@@ -43,12 +43,25 @@ function numeros_iguais($x, $y, $chave)
     if ($chave === "porcentagem" && abs($x - $y) <= 0.5) {
         return true;
     }
-    return abs($x - $y) <= max(1e-6, 5e-3 * max(abs($x), abs($y)));
+    // (e os valores bem pequenos, como os dias sem uso de quem acabou de sair do pulso: 3 ou 4 segundos em dias)
+    return abs($x - $y) <= max(1e-3, 5e-3 * max(abs($x), abs($y)));
 }
 
 function comparar($x, $y, $caminho, $chave)
 {
     global $graves, $leves;
+    // o id das faixas dos critérios: o MySQL (InnoDB) reserva ids em blocos num INSERT ... SELECT de várias linhas e deixa
+    // buracos na sequência; os outros bancos, não. O id não quer dizer nada além de identificar a faixa
+    if (preg_match("/\.faixas\[\d+\]\.id$/", $caminho) === 1) {
+        return;
+    }
+    // a mensagem de erro que o próprio banco escreveu (cada um tem a sua redação), e quanto tempo o cron levou (desempenho)
+    if ($chave === "detalhe" && preg_match("/\\.resposta\\.detalhe\$/", $caminho) === 1) {
+        return;
+    }
+    if (in_array($chave, ["duracao_ms", "mais_lenta_ms"], true)) {
+        return;
+    }
     if (is_array($x) && is_array($y)) {
         $lista_x = array_is_list($x);
         if ($lista_x !== array_is_list($y) && count($x) > 0 && count($y) > 0) {
@@ -79,6 +92,11 @@ function comparar($x, $y, $caminho, $chave)
     if ((is_int($x) || is_float($x)) && numeros_iguais($x, $y, $chave)) {
         return;
     }
+    // um inteiro arredondado bem na fronteira (23,499 e 23,501, calculados com segundos de diferença): 23 e 24
+    if (is_int($x) && is_int($y) && abs($x - $y) === 1) {
+        $leves[] = [$caminho, "arredondamento", $x, $y];
+        return;
+    }
     $ix = instante($x);
     $iy = instante($y);
     if ($ix !== null && $iy !== null && abs($ix - $iy) <= 120) {
@@ -91,6 +109,10 @@ function comparar($x, $y, $caminho, $chave)
     $graves[] = [$caminho, "valor diferente", json_encode($x, JSON_UNESCAPED_UNICODE), json_encode($y, JSON_UNESCAPED_UNICODE)];
 }
 
+// a pasta onde o sistema está instalado muda de uma instalação para outra
+foreach (["config", "2 config"] as $l) {
+    unset($a["leituras"][$l]["resposta"]["pasta"], $b["leituras"][$l]["resposta"]["pasta"]);
+}
 comparar($a, $b, "", "");
 $corta = function ($s) {
     $s = (string)$s;
