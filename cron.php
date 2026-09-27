@@ -82,11 +82,7 @@ try {
     $hoje = new DateTimeImmutable("today");
     $agora = date("H:i");
     // banco desatualizado: registra o que falta e não roda nada, em vez de quebrar no meio
-    $pendentes = array_filter($MIGRACOES, function ($m) {
-        $marca = explode(".", $m[2]);
-        return (int)valor(count($marca) === 2 ? "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?"
-            : "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?", $marca) === 0;
-    });
+    $pendentes = migracoes_pendentes();
     if ($ERRO_TOKEN !== "") {
         // token da API inválido: o sistema inteiro para, o cron também (registra o motivo, sem escrever na saída)
         $log[] = "erro: " . $ERRO_TOKEN;
