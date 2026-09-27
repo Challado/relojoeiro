@@ -297,7 +297,7 @@ usuário do PHP possa escrever (o SQLite cria ao lado os arquivos `-wal` e `-shm
 | `DB_HOST`, `DB_PORTA`, `DB_NOME`, `DB_USUARIO`, `DB_SENHA` | o servidor do banco (MySQL e Postgres); `DB_PORTA` 0 é a porta padrão |
 | `DB_ARQUIVO` | o arquivo do banco (SQLite), fora da pasta publicada |
 | `API_TOKEN` | **obrigatório**, com 10 caracteres ou mais. Sem ele o sistema inteiro para e diz por quê. |
-| `FUSO` | o fuso horário, como `America/Sao_Paulo` |
+| `FUSO` | o fuso horário, como `America/Sao_Paulo`. Vazio ou ausente: o do PHP (`date.timezone` no php.ini). Vale para tudo, inclusive para as datas que o banco grava |
 | `MSG_ENDPOINT`, `MSG_DESTINATARIO`, `MSG_TITULO` | as mensagens (veja abaixo). Sem o endereço, nada é enviado. |
 
 ### Mensagens pelo Telegram

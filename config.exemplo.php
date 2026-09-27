@@ -14,6 +14,7 @@ define("DB_ARQUIVO", "/var/lib/relogios2/relogios2.sqlite");
 
 // obrigatório, com pelo menos 10 caracteres: sem ele o sistema não abre
 define("API_TOKEN", "uma-chave-longa-e-secreta");
+// o fuso horário do sistema (e das datas que o banco grava); vazio: o do PHP (date.timezone no php.ini)
 define("FUSO", "America/Sao_Paulo");
 // a API de mensagem (Telegram): o endereço, o destinatário e o título das mensagens; sem o endereço, nada é enviado
 define("MSG_ENDPOINT", "");

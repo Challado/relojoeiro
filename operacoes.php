@@ -177,21 +177,30 @@ function op_arvore($acao, $d)
     } elseif ($acao === "excluir" && isset($n[$id])) {
         $cima = $n[$id]["pai_id"] !== null ? (int)$n[$id]["pai_id"] : null;
         $destino = no_caminho($cima);
-        // fórmulas: sobem, menos as que o ponto de cima já tem com o mesmo identificador
-        $saem = [];
-        foreach (linhas("SELECT id, identificador FROM formula WHERE no_id = ?", [$id]) as $f) {
-            if ((int)valor("SELECT COUNT(*) FROM formula WHERE identificador = ? AND no_id <=> ?", [$f["identificador"], $cima]) > 0) {
-                sql("DELETE FROM formula WHERE id = ?", [$f["id"]]);
-                $saem[] = $f["identificador"];
+        // fórmulas e avisos (uma versão por ponto): sobem, menos os que o ponto de cima já tem com o mesmo identificador
+        $saem = ["formula" => [], "aviso" => []];
+        foreach (array_keys($saem) as $tabela) {
+            foreach (linhas("SELECT id, identificador FROM " . $tabela . " WHERE no_id = ?", [$id]) as $f) {
+                if ((int)valor("SELECT COUNT(*) FROM " . $tabela . " WHERE identificador = ? AND no_id <=> ?", [$f["identificador"], $cima]) > 0) {
+                    sql("DELETE FROM " . $tabela . " WHERE id = ?", [$f["id"]]);
+                    $saem[$tabela][] = $f["identificador"];
+                }
             }
         }
-        foreach (["no" => "pai_id", "relogio" => "no_id", "campo" => "no_id", "lancamento_tipo" => "no_id", "formula" => "no_id"] as $tabela => $coluna) {
+        // os critérios próprios dele saem (o banco apaga junto): os relógios passam a usar os do ponto de cima
+        $criterios = (int)valor("SELECT COUNT(*) FROM criterio_parametro WHERE escopo_no_id = ?", [$id]);
+        // o resto sobe: os pontos de dentro, os relógios, os campos, os tipos de lançamento, as fórmulas, os avisos, e os
+        // blocos dos modos que sorteavam dele (passam a sortear do ponto de cima)
+        foreach (["no" => "pai_id", "relogio" => "no_id", "campo" => "no_id", "lancamento_tipo" => "no_id", "formula" => "no_id", "aviso" => "no_id",
+            "modo_bloco" => "no_id"] as $tabela => $coluna) {
             sql("UPDATE " . $tabela . " SET " . $coluna . " = ? WHERE " . $coluna . " = ?", [$cima, $id]);
         }
         sql("DELETE FROM no WHERE id = ?", [$id]);
         nos_todos(true);
         $msg = $n[$id]["nome"] . " excluído; o que era dele foi para " . $destino . "."
-            . (count($saem) > 0 ? " Saíram as versões dele das fórmulas que " . $destino . " já tinha: " . implode(", ", $saem) . "." : "");
+            . (count($saem["formula"]) > 0 ? " Saíram as versões dele das fórmulas que " . $destino . " já tinha: " . implode(", ", $saem["formula"]) . "." : "")
+            . (count($saem["aviso"]) > 0 ? " Saíram as versões dele dos avisos que " . $destino . " já tinha: " . implode(", ", $saem["aviso"]) . "." : "")
+            . ($criterios > 0 ? " Os critérios próprios dele saíram: os relógios dele usam os do lugar mais perto, acima." : "");
     }
     return resultado($erros, $msg, ["id" => $id]);
 }

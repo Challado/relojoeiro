@@ -1573,7 +1573,8 @@
  * ERROS  (no formato pedido)
  * ---------------------------------------------------------------------------------------------
  *   400 pedido recusado (os erros dizem por quê)      401 sem token nem login      404 recurso ou relógio que não existe
- *   500 {"erro": "Sistema parado: ..."} (token inválido no config.php) ou {"erro": "erro interno", "detalhe"}
+ *   409 {"erro": "o banco recusou a gravação: ...", "detalhe"} (um registro que outro ainda usa, ou um valor repetido)
+ *   500 {"erro": "Sistema parado: ..."} (token ou fuso inválido no config.php) ou {"erro": "erro interno", "detalhe"}
  *   503 {"erro": "o banco está desatualizado: ...", "pendentes"}: só recurso=migracoes responde até aplicar
  *   503 {"erro": "o banco de dados não respondeu", "detalhe"}
  */
@@ -1876,6 +1877,12 @@ function responde($codigo, $saida, $formato)
 
 // erro que escapar: sai no formato pedido
 set_exception_handler(function ($t) use ($formato) {
+    if ($t instanceof BancoErro && $t->integridade) {
+        // o banco recusou a gravação: um registro que outro ainda usa, ou um valor repetido onde não pode
+        responde(409, ["erro" => "o banco recusou a gravação: ela quebraria uma ligação entre os dados (um registro que outro ainda usa, "
+            . "ou um valor repetido onde não pode)", "detalhe" => $t->getMessage()], $formato);
+        return;
+    }
     $banco = $t instanceof BancoErro || $t instanceof mysqli_sql_exception;
     responde($banco ? 503 : 500, ["erro" => $banco ? "o banco de dados não respondeu" : "erro interno", "detalhe" => $t->getMessage()], $formato);
 });
@@ -3528,7 +3535,8 @@ if (!$token_ok && $quem === "") {
             "recurso" => "o recurso (vazio: tudo)", "acao" => "a ação (escrita)", "formato" => "json (padrão) ou xml", "token" => "o token da API; também no cabeçalho X-Api-Token, ou o login do site (HTTP Basic) no lugar dele",
         ],
         "erros" => ["400" => "pedido recusado (os erros dizem por quê)", "401" => "sem token nem login", "404" => "recurso ou relógio que não existe",
-            "500" => "sistema parado (token inválido no config.php) ou erro interno", "503" => "banco desatualizado (só recurso=migracoes responde) ou banco fora do ar"],
+            "409" => "o banco recusou a gravação (um registro que outro ainda usa, ou um valor repetido)",
+            "500" => "sistema parado (token ou fuso inválido no config.php) ou erro interno", "503" => "banco desatualizado (só recurso=migracoes responde) ou banco fora do ar"],
         "motor" => array_map(function ($f) { return $f[2]; }, $GLOBALS["FUNCOES"]),
         "escrita_das_formulas" => "números com vírgula ou ponto; textos entre aspas; argumentos separados por ponto e vírgula; operações + - * / ^; "
             . "comparações = <> < <= > >= (dão 1 ou 0); variáveis: os identificadores dos campos e das fórmulas; vazio se propaga; divisão por zero: vazio",
