@@ -3,7 +3,7 @@
 > **O rodízio inteligente de uma coleção de relógios.** Todo dia ele diz qual relógio vai para o pulso, lembra de dar corda,
 > carregar, pôr no sol e trocar a pilha, e faz a coleção inteira ser usada, e não só o favorito.
 
-PHP 8.1+ · SQLite, MySQL/MariaDB ou PostgreSQL · sem framework · sem dependências · API REST completa · Telegram · Google Agenda
+PHP 8.1+ · SQLite, MySQL/MariaDB ou PostgreSQL · sem framework · sem dependências · API REST completa · Telegram · Google Agenda · [código-fonte disponível](#licença)
 
 ---
 
@@ -411,6 +411,29 @@ Pode. As telas usam exatamente a mesma API.
 | [`nginx-relogios.conf`](nginx-relogios.conf) | o bloco do nginx que protege os arquivos internos |
 | [`testes/`](testes/) | o teste de paridade: o mesmo roteiro pela API em cada banco, e o comparador das respostas |
 | [`PORTE.md`](PORTE.md), [`PARIDADE.md`](PARIDADE.md) | o registro do porte da versão anterior |
+
+---
+
+## Licença
+
+O Relojoeiro é **código-fonte disponível**, não software livre: o código está à vista, mas tem dono e regras de uso. Em
+resumo (o que vale é o texto do [`LICENSE`](LICENSE)):
+
+| ✅ Pode | ❌ Não pode |
+|---|---|
+| instalar e usar para você, a sua família ou a sua empresa | criar um projeto novo baseado neste código, no todo ou em parte, nem reescrito em outra linguagem |
+| alterar o código da sua instalação | distribuir o código, original ou alterado, fora deste repositório |
+| propor melhorias por pull request aqui | oferecer o sistema como serviço para outras pessoas |
+| fazer fork no GitHub para preparar essas propostas | manter um fork como projeto separado |
+
+Para qualquer outro uso, peça autorização pelo GitHub ([Challado](https://github.com/Challado)).
+
+> 💡 **Contribua, não copie.** Ser contribuidor do Relojoeiro é muito melhor que fazer um fork: a sua melhoria entra para
+> todos, com o seu nome no histórico, e você não corre risco nenhum. Já um fork que vira projeto próprio viola a licença,
+> e os direitos sobre este código são defendidos: pedido de remoção nas plataformas, ação judicial com indenização e até
+> ação penal (a Lei 9.609/98 trata a violação de direito de autor de software como crime). Mesmo quem acha que está certo
+> pode ter de se defender, e isso custa tempo e advogado. **Na dúvida, pergunte antes:** a resposta é de graça, a
+> discussão depois não é.
 
 ---
 
