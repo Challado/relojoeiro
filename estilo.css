@@ -1,0 +1,773 @@
+:root {
+  --aco: #e4e8ec;
+  --aco-escuro: #c3cad2;
+  --tinta: #1c2530;
+  --cinza: #6b7684;
+  --safira: #1f4f8f;
+  --ambar: #a8661a;
+  --papel: #fbfcfd;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--aco);
+  color: var(--tinta);
+  font: 16px/1.5 "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+.topo {
+  display: flex;
+  flex-wrap: wrap;            /* no celular, o menu quebra a linha em vez de passar da largura da tela */
+  gap: .5rem 1.5rem;
+  padding: .9rem 1.25rem;
+  background: var(--tinta);
+}
+.topo a { color: #b9c3ce; text-decoration: none; }
+.topo a.ativo { color: #fff; border-bottom: 2px solid #fff; }
+.topo a:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+main { max-width: 56rem; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
+
+section { margin-bottom: 2.25rem; }
+
+h1 {
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  margin: .2rem 0 .8rem;
+}
+h2 { font-size: 1.1rem; margin: 0 0 .75rem; }
+
+.hoje {
+  background: var(--papel);
+  border-radius: 14px;
+  padding: 1.5rem 1.5rem 1.25rem;
+  border: 1px solid var(--aco-escuro);
+}
+.hoje .data { color: var(--cinza); margin: 0; }
+.periodo { display: flex; align-items: center; gap: .75rem; color: var(--cinza); margin: 0 0 1rem; }
+
+/* janela de data, como a de um mostrador */
+.janela {
+  display: inline-block;
+  background: #fff;
+  color: var(--tinta);
+  font-weight: 700;
+  padding: .15rem .6rem;
+  border: 2px solid var(--tinta);
+  border-radius: 3px;
+  box-shadow: inset 0 2px 0 rgba(0, 0, 0, .12);
+}
+
+.acao { color: var(--ambar); font-weight: 600; }
+
+.botoes, .linha { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+form { margin: 0; }
+
+/* campos, listas e botões: UMA altura em todo o sistema (--altura-controle), para ficarem sempre alinhados lado a lado.
+   Campo e lista têm altura fixa (uma linha); botão tem altura mínima (um texto longo no celular pode quebrar a linha). */
+:root { --altura-controle: 2.4rem; }
+button, .botoes a {
+  font: inherit;
+  min-height: var(--altura-controle);
+  padding: .3rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  vertical-align: middle;
+  border-radius: 8px;
+  border: 1px solid var(--safira);
+  background: var(--safira);
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+}
+button.leve, .botoes a.leve { background: transparent; color: var(--safira); }
+button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible {
+  outline: 2px solid var(--safira);
+  outline-offset: 2px;
+}
+
+select, textarea, input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):not([type=range]) {
+  font: inherit;
+  padding: 0 .6rem;
+  box-sizing: border-box;
+  vertical-align: middle;
+  border: 1px solid var(--aco-escuro);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--tinta);
+}
+select, input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):not([type=range]) { height: var(--altura-controle); }
+textarea { padding: .45rem .6rem; }
+input[type=number] { width: 5.5rem; }
+
+.avisos ul { list-style: none; margin: 0; padding: 0; }
+.avisos li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: .7rem 0;
+  border-bottom: 1px solid var(--aco-escuro);
+}
+.avisos li form { display: flex; gap: .4rem; }
+.aviso-corda span, .aviso-sol span { color: var(--ambar); font-weight: 600; }
+/* "Hoje é dia de" em tabela, como a dos próximos dias: o botão à direita, na mesma linha */
+.avisos table.relogios td.botao-aviso { text-align: right; white-space: nowrap; width: 1%; }
+.avisos table.relogios td.botao-aviso form { display: inline-flex; gap: .4rem; justify-content: flex-end; }
+.avisos table.relogios td.botao-aviso input[type=text] { width: 5.5rem; }
+.avisos table.relogios td a { color: var(--tinta); font-weight: 600; text-decoration: none; }
+.avisos table.relogios td a:hover { text-decoration: underline; }
+.avisos table.relogios tr.aviso-atrasado td:first-child span { color: #9b2c22; font-weight: 600; }
+
+table { width: 100%; border-collapse: collapse; background: var(--papel); border-radius: 10px; overflow: hidden; }
+th, td { text-align: left; padding: .55rem .75rem; border-bottom: 1px solid var(--aco); }
+th { font-size: .9rem; color: var(--cinza); font-weight: 600; }
+tr.fds td { background: #f1f4f7; }
+tr.indisponivel td { color: var(--cinza); }
+td small { color: var(--cinza); }
+td.acoes { display: flex; gap: .75rem; align-items: center; }
+td.acoes a { color: var(--safira); }
+
+.opcoes { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin-bottom: 1rem; }
+fieldset { border: 0; padding: 0; margin: 0 0 1rem; display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; }
+fieldset label, .cadastro label { display: flex; flex-direction: column; gap: .25rem; font-size: .95rem; }
+.cadastro { display: grid; gap: .9rem; max-width: 28rem; }
+.cadastro label.check { flex-direction: row; align-items: center; gap: .5rem; }
+.nota { color: var(--cinza); font-size: .92rem; }
+
+[hidden] { display: none !important; }
+
+@media (max-width: 560px) {
+  .avisos li { flex-direction: column; align-items: flex-start; }
+  th:nth-child(3), td:nth-child(3) { font-size: .9rem; }
+}
+
+/* ---------- página principal em duas colunas: o meio (com o modo de rodízio dentro) e o painel ---------- */
+.painel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22rem;
+  grid-template-areas: "hoje detalhe";
+  gap: 1.25rem;
+  margin: 0;
+  padding: 1rem .75rem 4rem;
+  align-items: start;
+}
+.painel main { max-width: none; margin: 0; padding: 0; }
+.col-hoje { grid-area: hoje; }
+.col-detalhe { grid-area: detalhe; }
+
+.col-detalhe {
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+/* modo de rodízio: quadro embaixo de "Próximos dias"; fechado mostra o modo atual, aberto edita */
+.modo-rodizio details {
+  background: var(--papel);
+  border: 1px solid var(--aco-escuro);
+  border-radius: 12px;
+  padding: .7rem 1rem;
+}
+.modo-rodizio summary { cursor: pointer; display: flex; align-items: baseline; gap: .6rem; list-style: none; }
+.modo-rodizio summary::-webkit-details-marker { display: none; }
+.modo-rodizio summary .rotulo { color: var(--cinza); font-size: .9rem; }
+.modo-rodizio summary .editar { margin-left: auto; color: var(--safira); font-size: .88rem; }
+.modo-rodizio details[open] summary .editar { visibility: hidden; }
+.modo-rodizio form { display: flex; flex-direction: column; gap: .8rem; margin-top: .8rem; }
+.modo-rodizio .opcoes { display: flex; flex-wrap: wrap; gap: .4rem 1.3rem; }
+.modo-rodizio fieldset { display: flex; flex-wrap: wrap; gap: .6rem 1rem; border: 0; padding: 0; margin: 0; }
+.modo-rodizio fieldset label { display: flex; flex-direction: column; gap: .2rem; font-size: .88rem; }
+.modo-rodizio button { align-self: flex-start; }
+.modo-rodizio .nota { margin: 0; }
+
+.col-detalhe {
+  background: var(--papel);
+  border: 1px solid var(--aco-escuro);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+}
+
+.titulo-secao { display: flex; justify-content: space-between; align-items: center; margin-bottom: .6rem; }
+.titulo-secao h2 { margin: 0; }
+a.botao {
+  display: inline-block;
+  padding: .4rem .85rem;
+  border-radius: 8px;
+  background: var(--safira);
+  color: #fff;
+  text-decoration: none;
+  font-size: .95rem;
+}
+
+/* tabela corrida dos relógios: linhas coladas, borda fina, clicável */
+table.relogios {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--papel);
+  border: 1px solid var(--aco-escuro);
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: .93rem;
+}
+table.relogios th {
+  background: #eef1f4;
+  font-size: .85rem;
+  color: var(--cinza);
+  font-weight: 600;
+  padding: .45rem .6rem;
+  border-bottom: 1px solid var(--aco-escuro);
+  white-space: nowrap;
+}
+table.relogios td { padding: .38rem .6rem; border-bottom: 1px solid var(--aco); vertical-align: middle; }
+table.relogios tbody tr:last-child td { border-bottom: 0; }
+table.relogios tr[data-id] { cursor: pointer; }
+table.relogios tr[data-id]:hover td { background: #f1f4f8; }
+table.relogios tr[data-id]:focus-visible { outline: 2px solid var(--safira); outline-offset: -2px; }
+table.relogios tr[data-id] a { color: var(--tinta); text-decoration: none; font-weight: 600; }
+table.relogios td.mini, table.relogios th.mini { width: 36px; padding-right: 0; }
+table.relogios td.mini img { width: 28px; height: 28px; object-fit: cover; border-radius: 5px; display: block; }
+table.relogios tr.de-hoje td:first-child { box-shadow: inset 3px 0 0 var(--safira); }
+table.relogios tr.pendente td:first-child { box-shadow: inset 3px 0 0 var(--ambar); }
+table.relogios tr.de-hoje.pendente td:first-child { box-shadow: inset 3px 0 0 var(--safira); }
+table.relogios tr.selecionado td { background: #e3eaf5; }
+table.relogios tr.indisponivel td { color: var(--cinza); }
+table.relogios tr.indisponivel a { color: var(--cinza); font-weight: 400; }
+table.relogios tr.fds td { background: #f4f6f8; }
+
+/* telas médias: painel mais estreito */
+@media (max-width: 1250px) {
+  .painel { grid-template-columns: minmax(0, 1fr) 22rem; }
+}
+
+/* celular: uma coluna */
+@media (max-width: 800px) {
+  .painel {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "hoje" "detalhe";
+  }
+  .col-detalhe { position: static; max-height: none; }
+  #tabela-relogios th:nth-child(3), #tabela-relogios td:nth-child(3),
+  #tabela-relogios th:nth-child(7), #tabela-relogios td:nth-child(7),
+  #tabela-relogios th:nth-child(10), #tabela-relogios td:nth-child(10) { display: none; }
+}
+
+/* ---------- fotos ---------- */
+.miniatura { width: 38px; height: 38px; object-fit: cover; border-radius: 6px; flex: none; }
+.cartao header { justify-content: flex-start; }
+.cartao header a { color: var(--tinta); text-decoration: none; flex: 1; }
+.cartao header a:hover { text-decoration: underline; }
+td.com-foto { display: flex; align-items: center; gap: .6rem; }
+td.com-foto a { color: var(--tinta); }
+.previa { max-width: 160px; border-radius: 8px; }
+a.nome-hoje { color: inherit; text-decoration: none; }
+a.nome-hoje:hover { text-decoration: underline; }
+
+/* ---------- ficha do relógio ---------- */
+main.ficha { max-width: 72rem; }
+.seletor { display: flex; align-items: center; gap: .6rem; margin-bottom: 1.25rem; }
+.seletor select { min-width: 18rem; }
+.ficha-topo { display: grid; grid-template-columns: 22rem minmax(0, 1fr); gap: 2rem; align-items: start; margin-bottom: 2rem; }
+.ficha-foto img:not(.previa) { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 14px; border: 1px solid var(--aco-escuro); background: #fff; }
+.sem-foto {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--aco-escuro);
+  border-radius: 14px;
+  color: var(--cinza);
+  background: var(--papel);
+}
+.ficha-foto form { margin-top: .6rem; }
+.ficha-foto input[type=file] { font-size: .85rem; max-width: 100%; }
+button.discreto { border-color: transparent; font-size: .85rem; padding: 0 .45rem; }
+.ficha-dados h1 { margin-bottom: 1rem; }
+.blocos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
+.blocos section {
+  margin: 0;
+  background: var(--papel);
+  border: 1px solid var(--aco-escuro);
+  border-radius: 10px;
+  padding: .8rem .9rem;
+}
+.blocos h2 { font-size: .95rem; margin-bottom: .4rem; color: var(--cinza); font-weight: 600; }
+.blocos p { margin: .25rem 0; }
+.ficha .acoes-cartao { margin: .5rem 0 0; }
+.ficha .acoes-cartao button { font-size: .95rem; padding: .45rem .9rem; }
+.grafico { width: 100%; height: auto; background: var(--papel); border: 1px solid var(--aco-escuro); border-radius: 10px; }
+.grafico .guia { stroke: var(--aco); stroke-width: 1; }
+.grafico .linha-carga { fill: none; stroke: var(--safira); stroke-width: 2; }
+.grafico .ponto { fill: var(--safira); }
+
+@media (max-width: 900px) {
+  .ficha-topo { grid-template-columns: minmax(0, 1fr); }
+  .ficha-foto { max-width: 22rem; }
+  .blocos { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---------- a ficha dentro do painel da direita ---------- */
+.col-detalhe .ficha-topo { grid-template-columns: minmax(0, 1fr); gap: 1rem; margin-bottom: 1rem; }
+.col-detalhe .ficha-foto img:not(.previa) { aspect-ratio: 4 / 3; }
+.col-detalhe .sem-foto { aspect-ratio: 4 / 1.2; }
+.col-detalhe h1 { font-size: 1.6rem; margin: .1rem 0 .8rem; }
+.col-detalhe .blocos { grid-template-columns: minmax(0, 1fr); gap: .6rem; }
+.col-detalhe section { margin-bottom: 1.25rem; }
+.col-detalhe .blocos section { margin: 0; }
+table.compacta { width: 100%; border-collapse: collapse; font-size: .88rem; background: transparent; }
+table.compacta td { padding: .3rem .2rem; border-bottom: 1px solid var(--aco); }
+details.cadastro-painel {
+  border: 1px solid var(--aco-escuro);
+  border-radius: 10px;
+  padding: .6rem .8rem;
+  margin: 0 0 1.25rem;
+  background: #fff;
+}
+details.cadastro-painel summary { cursor: pointer; font-weight: 600; color: var(--safira); }
+details.cadastro-painel[open] summary { margin-bottom: .8rem; }
+.detalhe .cadastro { max-width: none; }
+.detalhe .cadastro input:not([type=checkbox]):not([type=file]), .detalhe .cadastro select { width: 100%; }
+form.excluir { margin-top: .9rem; padding-top: .6rem; border-top: 1px solid var(--aco); }
+form.excluir button { color: #9b2c2c; }
+
+/* ---------- configuração ---------- */
+main.config { max-width: 76rem; }
+.config-grade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem; align-items: start; }
+.config-grade section { margin: 0; }
+.config-grade .modo, .previa-msg {
+  background: var(--papel);
+  border: 1px solid var(--aco-escuro);
+  border-radius: 12px;
+  padding: 1rem;
+}
+.config .cadastro { max-width: none; }
+.config .cadastro input:not([type=checkbox]) { width: 100%; }
+table.canais { max-width: 44rem; }
+table.canais td:nth-child(3), table.canais td:nth-child(4), table.canais th:nth-child(3), table.canais th:nth-child(4) { text-align: center; width: 6rem; }
+table.canais input[type=checkbox] { width: 1.1rem; height: 1.1rem; }
+.previa-msg h3 { font-size: 1rem; margin: 0 0 .5rem; }
+.previa-msg pre {
+  white-space: pre-wrap;
+  font: .9rem/1.45 inherit;
+  font-family: inherit;
+  background: #fff;
+  border: 1px solid var(--aco);
+  border-radius: 8px;
+  padding: .6rem .7rem;
+  margin: 0 0 .6rem;
+}
+@media (max-width: 900px) {
+  .config-grade { grid-template-columns: minmax(0, 1fr); }
+}
+.config .botoes.salvar { margin: 1rem 0 2.25rem; }
+button.largo { width: 100%; margin-top: .5rem; }
+
+/* ---------- leitura de carga ---------- */
+.form-carga { flex-direction: column; align-items: stretch !important; gap: .45rem !important; width: 100%; }
+.form-carga > label { display: flex; justify-content: space-between; align-items: center; gap: .6rem; font-size: .92rem; }
+.form-carga > label span { display: flex; align-items: center; gap: .3rem; }
+.form-carga input[type=number] { width: 5rem !important; }
+.form-carga > label.check { justify-content: flex-start; }
+.form-carga button { align-self: flex-start; }
+p.conta-carga {
+  background: #eef4ec;
+  border: 1px solid #b9d4b3;
+  color: #2c4a27;
+  border-radius: 8px;
+  padding: .6rem .75rem;
+  margin: 0 0 1rem;
+  font-size: .92rem;
+}
+
+/* ---------- estado: em uso (verde) ou em repouso (vermelho) ---------- */
+.estado {
+  display: inline-block;
+  padding: .12rem .55rem;
+  border-radius: 999px;
+  font-size: .8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.estado-uso { background: #e3f3e6; color: #1e6b2e; border-color: #a9d8b3; }
+.estado-repouso { background: #fbe8e6; color: #9b2c22; border-color: #efb5ae; }
+.estado-linha { margin: 0 0 .2rem; font-size: .92rem; display: flex; align-items: center; gap: .5rem; }
+table.compacta tr.marco td { color: var(--cinza); font-size: .85rem; }
+table.compacta td:last-child { text-align: right; }
+.grafico .ponto-uso { fill: #2e8b45; }
+.grafico .ponto-repouso { fill: #c0392b; }
+.bolinha { display: inline-block; width: .65rem; height: .65rem; border-radius: 50%; vertical-align: middle; margin: 0 .2rem 0 .1rem; }
+.bolinha.ponto-uso { background: #2e8b45; }
+.bolinha.ponto-repouso { background: #c0392b; }
+p.alerta-duplo { font-size: .88rem; color: var(--ambar); margin: .3rem 0; }
+button.corrige { font-size: .85rem; padding: .3rem .7rem; margin-top: .2rem; border-color: #c0392b; color: #9b2c22; }
+fieldset.compra { border: 1px solid var(--aco); border-radius: 8px; padding: .6rem .7rem .7rem; margin: 0; display: grid; gap: .6rem; }
+fieldset.compra legend { font-size: .9rem; font-weight: 600; color: var(--cinza); padding: 0 .3rem; }
+
+/* ---------- tabela de relógios: ordenação, filtros, carga e compra ---------- */
+.rolagem { overflow-x: auto; border-radius: 10px; }
+.titulo-e-conta { display: flex; align-items: baseline; gap: .8rem; }
+.titulo-e-conta h2 { margin: 0; }
+#conta-relogios { font-size: .88rem; color: var(--cinza); }
+.titulo-secao .botoes { display: flex; gap: .5rem; align-items: center; margin: 0; }
+#tabela-relogios { min-width: 1080px; }
+#tabela-relogios thead th { padding-bottom: .2rem; }
+#tabela-relogios thead th button {
+  font: inherit; font-size: .83rem; font-weight: 600; color: var(--cinza);
+  background: none; border: 0; padding: 0; cursor: pointer; white-space: nowrap;
+}
+#tabela-relogios thead th button:hover { color: var(--tinta); }
+#tabela-relogios thead th button span { color: var(--safira); }
+#tabela-relogios tr.filtros td { background: #eef1f4; padding: .15rem .45rem .5rem; border-bottom: 1px solid var(--aco-escuro); }
+#tabela-relogios tr.filtros input, #tabela-relogios tr.filtros select {
+  font: inherit; font-size: .8rem; width: 100%; box-sizing: border-box;
+  padding: .25rem .35rem; border: 1px solid var(--aco-escuro); border-radius: 6px; background: #fff;
+}
+#tabela-relogios tr.filtros input.curto { width: 3.2rem; }
+#tabela-relogios .col-codigo { width: 3.6rem; color: var(--cinza); font-variant-numeric: tabular-nums; }
+#tabela-relogios .col-valor { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+#tabela-relogios th.col-valor button { margin-left: auto; }
+.nome-rel { display: flex; align-items: center; gap: .55rem; }
+.nome-rel img, .nome-rel .sem-mini { width: 28px; height: 28px; border-radius: 5px; object-fit: cover; flex: none; }
+.nome-rel .sem-mini { background: var(--aco); display: inline-block; }
+.carga-cel { display: flex; flex-direction: column; gap: .1rem; }
+.carga-linha { display: flex; align-items: center; gap: .45rem; }
+.carga-cel .barra { width: 56px; height: 7px; border-radius: 4px; background: var(--aco); overflow: hidden; display: inline-block; }
+.carga-cel .barra span { display: block; height: 100%; background: var(--safira); }
+.carga-cel strong { font-variant-numeric: tabular-nums; }
+.carga-cel small, small.sem-carga { font-size: .72rem; color: var(--cinza); }
+.carga-cel.baixa .barra span { background: var(--ambar); }
+.carga-cel.baixa strong { color: #8a4f0e; }
+#tabela-relogios td.fazer { font-weight: 600; color: #8a4f0e; }
+.estado-indisponivel { background: #eef1f4; color: var(--cinza); border-color: var(--aco-escuro); }
+#tabela-relogios tfoot td { background: #eef1f4; border-top: 1px solid var(--aco-escuro); font-weight: 600; padding: .5rem .6rem; }
+#tabela-relogios tfoot .rotulo-total { text-align: right; color: var(--cinza); font-weight: 500; }
+/* uma linha por relógio: nada quebra; o que não couber rola para o lado dentro da tabela */
+#tabela-relogios { min-width: 0; width: max-content; min-width: 100%; }
+#tabela-relogios td, #tabela-relogios th { white-space: nowrap; padding-top: .32rem; padding-bottom: .32rem; }
+#tabela-relogios .carga-cel { flex-direction: row; align-items: center; gap: .45rem; }
+#tabela-relogios .carga-cel small { font-size: .72rem; }
+#tabela-relogios tr.filtros td { padding-top: .1rem; padding-bottom: .45rem; }
+
+#tabela-relogios .nome-rel a { overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle; }
+#tabela-relogios td, #tabela-relogios th { padding-left: .5rem; padding-right: .5rem; }
+#tabela-relogios .carga-cel .barra { width: 44px; }
+/* títulos compridos em duas linhas, conteúdo sempre numa só */
+#tabela-relogios thead th { white-space: normal; vertical-align: bottom; }
+#tabela-relogios thead th button { white-space: normal; text-align: left; line-height: 1.2; }
+#tabela-relogios .col-codigo { width: 2.4rem; }
+#tabela-relogios td, #tabela-relogios th { padding-left: .4rem; padding-right: .4rem; }
+#tabela-relogios .estado { padding: .1rem .45rem; font-size: .76rem; }
+#tabela-relogios .nome-rel { gap: .45rem; }
+
+/* ---------- campos nunca saem do quadro: a largura já inclui borda e espaçamento ---------- */
+input, select, textarea, button { box-sizing: border-box; max-width: 100%; }
+
+/* ---------- configuração ---------- */
+.cartao-config {
+  background: var(--papel);
+  border: 1px solid var(--aco-escuro);
+  border-radius: 12px;
+  padding: 1rem;
+  margin: 0;
+  min-width: 0;
+}
+.cartao-config h2, .cartao-config h3 { margin-top: 0; }
+.config .cadastro label { display: flex; flex-direction: column; gap: .25rem; }
+.config .cadastro label.check { flex-direction: row; align-items: center; gap: .45rem; }
+.config .cadastro input:not([type=checkbox]), .config textarea, .config select { width: 100%; }
+.quebra { word-break: break-all; }
+.botoes-teste { display: flex; flex-wrap: wrap; gap: .5rem; }
+.botoes-teste button[disabled] { opacity: .45; cursor: not-allowed; }
+
+.modelos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: .8rem; }
+.campo-modelo { margin-bottom: .8rem; }
+.rotulo-modelo { display: flex; justify-content: space-between; align-items: center; gap: .6rem; margin-bottom: .3rem; }
+.rotulo-modelo label { font-size: .92rem; font-weight: 600; }
+.rotulo-modelo select.ancora { width: auto; max-width: 13rem; font-size: .82rem; padding: .2rem .35rem; }
+.config textarea {
+  font: .9rem/1.45 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  padding: .5rem .6rem;
+  border: 1px solid var(--aco-escuro);
+  border-radius: 8px;
+  background: #fff;
+  resize: vertical;
+}
+.lista-ancoras { margin-top: .4rem; }
+.lista-ancoras summary { cursor: pointer; color: var(--safira); font-weight: 600; }
+.lista-ancoras code { font-size: .85rem; }
+
+table.canais { max-width: 60rem; }
+table.canais td.centro { text-align: center; }
+table.canais td.proprios { white-space: nowrap; }
+table.canais td.proprios label { display: inline-flex; margin-right: .9rem; font-size: .88rem; }
+table.canais tr.linha-corpo td { padding: 0 .6rem; border-bottom: 1px solid var(--aco); }
+table.canais tr.linha-corpo .campo-modelo { margin: .5rem 0 .7rem; }
+table.canais tr.linha-corpo:not(:has(.campo-modelo:not([hidden]))) { display: none; }
+
+.previa-evento { border-bottom: 1px solid var(--aco); padding: .45rem 0; }
+.previa-evento .quando { font-size: .8rem; color: var(--cinza); }
+.previa-evento pre { margin: .3rem 0 0; font-size: .82rem; }
+
+@media (max-width: 900px) {
+  .modelos { grid-template-columns: minmax(0, 1fr); }
+}
+p.alerta-cron { font-size: .88rem; color: #8a4f0e; background: #fbf1e3; border: 1px solid #ecd2a8; border-radius: 8px; padding: .5rem .6rem; margin: .4rem 0 0; }
+p.alerta-cron code, .registro-cron pre { word-break: break-all; white-space: pre-wrap; }
+.registro-cron summary { cursor: pointer; color: var(--safira); font-size: .9rem; }
+.registro-cron pre { font-size: .8rem; background: #fff; border: 1px solid var(--aco); border-radius: 6px; padding: .45rem .55rem; margin: .4rem 0 0; }
+
+/* ---------- eventos personalizados ---------- */
+.novo-evento-link { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin: .8rem 0 0; }
+table.canais tr.personalizado td:first-child { font-weight: 600; }
+.acoes-ev { display: inline-flex; gap: .4rem; margin-left: .5rem; font-weight: 400; font-size: .82rem; }
+.acoes-ev button.discreto { padding: 0; font-size: .82rem; color: #9b2c22; background: none; border: 0; cursor: pointer; }
+details.novo-evento { max-width: 44rem; }
+details.novo-evento summary { cursor: pointer; font-weight: 600; color: var(--safira); font-size: 1.05rem; }
+details.novo-evento[open] summary { margin-bottom: .8rem; }
+.form-evento { display: grid; gap: .7rem; }
+.linha-campos { display: flex; flex-wrap: wrap; gap: .7rem; }
+.linha-campos label { flex: 1 1 9rem; }
+fieldset.dias-semana { border: 1px solid var(--aco); border-radius: 8px; padding: .5rem .7rem; margin: 0; display: flex; flex-wrap: wrap; gap: .3rem 1rem; }
+fieldset.dias-semana legend { font-size: .9rem; color: var(--cinza); padding: 0 .3rem; }
+.aviso-banco { max-width: 46rem; margin: 1.5rem auto; border-color: #ecd2a8; }
+.aviso-banco h2 { color: #8a4f0e; }
+.erro-cron { background: #fbe8e6; border: 1px solid #efb5ae; color: #9b2c22; border-radius: 8px; padding: .5rem .6rem; margin-top: .5rem; font-size: .88rem; }
+.erro-cron pre { white-space: pre-wrap; word-break: break-all; font-size: .8rem; margin: .3rem 0; color: #7a2019; }
+
+/* ---------- execuções do cron ---------- */
+main.execucoes { max-width: 72rem; }
+.execucoes h1 { font-size: 1.5rem; margin: 0; }
+.filtros-execucoes { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .7rem; margin: 1rem 0; }
+.filtros-execucoes label { display: flex; flex-direction: column; gap: .2rem; font-size: .88rem; }
+.filtros-execucoes .botoes { margin: 0; }
+.filtros-execucoes .atalhos { flex-basis: 100%; display: flex; gap: 1rem; font-size: .88rem; }
+.resumo-execucoes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .7rem; margin-bottom: .8rem; }
+.resumo-execucoes > div { background: var(--papel); border: 1px solid var(--aco-escuro); border-radius: 10px; padding: .6rem .8rem; display: flex; flex-direction: column; }
+.resumo-execucoes strong { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+.resumo-execucoes span { font-size: .82rem; color: var(--cinza); }
+.resumo-execucoes .com-erro { border-color: #efb5ae; background: #fbe8e6; }
+.resumo-execucoes .com-erro strong { color: #9b2c22; }
+table.lista-execucoes td { vertical-align: top; }
+table.lista-execucoes td.quando { white-space: nowrap; font-size: .85rem; }
+table.lista-execucoes td.duracao { white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.lista-execucoes pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-size: .82rem; }
+table.lista-execucoes tr.linha-erro td { background: #fdf2f1; }
+.estado-atividade { background: #e6eef8; color: #1f4f8f; border-color: #b8cbe6; }
+nav.paginas { display: flex; flex-wrap: wrap; gap: .35rem; margin: 1rem 0 2rem; }
+nav.paginas a, nav.paginas span { padding: .3rem .65rem; border: 1px solid var(--aco-escuro); border-radius: 6px; text-decoration: none; font-size: .9rem; }
+nav.paginas span.atual { background: var(--safira); color: #fff; border-color: var(--safira); }
+@media (max-width: 700px) { .resumo-execucoes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.regra-pulso { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .7rem; font-size: .92rem; }
+.regra-pulso label { display: flex; align-items: center; gap: .3rem; flex-direction: row !important; }
+.detalhe .cadastro .regra-pulso input { width: 4rem !important; }
+details.periodo-pulso { font-size: .9rem; margin-top: .3rem; }
+details.periodo-pulso summary { cursor: pointer; color: var(--safira); }
+details.periodo-pulso form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem; margin-top: .5rem; }
+details.periodo-pulso label { display: flex; flex-direction: column; gap: .2rem; font-size: .85rem; }
+/* Lançar: uma linha por grupo (Corda, Winder, Pulso, Sol, Pilha, Revisão) */
+.lancar-grupos { display: flex; flex-direction: column; gap: .35rem; width: 100%; }
+.linha-lancar { display: grid; grid-template-columns: 4.5rem auto 1fr; align-items: center; gap: .5rem; }
+.linha-lancar .grupo { font-size: .88rem; font-weight: 600; color: var(--cinza); }
+.linha-lancar .botoes-grupo { display: flex; gap: .3rem; }
+.linha-lancar button[disabled] { opacity: .35; cursor: not-allowed; }
+.linha-lancar .sessao-aberta { font-size: .8rem; color: #1e6b2e; }
+.modo-rodizio .bloco-5x2 { display: flex; align-items: flex-end; gap: .6rem; }
+.modo-rodizio .bloco-5x2 label.check { flex-direction: row; align-items: center; gap: .3rem; padding-bottom: .35rem; }
+
+/* coluna "Em": quanto falta para a próxima manutenção */
+#tabela-relogios .col-em { white-space: nowrap; font-variant-numeric: tabular-nums; }
+#tabela-relogios td.col-em.atrasado { color: #9b2c22; font-weight: 600; }
+
+/* ---------- quadro "Hoje": texto, informações do relógio do dia e a foto no canto direito ---------- */
+.hoje.com-relogio { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 24rem) 12rem; gap: 1.5rem; align-items: start; }
+.hoje h1 a { color: inherit; text-decoration: none; }
+.hoje h1 a:hover { text-decoration: underline; text-decoration-thickness: 2px; }
+.hoje-info { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .35rem .9rem; margin: .2rem 0 0; font-size: .92rem; }
+.hoje-info dt { color: var(--cinza); font-size: .8rem; padding-top: .15rem; white-space: nowrap; }
+.hoje-info dd { margin: 0; }
+.hoje-info dd .linha { display: block; }
+.hoje-info dd small { color: var(--cinza); margin-left: .3rem; }
+.hoje-info .carga-linha { display: inline-flex; align-items: center; gap: .45rem; }
+.hoje-info .barra { width: 70px; height: 7px; border-radius: 4px; background: var(--aco); overflow: hidden; display: inline-block; }
+.hoje-info .barra span { display: block; height: 100%; background: var(--safira); }
+.hoje-info .carga-linha.baixa .barra span { background: var(--ambar); }
+.hoje-info .em { color: var(--cinza); }
+.hoje-info .em.atrasado { color: #9b2c22; font-weight: 600; }
+.hoje-foto { display: block; }
+.hoje-foto img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; border: 1px solid var(--aco-escuro); background: #fff; }
+.hoje-foto .sem-foto { aspect-ratio: 1; }
+@media (max-width: 1150px) {
+  .hoje.com-relogio { grid-template-columns: minmax(0, 1fr) 9rem; }
+  .hoje.com-relogio .hoje-info { grid-column: 1 / -1; grid-row: 2; }
+}
+@media (max-width: 560px) {
+  .hoje.com-relogio { grid-template-columns: minmax(0, 1fr) 6.5rem; gap: 1rem; }
+}
+
+/* ---------- painel da direita: só com um relógio escolhido ---------- */
+.painel.sem-selecao { grid-template-columns: minmax(0, 1fr); grid-template-areas: "hoje"; }
+.col-detalhe[hidden] { display: none; }
+.fechar-painel {
+  float: right; margin: -.35rem -.4rem .2rem .5rem;
+  width: 2rem; height: 2rem; border-radius: 50%;
+  border: 1px solid var(--aco-escuro); background: var(--papel); color: var(--cinza);
+  font-size: 1.3rem; line-height: 1; cursor: pointer; padding: 0;
+}
+.fechar-painel:hover { color: var(--tinta); border-color: var(--cinza); }
+
+/* ---------- histórico do relógio ---------- */
+.estado-carga { background: #fff4e0; color: #8a5a00; border-color: #efd29a; }
+
+
+/* página do histórico (historico.php): tela cheia, fonte normal, nada cortado */
+main.pagina-historico { max-width: 80rem; }
+.cabeca-historico { display: flex; align-items: center; gap: 1.2rem; margin-bottom: 1rem; }
+.cabeca-historico img { width: 6rem; height: 6rem; object-fit: cover; border-radius: 12px; border: 1px solid var(--aco-escuro); background: #fff; }
+.cabeca-historico h1 { margin: .1rem 0 .2rem; }
+.cabeca-historico .data { margin: 0; color: var(--cinza); font-size: .9rem; }
+.resumo-historico { grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); }
+table.lista-historico td { white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.lista-historico tr.marca td { color: var(--cinza); }
+table.lista-historico td small { color: var(--cinza); margin-left: .3rem; }
+.col-detalhe .historico .botao { display: inline-block; margin-top: .2rem; }
+@media (max-width: 700px) {
+  /* celular: a tabela fica na largura da tela e tudo quebra a linha quando precisa (nada cortado, sem barra lateral) */
+  main.pagina-historico table.lista-historico { table-layout: fixed; width: 100%; min-width: 0; }
+  main.pagina-historico table.lista-historico th, main.pagina-historico table.lista-historico td {
+    white-space: normal; overflow-wrap: anywhere; padding: .35rem .3rem; font-size: .82rem;
+  }
+  main.pagina-historico table.lista-historico .estado { white-space: normal; }
+  .cabeca-historico img { width: 4rem; height: 4rem; }
+}
+
+/* últimos 5 registros no painel: três colunas desenhadas para a largura do painel; o estado quebra a linha se precisar,
+   nada é cortado. Classe própria (sem "compacta"), para nenhuma regra geral de tabela passar por cima */
+.col-detalhe table.historico-curto { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: .8rem; margin: .3rem 0 .7rem; }
+.col-detalhe table.historico-curto th { font-size: .7rem; color: var(--cinza); font-weight: 600; text-align: left; padding: .25rem .3rem; border-bottom: 1px solid var(--aco); }
+.col-detalhe table.historico-curto th:nth-child(1) { width: 34%; }
+.col-detalhe table.historico-curto th:nth-child(2) { width: 22%; }
+.col-detalhe table.historico-curto th:nth-child(3) { width: 44%; }
+.col-detalhe table.historico-curto td { padding: .35rem .3rem; vertical-align: top; border-bottom: 1px solid var(--aco); white-space: normal; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.col-detalhe table.historico-curto td small { display: block; color: var(--cinza); font-size: .72rem; }
+.col-detalhe table.historico-curto tr.marca td { color: var(--cinza); }
+.col-detalhe table.historico-curto .estado { font-size: .7rem; white-space: normal; }
+
+/* ---------- página dos critérios ---------- */
+main.pagina-criterios { max-width: 80rem; }
+.erros-form { border: 1px solid #e3b4ae; background: #fdf0ee; color: #7a2419; border-radius: 10px; padding: .7rem 1rem; margin: 0 0 1rem; }
+.erros-form p { margin: .25rem 0 0; }
+.opcao-selecao { display: block; margin: .3rem 0; }
+.tabela-criterios input[name^="nome"] { width: 100%; min-width: 12rem; }
+input.curto { width: 5.5rem; }
+.tipos-aplica label { display: inline-block; margin-right: .6rem; white-space: nowrap; font-size: .85rem; }
+/* formulários de inclusão: título em cima de cada campo; campos e botão com a mesma altura, alinhados pela base */
+.linha-inclusao { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .6rem 1rem; margin-top: 1rem; padding-top: .8rem; border-top: 1px dashed var(--aco-escuro); }
+.linha-inclusao label { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; color: var(--cinza); margin: 0; }
+/* a altura é a padrão do sistema (--altura-controle), a mesma de todos os campos, listas e botões */
+.linha-inclusao input, .linha-inclusao select, .linha-inclusao button { margin: 0; }
+.linha-inclusao .nota { flex-basis: 100%; }
+.excluir-conjunto { margin-top: .8rem; }
+.escolhe-lugar { margin-bottom: 1rem; }
+.escolhe-lugar .linha-sorteio { max-width: 42rem; }
+details.faixas, details.conta-nota { border: 1px solid var(--aco); border-radius: 10px; padding: .45rem .8rem; margin: .5rem 0; background: var(--papel); }
+details.faixas summary, details.conta-nota summary { cursor: pointer; }
+.tabela-faixas { margin-top: .5rem; }
+.conta-nota summary { display: flex; align-items: baseline; gap: .6rem; }
+.conta-nota .nota-final { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tabela-conta td, .tabela-criterios td { vertical-align: middle; }
+@media (max-width: 560px) {
+  .pagina-criterios input.curto { width: 4.2rem; }
+  .tabela-criterios input[name^="nome"] { min-width: 9rem; }
+}
+.acoes-linha { white-space: nowrap; }
+.acoes-linha button { padding: .15rem .45rem; }
+.mais-opcoes { display: flex; flex-wrap: wrap; gap: .4rem 1.5rem; align-items: center; margin: .6rem 0 .2rem; padding-top: .5rem; border-top: 1px dashed var(--aco); }
+.mais-opcoes form { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.mais-opcoes p { flex-basis: 100%; margin: 0; }
+tr.substituida td { color: var(--cinza); text-decoration: line-through; }
+tr.substituida td small { text-decoration: none; display: inline-block; }
+/* árvore de grupos */
+ul.arvore { list-style: none; padding: 0; margin: 0; }
+ul.arvore li { margin: .35rem 0 .35rem calc(var(--nivel) * 1.6rem); padding: .4rem .6rem; border-left: 3px solid var(--aco-escuro); background: var(--papel); border-radius: 6px; }
+.no-arvore { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .8rem; }
+.no-arvore form.inline, .mais-grupo form.inline { display: inline-flex; flex-wrap: wrap; gap: .3rem; align-items: center; }
+.relogios-do-grupo { margin: .2rem 0 0; }
+.mais-grupo { margin-top: .2rem; font-size: .9rem; }
+.mais-grupo summary { cursor: pointer; color: var(--safira); }
+.mais-grupo form { margin: .3rem 0; }
+@media (max-width: 560px) { ul.arvore li { margin-left: calc(var(--nivel) * .8rem); } }
+
+/* quadro do modo de rodízio: duas metades, o modo à esquerda e a forma de escolha à direita */
+.modo-rodizio .modo-grade { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem 2rem; }
+.modo-rodizio .modo-lado { display: flex; flex-direction: column; gap: .7rem; min-width: 0; }
+.modo-rodizio .modo-lado + .modo-lado { border-left: 1px solid var(--aco); padding-left: 2rem; }
+.modo-rodizio .campo-principal { display: flex; flex-direction: column; gap: .3rem; font-size: .88rem; color: var(--cinza); margin: 0; }
+.modo-rodizio .campo-principal select { font-size: 1rem; max-width: 100%; }
+.modo-rodizio .campo-principal strong { color: var(--tinta); font-size: 1rem; }
+.modo-rodizio .explicacao { line-height: 1.45; }
+.modo-rodizio [data-garantia] { display: flex; flex-direction: column; gap: .4rem; }
+.modo-rodizio [hidden] { display: none !important; }
+@media (max-width: 760px) {
+  .modo-rodizio .modo-grade { grid-template-columns: minmax(0, 1fr); }
+  .modo-rodizio .modo-lado + .modo-lado { border-left: 0; padding-left: 0; border-top: 1px solid var(--aco); padding-top: 1rem; }
+}
+/* sortear de novo, no quadro do modo: a lista das ações e um botão */
+.modo-rodizio form.sortear-de-novo { display: flex; flex-direction: column; gap: .35rem; margin-top: 1rem; padding-top: .9rem; border-top: 1px solid var(--aco); }
+/* uma lista e o seu botão na mesma linha, com a mesma altura (sortear de novo, escolher o lugar dos critérios) */
+.linha-sorteio { display: flex; align-items: stretch; gap: .6rem; max-width: 36rem; }
+.linha-sorteio select { flex: 1; min-width: 0; font-size: 1rem; margin: 0; }
+.linha-sorteio button { margin: 0; align-self: stretch; }
+
+/* formulários em linha (incluir, filtrar): o título sempre em cima do campo, e campos e botão alinhados pela base */
+.linha-inclusao, form.filtros-execucoes { align-items: flex-end; }
+.linha-inclusao > label, form.filtros-execucoes > label { display: flex; flex-direction: column; gap: .25rem; font-size: .88rem; }
+.linha-inclusao > label input, .linha-inclusao > label select, form.filtros-execucoes > label input, form.filtros-execucoes > label select { font-size: 1rem; }
+
+/* cadastro: o título das regras de carga fica em cima, como o dos outros campos; a frase ("no pulso por 8 h dá 36 h") embaixo */
+.regra-pulso > span { flex-basis: 100%; }
+/* critérios: o peso e o "%" na mesma linha */
+td.celula-peso { white-space: nowrap; }
+/* formulários curtos de ação (mover, trocar a medida, subgrupo): título em cima, lista e botão alinhados pela base */
+.mais-opcoes form, .mais-grupo form.inline { align-items: flex-end; }
+.mais-opcoes form > label, .mais-grupo form.inline > label { display: flex; flex-direction: column; gap: .25rem; font-size: .88rem; }
+.mais-opcoes form > label select, .mais-grupo form.inline > label input, .mais-grupo form.inline > label select { font-size: 1rem; }
+
+/* o nome do relógio na tabela aparece sempre inteiro; quando as colunas não cabem (painel aberto em tela menor), a tabela
+   rola para o lado dentro dela, nunca a página */
+
+/* ---------- Relógios 2 ---------- */
+.foto-hoje { width: 9rem; height: 9rem; object-fit: cover; border-radius: .6rem; border: 1px solid var(--aco); background: #fff; }
+.hoje-grade { display: flex; gap: 1.2rem; align-items: flex-start; flex-wrap: wrap; }
+.hoje-info p { margin: .2rem 0; }
+.estado-atrasado { color: #9b2c22; font-weight: 600; }
+.estado-em_breve { color: #8a5a00; font-weight: 600; }
+.lista-avisos { list-style: none; padding: 0; margin: 0; }
+.lista-avisos li { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; padding: .45rem 0; border-bottom: 1px solid var(--aco); }
+.lista-avisos li form { display: flex; gap: .4rem; align-items: center; margin: 0; }
+.arvore-lista { list-style: none; padding: 0; margin: 0; }
+.arvore-lista li { padding: .35rem 0; border-bottom: 1px solid var(--aco); display: flex; flex-wrap: wrap; gap: .4rem .8rem; align-items: center; }
+.recuo { display: inline-block; }
+.formula { font-family: ui-monospace, Consolas, monospace; font-size: .85rem; white-space: pre-wrap; word-break: break-word; }
+.abas { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 1rem; }
+.abas a { padding: .35rem .8rem; border: 1px solid var(--aco); border-radius: .4rem; text-decoration: none; color: var(--safira); }
+.abas a.ativa { background: var(--safira); color: #fff; }
+.form-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: .6rem 1rem; align-items: end; }
+.form-grade label { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; color: var(--cinza); }
+.form-grade textarea { min-height: 4rem; }
+.dias-semana label { display: inline-flex; flex-direction: row; gap: .2rem; margin-right: .5rem; }
+td.num, th.num { text-align: right; white-space: nowrap; }
+
+/* painel do relógio: as medições do gasto e os dados do relógio (tabelas com as colunas do tamanho do conteúdo) */
+.detalhe table.historico-curto.medicoes th, .detalhe table.historico-curto.dados th { width: auto; }
+.detalhe table.historico-curto.medicoes, .detalhe table.historico-curto.dados { table-layout: auto; }
+.detalhe table.historico-curto.dados td:nth-child(2) { font-variant-numeric: tabular-nums; }
+.detalhe .dados-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 0 1.2rem; }
+.detalhe .dados-relogio h3, .detalhe section h3 { font-size: .85rem; margin: .6rem 0 .2rem; color: var(--tinta); }
+.detalhe table.historico-curto.medicoes td, .detalhe table.historico-curto.dados td { overflow-wrap: normal; word-break: normal; }
+.detalhe table.historico-curto.dados td.nota { font-size: .72rem; }
