@@ -428,6 +428,13 @@ resumo (o que vale é o texto do [`LICENSE`](LICENSE)):
 
 Para qualquer outro uso, peça autorização pelo GitHub ([Challado](https://github.com/Challado)).
 
+> 💡 **Contribua, não copie.** Ser contribuidor do Relojoeiro é muito melhor que fazer um fork: a sua melhoria entra para
+> todos, com o seu nome no histórico, e você não corre risco nenhum. Já um fork que vira projeto próprio viola a licença,
+> e os direitos sobre este código são defendidos: pedido de remoção nas plataformas, ação judicial com indenização e até
+> ação penal (a Lei 9.609/98 trata a violação de direito de autor de software como crime). Mesmo quem acha que está certo
+> pode ter de se defender, e isso custa tempo e advogado. **Na dúvida, pergunte antes:** a resposta é de graça, a
+> discussão depois não é.
+
 ---
 
 <p align="center"><sub>Feito para quem tem mais relógios do que pulsos. ⌚</sub></p>
