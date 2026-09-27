@@ -3,7 +3,20 @@
 // fórmulas, os critérios, os modos) é tudo cadastro. Aqui: o banco, o token obrigatório, o login, a árvore, os campos com
 // os seus valores, os tipos de lançamento e o motor de cálculo (as fórmulas).
 require_once __DIR__ . "/config.php";
-date_default_timezone_set(defined("FUSO") ? FUSO : "America/Sao_Paulo");
+
+// O fuso: o FUSO do config.php; sem ele (ou vazio), o do PHP (date.timezone no php.ini; sem nada lá, UTC). Um nome que o
+// PHP não conhece para o sistema, como o token abaixo: rodar com a hora errada é pior que não rodar.
+/** @var mixed $fuso_cfg */
+$fuso_cfg = defined("FUSO") ? trim((string)constant("FUSO")) : "";
+$ERRO_FUSO = "";
+if ($fuso_cfg !== "") {
+    if (in_array($fuso_cfg, DateTimeZone::listIdentifiers(DateTimeZone::ALL_WITH_BC), true)) {
+        date_default_timezone_set($fuso_cfg);
+    } else {
+        $ERRO_FUSO = "Sistema parado: FUSO no config.php (\"" . $fuso_cfg . "\") não é um fuso que o PHP conheça. Use um nome como "
+            . "America/Sao_Paulo, ou deixe vazio para usar o do PHP (date.timezone no php.ini, agora " . date_default_timezone_get() . ").";
+    }
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 // O token da API é obrigatório: API_TOKEN no config.php, texto com pelo menos 10 caracteres sem contar os espaços das
@@ -27,6 +40,12 @@ if (!defined("API_TOKEN")) {
 if ($ERRO_TOKEN !== "") {
     $ERRO_TOKEN = "Sistema parado: " . $ERRO_TOKEN . ". Defina no config.php, por exemplo: define('API_TOKEN', 'uma-chave-longa-e-secreta'); "
         . "com pelo menos 10 caracteres (sem contar espaços nas pontas).";
+}
+// $ERRO_TOKEN é o motivo de o sistema estar parado (o cron e a API conferem ele): o token ou o fuso
+if ($ERRO_TOKEN === "" && $ERRO_FUSO !== "") {
+    $ERRO_TOKEN = $ERRO_FUSO;
+}
+if ($ERRO_TOKEN !== "") {
     if (PHP_SAPI === "cli" && basename((string)($_SERVER["SCRIPT_FILENAME"] ?? "")) === "cron.php") {
         // o cron fica mudo: registra o motivo nas execuções e não faz mais nada (cron.php confere $ERRO_TOKEN)
     } elseif (PHP_SAPI === "cli") {

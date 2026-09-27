@@ -16,6 +16,28 @@
 
 class BancoErro extends RuntimeException
 {
+    // o banco recusou a gravação por uma regra de integridade (um registro que outro usa, um valor repetido onde não
+    // pode): não é o banco fora do ar, é a gravação que estava errada
+    public $integridade = false;
+
+    public function __construct($mensagem, $codigo = 0, $anterior = null, $integridade = false)
+    {
+        parent::__construct((string)$mensagem, (int)$codigo, $anterior);
+        $this->integridade = (bool)$integridade;
+    }
+}
+
+// O erro de cada extensão como BancoErro, dizendo se foi uma regra de integridade: SQLSTATE 23xxx no MySQL e no Postgres,
+// o código 19 (SQLITE_CONSTRAINT) no SQLite
+function banco_erro($e)
+{
+    if ($e instanceof BancoErro) {
+        return $e;
+    }
+    if ($e instanceof mysqli_sql_exception) {
+        return new BancoErro($e->getMessage(), $e->getCode(), $e, strpos((string)$e->getSqlState(), "23") === 0);
+    }
+    return new BancoErro($e->getMessage(), $e->getCode(), $e, banco_tipo() === "sqlite" && (int)$e->getCode() === 19);
 }
 
 function banco_tipo()
@@ -50,6 +72,9 @@ function db()
             try {
                 $c = new mysqli(DB_HOST, DB_USUARIO, DB_SENHA, DB_NOME, $porta > 0 ? $porta : null);
                 $c->set_charset("utf8mb4");
+                // o NOW() no fuso do sistema, e não no do servidor do banco (o deslocamento de agora: "-03:00"; o nome do fuso
+                // só funciona com as tabelas de fuso carregadas no MySQL)
+                $c->query("SET time_zone = '" . date("P") . "'");
             } catch (mysqli_sql_exception $e) {
                 throw new BancoErro($e->getMessage(), (int)$e->getCode(), $e);
             }
@@ -218,7 +243,7 @@ function banco_executar($comando, $params = [])
                 $st->execute();
                 $res = $st->get_result();
             } catch (mysqli_sql_exception $e) {
-                throw new BancoErro($e->getMessage(), (int)$e->getCode(), $e);
+                throw banco_erro($e);
             }
             if ($res === false) {
                 return null;
@@ -251,7 +276,8 @@ function banco_executar($comando, $params = [])
             }
             $estado = pg_result_status($res);
             if ($estado === PGSQL_FATAL_ERROR || $estado === PGSQL_BAD_RESPONSE || $estado === PGSQL_NONFATAL_ERROR) {
-                throw new BancoErro(trim((string)pg_result_error($res)), (int)pg_result_error_field($res, PGSQL_DIAG_SQLSTATE));
+                $estado_sql = (string)pg_result_error_field($res, PGSQL_DIAG_SQLSTATE);
+                throw new BancoErro(trim((string)pg_result_error($res)), (int)$estado_sql, null, strpos($estado_sql, "23") === 0);
             }
             if ($estado !== PGSQL_TUPLES_OK) {
                 return null;
@@ -327,7 +353,7 @@ function banco_executar($comando, $params = [])
                 $res->finalize();
                 $st->close();
             } catch (Exception $e) {
-                throw new BancoErro($e->getMessage(), (int)$e->getCode(), $e);
+                throw banco_erro($e);
             }
             return [$nomes, banco_sqlite_valores($nomes, $linhas)];
     }
@@ -449,9 +475,10 @@ function banco_direto($comando, $c = null)
                     $estado = pg_result_status($res);
                     if ($estado === PGSQL_FATAL_ERROR || $estado === PGSQL_BAD_RESPONSE) {
                         $erro = trim((string)pg_result_error($res));
+                        $estado_sql = (string)pg_result_error_field($res, PGSQL_DIAG_SQLSTATE);
                         while (pg_get_result($c) !== false) {
                         }
-                        throw new BancoErro($erro);
+                        throw new BancoErro($erro, (int)$estado_sql, null, strpos($estado_sql, "23") === 0);
                     }
                 }
                 break;
@@ -459,11 +486,11 @@ function banco_direto($comando, $c = null)
                 $c->exec($comando);
         }
     } catch (mysqli_sql_exception $e) {
-        throw new BancoErro($e->getMessage(), (int)$e->getCode(), $e);
+        throw banco_erro($e);
     } catch (BancoErro $e) {
         throw $e;
     } catch (Exception $e) {
-        throw new BancoErro($e->getMessage(), (int)$e->getCode(), $e);
+        throw banco_erro($e);
     }
 }
 

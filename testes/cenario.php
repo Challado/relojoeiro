@@ -266,7 +266,7 @@ $sub_g = escrever(["recurso" => "arvore", "acao" => "novo", "nome" => "Vintage",
 escrever(["recurso" => "arvore", "acao" => "mover", "id" => $sub_g, "pai_id" => 0]);
 escrever(["recurso" => "arvore", "acao" => "relogios", "grupo" => [$rel["manual"] => $sub_g]]);
 escrever(["recurso" => "arvore", "acao" => "excluir", "id" => $sub_g]);
-escrever(["recurso" => "arvore", "acao" => "excluir", "id" => 1], false);   // o grupo dos smartwatches tem campos e fórmulas
+escrever(["recurso" => "arvore", "acao" => "excluir", "id" => 1]);   // o grupo dos smartwatches: os campos, as fórmulas, os avisos e o relógio sobem
 $lancs = ler("lancamentos do auto", ["incluir" => "relogios", "f" => ["relogios" => ["id" => $rel["auto"]]], "mostrar" => ["relogios" => "lancamentos"], "foto" => "nao"]);
 $l0 = $lancs["relogios"][0]["lancamentos"][0]["id"] ?? 0;
 escrever(["recurso" => "lancamento", "acao" => "alterar", "id" => $l0, "fim" => dia(2, "21:00")]);
