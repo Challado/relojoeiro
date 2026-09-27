@@ -41,50 +41,24 @@ if ($ERRO_TOKEN !== "") {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Banco
+// Banco: MySQL/MariaDB, PostgreSQL ou SQLite (DB_TIPO no config.php). db(), sql(), linhas(), linha(), valor(), ultimo_id()
+// e a tradução do SQL estão no banco.php
 // ---------------------------------------------------------------------------------------------------------------------
-function db()
-{
-    static $c = null;
-    if ($c === null) {
-        mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-        $c = new mysqli(DB_HOST, DB_USUARIO, DB_SENHA, DB_NOME);
-        $c->set_charset("utf8mb4");
-    }
-    return $c;
-}
+require_once __DIR__ . "/banco.php";
 
-// Executa um comando com parâmetros (?); devolve o resultado (SELECT) ou true
-function sql($comando, $params = [])
+// O sorteio: aleatório de verdade (random_int). Com a variável de ambiente RELOGIOS_SEMENTE (os testes de paridade entre
+// os bancos), repetível: a mesma semente dá os mesmos sorteios em cada pedido e em cada rodada do cron
+function sorteio($min, $max)
 {
-    $st = db()->prepare($comando);
-    if (count($params) > 0) {
-        $tipos = "";
-        foreach ($params as $p) {
-            $tipos .= is_int($p) ? "i" : (is_float($p) ? "d" : "s");
+    static $semente = null;
+    if ($semente === null) {
+        $s = getenv("RELOGIOS_SEMENTE");
+        $semente = $s === false || $s === "" ? false : (int)$s;
+        if ($semente !== false) {
+            mt_srand($semente);
         }
-        $st->bind_param($tipos, ...$params);
     }
-    $st->execute();
-    $res = $st->get_result();
-    return $res === false ? true : $res;
-}
-
-function linhas($comando, $params = [])
-{
-    return sql($comando, $params)->fetch_all(MYSQLI_ASSOC);
-}
-
-function linha($comando, $params = [])
-{
-    $l = sql($comando, $params)->fetch_assoc();
-    return $l ?: null;
-}
-
-function valor($comando, $params = [])
-{
-    $l = sql($comando, $params)->fetch_row();
-    return $l ? $l[0] : null;
+    return $semente === false ? random_int($min, $max) : mt_rand($min, $max);
 }
 
 // Dois nomes iguais, sem diferenciar maiúsculas de minúsculas, inclusive acentuadas (É = é), sem depender do mbstring
@@ -284,7 +258,8 @@ function condicao_vale($expressao, $r, $momento)
 // ---------------------------------------------------------------------------------------------------------------------
 // Migrações: as mudanças de estrutura do banco depois da instalação, em arquivos migracao_vN.sql, aplicadas pela API
 // (recurso=migracoes, acao=aplicar). Cada uma: [arquivo, o que traz, a marca de que já foi aplicada: uma tabela ou
-// tabela.coluna]. Com alguma pendente, a API só responde as migrações (a conferência fica no api.php).
+// tabela.coluna]. Com alguma pendente, a API só responde as migrações (a conferência fica no api.php). O arquivo é um
+// só para os três bancos: o DDL no dialeto do MySQL (o banco.php traduz) e os dados em SQL comum aos três.
 // ---------------------------------------------------------------------------------------------------------------------
 $MIGRACOES = [
     "v2" => ["migracao_v2.sql", "lançamentos pela API, com sessões exclusivas (o relógio num lugar só), avisos cadastráveis e a autonomia restante", "aviso"],
@@ -296,6 +271,16 @@ $MIGRACOES = [
     "v7" => ["migracao_v7.sql", "o ciclo no rodízio (opção de cada modo, desligada por padrão): um relógio só volta depois que todos do bloco passaram", "modo.ciclo"],
     "v8" => ["migracao_v8.sql", "a condição \"vale quando\" nos tipos de lançamento e nos avisos; o automático sem corda recebe \"Pôr no winder\" em vez de \"Dar corda\"", "aviso.condicao"],
 ];
+
+// As migrações que faltam aplicar neste banco: as da lista cuja marca ainda não existe
+function migracoes_pendentes()
+{
+    global $MIGRACOES;
+    return array_filter($MIGRACOES, function ($m) {
+        $marca = explode(".", $m[2]);
+        return count($marca) === 2 ? !banco_tem_coluna($marca[0], $marca[1]) : !banco_tem_tabela($marca[0]);
+    });
+}
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -622,7 +607,7 @@ function formula_calcular($no, &$ctx)
             $id = (int)$ctx["r"]["id"];
             if (!isset($cache_l[$id])) {
                 $cache_l[$id] = [];
-                foreach (linhas("SELECT l.*, t.identificador AS tipo, t.formato, t.fecha_as FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? ORDER BY l.inicio", [$id]) as $l) {
+                foreach (linhas("SELECT l.*, t.identificador AS tipo, t.formato, t.fecha_as FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? ORDER BY l.inicio, l.id", [$id]) as $l) {
                     $ini = strtotime($l["inicio"]);
                     $limite = null;
                     if ($l["fim"] === null && $l["fecha_as"] !== null) {
@@ -1236,7 +1221,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
     if ($modo) {
         // hoje sem plano, mas com um relógio já no pulso pelo rodízio: o plano de hoje é ele (não se sorteia outro)
         $no_pulso = $manter_pulso ? valor("SELECT l.relogio_id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
-            WHERE t.identificador = 'pulso' AND l.origem = 'rodizio' AND DATE(l.inicio) = ? ORDER BY l.inicio DESC LIMIT 1", [$hoje->format("Y-m-d")]) : null;
+            WHERE t.identificador = 'pulso' AND l.origem = 'rodizio' AND DATE(l.inicio) = ? ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [$hoje->format("Y-m-d")]) : null;
         if (plano_do_dia($hoje->format("Y-m-d")) === null && $no_pulso !== null) {
             sql("INSERT INTO plano (data, relogio_id, bloco_id, origem, criado) VALUES (?, ?, NULL, 'manual', NOW())", [$hoje->format("Y-m-d"), (int)$no_pulso]);
         }
@@ -1315,7 +1300,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                                 $escolhido = (int)array_key_first($parados);
                             } elseif ($modo["selecao"] === "aleatorio") {
                                 $ids = array_keys($cands);
-                                $escolhido = $ids[random_int(0, count($ids) - 1)];
+                                $escolhido = $ids[sorteio(0, count($ids) - 1)];
                             } elseif ($modo["selecao"] === "fifo") {
                                 uasort($info, function ($x, $y) { return $y["dsu"] <=> $x["dsu"]; });
                                 $escolhido = (int)array_key_first($info);
@@ -1328,7 +1313,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                                 foreach ($info as $x) {
                                     $total += (int)round(max(1, $x["nota"]) * 100);
                                 }
-                                $alvo = random_int(1, max(1, $total));
+                                $alvo = sorteio(1, max(1, $total));
                                 foreach ($info as $cid => $x) {
                                     $alvo -= (int)round(max(1, $x["nota"]) * 100);
                                     if ($escolhido === null && $alvo <= 0) {
@@ -1462,7 +1447,7 @@ function visao_relogio($r, $agora)
     $abertas = [];
     $ult_pulso = 0;
     foreach (linhas("SELECT l.inicio, l.fim, l.origem, t.identificador, t.nome, t.fecha_as FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
-        WHERE l.relogio_id = ? AND t.formato = 'sessao' AND l.inicio <= ? ORDER BY l.inicio", [$id, date("Y-m-d H:i:s", $agora)]) as $l) {
+        WHERE l.relogio_id = ? AND t.formato = 'sessao' AND l.inicio <= ? ORDER BY l.inicio, l.id", [$id, date("Y-m-d H:i:s", $agora)]) as $l) {
         $fim = $l["fim"] !== null ? strtotime($l["fim"]) : ($l["fecha_as"] !== null ? max(strtotime($l["inicio"]), (int)strtotime(substr($l["inicio"], 0, 10) . " " . $l["fecha_as"])) : PHP_INT_MAX);
         if ($fim > $agora) {
             $abertas[] = ["tipo" => $l["identificador"], "nome" => $l["nome"], "inicio" => strtotime($l["inicio"]), "origem" => $l["origem"]];
@@ -1827,7 +1812,7 @@ function gerar_escala($ini)
         // o último escolhido: o de ontem no plano, senão o último no pulso pelo rodízio
         $ultimo = valor("SELECT relogio_id FROM plano WHERE data = ?", [$ini->modify("-1 day")->format("Y-m-d")]);
         $ultimo = $ultimo !== null ? (int)$ultimo : (int)valor("SELECT l.relogio_id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
-            WHERE t.identificador = 'pulso' AND l.origem = 'rodizio' ORDER BY l.inicio DESC LIMIT 1");
+            WHERE t.identificador = 'pulso' AND l.origem = 'rodizio' ORDER BY l.inicio DESC, l.id DESC LIMIT 1");
         $no_bloco = 0;
         $bloco_fim = $ini->modify("-1 day");
         $acoes = [];
@@ -1878,7 +1863,7 @@ function gerar_escala($ini)
                     // a maior nota no dia simulado; um valor minúsculo só desempata notas iguais
                     $melhor = -1.0;
                     foreach (array_keys($cands) as $cid) {
-                        $nota = nota_do_relogio($rels[$cid], $m_ini)["nota"] + random_int(0, 1000) / 100000;
+                        $nota = nota_do_relogio($rels[$cid], $m_ini)["nota"] + sorteio(0, 1000) / 100000;
                         if ($nota > $melhor) {
                             $melhor = $nota;
                             $novo = $cid;
@@ -1983,7 +1968,7 @@ function previsao_energia($r, $agora)
     if (count($tipos_valor) > 0 && $energia_f !== null) {
         $res["aplica"] = true;
         $leitura = linha("SELECT l.inicio, l.valor, t.identificador, t.unidade FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
-            WHERE l.relogio_id = ? AND t.formato = 'valor' AND l.inicio <= ? ORDER BY l.inicio DESC LIMIT 1", [(int)$r["id"], date("Y-m-d H:i:s", $agora)]);
+            WHERE l.relogio_id = ? AND t.formato = 'valor' AND l.inicio <= ? ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [(int)$r["id"], date("Y-m-d H:i:s", $agora)]);
         $valores = valores_do_relogio((int)$r["id"]);
         $ctx = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => $valores];
         $energia = variavel_valor("energia", $ctx);
@@ -2256,7 +2241,7 @@ function linha_do_tempo($id, $de, $ate, $estados)
     $marcas = [];
     $t0 = 0;
     foreach (linhas("SELECT l.*, t.identificador, t.nome, t.formato, t.fecha_as, t.unidade, t.ordem FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
-        WHERE l.relogio_id = ? AND l.inicio <= ? ORDER BY l.inicio", [(int)$id, date("Y-m-d H:i:s", $agora)]) as $l) {
+        WHERE l.relogio_id = ? AND l.inicio <= ? ORDER BY l.inicio, l.id", [(int)$id, date("Y-m-d H:i:s", $agora)]) as $l) {
         $ini = strtotime($l["inicio"]);
         $t0 = $t0 === 0 ? $ini : min($t0, $ini);
         if ($l["formato"] === "sessao") {
