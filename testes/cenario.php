@@ -180,12 +180,135 @@ ler("calcular", ["recurso" => "calcular", "expressao" => "energia * 2 + HORAS(\"
 ler("filtro nome", ["incluir" => "relogios", "f" => ["relogios" => ["nome" => ["contem" => "relogio"]]], "mostrar" => ["relogios" => "id,nome"], "foto" => "nao"]);
 ler("filtro energia", ["incluir" => "relogios", "f" => ["relogios" => ["formulas.energia.valor" => ["ate" => 60]]], "ordem" => ["relogios" => "-formulas.energia.valor"], "mostrar" => ["relogios" => "nome,formulas.energia.valor"], "foto" => "nao"]);
 ler("cron", ["recurso" => "cron", "situacao" => "todas", "busca" => "plano"]);
+ler("cron maiusculas", ["recurso" => "cron", "situacao" => "todas", "busca" => "PLANO"]);
 ler("xml", ["recurso" => "usuarios", "formato" => "xml"]);
+ler("historico filtrado", ["recurso" => "historico", "de" => dia(10, "00:00"), "ate" => dia(1, "23:59"), "estado" => "pulso,marca", "ordem" => "asc", "limite" => 5, "pagina" => 2]);
+ler("busca e paginas", ["incluir" => "relogios", "busca" => ["relogios" => "ÔMEGA"], "mostrar" => ["relogios" => "id,nome"], "foto" => "nao"]);
+ler("ordem por nome", ["incluir" => "relogios", "ordem" => ["relogios" => "nome"], "limite" => ["relogios" => 3], "pagina" => ["relogios" => 2], "mostrar" => ["relogios" => "nome"], "foto" => "nao"]);
+
+// ---------- a segunda fase: o que muda a estrutura (exclusões em cascata), os outros modos e os critérios por inteiro ----------
+// o login pelo site (HTTP Basic): a senha conferida no banco, e o login sem diferença de maiúsculas
+foreach ([["teste", "senha123"], ["TESTE", "senha123"], ["teste", "errada"], ["maria", "outra12345"]] as [$u, $s]) {
+    $ch = curl_init($API . "?recurso=usuarios");
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_USERPWD => $u . ":" . $s, CURLOPT_TIMEOUT => 60]);
+    $corpo = (string)curl_exec($ch);
+    $foto["leituras"]["login " . $u . ":" . $s] = ["codigo" => (int)curl_getinfo($ch, CURLINFO_HTTP_CODE), "resposta" => json_decode($corpo, true)];
+}
+
+// os critérios: pesos, faixas, subparâmetros movidos, ordem, conjunto excluído, e no fim o restaurar
+$crit = ler("criterios (fase 2)", ["recurso" => "criterios"]);
+$param_smart = [];
+$nomes_param = [];
+$subs = [];
+foreach ($crit["conjuntos"] ?? [] as $cj) {
+    if ($cj["escopo"] === "g:1") {
+        foreach ($cj["parametros"] as $pm) {
+            $param_smart[] = (int)$pm["id"];
+            $nomes_param[(int)$pm["id"]] = $pm["nome"];
+            foreach ($pm["subparametros"] as $sb) {
+                $subs[] = (int)$sb["id"];
+            }
+        }
+    }
+}
+if (count($param_smart) >= 2 && count($subs) >= 2) {
+    $pesos = ["recurso" => "criterios", "acao" => "param_pesos", "escopo" => "g:1"];
+    foreach ($param_smart as $k => $id) {
+        $pesos["peso"][$id] = $k === 0 ? 100 - 5 * (count($param_smart) - 1) : 5;
+        $pesos["nome"][$id] = $nomes_param[$id];
+    }
+    escrever($pesos);
+    $sub_novo = escrever(["recurso" => "criterios", "acao" => "sub_novo", "parametro_id" => $param_smart[0], "nome" => "Dias de carga", "variavel" => "dias_de_carga", "peso" => 20]);
+    escrever(["recurso" => "criterios", "acao" => "faixas", "sub_id" => $subs[0], "de" => [0, 40, 80], "ate" => [40, 80, ""], "nota" => [10, 60, 100]]);
+    escrever(["recurso" => "criterios", "acao" => "sub_medida", "id" => $subs[1], "variavel" => "energia"]);
+    escrever(["recurso" => "criterios", "acao" => "sub_mover", "id" => $subs[1], "parametro_id" => $param_smart[1]]);
+    escrever(["recurso" => "criterios", "acao" => "ordem", "tipo" => "parametro", "id" => $param_smart[1], "direcao" => "sobe"]);
+    foreach (ler("criterios (sub novo)", ["recurso" => "criterios"])["conjuntos"] ?? [] as $cj) {
+        foreach ($cj["parametros"] as $pm) {
+            foreach ($pm["subparametros"] as $sb) {
+                if ($sb["nome"] === "Dias de carga") {
+                    $sub_novo = (int)$sb["id"];
+                }
+            }
+        }
+    }
+    escrever(["recurso" => "criterios", "acao" => "sub_excluir", "id" => $sub_novo]);
+    escrever(["recurso" => "criterios", "acao" => "param_pesos", "escopo" => "g:1", "peso" => [$param_smart[0] => 90]], false);
+}
+escrever(["recurso" => "criterios", "acao" => "conjunto_excluir", "escopo" => "r:" . $rel["crono"]]);
+ler("criterios editados", ["recurso" => "criterios"]);
+escrever(["recurso" => "criterios", "acao" => "restaurar"]);
+escrever(["recurso" => "criterios", "acao" => "param_novo", "escopo" => "g:3", "nome" => "Depois de restaurar", "peso" => 10]);
+
+// os cadastros alterados e excluídos
+$cad = ler("cadastros (fase 2)", ["recurso" => "cadastros"]);
+$id_de = function ($lista, $ident) use ($cad) {
+    foreach ($cad[$lista] ?? [] as $x) {
+        if (($x["identificador"] ?? "") === $ident) {
+            return (int)$x["id"];
+        }
+    }
+    return 0;
+};
+escrever(["recurso" => "campos", "acao" => "alterar", "id" => $id_de("campos", "estilo"), "nome" => "Estilo do relógio", "opcoes" => "Social\nEsportivo\nMilitar\nDress"]);
+escrever(["recurso" => "campos", "acao" => "ordem", "id" => $id_de("campos", "estilo"), "direcao" => "sobe"]);
+escrever(["recurso" => "campos", "acao" => "excluir", "id" => $id_de("campos", "resistencia_agua")]);
+escrever(["recurso" => "lancamento_tipos", "acao" => "alterar", "id" => $id_de("lancamento_tipos", "banho_ultrassom"), "nome" => "Banho de ultrassom"]);
+escrever(["recurso" => "lancamento_tipos", "acao" => "excluir", "id" => $id_de("lancamento_tipos", "banho_ultrassom")], false);   // tem lançamento
+escrever(["recurso" => "formulas", "acao" => "alterar", "id" => $id_de("formulas", "idade_dias"), "expressao" => "ARREDONDA(HOJE() - data_compra; 1)"]);
+escrever(["recurso" => "formulas", "acao" => "excluir", "id" => $id_de("formulas", "idade_dias")]);
+escrever(["recurso" => "avisos", "acao" => "alterar", "id" => $id_de("avisos", "pulseira"), "antecedencia_dias" => 30, "escala" => "sempre", "agenda" => "sempre"]);
+escrever(["recurso" => "avisos", "acao" => "excluir", "id" => $id_de("avisos", "pulseira")]);
+
+// a árvore: mover, excluir um grupo com relógio dentro (o relógio sobe), e excluir relógios (vão junto o histórico, a foto,
+// os valores dos campos e o plano)
+$sub_g = escrever(["recurso" => "arvore", "acao" => "novo", "nome" => "Vintage", "pai_id" => $cron_g]);
+escrever(["recurso" => "arvore", "acao" => "mover", "id" => $sub_g, "pai_id" => 0]);
+escrever(["recurso" => "arvore", "acao" => "relogios", "grupo" => [$rel["manual"] => $sub_g]]);
+escrever(["recurso" => "arvore", "acao" => "excluir", "id" => $sub_g]);
+escrever(["recurso" => "arvore", "acao" => "excluir", "id" => 1], false);   // o grupo dos smartwatches tem campos e fórmulas
+$lancs = ler("lancamentos do auto", ["incluir" => "relogios", "f" => ["relogios" => ["id" => $rel["auto"]]], "mostrar" => ["relogios" => "lancamentos"], "foto" => "nao"]);
+$l0 = $lancs["relogios"][0]["lancamentos"][0]["id"] ?? 0;
+escrever(["recurso" => "lancamento", "acao" => "alterar", "id" => $l0, "fim" => dia(2, "21:00")]);
+escrever(["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => $rel["auto"], "tipo" => "winder", "inicio" => dia(2, "20:00"), "fim" => dia(2, "23:00")], false);   // sobrepõe o pulso
+escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $rel["solar"]]);
+escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $rel["auto"]]);
+
+// os outros modos: semana e fim de semana (sorteio pela nota), fila com ciclo, aleatório; sortear de novo; a semana que vem
+$modos = ler("modos (fase 2)", ["incluir" => "modos"]);
+$por_nome = [];
+foreach ($modos["modos"] ?? [] as $m) {
+    $por_nome[$m["nome"]] = (int)$m["id"];
+}
+escrever(["recurso" => "modos", "acao" => "ativar", "id" => $por_nome["Semana e fim de semana"] ?? 0]);
+escrever(["recurso" => "rodizio", "acao" => "resortear"]);
+ler("plano ponderado", ["recurso" => "plano"]);
+$fila = escrever(["recurso" => "modos", "acao" => "salvar", "id" => 0, "nome" => "Fila com ciclo", "selecao" => "fifo", "ciclo" => 1,
+    "blocos" => [["nome" => "Dias úteis", "dias" => [1, 2, 3, 4, 5], "no_id" => 2, "um_por" => "dia", "relogio_id" => 0],
+        ["nome" => "Fim de semana", "dias" => [6, 7], "no_id" => 0, "um_por" => "bloco", "relogio_id" => $rel["smart"]]]]);
+escrever(["recurso" => "modos", "acao" => "ativar", "id" => $fila]);
+escrever(["recurso" => "rodizio", "acao" => "resortear_hoje"]);
+ler("plano fila", ["recurso" => "plano"]);
+escrever(["recurso" => "modos", "acao" => "ativar", "id" => $por_nome["Aleatório todo dia"] ?? 0]);
+escrever(["recurso" => "rodizio", "acao" => "resortear"]);
+if (date("N") === "7") {
+    escrever(["recurso" => "rodizio", "acao" => "proxima_semana"]);
+}
+escrever(["recurso" => "modos", "acao" => "excluir", "id" => $fila]);
+escrever(["recurso" => "config", "acao" => "evento_excluir", "id" => 1]);
+cron();
+
+// a fotografia de novo, depois de tudo. Antes, 2 segundos: o trecho que começou agora (a troca do relógio de hoje) já tem
+// duração em qualquer banco, rápido ou lento (lido no mesmo segundo, ele tem 0 s e não aparece na linha do tempo)
+sleep(2);
+ler("2 tudo", ["foto" => "nao"]);
+foreach (["hoje", "avisos", "criterios", "historico", "plano", "eventos", "arvore", "cadastros", "config"] as $r) {
+    ler("2 " . $r, ["recurso" => $r]);
+}
 
 $texto = json_encode($foto, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_PRESERVE_ZERO_FRACTION | JSON_INVALID_UTF8_SUBSTITUTE);
 if ($texto === false) {
-    fwrite(STDERR, "Não consegui gravar a fotografia: " . json_last_error_msg() . "
-");
+    fwrite(STDERR, "Não consegui gravar a fotografia: " . json_last_error_msg() . "\n");
     exit(1);
 }
 file_put_contents($SAIDA, $texto);
