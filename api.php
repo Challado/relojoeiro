@@ -1573,7 +1573,8 @@
  * ERROS  (no formato pedido)
  * ---------------------------------------------------------------------------------------------
  *   400 pedido recusado (os erros dizem por quê)      401 sem token nem login      404 recurso ou relógio que não existe
- *   500 {"erro": "Sistema parado: ..."} (token inválido no config.php) ou {"erro": "erro interno", "detalhe"}
+ *   409 {"erro": "o banco recusou a gravação: ...", "detalhe"} (um registro que outro ainda usa, ou um valor repetido)
+ *   500 {"erro": "Sistema parado: ..."} (token ou fuso inválido no config.php) ou {"erro": "erro interno", "detalhe"}
  *   503 {"erro": "o banco está desatualizado: ...", "pendentes"}: só recurso=migracoes responde até aplicar
  *   503 {"erro": "o banco de dados não respondeu", "detalhe"}
  */
@@ -1662,7 +1663,7 @@ function plano_legivel($de, $ate)
         return ["data" => $p["data"], "relogio_id" => (int)$p["relogio_id"], "relogio" => $p["relogio"], "bloco_id" => $p["bloco_id"] === null ? null : (int)$p["bloco_id"],
             "bloco" => $p["bloco"], "origem" => $p["origem"], "acao" => $p["acao"], "criado" => $p["criado"]];
     }, linhas("SELECT p.*, r.nome AS relogio, b.nome AS bloco FROM plano p JOIN relogio r ON r.id = p.relogio_id LEFT JOIN modo_bloco b ON b.id = p.bloco_id
-        WHERE p.data >= ? AND p.data <= ? ORDER BY p.data", [$de !== "" ? $de : "0000-01-01", $ate !== "" ? $ate : "9999-12-31"]));
+        WHERE p.data >= ? AND p.data <= ? ORDER BY p.data", [$de !== "" ? $de : "0001-01-01", $ate !== "" ? $ate : "9999-12-31"]));
 }
 
 // O que tem de estar na agenda, com o título e a descrição pelo modelo
@@ -1876,7 +1877,13 @@ function responde($codigo, $saida, $formato)
 
 // erro que escapar: sai no formato pedido
 set_exception_handler(function ($t) use ($formato) {
-    $banco = $t instanceof mysqli_sql_exception;
+    if ($t instanceof BancoErro && $t->integridade) {
+        // o banco recusou a gravação: um registro que outro ainda usa, ou um valor repetido onde não pode
+        responde(409, ["erro" => "o banco recusou a gravação: ela quebraria uma ligação entre os dados (um registro que outro ainda usa, "
+            . "ou um valor repetido onde não pode)", "detalhe" => $t->getMessage()], $formato);
+        return;
+    }
+    $banco = $t instanceof BancoErro || $t instanceof mysqli_sql_exception;
     responde($banco ? 503 : 500, ["erro" => $banco ? "o banco de dados não respondeu" : "erro interno", "detalhe" => $t->getMessage()], $formato);
 });
 
@@ -1895,16 +1902,7 @@ $codigo = 200;
 $saida = [];
 
 // as migrações pendentes: as da lista ($MIGRACOES, no lib.php) cuja marca (tabela ou tabela.coluna) ainda não existe
-$pendentes = [];
-foreach ($MIGRACOES as $versao => $m) {
-    $marca = explode(".", $m[2]);
-    $aplicada = count($marca) === 2
-        ? (int)valor("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?", $marca) > 0
-        : (int)valor("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?", $marca) > 0;
-    if (!$aplicada) {
-        $pendentes[$versao] = $m;
-    }
-}
+$pendentes = migracoes_pendentes();
 if (!$token_ok && $quem === "") {
     $codigo = 401;
     header("WWW-Authenticate: Basic realm=\"Relogios\", charset=\"UTF-8\"");
@@ -1914,13 +1912,8 @@ if (!$token_ok && $quem === "") {
     if ($escrita && $acao === "aplicar") {
         $aplicadas = [];
         foreach ($pendentes as $versao => $m) {
-            // os comandos do arquivo, um a um (as linhas de comentário saem)
-            $texto = preg_replace("/^--.*\$/m", "", (string)file_get_contents(__DIR__ . "/" . $m[0]));
-            foreach (explode(";\n", (string)$texto) as $comando) {
-                if (trim($comando) !== "") {
-                    db()->query($comando);
-                }
-            }
+            // os comandos do arquivo, um a um, cada um traduzido para o banco em uso (os comentários saem)
+            banco_script((string)file_get_contents(__DIR__ . "/" . $m[0]));
             $aplicadas[] = $versao . " (" . $m[1] . ")";
         }
         $saida = ["ok" => true, "mensagem" => count($aplicadas) > 0 ? "Aplicadas: " . implode("; ", $aplicadas) . "." : "Nada a aplicar: o banco está em dia.", "erros" => [], "aplicadas" => $aplicadas];
@@ -2011,7 +2004,7 @@ if (!$token_ok && $quem === "") {
         $v = visao_relogio($r, $agora);
         $val = valores_do_relogio((int)$r["id"]);
         $leitura = linha("SELECT l.inicio, l.valor, t.unidade FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'valor'
-            ORDER BY l.inicio DESC LIMIT 1", [(int)$r["id"]]);
+            ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [(int)$r["id"]]);
         $rels[] = ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1, "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "—",
             "em_uso" => $v["em_uso"], "agora" => $v["texto"], "carga" => (int)$r["disponivel"] === 1 ? $v["energia"] : null, "carga_de" => $v["de"], "ultimo" => $v["ultimo"],
             "ultimo_txt" => $v["em_uso"] ? "agora · " . date("H:i", $agora) : ($v["ultimo"] > 0 ? date(date("Y", $v["ultimo"]) === date("Y", $agora) ? "d/m H:i" : "d/m/Y H:i", $v["ultimo"]) : "nunca"),
@@ -2084,7 +2077,7 @@ if (!$token_ok && $quem === "") {
         }
         $leituras = [];
         foreach (array_reverse(linhas("SELECT l.inicio, l.valor, t.unidade FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
-            WHERE l.relogio_id = ? AND t.formato = 'valor' ORDER BY l.inicio DESC LIMIT 40", [$id])) as $l) {
+            WHERE l.relogio_id = ? AND t.formato = 'valor' ORDER BY l.inicio DESC, l.id DESC LIMIT 40", [$id])) as $l) {
             $leituras[] = ["inicio" => $l["inicio"], "valor" => (float)$l["valor"], "unidade" => $l["unidade"],
                 "em_uso" => valor("SELECT l.id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.identificador = 'pulso'
                     AND l.inicio <= ? AND COALESCE(l.fim, ?) >= ? LIMIT 1", [$id, $l["inicio"], $l["inicio"], $l["inicio"]]) !== null];
@@ -2207,7 +2200,7 @@ if (!$token_ok && $quem === "") {
         "linhas" => array_map(function ($l) { unset($l["ts"]); return $l; }, array_slice($linhas_h, ($pag_h - 1) * $por_h, $por_h)),
         "lancamentos" => count($ids_rel) === 0 ? [] : linhas("SELECT l.id, l.relogio_id, r.nome AS relogio, t.identificador AS tipo, l.inicio, l.fim, l.valor, l.origem
             FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id JOIN relogio r ON r.id = l.relogio_id WHERE l.relogio_id IN (" . implode(",", $ids_rel) . ")
-            AND l.inicio < ? AND COALESCE(l.fim, l.inicio) >= ? ORDER BY l.inicio " . ($asc ? "ASC" : "DESC") . " LIMIT " . $por_h,
+            AND l.inicio < ? AND COALESCE(l.fim, l.inicio) >= ? ORDER BY l.inicio " . ($asc ? "ASC, l.id ASC" : "DESC, l.id DESC") . " LIMIT " . $por_h,
             [date("Y-m-d H:i:s", min($per[1], 253402300799)), date("Y-m-d H:i:s", $per[0])])];
 } elseif ($recurso === "previsao") {
     $ids_p = array_values(array_filter(array_map("intval", explode(",", (string)($_REQUEST["relogio"] ?? "")))));
@@ -2238,7 +2231,7 @@ if (!$token_ok && $quem === "") {
     foreach (["de" => "00:00:00", "ate" => "23:59:59"] as $k => $hora) {
         $v = str_replace("T", " ", trim((string)($_REQUEST["cron_" . $k] ?? ($_REQUEST[$k] ?? ""))));
         $per_c[$k] = preg_match("/^[0-9]{4}-[0-9]{2}-[0-9]{2}( [0-9]{2}:[0-9]{2}(:[0-9]{2})?)?\$/", $v) === 1
-            ? $v . (strlen($v) === 10 ? " " . $hora : (strlen($v) === 16 ? ($k === "de" ? ":00" : ":59") : "")) : ($k === "de" ? "0000-01-01 00:00:00" : "9999-12-31 23:59:59");
+            ? $v . (strlen($v) === 10 ? " " . $hora : (strlen($v) === 16 ? ($k === "de" ? ":00" : ":59") : "")) : ($k === "de" ? "0001-01-01 00:00:00" : "9999-12-31 23:59:59");
     }
     $situacao = in_array($_REQUEST["cron_situacao"] ?? ($_REQUEST["situacao"] ?? ""), ["atividade", "erro", "nada", "todas"], true) ? ($_REQUEST["cron_situacao"] ?? $_REQUEST["situacao"]) : "atividade";
     $busca = trim((string)($_REQUEST["cron_busca"] ?? ($_REQUEST["busca"] ?? "")));
@@ -3542,7 +3535,8 @@ if (!$token_ok && $quem === "") {
             "recurso" => "o recurso (vazio: tudo)", "acao" => "a ação (escrita)", "formato" => "json (padrão) ou xml", "token" => "o token da API; também no cabeçalho X-Api-Token, ou o login do site (HTTP Basic) no lugar dele",
         ],
         "erros" => ["400" => "pedido recusado (os erros dizem por quê)", "401" => "sem token nem login", "404" => "recurso ou relógio que não existe",
-            "500" => "sistema parado (token inválido no config.php) ou erro interno", "503" => "banco desatualizado (só recurso=migracoes responde) ou banco fora do ar"],
+            "409" => "o banco recusou a gravação (um registro que outro ainda usa, ou um valor repetido)",
+            "500" => "sistema parado (token ou fuso inválido no config.php) ou erro interno", "503" => "banco desatualizado (só recurso=migracoes responde) ou banco fora do ar"],
         "motor" => array_map(function ($f) { return $f[2]; }, $GLOBALS["FUNCOES"]),
         "escrita_das_formulas" => "números com vírgula ou ponto; textos entre aspas; argumentos separados por ponto e vírgula; operações + - * / ^; "
             . "comparações = <> < <= > >= (dão 1 ou 0); variáveis: os identificadores dos campos e das fórmulas; vazio se propaga; divisão por zero: vazio",
@@ -3603,7 +3597,7 @@ if (!$token_ok && $quem === "") {
             "lancamentos" => array_map(function ($l) {
                 return ["id" => (int)$l["id"], "tipo" => $l["tipo"], "inicio" => $l["inicio"], "fim" => $l["fim"], "valor" => $l["valor"] === null ? null : (float)$l["valor"],
                     "origem" => $l["origem"], "criado" => $l["criado"]];
-            }, linhas("SELECT l.*, t.identificador AS tipo FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? ORDER BY l.inicio", [(int)$r["id"]])),
+            }, linhas("SELECT l.*, t.identificador AS tipo FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? ORDER BY l.inicio, l.id", [(int)$r["id"]])),
             "previsao" => previsao_energia($r, time())];
         $lt = linha_do_tempo((int)$r["id"], 0, PHP_INT_MAX, []);
         $relogios[count($relogios) - 1]["linha_do_tempo"] = array_map("linha_legivel", $lt["linhas"]);

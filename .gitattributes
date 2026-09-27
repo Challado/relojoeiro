@@ -1,0 +1,5 @@
+# Tudo em LF, inclusive num checkout no Windows: os arquivos .sql são lidos pelo próprio sistema (a instalação, as
+# migrações, o "restaurar" dos critérios), e o servidor é Linux
+* text=auto eol=lf
+*.png binary
+*.jpg binary
