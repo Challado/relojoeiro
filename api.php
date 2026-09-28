@@ -9,9 +9,9 @@
  *   O config.php tem de definir API_TOKEN com pelo menos 10 caracteres (sem contar espaços nas pontas); sem isso o
  *   sistema inteiro para e responde 500 {"erro": "Sistema parado: ..."}.
  *   Todo pedido, consulta ou escrita, exige o token ou o login do site (HTTP Basic):
- *     curl -H "X-Api-Token: segredo" "http://servidor/relogios2/api.php"
- *     http://servidor/relogios2/api.php?token=segredo
- *     curl -u lucas:senha "http://servidor/relogios2/api.php"
+ *     curl -H "X-Api-Token: segredo" "http://servidor/relojoeiro/api.php"
+ *     http://servidor/relojoeiro/api.php?token=segredo
+ *     curl -u lucas:senha "http://servidor/relojoeiro/api.php"
  *   Sem nenhum dos dois: 401. O token é comparado sem os espaços das pontas.
  *
  * ---------------------------------------------------------------------------------------------
@@ -68,18 +68,18 @@
  *                          "ativo", "no_id", "lugar", "escala" (nao, uso, sempre), "simula_valor", "simula_horas", "agenda" (janela
  *                          ou sempre: a data na agenda)}]  a mesma chave pode ter uma versão por ponto; vale a do mais perto
  *     "motor":             {"funcoes": {NOME: descrição}, "tipos_de_campo", "formatos_de_lancamento"}
- *                   Ex.: curl -u lucas:senha "http://servidor/relogios2/api.php?foto=nao"
+ *                   Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?foto=nao"
  *   recurso=avisos    os avisos de todos os relógios agora, do mais urgente ao mais distante: [{"relogio_id", "relogio",
  *                   "disponivel", "identificador", "nome", "data", "falta_dias" (negativo: atrasado), "estado" (atrasado,
  *                   em_breve ou ok), "texto", "resolve", "versao", "escala", "simula_valor", "simula_horas", "agenda", "modelo" (o texto
  *                   com as âncoras)}]. Sem data prevista (falta um dado): o aviso não aparece.
- *                            Ex.: curl -u lucas:senha "http://servidor/relogios2/api.php?recurso=avisos"
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=avisos"
  *   recurso=calcular  expressao=<fórmula> [relogio=3 ou 1,2,3]: calcula a fórmula (sem gravar) em cada relógio:
  *                   {"expressao", "resultados": [{"relogio_id", "relogio", "valor", "partes": {nome: valor}}]}
  *                   Erro de escrita: 400 {"erro", "erros": [...]}. É o "testar" das fórmulas.
- *                            Ex.: curl -u lucas:senha -G "http://servidor/relogios2/api.php" --data-urlencode recurso=calcular --data-urlencode "expressao=energia * 2" -d relogio=10,12
+ *                            Ex.: curl -u lucas:senha -G "http://servidor/relojoeiro/api.php" --data-urlencode recurso=calcular --data-urlencode "expressao=energia * 2" -d relogio=10,12
  *   recurso=foto relogio=3   a imagem (não é JSON)
- *                            Ex.: curl -u lucas:senha -o foto.jpg "http://servidor/relogios2/api.php?recurso=foto&relogio=10"
+ *                            Ex.: curl -u lucas:senha -o foto.jpg "http://servidor/relojoeiro/api.php?recurso=foto&relogio=10"
  *   recurso=criterios        {"conjuntos": [{"escopo" ("" todos, "g:<ponto>", "r:<relógio>"), "lugar", "usado_por": [ids],
  *                            "parametros": [{"id", "ordem", "escopo_no_id", "escopo_relogio_id", "nome", "peso", "subparametros":
  *                            [{"id", "ordem", "nome", "variavel", "peso", "peso_efetivo_no_conjunto", "faixas": [{"id", "de", "ate",
@@ -87,7 +87,7 @@
  *                            "notas": [{"relogio_id", "relogio", "disponivel", "nota", "conjunto", "conjunto_texto", "conta": [{"parametro",
  *                            "subparametro", "variavel", "valor", "faixa", "nota", "peso_efetivo", "pontos"}]}], "max_sem_uso"}
  *                            o relógio usa o conjunto mais perto dele, inteiro; sem conjunto nenhum, nota 50
- *                            Ex.: curl -u lucas:senha "http://servidor/relogios2/api.php?recurso=criterios"
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=criterios"
  *   recurso=historico        a linha do tempo (a mesma da página Histórico): trechos contínuos, cada um num estado — rodizio (em
  *                            uso pelo rodízio), pulso (no pulso fora do rodízio), cada tipo de sessão (winder, sol...), repouso —
  *                            e as marcações instantâneas (marca: corda, leitura de carga, troca de pilha...).
@@ -103,35 +103,35 @@
  *                            "fim", "em_andamento", "duracao_seg", "duracao", "estado", "tipo", "texto"}], "lancamentos": [os
  *                            lançamentos crus do período, até o limite]}. O resumo conta o tempo dentro do período (o trecho que
  *                            cruza a borda, só a parte de dentro) e ignora o filtro de estado.
- *                            Ex.: curl -u lucas:senha "http://servidor/relogios2/api.php?recurso=historico&relogio=3&de=2026-09-01&estado=marca"
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=historico&relogio=3&de=2026-09-01&estado=marca"
  *   recurso=previsao         [relogio=ids] a previsão da energia dos relógios com leitura (o smartwatch): {"previsoes": [{"relogio_id",
  *                            "relogio", "aplica" (tem leitura com valor), "linhas" (as frases da página), "energia", "dura_dias",
  *                            "dura_ate", "limite" (a Configuração, 20%), "chega_limite_em" (parado), "proxima_entrada",
  *                            "carga_na_entrada", "precisa", "carregar_antes", "leitura", "leitura_em", "confianca" (alta, média,
  *                            baixa), "conta": [{"campo", "nome", "valor", "unidade", "origem": informado, padrão ou vazio}]}]}
- *                            Ex.: curl -u lucas:senha "http://servidor/relogios2/api.php?recurso=previsao&relogio=10"
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=previsao&relogio=10"
  *   recurso=plano            [de, ate: AAAA-MM-DD] o plano gravado (sem de/ate: inteiro), com "escala_fim" e o modo ativo:
  *                            {"modo", "escala_fim", "plano": [como em "plano" acima]}
- *                            Ex.: curl -u lucas:senha "http://servidor/relogios2/api.php?recurso=plano&de=2026-10-01&ate=2026-10-31"
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=plano&de=2026-10-01&ate=2026-10-31"
  *   recurso=eventos          os eventos personalizados: {"eventos": [{"id", "nome", "ativo", "repeticao" (uma, diaria,
  *                            semanal, mensal, intervalo), "descricao" ("seg, qua 20:00"), "hora", "data_inicio", "dias_semana",
  *                            "dia_mes", "intervalo_dias", "relogio_id", "relogio", "telegram" e "agenda" (se vai por cada canal, em
  *                            "O que vai para onde"), "criado", "proximas" (as 10
  *                            próximas ocorrências, no próximo ano), "disparos": [{"ocorrencia", "disparado"}]}]}
- *                            Ex.: curl -u lucas:senha "http://servidor/relogios2/api.php?recurso=eventos"
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=eventos"
  *   recurso=agenda           o Google Agenda: {"ativa", "agenda_id", "janela_dias", "chave_ok" (a chave JSON foi lida e o Google
  *                            deu o token; só é conferido com agenda_id preenchido), "desejados": [o que tem de estar na agenda:
  *                            {"chave", "data", "hora", "momento", "tipo", "relogio_id", "relogio", "acao", "motivo", "titulo",
  *                            "descricao"}], "criados": [os eventos criados pelo sistema]}
- *                            Ex.: curl -u lucas:senha "http://servidor/relogios2/api.php?recurso=agenda"
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=agenda"
  *   recurso=autonomia        [relogio=ids] as autonomias de cada relógio, enxuto e rápido, para sistemas de fora: quanto dura cheio pelo
  *                            cadastro (autonomia_prevista) e pela conta do sistema com o gasto medido (autonomia_atual), quanto ainda
  *                            dura a partir de agora seguindo o plano (autonomia_estimada), no pulso sem tirar (restante_em_uso) e
  *                            guardado (restante_guardado), e quando acaba (acaba_em_unixtimestamp, acaba_em_segundos,
  *                            acaba_em_datacomtz com o fuso). Tudo em segundos inteiros; null com o motivo em "motivos".
- *                            Ex.: curl -u lucas:senha "http://servidor/relogios2/api.php?recurso=autonomia"
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=autonomia"
  *                            Ex.: os que acabam nas próximas 24 horas:
- *                                 curl -u lucas:senha -g "http://servidor/relogios2/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz"
+ *                                 curl -u lucas:senha -g "http://servidor/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz"
  *   recurso=hoje             tudo o que a página Hoje mostra: {"data", "agora", "uso_inicio", "comecou" (o dia já começou no pulso),
  *                            "modo": {"id", "nome", "selecao", "escala_dias"}, "escala_fim", "max_sem_uso", "dia": {"data", "relogio_id",
  *                            "relogio", "ate" ("só hoje", "até sexta, 02/10"), "acao" (o lembrete do dia)}, "avisos": [os de hoje, atrasados
@@ -144,7 +144,7 @@
  *                            vem), "ultimo" (a última vez no pulso, em segundos), "ultimo_txt", "situacao": [linhas], "manutencao":
  *                            {"nome", "data", "momento", "falta"} (o aviso mais perto), "compra": {"data", "valor", "loja", "garantia_ate"},
  *                            "leitura": {"inicio", "valor", "unidade"} (a última), "de_hoje", "com_aviso", "foto" (a versão)}]}
- *                            Ex.: curl -u lucas:senha "http://servidor/relogios2/api.php?recurso=hoje"
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=hoje"
  *   recurso=ficha            relogio=<id>: tudo o que o painel de um relógio mostra: {"hoje", "relogio": {"id", "nome", "no_id",
  *                            "disponivel", "tipo", "caminho", "observacao", "foto", "em_uso", "agora", "carga", "carga_de", "situacao",
  *                            "nota": {"nota", "conjunto_texto"}, "proxima" (a próxima entrada no plano), "proxima_ate", "escala_fim",
@@ -154,7 +154,7 @@
  *                            linhas mais recentes), "registros", "desde"}, "campos": [o cadastro: {"identificador", "nome", "tipo",
  *                            "unidade", "opcoes", "padrao", "no_id", "valor"}], "grupos": [{"id", "caminho", "cadeia"}]}. Sem relogio:
  *                            só "campos" e "grupos" (o cadastro de um relógio novo); relógio que não existe: 404
- *                            Ex.: curl -u lucas:senha "http://servidor/relogios2/api.php?recurso=ficha&relogio=10"
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=ficha&relogio=10"
  *   recurso=config           tudo o que a página Configuração mostra: {"config": {chave: valor} (inclusive agenda_chave), "sol_fim",
  *                            "chave_agenda": {"client_email"} (a chave JSON foi lida; null: não), "pasta", "canais" (tg e ag: o nome,
  *                            a lista de avisos e a ajuda), "ancoras", "repeticoes", "tipos": [cada tipo de aviso: {"tipo" (dia, vespera,
@@ -163,30 +163,30 @@
  *                            5 dos próximos 60 dias)], "relogios": [{"id", "nome", "disponivel"}], "previa": {"manha", "noite" (as
  *                            mensagens do Telegram como sairiam agora), "agenda" (os 8 primeiros eventos: {"data", "hora", "titulo",
  *                            "descricao"}), "sincronizados"}}
- *                            Ex.: curl -u lucas:senha "http://servidor/relogios2/api.php?recurso=config"
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=config"
  *   recurso=cron             as execuções do cron: de, ate (data, ou data e hora; cron_de e cron_ate também valem), situacao
  *                            (atividade, o padrão; erro, nada ou todas; cron_situacao também vale), busca (texto no registro;
  *                            cron_busca também vale), limite (padrão 100, máximo 1000), pagina: {"filtro", "ultima" (a última execução),
  *                            "resumo": {"total", "atividade", "erros", "mais_lenta_ms"} (do período, sem os outros filtros), "total",
  *                            "pagina", "por_pagina", "paginas", "execucoes": [{"inicio", "fim", "duracao_ms", "teve_atividade",
  *                            "teve_erro", "registro"}]}. Sem atividade, as execuções ficam 7 dias; com atividade ou erro, 1 ano
- *                            Ex.: curl -u lucas:senha "http://servidor/relogios2/api.php?recurso=cron&situacao=erro&de=2026-09-01&busca=agenda"
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=cron&situacao=erro&de=2026-09-01&busca=agenda"
  *   recurso=arvore           os grupos em ordem de árvore: {"grupos": [{"id", "pai_id", "nome", "profundidade", "caminho", "cadeia",
  *                            "subgrupos", "relogios": [nomes, direto no grupo], "criterios" (quantos parâmetros próprios)}], "relogios":
  *                            [{"id", "nome", "no_id", "disponivel"}]}
- *                            Ex.: curl -u lucas:senha "http://servidor/relogios2/api.php?recurso=arvore"
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=arvore"
  *   recurso=cadastros        tudo o que a página Cadastros mostra: {"campos", "lancamento_tipos" (com "lancamentos": quantos cada um
  *                            tem), "formulas", "avisos" (todas as versões, como no banco), "modos" (com "blocos"), "modo_ativo",
  *                            "max_sem_uso", "grupos", "relogios", "funcoes" (as do motor), "tipos_de_campo", "formatos_de_lancamento"}
- *                            Ex.: curl -u lucas:senha "http://servidor/relogios2/api.php?recurso=cadastros"
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=cadastros"
  *   recurso=usuarios         {"usuarios": [{"login", "criado"}], "voce" (o login de quem pediu, pelo site; vazio pelo token)} (senhas nunca saem)
- *                            Ex.: curl -u lucas:senha "http://servidor/relogios2/api.php?recurso=usuarios"
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=usuarios"
  *   recurso=migracoes        {"pendentes": [{"versao", "arquivo", "traz"}]} (lista vazia: o banco está em dia)
- *                            Ex.: curl -u lucas:senha "http://servidor/relogios2/api.php?recurso=migracoes"
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=migracoes"
  *   recurso=ajuda            esta documentação em JSON: cada consulta com a descrição, os parâmetros e um exemplo; cada escrita com as ações,
  *                            os campos de cada uma e um exemplo; o dicionário de todos os campos das respostas ("campos"); a
  *                            autenticação, o formato, os erros e as funções do motor
- *                            Ex.: curl -u lucas:senha "http://servidor/relogios2/api.php?recurso=ajuda"
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=ajuda"
  *   Não é exportado: a senha dos usuários.
  *
  * ---------------------------------------------------------------------------------------------
@@ -214,21 +214,21 @@
  *   "devolvidos", "pagina", "limite"}}, "ignorados": [o caminho sem lista, a parte que não existe]}. Sem colchetes, limite,
  *   pagina, ordem e busca continuam sendo os do recurso (historico, cron). Com filtros, objetos vazios saem como listas vazias.
  *   Ex.: só os relógios disponíveis, com o id e o nome:
- *        curl -u lucas:senha -g "http://servidor/relogios2/api.php?incluir=relogios&f[relogios][disponivel]=1&mostrar[relogios]=id,nome&foto=nao"
+ *        curl -u lucas:senha -g "http://servidor/relojoeiro/api.php?incluir=relogios&f[relogios][disponivel]=1&mostrar[relogios]=id,nome&foto=nao"
  *   Ex.: os relógios com energia até 20%, da menor para a maior:
- *        curl -u lucas:senha -g "http://servidor/relogios2/api.php?incluir=relogios&f[relogios][formulas.energia.valor][ate]=20&ordem[relogios]=formulas.energia.valor&mostrar[relogios]=nome,formulas.energia.valor&foto=nao"
+ *        curl -u lucas:senha -g "http://servidor/relojoeiro/api.php?incluir=relogios&f[relogios][formulas.energia.valor][ate]=20&ordem[relogios]=formulas.energia.valor&mostrar[relogios]=nome,formulas.energia.valor&foto=nao"
  *   Ex.: as leituras de carga de setembro de dois relógios:
- *        curl -u lucas:senha -g "http://servidor/relogios2/api.php?incluir=relogios&f[relogios][id]=10,12&f[relogios.lancamentos][tipo]=carga&f[relogios.lancamentos][inicio][de]=2026-09-01&f[relogios.lancamentos][inicio][ate]=2026-09-30&mostrar[relogios]=nome,lancamentos&foto=nao"
+ *        curl -u lucas:senha -g "http://servidor/relojoeiro/api.php?incluir=relogios&f[relogios][id]=10,12&f[relogios.lancamentos][tipo]=carga&f[relogios.lancamentos][inicio][de]=2026-09-01&f[relogios.lancamentos][inicio][ate]=2026-09-30&mostrar[relogios]=nome,lancamentos&foto=nao"
  *   Ex.: comprados na AliExpress:
- *        curl -u lucas:senha -g "http://servidor/relogios2/api.php?incluir=relogios&f[relogios][campos.loja.valor][contem]=aliexpress&mostrar[relogios]=nome,campos.valor_compra.valor&foto=nao"
+ *        curl -u lucas:senha -g "http://servidor/relojoeiro/api.php?incluir=relogios&f[relogios][campos.loja.valor][contem]=aliexpress&mostrar[relogios]=nome,campos.valor_compra.valor&foto=nao"
  *   Ex.: o plano de outubro, só o Xiaomi:
- *        curl -u lucas:senha -g "http://servidor/relogios2/api.php?recurso=plano&f[plano][data][de]=2026-10-01&f[plano][data][ate]=2026-10-31&f[plano][relogio][contem]=xiaomi"
+ *        curl -u lucas:senha -g "http://servidor/relojoeiro/api.php?recurso=plano&f[plano][data][de]=2026-10-01&f[plano][data][ate]=2026-10-31&f[plano][relogio][contem]=xiaomi"
  *   Ex.: as execuções do cron com erro, 20 por página, a segunda página:
- *        curl -u lucas:senha -g "http://servidor/relogios2/api.php?incluir=cron&f[cron.execucoes][teve_erro]=1&limite[cron.execucoes]=20&pagina[cron.execucoes]=2"
+ *        curl -u lucas:senha -g "http://servidor/relojoeiro/api.php?incluir=cron&f[cron.execucoes][teve_erro]=1&limite[cron.execucoes]=20&pagina[cron.execucoes]=2"
  *   Ex.: as notas acima de 50, da maior para a menor:
- *        curl -u lucas:senha -g "http://servidor/relogios2/api.php?incluir=criterios&f[criterios.notas][nota][de]=50&ordem[criterios.notas]=-nota&mostrar[criterios.notas]=relogio,nota"
+ *        curl -u lucas:senha -g "http://servidor/relojoeiro/api.php?incluir=criterios&f[criterios.notas][nota][de]=50&ordem[criterios.notas]=-nota&mostrar[criterios.notas]=relogio,nota"
  *   Ex.: na página Hoje, só os relógios com aviso:
- *        curl -u lucas:senha -g "http://servidor/relogios2/api.php?recurso=hoje&f[relogios][com_aviso]=1&mostrar[relogios]=nome,manutencao.nome"
+ *        curl -u lucas:senha -g "http://servidor/relojoeiro/api.php?recurso=hoje&f[relogios][com_aviso]=1&mostrar[relogios]=nome,manutencao.nome"
  *   (o -g do curl deixa os colchetes passarem; no navegador, é só escrever o endereço)
  *
  * ---------------------------------------------------------------------------------------------
@@ -241,37 +241,37 @@
  *                             relógios, os campos, os tipos de lançamento, as fórmulas e os avisos, menos as versões de fórmulas e
  *                             avisos que o de cima já tem, que saem; os blocos dos modos que sorteavam dele passam a sortear do de
  *                             cima; os critérios próprios dele saem), relogios (grupo[<relógio>]: o grupo de cada relógio, 0 = na raiz)
- *                            Ex. novo: curl -u lucas:senha -d recurso=arvore -d acao=novo -d "nome=Cronógrafos" -d pai_id=2 http://servidor/relogios2/api.php
- *                            Ex. renomear: curl -u lucas:senha -d recurso=arvore -d acao=renomear -d id=5 -d "nome=Automáticos" http://servidor/relogios2/api.php
- *                            Ex. mover: curl -u lucas:senha -d recurso=arvore -d acao=mover -d id=5 -d pai_id=0 http://servidor/relogios2/api.php
- *                            Ex. ordem: curl -u lucas:senha -d recurso=arvore -d acao=ordem -d id=5 -d direcao=sobe http://servidor/relogios2/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=arvore -d acao=excluir -d id=5 http://servidor/relogios2/api.php
- *                            Ex. relogios: curl -u lucas:senha -d recurso=arvore -d acao=relogios -d "grupo[13]=1" -d "grupo[4]=8" http://servidor/relogios2/api.php
+ *                            Ex. novo: curl -u lucas:senha -d recurso=arvore -d acao=novo -d "nome=Cronógrafos" -d pai_id=2 http://servidor/relojoeiro/api.php
+ *                            Ex. renomear: curl -u lucas:senha -d recurso=arvore -d acao=renomear -d id=5 -d "nome=Automáticos" http://servidor/relojoeiro/api.php
+ *                            Ex. mover: curl -u lucas:senha -d recurso=arvore -d acao=mover -d id=5 -d pai_id=0 http://servidor/relojoeiro/api.php
+ *                            Ex. ordem: curl -u lucas:senha -d recurso=arvore -d acao=ordem -d id=5 -d direcao=sobe http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=arvore -d acao=excluir -d id=5 http://servidor/relojoeiro/api.php
+ *                            Ex. relogios: curl -u lucas:senha -d recurso=arvore -d acao=relogios -d "grupo[13]=1" -d "grupo[4]=8" http://servidor/relojoeiro/api.php
  *   recurso=campos            novo, alterar (id): identificador, nome, tipo (inteiro, decimal, sim_nao, data, lista, texto),
  *                             unidade, opcoes (lista: uma por linha), padrao, no_id (0 = todos); excluir (id); ordem (id, direcao)
- *                            Ex. novo: curl -u lucas:senha -d recurso=campos -d acao=novo -d identificador=resistencia_agua -d "nome=Resistência à água" -d tipo=inteiro -d unidade=m -d no_id=0 http://servidor/relogios2/api.php
- *                            Ex. alterar: curl -u lucas:senha -d recurso=campos -d acao=alterar -d id=21 -d "nome=Resistência (m)" http://servidor/relogios2/api.php
- *                            Ex. ordem: curl -u lucas:senha -d recurso=campos -d acao=ordem -d id=21 -d direcao=sobe http://servidor/relogios2/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=campos -d acao=excluir -d id=21 http://servidor/relogios2/api.php
+ *                            Ex. novo: curl -u lucas:senha -d recurso=campos -d acao=novo -d identificador=resistencia_agua -d "nome=Resistência à água" -d tipo=inteiro -d unidade=m -d no_id=0 http://servidor/relojoeiro/api.php
+ *                            Ex. alterar: curl -u lucas:senha -d recurso=campos -d acao=alterar -d id=21 -d "nome=Resistência (m)" http://servidor/relojoeiro/api.php
+ *                            Ex. ordem: curl -u lucas:senha -d recurso=campos -d acao=ordem -d id=21 -d direcao=sobe http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=campos -d acao=excluir -d id=21 http://servidor/relojoeiro/api.php
  *   recurso=lancamento_tipos  novo, alterar (id): identificador, nome, formato (instantaneo, valor, sessao), unidade, fecha_as,
  *                             exclusiva (1 ou 0, só sessão), mede_gasto (1 ou 0, só com valor: cada leitura mede o gasto), condicao
  *                             (vale quando: uma fórmula, 1 vale e 0 não; vazia, vale sempre; ex.: corda_manual), no_id;
  *                             excluir (id)
- *                            Ex. novo: curl -u lucas:senha -d recurso=lancamento_tipos -d acao=novo -d identificador=banho_ultrassom -d "nome=Banho ultrassônico" -d formato=instantaneo -d no_id=0 http://servidor/relogios2/api.php
- *                            Ex. alterar: curl -u lucas:senha -d recurso=lancamento_tipos -d acao=alterar -d id=11 -d fecha_as=18:00 http://servidor/relogios2/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=lancamento_tipos -d acao=excluir -d id=11 http://servidor/relogios2/api.php
+ *                            Ex. novo: curl -u lucas:senha -d recurso=lancamento_tipos -d acao=novo -d identificador=banho_ultrassom -d "nome=Banho ultrassônico" -d formato=instantaneo -d no_id=0 http://servidor/relojoeiro/api.php
+ *                            Ex. alterar: curl -u lucas:senha -d recurso=lancamento_tipos -d acao=alterar -d id=11 -d fecha_as=18:00 http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=lancamento_tipos -d acao=excluir -d id=11 http://servidor/relojoeiro/api.php
  *   recurso=formulas          nova (identificador, nome, expressao, unidade, no_id: fórmula nova, ou mais uma versão da que
  *                             existe, em outro ponto), alterar (id: nome, expressao, unidade, no_id), excluir (id)
- *                            Ex. nova: curl -u lucas:senha -d recurso=formulas -d acao=nova -d identificador=idade_dias -d "nome=Idade (dias)" --data-urlencode "expressao=AGORA() - data_compra" -d unidade=dias -d no_id=0 http://servidor/relogios2/api.php
- *                            Ex. alterar: curl -u lucas:senha -d recurso=formulas -d acao=alterar -d id=17 --data-urlencode "expressao=ARREDONDA(AGORA() - data_compra)" http://servidor/relogios2/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=formulas -d acao=excluir -d id=17 http://servidor/relogios2/api.php
+ *                            Ex. nova: curl -u lucas:senha -d recurso=formulas -d acao=nova -d identificador=idade_dias -d "nome=Idade (dias)" --data-urlencode "expressao=AGORA() - data_compra" -d unidade=dias -d no_id=0 http://servidor/relojoeiro/api.php
+ *                            Ex. alterar: curl -u lucas:senha -d recurso=formulas -d acao=alterar -d id=17 --data-urlencode "expressao=ARREDONDA(AGORA() - data_compra)" http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=formulas -d acao=excluir -d id=17 http://servidor/relojoeiro/api.php
  *   recurso=relogio           salvar (id: 0 ou ausente cria; nome, no_id, disponivel, valores[identificador]: só muda o que
  *                             vier; valor vazio apaga; inválido fica o que estava e a mensagem diz), excluir (id),
  *                             foto (id, foto_base64), remover_foto (id)
- *                            Ex. salvar: curl -u lucas:senha -d recurso=relogio -d acao=salvar -d id=10 -d "valores[preferencia]=80" -d disponivel=1 http://servidor/relogios2/api.php
- *                            Ex. foto: curl -u lucas:senha -d recurso=relogio -d acao=foto -d id=10 --data-urlencode foto_base64@foto.b64 http://servidor/relogios2/api.php
- *                            Ex. remover_foto: curl -u lucas:senha -d recurso=relogio -d acao=remover_foto -d id=10 http://servidor/relogios2/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=relogio -d acao=excluir -d id=15 http://servidor/relogios2/api.php
+ *                            Ex. salvar: curl -u lucas:senha -d recurso=relogio -d acao=salvar -d id=10 -d "valores[preferencia]=80" -d disponivel=1 http://servidor/relojoeiro/api.php
+ *                            Ex. foto: curl -u lucas:senha -d recurso=relogio -d acao=foto -d id=10 --data-urlencode foto_base64@foto.b64 http://servidor/relojoeiro/api.php
+ *                            Ex. remover_foto: curl -u lucas:senha -d recurso=relogio -d acao=remover_foto -d id=10 http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=relogio -d acao=excluir -d id=15 http://servidor/relojoeiro/api.php
  *   recurso=lancamento        lancar (relogio_id, tipo, valor, quando: AAAA-MM-DD HH:MM, vazio = agora; medir: 1 (padrão) ou 0,
  *                             num tipo que mede o gasto: com 1 a medição entra na média, com 0 fica só no histórico — a caixa
  *                             "Atualizar o gasto com esta medição"; a mensagem traz a conta), iniciar (relogio_id,
@@ -279,21 +279,21 @@
  *                             quando), periodo (relogio_id, tipo, inicio, fim: uma sessão que já passou), alterar (id: quando
  *                             ou inicio, fim, valor; só o que vier), excluir (id). Nada no futuro; o tipo tem de valer para o
  *                             relógio; exclusivas não se sobrepõem
- *                            Ex. lancar: curl -u lucas:senha -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://servidor/relogios2/api.php
- *                            Ex. iniciar: curl -u lucas:senha -d recurso=lancamento -d acao=iniciar -d relogio_id=4 -d tipo=sol http://servidor/relogios2/api.php
- *                            Ex. encerrar: curl -u lucas:senha -d recurso=lancamento -d acao=encerrar -d relogio_id=4 -d tipo=sol http://servidor/relogios2/api.php
- *                            Ex. periodo: curl -u lucas:senha -d recurso=lancamento -d acao=periodo -d relogio_id=3 -d tipo=winder -d "inicio=2026-09-26 20:00" -d "fim=2026-09-27 07:00" http://servidor/relogios2/api.php
- *                            Ex. alterar: curl -u lucas:senha -d recurso=lancamento -d acao=alterar -d id=42 -d valor=70 http://servidor/relogios2/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=lancamento -d acao=excluir -d id=42 http://servidor/relogios2/api.php
+ *                            Ex. lancar: curl -u lucas:senha -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://servidor/relojoeiro/api.php
+ *                            Ex. iniciar: curl -u lucas:senha -d recurso=lancamento -d acao=iniciar -d relogio_id=4 -d tipo=sol http://servidor/relojoeiro/api.php
+ *                            Ex. encerrar: curl -u lucas:senha -d recurso=lancamento -d acao=encerrar -d relogio_id=4 -d tipo=sol http://servidor/relojoeiro/api.php
+ *                            Ex. periodo: curl -u lucas:senha -d recurso=lancamento -d acao=periodo -d relogio_id=3 -d tipo=winder -d "inicio=2026-09-26 20:00" -d "fim=2026-09-27 07:00" http://servidor/relojoeiro/api.php
+ *                            Ex. alterar: curl -u lucas:senha -d recurso=lancamento -d acao=alterar -d id=42 -d valor=70 http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=lancamento -d acao=excluir -d id=42 http://servidor/relojoeiro/api.php
  *   recurso=avisos            novo (identificador, nome, expressao: a data prevista, condicao: vale quando (uma fórmula, 1 vale e 0
  *                             não; vazia, vale sempre; ex.: corda_manual = 0), antecedencia_dias, texto com {relogio},
  *                             {data} e {quando}, resolve: o tipo de lançamento, ativo, no_id, escala: nao, uso (conferido no
  *                             relógio do dia na escala inteligente) ou sempre (também nos guardados), simula_valor e simula_horas
  *                             (o lançamento que a escala simula para resolver), agenda: janela (na agenda, só dentro da antecedência)
  *                             ou sempre (qualquer data); se vai pela agenda ou pelo Telegram é a Configuração), alterar (id), excluir (id)
- *                            Ex. novo: curl -u lucas:senha -d recurso=avisos -d acao=novo -d identificador=pulseira -d "nome=Trocar a pulseira" --data-urlencode "expressao=data_compra + 365" -d antecedencia_dias=15 -d "texto=vence {quando}, {data}" -d no_id=0 http://servidor/relogios2/api.php
- *                            Ex. alterar: curl -u lucas:senha -d recurso=avisos -d acao=alterar -d id=9 -d antecedencia_dias=30 http://servidor/relogios2/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=avisos -d acao=excluir -d id=9 http://servidor/relogios2/api.php
+ *                            Ex. novo: curl -u lucas:senha -d recurso=avisos -d acao=novo -d identificador=pulseira -d "nome=Trocar a pulseira" --data-urlencode "expressao=data_compra + 365" -d antecedencia_dias=15 -d "texto=vence {quando}, {data}" -d no_id=0 http://servidor/relojoeiro/api.php
+ *                            Ex. alterar: curl -u lucas:senha -d recurso=avisos -d acao=alterar -d id=9 -d antecedencia_dias=30 http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=avisos -d acao=excluir -d id=9 http://servidor/relojoeiro/api.php
  *   recurso=criterios         escopo: "" (todos), g:<ponto> ou r:<relógio>. conjunto_criar (escopo, origem: herdado ou vazio),
  *                             conjunto_excluir (escopo), param_novo (escopo, nome, peso), param_pesos (escopo, nome[id], peso[id]:
  *                             todos os do conjunto, somando 100), param_excluir (id), sub_novo (parametro_id, nome, variavel, peso),
@@ -301,19 +301,19 @@
  *                             as faixas recomeçam), sub_mover (id, parametro_id), ordem (tipo: parametro ou sub, id, direcao),
  *                             faixas (sub_id, de[], ate[], categoria[], nota[], apagar[]), restaurar (volta aos critérios iniciais).
  *                             Incluir e excluir redistribuem os pesos na proporção; a mensagem traz a conta
- *                            Ex. conjunto_criar: curl -u lucas:senha -d recurso=criterios -d acao=conjunto_criar -d escopo=r:10 -d origem=herdado http://servidor/relogios2/api.php
- *                            Ex. conjunto_excluir: curl -u lucas:senha -d recurso=criterios -d acao=conjunto_excluir -d escopo=r:10 http://servidor/relogios2/api.php
- *                            Ex. param_novo: curl -u lucas:senha -d recurso=criterios -d acao=param_novo -d escopo=g:1 -d "nome=Estilo" -d peso=10 http://servidor/relogios2/api.php
- *                            Ex. param_pesos: curl -u lucas:senha -d recurso=criterios -d acao=param_pesos -d escopo=g:1 -d "peso[5]=35" -d "peso[6]=10" http://servidor/relogios2/api.php
- *                            Ex. param_excluir: curl -u lucas:senha -d recurso=criterios -d acao=param_excluir -d id=29 http://servidor/relogios2/api.php
- *                            Ex. sub_novo: curl -u lucas:senha -d recurso=criterios -d acao=sub_novo -d parametro_id=5 -d "nome=Carga" -d variavel=energia -d peso=20 http://servidor/relogios2/api.php
- *                            Ex. sub_pesos: curl -u lucas:senha -d recurso=criterios -d acao=sub_pesos -d parametro_id=5 -d "peso[6]=60" -d "peso[7]=40" http://servidor/relogios2/api.php
- *                            Ex. sub_excluir: curl -u lucas:senha -d recurso=criterios -d acao=sub_excluir -d id=7 http://servidor/relogios2/api.php
- *                            Ex. sub_medida: curl -u lucas:senha -d recurso=criterios -d acao=sub_medida -d id=7 -d variavel=dias_de_carga http://servidor/relogios2/api.php
- *                            Ex. sub_mover: curl -u lucas:senha -d recurso=criterios -d acao=sub_mover -d id=7 -d parametro_id=8 http://servidor/relogios2/api.php
- *                            Ex. ordem: curl -u lucas:senha -d recurso=criterios -d acao=ordem -d tipo=parametro -d id=5 -d direcao=desce http://servidor/relogios2/api.php
- *                            Ex. faixas: curl -u lucas:senha -d recurso=criterios -d acao=faixas -d sub_id=6 -d "de[0]=0" -d "ate[0]=50" -d "nota[0]=30" -d "de[1]=50" -d "ate[1]=100" -d "nota[1]=100" http://servidor/relogios2/api.php
- *                            Ex. restaurar: curl -u lucas:senha -d recurso=criterios -d acao=restaurar http://servidor/relogios2/api.php
+ *                            Ex. conjunto_criar: curl -u lucas:senha -d recurso=criterios -d acao=conjunto_criar -d escopo=r:10 -d origem=herdado http://servidor/relojoeiro/api.php
+ *                            Ex. conjunto_excluir: curl -u lucas:senha -d recurso=criterios -d acao=conjunto_excluir -d escopo=r:10 http://servidor/relojoeiro/api.php
+ *                            Ex. param_novo: curl -u lucas:senha -d recurso=criterios -d acao=param_novo -d escopo=g:1 -d "nome=Estilo" -d peso=10 http://servidor/relojoeiro/api.php
+ *                            Ex. param_pesos: curl -u lucas:senha -d recurso=criterios -d acao=param_pesos -d escopo=g:1 -d "peso[5]=35" -d "peso[6]=10" http://servidor/relojoeiro/api.php
+ *                            Ex. param_excluir: curl -u lucas:senha -d recurso=criterios -d acao=param_excluir -d id=29 http://servidor/relojoeiro/api.php
+ *                            Ex. sub_novo: curl -u lucas:senha -d recurso=criterios -d acao=sub_novo -d parametro_id=5 -d "nome=Carga" -d variavel=energia -d peso=20 http://servidor/relojoeiro/api.php
+ *                            Ex. sub_pesos: curl -u lucas:senha -d recurso=criterios -d acao=sub_pesos -d parametro_id=5 -d "peso[6]=60" -d "peso[7]=40" http://servidor/relojoeiro/api.php
+ *                            Ex. sub_excluir: curl -u lucas:senha -d recurso=criterios -d acao=sub_excluir -d id=7 http://servidor/relojoeiro/api.php
+ *                            Ex. sub_medida: curl -u lucas:senha -d recurso=criterios -d acao=sub_medida -d id=7 -d variavel=dias_de_carga http://servidor/relojoeiro/api.php
+ *                            Ex. sub_mover: curl -u lucas:senha -d recurso=criterios -d acao=sub_mover -d id=7 -d parametro_id=8 http://servidor/relojoeiro/api.php
+ *                            Ex. ordem: curl -u lucas:senha -d recurso=criterios -d acao=ordem -d tipo=parametro -d id=5 -d direcao=desce http://servidor/relojoeiro/api.php
+ *                            Ex. faixas: curl -u lucas:senha -d recurso=criterios -d acao=faixas -d sub_id=6 -d "de[0]=0" -d "ate[0]=50" -d "nota[0]=30" -d "de[1]=50" -d "ate[1]=100" -d "nota[1]=100" http://servidor/relojoeiro/api.php
+ *                            Ex. restaurar: curl -u lucas:senha -d recurso=criterios -d acao=restaurar http://servidor/relojoeiro/api.php
  *   recurso=rodizio           modo (o quadro Modo de rodízio: modo (id), bloco_alvo[<bloco>] (0 ou o grupo; r:<id>, um relógio fixo),
  *                             bloco_cada_dia[<bloco>] (presente: um por dia), selecao, escala_dias, max_sem_uso: grava e ativa o modo;
  *                             se o dia ainda não começou no pulso, o plano novo vale já de hoje),
@@ -322,20 +322,20 @@
  *                             relógio de hoje a partir de agora), proxima_semana (só no domingo: a semana seguinte inteira).
  *                             Na escala inteligente: sortear de novo refaz a escala; usando segura o escolhido nos dias que
  *                             faltavam do bloco de hoje e refaz a escala depois deles; proxima_semana é recusada
- *                            Ex. modo: curl -u lucas:senha -d recurso=rodizio -d acao=modo -d modo=2 -d "bloco_alvo[8]=1" -d "bloco_cada_dia[8]=1" -d selecao=ponderado -d max_sem_uso=21 http://servidor/relogios2/api.php
- *                            Ex. resortear: curl -u lucas:senha -d recurso=rodizio -d acao=resortear http://servidor/relogios2/api.php
- *                            Ex. resortear_hoje: curl -u lucas:senha -d recurso=rodizio -d acao=resortear_hoje http://servidor/relogios2/api.php
- *                            Ex. usando: curl -u lucas:senha -d recurso=rodizio -d acao=usando -d relogio_id=12 http://servidor/relogios2/api.php
- *                            Ex. proxima_semana: curl -u lucas:senha -d recurso=rodizio -d acao=proxima_semana http://servidor/relogios2/api.php
+ *                            Ex. modo: curl -u lucas:senha -d recurso=rodizio -d acao=modo -d modo=2 -d "bloco_alvo[8]=1" -d "bloco_cada_dia[8]=1" -d selecao=ponderado -d max_sem_uso=21 http://servidor/relojoeiro/api.php
+ *                            Ex. resortear: curl -u lucas:senha -d recurso=rodizio -d acao=resortear http://servidor/relojoeiro/api.php
+ *                            Ex. resortear_hoje: curl -u lucas:senha -d recurso=rodizio -d acao=resortear_hoje http://servidor/relojoeiro/api.php
+ *                            Ex. usando: curl -u lucas:senha -d recurso=rodizio -d acao=usando -d relogio_id=12 http://servidor/relojoeiro/api.php
+ *                            Ex. proxima_semana: curl -u lucas:senha -d recurso=rodizio -d acao=proxima_semana http://servidor/relojoeiro/api.php
  *   recurso=modos             salvar (id: 0 cria; nome, selecao: inteligente, ponderado, aleatorio ou fifo; escala_dias: vazio ou 0
  *                             = sorteio pelos blocos, 7 a 730 = escala inteligente com esse horizonte; blocos: [{nome, dias:
  *                             [1..7], no_id (0: todos), um_por: bloco ou dia, relogio_id: fixo (0: sorteia)}], substitui os
  *                             blocos; ciclo: 1 ou 0 (padrão): com o ciclo, um relógio só volta depois que todos os disponíveis do bloco
  *                             passaram na semana — na escala, pelo período dela), ativar (id: o plano de amanhã em diante é refeito),
  *                             excluir (id: não o ativo)
- *                            Ex. salvar: curl -u lucas:senha -d recurso=modos -d acao=salvar -d id=0 -d "nome=Só smartwatch" -d selecao=inteligente -d "blocos[0][nome]=Todo dia" -d "blocos[0][dias][]=1" -d "blocos[0][dias][]=7" -d "blocos[0][no_id]=1" -d "blocos[0][um_por]=dia" http://servidor/relogios2/api.php
- *                            Ex. ativar: curl -u lucas:senha -d recurso=modos -d acao=ativar -d id=5 http://servidor/relogios2/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=modos -d acao=excluir -d id=6 http://servidor/relogios2/api.php
+ *                            Ex. salvar: curl -u lucas:senha -d recurso=modos -d acao=salvar -d id=0 -d "nome=Só smartwatch" -d selecao=inteligente -d "blocos[0][nome]=Todo dia" -d "blocos[0][dias][]=1" -d "blocos[0][dias][]=7" -d "blocos[0][no_id]=1" -d "blocos[0][um_por]=dia" http://servidor/relojoeiro/api.php
+ *                            Ex. ativar: curl -u lucas:senha -d recurso=modos -d acao=ativar -d id=5 http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=modos -d acao=excluir -d id=6 http://servidor/relojoeiro/api.php
  *   recurso=config            salvar (horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (a sessão no sol esquecida fecha
  *                             a essa hora): HH:MM; sol_limiar (1 a 99: o solar vai para o sol nessa carga); url_sistema;
  *                             alerta_ativo (ou mensagens_ativas) e agenda_ativa: 1 ou 0; agenda_id; agenda_chave; agenda_antecedencia
@@ -347,19 +347,19 @@
  *                             mensagem agora), evento_salvar (evento_id ou id: 0 cria; nome, ativo, repeticao, hora, data_inicio,
  *                             dias_semana, dia_mes, intervalo_dias, relogio_id; o evento novo já vai pelo Telegram), evento_excluir
  *                             (evento_id ou id), teste_agenda_criar, teste_agenda_remover, sincronizar
- *                            Ex. salvar: curl -u lucas:senha -d recurso=config -d acao=salvar -d horario_manha=06:30 -d alerta_ativo=1 --data-urlencode "tg_padrao={acao}: {relogio}" -d tg_proprio_corda=1 --data-urlencode "tg_corpo_corda=Corda no {relogio}!" http://servidor/relogios2/api.php
- *                            Ex. testar_manha: curl -u lucas:senha -d recurso=config -d acao=testar_manha http://servidor/relogios2/api.php
- *                            Ex. testar_noite: curl -u lucas:senha -d recurso=config -d acao=testar_noite http://servidor/relogios2/api.php
- *                            Ex. evento_salvar: curl -u lucas:senha -d recurso=config -d acao=evento_salvar -d evento_id=0 -d "nome=Limpar as pulseiras" -d repeticao=semanal -d "dias_semana[]=1" -d "dias_semana[]=4" -d hora=20:00 http://servidor/relogios2/api.php
- *                            Ex. evento_excluir: curl -u lucas:senha -d recurso=config -d acao=evento_excluir -d evento_id=3 http://servidor/relogios2/api.php
- *                            Ex. teste_agenda_criar: curl -u lucas:senha -d recurso=config -d acao=teste_agenda_criar http://servidor/relogios2/api.php
- *                            Ex. teste_agenda_remover: curl -u lucas:senha -d recurso=config -d acao=teste_agenda_remover http://servidor/relogios2/api.php
- *                            Ex. sincronizar: curl -u lucas:senha -d recurso=config -d acao=sincronizar http://servidor/relogios2/api.php
+ *                            Ex. salvar: curl -u lucas:senha -d recurso=config -d acao=salvar -d horario_manha=06:30 -d alerta_ativo=1 --data-urlencode "tg_padrao={acao}: {relogio}" -d tg_proprio_corda=1 --data-urlencode "tg_corpo_corda=Corda no {relogio}!" http://servidor/relojoeiro/api.php
+ *                            Ex. testar_manha: curl -u lucas:senha -d recurso=config -d acao=testar_manha http://servidor/relojoeiro/api.php
+ *                            Ex. testar_noite: curl -u lucas:senha -d recurso=config -d acao=testar_noite http://servidor/relojoeiro/api.php
+ *                            Ex. evento_salvar: curl -u lucas:senha -d recurso=config -d acao=evento_salvar -d evento_id=0 -d "nome=Limpar as pulseiras" -d repeticao=semanal -d "dias_semana[]=1" -d "dias_semana[]=4" -d hora=20:00 http://servidor/relojoeiro/api.php
+ *                            Ex. evento_excluir: curl -u lucas:senha -d recurso=config -d acao=evento_excluir -d evento_id=3 http://servidor/relojoeiro/api.php
+ *                            Ex. teste_agenda_criar: curl -u lucas:senha -d recurso=config -d acao=teste_agenda_criar http://servidor/relojoeiro/api.php
+ *                            Ex. teste_agenda_remover: curl -u lucas:senha -d recurso=config -d acao=teste_agenda_remover http://servidor/relojoeiro/api.php
+ *                            Ex. sincronizar: curl -u lucas:senha -d recurso=config -d acao=sincronizar http://servidor/relojoeiro/api.php
  *   recurso=usuarios          salvar (login, senha), excluir (login)
- *                            Ex. salvar: curl -u lucas:senha -d recurso=usuarios -d acao=salvar -d login=visitante -d senha=segredo123 http://servidor/relogios2/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=usuarios -d acao=excluir -d login=visitante http://servidor/relogios2/api.php
+ *                            Ex. salvar: curl -u lucas:senha -d recurso=usuarios -d acao=salvar -d login=visitante -d senha=segredo123 http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=usuarios -d acao=excluir -d login=visitante http://servidor/relojoeiro/api.php
  *   recurso=migracoes         aplicar: aplica as migrações pendentes (a única escrita aceita com o banco desatualizado)
- *                            Ex. aplicar: curl -u lucas:senha -d recurso=migracoes -d acao=aplicar http://servidor/relogios2/api.php
+ *                            Ex. aplicar: curl -u lucas:senha -d recurso=migracoes -d acao=aplicar http://servidor/relojoeiro/api.php
  *
  * ---------------------------------------------------------------------------------------------
  * DICIONÁRIO DOS CAMPOS  (o que é, para que serve e que valor tem cada campo; o mesmo está em recurso=ajuda, "campos")
@@ -2329,162 +2329,162 @@ if (!$token_ok && $quem === "") {
             . "config (inteira), eventos (com os disparos), agenda, criterios (com a nota de cada relógio), cron (todas as execuções guardadas), usuarios "
             . "(os logins), migracoes e motor. Só a senha dos usuários fica de fora. Para pegar só uma parte, ou filtrar, ordenar e paginar: veja filtros.",
         "autenticacao" => "token (cabeçalho X-Api-Token ou parâmetro token; o API_TOKEN do config.php, obrigatório, com pelo menos 10 caracteres) "
-            . "ou o login do site (HTTP Basic), em todo pedido. Ex.: curl -H \"X-Api-Token: segredo\" http://servidor/relogios2/api.php?recurso=hoje; curl -u lucas:senha http://servidor/relogios2/api.php?recurso=hoje",
-        "formato" => "JSON (padrão) ou XML: formato=xml, ou o cabeçalho Accept com xml. Ex.: http://servidor/relogios2/api.php?recurso=plano&formato=xml",
+            . "ou o login do site (HTTP Basic), em todo pedido. Ex.: curl -H \"X-Api-Token: segredo\" http://servidor/relojoeiro/api.php?recurso=hoje; curl -u lucas:senha http://servidor/relojoeiro/api.php?recurso=hoje",
+        "formato" => "JSON (padrão) ou XML: formato=xml, ou o cabeçalho Accept com xml. Ex.: http://servidor/relojoeiro/api.php?recurso=plano&formato=xml",
         "consulta" => [
             "(nenhum)" => ["descricao" => "tudo o que está guardado, sem filtro (os relógios com os campos, as fórmulas, os avisos, os lançamentos, a previsão e a linha do tempo; modos, plano, configuração, eventos, agenda e o motor)",
                 "parametros" => ["foto" => "nao: sem as fotos em base64 (a resposta fica bem menor)"],
-                "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?foto=nao\""],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?foto=nao\""],
             "hoje" => ["descricao" => "tudo o que a página Hoje mostra: o dia e o relógio dele, os avisos de hoje (com o lançamento que resolve cada um), os próximos 62 dias do plano, os modos com os blocos, os grupos e a tabela dos relógios",
                 "parametros" => [],
-                "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?recurso=hoje\""],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=hoje\""],
             "ficha" => ["descricao" => "tudo o que o painel de um relógio mostra: agora, carga e de onde vem, situação, nota, quando entra no rodízio, compra, próximas manutenções, previsão, os tipos de lançamento dele (com a sessão aberta), as últimas leituras, o resumo do histórico e o cadastro; sem relogio, só o cadastro de um relógio novo; relógio que não existe: 404",
                 "parametros" => ["relogio" => "o id do relógio (vazio: o cadastro de um relógio novo)"],
-                "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?recurso=ficha&relogio=10\""],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=ficha&relogio=10\""],
             "config" => ["descricao" => "tudo o que a página Configuração mostra: os valores (inclusive o caminho da chave do Google), os canais com a mensagem padrão e a personalizada de cada tipo de aviso, os eventos personalizados, a chave do Google lida ou não, e como as mensagens e a agenda saem agora",
                 "parametros" => [],
-                "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?recurso=config\""],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=config\""],
             "cron" => ["descricao" => "as execuções do cron, com o resumo do período (total, com atividade, com erro, a mais lenta) e páginas; sem atividade elas ficam 7 dias, com atividade ou erro, 1 ano",
                 "parametros" => ["de, ate" => "data (AAAA-MM-DD) ou data e hora (AAAA-MM-DD HH:MM[:SS], espaço ou T); cron_de e cron_ate também valem", "situacao" => "atividade (padrão), erro, nada ou todas; cron_situacao também vale", "busca" => "texto no registro; cron_busca também vale", "limite" => "por página (padrão 100, máximo 1000)", "pagina" => "a página (padrão 1)"],
-                "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?recurso=cron&situacao=erro&de=2026-09-01&busca=agenda\""],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=cron&situacao=erro&de=2026-09-01&busca=agenda\""],
             "arvore" => ["descricao" => "os grupos em ordem de árvore (com o caminho, os de cima, quantos subgrupos, os relógios direto neles e quantos parâmetros de critérios próprios) e o grupo de cada relógio",
                 "parametros" => [],
-                "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?recurso=arvore\""],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=arvore\""],
             "cadastros" => ["descricao" => "tudo o que a página Cadastros mostra: campos, tipos de lançamento (com quantos lançamentos cada um tem), fórmulas e avisos (todas as versões), modos com os blocos, grupos, relógios e as funções do motor",
                 "parametros" => [],
-                "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?recurso=cadastros\""],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=cadastros\""],
             "calcular" => ["descricao" => "calcula uma fórmula sem gravar, em cada relógio (ou nos pedidos), com as partes da conta (o testar da página Cadastros); fórmula com erro de escrita: 400 com os erros",
                 "parametros" => ["expressao" => "a fórmula", "relogio" => "um id ou vários separados por vírgula (vazio: todos)"],
-                "exemplo" => "curl -u lucas:senha -G \"http://servidor/relogios2/api.php\" --data-urlencode recurso=calcular --data-urlencode \"expressao=energia * 2\" -d relogio=10,12"],
+                "exemplo" => "curl -u lucas:senha -G \"http://servidor/relojoeiro/api.php\" --data-urlencode recurso=calcular --data-urlencode \"expressao=energia * 2\" -d relogio=10,12"],
             "avisos" => ["descricao" => "os avisos de todos os relógios agora, do mais urgente ao mais distante, com a data prevista, quanto falta, o estado (atrasado, em_breve, ok) e o texto",
                 "parametros" => [],
-                "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?recurso=avisos\""],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=avisos\""],
             "criterios" => ["descricao" => "os conjuntos de critérios por lugar (parâmetros, subparâmetros, faixas), as variáveis que podem medir (com o limite), os lugares (quem tem critérios próprios e de quem herda), os modos e a nota de cada relógio com a conta",
                 "parametros" => [],
-                "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?recurso=criterios\""],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=criterios\""],
             "historico" => ["descricao" => "a linha do tempo: trechos contínuos por estado (rodizio, pulso fora do rodízio, cada tipo de sessão, repouso) e as marcações, com o resumo do tempo em cada estado e os lançamentos crus do período",
                 "parametros" => ["relogio" => "um id ou vários (relogio_id também vale; vazio: todos)", "de, ate" => "data ou data e hora; entra a linha que cruza o período", "estado" => "rodizio, pulso, winder, sol, repouso, marca... (um ou vários; linha_estado também vale)", "limite" => "por página (padrão 100, máximo 1000)", "pagina" => "a página", "ordem" => "desc (padrão, mais recente primeiro) ou asc; dois no mesmo instante saem pela ordem em que foram lançados (o id)"],
-                "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?recurso=historico&relogio=3&de=2026-09-01&estado=marca\""],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=historico&relogio=3&de=2026-09-01&estado=marca\""],
             "previsao" => ["descricao" => "a previsão da energia dos relógios com leitura (o smartwatch): quanto dura usando, quando chega ao limite parado, com quanto entra no próximo rodízio e quanto precisa, e a confiança da conta",
                 "parametros" => ["relogio" => "um id ou vários (vazio: todos)"],
-                "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?recurso=previsao&relogio=10\""],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=previsao&relogio=10\""],
             "plano" => ["descricao" => "o plano gravado (a escala de dois anos sai inteira), com o modo ativo e o fim da escala; cada dia com o relógio, o bloco, a origem (sorteio ou manual) e o lembrete",
                 "parametros" => ["de, ate" => "datas AAAA-MM-DD (vazio: o plano inteiro)"],
-                "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?recurso=plano&de=2026-10-01&ate=2026-10-31\""],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=plano&de=2026-10-01&ate=2026-10-31\""],
             "eventos" => ["descricao" => "os eventos personalizados, com quando disparam, se vão pelo Telegram e pela agenda, as 10 próximas ocorrências e os disparos",
                 "parametros" => [],
-                "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?recurso=eventos\""],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=eventos\""],
             "agenda" => ["descricao" => "o Google Agenda: se está ativa, a chave lida, o que tem de estar na agenda agora (com o título e a descrição pelo modelo) e o que o sistema já criou",
                 "parametros" => [],
-                "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?recurso=agenda\""],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=agenda\""],
             "foto" => ["descricao" => "a foto de um relógio (a imagem, não é JSON)",
                 "parametros" => ["relogio" => "o id do relógio"],
-                "exemplo" => "curl -u lucas:senha -o foto.jpg \"http://servidor/relogios2/api.php?recurso=foto&relogio=10\""],
+                "exemplo" => "curl -u lucas:senha -o foto.jpg \"http://servidor/relojoeiro/api.php?recurso=foto&relogio=10\""],
             "usuarios" => ["descricao" => "os logins (as senhas nunca saem) e quem está pedindo (pelo login do site)",
                 "parametros" => [],
-                "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?recurso=usuarios\""],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=usuarios\""],
             "migracoes" => ["descricao" => "as migrações que faltam aplicar no banco (lista vazia: está em dia); é o único recurso que responde com o banco desatualizado",
                 "parametros" => [],
-                "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?recurso=migracoes\""],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=migracoes\""],
             "autonomia" => ["descricao" => "as autonomias de cada relógio, enxuto e rápido, para sistemas de fora, em segundos inteiros: prevista (cheio, pelo cadastro), atual (cheio, pela conta do sistema com o gasto medido), estimada (quanto ainda dura seguindo o plano), restante_em_uso (no pulso sem tirar), restante_guardado (parado) e quando acaba (acaba_em_unixtimestamp, acaba_em_segundos, acaba_em_datacomtz); null com o motivo em motivos",
                 "parametros" => ["relogio" => "um id ou vários separados por vírgula (vazio: todos)"],
-                "exemplo" => "curl -u lucas:senha -g \"http://servidor/relogios2/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz\""],
+                "exemplo" => "curl -u lucas:senha -g \"http://servidor/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz\""],
             "ajuda" => ["descricao" => "esta explicação: os recursos, os parâmetros, as ações de escrita com os campos, os exemplos, o dicionário de todos os campos (campos) e as funções do motor",
                 "parametros" => [],
-                "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?recurso=ajuda\""],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=ajuda\""],
         ],
         "escrita" => [
             "como" => "POST, com os campos em formulário ou em JSON no corpo (Content-Type: application/json); recurso e acao nos campos ou na URL. "
                 . "Resposta: {ok, mensagem, erros, id}; 400 quando recusado (os erros dizem por quê). Ex. em JSON: curl -u lucas:senha -H \"Content-Type: application/json\" "
-                . "-d '{\"recurso\":\"lancamento\",\"acao\":\"lancar\",\"relogio_id\":10,\"tipo\":\"carga\",\"valor\":68}' http://servidor/relogios2/api.php",
+                . "-d '{\"recurso\":\"lancamento\",\"acao\":\"lancar\",\"relogio_id\":10,\"tipo\":\"carga\",\"valor\":68}' http://servidor/relojoeiro/api.php",
             "arvore" => [
-                "novo" => ["campos" => "nome, pai_id (0 = na raiz)", "exemplo" => "curl -u lucas:senha -d recurso=arvore -d acao=novo -d \"nome=Cronógrafos\" -d pai_id=2 http://servidor/relogios2/api.php"],
-                "renomear" => ["campos" => "id, nome", "exemplo" => "curl -u lucas:senha -d recurso=arvore -d acao=renomear -d id=5 -d \"nome=Automáticos\" http://servidor/relogios2/api.php"],
-                "mover" => ["campos" => "id, pai_id (0 = na raiz; não pode ir para dentro dele mesmo)", "exemplo" => "curl -u lucas:senha -d recurso=arvore -d acao=mover -d id=5 -d pai_id=0 http://servidor/relogios2/api.php"],
-                "ordem" => ["campos" => "id, direcao (sobe ou desce)", "exemplo" => "curl -u lucas:senha -d recurso=arvore -d acao=ordem -d id=5 -d direcao=sobe http://servidor/relogios2/api.php"],
+                "novo" => ["campos" => "nome, pai_id (0 = na raiz)", "exemplo" => "curl -u lucas:senha -d recurso=arvore -d acao=novo -d \"nome=Cronógrafos\" -d pai_id=2 http://servidor/relojoeiro/api.php"],
+                "renomear" => ["campos" => "id, nome", "exemplo" => "curl -u lucas:senha -d recurso=arvore -d acao=renomear -d id=5 -d \"nome=Automáticos\" http://servidor/relojoeiro/api.php"],
+                "mover" => ["campos" => "id, pai_id (0 = na raiz; não pode ir para dentro dele mesmo)", "exemplo" => "curl -u lucas:senha -d recurso=arvore -d acao=mover -d id=5 -d pai_id=0 http://servidor/relojoeiro/api.php"],
+                "ordem" => ["campos" => "id, direcao (sobe ou desce)", "exemplo" => "curl -u lucas:senha -d recurso=arvore -d acao=ordem -d id=5 -d direcao=sobe http://servidor/relojoeiro/api.php"],
                 "excluir" => ["campos" => "id; o que é dele (subgrupos, relógios, campos, tipos de lançamento, fórmulas, avisos) sobe para o de cima, menos as "
                     . "versões de fórmulas e avisos que o de cima já tem (essas saem); os blocos dos modos que sorteavam dele passam a sortear do de cima; "
-                    . "os critérios próprios saem (os relógios usam os do lugar mais perto, acima)", "exemplo" => "curl -u lucas:senha -d recurso=arvore -d acao=excluir -d id=5 http://servidor/relogios2/api.php"],
-                "relogios" => ["campos" => "grupo[<id do relógio>] = o grupo (0 = na raiz), um ou vários", "exemplo" => "curl -u lucas:senha -d recurso=arvore -d acao=relogios -d \"grupo[13]=1\" -d \"grupo[4]=8\" http://servidor/relogios2/api.php"],
+                    . "os critérios próprios saem (os relógios usam os do lugar mais perto, acima)", "exemplo" => "curl -u lucas:senha -d recurso=arvore -d acao=excluir -d id=5 http://servidor/relojoeiro/api.php"],
+                "relogios" => ["campos" => "grupo[<id do relógio>] = o grupo (0 = na raiz), um ou vários", "exemplo" => "curl -u lucas:senha -d recurso=arvore -d acao=relogios -d \"grupo[13]=1\" -d \"grupo[4]=8\" http://servidor/relojoeiro/api.php"],
             ],
             "campos" => [
-                "novo" => ["campos" => "identificador, nome, tipo (inteiro, decimal, sim_nao, data, lista, texto), unidade, opcoes (lista: uma por linha), padrao, no_id (0 = todos)", "exemplo" => "curl -u lucas:senha -d recurso=campos -d acao=novo -d identificador=resistencia_agua -d \"nome=Resistência à água\" -d tipo=inteiro -d unidade=m -d no_id=0 http://servidor/relogios2/api.php"],
-                "alterar" => ["campos" => "id e os mesmos campos (só o que vier muda)", "exemplo" => "curl -u lucas:senha -d recurso=campos -d acao=alterar -d id=21 -d \"nome=Resistência (m)\" http://servidor/relogios2/api.php"],
-                "ordem" => ["campos" => "id, direcao (sobe ou desce)", "exemplo" => "curl -u lucas:senha -d recurso=campos -d acao=ordem -d id=21 -d direcao=sobe http://servidor/relogios2/api.php"],
-                "excluir" => ["campos" => "id (os valores dele saem junto)", "exemplo" => "curl -u lucas:senha -d recurso=campos -d acao=excluir -d id=21 http://servidor/relogios2/api.php"],
+                "novo" => ["campos" => "identificador, nome, tipo (inteiro, decimal, sim_nao, data, lista, texto), unidade, opcoes (lista: uma por linha), padrao, no_id (0 = todos)", "exemplo" => "curl -u lucas:senha -d recurso=campos -d acao=novo -d identificador=resistencia_agua -d \"nome=Resistência à água\" -d tipo=inteiro -d unidade=m -d no_id=0 http://servidor/relojoeiro/api.php"],
+                "alterar" => ["campos" => "id e os mesmos campos (só o que vier muda)", "exemplo" => "curl -u lucas:senha -d recurso=campos -d acao=alterar -d id=21 -d \"nome=Resistência (m)\" http://servidor/relojoeiro/api.php"],
+                "ordem" => ["campos" => "id, direcao (sobe ou desce)", "exemplo" => "curl -u lucas:senha -d recurso=campos -d acao=ordem -d id=21 -d direcao=sobe http://servidor/relojoeiro/api.php"],
+                "excluir" => ["campos" => "id (os valores dele saem junto)", "exemplo" => "curl -u lucas:senha -d recurso=campos -d acao=excluir -d id=21 http://servidor/relojoeiro/api.php"],
             ],
             "lancamento_tipos" => [
-                "novo" => ["campos" => "identificador, nome, formato (instantaneo, valor, sessao), unidade (com valor), fecha_as (sessão: HH:MM; vazio: não fecha sozinha), exclusiva (1 ou 0, só sessão), mede_gasto (1 ou 0, só com valor: cada leitura mede o gasto, comparando com a anterior), condicao (vale quando: uma fórmula, 1 vale e 0 não; vazia, vale sempre; ex.: corda_manual), no_id", "exemplo" => "curl -u lucas:senha -d recurso=lancamento_tipos -d acao=novo -d identificador=banho_ultrassom -d \"nome=Banho ultrassônico\" -d formato=instantaneo -d no_id=0 http://servidor/relogios2/api.php"],
-                "alterar" => ["campos" => "id e os mesmos campos", "exemplo" => "curl -u lucas:senha -d recurso=lancamento_tipos -d acao=alterar -d id=11 -d fecha_as=18:00 http://servidor/relogios2/api.php"],
-                "excluir" => ["campos" => "id (só sem lançamentos)", "exemplo" => "curl -u lucas:senha -d recurso=lancamento_tipos -d acao=excluir -d id=11 http://servidor/relogios2/api.php"],
+                "novo" => ["campos" => "identificador, nome, formato (instantaneo, valor, sessao), unidade (com valor), fecha_as (sessão: HH:MM; vazio: não fecha sozinha), exclusiva (1 ou 0, só sessão), mede_gasto (1 ou 0, só com valor: cada leitura mede o gasto, comparando com a anterior), condicao (vale quando: uma fórmula, 1 vale e 0 não; vazia, vale sempre; ex.: corda_manual), no_id", "exemplo" => "curl -u lucas:senha -d recurso=lancamento_tipos -d acao=novo -d identificador=banho_ultrassom -d \"nome=Banho ultrassônico\" -d formato=instantaneo -d no_id=0 http://servidor/relojoeiro/api.php"],
+                "alterar" => ["campos" => "id e os mesmos campos", "exemplo" => "curl -u lucas:senha -d recurso=lancamento_tipos -d acao=alterar -d id=11 -d fecha_as=18:00 http://servidor/relojoeiro/api.php"],
+                "excluir" => ["campos" => "id (só sem lançamentos)", "exemplo" => "curl -u lucas:senha -d recurso=lancamento_tipos -d acao=excluir -d id=11 http://servidor/relojoeiro/api.php"],
             ],
             "formulas" => [
-                "nova" => ["campos" => "identificador, nome, expressao, unidade, no_id: uma fórmula nova, ou mais uma versão de uma que existe, em outro ponto da árvore", "exemplo" => "curl -u lucas:senha -d recurso=formulas -d acao=nova -d identificador=idade_dias -d \"nome=Idade (dias)\" --data-urlencode \"expressao=AGORA() - data_compra\" -d unidade=dias -d no_id=0 http://servidor/relogios2/api.php"],
-                "alterar" => ["campos" => "id: nome, expressao, unidade, no_id", "exemplo" => "curl -u lucas:senha -d recurso=formulas -d acao=alterar -d id=17 --data-urlencode \"expressao=ARREDONDA(AGORA() - data_compra)\" http://servidor/relogios2/api.php"],
-                "excluir" => ["campos" => "id (a versão)", "exemplo" => "curl -u lucas:senha -d recurso=formulas -d acao=excluir -d id=17 http://servidor/relogios2/api.php"],
+                "nova" => ["campos" => "identificador, nome, expressao, unidade, no_id: uma fórmula nova, ou mais uma versão de uma que existe, em outro ponto da árvore", "exemplo" => "curl -u lucas:senha -d recurso=formulas -d acao=nova -d identificador=idade_dias -d \"nome=Idade (dias)\" --data-urlencode \"expressao=AGORA() - data_compra\" -d unidade=dias -d no_id=0 http://servidor/relojoeiro/api.php"],
+                "alterar" => ["campos" => "id: nome, expressao, unidade, no_id", "exemplo" => "curl -u lucas:senha -d recurso=formulas -d acao=alterar -d id=17 --data-urlencode \"expressao=ARREDONDA(AGORA() - data_compra)\" http://servidor/relojoeiro/api.php"],
+                "excluir" => ["campos" => "id (a versão)", "exemplo" => "curl -u lucas:senha -d recurso=formulas -d acao=excluir -d id=17 http://servidor/relojoeiro/api.php"],
             ],
             "relogio" => [
-                "salvar" => ["campos" => "id (0 ou ausente cria), nome, no_id, disponivel (1 ou 0), valores[<identificador do campo>]: só muda o que vier; valor vazio apaga", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=salvar -d id=10 -d \"valores[preferencia]=80\" -d disponivel=1 http://servidor/relogios2/api.php"],
-                "foto" => ["campos" => "id, foto_base64 (JPEG, PNG ou WebP, até 4 MB; data:image/...;base64,... ou só o base64)", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=foto -d id=10 --data-urlencode foto_base64@foto.b64 http://servidor/relogios2/api.php"],
-                "remover_foto" => ["campos" => "id", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=remover_foto -d id=10 http://servidor/relogios2/api.php"],
-                "excluir" => ["campos" => "id (com todo o histórico e a foto)", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=excluir -d id=15 http://servidor/relogios2/api.php"],
+                "salvar" => ["campos" => "id (0 ou ausente cria), nome, no_id, disponivel (1 ou 0), valores[<identificador do campo>]: só muda o que vier; valor vazio apaga", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=salvar -d id=10 -d \"valores[preferencia]=80\" -d disponivel=1 http://servidor/relojoeiro/api.php"],
+                "foto" => ["campos" => "id, foto_base64 (JPEG, PNG ou WebP, até 4 MB; data:image/...;base64,... ou só o base64)", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=foto -d id=10 --data-urlencode foto_base64@foto.b64 http://servidor/relojoeiro/api.php"],
+                "remover_foto" => ["campos" => "id", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=remover_foto -d id=10 http://servidor/relojoeiro/api.php"],
+                "excluir" => ["campos" => "id (com todo o histórico e a foto)", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=excluir -d id=15 http://servidor/relojoeiro/api.php"],
             ],
             "lancamento" => [
-                "lancar" => ["campos" => "relogio_id, tipo (instantâneo ou com valor), valor (com valor), quando (AAAA-MM-DD HH:MM; vazio: agora), medir (1, o padrão, ou 0: num tipo que mede o gasto, com 1 a medição entra na média; com 0 fica só no histórico)", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://servidor/relogios2/api.php"],
-                "iniciar" => ["campos" => "relogio_id, tipo (sessão), quando: abre a sessão; uma exclusiva fecha a outra exclusiva aberta", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=iniciar -d relogio_id=4 -d tipo=sol http://servidor/relogios2/api.php"],
-                "encerrar" => ["campos" => "relogio_id, tipo, quando: fecha a sessão aberta", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=encerrar -d relogio_id=4 -d tipo=sol http://servidor/relogios2/api.php"],
-                "periodo" => ["campos" => "relogio_id, tipo, inicio, fim: uma sessão que já passou (espaço ou T entre data e hora)", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=periodo -d relogio_id=3 -d tipo=winder -d \"inicio=2026-09-26 20:00\" -d \"fim=2026-09-27 07:00\" http://servidor/relogios2/api.php"],
-                "alterar" => ["campos" => "id: quando ou inicio e fim, valor (só o que vier)", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=alterar -d id=42 -d valor=70 http://servidor/relogios2/api.php"],
-                "excluir" => ["campos" => "id", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=excluir -d id=42 http://servidor/relogios2/api.php"],
+                "lancar" => ["campos" => "relogio_id, tipo (instantâneo ou com valor), valor (com valor), quando (AAAA-MM-DD HH:MM; vazio: agora), medir (1, o padrão, ou 0: num tipo que mede o gasto, com 1 a medição entra na média; com 0 fica só no histórico)", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://servidor/relojoeiro/api.php"],
+                "iniciar" => ["campos" => "relogio_id, tipo (sessão), quando: abre a sessão; uma exclusiva fecha a outra exclusiva aberta", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=iniciar -d relogio_id=4 -d tipo=sol http://servidor/relojoeiro/api.php"],
+                "encerrar" => ["campos" => "relogio_id, tipo, quando: fecha a sessão aberta", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=encerrar -d relogio_id=4 -d tipo=sol http://servidor/relojoeiro/api.php"],
+                "periodo" => ["campos" => "relogio_id, tipo, inicio, fim: uma sessão que já passou (espaço ou T entre data e hora)", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=periodo -d relogio_id=3 -d tipo=winder -d \"inicio=2026-09-26 20:00\" -d \"fim=2026-09-27 07:00\" http://servidor/relojoeiro/api.php"],
+                "alterar" => ["campos" => "id: quando ou inicio e fim, valor (só o que vier)", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=alterar -d id=42 -d valor=70 http://servidor/relojoeiro/api.php"],
+                "excluir" => ["campos" => "id", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=excluir -d id=42 http://servidor/relojoeiro/api.php"],
             ],
             "avisos" => [
-                "novo" => ["campos" => "identificador, nome, expressao (a data prevista), condicao (vale quando: uma fórmula, 1 vale e 0 não; vazia, vale sempre; ex.: corda_manual = 0), antecedencia_dias, texto (o motivo, com {relogio}, {data}, {quando}), resolve (o tipo de lançamento), ativo, no_id, escala (nao, uso, sempre), simula_valor, simula_horas, agenda (janela ou sempre)", "exemplo" => "curl -u lucas:senha -d recurso=avisos -d acao=novo -d identificador=pulseira -d \"nome=Trocar a pulseira\" --data-urlencode \"expressao=data_compra + 365\" -d antecedencia_dias=15 -d \"texto=vence {quando}, {data}\" -d no_id=0 http://servidor/relogios2/api.php"],
-                "alterar" => ["campos" => "id e os mesmos campos (menos o identificador)", "exemplo" => "curl -u lucas:senha -d recurso=avisos -d acao=alterar -d id=9 -d antecedencia_dias=30 http://servidor/relogios2/api.php"],
-                "excluir" => ["campos" => "id (a versão)", "exemplo" => "curl -u lucas:senha -d recurso=avisos -d acao=excluir -d id=9 http://servidor/relogios2/api.php"],
+                "novo" => ["campos" => "identificador, nome, expressao (a data prevista), condicao (vale quando: uma fórmula, 1 vale e 0 não; vazia, vale sempre; ex.: corda_manual = 0), antecedencia_dias, texto (o motivo, com {relogio}, {data}, {quando}), resolve (o tipo de lançamento), ativo, no_id, escala (nao, uso, sempre), simula_valor, simula_horas, agenda (janela ou sempre)", "exemplo" => "curl -u lucas:senha -d recurso=avisos -d acao=novo -d identificador=pulseira -d \"nome=Trocar a pulseira\" --data-urlencode \"expressao=data_compra + 365\" -d antecedencia_dias=15 -d \"texto=vence {quando}, {data}\" -d no_id=0 http://servidor/relojoeiro/api.php"],
+                "alterar" => ["campos" => "id e os mesmos campos (menos o identificador)", "exemplo" => "curl -u lucas:senha -d recurso=avisos -d acao=alterar -d id=9 -d antecedencia_dias=30 http://servidor/relojoeiro/api.php"],
+                "excluir" => ["campos" => "id (a versão)", "exemplo" => "curl -u lucas:senha -d recurso=avisos -d acao=excluir -d id=9 http://servidor/relojoeiro/api.php"],
             ],
             "criterios" => [
-                "conjunto_criar" => ["campos" => "escopo (\"\" todos, g:<grupo>, r:<relógio>), origem (herdado: copia o que ele usa hoje; vazio)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=conjunto_criar -d escopo=r:10 -d origem=herdado http://servidor/relogios2/api.php"],
-                "conjunto_excluir" => ["campos" => "escopo (volta a herdar o de cima)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=conjunto_excluir -d escopo=r:10 http://servidor/relogios2/api.php"],
-                "param_novo" => ["campos" => "escopo, nome, peso (os outros abrem espaço na proporção)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=param_novo -d escopo=g:1 -d \"nome=Estilo\" -d peso=10 http://servidor/relogios2/api.php"],
-                "param_pesos" => ["campos" => "escopo, nome[<id>], peso[<id>]: todos os do conjunto, somando 100", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=param_pesos -d escopo=g:1 -d \"peso[5]=35\" -d \"peso[6]=10\" http://servidor/relogios2/api.php"],
-                "param_excluir" => ["campos" => "id (o peso dele vai para os outros na proporção)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=param_excluir -d id=29 http://servidor/relogios2/api.php"],
-                "sub_novo" => ["campos" => "parametro_id, nome, variavel (o identificador de um campo ou fórmula), peso", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=sub_novo -d parametro_id=5 -d \"nome=Carga\" -d variavel=energia -d peso=20 http://servidor/relogios2/api.php"],
-                "sub_pesos" => ["campos" => "parametro_id, nome[<id>], peso[<id>]: somando 100", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=sub_pesos -d parametro_id=5 -d \"peso[6]=60\" -d \"peso[7]=40\" http://servidor/relogios2/api.php"],
-                "sub_excluir" => ["campos" => "id", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=sub_excluir -d id=7 http://servidor/relogios2/api.php"],
-                "sub_medida" => ["campos" => "id, variavel (as faixas recomeçam)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=sub_medida -d id=7 -d variavel=dias_de_carga http://servidor/relogios2/api.php"],
-                "sub_mover" => ["campos" => "id, parametro_id (o de destino, de qualquer lugar)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=sub_mover -d id=7 -d parametro_id=8 http://servidor/relogios2/api.php"],
-                "ordem" => ["campos" => "tipo (parametro ou sub), id, direcao (sobe ou desce)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=ordem -d tipo=parametro -d id=5 -d direcao=desce http://servidor/relogios2/api.php"],
-                "faixas" => ["campos" => "sub_id, de[], ate[], categoria[], nota[], apagar[] (todas as faixas do subparâmetro de uma vez; a última vai até o limite da medida ou sem limite)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=faixas -d sub_id=6 -d \"de[0]=0\" -d \"ate[0]=50\" -d \"nota[0]=30\" -d \"de[1]=50\" -d \"ate[1]=100\" -d \"nota[1]=100\" http://servidor/relogios2/api.php"],
-                "restaurar" => ["campos" => "(nada): volta aos critérios iniciais", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=restaurar http://servidor/relogios2/api.php"],
+                "conjunto_criar" => ["campos" => "escopo (\"\" todos, g:<grupo>, r:<relógio>), origem (herdado: copia o que ele usa hoje; vazio)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=conjunto_criar -d escopo=r:10 -d origem=herdado http://servidor/relojoeiro/api.php"],
+                "conjunto_excluir" => ["campos" => "escopo (volta a herdar o de cima)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=conjunto_excluir -d escopo=r:10 http://servidor/relojoeiro/api.php"],
+                "param_novo" => ["campos" => "escopo, nome, peso (os outros abrem espaço na proporção)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=param_novo -d escopo=g:1 -d \"nome=Estilo\" -d peso=10 http://servidor/relojoeiro/api.php"],
+                "param_pesos" => ["campos" => "escopo, nome[<id>], peso[<id>]: todos os do conjunto, somando 100", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=param_pesos -d escopo=g:1 -d \"peso[5]=35\" -d \"peso[6]=10\" http://servidor/relojoeiro/api.php"],
+                "param_excluir" => ["campos" => "id (o peso dele vai para os outros na proporção)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=param_excluir -d id=29 http://servidor/relojoeiro/api.php"],
+                "sub_novo" => ["campos" => "parametro_id, nome, variavel (o identificador de um campo ou fórmula), peso", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=sub_novo -d parametro_id=5 -d \"nome=Carga\" -d variavel=energia -d peso=20 http://servidor/relojoeiro/api.php"],
+                "sub_pesos" => ["campos" => "parametro_id, nome[<id>], peso[<id>]: somando 100", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=sub_pesos -d parametro_id=5 -d \"peso[6]=60\" -d \"peso[7]=40\" http://servidor/relojoeiro/api.php"],
+                "sub_excluir" => ["campos" => "id", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=sub_excluir -d id=7 http://servidor/relojoeiro/api.php"],
+                "sub_medida" => ["campos" => "id, variavel (as faixas recomeçam)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=sub_medida -d id=7 -d variavel=dias_de_carga http://servidor/relojoeiro/api.php"],
+                "sub_mover" => ["campos" => "id, parametro_id (o de destino, de qualquer lugar)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=sub_mover -d id=7 -d parametro_id=8 http://servidor/relojoeiro/api.php"],
+                "ordem" => ["campos" => "tipo (parametro ou sub), id, direcao (sobe ou desce)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=ordem -d tipo=parametro -d id=5 -d direcao=desce http://servidor/relojoeiro/api.php"],
+                "faixas" => ["campos" => "sub_id, de[], ate[], categoria[], nota[], apagar[] (todas as faixas do subparâmetro de uma vez; a última vai até o limite da medida ou sem limite)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=faixas -d sub_id=6 -d \"de[0]=0\" -d \"ate[0]=50\" -d \"nota[0]=30\" -d \"de[1]=50\" -d \"ate[1]=100\" -d \"nota[1]=100\" http://servidor/relojoeiro/api.php"],
+                "restaurar" => ["campos" => "(nada): volta aos critérios iniciais", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=restaurar http://servidor/relojoeiro/api.php"],
             ],
             "rodizio" => [
-                "modo" => ["campos" => "modo (o id), bloco_alvo[<bloco>] (0, o grupo, ou r:<id> para um relógio fixo), bloco_cada_dia[<bloco>] (presente: um por dia), selecao, escala_dias, max_sem_uso: grava e ativa o modo", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=modo -d modo=2 -d \"bloco_alvo[8]=1\" -d \"bloco_cada_dia[8]=1\" -d selecao=ponderado -d max_sem_uso=21 http://servidor/relogios2/api.php"],
-                "resortear" => ["campos" => "(nada): refaz o plano de amanhã até domingo (ou até o fim da escala); se o dia ainda não começou no pulso, também hoje", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=resortear http://servidor/relogios2/api.php"],
-                "resortear_hoje" => ["campos" => "(nada): inclusive hoje; se sair outro relógio, ele passa a ser o do pulso a partir de agora", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=resortear_hoje http://servidor/relogios2/api.php"],
-                "usando" => ["campos" => "relogio_id: o relógio de hoje, a partir de agora (na escala, fica os dias que faltavam do bloco de hoje)", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=usando -d relogio_id=12 http://servidor/relogios2/api.php"],
-                "proxima_semana" => ["campos" => "(nada): só no domingo, monta ou refaz a semana seguinte inteira; recusada na escala", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=proxima_semana http://servidor/relogios2/api.php"],
+                "modo" => ["campos" => "modo (o id), bloco_alvo[<bloco>] (0, o grupo, ou r:<id> para um relógio fixo), bloco_cada_dia[<bloco>] (presente: um por dia), selecao, escala_dias, max_sem_uso: grava e ativa o modo", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=modo -d modo=2 -d \"bloco_alvo[8]=1\" -d \"bloco_cada_dia[8]=1\" -d selecao=ponderado -d max_sem_uso=21 http://servidor/relojoeiro/api.php"],
+                "resortear" => ["campos" => "(nada): refaz o plano de amanhã até domingo (ou até o fim da escala); se o dia ainda não começou no pulso, também hoje", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=resortear http://servidor/relojoeiro/api.php"],
+                "resortear_hoje" => ["campos" => "(nada): inclusive hoje; se sair outro relógio, ele passa a ser o do pulso a partir de agora", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=resortear_hoje http://servidor/relojoeiro/api.php"],
+                "usando" => ["campos" => "relogio_id: o relógio de hoje, a partir de agora (na escala, fica os dias que faltavam do bloco de hoje)", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=usando -d relogio_id=12 http://servidor/relojoeiro/api.php"],
+                "proxima_semana" => ["campos" => "(nada): só no domingo, monta ou refaz a semana seguinte inteira; recusada na escala", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=proxima_semana http://servidor/relojoeiro/api.php"],
             ],
             "modos" => [
-                "salvar" => ["campos" => "id (0 cria), nome, selecao (inteligente, ponderado, aleatorio, fifo), escala_dias (vazio: sorteio pelos blocos; 7 a 730: escala), blocos[n][nome], blocos[n][dias][], blocos[n][no_id], blocos[n][um_por] (dia ou bloco), blocos[n][relogio_id] (0: sorteia); substitui os blocos; ciclo (1 ou 0, o padrão: com o ciclo, um relógio só volta depois que todos os disponíveis do bloco passaram na semana; na escala, pelo período dela)", "exemplo" => "curl -u lucas:senha -d recurso=modos -d acao=salvar -d id=0 -d \"nome=Só smartwatch\" -d selecao=inteligente -d \"blocos[0][nome]=Todo dia\" -d \"blocos[0][dias][]=1\" -d \"blocos[0][dias][]=7\" -d \"blocos[0][no_id]=1\" -d \"blocos[0][um_por]=dia\" http://servidor/relogios2/api.php"],
-                "ativar" => ["campos" => "id (o plano de amanhã em diante é refeito)", "exemplo" => "curl -u lucas:senha -d recurso=modos -d acao=ativar -d id=5 http://servidor/relogios2/api.php"],
-                "excluir" => ["campos" => "id (não o ativo)", "exemplo" => "curl -u lucas:senha -d recurso=modos -d acao=excluir -d id=6 http://servidor/relogios2/api.php"],
+                "salvar" => ["campos" => "id (0 cria), nome, selecao (inteligente, ponderado, aleatorio, fifo), escala_dias (vazio: sorteio pelos blocos; 7 a 730: escala), blocos[n][nome], blocos[n][dias][], blocos[n][no_id], blocos[n][um_por] (dia ou bloco), blocos[n][relogio_id] (0: sorteia); substitui os blocos; ciclo (1 ou 0, o padrão: com o ciclo, um relógio só volta depois que todos os disponíveis do bloco passaram na semana; na escala, pelo período dela)", "exemplo" => "curl -u lucas:senha -d recurso=modos -d acao=salvar -d id=0 -d \"nome=Só smartwatch\" -d selecao=inteligente -d \"blocos[0][nome]=Todo dia\" -d \"blocos[0][dias][]=1\" -d \"blocos[0][dias][]=7\" -d \"blocos[0][no_id]=1\" -d \"blocos[0][um_por]=dia\" http://servidor/relojoeiro/api.php"],
+                "ativar" => ["campos" => "id (o plano de amanhã em diante é refeito)", "exemplo" => "curl -u lucas:senha -d recurso=modos -d acao=ativar -d id=5 http://servidor/relojoeiro/api.php"],
+                "excluir" => ["campos" => "id (não o ativo)", "exemplo" => "curl -u lucas:senha -d recurso=modos -d acao=excluir -d id=6 http://servidor/relojoeiro/api.php"],
             ],
             "config" => [
-                "salvar" => ["campos" => "horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (HH:MM), sol_limiar (1 a 99), url_sistema, alerta_ativo e agenda_ativa (1 ou 0), agenda_id, agenda_chave, agenda_antecedencia (1 a 365), max_sem_uso, previsao_limite, medicao_janela_dias (1 a 3650: a janela da média do gasto medido), alerta_tipos[] e agenda_tipos[] (os tipos de aviso de cada canal: dia, vespera, os identificadores dos avisos, ev<id>), tg_padrao e ag_padrao, tg_proprio_<tipo> e ag_proprio_<tipo> (1 ou 0), tg_corpo_<tipo> e ag_corpo_<tipo>; só o que vier muda", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=salvar -d horario_manha=06:30 -d alerta_ativo=1 --data-urlencode \"tg_padrao={acao}: {relogio}\" -d tg_proprio_corda=1 --data-urlencode \"tg_corpo_corda=Corda no {relogio}!\" http://servidor/relogios2/api.php"],
-                "testar_manha" => ["campos" => "(nada): manda a mensagem da manhã agora", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=testar_manha http://servidor/relogios2/api.php"],
-                "testar_noite" => ["campos" => "(nada): manda a mensagem da noite agora", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=testar_noite http://servidor/relogios2/api.php"],
-                "evento_salvar" => ["campos" => "evento_id (ou id; 0 cria), nome, ativo, repeticao (uma, diaria, semanal, mensal, intervalo), hora (HH:MM), data_inicio, dias_semana (1 a 7), dia_mes, intervalo_dias, relogio_id; o evento novo já vai pelo Telegram", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=evento_salvar -d evento_id=0 -d \"nome=Limpar as pulseiras\" -d repeticao=semanal -d \"dias_semana[]=1\" -d \"dias_semana[]=4\" -d hora=20:00 http://servidor/relogios2/api.php"],
-                "evento_excluir" => ["campos" => "evento_id (ou id)", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=evento_excluir -d evento_id=3 http://servidor/relogios2/api.php"],
-                "teste_agenda_criar" => ["campos" => "(nada): cria um evento de teste daqui a 10 minutos", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=teste_agenda_criar http://servidor/relogios2/api.php"],
-                "teste_agenda_remover" => ["campos" => "(nada): remove o evento de teste", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=teste_agenda_remover http://servidor/relogios2/api.php"],
-                "sincronizar" => ["campos" => "(nada): sincroniza o Google Agenda agora", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=sincronizar http://servidor/relogios2/api.php"],
+                "salvar" => ["campos" => "horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (HH:MM), sol_limiar (1 a 99), url_sistema, alerta_ativo e agenda_ativa (1 ou 0), agenda_id, agenda_chave, agenda_antecedencia (1 a 365), max_sem_uso, previsao_limite, medicao_janela_dias (1 a 3650: a janela da média do gasto medido), alerta_tipos[] e agenda_tipos[] (os tipos de aviso de cada canal: dia, vespera, os identificadores dos avisos, ev<id>), tg_padrao e ag_padrao, tg_proprio_<tipo> e ag_proprio_<tipo> (1 ou 0), tg_corpo_<tipo> e ag_corpo_<tipo>; só o que vier muda", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=salvar -d horario_manha=06:30 -d alerta_ativo=1 --data-urlencode \"tg_padrao={acao}: {relogio}\" -d tg_proprio_corda=1 --data-urlencode \"tg_corpo_corda=Corda no {relogio}!\" http://servidor/relojoeiro/api.php"],
+                "testar_manha" => ["campos" => "(nada): manda a mensagem da manhã agora", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=testar_manha http://servidor/relojoeiro/api.php"],
+                "testar_noite" => ["campos" => "(nada): manda a mensagem da noite agora", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=testar_noite http://servidor/relojoeiro/api.php"],
+                "evento_salvar" => ["campos" => "evento_id (ou id; 0 cria), nome, ativo, repeticao (uma, diaria, semanal, mensal, intervalo), hora (HH:MM), data_inicio, dias_semana (1 a 7), dia_mes, intervalo_dias, relogio_id; o evento novo já vai pelo Telegram", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=evento_salvar -d evento_id=0 -d \"nome=Limpar as pulseiras\" -d repeticao=semanal -d \"dias_semana[]=1\" -d \"dias_semana[]=4\" -d hora=20:00 http://servidor/relojoeiro/api.php"],
+                "evento_excluir" => ["campos" => "evento_id (ou id)", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=evento_excluir -d evento_id=3 http://servidor/relojoeiro/api.php"],
+                "teste_agenda_criar" => ["campos" => "(nada): cria um evento de teste daqui a 10 minutos", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=teste_agenda_criar http://servidor/relojoeiro/api.php"],
+                "teste_agenda_remover" => ["campos" => "(nada): remove o evento de teste", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=teste_agenda_remover http://servidor/relojoeiro/api.php"],
+                "sincronizar" => ["campos" => "(nada): sincroniza o Google Agenda agora", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=sincronizar http://servidor/relojoeiro/api.php"],
             ],
             "usuarios" => [
-                "salvar" => ["campos" => "login, senha (6 caracteres ou mais; login que existe: troca a senha)", "exemplo" => "curl -u lucas:senha -d recurso=usuarios -d acao=salvar -d login=visitante -d senha=segredo123 http://servidor/relogios2/api.php"],
-                "excluir" => ["campos" => "login (não o próprio)", "exemplo" => "curl -u lucas:senha -d recurso=usuarios -d acao=excluir -d login=visitante http://servidor/relogios2/api.php"],
+                "salvar" => ["campos" => "login, senha (6 caracteres ou mais; login que existe: troca a senha)", "exemplo" => "curl -u lucas:senha -d recurso=usuarios -d acao=salvar -d login=visitante -d senha=segredo123 http://servidor/relojoeiro/api.php"],
+                "excluir" => ["campos" => "login (não o próprio)", "exemplo" => "curl -u lucas:senha -d recurso=usuarios -d acao=excluir -d login=visitante http://servidor/relojoeiro/api.php"],
             ],
             "migracoes" => [
-                "aplicar" => ["campos" => "(nada): aplica as migrações pendentes, na ordem", "exemplo" => "curl -u lucas:senha -d recurso=migracoes -d acao=aplicar http://servidor/relogios2/api.php"],
+                "aplicar" => ["campos" => "(nada): aplica as migrações pendentes, na ordem", "exemplo" => "curl -u lucas:senha -d recurso=migracoes -d acao=aplicar http://servidor/relojoeiro/api.php"],
             ],
         ],
         "filtros" => [
@@ -2511,14 +2511,14 @@ if (!$token_ok && $quem === "") {
                 . "com filtros, objetos vazios saem como listas vazias",
             "sem_colchetes" => "limite, pagina, ordem e busca sem colchetes continuam sendo os do recurso (historico, cron)",
             "exemplos" => [
-                "curl -u lucas:senha -g \"http://servidor/relogios2/api.php?incluir=relogios&f[relogios][disponivel]=1&mostrar[relogios]=id,nome&foto=nao\"",
-                "curl -u lucas:senha -g \"http://servidor/relogios2/api.php?incluir=relogios&f[relogios][formulas.energia.valor][ate]=20&ordem[relogios]=formulas.energia.valor&mostrar[relogios]=nome,formulas.energia.valor&foto=nao\"",
-                "curl -u lucas:senha -g \"http://servidor/relogios2/api.php?incluir=relogios&f[relogios][id]=10,12&f[relogios.lancamentos][tipo]=carga&f[relogios.lancamentos][inicio][de]=2026-09-01&mostrar[relogios]=nome,lancamentos&foto=nao\"",
-                "curl -u lucas:senha -g \"http://servidor/relogios2/api.php?incluir=relogios&f[relogios][campos.loja.valor][contem]=aliexpress&mostrar[relogios]=nome,campos.valor_compra.valor&foto=nao\"",
-                "curl -u lucas:senha -g \"http://servidor/relogios2/api.php?recurso=plano&f[plano][data][de]=2026-10-01&f[plano][data][ate]=2026-10-31&f[plano][relogio][contem]=xiaomi\"",
-                "curl -u lucas:senha -g \"http://servidor/relogios2/api.php?incluir=cron&f[cron.execucoes][teve_erro]=1&limite[cron.execucoes]=20&pagina[cron.execucoes]=2\"",
-                "curl -u lucas:senha -g \"http://servidor/relogios2/api.php?incluir=criterios&f[criterios.notas][nota][de]=50&ordem[criterios.notas]=-nota&mostrar[criterios.notas]=relogio,nota\"",
-                "curl -u lucas:senha -g \"http://servidor/relogios2/api.php?recurso=hoje&f[relogios][com_aviso]=1&mostrar[relogios]=nome,manutencao.nome\"",
+                "curl -u lucas:senha -g \"http://servidor/relojoeiro/api.php?incluir=relogios&f[relogios][disponivel]=1&mostrar[relogios]=id,nome&foto=nao\"",
+                "curl -u lucas:senha -g \"http://servidor/relojoeiro/api.php?incluir=relogios&f[relogios][formulas.energia.valor][ate]=20&ordem[relogios]=formulas.energia.valor&mostrar[relogios]=nome,formulas.energia.valor&foto=nao\"",
+                "curl -u lucas:senha -g \"http://servidor/relojoeiro/api.php?incluir=relogios&f[relogios][id]=10,12&f[relogios.lancamentos][tipo]=carga&f[relogios.lancamentos][inicio][de]=2026-09-01&mostrar[relogios]=nome,lancamentos&foto=nao\"",
+                "curl -u lucas:senha -g \"http://servidor/relojoeiro/api.php?incluir=relogios&f[relogios][campos.loja.valor][contem]=aliexpress&mostrar[relogios]=nome,campos.valor_compra.valor&foto=nao\"",
+                "curl -u lucas:senha -g \"http://servidor/relojoeiro/api.php?recurso=plano&f[plano][data][de]=2026-10-01&f[plano][data][ate]=2026-10-31&f[plano][relogio][contem]=xiaomi\"",
+                "curl -u lucas:senha -g \"http://servidor/relojoeiro/api.php?incluir=cron&f[cron.execucoes][teve_erro]=1&limite[cron.execucoes]=20&pagina[cron.execucoes]=2\"",
+                "curl -u lucas:senha -g \"http://servidor/relojoeiro/api.php?incluir=criterios&f[criterios.notas][nota][de]=50&ordem[criterios.notas]=-nota&mostrar[criterios.notas]=relogio,nota\"",
+                "curl -u lucas:senha -g \"http://servidor/relojoeiro/api.php?recurso=hoje&f[relogios][com_aviso]=1&mostrar[relogios]=nome,manutencao.nome\"",
             ],
         ],
         "campos" => [

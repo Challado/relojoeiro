@@ -2,7 +2,7 @@
 // Rodar a cada minuto. O script é MUDO: não escreve nada na saída, nem em caso de erro,
 // então o cron não manda e-mail. Cada execução fica registrada no banco (tabela cron_execucao) e aparece
 // na página "Execuções do cron"; a última rodada e o erro, se houver, também na Configuração.
-//   * * * * *  php /caminho/relogios/cron.php
+//   * * * * *  php /caminho/relojoeiro/cron.php
 // Opções:
 //   --forcar   roda a manhã e a noite agora, mesmo que já tenham rodado hoje
 //   -v         mostra o registro na tela (para rodar à mão)
