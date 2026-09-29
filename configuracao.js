@@ -74,6 +74,7 @@ function recarregarConfig(aplicadas) {
           + el("label", {}, "Relógio no pulso a partir de " + el("input", {"type": "time", "name": "uso_inicio", "value": cfg("uso_inicio")}))
           + el("label", {}, "Até " + el("input", {"type": "time", "name": "uso_fim", "value": cfg("uso_fim")}))
           + el("label", {}, "Sessão no sol esquecida aberta fecha às " + el("input", {"type": "time", "name": "sol_fim", "value": d.sol_fim}))
+          + el("label", {}, "Carregar quando a carga estimada chegar a (%) " + el("input", {"type": "number", "min": "1", "max": "99", "name": "carga_limiar", "value": cfg("carga_limiar") !== "" ? cfg("carga_limiar") : "20"}))
           + el("label", {}, "Solar: pôr no sol quando a carga estimada chegar a (%) " + el("input", {"type": "number", "min": "1", "max": "99", "name": "sol_limiar", "value": cfg("sol_limiar") !== "" ? cfg("sol_limiar") : "70"}))
           + el("label", {}, "Gasto medido pelas leituras: média das medições dos últimos (dias) " + el("input", {"type": "number", "min": "1", "max": "3650", "name": "medicao_janela_dias",
             "value": cfg("medicao_janela_dias") !== "" ? cfg("medicao_janela_dias") : "90"}))

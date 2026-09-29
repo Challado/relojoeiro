@@ -781,7 +781,7 @@ function op_lancamento($acao, $d)
 // ---------------------------------------------------------------------------------------------------------------------
 // Avisos. Ações: novo (identificador, nome, expressao (a data prevista), condicao (vale quando: uma fórmula, 1 vale e 0 não;
 // vazia, vale sempre; ex.: corda_manual), antecedencia_dias, texto ({relogio}, {data},
-// {quando}), resolve (o tipo de lançamento que resolve; vazio: nenhum), ativo (1 ou 0), no_id: um aviso novo, ou mais
+// {quando}, {limite}), resolve (o tipo de lançamento que resolve; vazio: nenhum), ativo (1 ou 0), no_id: um aviso novo, ou mais
 // uma versão de um que existe, em outro ponto da árvore; escala: nao, uso ou sempre; simula_valor e simula_horas (o
 // lançamento que a escala simula; vazio: nenhum); agenda: janela (na agenda, só dentro da antecedência) ou sempre (qualquer
 // data; se vai ou não para a agenda é a Configuração, em "O que vai para onde")), alterar (id: o mesmo, menos o
@@ -828,7 +828,7 @@ function op_avisos($acao, $d)
             $erros[] = "Dê um nome ao aviso (até 120 caracteres).";
         }
         if ($texto === "" || strlen($texto) > 300) {
-            $erros[] = "Escreva o texto do aviso (até 300 caracteres; pode usar {relogio}, {data} e {quando}).";
+            $erros[] = "Escreva o texto do aviso (até 300 caracteres; pode usar {relogio}, {data}, {quando} e {limite}).";
         }
         if ($ante === null || $ante < 0 || $ante > 3650) {
             $erros[] = "Antecedência: de 0 a 3650 dias.";
@@ -1628,6 +1628,9 @@ function op_config($acao, $d)
             || preg_match($hora_ok, (string)($d["uso_fim"] ?? cfg("uso_fim"))) !== 1 || (string)($d["uso_fim"] ?? cfg("uso_fim")) <= (string)($d["uso_inicio"] ?? cfg("uso_inicio")))) {
             $erros[] = "Relógio no pulso: duas horas HH:MM, o fim depois do início.";
         }
+        if (array_key_exists("carga_limiar", $d) && (!ctype_digit(trim((string)$d["carga_limiar"])) || (int)$d["carga_limiar"] < 1 || (int)$d["carga_limiar"] > 99)) {
+            $erros[] = "Carregar: o limite é uma carga de 1 a 99%.";
+        }
         if (array_key_exists("sol_limiar", $d) && (!ctype_digit(trim((string)$d["sol_limiar"])) || (int)$d["sol_limiar"] < 1 || (int)$d["sol_limiar"] > 99)) {
             $erros[] = "Solar: o limite é uma carga de 1 a 99%.";
         }
@@ -1663,8 +1666,8 @@ function op_config($acao, $d)
             }
         }
         if (count($erros) === 0) {
-            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "agenda_antecedencia", "agenda_id", "agenda_chave", "url_sistema", "sol_limiar",
-                "medicao_janela_dias"] as $k) {
+            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "agenda_antecedencia", "agenda_id", "agenda_chave", "url_sistema", "carga_limiar",
+                "sol_limiar", "medicao_janela_dias"] as $k) {
                 if (array_key_exists($k, $d)) {
                     cfg_set($k, trim((string)$d[$k]));
                 }

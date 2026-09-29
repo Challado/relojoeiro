@@ -137,7 +137,7 @@ function recarregarCadastros() {
       var f = e || {};
       res += el("section", {"class": "cartao-config"}, el("h2", {}, "Avisos")
         + el("p", {"class": "nota"}, "Cada aviso tem uma fórmula da data prevista; entra \"em breve\" dentro da antecedência e \"atrasado\" quando a data passa. O \"vale quando\" (uma fórmula) diz para quais relógios o aviso vale (ex.: corda_manual = 0, só para o automático sem corda); vazio, vale para todos do grupo. O texto é o motivo nas mensagens ({motivo}): "
-          + "\"Dar corda: San Martin (a reserva acaba em 3h, 28/09/2026 10:53)\"; nele: {relogio}, {data} e {quando}. O tipo que resolve vira o botão na tela Hoje. Como as fórmulas, pode ter uma versão por ponto da árvore. "
+          + "\"Dar corda: San Martin (a reserva acaba em 3h, 28/09/2026 10:53)\"; nele: {relogio}, {data}, {quando} e {limite} (o limite de carga do relógio). O tipo que resolve vira o botão na tela Hoje. Como as fórmulas, pode ter uma versão por ponto da árvore. "
           + "Na escala inteligente: \"no relógio do dia\" é conferido no escolhido, do começo ao fim do bloco dele; \"sempre\", também nos guardados, todo dia. O que vence vira o lembrete do dia, e o lançamento "
           + "que resolve é simulado com o valor (leitura) ou as horas (sessão) do aviso. Se o aviso vai pelo Telegram e pela agenda é a Configuração, em \"O que vai para onde\"; aqui fica a data que ele usa na agenda.")
         + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, ["Aviso", "Versão para", "Data prevista", "Vale quando", "Antecedência", "Resolve", "Na escala", "Na agenda", "Ativo", ""].map(function (t, i) {

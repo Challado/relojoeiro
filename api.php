@@ -287,7 +287,7 @@
  *                            Ex. excluir: curl -u lucas:senha -d recurso=lancamento -d acao=excluir -d id=42 http://servidor/relojoeiro/api.php
  *   recurso=avisos            novo (identificador, nome, expressao: a data prevista, condicao: vale quando (uma fórmula, 1 vale e 0
  *                             não; vazia, vale sempre; ex.: corda_manual = 0), antecedencia_dias, texto com {relogio},
- *                             {data} e {quando}, resolve: o tipo de lançamento, ativo, no_id, escala: nao, uso (conferido no
+ *                             {data}, {quando} e {limite}, resolve: o tipo de lançamento, ativo, no_id, escala: nao, uso (conferido no
  *                             relógio do dia na escala inteligente) ou sempre (também nos guardados), simula_valor e simula_horas
  *                             (o lançamento que a escala simula para resolver), agenda: janela (na agenda, só dentro da antecedência)
  *                             ou sempre (qualquer data); se vai pela agenda ou pelo Telegram é a Configuração), alterar (id), excluir (id)
@@ -337,7 +337,8 @@
  *                            Ex. ativar: curl -u lucas:senha -d recurso=modos -d acao=ativar -d id=5 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=modos -d acao=excluir -d id=6 http://servidor/relojoeiro/api.php
  *   recurso=config            salvar (horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (a sessão no sol esquecida fecha
- *                             a essa hora): HH:MM; sol_limiar (1 a 99: o solar vai para o sol nessa carga); url_sistema;
+ *                             a essa hora): HH:MM; carga_limiar (1 a 99: carregar nessa carga, o geral); sol_limiar (1 a 99: o
+ *                             solar vai para o sol nessa carga); url_sistema;
  *                             alerta_ativo (ou mensagens_ativas) e agenda_ativa: 1 ou 0; agenda_id; agenda_chave; agenda_antecedencia
  *                             (1 a 365); max_sem_uso (0 a 365); previsao_limite (0 a 100); medicao_janela_dias (1 a 3650: a média
  *                             do gasto medido usa as medições destes últimos dias); os canais: alerta_tipos[] e agenda_tipos[]
@@ -411,7 +412,7 @@
  *     avisos[].resolve               o tipo de lançamento que resolve (o botão na tela Hoje); null: nenhum
  *     avisos[].simula_horas          as horas da sessão que a escala simula para resolver (número; null)
  *     avisos[].simula_valor          o valor do lançamento que a escala simula para resolver (número; null)
- *     avisos[].texto                 o motivo, com {relogio}, {data} e {quando} — a âncora {motivo}
+ *     avisos[].texto                 o motivo, com {relogio}, {data}, {quando} e {limite} — a âncora {motivo}
  *     campos[]                       os campos do cadastro dos relógios (cada um vale para o grupo dele e tudo abaixo)
  *     campos[].id                    o número do campo
  *     campos[].identificador         o nome do campo nas fórmulas e nos critérios
@@ -434,6 +435,7 @@
  *     config.agenda_tipos            os tipos de aviso que vão para o Google Agenda, separados por vírgula
  *     config.alerta_tipos            os tipos de aviso que vão pelo Telegram, separados por vírgula (dia, vespera, os identificadores dos avisos,
  *                                    ev<id>)
+ *     config.carga_limiar            o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se preenchido, vale no lugar)
  *     config.cron_erro               o erro guardado da última execução com erro (texto; vazio: sem erro)
  *     config.cron_registro           o registro da última rodada com atividade (texto)
  *     config.cron_ultima_execucao    quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
@@ -663,14 +665,14 @@
  *     relogios[].avisos[].falta_dias quanto falta para a data prevista, em dias (número; negativo: já passou)
  *     relogios[].avisos[].identificador
  *                                    o aviso (corda, carregar, sol, pilha, revisao, garantia, carga_baixa, leitura, ou um que você cadastrou)
- *     relogios[].avisos[].modelo     o texto do cadastro, sem trocar as âncoras
+ *     relogios[].avisos[].modelo     o texto do cadastro, sem trocar as âncoras (só o {limite})
  *     relogios[].avisos[].nome       o nome do aviso ("Dar corda") — a âncora {acao}
  *     relogios[].avisos[].resolve    o tipo de lançamento que resolve o aviso (o botão na tela Hoje); null: nenhum
  *     relogios[].avisos[].simula_horas
  *                                    as horas da sessão que a escala simula para resolver o aviso (número; null: nenhuma)
  *     relogios[].avisos[].simula_valor
  *                                    o valor do lançamento que a escala simula para resolver o aviso (leitura) (número; null: nenhum)
- *     relogios[].avisos[].texto      o motivo por extenso, com {relogio}, {data} e {quando} trocados — a âncora {motivo}
+ *     relogios[].avisos[].texto      o motivo por extenso, com {relogio}, {data}, {quando} e {limite} trocados — a âncora {motivo}
  *     relogios[].avisos[].versao     o lugar da árvore da versão do aviso usada (texto)
  *     relogios[].calculado_em_unixtimestamp
  *                                    o instante em que as autonomias foram calculadas (número inteiro: instante Unix (segundos desde 01/01/1970 UTC));
@@ -1125,6 +1127,7 @@
  *     config.agenda_tipos            os tipos de aviso que vão para o Google Agenda, separados por vírgula
  *     config.alerta_tipos            os tipos de aviso que vão pelo Telegram, separados por vírgula (dia, vespera, os identificadores dos avisos,
  *                                    ev<id>)
+ *     config.carga_limiar            o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se preenchido, vale no lugar)
  *     config.cron_erro               o erro guardado da última execução com erro (texto; vazio: sem erro)
  *     config.cron_registro           o registro da última rodada com atividade (texto)
  *     config.cron_ultima_execucao    quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
@@ -1246,7 +1249,7 @@
  *     avisos[].resolve               o tipo de lançamento que resolve (o botão na tela Hoje); null: nenhum
  *     avisos[].simula_horas          as horas da sessão que a escala simula para resolver (número; null)
  *     avisos[].simula_valor          o valor do lançamento que a escala simula para resolver (número; null)
- *     avisos[].texto                 o motivo, com {relogio}, {data} e {quando} — a âncora {motivo}
+ *     avisos[].texto                 o motivo, com {relogio}, {data}, {quando} e {limite} — a âncora {motivo}
  *     campos[]                       os campos do cadastro dos relógios (cada um vale para o grupo dele e tudo abaixo)
  *     campos[].id                    o número do campo
  *     campos[].identificador         o nome do campo nas fórmulas e nos critérios
@@ -1326,14 +1329,14 @@
  *     avisos[].estado                atrasado (a data passou), em_breve (dentro da antecedência) ou ok
  *     avisos[].falta_dias            quanto falta para a data prevista, em dias (número; negativo: já passou)
  *     avisos[].identificador         o aviso (corda, carregar, sol, pilha, revisao, garantia, carga_baixa, leitura, ou um que você cadastrou)
- *     avisos[].modelo                o texto do cadastro, sem trocar as âncoras
+ *     avisos[].modelo                o texto do cadastro, sem trocar as âncoras (só o {limite})
  *     avisos[].nome                  o nome do aviso ("Dar corda") — a âncora {acao}
  *     avisos[].relogio               o nome
  *     avisos[].relogio_id            o relógio
  *     avisos[].resolve               o tipo de lançamento que resolve o aviso (o botão na tela Hoje); null: nenhum
  *     avisos[].simula_horas          as horas da sessão que a escala simula para resolver o aviso (número; null: nenhuma)
  *     avisos[].simula_valor          o valor do lançamento que a escala simula para resolver o aviso (leitura) (número; null: nenhum)
- *     avisos[].texto                 o motivo por extenso, com {relogio}, {data} e {quando} trocados — a âncora {motivo}
+ *     avisos[].texto                 o motivo por extenso, com {relogio}, {data}, {quando} e {limite} trocados — a âncora {motivo}
  *     avisos[].versao                o lugar da árvore da versão do aviso usada (texto)
  *
  *   recurso=criterios
@@ -2438,7 +2441,7 @@ if (!$token_ok && $quem === "") {
                 "excluir" => ["campos" => "id", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=excluir -d id=42 http://servidor/relojoeiro/api.php"],
             ],
             "avisos" => [
-                "novo" => ["campos" => "identificador, nome, expressao (a data prevista), condicao (vale quando: uma fórmula, 1 vale e 0 não; vazia, vale sempre; ex.: corda_manual = 0), antecedencia_dias, texto (o motivo, com {relogio}, {data}, {quando}), resolve (o tipo de lançamento), ativo, no_id, escala (nao, uso, sempre), simula_valor, simula_horas, agenda (janela ou sempre)", "exemplo" => "curl -u lucas:senha -d recurso=avisos -d acao=novo -d identificador=pulseira -d \"nome=Trocar a pulseira\" --data-urlencode \"expressao=data_compra + 365\" -d antecedencia_dias=15 -d \"texto=vence {quando}, {data}\" -d no_id=0 http://servidor/relojoeiro/api.php"],
+                "novo" => ["campos" => "identificador, nome, expressao (a data prevista), condicao (vale quando: uma fórmula, 1 vale e 0 não; vazia, vale sempre; ex.: corda_manual = 0), antecedencia_dias, texto (o motivo, com {relogio}, {data}, {quando}, {limite}), resolve (o tipo de lançamento), ativo, no_id, escala (nao, uso, sempre), simula_valor, simula_horas, agenda (janela ou sempre)", "exemplo" => "curl -u lucas:senha -d recurso=avisos -d acao=novo -d identificador=pulseira -d \"nome=Trocar a pulseira\" --data-urlencode \"expressao=data_compra + 365\" -d antecedencia_dias=15 -d \"texto=vence {quando}, {data}\" -d no_id=0 http://servidor/relojoeiro/api.php"],
                 "alterar" => ["campos" => "id e os mesmos campos (menos o identificador)", "exemplo" => "curl -u lucas:senha -d recurso=avisos -d acao=alterar -d id=9 -d antecedencia_dias=30 http://servidor/relojoeiro/api.php"],
                 "excluir" => ["campos" => "id (a versão)", "exemplo" => "curl -u lucas:senha -d recurso=avisos -d acao=excluir -d id=9 http://servidor/relojoeiro/api.php"],
             ],
@@ -2470,7 +2473,7 @@ if (!$token_ok && $quem === "") {
                 "excluir" => ["campos" => "id (não o ativo)", "exemplo" => "curl -u lucas:senha -d recurso=modos -d acao=excluir -d id=6 http://servidor/relojoeiro/api.php"],
             ],
             "config" => [
-                "salvar" => ["campos" => "horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (HH:MM), sol_limiar (1 a 99), url_sistema, alerta_ativo e agenda_ativa (1 ou 0), agenda_id, agenda_chave, agenda_antecedencia (1 a 365), max_sem_uso, previsao_limite, medicao_janela_dias (1 a 3650: a janela da média do gasto medido), alerta_tipos[] e agenda_tipos[] (os tipos de aviso de cada canal: dia, vespera, os identificadores dos avisos, ev<id>), tg_padrao e ag_padrao, tg_proprio_<tipo> e ag_proprio_<tipo> (1 ou 0), tg_corpo_<tipo> e ag_corpo_<tipo>; só o que vier muda", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=salvar -d horario_manha=06:30 -d alerta_ativo=1 --data-urlencode \"tg_padrao={acao}: {relogio}\" -d tg_proprio_corda=1 --data-urlencode \"tg_corpo_corda=Corda no {relogio}!\" http://servidor/relojoeiro/api.php"],
+                "salvar" => ["campos" => "horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (HH:MM), carga_limiar (1 a 99), sol_limiar (1 a 99), url_sistema, alerta_ativo e agenda_ativa (1 ou 0), agenda_id, agenda_chave, agenda_antecedencia (1 a 365), max_sem_uso, previsao_limite, medicao_janela_dias (1 a 3650: a janela da média do gasto medido), alerta_tipos[] e agenda_tipos[] (os tipos de aviso de cada canal: dia, vespera, os identificadores dos avisos, ev<id>), tg_padrao e ag_padrao, tg_proprio_<tipo> e ag_proprio_<tipo> (1 ou 0), tg_corpo_<tipo> e ag_corpo_<tipo>; só o que vier muda", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=salvar -d horario_manha=06:30 -d alerta_ativo=1 --data-urlencode \"tg_padrao={acao}: {relogio}\" -d tg_proprio_corda=1 --data-urlencode \"tg_corpo_corda=Corda no {relogio}!\" http://servidor/relojoeiro/api.php"],
                 "testar_manha" => ["campos" => "(nada): manda a mensagem da manhã agora", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=testar_manha http://servidor/relojoeiro/api.php"],
                 "testar_noite" => ["campos" => "(nada): manda a mensagem da noite agora", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=testar_noite http://servidor/relojoeiro/api.php"],
                 "evento_salvar" => ["campos" => "evento_id (ou id; 0 cria), nome, ativo, repeticao (uma, diaria, semanal, mensal, intervalo), hora (HH:MM), data_inicio, dias_semana (1 a 7), dia_mes, intervalo_dias, relogio_id; o evento novo já vai pelo Telegram", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=evento_salvar -d evento_id=0 -d \"nome=Limpar as pulseiras\" -d repeticao=semanal -d \"dias_semana[]=1\" -d \"dias_semana[]=4\" -d hora=20:00 http://servidor/relojoeiro/api.php"],
@@ -2565,7 +2568,7 @@ if (!$token_ok && $quem === "") {
                 "avisos[].resolve" => "o tipo de lançamento que resolve (o botão na tela Hoje); null: nenhum",
                 "avisos[].simula_horas" => "as horas da sessão que a escala simula para resolver (número; null)",
                 "avisos[].simula_valor" => "o valor do lançamento que a escala simula para resolver (número; null)",
-                "avisos[].texto" => "o motivo, com {relogio}, {data} e {quando} — a âncora {motivo}",
+                "avisos[].texto" => "o motivo, com {relogio}, {data}, {quando} e {limite} — a âncora {motivo}",
                 "campos[]" => "os campos do cadastro dos relógios (cada um vale para o grupo dele e tudo abaixo)",
                 "campos[].id" => "o número do campo",
                 "campos[].identificador" => "o nome do campo nas fórmulas e nos critérios",
@@ -2587,6 +2590,7 @@ if (!$token_ok && $quem === "") {
                 "config.agenda_teste_id" => "o id do evento de teste na agenda (vazio: nenhum)",
                 "config.agenda_tipos" => "os tipos de aviso que vão para o Google Agenda, separados por vírgula",
                 "config.alerta_tipos" => "os tipos de aviso que vão pelo Telegram, separados por vírgula (dia, vespera, os identificadores dos avisos, ev<id>)",
+                "config.carga_limiar" => "o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se preenchido, vale no lugar)",
                 "config.cron_erro" => "o erro guardado da última execução com erro (texto; vazio: sem erro)",
                 "config.cron_registro" => "o registro da última rodada com atividade (texto)",
                 "config.cron_ultima_execucao" => "quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
@@ -2764,12 +2768,12 @@ if (!$token_ok && $quem === "") {
                 "relogios[].avisos[].estado" => "atrasado (a data passou), em_breve (dentro da antecedência) ou ok",
                 "relogios[].avisos[].falta_dias" => "quanto falta para a data prevista, em dias (número; negativo: já passou)",
                 "relogios[].avisos[].identificador" => "o aviso (corda, carregar, sol, pilha, revisao, garantia, carga_baixa, leitura, ou um que você cadastrou)",
-                "relogios[].avisos[].modelo" => "o texto do cadastro, sem trocar as âncoras",
+                "relogios[].avisos[].modelo" => "o texto do cadastro, sem trocar as âncoras (só o {limite})",
                 "relogios[].avisos[].nome" => "o nome do aviso (\"Dar corda\") — a âncora {acao}",
                 "relogios[].avisos[].resolve" => "o tipo de lançamento que resolve o aviso (o botão na tela Hoje); null: nenhum",
                 "relogios[].avisos[].simula_horas" => "as horas da sessão que a escala simula para resolver o aviso (número; null: nenhuma)",
                 "relogios[].avisos[].simula_valor" => "o valor do lançamento que a escala simula para resolver o aviso (leitura) (número; null: nenhum)",
-                "relogios[].avisos[].texto" => "o motivo por extenso, com {relogio}, {data} e {quando} trocados — a âncora {motivo}",
+                "relogios[].avisos[].texto" => "o motivo por extenso, com {relogio}, {data}, {quando} e {limite} trocados — a âncora {motivo}",
                 "relogios[].avisos[].versao" => "o lugar da árvore da versão do aviso usada (texto)",
                 "relogios[].calculado_em_unixtimestamp" => "o instante em que as autonomias foram calculadas (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); segundos que faltam agora = acaba_em_unixtimestamp − hora atual",
                 "relogios[].campos[]" => "os campos do cadastro que valem para ele",
@@ -3121,6 +3125,7 @@ if (!$token_ok && $quem === "") {
                 "config.agenda_teste_id" => "o id do evento de teste na agenda (vazio: nenhum)",
                 "config.agenda_tipos" => "os tipos de aviso que vão para o Google Agenda, separados por vírgula",
                 "config.alerta_tipos" => "os tipos de aviso que vão pelo Telegram, separados por vírgula (dia, vespera, os identificadores dos avisos, ev<id>)",
+                "config.carga_limiar" => "o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se preenchido, vale no lugar)",
                 "config.cron_erro" => "o erro guardado da última execução com erro (texto; vazio: sem erro)",
                 "config.cron_registro" => "o registro da última rodada com atividade (texto)",
                 "config.cron_ultima_execucao" => "quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
@@ -3240,7 +3245,7 @@ if (!$token_ok && $quem === "") {
                 "avisos[].resolve" => "o tipo de lançamento que resolve (o botão na tela Hoje); null: nenhum",
                 "avisos[].simula_horas" => "as horas da sessão que a escala simula para resolver (número; null)",
                 "avisos[].simula_valor" => "o valor do lançamento que a escala simula para resolver (número; null)",
-                "avisos[].texto" => "o motivo, com {relogio}, {data} e {quando} — a âncora {motivo}",
+                "avisos[].texto" => "o motivo, com {relogio}, {data}, {quando} e {limite} — a âncora {motivo}",
                 "campos[]" => "os campos do cadastro dos relógios (cada um vale para o grupo dele e tudo abaixo)",
                 "campos[].id" => "o número do campo",
                 "campos[].identificador" => "o nome do campo nas fórmulas e nos critérios",
@@ -3316,14 +3321,14 @@ if (!$token_ok && $quem === "") {
                 "avisos[].estado" => "atrasado (a data passou), em_breve (dentro da antecedência) ou ok",
                 "avisos[].falta_dias" => "quanto falta para a data prevista, em dias (número; negativo: já passou)",
                 "avisos[].identificador" => "o aviso (corda, carregar, sol, pilha, revisao, garantia, carga_baixa, leitura, ou um que você cadastrou)",
-                "avisos[].modelo" => "o texto do cadastro, sem trocar as âncoras",
+                "avisos[].modelo" => "o texto do cadastro, sem trocar as âncoras (só o {limite})",
                 "avisos[].nome" => "o nome do aviso (\"Dar corda\") — a âncora {acao}",
                 "avisos[].relogio" => "o nome",
                 "avisos[].relogio_id" => "o relógio",
                 "avisos[].resolve" => "o tipo de lançamento que resolve o aviso (o botão na tela Hoje); null: nenhum",
                 "avisos[].simula_horas" => "as horas da sessão que a escala simula para resolver o aviso (número; null: nenhuma)",
                 "avisos[].simula_valor" => "o valor do lançamento que a escala simula para resolver o aviso (leitura) (número; null: nenhum)",
-                "avisos[].texto" => "o motivo por extenso, com {relogio}, {data} e {quando} trocados — a âncora {motivo}",
+                "avisos[].texto" => "o motivo por extenso, com {relogio}, {data}, {quando} e {limite} trocados — a âncora {motivo}",
                 "avisos[].versao" => "o lugar da árvore da versão do aviso usada (texto)",
             ],
             "criterios" => [
