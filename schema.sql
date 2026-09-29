@@ -576,6 +576,24 @@ UPDATE aviso SET expressao = 'AGORA() + autonomia_restante / 86400 - limite_carg
     WHERE identificador IN ('corda', 'winder') AND expressao = 'AGORA() + autonomia_restante / 86400';
 UPDATE aviso SET texto = 'a reserva chega a {limite}% {quando}, {data}' WHERE identificador IN ('corda', 'winder') AND texto = 'a reserva acaba {quando}, {data}';
 
+-- ---------------------------------------------------------------------------------------------------------------------
+-- Migração v10 (já incluída na instalação nova)
+-- ---------------------------------------------------------------------------------------------------------------------
+-- só no aviso que ainda está como veio na v9, ou com a troca feita à mão pela fórmula sem a proteção
+UPDATE aviso SET expressao = 'SE(energia <= limite_carga; AGORA(); AGORA() + (energia - limite_carga) / SE(EM_SESSAO("pulso"); taxa_uso; taxa_repouso))'
+    WHERE identificador = 'carregar' AND expressao IN ('AGORA() + (energia - limite_carga) / taxa_uso',
+        'AGORA() + (energia - limite_carga) / SE(EM_SESSAO("pulso"); taxa_uso; taxa_repouso)');
+
+-- carregando, não precisa de corda nem de winder: no winder, ou no pulso quando o pulso dá corda (o automático, que tem
+-- carga_pulso_reserva; o de corda manual não carrega no pulso e continua avisando). No sol, não precisa de sol
+UPDATE aviso SET expressao = 'SE(OU(EM_SESSAO("winder"); E(EM_SESSAO("pulso"); PADRAO(carga_pulso_reserva; 0) > 0)); NADA(); AGORA() + autonomia_restante / 86400 - limite_carga / 100 * reserva_horas / 24)'
+    WHERE identificador IN ('corda', 'winder') AND expressao = 'AGORA() + autonomia_restante / 86400 - limite_carga / 100 * reserva_horas / 24';
+UPDATE aviso SET expressao = 'SE(EM_SESSAO("sol"); NADA(); AGORA() + (energia - limite_carga) / (100 / reserva_dias))'
+    WHERE identificador = 'sol' AND expressao = 'AGORA() + (energia - limite_carga) / (100 / reserva_dias)';
+
+-- a marca de que a v10 foi aplicada: por último, para uma v10 que parou no meio continuar pendente
+INSERT IGNORE INTO config (chave, valor) VALUES ('migracao_v10', '1');
+
 -- critérios iniciais (o "restaurar" da página Critérios lê daqui até o fim do arquivo)
 -- critérios de todos os relógios
 INSERT INTO criterio_parametro (id, escopo_no_id, escopo_relogio_id, nome, peso, ordem) VALUES (1, NULL, NULL, 'Tempo sem uso', 40, 1);
