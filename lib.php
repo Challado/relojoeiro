@@ -336,7 +336,7 @@ $FUNCOES = [
     "HOJE" => [0, 0, "a data de hoje (em dias)", false],
     "AGORA" => [0, 0, "o instante de agora (em dias, com a fração do dia)", false],
     "HORAS_USO" => [0, 0, "as horas de um dia de uso, pelo horário de uso da Configuração (das 7h às 22h: 15)", false],
-    "MEDIDO" => [1, 1, "MEDIDO(\"uso\") ou MEDIDO(\"repouso\"): o gasto medido pelas leituras, em % por dia (de uso ou guardado): a média das medições dos últimos dias da Configuração, pesada pelas horas de cada uma; sem nenhuma nesses dias, a última; sem nenhuma, vazio", false],
+    "MEDIDO" => [1, 1, "MEDIDO(\"uso\") ou MEDIDO(\"repouso\"): o gasto medido pelas leituras, em % por dia (de uso ou fora do pulso): os dois saem juntos das medições dos últimos dias da Configuração (cada intervalo entre duas leituras: a queda = dias de uso × gasto em uso + dias fora × gasto fora), pesadas pelas horas; quando elas não separam os dois, a média das medições de cada um; sem nenhuma nesses dias, a última; sem nenhuma, vazio", false],
     "CONFIG" => [1, 1, "CONFIG(\"chave\"): um número da Configuração (ex.: CONFIG(\"sol_limiar\"), o limite do solar); vazio se não for número", false],
     "DIAS_DESDE" => [1, 1, "dias desde uma data", false],
     "DIAS_ATE" => [1, 1, "dias até uma data (negativo: já passou)", false],
@@ -553,6 +553,78 @@ function mais_perto($versoes, $r)
                 $melhor = $nivel;
                 $res = $v;
             }
+        }
+    }
+    return $res;
+}
+
+// O gasto medido pelas leituras de carga, num instante: ["uso" => % por dia de uso, "repouso" => % por dia fora do pulso
+// (guardado, desligado), "n" => quantas medições entraram, "conjunta" => se os dois saíram juntos]. $medicoes: as medições
+// usadas do relógio, em ordem de fim (medida, taxa, peso_horas, fim, horas_pulso, horas_guardado, de_valor, ate_valor).
+// Cada medição é um intervalo entre duas leituras: a queda = dias de uso × gasto em uso + dias fora do pulso × gasto fora.
+// Com as medições da janela da Configuração (nenhuma nela: todas as de antes), os dois gastos saem juntos, pelos mínimos
+// quadrados (cada intervalo pesa as suas horas: o curto, que o arredondamento da leitura atrapalha mais, pesa pouco),
+// nunca negativos. Quando as medições não separam os dois (só intervalos fora do pulso, só no pulso, ou todos na mesma
+// proporção), vale a média das medições de cada gasto, pesada pelas horas.
+function gasto_medido($medicoes, $momento)
+{
+    $janela = max(1, (int)cfg("medicao_janela_dias")) * 86400;
+    $res = gasto_medido_desde($medicoes, $momento, $momento - $janela);
+    return $res["n"] > 0 ? $res : gasto_medido_desde($medicoes, $momento, null);
+}
+
+// A conta do gasto_medido com as medições que terminam depois de $desde (null: todas) e até $momento
+function gasto_medido_desde($medicoes, $momento, $desde)
+{
+    $h_dia = (strtotime("2000-01-01 " . cfg("uso_fim")) - strtotime("2000-01-01 " . cfg("uso_inicio"))) / 3600;
+    $h_dia = $h_dia > 0 ? $h_dia : 24;
+    $n = 0;
+    $saa = $sbb = $sab = $saq = $sbq = 0.0;
+    $media = ["uso" => [0.0, 0.0], "repouso" => [0.0, 0.0]];
+    foreach ($medicoes as $m) {
+        $fim = strtotime($m["fim"]);
+        if ($fim > $momento) {
+            break;
+        }
+        if ($desde !== null && $fim <= $desde) {
+            continue;
+        }
+        $n++;
+        $hp = (float)$m["horas_pulso"];
+        $hg = (float)$m["horas_guardado"];
+        $w = $hp + $hg;
+        $a = $hp / $h_dia;
+        $b = $hg / 24;
+        $q = (float)$m["de_valor"] - (float)$m["ate_valor"];
+        $saa += $w * $a * $a;
+        $sbb += $w * $b * $b;
+        $sab += $w * $a * $b;
+        $saq += $w * $a * $q;
+        $sbq += $w * $b * $q;
+        $media[$m["medida"]][0] += (float)$m["taxa"] * (float)$m["peso_horas"];
+        $media[$m["medida"]][1] += (float)$m["peso_horas"];
+    }
+    $res = ["uso" => null, "repouso" => null, "n" => $n, "conjunta" => false];
+    if ($n === 0) {
+        return $res;
+    }
+    $det = $saa * $sbb - $sab * $sab;
+    // separa bem quando os intervalos têm proporções diferentes de pulso e de fora (1 - a correlação² entre elas)
+    if ($saa > 0 && $sbb > 0 && $det / ($saa * $sbb) >= 0.02) {
+        $u = ($saq * $sbb - $sbq * $sab) / $det;
+        $r = ($sbq * $saa - $saq * $sab) / $det;
+        if ($r < 0) {
+            $r = 0.0;
+            $u = $saq / $saa;
+        } elseif ($u < 0) {
+            $u = 0.0;
+            $r = $sbq / $sbb;
+        }
+        return ["uso" => round(max(0, $u), 3), "repouso" => round(max(0, $r), 3), "n" => $n, "conjunta" => true];
+    }
+    foreach (["uso", "repouso"] as $medida) {
+        if ($media[$medida][1] > 0) {
+            $res[$medida] = round($media[$medida][0] / $media[$medida][1], 3);
         }
     }
     return $res;
@@ -834,26 +906,30 @@ function formula_calcular($no, &$ctx)
             } elseif ($nome === "AGORA") {
                 $res = $agora_d;
             } elseif ($nome === "MEDIDO") {
-                // as medições usadas do relógio, lidas uma vez por requisição; a média é a da janela que termina no instante da conta
+                // as medições usadas do relógio, lidas uma vez por requisição; os gastos são os da janela que termina no
+                // instante da conta (gasto_medido), guardados pelo trecho de medições que entrou (a escala pede o mesmo muitas vezes)
                 $id = (int)$ctx["r"]["id"];
                 if (!isset($cache_med[$id])) {
-                    $cache_med[$id] = linhas("SELECT medida, taxa, peso_horas, fim FROM medicao WHERE relogio_id = ? AND usada = 1 ORDER BY fim", [$id]);
+                    $cache_med[$id] = ["linhas" => linhas("SELECT medida, taxa, peso_horas, fim, horas_pulso, horas_guardado, de_valor, ate_valor
+                        FROM medicao WHERE relogio_id = ? AND usada = 1 ORDER BY fim, id", [$id]), "contas" => []];
                 }
                 $janela = max(1, (int)cfg("medicao_janela_dias")) * 86400;
-                $soma = 0.0;
-                $pesos = 0.0;
-                $ultima = null;
-                foreach ($cache_med[$id] as $m) {
-                    $fim_m = strtotime($m["fim"]);
-                    if ($m["medida"] === $v[0] && $fim_m <= $ctx["momento"]) {
-                        $ultima = (float)$m["taxa"];
-                        if ($fim_m > $ctx["momento"] - $janela) {
-                            $soma += (float)$m["taxa"] * (float)$m["peso_horas"];
-                            $pesos += (float)$m["peso_horas"];
-                        }
+                $ini = 0;
+                $fim = 0;
+                foreach ($cache_med[$id]["linhas"] as $k => $m) {
+                    $t = strtotime($m["fim"]);
+                    if ($t <= $ctx["momento"] - $janela) {
+                        $ini = $k + 1;
+                    }
+                    if ($t <= $ctx["momento"]) {
+                        $fim = $k + 1;
                     }
                 }
-                $res = $pesos > 0 ? $soma / $pesos : $ultima;
+                $chave = $ini . "-" . $fim;
+                if (!isset($cache_med[$id]["contas"][$chave])) {
+                    $cache_med[$id]["contas"][$chave] = gasto_medido($cache_med[$id]["linhas"], $ctx["momento"]);
+                }
+                $res = in_array($v[0], ["uso", "repouso"], true) ? $cache_med[$id]["contas"][$chave][$v[0]] : null;
             } elseif ($nome === "CONFIG") {
                 $res = is_string($v[0]) && is_numeric(cfg($v[0])) ? (float)cfg($v[0]) : null;
             } elseif ($nome === "HORAS_USO") {
@@ -2019,18 +2095,18 @@ function previsao_energia($r, $agora)
                     $res["conta"][] = ["campo" => $nome, "nome" => $campos[$nome]["nome"], "valor" => $v, "unidade" => $campos[$nome]["unidade"], "origem" => $origem];
                 }
             }
-            // o gasto medido pelas leituras (a média da janela da Configuração): com o de uso medido, o campo vazio do cadastro
-            // não pesa na confiança (a medição vale no lugar dele)
+            // o gasto medido pelas leituras (gasto_medido, na janela da Configuração): com o de uso medido, o campo vazio do
+            // cadastro não pesa na confiança (a medição vale no lugar dele)
             $janela = max(1, (int)cfg("medicao_janela_dias"));
-            foreach (["uso" => "Gasto em uso medido", "repouso" => "Gasto guardado medido"] as $medida => $nome_m) {
-                $cm = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => $valores];
-                $vm = formula_calcular(formula_ler("MEDIDO(\"" . $medida . "\")"), $cm);
-                if ($vm !== null) {
-                    $n = (int)valor("SELECT COUNT(*) FROM medicao WHERE relogio_id = ? AND medida = ? AND usada = 1 AND fim <= ? AND fim > ?",
-                        [(int)$r["id"], $medida, date("Y-m-d H:i:s", $agora), date("Y-m-d H:i:s", $agora - $janela * 86400)]);
-                    $res["conta"][] = ["campo" => "MEDIDO(\"" . $medida . "\")", "nome" => $nome_m . ($n > 0 ? " (média de " . $n . ($n === 1 ? " medição" : " medições") . " dos últimos "
-                        . $janela . " dias)" : " (a última medição; nenhuma nos últimos " . $janela . " dias)"), "valor" => round($vm, 3),
-                        "unidade" => $medida === "uso" ? "% por dia de uso" : "% por dia guardado", "origem" => "medido"];
+            $g = gasto_medido(linhas("SELECT medida, taxa, peso_horas, fim, horas_pulso, horas_guardado, de_valor, ate_valor FROM medicao
+                WHERE relogio_id = ? AND usada = 1 ORDER BY fim, id", [(int)$r["id"]]), $agora);
+            $como = $g["n"] === 0 ? " (a última medição; nenhuma nos últimos " . $janela . " dias)"
+                : " (" . ($g["conjunta"] ? "conta dos dois gastos juntos, com " : "média de ") . $g["n"] . ($g["n"] === 1 ? " medição" : " medições")
+                    . " dos últimos " . $janela . " dias)";
+            foreach (["uso" => "Gasto em uso medido", "repouso" => "Gasto fora do pulso medido"] as $medida => $nome_m) {
+                if ($g[$medida] !== null) {
+                    $res["conta"][] = ["campo" => "MEDIDO(\"" . $medida . "\")", "nome" => $nome_m . $como, "valor" => round($g[$medida], 3),
+                        "unidade" => $medida === "uso" ? "% por dia de uso" : "% por dia fora do pulso", "origem" => "medido"];
                     if ($medida === "uso") {
                         $vazio = false;
                     }
