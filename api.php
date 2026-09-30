@@ -132,7 +132,7 @@
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=autonomia"
  *                            Ex.: os que acabam nas próximas 24 horas:
  *                                 curl -u lucas:senha -g "http://servidor/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz"
- *   recurso=hoje             tudo o que a página Hoje mostra: {"data", "agora", "uso_inicio", "comecou" (o dia já começou no pulso),
+ *   recurso=hoje             tudo o que a página Hoje mostra: {"data", "agora", "uso_inicio", "comecou" (o dia já começou no pulso), "pulso_poe_sozinho", "pulso_tira_sozinho",
  *                            "modo": {"id", "nome", "selecao", "escala_dias"}, "escala_fim", "max_sem_uso", "dia": {"data", "relogio_id",
  *                            "relogio", "ate" ("só hoje", "até sexta, 02/10"), "acao" (o lembrete do dia)}, "avisos": [os de hoje, atrasados
  *                            ou em breve: {"relogio_id", "relogio", "identificador", "nome", "texto" (o motivo), "estado", "resolve":
@@ -337,7 +337,8 @@
  *                            Ex. ativar: curl -u lucas:senha -d recurso=modos -d acao=ativar -d id=5 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=modos -d acao=excluir -d id=6 http://servidor/relojoeiro/api.php
  *   recurso=config            salvar (horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (a sessão no sol esquecida fecha
- *                             a essa hora): HH:MM; carga_limiar (1 a 99: carregar nessa carga, o geral); sol_limiar (1 a 99: o
+ *                             a essa hora): HH:MM; pulso_auto_inicio e pulso_auto_fim (1 ou 0: pôr no pulso sozinho no
+ *                             início do horário de uso, tirar sozinho no fim; 0: só pelo Pôs, só pelo Tirou); carga_limiar (1 a 99: carregar nessa carga, o geral); sol_limiar (1 a 99: o
  *                             solar vai para o sol nessa carga); url_sistema;
  *                             alerta_ativo (ou mensagens_ativas) e agenda_ativa: 1 ou 0; agenda_id; agenda_chave; agenda_antecedencia
  *                             (1 a 365); max_sem_uso (0 a 365); previsao_limite (0 a 100); medicao_janela_dias (1 a 3650: a média
@@ -448,6 +449,8 @@
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
  *     config.migracao_v10            marca de que a migração v10 foi aplicada (1)
  *     config.modo_ativo              o id do modo de rodízio em uso
+ *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso); 0: só pelo Tirou
+ *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
  *     config.sol_limiar              no solar, a carga (%) em que ele deve ir para o sol
  *     config.tg_padrao               a mensagem padrão do Telegram, com âncoras ({acao}, {relogio}, {motivo}...)
@@ -1143,6 +1146,8 @@
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
  *     config.migracao_v10            marca de que a migração v10 foi aplicada (1)
  *     config.modo_ativo              o id do modo de rodízio em uso
+ *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso); 0: só pelo Tirou
+ *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
  *     config.sol_limiar              no solar, a carga (%) em que ele deve ir para o sol
  *     config.tg_padrao               a mensagem padrão do Telegram, com âncoras ({acao}, {relogio}, {motivo}...)
@@ -2038,7 +2043,8 @@ if (!$token_ok && $quem === "") {
     foreach (avisos_todos() as $versoes) {
         $avisos_nomes[] = $versoes[0]["nome"];
     }
-    $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => cfg("uso_inicio"), "comecou" => $dia !== null && $agora >= strtotime($hoje->format("Y-m-d") . " " . cfg("uso_inicio")),
+    $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => cfg("uso_inicio"), "comecou" => $dia !== null && dia_comecou($agora),
+        "pulso_poe_sozinho" => pulso_poe_sozinho(), "pulso_tira_sozinho" => pulso_tira_sozinho(),
         "modo" => $modo ? ["id" => (int)$modo["id"], "nome" => $modo["nome"], "selecao" => $modo["selecao"], "escala_dias" => $modo["escala_dias"] === null ? null : (int)$modo["escala_dias"]] : null,
         "escala_fim" => cfg("escala_fim") !== "" ? cfg("escala_fim") : null, "max_sem_uso" => (int)cfg("max_sem_uso"),
         "dia" => $dia ? ["data" => $dia["data"], "relogio_id" => (int)$dia["relogio_id"], "relogio" => $dia["nome"], "ate" => texto_ate($dia["data"], "hoje"), "acao" => $dia["acao"]] : null,
@@ -2477,7 +2483,7 @@ if (!$token_ok && $quem === "") {
                 "excluir" => ["campos" => "id (não o ativo)", "exemplo" => "curl -u lucas:senha -d recurso=modos -d acao=excluir -d id=6 http://servidor/relojoeiro/api.php"],
             ],
             "config" => [
-                "salvar" => ["campos" => "horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (HH:MM), carga_limiar (1 a 99), sol_limiar (1 a 99), url_sistema, alerta_ativo e agenda_ativa (1 ou 0), agenda_id, agenda_chave, agenda_antecedencia (1 a 365), max_sem_uso, previsao_limite, medicao_janela_dias (1 a 3650: a janela da média do gasto medido), alerta_tipos[] e agenda_tipos[] (os tipos de aviso de cada canal: dia, vespera, os identificadores dos avisos, ev<id>), tg_padrao e ag_padrao, tg_proprio_<tipo> e ag_proprio_<tipo> (1 ou 0), tg_corpo_<tipo> e ag_corpo_<tipo>; só o que vier muda", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=salvar -d horario_manha=06:30 -d alerta_ativo=1 --data-urlencode \"tg_padrao={acao}: {relogio}\" -d tg_proprio_corda=1 --data-urlencode \"tg_corpo_corda=Corda no {relogio}!\" http://servidor/relojoeiro/api.php"],
+                "salvar" => ["campos" => "horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (HH:MM), pulso_auto_inicio e pulso_auto_fim (1 ou 0), carga_limiar (1 a 99), sol_limiar (1 a 99), url_sistema, alerta_ativo e agenda_ativa (1 ou 0), agenda_id, agenda_chave, agenda_antecedencia (1 a 365), max_sem_uso, previsao_limite, medicao_janela_dias (1 a 3650: a janela da média do gasto medido), alerta_tipos[] e agenda_tipos[] (os tipos de aviso de cada canal: dia, vespera, os identificadores dos avisos, ev<id>), tg_padrao e ag_padrao, tg_proprio_<tipo> e ag_proprio_<tipo> (1 ou 0), tg_corpo_<tipo> e ag_corpo_<tipo>; só o que vier muda", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=salvar -d horario_manha=06:30 -d alerta_ativo=1 --data-urlencode \"tg_padrao={acao}: {relogio}\" -d tg_proprio_corda=1 --data-urlencode \"tg_corpo_corda=Corda no {relogio}!\" http://servidor/relojoeiro/api.php"],
                 "testar_manha" => ["campos" => "(nada): manda a mensagem da manhã agora", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=testar_manha http://servidor/relojoeiro/api.php"],
                 "testar_noite" => ["campos" => "(nada): manda a mensagem da noite agora", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=testar_noite http://servidor/relojoeiro/api.php"],
                 "evento_salvar" => ["campos" => "evento_id (ou id; 0 cria), nome, ativo, repeticao (uma, diaria, semanal, mensal, intervalo), hora (HH:MM), data_inicio, dias_semana (1 a 7), dia_mes, intervalo_dias, relogio_id; o evento novo já vai pelo Telegram", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=evento_salvar -d evento_id=0 -d \"nome=Limpar as pulseiras\" -d repeticao=semanal -d \"dias_semana[]=1\" -d \"dias_semana[]=4\" -d hora=20:00 http://servidor/relojoeiro/api.php"],
@@ -2607,6 +2613,8 @@ if (!$token_ok && $quem === "") {
                 "config.mensagens_ativas" => "1: o Telegram (a API de alerta) envia; 0: não envia",
                 "config.migracao_v10" => "marca de que a migração v10 foi aplicada (1)",
                 "config.modo_ativo" => "o id do modo de rodízio em uso",
+                "config.pulso_auto_fim" => "1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o \"fecha às\" do tipo No pulso); 0: só pelo Tirou",
+                "config.pulso_auto_inicio" => "1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs",
                 "config.previsao_limite" => "o limite de carga da previsão do smartwatch, em %",
                 "config.sol_limiar" => "no solar, a carga (%) em que ele deve ir para o sol",
                 "config.tg_padrao" => "a mensagem padrão do Telegram, com âncoras ({acao}, {relogio}, {motivo}...)",
@@ -2908,7 +2916,9 @@ if (!$token_ok && $quem === "") {
                 "avisos[].resolve.unidade" => "a unidade do valor",
                 "avisos[].texto" => "o motivo por extenso",
                 "avisos_nomes[]" => "os nomes dos avisos (o filtro \"O que fazer\" da tabela)",
-                "comecou" => "verdadeiro ou falso: o dia já começou no pulso (passou do uso_inicio e há relógio do dia)",
+                "comecou" => "verdadeiro ou falso: o dia já começou no pulso (há relógio do dia e: pondo no pulso sozinho, passou do uso_inicio; senão, ele já foi posto no pulso hoje)",
+                "pulso_poe_sozinho" => "verdadeiro: o relógio do dia entra no pulso sozinho no início do horário de uso; falso: só pelo Pôs",
+                "pulso_tira_sozinho" => "verdadeiro: o relógio sai do pulso sozinho no fim do horário de uso; falso: só pelo Tirou",
                 "data" => "hoje (texto AAAA-MM-DD)",
                 "dia" => "o relógio de hoje; null: nenhum",
                 "dia.acao" => "o lembrete do dia; null: nada",
@@ -3143,6 +3153,8 @@ if (!$token_ok && $quem === "") {
                 "config.mensagens_ativas" => "1: o Telegram (a API de alerta) envia; 0: não envia",
                 "config.migracao_v10" => "marca de que a migração v10 foi aplicada (1)",
                 "config.modo_ativo" => "o id do modo de rodízio em uso",
+                "config.pulso_auto_fim" => "1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o \"fecha às\" do tipo No pulso); 0: só pelo Tirou",
+                "config.pulso_auto_inicio" => "1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs",
                 "config.previsao_limite" => "o limite de carga da previsão do smartwatch, em %",
                 "config.sol_limiar" => "no solar, a carga (%) em que ele deve ir para o sol",
                 "config.tg_padrao" => "a mensagem padrão do Telegram, com âncoras ({acao}, {relogio}, {motivo}...)",

@@ -71,15 +71,23 @@ function recarregarConfig(aplicadas) {
         var geral = el("section", {"class": "cartao-config"}, el("h2", {}, "Geral") + el("div", {"class": "cadastro"},
           el("label", {}, "Manhã: relógio do dia e avisos " + el("input", {"type": "time", "name": "horario_manha", "value": cfg("horario_manha")}))
           + el("label", {}, "Noite: preparar o relógio de amanhã " + el("input", {"type": "time", "name": "horario_noite", "value": cfg("horario_noite")}))
-          + el("label", {}, "Relógio no pulso a partir de " + el("input", {"type": "time", "name": "uso_inicio", "value": cfg("uso_inicio")}))
-          + el("label", {}, "Até " + el("input", {"type": "time", "name": "uso_fim", "value": cfg("uso_fim")}))
+          // o horário de uso, cada ponta com a sua caixa: pôr no pulso sozinho no início, tirar sozinho no fim
+          + el("div", {"class": "horario-auto"}, el("label", {}, "Relógio no pulso a partir de " + el("input", {"type": "time", "name": "uso_inicio", "value": cfg("uso_inicio")}))
+            + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "pulso_auto_inicio", "value": "0"}) + el("input", {"type": "checkbox", "name": "pulso_auto_inicio", "value": "1",
+              "checked": cfg("pulso_auto_inicio") !== "0"}) + " pôr no pulso sozinho"))
+          + el("div", {"class": "horario-auto"}, el("label", {}, "Até " + el("input", {"type": "time", "name": "uso_fim", "value": cfg("uso_fim")}))
+            + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "pulso_auto_fim", "value": "0"}) + el("input", {"type": "checkbox", "name": "pulso_auto_fim", "value": "1",
+              "checked": cfg("pulso_auto_fim") !== "0"}) + " tirar do pulso sozinho"))
+          + el("p", {"class": "nota"}, "Sem <strong>pôr sozinho</strong>, o relógio do dia só entra no pulso pelo <strong>Pôs no pulso</strong> (no quadro de hoje ou no painel do relógio). "
+            + "Sem <strong>tirar sozinho</strong>, ele só sai pelo <strong>Tirou do pulso</strong>: esquecido, continua contando como no pulso. "
+            + "O horário de uso continua valendo para o plano e as previsões dos próximos dias.")
           + el("label", {}, "Sessão no sol esquecida aberta fecha às " + el("input", {"type": "time", "name": "sol_fim", "value": d.sol_fim}))
           + el("label", {}, "Carregar quando a carga estimada chegar a (%) " + el("input", {"type": "number", "min": "1", "max": "99", "name": "carga_limiar", "value": cfg("carga_limiar") !== "" ? cfg("carga_limiar") : "20"}))
           + el("label", {}, "Solar: pôr no sol quando a carga estimada chegar a (%) " + el("input", {"type": "number", "min": "1", "max": "99", "name": "sol_limiar", "value": cfg("sol_limiar") !== "" ? cfg("sol_limiar") : "70"}))
           + el("label", {}, "Gasto medido pelas leituras: média das medições dos últimos (dias) " + el("input", {"type": "number", "min": "1", "max": "3650", "name": "medicao_janela_dias",
             "value": cfg("medicao_janela_dias") !== "" ? cfg("medicao_janela_dias") : "90"}))
           + el("label", {}, "Endereço do sistema, para a âncora {link} " + el("input", {"name": "url_sistema", "value": cfg("url_sistema"), "placeholder": "http://servidor/relogios"}))
-          + el("p", {"class": "nota"}, "O cron roda a cada minuto e faz cada rodada uma vez por dia, a partir dos horários da manhã e da noite. Fora do horário de uso, todos os relógios ficam desligados.")
+          + el("p", {"class": "nota"}, "O cron roda a cada minuto e faz cada rodada uma vez por dia, a partir dos horários da manhã e da noite. Fora do pulso, o relógio conta como guardado (desligado).")
           + cron));
         var telegram = el("section", {"class": "cartao-config"}, el("h2", {}, "Telegram (API de alerta)") + el("div", {"class": "cadastro"},
           el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "alerta_ativo", "value": "0"}) + el("input", {"type": "checkbox", "name": "alerta_ativo", "value": "1",

@@ -103,6 +103,8 @@ try {
         if ($novos > 0) {
             $log[] = "plano: " . $novos . ($novos === 1 ? " dia montado" : " dias montados") . ", pelo modo " . valor("SELECT nome FROM modo WHERE id = ?", [(int)cfg("modo_ativo")]);
         }
+        // as sessões esquecidas abertas ganham o fim no "fecha às" do tipo (o No pulso, tirando sozinho, no fim do horário de uso)
+        fechar_esquecidas(time());
         // o período no pulso do relógio do dia, no horário de uso
         $sessoes = (int)valor("SELECT COUNT(*) FROM lancamento WHERE origem = 'rodizio'");
         sessao_do_dia(time());
