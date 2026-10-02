@@ -298,8 +298,6 @@ button.discreto { border-color: transparent; font-size: .85rem; padding: 0 .45re
 }
 .blocos h2 { font-size: .95rem; margin-bottom: .4rem; color: var(--cinza); font-weight: 600; }
 .blocos p { margin: .25rem 0; }
-.ficha .acoes-cartao { margin: .5rem 0 0; }
-.ficha .acoes-cartao button { font-size: .95rem; padding: .45rem .9rem; }
 .grafico { width: 100%; height: auto; background: var(--papel); border: 1px solid var(--aco-escuro); border-radius: 10px; }
 .grafico .guia { stroke: var(--aco); stroke-width: 1; }
 .grafico .linha-carga { fill: none; stroke: var(--safira); stroke-width: 2; }
@@ -368,12 +366,6 @@ table.canais input[type=checkbox] { width: 1.1rem; height: 1.1rem; }
 button.largo { width: 100%; margin-top: .5rem; }
 
 /* ---------- leitura de carga ---------- */
-.form-carga { flex-direction: column; align-items: stretch !important; gap: .45rem !important; width: 100%; }
-.form-carga > label { display: flex; justify-content: space-between; align-items: center; gap: .6rem; font-size: .92rem; }
-.form-carga > label span { display: flex; align-items: center; gap: .3rem; }
-.form-carga input[type=number] { width: 5rem !important; }
-.form-carga > label.check { justify-content: flex-start; }
-.form-carga button { align-self: flex-start; }
 p.conta-carga {
   background: #eef4ec;
   border: 1px solid #b9d4b3;
@@ -396,7 +388,6 @@ p.conta-carga {
 }
 .estado-uso { background: #e3f3e6; color: #1e6b2e; border-color: #a9d8b3; }
 .estado-repouso { background: #fbe8e6; color: #9b2c22; border-color: #efb5ae; }
-.estado-linha { margin: 0 0 .2rem; font-size: .92rem; display: flex; align-items: center; gap: .5rem; }
 table.compacta tr.marco td { color: var(--cinza); font-size: .85rem; }
 table.compacta td:last-child { text-align: right; }
 .grafico .ponto-uso { fill: #2e8b45; }
@@ -566,17 +557,6 @@ nav.paginas span.atual { background: var(--safira); color: #fff; border-color: v
 .regra-pulso { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .7rem; font-size: .92rem; }
 .regra-pulso label { display: flex; align-items: center; gap: .3rem; flex-direction: row !important; }
 .detalhe .cadastro .regra-pulso input { width: 4rem !important; }
-details.periodo-pulso { font-size: .9rem; margin-top: .3rem; }
-details.periodo-pulso summary { cursor: pointer; color: var(--safira); }
-details.periodo-pulso form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem; margin-top: .5rem; }
-details.periodo-pulso label { display: flex; flex-direction: column; gap: .2rem; font-size: .85rem; }
-/* Lançar: uma linha por grupo (Corda, Winder, Pulso, Sol, Pilha, Revisão) */
-.lancar-grupos { display: flex; flex-direction: column; gap: .35rem; width: 100%; }
-.linha-lancar { display: grid; grid-template-columns: 4.5rem auto 1fr; align-items: center; gap: .3rem .5rem; }
-.linha-lancar .grupo { font-size: .88rem; font-weight: 600; color: var(--cinza); }
-.linha-lancar .botoes-grupo { display: flex; gap: .3rem; }
-.linha-lancar button[disabled] { opacity: .35; cursor: not-allowed; }
-.linha-lancar .sessao-aberta { font-size: .8rem; color: #1e6b2e; }
 .modo-rodizio .bloco-5x2 { display: flex; align-items: flex-end; gap: .6rem; }
 .modo-rodizio .bloco-5x2 label.check { flex-direction: row; align-items: center; gap: .3rem; padding-bottom: .35rem; }
 
@@ -800,16 +780,23 @@ form.marcar-pulso button { padding: .1rem .6rem; font-size: .85rem; }
 .horario-auto { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .4rem 1rem; }
 .horario-auto label.check { padding-bottom: .35rem; }
 
-/* painel: a hora opcional do Pôs e do Tirou, e o quadro "Corrigir marcações" */
-.quando-lancar { display: inline-flex; align-items: center; gap: .3rem; font-size: .8rem; color: var(--cinza); grid-column: 2 / -1; grid-row: 2; }
-.quando-lancar input { font-size: .8rem; padding: .1rem .25rem; }
-details.corrigir { margin-top: .6rem; }
-details.corrigir summary { cursor: pointer; font-size: .9rem; color: var(--safira); }
-form.linha-corrigir { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .35rem .7rem; padding: .45rem 0; border-bottom: 1px solid var(--aco); font-size: .85rem; }
-form.linha-corrigir .grupo { min-width: 7rem; font-weight: 600; }
-form.linha-corrigir label { display: flex; flex-direction: column; gap: .1rem; font-size: .75rem; color: var(--cinza); }
-form.linha-corrigir input { font-size: .8rem; padding: .1rem .25rem; }
-form.linha-corrigir input[name=valor] { width: 4.5rem; }
+
+/* painel: o quadro Marcar. O menu diz o que aconteceu, e embaixo aparecem só os campos daquilo */
+form.marcar { display: flex; flex-direction: column; gap: .6rem; max-width: 34rem; margin: .4rem 0 0; }
+form.marcar label { display: flex; flex-direction: column; gap: .2rem; font-size: .88rem; color: var(--cinza); }
+form.marcar label small { font-size: .75rem; }
+form.marcar label.check { flex-direction: row; align-items: center; gap: .4rem; color: var(--tinta); }
+form.marcar .marcar-o-que { color: var(--tinta); font-weight: 600; }
+form.marcar .marcar-o-que select { font-weight: normal; }
+form.marcar .com-unidade { display: flex; align-items: center; gap: .35rem; color: var(--tinta); }
+form.marcar .com-unidade input { width: 6rem; }
+.marcar-campos { display: flex; flex-direction: column; gap: .6rem; padding: .8rem; background: var(--papel); border: 1px solid var(--aco-escuro); border-radius: 10px; }
+.marcar-campos[hidden] { display: none; }
+.marcar-campos .marcar-campos { padding: 0; border: 0; background: none; }
+.marcar-campos .nota { margin: 0; }
+.marcar-campos button { align-self: flex-start; }
+.marcar-estado { margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; font-size: .9rem; }
+.marcar-botoes { display: flex; gap: .5rem; }
 
 /* trocar o relógio de um dia (Hoje e Plano), e a página Plano */
 form.trocar-dia { display: inline-flex; gap: .3rem; align-items: center; }
