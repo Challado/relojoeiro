@@ -6,7 +6,7 @@ fórmulas, avisos, critérios por lugar, modos). Um arquivo só está portado qu
 Marcados com [x]: os itens da escala inteligente, dos eventos personalizados, do Google Agenda, da previsão do smartwatch e da
 linha do tempo (com a migração v4), e todas as páginas, o painel, a tabela, a foto e o cron (com a migração v5: as telas do
 sistema antigo, montadas no navegador a partir da API), feitos e testados. Nas páginas, sem marca ficam só três itens que o
-modelo novo não tem como reproduzir igual (o PARIDADE.md diz por quê); a medição do gasto pelas leituras, que era um deles,
+modelo novo não tem como reproduzir igual; a medição do gasto pelas leituras, que era um deles,
 foi portada na migração v6. Nas seções api.php, lib.php e operacoes.php, os itens sem
 marca ainda não foram conferidos um por um contra o antigo, mesmo quando a função nova já tem o equivalente.
 
