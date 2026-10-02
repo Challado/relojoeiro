@@ -319,13 +319,16 @@
  *                             se o dia ainda não começou no pulso, o plano novo vale já de hoje),
  *                             resortear (de amanhã até domingo; se o dia ainda não começou no pulso, também hoje), resortear_hoje
  *                             (inclusive hoje: o sorteado passa a ser o do pulso a partir de agora), usando (relogio_id: o
- *                             relógio de hoje a partir de agora), proxima_semana (só no domingo: a semana seguinte inteira).
+ *                             relógio de hoje a partir de agora), trocar_dia (data, relogio_id: o relógio daquele dia, à mão;
+ *                             hoje, como o usando; 0: o dia volta a ser sorteado), proxima_semana (só no domingo: a semana
+ *                             seguinte inteira).
  *                             Na escala inteligente: sortear de novo refaz a escala; usando segura o escolhido nos dias que
  *                             faltavam do bloco de hoje e refaz a escala depois deles; proxima_semana é recusada
  *                            Ex. modo: curl -u lucas:senha -d recurso=rodizio -d acao=modo -d modo=2 -d "bloco_alvo[8]=1" -d "bloco_cada_dia[8]=1" -d selecao=ponderado -d max_sem_uso=21 http://servidor/relojoeiro/api.php
  *                            Ex. resortear: curl -u lucas:senha -d recurso=rodizio -d acao=resortear http://servidor/relojoeiro/api.php
  *                            Ex. resortear_hoje: curl -u lucas:senha -d recurso=rodizio -d acao=resortear_hoje http://servidor/relojoeiro/api.php
  *                            Ex. usando: curl -u lucas:senha -d recurso=rodizio -d acao=usando -d relogio_id=12 http://servidor/relojoeiro/api.php
+ *                            Ex. trocar_dia: curl -u lucas:senha -d recurso=rodizio -d acao=trocar_dia -d data=2026-10-09 -d relogio_id=12 http://servidor/relojoeiro/api.php
  *                            Ex. proxima_semana: curl -u lucas:senha -d recurso=rodizio -d acao=proxima_semana http://servidor/relojoeiro/api.php
  *   recurso=modos             salvar (id: 0 cria; nome, selecao: inteligente, ponderado, aleatorio ou fifo; escala_dias: vazio ou 0
  *                             = sorteio pelos blocos, 7 a 730 = escala inteligente com esse horizonte; blocos: [{nome, dias:
@@ -901,6 +904,7 @@
  *     modos[].selecao                a forma de escolha
  *     plano[]                        os próximos 62 dias do plano
  *     plano[].acao                   o lembrete do dia; null
+ *     plano[].origem                 sorteio (pelo modo) ou manual (escolhido à mão: "trocar por…" ou "Usando hoje")
  *     plano[].data                   o dia
  *     plano[].relogio                o nome
  *     plano[].relogio_id             o relógio
@@ -1021,6 +1025,16 @@
  *     relogio.leituras[]             as 40 últimas leituras com valor (o gráfico)
  *     relogio.leituras[].em_uso      verdadeiro ou falso: a leitura foi feita com o relógio no pulso
  *     relogio.leituras[].inicio      quando
+ *     relogio.lancamentos_recentes[] os lançamentos dos últimos 14 dias e a sessão ainda aberta, do mais recente ao mais antigo (até 40): o que o quadro "Corrigir marcações" do painel mostra
+ *     relogio.lancamentos_recentes[].fim quando a sessão terminou (texto AAAA-MM-DD HH:MM:SS); null: ainda aberta, ou um lançamento instantâneo
+ *     relogio.lancamentos_recentes[].formato instantaneo, valor ou sessao
+ *     relogio.lancamentos_recentes[].id o número do lançamento (para recurso=lancamento, acao=alterar ou excluir)
+ *     relogio.lancamentos_recentes[].inicio quando foi (a sessão: quando começou), texto AAAA-MM-DD HH:MM:SS
+ *     relogio.lancamentos_recentes[].nome o nome do tipo de lançamento
+ *     relogio.lancamentos_recentes[].origem manual, rodizio (a sessão do dia) ou importado
+ *     relogio.lancamentos_recentes[].tipo o identificador do tipo de lançamento (pulso, carga, corda...)
+ *     relogio.lancamentos_recentes[].unidade a unidade do valor (texto; vazio sem valor)
+ *     relogio.lancamentos_recentes[].valor o valor (número), num lançamento com valor; null nos outros
  *     relogio.leituras[].unidade     a unidade
  *     relogio.leituras[].valor       o valor
  *     relogio.linha_do_tempo[]       os trechos da linha do tempo do relógio, os 5 mais recentes: cada trecho é um período contínuo num estado, ou uma
@@ -1502,6 +1516,7 @@
  *
  *   recurso=plano
  *     escala_fim                     até que dia vai a escala (null fora da escala)
+ *     hoje                           hoje (texto AAAA-MM-DD)
  *     modo                           o nome do modo em uso
  *     plano[]                        o plano gravado: o relógio de cada dia
  *     plano[].acao                   o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nada
@@ -1509,9 +1524,13 @@
  *     plano[].bloco_id               o bloco do modo que escolheu o dia; null: escala ou manual
  *     plano[].criado                 quando o dia foi gravado no plano (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     plano[].data                   o dia (texto AAAA-MM-DD)
- *     plano[].origem                 sorteio (pelo modo) ou manual ("Usando hoje")
+ *     plano[].origem                 sorteio (pelo modo) ou manual (escolhido à mão: "Usando hoje" ou trocar_dia)
  *     plano[].relogio                o nome dele
  *     plano[].relogio_id             o relógio do dia
+ *     relogios[]                     os relógios, para trocar o de um dia (trocar_dia)
+ *     relogios[].disponivel          verdadeiro ou falso: entra no rodízio (só o disponível pode ser escolhido para um dia)
+ *     relogios[].id                  o número do relógio
+ *     relogios[].nome                o nome
  *
  *   recurso=eventos
  *     eventos[]                      os eventos personalizados (avisos seus, com horário e repetição próprios)
@@ -2049,7 +2068,7 @@ if (!$token_ok && $quem === "") {
         "escala_fim" => cfg("escala_fim") !== "" ? cfg("escala_fim") : null, "max_sem_uso" => (int)cfg("max_sem_uso"),
         "dia" => $dia ? ["data" => $dia["data"], "relogio_id" => (int)$dia["relogio_id"], "relogio" => $dia["nome"], "ate" => texto_ate($dia["data"], "hoje"), "acao" => $dia["acao"]] : null,
         "avisos" => $avisos_h,
-        "plano" => array_map(function ($p) { return ["data" => $p["data"], "relogio_id" => (int)$p["relogio_id"], "relogio" => $p["nome"], "acao" => $p["acao"]]; },
+        "plano" => array_map(function ($p) { return ["data" => $p["data"], "relogio_id" => (int)$p["relogio_id"], "relogio" => $p["nome"], "acao" => $p["acao"], "origem" => $p["origem"]]; },
             linhas("SELECT p.*, r.nome FROM plano p JOIN relogio r ON r.id = p.relogio_id WHERE p.data >= ? ORDER BY p.data LIMIT 62", [$hoje->format("Y-m-d")])),
         "proxima_semana" => ["segunda" => $seg->format("Y-m-d"), "domingo" => $seg->modify("+6 days")->format("Y-m-d"),
             "ja_montada" => (int)valor("SELECT COUNT(*) FROM plano WHERE data BETWEEN ? AND ?", [$seg->format("Y-m-d"), $seg->modify("+6 days")->format("Y-m-d")]) > 1],
@@ -2112,6 +2131,13 @@ if (!$token_ok && $quem === "") {
             "manutencoes" => array_map(function ($a) use ($hoje) { return ["data" => max($hoje->format("Y-m-d"), substr($a["data"], 0, 10)), "nome" => $a["nome"]]; }, array_slice($v["avisos"], 0, 5)),
             "previsao" => previsao_energia($r, $agora), "tipos" => $tipos, "leituras" => $leituras,
             "medicoes" => medicoes_legivel($id), "medicao_janela_dias" => max(1, (int)cfg("medicao_janela_dias")),
+            // os lançamentos dos últimos 14 dias (e a sessão ainda aberta), para corrigir: o quadro "Corrigir marcações"
+            "lancamentos_recentes" => array_map(function ($l) {
+                return ["id" => (int)$l["id"], "tipo" => $l["identificador"], "nome" => $l["nome"], "formato" => $l["formato"], "unidade" => $l["unidade"],
+                    "inicio" => $l["inicio"], "fim" => $l["fim"], "valor" => $l["valor"] === null ? null : (float)$l["valor"], "origem" => $l["origem"]];
+            }, linhas("SELECT l.id, t.identificador, t.nome, t.formato, t.unidade, l.inicio, l.fim, l.valor, l.origem FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
+                WHERE l.relogio_id = ? AND l.inicio <= ? AND (l.inicio >= ? OR l.fim IS NULL OR l.fim >= ?) ORDER BY l.inicio DESC, l.id DESC LIMIT 40",
+                [$id, date("Y-m-d H:i:s", $agora), date("Y-m-d H:i:s", $agora - 14 * 86400), date("Y-m-d H:i:s", $agora - 14 * 86400)])),
             "linha_do_tempo" => array_map("linha_legivel", array_slice($lt["linhas"], 0, 5)), "registros" => count($lt["linhas"]),
             "desde" => count($lt["linhas"]) > 0 ? date("Y-m-d H:i:s", $lt["linhas"][count($lt["linhas"]) - 1]["inicio"]) : null];
         // os dados do relógio: os campos do cadastro que valem para ele (o informado, senão o padrão) e o resultado de cada fórmula
@@ -2231,7 +2257,9 @@ if (!$token_ok && $quem === "") {
     $de_p = preg_match("/^[0-9]{4}-[0-9]{2}-[0-9]{2}\$/", (string)($_REQUEST["de"] ?? "")) === 1 ? (string)$_REQUEST["de"] : "";
     $ate_p = preg_match("/^[0-9]{4}-[0-9]{2}-[0-9]{2}\$/", (string)($_REQUEST["ate"] ?? "")) === 1 ? (string)$_REQUEST["ate"] : "";
     $saida = ["modo" => valor("SELECT nome FROM modo WHERE id = ?", [(int)cfg("modo_ativo")]), "escala_fim" => cfg("escala_fim") !== "" ? cfg("escala_fim") : null,
-        "plano" => plano_legivel($de_p, $ate_p)];
+        "hoje" => date("Y-m-d"), "plano" => plano_legivel($de_p, $ate_p),
+        "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1]; },
+            linhas("SELECT id, nome, disponivel FROM relogio ORDER BY nome"))];
 } elseif ($recurso === "eventos") {
     $saida = ["eventos" => array_map("evento_legivel", linhas("SELECT * FROM evento_personalizado ORDER BY nome"))];
 } elseif ($recurso === "agenda") {
@@ -2475,6 +2503,7 @@ if (!$token_ok && $quem === "") {
                 "resortear" => ["campos" => "(nada): refaz o plano de amanhã até domingo (ou até o fim da escala); se o dia ainda não começou no pulso, também hoje", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=resortear http://servidor/relojoeiro/api.php"],
                 "resortear_hoje" => ["campos" => "(nada): inclusive hoje; se sair outro relógio, ele passa a ser o do pulso a partir de agora", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=resortear_hoje http://servidor/relojoeiro/api.php"],
                 "usando" => ["campos" => "relogio_id: o relógio de hoje, a partir de agora (na escala, fica os dias que faltavam do bloco de hoje)", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=usando -d relogio_id=12 http://servidor/relojoeiro/api.php"],
+                "trocar_dia" => ["campos" => "data (AAAA-MM-DD, de hoje em diante), relogio_id: o relógio daquele dia, escolhido à mão (hoje: como o usando; na escala, ela é refeita a partir do dia); relogio_id 0: o dia volta a ser sorteado", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=trocar_dia -d data=2026-10-09 -d relogio_id=12 http://servidor/relojoeiro/api.php"],
                 "proxima_semana" => ["campos" => "(nada): só no domingo, monta ou refaz a semana seguinte inteira; recusada na escala", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=proxima_semana http://servidor/relojoeiro/api.php"],
             ],
             "modos" => [
@@ -2953,6 +2982,7 @@ if (!$token_ok && $quem === "") {
                 "modos[].selecao" => "a forma de escolha",
                 "plano[]" => "os próximos 62 dias do plano",
                 "plano[].acao" => "o lembrete do dia; null",
+                "plano[].origem" => "sorteio (pelo modo) ou manual (escolhido à mão: \"trocar por…\" ou \"Usando hoje\")",
                 "plano[].data" => "o dia",
                 "plano[].relogio" => "o nome",
                 "plano[].relogio_id" => "o relógio",
@@ -3050,6 +3080,16 @@ if (!$token_ok && $quem === "") {
                 "relogio.leituras[]" => "as 40 últimas leituras com valor (o gráfico)",
                 "relogio.leituras[].em_uso" => "verdadeiro ou falso: a leitura foi feita com o relógio no pulso",
                 "relogio.leituras[].inicio" => "quando",
+                "relogio.lancamentos_recentes[]" => "os lançamentos dos últimos 14 dias e a sessão ainda aberta, do mais recente ao mais antigo (até 40): o que o quadro \"Corrigir marcações\" do painel mostra",
+                "relogio.lancamentos_recentes[].fim" => "quando a sessão terminou (texto AAAA-MM-DD HH:MM:SS); null: ainda aberta, ou um lançamento instantâneo",
+                "relogio.lancamentos_recentes[].formato" => "instantaneo, valor ou sessao",
+                "relogio.lancamentos_recentes[].id" => "o número do lançamento (para recurso=lancamento, acao=alterar ou excluir)",
+                "relogio.lancamentos_recentes[].inicio" => "quando foi (a sessão: quando começou), texto AAAA-MM-DD HH:MM:SS",
+                "relogio.lancamentos_recentes[].nome" => "o nome do tipo de lançamento",
+                "relogio.lancamentos_recentes[].origem" => "manual, rodizio (a sessão do dia) ou importado",
+                "relogio.lancamentos_recentes[].tipo" => "o identificador do tipo de lançamento (pulso, carga, corda...)",
+                "relogio.lancamentos_recentes[].unidade" => "a unidade do valor (texto; vazio sem valor)",
+                "relogio.lancamentos_recentes[].valor" => "o valor (número), num lançamento com valor; null nos outros",
                 "relogio.leituras[].unidade" => "a unidade",
                 "relogio.leituras[].valor" => "o valor",
                 "relogio.linha_do_tempo[]" => "os trechos da linha do tempo do relógio, os 5 mais recentes: cada trecho é um período contínuo num estado, ou uma marcação (um lançamento instantâneo)",
@@ -3486,9 +3526,14 @@ if (!$token_ok && $quem === "") {
                 "plano[].bloco_id" => "o bloco do modo que escolheu o dia; null: escala ou manual",
                 "plano[].criado" => "quando o dia foi gravado no plano (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "plano[].data" => "o dia (texto AAAA-MM-DD)",
-                "plano[].origem" => "sorteio (pelo modo) ou manual (\"Usando hoje\")",
+                "hoje" => "hoje (texto AAAA-MM-DD)",
+                "plano[].origem" => "sorteio (pelo modo) ou manual (escolhido à mão: \"Usando hoje\" ou trocar_dia)",
                 "plano[].relogio" => "o nome dele",
                 "plano[].relogio_id" => "o relógio do dia",
+                "relogios[]" => "os relógios, para trocar o de um dia (trocar_dia)",
+                "relogios[].disponivel" => "verdadeiro ou falso: entra no rodízio (só o disponível pode ser escolhido para um dia)",
+                "relogios[].id" => "o número do relógio",
+                "relogios[].nome" => "o nome",
             ],
             "eventos" => [
                 "eventos[]" => "os eventos personalizados (avisos seus, com horário e repetição próprios)",

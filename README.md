@@ -427,6 +427,7 @@ porcentagem em cada estado.</sub>
 | Página | Para que serve |
 |---|---|
 | **Hoje** (`index.php`) | A tela principal. Mostra o relógio do dia, os avisos de hoje (atrasados e em breve) com o botão que resolve cada um, os próximos dias do plano e o modo de rodízio, que se troca ali mesmo. Abaixo fica a tabela da coleção, com filtros e ordenação por tipo, estado, carga, última vez usado, próxima manutenção, data e valor da compra. Clicar num relógio abre o **painel** ao lado. |
+| **Plano** (`plano.php`) | O plano inteiro, de hoje até o fim (na escala inteligente, um ou dois anos), mês a mês: o relógio de cada dia, o lembrete e o **trocar por…**. Filtra por período (30 dias, 90, um ano, dois, tudo) e por relógio, e mostra quantos dias cada relógio tem no período, a porcentagem e o próximo dia dele. |
 | **Painel / Ficha** (`ficha.php`) | Tudo sobre um relógio: foto, estado agora (*"Em repouso desde 21:40"*), carga, nota com a conta, próxima entrada no plano, previsão da bateria, as últimas leituras, a linha do tempo recente, os botões de lançamento e o cadastro completo, editável. |
 | **Histórico** (`historico.php`) | A linha do tempo de um relógio: em uso pelo rodízio, no pulso fora do rodízio, no winder, no sol, em repouso, e cada corda, carga e troca de pilha. Mostra quanto tempo e que porcentagem ficou em cada estado, com filtro de período e de estado. |
 | **Configuração** (`configuracao.php`) | Os horários (manhã, noite, uso), o Telegram, o Google Agenda, a mensagem padrão de cada canal, a tabela **"O que vai para onde"** (qual aviso sai por qual canal), os eventos personalizados, a prévia **"Como sai hoje"** e o botão que aplica as migrações do banco. |
@@ -621,8 +622,18 @@ a leitura de carga do smartwatch, o sol, o winder, a troca de pilha e o dia em q
 botão que o resolve.
 
 **E se eu não quiser usar o relógio sorteado?**
-Clique em **Usar o...** no relógio que você colocou. O plano passa a considerar esse e se refaz a partir dali. Também dá para
-**Sortear de novo** a partir de hoje ou de amanhã.
+Em **Próximos dias** (na página Hoje) ou na página **Plano**, cada dia tem o **trocar por…**: escolha o relógio e clique em
+**Trocar**. Hoje, ele passa a ser o do pulso a partir de agora; num dia que vem, só aquele dia muda, e fica marcado *à mão*. Na
+escala inteligente, o plano é refeito a partir do dia trocado (os lembretes de carregar e de dar corda dos dias seguintes se
+ajustam). Num dia escolhido à mão, a mesma lista tem **voltar a sortear**. Também dá para **Sortear de novo** a partir de hoje
+ou de amanhã.
+
+**Esqueci de marcar o Tirou (ou o Pôs).**
+No painel do relógio, ao lado do **Pôs** e do **Tirou**, tem o campo **às**: vazio, é agora; preenchido, é a hora que você
+esqueceu (ontem às 22:30). E o quadro **Corrigir marcações** lista tudo o que foi lançado nos últimos 14 dias: cada sessão no
+pulso, no winder ou no sol com o início e o fim, e cada leitura e corda com a hora e o valor. Mude o que estiver errado e clique
+em **Salvar**, ou **Excluir**. Corrigir o pulso também corrige as medições do gasto que passam por aquele trecho: uma noite que
+contou como no pulso por um Tirou esquecido deixa de puxar o gasto em uso para cima.
 
 **Um relógio está no conserto.**
 Desmarque **Disponível** no cadastro. Ele sai do sorteio e das médias da coleção, mas o histórico continua.
@@ -662,7 +673,7 @@ Pode. As telas usam exatamente a mesma API.
 | [`banco.php`](banco.php) | o banco: a conexão com o MySQL, o Postgres ou o SQLite, e a tradução do SQL de um para outro |
 | [`operacoes.php`](operacoes.php) | as regras de cada gravação: validações e mensagens |
 | [`cron.php`](cron.php) | o plano, a sessão do dia, as rodadas da manhã e da noite, os eventos e a agenda |
-| `index.php`, `ficha.php`, `historico.php`, `configuracao.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `usuarios.php` | as páginas (só o esqueleto) |
+| `index.php`, `plano.php`, `ficha.php`, `historico.php`, `configuracao.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `usuarios.php` | as páginas (só o esqueleto) |
 | `ajuda.php` | a página de ajuda: as seções do README para quem usa, convertidas para HTML |
 | [`pagina.php`](pagina.php) | o login do site e o menu |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |
