@@ -20,12 +20,16 @@ function topo($titulo, $ativo)
     $menu = ["index.php" => "Hoje", "plano.php" => "Plano", "configuracao.php" => "Configuração", "criterios.php" => "Critérios", "grupos.php" => "Grupos",
         "execucoes.php" => "Execuções do cron", "usuarios.php" => "Usuários", "cadastros.php" => "Cadastros",
         "ajuda.php" => "Ajuda"];
-    echo "<!doctype html>\n<html lang=\"pt-BR\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>" . htmlspecialchars($titulo, ENT_QUOTES, "UTF-8") . "</title>\n"
+    echo "<!doctype html>\n<html lang=\"pt-BR\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta name=\"theme-color\" content=\"#1c2530\">\n<title>" . htmlspecialchars($titulo, ENT_QUOTES, "UTF-8") . "</title>\n"
         . "<link rel=\"stylesheet\" href=\"estilo.css?v=" . (int)@filemtime(__DIR__ . "/estilo.css") . "\">\n</head>\n<body>\n<nav class=\"topo\">\n";
+    // no celular o menu fica recolhido: uma barra com a página atual e o botão que abre a lista (na tela grande o botão some)
+    echo "  <button type=\"button\" class=\"menu-botao\" aria-expanded=\"false\" aria-controls=\"menu-itens\"><span class=\"menu-pagina\">" . ($menu[$ativo] ?? htmlspecialchars($titulo, ENT_QUOTES, "UTF-8")) . "</span><span class=\"menu-abre\">Menu</span></button>\n"
+        . "  <div class=\"menu-itens\" id=\"menu-itens\">\n";
     foreach ($menu as $url => $nome) {
-        echo "  <a href=\"" . $url . "\"" . ($url === $ativo ? " class=\"ativo\"" : "") . ">" . $nome . "</a>\n";
+        echo "    <a href=\"" . $url . "\"" . ($url === $ativo ? " class=\"ativo\"" : "") . ">" . $nome . "</a>\n";
     }
-    echo "</nav>\n";
+    echo "  </div>\n</nav>\n"
+        . "<script>document.querySelector(\".menu-botao\").addEventListener(\"click\", function () { this.setAttribute(\"aria-expanded\", this.parentNode.classList.toggle(\"aberto\") ? \"true\" : \"false\"); });</script>\n";
 }
 
 // Os scripts da página e o fim dela. Cada script leva a data do arquivo no endereço, para o navegador não usar uma versão

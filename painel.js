@@ -107,10 +107,29 @@ function mostrarPainel(mostrar) {
   }
 }
 
+// No celular o painel cobre a tela inteira (estilo.css), e abri-lo empilha um passo no histórico do navegador: o "voltar"
+// do aparelho fecha o painel, em vez de sair da página
+var painelNoHistorico = false;
+function fecharPainel() {
+  var voltar = painelNoHistorico;
+  painelNoHistorico = false;
+  mostrarPainel(false);
+  if (voltar) {
+    history.back();
+  }
+}
+window.addEventListener("popstate", function () {
+  if (painelNoHistorico) {
+    painelNoHistorico = false;
+    mostrarPainel(false);
+  }
+});
+
 // Abre (ou remonta) o relógio no painel: id > 0, um relógio; 0, o cadastro de um novo. Remontando o mesmo relógio, os
 // quadros abertos e a rolagem ficam como estavam.
 function abrirNoPainel(id) {
   var painel = document.getElementById("detalhe");
+  var fechado = painel.hidden;
   var abertos = [];
   painel.querySelectorAll("details[open]").forEach(function (d) {
     if (d.className) {
@@ -459,9 +478,12 @@ function abrirNoPainel(id) {
       document.querySelectorAll("tr[data-id]").forEach(function (tr) {
         tr.classList.toggle("selecionado", tr.getAttribute("data-id") === String(id));
       });
-      history.replaceState(null, "", id > 0 ? "index.php?r=" + id : "index.php?novo=1");
-      if (!mesmo && window.innerWidth < 800) {
-        painel.scrollIntoView({ behavior: "smooth" });
+      var endereco = id > 0 ? "index.php?r=" + id : "index.php?novo=1";
+      if (fechado && !painelNoHistorico && window.innerWidth <= 800 && window.location.search === "") {
+        history.pushState(null, "", endereco);
+        painelNoHistorico = true;
+      } else {
+        history.replaceState(null, "", endereco);
       }
     }
   });
@@ -483,7 +505,7 @@ document.addEventListener("click", function (ev) {
   var fechar = ev.target.closest("[data-fechar-painel]");
   if (document.querySelector(".painel")) {
     if (fechar) {
-      mostrarPainel(false);
+      fecharPainel();
     } else if (abrir) {
       // o relógio do dia, pelo quadro "Hoje": abre no painel
       ev.preventDefault();
@@ -504,7 +526,7 @@ document.addEventListener("keydown", function (ev) {
   }
   // Esc fecha o painel (menos quando se está digitando num campo)
   if (ev.key === "Escape" && !ev.target.matches("input, textarea, select") && document.querySelector(".painel")) {
-    mostrarPainel(false);
+    fecharPainel();
   }
 });
 
