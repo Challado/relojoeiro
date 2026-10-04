@@ -137,13 +137,17 @@ agora e quantos dias ela aguenta), para não sortear um relógio que vai morrer 
 conta inteira de cada nota: cada faixa, cada peso e cada ponto.
 
 E existe uma **garantia de rodízio**: nenhum relógio passa de N dias parado (21 por padrão). Ela vale **antes** da nota: se
-algum candidato já passou do limite, ele ganha direto, o mais tempo parado primeiro (um relógio nunca usado conta como o mais
-parado de todos). Só quando ninguém passou do limite é que a nota decide.
+algum candidato já passou do limite, ele ganha direto, o mais tempo parado primeiro. Só quando ninguém passou do limite é
+que a nota decide.
+
+Os dias parado são a fórmula **Dias sem uso**, que você pode editar em Cadastros: os dias desde a última vez no pulso e, para
+um relógio que **nunca foi usado**, os dias desde a compra (sem data de compra, 9999, o mais parado de todos). Assim um
+relógio comprado ontem não fura a fila, e dois nunca usados não empatam: espera há mais tempo o que foi comprado antes.
 
 Para você nunca ficar na dúvida, **cada dia do plano guarda o motivo da escolha**, numa frase, e ela aparece embaixo do
-relógio na página Hoje e na página Plano: *"Garantia de rodízio: nunca usado, além do limite de 21 dias sem uso"*, *"Sorteio
-pela nota, entre 5 candidatos: nota 70,2, 16,4% de chance"*, *"A maior nota (91,2)"*, *"O mesmo relógio da semana no bloco
-Segunda a sexta"*, *"Escolhido à mão"*.
+relógio na página Hoje e na página Plano: *"Garantia de rodízio: nunca usado, na coleção há 38 dias, além do limite de 21
+dias sem uso"*, *"Sorteio pela nota, entre 5 candidatos: nota 70,2, 16,4% de chance"*, *"A maior nota (91,2)"*, *"O mesmo
+relógio da semana no bloco Segunda a sexta"*, *"Escolhido à mão"*.
 
 ### Os modos de rodízio
 
@@ -630,7 +634,8 @@ botão que o resolve.
 
 **Por que saiu este relógio, e não outro?**
 Olhe embaixo do nome dele, na página **Hoje** ou na **Plano**: cada dia traz o motivo da escolha. Se for *"Garantia de
-rodízio"*, ele estava parado além do limite (ou nunca tinha sido usado) e passou na frente de todos, qualquer que fosse a nota;
+rodízio"*, ele estava parado além do limite (ou nunca tinha sido usado e já está na coleção há mais tempo que o limite) e passou na
+frente de todos, qualquer que fosse a nota;
 sortear de novo dá o mesmo resultado enquanto ele não for usado. Se for *"Sorteio pela nota"*, a frase traz a nota e a chance
 que ele tinha. Um dia sem motivo foi gravado antes de o sistema guardar isso: sorteie de novo para ele aparecer.
 

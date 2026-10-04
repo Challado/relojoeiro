@@ -292,6 +292,7 @@ $MIGRACOES = [
     "v9" => ["migracao_v9.sql", "o limite de carga, geral e por relógio: carregar, pôr no sol e dar corda só quando a carga chega a ele", "campo.identificador=carga_minima"],
     "v10" => ["migracao_v10.sql", "os avisos de carga pelo estado de agora: no winder ou no pulso (o automático carrega no pulso), sem aviso de winder ou de corda; no sol, sem aviso de sol; a data do \"Carregar\" pelo gasto de agora (no pulso, o de uso; guardado, o de guardado)", "config.chave=migracao_v10"],
     "v11" => ["migracao_v11.sql", "o motivo de cada escolha do plano: por que aquele relógio saiu naquele dia (a garantia de rodízio, a nota, o sorteio, a escolha à mão)", "plano.motivo"],
+    "v12" => ["migracao_v12.sql", "os dias sem uso de um relógio nunca usado contam desde a compra (antes valiam 9999 para todos: empatavam na garantia de rodízio)", "config.chave=migracao_v12"],
 ];
 
 // As migrações que faltam aplicar neste banco: as da lista cuja marca ainda não existe. A marca: uma tabela, uma coluna
@@ -1314,9 +1315,24 @@ function plano_do_dia($data)
 
 // Para o motivo de uma escolha do plano (a frase que diz por que aquele relógio saiu): os dias sem uso por extenso
 // ("nunca usado", "parado há 23 dias") e a nota com vírgula ("91,2")
-function motivo_parado($dias_sem_uso)
+function motivo_parado($dias_sem_uso, $nunca_usado = false)
 {
-    return $dias_sem_uso >= 9999 ? "nunca usado" : "parado há " . str_replace(".", ",", (string)round($dias_sem_uso, $dias_sem_uso < 10 ? 1 : 0)) . " dias";
+    $dias = str_replace(".", ",", (string)round($dias_sem_uso, $dias_sem_uso < 10 ? 1 : 0)) . " dias";
+    if ($dias_sem_uso >= 9999) {
+        return "nunca usado";
+    }
+    return $nunca_usado ? "nunca usado, na coleção há " . $dias : "parado há " . $dias;
+}
+
+// O relógio nunca foi ao pulso (nem nos dias do plano já simulados)? Pela mesma conta das fórmulas. Os dias sem uso de um
+// relógio assim vêm da fórmula dias_sem_uso (desde a compra, ou 9999), e o motivo diz que ele nunca foi usado
+function nunca_no_pulso(&$ctx)
+{
+    static $arvore = null;
+    if ($arvore === null) {
+        $arvore = formula_ler("DIAS_DESDE_ULTIMO(\"pulso\")");
+    }
+    return formula_calcular($arvore, $ctx) === null;
 }
 
 function motivo_nota($nota)
@@ -1425,7 +1441,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                             foreach ($cands as $cid => $r) {
                                 $ctx = ["r" => $r, "momento" => $m_ini, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio($cid)];
                                 $dsu = variavel_valor("dias_sem_uso", $ctx);
-                                $info[$cid] = ["dsu" => is_numeric($dsu) ? (float)$dsu : 9999.0, "nota" => nota_do_relogio($r, $m_ini)["nota"]];
+                                $info[$cid] = ["dsu" => is_numeric($dsu) ? (float)$dsu : 9999.0, "nota" => nota_do_relogio($r, $m_ini)["nota"], "nunca" => nunca_no_pulso($ctx)];
                             }
                             $entre = count($cands) === 1 ? "único candidato do bloco " . $bloco["nome"] : "entre " . count($cands) . " candidatos";
                             $max = (int)cfg("max_sem_uso");
@@ -1440,7 +1456,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                                         $empatados[] = $cands[$cid]["nome"];
                                     }
                                 }
-                                $motivo = "Garantia de rodízio: " . motivo_parado($parados[$escolhido]["dsu"]) . ", além do limite de " . $max . " dias sem uso"
+                                $motivo = "Garantia de rodízio: " . motivo_parado($parados[$escolhido]["dsu"], $parados[$escolhido]["nunca"]) . ", além do limite de " . $max . " dias sem uso"
                                     . (count($parados) > 1 ? " (" . count($parados) . " além do limite; sai o mais tempo parado)" : "") . "."
                                     . (count($empatados) > 0 ? " Empatado com " . implode(", ", $empatados) . ": saiu o cadastrado primeiro." : "");
                             } elseif ($modo["selecao"] === "aleatorio") {
@@ -1450,7 +1466,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                             } elseif ($modo["selecao"] === "fifo") {
                                 uasort($info, function ($x, $y) { return $y["dsu"] <=> $x["dsu"]; });
                                 $escolhido = (int)array_key_first($info);
-                                $motivo = "Fila: o mais tempo sem uso (" . motivo_parado($info[$escolhido]["dsu"]) . "), " . $entre . ".";
+                                $motivo = "Fila: o mais tempo sem uso (" . motivo_parado($info[$escolhido]["dsu"], $info[$escolhido]["nunca"]) . "), " . $entre . ".";
                             } elseif ($modo["selecao"] === "inteligente") {
                                 uasort($info, function ($x, $y) { return $y["nota"] <=> $x["nota"]; });
                                 $escolhido = (int)array_key_first($info);
@@ -2080,11 +2096,13 @@ function gerar_escala($ini)
                 } else {
                     $fora = [];
                     $cands = [];
+                    $nunca = [];
                     foreach ($rels as $cid => $r) {
                         if ($aceita($bloco, $r)) {
                             $ctx = ["r" => $r, "momento" => $m_ini, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio($cid)];
                             $dsu = variavel_valor("dias_sem_uso", $ctx);
                             $cands[$cid] = is_numeric($dsu) ? (float)$dsu : 9999.0;
+                            $nunca[$cid] = nunca_no_pulso($ctx);
                         }
                     }
                     if (count($cands) > 1 && isset($cands[$ultimo])) {
@@ -2108,7 +2126,7 @@ function gerar_escala($ini)
                     if ($max > 0 && count($cands) > 0 && max($cands) >= $max) {
                         $mais = max($cands);
                         $cands = array_filter($cands, function ($x) use ($mais) { return $x == $mais; });
-                        $garantia = "Garantia de rodízio: " . motivo_parado($mais) . ", no limite de " . $max . " dias sem uso";
+                        $garantia = "no limite de " . $max . " dias sem uso";
                     }
                     // a maior nota no dia simulado; um valor minúsculo só desempata notas iguais
                     $melhor = -1.0;
@@ -2124,7 +2142,7 @@ function gerar_escala($ini)
                     }
                     if ($novo > 0) {
                         $motivo_bloco = ($garantia !== ""
-                            ? $garantia . (count($cands) > 1 ? "; entre os " . count($cands) . " empatados no tempo parado, a maior nota (" . motivo_nota($nota_dele) . ")" : "") . "."
+                            ? "Garantia de rodízio: " . motivo_parado($cands[$novo], $nunca[$novo]) . ", " . $garantia . (count($cands) > 1 ? "; entre os " . count($cands) . " empatados no tempo parado, a maior nota (" . motivo_nota($nota_dele) . ")" : "") . "."
                             : "A maior nota do dia (" . motivo_nota($nota_dele) . "), " . ($todos === 1 ? "único candidato" : "entre " . $todos . " candidatos") . ".")
                             . (count($fora) > 0 ? " " . ucfirst(implode("; ", $fora)) . "." : "");
                     }
