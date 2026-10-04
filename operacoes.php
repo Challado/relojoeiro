@@ -1394,10 +1394,10 @@ function op_rodizio($acao, $d)
     $comecou = dia_comecou($agora);
     // troca o relógio de hoje a partir de agora: a sessão de rodízio do anterior termina agora (ou sai, se nem começou)
     // e a do novo começa agora (se ainda está no horário de uso)
-    $troca_hoje = function ($novo_id) use ($hoje, $agora, $ini_uso, $fim_uso) {
+    $troca_hoje = function ($novo_id, $motivo) use ($hoje, $agora, $ini_uso, $fim_uso) {
         $tipo = lancamento_tipos()["pulso"] ?? null;
         $dia = $hoje->format("Y-m-d");
-        sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, criado) VALUES (?, ?, NULL, 'manual', NOW())", [$dia, $novo_id]);
+        sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, NULL, 'manual', ?, NOW())", [$dia, $novo_id, $motivo]);
         if ($tipo) {
             foreach (linhas("SELECT id, relogio_id, inicio FROM lancamento WHERE tipo_id = ? AND origem = 'rodizio' AND DATE(inicio) = ? AND relogio_id <> ?", [(int)$tipo["id"], $dia, $novo_id]) as $l) {
                 if (strtotime($l["inicio"]) >= $agora) {
@@ -1461,7 +1461,8 @@ function op_rodizio($acao, $d)
         garantir_plano($hoje, null, $acao !== "resortear_hoje");
         $depois = plano_do_dia($hoje->format("Y-m-d"));
         if ($depois && (!$antes || (int)$antes["relogio_id"] !== (int)$depois["relogio_id"]) && ($acao === "resortear_hoje" || !$comecou)) {
-            $troca_hoje((int)$depois["relogio_id"]);
+            // o de hoje trocado pelo sorteio: o motivo é o do sorteio
+            $troca_hoje((int)$depois["relogio_id"], $depois["motivo"] ?? null);
         }
         $msg = "Sorteado de novo" . ($desde > $hoje ? " a partir de amanhã; hoje continua o " . ($antes["nome"] ?? "mesmo") : "") . "." . ($depois ? " Hoje: " . $depois["nome"] . "." : "");
     } elseif ($acao === "usando") {
@@ -1470,14 +1471,15 @@ function op_rodizio($acao, $d)
             $erros[] = "Relógio não encontrado.";
         } else {
             $antes = plano_do_dia($hoje->format("Y-m-d"));
-            $troca_hoje((int)$r["id"]);
+            $troca_hoje((int)$r["id"], "Escolhido à mão: você marcou que está usando este hoje.");
             $msg = "Hoje: " . $r["nome"] . ", a partir de agora.";
             if ($escala) {
                 // os dias seguidos que o relógio de antes ainda teria ficam com o escolhido; a escala é refeita depois deles
                 $dia = $hoje->modify("+1 day");
                 $p = plano_do_dia($dia->format("Y-m-d"));
                 for ($n = 0; $antes && $p && (int)$p["relogio_id"] === (int)$antes["relogio_id"] && $n < 366; $n++) {
-                    sql("UPDATE plano SET relogio_id = ?, origem = 'manual', acao = NULL WHERE data = ?", [(int)$r["id"], $dia->format("Y-m-d")]);
+                    sql("UPDATE plano SET relogio_id = ?, origem = 'manual', acao = NULL, motivo = ? WHERE data = ?",
+                        [(int)$r["id"], "Escolhido à mão: segue o relógio que você pôs no pulso.", $dia->format("Y-m-d")]);
                     $dia = $dia->modify("+1 day");
                     $p = plano_do_dia($dia->format("Y-m-d"));
                 }
@@ -1515,7 +1517,7 @@ function op_rodizio($acao, $d)
             $p = plano_do_dia($data);
             $msg = $dt->format("d/m") . ": volta a ser sorteado" . ($p ? " (" . $p["nome"] . ")" : "") . ".";
         } else {
-            sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, criado) VALUES (?, ?, NULL, 'manual', NOW())", [$data, $novo]);
+            sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, NULL, 'manual', ?, NOW())", [$data, $novo, "Escolhido à mão."]);
             if ($escala) {
                 // a escala refeita a partir do dia trocado: ele fica, e os seguintes (e o que fazer antes de cada um) se ajustam
                 gerar_escala($dt);

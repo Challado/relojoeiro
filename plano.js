@@ -74,7 +74,8 @@ function montarPlano() {
     var dia = new Date(instante(p.data)).getDay();
     linhas += el("tr", {"class": (dia === 0 || dia === 6 ? "fds" : "") + (p.data === d.hoje ? " de-hoje" : "")},
       el("td", {"class": "dia"}, dataBr(p.data, true) + " " + el("small", {}, SEMANA[dia]) + (p.data === d.hoje ? " " + el("small", {}, "hoje") : ""))
-      + el("td", {}, h(p.relogio) + (p.origem === "manual" ? " " + el("small", {"class": "a-mao"}, "à mão") : "")) + el("td", {}, h(p.acao || ""))
+      + el("td", {}, h(p.relogio) + (p.origem === "manual" ? " " + el("small", {"class": "a-mao"}, "à mão") : "")
+        + (p.motivo ? el("small", {"class": "motivo"}, h(p.motivo)) : "")) + el("td", {}, h(p.acao || ""))
       + el("td", {"class": "trocar"}, formTrocarDia(p, d.relogios, d.hoje)));
   });
   fecha();

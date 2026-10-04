@@ -52,7 +52,7 @@
  *     "modos":             [{"id", "nome", "selecao", "escala_dias" (vazio: sorteio pelos blocos; número: escala inteligente),
  *                          "ordem", "ativo", "blocos": [{"id", "nome", "dias", "no_id", "lugar", "um_por", "relogio_id"}]}]
  *     "plano":             [{"data", "relogio_id", "relogio", "bloco_id", "bloco", "origem" (sorteio ou manual), "acao" (o que fazer
- *                          no dia, anotado pela escala), "criado"}]  o plano inteiro gravado, do primeiro dia ao último (a escala
+ *                          no dia, anotado pela escala), "motivo" (por que este relógio saiu), "criado"}]  o plano inteiro gravado, do primeiro dia ao último (a escala
  *                          de dois anos sai inteira)
  *     "config":            {chave: valor}  toda a configuração, inclusive o caminho da chave do Google (agenda_chave)
  *     "eventos":           [os eventos personalizados, como em recurso=eventos, com todos os disparos]
@@ -134,10 +134,10 @@
  *                                 curl -u lucas:senha -g "http://servidor/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz"
  *   recurso=hoje             tudo o que a página Hoje mostra: {"data", "agora", "uso_inicio", "comecou" (o dia já começou no pulso), "pulso_poe_sozinho", "pulso_tira_sozinho",
  *                            "modo": {"id", "nome", "selecao", "escala_dias"}, "escala_fim", "max_sem_uso", "dia": {"data", "relogio_id",
- *                            "relogio", "ate" ("só hoje", "até sexta, 02/10"), "acao" (o lembrete do dia)}, "avisos": [os de hoje, atrasados
+ *                            "relogio", "ate" ("só hoje", "até sexta, 02/10"), "acao" (o lembrete do dia), "motivo" (por que ele saiu)}, "avisos": [os de hoje, atrasados
  *                            ou em breve: {"relogio_id", "relogio", "identificador", "nome", "texto" (o motivo), "estado", "resolve":
  *                            {"identificador", "nome", "formato", "unidade"} (o lançamento do botão)}], "plano": [os próximos 62 dias:
- *                            {"data", "relogio_id", "relogio", "acao"}], "proxima_semana": {"segunda", "domingo", "ja_montada"}, "modos":
+ *                            {"data", "relogio_id", "relogio", "acao", "motivo", "origem"}], "proxima_semana": {"segunda", "domingo", "ja_montada"}, "modos":
  *                            [{"id", "nome", "selecao", "escala_dias", "blocos": [{"id", "nome", "dias", "no_id", "um_por", "relogio_id"}]}],
  *                            "grupos": [{"id", "nome", "profundidade", "caminho"}], "avisos_nomes", "relogios": [{"id", "nome",
  *                            "disponivel", "tipo" (o grupo), "em_uso", "agora" ("Em repouso desde 21:40"), "carga" (%), "carga_de" (de onde
@@ -645,6 +645,7 @@
  *     plano[].bloco_id               o bloco do modo que escolheu o dia; null: escala ou manual
  *     plano[].criado                 quando o dia foi gravado no plano (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     plano[].data                   o dia (texto AAAA-MM-DD)
+ *     plano[].motivo                 por que este relógio saiu neste dia, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à mão); null: o dia foi gravado antes de o sistema guardar o motivo
  *     plano[].origem                 sorteio (pelo modo) ou manual ("Usando hoje")
  *     plano[].relogio                o nome dele
  *     plano[].relogio_id             o relógio do dia
@@ -874,6 +875,7 @@
  *     dia.acao                       o lembrete do dia; null: nada
  *     dia.ate                        até quando ele fica ("só hoje", "até sexta, 02/10")
  *     dia.data                       hoje
+ *     dia.motivo                     por que ele saiu hoje, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à mão); null: não foi guardado
  *     dia.relogio                    o nome dele
  *     dia.relogio_id                 o relógio de hoje
  *     escala_fim                     até que dia vai a escala (texto AAAA-MM-DD); null fora da escala
@@ -904,6 +906,7 @@
  *     modos[].selecao                a forma de escolha
  *     plano[]                        os próximos 62 dias do plano
  *     plano[].acao                   o lembrete do dia; null
+ *     plano[].motivo                 por que este relógio saiu neste dia, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à mão); null: o dia foi gravado antes de o sistema guardar o motivo
  *     plano[].origem                 sorteio (pelo modo) ou manual (escolhido à mão: "trocar por…" ou "Usando hoje")
  *     plano[].data                   o dia
  *     plano[].relogio                o nome
@@ -1524,6 +1527,7 @@
  *     plano[].bloco_id               o bloco do modo que escolheu o dia; null: escala ou manual
  *     plano[].criado                 quando o dia foi gravado no plano (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     plano[].data                   o dia (texto AAAA-MM-DD)
+ *     plano[].motivo                 por que este relógio saiu neste dia, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à mão); null: o dia foi gravado antes de o sistema guardar o motivo
  *     plano[].origem                 sorteio (pelo modo) ou manual (escolhido à mão: "Usando hoje" ou trocar_dia)
  *     plano[].relogio                o nome dele
  *     plano[].relogio_id             o relógio do dia
@@ -1695,7 +1699,7 @@ function plano_legivel($de, $ate)
 {
     return array_map(function ($p) {
         return ["data" => $p["data"], "relogio_id" => (int)$p["relogio_id"], "relogio" => $p["relogio"], "bloco_id" => $p["bloco_id"] === null ? null : (int)$p["bloco_id"],
-            "bloco" => $p["bloco"], "origem" => $p["origem"], "acao" => $p["acao"], "criado" => $p["criado"]];
+            "bloco" => $p["bloco"], "origem" => $p["origem"], "acao" => $p["acao"], "motivo" => $p["motivo"], "criado" => $p["criado"]];
     }, linhas("SELECT p.*, r.nome AS relogio, b.nome AS bloco FROM plano p JOIN relogio r ON r.id = p.relogio_id LEFT JOIN modo_bloco b ON b.id = p.bloco_id
         WHERE p.data >= ? AND p.data <= ? ORDER BY p.data", [$de !== "" ? $de : "0001-01-01", $ate !== "" ? $ate : "9999-12-31"]));
 }
@@ -2066,9 +2070,9 @@ if (!$token_ok && $quem === "") {
         "pulso_poe_sozinho" => pulso_poe_sozinho(), "pulso_tira_sozinho" => pulso_tira_sozinho(),
         "modo" => $modo ? ["id" => (int)$modo["id"], "nome" => $modo["nome"], "selecao" => $modo["selecao"], "escala_dias" => $modo["escala_dias"] === null ? null : (int)$modo["escala_dias"]] : null,
         "escala_fim" => cfg("escala_fim") !== "" ? cfg("escala_fim") : null, "max_sem_uso" => (int)cfg("max_sem_uso"),
-        "dia" => $dia ? ["data" => $dia["data"], "relogio_id" => (int)$dia["relogio_id"], "relogio" => $dia["nome"], "ate" => texto_ate($dia["data"], "hoje"), "acao" => $dia["acao"]] : null,
+        "dia" => $dia ? ["data" => $dia["data"], "relogio_id" => (int)$dia["relogio_id"], "relogio" => $dia["nome"], "ate" => texto_ate($dia["data"], "hoje"), "acao" => $dia["acao"], "motivo" => $dia["motivo"]] : null,
         "avisos" => $avisos_h,
-        "plano" => array_map(function ($p) { return ["data" => $p["data"], "relogio_id" => (int)$p["relogio_id"], "relogio" => $p["nome"], "acao" => $p["acao"], "origem" => $p["origem"]]; },
+        "plano" => array_map(function ($p) { return ["data" => $p["data"], "relogio_id" => (int)$p["relogio_id"], "relogio" => $p["nome"], "acao" => $p["acao"], "motivo" => $p["motivo"], "origem" => $p["origem"]]; },
             linhas("SELECT p.*, r.nome FROM plano p JOIN relogio r ON r.id = p.relogio_id WHERE p.data >= ? ORDER BY p.data LIMIT 62", [$hoje->format("Y-m-d")])),
         "proxima_semana" => ["segunda" => $seg->format("Y-m-d"), "domingo" => $seg->modify("+6 days")->format("Y-m-d"),
             "ja_montada" => (int)valor("SELECT COUNT(*) FROM plano WHERE data BETWEEN ? AND ?", [$seg->format("Y-m-d"), $seg->modify("+6 days")->format("Y-m-d")]) > 1],
@@ -2793,6 +2797,7 @@ if (!$token_ok && $quem === "") {
                 "plano[].bloco_id" => "o bloco do modo que escolheu o dia; null: escala ou manual",
                 "plano[].criado" => "quando o dia foi gravado no plano (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "plano[].data" => "o dia (texto AAAA-MM-DD)",
+                "plano[].motivo" => "por que este relógio saiu neste dia, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à mão); null: o dia foi gravado antes de o sistema guardar o motivo",
                 "plano[].origem" => "sorteio (pelo modo) ou manual (\"Usando hoje\")",
                 "plano[].relogio" => "o nome dele",
                 "plano[].relogio_id" => "o relógio do dia",
@@ -2953,6 +2958,7 @@ if (!$token_ok && $quem === "") {
                 "dia.acao" => "o lembrete do dia; null: nada",
                 "dia.ate" => "até quando ele fica (\"só hoje\", \"até sexta, 02/10\")",
                 "dia.data" => "hoje",
+                "dia.motivo" => "por que ele saiu hoje, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à mão); null: não foi guardado",
                 "dia.relogio" => "o nome dele",
                 "dia.relogio_id" => "o relógio de hoje",
                 "escala_fim" => "até que dia vai a escala (texto AAAA-MM-DD); null fora da escala",
@@ -2982,6 +2988,7 @@ if (!$token_ok && $quem === "") {
                 "modos[].selecao" => "a forma de escolha",
                 "plano[]" => "os próximos 62 dias do plano",
                 "plano[].acao" => "o lembrete do dia; null",
+                "plano[].motivo" => "por que este relógio saiu neste dia, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à mão); null: o dia foi gravado antes de o sistema guardar o motivo",
                 "plano[].origem" => "sorteio (pelo modo) ou manual (escolhido à mão: \"trocar por…\" ou \"Usando hoje\")",
                 "plano[].data" => "o dia",
                 "plano[].relogio" => "o nome",
@@ -3527,6 +3534,7 @@ if (!$token_ok && $quem === "") {
                 "plano[].criado" => "quando o dia foi gravado no plano (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "plano[].data" => "o dia (texto AAAA-MM-DD)",
                 "hoje" => "hoje (texto AAAA-MM-DD)",
+                "plano[].motivo" => "por que este relógio saiu neste dia, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à mão); null: o dia foi gravado antes de o sistema guardar o motivo",
                 "plano[].origem" => "sorteio (pelo modo) ou manual (escolhido à mão: \"Usando hoje\" ou trocar_dia)",
                 "plano[].relogio" => "o nome dele",
                 "plano[].relogio_id" => "o relógio do dia",
