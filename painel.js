@@ -188,17 +188,34 @@ function abrirNoPainel(id) {
         blocos += el("section", {}, el("h2", {}, "Previsão") + (r.previsao.linhas.length === 0 ? el("p", {}, "Informe a carga atual para o sistema começar a prever.")
           : r.previsao.linhas.map(function (l) { return el("p", {}, h(l)); }).join("")));
       }
+      // os dois gastos lado a lado: o do cadastro, o medido pelas leituras (nesta janela e na anterior) e o que vale na conta
+      var gs = r.previsao.gasto;
+      if (gs) {
+        var pct = function (v) { return num(v, 2) + "%"; };
+        var linhaGasto = function (rotulo, por, x) {
+          return el("p", {}, rotulo + ": " + el("strong", {}, x.vale !== null ? pct(x.vale) + " " + por : "sem dados")
+            + " " + el("span", {"class": "nota"}, "(" + (x.medido !== null ? "medido; o cadastro diz " + (x.cadastro !== null ? pct(x.cadastro) : "nada") : "do cadastro, sem medição") + ")"));
+        };
+        var antes = gs.uso.antes !== null || gs.repouso.antes !== null
+          ? el("p", {"class": "nota"}, "Nos " + gs.janela_dias + " dias antes desses (" + gs.medicoes_antes + (gs.medicoes_antes === 1 ? " medição" : " medições") + "): "
+            + (gs.uso.antes !== null ? pct(gs.uso.antes) + " no pulso" : "") + (gs.uso.antes !== null && gs.repouso.antes !== null ? " e " : "")
+            + (gs.repouso.antes !== null ? pct(gs.repouso.antes) + " fora" : "") + ".")
+          : "";
+        blocos += el("section", {}, el("h2", {}, "Gasto da bateria")
+          + linhaGasto("No pulso", "por dia de uso", gs.uso) + linhaGasto("Fora do pulso (desligado)", "por dia", gs.repouso) + antes
+          + el("p", {"class": "nota"}, (gs.medicoes > 0 ? "Pelas " + gs.medicoes + (gs.medicoes === 1 ? " medição" : " medições") + " dos últimos " + gs.janela_dias + " dias"
+              + (gs.conjunta ? ", os dois gastos saem juntos da conta." : "; elas ainda não separam bem os dois, então vale a média de cada um.")
+              : "Nenhuma medição nos últimos " + gs.janela_dias + " dias" + (gs.uso.medido !== null || gs.repouso.medido !== null ? ": vale a conta com as de antes." : "."))
+            + " Medições mais velhas que isso saem da conta: se a bateria envelhecer e gastar mais, o medido sobe sozinho."));
+      }
       // a autonomia: cheio pelo cadastro e pela conta (com o gasto medido), quanto ainda dura e quando acaba
       var au = r.autonomia;
-      var medido = r.previsao.conta.filter(function (cc) { return cc.origem === "medido" && cc.campo.indexOf("uso") >= 0; });
       var linhaAu = function (rotulo, seg, motivo) {
         return el("p", {}, rotulo + ": " + (seg !== null ? el("strong", {}, duracao(seg)) : el("span", {"class": "nota"}, h(motivo || "sem dados"))));
       };
       blocos += el("section", {}, el("h2", {}, "Autonomia")
         + linhaAu("Cheio, pelo cadastro", au.autonomia_prevista, au.motivos.autonomia_prevista)
         + linhaAu("Cheio, pela conta", au.autonomia_atual, au.motivos.autonomia_atual)
-        + (medido.length > 0 ? el("p", {"class": "nota"}, h(medido[0].nome) + ": " + num(medido[0].valor, 2) + " " + h(medido[0].unidade))
-          : (r.previsao.aplica ? el("p", {"class": "nota"}, "Sem gasto medido ainda: a conta usa o cadastro.") : ""))
         + (au.acaba_em_unixtimestamp !== null ? el("p", {}, "Seguindo o plano, acaba " + el("strong", {}, dataBr(au.acaba_em_datacomtz.substr(0, 10),
             au.acaba_em_datacomtz.substr(0, 4) === hoje.substr(0, 4)) + " "
             + au.acaba_em_datacomtz.substr(11, 5)) + " " + el("span", {"class": "nota"}, "(em " + duracao(au.acaba_em_segundos) + ")"))

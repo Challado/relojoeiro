@@ -108,7 +108,9 @@
  *                            "relogio", "aplica" (tem leitura com valor), "linhas" (as frases da página), "energia", "dura_dias",
  *                            "dura_ate", "limite" (a Configuração, 20%), "chega_limite_em" (parado), "proxima_entrada",
  *                            "carga_na_entrada", "precisa", "carregar_antes", "leitura", "leitura_em", "confianca" (alta, média,
- *                            baixa), "conta": [{"campo", "nome", "valor", "unidade", "origem": informado, padrão ou vazio}]}]}
+ *                            baixa), "conta": [{"campo", "nome", "valor", "unidade", "origem": informado, padrão ou vazio}],
+ *                            "gasto": {"uso" e "repouso": {"cadastro", "medido", "antes", "vale"}, "janela_dias", "medicoes",
+ *                            "medicoes_antes", "conjunta"}}]}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=previsao&relogio=10"
  *   recurso=plano            [de, ate: AAAA-MM-DD] o plano gravado (sem de/ate: inteiro), com "escala_fim" e o modo ativo:
  *                            {"modo", "escala_fim", "plano": [como em "plano" acima]}
@@ -796,6 +798,31 @@
  *     relogios[].previsao.dura_ate   até que dia a carga aguenta se usar a partir de hoje (texto AAAA-MM-DD)
  *     relogios[].previsao.dura_dias  quantos dias de uso a carga de agora aguenta (número, dias; a fórmula dias_de_carga)
  *     relogios[].previsao.energia    a energia agora, em % (número; null sem leitura)
+ *     relogios[].previsao.gasto      os dois gastos da bateria lado a lado (as fórmulas taxa_uso e taxa_repouso; null se o relógio não as tem)
+ *     relogios[].previsao.gasto.conjunta
+ *                                    true: os dois gastos saem juntos da conta das medições; false: a média das medições de cada um
+ *     relogios[].previsao.gasto.janela_dias
+ *                                    a janela do gasto medido (medicao_janela_dias da Configuração), em dias (número)
+ *     relogios[].previsao.gasto.medicoes
+ *                                    quantas medições há na janela (número)
+ *     relogios[].previsao.gasto.medicoes_antes
+ *                                    quantas medições há na janela anterior, a dos antes (número)
+ *     relogios[].previsao.gasto.uso.antes
+ *                                    o gasto em uso, em % por dia de uso, medido na janela anterior (número; null sem medição)
+ *     relogios[].previsao.gasto.uso.cadastro
+ *                                    o gasto em uso, em % por dia de uso, pelo cadastro, sem as medições (número)
+ *     relogios[].previsao.gasto.uso.medido
+ *                                    o gasto em uso, em % por dia de uso, medido pelas leituras, como o MEDIDO (número; null sem medição)
+ *     relogios[].previsao.gasto.uso.vale
+ *                                    o gasto em uso, em % por dia de uso que vale na conta: o medido, senão o cadastro (número)
+ *     relogios[].previsao.gasto.repouso.antes
+ *                                    o gasto fora do pulso, em % por dia, medido na janela anterior (número; null sem medição)
+ *     relogios[].previsao.gasto.repouso.cadastro
+ *                                    o gasto fora do pulso, em % por dia, pelo cadastro, sem as medições (número)
+ *     relogios[].previsao.gasto.repouso.medido
+ *                                    o gasto fora do pulso, em % por dia, medido pelas leituras, como o MEDIDO (número; null sem medição)
+ *     relogios[].previsao.gasto.repouso.vale
+ *                                    o gasto fora do pulso, em % por dia que vale na conta: o medido, senão o cadastro (número)
  *     relogios[].previsao.leitura    a última leitura, no valor informado (número)
  *     relogios[].previsao.leitura_em quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].previsao.limite     o limite de carga da Configuração (previsao_limite), em % (número)
@@ -1109,6 +1136,31 @@
  *     relogio.previsao.dura_ate      até que dia a carga aguenta se usar a partir de hoje (texto AAAA-MM-DD)
  *     relogio.previsao.dura_dias     quantos dias de uso a carga de agora aguenta (número, dias; a fórmula dias_de_carga)
  *     relogio.previsao.energia       a energia agora, em % (número; null sem leitura)
+ *     relogio.previsao.gasto         os dois gastos da bateria lado a lado (as fórmulas taxa_uso e taxa_repouso; null se o relógio não as tem)
+ *     relogio.previsao.gasto.conjunta
+ *                                    true: os dois gastos saem juntos da conta das medições; false: a média das medições de cada um
+ *     relogio.previsao.gasto.janela_dias
+ *                                    a janela do gasto medido (medicao_janela_dias da Configuração), em dias (número)
+ *     relogio.previsao.gasto.medicoes
+ *                                    quantas medições há na janela (número)
+ *     relogio.previsao.gasto.medicoes_antes
+ *                                    quantas medições há na janela anterior, a dos antes (número)
+ *     relogio.previsao.gasto.uso.antes
+ *                                    o gasto em uso, em % por dia de uso, medido na janela anterior (número; null sem medição)
+ *     relogio.previsao.gasto.uso.cadastro
+ *                                    o gasto em uso, em % por dia de uso, pelo cadastro, sem as medições (número)
+ *     relogio.previsao.gasto.uso.medido
+ *                                    o gasto em uso, em % por dia de uso, medido pelas leituras, como o MEDIDO (número; null sem medição)
+ *     relogio.previsao.gasto.uso.vale
+ *                                    o gasto em uso, em % por dia de uso que vale na conta: o medido, senão o cadastro (número)
+ *     relogio.previsao.gasto.repouso.antes
+ *                                    o gasto fora do pulso, em % por dia, medido na janela anterior (número; null sem medição)
+ *     relogio.previsao.gasto.repouso.cadastro
+ *                                    o gasto fora do pulso, em % por dia, pelo cadastro, sem as medições (número)
+ *     relogio.previsao.gasto.repouso.medido
+ *                                    o gasto fora do pulso, em % por dia, medido pelas leituras, como o MEDIDO (número; null sem medição)
+ *     relogio.previsao.gasto.repouso.vale
+ *                                    o gasto fora do pulso, em % por dia que vale na conta: o medido, senão o cadastro (número)
  *     relogio.previsao.leitura       a última leitura, no valor informado (número)
  *     relogio.previsao.leitura_em    quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.previsao.limite        o limite de carga da Configuração (previsao_limite), em % (número)
@@ -1508,6 +1560,23 @@
  *     previsoes[].dura_ate           até que dia a carga aguenta se usar a partir de hoje (texto AAAA-MM-DD)
  *     previsoes[].dura_dias          quantos dias de uso a carga de agora aguenta (número, dias; a fórmula dias_de_carga)
  *     previsoes[].energia            a energia agora, em % (número; null sem leitura)
+ *     previsoes[].gasto              os dois gastos da bateria lado a lado (as fórmulas taxa_uso e taxa_repouso; null se o relógio não as tem)
+ *     previsoes[].gasto.conjunta     true: os dois gastos saem juntos da conta das medições; false: a média das medições de cada um
+ *     previsoes[].gasto.janela_dias  a janela do gasto medido (medicao_janela_dias da Configuração), em dias (número)
+ *     previsoes[].gasto.medicoes     quantas medições há na janela (número)
+ *     previsoes[].gasto.medicoes_antes
+ *                                    quantas medições há na janela anterior, a dos antes (número)
+ *     previsoes[].gasto.uso.antes    o gasto em uso, em % por dia de uso, medido na janela anterior (número; null sem medição)
+ *     previsoes[].gasto.uso.cadastro o gasto em uso, em % por dia de uso, pelo cadastro, sem as medições (número)
+ *     previsoes[].gasto.uso.medido   o gasto em uso, em % por dia de uso, medido pelas leituras, como o MEDIDO (número; null sem medição)
+ *     previsoes[].gasto.uso.vale     o gasto em uso, em % por dia de uso que vale na conta: o medido, senão o cadastro (número)
+ *     previsoes[].gasto.repouso.antes
+ *                                    o gasto fora do pulso, em % por dia, medido na janela anterior (número; null sem medição)
+ *     previsoes[].gasto.repouso.cadastro
+ *                                    o gasto fora do pulso, em % por dia, pelo cadastro, sem as medições (número)
+ *     previsoes[].gasto.repouso.medido
+ *                                    o gasto fora do pulso, em % por dia, medido pelas leituras, como o MEDIDO (número; null sem medição)
+ *     previsoes[].gasto.repouso.vale o gasto fora do pulso, em % por dia que vale na conta: o medido, senão o cadastro (número)
  *     previsoes[].leitura            a última leitura, no valor informado (número)
  *     previsoes[].leitura_em         quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     previsoes[].limite             o limite de carga da Configuração (previsao_limite), em % (número)
@@ -2898,6 +2967,19 @@ if (!$token_ok && $quem === "") {
                 "relogios[].previsao.dura_ate" => "até que dia a carga aguenta se usar a partir de hoje (texto AAAA-MM-DD)",
                 "relogios[].previsao.dura_dias" => "quantos dias de uso a carga de agora aguenta (número, dias; a fórmula dias_de_carga)",
                 "relogios[].previsao.energia" => "a energia agora, em % (número; null sem leitura)",
+                "relogios[].previsao.gasto" => "os dois gastos da bateria lado a lado (as fórmulas taxa_uso e taxa_repouso; null se o relógio não as tem)",
+                "relogios[].previsao.gasto.conjunta" => "true: os dois gastos saem juntos da conta das medições; false: a média das medições de cada um",
+                "relogios[].previsao.gasto.janela_dias" => "a janela do gasto medido (medicao_janela_dias da Configuração), em dias (número)",
+                "relogios[].previsao.gasto.medicoes" => "quantas medições há na janela (número)",
+                "relogios[].previsao.gasto.medicoes_antes" => "quantas medições há na janela anterior, a dos antes (número)",
+                "relogios[].previsao.gasto.uso.antes" => "o gasto em uso, em % por dia de uso, medido na janela anterior (número; null sem medição)",
+                "relogios[].previsao.gasto.uso.cadastro" => "o gasto em uso, em % por dia de uso, pelo cadastro, sem as medições (número)",
+                "relogios[].previsao.gasto.uso.medido" => "o gasto em uso, em % por dia de uso, medido pelas leituras, como o MEDIDO (número; null sem medição)",
+                "relogios[].previsao.gasto.uso.vale" => "o gasto em uso, em % por dia de uso que vale na conta: o medido, senão o cadastro (número)",
+                "relogios[].previsao.gasto.repouso.antes" => "o gasto fora do pulso, em % por dia, medido na janela anterior (número; null sem medição)",
+                "relogios[].previsao.gasto.repouso.cadastro" => "o gasto fora do pulso, em % por dia, pelo cadastro, sem as medições (número)",
+                "relogios[].previsao.gasto.repouso.medido" => "o gasto fora do pulso, em % por dia, medido pelas leituras, como o MEDIDO (número; null sem medição)",
+                "relogios[].previsao.gasto.repouso.vale" => "o gasto fora do pulso, em % por dia que vale na conta: o medido, senão o cadastro (número)",
                 "relogios[].previsao.leitura" => "a última leitura, no valor informado (número)",
                 "relogios[].previsao.leitura_em" => "quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogios[].previsao.limite" => "o limite de carga da Configuração (previsao_limite), em % (número)",
@@ -3148,6 +3230,19 @@ if (!$token_ok && $quem === "") {
                 "relogio.previsao.dura_ate" => "até que dia a carga aguenta se usar a partir de hoje (texto AAAA-MM-DD)",
                 "relogio.previsao.dura_dias" => "quantos dias de uso a carga de agora aguenta (número, dias; a fórmula dias_de_carga)",
                 "relogio.previsao.energia" => "a energia agora, em % (número; null sem leitura)",
+                "relogio.previsao.gasto" => "os dois gastos da bateria lado a lado (as fórmulas taxa_uso e taxa_repouso; null se o relógio não as tem)",
+                "relogio.previsao.gasto.conjunta" => "true: os dois gastos saem juntos da conta das medições; false: a média das medições de cada um",
+                "relogio.previsao.gasto.janela_dias" => "a janela do gasto medido (medicao_janela_dias da Configuração), em dias (número)",
+                "relogio.previsao.gasto.medicoes" => "quantas medições há na janela (número)",
+                "relogio.previsao.gasto.medicoes_antes" => "quantas medições há na janela anterior, a dos antes (número)",
+                "relogio.previsao.gasto.uso.antes" => "o gasto em uso, em % por dia de uso, medido na janela anterior (número; null sem medição)",
+                "relogio.previsao.gasto.uso.cadastro" => "o gasto em uso, em % por dia de uso, pelo cadastro, sem as medições (número)",
+                "relogio.previsao.gasto.uso.medido" => "o gasto em uso, em % por dia de uso, medido pelas leituras, como o MEDIDO (número; null sem medição)",
+                "relogio.previsao.gasto.uso.vale" => "o gasto em uso, em % por dia de uso que vale na conta: o medido, senão o cadastro (número)",
+                "relogio.previsao.gasto.repouso.antes" => "o gasto fora do pulso, em % por dia, medido na janela anterior (número; null sem medição)",
+                "relogio.previsao.gasto.repouso.cadastro" => "o gasto fora do pulso, em % por dia, pelo cadastro, sem as medições (número)",
+                "relogio.previsao.gasto.repouso.medido" => "o gasto fora do pulso, em % por dia, medido pelas leituras, como o MEDIDO (número; null sem medição)",
+                "relogio.previsao.gasto.repouso.vale" => "o gasto fora do pulso, em % por dia que vale na conta: o medido, senão o cadastro (número)",
                 "relogio.previsao.leitura" => "a última leitura, no valor informado (número)",
                 "relogio.previsao.leitura_em" => "quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogio.previsao.limite" => "o limite de carga da Configuração (previsao_limite), em % (número)",
@@ -3515,6 +3610,19 @@ if (!$token_ok && $quem === "") {
                 "previsoes[].dura_ate" => "até que dia a carga aguenta se usar a partir de hoje (texto AAAA-MM-DD)",
                 "previsoes[].dura_dias" => "quantos dias de uso a carga de agora aguenta (número, dias; a fórmula dias_de_carga)",
                 "previsoes[].energia" => "a energia agora, em % (número; null sem leitura)",
+                "previsoes[].gasto" => "os dois gastos da bateria lado a lado (as fórmulas taxa_uso e taxa_repouso; null se o relógio não as tem)",
+                "previsoes[].gasto.conjunta" => "true: os dois gastos saem juntos da conta das medições; false: a média das medições de cada um",
+                "previsoes[].gasto.janela_dias" => "a janela do gasto medido (medicao_janela_dias da Configuração), em dias (número)",
+                "previsoes[].gasto.medicoes" => "quantas medições há na janela (número)",
+                "previsoes[].gasto.medicoes_antes" => "quantas medições há na janela anterior, a dos antes (número)",
+                "previsoes[].gasto.uso.antes" => "o gasto em uso, em % por dia de uso, medido na janela anterior (número; null sem medição)",
+                "previsoes[].gasto.uso.cadastro" => "o gasto em uso, em % por dia de uso, pelo cadastro, sem as medições (número)",
+                "previsoes[].gasto.uso.medido" => "o gasto em uso, em % por dia de uso, medido pelas leituras, como o MEDIDO (número; null sem medição)",
+                "previsoes[].gasto.uso.vale" => "o gasto em uso, em % por dia de uso que vale na conta: o medido, senão o cadastro (número)",
+                "previsoes[].gasto.repouso.antes" => "o gasto fora do pulso, em % por dia, medido na janela anterior (número; null sem medição)",
+                "previsoes[].gasto.repouso.cadastro" => "o gasto fora do pulso, em % por dia, pelo cadastro, sem as medições (número)",
+                "previsoes[].gasto.repouso.medido" => "o gasto fora do pulso, em % por dia, medido pelas leituras, como o MEDIDO (número; null sem medição)",
+                "previsoes[].gasto.repouso.vale" => "o gasto fora do pulso, em % por dia que vale na conta: o medido, senão o cadastro (número)",
                 "previsoes[].leitura" => "a última leitura, no valor informado (número)",
                 "previsoes[].leitura_em" => "quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "previsoes[].limite" => "o limite de carga da Configuração (previsao_limite), em % (número)",
