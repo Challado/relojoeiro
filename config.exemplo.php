@@ -21,6 +21,11 @@ define("MSG_ENDPOINT", "");
 define("MSG_DESTINATARIO", "");
 define("MSG_TITULO", "Relógios");
 
+// o maior manual de relógio aceito (o quadro Manual da ficha), em bytes. Sem esta linha: 12 MB (12582912). 0 ou -1: sem
+// limite do sistema. Valendo sempre também o limite do PHP (upload_max_filesize e post_max_size do php.ini) e o do nginx
+// (client_max_body_size). Ex.: 26214400 = 25 MB
+// define("MANUAL_LIMITE", 26214400);
+
 // só para o importar.php, com este sistema no PostgreSQL ou no SQLite: onde está o MySQL do sistema antigo
 // define("ANTIGO_HOST", "127.0.0.1");
 // define("ANTIGO_PORTA", 3306);

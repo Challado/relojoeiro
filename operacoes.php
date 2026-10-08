@@ -465,7 +465,8 @@ function op_formulas($acao, $d)
 // Relógios. Ações: salvar (id: 0 ou ausente cria; nome, no_id, disponivel (1 ou 0), valores[identificador]: só muda o
 // que vier no pedido; valor vazio apaga; valor inválido fica o que estava, e a mensagem diz quais), excluir (id), foto
 // (id, foto_base64: JPEG, PNG ou WebP, até 4 MB), remover_foto (id), manual (id e o arquivo: enviado como arquivo, no campo
-// manual, ou em manual_base64 com o nome em manual_nome; PDF, JPEG, PNG ou WebP, até manual_limite()), remover_manual (id).
+// manual, ou em manual_base64 com o nome em manual_nome; PDF, JPEG, PNG ou WebP, até manual_limite(): 12 MB, ou o
+// MANUAL_LIMITE do config.php, ou menos pelo PHP), remover_manual (id).
 // ---------------------------------------------------------------------------------------------------------------------
 function op_relogio($acao, $d)
 {
@@ -535,13 +536,13 @@ function op_relogio($acao, $d)
     } elseif ($acao === "manual" && $atual) {
         // o arquivo chega como arquivo (o formulário da ficha; curl -F manual=@arquivo.pdf) ou em base64 (JSON)
         $limite = manual_limite();
-        $mb = tamanho_texto($limite);
+        $mb = $limite === null ? "" : tamanho_texto($limite);
         $arq = $_FILES["manual"] ?? null;
         $bin = false;
         $nome = "";
         if (is_array($arq) && (int)$arq["error"] !== UPLOAD_ERR_NO_FILE) {
             if ((int)$arq["error"] === UPLOAD_ERR_INI_SIZE || (int)$arq["error"] === UPLOAD_ERR_FORM_SIZE) {
-                $erros[] = "O manual passou do tamanho que o servidor aceita (" . $mb . ").";
+                $erros[] = "O manual passou do tamanho que o servidor aceita" . ($mb !== "" ? " (" . $mb . ")" : "") . ": o upload_max_filesize do php.ini.";
             } elseif ((int)$arq["error"] !== UPLOAD_ERR_OK || !is_uploaded_file($arq["tmp_name"])) {
                 $erros[] = "O manual não chegou inteiro (erro " . (int)$arq["error"] . " no envio). Tente de novo.";
             } else {
@@ -565,7 +566,7 @@ function op_relogio($acao, $d)
         if ($bin !== false && count($erros) === 0) {
             if (strlen($bin) === 0) {
                 $erros[] = "O arquivo do manual está vazio.";
-            } elseif (strlen($bin) > $limite) {
+            } elseif ($limite !== null && strlen($bin) > $limite) {
                 $erros[] = "O manual tem " . tamanho_texto(strlen($bin)) . "; o servidor aceita até " . $mb . ".";
             } elseif (substr($bin, 0, 5) === "%PDF-") {
                 $tipo = "application/pdf";
