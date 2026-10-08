@@ -614,6 +614,21 @@ UPDATE formula SET expressao = 'PADRAO(DIAS_DESDE_ULTIMO("pulso"); PADRAO(DIAS_D
 -- a marca de que a v12 foi aplicada
 INSERT IGNORE INTO config (chave, valor) VALUES ('migracao_v12', '1');
 
+-- ---------------------------------------------------------------------------------------------------------------------
+-- Migração v13 (já incluída na instalação nova)
+-- ---------------------------------------------------------------------------------------------------------------------
+-- o manual de cada relógio: um arquivo (PDF ou imagem) guardado no banco, como a foto; um por relógio, e sai junto quando
+-- o relógio é excluído
+CREATE TABLE manual (
+    relogio_id  INT PRIMARY KEY,
+    nome        VARCHAR(200) NOT NULL,   -- o nome do arquivo enviado
+    tipo        VARCHAR(40) NOT NULL,    -- application/pdf, image/jpeg, image/png, image/webp
+    tamanho     INT NOT NULL,            -- em bytes
+    dados       LONGBLOB NOT NULL,
+    atualizado  DATETIME NOT NULL,
+    FOREIGN KEY (relogio_id) REFERENCES relogio(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- critérios iniciais (o "restaurar" da página Critérios lê daqui até o fim do arquivo)
 -- critérios de todos os relógios
 INSERT INTO criterio_parametro (id, escopo_no_id, escopo_relogio_id, nome, peso, ordem) VALUES (1, NULL, NULL, 'Tempo sem uso', 40, 1);

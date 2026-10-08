@@ -25,7 +25,7 @@
  *   (sem recurso)   tudo o que está guardado, sem filtro: {"arvore", "campos", "lancamento_tipos", "formulas", "avisos",
  *                   "relogios", "modos", "plano", "config", "eventos", "agenda", "criterios", "cron", "usuarios", "migracoes",
  *                   "motor"}. Só a senha dos usuários fica de fora. Parâmetro foto=nao deixa as fotos de fora (senão vêm em
- *                   base64). Para pegar só uma parte, ou filtrar, ordenar e paginar qualquer lista: veja FILTROS, abaixo.
+ *                   base64). O arquivo do manual de cada relógio não vem aqui (só o nome, o tipo e o tamanho): recurso=manual. Para pegar só uma parte, ou filtrar, ordenar e paginar qualquer lista: veja FILTROS, abaixo.
  *     "arvore":            [{"id", "pai_id", "nome", "ordem", "caminho", "profundidade"}]  em ordem de árvore
  *     "campos":            [{"id", "identificador", "nome", "tipo", "unidade", "opcoes", "padrao", "no_id", "lugar", "ordem"}]
  *                          o campo vale para os relógios do ponto (no_id) e de tudo abaixo; vazio: todos
@@ -37,6 +37,7 @@
  *                          "lancamentos"}}]  a mesma fórmula pode ter uma versão por ponto; vale a do mais perto do relógio
  *     "relogios":          [{"id", "nome", "no_id", "lugar", "disponivel", "criado",
  *                          "foto": {"tipo", "atualizada_em", "base64"} ou null,
+ *                          "manual": {"nome", "tipo", "tamanho", "atualizado_em"} ou null (o arquivo: recurso=manual),
  *                          "campos": [{"identificador", "nome", "tipo", "unidade", "valor" (o gravado), "valor_usado" (com o padrão)}],
  *                          "formulas": [{"identificador", "nome", "unidade", "valor", "versao" (o lugar da versão usada)}],
  *                          "avisos": [os avisos calculados, como em recurso=avisos, sem relogio_id e relogio],
@@ -80,6 +81,8 @@
  *                            Ex.: curl -u lucas:senha -G "http://servidor/relojoeiro/api.php" --data-urlencode recurso=calcular --data-urlencode "expressao=energia * 2" -d relogio=10,12
  *   recurso=foto relogio=3   a imagem (não é JSON)
  *                            Ex.: curl -u lucas:senha -o foto.jpg "http://servidor/relojoeiro/api.php?recurso=foto&relogio=10"
+ *   recurso=manual relogio=3 o arquivo do manual (PDF ou imagem; não é JSON), aberto no navegador
+ *                            Ex.: curl -u lucas:senha -o manual.pdf "http://servidor/relojoeiro/api.php?recurso=manual&relogio=10"
  *   recurso=criterios        {"conjuntos": [{"escopo" ("" todos, "g:<ponto>", "r:<relógio>"), "lugar", "usado_por": [ids],
  *                            "parametros": [{"id", "ordem", "escopo_no_id", "escopo_relogio_id", "nome", "peso", "subparametros":
  *                            [{"id", "ordem", "nome", "variavel", "peso", "peso_efetivo_no_conjunto", "faixas": [{"id", "de", "ate",
@@ -148,7 +151,8 @@
  *                            "leitura": {"inicio", "valor", "unidade"} (a última), "de_hoje", "com_aviso", "foto" (a versão)}]}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=hoje"
  *   recurso=ficha            relogio=<id>: tudo o que o painel de um relógio mostra: {"hoje", "relogio": {"id", "nome", "no_id",
- *                            "disponivel", "tipo", "caminho", "observacao", "foto", "em_uso", "agora", "carga", "carga_de", "situacao",
+ *                            "disponivel", "tipo", "caminho", "observacao", "foto", "manual": {"nome", "tipo", "tamanho", "atualizado_em"}
+ *                            (o arquivo: recurso=manual), "manual_limite", "em_uso", "agora", "carga", "carga_de", "situacao",
  *                            "nota": {"nota", "conjunto_texto"}, "proxima" (a próxima entrada no plano), "proxima_ate", "escala_fim",
  *                            "compra", "manutencoes": [{"data", "nome"}], "previsao" (como em recurso=previsao), "tipos": [os lançamentos
  *                            do relógio: {"identificador", "nome", "formato", "unidade", "aberta": {"inicio", "rodizio", "texto"}}],
@@ -269,10 +273,14 @@
  *                            Ex. excluir: curl -u lucas:senha -d recurso=formulas -d acao=excluir -d id=17 http://servidor/relojoeiro/api.php
  *   recurso=relogio           salvar (id: 0 ou ausente cria; nome, no_id, disponivel, valores[identificador]: só muda o que
  *                             vier; valor vazio apaga; inválido fica o que estava e a mensagem diz), excluir (id),
- *                             foto (id, foto_base64), remover_foto (id)
+ *                             foto (id, foto_base64), remover_foto (id), manual (id e o arquivo: no campo manual, como
+ *                             arquivo, ou manual_base64 com manual_nome; PDF, JPEG, PNG ou WebP, até relogio.manual_limite
+ *                             da ficha), remover_manual (id)
  *                            Ex. salvar: curl -u lucas:senha -d recurso=relogio -d acao=salvar -d id=10 -d "valores[preferencia]=80" -d disponivel=1 http://servidor/relojoeiro/api.php
  *                            Ex. foto: curl -u lucas:senha -d recurso=relogio -d acao=foto -d id=10 --data-urlencode foto_base64@foto.b64 http://servidor/relojoeiro/api.php
  *                            Ex. remover_foto: curl -u lucas:senha -d recurso=relogio -d acao=remover_foto -d id=10 http://servidor/relojoeiro/api.php
+ *                            Ex. manual: curl -u lucas:senha -F recurso=relogio -F acao=manual -F id=10 -F manual=@manual.pdf http://servidor/relojoeiro/api.php
+ *                            Ex. remover_manual: curl -u lucas:senha -d recurso=relogio -d acao=remover_manual -d id=10 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=relogio -d acao=excluir -d id=15 http://servidor/relojoeiro/api.php
  *   recurso=lancamento        lancar (relogio_id, tipo, valor, quando: AAAA-MM-DD HH:MM, vazio = agora; medir: 1 (padrão) ou 0,
  *                             num tipo que mede o gasto: com 1 a medição entra na média, com 0 fica só no histórico — a caixa
@@ -453,6 +461,7 @@
  *     config.medicao_janela_dias     a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a última)
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
  *     config.migracao_v10            marca de que a migração v10 foi aplicada (1)
+ *     config.migracao_v12            marca de que a migração v12 foi aplicada (1)
  *     config.modo_ativo              o id do modo de rodízio em uso
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso); 0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
@@ -711,6 +720,11 @@
  *     relogios[].foto.atualizada_em  quando a foto foi trocada (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].foto.base64         a imagem em base64; null com foto=nao
  *     relogios[].foto.tipo           o tipo da imagem (image/jpeg, image/png, image/webp)
+ *     relogios[].manual              o manual; null: sem manual (o arquivo vem pelo recurso=manual)
+ *     relogios[].manual.atualizado_em quando o manual foi enviado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     relogios[].manual.nome         o nome do arquivo enviado
+ *     relogios[].manual.tamanho      o tamanho do arquivo, em bytes (número inteiro)
+ *     relogios[].manual.tipo         o tipo do arquivo (application/pdf, image/jpeg, image/png, image/webp)
  *     relogios[].id                  o número (código) do relógio
  *     relogios[].lancamento_tipos[]  os identificadores dos tipos de lançamento que valem para ele (texto)
  *     relogios[].lancamentos[]       todos os lançamentos do relógio, do mais antigo para o mais recente
@@ -896,7 +910,10 @@
  *     avisos[].resolve.unidade       a unidade do valor
  *     avisos[].texto                 o motivo por extenso
  *     avisos_nomes[]                 os nomes dos avisos (o filtro "O que fazer" da tabela)
- *     comecou                        verdadeiro ou falso: o dia já começou no pulso (passou do uso_inicio e há relógio do dia)
+ *     comecou                        verdadeiro ou falso: o dia já começou no pulso (há relógio do dia e: pondo no pulso sozinho,
+ *                                    passou do uso_inicio; senão, ele já foi posto no pulso hoje)
+ *     pulso_poe_sozinho              verdadeiro: o relógio do dia entra no pulso sozinho no início do horário de uso; falso: só pelo Pôs
+ *     pulso_tira_sozinho             verdadeiro: o relógio sai do pulso sozinho no fim do horário de uso; falso: só pelo Tirou
  *     data                           hoje (texto AAAA-MM-DD)
  *     dia                            o relógio de hoje; null: nenhum
  *     dia.acao                       o lembrete do dia; null: nada
@@ -1083,6 +1100,12 @@
  *                                    quando o trecho começou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.linha_do_tempo[].texto o trecho por extenso, como a tela mostra ("em uso", "no sol", "Leitura de carga 80%")
  *     relogio.linha_do_tempo[].tipo  o identificador do tipo de lançamento que originou o trecho (pulso, sol, corda, carga...); null no repouso
+ *     relogio.manual                 o manual; null: sem manual (o arquivo: recurso=manual&relogio=id)
+ *     relogio.manual.atualizado_em   quando o manual foi enviado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     relogio.manual.nome            o nome do arquivo enviado
+ *     relogio.manual.tamanho         o tamanho do arquivo, em bytes (número inteiro)
+ *     relogio.manual.tipo            o tipo do arquivo (application/pdf, image/jpeg, image/png, image/webp)
+ *     relogio.manual_limite          o maior manual que o servidor aceita, em bytes (12 MB, ou menos pelo upload_max_filesize e o post_max_size do PHP)
  *     relogio.manutencoes[]          as 5 próximas manutenções (avisos)
  *     relogio.manutencoes[].data     a data (texto AAAA-MM-DD)
  *     relogio.manutencoes[].nome     o aviso
@@ -1214,6 +1237,7 @@
  *     config.medicao_janela_dias     a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a última)
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
  *     config.migracao_v10            marca de que a migração v10 foi aplicada (1)
+ *     config.migracao_v12            marca de que a migração v12 foi aplicada (1)
  *     config.modo_ativo              o id do modo de rodízio em uso
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso); 0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
@@ -1681,6 +1705,7 @@
  * ---------------------------------------------------------------------------------------------
  *   400 pedido recusado (os erros dizem por quê)      401 sem token nem login      404 recurso ou relógio que não existe
  *   409 {"erro": "o banco recusou a gravação: ...", "detalhe"} (um registro que outro ainda usa, ou um valor repetido)
+ *   413 {"ok": false, "erros": [...]} (o envio passou do post_max_size do PHP: um arquivo grande demais)
  *   500 {"erro": "Sistema parado: ..."} (token ou fuso inválido no config.php) ou {"erro": "erro interno", "detalhe"}
  *   503 {"erro": "o banco está desatualizado: ...", "pendentes"}: só recurso=migracoes responde até aplicar
  *   503 {"erro": "o banco de dados não respondeu", "detalhe"}
@@ -2003,6 +2028,9 @@ if ($escrita && stripos($_SERVER["CONTENT_TYPE"] ?? "", "json") !== false) {
     $corpo = json_decode((string)file_get_contents("php://input"), true);
     $d = is_array($corpo) ? array_merge($_POST, $corpo) : $_POST;
 }
+// um envio maior que o post_max_size do PHP chega vazio (sem nenhum campo nem arquivo): o motivo, em vez de "recurso desconhecido"
+$envio_grande = $escrita && count($_POST) === 0 && count($_FILES) === 0 && ini_bytes(ini_get("post_max_size")) > 0
+    && (int)($_SERVER["CONTENT_LENGTH"] ?? 0) > ini_bytes(ini_get("post_max_size"));
 $recurso = strtolower(trim((string)($d["recurso"] ?? ($_REQUEST["recurso"] ?? ""))));
 $acao = (string)($d["acao"] ?? ($_REQUEST["acao"] ?? ""));
 $codigo = 200;
@@ -2014,6 +2042,10 @@ if (!$token_ok && $quem === "") {
     $codigo = 401;
     header("WWW-Authenticate: Basic realm=\"Relogios\", charset=\"UTF-8\"");
     $saida = ["erro" => "falta autenticação: o token (cabeçalho X-Api-Token ou parâmetro token) ou o login do site (HTTP Basic)"];
+} elseif ($envio_grande) {
+    $codigo = 413;
+    $saida = ["ok" => false, "mensagem" => "", "erros" => ["O envio tem " . str_replace(".", ",", (string)round((int)$_SERVER["CONTENT_LENGTH"] / 1048576, 1))
+        . " MB e passou do limite do PHP do servidor (post_max_size = " . ini_get("post_max_size") . "). Envie um arquivo menor ou aumente o limite no php.ini."]];
 } elseif ($recurso === "migracoes") {
     // as migrações: a lista das pendentes, e aplicar (a única escrita aceita com o banco desatualizado)
     if ($escrita && $acao === "aplicar") {
@@ -2059,6 +2091,21 @@ if (!$token_ok && $quem === "") {
     }
     $codigo = 404;
     $saida = ["erro" => "sem foto para esse relógio"];
+} elseif ($recurso === "manual") {
+    $m = linha("SELECT nome, tipo, dados FROM manual WHERE relogio_id = ?", [(int)($_REQUEST["relogio"] ?? 0)]);
+    if ($m) {
+        // abre no navegador (o PDF no leitor dele), com o nome do arquivo para quem salvar
+        $ascii = preg_replace("/[^A-Za-z0-9._ -]/", "_", $m["nome"]);
+        header("Content-Type: " . $m["tipo"]);
+        header("Content-Length: " . strlen($m["dados"]));
+        header("Content-Disposition: inline; filename=\"" . $ascii . "\"; filename*=UTF-8''" . rawurlencode($m["nome"]));
+        header("X-Content-Type-Options: nosniff");
+        header("Cache-Control: private, max-age=86400");
+        echo $m["dados"];
+        exit;
+    }
+    $codigo = 404;
+    $saida = ["erro" => "sem manual para esse relógio"];
 } elseif ($recurso === "criterios") {
     $saida = montar_criterios();
 } elseif ($recurso === "avisos") {
@@ -2195,7 +2242,7 @@ if (!$token_ok && $quem === "") {
         $nota = (int)$r["disponivel"] === 1 ? nota_do_relogio($r, $agora) : null;
         $saida["relogio"] = ["id" => $id, "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? 0 : (int)$r["no_id"], "disponivel" => (int)$r["disponivel"] === 1,
             "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "sem grupo", "caminho" => no_caminho($r["no_id"]), "observacao" => $valores["observacao"] ?? null,
-            "foto" => $foto !== null ? strtotime($foto) : null, "em_uso" => $v["em_uso"], "agora" => $v["texto"], "carga" => $v["energia"], "carga_de" => $v["de"], "situacao" => $v["situacao"],
+            "foto" => $foto !== null ? strtotime($foto) : null, "manual" => manual_info($id), "manual_limite" => manual_limite(), "em_uso" => $v["em_uso"], "agora" => $v["texto"], "carga" => $v["energia"], "carga_de" => $v["de"], "situacao" => $v["situacao"],
             "nota" => $nota ? ["nota" => $nota["nota"], "conjunto_texto" => $nota["conjunto_texto"]] : null,
             "proxima" => $proxima, "proxima_ate" => $proxima !== null ? texto_ate($proxima, "neste dia") : null,
             "escala_fim" => valor("SELECT escala_dias FROM modo WHERE id = ?", [(int)cfg("modo_ativo")]) !== null ? cfg("escala_fim") : null,
@@ -2441,7 +2488,8 @@ if (!$token_ok && $quem === "") {
         "sem_parametros" => "api.php devolve tudo o que está guardado, sem filtro: arvore, campos, lancamento_tipos, formulas, avisos, relogios (com os valores "
             . "dos campos, o resultado de cada fórmula, os avisos, os lançamentos, a previsão e a linha do tempo inteira com o resumo), modos, plano (inteiro), "
             . "config (inteira), eventos (com os disparos), agenda, criterios (com a nota de cada relógio), cron (todas as execuções guardadas), usuarios "
-            . "(os logins), migracoes e motor. Só a senha dos usuários fica de fora. Para pegar só uma parte, ou filtrar, ordenar e paginar: veja filtros.",
+            . "(os logins), migracoes e motor. Só a senha dos usuários fica de fora. O arquivo do manual de cada relógio não vem (só o nome, o tipo e o tamanho, em relogios[].manual): ele sai pelo recurso=manual. "
+            . "Para pegar só uma parte, ou filtrar, ordenar e paginar: veja filtros.",
         "autenticacao" => "token (cabeçalho X-Api-Token ou parâmetro token; o API_TOKEN do config.php, obrigatório, com pelo menos 10 caracteres) "
             . "ou o login do site (HTTP Basic), em todo pedido. Ex.: curl -H \"X-Api-Token: segredo\" http://servidor/relojoeiro/api.php?recurso=hoje; curl -u lucas:senha http://servidor/relojoeiro/api.php?recurso=hoje",
         "formato" => "JSON (padrão) ou XML: formato=xml, ou o cabeçalho Accept com xml. Ex.: http://servidor/relojoeiro/api.php?recurso=plano&formato=xml",
@@ -2452,7 +2500,7 @@ if (!$token_ok && $quem === "") {
             "hoje" => ["descricao" => "tudo o que a página Hoje mostra: o dia e o relógio dele, os avisos de hoje (com o lançamento que resolve cada um), os próximos 62 dias do plano, os modos com os blocos, os grupos e a tabela dos relógios",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=hoje\""],
-            "ficha" => ["descricao" => "tudo o que o painel de um relógio mostra: agora, carga e de onde vem, situação, nota, quando entra no rodízio, compra, próximas manutenções, previsão, os tipos de lançamento dele (com a sessão aberta), as últimas leituras, o resumo do histórico e o cadastro; sem relogio, só o cadastro de um relógio novo; relógio que não existe: 404",
+            "ficha" => ["descricao" => "tudo o que o painel de um relógio mostra: agora, carga e de onde vem, situação, nota, quando entra no rodízio, compra, próximas manutenções, previsão, o gasto da bateria, o manual (sem o arquivo) e o maior manual aceito, os tipos de lançamento dele (com a sessão aberta), as últimas leituras, as marcações dos últimos 14 dias, o resumo do histórico e o cadastro; sem relogio, só o cadastro de um relógio novo; relógio que não existe: 404",
                 "parametros" => ["relogio" => "o id do relógio (vazio: o cadastro de um relógio novo)"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=ficha&relogio=10\""],
             "config" => ["descricao" => "tudo o que a página Configuração mostra: os valores (inclusive o caminho da chave do Google), os canais com a mensagem padrão e a personalizada de cada tipo de aviso, os eventos personalizados, a chave do Google lida ou não, e como as mensagens e a agenda saem agora",
@@ -2494,6 +2542,9 @@ if (!$token_ok && $quem === "") {
             "foto" => ["descricao" => "a foto de um relógio (a imagem, não é JSON)",
                 "parametros" => ["relogio" => "o id do relógio"],
                 "exemplo" => "curl -u lucas:senha -o foto.jpg \"http://servidor/relojoeiro/api.php?recurso=foto&relogio=10\""],
+            "manual" => ["descricao" => "o manual de um relógio (o arquivo: PDF ou imagem, não é JSON), para abrir no navegador",
+                "parametros" => ["relogio" => "o id do relógio"],
+                "exemplo" => "curl -u lucas:senha -o manual.pdf \"http://servidor/relojoeiro/api.php?recurso=manual&relogio=10\""],
             "usuarios" => ["descricao" => "os logins (as senhas nunca saem) e quem está pedindo (pelo login do site)",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=usuarios\""],
@@ -2541,7 +2592,10 @@ if (!$token_ok && $quem === "") {
                 "salvar" => ["campos" => "id (0 ou ausente cria), nome, no_id, disponivel (1 ou 0), valores[<identificador do campo>]: só muda o que vier; valor vazio apaga", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=salvar -d id=10 -d \"valores[preferencia]=80\" -d disponivel=1 http://servidor/relojoeiro/api.php"],
                 "foto" => ["campos" => "id, foto_base64 (JPEG, PNG ou WebP, até 4 MB; data:image/...;base64,... ou só o base64)", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=foto -d id=10 --data-urlencode foto_base64@foto.b64 http://servidor/relojoeiro/api.php"],
                 "remover_foto" => ["campos" => "id", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=remover_foto -d id=10 http://servidor/relojoeiro/api.php"],
-                "excluir" => ["campos" => "id (com todo o histórico e a foto)", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=excluir -d id=15 http://servidor/relojoeiro/api.php"],
+                "manual" => ["campos" => "id e o arquivo: no campo manual, enviado como arquivo (multipart), ou manual_base64 com o nome em manual_nome; PDF, JPEG, PNG ou WebP, até relogio.manual_limite da ficha (12 MB, ou menos pelo PHP do servidor)",
+                    "exemplo" => "curl -u lucas:senha -F recurso=relogio -F acao=manual -F id=10 -F manual=@manual.pdf http://servidor/relojoeiro/api.php"],
+                "remover_manual" => ["campos" => "id", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=remover_manual -d id=10 http://servidor/relojoeiro/api.php"],
+                "excluir" => ["campos" => "id (com todo o histórico, a foto e o manual)", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=excluir -d id=15 http://servidor/relojoeiro/api.php"],
             ],
             "lancamento" => [
                 "lancar" => ["campos" => "relogio_id, tipo (instantâneo ou com valor), valor (com valor), quando (AAAA-MM-DD HH:MM; vazio: agora), medir (1, o padrão, ou 0: num tipo que mede o gasto, com 1 a medição entra na média; com 0 fica só no histórico)", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://servidor/relojoeiro/api.php"],
@@ -2714,6 +2768,7 @@ if (!$token_ok && $quem === "") {
                 "config.medicao_janela_dias" => "a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a última)",
                 "config.mensagens_ativas" => "1: o Telegram (a API de alerta) envia; 0: não envia",
                 "config.migracao_v10" => "marca de que a migração v10 foi aplicada (1)",
+                "config.migracao_v12" => "marca de que a migração v12 foi aplicada (1)",
                 "config.modo_ativo" => "o id do modo de rodízio em uso",
                 "config.pulso_auto_fim" => "1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o \"fecha às\" do tipo No pulso); 0: só pelo Tirou",
                 "config.pulso_auto_inicio" => "1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs",
@@ -2913,6 +2968,11 @@ if (!$token_ok && $quem === "") {
                 "relogios[].foto.atualizada_em" => "quando a foto foi trocada (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogios[].foto.base64" => "a imagem em base64; null com foto=nao",
                 "relogios[].foto.tipo" => "o tipo da imagem (image/jpeg, image/png, image/webp)",
+                "relogios[].manual" => "o manual; null: sem manual (o arquivo vem pelo recurso=manual)",
+                "relogios[].manual.atualizado_em" => "quando o manual foi enviado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
+                "relogios[].manual.nome" => "o nome do arquivo enviado",
+                "relogios[].manual.tamanho" => "o tamanho do arquivo, em bytes (número inteiro)",
+                "relogios[].manual.tipo" => "o tipo do arquivo (application/pdf, image/jpeg, image/png, image/webp)",
                 "relogios[].id" => "o número (código) do relógio",
                 "relogios[].lancamento_tipos[]" => "os identificadores dos tipos de lançamento que valem para ele (texto)",
                 "relogios[].lancamentos[]" => "todos os lançamentos do relógio, do mais antigo para o mais recente",
@@ -3190,6 +3250,12 @@ if (!$token_ok && $quem === "") {
                 "relogio.linha_do_tempo[].inicio" => "quando o trecho começou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogio.linha_do_tempo[].texto" => "o trecho por extenso, como a tela mostra (\"em uso\", \"no sol\", \"Leitura de carga 80%\")",
                 "relogio.linha_do_tempo[].tipo" => "o identificador do tipo de lançamento que originou o trecho (pulso, sol, corda, carga...); null no repouso",
+                "relogio.manual" => "o manual; null: sem manual (o arquivo: recurso=manual&relogio=id)",
+                "relogio.manual.atualizado_em" => "quando o manual foi enviado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
+                "relogio.manual.nome" => "o nome do arquivo enviado",
+                "relogio.manual.tamanho" => "o tamanho do arquivo, em bytes (número inteiro)",
+                "relogio.manual.tipo" => "o tipo do arquivo (application/pdf, image/jpeg, image/png, image/webp)",
+                "relogio.manual_limite" => "o maior manual que o servidor aceita, em bytes (12 MB, ou menos pelo upload_max_filesize e o post_max_size do PHP)",
                 "relogio.manutencoes[]" => "as 5 próximas manutenções (avisos)",
                 "relogio.manutencoes[].data" => "a data (texto AAAA-MM-DD)",
                 "relogio.manutencoes[].nome" => "o aviso",
@@ -3294,6 +3360,7 @@ if (!$token_ok && $quem === "") {
                 "config.medicao_janela_dias" => "a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a última)",
                 "config.mensagens_ativas" => "1: o Telegram (a API de alerta) envia; 0: não envia",
                 "config.migracao_v10" => "marca de que a migração v10 foi aplicada (1)",
+                "config.migracao_v12" => "marca de que a migração v12 foi aplicada (1)",
                 "config.modo_ativo" => "o id do modo de rodízio em uso",
                 "config.pulso_auto_fim" => "1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o \"fecha às\" do tipo No pulso); 0: só pelo Tirou",
                 "config.pulso_auto_inicio" => "1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs",
@@ -3725,6 +3792,7 @@ if (!$token_ok && $quem === "") {
         ],
         "erros" => ["400" => "pedido recusado (os erros dizem por quê)", "401" => "sem token nem login", "404" => "recurso ou relógio que não existe",
             "409" => "o banco recusou a gravação (um registro que outro ainda usa, ou um valor repetido)",
+            "413" => "o envio passou do limite do PHP do servidor (post_max_size): um arquivo grande demais",
             "500" => "sistema parado (token ou fuso inválido no config.php) ou erro interno", "503" => "banco desatualizado (só recurso=migracoes responde) ou banco fora do ar"],
         "motor" => array_map(function ($f) { return $f[2]; }, $GLOBALS["FUNCOES"]),
         "escrita_das_formulas" => "números com vírgula ou ponto; textos entre aspas; argumentos separados por ponto e vírgula; operações + - * / ^; "
@@ -3781,6 +3849,7 @@ if (!$token_ok && $quem === "") {
         $relogios[] = ["id" => (int)$r["id"], "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? null : (int)$r["no_id"], "lugar" => no_caminho($r["no_id"]),
             "disponivel" => (int)$r["disponivel"] === 1, "criado" => $r["criado"],
             "foto" => $foto ? ["tipo" => $foto["tipo"], "atualizada_em" => $foto["atualizado"], "base64" => $com_foto ? base64_encode($foto["dados"]) : null] : null,
+            "manual" => manual_info((int)$r["id"]),
             "campos" => $cs, "formulas" => $fs, "avisos" => avisos_do_relogio($r, time()),
             "lancamento_tipos" => array_keys(lancamento_tipos_do_relogio($r)),
             "lancamentos" => array_map(function ($l) {
@@ -3832,7 +3901,7 @@ if (!$token_ok && $quem === "") {
 } else {
     $codigo = 404;
     $saida = ["erro" => "recurso desconhecido", "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "eventos", "agenda", "foto", "usuarios", "migracoes", "ajuda"]];
+        "historico", "previsao", "plano", "eventos", "agenda", "foto", "manual", "usuarios", "migracoes", "ajuda"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],
