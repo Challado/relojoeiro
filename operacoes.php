@@ -464,9 +464,7 @@ function op_formulas($acao, $d)
 // ---------------------------------------------------------------------------------------------------------------------
 // Relógios. Ações: salvar (id: 0 ou ausente cria; nome, no_id, disponivel (1 ou 0), valores[identificador]: só muda o
 // que vier no pedido; valor vazio apaga; valor inválido fica o que estava, e a mensagem diz quais), excluir (id), foto
-// (id, foto_base64: JPEG, PNG ou WebP, até 4 MB), remover_foto (id), manual (id e o arquivo: enviado como arquivo, no campo
-// manual, ou em manual_base64 com o nome em manual_nome; PDF, JPEG, PNG ou WebP, até manual_limite(): 12 MB, ou o
-// MANUAL_LIMITE do config.php, ou menos pelo PHP), remover_manual (id).
+// (id, foto_base64: JPEG, PNG ou WebP, até 4 MB), remover_foto (id). Os documentos do relógio: op_documentos.
 // ---------------------------------------------------------------------------------------------------------------------
 function op_relogio($acao, $d)
 {
@@ -514,8 +512,12 @@ function op_relogio($acao, $d)
                 . (count($ignorados) > 0 ? " Não gravei: " . implode("; ", $ignorados) . ". Ficou o que já estava." : "");
         }
     } elseif ($acao === "excluir" && $atual) {
+        // os arquivos dos documentos saem da pasta (as linhas saem com o relógio, pelo banco)
+        foreach (linhas("SELECT arquivo, miniatura FROM documento WHERE relogio_id = ?", [$id]) as $doc) {
+            documento_apagar_arquivos($doc);
+        }
         sql("DELETE FROM relogio WHERE id = ?", [$id]);
-        $msg = "Relógio " . $atual["nome"] . " excluído, com os valores, a foto, o manual e os lançamentos dele.";
+        $msg = "Relógio " . $atual["nome"] . " excluído, com os valores, a foto, os documentos e os lançamentos dele.";
         $id = 0;
     } elseif ($acao === "foto" && $atual) {
         $b64 = (string)($d["foto_base64"] ?? "");
@@ -533,78 +535,230 @@ function op_relogio($acao, $d)
     } elseif ($acao === "remover_foto" && $atual) {
         sql("DELETE FROM foto WHERE relogio_id = ?", [$id]);
         $msg = "Foto de " . $atual["nome"] . " removida.";
-    } elseif ($acao === "manual" && $atual) {
-        // o arquivo chega como arquivo (o formulário da ficha; curl -F manual=@arquivo.pdf) ou em base64 (JSON)
-        $limite = manual_limite();
-        $mb = $limite === null ? "" : tamanho_texto($limite);
-        $arq = $_FILES["manual"] ?? null;
-        $bin = false;
-        $nome = "";
-        if (is_array($arq) && (int)$arq["error"] !== UPLOAD_ERR_NO_FILE) {
-            if ((int)$arq["error"] === UPLOAD_ERR_INI_SIZE || (int)$arq["error"] === UPLOAD_ERR_FORM_SIZE) {
-                $erros[] = "O manual passou do tamanho que o servidor aceita" . ($mb !== "" ? " (" . $mb . ")" : "") . ": o upload_max_filesize do php.ini.";
-            } elseif ((int)$arq["error"] !== UPLOAD_ERR_OK || !is_uploaded_file($arq["tmp_name"])) {
-                $erros[] = "O manual não chegou inteiro (erro " . (int)$arq["error"] . " no envio). Tente de novo.";
-            } else {
-                $bin = (string)file_get_contents($arq["tmp_name"]);
-                $nome = (string)$arq["name"];
-            }
-        } elseif (trim((string)($d["manual_base64"] ?? "")) !== "") {
-            $b64 = (string)$d["manual_base64"];
-            if (strpos($b64, "base64,") !== false) {
-                $b64 = substr($b64, strpos($b64, "base64,") + 7);
-            }
-            $bin = base64_decode($b64, true);
-            $nome = (string)($d["manual_nome"] ?? "");
-            if ($bin === false) {
-                $erros[] = "O manual_base64 não é base64.";
-            }
-        } else {
-            $erros[] = "Escolha o arquivo do manual.";
-        }
-        $tipo = null;
-        if ($bin !== false && count($erros) === 0) {
-            if (strlen($bin) === 0) {
-                $erros[] = "O arquivo do manual está vazio.";
-            } elseif ($limite !== null && strlen($bin) > $limite) {
-                $erros[] = "O manual tem " . tamanho_texto(strlen($bin)) . "; o servidor aceita até " . $mb . ".";
-            } elseif (substr($bin, 0, 5) === "%PDF-") {
-                $tipo = "application/pdf";
-            } else {
-                $info = @getimagesizefromstring($bin);
-                if ($info && in_array($info["mime"], ["image/jpeg", "image/png", "image/webp"], true)) {
-                    $tipo = $info["mime"];
-                } else {
-                    $erros[] = "O manual não foi aceito: tem de ser PDF, JPEG, PNG ou WebP.";
-                }
-            }
-        }
-        if ($tipo !== null) {
-            // o nome do arquivo, sem a pasta; sem nome, "manual" com a extensão do tipo
-            $nome = trim(preg_replace("/[\\x00-\\x1f]/", "", basename(str_replace("\\", "/", $nome))));
-            if ($nome === "") {
-                $nome = "manual." . ["application/pdf" => "pdf", "image/jpeg" => "jpg", "image/png" => "png", "image/webp" => "webp"][$tipo];
-            }
-            $nome = mb_substr($nome, 0, 200);
-            try {
-                sql("REPLACE INTO manual (relogio_id, nome, tipo, tamanho, dados, atualizado) VALUES (?, ?, ?, ?, ?, NOW())", [$id, $nome, $tipo, strlen($bin), $bin]);
-                // relido para conferir: o arquivo grande que o banco cortasse no caminho não fica como se estivesse inteiro
-                $volta = valor("SELECT dados FROM manual WHERE relogio_id = ?", [$id]);
-                if ($volta === null || md5((string)$volta) !== md5($bin)) {
-                    sql("DELETE FROM manual WHERE relogio_id = ?", [$id]);
-                    $erros[] = "O banco não guardou o manual inteiro. No MySQL/MariaDB, o max_allowed_packet do servidor tem de ser maior que o arquivo.";
-                } else {
-                    $msg = "Manual de " . $atual["nome"] . " salvo (" . $nome . ", " . tamanho_texto(strlen($bin)) . ").";
-                }
-            } catch (BancoErro $e) {
-                $erros[] = "O banco recusou o manual (" . $e->getMessage() . "). No MySQL/MariaDB, o max_allowed_packet do servidor tem de ser maior que o arquivo.";
-            }
-        }
-    } elseif ($acao === "remover_manual" && $atual) {
-        sql("DELETE FROM manual WHERE relogio_id = ?", [$id]);
-        $msg = "Manual de " . $atual["nome"] . " removido.";
     } elseif ($id === 0) {
         $erros[] = "Informe o relógio (id).";
+    }
+    return resultado($erros, $msg, ["id" => $id]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Documentos de um relógio. Ações: enviar (relogio_id, categoria_id, titulo, data AAAA-MM-DD, descricao e os arquivos: no
+// campo arquivos[] (vários, como upload), ou arquivo (um), ou arquivo_base64 com o nome em arquivo_nome; a miniatura de
+// uma foto, opcional, em miniatura (uma por envio: a do primeiro arquivo) ou miniatura_base64), alterar (id: categoria_id,
+// titulo, data, descricao; só muda o que vier), excluir (id: o documento e o arquivo dele).
+// ---------------------------------------------------------------------------------------------------------------------
+function op_documentos($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $id = (int)($d["id"] ?? 0);
+    $atual = $id > 0 ? linha("SELECT * FROM documento WHERE id = ?", [$id]) : null;
+    $pasta = documentos_pasta();
+    if ($pasta === null && $acao !== "excluir" && $acao !== "alterar") {
+        $erros[] = "Não dá para guardar documentos: " . documentos_pasta_erro() . ".";
+        return resultado($erros, $msg, ["id" => $id, "ids" => []]);
+    }
+    mover_manuais();
+    // a categoria do pedido (ou a de antes) e as famílias que ela aceita
+    $cat_id = array_key_exists("categoria_id", $d) ? (int)$d["categoria_id"] : ($atual ? (int)$atual["categoria_id"] : 0);
+    $cat = linha("SELECT * FROM documento_categoria WHERE id = ?", [$cat_id]);
+    $data = array_key_exists("data", $d) ? trim((string)$d["data"]) : ($atual ? (string)$atual["data"] : "");
+    $data = $data === "" ? null : substr($data, 0, 10);
+    if ($data !== null && (preg_match("/^\\d{4}-\\d{2}-\\d{2}$/", $data) !== 1 || !checkdate((int)substr($data, 5, 2), (int)substr($data, 8, 2), (int)substr($data, 0, 4)))) {
+        $erros[] = "A data tem de ser AAAA-MM-DD (ou vazia).";
+    }
+    $titulo = trim((string)($d["titulo"] ?? ($atual["titulo"] ?? "")));
+    $descricao = array_key_exists("descricao", $d) ? trim((string)$d["descricao"]) : ($atual ? (string)$atual["descricao"] : "");
+    if (mb_strlen($titulo) > 200) {
+        $erros[] = "O título vai até 200 caracteres.";
+    }
+    $ids = [];
+    if ($acao === "enviar") {
+        $r = linha("SELECT id, nome FROM relogio WHERE id = ?", [(int)($d["relogio_id"] ?? 0)]);
+        if (!$r) {
+            $erros[] = "Relógio não encontrado.";
+        }
+        if (!$cat) {
+            $erros[] = "Escolha a categoria.";
+        }
+        // os arquivos do pedido: [nome, caminho temporário ou null, conteúdo (base64) ou null, erro do envio]
+        $arquivos = [];
+        foreach (["arquivos", "arquivo"] as $campo) {
+            $f = $_FILES[$campo] ?? null;
+            if (is_array($f)) {
+                $nomes = (array)$f["name"];
+                foreach ($nomes as $k => $nome) {
+                    $erro = (int)((array)$f["error"])[$k];
+                    if ($erro !== UPLOAD_ERR_NO_FILE) {
+                        $arquivos[] = [(string)$nome, (string)((array)$f["tmp_name"])[$k], null, $erro];
+                    }
+                }
+            }
+        }
+        if (trim((string)($d["arquivo_base64"] ?? "")) !== "") {
+            $b64 = (string)$d["arquivo_base64"];
+            $bin = base64_decode(strpos($b64, "base64,") !== false ? substr($b64, strpos($b64, "base64,") + 7) : $b64, true);
+            if ($bin === false) {
+                $erros[] = "O arquivo_base64 não é base64.";
+            } else {
+                $arquivos[] = [trim((string)($d["arquivo_nome"] ?? "")) !== "" ? (string)$d["arquivo_nome"] : "arquivo", null, $bin, UPLOAD_ERR_OK];
+            }
+        }
+        if (count($arquivos) === 0 && count($erros) === 0) {
+            $erros[] = "Escolha o arquivo.";
+        }
+        // a miniatura da foto (a do primeiro arquivo), feita pelo navegador: só imagem JPEG, PNG ou WebP, até 1 MB
+        $mini = null;
+        if (isset($_FILES["miniatura"]) && (int)$_FILES["miniatura"]["error"] === UPLOAD_ERR_OK && is_uploaded_file($_FILES["miniatura"]["tmp_name"])) {
+            $mini = (string)file_get_contents($_FILES["miniatura"]["tmp_name"]);
+        } elseif (trim((string)($d["miniatura_base64"] ?? "")) !== "") {
+            $b64 = (string)$d["miniatura_base64"];
+            $mini = base64_decode(strpos($b64, "base64,") !== false ? substr($b64, strpos($b64, "base64,") + 7) : $b64, true);
+        }
+        if (is_string($mini)) {
+            $info = strlen($mini) <= 1048576 ? @getimagesizefromstring($mini) : false;
+            $mini = $info && in_array($info["mime"], ["image/jpeg", "image/png", "image/webp"], true) ? $mini : null;
+        }
+        $limite = documentos_limite();
+        $aceita = $cat ? documento_familias_aceitas($cat["aceita"]) : [];
+        $nomes_fam = ["imagem" => "imagens", "video" => "vídeos", "audio" => "áudios", "pdf" => "PDF", "xml" => "XML"];
+        if (count($erros) === 0) {
+            foreach ($arquivos as $k => $a) {
+                list($nome, $tmp, $bin, $erro) = $a;
+                $nome = trim(preg_replace("/[\\x00-\\x1f]/", "", basename(str_replace("\\", "/", $nome))));
+                $nome = $nome !== "" ? mb_substr($nome, 0, 255) : "arquivo";
+                if ($erro === UPLOAD_ERR_INI_SIZE || $erro === UPLOAD_ERR_FORM_SIZE) {
+                    $erros[] = $nome . ": passou do tamanho que o servidor aceita (o upload_max_filesize do php.ini" . ($limite !== null ? ", " . tamanho_texto($limite) : "") . ").";
+                    continue;
+                }
+                if ($erro !== UPLOAD_ERR_OK || ($tmp !== null && !is_uploaded_file($tmp))) {
+                    $erros[] = $nome . ": não chegou inteiro (erro " . $erro . " no envio). Tente de novo.";
+                    continue;
+                }
+                $tamanho = $tmp !== null ? (int)filesize($tmp) : strlen($bin);
+                if ($tamanho === 0) {
+                    $erros[] = $nome . ": o arquivo está vazio.";
+                    continue;
+                }
+                if ($limite !== null && $tamanho > $limite) {
+                    $erros[] = $nome . ": tem " . tamanho_texto($tamanho) . "; o servidor aceita até " . tamanho_texto($limite) . ".";
+                    continue;
+                }
+                $arquivo = documento_novo_arquivo($pasta, (int)$r["id"], $nome);
+                $ok = $tmp !== null ? @move_uploaded_file($tmp, $pasta . "/" . $arquivo) : @file_put_contents($pasta . "/" . $arquivo, $bin) === $tamanho;
+                if (!$ok) {
+                    $erros[] = $nome . ": não consegui gravar na pasta dos documentos.";
+                    continue;
+                }
+                $tipo = documento_tipo($pasta . "/" . $arquivo, $nome);
+                $familia = documento_familia($tipo, $nome);
+                if (count($aceita) > 0 && !in_array($familia, $aceita, true)) {
+                    @unlink($pasta . "/" . $arquivo);
+                    $erros[] = $nome . ": a categoria " . $cat["nome"] . " aceita só " . implode(", ", array_map(function ($f) use ($nomes_fam) { return $nomes_fam[$f] ?? $f; }, $aceita)) . ".";
+                    continue;
+                }
+                $arq_mini = null;
+                if ($k === 0 && $mini !== null && $familia === "imagem") {
+                    $arq_mini = $arquivo . ".mini.jpg";
+                    if (@file_put_contents($pasta . "/" . $arq_mini, $mini) !== strlen($mini)) {
+                        $arq_mini = null;
+                    }
+                }
+                $t = $titulo !== "" ? $titulo : mb_substr(pathinfo($nome, PATHINFO_FILENAME), 0, 200);
+                try {
+                    sql("INSERT INTO documento (relogio_id, categoria_id, titulo, data, descricao, nome, tipo, tamanho, arquivo, miniatura, criado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                        [(int)$r["id"], (int)$cat["id"], $t !== "" ? $t : $nome, $data, $descricao !== "" ? $descricao : null, $nome, $tipo, $tamanho, $arquivo, $arq_mini]);
+                    $ids[] = ultimo_id();
+                } catch (BancoErro $e) {
+                    documento_apagar_arquivos(["arquivo" => $arquivo, "miniatura" => $arq_mini]);
+                    $erros[] = $nome . ": o banco recusou (" . $e->getMessage() . ").";
+                }
+            }
+            if (count($ids) > 0) {
+                $msg = (count($ids) === 1 ? "1 documento guardado" : count($ids) . " documentos guardados") . " em " . $cat["nome"] . " do " . $r["nome"] . ".";
+                $id = $ids[0];
+            }
+        }
+    } elseif ($acao === "alterar" || $acao === "excluir") {
+        if (!$atual) {
+            $erros[] = "Documento não encontrado.";
+        } elseif ($acao === "excluir") {
+            documento_apagar_arquivos($atual);
+            sql("DELETE FROM documento WHERE id = ?", [$id]);
+            $msg = "Documento " . $atual["titulo"] . " excluído.";
+        } else {
+            if (!$cat) {
+                $erros[] = "A categoria não existe.";
+            } elseif ((int)$cat["id"] !== (int)$atual["categoria_id"] && count(documento_familias_aceitas($cat["aceita"])) > 0
+                && !in_array(documento_familia($atual["tipo"], $atual["nome"]), documento_familias_aceitas($cat["aceita"]), true)) {
+                $erros[] = "A categoria " . $cat["nome"] . " não aceita este tipo de arquivo (" . $atual["tipo"] . ").";
+            }
+            if ($titulo === "") {
+                $erros[] = "Dê um título ao documento.";
+            }
+            if (count($erros) === 0) {
+                sql("UPDATE documento SET categoria_id = ?, titulo = ?, data = ?, descricao = ? WHERE id = ?", [(int)$cat["id"], $titulo, $data, $descricao !== "" ? $descricao : null, $id]);
+                $msg = "Documento " . $titulo . " salvo.";
+            }
+        }
+    } else {
+        $erros[] = "Ação desconhecida: use enviar, alterar ou excluir.";
+    }
+    return resultado($erros, $msg, ["id" => $id, "ids" => $ids]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Categorias dos documentos (cadastro). Ações: nova (identificador, nome, aceita, ordem), alterar (id: nome, aceita, ordem;
+// o identificador não muda), excluir (id; só sem documentos). "aceita": as famílias aceitas (aceita[] ou o texto separado
+// por vírgula: imagem, video, audio, pdf, xml); vazio, qualquer arquivo.
+// ---------------------------------------------------------------------------------------------------------------------
+function op_documento_categorias($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $id = (int)($d["id"] ?? 0);
+    $atual = $id > 0 ? linha("SELECT * FROM documento_categoria WHERE id = ?", [$id]) : null;
+    if (($acao === "alterar" || $acao === "excluir") && !$atual) {
+        $erros[] = "Categoria não encontrada.";
+    } elseif ($acao === "nova" || $acao === "alterar") {
+        $ident = $atual ? $atual["identificador"] : trim((string)($d["identificador"] ?? ""));
+        $nome = trim((string)($d["nome"] ?? ($atual["nome"] ?? "")));
+        $aceita = array_key_exists("aceita", $d) ? (is_array($d["aceita"]) ? $d["aceita"] : documento_familias_aceitas($d["aceita"])) : documento_familias_aceitas($atual["aceita"] ?? "");
+        $aceita = array_values(array_unique(array_filter(array_map("trim", $aceita), function ($x) { return $x !== ""; })));
+        $ordem = array_key_exists("ordem", $d) && trim((string)$d["ordem"]) !== "" ? (int)$d["ordem"] : ($atual ? (int)$atual["ordem"] : (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM documento_categoria"));
+        if (!identificador_valido($ident)) {
+            $erros[] = "Identificador: minúsculas, números e _, começando por letra, até 40.";
+        } elseif (!$atual && valor("SELECT id FROM documento_categoria WHERE identificador = ?", [$ident]) !== null) {
+            $erros[] = "Já existe a categoria " . $ident . ".";
+        }
+        if ($nome === "" || mb_strlen($nome) > 120) {
+            $erros[] = "Dê um nome à categoria (até 120 caracteres).";
+        }
+        foreach ($aceita as $f) {
+            if (!in_array($f, ["imagem", "video", "audio", "pdf", "xml"], true)) {
+                $erros[] = "Tipo aceito desconhecido: " . $f . " (use imagem, video, audio, pdf ou xml; nenhum: qualquer arquivo).";
+            }
+        }
+        if (count($erros) === 0) {
+            if ($atual) {
+                sql("UPDATE documento_categoria SET nome = ?, aceita = ?, ordem = ? WHERE id = ?", [$nome, implode(",", $aceita), $ordem, $id]);
+                $msg = "Categoria " . $nome . " salva.";
+            } else {
+                sql("INSERT INTO documento_categoria (identificador, nome, aceita, ordem) VALUES (?, ?, ?, ?)", [$ident, $nome, implode(",", $aceita), $ordem]);
+                $id = ultimo_id();
+                $msg = "Categoria " . $nome . " criada.";
+            }
+        }
+    } elseif ($acao === "excluir") {
+        $n = (int)valor("SELECT COUNT(*) FROM documento WHERE categoria_id = ?", [$id]);
+        if ($n > 0) {
+            $erros[] = "A categoria " . $atual["nome"] . " tem " . $n . ($n === 1 ? " documento" : " documentos") . ": passe para outra categoria ou exclua antes.";
+        } else {
+            sql("DELETE FROM documento_categoria WHERE id = ?", [$id]);
+            $msg = "Categoria " . $atual["nome"] . " excluída.";
+        }
+    } else {
+        $erros[] = "Ação desconhecida: use nova, alterar ou excluir.";
     }
     return resultado($erros, $msg, ["id" => $id]);
 }

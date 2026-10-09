@@ -1,7 +1,9 @@
 // Cadastros: os dados da API (recurso=cadastros), uma aba por vez (cadastros.php?aba=campos&editar=3), com as gravações
-// pela API (recurso=campos, lancamento_tipos, formulas, avisos e modos) e o testar das fórmulas (recurso=calcular).
-var ABAS = {campos: "Campos", lancamentos: "Tipos de lançamento", formulas: "Fórmulas", avisos: "Avisos", modos: "Modos de rodízio"};
-var RECURSO = {campos: "campos", lancamentos: "lancamento_tipos", formulas: "formulas", avisos: "avisos", modos: "modos"};
+// pela API (recurso=campos, lancamento_tipos, formulas, avisos, modos e documento_categorias) e o testar das fórmulas
+// (recurso=calcular).
+var ABAS = {campos: "Campos", lancamentos: "Tipos de lançamento", formulas: "Fórmulas", avisos: "Avisos", modos: "Modos de rodízio", documentos: "Categorias de documentos"};
+var RECURSO = {campos: "campos", lancamentos: "lancamento_tipos", formulas: "formulas", avisos: "avisos", modos: "modos", documentos: "documento_categorias"};
+var FAMILIAS = {imagem: "imagens", video: "vídeos", audio: "áudios", pdf: "PDF", xml: "XML"};
 var SEL = {inteligente: "Inteligente: a maior nota", ponderado: "Inteligente com sorteio: a nota é a chance", aleatorio: "Totalmente aleatório", fifo: "Fila: o que está há mais tempo sem uso"};
 var DIAS = ["", "seg", "ter", "qua", "qui", "sex", "sáb", "dom"];
 var ESCALAS = [[7, "7 dias"], [30, "30 dias"], [60, "60 dias"], [180, "6 meses"], [365, "1 ano"], [730, "2 anos"]];
@@ -213,6 +215,32 @@ function recarregarCadastros() {
             + el("tbody", {}, linhas)))
           + el("p", {"class": "nota"}, "Bloco sem nenhum dia marcado sai. Cada dia da semana pode estar num bloco só.")
           + el("div", {"class": "botoes"}, el("button", {}, e ? "Salvar o modo" : "Criar o modo"))));
+    } else if (aba === "documentos") {
+      var e = null;
+      d.documento_categorias.forEach(function (x) { if (x.id === editar) { e = x; } });
+      var f = e || {aceita: []};
+      res += el("section", {"class": "cartao-config"}, el("h2", {}, "Categorias de documentos")
+        + el("p", {"class": "nota"}, "Os documentos de cada relógio (a página Documentos, aberta pela ficha) ficam numa categoria. \"Aceita\" limita os arquivos da categoria; "
+          + "nada marcado, ela aceita qualquer arquivo. O jeito de abrir cada arquivo vem do tipo dele, não da categoria: as fotos na galeria, os vídeos no player, o PDF no visualizador, o XML da nota com o resumo, o resto para baixar. "
+          + "Uma categoria com documentos não se exclui: passe os documentos para outra antes.")
+        + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, ["Categoria", "Identificador", "Aceita", "Ordem", "Documentos", ""].map(function (t, i) {
+            return el("th", {"class": i === 3 || i === 4 ? "num" : null}, t);
+          }).join(""))) + el("tbody", {}, d.documento_categorias.map(function (c) {
+            return el("tr", {}, el("td", {}, h(c.nome)) + el("td", {"class": "formula"}, h(c.identificador))
+              + el("td", {}, c.aceita.length === 0 ? "qualquer arquivo" : h(c.aceita.map(function (x) { return FAMILIAS[x] || x; }).join(", ")))
+              + el("td", {"class": "num"}, String(c.ordem)) + el("td", {"class": "num"}, String(c.documentos))
+              + el("td", {"class": "acoes-linha"}, linkEditar(c.id) + (c.documentos === 0 ? " " + botaoLinha("excluir", c.id, "Excluir", "Excluir a categoria " + c.nome + "?") : "")));
+          }).join(""))))
+        + el("h3", {"id": "form"}, e ? "Alterar a categoria " + h(e.nome) : "Nova categoria")
+        + el("form", {"data-recurso": "documento_categorias", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": e ? "alterar" : "nova"}) + (e ? el("input", {"type": "hidden", "name": "id", "value": e.id}) : "")
+          + el("label", {}, "Nome " + el("input", {"name": "nome", "value": vazio(f.nome), "required": true, "maxlength": "120"}))
+          + (e ? "" : el("label", {}, "Identificador " + el("input", {"name": "identificador", "required": true, "pattern": "[a-z][a-z0-9_]{0,39}"})))
+          + el("label", {}, "Ordem " + el("input", {"type": "number", "name": "ordem", "value": e ? e.ordem : "", "placeholder": "vazio: no fim"}))
+          + el("fieldset", {"style": "grid-column: 1 / -1"}, el("legend", {}, "Aceita (nada marcado: qualquer arquivo)") + el("input", {"type": "hidden", "name": "aceita", "value": ""})
+            + Object.keys(FAMILIAS).map(function (k) {
+              return el("label", {"class": "check"}, el("input", {"type": "checkbox", "name": "aceita[]", "value": k, "checked": f.aceita.indexOf(k) >= 0}) + " " + h(FAMILIAS[k]));
+            }).join(" "))
+          + el("div", {"class": "botoes"}, el("button", {}, e ? "Salvar" : "Criar") + (e ? " " + el("a", {"href": "cadastros.php?aba=documentos"}, "cancelar") : ""))));
     }
     document.getElementById("cadastros").innerHTML = res;
   });

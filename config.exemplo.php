@@ -21,10 +21,13 @@ define("MSG_ENDPOINT", "");
 define("MSG_DESTINATARIO", "");
 define("MSG_TITULO", "Relógios");
 
-// o maior manual de relógio aceito (o quadro Manual da ficha), em bytes. Sem esta linha: 12 MB (12582912). 0 ou -1: sem
-// limite do sistema. Valendo sempre também o limite do PHP (upload_max_filesize e post_max_size do php.ini) e o do nginx
-// (client_max_body_size). Ex.: 26214400 = 25 MB
-// define("MANUAL_LIMITE", 26214400);
+// os documentos dos relógios (o manual, a nota fiscal, fotos, vídeos...): a pasta onde os arquivos ficam, FORA da pasta que
+// o servidor web publica, com permissão de escrita para o usuário do PHP (sem ela, a página Documentos só avisa que falta)
+define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");
+// o maior documento aceito, em bytes. Sem esta linha: 100 MB (104857600). 0 ou -1: sem limite do sistema. Valem sempre
+// também o limite do PHP (upload_max_filesize e post_max_size do php.ini) e o do nginx (client_max_body_size). O
+// MANUAL_LIMITE, o nome antigo, ainda vale quando esta linha não existe. Ex.: 524288000 = 500 MB
+// define("DOCUMENTOS_LIMITE", 524288000);
 
 // só para o importar.php, com este sistema no PostgreSQL ou no SQLite: onde está o MySQL do sistema antigo
 // define("ANTIGO_HOST", "127.0.0.1");

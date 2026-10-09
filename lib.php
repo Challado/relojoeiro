@@ -294,6 +294,7 @@ $MIGRACOES = [
     "v11" => ["migracao_v11.sql", "o motivo de cada escolha do plano: por que aquele relógio saiu naquele dia (a garantia de rodízio, a nota, o sorteio, a escolha à mão)", "plano.motivo"],
     "v12" => ["migracao_v12.sql", "os dias sem uso de um relógio nunca usado contam desde a compra (antes valiam 9999 para todos: empatavam na garantia de rodízio)", "config.chave=migracao_v12"],
     "v13" => ["migracao_v13.sql", "o manual de cada relógio: um arquivo (PDF ou imagem) guardado no banco, que se envia e se abre pela ficha", "manual"],
+    "v14" => ["migracao_v14.sql", "os documentos de cada relógio: qualquer arquivo (manual, nota fiscal em PDF e em XML, fotos, vídeos, diversos), numa categoria, com a página Documentos (galeria, vídeos em sequência, visualizador de PDF, resumo da nota); os manuais da v13 passam para lá", "documento"],
 ];
 
 // As migrações que faltam aplicar neste banco: as da lista cuja marca ainda não existe. A marca: uma tabela, uma coluna
@@ -1538,12 +1539,44 @@ function ini_bytes($v)
     return max(0, (int)$n);
 }
 
-// O maior manual aceito, em bytes: o MANUAL_LIMITE do config.php (sem ele, 12 MB; 0 ou negativo, como o -1: sem limite do
-// sistema), ou menos se o PHP do servidor aceitar menos num envio (upload_max_filesize e post_max_size do php.ini; o envio
-// leva também o resto do formulário, daí a folga de 64 KB). null: nenhum limite, nem do sistema nem do PHP
-function manual_limite()
+// ---------------------------------------------------------------------------------------------------------------------
+// Os documentos de cada relógio: o arquivo numa pasta do servidor (DOCUMENTOS_PASTA, no config.php, fora da pasta
+// publicada) e os dados dele na tabela documento, numa categoria (documento_categoria, cadastro)
+// ---------------------------------------------------------------------------------------------------------------------
+
+// A pasta dos documentos, sem a barra do fim; null se o config.php não tem DOCUMENTOS_PASTA ou se ela não existe e não dá
+// para criar, ou não aceita gravar (documentos_pasta_erro() diz o motivo)
+function documentos_pasta()
 {
-    $limite = defined("MANUAL_LIMITE") ? (int)MANUAL_LIMITE : 12 * 1024 * 1024;
+    return documentos_pasta_erro() === "" ? rtrim((string)DOCUMENTOS_PASTA, "/\\") : null;
+}
+
+// O motivo de a pasta dos documentos não servir ("" se serve)
+function documentos_pasta_erro()
+{
+    static $erro = null;
+    if ($erro === null) {
+        if (!defined("DOCUMENTOS_PASTA") || trim((string)DOCUMENTOS_PASTA) === "") {
+            $erro = "falta a pasta dos documentos: o DOCUMENTOS_PASTA do config.php (uma pasta do servidor fora da pasta publicada)";
+        } else {
+            $pasta = rtrim((string)DOCUMENTOS_PASTA, "/\\");
+            if (!is_dir($pasta)) {
+                @mkdir($pasta, 0750, true);
+            }
+            $erro = !is_dir($pasta) ? "a pasta dos documentos (" . $pasta . ") não existe e não consegui criá-la"
+                : (!is_writable($pasta) ? "a pasta dos documentos (" . $pasta . ") não aceita gravar: dê permissão de escrita ao usuário do PHP" : "");
+        }
+    }
+    return $erro;
+}
+
+// O maior documento aceito, em bytes: o DOCUMENTOS_LIMITE do config.php (sem ele, o MANUAL_LIMITE, o nome antigo; sem os
+// dois, 100 MB; 0 ou negativo, como o -1: sem limite do sistema), ou menos se o PHP do servidor aceitar menos num envio
+// (upload_max_filesize e post_max_size do php.ini; o envio leva também o resto do formulário, daí a folga de 64 KB).
+// null: nenhum limite, nem do sistema nem do PHP
+function documentos_limite()
+{
+    $limite = defined("DOCUMENTOS_LIMITE") ? (int)DOCUMENTOS_LIMITE : (defined("MANUAL_LIMITE") ? (int)MANUAL_LIMITE : 100 * 1024 * 1024);
     $limite = $limite > 0 ? $limite : PHP_INT_MAX;
     $arquivo = ini_bytes(ini_get("upload_max_filesize"));
     $envio = ini_bytes(ini_get("post_max_size"));
@@ -1562,11 +1595,221 @@ function tamanho_texto($bytes)
     return $bytes < 1048576 ? max(1, (int)round($bytes / 1024)) . " KB" : str_replace(".", ",", (string)round($bytes / 1048576, 1)) . " MB";
 }
 
-// O manual de um relógio, sem o arquivo: {"nome", "tipo", "tamanho", "atualizado_em"}; null se não tem
-function manual_info($rid)
+// O tipo (MIME) de um arquivo: pelo conteúdo (a extensão fileinfo do PHP) e, quando ele não diz, pela extensão do nome
+function documento_tipo($caminho, $nome)
 {
-    $m = linha("SELECT nome, tipo, tamanho, atualizado FROM manual WHERE relogio_id = ?", [(int)$rid]);
-    return $m ? ["nome" => $m["nome"], "tipo" => $m["tipo"], "tamanho" => (int)$m["tamanho"], "atualizado_em" => $m["atualizado"]] : null;
+    $ext = strtolower(pathinfo($nome, PATHINFO_EXTENSION));
+    $por_ext = ["jpg" => "image/jpeg", "jpeg" => "image/jpeg", "png" => "image/png", "gif" => "image/gif", "webp" => "image/webp", "avif" => "image/avif",
+        "heic" => "image/heic", "bmp" => "image/bmp", "svg" => "image/svg+xml", "mp4" => "video/mp4", "m4v" => "video/mp4", "mov" => "video/quicktime",
+        "webm" => "video/webm", "mkv" => "video/x-matroska", "avi" => "video/x-msvideo", "3gp" => "video/3gpp", "mp3" => "audio/mpeg", "m4a" => "audio/mp4",
+        "ogg" => "audio/ogg", "wav" => "audio/wav", "pdf" => "application/pdf", "xml" => "application/xml", "txt" => "text/plain", "csv" => "text/csv",
+        "zip" => "application/zip", "doc" => "application/msword", "docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "xls" => "application/vnd.ms-excel", "xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"];
+    $tipo = "";
+    if (function_exists("finfo_open")) {
+        $f = finfo_open(FILEINFO_MIME_TYPE);
+        $tipo = (string)@finfo_file($f, $caminho);
+        finfo_close($f);
+    }
+    // o conteúdo diz pouco (texto, binário genérico, um zip que é docx): vale a extensão, se ela for conhecida
+    if (($tipo === "" || in_array($tipo, ["application/octet-stream", "text/plain", "application/zip", "text/xml"], true)) && isset($por_ext[$ext])) {
+        $tipo = $tipo === "text/xml" && $ext !== "xml" ? $tipo : $por_ext[$ext];
+    }
+    return $tipo !== "" ? substr($tipo, 0, 100) : "application/octet-stream";
+}
+
+// A família do arquivo, que decide como ele abre: imagem (a galeria), video (o player em sequência), audio, pdf (o
+// visualizador), xml (o resumo da nota e o download) ou outro (só o download)
+function documento_familia($tipo, $nome = "")
+{
+    $ext = strtolower(pathinfo($nome, PATHINFO_EXTENSION));
+    if ($tipo === "image/svg+xml") {
+        return "outro";
+    }
+    foreach (["image/" => "imagem", "video/" => "video", "audio/" => "audio"] as $pre => $fam) {
+        if (strpos($tipo, $pre) === 0) {
+            return $fam;
+        }
+    }
+    if ($tipo === "application/pdf") {
+        return "pdf";
+    }
+    return in_array($tipo, ["application/xml", "text/xml"], true) || $ext === "xml" ? "xml" : "outro";
+}
+
+// As famílias que uma categoria aceita (vazio: qualquer arquivo)
+function documento_familias_aceitas($aceita)
+{
+    return array_values(array_filter(array_map("trim", explode(",", (string)$aceita)), function ($x) { return $x !== ""; }));
+}
+
+// Um nome novo de arquivo dentro da pasta (r<relógio>/<aleatório>), com a subpasta criada
+function documento_novo_arquivo($pasta, $rid, $nome)
+{
+    $sub = "r" . (int)$rid;
+    if (!is_dir($pasta . "/" . $sub)) {
+        @mkdir($pasta . "/" . $sub, 0750, true);
+    }
+    $ext = strtolower(preg_replace("/[^A-Za-z0-9]/", "", pathinfo($nome, PATHINFO_EXTENSION)));
+    return $sub . "/" . bin2hex(random_bytes(12)) . ($ext !== "" ? "." . substr($ext, 0, 10) : "");
+}
+
+// Os dados de um documento para a API: a linha da tabela, com a família, os endereços e, no XML de uma NF-e, o resumo dela
+function documento_info($d, $com_nfe = true)
+{
+    $familia = documento_familia($d["tipo"], $d["nome"]);
+    $res = ["id" => (int)$d["id"], "relogio_id" => (int)$d["relogio_id"], "categoria_id" => (int)$d["categoria_id"], "titulo" => $d["titulo"],
+        "data" => $d["data"] === null ? null : substr((string)$d["data"], 0, 10), "descricao" => $d["descricao"], "nome" => $d["nome"], "tipo" => $d["tipo"],
+        "familia" => $familia, "tamanho" => (int)$d["tamanho"], "miniatura" => $d["miniatura"] !== null && $d["miniatura"] !== "", "criado" => $d["criado"],
+        "url" => "api.php?recurso=documento&id=" . (int)$d["id"], "nfe" => null];
+    if ($com_nfe && $familia === "xml" && documentos_pasta() !== null) {
+        $res["nfe"] = nfe_resumo(documentos_pasta() . "/" . $d["arquivo"]);
+    }
+    return $res;
+}
+
+// Os documentos de um relógio (null: de todos), da categoria e da data
+function documentos_do_relogio($rid = null)
+{
+    return linhas("SELECT d.* FROM documento d JOIN documento_categoria c ON c.id = d.categoria_id" . ($rid !== null ? " WHERE d.relogio_id = ?" : "")
+        . " ORDER BY d.relogio_id, c.ordem, c.id, COALESCE(d.data, '9999-12-31'), d.criado, d.id", $rid !== null ? [(int)$rid] : []);
+}
+
+// O resumo de uma NF-e (o XML da nota fiscal eletrônica): o emitente, o número, a série, a data, o valor, a chave e os
+// produtos; null se o arquivo não é uma NF-e. Lido sem baixar nada de fora (LIBXML_NONET) e sem entidades
+function nfe_resumo($caminho)
+{
+    if (!is_file($caminho) || filesize($caminho) > 5 * 1048576 || !class_exists("DOMDocument")) {
+        return null;
+    }
+    $dom = new DOMDocument();
+    if (!@$dom->loadXML((string)file_get_contents($caminho), LIBXML_NONET)) {
+        return null;
+    }
+    $inf = $dom->getElementsByTagName("infNFe")->item(0);
+    if ($inf === null) {
+        return null;
+    }
+    $um = function ($pai, $tag) {
+        $n = $pai !== null ? $pai->getElementsByTagName($tag)->item(0) : null;
+        return $n !== null ? trim($n->textContent) : null;
+    };
+    $emit = $inf->getElementsByTagName("emit")->item(0);
+    $ide = $inf->getElementsByTagName("ide")->item(0);
+    $tot = $inf->getElementsByTagName("ICMSTot")->item(0);
+    $produtos = [];
+    foreach ($inf->getElementsByTagName("prod") as $p) {
+        $produtos[] = ["descricao" => $um($p, "xProd"), "quantidade" => is_numeric($um($p, "qCom")) ? (float)$um($p, "qCom") : null,
+            "valor" => is_numeric($um($p, "vProd")) ? (float)$um($p, "vProd") : null];
+    }
+    $data = $um($ide, "dhEmi") ?? $um($ide, "dEmi");
+    return ["emitente" => $um($emit, "xNome"), "cnpj" => $um($emit, "CNPJ") ?? $um($emit, "CPF"), "numero" => $um($ide, "nNF"), "serie" => $um($ide, "serie"),
+        "data" => $data !== null ? substr($data, 0, 10) : null, "valor" => is_numeric($um($tot, "vNF")) ? (float)$um($tot, "vNF") : null,
+        "chave" => preg_replace("/^NFe/", "", (string)$inf->getAttribute("Id")), "produtos" => $produtos];
+}
+
+// Manda um documento para o navegador: inline só os tipos que o navegador mostra sem rodar nada (imagens, vídeo, áudio,
+// PDF, texto); o resto (inclusive HTML, SVG e XML, que rodariam no endereço do sistema) vai como download. Atende o
+// pedido de um pedaço (Range), que o vídeo usa para avançar
+function documento_enviar($d, $caminho, $baixar, $miniatura = false)
+{
+    $tipo = $miniatura ? "image/jpeg" : $d["tipo"];
+    $mostra = !$baixar && ($miniatura || in_array(documento_familia($d["tipo"], $d["nome"]), ["imagem", "video", "audio", "pdf"], true) || $d["tipo"] === "text/plain");
+    $tamanho = filesize($caminho);
+    $ini = 0;
+    $fim = $tamanho - 1;
+    if (!$miniatura && preg_match("/^bytes=(\\d*)-(\\d*)$/", trim((string)($_SERVER["HTTP_RANGE"] ?? "")), $m) === 1 && ($m[1] !== "" || $m[2] !== "")) {
+        if ($m[1] === "") {
+            $ini = max(0, $tamanho - (int)$m[2]);
+        } else {
+            $ini = (int)$m[1];
+            $fim = $m[2] !== "" ? min((int)$m[2], $tamanho - 1) : $tamanho - 1;
+        }
+        if ($ini > $fim || $ini >= $tamanho) {
+            http_response_code(416);
+            header("Content-Range: bytes */" . $tamanho);
+            return;
+        }
+        http_response_code(206);
+        header("Content-Range: bytes " . $ini . "-" . $fim . "/" . $tamanho);
+    }
+    $ascii = preg_replace("/[^A-Za-z0-9._ -]/", "_", $d["nome"]);
+    header("Content-Type: " . ($mostra ? $tipo : "application/octet-stream"));
+    header("Content-Length: " . ($fim - $ini + 1));
+    header("Accept-Ranges: bytes");
+    header("Content-Disposition: " . ($mostra ? "inline" : "attachment") . "; filename=\"" . $ascii . "\"; filename*=UTF-8''" . rawurlencode($d["nome"]));
+    header("X-Content-Type-Options: nosniff");
+    header("Cache-Control: private, max-age=86400");
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    @set_time_limit(0);
+    $f = fopen($caminho, "rb");
+    fseek($f, $ini);
+    $falta = $fim - $ini + 1;
+    while ($falta > 0 && !feof($f)) {
+        $pedaco = fread($f, (int)min(1048576, $falta));
+        if ($pedaco === false || $pedaco === "") {
+            break;
+        }
+        echo $pedaco;
+        $falta -= strlen($pedaco);
+        flush();
+    }
+    fclose($f);
+}
+
+// As categorias dos documentos, na ordem, com quantos documentos cada uma tem (de um relógio; null: de todos)
+function documento_categorias_lista($rid = null)
+{
+    return array_map(function ($c) {
+        return ["id" => (int)$c["id"], "identificador" => $c["identificador"], "nome" => $c["nome"], "aceita" => documento_familias_aceitas($c["aceita"]),
+            "ordem" => (int)$c["ordem"], "documentos" => (int)$c["documentos"]];
+    }, linhas("SELECT c.*, (SELECT COUNT(*) FROM documento d WHERE d.categoria_id = c.id" . ($rid !== null ? " AND d.relogio_id = ?" : "") . ") AS documentos
+        FROM documento_categoria c ORDER BY c.ordem, c.id", $rid !== null ? [(int)$rid] : []));
+}
+
+// Apaga os arquivos de um documento (o arquivo e a miniatura) da pasta
+function documento_apagar_arquivos($d)
+{
+    $pasta = documentos_pasta();
+    if ($pasta !== null) {
+        foreach ([$d["arquivo"], $d["miniatura"]] as $a) {
+            if ($a !== null && $a !== "" && strpos($a, "..") === false && is_file($pasta . "/" . $a)) {
+                @unlink($pasta . "/" . $a);
+            }
+        }
+    }
+}
+
+// Os manuais da v13 (guardados no banco, na tabela manual) passam para os documentos, na categoria Manual (sem ela, na
+// primeira categoria), assim que a pasta dos documentos existe. Um por vez, para não pesar na memória; a tabela fica vazia
+function mover_manuais()
+{
+    static $feito = false;
+    if ($feito) {
+        return;
+    }
+    $feito = true;
+    $pasta = documentos_pasta();
+    if ($pasta === null || (int)valor("SELECT COUNT(*) FROM manual") === 0) {
+        return;
+    }
+    $cat = valor("SELECT id FROM documento_categoria WHERE identificador = 'manual'") ?? valor("SELECT id FROM documento_categoria ORDER BY ordem, id LIMIT 1");
+    if ($cat === null) {
+        return;
+    }
+    foreach (linhas("SELECT relogio_id FROM manual") as $x) {
+        $m = linha("SELECT * FROM manual WHERE relogio_id = ?", [(int)$x["relogio_id"]]);
+        $arquivo = documento_novo_arquivo($pasta, (int)$m["relogio_id"], $m["nome"]);
+        if (@file_put_contents($pasta . "/" . $arquivo, $m["dados"]) === strlen($m["dados"])) {
+            sql("INSERT INTO documento (relogio_id, categoria_id, titulo, data, descricao, nome, tipo, tamanho, arquivo, miniatura, criado) VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, ?, NULL, ?)",
+                [(int)$m["relogio_id"], (int)$cat, "Manual", $m["nome"], $m["tipo"], strlen($m["dados"]), $arquivo, $m["atualizado"]]);
+            sql("DELETE FROM manual WHERE relogio_id = ?", [(int)$m["relogio_id"]]);
+        } else {
+            @unlink($pasta . "/" . $arquivo);
+        }
+    }
 }
 
 // O relógio do dia entra no pulso sozinho no início do horário de uso (a Configuração, ao lado do horário; é o padrão).

@@ -235,19 +235,15 @@ function abrirNoPainel(id) {
           + (c.data !== null ? el("p", {}, "Comprado em " + dataBr(c.data) + ", há " + Math.round((instante(hoje) - instante(c.data)) / 86400000) + " dias") : "")
           + (c.garantia_ate !== null ? el("p", {}, (c.garantia_ate >= hoje ? "Garantia até " : "Garantia vencida em ") + dataBr(c.garantia_ate)) : "");
       blocos += el("section", {}, el("h2", {}, "Compra") + compra);
-      // o manual: o arquivo guardado no banco (PDF ou imagem), aberto numa aba nova; enviar, trocar e remover
-      var man = r.manual;
-      var mb = function (b) { return b < 1048576 ? Math.max(1, Math.round(b / 1024)) + " KB" : num(b / 1048576, 1) + " MB"; };
-      blocos += el("section", {"class": "manual"}, el("h2", {}, "Manual")
-        + (man !== null ? el("p", {}, el("a", {"href": "api.php?recurso=manual&relogio=" + id + "&v=" + encodeURIComponent(man.atualizado_em), "target": "_blank", "rel": "noopener"}, "Abrir o manual")
-            + " " + el("span", {"class": "nota"}, h(man.nome) + " · " + mb(man.tamanho) + " · enviado em " + dataBr(man.atualizado_em)))
-          : el("p", {}, "Sem manual."))
-        + el("form", {"data-recurso": "relogio", "class": "linha"}, el("input", {"type": "hidden", "name": "acao", "value": "manual"}) + el("input", {"type": "hidden", "name": "id", "value": id})
-          + el("input", {"type": "file", "name": "manual", "accept": "application/pdf,image/jpeg,image/png,image/webp", "required": true, "aria-label": "Escolher o arquivo do manual"})
-          + el("button", {"class": "leve"}, man !== null ? "Trocar manual" : "Salvar manual"))
-        + el("p", {"class": "nota"}, "PDF, JPEG, PNG ou WebP" + (r.manual_limite !== null ? ", até " + mb(r.manual_limite) : ", de qualquer tamanho") + ". O manual que só existe como página da internet: abra no navegador e use Imprimir → Salvar como PDF.")
-        + (man !== null ? el("form", {"data-recurso": "relogio", "onsubmit": "return confirm('Remover o manual?')"}, el("input", {"type": "hidden", "name": "acao", "value": "remover_manual"})
-          + el("input", {"type": "hidden", "name": "id", "value": id}) + el("button", {"class": "leve discreto"}, "Remover manual")) : ""));
+      // os documentos: quantos em cada categoria, cada uma abrindo a página Documentos (numa aba nova) já nela
+      var dc = r.documentos;
+      blocos += el("section", {"class": "documentos-ficha"}, el("h2", {}, "Documentos")
+        + (dc.total === 0 ? el("p", {}, "Nenhum ainda: o manual, a nota fiscal, fotos, vídeos...")
+          : el("p", {}, dc.categorias.map(function (c) {
+            return el("a", {"href": "documentos.php?relogio=" + id + "&cat=" + c.id, "target": "_blank", "rel": "noopener"}, h(c.nome)) + " (" + c.documentos + ")";
+          }).join(" · ")))
+        + (dc.pasta_ok ? "" : el("p", {"class": "nota"}, "Para guardar documentos, falta a pasta deles no config.php (DOCUMENTOS_PASTA)."))
+        + el("p", {}, el("a", {"href": "documentos.php?relogio=" + id, "target": "_blank", "rel": "noopener", "class": "botao-link"}, dc.total === 0 ? "Enviar documentos" : "Abrir os documentos")));
       blocos += el("section", {}, el("h2", {}, "Próximas manutenções") + (r.manutencoes.length === 0 ? el("p", {}, "Nada previsto.")
         : r.manutencoes.map(function (m) { return el("p", {}, el("strong", {}, dataBr(m.data)) + " " + h(m.nome)); }).join("")));
       // marcar: um quadro só. O menu diz o que aconteceu, e embaixo aparecem só os campos daquilo: pôr ou tirar (cada sessão,

@@ -325,28 +325,52 @@ cadastro, não código: dá para mudar tudo na página **Cadastros**, e criar os
 | **Grupo** | o lugar dele na árvore. Decide os campos, as fórmulas (a "carga" de um smartwatch é a bateria; a de um mecânico, a reserva de marcha) e os avisos que ele recebe. |
 | **Disponível** | desmarcado, ele sai do rodízio e dos avisos (no conserto, emprestado, vendido), mas o histórico fica. |
 | **Foto** | só para a tela. |
-| **Manual** | o manual do relógio (PDF ou imagem), guardado no próprio banco: abre pela ficha, em qualquer aparelho. Veja [O manual do relógio](#o-manual-do-relógio). |
+| **Documentos** | o manual, a nota fiscal (em PDF e em XML), as fotos de recordação, os vídeos e o que mais for. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 
-### O manual do relógio
+### Os documentos do relógio
 
-Cada relógio guarda **um arquivo de manual**: um PDF, ou uma imagem (JPEG, PNG ou WebP) para o manual que veio só como folheto
-ou foto. Ele fica no banco, junto com o resto, e vai junto no backup do banco.
+Cada relógio guarda **quantos arquivos você quiser**, de qualquer tipo, cada um numa **categoria**: o manual, a nota fiscal em
+PDF, o XML da nota, as fotos de recordação, os vídeos, uma planilha, o que for. Cada documento tem:
 
-Na ficha do relógio, o quadro **Manual**:
+| Dado | O que é |
+|---|---|
+| **Categoria** | onde ele fica. As que vêm prontas: **Manual** (`manual`, qualquer arquivo), **Nota fiscal** (`nota_fiscal`, PDF ou imagem), **Nota fiscal (XML)** (`nota_xml`, XML), **Fotos** (`fotos`, imagens), **Vídeos** (`videos`, vídeos) e **Diversos** (`diversos`, qualquer arquivo). Elas são cadastro: crie, renomeie ou apague em **Cadastros → Categorias de documentos**. |
+| **Título** | como ele aparece. Vazio no envio: o nome do arquivo. |
+| **Data** | a data do documento: a ocasião da foto, o dia do vídeo, a data da nota. Opcional. |
+| **Descrição** | um texto livre: *"no casamento do primo"*, *"a primeira troca de pulseira"*. Opcional. |
+| **O arquivo** | qualquer arquivo, até o limite do servidor (veja [O tamanho dos envios](#o-tamanho-dos-envios-os-documentos)). |
 
-- **Abrir o manual** abre o arquivo numa aba nova (o PDF, no leitor do navegador). Ao lado: o nome do arquivo, o tamanho e o dia
-  em que foi enviado.
-- **Escolher o arquivo** e **Salvar manual** envia; com um manual já guardado, o botão vira **Trocar manual**, e o novo
-  substitui o antigo.
-- **Remover manual** apaga o arquivo. Excluir o relógio também apaga o manual dele.
+Na ficha, o quadro **Documentos** mostra quantos o relógio tem em cada categoria; cada categoria, e o botão **Abrir os
+documentos**, abrem a página **Documentos** daquele relógio numa aba nova. Lá:
 
-O tamanho máximo é **12 MB** (o `MANUAL_LIMITE` do `config.php` muda), ou menos se o PHP do servidor aceitar menos num envio:
-o quadro mostra o limite que vale (veja
-[O tamanho dos envios](#o-tamanho-dos-envios-o-manual) na instalação). O manual que o fabricante publica só como página da
-internet (a Casio faz assim) vira PDF pelo próprio navegador: abra a página e use **Imprimir → Salvar como PDF**.
+- **Enviar arquivos:** a categoria, o título, a data, a descrição e os arquivos. Dá para escolher **vários de uma vez** (um
+  álbum inteiro): eles sobem um por um, com o andamento em porcentagem, e o título, a data e a descrição valem para todos (depois
+  cada um se edita sozinho). A categoria só aceita os tipos dela: uma foto não entra em **Vídeos**.
+- **Uma aba por categoria**, e **Todos**. Dentro dela, cada arquivo abre **pelo tipo dele**, não pela categoria:
+  - **Fotos:** uma galeria de miniaturas. Uma foto abre em **tela cheia**, com a data e a descrição embaixo; troque com as
+    setas da tela, as setas do teclado ou deslizando o dedo no celular. **▶ Apresentação** passa sozinha a cada 4 segundos (a
+    barra de espaço liga e desliga; Esc fecha). As miniaturas são feitas pelo navegador no envio, por isso a galeria abre rápido
+    mesmo com fotos grandes.
+  - **Vídeos:** a lista, com uma caixa em cada um e as setas **↑** e **↓** para pôr na ordem. **▶ Assistir os marcados** toca
+    os marcados um depois do outro, no player da página, com **Anterior** e **Próximo**. Dá para avançar e voltar dentro do vídeo.
+  - **PDF:** **Ver aqui** abre o visualizador de PDF do navegador dentro da página; **Abrir noutra aba** e **Baixar**.
+  - **XML:** se for uma **NF-e** (o XML da nota fiscal eletrônica), a página mostra o resumo: o emitente, o número, a série, a
+    data, o valor, os produtos e a chave de acesso. E o botão **Baixar o XML**.
+  - **Áudio:** o player. **Qualquer outro arquivo:** o botão **Baixar**.
+- **Editar** (o título, a data, a categoria, a descrição) e **Excluir**, em cada documento; o das fotos e dos vídeos fica na
+  lista **Editar ou excluir fotos e vídeos**, no fim da página.
+- No alto, a escolha do relógio: **Todos** mostra os documentos da coleção inteira.
 
-O manual não entra em nenhuma conta: é para consultar. Os números que o sistema usa (a reserva de marcha, a autonomia, o tempo
-de sol para encher...) continuam nos campos do cadastro.
+Os arquivos ficam numa **pasta do servidor** (o `DOCUMENTOS_PASTA` do `config.php`, fora da pasta publicada), e o banco guarda
+os dados de cada um. Por isso o **backup** é o banco **e** essa pasta. Excluir um documento apaga o arquivo; excluir o relógio
+apaga os documentos dele. Sem a pasta configurada, a página avisa o que falta e não aceita envios.
+
+Os documentos não entram em nenhuma conta: são para consultar. Os números que o sistema usa (a reserva de marcha, a autonomia,
+o tempo de sol para encher...) continuam nos campos do cadastro. O manual que o fabricante publica só como página da internet
+(a Casio faz assim) vira PDF pelo próprio navegador: abra a página e use **Imprimir → Salvar como PDF**.
+
+O sistema anterior a esta versão guardava um manual por relógio dentro do banco (a migração v13). Assim que a pasta dos
+documentos existe, esses manuais passam sozinhos para a categoria **Manual**.
 
 ### Todos os relógios
 
@@ -668,12 +692,13 @@ relógio abre em tela cheia; o "voltar" do aparelho fecha o painel.</sub>
 |---|---|
 | **Hoje** (`index.php`) | A tela principal. Mostra o relógio do dia, os avisos de hoje (atrasados e em breve) com o botão que resolve cada um, os próximos dias do plano e o modo de rodízio, que se troca ali mesmo. Abaixo fica a tabela da coleção, com filtros e ordenação por tipo, estado, carga, última vez usado, próxima manutenção, data e valor da compra. Clicar num relógio abre o **painel** ao lado. |
 | **Plano** (`plano.php`) | O plano inteiro, de hoje até o fim (na escala inteligente, um ou dois anos), mês a mês: o relógio de cada dia, o lembrete e o **trocar por…**. Filtra por período (30 dias, 90, um ano, dois, tudo) e por relógio, e mostra quantos dias cada relógio tem no período, a porcentagem e o próximo dia dele. |
-| **Painel / Ficha** (`ficha.php`) | Tudo sobre um relógio: foto, estado agora (*"Em repouso desde 21:40"*), carga, nota com a conta, próxima entrada no plano, previsão da bateria, o gasto da bateria no pulso e fora (o medido e o do cadastro), as últimas leituras, a linha do tempo recente, o quadro **Manual** (abrir, enviar, trocar ou remover o manual do relógio), o quadro **Marcar** e o cadastro completo, editável. O **Marcar** é um menu só, *O que você quer marcar?*: pôr ou tirar do pulso, do winder ou do sol, corda, troca de pilha, leitura de carga, um período que já passou ou corrigir uma marcação; embaixo aparecem só os campos daquilo. |
+| **Painel / Ficha** (`ficha.php`) | Tudo sobre um relógio: foto, estado agora (*"Em repouso desde 21:40"*), carga, nota com a conta, próxima entrada no plano, previsão da bateria, o gasto da bateria no pulso e fora (o medido e o do cadastro), as últimas leituras, a linha do tempo recente, o quadro **Documentos** (quantos em cada categoria, e o link para a página Documentos), o quadro **Marcar** e o cadastro completo, editável. O **Marcar** é um menu só, *O que você quer marcar?*: pôr ou tirar do pulso, do winder ou do sol, corda, troca de pilha, leitura de carga, um período que já passou ou corrigir uma marcação; embaixo aparecem só os campos daquilo. |
+| **Documentos** (`documentos.php`) | Os documentos de um relógio (ou de todos), aberta pela ficha: o envio de vários arquivos, uma aba por categoria, a galeria das fotos em tela cheia com apresentação, os vídeos em sequência na ordem escolhida, o visualizador de PDF, o resumo da NF-e do XML, e o download do resto. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 | **Histórico** (`historico.php`) | A linha do tempo de um relógio: em uso pelo rodízio, no pulso fora do rodízio, no winder, no sol, em repouso, e cada corda, carga e troca de pilha. Mostra quanto tempo e que porcentagem ficou em cada estado, com filtro de período e de estado. |
 | **Configuração** (`configuracao.php`) | Os horários (manhã, noite, uso), o Telegram, o Google Agenda, a mensagem padrão de cada canal, a tabela **"O que vai para onde"** (qual aviso sai por qual canal), os eventos personalizados, a prévia **"Como sai hoje"** e o botão que aplica as migrações do banco. |
 | **Critérios** (`criterios.php`) | Os conjuntos de critérios por lugar (todos os relógios, um grupo ou um relógio), com parâmetros, subparâmetros, faixas e a nota de cada relógio com a conta aberta. Tem **Restaurar os critérios iniciais**. |
 | **Grupos** (`grupos.php`) | A árvore: criar, renomear, mover, ordenar, excluir e escolher o grupo de cada relógio. |
-| **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), avisos e modos de rodízio: tudo o que o sistema usa e que não é código. |
+| **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), avisos, modos de rodízio e as categorias de documentos: tudo o que o sistema usa e que não é código. |
 | **Execuções do cron** (`execucoes.php`) | O que o cron fez a cada rodada, quanto tempo levou e os erros, com filtros. |
 | **Usuários** (`usuarios.php`) | Quem acessa: criar um usuário ou trocar a senha. |
 | **Ajuda** (`ajuda.php`) | Este guia dentro do sistema: a ideia central, como funciona, o cadastro de cada relógio campo por campo, os avisos de carga, as telas e as perguntas frequentes (as mesmas seções deste README, lidas dele). |
@@ -713,9 +738,9 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 
 | Recurso | Devolve |
 |---|---|
-| *(nenhum)* | tudo o que está guardado: a árvore, os campos, os tipos de lançamento, as fórmulas, os avisos, os relógios (com os valores, as fórmulas calculadas, os avisos, os lançamentos, a previsão, a foto e as informações do manual), os modos, o plano, a configuração, os eventos, a agenda, os critérios, o cron, os usuários e as migrações. Só a senha fica de fora. `foto=nao` deixa as fotos de fora. |
+| *(nenhum)* | tudo o que está guardado: a árvore, os campos, os tipos de lançamento, as fórmulas, os avisos, os relógios (com os valores, as fórmulas calculadas, os avisos, os lançamentos, a previsão, a foto e os dados dos documentos), as categorias dos documentos, os modos, o plano, a configuração, os eventos, a agenda, os critérios, o cron, os usuários e as migrações. Só a senha fica de fora. `foto=nao` deixa as fotos de fora. |
 | `hoje` | o que a página Hoje mostra: o relógio do dia, os avisos, os próximos dias, os modos e a tabela da coleção |
-| `ficha` | o que o painel de um relógio mostra (`relogio=<id>`): agora, carga, nota, previsão, gasto da bateria, manual, marcações recentes, cadastro |
+| `ficha` | o que o painel de um relógio mostra (`relogio=<id>`): agora, carga, nota, previsão, gasto da bateria, quantos documentos em cada categoria, marcações recentes, cadastro |
 | `plano` | o plano gravado, dia a dia, com o motivo de cada escolha |
 | `avisos` | os avisos de todos os relógios, do mais urgente ao mais distante |
 | `previsao` | a previsão da bateria dos relógios com leitura de carga |
@@ -726,7 +751,9 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `config`, `cron` | a configuração (com as mensagens e a prévia); as execuções do cron |
 | `arvore`, `cadastros` | os grupos; tudo o que a página Cadastros mostra |
 | `calcular` | o resultado de uma fórmula (`expressao=`) nos relógios, sem gravar |
-| `foto`, `manual` | a foto e o manual de um relógio (`relogio=<id>`): o arquivo, não JSON |
+| `foto` | a foto de um relógio (`relogio=<id>`): a imagem, não JSON |
+| `documentos` | os documentos de um relógio (`relogio=<id>`; sem ele, de todos), com as categorias, o resumo da NF-e de cada XML, a pasta e o limite |
+| `documento` | o arquivo de um documento (`id=<id>`): para mostrar (imagem, vídeo, áudio, PDF, texto) ou para baixar (o resto, ou com `baixar=1`); `mini=1` é a miniatura da foto. Atende pedaços (Range), para o vídeo avançar |
 | `usuarios`, `migracoes` | os logins; as migrações que faltam aplicar |
 | `ajuda` | a documentação inteira: cada consulta, cada escrita, cada campo de cada resposta e as funções do motor |
 
@@ -734,7 +761,9 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 
 | Recurso | Ações |
 |---|---|
-| `relogio` | `salvar` (criar ou alterar), `excluir`, `foto`, `remover_foto`, `manual`, `remover_manual` |
+| `relogio` | `salvar` (criar ou alterar), `excluir` (com os documentos), `foto`, `remover_foto` |
+| `documentos` | `enviar` (um ou vários arquivos, com a categoria, o título, a data, a descrição e, numa foto, a miniatura), `alterar`, `excluir` |
+| `documento_categorias` | `nova`, `alterar`, `excluir` (só sem documentos) |
 | `lancamento` | `lancar` (corda, carga, pilha...), `iniciar` e `encerrar` (pôr e tirar do pulso, do winder, do sol), `periodo` (um período que já passou), `alterar`, `excluir` |
 | `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
@@ -786,9 +815,11 @@ roteiro nos três bancos e compara tudo o que a API devolve.
 git clone https://github.com/Challado/relojoeiro.git /var/www/relojoeiro
 cd /var/www/relojoeiro
 
-# 2. a configuração: o banco (DB_TIPO), o token da API, o fuso, as mensagens
+# 2. a configuração: o banco (DB_TIPO), o token da API, o fuso, as mensagens, a pasta dos documentos
 cp config.exemplo.php config.php
 nano config.php
+#    a pasta dos documentos (DOCUMENTOS_PASTA), fora da pasta publicada, com escrita para o usuário do PHP:
+#    mkdir -p /var/lib/relogios2/documentos && chown www-data /var/lib/relogios2/documentos
 
 # 3. o banco vazio (só no MySQL e no Postgres; o SQLite cria o arquivo sozinho)
 #    MySQL:    mysql -u root -p -e "CREATE DATABASE relogios2 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
@@ -817,8 +848,8 @@ pasta `.git`, que vem junto com o `git clone`. O projeto traz isso pronto para o
   também faz o login do site funcionar quando o PHP roda por FastCGI (PHP-FPM, a maioria das hospedagens), caso em que o
   Apache não repassaria a senha para o PHP.
 - **nginx:** copie o bloco do [`nginx-relogios.conf`](nginx-relogios.conf) para dentro do `server` do seu site (ajuste
-  `/relojoeiro/` e o endereço do PHP-FPM). Ele traz também o `client_max_body_size 16m`, para o envio do manual (veja
-  [O tamanho dos envios](#o-tamanho-dos-envios-o-manual)).
+  `/relojoeiro/` e o endereço do PHP-FPM). Ele traz também o `client_max_body_size 512m`, para o envio dos documentos (veja
+  [O tamanho dos envios](#o-tamanho-dos-envios-os-documentos)).
 
 Para conferir, abra `https://seu-servidor/relojoeiro/config.php` e `https://seu-servidor/relojoeiro/.git/config`: os dois
 têm de dar **403**.
@@ -836,7 +867,8 @@ têm de dar **403**.
 | `API_TOKEN` | **obrigatório**, com 10 caracteres ou mais. Sem ele o sistema inteiro para e diz por quê. |
 | `FUSO` | o fuso horário, como `America/Sao_Paulo`. Vazio ou ausente: o do PHP (`date.timezone` no php.ini). Vale para tudo, inclusive para as datas que o banco grava |
 | `MSG_ENDPOINT`, `MSG_DESTINATARIO`, `MSG_TITULO` | as mensagens (veja abaixo). Sem o endereço, nada é enviado. |
-| `MANUAL_LIMITE` | opcional: o maior manual de relógio aceito, em bytes. Sem ela, 12 MB (`12582912`); `0` ou `-1`, sem limite do sistema. O limite do PHP e o do nginx continuam valendo (veja [O tamanho dos envios](#o-tamanho-dos-envios-o-manual)). Ex.: `define("MANUAL_LIMITE", 26214400);` para 25 MB |
+| `DOCUMENTOS_PASTA` | a pasta dos arquivos dos documentos (o manual, a nota, fotos, vídeos), **fora da pasta publicada**, com permissão de escrita para o usuário do PHP. Sem ela, a página Documentos avisa que falta e não aceita envios. Ex.: `define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
+| `DOCUMENTOS_LIMITE` | opcional: o maior documento aceito, em bytes. Sem ela, 100 MB (`104857600`); `0` ou `-1`, sem limite do sistema. O `MANUAL_LIMITE`, o nome antigo, ainda vale quando ela não existe. O limite do PHP e o do nginx continuam valendo (veja [O tamanho dos envios](#o-tamanho-dos-envios-os-documentos)). Ex.: `define("DOCUMENTOS_LIMITE", 524288000);` para 500 MB |
 | `ANTIGO_HOST`, `ANTIGO_PORTA`, `ANTIGO_USUARIO`, `ANTIGO_SENHA` | opcionais, só para o `importar.php` com este sistema no Postgres ou no SQLite: onde está o MySQL do sistema anterior |
 
 ### Mensagens pelo Telegram
@@ -856,24 +888,22 @@ webhook, o n8n, o Home Assistant ou qualquer ponte de mensagens. Mensagens longa
 O sistema cria, atualiza e remove só os eventos que ele mesmo criou, sem duplicar. A rotina (carregar, corda, sol) entra
 dentro da janela de antecedência, e a manutenção (pilha, revisão, garantia) entra em qualquer data.
 
-### O tamanho dos envios (o manual)
+### O tamanho dos envios (os documentos)
 
-O manual de um relógio sobe inteiro num envio, e três limites do servidor podem recusar um arquivo grande antes do sistema. O
-sistema aceita até **12 MB**, e o `MANUAL_LIMITE` do `config.php` muda isso (em bytes; `0` ou `-1`: sem limite do sistema).
-Para o manual de 12 MB:
+Cada documento sobe num envio (vários arquivos escolhidos juntos sobem um por vez), e três limites do servidor podem recusar um
+arquivo grande antes do sistema. O sistema aceita até **100 MB** por arquivo; o `DOCUMENTOS_LIMITE` do `config.php` muda isso
+(em bytes; `0` ou `-1`: sem limite do sistema). Para vídeos de celular, pense em uns 500 MB:
 
-| Onde | O limite | O padrão | Para o manual de 12 MB |
+| Onde | O limite | O padrão | Para 500 MB |
 |---|---|---|---|
-| `php.ini` | `upload_max_filesize` (o arquivo) e `post_max_size` (o envio inteiro) | 2M e 8M | `upload_max_filesize = 12M` e `post_max_size = 16M` |
-| nginx | `client_max_body_size` | 1m | `16m` (já vem no [`nginx-relogios.conf`](nginx-relogios.conf)) |
-| MySQL/MariaDB | `max_allowed_packet` | 16M a 64M, conforme a versão | maior que o arquivo (o padrão já basta) |
-| `php.ini` | `memory_limit` | 128M | o padrão basta; para manuais bem maiores (com o `MANUAL_LIMITE` alto ou sem limite), umas 4 vezes o arquivo: o PHP guarda o arquivo, confere o que o banco gravou e, no envio em base64, o texto dele |
+| `php.ini` | `upload_max_filesize` (o arquivo) e `post_max_size` (o envio inteiro) | 2M e 8M | `upload_max_filesize = 500M` e `post_max_size = 512M` |
+| nginx | `client_max_body_size` | 1m | `512m` (já vem no [`nginx-relogios.conf`](nginx-relogios.conf)) |
+| `config.php` | `DOCUMENTOS_LIMITE` | 100 MB | `524288000` |
 
-O quadro **Manual** da ficha mostra o limite que vale de verdade: os 12 MB (ou o `MANUAL_LIMITE`), ou menos, pelo `php.ini`;
-sem limite nenhum, ele diz "de qualquer tamanho". Um arquivo acima dele é
-recusado com a mensagem do tamanho; um envio acima do `post_max_size` volta com o código `413` e o limite do servidor; se o
-banco cortar o arquivo no caminho, o sistema percebe (ele relê o que gravou), apaga o pedaço e avisa. No Apache não há limite a
-mexer, além do `php.ini`.
+O arquivo vai direto para a pasta dos documentos, sem passar pelo banco nem pela memória do PHP: o `memory_limit` e o
+`max_allowed_packet` do MySQL não contam. A página Documentos mostra o limite que vale de verdade (o do sistema, ou menos pelo
+`php.ini`; sem limite nenhum, "de qualquer tamanho"). Um arquivo acima dele é recusado com a mensagem do tamanho; um envio acima
+do `post_max_size` volta com o código `413` e o limite do servidor. No Apache não há limite a mexer, além do `php.ini`.
 
 ### Atualizações do banco
 
@@ -914,9 +944,11 @@ Não. O uso do relógio do dia é registrado sozinho, no horário de uso. Você 
 a leitura de carga do smartwatch, o sol, o winder, a troca de pilha e o dia em que usou outro relógio. E cada aviso já traz o
 botão que o resolve.
 
-**Onde guardo o manual do relógio?**
-Na ficha dele, no quadro **Manual**: escolha o PDF (ou a foto do folheto) e salve. Ele fica no banco e abre em qualquer
-aparelho. O manual que só existe como página da internet vira PDF pelo navegador (**Imprimir → Salvar como PDF**).
+**Onde guardo o manual, a nota fiscal, as fotos do relógio?**
+Na página **Documentos** dele (pela ficha: **Abrir os documentos**). Escolha a categoria (Manual, Nota fiscal, Nota fiscal
+(XML), Fotos, Vídeos, Diversos), os arquivos, e envie. As fotos viram uma galeria com apresentação, os vídeos tocam em
+sequência, o PDF abre no visualizador e o XML da nota mostra o resumo. O manual que só existe como página da internet vira PDF
+pelo navegador (**Imprimir → Salvar como PDF**).
 
 **Por que saiu este relógio, e não outro?**
 Olhe embaixo do nome dele, na página **Hoje** ou na **Plano**: cada dia traz o motivo da escolha. Se for *"Garantia de
@@ -978,13 +1010,13 @@ Pode. As telas usam exatamente a mesma API.
 | [`banco.php`](banco.php) | o banco: a conexão com o MySQL, o Postgres ou o SQLite, e a tradução do SQL de um para outro |
 | [`operacoes.php`](operacoes.php) | as regras de cada gravação: validações e mensagens |
 | [`cron.php`](cron.php) | o plano, a sessão do dia, as rodadas da manhã e da noite, os eventos e a agenda |
-| `index.php`, `plano.php`, `ficha.php`, `historico.php`, `configuracao.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `usuarios.php` | as páginas (só o esqueleto) |
+| `index.php`, `plano.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `usuarios.php` | as páginas (só o esqueleto) |
 | `ajuda.php` | a página de ajuda: as seções do README para quem usa, convertidas para HTML |
 | [`pagina.php`](pagina.php) | o login do site e o menu |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |
 | [`estilo.css`](estilo.css) | o visual |
 | [`schema.sql`](schema.sql) | a estrutura do banco e o conjunto inicial (grupos, campos, fórmulas, avisos, modos, critérios) |
-| `migracao_v2.sql` … `migracao_v13.sql` | as migrações, aplicadas pela página Configuração |
+| `migracao_v2.sql` … `migracao_v14.sql` | as migrações, aplicadas pela página Configuração |
 | [`config.exemplo.php`](config.exemplo.php) | o modelo do `config.php` |
 | [`instalar.php`](instalar.php) | instala o `schema.sql` no banco do `config.php`, qualquer um dos três |
 | [`criar_usuario.php`](criar_usuario.php) | cria um usuário ou troca a senha, pela linha de comando |
