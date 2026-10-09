@@ -392,7 +392,8 @@
  *   recurso=usuarios          salvar (login, senha), excluir (login)
  *                            Ex. salvar: curl -u lucas:senha -d recurso=usuarios -d acao=salvar -d login=visitante -d senha=segredo123 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=usuarios -d acao=excluir -d login=visitante http://servidor/relojoeiro/api.php
- *   recurso=migracoes         aplicar: aplica as migrações pendentes (a única escrita aceita com o banco desatualizado)
+ *   recurso=migracoes         aplicar: aplica as migrações pendentes, na ordem: o SQL de cada uma e, se ela tiver, o passo em PHP (a única escrita
+ *                            aceita com o banco desatualizado)
  *                            Ex. aplicar: curl -u lucas:senha -d recurso=migracoes -d acao=aplicar http://servidor/relojoeiro/api.php
  *
  * ---------------------------------------------------------------------------------------------
@@ -457,17 +458,12 @@
  *     campos[].padrao                o valor usado quando o relógio não tem o campo preenchido (texto; null: nenhum)
  *     campos[].tipo                  inteiro, decimal, sim_nao, data, lista ou texto
  *     campos[].unidade               a unidade (texto; vazio: nenhuma)
- *     config.<canal>_corpo_<tipo>    a mensagem personalizada daquele tipo naquele canal (texto com âncoras)
- *     config.<canal>_proprio_<tipo>  1: o tipo de aviso <tipo> tem mensagem personalizada no canal <canal> (tg: Telegram, ag: agenda); 0: usa a padrão
  *     config.ag_padrao               a mensagem padrão da agenda: a primeira linha é o título do evento, o resto a descrição
  *     config.agenda_antecedencia     com quantos dias de antecedência os eventos são criados na agenda
  *     config.agenda_ativa            1: cria os eventos no Google Agenda; 0: não
  *     config.agenda_chave            o caminho da chave JSON da conta de serviço do Google, no servidor
  *     config.agenda_id               o id da agenda do Google
  *     config.agenda_teste_id         o id do evento de teste na agenda (vazio: nenhum)
- *     config.agenda_tipos            os tipos de aviso que vão para o Google Agenda, separados por vírgula
- *     config.alerta_tipos            os tipos de aviso que vão pelo Telegram, separados por vírgula (dia, vespera, os identificadores dos avisos,
- *                                    ev<id>)
  *     config.carga_limiar            o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se preenchido, vale no lugar)
  *     config.cron_erro               o erro guardado da última execução com erro (texto; vazio: sem erro)
  *     config.cron_registro           o registro da última rodada com atividade (texto)
@@ -481,7 +477,7 @@
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
  *     config.migracao_v10            marca de que a migração v10 foi aplicada (1)
  *     config.migracao_v12            marca de que a migração v12 foi aplicada (1)
- *     config.modo_ativo              o id do modo de rodízio em uso
+ *     config.migracao_v16            marca de que a migração v16 foi aplicada (1)
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso); 0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
@@ -1269,20 +1265,15 @@
  *     ancoras.<ancora>               cada âncora que as mensagens aceitam ({relogio}, {acao}...) e o que ela vira
  *     canais.<canal>.ajuda           a explicação do canal
  *     canais.<canal>.nome            o nome do canal (Telegram, Google Agenda)
- *     canais.<canal>.tipos           a chave da configuração com a lista de tipos do canal (alerta_tipos, agenda_tipos)
+ *     canais.<canal>.tipos           o nome do campo do formulário (acao=salvar) com os tipos que vão pelo canal (alerta_tipos[], agenda_tipos[])
  *     chave_agenda                   a chave do Google lida no caminho configurado; null: não lida
  *     chave_agenda.client_email      o e-mail da conta de serviço (compartilhar a agenda com ele)
- *     config.<canal>_corpo_<tipo>    a mensagem personalizada daquele tipo naquele canal (texto com âncoras)
- *     config.<canal>_proprio_<tipo>  1: o tipo de aviso <tipo> tem mensagem personalizada no canal <canal> (tg: Telegram, ag: agenda); 0: usa a padrão
  *     config.ag_padrao               a mensagem padrão da agenda: a primeira linha é o título do evento, o resto a descrição
  *     config.agenda_antecedencia     com quantos dias de antecedência os eventos são criados na agenda
  *     config.agenda_ativa            1: cria os eventos no Google Agenda; 0: não
  *     config.agenda_chave            o caminho da chave JSON da conta de serviço do Google, no servidor
  *     config.agenda_id               o id da agenda do Google
  *     config.agenda_teste_id         o id do evento de teste na agenda (vazio: nenhum)
- *     config.agenda_tipos            os tipos de aviso que vão para o Google Agenda, separados por vírgula
- *     config.alerta_tipos            os tipos de aviso que vão pelo Telegram, separados por vírgula (dia, vespera, os identificadores dos avisos,
- *                                    ev<id>)
  *     config.carga_limiar            o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se preenchido, vale no lugar)
  *     config.cron_erro               o erro guardado da última execução com erro (texto; vazio: sem erro)
  *     config.cron_registro           o registro da última rodada com atividade (texto)
@@ -1296,7 +1287,7 @@
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
  *     config.migracao_v10            marca de que a migração v10 foi aplicada (1)
  *     config.migracao_v12            marca de que a migração v12 foi aplicada (1)
- *     config.modo_ativo              o id do modo de rodízio em uso
+ *     config.migracao_v16            marca de que a migração v16 foi aplicada (1)
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso); 0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
@@ -1407,6 +1398,7 @@
  *     avisos[].no_id                 o grupo desta versão; null: todos
  *     avisos[].nome                  o nome do aviso — a âncora {acao}
  *     avisos[].resolve               o tipo de lançamento que resolve (o botão na tela Hoje); null: nenhum
+ *     avisos[].resolve_tipo_id       o número desse tipo de lançamento (a chave estrangeira no banco); null: nenhum
  *     avisos[].simula_horas          as horas da sessão que a escala simula para resolver (número; null)
  *     avisos[].simula_valor          o valor do lançamento que a escala simula para resolver (número; null)
  *     avisos[].texto                 o motivo, com {relogio}, {data}, {quando} e {limite} — a âncora {motivo}
@@ -1452,7 +1444,8 @@
  *     modo_ativo                     o id do modo em uso
  *     modos[]                        os modos (como no banco)
  *     modos[].blocos[]               os blocos
- *     modos[].blocos[].dias          os dias (1 a 7) separados por vírgula
+ *     modos[].ativo                  1: o modo em uso (só um); 0: não
+ *     modos[].blocos[].dias          os dias (1 a 7) separados por vírgula (no banco, uma linha por dia na tabela modo_bloco_dia)
  *     modos[].blocos[].id            o número
  *     modos[].blocos[].modo_id       o modo
  *     modos[].blocos[].no_id         o grupo de onde sortear; null: todos
@@ -1895,7 +1888,7 @@ function medicoes_legivel($id)
         return ["id" => (int)$m["id"], "lancamento_id" => (int)$m["lancamento_id"], "medida" => $m["medida"], "taxa" => (float)$m["taxa"], "de_valor" => (float)$m["de_valor"],
             "ate_valor" => (float)$m["ate_valor"], "inicio" => $m["inicio"], "fim" => $m["fim"], "horas_pulso" => (float)$m["horas_pulso"], "horas_guardado" => (float)$m["horas_guardado"],
             "peso_horas" => (float)$m["peso_horas"], "usada" => (int)$m["usada"] === 1, "na_media" => (int)$m["usada"] === 1 && strtotime($m["fim"]) > $limite, "criado" => $m["criado"]];
-    }, linhas("SELECT * FROM medicao WHERE relogio_id = ? ORDER BY fim DESC, id DESC", [(int)$id]));
+    }, linhas("SELECT m.* FROM medicao m JOIN lancamento l ON l.id = m.lancamento_id WHERE l.relogio_id = ? ORDER BY m.fim DESC, m.id DESC", [(int)$id]));
 }
 
 // Um evento personalizado para a resposta, com as próximas ocorrências e os disparos
@@ -1906,7 +1899,7 @@ function evento_legivel($ev)
         "dia_mes" => $ev["dia_mes"] === null ? null : (int)$ev["dia_mes"], "intervalo_dias" => $ev["intervalo_dias"] === null ? null : (int)$ev["intervalo_dias"],
         "relogio_id" => $ev["relogio_id"] === null ? null : (int)$ev["relogio_id"],
         "relogio" => $ev["relogio_id"] === null ? null : valor("SELECT nome FROM relogio WHERE id = ?", [(int)$ev["relogio_id"]]),
-        "telegram" => in_array("ev" . $ev["id"], explode(",", cfg("alerta_tipos")), true), "agenda" => in_array("ev" . $ev["id"], explode(",", cfg("agenda_tipos")), true),
+        "telegram" => canal_aviso("tg", "ev" . $ev["id"])["envia"], "agenda" => canal_aviso("ag", "ev" . $ev["id"])["envia"],
         "criado" => $ev["criado"],
         "proximas" => (int)$ev["ativo"] === 1 ? array_map(function ($t) { return date("Y-m-d H:i:s", $t); }, array_slice(ocorrencias($ev, time() + 1, time() + 366 * 86400), 0, 10)) : [],
         "disparos" => linhas("SELECT ocorrencia, disparado FROM evento_disparo WHERE evento_id = ? ORDER BY ocorrencia DESC", [(int)$ev["id"]])];
@@ -2114,7 +2107,7 @@ function montar_criterios()
         $notas[$i]["grupo"] = no_caminho(valor("SELECT no_id FROM relogio WHERE id = ?", [$x["relogio_id"]]));
     }
     return ["conjuntos" => $lista, "variaveis" => variaveis_disponiveis(), "notas" => $notas, "max_sem_uso" => (int)cfg("max_sem_uso"), "lugares" => $lugares,
-        "modos" => array_map(function ($m) { return ["nome" => $m["nome"], "selecao" => $m["selecao"], "escala" => $m["escala_dias"] !== null, "ativo" => (int)$m["id"] === (int)cfg("modo_ativo")]; },
+        "modos" => array_map(function ($m) { return ["nome" => $m["nome"], "selecao" => $m["selecao"], "escala" => $m["escala_dias"] !== null, "ativo" => (int)$m["id"] === modo_ativo()]; },
             linhas("SELECT * FROM modo ORDER BY ordem, id"))];
 }
 
@@ -2177,6 +2170,10 @@ if (!$token_ok && $quem === "") {
         foreach ($pendentes as $versao => $m) {
             // os comandos do arquivo, um a um, cada um traduzido para o banco em uso (os comentários saem)
             banco_script((string)file_get_contents(__DIR__ . "/" . $m[0]));
+            // o passo em PHP da migração, se ela tem (o que o SQL comum aos três bancos não faz bem)
+            if (isset($m[3])) {
+                call_user_func($m[3]);
+            }
             $aplicadas[] = $versao . " (" . $m[1] . ")";
         }
         $saida = ["ok" => true, "mensagem" => count($aplicadas) > 0 ? "Aplicadas: " . implode("; ", $aplicadas) . "." : "Nada a aplicar: o banco está em dia.", "erros" => [], "aplicadas" => $aplicadas];
@@ -2233,7 +2230,6 @@ if (!$token_ok && $quem === "") {
     $saida = ["erro" => $doc ? "o arquivo do documento não está na pasta dos documentos" . ($pasta === null ? " (" . documentos_pasta_erro() . ")" : ((int)$doc["no_banco"] === 1 ? " e a cópia no banco não pôde ser recriada" : " e não tem cópia no banco")) : "documento não encontrado"];
 } elseif ($recurso === "documentos") {
     // os documentos de um relógio (relogio=<id>; sem ele, de todos), com as categorias, os relógios, a pasta e o limite
-    mover_manuais();
     $rid = (int)($_REQUEST["relogio"] ?? 0);
     $r = $rid > 0 ? linha("SELECT id, nome FROM relogio WHERE id = ?", [$rid]) : null;
     if ($rid > 0 && !$r) {
@@ -2281,7 +2277,7 @@ if (!$token_ok && $quem === "") {
     $agora = time();
     $dia = plano_do_dia($hoje->format("Y-m-d"));
     $n = nos_todos();
-    $modo = linha("SELECT * FROM modo WHERE id = ?", [(int)cfg("modo_ativo")]);
+    $modo = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]);
     $pendentes_h = [];
     $avisos_h = [];
     foreach (avisos_de_hoje() as $x) {
@@ -2316,7 +2312,7 @@ if (!$token_ok && $quem === "") {
             "blocos" => array_map(function ($b) {
                 return ["id" => (int)$b["id"], "nome" => $b["nome"], "dias" => $b["dias"], "no_id" => $b["no_id"] === null ? 0 : (int)$b["no_id"], "um_por" => $b["um_por"],
                     "relogio_id" => $b["relogio_id"] === null ? null : (int)$b["relogio_id"]];
-            }, linhas("SELECT * FROM modo_bloco WHERE modo_id = ? ORDER BY ordem, id", [(int)$m["id"]]))];
+            }, modo_blocos((int)$m["id"]))];
     }
     $seg = $hoje->modify("next monday");
     $avisos_nomes = [];
@@ -2384,14 +2380,13 @@ if (!$token_ok && $quem === "") {
         $saida["relogio"] = ["id" => $id, "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? 0 : (int)$r["no_id"], "disponivel" => (int)$r["disponivel"] === 1,
             "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "sem grupo", "caminho" => no_caminho($r["no_id"]), "observacao" => $valores["observacao"] ?? null,
             "foto" => $foto !== null ? strtotime($foto) : null, "documentos" => (function () use ($id) {
-                mover_manuais();
                 $cats = array_values(array_filter(documento_categorias_lista($id), function ($c) { return $c["documentos"] > 0; }));
                 return ["total" => array_sum(array_column($cats, "documentos")), "categorias" => array_map(function ($c) { return ["id" => $c["id"], "nome" => $c["nome"], "documentos" => $c["documentos"]]; }, $cats),
                     "pasta_ok" => documentos_pasta() !== null];
             })(), "em_uso" => $v["em_uso"], "agora" => $v["texto"], "carga" => $v["energia"], "carga_de" => $v["de"], "situacao" => $v["situacao"],
             "nota" => $nota ? ["nota" => $nota["nota"], "conjunto_texto" => $nota["conjunto_texto"]] : null,
             "proxima" => $proxima, "proxima_ate" => $proxima !== null ? texto_ate($proxima, "neste dia") : null,
-            "escala_fim" => valor("SELECT escala_dias FROM modo WHERE id = ?", [(int)cfg("modo_ativo")]) !== null ? cfg("escala_fim") : null,
+            "escala_fim" => valor("SELECT escala_dias FROM modo WHERE id = ?", [modo_ativo()]) !== null ? cfg("escala_fim") : null,
             "compra" => ["data" => $valores["data_compra"] ?? null, "valor" => isset($valores["valor_compra"]) ? (float)$valores["valor_compra"] : null, "loja" => $valores["loja"] ?? null,
                 "garantia_ate" => $valores["garantia_ate"] ?? null],
             "manutencoes" => array_map(function ($a) use ($hoje) { return ["data" => max($hoje->format("Y-m-d"), substr($a["data"], 0, 10)), "nome" => $a["nome"]]; }, array_slice($v["avisos"], 0, 5)),
@@ -2438,7 +2433,8 @@ if (!$token_ok && $quem === "") {
     foreach (tipos_de_aviso() as $k => $t) {
         $canais_t = [];
         foreach ($CANAIS as $canal => $c) {
-            $canais_t[$canal] = ["marcado" => in_array($k, explode(",", cfg($c["tipos"])), true), "proprio" => cfg($canal . "_proprio_" . $k) === "1", "corpo" => cfg($canal . "_corpo_" . $k)];
+            $l = canal_aviso($canal, $k);
+            $canais_t[$canal] = ["marcado" => $l["envia"], "proprio" => $l["propria"], "corpo" => $l["corpo"]];
         }
         $tipos_c[] = ["tipo" => $k, "nome" => $t[0], "quando" => $t[1], "evento" => strpos($k, "ev") === 0 && ctype_digit(substr($k, 2)) ? (int)substr($k, 2) : null, "canais" => $canais_t];
     }
@@ -2454,7 +2450,7 @@ if (!$token_ok && $quem === "") {
         "eventos" => array_map(function ($ev) {
             return array_merge(evento_legivel($ev), ["proximas_60" => array_map(function ($t) { return date("Y-m-d H:i:s", $t); },
                 array_slice(ocorrencias($ev, time(), time() + 60 * 86400), 0, 5))]);
-        }, linhas("SELECT * FROM evento_personalizado ORDER BY nome")),
+        }, eventos_com_dias(linhas("SELECT * FROM evento_personalizado ORDER BY nome"))),
         "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1]; },
             linhas("SELECT id, nome, disponivel FROM relogio ORDER BY nome")),
         "previa" => ["manha" => montar_mensagem($hoje), "noite" => montar_mensagem_noite($hoje), "agenda" => $previa,
@@ -2522,12 +2518,12 @@ if (!$token_ok && $quem === "") {
 } elseif ($recurso === "plano") {
     $de_p = preg_match("/^[0-9]{4}-[0-9]{2}-[0-9]{2}\$/", (string)($_REQUEST["de"] ?? "")) === 1 ? (string)$_REQUEST["de"] : "";
     $ate_p = preg_match("/^[0-9]{4}-[0-9]{2}-[0-9]{2}\$/", (string)($_REQUEST["ate"] ?? "")) === 1 ? (string)$_REQUEST["ate"] : "";
-    $saida = ["modo" => valor("SELECT nome FROM modo WHERE id = ?", [(int)cfg("modo_ativo")]), "escala_fim" => cfg("escala_fim") !== "" ? cfg("escala_fim") : null,
+    $saida = ["modo" => valor("SELECT nome FROM modo WHERE id = ?", [modo_ativo()]), "escala_fim" => cfg("escala_fim") !== "" ? cfg("escala_fim") : null,
         "hoje" => date("Y-m-d"), "plano" => plano_legivel($de_p, $ate_p),
         "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1]; },
             linhas("SELECT id, nome, disponivel FROM relogio ORDER BY nome"))];
 } elseif ($recurso === "eventos") {
-    $saida = ["eventos" => array_map("evento_legivel", linhas("SELECT * FROM evento_personalizado ORDER BY nome"))];
+    $saida = ["eventos" => array_map("evento_legivel", eventos_com_dias(linhas("SELECT * FROM evento_personalizado ORDER BY nome")))];
 } elseif ($recurso === "agenda") {
     $saida = ["ativa" => cfg("agenda_ativa") === "1", "agenda_id" => cfg("agenda_id"), "janela_dias" => (int)cfg("agenda_antecedencia"),
         "chave_ok" => cfg("agenda_id") !== "" ? google_token() !== false : null, "desejados" => agenda_legivel(),
@@ -2587,7 +2583,7 @@ if (!$token_ok && $quem === "") {
     $n = nos_todos();
     $com_id = function ($linhas) {
         return array_map(function ($x) {
-            foreach (["id", "no_id", "ordem", "ativo", "exclusiva", "mede_gasto", "modo_id", "relogio_id", "escala_dias", "ciclo"] as $k) {
+            foreach (["id", "no_id", "ordem", "ativo", "exclusiva", "mede_gasto", "modo_id", "relogio_id", "escala_dias", "ciclo", "resolve_tipo_id"] as $k) {
                 if (array_key_exists($k, $x) && $x[$k] !== null) {
                     $x[$k] = (int)$x[$k];
                 }
@@ -2595,16 +2591,16 @@ if (!$token_ok && $quem === "") {
             return $x;
         }, $linhas);
     };
-    $saida = ["campos" => $com_id(linhas("SELECT * FROM campo ORDER BY ordem, id")),
+    $saida = ["campos" => $com_id(campos_com_opcoes(linhas("SELECT * FROM campo ORDER BY ordem, id"))),
         "lancamento_tipos" => $com_id(linhas("SELECT t.*, (SELECT COUNT(*) FROM lancamento l WHERE l.tipo_id = t.id) AS lancamentos FROM lancamento_tipo t ORDER BY t.ordem, t.id")),
         "formulas" => $com_id(linhas("SELECT * FROM formula ORDER BY identificador, id")),
-        "avisos" => $com_id(linhas("SELECT * FROM aviso ORDER BY identificador, id")),
+        "avisos" => $com_id(linhas(AVISO_SELECT . " ORDER BY a.identificador, a.id")),
         "modos" => array_map(function ($m) use ($com_id) {
             $m = $com_id([$m])[0];
-            $m["blocos"] = $com_id(linhas("SELECT * FROM modo_bloco WHERE modo_id = ? ORDER BY ordem, id", [$m["id"]]));
+            $m["blocos"] = $com_id(modo_blocos($m["id"]));
             return $m;
         }, linhas("SELECT * FROM modo ORDER BY ordem, id")),
-        "modo_ativo" => (int)cfg("modo_ativo"), "max_sem_uso" => (int)cfg("max_sem_uso"),
+        "modo_ativo" => modo_ativo(), "max_sem_uso" => (int)cfg("max_sem_uso"),
         "grupos" => array_map(function ($o) { return ["id" => $o[0], "caminho" => no_caminho($o[0])]; }, nos_em_ordem()),
         "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"]]; }, linhas("SELECT id, nome FROM relogio ORDER BY nome")),
         "documento_categorias" => documento_categorias_lista(),
@@ -2811,7 +2807,7 @@ if (!$token_ok && $quem === "") {
                 "excluir" => ["campos" => "login (não o próprio)", "exemplo" => "curl -u lucas:senha -d recurso=usuarios -d acao=excluir -d login=visitante http://servidor/relojoeiro/api.php"],
             ],
             "migracoes" => [
-                "aplicar" => ["campos" => "(nada): aplica as migrações pendentes, na ordem", "exemplo" => "curl -u lucas:senha -d recurso=migracoes -d acao=aplicar http://servidor/relojoeiro/api.php"],
+                "aplicar" => ["campos" => "(nada): aplica as migrações pendentes, na ordem: o SQL de cada uma e, se ela tiver, o passo em PHP", "exemplo" => "curl -u lucas:senha -d recurso=migracoes -d acao=aplicar http://servidor/relojoeiro/api.php"],
             ],
         ],
         "filtros" => [
@@ -2904,16 +2900,12 @@ if (!$token_ok && $quem === "") {
                 "campos[].padrao" => "o valor usado quando o relógio não tem o campo preenchido (texto; null: nenhum)",
                 "campos[].tipo" => "inteiro, decimal, sim_nao, data, lista ou texto",
                 "campos[].unidade" => "a unidade (texto; vazio: nenhuma)",
-                "config.<canal>_corpo_<tipo>" => "a mensagem personalizada daquele tipo naquele canal (texto com âncoras)",
-                "config.<canal>_proprio_<tipo>" => "1: o tipo de aviso <tipo> tem mensagem personalizada no canal <canal> (tg: Telegram, ag: agenda); 0: usa a padrão",
                 "config.ag_padrao" => "a mensagem padrão da agenda: a primeira linha é o título do evento, o resto a descrição",
                 "config.agenda_antecedencia" => "com quantos dias de antecedência os eventos são criados na agenda",
                 "config.agenda_ativa" => "1: cria os eventos no Google Agenda; 0: não",
                 "config.agenda_chave" => "o caminho da chave JSON da conta de serviço do Google, no servidor",
                 "config.agenda_id" => "o id da agenda do Google",
                 "config.agenda_teste_id" => "o id do evento de teste na agenda (vazio: nenhum)",
-                "config.agenda_tipos" => "os tipos de aviso que vão para o Google Agenda, separados por vírgula",
-                "config.alerta_tipos" => "os tipos de aviso que vão pelo Telegram, separados por vírgula (dia, vespera, os identificadores dos avisos, ev<id>)",
                 "config.carga_limiar" => "o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se preenchido, vale no lugar)",
                 "config.cron_erro" => "o erro guardado da última execução com erro (texto; vazio: sem erro)",
                 "config.cron_registro" => "o registro da última rodada com atividade (texto)",
@@ -2927,7 +2919,7 @@ if (!$token_ok && $quem === "") {
                 "config.mensagens_ativas" => "1: o Telegram (a API de alerta) envia; 0: não envia",
                 "config.migracao_v10" => "marca de que a migração v10 foi aplicada (1)",
                 "config.migracao_v12" => "marca de que a migração v12 foi aplicada (1)",
-                "config.modo_ativo" => "o id do modo de rodízio em uso",
+                "config.migracao_v16" => "marca de que a migração v16 foi aplicada (1)",
                 "config.pulso_auto_fim" => "1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o \"fecha às\" do tipo No pulso); 0: só pelo Tirou",
                 "config.pulso_auto_inicio" => "1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs",
                 "config.previsao_limite" => "o limite de carga da previsão do smartwatch, em %",
@@ -3513,19 +3505,15 @@ if (!$token_ok && $quem === "") {
                 "ancoras.<ancora>" => "cada âncora que as mensagens aceitam ({relogio}, {acao}...) e o que ela vira",
                 "canais.<canal>.ajuda" => "a explicação do canal",
                 "canais.<canal>.nome" => "o nome do canal (Telegram, Google Agenda)",
-                "canais.<canal>.tipos" => "a chave da configuração com a lista de tipos do canal (alerta_tipos, agenda_tipos)",
+                "canais.<canal>.tipos" => "o nome do campo do formulário (acao=salvar) com os tipos que vão pelo canal (alerta_tipos[], agenda_tipos[])",
                 "chave_agenda" => "a chave do Google lida no caminho configurado; null: não lida",
                 "chave_agenda.client_email" => "o e-mail da conta de serviço (compartilhar a agenda com ele)",
-                "config.<canal>_corpo_<tipo>" => "a mensagem personalizada daquele tipo naquele canal (texto com âncoras)",
-                "config.<canal>_proprio_<tipo>" => "1: o tipo de aviso <tipo> tem mensagem personalizada no canal <canal> (tg: Telegram, ag: agenda); 0: usa a padrão",
                 "config.ag_padrao" => "a mensagem padrão da agenda: a primeira linha é o título do evento, o resto a descrição",
                 "config.agenda_antecedencia" => "com quantos dias de antecedência os eventos são criados na agenda",
                 "config.agenda_ativa" => "1: cria os eventos no Google Agenda; 0: não",
                 "config.agenda_chave" => "o caminho da chave JSON da conta de serviço do Google, no servidor",
                 "config.agenda_id" => "o id da agenda do Google",
                 "config.agenda_teste_id" => "o id do evento de teste na agenda (vazio: nenhum)",
-                "config.agenda_tipos" => "os tipos de aviso que vão para o Google Agenda, separados por vírgula",
-                "config.alerta_tipos" => "os tipos de aviso que vão pelo Telegram, separados por vírgula (dia, vespera, os identificadores dos avisos, ev<id>)",
                 "config.carga_limiar" => "o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se preenchido, vale no lugar)",
                 "config.cron_erro" => "o erro guardado da última execução com erro (texto; vazio: sem erro)",
                 "config.cron_registro" => "o registro da última rodada com atividade (texto)",
@@ -3539,7 +3527,7 @@ if (!$token_ok && $quem === "") {
                 "config.mensagens_ativas" => "1: o Telegram (a API de alerta) envia; 0: não envia",
                 "config.migracao_v10" => "marca de que a migração v10 foi aplicada (1)",
                 "config.migracao_v12" => "marca de que a migração v12 foi aplicada (1)",
-                "config.modo_ativo" => "o id do modo de rodízio em uso",
+                "config.migracao_v16" => "marca de que a migração v16 foi aplicada (1)",
                 "config.pulso_auto_fim" => "1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o \"fecha às\" do tipo No pulso); 0: só pelo Tirou",
                 "config.pulso_auto_inicio" => "1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs",
                 "config.previsao_limite" => "o limite de carga da previsão do smartwatch, em %",
@@ -3648,6 +3636,7 @@ if (!$token_ok && $quem === "") {
                 "avisos[].no_id" => "o grupo desta versão; null: todos",
                 "avisos[].nome" => "o nome do aviso — a âncora {acao}",
                 "avisos[].resolve" => "o tipo de lançamento que resolve (o botão na tela Hoje); null: nenhum",
+                "avisos[].resolve_tipo_id" => "o número desse tipo de lançamento (a chave estrangeira no banco); null: nenhum",
                 "avisos[].simula_horas" => "as horas da sessão que a escala simula para resolver (número; null)",
                 "avisos[].simula_valor" => "o valor do lançamento que a escala simula para resolver (número; null)",
                 "avisos[].texto" => "o motivo, com {relogio}, {data}, {quando} e {limite} — a âncora {motivo}",
@@ -3690,7 +3679,8 @@ if (!$token_ok && $quem === "") {
                 "modo_ativo" => "o id do modo em uso",
                 "modos[]" => "os modos (como no banco)",
                 "modos[].blocos[]" => "os blocos",
-                "modos[].blocos[].dias" => "os dias (1 a 7) separados por vírgula",
+                "modos[].ativo" => "1: o modo em uso (só um); 0: não",
+                "modos[].blocos[].dias" => "os dias (1 a 7) separados por vírgula (no banco, uma linha por dia na tabela modo_bloco_dia)",
                 "modos[].blocos[].id" => "o número",
                 "modos[].blocos[].modo_id" => "o modo",
                 "modos[].blocos[].no_id" => "o grupo de onde sortear; null: todos",
@@ -4033,7 +4023,6 @@ if (!$token_ok && $quem === "") {
     ];
 } elseif ($recurso === "") {
     $com_foto = ($_REQUEST["foto"] ?? "") !== "nao";
-    mover_manuais();
     $arvore = [];
     foreach (nos_em_ordem() as $o) {
         $x = nos_todos()[$o[0]];
@@ -4100,11 +4089,11 @@ if (!$token_ok && $quem === "") {
     $modos = [];
     foreach (linhas("SELECT * FROM modo ORDER BY ordem, id") as $m) {
         $modos[] = ["id" => (int)$m["id"], "nome" => $m["nome"], "selecao" => $m["selecao"], "escala_dias" => $m["escala_dias"] === null ? null : (int)$m["escala_dias"], "ciclo" => (int)$m["ciclo"] === 1,
-            "ordem" => (int)$m["ordem"], "ativo" => (int)$m["id"] === (int)cfg("modo_ativo"),
+            "ordem" => (int)$m["ordem"], "ativo" => (int)$m["id"] === modo_ativo(),
             "blocos" => array_map(function ($b) {
                 return ["id" => (int)$b["id"], "nome" => $b["nome"], "dias" => array_map("intval", explode(",", $b["dias"])), "no_id" => $b["no_id"] === null ? null : (int)$b["no_id"],
                     "lugar" => no_caminho($b["no_id"]), "um_por" => $b["um_por"], "relogio_id" => $b["relogio_id"] === null ? null : (int)$b["relogio_id"]];
-            }, linhas("SELECT * FROM modo_bloco WHERE modo_id = ? ORDER BY ordem, id", [(int)$m["id"]]))];
+            }, modo_blocos((int)$m["id"]))];
     }
     $config = [];
     foreach (linhas("SELECT chave, valor FROM config ORDER BY chave") as $c) {
@@ -4122,7 +4111,7 @@ if (!$token_ok && $quem === "") {
     }
     $saida = ["arvore" => $arvore, "campos" => $campos, "lancamento_tipos" => $tipos_l, "formulas" => $formulas, "avisos" => $avisos, "relogios" => $relogios,
         "documento_categorias" => documento_categorias_lista(), "modos" => $modos, "plano" => plano_legivel("", ""), "config" => (object)$config,
-        "eventos" => array_map("evento_legivel", linhas("SELECT * FROM evento_personalizado ORDER BY nome")),
+        "eventos" => array_map("evento_legivel", eventos_com_dias(linhas("SELECT * FROM evento_personalizado ORDER BY nome"))),
         "agenda" => ["criados" => linhas("SELECT chave, google_id, data, titulo, assinatura, criado FROM agenda_evento ORDER BY data, chave"), "desejados" => agenda_legivel()],
         "criterios" => montar_criterios(),
         "cron" => ["ultima" => cfg("cron_ultima_execucao"), "erro" => cfg("cron_erro"), "execucoes" => array_map(function ($x) {

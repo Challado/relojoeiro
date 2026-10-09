@@ -168,11 +168,38 @@ function campos_todos($recarregar = false)
     static $c = null;
     if ($c === null || $recarregar) {
         $c = [];
-        foreach (linhas("SELECT * FROM campo ORDER BY ordem, nome") as $x) {
+        foreach (campos_com_opcoes(linhas("SELECT * FROM campo ORDER BY ordem, nome")) as $x) {
             $c[$x["identificador"]] = $x;
         }
     }
     return $c;
+}
+
+// Os campos com as opções de cada lista (a tabela campo_opcao) em "opcoes": uma por linha, na ordem (null: nenhuma)
+function campos_com_opcoes($campos)
+{
+    $ops = [];
+    foreach (linhas("SELECT campo_id, valor FROM campo_opcao ORDER BY campo_id, ordem") as $o) {
+        $ops[(int)$o["campo_id"]][] = $o["valor"];
+    }
+    return array_map(function ($c) use ($ops) {
+        $c["opcoes"] = isset($ops[(int)$c["id"]]) ? implode("\n", $ops[(int)$c["id"]]) : null;
+        return $c;
+    }, $campos);
+}
+
+// Grava as opções de um campo do tipo lista (o texto, uma por linha; as repetidas e as vazias saem): a tabela campo_opcao
+function campo_gravar_opcoes($campo_id, $texto)
+{
+    sql("DELETE FROM campo_opcao WHERE campo_id = ?", [(int)$campo_id]);
+    $ordem = 0;
+    foreach (explode("\n", str_replace("\r", "", (string)$texto)) as $op) {
+        $op = mb_substr(trim($op), 0, 120);
+        // a repetida fica de fora; quem diz se é repetida é o próprio banco (maiúsculas e acentos não contam, como na chave única)
+        if ($op !== "" && (int)valor("SELECT COUNT(*) FROM campo_opcao WHERE campo_id = ? AND valor = ?", [(int)$campo_id, $op]) === 0) {
+            sql("INSERT INTO campo_opcao (campo_id, ordem, valor) VALUES (?, ?, ?)", [(int)$campo_id, ++$ordem, $op]);
+        }
+    }
 }
 
 // Os campos que valem para um relógio: os de todos e os de cada ponto da cadeia dele
@@ -293,23 +320,46 @@ $MIGRACOES = [
     "v10" => ["migracao_v10.sql", "os avisos de carga pelo estado de agora: no winder ou no pulso (o automático carrega no pulso), sem aviso de winder ou de corda; no sol, sem aviso de sol; a data do \"Carregar\" pelo gasto de agora (no pulso, o de uso; guardado, o de guardado)", "config.chave=migracao_v10"],
     "v11" => ["migracao_v11.sql", "o motivo de cada escolha do plano: por que aquele relógio saiu naquele dia (a garantia de rodízio, a nota, o sorteio, a escolha à mão)", "plano.motivo"],
     "v12" => ["migracao_v12.sql", "os dias sem uso de um relógio nunca usado contam desde a compra (antes valiam 9999 para todos: empatavam na garantia de rodízio)", "config.chave=migracao_v12"],
-    "v13" => ["migracao_v13.sql", "o manual de cada relógio: um arquivo (PDF ou imagem) guardado no banco, que se envia e se abre pela ficha", "manual"],
+    "v13" => ["migracao_v13.sql", "o manual de cada relógio: um arquivo (PDF ou imagem) guardado no banco, que se envia e se abre pela ficha", "manual|documento"],
     "v14" => ["migracao_v14.sql", "os documentos de cada relógio: qualquer arquivo (manual, nota fiscal em PDF e em XML, fotos, vídeos, diversos), numa categoria, com a página Documentos (galeria, vídeos em sequência, visualizador de PDF, resumo da nota); os manuais da v13 passam para lá", "documento"],
     "v15" => ["migracao_v15.sql", "a cópia de segurança de cada documento dentro do banco (em pedaços de 4 MB): o arquivo que sumir da pasta volta sozinho do banco; o cron copia os que já existem e limpa a pasta (relógio excluído, arquivo sem documento)", "documento_parte"],
+    "v16" => ["migracao_v16.sql", "o banco no modelo relacional estrito: toda ligação é chave estrangeira, com cascata (ou, se opcional, desfazendo a ligação); as listas guardadas num campo (dias dos blocos e dos eventos, tipos aceitos, opções de um campo) viram tabelas; as mensagens e os canais saem da configuração para a tabela canal_aviso; o modo ativo vira uma marca no modo; a tabela manual sai (os manuais viram documentos)", "config.chave=migracao_v16", "migracao_v16_dados"],
 ];
 
+// O passo em PHP da v16, depois do SQL dela: as opções de cada campo do tipo lista (o texto, uma por linha) viram linhas da
+// tabela campo_opcao, e a coluna opcoes sai; por último, a marca de que a v16 foi aplicada. Pode rodar de novo (na
+// instalação nova, sem opção nenhuma, só tira a coluna e grava a marca)
+function migracao_v16_dados()
+{
+    if (banco_tem_coluna("campo", "opcoes")) {
+        foreach (linhas("SELECT id, opcoes FROM campo WHERE opcoes IS NOT NULL") as $c) {
+            campo_gravar_opcoes($c["id"], $c["opcoes"]);
+        }
+        banco_script("ALTER TABLE campo DROP COLUMN opcoes");
+    }
+    sql("INSERT IGNORE INTO config (chave, valor) VALUES ('migracao_v16', '1')");
+}
+
 // As migrações que faltam aplicar neste banco: as da lista cuja marca ainda não existe. A marca: uma tabela, uma coluna
-// (tabela.coluna) ou uma linha (tabela.coluna=valor, para a migração que só acrescenta cadastro)
+// (tabela.coluna) ou uma linha (tabela.coluna=valor, para a migração que só acrescenta cadastro); várias separadas por |
+// valem uma ou outra (a v13 criou a tabela manual, que a v16 tira: depois dela, a marca é a tabela documento)
 function migracoes_pendentes()
 {
     global $MIGRACOES;
     return array_filter($MIGRACOES, function ($m) {
-        $linha = explode("=", $m[2], 2);
-        $marca = explode(".", $linha[0]);
-        if (count($linha) === 2) {
-            return (int)valor("SELECT COUNT(*) FROM " . $marca[0] . " WHERE " . $marca[1] . " = ?", [$linha[1]]) === 0;
+        foreach (explode("|", $m[2]) as $uma) {
+            $linha = explode("=", $uma, 2);
+            $marca = explode(".", $linha[0]);
+            if (count($linha) === 2) {
+                $existe = banco_tem_tabela($marca[0]) && (int)valor("SELECT COUNT(*) FROM " . $marca[0] . " WHERE " . $marca[1] . " = ?", [$linha[1]]) > 0;
+            } else {
+                $existe = count($marca) === 2 ? banco_tem_coluna($marca[0], $marca[1]) : banco_tem_tabela($marca[0]);
+            }
+            if ($existe) {
+                return false;
+            }
         }
-        return count($marca) === 2 ? !banco_tem_coluna($marca[0], $marca[1]) : !banco_tem_tabela($marca[0]);
+        return true;
     });
 }
 
@@ -919,8 +969,8 @@ function formula_calcular($no, &$ctx)
                 // instante da conta (gasto_medido), guardados pelo trecho de medições que entrou (a escala pede o mesmo muitas vezes)
                 $id = (int)$ctx["r"]["id"];
                 if (!isset($cache_med[$id])) {
-                    $cache_med[$id] = ["linhas" => linhas("SELECT medida, taxa, peso_horas, fim, horas_pulso, horas_guardado, de_valor, ate_valor
-                        FROM medicao WHERE relogio_id = ? AND usada = 1 ORDER BY fim, id", [$id]), "contas" => []];
+                    $cache_med[$id] = ["linhas" => linhas("SELECT m.medida, m.taxa, m.peso_horas, m.fim, m.horas_pulso, m.horas_guardado, m.de_valor, m.ate_valor
+                        FROM medicao m JOIN lancamento l ON l.id = m.lancamento_id WHERE l.relogio_id = ? AND m.usada = 1 ORDER BY m.fim, m.id", [$id]), "contas" => []];
                 }
                 $janela = max(1, (int)cfg("medicao_janela_dias")) * 86400;
                 $ini = 0;
@@ -1093,7 +1143,7 @@ function avisos_todos($recarregar = false)
     static $a = null;
     if ($a === null || $recarregar) {
         $a = [];
-        foreach (linhas("SELECT * FROM aviso ORDER BY identificador, id") as $x) {
+        foreach (linhas(AVISO_SELECT . " ORDER BY a.identificador, a.id") as $x) {
             $a[$x["identificador"]][] = $x;
         }
     }
@@ -1361,7 +1411,7 @@ function motivo_nota($nota)
 // novo inclusive hoje, que quer outro sorteio para hoje.
 function garantir_plano($hoje, $ate = null, $manter_pulso = true)
 {
-    $modo = linha("SELECT * FROM modo WHERE id = ?", [(int)cfg("modo_ativo")]);
+    $modo = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]);
     if ($modo) {
         // hoje sem plano, mas com um relógio já no pulso pelo rodízio: o plano de hoje é ele (não se sorteia outro)
         $no_pulso = $manter_pulso ? valor("SELECT l.relogio_id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
@@ -1370,7 +1420,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
             sql("INSERT INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, NULL, 'manual', ?, NOW())",
                 [$hoje->format("Y-m-d"), (int)$no_pulso, "Já estava no pulso pelo rodízio quando o plano de hoje foi montado."]);
         }
-        $blocos = linhas("SELECT * FROM modo_bloco WHERE modo_id = ? ORDER BY ordem, id", [(int)$modo["id"]]);
+        $blocos = modo_blocos((int)$modo["id"]);
         if ($ate === null) {
             $ate = $hoje->modify((int)$hoje->format("N") === 7 ? "+1 day" : "sunday this week");
         }
@@ -1540,6 +1590,36 @@ function ini_bytes($v)
     return max(0, (int)$n);
 }
 
+// O modo de rodízio ativo (o id; 0: nenhum): a marca "ativo" da tabela modo (um só tem a marca)
+function modo_ativo($recarregar = false)
+{
+    static $id = null;
+    if ($id === null || $recarregar) {
+        $id = (int)(valor("SELECT id FROM modo WHERE ativo = 1 ORDER BY id LIMIT 1") ?? 0);
+    }
+    return $id;
+}
+
+// Os blocos de um modo, na ordem, cada um com os dias da semana dele (a tabela modo_bloco_dia) em "dias": "1,2,3,4,5"
+function modo_blocos($modo_id)
+{
+    $dias = [];
+    foreach (linhas("SELECT d.bloco_id, d.dia FROM modo_bloco_dia d JOIN modo_bloco b ON b.id = d.bloco_id WHERE b.modo_id = ? ORDER BY d.bloco_id, d.dia", [(int)$modo_id]) as $x) {
+        $dias[(int)$x["bloco_id"]][] = (int)$x["dia"];
+    }
+    return array_map(function ($b) use ($dias) {
+        $b["dias"] = implode(",", $dias[(int)$b["id"]] ?? []);
+        return $b;
+    }, linhas("SELECT * FROM modo_bloco WHERE modo_id = ? ORDER BY ordem, id", [(int)$modo_id]));
+}
+
+// Ativa um modo, e só ele
+function modo_ativar($id)
+{
+    sql("UPDATE modo SET ativo = CASE WHEN id = ? THEN 1 ELSE 0 END", [(int)$id]);
+    modo_ativo(true);
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Os documentos de cada relógio: o arquivo numa pasta do servidor (DOCUMENTOS_PASTA, no config.php, fora da pasta
 // publicada) e os dados dele na tabela documento, numa categoria (documento_categoria, cadastro)
@@ -1638,10 +1718,30 @@ function documento_familia($tipo, $nome = "")
     return in_array($tipo, ["application/xml", "text/xml"], true) || $ext === "xml" ? "xml" : "outro";
 }
 
-// As famílias que uma categoria aceita (vazio: qualquer arquivo)
+// As famílias que uma categoria aceita (vazio: qualquer arquivo): o texto "pdf,imagem" (o formato do pedido) em lista
 function documento_familias_aceitas($aceita)
 {
     return array_values(array_filter(array_map("trim", explode(",", (string)$aceita)), function ($x) { return $x !== ""; }));
+}
+
+// Uma categoria de documentos (null se não existe), com as famílias que ela aceita (a tabela documento_categoria_aceita) em
+// "aceita": "imagem,pdf" (vazio: qualquer arquivo)
+function documento_categoria_linha($id)
+{
+    $c = linha("SELECT * FROM documento_categoria WHERE id = ?", [(int)$id]);
+    if ($c) {
+        $c["aceita"] = implode(",", array_column(linhas("SELECT familia FROM documento_categoria_aceita WHERE categoria_id = ? ORDER BY familia", [(int)$id]), "familia"));
+    }
+    return $c;
+}
+
+// Grava as famílias que uma categoria aceita
+function documento_categoria_gravar_aceita($id, $familias)
+{
+    sql("DELETE FROM documento_categoria_aceita WHERE categoria_id = ?", [(int)$id]);
+    foreach ($familias as $f) {
+        sql("INSERT INTO documento_categoria_aceita (categoria_id, familia) VALUES (?, ?)", [(int)$id, $f]);
+    }
 }
 
 // Um nome novo de arquivo dentro da pasta (r<relógio>/<aleatório>), com a subpasta criada
@@ -1764,8 +1864,12 @@ function documento_enviar($d, $caminho, $baixar, $miniatura = false)
 // As categorias dos documentos, na ordem, com quantos documentos cada uma tem (de um relógio; null: de todos)
 function documento_categorias_lista($rid = null)
 {
-    return array_map(function ($c) {
-        return ["id" => (int)$c["id"], "identificador" => $c["identificador"], "nome" => $c["nome"], "aceita" => documento_familias_aceitas($c["aceita"]),
+    $aceita = [];
+    foreach (linhas("SELECT categoria_id, familia FROM documento_categoria_aceita ORDER BY categoria_id, familia") as $x) {
+        $aceita[(int)$x["categoria_id"]][] = $x["familia"];
+    }
+    return array_map(function ($c) use ($aceita) {
+        return ["id" => (int)$c["id"], "identificador" => $c["identificador"], "nome" => $c["nome"], "aceita" => $aceita[(int)$c["id"]] ?? [],
             "ordem" => (int)$c["ordem"], "documentos" => (int)$c["documentos"]];
     }, linhas("SELECT c.*, (SELECT COUNT(*) FROM documento d WHERE d.categoria_id = c.id" . ($rid !== null ? " AND d.relogio_id = ?" : "") . ") AS documentos
         FROM documento_categoria c ORDER BY c.ordem, c.id", $rid !== null ? [(int)$rid] : []));
@@ -2006,39 +2110,6 @@ function documentos_manutencao($orcamento, $diario = false)
     return $log;
 }
 
-// Os manuais da v13 (guardados no banco, na tabela manual) passam para os documentos, na categoria Manual (sem ela, na
-// primeira categoria), assim que a pasta dos documentos existe. Um por vez, para não pesar na memória; a tabela fica vazia
-function mover_manuais()
-{
-    static $feito = false;
-    if ($feito) {
-        return;
-    }
-    $feito = true;
-    $pasta = documentos_pasta();
-    if ($pasta === null || (int)valor("SELECT COUNT(*) FROM manual") === 0) {
-        return;
-    }
-    $cat = valor("SELECT id FROM documento_categoria WHERE identificador = 'manual'") ?? valor("SELECT id FROM documento_categoria ORDER BY ordem, id LIMIT 1");
-    if ($cat === null) {
-        return;
-    }
-    foreach (linhas("SELECT relogio_id FROM manual") as $x) {
-        $m = linha("SELECT * FROM manual WHERE relogio_id = ?", [(int)$x["relogio_id"]]);
-        $arquivo = documento_novo_arquivo($pasta, (int)$m["relogio_id"], $m["nome"]);
-        if (@file_put_contents($pasta . "/" . $arquivo, $m["dados"]) === strlen($m["dados"])) {
-            sql("INSERT INTO documento (relogio_id, categoria_id, titulo, data, descricao, nome, tipo, tamanho, arquivo, miniatura, criado) VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, ?, NULL, ?)",
-                [(int)$m["relogio_id"], (int)$cat, "Manual", $m["nome"], $m["tipo"], strlen($m["dados"]), $arquivo, $m["atualizado"]]);
-            if (documentos_copia_banco()) {
-                documento_copiar_para_banco(linha("SELECT * FROM documento WHERE id = ?", [ultimo_id()]));
-            }
-            sql("DELETE FROM manual WHERE relogio_id = ?", [(int)$m["relogio_id"]]);
-        } else {
-            @unlink($pasta . "/" . $arquivo);
-        }
-    }
-}
-
 // O relógio do dia entra no pulso sozinho no início do horário de uso (a Configuração, ao lado do horário; é o padrão).
 // Desligado, ele só entra pelo Pôs.
 function pulso_poe_sozinho()
@@ -2075,7 +2146,7 @@ function horas_no_pulso($rid, $de, $ate)
 // medições do gasto que cobrem esse trecho refazem as horas no pulso e fora dele (a queda entre as leituras não muda)
 function recalcular_medicoes($rid, $de, $ate)
 {
-    foreach (linhas("SELECT id, inicio, fim FROM medicao WHERE relogio_id = ? AND inicio < ? AND fim > ?", [(int)$rid, date("Y-m-d H:i:s", $ate), date("Y-m-d H:i:s", $de)]) as $m) {
+    foreach (linhas("SELECT m.id, m.inicio, m.fim FROM medicao m JOIN lancamento l ON l.id = m.lancamento_id WHERE l.relogio_id = ? AND m.inicio < ? AND m.fim > ?", [(int)$rid, date("Y-m-d H:i:s", $ate), date("Y-m-d H:i:s", $de)]) as $m) {
         $a = strtotime($m["inicio"]);
         $b = strtotime($m["fim"]);
         $hp = horas_no_pulso($rid, $a, $b);
@@ -2156,7 +2227,7 @@ function texto_ate($data, $quando)
 // os valores na hora de enviar.
 // ---------------------------------------------------------------------------------------------------------------------
 $CANAIS = [
-    "tg" => ["nome" => "Telegram", "tipos" => "alerta_tipos",
+    "tg" => ["nome" => "Telegram", "tipos" => "alerta_tipos",       // "tipos": o campo do formulário com os tipos que vão (alerta_tipos[])
         "ajuda" => "Cada aviso vira uma mensagem com este texto. As do mesmo horário vão juntas, separadas por uma linha em branco."],
     "ag" => ["nome" => "Google Agenda", "tipos" => "agenda_tipos",
         "ajuda" => "Cada aviso vira um evento. A primeira linha é o título do evento; o resto, a descrição."],
@@ -2198,7 +2269,7 @@ function tipos_de_aviso()
     foreach (linhas("SELECT identificador, MIN(id) AS primeiro FROM aviso GROUP BY identificador ORDER BY primeiro") as $a) {
         $lista[$a["identificador"]] = [avisos_todos()[$a["identificador"]][0]["nome"], "manhã"];
     }
-    foreach (linhas("SELECT * FROM evento_personalizado ORDER BY nome") as $ev) {
+    foreach (eventos_com_dias(linhas("SELECT * FROM evento_personalizado ORDER BY nome")) as $ev) {
         $lista["ev" . $ev["id"]] = [$ev["nome"], descricao_repeticao($ev)];
     }
     return $lista;
@@ -2291,7 +2362,7 @@ function contexto_mensagem($id, $extra, $hoje)
         "ate" => "", "ultimo_uso" => "", "quantidade" => "",
         "data" => $hoje->format("d/m/Y"), "hora" => date("H:i"), "dia_semana" => $dias[(int)$hoje->format("N")],
         "relogio_do_dia" => $dia ? $dia["nome"] : "nenhum", "relogio_de_amanha" => $amanha ? $amanha["nome"] : "nenhum",
-        "modo" => (string)valor("SELECT nome FROM modo WHERE id = ?", [(int)cfg("modo_ativo")]), "link" => $url !== "" ? $url . "/" : "",
+        "modo" => (string)valor("SELECT nome FROM modo WHERE id = ?", [modo_ativo()]), "link" => $url !== "" ? $url . "/" : "",
     ];
     $r = $id > 0 ? linha("SELECT * FROM relogio WHERE id = ?", [$id]) : null;
     if ($r) {
@@ -2328,14 +2399,73 @@ function aplicar_modelo($modelo, $ctx)
     return trim(implode("\n", $linhas));
 }
 
+// Os eventos personalizados com os dias da semana (a tabela evento_dia) em "dias_semana": "1,4" (null: nenhum dia)
+function eventos_com_dias($eventos)
+{
+    $dias = [];
+    foreach (linhas("SELECT evento_id, dia FROM evento_dia ORDER BY evento_id, dia") as $x) {
+        $dias[(int)$x["evento_id"]][] = (int)$x["dia"];
+    }
+    return array_map(function ($ev) use ($dias) {
+        $ev["dias_semana"] = isset($dias[(int)$ev["id"]]) ? implode(",", $dias[(int)$ev["id"]]) : null;
+        return $ev;
+    }, $eventos);
+}
+
+// Os avisos com o identificador do tipo de lançamento que resolve cada um em "resolve" (a chave estrangeira é resolve_tipo_id)
+const AVISO_SELECT = "SELECT a.*, t.identificador AS resolve FROM aviso a LEFT JOIN lancamento_tipo t ON t.id = a.resolve_tipo_id";
+
+// O que vai por um canal (tg, ag) para um tipo (dia, vespera, o identificador de um aviso, ev<id> de um evento): a linha da
+// tabela canal_aviso, {envia, propria, corpo}; sem linha, nada vai e não há mensagem própria
+function canal_aviso($canal, $tipo, $recarregar = false)
+{
+    static $todas = null;
+    if ($todas === null || $recarregar) {
+        $todas = [];
+        foreach (linhas("SELECT * FROM canal_aviso") as $l) {
+            $todas[$l["canal"] . "|" . ($l["evento_id"] !== null ? "ev" . (int)$l["evento_id"] : $l["tipo"])] = ["envia" => (int)$l["envia"] === 1,
+                "propria" => (int)$l["propria"] === 1, "corpo" => (string)$l["corpo"]];
+        }
+    }
+    return $tipo === null ? $todas : ($todas[$canal . "|" . $tipo] ?? ["envia" => false, "propria" => false, "corpo" => ""]);
+}
+
+// Os tipos que vão por um canal
+function canal_tipos($canal)
+{
+    $res = [];
+    foreach (canal_aviso($canal, null) as $k => $l) {
+        if ($l["envia"] && strpos($k, $canal . "|") === 0) {
+            $res[] = substr($k, strlen($canal) + 1);
+        }
+    }
+    return $res;
+}
+
+// Grava o que vai por um canal para um tipo: só as chaves que vierem em $dados (envia, propria, corpo); a linha é criada se
+// não existe. Um evento (ev<id>) entra pelo número dele, a chave estrangeira
+function canal_gravar($canal, $tipo, $dados)
+{
+    $ev = preg_match("/^ev(\d+)\$/", $tipo, $m) === 1 ? (int)$m[1] : null;
+    $onde = $ev !== null ? "canal = ? AND evento_id = ?" : "canal = ? AND tipo = ?";
+    $chave = [$canal, $ev !== null ? $ev : $tipo];
+    if (valor("SELECT id FROM canal_aviso WHERE " . $onde, $chave) === null) {
+        sql("INSERT INTO canal_aviso (canal, tipo, evento_id, envia, propria, corpo) VALUES (?, ?, ?, 0, 0, NULL)", [$canal, $ev !== null ? null : $tipo, $ev]);
+    }
+    foreach (["envia" => "envia", "propria" => "propria", "corpo" => "corpo"] as $k => $col) {
+        if (array_key_exists($k, $dados)) {
+            $v = $k === "corpo" ? $dados[$k] : ($dados[$k] ? 1 : 0);
+            sql("UPDATE canal_aviso SET " . $col . " = ? WHERE " . $onde, array_merge([$v], $chave));
+        }
+    }
+    canal_aviso($canal, null, true);
+}
+
 // O modelo de um aviso num canal: o personalizado do tipo, se marcado e preenchido; senão a mensagem padrão do canal
 function modelo_do_aviso($canal, $tipo)
 {
-    $modelo = cfg($canal . "_padrao");
-    if (cfg($canal . "_proprio_" . $tipo) === "1" && trim(cfg($canal . "_corpo_" . $tipo)) !== "") {
-        $modelo = cfg($canal . "_corpo_" . $tipo);
-    }
-    return $modelo;
+    $l = canal_aviso($canal, $tipo);
+    return $l["propria"] && trim((string)$l["corpo"]) !== "" ? $l["corpo"] : cfg($canal . "_padrao");
 }
 
 // Telegram: cada aviso é uma mensagem pelo seu modelo; as do mesmo horário vão agrupadas, separadas por linha em branco.
@@ -2353,7 +2483,7 @@ function mensagem_telegram($itens, $hoje)
 // A mensagem da manhã: o relógio do dia e os avisos atrasados ou em breve, só os marcados para o Telegram
 function montar_mensagem($hoje)
 {
-    $tipos = explode(",", cfg("alerta_tipos"));
+    $tipos = canal_tipos("tg");
     $itens = [];
     $dia = plano_do_dia($hoje->format("Y-m-d"));
     if (in_array("dia", $tipos, true) && $dia) {
@@ -2375,7 +2505,7 @@ function montar_mensagem_noite($hoje)
     $itens = [];
     $d = plano_do_dia($hoje->modify("+1 day")->format("Y-m-d"));
     $h = plano_do_dia($hoje->format("Y-m-d"));
-    if ($d && in_array("vespera", explode(",", cfg("alerta_tipos")), true) && (!$h || (int)$h["relogio_id"] !== (int)$d["relogio_id"])) {
+    if ($d && in_array("vespera", canal_tipos("tg"), true) && (!$h || (int)$h["relogio_id"] !== (int)$d["relogio_id"])) {
         $preparo = preparo_do_dia(linha("SELECT * FROM relogio WHERE id = ?", [(int)$d["relogio_id"]]), $d["data"]);
         $itens[] = ["tipo" => "vespera", "id" => (int)$d["relogio_id"], "fazer" => "Preparar para amanhã",
             "motivo" => count($preparo) > 0 ? implode("\n", $preparo) : "É só usar.", "ate" => texto_ate($d["data"], "amanhã")];
@@ -2532,7 +2662,7 @@ function simular_lancamento($rid, $tipo, $ini, $fim, $valor, $so_uso = false)
 function gerar_escala($ini)
 {
     $gravados = 0;
-    $modo = linha("SELECT * FROM modo WHERE id = ?", [(int)cfg("modo_ativo")]);
+    $modo = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]);
     $hoje = new DateTimeImmutable("today");
     $agora = time();
     if ($ini < $hoje) {
@@ -2547,7 +2677,7 @@ function gerar_escala($ini)
             $fim = $ini->modify("+" . (max(1, (int)$modo["escala_dias"]) - 1) . " days");
             cfg_set("escala_fim", $fim->format("Y-m-d"));
         }
-        $blocos = linhas("SELECT * FROM modo_bloco WHERE modo_id = ? ORDER BY ordem, id", [(int)$modo["id"]]);
+        $blocos = modo_blocos((int)$modo["id"]);
         sql("DELETE FROM plano WHERE data >= ? AND origem <> 'manual'", [$ini->format("Y-m-d")]);
         $manuais = [];
         foreach (linhas("SELECT data, relogio_id FROM plano WHERE data >= ?", [$ini->format("Y-m-d")]) as $m) {
@@ -2797,8 +2927,8 @@ function previsao_energia($r, $agora)
             // o gasto medido pelas leituras (gasto_medido, na janela da Configuração): com o de uso medido, o campo vazio do
             // cadastro não pesa na confiança (a medição vale no lugar dele)
             $janela = max(1, (int)cfg("medicao_janela_dias"));
-            $medicoes = linhas("SELECT medida, taxa, peso_horas, fim, horas_pulso, horas_guardado, de_valor, ate_valor FROM medicao
-                WHERE relogio_id = ? AND usada = 1 ORDER BY fim, id", [(int)$r["id"]]);
+            $medicoes = linhas("SELECT m.medida, m.taxa, m.peso_horas, m.fim, m.horas_pulso, m.horas_guardado, m.de_valor, m.ate_valor FROM medicao m
+                JOIN lancamento l ON l.id = m.lancamento_id WHERE l.relogio_id = ? AND m.usada = 1 ORDER BY m.fim, m.id", [(int)$r["id"]]);
             $g = gasto_medido($medicoes, $agora);
             $como = $g["n"] === 0 ? " (a última medição; nenhuma nos últimos " . $janela . " dias)"
                 : " (" . ($g["conjunta"] ? "conta dos dois gastos juntos, com " : "média de ") . $g["n"] . ($g["n"] === 1 ? " medição" : " medições")
@@ -3216,7 +3346,7 @@ function ocorrencias($ev, $de, $ate)
 }
 
 // O que tem de estar na agenda, de hoje até o fim da janela (agenda_antecedencia dias), só os tipos marcados para a agenda
-// (agenda_tipos): os avisos dos relógios disponíveis que não estão com uma sessão aberta à mão (carregando: a data andaria a
+// (canal_aviso, canal ag): os avisos dos relógios disponíveis que não estão com uma sessão aberta à mão (carregando: a data andaria a
 // cada conta; volta quando a sessão fechar), no horário da manhã do dia previsto (vencido: hoje) — a rotina (agenda "janela"
 // no aviso) só dentro da janela, a manutenção ("sempre") em qualquer data; o relógio do dia e a véspera, a partir do plano;
 // e as ocorrências dos eventos personalizados. Cada item: chave (a mesma enquanto nada mudar), data, hora, momento (o
@@ -3224,7 +3354,7 @@ function ocorrencias($ev, $de, $ate)
 function agenda_desejada($hoje)
 {
     $lista = [];
-    $tipos = explode(",", cfg("agenda_tipos"));
+    $tipos = canal_tipos("ag");
     $janela = max(0, (int)cfg("agenda_antecedencia"));
     $limite = $hoje->modify("+" . $janela . " days")->format("Y-m-d");
     $manha = cfg("horario_manha") !== "" ? cfg("horario_manha") : "06:30";
@@ -3266,7 +3396,7 @@ function agenda_desejada($hoje)
         $anterior = (int)$p["relogio_id"];
     }
     $fim = strtotime($limite . " 23:59:59");
-    foreach (linhas("SELECT * FROM evento_personalizado WHERE ativo = 1") as $ev) {
+    foreach (eventos_com_dias(linhas("SELECT * FROM evento_personalizado WHERE ativo = 1")) as $ev) {
         if (in_array("ev" . $ev["id"], $tipos, true)) {
             foreach (ocorrencias($ev, max(time(), strtotime($ev["criado"])), $fim) as $ts) {
                 $lista[] = ["chave" => "ev" . $ev["id"] . ":" . (int)$ev["relogio_id"] . ":" . date("Y-m-d-H-i", $ts), "data" => date("Y-m-d", $ts), "hora" => date("H:i", $ts),

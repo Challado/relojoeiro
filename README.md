@@ -385,8 +385,9 @@ Os documentos não entram em nenhuma conta: são para consultar. Os números que
 o tempo de sol para encher...) continuam nos campos do cadastro. O manual que o fabricante publica só como página da internet
 (a Casio faz assim) vira PDF pelo próprio navegador: abra a página e use **Imprimir → Salvar como PDF**.
 
-O sistema anterior a esta versão guardava um manual por relógio dentro do banco (a migração v13). Assim que a pasta dos
-documentos existe, esses manuais passam sozinhos para a categoria **Manual**.
+O sistema anterior guardava um manual por relógio numa tabela própria do banco (a migração v13). A migração v16 passa cada
+um para os documentos, na categoria **Manual** (com a cópia no banco), e apaga a tabela; o arquivo volta para a pasta sozinho
+no minuto seguinte, pelo cron (o mesmo que recupera um arquivo sumido).
 
 ### Todos os relógios
 
@@ -613,8 +614,8 @@ na chave `config`), para quem automatiza; o padrão de uma instalação nova vem
 | **Id da agenda** (`agenda_id`) e **chave** (`agenda_chave`) | a agenda do Google e o caminho, no servidor, da chave JSON da conta de serviço (vazio: a `google-conta-servico.json` na pasta do sistema). Veja [Google Agenda](#google-agenda). |
 | **Antecedência** (`agenda_antecedencia`) | com quantos dias de antecedência os eventos entram na agenda. De 1 a 365. Padrão: 30. |
 | **Mensagem padrão** de cada canal (`tg_padrao`, `ag_padrao`) | o texto de todo aviso que não tem mensagem própria, com as âncoras (`{acao}`, `{relogio}`, `{motivo}`, `{carga}`, `{ate}`, `{link}`...; o botão **Inserir âncora** mostra todas). Na agenda, a primeira linha é o título do evento e o resto, a descrição. |
-| **O que vai para onde** (`alerta_tipos`, `agenda_tipos`) | a tabela que marca, para cada tipo de aviso (o dia, a véspera, cada aviso cadastrado e cada evento personalizado), se ele vai pelo Telegram e pela agenda. |
-| **Mensagem personalizada** de um aviso num canal (`tg_proprio_<tipo>` e `tg_corpo_<tipo>`; na agenda, `ag_proprio_<tipo>` e `ag_corpo_<tipo>`) | marcada, aquele aviso sai com o texto dele naquele canal, em vez da mensagem padrão. |
+| **O que vai para onde** (no formulário, `alerta_tipos[]` e `agenda_tipos[]`; no banco, a coluna `envia` da tabela `canal_aviso`) | a tabela que marca, para cada tipo de aviso (o dia, a véspera, cada aviso cadastrado e cada evento personalizado), se ele vai pelo Telegram e pela agenda. Um evento personalizado novo já nasce marcado no Telegram. |
+| **Mensagem personalizada** de um aviso num canal (no formulário, `tg_proprio_<tipo>` e `tg_corpo_<tipo>`; na agenda, `ag_proprio_<tipo>` e `ag_corpo_<tipo>`; no banco, as colunas `propria` e `corpo` da tabela `canal_aviso`) | marcada, aquele aviso sai com o texto dele naquele canal, em vez da mensagem padrão. |
 | **Eventos personalizados** | lembretes seus (limpar as pulseiras, revisar a coleção), com nome, quando disparam (uma vez, todo dia, em dias da semana, num dia do mês ou a cada N dias), a hora e, se quiser, um relógio. Saem pelos canais como os avisos. |
 | **Testar manhã**, **Testar noite**, **Criar evento de teste**, **Remover evento de teste**, **Sincronizar agora** | mandam a mensagem da manhã ou da noite na hora, criam (daqui a 10 minutos) ou apagam um evento de teste na agenda, e acertam a agenda agora, sem esperar o cron. |
 
@@ -622,16 +623,16 @@ A prévia **Como sai hoje** mostra as mensagens e os eventos de hoje exatamente 
 
 ### O que o sistema guarda sozinho
 
-Estas não aparecem como opção: o sistema anota para ele mesmo, e a API mostra.
+Estas não aparecem como opção: o sistema anota para ele mesmo, e a API mostra. (O modo de rodízio em uso não fica aqui: é a
+coluna `ativo` da tabela `modo`, e troca-se na página Hoje.)
 
 | Chave | O que é |
 |---|---|
-| `modo_ativo` | o modo de rodízio em uso (troca-se na página Hoje). |
 | `escala_fim`, `escala_gerada` | até que dia vai a escala inteligente e quando ela foi gerada. |
 | `ultima_manha`, `ultima_noite` | o dia da última rodada da manhã e da noite (para não rodar duas vezes). |
 | `cron_ultima_execucao`, `cron_erro`, `cron_registro` | quando o cron rodou, o último erro (vazio: nenhum) e o registro da última rodada com atividade. |
 | `agenda_teste_id` | o evento de teste da agenda, enquanto existir. |
-| `migracao_v10`, `migracao_v12` | as marcas de que essas migrações foram aplicadas (as outras se marcam pela própria estrutura do banco). |
+| `migracao_v10`, `migracao_v12`, `migracao_v16` | as marcas de que essas migrações foram aplicadas (as outras se marcam pela própria estrutura do banco). |
 
 ## Um dia com o Relógios 2
 
@@ -713,7 +714,7 @@ relógio abre em tela cheia; o "voltar" do aparelho fecha o painel.</sub>
 | **Histórico** (`historico.php`) | A linha do tempo de um relógio: em uso pelo rodízio, no pulso fora do rodízio, no winder, no sol, em repouso, e cada corda, carga e troca de pilha. Mostra quanto tempo e que porcentagem ficou em cada estado, com filtro de período e de estado. |
 | **Configuração** (`configuracao.php`) | Os horários (manhã, noite, uso), o Telegram, o Google Agenda, a mensagem padrão de cada canal, a tabela **"O que vai para onde"** (qual aviso sai por qual canal), os eventos personalizados, a prévia **"Como sai hoje"** e o botão que aplica as migrações do banco. |
 | **Critérios** (`criterios.php`) | Os conjuntos de critérios por lugar (todos os relógios, um grupo ou um relógio), com parâmetros, subparâmetros, faixas e a nota de cada relógio com a conta aberta. Tem **Restaurar os critérios iniciais**. |
-| **Grupos** (`grupos.php`) | A árvore: criar, renomear, mover, ordenar, excluir e escolher o grupo de cada relógio. |
+| **Grupos** (`grupos.php`) | A árvore: criar, renomear, mover, ordenar, excluir (o que era do grupo passa para o de cima) e escolher o grupo de cada relógio. |
 | **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), avisos, modos de rodízio e as categorias de documentos: tudo o que o sistema usa e que não é código. |
 | **Execuções do cron** (`execucoes.php`) | O que o cron fez a cada rodada, quanto tempo levou e os erros, com filtros. |
 | **Usuários** (`usuarios.php`) | Quem acessa: criar um usuário ou trocar a senha. |
@@ -936,6 +937,17 @@ escrita no dialeto do MySQL, e o [`banco.php`](banco.php) traduz para o Postgres
 vazio, no MySQL o resultado vira NULL). As migrações v2 a v8 são de antes disso e existem só para atualizar bancos MySQL
 antigos: um banco Postgres ou SQLite já nasce na versão atual.
 
+Dois comandos que não existem assim em nenhum banco, o `banco.php` entende e faz do jeito de cada um:
+
+| Comando | O que faz |
+|---|---|
+| `ALTER TABLE t ALTER FOREIGN KEY (coluna) REFERENCES outra(id) ON DELETE CASCADE` (ou `SET NULL`) | troca a chave estrangeira da coluna (ou cria, se não havia). No MySQL e no Postgres, procura no catálogo o nome da chave antiga, apaga e cria a nova; no SQLite, refaz a tabela. |
+| `ALTER TABLE t DROP COLUMN coluna` | apaga a coluna junto com a chave estrangeira e os índices dela (o SQLite refaz a tabela). |
+
+Uma migração pode ter também um **passo em PHP**, para o que o SQL comum aos três não faz (a v16 quebra o texto das opções
+de um campo, uma por linha, em linhas da tabela `campo_opcao`). Ele roda logo depois do SQL, pelo botão da Configuração, e
+também no `instalar.php`.
+
 ### Diferenças entre os bancos que você pode notar
 
 - **Maiúsculas e acentos:** como no MySQL, "Relógio" e "RELOGIO" são o mesmo nome, na busca, na ordem e no login. No
@@ -1020,6 +1032,30 @@ Pode. As telas usam exatamente a mesma API.
   e limpa o que sobrou (veja [Os documentos do relógio](#os-documentos-do-relógio)).
 - **Falha segura:** sem token válido ou com o banco desatualizado, o sistema para e explica o motivo, em vez de rodar pela metade.
 
+### O modelo do banco
+
+O banco é relacional e normalizado (desde a migração v16): cada coisa numa tabela, cada ligação entre tabelas uma **chave
+estrangeira**, e nenhuma lista guardada como texto dentro de um campo. Apagar direto no banco não deixa nada solto:
+
+| A ligação | Ao apagar o de cima | Onde |
+|---|---|---|
+| obrigatória (a linha não existe sem o de cima) | **some junto** (`ON DELETE CASCADE`) | um grupo leva os grupos de dentro, os relógios, os campos, os tipos de lançamento, as fórmulas e os avisos dele; um relógio leva os lançamentos, os valores, as fotos, os documentos, o plano e os critérios próprios; um lançamento leva a medição do gasto; e assim por diante |
+| opcional (a coluna aceita vazio) | **a ligação se desfaz** (`ON DELETE SET NULL`) | o relógio de um evento personalizado, o grupo e o relógio fixo de um bloco de modo, o bloco de um dia do plano, o tipo de lançamento que resolve um aviso |
+
+Pela tela (**Grupos**, Excluir), apagar um grupo continua passando antes o que era dele (os grupos de dentro, os relógios,
+os campos, os tipos, as fórmulas e os avisos) para o grupo de cima; a cascata vale para quem apaga direto no banco.
+
+As listas viraram tabelas: os dias de um bloco de modo (`modo_bloco_dia`) e de um evento semanal (`evento_dia`), os tipos de
+arquivo que uma categoria de documentos aceita (`documento_categoria_aceita`), as opções de um campo de lista
+(`campo_opcao`) e, para cada canal e cada tipo de aviso, se ele vai, se tem mensagem própria e o texto dela (`canal_aviso`).
+O modo em uso é a coluna `ativo` do modo, e a medição do gasto chega ao relógio pelo lançamento que a fechou. A tabela
+`config` guarda só valores soltos (horários, limites, marcas).
+
+Três referências ficam **pelo nome**, de propósito: as fórmulas e os critérios citam campos e fórmulas pelo identificador
+(é o texto que você escreve, como `HORAS("pulso"; 30)`), e o `canal_aviso` cita o aviso pelo identificador, porque um aviso
+pode ter várias versões (uma por grupo) e o canal vale para todas. Quando a última versão de um aviso é apagada, o sistema
+apaga junto as linhas dele no `canal_aviso`.
+
 ### Arquivos
 
 | Arquivo | O que é |
@@ -1035,7 +1071,7 @@ Pode. As telas usam exatamente a mesma API.
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |
 | [`estilo.css`](estilo.css) | o visual |
 | [`schema.sql`](schema.sql) | a estrutura do banco e o conjunto inicial (grupos, campos, fórmulas, avisos, modos, critérios) |
-| `migracao_v2.sql` … `migracao_v15.sql` | as migrações, aplicadas pela página Configuração |
+| `migracao_v2.sql` … `migracao_v16.sql` | as migrações, aplicadas pela página Configuração |
 | [`config.exemplo.php`](config.exemplo.php) | o modelo do `config.php` |
 | [`instalar.php`](instalar.php) | instala o `schema.sql` no banco do `config.php`, qualquer um dos três |
 | [`criar_usuario.php`](criar_usuario.php) | cria um usuário ou troca a senha, pela linha de comando |

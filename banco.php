@@ -556,6 +556,11 @@ function banco_script($texto)
 {
     $n = 0;
     foreach (sql_comandos($texto) as $comando) {
+        // as mudanças de estrutura que cada banco faz do seu jeito: trocar a regra de uma chave estrangeira e tirar uma coluna
+        if (banco_estrutura($comando)) {
+            $n++;
+            continue;
+        }
         foreach (sql_traduzir($comando) as $parte) {
             if (is_array($parte)) {
                 sqlite_modificar_coluna($parte[1], $parte[2]);
@@ -604,37 +609,138 @@ function banco_ajustar_id($tabela)
     banco_direto("SELECT setval('" . str_replace("'", "''", $seq) . "', " . max($prox, $maior + 1) . ", false)");
 }
 
-// SQLite não altera uma coluna: a tabela é refeita com a coluna nova, os dados copiados, e os índices recriados
-function sqlite_modificar_coluna($tabela, $definicao)
+// As duas mudanças de estrutura que o dialeto do MySQL não escreve igual nos três bancos, como comandos das migrações:
+//   ALTER TABLE t ALTER FOREIGN KEY (coluna) REFERENCES outra(id) ON DELETE CASCADE | SET NULL
+//     a chave estrangeira da coluna passa a ser esta (a que havia sai; sem nenhuma, esta entra). No MySQL e no Postgres o
+//     nome da restrição antiga vem do catálogo do banco (cada instalação gerou o seu); no SQLite a tabela é refeita.
+//   ALTER TABLE t DROP COLUMN coluna
+//     a coluna sai, com a chave estrangeira e os índices dela (no MySQL a chave sai antes; no SQLite a tabela é refeita).
+// Devolve verdadeiro se o comando era um destes (e já rodou)
+function banco_estrutura($comando)
+{
+    $c = trim((string)preg_replace("/\\s+/", " ", $comando));
+    if (preg_match("/^ALTER TABLE `?(\\w+)`? ALTER FOREIGN KEY \\(`?(\\w+)`?\\) REFERENCES `?(\\w+)`? ?\\(`?(\\w+)`?\\) ON DELETE (CASCADE|SET NULL)\$/i", $c, $m) === 1) {
+        banco_chave_estrangeira($m[1], $m[2], $m[3], $m[4], strtoupper($m[5]));
+        return true;
+    }
+    if (preg_match("/^ALTER TABLE `?(\\w+)`? DROP COLUMN `?(\\w+)`?\$/i", $c, $m) === 1) {
+        banco_remover_coluna($m[1], $m[2]);
+        return true;
+    }
+    return false;
+}
+
+// Os nomes das chaves estrangeiras de uma coluna (MySQL e Postgres)
+function banco_nomes_chaves($tabela, $coluna)
+{
+    if (banco_tipo() === "mysql") {
+        return array_column(linhas("SELECT CONSTRAINT_NAME AS n FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+            AND COLUMN_NAME = ? AND REFERENCED_TABLE_NAME IS NOT NULL", [$tabela, $coluna]), "n");
+    }
+    return array_column(linhas("SELECT c.conname AS n FROM pg_constraint c JOIN pg_class t ON t.oid = c.conrelid JOIN pg_attribute a ON a.attrelid = t.oid
+        AND a.attnum = ANY (c.conkey) WHERE c.contype = 'f' AND t.relname = ? AND a.attname = ? AND t.relnamespace = current_schema()::regnamespace", [$tabela, $coluna]), "n");
+}
+
+function banco_chave_estrangeira($tabela, $coluna, $ref, $ref_coluna, $acao)
+{
+    $nova = "FOREIGN KEY (" . $coluna . ") REFERENCES " . $ref . "(" . $ref_coluna . ") ON DELETE " . $acao;
+    if (banco_tipo() === "sqlite") {
+        sqlite_refazer($tabela, function ($partes) use ($coluna, $nova) {
+            $fica = [];
+            foreach ($partes as $p) {
+                if (preg_match("/^FOREIGN KEY\\s*\\(\\s*[\"`]?" . preg_quote($coluna, "/") . "[\"`]?\\s*\\)/i", trim($p)) !== 1) {
+                    $fica[] = $p;
+                }
+            }
+            $fica[] = $nova;
+            return $fica;
+        });
+        return;
+    }
+    $q = banco_tipo() === "mysql" ? "`" : "\"";
+    foreach (banco_nomes_chaves($tabela, $coluna) as $nome) {
+        banco_direto("ALTER TABLE " . $tabela . (banco_tipo() === "mysql" ? " DROP FOREIGN KEY " : " DROP CONSTRAINT ") . $q . $nome . $q);
+    }
+    banco_direto("ALTER TABLE " . $tabela . " ADD CONSTRAINT " . $tabela . "_" . $coluna . "_fk " . $nova);
+}
+
+function banco_remover_coluna($tabela, $coluna)
+{
+    if (banco_tipo() === "sqlite") {
+        sqlite_refazer($tabela, function ($partes) use ($coluna) {
+            $fica = [];
+            foreach ($partes as $p) {
+                $primeira = strtolower(trim((string)preg_split("/\\s+/", trim($p))[0], "\"`"));
+                if ($primeira !== strtolower($coluna) && preg_match("/^FOREIGN KEY\\s*\\(\\s*[\"`]?" . preg_quote($coluna, "/") . "[\"`]?\\s*\\)/i", trim($p)) !== 1) {
+                    $fica[] = $p;
+                }
+            }
+            return $fica;
+        }, $coluna);
+        return;
+    }
+    if (banco_tipo() === "mysql") {
+        foreach (banco_nomes_chaves($tabela, $coluna) as $nome) {
+            banco_direto("ALTER TABLE `" . $tabela . "` DROP FOREIGN KEY `" . $nome . "`");
+        }
+    }
+    banco_direto("ALTER TABLE " . $tabela . " DROP COLUMN " . $coluna);
+}
+
+// SQLite não altera uma coluna nem uma chave estrangeira: a tabela é refeita com as partes que $mudar devolve (as colunas e
+// as restrições do CREATE TABLE), os dados copiados (as colunas que continuam), e os índices recriados (menos os que usam a
+// coluna que saiu, $sai). As outras tabelas que apontam para ela continuam apontando (o nome volta a ser o mesmo)
+function sqlite_refazer($tabela, $mudar, $sai = null)
 {
     $criar = (string)valor("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", [$tabela]);
+    if ($criar === "") {
+        throw new BancoErro("a tabela " . $tabela . " não existe");
+    }
     $indices = array_column(linhas("SELECT sql FROM sqlite_master WHERE type = 'index' AND tbl_name = ? AND sql IS NOT NULL", [$tabela]), "sql");
     $abre = strpos($criar, "(");
     $fecha = strrpos($criar, ")");
-    $partes = sql_dividir(substr($criar, $abre + 1, $fecha - $abre - 1));
-    $coluna = strtolower(preg_split("/\\s+/", trim($definicao))[0]);
-    $achou = false;
-    foreach ($partes as $i => $p) {
-        if (strtolower(trim((string)preg_split("/\\s+/", trim($p))[0], "\"`")) === $coluna) {
-            $partes[$i] = $definicao;
-            $achou = true;
+    $partes = $mudar(sql_dividir(substr($criar, $abre + 1, $fecha - $abre - 1)));
+    $colunas = [];
+    foreach ($partes as $p) {
+        $primeira = trim((string)preg_split("/\\s+/", trim($p))[0], "\"`");
+        if (preg_match("/^(PRIMARY|FOREIGN|UNIQUE|CONSTRAINT|CHECK)\$/i", $primeira) !== 1) {
+            $colunas[] = $primeira;
         }
-    }
-    if (!$achou) {
-        throw new BancoErro("MODIFY COLUMN: a tabela " . $tabela . " não tem a coluna " . $coluna);
     }
     $novo = $tabela . "__novo";
     banco_direto("PRAGMA foreign_keys = OFF");
     banco_direto("BEGIN");
     banco_direto("CREATE TABLE " . $novo . " (" . implode(", ", $partes) . ")");
-    banco_direto("INSERT INTO " . $novo . " SELECT * FROM " . $tabela);
+    banco_direto("INSERT INTO " . $novo . " (" . implode(", ", $colunas) . ") SELECT " . implode(", ", $colunas) . " FROM " . $tabela);
     banco_direto("DROP TABLE " . $tabela);
     banco_direto("ALTER TABLE " . $novo . " RENAME TO " . $tabela);
     foreach ($indices as $ix) {
-        banco_direto($ix);
+        $usa = preg_match("/\\(([^)]*)\\)\\s*\$/", $ix, $m) === 1 ? array_map(function ($x) { return strtolower(trim($x, " \"`")); }, explode(",", $m[1])) : [];
+        if ($sai === null || !in_array(strtolower($sai), $usa, true)) {
+            banco_direto($ix);
+        }
     }
     banco_direto("COMMIT");
     banco_direto("PRAGMA foreign_keys = ON");
+}
+
+// SQLite não altera uma coluna: a tabela é refeita com a coluna nova (sqlite_refazer)
+function sqlite_modificar_coluna($tabela, $definicao)
+{
+    $coluna = strtolower(preg_split("/\\s+/", trim($definicao))[0]);
+    sqlite_refazer($tabela, function ($partes) use ($tabela, $coluna, $definicao) {
+        $achou = false;
+        foreach ($partes as $i => $p) {
+            if (strtolower(trim((string)preg_split("/\\s+/", trim($p))[0], "\"`")) === $coluna) {
+                $partes[$i] = $definicao;
+                $achou = true;
+            }
+        }
+        if (!$achou) {
+            throw new BancoErro("MODIFY COLUMN: a tabela " . $tabela . " não tem a coluna " . $coluna);
+        }
+        return $partes;
+    });
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
