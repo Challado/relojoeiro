@@ -17,7 +17,7 @@
 class BancoErro extends RuntimeException
 {
     // o banco recusou a gravação por uma regra de integridade (um registro que outro usa, um valor repetido onde não
-    // pode): não é o banco fora do ar, é a gravação que estava errada
+    // pode, um valor fora da regra de validação): não é o banco fora do ar, é a gravação que estava errada
     public $integridade = false;
 
     public function __construct($mensagem, $codigo = 0, $anterior = null, $integridade = false)
@@ -27,15 +27,16 @@ class BancoErro extends RuntimeException
     }
 }
 
-// O erro de cada extensão como BancoErro, dizendo se foi uma regra de integridade: SQLSTATE 23xxx no MySQL e no Postgres,
-// o código 19 (SQLITE_CONSTRAINT) no SQLite
+// O erro de cada extensão como BancoErro, dizendo se foi uma regra de integridade (chave estrangeira, chave única, NOT NULL,
+// CHECK): SQLSTATE 23xxx no MySQL e no Postgres (e o 3819 do CHECK no MySQL 8), o código 19 (SQLITE_CONSTRAINT) no SQLite
 function banco_erro($e)
 {
     if ($e instanceof BancoErro) {
         return $e;
     }
     if ($e instanceof mysqli_sql_exception) {
-        return new BancoErro($e->getMessage(), $e->getCode(), $e, strpos((string)$e->getSqlState(), "23") === 0);
+        // a regra de validação (CHECK) quebrada: no MariaDB vem como 23000; no MySQL 8, o erro 3819 (SQLSTATE HY000)
+        return new BancoErro($e->getMessage(), $e->getCode(), $e, strpos((string)$e->getSqlState(), "23") === 0 || (int)$e->getCode() === 3819);
     }
     return new BancoErro($e->getMessage(), $e->getCode(), $e, banco_tipo() === "sqlite" && (int)$e->getCode() === 19);
 }
@@ -537,6 +538,18 @@ function banco_tem_coluna($tabela, $coluna)
     }
 }
 
+function banco_tem_indice($tabela, $indice)
+{
+    switch (banco_tipo()) {
+        case "mysql":
+            return (int)valor("SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?", [$tabela, $indice]) > 0;
+        case "pgsql":
+            return (int)valor("SELECT COUNT(*) FROM pg_indexes WHERE schemaname = current_schema() AND tablename = ? AND indexname = ?", [$tabela, $indice]) > 0;
+        default:
+            return (int)valor("SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND tbl_name = ? AND name = ?", [$tabela, $indice]) > 0;
+    }
+}
+
 function banco_tabelas()
 {
     switch (banco_tipo()) {
@@ -615,10 +628,24 @@ function banco_ajustar_id($tabela)
 //     nome da restrição antiga vem do catálogo do banco (cada instalação gerou o seu); no SQLite a tabela é refeita.
 //   ALTER TABLE t DROP COLUMN coluna
 //     a coluna sai, com a chave estrangeira e os índices dela (no MySQL a chave sai antes; no SQLite a tabela é refeita).
-// Devolve verdadeiro se o comando era um destes (e já rodou)
+//   ALTER TABLE t ADD CONSTRAINT nome CHECK (condição)
+//     a regra de validação (CHECK do SQL padrão) entra com este nome; se já havia uma com ele, é trocada (a migração pode
+//     rodar de novo). As linhas que já existem têm de cumprir a regra, senão o banco recusa. No SQLite a tabela é refeita.
+//     No MySQL 8, a condição não pode usar a coluna id (AUTO_INCREMENT) nem uma coluna de chave estrangeira com ON DELETE
+//     SET NULL (o MySQL recusa as duas).
+// E, para uma migração que parou no meio poder rodar de novo: o ADD COLUMN de uma coluna que já existe e o ADD INDEX com
+// nome de um índice que já existe não fazem nada.
+// Devolve verdadeiro se o comando era um destes (e já rodou, ou não precisava)
 function banco_estrutura($comando)
 {
     $c = trim((string)preg_replace("/\\s+/", " ", $comando));
+    if (preg_match("/^ALTER TABLE `?(\\w+)`? ADD (COLUMN )?`?(\\w+)`? /i", $c, $m) === 1
+        && preg_match("/^(INDEX|KEY|UNIQUE|CONSTRAINT|FOREIGN|PRIMARY|CHECK)\$/i", $m[3]) !== 1 && banco_tem_coluna($m[1], $m[3])) {
+        return true;
+    }
+    if (preg_match("/^ALTER TABLE `?(\\w+)`? ADD (UNIQUE )?(INDEX|KEY) `?(\\w+)`? ?\\(/i", $c, $m) === 1 && banco_tem_indice($m[1], $m[4])) {
+        return true;
+    }
     if (preg_match("/^ALTER TABLE `?(\\w+)`? ALTER FOREIGN KEY \\(`?(\\w+)`?\\) REFERENCES `?(\\w+)`? ?\\(`?(\\w+)`?\\) ON DELETE (CASCADE|SET NULL)\$/i", $c, $m) === 1) {
         banco_chave_estrangeira($m[1], $m[2], $m[3], $m[4], strtoupper($m[5]));
         return true;
@@ -627,7 +654,66 @@ function banco_estrutura($comando)
         banco_remover_coluna($m[1], $m[2]);
         return true;
     }
+    if (preg_match("/^ALTER TABLE `?(\\w+)`? ADD CONSTRAINT `?(\\w+)`? CHECK ?\\((.*)\\)\$/i", $c, $m) === 1) {
+        banco_regra($m[1], $m[2], $m[3]);
+        return true;
+    }
     return false;
+}
+
+// A regra de validação (CHECK) de uma tabela, com nome: a que já havia com o mesmo nome sai antes
+function banco_regra($tabela, $nome, $condicao)
+{
+    $banco = banco_tipo();
+    if ($banco !== "mysql") {
+        // a condição no dialeto do banco (o LIKE nas colunas "ci" do Postgres, o <=>)
+        $condicao = sql_texto(sql_dml(sql_pedacos($condicao), $banco), $banco);
+    }
+    $regra = "CONSTRAINT " . $nome . " CHECK (" . $condicao . ")";
+    if ($banco === "sqlite") {
+        sqlite_refazer($tabela, function ($partes) use ($nome, $regra) {
+            $fica = [];
+            foreach ($partes as $p) {
+                if (preg_match("/^CONSTRAINT\\s+[\"`]?" . preg_quote($nome, "/") . "[\"`]?\\s/i", trim($p)) !== 1) {
+                    $fica[] = $p;
+                }
+            }
+            $fica[] = $regra;
+            return $fica;
+        });
+        return;
+    }
+    if ($banco === "pgsql") {
+        // no Postgres a estrutura também tem transação: se as linhas não cumprem a regra nova, a de antes fica
+        banco_direto("BEGIN");
+        try {
+            banco_direto("ALTER TABLE " . $tabela . " DROP CONSTRAINT IF EXISTS " . $nome);
+            banco_direto("ALTER TABLE " . $tabela . " ADD " . $regra);
+            banco_direto("COMMIT");
+        } catch (Throwable $e) {
+            banco_direto("ROLLBACK");
+            throw $e;
+        }
+        return;
+    }
+    // MySQL: sem transação na estrutura. Trocando uma regra, a nova entra antes com um nome provisório (se as linhas não a
+    // cumprem, para aí e a de antes fica); só então a de antes sai e a nova ganha o nome certo
+    $existe = function ($n) use ($tabela) {
+        return (int)valor("SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = ?
+            AND CONSTRAINT_TYPE = 'CHECK'", [$tabela, $n]) > 0;
+    };
+    if ($existe($nome)) {
+        $provisorio = substr($nome, 0, 56) . "_trocar";
+        if ($existe($provisorio)) {
+            banco_direto("ALTER TABLE `" . $tabela . "` DROP CONSTRAINT `" . $provisorio . "`");
+        }
+        banco_direto("ALTER TABLE `" . $tabela . "` ADD CONSTRAINT `" . $provisorio . "` CHECK (" . $condicao . ")");
+        banco_direto("ALTER TABLE `" . $tabela . "` DROP CONSTRAINT `" . $nome . "`");
+        banco_direto("ALTER TABLE `" . $tabela . "` ADD " . $regra);
+        banco_direto("ALTER TABLE `" . $tabela . "` DROP CONSTRAINT `" . $provisorio . "`");
+        return;
+    }
+    banco_direto("ALTER TABLE `" . $tabela . "` ADD " . $regra);
 }
 
 // Os nomes das chaves estrangeiras de uma coluna (MySQL e Postgres)
@@ -710,17 +796,24 @@ function sqlite_refazer($tabela, $mudar, $sai = null)
     $novo = $tabela . "__novo";
     banco_direto("PRAGMA foreign_keys = OFF");
     banco_direto("BEGIN");
-    banco_direto("CREATE TABLE " . $novo . " (" . implode(", ", $partes) . ")");
-    banco_direto("INSERT INTO " . $novo . " (" . implode(", ", $colunas) . ") SELECT " . implode(", ", $colunas) . " FROM " . $tabela);
-    banco_direto("DROP TABLE " . $tabela);
-    banco_direto("ALTER TABLE " . $novo . " RENAME TO " . $tabela);
-    foreach ($indices as $ix) {
-        $usa = preg_match("/\\(([^)]*)\\)\\s*\$/", $ix, $m) === 1 ? array_map(function ($x) { return strtolower(trim($x, " \"`")); }, explode(",", $m[1])) : [];
-        if ($sai === null || !in_array(strtolower($sai), $usa, true)) {
-            banco_direto($ix);
+    try {
+        banco_direto("CREATE TABLE " . $novo . " (" . implode(", ", $partes) . ")");
+        // uma linha que não cumpre uma regra nova (CHECK, NOT NULL) para a cópia: nada muda e o erro sobe
+        banco_direto("INSERT INTO " . $novo . " (" . implode(", ", $colunas) . ") SELECT " . implode(", ", $colunas) . " FROM " . $tabela);
+        banco_direto("DROP TABLE " . $tabela);
+        banco_direto("ALTER TABLE " . $novo . " RENAME TO " . $tabela);
+        foreach ($indices as $ix) {
+            $usa = preg_match("/\\(([^)]*)\\)\\s*\$/", $ix, $m) === 1 ? array_map(function ($x) { return strtolower(trim($x, " \"`")); }, explode(",", $m[1])) : [];
+            if ($sai === null || !in_array(strtolower($sai), $usa, true)) {
+                banco_direto($ix);
+            }
         }
+        banco_direto("COMMIT");
+    } catch (Throwable $e) {
+        banco_direto("ROLLBACK");
+        banco_direto("PRAGMA foreign_keys = ON");
+        throw $e;
     }
-    banco_direto("COMMIT");
     banco_direto("PRAGMA foreign_keys = ON");
 }
 
