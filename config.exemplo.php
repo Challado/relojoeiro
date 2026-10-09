@@ -28,6 +28,10 @@ define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");
 // também o limite do PHP (upload_max_filesize e post_max_size do php.ini) e o do nginx (client_max_body_size). O
 // MANUAL_LIMITE, o nome antigo, ainda vale quando esta linha não existe. Ex.: 524288000 = 500 MB
 // define("DOCUMENTOS_LIMITE", 524288000);
+// a cópia de segurança dos documentos dentro do banco: o arquivo vai para a pasta e também para o banco (em pedaços de
+// 4 MB); se um dia ele sumir da pasta (um backup do banco restaurado noutro servidor), volta sozinho do banco. Sem esta
+// linha: ligada. false: os arquivos ficam só na pasta (o banco fica menor)
+// define("DOCUMENTOS_COPIA_BANCO", false);
 
 // só para o importar.php, com este sistema no PostgreSQL ou no SQLite: onde está o MySQL do sistema antigo
 // define("ANTIGO_HOST", "127.0.0.1");

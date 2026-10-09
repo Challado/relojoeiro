@@ -361,9 +361,25 @@ documentos**, abrem a página **Documentos** daquele relógio numa aba nova. Lá
   lista **Editar ou excluir fotos e vídeos**, no fim da página.
 - No alto, a escolha do relógio: **Todos** mostra os documentos da coleção inteira.
 
-Os arquivos ficam numa **pasta do servidor** (o `DOCUMENTOS_PASTA` do `config.php`, fora da pasta publicada), e o banco guarda
-os dados de cada um. Por isso o **backup** é o banco **e** essa pasta. Excluir um documento apaga o arquivo; excluir o relógio
-apaga os documentos dele. Sem a pasta configurada, a página avisa o que falta e não aceita envios.
+**Onde os arquivos ficam:** numa **pasta do servidor** (o `DOCUMENTOS_PASTA` do `config.php`, fora da pasta publicada), de onde
+a página os entrega, **e também dentro do banco**, inteiros, como cópia de segurança (a tabela `documento_parte`, em pedaços de
+4 MB: assim um vídeo grande não esbarra no limite de um comando do MySQL nem na memória do PHP). Por isso **o backup do banco
+basta**: restaurado o banco num servidor novo, com a pasta vazia, cada arquivo volta sozinho para a pasta quando é aberto, ou
+na próxima rodada do cron. Ao recriar, o sistema confere o arquivo pelo SHA-256 guardado no envio; um arquivo que não bate
+não é recriado. Um documento que perdeu o arquivo **e** a cópia no banco está perdido: a página avisa, e a rodada da noite do
+cron registra quantos são.
+
+A cópia no banco vem ligada; o `DOCUMENTOS_COPIA_BANCO` do `config.php` em `false` a desliga (os arquivos ficam só na pasta, e
+o banco fica menor). O banco cresce o tamanho dos arquivos: um vídeo de 500 MB são 500 MB a mais no banco e no backup dele.
+Na página, cada arquivo diz se está faltando na pasta ou se ainda não tem a cópia no banco.
+
+**A limpeza, pelo cron (a cada minuto):** o arquivo que sumiu da pasta volta do banco; o documento que ainda não tem cópia
+no banco (os enviados antes desta versão, ou uma cópia que falhou) ganha, até 256 MB por minuto; a pasta de um relógio que não
+existe mais (`r<número>`) é apagada inteira; e o arquivo da pasta que não é de nenhum documento é apagado (só depois de 10
+minutos, porque um envio pode estar no meio). Tudo o que ele faz entra no registro (**Execuções do cron**).
+
+Excluir um documento apaga o arquivo e a cópia no banco; excluir o relógio apaga os documentos dele. Sem a pasta configurada,
+a página avisa o que falta e não aceita envios.
 
 Os documentos não entram em nenhuma conta: são para consultar. Os números que o sistema usa (a reserva de marcha, a autonomia,
 o tempo de sol para encher...) continuam nos campos do cadastro. O manual que o fabricante publica só como página da internet
@@ -868,6 +884,7 @@ têm de dar **403**.
 | `FUSO` | o fuso horário, como `America/Sao_Paulo`. Vazio ou ausente: o do PHP (`date.timezone` no php.ini). Vale para tudo, inclusive para as datas que o banco grava |
 | `MSG_ENDPOINT`, `MSG_DESTINATARIO`, `MSG_TITULO` | as mensagens (veja abaixo). Sem o endereço, nada é enviado. |
 | `DOCUMENTOS_PASTA` | a pasta dos arquivos dos documentos (o manual, a nota, fotos, vídeos), **fora da pasta publicada**, com permissão de escrita para o usuário do PHP. Sem ela, a página Documentos avisa que falta e não aceita envios. Ex.: `define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
+| `DOCUMENTOS_COPIA_BANCO` | opcional: a cópia de segurança dos documentos dentro do banco. Sem ela, ligada; `false`, os arquivos ficam só na pasta. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 | `DOCUMENTOS_LIMITE` | opcional: o maior documento aceito, em bytes. Sem ela, 100 MB (`104857600`); `0` ou `-1`, sem limite do sistema. O `MANUAL_LIMITE`, o nome antigo, ainda vale quando ela não existe. O limite do PHP e o do nginx continuam valendo (veja [O tamanho dos envios](#o-tamanho-dos-envios-os-documentos)). Ex.: `define("DOCUMENTOS_LIMITE", 524288000);` para 500 MB |
 | `ANTIGO_HOST`, `ANTIGO_PORTA`, `ANTIGO_USUARIO`, `ANTIGO_SENHA` | opcionais, só para o `importar.php` com este sistema no Postgres ou no SQLite: onde está o MySQL do sistema anterior |
 
@@ -900,8 +917,8 @@ arquivo grande antes do sistema. O sistema aceita até **100 MB** por arquivo; o
 | nginx | `client_max_body_size` | 1m | `512m` (já vem no [`nginx-relogios.conf`](nginx-relogios.conf)) |
 | `config.php` | `DOCUMENTOS_LIMITE` | 100 MB | `524288000` |
 
-O arquivo vai direto para a pasta dos documentos, sem passar pelo banco nem pela memória do PHP: o `memory_limit` e o
-`max_allowed_packet` do MySQL não contam. A página Documentos mostra o limite que vale de verdade (o do sistema, ou menos pelo
+O arquivo vai direto para a pasta dos documentos; a cópia no banco vai em pedaços de 4 MB, lidos um de cada vez: o
+`memory_limit` do PHP e o `max_allowed_packet` do MySQL (16 MB ou mais) não limitam o tamanho do arquivo. A página Documentos mostra o limite que vale de verdade (o do sistema, ou menos pelo
 `php.ini`; sem limite nenhum, "de qualquer tamanho"). Um arquivo acima dele é recusado com a mensagem do tamanho; um envio acima
 do `post_max_size` volta com o código `413` e o limite do servidor. No Apache não há limite a mexer, além do `php.ini`.
 
@@ -999,6 +1016,8 @@ Pode. As telas usam exatamente a mesma API.
   monta a tela. Os scripts levam a data do arquivo na URL, para o cache do navegador não servir uma versão antiga.
 - **Cron mudo e rastreável:** roda a cada minuto, não escreve na saída e registra cada execução no banco (sem atividade, 7 dias;
   com atividade ou erro, 1 ano). Um erro fatal vai para o banco ou, se nem o banco responder, para um arquivo temporário.
+- **Documentos à prova de perda:** cada arquivo fica na pasta e, inteiro, no banco; o cron recria o que sumir, copia o que falta
+  e limpa o que sobrou (veja [Os documentos do relógio](#os-documentos-do-relógio)).
 - **Falha segura:** sem token válido ou com o banco desatualizado, o sistema para e explica o motivo, em vez de rodar pela metade.
 
 ### Arquivos
@@ -1009,14 +1028,14 @@ Pode. As telas usam exatamente a mesma API.
 | [`lib.php`](lib.php) | o núcleo: login, árvore, motor de fórmulas, avisos, critérios, rodízio, escala, mensagens, agenda |
 | [`banco.php`](banco.php) | o banco: a conexão com o MySQL, o Postgres ou o SQLite, e a tradução do SQL de um para outro |
 | [`operacoes.php`](operacoes.php) | as regras de cada gravação: validações e mensagens |
-| [`cron.php`](cron.php) | o plano, a sessão do dia, as rodadas da manhã e da noite, os eventos e a agenda |
+| [`cron.php`](cron.php) | o plano, a sessão do dia, as rodadas da manhã e da noite, os eventos, a agenda e a manutenção dos documentos |
 | `index.php`, `plano.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `usuarios.php` | as páginas (só o esqueleto) |
 | `ajuda.php` | a página de ajuda: as seções do README para quem usa, convertidas para HTML |
 | [`pagina.php`](pagina.php) | o login do site e o menu |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |
 | [`estilo.css`](estilo.css) | o visual |
 | [`schema.sql`](schema.sql) | a estrutura do banco e o conjunto inicial (grupos, campos, fórmulas, avisos, modos, critérios) |
-| `migracao_v2.sql` … `migracao_v14.sql` | as migrações, aplicadas pela página Configuração |
+| `migracao_v2.sql` … `migracao_v15.sql` | as migrações, aplicadas pela página Configuração |
 | [`config.exemplo.php`](config.exemplo.php) | o modelo do `config.php` |
 | [`instalar.php`](instalar.php) | instala o `schema.sql` no banco do `config.php`, qualquer um dos três |
 | [`criar_usuario.php`](criar_usuario.php) | cria um usuário ou troca a senha, pela linha de comando |

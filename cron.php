@@ -114,6 +114,14 @@ try {
         }
         $titulo = defined("MSG_TITULO") ? (string)constant("MSG_TITULO") : "Relógios";
 
+        // os documentos: o arquivo que sumiu da pasta volta da cópia no banco; o que ainda não tem cópia ganha (até 256 MB por
+        // minuto); a pasta de um relógio que não existe mais e o arquivo que não é de nenhum documento saem. Os perdidos (sem
+        // o arquivo e sem a cópia) entram no registro uma vez por dia, na rodada da noite
+        $noite_agora = $forcar || ($agora >= cfg("horario_noite") && cfg("ultima_noite") !== $hoje->format("Y-m-d"));
+        foreach (documentos_manutencao(256 * 1024 * 1024, $noite_agora) as $l) {
+            $log[] = $l;
+        }
+
         // ---------- manhã ----------
         if ($forcar || ($agora >= cfg("horario_manha") && cfg("ultima_manha") !== $hoje->format("Y-m-d"))) {
             $log[] = "rodada da manhã";

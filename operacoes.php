@@ -545,7 +545,8 @@ function op_relogio($acao, $d)
 // Documentos de um relógio. Ações: enviar (relogio_id, categoria_id, titulo, data AAAA-MM-DD, descricao e os arquivos: no
 // campo arquivos[] (vários, como upload), ou arquivo (um), ou arquivo_base64 com o nome em arquivo_nome; a miniatura de
 // uma foto, opcional, em miniatura (uma por envio: a do primeiro arquivo) ou miniatura_base64), alterar (id: categoria_id,
-// titulo, data, descricao; só muda o que vier), excluir (id: o documento e o arquivo dele).
+// titulo, data, descricao; só muda o que vier), excluir (id: o documento, o arquivo dele e a cópia no banco). O arquivo vai
+// para a pasta e, com a cópia de segurança ligada (DOCUMENTOS_COPIA_BANCO), também para o banco, em pedaços.
 // ---------------------------------------------------------------------------------------------------------------------
 function op_documentos($acao, $d)
 {
@@ -622,6 +623,7 @@ function op_documentos($acao, $d)
         $limite = documentos_limite();
         $aceita = $cat ? documento_familias_aceitas($cat["aceita"]) : [];
         $nomes_fam = ["imagem" => "imagens", "video" => "vídeos", "audio" => "áudios", "pdf" => "PDF", "xml" => "XML"];
+        $avisos = [];
         if (count($erros) === 0) {
             foreach ($arquivos as $k => $a) {
                 list($nome, $tmp, $bin, $erro) = $a;
@@ -669,13 +671,21 @@ function op_documentos($acao, $d)
                     sql("INSERT INTO documento (relogio_id, categoria_id, titulo, data, descricao, nome, tipo, tamanho, arquivo, miniatura, criado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
                         [(int)$r["id"], (int)$cat["id"], $t !== "" ? $t : $nome, $data, $descricao !== "" ? $descricao : null, $nome, $tipo, $tamanho, $arquivo, $arq_mini]);
                     $ids[] = ultimo_id();
+                    // a cópia de segurança no banco, em pedaços; se falhar, o documento fica (o cron tenta de novo)
+                    if (documentos_copia_banco()) {
+                        $erro_copia = documento_copiar_para_banco(linha("SELECT * FROM documento WHERE id = ?", [end($ids)]));
+                        if ($erro_copia !== "") {
+                            $avisos[] = $nome . ": a cópia no banco falhou (" . $erro_copia . "); o cron tenta de novo";
+                        }
+                    }
                 } catch (BancoErro $e) {
                     documento_apagar_arquivos(["arquivo" => $arquivo, "miniatura" => $arq_mini]);
                     $erros[] = $nome . ": o banco recusou (" . $e->getMessage() . ").";
                 }
             }
             if (count($ids) > 0) {
-                $msg = (count($ids) === 1 ? "1 documento guardado" : count($ids) . " documentos guardados") . " em " . $cat["nome"] . " do " . $r["nome"] . ".";
+                $msg = (count($ids) === 1 ? "1 documento guardado" : count($ids) . " documentos guardados") . " em " . $cat["nome"] . " do " . $r["nome"] . "."
+                    . (count($avisos) > 0 ? " Atenção: " . implode("; ", $avisos) . "." : "");
                 $id = $ids[0];
             }
         }

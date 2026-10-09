@@ -295,6 +295,7 @@ $MIGRACOES = [
     "v12" => ["migracao_v12.sql", "os dias sem uso de um relógio nunca usado contam desde a compra (antes valiam 9999 para todos: empatavam na garantia de rodízio)", "config.chave=migracao_v12"],
     "v13" => ["migracao_v13.sql", "o manual de cada relógio: um arquivo (PDF ou imagem) guardado no banco, que se envia e se abre pela ficha", "manual"],
     "v14" => ["migracao_v14.sql", "os documentos de cada relógio: qualquer arquivo (manual, nota fiscal em PDF e em XML, fotos, vídeos, diversos), numa categoria, com a página Documentos (galeria, vídeos em sequência, visualizador de PDF, resumo da nota); os manuais da v13 passam para lá", "documento"],
+    "v15" => ["migracao_v15.sql", "a cópia de segurança de cada documento dentro do banco (em pedaços de 4 MB): o arquivo que sumir da pasta volta sozinho do banco; o cron copia os que já existem e limpa a pasta (relógio excluído, arquivo sem documento)", "documento_parte"],
 ];
 
 // As migrações que faltam aplicar neste banco: as da lista cuja marca ainda não existe. A marca: uma tabela, uma coluna
@@ -1661,7 +1662,8 @@ function documento_info($d, $com_nfe = true)
     $res = ["id" => (int)$d["id"], "relogio_id" => (int)$d["relogio_id"], "categoria_id" => (int)$d["categoria_id"], "titulo" => $d["titulo"],
         "data" => $d["data"] === null ? null : substr((string)$d["data"], 0, 10), "descricao" => $d["descricao"], "nome" => $d["nome"], "tipo" => $d["tipo"],
         "familia" => $familia, "tamanho" => (int)$d["tamanho"], "miniatura" => $d["miniatura"] !== null && $d["miniatura"] !== "", "criado" => $d["criado"],
-        "url" => "api.php?recurso=documento&id=" . (int)$d["id"], "nfe" => null];
+        "url" => "api.php?recurso=documento&id=" . (int)$d["id"], "no_disco" => documentos_pasta() !== null && is_file(documentos_pasta() . "/" . $d["arquivo"]),
+        "no_banco" => (int)($d["no_banco"] ?? 0) === 1, "nfe" => null];
     if ($com_nfe && $familia === "xml" && documentos_pasta() !== null) {
         $res["nfe"] = nfe_resumo(documentos_pasta() . "/" . $d["arquivo"]);
     }
@@ -1782,6 +1784,228 @@ function documento_apagar_arquivos($d)
     }
 }
 
+// A cópia de segurança dos documentos no banco está ligada: o DOCUMENTOS_COPIA_BANCO do config.php (sem ele, ligada)
+function documentos_copia_banco()
+{
+    return !defined("DOCUMENTOS_COPIA_BANCO") || (bool)DOCUMENTOS_COPIA_BANCO;
+}
+
+// O tamanho de cada pedaço da cópia no banco: 4 MB cabem em qualquer max_allowed_packet do MySQL (o menor padrão é 16 MB)
+// e na memória do PHP, um de cada vez
+const DOCUMENTO_PEDACO = 4 * 1024 * 1024;
+
+// Copia o arquivo de um documento (e a miniatura, na parte -1) para o banco, em pedaços, lendo da pasta um pedaço por vez;
+// no fim, marca no_banco = 1 com o SHA-256 do arquivo. Devolve "" se deu certo, ou o motivo (a cópia parcial sai)
+function documento_copiar_para_banco($d)
+{
+    $pasta = documentos_pasta();
+    $caminho = $pasta !== null ? $pasta . "/" . $d["arquivo"] : null;
+    if ($caminho === null || !is_file($caminho)) {
+        return "o arquivo não está na pasta";
+    }
+    try {
+        sql("DELETE FROM documento_parte WHERE documento_id = ?", [(int)$d["id"]]);
+        sql("UPDATE documento SET no_banco = 0 WHERE id = ?", [(int)$d["id"]]);
+        $h = hash_init("sha256");
+        $f = fopen($caminho, "rb");
+        $parte = 0;
+        while (!feof($f)) {
+            $pedaco = fread($f, DOCUMENTO_PEDACO);
+            if ($pedaco === false || $pedaco === "") {
+                break;
+            }
+            // o fread de um arquivo comum devolve o pedaço inteiro; o resto do pedaço, se faltar, vem nas voltas seguintes
+            while (strlen($pedaco) < DOCUMENTO_PEDACO && !feof($f)) {
+                $mais = fread($f, DOCUMENTO_PEDACO - strlen($pedaco));
+                if ($mais === false || $mais === "") {
+                    break;
+                }
+                $pedaco .= $mais;
+            }
+            hash_update($h, $pedaco);
+            sql("INSERT INTO documento_parte (documento_id, parte, dados) VALUES (?, ?, ?)", [(int)$d["id"], $parte, documento_pedaco_para_banco($pedaco)]);
+            $parte++;
+        }
+        fclose($f);
+        if ($d["miniatura"] !== null && $d["miniatura"] !== "" && is_file($pasta . "/" . $d["miniatura"])) {
+            sql("INSERT INTO documento_parte (documento_id, parte, dados) VALUES (?, -1, ?)", [(int)$d["id"], (string)file_get_contents($pasta . "/" . $d["miniatura"])]);
+        }
+        sql("UPDATE documento SET no_banco = 1, hash = ? WHERE id = ?", [hash_final($h), (int)$d["id"]]);
+        return "";
+    } catch (Throwable $t) {
+        try {
+            sql("DELETE FROM documento_parte WHERE documento_id = ?", [(int)$d["id"]]);
+        } catch (Throwable $t2) {
+            // o banco não respondeu nem para limpar: a parte que ficou é refeita na próxima cópia
+        }
+        return $t->getMessage();
+    }
+}
+
+// Um pedaço de arquivo pronto para a coluna binária: no PostgreSQL, um pedaço que parece texto (um CSV, um XML) iria como
+// texto para o bytea, e as barras invertidas dele virariam escapes; vai então já no formato binário dele (\x e o hexadecimal)
+function documento_pedaco_para_banco($pedaco)
+{
+    return banco_tipo() === "pgsql" && !banco_binario($pedaco) ? "\\x" . bin2hex($pedaco) : $pedaco;
+}
+
+// Recria na pasta o arquivo de um documento (e a miniatura) a partir da cópia no banco, um pedaço por vez, conferindo o
+// SHA-256; o arquivo só aparece na pasta quando está inteiro e certo. Devolve verdadeiro se o arquivo está na pasta no fim
+function documento_restaurar($d)
+{
+    $pasta = documentos_pasta();
+    if ($pasta === null || strpos((string)$d["arquivo"], "..") !== false) {
+        return false;
+    }
+    $caminho = $pasta . "/" . $d["arquivo"];
+    $mini = $d["miniatura"] !== null && $d["miniatura"] !== "" ? $pasta . "/" . $d["miniatura"] : null;
+    if ($mini !== null && !is_file($mini) && (int)$d["no_banco"] === 1) {
+        $m = valor("SELECT dados FROM documento_parte WHERE documento_id = ? AND parte = -1", [(int)$d["id"]]);
+        if ($m !== null) {
+            if (!is_dir(dirname($mini))) {
+                @mkdir(dirname($mini), 0750, true);
+            }
+            @file_put_contents($mini, $m);
+        }
+    }
+    if (is_file($caminho)) {
+        return true;
+    }
+    if ((int)$d["no_banco"] !== 1) {
+        return false;
+    }
+    if (!is_dir(dirname($caminho))) {
+        @mkdir(dirname($caminho), 0750, true);
+    }
+    $tmp = $caminho . ".restaurando";
+    $f = @fopen($tmp, "wb");
+    if ($f === false) {
+        return false;
+    }
+    $h = hash_init("sha256");
+    foreach (linhas("SELECT parte FROM documento_parte WHERE documento_id = ? AND parte >= 0 ORDER BY parte", [(int)$d["id"]]) as $p) {
+        $pedaco = (string)valor("SELECT dados FROM documento_parte WHERE documento_id = ? AND parte = ?", [(int)$d["id"], (int)$p["parte"]]);
+        hash_update($h, $pedaco);
+        fwrite($f, $pedaco);
+    }
+    fclose($f);
+    if ($d["hash"] !== null && hash_final($h) !== $d["hash"]) {
+        @unlink($tmp);
+        return false;
+    }
+    return @rename($tmp, $caminho);
+}
+
+// Apaga uma pasta e tudo o que há dentro
+function apagar_pasta($pasta)
+{
+    $n = 0;
+    foreach (scandir($pasta) ?: [] as $x) {
+        if ($x === "." || $x === "..") {
+            continue;
+        }
+        if (is_dir($pasta . "/" . $x) && !is_link($pasta . "/" . $x)) {
+            $n += apagar_pasta($pasta . "/" . $x);
+        } elseif (@unlink($pasta . "/" . $x)) {
+            $n++;
+        }
+    }
+    @rmdir($pasta);
+    return $n;
+}
+
+// A manutenção dos documentos, que o cron roda a cada minuto. Devolve as linhas do registro (vazio: nada a fazer):
+// 1. o documento cujo arquivo sumiu da pasta volta do banco (a cópia de segurança);
+// 2. o documento que ainda não tem cópia no banco ganha (até $orcamento bytes por rodada, para não pesar);
+// 3. a pasta de um relógio que não existe mais sai inteira (r<id>), e o arquivo que não é de nenhum documento sai (só os
+//    de mais de 10 minutos: um envio pode estar no meio); o documento de um relógio que não existe mais sai do banco.
+// Com $diario, conta também os documentos perdidos (sem o arquivo na pasta e sem a cópia no banco).
+function documentos_manutencao($orcamento, $diario = false)
+{
+    $log = [];
+    $pasta = documentos_pasta();
+    if ($pasta === null) {
+        return $log;
+    }
+    $orfaos = (int)valor("SELECT COUNT(*) FROM documento WHERE relogio_id NOT IN (SELECT id FROM relogio)");
+    if ($orfaos > 0) {
+        sql("DELETE FROM documento WHERE relogio_id NOT IN (SELECT id FROM relogio)");
+        $log[] = "documentos: " . $orfaos . ($orfaos === 1 ? " documento de relógio que não existe mais apagado" : " documentos de relógios que não existem mais apagados");
+    }
+    $restaurados = [];
+    $perdidos = 0;
+    $copiados = 0;
+    $falhas = [];
+    $usados = [];
+    foreach (linhas("SELECT id, relogio_id, titulo, arquivo, miniatura, no_banco, hash, tamanho FROM documento ORDER BY id") as $d) {
+        $usados[$d["arquivo"]] = true;
+        if ($d["miniatura"] !== null && $d["miniatura"] !== "") {
+            $usados[$d["miniatura"]] = true;
+        }
+        $tem = is_file($pasta . "/" . $d["arquivo"]);
+        $mini_falta = $d["miniatura"] !== null && $d["miniatura"] !== "" && !is_file($pasta . "/" . $d["miniatura"]);
+        if (!$tem || $mini_falta) {
+            if (documento_restaurar($d) && !$tem) {
+                $restaurados[] = $d["titulo"];
+            } elseif (!$tem) {
+                $perdidos++;
+            }
+        } elseif ((int)$d["no_banco"] !== 1 && documentos_copia_banco() && $orcamento > 0) {
+            $erro = documento_copiar_para_banco(linha("SELECT * FROM documento WHERE id = ?", [(int)$d["id"]]));
+            if ($erro === "") {
+                $copiados++;
+                $orcamento -= (int)$d["tamanho"];
+            } else {
+                $falhas[] = $d["titulo"] . " (" . $erro . ")";
+            }
+        }
+    }
+    if (count($restaurados) > 0) {
+        $log[] = "documentos: " . count($restaurados) . (count($restaurados) === 1 ? " arquivo sumido da pasta, recriado" : " arquivos sumidos da pasta, recriados") . " a partir do banco: " . implode(", ", array_slice($restaurados, 0, 10));
+    }
+    if ($copiados > 0) {
+        $log[] = "documentos: " . $copiados . ($copiados === 1 ? " documento copiado" : " documentos copiados") . " para o banco";
+    }
+    if (count($falhas) > 0) {
+        $log[] = "erro: a cópia no banco falhou: " . implode("; ", array_slice($falhas, 0, 5));
+    }
+    if ($diario && $perdidos > 0) {
+        $log[] = "aviso: " . $perdidos . ($perdidos === 1 ? " documento sem o arquivo" : " documentos sem o arquivo") . " na pasta e sem a cópia no banco (perdidos: exclua-os na página Documentos)";
+    }
+    // a pasta: as dos relógios que não existem mais, e os arquivos de nenhum documento
+    $relogios = [];
+    foreach (linhas("SELECT id FROM relogio") as $r) {
+        $relogios[(int)$r["id"]] = true;
+    }
+    $pastas_apagadas = [];
+    $soltos = 0;
+    foreach (scandir($pasta) ?: [] as $x) {
+        if (preg_match("/^r(\\d+)$/", $x, $m) !== 1 || !is_dir($pasta . "/" . $x)) {
+            continue;
+        }
+        if (!isset($relogios[(int)$m[1]])) {
+            $n = apagar_pasta($pasta . "/" . $x);
+            $pastas_apagadas[] = $x . " (" . $n . ($n === 1 ? " arquivo)" : " arquivos)");
+            continue;
+        }
+        foreach (scandir($pasta . "/" . $x) ?: [] as $a) {
+            $rel = $x . "/" . $a;
+            if ($a !== "." && $a !== ".." && is_file($pasta . "/" . $rel) && !isset($usados[$rel]) && filemtime($pasta . "/" . $rel) < time() - 600) {
+                if (@unlink($pasta . "/" . $rel)) {
+                    $soltos++;
+                }
+            }
+        }
+    }
+    if (count($pastas_apagadas) > 0) {
+        $log[] = "documentos: pastas de relógios que não existem mais apagadas: " . implode(", ", $pastas_apagadas);
+    }
+    if ($soltos > 0) {
+        $log[] = "documentos: " . $soltos . ($soltos === 1 ? " arquivo que não era de nenhum documento apagado" : " arquivos que não eram de nenhum documento apagados") . " da pasta";
+    }
+    return $log;
+}
+
 // Os manuais da v13 (guardados no banco, na tabela manual) passam para os documentos, na categoria Manual (sem ela, na
 // primeira categoria), assim que a pasta dos documentos existe. Um por vez, para não pesar na memória; a tabela fica vazia
 function mover_manuais()
@@ -1805,6 +2029,9 @@ function mover_manuais()
         if (@file_put_contents($pasta . "/" . $arquivo, $m["dados"]) === strlen($m["dados"])) {
             sql("INSERT INTO documento (relogio_id, categoria_id, titulo, data, descricao, nome, tipo, tamanho, arquivo, miniatura, criado) VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, ?, NULL, ?)",
                 [(int)$m["relogio_id"], (int)$cat, "Manual", $m["nome"], $m["tipo"], strlen($m["dados"]), $arquivo, $m["atualizado"]]);
+            if (documentos_copia_banco()) {
+                documento_copiar_para_banco(linha("SELECT * FROM documento WHERE id = ?", [ultimo_id()]));
+            }
             sql("DELETE FROM manual WHERE relogio_id = ?", [(int)$m["relogio_id"]]);
         } else {
             @unlink($pasta . "/" . $arquivo);
