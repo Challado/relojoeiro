@@ -324,7 +324,7 @@ cadastro, não código: dá para mudar tudo na página **Cadastros**, e criar os
 | **Nome** | como ele aparece em todo lugar: na tela, no Telegram e na agenda. |
 | **Grupo** | o lugar dele na árvore. Decide os campos, as fórmulas (a "carga" de um smartwatch é a bateria; a de um mecânico, a reserva de marcha) e os avisos que ele recebe. |
 | **Disponível** | desmarcado, ele sai do rodízio e dos avisos (no conserto, emprestado, vendido), mas o histórico fica. |
-| **Guardar no banco a cópia de todos os documentos dele** | marcada, todo arquivo do relógio (o manual, a nota, as fotos, os vídeos) vai também para o banco, como cópia de segurança. Veja [Os documentos do relógio](#os-documentos-do-relógio): é o segundo dos três níveis da cópia. |
+| **Guardar no banco a cópia de todos os documentos dele** | marcada, todo arquivo do relógio (o manual, a nota, as fotos, os vídeos) vai também para o banco, como cópia de segurança. Só aparece quando o `config.php` não decide por todos (sem o `DOCUMENTOS_COPIA_BANCO`). Veja [Os documentos do relógio](#os-documentos-do-relógio): é o segundo dos três níveis da cópia. |
 | **Foto** | só para a tela. |
 | **Documentos** | o manual, a nota fiscal (em PDF e em XML), as fotos de recordação, os vídeos e o que mais for. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 
@@ -377,6 +377,10 @@ cron registra quantos são.
 | 1. **O sistema** | o `DOCUMENTOS_COPIA_BANCO` do `config.php` | `true`: **todo** arquivo, de todo relógio, vai também para o banco. `false`: **nenhum** vai (nem o que o relógio ou o arquivo pedem). Sem a linha: quem decide são os dois níveis de baixo. |
 | 2. **O relógio** | a caixa **Guardar no banco a cópia de todos os documentos dele**, no cadastro do relógio (ou o botão **Guardar todos os dele no banco**, na página Documentos dele) | marcada, todo arquivo daquele relógio vai para o banco, os que já estavam e os que vierem. |
 | 3. **O arquivo** | a caixa **Guardar a cópia destes arquivos também no banco**, no envio, ou **Guardar a cópia deste arquivo no banco**, em editar | só aquele arquivo vai para o banco. |
+
+**A tela só mostra a escolha de quem decide:** com o `DOCUMENTOS_COPIA_BANCO` no `config.php` (`true` ou `false`), não aparece
+nem a caixa do relógio nem a dos arquivos (a página Documentos só diz o que o `config.php` manda); com o relógio guardando
+todos, não aparece a caixa dos arquivos dele (nem no envio, nem em editar), só o botão **Só os marcados**, para voltar.
 
 Marcou num nível e o arquivo ainda não tem a cópia: no envio e em editar ela vai na hora; ao marcar o relógio, o cron copia os
 arquivos dele aos poucos. Desmarcou e ninguém mais pede: em editar a cópia sai na hora, e pelo relógio o cron a tira aos poucos;

@@ -55,10 +55,10 @@ function formEditar(x) {
         return el("option", {"value": c.id, "selected": c.id === x.categoria_id}, h(c.nome));
       }).join("")))
       + el("label", {"style": "grid-column: 1 / -1"}, "Descrição " + el("textarea", {"name": "descricao", "rows": "2"}, h(x.descricao || "")))
-      + el("label", {"class": "check", "style": "grid-column: 1 / -1"}, el("input", {"type": "hidden", "name": "copia_banco", "value": "0"})
-        + el("input", {"type": "checkbox", "name": "copia_banco", "value": "1", "checked": x.copia_banco}) + " Guardar a cópia deste arquivo no banco"
-        + (x.copia_por === "sistema" || x.copia_por === "relogio" ? " " + el("small", {}, "(já vai: " + (x.copia_por === "sistema" ? "o config.php guarda todos" : "o relógio guarda todos os dele") + ")")
-          : (dados.copia_sistema === false ? " " + el("small", {}, "(o config.php não deixa)") : "")))
+      // a escolha do próprio arquivo só aparece quando é ele quem decide: nem o config.php nem o relógio decidem por cima
+      + (dados.copia_sistema === null && x.copia_por !== "relogio" ? el("label", {"class": "check", "style": "grid-column: 1 / -1"},
+        el("input", {"type": "hidden", "name": "copia_banco", "value": "0"})
+        + el("input", {"type": "checkbox", "name": "copia_banco", "value": "1", "checked": x.copia_banco}) + " Guardar a cópia deste arquivo no banco") : "")
       + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, "Salvar")))
     + el("form", {"data-recurso": "documentos", "onsubmit": "return confirm(" + JSON.stringify("Excluir " + x.titulo + "? O arquivo sai do servidor.") + ")"},
       el("input", {"type": "hidden", "name": "acao", "value": "excluir"}) + el("input", {"type": "hidden", "name": "id", "value": x.id})
@@ -88,7 +88,8 @@ function montar() {
   if (recado !== "") {
     res += el("p", {"class": "acao"}, h(recado));
   }
-  // a cópia no banco: o config.php vale por todos; sem ele, o relógio (aqui) e cada arquivo (no envio e em editar)
+  // a cópia no banco: o config.php vale por todos (e então não há escolha nenhuma na página); sem ele, o relógio (aqui) e,
+  // quando o relógio não guarda todos, cada arquivo (no envio e em editar)
   if (d.pasta_ok && d.copia_sistema === true) {
     res += el("p", {"class": "nota"}, "Cópia no banco: o config.php (DOCUMENTOS_COPIA_BANCO) manda guardar todo arquivo também no banco.");
   } else if (d.pasta_ok && d.copia_sistema === false) {
