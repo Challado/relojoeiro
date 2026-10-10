@@ -318,8 +318,11 @@ function reconstrucao()
                 "Plano, Histórico, Documentos, Configuração (quadros com uma opção por linha e a barra de salvar presa no pé), Critérios, Grupos, "
                     . "Cadastros, Execuções do cron, Usuários e Ajuda (as seções do README).",
                 "Três tamanhos com o mesmo sistema visual: até 900 px (celular e tablet de pé) o menu fica recolhido, as tabelas viram cartões e o "
-                    . "relógio abre em tela cheia (o voltar do aparelho fecha); de 901 a 1199 px o painel ao lado desliza por cima, pela direita; a "
-                    . "tabela dos relógios esconde as colunas menos importantes conforme o espaço que tem, sem nunca cortar. Campos com letra de 16 px no "
+                    . "relógio abre em tela cheia (o voltar do aparelho fecha); de 901 a 1199 px o painel ao lado desliza por cima, pela direita. A "
+                    . "mesma informação em todos os tamanhos: nenhuma coluna, filtro ou dia é escondido por falta de espaço. A tabela dos relógios tem "
+                    . "sempre as 11 colunas; quando a tabela inteira não cabe na largura que tem (medida com os dados, com ou sem o painel aberto), "
+                    . "cada relógio vira um cartão com os mesmos 11 campos na mesma ordem, cada um com o nome da coluna em cima (2 colunas no "
+                    . "celular, 5 no tablet), os títulos viram botões de ordenar e os 10 filtros ficam todos. Campos com letra de 16 px no "
                     . "celular (o iPhone não aproxima a tela).",
             ]),
             $secao("seguranca", "Segurança", [

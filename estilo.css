@@ -265,9 +265,6 @@ table.relogios tr.fds td { background: #f4f6f8; }
     box-shadow: 0 1px 4px rgba(0, 0, 0, .18);
   }
   .painel .fechar-painel::after { content: " Fechar"; font-size: .9rem; }
-  #tabela-relogios th:nth-child(3), #tabela-relogios td:nth-child(3),
-  #tabela-relogios th:nth-child(7), #tabela-relogios td:nth-child(7),
-  #tabela-relogios th:nth-child(10), #tabela-relogios td:nth-child(10) { display: none; }
 }
 
 /* ---------- fotos ---------- */
@@ -394,7 +391,6 @@ fieldset.compra legend { font-size: .9rem; font-weight: 600; color: var(--cinza)
 .titulo-e-conta h2 { margin: 0; }
 #conta-relogios { font-size: .88rem; color: var(--cinza); }
 .titulo-secao .botoes { display: flex; gap: .5rem; align-items: center; margin: 0; }
-#tabela-relogios { min-width: 1080px; }
 #tabela-relogios thead th { padding-bottom: .2rem; }
 #tabela-relogios thead th button {
   font: inherit; font-size: .83rem; font-weight: 600; color: var(--cinza);
@@ -407,7 +403,7 @@ fieldset.compra legend { font-size: .9rem; font-weight: 600; color: var(--cinza)
   font: inherit; font-size: .8rem; width: 100%; box-sizing: border-box;
   padding: .25rem .35rem; border: 1px solid var(--aco-escuro); border-radius: 6px; background: #fff;
 }
-#tabela-relogios tr.filtros input.curto { width: 3.2rem; }
+#tabela-relogios tr.filtros input.curto { width: 2.7rem; }
 #tabela-relogios .col-codigo { width: 3.6rem; color: var(--cinza); font-variant-numeric: tabular-nums; }
 #tabela-relogios .col-valor { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 #tabela-relogios th.col-valor button { margin-left: auto; }
@@ -424,23 +420,29 @@ fieldset.compra legend { font-size: .9rem; font-weight: 600; color: var(--cinza)
 .carga-cel.baixa strong { color: #8a4f0e; }
 #tabela-relogios td.fazer { font-weight: 600; color: #8a4f0e; }
 .estado-indisponivel { background: #eef1f4; color: var(--cinza); border-color: var(--aco-escuro); }
-#tabela-relogios tfoot td { background: #eef1f4; border-top: 1px solid var(--aco-escuro); font-weight: 600; padding: .5rem .6rem; }
-#tabela-relogios tfoot .rotulo-total { text-align: right; color: var(--cinza); font-weight: 500; }
-/* uma linha por relógio: nada quebra; o que não couber rola para o lado dentro da tabela */
-#tabela-relogios { min-width: 0; width: max-content; min-width: 100%; }
-#tabela-relogios td, #tabela-relogios th { white-space: nowrap; padding-top: .32rem; padding-bottom: .32rem; }
+#tabela-relogios tfoot td { background: #eef1f4; border-top: 1px solid var(--aco-escuro); font-weight: 600; padding: .5rem .6rem; text-align: right; }
+#tabela-relogios tfoot .rotulo-total { margin-right: 1rem; color: var(--cinza); font-weight: 500; }
+#tabela-relogios tfoot #total-valor { white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* as 11 colunas sempre (no computador, no tablet e no celular a mesma informação): a tabela ocupa a largura que tem, e o
+   texto das células quebra linha só quando falta espaço; o que é um valor só (código, carga, estado, valor) não quebra */
+#tabela-relogios { width: 100%; min-width: 0; }
+#tabela-relogios td, #tabela-relogios th { white-space: normal; padding-top: .32rem; padding-bottom: .32rem; }
+#tabela-relogios :is(.col-codigo, .col-valor), #tabela-relogios .carga-cel, #tabela-relogios .estado { white-space: nowrap; }
+#tabela-relogios tr.filtros :is(input, select) { min-width: 0; }
 #tabela-relogios .carga-cel { flex-direction: row; align-items: center; gap: .45rem; }
 #tabela-relogios .carga-cel small { font-size: .72rem; }
 #tabela-relogios tr.filtros td { padding-top: .1rem; padding-bottom: .45rem; }
 
-#tabela-relogios .nome-rel a { overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle; }
+#tabela-relogios .nome-rel { min-width: 9.5rem; }
+#tabela-relogios .nome-rel a { overflow-wrap: break-word; min-width: 0; }
+#tabela-relogios tr.filtros select { min-width: 4.3rem; padding-right: .1rem; }
 #tabela-relogios td, #tabela-relogios th { padding-left: .5rem; padding-right: .5rem; }
 #tabela-relogios .carga-cel .barra { width: 44px; }
-/* títulos compridos em duas linhas, conteúdo sempre numa só */
+/* títulos compridos em duas linhas */
 #tabela-relogios thead th { white-space: normal; vertical-align: bottom; }
 #tabela-relogios thead th button { white-space: normal; text-align: left; line-height: 1.2; }
 #tabela-relogios .col-codigo { width: 2.4rem; }
-#tabela-relogios td, #tabela-relogios th { padding-left: .4rem; padding-right: .4rem; }
+#tabela-relogios td, #tabela-relogios th { padding-left: .35rem; padding-right: .35rem; }
 #tabela-relogios .estado { padding: .1rem .45rem; font-size: .76rem; }
 #tabela-relogios .nome-rel { gap: .45rem; }
 
@@ -549,7 +551,7 @@ nav.paginas span.atual { background: var(--safira); color: #fff; border-color: v
 .modo-rodizio .bloco-5x2 label.check { flex-direction: row; align-items: center; gap: .3rem; padding-bottom: .35rem; }
 
 /* coluna "Em": quanto falta para a próxima manutenção */
-#tabela-relogios .col-em { white-space: nowrap; font-variant-numeric: tabular-nums; }
+#tabela-relogios .col-em { font-variant-numeric: tabular-nums; }
 #tabela-relogios td.col-em.atrasado { color: #9b2c22; font-weight: 600; }
 
 /* ---------- quadro "Hoje": texto, informações do relógio do dia e a foto no canto direito ---------- */
@@ -789,7 +791,6 @@ table.resumo-plano { max-width: 44rem; }
 /* o menu: na tela grande o botão não existe e os itens ficam na barra, como sempre */
 .menu-botao { display: none; }
 .menu-itens { display: contents; }
-.ver-mais-dias { display: none; }
 
 /* celular e tablet de pé (até 900 px): o mesmo layout — menu recolhido, listas em cartões, campos com letra de 16 px */
 @media (max-width: 900px) {
@@ -863,9 +864,6 @@ table.resumo-plano { max-width: 44rem; }
   table.dias-plano tr.de-hoje { box-shadow: inset 3px 0 0 var(--safira); }
   table.dias-plano tr.de-hoje td:first-child { box-shadow: none; }
   form.trocar-dia select { width: 8.2rem; padding: 0 .4rem; }
-  /* na página Hoje, só a primeira semana; o botão mostra o resto (o plano inteiro tem a página dele) */
-  #bloco-proximos:not(.todos-os-dias) tr.dia-alem { display: none; }
-  #bloco-proximos:not(.todos-os-dias) .ver-mais-dias { display: flex; width: 100%; margin-top: .5rem; }
 
   /* execuções do cron: quando, duração e situação numa linha, e o registro embaixo, na largura toda */
   table.lista-execucoes tr { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .8rem; padding: .6rem .7rem; border-bottom: 1px solid var(--aco); }
@@ -881,40 +879,6 @@ table.resumo-plano { max-width: 44rem; }
   table.canais tbody tr:not(.linha-corpo) td:first-child { flex-basis: 100%; font-weight: 600; }
   table.canais tbody td[data-rotulo]:not(:first-child)::before { content: attr(data-rotulo) "\00a0"; color: var(--cinza); font-size: .82rem; }
   table.canais td.proprios label { margin: 0 0 0 .6rem; }
-
-  /* a tabela dos relógios vira uma lista de cartões: nome e estado; tipo, última vez no pulso e carga; o que fazer e em
-     quanto tempo. Os filtros que ficam: a busca pelo nome, o tipo e o estado */
-  #tabela-relogios, #tabela-relogios thead, #tabela-relogios tbody, #tabela-relogios tfoot { display: block; width: 100%; min-width: 0; }
-  #tabela-relogios thead tr:first-child { display: none; }
-  #tabela-relogios tr.filtros { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem .5rem; padding: .6rem .7rem; background: #eef1f4; border-bottom: 1px solid var(--aco-escuro); }
-  #tabela-relogios tr.filtros td { display: none; padding: 0; border: 0; background: none; }
-  #tabela-relogios tr.filtros td:nth-child(2), #tabela-relogios tr.filtros td:nth-child(3), #tabela-relogios tr.filtros td:nth-child(4) { display: block; }
-  #tabela-relogios tr.filtros td:nth-child(2) { grid-column: 1 / -1; }
-  #tabela-relogios tr.filtros td:nth-child(3)::before { content: "Tipo"; }
-  #tabela-relogios tr.filtros td:nth-child(4)::before { content: "Estado"; }
-  #tabela-relogios tr.filtros td::before { display: block; font-size: .75rem; color: var(--cinza); }
-  #tabela-relogios tr.filtros input, #tabela-relogios tr.filtros select { padding: 0 .5rem; border-radius: 8px; }
-  #tabela-relogios tbody tr { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .6rem; padding: .65rem .7rem; border-bottom: 1px solid var(--aco); }
-  #tabela-relogios tbody tr::before, #tabela-relogios tbody tr::after { content: ""; flex-basis: 100%; }
-  #tabela-relogios tbody tr::before { order: 3; }
-  #tabela-relogios tbody tr::after { order: 7; }
-  #tabela-relogios tbody td { display: none; padding: 0; border: 0; background: none; white-space: normal; }
-  #tabela-relogios tbody td[colspan] { display: block; }
-  #tabela-relogios tbody tr.selecionado { background: #e3eaf5; }
-  #tabela-relogios tbody tr.de-hoje { box-shadow: inset 3px 0 0 var(--safira); }
-  #tabela-relogios tbody tr.pendente:not(.de-hoje) { box-shadow: inset 3px 0 0 var(--ambar); }
-  #tabela-relogios tbody tr[data-id] td:nth-child(2) { display: block; order: 1; flex: 1 1 0; min-width: 0; font-size: 1rem; }
-  #tabela-relogios tbody tr[data-id] td:nth-child(4) { display: block; order: 2; }
-  #tabela-relogios tbody tr[data-id] td:nth-child(3) { display: block; order: 4; font-size: .85rem; color: var(--cinza); }
-  #tabela-relogios tbody tr[data-id] td:nth-child(6) { display: block; order: 5; font-size: .85rem; color: var(--cinza); }
-  #tabela-relogios tbody tr[data-id] td:nth-child(6)::before { content: "\00b7\00a0no pulso: "; }
-  #tabela-relogios tbody tr[data-id] td:nth-child(5) { display: block; order: 6; margin-left: auto; }
-  #tabela-relogios tbody tr[data-id] td.fazer { display: block; order: 8; font-size: .9rem; }
-  #tabela-relogios tbody tr[data-id]:has(td.fazer) td.col-em { display: block; order: 9; margin-left: auto; font-size: .85rem; }
-  #tabela-relogios .nome-rel img, #tabela-relogios .nome-rel .sem-mini { width: 36px; height: 36px; border-radius: 7px; }
-  #tabela-relogios .nome-rel a { white-space: normal; }
-  #tabela-relogios tfoot tr { display: flex; justify-content: space-between; gap: .6rem; padding: .55rem .7rem; background: #eef1f4; }
-  #tabela-relogios tfoot td { display: block; padding: 0; border: 0; background: none; white-space: normal; }
 
   /* as tabelas dos cadastros (Cadastros, Critérios, Grupos, Configuração) viram fichas: a primeira coluna é o título, e
      cada uma das outras leva o nome da coluna ao lado (o data-rotulo, posto pelo api.js) */
@@ -1250,32 +1214,51 @@ a.hoje-foto, a.hoje-foto * { text-decoration: none; }
   .painel:not(.modo-flutuante) .fechar-painel { position: sticky; top: 0; z-index: 3; box-shadow: 0 1px 4px rgba(0, 0, 0, .15); background: var(--papel); }
 }
 
-/* o total da tabela dos relógios fica embaixo dela como uma linha só (fora das colunas: ele não estica as colunas
-   escondidas) */
-@media (min-width: 901px) {
-  #tabela-relogios tfoot { display: table-caption; caption-side: bottom; background: #eef1f4; border: 1px solid var(--aco-escuro); border-top: 0; border-radius: 0 0 10px 10px; }
-  #tabela-relogios tfoot tr { display: flex; justify-content: flex-end; gap: 1rem; }
-  #tabela-relogios tfoot td { border: 0; background: none; }
+/* ---------- a tabela dos relógios quando as 11 colunas não cabem (celular, tablet, o painel aberto ao lado): cada relógio
+   vira um cartão com TODOS os campos da tabela, cada um com o nome da coluna em cima, na mesma ordem; os títulos viram os
+   botões de ordenar e os filtros ficam todos, com o nome em cima. Nada some: a mesma informação do computador. Quem decide
+   é o tabela.js (a classe em-cartoes), medindo se a tabela inteira cabe na largura que ela tem de verdade ---------- */
+#rolagem-relogios { container-type: inline-size; }
+#tabela-relogios.em-cartoes { --colunas: 5; }
+#tabela-relogios.em-cartoes, #tabela-relogios.em-cartoes thead, #tabela-relogios.em-cartoes tbody, #tabela-relogios.em-cartoes tfoot { display: block; width: 100%; min-width: 0; }
+/* ordenar: os títulos das colunas em botões */
+#tabela-relogios.em-cartoes thead tr:first-child { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; padding: .6rem .7rem .3rem; background: #eef1f4; }
+#tabela-relogios.em-cartoes thead tr:first-child::before { content: "Ordenar por"; flex-basis: 100%; font-size: .75rem; color: var(--cinza); }
+#tabela-relogios.em-cartoes thead th { display: block; padding: 0; border: 0; background: none; width: auto; }
+#tabela-relogios.em-cartoes thead th button {
+  white-space: nowrap; padding: .15rem .6rem; border: 1px solid var(--aco-escuro); border-radius: 999px; background: #fff;
+  font-size: .8rem; line-height: 1.5; color: var(--tinta); font-weight: 500;
 }
-/* ---------- a tabela dos relógios no computador e no tablet deitado: as colunas menos importantes saem conforme o espaço
-   que a tabela tem de verdade (com ou sem o painel ao lado), para nada ficar cortado. No celular ela vira cartões ---------- */
-@media (min-width: 901px) {
-  #bloco-relogios-rolagem, .painel .col-hoje .rolagem { container-type: inline-size; }
-  /* as larguras: a tabela inteira pede uns 1340 px; sem o tipo e a data da compra, 1150; sem o código e a próxima
-     manutenção, 990; sem a última vez usado, 890; sem o valor, 780 */
-  @container (max-width: 1345px) {
-    #tabela-relogios :is(thead, tbody) tr > :nth-child(10), #tabela-relogios :is(thead, tbody) tr > :nth-child(3) { display: none; }
-  }
-  @container (max-width: 1150px) {
-    #tabela-relogios :is(thead, tbody) tr > :nth-child(1), #tabela-relogios :is(thead, tbody) tr > :nth-child(7) { display: none; }
-  }
-  @container (max-width: 990px) {
-    #tabela-relogios :is(thead, tbody) tr > :nth-child(6) { display: none; }
-  }
-  @container (max-width: 890px) {
-    #tabela-relogios :is(thead, tbody) tr > :nth-child(11) { display: none; }
-  }
-  @container (max-width: 785px) {
-    #tabela-relogios :is(thead, tbody) tr > :nth-child(8) { display: none; }
-  }
+#tabela-relogios.em-cartoes thead th button br { display: none; }
+#tabela-relogios.em-cartoes thead th.col-valor button { margin-left: 0; }
+/* os filtros: todos, com o nome da coluna em cima (a busca pelo nome primeiro) */
+#tabela-relogios.em-cartoes tr.filtros {
+  display: grid; grid-template-columns: repeat(var(--colunas), minmax(0, 1fr)); gap: .45rem .6rem;
+  padding: .4rem .7rem .7rem; background: #eef1f4; border-bottom: 1px solid var(--aco-escuro);
+}
+#tabela-relogios.em-cartoes tr.filtros td { display: block; padding: 0; border: 0; background: none; }
+#tabela-relogios.em-cartoes tr.filtros td.col-em { display: none; }
+#tabela-relogios.em-cartoes tr.filtros td:nth-child(2) { order: -1; }
+#tabela-relogios.em-cartoes tr.filtros td[data-rotulo]::before { content: attr(data-rotulo); display: block; margin-bottom: .1rem; font-size: .75rem; color: var(--cinza); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#tabela-relogios.em-cartoes tr.filtros input.curto { width: 100%; }
+/* cada relógio: a foto e o nome na linha de cima; embaixo os campos em colunas iguais, alinhados de um cartão para o outro */
+#tabela-relogios.em-cartoes tbody tr {
+  display: grid; grid-template-columns: repeat(var(--colunas), minmax(0, 1fr)); gap: .5rem .8rem; align-items: start;
+  padding: .7rem .8rem; border-bottom: 1px solid var(--aco);
+}
+#tabela-relogios.em-cartoes tbody td { display: block; padding: 0; border: 0; background: none; white-space: normal; min-width: 0; width: auto; box-shadow: none !important; }
+#tabela-relogios.em-cartoes tbody td.col-nome { grid-column: 1 / -1; grid-row: 1; font-size: 1rem; }
+#tabela-relogios.em-cartoes tbody td[colspan] { grid-column: 1 / -1; }
+#tabela-relogios.em-cartoes tbody td[data-rotulo]::before { content: attr(data-rotulo); display: block; margin-bottom: .05rem; font-size: .72rem; font-weight: 400; color: var(--cinza); }
+#tabela-relogios.em-cartoes tbody td.col-valor { text-align: left; }
+#tabela-relogios.em-cartoes tbody tr.selecionado { background: #e3eaf5; }
+#tabela-relogios.em-cartoes tbody tr.de-hoje { box-shadow: inset 3px 0 0 var(--safira); }
+#tabela-relogios.em-cartoes tbody tr.pendente:not(.de-hoje) { box-shadow: inset 3px 0 0 var(--ambar); }
+#tabela-relogios.em-cartoes .nome-rel img, #tabela-relogios.em-cartoes .nome-rel .sem-mini { width: 36px; height: 36px; border-radius: 7px; }
+#tabela-relogios.em-cartoes tfoot tr { display: block; }
+#tabela-relogios.em-cartoes tfoot td { display: flex; justify-content: space-between; gap: .6rem; padding: .55rem .8rem; }
+#tabela-relogios.em-cartoes tbody td.col-nome::before { content: none; }
+/* no celular, duas colunas: cada par de campos lado a lado */
+@container (max-width: 559px) {
+  #tabela-relogios.em-cartoes { --colunas: 2; }
 }

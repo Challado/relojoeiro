@@ -29,7 +29,7 @@ topo("Relógio de hoje", "index.php");
           <a href="index.php?novo=1" class="botao" data-novo>Novo relógio</a>
         </div>
       </div>
-      <div class="rolagem">
+      <div class="rolagem" id="rolagem-relogios">
       <table class="relogios" id="tabela-relogios">
         <thead>
           <tr>
@@ -38,30 +38,30 @@ topo("Relógio de hoje", "index.php");
             <th><button type="button" data-ordena="tipo">Tipo <span></span></button></th>
             <th><button type="button" data-ordena="estado" data-tipo-ordem="num">Estado <span></span></button></th>
             <th><button type="button" data-ordena="carga" data-tipo-ordem="num">Carga <span></span></button></th>
-            <th><button type="button" data-ordena="ultimo" data-tipo-ordem="num">Última vez<br>usado <span></span></button></th>
-            <th><button type="button" data-ordena="manut">Próxima<br>manutenção <span></span></button></th>
+            <th><button type="button" data-ordena="ultimo" data-tipo-ordem="num">Última vez<br> usado <span></span></button></th>
+            <th><button type="button" data-ordena="manut">Próxima<br> manutenção <span></span></button></th>
             <th class="col-em"><button type="button" data-ordena="em" data-tipo-ordem="num">Em <span></span></button></th>
-            <th><button type="button" data-ordena="fazer">O que<br>fazer <span></span></button></th>
-            <th><button type="button" data-ordena="compra">Comprado<br>em <span></span></button></th>
+            <th><button type="button" data-ordena="fazer">O que<br> fazer <span></span></button></th>
+            <th><button type="button" data-ordena="compra">Comprado<br> em <span></span></button></th>
             <th class="col-valor"><button type="button" data-ordena="valor" data-tipo-ordem="num">Valor <span></span></button></th>
           </tr>
           <tr class="filtros">
-            <td><input data-filtro="codigo" aria-label="Filtrar por código" placeholder="nº" class="curto"></td>
-            <td><input data-filtro="nome" aria-label="Filtrar por nome" placeholder="buscar"></td>
-            <td><select data-filtro="tipo" aria-label="Filtrar por tipo"><option value="">Todos</option></select></td>
-            <td><select data-filtro="estado" aria-label="Filtrar por estado"><option value="">Todos</option><option>Em uso</option><option>Em repouso</option><option>Indisponível</option></select></td>
-            <td><select data-filtro="carga" aria-label="Filtrar por carga"><option value="">Todas</option><option value="20">≤ 20%</option><option value="50">≤ 50%</option></select></td>
-            <td><select data-filtro="ultimo" aria-label="Filtrar pela última vez usado"><option value="">Todos</option><option value="7">7 dias</option><option value="mais7">+7 dias</option><option value="nunca">nunca</option></select></td>
-            <td><select data-filtro="manut" aria-label="Filtrar pela próxima manutenção"><option value="">Todas</option><option value="0">até hoje</option><option value="7">7 dias</option><option value="30">30 dias</option></select></td>
+            <td data-rotulo="Código"><input data-filtro="codigo" aria-label="Filtrar por código" placeholder="nº" class="curto"></td>
+            <td data-rotulo="Relógio"><input data-filtro="nome" aria-label="Filtrar por nome" placeholder="buscar"></td>
+            <td data-rotulo="Tipo"><select data-filtro="tipo" aria-label="Filtrar por tipo"><option value="">Todos</option></select></td>
+            <td data-rotulo="Estado"><select data-filtro="estado" aria-label="Filtrar por estado"><option value="">Todos</option><option>Em uso</option><option>Em repouso</option><option>Indisponível</option></select></td>
+            <td data-rotulo="Carga"><select data-filtro="carga" aria-label="Filtrar por carga"><option value="">Todas</option><option value="20">≤ 20%</option><option value="50">≤ 50%</option></select></td>
+            <td data-rotulo="Última vez usado"><select data-filtro="ultimo" aria-label="Filtrar pela última vez usado"><option value="">Todos</option><option value="7">7 dias</option><option value="mais7">+7 dias</option><option value="nunca">nunca</option></select></td>
+            <td data-rotulo="Próxima manutenção"><select data-filtro="manut" aria-label="Filtrar pela próxima manutenção"><option value="">Todas</option><option value="0">até hoje</option><option value="7">7 dias</option><option value="30">30 dias</option></select></td>
             <td class="col-em"></td>
-            <td><select data-filtro="fazer" aria-label="Filtrar pelo que fazer"><option value="">Todos</option></select></td>
-            <td><select data-filtro="compra" aria-label="Filtrar pela data da compra"><option value="">Todas</option><option value="30">30 dias</option><option value="90">90 dias</option><option value="ano">este ano</option><option value="sem">sem data</option></select></td>
-            <td><select data-filtro="valor" aria-label="Filtrar pelo valor"><option value="">Todos</option><option value="ate500">≤ 500</option><option value="500a1500">500–1.500</option><option value="acima1500">&gt; 1.500</option><option value="sem">sem valor</option></select></td>
+            <td data-rotulo="O que fazer"><select data-filtro="fazer" aria-label="Filtrar pelo que fazer"><option value="">Todos</option></select></td>
+            <td data-rotulo="Comprado em"><select data-filtro="compra" aria-label="Filtrar pela data da compra"><option value="">Todas</option><option value="30">30 dias</option><option value="90">90 dias</option><option value="ano">este ano</option><option value="sem">sem data</option></select></td>
+            <td data-rotulo="Valor"><select data-filtro="valor" aria-label="Filtrar pelo valor"><option value="">Todos</option><option value="ate500">≤ 500</option><option value="500a1500">500–1.500</option><option value="acima1500">&gt; 1.500</option><option value="sem">sem valor</option></select></td>
           </tr>
         </thead>
         <tbody></tbody>
         <tfoot>
-          <tr><td colspan="10" class="rotulo-total">Total dos relógios mostrados</td><td class="col-valor" id="total-valor"></td></tr>
+          <tr><td colspan="11"><span class="rotulo-total">Total dos relógios mostrados</span> <span id="total-valor"></span></td></tr>
         </tfoot>
       </table>
       </div>
