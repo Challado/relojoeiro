@@ -203,8 +203,14 @@
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=migracoes"
  *   recurso=ajuda            esta documentação em JSON: cada consulta com a descrição, os parâmetros e um exemplo; cada escrita com as ações,
  *                            os campos de cada uma e um exemplo; o dicionário de todos os campos das respostas ("campos"); a
- *                            autenticação, o formato, os erros e as funções do motor. [parte=reconstrucao: a reconstrução, abaixo]
+ *                            autenticação, o formato, os erros e as funções do motor. [parte=manual: o manual, abaixo;
+ *                            parte=reconstrucao: a reconstrução, abaixo]
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=ajuda"
+ *   recurso=manual           (ou recurso=ajuda&parte=manual) o texto da página Ajuda: os trechos do README para quem usa (a ideia
+ *                            central, como funciona, o cadastro campo por campo, a Configuração, um dia com o sistema, as telas,
+ *                            as perguntas frequentes e como reescrever o sistema do zero), em markdown: {"fonte" ("README.md"), "trechos": [{"de", "ate"}], "secoes":
+ *                            [{"nivel", "titulo", "ancora", "texto"}], "markdown"}. Sem o README.md na pasta: 404
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=manual&mostrar[secoes]=titulo,ancora" -g
  *   recurso=reconstrucao     (ou recurso=ajuda&parte=reconstrucao) o roteiro para reescrever a aplicação inteira do zero, em qualquer
  *                            linguagem e banco, chegando ao mesmo sistema: {"o_que_e", "como_usar": [textos], "secoes": [{"id", "titulo",
  *                            "itens": [textos]}] (os princípios, a arquitetura, a ordem de construção e as regras de cada parte),
@@ -317,9 +323,9 @@
  *                             num tipo que mede o gasto: com 1 a medição entra na média, com 0 fica só no histórico — a caixa
  *                             "Atualizar o gasto com esta medição"; a mensagem traz a conta), iniciar (relogio_id,
  *                             tipo, quando: abre a sessão; exclusiva fecha a outra exclusiva aberta), encerrar (relogio_id, tipo,
- *                             quando), periodo (relogio_id, tipo, inicio, fim: uma sessão que já passou), alterar (id: quando
- *                             ou inicio, fim, valor; só o que vier), excluir (id). Nada no futuro; o tipo tem de valer para o
- *                             relógio; exclusivas não se sobrepõem
+ *                             quando), periodo (relogio_id, tipo, inicio (quando também vale), fim: uma sessão que já passou),
+ *                             alterar (id: quando ou inicio, fim, valor; só o que vier), excluir (id). Nada no futuro; o tipo tem
+ *                             de valer para o relógio; exclusivas não se sobrepõem
  *                            Ex. lancar: curl -u lucas:senha -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://servidor/relojoeiro/api.php
  *                            Ex. iniciar: curl -u lucas:senha -d recurso=lancamento -d acao=iniciar -d relogio_id=4 -d tipo=sol http://servidor/relojoeiro/api.php
  *                            Ex. encerrar: curl -u lucas:senha -d recurso=lancamento -d acao=encerrar -d relogio_id=4 -d tipo=sol http://servidor/relojoeiro/api.php
@@ -337,9 +343,10 @@
  *                            Ex. excluir: curl -u lucas:senha -d recurso=avisos -d acao=excluir -d id=9 http://servidor/relojoeiro/api.php
  *   recurso=criterios         escopo: "" (todos), g:<ponto> ou r:<relógio>. conjunto_criar (escopo, origem: herdado ou vazio),
  *                             conjunto_excluir (escopo), param_novo (escopo, nome, peso), param_pesos (escopo, nome[id], peso[id]:
- *                             todos os do conjunto, somando 100), param_excluir (id), sub_novo (parametro_id, nome, variavel, peso),
- *                             sub_pesos (parametro_id, nome[id], peso[id]: somando 100), sub_excluir (id), sub_medida (id, variavel:
- *                             as faixas recomeçam), sub_mover (id, parametro_id), ordem (tipo: parametro ou sub, id, direcao),
+ *                             todos os do conjunto, somando 100), param_excluir (id), sub_novo (parametro_id, nome, variavel
+ *                             (metrica também vale), peso), sub_pesos (parametro_id, nome[id], peso[id]: somando 100), sub_excluir
+ *                             (id), sub_medida (id, variavel (metrica também vale): as faixas recomeçam), sub_mover (id,
+ *                             parametro_id), ordem (tipo: parametro ou sub, id, direcao),
  *                             faixas (sub_id, de[], ate[], categoria[], nota[], apagar[]), restaurar (volta aos critérios iniciais).
  *                             Incluir e excluir redistribuem os pesos na proporção; a mensagem traz a conta
  *                            Ex. conjunto_criar: curl -u lucas:senha -d recurso=criterios -d acao=conjunto_criar -d escopo=r:10 -d origem=herdado http://servidor/relojoeiro/api.php
@@ -1854,6 +1861,17 @@
  *                                    o valor do produto (número, em R$)
  *     documentos[].nfe.serie         a série da nota
  *     documentos[].nfe.valor         o valor total da nota (número, em R$)
+ *   recurso=manual
+ *     fonte                          de onde vem o texto: README.md
+ *     trechos[]                      os trechos do README que entram, na ordem: cada um da seção "de" até antes da seção "ate"
+ *     trechos[].de                   o título da seção em que o trecho começa
+ *     trechos[].ate                  o título da seção em que o trecho para (ela fica de fora)
+ *     secoes[]                       cada título do manual (## a ####), na ordem
+ *     secoes[].nivel                 o nível do título: 2 (seção), 3 ou 4 (dentro dela)
+ *     secoes[].titulo                o título, como no README (em markdown)
+ *     secoes[].ancora                a âncora do título, como a do GitHub e a da página Ajuda (ajuda.php#ancora)
+ *     secoes[].texto                 o texto da seção até o próximo título, em markdown (tabelas, listas, código, imagens)
+ *     markdown                       o manual inteiro, em markdown: o que a página Ajuda converte para HTML
  *   recurso=reconstrucao
  *     o_que_e                        o que o sistema é e faz, num parágrafo
  *     como_usar[]                    como ler esta resposta e onde está o resto (a API em recurso=ajuda, o cadastro inicial no schema.sql e
@@ -1961,7 +1979,11 @@
  * ---------------------------------------------------------------------------------------------
  * ERROS  (no formato pedido)
  * ---------------------------------------------------------------------------------------------
- *   400 pedido recusado (os erros dizem por quê)      401 sem token nem login      404 recurso ou relógio que não existe
+ *   400 pedido recusado: uma escrita que não passou nas validações ({"ok": false, "mensagem", "erros": [...]}, um erro por
+ *       motivo) ou uma fórmula mal escrita no recurso=calcular ({"erro", "erros"})
+ *   401 {"erro"}: sem o token nem o login do site, ou com eles errados
+ *   404 {"erro"}: recurso desconhecido (com "recursos", a lista deles), ou o relógio, a foto, o documento (ou o arquivo dele) ou o
+ *       README.md (recurso=manual) que não existe
  *   409 {"erro": "o banco recusou a gravação: ...", "detalhe"} (um registro que outro ainda usa, um valor repetido, ou um valor fora
  *       das regras de validação do banco: o nome da regra, ck_<tabela>_<o quê>, vem no detalhe)
  *   413 {"ok": false, "erros": [...]} (o envio passou do post_max_size do PHP: um arquivo grande demais)
@@ -2769,6 +2791,16 @@ if (!$token_ok && $quem === "") {
         }
         $saida = ["expressao" => $expr, "resultados" => $res];
     }
+} elseif ($recurso === "manual" || ($recurso === "ajuda" && ($_REQUEST["parte"] ?? "") === "manual")) {
+    // o manual: o texto da página Ajuda (os trechos do README para quem usa), inteiro em markdown e seção por seção
+    $md = manual_markdown();
+    if ($md === "") {
+        $codigo = 404;
+        $saida = ["erro" => "o README.md não está na pasta do sistema"];
+    } else {
+        $saida = ["fonte" => "README.md", "trechos" => array_map(function ($t) { return ["de" => $t[0], "ate" => $t[1]]; }, MANUAL_TRECHOS),
+            "secoes" => manual_secoes($md), "markdown" => $md];
+    }
 } elseif ($recurso === "reconstrucao" || ($recurso === "ajuda" && ($_REQUEST["parte"] ?? "") === "reconstrucao")) {
     // a reconstrução: o roteiro para reescrever a aplicação do zero (o texto em reconstrucao.php; o modelo de dados e as
     // listas, lidos na hora do banco e do código)
@@ -2850,9 +2882,12 @@ if (!$token_ok && $quem === "") {
             "autonomia" => ["descricao" => "as autonomias de cada relógio, enxuto e rápido, para sistemas de fora, em segundos inteiros: prevista (cheio, pelo cadastro), atual (cheio, pela conta do sistema com o gasto medido), estimada (quanto ainda dura seguindo o plano), restante_em_uso (no pulso sem tirar), restante_guardado (parado) e quando acaba (acaba_em_unixtimestamp, acaba_em_segundos, acaba_em_datacomtz); null com o motivo em motivos",
                 "parametros" => ["relogio" => "um id ou vários separados por vírgula (vazio: todos)"],
                 "exemplo" => "curl -u lucas:senha -g \"http://servidor/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz\""],
-            "ajuda" => ["descricao" => "esta explicação: os recursos, os parâmetros, as ações de escrita com os campos, os exemplos, o dicionário de todos os campos (campos) e as funções do motor; com parte=reconstrucao, a reconstrução (veja reconstrucao)",
-                "parametros" => ["parte" => "reconstrucao: em vez desta explicação, o roteiro para reescrever a aplicação do zero (o mesmo que recurso=reconstrucao)"],
+            "ajuda" => ["descricao" => "esta explicação: os recursos, os parâmetros, as ações de escrita com os campos, os exemplos, o dicionário de todos os campos (campos) e as funções do motor; com parte=manual, o manual (veja manual); com parte=reconstrucao, a reconstrução (veja reconstrucao)",
+                "parametros" => ["parte" => "manual: em vez desta explicação, o texto da página Ajuda (o mesmo que recurso=manual); reconstrucao: o roteiro para reescrever a aplicação do zero (o mesmo que recurso=reconstrucao)"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=ajuda&parte=reconstrucao\""],
+            "manual" => ["descricao" => "o texto da página Ajuda: os trechos do README para quem usa (a ideia central, como funciona, o cadastro campo por campo, a Configuração, um dia com o sistema, as telas, as perguntas frequentes e como reescrever o sistema do zero), em markdown, inteiro e seção por seção (título, nível, âncora e texto); sem o README.md na pasta: 404. O mesmo que recurso=ajuda&parte=manual",
+                "parametros" => [],
+                "exemplo" => "curl -u lucas:senha -g \"http://servidor/relojoeiro/api.php?recurso=manual&mostrar[secoes]=titulo,ancora\""],
             "reconstrucao" => ["descricao" => "o roteiro para reescrever a aplicação inteira do zero, em qualquer linguagem e banco, chegando ao mesmo sistema: o que ele é, os princípios, a arquitetura, a ordem de construção e as regras de cada parte (árvore e campos, lançamentos, fórmulas, avisos, gasto medido, critérios, rodízio e escala, pulso sozinho, cron, mensagens e agenda, documentos, telas, segurança, testes), o modelo de dados lido do próprio banco (tabelas, colunas, chaves, índices e regras de validação) e as listas do código (funções das fórmulas, tipos de campo, formatos de lançamento, repetições, dias da semana, âncoras, canais, migrações e as constantes do config.php). O mesmo que recurso=ajuda&parte=reconstrucao",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=reconstrucao\""],
@@ -2908,7 +2943,7 @@ if (!$token_ok && $quem === "") {
                 "lancar" => ["campos" => "relogio_id, tipo (instantâneo ou com valor), valor (com valor), quando (AAAA-MM-DD HH:MM; vazio: agora), medir (1, o padrão, ou 0: num tipo que mede o gasto, com 1 a medição entra na média; com 0 fica só no histórico)", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://servidor/relojoeiro/api.php"],
                 "iniciar" => ["campos" => "relogio_id, tipo (sessão), quando: abre a sessão; uma exclusiva fecha a outra exclusiva aberta", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=iniciar -d relogio_id=4 -d tipo=sol http://servidor/relojoeiro/api.php"],
                 "encerrar" => ["campos" => "relogio_id, tipo, quando: fecha a sessão aberta", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=encerrar -d relogio_id=4 -d tipo=sol http://servidor/relojoeiro/api.php"],
-                "periodo" => ["campos" => "relogio_id, tipo, inicio, fim: uma sessão que já passou (espaço ou T entre data e hora)", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=periodo -d relogio_id=3 -d tipo=winder -d \"inicio=2026-09-26 20:00\" -d \"fim=2026-09-27 07:00\" http://servidor/relojoeiro/api.php"],
+                "periodo" => ["campos" => "relogio_id, tipo, inicio (quando também vale), fim: uma sessão que já passou (espaço ou T entre data e hora)", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=periodo -d relogio_id=3 -d tipo=winder -d \"inicio=2026-09-26 20:00\" -d \"fim=2026-09-27 07:00\" http://servidor/relojoeiro/api.php"],
                 "alterar" => ["campos" => "id: quando ou inicio e fim, valor (só o que vier)", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=alterar -d id=42 -d valor=70 http://servidor/relojoeiro/api.php"],
                 "excluir" => ["campos" => "id", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=excluir -d id=42 http://servidor/relojoeiro/api.php"],
             ],
@@ -2923,10 +2958,10 @@ if (!$token_ok && $quem === "") {
                 "param_novo" => ["campos" => "escopo, nome, peso (os outros abrem espaço na proporção)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=param_novo -d escopo=g:1 -d \"nome=Estilo\" -d peso=10 http://servidor/relojoeiro/api.php"],
                 "param_pesos" => ["campos" => "escopo, nome[<id>], peso[<id>]: todos os do conjunto, somando 100", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=param_pesos -d escopo=g:1 -d \"peso[5]=35\" -d \"peso[6]=10\" http://servidor/relojoeiro/api.php"],
                 "param_excluir" => ["campos" => "id (o peso dele vai para os outros na proporção)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=param_excluir -d id=29 http://servidor/relojoeiro/api.php"],
-                "sub_novo" => ["campos" => "parametro_id, nome, variavel (o identificador de um campo ou fórmula), peso", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=sub_novo -d parametro_id=5 -d \"nome=Carga\" -d variavel=energia -d peso=20 http://servidor/relojoeiro/api.php"],
+                "sub_novo" => ["campos" => "parametro_id, nome, variavel (o identificador de um campo ou fórmula; metrica também vale), peso", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=sub_novo -d parametro_id=5 -d \"nome=Carga\" -d variavel=energia -d peso=20 http://servidor/relojoeiro/api.php"],
                 "sub_pesos" => ["campos" => "parametro_id, nome[<id>], peso[<id>]: somando 100", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=sub_pesos -d parametro_id=5 -d \"peso[6]=60\" -d \"peso[7]=40\" http://servidor/relojoeiro/api.php"],
                 "sub_excluir" => ["campos" => "id", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=sub_excluir -d id=7 http://servidor/relojoeiro/api.php"],
-                "sub_medida" => ["campos" => "id, variavel (as faixas recomeçam)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=sub_medida -d id=7 -d variavel=dias_de_carga http://servidor/relojoeiro/api.php"],
+                "sub_medida" => ["campos" => "id, variavel (metrica também vale; as faixas recomeçam)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=sub_medida -d id=7 -d variavel=dias_de_carga http://servidor/relojoeiro/api.php"],
                 "sub_mover" => ["campos" => "id, parametro_id (o de destino, de qualquer lugar)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=sub_mover -d id=7 -d parametro_id=8 http://servidor/relojoeiro/api.php"],
                 "ordem" => ["campos" => "tipo (parametro ou sub), id, direcao (sobe ou desce)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=ordem -d tipo=parametro -d id=5 -d direcao=desce http://servidor/relojoeiro/api.php"],
                 "faixas" => ["campos" => "sub_id, de[], ate[], categoria[], nota[], apagar[] (todas as faixas do subparâmetro de uma vez; a última vai até o limite da medida ou sem limite)", "exemplo" => "curl -u lucas:senha -d recurso=criterios -d acao=faixas -d sub_id=6 -d \"de[0]=0\" -d \"ate[0]=50\" -d \"nota[0]=30\" -d \"de[1]=50\" -d \"ate[1]=100\" -d \"nota[1]=100\" http://servidor/relojoeiro/api.php"],
@@ -4167,6 +4202,18 @@ if (!$token_ok && $quem === "") {
                 "documentos[].nfe.serie" => "a série da nota",
                 "documentos[].nfe.valor" => "o valor total da nota (número, em R$)",
             ],
+            "manual" => [
+                "fonte" => "de onde vem o texto: README.md",
+                "trechos[]" => "os trechos do README que entram, na ordem: cada um da seção \"de\" até antes da seção \"ate\"",
+                "trechos[].de" => "o título da seção em que o trecho começa",
+                "trechos[].ate" => "o título da seção em que o trecho para (ela fica de fora)",
+                "secoes[]" => "cada título do manual (## a ####), na ordem",
+                "secoes[].nivel" => "o nível do título: 2 (seção), 3 ou 4 (dentro dela)",
+                "secoes[].titulo" => "o título, como no README (em markdown)",
+                "secoes[].ancora" => "a âncora do título, como a do GitHub e a da página Ajuda (ajuda.php#ancora)",
+                "secoes[].texto" => "o texto da seção até o próximo título, em markdown (tabelas, listas, código, imagens)",
+                "markdown" => "o manual inteiro, em markdown: o que a página Ajuda converte para HTML",
+            ],
             "reconstrucao" => [
                 "o_que_e" => "o que o sistema é e faz, num parágrafo",
                 "como_usar[]" => "como ler esta resposta e onde está o resto (a API em recurso=ajuda, o cadastro inicial no schema.sql e em recurso=cadastros e recurso=criterios, o README, os testes)",
@@ -4244,7 +4291,9 @@ if (!$token_ok && $quem === "") {
         "parametros_gerais" => [
             "recurso" => "o recurso (vazio: tudo)", "acao" => "a ação (escrita)", "formato" => "json (padrão) ou xml", "token" => "o token da API; também no cabeçalho X-Api-Token, ou o login do site (HTTP Basic) no lugar dele",
         ],
-        "erros" => ["400" => "pedido recusado (os erros dizem por quê)", "401" => "sem token nem login", "404" => "recurso ou relógio que não existe",
+        "erros" => ["400" => "pedido recusado: uma escrita que não passou nas validações ({ok: false, mensagem, erros: [...]}, um erro por motivo) ou uma fórmula mal escrita no recurso=calcular ({erro, erros})",
+            "401" => "sem o token nem o login do site, ou com eles errados",
+            "404" => "recurso desconhecido (com recursos, a lista deles), ou o relógio, a foto, o documento (ou o arquivo dele) ou o README.md (recurso=manual) que não existe",
             "409" => "o banco recusou a gravação (um registro que outro ainda usa, um valor repetido, ou um valor fora das regras de validação do banco: o nome da regra, ck_<tabela>_<o quê>, vem no detalhe)",
             "413" => "o envio passou do limite do PHP do servidor (post_max_size): um arquivo grande demais",
             "500" => "sistema parado (token ou fuso inválido no config.php) ou erro interno", "503" => "banco desatualizado (só recurso=migracoes responde) ou banco fora do ar"],
@@ -4355,7 +4404,7 @@ if (!$token_ok && $quem === "") {
 } else {
     $codigo = 404;
     $saida = ["erro" => "recurso desconhecido", "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "ajuda", "reconstrucao"]];
+        "historico", "previsao", "plano", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "ajuda", "manual", "reconstrucao"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

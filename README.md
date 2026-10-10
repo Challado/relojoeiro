@@ -760,7 +760,7 @@ Os **Próximos dias** também mostram todos os dias da escala em qualquer tela.
 | **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), avisos, modos de rodízio e as categorias de documentos: tudo o que o sistema usa e que não é código. |
 | **Execuções do cron** (`execucoes.php`) | O que o cron fez a cada rodada, quanto tempo levou e os erros, com filtros. |
 | **Usuários** (`usuarios.php`) | Quem acessa: criar um usuário ou trocar a senha. |
-| **Ajuda** (`ajuda.php`) | Este guia dentro do sistema: a ideia central, como funciona, o cadastro de cada relógio campo por campo, os avisos de carga, as telas e as perguntas frequentes (as mesmas seções deste README, lidas dele). |
+| **Ajuda** (`ajuda.php`) | Este guia dentro do sistema: a ideia central, como funciona, o cadastro de cada relógio campo por campo, os avisos de carga, as telas e as perguntas frequentes (as mesmas seções deste README, lidas dele; a API devolve o mesmo texto em `recurso=manual`). |
 
 ---
 
@@ -799,22 +799,23 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 |---|---|
 | *(nenhum)* | tudo o que está guardado: a árvore, os campos, os tipos de lançamento, as fórmulas, os avisos, os relógios (com os valores, as fórmulas calculadas, os avisos, os lançamentos, a previsão, a foto e os dados dos documentos), as categorias dos documentos, os modos, o plano, a configuração, os eventos, a agenda, os critérios, o cron, os usuários e as migrações. Só a senha fica de fora. `foto=nao` deixa as fotos de fora. |
 | `hoje` | o que a página Hoje mostra: o relógio do dia, os avisos, os próximos dias, os modos e a tabela da coleção |
-| `ficha` | o que o painel de um relógio mostra (`relogio=<id>`): agora, carga, nota, previsão, gasto da bateria, quantos documentos em cada categoria, marcações recentes, cadastro |
-| `plano` | o plano gravado, dia a dia, com o motivo de cada escolha |
+| `ficha` | o que o painel de um relógio mostra (`relogio=<id>`; sem ele, só o cadastro de um relógio novo): agora, carga, nota, previsão, gasto da bateria, quantos documentos em cada categoria, marcações recentes, cadastro |
+| `plano` | o plano gravado, dia a dia, com o motivo de cada escolha (`de=` e `ate=`, AAAA-MM-DD; sem eles, o plano inteiro) |
 | `avisos` | os avisos de todos os relógios, do mais urgente ao mais distante |
-| `previsao` | a previsão da bateria dos relógios com leitura de carga |
-| `autonomia` | quanto cada relógio dura, em segundos, enxuto para sistemas de fora |
-| `historico` | a linha do tempo de um relógio, com o tempo em cada estado |
+| `previsao` | a previsão da bateria dos relógios com leitura de carga (`relogio=` um id ou vários separados por vírgula; sem ele, todos) |
+| `autonomia` | quanto cada relógio dura, em segundos, enxuto para sistemas de fora (`relogio=` um id ou vários; sem ele, todos) |
+| `historico` | a linha do tempo de um relógio, com o tempo em cada estado. `relogio=` (um id ou vários; `relogio_id` também vale; sem ele, todos), `de=` e `ate=` (data, ou data e hora: entra o trecho que cruza o período), `estado=` (`rodizio`, `pulso`, `repouso`, `marca` ou um tipo de sessão como `winder` e `sol`; um ou vários; `linha_estado` também vale), `ordem=` (`desc`, o padrão, ou `asc`), `limite=` (padrão 100, máximo 1000) e `pagina=` |
 | `criterios` | os conjuntos de critérios e a nota de cada relógio com a conta |
 | `eventos`, `agenda` | os eventos personalizados; o que tem de estar no Google Agenda |
-| `config`, `cron` | a configuração (com as mensagens e a prévia); as execuções do cron |
+| `config`, `cron` | a configuração (com as mensagens e a prévia); as execuções do cron, com o resumo do período. No `cron`: `de=` e `ate=` (data, ou data e hora), `situacao=` (`atividade`, o padrão; `erro`, `nada` ou `todas`), `busca=` (texto no registro), `limite=` (padrão 100, máximo 1000) e `pagina=`; cada um também vale com `cron_` na frente (`cron_de`...) |
 | `arvore`, `cadastros` | os grupos; tudo o que a página Cadastros mostra |
-| `calcular` | o resultado de uma fórmula (`expressao=`) nos relógios, sem gravar |
+| `calcular` | o resultado de uma fórmula (`expressao=`) nos relógios (`relogio=` um id ou vários; sem ele, todos), sem gravar, com as partes da conta; fórmula mal escrita: 400 com os erros |
 | `foto` | a foto de um relógio (`relogio=<id>`): a imagem, não JSON |
 | `documentos` | os documentos de um relógio (`relogio=<id>`; sem ele, de todos), com as categorias, o resumo da NF-e de cada XML, a pasta e o limite |
 | `documento` | o arquivo de um documento (`id=<id>`): para mostrar (imagem, vídeo, áudio, PDF, texto) ou para baixar (o resto, ou com `baixar=1`); `mini=1` é a miniatura da foto. Atende pedaços (Range), para o vídeo avançar |
 | `usuarios`, `migracoes` | os logins; as migrações que faltam aplicar |
 | `ajuda` | a documentação inteira: cada consulta, cada escrita, cada campo de cada resposta e as funções do motor |
+| `manual` (ou `ajuda&parte=manual`) | o texto da página **Ajuda** (as seções deste README para quem usa: da ideia central às perguntas frequentes), em markdown, inteiro e seção por seção, com o título, o nível e a âncora de cada uma |
 | `reconstrucao` (ou `ajuda&parte=reconstrucao`) | o roteiro para **reescrever o sistema inteiro do zero** (veja [Reescrever o sistema do zero](#reescrever-o-sistema-do-zero)) |
 
 **Escritas** (`POST`, com `recurso=` e `acao=`), todas com as mesmas validações e mensagens da tela:
@@ -834,6 +835,19 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `config` | `salvar`, `evento_salvar`, `evento_excluir`, `testar_manha`, `testar_noite`, `teste_agenda_criar`, `teste_agenda_remover`, `sincronizar` |
 | `usuarios` | `salvar`, `excluir` |
 | `migracoes` | `aplicar` |
+
+**As respostas de erro** dizem o motivo: `{"erro": "..."}` nas consultas, e `{"ok": false, "mensagem", "erros": [...]}` (um erro
+por motivo) numa escrita recusada:
+
+| Código | Quando |
+|---|---|
+| `400` | escrita recusada pelas validações (os erros dizem por quê), ou uma fórmula mal escrita no `calcular` |
+| `401` | sem o token nem o login do site, ou com eles errados |
+| `404` | recurso desconhecido (a resposta traz a lista dos recursos), ou o relógio, a foto, o documento (ou o arquivo dele) ou o `README.md` (no `manual`) que não existe |
+| `409` | o banco recusou a gravação: um registro que outro ainda usa, um valor repetido, ou um valor fora das regras de validação do banco (vem o nome da regra) |
+| `413` | o envio passou do limite do PHP do servidor (`post_max_size`): um arquivo grande demais |
+| `500` | sistema parado (o `API_TOKEN` ou o `FUSO` do `config.php` inválido) ou um erro interno |
+| `503` | banco desatualizado (só `recurso=migracoes` responde, e a escrita `migracoes`/`aplicar`) ou banco fora do ar |
 
 **Filtros genéricos** funcionam em qualquer lista de qualquer resposta:
 
@@ -895,6 +909,10 @@ php criar_usuario.php seu_login
 ( crontab -l; echo "* * * * * php /var/www/relojoeiro/cron.php" ) | crontab -
 ```
 
+O `cron.php` tem duas opções, para rodar à mão: `--forcar` roda a rodada da manhã e a da noite agora, mesmo que já tenham
+rodado hoje (monta a escala, manda as mensagens e sincroniza a agenda, se estiverem ligadas), e `-v` mostra na tela o registro
+que ele grava (o mesmo da página Execuções do cron). Ex.: `php cron.php --forcar -v`.
+
 No SQLite, ponha o arquivo do banco (`DB_ARQUIVO`) **fora da pasta que o servidor web publica**, numa pasta em que o
 usuário do PHP possa escrever (o SQLite cria ao lado os arquivos `-wal` e `-shm`).
 
@@ -931,6 +949,7 @@ têm de dar **403**.
 | `DOCUMENTOS_COPIA_BANCO` | opcional: a cópia de segurança dos documentos dentro do banco, para o sistema inteiro. `true`: todo arquivo vai também para o banco; `false`: nenhum vai; sem ela: cada relógio e cada arquivo decidem. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 | `DOCUMENTOS_LIMITE` | opcional: o maior documento aceito, em bytes. Sem ela, 100 MB (`104857600`); `0` ou `-1`, sem limite do sistema. O `MANUAL_LIMITE`, o nome antigo, ainda vale quando ela não existe. O limite do PHP e o do nginx continuam valendo (veja [O tamanho dos envios](#o-tamanho-dos-envios-os-documentos)). Ex.: `define("DOCUMENTOS_LIMITE", 524288000);` para 500 MB |
 | `ANTIGO_HOST`, `ANTIGO_PORTA`, `ANTIGO_USUARIO`, `ANTIGO_SENHA` | opcionais, só para o `importar.php` com este sistema no Postgres ou no SQLite: onde está o MySQL do sistema anterior |
+| `GOOGLE_TOKEN_URL`, `GOOGLE_API_URL` | opcionais, só para testes: os endereços do Google que a agenda usa (o do token, `https://oauth2.googleapis.com/token`, e o da API, `https://www.googleapis.com/calendar/v3`). Trocados, a sincronização da agenda conversa com um servidor de teste em vez do Google |
 
 ### Mensagens pelo Telegram
 
@@ -1167,7 +1186,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | [`operacoes.php`](operacoes.php) | as regras de cada gravação: validações e mensagens |
 | [`cron.php`](cron.php) | o plano, a sessão do dia, as rodadas da manhã e da noite, os eventos, a agenda e a manutenção dos documentos |
 | `index.php`, `plano.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `usuarios.php` | as páginas (só o esqueleto) |
-| `ajuda.php` | a página de ajuda: as seções do README para quem usa, convertidas para HTML |
+| `ajuda.php` | a página de ajuda: as seções do README para quem usa (quais são e a leitura ficam no `lib.php`, que a API usa em `recurso=manual`), convertidas para HTML |
 | [`pagina.php`](pagina.php) | o login do site e o menu |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |
 | [`estilo.css`](estilo.css) | o visual |

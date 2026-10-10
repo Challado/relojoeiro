@@ -3615,5 +3615,63 @@ function sincronizar_agenda($hoje)
     return $res;
 }
 
+// O manual: os trechos do README.md que a página Ajuda mostra (as seções para quem usa: sem a instalação, a API e o código),
+// na ordem dele, cada um da seção do primeiro título até antes da do segundo. A página Ajuda (ajuda.php) converte para HTML;
+// a API (recurso=manual, ou recurso=ajuda&parte=manual) devolve o mesmo texto, em markdown e seção por seção
+const MANUAL_TRECHOS = [["A ideia central", "Experimente em 1 minuto"], ["As telas", "A API"], ["Perguntas frequentes", "Como é por dentro"]];
+
+// A âncora de um título, como a do GitHub (os links do README para as próprias seções funcionam na Ajuda também):
+// minúsculas, sem pontuação, espaços viram hífens; as letras acentuadas ficam
+function manual_ancora($titulo)
+{
+    $t = function_exists("mb_strtolower") ? mb_strtolower($titulo, "UTF-8") : strtolower($titulo);
+    $t = preg_replace("/[^\\p{L}\\p{N} _-]/u", "", $t);
+    return str_replace(" ", "-", trim((string)$t));
+}
+
+// O markdown do manual (vazio: o README.md não está na pasta do sistema)
+function manual_markdown()
+{
+    $readme = str_replace("\r\n", "\n", (string)@file_get_contents(__DIR__ . "/README.md"));
+    $md = "";
+    foreach (MANUAL_TRECHOS as $t) {
+        $ini = strpos($readme, "\n## " . $t[0]);
+        $fim = $ini === false ? false : strpos($readme, "\n## " . $t[1], $ini + 1);
+        if ($ini !== false) {
+            $md .= substr($readme, $ini, $fim === false ? null : $fim - $ini) . "\n";
+        }
+    }
+    return $md;
+}
+
+// O manual seção por seção: cada título (## a ####) com o nível, a âncora e o texto até o próximo título, em markdown (os
+// títulos dentro de um bloco de código não contam)
+function manual_secoes($md)
+{
+    $secoes = [];
+    $atual = null;
+    $no_codigo = false;
+    foreach (explode("\n", $md) as $l) {
+        if (strpos($l, "```") === 0) {
+            $no_codigo = !$no_codigo;
+        }
+        if (!$no_codigo && preg_match("/^(#{2,4})\\s+(.*)$/", $l, $m) === 1) {
+            if ($atual !== null) {
+                $secoes[] = $atual;
+            }
+            $atual = ["nivel" => strlen($m[1]), "titulo" => trim($m[2]), "ancora" => manual_ancora(trim($m[2])), "texto" => ""];
+        } elseif ($atual !== null) {
+            $atual["texto"] .= $l . "\n";
+        }
+    }
+    if ($atual !== null) {
+        $secoes[] = $atual;
+    }
+    foreach ($secoes as $i => $x) {
+        $secoes[$i]["texto"] = trim(preg_replace("/\\n-{3,}\\s*$/", "", rtrim($x["texto"])));
+    }
+    return $secoes;
+}
+
 // o back-end de escrita (as operações que as páginas e a API chamam)
 require_once __DIR__ . "/operacoes.php";

@@ -52,6 +52,7 @@ const RECONSTRUCAO_CONFIG_PHP = [
     "DOCUMENTOS_LIMITE (e o nome antigo MANUAL_LIMITE)" => "o maior documento aceito, em bytes (sem ele: 100 MB; 0 ou -1: sem limite do sistema)",
     "DOCUMENTOS_COPIA_BANCO" => "a cópia dos documentos no banco para o sistema inteiro: true, todos; false, nenhum; ausente, o relógio e o arquivo decidem",
     "ANTIGO_HOST, ANTIGO_PORTA, ANTIGO_USUARIO, ANTIGO_SENHA" => "só para importar o sistema anterior (importar.php)",
+    "GOOGLE_TOKEN_URL, GOOGLE_API_URL" => "só para testes: os endereços do Google que a agenda usa (o do token e o da API do Google Agenda); trocados, a sincronização conversa com um servidor de teste",
 ];
 
 function reconstrucao()
@@ -91,7 +92,8 @@ function reconstrucao()
             "O conhecimento sobre relógios não está no código: está no cadastro inicial (schema.sql, a partir de \"-- critérios iniciais\" para os "
                 . "critérios; os campos, os tipos de lançamento, as fórmulas, os avisos e os modos nas migrações). Leia também por "
                 . "recurso=cadastros e recurso=criterios. A reescrita traz esse cadastro como dado, não como código.",
-            "O README.md explica cada tela e cada opção para quem usa; o testes/cenario.php é o roteiro de aceitação (veja a seção testes).",
+            "O README.md explica cada tela e cada opção para quem usa (as seções para quem usa saem também pela API, em recurso=manual: o texto da "
+                . "página Ajuda); o testes/cenario.php é o roteiro de aceitação (veja a seção testes).",
         ],
         "secoes" => [
             $secao("principios", "Os princípios (não negociáveis)", [
@@ -152,7 +154,8 @@ function reconstrucao()
                 "10. O pulso sozinho e as sessões esquecidas; o cron.",
                 "11. As mensagens (Telegram), a agenda (Google), os eventos personalizados e a tabela \"O que vai para onde\".",
                 "12. Os documentos (pasta, cópia no banco em três níveis, galeria, vídeos, PDF, NF-e) e a manutenção deles no cron.",
-                "13. As telas, os usuários, as execuções do cron, a ajuda (o README dentro do sistema) e a importação do sistema anterior.",
+                "13. As telas, os usuários, as execuções do cron, a ajuda (o README dentro do sistema: os mesmos trechos que recurso=manual devolve) "
+                    . "e a importação do sistema anterior.",
                 "14. A aceitação: o roteiro de testes nos três bancos dá as mesmas respostas (seção testes).",
             ]),
             $secao("arvore_campos", "A árvore, os campos e os relógios", [

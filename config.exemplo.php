@@ -39,3 +39,8 @@ define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");
 // define("ANTIGO_PORTA", 3306);
 // define("ANTIGO_USUARIO", "relogios");
 // define("ANTIGO_SENHA", "a senha do banco antigo");
+
+// só para testes: os endereços do Google que a agenda usa (sem estas linhas, os do Google de verdade); trocados, a
+// sincronização da agenda conversa com um servidor de teste
+// define("GOOGLE_TOKEN_URL", "https://oauth2.googleapis.com/token");
+// define("GOOGLE_API_URL", "https://www.googleapis.com/calendar/v3");
