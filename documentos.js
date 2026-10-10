@@ -84,7 +84,7 @@ function montar() {
       el("option", {"value": "0"}, "Todos") + d.relogios.map(function (r) {
         return el("option", {"value": r.id, "selected": r.id === rid}, h(r.nome) + (r.documentos > 0 ? " (" + r.documentos + ")" : ""));
       }).join("")))
-      + (d.relogio ? " " + el("a", {"href": "ficha.php?id=" + rid}, "a ficha do relógio") : ""));
+      + (d.relogio ? " " + el("a", {"href": "ficha.php?id=" + rid, "class": "botao leve"}, "Abrir a ficha do relógio") : ""));
   if (recado !== "") {
     res += el("p", {"class": "acao"}, h(recado));
   }

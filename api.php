@@ -161,7 +161,8 @@
  *                            {"nome", "data", "momento", "falta"} (o aviso mais perto), "compra": {"data", "valor", "loja", "garantia_ate"},
  *                            "leitura": {"inicio", "valor", "unidade"} (a última), "de_hoje", "com_aviso", "foto" (a versão)}]}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=hoje"
- *   recurso=ficha            relogio=<id>: tudo o que o painel de um relógio mostra: {"hoje", "copia_sistema", "relogio": {"id", "nome", "no_id",
+ *   recurso=ficha            relogio=<id>: tudo o que o painel de um relógio mostra: {"hoje", "copia_sistema", "painel_modo",
+ *                            "relogio": {"id", "nome", "no_id",
  *                            "disponivel", "copia_banco", "tipo", "caminho", "observacao", "foto", "documentos": {"total",
  *                            "categorias": [{"id", "nome", "documentos"}], "pasta_ok", "copia_sistema"}, "em_uso", "agora", "carga",
  *                            "carga_de", "situacao", "nota": {"nota", "conjunto_texto"}, "proxima" (a próxima entrada no plano), "proxima_ate", "escala_fim",
@@ -375,7 +376,8 @@
  *   recurso=config            salvar (horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (a sessão no sol esquecida fecha
  *                             a essa hora): HH:MM; pulso_auto_inicio e pulso_auto_fim (1 ou 0: pôr no pulso sozinho no
  *                             início do horário de uso, tirar sozinho no fim; 0: só pelo Pôs, só pelo Tirou); carga_limiar (1 a 99: carregar nessa carga, o geral); sol_limiar (1 a 99: o
- *                             solar vai para o sol nessa carga); url_sistema;
+ *                             solar vai para o sol nessa carga); url_sistema; painel_modo (lado: o relógio abre no painel ao lado da
+ *                             lista; flutuante: numa janela grande por cima da página);
  *                             alerta_ativo (ou mensagens_ativas) e agenda_ativa: 1 ou 0; agenda_id; agenda_chave; agenda_antecedencia
  *                             (1 a 365); max_sem_uso (0 a 365); previsao_limite (0 a 100); medicao_janela_dias (1 a 3650: a média
  *                             do gasto medido usa as medições destes últimos dias); os canais: alerta_tipos[] e agenda_tipos[]
@@ -479,6 +481,8 @@
  *     config.max_sem_uso             a garantia de rodízio: nenhum relógio passa desses dias sem uso (0 desliga)
  *     config.medicao_janela_dias     a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a última)
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
+ *     config.painel_modo             como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela
+ *                                    grande por cima da página); vazio: lado
  *     config.migracao_v10            marca de que a migração v10 foi aplicada (1)
  *     config.migracao_v12            marca de que a migração v12 foi aplicada (1)
  *     config.migracao_v16            marca de que a migração v16 foi aplicada (1)
@@ -1070,6 +1074,8 @@
  *     copia_sistema                  a cópia no banco pelo config.php (DOCUMENTOS_COPIA_BANCO), que vale sobre o relógio e o arquivo:
  *                                    verdadeiro, todo arquivo vai; falso, nenhum vai; null (sem a constante), cada relógio decide (a caixa
  *                                    do cadastro só aparece então)
+ *     painel_modo                    como o relógio abre na página Hoje (a Configuração): lado (no painel à direita da lista, o padrão) ou
+ *                                    flutuante (numa janela grande por cima da página); no celular, os dois cobrem a tela
  *     relogio                        o relógio; null: o cadastro de um relógio novo
  *     relogio.agora                  o estado por extenso
  *     relogio.autonomia              as autonomias do relógio (as mesmas do recurso autonomia)
@@ -1308,6 +1314,8 @@
  *     config.max_sem_uso             a garantia de rodízio: nenhum relógio passa desses dias sem uso (0 desliga)
  *     config.medicao_janela_dias     a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a última)
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
+ *     config.painel_modo             como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela
+ *                                    grande por cima da página); vazio: lado
  *     config.migracao_v10            marca de que a migração v10 foi aplicada (1)
  *     config.migracao_v12            marca de que a migração v12 foi aplicada (1)
  *     config.migracao_v16            marca de que a migração v16 foi aplicada (1)
@@ -2379,7 +2387,7 @@ if (!$token_ok && $quem === "") {
         $campos[] = ["identificador" => $ident, "nome" => $c["nome"], "tipo" => $c["tipo"], "unidade" => $c["unidade"], "opcoes" => array_values(array_filter(array_map("trim", explode("\n", (string)$c["opcoes"])))),
             "padrao" => $c["padrao"], "no_id" => $c["no_id"] === null ? 0 : (int)$c["no_id"], "valor" => $valores[$ident] ?? null];
     }
-    $saida = ["hoje" => $hoje->format("Y-m-d"), "relogio" => null, "copia_sistema" => documentos_copia_sistema(), "campos" => $campos,
+    $saida = ["hoje" => $hoje->format("Y-m-d"), "relogio" => null, "copia_sistema" => documentos_copia_sistema(), "painel_modo" => painel_modo(), "campos" => $campos,
         "grupos" => array_map(function ($o) use ($n) { return ["id" => $o[0], "caminho" => no_caminho($o[0]), "cadeia" => no_cadeia($o[0])]; }, nos_em_ordem())];
     if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
         $codigo = 404;
@@ -2829,7 +2837,7 @@ if (!$token_ok && $quem === "") {
                 "excluir" => ["campos" => "id (não o ativo)", "exemplo" => "curl -u lucas:senha -d recurso=modos -d acao=excluir -d id=6 http://servidor/relojoeiro/api.php"],
             ],
             "config" => [
-                "salvar" => ["campos" => "horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (HH:MM), pulso_auto_inicio e pulso_auto_fim (1 ou 0), carga_limiar (1 a 99), sol_limiar (1 a 99), url_sistema, alerta_ativo e agenda_ativa (1 ou 0), agenda_id, agenda_chave, agenda_antecedencia (1 a 365), max_sem_uso, previsao_limite, medicao_janela_dias (1 a 3650: a janela da média do gasto medido), alerta_tipos[] e agenda_tipos[] (os tipos de aviso de cada canal: dia, vespera, os identificadores dos avisos, ev<id>), tg_padrao e ag_padrao, tg_proprio_<tipo> e ag_proprio_<tipo> (1 ou 0), tg_corpo_<tipo> e ag_corpo_<tipo>; só o que vier muda", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=salvar -d horario_manha=06:30 -d alerta_ativo=1 --data-urlencode \"tg_padrao={acao}: {relogio}\" -d tg_proprio_corda=1 --data-urlencode \"tg_corpo_corda=Corda no {relogio}!\" http://servidor/relojoeiro/api.php"],
+                "salvar" => ["campos" => "horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (HH:MM), pulso_auto_inicio e pulso_auto_fim (1 ou 0), carga_limiar (1 a 99), sol_limiar (1 a 99), url_sistema, painel_modo (lado: o relógio abre no painel ao lado da lista; flutuante: numa janela grande por cima da página), alerta_ativo e agenda_ativa (1 ou 0), agenda_id, agenda_chave, agenda_antecedencia (1 a 365), max_sem_uso, previsao_limite, medicao_janela_dias (1 a 3650: a janela da média do gasto medido), alerta_tipos[] e agenda_tipos[] (os tipos de aviso de cada canal: dia, vespera, os identificadores dos avisos, ev<id>), tg_padrao e ag_padrao, tg_proprio_<tipo> e ag_proprio_<tipo> (1 ou 0), tg_corpo_<tipo> e ag_corpo_<tipo>; só o que vier muda", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=salvar -d horario_manha=06:30 -d alerta_ativo=1 --data-urlencode \"tg_padrao={acao}: {relogio}\" -d tg_proprio_corda=1 --data-urlencode \"tg_corpo_corda=Corda no {relogio}!\" http://servidor/relojoeiro/api.php"],
                 "testar_manha" => ["campos" => "(nada): manda a mensagem da manhã agora", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=testar_manha http://servidor/relojoeiro/api.php"],
                 "testar_noite" => ["campos" => "(nada): manda a mensagem da noite agora", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=testar_noite http://servidor/relojoeiro/api.php"],
                 "evento_salvar" => ["campos" => "evento_id (ou id; 0 cria), nome, ativo, repeticao (uma, diaria, semanal, mensal, intervalo), hora (HH:MM), data_inicio, dias_semana (1 a 7), dia_mes, intervalo_dias, relogio_id; o evento novo já vai pelo Telegram", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=evento_salvar -d evento_id=0 -d \"nome=Limpar as pulseiras\" -d repeticao=semanal -d \"dias_semana[]=1\" -d \"dias_semana[]=4\" -d hora=20:00 http://servidor/relojoeiro/api.php"],
@@ -2953,6 +2961,7 @@ if (!$token_ok && $quem === "") {
                 "config.max_sem_uso" => "a garantia de rodízio: nenhum relógio passa desses dias sem uso (0 desliga)",
                 "config.medicao_janela_dias" => "a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a última)",
                 "config.mensagens_ativas" => "1: o Telegram (a API de alerta) envia; 0: não envia",
+                "config.painel_modo" => "como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela grande por cima da página); vazio: lado",
                 "config.migracao_v10" => "marca de que a migração v10 foi aplicada (1)",
                 "config.migracao_v12" => "marca de que a migração v12 foi aplicada (1)",
                 "config.migracao_v16" => "marca de que a migração v16 foi aplicada (1)",
@@ -3393,6 +3402,7 @@ if (!$token_ok && $quem === "") {
                 "grupos[].id" => "o número",
                 "hoje" => "hoje (texto AAAA-MM-DD)",
                 "copia_sistema" => "a cópia no banco pelo config.php (DOCUMENTOS_COPIA_BANCO), que vale sobre o relógio e o arquivo: verdadeiro, todo arquivo vai; falso, nenhum vai; null (sem a constante), cada relógio decide (a caixa do cadastro só aparece então)",
+                "painel_modo" => "como o relógio abre na página Hoje (a Configuração): lado (no painel à direita da lista, o padrão) ou flutuante (numa janela grande por cima da página); no celular, os dois cobrem a tela",
                 "relogio" => "o relógio; null: o cadastro de um relógio novo",
                 "relogio.agora" => "o estado por extenso",
                 "relogio.autonomia" => "as autonomias do relógio (as mesmas do recurso autonomia)",
@@ -3568,6 +3578,7 @@ if (!$token_ok && $quem === "") {
                 "config.max_sem_uso" => "a garantia de rodízio: nenhum relógio passa desses dias sem uso (0 desliga)",
                 "config.medicao_janela_dias" => "a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a última)",
                 "config.mensagens_ativas" => "1: o Telegram (a API de alerta) envia; 0: não envia",
+                "config.painel_modo" => "como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela grande por cima da página); vazio: lado",
                 "config.migracao_v10" => "marca de que a migração v10 foi aplicada (1)",
                 "config.migracao_v12" => "marca de que a migração v12 foi aplicada (1)",
                 "config.migracao_v16" => "marca de que a migração v16 foi aplicada (1)",

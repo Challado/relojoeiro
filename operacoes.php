@@ -1987,6 +1987,9 @@ function op_config($acao, $d)
         if (array_key_exists("url_sistema", $d) && trim((string)$d["url_sistema"]) !== "" && preg_match("#^https?://#i", trim((string)$d["url_sistema"])) !== 1) {
             $erros[] = "Endereço do sistema: começando por http:// ou https:// (vazio: sem link).";
         }
+        if (array_key_exists("painel_modo", $d) && !in_array((string)$d["painel_modo"], ["lado", "flutuante"], true)) {
+            $erros[] = "Abrir o relógio: lado (ao lado da lista) ou flutuante (numa janela grande por cima da página).";
+        }
         foreach (["agenda_id" => 255, "agenda_chave" => 500] as $k => $max) {
             if (array_key_exists($k, $d) && strlen(trim((string)$d[$k])) > $max) {
                 $erros[] = $k . ": até " . $max . " caracteres.";
@@ -2005,7 +2008,7 @@ function op_config($acao, $d)
         }
         if (count($erros) === 0) {
             foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "agenda_antecedencia", "agenda_id", "agenda_chave", "url_sistema", "carga_limiar",
-                "sol_limiar", "medicao_janela_dias"] as $k) {
+                "sol_limiar", "medicao_janela_dias", "painel_modo"] as $k) {
                 if (array_key_exists($k, $d)) {
                     cfg_set($k, trim((string)$d[$k]));
                 }

@@ -85,6 +85,14 @@ function rotularTabelas() {
     });
   });
 }
+// As ações de uma linha (Editar, ↑ ↓, Excluir): o Excluir em vermelho, em todas as tabelas, também nas montadas depois
+function marcarAcoes() {
+  document.querySelectorAll(".acoes-linha button, .acoes-ev button").forEach(function (b) {
+    if (/^\s*excluir/i.test(b.textContent) && !b.classList.contains("perigo")) {
+      b.classList.add("perigo");
+    }
+  });
+}
 var rotulosPedidos = false;
 new MutationObserver(function () {
   if (!rotulosPedidos) {
@@ -92,6 +100,7 @@ new MutationObserver(function () {
     setTimeout(function () {
       rotulosPedidos = false;
       rotularTabelas();
+      marcarAcoes();
     }, 0);
   }
 }).observe(document.body, {childList: true, subtree: true});
