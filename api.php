@@ -234,6 +234,11 @@
  *   recurso=reconstrucao     (ou recurso=ajuda&parte=reconstrucao) o roteiro para reescrever a aplicação inteira do zero, em qualquer
  *                            linguagem e banco, chegando ao mesmo sistema: {"o_que_e", "como_usar": [textos], "secoes": [{"id", "titulo",
  *                            "itens": [textos]}] (os princípios, a arquitetura, a ordem de construção e as regras de cada parte),
+ *                            "telas": {"como_ler", "visual": [{"id", "titulo", "itens"}] (cores, letras, controles, componentes,
+ *                            larguras e comportamento, com os valores exatos), "menu": {"como", "itens": [{"pagina", "rotulo"}]},
+ *                            "paginas": [{"id", "pagina", "titulo", "endereco", "le", "grava", "partes": [{"titulo", "itens"}]}] (cada
+ *                            página de cima para baixo: as tabelas, os campos, os botões e as mensagens, com os textos da tela),
+ *                            "capturas": [{"arquivo", "mostra"}]} (a especificação visual: a mesma interface, não uma parecida),
  *                            "modelo_de_dados": {"banco", "como_ler", "tabelas": [cada tabela com as colunas, as chaves, os índices e as
  *                            regras, lidas do próprio banco]}, "listas": {as funções das fórmulas, os tipos de campo, os formatos de
  *                            lançamento, as repetições, os dias da semana, as âncoras, os canais, as migrações e as constantes do config.php}}
@@ -2010,6 +2015,38 @@
  *                                    gasto, criterios, rodizio, pulso, cron, mensagens, documentos, telas, seguranca, testes)
  *     secoes[].titulo                o título da parte
  *     secoes[].itens[]               as regras e as explicações daquela parte, uma por texto
+ *     telas                          a especificação visual que a reescrita tem de reproduzir, tela por tela: o que está lá existe, o que
+ *                                    não está não existe
+ *     telas.como_ler                 como ler a especificação (os textos entre aspas são os da tela, palavra por palavra; o estilo.css é a
+ *                                    referência de cada medida)
+ *     telas.visual[]                 o sistema visual, comum a todas as páginas, em partes: cores, letras, controles, componentes, layout
+ *                                    (larguras e tamanhos de tela) e comportamento
+ *     telas.visual[].id              o nome curto da parte (cores, letras, controles, componentes, layout, comportamento)
+ *     telas.visual[].titulo          o título da parte
+ *     telas.visual[].itens[]         uma regra do visual, com os valores exatos (cores em hexadecimal, tamanhos em px ou rem, os textos da
+ *                                    tela)
+ *     telas.menu                     o menu do topo
+ *     telas.menu.como                como o menu aparece no computador e no celular, e as páginas que não estão nele
+ *     telas.menu.itens[]             os itens do menu, na ordem da barra
+ *     telas.menu.itens[].pagina      o arquivo da página (index.php, plano.php...)
+ *     telas.menu.itens[].rotulo      o texto do item no menu
+ *     telas.paginas[]                cada página do sistema, na ordem do menu e depois as que abrem do relógio
+ *     telas.paginas[].id             o nome curto da página (hoje, ficha, plano, configuracao, criterios, grupos, execucoes, historico,
+ *                                    documentos, cadastros, usuarios, ajuda)
+ *     telas.paginas[].pagina         o arquivo da página
+ *     telas.paginas[].titulo         o título da página (o da aba do navegador)
+ *     telas.paginas[].endereco       o endereço, com os parâmetros que a página aceita
+ *     telas.paginas[].le[]           o que a página lê da API
+ *     telas.paginas[].grava[]        o que a página grava pela API (o recurso e as ações); vazio: só lê
+ *     telas.paginas[].partes[]       as partes da página, de cima para baixo
+ *     telas.paginas[].partes[].titulo
+ *                                    o nome da parte (e quando ela aparece)
+ *     telas.paginas[].partes[].itens[]
+ *                                    o que a parte tem: cada tabela com as colunas, cada formulário com os campos (rótulo, tipo, padrão e
+ *                                    limites), cada botão com o texto e o que ele manda para a API, e cada mensagem
+ *     telas.capturas[]               as capturas de tela no repositório, para conferir o resultado
+ *     telas.capturas[].arquivo       o caminho da imagem (docs/telas/...)
+ *     telas.capturas[].mostra        o que ela mostra
  *     modelo_de_dados                o modelo de dados, lido do próprio banco em uso (o que vale agora, depois de todas as migrações)
  *     modelo_de_dados.banco          o banco de onde o modelo foi lido: mysql, pgsql ou sqlite (os tipos das colunas vêm no dialeto dele)
  *     modelo_de_dados.como_ler       como ler as tabelas, e as três referências que ficam pelo nome, de propósito
@@ -3130,7 +3167,7 @@ if (!$token_ok && $quem === "") {
             "manual" => ["descricao" => "o texto da página Ajuda: os trechos do README para quem usa (a ideia central, como funciona, o cadastro campo por campo, a Configuração, um dia com o sistema, as telas, as perguntas frequentes e como reescrever o sistema do zero), em markdown, inteiro e seção por seção (título, nível, âncora e texto), e já em HTML com o sumário, como a página Ajuda mostra; sem o README.md na pasta: 404; responde mesmo com o banco desatualizado. O mesmo que recurso=ajuda&parte=manual",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha -g \"http://servidor/relojoeiro/api.php?recurso=manual&mostrar[secoes]=titulo,ancora\""],
-            "reconstrucao" => ["descricao" => "o roteiro para reescrever a aplicação inteira do zero, em qualquer linguagem e banco, chegando ao mesmo sistema: o que ele é, os princípios, a arquitetura, a ordem de construção e as regras de cada parte (árvore e campos, lançamentos, fórmulas, avisos, gasto medido, critérios, rodízio e escala, pulso sozinho, cron, mensagens e agenda, documentos, telas, segurança, testes), o modelo de dados lido do próprio banco (tabelas, colunas, chaves, índices e regras de validação) e as listas do código (funções das fórmulas, tipos de campo, formatos de lançamento, repetições, dias da semana, âncoras, canais, migrações e as constantes do config.php). O mesmo que recurso=ajuda&parte=reconstrucao",
+            "reconstrucao" => ["descricao" => "o roteiro para reescrever a aplicação inteira do zero, em qualquer linguagem e banco, chegando ao mesmo sistema: o que ele é, os princípios, a arquitetura, a ordem de construção e as regras de cada parte (árvore e campos, lançamentos, fórmulas, avisos, gasto medido, critérios, rodízio e escala, pulso sozinho, cron, mensagens e agenda, documentos, telas, segurança, testes), a especificação visual de cada tela (telas: o visual com os valores exatos, o menu e cada página com as tabelas, os campos, os botões e as mensagens), o modelo de dados lido do próprio banco (tabelas, colunas, chaves, índices e regras de validação) e as listas do código (funções das fórmulas, tipos de campo, formatos de lançamento, repetições, dias da semana, âncoras, canais, migrações e as constantes do config.php). O mesmo que recurso=ajuda&parte=reconstrucao",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=reconstrucao\""],
         ],
@@ -4544,6 +4581,30 @@ if (!$token_ok && $quem === "") {
                 "secoes[].id" => "o nome curto da parte (principios, arquitetura, ordem, arvore_campos, lancamentos, formulas, avisos, gasto, criterios, rodizio, pulso, cron, mensagens, documentos, telas, seguranca, testes)",
                 "secoes[].titulo" => "o título da parte",
                 "secoes[].itens[]" => "as regras e as explicações daquela parte, uma por texto",
+                "telas" => "a especificação visual que a reescrita tem de reproduzir, tela por tela: o que está lá existe, o que não está não existe",
+                "telas.como_ler" => "como ler a especificação (os textos entre aspas são os da tela, palavra por palavra; o estilo.css é a referência de cada medida)",
+                "telas.visual[]" => "o sistema visual, comum a todas as páginas, em partes: cores, letras, controles, componentes, layout (larguras e tamanhos de tela) e comportamento",
+                "telas.visual[].id" => "o nome curto da parte (cores, letras, controles, componentes, layout, comportamento)",
+                "telas.visual[].titulo" => "o título da parte",
+                "telas.visual[].itens[]" => "uma regra do visual, com os valores exatos (cores em hexadecimal, tamanhos em px ou rem, os textos da tela)",
+                "telas.menu" => "o menu do topo",
+                "telas.menu.como" => "como o menu aparece no computador e no celular, e as páginas que não estão nele",
+                "telas.menu.itens[]" => "os itens do menu, na ordem da barra",
+                "telas.menu.itens[].pagina" => "o arquivo da página (index.php, plano.php...)",
+                "telas.menu.itens[].rotulo" => "o texto do item no menu",
+                "telas.paginas[]" => "cada página do sistema, na ordem do menu e depois as que abrem do relógio",
+                "telas.paginas[].id" => "o nome curto da página (hoje, ficha, plano, configuracao, criterios, grupos, execucoes, historico, documentos, cadastros, usuarios, ajuda)",
+                "telas.paginas[].pagina" => "o arquivo da página",
+                "telas.paginas[].titulo" => "o título da página (o da aba do navegador)",
+                "telas.paginas[].endereco" => "o endereço, com os parâmetros que a página aceita",
+                "telas.paginas[].le[]" => "o que a página lê da API",
+                "telas.paginas[].grava[]" => "o que a página grava pela API (o recurso e as ações); vazio: só lê",
+                "telas.paginas[].partes[]" => "as partes da página, de cima para baixo",
+                "telas.paginas[].partes[].titulo" => "o nome da parte (e quando ela aparece)",
+                "telas.paginas[].partes[].itens[]" => "o que a parte tem: cada tabela com as colunas, cada formulário com os campos (rótulo, tipo, padrão e limites), cada botão com o texto e o que ele manda para a API, e cada mensagem",
+                "telas.capturas[]" => "as capturas de tela no repositório, para conferir o resultado",
+                "telas.capturas[].arquivo" => "o caminho da imagem (docs/telas/...)",
+                "telas.capturas[].mostra" => "o que ela mostra",
                 "modelo_de_dados" => "o modelo de dados, lido do próprio banco em uso (o que vale agora, depois de todas as migrações)",
                 "modelo_de_dados.banco" => "o banco de onde o modelo foi lido: mysql, pgsql ou sqlite (os tipos das colunas vêm no dialeto dele)",
                 "modelo_de_dados.como_ler" => "como ler as tabelas, e as três referências que ficam pelo nome, de propósito",
