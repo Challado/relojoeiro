@@ -833,6 +833,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `ajuda` | a documentação inteira: cada consulta, cada escrita, cada campo de cada resposta e as funções do motor |
 | `manual` (ou `ajuda&parte=manual`) | o texto da página **Ajuda** (as seções deste README para quem usa: da ideia central às perguntas frequentes), em markdown, inteiro e seção por seção, com o título, o nível e a âncora de cada uma, e já em HTML com o sumário (é dele que a página Ajuda se monta) |
 | `reconstrucao` (ou `ajuda&parte=reconstrucao`) | o roteiro para **reescrever o sistema inteiro do zero** (veja [Reescrever o sistema do zero](#reescrever-o-sistema-do-zero)) |
+| `codigo` (ou `ajuda&parte=codigo`) | **o código do sistema como está agora**, lido do disco na hora: cada arquivo com a camada, o que ele é, a linguagem, o tamanho, as linhas, o SHA-256 e a data, e o que fica de fora de propósito (`nao_mostrados`). `arquivo=<nome>` traz o conteúdo (a imagem em base64; numa página, também o HTML que o navegador recebe); `cru=1` traz o arquivo puro, sem JSON, para ler no navegador; `conteudo=1` traz todos (veja [Reescrever o sistema do zero](#reescrever-o-sistema-do-zero)) |
 
 **Escritas** (`POST`, com `recurso=` e `acao=`), todas com as mesmas validações e mensagens da tela:
 
@@ -862,11 +863,11 @@ por motivo) numa escrita recusada:
 | `400` | escrita recusada pelas validações (os erros dizem por quê), ou uma fórmula mal escrita no `calcular` |
 | `302` | `recurso=entrar` com o login certo e `volta=`: vai para a página |
 | `401` | sem o token nem o login do site, ou com eles errados; sem nenhum usuário (ou com o banco vazio), a resposta diz o que fazer (`sem_usuarios` e `como`) |
-| `404` | recurso desconhecido (a resposta traz a lista dos recursos), ou o relógio, a foto, o documento (ou o arquivo dele) ou o `README.md` (no `manual`) que não existe |
+| `404` | recurso desconhecido (a resposta traz a lista dos recursos), ou o relógio, a foto, o documento (ou o arquivo dele) ou o `README.md` (no `manual`) que não existe, ou um arquivo que não sai pelo `codigo` (com `o_que_ver` no que fica de fora de propósito, como o `config.php`) |
 | `409` | o banco recusou a gravação: um registro que outro ainda usa, um valor repetido, ou um valor fora das regras de validação do banco (vem o nome da regra) |
 | `413` | o envio passou do limite do PHP do servidor (`post_max_size`): um arquivo grande demais |
 | `500` | sistema parado (o `API_TOKEN` ou o `FUSO` do `config.php` inválido) ou um erro interno |
-| `503` | banco desatualizado (só `recurso=migracoes` responde, e a escrita `migracoes`/`aplicar`; e o `manual`, que não usa o banco), banco vazio (antes da instalação só `instalacao` responde, e o `manual`) ou banco fora do ar |
+| `503` | banco desatualizado (só `recurso=migracoes` responde, e a escrita `migracoes`/`aplicar`; e o `manual` e o `codigo`, que não usam o banco), banco vazio (antes da instalação só `instalacao` responde, e o `manual` e o `codigo`) ou banco fora do ar |
 
 ### Os usuários e as senhas
 
@@ -1149,10 +1150,28 @@ roteiro: `api.php?recurso=reconstrucao` (o mesmo que `api.php?recurso=ajuda&part
 | `telas` | **a especificação visual, tela por tela**, para a reescrita reproduzir a mesma interface (não uma parecida): o visual com os valores exatos (as cores em hexadecimal, as letras, a altura dos campos e botões, cada componente: cartão, quadro, pares rótulo e valor, tabela, etiquetas, barra de carga, abas, barra de salvar), as larguras e o que muda no celular, no tablet e no computador, o comportamento comum (gravar, confirmar, sem login, banco desatualizado, fotos); o menu na ordem; e cada página com o endereço, o que lê e grava na API e as partes de cima para baixo, com cada tabela (as colunas), cada formulário (os campos com rótulo, tipo, padrão e limites), cada botão (o texto e o que manda para a API) e cada mensagem, palavra por palavra. E as capturas em `docs/telas/` |
 | `modelo_de_dados` | **lido do próprio banco em uso**, na hora: cada tabela com o que ela guarda, as colunas (tipo, vazio, padrão), a chave primária, as chaves estrangeiras (e o que acontece ao apagar), as chaves únicas, os índices e as regras de validação. Nunca fica atrás da versão instalada |
 | `listas` | as listas do código, também lidas na hora: as funções das fórmulas (com os argumentos e se leem o histórico), os tipos de campo, os formatos de lançamento, as repetições dos eventos, os dias da semana, as âncoras das mensagens, os canais, as migrações e as constantes do `config.php` |
+| `codigo` | a lista dos arquivos do sistema (a mesma do `recurso=codigo`, sem o conteúdo); e cada página em `telas` diz os arquivos dela (`codigo`) |
 
 O contrato da API (cada consulta, cada escrita e cada campo) fica no `recurso=ajuda`, e o conhecimento sobre relógios (os campos,
 as fórmulas, os avisos, os critérios e os modos que vêm prontos) no `schema.sql` e nos recursos `cadastros` e `criterios`: o
 roteiro aponta para eles. A aceitação é o `testes/cenario.php`: a reescrita tem de dar as mesmas respostas.
+
+E o código de verdade, como está agora, sai pelo `recurso=codigo`, lido do disco na hora do pedido (assim nunca fica atrás de uma
+alteração): o CSS, o JavaScript, cada página (e o HTML que ela entrega ao navegador, já montado), a API, o núcleo, o banco e as
+migrações, o servidor, os testes e as capturas. Para ler no navegador, um arquivo puro:
+
+```
+api.php?recurso=codigo                                   a lista: cada arquivo com a camada, o que é, o tamanho e o SHA-256
+api.php?recurso=codigo&arquivo=estilo.css&cru=1          o CSS, puro
+api.php?recurso=codigo&arquivo=hoje.js&cru=1             o JavaScript da página Hoje, puro
+api.php?recurso=codigo&arquivo=index.php&html=1&cru=1    o HTML que a página Hoje entrega ao navegador
+api.php?recurso=codigo&conteudo=1&f[arquivos][camada]=tela   tudo o que é tela, de uma vez, em JSON
+```
+
+Só saem os arquivos do sistema (os do repositório). O que fica de fora de propósito vem em `nao_mostrados`, cada um com o porquê
+e o que ver no lugar: o `config.php` (tem as senhas: no lugar, o `config.exemplo.php` e as constantes explicadas na reconstrução),
+a chave do Google, o banco (o modelo está na reconstrução e os dados na API), a pasta dos documentos e as senhas dos usuários (só
+o hash existe).
 
 ## Como é por dentro
 

@@ -223,7 +223,7 @@
  *   recurso=ajuda            esta documentação em JSON: cada consulta com a descrição, os parâmetros e um exemplo; cada escrita com as ações,
  *                            os campos de cada uma e um exemplo; o dicionário de todos os campos das respostas ("campos"); a
  *                            autenticação, o formato, os erros e as funções do motor. [parte=manual: o manual, abaixo;
- *                            parte=reconstrucao: a reconstrução, abaixo]
+ *                            parte=reconstrucao: a reconstrução, abaixo; parte=codigo: o código, abaixo]
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=ajuda"
  *   recurso=manual           (ou recurso=ajuda&parte=manual) o texto da página Ajuda: os trechos do README para quem usa (a ideia
  *                            central, como funciona, o cadastro campo por campo, a Configuração, um dia com o sistema, as telas,
@@ -236,13 +236,27 @@
  *                            "itens": [textos]}] (os princípios, a arquitetura, a ordem de construção e as regras de cada parte),
  *                            "telas": {"como_ler", "visual": [{"id", "titulo", "itens"}] (cores, letras, controles, componentes,
  *                            larguras e comportamento, com os valores exatos), "menu": {"como", "itens": [{"pagina", "rotulo"}]},
- *                            "paginas": [{"id", "pagina", "titulo", "endereco", "le", "grava", "partes": [{"titulo", "itens"}]}] (cada
+ *                            "paginas": [{"id", "pagina", "titulo", "endereco", "le", "grava", "partes": [{"titulo", "itens"}], "codigo"}] (cada
  *                            página de cima para baixo: as tabelas, os campos, os botões e as mensagens, com os textos da tela),
  *                            "capturas": [{"arquivo", "mostra"}]} (a especificação visual: a mesma interface, não uma parecida),
+ *                            "codigo": {a lista do código, a mesma do recurso=codigo, sem o conteúdo},
  *                            "modelo_de_dados": {"banco", "como_ler", "tabelas": [cada tabela com as colunas, as chaves, os índices e as
  *                            regras, lidas do próprio banco]}, "listas": {as funções das fórmulas, os tipos de campo, os formatos de
  *                            lançamento, as repetições, os dias da semana, as âncoras, os canais, as migrações e as constantes do config.php}}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=reconstrucao"
+ *   recurso=codigo           (ou recurso=ajuda&parte=codigo) o código do sistema como está agora, lido do disco na hora do pedido, para
+ *                            a reescrita ler o original: {"como_usar", "camadas": [{"camada", "o_que_e"}], "arquivos": [{"arquivo",
+ *                            "camada", "o_que_e", "linguagem", "bytes", "linhas", "sha256", "alterado_em", "ver", "cru"; nas páginas
+ *                            também "usa" (os arquivos que ela carrega) e "html_cru"}], "nao_mostrados": [{"arquivo", "por_que",
+ *                            "o_que_ver"}] (o que fica de fora de propósito: o config.php, a chave do Google, o banco, os documentos,
+ *                            as senhas, e o que ver no lugar)}. Parâmetros: arquivo=<nome> (um arquivo, com o conteúdo como está em
+ *                            "conteudo", ou a imagem em "conteudo_base64"; numa página, também "html": o HTML que o navegador recebe,
+ *                            já montado); cru=1 com arquivo= (o arquivo puro, sem JSON: texto como text/plain, imagem como imagem);
+ *                            html=1 com cru=1 (o HTML de uma página, puro); conteudo=1 sem arquivo (todos, com o conteúdo; com
+ *                            f[arquivos][camada]=tela, só as telas). Só saem os arquivos do sistema (os do repositório); outro: 404.
+ *                            Responde mesmo com o banco vazio ou desatualizado
+ *                            Ex.: no navegador, http://servidor/relojoeiro/api.php?recurso=codigo&arquivo=estilo.css&cru=1
+ *                            Ex.: curl -u lucas:senha -g "http://servidor/relojoeiro/api.php?recurso=codigo&conteudo=1&f[arquivos][camada]=tela"
  *   A senha dos usuários não existe no sistema: sai o hash dela (recurso=usuarios), e o bloco SENHAS ensina a conferir e a migrar.
  *
  * ---------------------------------------------------------------------------------------------
@@ -2044,9 +2058,38 @@
  *     telas.paginas[].partes[].itens[]
  *                                    o que a parte tem: cada tabela com as colunas, cada formulário com os campos (rótulo, tipo, padrão e
  *                                    limites), cada botão com o texto e o que ele manda para a API, e cada mensagem
+ *     telas.paginas[].codigo[]       os arquivos da página, lidos dela na hora (o pagina.php, o estilo.css, a própria página e os scripts
+ *                                    que ela carrega): o código de cada um em recurso=codigo&arquivo=<nome>
  *     telas.capturas[]               as capturas de tela no repositório, para conferir o resultado
  *     telas.capturas[].arquivo       o caminho da imagem (docs/telas/...)
  *     telas.capturas[].mostra        o que ela mostra
+ *     codigo                         a lista do código do sistema, como em recurso=codigo (sem o conteúdo: cada arquivo pelo
+ *                                    recurso=codigo&arquivo=<nome>)
+ *     codigo.como_usar               como pedir um arquivo, o arquivo puro, o HTML de uma página e todos de uma vez
+ *     codigo.camadas[]               as camadas do sistema
+ *     codigo.camadas[].camada        o nome curto da camada
+ *     codigo.camadas[].o_que_e       o que está nela
+ *     codigo.arquivos[]              cada arquivo do sistema
+ *     codigo.arquivos[].arquivo      o nome do arquivo, com a pasta (estilo.css, testes/cenario.php, docs/telas/hoje.png): é o que se passa
+ *                                    em arquivo=
+ *     codigo.arquivos[].camada       a camada (tela, api, linha_de_comando, banco, servidor, testes, documentacao, repositorio, imagem;
+ *                                    veja camadas)
+ *     codigo.arquivos[].o_que_e      o que o arquivo é e o que ele faz
+ *     codigo.arquivos[].linguagem    php, javascript, css, sql, markdown, apache, nginx, texto ou png
+ *     codigo.arquivos[].bytes        o tamanho, em bytes
+ *     codigo.arquivos[].linhas       quantas linhas (null na imagem)
+ *     codigo.arquivos[].sha256       o SHA-256 do arquivo: para conferir a cópia, ou saber se mudou desde a última leitura
+ *     codigo.arquivos[].alterado_em  a data da última alteração do arquivo no servidor (AAAA-MM-DD HH:MM:SS)
+ *     codigo.arquivos[].ver          o endereço deste arquivo na API, com o conteúdo, em JSON
+ *     codigo.arquivos[].cru          o endereço do arquivo puro, sem JSON (texto como text/plain; imagem como imagem)
+ *     codigo.arquivos[].usa[]        só nas páginas: os arquivos que ela usa, na ordem (o pagina.php, o estilo.css, a própria página e os
+ *                                    scripts que ela carrega)
+ *     codigo.arquivos[].html_cru     só nas páginas: o endereço do HTML que o navegador recebe, puro
+ *     codigo.nao_mostrados[]         o que fica de fora de propósito
+ *     codigo.nao_mostrados[].arquivo o que é
+ *     codigo.nao_mostrados[].por_que por que não sai
+ *     codigo.nao_mostrados[].o_que_ver
+ *                                    onde está o que a reescrita precisa saber dele
  *     modelo_de_dados                o modelo de dados, lido do próprio banco em uso (o que vale agora, depois de todas as migrações)
  *     modelo_de_dados.banco          o banco de onde o modelo foi lido: mysql, pgsql ou sqlite (os tipos das colunas vêm no dialeto dele)
  *     modelo_de_dados.como_ler       como ler as tabelas, e as três referências que ficam pelo nome, de propósito
@@ -2131,6 +2174,54 @@
  *     listas.config_php[]            as constantes do config.php
  *     listas.config_php[].constante  o nome (ou os nomes) da constante
  *     listas.config_php[].descricao  para que ela serve
+ *   recurso=codigo
+ *     como_usar                      como pedir um arquivo, o arquivo puro, o HTML de uma página e todos de uma vez
+ *     camadas[]                      as camadas do sistema, na ordem
+ *     camadas[].camada               o nome curto da camada
+ *     camadas[].o_que_e              o que está nela
+ *     arquivos[]                     cada arquivo do sistema (os do repositório), pela camada
+ *     arquivos[].arquivo             o nome do arquivo, com a pasta (estilo.css, testes/cenario.php, docs/telas/hoje.png): é o que se passa
+ *                                    em arquivo=
+ *     arquivos[].camada              a camada (tela, api, linha_de_comando, banco, servidor, testes, documentacao, repositorio, imagem;
+ *                                    veja camadas)
+ *     arquivos[].o_que_e             o que o arquivo é e o que ele faz
+ *     arquivos[].linguagem           php, javascript, css, sql, markdown, apache, nginx, texto ou png
+ *     arquivos[].bytes               o tamanho, em bytes
+ *     arquivos[].linhas              quantas linhas (null na imagem)
+ *     arquivos[].sha256              o SHA-256 do arquivo: para conferir a cópia, ou saber se mudou desde a última leitura
+ *     arquivos[].alterado_em         a data da última alteração do arquivo no servidor (AAAA-MM-DD HH:MM:SS)
+ *     arquivos[].ver                 o endereço deste arquivo na API, com o conteúdo, em JSON
+ *     arquivos[].cru                 o endereço do arquivo puro, sem JSON (texto como text/plain; imagem como imagem)
+ *     arquivos[].usa[]               só nas páginas: os arquivos que ela usa, na ordem (o pagina.php, o estilo.css, a própria página e os
+ *                                    scripts que ela carrega)
+ *     arquivos[].html_cru            só nas páginas: o endereço do HTML que o navegador recebe, puro
+ *     arquivos[].conteudo            o conteúdo do arquivo, como está (texto); só com arquivo= ou conteudo=1
+ *     arquivos[].conteudo_base64     o conteúdo da imagem, em base64; só com arquivo= ou conteudo=1
+ *     arquivos[].html                só nas páginas, com arquivo= ou conteudo=1: o HTML que o navegador recebe, já montado (o topo com o
+ *                                    menu, o esqueleto da página e os scripts)
+ *     nao_mostrados[]                o que fica de fora de propósito, e o que ver no lugar
+ *     nao_mostrados[].arquivo        o que é (o config.php, a chave do Google, o banco, a pasta dos documentos, as senhas)
+ *     nao_mostrados[].por_que        por que não sai
+ *     nao_mostrados[].o_que_ver      onde está o que a reescrita precisa saber dele
+ *     arquivo                        com arquivo=: o nome do arquivo, com a pasta (estilo.css, testes/cenario.php, docs/telas/hoje.png): é
+ *                                    o que se passa em arquivo=
+ *     camada                         com arquivo=: a camada (tela, api, linha_de_comando, banco, servidor, testes, documentacao,
+ *                                    repositorio, imagem; veja camadas)
+ *     o_que_e                        com arquivo=: o que o arquivo é e o que ele faz
+ *     linguagem                      com arquivo=: php, javascript, css, sql, markdown, apache, nginx, texto ou png
+ *     bytes                          com arquivo=: o tamanho, em bytes
+ *     linhas                         com arquivo=: quantas linhas (null na imagem)
+ *     sha256                         com arquivo=: o SHA-256 do arquivo: para conferir a cópia, ou saber se mudou desde a última leitura
+ *     alterado_em                    com arquivo=: a data da última alteração do arquivo no servidor (AAAA-MM-DD HH:MM:SS)
+ *     ver                            com arquivo=: o endereço deste arquivo na API, com o conteúdo, em JSON
+ *     cru                            com arquivo=: o endereço do arquivo puro, sem JSON (texto como text/plain; imagem como imagem)
+ *     usa[]                          com arquivo=: só nas páginas: os arquivos que ela usa, na ordem (o pagina.php, o estilo.css, a própria
+ *                                    página e os scripts que ela carrega)
+ *     html_cru                       com arquivo=: só nas páginas: o endereço do HTML que o navegador recebe, puro
+ *     conteudo                       com arquivo=: o conteúdo do arquivo, como está (texto); só com arquivo= ou conteudo=1
+ *     conteudo_base64                com arquivo=: o conteúdo da imagem, em base64; só com arquivo= ou conteudo=1
+ *     html                           com arquivo=: só nas páginas, com arquivo= ou conteudo=1: o HTML que o navegador recebe, já montado (o
+ *                                    topo com o menu, o esqueleto da página e os scripts)
  *   _filtros (em qualquer consulta com filtros)
  *     _filtros                       aparece quando a consulta usa filtros (incluir, excluir, f, busca, ordem, limite, pagina, mostrar)
  *     _filtros.ignorados[]           o que foi pedido e não existe (caminho sem lista, parte que não existe)
@@ -2150,14 +2241,15 @@
  *   401 {"erro"}: sem o token nem o login do site, ou com eles errados; sem nenhum usuário (ou com o banco vazio), também
  *       "sem_usuarios": true e "como" (o que fazer: instalar, criar o primeiro usuário pelo token)
  *   404 {"erro"}: recurso desconhecido (com "recursos", a lista deles), ou o relógio, a foto, o documento (ou o arquivo dele) ou o
- *       README.md (recurso=manual) que não existe
+ *       README.md (recurso=manual) que não existe, ou um arquivo que não sai pelo recurso=codigo ({"erro", e "o_que_ver" no
+ *       que fica de fora de propósito, como o config.php, ou "arquivos", os que saem)
  *   409 {"erro": "o banco recusou a gravação: ...", "detalhe"} (um registro que outro ainda usa, um valor repetido, ou um valor fora
  *       das regras de validação do banco: o nome da regra, ck_<tabela>_<o quê>, vem no detalhe)
  *   413 {"ok": false, "erros": [...]} (o envio passou do post_max_size do PHP: um arquivo grande demais)
  *   500 {"erro": "Sistema parado: ..."} (token ou fuso inválido no config.php) ou {"erro": "erro interno", "detalhe"}
- *   503 {"erro": "o banco está desatualizado: ...", "pendentes"}: só recurso=migracoes (e recurso=manual, que não usa o banco)
+ *   503 {"erro": "o banco está desatualizado: ...", "pendentes"}: só recurso=migracoes (e recurso=manual e recurso=codigo, que não usam o banco)
  *       responde até aplicar
- *   503 {"erro": "o banco está vazio: ...", "proximo_passo"}: antes da instalação só recurso=instalacao (e recurso=manual) responde
+ *   503 {"erro": "o banco está vazio: ...", "proximo_passo"}: antes da instalação só recurso=instalacao (e recurso=manual e recurso=codigo) responde
  *   503 {"erro": "o banco de dados não respondeu", "detalhe"}
  */
 require_once __DIR__ . "/lib.php";
@@ -2530,6 +2622,9 @@ $saida = [];
 $pendentes = migracoes_pendentes();
 // o banco vazio (antes da instalação): só a instalação responde
 $banco_vazio = count($pendentes) > 0 && count(banco_tabelas()) === 0;
+// o que responde sem o banco (com ele vazio ou desatualizado): o manual e o código, que só leem arquivos
+$parte_ajuda = (string)($_REQUEST["parte"] ?? "");
+$sem_banco = in_array($recurso, ["manual", "codigo"], true) || ($recurso === "ajuda" && in_array($parte_ajuda, ["manual", "codigo"], true));
 if (!$token_ok && $quem === "") {
     $codigo = 401;
     header("WWW-Authenticate: Basic realm=\"Relogios\", charset=\"UTF-8\"");
@@ -2592,11 +2687,11 @@ if (!$token_ok && $quem === "") {
             return ["versao" => $v, "arquivo" => $m[0], "traz" => $m[1]];
         }, array_keys($pendentes), array_values($pendentes))];
     }
-} elseif ($banco_vazio && !($recurso === "manual" || ($recurso === "ajuda" && ($_REQUEST["parte"] ?? "") === "manual"))) {
+} elseif ($banco_vazio && !$sem_banco) {
     $codigo = 503;
     $saida = ["erro" => "o banco está vazio: instale (POST recurso=instalacao, acao=instalar)", "proximo_passo" => instalacao_situacao()["proximo_passo"]];
-} elseif (count($pendentes) > 0 && !($recurso === "manual" || ($recurso === "ajuda" && ($_REQUEST["parte"] ?? "") === "manual"))) {
-    // banco desatualizado: só as migrações respondem (e o manual, que não usa o banco: a página Ajuda continua abrindo)
+} elseif (count($pendentes) > 0 && !$sem_banco) {
+    // banco desatualizado: só as migrações respondem (e o manual e o código, que não usam o banco: a página Ajuda continua abrindo)
     $codigo = 503;
     $saida = ["erro" => "o banco está desatualizado: aplique as migrações (POST recurso=migracoes, acao=aplicar)", "pendentes" => array_map(function ($v, $m) {
         return ["versao" => $v, "arquivo" => $m[0], "traz" => $m[1]];
@@ -3058,6 +3153,31 @@ if (!$token_ok && $quem === "") {
         }
         $saida = ["expressao" => $expr, "resultados" => $res];
     }
+} elseif ($recurso === "codigo" || ($recurso === "ajuda" && $parte_ajuda === "codigo")) {
+    // o código do sistema como está agora, lido do disco (a lista e o que cada arquivo é ficam no reconstrucao.php): a lista
+    // (conteudo=1: com o conteúdo de todos), um arquivo (arquivo=), o arquivo puro (cru=1) e o HTML de uma página (html=1)
+    require_once __DIR__ . "/reconstrucao.php";
+    $arq = (string)($_REQUEST["arquivo"] ?? "");
+    $html = ($_REQUEST["html"] ?? "") === "1";
+    $fora = array_values(array_filter(RECONSTRUCAO_NAO_MOSTRADOS, function ($x) use ($arq) { return $x["arquivo"] === $arq; }));
+    if ($arq === "") {
+        $saida = codigo_lista(($_REQUEST["conteudo"] ?? "") === "1");
+    } elseif (!isset(codigo_arquivos()[$arq])) {
+        $codigo = 404;
+        $saida = count($fora) > 0 ? ["erro" => $arq . " não sai pela API: " . $fora[0]["por_que"], "o_que_ver" => $fora[0]["o_que_ver"]]
+            : ["erro" => "esse arquivo não é do sistema (os que saem estão em arquivos)", "arquivos" => array_keys(codigo_arquivos())];
+    } elseif ($html && !in_array($arq, codigo_paginas(), true)) {
+        $codigo = 400;
+        $saida = ["erro" => "html=1 só vale para uma página: " . implode(", ", codigo_paginas())];
+    } elseif (($_REQUEST["cru"] ?? "") === "1") {
+        // puro, sem JSON: o texto como text/plain (o navegador mostra, não roda), a imagem como imagem
+        header("Content-Type: " . ($html ? "text/plain; charset=utf-8" : codigo_tipo($arq)[2]));
+        header("X-Content-Type-Options: nosniff");
+        echo $html ? codigo_html($arq) : file_get_contents(__DIR__ . "/" . $arq);
+        exit;
+    } else {
+        $saida = codigo_arquivo($arq, true);
+    }
 } elseif ($recurso === "manual" || ($recurso === "ajuda" && ($_REQUEST["parte"] ?? "") === "manual")) {
     // o manual: o texto da página Ajuda (os trechos do README para quem usa), inteiro em markdown e seção por seção
     $md = manual_markdown();
@@ -3146,7 +3266,7 @@ if (!$token_ok && $quem === "") {
             "usuarios" => ["descricao" => "os logins, cada um com o hash da senha (o algoritmo e o custo), para migrar os usuários com a mesma senha (veja senhas), e quem está pedindo (pelo login do site); a senha não existe no sistema",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=usuarios\""],
-            "migracoes" => ["descricao" => "as migrações que faltam aplicar no banco (lista vazia: está em dia); com o banco desatualizado, só ele (e o manual, que não usa o banco) responde",
+            "migracoes" => ["descricao" => "as migrações que faltam aplicar no banco (lista vazia: está em dia); com o banco desatualizado, só ele (e o manual e o código, que não usam o banco) responde",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=migracoes\""],
             "instalacao" => ["descricao" => "a situação da instalação: o banco, se está vazio, instalado e em dia, as migrações que faltam, quantos usuários há e o próximo passo (instalar, aplicar as migrações, criar o primeiro usuário ou nada); responde também com o banco vazio, pelo token",
@@ -3161,15 +3281,21 @@ if (!$token_ok && $quem === "") {
             "autonomia" => ["descricao" => "as autonomias de cada relógio, enxuto e rápido, para sistemas de fora, em segundos inteiros: prevista (cheio, pelo cadastro), atual (cheio, pela conta do sistema com o gasto medido), estimada (quanto ainda dura seguindo o plano), restante_em_uso (no pulso sem tirar), restante_guardado (parado) e quando acaba (acaba_em_unixtimestamp, acaba_em_segundos, acaba_em_datacomtz); null com o motivo em motivos",
                 "parametros" => ["relogio" => "um id ou vários separados por vírgula (vazio: todos)"],
                 "exemplo" => "curl -u lucas:senha -g \"http://servidor/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz\""],
-            "ajuda" => ["descricao" => "esta explicação: os recursos, os parâmetros, as ações de escrita com os campos, os exemplos, o dicionário de todos os campos (campos) e as funções do motor; com parte=manual, o manual (veja manual); com parte=reconstrucao, a reconstrução (veja reconstrucao)",
-                "parametros" => ["parte" => "manual: em vez desta explicação, o texto da página Ajuda (o mesmo que recurso=manual); reconstrucao: o roteiro para reescrever a aplicação do zero (o mesmo que recurso=reconstrucao)"],
+            "ajuda" => ["descricao" => "esta explicação: os recursos, os parâmetros, as ações de escrita com os campos, os exemplos, o dicionário de todos os campos (campos) e as funções do motor; com parte=manual, o manual (veja manual); com parte=reconstrucao, a reconstrução (veja reconstrucao); com parte=codigo, o código (veja codigo)",
+                "parametros" => ["parte" => "manual: em vez desta explicação, o texto da página Ajuda (o mesmo que recurso=manual); reconstrucao: o roteiro para reescrever a aplicação do zero (o mesmo que recurso=reconstrucao); codigo: o código do sistema (o mesmo que recurso=codigo)"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=ajuda&parte=reconstrucao\""],
             "manual" => ["descricao" => "o texto da página Ajuda: os trechos do README para quem usa (a ideia central, como funciona, o cadastro campo por campo, a Configuração, um dia com o sistema, as telas, as perguntas frequentes e como reescrever o sistema do zero), em markdown, inteiro e seção por seção (título, nível, âncora e texto), e já em HTML com o sumário, como a página Ajuda mostra; sem o README.md na pasta: 404; responde mesmo com o banco desatualizado. O mesmo que recurso=ajuda&parte=manual",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha -g \"http://servidor/relojoeiro/api.php?recurso=manual&mostrar[secoes]=titulo,ancora\""],
-            "reconstrucao" => ["descricao" => "o roteiro para reescrever a aplicação inteira do zero, em qualquer linguagem e banco, chegando ao mesmo sistema: o que ele é, os princípios, a arquitetura, a ordem de construção e as regras de cada parte (árvore e campos, lançamentos, fórmulas, avisos, gasto medido, critérios, rodízio e escala, pulso sozinho, cron, mensagens e agenda, documentos, telas, segurança, testes), a especificação visual de cada tela (telas: o visual com os valores exatos, o menu e cada página com as tabelas, os campos, os botões e as mensagens), o modelo de dados lido do próprio banco (tabelas, colunas, chaves, índices e regras de validação) e as listas do código (funções das fórmulas, tipos de campo, formatos de lançamento, repetições, dias da semana, âncoras, canais, migrações e as constantes do config.php). O mesmo que recurso=ajuda&parte=reconstrucao",
+            "reconstrucao" => ["descricao" => "o roteiro para reescrever a aplicação inteira do zero, em qualquer linguagem e banco, chegando ao mesmo sistema: o que ele é, os princípios, a arquitetura, a ordem de construção e as regras de cada parte (árvore e campos, lançamentos, fórmulas, avisos, gasto medido, critérios, rodízio e escala, pulso sozinho, cron, mensagens e agenda, documentos, telas, segurança, testes), a especificação visual de cada tela (telas: o visual com os valores exatos, o menu e cada página com as tabelas, os campos, os botões e as mensagens), a lista do código do sistema (codigo: o mesmo do recurso=codigo, que traz cada arquivo como está agora), o modelo de dados lido do próprio banco (tabelas, colunas, chaves, índices e regras de validação) e as listas do código (funções das fórmulas, tipos de campo, formatos de lançamento, repetições, dias da semana, âncoras, canais, migrações e as constantes do config.php). O mesmo que recurso=ajuda&parte=reconstrucao",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=reconstrucao\""],
+            "codigo" => ["descricao" => "o código do sistema como está agora, lido do disco na hora do pedido, para a reescrita ler o original: cada arquivo (as páginas, o estilo, o JavaScript, a API, o núcleo, o banco, as migrações, o servidor, os testes, a documentação e as capturas das telas) com a camada, o que ele é, a linguagem, o tamanho, as linhas, o SHA-256 e a data; nas páginas, os arquivos que ela carrega e o HTML que o navegador recebe; e o que fica de fora de propósito (o config.php, a chave do Google, o banco, os documentos, as senhas), com o que ver no lugar. Só saem os arquivos do sistema (os do repositório); responde mesmo com o banco vazio ou desatualizado. O mesmo que recurso=ajuda&parte=codigo",
+                "parametros" => ["arquivo" => "um arquivo (o nome como está em arquivos, ex.: estilo.css, docs/telas/hoje.png): vem com o conteúdo como está (conteudo; a imagem em conteudo_base64) e, numa página, com o HTML que o navegador recebe (html)",
+                    "cru" => "1, com arquivo: o arquivo puro, sem JSON (texto como text/plain, para ler no navegador; imagem como imagem)",
+                    "html" => "1, com arquivo de uma página e cru=1: o HTML que o navegador recebe, puro",
+                    "conteudo" => "1, sem arquivo: a lista com o conteúdo de todos (com f[arquivos][camada]=tela, só o das telas)"],
+                "exemplo" => "no navegador: http://servidor/relojoeiro/api.php?recurso=codigo&arquivo=estilo.css&cru=1"],
         ],
         "escrita" => [
             "como" => "POST, com os campos em formulário ou em JSON no corpo (Content-Type: application/json); recurso e acao nos campos ou na URL. "
@@ -4602,9 +4728,32 @@ if (!$token_ok && $quem === "") {
                 "telas.paginas[].partes[]" => "as partes da página, de cima para baixo",
                 "telas.paginas[].partes[].titulo" => "o nome da parte (e quando ela aparece)",
                 "telas.paginas[].partes[].itens[]" => "o que a parte tem: cada tabela com as colunas, cada formulário com os campos (rótulo, tipo, padrão e limites), cada botão com o texto e o que ele manda para a API, e cada mensagem",
+                "telas.paginas[].codigo[]" => "os arquivos da página, lidos dela na hora (o pagina.php, o estilo.css, a própria página e os scripts que ela carrega): o código de cada um em recurso=codigo&arquivo=<nome>",
                 "telas.capturas[]" => "as capturas de tela no repositório, para conferir o resultado",
                 "telas.capturas[].arquivo" => "o caminho da imagem (docs/telas/...)",
                 "telas.capturas[].mostra" => "o que ela mostra",
+                "codigo" => "a lista do código do sistema, como em recurso=codigo (sem o conteúdo: cada arquivo pelo recurso=codigo&arquivo=<nome>)",
+                "codigo.como_usar" => "como pedir um arquivo, o arquivo puro, o HTML de uma página e todos de uma vez",
+                "codigo.camadas[]" => "as camadas do sistema",
+                "codigo.camadas[].camada" => "o nome curto da camada",
+                "codigo.camadas[].o_que_e" => "o que está nela",
+                "codigo.arquivos[]" => "cada arquivo do sistema",
+                "codigo.arquivos[].arquivo" => "o nome do arquivo, com a pasta (estilo.css, testes/cenario.php, docs/telas/hoje.png): é o que se passa em arquivo=",
+                "codigo.arquivos[].camada" => "a camada (tela, api, linha_de_comando, banco, servidor, testes, documentacao, repositorio, imagem; veja camadas)",
+                "codigo.arquivos[].o_que_e" => "o que o arquivo é e o que ele faz",
+                "codigo.arquivos[].linguagem" => "php, javascript, css, sql, markdown, apache, nginx, texto ou png",
+                "codigo.arquivos[].bytes" => "o tamanho, em bytes",
+                "codigo.arquivos[].linhas" => "quantas linhas (null na imagem)",
+                "codigo.arquivos[].sha256" => "o SHA-256 do arquivo: para conferir a cópia, ou saber se mudou desde a última leitura",
+                "codigo.arquivos[].alterado_em" => "a data da última alteração do arquivo no servidor (AAAA-MM-DD HH:MM:SS)",
+                "codigo.arquivos[].ver" => "o endereço deste arquivo na API, com o conteúdo, em JSON",
+                "codigo.arquivos[].cru" => "o endereço do arquivo puro, sem JSON (texto como text/plain; imagem como imagem)",
+                "codigo.arquivos[].usa[]" => "só nas páginas: os arquivos que ela usa, na ordem (o pagina.php, o estilo.css, a própria página e os scripts que ela carrega)",
+                "codigo.arquivos[].html_cru" => "só nas páginas: o endereço do HTML que o navegador recebe, puro",
+                "codigo.nao_mostrados[]" => "o que fica de fora de propósito",
+                "codigo.nao_mostrados[].arquivo" => "o que é",
+                "codigo.nao_mostrados[].por_que" => "por que não sai",
+                "codigo.nao_mostrados[].o_que_ver" => "onde está o que a reescrita precisa saber dele",
                 "modelo_de_dados" => "o modelo de dados, lido do próprio banco em uso (o que vale agora, depois de todas as migrações)",
                 "modelo_de_dados.banco" => "o banco de onde o modelo foi lido: mysql, pgsql ou sqlite (os tipos das colunas vêm no dialeto dele)",
                 "modelo_de_dados.como_ler" => "como ler as tabelas, e as três referências que ficam pelo nome, de propósito",
@@ -4662,6 +4811,47 @@ if (!$token_ok && $quem === "") {
                 "listas.config_php[].constante" => "o nome (ou os nomes) da constante",
                 "listas.config_php[].descricao" => "para que ela serve",
             ],
+            "codigo" => [
+                "como_usar" => "como pedir um arquivo, o arquivo puro, o HTML de uma página e todos de uma vez",
+                "camadas[]" => "as camadas do sistema, na ordem",
+                "camadas[].camada" => "o nome curto da camada",
+                "camadas[].o_que_e" => "o que está nela",
+                "arquivos[]" => "cada arquivo do sistema (os do repositório), pela camada",
+                "arquivos[].arquivo" => "o nome do arquivo, com a pasta (estilo.css, testes/cenario.php, docs/telas/hoje.png): é o que se passa em arquivo=",
+                "arquivos[].camada" => "a camada (tela, api, linha_de_comando, banco, servidor, testes, documentacao, repositorio, imagem; veja camadas)",
+                "arquivos[].o_que_e" => "o que o arquivo é e o que ele faz",
+                "arquivos[].linguagem" => "php, javascript, css, sql, markdown, apache, nginx, texto ou png",
+                "arquivos[].bytes" => "o tamanho, em bytes",
+                "arquivos[].linhas" => "quantas linhas (null na imagem)",
+                "arquivos[].sha256" => "o SHA-256 do arquivo: para conferir a cópia, ou saber se mudou desde a última leitura",
+                "arquivos[].alterado_em" => "a data da última alteração do arquivo no servidor (AAAA-MM-DD HH:MM:SS)",
+                "arquivos[].ver" => "o endereço deste arquivo na API, com o conteúdo, em JSON",
+                "arquivos[].cru" => "o endereço do arquivo puro, sem JSON (texto como text/plain; imagem como imagem)",
+                "arquivos[].usa[]" => "só nas páginas: os arquivos que ela usa, na ordem (o pagina.php, o estilo.css, a própria página e os scripts que ela carrega)",
+                "arquivos[].html_cru" => "só nas páginas: o endereço do HTML que o navegador recebe, puro",
+                "arquivos[].conteudo" => "o conteúdo do arquivo, como está (texto); só com arquivo= ou conteudo=1",
+                "arquivos[].conteudo_base64" => "o conteúdo da imagem, em base64; só com arquivo= ou conteudo=1",
+                "arquivos[].html" => "só nas páginas, com arquivo= ou conteudo=1: o HTML que o navegador recebe, já montado (o topo com o menu, o esqueleto da página e os scripts)",
+                "nao_mostrados[]" => "o que fica de fora de propósito, e o que ver no lugar",
+                "nao_mostrados[].arquivo" => "o que é (o config.php, a chave do Google, o banco, a pasta dos documentos, as senhas)",
+                "nao_mostrados[].por_que" => "por que não sai",
+                "nao_mostrados[].o_que_ver" => "onde está o que a reescrita precisa saber dele",
+                "arquivo" => "com arquivo=: o nome do arquivo, com a pasta (estilo.css, testes/cenario.php, docs/telas/hoje.png): é o que se passa em arquivo=",
+                "camada" => "com arquivo=: a camada (tela, api, linha_de_comando, banco, servidor, testes, documentacao, repositorio, imagem; veja camadas)",
+                "o_que_e" => "com arquivo=: o que o arquivo é e o que ele faz",
+                "linguagem" => "com arquivo=: php, javascript, css, sql, markdown, apache, nginx, texto ou png",
+                "bytes" => "com arquivo=: o tamanho, em bytes",
+                "linhas" => "com arquivo=: quantas linhas (null na imagem)",
+                "sha256" => "com arquivo=: o SHA-256 do arquivo: para conferir a cópia, ou saber se mudou desde a última leitura",
+                "alterado_em" => "com arquivo=: a data da última alteração do arquivo no servidor (AAAA-MM-DD HH:MM:SS)",
+                "ver" => "com arquivo=: o endereço deste arquivo na API, com o conteúdo, em JSON",
+                "cru" => "com arquivo=: o endereço do arquivo puro, sem JSON (texto como text/plain; imagem como imagem)",
+                "usa[]" => "com arquivo=: só nas páginas: os arquivos que ela usa, na ordem (o pagina.php, o estilo.css, a própria página e os scripts que ela carrega)",
+                "html_cru" => "com arquivo=: só nas páginas: o endereço do HTML que o navegador recebe, puro",
+                "conteudo" => "com arquivo=: o conteúdo do arquivo, como está (texto); só com arquivo= ou conteudo=1",
+                "conteudo_base64" => "com arquivo=: o conteúdo da imagem, em base64; só com arquivo= ou conteudo=1",
+                "html" => "com arquivo=: só nas páginas, com arquivo= ou conteudo=1: o HTML que o navegador recebe, já montado (o topo com o menu, o esqueleto da página e os scripts)",
+            ],
             "_filtros (em qualquer consulta com filtros)" => [
                 "_filtros" => "aparece quando a consulta usa filtros (incluir, excluir, f, busca, ordem, limite, pagina, mostrar)",
                 "_filtros.ignorados[]" => "o que foi pedido e não existe (caminho sem lista, parte que não existe)",
@@ -4678,10 +4868,10 @@ if (!$token_ok && $quem === "") {
         "erros" => ["400" => "pedido recusado: uma escrita que não passou nas validações ({ok: false, mensagem, erros: [...]}, um erro por motivo) ou uma fórmula mal escrita no recurso=calcular ({erro, erros})",
             "302" => "recurso=entrar com o login certo e volta=<página>: vai para a página",
             "401" => "sem o token nem o login do site, ou com eles errados; sem nenhum usuário (ou com o banco vazio), também sem_usuarios: true e como (o que fazer: instalar, criar o primeiro usuário pelo token)",
-            "404" => "recurso desconhecido (com recursos, a lista deles), ou o relógio, a foto, o documento (ou o arquivo dele) ou o README.md (recurso=manual) que não existe",
+            "404" => "recurso desconhecido (com recursos, a lista deles), ou o relógio, a foto, o documento (ou o arquivo dele) ou o README.md (recurso=manual) que não existe, ou um arquivo que não sai pelo recurso=codigo ({erro, e o_que_ver no que fica de fora de propósito, como o config.php, ou arquivos, os que saem)",
             "409" => "o banco recusou a gravação (um registro que outro ainda usa, um valor repetido, ou um valor fora das regras de validação do banco: o nome da regra, ck_<tabela>_<o quê>, vem no detalhe)",
             "413" => "o envio passou do limite do PHP do servidor (post_max_size): um arquivo grande demais",
-            "500" => "sistema parado (token ou fuso inválido no config.php) ou erro interno", "503" => "banco desatualizado (só recurso=migracoes responde, e o recurso=manual, que não usa o banco), banco vazio (antes da instalação só recurso=instalacao responde, e o manual) ou banco fora do ar"],
+            "500" => "sistema parado (token ou fuso inválido no config.php) ou erro interno", "503" => "banco desatualizado (só recurso=migracoes responde, e o recurso=manual e o recurso=codigo, que não usam o banco), banco vazio (antes da instalação só recurso=instalacao responde, e o manual e o código) ou banco fora do ar"],
         "motor" => array_map(function ($f) { return $f[2]; }, $GLOBALS["FUNCOES"]),
         "escrita_das_formulas" => "números com vírgula ou ponto; textos entre aspas; argumentos separados por ponto e vírgula; operações + - * / ^; "
             . "comparações = <> < <= > >= (dão 1 ou 0); variáveis: os identificadores dos campos e das fórmulas; vazio se propaga; divisão por zero: vazio",
@@ -4789,7 +4979,7 @@ if (!$token_ok && $quem === "") {
 } else {
     $codigo = 404;
     $saida = ["erro" => "recurso desconhecido", "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "ajuda", "manual", "reconstrucao"]];
+        "historico", "previsao", "plano", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],
