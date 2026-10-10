@@ -2210,17 +2210,27 @@ function op_usuarios($acao, $d, $atual)
     $msg = "";
     $alvo = trim((string)($d["login"] ?? ""));
     $nova = (string)($d["senha"] ?? "");
+    // a senha, ou o hash pronto de outro sistema (senha_hash: bcrypt ou argon2, como os do password_hash do PHP), para
+    // trazer um usuário com a mesma senha sem saber qual é
+    $hash_pronto = trim((string)($d["senha_hash"] ?? ""));
     if ($acao === "salvar") {
-        if ($alvo === "" || strlen($alvo) > 60 || strlen($nova) < 6) {
-            $erros[] = "Informe o login (até 60 caracteres) e uma senha de pelo menos 6 caracteres.";
+        if ($alvo === "" || strlen($alvo) > 60) {
+            $erros[] = "Informe o login (até 60 caracteres).";
+        } elseif ($hash_pronto !== "" && $nova !== "") {
+            $erros[] = "Mande a senha ou o senha_hash, não os dois.";
+        } elseif ($hash_pronto !== "" && (strlen($hash_pronto) > 255 || senha_hash_info($hash_pronto)[0] === null)) {
+            $erros[] = "senha_hash: um hash que o password_verify do PHP entenda (bcrypt, que começa com \$2y\$, \$2b\$ ou \$2a\$, ou argon2, com \$argon2).";
+        } elseif ($hash_pronto === "" && strlen($nova) < 6) {
+            $erros[] = "Informe uma senha de pelo menos 6 caracteres (ou o senha_hash de outro sistema).";
         } else {
-            $hash = password_hash($nova, PASSWORD_DEFAULT);
+            // o $2b$ (o bcrypt de Python, Node, Java...) é o mesmo cálculo que o $2y$ do PHP: guarda como $2y$
+            $hash = $hash_pronto !== "" ? (strncmp($hash_pronto, '$2b$', 4) === 0 ? '$2y$' . substr($hash_pronto, 4) : $hash_pronto) : password_hash($nova, PASSWORD_DEFAULT);
             if (valor("SELECT id FROM usuario WHERE login = ?", [$alvo])) {
                 sql("UPDATE usuario SET senha_hash = ? WHERE login = ?", [$hash, $alvo]);
-                $msg = "Senha de " . $alvo . " trocada.";
+                $msg = "Senha de " . $alvo . " trocada" . ($hash_pronto !== "" ? " (pelo hash informado)." : ".");
             } else {
                 sql("INSERT INTO usuario (login, senha_hash, criado) VALUES (?, ?, NOW())", [$alvo, $hash]);
-                $msg = "Usuário " . $alvo . " criado.";
+                $msg = "Usuário " . $alvo . " criado" . ($hash_pronto !== "" ? " (pelo hash informado: entra com a senha do outro sistema)." : ".");
             }
         }
     } elseif ($acao === "excluir") {

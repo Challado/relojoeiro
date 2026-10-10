@@ -344,6 +344,29 @@ function migracao_v16_dados()
 // As migrações que faltam aplicar neste banco: as da lista cuja marca ainda não existe. A marca: uma tabela, uma coluna
 // (tabela.coluna) ou uma linha (tabela.coluna=valor, para a migração que só acrescenta cadastro); várias separadas por |
 // valem uma ou outra (a v13 criou a tabela manual, que a v16 tira: depois dela, a marca é a tabela documento)
+// O catálogo de usuários (recurso=usuarios e a resposta sem recurso): o login, quando foi criado e o hash da senha, com o
+// algoritmo e o custo. A senha não existe no sistema: o login passa a senha digitada pelo mesmo cálculo (password_hash) e
+// confere com o hash (password_verify). Levando o login e o hash para outro sistema que confira do mesmo jeito (bcrypt),
+// cada um entra lá com a mesma senha de sempre; e o caminho de volta é o usuarios/salvar com senha_hash
+function usuarios_catalogo()
+{
+    return array_map(function ($u) {
+        $info = senha_hash_info((string)$u["senha_hash"]);
+        return ["login" => $u["login"], "criado" => $u["criado"], "senha_hash" => $u["senha_hash"], "senha_algoritmo" => $info[0], "senha_custo" => $info[1]];
+    }, linhas("SELECT login, criado, senha_hash FROM usuario ORDER BY login"));
+}
+
+// O algoritmo e o custo de um hash de senha: bcrypt ($2y$, $2b$ ou $2a$, o custo no começo: $2y$12$...) ou o que o
+// password_get_info do PHP reconhecer (argon2i, argon2id); [null, null] para o que não é hash de senha
+function senha_hash_info($hash)
+{
+    if (preg_match("#^\\$2[aby]\\$(\\d{2})\\$[./A-Za-z0-9]{53}\$#", $hash, $m) === 1) {
+        return ["bcrypt", (int)$m[1]];
+    }
+    $info = password_get_info($hash);
+    return $info["algoName"] !== "unknown" ? [$info["algoName"], isset($info["options"]["cost"]) ? (int)$info["options"]["cost"] : null] : [null, null];
+}
+
 // A instalação: o schema.sql no banco do config.php, cada comando traduzido para ele, e os passos em PHP das migrações
 // (o schema.sql já traz o SQL delas). Só num banco vazio. A API (recurso=instalacao, acao=instalar) e o instalar.php
 // chamam esta. Devolve {ok, mensagem, erros, comandos, tabelas, segundos}

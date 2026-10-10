@@ -62,6 +62,13 @@ function comparar($x, $y, $caminho, $chave)
     if (in_array($chave, ["duracao_ms", "mais_lenta_ms"], true)) {
         return;
     }
+    // o hash da senha: cada cálculo usa um sal novo, então ele nunca sai igual; vale ser um hash do mesmo algoritmo
+    if ($chave === "senha_hash" && is_string($x) && is_string($y)) {
+        if (substr($x, 0, 4) !== substr($y, 0, 4)) {
+            $graves[] = [$caminho, "algoritmo diferente", $x, $y];
+        }
+        return;
+    }
     if (is_array($x) && is_array($y)) {
         $lista_x = array_is_list($x);
         if ($lista_x !== array_is_list($y) && count($x) > 0 && count($y) > 0) {
@@ -81,6 +88,12 @@ function comparar($x, $y, $caminho, $chave)
             comparar($x[$k], $y[$k], $caminho . ($lista_x ? "[" . $k . "]" : "." . $k), $lista_x ? $chave : $k);
         }
         return;
+    }
+    // o hash da senha dentro de um texto (a resposta em XML): também só o algoritmo conta
+    if (is_string($x) && is_string($y) && strpos($x, "<senha_hash>") !== false) {
+        $sem_sal = function ($t) { return preg_replace("#<senha_hash>(\\$[0-9a-z]+\\$)[^<]*</senha_hash>#", "<senha_hash>\\1</senha_hash>", $t); };
+        $x = $sem_sal($x);
+        $y = $sem_sal($y);
     }
     if ($x === $y) {
         return;
