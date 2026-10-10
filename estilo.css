@@ -246,8 +246,8 @@ table.relogios tr.fds td { background: #f4f6f8; }
   .painel { grid-template-columns: minmax(0, 1fr) 22rem; }
 }
 
-/* celular: uma coluna */
-@media (max-width: 800px) {
+/* celular e tablet de pé: uma coluna, e o relógio abre em tela cheia */
+@media (max-width: 900px) {
   .painel {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "hoje" "detalhe";
@@ -791,7 +791,8 @@ table.resumo-plano { max-width: 44rem; }
 .menu-itens { display: contents; }
 .ver-mais-dias { display: none; }
 
-@media (max-width: 700px) {
+/* celular e tablet de pé (até 900 px): o mesmo layout — menu recolhido, listas em cartões, campos com letra de 16 px */
+@media (max-width: 900px) {
   /* campos com letra de 16 px: com menos que isso o iPhone aproxima a página inteira ao tocar no campo */
   select, textarea, input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):not([type=range]) { font-size: 16px !important; }
 
@@ -1084,7 +1085,7 @@ table.tabela-dados code.ident { display: block; font-size: .74rem; color: var(--
 /* a janela flutuante (Configuração: abrir o relógio "numa janela flutuante"): grande, no meio da tela, por cima da página
    com o fundo escurecido; a lista fica com a largura toda. No celular, como o painel ao lado: a tela inteira */
 .fundo-painel { display: none; }
-@media (min-width: 801px) {
+@media (min-width: 901px) {
   .painel.modo-flutuante, .painel.modo-flutuante.sem-selecao { grid-template-columns: minmax(0, 1fr); grid-template-areas: "hoje"; }
   .painel.modo-flutuante .col-detalhe {
     grid-area: auto; position: fixed; z-index: 40; top: 3vh; bottom: 3vh; left: 50%; transform: translateX(-50%);
@@ -1229,8 +1230,52 @@ form.filtros-execucoes > label input, form.filtros-execucoes > label select { fo
 .documentos form.linha { margin: 0 0 1rem; }
 /* a foto do relógio do dia: sem sublinhado no "Sem foto" */
 a.hoje-foto, a.hoje-foto * { text-decoration: none; }
-@media (max-width: 700px) {
-  /* no celular, as ações de cada ficha numa linha só, à esquerda */
+@media (max-width: 900px) {
+  /* no celular e no tablet de pé, as ações de cada ficha numa linha só, à esquerda */
   .rolagem > table.compacta > tbody > tr > td.acoes-linha { display: flex !important; flex-wrap: wrap; gap: .4rem; padding-top: .5rem; width: auto; }
   .acoes-linha a, .acoes-linha button { margin-left: 0; }
+}
+
+/* ---------- tablet deitado e telas médias (901 a 1199 px): o painel "ao lado" não espreme a lista; ele desliza por cima,
+   pela direita, com o fundo escurecido (um clique fora fecha, como o × e o Esc) ---------- */
+@media (min-width: 901px) and (max-width: 1199px) {
+  .painel:not(.modo-flutuante), .painel:not(.modo-flutuante).sem-selecao { grid-template-columns: minmax(0, 1fr); grid-template-areas: "hoje"; }
+  .painel:not(.modo-flutuante) .col-detalhe {
+    grid-area: auto; position: fixed; z-index: 40; top: 0; right: 0; bottom: 0; width: min(30rem, 92vw);
+    max-height: none; overflow-y: auto; overscroll-behavior: contain; border-radius: 16px 0 0 16px;
+    box-shadow: -18px 0 50px rgba(10, 16, 24, .35);
+  }
+  .painel:not(.modo-flutuante):not(.sem-selecao) .fundo-painel { display: block; position: fixed; inset: 0; z-index: 35; background: rgba(16, 22, 29, .45); }
+  body:has(.painel:not(.modo-flutuante):not(.sem-selecao)) { overflow: hidden; }
+  .painel:not(.modo-flutuante) .fechar-painel { position: sticky; top: 0; z-index: 3; box-shadow: 0 1px 4px rgba(0, 0, 0, .15); background: var(--papel); }
+}
+
+/* o total da tabela dos relógios fica embaixo dela como uma linha só (fora das colunas: ele não estica as colunas
+   escondidas) */
+@media (min-width: 901px) {
+  #tabela-relogios tfoot { display: table-caption; caption-side: bottom; background: #eef1f4; border: 1px solid var(--aco-escuro); border-top: 0; border-radius: 0 0 10px 10px; }
+  #tabela-relogios tfoot tr { display: flex; justify-content: flex-end; gap: 1rem; }
+  #tabela-relogios tfoot td { border: 0; background: none; }
+}
+/* ---------- a tabela dos relógios no computador e no tablet deitado: as colunas menos importantes saem conforme o espaço
+   que a tabela tem de verdade (com ou sem o painel ao lado), para nada ficar cortado. No celular ela vira cartões ---------- */
+@media (min-width: 901px) {
+  #bloco-relogios-rolagem, .painel .col-hoje .rolagem { container-type: inline-size; }
+  /* as larguras: a tabela inteira pede uns 1340 px; sem o tipo e a data da compra, 1150; sem o código e a próxima
+     manutenção, 990; sem a última vez usado, 890; sem o valor, 780 */
+  @container (max-width: 1345px) {
+    #tabela-relogios :is(thead, tbody) tr > :nth-child(10), #tabela-relogios :is(thead, tbody) tr > :nth-child(3) { display: none; }
+  }
+  @container (max-width: 1150px) {
+    #tabela-relogios :is(thead, tbody) tr > :nth-child(1), #tabela-relogios :is(thead, tbody) tr > :nth-child(7) { display: none; }
+  }
+  @container (max-width: 990px) {
+    #tabela-relogios :is(thead, tbody) tr > :nth-child(6) { display: none; }
+  }
+  @container (max-width: 890px) {
+    #tabela-relogios :is(thead, tbody) tr > :nth-child(11) { display: none; }
+  }
+  @container (max-width: 785px) {
+    #tabela-relogios :is(thead, tbody) tr > :nth-child(8) { display: none; }
+  }
 }
