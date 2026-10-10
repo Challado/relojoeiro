@@ -128,13 +128,17 @@ function reconstrucao()
                     . "maiúsculas; e três comandos próprios das migrações: ALTER FOREIGN KEY, DROP COLUMN e ADD CONSTRAINT ... CHECK (trocando a regra "
                     . "sem perder a anterior se os dados não cumprem a nova).",
                 "As páginas (index.php, plano.php, ficha.php, documentos.php, historico.php, configuracao.php, criterios.php, grupos.php, "
-                    . "cadastros.php, execucoes.php, usuarios.php, ajuda.php) só conferem o login e entregam o esqueleto; o JavaScript de cada uma "
+                    . "cadastros.php, execucoes.php, usuarios.php, ajuda.php) só entregam o esqueleto, sem conferir nem o login; o JavaScript de cada uma "
                     . "(hoje.js, painel.js, configuracao.js, ajuda.js...) chama a API e monta a tela, sem fazer conta: resumos, porcentagens e situações "
                     . "(o resumo do plano, a porcentagem de cada estado no histórico, o peso efetivo dos critérios, a situação do cron, o manual "
-                    . "em HTML) vêm prontos da API. Formulários com data-recurso gravam pela API e a página se remonta com a resposta. Fora da API, "
-                    . "de propósito: o cron, os scripts de linha de comando e a conferência do login de cada página.",
-                "O cron (cron.php), a cada minuto pela linha de comando; os scripts de linha de comando: instalar.php (o banco vazio), criar_usuario.php, "
-                    . "importar.php (o sistema anterior).",
+                    . "em HTML) vêm prontos da API. Formulários com data-recurso gravam pela API e a página se remonta com a resposta.",
+                "A API faz tudo, inclusive o que vem antes das telas: a instalação do banco vazio (recurso=instalacao, pelo token), o primeiro "
+                    . "usuário (recurso=usuarios pelo token), a importação do sistema anterior (recurso=importacao) e o login das páginas "
+                    . "(recurso=entrar: a página sem login recebe 401 da API, o api.js manda para api.php?recurso=entrar&volta=<a página>, o "
+                    . "navegador pede o usuário e a senha e a API devolve para a página). Os scripts de linha de comando (instalar.php, "
+                    . "criar_usuario.php, importar.php) só chamam as mesmas operações.",
+                "Fora da API, só o cron (cron.php), a cada minuto pela linha de comando, com as mesmas funções que a API usa; o que ele fez sai "
+                    . "em recurso=cron.",
                 "Sem framework e sem dependências: PHP 8.1+ e JavaScript puro. A reescrita pode usar outra pilha, desde que mantenha o contrato da API, o "
                     . "modelo de dados e as regras.",
             ]),
@@ -331,7 +335,8 @@ function reconstrucao()
                     . "celular (o iPhone não aproxima a tela).",
             ]),
             $secao("seguranca", "Segurança", [
-                "Toda página e todo pedido da API exigem autenticação; o cron e os scripts só pela linha de comando. Os arquivos internos (núcleo, banco, "
+                "Todo pedido da API exige autenticação (o token ou o login do site); as páginas são só o esqueleto, sem dado nenhum, e quem "
+                    . "chega sem login vai para o login da API. O cron e os scripts só pela linha de comando. Os arquivos internos (núcleo, banco, "
                     . "configuração, scripts, testes, dados, os que começam com ponto) ficam bloqueados no servidor web (.htaccess e nginx-relogios.conf).",
                 "SQL sempre com parâmetros; textos escapados no HTML; XML da NF-e lido sem entidades nem rede; arquivos servidos inline só dos tipos "
                     . "seguros; senhas com password_hash; o token comparado em tempo constante.",

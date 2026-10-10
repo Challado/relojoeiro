@@ -112,8 +112,9 @@ function tratarResposta(resp) {
     if (resp.status === 503 && dados.pendentes && window.location.pathname.indexOf("configuracao.php") < 0) {
       window.location = "configuracao.php";
     }
+    // sem login: o login é da API (recurso=entrar), que pede o usuário e a senha e volta para esta página
     if (resp.status === 401) {
-      window.location.reload();
+      window.location = "api.php?recurso=entrar&volta=" + encodeURIComponent((window.location.pathname.split("/").pop() || "index.php") + window.location.search + window.location.hash);
     }
     // a resposta vai junto no erro (dados.erros: o que a API explicou)
     if (!resp.ok && dados.ok === undefined) {
