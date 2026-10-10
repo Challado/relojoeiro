@@ -63,16 +63,10 @@ function recarregarConfig(aplicadas) {
           recadoConfig = "";
         }
         // ---------- Geral ----------
-        var ultCron = cfg("cron_ultima_execucao");
-        var linhaCron = el("code", {}, "* * * * * php " + h(d.pasta) + "/cron.php");
-        var cron = "";
-        if (ultCron === "") {
-          cron = el("p", {"class": "alerta-cron"}, "O cron ainda não rodou. Linha do crontab: " + linhaCron);
-        } else if (Date.now() - instante(ultCron) > 10 * 60000) {
-          cron = el("p", {"class": "alerta-cron"}, "O cron não roda desde " + dataBr(ultCron, true) + " " + horaBr(ultCron) + ". Confira o crontab: " + linhaCron);
-        } else {
-          cron = el("p", {"class": "nota"}, "Cron rodando: última execução às " + horaBr(ultCron) + ".");
-        }
+        // a situação do cron vem da API (cron_estado): nunca rodou, parado (mais de 10 minutos) ou rodando
+        var ce = d.cron_estado;
+        var cron = ce.situacao === "rodando" ? el("p", {"class": "nota"}, h(ce.texto))
+          : el("p", {"class": "alerta-cron"}, h(ce.texto.replace(ce.crontab, "")) + el("code", {}, h(ce.crontab)));
         if (cfg("cron_erro") !== "") {
           cron += el("div", {"class": "erro-cron"}, el("strong", {}, "O cron está com erro") + el("pre", {}, h(cfg("cron_erro"))) + el("span", {"class": "nota"}, "Some sozinho na primeira execução sem erro."));
         }

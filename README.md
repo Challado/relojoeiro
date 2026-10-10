@@ -766,8 +766,17 @@ Os **Próximos dias** também mostram todos os dias da escala em qualquer tela.
 
 ## A API: uma porta só para tudo
 
-O `api.php` é o **único back-end**. As páginas são só a tela: o JavaScript de cada uma chama a API e monta o HTML. Por isso,
+O `api.php` é o **único back-end**. As páginas são só a tela: o JavaScript de cada uma chama a API e monta o HTML, sem fazer
+conta (os resumos, as porcentagens, os totais e as situações, como o resumo do Plano e a situação do cron, vêm prontos da API;
+na tela fica só o que é dela: filtrar, ordenar e somar o que os filtros da tabela deixam à mostra). Por isso,
 **tudo o que a tela faz, um script também faz**: automações, atalhos no celular, integração com o Home Assistant, um widget.
+
+Fora da API ficam só três coisas, de propósito: o **cron** (`cron.php`, o relógio do sistema: monta o plano, abre e fecha a
+sessão do dia, manda as mensagens, sincroniza a agenda, dispara os eventos e cuida das cópias dos documentos, com as mesmas
+funções que a API usa; o que dá para pedir na hora tem ação na API: `testar_manha`, `testar_noite`, `sincronizar`,
+`resortear`...), os **scripts de instalação** pela linha de comando (`instalar.php`, `criar_usuario.php` para o primeiro
+usuário e `importar.php`) e o **login das páginas** (cada página confere o login antes de entregar o esqueleto; a API confere
+de novo em cada pedido).
 
 **Autenticação:** o token (`X-Api-Token: ...` ou `?token=...`) ou o login do site (HTTP Basic).
 **Formato:** JSON por padrão, ou XML com `formato=xml`.
@@ -798,16 +807,16 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | Recurso | Devolve |
 |---|---|
 | *(nenhum)* | tudo o que está guardado: a árvore, os campos, os tipos de lançamento, as fórmulas, os avisos, os relógios (com os valores, as fórmulas calculadas, os avisos, os lançamentos, a previsão, a foto e os dados dos documentos), as categorias dos documentos, os modos, o plano, a configuração, os eventos, a agenda, os critérios, o cron, os usuários e as migrações. Só a senha fica de fora. `foto=nao` deixa as fotos de fora. |
-| `hoje` | o que a página Hoje mostra: o relógio do dia, os avisos, os próximos dias, os modos e a tabela da coleção |
+| `hoje` | o que a página Hoje mostra: o relógio do dia, os avisos, os próximos dias, os modos, a tabela da coleção e os totais dela (quantos relógios, disponíveis, em uso e o valor pago) |
 | `ficha` | o que o painel de um relógio mostra (`relogio=<id>`; sem ele, só o cadastro de um relógio novo): agora, carga, nota, previsão, gasto da bateria, quantos documentos em cada categoria, marcações recentes, cadastro |
-| `plano` | o plano gravado, dia a dia, com o motivo de cada escolha (`de=` e `ate=`, AAAA-MM-DD; sem eles, o plano inteiro) |
+| `plano` | o plano gravado, dia a dia, com o motivo de cada escolha, e o resumo do período como a página Plano mostra (quantos dias cada relógio tem, a porcentagem, o próximo dia, quantos à mão, quem ficou sem dia). `de=` e `ate=` (AAAA-MM-DD; sem eles, o plano inteiro) ou `dias=N` (os próximos N dias; `dias=todos`, de hoje até o fim) |
 | `avisos` | os avisos de todos os relógios, do mais urgente ao mais distante |
 | `previsao` | a previsão da bateria dos relógios com leitura de carga (`relogio=` um id ou vários separados por vírgula; sem ele, todos) |
 | `autonomia` | quanto cada relógio dura, em segundos, enxuto para sistemas de fora (`relogio=` um id ou vários; sem ele, todos) |
 | `historico` | a linha do tempo de um relógio, com o tempo em cada estado. `relogio=` (um id ou vários; `relogio_id` também vale; sem ele, todos), `de=` e `ate=` (data, ou data e hora: entra o trecho que cruza o período), `estado=` (`rodizio`, `pulso`, `repouso`, `marca` ou um tipo de sessão como `winder` e `sol`; um ou vários; `linha_estado` também vale), `ordem=` (`desc`, o padrão, ou `asc`), `limite=` (padrão 100, máximo 1000) e `pagina=` |
 | `criterios` | os conjuntos de critérios e a nota de cada relógio com a conta |
 | `eventos`, `agenda` | os eventos personalizados; o que tem de estar no Google Agenda |
-| `config`, `cron` | a configuração (com as mensagens e a prévia); as execuções do cron, com o resumo do período. No `cron`: `de=` e `ate=` (data, ou data e hora), `situacao=` (`atividade`, o padrão; `erro`, `nada` ou `todas`), `busca=` (texto no registro), `limite=` (padrão 100, máximo 1000) e `pagina=`; cada um também vale com `cron_` na frente (`cron_de`...) |
+| `config`, `cron` | a configuração (com as mensagens, a prévia e a situação do cron: nunca rodou, parado ou rodando); as execuções do cron, com o resumo do período. No `cron`: `de=` e `ate=` (data, ou data e hora), `situacao=` (`atividade`, o padrão; `erro`, `nada` ou `todas`), `busca=` (texto no registro), `limite=` (padrão 100, máximo 1000) e `pagina=`; cada um também vale com `cron_` na frente (`cron_de`...) |
 | `arvore`, `cadastros` | os grupos; tudo o que a página Cadastros mostra |
 | `calcular` | o resultado de uma fórmula (`expressao=`) nos relógios (`relogio=` um id ou vários; sem ele, todos), sem gravar, com as partes da conta; fórmula mal escrita: 400 com os erros |
 | `foto` | a foto de um relógio (`relogio=<id>`): a imagem, não JSON |
@@ -815,7 +824,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `documento` | o arquivo de um documento (`id=<id>`): para mostrar (imagem, vídeo, áudio, PDF, texto) ou para baixar (o resto, ou com `baixar=1`); `mini=1` é a miniatura da foto. Atende pedaços (Range), para o vídeo avançar |
 | `usuarios`, `migracoes` | os logins; as migrações que faltam aplicar |
 | `ajuda` | a documentação inteira: cada consulta, cada escrita, cada campo de cada resposta e as funções do motor |
-| `manual` (ou `ajuda&parte=manual`) | o texto da página **Ajuda** (as seções deste README para quem usa: da ideia central às perguntas frequentes), em markdown, inteiro e seção por seção, com o título, o nível e a âncora de cada uma |
+| `manual` (ou `ajuda&parte=manual`) | o texto da página **Ajuda** (as seções deste README para quem usa: da ideia central às perguntas frequentes), em markdown, inteiro e seção por seção, com o título, o nível e a âncora de cada uma, e já em HTML com o sumário (é dele que a página Ajuda se monta) |
 | `reconstrucao` (ou `ajuda&parte=reconstrucao`) | o roteiro para **reescrever o sistema inteiro do zero** (veja [Reescrever o sistema do zero](#reescrever-o-sistema-do-zero)) |
 
 **Escritas** (`POST`, com `recurso=` e `acao=`), todas com as mesmas validações e mensagens da tela:
@@ -847,7 +856,7 @@ por motivo) numa escrita recusada:
 | `409` | o banco recusou a gravação: um registro que outro ainda usa, um valor repetido, ou um valor fora das regras de validação do banco (vem o nome da regra) |
 | `413` | o envio passou do limite do PHP do servidor (`post_max_size`): um arquivo grande demais |
 | `500` | sistema parado (o `API_TOKEN` ou o `FUSO` do `config.php` inválido) ou um erro interno |
-| `503` | banco desatualizado (só `recurso=migracoes` responde, e a escrita `migracoes`/`aplicar`) ou banco fora do ar |
+| `503` | banco desatualizado (só `recurso=migracoes` responde, e a escrita `migracoes`/`aplicar`; e o `manual`, que não usa o banco) ou banco fora do ar |
 
 **Filtros genéricos** funcionam em qualquer lista de qualquer resposta:
 
@@ -1186,7 +1195,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | [`operacoes.php`](operacoes.php) | as regras de cada gravação: validações e mensagens |
 | [`cron.php`](cron.php) | o plano, a sessão do dia, as rodadas da manhã e da noite, os eventos, a agenda e a manutenção dos documentos |
 | `index.php`, `plano.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `usuarios.php` | as páginas (só o esqueleto) |
-| `ajuda.php` | a página de ajuda: as seções do README para quem usa (quais são e a leitura ficam no `lib.php`, que a API usa em `recurso=manual`), convertidas para HTML |
+| `ajuda.php` | a página de ajuda: só o esqueleto; o `ajuda.js` pede o texto à API (`recurso=manual`: as seções do README para quem usa, já em HTML, convertidas no `lib.php`) |
 | [`pagina.php`](pagina.php) | o login do site e o menu |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |
 | [`estilo.css`](estilo.css) | o visual |

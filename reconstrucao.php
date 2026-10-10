@@ -129,8 +129,10 @@ function reconstrucao()
                     . "sem perder a anterior se os dados não cumprem a nova).",
                 "As páginas (index.php, plano.php, ficha.php, documentos.php, historico.php, configuracao.php, criterios.php, grupos.php, "
                     . "cadastros.php, execucoes.php, usuarios.php, ajuda.php) só conferem o login e entregam o esqueleto; o JavaScript de cada uma "
-                    . "(hoje.js, painel.js, configuracao.js...) chama a API e monta a tela. Formulários com data-recurso gravam pela API e a página "
-                    . "se remonta com a resposta.",
+                    . "(hoje.js, painel.js, configuracao.js, ajuda.js...) chama a API e monta a tela, sem fazer conta: resumos, porcentagens e situações "
+                    . "(o resumo do plano, a porcentagem de cada estado no histórico, o peso efetivo dos critérios, a situação do cron, o manual "
+                    . "em HTML) vêm prontos da API. Formulários com data-recurso gravam pela API e a página se remonta com a resposta. Fora da API, "
+                    . "de propósito: o cron, os scripts de linha de comando e a conferência do login de cada página.",
                 "O cron (cron.php), a cada minuto pela linha de comando; os scripts de linha de comando: instalar.php (o banco vazio), criar_usuario.php, "
                     . "importar.php (o sistema anterior).",
                 "Sem framework e sem dependências: PHP 8.1+ e JavaScript puro. A reescrita pode usar outra pilha, desde que mantenha o contrato da API, o "

@@ -67,7 +67,7 @@ api(pedido).then(function (d) {
     var marcas = Object.keys(r.marcacoes);
     if (soma > 0 || marcas.length > 0) {
       res += el("div", {"class": "resumo-execucoes resumo-historico"}, Object.keys(r.tempo).map(function (k) {
-        return r.tempo[k].segundos > 0 ? el("div", {}, el("strong", {}, h(r.tempo[k].texto)) + el("span", {}, h(d.estados[k]) + " · " + Math.round(r.tempo[k].segundos * 100 / Math.max(1, soma)) + "%")) : "";
+        return r.tempo[k].segundos > 0 ? el("div", {}, el("strong", {}, h(r.tempo[k].texto)) + el("span", {}, h(d.estados[k]) + " · " + Math.round(r.tempo[k].porcentagem) + "%")) : "";
       }).join("") + marcas.map(function (n) { return el("div", {}, el("strong", {}, String(r.marcacoes[n])) + el("span", {}, h(n))); }).join(""));
     }
     res += el("p", {"class": "nota"}, d.total + " " + (d.total === 1 ? "registro" : "registros") + " com esses filtros" + (d.paginas > 1 ? ", página " + d.pagina + " de " + d.paginas : "") + ". "

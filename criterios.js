@@ -186,7 +186,7 @@ function recarregarCriterios() {
             return el("tr", {}, el("td", {}, el("input", {"name": "nome[" + s.id + "]", "value": s.nome, "maxlength": "80"}))
               + el("td", {"class": "nota"}, h(d.variaveis[s.variavel] ? d.variaveis[s.variavel].nome : s.variavel))
               + el("td", {}, el("input", {"name": "peso[" + s.id + "]", "value": num(s.peso, 2), "class": "curto", "inputmode": "decimal", "data-soma": true, "data-peso-pai": p.peso}) + " %")
-              + el("td", {"data-efetivo": true}, pct(s.peso * p.peso / 100))
+              + el("td", {"data-efetivo": true}, pct(s.peso_efetivo_no_conjunto))
               + el("td", {"class": "acoes-linha"}, el("button", {"form": "ordem-s" + s.id, "name": "direcao", "value": "sobe", "class": "leve discreto", "type": "submit", "title": "Subir"}, "↑")
                 + el("button", {"form": "ordem-s" + s.id, "name": "direcao", "value": "desce", "class": "leve discreto", "type": "submit", "title": "Descer"}, "↓") + " "
                 + el("button", {"form": "excluir-s" + s.id, "class": "leve discreto", "type": "submit"}, "Excluir")));
