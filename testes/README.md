@@ -45,6 +45,10 @@ pela API, do jeito que uma pessoa usa o sistema:
    php testes/comparar.php mysql.json sqlite.json
    ```
 
+O cenário monta as datas e horas no mesmo fuso do sistema: o `FUSO` do `config.php` da pasta do sistema (ou a variável
+`RELOGIOS_FUSO`, se o sistema estiver noutro lugar). Assim ele roda em qualquer hora do dia, inclusive à noite no Brasil (quando
+em UTC já é o dia seguinte) e logo depois da meia-noite.
+
 Rode os bancos **ao mesmo tempo**, cada um no seu servidor: com minutos de diferença entre as rodadas, as contas que andam
 com o tempo passam da folga. O resultado esperado é `0 diferenças graves`; as leves (`--leves` mostra) são os números
 dentro dos textos, como "há 3 min", e os arredondamentos bem na fronteira, como 23,499 e 23,501.
