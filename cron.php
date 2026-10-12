@@ -162,7 +162,36 @@ try {
                 $log[] = ($r["mensagem"] !== "" || $r["erros"] > 0 ? "erro na agenda: " : "agenda: ") . $r["criados"] . " criados, " . $r["atualizados"] . " atualizados, "
                     . $r["removidos"] . " removidos, " . $r["erros"] . " recusados " . $r["mensagem"];
             }
+            // a cópia de segurança do banco, uma por dia (só com a BACKUP_PASTA no config.php)
+            if (defined("BACKUP_PASTA") && trim((string)BACKUP_PASTA) !== "") {
+                $b = backup_fazer();
+                $log[] = $b["ok"] ? "cópia de segurança: " . $b["mensagem"] : "erro na cópia de segurança: " . implode(" ", $b["erros"]);
+            }
             cfg_set("ultima_noite", $hoje->format("Y-m-d"));
+        }
+
+        // ---------- avisos na hora ----------
+        // o aviso marcado "na hora" (o Tirar do carregador) vai pelo Telegram no minuto em que vence, uma vez: a lista dos que
+        // já foram (relógio:aviso) fica na configuração, e um aviso sai dela quando deixa de vencer (foi resolvido)
+        $ja = array_values(array_filter(explode(",", cfg("na_hora_enviados"))));
+        $agora_vencidos = [];
+        $itens_h = [];
+        foreach (avisos_na_hora_vencidos(time()) as $x) {
+            $chave = $x[0]["id"] . ":" . $x[1]["identificador"];
+            $agora_vencidos[] = $chave;
+            if (!in_array($chave, $ja, true)) {
+                $log[] = "aviso na hora: " . $x[1]["nome"] . " (" . $x[0]["nome"] . ")";
+                if (canal_aviso("tg", $x[1]["identificador"])["envia"]) {
+                    $itens_h[] = ["tipo" => $x[1]["identificador"], "id" => (int)$x[0]["id"], "fazer" => $x[1]["nome"], "motivo" => $x[1]["texto"], "ate" => ""];
+                }
+            }
+        }
+        if (count($itens_h) > 0) {
+            $log[] = cfg("mensagens_ativas") !== "1" ? "avisos na hora: alerta desligado"
+                : (enviar_em_partes(mensagem_telegram($itens_h, $hoje), $titulo) === 0 ? "avisos na hora enviados ao Telegram" : "erro: a API de alerta não aceitou os avisos na hora");
+        }
+        if (implode(",", $agora_vencidos) !== implode(",", $ja)) {
+            cfg_set("na_hora_enviados", implode(",", $agora_vencidos));
         }
 
         // ---------- eventos personalizados ----------

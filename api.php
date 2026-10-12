@@ -219,6 +219,12 @@
  *                            senha), "mysqli" (a extensão do MySQL no PHP), "relogios_neste_banco", "precisa_substituir", "traz": [o que ela
  *                            traz]}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=importacao"
+ *   recurso=backup           a cópia de segurança do banco (uma por dia, na rodada da noite do cron, na BACKUP_PASTA do config.php):
+ *                            {"pasta_ok", "pasta_erro", "manter" (quantas ficam), "documentos" (se levam o conteúdo dos documentos),
+ *                            "versao" (a do banco agora), "ultima", "copias": [{"arquivo", "bytes", "tamanho", "criada", "documentos",
+ *                            "versao"}] (da mais nova para a mais velha)}. Com arquivo=<nome>: baixa aquela cópia (relojoeiro-AAAA-MM-DD-
+ *                            HHMMSS.jsonl.gz: JSON Lines comprimido, o mesmo nos três bancos). Fazer e restaurar: na escrita
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=backup"
  *   recurso=entrar           o login das páginas: sem login, 401 (o navegador pede o usuário e a senha); com login, volta para a página
  *                            de volta=<uma página do sistema> (302) ou diz quem entrou: {"usuario" (null pelo token), "por" (login ou
  *                            token), "volta"}. É para onde o api.js manda quem abre uma página sem login
@@ -391,8 +397,12 @@
  *                             "Atualizar o gasto com esta medição"; a mensagem traz a conta), iniciar (relogio_id,
  *                             tipo, quando: abre a sessão; exclusiva fecha a outra exclusiva aberta), encerrar (relogio_id, tipo,
  *                             quando), periodo (relogio_id, tipo, inicio (quando também vale), fim: uma sessão que já passou),
- *                             alterar (id: quando ou inicio, fim, valor; só o que vier), excluir (id). Nada no futuro; o tipo tem
- *                             de valer para o relógio; exclusivas não se sobrepõem
+ *                             alterar (id: quando ou inicio, fim, valor; só o que vier), excluir (id), alternar (relogio_id, tipo
+ *                             (sessão), quando: fecha a sessão se ela está aberta, abre se está fechada: um botão só num atalho de
+ *                             celular). Em todas, relogio_id=hoje é o relógio do dia, pelo plano. Nada no futuro; o tipo tem de
+ *                             valer para o relógio; exclusivas não se sobrepõem. Um intervalo entre duas leituras com outra sessão
+ *                             no meio (o carregador) não mede o gasto
+ *                            Ex. alternar: curl -H "X-Api-Token: ..." -d recurso=lancamento -d acao=alternar -d relogio_id=hoje -d tipo=pulso http://servidor/relojoeiro/api.php
  *                            Ex. lancar: curl -u lucas:senha -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://servidor/relojoeiro/api.php
  *                            Ex. iniciar: curl -u lucas:senha -d recurso=lancamento -d acao=iniciar -d relogio_id=4 -d tipo=sol http://servidor/relojoeiro/api.php
  *                            Ex. encerrar: curl -u lucas:senha -d recurso=lancamento -d acao=encerrar -d relogio_id=4 -d tipo=sol http://servidor/relojoeiro/api.php
@@ -404,7 +414,9 @@
  *                             {data}, {quando} e {limite}, resolve: o tipo de lançamento, ativo, no_id, escala: nao, uso (conferido no
  *                             relógio do dia na escala inteligente) ou sempre (também nos guardados), simula_valor e simula_horas
  *                             (o lançamento que a escala simula para resolver), agenda: janela (na agenda, só dentro da antecedência)
- *                             ou sempre (qualquer data); se vai pela agenda ou pelo Telegram é a Configuração), alterar (id), excluir (id)
+ *                             ou sempre (qualquer data); se vai pela agenda ou pelo Telegram é a Configuração), na_hora (1 ou 0:
+ *                             além do alerta da manhã, o Telegram recebe o aviso no minuto em que ele vence, uma vez, até ser
+ *                             resolvido; o "Tirar do carregador" vem assim), alterar (id), excluir (id)
  *                            Ex. novo: curl -u lucas:senha -d recurso=avisos -d acao=novo -d identificador=pulseira -d "nome=Trocar a pulseira" --data-urlencode "expressao=data_compra + 365" -d antecedencia_dias=15 -d "texto=vence {quando}, {data}" -d no_id=0 http://servidor/relojoeiro/api.php
  *                            Ex. alterar: curl -u lucas:senha -d recurso=avisos -d acao=alterar -d id=9 -d antecedencia_dias=30 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=avisos -d acao=excluir -d id=9 http://servidor/relojoeiro/api.php
@@ -436,7 +448,11 @@
  *                             (inclusive hoje: o sorteado passa a ser o do pulso a partir de agora), usando (relogio_id: o
  *                             relógio de hoje a partir de agora), trocar_dia (data, relogio_id: o relógio daquele dia, à mão;
  *                             hoje, como o usando; 0: o dia volta a ser sorteado), proxima_semana (só no domingo: a semana
- *                             seguinte inteira).
+ *                             seguinte inteira), periodo (de, ate: AAAA-MM-DD, de hoje até 2 anos; relogio_ids[]: um ou vários, na
+ *                             ordem; dias_cada (padrão 1): os dias do período ficam escolhidos à mão, cada relógio dias_cada dias
+ *                             seguidos, e depois do último volta ao primeiro), periodo_sortear (de, ate: os dias escolhidos à mão do
+ *                             período, de amanhã em diante, voltam a ser sorteados). Os dias escolhidos à mão de amanhã em diante
+ *                             ficam quando se sorteia de novo ou se monta a próxima semana.
  *                             Na escala inteligente: sortear de novo refaz a escala; usando segura o escolhido nos dias que
  *                             faltavam do bloco de hoje e refaz a escala depois deles; proxima_semana é recusada
  *                            Ex. modo: curl -u lucas:senha -d recurso=rodizio -d acao=modo -d modo=2 -d "bloco_alvo[8]=1" -d "bloco_cada_dia[8]=1" -d selecao=ponderado -d max_sem_uso=21 http://servidor/relojoeiro/api.php
@@ -445,6 +461,8 @@
  *                            Ex. usando: curl -u lucas:senha -d recurso=rodizio -d acao=usando -d relogio_id=12 http://servidor/relojoeiro/api.php
  *                            Ex. trocar_dia: curl -u lucas:senha -d recurso=rodizio -d acao=trocar_dia -d data=2026-10-09 -d relogio_id=12 http://servidor/relojoeiro/api.php
  *                            Ex. proxima_semana: curl -u lucas:senha -d recurso=rodizio -d acao=proxima_semana http://servidor/relojoeiro/api.php
+ *                            Ex. periodo: curl -u lucas:senha -d recurso=rodizio -d acao=periodo -d de=2026-12-20 -d ate=2027-01-05 -d "relogio_ids[]=12" -d "relogio_ids[]=7" -d dias_cada=2 http://servidor/relojoeiro/api.php
+ *                            Ex. periodo_sortear: curl -u lucas:senha -d recurso=rodizio -d acao=periodo_sortear -d de=2026-12-20 -d ate=2027-01-05 http://servidor/relojoeiro/api.php
  *   recurso=modos             salvar (id: 0 cria; nome, selecao: inteligente, ponderado, aleatorio ou fifo; escala_dias: vazio ou 0
  *                             = sorteio pelos blocos, 7 a 730 = escala inteligente com esse horizonte; blocos: [{nome, dias:
  *                             [1..7], no_id (0: todos), um_por: bloco ou dia, relogio_id: fixo (0: sorteia)}], substitui os
@@ -492,6 +510,12 @@
  *                             os valores dos campos e o histórico; tudo numa transação (parou no meio: nada fica gravado); a resposta
  *                             traz "contagem" (quantos de cada)
  *                            Ex. importar: curl -u lucas:senha -d recurso=importacao -d acao=importar -d banco=relogios -d substituir=1 http://servidor/relojoeiro/api.php
+ *   recurso=backup            fazer (agora: a cópia vai para a BACKUP_PASTA, e as mais velhas que passam do BACKUP_MANTER saem; a
+ *                             resposta traz "arquivo"), restaurar (arquivo: o nome de uma cópia da pasta; antes, guarda uma cópia do
+ *                             que está agora; depois, num passo só, troca todos os registros pelos da cópia; só uma cópia da mesma
+ *                             versão do banco; sem o conteúdo dos documentos, eles voltam sem a cópia no banco e o cron refaz a pedida)
+ *                            Ex. fazer: curl -u lucas:senha -d recurso=backup -d acao=fazer http://servidor/relojoeiro/api.php
+ *                            Ex. restaurar: curl -u lucas:senha -d recurso=backup -d acao=restaurar -d arquivo=relojoeiro-2026-10-12-200000.jsonl.gz http://servidor/relojoeiro/api.php
  *
  * ---------------------------------------------------------------------------------------------
  * DICIONÁRIO DOS CAMPOS  (o que é, para que serve e que valor tem cada campo; o mesmo está em recurso=ajuda, "campos")
@@ -529,6 +553,8 @@
  *     arvore[].profundidade          o nível na árvore (0: na raiz)
  *     avisos[]                       os avisos cadastrados (cada identificador pode ter uma versão por grupo)
  *     avisos[].agenda                a data na agenda: janela (só dentro da antecedência da agenda) ou sempre
+ *     avisos[].na_hora               1: o aviso vai pelo Telegram no minuto em que vence (uma vez, até ser resolvido); 0: só no alerta da
+ *                                    manhã
  *     avisos[].antecedencia_dias     com quantos dias antes ele entra "em breve" (número)
  *     avisos[].ativo                 o aviso vale
  *     avisos[].condicao              vale quando: uma fórmula que diz para quais relógios do grupo o aviso vale (1 vale, 0 não; ex.: corda_manual = 0,
@@ -565,6 +591,9 @@
  *     config.cron_erro               o erro guardado da última execução com erro (texto; vazio: sem erro)
  *     config.cron_registro           o registro da última rodada com atividade (texto)
  *     config.cron_ultima_execucao    quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     config.na_hora_enviados        os avisos "na hora" que já foram pelo Telegram e ainda estão vencidos (relogio_id:identificador,
+ *                                    separados por vírgula): o cron não manda de novo
+ *     config.backup_ultima           quando foi feita a última cópia de segurança (texto AAAA-MM-DD HH:MM:SS)
  *     config.escala_fim              até que dia vai a escala inteligente gerada (texto AAAA-MM-DD; vazio fora da escala)
  *     config.escala_gerada           o dia em que a escala foi gerada pela última vez (texto AAAA-MM-DD)
  *     config.horario_manha           a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)
@@ -580,6 +609,7 @@
  *     config.migracao_v17            marca de que a migração v17 foi aplicada (1)
  *     config.migracao_v18            marca de que a migração v18 foi aplicada (1)
  *     config.migracao_v19            marca de que a migração v19 foi aplicada (1)
+ *     config.migracao_v20            marca de que a migração v20 foi aplicada (1)
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso); 0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
@@ -795,6 +825,7 @@
  *     relogios[].avisos[]            os avisos do relógio agora (os que valem para ele e têm data prevista), do mais urgente ao mais distante
  *     relogios[].avisos[].agenda     a data na agenda: janela (só dentro da antecedência da agenda) ou sempre (qualquer data); se vai pela agenda é a
  *                                    Configuração
+ *     relogios[].avisos[].na_hora    verdadeiro: o aviso vai pelo Telegram no minuto em que vence (uma vez), além do alerta da manhã
  *     relogios[].avisos[].data       a data prevista, pela fórmula do aviso (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].avisos[].escala     na escala inteligente: nao, uso (conferido no relógio do dia) ou sempre (também nos guardados)
  *     relogios[].avisos[].estado     atrasado (a data passou), em_breve (dentro da antecedência) ou ok
@@ -1075,6 +1106,9 @@
  *     avisos[].resolve.identificador o tipo de lançamento
  *     avisos[].resolve.nome          o nome dele
  *     avisos[].resolve.unidade       a unidade do valor
+ *     avisos[].resolve.acao          o que o botão manda (recurso=lancamento): iniciar (a sessão está fechada), encerrar (a sessão está
+ *                                    aberta: o Tirar do carregador) ou lancar (instantâneo ou leitura)
+ *     avisos[].resolve.botao         o texto do botão ("Pôs no sol", "Tirou do carregador", "Informar leitura de carga", "Corda")
  *     avisos[].texto                 o motivo por extenso
  *     avisos_nomes[]                 os nomes dos avisos (o filtro "O que fazer" da tabela)
  *     estados[]                      os estados da tabela, na ordem (o filtro Estado): "Em uso", o nome de cada sessão que não é o pulso
@@ -1244,6 +1278,10 @@
  *     relogio.compra.garantia_ate    até quando vai a garantia
  *     relogio.compra.loja            onde comprou
  *     relogio.compra.valor           o valor pago
+ *     relogio.compra.ha_dias         há quantos dias foi a compra (número inteiro); null: sem a data
+ *     relogio.compra.dias_de_uso     em quantos dias ele foi ao pulso (a fórmula dias_de_uso); null: sem a fórmula
+ *     relogio.compra.custo_por_uso   o valor pago dividido pelos dias de uso, em R$ (a fórmula custo_por_uso); null: sem o valor pago ou
+ *                                    sem nenhum dia de uso
  *     relogio.dados[]                os campos do cadastro que valem para o relógio (os do grupo dele e dos de cima), com o valor que as contas usam
  *     relogio.dados[].identificador  o campo
  *     relogio.dados[].nome           o nome do campo
@@ -1436,6 +1474,9 @@
  *     config.cron_erro               o erro guardado da última execução com erro (texto; vazio: sem erro)
  *     config.cron_registro           o registro da última rodada com atividade (texto)
  *     config.cron_ultima_execucao    quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     config.na_hora_enviados        os avisos "na hora" que já foram pelo Telegram e ainda estão vencidos (relogio_id:identificador,
+ *                                    separados por vírgula): o cron não manda de novo
+ *     config.backup_ultima           quando foi feita a última cópia de segurança (texto AAAA-MM-DD HH:MM:SS)
  *     config.escala_fim              até que dia vai a escala inteligente gerada (texto AAAA-MM-DD; vazio fora da escala)
  *     config.escala_gerada           o dia em que a escala foi gerada pela última vez (texto AAAA-MM-DD)
  *     config.horario_manha           a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)
@@ -1451,6 +1492,7 @@
  *     config.migracao_v17            marca de que a migração v17 foi aplicada (1)
  *     config.migracao_v18            marca de que a migração v18 foi aplicada (1)
  *     config.migracao_v19            marca de que a migração v19 foi aplicada (1)
+ *     config.migracao_v20            marca de que a migração v20 foi aplicada (1)
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso); 0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
@@ -1550,6 +1592,8 @@
  *   recurso=cadastros
  *     avisos[]                       os avisos cadastrados (cada identificador pode ter uma versão por grupo)
  *     avisos[].agenda                a data na agenda: janela (só dentro da antecedência da agenda) ou sempre
+ *     avisos[].na_hora               1: o aviso vai pelo Telegram no minuto em que vence (uma vez, até ser resolvido); 0: só no alerta da
+ *                                    manhã
  *     avisos[].antecedencia_dias     com quantos dias antes ele entra "em breve" (número)
  *     avisos[].ativo                 o aviso vale
  *     avisos[].condicao              vale quando: uma fórmula que diz para quais relógios do grupo o aviso vale (1 vale, 0 não; ex.: corda_manual = 0,
@@ -1649,6 +1693,7 @@
  *     avisos[]                       os avisos de todos os relógios agora, do mais urgente ao mais distante
  *     avisos[].agenda                a data na agenda: janela (só dentro da antecedência da agenda) ou sempre (qualquer data); se vai pela agenda é a
  *                                    Configuração
+ *     avisos[].na_hora               verdadeiro: o aviso vai pelo Telegram no minuto em que vence (uma vez), além do alerta da manhã
  *     avisos[].data                  a data prevista, pela fórmula do aviso (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     avisos[].disponivel            verdadeiro ou falso: o relógio entra no rodízio
  *     avisos[].escala                na escala inteligente: nao, uso (conferido no relógio do dia) ou sempre (também nos guardados)
@@ -2196,6 +2241,24 @@
  *     listas.config_php[]            as constantes do config.php
  *     listas.config_php[].constante  o nome (ou os nomes) da constante
  *     listas.config_php[].descricao  para que ela serve
+ *   recurso=backup
+ *     pasta_ok                       verdadeiro: a pasta das cópias (BACKUP_PASTA do config.php) existe, aceita gravar e fica fora da pasta publicada
+ *     pasta_erro                     por que a pasta não serve (sem BACKUP_PASTA, não existe, sem permissão de escrita, ou dentro da pasta
+ *                                    publicada); null: serve
+ *     manter                         quantas cópias ficam na pasta (BACKUP_MANTER; padrão 7): a cada cópia nova, as mais velhas que passam
+ *                                    disso saem
+ *     documentos                     verdadeiro: as cópias levam o conteúdo dos documentos guardado no banco (BACKUP_DOCUMENTOS); falso:
+ *                                    não levam (os arquivos já estão na pasta dos documentos)
+ *     versao                         a versão do banco agora (a última migração): só uma cópia da mesma versão volta
+ *     ultima                         quando foi feita a última cópia (texto AAAA-MM-DD HH:MM:SS); null: nenhuma
+ *     copias[]                       as cópias que estão na pasta, da mais nova para a mais velha
+ *     copias[].arquivo               o nome do arquivo (relojoeiro-AAAA-MM-DD-HHMMSS.jsonl.gz): é o que se passa em arquivo= para baixar ou
+ *                                    restaurar
+ *     copias[].bytes                 o tamanho, em bytes
+ *     copias[].tamanho               o tamanho por extenso ("7 KB", "1,2 MB")
+ *     copias[].criada                quando a cópia foi feita (texto AAAA-MM-DD HH:MM:SS)
+ *     copias[].documentos            verdadeiro: a cópia leva o conteúdo dos documentos
+ *     copias[].versao                a versão do banco da cópia (a última migração dele)
  *   recurso=codigo
  *     como_usar                      como pedir um arquivo, o arquivo puro, o HTML de uma página e todos de uma vez
  *     camadas[]                      as camadas do sistema, na ordem
@@ -2730,12 +2793,36 @@ if (!$token_ok && $quem === "") {
         // a importação do sistema anterior pode demorar (o histórico inteiro): sem o limite de tempo do PHP
         @set_time_limit(0);
         $saida = op_importacao($acao, $d);
+    } elseif ($recurso === "backup") {
+        // a cópia de segurança: fazer agora, ou restaurar uma (as duas podem demorar num banco grande)
+        @set_time_limit(0);
+        $saida = $acao === "fazer" ? backup_fazer() : ($acao === "restaurar" ? backup_restaurar((string)($d["arquivo"] ?? ""))
+            : ["ok" => false, "mensagem" => "", "erros" => ["Ação desconhecida: use fazer ou restaurar."]]);
     } else {
-        $saida = ["ok" => false, "mensagem" => "", "erros" => ["este recurso não aceita escrita; os que aceitam: " . implode(", ", array_merge(array_keys($ops), ["usuarios", "importacao", "instalacao", "migracoes"]))]];
+        $saida = ["ok" => false, "mensagem" => "", "erros" => ["este recurso não aceita escrita; os que aceitam: " . implode(", ", array_merge(array_keys($ops), ["usuarios", "importacao", "backup", "instalacao", "migracoes"]))]];
     }
     $codigo = $saida["ok"] ? 200 : 400;
 } elseif ($recurso === "importacao") {
     $saida = importacao_situacao();
+} elseif ($recurso === "backup") {
+    // a cópia de segurança do banco: a situação e as cópias da pasta; arquivo=<nome> baixa uma (fazer e restaurar: na escrita)
+    $arq_b = (string)($_REQUEST["arquivo"] ?? "");
+    if ($arq_b !== "") {
+        $caminho_b = backup_caminho($arq_b);
+        if ($caminho_b !== null) {
+            header("Content-Type: application/gzip");
+            header("Content-Disposition: attachment; filename=\"" . $arq_b . "\"");
+            header("Content-Length: " . filesize($caminho_b));
+            readfile($caminho_b);
+            exit;
+        }
+        $codigo = 404;
+        $saida = ["erro" => "cópia não encontrada"];
+    } else {
+        $saida = ["pasta_ok" => backup_pasta() !== null, "pasta_erro" => backup_pasta_erro() !== "" ? backup_pasta_erro() : null, "manter" => backup_manter(),
+            "documentos" => backup_com_documentos(), "versao" => array_key_last($MIGRACOES), "ultima" => cfg("backup_ultima") !== "" ? cfg("backup_ultima") : null,
+            "copias" => backup_lista()];
+    }
 } elseif ($recurso === "foto") {
     $f = linha("SELECT tipo, dados FROM foto WHERE relogio_id = ?", [(int)($_REQUEST["relogio"] ?? 0)]);
     if ($f) {
@@ -2818,8 +2905,14 @@ if (!$token_ok && $quem === "") {
     foreach (avisos_de_hoje() as $x) {
         $pendentes_h[(int)$x[0]["id"]] = true;
         $t = $x[1]["resolve"] !== null ? (lancamento_tipos()[$x[1]["resolve"]] ?? null) : null;
+        // o botão: a sessão que resolve, aberta, se fecha (o Tirar do carregador); fechada, se abre; a leitura se informa
+        $aberta_h = $t && $t["formato"] === "sessao" && (int)valor("SELECT COUNT(*) FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND fim IS NULL", [(int)$x[0]["id"], (int)$t["id"]]) > 0;
+        $minus = $t ? (function_exists("mb_strtolower") ? mb_strtolower($t["nome"], "UTF-8") : strtolower($t["nome"])) : "";
         $avisos_h[] = ["relogio_id" => (int)$x[0]["id"], "relogio" => $x[0]["nome"], "identificador" => $x[1]["identificador"], "nome" => $x[1]["nome"], "texto" => $x[1]["texto"],
-            "estado" => $x[1]["estado"], "resolve" => $t ? ["identificador" => $t["identificador"], "nome" => $t["nome"], "formato" => $t["formato"], "unidade" => $t["unidade"]] : null];
+            "estado" => $x[1]["estado"], "resolve" => $t ? ["identificador" => $t["identificador"], "nome" => $t["nome"], "formato" => $t["formato"], "unidade" => $t["unidade"],
+                "acao" => $t["formato"] === "sessao" ? ($aberta_h ? "encerrar" : "iniciar") : "lancar",
+                "botao" => $t["formato"] === "sessao" ? ($aberta_h ? (preg_match("/^n(o|a|os|as)\\s/u", $minus) === 1 ? "Tirou d" . substr($minus, 1) : "Terminou: " . $minus) : "Pôs " . $minus)
+                    : ($t["formato"] === "valor" ? "Informar " . $minus : $t["nome"])] : null];
     }
     $fotos = [];
     foreach (linhas("SELECT relogio_id, atualizado FROM foto") as $f) {
@@ -2935,7 +3028,19 @@ if (!$token_ok && $quem === "") {
             "proxima" => $proxima, "proxima_ate" => $proxima !== null ? texto_ate($proxima, "neste dia") : null,
             "escala_fim" => valor("SELECT escala_dias FROM modo WHERE id = ?", [modo_ativo()]) !== null ? cfg("escala_fim") : null,
             "compra" => ["data" => $valores["data_compra"] ?? null, "valor" => isset($valores["valor_compra"]) ? (float)$valores["valor_compra"] : null, "loja" => $valores["loja"] ?? null,
-                "garantia_ate" => $valores["garantia_ate"] ?? null],
+                "garantia_ate" => $valores["garantia_ate"] ?? null,
+                "ha_dias" => !empty($valores["data_compra"]) ? (int)floor(($hoje->getTimestamp() - strtotime(substr((string)$valores["data_compra"], 0, 10))) / 86400) : null,
+                // as fórmulas do cadastro (Dias de uso e Custo por uso), quando existem
+                "dias_de_uso" => (function () use ($r, $agora, $valores) {
+                    $c = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => $valores];
+                    $x = isset(formulas_todas()["dias_de_uso"]) ? variavel_valor("dias_de_uso", $c) : null;
+                    return is_numeric($x) ? (int)round((float)$x) : null;
+                })(),
+                "custo_por_uso" => (function () use ($r, $agora, $valores) {
+                    $c = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => $valores];
+                    $x = isset(formulas_todas()["custo_por_uso"]) ? variavel_valor("custo_por_uso", $c) : null;
+                    return is_numeric($x) ? round((float)$x, 2) : null;
+                })()],
             "manutencoes" => array_map(function ($a) use ($hoje) { return ["data" => max($hoje->format("Y-m-d"), substr($a["data"], 0, 10)), "nome" => $a["nome"]]; }, array_slice($v["avisos"], 0, 5)),
             "previsao" => previsao_energia($r, $agora), "tipos" => $tipos, "leituras" => $leituras,
             "medicoes" => medicoes_legivel($id), "medicao_janela_dias" => max(1, (int)cfg("medicao_janela_dias")),
@@ -3140,7 +3245,7 @@ if (!$token_ok && $quem === "") {
     $n = nos_todos();
     $com_id = function ($linhas) {
         return array_map(function ($x) {
-            foreach (["id", "no_id", "ordem", "ativo", "exclusiva", "mede_gasto", "modo_id", "relogio_id", "escala_dias", "ciclo", "resolve_tipo_id"] as $k) {
+            foreach (["id", "no_id", "ordem", "ativo", "exclusiva", "mede_gasto", "modo_id", "relogio_id", "escala_dias", "ciclo", "resolve_tipo_id", "na_hora"] as $k) {
                 // a marca do modo em uso é 1 ou vazia (NULL) no banco: aqui, 1 ou 0
                 if (array_key_exists($k, $x) && ($x[$k] !== null || ($k === "ativo" && array_key_exists("selecao", $x)))) {
                     $x[$k] = (int)$x[$k];
@@ -3304,6 +3409,9 @@ if (!$token_ok && $quem === "") {
             "importacao" => ["descricao" => "o que a importação do sistema anterior usa: o servidor do banco antigo (sem a senha) e de onde ele vem no config.php, se o PHP tem a extensão do MySQL, quantos relógios este banco já tem (com algum, a importação pede substituir=1) e o que ela traz",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=importacao\""],
+            "backup" => ["descricao" => "a cópia de segurança do banco (uma por dia, na rodada da noite do cron, na BACKUP_PASTA do config.php): se a pasta serve, quantas cópias ficam, se levam o conteúdo dos documentos, a versão do banco, a última e as cópias da pasta (da mais nova para a mais velha); com arquivo=<nome>, baixa aquela cópia (JSON Lines comprimido, o mesmo nos três bancos). Fazer e restaurar: na escrita",
+                "parametros" => ["arquivo" => "o nome de uma cópia (relojoeiro-AAAA-MM-DD-HHMMSS.jsonl.gz): baixa o arquivo"],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=backup\""],
             "entrar" => ["descricao" => "o login das páginas: sem login, 401 (o navegador pede o usuário e a senha); com login, vai para a página de volta (302) ou diz quem entrou (usuario, por, volta). É para onde o api.js manda quem abre uma página sem login",
                 "parametros" => ["volta" => "uma página do sistema para onde ir depois de entrar (index.php, plano.php?..., ajuda.php#...); outra coisa não vale"],
                 "exemplo" => "no navegador: http://servidor/relojoeiro/api.php?recurso=entrar&volta=index.php"],
@@ -3380,9 +3488,10 @@ if (!$token_ok && $quem === "") {
                 "periodo" => ["campos" => "relogio_id, tipo, inicio (quando também vale), fim: uma sessão que já passou (espaço ou T entre data e hora)", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=periodo -d relogio_id=3 -d tipo=winder -d \"inicio=2026-09-26 20:00\" -d \"fim=2026-09-27 07:00\" http://servidor/relojoeiro/api.php"],
                 "alterar" => ["campos" => "id: quando ou inicio e fim, valor (só o que vier)", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=alterar -d id=42 -d valor=70 http://servidor/relojoeiro/api.php"],
                 "excluir" => ["campos" => "id", "exemplo" => "curl -u lucas:senha -d recurso=lancamento -d acao=excluir -d id=42 http://servidor/relojoeiro/api.php"],
+                "alternar" => ["campos" => "relogio_id, tipo (sessão), quando: fecha a sessão se ela está aberta, abre se está fechada (um botão só num atalho de celular). Em todas as ações, relogio_id=hoje é o relógio do dia, pelo plano", "exemplo" => "curl -H \"X-Api-Token: ...\" -d recurso=lancamento -d acao=alternar -d relogio_id=hoje -d tipo=pulso http://servidor/relojoeiro/api.php"],
             ],
             "avisos" => [
-                "novo" => ["campos" => "identificador, nome, expressao (a data prevista), condicao (vale quando: uma fórmula, 1 vale e 0 não; vazia, vale sempre; ex.: corda_manual = 0), antecedencia_dias, texto (o motivo, com {relogio}, {data}, {quando}, {limite}), resolve (o tipo de lançamento), ativo, no_id, escala (nao, uso, sempre), simula_valor, simula_horas, agenda (janela ou sempre)", "exemplo" => "curl -u lucas:senha -d recurso=avisos -d acao=novo -d identificador=pulseira -d \"nome=Trocar a pulseira\" --data-urlencode \"expressao=data_compra + 365\" -d antecedencia_dias=15 -d \"texto=vence {quando}, {data}\" -d no_id=0 http://servidor/relojoeiro/api.php"],
+                "novo" => ["campos" => "identificador, nome, expressao (a data prevista), condicao (vale quando: uma fórmula, 1 vale e 0 não; vazia, vale sempre; ex.: corda_manual = 0), antecedencia_dias, texto (o motivo, com {relogio}, {data}, {quando}, {limite}), resolve (o tipo de lançamento), ativo, no_id, escala (nao, uso, sempre), simula_valor, simula_horas, agenda (janela ou sempre), na_hora (1 ou 0: o Telegram recebe o aviso no minuto em que ele vence, uma vez)", "exemplo" => "curl -u lucas:senha -d recurso=avisos -d acao=novo -d identificador=pulseira -d \"nome=Trocar a pulseira\" --data-urlencode \"expressao=data_compra + 365\" -d antecedencia_dias=15 -d \"texto=vence {quando}, {data}\" -d no_id=0 http://servidor/relojoeiro/api.php"],
                 "alterar" => ["campos" => "id e os mesmos campos (menos o identificador)", "exemplo" => "curl -u lucas:senha -d recurso=avisos -d acao=alterar -d id=9 -d antecedencia_dias=30 http://servidor/relojoeiro/api.php"],
                 "excluir" => ["campos" => "id (a versão)", "exemplo" => "curl -u lucas:senha -d recurso=avisos -d acao=excluir -d id=9 http://servidor/relojoeiro/api.php"],
             ],
@@ -3407,6 +3516,8 @@ if (!$token_ok && $quem === "") {
                 "resortear_hoje" => ["campos" => "(nada): inclusive hoje; se sair outro relógio, ele passa a ser o do pulso a partir de agora", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=resortear_hoje http://servidor/relojoeiro/api.php"],
                 "usando" => ["campos" => "relogio_id: o relógio de hoje, a partir de agora (na escala, fica os dias que faltavam do bloco de hoje)", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=usando -d relogio_id=12 http://servidor/relojoeiro/api.php"],
                 "trocar_dia" => ["campos" => "data (AAAA-MM-DD, de hoje em diante), relogio_id: o relógio daquele dia, escolhido à mão (hoje: como o usando; na escala, ela é refeita a partir do dia); relogio_id 0: o dia volta a ser sorteado", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=trocar_dia -d data=2026-10-09 -d relogio_id=12 http://servidor/relojoeiro/api.php"],
+                "periodo" => ["campos" => "de, ate (AAAA-MM-DD, de hoje até 2 anos), relogio_ids[] (um ou vários, na ordem), dias_cada (padrão 1): os dias do período ficam escolhidos à mão, cada relógio dias_cada dias seguidos, e depois do último volta ao primeiro (hoje: o primeiro passa a ser o do pulso a partir de agora; na escala, ela é refeita a partir do começo do período)", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=periodo -d de=2026-12-20 -d ate=2027-01-05 -d \"relogio_ids[]=12\" -d \"relogio_ids[]=7\" -d dias_cada=2 http://servidor/relojoeiro/api.php"],
+                "periodo_sortear" => ["campos" => "de, ate: os dias escolhidos à mão do período, de amanhã em diante, voltam a ser sorteados (os dias escolhidos à mão ficam quando se sorteia de novo ou se monta a próxima semana)", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=periodo_sortear -d de=2026-12-20 -d ate=2027-01-05 http://servidor/relojoeiro/api.php"],
                 "proxima_semana" => ["campos" => "(nada): só no domingo, monta ou refaz a semana seguinte inteira; recusada na escala", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=proxima_semana http://servidor/relojoeiro/api.php"],
             ],
             "modos" => [
@@ -3436,6 +3547,10 @@ if (!$token_ok && $quem === "") {
             ],
             "importacao" => [
                 "importar" => ["campos" => "banco (o nome do banco antigo, MySQL/MariaDB), substituir (1: apaga antes os relógios e o histórico deste banco; obrigatório quando ele já tem relógios): traz a árvore, os relógios, as fotos, os usuários, os valores dos campos e o histórico, tudo numa transação (parou no meio: nada fica gravado); a resposta traz contagem (quantos de cada)", "exemplo" => "curl -u lucas:senha -d recurso=importacao -d acao=importar -d banco=relogios -d substituir=1 http://servidor/relojoeiro/api.php"],
+            ],
+            "backup" => [
+                "fazer" => ["campos" => "(nada): faz uma cópia agora na BACKUP_PASTA (as mais velhas que passam do BACKUP_MANTER saem); a resposta traz arquivo", "exemplo" => "curl -u lucas:senha -d recurso=backup -d acao=fazer http://servidor/relojoeiro/api.php"],
+                "restaurar" => ["campos" => "arquivo (o nome de uma cópia da pasta): antes, guarda uma cópia do que está agora; depois, num passo só, troca todos os registros pelos da cópia (se algo falha, nada muda); só uma cópia da mesma versão do banco; sem o conteúdo dos documentos, eles voltam sem a cópia no banco e o cron refaz a pedida", "exemplo" => "curl -u lucas:senha -d recurso=backup -d acao=restaurar -d arquivo=relojoeiro-2026-10-12-200000.jsonl.gz http://servidor/relojoeiro/api.php"],
             ],
         ],
         "senhas" => [
@@ -3514,6 +3629,7 @@ if (!$token_ok && $quem === "") {
                 "arvore[].profundidade" => "o nível na árvore (0: na raiz)",
                 "avisos[]" => "os avisos cadastrados (cada identificador pode ter uma versão por grupo)",
                 "avisos[].agenda" => "a data na agenda: janela (só dentro da antecedência da agenda) ou sempre",
+                "avisos[].na_hora" => "1: o aviso vai pelo Telegram no minuto em que vence (uma vez, até ser resolvido); 0: só no alerta da manhã",
                 "avisos[].antecedencia_dias" => "com quantos dias antes ele entra \"em breve\" (número)",
                 "avisos[].ativo" => "o aviso vale",
                 "avisos[].condicao" => "vale quando: uma fórmula que diz para quais relógios do grupo o aviso vale (1 vale, 0 não; ex.: corda_manual = 0, só o automático sem corda); null: vale para todos",
@@ -3549,6 +3665,8 @@ if (!$token_ok && $quem === "") {
                 "config.cron_erro" => "o erro guardado da última execução com erro (texto; vazio: sem erro)",
                 "config.cron_registro" => "o registro da última rodada com atividade (texto)",
                 "config.cron_ultima_execucao" => "quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
+                "config.na_hora_enviados" => "os avisos \"na hora\" que já foram pelo Telegram e ainda estão vencidos (relogio_id:identificador, separados por vírgula): o cron não manda de novo",
+                "config.backup_ultima" => "quando foi feita a última cópia de segurança (texto AAAA-MM-DD HH:MM:SS)",
                 "config.escala_fim" => "até que dia vai a escala inteligente gerada (texto AAAA-MM-DD; vazio fora da escala)",
                 "config.escala_gerada" => "o dia em que a escala foi gerada pela última vez (texto AAAA-MM-DD)",
                 "config.horario_manha" => "a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)",
@@ -3563,6 +3681,7 @@ if (!$token_ok && $quem === "") {
                 "config.migracao_v17" => "marca de que a migração v17 foi aplicada (1)",
                 "config.migracao_v18" => "marca de que a migração v18 foi aplicada (1)",
                 "config.migracao_v19" => "marca de que a migração v19 foi aplicada (1)",
+                "config.migracao_v20" => "marca de que a migração v20 foi aplicada (1)",
                 "config.pulso_auto_fim" => "1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o \"fecha às\" do tipo No pulso); 0: só pelo Tirou",
                 "config.pulso_auto_inicio" => "1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs",
                 "config.previsao_limite" => "o limite de carga da previsão do smartwatch, em %",
@@ -3727,6 +3846,7 @@ if (!$token_ok && $quem === "") {
                 "relogios[].autonomia_prevista" => "quanto o relógio dura com a carga cheia, pelo cadastro (número inteiro, em segundos): a autonomia do smartwatch, a reserva de marcha do mecânico, a reserva do solar ou a vida da pilha; a fórmula autonomia_prevista; null se falta o dado no cadastro",
                 "relogios[].avisos[]" => "os avisos do relógio agora (os que valem para ele e têm data prevista), do mais urgente ao mais distante",
                 "relogios[].avisos[].agenda" => "a data na agenda: janela (só dentro da antecedência da agenda) ou sempre (qualquer data); se vai pela agenda é a Configuração",
+                "relogios[].avisos[].na_hora" => "verdadeiro: o aviso vai pelo Telegram no minuto em que vence (uma vez), além do alerta da manhã",
                 "relogios[].avisos[].data" => "a data prevista, pela fórmula do aviso (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogios[].avisos[].escala" => "na escala inteligente: nao, uso (conferido no relógio do dia) ou sempre (também nos guardados)",
                 "relogios[].avisos[].estado" => "atrasado (a data passou), em_breve (dentro da antecedência) ou ok",
@@ -3908,6 +4028,8 @@ if (!$token_ok && $quem === "") {
                 "avisos[].resolve.identificador" => "o tipo de lançamento",
                 "avisos[].resolve.nome" => "o nome dele",
                 "avisos[].resolve.unidade" => "a unidade do valor",
+                "avisos[].resolve.acao" => "o que o botão manda (recurso=lancamento): iniciar (a sessão está fechada), encerrar (a sessão está aberta: o Tirar do carregador) ou lancar (instantâneo ou leitura)",
+                "avisos[].resolve.botao" => "o texto do botão (\"Pôs no sol\", \"Tirou do carregador\", \"Informar leitura de carga\", \"Corda\")",
                 "avisos[].texto" => "o motivo por extenso",
                 "avisos_nomes[]" => "os nomes dos avisos (o filtro \"O que fazer\" da tabela)",
                 "estados[]" => "os estados da tabela, na ordem (o filtro Estado): \"Em uso\", o nome de cada sessão que não é o pulso (\"No sol\", \"No winder\", \"No carregador\"...), \"Em repouso\" e \"Indisponível\"",
@@ -4041,6 +4163,9 @@ if (!$token_ok && $quem === "") {
                 "relogio.compra.garantia_ate" => "até quando vai a garantia",
                 "relogio.compra.loja" => "onde comprou",
                 "relogio.compra.valor" => "o valor pago",
+                "relogio.compra.ha_dias" => "há quantos dias foi a compra (número inteiro); null: sem a data",
+                "relogio.compra.dias_de_uso" => "em quantos dias ele foi ao pulso (a fórmula dias_de_uso); null: sem a fórmula",
+                "relogio.compra.custo_por_uso" => "o valor pago dividido pelos dias de uso, em R$ (a fórmula custo_por_uso); null: sem o valor pago ou sem nenhum dia de uso",
                 "relogio.dados[]" => "os campos do cadastro que valem para o relógio (os do grupo dele e dos de cima), com o valor que as contas usam",
                 "relogio.dados[].identificador" => "o campo",
                 "relogio.dados[].nome" => "o nome do campo",
@@ -4189,6 +4314,8 @@ if (!$token_ok && $quem === "") {
                 "config.cron_erro" => "o erro guardado da última execução com erro (texto; vazio: sem erro)",
                 "config.cron_registro" => "o registro da última rodada com atividade (texto)",
                 "config.cron_ultima_execucao" => "quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
+                "config.na_hora_enviados" => "os avisos \"na hora\" que já foram pelo Telegram e ainda estão vencidos (relogio_id:identificador, separados por vírgula): o cron não manda de novo",
+                "config.backup_ultima" => "quando foi feita a última cópia de segurança (texto AAAA-MM-DD HH:MM:SS)",
                 "config.escala_fim" => "até que dia vai a escala inteligente gerada (texto AAAA-MM-DD; vazio fora da escala)",
                 "config.escala_gerada" => "o dia em que a escala foi gerada pela última vez (texto AAAA-MM-DD)",
                 "config.horario_manha" => "a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)",
@@ -4203,6 +4330,7 @@ if (!$token_ok && $quem === "") {
                 "config.migracao_v17" => "marca de que a migração v17 foi aplicada (1)",
                 "config.migracao_v18" => "marca de que a migração v18 foi aplicada (1)",
                 "config.migracao_v19" => "marca de que a migração v19 foi aplicada (1)",
+                "config.migracao_v20" => "marca de que a migração v20 foi aplicada (1)",
                 "config.pulso_auto_fim" => "1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o \"fecha às\" do tipo No pulso); 0: só pelo Tirou",
                 "config.pulso_auto_inicio" => "1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs",
                 "config.previsao_limite" => "o limite de carga da previsão do smartwatch, em %",
@@ -4301,6 +4429,7 @@ if (!$token_ok && $quem === "") {
             "cadastros" => [
                 "avisos[]" => "os avisos cadastrados (cada identificador pode ter uma versão por grupo)",
                 "avisos[].agenda" => "a data na agenda: janela (só dentro da antecedência da agenda) ou sempre",
+                "avisos[].na_hora" => "1: o aviso vai pelo Telegram no minuto em que vence (uma vez, até ser resolvido); 0: só no alerta da manhã",
                 "avisos[].antecedencia_dias" => "com quantos dias antes ele entra \"em breve\" (número)",
                 "avisos[].ativo" => "o aviso vale",
                 "avisos[].condicao" => "vale quando: uma fórmula que diz para quais relógios do grupo o aviso vale (1 vale, 0 não; ex.: corda_manual = 0, só o automático sem corda); null: vale para todos",
@@ -4392,6 +4521,7 @@ if (!$token_ok && $quem === "") {
             "avisos" => [
                 "avisos[]" => "os avisos de todos os relógios agora, do mais urgente ao mais distante",
                 "avisos[].agenda" => "a data na agenda: janela (só dentro da antecedência da agenda) ou sempre (qualquer data); se vai pela agenda é a Configuração",
+                "avisos[].na_hora" => "verdadeiro: o aviso vai pelo Telegram no minuto em que vence (uma vez), além do alerta da manhã",
                 "avisos[].data" => "a data prevista, pela fórmula do aviso (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "avisos[].disponivel" => "verdadeiro ou falso: o relógio entra no rodízio",
                 "avisos[].escala" => "na escala inteligente: nao, uso (conferido no relógio do dia) ou sempre (também nos guardados)",
@@ -4850,6 +4980,21 @@ if (!$token_ok && $quem === "") {
                 "listas.config_php[].constante" => "o nome (ou os nomes) da constante",
                 "listas.config_php[].descricao" => "para que ela serve",
             ],
+            "backup" => [
+                "pasta_ok" => "verdadeiro: a pasta das cópias (BACKUP_PASTA do config.php) existe, aceita gravar e fica fora da pasta publicada",
+                "pasta_erro" => "por que a pasta não serve (sem BACKUP_PASTA, não existe, sem permissão de escrita, ou dentro da pasta publicada); null: serve",
+                "manter" => "quantas cópias ficam na pasta (BACKUP_MANTER; padrão 7): a cada cópia nova, as mais velhas que passam disso saem",
+                "documentos" => "verdadeiro: as cópias levam o conteúdo dos documentos guardado no banco (BACKUP_DOCUMENTOS); falso: não levam (os arquivos já estão na pasta dos documentos)",
+                "versao" => "a versão do banco agora (a última migração): só uma cópia da mesma versão volta",
+                "ultima" => "quando foi feita a última cópia (texto AAAA-MM-DD HH:MM:SS); null: nenhuma",
+                "copias[]" => "as cópias que estão na pasta, da mais nova para a mais velha",
+                "copias[].arquivo" => "o nome do arquivo (relojoeiro-AAAA-MM-DD-HHMMSS.jsonl.gz): é o que se passa em arquivo= para baixar ou restaurar",
+                "copias[].bytes" => "o tamanho, em bytes",
+                "copias[].tamanho" => "o tamanho por extenso (\"7 KB\", \"1,2 MB\")",
+                "copias[].criada" => "quando a cópia foi feita (texto AAAA-MM-DD HH:MM:SS)",
+                "copias[].documentos" => "verdadeiro: a cópia leva o conteúdo dos documentos",
+                "copias[].versao" => "a versão do banco da cópia (a última migração dele)",
+            ],
             "codigo" => [
                 "como_usar" => "como pedir um arquivo, o arquivo puro, o HTML de uma página e todos de uma vez",
                 "camadas[]" => "as camadas do sistema, na ordem",
@@ -5018,7 +5163,7 @@ if (!$token_ok && $quem === "") {
 } else {
     $codigo = 404;
     $saida = ["erro" => "recurso desconhecido", "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

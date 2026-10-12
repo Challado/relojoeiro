@@ -53,6 +53,8 @@ const RECONSTRUCAO_CONFIG_PHP = [
     "DOCUMENTOS_PASTA" => "a pasta dos arquivos dos documentos, fora da pasta publicada, com escrita para o PHP",
     "DOCUMENTOS_LIMITE (e o nome antigo MANUAL_LIMITE)" => "o maior documento aceito, em bytes (sem ele: 100 MB; 0 ou -1: sem limite do sistema)",
     "DOCUMENTOS_COPIA_BANCO" => "a cópia dos documentos no banco para o sistema inteiro: true, todos; false, nenhum; ausente, o relógio e o arquivo decidem",
+    "BACKUP_PASTA, BACKUP_MANTER, BACKUP_DOCUMENTOS" => "a cópia de segurança do banco: a pasta (fora da publicada; sem ela, não há cópia automática), quantas "
+        . "ficam (padrão 7) e se leva o conteúdo dos documentos (padrão: não)",
     "ANTIGO_HOST, ANTIGO_PORTA, ANTIGO_USUARIO, ANTIGO_SENHA" => "só para importar o sistema anterior (importar.php)",
     "GOOGLE_TOKEN_URL, GOOGLE_API_URL" => "só para testes: os endereços do Google que a agenda usa (o do token e o da API do Google Agenda); trocados, a sincronização conversa com um servidor de teste",
 ];
@@ -219,9 +221,10 @@ const RECONSTRUCAO_TELAS = [
                 ]],
                 ["titulo" => "Hoje é dia de (só quando há aviso)", "itens" => [
                     "Tabela com as colunas \"O que fazer\" (o nome do aviso; atrasado em vermelho), \"Relógio\" (link que abre o "
-                        . "painel), \"Por quê\" (o texto do aviso) e, à direita, o botão do lançamento que resolve: sessão: \"Pôs <nome em "
-                        . "minúsculas>\" (lancamento iniciar); com valor: um campo curto com a unidade de dica (\"%\") e \"Informar <nome>\" "
-                        . "(lancamento lancar com valor); instantâneo: o nome do tipo (lancamento lancar).",
+                        . "painel), \"Por quê\" (o texto do aviso) e, à direita, o botão do lançamento que resolve, com o texto e a ação "
+                        . "que a API dá (resolve.botao e resolve.acao): sessão fechada: \"Pôs <nome em minúsculas>\" (lancamento iniciar); "
+                        . "sessão aberta: \"Tirou do carregador\" (lancamento encerrar); com valor: um campo curto com a unidade de dica "
+                        . "(\"%\") e \"Informar <nome>\" (lancamento lancar com valor); instantâneo: o nome do tipo (lancamento lancar).",
                 ]],
                 ["titulo" => "Próximos dias", "itens" => [
                     "Título \"Próximos dias\" com o link \"ver o plano inteiro →\" (plano.php). Tabela: Dia (\"DD/MM\" e o dia da semana "
@@ -294,9 +297,11 @@ const RECONSTRUCAO_TELAS = [
                         . "Guardado; sem dado, o motivo em cinza); Rodízio (Nota com o link \"ver a conta\" (Critérios, numa aba nova); "
                         . "Critérios de; Próxima vez; no rodapé o botão leve \"Usando hoje\" (rodizio usando, com confirmação), se ele está "
                         . "disponível e não é o de hoje); Compra (Valor pago, Loja, Comprado em com \"há N dias\", Garantia \"até\" ou "
-                        . "\"vencida em\"; sem nada: \"Sem dados da compra. Preencha em \"Editar cadastro\".\"); Documentos (cada categoria com "
-                        . "\"N arquivos\", link para a página Documentos numa aba nova; o botão \"Enviar documentos\" ou \"Abrir os "
-                        . "documentos\"); Próximas manutenções (data em negrito e o nome; ou \"Nada previsto.\").",
+                        . "\"vencida em\"; sem nada: \"Sem dados da compra. Preencha em \"Editar cadastro\".\"); Compra também com \"Custo por "
+                        . "uso\" (\"R\$ 100,00\" em negrito e \"3 dias de uso\" embaixo; sem: \"sem o valor pago\" ou \"ainda não foi ao pulso\" em "
+                        . "cinza) e o \"há N dias\" da compra vindo da API (compra.ha_dias). Documentos (cada categoria com \"N arquivos\", "
+                        . "link para a página Documentos numa aba nova; o botão \"Enviar documentos\" ou \"Abrir os documentos\"); Próximas "
+                        . "manutenções (data em negrito e o nome; ou \"Nada previsto.\").",
                     "Marcar (um quadro na largura toda): \"O que você quer marcar?\" com uma lista em grupos: \"Agora, ou numa hora "
                         . "que você disser\" (cada sessão como verbo: \"Pôr no sol\" / \"Tirar do sol\" conforme está aberta; cada tipo com "
                         . "valor pelo nome; cada instantâneo pelo nome), \"Algo que já passou\" (\"Um período que já passou (<sessões>)\") e "
@@ -363,7 +368,7 @@ const RECONSTRUCAO_TELAS = [
                 "recurso=plano (com dias=30, 90, 365, 730 ou todos)",
             ],
             "grava" => [
-                "rodizio: trocar_dia",
+                "rodizio: trocar_dia, periodo, periodo_sortear",
             ],
             "partes" => [
                 ["titulo" => "Cabeça e filtros", "itens" => [
@@ -371,6 +376,17 @@ const RECONSTRUCAO_TELAS = [
                         . "relógio de qualquer dia em \"trocar por…\": o dia fica escolhido à mão (e a escala é refeita a partir dele).\" "
                         . "Filtros lado a lado: Período (Próximos 30 dias, Próximos 90 dias (o padrão), Próximo ano, Próximos 2 anos, "
                         . "Tudo; trocar relê a API) e Relógio (Todos e cada um; filtra o dia a dia na tela).",
+                ]],
+                ["titulo" => "Escolher os relógios de um período (um quadro que abre e fecha, fechado ao abrir a página)", "itens" => [
+                    "Num formulário em grade: \"De\" e \"Até\" (datas, de hoje em diante, obrigatórias), \"Dias seguidos de cada\" "
+                        . "(número de 1 a 365, padrão 1) e \"Incluir relógio\" (uma lista com \"escolha…\" e os relógios disponíveis): "
+                        . "escolher um põe o nome no fim de uma lista numerada embaixo (\"1. Gama ×\", \"2. Beta ×\"; o × tira; vazia: "
+                        . "\"Nenhum relógio ainda: escolha em \"Incluir relógio\".\" em cinza). A nota explica a ordem (um por dia, ou os "
+                        . "dias seguidos de cada, e depois do último volta ao primeiro), que os dias ficam escolhidos à mão e que sortear "
+                        . "de novo não mexe neles. Botões \"Aplicar ao período\" (rodizio periodo, com de, ate, relogio_ids[] na ordem e "
+                        . "dias_cada; confirma \"Os dias do período ficam com estes relógios, escolhidos à mão. Continuar?\") e, leve, "
+                        . "\"Voltar a sortear o período\" (rodizio periodo_sortear com de e ate; confirma \"Os dias escolhidos à mão neste "
+                        . "período voltam a ser sorteados. Continuar?\"). O recado da API aparece no alto; recusado, o quadro fica aberto.",
                 ]],
                 ["titulo" => "Resumo do período (<n> dias)", "itens" => [
                     "Tabela Relógio, Dias, %, Próximo dia (\"DD/MM/AAAA seg\"), À mão; do que tem mais dias ao que tem menos. "
@@ -392,11 +408,13 @@ const RECONSTRUCAO_TELAS = [
             "le" => [
                 "recurso=migracoes (antes de tudo)",
                 "recurso=config",
+                "recurso=backup",
             ],
             "grava" => [
                 "config: salvar, evento_salvar, evento_excluir, testar_manha, testar_noite, teste_agenda_criar, "
                     . "teste_agenda_remover, sincronizar",
                 "migracoes: aplicar",
+                "backup: fazer, restaurar",
             ],
             "partes" => [
                 ["titulo" => "Banco desatualizado (só quando há migração pendente)", "itens" => [
@@ -443,6 +461,17 @@ const RECONSTRUCAO_TELAS = [
                         . "todo mês, a cada N dias), e só os campos da repetição escolhida: Data / A partir de, Hora (obrigatória), Dia "
                         . "do mês (1 a 31), A cada quantos dias, Dias da semana (caixas seg a dom); Ativo; as próximas vezes (na edição); "
                         . "botão \"Criar evento\" / \"Salvar alterações\" e \"cancelar\".",
+                ]],
+                ["titulo" => "Cópia de segurança (no fim da página, depois de Como sai hoje)", "itens" => [
+                    "Título \"Cópia de segurança\". Com a pasta: a nota \"Uma cópia do banco inteiro por dia, na rodada da noite, "
+                        . "guardando as 7 mais novas, sem (ou com) o conteúdo dos documentos... Última: DD/MM/AAAA HH:MM.\" (ou \"Nenhuma "
+                        . "feita ainda.\"); sem a pasta, em âmbar: \"A cópia automática está desligada: <motivo>. Ponha no config.php a "
+                        . "BACKUP_PASTA, uma pasta do servidor fora da pasta publicada.\"",
+                    "A tabela compacta das cópias (da mais nova para a mais velha): Cópia (o nome do arquivo em fonte fixa), Feita "
+                        . "em, Tamanho (\"7 KB\"), Documentos (com/sem) e, à direita, \"Baixar\" (link leve para "
+                        . "api.php?recurso=backup&arquivo=<nome>) e \"Restaurar\" (discreto; confirma \"Voltar o banco para a cópia de "
+                        . "DD/MM/AAAA HH:MM? Tudo o que foi feito depois some. Antes, o sistema guarda uma cópia do que está agora.\"; "
+                        . "backup restaurar). Embaixo, o botão leve \"Fazer uma cópia agora\" (backup fazer).",
                 ]],
                 ["titulo" => "Como sai hoje", "itens" => [
                     "Três caixas lado a lado: Telegram de manhã e Telegram à noite (o texto como sai, em fonte fixa, ou \"(nada a "
@@ -656,10 +685,11 @@ const RECONSTRUCAO_TELAS = [
                 ]],
                 ["titulo" => "Avisos", "itens" => [
                     "Tabela Aviso, Versão para, Data prevista, Vale quando, Antecedência (\"N d\"), Resolve, Na escala (com o valor "
-                        . "ou as horas simuladas), Na agenda, Ativo, ações. Formulário: Identificador (na novo), Nome, Antecedência "
-                        . "(dias), Resolve (os tipos), Versão para, ativo, Na escala inteligente (não; no relógio do dia; sempre), "
-                        . "Escala: valor do lançamento simulado, Escala: horas da sessão simulada, Data na agenda (só dentro da "
-                        . "antecedência; qualquer data), Data prevista (fórmula), Vale quando (fórmula), Texto (até 300).",
+                        . "ou as horas simuladas), Na agenda, Na hora (sim/não), Ativo, ações. Formulário: Identificador (na novo), Nome, "
+                        . "Antecedência (dias), Resolve (os tipos), Versão para, ativo, \"na hora (Telegram no minuto em que vence)\" "
+                        . "(caixa), Na escala inteligente (não; no relógio do dia; sempre), Escala: valor do lançamento simulado, Escala: "
+                        . "horas da sessão simulada, Data na agenda (só dentro da antecedência; qualquer data), Data prevista (fórmula), "
+                        . "Vale quando (fórmula), Texto (até 300).",
                 ]],
                 ["titulo" => "Modos de rodízio", "itens" => [
                     "Tabela Modo (\"(ativo)\"), Forma de escolha (\"· com ciclo\"), Blocos (nome e dias), ações (Editar; nos outros: "
@@ -950,7 +980,8 @@ function reconstrucao()
                     . "a ligação se desfaz, SET NULL), nenhuma lista guardada como texto, e regras de validação (CHECK, NOT NULL, UNIQUE) iguais às da "
                     . "tela. Uma gravação errada é recusada pelo banco venha de onde vier (a API responde 409 com a regra quebrada).",
                 "Os mesmos resultados em MySQL/MariaDB, PostgreSQL e SQLite: o SQL do sistema é escrito uma vez só; o que muda de banco para banco "
-                    . "fica numa camada de tradução. Maiúsculas e acentos não contam nos textos curtos (\"Relógio\" = \"RELOGIO\"), em todos.",
+                    . "fica numa camada de tradução. Maiúsculas e acentos não contam nos textos curtos (\"Relógio\" = \"RELOGIO\"), em todos; no "
+                    . "MySQL/MariaDB, toda tabela em utf8mb4_unicode_ci (a utf8mb4_general_ci, padrão do MariaDB, ordena diferente).",
                 "Datas e horas no fuso do sistema (FUSO). Nas fórmulas, o tempo é contado em dias no horário local: a meia-noite local de qualquer "
                     . "data é um número inteiro e a fração é a hora do dia; assim uma data e o agora entram na mesma conta sem o fuso aparecer.",
                 "O cron é mudo e rastreável: roda a cada minuto, não escreve na saída, e registra no banco o que fez.",
@@ -1028,8 +1059,9 @@ function reconstrucao()
                     . "pode ser exclusiva (abrir uma exclusiva fecha as outras exclusivas abertas no mesmo instante: o relógio fica num lugar só). Só "
                     . "o com valor pode medir o gasto. A condição (\"vale quando\") é uma fórmula: o tipo só vale para os relógios em que ela dá verdadeiro.",
                 "Lançar: lancar (instantâneo ou com valor, num instante até agora), iniciar e encerrar (uma sessão; encerrar não antes do início), "
-                    . "periodo (uma sessão inteira que já passou, sem sobrepor outra exclusiva), alterar e excluir (corrigir uma marcação). O formato de "
-                    . "um tipo não muda depois de ter lançamentos; um tipo com lançamentos não é excluído.",
+                    . "alternar (a sessão aberta se fecha, a fechada se abre: um botão só num atalho de celular), periodo (uma sessão inteira que já "
+                    . "passou, sem sobrepor outra exclusiva), alterar e excluir (corrigir uma marcação). Em todas, relogio_id=hoje é o relógio do dia "
+                    . "pelo plano. O formato de um tipo não muda depois de ter lançamentos; um tipo com lançamentos não é excluído.",
                 "A origem: manual (pela tela ou pela API), rodizio (a sessão no pulso do relógio do dia, aberta pelo sistema ou pelo Pôs no relógio do "
                     . "dia) e importado.",
                 "A linha do tempo de um relógio divide o histórico em trechos contínuos: em uso pelo rodízio, no pulso fora do rodízio, em cada tipo "
@@ -1068,7 +1100,12 @@ function reconstrucao()
                     . "antecedência já chegou. Estado: atrasado (a data passou) ou em breve. O aviso de um relógio com uma sessão aberta à mão "
                     . "(carregando, no sol) não vai para a agenda enquanto ela estiver aberta: a data andaria a cada conta.",
                 "Os avisos de carga usam o limite de carga: o do relógio (campo carga_minima), senão o geral da Configuração (carga_limiar); o solar "
-                    . "usa sol_limiar. A data do Carregar é pelo gasto do estado de agora (no pulso, o de uso; guardado, o de guardado).",
+                    . "usa sol_limiar. A data do Carregar é pelo gasto do estado de agora (no pulso, o de uso; guardado, o de guardado); no carregador, "
+                    . "o Carregar some e vale o Tirar do carregador (carregado: vence quando a bateria enche no carregador).",
+                "Um aviso pode ser \"na hora\" (na_hora): além do alerta da manhã, o cron manda pelo Telegram no minuto em que ele vence, uma vez, e "
+                    . "guarda quais já foram (config.na_hora_enviados, relogio_id:identificador); um aviso sai da lista quando deixa de vencer. O botão "
+                    . "do aviso na página Hoje vem da API (resolve.acao e resolve.botao): a sessão que resolve, aberta, se encerra (\"Tirou do "
+                    . "carregador\"); fechada, se inicia (\"Pôs no sol\"); a leitura se informa.",
                 "A visão de cada relógio (a tabela da página Hoje e o painel): em uso ou em repouso desde quando, a carga estimada agora e de onde vem "
                     . "(a fórmula energia e a origem), a situação (frases curtas: autonomia restante, reserva...), a próxima manutenção (o aviso mais "
                     . "perto) e o que fazer.",
@@ -1077,7 +1114,8 @@ function reconstrucao()
                 "Cada leitura de carga de um tipo que mede o gasto é comparada com a anterior do mesmo relógio: o intervalo vira uma medição, com a "
                     . "queda, as horas no pulso e as horas fora do pulso no intervalo (o horário de uso conta como pulso sozinho quando o pulso sozinho "
                     . "está ligado; as marcações Pôs e Tirou mandam). Uma subida é recarga: novo ponto de partida, sem medir. Só entram intervalos de 1 "
-                    . "hora ou mais; o curto entra com peso pequeno.",
+                    . "hora ou mais; o curto entra com peso pequeno. Um intervalo com outra sessão no meio (o carregador) não mede: a medição só separa pulso "
+                    . "e guardado.",
                 "Cada medição é uma conta com dois desconhecidos: queda = dias de uso × gasto em uso + dias fora × gasto fora. Com as medições da janela "
                     . "(medicao_janela_dias, padrão 90), os dois gastos saem juntos por mínimos quadrados, cada medição pesando as horas que cobriu. "
                     . "Quando elas não separam os dois (só leituras guardado, por exemplo), vale a média das medições de cada um; sem nenhuma na janela, "
@@ -1109,6 +1147,11 @@ function reconstrucao()
                     . "rodízio: ...\", \"Sorteio pela nota, entre 5 candidatos: nota 70,2, 16,4% de chance\", \"Escolhido à mão\"). O cron monta o dia que "
                     . "falta (à 0h da segunda, a semana nova); trocar o relógio de um dia o marca como manual; sortear de novo refaz o período; usando "
                     . "hoje põe outro relógio no período atual e refaz o plano.",
+                "Um período escolhido à mão (rodizio, acao=periodo): de, até (de hoje até 2 anos), os relógios na ordem e quantos dias seguidos cada "
+                    . "(dias_cada): cada dia do período fica manual, com o relógio da vez (depois do último, volta ao primeiro; hoje, ele passa a ser o "
+                    . "do pulso a partir de agora); na escala, ela é refeita a partir do começo do período. periodo_sortear devolve ao sorteio os dias "
+                    . "manuais do período, de amanhã em diante. Os dias manuais de amanhã em diante ficam quando se sorteia de novo ou se monta a "
+                    . "próxima semana (hoje, o sortear de novo sorteia); trocar de modo refaz tudo.",
                 "A escala inteligente (um modo com escala_dias de 7 a 730) planeja tudo de uma vez simulando dia a dia: a nota de cada relógio com o "
                     . "estado simulado daquele dia; a escolha (o smartwatch fica os dias que a bateria aguenta, até 7); a sessão no pulso no horário de uso "
                     . "e o efeito dela em todos; os avisos (se o escolhido vai precisar de carga ou corda, anota a ação no dia e simula o lançamento que "
@@ -1117,7 +1160,9 @@ function reconstrucao()
             $secao("pulso", "O pulso sozinho e as sessões esquecidas", [
                 "O horário de uso (uso_inicio e uso_fim) diz quando o relógio do dia está no pulso. Pôr sozinho (pulso_auto_inicio): no início do horário, "
                     . "o cron abre a sessão no pulso do relógio do dia (origem rodizio). Tirar sozinho (pulso_auto_fim): o \"fecha às\" do tipo No pulso "
-                    . "segue o fim do horário. Desligados, só as marcações Pôs e Tirou contam; o que foi marcado sempre vale.",
+                    . "segue o fim do horário. Desligados, só as marcações Pôs e Tirou contam; o que foi marcado sempre vale. Com o relógio do dia noutra "
+                    . "sessão exclusiva aberta (no carregador, no sol, no winder), o pôr sozinho espera; se ele saiu de uma depois do início do horário, "
+                    . "a sessão no pulso começa quando ele saiu.",
                 "Toda sessão esquecida aberta fecha sozinha no \"fecha às\" do tipo dela (a do sol, em sol_fim).",
             ]),
             $secao("cron", "O cron", [
@@ -1127,7 +1172,15 @@ function reconstrucao()
                     . "documentos.",
                 "Na hora da manhã (horario_manha), uma vez por dia: refaz a escala a partir do estado real, manda o Telegram do dia (o relógio de hoje e "
                     . "os avisos) e sincroniza a agenda. Na hora da noite (horario_noite): o Telegram da véspera (o relógio de amanhã e o que preparar) e a "
-                    . "sincronização; e conta os documentos perdidos.",
+                    . "sincronização; conta os documentos perdidos; e, com a BACKUP_PASTA no config.php, faz a cópia de segurança do banco.",
+                "Os avisos na hora, a cada minuto: os vencidos agora (de todos os relógios) que ainda não foram vão pelo Telegram.",
+                "A cópia de segurança: um arquivo relojoeiro-AAAA-MM-DD-HHMMSS.jsonl.gz na BACKUP_PASTA (fora da pasta publicada: dentro dela, "
+                    . "recusada), JSON Lines comprimido, o mesmo nos três bancos: a primeira linha é o cabeçalho (relojoeiro_copia 1, criada, banco, "
+                    . "versao: a última migração, documentos, tabelas); depois, para cada tabela, uma linha {tabela, colunas, binarias} e uma linha "
+                    . "por registro com a lista dos valores (binários em base64). As tabelas vêm na ordem em que voltam (a citada antes da que cita; "
+                    . "a que cita a si mesma, a árvore, volta em rodadas). Ficam as BACKUP_MANTER mais novas (padrão 7). O conteúdo dos documentos "
+                    . "(documento_parte) só com BACKUP_DOCUMENTOS = true. Restaurar: só da mesma versão; antes, uma cópia do que está agora; depois, "
+                    . "numa transação, apaga tudo (na ordem inversa) e grava a cópia; sem o conteúdo dos documentos, documento.no_banco volta a 0.",
                 "Mudo: avisos do PHP e erros entram no registro, nunca na saída. Grava em cron_execucao o que fez (só quando fez algo, ou deu erro), o "
                     . "último erro em config.cron_erro (sai na primeira execução sem erro) e a última rodada com atividade em config.cron_registro. Erro "
                     . "fatal sem banco vai para um arquivo na pasta temporária. Opções: --forcar (manhã e noite agora) e -v (mostra o registro).",

@@ -562,6 +562,18 @@ function banco_tabelas()
     }
 }
 
+// MySQL/MariaDB: as tabelas que têm alguma coluna de texto numa collation que não ordena pelo Unicode (a utf8mb4_general_ci,
+// padrão do MariaDB, ou uma binária). As que valem: utf8mb4_unicode_ci (a que o sistema cria), utf8mb4_unicode_520_ci,
+// utf8mb4_0900_ai_ci (o padrão do MySQL 8) e utf8mb4_uca1400_ai_ci (a do MariaDB novo). Nos outros bancos: nenhuma
+function banco_tabelas_fora_da_collation()
+{
+    if (banco_tipo() !== "mysql") {
+        return [];
+    }
+    return array_column(linhas("SELECT DISTINCT table_name AS t FROM information_schema.columns WHERE table_schema = DATABASE() AND collation_name IS NOT NULL
+        AND collation_name NOT IN ('utf8mb4_unicode_ci', 'utf8mb4_unicode_520_ci', 'utf8mb4_0900_ai_ci', 'utf8mb4_uca1400_ai_ci') ORDER BY t"), "t");
+}
+
 // Os comandos de um arquivo SQL (o schema.sql, uma migração), um a um, cada um traduzido para o banco. Os comentários
 // saem; os comandos se separam pelo ";" fora dos textos. Depois, no Postgres, os contadores dos ids andam até o maior id
 // gravado (o arquivo grava ids explícitos). Devolve quantos comandos rodou.
@@ -1028,6 +1040,11 @@ function sql_traduzir($comando)
     static $cache = [];
     $banco = banco_tipo();
     if ($banco === "mysql") {
+        // toda tabela nasce em utf8mb4_unicode_ci, qualquer que seja o padrão do banco (no MariaDB, a utf8mb4_general_ci
+        // ordena os textos de outro jeito que os outros bancos)
+        if (preg_match("/^\\s*CREATE\\s+TABLE\\b/i", $comando) === 1 && stripos($comando, "COLLATE") === false) {
+            $comando = rtrim($comando, " \t\r\n;") . " DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+        }
         return [$comando];
     }
     if (isset($cache[$comando])) {

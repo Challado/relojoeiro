@@ -34,6 +34,14 @@ define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");
 // (no cadastro dele) e cada arquivo (no envio e em editar) decidem
 // define("DOCUMENTOS_COPIA_BANCO", true);
 
+// a cópia de segurança do banco: uma por dia, na rodada da noite do cron, nesta pasta do servidor (fora da pasta
+// publicada, com escrita para o PHP); sem esta linha, não há cópia automática. Ficam as BACKUP_MANTER mais novas (sem a
+// linha: 7). Com BACKUP_DOCUMENTOS = true, a cópia leva também o conteúdo dos documentos guardado no banco (pode ficar
+// grande; sem a linha, não leva: os arquivos já estão na pasta dos documentos)
+// define("BACKUP_PASTA", "/var/lib/relojoeiro/copias");
+// define("BACKUP_MANTER", 7);
+// define("BACKUP_DOCUMENTOS", false);
+
 // só para o importar.php, com este sistema no PostgreSQL ou no SQLite: onde está o MySQL do sistema antigo
 // define("ANTIGO_HOST", "127.0.0.1");
 // define("ANTIGO_PORTA", 3306);

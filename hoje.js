@@ -79,19 +79,17 @@ function recarregarHoje() {
     quadro.innerHTML = res;
 
     // "Hoje é dia de": uma tabela, como a dos próximos dias; cada aviso com o relógio (abre o painel), o motivo e o botão do
-    // lançamento que o resolve (leitura: com o valor; sessão: "Pôs ...")
+    // lançamento que o resolve, como a API diz (leitura: com o valor; sessão: "Pôs ...", ou "Tirou ..." se ela já está aberta)
     var res = "";
     if (d.avisos.length > 0) {
       res = el("section", {"class": "avisos"}, el("h2", {}, "Hoje é dia de") + el("table", {"class": "relogios"}, el("thead", {}, el("tr", {}, el("th", {}, "O que fazer")
         + el("th", {}, "Relógio") + el("th", {}, "Por quê") + el("th", {}, ""))) + el("tbody", {}, d.avisos.map(function (a) {
         var botao = "";
         if (a.resolve) {
-          var acao = a.resolve.formato === "sessao" ? "iniciar" : "lancar";
-          var rotulo = a.resolve.formato === "sessao" ? "Pôs " + minusculo(a.resolve.nome) : (a.resolve.formato === "valor" ? "Informar " + minusculo(a.resolve.nome) : a.resolve.nome);
-          botao = el("form", {"data-recurso": "lancamento"}, el("input", {"type": "hidden", "name": "acao", "value": acao}) + el("input", {"type": "hidden", "name": "tipo", "value": a.resolve.identificador})
+          botao = el("form", {"data-recurso": "lancamento"}, el("input", {"type": "hidden", "name": "acao", "value": a.resolve.acao}) + el("input", {"type": "hidden", "name": "tipo", "value": a.resolve.identificador})
             + el("input", {"type": "hidden", "name": "relogio_id", "value": a.relogio_id}) + el("input", {"type": "hidden", "name": "r", "value": a.relogio_id})
             + (a.resolve.formato === "valor" ? el("input", {"type": "text", "inputmode": "decimal", "name": "valor", "placeholder": a.resolve.unidade, "required": true, "aria-label": a.resolve.nome}) : "")
-            + el("button", {"class": "leve"}, h(rotulo)));
+            + el("button", {"class": "leve"}, h(a.resolve.botao)));
         }
         return el("tr", {"class": "aviso-" + a.identificador + (a.estado === "atrasado" ? " aviso-atrasado" : "")}, el("td", {}, el("span", {}, h(a.nome)))
           + el("td", {}, el("a", {"href": "index.php?r=" + a.relogio_id, "data-abrir": a.relogio_id}, h(a.relogio))) + el("td", {}, el("span", {}, h(a.texto)))
