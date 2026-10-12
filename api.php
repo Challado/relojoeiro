@@ -3319,6 +3319,9 @@ if (!$token_ok && $quem === "") {
     $por_h = max(1, min(1000, (int)($_REQUEST["limite"] ?? 100)));
     $pag_h = max(1, (int)($_REQUEST["pagina"] ?? 1));
     $ids_rel = array_map("intval", array_column($rels_h, "id"));
+    // o teto do período sem "ate": 9999-12-31 23:59:59 no fuso do sistema (o de UTC, num fuso a leste, dá o ano 10000, que o
+    // MySQL compara como texto e não acha nada, e o Firebird recusa)
+    $teto_h = min($per[1], (int)strtotime("9999-12-31 23:59:59"));
     $saida = ["filtro" => ["relogios" => $ids_rel, "de" => $filtro["de"], "ate" => $filtro["ate"], "estados" => $estados_h, "ordem" => $asc ? "asc" : "desc", "ignorados" => $ignorados],
         "estados" => estados_da_linha(), "total" => count($linhas_h), "pagina" => $pag_h, "por_pagina" => $por_h, "paginas" => max(1, (int)ceil(count($linhas_h) / $por_h)),
         "resumo" => (object)$resumos,
@@ -3326,7 +3329,7 @@ if (!$token_ok && $quem === "") {
         "lancamentos" => count($ids_rel) === 0 ? [] : linhas("SELECT l.id, l.relogio_id, r.nome AS relogio, t.identificador AS tipo, l.inicio, l.fim, l.valor, l.origem
             FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id JOIN relogio r ON r.id = l.relogio_id WHERE l.relogio_id IN (" . implode(",", $ids_rel) . ")
             AND l.inicio < ? AND COALESCE(l.fim, l.inicio) >= ? ORDER BY l.inicio " . ($asc ? "ASC, l.id ASC" : "DESC, l.id DESC") . " LIMIT " . $por_h,
-            [date("Y-m-d H:i:s", min($per[1], 253402300799)), date("Y-m-d H:i:s", $per[0])])];
+            [date("Y-m-d H:i:s", $teto_h), date("Y-m-d H:i:s", $per[0])])];
 } elseif ($recurso === "previsao") {
     $ids_p = array_values(array_filter(array_map("intval", explode(",", (string)($_REQUEST["relogio"] ?? "")))));
     $prev = [];
