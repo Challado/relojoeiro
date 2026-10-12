@@ -328,6 +328,7 @@ $MIGRACOES = [
     "v18" => ["migracao_v18.sql", "o carregador: a sessão \"No carregador\" onde vale a leitura de carga (o smartwatch), o estado do relógio mostra a sessão aberta (no sol, no winder, no carregador) e, no carregador, o aviso \"Carregar\" não aparece", "config.chave=migracao_v18"],
     "v19" => ["migracao_v19.sql", "o solar carrega também no pulso: uma parte do que ganharia no sol direto, pelo campo \"No pulso: quanto carrega, comparado ao sol direto\" (padrão 25%; 0 é o de antes, a carga parada)", "config.chave=migracao_v19"],
     "v20" => ["migracao_v20.sql", "o smartwatch carrega no carregador (o campo \"No carregador: horas para encher\"), o aviso \"Tirar do carregador\" que sai na hora pelo Telegram (os avisos \"na hora\"), as fórmulas \"Dias de uso\" e \"Custo por uso\", e no MySQL/MariaDB as tabelas em utf8mb4_unicode_ci", "config.chave=migracao_v20", "migracao_v20_dados"],
+    "v21" => ["migracao_v21.sql", "os dias livres do plano: o \"Deixar o período livre\" da página Plano apaga o que foi gerado e deixa os dias sem relógio, sem sorteio, para você escolher à mão", "plano_livre"],
 ];
 
 // O passo em PHP da v16, depois do SQL dela: as opções de cada campo do tipo lista (o texto, uma por linha) viram linhas da
@@ -1566,7 +1567,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
             $ini_u = strtotime($dia->format("Y-m-d") . " " . cfg("uso_inicio"));
             $fim_u = strtotime($dia->format("Y-m-d") . " " . cfg("uso_fim"));
             $m_ini = max($agora, $ini_u);
-            if (plano_do_dia($dia->format("Y-m-d")) === null) {
+            if (plano_do_dia($dia->format("Y-m-d")) === null && !dia_livre($dia->format("Y-m-d"))) {
                 $bloco = null;
                 foreach ($blocos as $b) {
                     if ($bloco === null && in_array($dia->format("N"), explode(",", $b["dias"]), true)) {
@@ -2405,6 +2406,19 @@ function sessao_do_dia($agora)
     }
 }
 
+// Um dia livre do plano (Deixar o período livre): sem relógio e sem sorteio, para escolher à mão
+function dia_livre($data)
+{
+    return valor("SELECT data FROM plano_livre WHERE data = ?", [$data]) !== null;
+}
+
+// Os dias livres de um período (AAAA-MM-DD), em ordem
+function dias_livres($de, $ate)
+{
+    return array_map(function ($x) { return substr((string)$x["data"], 0, 10); }, linhas("SELECT data FROM plano_livre WHERE data >= ? AND data <= ? ORDER BY data",
+        [$de !== "" ? $de : "0001-01-01", $ate !== "" ? $ate : "9999-12-31"]));
+}
+
 // "só hoje" / "só amanhã" (conforme $quando), ou "até sexta, 02/10": até o último dia seguido do mesmo relógio no plano
 function texto_ate($data, $quando)
 {
@@ -2895,6 +2909,10 @@ function gerar_escala($ini)
         $manuais = [];
         foreach (linhas("SELECT data, relogio_id FROM plano WHERE data >= ?", [$ini->format("Y-m-d")]) as $m) {
             $manuais[$m["data"]] = (int)$m["relogio_id"];
+        }
+        // os dias livres: como um dia à mão sem relógio (a escala não escolhe nada para eles, nem estica um bloco sobre eles)
+        foreach (linhas("SELECT data FROM plano_livre WHERE data >= ?", [$ini->format("Y-m-d")]) as $m) {
+            $manuais[substr((string)$m["data"], 0, 10)] = -1;
         }
         $rels = [];
         foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY id") as $r) {

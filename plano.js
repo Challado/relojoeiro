@@ -10,7 +10,7 @@ var periodoAberto = false;
 
 function montarPlano() {
   var d = dados;
-  var mostrados = d.plano.filter(function (p) { return filtro.relogio === "" || String(p.relogio_id) === filtro.relogio; });
+  var mostrados = (filtro.relogio === "" ? comLivres(d.plano, d.livres) : d.plano).filter(function (p) { return filtro.relogio === "" || String(p.relogio_id) === filtro.relogio; });
   var ultimo = d.plano_fim;
 
   var res = el("h1", {}, "Plano") + el("p", {"class": "nota"}, "Modo: " + h(d.modo || "nenhum")
@@ -31,7 +31,8 @@ function montarPlano() {
   // do último volta ao primeiro); e voltar a sortear os dias escolhidos à mão do período
   res += el("details", {"class": "cartao-config periodo-mao", "open": periodoAberto}, el("summary", {}, "Escolher os relógios de um período")
     + el("form", {"data-recurso": "rodizio", "class": "form-grade", "id": "form-periodo", "onsubmit": "return confirm(event.submitter && event.submitter.value === 'periodo_sortear' "
-      + "? 'Os dias escolhidos à mão neste período voltam a ser sorteados. Continuar?' : 'Os dias do período ficam com estes relógios, escolhidos à mão. Continuar?')"},
+      + "? 'Tudo o que o período tem (à mão ou sorteado) sai e ele é sorteado de novo. Continuar?' : (event.submitter && event.submitter.value === 'periodo_livre' "
+      + "? 'Tudo o que o período tem sai e os dias ficam livres, sem relógio, para você escolher à mão. Continuar?' : 'Os dias do período ficam com estes relógios, escolhidos à mão. Continuar?'))"},
       el("input", {"type": "hidden", "name": "acao", "value": "periodo"})
       + el("label", {}, "De " + el("input", {"type": "date", "name": "de", "min": d.hoje, "required": true}))
       + el("label", {}, "Até " + el("input", {"type": "date", "name": "ate", "min": d.hoje, "required": true}))
@@ -41,8 +42,10 @@ function montarPlano() {
       }).join("")))
       + el("ol", {"id": "periodo-lista", "class": "periodo-lista", "style": "grid-column: 1 / -1"}, "")
       + el("p", {"class": "nota", "style": "grid-column: 1 / -1"}, "Os relógios entram na ordem da lista: um por dia (ou os dias seguidos de cada), e depois do último volta ao primeiro; com um só, ele fica o período inteiro. "
-        + "Os dias ficam escolhidos à mão: sortear de novo não mexe neles. Para desfazer, \"Voltar a sortear o período\" (de amanhã em diante).")
-      + el("div", {"class": "botoes"}, el("button", {}, "Aplicar ao período") + " " + el("button", {"class": "leve", "name": "acao", "value": "periodo_sortear", "formnovalidate": true}, "Voltar a sortear o período"))));
+        + "Os dias ficam escolhidos à mão: sortear de novo não mexe neles. Não gostou? \"Sortear de novo o período\" apaga o que o período tem (à mão ou sorteado) e sorteia outra vez; "
+        + "\"Deixar o período livre\" apaga e não sorteia nada: cada dia fica para você escolher em \"trocar por…\". Os dois valem de amanhã em diante; só pedem o De e o Até.")
+      + el("div", {"class": "botoes"}, el("button", {}, "Aplicar ao período") + " " + el("button", {"class": "leve", "name": "acao", "value": "periodo_sortear", "formnovalidate": true}, "Sortear de novo o período")
+        + " " + el("button", {"class": "leve", "name": "acao", "value": "periodo_livre", "formnovalidate": true}, "Deixar o período livre"))));
 
   // o resumo, da API: quantos dias cada relógio tem no período, a porcentagem, o próximo dia e quantos foram à mão
   var rs = d.resumo;
@@ -76,8 +79,7 @@ function montarPlano() {
     var dia = new Date(instante(p.data)).getDay();
     linhas += el("tr", {"class": (dia === 0 || dia === 6 ? "fds" : "") + (p.data === d.hoje ? " de-hoje" : "")},
       el("td", {"class": "dia"}, dataBr(p.data, true) + " " + el("small", {}, SEMANA[dia]) + (p.data === d.hoje ? " " + el("small", {}, "hoje") : ""))
-      + el("td", {}, h(p.relogio) + (p.origem === "manual" ? " " + el("small", {"class": "a-mao"}, "à mão") : "")
-        + (p.motivo ? el("small", {"class": "motivo"}, h(p.motivo)) : "")) + el("td", {}, h(p.acao || ""))
+      + el("td", {}, celulaDoDia(p)) + el("td", {}, h(p.acao || ""))
       + el("td", {"class": "trocar"}, formTrocarDia(p, d.relogios, d.hoje)));
   });
   fecha();

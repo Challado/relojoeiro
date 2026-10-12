@@ -321,12 +321,17 @@ if (date("N") === "7") {
     escrever(["recurso" => "rodizio", "acao" => "proxima_semana"]);
 }
 // os relógios de um período, escolhidos à mão: dois, na ordem, dois dias seguidos cada; o sortear de novo não mexe neles, e
-// depois uma parte do período volta ao sorteio. Um período no passado é recusado
+// depois uma parte do período é sorteada de novo e outra fica livre. Um período no passado é recusado
 $em = function ($dias) { return date("Y-m-d", strtotime("+" . (int)$dias . " days")); };
 escrever(["recurso" => "rodizio", "acao" => "periodo", "de" => $em(10), "ate" => $em(15), "relogio_ids" => [$rel["manual"], $rel["crono"]], "dias_cada" => 2]);
 escrever(["recurso" => "rodizio", "acao" => "resortear"]);
 ler("plano com periodo", ["recurso" => "plano", "dias" => 30]);
 escrever(["recurso" => "rodizio", "acao" => "periodo_sortear", "de" => $em(14), "ate" => $em(15)]);
+// parte do período livre (sem relógio e sem sorteio), e um dia livre escolhido à mão
+escrever(["recurso" => "rodizio", "acao" => "periodo_livre", "de" => $em(11), "ate" => $em(13)]);
+escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(12), "relogio_id" => $rel["crono"]]);
+escrever(["recurso" => "rodizio", "acao" => "resortear"]);
+ler("plano com livres", ["recurso" => "plano", "dias" => 30]);
 escrever(["recurso" => "rodizio", "acao" => "periodo", "de" => substr(dia(3, "00:00"), 0, 10), "ate" => $em(2), "relogio_ids" => [$rel["solar"]]], false);
 // o lançamento no relógio do dia, sem saber o id dele
 escrever(["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => "hoje", "tipo" => "pulso", "inicio" => dia(20, "08:00"), "fim" => dia(20, "09:00")]);

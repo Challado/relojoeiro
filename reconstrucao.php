@@ -39,6 +39,7 @@ const RECONSTRUCAO_TABELAS = [
     "no" => "a árvore dos grupos: o nome, o grupo de cima (vazio: a raiz) e a ordem entre irmãos",
     "plano" => "o relógio de cada dia: o relógio, o bloco do modo que o escolheu, a origem (sorteio ou manual), a ação do dia (o que fazer antes de usar), o motivo da escolha e quando foi gravado",
     "relogio" => "os relógios: nome, grupo, se está disponível para o rodízio, se pede a cópia no banco de todos os documentos e quando foi cadastrado",
+    "plano_livre" => "os dias livres do plano: sem relógio e sem sorteio (nem a escala), para escolher à mão",
     "usuario" => "quem entra no site: o login e o hash da senha (password_hash)",
 ];
 
@@ -229,7 +230,8 @@ const RECONSTRUCAO_TELAS = [
                 ["titulo" => "Próximos dias", "itens" => [
                     "Título \"Próximos dias\" com o link \"ver o plano inteiro →\" (plano.php). Tabela: Dia (\"DD/MM\" e o dia da semana "
                         . "curto, menor), Relógio (o nome; \"à mão\" pequeno quando escolhido à mão; o motivo embaixo, menor), Lembrete, e "
-                        . "o \"trocar por…\". Fim de semana com fundo #f4f6f8. Sem plano: \"Neste modo o sorteio é feito dia a dia.\"",
+                        . "o \"trocar por…\". Fim de semana com fundo #f4f6f8. Sem plano: \"Neste modo o sorteio é feito dia a dia.\" Os dias "
+                        . "livres entram no meio, como na página Plano (\"livre: escolha à mão\", \"escolher…\").",
                     "\"trocar por…\": uma lista com os relógios disponíveis (menos o do dia) e, num dia de amanhã em diante escolhido "
                         . "à mão, \"↺ voltar a sortear\" (valor 0); escolhido um, aparece o botão leve \"Trocar\" (rodizio trocar_dia com "
                         . "data e relogio_id).",
@@ -368,7 +370,7 @@ const RECONSTRUCAO_TELAS = [
                 "recurso=plano (com dias=30, 90, 365, 730 ou todos)",
             ],
             "grava" => [
-                "rodizio: trocar_dia, periodo, periodo_sortear",
+                "rodizio: trocar_dia, periodo, periodo_sortear, periodo_livre",
             ],
             "partes" => [
                 ["titulo" => "Cabeça e filtros", "itens" => [
@@ -383,20 +385,25 @@ const RECONSTRUCAO_TELAS = [
                         . "escolher um põe o nome no fim de uma lista numerada embaixo (\"1. Gama ×\", \"2. Beta ×\"; o × tira; vazia: "
                         . "\"Nenhum relógio ainda: escolha em \"Incluir relógio\".\" em cinza). A nota explica a ordem (um por dia, ou os "
                         . "dias seguidos de cada, e depois do último volta ao primeiro), que os dias ficam escolhidos à mão e que sortear "
-                        . "de novo não mexe neles. Botões \"Aplicar ao período\" (rodizio periodo, com de, ate, relogio_ids[] na ordem e "
-                        . "dias_cada; confirma \"Os dias do período ficam com estes relógios, escolhidos à mão. Continuar?\") e, leve, "
-                        . "\"Voltar a sortear o período\" (rodizio periodo_sortear com de e ate; confirma \"Os dias escolhidos à mão neste "
-                        . "período voltam a ser sorteados. Continuar?\"). O recado da API aparece no alto; recusado, o quadro fica aberto.",
+                        . "de novo não mexe neles, e o que fazem os outros dois botões. Botões \"Aplicar ao período\" (rodizio periodo, "
+                        . "com de, ate, relogio_ids[] na ordem e dias_cada; confirma \"Os dias do período ficam com estes relógios, "
+                        . "escolhidos à mão. Continuar?\") e, leves, \"Sortear de novo o período\" (rodizio periodo_sortear com de e ate; "
+                        . "confirma \"Tudo o que o período tem (à mão ou sorteado) sai e ele é sorteado de novo. Continuar?\") e \"Deixar o "
+                        . "período livre\" (rodizio periodo_livre; confirma \"Tudo o que o período tem sai e os dias ficam livres, sem "
+                        . "relógio, para você escolher à mão. Continuar?\"). O recado da API aparece no alto; recusado, o quadro fica "
+                        . "aberto.",
                 ]],
                 ["titulo" => "Resumo do período (<n> dias)", "itens" => [
                     "Tabela Relógio, Dias, %, Próximo dia (\"DD/MM/AAAA seg\"), À mão; do que tem mais dias ao que tem menos. "
                         . "Embaixo, \"Sem nenhum dia no período: <relógios>.\" Sem dias: \"Nenhum dia no plano neste período.\"",
                 ]],
                 ["titulo" => "Dia a dia", "itens" => [
-                    "Um título por mês (\"Outubro de 2026\") e uma tabela de dias: o dia (\"DD/MM\" e o dia da semana, \"hoje\" no de "
-                        . "hoje, com a faixa safira), o relógio (com \"à mão\" e o motivo embaixo), o lembrete e o \"trocar por…\" (como na "
-                        . "página Hoje). Fim de semana com fundo cinza claro. Sem dias: \"Neste modo o sorteio é feito semana a semana: o "
-                        . "plano tem só a semana atual.\" ou \"Nenhum dia.\"",
+                    "Os dias livres (livres, da API) entram entre os do plano, na ordem das datas: no lugar do relógio, \"livre: "
+                        . "escolha à mão\" em cinza com a marca \"livre\", e a lista do dia começa em \"escolher…\" (com \"↺ voltar a "
+                        . "sortear\"). Um título por mês (\"Outubro de 2026\") e uma tabela de dias: o dia (\"DD/MM\" e o dia da semana, "
+                        . "\"hoje\" no de hoje, com a faixa safira), o relógio (com \"à mão\" e o motivo embaixo), o lembrete e o \"trocar "
+                        . "por…\" (como na página Hoje). Fim de semana com fundo cinza claro. Sem dias: \"Neste modo o sorteio é feito "
+                        . "semana a semana: o plano tem só a semana atual.\" ou \"Nenhum dia.\"",
                 ]],
             ],
         ],
@@ -1149,9 +1156,13 @@ function reconstrucao()
                     . "hoje põe outro relógio no período atual e refaz o plano.",
                 "Um período escolhido à mão (rodizio, acao=periodo): de, até (de hoje até 2 anos), os relógios na ordem e quantos dias seguidos cada "
                     . "(dias_cada): cada dia do período fica manual, com o relógio da vez (depois do último, volta ao primeiro; hoje, ele passa a ser o "
-                    . "do pulso a partir de agora); na escala, ela é refeita a partir do começo do período. periodo_sortear devolve ao sorteio os dias "
-                    . "manuais do período, de amanhã em diante. Os dias manuais de amanhã em diante ficam quando se sorteia de novo ou se monta a "
-                    . "próxima semana (hoje, o sortear de novo sorteia); trocar de modo refaz tudo.",
+                    . "do pulso a partir de agora); na escala, ela é refeita a partir do começo do período. De amanhã em diante: periodo_sortear "
+                    . "apaga o que o período tem (à mão, sorteado ou livre) e sorteia de novo; periodo_livre apaga e deixa os dias livres (a tabela "
+                    . "plano_livre: sem relógio e sem sorteio; o sorteio e a escala pulam esses dias, e a escala não estica um bloco sobre eles). "
+                    . "Escolher um relógio para um dia livre (trocar_dia, periodo, usando) o tira de plano_livre; trocar_dia 0 também (volta ao "
+                    . "sorteio). Os dias manuais e os livres de amanhã em diante ficam quando se sorteia de novo ou se monta a próxima semana (hoje, "
+                    . "o sortear de novo sorteia); trocar de modo refaz os sorteados. A API dá os dias livres em plano.livres e hoje.livres (as telas os "
+                    . "põem entre os dias do plano, como \"livre: escolha à mão\").",
                 "A escala inteligente (um modo com escala_dias de 7 a 730) planeja tudo de uma vez simulando dia a dia: a nota de cada relógio com o "
                     . "estado simulado daquele dia; a escolha (o smartwatch fica os dias que a bateria aguenta, até 7); a sessão no pulso no horário de uso "
                     . "e o efeito dela em todos; os avisos (se o escolhido vai precisar de carga ou corda, anota a ação no dia e simula o lançamento que "
