@@ -57,6 +57,7 @@ const RECONSTRUCAO_CONFIG_PHP = [
     "BACKUP_PASTA, BACKUP_MANTER, BACKUP_DOCUMENTOS" => "a cópia de segurança do banco: a pasta (fora da publicada; sem ela, não há cópia automática), quantas "
         . "ficam (padrão 7) e se leva o conteúdo dos documentos (padrão: não)",
     "ANTIGO_HOST, ANTIGO_PORTA, ANTIGO_USUARIO, ANTIGO_SENHA" => "só para importar o sistema anterior (importar.php)",
+    "ALEATORIO_RANDOMORG_URL, ALEATORIO_ANU_URL" => "só para testes: as fontes dos números aleatórios (RANDOM.ORG e ANU QRNG); trocadas, os sorteios pedem os números a um servidor de teste",
     "GOOGLE_TOKEN_URL, GOOGLE_API_URL" => "só para testes: os endereços do Google que a agenda usa (o do token e o da API do Google Agenda); trocados, a sincronização conversa com um servidor de teste",
 ];
 
@@ -498,6 +499,12 @@ const RECONSTRUCAO_TELAS = [
                     "Cron: \"Cron rodando: última execução às HH:MM.\" (nota) ou, em âmbar, \"O cron ainda não rodou\" / \"O cron não "
                         . "roda desde ...\" com a linha do crontab em código; o erro guardado numa caixa (\"O cron está com erro\"); o link "
                         . "\"Ver todas as execuções do cron\" e o \"Registro da última rodada\" (abre e fecha).",
+                    "Sorteios (só leitura): \"Os números vêm de\": \"1. RANDOM.ORG (ruído atmosférico) · 2. fora do ar, ANU QRNG "
+                        . "(quântico) · 3. sem os dois, o gerador seguro do PHP\"; \"Último lote\": \"<fonte> em DD/MM/AAAA HH:MM\" "
+                        . "(aleatorio.ultimo_lote da API) ou \"nenhum ainda\"; com os dois fora, \"Serviços fora\" em âmbar: \"os dois sem "
+                        . "responder desde DD/MM/AAAA HH:MM; o sistema tenta de novo depois de 10 minutos\". A nota: \"Todo sorteio do "
+                        . "sistema (o rodízio totalmente aleatório, o sorteio pela nota e o desempate de notas iguais na escala) usa "
+                        . "estes números. Eles chegam num lote, e cada sorteio usa só o que precisa, sem viés.\"",
                     "Telegram (API de alerta): Enviar alertas (caixa). Google Agenda: Criar eventos na agenda (caixa), Antecedência "
                         . "dos eventos (dias, 1 a 365), ID da agenda, Caminho da chave JSON no servidor; a chave encontrada "
                         . "(\"Compartilhe a agenda com <e-mail>\") ou não; os botões leves \"Criar evento de teste\" e \"Remover evento de "
@@ -1247,7 +1254,20 @@ function reconstrucao()
                 "A escala inteligente (um modo com escala_dias de 7 a 730) planeja tudo de uma vez simulando dia a dia: a nota de cada relógio com o "
                     . "estado simulado daquele dia; a escolha (o smartwatch fica os dias que a bateria aguenta, até 7); a sessão no pulso no horário de uso "
                     . "e o efeito dela em todos; os avisos (se o escolhido vai precisar de carga ou corda, anota a ação no dia e simula o lançamento que "
-                    . "resolve). Toda manhã o cron refaz a escala a partir do estado real.",
+                    . "resolve). Toda manhã o cron refaz a escala a partir do estado real. Notas iguais na maior (o empate exato) se desempatam por "
+                    . "sorteio, e o motivo diz \"Empatado na nota com N outros: saiu no sorteio (<fonte>).\"",
+                "O sorteio (sorteio(min, max): o modo aleatório, o sorteio pela nota e o desempate da escala) usa números aleatórios de fora, nesta "
+                    . "ordem: RANDOM.ORG (www.random.org/integers/?num=64&min=0&max=65535&col=1&base=10&format=plain&rnd=new: ruído atmosférico); "
+                    . "senão o ANU QRNG (qrng.anu.edu.au/API/jsonI.php?length=64&type=uint16, o endereço antigo, sem chave: {\"success\": true, "
+                    . "\"data\": [...]}; quântico); senão o gerador seguro do PHP (random_int). Um lote de 64 números de 16 bits por pedido, na memória "
+                    . "do pedido; cada sorteio junta quantos pedaços de 16 bits precisar e descarta o valor que passa do último múltiplo inteiro da faixa "
+                    . "(sem viés). Cada serviço tem 4 segundos; a resposta tem de vir completa e dentro da faixa, senão vale como falha. Se os dois "
+                    . "falham, a config aleatorio_fora guarda quando, e por 10 minutos o sistema nem tenta (usa o do PHP); a config aleatorio_ultima "
+                    . "guarda a fonte do último lote e quando (recurso=config: aleatorio.ultimo_lote, aleatorio.fora_desde; a Configuração mostra no "
+                    . "quadro Sorteios). O motivo de cada dia sorteado termina com a fonte entre parênteses (\"... todos com a mesma chance "
+                    . "(RANDOM.ORG).\"). Com RELOGIOS_SEMENTE (os testes), mt_rand com a semente, sem rede (a fonte: \"semente de teste\"). O que é "
+                    . "segredo (o sal das senhas, os nomes dos arquivos dos documentos) fica no gerador do PHP: número que viaja pela internet não "
+                    . "serve para segredo.",
             ]),
             $secao("pulso", "O pulso sozinho e as sessões esquecidas", [
                 "O horário de uso (uso_inicio e uso_fim) diz quando o relógio do dia está no pulso. Pôr sozinho (pulso_auto_inicio): no início do horário, "

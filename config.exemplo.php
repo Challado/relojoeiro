@@ -55,3 +55,7 @@ define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");
 // sincronização da agenda conversa com um servidor de teste
 // define("GOOGLE_TOKEN_URL", "https://oauth2.googleapis.com/token");
 // define("GOOGLE_API_URL", "https://www.googleapis.com/calendar/v3");
+// só para testes: as fontes dos números aleatórios dos sorteios (o RANDOM.ORG e, fora do ar, o ANU QRNG; sem os dois, o
+// gerador seguro do PHP). Trocadas, os sorteios pedem os números a um servidor de teste
+// define("ALEATORIO_RANDOMORG_URL", "https://www.random.org/integers/");
+// define("ALEATORIO_ANU_URL", "https://qrng.anu.edu.au/API/jsonI.php");

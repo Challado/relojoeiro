@@ -243,6 +243,25 @@ A escolha dentro do bloco pode ser pela **maior nota**, por **sorteio pela nota*
 **fila** (quem está esperando há mais tempo). Com o **ciclo** ligado, um relógio só volta depois que todos os disponíveis do
 bloco passaram.
 
+**De onde vem o sorteio.** Todo sorteio do sistema (o modo totalmente aleatório, o sorteio pela nota e o desempate de notas
+iguais na escala inteligente) usa números aleatórios de verdade, de fora, nesta ordem:
+
+1. **[RANDOM.ORG](https://www.random.org/)**: aleatoriedade por ruído atmosférico (mede a variação das micro-ondas do ar e
+   converte em bits);
+2. fora do ar (ou com a cota do dia esgotada), o **ANU QRNG**, o gerador quântico da Universidade Nacional da Austrália (mede
+   flutuações quânticas da luz). O sistema usa o endereço antigo, `qrng.anu.edu.au/API/jsonI.php`, que responde sem chave (o
+   novo, `api.quantumnumbers.anu.edu.au`, exige uma chave de API);
+3. sem os dois (sem internet no servidor, por exemplo), o **gerador seguro do PHP** (`random_int`, o do sistema
+   operacional: o equivalente ao `secrets` do Python).
+
+Os números chegam num lote (64 números de 16 bits por pedido), e cada sorteio usa só o que precisa, descartando o que passa do
+último múltiplo inteiro da faixa: todos os resultados têm exatamente a mesma chance. Cada serviço tem 4 segundos para
+responder; se os dois falham, o sistema usa o do PHP e não tenta de novo por 10 minutos (assim nenhuma página fica esperando).
+O motivo de cada dia sorteado diz de onde veio o número (*"Sorteio simples, entre 4 candidatos, todos com a mesma chance
+(RANDOM.ORG)."*), e a **Configuração** mostra o último lote (quadro **Sorteios**). O que é segredo não usa estes serviços: o sal das
+senhas e os nomes dos arquivos dos documentos continuam com o gerador do PHP, porque um número que viaja pela internet não serve
+para segredo.
+
 ### Apagar a programação
 
 Na página **Plano** (o lugar principal) e no quadro **Modo de rodízio** da página Hoje (cada um abaixo de uma linha, como o
@@ -685,7 +704,7 @@ na chave `config`), para quem automatiza; o padrão de uma instalação nova vem
 | **Abrir o relógio na página Hoje** (`painel_modo`) | **Ao lado da lista** (`lado`): o relógio clicado abre num painel à direita, e a lista continua à vista. **Numa janela flutuante, grande** (`flutuante`): abre no meio da tela, por cima da página, com o fundo escurecido e os quadros lado a lado; fecha no ×, no Esc ou num clique fora. No celular, os dois cobrem a tela inteira. Padrão: ao lado. |
 
 Na página, cada opção fica numa linha, com o nome à esquerda e o campo à direita, em quadros (Rotina do dia, Limites e contas,
-Telas, Cron, Telegram, Google Agenda); o botão **Salvar configuração** fica numa barra presa no pé da tela.
+Telas, Cron, Sorteios, Telegram, Google Agenda); o botão **Salvar configuração** fica numa barra presa no pé da tela.
 
 ### Telegram e Google Agenda
 
@@ -1082,6 +1101,7 @@ têm de dar **403**.
 | `BACKUP_PASTA`, `BACKUP_MANTER`, `BACKUP_DOCUMENTOS` | opcionais: a cópia de segurança do banco (veja [Cópia de segurança](#cópia-de-segurança)). A pasta, **fora da pasta publicada** (sem ela, não há cópia automática); quantas ficam (padrão 7); e se leva o conteúdo dos documentos guardado no banco (padrão: não). |
 | `DOCUMENTOS_LIMITE` | opcional: o maior documento aceito, em bytes. Sem ela, 100 MB (`104857600`); `0` ou `-1`, sem limite do sistema. O `MANUAL_LIMITE`, o nome antigo, ainda vale quando ela não existe. O limite do PHP e o do nginx continuam valendo (veja [O tamanho dos envios](#o-tamanho-dos-envios-os-documentos)). Ex.: `define("DOCUMENTOS_LIMITE", 524288000);` para 500 MB |
 | `ANTIGO_HOST`, `ANTIGO_PORTA`, `ANTIGO_USUARIO`, `ANTIGO_SENHA` | opcionais, só para o `importar.php` com este sistema no Postgres, no SQLite ou no Firebird: onde está o MySQL do sistema anterior |
+| `ALEATORIO_RANDOMORG_URL`, `ALEATORIO_ANU_URL` | opcionais, só para testes: os endereços das fontes dos números aleatórios (`https://www.random.org/integers/` e `https://qrng.anu.edu.au/API/jsonI.php`). Trocados, os sorteios pedem os números a um servidor de teste |
 | `GOOGLE_TOKEN_URL`, `GOOGLE_API_URL` | opcionais, só para testes: os endereços do Google que a agenda usa (o do token, `https://oauth2.googleapis.com/token`, e o da API, `https://www.googleapis.com/calendar/v3`). Trocados, a sincronização da agenda conversa com um servidor de teste em vez do Google |
 
 ### Mensagens pelo Telegram

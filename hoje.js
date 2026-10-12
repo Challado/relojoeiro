@@ -4,7 +4,7 @@ var DIAS_SEMANA = ["", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábad
 var SELECOES = {
   inteligente: ["Inteligente", "Vai o relógio com a maior nota nos critérios. Previsível: com os mesmos dados, a mesma escolha."],
   ponderado: ["Inteligente com sorteio", "Sorteio em que a nota de cada relógio é a chance dele: quem tem nota maior sai mais vezes, mas todos têm chance. Variedade sem perder o critério."],
-  aleatorio: ["Totalmente aleatório", "Todos os relógios do tipo têm a mesma chance, sem olhar os critérios (gerador do sistema, random_int)."],
+  aleatorio: ["Totalmente aleatório", "Todos os relógios do tipo têm a mesma chance, sem olhar os critérios. Os números vêm do RANDOM.ORG (ruído atmosférico); fora do ar, do ANU QRNG (quântico); sem os dois, do gerador seguro do PHP."],
   fifo: ["Fila (FIFO)", "Vai o que está há mais tempo sem uso: todos passam pelo pulso, em fila. Não olha os critérios, e já garante o rodízio por natureza."]
 };
 

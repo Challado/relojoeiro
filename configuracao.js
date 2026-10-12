@@ -108,6 +108,15 @@ function recarregarConfig(aplicadas) {
           + el("p", {"class": "nota"}, "<strong>Mostrar até:</strong> quantos dias os Próximos dias (página Hoje, padrão 7) e o dia a dia da página Plano (padrão 31) mostram de cada vez. "
             + "Passando disso, embaixo aparecem as páginas: &lt; (anterior), os números e &gt; (próxima)."));
         var quadroCron = cartao("Cron", cron);
+        // de onde vêm os números dos sorteios (a API diz o último lote e se os dois serviços estão fora)
+        var al = d.aleatorio;
+        var sorteios = cartao("Sorteios", el("div", {"class": "campos"},
+          parCampo("Os números vêm de", el("span", {}, "1. RANDOM.ORG (ruído atmosférico) · 2. fora do ar, ANU QRNG (quântico) · 3. sem os dois, o gerador seguro do PHP"))
+          + parCampo("Último lote", el("span", {}, al.ultimo_lote ? h(al.ultimo_lote.replace(/ em (\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2}).*/, " em $3/$2/$1 $4")) : "nenhum ainda"))
+          + (al.fora_desde ? parCampo("Serviços fora", el("span", {"class": "acao"}, "os dois sem responder desde " + dataBr(al.fora_desde) + " " + horaBr(al.fora_desde)
+            + "; o sistema tenta de novo depois de 10 minutos")) : "")),
+          el("p", {"class": "nota"}, "Todo sorteio do sistema (o rodízio totalmente aleatório, o sorteio pela nota e o desempate de notas iguais na escala) usa estes números. "
+            + "Eles chegam num lote, e cada sorteio usa só o que precisa, sem viés."));
         var telegram = cartao("Telegram (API de alerta)", el("div", {"class": "campos"}, parCampo("Enviar alertas", marca("alerta_ativo", cfg("mensagens_ativas") === "1"), "check")),
           el("p", {"class": "nota"}, "O endereço e o destinatário ficam no config.php. O texto de cada aviso vem da mensagem padrão do Telegram ou da personalizada dele, em \"O que vai para onde\"."));
         var agenda = cartao("Google Agenda", el("div", {"class": "campos"},
@@ -162,7 +171,7 @@ function recarregarConfig(aplicadas) {
           + el("div", {"class": "rolagem"}, el("table", {"class": "relogios canais"}, el("thead", {}, el("tr", {}, el("th", {}, "Aviso") + el("th", {}, "Quando")
             + canais.map(function (canal) { return el("th", {"class": "centro"}, h(d.canais[canal].nome)); }).join("") + el("th", {}, "Personalizar"))) + el("tbody", {}, linhas))));
         res += el("form", {"data-recurso": "config", "id": "form-config"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
-          + el("div", {"class": "config-grade"}, rotina + limites + tela + quadroCron + telegram + agenda) + padrao + paraOnde
+          + el("div", {"class": "config-grade"}, rotina + limites + tela + quadroCron + sorteios + telegram + agenda) + padrao + paraOnde
           // salvar: uma barra presa no pé da tela enquanto a página rola, com o botão sempre no mesmo lugar
           + el("div", {"class": "barra-salvar"}, el("span", {"class": "nota"}, "As mudanças desta página valem depois de salvar.") + el("button", {}, "Salvar configuração")));
         res += el("form", {"data-recurso": "config", "id": "f-evento-excluir"}, el("input", {"type": "hidden", "name": "acao", "value": "evento_excluir"}));
