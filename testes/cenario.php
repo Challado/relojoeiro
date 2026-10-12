@@ -24,6 +24,20 @@ if ($fuso !== "" && !@date_default_timezone_set($fuso)) {
     fwrite(STDERR, "Fuso desconhecido: " . $fuso . "\n");
     exit(1);
 }
+// as horas do dia em que o sistema muda de comportamento: a meia-noite (o dia de hoje), o começo e o fim do horário de uso (o
+// padrão, 07:00, e o que o roteiro configura, 07:30 a 22:00: a sessão do rodízio de hoje abre ou não) e as rodadas da manhã e
+// da noite. Uma rodada que passa por uma delas sai diferente de outra que roda toda antes; perto de uma, o roteiro espera
+// ela passar (os bancos, rodando juntos, esperam todos)
+foreach (["00:00", "06:30", "07:00", "07:30", "20:00", "22:00"] as $virada) {
+    $em = strtotime(date("Y-m-d") . " " . $virada);
+    if ($em <= time()) {
+        $em = strtotime("+1 day", $em);
+    }
+    if ($em - time() <= 180) {
+        echo "Esperando passar das " . $virada . " (" . ($em - time() + 2) . " s)\n";
+        sleep(max(0, $em - time() + 2));
+    }
+}
 $falhas = [];
 $passo = 0;
 
@@ -167,8 +181,10 @@ $lanc("periodo", "auto", "pulso", ["inicio" => dia(2, "08:00"), "fim" => dia(2, 
 $lanc("lancar", "auto", "corda", ["quando" => dia(1, "07:00")]);
 $lanc("periodo", "auto2", "winder", ["inicio" => dia(4, "08:00"), "fim" => dia(4, "20:00")]);
 $lanc("periodo", "auto2", "pulso", ["inicio" => dia(9, "08:00"), "fim" => dia(9, "22:00")]);
-$lanc("periodo", "manual", "pulso", ["inicio" => dia(30, "09:00"), "fim" => dia(30, "19:00")]);
-$lanc("lancar", "manual", "corda", ["quando" => dia(30, "09:00")]);
+// 29 dias atrás, e não 30: as fórmulas de uso olham os últimos 30 dias (HORAS("pulso"; 30), CONTAR("pulso"; 30)), cuja borda
+// (agora menos 30 dias) passaria por dentro do período conforme a hora do dia, e as horas contadas andariam com o relógio
+$lanc("periodo", "manual", "pulso", ["inicio" => dia(29, "09:00"), "fim" => dia(29, "19:00")]);
+$lanc("lancar", "manual", "corda", ["quando" => dia(29, "09:00")]);
 $lanc("lancar", "pilha", "pilha", ["quando" => dia(400, "10:00")]);
 $lanc("periodo", "solar", "sol", ["inicio" => dia(8, "10:00"), "fim" => dia(8, "16:00")]);
 $lanc("iniciar", "solar", "sol", ["quando" => ha_minutos(20)]);

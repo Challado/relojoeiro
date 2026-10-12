@@ -5,7 +5,8 @@
 // agora: por isso os horários e as contas que andam com o tempo têm uma folga. O resto tem de ser idêntico, inclusive o
 // tipo (5 não é "5"). As diferenças são de dois tipos:
 //   graves: estrutura, tipo, texto, quantidade, ordem — o que está errado;
-//   leves:  só os números dentro de um texto ("em 3h 12min"), provavelmente o tempo que passou; com --leves, mostra.
+//   leves:  só os números dentro de um texto ("em 3h 12min"), ou uma duração por extenso que anda com o tempo ("em 10h 59min"
+//           e "em 11h"), provavelmente o tempo que passou; e o tamanho da cópia de segurança; com --leves, mostra.
 if (PHP_SAPI !== "cli" || count($argv) < 3) {
     fwrite(STDERR, "Uso: php testes/comparar.php <referência.json> <outro.json> [--leves]\n");
     exit(2);
@@ -28,6 +29,22 @@ function instante($v)
     }
     $t = strtotime($v);
     return $t === false ? null : $t;
+}
+
+// as durações por extenso de um texto, como o sistema escreve (duracao_texto: as duas maiores partes, "2a 3m", "5d 3h",
+// "2h 40min", "11h", "30min"): o texto com cada uma trocada por uma marca, e cada uma em minutos, com a precisão (a unidade
+// da segunda parte: "5d 3h" vale até 1h a mais; "11h" é exato no minuto)
+function duracoes($texto)
+{
+    $u = ["a" => 525960, "m" => 43830, "d" => 1440, "h" => 60, "min" => 1];
+    $ordem = array_keys($u);
+    $achadas = [];
+    $marcado = preg_replace_callback("/\\b(\\d+)(min|a|m|d|h)\\b(?: (\\d+)(min|m|d|h)\\b)?/", function ($m) use ($u, $ordem, &$achadas) {
+        $i = array_search($m[2], $ordem, true);
+        $achadas[] = [(int)$m[1] * $u[$m[2]] + (isset($m[3]) ? (int)$m[3] * $u[$m[4]] : 0), $u[$ordem[min($i + 1, count($ordem) - 1)]]];
+        return "\u{23F1}";
+    }, $texto);
+    return [$marcado, $achadas];
 }
 
 function numeros_iguais($x, $y, $chave)
@@ -125,6 +142,22 @@ function comparar($x, $y, $caminho, $chave)
     if (is_string($x) && is_string($y) && preg_replace("/\\d+/", "#", $x) === preg_replace("/\\d+/", "#", $y)) {
         $leves[] = [$caminho, "números no texto", $x, $y];
         return;
+    }
+    // uma duração contada até agora que cruza a virada de um minuto numa hora cheia, "em 10h 59min" num banco e "em 11h"
+    // noutro: as durações lidas em minutos, até a precisão de cada texto e mais 2 minutos de folga (a das duas rodadas)
+    if (is_string($x) && is_string($y)) {
+        [$mx, $dx] = duracoes($x);
+        [$my, $dy] = duracoes($y);
+        if (count($dx) > 0 && count($dx) === count($dy) && preg_replace("/\\d+/", "#", $mx) === preg_replace("/\\d+/", "#", $my)) {
+            $perto = true;
+            foreach ($dx as $i => $d) {
+                $perto = $perto && abs($d[0] - $dy[$i][0]) <= $d[1] + $dy[$i][1] + 2;
+            }
+            if ($perto) {
+                $leves[] = [$caminho, "duração no texto", $x, $y];
+                return;
+            }
+        }
     }
     $graves[] = [$caminho, "valor diferente", json_encode($x, JSON_UNESCAPED_UNICODE), json_encode($y, JSON_UNESCAPED_UNICODE)];
 }

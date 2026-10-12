@@ -53,14 +53,19 @@ em UTC já é o dia seguinte) e logo depois da meia-noite. O token que ele manda
 
 Rode os bancos **ao mesmo tempo**, cada um no seu servidor: com minutos de diferença entre as rodadas, as contas que andam
 com o tempo passam da folga. O resultado esperado é `0 diferenças graves`; as leves (`--leves` mostra) são os números
-dentro dos textos, como "há 3 min", os arredondamentos bem na fronteira, como 23,499 e 23,501, e o tamanho do arquivo da
-cópia de segurança (comprimido, com o nome do banco no cabeçalho: uns bytes de diferença, até 2%).
+dentro dos textos, como "há 3 min", as durações por extenso contadas até agora que cruzam a virada de uma hora cheia, como
+"em 10h 59min" e "em 11h" (até a precisão do texto e mais 2 minutos), os arredondamentos bem na fronteira, como 23,499 e
+23,501, e o tamanho do arquivo da cópia de segurança (comprimido, com o nome do banco no cabeçalho: uns bytes de diferença,
+até 2%).
 
-Para isso, o roteiro não deixa o resultado depender do segundo em que cada passo cai:
+Para isso, o roteiro não deixa o resultado depender do segundo em que cada passo cai, nem da hora do dia:
 
 - as sessões "há N minutos" (o sol, o winder, o carregador) contam todas de um minuto só, o do começo do roteiro; o
   carregador é fechado e aberto de novo (`alternar`) num mesmo minuto redondo, e a sessão aberta tem 1h 30min e pouco quando
   é lida, longe da virada da hora cheia;
 - antes de cada escrita do rodízio e dos modos (as que podem trocar o relógio de hoje), ele espera o segundo virar: a sessão
   do rodízio de cada relógio que passa por hoje dura ao menos 1 s (a que começa e acaba no mesmo segundo some, e mudaria o
-  histórico e as fórmulas).
+  histórico e as fórmulas);
+- o que ele lança no passado fica longe das bordas das janelas das fórmulas (os últimos 30 dias), que andam com a hora do dia;
+- a menos de 3 minutos de uma das horas em que o sistema muda de comportamento (a meia-noite, 06:30, 07:00, 07:30, 20:00 e
+  22:00: o horário de uso e as rodadas do cron), ele espera a hora passar antes de começar.
