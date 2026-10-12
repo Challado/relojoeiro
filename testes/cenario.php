@@ -340,11 +340,21 @@ escrever(["recurso" => "rodizio", "acao" => "manual", "de" => $em(16), "ate" => 
 ler("rodizio manual gravado", ["recurso" => "rodizio_manual", "de" => $em(16), "ate" => $em(25)]);
 ler("rodizio manual recusado", ["recurso" => "rodizio_manual", "de" => substr(dia(3, "00:00"), 0, 10), "ate" => $em(2)]);
 escrever(["recurso" => "rodizio", "acao" => "manual", "de" => $em(16), "ate" => $em(17), "dias" => [$em(17) => 99999]], false);
+// as listas em páginas (o "Mostrar até" da Configuração): os Próximos dias e o dia a dia do Plano, com o filtro de relógio
+escrever(["recurso" => "config", "acao" => "salvar", "proximos_por_pagina" => 3, "plano_por_pagina" => 5]);
+escrever(["recurso" => "config", "acao" => "salvar", "plano_por_pagina" => 0], false);
+ler("proximos pagina 2", ["recurso" => "proximos", "pagina" => 2]);
+ler("plano pagina 2", ["recurso" => "plano", "dias" => 30, "pagina" => 2]);
+ler("plano de um relogio", ["recurso" => "plano", "dias" => "todos", "relogio" => $rel["manual"]]);
 escrever(["recurso" => "rodizio", "acao" => "periodo", "de" => substr(dia(3, "00:00"), 0, 10), "ate" => $em(2), "relogio_ids" => [$rel["solar"]]], false);
 // o lançamento no relógio do dia, sem saber o id dele
 escrever(["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => "hoje", "tipo" => "pulso", "inicio" => dia(20, "08:00"), "fim" => dia(20, "09:00")]);
 // um aviso que sai na hora
 escrever(["recurso" => "avisos", "acao" => "alterar", "id" => (int)(array_values(array_filter($cad["avisos"] ?? [], function ($a) { return $a["identificador"] === "leitura"; }))[0]["id"] ?? 0), "na_hora" => 1]);
+// apagar tudo: de amanhã em diante (o modo monta de novo), e depois de hoje em diante
+escrever(["recurso" => "rodizio", "acao" => "apagar_tudo"]);
+escrever(["recurso" => "rodizio", "acao" => "apagar_tudo", "hoje" => 1]);
+ler("plano depois de apagar tudo", ["recurso" => "plano", "dias" => 30]);
 ler("backup", ["recurso" => "backup"]);
 escrever(["recurso" => "modos", "acao" => "excluir", "id" => $fila]);
 escrever(["recurso" => "config", "acao" => "evento_excluir", "id" => 1]);

@@ -100,9 +100,13 @@ function recarregarConfig(aplicadas) {
         var tela = cartao("Telas", el("div", {"class": "campos"},
           parCampo("Abrir o relógio na página Hoje", el("select", {"name": "painel_modo"}, el("option", {"value": "lado", "selected": cfg("painel_modo") !== "flutuante"}, "Ao lado da lista")
             + el("option", {"value": "flutuante", "selected": cfg("painel_modo") === "flutuante"}, "Numa janela flutuante, grande")))
+          + parCampo("Próximos dias (página Hoje): mostrar até (dias por página)", numero("proximos_por_pagina", String(d.mostrar_ate.proximos), "1", "366"))
+          + parCampo("Plano: mostrar até (dias por página)", numero("plano_por_pagina", String(d.mostrar_ate.plano), "1", "366"))
           + parCampo("Endereço do sistema (a âncora {link})", el("input", {"name": "url_sistema", "value": cfg("url_sistema"), "placeholder": "http://servidor/relogios"}), "largo")),
           el("p", {"class": "nota"}, "<strong>Ao lado da lista:</strong> o relógio clicado abre num painel à direita, e a lista continua à vista. <strong>Numa janela flutuante:</strong> abre grande, "
-            + "no meio da tela, com os quadros lado a lado; fecha no ×, no Esc ou num clique fora. No celular, os dois cobrem a tela inteira."));
+            + "no meio da tela, com os quadros lado a lado; fecha no ×, no Esc ou num clique fora. No celular, os dois cobrem a tela inteira.")
+          + el("p", {"class": "nota"}, "<strong>Mostrar até:</strong> quantos dias os Próximos dias (página Hoje, padrão 7) e o dia a dia da página Plano (padrão 31) mostram de cada vez. "
+            + "Passando disso, embaixo aparecem as páginas: &lt; (anterior), os números e &gt; (próxima)."));
         var quadroCron = cartao("Cron", cron);
         var telegram = cartao("Telegram (API de alerta)", el("div", {"class": "campos"}, parCampo("Enviar alertas", marca("alerta_ativo", cfg("mensagens_ativas") === "1"), "check")),
           el("p", {"class": "nota"}, "O endereço e o destinatário ficam no config.php. O texto de cada aviso vem da mensagem padrão do Telegram ou da personalizada dele, em \"O que vai para onde\"."));

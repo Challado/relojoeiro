@@ -4,13 +4,15 @@
 // página Hoje). Remontada depois de cada troca.
 var MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 var SEMANA = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
-var filtro = {dias: "90", relogio: ""};
+var filtro = {dias: "90", relogio: "", pagina: 1};
 var dados = null;
 var recado = "";
 
 function montarPlano() {
   var d = dados;
-  var mostrados = (filtro.relogio === "" ? comLivres(d.plano, d.livres) : d.plano).filter(function (p) { return filtro.relogio === "" || String(p.relogio_id) === filtro.relogio; });
+  // o dia a dia vem da API uma página por vez (o "Mostrar até" da Configuração), já com os dias livres e o filtro de relógio
+  var dd = d.dia_a_dia;
+  var mostrados = dd.dias;
   var ultimo = d.plano_fim;
 
   var res = el("h1", {}, "Plano") + el("p", {"class": "nota"}, "Modo: " + h(d.modo || "nenhum")
@@ -27,9 +29,10 @@ function montarPlano() {
       return el("option", {"value": String(r.id), "selected": filtro.relogio === String(r.id)}, h(r.nome));
     }).join(""))));
 
-  // escolher os relógios de um período, dia a dia: no quadro Modo de rodízio da página Hoje (Rodízio manual)
-  res += el("p", {"class": "nota"}, "Para escolher os relógios de um período, dia a dia: na página " + el("a", {"href": "index.php#manual"}, "Hoje")
-    + ", no quadro Modo de rodízio, escolha \"Rodízio manual\".");
+  // apagar o que um período tem (e sortear de novo, ou deixar livre); escolher os relógios dia a dia é no Rodízio manual
+  res += el("section", {"class": "cartao-config apagar-plano"}, formApagarPeriodo(d.hoje) + formApagarTudo()
+    + el("p", {"class": "nota"}, "Para escolher os relógios de um período, dia a dia: na página " + el("a", {"href": "index.php#manual"}, "Hoje")
+      + ", no quadro Modo de rodízio, escolha \"Rodízio manual\"."));
 
   // o resumo, da API: quantos dias cada relógio tem no período, a porcentagem, o próximo dia e quantos foram à mão
   var rs = d.resumo;
@@ -60,25 +63,28 @@ function montarPlano() {
       mes = p.data.substr(0, 7);
       linhas = "";
     }
-    var dia = new Date(instante(p.data)).getDay();
-    linhas += el("tr", {"class": (dia === 0 || dia === 6 ? "fds" : "") + (p.data === d.hoje ? " de-hoje" : "")},
-      el("td", {"class": "dia"}, dataBr(p.data, true) + " " + el("small", {}, SEMANA[dia]) + (p.data === d.hoje ? " " + el("small", {}, "hoje") : ""))
+    linhas += el("tr", {"class": (p.dia_semana >= 6 ? "fds" : "") + (p.hoje ? " de-hoje" : "")},
+      el("td", {"class": "dia"}, dataBr(p.data, true) + " " + el("small", {}, p.dia_semana_curto) + (p.hoje ? " " + el("small", {}, "hoje") : ""))
       + el("td", {}, celulaDoDia(p)) + el("td", {}, h(p.acao || ""))
       + el("td", {"class": "trocar"}, formTrocarDia(p, d.relogios, d.hoje)));
   });
   fecha();
   res += el("section", {}, el("h2", {}, "Dia a dia" + (filtro.relogio !== "" ? " (só os dias do relógio escolhido)" : ""))
-    + (mostrados.length === 0 ? el("p", {}, !d.plano_fim ? "Neste modo o sorteio é feito semana a semana: o plano tem só a semana atual." : "Nenhum dia.") : meses));
+    + (mostrados.length === 0 ? el("p", {}, !d.plano_fim ? "Neste modo o sorteio é feito semana a semana: o plano tem só a semana atual." : "Nenhum dia.") : meses)
+    + navPaginas(dd.pagina, dd.paginas, "plano-pagina")
+    + (dd.paginas > 1 ? el("p", {"class": "nota"}, "Página " + dd.pagina + " de " + dd.paginas + " · " + dd.total + " dias, " + dd.por_pagina + " por página (o \"Mostrar até\" da "
+      + el("a", {"href": "configuracao.php"}, "Configuração") + ").") : ""));
 
   var main = document.getElementById("plano");
   main.innerHTML = res;
-  document.getElementById("f-dias").addEventListener("change", function () { filtro.dias = this.value; recarregarPlano(); });
-  document.getElementById("f-relogio").addEventListener("change", function () { filtro.relogio = this.value; montarPlano(); });
+  document.getElementById("f-dias").addEventListener("change", function () { filtro.dias = this.value; filtro.pagina = 1; recarregarPlano(); });
+  document.getElementById("f-relogio").addEventListener("change", function () { filtro.relogio = this.value; filtro.pagina = 1; recarregarPlano(); });
 }
 
 function recarregarPlano() {
-  return api({recurso: "plano", dias: filtro.dias === "" ? "todos" : filtro.dias}).then(function (d) {
+  return api({recurso: "plano", dias: filtro.dias === "" ? "todos" : filtro.dias, relogio: filtro.relogio, pagina: filtro.pagina}).then(function (d) {
     dados = d;
+    filtro.pagina = d.dia_a_dia.pagina;
     montarPlano();
   });
 }
@@ -87,5 +93,19 @@ aoGravar = function (form, res) {
   recado = textoResposta(res);
   recarregarPlano();
 };
+
+// as páginas do dia a dia: cada uma relê a API (o resumo continua o do período inteiro)
+document.addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-plano-pagina]");
+  if (b && !b.disabled) {
+    filtro.pagina = parseInt(b.getAttribute("data-plano-pagina"), 10);
+    recarregarPlano().then(function () {
+      var dia = document.querySelector("#plano .dias-plano");
+      if (dia) {
+        dia.closest("section").scrollIntoView({block: "start"});
+      }
+    });
+  }
+});
 
 recarregarPlano();

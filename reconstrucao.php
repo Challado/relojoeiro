@@ -180,6 +180,11 @@ const RECONSTRUCAO_TELAS = [
             "O título da aba do navegador é o título da página (\"Relógio de hoje\", \"Plano\", \"Configuração\", \"Critérios de escolha\", "
                 . "\"Grupos de relógios\", \"Execuções do cron\", \"Usuários\", \"Cadastros\", \"Ajuda\", \"Ficha do relógio\", \"Documentos\"; no "
                 . "histórico, \"Histórico — <relógio>\").",
+            "O navegador de páginas (Próximos dias, Dia a dia do Plano, Rodízio manual): botões leves pequenos (padding .3rem "
+                . ".65rem, letra .9rem) numa linha que quebra: \"<\" (dica \"Anterior\"; desativado na primeira), os números (a 1, a última e "
+                . "até 2 de cada lado da atual, com \"…\" sem borda nos saltos; dica \"Página N\"; a atual em safira com letra branca, sem "
+                . "ser botão) e \">\" (dica \"Próximo\"; desativado na última). Uma página só: sem navegador. Cada botão relê a API com a "
+                . "página.",
         ]],
     ],
     "menu" => [
@@ -207,14 +212,15 @@ const RECONSTRUCAO_TELAS = [
             "endereco" => "index.php; index.php?r=<id> abre o relógio no painel; index.php?novo=1 abre o cadastro de um novo; index.php#manual "
                 . "abre o quadro Modo de rodízio no Rodízio manual",
             "le" => [
-                "recurso=hoje",
+                "recurso=hoje (com proximos_pagina)",
+                "recurso=proximos (a troca de página dos Próximos dias)",
                 "recurso=ficha (o painel)",
                 "recurso=rodizio_manual (o Rodízio manual, de 7 em 7 dias)",
             ],
             "grava" => [
                 "lancamento: iniciar, encerrar, lancar, periodo, alterar, excluir",
                 "rodizio: trocar_dia, modo, resortear, resortear_hoje, proxima_semana, usando, manual, periodo_sortear, "
-                    . "periodo_livre",
+                    . "periodo_livre, apagar_tudo",
                 "relogio: salvar, foto, remover_foto, excluir",
             ],
             "partes" => [
@@ -243,7 +249,11 @@ const RECONSTRUCAO_TELAS = [
                     "Título \"Próximos dias\" com o link \"ver o plano inteiro →\" (plano.php). Tabela: Dia (\"DD/MM\" e o dia da semana "
                         . "curto, menor), Relógio (o nome; \"à mão\" pequeno quando escolhido à mão; o motivo embaixo, menor), Lembrete, e "
                         . "o \"trocar por…\". Fim de semana com fundo #f4f6f8. Sem plano: \"Neste modo o sorteio é feito dia a dia.\" Os dias "
-                        . "livres entram no meio, como na página Plano (\"livre: escolha à mão\", \"escolher…\").",
+                        . "livres entram no meio, como na página Plano (\"livre: escolha à mão\", \"escolher…\"). Os dias vêm da API "
+                        . "(hoje.proximos), de \"Mostrar até\" em \"Mostrar até\" (a Configuração, padrão 7); passando disso, embaixo o "
+                        . "navegador de páginas (recurso=proximos com pagina; só a lista se remonta) e \"Página N de M · <total> dias no "
+                        . "plano, <n> por página (o \"Mostrar até\" da Configuração).\" (link para configuracao.php). A página à mostra fica "
+                        . "a mesma quando a página Hoje se remonta depois de uma gravação.",
                     "\"trocar por…\": uma lista com os relógios disponíveis (menos o do dia) e, num dia de amanhã em diante escolhido "
                         . "à mão, \"↺ voltar a sortear\" (valor 0); escolhido um, aparece o botão leve \"Trocar\" (rodizio trocar_dia com "
                         . "data e relogio_id).",
@@ -287,10 +297,12 @@ const RECONSTRUCAO_TELAS = [
                         . "DD/MM/AAAA a DD/MM/AAAA. O que você escolhe fica guardado enquanto você anda pelas páginas; nada muda antes de "
                         . "gravar.\", os botões \"Gravar o rodízio manual\" (rodizio manual com de, ate e dias[data] dos que você mudou; "
                         . "confirma \"Gravar o rodízio manual de DD/MM/AAAA a DD/MM/AAAA? Os dias ficam com os relógios escolhidos; os de "
-                        . "\"Decida por mim\" são decididos agora pelo sistema.\") e, leves, \"Sortear de novo o período\" (periodo_sortear) e "
-                        . "\"Deixar o período livre\" (periodo_livre), cada um com a sua confirmação; e as notas com o critério do Decida "
-                        . "por mim (o texto da API) e o que fazem os dois botões leves. Recusado: o motivo em âmbar acima da tabela, e as "
-                        . "escolhas ficam; gravado: o recado no alto da página e a página remontada.",
+                        . "\"Decida por mim\" são decididos agora pelo sistema.\"); e as notas com o critério do Decida por mim (o texto da "
+                        . "API) e \"Para apagar o que um período tem (e sortear de novo, ou deixar os dias livres): \"Apagar um período\", "
+                        . "embaixo deste quadro, ou na página Plano.\" (link). Recusado: o motivo em âmbar acima da tabela, e as escolhas "
+                        . "ficam; gravado: o recado no alto da página e a página remontada.",
+                    "Abaixo do Sortear de novo, cada um abaixo de uma linha, os mesmos dois formulários da página Plano: \"Apagar um "
+                        . "período\" e \"Apagar tudo\" (veja a página Plano).",
                 ]],
                 ["titulo" => "Relógios (a tabela da coleção)", "itens" => [
                     "Título \"Relógios\" com \"<mostrados> de <total> relógios · <n> em uso\" em cinza e, à direita, os botões \"Limpar "
@@ -400,10 +412,10 @@ const RECONSTRUCAO_TELAS = [
             "titulo" => "Plano",
             "endereco" => "plano.php",
             "le" => [
-                "recurso=plano (com dias=30, 90, 365, 730 ou todos)",
+                "recurso=plano (com dias=30, 90, 365, 730 ou todos; pagina e relogio)",
             ],
             "grava" => [
-                "rodizio: trocar_dia",
+                "rodizio: trocar_dia, periodo_sortear, periodo_livre, apagar_tudo",
             ],
             "partes" => [
                 ["titulo" => "Cabeça e filtros", "itens" => [
@@ -412,9 +424,23 @@ const RECONSTRUCAO_TELAS = [
                         . "Filtros lado a lado: Período (Próximos 30 dias, Próximos 90 dias (o padrão), Próximo ano, Próximos 2 anos, "
                         . "Tudo; trocar relê a API) e Relógio (Todos e cada um; filtra o dia a dia na tela).",
                 ]],
-                ["titulo" => "O período à mão", "itens" => [
-                    "Uma nota: \"Para escolher os relógios de um período, dia a dia: na página Hoje, no quadro Modo de rodízio, "
-                        . "escolha \"Rodízio manual\".\" (o link Hoje vai para index.php#manual).",
+                ["titulo" => "Apagar a programação (um cartão)", "itens" => [
+                    "\"Apagar um período\" (o rótulo em cinza): numa linha que quebra, \"De\" e \"Até\" (datas, de hoje em diante, "
+                        . "obrigatórias), \"Depois\" (lista: \"e sortear de novo\" = rodizio periodo_sortear; \"e deixar livre\" = "
+                        . "periodo_livre) e o botão leve \"Apagar\". Embaixo, a explicação da opção escolhida (\"Tudo o que o período tem, "
+                        . "de amanhã em diante (escolhido à mão, sorteado ou livre), sai, e o modo de rodízio sorteia os dias outra vez.\" "
+                        . "/ \"... sai, e os dias ficam livres: sem relógio e sem sorteio, para você escolher cada um ...\"). Confirma "
+                        . "\"Apagar o que o período tem e sortear de novo? Os dias escolhidos à mão nele também saem.\" (ou \"... e deixar "
+                        . "os dias livres, sem relógio? ...\").",
+                    "Abaixo de uma linha, \"Apagar tudo\": a caixa \"Excluindo hoje (apaga também o dia de hoje)\" e o botão leve "
+                        . "\"Apagar tudo\" (rodizio apagar_tudo, com hoje=1 marcada), e a nota \"Limpa toda a programação, de amanhã em "
+                        . "diante: os dias escolhidos à mão, os sorteados e os livres. Marcando \"Excluindo hoje\", apaga de hoje em diante "
+                        . "(se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora). Depois, o modo de rodízio "
+                        . "monta o plano de novo, do zero.\" Confirma (com hoje: \"Apagar toda a programação, de hoje em diante (escolhidos "
+                        . "à mão, sorteados e dias livres)? O modo de rodízio monta o plano de novo, e hoje pode sair outro relógio, que "
+                        . "passa a ser o do pulso a partir de agora.\"; sem: \"... de amanhã em diante ...; hoje continua como está.\").",
+                    "Por último, a nota \"Para escolher os relógios de um período, dia a dia: na página Hoje, no quadro Modo de "
+                        . "rodízio, escolha \"Rodízio manual\".\" (o link Hoje vai para index.php#manual).",
                 ]],
                 ["titulo" => "Resumo do período (<n> dias)", "itens" => [
                     "Tabela Relógio, Dias, %, Próximo dia (\"DD/MM/AAAA seg\"), À mão; do que tem mais dias ao que tem menos. "
@@ -426,7 +452,10 @@ const RECONSTRUCAO_TELAS = [
                         . "sortear\"). Um título por mês (\"Outubro de 2026\") e uma tabela de dias: o dia (\"DD/MM\" e o dia da semana, "
                         . "\"hoje\" no de hoje, com a faixa safira), o relógio (com \"à mão\" e o motivo embaixo), o lembrete e o \"trocar "
                         . "por…\" (como na página Hoje). Fim de semana com fundo cinza claro. Sem dias: \"Neste modo o sorteio é feito "
-                        . "semana a semana: o plano tem só a semana atual.\" ou \"Nenhum dia.\"",
+                        . "semana a semana: o plano tem só a semana atual.\" ou \"Nenhum dia.\" Os dias vêm da API (plano.dia_a_dia, com "
+                        . "pagina e relogio: o filtro de relógio relê a API), de \"Mostrar até\" em \"Mostrar até\" (a Configuração, padrão "
+                        . "31); passando disso, o navegador de páginas embaixo (cada página relê a API e rola até o dia a dia) e \"Página "
+                        . "N de M · <total> dias, <n> por página (o \"Mostrar até\" da Configuração).\"",
                 ]],
             ],
         ],
@@ -462,8 +491,10 @@ const RECONSTRUCAO_TELAS = [
                         . "esquecida fecha às (hora).",
                     "Limites e contas: Carregar quando a carga chegar a (%) (1 a 99, padrão 20); Solar: pôr no sol quando chegar a "
                         . "(%) (1 a 99, padrão 70); Gasto medido: média dos últimos (dias) (1 a 3650, padrão 90).",
-                    "Telas: Abrir o relógio na página Hoje (Ao lado da lista; Numa janela flutuante, grande); Endereço do sistema "
-                        . "(a âncora {link}).",
+                    "Telas: Abrir o relógio na página Hoje (Ao lado da lista; Numa janela flutuante, grande); \"Próximos dias "
+                        . "(página Hoje): mostrar até (dias por página)\" e \"Plano: mostrar até (dias por página)\" (números de 1 a 366, "
+                        . "com o valor de mostrar_ate da API: padrão 7 e 31); Endereço do sistema (a âncora {link}); e a nota sobre o "
+                        . "Mostrar até (passando disso, as páginas embaixo: <, os números, >).",
                     "Cron: \"Cron rodando: última execução às HH:MM.\" (nota) ou, em âmbar, \"O cron ainda não rodou\" / \"O cron não "
                         . "roda desde ...\" com a linha do crontab em código; o erro guardado numa caixa (\"O cron está com erro\"); o link "
                         . "\"Ver todas as execuções do cron\" e o \"Registro da última rodada\" (abre e fecha).",
@@ -1203,6 +1234,16 @@ function reconstrucao()
                     . "para amanhã (se sobrar outro); a garantia de rodízio na frente (o mais tempo parado além de max_sem_uso); senão a maior nota no "
                     . "começo do uso do dia; empate: o menor id. A resposta diz quantos dias foram escolhidos, decididos, livres e quantos ficaram "
                     . "como já estavam.",
+                "Apagar a programação (página Plano e quadro Modo de rodízio): apagar um período (periodo_sortear: sai tudo o que ele tem, de amanhã "
+                    . "em diante, e o modo sorteia de novo; periodo_livre: sai tudo e os dias ficam livres) e apagar tudo (rodizio apagar_tudo: sai toda a "
+                    . "programação de amanhã em diante, à mão, sorteada e livre; com hoje=1, \"Excluindo hoje\", de hoje em diante; depois o modo ativo "
+                    . "monta o plano de novo, gerar_escala na escala e garantir_plano até domingo no sorteio; hoje, se mudar, o novo vai para o pulso a "
+                    . "partir de agora, como no resortear_hoje).",
+                "As listas longas de dias vêm da API uma página por vez (plano_pagina): os Próximos dias (hoje.proximos e recurso=proximos, de hoje "
+                    . "até o fim do plano) e o dia a dia da página Plano (plano.dia_a_dia, com o filtro relogio), com os dias livres no meio (origem "
+                    . "livre; sem eles no filtro de relógio), cada dia com o dia da semana (dia_semana 1 a 7, dia_semana_curto); o tamanho da página é o "
+                    . "Mostrar até da Configuração (config proximos_por_pagina, padrão 7; plano_por_pagina, padrão 31; 1 a 366; por_pagina no pedido "
+                    . "vale por cima), e o recurso=config devolve os dois já com o padrão (mostrar_ate).",
                 "A escala inteligente (um modo com escala_dias de 7 a 730) planeja tudo de uma vez simulando dia a dia: a nota de cada relógio com o "
                     . "estado simulado daquele dia; a escolha (o smartwatch fica os dias que a bateria aguenta, até 7); a sessão no pulso no horário de uso "
                     . "e o efeito dela em todos; os avisos (se o escolhido vai precisar de carga ou corda, anota a ação no dia e simula o lançamento que "

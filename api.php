@@ -127,13 +127,22 @@
  *                            "medicoes_antes", "conjunta"}}]}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=previsao&relogio=10"
  *   recurso=plano            [de, ate: AAAA-MM-DD; ou dias=N: os próximos N dias, de hoje em diante; dias=todos: de hoje até o fim]
+ *                            [pagina=N, por_pagina=N, relogio=<id>: a página do "dia_a_dia"; sem por_pagina, o "Mostrar até" da
+ *                            Configuração (plano_por_pagina, padrão 31); relogio: só os dias dele]
  *                            o plano gravado (sem nada: inteiro), com "escala_fim", o último dia gravado e o modo ativo, e o resumo do
  *                            período como a página Plano mostra: {"modo", "escala_fim", "plano_fim", "hoje", "plano": [como em "plano"
- *                            acima], "livres": [os dias livres do período: sem relógio e sem sorteio], "resumo": {"de", "ate", "dias",
+ *                            acima], "livres": [os dias livres do período: sem relógio e sem sorteio], "dia_a_dia": {"por_pagina",
+ *                            "pagina", "paginas", "total", "relogio", "dias": [{"data", "dia_semana", "dia_semana_curto", "hoje",
+ *                            "relogio_id", "relogio", "origem" (sorteio, manual ou livre), "acao", "motivo"}]} (o que a página Plano
+ *                            mostra, uma página por vez, com os dias livres no meio), "resumo": {"de", "ate", "dias",
  *                            "relogios": [{"relogio_id", "relogio", "dias", "porcentagem",
  *                            "proximo", "a_mao"}], "sem_dias": [{"id", "nome"}]}, "relogios"}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=plano&de=2026-10-01&ate=2026-10-31"
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=plano&dias=90"
+ *   recurso=proximos         [pagina=N, por_pagina=N] os Próximos dias da página Hoje, uma página (de hoje até o fim do plano, com os
+ *                            dias livres no meio; sem por_pagina, o "Mostrar até" da Configuração: proximos_por_pagina, padrão 7):
+ *                            {"por_pagina", "pagina", "paginas", "total", "relogio" (null), "dias": [como em plano.dia_a_dia]}
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=proximos&pagina=2"
  *   recurso=rodizio_manual   de, ate (AAAA-MM-DD, de hoje em diante, até 2 anos), [pagina: 1, 2...]: o Rodízio manual (o quadro Modo de
  *                            rodízio da página Hoje): os dias do período de 7 em 7, cada um com o que o plano tem agora e a escolha de
  *                            partida do seletor (o relógio escolhido à mão, livre ou auto: Decida por mim): {"de", "ate", "total_dias",
@@ -166,7 +175,8 @@
  *                            ou em breve: {"relogio_id", "relogio", "identificador", "nome", "texto" (o motivo), "estado", "resolve":
  *                            {"identificador", "nome", "formato", "unidade", "acao", "botao"} (o lançamento do botão)}], "plano": [os
  *                            próximos 62 dias: {"data", "relogio_id", "relogio", "acao", "motivo", "origem"}], "livres": [os dias livres
- *                            dos próximos 62 dias], "proxima_semana": {"segunda", "domingo", "ja_montada"}, "modos":
+ *                            dos próximos 62 dias], "proximos": {os Próximos dias da página, uma página: como em recurso=proximos;
+ *                            proximos_pagina=N escolhe a página}, "proxima_semana": {"segunda", "domingo", "ja_montada"}, "modos":
  *                            [{"id", "nome", "selecao", "escala_dias", "blocos": [{"id", "nome", "dias", "no_id", "um_por", "relogio_id"}]}],
  *                            "grupos": [{"id", "nome", "profundidade", "caminho"}], "avisos_nomes", "estados" (o filtro Estado),
  *                            "relogios": [{"id", "nome", "disponivel", "tipo" (o grupo), "em_uso", "estado" (uso, sessao, repouso ou
@@ -190,7 +200,8 @@
  *                            "unidade", "opcoes", "padrao", "no_id", "valor"}], "grupos": [{"id", "caminho", "cadeia"}]}. Sem relogio:
  *                            só "campos" e "grupos" (o cadastro de um relógio novo); relógio que não existe: 404
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=ficha&relogio=10"
- *   recurso=config           tudo o que a página Configuração mostra: {"config": {chave: valor} (inclusive agenda_chave), "sol_fim",
+ *   recurso=config           tudo o que a página Configuração mostra: {"config": {chave: valor} (inclusive agenda_chave), "mostrar_ate":
+ *                            {"proximos", "plano"} (quantos dias por página, já com o padrão), "sol_fim",
  *                            "chave_agenda": {"client_email"} (a chave JSON foi lida; null: não), "pasta", "canais" (tg e ag: o nome,
  *                            a lista de avisos e a ajuda), "ancoras", "repeticoes", "tipos": [cada tipo de aviso: {"tipo" (dia, vespera,
  *                            o identificador do aviso, ev<id>), "nome", "quando", "evento" (o id, se for um evento), "canais": {"tg": {
@@ -466,7 +477,9 @@
  *                             auto (Decida por mim: o sistema decide ao gravar, pelo critério do recurso=rodizio_manual) ou livre
  *                             (hoje não); o dia que não vem fica com a escolha de partida (dias[].escolha); tudo fica gravado à mão,
  *                             com o motivo; hoje, com outro relógio, ele passa a ser o do pulso a partir de agora; hoje em auto
- *                             continua o que está; fora do período, vale o modo ativo). Os dias escolhidos à mão e os livres, de
+ *                             continua o que está; fora do período, vale o modo ativo), apagar_tudo (toda a programação de
+ *                             amanhã em diante, escolhida à mão, sorteada e livre, sai; hoje=1, "Excluindo hoje": de hoje em
+ *                             diante; o modo ativo monta o plano de novo; hoje, se mudar, o novo vai para o pulso a partir de agora). Os dias escolhidos à mão e os livres, de
  *                             amanhã em diante, ficam quando se sorteia de novo ou se monta a próxima semana.
  *                             Na escala inteligente: sortear de novo refaz a escala; usando segura o escolhido nos dias que
  *                             faltavam do bloco de hoje e refaz a escala depois deles; proxima_semana é recusada
@@ -479,6 +492,7 @@
  *                            Ex. periodo: curl -u lucas:senha -d recurso=rodizio -d acao=periodo -d de=2026-12-20 -d ate=2027-01-05 -d "relogio_ids[]=12" -d "relogio_ids[]=7" -d dias_cada=2 http://servidor/relojoeiro/api.php
  *                            Ex. periodo_sortear: curl -u lucas:senha -d recurso=rodizio -d acao=periodo_sortear -d de=2026-12-20 -d ate=2027-01-05 http://servidor/relojoeiro/api.php
  *                            Ex. periodo_livre: curl -u lucas:senha -d recurso=rodizio -d acao=periodo_livre -d de=2026-12-20 -d ate=2027-01-05 http://servidor/relojoeiro/api.php
+ *                            Ex. apagar_tudo: curl -u lucas:senha -d recurso=rodizio -d acao=apagar_tudo -d hoje=1 http://servidor/relojoeiro/api.php
  *                            Ex. manual: curl -u lucas:senha -d recurso=rodizio -d acao=manual -d de=2026-12-20 -d ate=2027-01-05 -d "dias[2026-12-20]=12" -d "dias[2026-12-21]=auto" -d "dias[2026-12-25]=livre" http://servidor/relojoeiro/api.php
  *   recurso=modos             salvar (id: 0 cria; nome, selecao: inteligente, ponderado, aleatorio ou fifo; escala_dias: vazio ou 0
  *                             = sorteio pelos blocos, 7 a 730 = escala inteligente com esse horizonte; blocos: [{nome, dias:
@@ -493,7 +507,9 @@
  *                             a essa hora): HH:MM; pulso_auto_inicio e pulso_auto_fim (1 ou 0: pôr no pulso sozinho no
  *                             início do horário de uso, tirar sozinho no fim; 0: só pelo Pôs, só pelo Tirou); carga_limiar (1 a 99: carregar nessa carga, o geral); sol_limiar (1 a 99: o
  *                             solar vai para o sol nessa carga); url_sistema; painel_modo (lado: o relógio abre no painel ao lado da
- *                             lista; flutuante: numa janela grande por cima da página);
+ *                             lista; flutuante: numa janela grande por cima da página); proximos_por_pagina e plano_por_pagina (1 a
+ *                             366: o "Mostrar até", quantos dias os Próximos dias da página Hoje e o dia a dia da página Plano
+ *                             mostram por página; padrão 7 e 31);
  *                             alerta_ativo (ou mensagens_ativas) e agenda_ativa: 1 ou 0; agenda_id; agenda_chave; agenda_antecedencia
  *                             (1 a 365); max_sem_uso (0 a 365); previsao_limite (0 a 100); medicao_janela_dias (1 a 3650: a média
  *                             do gasto medido usa as medições destes últimos dias); os canais: alerta_tipos[] e agenda_tipos[]
@@ -620,6 +636,8 @@
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
  *     config.painel_modo             como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela
  *                                    grande por cima da página); vazio: lado
+ *     config.proximos_por_pagina     o "Mostrar até" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)
+ *     config.plano_por_pagina        o "Mostrar até" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)
  *     config.migracao_v10            marca de que a migração v10 foi aplicada (1)
  *     config.migracao_v12            marca de que a migração v12 foi aplicada (1)
  *     config.migracao_v16            marca de que a migração v16 foi aplicada (1)
@@ -1179,6 +1197,25 @@
  *     plano[].relogio_id             o relógio
  *     livres[]                       os dias livres dos próximos 62 dias (texto AAAA-MM-DD): sem relógio e sem sorteio, para escolher à
  *                                    mão; a tela os põe entre os dias do plano
+ *     proximos                       os Próximos dias da página, uma página por vez (proximos_pagina=N; por_pagina=N, sem ele o "Mostrar
+ *                                    até" da Configuração, proximos_por_pagina, padrão 7), de hoje até o fim do plano, com os dias livres
+ *                                    no meio; a troca de página lê só eles (recurso=proximos)
+ *     proximos.por_pagina            quantos dias vêm por página (o "Mostrar até" da Configuração, ou o por_pagina pedido)
+ *     proximos.pagina                a página que veio (1: a primeira)
+ *     proximos.paginas               quantas páginas há
+ *     proximos.total                 quantos dias há, somando todas as páginas (com os dias livres)
+ *     proximos.relogio               o filtro de relógio (o id; null: todos)
+ *     proximos.dias[]                os dias desta página, na ordem das datas, com os dias livres no meio
+ *     proximos.dias[].data           o dia (AAAA-MM-DD)
+ *     proximos.dias[].dia_semana     o dia da semana: 1 segunda ... 7 domingo
+ *     proximos.dias[].dia_semana_curto
+ *                                    o dia da semana curto: seg, ter, qua, qui, sex, sáb, dom
+ *     proximos.dias[].hoje           verdadeiro no dia de hoje
+ *     proximos.dias[].relogio_id     o relógio do dia (null num dia livre)
+ *     proximos.dias[].relogio        o nome dele (null num dia livre)
+ *     proximos.dias[].origem         sorteio, manual (escolhido à mão) ou livre (dia livre: sem relógio e sem sorteio, para escolher à mão)
+ *     proximos.dias[].acao           o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nenhum
+ *     proximos.dias[].motivo         por que o relógio está no dia; null: nenhum
  *     proxima_semana.domingo         o domingo dela
  *     proxima_semana.ja_montada      verdadeiro ou falso: a próxima semana já está no plano
  *     proxima_semana.segunda         a segunda-feira da próxima semana (texto AAAA-MM-DD)
@@ -1476,6 +1513,9 @@
  *     canais.<canal>.nome            o nome do canal (Telegram, Google Agenda)
  *     canais.<canal>.tipos           o nome do campo do formulário (acao=salvar) com os tipos que vão pelo canal (alerta_tipos[], agenda_tipos[])
  *     chave_agenda                   a chave do Google lida no caminho configurado; null: não lida
+ *     mostrar_ate                    quantos dias as listas mostram por página (o "Mostrar até" da Configuração, já com o padrão)
+ *     mostrar_ate.proximos           os Próximos dias da página Hoje (proximos_por_pagina; padrão 7)
+ *     mostrar_ate.plano              o dia a dia da página Plano (plano_por_pagina; padrão 31)
  *     chave_agenda.client_email      o e-mail da conta de serviço (compartilhar a agenda com ele)
  *     cron_estado                    a situação do cron, como a Configuração mostra (o cron roda a cada minuto)
  *     cron_estado.crontab            a linha do crontab que roda o sistema (com a pasta dele)
@@ -1507,6 +1547,8 @@
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
  *     config.painel_modo             como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela
  *                                    grande por cima da página); vazio: lado
+ *     config.proximos_por_pagina     o "Mostrar até" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)
+ *     config.plano_por_pagina        o "Mostrar até" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)
  *     config.migracao_v10            marca de que a migração v10 foi aplicada (1)
  *     config.migracao_v12            marca de que a migração v12 foi aplicada (1)
  *     config.migracao_v16            marca de que a migração v16 foi aplicada (1)
@@ -1905,6 +1947,25 @@
  *     hoje                           hoje (texto AAAA-MM-DD)
  *     livres[]                       os dias livres do período (texto AAAA-MM-DD): sem relógio e sem sorteio, para escolher à mão (o
  *                                    "Deixar o período livre"); a página Plano os põe entre os dias do plano
+ *     dia_a_dia                      o dia a dia da página Plano, uma página por vez (pagina=N; por_pagina=N, sem ele o "Mostrar até" da
+ *                                    Configuração, plano_por_pagina, padrão 31), no período pedido, com os dias livres no meio;
+ *                                    relogio=<id>: só os dias desse relógio (sem os livres)
+ *     dia_a_dia.por_pagina           quantos dias vêm por página (o "Mostrar até" da Configuração, ou o por_pagina pedido)
+ *     dia_a_dia.pagina               a página que veio (1: a primeira)
+ *     dia_a_dia.paginas              quantas páginas há
+ *     dia_a_dia.total                quantos dias há, somando todas as páginas (com os dias livres)
+ *     dia_a_dia.relogio              o filtro de relógio (o id; null: todos)
+ *     dia_a_dia.dias[]               os dias desta página, na ordem das datas, com os dias livres no meio
+ *     dia_a_dia.dias[].data          o dia (AAAA-MM-DD)
+ *     dia_a_dia.dias[].dia_semana    o dia da semana: 1 segunda ... 7 domingo
+ *     dia_a_dia.dias[].dia_semana_curto
+ *                                    o dia da semana curto: seg, ter, qua, qui, sex, sáb, dom
+ *     dia_a_dia.dias[].hoje          verdadeiro no dia de hoje
+ *     dia_a_dia.dias[].relogio_id    o relógio do dia (null num dia livre)
+ *     dia_a_dia.dias[].relogio       o nome dele (null num dia livre)
+ *     dia_a_dia.dias[].origem        sorteio, manual (escolhido à mão) ou livre (dia livre: sem relógio e sem sorteio, para escolher à mão)
+ *     dia_a_dia.dias[].acao          o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nenhum
+ *     dia_a_dia.dias[].motivo        por que o relógio está no dia; null: nenhum
  *     modo                           o nome do modo em uso
  *     plano[]                        o plano gravado: o relógio de cada dia
  *     plano[].acao                   o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nada
@@ -1935,6 +1996,23 @@
  *     relogios[].disponivel          verdadeiro ou falso: entra no rodízio (só o disponível pode ser escolhido para um dia)
  *     relogios[].id                  o número do relógio
  *     relogios[].nome                o nome
+ *
+ *   recurso=proximos
+ *     por_pagina                     quantos dias vêm por página (o "Mostrar até" da Configuração, ou o por_pagina pedido)
+ *     pagina                         a página que veio (1: a primeira)
+ *     paginas                        quantas páginas há
+ *     total                          quantos dias há, somando todas as páginas (com os dias livres)
+ *     relogio                        o filtro de relógio (o id; null: todos)
+ *     dias[]                         os dias desta página, na ordem das datas, com os dias livres no meio
+ *     dias[].data                    o dia (AAAA-MM-DD)
+ *     dias[].dia_semana              o dia da semana: 1 segunda ... 7 domingo
+ *     dias[].dia_semana_curto        o dia da semana curto: seg, ter, qua, qui, sex, sáb, dom
+ *     dias[].hoje                    verdadeiro no dia de hoje
+ *     dias[].relogio_id              o relógio do dia (null num dia livre)
+ *     dias[].relogio                 o nome dele (null num dia livre)
+ *     dias[].origem                  sorteio, manual (escolhido à mão) ou livre (dia livre: sem relógio e sem sorteio, para escolher à mão)
+ *     dias[].acao                    o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nenhum
+ *     dias[].motivo                  por que o relógio está no dia; null: nenhum
  *
  *   recurso=rodizio_manual
  *     de                             o primeiro dia do período (AAAA-MM-DD)
@@ -3014,6 +3092,9 @@ if (!$token_ok && $quem === "") {
             linhas("SELECT p.*, r.nome FROM plano p JOIN relogio r ON r.id = p.relogio_id WHERE p.data >= ? ORDER BY p.data LIMIT 62", [$hoje->format("Y-m-d")])),
         // os dias livres dos próximos 62 dias (sem relógio e sem sorteio: para escolher à mão)
         "livres" => dias_livres($hoje->format("Y-m-d"), $hoje->modify("+61 days")->format("Y-m-d")),
+        // os Próximos dias da página, uma página por vez (o "Mostrar até" da Configuração), com os dias livres no meio
+        "proximos" => plano_pagina($hoje->format("Y-m-d"), "", null, (int)($_REQUEST["proximos_pagina"] ?? 1),
+            ctype_digit((string)($_REQUEST["por_pagina"] ?? "")) ? (int)$_REQUEST["por_pagina"] : proximos_por_pagina()),
         "proxima_semana" => ["segunda" => $seg->format("Y-m-d"), "domingo" => $seg->modify("+6 days")->format("Y-m-d"),
             "ja_montada" => (int)valor("SELECT COUNT(*) FROM plano WHERE data BETWEEN ? AND ?", [$seg->format("Y-m-d"), $seg->modify("+6 days")->format("Y-m-d")]) > 1],
         "modos" => $modos_h,
@@ -3148,7 +3229,7 @@ if (!$token_ok && $quem === "") {
             $previa[] = array_merge(["data" => $m["data"], "hora" => $m["hora"]], evento_formatado($m));
         }
     }
-    $saida = ["config" => (object)$valores_c, "sol_fim" => isset(lancamento_tipos()["sol"]) && lancamento_tipos()["sol"]["fecha_as"] !== null ? substr(lancamento_tipos()["sol"]["fecha_as"], 0, 5) : "",
+    $saida = ["config" => (object)$valores_c, "mostrar_ate" => ["proximos" => proximos_por_pagina(), "plano" => plano_por_pagina()], "sol_fim" => isset(lancamento_tipos()["sol"]) && lancamento_tipos()["sol"]["fecha_as"] !== null ? substr(lancamento_tipos()["sol"]["fecha_as"], 0, 5) : "",
         "chave_agenda" => is_array($json_c) && !empty($json_c["private_key"]) && !empty($json_c["client_email"]) ? ["client_email" => $json_c["client_email"]] : null,
         "pasta" => __DIR__, "canais" => $CANAIS, "ancoras" => $ANCORAS, "repeticoes" => $REPETICOES, "tipos" => $tipos_c,
         "eventos" => array_map(function ($ev) {
@@ -3232,11 +3313,19 @@ if (!$token_ok && $quem === "") {
         $ate_p = date("Y-m-d", strtotime("+" . ((int)$dias_p - 1) . " days"));
     }
     $plano_p = plano_legivel($de_p, $ate_p);
-    $saida = ["modo" => valor("SELECT nome FROM modo WHERE id = ?", [modo_ativo()]), "escala_fim" => cfg("escala_fim") !== "" ? cfg("escala_fim") : null,
+    $rel_p = ctype_digit((string)($_REQUEST["relogio"] ?? "")) && (int)$_REQUEST["relogio"] > 0 ? (int)$_REQUEST["relogio"] : null;
+    $saida = ["modo" => valor("SELECT nome FROM modo WHERE id = ?", [modo_ativo()]),
+        // o dia a dia da página, uma página por vez (o "Mostrar até" da Configuração), só de um relógio com relogio=<id>
+        "dia_a_dia" => plano_pagina($de_p, $ate_p, $rel_p, (int)($_REQUEST["pagina"] ?? 1),
+            ctype_digit((string)($_REQUEST["por_pagina"] ?? "")) ? (int)$_REQUEST["por_pagina"] : plano_por_pagina()), "escala_fim" => cfg("escala_fim") !== "" ? cfg("escala_fim") : null,
         "plano_fim" => valor("SELECT MAX(data) FROM plano"), "hoje" => date("Y-m-d"), "plano" => $plano_p, "livres" => dias_livres($de_p, $ate_p),
         "resumo" => plano_resumo($plano_p, date("Y-m-d")),
         "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1]; },
             linhas("SELECT id, nome, disponivel FROM relogio ORDER BY nome"))];
+} elseif ($recurso === "proximos") {
+    // os Próximos dias da página Hoje, uma página (a troca de página não relê a página Hoje inteira)
+    $saida = plano_pagina(date("Y-m-d"), "", null, (int)($_REQUEST["pagina"] ?? 1),
+        ctype_digit((string)($_REQUEST["por_pagina"] ?? "")) ? (int)$_REQUEST["por_pagina"] : proximos_por_pagina());
 } elseif ($recurso === "rodizio_manual") {
     // o rodízio manual: os dias do período (de, ate), de 7 em 7 (pagina), com o que cada um tem e a escolha de partida
     [$de_m, $ate_m, $erro_m] = rodizio_manual_periodo($_REQUEST["de"] ?? "", $_REQUEST["ate"] ?? "");
@@ -3408,13 +3497,13 @@ if (!$token_ok && $quem === "") {
             "(nenhum)" => ["descricao" => "tudo o que está guardado, sem filtro (os relógios com os campos, as fórmulas, os avisos, os lançamentos, a previsão e a linha do tempo; modos, plano, configuração, eventos, agenda e o motor)",
                 "parametros" => ["foto" => "nao: sem as fotos em base64 (a resposta fica bem menor)"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?foto=nao\""],
-            "hoje" => ["descricao" => "tudo o que a página Hoje mostra: o dia e o relógio dele, os avisos de hoje (com o lançamento que resolve cada um), os próximos 62 dias do plano, os modos com os blocos, os grupos, a tabela dos relógios e os totais da coleção (quantos, disponíveis, em uso e o valor pago)",
-                "parametros" => [],
+            "hoje" => ["descricao" => "tudo o que a página Hoje mostra: o dia e o relógio dele, os avisos de hoje (com o lançamento que resolve cada um), os próximos 62 dias do plano, os Próximos dias da página (uma página: proximos), os modos com os blocos, os grupos, a tabela dos relógios e os totais da coleção (quantos, disponíveis, em uso e o valor pago)",
+                "parametros" => ["proximos_pagina" => "a página dos Próximos dias (padrão 1)", "por_pagina" => "quantos dias por página nos Próximos dias (sem ele: o Mostrar até da Configuração, padrão 7)"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=hoje\""],
             "ficha" => ["descricao" => "tudo o que o painel de um relógio mostra: agora, carga e de onde vem, situação, nota, quando entra no rodízio, compra, próximas manutenções, previsão, o gasto da bateria, quantos documentos o relógio tem em cada categoria, os tipos de lançamento dele (com a sessão aberta), as últimas leituras, as marcações dos últimos 14 dias, o resumo do histórico e o cadastro; sem relogio, só o cadastro de um relógio novo; relógio que não existe: 404",
                 "parametros" => ["relogio" => "o id do relógio (vazio: o cadastro de um relógio novo)"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=ficha&relogio=10\""],
-            "config" => ["descricao" => "tudo o que a página Configuração mostra: os valores (inclusive o caminho da chave do Google), os canais com a mensagem padrão e a personalizada de cada tipo de aviso, os eventos personalizados, a chave do Google lida ou não, como as mensagens e a agenda saem agora e a situação do cron (nunca rodou, parado ou rodando)",
+            "config" => ["descricao" => "tudo o que a página Configuração mostra: os valores (inclusive o caminho da chave do Google), o Mostrar até de cada lista (mostrar_ate), os canais com a mensagem padrão e a personalizada de cada tipo de aviso, os eventos personalizados, a chave do Google lida ou não, como as mensagens e a agenda saem agora e a situação do cron (nunca rodou, parado ou rodando)",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=config\""],
             "cron" => ["descricao" => "as execuções do cron, com o resumo do período (total, com atividade, com erro, a mais lenta) e páginas; sem atividade elas ficam 7 dias, com atividade ou erro, 1 ano",
@@ -3441,9 +3530,12 @@ if (!$token_ok && $quem === "") {
             "previsao" => ["descricao" => "a previsão da energia dos relógios com leitura (o smartwatch): quanto dura usando, quando chega ao limite parado, com quanto entra no próximo rodízio e quanto precisa, e a confiança da conta",
                 "parametros" => ["relogio" => "um id ou vários (vazio: todos)"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=previsao&relogio=10\""],
-            "plano" => ["descricao" => "o plano gravado (a escala de dois anos sai inteira), com o modo ativo, o fim da escala e o último dia gravado; cada dia com o relógio, o bloco, a origem (sorteio ou manual) e o lembrete; os dias livres do período (sem relógio e sem sorteio, para escolher à mão); e o resumo do período (de hoje em diante), como a página Plano mostra: quantos dias cada relógio tem, a porcentagem, o próximo dia, quantos à mão e os relógios sem nenhum dia",
-                "parametros" => ["de, ate" => "datas AAAA-MM-DD (vazio: o plano inteiro)", "dias" => "N: os próximos N dias, de hoje em diante (no lugar de de e ate); todos: de hoje até o fim do plano"],
+            "plano" => ["descricao" => "o plano gravado (a escala de dois anos sai inteira), o dia a dia da página Plano uma página por vez (dia_a_dia, com os dias livres no meio), com o modo ativo, o fim da escala e o último dia gravado; cada dia com o relógio, o bloco, a origem (sorteio ou manual) e o lembrete; os dias livres do período (sem relógio e sem sorteio, para escolher à mão); e o resumo do período (de hoje em diante), como a página Plano mostra: quantos dias cada relógio tem, a porcentagem, o próximo dia, quantos à mão e os relógios sem nenhum dia",
+                "parametros" => ["de, ate" => "datas AAAA-MM-DD (vazio: o plano inteiro)", "pagina" => "a página do dia_a_dia (padrão 1)", "por_pagina" => "quantos dias por página no dia_a_dia (sem ele: o Mostrar até da Configuração, padrão 31)", "relogio" => "o id: o dia_a_dia só com os dias desse relógio", "dias" => "N: os próximos N dias, de hoje em diante (no lugar de de e ate); todos: de hoje até o fim do plano"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=plano&de=2026-10-01&ate=2026-10-31\""],
+            "proximos" => ["descricao" => "os Próximos dias da página Hoje, uma página (de hoje até o fim do plano, com os dias livres no meio): a troca de página da tela lê só eles",
+                "parametros" => ["pagina" => "a página (padrão 1)", "por_pagina" => "quantos dias por página (sem ele: o Mostrar até da Configuração, padrão 7)"],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=proximos&pagina=2\""],
             "rodizio_manual" => ["descricao" => "o Rodízio manual (o quadro Modo de rodízio da página Hoje): os dias de um período, de 7 em 7, cada um com o que o plano tem agora e a escolha de partida do seletor (o relógio escolhido à mão, livre ou auto: Decida por mim), os relógios disponíveis e o critério do Decida por mim. Gravar: recurso=rodizio, acao=manual",
                 "parametros" => ["de, ate" => "datas AAAA-MM-DD, de hoje em diante, até 2 anos (obrigatórias; inválidas: 400 com erro)", "pagina" => "1, 2...: a página de 7 dias (padrão 1)"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=rodizio_manual&de=2026-12-20&ate=2027-01-05&pagina=2\""],
@@ -3583,6 +3675,7 @@ if (!$token_ok && $quem === "") {
                 "trocar_dia" => ["campos" => "data (AAAA-MM-DD, de hoje em diante), relogio_id: o relógio daquele dia, escolhido à mão (hoje: como o usando; na escala, ela é refeita a partir do dia); relogio_id 0: o dia volta a ser sorteado", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=trocar_dia -d data=2026-10-09 -d relogio_id=12 http://servidor/relojoeiro/api.php"],
                 "periodo" => ["campos" => "de, ate (AAAA-MM-DD, de hoje até 2 anos), relogio_ids[] (um ou vários, na ordem), dias_cada (padrão 1): os dias do período ficam escolhidos à mão, cada relógio dias_cada dias seguidos, e depois do último volta ao primeiro (hoje: o primeiro passa a ser o do pulso a partir de agora; na escala, ela é refeita a partir do começo do período)", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=periodo -d de=2026-12-20 -d ate=2027-01-05 -d \"relogio_ids[]=12\" -d \"relogio_ids[]=7\" -d dias_cada=2 http://servidor/relojoeiro/api.php"],
                 "periodo_sortear" => ["campos" => "de, ate: tudo o que o período tem, de amanhã em diante (à mão, sorteado ou livre), sai e ele é sorteado de novo (os dias escolhidos à mão e os livres ficam quando se sorteia de novo ou se monta a próxima semana)", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=periodo_sortear -d de=2026-12-20 -d ate=2027-01-05 http://servidor/relojoeiro/api.php"],
+                "apagar_tudo" => ["campos" => "hoje (1: Excluindo hoje, de hoje em diante; sem ele, de amanhã em diante): toda a programação (os dias escolhidos à mão, os sorteados e os livres) sai e o modo ativo monta o plano de novo; hoje, se mudar, o novo vai para o pulso a partir de agora", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=apagar_tudo -d hoje=1 http://servidor/relojoeiro/api.php"],
                 "manual" => ["campos" => "de, ate; dias[AAAA-MM-DD]: o id do relógio, auto (Decida por mim: o sistema decide ao gravar, pelo critério do recurso=rodizio_manual) ou livre (hoje não). O dia que não vem fica com a escolha de partida (dias[].escolha do recurso=rodizio_manual). Tudo fica gravado à mão, com o motivo; hoje, com outro relógio, ele passa a ser o do pulso a partir de agora; hoje em auto continua o que está. Fora do período, vale o modo ativo", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=manual -d de=2026-12-20 -d ate=2027-01-05 -d \"dias[2026-12-20]=12\" -d \"dias[2026-12-21]=auto\" -d \"dias[2026-12-25]=livre\" http://servidor/relojoeiro/api.php"],
                 "periodo_livre" => ["campos" => "de, ate: tudo o que o período tem, de amanhã em diante, sai e os dias ficam livres: sem relógio e sem sorteio (nem a escala), para escolher à mão (trocar_dia ou periodo num dia livre o tira de lá)", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=periodo_livre -d de=2026-12-20 -d ate=2027-01-05 http://servidor/relojoeiro/api.php"],
                 "proxima_semana" => ["campos" => "(nada): só no domingo, monta ou refaz a semana seguinte inteira; recusada na escala", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=proxima_semana http://servidor/relojoeiro/api.php"],
@@ -3593,7 +3686,7 @@ if (!$token_ok && $quem === "") {
                 "excluir" => ["campos" => "id (não o ativo)", "exemplo" => "curl -u lucas:senha -d recurso=modos -d acao=excluir -d id=6 http://servidor/relojoeiro/api.php"],
             ],
             "config" => [
-                "salvar" => ["campos" => "horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (HH:MM), pulso_auto_inicio e pulso_auto_fim (1 ou 0), carga_limiar (1 a 99), sol_limiar (1 a 99), url_sistema, painel_modo (lado: o relógio abre no painel ao lado da lista; flutuante: numa janela grande por cima da página), alerta_ativo e agenda_ativa (1 ou 0), agenda_id, agenda_chave, agenda_antecedencia (1 a 365), max_sem_uso, previsao_limite, medicao_janela_dias (1 a 3650: a janela da média do gasto medido), alerta_tipos[] e agenda_tipos[] (os tipos de aviso de cada canal: dia, vespera, os identificadores dos avisos, ev<id>), tg_padrao e ag_padrao, tg_proprio_<tipo> e ag_proprio_<tipo> (1 ou 0), tg_corpo_<tipo> e ag_corpo_<tipo>; só o que vier muda", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=salvar -d horario_manha=06:30 -d alerta_ativo=1 --data-urlencode \"tg_padrao={acao}: {relogio}\" -d tg_proprio_corda=1 --data-urlencode \"tg_corpo_corda=Corda no {relogio}!\" http://servidor/relojoeiro/api.php"],
+                "salvar" => ["campos" => "horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (HH:MM), pulso_auto_inicio e pulso_auto_fim (1 ou 0), carga_limiar (1 a 99), sol_limiar (1 a 99), url_sistema, painel_modo (lado: o relógio abre no painel ao lado da lista; flutuante: numa janela grande por cima da página), proximos_por_pagina e plano_por_pagina (1 a 366: o Mostrar até dos Próximos dias da página Hoje e do dia a dia da página Plano; padrão 7 e 31), alerta_ativo e agenda_ativa (1 ou 0), agenda_id, agenda_chave, agenda_antecedencia (1 a 365), max_sem_uso, previsao_limite, medicao_janela_dias (1 a 3650: a janela da média do gasto medido), alerta_tipos[] e agenda_tipos[] (os tipos de aviso de cada canal: dia, vespera, os identificadores dos avisos, ev<id>), tg_padrao e ag_padrao, tg_proprio_<tipo> e ag_proprio_<tipo> (1 ou 0), tg_corpo_<tipo> e ag_corpo_<tipo>; só o que vier muda", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=salvar -d horario_manha=06:30 -d alerta_ativo=1 --data-urlencode \"tg_padrao={acao}: {relogio}\" -d tg_proprio_corda=1 --data-urlencode \"tg_corpo_corda=Corda no {relogio}!\" http://servidor/relojoeiro/api.php"],
                 "testar_manha" => ["campos" => "(nada): manda a mensagem da manhã agora", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=testar_manha http://servidor/relojoeiro/api.php"],
                 "testar_noite" => ["campos" => "(nada): manda a mensagem da noite agora", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=testar_noite http://servidor/relojoeiro/api.php"],
                 "evento_salvar" => ["campos" => "evento_id (ou id; 0 cria), nome, ativo, repeticao (uma, diaria, semanal, mensal, intervalo), hora (HH:MM), data_inicio, dias_semana (1 a 7), dia_mes, intervalo_dias, relogio_id; o evento novo já vai pelo Telegram", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=evento_salvar -d evento_id=0 -d \"nome=Limpar as pulseiras\" -d repeticao=semanal -d \"dias_semana[]=1\" -d \"dias_semana[]=4\" -d hora=20:00 http://servidor/relojoeiro/api.php"],
@@ -3742,6 +3835,8 @@ if (!$token_ok && $quem === "") {
                 "config.medicao_janela_dias" => "a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a última)",
                 "config.mensagens_ativas" => "1: o Telegram (a API de alerta) envia; 0: não envia",
                 "config.painel_modo" => "como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela grande por cima da página); vazio: lado",
+                "config.proximos_por_pagina" => "o \"Mostrar até\" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)",
+                "config.plano_por_pagina" => "o \"Mostrar até\" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)",
                 "config.migracao_v10" => "marca de que a migração v10 foi aplicada (1)",
                 "config.migracao_v12" => "marca de que a migração v12 foi aplicada (1)",
                 "config.migracao_v16" => "marca de que a migração v16 foi aplicada (1)",
@@ -4145,6 +4240,22 @@ if (!$token_ok && $quem === "") {
                 "plano[].relogio" => "o nome",
                 "plano[].relogio_id" => "o relógio",
                 "livres[]" => "os dias livres dos próximos 62 dias (texto AAAA-MM-DD): sem relógio e sem sorteio, para escolher à mão; a tela os põe entre os dias do plano",
+                "proximos" => "os Próximos dias da página, uma página por vez (proximos_pagina=N; por_pagina=N, sem ele o \"Mostrar até\" da Configuração, proximos_por_pagina, padrão 7), de hoje até o fim do plano, com os dias livres no meio; a troca de página lê só eles (recurso=proximos)",
+                "proximos.por_pagina" => "quantos dias vêm por página (o \"Mostrar até\" da Configuração, ou o por_pagina pedido)",
+                "proximos.pagina" => "a página que veio (1: a primeira)",
+                "proximos.paginas" => "quantas páginas há",
+                "proximos.total" => "quantos dias há, somando todas as páginas (com os dias livres)",
+                "proximos.relogio" => "o filtro de relógio (o id; null: todos)",
+                "proximos.dias[]" => "os dias desta página, na ordem das datas, com os dias livres no meio",
+                "proximos.dias[].data" => "o dia (AAAA-MM-DD)",
+                "proximos.dias[].dia_semana" => "o dia da semana: 1 segunda ... 7 domingo",
+                "proximos.dias[].dia_semana_curto" => "o dia da semana curto: seg, ter, qua, qui, sex, sáb, dom",
+                "proximos.dias[].hoje" => "verdadeiro no dia de hoje",
+                "proximos.dias[].relogio_id" => "o relógio do dia (null num dia livre)",
+                "proximos.dias[].relogio" => "o nome dele (null num dia livre)",
+                "proximos.dias[].origem" => "sorteio, manual (escolhido à mão) ou livre (dia livre: sem relógio e sem sorteio, para escolher à mão)",
+                "proximos.dias[].acao" => "o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nenhum",
+                "proximos.dias[].motivo" => "por que o relógio está no dia; null: nenhum",
                 "proxima_semana.domingo" => "o domingo dela",
                 "proxima_semana.ja_montada" => "verdadeiro ou falso: a próxima semana já está no plano",
                 "proxima_semana.segunda" => "a segunda-feira da próxima semana (texto AAAA-MM-DD)",
@@ -4365,6 +4476,9 @@ if (!$token_ok && $quem === "") {
                 "canais.<canal>.nome" => "o nome do canal (Telegram, Google Agenda)",
                 "canais.<canal>.tipos" => "o nome do campo do formulário (acao=salvar) com os tipos que vão pelo canal (alerta_tipos[], agenda_tipos[])",
                 "chave_agenda" => "a chave do Google lida no caminho configurado; null: não lida",
+                "mostrar_ate" => "quantos dias as listas mostram por página (o \"Mostrar até\" da Configuração, já com o padrão)",
+                "mostrar_ate.proximos" => "os Próximos dias da página Hoje (proximos_por_pagina; padrão 7)",
+                "mostrar_ate.plano" => "o dia a dia da página Plano (plano_por_pagina; padrão 31)",
                 "chave_agenda.client_email" => "o e-mail da conta de serviço (compartilhar a agenda com ele)",
                 "cron_estado" => "a situação do cron, como a Configuração mostra (o cron roda a cada minuto)",
                 "cron_estado.crontab" => "a linha do crontab que roda o sistema (com a pasta dele)",
@@ -4393,6 +4507,8 @@ if (!$token_ok && $quem === "") {
                 "config.medicao_janela_dias" => "a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a última)",
                 "config.mensagens_ativas" => "1: o Telegram (a API de alerta) envia; 0: não envia",
                 "config.painel_modo" => "como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela grande por cima da página); vazio: lado",
+                "config.proximos_por_pagina" => "o \"Mostrar até\" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)",
+                "config.plano_por_pagina" => "o \"Mostrar até\" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)",
                 "config.migracao_v10" => "marca de que a migração v10 foi aplicada (1)",
                 "config.migracao_v12" => "marca de que a migração v12 foi aplicada (1)",
                 "config.migracao_v16" => "marca de que a migração v16 foi aplicada (1)",
@@ -4759,6 +4875,22 @@ if (!$token_ok && $quem === "") {
                 "plano[].data" => "o dia (texto AAAA-MM-DD)",
                 "hoje" => "hoje (texto AAAA-MM-DD)",
                 "livres[]" => "os dias livres do período (texto AAAA-MM-DD): sem relógio e sem sorteio, para escolher à mão (o \"Deixar o período livre\"); a página Plano os põe entre os dias do plano",
+                "dia_a_dia" => "o dia a dia da página Plano, uma página por vez (pagina=N; por_pagina=N, sem ele o \"Mostrar até\" da Configuração, plano_por_pagina, padrão 31), no período pedido, com os dias livres no meio; relogio=<id>: só os dias desse relógio (sem os livres)",
+                "dia_a_dia.por_pagina" => "quantos dias vêm por página (o \"Mostrar até\" da Configuração, ou o por_pagina pedido)",
+                "dia_a_dia.pagina" => "a página que veio (1: a primeira)",
+                "dia_a_dia.paginas" => "quantas páginas há",
+                "dia_a_dia.total" => "quantos dias há, somando todas as páginas (com os dias livres)",
+                "dia_a_dia.relogio" => "o filtro de relógio (o id; null: todos)",
+                "dia_a_dia.dias[]" => "os dias desta página, na ordem das datas, com os dias livres no meio",
+                "dia_a_dia.dias[].data" => "o dia (AAAA-MM-DD)",
+                "dia_a_dia.dias[].dia_semana" => "o dia da semana: 1 segunda ... 7 domingo",
+                "dia_a_dia.dias[].dia_semana_curto" => "o dia da semana curto: seg, ter, qua, qui, sex, sáb, dom",
+                "dia_a_dia.dias[].hoje" => "verdadeiro no dia de hoje",
+                "dia_a_dia.dias[].relogio_id" => "o relógio do dia (null num dia livre)",
+                "dia_a_dia.dias[].relogio" => "o nome dele (null num dia livre)",
+                "dia_a_dia.dias[].origem" => "sorteio, manual (escolhido à mão) ou livre (dia livre: sem relógio e sem sorteio, para escolher à mão)",
+                "dia_a_dia.dias[].acao" => "o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nenhum",
+                "dia_a_dia.dias[].motivo" => "por que o relógio está no dia; null: nenhum",
                 "plano[].motivo" => "por que este relógio saiu neste dia, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à mão); null: o dia foi gravado antes de o sistema guardar o motivo",
                 "plano[].origem" => "sorteio (pelo modo) ou manual (escolhido à mão: \"Usando hoje\" ou trocar_dia)",
                 "plano[].relogio" => "o nome dele",
@@ -4782,6 +4914,23 @@ if (!$token_ok && $quem === "") {
                 "relogios[].disponivel" => "verdadeiro ou falso: entra no rodízio (só o disponível pode ser escolhido para um dia)",
                 "relogios[].id" => "o número do relógio",
                 "relogios[].nome" => "o nome",
+            ],
+            "proximos" => [
+                "por_pagina" => "quantos dias vêm por página (o \"Mostrar até\" da Configuração, ou o por_pagina pedido)",
+                "pagina" => "a página que veio (1: a primeira)",
+                "paginas" => "quantas páginas há",
+                "total" => "quantos dias há, somando todas as páginas (com os dias livres)",
+                "relogio" => "o filtro de relógio (o id; null: todos)",
+                "dias[]" => "os dias desta página, na ordem das datas, com os dias livres no meio",
+                "dias[].data" => "o dia (AAAA-MM-DD)",
+                "dias[].dia_semana" => "o dia da semana: 1 segunda ... 7 domingo",
+                "dias[].dia_semana_curto" => "o dia da semana curto: seg, ter, qua, qui, sex, sáb, dom",
+                "dias[].hoje" => "verdadeiro no dia de hoje",
+                "dias[].relogio_id" => "o relógio do dia (null num dia livre)",
+                "dias[].relogio" => "o nome dele (null num dia livre)",
+                "dias[].origem" => "sorteio, manual (escolhido à mão) ou livre (dia livre: sem relógio e sem sorteio, para escolher à mão)",
+                "dias[].acao" => "o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nenhum",
+                "dias[].motivo" => "por que o relógio está no dia; null: nenhum",
             ],
             "rodizio_manual" => [
                 "de" => "o primeiro dia do período (AAAA-MM-DD)",
@@ -5256,7 +5405,7 @@ if (!$token_ok && $quem === "") {
 } else {
     $codigo = 404;
     $saida = ["erro" => "recurso desconhecido", "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "rodizio_manual", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],
