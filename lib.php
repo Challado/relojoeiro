@@ -2355,6 +2355,46 @@ function painel_modo()
     return cfg("painel_modo") === "flutuante" ? "flutuante" : "lado";
 }
 
+// O destaque no alto da página Hoje (a Configuração): o relógio do dia (dia, o padrão) ou o que está no pulso agora (pulso)
+function destaque_hoje()
+{
+    return cfg("destaque_hoje") === "pulso" ? "pulso" : "dia";
+}
+
+// Qual relógio vai no destaque da página Hoje, e por quê. $rels: os relógios com id e em_uso (o pulso aberto agora, como
+// a tabela mostra); $dia: o plano de hoje (ou null). No "pulso", o relógio no pulso agora (havendo mais de um, o que foi ao
+// pulso por último); ninguém no pulso, fica o relógio do dia, e o texto diz isso.
+// Devolve {mostra, relogio_id, e (dia ou pulso: o que o relógio do destaque é), do_dia, no_pulso, texto}
+function destaque_da_pagina_hoje($rels, $dia)
+{
+    $mostra = destaque_hoje();
+    $dia_id = $dia !== null ? (int)$dia["relogio_id"] : null;
+    $no_pulso = [];
+    foreach ($rels as $r) {
+        if ($r["em_uso"]) {
+            $no_pulso[] = (int)$r["id"];
+        }
+    }
+    $pulso_id = null;
+    if (count($no_pulso) > 0) {
+        // o último que foi ao pulso (a sessão aberta mais recente); sem sessão aberta (o pulso posto sozinho), o do dia
+        $ultimo = linha("SELECT l.relogio_id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE t.identificador = 'pulso' AND l.fim IS NULL
+            AND l.relogio_id IN (" . implode(",", $no_pulso) . ") ORDER BY l.inicio DESC, l.id DESC LIMIT 1");
+        $pulso_id = $ultimo ? (int)$ultimo["relogio_id"] : (in_array($dia_id, $no_pulso, true) ? $dia_id : $no_pulso[0]);
+    }
+    if ($mostra === "pulso" && $pulso_id !== null) {
+        $id = $pulso_id;
+        $e = $pulso_id === $dia_id ? "dia" : "pulso";
+        $texto = $pulso_id === $dia_id ? "O relógio do dia, no pulso agora." : "No pulso agora" . ($dia_id !== null ? "; o relógio do dia é outro." : "; hoje não tem relógio do dia.");
+    } else {
+        $id = $dia_id;
+        $e = "dia";
+        $texto = $mostra === "pulso" ? "Nenhum relógio no pulso agora: aqui, o relógio do dia." : "O relógio do dia.";
+    }
+    return ["mostra" => $mostra, "relogio_id" => $id, "e" => $e, "do_dia" => $id !== null && $id === $dia_id, "no_pulso" => $id !== null && $id === $pulso_id,
+        "texto" => $id === null ? "Nenhum relógio para hoje e nenhum no pulso." : $texto];
+}
+
 // A cópia de segurança dos documentos no banco tem três níveis, e o de cima vale sobre os de baixo:
 // 1. o sistema: o DOCUMENTOS_COPIA_BANCO do config.php. true: todo arquivo vai também para o banco; false: nenhum vai (nem
 //    o que o relógio ou o arquivo pedem); sem ele (null): quem decide é o relógio e o arquivo;

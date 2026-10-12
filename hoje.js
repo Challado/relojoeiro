@@ -57,18 +57,27 @@ function recarregarHoje() {
     dadosHoje = d;
     paginaProximos = d.proximos.pagina;
     // o quadro "Hoje": o relógio do dia, até quando, o tipo, o lembrete, e ao lado as informações dele e a foto
+    // o relógio do destaque (a Configuração: o do dia ou o que está no pulso agora): a API diz qual é
     var t = null;
     d.relogios.forEach(function (x) {
-      if (x.de_hoje) {
+      if (x.destaque) {
         t = x;
       }
     });
+    var dz = d.destaque;
     var texto = el("p", {"class": "data"}, DIAS_SEMANA[diaDaSemana(d.data)] + ", " + dataBr(d.data) + " · " + h(d.modo ? d.modo.nome : "sem modo"));
-    if (d.dia) {
+    if (t && dz.e === "pulso") {
+      // no pulso agora, e não é o do dia: o nome dele, "no pulso agora", e embaixo o relógio do dia
+      texto += el("h1", {}, el("a", {"href": "index.php?r=" + t.id, "data-abrir": t.id}, h(t.nome)))
+        + el("p", {"class": "periodo"}, el("span", {"class": "janela"}, "no pulso agora") + " " + h(t.tipo))
+        + el("p", {"class": "acao"}, d.dia ? "Relógio do dia: " + el("a", {"href": "index.php?r=" + d.dia.relogio_id, "data-abrir": d.dia.relogio_id}, h(d.dia.relogio)) + " (" + h(d.dia.ate) + ")"
+          : "Hoje não tem relógio do dia.");
+    } else if (d.dia) {
       texto += el("h1", {}, el("a", {"href": "index.php?r=" + d.dia.relogio_id, "data-abrir": d.dia.relogio_id}, h(d.dia.relogio)))
         + el("p", {"class": "periodo"}, el("span", {"class": "janela"}, h(d.dia.ate)) + " " + h(t ? t.tipo : ""))
         + (d.dia.acao ? el("p", {"class": "acao"}, h(d.dia.acao)) : "")
-        + (d.dia.motivo ? el("p", {"class": "motivo"}, el("strong", {}, "Por que ele: ") + h(d.dia.motivo)) : "");
+        + (d.dia.motivo ? el("p", {"class": "motivo"}, el("strong", {}, "Por que ele: ") + h(d.dia.motivo)) : "")
+        + (dz.mostra === "pulso" && !dz.no_pulso ? el("p", {"class": "nota"}, h(dz.texto)) : "");
     } else {
       texto += el("h1", {}, "Nenhum relógio para hoje")
         + el("p", {}, "Nenhum relógio disponível no grupo deste dia. Mude o grupo no modo de rodízio ou marque um relógio como disponível.");

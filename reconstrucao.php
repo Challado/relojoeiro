@@ -237,6 +237,13 @@ const RECONSTRUCAO_TELAS = [
             ],
             "partes" => [
                 ["titulo" => "O relógio do dia (um cartão grande, no alto do meio)", "itens" => [
+                    "O relógio do cartão é o de destaque.relogio_id da API (o que tem relogios[].destaque): o relógio do dia, ou, "
+                        . "com a Configuração \"Destaque no alto da página Hoje\" em \"O relógio no pulso agora\" (destaque_hoje = pulso), o "
+                        . "que está no pulso agora. Quando ele não é o do dia (destaque.e = pulso): o nome dele em h1 (link que abre o "
+                        . "painel), a janela de data com \"no pulso agora\" e o tipo dele, e em âmbar \"Relógio do dia: <nome, link que abre "
+                        . "o painel> (<até>)\" (ou \"Hoje não tem relógio do dia.\"), sem o motivo. Com o destaque no pulso e ninguém no "
+                        . "pulso, o cartão do dia como sempre e, embaixo do motivo, o destaque.texto em cinza (\"Nenhum relógio no pulso "
+                        . "agora: aqui, o relógio do dia.\"). Os pares, o botão Pôs/Tirou do pulso e a foto são do relógio do cartão.",
                     "À esquerda: \"<Dia da semana>, DD/MM/AAAA · <nome do modo>\" em cinza; o nome do relógio do dia em h1 (link que "
                         . "abre o painel); a janela de data com o \"até\" (\"só hoje\", \"até sexta, 02/10\") e o tipo dele; o lembrete do dia "
                         . "em âmbar (\"Pôr no winder: <relógio> (8 h)\"); \"Por que ele: <motivo>\" (o motivo em cinza).",
@@ -516,10 +523,11 @@ const RECONSTRUCAO_TELAS = [
                         . "esquecida fecha às (hora).",
                     "Limites e contas: Carregar quando a carga chegar a (%) (1 a 99, padrão 20); Solar: pôr no sol quando chegar a "
                         . "(%) (1 a 99, padrão 70); Gasto medido: média dos últimos (dias) (1 a 3650, padrão 90).",
-                    "Telas: Abrir o relógio na página Hoje (Ao lado da lista; Numa janela flutuante, grande); \"Próximos dias "
-                        . "(página Hoje): mostrar até (dias por página)\" e \"Plano: mostrar até (dias por página)\" (números de 1 a 366, "
-                        . "com o valor de mostrar_ate da API: padrão 7 e 31); Endereço do sistema (a âncora {link}); e a nota sobre o "
-                        . "Mostrar até (passando disso, as páginas embaixo: <, os números, >).",
+                    "Telas: Abrir o relógio na página Hoje (Ao lado da lista; Numa janela flutuante, grande); Destaque no alto da "
+                        . "página Hoje (O relógio do dia; O relógio no pulso agora: destaque_hoje dia ou pulso, com a nota \"Destaque: "
+                        . "...\"); \"Próximos dias (página Hoje): mostrar até (dias por página)\" e \"Plano: mostrar até (dias por página)\" "
+                        . "(números de 1 a 366, com o valor de mostrar_ate da API: padrão 7 e 31); Endereço do sistema (a âncora {link}); "
+                        . "e a nota sobre o Mostrar até (passando disso, as páginas embaixo: <, os números, >).",
                     "Cron: \"Cron rodando: última execução às HH:MM.\" (nota) ou, em âmbar, \"O cron ainda não rodou\" / \"O cron não "
                         . "roda desde ...\" com a linha do crontab em código; o erro guardado numa caixa (\"O cron está com erro\"); o link "
                         . "\"Ver todas as execuções do cron\" e o \"Registro da última rodada\" (abre e fecha).",
@@ -1357,7 +1365,8 @@ function reconstrucao()
                 "A especificação completa, tela por tela, está em telas (abaixo): o visual com os valores exatos (cores, letras, controles, "
                     . "componentes, larguras), o menu, e cada página com o endereço, o que ela lê e grava na API, e as partes em ordem com cada "
                     . "tabela, campo, botão e mensagem. Aqui, o resumo.",
-                "Hoje: o relógio do dia (com o Pôs e o Tirou), \"Hoje é dia de\" (os avisos com o botão que resolve), os próximos dias com o motivo e o "
+                "Hoje: no alto, o destaque: o relógio do dia ou, com destaque_hoje = pulso, o que está no pulso agora (a API escolhe: destaque.relogio_id) "
+                    . "(com o Pôs e o Tirou), \"Hoje é dia de\" (os avisos com o botão que resolve), os próximos dias com o motivo e o "
                     . "trocar por…, o modo de rodízio (troca ali mesmo), e a tabela da coleção com filtros e ordenação; clicar num relógio abre o painel "
                     . "dele, ao lado da lista ou numa janela flutuante (painel_modo).",
                 "O painel (e a ficha, a mesma coisa numa página): a cabeça (foto, grupo, nome, marcas), quadros alinhados numa grade (Agora, Previsão, "
