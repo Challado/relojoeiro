@@ -204,14 +204,17 @@ const RECONSTRUCAO_TELAS = [
             "id" => "hoje",
             "pagina" => "index.php",
             "titulo" => "Relógio de hoje",
-            "endereco" => "index.php; index.php?r=<id> abre o relógio no painel; index.php?novo=1 abre o cadastro de um novo",
+            "endereco" => "index.php; index.php?r=<id> abre o relógio no painel; index.php?novo=1 abre o cadastro de um novo; index.php#manual "
+                . "abre o quadro Modo de rodízio no Rodízio manual",
             "le" => [
                 "recurso=hoje",
                 "recurso=ficha (o painel)",
+                "recurso=rodizio_manual (o Rodízio manual, de 7 em 7 dias)",
             ],
             "grava" => [
                 "lancamento: iniciar, encerrar, lancar, periodo, alterar, excluir",
-                "rodizio: trocar_dia, modo, resortear, resortear_hoje, proxima_semana, usando",
+                "rodizio: trocar_dia, modo, resortear, resortear_hoje, proxima_semana, usando, manual, periodo_sortear, "
+                    . "periodo_livre",
                 "relogio: salvar, foto, remover_foto, excluir",
             ],
             "partes" => [
@@ -267,6 +270,27 @@ const RECONSTRUCAO_TELAS = [
                         . "(resortear); fora da escala, \"a próxima semana (DD/MM a DD/MM)\" (proxima_semana; só no domingo: nos outros "
                         . "dias a opção vem desativada com \"— disponível no domingo\"). Embaixo, a explicação da opção escolhida; cada uma "
                         . "tem a sua confirmação.",
+                    "Rodízio manual: a última opção da lista \"Modo de rodízio\" (não é um modo: o modo de sempre continua valendo "
+                        . "fora do período). Escolhida, a explicação diz \"Você escolhe o relógio de cada dia de um período. Ponha o "
+                        . "começo e o fim e clique em OK: os dias aparecem de 7 em 7, cada um com a lista dos relógios, \"Decida por mim\" "
+                        . "(o sistema escolhe) e \"Sem relógio (dia livre)\". Fora do período, continua valendo o modo de rodízio de sempre "
+                        . "(<modo>).\"; somem a coluna da direita, o \"Aplicar modo\" com a nota e o \"Sortear de novo\"; aparece, abaixo de "
+                        . "uma linha, o formulário do período: \"De\" (data, de hoje em diante, já com hoje), \"Até\" (data) e o botão \"OK\". "
+                        . "O endereço index.php#manual abre o quadro já no Rodízio manual (o link da página Plano).",
+                    "OK lê recurso=rodizio_manual (de, ate, pagina) e mostra a tabela compacta (até 46rem): Dia (\"DD/MM\" e o dia da "
+                        . "semana por extenso, menor, com \" · hoje\"; o número em safira no fim de semana), No plano agora (o relógio com "
+                        . "\"à mão\" ou \"sorteado\" pequeno em âmbar, \"dia livre\" ou \"—\" em cinza) e Relógio do dia (uma lista: \"Decida por "
+                        . "mim\", o grupo \"Relógios\" com os disponíveis por nome e, menos hoje, \"Sem relógio (dia livre)\"; de partida, a "
+                        . "escolha que a API manda). Mais de 7 dias: embaixo, os botões leves \"‹ Anterior\", os números das páginas (a 1, "
+                        . "a última e até 2 de cada lado da atual, com \"…\" nos saltos; a atual em safira) e \"Próxima ›\"; cada um relê a "
+                        . "API. O que se escolhe fica guardado na tela ao trocar de página. Embaixo, \"Página N de M · <n> dias, de "
+                        . "DD/MM/AAAA a DD/MM/AAAA. O que você escolhe fica guardado enquanto você anda pelas páginas; nada muda antes de "
+                        . "gravar.\", os botões \"Gravar o rodízio manual\" (rodizio manual com de, ate e dias[data] dos que você mudou; "
+                        . "confirma \"Gravar o rodízio manual de DD/MM/AAAA a DD/MM/AAAA? Os dias ficam com os relógios escolhidos; os de "
+                        . "\"Decida por mim\" são decididos agora pelo sistema.\") e, leves, \"Sortear de novo o período\" (periodo_sortear) e "
+                        . "\"Deixar o período livre\" (periodo_livre), cada um com a sua confirmação; e as notas com o critério do Decida "
+                        . "por mim (o texto da API) e o que fazem os dois botões leves. Recusado: o motivo em âmbar acima da tabela, e as "
+                        . "escolhas ficam; gravado: o recado no alto da página e a página remontada.",
                 ]],
                 ["titulo" => "Relógios (a tabela da coleção)", "itens" => [
                     "Título \"Relógios\" com \"<mostrados> de <total> relógios · <n> em uso\" em cinza e, à direita, os botões \"Limpar "
@@ -379,7 +403,7 @@ const RECONSTRUCAO_TELAS = [
                 "recurso=plano (com dias=30, 90, 365, 730 ou todos)",
             ],
             "grava" => [
-                "rodizio: trocar_dia, periodo, periodo_sortear, periodo_livre",
+                "rodizio: trocar_dia",
             ],
             "partes" => [
                 ["titulo" => "Cabeça e filtros", "itens" => [
@@ -388,19 +412,9 @@ const RECONSTRUCAO_TELAS = [
                         . "Filtros lado a lado: Período (Próximos 30 dias, Próximos 90 dias (o padrão), Próximo ano, Próximos 2 anos, "
                         . "Tudo; trocar relê a API) e Relógio (Todos e cada um; filtra o dia a dia na tela).",
                 ]],
-                ["titulo" => "Escolher os relógios de um período (um quadro que abre e fecha, fechado ao abrir a página)", "itens" => [
-                    "Num formulário em grade: \"De\" e \"Até\" (datas, de hoje em diante, obrigatórias), \"Dias seguidos de cada\" "
-                        . "(número de 1 a 365, padrão 1) e \"Incluir relógio\" (uma lista com \"escolha…\" e os relógios disponíveis): "
-                        . "escolher um põe o nome no fim de uma lista numerada embaixo (\"1. Gama ×\", \"2. Beta ×\"; o × tira; vazia: "
-                        . "\"Nenhum relógio ainda: escolha em \"Incluir relógio\".\" em cinza). A nota explica a ordem (um por dia, ou os "
-                        . "dias seguidos de cada, e depois do último volta ao primeiro), que os dias ficam escolhidos à mão e que sortear "
-                        . "de novo não mexe neles, e o que fazem os outros dois botões. Botões \"Aplicar ao período\" (rodizio periodo, "
-                        . "com de, ate, relogio_ids[] na ordem e dias_cada; confirma \"Os dias do período ficam com estes relógios, "
-                        . "escolhidos à mão. Continuar?\") e, leves, \"Sortear de novo o período\" (rodizio periodo_sortear com de e ate; "
-                        . "confirma \"Tudo o que o período tem (à mão ou sorteado) sai e ele é sorteado de novo. Continuar?\") e \"Deixar o "
-                        . "período livre\" (rodizio periodo_livre; confirma \"Tudo o que o período tem sai e os dias ficam livres, sem "
-                        . "relógio, para você escolher à mão. Continuar?\"). O recado da API aparece no alto; recusado, o quadro fica "
-                        . "aberto.",
+                ["titulo" => "O período à mão", "itens" => [
+                    "Uma nota: \"Para escolher os relógios de um período, dia a dia: na página Hoje, no quadro Modo de rodízio, "
+                        . "escolha \"Rodízio manual\".\" (o link Hoje vai para index.php#manual).",
                 ]],
                 ["titulo" => "Resumo do período (<n> dias)", "itens" => [
                     "Tabela Relógio, Dias, %, Próximo dia (\"DD/MM/AAAA seg\"), À mão; do que tem mais dias ao que tem menos. "
@@ -1176,6 +1190,19 @@ function reconstrucao()
                     . "sorteio). Os dias manuais e os livres de amanhã em diante ficam quando se sorteia de novo ou se monta a próxima semana (hoje, "
                     . "o sortear de novo sorteia); trocar de modo refaz os sorteados. A API dá os dias livres em plano.livres e hoje.livres (as telas os "
                     . "põem entre os dias do plano, como \"livre: escolha à mão\").",
+                "O Rodízio manual (a última opção da lista Modo de rodízio da página Hoje; não é um modo: fora do período vale o modo ativo): de e "
+                    . "até (de hoje até 2 anos); recurso=rodizio_manual dá os dias de 7 em 7 (pagina), cada um com o que o plano tem e a escolha de "
+                    . "partida do seletor: o relógio escolhido à mão, livre (dia livre) ou auto (Decida por mim: o dia sorteado ou sem relógio). "
+                    . "rodizio acao=manual grava o período inteiro: dias[data] = o id, auto ou livre (hoje não); o dia que não vem fica com a escolha "
+                    . "de partida. Os dias com relógio ficam manual (\"Escolhido à mão no rodízio manual de DD/MM a DD/MM.\"); os livres vão para "
+                    . "plano_livre; hoje com outro relógio passa a ser o do pulso a partir de agora (hoje em auto continua o que está); na escala, ela "
+                    . "é refeita a partir do começo. O Decida por mim decide ao gravar e grava manual, com o motivo (\"Decida por mim: a maior nota "
+                    . "(62,9), entre 4 candidatos. O de ontem (X) ficou de fora.\" ou \"Decida por mim, pela garantia de rodízio: parado há 33 dias, "
+                    . "além do limite de 15 dias sem uso, ...\"): de hoje até o fim do período, dia a dia, cada dia vira uma sessão simulada no pulso "
+                    . "(os do plano antes do período, os escolhidos e os decididos), e no dia auto: os disponíveis, menos o de ontem e o escolhido "
+                    . "para amanhã (se sobrar outro); a garantia de rodízio na frente (o mais tempo parado além de max_sem_uso); senão a maior nota no "
+                    . "começo do uso do dia; empate: o menor id. A resposta diz quantos dias foram escolhidos, decididos, livres e quantos ficaram "
+                    . "como já estavam.",
                 "A escala inteligente (um modo com escala_dias de 7 a 730) planeja tudo de uma vez simulando dia a dia: a nota de cada relógio com o "
                     . "estado simulado daquele dia; a escolha (o smartwatch fica os dias que a bateria aguenta, até 7); a sessão no pulso no horário de uso "
                     . "e o efeito dela em todos; os avisos (se o escolhido vai precisar de carga ou corda, anota a ação no dia e simula o lançamento que "

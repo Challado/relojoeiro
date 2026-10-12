@@ -243,6 +243,36 @@ A escolha dentro do bloco pode ser pela **maior nota**, por **sorteio pela nota*
 **fila** (quem está esperando há mais tempo). Com o **ciclo** ligado, um relógio só volta depois que todos os disponíveis do
 bloco passaram.
 
+### O rodízio manual
+
+No quadro **Modo de rodízio** da página Hoje, a última opção da lista é **Rodízio manual**: você mesmo escolhe o relógio de
+cada dia de um período (as férias, uma viagem, um mês inteiro). Ponha o começo (**De**) e o fim (**Até**) e clique em **OK**:
+
+- os dias aparecem **de 7 em 7**, com a data, o dia da semana, o que o plano tem agora nesse dia e um seletor;
+- com mais de 7 dias, embaixo ficam as páginas: **‹ Anterior**, **1 2 3 …**, **Próxima ›**. O que você escolhe numa página
+  fica guardado enquanto você anda pelas outras; nada muda antes de gravar;
+- o seletor de cada dia tem os relógios disponíveis, **Decida por mim** e **Sem relógio (dia livre)**. De partida, ele mostra
+  o relógio que o dia já tem escolhido à mão; um dia livre aparece como livre; e o resto (sorteado ou ainda sem relógio), como
+  *Decida por mim*;
+- **Gravar o rodízio manual** grava o período inteiro: os dias com relógio ficam escolhidos à mão, os de *Decida por mim* são
+  decididos na hora pelo sistema e também ficam gravados (o motivo de cada um aparece no plano), e os livres ficam sem
+  relógio. Se hoje está no período e você escolheu outro relógio, ele passa a ser o do pulso a partir de agora;
+- **Sortear de novo o período** e **Deixar o período livre** apagam o que o período tem, de amanhã em diante: o primeiro
+  sorteia outra vez pelo modo de sempre; o segundo deixa os dias sem relógio, para você escolher.
+
+Fora do período, continua valendo o modo de rodízio de sempre. Os dias escolhidos à mão ficam mesmo quando você sorteia de
+novo ou o cron monta a semana seguinte; na escala inteligente, ela é refeita em volta deles.
+
+**O critério do *Decida por mim*:**
+1. a **nota dos critérios** (os que você cadastra em **Critérios**: dias sem uso, equilíbrio, preferência, carga...), calculada
+   no começo de cada dia, com os dias anteriores do período (os que você escolheu e os que ele decidiu) já contados como uso;
+2. a **garantia de rodízio** vem na frente: quem passou do limite de dias sem uso entra primeiro, o mais tempo parado antes;
+3. o relógio de **ontem** e o de **amanhã** ficam de fora, se houver outro. Assim um relógio não se repete colado ao que você
+   escolheu;
+4. no empate, ganha o cadastrado primeiro.
+
+Hoje, com *Decida por mim*, continua o relógio que já está no plano.
+
 ### A escala inteligente
 
 É o modo mais completo. Em vez de sortear semana a semana, ele **planeja de 7 dias a 2 anos de uma vez**, simulando dia a dia:
@@ -768,8 +798,8 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 
 | Página | Para que serve |
 |---|---|
-| **Hoje** (`index.php`) | A tela principal. Mostra o relógio do dia, os avisos de hoje (atrasados e em breve) com o botão que resolve cada um, os próximos dias do plano e o modo de rodízio, que se troca ali mesmo. Abaixo fica a tabela da coleção, com filtros e ordenação por tipo, estado, carga, última vez usado, próxima manutenção, data e valor da compra. Clicar num relógio abre o **painel** dele: ao lado da lista ou numa janela flutuante grande, como estiver na Configuração (**Abrir o relógio na página Hoje**). |
-| **Plano** (`plano.php`) | Em **Escolher os relógios de um período**: de, até, os relógios na ordem e quantos dias seguidos cada um (as férias com estes três, um por dia); **Sortear de novo o período** (apaga o que ele tem, à mão ou sorteado, e sorteia outra vez) e **Deixar o período livre** (apaga e não sorteia: os dias ficam *livres*, para escolher à mão). O plano inteiro, de hoje até o fim (na escala inteligente, um ou dois anos), mês a mês: o relógio de cada dia, o lembrete e o **trocar por…**. Filtra por período (30 dias, 90, um ano, dois, tudo) e por relógio, e mostra quantos dias cada relógio tem no período, a porcentagem e o próximo dia dele. |
+| **Hoje** (`index.php`) | A tela principal. Mostra o relógio do dia, os avisos de hoje (atrasados e em breve) com o botão que resolve cada um, os próximos dias do plano e o modo de rodízio, que se troca ali mesmo (e, nele, o **Rodízio manual**: os relógios de um período, dia a dia; veja [O rodízio manual](#o-rodízio-manual)). Abaixo fica a tabela da coleção, com filtros e ordenação por tipo, estado, carga, última vez usado, próxima manutenção, data e valor da compra. Clicar num relógio abre o **painel** dele: ao lado da lista ou numa janela flutuante grande, como estiver na Configuração (**Abrir o relógio na página Hoje**). |
+| **Plano** (`plano.php`) | O plano inteiro, de hoje até o fim (na escala inteligente, um ou dois anos), mês a mês: o relógio de cada dia, o lembrete e o **trocar por…**. Filtra por período (30 dias, 90, um ano, dois, tudo) e por relógio, e mostra quantos dias cada relógio tem no período, a porcentagem e o próximo dia dele. Para escolher os relógios de um período, dia a dia, ela leva ao **Rodízio manual** (na página Hoje). |
 | **Painel / Ficha** (`ficha.php`) | Tudo sobre um relógio, em quadros alinhados numa grade (cada quadro com o rótulo de cada informação à esquerda e o valor à direita): foto, estado agora (*"Em repouso desde 21:40"*, *"No sol desde 09:12"*), carga, nota com a conta, próxima entrada no plano, previsão da bateria, o gasto da bateria no pulso e fora (o medido e o do cadastro), as últimas leituras, a linha do tempo recente, o quadro **Compra** (o valor pago, a loja, a garantia e o **custo por uso**: o valor pago dividido pelos dias de uso), o quadro **Documentos** (quantos em cada categoria, e o link para a página Documentos), o quadro **Marcar** e o cadastro completo, editável. O **Marcar** é um menu só, *O que você quer marcar?*: pôr ou tirar do pulso, do winder, do sol ou do carregador, corda, troca de pilha, leitura de carga, um período que já passou ou corrigir uma marcação; embaixo aparecem só os campos daquilo. |
 | **Documentos** (`documentos.php`) | Os documentos de um relógio (ou de todos), aberta pela ficha: o envio de vários arquivos, uma aba por categoria, a galeria das fotos em tela cheia com apresentação, os vídeos em sequência na ordem escolhida, o visualizador de PDF, o resumo da NF-e do XML, e o download do resto. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 | **Histórico** (`historico.php`) | A linha do tempo de um relógio: em uso pelo rodízio, no pulso fora do rodízio, no winder, no sol, em repouso, e cada corda, carga e troca de pilha. Mostra quanto tempo e que porcentagem ficou em cada estado, com filtro de período e de estado. |
@@ -832,6 +862,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | *(nenhum)* | tudo o que está guardado: a árvore, os campos, os tipos de lançamento, as fórmulas, os avisos, os relógios (com os valores, as fórmulas calculadas, os avisos, os lançamentos, a previsão, a foto e os dados dos documentos), as categorias dos documentos, os modos, o plano, a configuração, os eventos, a agenda, os critérios, o cron, os usuários (com o hash da senha: a senha não existe no sistema) e as migrações. `foto=nao` deixa as fotos de fora. |
 | `hoje` | o que a página Hoje mostra: o relógio do dia, os avisos, os próximos dias, os modos, a tabela da coleção e os totais dela (quantos relógios, disponíveis, em uso e o valor pago) |
 | `ficha` | o que o painel de um relógio mostra (`relogio=<id>`; sem ele, só o cadastro de um relógio novo): agora, carga, nota, previsão, gasto da bateria, quantos documentos em cada categoria, marcações recentes, cadastro |
+| `rodizio_manual` | o Rodízio manual: os dias de um período (`de=`, `ate=`) de 7 em 7 (`pagina=`), cada um com o que o plano tem agora e a escolha de partida do seletor (o relógio escolhido à mão, `livre` ou `auto`: Decida por mim), os relógios disponíveis e o critério do Decida por mim |
 | `plano` | o plano gravado, dia a dia, com o motivo de cada escolha, e o resumo do período como a página Plano mostra (quantos dias cada relógio tem, a porcentagem, o próximo dia, quantos à mão, quem ficou sem dia). `de=` e `ate=` (AAAA-MM-DD; sem eles, o plano inteiro) ou `dias=N` (os próximos N dias; `dias=todos`, de hoje até o fim) |
 | `avisos` | os avisos de todos os relógios, do mais urgente ao mais distante |
 | `previsao` | a previsão da bateria dos relógios com leitura de carga (`relogio=` um id ou vários separados por vírgula; sem ele, todos) |
@@ -863,7 +894,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `documentos` | `enviar` (um ou vários arquivos, com a categoria, o título, a data, a descrição e, numa foto, a miniatura), `alterar`, `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (só sem documentos) |
 | `lancamento` | `lancar` (corda, carga, pilha...), `iniciar` e `encerrar` (pôr e tirar do pulso, do winder, do sol, do carregador), `alternar` (fecha a sessão se está aberta, abre se está fechada: um botão só no celular), `periodo` (um período que já passou), `alterar`, `excluir`. Em todas, `relogio_id=hoje` é o relógio do dia |
-| `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `periodo` (os relógios de um período, na ordem: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (apaga o que o período tem e sorteia de novo), `periodo_livre` (apaga e deixa os dias livres, sem sorteio), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |
+| `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `periodo` (os relógios de um período, na ordem: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (apaga o que o período tem e sorteia de novo), `periodo_livre` (apaga e deixa os dias livres, sem sorteio), `manual` (o Rodízio manual: `de`, `ate`, `dias[AAAA-MM-DD]` = o id do relógio, `auto` ou `livre`), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (grupos) e `relogios` (o grupo de cada relógio) |
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (e `ordem` nos campos) |
@@ -1161,13 +1192,14 @@ ajustam). Num dia escolhido à mão, a mesma lista tem **voltar a sortear**. Tam
 ou de amanhã.
 
 **E se eu quiser escolher eu mesmo os relógios de um período?**
-Na página **Plano**, abra **Escolher os relógios de um período**: ponha o começo e o fim, inclua os relógios na ordem que quiser
-(um só, ou vários) e, se quiser, quantos dias seguidos cada um fica. **Aplicar ao período** grava os dias como escolhidos à mão:
-com vários relógios, eles se revezam na ordem da lista, e depois do último volta o primeiro. Esses dias ficam mesmo quando você
-sorteia de novo ou monta a próxima semana.
+No quadro **Modo de rodízio** da página Hoje, escolha **Rodízio manual**, ponha o começo e o fim e clique em **OK**: os dias
+aparecem de 7 em 7 (com as páginas embaixo), e em cada um você escolhe o relógio, **Decida por mim** ou **Sem relógio (dia
+livre)**. **Gravar o rodízio manual** grava tudo. Veja [O rodízio manual](#o-rodízio-manual). Esses dias ficam mesmo quando
+você sorteia de novo ou monta a próxima semana. (Pela API, há também a ação `periodo`, que reveza uma lista de relógios na
+ordem, N dias seguidos cada.)
 
 **Não gostei do que saiu num período. Como apago?**
-No mesmo quadro, ponha o começo e o fim e escolha: **Sortear de novo o período** apaga tudo o que o período tem (escolhido à
+No **Rodízio manual**, ponha o começo e o fim, clique em **OK** e escolha: **Sortear de novo o período** apaga tudo o que o período tem (escolhido à
 mão ou sorteado) e sorteia outra vez; **Deixar o período livre** apaga e não sorteia nada: os dias aparecem como *livre:
 escolha à mão*, e nem o sorteio nem a escala põem relógio neles. Cada dia livre se escolhe no **escolher…** do próprio dia (ou
 com os relógios de um período); **↺ voltar a sortear** devolve o dia ao sorteio. Os dois valem de amanhã em diante (hoje já tem

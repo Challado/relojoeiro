@@ -1289,3 +1289,14 @@ img[src*="recurso=foto&"] { cursor: zoom-in; }
   font-size: 1.4rem; line-height: 1; background: #fff; color: #222; border: 1px solid rgba(0, 0, 0, .2); box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
 }
 body.com-foto-ampliada { overflow: hidden; }
+
+/* o rodízio manual (quadro Modo de rodízio, opção "Rodízio manual"): o período, os dias de 7 em 7 com o seletor de cada
+   um, as páginas e os botões de gravar */
+.modo-rodizio form.rodizio-manual { display: flex; flex-direction: column; gap: .7rem; margin-top: 1rem; padding-top: .9rem; border-top: 1px solid var(--aco); }
+.rodizio-manual .manual-periodo { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .6rem 1rem; }
+.rodizio-manual .manual-tabela { width: 100%; max-width: 46rem; }
+.rodizio-manual .manual-tabela select { width: 100%; min-width: 12rem; }
+.rodizio-manual .manual-tabela tr.fds td:first-child { color: var(--safira); }
+.rodizio-manual nav.paginas { margin: .2rem 0 0; align-items: center; }
+nav.paginas button { min-height: 0; padding: .3rem .65rem; font-size: .9rem; }
+nav.paginas .reticencias { border: 0; padding: .3rem .2rem; }

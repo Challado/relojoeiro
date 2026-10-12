@@ -1674,7 +1674,9 @@ function op_criterios($acao, $d)
 // usando; 0: o dia volta a ser sorteado), proxima_semana (só no domingo: monta ou refaz a semana seguinte inteira),
 // periodo (de, ate, relogio_ids em ordem, dias_cada: os dias do período escolhidos à mão, em rodízio entre eles),
 // periodo_sortear (de, ate: tudo o que o período tem, de amanhã em diante, sai e ele é sorteado de novo), periodo_livre (de,
-// ate: tudo sai e os dias ficam livres: sem relógio e sem sorteio, para escolher à mão). Os dias escolhidos à mão e os
+// ate: tudo sai e os dias ficam livres: sem relógio e sem sorteio, para escolher à mão), manual (o rodízio manual: de, ate,
+// dias[AAAA-MM-DD] = o id do relógio, auto (Decida por mim: o sistema decide ao gravar, rodizio_manual_decidir) ou livre;
+// o dia que não vem fica com a escolha de partida; tudo grava como escolhido à mão). Os dias escolhidos à mão e os
 // livres, de amanhã em diante, ficam quando se sorteia de novo ou se monta a próxima semana.
 // Na escala inteligente: sortear de novo refaz a escala (do mesmo jeito: de amanhã, ou inclusive hoje); usando segura o
 // escolhido nos dias que faltavam do bloco de hoje e refaz a escala depois deles; a próxima semana não existe (a escala
@@ -1909,6 +1911,86 @@ function op_rodizio($acao, $d)
                     . implode(", ", array_column($rels_p, "nome")) . (count($rels_p) > 1 ? ", nessa ordem, " . ((int)$cada === 1 ? "um por dia" : $cada . " dias seguidos cada") : "") . ")."
                     . ($escala ? " A escala foi refeita a partir de " . $de_p->format("d/m") . "." : "");
             }
+        }
+    } elseif ($acao === "manual") {
+        // o rodízio manual: de, ate, dias[AAAA-MM-DD] = o id do relógio, "auto" (Decida por mim) ou "livre" (dia livre).
+        // O dia que não vem fica com a escolha de partida (a escolha à mão que ele já tem; senão, Decida por mim)
+        [$de_m, $ate_m, $erro_m] = rodizio_manual_periodo($d["de"] ?? "", $d["ate"] ?? "");
+        $vindos = is_array($d["dias"] ?? null) ? $d["dias"] : [];
+        $disp = [];
+        foreach (linhas("SELECT id, nome FROM relogio WHERE disponivel = 1") as $r) {
+            $disp[(int)$r["id"]] = $r["nome"];
+        }
+        $escolhas = [];
+        if ($erro_m !== null) {
+            $erros[] = $erro_m;
+        } else {
+            foreach (array_keys($vindos) as $k) {
+                if (!is_string($k) || $k < $de_m->format("Y-m-d") || $k > $ate_m->format("Y-m-d") || DateTimeImmutable::createFromFormat("!Y-m-d", $k) === false) {
+                    $erros[] = "O dia " . $k . " está fora do período.";
+                }
+            }
+            for ($dia = $de_m; $dia <= $ate_m; $dia = $dia->modify("+1 day")) {
+                $data = $dia->format("Y-m-d");
+                $v = array_key_exists($data, $vindos) ? trim((string)$vindos[$data]) : null;
+                if ($v === null) {
+                    $escolhas[$data] = rodizio_manual_escolha(plano_do_dia($data), dia_livre($data));
+                } elseif ($v === "auto" || $v === "livre") {
+                    $escolhas[$data] = $v;
+                } elseif (ctype_digit($v) && isset($disp[(int)$v])) {
+                    $escolhas[$data] = (int)$v;
+                } else {
+                    $erros[] = $dia->format("d/m") . ": escolha um relógio disponível, \"auto\" (Decida por mim) ou \"livre\".";
+                }
+                if (($escolhas[$data] ?? null) === "livre" && $dia == $hoje) {
+                    $erros[] = "Hoje não pode ficar livre: hoje já tem o relógio do pulso (troque por outro, ou Decida por mim).";
+                }
+            }
+        }
+        if (count($erros) === 0) {
+            $decididos = rodizio_manual_decidir($de_m, $ate_m, $escolhas);
+            $motivo_m = "Escolhido à mão no rodízio manual de " . $de_m->format("d/m") . " a " . $ate_m->format("d/m") . ".";
+            $n = ["mao" => 0, "decididos" => 0, "livres" => 0, "mantidos" => 0];
+            foreach ($escolhas as $data => $e) {
+                $eh_hoje = $data === $hoje->format("Y-m-d");
+                // o dia que não veio e já estava escolhido à mão (ou livre) fica como estava
+                $mantido = !array_key_exists($data, $vindos) && $e !== "auto";
+                if ($e === "livre") {
+                    sql("DELETE FROM plano WHERE data = ?", [$data]);
+                    sql("INSERT IGNORE INTO plano_livre (data, criado) VALUES (?, NOW())", [$data]);
+                    $n[$mantido ? "mantidos" : "livres"]++;
+                    continue;
+                }
+                sql("DELETE FROM plano_livre WHERE data = ?", [$data]);
+                [$rid, $motivo] = is_int($e) ? [$e, $motivo_m] : ($decididos[$data] ?? [null, null]);
+                if ($rid === null) {
+                    // hoje, no Decida por mim: continua o que está no plano
+                    continue;
+                }
+                $n[$mantido ? "mantidos" : (is_int($e) ? "mao" : "decididos")]++;
+                $antes = plano_do_dia($data);
+                if ($eh_hoje) {
+                    if (!$antes || (int)$antes["relogio_id"] !== $rid) {
+                        $troca_hoje($rid, $motivo);
+                    }
+                } elseif (!$antes || (int)$antes["relogio_id"] !== $rid || $antes["origem"] !== "manual" || !is_int($e)) {
+                    sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, NULL, 'manual', ?, NOW())", [$data, $rid, $motivo]);
+                }
+            }
+            if ($escala) {
+                // a escala refeita a partir do começo do período: os dias dele ficam, e o resto se ajusta
+                gerar_escala($de_m);
+            }
+            $partes = [];
+            foreach ([["mao", "escolhido por você", "escolhidos por você"], ["decididos", "decidido pelo sistema", "decididos pelo sistema"], ["livres", "livre", "livres"],
+                ["mantidos", "como já estava", "como já estavam"]] as [$k, $um, $varios]) {
+                if ($n[$k] > 0) {
+                    $partes[] = $n[$k] . " " . ($n[$k] === 1 ? "dia " . $um : "dias " . $varios);
+                }
+            }
+            $msg = "Rodízio manual de " . $de_m->format("d/m") . " a " . $ate_m->format("d/m") . " gravado" . (count($partes) > 0 ? ": " . implode(", ", $partes) : "") . "."
+                . ($escala ? " A escala foi refeita a partir de " . $de_m->format("d/m") . "." : "")
+                . " Fora do período, vale o modo de rodízio de sempre.";
         }
     } elseif ($acao === "proxima_semana") {
         if ($escala) {

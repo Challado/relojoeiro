@@ -134,6 +134,13 @@
  *                            "proximo", "a_mao"}], "sem_dias": [{"id", "nome"}]}, "relogios"}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=plano&de=2026-10-01&ate=2026-10-31"
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=plano&dias=90"
+ *   recurso=rodizio_manual   de, ate (AAAA-MM-DD, de hoje em diante, até 2 anos), [pagina: 1, 2...]: o Rodízio manual (o quadro Modo de
+ *                            rodízio da página Hoje): os dias do período de 7 em 7, cada um com o que o plano tem agora e a escolha de
+ *                            partida do seletor (o relógio escolhido à mão, livre ou auto: Decida por mim): {"de", "ate", "total_dias",
+ *                            "por_pagina", "pagina", "paginas", "dias": [{"data", "dia_semana", "dia_semana_nome", "hoje", "relogio_id",
+ *                            "relogio", "origem", "motivo", "livre", "escolha"}], "relogios": [os disponíveis: {"id", "nome"}],
+ *                            "decida_por_mim" (o critério)}. Período inválido: 400 com "erro". Gravar: recurso=rodizio, acao=manual
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=rodizio_manual&de=2026-12-20&ate=2027-01-05&pagina=2"
  *   recurso=eventos          os eventos personalizados: {"eventos": [{"id", "nome", "ativo", "repeticao" (uma, diaria,
  *                            semanal, mensal, intervalo), "descricao" ("seg, qua 20:00"), "hora", "data_inicio", "dias_semana",
  *                            "dia_mes", "intervalo_dias", "relogio_id", "relogio", "telegram" e "agenda" (se vai por cada canal, em
@@ -455,8 +462,12 @@
  *                             seguidos, e depois do último volta ao primeiro), periodo_sortear (de, ate: tudo o que o período tem,
  *                             de amanhã em diante, à mão, sorteado ou livre, sai e ele é sorteado de novo), periodo_livre (de, ate:
  *                             tudo sai e os dias ficam livres: sem relógio e sem sorteio, para escolher à mão; trocar_dia ou periodo
- *                             num dia livre o tira de lá). Os dias escolhidos à mão e os livres, de amanhã em diante, ficam quando se
- *                             sorteia de novo ou se monta a próxima semana.
+ *                             num dia livre o tira de lá), manual (o Rodízio manual: de, ate; dias[AAAA-MM-DD]: o id do relógio,
+ *                             auto (Decida por mim: o sistema decide ao gravar, pelo critério do recurso=rodizio_manual) ou livre
+ *                             (hoje não); o dia que não vem fica com a escolha de partida (dias[].escolha); tudo fica gravado à mão,
+ *                             com o motivo; hoje, com outro relógio, ele passa a ser o do pulso a partir de agora; hoje em auto
+ *                             continua o que está; fora do período, vale o modo ativo). Os dias escolhidos à mão e os livres, de
+ *                             amanhã em diante, ficam quando se sorteia de novo ou se monta a próxima semana.
  *                             Na escala inteligente: sortear de novo refaz a escala; usando segura o escolhido nos dias que
  *                             faltavam do bloco de hoje e refaz a escala depois deles; proxima_semana é recusada
  *                            Ex. modo: curl -u lucas:senha -d recurso=rodizio -d acao=modo -d modo=2 -d "bloco_alvo[8]=1" -d "bloco_cada_dia[8]=1" -d selecao=ponderado -d max_sem_uso=21 http://servidor/relojoeiro/api.php
@@ -468,6 +479,7 @@
  *                            Ex. periodo: curl -u lucas:senha -d recurso=rodizio -d acao=periodo -d de=2026-12-20 -d ate=2027-01-05 -d "relogio_ids[]=12" -d "relogio_ids[]=7" -d dias_cada=2 http://servidor/relojoeiro/api.php
  *                            Ex. periodo_sortear: curl -u lucas:senha -d recurso=rodizio -d acao=periodo_sortear -d de=2026-12-20 -d ate=2027-01-05 http://servidor/relojoeiro/api.php
  *                            Ex. periodo_livre: curl -u lucas:senha -d recurso=rodizio -d acao=periodo_livre -d de=2026-12-20 -d ate=2027-01-05 http://servidor/relojoeiro/api.php
+ *                            Ex. manual: curl -u lucas:senha -d recurso=rodizio -d acao=manual -d de=2026-12-20 -d ate=2027-01-05 -d "dias[2026-12-20]=12" -d "dias[2026-12-21]=auto" -d "dias[2026-12-25]=livre" http://servidor/relojoeiro/api.php
  *   recurso=modos             salvar (id: 0 cria; nome, selecao: inteligente, ponderado, aleatorio ou fifo; escala_dias: vazio ou 0
  *                             = sorteio pelos blocos, 7 a 730 = escala inteligente com esse horizonte; blocos: [{nome, dias:
  *                             [1..7], no_id (0: todos), um_por: bloco ou dia, relogio_id: fixo (0: sorteia)}], substitui os
@@ -1924,6 +1936,33 @@
  *     relogios[].id                  o número do relógio
  *     relogios[].nome                o nome
  *
+ *   recurso=rodizio_manual
+ *     de                             o primeiro dia do período (AAAA-MM-DD)
+ *     ate                            o último dia do período (AAAA-MM-DD)
+ *     total_dias                     quantos dias o período tem
+ *     por_pagina                     quantos dias vêm por página: 7
+ *     pagina                         a página que veio (1: a primeira)
+ *     paginas                        quantas páginas o período tem
+ *     dias[]                         os dias desta página, em ordem
+ *     dias[].data                    o dia (AAAA-MM-DD)
+ *     dias[].dia_semana              o dia da semana: 1 segunda ... 7 domingo
+ *     dias[].dia_semana_nome         o dia da semana por extenso (segunda, terça... domingo)
+ *     dias[].hoje                    verdadeiro no dia de hoje (hoje não pode ficar livre: já tem o relógio do pulso)
+ *     dias[].relogio_id              o relógio que o plano tem agora nesse dia (null: nenhum)
+ *     dias[].relogio                 o nome dele (null: nenhum)
+ *     dias[].origem                  como ele entrou no plano: sorteio ou manual (escolhido à mão; o Decida por mim gravado também fica
+ *                                    manual); null: sem relógio
+ *     dias[].motivo                  por que ele está no dia (o motivo do sorteio, da escolha à mão ou do Decida por mim); null: nenhum
+ *     dias[].livre                   verdadeiro se o dia está livre (sem relógio e sem sorteio)
+ *     dias[].escolha                 o que o seletor do dia mostra de partida, e o que vale se o dia não vier no acao=manual: o id do
+ *                                    relógio escolhido à mão, livre, ou auto (Decida por mim: o dia sorteado ou ainda sem relógio)
+ *     relogios[]                     os relógios disponíveis, para o seletor de cada dia (por nome)
+ *     relogios[].id                  o número do relógio
+ *     relogios[].nome                o nome
+ *     decida_por_mim                 o critério do Decida por mim, em texto: a nota dos critérios recalculada dia a dia com os dias
+ *                                    anteriores do período contados como uso, a garantia de rodízio na frente, sem o relógio de ontem nem o
+ *                                    de amanhã (se houver outro), empate pelo cadastrado primeiro; decidido ao gravar
+ *
  *   recurso=eventos
  *     eventos[]                      os eventos personalizados (avisos seus, com horário e repetição próprios)
  *     eventos[].agenda               verdadeiro ou falso: o evento vai para o Google Agenda
@@ -3198,6 +3237,15 @@ if (!$token_ok && $quem === "") {
         "resumo" => plano_resumo($plano_p, date("Y-m-d")),
         "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1]; },
             linhas("SELECT id, nome, disponivel FROM relogio ORDER BY nome"))];
+} elseif ($recurso === "rodizio_manual") {
+    // o rodízio manual: os dias do período (de, ate), de 7 em 7 (pagina), com o que cada um tem e a escolha de partida
+    [$de_m, $ate_m, $erro_m] = rodizio_manual_periodo($_REQUEST["de"] ?? "", $_REQUEST["ate"] ?? "");
+    if ($erro_m !== null) {
+        $codigo = 400;
+        $saida = ["erro" => $erro_m];
+    } else {
+        $saida = rodizio_manual_pagina($de_m, $ate_m, (int)($_REQUEST["pagina"] ?? 1));
+    }
 } elseif ($recurso === "eventos") {
     $saida = ["eventos" => array_map("evento_legivel", eventos_com_dias(linhas("SELECT * FROM evento_personalizado ORDER BY nome")))];
 } elseif ($recurso === "agenda") {
@@ -3396,6 +3444,9 @@ if (!$token_ok && $quem === "") {
             "plano" => ["descricao" => "o plano gravado (a escala de dois anos sai inteira), com o modo ativo, o fim da escala e o último dia gravado; cada dia com o relógio, o bloco, a origem (sorteio ou manual) e o lembrete; os dias livres do período (sem relógio e sem sorteio, para escolher à mão); e o resumo do período (de hoje em diante), como a página Plano mostra: quantos dias cada relógio tem, a porcentagem, o próximo dia, quantos à mão e os relógios sem nenhum dia",
                 "parametros" => ["de, ate" => "datas AAAA-MM-DD (vazio: o plano inteiro)", "dias" => "N: os próximos N dias, de hoje em diante (no lugar de de e ate); todos: de hoje até o fim do plano"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=plano&de=2026-10-01&ate=2026-10-31\""],
+            "rodizio_manual" => ["descricao" => "o Rodízio manual (o quadro Modo de rodízio da página Hoje): os dias de um período, de 7 em 7, cada um com o que o plano tem agora e a escolha de partida do seletor (o relógio escolhido à mão, livre ou auto: Decida por mim), os relógios disponíveis e o critério do Decida por mim. Gravar: recurso=rodizio, acao=manual",
+                "parametros" => ["de, ate" => "datas AAAA-MM-DD, de hoje em diante, até 2 anos (obrigatórias; inválidas: 400 com erro)", "pagina" => "1, 2...: a página de 7 dias (padrão 1)"],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=rodizio_manual&de=2026-12-20&ate=2027-01-05&pagina=2\""],
             "eventos" => ["descricao" => "os eventos personalizados, com quando disparam, se vão pelo Telegram e pela agenda, as 10 próximas ocorrências e os disparos",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=eventos\""],
@@ -3532,6 +3583,7 @@ if (!$token_ok && $quem === "") {
                 "trocar_dia" => ["campos" => "data (AAAA-MM-DD, de hoje em diante), relogio_id: o relógio daquele dia, escolhido à mão (hoje: como o usando; na escala, ela é refeita a partir do dia); relogio_id 0: o dia volta a ser sorteado", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=trocar_dia -d data=2026-10-09 -d relogio_id=12 http://servidor/relojoeiro/api.php"],
                 "periodo" => ["campos" => "de, ate (AAAA-MM-DD, de hoje até 2 anos), relogio_ids[] (um ou vários, na ordem), dias_cada (padrão 1): os dias do período ficam escolhidos à mão, cada relógio dias_cada dias seguidos, e depois do último volta ao primeiro (hoje: o primeiro passa a ser o do pulso a partir de agora; na escala, ela é refeita a partir do começo do período)", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=periodo -d de=2026-12-20 -d ate=2027-01-05 -d \"relogio_ids[]=12\" -d \"relogio_ids[]=7\" -d dias_cada=2 http://servidor/relojoeiro/api.php"],
                 "periodo_sortear" => ["campos" => "de, ate: tudo o que o período tem, de amanhã em diante (à mão, sorteado ou livre), sai e ele é sorteado de novo (os dias escolhidos à mão e os livres ficam quando se sorteia de novo ou se monta a próxima semana)", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=periodo_sortear -d de=2026-12-20 -d ate=2027-01-05 http://servidor/relojoeiro/api.php"],
+                "manual" => ["campos" => "de, ate; dias[AAAA-MM-DD]: o id do relógio, auto (Decida por mim: o sistema decide ao gravar, pelo critério do recurso=rodizio_manual) ou livre (hoje não). O dia que não vem fica com a escolha de partida (dias[].escolha do recurso=rodizio_manual). Tudo fica gravado à mão, com o motivo; hoje, com outro relógio, ele passa a ser o do pulso a partir de agora; hoje em auto continua o que está. Fora do período, vale o modo ativo", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=manual -d de=2026-12-20 -d ate=2027-01-05 -d \"dias[2026-12-20]=12\" -d \"dias[2026-12-21]=auto\" -d \"dias[2026-12-25]=livre\" http://servidor/relojoeiro/api.php"],
                 "periodo_livre" => ["campos" => "de, ate: tudo o que o período tem, de amanhã em diante, sai e os dias ficam livres: sem relógio e sem sorteio (nem a escala), para escolher à mão (trocar_dia ou periodo num dia livre o tira de lá)", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=periodo_livre -d de=2026-12-20 -d ate=2027-01-05 http://servidor/relojoeiro/api.php"],
                 "proxima_semana" => ["campos" => "(nada): só no domingo, monta ou refaz a semana seguinte inteira; recusada na escala", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=proxima_semana http://servidor/relojoeiro/api.php"],
             ],
@@ -4731,6 +4783,29 @@ if (!$token_ok && $quem === "") {
                 "relogios[].id" => "o número do relógio",
                 "relogios[].nome" => "o nome",
             ],
+            "rodizio_manual" => [
+                "de" => "o primeiro dia do período (AAAA-MM-DD)",
+                "ate" => "o último dia do período (AAAA-MM-DD)",
+                "total_dias" => "quantos dias o período tem",
+                "por_pagina" => "quantos dias vêm por página: 7",
+                "pagina" => "a página que veio (1: a primeira)",
+                "paginas" => "quantas páginas o período tem",
+                "dias[]" => "os dias desta página, em ordem",
+                "dias[].data" => "o dia (AAAA-MM-DD)",
+                "dias[].dia_semana" => "o dia da semana: 1 segunda ... 7 domingo",
+                "dias[].dia_semana_nome" => "o dia da semana por extenso (segunda, terça... domingo)",
+                "dias[].hoje" => "verdadeiro no dia de hoje (hoje não pode ficar livre: já tem o relógio do pulso)",
+                "dias[].relogio_id" => "o relógio que o plano tem agora nesse dia (null: nenhum)",
+                "dias[].relogio" => "o nome dele (null: nenhum)",
+                "dias[].origem" => "como ele entrou no plano: sorteio ou manual (escolhido à mão; o Decida por mim gravado também fica manual); null: sem relógio",
+                "dias[].motivo" => "por que ele está no dia (o motivo do sorteio, da escolha à mão ou do Decida por mim); null: nenhum",
+                "dias[].livre" => "verdadeiro se o dia está livre (sem relógio e sem sorteio)",
+                "dias[].escolha" => "o que o seletor do dia mostra de partida, e o que vale se o dia não vier no acao=manual: o id do relógio escolhido à mão, livre, ou auto (Decida por mim: o dia sorteado ou ainda sem relógio)",
+                "relogios[]" => "os relógios disponíveis, para o seletor de cada dia (por nome)",
+                "relogios[].id" => "o número do relógio",
+                "relogios[].nome" => "o nome",
+                "decida_por_mim" => "o critério do Decida por mim, em texto: a nota dos critérios recalculada dia a dia com os dias anteriores do período contados como uso, a garantia de rodízio na frente, sem o relógio de ontem nem o de amanhã (se houver outro), empate pelo cadastrado primeiro; decidido ao gravar",
+            ],
             "eventos" => [
                 "eventos[]" => "os eventos personalizados (avisos seus, com horário e repetição próprios)",
                 "eventos[].agenda" => "verdadeiro ou falso: o evento vai para o Google Agenda",
@@ -5181,7 +5256,7 @@ if (!$token_ok && $quem === "") {
 } else {
     $codigo = 404;
     $saida = ["erro" => "recurso desconhecido", "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "rodizio_manual", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],
