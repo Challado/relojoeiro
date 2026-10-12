@@ -121,7 +121,9 @@ const RECONSTRUCAO_TELAS = [
                 . "semana em #f4f6f8; o relógio de hoje com uma faixa safira de 3px na borda esquerda, e um com aviso pendente com a "
                 . "faixa âmbar. Tabela compacta (dos cadastros): 0,88rem, sem fundo próprio.",
             "Etiqueta de estado: pílula com cantos arredondados por inteiro, 0,8rem negrito, preenchimento 0,12rem 0,55rem, cores "
-                . "em \"cores\".",
+                . "em \"cores\". Numa linha só; nos pares rótulo/valor (o quadro Agora do painel estreito) e nas marcas da cabeça, a "
+                . "comprida (\"Em repouso desde 25/09 20:40\") quebra a linha nos espaços (nunca no meio da palavra), com cantos de 0,8rem, "
+                . "e fica dentro do quadro.",
             "Barra de carga: trilho aço com 7px de altura (44px na tabela, 56 a 70px nos quadros), preenchido em safira até a "
                 . "porcentagem (âmbar com carga até 20%), seguido do número em negrito (\"68%\"; estimado: \"~68%\") e, menor, de onde a "
                 . "carga vem.",
@@ -156,6 +158,14 @@ const RECONSTRUCAO_TELAS = [
                 . "cima, pela direita, com até 30rem, cantos 16px à esquerda e o fundo escurecido. De 1200px em diante: o painel ao lado.",
             "Nenhuma página rola de lado, em nenhum tamanho. A mesma informação em todos os tamanhos: nada é escondido por falta de "
                 . "espaço (a tabela dos relógios vira cartões com todos os campos quando as 11 colunas não cabem).",
+            "Nada sai da caixa em que está, de 320px (celular pequeno) a 1920px: as grades de colunas automáticas encolhem a coluna "
+                . "mínima até a largura da tela; um grupo de campos (fieldset) e os menus dentro dele encolhem com a tela (um menu de "
+                . "nome comprido não vaza); o menu de escolher o relógio da Ficha fica na largura da tela; o código comprido da Ajuda "
+                . "(uma URL de exemplo) quebra a linha. Os botões nunca partem o texto em duas linhas: os da foto (Abrir, Trocar, Remover "
+                . "foto) ficam numa linha, na largura da foto (6,5rem no painel ao lado e no celular); o botão de marcar do quadro "
+                . "Marcar fica numa linha própria, embaixo dos campos. Até 420px, as tabelas do painel e o resumo do Plano ficam mais "
+                . "justas (0,82rem, 0,3rem entre as colunas) e quebram dentro da célula. No Histórico do celular, as colunas são 25%, "
+                . "25%, 18% e 32% (o Estado, a mais larga).",
         ]],
         ["id" => "comportamento", "titulo" => "Comportamento comum", "itens" => [
             "Cada página entrega só o esqueleto; o JavaScript dela lê a API e monta a tela. Gravar é um formulário que manda um "
@@ -884,7 +894,8 @@ const RECONSTRUCAO_CODIGO = [
     "nginx-relogios.conf" => ["servidor", "o nginx: o mesmo bloqueio do .htaccess"],
     "testes/cenario.php" => ["testes", "o roteiro de aceitação: faz pela API o que uma pessoa faz e tira a fotografia de tudo o que a API devolve"],
     "testes/comparar.php" => ["testes", "compara duas fotografias do cenário (os quatro bancos, ou a reescrita com a versão atual)"],
-    "testes/README.md" => ["testes", "como rodar o teste de paridade"],
+    "testes/layout.cjs" => ["testes", "a conferência do layout: todas as telas num navegador, em 15 tamanhos, procurando o que quebra"],
+    "testes/README.md" => ["testes", "como rodar o teste de paridade e a conferência do layout"],
     "README.md" => ["documentacao", "o manual inteiro: para quem usa, a instalação, a API e como é por dentro"],
     "PORTE.md" => ["documentacao", "o que o sistema antigo fazia e onde está no novo"],
     "LICENSE" => ["documentacao", "a licença"],
@@ -1382,6 +1393,9 @@ function reconstrucao()
                     . "PostgreSQL, SQLite e Firebird, num banco recém-instalado, tem de dar as mesmas respostas; e a reescrita, as mesmas da versão atual.",
                 "Além disso: nenhuma escrita do roteiro recusada; o dicionário da ajuda explica todos os campos das respostas; as telas sem erro de "
                     . "JavaScript e sem rolagem lateral no celular, no tablet e no computador.",
+                "testes/layout.cjs abre todas as telas (com os quadros recolhidos abertos e cada opção dos menus que mostram partes) num navegador, "
+                    . "em 15 tamanhos de 320 a 1920px, e mede o que quebra: a página que rola de lado, o elemento que sai da caixa em que está, a "
+                    . "etiqueta partida, o texto cortado, o botão com o texto em duas linhas e o que fica por cima de outro. O esperado: 0 problemas.",
             ]),
         ],
         // cada página com os arquivos dela (lidos da própria página: nunca ficam atrás)

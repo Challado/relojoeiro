@@ -1459,7 +1459,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | [`reconstrucao.php`](reconstrucao.php) | o roteiro para reescrever o sistema do zero (o `recurso=reconstrucao` da API) |
 | [`.htaccess`](.htaccess) | a proteção dos arquivos internos no Apache (e o login do site com o PHP por FastCGI) |
 | [`nginx-relogios.conf`](nginx-relogios.conf) | o bloco do nginx que protege os arquivos internos |
-| [`testes/`](testes/) | o teste de paridade: o mesmo roteiro pela API em cada banco, e o comparador das respostas |
+| [`testes/`](testes/) | o teste de paridade: o mesmo roteiro pela API em cada banco, e o comparador das respostas; e a conferência do layout de todas as telas, do celular ao computador (`layout.cjs`) |
 | [`docs/telas/`](docs/telas/) | as capturas de tela deste README |
 | [`PORTE.md`](PORTE.md) | o registro do porte da versão anterior |
 
@@ -1477,7 +1477,7 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
 4. Mudou o banco? Crie uma `migracao_vN.sql` e registre em `$MIGRACOES` no `lib.php`: a estrutura no dialeto do MySQL, os
    dados em SQL comum aos quatro bancos (veja [Atualizações do banco](#atualizações-do-banco)).
 5. **Rode o teste de paridade** ([`testes/`](testes/)) nos quatro bancos antes de mandar: o resultado tem de ser
-   `0 diferenças graves`.
+   `0 diferenças graves`. Mexeu nas telas? Rode também a conferência do layout (`node testes/layout.cjs`): `0 problemas`.
 6. Abra o pull request contando o que muda para quem usa e como você testou.
 
 ---

@@ -26,3 +26,6 @@ Thumbs.db
 *~
 .idea/
 .vscode/
+
+# as capturas e o relatório da conferência do layout (testes/layout.cjs)
+testes/layout/

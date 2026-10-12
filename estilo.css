@@ -135,7 +135,9 @@ td.acoes { display: flex; gap: .75rem; align-items: center; }
 td.acoes a { color: var(--safira); }
 
 .opcoes { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin-bottom: 1rem; }
-fieldset { border: 0; padding: 0; margin: 0 0 1rem; display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; }
+fieldset { border: 0; padding: 0; margin: 0 0 1rem; display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; min-width: 0; }
+/* (o navegador dá ao fieldset a largura mínima do conteúdo: sem o min-width 0, um menu de nome comprido vaza a caixa) */
+fieldset select, fieldset input, fieldset label { max-width: 100%; min-width: 0; }
 fieldset label, .cadastro label { display: flex; flex-direction: column; gap: .25rem; font-size: .95rem; }
 .cadastro { display: grid; gap: .9rem; max-width: 28rem; }
 .cadastro label.check { flex-direction: row; align-items: center; gap: .5rem; }
@@ -281,7 +283,8 @@ a.nome-hoje:hover { text-decoration: underline; }
 /* ---------- ficha do relógio ---------- */
 main.ficha { max-width: 72rem; }
 .seletor { display: flex; align-items: center; gap: .6rem; margin-bottom: 1.25rem; }
-.seletor select { min-width: 18rem; }
+.seletor select { min-width: 0; width: 18rem; max-width: 100%; flex: 0 1 auto; }
+.seletor { min-width: 0; }
 .ficha-foto img:not(.previa) { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 14px; border: 1px solid var(--aco-escuro); background: #fff; }
 .sem-foto {
   aspect-ratio: 1;
@@ -370,7 +373,12 @@ p.conta-carga {
   font-weight: 600;
   white-space: nowrap;
   border: 1px solid transparent;
+  max-width: 100%;
+  overflow-wrap: normal;
 }
+/* nos pares rótulo/valor (o quadro Agora do painel estreito), a etiqueta comprida ("Em repouso desde 25/09 20:40") quebra a linha
+   nos espaços e continua dentro do quadro */
+dl.pares dd .estado, .marcas .estado { white-space: normal; border-radius: .8rem; }
 .estado-uso { background: #e3f3e6; color: #1e6b2e; border-color: #a9d8b3; }
 .estado-repouso { background: #fbe8e6; color: #9b2c22; border-color: #efb5ae; }
 /* numa sessão que não é o pulso (no sol, no winder, no carregador): a cor das outras sessões no histórico */
@@ -470,9 +478,9 @@ input, select, textarea, button { box-sizing: border-box; max-width: 100%; }
 
 .modelos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: .8rem; }
 .campo-modelo { margin-bottom: .8rem; }
-.rotulo-modelo { display: flex; justify-content: space-between; align-items: center; gap: .6rem; margin-bottom: .3rem; }
+.rotulo-modelo { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .3rem .6rem; margin-bottom: .3rem; }
 .rotulo-modelo label { font-size: .92rem; font-weight: 600; }
-.rotulo-modelo select.ancora { width: auto; max-width: 13rem; font-size: .82rem; padding: .2rem .35rem; }
+.rotulo-modelo select.ancora { width: auto; max-width: min(13rem, 100%); font-size: .82rem; padding: .2rem .35rem; }
 .config textarea {
   font: .9rem/1.45 ui-monospace, "Cascadia Mono", Consolas, monospace;
   padding: .5rem .6rem;
@@ -549,7 +557,9 @@ nav.paginas span.atual { background: var(--safira); color: #fff; border-color: v
 .regra-pulso { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .7rem; font-size: .92rem; }
 .regra-pulso label { display: flex; align-items: center; gap: .3rem; flex-direction: row !important; }
 .detalhe .cadastro .regra-pulso input { width: 4rem !important; }
-.modo-rodizio .bloco-5x2 { display: flex; align-items: flex-end; gap: .6rem; }
+.modo-rodizio .bloco-5x2 { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .6rem; min-width: 0; max-width: 100%; }
+.modo-rodizio .bloco-5x2 > label:not(.check) { flex: 1 1 12rem; min-width: 0; }
+.modo-rodizio .bloco-5x2 select { width: 100%; max-width: 100%; }
 .modo-rodizio .bloco-5x2 label.check { flex-direction: row; align-items: center; gap: .3rem; padding-bottom: .35rem; }
 
 /* coluna "Em": quanto falta para a próxima manutenção */
@@ -603,7 +613,7 @@ main.pagina-historico { max-width: 80rem; }
 .cabeca-historico img { width: 6rem; height: 6rem; object-fit: cover; border-radius: 12px; border: 1px solid var(--aco-escuro); background: #fff; }
 .cabeca-historico h1 { margin: .1rem 0 .2rem; }
 .cabeca-historico .data { margin: 0; color: var(--cinza); font-size: .9rem; }
-.resumo-historico { grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); }
+.resumo-historico { grid-template-columns: repeat(auto-fill, minmax(min(10rem, 100%), 1fr)); }
 table.lista-historico td { white-space: nowrap; font-variant-numeric: tabular-nums; }
 table.lista-historico tr.marca td { color: var(--cinza); }
 table.lista-historico td small { color: var(--cinza); margin-left: .3rem; }
@@ -613,7 +623,10 @@ table.lista-historico td small { color: var(--cinza); margin-left: .3rem; }
   main.pagina-historico table.lista-historico th, main.pagina-historico table.lista-historico td {
     white-space: normal; overflow-wrap: anywhere; padding: .35rem .3rem; font-size: .82rem;
   }
-  main.pagina-historico table.lista-historico .estado { white-space: normal; }
+  main.pagina-historico table.lista-historico .estado { white-space: normal; overflow-wrap: normal; border-radius: .8rem; padding: .1rem .4rem; font-size: .74rem; }
+  main.pagina-historico table.lista-historico th:nth-child(1), main.pagina-historico table.lista-historico th:nth-child(2) { width: 25%; }
+  main.pagina-historico table.lista-historico th:nth-child(3) { width: 18%; }
+  main.pagina-historico table.lista-historico th:nth-child(4) { width: 32%; }
   .cabeca-historico img { width: 4rem; height: 4rem; }
 }
 
@@ -656,7 +669,10 @@ tr.substituida td small { text-decoration: none; display: inline-block; }
 ul.arvore { list-style: none; padding: 0; margin: 0; }
 ul.arvore li { margin: .35rem 0 .35rem calc(var(--nivel) * 1.6rem); padding: .4rem .6rem; border-left: 3px solid var(--aco-escuro); background: var(--papel); border-radius: 6px; }
 .no-arvore { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .8rem; }
-.no-arvore form.inline, .mais-grupo form.inline { display: inline-flex; flex-wrap: wrap; gap: .3rem; align-items: center; }
+.no-arvore form.inline, .mais-grupo form.inline { display: inline-flex; flex-wrap: wrap; gap: .3rem; align-items: center; max-width: 100%; }
+/* o nome do grupo encolhe no celular pequeno, e o Renomear vai para baixo se não couber */
+.no-arvore form.inline input:not([type=hidden]) { flex: 1 1 8rem; min-width: 0; max-width: 100%; }
+.no-arvore { min-width: 0; max-width: 100%; }
 .relogios-do-grupo { margin: .2rem 0 0; }
 .mais-grupo { margin-top: .2rem; font-size: .9rem; }
 .mais-grupo summary { cursor: pointer; color: var(--safira); }
@@ -717,7 +733,7 @@ td.celula-peso { white-space: nowrap; }
 .abas { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 1rem; }
 .abas a { padding: .35rem .8rem; border: 1px solid var(--aco); border-radius: .4rem; text-decoration: none; color: var(--safira); }
 .abas a.ativa { background: var(--safira); color: #fff; }
-.form-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: .6rem 1rem; align-items: end; }
+.form-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr)); gap: .6rem 1rem; align-items: end; }
 .form-grade label { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; color: var(--cinza); }
 .form-grade textarea { min-height: 4rem; }
 .dias-semana label { display: inline-flex; flex-direction: row; gap: .2rem; margin-right: .5rem; }
@@ -732,6 +748,8 @@ main.ajuda h4 { font-size: 1rem; margin: 1.3rem 0 .4rem; }
 main.ajuda h2, main.ajuda h3, main.ajuda h4 { scroll-margin-top: 1rem; }
 main.ajuda p, main.ajuda li { max-width: 46rem; }
 main.ajuda code { font-family: ui-monospace, Consolas, monospace; font-size: .86em; background: var(--papel); border: 1px solid var(--aco-escuro); border-radius: 4px; padding: 0 .25em; }
+/* um trecho de código comprido e sem espaço (uma URL de exemplo) quebra a linha em vez de passar da tela */
+main.ajuda :not(pre) > code { overflow-wrap: anywhere; }
 main.ajuda pre { font-family: ui-monospace, Consolas, monospace; font-size: .85rem; background: var(--papel); border: 1px solid var(--aco-escuro); border-radius: 8px; padding: .8rem 1rem; overflow-x: auto; }
 main.ajuda img { max-width: 100%; height: auto; border: 1px solid var(--aco-escuro); border-radius: 8px; margin-top: .5rem; }
 main.ajuda a { color: var(--safira); }
@@ -859,6 +877,7 @@ table.resumo-plano { max-width: 44rem; }
   #bloco-proximos table.relogios tr.fds, table.dias-plano tr.fds { background: #f4f6f8; }
   #bloco-proximos table.relogios td:nth-child(1), table.dias-plano td:nth-child(1) { grid-row: 1 / 3; align-self: start; font-variant-numeric: tabular-nums; }
   #bloco-proximos table.relogios td:nth-child(1) small, table.dias-plano td:nth-child(1) small { display: block; }
+  table.dias-plano td.dia { width: auto; }
   #bloco-proximos table.relogios td:nth-child(2), table.dias-plano td:nth-child(2) { grid-column: 2 / 4; font-weight: 600; }
   #bloco-proximos table.relogios td:nth-child(3), table.dias-plano td:nth-child(3) { grid-column: 2; grid-row: 2; font-size: .85rem; color: var(--ambar); }
   #bloco-proximos table.relogios td.trocar, table.dias-plano td.trocar { grid-column: 3; grid-row: 2; }
@@ -954,6 +973,7 @@ body.com-visor { overflow: hidden; }
 .foto-acoes { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .55rem !important; }
 .foto-acoes .previa { width: 100%; max-width: none; }
 .foto-remover button { width: 100%; }
+.foto-acoes button, .foto-acoes .botao-arquivo { white-space: nowrap; }
 .ficha-identidade { min-width: 0; }
 .ficha-identidade .data { color: var(--cinza); margin: .2rem 0 0; font-size: .9rem; }
 .ficha-identidade h1 { margin: .2rem 0 .6rem; overflow-wrap: anywhere; }
@@ -970,7 +990,7 @@ body.com-visor { overflow: hidden; }
 
 /* os quadros: numa grade que se ajusta à largura (uma coluna no painel ao lado, três ou quatro na janela flutuante e na
    ficha); os da mesma linha têm a mesma altura, e o rodapé (os botões) fica sempre no pé */
-.quadros { display: grid; grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); gap: 1rem; align-items: stretch; margin-bottom: 1rem; }
+.quadros { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr)); gap: 1rem; align-items: stretch; margin-bottom: 1rem; }
 .quadro {
   margin: 0; min-width: 0; display: flex; flex-direction: column; gap: .55rem;
   background: var(--papel); border: 1px solid var(--aco-escuro); border-radius: 12px; padding: .85rem 1rem;
@@ -1023,29 +1043,29 @@ table.tabela-dados code.ident { display: block; font-size: .74rem; color: var(--
 .origem { display: inline-block; font-size: .72rem; padding: .05rem .5rem; border-radius: 999px; border: 1px solid var(--aco-escuro); color: var(--cinza); white-space: nowrap; }
 .origem-informado { background: #e6eef8; color: #1f4f8f; border-color: #b8cbe6; }
 .origem-padrao { background: #fbf1e3; color: #8a5a00; border-color: #ecd2a8; }
-.dados-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem 1.75rem; }
+.dados-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr)); gap: 1rem 1.75rem; }
 .dados-grade h3 { font-size: .9rem; margin: 0 0 .3rem; }
 
 /* editar cadastro: os campos numa grade, todos da mesma largura; o grupo, a compra e os botões na linha inteira */
-.detalhe .cadastro { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: .8rem 1rem; max-width: none; align-items: end; }
+.detalhe .cadastro { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr)); gap: .8rem 1rem; max-width: none; align-items: end; }
 .detalhe .cadastro > label:not(.check) { font-size: .85rem; color: var(--cinza); }
 .detalhe .cadastro > label:has(.campo-subtipo), .detalhe .cadastro > fieldset.compra, .detalhe .cadastro > .botoes, .detalhe .cadastro > .regra-pulso { grid-column: 1 / -1; }
 .detalhe .cadastro > label small { color: var(--cinza); font-size: .78rem; }
 .detalhe .cadastro label.check { padding-bottom: .5rem; color: var(--tinta); }
-.detalhe fieldset.compra { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: .8rem 1rem; padding: .7rem .8rem .8rem; }
+.detalhe fieldset.compra { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr)); gap: .8rem 1rem; padding: .7rem .8rem .8rem; }
 .detalhe fieldset.compra label { font-size: .85rem; color: var(--cinza); }
 
 /* marcar: a lista do que aconteceu e, embaixo, os campos daquilo lado a lado, alinhados pela base */
 .quadro-marcar form.marcar { max-width: none; margin: 0; }
 .quadro-marcar .marcar-o-que { max-width: 34rem; }
-.quadro-marcar .marcar-campos { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: .7rem 1rem; align-items: end; }
+.quadro-marcar .marcar-campos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr)); gap: .7rem 1rem; align-items: end; }
 .quadro-marcar .marcar-campos > p, .quadro-marcar .marcar-campos > .marcar-campos, .quadro-marcar .marcar-campos > label:has(select[data-mostra]) { grid-column: 1 / -1; }
 .quadro-marcar .marcar-campos > button, .quadro-marcar .marcar-campos > .marcar-botoes { justify-self: start; }
 
 /* no painel ao lado da lista (estreito): a foto menor ao lado do nome, e tudo numa coluna */
-.col-detalhe .ficha-cabeca { grid-template-columns: 6rem minmax(0, 1fr); gap: .9rem; margin-bottom: 1rem; padding-right: 2.2rem; }
+.col-detalhe .ficha-cabeca { grid-template-columns: 6.5rem minmax(0, 1fr); gap: .9rem; margin-bottom: 1rem; padding-right: 2.2rem; }
 .col-detalhe .ficha-identidade h1 { font-size: 1.45rem; }
-.col-detalhe .foto-acoes .botao-arquivo, .col-detalhe .foto-acoes button { font-size: .8rem; padding: .2rem .4rem; min-height: 2rem; width: 100%; }
+.col-detalhe .foto-acoes .botao-arquivo, .col-detalhe .foto-acoes button { font-size: .8rem; padding: .2rem .25rem; min-height: 2rem; width: 100%; }
 .col-detalhe .quadros { grid-template-columns: minmax(0, 1fr); gap: .7rem; }
 .col-detalhe .dados-grade { grid-template-columns: minmax(0, 1fr); }
 .col-detalhe .quadro-marcar .marcar-campos { grid-template-columns: minmax(0, 1fr); }
@@ -1070,15 +1090,15 @@ table.tabela-dados code.ident { display: block; font-size: .74rem; color: var(--
   .painel.modo-flutuante .ficha-cabeca { grid-template-columns: 10rem minmax(0, 1fr); gap: 1.4rem; padding-right: 2.5rem; }
   .painel.modo-flutuante .ficha-identidade h1 { font-size: clamp(1.8rem, 3vw, 2.6rem); }
   .painel.modo-flutuante .foto-acoes .botao-arquivo, .painel.modo-flutuante .foto-acoes button { font-size: .9rem; min-height: var(--altura-controle); }
-  .painel.modo-flutuante .quadros { grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); gap: 1rem; }
-  .painel.modo-flutuante .dados-grade { grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }
-  .painel.modo-flutuante .quadro-marcar .marcar-campos { grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); }
-  .painel.modo-flutuante .detalhe .cadastro { grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); }
+  .painel.modo-flutuante .quadros { grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr)); gap: 1rem; }
+  .painel.modo-flutuante .dados-grade { grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr)); }
+  .painel.modo-flutuante .quadro-marcar .marcar-campos { grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr)); }
+  .painel.modo-flutuante .detalhe .cadastro { grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr)); }
 }
 @media (max-width: 700px) {
   .ficha-cabeca { grid-template-columns: 6.5rem minmax(0, 1fr); gap: .9rem; }
   .ficha-identidade h1 { font-size: 1.5rem; }
-  .foto-acoes .botao-arquivo, .foto-acoes button { font-size: .8rem; padding: .2rem .4rem; min-height: 2rem; width: 100%; }
+  .foto-acoes .botao-arquivo, .foto-acoes button { font-size: .8rem; padding: .2rem .25rem; min-height: 2rem; width: 100%; }
   .quadros { grid-template-columns: minmax(0, 1fr); gap: .7rem; }
   dl.pares { grid-template-columns: fit-content(48%) minmax(0, 1fr); }
 }
@@ -1090,7 +1110,7 @@ a.botao:hover { filter: brightness(1.08); }
 
 /* ---------- Configuração: quadros da mesma altura numa grade; em cada um, uma opção por linha, o rótulo à esquerda e o
    campo à direita, na mesma coluna em todos; salvar numa barra presa no pé da tela ---------- */
-.config-grade { grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr)); align-items: stretch; }
+.config-grade { grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr)); align-items: stretch; }
 /* só nas grades (os quadros da mesma linha com a mesma altura, o pé no fundo): os outros quadros ficam como sempre */
 .config-grade > .cartao-config, .modelos > .cartao-config { display: flex; flex-direction: column; gap: .6rem; }
 .cartao-config > h2 { margin-bottom: .75rem; }
@@ -1127,11 +1147,11 @@ table.canais { max-width: none; }
 }
 .barra-salvar .nota { margin: 0; }
 /* o evento personalizado: os campos numa grade, o resto na linha inteira */
-.form-evento { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: .8rem 1rem; align-items: end; }
+.form-evento { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr)); gap: .8rem 1rem; align-items: end; }
 .form-evento > label:not(.check) { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; color: var(--cinza); }
 .form-evento > label input, .form-evento > label select { width: 100%; }
 .form-evento > .linha-campos, .form-evento > fieldset, .form-evento > .nota, .form-evento > .botoes { grid-column: 1 / -1; }
-.form-evento .linha-campos { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: .8rem 1rem; }
+.form-evento .linha-campos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr)); gap: .8rem 1rem; }
 .form-evento .linha-campos label { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; color: var(--cinza); }
 .form-evento .linha-campos input { width: 100%; }
 .form-evento > label.check { flex-direction: row; display: flex; align-items: center; gap: .45rem; padding-bottom: .5rem; }
@@ -1314,3 +1334,18 @@ form.apagar-periodo, form.apagar-tudo { display: flex; flex-direction: column; g
 footer.apagar-plano { margin-top: 3rem; border-top: 3px solid var(--aco-escuro); }
 footer.apagar-plano h2 { margin-top: 0; }
 #proximos-lista nav.paginas, #plano nav.paginas { margin: .6rem 0 .4rem; }
+/* o botão de marcar fica na linha dele, embaixo dos campos, e nunca parte o texto ("Marcar banho de ultrassom") */
+.quadro-marcar .marcar-campos > button { grid-column: 1 / -1; white-space: nowrap; }
+/* celular estreito (360 px): as tabelas do painel e o resumo do plano com menos folga entre as colunas, para caber na tela */
+@media (max-width: 420px) {
+  table.tabela-dados { font-size: .82rem; }
+  table.tabela-dados th, table.tabela-dados td { padding-left: .3rem; padding-right: .3rem; }
+  table.tabela-dados th { letter-spacing: 0; }
+  table.resumo-plano th, table.resumo-plano td { padding-left: .35rem; padding-right: .35rem; }
+  table.tabela-dados td, table.tabela-dados th, table.resumo-plano td, table.resumo-plano th { overflow-wrap: anywhere; }
+  table.tabela-dados td.valor { white-space: normal; }
+  table.tabela-dados td.valor.texto { min-width: 0; }
+  table.resumo-plano { font-size: .85rem; }
+}
+/* o botão discreto de texto comprido ("Excluir os critérios próprios de todos os relógios") quebra a linha no celular, alinhado à esquerda */
+form.excluir-conjunto button.discreto { white-space: normal; text-align: left; }
