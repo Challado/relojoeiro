@@ -1,8 +1,8 @@
 <?php
-// Instala o banco: roda o schema.sql no banco do config.php (MySQL/MariaDB, PostgreSQL ou SQLite, pelo DB_TIPO),
-// cada comando traduzido para ele. O banco tem de estar vazio.
+// Instala o banco: roda o schema.sql no banco do config.php (MySQL/MariaDB, PostgreSQL, SQLite ou Firebird, pelo
+// DB_TIPO), cada comando traduzido para ele. O banco tem de estar vazio.
 //   php instalar.php
-// No MySQL e no Postgres, crie antes o banco vazio (veja o README); no SQLite, o arquivo é criado aqui. É a mesma
+// No MySQL, no Postgres e no Firebird, crie antes o banco vazio (veja o README); no SQLite, o arquivo é criado aqui. É a mesma
 // instalação da API (POST recurso=instalacao, acao=instalar, com o token): instalar_banco(), no lib.php.
 if (PHP_SAPI !== "cli") {
     http_response_code(403);

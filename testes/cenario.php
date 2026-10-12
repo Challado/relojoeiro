@@ -1,7 +1,7 @@
 <?php
 // O roteiro de paridade: faz pela API o que uma pessoa faz no sistema (cadastra relógios de cada tipo, lança cordas,
 // cargas, sol, winder, carregador e pilha, monta a escala, mexe nos critérios, nos eventos e nas fotos, roda o cron) e no fim tira a
-// "fotografia" de tudo o que a API devolve. Rodado contra cada banco (MySQL, Postgres, SQLite) num banco recém-instalado,
+// "fotografia" de tudo o que a API devolve. Rodado contra cada banco (MySQL, Postgres, SQLite, Firebird) num banco recém-instalado,
 // as fotografias têm de sair iguais; o testes/comparar.php diz onde não saíram.
 //   php testes/cenario.php http://127.0.0.1:8081/api.php saida.json
 // O cron roda como processo filho, com o mesmo ambiente deste (o config.php de teste escolhe o banco por ele).

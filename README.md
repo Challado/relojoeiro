@@ -4,7 +4,7 @@
 > carregar, pôr no sol e trocar a pilha, e faz a coleção inteira ser usada, e não só o favorito.
 
 ![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-777bb4?logo=php&logoColor=white)
-![SQLite, MySQL/MariaDB ou PostgreSQL](https://img.shields.io/badge/banco-SQLite%20%7C%20MySQL%20%7C%20PostgreSQL-336791)
+![SQLite, MySQL/MariaDB, PostgreSQL ou Firebird](https://img.shields.io/badge/banco-SQLite%20%7C%20MySQL%20%7C%20PostgreSQL%20%7C%20Firebird-336791)
 ![sem dependências](https://img.shields.io/badge/depend%C3%AAncias-nenhuma-2ea44f)
 ![API REST](https://img.shields.io/badge/API-REST%20%2B%20JSON%2FXML-0366d6)
 [![licença](https://img.shields.io/badge/licen%C3%A7a-c%C3%B3digo--fonte%20dispon%C3%ADvel-orange)](#licença)
@@ -944,16 +944,17 @@ cabeçalho do [`api.php`](api.php) e na própria API: `api.php?recurso=ajuda`.
 ## Instalação
 
 **Requisitos:** PHP 8.1+ com `curl` e `openssl` (este só para o Google Agenda), um servidor web (nginx ou Apache), o cron e
-**um destes bancos**, cada um pela extensão nativa do PHP:
+**um destes bancos**, cada um pela extensão do PHP:
 
 | Banco | Extensão do PHP | Versão | Quando escolher |
 |---|---|---|---|
 | **SQLite** | `sqlite3` | 3.35+ (testado no 3.53) | o mais simples: um arquivo só, sem servidor de banco. Sobra para uma coleção pessoal, até num Raspberry Pi |
 | **MySQL / MariaDB** | `mysqli` | com utf8mb4 (testado no MariaDB 11.4) | a hospedagem já tem, ou você já usa |
 | **PostgreSQL** | `pgsql` | 12+, com ICU, o padrão (testado no 18) | você já tem um Postgres rodando |
+| **Firebird** | `pdo_firebird` | 3.0+ (testado no 3.0.11, com o PHP 8.4) | você já tem um Firebird rodando |
 
-O sistema se comporta igual nos três. Isso é conferido pelo teste de paridade ([`testes/`](testes/)), que roda o mesmo
-roteiro nos três bancos e compara tudo o que a API devolve.
+O sistema se comporta igual nos quatro. Isso é conferido pelo teste de paridade ([`testes/`](testes/)), que roda o mesmo
+roteiro nos quatro bancos e compara tudo o que a API devolve.
 
 ```sh
 # 1. o código
@@ -966,9 +967,11 @@ nano config.php
 #    a pasta dos documentos (DOCUMENTOS_PASTA), fora da pasta publicada, com escrita para o usuário do PHP:
 #    mkdir -p /var/lib/relogios2/documentos && chown www-data /var/lib/relogios2/documentos
 
-# 3. o banco vazio (só no MySQL e no Postgres; o SQLite cria o arquivo sozinho)
+# 3. o banco vazio (só no MySQL, no Postgres e no Firebird; o SQLite cria o arquivo sozinho)
 #    MySQL:    mysql -u root -p -e "CREATE DATABASE relogios2 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 #    Postgres: createdb -U postgres relogios2
+#    Firebird: echo "CREATE DATABASE 'localhost:/var/lib/firebird/3.0/data/relogios2.fdb' USER 'SYSDBA' PASSWORD '...'
+#                    PAGE_SIZE 16384 DEFAULT CHARACTER SET UTF8;" | isql-fb -q
 
 # 4. a instalação: a estrutura e o conjunto inicial, traduzidos para o banco do config.php
 php instalar.php
@@ -990,6 +993,12 @@ que ele grava (o mesmo da página Execuções do cron). Ex.: `php cron.php --for
 
 No SQLite, ponha o arquivo do banco (`DB_ARQUIVO`) **fora da pasta que o servidor web publica**, numa pasta em que o
 usuário do PHP possa escrever (o SQLite cria ao lado os arquivos `-wal` e `-shm`).
+
+No Firebird, o banco tem de ser criado em **UTF8** (o `DEFAULT CHARACTER SET UTF8` acima). O PHP precisa da extensão
+`pdo_firebird`: no Debian e no Ubuntu, o pacote `php8.4-interbase` (o nome antigo dela) e o cliente do Firebird
+(`libfbclient2`), que vem junto; no `php.ini`, `extension=pdo_firebird`. O servidor, o pacote `firebird3.0-server` (ou o
+instalador do site do Firebird). No `config.php`, `DB_NOME` é o caminho do arquivo `.fdb` **no servidor do banco** (ou um
+apelido do `databases.conf`), e `DB_USUARIO`/`DB_SENHA` um usuário do Firebird (o `SYSDBA` ou um criado para o sistema).
 
 **7. O servidor web.** Pela web só podem abrir as páginas, o `api.php` e o que elas carregam (`estilo.css`, os `.js`, as
 imagens). Todo o resto fica bloqueado: o núcleo (`lib.php`, `banco.php`, `operacoes.php`), o `config.php`, o cron, os scripts
@@ -1014,8 +1023,8 @@ têm de dar **403**.
 
 | Constante | Para quê |
 |---|---|
-| `DB_TIPO` | o banco: `mysql` (o padrão, vale para o MariaDB), `pgsql` ou `sqlite` |
-| `DB_HOST`, `DB_PORTA`, `DB_NOME`, `DB_USUARIO`, `DB_SENHA` | o servidor do banco (MySQL e Postgres); `DB_PORTA` 0 é a porta padrão |
+| `DB_TIPO` | o banco: `mysql` (o padrão, vale para o MariaDB), `pgsql`, `sqlite` ou `firebird` |
+| `DB_HOST`, `DB_PORTA`, `DB_NOME`, `DB_USUARIO`, `DB_SENHA` | o servidor do banco (MySQL, Postgres e Firebird); `DB_PORTA` 0 é a porta padrão. No Firebird, `DB_NOME` é o caminho do arquivo `.fdb` no servidor (ex.: `/var/lib/firebird/3.0/data/relogios2.fdb`) ou um apelido do `databases.conf`, e `DB_HOST` vazio abre o arquivo direto, sem servidor (o Firebird embutido) |
 | `DB_ARQUIVO` | o arquivo do banco (SQLite), fora da pasta publicada |
 | `API_TOKEN` | **obrigatório**, com 10 caracteres ou mais. Sem ele o sistema inteiro para e diz por quê. |
 | `FUSO` | o fuso horário, como `America/Sao_Paulo`. Vazio ou ausente: o do PHP (`date.timezone` no php.ini). Vale para tudo, inclusive para as datas que o banco grava |
@@ -1024,7 +1033,7 @@ têm de dar **403**.
 | `DOCUMENTOS_COPIA_BANCO` | opcional: a cópia de segurança dos documentos dentro do banco, para o sistema inteiro. `true`: todo arquivo vai também para o banco; `false`: nenhum vai; sem ela: cada relógio e cada arquivo decidem. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 | `BACKUP_PASTA`, `BACKUP_MANTER`, `BACKUP_DOCUMENTOS` | opcionais: a cópia de segurança do banco (veja [Cópia de segurança](#cópia-de-segurança)). A pasta, **fora da pasta publicada** (sem ela, não há cópia automática); quantas ficam (padrão 7); e se leva o conteúdo dos documentos guardado no banco (padrão: não). |
 | `DOCUMENTOS_LIMITE` | opcional: o maior documento aceito, em bytes. Sem ela, 100 MB (`104857600`); `0` ou `-1`, sem limite do sistema. O `MANUAL_LIMITE`, o nome antigo, ainda vale quando ela não existe. O limite do PHP e o do nginx continuam valendo (veja [O tamanho dos envios](#o-tamanho-dos-envios-os-documentos)). Ex.: `define("DOCUMENTOS_LIMITE", 524288000);` para 500 MB |
-| `ANTIGO_HOST`, `ANTIGO_PORTA`, `ANTIGO_USUARIO`, `ANTIGO_SENHA` | opcionais, só para o `importar.php` com este sistema no Postgres ou no SQLite: onde está o MySQL do sistema anterior |
+| `ANTIGO_HOST`, `ANTIGO_PORTA`, `ANTIGO_USUARIO`, `ANTIGO_SENHA` | opcionais, só para o `importar.php` com este sistema no Postgres, no SQLite ou no Firebird: onde está o MySQL do sistema anterior |
 | `GOOGLE_TOKEN_URL`, `GOOGLE_API_URL` | opcionais, só para testes: os endereços do Google que a agenda usa (o do token, `https://oauth2.googleapis.com/token`, e o da API, `https://www.googleapis.com/calendar/v3`). Trocados, a sincronização da agenda conversa com um servidor de teste em vez do Google |
 
 ### Mensagens pelo Telegram
@@ -1067,26 +1076,27 @@ Depois de atualizar o código, se houver migração nova (`migracao_v*.sql`), a 
 mostra o botão para aplicá-la. O cron também para e registra o motivo, em vez de rodar pela metade. Numa instalação nova, o
 `schema.sql` já traz todas as migrações.
 
-O `schema.sql` e cada migração são **um arquivo só para os três bancos**: a estrutura (`CREATE TABLE`, `ALTER TABLE`) é
-escrita no dialeto do MySQL, e o [`banco.php`](banco.php) traduz para o Postgres e o SQLite (`AUTO_INCREMENT`, `ENUM`,
-`TINYINT`, `DATETIME`, os `INDEX` dentro da tabela, o `AFTER` e o `MODIFY COLUMN`, que no SQLite refaz a tabela). Os dados
-(`INSERT`, `UPDATE`) vão em SQL comum aos três: nada de `GROUP_CONCAT`, `IF()` ou `FIND_IN_SET`. `INSERT IGNORE`,
-`REPLACE INTO`, `NOW()`, `LEAST`, `<=>` e `CONCAT` podem (o `CONCAT` sem argumento NULL: no Postgres o NULL vira texto
-vazio, no MySQL o resultado vira NULL). As migrações v2 a v8 são de antes disso e existem só para atualizar bancos MySQL
-antigos: um banco Postgres ou SQLite já nasce na versão atual.
+O `schema.sql` e cada migração são **um arquivo só para os quatro bancos**: a estrutura (`CREATE TABLE`, `ALTER TABLE`) é
+escrita no dialeto do MySQL, e o [`banco.php`](banco.php) traduz para o Postgres, o SQLite e o Firebird (`AUTO_INCREMENT`,
+`ENUM`, `TINYINT`, `DATETIME`, os `INDEX` dentro da tabela, o `AFTER` e o `MODIFY COLUMN`, que no SQLite refaz a tabela). Os
+dados (`INSERT`, `UPDATE`) vão em SQL comum aos quatro: nada de `GROUP_CONCAT`, `IF()` ou `FIND_IN_SET`. `INSERT IGNORE`,
+`REPLACE INTO`, `NOW()`, `LEAST`, `GREATEST`, `LENGTH`, `DATE()`, `<=>`, `LIMIT`/`OFFSET`, o `SELECT` sem `FROM`, o `INSERT`
+de várias linhas e `CONCAT` podem (o `CONCAT` sem argumento NULL: no Postgres o NULL vira texto vazio, no MySQL o resultado
+vira NULL). As migrações v2 a v8 são de antes disso e existem só para atualizar bancos MySQL antigos: um banco Postgres,
+SQLite ou Firebird já nasce na versão atual.
 
 Dois comandos que não existem assim em nenhum banco, o `banco.php` entende e faz do jeito de cada um:
 
 | Comando | O que faz |
 |---|---|
-| `ALTER TABLE t ALTER FOREIGN KEY (coluna) REFERENCES outra(id) ON DELETE CASCADE` (ou `SET NULL`) | troca a chave estrangeira da coluna (ou cria, se não havia). No MySQL e no Postgres, procura no catálogo o nome da chave antiga, apaga e cria a nova; no SQLite, refaz a tabela. |
-| `ALTER TABLE t DROP COLUMN coluna` | apaga a coluna junto com a chave estrangeira e os índices dela (o SQLite refaz a tabela). |
-| `ALTER TABLE t ADD CONSTRAINT nome CHECK (condição)` | a regra de validação, com nome; se já existe uma com ele, é trocada. As linhas que já existem têm de cumprir a regra nova, senão o banco recusa e a regra de antes continua (no Postgres, numa transação; no MySQL, a nova entra antes com um nome provisório; no SQLite, a tabela é refeita numa transação). |
+| `ALTER TABLE t ALTER FOREIGN KEY (coluna) REFERENCES outra(id) ON DELETE CASCADE` (ou `SET NULL`) | troca a chave estrangeira da coluna (ou cria, se não havia). No MySQL, no Postgres e no Firebird, procura no catálogo o nome da chave antiga, apaga e cria a nova (no Firebird, numa transação); no SQLite, refaz a tabela. |
+| `ALTER TABLE t DROP COLUMN coluna` | apaga a coluna junto com a chave estrangeira e os índices dela (o SQLite refaz a tabela; o Firebird apaga antes também as regras que usam a coluna). |
+| `ALTER TABLE t ADD CONSTRAINT nome CHECK (condição)` | a regra de validação, com nome; se já existe uma com ele, é trocada. As linhas que já existem têm de cumprir a regra nova, senão o banco recusa e a regra de antes continua (no Postgres e no Firebird, numa transação; no MySQL, a nova entra antes com um nome provisório; no SQLite, a tabela é refeita numa transação). |
 
 E, para uma migração que parou no meio poder rodar de novo pelo mesmo botão: o `ADD COLUMN` de uma coluna que já existe e o
 `ADD INDEX` com nome de um índice que já existe não fazem nada.
 
-Uma migração pode ter também um **passo em PHP**, para o que o SQL comum aos três não faz (a v16 quebra o texto das opções
+Uma migração pode ter também um **passo em PHP**, para o que o SQL comum aos quatro não faz (a v16 quebra o texto das opções
 de um campo, uma por linha, em linhas da tabela `campo_opcao`; a v20, no MySQL/MariaDB, passa para `utf8mb4_unicode_ci` as
 tabelas criadas noutra collation). Ele roda logo depois do SQL, pelo botão da Configuração, e
 também no `instalar.php`.
@@ -1100,7 +1110,16 @@ também no `instalar.php`.
 - **Maiúsculas e acentos:** como no MySQL, "Relógio" e "RELOGIO" são o mesmo nome, na busca, na ordem e no login. No
   Postgres, isso vem de uma collation ICU (`ci`) que o `instalar.php` cria. No SQLite, de uma função do PHP; por isso, num
   programa de fora (o `sqlite3` da linha de comando, o DB Browser), ordenar ou comparar essas colunas dá o erro "no such
-  collation sequence: ci". Ler e exportar funciona normalmente.
+  collation sequence: ci". Ler e exportar funciona normalmente. No Firebird, da collation `UNICODE_CI_AI`, em todas as
+  colunas de texto.
+- **No Firebird:**
+  - os textos longos (`TEXT` no `schema.sql`: as fórmulas, as mensagens, o registro do cron) vão até **8191 letras** (no
+    MySQL, 65535 bytes), porque viram `VARCHAR(8191)` (o `BLOB` de texto volta vazio como nulo no PHP);
+  - os nomes de índice e de regra passam de 31 letras só com um pedaço do md5 do nome inteiro no fim, e a tabela `no` é
+    palavra reservada: num programa de fora (o `isql-fb`, o FlameRobin), escreva `"NO"`, entre aspas e em maiúsculas;
+  - a chave única de várias colunas em que uma pode ficar vazia (a `canal_aviso`) vira um índice único de uma expressão,
+    porque no Firebird duas linhas com o mesmo valor e a outra coluna vazia contam como repetidas (no MySQL, não);
+  - a hora do `NOW()` vem do PHP (o Firebird não tem fuso por conexão), no `FUSO` do `config.php`, como nos outros.
 - **A ordem das colunas** de uma migração com `AFTER` só vale no MySQL: nos outros a coluna nova vai para o fim da tabela
   (muda só a ordem das chaves no JSON da API).
 - **Os ids** podem pular números diferentes em cada banco (o MySQL reserva ids em bloco em alguns `INSERT ... SELECT`).
@@ -1218,8 +1237,8 @@ Com a `BACKUP_PASTA` no `config.php` (uma pasta do servidor **fora da pasta publ
 **uma cópia do banco inteiro por dia**, na rodada da noite, e guarda as `BACKUP_MANTER` mais novas (padrão 7): a cada cópia
 nova, as mais velhas saem. A pasta dentro da publicada é recusada (qualquer um baixaria o banco pelo navegador).
 
-- **O arquivo** é `relojoeiro-AAAA-MM-DD-HHMMSS.jsonl.gz`: JSON Lines comprimido, uma linha por registro, **o mesmo nos três
-  bancos**. Uma cópia de um MySQL volta num PostgreSQL ou num SQLite, desde que o sistema esteja na mesma versão (a mesma
+- **O arquivo** é `relojoeiro-AAAA-MM-DD-HHMMSS.jsonl.gz`: JSON Lines comprimido, uma linha por registro, **o mesmo nos quatro
+  bancos**. Uma cópia de um MySQL volta num PostgreSQL, num SQLite ou num Firebird, desde que o sistema esteja na mesma versão (a mesma
   última migração).
 - **Os documentos:** os arquivos já ficam na pasta deles, e a cópia deles dentro do banco (que pode ser grande) só entra na
   cópia de segurança com `BACKUP_DOCUMENTOS = true`. Sem ela, ao restaurar, os documentos voltam sem a cópia no banco e o cron
@@ -1240,7 +1259,7 @@ roteiro: `api.php?recurso=reconstrucao` (o mesmo que `api.php?recurso=ajuda&part
 | Parte | O que tem |
 |---|---|
 | `o_que_e`, `como_usar` | o que o sistema faz e como ler o roteiro (e onde está o resto: a API, o cadastro inicial, este README, os testes) |
-| `secoes` | os princípios (o sistema não sabe nada de relógios, tudo pela API, falha segura, o banco que se defende, os três bancos, o tempo em dias), a arquitetura, **a ordem de construção** (do banco à aceitação, em 14 passos) e as regras de cada parte: árvore e campos, lançamentos e linha do tempo, o motor das fórmulas, avisos, gasto medido e autonomia, critérios e nota, modos de rodízio, plano e escala inteligente, pulso sozinho, cron, mensagens, agenda e eventos, documentos, telas (celular, tablet e computador), segurança e testes |
+| `secoes` | os princípios (o sistema não sabe nada de relógios, tudo pela API, falha segura, o banco que se defende, os quatro bancos, o tempo em dias), a arquitetura, **a ordem de construção** (do banco à aceitação, em 14 passos) e as regras de cada parte: árvore e campos, lançamentos e linha do tempo, o motor das fórmulas, avisos, gasto medido e autonomia, critérios e nota, modos de rodízio, plano e escala inteligente, pulso sozinho, cron, mensagens, agenda e eventos, documentos, telas (celular, tablet e computador), segurança e testes |
 | `telas` | **a especificação visual, tela por tela**, para a reescrita reproduzir a mesma interface (não uma parecida): o visual com os valores exatos (as cores em hexadecimal, as letras, a altura dos campos e botões, cada componente: cartão, quadro, pares rótulo e valor, tabela, etiquetas, barra de carga, abas, barra de salvar), as larguras e o que muda no celular, no tablet e no computador, o comportamento comum (gravar, confirmar, sem login, banco desatualizado, fotos); o menu na ordem; e cada página com o endereço, o que lê e grava na API e as partes de cima para baixo, com cada tabela (as colunas), cada formulário (os campos com rótulo, tipo, padrão e limites), cada botão (o texto e o que manda para a API) e cada mensagem, palavra por palavra. E as capturas em `docs/telas/` |
 | `modelo_de_dados` | **lido do próprio banco em uso**, na hora: cada tabela com o que ela guarda, as colunas (tipo, vazio, padrão), a chave primária, as chaves estrangeiras (e o que acontece ao apagar), as chaves únicas, os índices e as regras de validação. Nunca fica atrás da versão instalada |
 | `listas` | as listas do código, também lidas na hora: as funções das fórmulas (com os argumentos e se leem o histórico), os tipos de campo, os formatos de lançamento, as repetições dos eventos, os dias da semana, as âncoras das mensagens, os canais, as migrações e as constantes do `config.php` |
@@ -1269,8 +1288,8 @@ o hash existe).
 
 ## Como é por dentro
 
-- **PHP 8.1+ puro, com SQLite, MySQL/MariaDB ou PostgreSQL.** Sem framework, sem Composer e sem dependências, para rodar em
-  qualquer hospedagem com PHP. Cada banco pela extensão nativa do PHP (`sqlite3`, `mysqli`, `pgsql`); o SQL do sistema é
+- **PHP 8.1+ puro, com SQLite, MySQL/MariaDB, PostgreSQL ou Firebird.** Sem framework, sem Composer e sem dependências,
+  para rodar em qualquer hospedagem com PHP. Cada banco pela extensão do PHP (`sqlite3`, `mysqli`, `pgsql`, `pdo_firebird`); o SQL do sistema é
   escrito uma vez só e o [`banco.php`](banco.php) traduz o que muda de um banco para outro.
 - **Motor de fórmulas próprio**, com análise sintática, funções de histórico, versões por grupo e dependências entre fórmulas.
 - **Simulação:** a escala e as previsões simulam lançamentos futuros e recalculam as fórmulas dia a dia, sem gravar nada.
@@ -1283,7 +1302,7 @@ o hash existe).
   inteiro, no banco; o cron recria o que sumir, copia o que falta e limpa o que sobrou (veja [Os documentos do
   relógio](#os-documentos-do-relógio)).
 - **Banco que se defende:** relacional e normalizado, com chaves estrangeiras e regras de validação (`CHECK`, `NOT NULL`,
-  `UNIQUE`) nos três bancos: uma gravação errada é recusada pelo próprio banco (veja [O modelo do banco](#o-modelo-do-banco)).
+  `UNIQUE`) nos quatro bancos: uma gravação errada é recusada pelo próprio banco (veja [O modelo do banco](#o-modelo-do-banco)).
 - **Falha segura:** sem token válido ou com o banco desatualizado, o sistema para e explica o motivo, em vez de rodar pela metade.
 
 ### O modelo do banco
@@ -1351,7 +1370,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 |---|---|
 | [`api.php`](api.php) | a API: toda leitura e escrita, com a documentação completa no cabeçalho |
 | [`lib.php`](lib.php) | o núcleo: login, árvore, motor de fórmulas, avisos, critérios, rodízio, escala, mensagens, agenda |
-| [`banco.php`](banco.php) | o banco: a conexão com o MySQL, o Postgres ou o SQLite, e a tradução do SQL de um para outro |
+| [`banco.php`](banco.php) | o banco: a conexão com o MySQL, o Postgres, o SQLite ou o Firebird, e a tradução do SQL de um para outro |
 | [`operacoes.php`](operacoes.php) | as regras de cada gravação: validações e mensagens |
 | [`cron.php`](cron.php) | o plano, a sessão do dia, as rodadas da manhã e da noite, os eventos, a agenda e a manutenção dos documentos |
 | `index.php`, `plano.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `usuarios.php` | as páginas (só o esqueleto) |
@@ -1384,8 +1403,8 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
 3. **Siga o jeito do código:** PHP e JavaScript puros, sem dependências, comentários e mensagens em português. O que é
    conhecimento sobre relógios vai para o cadastro (`schema.sql`), não para o código.
 4. Mudou o banco? Crie uma `migracao_vN.sql` e registre em `$MIGRACOES` no `lib.php`: a estrutura no dialeto do MySQL, os
-   dados em SQL comum aos três bancos (veja [Atualizações do banco](#atualizações-do-banco)).
-5. **Rode o teste de paridade** ([`testes/`](testes/)) nos três bancos antes de mandar: o resultado tem de ser
+   dados em SQL comum aos quatro bancos (veja [Atualizações do banco](#atualizações-do-banco)).
+5. **Rode o teste de paridade** ([`testes/`](testes/)) nos quatro bancos antes de mandar: o resultado tem de ser
    `0 diferenças graves`.
 6. Abra o pull request contando o que muda para quem usa e como você testou.
 
@@ -1421,7 +1440,7 @@ your wrist, scoring each one by the criteria you set (days unworn, balance of us
 and it can plan weeks or months ahead by simulating each watch's charge day by day. It reminds you, by Telegram and Google
 Calendar, to wind the automatic, charge the smartwatch, put the solar in the sun and replace the battery, and it learns each
 smartwatch's real battery drain from your readings. Everything about watches (types, fields, formulas, alerts) is data you
-edit, not code. PHP 8.1+ with SQLite, MySQL/MariaDB or PostgreSQL, no dependencies, and a complete REST API
+edit, not code. PHP 8.1+ with SQLite, MySQL/MariaDB, PostgreSQL or Firebird, no dependencies, and a complete REST API
 (`api.php?recurso=ajuda`).
 
 The interface and the documentation are in Portuguese. The code is **source-available, not open source**: you may install,

@@ -213,8 +213,8 @@
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=usuarios"
  *   recurso=migracoes        {"pendentes": [{"versao", "arquivo", "traz"}]} (lista vazia: o banco está em dia)
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=migracoes"
- *   recurso=instalacao       a situação da instalação (responde também com o banco vazio, pelo token): {"banco" (mysql, pgsql ou
- *                            sqlite), "vazio", "instalado", "tabelas", "em_dia", "migracoes_pendentes": [versões], "usuarios" (quantos),
+ *   recurso=instalacao       a situação da instalação (responde também com o banco vazio, pelo token): {"banco" (mysql, pgsql,
+ *                            sqlite ou firebird), "vazio", "instalado", "tabelas", "em_dia", "migracoes_pendentes": [versões], "usuarios" (quantos),
  *                            "proximo_passo" (instalar, aplicar as migrações, criar o primeiro usuário ou nada)}
  *                            Ex.: curl -H "X-Api-Token: segredo" "http://servidor/relojoeiro/api.php?recurso=instalacao"
  *   recurso=importacao       o que a importação do sistema anterior usa: {"servidor_antigo": {"host", "porta", "usuario", "de_onde"} (sem a
@@ -225,7 +225,7 @@
  *                            {"pasta_ok", "pasta_erro", "manter" (quantas ficam), "documentos" (se levam o conteúdo dos documentos),
  *                            "versao" (a do banco agora), "ultima", "copias": [{"arquivo", "bytes", "tamanho", "criada", "documentos",
  *                            "versao"}] (da mais nova para a mais velha)}. Com arquivo=<nome>: baixa aquela cópia (relojoeiro-AAAA-MM-DD-
- *                            HHMMSS.jsonl.gz: JSON Lines comprimido, o mesmo nos três bancos). Fazer e restaurar: na escrita
+ *                            HHMMSS.jsonl.gz: JSON Lines comprimido, o mesmo nos quatro bancos). Fazer e restaurar: na escrita
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=backup"
  *   recurso=entrar           o login das páginas: sem login, 401 (o navegador pede o usuário e a senha); com login, volta para a página
  *                            de volta=<uma página do sistema> (302) ou diz quem entrou: {"usuario" (null pelo token), "por" (login ou
@@ -1992,7 +1992,7 @@
  *     pendentes[].traz               o que a migração traz
  *     pendentes[].versao             a versão (v2, v3...)
  *   recurso=instalacao
- *     banco                          o banco do config.php: mysql, pgsql ou sqlite
+ *     banco                          o banco do config.php: mysql, pgsql, sqlite ou firebird
  *     em_dia                         instalado e sem migração pendente
  *     instalado                      o banco tem as tabelas do sistema
  *     migracoes_pendentes[]          as versões das migrações que faltam aplicar (vazio com o banco vazio ou em dia)
@@ -2169,7 +2169,7 @@
  *     codigo.nao_mostrados[].o_que_ver
  *                                    onde está o que a reescrita precisa saber dele
  *     modelo_de_dados                o modelo de dados, lido do próprio banco em uso (o que vale agora, depois de todas as migrações)
- *     modelo_de_dados.banco          o banco de onde o modelo foi lido: mysql, pgsql ou sqlite (os tipos das colunas vêm no dialeto dele)
+ *     modelo_de_dados.banco          o banco de onde o modelo foi lido: mysql, pgsql, sqlite ou firebird (os tipos das colunas vêm no dialeto dele)
  *     modelo_de_dados.como_ler       como ler as tabelas, e as três referências que ficam pelo nome, de propósito
  *     modelo_de_dados.tabelas[]      cada tabela, em ordem alfabética
  *     modelo_de_dados.tabelas[].tabela
@@ -2768,7 +2768,7 @@ if (!$token_ok && $quem === "") {
         foreach ($pendentes as $versao => $m) {
             // os comandos do arquivo, um a um, cada um traduzido para o banco em uso (os comentários saem)
             banco_script((string)file_get_contents(__DIR__ . "/" . $m[0]));
-            // o passo em PHP da migração, se ela tem (o que o SQL comum aos três bancos não faz bem)
+            // o passo em PHP da migração, se ela tem (o que o SQL comum aos quatro bancos não faz bem)
             if (isset($m[3])) {
                 call_user_func($m[3]);
             }
@@ -3423,7 +3423,7 @@ if (!$token_ok && $quem === "") {
             "importacao" => ["descricao" => "o que a importação do sistema anterior usa: o servidor do banco antigo (sem a senha) e de onde ele vem no config.php, se o PHP tem a extensão do MySQL, quantos relógios este banco já tem (com algum, a importação pede substituir=1) e o que ela traz",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=importacao\""],
-            "backup" => ["descricao" => "a cópia de segurança do banco (uma por dia, na rodada da noite do cron, na BACKUP_PASTA do config.php): se a pasta serve, quantas cópias ficam, se levam o conteúdo dos documentos, a versão do banco, a última e as cópias da pasta (da mais nova para a mais velha); com arquivo=<nome>, baixa aquela cópia (JSON Lines comprimido, o mesmo nos três bancos). Fazer e restaurar: na escrita",
+            "backup" => ["descricao" => "a cópia de segurança do banco (uma por dia, na rodada da noite do cron, na BACKUP_PASTA do config.php): se a pasta serve, quantas cópias ficam, se levam o conteúdo dos documentos, a versão do banco, a última e as cópias da pasta (da mais nova para a mais velha); com arquivo=<nome>, baixa aquela cópia (JSON Lines comprimido, o mesmo nos quatro bancos). Fazer e restaurar: na escrita",
                 "parametros" => ["arquivo" => "o nome de uma cópia (relojoeiro-AAAA-MM-DD-HHMMSS.jsonl.gz): baixa o arquivo"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=backup\""],
             "entrar" => ["descricao" => "o login das páginas: sem login, 401 (o navegador pede o usuário e a senha); com login, vai para a página de volta (302) ou diz quem entrou (usuario, por, volta). É para onde o api.js manda quem abre uma página sem login",
@@ -4794,7 +4794,7 @@ if (!$token_ok && $quem === "") {
                 "pendentes[].versao" => "a versão (v2, v3...)",
             ],
             "instalacao" => [
-                "banco" => "o banco do config.php: mysql, pgsql ou sqlite",
+                "banco" => "o banco do config.php: mysql, pgsql, sqlite ou firebird",
                 "em_dia" => "instalado e sem migração pendente",
                 "instalado" => "o banco tem as tabelas do sistema",
                 "migracoes_pendentes[]" => "as versões das migrações que faltam aplicar (vazio com o banco vazio ou em dia)",
@@ -4942,7 +4942,7 @@ if (!$token_ok && $quem === "") {
                 "codigo.nao_mostrados[].por_que" => "por que não sai",
                 "codigo.nao_mostrados[].o_que_ver" => "onde está o que a reescrita precisa saber dele",
                 "modelo_de_dados" => "o modelo de dados, lido do próprio banco em uso (o que vale agora, depois de todas as migrações)",
-                "modelo_de_dados.banco" => "o banco de onde o modelo foi lido: mysql, pgsql ou sqlite (os tipos das colunas vêm no dialeto dele)",
+                "modelo_de_dados.banco" => "o banco de onde o modelo foi lido: mysql, pgsql, sqlite ou firebird (os tipos das colunas vêm no dialeto dele)",
                 "modelo_de_dados.como_ler" => "como ler as tabelas, e as três referências que ficam pelo nome, de propósito",
                 "modelo_de_dados.tabelas[]" => "cada tabela, em ordem alfabética",
                 "modelo_de_dados.tabelas[].tabela" => "o nome da tabela",

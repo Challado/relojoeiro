@@ -305,7 +305,7 @@ function condicao_vale($expressao, $r, $momento)
 // Migrações: as mudanças de estrutura do banco depois da instalação, em arquivos migracao_vN.sql, aplicadas pela API
 // (recurso=migracoes, acao=aplicar). Cada uma: [arquivo, o que traz, a marca de que já foi aplicada: uma tabela ou
 // tabela.coluna]. Com alguma pendente, a API só responde as migrações (a conferência fica no api.php). O arquivo é um
-// só para os três bancos: o DDL no dialeto do MySQL (o banco.php traduz) e os dados em SQL comum aos três.
+// só para os quatro bancos: o DDL no dialeto do MySQL (o banco.php traduz) e os dados em SQL comum aos quatro.
 // ---------------------------------------------------------------------------------------------------------------------
 $MIGRACOES = [
     "v2" => ["migracao_v2.sql", "lançamentos pela API, com sessões exclusivas (o relógio num lugar só), avisos cadastráveis e a autonomia restante", "aviso"],
@@ -412,7 +412,7 @@ function instalar_banco()
         return ["ok" => false, "mensagem" => "", "erros" => ["A instalação terminou, mas faltam as migrações " . implode(", ", array_keys($pendentes)) . ": o schema.sql está incompleto."]];
     }
     $seg = round(microtime(true) - $inicio, 1);
-    return ["ok" => true, "mensagem" => "Banco instalado (" . ["mysql" => "MySQL/MariaDB", "pgsql" => "PostgreSQL", "sqlite" => "SQLite"][banco_tipo()] . "): " . $n
+    return ["ok" => true, "mensagem" => "Banco instalado (" . ["mysql" => "MySQL/MariaDB", "pgsql" => "PostgreSQL", "sqlite" => "SQLite", "firebird" => "Firebird"][banco_tipo()] . "): " . $n
         . " comandos, " . count(banco_tabelas()) . " tabelas, em " . str_replace(".", ",", (string)$seg) . " s. Agora crie o primeiro usuário (recurso=usuarios, acao=salvar, com o token).",
         "erros" => [], "comandos" => $n, "tabelas" => count(banco_tabelas()), "segundos" => $seg];
 }
@@ -3952,7 +3952,7 @@ function manual_html($md)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // A cópia de segurança do banco: um arquivo por cópia na BACKUP_PASTA do config.php (uma pasta do servidor fora da
-// pasta publicada), relojoeiro-AAAA-MM-DD-HHMMSS.jsonl.gz: JSON Lines comprimido, o mesmo nos três bancos (uma cópia do
+// pasta publicada), relojoeiro-AAAA-MM-DD-HHMMSS.jsonl.gz: JSON Lines comprimido, o mesmo nos quatro bancos (uma cópia do
 // MySQL volta num PostgreSQL ou num SQLite da mesma versão). A primeira linha é o cabeçalho ({"relojoeiro_copia": 1,
 // "criada", "banco", "versao" (a última migração), "documentos" (se tem o conteúdo dos documentos), "tabelas"}); depois,
 // para cada tabela, uma linha {"tabela", "colunas", "binarias"} e uma linha por registro, a lista dos valores na ordem das
@@ -4031,7 +4031,8 @@ function backup_tabelas()
         $t = $cat[$nome];
         $colunas = array_column($t["colunas"], "nome");
         $binarias = array_values(array_map(function ($c) { return $c["nome"]; }, array_filter($t["colunas"], function ($c) {
-            return preg_match("/blob|bytea/i", (string)$c["tipo"]) === 1;
+            // (no Firebird, o texto longo é um BLOB SUB_TYPE TEXT: texto, não binário)
+            return preg_match("/blob|bytea/i", (string)$c["tipo"]) === 1 && stripos((string)$c["tipo"], "SUB_TYPE TEXT") === false;
         })));
         $proprias = [];
         foreach ($t["chaves_estrangeiras"] as $f) {
