@@ -39,6 +39,11 @@ function numeros_iguais($x, $y, $chave)
     if (preg_match("/segundos|_seg\$|timestamp|restante|autonomia|duracao|_ms\$|ultimo\$/", (string)$chave) === 1 && abs($x - $y) <= 120) {
         return true;
     }
+    // o que é medido em horas (HORAS("pulso"; 30), numa conta da fórmula): a sessão aberta cresce enquanto o cenário roda; a
+    // mesma folga de 120 s, em horas
+    if (strpos((string)$chave, "HORAS(") === 0 && abs($x - $y) <= 120 / 3600) {
+        return true;
+    }
     // o resto (energia, reserva, notas...) anda devagar com o tempo (uma sessão aberta cresce enquanto o cenário roda): 0,5% de folga
     if ($chave === "porcentagem" && abs($x - $y) <= 0.5) {
         return true;
@@ -103,6 +108,13 @@ function comparar($x, $y, $caminho, $chave)
         return;
     }
     if ((is_int($x) || is_float($x)) && numeros_iguais($x, $y, $chave)) {
+        return;
+    }
+    // o tamanho do arquivo da cópia de segurança: comprimido, com o nome do banco e a hora no cabeçalho; uns bytes de diferença
+    // (até 2%) são leves. Mais que isso, é outra coisa
+    if ($chave === "bytes" && preg_match("/^\\.leituras\\.backup\\.resposta\\.copias\\[\\d+\\]\\.bytes\$/", $caminho) === 1 && is_int($x) && is_int($y)
+        && abs($x - $y) <= 0.02 * max($x, $y)) {
+        $leves[] = [$caminho, "tamanho da cópia", $x, $y];
         return;
     }
     // um inteiro arredondado bem na fronteira (23,499 e 23,501, calculados com segundos de diferença): 23 e 24
