@@ -58,12 +58,6 @@ function duracao(seg) {
   return res.length === 0 ? "menos de 1min" : res.filter(function (x) { return x.charAt(0) !== "0"; }).join(" ");
 }
 
-// Um instante no formato do campo de data e hora (AAAA-MM-DDTHH:MM), no fuso do navegador
-function momentoLocal(d) {
-  return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-") + "T"
-    + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
-}
-
 // um campo do cadastro, conforme o tipo dele; aparece só nos grupos em que vale (data-sub: o grupo do campo)
 function campoCadastro(c) {
   var v = c.valor === null ? "" : String(c.valor);
@@ -290,11 +284,13 @@ function abrirNoPainel(id) {
           return el("div", {"class": "marcar-campos", "data-grupo": grupo, "data-valor": valor, "hidden": true}, conteudo);
         };
         var quando = function (rotulo) {
-          return el("label", {}, rotulo + " " + el("input", {"type": "datetime-local", "name": "quando", "max": momentoLocal(agora)})
-            + el("small", {}, "Vazio: agora."));
+          return el("label", {}, rotulo + " " + el("input", {"type": "datetime-local", "name": "quando", "value": momentoNavegador(new Date()),
+            "max": momentoNavegador(new Date()), "data-agora": "vazio", "data-max-agora": true})
+            + el("small", {}, "Anda com o relógio até você mudar (vazio: agora)."));
         };
-        var momento = function (nome, valor, obrigatorio) {
-          return el("input", {"type": "datetime-local", "name": nome, "value": valor, "max": momentoLocal(agora), "required": obrigatorio});
+        var momento = function (nome, valor, obrigatorio, anda) {
+          return el("input", {"type": "datetime-local", "name": nome, "value": valor, "max": momentoNavegador(new Date()), "data-max-agora": true,
+            "data-agora": anda === true, "required": obrigatorio});
         };
         r.tipos.forEach(function (t) {
           var chave = "t-" + t.identificador;
@@ -329,8 +325,8 @@ function abrirNoPainel(id) {
             + (sessoes.length > 1
               ? el("label", {}, "Onde " + el("select", {"name": "tipo"}, sessoes.map(function (t) { return el("option", {"value": t.identificador}, h(t.nome)); }).join("")))
               : el("input", {"type": "hidden", "name": "tipo", "value": sessoes[0].identificador}))
-            + el("label", {}, "De " + momento("inicio", momentoLocal(new Date(agora.getTime() - 3600000)), true))
-            + el("label", {}, "Até " + momento("fim", momentoLocal(agora), true))
+            + el("label", {}, "De " + momento("inicio", momentoNavegador(new Date(agora.getTime() - 3600000)), true))
+            + el("label", {}, "Até " + momento("fim", momentoNavegador(new Date()), true, true))
             + el("button", {}, "Registrar o período"));
         }
         // corrigir: o segundo menu escolhe a marcação, e embaixo aparecem os campos dela, com Salvar e Excluir

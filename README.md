@@ -1251,7 +1251,9 @@ para encher*; quando enche, o aviso **Tirar do carregador** sai na hora pelo Tel
 
 **Esqueci de marcar o Tirou (ou o Pôs).**
 No painel do relógio, no quadro **Marcar**, escolha no menu o que aconteceu (*Tirar do pulso*, *Pôr no winder*...) e preencha
-a hora: vazia, é agora; preenchida, é a hora que você esqueceu (ontem às 22:30). Se o que foi marcado está errado, escolha
+a hora. Ela já vem com a hora do navegador, e acompanha o relógio enquanto a página está aberta: sem mexer, vale agora (o
+instante exato, com os segundos); mexendo, vale a hora que você pôs (ontem às 22:30), e ela para de andar. Basta acertar o que
+mudou (a hora, o dia), sem escolher tudo de novo. Apagada, também é agora. Se o que foi marcado está errado, escolha
 **Corrigir ou excluir uma marcação**: um segundo menu lista tudo o que foi lançado nos últimos 14 dias, e embaixo aparecem os
 campos daquela marcação (o início e o fim de uma sessão; a hora e o valor de uma leitura). Mude o que estiver errado e clique
 em **Salvar**, ou **Excluir**. Corrigir o pulso também corrige as medições do gasto que passam por aquele trecho: uma noite que
