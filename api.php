@@ -189,7 +189,8 @@
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=hoje"
  *   recurso=ficha            relogio=<id>: tudo o que o painel de um relógio mostra: {"hoje", "copia_sistema", "painel_modo",
  *                            "relogio": {"id", "nome", "no_id",
- *                            "disponivel", "copia_banco", "tipo", "caminho", "observacao", "foto", "documentos": {"total",
+ *                            "disponivel", "copia_banco", "tipo", "caminho", "observacao", "foto", "dica_foto" (a dica da foto: o
+ *                            resumo do relógio e o duplo clique), "documentos": {"total",
  *                            "categorias": [{"id", "nome", "documentos"}], "pasta_ok", "copia_sistema"}, "em_uso", "estado",
  *                            "estado_texto", "agora", "carga",
  *                            "carga_de", "situacao", "nota": {"nota", "conjunto_texto"}, "proxima" (a próxima entrada no plano), "proxima_ate", "escala_fim",
@@ -1363,6 +1364,9 @@
  *                                    juntas: "No sol · No winder") ou "Em repouso"
  *     relogio.escala_fim             até que dia vai a escala (null fora da escala)
  *     relogio.foto                   a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
+ *     relogio.dica_foto              a dica da foto no painel (aparece com o mouse parado em cima dela), em linhas: o nome, o grupo e o
+ *                                    código; o estado e a carga; a nota e o próximo dia no rodízio (ou indisponível); a compra (data e
+ *                                    valor); e "Duplo clique (ou \"Abrir foto\", embaixo): a foto em tamanho grande."
  *     relogio.id                     o número (código)
  *     relogio.leituras[]             as 40 últimas leituras com valor (o gráfico)
  *     relogio.leituras[].em_uso      verdadeiro ou falso: a leitura foi feita com o relógio no pulso
@@ -3198,6 +3202,23 @@ if (!$token_ok && $quem === "") {
                 WHERE l.relogio_id = ? AND l.inicio <= ? AND (l.inicio >= ? OR l.fim IS NULL OR l.fim >= ?) ORDER BY l.inicio DESC, l.id DESC LIMIT 40",
                 [$id, date("Y-m-d H:i:s", $agora), date("Y-m-d H:i:s", $agora - 14 * 86400), date("Y-m-d H:i:s", $agora - 14 * 86400)])),
             "linha_do_tempo" => array_map("linha_legivel", array_slice($lt["linhas"], 0, 5)), "registros" => count($lt["linhas"]),
+            // a dica da foto no painel (o texto que aparece com o mouse parado em cima dela): um resumo do relógio e o duplo clique
+            "dica_foto" => (function () use ($r, $id, $n, $v, $nota, $proxima, $valores) {
+                $l = [$r["nome"] . " · " . (isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "sem grupo") . " · código " . $id];
+                $l[] = $v["estado_texto"] . " · " . ($v["energia"] !== null ? "carga " . (int)round((float)$v["energia"]) . "%" : (string)$v["de"]);
+                if ($nota !== null) {
+                    $l[] = "Nota " . motivo_nota($nota["nota"]) . ($proxima !== null ? " · próximo dia no rodízio: " . date("d/m/Y", strtotime($proxima)) : "");
+                } elseif ((int)$r["disponivel"] !== 1) {
+                    $l[] = "Indisponível: fora do rodízio";
+                }
+                if (!empty($valores["data_compra"]) || isset($valores["valor_compra"])) {
+                    $l[] = "Comprado" . (!empty($valores["data_compra"]) ? " em " . date("d/m/Y", strtotime(substr((string)$valores["data_compra"], 0, 10))) : "")
+                        . (isset($valores["valor_compra"]) && $valores["valor_compra"] !== "" ? " por R\$ " . number_format((float)$valores["valor_compra"], 2, ",", ".") : "");
+                }
+                $l[] = "";
+                $l[] = "Duplo clique (ou \"Abrir foto\", embaixo): a foto em tamanho grande.";
+                return implode("\n", $l);
+            })(),
             "desde" => count($lt["linhas"]) > 0 ? date("Y-m-d H:i:s", $lt["linhas"][count($lt["linhas"]) - 1]["inicio"]) : null];
         // os dados do relógio: os campos do cadastro que valem para ele (o informado, senão o padrão) e o resultado de cada fórmula
         $dados = [];
@@ -4379,6 +4400,7 @@ if (!$token_ok && $quem === "") {
                 "relogio.estado_texto" => "o estado como a tela mostra: \"Em uso\", o nome da sessão aberta (\"No sol\", \"No carregador\"; duas juntas: \"No sol · No winder\") ou \"Em repouso\"",
                 "relogio.escala_fim" => "até que dia vai a escala (null fora da escala)",
                 "relogio.foto" => "a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto",
+                "relogio.dica_foto" => "a dica da foto no painel (aparece com o mouse parado em cima dela), em linhas: o nome, o grupo e o código; o estado e a carga; a nota e o próximo dia no rodízio (ou indisponível); a compra (data e valor); e a frase do duplo clique (Duplo clique, ou Abrir foto embaixo: a foto em tamanho grande)",
                 "relogio.id" => "o número (código)",
                 "relogio.leituras[]" => "as 40 últimas leituras com valor (o gráfico)",
                 "relogio.leituras[].em_uso" => "verdadeiro ou falso: a leitura foi feita com o relógio no pulso",

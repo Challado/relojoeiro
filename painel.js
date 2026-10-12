@@ -185,8 +185,12 @@ function abrirNoPainel(id) {
       res += el("h1", {}, "Novo relógio");
     } else {
       // a foto, com os botões dela embaixo: escolher (o campo de arquivo fica escondido atrás do botão), salvar e remover
-      var foto = r.foto !== null ? el("img", {"src": "api.php?recurso=foto&relogio=" + id + "&v=" + r.foto, "alt": "Foto do " + r.nome}) : el("div", {"class": "sem-foto"}, "Sem foto");
-      foto += el("form", {"data-recurso": "relogio", "class": "foto-acoes"}, el("input", {"type": "hidden", "name": "acao", "value": "foto"}) + el("input", {"type": "hidden", "name": "id", "value": id})
+      // com o mouse em cima, a dica: o resumo do relógio (da API) e o duplo clique, que abre a foto grande (como o "Abrir foto")
+      var foto = r.foto !== null ? el("img", {"src": "api.php?recurso=foto&relogio=" + id + "&v=" + r.foto, "alt": "Foto do " + r.nome, "title": r.dica_foto, "data-foto-grande": r.nome})
+        : el("div", {"class": "sem-foto"}, "Sem foto");
+      foto += el("form", {"data-recurso": "relogio", "class": "foto-acoes"}, (r.foto !== null ? el("button", {"type": "button", "class": "leve", "data-abrir-foto": true,
+          "title": "A foto em tamanho grande (também com duplo clique na foto)"}, "Abrir foto") : "")
+        + el("input", {"type": "hidden", "name": "acao", "value": "foto"}) + el("input", {"type": "hidden", "name": "id", "value": id})
         + el("input", {"type": "hidden", "name": "foto_base64", "id": "foto_base64_" + id})
         + el("label", {"class": "botao-arquivo"}, el("input", {"type": "file", "accept": "image/*", "data-foto": "foto_base64_" + id, "data-previa": "previa_" + id,
           "data-salvar": "salvar_foto_" + id, "aria-label": "Escolher foto"}) + (r.foto !== null ? "Trocar foto" : "Escolher foto"))

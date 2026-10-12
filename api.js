@@ -267,8 +267,9 @@ document.addEventListener("submit", function (ev) {
   }
 });
 
-// A foto do relógio ampliada: duplo clique em qualquer foto dele (o painel, o "Hoje é dia de", a miniatura da lista) abre
-// a imagem numa janela flutuante, no tamanho dela. A que não cabe é mostrada em escala, sem deformar, no maior tamanho
+// A foto do relógio ampliada: duplo clique na foto do detalhe do relógio (o painel, ou a ficha), ou o botão "Abrir foto"
+// embaixo dela, abre a imagem numa janela flutuante, no tamanho dela. Só ali: nas outras fotos (o "Hoje é dia de", as
+// miniaturas da lista, o histórico) o clique já abre o relógio, e o duplo clique não faz nada a mais. A que não cabe é mostrada em escala, sem deformar, no maior tamanho
 // que cabe no monitor em que a página está (screen.availWidth/availHeight) e na janela do navegador (a página não desenha
 // fora dela); com o navegador em tela cheia, é o monitor. Muda de tamanho junto com a janela (e ao passar para outro
 // monitor). Fecha com o ×, com um clique fora da imagem ou com Esc.
@@ -326,11 +327,19 @@ function fecharFotoAmpliada() {
 }
 
 document.addEventListener("dblclick", function (ev) {
-  var img = ev.target.closest("img");
-  if (img && /[?&]recurso=foto&/.test(img.getAttribute("src") || "")) {
+  var img = ev.target.closest(".ficha-foto img[data-foto-grande]");
+  if (img) {
     ev.preventDefault();
-    var nome = (img.getAttribute("alt") || "").replace(/^Foto do /, "") || img.getAttribute("data-nome") || "";
-    fotoAmpliada(img.getAttribute("src"), nome);
+    fotoAmpliada(img.getAttribute("src"), img.getAttribute("data-foto-grande"));
+  }
+});
+document.addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-abrir-foto]");
+  if (b) {
+    var img = b.closest(".ficha-foto").querySelector("img[data-foto-grande]");
+    if (img) {
+      fotoAmpliada(img.getAttribute("src"), img.getAttribute("data-foto-grande"));
+    }
   }
 });
 
