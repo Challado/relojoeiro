@@ -379,9 +379,10 @@ const RECONSTRUCAO_TELAS = [
                         . "Embaixo, \"Medições do gasto\": tabela Quando, Leituras (\"89 → 75\"), Horas (\"14 h no pulso, 2 h fora\"), Gasto "
                         . "medido (\"% por dia de uso\" ou \"fora do pulso\"), Na conta (sim; não (fora da janela); não (só histórico)), as "
                         . "10 mais recentes.",
-                    "Dados do relógio (largo): duas tabelas lado a lado: Cadastro (Campo, Valor, Origem com a etiqueta "
-                        . "informado/padrão/vazio) e Calculado agora (Fórmula com o identificador em código, Valor com a unidade "
-                        . "(segundos por extenso), Versão).",
+                    "Dados do relógio (largo): duas tabelas lado a lado (o valor numérico, a data e o sim/não numa linha só; o "
+                        . "valor de texto, como a observação ou uma fórmula que dá texto, quebra a linha dentro da coluna, sem invadir a "
+                        . "tabela do lado): Cadastro (Campo, Valor, Origem com a etiqueta informado/padrão/vazio) e Calculado agora "
+                        . "(Fórmula com o identificador em código, Valor com a unidade (segundos por extenso), Versão).",
                     "Histórico (largo): \"<n> registros desde DD/MM/AAAA HH:MM. Agora <estado> há <duração>.\" e a tabela das 5 "
                         . "linhas mais recentes (Quando com \"até ...\" embaixo, Duração, Estado em etiqueta ou o texto da marcação) e o "
                         . "botão leve \"Abrir o histórico completo\" (historico.php numa aba nova).",

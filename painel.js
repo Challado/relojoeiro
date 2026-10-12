@@ -487,12 +487,14 @@ function abrirNoPainel(id) {
       res += quadro("Dados do relógio", el("div", {"class": "dados-grade"},
         el("div", {}, el("h3", {}, "Cadastro") + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, "Campo")
             + el("th", {}, "Valor") + el("th", {}, "Origem"))) + el("tbody", {}, r.dados.map(function (c) {
-              return el("tr", {"class": c.origem === "vazio" ? "vazio" : ""}, el("td", {}, h(c.nome)) + el("td", {"class": "valor"}, valorCampo(c))
+              // o texto livre (a observação, uma lista) quebra a linha; número, data e sim/não ficam numa linha só
+              var texto = c.valor !== null && c.valor !== "" && ["sim_nao", "data", "inteiro", "decimal"].indexOf(c.tipo) < 0;
+              return el("tr", {"class": c.origem === "vazio" ? "vazio" : ""}, el("td", {}, h(c.nome)) + el("td", {"class": "valor" + (texto ? " texto" : "")}, valorCampo(c))
                 + el("td", {}, el("span", {"class": "origem origem-" + (c.origem === "padrão" ? "padrao" : c.origem)}, h(c.origem))));
             }).join(""))))
           + el("div", {}, el("h3", {}, "Calculado agora") + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, "Fórmula")
             + el("th", {}, "Valor") + el("th", {}, "Versão"))) + el("tbody", {}, r.calculos.map(function (x) {
-              return el("tr", {}, el("td", {}, h(x.nome) + el("code", {"class": "ident"}, h(x.identificador))) + el("td", {"class": "valor"}, valorCalculo(x))
+              return el("tr", {}, el("td", {}, h(x.nome) + el("code", {"class": "ident"}, h(x.identificador))) + el("td", {"class": "valor" + (typeof x.valor === "string" ? " texto" : "")}, valorCalculo(x))
                 + el("td", {"class": "versao"}, h(x.versao)));
             }).join(""))))), "", "largo");
       // o histórico: no painel só o resumo; a linha do tempo inteira fica em historico.php, que abre numa aba nova
