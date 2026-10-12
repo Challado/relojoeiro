@@ -26,6 +26,7 @@ pela API, do jeito que uma pessoa usa o sistema:
    define("DB_ARQUIVO", "/tmp/relogios_teste.sqlite");
    define("API_TOKEN", "token-de-teste-123");
    define("FUSO", "America/Sao_Paulo");
+   define("BACKUP_PASTA", "/tmp/relogios_copias_" . $b);   // a pasta tem de existir; uma para cada banco
    define("MSG_ENDPOINT", "");
    define("MSG_DESTINATARIO", "");
    define("MSG_TITULO", "Relógios");
@@ -52,4 +53,14 @@ em UTC já é o dia seguinte) e logo depois da meia-noite. O token que ele manda
 
 Rode os bancos **ao mesmo tempo**, cada um no seu servidor: com minutos de diferença entre as rodadas, as contas que andam
 com o tempo passam da folga. O resultado esperado é `0 diferenças graves`; as leves (`--leves` mostra) são os números
-dentro dos textos, como "há 3 min", e os arredondamentos bem na fronteira, como 23,499 e 23,501.
+dentro dos textos, como "há 3 min", os arredondamentos bem na fronteira, como 23,499 e 23,501, e o tamanho do arquivo da
+cópia de segurança (comprimido, com o nome do banco no cabeçalho: uns bytes de diferença, até 2%).
+
+Para isso, o roteiro não deixa o resultado depender do segundo em que cada passo cai:
+
+- as sessões "há N minutos" (o sol, o winder, o carregador) contam todas de um minuto só, o do começo do roteiro; o
+  carregador é fechado e aberto de novo (`alternar`) num mesmo minuto redondo, e a sessão aberta tem 1h 30min e pouco quando
+  é lida, longe da virada da hora cheia;
+- antes de cada escrita do rodízio e dos modos (as que podem trocar o relógio de hoje), ele espera o segundo virar: a sessão
+  do rodízio de cada relógio que passa por hoje dura ao menos 1 s (a que começa e acaba no mesmo segundo some, e mudaria o
+  histórico e as fórmulas).

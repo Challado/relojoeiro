@@ -45,9 +45,16 @@ function chamar($metodo, $params = [])
 // uma escrita: guarda a resposta (o ok, a mensagem, os erros) para comparar, e devolve o id
 function escrever($params, $espera_ok = true)
 {
-    global $foto, $falhas, $passo;
+    global $foto, $falhas, $passo, $ultima_troca;
     $passo++;
+    $troca = in_array($params["recurso"], ["rodizio", "modos"], true);
+    if ($troca) {
+        novo_segundo();
+    }
     $r = chamar("POST", $params);
+    if ($troca) {
+        $ultima_troca = time();
+    }
     $j = $r["json"] ?? [];
     $foto["escritas"][sprintf("%03d", $passo) . " " . $params["recurso"] . "." . $params["acao"]] = ["codigo" => $r["codigo"], "resposta" => $j ?? $r["cru"]];
     if ($espera_ok && !($j["ok"] ?? false)) {
@@ -79,10 +86,27 @@ function dia($dias_atras, $hora)
     return date("Y-m-d", strtotime("-" . (int)$dias_atras . " days")) . " " . $hora;
 }
 
-// um instante de agora há pouco (minutos atrás): o que tem de estar no passado mesmo rodando logo depois da meia-noite
+// um instante de agora há pouco (minutos atrás): o que tem de estar no passado mesmo rodando logo depois da meia-noite. Contado
+// de um minuto só, o do começo do roteiro (o $MINUTO): duas chamadas que caem uma de cada lado da virada do minuto dariam
+// durações diferentes (de 30 a 25 minutos atrás, 5 min num banco e 6 noutro)
+$MINUTO = intdiv(time(), 60) * 60;
 function ha_minutos($minutos)
 {
-    return date("Y-m-d H:i", time() - (int)$minutos * 60);
+    global $MINUTO;
+    return date("Y-m-d H:i", $MINUTO - (int)$minutos * 60);
+}
+
+// as trocas do relógio de hoje (sortear de novo, usando, ativar um modo...) fecham a sessão do rodízio do anterior agora e
+// abrem a do novo agora; a que começou no mesmo segundo em que fecha some (0 s), e a que fecha no segundo seguinte fica (1 s).
+// Antes de cada uma, o roteiro espera o segundo virar: a sessão de cada relógio que passou por hoje dura ao menos 1 s em
+// qualquer banco, rápido ou lento, e o histórico e as fórmulas (dias de uso, dias sem uso) saem iguais
+$ultima_troca = 0;
+function novo_segundo()
+{
+    global $ultima_troca;
+    while (time() <= $ultima_troca) {
+        usleep(20000);
+    }
 }
 
 $foto = ["escritas" => [], "leituras" => [], "cron" => []];
@@ -158,9 +182,12 @@ $id_errado = $lanc("lancar", "crono", "banho_ultrassom", ["quando" => dia(1, "16
 escrever(["recurso" => "lancamento", "acao" => "excluir", "id" => $id_errado]);
 escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["pilha"], "tipo" => "sol"], false);   // o tipo não vale para ele
 escrever(["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel["pilha"], "tipo" => "carregador"], false);   // só onde vale a leitura de carga
-// alternar: fecha a sessão aberta e abre de novo (um botão só no celular); não vale para o que não é sessão
-$lanc("alternar", "smart", "carregador");
-$lanc("alternar", "smart", "carregador");
+// alternar: fecha a sessão aberta e abre de novo (um botão só no celular); não vale para o que não é sessão. As duas no
+// mesmo instante, um minuto redondo: com "agora", as duas caíam às vezes em segundos diferentes, e a linha do tempo ganhava
+// 1 s de repouso entre elas. E não agora: a sessão aberta tem 1h 30min e pouco quando é lida, longe da virada de uma hora
+// cheia ("5h" num banco e "5h 1min" noutro); uma diferença de minutos ("1h 30min", "1h 31min") é só de números no texto
+$lanc("alternar", "smart", "carregador", ["quando" => ha_minutos(90)]);
+$lanc("alternar", "smart", "carregador", ["quando" => ha_minutos(90)]);
 escrever(["recurso" => "lancamento", "acao" => "alternar", "relogio_id" => $rel["smart"], "tipo" => "carga"], false);
 escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["smart"], "tipo" => "carga", "valor" => 50, "quando" => date("Y-m-d H:i", time() + 86400)], false);
 

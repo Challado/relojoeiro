@@ -105,6 +105,13 @@ function comparar($x, $y, $caminho, $chave)
     if ((is_int($x) || is_float($x)) && numeros_iguais($x, $y, $chave)) {
         return;
     }
+    // o tamanho do arquivo da cópia de segurança: comprimido, e o cabeçalho traz o nome do banco ("mysql", "firebird"), a
+    // hora em que foi feita e a ordem das tabelas e colunas de cada banco; uns bytes a mais ou a menos. Mais de 2%, é outra coisa
+    if ($chave === "bytes" && preg_match("/^\\.leituras\\.backup\\.resposta\\.copias\\[\\d+\\]\\.bytes\$/", $caminho) === 1 && is_int($x) && is_int($y)
+        && abs($x - $y) <= 0.02 * max($x, $y)) {
+        $leves[] = [$caminho, "tamanho da cópia", $x, $y];
+        return;
+    }
     // um inteiro arredondado bem na fronteira (23,499 e 23,501, calculados com segundos de diferença): 23 e 24
     if (is_int($x) && is_int($y) && abs($x - $y) === 1) {
         $leves[] = [$caminho, "arredondamento", $x, $y];
