@@ -214,7 +214,7 @@ function abrirNoPainel(id) {
         ? el("span", {"class": "carga-linha" + (r.carga <= 20 ? " baixa" : "")}, el("span", {"class": "barra"}, el("span", {"style": "width:" + Math.max(0, Math.min(100, r.carga)) + "%"}, ""))
           + el("strong", {}, "~" + r.carga + "%")) + el("small", {}, h(r.carga_de))
         : nada(r.carga_de);
-      var blocos = quadro("Agora", pares([["Estado", el("span", {"class": "estado " + (r.em_uso ? "estado-uso" : "estado-repouso")}, h(r.agora))], ["Carga", carga]]
+      var blocos = quadro("Agora", pares([["Estado", el("span", {"class": "estado estado-" + r.estado}, h(r.agora))], ["Carga", carga]]
         .concat(r.situacao.map(function (l, i) { return [i === 0 ? "Situação" : "", h(l)]; }))
         .concat(ultima ? [["Última leitura", num(ultima.valor, 1) + h(ultima.unidade) + " " + el("small", {}, dataBr(ultima.inicio, true) + " " + horaBr(ultima.inicio))]] : [])));
       if (r.previsao.aplica) {
@@ -303,7 +303,7 @@ function abrirNoPainel(id) {
           } else if (t.formato === "valor") {
             opcoes.agora += el("option", {"value": chave}, h(t.nome));
             partes += parte("marcar", chave, base + el("input", {"type": "hidden", "name": "acao", "value": "lancar"})
-              + el("p", {"class": "marcar-estado"}, "Agora " + el("span", {"class": "estado " + (r.em_uso ? "estado-uso" : "estado-repouso")}, r.em_uso ? "em uso" : "em repouso")
+              + el("p", {"class": "marcar-estado"}, "Agora " + el("span", {"class": "estado estado-" + r.estado}, h(minusculo(r.estado_texto)))
                 + (r.carga !== null && t.unidade === "%" ? " " + el("small", {}, "estimada ~" + r.carga + "%") : ""))
               + el("label", {}, "Leitura " + el("span", {"class": "com-unidade"}, el("input", {"type": "text", "inputmode": "decimal", "name": "valor", "required": true}) + " " + h(t.unidade)))
               + quando("Lida às")
@@ -368,7 +368,7 @@ function abrirNoPainel(id) {
       res += el("div", {"class": "ficha-cabeca"}, el("div", {"class": "ficha-foto"}, foto)
         + el("div", {"class": "ficha-identidade"}, el("p", {"class": "data"}, h(r.tipo) + " · " + h(r.caminho))
           + el("h1", {}, h(r.nome)) + (r.observacao ? el("p", {"class": "observacao"}, h(r.observacao)) : "")
-          + el("p", {"class": "marcas"}, el("span", {"class": "estado " + (r.em_uso ? "estado-uso" : "estado-repouso")}, h(r.em_uso ? "em uso" : "em repouso"))
+          + el("p", {"class": "marcas"}, el("span", {"class": "estado estado-" + r.estado}, h(minusculo(r.estado_texto)))
             + (r.disponivel ? "" : " " + el("span", {"class": "estado estado-indisponivel"}, "indisponível"))
             + (r.proxima === hoje ? " " + el("span", {"class": "estado estado-atividade"}, "relógio de hoje") : ""))))
         + el("div", {"class": "quadros"}, blocos + lancar);

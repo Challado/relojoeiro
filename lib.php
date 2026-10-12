@@ -325,6 +325,7 @@ $MIGRACOES = [
     "v15" => ["migracao_v15.sql", "a cópia de segurança de cada documento dentro do banco (em pedaços de 4 MB): o arquivo que sumir da pasta volta sozinho do banco; o cron copia os que já existem e limpa a pasta (relógio excluído, arquivo sem documento)", "documento_parte"],
     "v16" => ["migracao_v16.sql", "o banco no modelo relacional estrito: toda ligação é chave estrangeira, com cascata (ou, se opcional, desfazendo a ligação); as listas guardadas num campo (dias dos blocos e dos eventos, tipos aceitos, opções de um campo) viram tabelas; as mensagens e os canais saem da configuração para a tabela canal_aviso; o modo ativo vira uma marca no modo; a tabela manual sai (os manuais viram documentos)", "config.chave=migracao_v16", "migracao_v16_dados"],
     "v17" => ["migracao_v17.sql", "o banco valida o que guarda: regras (CHECK) em cada tabela, a origem dos lançamentos e do plano numa lista fechada, no máximo um modo em uso, um arquivo por documento; e a cópia dos documentos no banco em três níveis: o sistema (config.php), o relógio e o próprio arquivo", "config.chave=migracao_v17"],
+    "v18" => ["migracao_v18.sql", "o carregador: a sessão \"No carregador\" onde vale a leitura de carga (o smartwatch), o estado do relógio mostra a sessão aberta (no sol, no winder, no carregador) e, no carregador, o aviso \"Carregar\" não aparece", "config.chave=migracao_v18"],
 ];
 
 // O passo em PHP da v16, depois do SQL dela: as opções de cada campo do tipo lista (o texto, uma por linha) viram linhas da
@@ -2378,7 +2379,7 @@ $ANCORAS = [
     "relogio" => "Nome do relógio",
     "codigo" => "Código do relógio",
     "tipo" => "Tipo: o grupo do relógio (Smartwatch, Automático, Solar...)",
-    "estado" => "Em uso ou em repouso",
+    "estado" => "O estado agora: em uso, em repouso ou a sessão aberta (no sol, no winder, no carregador...)",
     "carga" => "Carga em %: bateria, reserva, luz ou pilha",
     "acao" => "O que fazer: Dar corda, Carregar...",
     "motivo" => "Por quê, com os números: a reserva acaba em 3h...",
@@ -2445,18 +2446,29 @@ function visao_relogio($r, $agora)
     $antigo = valor("SELECT MAX(l.inicio) FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.identificador = 'pulso_antigo'", [$id]);
     $ult_pulso = max($ult_pulso, $antigo ? (int)strtotime($antigo) : 0);
     $pulso = null;
+    $sessoes = [];
     $situacao = [];
     foreach ($abertas as $a) {
         if ($a["tipo"] === "pulso") {
             $pulso = $a;
         } else {
+            $sessoes[] = $a;
+        }
+    }
+    // na situação, as sessões abertas que o estado não mostra (ele mostra o pulso, ou a sessão mais recente)
+    foreach ($sessoes as $i => $a) {
+        if ($pulso !== null || $i < count($sessoes) - 1) {
             $min = (int)floor(($agora - $a["inicio"]) / 60);
             $situacao[] = $a["nome"] . " desde " . date("H:i", $a["inicio"]) . " (" . intdiv($min, 60) . " h " . ($min % 60) . " min)";
         }
     }
-    // em uso desde o começo da sessão no pulso; em repouso desde o fim da última
-    $desde = $pulso !== null ? $pulso["inicio"] : ($ult_pulso > 0 ? $ult_pulso : null);
-    $texto = $pulso !== null ? "Em uso" : "Em repouso";
+    // o estado: em uso (no pulso), numa sessão (no sol, no winder, no carregador: o nome do tipo) ou em repouso. Em uso desde o
+    // começo da sessão no pulso; numa sessão, desde o começo da mais recente; em repouso, desde o fim da última no pulso
+    $estado = $pulso !== null ? "uso" : (count($sessoes) > 0 ? "sessao" : "repouso");
+    $estado_texto = $estado === "uso" ? "Em uso" : ($estado === "sessao" ? implode(" · ", array_column($sessoes, "nome")) : "Em repouso");
+    $ultima = count($sessoes) > 0 ? $sessoes[count($sessoes) - 1] : null;
+    $desde = $pulso !== null ? $pulso["inicio"] : ($ultima !== null ? $ultima["inicio"] : ($ult_pulso > 0 ? $ult_pulso : null));
+    $texto = $pulso !== null ? "Em uso" : ($ultima !== null ? $ultima["nome"] : "Em repouso");
     if ($desde !== null) {
         $texto .= " desde " . (date("Y-m-d", $desde) === date("Y-m-d", $agora) ? date("H:i", $desde)
             : (date("Y-m-d", $desde) === date("Y-m-d", $agora - 86400) ? date("H:i", $desde) . " de ontem" : date("d/m H:i", $desde)));
@@ -2469,6 +2481,7 @@ function visao_relogio($r, $agora)
     $avisos = avisos_do_relogio($r, $agora);
     $prox = count($avisos) > 0 ? $avisos[0] : null;
     return ["energia" => is_numeric($energia) ? (int)round((float)$energia) : null, "de" => $de, "em_uso" => $pulso !== null, "pulso" => $pulso,
+        "estado" => $estado, "estado_texto" => $estado_texto,
         "texto" => $texto, "ultimo" => $pulso !== null ? $agora : $ult_pulso, "situacao" => $situacao, "abertas" => $abertas, "avisos" => $avisos,
         "prox" => $prox, "prox_momento" => $prox ? (int)strtotime($prox["data"]) : 0,
         "prox_falta" => $prox ? ($prox["falta_dias"] < 0 ? "atrasado " : "") . (duracao_texto($prox["falta_dias"]) !== "" ? duracao_texto($prox["falta_dias"]) : "agora") : "—"];
@@ -2511,7 +2524,7 @@ function contexto_mensagem($id, $extra, $hoje)
         $ctx["relogio"] = $r["nome"];
         $ctx["codigo"] = (string)$r["id"];
         $ctx["tipo"] = isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "";
-        $ctx["estado"] = $v["em_uso"] ? "em uso" : "em repouso";
+        $ctx["estado"] = function_exists("mb_strtolower") ? mb_strtolower($v["estado_texto"], "UTF-8") : strtolower($v["estado_texto"]);
         $ctx["carga"] = $v["energia"] !== null ? $v["energia"] . "%" : $v["de"];
         $ctx["ultimo_uso"] = $v["ultimo"] > 0 ? date("d/m H:i", $v["ultimo"]) : "nunca";
         if ($url !== "") {
