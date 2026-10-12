@@ -66,6 +66,7 @@ Para isso, o roteiro não deixa o resultado depender do segundo em que cada pass
 - antes de cada escrita do rodízio e dos modos (as que podem trocar o relógio de hoje), ele espera o segundo virar: a sessão
   do rodízio de cada relógio que passa por hoje dura ao menos 1 s (a que começa e acaba no mesmo segundo some, e mudaria o
   histórico e as fórmulas);
-- o que ele lança no passado fica longe das bordas das janelas das fórmulas (os últimos 30 dias), que andam com a hora do dia;
-- a menos de 3 minutos de uma das horas em que o sistema muda de comportamento (a meia-noite, 06:30, 07:00, 07:30, 20:00 e
-  22:00: o horário de uso e as rodadas do cron), ele espera a hora passar antes de começar.
+- o que ele lança no passado fica longe das bordas das janelas das fórmulas (os últimos 30 dias), que andam com a hora do dia,
+  e a reserva do automático não chega perto de zero hoje (perto de zero, os segundos entre os bancos passam da folga);
+- a menos de 3 minutos de uma das horas em que o sistema muda de comportamento (a meia-noite, 06:30, 07:00, 07:30, 18:00,
+  20:00 e 22:00: o horário de uso, as rodadas do cron e o sol que fecha sozinho), ele espera a hora passar antes de começar.

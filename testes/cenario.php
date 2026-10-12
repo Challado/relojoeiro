@@ -25,10 +25,10 @@ if ($fuso !== "" && !@date_default_timezone_set($fuso)) {
     exit(1);
 }
 // as horas do dia em que o sistema muda de comportamento: a meia-noite (o dia de hoje), o começo e o fim do horário de uso (o
-// padrão, 07:00, e o que o roteiro configura, 07:30 a 22:00: a sessão do rodízio de hoje abre ou não) e as rodadas da manhã e
-// da noite. Uma rodada que passa por uma delas sai diferente de outra que roda toda antes; perto de uma, o roteiro espera
+// padrão, 07:00, e o que o roteiro configura, 07:30 a 22:00: a sessão do rodízio de hoje abre ou não), as rodadas da manhã e
+// da noite, e as 18:00, quando a sessão no sol fecha sozinha. Uma rodada que passa por uma delas sai diferente de outra que roda toda antes; perto de uma, o roteiro espera
 // ela passar (os bancos, rodando juntos, esperam todos)
-foreach (["00:00", "06:30", "07:00", "07:30", "20:00", "22:00"] as $virada) {
+foreach (["00:00", "06:30", "07:00", "07:30", "18:00", "20:00", "22:00"] as $virada) {
     $em = strtotime(date("Y-m-d") . " " . $virada);
     if ($em <= time()) {
         $em = strtotime("+1 day", $em);
@@ -178,7 +178,10 @@ $lanc("periodo", "smart", "pulso", ["inicio" => dia(3, "08:00"), "fim" => dia(3,
 $lanc("lancar", "smart", "carga", ["valor" => "71.5", "quando" => dia(2, "12:00"), "medir" => 0]);
 $lanc("lancar", "smart", "carga", ["valor" => 64, "quando" => dia(1, "18:00")]);
 $lanc("periodo", "auto", "pulso", ["inicio" => dia(2, "08:00"), "fim" => dia(2, "22:00")]);
-$lanc("lancar", "auto", "corda", ["quando" => dia(1, "07:00")]);
+// a corda às 15:06: a reserva (41 h) acaba amanhã às 08:06, e hoje fica entre 8 h e 32 h a qualquer hora (perto de zero, os
+// segundos entre um banco e outro passariam da folga); e passa de 60% (o "filtro energia", abaixo) às 07:30, quando o
+// roteiro não roda
+$lanc("lancar", "auto", "corda", ["quando" => dia(1, "15:06")]);
 $lanc("periodo", "auto2", "winder", ["inicio" => dia(4, "08:00"), "fim" => dia(4, "20:00")]);
 $lanc("periodo", "auto2", "pulso", ["inicio" => dia(9, "08:00"), "fim" => dia(9, "22:00")]);
 // 29 dias atrás, e não 30: as fórmulas de uso olham os últimos 30 dias (HORAS("pulso"; 30), CONTAR("pulso"; 30)), cuja borda
