@@ -226,7 +226,7 @@ function recarregarHoje() {
         "data-compra": x.compra.data || "", "data-valor": x.compra.valor === null ? "" : x.compra.valor,
         "class": ((x.de_hoje ? "de-hoje " : "") + (x.com_aviso ? "pendente " : "") + (x.disponivel ? "" : "indisponivel ") + (x.id === sel ? "selecionado" : "")).trim()},
         el("td", {"class": "col-codigo", "data-rotulo": "Código"}, String(x.id))
-        + el("td", {"class": "col-nome"}, el("div", {"class": "nome-rel"}, (x.foto !== null ? el("img", {"src": "api.php?recurso=foto&relogio=" + x.id + "&v=" + x.foto, "alt": ""}) : el("span", {"class": "sem-mini"}, ""))
+        + el("td", {"class": "col-nome"}, el("div", {"class": "nome-rel"}, (x.foto !== null ? el("img", {"src": "api.php?recurso=foto&relogio=" + x.id + "&v=" + x.foto, "alt": "", "data-nome": x.nome, "title": "Duplo clique: a foto ampliada"}) : el("span", {"class": "sem-mini"}, ""))
           + el("a", {"href": "index.php?r=" + x.id, "title": x.nome}, h(x.nome))))
         + el("td", {"data-rotulo": "Tipo"}, h(x.tipo))
         + el("td", {"data-rotulo": "Estado"}, el("span", {"class": "estado estado-" + x.estado}, h(x.estado_texto)))

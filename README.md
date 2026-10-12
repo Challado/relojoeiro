@@ -327,7 +327,7 @@ cadastro, não código: dá para mudar tudo na página **Cadastros**, e criar os
 | **Grupo** | o lugar dele na árvore. Decide os campos, as fórmulas (a "carga" de um smartwatch é a bateria; a de um mecânico, a reserva de marcha) e os avisos que ele recebe. |
 | **Disponível** | desmarcado, ele sai do rodízio e dos avisos (no conserto, emprestado, vendido), mas o histórico fica. |
 | **Guardar no banco a cópia de todos os documentos dele** | marcada, todo arquivo do relógio (o manual, a nota, as fotos, os vídeos) vai também para o banco, como cópia de segurança. Só aparece quando o `config.php` não decide por todos (sem o `DOCUMENTOS_COPIA_BANCO`). Veja [Os documentos do relógio](#os-documentos-do-relógio): é o segundo dos três níveis da cópia. |
-| **Foto** | só para a tela. |
+| **Foto** | só para a tela. **Duplo clique** em qualquer foto do relógio (no painel, no *Hoje é dia de*, na miniatura da lista, no histórico) abre a foto numa janela flutuante, no tamanho dela; a que é maior que a tela aparece em escala, sem deformar, no maior tamanho que cabe no monitor (e na janela do navegador), com o tamanho real e a escala embaixo. Fecha com o ×, com um clique fora ou com Esc. |
 | **Documentos** | o manual, a nota fiscal (em PDF e em XML), as fotos de recordação, os vídeos e o que mais for. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 
 ### Os documentos do relógio

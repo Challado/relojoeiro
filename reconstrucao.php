@@ -168,6 +168,15 @@ const RECONSTRUCAO_TELAS = [
                 . "Erro ao ler: \"Não consegui ler <o quê>: <motivo>\" em âmbar, no lugar da página.",
             "Fotos reduzidas no navegador antes de enviar: no máximo 1200px no lado maior, JPEG 85%, com a prévia na tela; imagem "
                 . "que não abre: alerta \"Não consegui abrir essa imagem. Use JPEG ou PNG.\".",
+            "A foto do relógio ampliada: duplo clique em qualquer foto dele (a do painel, a do \"Hoje é dia de\", a miniatura da "
+                . "lista, a do histórico; o cursor é a lupa de ampliar) abre por cima de tudo uma janela flutuante: fundo "
+                . "rgba(10,14,20,.82) na tela inteira, a foto no meio, no tamanho dela (os pixels da imagem em px da página), cantos 6px, "
+                . "fundo branco e sombra; maior que a área que se vê, em escala, sem deformar: a escala é o menor entre 1, (largura − "
+                . "32px) ÷ a largura da foto e (altura − 72px) ÷ a altura da foto, com a largura e a altura sendo o menor entre o monitor "
+                . "(screen.availWidth/availHeight) e a janela do navegador; refeita quando a janela muda de tamanho ou de monitor. "
+                . "Embaixo, em branco, \"<nome> · <largura> × <altura> px\" e, em escala, \"(mostrada a N%)\". Um botão redondo \"×\" (branco, "
+                . "2,4rem) no canto de cima, à direita. Fecha com o ×, com um clique fora da foto ou com Esc (o Esc fecha só a foto: o "
+                . "painel por baixo continua aberto); enquanto aberta, a página não rola.",
             "O título da aba do navegador é o título da página (\"Relógio de hoje\", \"Plano\", \"Configuração\", \"Critérios de escolha\", "
                 . "\"Grupos de relógios\", \"Execuções do cron\", \"Usuários\", \"Cadastros\", \"Ajuda\", \"Ficha do relógio\", \"Documentos\"; no "
                 . "histórico, \"Histórico — <relógio>\").",

@@ -1272,3 +1272,20 @@ a.hoje-foto, a.hoje-foto * { text-decoration: none; }
 .periodo-lista:empty::before { content: "Nenhum relógio ainda: escolha em \"Incluir relógio\"."; color: var(--cinza); font-size: .92rem; margin-left: -1.4rem; }
 .periodo-lista li { margin: .2rem 0; }
 
+
+/* a foto do relógio ampliada (duplo clique numa foto): por cima de tudo, no meio da tela, no tamanho da imagem ou em
+   escala para caber no monitor (o tamanho em px vem do api.js, sem deformar); o fundo escurecido fecha com um clique */
+img[src*="recurso=foto&"] { cursor: zoom-in; }
+.foto-ampliada {
+  position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+  background: rgba(10, 14, 20, .82); padding: 16px; cursor: zoom-out; opacity: 0; transition: opacity .15s;
+}
+.foto-ampliada.pronta { opacity: 1; }
+.foto-ampliada figure { position: relative; margin: 0; display: flex; flex-direction: column; align-items: center; gap: .5rem; cursor: default; }
+.foto-ampliada img { display: block; max-width: none; border-radius: 6px; background: #fff; box-shadow: 0 24px 70px rgba(0, 0, 0, .55); cursor: default; }
+.foto-ampliada figcaption { color: #e9eef3; font-size: .9rem; text-align: center; }
+.foto-ampliada .fechar-foto {
+  position: absolute; top: -.6rem; right: -.6rem; width: 2.4rem; height: 2.4rem; min-height: 0; padding: 0; border-radius: 50%;
+  font-size: 1.4rem; line-height: 1; background: #fff; color: #222; border: 1px solid rgba(0, 0, 0, .2); box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
+}
+body.com-foto-ampliada { overflow: hidden; }
