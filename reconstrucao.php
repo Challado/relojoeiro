@@ -892,7 +892,7 @@ const RECONSTRUCAO_CODIGO = [
     "api/tudo.php" => ["api", "api.php sem recurso: tudo o que está guardado"],
     "api/hoje.php" => ["api", "recurso=hoje: tudo o que a página Hoje mostra"],
     "api/ficha.php" => ["api", "recurso=ficha: tudo o que o painel de um relógio mostra (ou o cadastro de um novo)"],
-    "api/config.php" => ["api", "recurso=config: a Configuração inteira"],
+    "api/configuracao.php" => ["api", "recurso=config: a Configuração inteira"],
     "api/historico.php" => ["api", "recurso=historico: a linha do tempo de um relógio, com os filtros e o resumo"],
     "api/plano.php" => ["api", "recurso=plano: o plano dia a dia, o resumo por relógio e as páginas"],
     "api/cron.php" => ["api", "recurso=cron: as execuções do cron, com os filtros, o resumo e as páginas"],
