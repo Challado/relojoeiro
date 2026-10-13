@@ -1129,7 +1129,7 @@ function sqlite_refazer($tabela, $mudar, $sai = null)
 {
     $criar = (string)valor("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", [$tabela]);
     if ($criar === "") {
-        throw new BancoErro("a tabela " . $tabela . " não existe");
+        throw new BancoErro(t("a tabela {1} não existe", [1 => $tabela]));
     }
     $indices = array_column(linhas("SELECT sql FROM sqlite_master WHERE type = 'index' AND tbl_name = ? AND sql IS NOT NULL", [$tabela]), "sql");
     $abre = strpos($criar, "(");
@@ -2053,7 +2053,7 @@ function banco_colunas($tabela)
 function sql_coluna($def, $banco, $tabela)
 {
     if (preg_match("/^(`?)(\\w+)\\1\\s+(\\w+)\\s*(\\(((?:[^()']|'(?:[^']|'')*')*)\\))?(.*)\$/is", trim($def), $m) !== 1) {
-        throw new BancoErro("não sei traduzir a coluna: " . $def);
+        throw new BancoErro(t("não sei traduzir a coluna: {1}", [1 => $def]));
     }
     [, , $nome, $tipo, , $args, $resto] = $m;
     $tipo = strtoupper($tipo);
@@ -2119,7 +2119,7 @@ function sql_coluna($def, $banco, $tabela)
             $novo = $banco === "pgsql" ? "BYTEA" : "BLOB";
             break;
         default:
-            throw new BancoErro("não sei traduzir o tipo " . $tipo . " da coluna " . $tabela . "." . $nome);
+            throw new BancoErro(t("não sei traduzir o tipo {1} da coluna {2}", [1 => $tipo, 2 => $tabela . "." . $nome]));
     }
     // os textos do valor padrão, no formato do banco
     $resto = sql_texto(sql_pedacos($resto), $banco);
@@ -2202,7 +2202,7 @@ function sql_coluna_fb($nome, $tipo, $args, $resto, $tabela)
             $novo = "BLOB SUB_TYPE BINARY";
             break;
         default:
-            throw new BancoErro("não sei traduzir o tipo " . $tipo . " da coluna " . $tabela . "." . $nome);
+            throw new BancoErro(t("não sei traduzir o tipo {1} da coluna {2}", [1 => $tipo, 2 => $tabela . "." . $nome]));
     }
     $sql = $nome . " " . $novo . ($padrao !== null ? " DEFAULT " . $padrao : "") . ($nao_nulo ? " NOT NULL" : "") . ($resto !== "" ? " " . $resto : "") . $check
         . ($texto ? " COLLATE UNICODE_CI_AI" : "");
@@ -2212,7 +2212,7 @@ function sql_coluna_fb($nome, $tipo, $args, $resto, $tabela)
 function sql_criar_tabela($comando, $banco)
 {
     if (preg_match("/^\\s*CREATE\\s+TABLE\\s+(IF\\s+NOT\\s+EXISTS\\s+)?`?(\\w+)`?\\s*\\((.*)\\)([^)]*)\$/is", $comando, $m) !== 1) {
-        throw new BancoErro("não sei traduzir: " . substr($comando, 0, 80));
+        throw new BancoErro(t("não sei traduzir: {1}", [1 => substr($comando, 0, 80)]));
     }
     $tabela = $m[2];
     $defs = [];
@@ -2312,7 +2312,7 @@ function sql_alterar_tabela($comando, $banco)
         }
         return $saida;
     }
-    throw new BancoErro("não sei traduzir: " . substr($comando, 0, 120));
+    throw new BancoErro(t("não sei traduzir: {1}", [1 => substr($comando, 0, 120)]));
 }
 
 // O ALTER TABLE no Firebird: ADD sem a palavra COLUMN, o índice com nome de até 31 letras, DROP sem COLUMN, e o MODIFY
@@ -2333,7 +2333,7 @@ function sql_alterar_tabela_fb($comando)
     if (preg_match("/^ALTER TABLE `?(\\w+)`? MODIFY (COLUMN )?(.*?)( AFTER `?\\w+`?| FIRST)?\$/i", $comando, $m) === 1) {
         return [["firebird_modificar", $m[1], $m[3]]];
     }
-    throw new BancoErro("não sei traduzir: " . substr($comando, 0, 120));
+    throw new BancoErro(t("não sei traduzir: {1}", [1 => substr($comando, 0, 120)]));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

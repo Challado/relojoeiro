@@ -19,10 +19,10 @@ if ($escrita && $acao === "aplicar") {
         }
         $aplicadas[] = $versao . " (" . $m[1] . ")";
     }
-    $saida = ["ok" => true, "mensagem" => count($aplicadas) > 0 ? "Aplicadas: " . implode("; ", $aplicadas) . "." : "Nada a aplicar: o banco está em dia.", "erros" => [], "aplicadas" => $aplicadas];
+    $saida = ["ok" => true, "mensagem" => count($aplicadas) > 0 ? t("Aplicadas: {1}.", [1 => implode("; ", $aplicadas)]) : t("Nada a aplicar: o banco está em dia."), "erros" => [], "aplicadas" => $aplicadas];
 } elseif ($escrita) {
     $codigo = 400;
-    $saida = ["ok" => false, "mensagem" => "", "erros" => ["Ação desconhecida: use aplicar."]];
+    $saida = ["ok" => false, "mensagem" => "", "erros" => [t("Ação desconhecida: use aplicar.")]];
 } else {
     $saida = ["pendentes" => array_map(function ($v, $m) {
         return ["versao" => $v, "arquivo" => $m[0], "traz" => $m[1]];

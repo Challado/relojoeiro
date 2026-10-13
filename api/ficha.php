@@ -21,11 +21,11 @@ foreach (campos_todos() as $ident => $c) {
 }
 $saida = ["hoje" => $hoje->format("Y-m-d"), "relogio" => null, "copia_sistema" => documentos_copia_sistema(), "painel_modo" => painel_modo(), "campos" => $campos,
     // as situações na coleção, na ordem, para o menu do cadastro
-    "posses" => array_map(function ($k) { return ["valor" => $k, "nome" => POSSES[$k]]; }, array_keys(POSSES)),
+    "posses" => array_map(function ($k) { return ["valor" => $k, "nome" => t(POSSES[$k])]; }, array_keys(POSSES)),
     "grupos" => array_map(function ($o) use ($n) { return ["id" => $o[0], "caminho" => no_caminho($o[0]), "cadeia" => no_cadeia($o[0])]; }, nos_em_ordem())];
 if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     $codigo = 404;
-    $saida = ["erro" => "relógio não encontrado"];
+    $saida = ["erro" => t("relógio não encontrado")];
 } elseif ($r) {
     $id = (int)$r["id"];
     $v = visao_relogio($r, $agora);
@@ -39,8 +39,7 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
         if (substr($ident, -7) !== "_antigo") {
             $tipos[] = ["identificador" => $ident, "nome" => $t["nome"], "formato" => $t["formato"], "unidade" => $t["unidade"], "mede_gasto" => (int)$t["mede_gasto"] === 1,
                 "aberta" => isset($abertas[$ident]) ? ["inicio" => date("Y-m-d H:i:s", $abertas[$ident]["inicio"]), "rodizio" => $abertas[$ident]["origem"] === "rodizio",
-                    "texto" => ($abertas[$ident]["origem"] === "rodizio" ? "no rodízio " : "") . "desde " . date("H:i", $abertas[$ident]["inicio"]) . " ("
-                        . intdiv((int)floor(($agora - $abertas[$ident]["inicio"]) / 60), 60) . " h " . ((int)floor(($agora - $abertas[$ident]["inicio"]) / 60) % 60) . " min)"] : null];
+                    "texto" => t("{1}desde {2} ({3} h {4} min)", [1 => $abertas[$ident]["origem"] === "rodizio" ? t("no rodízio ") : "", 2 => date("H:i", $abertas[$ident]["inicio"]), 3 => intdiv((int)floor(($agora - $abertas[$ident]["inicio"]) / 60), 60), 4 => (int)floor(($agora - $abertas[$ident]["inicio"]) / 60) % 60])] : null];
         }
     }
     $leituras = [];
@@ -54,17 +53,17 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     $foto = valor("SELECT atualizado FROM foto WHERE relogio_id = ?", [$id]);
     $nota = (int)$r["disponivel"] === 1 ? nota_do_relogio($r, $agora) : null;
     $saida["relogio"] = ["id" => $id, "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? 0 : (int)$r["no_id"], "disponivel" => (int)$r["disponivel"] === 1,
-        "posse" => posse_de($r), "posse_texto" => POSSES[posse_de($r)], "da_colecao" => da_colecao($r),
+        "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]), "da_colecao" => da_colecao($r),
         "acessorios" => acessorios_lista($id),
         "copia_banco" => (int)$r["copia_banco"] === 1,
-        "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "sem grupo", "caminho" => no_caminho($r["no_id"]), "observacao" => $valores["observacao"] ?? null,
+        "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : t("sem grupo"), "caminho" => no_caminho($r["no_id"]), "observacao" => $valores["observacao"] ?? null,
         "foto" => $foto !== null ? strtotime($foto) : null, "documentos" => (function () use ($id) {
             $cats = array_values(array_filter(documento_categorias_lista($id), function ($c) { return $c["documentos"] > 0; }));
             return ["total" => array_sum(array_column($cats, "documentos")), "categorias" => array_map(function ($c) { return ["id" => $c["id"], "nome" => $c["nome"], "documentos" => $c["documentos"]]; }, $cats),
                 "pasta_ok" => documentos_pasta() !== null, "copia_sistema" => documentos_copia_sistema()];
         })(), "em_uso" => $v["em_uso"], "estado" => $v["estado"], "estado_texto" => $v["estado_texto"], "agora" => $v["texto"], "carga" => $v["energia"], "carga_de" => $v["de"], "situacao" => $v["situacao"],
         "nota" => $nota ? ["nota" => $nota["nota"], "conjunto_texto" => $nota["conjunto_texto"]] : null,
-        "proxima" => $proxima, "proxima_ate" => $proxima !== null ? texto_ate($proxima, "neste dia") : null,
+        "proxima" => $proxima, "proxima_ate" => $proxima !== null ? texto_ate($proxima, t("neste dia")) : null,
         "escala_fim" => valor("SELECT escala_dias FROM modo WHERE id = ?", [modo_ativo()]) !== null ? cfg("escala_fim") : null,
         "compra" => ["data" => $valores["data_compra"] ?? null, "valor" => isset($valores["valor_compra"]) ? (float)$valores["valor_compra"] : null, "loja" => $valores["loja"] ?? null,
             "garantia_ate" => $valores["garantia_ate"] ?? null,
@@ -93,21 +92,20 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
         "linha_do_tempo" => array_map("linha_legivel", array_slice($lt["linhas"], 0, 5)), "registros" => count($lt["linhas"]),
         // a dica da foto no painel (o texto que aparece com o mouse parado em cima dela): um resumo do relógio e o duplo clique
         "dica_foto" => (function () use ($r, $id, $n, $v, $nota, $proxima, $valores) {
-            $l = [$r["nome"] . " · " . (isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "sem grupo") . " · código " . $id];
-            $l[] = $v["estado_texto"] . " · " . ($v["energia"] !== null ? "carga " . (int)round((float)$v["energia"]) . "%" : (string)$v["de"]);
+            $l = [t("{1} · {2} · código {3}", [1 => $r["nome"], 2 => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : t("sem grupo"), 3 => $id])];
+            $l[] = $v["estado_texto"] . " · " . ($v["energia"] !== null ? t("carga {1}%", [1 => (int)round((float)$v["energia"])]) : (string)$v["de"]);
             if ($nota !== null) {
-                $l[] = "Nota " . motivo_nota($nota["nota"]) . ($proxima !== null ? " · próximo dia no rodízio: " . date("d/m/Y", strtotime($proxima)) : "");
+                $l[] = t("Nota {1}{2}", [1 => motivo_nota($nota["nota"]), 2 => $proxima !== null ? t(" · próximo dia no rodízio: {1}", [1 => data_txt(strtotime($proxima))]) : ""]);
             } elseif (posse_de($r) !== "colecao") {
-                $l[] = POSSES[posse_de($r)] . ": fora do rodízio";
+                $l[] = t("{1}: fora do rodízio", [1 => t(POSSES[posse_de($r)])]);
             } elseif ((int)$r["disponivel"] !== 1) {
-                $l[] = "Indisponível: fora do rodízio";
+                $l[] = t("Indisponível: fora do rodízio");
             }
             if (!empty($valores["data_compra"]) || isset($valores["valor_compra"])) {
-                $l[] = "Comprado" . (!empty($valores["data_compra"]) ? " em " . date("d/m/Y", strtotime(substr((string)$valores["data_compra"], 0, 10))) : "")
-                    . (isset($valores["valor_compra"]) && $valores["valor_compra"] !== "" ? " por R\$ " . number_format((float)$valores["valor_compra"], 2, ",", ".") : "");
+                $l[] = t("Comprado{1}{2}", [1 => !empty($valores["data_compra"]) ? " em " . data_txt(strtotime(substr((string)$valores["data_compra"], 0, 10))) : "", 2 => isset($valores["valor_compra"]) && $valores["valor_compra"] !== "" ? " por R\$ " . numero_txt((float)$valores["valor_compra"], 2) : ""]);
             }
             $l[] = "";
-            $l[] = "Duplo clique (ou \"Abrir foto\", embaixo): a foto em tamanho grande.";
+            $l[] = t("Duplo clique (ou \"Abrir foto\", embaixo): a foto em tamanho grande.");
             return implode("\n", $l);
         })(),
         "desde" => count($lt["linhas"]) > 0 ? date("Y-m-d H:i:s", $lt["linhas"][count($lt["linhas"]) - 1]["inicio"]) : null,
@@ -118,7 +116,7 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     foreach (campos_do_relogio($r) as $ident => $c) {
         $dados[] = ["identificador" => $ident, "nome" => $c["nome"], "tipo" => $c["tipo"], "unidade" => $c["unidade"], "valor" => $valores[$ident] ?? null,
             "valor_usado" => ($valores[$ident] ?? "") !== "" ? $valores[$ident] : $c["padrao"],
-            "origem" => ($valores[$ident] ?? "") !== "" ? "informado" : ($c["padrao"] !== null && $c["padrao"] !== "" ? "padrão" : "vazio")];
+            "origem" => ($valores[$ident] ?? "") !== "" ? "informado" : ($c["padrao"] !== null && $c["padrao"] !== "" ? t("padrão") : "vazio")];
     }
     $calculos = [];
     foreach (formulas_todas() as $ident => $versoes) {

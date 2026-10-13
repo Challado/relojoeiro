@@ -27,14 +27,14 @@ foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
     $v = valores_do_relogio((int)$r["id"]);
     $c = ["r" => $r, "momento" => $agora_g, "rastro" => [], "pilha" => [], "valores" => $v];
     $du = isset(formulas_todas()["dias_de_uso"]) ? variavel_valor("dias_de_uso", $c) : null;
-    $caminho = $r["no_id"] === null ? "(na raiz)" : no_caminho($r["no_id"]);
+    $caminho = $r["no_id"] === null ? t("(na raiz)") : no_caminho($r["no_id"]);
     if (!isset($grupos_g[$caminho])) {
         $grupos_g[$caminho] = ["caminho" => $caminho, "relogios" => []];
     }
     $valor = ($v["valor_compra"] ?? "") !== "" ? (float)$v["valor_compra"] : null;
     $grupos_g[$caminho]["relogios"][] = ["id" => (int)$r["id"], "nome" => $r["nome"],
-        "tipo" => isset($n_g[(int)$r["no_id"]]) ? $n_g[(int)$r["no_id"]]["nome"] : "sem grupo",
-        "posse" => posse_de($r), "posse_texto" => POSSES[posse_de($r)], "foto" => $fotos_g[(int)$r["id"]] ?? null,
+        "tipo" => isset($n_g[(int)$r["no_id"]]) ? $n_g[(int)$r["no_id"]]["nome"] : t("sem grupo"),
+        "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]), "foto" => $fotos_g[(int)$r["id"]] ?? null,
         "marca" => ($v["marca"] ?? "") !== "" ? $v["marca"] : null, "referencia" => ($v["referencia"] ?? "") !== "" ? $v["referencia"] : null,
         "ano_compra" => ($v["data_compra"] ?? "") !== "" ? (int)substr((string)$v["data_compra"], 0, 4) : null, "valor_compra" => $valor,
         "dias_de_uso" => is_numeric($du) ? (int)round((float)$du) : null];

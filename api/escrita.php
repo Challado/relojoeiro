@@ -14,7 +14,7 @@ $ops = ["arvore" => "op_arvore", "campos" => "op_campos", "lancamento_tipos" => 
 if (isset($ops[$recurso])) {
     $saida = $ops[$recurso]($acao, $d);
 } elseif ($recurso === "usuarios") {
-    $saida = op_usuarios($acao, $d, $quem !== "" ? $quem : "(token da API)");
+    $saida = op_usuarios($acao, $d, $quem !== "" ? $quem : t("(token da API)"));
 } elseif ($recurso === "importacao") {
     // a importação do sistema anterior pode demorar (o histórico inteiro): sem o limite de tempo do PHP
     @set_time_limit(0);
@@ -23,8 +23,8 @@ if (isset($ops[$recurso])) {
     // a cópia de segurança: fazer agora, ou restaurar uma (as duas podem demorar num banco grande)
     @set_time_limit(0);
     $saida = $acao === "fazer" ? backup_fazer() : ($acao === "restaurar" ? backup_restaurar((string)($d["arquivo"] ?? ""))
-        : ["ok" => false, "mensagem" => "", "erros" => ["Ação desconhecida: use fazer ou restaurar."]]);
+        : ["ok" => false, "mensagem" => "", "erros" => [t("Ação desconhecida: use fazer ou restaurar.")]]);
 } else {
-    $saida = ["ok" => false, "mensagem" => "", "erros" => ["este recurso não aceita escrita; os que aceitam: " . implode(", ", array_merge(array_keys($ops), ["usuarios", "importacao", "backup", "instalacao", "migracoes"]))]];
+    $saida = ["ok" => false, "mensagem" => "", "erros" => [t("este recurso não aceita escrita; os que aceitam: {1}", [1 => implode(", ", array_merge(array_keys($ops), ["usuarios", "importacao", "backup", "instalacao", "migracoes"]))])]];
 }
 $codigo = $saida["ok"] ? 200 : 400;

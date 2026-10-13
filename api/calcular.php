@@ -12,7 +12,7 @@ $expr = (string)($_REQUEST["expressao"] ?? "");
 $erros = formula_validar("", $expr);
 if (count($erros) > 0) {
     $codigo = 400;
-    $saida = ["erro" => "a fórmula não pode ser calculada", "erros" => $erros];
+    $saida = ["erro" => t("a fórmula não pode ser calculada"), "erros" => $erros];
 } else {
     $ids = array_filter(array_map("intval", explode(',', (string)($_REQUEST["relogio"] ?? ""))));
     $res = [];

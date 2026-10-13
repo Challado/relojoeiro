@@ -43,3 +43,7 @@ define("MSG_DESTINATARIO", "");
 define("MSG_TITULO", "Relógios");
 define("DOCUMENTOS_PASTA", $teste_pasta . "/documentos_" . $teste_db);
 define("BACKUP_PASTA", $teste_pasta . "/copias_" . $teste_db);
+// TESTE_ESTRITO=1 no ambiente: a tradução que falta para com erro (o modo estrito dos idiomas, para conferir um idioma)
+if (getenv("TESTE_ESTRITO") === "1") {
+    define("TEXTOS_ESTRITO", true);
+}

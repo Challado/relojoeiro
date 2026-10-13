@@ -19,7 +19,7 @@ if ($arq_b !== "") {
         exit;
     }
     $codigo = 404;
-    $saida = ["erro" => "cópia não encontrada"];
+    $saida = ["erro" => t("cópia não encontrada")];
 } else {
     $saida = ["pasta_ok" => backup_pasta() !== null, "pasta_erro" => backup_pasta_erro() !== "" ? backup_pasta_erro() : null, "manter" => backup_manter(),
         "documentos" => backup_com_documentos(), "versao" => array_key_last($MIGRACOES), "ultima" => cfg("backup_ultima") !== "" ? cfg("backup_ultima") : null,

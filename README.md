@@ -916,11 +916,16 @@ O que falta num idioma sai em português, para nada parar no uso. Para achar o q
    outras partes: `api`, `ajuda`...). Ou escreva direto no `textos/de.php`, copiando o de outro idioma.
 3. `php testes/textos.php` tem de terminar sem falta (o teste de paridade confere o mesmo), e
    `LINGUA=de testes/paridade.sh --layout sqlite` confere as telas no idioma novo: textos mais longos podem quebrar um botão.
+   Com `TESTE_ESTRITO=1` na frente, o roteiro inteiro do teste (todas as gravações, leituras e rodadas do cron) roda nesse
+   idioma em modo estrito, e a tradução que faltar aparece no registro do roteiro.
 
-As mensagens da API e do cron e a documentação (esta ajuda, a da API e a reconstrução) ainda saem em português; elas passam
-para os idiomas nas próximas versões, pelo mesmo caminho (as partes `api`, `ajuda`, `manual` e `reconstrucao` do
-`textos/<idioma>.php`). Os nomes que você cadastra (grupos, campos, tipos de lançamento, avisos, modos, os relógios) ficam como
-você escreveu.
+As mensagens da API (o que cada gravação responde, os erros, os textos das consultas) saem no idioma do pedido; as do cron
+(o Telegram, a agenda e o registro das execuções) saem no idioma padrão da instalação. O que fica gravado no banco, como o
+motivo de cada dia do plano, fica no idioma de quem gravou. A documentação (esta ajuda, a da API e a reconstrução) e o
+cadastro inicial (os nomes dos grupos, campos, fórmulas e avisos que vêm na instalação) ainda estão em português; passam
+para os idiomas nas próximas versões, pelo mesmo caminho (as partes `ajuda`, `manual` e `reconstrucao` do
+`textos/<idioma>.php`). Os nomes que você cadastra (grupos, campos, tipos de lançamento, avisos, modos, os relógios) ficam
+como você escreveu.
 
 ---
 

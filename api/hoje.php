@@ -26,8 +26,8 @@ foreach (avisos_de_hoje() as $x) {
     $avisos_h[] = ["relogio_id" => (int)$x[0]["id"], "relogio" => $x[0]["nome"], "identificador" => $x[1]["identificador"], "nome" => $x[1]["nome"], "texto" => $x[1]["texto"],
         "estado" => $x[1]["estado"], "resolve" => $t ? ["identificador" => $t["identificador"], "nome" => $t["nome"], "formato" => $t["formato"], "unidade" => $t["unidade"],
             "acao" => $t["formato"] === "sessao" ? ($aberta_h ? "encerrar" : "iniciar") : "lancar",
-            "botao" => $t["formato"] === "sessao" ? ($aberta_h ? (preg_match("/^n(o|a|os|as)\\s/u", $minus) === 1 ? "Tirou d" . substr($minus, 1) : "Terminou: " . $minus) : "Pôs " . $minus)
-                : ($t["formato"] === "valor" ? "Informar " . $minus : $t["nome"])] : null];
+            "botao" => $t["formato"] === "sessao" ? ($aberta_h ? (preg_match("/^n(o|a|os|as)\\s/u", $minus) === 1 ? "Tirou d" . substr($minus, 1) : t("Terminou: {1}", [1 => $minus])) : t("Pôs {1}", [1 => $minus]))
+                : ($t["formato"] === "valor" ? t("Informar {1}", [1 => $minus]) : $t["nome"])] : null];
 }
 $fotos = [];
 foreach (linhas("SELECT relogio_id, atualizado FROM foto") as $f) {
@@ -38,7 +38,7 @@ $rels = [];
 $fora_h = [];
 foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
     if (!da_colecao($r)) {
-        $fora_h[] = ["id" => (int)$r["id"], "nome" => $r["nome"], "posse" => posse_de($r), "posse_texto" => POSSES[posse_de($r)],
+        $fora_h[] = ["id" => (int)$r["id"], "nome" => $r["nome"], "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]),
             "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "—", "foto" => $fotos[(int)$r["id"]] ?? null];
         continue;
     }
@@ -50,8 +50,8 @@ foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
     $leitura = linha("SELECT l.inicio, l.valor, t.unidade FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'valor'
             ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [(int)$r["id"]]);
     $rels[] = ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1, "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "—",
-        "posse" => posse_de($r), "posse_texto" => POSSES[posse_de($r)],
-        "em_uso" => $v["em_uso"], "estado" => $estado_h, "estado_texto" => $estado_h === "indisponivel" ? (posse_de($r) === "emprestado" ? "Emprestado" : "Indisponível") : $v["estado_texto"],
+        "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]),
+        "em_uso" => $v["em_uso"], "estado" => $estado_h, "estado_texto" => $estado_h === "indisponivel" ? (posse_de($r) === "emprestado" ? t("Emprestado") : t("Indisponível")) : $v["estado_texto"],
         "estado_ordem" => ["uso" => 0, "sessao" => 1, "repouso" => 2, "indisponivel" => 3][$estado_h],
         "agora" => $v["texto"], "carga" => (int)$r["disponivel"] === 1 ? $v["energia"] : null, "carga_de" => $v["de"], "ultimo" => $v["ultimo"],
         "ultimo_txt" => $v["em_uso"] ? "agora · " . date("H:i", $agora) : ($v["ultimo"] > 0 ? date(date("Y", $v["ultimo"]) === date("Y", $agora) ? "d/m H:i" : "d/m/Y H:i", $v["ultimo"]) : "nunca"),
@@ -88,8 +88,8 @@ $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => c
     "destaque" => $destaque_h,
     "avisos" => $avisos_h,
     // os estados da tabela, na ordem (o filtro Estado): em uso, cada sessão que não é o pulso, em repouso e indisponível
-    "estados" => array_merge(["Em uso"], array_column(linhas("SELECT nome FROM lancamento_tipo WHERE formato = 'sessao' AND identificador <> 'pulso' ORDER BY ordem, id"), "nome"),
-        ["Em repouso", "Indisponível", "Emprestado"]),
+    "estados" => array_merge([t("Em uso")], array_column(linhas("SELECT nome FROM lancamento_tipo WHERE formato = 'sessao' AND identificador <> 'pulso' ORDER BY ordem, id"), "nome"),
+        [t("Em repouso"), t("Indisponível"), t("Emprestado")]),
     "plano" => array_map(function ($p) { return ["data" => $p["data"], "relogio_id" => (int)$p["relogio_id"], "relogio" => $p["nome"], "acao" => $p["acao"], "motivo" => $p["motivo"], "origem" => $p["origem"]]; },
         linhas("SELECT p.*, r.nome FROM plano p JOIN relogio r ON r.id = p.relogio_id WHERE p.data >= ? ORDER BY p.data LIMIT 62", [$hoje->format("Y-m-d")])),
     // os dias livres dos próximos 62 dias (sem relógio e sem sorteio: para escolher à mão)
