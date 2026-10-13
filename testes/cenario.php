@@ -14,10 +14,12 @@ $SAIDA = $argv[2];
 $TOKEN = getenv("RELOGIOS_TOKEN") ?: "token-de-teste-123";
 // O fuso do sistema: as datas e horas que o roteiro manda (o "quando" de cada lançamento) a API lê no FUSO do config.php.
 // Montadas em outro fuso, elas caem fora do lugar: à noite no Brasil já é o dia seguinte em UTC, e "hoje 00:20" vira uma
-// hora no futuro, que a API recusa. O fuso vem da variável RELOGIOS_FUSO ou, sem ela, do config.php da pasta do sistema
+// hora no futuro, que a API recusa. O fuso vem da variável RELOGIOS_FUSO ou, sem ela, do config.php do sistema (o de
+// RELOGIOS_CONFIG, se houver; senão, o da pasta do sistema)
 $fuso = (string)getenv("RELOGIOS_FUSO");
-if ($fuso === "" && is_file(__DIR__ . "/../config.php")) {
-    require __DIR__ . "/../config.php";
+$config_sistema = getenv("RELOGIOS_CONFIG") ?: __DIR__ . "/../config.php";
+if ($fuso === "" && is_file($config_sistema)) {
+    require $config_sistema;
     $fuso = defined("FUSO") ? trim((string)constant("FUSO")) : "";
 }
 if ($fuso !== "" && !@date_default_timezone_set($fuso)) {

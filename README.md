@@ -1105,6 +1105,10 @@ têm de dar **403**.
 | `ALEATORIO_RANDOMORG_URL`, `ALEATORIO_ANU_URL` | opcionais, só para testes: os endereços das fontes dos números aleatórios (`https://www.random.org/integers/` e `https://qrng.anu.edu.au/API/jsonI.php`). Trocados, os sorteios pedem os números a um servidor de teste |
 | `GOOGLE_TOKEN_URL`, `GOOGLE_API_URL` | opcionais, só para testes: os endereços do Google que a agenda usa (o do token, `https://oauth2.googleapis.com/token`, e o da API, `https://www.googleapis.com/calendar/v3`). Trocados, a sincronização da agenda conversa com um servidor de teste em vez do Google |
 
+O sistema lê o `config.php` da pasta dele. Uma variável de ambiente do servidor, `RELOGIOS_CONFIG`, aponta outro arquivo no
+lugar: é o que o teste de paridade usa (`testes/paridade.sh`, com o [`testes/config.teste.php`](testes/config.teste.php)), para
+rodar sem tocar no `config.php` de verdade. Numa instalação normal, não a defina.
+
 ### Mensagens pelo Telegram
 
 O sistema não fala direto com a API do Telegram: ele chama **um endereço HTTP seu** (`MSG_ENDPOINT`) com
@@ -1477,8 +1481,9 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
    conhecimento sobre relógios vai para o cadastro (`schema.sql`), não para o código.
 4. Mudou o banco? Crie uma `migracao_vN.sql` e registre em `$MIGRACOES` no `lib.php`: a estrutura no dialeto do MySQL, os
    dados em SQL comum aos quatro bancos (veja [Atualizações do banco](#atualizações-do-banco)).
-5. **Rode o teste de paridade** ([`testes/`](testes/)) nos quatro bancos antes de mandar: o resultado tem de ser
-   `0 diferenças graves`. Mexeu nas telas? Rode também a conferência do layout (`node testes/layout.cjs`): `0 problemas`.
+5. **Rode o teste de paridade** ([`testes/`](testes/)) nos quatro bancos antes de mandar: `testes/paridade.sh`, com os
+   bancos no ar, tem de terminar com `Tudo igual.` Mexeu nas telas? Rode também a conferência do layout
+   (`testes/paridade.sh --layout sqlite`): `0 problemas`.
 6. Abra o pull request contando o que muda para quem usa e como você testou.
 
 ---

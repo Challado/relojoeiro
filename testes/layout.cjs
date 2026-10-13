@@ -139,6 +139,11 @@ function examinar(seletorRaiz) {
       && e.scrollWidth > e.clientWidth + 2 && e.clientWidth > 0 && !/(auto|scroll)/.test(cs.overflowX)) {
       probs.push({ tipo: 'texto-cortado-ou-vazando', det: e.scrollWidth + ' > ' + e.clientWidth, quem: nomear(e) });
     }
+    // 4a. o conteúdo (um texto que não quebra, uma etiqueta) passa da caixa do próprio elemento, que não rola nem corta
+    if (!corta && !/(auto|scroll)/.test(cs.overflowX) && e.scrollWidth > e.clientWidth + 2 && e.clientWidth > 0
+      && !['INPUT', 'SELECT', 'TEXTAREA', 'TABLE', 'TBODY', 'THEAD', 'TR', 'PRE'].includes(e.tagName) && cs.display !== 'inline' && !rolaveis(e)) {
+      probs.push({ tipo: 'conteudo-vaza', det: e.scrollWidth + ' > ' + e.clientWidth, quem: nomear(e) });
+    }
     // 4b. botão (ou etiqueta) com o texto partido em duas linhas: "Abrir" numa, "foto" na outra (as linhas de verdade do texto)
     // (a etiqueta de estado que quebra de propósito, nos espaços, fica de fora: white-space normal)
     if ((e.tagName === 'BUTTON' && !e.matches('form.excluir-conjunto button') || e.classList.contains('botao') || (e.classList.contains('estado') && cs.whiteSpace === 'nowrap')) && (e.innerText || '').trim().length > 0
