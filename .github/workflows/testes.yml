@@ -97,3 +97,4 @@ jobs:
           name: layout
           path: /tmp/relojoeiro-paridade.*/layout/
           if-no-files-found: ignore
+          retention-days: 7
