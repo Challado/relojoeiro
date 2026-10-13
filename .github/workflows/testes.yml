@@ -1,0 +1,99 @@
+# Os testes a cada push no main (e quando pedido na aba Actions): o teste de paridade (testes/paridade.sh) nos bancos, que
+# confere também a documentação da API (o dicionário do cabeçalho e os campos explicados), e a conferência do layout das telas.
+# O resultado aparece na aba Actions do GitHub e no ✓ / ✗ ao lado de cada commit.
+name: Testes
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  paridade:
+    name: Paridade (SQLite, PostgreSQL, MariaDB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: teste
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: teste
+        ports: ["3306:3306"]
+        options: --health-cmd "healthcheck.sh --connect --innodb_initialized" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      TESTE_MYSQL_USUARIO: root
+      TESTE_MYSQL_SENHA: teste
+      TESTE_PG_SENHA: teste
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: mysqli, pgsql, sqlite3, curl, mbstring, fileinfo, dom, zlib, gd, zip
+          coverage: none
+      - name: Clientes dos bancos
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client mariadb-client > /dev/null
+      - name: Teste de paridade
+        run: testes/paridade.sh sqlite pgsql mysql
+
+  firebird:
+    name: Paridade (SQLite e Firebird)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      firebird:
+        image: firebirdsql/firebird:3
+        env:
+          FIREBIRD_ROOT_PASSWORD: masterkey
+        ports: ["3050:3050"]
+    env:
+      TESTE_FB_ARQUIVO: /var/lib/firebird/data/relogios_teste.fdb
+      TESTE_FB_SENHA: masterkey
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: sqlite3, pdo_firebird, curl, mbstring, fileinfo, dom, zlib, gd, zip
+          coverage: none
+      - name: Cliente do Firebird
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq firebird3.0-utils > /dev/null
+      - name: Teste de paridade
+        run: testes/paridade.sh sqlite firebird
+
+  layout:
+    name: Layout das telas
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: sqlite3, curl, mbstring, fileinfo, dom, zlib, gd, zip
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Playwright e o Chromium
+        run: |
+          npm install -g playwright@1
+          playwright install --with-deps chromium
+      - name: Conferência do layout
+        run: testes/paridade.sh --layout sqlite
+      - name: Capturas das telas (para olhar quando falha)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: layout
+          path: /tmp/relojoeiro-paridade.*/layout/
+          if-no-files-found: ignore

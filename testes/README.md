@@ -139,3 +139,16 @@ php testes/campos.php http://127.0.0.1:8101/api.php --sobras   # e os explicados
 ```
 
 O `paridade.sh` roda os dois depois da comparação (o `campos.php` no servidor do primeiro banco).
+
+# No GitHub, a cada push
+
+O [`.github/workflows/testes.yml`](../.github/workflows/testes.yml) roda os testes no GitHub Actions a cada push no `main` (e
+quando pedido na aba **Actions**, em "Run workflow"), em três trabalhos ao mesmo tempo:
+
+- **Paridade (SQLite, PostgreSQL, MariaDB):** os bancos como serviços do GitHub e o `testes/paridade.sh` (com as conferências
+  da documentação);
+- **Paridade (SQLite e Firebird):** o mesmo com o Firebird 3;
+- **Layout das telas:** o Playwright com o Chromium e o `testes/paridade.sh --layout sqlite`; quando falha, as capturas das
+  telas ficam para baixar na página da rodada (Artifacts, "layout").
+
+O resultado aparece na aba **Actions** do repositório e no ✓ / ✗ ao lado de cada commit; uma falha também chega por e-mail.
