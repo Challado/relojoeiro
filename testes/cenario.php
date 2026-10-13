@@ -420,6 +420,10 @@ escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $desejo, "posse" =
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "posse" => "colecao"]);
 ler("desejos depois de comprar", ["recurso" => "desejos"]);
 ler("ficha do comprado", ["recurso" => "ficha", "relogio" => $desejo]);
+// o aviso Encostado: com 5 dias, os relógios parados há mais tempo são avisados; 0 é recusado
+escrever(["recurso" => "config", "acao" => "salvar", "encostado_dias" => 5]);
+escrever(["recurso" => "config", "acao" => "salvar", "encostado_dias" => 0], false);
+ler("avisos com encostado", ["recurso" => "avisos"]);
 // hoje sem relógio: o dia fica livre (o cron não põe ninguém no pulso nem sorteia de novo) e depois volta, escolhendo um
 escrever(["recurso" => "rodizio", "acao" => "sem_relogio"]);
 cron();

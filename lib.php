@@ -481,6 +481,7 @@ $MIGRACOES = [
     "v20" => ["migracao_v20.sql", "o smartwatch carrega no carregador (o campo \"No carregador: horas para encher\"), o aviso \"Tirar do carregador\" que sai na hora pelo Telegram (os avisos \"na hora\"), as fórmulas \"Dias de uso\" e \"Custo por uso\", e no MySQL/MariaDB as tabelas em utf8mb4_unicode_ci", "config.chave=migracao_v20", "migracao_v20_dados"],
     "v21" => ["migracao_v21.sql", "os dias livres do plano: o \"Deixar o período livre\" da página Plano apaga o que foi gerado e deixa os dias sem relógio, sem sorteio, para você escolher à mão", "plano_livre"],
     "v22" => ["migracao_v22.sql", "a situação de cada relógio na coleção (na coleção, desejado, emprestado, vendido ou arquivado: fora da coleção, ele sai do rodízio e dos avisos, e a ficha e o histórico ficam) e a lista de desejos; os campos Marca, Referência e Link, e, só nos desejados, Preço-alvo e Prioridade", "relogio.posse"],
+    "v23" => ["migracao_v23.sql", "o aviso Encostado: um relógio da coleção que passou do limite de dias sem ir ao pulso (a Configuração, \"Aviso Encostado: dias sem ir ao pulso\", padrão 30)", "config.chave=encostado_dias"],
 ];
 
 // O passo em PHP da v16, depois do SQL dela: as opções de cada campo do tipo lista (o texto, uma por linha) viram linhas da
@@ -1400,6 +1401,10 @@ function avisos_todos($recarregar = false)
 function avisos_do_relogio($r, $momento, $so = null)
 {
     $res = [];
+    // fora da coleção (desejado, vendido, arquivado), nenhum aviso: o relógio não está com você (o emprestado continua)
+    if (array_key_exists("posse", $r) && !da_colecao($r)) {
+        return $res;
+    }
     $agora_d = dias_de($momento);
     foreach (avisos_todos() as $ident => $versoes) {
         // $so: só estes avisos (os identificadores), para não calcular os outros

@@ -95,8 +95,10 @@ function recarregarConfig(aplicadas) {
         var limites = cartao("Limites e contas", el("div", {"class": "campos"},
           parCampo("Carregar quando a carga chegar a (%)", numero("carga_limiar", cfg("carga_limiar") !== "" ? cfg("carga_limiar") : "20", "1", "99"))
           + parCampo("Solar: pôr no sol quando chegar a (%)", numero("sol_limiar", cfg("sol_limiar") !== "" ? cfg("sol_limiar") : "70", "1", "99"))
-          + parCampo("Gasto medido: média dos últimos (dias)", numero("medicao_janela_dias", cfg("medicao_janela_dias") !== "" ? cfg("medicao_janela_dias") : "90", "1", "3650"))),
-          el("p", {"class": "nota"}, "O limite de carga de um relógio (no cadastro dele) vale no lugar do geral. Medições do gasto mais velhas que a janela saem da média."));
+          + parCampo("Gasto medido: média dos últimos (dias)", numero("medicao_janela_dias", cfg("medicao_janela_dias") !== "" ? cfg("medicao_janela_dias") : "90", "1", "3650"))
+          + parCampo("Aviso Encostado: dias sem ir ao pulso", numero("encostado_dias", cfg("encostado_dias") !== "" ? cfg("encostado_dias") : "30", "1", "3650"))),
+          el("p", {"class": "nota"}, "O limite de carga de um relógio (no cadastro dele) vale no lugar do geral. Medições do gasto mais velhas que a janela saem da média. "
+            + "Um relógio da coleção que passa do limite de dias sem ir ao pulso ganha o aviso <strong>Encostado</strong> (desliga em Cadastros › Avisos)."));
         var tela = cartao("Telas", el("div", {"class": "campos"},
           parCampo("Abrir o relógio na página Hoje", el("select", {"name": "painel_modo"}, el("option", {"value": "lado", "selected": cfg("painel_modo") !== "flutuante"}, "Ao lado da lista")
             + el("option", {"value": "flutuante", "selected": cfg("painel_modo") === "flutuante"}, "Numa janela flutuante, grande")))

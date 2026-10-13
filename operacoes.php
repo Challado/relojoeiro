@@ -2268,6 +2268,9 @@ function op_config($acao, $d)
         if (array_key_exists("medicao_janela_dias", $d) && (!ctype_digit(trim((string)$d["medicao_janela_dias"])) || (int)$d["medicao_janela_dias"] < 1 || (int)$d["medicao_janela_dias"] > 3650)) {
             $erros[] = "Gasto medido: a média usa de 1 a 3650 dias de medições.";
         }
+        if (array_key_exists("encostado_dias", $d) && (!ctype_digit(trim((string)$d["encostado_dias"])) || (int)$d["encostado_dias"] < 1 || (int)$d["encostado_dias"] > 3650)) {
+            $erros[] = "Aviso Encostado: de 1 a 3650 dias sem ir ao pulso.";
+        }
         if (array_key_exists("previsao_limite", $d) && (numero_br($d["previsao_limite"]) === null || numero_br($d["previsao_limite"]) < 0 || numero_br($d["previsao_limite"]) > 100)) {
             $erros[] = "Previsão: o limite é uma carga de 0 a 100%.";
         }
@@ -2303,7 +2306,7 @@ function op_config($acao, $d)
         }
         if (count($erros) === 0) {
             foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "agenda_antecedencia", "agenda_id", "agenda_chave", "url_sistema", "carga_limiar",
-                "sol_limiar", "medicao_janela_dias", "painel_modo", "destaque_hoje", "proximos_por_pagina", "plano_por_pagina"] as $k) {
+                "sol_limiar", "medicao_janela_dias", "encostado_dias", "painel_modo", "destaque_hoje", "proximos_por_pagina", "plano_por_pagina"] as $k) {
                 if (array_key_exists($k, $d)) {
                     cfg_set($k, trim((string)$d[$k]));
                 }
