@@ -921,10 +921,15 @@ O que falta num idioma sai em português, para nada parar no uso. Para achar o q
 
 As mensagens da API (o que cada gravação responde, os erros, os textos das consultas) saem no idioma do pedido; as do cron
 (o Telegram, a agenda e o registro das execuções) saem no idioma padrão da instalação. O que fica gravado no banco, como o
-motivo de cada dia do plano, fica no idioma de quem gravou. A documentação (esta ajuda, a da API e a reconstrução) e o
-cadastro inicial (os nomes dos grupos, campos, fórmulas e avisos que vêm na instalação) ainda estão em português; passam
-para os idiomas nas próximas versões, pelo mesmo caminho (as partes `ajuda`, `manual` e `reconstrucao` do
-`textos/<idioma>.php`). Os nomes que você cadastra (grupos, campos, tipos de lançamento, avisos, modos, os relógios) ficam
+motivo de cada dia do plano, fica no idioma de quem gravou.
+
+O cadastro inicial (os grupos, os campos, os tipos de lançamento, as fórmulas, os avisos, os modos, os critérios, as
+categorias e as mensagens padrão que vêm na instalação) sai no idioma da instalação: `php instalar.php --lingua=en`, ou a
+instalação pela API com `lingua=en`, grava esses nomes em inglês e deixa o inglês como padrão (a parte `cadastro` do
+`textos/<idioma>.php`; `testes/textos.php` acha os textos instalando o `schema.sql` num SQLite temporário). Uma instalação
+que já existe não muda. A documentação (esta ajuda, a da API e a reconstrução) passa para os idiomas pelo mesmo caminho (as
+partes `ajuda`, `manual` e `reconstrucao` do `textos/<idioma>.php`).
+Os nomes que você cadastra (grupos, campos, tipos de lançamento, avisos, modos, os relógios) ficam
 como você escreveu.
 
 ---
@@ -1124,7 +1129,8 @@ nano config.php
 
 # 4. a instalação: a estrutura e o conjunto inicial, traduzidos para o banco do config.php
 php instalar.php
-#    ou pela API, com o token do config.php:
+#    noutro idioma (o cadastro inicial nele, e ele vira o padrão da instalação): php instalar.php --lingua=en
+#    ou pela API, com o token do config.php (o idioma: lingua=en, como em qualquer pedido):
 #    curl -H "X-Api-Token: $TOKEN" -d recurso=instalacao -d acao=instalar http://servidor/relojoeiro/api.php
 
 # 5. o primeiro usuário (a senha é pedida sem aparecer)

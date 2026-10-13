@@ -2,7 +2,8 @@
 // Os idiomas do sistema. Todo texto que alguém lê (as telas, as mensagens da API e do cron, a ajuda, o manual, a reconstrução)
 // passa por t("o texto em português", ["parametro" => valor]): o português é a chave (como no gettext), e cada idioma tem um
 // arquivo só, textos/<idioma>.php, com as traduções divididas em partes (telas: o que as páginas e os scripts escrevem, e que
-// vai para o navegador; api: as mensagens da API e do cron; ajuda, manual e reconstrucao: a documentação). Os parâmetros
+// vai para o navegador; api: as mensagens da API e do cron; cadastro: o cadastro inicial, traduzido na instalação; ajuda,
+// manual e reconstrucao: a documentação). Os parâmetros
 // entre chaves ({nome}) são trocados depois da tradução, em qualquer ordem que o idioma pedir.
 // O que falta num idioma sai em português; com TEXTOS_ESTRITO = true no config.php (para quem traduz), o t() para com o erro
 // "Falta a tradução em en (textos/en.php): ..." e as telas mostram o texto entre ⟦ ⟧. php testes/textos.php confere tudo de
@@ -27,7 +28,7 @@ const LINGUAS = [
     "fr" => ["nome" => "Français", "curto" => "FR", "locale" => "fr-FR", "data" => "d/m/Y", "data_curta" => "d/m", "decimal" => ",", "milhar" => " "],
 ];
 // as partes do arquivo de cada idioma
-const TEXTOS_PARTES = ["telas", "api", "ajuda", "manual", "reconstrucao"];
+const TEXTOS_PARTES = ["telas", "api", "cadastro", "ajuda", "manual", "reconstrucao"];
 
 $GLOBALS["LINGUA"] = "pt-BR";
 $GLOBALS["TEXTOS"] = null;

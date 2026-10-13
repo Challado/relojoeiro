@@ -565,9 +565,47 @@ function instalar_banco()
     if (count($pendentes) > 0) {
         return ["ok" => false, "mensagem" => "", "erros" => [t("A instalação terminou, mas faltam as migrações {1}: o schema.sql está incompleto.", [1 => implode(", ", array_keys($pendentes))])]];
     }
+    // num idioma que não é o português: o cadastro inicial nesse idioma, e ele vira o padrão da instalação
+    if (lingua_atual() !== "pt-BR") {
+        cadastro_traduzir(lingua_atual());
+        cfg_set("idioma", lingua_atual());
+    }
     $seg = round(microtime(true) - $inicio, 1);
     return ["ok" => true, "mensagem" => t("Banco instalado ({1}): {2} comandos, {3} tabelas, em {4} s. Agora crie o primeiro usuário (recurso=usuarios, acao=salvar, com o token).", [1 => ["mysql" => "MySQL/MariaDB", "pgsql" => "PostgreSQL", "sqlite" => "SQLite", "firebird" => t("Firebird")][banco_tipo()], 2 => $n, 3 => count(banco_tabelas()), 4 => decimal_txt($seg, 6)]),
         "erros" => [], "comandos" => $n, "tabelas" => count(banco_tabelas()), "segundos" => $seg];
+}
+
+// Os textos do cadastro inicial (o que o schema.sql grava: os grupos, os campos, os tipos de lançamento, as fórmulas, os avisos,
+// os modos, os critérios, as categorias e as mensagens padrão): [tabela, coluna, condição]. Estão em português no schema.sql;
+// a parte "cadastro" dos arquivos dos idiomas traz a tradução de cada um (testes/textos.php os acha instalando o schema.sql)
+const CADASTRO_TEXTOS = [
+    ["no", "nome", ""], ["campo", "nome", ""], ["campo_opcao", "valor", ""], ["lancamento_tipo", "nome", ""], ["formula", "nome", ""],
+    ["aviso", "nome", ""], ["aviso", "texto", ""], ["modo", "nome", ""], ["canal_aviso", "corpo", ""], ["documento_categoria", "nome", ""],
+    ["criterio_parametro", "nome", ""], ["criterio_sub", "nome", ""], ["criterio_faixa", "categoria", ""],
+    ["config", "valor", "chave IN ('tg_padrao', 'tg_corpo_dia', 'tg_corpo_vespera', 'ag_padrao')"],
+];
+
+// Os textos do cadastro inicial no idioma do pedido: cada valor em português que tem tradução na parte "cadastro" vira a
+// tradução (as opções das listas e as categorias das faixas dos critérios trocam juntas, e continuam batendo). A instalação
+// num idioma chama esta; o "Restaurar os critérios iniciais" também, só nas tabelas dos critérios ($so) e no idioma da
+// instalação. O que você escreveu depois fica como está
+function cadastro_traduzir($lingua, $so = null)
+{
+    $dic = textos_parte($lingua, "cadastro");
+    $n = 0;
+    foreach (CADASTRO_TEXTOS as [$tabela, $coluna, $onde]) {
+        if ($so !== null && !in_array($tabela, $so, true)) {
+            continue;
+        }
+        foreach (linhas("SELECT DISTINCT " . $coluna . " AS v FROM " . $tabela . ($onde !== "" ? " WHERE " . $onde : "")) as $l) {
+            $v = (string)$l["v"];
+            if ($v !== "" && isset($dic[$v]) && $dic[$v] !== "" && $dic[$v] !== $v) {
+                sql("UPDATE " . $tabela . " SET " . $coluna . " = ? WHERE " . $coluna . " = ?" . ($onde !== "" ? " AND " . $onde : ""), [$dic[$v], $v]);
+                $n++;
+            }
+        }
+    }
+    return $n;
 }
 
 // A situação da instalação (recurso=instalacao): o banco, se está vazio, instalado e em dia, e quantos usuários tem
