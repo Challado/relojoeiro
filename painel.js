@@ -283,7 +283,9 @@ function abrirNoPainel(id) {
             return [h(cat.nome), el("a", {"href": "documentos.php?relogio=" + id + "&cat=" + cat.id, "target": "_blank", "rel": "noopener"}, cat.documentos + (cat.documentos === 1 ? " arquivo" : " arquivos"))];
           })))
         + (dc.pasta_ok ? "" : el("p", {"class": "nota"}, "Para guardar documentos, falta a pasta deles no config.php (DOCUMENTOS_PASTA).")),
-        el("a", {"href": "documentos.php?relogio=" + id, "target": "_blank", "rel": "noopener", "class": "botao leve"}, dc.total === 0 ? "Enviar documentos" : "Abrir os documentos"), "documentos-ficha");
+        el("a", {"href": "documentos.php?relogio=" + id, "target": "_blank", "rel": "noopener", "class": "botao leve"}, dc.total === 0 ? "Enviar documentos" : "Abrir os documentos")
+        // o passaporte: a ficha dele para imprimir (ou guardar em PDF)
+        + " " + el("a", {"href": "passaporte.php?id=" + id, "target": "_blank", "rel": "noopener", "class": "botao leve"}, "Passaporte"), "documentos-ficha");
       blocos += quadroDocs;
       // os acessórios dele (a pulseira, a caixa, a ferramenta...): o tipo e o nome; cadastrar e mudar, na página Acessórios
       blocos += quadro("Acessórios", r.acessorios.length === 0 ? el("p", {"class": "nota"}, "Nenhum: a pulseira extra, a caixa, o estojo, a ferramenta...")
