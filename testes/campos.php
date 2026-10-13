@@ -86,6 +86,7 @@ $consultas = [
     "previsao" => ["recurso=previsao"],
     "plano" => ["recurso=plano", "recurso=plano&dias=todos&pagina=2&por_pagina=3"],
     "proximos" => ["recurso=proximos", "recurso=proximos&pagina=2&por_pagina=3"],
+    "desejos" => ["recurso=desejos"],
     "rodizio_manual" => ["recurso=rodizio_manual&de=" . $hoje . "&ate=" . $daqui20 . "&pagina=1", "recurso=rodizio_manual&de=" . $hoje . "&ate=" . $daqui20 . "&pagina=3"],
     "eventos" => ["recurso=eventos"],
     "agenda" => ["recurso=agenda"],

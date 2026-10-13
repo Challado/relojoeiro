@@ -289,6 +289,13 @@ function recarregarHoje() {
         + el("td", {"data-rotulo": "Comprado em"}, x.compra.data ? dataBr(x.compra.data) : "—")
         + el("td", {"class": "col-valor", "data-rotulo": "Valor"}, x.compra.valor !== null ? "R$ " + reais(x.compra.valor) : "—"));
     }).join("");
+    // o botão da página Desejos, com quantos estão na lista de desejos e fora da coleção (só quando há algum)
+    var desejos = document.getElementById("link-desejos");
+    if (desejos) {
+      desejos.hidden = d.totais.fora === 0;
+      desejos.textContent = [d.totais.desejados > 0 ? "Desejos (" + d.totais.desejados + ")" : "", d.totais.fora > d.totais.desejados ? "Fora da coleção (" + (d.totais.fora - d.totais.desejados) + ")" : ""]
+        .filter(function (t) { return t !== ""; }).join(" · ");
+    }
     window.trocarLinhasDaTabela(linhas + (lista.length === 0 ? el("tr", {}, el("td", {"colspan": "11"}, "Nenhum relógio cadastrado. Use o botão Novo relógio.")) : ""));
   });
 }

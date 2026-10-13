@@ -229,6 +229,8 @@ function op_campos($acao, $d)
             "padrao" => trim((string)($d["padrao"] ?? ($atual["padrao"] ?? ""))),
         ];
         $no = array_key_exists("no_id", $d) ? no_do_pedido($d["no_id"]) : ($atual ? ($atual["no_id"] === null ? null : (int)$atual["no_id"]) : null);
+        // só na lista de desejos: o campo aparece só nos relógios desejados (o preço-alvo, a prioridade)
+        $so_desejado = array_key_exists("so_desejado", $d) ? ((string)$d["so_desejado"] === "1" ? 1 : 0) : (int)($atual["so_desejado"] ?? 0);
         if (!identificador_valido($c["identificador"])) {
             $erros[] = "Identificador: minúsculas, números e _, começando por letra, até 40 (é o nome nas fórmulas).";
         } elseif ((int)valor("SELECT COUNT(*) FROM campo WHERE identificador = ? AND id <> ?", [$c["identificador"], $id]) > 0 || isset(formulas_todas()[$c["identificador"]])) {
@@ -269,14 +271,14 @@ function op_campos($acao, $d)
             }
         }
         if (count($erros) === 0) {
-            $dados = [$c["identificador"], $c["nome"], $c["tipo"], $c["unidade"], $c["padrao"] !== "" ? $c["padrao"] : null, $no];
+            $dados = [$c["identificador"], $c["nome"], $c["tipo"], $c["unidade"], $c["padrao"] !== "" ? $c["padrao"] : null, $no, $so_desejado];
             if ($acao === "novo") {
-                sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, ordem) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, so_desejado, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     array_merge($dados, [(int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM campo")]));
                 $id = ultimo_id();
                 $msg = "Campo " . $c["nome"] . " criado, para " . no_caminho($no) . ". Nas fórmulas: " . $c["identificador"] . ".";
             } else {
-                sql("UPDATE campo SET identificador = ?, nome = ?, tipo = ?, unidade = ?, padrao = ?, no_id = ? WHERE id = ?", array_merge($dados, [$id]));
+                sql("UPDATE campo SET identificador = ?, nome = ?, tipo = ?, unidade = ?, padrao = ?, no_id = ?, so_desejado = ? WHERE id = ?", array_merge($dados, [$id]));
                 $msg = "Campo " . $c["nome"] . " salvo.";
             }
             // as opções da lista (só no tipo lista; nos outros, nenhuma)
@@ -482,6 +484,24 @@ function op_relogio($acao, $d)
         $no = array_key_exists("no_id", $d) ? no_do_pedido($d["no_id"]) : ($atual ? ($atual["no_id"] === null ? null : (int)$atual["no_id"]) : null);
         $disp = array_key_exists("disponivel", $d) ? ((string)$d["disponivel"] === "1" ? 1 : 0) : ($atual ? (int)$atual["disponivel"] : 1);
         $copia = array_key_exists("copia_banco", $d) ? ((string)$d["copia_banco"] === "1" ? 1 : 0) : ($atual ? (int)$atual["copia_banco"] : 0);
+        // a situação na coleção: fora dela o relógio fica indisponível (o banco garante); voltando para ela sem dizer o
+        // disponível, ele volta disponível
+        $posse_antes = $atual ? posse_de($atual) : null;
+        $posse = array_key_exists("posse", $d) ? (string)$d["posse"] : ($posse_antes ?? "colecao");
+        $nota_posse = "";
+        if (!isset(POSSES[$posse])) {
+            $erros[] = "Situação na coleção: colecao, desejado, emprestado, vendido ou arquivado.";
+        } elseif ($posse !== "colecao") {
+            if ($disp === 1 && array_key_exists("disponivel", $d) && $posse_antes !== null) {
+                $nota_posse = " Fora da coleção, ele fica indisponível para o rodízio.";
+            }
+            $disp = 0;
+        } elseif ($posse_antes !== null && $posse_antes !== "colecao") {
+            if (!array_key_exists("disponivel", $d)) {
+                $disp = 1;
+            }
+            $nota_posse = " Entrou na coleção" . ($disp === 1 ? ": disponível para o rodízio." : " (indisponível para o rodízio, como pedido).");
+        }
         if ($nome === "" || strlen($nome) > 120) {
             $erros[] = "Dê um nome ao relógio (até 120 caracteres).";
         }
@@ -490,18 +510,40 @@ function op_relogio($acao, $d)
         }
         if (count($erros) === 0) {
             if ($atual) {
-                sql("UPDATE relogio SET nome = ?, no_id = ?, disponivel = ?, copia_banco = ? WHERE id = ?", [$nome, $no, $disp, $copia, $id]);
+                sql("UPDATE relogio SET nome = ?, no_id = ?, disponivel = ?, copia_banco = ?, posse = ? WHERE id = ?", [$nome, $no, $disp, $copia, $posse, $id]);
             } else {
-                sql("INSERT INTO relogio (nome, no_id, disponivel, copia_banco, criado) VALUES (?, ?, ?, ?, NOW())", [$nome, $no, $disp, $copia]);
+                sql("INSERT INTO relogio (nome, no_id, disponivel, copia_banco, posse, criado) VALUES (?, ?, ?, ?, ?, NOW())", [$nome, $no, $disp, $copia, $posse]);
                 $id = ultimo_id();
             }
             relogio_copia_banco($id, true);
-            // os valores: só dos campos que valem para o relógio (no ponto em que ficou)
-            $campos = campos_do_relogio(["no_id" => $no]);
+            // saiu da coleção: os dias dele no plano, de amanhã em diante, saem e são sorteados de novo (hoje fica: troque pelo
+            // "trocar por…" ou pelo "Sortear de novo")
+            if ($posse_antes === "colecao" && $posse !== "colecao") {
+                // as sessões abertas dele (no pulso, no sol, no carregador...) fecham agora: fora da coleção, ele não está em lugar nenhum
+                $abertas = linhas("SELECT l.id, t.nome FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND l.fim IS NULL AND t.formato = 'sessao'", [$id]);
+                if (count($abertas) > 0) {
+                    sql("UPDATE lancamento SET fim = ? WHERE relogio_id = ? AND fim IS NULL AND id IN (" . implode(", ", array_map(function ($x) { return (int)$x["id"]; }, $abertas)) . ")",
+                        [date("Y-m-d H:i:s"), $id]);
+                    $nota_posse .= " Fechei agora: " . implode(", ", array_map(function ($x) { return mb_strtolower($x["nome"], "UTF-8"); }, $abertas)) . ".";
+                }
+                $amanha = (new DateTimeImmutable("today"))->modify("+1 day");
+                $tirados = (int)valor("SELECT COUNT(*) FROM plano WHERE relogio_id = ? AND data >= ?", [$id, $amanha->format("Y-m-d")]);
+                if ($tirados > 0) {
+                    sql("DELETE FROM plano WHERE relogio_id = ? AND data >= ?", [$id, $amanha->format("Y-m-d")]);
+                    if (valor("SELECT escala_dias FROM modo WHERE id = ?", [modo_ativo()]) !== null) {
+                        gerar_escala($amanha);
+                    } else {
+                        garantir_plano(new DateTimeImmutable("today"));
+                    }
+                    $nota_posse .= " Saiu do plano de amanhã em diante (" . $tirados . ($tirados === 1 ? " dia sorteado" : " dias sorteados") . " de novo).";
+                }
+            }
+            // os valores: só dos campos que valem para o relógio (no ponto e na situação em que ficou)
+            $campos = campos_do_relogio(["no_id" => $no, "posse" => $posse]);
             $ignorados = [];
             foreach ((array)($d["valores"] ?? []) as $ident => $v) {
                 if (!isset($campos[$ident])) {
-                    $ignorados[] = $ident . " (não é campo de " . no_caminho($no) . ")";
+                    $ignorados[] = $ident . (isset(campos_do_relogio(["no_id" => $no, "posse" => "desejado"])[$ident]) ? " (só nos desejados)" : " (não é campo de " . no_caminho($no) . ")");
                 } else {
                     $conf = valor_para_campo($campos[$ident], $v);
                     if ($conf[1] !== "") {
@@ -520,7 +562,8 @@ function op_relogio($acao, $d)
                 $aviso_copia = $sistema !== null ? " (A cópia no banco dos documentos não muda: o config.php decide por todos, DOCUMENTOS_COPIA_BANCO = " . ($sistema ? "true" : "false") . ".)"
                     : ($copia === 1 ? " Os documentos dele vão para o banco aos poucos, pelo cron." : " As cópias no banco dos documentos dele que não pedem a própria cópia saem aos poucos, pelo cron (os arquivos continuam na pasta).");
             }
-            $msg = ($atual ? "Relógio " . $nome . " salvo." : "Relógio " . $nome . " criado " . ($no === null ? "na raiz da árvore" : "em " . no_caminho($no)) . ".") . $aviso_copia
+            $msg = ($atual ? "Relógio " . $nome . " salvo." : "Relógio " . $nome . " criado " . ($no === null ? "na raiz da árvore" : "em " . no_caminho($no))
+                . ($posse !== "colecao" ? " (" . mb_strtolower(POSSES[$posse], "UTF-8") . ")" : "") . ".") . $nota_posse . $aviso_copia
                 . (count($ignorados) > 0 ? " Não gravei: " . implode("; ", $ignorados) . ". Ficou o que já estava." : "");
         }
     } elseif ($acao === "excluir" && $atual) {

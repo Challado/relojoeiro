@@ -26,6 +26,7 @@ topo("Relógio de hoje", "index.php");
         <div class="titulo-e-conta"><h2>Relógios</h2> <span id="conta-relogios"></span></div>
         <div class="botoes">
           <button type="button" class="leve" id="limpar-filtros">Limpar filtros</button>
+          <a href="desejos.php" class="botao leve" id="link-desejos" hidden>Desejos</a>
           <a href="index.php?novo=1" class="botao" data-novo>Novo relógio</a>
         </div>
       </div>

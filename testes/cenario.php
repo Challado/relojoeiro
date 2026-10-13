@@ -398,6 +398,28 @@ escrever(["recurso" => "rodizio", "acao" => "periodo", "de" => substr(dia(3, "00
 escrever(["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => "hoje", "tipo" => "pulso", "inicio" => dia(20, "08:00"), "fim" => dia(20, "09:00")]);
 // um aviso que sai na hora
 escrever(["recurso" => "avisos", "acao" => "alterar", "id" => (int)(array_values(array_filter($cad["avisos"] ?? [], function ($a) { return $a["identificador"] === "leitura"; }))[0]["id"] ?? 0), "na_hora" => 1]);
+// a situação na coleção e a lista de desejos: dois desejados (o disponível pedido é ignorado, com a nota), um campo só nos
+// desejados, o preço-alvo recusado num relógio da coleção, uma situação que não existe; emprestar, vender (os dias dele no
+// plano de amanhã em diante são sorteados de novo), comprar o desejado e trazer o emprestado de volta
+$desejo = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Grand Seiko SBGA211", "no_id" => 4, "posse" => "desejado", "disponivel" => 1,
+    "valores" => ["marca" => "Grand Seiko", "referencia" => "SBGA211", "link" => "https://exemplo.com/sbga211", "preco_alvo" => "25.000,00", "prioridade_desejo" => "Alta"]]);
+$desejo2 = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Casio G-Shock GW-M5610", "no_id" => 8, "posse" => "desejado",
+    "valores" => ["marca" => "Casio", "prioridade_desejo" => "Baixa"]]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $desejo2, "disponivel" => 1]);
+escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "onde_vi", "nome" => "Onde vi", "tipo" => "texto", "no_id" => 0, "so_desejado" => 1]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $desejo2, "valores" => ["onde_vi" => "Na vitrine da loja"]]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "valores" => ["preco_alvo" => "100", "marca" => "Orient"]]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "posse" => "perdido"], false);
+ler("desejos", ["recurso" => "desejos"]);
+ler("ficha do desejado", ["recurso" => "ficha", "relogio" => $desejo]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "posse" => "emprestado"]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["manual"], "posse" => "vendido"]);
+ler("hoje com emprestado e vendido", ["recurso" => "hoje"]);
+ler("plano depois de vender", ["recurso" => "plano", "dias" => 30]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $desejo, "posse" => "colecao", "valores" => ["data_compra" => substr(dia(0, "00:00"), 0, 10), "valor_compra" => "24500"]]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "posse" => "colecao"]);
+ler("desejos depois de comprar", ["recurso" => "desejos"]);
+ler("ficha do comprado", ["recurso" => "ficha", "relogio" => $desejo]);
 // apagar tudo: de amanhã em diante (o modo monta de novo), e depois de hoje em diante
 escrever(["recurso" => "rodizio", "acao" => "apagar_tudo"]);
 escrever(["recurso" => "rodizio", "acao" => "apagar_tudo", "hoje" => 1]);

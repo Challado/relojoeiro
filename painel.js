@@ -6,13 +6,19 @@ var CURTO = ["", "seg", "ter", "qua", "qui", "sex", "sáb", "dom"];
 
 function mostrarCamposDoTipo(form) {
   var sel = form.querySelector(".campo-subtipo");
+  // a situação na coleção: os campos da lista de desejos (data-desejo) só no desejado; o disponível só na coleção
+  var posse = form.querySelector(".campo-posse");
+  var desejado = posse !== null && posse.value === "desejado";
   if (sel) {
     var opcao = sel.options[sel.selectedIndex];
     var cadeia = (opcao ? opcao.getAttribute("data-cadeia") || "" : "").split(" ");
     form.querySelectorAll("[data-sub]").forEach(function (el) {
-      el.hidden = el.getAttribute("data-sub") !== "" && cadeia.indexOf(el.getAttribute("data-sub")) < 0;
+      el.hidden = (el.getAttribute("data-sub") !== "" && cadeia.indexOf(el.getAttribute("data-sub")) < 0) || (el.hasAttribute("data-desejo") && !desejado);
     });
   }
+  form.querySelectorAll("[data-so-colecao]").forEach(function (el) {
+    el.hidden = posse !== null && posse.value !== "colecao";
+  });
 }
 
 // Num formulário com menus que escolhem partes (select[data-mostra] e as partes com data-grupo e data-valor): fica à vista,
@@ -65,6 +71,7 @@ function campoCadastro(c) {
   var nome = "valores[" + c.identificador + "]";
   var sub = c.no_id > 0 ? String(c.no_id) : "";
   var res = "";
+  var desejo = c.so_desejado ? " data-desejo" : "";
   if (c.tipo === "sim_nao") {
     res = el("label", {"data-sub": sub, "class": "check"}, el("input", {"type": "hidden", "name": nome, "value": "0"}) + el("input", {"type": "checkbox", "name": nome, "value": "1",
       "checked": (v !== "" ? v : String(c.padrao || "")) === "1"}) + " " + rotulo);
@@ -81,7 +88,7 @@ function campoCadastro(c) {
     res = el("label", {"data-sub": sub}, rotulo + " " + el("input", {"type": "text", "inputmode": "decimal", "name": nome, "value": mostra,
       "placeholder": c.padrao !== null && c.padrao !== "" ? "vazio: " + String(c.padrao).replace(".", ",") : null}));
   }
-  return res;
+  return desejo !== "" ? res.replace("<label ", "<label" + desejo + " ") : res;
 }
 
 // Um quadro do painel: o título, o conteúdo e, se houver, o rodapé (os botões, sempre no pé do quadro: os quadros da mesma
@@ -271,12 +278,13 @@ function abrirNoPainel(id) {
             : nada(c.dias_de_uso === 0 ? "ainda não foi ao pulso" : "sem o valor pago")]]));
       // os documentos: quantos em cada categoria, cada uma abrindo a página Documentos (numa aba nova) já nela
       var dc = r.documentos;
-      blocos += quadro("Documentos", (dc.total === 0 ? el("p", {"class": "nota"}, "Nenhum ainda: o manual, a nota fiscal, fotos, vídeos...")
+      var quadroDocs = quadro("Documentos", (dc.total === 0 ? el("p", {"class": "nota"}, "Nenhum ainda: o manual, a nota fiscal, fotos, vídeos...")
           : pares(dc.categorias.map(function (cat) {
             return [h(cat.nome), el("a", {"href": "documentos.php?relogio=" + id + "&cat=" + cat.id, "target": "_blank", "rel": "noopener"}, cat.documentos + (cat.documentos === 1 ? " arquivo" : " arquivos"))];
           })))
         + (dc.pasta_ok ? "" : el("p", {"class": "nota"}, "Para guardar documentos, falta a pasta deles no config.php (DOCUMENTOS_PASTA).")),
         el("a", {"href": "documentos.php?relogio=" + id, "target": "_blank", "rel": "noopener", "class": "botao leve"}, dc.total === 0 ? "Enviar documentos" : "Abrir os documentos"), "documentos-ficha");
+      blocos += quadroDocs;
       blocos += quadro("Próximas manutenções", r.manutencoes.length === 0 ? el("p", {"class": "nota"}, "Nada previsto.")
         : pares(r.manutencoes.map(function (m) { return [dataBr(m.data), h(m.nome)]; }), "datas"));
       // marcar: um quadro só. O menu diz o que aconteceu, e embaixo aparecem só os campos daquilo: pôr ou tirar (cada sessão,
@@ -373,12 +381,24 @@ function abrirNoPainel(id) {
         lancar = quadro("Marcar", el("form", {"data-recurso": "lancamento", "class": "marcar"}, el("input", {"type": "hidden", "name": "relogio_id", "value": id})
           + el("label", {"class": "marcar-o-que"}, "O que você quer marcar? " + el("select", {"data-mostra": "marcar"}, menu)) + partes), "", "quadro-marcar");
       }
+      // o desejado (a lista de desejos): ainda não é seu, então nada de agora, previsão, rodízio ou marcar; o quadro Desejo (a
+      // marca, a referência, o preço-alvo, a prioridade e o link) e os documentos (fotos, anúncios guardados)
+      if (r.posse === "desejado" && r.desejo) {
+        var dj = r.desejo;
+        blocos = quadro("Desejo", pares([["Marca", dj.marca !== null ? h(dj.marca) : nada("—")], ["Referência", dj.referencia !== null ? h(dj.referencia) : nada("—")],
+          ["Preço-alvo", dj.preco_alvo !== null ? el("strong", {}, "R$ " + reais(dj.preco_alvo)) : nada("sem preço-alvo")],
+          ["Prioridade", dj.prioridade !== null ? h(dj.prioridade) : nada("sem prioridade")],
+          ["Link", dj.link !== null ? el("a", {"href": dj.link, "target": "_blank", "rel": "noopener noreferrer"}, "abrir a página") : nada("—")]]),
+          el("p", {"class": "nota"}, "Comprou? Em \"Editar cadastro\", mude a situação para \"Na coleção\" e preencha a compra."), "quadro-desejo") + quadroDocs;
+        lancar = "";
+      }
       // a cabeça: a foto e quem ele é (o grupo, o nome e as marcas de agora); embaixo, os quadros, todos alinhados numa grade
       res += el("div", {"class": "ficha-cabeca"}, el("div", {"class": "ficha-foto"}, foto)
         + el("div", {"class": "ficha-identidade"}, el("p", {"class": "data"}, h(r.tipo) + " · " + h(r.caminho))
           + el("h1", {}, h(r.nome)) + (r.observacao ? el("p", {"class": "observacao"}, h(r.observacao)) : "")
-          + el("p", {"class": "marcas"}, el("span", {"class": "estado estado-" + r.estado}, h(minusculo(r.estado_texto)))
-            + (r.disponivel ? "" : " " + el("span", {"class": "estado estado-indisponivel"}, "indisponível"))
+          + el("p", {"class": "marcas"}, (r.posse === "desejado" ? "" : el("span", {"class": "estado estado-" + r.estado}, h(minusculo(r.estado_texto))))
+            + (r.posse !== "colecao" ? " " + el("span", {"class": "estado estado-posse"}, h(minusculo(r.posse_texto)))
+              : (r.disponivel ? "" : " " + el("span", {"class": "estado estado-indisponivel"}, "indisponível")))
             + (r.proxima === hoje ? " " + el("span", {"class": "estado estado-atividade"}, "relógio de hoje") : ""))))
         + el("div", {"class": "quadros"}, blocos + lancar);
     }
@@ -390,6 +410,11 @@ function abrirNoPainel(id) {
       + el("label", {}, "Grupo " + el("select", {"name": "no_id", "class": "campo-subtipo"}, el("option", {"value": "0", "data-cadeia": "", "selected": noForm === 0}, "(na raiz)")
         + d.grupos.map(function (g) { return el("option", {"value": g.id, "data-cadeia": g.cadeia.join(" "), "selected": noForm === g.id}, h(g.caminho)); }).join(""))
         + " " + el("small", {}, "os campos, os lançamentos e os critérios de um grupo valem para tudo abaixo dele (páginas Grupos e Cadastros)"));
+    // a situação na coleção (no relógio novo, a do endereço: index.php?novo=1&posse=desejado, o "Novo desejo" da página Desejos)
+    var posseForm = novo ? (new URLSearchParams(window.location.search).get("posse") || "colecao") : r.posse;
+    cad += el("label", {}, "Situação na coleção " + el("select", {"name": "posse", "class": "campo-posse"}, d.posses.map(function (p) {
+      return el("option", {"value": p.valor, "selected": p.valor === posseForm}, h(p.nome));
+    }).join("")) + " " + el("small", {}, "fora da coleção, ele sai do rodízio e dos avisos; a ficha e o histórico ficam"));
     d.campos.forEach(function (c) {
       if (compraIds.indexOf(c.identificador) < 0 && c.identificador !== "observacao") {
         cad += campoCadastro(c);
@@ -408,7 +433,7 @@ function abrirNoPainel(id) {
       cad += el("label", {}, "Foto " + el("input", {"type": "file", "accept": "image/*", "data-foto": "foto_base64_" + fid, "data-previa": "previa_" + fid, "aria-label": "Escolher foto"}))
         + el("input", {"type": "hidden", "name": "foto_base64", "id": "foto_base64_" + fid}) + el("img", {"id": "previa_" + fid, "class": "previa", "hidden": true, "alt": ""});
     }
-    cad += el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "disponivel", "value": "0"}) + el("input", {"type": "checkbox", "name": "disponivel", "value": "1",
+    cad += el("label", {"class": "check", "data-so-colecao": true}, el("input", {"type": "hidden", "name": "disponivel", "value": "0"}) + el("input", {"type": "checkbox", "name": "disponivel", "value": "1",
       "checked": novo || r.disponivel}) + " Disponível para o rodízio")
       // a escolha do relógio só aparece quando o config.php não decide por todos (DOCUMENTOS_COPIA_BANCO ausente)
       + (d.copia_sistema === null ? el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "copia_banco", "value": "0"})
@@ -566,7 +591,7 @@ function abrirNoPainel(id) {
 }
 
 document.addEventListener("change", function (ev) {
-  if (ev.target.matches(".campo-subtipo")) {
+  if (ev.target.matches(".campo-subtipo, .campo-posse")) {
     mostrarCamposDoTipo(ev.target.form);
   }
   if (ev.target.matches("select[data-mostra]")) {

@@ -15,15 +15,21 @@ topo("Ficha do relógio", "");
   <div id="detalhe"></div>
 </main>
 <script>
-// a lista dos relógios (os disponíveis primeiro) e o relógio pedido (ficha.php?id=3; sem id, o primeiro), depois que os
-// scripts do fim da página (api.js, painel.js) carregarem
+// a lista dos relógios (os da coleção, os disponíveis primeiro; depois os de fora dela: desejados, emprestados, vendidos,
+// arquivados) e o relógio pedido (ficha.php?id=3; sem id, o primeiro), depois que os scripts do fim da página (api.js,
+// painel.js) carregarem
 document.addEventListener("DOMContentLoaded", function () { api({recurso: "hoje"}).then(function (d) {
   var lista = d.relogios.slice().sort(function (a, b) { return (b.disponivel ? 1 : 0) - (a.disponivel ? 1 : 0) || a.nome.localeCompare(b.nome); });
-  var id = parseInt(new URLSearchParams(window.location.search).get("id") || "0", 10) || (lista.length > 0 ? lista[0].id : 0);
-  document.getElementById("troca").innerHTML = lista.map(function (x) {
-    return el("option", {"value": x.id, "selected": x.id === id}, h(x.nome) + (x.disponivel ? "" : " (indisponível)"));
-  }).join("");
-  document.getElementById("sem-relogios").hidden = lista.length > 0;
+  var fora = d.fora_da_colecao.slice().sort(function (a, b) { return a.posse_texto.localeCompare(b.posse_texto) || a.nome.localeCompare(b.nome); });
+  var todos = lista.concat(fora);
+  var id = parseInt(new URLSearchParams(window.location.search).get("id") || "0", 10) || (todos.length > 0 ? todos[0].id : 0);
+  var opcao = function (x, extra) { return el("option", {"value": x.id, "selected": x.id === id}, h(x.nome) + extra); };
+  var html = lista.map(function (x) { return opcao(x, x.disponivel ? "" : " (" + h(x.estado_texto.toLowerCase()) + ")"); }).join("");
+  if (fora.length > 0) {
+    html = el("optgroup", {"label": "Na coleção"}, html) + el("optgroup", {"label": "Fora da coleção"}, fora.map(function (x) { return opcao(x, " (" + h(x.posse_texto.toLowerCase()) + ")"); }).join(""));
+  }
+  document.getElementById("troca").innerHTML = html;
+  document.getElementById("sem-relogios").hidden = todos.length > 0;
   if (id > 0) {
     abrirNoPainel(id);
   }

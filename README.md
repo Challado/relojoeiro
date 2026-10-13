@@ -363,13 +363,14 @@ mexer no cadastro. O "Decaimento em uso" e o "Decaimento guardado" do cadastro s
 
 ## O cadastro de cada relógio, campo por campo
 
-Todo relógio tem **nome**, **grupo**, **disponível** e **foto**. O resto são **campos**, e quais campos um relógio tem depende
+Todo relógio tem **nome**, **grupo**, **situação na coleção**, **disponível** e **foto**. O resto são **campos**, e quais campos um relógio tem depende
 do **grupo** dele: tudo o que é cadastrado num grupo vale para ele e para todos os grupos abaixo. É por isso que "ser
 automático" não é uma marcação à parte: é estar no grupo **Automático** (ou num subgrupo dele), e com isso herdar os campos de
 pulso e de winder.
 
 ```text
-(todos os relógios)       Observação, Sua nota, Compra, Garantia, Limite de carga
+(todos os relógios)       Observação, Sua nota, Compra, Garantia, Limite de carga, Marca, Referência, Link
+                          (só nos desejados: Preço-alvo, Prioridade do desejo)
 ├── Smartwatch            Autonomia em uso real, Decaimento em uso, Decaimento guardado, No carregador: horas para encher
 └── Tradicional           Última revisão, Revisão a cada
     ├── Mecânico          Reserva de marcha, Aceita corda pela coroa
@@ -389,7 +390,8 @@ cadastro, não código: dá para mudar tudo na página **Cadastros**, e criar os
 |---|---|
 | **Nome** | como ele aparece em todo lugar: na tela, no Telegram e na agenda. |
 | **Grupo** | o lugar dele na árvore. Decide os campos, as fórmulas (a "carga" de um smartwatch é a bateria; a de um mecânico, a reserva de marcha) e os avisos que ele recebe. |
-| **Disponível** | desmarcado, ele sai do rodízio e dos avisos (no conserto, emprestado, vendido), mas o histórico fica. |
+| **Situação na coleção** | **Na coleção** (o de sempre), **Desejado** (a lista de desejos: ainda não é seu), **Emprestado** (é seu, mas está com outra pessoa), **Vendido** ou **Arquivado**. Só o que está na coleção entra no rodízio: nas outras situações o relógio fica indisponível (o banco garante: a regra `ck_relogio_posse_disponivel`), sai do sorteio, da escala e dos avisos, e, ao sair da coleção, as sessões abertas dele (no pulso, no sol, no carregador) fecham na hora e os dias dele no plano de amanhã em diante saem e são sorteados de novo (hoje fica, mas ele não vai mais ao pulso sozinho: troque no **trocar por…**). A ficha, os documentos e o histórico ficam. O emprestado continua na tabela da página Hoje (com o estado **Emprestado**) e no valor da coleção; o desejado, o vendido e o arquivado saem da tabela e aparecem na página **Desejos** (e no seletor da ficha, em **Fora da coleção**). Voltando para **Na coleção**, ele volta disponível. Veja [A lista de desejos](#a-lista-de-desejos). |
+| **Disponível** | desmarcado, ele sai do rodízio e dos avisos (no conserto, numa pausa), mas o histórico fica. Fora da coleção, fica sempre desmarcado (e o campo some do cadastro). |
 | **Guardar no banco a cópia de todos os documentos dele** | marcada, todo arquivo do relógio (o manual, a nota, as fotos, os vídeos) vai também para o banco, como cópia de segurança. Só aparece quando o `config.php` não decide por todos (sem o `DOCUMENTOS_COPIA_BANCO`). Veja [Os documentos do relógio](#os-documentos-do-relógio): é o segundo dos três níveis da cópia. |
 | **Foto** | só para a tela. No detalhe do relógio (o painel, ou a ficha), parando o mouse em cima da foto aparece um resumo dele (o nome, o grupo e o código; o estado e a carga; a nota e o próximo dia no rodízio; a compra) e a lembrança do duplo clique. **Duplo clique** nela, ou o botão **Abrir foto** embaixo, abre a foto numa janela flutuante, no tamanho dela (só no detalhe: nas outras fotos, como a do *Hoje é dia de* e as miniaturas da lista, o clique abre o relógio); a que é maior que a tela aparece em escala, sem deformar, no maior tamanho que cabe no monitor (e na janela do navegador), com o tamanho real e a escala embaixo. Fecha com o ×, com um clique fora ou com Esc. |
 | **Documentos** | o manual, a nota fiscal (em PDF e em XML), as fotos de recordação, os vídeos e o que mais for. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
@@ -484,7 +486,28 @@ no minuto seguinte, pelo cron (o mesmo que recupera um arquivo sumido).
 | **Valor pago** (R$) `valor_compra` | | Também no critério *Novidade e valor* (*aproveitar o investimento*): o mais caro sobe um pouco (até R$ 300: nota 30; acima de R$ 1.500: 90). |
 | **Onde comprou** `loja` | | Texto, mostrado no quadro Compra. Não entra em conta. |
 | **Garantia até** `garantia_ate` | | Data. O aviso *"Garantia vencendo"* sai 30 dias antes. |
+| **Marca** `marca` | | Texto. Não entra em conta; aparece na lista de desejos. |
+| **Referência (o modelo)** `referencia` | | Texto: o modelo, a referência do fabricante. Aparece na lista de desejos. |
+| **Link (a página do relógio)** `link` | | O endereço da página do relógio (a loja, o fabricante). Na lista de desejos vira o link **abrir a página** (só os que começam com `http://` ou `https://`). |
 | **Avisar quando a carga chegar a** (%) `carga_minima` | o geral | O **limite de carga** deste relógio: o ponto em que sai o aviso de carregar (smartwatch), de pôr no sol (solar) ou de dar corda/pôr no winder (mecânico). Vazio, vale o geral do tipo: no smartwatch, o da Configuração (*"Carregar quando a carga estimada chegar a"*, 20%); no solar, o do solar na Configuração (70%); no mecânico, 0% (a reserva acabando). Veja [Os avisos de carga](#os-avisos-de-carga). |
+
+### A lista de desejos
+
+Um relógio que você quer comprar entra no sistema como **Desejado** (na página **Desejos**, o botão **Novo desejo**; ou, no
+cadastro de qualquer relógio, a **Situação na coleção**). Ele não entra no rodízio, no plano nem nos avisos; tem a ficha, a
+foto e os documentos como qualquer outro (o anúncio, a foto da vitrine), e dois campos a mais, que só aparecem nele (a marca
+**só nos desejados** do campo, na página Cadastros):
+
+| Campo | Vazio | O que é e para que serve |
+|---|---|---|
+| **Preço-alvo (até quanto pagar)** (R$) `preco_alvo` | | Quanto você está disposto a pagar. A página Desejos soma os preços-alvo da lista. |
+| **Prioridade do desejo** `prioridade_desejo` | | Alta, Média ou Baixa (as opções do campo: dá para mudar na página Cadastros). A lista vem da mais alta para a mais baixa; sem prioridade, no fim. |
+
+No painel de um desejado, no lugar dos quadros do dia a dia (agora, carga, nota, plano, compra, Marcar), aparece o quadro
+**Desejo**: a marca, a referência, o preço-alvo, a prioridade e o link. **Comprou?** Na página Desejos, o botão **Comprei**
+põe o relógio na coleção (disponível para o rodízio) e abre a ficha dele, para preencher a compra (a data, o valor, a loja):
+o histórico começa dali. Os campos só dos desejados continuam guardados, mas somem do cadastro. Pela API:
+`recurso=desejos` (a lista) e `recurso=relogio`, `acao=salvar`, `posse=colecao` (o Comprei).
 
 ### Smartwatch
 
@@ -829,14 +852,15 @@ Os **Próximos dias** também mostram todos os dias da escala em qualquer tela.
 
 **O estado de cada relógio** diz onde ele está agora: **Em uso** (verde, no pulso), o nome da sessão aberta quando ele está
 noutro lugar, como **No sol**, **No winder** ou **No carregador** (laranja), **Em repouso** (vermelho, guardado) e
-**Indisponível** (cinza, fora do rodízio e guardado). O filtro **Estado** traz cada um deles. No painel, o estado vem com o
+**Indisponível** (cinza, fora do rodízio e guardado) ou **Emprestado** (cinza: com outra pessoa). O filtro **Estado** traz cada um deles. No painel, o estado vem com o
 desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato sessão que você cadastrar entra aqui pelo nome.
 
 | Página | Para que serve |
 |---|---|
 | **Hoje** (`index.php`) | A tela principal. Mostra no alto o relógio do dia (ou, conforme a Configuração, o que está no pulso agora), os avisos de hoje (atrasados e em breve) com o botão que resolve cada um, os próximos dias do plano (de "Mostrar até" em "Mostrar até" dias, com as páginas embaixo) e o modo de rodízio, que se troca ali mesmo (com **Apagar um período** e **Apagar tudo**) (e, nele, o **Rodízio manual**: os relógios de um período, dia a dia; veja [O rodízio manual](#o-rodízio-manual)). Abaixo fica a tabela da coleção, com filtros e ordenação por tipo, estado, carga, última vez usado, próxima manutenção, data e valor da compra. Clicar num relógio abre o **painel** dele: ao lado da lista ou numa janela flutuante grande, como estiver na Configuração (**Abrir o relógio na página Hoje**). |
 | **Plano** (`plano.php`) | O plano inteiro, de hoje até o fim (na escala inteligente, um ou dois anos), mês a mês: o relógio de cada dia, o lembrete e o **trocar por…**. Filtra por período (30 dias, 90, um ano, dois, tudo) e por relógio; o dia a dia vem de "Mostrar até" em "Mostrar até" dias (a Configuração), com as páginas embaixo (**<**, os números, **>**); e mostra quantos dias cada relógio tem no período, a porcentagem e o próximo dia dele. Para escolher os relógios de um período, dia a dia, ela leva ao **Rodízio manual** (na página Hoje). No rodapé, **Apagar a programação**: **Apagar um período** (e sortear de novo, ou deixar livre) e **Apagar tudo** (veja [Apagar a programação](#apagar-a-programação)). |
-| **Painel / Ficha** (`ficha.php`) | Tudo sobre um relógio, em quadros alinhados numa grade (cada quadro com o rótulo de cada informação à esquerda e o valor à direita): foto, estado agora (*"Em repouso desde 21:40"*, *"No sol desde 09:12"*), carga, nota com a conta, próxima entrada no plano, previsão da bateria, o gasto da bateria no pulso e fora (o medido e o do cadastro), as últimas leituras, a linha do tempo recente, o quadro **Compra** (o valor pago, a loja, a garantia e o **custo por uso**: o valor pago dividido pelos dias de uso), o quadro **Documentos** (quantos em cada categoria, e o link para a página Documentos), o quadro **Marcar** e o cadastro completo, editável. O **Marcar** é um menu só, *O que você quer marcar?*: pôr ou tirar do pulso, do winder, do sol ou do carregador, corda, troca de pilha, leitura de carga, um período que já passou ou corrigir uma marcação; embaixo aparecem só os campos daquilo. |
+| **Painel / Ficha** (`ficha.php`) | Tudo sobre um relógio, em quadros alinhados numa grade (cada quadro com o rótulo de cada informação à esquerda e o valor à direita): foto, estado agora (*"Em repouso desde 21:40"*, *"No sol desde 09:12"*), carga, nota com a conta, próxima entrada no plano, previsão da bateria, o gasto da bateria no pulso e fora (o medido e o do cadastro), as últimas leituras, a linha do tempo recente, o quadro **Compra** (o valor pago, a loja, a garantia e o **custo por uso**: o valor pago dividido pelos dias de uso), o quadro **Documentos** (quantos em cada categoria, e o link para a página Documentos), o quadro **Marcar** e o cadastro completo, editável (com a **Situação na coleção**). Num relógio **Desejado**, no lugar dos quadros do dia a dia, o quadro **Desejo** (a marca, a referência, o preço-alvo, a prioridade e o link) e os documentos; num emprestado, vendido ou arquivado, a marca da situação ao lado do estado. Na página da ficha, o seletor traz os relógios da coleção e, separados, os de **Fora da coleção**. O **Marcar** é um menu só, *O que você quer marcar?*: pôr ou tirar do pulso, do winder, do sol ou do carregador, corda, troca de pilha, leitura de carga, um período que já passou ou corrigir uma marcação; embaixo aparecem só os campos daquilo. |
+| **Desejos** (`desejos.php`) | A **lista de desejos**: os relógios desejados, da prioridade mais alta para a mais baixa, cada um com a foto, a marca e a referência, a prioridade, o preço-alvo, o grupo, o link da página dele e o botão **Comprei** (põe na coleção e abre a ficha, para preencher a compra), com a soma dos preços-alvo; o botão **Novo desejo**; e, embaixo, **Fora da coleção**: os emprestados, vendidos e arquivados, com **Voltar para a coleção**. Na página Hoje, o botão **Desejos (N)** ao lado do **Novo relógio** leva a ela (só quando há algum). Veja [A lista de desejos](#a-lista-de-desejos). |
 | **Documentos** (`documentos.php`) | Os documentos de um relógio (ou de todos), aberta pela ficha: o envio de vários arquivos, uma aba por categoria, a galeria das fotos em tela cheia com apresentação, os vídeos em sequência na ordem escolhida, o visualizador de PDF, o resumo da NF-e do XML, e o download do resto. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 | **Histórico** (`historico.php`) | A linha do tempo de um relógio: em uso pelo rodízio, no pulso fora do rodízio, no winder, no sol, em repouso, e cada corda, carga e troca de pilha. Mostra quanto tempo e que porcentagem ficou em cada estado, com filtro de período e de estado. |
 | **Configuração** (`configuracao.php`) | A **Cópia de segurança** (as cópias da pasta, com **Baixar** e **Restaurar**, e o **Fazer uma cópia agora**). Os horários (manhã, noite, uso), o Telegram, o Google Agenda, a mensagem padrão de cada canal, a tabela **"O que vai para onde"** (qual aviso sai por qual canal), os eventos personalizados, a prévia **"Como sai hoje"** e o botão que aplica as migrações do banco. |
@@ -1424,7 +1448,8 @@ As regras `CHECK`, por assunto:
 | Assunto | O banco recusa |
 |---|---|
 | Textos | nome, identificador, título, texto de aviso, fórmula e chave da configuração vazios ou só com espaços |
-| Marcas sim/não | qualquer valor além de 0 e 1 (disponível, ativo, exclusiva, mede o gasto, usada, envia, cópia no banco...) |
+| Marcas sim/não | qualquer valor além de 0 e 1 (disponível, ativo, exclusiva, mede o gasto, usada, envia, cópia no banco, só nos desejados...) |
+| Relógios | uma situação na coleção fora da lista (`colecao`, `desejado`, `emprestado`, `vendido`, `arquivado`); um relógio disponível fora da coleção |
 | Tipos de lançamento | sessão exclusiva fora do formato sessão; "mede o gasto" fora do formato com valor; "fecha às" fora do formato sessão |
 | Lançamentos e medições | fim antes do início; gasto medido (taxa) fora de 0 a 100%; horas negativas |
 | Avisos | antecedência fora de 0 a 3650 dias; horas simuladas na escala fora de 0 a 48 |
@@ -1447,18 +1472,18 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | Arquivo | O que é |
 |---|---|
 | [`api.php`](api.php) | a API, a porta de toda leitura e escrita (a autenticação, o formato, a ordem dos recursos, os filtros, a resposta), com a documentação completa no cabeçalho |
-| [`api/`](api/) | os recursos grandes da API, um arquivo cada (`hoje.php`, `ficha.php`, `config.php`, `ajuda.php`...), mais as funções dela (`funcoes.php`) e as escritas (`escrita.php`): rodam dentro do `api.php`, e abertos direto não fazem nada (o `.htaccess` e o `nginx-relogios.conf` bloqueiam a pasta) |
+| [`api/`](api/) | os recursos grandes da API, um arquivo cada (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `ajuda.php`...), mais as funções dela (`funcoes.php`) e as escritas (`escrita.php`): rodam dentro do `api.php`, e abertos direto não fazem nada (o `.htaccess` e o `nginx-relogios.conf` bloqueiam a pasta) |
 | [`lib.php`](lib.php) | o núcleo: login, árvore, motor de fórmulas, avisos, critérios, rodízio, escala, mensagens, agenda |
 | [`banco.php`](banco.php) | o banco: a conexão com o MySQL, o Postgres, o SQLite ou o Firebird, e a tradução do SQL de um para outro |
 | [`operacoes.php`](operacoes.php) | as regras de cada gravação: validações e mensagens |
 | [`cron.php`](cron.php) | o plano, a sessão do dia, as rodadas da manhã e da noite, os eventos, a agenda e a manutenção dos documentos |
-| `index.php`, `plano.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `usuarios.php` | as páginas (só o esqueleto) |
+| `index.php`, `plano.php`, `desejos.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `usuarios.php` | as páginas (só o esqueleto) |
 | `ajuda.php` | a página de ajuda: só o esqueleto; o `ajuda.js` pede o texto à API (`recurso=manual`: as seções do README para quem usa, já em HTML, convertidas no `lib.php`) |
 | [`pagina.php`](pagina.php) | o topo com o menu e o fim das páginas (o login é da API: `recurso=entrar`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |
 | [`estilo.css`](estilo.css) | o visual |
 | [`schema.sql`](schema.sql) | a estrutura do banco e o conjunto inicial (grupos, campos, fórmulas, avisos, modos, critérios) |
-| `migracao_v2.sql` … `migracao_v21.sql` | as migrações, aplicadas pela página Configuração |
+| `migracao_v2.sql` … `migracao_v22.sql` | as migrações, aplicadas pela página Configuração |
 | [`config.exemplo.php`](config.exemplo.php) | o modelo do `config.php` |
 | [`instalar.php`](instalar.php) | instala o `schema.sql` no banco do `config.php`, qualquer um dos três (o mesmo que `recurso=instalacao`) |
 | [`criar_usuario.php`](criar_usuario.php) | cria um usuário ou troca a senha, pela linha de comando (o mesmo que `recurso=usuarios`, `acao=salvar`) |
