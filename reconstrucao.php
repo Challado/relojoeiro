@@ -904,6 +904,8 @@ const RECONSTRUCAO_CODIGO = [
     "testes/comparar.php" => ["testes", "compara duas fotografias do cenário (os quatro bancos, ou a reescrita com a versão atual)"],
     "testes/paridade.sh" => ["testes", "o teste de paridade com um comando: os quatro bancos ao mesmo tempo, numa pasta temporária, e a comparação"],
     "testes/config.teste.php" => ["testes", "o config dos testes (o acesso aos bancos pelo ambiente), apontado por RELOGIOS_CONFIG: o config.php de verdade fica intocado"],
+    "testes/dicionario.php" => ["testes", "gera o dicionário dos campos do cabeçalho do api.php a partir do da ajuda (a fonte única), e confere que batem"],
+    "testes/campos.php" => ["testes", "confere que todo campo das respostas da API está explicado no dicionário da ajuda"],
     "testes/layout.cjs" => ["testes", "a conferência do layout: todas as telas num navegador, em 15 tamanhos, procurando o que quebra"],
     "testes/README.md" => ["testes", "como rodar o teste de paridade e a conferência do layout"],
     "README.md" => ["documentacao", "o manual inteiro: para quem usa, a instalação, a API e como é por dentro"],
@@ -1406,6 +1408,9 @@ function reconstrucao()
                     . "com o config de teste apontado pela variável de ambiente RELOGIOS_CONFIG (o núcleo carrega o arquivo que ela diz; sem ela, o config.php).",
                 "Além disso: nenhuma escrita do roteiro recusada; o dicionário da ajuda explica todos os campos das respostas; as telas sem erro de "
                     . "JavaScript e sem rolagem lateral no celular, no tablet e no computador.",
+                "A documentação da API tem uma fonte só: o dicionário dos campos da ajuda (recurso=ajuda, campos); o do cabeçalho do api.php é "
+                    . "gerado dele (testes/dicionario.php --gravar; sem o --gravar, confere). testes/campos.php confere que todo campo das respostas "
+                    . "está explicado. Os dois rodam no testes/paridade.sh.",
                 "testes/layout.cjs abre todas as telas (com os quadros recolhidos abertos e cada opção dos menus que mostram partes) num navegador, "
                     . "em 15 tamanhos de 320 a 1920px, e mede o que quebra: a página que rola de lado, o elemento que sai da caixa em que está, a "
                     . "etiqueta partida, o texto cortado, o botão com o texto em duas linhas e o que fica por cima de outro. O esperado: 0 problemas.",

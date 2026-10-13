@@ -115,3 +115,27 @@ O resultado esperado é `{} 0 problemas`. Em `testes/layout/` (fora do git) fica
 uma parte, os dois argumentos filtram o nome da tela e o do tamanho: `node testes/layout.cjs "ficha" "cel-"`. Os dados do cenário
 são curtos; para pegar o que só quebra com o nome comprido de verdade, vale rodar também depois de dar nomes longos a alguns
 relógios e grupos e pôr foto em alguns (a cabeça do painel muda com a foto: os botões Abrir, Trocar e Remover foto).
+
+# A documentação da API
+
+O dicionário dos campos (o que é cada campo de cada resposta) tem **uma fonte só**: o `"campos"` da ajuda, no `api.php` (o
+que o `recurso=ajuda` devolve). O bloco "DICIONÁRIO DOS CAMPOS" do cabeçalho do `api.php` é gerado dele:
+
+```sh
+php testes/dicionario.php            # confere: o cabeçalho é o que a ajuda gera? (0: sim; 1: não, e diz a primeira linha diferente)
+php testes/dicionario.php --gravar   # regrava o bloco do cabeçalho a partir da ajuda
+```
+
+Para documentar um campo novo: escreva a entrada no `"campos"` da ajuda (na seção do recurso, com o caminho do campo como
+chave: `relogios[].compra.valor`, `config.painel_modo`, `destaque.relogio_id`) e rode com `--gravar`. No cabeçalho, cada
+campo fica com o caminho numa coluna de 31 caracteres (o comprido, sozinho na linha) e o texto em linhas de até 140.
+
+E todo campo que a API devolve tem de estar explicado. O [`campos.php`](campos.php) lê cada recurso de um sistema no ar (o do
+cenário), junta o caminho de cada campo das respostas e procura no dicionário da seção do recurso:
+
+```sh
+php testes/campos.php http://127.0.0.1:8101/api.php            # 0: todos explicados; 1: lista os que faltam
+php testes/campos.php http://127.0.0.1:8101/api.php --sobras   # e os explicados que não apareceram neste banco
+```
+
+O `paridade.sh` roda os dois depois da comparação (o `campos.php` no servidor do primeiro banco).
