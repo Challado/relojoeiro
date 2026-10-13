@@ -2253,6 +2253,53 @@
  *     distribuicao[].itens[].horas   as horas no pulso desses relógios no período
  *     distribuicao[].itens[].porcentagem_horas
  *                                    a parte deles nas horas no pulso, em %
+ *   recurso=hora_certa
+ *     agora                          o instante da resposta (número inteiro: instante Unix (segundos desde 01/01/1970 UTC))
+ *     agora_ms                       o mesmo em milissegundos: a página acerta o relógio dela por ele, descontando metade do tempo do
+ *                                    pedido
+ *     local                          a hora local (o fuso do sistema)
+ *     local.data                     a data (texto AAAA-MM-DD)
+ *     local.hora                     a hora (texto HH:MM:SS)
+ *     local.iso8601                  a data e a hora com o deslocamento ("2026-10-13T14:33:50-03:00")
+ *     local.dia_semana               o dia da semana ("terça-feira")
+ *     local.texto                    a data por extenso ("terça-feira, 13 de outubro de 2026")
+ *     fuso                           o fuso do sistema
+ *     fuso.nome                      o nome ("America/Sao_Paulo": o FUSO do config.php)
+ *     fuso.deslocamento              a diferença para o UTC ("-03:00")
+ *     fuso.segundos                  a mesma em segundos (-10800)
+ *     fuso.abreviacao                a abreviação ("-03", "CET")
+ *     fuso.horario_de_verao          verdadeiro: o horário de verão vale agora
+ *     utc                            a hora UTC (Zulu)
+ *     utc.data                       a data (texto AAAA-MM-DD)
+ *     utc.hora                       a hora (texto HH:MM:SS)
+ *     utc.iso8601                    a data e a hora com Z ("2026-10-13T17:33:50Z")
+ *     militar                        o fuso militar (o alfabeto da OTAN)
+ *     militar.letra                  a letra do fuso (A a M, sem J, a leste; N a Y a oeste; Z no UTC); null: o fuso não é de hora cheia
+ *     militar.nome                   o nome da letra ("Papa"); null
+ *     militar.grupo_data_hora_local  o grupo data-hora (DTG) local: DDHHMM, a letra, o mês em inglês e o ano ("131433P OCT 26"); null sem
+ *                                    letra
+ *     militar.grupo_data_hora_zulu   o mesmo em UTC ("131733Z OCT 26")
+ *     calendario                     o calendário de hoje
+ *     calendario.dia_do_ano          o dia do ano (1 a 366)
+ *     calendario.dias_no_ano         quantos dias o ano tem (365 ou 366)
+ *     calendario.faltam_no_ano       quantos dias faltam para acabar o ano
+ *     calendario.semana_iso          a semana do ano pela ISO 8601 (1 a 53)
+ *     calendario.ano_iso             o ano dessa semana (no começo de janeiro e no fim de dezembro pode ser outro)
+ *     calendario.trimestre           o trimestre (1 a 4)
+ *     calendario.bissexto            verdadeiro: o ano é bissexto
+ *     calendario.dia_juliano         o dia juliano (o número dos astrônomos, cinco casas)
+ *     calendario.unix                o instante Unix (segundos desde 01/01/1970 UTC)
+ *     lua                            a lua agora, pelo ciclo sinódico médio (29,53 dias) a partir da lua nova de 06/01/2000: pode errar por
+ *                                    um dia
+ *     lua.fase                       nova, crescente, quarto_crescente, crescente_gibosa, cheia, minguante_gibosa, quarto_minguante ou
+ *                                    minguante
+ *     lua.nome                       a fase por extenso ("Lua cheia", "Quarto minguante")
+ *     lua.simbolo                    o símbolo da fase (🌑 🌒 🌓 🌔 🌕 🌖 🌗 🌘)
+ *     lua.idade_dias                 os dias desde a última lua nova (uma casa)
+ *     lua.iluminacao                 a parte iluminada, em % (uma casa)
+ *     lua.proxima_cheia              a próxima lua cheia (texto AAAA-MM-DD)
+ *     lua.proxima_nova               a próxima lua nova (texto AAAA-MM-DD)
+ *     como_acertar                   o passo a passo para acertar um relógio de ponteiros pela hora certa
  *   recurso=rodizio_manual
  *     de                             o primeiro dia do período (AAAA-MM-DD)
  *     ate                            o último dia do período (AAAA-MM-DD)
@@ -2860,6 +2907,8 @@ if (!$token_ok && $quem === "") {
     require __DIR__ . "/api/desejos.php";
 } elseif ($recurso === "estatisticas") {
     require __DIR__ . "/api/estatisticas.php";
+} elseif ($recurso === "hora_certa") {
+    require __DIR__ . "/api/hora_certa.php";
 } elseif ($recurso === "proximos") {
     // os Próximos dias da página Hoje, uma página (a troca de página não relê a página Hoje inteira)
     $saida = plano_pagina(date("Y-m-d"), "", null, (int)($_REQUEST["pagina"] ?? 1),
@@ -2916,7 +2965,7 @@ if (!$token_ok && $quem === "") {
 } else {
     $codigo = 404;
     $saida = ["erro" => "recurso desconhecido", "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "hora_certa", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

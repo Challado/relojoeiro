@@ -9,7 +9,7 @@
 // não tinha). Cada página abre o seu <main> e mostra as suas mensagens.
 function topo($titulo, $ativo)
 {
-    $menu = ["index.php" => "Hoje", "plano.php" => "Plano", "desejos.php" => "Desejos", "estatisticas.php" => "Estatísticas", "configuracao.php" => "Configuração", "criterios.php" => "Critérios", "grupos.php" => "Grupos",
+    $menu = ["index.php" => "Hoje", "plano.php" => "Plano", "desejos.php" => "Desejos", "estatisticas.php" => "Estatísticas", "hora.php" => "Hora certa", "configuracao.php" => "Configuração", "criterios.php" => "Critérios", "grupos.php" => "Grupos",
         "execucoes.php" => "Execuções do cron", "usuarios.php" => "Usuários", "cadastros.php" => "Cadastros",
         "ajuda.php" => "Ajuda"];
     echo "<!doctype html>\n<html lang=\"pt-BR\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta name=\"theme-color\" content=\"#1c2530\">\n<title>" . htmlspecialchars($titulo, ENT_QUOTES, "UTF-8") . "</title>\n"
