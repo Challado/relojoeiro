@@ -420,6 +420,12 @@ escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $desejo, "posse" =
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "posse" => "colecao"]);
 ler("desejos depois de comprar", ["recurso" => "desejos"]);
 ler("ficha do comprado", ["recurso" => "ficha", "relogio" => $desejo]);
+// hoje sem relógio: o dia fica livre (o cron não põe ninguém no pulso nem sorteia de novo) e depois volta, escolhendo um
+escrever(["recurso" => "rodizio", "acao" => "sem_relogio"]);
+cron();
+ler("hoje sem relogio", ["recurso" => "hoje"]);
+escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => substr(dia(0, "00:00"), 0, 10), "relogio_id" => $rel["pilha"]]);
+ler("hoje depois do dia livre", ["recurso" => "hoje"]);
 // apagar tudo: de amanhã em diante (o modo monta de novo), e depois de hoje em diante
 escrever(["recurso" => "rodizio", "acao" => "apagar_tudo"]);
 escrever(["recurso" => "rodizio", "acao" => "apagar_tudo", "hoje" => 1]);

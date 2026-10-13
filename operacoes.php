@@ -1753,7 +1753,9 @@ function op_rodizio($acao, $d)
                 }
             }
             // sem pôr no pulso sozinho, o novo só entra no pulso pelo Pôs
-            if (pulso_poe_sozinho() && $agora < $fim_uso && valor("SELECT id FROM lancamento WHERE tipo_id = ? AND origem = 'rodizio' AND DATE(inicio) = ? AND relogio_id = ?", [(int)$tipo["id"], $dia, $novo_id]) === null) {
+            // (uma sessão dele de hoje já fechada, como a do "Sem relógio hoje", não conta: ele volta ao pulso agora)
+            if (pulso_poe_sozinho() && $agora < $fim_uso && valor("SELECT id FROM lancamento WHERE tipo_id = ? AND origem = 'rodizio' AND DATE(inicio) = ? AND relogio_id = ?
+                AND (fim IS NULL OR fim > ?)", [(int)$tipo["id"], $dia, $novo_id, date("Y-m-d H:i:s", $agora)]) === null) {
                 sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, ?, NULL, 'rodizio', NOW())",
                     [$novo_id, (int)$tipo["id"], date("Y-m-d H:i:s", max($agora, $ini_uso)), pulso_tira_sozinho() ? date("Y-m-d H:i:s", $fim_uso) : null]);
             }
@@ -1812,6 +1814,30 @@ function op_rodizio($acao, $d)
             $troca_hoje((int)$depois["relogio_id"], $depois["motivo"] ?? null);
         }
         $msg = "Sorteado de novo" . ($desde > $hoje ? " a partir de amanhã; hoje continua o " . ($antes["nome"] ?? "mesmo") : "") . "." . ($depois ? " Hoje: " . $depois["nome"] . "." : "");
+    } elseif ($acao === "sem_relogio") {
+        // hoje sem relógio: o dia fica livre (sem relógio e sem sorteio, como os dias livres do plano) e a sessão do rodízio de
+        // hoje termina agora (o tempo que ele já ficou no pulso conta; a que ainda nem começou sai). Os outros dias não mudam.
+        // Desfaz: o "escolher…" de hoje (trocar_dia ou usando) ou o "Sortear de novo" inclusive hoje
+        $dia = $hoje->format("Y-m-d");
+        $antes = plano_do_dia($dia);
+        $tipo = lancamento_tipos()["pulso"] ?? null;
+        $tirou = "";
+        if ($tipo) {
+            foreach (linhas("SELECT l.id, l.inicio, l.fim, r.nome FROM lancamento l JOIN relogio r ON r.id = l.relogio_id WHERE l.tipo_id = ? AND l.origem = 'rodizio' AND DATE(l.inicio) = ?",
+                [(int)$tipo["id"], $dia]) as $l) {
+                if (strtotime($l["inicio"]) >= $agora) {
+                    sql("DELETE FROM lancamento WHERE id = ?", [(int)$l["id"]]);
+                } elseif ($l["fim"] === null || strtotime($l["fim"]) > $agora) {
+                    sql("UPDATE lancamento SET fim = ? WHERE id = ?", [date("Y-m-d H:i:s", $agora), (int)$l["id"]]);
+                    $tirou = $l["nome"];
+                }
+            }
+        }
+        sql("DELETE FROM plano WHERE data = ?", [$dia]);
+        sql("INSERT IGNORE INTO plano_livre (data, criado) VALUES (?, NOW())", [$dia]);
+        $msg = "Hoje sem relógio: o dia ficou livre" . ($antes ? " (era o " . $antes["nome"] . ")" : "") . "."
+            . ($tirou !== "" ? " O " . $tirou . " saiu do pulso agora; o tempo que ele já ficou conta." : " Nenhum relógio vai ao pulso pelo rodízio hoje.")
+            . " Mudou de ideia? Escolha um relógio para hoje (o \"escolher…\") ou sorteie de novo inclusive hoje.";
     } elseif ($acao === "usando") {
         $r = linha("SELECT * FROM relogio WHERE id = ?", [(int)($d["relogio_id"] ?? 0)]);
         if (!$r) {

@@ -1691,7 +1691,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
         // hoje sem plano, mas com um relógio já no pulso pelo rodízio: o plano de hoje é ele (não se sorteia outro)
         $no_pulso = $manter_pulso ? valor("SELECT l.relogio_id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
             WHERE t.identificador = 'pulso' AND l.origem = 'rodizio' AND DATE(l.inicio) = ? ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [$hoje->format("Y-m-d")]) : null;
-        if (plano_do_dia($hoje->format("Y-m-d")) === null && $no_pulso !== null) {
+        if (plano_do_dia($hoje->format("Y-m-d")) === null && $no_pulso !== null && !dia_livre($hoje->format("Y-m-d"))) {
             sql("INSERT INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, NULL, 'manual', ?, NOW())",
                 [$hoje->format("Y-m-d"), (int)$no_pulso, "Já estava no pulso pelo rodízio quando o plano de hoje foi montado."]);
         }

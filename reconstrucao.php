@@ -235,7 +235,7 @@ const RECONSTRUCAO_TELAS = [
             ],
             "grava" => [
                 "lancamento: iniciar, encerrar, lancar, periodo, alterar, excluir",
-                "rodizio: trocar_dia, modo, resortear, resortear_hoje, proxima_semana, usando, manual, periodo_sortear, "
+                "rodizio: trocar_dia, modo, resortear, resortear_hoje, proxima_semana, usando, sem_relogio, manual, periodo_sortear, "
                     . "periodo_livre, apagar_tudo",
                 "relogio: salvar, foto, remover_foto, excluir",
             ],
@@ -250,7 +250,8 @@ const RECONSTRUCAO_TELAS = [
                         . "agora: aqui, o relógio do dia.\"). Os pares, o botão Pôs/Tirou do pulso e a foto são do relógio do cartão.",
                     "À esquerda: \"<Dia da semana>, DD/MM/AAAA · <nome do modo>\" em cinza; o nome do relógio do dia em h1 (link que "
                         . "abre o painel); a janela de data com o \"até\" (\"só hoje\", \"até sexta, 02/10\") e o tipo dele; o lembrete do dia "
-                        . "em âmbar (\"Pôr no winder: <relógio> (8 h)\"); \"Por que ele: <motivo>\" (o motivo em cinza).",
+                        . "em âmbar (\"Pôr no winder: <relógio> (8 h)\"); \"Por que ele: <motivo>\" (o motivo em cinza); embaixo, o botão leve discreto "
+                        . "\"Sem relógio hoje\" (rodizio sem_relogio; confirma \"Hoje sem relógio? O dia fica livre: ...\").",
                     "No meio, em pares: Agora (a etiqueta \"Em uso desde 07:00\", \"No sol desde 09:12\" ou \"Em repouso desde ...\", na "
                         . "cor do estado, e o botão leve \"Pôs no pulso\" / \"Tirou do pulso\", que manda lancamento iniciar/encerrar do tipo "
                         . "pulso); Carga (a barra, o % e de onde vem, ou só o texto); Última leitura (\"89% em 06/10 21:30\", se houver); "
@@ -258,6 +259,9 @@ const RECONSTRUCAO_TELAS = [
                         . "atrasada, ou \"nenhuma prevista\"); Compra (\"R\$ valor · loja · data\"); Garantia (\"até DD/MM/AAAA\", \"(vencida)\" "
                         . "se passou); Código.",
                     "À direita: a foto do relógio (ou o quadrado \"Sem foto\"), que abre o painel.",
+                    "Hoje livre (hoje_livre da API: o Sem relógio hoje, ou um período livre): h1 \"Hoje sem relógio\", a janela \"dia livre\", "
+                        . "\"Nenhum relógio vai ao pulso pelo rodízio hoje. Quer usar um? ...\" e o \"escolher…\" dos dias livres (trocar_dia de "
+                        . "hoje: o escolhido vai para o pulso a partir de agora); sem os pares nem a foto (a não ser com o destaque no pulso).",
                     "Sem relógio para hoje: h1 \"Nenhum relógio para hoje\" e \"Nenhum relógio disponível no grupo deste dia. Mude o "
                         . "grupo no modo de rodízio ou marque um relógio como disponível.\"",
                 ]],
@@ -1334,6 +1338,10 @@ function reconstrucao()
                 "Restaurar os critérios iniciais apaga os de todos os lugares e volta aos do cadastro inicial.",
             ]),
             $secao("rodizio", "Os modos de rodízio, o plano e a escala inteligente", [
+                "Hoje sem relógio (rodizio sem_relogio): o plano de hoje sai e hoje vira um dia livre; a sessão do rodízio de hoje que já "
+                    . "começou fecha agora (o tempo dela conta como uso), a que ainda não começou sai; a sessão do dia (o pulso sozinho) não abre "
+                    . "num dia sem plano, e o garantir_plano não põe de volta como plano de hoje o relógio que esteve no pulso pelo rodízio "
+                    . "num dia livre. Os outros dias não mudam. Desfaz: trocar_dia (ou usando) de hoje, ou resortear_hoje.",
                 "Um modo é feito de blocos de dias da semana (cada dia em um bloco só). Cada bloco diz de onde escolher (um grupo, a coleção toda ou um "
                     . "relógio fixo) e se é um relógio por dia ou um para o bloco inteiro. A forma de escolha do modo: inteligente (a maior nota), "
                     . "ponderado (sorteio com a nota como chance), aleatório ou fifo (quem espera há mais tempo). Com o ciclo ligado, um relógio só volta "
