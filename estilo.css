@@ -1046,6 +1046,12 @@ table.tabela-dados code.ident { display: block; font-size: .74rem; color: var(--
 .origem { display: inline-block; font-size: .72rem; padding: .05rem .5rem; border-radius: 999px; border: 1px solid var(--aco-escuro); color: var(--cinza); white-space: nowrap; }
 .origem-informado { background: #e6eef8; color: #1f4f8f; border-color: #b8cbe6; }
 .origem-padrao { background: #fbf1e3; color: #8a5a00; border-color: #ecd2a8; }
+.origem-medido { background: #e3f3e6; color: #1e6b2e; border-color: #a9d8b3; }
+/* a conta da previsão: o que é (e, menor, como foi medido), o valor (e a unidade embaixo) e a origem */
+.quadro h3.conta-titulo { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cinza); margin: .9rem 0 .2rem; }
+table.conta-previsao td { font-size: .84rem; }
+table.conta-previsao td.valor { white-space: normal; text-align: right; min-width: 4.5rem; }
+table.conta-previsao td.origem-celula { width: 1%; text-align: right; }
 .dados-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr)); gap: 1rem 1.75rem; }
 .dados-grade h3 { font-size: .9rem; margin: 0 0 .3rem; }
 

@@ -3531,7 +3531,8 @@ function previsao_energia($r, $agora)
                 if (isset($campos[$nome])) {
                     $origem = ($valores[$nome] ?? "") !== "" ? "informado" : ($v === null ? "vazio" : "padrão");
                     $vazio = $vazio || $origem === "vazio";
-                    $res["conta"][] = ["campo" => $nome, "nome" => $campos[$nome]["nome"], "valor" => $v, "unidade" => $campos[$nome]["unidade"], "origem" => $origem];
+                    $res["conta"][] = ["campo" => $nome, "nome" => $campos[$nome]["nome"], "detalhe" => null, "valor" => $v, "unidade" => $campos[$nome]["unidade"],
+                        "origem" => $origem];
                 }
             }
             // o gasto medido pelas leituras (gasto_medido, na janela da Configuração): com o de uso medido, o campo vazio do
@@ -3540,12 +3541,12 @@ function previsao_energia($r, $agora)
             $medicoes = linhas("SELECT m.medida, m.taxa, m.peso_horas, m.fim, m.horas_pulso, m.horas_guardado, m.de_valor, m.ate_valor FROM medicao m
                 JOIN lancamento l ON l.id = m.lancamento_id WHERE l.relogio_id = ? AND m.usada = 1 ORDER BY m.fim, m.id", [(int)$r["id"]]);
             $g = gasto_medido($medicoes, $agora);
-            $como = $g["n"] === 0 ? " (a última medição; nenhuma nos últimos " . $janela . " dias)"
-                : " (" . ($g["conjunta"] ? "conta dos dois gastos juntos, com " : "média de ") . $g["n"] . ($g["n"] === 1 ? " medição" : " medições")
-                    . " dos últimos " . $janela . " dias)";
+            $como = $g["n"] === 0 ? "a última medição; nenhuma nos últimos " . $janela . " dias"
+                : ($g["conjunta"] ? "conta dos dois gastos juntos, com " : "média de ") . $g["n"] . ($g["n"] === 1 ? " medição" : " medições")
+                    . " dos últimos " . $janela . " dias";
             foreach (["uso" => "Gasto em uso medido", "repouso" => "Gasto fora do pulso medido"] as $medida => $nome_m) {
                 if ($g[$medida] !== null) {
-                    $res["conta"][] = ["campo" => "MEDIDO(\"" . $medida . "\")", "nome" => $nome_m . $como, "valor" => round($g[$medida], 3),
+                    $res["conta"][] = ["campo" => "MEDIDO(\"" . $medida . "\")", "nome" => $nome_m, "detalhe" => $como, "valor" => round($g[$medida], 3),
                         "unidade" => $medida === "uso" ? "% por dia de uso" : "% por dia fora do pulso", "origem" => "medido"];
                     if ($medida === "uso") {
                         $vazio = false;
@@ -3639,11 +3640,8 @@ function previsao_energia($r, $agora)
             // hoje, ontem, ou há quantos dias de calendário
             $dias_leitura = (int)(new DateTimeImmutable(substr($leitura["inicio"], 0, 10)))->diff($hoje)->days;
             $quando = $dias_leitura === 0 ? "hoje" : ($dias_leitura === 1 ? "ontem" : "há " . $dias_leitura . " dias");
-            $res["linhas"][] = "Confiança " . $res["confianca"] . ": leitura de " . str_replace(".", ",", (string)(0 + $res["leitura"])) . $leitura["unidade"] . " feita " . $quando
-                . (count($res["conta"]) > 0 ? ". Conta: " . implode("; ", array_map(function ($c) {
-                    return $c["nome"] . ": " . ($c["valor"] === null ? "vazio" : str_replace(".", ",", (string)(0 + round((float)$c["valor"], 2))) . ($c["unidade"] !== "" ? " " . $c["unidade"] : "")
-                        . " (" . $c["origem"] . ")");
-                }, $res["conta"])) : "") . ".";
+            // (de onde vem cada número da conta vai à parte, em "conta": a tela mostra numa tabela)
+            $res["linhas"][] = "Confiança " . $res["confianca"] . ": leitura de " . str_replace(".", ",", (string)(0 + $res["leitura"])) . $leitura["unidade"] . " feita " . $quando . ".";
         }
     }
     return $res;

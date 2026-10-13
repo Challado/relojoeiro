@@ -1014,8 +1014,11 @@
  *     relogios[].previsao.conta[]    de onde vem cada número da conta: os campos do cadastro usados e o gasto medido pelas leituras
  *     relogios[].previsao.conta[].campo
  *                                    o identificador do campo, ou MEDIDO("uso") / MEDIDO("repouso") para o gasto medido
+ *     relogios[].previsao.conta[].detalhe
+ *                                    no gasto medido, como ele foi medido ("conta dos dois gastos juntos, com 3 medições dos últimos 90
+ *                                    dias"); null nos campos
  *     relogios[].previsao.conta[].nome
- *                                    o nome do campo (ou do gasto medido, com quantas medições entraram)
+ *                                    o nome do campo, ou do gasto medido (Gasto em uso medido, Gasto fora do pulso medido)
  *     relogios[].previsao.conta[].origem
  *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo), vazio (sem valor) ou medido
  *                                    (pelas leituras)
@@ -1502,7 +1505,10 @@
  *                                    ou baixa (leitura com mais de 7 dias)
  *     relogio.previsao.conta[]       de onde vem cada número da conta: os campos do cadastro usados e o gasto medido pelas leituras
  *     relogio.previsao.conta[].campo o identificador do campo, ou MEDIDO("uso") / MEDIDO("repouso") para o gasto medido
- *     relogio.previsao.conta[].nome  o nome do campo (ou do gasto medido, com quantas medições entraram)
+ *     relogio.previsao.conta[].detalhe
+ *                                    no gasto medido, como ele foi medido ("conta dos dois gastos juntos, com 3 medições dos últimos 90
+ *                                    dias"); null nos campos
+ *     relogio.previsao.conta[].nome  o nome do campo, ou do gasto medido (Gasto em uso medido, Gasto fora do pulso medido)
  *     relogio.previsao.conta[].origem
  *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo), vazio (sem valor) ou medido
  *                                    (pelas leituras)
@@ -1988,7 +1994,9 @@
  *                                    ou baixa (leitura com mais de 7 dias)
  *     previsoes[].conta[]            de onde vem cada número da conta: os campos do cadastro usados e o gasto medido pelas leituras
  *     previsoes[].conta[].campo      o identificador do campo, ou MEDIDO("uso") / MEDIDO("repouso") para o gasto medido
- *     previsoes[].conta[].nome       o nome do campo (ou do gasto medido, com quantas medições entraram)
+ *     previsoes[].conta[].detalhe    no gasto medido, como ele foi medido ("conta dos dois gastos juntos, com 3 medições dos últimos 90
+ *                                    dias"); null nos campos
+ *     previsoes[].conta[].nome       o nome do campo, ou do gasto medido (Gasto em uso medido, Gasto fora do pulso medido)
  *     previsoes[].conta[].origem     de onde veio: informado (no cadastro do relógio), padrão (o do campo), vazio (sem valor) ou medido
  *                                    (pelas leituras)
  *     previsoes[].conta[].unidade    a unidade do valor (texto)
