@@ -193,7 +193,7 @@ const RECONSTRUCAO_TELAS = [
                 . "2,4rem) no canto de cima, à direita. Fecha com o ×, com um clique fora da foto ou com Esc (o Esc fecha só a foto: o "
                 . "painel por baixo continua aberto); enquanto aberta, a página não rola.",
             "O título da aba do navegador é o título da página (\"Relógio de hoje\", \"Plano\", \"Configuração\", \"Critérios de escolha\", "
-                . "\"Grupos de relógios\", \"Execuções do cron\", \"Usuários\", \"Cadastros\", \"Ajuda\", \"Ficha do relógio\", \"Documentos\", \"Desejos\"; no "
+                . "\"Grupos de relógios\", \"Execuções do cron\", \"Usuários\", \"Cadastros\", \"Ajuda\", \"Ficha do relógio\", \"Documentos\", \"Desejos\", \"Estatísticas\"; no "
                 . "histórico, \"Histórico — <relógio>\").",
             "O navegador de páginas (Próximos dias, Dia a dia do Plano, Rodízio manual): botões leves pequenos (padding .3rem "
                 . ".65rem, letra .9rem) numa linha que quebra: \"<\" (dica \"Anterior\"; desativado na primeira), os números (a 1, a última e "
@@ -211,6 +211,7 @@ const RECONSTRUCAO_TELAS = [
             ["pagina" => "index.php", "rotulo" => "Hoje"],
             ["pagina" => "plano.php", "rotulo" => "Plano"],
             ["pagina" => "desejos.php", "rotulo" => "Desejos"],
+            ["pagina" => "estatisticas.php", "rotulo" => "Estatísticas"],
             ["pagina" => "configuracao.php", "rotulo" => "Configuração"],
             ["pagina" => "criterios.php", "rotulo" => "Critérios"],
             ["pagina" => "grupos.php", "rotulo" => "Grupos"],
@@ -489,6 +490,43 @@ const RECONSTRUCAO_TELAS = [
                         . "(confirma; gravado, abre a ficha).",
                     "Na página Hoje, ao lado do \"Novo relógio\", o botão leve \"Desejos (<n>) · Fora da coleção (<n>)\" (só as partes "
                         . "que têm algum; sem nenhum, o botão some) leva a esta página.",
+                ]],
+            ],
+        ],
+        [
+            "id" => "estatisticas",
+            "pagina" => "estatisticas.php",
+            "titulo" => "Estatísticas",
+            "endereco" => "estatisticas.php?de=AAAA-MM-DD&ate=AAAA-MM-DD (de=tudo: desde o primeiro uso; sem nada: os últimos 90 dias)",
+            "le" => [
+                "recurso=estatisticas",
+            ],
+            "grava" => [],
+            "partes" => [
+                ["titulo" => "Período e resumo", "itens" => [
+                    "h1 \"Estatísticas\" com \"de DD/MM/AAAA a DD/MM/AAAA · N dias\" em cinza à direita. Filtro num cartão: De, Até (máximo "
+                        . "hoje), \"Ver\" e os atalhos 30 dias, 90 dias, 1 ano, desde o começo.",
+                    "Quatro caixas (duas por linha até 900px): \"<n>\" dias com relógio no pulso (de <dias>); \"<h> h\" no pulso · <h> h por dia "
+                        . "com relógio; \"<usados> de <coleção>\" relógios usados · <n> sem uso; \"R\$ <custo médio>\" custo por uso, em média · "
+                        . "coleção: R\$ <valor>. Embaixo, \"Mais usado: <link> (<h> h, <n> dias). Menos usado (dos que foram ao pulso): <link> (<h> h).\"",
+                ]],
+                ["titulo" => "Cada relógio", "itens" => [
+                    "Cartão com a nota do que cada coluna é e a tabela (fichas até 900px) Relógio (o link da ficha e, embaixo, menor, o grupo e a "
+                        . "situação fora da coleção), Dias de uso, Horas (\"12,5 h\"), A parte (a barra horizontal safira com a largura relogios[].barra "
+                        . "e \"56,8%\"), Custo por uso (\"R\$ 83,30\" ou —), Sem uso há (\"3 dias\", \"usado hoje\", \"nunca usado\"), Tendência (\"↑ "
+                        . "usando mais\" em verde, \"↓ usando menos\" em vermelho, \"→ estável\", \"· poucos dados\" em cinza; a dica com as horas de "
+                        . "cada metade).",
+                ]],
+                ["titulo" => "Gráficos", "itens" => [
+                    "Dois cartões lado a lado (um embaixo do outro até 900px): Por dia da semana e Por mês, cada um um gráfico de barras "
+                        . "verticais em SVG (largura 100%, as barras safira com a altura da barra da API, o valor \"14 h\" em cima de cada uma "
+                        . "quando são até 8, os rótulos embaixo: seg...dom, set/26..., no máximo uns 7 rótulos) e a nota com os números (a média "
+                        . "por dia de cada dia da semana; as horas e quantos relógios em cada mês).",
+                ]],
+                ["titulo" => "A coleção", "itens" => [
+                    "Cartão com a nota e as divisões em grade (lado a lado onde cabem, cada uma com pelo menos 22rem): h3 com o título e a "
+                        . "tabela nome, \"<n> relógios\", a barra com a porcentagem e as horas; numa divisão estreita (até 26rem), cada linha em "
+                        . "duas: o nome em negrito em cima e os números embaixo.",
                 ]],
             ],
         ],
@@ -938,6 +976,8 @@ const RECONSTRUCAO_CODIGO = [
     "execucoes.js" => ["tela", "a página Execuções do cron: os filtros, o resumo, a tabela e a paginação"],
     "desejos.php" => ["tela", "o esqueleto da página Desejos"],
     "desejos.js" => ["tela", "a página Desejos: a lista de desejos (com o Comprei) e os relógios fora da coleção"],
+    "estatisticas.php" => ["tela", "o esqueleto da página Estatísticas"],
+    "estatisticas.js" => ["tela", "a página Estatísticas: o período, o resumo, cada relógio, os gráficos em SVG e a coleção"],
     "historico.php" => ["tela", "o esqueleto da página Histórico"],
     "historico.js" => ["tela", "a página Histórico de um relógio: os filtros, o resumo do tempo e a linha do tempo"],
     "documentos.php" => ["tela", "o esqueleto da página Documentos"],
@@ -955,6 +995,7 @@ const RECONSTRUCAO_CODIGO = [
     "api/ficha.php" => ["api", "recurso=ficha: tudo o que o painel de um relógio mostra (ou o cadastro de um novo)"],
     "api/configuracao.php" => ["api", "recurso=config: a Configuração inteira"],
     "api/desejos.php" => ["api", "recurso=desejos: a lista de desejos e os relógios fora da coleção"],
+    "api/estatisticas.php" => ["api", "recurso=estatisticas: o uso da coleção num período, por relógio, dia da semana e mês, e a distribuição da coleção"],
     "api/historico.php" => ["api", "recurso=historico: a linha do tempo de um relógio, com os filtros e o resumo"],
     "api/plano.php" => ["api", "recurso=plano: o plano dia a dia, o resumo por relógio e as páginas"],
     "api/cron.php" => ["api", "recurso=cron: as execuções do cron, com os filtros, o resumo e as páginas"],
@@ -1192,7 +1233,7 @@ function reconstrucao()
                     . "linha), a tabela no (palavra reservada: \"NO\"), nomes de índice e de regra com até 31 letras, o TEXT como VARCHAR(8191) e a chave "
                     . "única de várias colunas com coluna vazia como índice único de uma expressão; e três comandos próprios das migrações: ALTER FOREIGN "
                     . "KEY, DROP COLUMN e ADD CONSTRAINT ... CHECK (trocando a regra sem perder a anterior se os dados não cumprem a nova).",
-                "As páginas (index.php, plano.php, desejos.php, ficha.php, documentos.php, historico.php, configuracao.php, criterios.php, grupos.php, "
+                "As páginas (index.php, plano.php, desejos.php, estatisticas.php, ficha.php, documentos.php, historico.php, configuracao.php, criterios.php, grupos.php, "
                     . "cadastros.php, execucoes.php, usuarios.php, ajuda.php) só entregam o esqueleto, sem conferir nem o login; o JavaScript de cada uma "
                     . "(hoje.js, painel.js, configuracao.js, ajuda.js...) chama a API e monta a tela, sem fazer conta: resumos, porcentagens e situações "
                     . "(o resumo do plano, a porcentagem de cada estado no histórico, o peso efetivo dos critérios, a situação do cron, o manual "
@@ -1464,6 +1505,16 @@ function reconstrucao()
                 "A manutenção (o cron, a cada minuto, até 256 MB por rodada): o arquivo que sumiu da pasta volta da cópia (conferindo o SHA-256); a "
                     . "cópia pedida que falta é feita; a que ninguém pede sai; a pasta de um relógio que não existe mais sai inteira; o arquivo que não é de "
                     . "nenhum documento sai (só depois de 10 minutos: um envio pode estar no meio). Os perdidos (sem arquivo e sem cópia) são contados à noite.",
+            ]),
+            $secao("estatisticas", "As estatísticas", [
+                "recurso=estatisticas conta o tempo no pulso de cada relógio em cada dia do período (as sessões do tipo pulso partidas na "
+                    . "meia-noite, a aberta até agora; as marcações antigas no pulso contam o dia, sem horas). Dela saem: os dias de uso e as horas "
+                    . "de cada relógio, a parte de cada um, a barra (comparada com o mais usado), a tendência (a segunda metade do período contra a "
+                    . "primeira: até 20% ou menos de 1 h de diferença é estável; menos de 1 h no total ou período de menos de 14 dias, poucos "
+                    . "dados), o uso por dia da semana e por mês (com a média por dia e a barra comparada com o maior) e o resumo. O custo por uso e "
+                    . "os dias de uso desde sempre são as fórmulas custo_por_uso e dias_de_uso. A coleção (na coleção e emprestados) é dividida "
+                    . "por grupo, marca, ano da compra, situação e cada campo de lista (menos os só dos desejados). Período padrão: os últimos 90 "
+                    . "dias; até hoje; no máximo 3661 dias; de=tudo: desde o primeiro uso.",
             ]),
             $secao("telas", "As telas", [
                 "A especificação completa, tela por tela, está em telas (abaixo): o visual com os valores exatos (cores, letras, controles, "

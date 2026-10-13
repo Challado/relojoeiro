@@ -50,6 +50,7 @@ const PAGINAS = [
   { nome: 'ficha-10', url: 'ficha.php?id=10' },
   { nome: 'hoje-painel-10', url: 'index.php?r=10' },
   { nome: 'desejos', url: 'desejos.php' },
+  { nome: 'estatisticas', url: 'estatisticas.php?de=tudo' },
   { nome: 'desejo-novo', url: 'index.php?novo=1&posse=desejado' },
   { nome: 'historico', url: 'historico.php?id=1' },
   { nome: 'historico-4', url: 'historico.php?id=4' },

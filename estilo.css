@@ -1406,3 +1406,37 @@ dl.pares.legenda-grafico dt, dl.pares.legenda-grafico dd { padding-top: .25rem; 
 @media (max-width: 900px) {
   .pagina-desejos td.acoes-desejo { text-align: left; width: auto; }
 }
+
+/* ---------- Estatísticas: o resumo, cada relógio, os gráficos e a coleção ---------- */
+.pagina-estatisticas section.cartao-config { margin-bottom: 1.2rem; }
+.pagina-estatisticas td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pagina-estatisticas td small.nota { display: block; font-size: .78rem; }
+.barra-h { display: inline-block; width: 5rem; height: 8px; border-radius: 4px; background: var(--aco); overflow: hidden; vertical-align: middle; }
+.barra-h > span { display: block; height: 100%; background: var(--safira); }
+.parte { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tendencia { white-space: nowrap; }
+.tendencia-sobe { color: #1f6b3a; }
+.tendencia-desce { color: #9b2c22; }
+.tendencia-sem_dados { color: var(--cinza); }
+.graficos-estatisticas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.2rem; }
+.graficos-estatisticas section.cartao-config { margin: 0; }
+svg.grafico-barras { display: block; width: 100%; height: auto; }
+svg.grafico-barras rect { fill: var(--safira); }
+svg.grafico-barras .eixo { stroke: var(--aco-escuro); stroke-width: 1; }
+svg.grafico-barras text { font-size: 22px; fill: var(--cinza); text-anchor: middle; font-variant-numeric: tabular-nums; }
+svg.grafico-barras text.valor { fill: var(--tinta); font-size: 19px; }
+.distribuicao { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr)); gap: 1rem 1.5rem; }
+.parte-distribuicao h3 { margin: 0 0 .3rem; font-size: 1rem; }
+table.tabela-distribuicao { width: 100%; }
+table.tabela-distribuicao td { padding: .3rem .4rem; overflow-wrap: break-word; }
+/* estreita (o celular, ou três partes lado a lado): cada linha em duas, o nome em cima e os números embaixo */
+.parte-distribuicao { container: distribuicao / inline-size; min-width: 0; }
+@container distribuicao (max-width: 26rem) {
+  table.tabela-distribuicao tr { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: .6rem; padding: .35rem 0; border-bottom: 1px solid var(--aco); }
+  table.tabela-distribuicao td { display: block; border: 0; padding: 0; }
+  table.tabela-distribuicao td:first-child { grid-column: 1 / -1; font-weight: 600; }
+}
+@media (max-width: 900px) {
+  .graficos-estatisticas { grid-template-columns: minmax(0, 1fr); }
+  .resumo-estatisticas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

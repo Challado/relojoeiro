@@ -446,6 +446,10 @@ ler("2 tudo", ["foto" => "nao"]);
 foreach (["hoje", "avisos", "criterios", "historico", "plano", "eventos", "arvore", "cadastros", "config"] as $r) {
     ler("2 " . $r, ["recurso" => $r]);
 }
+// as estatísticas: os últimos 90 dias, desde o começo, e um período recusado
+ler("2 estatisticas", ["recurso" => "estatisticas"]);
+ler("2 estatisticas desde o comeco", ["recurso" => "estatisticas", "de" => "tudo"]);
+ler("2 estatisticas recusadas", ["recurso" => "estatisticas", "de" => "2026-13-01"]);
 
 $texto = json_encode($foto, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_PRESERVE_ZERO_FRACTION | JSON_INVALID_UTF8_SUBSTITUTE);
 if ($texto === false) {
