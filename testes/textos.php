@@ -1,8 +1,9 @@
 <?php
-// Os dicionários dos idiomas (textos/<idioma>/<parte>.php) conferidos com o código: cada t("...") do PHP e do JavaScript é
-// uma chave (o texto em português); cada idioma tem de ter todas as chaves da parte, com tradução, e nenhuma que o código não
-// usa mais, e os mesmos parâmetros ({nome}) da chave. As partes: telas (os .js e as páginas), api (o núcleo, as gravações, a
-// API e o cron), ajuda (api/ajuda.php), reconstrucao (reconstrucao.php) e manual (os textos do manual).
+// Os arquivos dos idiomas (textos/<idioma>.php) conferidos com o código: cada t("...") do PHP e do JavaScript é uma chave
+// (o texto em português); cada idioma tem de ter todas as chaves, com tradução, e nenhuma que o código não usa mais, e os
+// mesmos parâmetros ({nome}) da chave. Lista o idioma, o arquivo e o texto de cada problema, de uma vez só. O arquivo é
+// dividido em partes: telas (os .js e as páginas), api (o núcleo, as gravações, a API e o cron), ajuda (api/ajuda.php),
+// reconstrucao (reconstrucao.php) e manual (os textos do manual).
 //   php testes/textos.php                       confere tudo (sai com 1 se faltar ou sobrar algo)
 //   php testes/textos.php --faltam <parte>      as chaves da parte que faltam em algum idioma, em JSON (para traduzir)
 //   php testes/textos.php --juntar <idioma> <parte> traducoes.json   junta as traduções (um objeto chave => tradução) ao
@@ -114,21 +115,29 @@ function parametros($s)
     return $p;
 }
 
-// regrava o dicionário de um idioma e parte, na ordem das chaves do código
+// regrava o arquivo de um idioma com uma parte nova, cada parte na ordem das chaves do código
 function gravar_parte($raiz, $lingua, $parte, $dic, $ordem)
 {
-    $linhas = [];
+    $partes = textos_arquivo($lingua);
+    $partes[$parte] = [];
     foreach ($ordem as $c) {
         if (isset($dic[$c])) {
-            $linhas[] = "    " . var_export($c, true) . " => " . var_export($dic[$c], true) . ",";
+            $partes[$parte][$c] = $dic[$c];
         }
     }
-    $pasta = $raiz . "/textos/" . $lingua;
-    if (!is_dir($pasta)) {
-        mkdir($pasta, 0775, true);
+    $saida = "<?php\n// " . LINGUAS[$lingua]["nome"] . " (" . $lingua . "): o texto em português => a tradução, por parte. Gerado e conferido por\n"
+        . "// testes/textos.php: traduza aqui e rode a conferência (php testes/textos.php).\nreturn [\n";
+    foreach (TEXTOS_PARTES as $p) {
+        if (count($partes[$p] ?? []) === 0) {
+            continue;
+        }
+        $saida .= "    " . var_export($p, true) . " => [\n";
+        foreach ($partes[$p] as $c => $v) {
+            $saida .= "        " . var_export($c, true) . " => " . var_export($v, true) . ",\n";
+        }
+        $saida .= "    ],\n";
     }
-    file_put_contents($pasta . "/" . $parte . ".php", "<?php\n// " . LINGUAS[$lingua]["nome"] . " · " . $parte . ": o texto em português => a tradução (gerado e conferido por testes/textos.php)\n"
-        . "return [\n" . implode("\n", $linhas) . (count($linhas) > 0 ? "\n" : "") . "];\n");
+    file_put_contents($raiz . "/textos/" . $lingua . ".php", $saida . "];\n");
 }
 
 $codigo = chaves_do_codigo($RAIZ);
@@ -180,18 +189,18 @@ foreach (TEXTOS_PARTES as $parte) {
             if (!isset($dic[$c]) || trim((string)$dic[$c]) === "") {
                 $falta++;
                 if ($falta <= 5) {
-                    $problemas[] = $l . " · " . $parte . ": falta \"" . mb_substr($c, 0, 90) . "\"";
+                    $problemas[] = "textos/" . $l . ".php · " . $parte . ": falta \"" . mb_substr($c, 0, 90) . "\"";
                 }
             } elseif (parametros($c) !== parametros($dic[$c])) {
-                $problemas[] = $l . " · " . $parte . ": os parâmetros não batem em \"" . mb_substr($c, 0, 90) . "\" (" . implode(", ", parametros($dic[$c])) . ")";
+                $problemas[] = "textos/" . $l . ".php · " . $parte . ": os parâmetros não batem em \"" . mb_substr($c, 0, 90) . "\" (" . implode(", ", parametros($dic[$c])) . ")";
             }
         }
         if ($falta > 5) {
-            $problemas[] = $l . " · " . $parte . ": faltam " . $falta . " no total";
+            $problemas[] = "textos/" . $l . ".php · " . $parte . ": faltam " . $falta . " no total";
         }
         foreach (array_keys($dic) as $c) {
             if (!isset($usadas[$c])) {
-                $problemas[] = $l . " · " . $parte . ": sobra \"" . mb_substr($c, 0, 90) . "\" (o código não usa mais)";
+                $problemas[] = "textos/" . $l . ".php · " . $parte . ": sobra \"" . mb_substr($c, 0, 90) . "\" (o código não usa mais)";
             }
         }
     }

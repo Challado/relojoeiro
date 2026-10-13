@@ -59,3 +59,8 @@ define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");
 // gerador seguro do PHP). Trocadas, os sorteios pedem os números a um servidor de teste
 // define("ALEATORIO_RANDOMORG_URL", "https://www.random.org/integers/");
 // define("ALEATORIO_ANU_URL", "https://qrng.anu.edu.au/API/jsonI.php");
+// para quem traduz: a tradução que falta num idioma (textos/<idioma>.php) para com o erro "Falta a tradução em en
+// (textos/en.php): ..." na API e no cron, e aparece entre ⟦ ⟧ nas telas (com o erro no console do navegador). Sem esta linha
+// (o normal num servidor de uso), o que falta sai em português e nada para. php testes/textos.php lista tudo o que falta
+// de uma vez
+// define("TEXTOS_ESTRITO", true);

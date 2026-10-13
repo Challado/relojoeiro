@@ -39,7 +39,7 @@ function topo($titulo, $ativo)
 function rodape($scripts)
 {
     // os textos das telas no idioma da página, antes de tudo (o t() do api.js já sai traduzido desde a primeira linha)
-    $arq = __DIR__ . "/textos/" . lingua_atual() . "/telas.php";
+    $arq = __DIR__ . "/textos/" . lingua_atual() . ".php";
     echo "<script src=\"api.php?recurso=textos&amp;formato=js&amp;lingua=" . lingua_atual() . "&amp;v=" . (is_file($arq) ? (int)filemtime($arq) : 0) . "\"></script>\n";
     foreach ($scripts as $js) {
         echo "<script src=\"" . $js . "?v=" . (int)@filemtime(__DIR__ . "/" . $js) . "\"></script>\n";

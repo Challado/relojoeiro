@@ -10,11 +10,13 @@ var LINGUA = document.documentElement.lang || "pt-BR";
 var LOCALE = "pt-BR";
 var FORMATO = {data: "d/m/Y", data_curta: "d/m"};
 var TEXTOS = {};
+var ESTRITO = false;
 function usarTextos(d) {
   if (d && d.lingua) {
     TEXTOS = d.textos || {};
     LOCALE = d.locale || "pt-BR";
     FORMATO = d.formato || FORMATO;
+    ESTRITO = d.estrito === true;
     LINGUA = d.lingua;
     // sem idioma escolhido no menu (o cookie), vale o padrão da instalação: a página abre de novo nele, uma vez
     if (d.padrao && d.padrao !== LINGUA && !/(^|;\s*)lingua=/.test(document.cookie)) {
@@ -26,9 +28,15 @@ function usarTextos(d) {
 var textosProntos = window.TEXTOS_API ? Promise.resolve(usarTextos(window.TEXTOS_API))
   : fetch("api.php?recurso=textos&lingua=" + encodeURIComponent(LINGUA), { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(usarTextos).catch(function () { return null; });
 
-// o texto no idioma, com os parâmetros trocados ({nome} pelo valor)
+// o texto no idioma, com os parâmetros trocados ({nome} pelo valor). O que falta sai em português; no modo estrito
+// (TEXTOS_ESTRITO no config.php), entre ⟦ ⟧ na tela e com o erro no console, dizendo o arquivo
 function t(s, p) {
-  var res = Object.prototype.hasOwnProperty.call(TEXTOS, s) && TEXTOS[s] !== "" ? TEXTOS[s] : s;
+  var tem = Object.prototype.hasOwnProperty.call(TEXTOS, s) && TEXTOS[s] !== "";
+  var res = tem ? TEXTOS[s] : s;
+  if (!tem && ESTRITO && LINGUA !== "pt-BR" && s !== "") {
+    console.error("Falta a tradução em " + LINGUA + " (textos/" + LINGUA + ".php): " + JSON.stringify(s));
+    res = "⟦" + s + "⟧";
+  }
   if (p) {
     Object.keys(p).forEach(function (k) {
       res = res.split("{" + k + "}").join(String(p[k]));

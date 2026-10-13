@@ -1062,7 +1062,7 @@ const RECONSTRUCAO_CODIGO = [
     "estilo.css" => ["tela", "o estilo de todas as páginas: as cores, as letras, os controles, os componentes e os tamanhos de tela"],
     "api.js" => ["tela", "a base do JavaScript das páginas: os textos no idioma (t(), com o dicionário de recurso=textos), ler e gravar pela API, os formatos do idioma (número, dinheiro, data, hora), o login, os formulários que gravam, as tabelas que viram fichas no celular"],
     "textos/funcoes.php" => ["tela", "os idiomas: a lista (LINGUAS: o nome, o código curto do menu, o locale e os formatos da data e dos números), o idioma do pedido, t() e os formatos no PHP"],
-    "textos/<idioma>/telas.php" => ["tela", "o dicionário das telas de um idioma (en, zh-CN, hi, es, fr): o texto em português => a tradução, gerado e conferido por testes/textos.php"],
+    "textos/<idioma>.php" => ["tela", "o arquivo de um idioma (en, zh-CN, hi, es, fr): o texto em português => a tradução, por parte (telas, api, ajuda, manual, reconstrucao), gerado e conferido por testes/textos.php; o que falta sai em português, ou para com erro no modo estrito (TEXTOS_ESTRITO)"],
     "index.php" => ["tela", "o esqueleto da página Hoje (o meio, a tabela dos relógios com os títulos e os filtros, e o painel)"],
     "hoje.js" => ["tela", "a página Hoje: o relógio do dia, os avisos de hoje, os próximos dias, o modo de rodízio e as linhas da tabela dos relógios"],
     "tabela.js" => ["tela", "a tabela dos relógios: ordenar, filtrar e virar cartões quando as 11 colunas não cabem"],

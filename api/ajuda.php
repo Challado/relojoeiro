@@ -1820,11 +1820,12 @@ $saida = [
             "formato.decimal" => "o separador decimal: vírgula ou ponto",
             "formato.milhar" => "o separador de milhar: ponto, vírgula ou espaço (fr)",
             "padrao" => "o idioma padrão da instalação (config.idioma); null: não escolhido",
+            "estrito" => "o modo estrito (TEXTOS_ESTRITO no config.php): a tradução que falta aparece entre ⟦ ⟧ nas telas, com o erro no console, em vez de sair em português",
             "linguas[]" => "os idiomas do sistema, na ordem do menu",
             "linguas[].codigo" => "o código",
             "linguas[].nome" => "o nome no próprio idioma",
             "linguas[].locale" => "o locale",
-            "textos" => "o dicionário das telas: o texto em português => a tradução (vazio em português)",
+            "textos" => "o dicionário das telas (a parte telas do textos/<idioma>.php): o texto em português => a tradução (vazio em português)",
             "textos.<texto em português>" => "a tradução",
         ],
         "rodizio_manual" => [
