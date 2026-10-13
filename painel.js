@@ -285,6 +285,10 @@ function abrirNoPainel(id) {
         + (dc.pasta_ok ? "" : el("p", {"class": "nota"}, "Para guardar documentos, falta a pasta deles no config.php (DOCUMENTOS_PASTA).")),
         el("a", {"href": "documentos.php?relogio=" + id, "target": "_blank", "rel": "noopener", "class": "botao leve"}, dc.total === 0 ? "Enviar documentos" : "Abrir os documentos"), "documentos-ficha");
       blocos += quadroDocs;
+      // os acessórios dele (a pulseira, a caixa, a ferramenta...): o tipo e o nome; cadastrar e mudar, na página Acessórios
+      blocos += quadro("Acessórios", r.acessorios.length === 0 ? el("p", {"class": "nota"}, "Nenhum: a pulseira extra, a caixa, o estojo, a ferramenta...")
+        : pares(r.acessorios.map(function (a) { return [h(a.tipo_texto), h(a.nome) + (a.observacao !== null ? el("small", {}, h(a.observacao)) : "")]; })),
+        el("a", {"href": "acessorios.php?relogio=" + id, "target": "_blank", "rel": "noopener", "class": "botao leve"}, r.acessorios.length === 0 ? "Cadastrar acessórios" : "Ver os acessórios"), "acessorios-ficha");
       blocos += quadro("Próximas manutenções", r.manutencoes.length === 0 ? el("p", {"class": "nota"}, "Nada previsto.")
         : pares(r.manutencoes.map(function (m) { return [dataBr(m.data), h(m.nome)]; }), "datas"));
       // marcar: um quadro só. O menu diz o que aconteceu, e embaixo aparecem só os campos daquilo: pôr ou tirar (cada sessão,

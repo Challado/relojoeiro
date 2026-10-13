@@ -1456,3 +1456,6 @@ svg.mostrador .eixo { fill: #b3261e; }
 .data-longa { font-size: 1.1rem; margin: .3rem 0 .6rem; }
 .grade-hora .cartao-config { min-width: 0; }
 .lua-simbolo { font-size: 1.3rem; vertical-align: -.1rem; }
+
+/* ---------- Acessórios ---------- */
+.pagina-acessorios #form { margin-top: 1.2rem; }

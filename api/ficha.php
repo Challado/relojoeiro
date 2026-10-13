@@ -55,6 +55,7 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     $nota = (int)$r["disponivel"] === 1 ? nota_do_relogio($r, $agora) : null;
     $saida["relogio"] = ["id" => $id, "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? 0 : (int)$r["no_id"], "disponivel" => (int)$r["disponivel"] === 1,
         "posse" => posse_de($r), "posse_texto" => POSSES[posse_de($r)], "da_colecao" => da_colecao($r),
+        "acessorios" => acessorios_lista($id),
         "copia_banco" => (int)$r["copia_banco"] === 1,
         "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "sem grupo", "caminho" => no_caminho($r["no_id"]), "observacao" => $valores["observacao"] ?? null,
         "foto" => $foto !== null ? strtotime($foto) : null, "documentos" => (function () use ($id) {

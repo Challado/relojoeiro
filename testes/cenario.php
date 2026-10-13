@@ -420,6 +420,20 @@ escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $desejo, "posse" =
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "posse" => "colecao"]);
 ler("desejos depois de comprar", ["recurso" => "desejos"]);
 ler("ficha do comprado", ["recurso" => "ficha", "relogio" => $desejo]);
+// os acessórios: de um relógio, solto, um tipo que não existe, mudar de relógio e excluir; o relógio excluído deixa o dele solto
+$aces = escrever(["recurso" => "acessorios", "acao" => "salvar", "nome" => "Pulseira NATO verde", "tipo" => "pulseira", "relogio_id" => $rel["auto2"]]);
+escrever(["recurso" => "acessorios", "acao" => "salvar", "nome" => "Caixa original", "tipo" => "caixa", "relogio_id" => $rel["auto2"], "observacao" => "Com o manual e o cartão"]);
+escrever(["recurso" => "acessorios", "acao" => "salvar", "nome" => "Chave de abrir fundo", "tipo" => "ferramenta", "relogio_id" => 0]);
+$temp = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Relógio de passagem", "no_id" => 0]);
+escrever(["recurso" => "acessorios", "acao" => "salvar", "nome" => "Carregador magnético", "tipo" => "carregador", "relogio_id" => $temp]);
+escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $temp]);
+escrever(["recurso" => "acessorios", "acao" => "salvar", "nome" => "Chapéu", "tipo" => "chapeu"], false);
+escrever(["recurso" => "acessorios", "acao" => "salvar", "id" => $aces, "relogio_id" => $rel["crono"]]);
+escrever(["recurso" => "acessorios", "acao" => "salvar", "nome" => "Sem relógio", "relogio_id" => 99999], false);
+ler("acessorios", ["recurso" => "acessorios"]);
+ler("acessorios soltos", ["recurso" => "acessorios", "relogio" => 0]);
+ler("ficha com acessorios", ["recurso" => "ficha", "relogio" => $rel["crono"]]);
+escrever(["recurso" => "acessorios", "acao" => "excluir", "id" => $aces]);
 // o aviso Encostado: com 5 dias, os relógios parados há mais tempo são avisados; 0 é recusado
 escrever(["recurso" => "config", "acao" => "salvar", "encostado_dias" => 5]);
 escrever(["recurso" => "config", "acao" => "salvar", "encostado_dias" => 0], false);

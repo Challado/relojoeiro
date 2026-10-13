@@ -482,6 +482,7 @@ $MIGRACOES = [
     "v21" => ["migracao_v21.sql", "os dias livres do plano: o \"Deixar o período livre\" da página Plano apaga o que foi gerado e deixa os dias sem relógio, sem sorteio, para você escolher à mão", "plano_livre"],
     "v22" => ["migracao_v22.sql", "a situação de cada relógio na coleção (na coleção, desejado, emprestado, vendido ou arquivado: fora da coleção, ele sai do rodízio e dos avisos, e a ficha e o histórico ficam) e a lista de desejos; os campos Marca, Referência e Link, e, só nos desejados, Preço-alvo e Prioridade", "relogio.posse"],
     "v23" => ["migracao_v23.sql", "o aviso Encostado: um relógio da coleção que passou do limite de dias sem ir ao pulso (a Configuração, \"Aviso Encostado: dias sem ir ao pulso\", padrão 30)", "config.chave=encostado_dias"],
+    "v24" => ["migracao_v24.sql", "os acessórios: pulseiras, caixas, estojos, ferramentas, carregadores, peças e o que mais for, de um relógio ou soltos (a página Acessórios e o quadro Acessórios do relógio)", "acessorio"],
 ];
 
 // O passo em PHP da v16, depois do SQL dela: as opções de cada campo do tipo lista (o texto, uma por linha) viram linhas da
@@ -2400,6 +2401,21 @@ function desejo_do_relogio($valores)
 function da_colecao($r)
 {
     return in_array(posse_de($r), ["colecao", "emprestado"], true);
+}
+
+// Os tipos de acessório (ck_acessorio_tipo), na ordem, com o nome
+const ACESSORIO_TIPOS = ["pulseira" => "Pulseira", "caixa" => "Caixa", "estojo" => "Estojo", "ferramenta" => "Ferramenta", "carregador" => "Carregador",
+    "peca" => "Peça", "outro" => "Outro"];
+
+// Os acessórios (de um relógio, ou todos: null), pelo tipo e pelo nome, prontos para a API
+function acessorios_lista($relogio_id = null)
+{
+    return array_map(function ($a) {
+        return ["id" => (int)$a["id"], "nome" => $a["nome"], "tipo" => $a["tipo"], "tipo_texto" => ACESSORIO_TIPOS[$a["tipo"]] ?? $a["tipo"],
+            "relogio_id" => $a["relogio_id"] === null ? null : (int)$a["relogio_id"], "relogio" => $a["relogio"],
+            "observacao" => $a["observacao"] !== null && $a["observacao"] !== "" ? $a["observacao"] : null, "criado" => $a["criado"]];
+    }, linhas("SELECT a.*, r.nome AS relogio FROM acessorio a LEFT JOIN relogio r ON r.id = a.relogio_id"
+        . ($relogio_id !== null ? " WHERE a.relogio_id = ?" : "") . " ORDER BY a.tipo, a.nome, a.id", $relogio_id !== null ? [(int)$relogio_id] : []));
 }
 
 // O destaque no alto da página Hoje (a Configuração): o relógio do dia (dia, o padrão) ou o que está no pulso agora (pulso)

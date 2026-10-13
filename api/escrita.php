@@ -9,7 +9,8 @@ if (!defined("RELOJOEIRO_API")) {
 
 $ops = ["arvore" => "op_arvore", "campos" => "op_campos", "lancamento_tipos" => "op_lancamento_tipos", "formulas" => "op_formulas", "relogio" => "op_relogio",
     "lancamento" => "op_lancamento", "avisos" => "op_avisos", "criterios" => "op_criterios",
-    "rodizio" => "op_rodizio", "modos" => "op_modos", "config" => "op_config", "documentos" => "op_documentos", "documento_categorias" => "op_documento_categorias"];
+    "rodizio" => "op_rodizio", "modos" => "op_modos", "config" => "op_config", "documentos" => "op_documentos", "documento_categorias" => "op_documento_categorias",
+    "acessorios" => "op_acessorios"];
 if (isset($ops[$recurso])) {
     $saida = $ops[$recurso]($acao, $d);
 } elseif ($recurso === "usuarios") {

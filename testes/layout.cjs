@@ -52,6 +52,8 @@ const PAGINAS = [
   { nome: 'desejos', url: 'desejos.php' },
   { nome: 'estatisticas', url: 'estatisticas.php?de=tudo' },
   { nome: 'hora', url: 'hora.php' },
+  { nome: 'acessorios', url: 'acessorios.php' },
+  { nome: 'acessorios-editar', url: 'acessorios.php?relogio=3&editar=2' },
   { nome: 'desejo-novo', url: 'index.php?novo=1&posse=desejado' },
   { nome: 'historico', url: 'historico.php?id=1' },
   { nome: 'historico-4', url: 'historico.php?id=4' },

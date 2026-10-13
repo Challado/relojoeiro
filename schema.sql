@@ -1081,6 +1081,20 @@ INSERT INTO aviso (identificador, nome, expressao, condicao, antecedencia_dias, 
 -- o limite (e a marca de aplicada, por último: se parar no meio, continua pendente)
 INSERT IGNORE INTO config (chave, valor) VALUES ('encostado_dias', '30');
 
+-- Migração v24: os acessórios (pulseiras, caixas, ferramentas...), de um relógio ou soltos
+CREATE TABLE acessorio (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    relogio_id  INT NULL,
+    nome        VARCHAR(120) NOT NULL,
+    tipo        VARCHAR(20) NOT NULL DEFAULT 'pulseira',
+    observacao  VARCHAR(1000) NULL,
+    criado      DATETIME NOT NULL,
+    FOREIGN KEY (relogio_id) REFERENCES relogio(id) ON DELETE SET NULL,
+    INDEX (relogio_id)
+) ENGINE=InnoDB;
+ALTER TABLE acessorio ADD CONSTRAINT ck_acessorio_nome CHECK (TRIM(nome) <> '');
+ALTER TABLE acessorio ADD CONSTRAINT ck_acessorio_tipo CHECK (tipo IN ('pulseira', 'caixa', 'estojo', 'ferramenta', 'carregador', 'peca', 'outro'));
+
 -- critérios iniciais (o "restaurar" da página Critérios lê daqui até o fim do arquivo)
 -- critérios de todos os relógios
 INSERT INTO criterio_parametro (id, escopo_no_id, escopo_relogio_id, nome, peso, ordem) VALUES (1, NULL, NULL, 'Tempo sem uso', 40, 1);

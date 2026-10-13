@@ -95,7 +95,7 @@ foreach (avisos_todos() as $versoes) {
     }
 }
 $saida = ["arvore" => $arvore, "campos" => $campos, "lancamento_tipos" => $tipos_l, "formulas" => $formulas, "avisos" => $avisos, "relogios" => $relogios,
-    "documento_categorias" => documento_categorias_lista(), "modos" => $modos, "plano" => plano_legivel("", ""), "plano_livre" => dias_livres("", ""), "config" => (object)$config,
+    "documento_categorias" => documento_categorias_lista(), "modos" => $modos, "plano" => plano_legivel("", ""), "plano_livre" => dias_livres("", ""), "acessorios" => acessorios_lista(), "config" => (object)$config,
     "eventos" => array_map("evento_legivel", eventos_com_dias(linhas("SELECT * FROM evento_personalizado ORDER BY nome"))),
     "agenda" => ["criados" => linhas("SELECT chave, google_id, data, titulo, assinatura, criado FROM agenda_evento ORDER BY data, chave"), "desejados" => agenda_legivel()],
     "criterios" => montar_criterios(),

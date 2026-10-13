@@ -193,7 +193,7 @@ const RECONSTRUCAO_TELAS = [
                 . "2,4rem) no canto de cima, à direita. Fecha com o ×, com um clique fora da foto ou com Esc (o Esc fecha só a foto: o "
                 . "painel por baixo continua aberto); enquanto aberta, a página não rola.",
             "O título da aba do navegador é o título da página (\"Relógio de hoje\", \"Plano\", \"Configuração\", \"Critérios de escolha\", "
-                . "\"Grupos de relógios\", \"Execuções do cron\", \"Usuários\", \"Cadastros\", \"Ajuda\", \"Ficha do relógio\", \"Documentos\", \"Desejos\", \"Estatísticas\", \"Hora certa\"; no "
+                . "\"Grupos de relógios\", \"Execuções do cron\", \"Usuários\", \"Cadastros\", \"Ajuda\", \"Ficha do relógio\", \"Documentos\", \"Desejos\", \"Estatísticas\", \"Hora certa\", \"Acessórios\"; no "
                 . "histórico, \"Histórico — <relógio>\").",
             "O navegador de páginas (Próximos dias, Dia a dia do Plano, Rodízio manual): botões leves pequenos (padding .3rem "
                 . ".65rem, letra .9rem) numa linha que quebra: \"<\" (dica \"Anterior\"; desativado na primeira), os números (a 1, a última e "
@@ -213,6 +213,7 @@ const RECONSTRUCAO_TELAS = [
             ["pagina" => "desejos.php", "rotulo" => "Desejos"],
             ["pagina" => "estatisticas.php", "rotulo" => "Estatísticas"],
             ["pagina" => "hora.php", "rotulo" => "Hora certa"],
+            ["pagina" => "acessorios.php", "rotulo" => "Acessórios"],
             ["pagina" => "configuracao.php", "rotulo" => "Configuração"],
             ["pagina" => "criterios.php", "rotulo" => "Critérios"],
             ["pagina" => "grupos.php", "rotulo" => "Grupos"],
@@ -389,7 +390,9 @@ const RECONSTRUCAO_TELAS = [
                         . "uso\" (\"R\$ 100,00\" em negrito e \"3 dias de uso\" embaixo; sem: \"sem o valor pago\" ou \"ainda não foi ao pulso\" em "
                         . "cinza) e o \"há N dias\" da compra vindo da API (compra.ha_dias). Documentos (cada categoria com \"N arquivos\", "
                         . "link para a página Documentos numa aba nova; o botão \"Enviar documentos\" ou \"Abrir os documentos\"); Próximas "
-                        . "manutenções (data em negrito e o nome; ou \"Nada previsto.\").",
+                        . "manutenções (data em negrito e o nome; ou \"Nada previsto.\"). Depois de Documentos, Acessórios (pares: o tipo e o nome, "
+                        . "com a observação menor embaixo; sem nenhum, \"Nenhum: a pulseira extra, a caixa, o estojo, a ferramenta...\"; o botão leve "
+                        . "\"Cadastrar acessórios\" ou \"Ver os acessórios\", que abre acessorios.php?relogio=<id> numa aba nova).",
                     "Marcar (um quadro na largura toda): \"O que você quer marcar?\" com uma lista em grupos: \"Agora, ou numa hora "
                         . "que você disser\" (cada sessão como verbo: \"Pôr no sol\" / \"Tirar do sol\" conforme está aberta; cada tipo com "
                         . "valor pelo nome; cada instantâneo pelo nome), \"Algo que já passou\" (\"Um período que já passou (<sessões>)\") e "
@@ -555,6 +558,31 @@ const RECONSTRUCAO_TELAS = [
                         . "Deslocamento, UTC (Zulu), Letra militar \"P (Papa)\", Grupo data-hora local e Zulu em código, ISO 8601), Calendário (Hoje, "
                         . "Dia do ano \"286 de 365 · faltam 79\", Semana (ISO), Trimestre, Dia juliano, Unix) e Lua (Fase com o símbolo, Idade, "
                         . "Iluminada, Próxima cheia, Próxima nova e a nota do ciclo médio). Embaixo, o cartão Como acertar com o texto da API.",
+                ]],
+            ],
+        ],
+        [
+            "id" => "acessorios",
+            "pagina" => "acessorios.php",
+            "titulo" => "Acessórios",
+            "endereco" => "acessorios.php?relogio=<id> (0: os soltos; sem ele: todos)&editar=<id do acessório>",
+            "le" => [
+                "recurso=acessorios (com relogio)",
+            ],
+            "grava" => [
+                "acessorios: salvar, excluir",
+            ],
+            "partes" => [
+                ["titulo" => "Lista e cadastro", "itens" => [
+                    "h1 \"Acessórios\" com \"<n> acessórios [do <relógio> | soltos] · 1 pulseira, 2 caixas...\" em cinza. Um cartão com o filtro "
+                        . "Relógio (Todos, Soltos (de nenhum relógio) e cada relógio; trocar abre o filtrado).",
+                    "Tabela (fichas até 900px) Acessório, Tipo, Relógio (o link da ficha, ou \"solto\" em cinza), Observação (cinza; —) e as ações "
+                        . "Editar (link: editar=<id>#form) e Excluir (botão leve discreto; confirma \"Excluir o acessório <nome>?\"). Vazia: "
+                        . "\"Nenhum acessório. Cadastre abaixo.\"",
+                    "Cartão Novo acessório (ou \"Alterar <nome>\", que a página rola até ele), em grade: Nome (obrigatório, até 120, a dica "
+                        . "\"Pulseira de couro marrom\"), Tipo (Pulseira, Caixa, Estojo, Ferramenta, Carregador, Peça, Outro), Relógio (\"— solto "
+                        . "(serve a vários) —\" e cada relógio; no novo, o do filtro), Observação (texto, até 1000) e \"Cadastrar\" ou \"Salvar\" e "
+                        . "\"cancelar\". Gravou: volta à lista, com o mesmo filtro; recusou: o alerta com os erros.",
                 ]],
             ],
         ],
@@ -1006,6 +1034,8 @@ const RECONSTRUCAO_CODIGO = [
     "desejos.js" => ["tela", "a página Desejos: a lista de desejos (com o Comprei) e os relógios fora da coleção"],
     "estatisticas.php" => ["tela", "o esqueleto da página Estatísticas"],
     "hora.php" => ["tela", "o esqueleto da página Hora certa"],
+    "acessorios.php" => ["tela", "o esqueleto da página Acessórios"],
+    "acessorios.js" => ["tela", "a página Acessórios: o filtro por relógio, a lista com Editar e Excluir e o cadastro"],
     "hora.js" => ["tela", "a página Hora certa: o mostrador e a hora digital andando, acertados pela API, e os quadros do fuso, do calendário e da lua"],
     "estatisticas.js" => ["tela", "a página Estatísticas: o período, o resumo, cada relógio, os gráficos em SVG e a coleção"],
     "historico.php" => ["tela", "o esqueleto da página Histórico"],
@@ -1264,7 +1294,7 @@ function reconstrucao()
                     . "linha), a tabela no (palavra reservada: \"NO\"), nomes de índice e de regra com até 31 letras, o TEXT como VARCHAR(8191) e a chave "
                     . "única de várias colunas com coluna vazia como índice único de uma expressão; e três comandos próprios das migrações: ALTER FOREIGN "
                     . "KEY, DROP COLUMN e ADD CONSTRAINT ... CHECK (trocando a regra sem perder a anterior se os dados não cumprem a nova).",
-                "As páginas (index.php, plano.php, desejos.php, estatisticas.php, hora.php, ficha.php, documentos.php, historico.php, configuracao.php, criterios.php, grupos.php, "
+                "As páginas (index.php, plano.php, desejos.php, estatisticas.php, hora.php, acessorios.php, ficha.php, documentos.php, historico.php, configuracao.php, criterios.php, grupos.php, "
                     . "cadastros.php, execucoes.php, usuarios.php, ajuda.php) só entregam o esqueleto, sem conferir nem o login; o JavaScript de cada uma "
                     . "(hoje.js, painel.js, configuracao.js, ajuda.js...) chama a API e monta a tela, sem fazer conta: resumos, porcentagens e situações "
                     . "(o resumo do plano, a porcentagem de cada estado no histórico, o peso efetivo dos critérios, a situação do cron, o manual "
@@ -1323,6 +1353,9 @@ function reconstrucao()
                     . "no desejado: campos_do_relogio o deixa de fora nos outros, e a gravação dos valores também. A lista de desejos (recurso=desejos) "
                     . "vem da prioridade mais alta para a mais baixa (a ordem das opções do campo prioridade_desejo; sem prioridade, no fim), depois "
                     . "pelo nome, com a soma dos preços-alvo; no painel do desejado, o quadro Desejo e os documentos tomam o lugar dos do dia a dia.",
+                "Acessórios (tabela acessorio): nome (até 120), tipo (pulseira, caixa, estojo, ferramenta, carregador, peca, outro), o relógio "
+                    . "de que ele é (opcional: sem ele, solto; excluir o relógio deixa solto, ON DELETE SET NULL), observação (até 1000) e quando foi "
+                    . "cadastrado. A lista vem pelo tipo e pelo nome; a ficha traz os do relógio.",
                 "Relógio: nome (até 120), grupo, situação na coleção, disponível (fora do rodízio e dos avisos quando não), a marca da cópia no banco dos documentos, a foto "
                     . "(JPEG, PNG ou WebP até 4 MB; o navegador reduz para 1200 px antes de enviar). Excluir apaga junto os valores, a foto, os "
                     . "documentos (e os arquivos), os lançamentos, o plano e os critérios próprios.",
