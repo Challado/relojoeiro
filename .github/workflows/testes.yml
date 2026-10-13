@@ -34,7 +34,7 @@ jobs:
       TESTE_MYSQL_SENHA: teste
       TESTE_PG_SENHA: teste
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
@@ -59,7 +59,7 @@ jobs:
       TESTE_FB_ARQUIVO: /var/lib/firebird/data/relogios_teste.fdb
       TESTE_FB_SENHA: masterkey
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
@@ -75,13 +75,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
           extensions: sqlite3, curl, mbstring, fileinfo, dom, zlib, gd, zip
           coverage: none
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
       - name: Playwright e o Chromium

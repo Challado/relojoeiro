@@ -1,5 +1,5 @@
 <?php
-// O dicionário dos campos tem uma fonte só: o "campos" da ajuda (o que o recurso=ajuda devolve, no api.php). O bloco
+// O dicionário dos campos tem uma fonte só: o "campos" da ajuda (o que o recurso=ajuda devolve, no api/ajuda.php). O bloco
 // "DICIONÁRIO DOS CAMPOS" do cabeçalho do api.php é gerado dele por este script; ninguém escreve nele à mão.
 //   php testes/dicionario.php            confere: termina com 0 se o cabeçalho é o que a ajuda gera, 1 se não (e diz onde)
 //   php testes/dicionario.php --gravar   reescreve o bloco do cabeçalho a partir da ajuda

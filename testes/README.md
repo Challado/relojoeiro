@@ -118,7 +118,7 @@ relógios e grupos e pôr foto em alguns (a cabeça do painel muda com a foto: o
 
 # A documentação da API
 
-O dicionário dos campos (o que é cada campo de cada resposta) tem **uma fonte só**: o `"campos"` da ajuda, no `api.php` (o
+O dicionário dos campos (o que é cada campo de cada resposta) tem **uma fonte só**: o `"campos"` da ajuda, no [`api/ajuda.php`](../api/ajuda.php) (o
 que o `recurso=ajuda` devolve). O bloco "DICIONÁRIO DOS CAMPOS" do cabeçalho do `api.php` é gerado dele:
 
 ```sh

@@ -1446,7 +1446,8 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 
 | Arquivo | O que é |
 |---|---|
-| [`api.php`](api.php) | a API: toda leitura e escrita, com a documentação completa no cabeçalho |
+| [`api.php`](api.php) | a API, a porta de toda leitura e escrita (a autenticação, o formato, a ordem dos recursos, os filtros, a resposta), com a documentação completa no cabeçalho |
+| [`api/`](api/) | os recursos grandes da API, um arquivo cada (`hoje.php`, `ficha.php`, `config.php`, `ajuda.php`...), mais as funções dela (`funcoes.php`) e as escritas (`escrita.php`): rodam dentro do `api.php`, e abertos direto não fazem nada (o `.htaccess` e o `nginx-relogios.conf` bloqueiam a pasta) |
 | [`lib.php`](lib.php) | o núcleo: login, árvore, motor de fórmulas, avisos, critérios, rodízio, escala, mensagens, agenda |
 | [`banco.php`](banco.php) | o banco: a conexão com o MySQL, o Postgres, o SQLite ou o Firebird, e a tradução do SQL de um para outro |
 | [`operacoes.php`](operacoes.php) | as regras de cada gravação: validações e mensagens |
@@ -1482,7 +1483,7 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
    conhecimento sobre relógios vai para o cadastro (`schema.sql`), não para o código.
 4. Mudou o banco? Crie uma `migracao_vN.sql` e registre em `$MIGRACOES` no `lib.php`: a estrutura no dialeto do MySQL, os
    dados em SQL comum aos quatro bancos (veja [Atualizações do banco](#atualizações-do-banco)).
-5. Mudou a API? **Explique cada campo novo** no dicionário da ajuda: o `"campos"` do `recurso=ajuda`, no `api.php` (a seção do
+5. Mudou a API? **Explique cada campo novo** no dicionário da ajuda: o `"campos"` do `recurso=ajuda`, no `api/ajuda.php` (a seção do
    recurso, com o caminho do campo como chave). Ele é a fonte única: o dicionário do cabeçalho do `api.php` é gerado dele, com
    `php testes/dicionario.php --gravar` (não escreva no cabeçalho à mão).
 6. **Rode o teste de paridade** ([`testes/`](testes/)) nos quatro bancos antes de mandar (o GitHub também roda, a cada push
