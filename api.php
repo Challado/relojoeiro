@@ -2632,7 +2632,8 @@
  *     documentos[].nfe.serie         a série da nota
  *     documentos[].nfe.valor         o valor total da nota (número, em R$)
  *   recurso=manual
- *     fonte                          de onde vem o texto: README.md
+ *     fonte                          de onde vem o texto: README.md (em português) ou textos/manual/<idioma>.md (a tradução do idioma do
+ *                                    pedido)
  *     trechos[]                      os trechos do README que entram, na ordem: cada um da seção "de" até antes da seção "ate"
  *     trechos[].de                   o título da seção em que o trecho começa
  *     trechos[].ate                  o título da seção em que o trecho para (ela fica de fora)
@@ -3143,7 +3144,7 @@ if ($recurso === "textos") {
         $saida = ["erro" => t("o README.md não está na pasta do sistema")];
     } else {
         [$html_m, $sumario_m] = manual_html($md);
-        $saida = ["fonte" => "README.md", "trechos" => array_map(function ($t) { return ["de" => $t[0], "ate" => $t[1]]; }, MANUAL_TRECHOS),
+        $saida = ["fonte" => lingua_atual() !== "pt-BR" && manual_traduzido(lingua_atual()) !== null ? "textos/manual/" . lingua_atual() . ".md" : "README.md", "trechos" => array_map(function ($t) { return ["de" => $t[0], "ate" => $t[1]]; }, MANUAL_TRECHOS),
             "secoes" => manual_secoes($md), "sumario" => array_map(function ($x) {
                 return ["nivel" => $x[0], "titulo" => html_entity_decode(strip_tags(manual_linha($x[1])), ENT_QUOTES, "UTF-8"), "ancora" => $x[2]];
             }, $sumario_m), "markdown" => $md, "html" => $html_m];

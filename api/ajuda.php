@@ -1991,7 +1991,7 @@ $saida = [
             "documentos[].nfe.valor" => "o valor total da nota (número, em R$)",
         ],
         "manual" => [
-            "fonte" => "de onde vem o texto: README.md",
+            "fonte" => "de onde vem o texto: README.md (em português) ou textos/manual/<idioma>.md (a tradução do idioma do pedido)",
             "trechos[]" => "os trechos do README que entram, na ordem: cada um da seção \"de\" até antes da seção \"ate\"",
             "trechos[].de" => "o título da seção em que o trecho começa",
             "trechos[].ate" => "o título da seção em que o trecho para (ela fica de fora)",

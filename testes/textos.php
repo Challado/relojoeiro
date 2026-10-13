@@ -7,6 +7,8 @@
 // CADASTRO_TEXTOS, no lib.php, achados instalando o schema.sql num SQLite temporário).
 //   php testes/textos.php                       confere tudo (sai com 1 se faltar ou sobrar algo)
 //   php testes/textos.php --faltam <parte>      as chaves da parte que faltam em algum idioma, em JSON (para traduzir)
+//   php testes/textos.php --manual               o manual em português (as seções do README.md que a Ajuda mostra), com a linha da
+//                                                origem: o ponto de partida de textos/manual/<idioma>.md
 //   php testes/textos.php --juntar <idioma> <parte> traducoes.json   junta as traduções (um objeto chave => tradução) ao
 //                                                dicionário, e regrava o arquivo na ordem em que o código usa as chaves
 $RAIZ = dirname(__DIR__);
@@ -118,7 +120,7 @@ function chaves_do_cadastro($raiz)
     @mkdir($pasta, 0775, true);
     $codigo = 'require "lib.php"; lingua_definir("pt-BR"); $r = instalar_banco(); if (!$r["ok"]) { fwrite(STDERR, implode("; ", $r["erros"])); exit(1); }'
         . ' $res = []; foreach (CADASTRO_TEXTOS as [$t, $c, $o]) { foreach (linhas("SELECT DISTINCT " . $c . " AS v FROM " . $t . ($o !== "" ? " WHERE " . $o : "")) as $l) { $res[] = (string)$l["v"]; } }'
-        . ' echo json_encode($res, JSON_UNESCAPED_UNICODE);';
+        . ' echo json_encode(["cadastro" => $res, "manual" => sha1(manual_original())], JSON_UNESCAPED_UNICODE);';
     $cmd = "cd " . escapeshellarg($raiz) . " && RELOGIOS_CONFIG=" . escapeshellarg($raiz . "/testes/config.teste.php") . " RELOGIOS_DB=sqlite RELOGIOS_TESTE_PASTA="
         . escapeshellarg($pasta) . " php -r " . escapeshellarg($codigo);
     $saida = shell_exec($cmd);
@@ -127,6 +129,8 @@ function chaves_do_cadastro($raiz)
     }
     @rmdir($pasta);
     $lista = json_decode((string)$saida, true);
+    $GLOBALS["MANUAL_SHA1"] = $lista["manual"] ?? "";
+    $lista = $lista["cadastro"] ?? null;
     if (!is_array($lista)) {
         fwrite(STDERR, "Não consegui instalar o schema.sql num SQLite temporário para achar os textos do cadastro.\n");
         exit(2);
@@ -174,6 +178,14 @@ function gravar_parte($raiz, $lingua, $parte, $dic, $ordem)
     file_put_contents($raiz . "/textos/" . $lingua . ".php", $saida . "];\n");
 }
 
+if (($argv[1] ?? "") === "--manual") {
+    $pasta = sys_get_temp_dir() . "/relojoeiro-manual-" . getmypid();
+    @mkdir($pasta);
+    echo shell_exec("cd " . escapeshellarg($RAIZ) . " && RELOGIOS_CONFIG=" . escapeshellarg($RAIZ . "/testes/config.teste.php") . " RELOGIOS_DB=sqlite RELOGIOS_TESTE_PASTA="
+        . escapeshellarg($pasta) . " php -r " . escapeshellarg('require "lib.php"; $md = manual_original(); echo "<!-- origem: " . sha1($md) . " -->\n" . $md;'));
+    @rmdir($pasta);
+    exit(0);
+}
 $codigo = chaves_do_codigo($RAIZ);
 $outras = array_values(array_filter(array_keys(LINGUAS), function ($l) { return $l !== "pt-BR"; }));
 
@@ -237,6 +249,17 @@ foreach (TEXTOS_PARTES as $parte) {
                 $problemas[] = "textos/" . $l . ".php · " . $parte . ": sobra \"" . mb_substr($c, 0, 90) . "\" (o código não usa mais)";
             }
         }
+    }
+}
+// o manual (a página Ajuda): um arquivo traduzido por idioma, da versão atual do original
+foreach ($outras as $l) {
+    $arq = $RAIZ . "/textos/manual/" . $l . ".md";
+    $origem = is_file($arq) && preg_match('/^<!-- origem: ([0-9a-f]+) -->/', (string)file_get_contents($arq), $m) === 1 ? $m[1] : null;
+    if ($origem === null) {
+        $problemas[] = "textos/manual/" . $l . ".md: falta a tradução do manual (as seções do README.md que a Ajuda mostra)";
+    } elseif ($origem !== $GLOBALS["MANUAL_SHA1"]) {
+        $problemas[] = "textos/manual/" . $l . ".md: o manual mudou no README.md depois desta tradução (origem " . substr($origem, 0, 10) . ", agora "
+            . substr($GLOBALS["MANUAL_SHA1"], 0, 10) . "): traduza as mudanças e ponha a origem nova na primeira linha";
     }
 }
 if (count($problemas) > 0) {
