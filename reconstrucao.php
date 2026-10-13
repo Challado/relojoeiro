@@ -402,13 +402,14 @@ const RECONSTRUCAO_TELAS = [
                         . "quando o config.php não decide); botão \"Cadastrar relógio\" ou \"Salvar alterações\" (relogio salvar). Embaixo, "
                         . "\"Excluir este relógio\" (discreto; confirma \"Excluir <nome> com todo o histórico e a foto?\").",
                     "Carga ao longo do tempo (largo; nos que têm leitura): um gráfico de linha das leituras (eixo de 0 a 100%, "
-                        . "guias em 0, 50 e 100%, pontos verdes em uso e vermelhos em repouso, a linha em safira), com a legenda "
-                        . "(\"leitura em uso\", \"em repouso\", o período, \"de 0 a 100%\" e \"De onde vem cada número da conta: no quadro "
-                        . "Previsão.\"); com menos de duas leituras, \"O gráfico aparece a partir de duas leituras de carga.\" Embaixo, "
-                        . "\"Medições do gasto\" (no quadro estreito, até 40rem, como no painel ao lado: cada medição vira um cartão, a "
-                        . "data em negrito e embaixo cada valor com o nome da coluna em maiúsculas cinza na frente): tabela Quando, "
-                        . "Leituras (\"89 → 75\"), Horas (\"14 h no pulso, 2 h fora\"), Gasto medido (\"% por dia de uso\" ou \"fora do pulso\"), "
-                        . "Na conta (sim; não (fora da janela); não (só histórico)), as 10 mais recentes.",
+                        . "guias em 0, 50 e 100%, pontos verdes em uso e vermelhos em repouso, a linha em safira), com a legenda em pares "
+                        . "rótulo/valor, menores (Pontos: as bolinhas \"leitura em uso\" e \"leitura em repouso\"; Período: \"DD/MM a DD/MM\"; "
+                        . "Escala: \"de 0 a 100%\"; A conta: \"de onde vem cada número: no quadro Previsão\"); com menos de duas leituras, "
+                        . "\"O gráfico aparece a partir de duas leituras de carga.\" Embaixo, \"Medições do gasto\" (no quadro estreito, até "
+                        . "40rem, como no painel ao lado: cada medição vira um cartão, a data em negrito e embaixo cada valor com o nome "
+                        . "da coluna em maiúsculas cinza na frente): tabela Quando, Leituras (\"89 → 75\"), Horas (\"14 h no pulso, 2 h "
+                        . "fora\"), Gasto medido (\"% por dia de uso\" ou \"fora do pulso\"), Na conta (sim; não (fora da janela); não (só "
+                        . "histórico)), as 10 mais recentes.",
                     "Dados do relógio (largo): duas tabelas lado a lado (o valor numérico, a data e o sim/não numa linha só; o "
                         . "valor de texto, como a observação ou uma fórmula que dá texto, quebra a linha dentro da coluna, sem invadir a "
                         . "tabela do lado): Cadastro (Campo, Valor, Origem com a etiqueta informado/padrão/vazio) e Calculado agora "

@@ -439,8 +439,12 @@ function abrirNoPainel(id) {
               var xy = p.split(",");
               return "<circle cx=\"" + xy[0] + "\" cy=\"" + xy[1] + "\" r=\"4\" class=\"" + (r.leituras[i].em_uso ? "ponto-uso" : "ponto-repouso") + "\"/>";
             }).join("")
-            + "</svg>" + el("p", {"class": "nota"}, el("span", {"class": "bolinha ponto-uso"}, "") + " leitura em uso " + el("span", {"class": "bolinha ponto-repouso"}, "") + " em repouso. "
-              + de + " a " + ate + ", de 0 a 100%. De onde vem cada número da conta: no quadro Previsão.");
+            + "</svg>" + pares([
+              ["Pontos", el("span", {"class": "legenda-ponto"}, el("span", {"class": "bolinha ponto-uso"}, "") + " leitura em uso")
+                + " " + el("span", {"class": "legenda-ponto"}, el("span", {"class": "bolinha ponto-repouso"}, "") + " leitura em repouso")],
+              ["Período", de + " a " + ate],
+              ["Escala", "de 0 a 100%"],
+              ["A conta", "de onde vem cada número: no quadro Previsão"]], "legenda-grafico");
         }
         // as medições do gasto pelas leituras (as 10 mais recentes) e se cada uma entra na média
         var med = "";
