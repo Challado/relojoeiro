@@ -7,11 +7,11 @@ topo("Ficha do relógio", "");
 
 <main class="ficha">
   <form method="get" class="seletor">
-    <label for="troca">Relógio</label>
+    <label for="troca"><?= t("Relógio") ?></label>
     <select id="troca" name="id" onchange="this.form.submit()"></select>
-    <noscript><button>Abrir</button></noscript>
+    <noscript><button><?= t("Abrir") ?></button></noscript>
   </form>
-  <p id="sem-relogios" hidden>Nenhum relógio cadastrado. <a href="index.php?novo=1">Cadastre o primeiro</a>.</p>
+  <p id="sem-relogios" hidden><?= t("Nenhum relógio cadastrado. {1}Cadastre o primeiro{2}.", ["1" => "<a href=\"index.php?novo=1\">", "2" => "</a>"]) ?></p>
   <div id="detalhe"></div>
 </main>
 <script>
@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", function () { api({recurso: "hoje"
   var opcao = function (x, extra) { return el("option", {"value": x.id, "selected": x.id === id}, h(x.nome) + extra); };
   var html = lista.map(function (x) { return opcao(x, x.disponivel ? "" : " (" + h(x.estado_texto.toLowerCase()) + ")"); }).join("");
   if (fora.length > 0) {
-    html = el("optgroup", {"label": "Na coleção"}, html) + el("optgroup", {"label": "Fora da coleção"}, fora.map(function (x) { return opcao(x, " (" + h(x.posse_texto.toLowerCase()) + ")"); }).join(""));
+    html = el("optgroup", {"label": t("Na coleção")}, html) + el("optgroup", {"label": t("Fora da coleção")}, fora.map(function (x) { return opcao(x, " (" + h(x.posse_texto.toLowerCase()) + ")"); }).join(""));
   }
   document.getElementById("troca").innerHTML = html;
   document.getElementById("sem-relogios").hidden = todos.length > 0;

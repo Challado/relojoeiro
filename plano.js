@@ -2,8 +2,8 @@
 // tem no período (o período e o resumo vêm da API: recurso=plano, dias=N), em cada dia o "trocar por…" (recurso=rodizio,
 // acao=trocar_dia). Os relógios de um período, dia a dia, se escolhem no Rodízio manual (quadro Modo de rodízio, na
 // página Hoje). Remontada depois de cada troca.
-var MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
-var SEMANA = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+var MESES = [t("janeiro"), t("fevereiro"), t("março"), t("abril"), t("maio"), t("junho"), t("julho"), t("agosto"), t("setembro"), t("outubro"), t("novembro"), t("dezembro")];
+var SEMANA = [t("dom"), t("seg"), t("ter"), t("qua"), t("qui"), t("sex"), t("sáb")];
 var filtro = {dias: "90", relogio: "", pagina: 1};
 var dados = null;
 var recado = "";
@@ -15,35 +15,32 @@ function montarPlano() {
   var mostrados = dd.dias;
   var ultimo = d.plano_fim;
 
-  var res = el("h1", {}, "Plano") + el("p", {"class": "nota"}, "Modo: " + h(d.modo || "nenhum")
-    + (d.escala_fim ? " · a escala vai até " + dataBr(d.escala_fim) : "") + (ultimo ? " · o plano gravado vai até " + dataBr(ultimo) : "")
-    + ". Troque o relógio de qualquer dia em \"trocar por…\": o dia fica escolhido à mão" + (d.escala_fim ? " e a escala é refeita a partir dele" : "") + ".");
+  var res = el("h1", {}, t("Plano")) + el("p", {"class": "nota"}, t("Modo: {1}{2}{3}. Troque o relógio de qualquer dia em \"trocar por…\": o dia fica escolhido à mão{4}.", {1: h(d.modo || t("nenhum")), 2: d.escala_fim ? t(" · a escala vai até {1}", {1: dataBr(d.escala_fim)}) : "", 3: ultimo ? t(" · o plano gravado vai até {1}", {1: dataBr(ultimo)}) : "", 4: d.escala_fim ? t(" e a escala é refeita a partir dele") : ""}));
   if (recado !== "") {
     res += el("p", {"class": "acao"}, h(recado));
   }
   // os filtros
-  var periodos = [["30", "Próximos 30 dias"], ["90", "Próximos 90 dias"], ["365", "Próximo ano"], ["730", "Próximos 2 anos"], ["", "Tudo"]];
+  var periodos = [["30", t("Próximos 30 dias")], ["90", t("Próximos 90 dias")], ["365", t("Próximo ano")], ["730", t("Próximos 2 anos")], ["", t("Tudo")]];
   res += el("form", {"class": "filtros-plano", "onsubmit": "return false"},
-    el("label", {}, "Período " + el("select", {"id": "f-dias"}, periodos.map(function (o) { return el("option", {"value": o[0], "selected": filtro.dias === o[0]}, o[1]); }).join("")))
-    + el("label", {}, "Relógio " + el("select", {"id": "f-relogio"}, el("option", {"value": ""}, "Todos") + d.relogios.map(function (r) {
+    el("label", {}, t("Período {1}", {1: el("select", {"id": "f-dias"}, periodos.map(function (o) { return el("option", {"value": o[0], "selected": filtro.dias === o[0]}, o[1]); }).join(""))}))
+    + el("label", {}, t("Relógio {1}", {1: el("select", {"id": "f-relogio"}, el("option", {"value": ""}, t("Todos")) + d.relogios.map(function (r) {
       return el("option", {"value": String(r.id), "selected": filtro.relogio === String(r.id)}, h(r.nome));
-    }).join(""))));
+    }).join(""))})));
 
   // escolher os relógios de um período, dia a dia, é no Rodízio manual (o apagar fica no rodapé da página)
-  res += el("p", {"class": "nota"}, "Para escolher os relógios de um período, dia a dia: na página " + el("a", {"href": "index.php#manual"}, "Hoje")
-    + ", no quadro Modo de rodízio, escolha \"Rodízio manual\". Para apagar a programação, veja o fim desta página.");
+  res += el("p", {"class": "nota"}, t("Para escolher os relógios de um período, dia a dia: na página {1}, no quadro Modo de rodízio, escolha \"Rodízio manual\". Para apagar a programação, veja o fim desta página.", {1: el("a", {"href": "index.php#manual"}, t("Hoje"))}));
 
   // o resumo, da API: quantos dias cada relógio tem no período, a porcentagem, o próximo dia e quantos foram à mão
   var rs = d.resumo;
-  res += el("section", {}, el("h2", {}, "Resumo do período (" + rs.dias + (rs.dias === 1 ? " dia)" : " dias)"))
-    + (rs.relogios.length === 0 ? el("p", {}, "Nenhum dia no plano neste período.")
-      : el("table", {"class": "relogios resumo-plano"}, el("thead", {}, el("tr", {}, el("th", {}, "Relógio") + el("th", {"class": "num"}, "Dias") + el("th", {"class": "num"}, "%")
-        + el("th", {}, "Próximo dia") + el("th", {"class": "num"}, "À mão")))
+  res += el("section", {}, el("h2", {}, t("Resumo do período ({1}{2})", {1: rs.dias, 2: rs.dias === 1 ? t(" dia") : t(" dias")}))
+    + (rs.relogios.length === 0 ? el("p", {}, t("Nenhum dia no plano neste período."))
+      : el("table", {"class": "relogios resumo-plano"}, el("thead", {}, el("tr", {}, el("th", {}, t("Relógio")) + el("th", {"class": "num"}, t("Dias")) + el("th", {"class": "num"}, "%")
+        + el("th", {}, t("Próximo dia")) + el("th", {"class": "num"}, t("À mão"))))
         + el("tbody", {}, rs.relogios.map(function (c) {
           return el("tr", {}, el("td", {}, h(c.relogio)) + el("td", {"class": "num"}, String(c.dias)) + el("td", {"class": "num"}, num(c.porcentagem, 1))
             + el("td", {}, dataBr(c.proximo) + " " + el("small", {}, SEMANA[new Date(instante(c.proximo)).getDay()])) + el("td", {"class": "num"}, c.a_mao > 0 ? String(c.a_mao) : ""));
         }).join(""))))
-    + (rs.sem_dias.length > 0 ? el("p", {"class": "nota"}, "Sem nenhum dia no período: " + rs.sem_dias.map(function (r) { return h(r.nome); }).join(", ") + ".") : ""));
+    + (rs.sem_dias.length > 0 ? el("p", {"class": "nota"}, t("Sem nenhum dia no período: {1}.", {1: rs.sem_dias.map(function (r) { return h(r.nome); }).join(", ")})) : ""));
 
   // os dias, mês a mês
   var meses = "";
@@ -53,7 +50,7 @@ function montarPlano() {
     if (mes !== "") {
       var p = mes.split("-");
       var nome = MESES[Number(p[1]) - 1];
-      meses += el("h3", {}, nome.charAt(0).toUpperCase() + nome.slice(1) + " de " + p[0]) + el("table", {"class": "relogios dias-plano"}, el("tbody", {}, linhas));
+      meses += el("h3", {}, nome.charAt(0).toUpperCase() + nome.slice(1) + t(" de ") + p[0]) + el("table", {"class": "relogios dias-plano"}, el("tbody", {}, linhas));
     }
   };
   mostrados.forEach(function (p) {
@@ -68,14 +65,13 @@ function montarPlano() {
       + el("td", {"class": "trocar"}, formTrocarDia(p, d.relogios, d.hoje)));
   });
   fecha();
-  res += el("section", {}, el("h2", {}, "Dia a dia" + (filtro.relogio !== "" ? " (só os dias do relógio escolhido)" : ""))
-    + (mostrados.length === 0 ? el("p", {}, !d.plano_fim ? "Neste modo o sorteio é feito semana a semana: o plano tem só a semana atual." : "Nenhum dia.") : meses)
+  res += el("section", {}, el("h2", {}, t("Dia a dia{1}", {1: filtro.relogio !== "" ? t(" (só os dias do relógio escolhido)") : ""}))
+    + (mostrados.length === 0 ? el("p", {}, !d.plano_fim ? t("Neste modo o sorteio é feito semana a semana: o plano tem só a semana atual.") : t("Nenhum dia.")) : meses)
     + navPaginas(dd.pagina, dd.paginas, "plano-pagina")
-    + (dd.paginas > 1 ? el("p", {"class": "nota"}, "Página " + dd.pagina + " de " + dd.paginas + " · " + dd.total + " dias, " + dd.por_pagina + " por página (o \"Mostrar até\" da "
-      + el("a", {"href": "configuracao.php"}, "Configuração") + ").") : ""));
+    + (dd.paginas > 1 ? el("p", {"class": "nota"}, t("Página {1} de {2} · {3} dias, {4} por página (o \"Mostrar até\" da {5}).", {1: dd.pagina, 2: dd.paginas, 3: dd.total, 4: dd.por_pagina, 5: el("a", {"href": "configuracao.php"}, t("Configuração"))})) : ""));
 
   // o rodapé: apagar o que um período tem (e sortear de novo, ou deixar livre) e apagar tudo, depois de tudo o mais
-  res += el("footer", {"class": "cartao-config apagar-plano", "id": "apagar"}, el("h2", {}, "Apagar a programação") + formApagarPeriodo(d.hoje) + formApagarTudo());
+  res += el("footer", {"class": "cartao-config apagar-plano", "id": "apagar"}, el("h2", {}, t("Apagar a programação")) + formApagarPeriodo(d.hoje) + formApagarTudo());
 
   var main = document.getElementById("plano");
   main.innerHTML = res;

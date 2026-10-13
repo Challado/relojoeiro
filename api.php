@@ -647,6 +647,7 @@
  *                                    última)
  *     config.encostado_dias          o aviso Encostado: depois de quantos dias sem ir ao pulso um relógio da coleção é avisado (1 a 3650;
  *                                    padrão 30)
+ *     config.idioma                  o idioma padrão da instalação (pt-BR, en, zh-CN, hi, es, fr; vazio: o do navegador, senão português)
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
  *     config.painel_modo             como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela
  *                                    grande por cima da página); vazio: lado
@@ -1688,6 +1689,11 @@
  *                                    última)
  *     config.encostado_dias          o aviso Encostado: depois de quantos dias sem ir ao pulso um relógio da coleção é avisado (1 a 3650;
  *                                    padrão 30)
+ *     config.idioma                  o idioma padrão da instalação (pt-BR, en, zh-CN, hi, es, fr): o de quem não escolheu outro no menu, o
+ *                                    das mensagens do cron e o da API sem lingua= (vazio: o do navegador, senão português)
+ *     linguas[]                      os idiomas do sistema, na ordem (o menu Idioma padrão)
+ *     linguas[].codigo               o código (pt-BR, en, zh-CN, hi, es, fr)
+ *     linguas[].nome                 o nome no próprio idioma
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
  *     config.painel_modo             como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela
  *                                    grande por cima da página); vazio: lado
@@ -2427,6 +2433,22 @@
  *                                    o valor pago, em R$ (null)
  *     grupos[].relogios[].dias_de_uso
  *                                    os dias de uso (a fórmula dias_de_uso; null)
+ *   recurso=textos
+ *     lingua                         o idioma da resposta (pt-BR, en, zh-CN, hi, es, fr)
+ *     locale                         o locale dos números nas telas (BCP 47: pt-BR, en-US, zh-CN, hi-IN, es-ES, fr-FR)
+ *     formato                        os formatos do idioma (os de LINGUAS, no textos/funcoes.php)
+ *     formato.data                   a data com o ano, com d (dia), m (mês) e Y (ano) como no date() do PHP: d/m/Y, m/d/Y (en), Y-m-d
+ *                                    (zh-CN)
+ *     formato.data_curta             a data sem o ano: d/m, m/d (en), m-d (zh-CN)
+ *     formato.decimal                o separador decimal: vírgula ou ponto
+ *     formato.milhar                 o separador de milhar: ponto, vírgula ou espaço (fr)
+ *     padrao                         o idioma padrão da instalação (config.idioma); null: não escolhido
+ *     linguas[]                      os idiomas do sistema, na ordem do menu
+ *     linguas[].codigo               o código
+ *     linguas[].nome                 o nome no próprio idioma
+ *     linguas[].locale               o locale
+ *     textos                         o dicionário das telas: o texto em português => a tradução (vazio em português)
+ *     textos.<texto em português>    a tradução
  *   recurso=rodizio_manual
  *     de                             o primeiro dia do período (AAAA-MM-DD)
  *     ate                            o último dia do período (AAAA-MM-DD)
@@ -2911,10 +2933,36 @@ $saida = [];
 $pendentes = migracoes_pendentes();
 // o banco vazio (antes da instalação): só a instalação responde
 $banco_vazio = count($pendentes) > 0 && count(banco_tabelas()) === 0;
-// o que responde sem o banco (com ele vazio ou desatualizado): o manual e o código, que só leem arquivos
+// o idioma do pedido: lingua=, o cookie do seletor do menu, o padrão da instalação (a Configuração), o Accept-Language
+$lingua_padrao = null;
+if (!$banco_vazio) {
+    try {
+        $lingua_padrao = cfg("idioma");
+    } catch (Throwable $e) {
+        $lingua_padrao = null;
+    }
+}
+lingua_definir(lingua_do_pedido($lingua_padrao));
+// o que responde sem o banco (com ele vazio ou desatualizado): o manual, o código e os textos das telas, que só leem arquivos
 $parte_ajuda = (string)($_REQUEST["parte"] ?? "");
-$sem_banco = in_array($recurso, ["manual", "codigo"], true) || ($recurso === "ajuda" && in_array($parte_ajuda, ["manual", "codigo"], true));
-if (!$token_ok && $quem === "") {
+$sem_banco = in_array($recurso, ["manual", "codigo", "textos"], true) || ($recurso === "ajuda" && in_array($parte_ajuda, ["manual", "codigo"], true));
+if ($recurso === "textos") {
+    // os textos das telas no idioma do pedido (o dicionário do t() do api.js), os idiomas e o locale. Responde sem login: é só
+    // o texto da interface. formato=js: um script (window.TEXTOS_API = ...), que as páginas carregam antes dos outros, para que
+    // todo t() já saia traduzido, até os de quando o script abre
+    $l = LINGUAS[lingua_atual()];
+    $saida = ["lingua" => lingua_atual(), "locale" => $l["locale"],
+        "formato" => ["data" => $l["data"], "data_curta" => $l["data_curta"], "decimal" => $l["decimal"], "milhar" => $l["milhar"]],
+        "padrao" => lingua_valida($lingua_padrao),
+        "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"], "locale" => LINGUAS[$k]["locale"]]; }, array_keys(LINGUAS)),
+        "textos" => (object)textos_parte(lingua_atual(), "telas")];
+    if (strtolower((string)($_REQUEST["formato"] ?? "")) === "js") {
+        header("Content-Type: application/javascript; charset=utf-8");
+        header("Cache-Control: private, max-age=" . (isset($_REQUEST["v"]) ? 86400 : 0));
+        echo "window.TEXTOS_API = " . json_encode($saida, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . ";\n";
+        exit;
+    }
+} elseif (!$token_ok && $quem === "") {
     $codigo = 401;
     header("WWW-Authenticate: Basic realm=\"Relogios\", charset=\"UTF-8\"");
     $saida = ["erro" => "falta autenticação: o token (cabeçalho X-Api-Token ou parâmetro token) ou o login do site (HTTP Basic)"];
@@ -3110,7 +3158,7 @@ if (!$token_ok && $quem === "") {
 } else {
     $codigo = 404;
     $saida = ["erro" => "recurso desconhecido", "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "hora_certa", "acessorios", "passaporte", "galeria", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "hora_certa", "acessorios", "passaporte", "galeria", "textos", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

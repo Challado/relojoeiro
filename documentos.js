@@ -15,12 +15,12 @@ var ordemVideos = [];
 var marcados = {};
 var fila = [];
 var tocando = 0;
-var NOME_FAMILIA = {imagem: "imagens", video: "vídeos", audio: "áudios", pdf: "PDF", xml: "XML"};
+var NOME_FAMILIA = {imagem: "imagens", video: t("vídeos"), audio: t("áudios"), pdf: t("PDF"), xml: t("XML")};
 var ACEITA = {imagem: "image/*", video: "video/*", audio: "audio/*", pdf: "application/pdf,.pdf", xml: ".xml,application/xml,text/xml"};
 
 // "850 KB", "3,2 MB"
 function tamanho(b) {
-  return b < 1048576 ? Math.max(1, Math.round(b / 1024)) + " KB" : num(b / 1048576, 1) + " MB";
+  return b < 1048576 ? t("{1} KB", {1: Math.max(1, Math.round(b / 1024))}) : t("{1} MB", {1: num(b / 1048576, 1)});
 }
 function categoria(id) {
   var res = null;
@@ -49,93 +49,92 @@ function nomeRelogio(id) {
 function formEditar(x) {
   return el("details", {"class": "doc-editar"}, el("summary", {}, "editar")
     + el("form", {"data-recurso": "documentos", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": "alterar"}) + el("input", {"type": "hidden", "name": "id", "value": x.id})
-      + el("label", {}, "Título " + el("input", {"name": "titulo", "value": x.titulo, "maxlength": "200", "required": true}))
-      + el("label", {}, "Data " + el("input", {"type": "date", "name": "data", "value": x.data || ""}))
-      + el("label", {}, "Categoria " + el("select", {"name": "categoria_id"}, dados.categorias.map(function (c) {
+      + el("label", {}, t("Título {1}", {1: el("input", {"name": "titulo", "value": x.titulo, "maxlength": "200", "required": true})}))
+      + el("label", {}, t("Data {1}", {1: el("input", {"type": "date", "name": "data", "value": x.data || ""})}))
+      + el("label", {}, t("Categoria {1}", {1: el("select", {"name": "categoria_id"}, dados.categorias.map(function (c) {
         return el("option", {"value": c.id, "selected": c.id === x.categoria_id}, h(c.nome));
-      }).join("")))
-      + el("label", {"style": "grid-column: 1 / -1"}, "Descrição " + el("textarea", {"name": "descricao", "rows": "2"}, h(x.descricao || "")))
+      }).join(""))}))
+      + el("label", {"style": "grid-column: 1 / -1"}, t("Descrição {1}", {1: el("textarea", {"name": "descricao", "rows": "2"}, h(x.descricao || ""))}))
       // a escolha do próprio arquivo só aparece quando é ele quem decide: nem o config.php nem o relógio decidem por cima
       + (dados.copia_sistema === null && x.copia_por !== "relogio" ? el("label", {"class": "check", "style": "grid-column: 1 / -1"},
         el("input", {"type": "hidden", "name": "copia_banco", "value": "0"})
-        + el("input", {"type": "checkbox", "name": "copia_banco", "value": "1", "checked": x.copia_banco}) + " Guardar a cópia deste arquivo no banco") : "")
-      + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, "Salvar")))
-    + el("form", {"data-recurso": "documentos", "onsubmit": "return confirm(" + JSON.stringify("Excluir " + x.titulo + "? O arquivo sai do servidor.") + ")"},
+        + el("input", {"type": "checkbox", "name": "copia_banco", "value": "1", "checked": x.copia_banco}) + t(" Guardar a cópia deste arquivo no banco")) : "")
+      + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, t("Salvar"))))
+    + el("form", {"data-recurso": "documentos", "onsubmit": "return confirm(" + JSON.stringify(t("Excluir {1}? O arquivo sai do servidor.", {1: x.titulo})) + ")"},
       el("input", {"type": "hidden", "name": "acao", "value": "excluir"}) + el("input", {"type": "hidden", "name": "id", "value": x.id})
-      + el("button", {"class": "leve discreto"}, "Excluir")));
+      + el("button", {"class": "leve discreto"}, t("Excluir"))));
 }
 // quem pede a cópia no banco: o sistema (config.php), o relógio ou o próprio arquivo
-var COPIA_POR = {sistema: "o config.php guarda todos", relogio: "o relógio guarda todos os dele", arquivo: "pedida neste arquivo"};
+var COPIA_POR = {sistema: t("o config.php guarda todos"), relogio: t("o relógio guarda todos os dele"), arquivo: t("pedida neste arquivo")};
 // o nome do arquivo, o tamanho e onde ele está guardado: na pasta, no banco, e quem pediu a cópia no banco
 function guardado(x) {
-  var onde = !x.no_disco ? el("strong", {}, x.no_banco ? "fora da pasta (volta do banco ao abrir)" : "o arquivo sumiu da pasta e não tem cópia no banco")
-    : x.no_banco ? (x.copia_por ? "na pasta e no banco (" + COPIA_POR[x.copia_por] + ")" : "na pasta e no banco (ninguém mais pede a cópia: o cron a tira)")
-      : x.copia_por ? "na pasta; a cópia no banco ainda vai (" + COPIA_POR[x.copia_por] + "; o cron faz)" : "só na pasta";
+  var onde = !x.no_disco ? el("strong", {}, x.no_banco ? t("fora da pasta (volta do banco ao abrir)") : t("o arquivo sumiu da pasta e não tem cópia no banco"))
+    : x.no_banco ? (x.copia_por ? t("na pasta e no banco ({1})", {1: COPIA_POR[x.copia_por]}) : t("na pasta e no banco (ninguém mais pede a cópia: o cron a tira)"))
+      : x.copia_por ? t("na pasta; a cópia no banco ainda vai ({1}; o cron faz)", {1: COPIA_POR[x.copia_por]}) : t("só na pasta");
   return el("p", {"class": "nota"}, h(x.nome) + " · " + tamanho(x.tamanho) + " · " + onde);
 }
 function linkBaixar(x, rotulo) {
-  return el("a", {"href": x.url + "&baixar=1", "class": "botao-link"}, rotulo || "Baixar");
+  return el("a", {"href": x.url + "&baixar=1", "class": "botao-link"}, rotulo || t("Baixar"));
 }
 
 function montar() {
   var d = dados;
-  var res = el("h1", {}, d.relogio ? "Documentos do " + h(d.relogio.nome) : "Documentos de todos os relógios")
-    + el("form", {"class": "filtros-plano", "onsubmit": "return false"}, el("label", {}, "Relógio " + el("select", {"id": "f-relogio"},
-      el("option", {"value": "0"}, "Todos") + d.relogios.map(function (r) {
+  var res = el("h1", {}, d.relogio ? t("Documentos do {1}", {1: h(d.relogio.nome)}) : t("Documentos de todos os relógios"))
+    + el("form", {"class": "filtros-plano", "onsubmit": "return false"}, el("label", {}, t("Relógio {1}", {1: el("select", {"id": "f-relogio"},
+      el("option", {"value": "0"}, t("Todos")) + d.relogios.map(function (r) {
         return el("option", {"value": r.id, "selected": r.id === rid}, h(r.nome) + (r.documentos > 0 ? " (" + r.documentos + ")" : ""));
-      }).join("")))
-      + (d.relogio ? " " + el("a", {"href": "ficha.php?id=" + rid, "class": "botao leve"}, "Abrir a ficha do relógio") : ""));
+      }).join(""))}))
+      + (d.relogio ? " " + el("a", {"href": "ficha.php?id=" + rid, "class": "botao leve"}, t("Abrir a ficha do relógio")) : ""));
   if (recado !== "") {
     res += el("p", {"class": "acao"}, h(recado));
   }
   // a cópia no banco: o config.php vale por todos (e então não há escolha nenhuma na página); sem ele, o relógio (aqui) e,
   // quando o relógio não guarda todos, cada arquivo (no envio e em editar)
   if (d.pasta_ok && d.copia_sistema === true) {
-    res += el("p", {"class": "nota"}, "Cópia no banco: o config.php (DOCUMENTOS_COPIA_BANCO) manda guardar todo arquivo também no banco.");
+    res += el("p", {"class": "nota"}, t("Cópia no banco: o config.php (DOCUMENTOS_COPIA_BANCO) manda guardar todo arquivo também no banco."));
   } else if (d.pasta_ok && d.copia_sistema === false) {
-    res += el("p", {"class": "nota"}, "Cópia no banco: o config.php (DOCUMENTOS_COPIA_BANCO = false) não deixa; os arquivos ficam só na pasta.");
+    res += el("p", {"class": "nota"}, t("Cópia no banco: o config.php (DOCUMENTOS_COPIA_BANCO = false) não deixa; os arquivos ficam só na pasta."));
   } else if (d.pasta_ok && d.relogio) {
     res += el("form", {"data-recurso": "relogio", "class": "linha"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
       + el("input", {"type": "hidden", "name": "id", "value": d.relogio.id}) + el("input", {"type": "hidden", "name": "copia_banco", "value": d.relogio.copia_banco ? "0" : "1"})
-      + el("span", {"class": "nota"}, d.relogio.copia_banco ? "Cópia no banco: todos os arquivos do " + h(d.relogio.nome) + " vão também para o banco. "
-        : "Cópia no banco: só os arquivos marcados vão também para o banco. ")
-      + el("button", {"class": "leve"}, d.relogio.copia_banco ? "Só os marcados" : "Guardar todos os dele no banco"));
+      + el("span", {"class": "nota"}, d.relogio.copia_banco ? t("Cópia no banco: todos os arquivos do {1} vão também para o banco. ", {1: h(d.relogio.nome)})
+        : t("Cópia no banco: só os arquivos marcados vão também para o banco. "))
+      + el("button", {"class": "leve"}, d.relogio.copia_banco ? t("Só os marcados") : t("Guardar todos os dele no banco")));
   }
   if (!d.pasta_ok) {
-    res += el("p", {"class": "acao"}, "Os documentos ainda não podem ser guardados: " + h(d.pasta_erro) + ".");
+    res += el("p", {"class": "acao"}, t("Os documentos ainda não podem ser guardados: {1}.", {1: h(d.pasta_erro)}));
   }
   // o envio: só com um relógio escolhido
   if (d.relogio && d.pasta_ok) {
     var catPadrao = aba !== "" ? parseInt(aba, 10) : (d.categorias.length > 0 ? d.categorias[0].id : 0);
-    res += el("details", {"class": "envio-docs", "open": d.documentos.length === 0}, el("summary", {}, "Enviar arquivos")
+    res += el("details", {"class": "envio-docs", "open": d.documentos.length === 0}, el("summary", {}, t("Enviar arquivos"))
       + el("form", {"id": "form-envio", "class": "form-grade"},
-        el("label", {}, "Categoria " + el("select", {"name": "categoria_id", "id": "envio-categoria"}, d.categorias.map(function (c) {
+        el("label", {}, t("Categoria {1}", {1: el("select", {"name": "categoria_id", "id": "envio-categoria"}, d.categorias.map(function (c) {
           return el("option", {"value": c.id, "selected": c.id === catPadrao}, h(c.nome) + (c.aceita.length > 0 ? " (" + c.aceita.map(function (f) { return NOME_FAMILIA[f] || f; }).join(", ") + ")" : ""));
-        }).join("")))
-        + el("label", {}, "Título " + el("input", {"name": "titulo", "maxlength": "200", "placeholder": "vazio: o nome do arquivo"}))
-        + el("label", {}, "Data " + el("input", {"type": "date", "name": "data"}))
-        + el("label", {"style": "grid-column: 1 / -1"}, "Descrição " + el("textarea", {"name": "descricao", "rows": "2", "placeholder": "a ocasião, o que é, onde foi..."}))
-        + el("label", {"style": "grid-column: 1 / -1"}, "Arquivos (pode escolher vários) " + el("input", {"type": "file", "name": "arquivos", "id": "envio-arquivos", "multiple": true, "required": true}))
+        }).join(""))}))
+        + el("label", {}, t("Título {1}", {1: el("input", {"name": "titulo", "maxlength": "200", "placeholder": t("vazio: o nome do arquivo")})}))
+        + el("label", {}, t("Data {1}", {1: el("input", {"type": "date", "name": "data"})}))
+        + el("label", {"style": "grid-column: 1 / -1"}, t("Descrição {1}", {1: el("textarea", {"name": "descricao", "rows": "2", "placeholder": t("a ocasião, o que é, onde foi...")})}))
+        + el("label", {"style": "grid-column: 1 / -1"}, t("Arquivos (pode escolher vários) {1}", {1: el("input", {"type": "file", "name": "arquivos", "id": "envio-arquivos", "multiple": true, "required": true})}))
         + (d.copia_sistema === null && !d.relogio.copia_banco ? el("label", {"class": "check", "style": "grid-column: 1 / -1"},
-          el("input", {"type": "checkbox", "name": "copia_banco", "value": "1"}) + " Guardar a cópia destes arquivos também no banco") : "")
-        + el("p", {"class": "nota", "style": "grid-column: 1 / -1"}, "Qualquer arquivo" + (d.limite !== null ? ", até " + tamanho(d.limite) + " cada" : ", de qualquer tamanho")
-          + ". O título, a data e a descrição valem para todos os escolhidos; depois cada um se edita sozinho.")
-        + el("div", {"class": "botoes"}, el("button", {}, "Enviar") + " " + el("span", {"id": "envio-andamento", "class": "nota"}, ""))));
+          t("{1} Guardar a cópia destes arquivos também no banco", {1: el("input", {"type": "checkbox", "name": "copia_banco", "value": "1"})})) : "")
+        + el("p", {"class": "nota", "style": "grid-column: 1 / -1"}, t("Qualquer arquivo{1}. O título, a data e a descrição valem para todos os escolhidos; depois cada um se edita sozinho.", {1: d.limite !== null ? t(", até {1} cada", {1: tamanho(d.limite)}) : t(", de qualquer tamanho")}))
+        + el("div", {"class": "botoes"}, el("button", {}, t("Enviar")) + " " + el("span", {"id": "envio-andamento", "class": "nota"}, ""))));
   }
   // as abas: todas e cada categoria, com quantos documentos
-  res += el("nav", {"class": "abas"}, el("a", {"href": endereco(""), "class": aba === "" ? "ativa" : ""}, "Todos (" + d.documentos.length + ")")
+  res += el("nav", {"class": "abas"}, el("a", {"href": endereco(""), "class": aba === "" ? "ativa" : ""}, t("Todos ({1})", {1: d.documentos.length}))
     + d.categorias.map(function (c) {
       return el("a", {"href": endereco(String(c.id)), "class": String(c.id) === aba ? "ativa" : ""}, h(c.nome) + " (" + c.documentos + ")");
     }).join(""));
   var docs = docsDaAba();
   if (docs.length === 0) {
-    res += el("p", {}, "Nenhum documento aqui ainda.");
+    res += el("p", {}, t("Nenhum documento aqui ainda."));
   }
   // as fotos: a galeria
   fotos = docs.filter(function (x) { return x.familia === "imagem"; });
   if (fotos.length > 0) {
-    res += el("section", {"class": "doc-secao"}, el("h2", {}, "Fotos (" + fotos.length + ")")
-      + el("p", {}, el("button", {"type": "button", "class": "leve", "data-apresentacao": "1"}, "▶ Apresentação") + " " + el("span", {"class": "nota"}, "Toque numa foto para ver em tela cheia."))
+    res += el("section", {"class": "doc-secao"}, el("h2", {}, t("Fotos ({1})", {1: fotos.length}))
+      + el("p", {}, el("button", {"type": "button", "class": "leve", "data-apresentacao": "1"}, t("▶ Apresentação")) + " " + el("span", {"class": "nota"}, t("Toque numa foto para ver em tela cheia.")))
       + el("div", {"class": "galeria"}, fotos.map(function (x, i) {
         return el("button", {"type": "button", "class": "galeria-foto", "data-foto": i, "title": x.titulo},
           el("img", {"src": x.url + (x.miniatura ? "&mini=1" : ""), "alt": h(x.titulo), "loading": "lazy"})
@@ -152,21 +151,21 @@ function montar() {
     }
   });
   if (videos.length > 0) {
-    res += el("section", {"class": "doc-secao"}, el("h2", {}, "Vídeos (" + videos.length + ")")
+    res += el("section", {"class": "doc-secao"}, el("h2", {}, t("Vídeos ({1})", {1: videos.length}))
       + el("div", {"id": "player", "class": "player"}, "")
-      + el("p", {"class": "nota"}, "Marque os vídeos, ponha na ordem com ↑ e ↓ e aperte Assistir: eles tocam um depois do outro.")
+      + el("p", {"class": "nota"}, t("Marque os vídeos, ponha na ordem com ↑ e ↓ e aperte Assistir: eles tocam um depois do outro."))
       + el("ol", {"id": "lista-videos", "class": "lista-videos"}, "")
-      + el("p", {}, el("button", {"type": "button", "data-assistir": "1"}, "▶ Assistir os marcados")));
+      + el("p", {}, el("button", {"type": "button", "data-assistir": "1"}, t("▶ Assistir os marcados"))));
   }
   // o resto: PDF, XML, áudio e outros
   var outros = docs.filter(function (x) { return x.familia !== "imagem" && x.familia !== "video"; });
   if (outros.length > 0) {
-    res += el("section", {"class": "doc-secao"}, el("h2", {}, "Arquivos (" + outros.length + ")") + outros.map(cartao).join(""));
+    res += el("section", {"class": "doc-secao"}, el("h2", {}, t("Arquivos ({1})", {1: outros.length})) + outros.map(cartao).join(""));
   }
   // as fotos e os vídeos também se editam aqui embaixo, numa lista só
   var midia = fotos.concat(videos);
   if (midia.length > 0) {
-    res += el("details", {"class": "doc-secao"}, el("summary", {}, "Editar ou excluir fotos e vídeos")
+    res += el("details", {"class": "doc-secao"}, el("summary", {}, t("Editar ou excluir fotos e vídeos"))
       + midia.map(function (x) { return el("div", {"class": "doc-cartao"}, sobre(x, true) + guardado(x) + formEditar(x)); }).join(""));
   }
   document.getElementById("documentos").innerHTML = res;
@@ -196,20 +195,20 @@ function montar() {
 function cartao(x) {
   var corpo = "";
   if (x.familia === "pdf") {
-    corpo = el("p", {}, el("button", {"type": "button", "class": "leve", "data-pdf": x.id}, "Ver aqui") + " " + el("a", {"href": x.url, "target": "_blank", "rel": "noopener", "class": "botao-link"}, "Abrir noutra aba")
+    corpo = el("p", {}, el("button", {"type": "button", "class": "leve", "data-pdf": x.id}, t("Ver aqui")) + " " + el("a", {"href": x.url, "target": "_blank", "rel": "noopener", "class": "botao-link"}, t("Abrir noutra aba"))
       + " " + linkBaixar(x)) + el("div", {"id": "pdf-" + x.id, "class": "pdf-visor", "hidden": true}, "");
   } else if (x.familia === "xml") {
     var n = x.nfe;
     corpo = (n ? el("table", {"class": "nfe"}, el("tbody", {},
-      el("tr", {}, el("th", {}, "Emitente") + el("td", {}, h(n.emitente || "") + (n.cnpj ? " " + el("span", {"class": "nota"}, h(n.cnpj)) : "")))
-      + el("tr", {}, el("th", {}, "Nota") + el("td", {}, "nº " + h(n.numero || "") + (n.serie ? ", série " + h(n.serie) : "") + (n.data ? ", " + dataBr(n.data) : "")))
-      + el("tr", {}, el("th", {}, "Valor") + el("td", {}, n.valor !== null ? "R$ " + reais(n.valor) : ""))
+      el("tr", {}, el("th", {}, t("Emitente")) + el("td", {}, h(n.emitente || "") + (n.cnpj ? " " + el("span", {"class": "nota"}, h(n.cnpj)) : "")))
+      + el("tr", {}, el("th", {}, t("Nota")) + el("td", {}, t("nº ") + h(n.numero || "") + (n.serie ? t(", série {1}", {1: h(n.serie)}) : "") + (n.data ? ", " + dataBr(n.data) : "")))
+      + el("tr", {}, el("th", {}, t("Valor")) + el("td", {}, n.valor !== null ? t("R$ ") + reais(n.valor) : ""))
       + n.produtos.map(function (p) {
-        return el("tr", {}, el("th", {}, "Produto") + el("td", {}, h(p.descricao || "") + (p.quantidade !== null && p.quantidade !== 1 ? " × " + num(p.quantidade, 2) : "") + (p.valor !== null ? " · R$ " + reais(p.valor) : "")));
+        return el("tr", {}, el("th", {}, t("Produto")) + el("td", {}, h(p.descricao || "") + (p.quantidade !== null && p.quantidade !== 1 ? t(" × ") + num(p.quantidade, 2) : "") + (p.valor !== null ? t(" · R$ ") + reais(p.valor) : "")));
       }).join("")
-      + (n.chave ? el("tr", {}, el("th", {}, "Chave") + el("td", {"class": "formula"}, h(n.chave))) : "")))
-      : el("p", {"class": "nota"}, "Não é o XML de uma NF-e: só para baixar."))
-      + el("p", {}, linkBaixar(x, "Baixar o XML"));
+      + (n.chave ? el("tr", {}, el("th", {}, t("Chave")) + el("td", {"class": "formula"}, h(n.chave))) : "")))
+      : el("p", {"class": "nota"}, t("Não é o XML de uma NF-e: só para baixar.")))
+      + el("p", {}, linkBaixar(x, t("Baixar o XML")));
   } else if (x.familia === "audio") {
     corpo = el("audio", {"controls": true, "preload": "none", "src": x.url}, "") + el("p", {}, linkBaixar(x));
   } else {
@@ -228,8 +227,8 @@ function desenharVideos() {
     var x = dados.documentos.filter(function (y) { return y.id === vid; })[0];
     return el("li", {}, el("label", {"class": "check"}, el("input", {"type": "checkbox", "data-marca": vid, "checked": marcados[vid] === true}) + " " + sobre(x, true))
       + el("span", {"class": "nota"}, tamanho(x.tamanho)) + " "
-      + el("button", {"type": "button", "class": "leve discreto", "data-sobe": i, "disabled": i === 0, "aria-label": "Subir"}, "↑")
-      + el("button", {"type": "button", "class": "leve discreto", "data-desce": i, "disabled": i === ordemVideos.length - 1, "aria-label": "Descer"}, "↓"));
+      + el("button", {"type": "button", "class": "leve discreto", "data-sobe": i, "disabled": i === 0, "aria-label": t("Subir")}, "↑")
+      + el("button", {"type": "button", "class": "leve discreto", "data-desce": i, "disabled": i === ordemVideos.length - 1, "aria-label": t("Descer")}, "↓"));
   }).join("");
 }
 
@@ -241,10 +240,10 @@ function tocar(i) {
   }
   tocando = i;
   var x = dados.documentos.filter(function (y) { return y.id === fila[i]; })[0];
-  p.innerHTML = el("div", {"class": "player-topo"}, el("span", {}, (i + 1) + " de " + fila.length + ": " + el("strong", {}, h(x.titulo)) + (x.data ? " · " + dataBr(x.data) : ""))
-    + el("span", {}, el("button", {"type": "button", "class": "leve", "data-video-ant": "1", "disabled": i === 0}, "‹ Anterior")
-      + el("button", {"type": "button", "class": "leve", "data-video-prox": "1", "disabled": i === fila.length - 1}, "Próximo ›")
-      + el("button", {"type": "button", "class": "leve discreto", "data-video-fechar": "1"}, "Fechar")))
+  p.innerHTML = el("div", {"class": "player-topo"}, el("span", {}, t("{1} de {2}", {1: i + 1, 2: fila.length}) + ": " + el("strong", {}, h(x.titulo)) + (x.data ? " · " + dataBr(x.data) : ""))
+    + el("span", {}, el("button", {"type": "button", "class": "leve", "data-video-ant": "1", "disabled": i === 0}, t("‹ Anterior"))
+      + el("button", {"type": "button", "class": "leve", "data-video-prox": "1", "disabled": i === fila.length - 1}, t("Próximo ›"))
+      + el("button", {"type": "button", "class": "leve discreto", "data-video-fechar": "1"}, t("Fechar"))))
     + el("video", {"src": x.url, "controls": true, "autoplay": true, "playsinline": true, "preload": "metadata"}, "")
     + (x.descricao ? el("p", {"class": "doc-descricao"}, h(x.descricao)) : "");
   p.querySelector("video").addEventListener("ended", function () {
@@ -271,11 +270,11 @@ function fecharVisor() {
 }
 function desenharVisor() {
   var x = fotos[atual];
-  visor.innerHTML = el("div", {"class": "visor-topo"}, el("span", {}, (atual + 1) + " de " + fotos.length)
-    + el("span", {}, el("button", {"type": "button", "class": "visor-apres"}, apresentacao ? "❚❚ Parar" : "▶ Apresentação")
-      + el("a", {"href": x.url + "&baixar=1", "class": "botao-link"}, "Baixar") + el("button", {"type": "button", "class": "visor-fechar", "aria-label": "Fechar"}, "×")))
-    + el("div", {"class": "visor-foto"}, el("button", {"type": "button", "class": "visor-ant", "aria-label": "Anterior"}, "‹")
-      + el("img", {"src": x.url, "alt": h(x.titulo)}) + el("button", {"type": "button", "class": "visor-prox", "aria-label": "Próxima"}, "›"))
+  visor.innerHTML = el("div", {"class": "visor-topo"}, el("span", {}, (atual + 1) + t(" de ") + fotos.length)
+    + el("span", {}, el("button", {"type": "button", "class": "visor-apres"}, apresentacao ? t("❚❚ Parar") : t("▶ Apresentação"))
+      + el("a", {"href": x.url + "&baixar=1", "class": "botao-link"}, t("Baixar")) + el("button", {"type": "button", "class": "visor-fechar", "aria-label": t("Fechar")}, t("×"))))
+    + el("div", {"class": "visor-foto"}, el("button", {"type": "button", "class": "visor-ant", "aria-label": t("Anterior")}, "‹")
+      + el("img", {"src": x.url, "alt": h(x.titulo)}) + el("button", {"type": "button", "class": "visor-prox", "aria-label": t("Próxima")}, "›"))
     + el("div", {"class": "visor-legenda"}, el("strong", {}, h(x.titulo)) + (x.data ? " · " + dataBr(x.data) : "") + (x.descricao ? el("p", {}, h(x.descricao)) : ""));
   // a próxima já vem carregando
   if (fotos.length > 1) {
@@ -301,22 +300,22 @@ function alternarApresentacao() {
   desenharVisor();
 }
 visor.addEventListener("click", function (ev) {
-  var t = ev.target.closest("button");
-  if (t === null) {
+  var item = ev.target.closest("button");
+  if (item === null) {
     if (ev.target === visor || ev.target.classList.contains("visor-foto")) {
       fecharVisor();
     }
     return;
   }
-  if (t.classList.contains("visor-ant")) {
+  if (item.classList.contains("visor-ant")) {
     pararApresentacao();
     andar(-1);
-  } else if (t.classList.contains("visor-prox")) {
+  } else if (item.classList.contains("visor-prox")) {
     pararApresentacao();
     andar(1);
-  } else if (t.classList.contains("visor-fechar")) {
+  } else if (item.classList.contains("visor-fechar")) {
     fecharVisor();
-  } else if (t.classList.contains("visor-apres")) {
+  } else if (item.classList.contains("visor-apres")) {
     alternarApresentacao();
   }
 });
@@ -353,45 +352,45 @@ visor.addEventListener("touchend", function (ev) {
 
 // os botões da página: abrir uma foto, a apresentação, os vídeos, o PDF
 document.addEventListener("click", function (ev) {
-  var t = ev.target.closest("[data-foto], [data-apresentacao], [data-assistir], [data-sobe], [data-desce], [data-video-ant], [data-video-prox], [data-video-fechar], [data-pdf]");
-  if (t === null || !document.getElementById("documentos").contains(t)) {
+  var item = ev.target.closest("[data-foto], [data-apresentacao], [data-assistir], [data-sobe], [data-desce], [data-video-ant], [data-video-prox], [data-video-fechar], [data-pdf]");
+  if (item === null || !document.getElementById("documentos").contains(item)) {
     return;
   }
-  if (t.hasAttribute("data-foto")) {
-    abrirVisor(parseInt(t.getAttribute("data-foto"), 10));
-  } else if (t.hasAttribute("data-apresentacao")) {
+  if (item.hasAttribute("data-foto")) {
+    abrirVisor(parseInt(item.getAttribute("data-foto"), 10));
+  } else if (item.hasAttribute("data-apresentacao")) {
     abrirVisor(0);
     alternarApresentacao();
-  } else if (t.hasAttribute("data-assistir")) {
+  } else if (item.hasAttribute("data-assistir")) {
     fila = ordemVideos.filter(function (vid) { return marcados[vid] === true; });
     if (fila.length === 0) {
-      alert("Marque pelo menos um vídeo.");
+      alert(t("Marque pelo menos um vídeo."));
     } else {
       tocar(0);
     }
-  } else if (t.hasAttribute("data-sobe") || t.hasAttribute("data-desce")) {
-    var i = parseInt(t.getAttribute(t.hasAttribute("data-sobe") ? "data-sobe" : "data-desce"), 10);
-    var j = t.hasAttribute("data-sobe") ? i - 1 : i + 1;
+  } else if (item.hasAttribute("data-sobe") || item.hasAttribute("data-desce")) {
+    var i = parseInt(item.getAttribute(item.hasAttribute("data-sobe") ? "data-sobe" : "data-desce"), 10);
+    var j = item.hasAttribute("data-sobe") ? i - 1 : i + 1;
     var x = ordemVideos[i];
     ordemVideos[i] = ordemVideos[j];
     ordemVideos[j] = x;
     desenharVideos();
-  } else if (t.hasAttribute("data-video-ant")) {
+  } else if (item.hasAttribute("data-video-ant")) {
     tocar(tocando - 1);
-  } else if (t.hasAttribute("data-video-prox")) {
+  } else if (item.hasAttribute("data-video-prox")) {
     tocar(tocando + 1);
-  } else if (t.hasAttribute("data-video-fechar")) {
+  } else if (item.hasAttribute("data-video-fechar")) {
     document.getElementById("player").innerHTML = "";
-  } else if (t.hasAttribute("data-pdf")) {
-    var caixa = document.getElementById("pdf-" + t.getAttribute("data-pdf"));
+  } else if (item.hasAttribute("data-pdf")) {
+    var caixa = document.getElementById("pdf-" + item.getAttribute("data-pdf"));
     if (caixa.hidden) {
-      caixa.innerHTML = el("iframe", {"src": "api.php?recurso=documento&id=" + t.getAttribute("data-pdf"), "title": "PDF"}, "");
+      caixa.innerHTML = el("iframe", {"src": "api.php?recurso=documento&id=" + item.getAttribute("data-pdf"), "title": t("PDF")}, "");
       caixa.hidden = false;
-      t.textContent = "Fechar";
+      item.textContent = t("Fechar");
     } else {
       caixa.hidden = true;
       caixa.innerHTML = "";
-      t.textContent = "Ver aqui";
+      item.textContent = t("Ver aqui");
     }
   }
 });
@@ -452,12 +451,12 @@ function enviarUm(form, arquivo, mini, rotulo) {
       try {
         r = JSON.parse(x.responseText);
       } catch (e) {
-        r = {ok: false, erros: [arquivo.name + ": o servidor recusou (HTTP " + x.status + (x.status === 413 ? ": o arquivo passou do limite de envio do servidor" : "") + ")."]};
+        r = {ok: false, erros: [t("{1}: o servidor recusou (HTTP {2}{3}).", {1: arquivo.name, 2: x.status, 3: x.status === 413 ? t(": o arquivo passou do limite de envio do servidor") : ""})]};
       }
       pronto(r);
     };
     x.onerror = function () {
-      pronto({ok: false, erros: [arquivo.name + ": a conexão caiu no meio do envio."]});
+      pronto({ok: false, erros: [t("{1}: a conexão caiu no meio do envio.", {1: arquivo.name})]});
     };
     x.open("POST", "api.php");
     x.send(fd);
@@ -481,7 +480,7 @@ document.addEventListener("submit", function (ev) {
     passo = passo.then(function () {
       return miniatura(a);
     }).then(function (mini) {
-      return enviarUm(form, a, mini, "Enviando " + (i + 1) + " de " + arquivos.length + ": " + a.name);
+      return enviarUm(form, a, mini, t("Enviando {1} de {2}: {3}", {1: i + 1, 2: arquivos.length, 3: a.name}));
     }).then(function (r) {
       if (r.ok) {
         guardados += (r.ids || []).length;
@@ -490,7 +489,7 @@ document.addEventListener("submit", function (ev) {
     });
   });
   passo.then(function () {
-    recado = (guardados > 0 ? (guardados === 1 ? "1 documento guardado." : guardados + " documentos guardados.") : "Nada foi guardado.") + (erros.length > 0 ? " " + erros.join(" ") : "");
+    recado = (guardados > 0 ? (guardados === 1 ? t("1 documento guardado.") : t("{1} documentos guardados.", {1: guardados})) : t("Nada foi guardado.")) + (erros.length > 0 ? " " + erros.join(" ") : "");
     return recarregar();
   });
 });
@@ -500,7 +499,7 @@ function recarregar() {
     dados = d;
     montar();
   }).catch(function (e) {
-    document.getElementById("documentos").innerHTML = el("p", {"class": "acao"}, "Não consegui ler os documentos: " + h(e.message));
+    document.getElementById("documentos").innerHTML = el("p", {"class": "acao"}, t("Não consegui ler os documentos: {1}", {1: h(e.message)}));
   });
 }
 

@@ -727,6 +727,7 @@ na chave `config`), para quem automatiza; o padrão de uma instalação nova vem
 | **Gasto medido: os últimos dias** (`medicao_janela_dias`) | a janela do [gasto medido pelas leituras](#gasto-medido-pelas-leituras): as medições mais velhas saem da conta. De 1 a 3650. Padrão: 90. |
 | **Endereço do sistema** (`url_sistema`) | o endereço que a âncora `{link}` põe nas mensagens e na agenda. Padrão: vazio. |
 | **Próximos dias: mostrar até** (`proximos_por_pagina`) e **Plano: mostrar até** (`plano_por_pagina`) | quantos dias os **Próximos dias** da página Hoje e o **Dia a dia** da página Plano mostram de cada vez (de 1 a 366). Passando disso, embaixo aparece o navegador das páginas: **<** (anterior), os números (a primeira, a última e até duas de cada lado da atual, com … nos saltos) e **>** (próxima); parando o mouse em cima, a dica diz *Anterior*, *Próximo* ou *Página N*. Padrão: 7 e 31. |
+| **Idioma padrão** (`idioma`) | o idioma das telas para quem ainda não escolheu o seu no seletor do menu (veja [Os idiomas](#os-idiomas)): português, inglês, chinês, hindi, espanhol ou francês. Padrão: vazio (o do navegador, senão português). |
 | **Abrir o relógio na página Hoje** (`painel_modo`) | **Ao lado da lista** (`lado`): o relógio clicado abre num painel à direita, e a lista continua à vista. **Numa janela flutuante, grande** (`flutuante`): abre no meio da tela, por cima da página, com o fundo escurecido e os quadros lado a lado; fecha no ×, no Esc ou num clique fora. No celular, os dois cobrem a tela inteira. Padrão: ao lado. |
 | **Destaque no alto da página Hoje** (`destaque_hoje`) | **O relógio do dia** (`dia`): o quadro grande no alto da página Hoje mostra o relógio do dia (o do plano), com até quando ele fica e por que saiu. **O relógio no pulso agora** (`pulso`): mostra o relógio que está no pulso, mesmo que não seja o do dia (com *no pulso agora* e, embaixo, *Relógio do dia: …*, que abre o do dia); com mais de um no pulso, o que foi por último; sem nenhum no pulso, fica o do dia, com o aviso *Nenhum relógio no pulso agora*. Os dados embaixo (estado, carga, o botão Pôs/Tirou do pulso, a foto) são os do relógio do destaque. Padrão: o relógio do dia. |
 
@@ -878,6 +879,38 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | **Execuções do cron** (`execucoes.php`) | O que o cron fez a cada rodada, quanto tempo levou e os erros, com filtros. |
 | **Usuários** (`usuarios.php`) | Quem acessa: criar um usuário ou trocar a senha. |
 | **Ajuda** (`ajuda.php`) | Este guia dentro do sistema: a ideia central, como funciona, o cadastro de cada relógio campo por campo, os avisos de carga, as telas e as perguntas frequentes (as mesmas seções deste README, lidas dele; a API devolve o mesmo texto em `recurso=manual`). |
+
+### Os idiomas
+
+As telas falam seis línguas: **português** (o original), **inglês**, **chinês** (simplificado), **hindi**, **espanhol** e
+**francês**. Cada pessoa escolhe a sua no seletor do fim do menu (PT, EN, 中文, हिं, ES, FR); a escolha fica no navegador
+dela (o cookie `lingua`, por um ano) e não muda a das outras. Quem ainda não escolheu vê o **idioma padrão** da instalação
+(Configuração › Geral); sem padrão, o do navegador (se for um dos seis), senão português. As datas e os números seguem o
+idioma: 13/10/2026 e 1.234,56 em português, 10/13/2026 e 1,234.56 em inglês, 2026-10-13 em chinês.
+
+Todo texto das telas passa por uma função, `t("o texto em português")`: o português é a chave, e cada idioma tem o seu
+dicionário em `textos/<idioma>/telas.php` (o texto em português => a tradução). As telas recebem o dicionário da API
+(`recurso=textos`), que também diz o idioma, o locale e os idiomas do sistema. Um texto com partes que mudam leva
+parâmetros, `t("Excluir {1}?", {1: nome})`, trocados depois da tradução, na ordem que o idioma pedir. O que falta num
+dicionário sai em português. `php testes/textos.php` confere os cinco dicionários contra o código: o texto que falta, o que
+sobrou e o parâmetro diferente.
+
+**Para pôr um idioma novo** (o alemão, por exemplo), nada no código muda:
+
+1. Uma linha em `LINGUAS`, no [`textos/funcoes.php`](textos/funcoes.php): o código (`de`), o nome no próprio idioma
+   (`Deutsch`), o curto do menu (`DE`), o locale (`de-DE`), a data com e sem o ano (`d.m.Y` e `d.m`, com `d`, `m` e `Y`) e os
+   separadores dos números (o decimal `,` e o de milhar `.`). O seletor do menu, a Configuração, a API e o `Accept-Language`
+   passam a aceitar o idioma na hora.
+2. Os dicionários: `php testes/textos.php --faltam telas > faltam.json` lista os textos (em português) que o idioma ainda
+   não tem; traduza num JSON `{"o texto em português": "a tradução", ...}`, mantendo os parâmetros entre chaves, e junte com
+   `php testes/textos.php --juntar de telas traducao.json`, que grava o `textos/de/telas.php` na ordem do código.
+3. `php testes/textos.php` tem de terminar sem falta (o teste de paridade confere o mesmo), e
+   `LINGUA=de testes/paridade.sh --layout sqlite` confere as telas no idioma novo: textos mais longos podem quebrar um botão.
+
+As mensagens da API e do cron e a documentação (esta ajuda, a da API e a reconstrução) ainda saem em português; elas passam
+para os idiomas nas próximas versões, pelo mesmo caminho (`textos/<idioma>/api.php`, `ajuda.php`, `manual.php` e
+`reconstrucao.php`). Os nomes que você cadastra (grupos, campos, tipos de lançamento, avisos, modos, os relógios) ficam como
+você escreveu.
 
 ---
 
@@ -1499,6 +1532,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | [`pagina.php`](pagina.php) | o topo com o menu e o fim das páginas (o login é da API: `recurso=entrar`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |
 | [`estilo.css`](estilo.css) | o visual |
+| [`textos/`](textos/) | os idiomas: `funcoes.php` (a função `t()`, o idioma do pedido, as datas e os números de cada idioma) e uma pasta por idioma com os dicionários (`telas.php`: o texto em português => a tradução); abertos direto não fazem nada |
 | [`schema.sql`](schema.sql) | a estrutura do banco e o conjunto inicial (grupos, campos, fórmulas, avisos, modos, critérios) |
 | `migracao_v2.sql` … `migracao_v24.sql` | as migrações, aplicadas pela página Configuração |
 | [`config.exemplo.php`](config.exemplo.php) | o modelo do `config.php` |
@@ -1508,7 +1542,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | [`reconstrucao.php`](reconstrucao.php) | o roteiro para reescrever o sistema do zero (o `recurso=reconstrucao` da API) |
 | [`.htaccess`](.htaccess) | a proteção dos arquivos internos no Apache (e o login do site com o PHP por FastCGI) |
 | [`nginx-relogios.conf`](nginx-relogios.conf) | o bloco do nginx que protege os arquivos internos |
-| [`testes/`](testes/) | o teste de paridade: o mesmo roteiro pela API em cada banco, e o comparador das respostas; e a conferência do layout de todas as telas, do celular ao computador (`layout.cjs`) |
+| [`testes/`](testes/) | o teste de paridade: o mesmo roteiro pela API em cada banco, e o comparador das respostas; a conferência do layout de todas as telas, do celular ao computador (`layout.cjs`; `LINGUA=en` confere num idioma); e a dos dicionários dos idiomas (`textos.php`) |
 | [`docs/telas/`](docs/telas/) | as capturas de tela deste README |
 | [`PORTE.md`](PORTE.md) | o registro do porte da versão anterior |
 
@@ -1534,7 +1568,10 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
    bancos no ar, tem de terminar com `Tudo igual.` Ele confere também a documentação: o cabeçalho é o que a ajuda gera, e
    todo campo das respostas está explicado. Mexeu nas telas? Rode também a conferência do layout
    (`testes/paridade.sh --layout sqlite`): `0 problemas`.
-7. Abra o pull request contando o que muda para quem usa e como você testou.
+7. **Todo texto novo passa pelo `t()`** (o `api.js` e o `textos/funcoes.php` têm a função), com o português como chave e os
+   parâmetros entre chaves: `t("Excluir {1}?", {1: nome})`, nunca `"Excluir " + nome + "?"`. Depois, traduza nos cinco
+   dicionários de `textos/` e rode `php testes/textos.php` (o teste de paridade também roda): tem de terminar sem falta.
+8. Abra o pull request contando o que muda para quem usa e como você testou.
 
 ---
 

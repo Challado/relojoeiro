@@ -32,7 +32,10 @@ foreach (agenda_desejada($hoje) as $m) {
         $previa[] = array_merge(["data" => $m["data"], "hora" => $m["hora"]], evento_formatado($m));
     }
 }
-$saida = ["config" => (object)$valores_c, "mostrar_ate" => ["proximos" => proximos_por_pagina(), "plano" => plano_por_pagina()],
+$saida = ["config" => (object)$valores_c,
+    // os idiomas (o menu Idioma padrão)
+    "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS)),
+    "mostrar_ate" => ["proximos" => proximos_por_pagina(), "plano" => plano_por_pagina()],
     "aleatorio" => ["fontes" => ["RANDOM.ORG", "ANU QRNG", "gerador seguro do PHP (random_int)"], "ultimo_lote" => cfg("aleatorio_ultima") !== "" ? cfg("aleatorio_ultima") : null,
         "fora_desde" => cfg("aleatorio_fora") !== "" ? date("Y-m-d H:i:s", (int)cfg("aleatorio_fora")) : null], "sol_fim" => isset(lancamento_tipos()["sol"]) && lancamento_tipos()["sol"]["fecha_as"] !== null ? substr(lancamento_tipos()["sol"]["fecha_as"], 0, 5) : "",
     "chave_agenda" => is_array($json_c) && !empty($json_c["private_key"]) && !empty($json_c["client_email"]) ? ["client_email" => $json_c["client_email"]] : null,

@@ -147,11 +147,11 @@
       });
       var conta = document.getElementById("conta-relogios");
       if (conta) {
-        conta.textContent = visiveis + " de " + lista.length + " relógios · " + emUso + " em uso";
+        conta.textContent = t("{1} de {2} relógios · {3} em uso", {1: visiveis, 2: lista.length, 3: emUso});
       }
       var campoTotal = document.getElementById("total-valor");
       if (campoTotal) {
-        campoTotal.textContent = "R$ " + total.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        campoTotal.textContent = t("R$ ") + total.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       }
       var vazia = document.getElementById("tabela-vazia");
       if (vazia) {
@@ -217,7 +217,7 @@
       if (txt === "") {
         txt = "agora";
       } else if (dif < 0) {
-        txt = "atrasado " + txt;
+        txt = t("atrasado {1}", {1: txt});
       }
       return txt;
     };

@@ -206,7 +206,10 @@ const RECONSTRUCAO_TELAS = [
         "como" => "Na barra escura do topo, nessa ordem, em todas as páginas; o da página atual em branco e sublinhado. A Ficha, o Histórico "
             . "e os Documentos não estão no menu: abrem do painel do relógio (o histórico e os documentos numa aba nova). No celular (até "
             . "900px): a barra, presa no alto ao rolar, mostra o nome da página atual à esquerda e o botão \"☰ Menu\" à direita; aberto, "
-            . "ele vira \"✕ Menu\" e os itens aparecem em duas colunas, cada um num botão escuro (#27323f), o atual em safira.",
+            . "ele vira \"✕ Menu\" e os itens aparecem em duas colunas, cada um num botão escuro (#27323f), o atual em safira. Depois do último "
+            . "item, o seletor do idioma: uma caixa pequena com o código curto de cada idioma (PT, EN, 中文, हिं, ES, FR; o nome inteiro na dica); "
+            . "escolher grava o cookie lingua (um ano, o caminho todo) e abre a página de novo nele. Os rótulos abaixo são os do português: em "
+            . "outro idioma, as traduções do dicionário das telas.",
         "itens" => [
             ["pagina" => "index.php", "rotulo" => "Hoje"],
             ["pagina" => "plano.php", "rotulo" => "Plano"],
@@ -1057,7 +1060,9 @@ const RECONSTRUCAO_TELAS = [
 const RECONSTRUCAO_CODIGO = [
     "pagina.php" => ["tela", "a base de todas as páginas: topo() (o head, o menu e o título) e rodape() (os scripts, com a data do arquivo na URL)"],
     "estilo.css" => ["tela", "o estilo de todas as páginas: as cores, as letras, os controles, os componentes e os tamanhos de tela"],
-    "api.js" => ["tela", "a base do JavaScript das páginas: ler e gravar pela API, os formatos (número, dinheiro, data, hora), o login, os formulários que gravam, as tabelas que viram fichas no celular"],
+    "api.js" => ["tela", "a base do JavaScript das páginas: os textos no idioma (t(), com o dicionário de recurso=textos), ler e gravar pela API, os formatos do idioma (número, dinheiro, data, hora), o login, os formulários que gravam, as tabelas que viram fichas no celular"],
+    "textos/funcoes.php" => ["tela", "os idiomas: a lista (LINGUAS: o nome, o código curto do menu, o locale e os formatos da data e dos números), o idioma do pedido, t() e os formatos no PHP"],
+    "textos/<idioma>/telas.php" => ["tela", "o dicionário das telas de um idioma (en, zh-CN, hi, es, fr): o texto em português => a tradução, gerado e conferido por testes/textos.php"],
     "index.php" => ["tela", "o esqueleto da página Hoje (o meio, a tabela dos relógios com os títulos e os filtros, e o painel)"],
     "hoje.js" => ["tela", "a página Hoje: o relógio do dia, os avisos de hoje, os próximos dias, o modo de rodízio e as linhas da tabela dos relógios"],
     "tabela.js" => ["tela", "a tabela dos relógios: ordenar, filtrar e virar cartões quando as 11 colunas não cabem"],
@@ -1324,7 +1329,12 @@ function reconstrucao()
                 "Datas e horas no fuso do sistema (FUSO). Nas fórmulas, o tempo é contado em dias no horário local: a meia-noite local de qualquer "
                     . "data é um número inteiro e a fração é a hora do dia; assim uma data e o agora entram na mesma conta sem o fuso aparecer.",
                 "O cron é mudo e rastreável: roda a cada minuto, não escreve na saída, e registra no banco o que fez.",
-                "Português em tudo o que o usuário vê: mensagens de erro explicam o que fazer (\"Dê um nome ao relógio (até 120 caracteres).\").",
+                "Mensagens que explicam o que fazer (\"Dê um nome ao relógio (até 120 caracteres).\"), em seis idiomas: português (o original), inglês, "
+                    . "chinês simplificado, hindi, espanhol e francês. Nenhum texto fixo: todo texto que alguém lê passa por t(\"o texto em português\", "
+                    . "parâmetros), com o português como chave (como no gettext) e os parâmetros entre chaves ({1}, {nome}) trocados depois da tradução; "
+                    . "cada idioma tem o seu dicionário (o texto em português => a tradução), e o que falta sai em português. O idioma de cada pessoa é "
+                    . "dela (o seletor do menu, guardado no navegador); quem não escolheu vê o padrão da instalação (config.idioma), senão o do "
+                    . "navegador, senão português. As datas e os números seguem o idioma. Os nomes cadastrados ficam como foram escritos.",
             ]),
             $secao("arquitetura", "A arquitetura", [
                 "Um back-end único, a API (api.php): GET lê (recurso=...), POST grava (recurso=... e acao=...). Responde JSON (ou XML com formato=xml). "

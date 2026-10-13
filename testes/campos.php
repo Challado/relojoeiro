@@ -24,7 +24,7 @@ function ler($consulta)
     return json_decode((string)$corpo, false);
 }
 
-// os caminhos de todos os campos de uma resposta; um objeto cujas chaves são números, datas ou ids (g:3) vira <*>
+// os caminhos de todos os campos de uma resposta; um objeto cujas chaves são números, datas ou ids (g:3), ou textos, vira <*>
 function caminhos($v, $pre, &$saida)
 {
     if (is_object($v)) {
@@ -33,6 +33,13 @@ function caminhos($v, $pre, &$saida)
         foreach (array_keys($v) as $k) {
             if (preg_match('/^(-?\d+|\d{4}-\d{2}-\d{2}.*|[a-z]:\d+|)$/', (string)$k) !== 1) {
                 $variaveis = false;
+                break;
+            }
+        }
+        // ou um dicionário: chaves que não são nomes de campo (o texto em português, nos textos dos idiomas)
+        foreach (array_keys($v) as $k) {
+            if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', (string)$k) !== 1) {
+                $variaveis = true;
                 break;
             }
         }
@@ -89,6 +96,7 @@ $consultas = [
     "desejos" => ["recurso=desejos"],
     "estatisticas" => ["recurso=estatisticas", "recurso=estatisticas&de=tudo"],
     "hora_certa" => ["recurso=hora_certa"],
+    "textos" => ["recurso=textos", "recurso=textos&lingua=en"],
     "acessorios" => ["recurso=acessorios", "recurso=acessorios&relogio=0"],
     "passaporte" => $para_cada("recurso=passaporte&relogio=%d"),
     "galeria" => ["recurso=galeria", "recurso=galeria&posse=todos"],
