@@ -51,11 +51,11 @@ function recarregarCadastros() {
       d.campos.forEach(function (c) { if (c.id === editar) { e = c; } });
       var f = e || {};
       res += el("section", {"class": "cartao-config"}, el("h2", {}, "Campos do cadastro dos relógios")
-        + el("p", {"class": "nota"}, "Cada campo vale para o ponto da árvore escolhido e tudo abaixo dele (os de cada nível somam) e aparece no cadastro desses relógios. O identificador é o nome do campo nas fórmulas.")
+        + el("p", {"class": "nota"}, "Cada campo vale para o ponto da árvore escolhido e tudo abaixo dele (os de cada nível somam) e aparece no cadastro desses relógios. O identificador é o nome do campo nas fórmulas. Marcado \"só nos desejados\", o campo aparece só nos relógios da lista de desejos.")
         + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, ["Campo", "Identificador", "Tipo", "Vale para", "Padrão", ""].map(function (t) { return el("th", {}, t); }).join("")))
           + el("tbody", {}, d.campos.map(function (c) {
             return el("tr", {}, el("td", {}, h(c.nome) + (c.unidade !== "" ? " (" + h(c.unidade) + ")" : "")) + el("td", {"class": "formula ident"}, h(c.identificador)) + el("td", {}, h(d.tipos_de_campo[c.tipo]))
-              + el("td", {"class": "nota"}, h(caminho(d, c.no_id))) + el("td", {}, h(vazio(c.padrao)))
+              + el("td", {"class": "nota"}, h(caminho(d, c.no_id)) + (c.so_desejado === 1 ? " · só nos desejados" : "")) + el("td", {}, h(vazio(c.padrao)))
               + el("td", {"class": "acoes-linha"}, linkEditar(c.id) + " " + botaoLinha("ordem", c.id, "", null, el("button", {"class": "leve discreto", "name": "direcao", "value": "sobe"}, "↑")
                 + el("button", {"class": "leve discreto", "name": "direcao", "value": "desce"}, "↓")) + botaoLinha("excluir", c.id, "Excluir", "Excluir o campo " + c.nome + " e os valores dele?")));
           }).join(""))))
@@ -68,6 +68,8 @@ function recarregarCadastros() {
           + el("label", {}, "Valor padrão " + el("input", {"name": "padrao", "value": vazio(f.padrao)}))
           + el("label", {}, "Vale para " + el("select", {"name": "no_id"}, opcoesNo(d, f.no_id)))
           + el("label", {}, "Opções (lista: uma por linha) " + el("textarea", {"name": "opcoes"}, h(vazio(f.opcoes))))
+          + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "so_desejado", "value": "0"}) + el("input", {"type": "checkbox", "name": "so_desejado", "value": "1", "checked": f.so_desejado === 1})
+            + " só nos desejados (a lista de desejos: o preço-alvo, a prioridade)")
           + el("div", {"class": "botoes"}, el("button", {}, e ? "Salvar" : "Criar") + (e ? " " + el("a", {"href": "cadastros.php?aba=campos"}, "cancelar") : ""))));
     } else if (aba === "lancamentos") {
       var e = null;

@@ -193,7 +193,7 @@ const RECONSTRUCAO_TELAS = [
                 . "2,4rem) no canto de cima, à direita. Fecha com o ×, com um clique fora da foto ou com Esc (o Esc fecha só a foto: o "
                 . "painel por baixo continua aberto); enquanto aberta, a página não rola.",
             "O título da aba do navegador é o título da página (\"Relógio de hoje\", \"Plano\", \"Configuração\", \"Critérios de escolha\", "
-                . "\"Grupos de relógios\", \"Execuções do cron\", \"Usuários\", \"Cadastros\", \"Ajuda\", \"Ficha do relógio\", \"Documentos\"; no "
+                . "\"Grupos de relógios\", \"Execuções do cron\", \"Usuários\", \"Cadastros\", \"Ajuda\", \"Ficha do relógio\", \"Documentos\", \"Desejos\"; no "
                 . "histórico, \"Histórico — <relógio>\").",
             "O navegador de páginas (Próximos dias, Dia a dia do Plano, Rodízio manual): botões leves pequenos (padding .3rem "
                 . ".65rem, letra .9rem) numa linha que quebra: \"<\" (dica \"Anterior\"; desativado na primeira), os números (a 1, a última e "
@@ -210,6 +210,7 @@ const RECONSTRUCAO_TELAS = [
         "itens" => [
             ["pagina" => "index.php", "rotulo" => "Hoje"],
             ["pagina" => "plano.php", "rotulo" => "Plano"],
+            ["pagina" => "desejos.php", "rotulo" => "Desejos"],
             ["pagina" => "configuracao.php", "rotulo" => "Configuração"],
             ["pagina" => "criterios.php", "rotulo" => "Critérios"],
             ["pagina" => "grupos.php", "rotulo" => "Grupos"],
@@ -359,7 +360,13 @@ const RECONSTRUCAO_TELAS = [
                         . "ampliada), \"Escolher foto\" / \"Trocar foto\" (abre o seletor de arquivo; escolhida, aparece a prévia e o botão "
                         . "\"Salvar foto\": relogio foto) e, com foto, \"Remover foto\" (discreto; confirma \"Remover a foto?\"); ao lado "
                         . "\"<tipo> · <caminho no grupo>\" em cinza, o nome em h1, a observação, e as etiquetas: em uso/em repouso, "
-                        . "\"indisponível\", \"relógio de hoje\".",
+                        . "\"indisponível\", \"relógio de hoje\" e, fora da coleção, a situação (etiqueta lilás: \"desejado\", "
+                        . "\"emprestado\", \"vendido\", \"arquivado\"; no desejado, sem a etiqueta do estado).",
+                    "Num relógio desejado, no lugar dos quadros abaixo (Agora, Previsão, Gasto, Autonomia, Rodízio, Compra, "
+                        . "Manutenções, Marcar), só o quadro Desejo (pares: Marca, Referência, Preço-alvo \"R\$ ...\", Prioridade, Link \"abrir "
+                        . "a página\" numa aba nova; vazio: \"—\"; no rodapé \"Comprou? Em \"Editar cadastro\", mude a situação para \"Na "
+                        . "coleção\" e preencha a compra.\") e o de Documentos; os quadros largos (Dados, Histórico) e o Editar cadastro "
+                        . "continuam.",
                     "Os quadros, numa grade (lado a lado onde cabem): Agora (pares: Estado (\"No carregador desde 06:30\", na cor do "
                         . "estado); Carga com a barra e \"~68%\" e de onde vem; Situação, uma linha por item; Última leitura); Previsão (só "
                         . "nos que têm leitura: as frases da API, ou \"Informe a carga atual para o sistema começar a prever.\"; embaixo, "
@@ -398,6 +405,9 @@ const RECONSTRUCAO_TELAS = [
                         . "grupo escolhido (mudar o grupo mostra e esconde na hora): sim/não como caixa; lista como menu (com \"—\"); data "
                         . "como campo de data; texto como campo; número como campo decimal, com o padrão de dica (\"vazio: 5\"); a Compra "
                         . "num grupo com título (Data da compra, Valor pago, Onde comprou, Garantia até); a Observação; no novo, a Foto; "
+                        . "\"Situação na coleção\" (menu: Na coleção, Desejado, Emprestado, Vendido, Arquivado; no novo, a do endereço, "
+                        . "index.php?novo=1&posse=desejado, senão Na coleção; os campos só nos desejados, como o Preço-alvo e a Prioridade, "
+                        . "aparecem só com Desejado, e a caixa do disponível só com Na coleção, na hora); "
                         . "\"Disponível para o rodízio\" (marcada no novo); \"Guardar no banco a cópia de todos os documentos dele\" (só "
                         . "quando o config.php não decide); botão \"Cadastrar relógio\" ou \"Salvar alterações\" (relogio salvar). Embaixo, "
                         . "\"Excluir este relógio\" (discreto; confirma \"Excluir <nome> com todo o histórico e a foto?\").",
@@ -436,10 +446,45 @@ const RECONSTRUCAO_TELAS = [
             ],
             "partes" => [
                 ["titulo" => "Escolha e painel", "itens" => [
-                    "No alto, \"Relógio\" e uma lista com todos (os disponíveis primeiro, \"(indisponível)\" nos outros); trocar abre o "
+                    "No alto, \"Relógio\" e uma lista com todos (os disponíveis primeiro, o estado entre parênteses nos outros: "
+                        . "\"(indisponível)\", \"(emprestado)\"); havendo relógios fora da coleção, a lista vem em dois grupos, \"Na coleção\" e "
+                        . "\"Fora da coleção\" (cada um com a situação: \"(desejado)\", \"(vendido)\", \"(arquivado)\"); trocar abre o "
                         . "escolhido. Embaixo, o mesmo painel do relógio da página Hoje, numa página própria de até 72rem, com os "
                         . "quadros lado a lado e sem o ×. Sem relógios: \"Nenhum relógio cadastrado. Cadastre o primeiro.\" (link para "
                         . "index.php?novo=1).",
+                ]],
+            ],
+        ],
+        [
+            "id" => "desejos",
+            "pagina" => "desejos.php",
+            "titulo" => "Desejos",
+            "endereco" => "desejos.php",
+            "le" => [
+                "recurso=desejos",
+            ],
+            "grava" => [
+                "relogio: salvar (id e posse=colecao: o Comprei e o Voltar para a coleção)",
+            ],
+            "partes" => [
+                ["titulo" => "Lista de desejos", "itens" => [
+                    "h1 \"Lista de desejos\" com o botão \"Novo desejo\" à direita (index.php?novo=1&posse=desejado: o cadastro de um "
+                        . "relógio novo já como Desejado). A nota: sem desejados, como um relógio entra na lista (\"Novo desejo\" ou a "
+                        . "\"Situação na coleção\" do cadastro) e que ele não entra no rodízio nem nos avisos; com desejados, \"<n> relógios "
+                        . "desejados, a prioridade mais alta primeiro. Somando os preços-alvo: R\$ <total> (<n> sem preço-alvo). Comprou? ...\".",
+                    "Tabela (vira fichas até 900px) Relógio (a miniatura, o nome com o link da ficha e, embaixo, menor, \"marca · "
+                        . "referência\"), Prioridade, Preço-alvo (\"R\$ 1.234,56\" ou —), Grupo (o caminho; — na raiz), Link (\"abrir a "
+                        . "página\" numa aba nova, só para http:// e https://; outro texto, como está; —) e o botão leve \"Comprei\" "
+                        . "(confirma \"Comprou o <nome>? Ele entra na coleção, disponível para o rodízio, e a ficha dele abre para você "
+                        . "preencher a compra.\"; gravado, abre ficha.php?id=<id>).",
+                ]],
+                ["titulo" => "Fora da coleção", "itens" => [
+                    "h2 \"Fora da coleção\", a nota (fora do rodízio, do plano e dos avisos; o emprestado continua na tabela da página "
+                        . "Hoje e no valor da coleção; a ficha, os documentos e o histórico ficam) e a tabela Relógio (miniatura e nome), "
+                        . "Situação (etiqueta lilás: emprestado, vendido, arquivado), Grupo e o botão leve \"Voltar para a coleção\" "
+                        . "(confirma; gravado, abre a ficha).",
+                    "Na página Hoje, ao lado do \"Novo relógio\", o botão leve \"Desejos (<n>) · Fora da coleção (<n>)\" (só as partes "
+                        . "que têm algum; sem nenhum, o botão some) leva a esta página.",
                 ]],
             ],
         ],
@@ -886,6 +931,8 @@ const RECONSTRUCAO_CODIGO = [
     "grupos.js" => ["tela", "a página Grupos: a árvore e o grupo de cada relógio"],
     "execucoes.php" => ["tela", "o esqueleto da página Execuções do cron"],
     "execucoes.js" => ["tela", "a página Execuções do cron: os filtros, o resumo, a tabela e a paginação"],
+    "desejos.php" => ["tela", "o esqueleto da página Desejos"],
+    "desejos.js" => ["tela", "a página Desejos: a lista de desejos (com o Comprei) e os relógios fora da coleção"],
     "historico.php" => ["tela", "o esqueleto da página Histórico"],
     "historico.js" => ["tela", "a página Histórico de um relógio: os filtros, o resumo do tempo e a linha do tempo"],
     "documentos.php" => ["tela", "o esqueleto da página Documentos"],
@@ -902,6 +949,7 @@ const RECONSTRUCAO_CODIGO = [
     "api/hoje.php" => ["api", "recurso=hoje: tudo o que a página Hoje mostra"],
     "api/ficha.php" => ["api", "recurso=ficha: tudo o que o painel de um relógio mostra (ou o cadastro de um novo)"],
     "api/configuracao.php" => ["api", "recurso=config: a Configuração inteira"],
+    "api/desejos.php" => ["api", "recurso=desejos: a lista de desejos e os relógios fora da coleção"],
     "api/historico.php" => ["api", "recurso=historico: a linha do tempo de um relógio, com os filtros e o resumo"],
     "api/plano.php" => ["api", "recurso=plano: o plano dia a dia, o resumo por relógio e as páginas"],
     "api/cron.php" => ["api", "recurso=cron: as execuções do cron, com os filtros, o resumo e as páginas"],
@@ -1139,7 +1187,7 @@ function reconstrucao()
                     . "linha), a tabela no (palavra reservada: \"NO\"), nomes de índice e de regra com até 31 letras, o TEXT como VARCHAR(8191) e a chave "
                     . "única de várias colunas com coluna vazia como índice único de uma expressão; e três comandos próprios das migrações: ALTER FOREIGN "
                     . "KEY, DROP COLUMN e ADD CONSTRAINT ... CHECK (trocando a regra sem perder a anterior se os dados não cumprem a nova).",
-                "As páginas (index.php, plano.php, ficha.php, documentos.php, historico.php, configuracao.php, criterios.php, grupos.php, "
+                "As páginas (index.php, plano.php, desejos.php, ficha.php, documentos.php, historico.php, configuracao.php, criterios.php, grupos.php, "
                     . "cadastros.php, execucoes.php, usuarios.php, ajuda.php) só entregam o esqueleto, sem conferir nem o login; o JavaScript de cada uma "
                     . "(hoje.js, painel.js, configuracao.js, ajuda.js...) chama a API e monta a tela, sem fazer conta: resumos, porcentagens e situações "
                     . "(o resumo do plano, a porcentagem de cada estado no histórico, o peso efetivo dos critérios, a situação do cron, o manual "
@@ -1183,12 +1231,22 @@ function reconstrucao()
                     . "recusado. Excluir um grupo pela tela passa antes o que era dele para o grupo de cima (os de dentro, os relógios, os campos, os "
                     . "tipos, as fórmulas, os avisos e os blocos que sorteavam dele); versões de fórmula e de aviso que o grupo de cima já tem saem.",
                 "Campos: identificador (minúsculas, números e _, começando por letra, até 40; único entre campos e fórmulas, porque é o nome nas "
-                    . "fórmulas; não muda se alguma fórmula usa), nome, tipo (listas.tipos_de_campo), unidade, valor padrão, o grupo e a ordem. Os campos de "
-                    . "um relógio são os de todos e os de cada grupo da cadeia dele.",
+                    . "fórmulas; não muda se alguma fórmula usa), nome, tipo (listas.tipos_de_campo), unidade, valor padrão, o grupo, a ordem e a marca só nos desejados "
+                    . "(so_desejado). Os campos de um relógio são os de todos e os de cada grupo da cadeia dele (os só nos desejados, só no desejado).",
                 "O valor de um campo é conferido e normalizado pelo tipo: inteiro; decimal (aceita 1.079,99, 1079,99 e 1079.99, grava com ponto); "
                     . "sim/não (1, sim, s, true; 0, não, nao, n, false); data AAAA-MM-DD; lista (uma das opções); texto (até 1000). Vazio apaga. O valor "
                     . "usado nas contas é o informado, senão o padrão do campo.",
-                "Relógio: nome (até 120), grupo, disponível (fora do rodízio e dos avisos quando não), a marca da cópia no banco dos documentos, a foto "
+                "A situação na coleção de cada relógio (posse): colecao (o padrão), desejado (a lista de desejos), emprestado, vendido ou arquivado. "
+                    . "Só o que está na coleção entra no rodízio: nas outras, o relógio fica indisponível (o banco garante, ck_relogio_posse_disponivel; "
+                    . "a gravação força disponivel=0 e diz isso na mensagem), e por isso sai do sorteio, da escala e dos avisos sem regra a mais. Saindo "
+                    . "da coleção, as sessões abertas dele fecham agora (com a nota \"Fechei agora: ...\"), os dias dele no plano de amanhã em diante saem e são sorteados de novo (com escala, gerar_escala de amanhã; sem, "
+                    . "garantir_plano); hoje fica, mas a sessão do dia (o pulso sozinho) não abre para um relógio fora da coleção. Voltando para a coleção sem dizer o disponível, ele fica disponível. Da coleção (contam na tabela da "
+                    . "página Hoje e no valor): na coleção e emprestado (o estado do emprestado parado é \"Emprestado\"); desejado, vendido e arquivado "
+                    . "vão para fora_da_colecao (recurso=hoje) e para a página Desejos. Um campo com so_desejado=1 (o preço-alvo, a prioridade) vale só "
+                    . "no desejado: campos_do_relogio o deixa de fora nos outros, e a gravação dos valores também. A lista de desejos (recurso=desejos) "
+                    . "vem da prioridade mais alta para a mais baixa (a ordem das opções do campo prioridade_desejo; sem prioridade, no fim), depois "
+                    . "pelo nome, com a soma dos preços-alvo; no painel do desejado, o quadro Desejo e os documentos tomam o lugar dos do dia a dia.",
+                "Relógio: nome (até 120), grupo, situação na coleção, disponível (fora do rodízio e dos avisos quando não), a marca da cópia no banco dos documentos, a foto "
                     . "(JPEG, PNG ou WebP até 4 MB; o navegador reduz para 1200 px antes de enviar). Excluir apaga junto os valores, a foto, os "
                     . "documentos (e os arquivos), os lançamentos, o plano e os critérios próprios.",
             ]),

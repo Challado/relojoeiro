@@ -352,8 +352,13 @@ function campo_gravar_opcoes($campo_id, $texto)
 function campos_do_relogio($r)
 {
     $cadeia = no_cadeia($r["no_id"] ?? 0);
+    // os campos da lista de desejos (o preço-alvo, a prioridade) só valem para o relógio desejado
+    $desejado = ($r["posse"] ?? "colecao") === "desejado";
     $res = [];
     foreach (campos_todos() as $ident => $c) {
+        if ((int)($c["so_desejado"] ?? 0) === 1 && !$desejado) {
+            continue;
+        }
         if ($c["no_id"] === null || in_array((int)$c["no_id"], $cadeia, true)) {
             $res[$ident] = $c;
         }
@@ -475,6 +480,7 @@ $MIGRACOES = [
     "v19" => ["migracao_v19.sql", "o solar carrega também no pulso: uma parte do que ganharia no sol direto, pelo campo \"No pulso: quanto carrega, comparado ao sol direto\" (padrão 25%; 0 é o de antes, a carga parada)", "config.chave=migracao_v19"],
     "v20" => ["migracao_v20.sql", "o smartwatch carrega no carregador (o campo \"No carregador: horas para encher\"), o aviso \"Tirar do carregador\" que sai na hora pelo Telegram (os avisos \"na hora\"), as fórmulas \"Dias de uso\" e \"Custo por uso\", e no MySQL/MariaDB as tabelas em utf8mb4_unicode_ci", "config.chave=migracao_v20", "migracao_v20_dados"],
     "v21" => ["migracao_v21.sql", "os dias livres do plano: o \"Deixar o período livre\" da página Plano apaga o que foi gerado e deixa os dias sem relógio, sem sorteio, para você escolher à mão", "plano_livre"],
+    "v22" => ["migracao_v22.sql", "a situação de cada relógio na coleção (na coleção, desejado, emprestado, vendido ou arquivado: fora da coleção, ele sai do rodízio e dos avisos, e a ficha e o histórico ficam) e a lista de desejos; os campos Marca, Referência e Link, e, só nos desejados, Preço-alvo e Prioridade", "relogio.posse"],
 ];
 
 // O passo em PHP da v16, depois do SQL dela: as opções de cada campo do tipo lista (o texto, uma por linha) viram linhas da
@@ -2357,6 +2363,40 @@ function painel_modo()
     return cfg("painel_modo") === "flutuante" ? "flutuante" : "lado";
 }
 
+// A situação de cada relógio na coleção (a posse): o identificador e o nome. Só "colecao" entra no rodízio (fora dela o relógio
+// fica indisponível: o banco garante, ck_relogio_posse_disponivel); "colecao" e "emprestado" são da coleção (contam no valor e
+// nas listas da página Hoje); "desejado" é a lista de desejos; "vendido" e "arquivado" saem das listas e guardam a ficha
+const POSSES = ["colecao" => "Na coleção", "desejado" => "Desejado", "emprestado" => "Emprestado", "vendido" => "Vendido", "arquivado" => "Arquivado"];
+
+function posse_de($r)
+{
+    $p = (string)($r["posse"] ?? "colecao");
+    return isset(POSSES[$p]) ? $p : "colecao";
+}
+
+// O que a lista de desejos mostra de um relógio desejado, dos valores dele: a marca, a referência, o preço-alvo, a prioridade
+// (e a ordem dela: 1 é a mais alta; sem prioridade, depois de todas) e o link
+function desejo_do_relogio($valores)
+{
+    $prioridades = [];
+    $c = campos_todos()["prioridade_desejo"] ?? null;
+    foreach (array_values(array_filter(array_map("trim", explode("\n", (string)($c["opcoes"] ?? ""))))) as $i => $op) {
+        $prioridades[$op] = $i + 1;
+    }
+    $prio = ($valores["prioridade_desejo"] ?? "") !== "" ? (string)$valores["prioridade_desejo"] : null;
+    return ["marca" => ($valores["marca"] ?? "") !== "" ? (string)$valores["marca"] : null,
+        "referencia" => ($valores["referencia"] ?? "") !== "" ? (string)$valores["referencia"] : null,
+        "preco_alvo" => isset($valores["preco_alvo"]) && $valores["preco_alvo"] !== "" ? (float)$valores["preco_alvo"] : null,
+        "prioridade" => $prio, "prioridade_ordem" => $prio !== null && isset($prioridades[$prio]) ? $prioridades[$prio] : count($prioridades) + 1,
+        "link" => ($valores["link"] ?? "") !== "" ? (string)$valores["link"] : null];
+}
+
+// é da coleção agora (na coleção ou emprestado)
+function da_colecao($r)
+{
+    return in_array(posse_de($r), ["colecao", "emprestado"], true);
+}
+
 // O destaque no alto da página Hoje (a Configuração): o relógio do dia (dia, o padrão) ou o que está no pulso agora (pulso)
 function destaque_hoje()
 {
@@ -2765,6 +2805,10 @@ function sessao_do_dia($agora)
     $ini = strtotime($hoje . " " . cfg("uso_inicio"));
     $fim = strtotime($hoje . " " . cfg("uso_fim"));
     $p = plano_do_dia($hoje);
+    // o relógio do dia que saiu da coleção hoje (vendido, emprestado...) não vai mais ao pulso sozinho
+    if ($p && posse_de(linha("SELECT posse FROM relogio WHERE id = ?", [(int)$p["relogio_id"]]) ?: []) !== "colecao") {
+        return;
+    }
     $tipo = lancamento_tipos()["pulso"] ?? null;
     // uma só por dia, de qualquer relógio: a troca do relógio do dia (usando hoje) fecha a de um e abre a do outro
     if ($p && $tipo && $agora >= $ini && $agora < $fim && valor("SELECT id FROM lancamento WHERE tipo_id = ? AND origem = 'rodizio' AND DATE(inicio) = ?",

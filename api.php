@@ -919,6 +919,8 @@
  *     relogios[].disponivel          verdadeiro ou falso: entra no rodízio
  *     relogios[].copia_banco         verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da
  *                                    cópia; o DOCUMENTOS_COPIA_BANCO do config.php, se definido, vale por cima)
+ *     relogios[].posse               a situação na coleção: colecao (na coleção), desejado (a lista de desejos), emprestado, vendido ou
+ *                                    arquivado; fora da coleção, disponivel é sempre falso
  *     relogios[].em_uso              verdadeiro ou falso: o relógio está com uma sessão no pulso aberta agora
  *     relogios[].energia             a energia agora, em % inteiro (a fórmula energia: bateria, reserva, luz ou pilha); null sem dados para
  *                                    calcular
@@ -1184,8 +1186,17 @@
  *     avisos[].resolve.botao         o texto do botão ("Pôs no sol", "Tirou do carregador", "Informar leitura de carga", "Corda")
  *     avisos[].texto                 o motivo por extenso
  *     avisos_nomes[]                 os nomes dos avisos (o filtro "O que fazer" da tabela)
+ *     fora_da_colecao                os relógios fora da coleção (desejados, vendidos, arquivados), fora da tabela: a página Desejos e o
+ *                                    seletor da ficha
+ *     fora_da_colecao[]              um relógio fora da coleção
+ *     fora_da_colecao[].foto         a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
+ *     fora_da_colecao[].id           o número (código)
+ *     fora_da_colecao[].nome         o nome
+ *     fora_da_colecao[].posse        a situação: desejado, vendido ou arquivado
+ *     fora_da_colecao[].posse_texto  a mesma por extenso ("Desejado", "Vendido", "Arquivado")
+ *     fora_da_colecao[].tipo         o grupo do relógio (o nome; "—": na raiz)
  *     estados[]                      os estados da tabela, na ordem (o filtro Estado): "Em uso", o nome de cada sessão que não é o pulso
- *                                    ("No sol", "No winder", "No carregador"...), "Em repouso" e "Indisponível"
+ *                                    ("No sol", "No winder", "No carregador"...), "Em repouso", "Indisponível" e "Emprestado"
  *     comecou                        verdadeiro ou falso: o dia já começou no pulso (há relógio do dia e: pondo no pulso sozinho, passou do
  *                                    uso_inicio; senão, ele já foi posto no pulso hoje)
  *     pulso_poe_sozinho              verdadeiro: o relógio do dia entra no pulso sozinho no início do horário de uso; falso: só pelo Pôs
@@ -1282,12 +1293,15 @@
  *     relogios[].de_hoje             verdadeiro ou falso: é o relógio de hoje
  *     relogios[].destaque            verdadeiro ou falso: é o relógio do destaque no alto da página (o mesmo de destaque.relogio_id)
  *     relogios[].disponivel          verdadeiro ou falso: entra no rodízio
+ *     relogios[].posse               a situação na coleção: colecao ou emprestado (os desejados, vendidos e arquivados ficam em
+ *                                    fora_da_colecao)
+ *     relogios[].posse_texto         a mesma por extenso: "Na coleção" ou "Emprestado"
  *     relogios[].em_uso              verdadeiro ou falso: no pulso agora
  *     relogios[].estado              o estado na tabela: uso (no pulso), sessao (numa sessão que não é o pulso: no sol, no winder, no
  *                                    carregador...), repouso ou indisponivel (o indisponível parado; no pulso ou numa sessão, vale o que
  *                                    ele está fazendo)
  *     relogios[].estado_texto        o estado como a tabela mostra: "Em uso", o nome da sessão aberta ("No sol", "No carregador"; duas
- *                                    juntas: "No sol · No winder"), "Em repouso" ou "Indisponível"
+ *                                    juntas: "No sol · No winder"), "Em repouso", "Indisponível" ou "Emprestado" (o emprestado parado)
  *     relogios[].estado_ordem        a ordem do estado na tabela: 0 em uso, 1 numa sessão, 2 em repouso, 3 indisponível
  *     relogios[].foto                a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC), para o endereço
  *                                    dela); null: sem foto
@@ -1310,7 +1324,9 @@
  *     totais                         os totais da coleção inteira (a tabela da página Hoje soma só os relógios que os filtros dela deixam à
  *                                    mostra)
  *     totais.disponiveis             quantos estão disponíveis para o rodízio
+ *     totais.desejados               quantos relógios estão na lista de desejos
  *     totais.em_uso                  quantos estão em uso agora
+ *     totais.fora                    quantos estão fora da coleção (desejados, vendidos e arquivados: os de fora_da_colecao)
  *     totais.relogios                quantos relógios há
  *     totais.valor                   a soma do valor pago (valor_compra) de todos, em R$ (os sem valor contam 0)
  *     uso_inicio                     a hora em que o relógio do dia vai para o pulso (HH:MM)
@@ -1321,10 +1337,15 @@
  *     campos[].nome                  o nome
  *     campos[].opcoes[]              as opções (lista)
  *     campos[].padrao                o valor padrão
+ *     campos[].so_desejado           verdadeiro: o campo vale só nos relógios desejados (o preço-alvo, a prioridade); no cadastro, aparece
+ *                                    só com a situação "Desejado"
  *     campos[].tipo                  o tipo
  *     campos[].unidade               a unidade
  *     campos[].valor                 o valor do relógio (null)
  *     grupos[]                       os grupos (o seletor do cadastro)
+ *     posses[]                       as situações na coleção, na ordem (o menu "Situação na coleção" do cadastro)
+ *     posses[].nome                  o nome ("Na coleção", "Desejado", "Emprestado", "Vendido", "Arquivado")
+ *     posses[].valor                 o valor que vai na gravação (posse): colecao, desejado, emprestado, vendido ou arquivado
  *     grupos[].cadeia[]              os ids do grupo e dos de cima
  *     grupos[].caminho               o caminho
  *     grupos[].id                    o número
@@ -1406,6 +1427,18 @@
  *     relogio.disponivel             verdadeiro ou falso: entra no rodízio
  *     relogio.copia_banco            verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da
  *                                    cópia; o DOCUMENTOS_COPIA_BANCO do config.php, se definido, vale por cima)
+ *     relogio.posse                  a situação na coleção: colecao, desejado, emprestado, vendido ou arquivado (fora da coleção,
+ *                                    disponivel é sempre falso)
+ *     relogio.posse_texto            a mesma por extenso ("Na coleção", "Desejado"...)
+ *     relogio.da_colecao             verdadeiro: é da coleção agora (na coleção ou emprestado); falso: desejado, vendido ou arquivado
+ *     relogio.desejo                 o que a lista de desejos mostra (o quadro Desejo do painel): só no desejado; null nos outros
+ *     relogio.desejo.link            o link da página do relógio (o campo link; null)
+ *     relogio.desejo.marca           a marca (o campo marca; null)
+ *     relogio.desejo.preco_alvo      até quanto pagar, em R$ (o campo preco_alvo; número; null)
+ *     relogio.desejo.prioridade      a prioridade (o campo prioridade_desejo: Alta, Média, Baixa...; null)
+ *     relogio.desejo.prioridade_ordem
+ *                                    a ordem da prioridade nas opções do campo (1 é a mais alta; sem prioridade: depois de todas)
+ *     relogio.desejo.referencia      a referência, o modelo (o campo referencia; null)
  *     relogio.em_uso                 verdadeiro ou falso: no pulso agora
  *     relogio.estado                 o estado agora: uso (no pulso), sessao (numa sessão que não é o pulso: no sol, no winder, no
  *                                    carregador...) ou repouso
@@ -1766,6 +1799,7 @@
  *     campos[].opcoes                as opções de um campo de lista, uma por linha (texto; vazio nos outros)
  *     campos[].ordem                 a posição do campo no cadastro
  *     campos[].padrao                o valor usado quando o relógio não tem o campo preenchido (texto; null: nenhum)
+ *     campos[].so_desejado           1: o campo vale só nos relógios desejados (a lista de desejos); 0: em todos (do grupo)
  *     campos[].tipo                  inteiro, decimal, sim_nao, data, lista ou texto
  *     campos[].unidade               a unidade (texto; vazio: nenhuma)
  *     formatos_de_lancamento.<formato>
@@ -2101,6 +2135,35 @@
  *     dias[].origem                  sorteio, manual (escolhido à mão) ou livre (dia livre: sem relógio e sem sorteio, para escolher à mão)
  *     dias[].acao                    o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nenhum
  *     dias[].motivo                  por que o relógio está no dia; null: nenhum
+ *   recurso=desejos
+ *     desejados[]                    os relógios desejados (a lista de desejos), a prioridade mais alta primeiro, depois pelo nome
+ *     desejados[].caminho            o caminho do grupo ("Automáticos › Mergulho"; "todos os relógios" na raiz)
+ *     desejados[].criado             quando entrou no sistema (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     desejados[].foto               a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
+ *     desejados[].id                 o número (código)
+ *     desejados[].link               o link da página do relógio (null)
+ *     desejados[].marca              a marca (null)
+ *     desejados[].nome               o nome
+ *     desejados[].preco_alvo         até quanto pagar, em R$ (número; null)
+ *     desejados[].prioridade         a prioridade (Alta, Média, Baixa...: as opções do campo prioridade_desejo; null)
+ *     desejados[].prioridade_ordem   a ordem da prioridade (1 é a mais alta; sem prioridade: depois de todas)
+ *     desejados[].referencia         a referência, o modelo (null)
+ *     desejados[].tipo               o grupo do relógio (o nome; "sem grupo" na raiz)
+ *     fora[]                         os relógios fora da coleção que não são desejados: emprestados, vendidos e arquivados, pelo nome
+ *     fora[].caminho                 o caminho do grupo
+ *     fora[].criado                  quando entrou no sistema (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     fora[].foto                    a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
+ *     fora[].id                      o número (código)
+ *     fora[].nome                    o nome
+ *     fora[].posse                   a situação: emprestado, vendido ou arquivado
+ *     fora[].posse_texto             a mesma por extenso
+ *     fora[].tipo                    o grupo do relógio (o nome; "sem grupo" na raiz)
+ *     grupos[]                       os grupos em ordem de árvore
+ *     grupos[].caminho               o caminho do grupo
+ *     grupos[].id                    o número do grupo
+ *     prioridades[]                  as prioridades, da mais alta para a mais baixa (as opções do campo prioridade_desejo)
+ *     sem_preco_alvo                 quantos desejados estão sem preço-alvo
+ *     total_preco_alvo               a soma dos preços-alvo dos desejados, em R$ (os sem preço contam 0)
  *   recurso=rodizio_manual
  *     de                             o primeiro dia do período (AAAA-MM-DD)
  *     ate                            o último dia do período (AAAA-MM-DD)
@@ -2704,6 +2767,8 @@ if (!$token_ok && $quem === "") {
     $saida = ["previsoes" => $prev];
 } elseif ($recurso === "plano") {
     require __DIR__ . "/api/plano.php";
+} elseif ($recurso === "desejos") {
+    require __DIR__ . "/api/desejos.php";
 } elseif ($recurso === "proximos") {
     // os Próximos dias da página Hoje, uma página (a troca de página não relê a página Hoje inteira)
     $saida = plano_pagina(date("Y-m-d"), "", null, (int)($_REQUEST["pagina"] ?? 1),
@@ -2760,7 +2825,7 @@ if (!$token_ok && $quem === "") {
 } else {
     $codigo = 404;
     $saida = ["erro" => "recurso desconhecido", "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

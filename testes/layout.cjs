@@ -46,6 +46,11 @@ const PAGINAS = [
   { nome: 'ficha-7', url: 'ficha.php?id=7' },
   { nome: 'ficha-8', url: 'ficha.php?id=8' },
   { nome: 'ficha-novo', url: 'index.php?novo=1' },
+  // o desejado do cenário (10) e o vendido (4), a lista de desejos e o cadastro de um desejo novo
+  { nome: 'ficha-10', url: 'ficha.php?id=10' },
+  { nome: 'hoje-painel-10', url: 'index.php?r=10' },
+  { nome: 'desejos', url: 'desejos.php' },
+  { nome: 'desejo-novo', url: 'index.php?novo=1&posse=desejado' },
   { nome: 'historico', url: 'historico.php?id=1' },
   { nome: 'historico-4', url: 'historico.php?id=4' },
   { nome: 'plano', url: 'plano.php' },
@@ -247,7 +252,16 @@ async function auditarTela(b, tela, fp, relatorio, total) {
     const vistos = new Set();
     probs = probs.filter((x) => { const k = x.tipo + x.quem; if (vistos.has(k)) return false; vistos.add(k); return true; });
     erros.forEach((e) => probs.push({ tipo: 'erro', det: e, quem: '' }));
-    await p.screenshot({ path: SAIDA + '/' + pg.nome + '__' + tela.nome + '.png', fullPage: true });
+    // a captura só serve para olhar: com a máquina carregada (15 tamanhos ao mesmo tempo) ela pode passar do tempo esperando
+    // as fontes; tenta de novo, e se falhar outra vez segue sem ela (os problemas já foram conferidos)
+    for (let t = 0; t < 2; t++) {
+      try {
+        await p.screenshot({ path: SAIDA + '/' + pg.nome + '__' + tela.nome + '.png', fullPage: true, timeout: 60000 });
+        break;
+      } catch (e) {
+        if (t === 1) console.log('sem a captura de ' + pg.nome + ' em ' + tela.nome + ': ' + e.message.split('\n')[0]);
+      }
+    }
     for (const x of probs) {
       relatorio.push([tela.nome, pg.nome, x.tipo, x.det, x.quem].join('\t'));
       total[x.tipo] = (total[x.tipo] || 0) + 1;
@@ -280,7 +294,11 @@ async function estressar() {
   resultados.push(await api({ recurso: 'relogio', acao: 'salvar', id: 1, 'valores[observacao]':
     'Comprado na viagem de 2024; a pulseira original foi trocada pela de silicone preta, e a de couro está guardada na caixa azul junto com o carregador reserva.' }));
   resultados.push(await api({ recurso: 'arvore', acao: 'renomear', id: 4, nome: 'Automático com reserva de marcha estendida de 80 horas' }));
-  for (const id of [1, 3, 4, 5]) {
+  // o desejado (10): marca, referência e link compridos, preço-alvo alto, a foto
+  resultados.push(await api({ recurso: 'relogio', acao: 'salvar', id: 10, 'valores[marca]': 'Casio G-Shock Master of G Edição Limitada',
+    'valores[referencia]': 'GW-M5610U-1ER-ANIVERSARIO-40-ANOS', 'valores[link]': 'https://www.exemplo-de-loja-com-endereco-comprido.com.br/relogios/casio/g-shock/gw-m5610u-1er?origem=lista',
+    'valores[preco_alvo]': '1234567,89' }));
+  for (const id of [1, 3, 4, 5, 10]) {
     resultados.push(await api({ recurso: 'relogio', acao: 'foto', id, foto_base64: png }));
   }
   return resultados.filter((x) => x).length + ' de ' + resultados.length;

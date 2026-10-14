@@ -16,9 +16,12 @@ $valores = $r ? valores_do_relogio((int)$r["id"]) : [];
 $campos = [];
 foreach (campos_todos() as $ident => $c) {
     $campos[] = ["identificador" => $ident, "nome" => $c["nome"], "tipo" => $c["tipo"], "unidade" => $c["unidade"], "opcoes" => array_values(array_filter(array_map("trim", explode("\n", (string)$c["opcoes"])))),
-        "padrao" => $c["padrao"], "no_id" => $c["no_id"] === null ? 0 : (int)$c["no_id"], "valor" => $valores[$ident] ?? null];
+        "padrao" => $c["padrao"], "no_id" => $c["no_id"] === null ? 0 : (int)$c["no_id"], "so_desejado" => (int)($c["so_desejado"] ?? 0) === 1,
+        "valor" => $valores[$ident] ?? null];
 }
 $saida = ["hoje" => $hoje->format("Y-m-d"), "relogio" => null, "copia_sistema" => documentos_copia_sistema(), "painel_modo" => painel_modo(), "campos" => $campos,
+    // as situações na coleção, na ordem, para o menu do cadastro
+    "posses" => array_map(function ($k) { return ["valor" => $k, "nome" => POSSES[$k]]; }, array_keys(POSSES)),
     "grupos" => array_map(function ($o) use ($n) { return ["id" => $o[0], "caminho" => no_caminho($o[0]), "cadeia" => no_cadeia($o[0])]; }, nos_em_ordem())];
 if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     $codigo = 404;
@@ -51,6 +54,7 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     $foto = valor("SELECT atualizado FROM foto WHERE relogio_id = ?", [$id]);
     $nota = (int)$r["disponivel"] === 1 ? nota_do_relogio($r, $agora) : null;
     $saida["relogio"] = ["id" => $id, "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? 0 : (int)$r["no_id"], "disponivel" => (int)$r["disponivel"] === 1,
+        "posse" => posse_de($r), "posse_texto" => POSSES[posse_de($r)], "da_colecao" => da_colecao($r),
         "copia_banco" => (int)$r["copia_banco"] === 1,
         "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "sem grupo", "caminho" => no_caminho($r["no_id"]), "observacao" => $valores["observacao"] ?? null,
         "foto" => $foto !== null ? strtotime($foto) : null, "documentos" => (function () use ($id) {
@@ -92,6 +96,8 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
             $l[] = $v["estado_texto"] . " · " . ($v["energia"] !== null ? "carga " . (int)round((float)$v["energia"]) . "%" : (string)$v["de"]);
             if ($nota !== null) {
                 $l[] = "Nota " . motivo_nota($nota["nota"]) . ($proxima !== null ? " · próximo dia no rodízio: " . date("d/m/Y", strtotime($proxima)) : "");
+            } elseif (posse_de($r) !== "colecao") {
+                $l[] = POSSES[posse_de($r)] . ": fora do rodízio";
             } elseif ((int)$r["disponivel"] !== 1) {
                 $l[] = "Indisponível: fora do rodízio";
             }
@@ -103,7 +109,9 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
             $l[] = "Duplo clique (ou \"Abrir foto\", embaixo): a foto em tamanho grande.";
             return implode("\n", $l);
         })(),
-        "desde" => count($lt["linhas"]) > 0 ? date("Y-m-d H:i:s", $lt["linhas"][count($lt["linhas"]) - 1]["inicio"]) : null];
+        "desde" => count($lt["linhas"]) > 0 ? date("Y-m-d H:i:s", $lt["linhas"][count($lt["linhas"]) - 1]["inicio"]) : null,
+        // a lista de desejos: o que o quadro Desejo mostra (só no desejado; null nos outros)
+        "desejo" => posse_de($r) === "desejado" ? desejo_do_relogio($valores) : null];
     // os dados do relógio: os campos do cadastro que valem para ele (o informado, senão o padrão) e o resultado de cada fórmula
     $dados = [];
     foreach (campos_do_relogio($r) as $ident => $c) {

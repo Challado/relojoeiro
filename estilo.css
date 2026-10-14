@@ -584,12 +584,17 @@ nav.paginas span.atual { background: var(--safira); color: #fff; border-color: v
 .hoje-foto { display: block; }
 .hoje-foto img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; border: 1px solid var(--aco-escuro); background: #fff; }
 .hoje-foto .sem-foto { aspect-ratio: 1; }
-@media (max-width: 1150px) {
+/* a largura que conta é a da coluna da página (com o painel do relógio aberto ao lado ela encolhe), e não a da tela: a
+   coluna é um container (coluna-hoje), e o quadro passa para duas colunas e depois para a foto pequena conforme ela */
+.col-hoje { container: coluna-hoje / inline-size; }
+.hoje h1, .hoje .data { overflow-wrap: anywhere; hyphens: auto; }
+@container coluna-hoje (max-width: 62rem) {
   .hoje.com-relogio { grid-template-columns: minmax(0, 1fr) 9rem; }
   .hoje.com-relogio .hoje-info { grid-column: 1 / -1; grid-row: 2; }
 }
-@media (max-width: 560px) {
+@container coluna-hoje (max-width: 34rem) {
   .hoje.com-relogio { grid-template-columns: minmax(0, 1fr) 6.5rem; gap: 1rem; }
+  .hoje h1 { font-size: 1.75rem; }
 }
 
 /* ---------- painel da direita: só com um relógio escolhido ---------- */
@@ -1387,3 +1392,15 @@ form.excluir-conjunto button.discreto { white-space: normal; text-align: left; }
 dl.pares.legenda-grafico { font-size: .85rem; margin-top: .2rem; }
 dl.pares.legenda-grafico dt, dl.pares.legenda-grafico dd { padding-top: .25rem; padding-bottom: .25rem; }
 .legenda-ponto { display: inline-block; margin-right: .9rem; white-space: nowrap; }
+/* a situação fora da coleção (desejado, emprestado, vendido, arquivado): uma etiqueta violeta, diferente dos estados */
+.estado-posse { background: #efe8f7; color: #5b3b8a; border-color: #d3c3ea; }
+
+/* ---------- Desejos: a lista de desejos e os de fora da coleção ---------- */
+.pagina-desejos h2 { margin-top: 2rem; }
+.pagina-desejos .nome-rel small.bloco { display: block; margin: .1rem 0 0; font-size: .8rem; }
+.pagina-desejos td.valor { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pagina-desejos td.acoes-desejo { text-align: right; white-space: nowrap; width: 1%; }
+.pagina-desejos td.acoes-desejo form { margin: 0; }
+@media (max-width: 900px) {
+  .pagina-desejos td.acoes-desejo { text-align: left; width: auto; }
+}

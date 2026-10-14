@@ -55,7 +55,7 @@ foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
     }
     $foto = linha("SELECT tipo, atualizado" . ($com_foto ? ", dados" : "") . " FROM foto WHERE relogio_id = ?", [(int)$r["id"]]);
     $relogios[] = ["id" => (int)$r["id"], "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? null : (int)$r["no_id"], "lugar" => no_caminho($r["no_id"]),
-        "disponivel" => (int)$r["disponivel"] === 1, "copia_banco" => (int)$r["copia_banco"] === 1, "criado" => $r["criado"],
+        "disponivel" => (int)$r["disponivel"] === 1, "copia_banco" => (int)$r["copia_banco"] === 1, "posse" => posse_de($r), "criado" => $r["criado"],
         "foto" => $foto ? ["tipo" => $foto["tipo"], "atualizada_em" => $foto["atualizado"], "base64" => $com_foto ? base64_encode($foto["dados"]) : null] : null,
         "documentos" => array_map(function ($x) { return documento_info($x, false); }, documentos_do_relogio((int)$r["id"])),
         "campos" => $cs, "formulas" => $fs, "avisos" => avisos_do_relogio($r, time()),

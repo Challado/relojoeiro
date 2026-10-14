@@ -34,15 +34,24 @@ foreach (linhas("SELECT relogio_id, atualizado FROM foto") as $f) {
     $fotos[(int)$f["relogio_id"]] = strtotime($f["atualizado"]);
 }
 $rels = [];
+// os que não são da coleção (desejados, vendidos, arquivados): fora da tabela, numa lista à parte
+$fora_h = [];
 foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
+    if (!da_colecao($r)) {
+        $fora_h[] = ["id" => (int)$r["id"], "nome" => $r["nome"], "posse" => posse_de($r), "posse_texto" => POSSES[posse_de($r)],
+            "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "—", "foto" => $fotos[(int)$r["id"]] ?? null];
+        continue;
+    }
     $v = visao_relogio($r, $agora);
-    // o estado na tabela: o indisponível parado aparece como indisponível; no pulso ou numa sessão, o que ele está fazendo
+    // o estado na tabela: o indisponível parado aparece como indisponível (o emprestado, como emprestado); no pulso ou numa
+    // sessão, o que ele está fazendo
     $estado_h = $v["estado"] === "repouso" && (int)$r["disponivel"] !== 1 ? "indisponivel" : $v["estado"];
     $val = valores_do_relogio((int)$r["id"]);
     $leitura = linha("SELECT l.inicio, l.valor, t.unidade FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'valor'
             ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [(int)$r["id"]]);
     $rels[] = ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1, "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "—",
-        "em_uso" => $v["em_uso"], "estado" => $estado_h, "estado_texto" => $estado_h === "indisponivel" ? "Indisponível" : $v["estado_texto"],
+        "posse" => posse_de($r), "posse_texto" => POSSES[posse_de($r)],
+        "em_uso" => $v["em_uso"], "estado" => $estado_h, "estado_texto" => $estado_h === "indisponivel" ? (posse_de($r) === "emprestado" ? "Emprestado" : "Indisponível") : $v["estado_texto"],
         "estado_ordem" => ["uso" => 0, "sessao" => 1, "repouso" => 2, "indisponivel" => 3][$estado_h],
         "agora" => $v["texto"], "carga" => (int)$r["disponivel"] === 1 ? $v["energia"] : null, "carga_de" => $v["de"], "ultimo" => $v["ultimo"],
         "ultimo_txt" => $v["em_uso"] ? "agora · " . date("H:i", $agora) : ($v["ultimo"] > 0 ? date(date("Y", $v["ultimo"]) === date("Y", $agora) ? "d/m H:i" : "d/m/Y H:i", $v["ultimo"]) : "nunca"),
@@ -80,7 +89,7 @@ $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => c
     "avisos" => $avisos_h,
     // os estados da tabela, na ordem (o filtro Estado): em uso, cada sessão que não é o pulso, em repouso e indisponível
     "estados" => array_merge(["Em uso"], array_column(linhas("SELECT nome FROM lancamento_tipo WHERE formato = 'sessao' AND identificador <> 'pulso' ORDER BY ordem, id"), "nome"),
-        ["Em repouso", "Indisponível"]),
+        ["Em repouso", "Indisponível", "Emprestado"]),
     "plano" => array_map(function ($p) { return ["data" => $p["data"], "relogio_id" => (int)$p["relogio_id"], "relogio" => $p["nome"], "acao" => $p["acao"], "motivo" => $p["motivo"], "origem" => $p["origem"]]; },
         linhas("SELECT p.*, r.nome FROM plano p JOIN relogio r ON r.id = p.relogio_id WHERE p.data >= ? ORDER BY p.data LIMIT 62", [$hoje->format("Y-m-d")])),
     // os dias livres dos próximos 62 dias (sem relógio e sem sorteio: para escolher à mão)
@@ -94,7 +103,10 @@ $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => c
     "grupos" => array_map(function ($o) use ($n) { return ["id" => $o[0], "nome" => $n[$o[0]]["nome"], "profundidade" => $o[1], "caminho" => no_caminho($o[0])]; }, nos_em_ordem()),
     "avisos_nomes" => array_values(array_unique($avisos_nomes)),
     "relogios" => $rels,
+    "fora_da_colecao" => $fora_h,
     // os totais da coleção inteira (a tabela da página soma só o que os filtros dela deixam à mostra)
     "totais" => ["relogios" => count($rels), "disponiveis" => count(array_filter($rels, function ($r) { return $r["disponivel"]; })),
         "em_uso" => count(array_filter($rels, function ($r) { return $r["em_uso"]; })),
-        "valor" => round(array_sum(array_map(function ($r) { return $r["compra"]["valor"] ?? 0; }, $rels)), 2)]];
+        "valor" => round(array_sum(array_map(function ($r) { return $r["compra"]["valor"] ?? 0; }, $rels)), 2),
+        "desejados" => count(array_filter($fora_h, function ($r) { return $r["posse"] === "desejado"; })),
+        "fora" => count($fora_h)]];
