@@ -126,9 +126,13 @@
  *                            "gasto": {"uso" e "repouso": {"cadastro", "medido", "antes", "vale"}, "janela_dias", "medicoes",
  *                            "medicoes_antes", "conjunta"}}]}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=previsao&relogio=10"
- *   recurso=plano            [de, ate: AAAA-MM-DD] o plano gravado (sem de/ate: inteiro), com "escala_fim" e o modo ativo:
- *                            {"modo", "escala_fim", "plano": [como em "plano" acima]}
+ *   recurso=plano            [de, ate: AAAA-MM-DD; ou dias=N: os próximos N dias, de hoje em diante; dias=todos: de hoje até o fim]
+ *                            o plano gravado (sem nada: inteiro), com "escala_fim", o último dia gravado e o modo ativo, e o resumo do
+ *                            período como a página Plano mostra: {"modo", "escala_fim", "plano_fim", "hoje", "plano": [como em "plano"
+ *                            acima], "resumo": {"de", "ate", "dias", "relogios": [{"relogio_id", "relogio", "dias", "porcentagem",
+ *                            "proximo", "a_mao"}], "sem_dias": [{"id", "nome"}]}, "relogios"}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=plano&de=2026-10-01&ate=2026-10-31"
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=plano&dias=90"
  *   recurso=eventos          os eventos personalizados: {"eventos": [{"id", "nome", "ativo", "repeticao" (uma, diaria,
  *                            semanal, mensal, intervalo), "descricao" ("seg, qua 20:00"), "hora", "data_inicio", "dias_semana",
  *                            "dia_mes", "intervalo_dias", "relogio_id", "relogio", "telegram" e "agenda" (se vai por cada canal, em
@@ -159,7 +163,8 @@
  *                            "disponivel", "tipo" (o grupo), "em_uso", "agora" ("Em repouso desde 21:40"), "carga" (%), "carga_de" (de onde
  *                            vem), "ultimo" (a última vez no pulso, em segundos), "ultimo_txt", "situacao": [linhas], "manutencao":
  *                            {"nome", "data", "momento", "falta"} (o aviso mais perto), "compra": {"data", "valor", "loja", "garantia_ate"},
- *                            "leitura": {"inicio", "valor", "unidade"} (a última), "de_hoje", "com_aviso", "foto" (a versão)}]}
+ *                            "leitura": {"inicio", "valor", "unidade"} (a última), "de_hoje", "com_aviso", "foto" (a versão)}], "totais":
+ *                            {"relogios", "disponiveis", "em_uso", "valor"} (da coleção inteira)}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=hoje"
  *   recurso=ficha            relogio=<id>: tudo o que o painel de um relógio mostra: {"hoje", "copia_sistema", "painel_modo",
  *                            "relogio": {"id", "nome", "no_id",
@@ -180,7 +185,8 @@
  *                            "marcado", "proprio", "corpo"}, "ag": {...}}}], "eventos": [como em recurso=eventos, com "proximas_60" (as
  *                            5 dos próximos 60 dias)], "relogios": [{"id", "nome", "disponivel"}], "previa": {"manha", "noite" (as
  *                            mensagens do Telegram como sairiam agora), "agenda" (os 8 primeiros eventos: {"data", "hora", "titulo",
- *                            "descricao"}), "sincronizados"}}
+ *                            "descricao"}), "sincronizados"}, "cron_estado": {"situacao" (nunca, parado ou rodando), "ultima",
+ *                            "minutos", "texto", "crontab", "erro"}}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=config"
  *   recurso=cron             as execuções do cron: de, ate (data, ou data e hora; cron_de e cron_ate também valem), situacao
  *                            (atividade, o padrão; erro, nada ou todas; cron_situacao também vale), busca (texto no registro;
@@ -209,7 +215,8 @@
  *   recurso=manual           (ou recurso=ajuda&parte=manual) o texto da página Ajuda: os trechos do README para quem usa (a ideia
  *                            central, como funciona, o cadastro campo por campo, a Configuração, um dia com o sistema, as telas,
  *                            as perguntas frequentes e como reescrever o sistema do zero), em markdown: {"fonte" ("README.md"), "trechos": [{"de", "ate"}], "secoes":
- *                            [{"nivel", "titulo", "ancora", "texto"}], "markdown"}. Sem o README.md na pasta: 404
+ *                            [{"nivel", "titulo", "ancora", "texto"}], "sumario": [{"nivel", "titulo", "ancora"}], "markdown", "html" (o
+ *                            que a página Ajuda mostra)}. Sem o README.md na pasta: 404. Responde mesmo com o banco desatualizado
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=manual&mostrar[secoes]=titulo,ancora" -g
  *   recurso=reconstrucao     (ou recurso=ajuda&parte=reconstrucao) o roteiro para reescrever a aplicação inteira do zero, em qualquer
  *                            linguagem e banco, chegando ao mesmo sistema: {"o_que_e", "como_usar": [textos], "secoes": [{"id", "titulo",
@@ -1068,6 +1075,12 @@
  *     relogios[].tipo                o grupo do relógio (o nome)
  *     relogios[].ultimo              a última vez no pulso (número inteiro: instante Unix (segundos desde 01/01/1970 UTC); 0: nunca)
  *     relogios[].ultimo_txt          a mesma por extenso ("agora · 14:32", "25/09 21:53", "nunca")
+ *     totais                         os totais da coleção inteira (a tabela da página Hoje soma só os relógios que os filtros dela deixam à
+ *                                    mostra)
+ *     totais.disponiveis             quantos estão disponíveis para o rodízio
+ *     totais.em_uso                  quantos estão em uso agora
+ *     totais.relogios                quantos relógios há
+ *     totais.valor                   a soma do valor pago (valor_compra) de todos, em R$ (os sem valor contam 0)
  *     uso_inicio                     a hora em que o relógio do dia vai para o pulso (HH:MM)
  *
  *   recurso=ficha
@@ -1311,6 +1324,14 @@
  *     canais.<canal>.tipos           o nome do campo do formulário (acao=salvar) com os tipos que vão pelo canal (alerta_tipos[], agenda_tipos[])
  *     chave_agenda                   a chave do Google lida no caminho configurado; null: não lida
  *     chave_agenda.client_email      o e-mail da conta de serviço (compartilhar a agenda com ele)
+ *     cron_estado                    a situação do cron, como a Configuração mostra (o cron roda a cada minuto)
+ *     cron_estado.crontab            a linha do crontab que roda o sistema (com a pasta dele)
+ *     cron_estado.erro               o erro guardado da última execução com erro (null: sem erro; some na primeira execução sem erro)
+ *     cron_estado.minutos            há quantos minutos ele rodou pela última vez (null: nunca rodou)
+ *     cron_estado.situacao           nunca (ainda não rodou), parado (mais de 10 minutos sem rodar) ou rodando
+ *     cron_estado.texto              a frase da Configuração ("Cron rodando: última execução às 10:41."; parado e nunca trazem a linha do
+ *                                    crontab)
+ *     cron_estado.ultima             quando rodou pela última vez (AAAA-MM-DD HH:MM:SS, no fuso do sistema; null: nunca rodou)
  *     config.ag_padrao               a mensagem padrão da agenda: a primeira linha é o título do evento, o resto a descrição
  *     config.agenda_antecedencia     com quantos dias de antecedência os eventos são criados na agenda
  *     config.agenda_ativa            1: cria os eventos no Google Agenda; 0: não
@@ -1731,6 +1752,21 @@
  *     plano[].origem                 sorteio (pelo modo) ou manual (escolhido à mão: "Usando hoje" ou trocar_dia)
  *     plano[].relogio                o nome dele
  *     plano[].relogio_id             o relógio do dia
+ *     plano_fim                      o último dia gravado no plano (AAAA-MM-DD; null: plano vazio), qualquer que seja o período pedido
+ *     resumo                         o resumo do período (os dias da resposta de hoje em diante), como a página Plano mostra
+ *     resumo.ate                     o último dia contado (null: nenhum)
+ *     resumo.de                      o primeiro dia contado (null: nenhum)
+ *     resumo.dias                    quantos dias o período tem no plano
+ *     resumo.relogios[]              cada relógio com dia no período, do que tem mais dias ao que tem menos (no empate, pelo nome)
+ *     resumo.relogios[].a_mao        quantos desses dias foram escolhidos à mão (o trocar por… ou o estou usando)
+ *     resumo.relogios[].dias         quantos dias ele tem no período
+ *     resumo.relogios[].porcentagem  a parte do período, em % (uma casa)
+ *     resumo.relogios[].proximo      o próximo dia dele no período (AAAA-MM-DD)
+ *     resumo.relogios[].relogio      o nome do relógio
+ *     resumo.relogios[].relogio_id   o número do relógio
+ *     resumo.sem_dias[]              os relógios disponíveis sem nenhum dia no período
+ *     resumo.sem_dias[].id           o número do relógio
+ *     resumo.sem_dias[].nome         o nome do relógio
  *     relogios[]                     os relógios, para trocar o de um dia (trocar_dia)
  *     relogios[].disponivel          verdadeiro ou falso: entra no rodízio (só o disponível pode ser escolhido para um dia)
  *     relogios[].id                  o número do relógio
@@ -1872,6 +1908,12 @@
  *     secoes[].ancora                a âncora do título, como a do GitHub e a da página Ajuda (ajuda.php#ancora)
  *     secoes[].texto                 o texto da seção até o próximo título, em markdown (tabelas, listas, código, imagens)
  *     markdown                       o manual inteiro, em markdown: o que a página Ajuda converte para HTML
+ *     html                           o manual inteiro já em HTML, como a página Ajuda mostra: títulos com âncora, parágrafos, listas,
+ *                                    tabelas, código, imagens e as legendas (o diagrama mermaid fica de fora)
+ *     sumario[]                      o sumário da página Ajuda: os títulos de nível 2 e 3, na ordem
+ *     sumario[].ancora               a âncora do título (ajuda.php#ancora)
+ *     sumario[].nivel                o nível do título: 2 ou 3
+ *     sumario[].titulo               o título em texto puro (sem a marcação do markdown)
  *   recurso=reconstrucao
  *     o_que_e                        o que o sistema é e faz, num parágrafo
  *     como_usar[]                    como ler esta resposta e onde está o resto (a API em recurso=ajuda, o cadastro inicial no schema.sql e
@@ -1988,7 +2030,8 @@
  *       das regras de validação do banco: o nome da regra, ck_<tabela>_<o quê>, vem no detalhe)
  *   413 {"ok": false, "erros": [...]} (o envio passou do post_max_size do PHP: um arquivo grande demais)
  *   500 {"erro": "Sistema parado: ..."} (token ou fuso inválido no config.php) ou {"erro": "erro interno", "detalhe"}
- *   503 {"erro": "o banco está desatualizado: ...", "pendentes"}: só recurso=migracoes responde até aplicar
+ *   503 {"erro": "o banco está desatualizado: ...", "pendentes"}: só recurso=migracoes (e recurso=manual, que não usa o banco)
+ *       responde até aplicar
  *   503 {"erro": "o banco de dados não respondeu", "detalhe"}
  */
 require_once __DIR__ . "/lib.php";
@@ -2077,6 +2120,46 @@ function plano_legivel($de, $ate)
             "bloco" => $p["bloco"], "origem" => $p["origem"], "acao" => $p["acao"], "motivo" => $p["motivo"], "criado" => $p["criado"]];
     }, linhas("SELECT p.*, r.nome AS relogio, b.nome AS bloco FROM plano p JOIN relogio r ON r.id = p.relogio_id LEFT JOIN modo_bloco b ON b.id = p.bloco_id
         WHERE p.data >= ? AND p.data <= ? ORDER BY p.data", [$de !== "" ? $de : "0001-01-01", $ate !== "" ? $ate : "9999-12-31"]));
+}
+
+// O resumo de um período do plano (os dias de hoje em diante da lista): quantos dias cada relógio tem, a porcentagem, o
+// próximo dia dele e quantos foram escolhidos à mão; e os relógios disponíveis sem nenhum dia (o resumo da página Plano)
+function plano_resumo($plano, $hoje)
+{
+    $dias = array_values(array_filter($plano, function ($p) use ($hoje) { return $p["data"] >= $hoje; }));
+    $conta = [];
+    foreach ($dias as $p) {
+        $k = $p["relogio_id"];
+        if (!isset($conta[$k])) {
+            $conta[$k] = ["relogio_id" => $k, "relogio" => $p["relogio"], "dias" => 0, "porcentagem" => 0.0, "proximo" => $p["data"], "a_mao" => 0];
+        }
+        $conta[$k]["dias"]++;
+        $conta[$k]["a_mao"] += $p["origem"] === "manual" ? 1 : 0;
+    }
+    $lista = array_values($conta);
+    foreach ($lista as $i => $c) {
+        $lista[$i]["porcentagem"] = round($c["dias"] * 100 / count($dias), 1);
+    }
+    usort($lista, function ($a, $b) { return $b["dias"] <=> $a["dias"] ?: strcmp(texto_normal($a["relogio"]), texto_normal($b["relogio"])); });
+    $sem = array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"]]; }, array_values(array_filter(linhas("SELECT id, nome FROM relogio WHERE disponivel = 1 ORDER BY nome"),
+        function ($r) use ($conta) { return !isset($conta[(int)$r["id"]]); })));
+    return ["de" => count($dias) > 0 ? $dias[0]["data"] : null, "ate" => count($dias) > 0 ? $dias[count($dias) - 1]["data"] : null, "dias" => count($dias),
+        "relogios" => $lista, "sem_dias" => $sem];
+}
+
+// A situação do cron, como a Configuração mostra: nunca rodou, parado (mais de 10 minutos sem rodar; ele roda a cada
+// minuto) ou rodando; com a última execução, há quantos minutos, a frase e a linha do crontab
+function cron_estado()
+{
+    $ultima = cfg("cron_ultima_execucao");
+    $minutos = $ultima !== "" ? max(0, (int)floor((time() - strtotime($ultima)) / 60)) : null;
+    $situacao = $ultima === "" ? "nunca" : ($minutos > 10 ? "parado" : "rodando");
+    $linha = "* * * * * php " . __DIR__ . "/cron.php";
+    $texto = $situacao === "nunca" ? "O cron ainda não rodou. Linha do crontab: " . $linha
+        : ($situacao === "parado" ? "O cron não roda desde " . date("d/m H:i", strtotime($ultima)) . ". Confira o crontab: " . $linha
+            : "Cron rodando: última execução às " . date("H:i", strtotime($ultima)) . ".");
+    return ["situacao" => $situacao, "ultima" => $ultima !== "" ? $ultima : null, "minutos" => $minutos, "texto" => $texto, "crontab" => $linha,
+        "erro" => cfg("cron_erro") !== "" ? cfg("cron_erro") : null];
 }
 
 // O que tem de estar na agenda, com o título e a descrição pelo modelo
@@ -2349,7 +2432,8 @@ if (!$token_ok && $quem === "") {
             return ["versao" => $v, "arquivo" => $m[0], "traz" => $m[1]];
         }, array_keys($pendentes), array_values($pendentes))];
     }
-} elseif (count($pendentes) > 0) {
+} elseif (count($pendentes) > 0 && !($recurso === "manual" || ($recurso === "ajuda" && ($_REQUEST["parte"] ?? "") === "manual"))) {
+    // banco desatualizado: só as migrações respondem (e o manual, que não usa o banco: a página Ajuda continua abrindo)
     $codigo = 503;
     $saida = ["erro" => "o banco está desatualizado: aplique as migrações (POST recurso=migracoes, acao=aplicar)", "pendentes" => array_map(function ($v, $m) {
         return ["versao" => $v, "arquivo" => $m[0], "traz" => $m[1]];
@@ -2497,7 +2581,11 @@ if (!$token_ok && $quem === "") {
         "modos" => $modos_h,
         "grupos" => array_map(function ($o) use ($n) { return ["id" => $o[0], "nome" => $n[$o[0]]["nome"], "profundidade" => $o[1], "caminho" => no_caminho($o[0])]; }, nos_em_ordem()),
         "avisos_nomes" => array_values(array_unique($avisos_nomes)),
-        "relogios" => $rels];
+        "relogios" => $rels,
+        // os totais da coleção inteira (a tabela da página soma só o que os filtros dela deixam à mostra)
+        "totais" => ["relogios" => count($rels), "disponiveis" => count(array_filter($rels, function ($r) { return $r["disponivel"]; })),
+            "em_uso" => count(array_filter($rels, function ($r) { return $r["em_uso"]; })),
+            "valor" => round(array_sum(array_map(function ($r) { return $r["compra"]["valor"] ?? 0; }, $rels)), 2)]];
 } elseif ($recurso === "ficha") {
     // tudo o que o painel de um relógio mostra (relogio=<id>); sem relogio, só o que o cadastro de um relógio novo precisa
     $hoje = new DateTimeImmutable("today");
@@ -2620,7 +2708,7 @@ if (!$token_ok && $quem === "") {
         "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1]; },
             linhas("SELECT id, nome, disponivel FROM relogio ORDER BY nome")),
         "previa" => ["manha" => montar_mensagem($hoje), "noite" => montar_mensagem_noite($hoje), "agenda" => $previa,
-            "sincronizados" => (int)valor("SELECT COUNT(*) FROM agenda_evento")]];
+            "sincronizados" => (int)valor("SELECT COUNT(*) FROM agenda_evento")], "cron_estado" => cron_estado()];
 } elseif ($recurso === "historico") {
     // os relógios pedidos (relogio=3 ou 1,2; relogio_id também vale); sem nenhum, todos
     $ids_h = array_values(array_filter(array_map("intval", array_merge(explode(",", (string)($_REQUEST["relogio"] ?? "")), explode(",", (string)($_REQUEST["relogio_id"] ?? ""))))));
@@ -2684,8 +2772,18 @@ if (!$token_ok && $quem === "") {
 } elseif ($recurso === "plano") {
     $de_p = preg_match("/^[0-9]{4}-[0-9]{2}-[0-9]{2}\$/", (string)($_REQUEST["de"] ?? "")) === 1 ? (string)$_REQUEST["de"] : "";
     $ate_p = preg_match("/^[0-9]{4}-[0-9]{2}-[0-9]{2}\$/", (string)($_REQUEST["ate"] ?? "")) === 1 ? (string)$_REQUEST["ate"] : "";
+    // dias=N: os próximos N dias, de hoje em diante (no lugar de de e ate); dias=todos: de hoje até o fim do plano
+    $dias_p = strtolower(trim((string)($_REQUEST["dias"] ?? "")));
+    if ($dias_p === "todos") {
+        $de_p = date("Y-m-d");
+        $ate_p = "";
+    } elseif (ctype_digit($dias_p) && (int)$dias_p > 0) {
+        $de_p = date("Y-m-d");
+        $ate_p = date("Y-m-d", strtotime("+" . ((int)$dias_p - 1) . " days"));
+    }
+    $plano_p = plano_legivel($de_p, $ate_p);
     $saida = ["modo" => valor("SELECT nome FROM modo WHERE id = ?", [modo_ativo()]), "escala_fim" => cfg("escala_fim") !== "" ? cfg("escala_fim") : null,
-        "hoje" => date("Y-m-d"), "plano" => plano_legivel($de_p, $ate_p),
+        "plano_fim" => valor("SELECT MAX(data) FROM plano"), "hoje" => date("Y-m-d"), "plano" => $plano_p, "resumo" => plano_resumo($plano_p, date("Y-m-d")),
         "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1]; },
             linhas("SELECT id, nome, disponivel FROM relogio ORDER BY nome"))];
 } elseif ($recurso === "eventos") {
@@ -2798,8 +2896,11 @@ if (!$token_ok && $quem === "") {
         $codigo = 404;
         $saida = ["erro" => "o README.md não está na pasta do sistema"];
     } else {
+        [$html_m, $sumario_m] = manual_html($md);
         $saida = ["fonte" => "README.md", "trechos" => array_map(function ($t) { return ["de" => $t[0], "ate" => $t[1]]; }, MANUAL_TRECHOS),
-            "secoes" => manual_secoes($md), "markdown" => $md];
+            "secoes" => manual_secoes($md), "sumario" => array_map(function ($x) {
+                return ["nivel" => $x[0], "titulo" => html_entity_decode(strip_tags(manual_linha($x[1])), ENT_QUOTES, "UTF-8"), "ancora" => $x[2]];
+            }, $sumario_m), "markdown" => $md, "html" => $html_m];
     }
 } elseif ($recurso === "reconstrucao" || ($recurso === "ajuda" && ($_REQUEST["parte"] ?? "") === "reconstrucao")) {
     // a reconstrução: o roteiro para reescrever a aplicação do zero (o texto em reconstrucao.php; o modelo de dados e as
@@ -2822,13 +2923,13 @@ if (!$token_ok && $quem === "") {
             "(nenhum)" => ["descricao" => "tudo o que está guardado, sem filtro (os relógios com os campos, as fórmulas, os avisos, os lançamentos, a previsão e a linha do tempo; modos, plano, configuração, eventos, agenda e o motor)",
                 "parametros" => ["foto" => "nao: sem as fotos em base64 (a resposta fica bem menor)"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?foto=nao\""],
-            "hoje" => ["descricao" => "tudo o que a página Hoje mostra: o dia e o relógio dele, os avisos de hoje (com o lançamento que resolve cada um), os próximos 62 dias do plano, os modos com os blocos, os grupos e a tabela dos relógios",
+            "hoje" => ["descricao" => "tudo o que a página Hoje mostra: o dia e o relógio dele, os avisos de hoje (com o lançamento que resolve cada um), os próximos 62 dias do plano, os modos com os blocos, os grupos, a tabela dos relógios e os totais da coleção (quantos, disponíveis, em uso e o valor pago)",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=hoje\""],
             "ficha" => ["descricao" => "tudo o que o painel de um relógio mostra: agora, carga e de onde vem, situação, nota, quando entra no rodízio, compra, próximas manutenções, previsão, o gasto da bateria, quantos documentos o relógio tem em cada categoria, os tipos de lançamento dele (com a sessão aberta), as últimas leituras, as marcações dos últimos 14 dias, o resumo do histórico e o cadastro; sem relogio, só o cadastro de um relógio novo; relógio que não existe: 404",
                 "parametros" => ["relogio" => "o id do relógio (vazio: o cadastro de um relógio novo)"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=ficha&relogio=10\""],
-            "config" => ["descricao" => "tudo o que a página Configuração mostra: os valores (inclusive o caminho da chave do Google), os canais com a mensagem padrão e a personalizada de cada tipo de aviso, os eventos personalizados, a chave do Google lida ou não, e como as mensagens e a agenda saem agora",
+            "config" => ["descricao" => "tudo o que a página Configuração mostra: os valores (inclusive o caminho da chave do Google), os canais com a mensagem padrão e a personalizada de cada tipo de aviso, os eventos personalizados, a chave do Google lida ou não, como as mensagens e a agenda saem agora e a situação do cron (nunca rodou, parado ou rodando)",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=config\""],
             "cron" => ["descricao" => "as execuções do cron, com o resumo do período (total, com atividade, com erro, a mais lenta) e páginas; sem atividade elas ficam 7 dias, com atividade ou erro, 1 ano",
@@ -2855,8 +2956,8 @@ if (!$token_ok && $quem === "") {
             "previsao" => ["descricao" => "a previsão da energia dos relógios com leitura (o smartwatch): quanto dura usando, quando chega ao limite parado, com quanto entra no próximo rodízio e quanto precisa, e a confiança da conta",
                 "parametros" => ["relogio" => "um id ou vários (vazio: todos)"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=previsao&relogio=10\""],
-            "plano" => ["descricao" => "o plano gravado (a escala de dois anos sai inteira), com o modo ativo e o fim da escala; cada dia com o relógio, o bloco, a origem (sorteio ou manual) e o lembrete",
-                "parametros" => ["de, ate" => "datas AAAA-MM-DD (vazio: o plano inteiro)"],
+            "plano" => ["descricao" => "o plano gravado (a escala de dois anos sai inteira), com o modo ativo, o fim da escala e o último dia gravado; cada dia com o relógio, o bloco, a origem (sorteio ou manual) e o lembrete; e o resumo do período (de hoje em diante), como a página Plano mostra: quantos dias cada relógio tem, a porcentagem, o próximo dia, quantos à mão e os relógios sem nenhum dia",
+                "parametros" => ["de, ate" => "datas AAAA-MM-DD (vazio: o plano inteiro)", "dias" => "N: os próximos N dias, de hoje em diante (no lugar de de e ate); todos: de hoje até o fim do plano"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=plano&de=2026-10-01&ate=2026-10-31\""],
             "eventos" => ["descricao" => "os eventos personalizados, com quando disparam, se vão pelo Telegram e pela agenda, as 10 próximas ocorrências e os disparos",
                 "parametros" => [],
@@ -2876,7 +2977,7 @@ if (!$token_ok && $quem === "") {
             "usuarios" => ["descricao" => "os logins (as senhas nunca saem) e quem está pedindo (pelo login do site)",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=usuarios\""],
-            "migracoes" => ["descricao" => "as migrações que faltam aplicar no banco (lista vazia: está em dia); é o único recurso que responde com o banco desatualizado",
+            "migracoes" => ["descricao" => "as migrações que faltam aplicar no banco (lista vazia: está em dia); com o banco desatualizado, só ele (e o manual, que não usa o banco) responde",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=migracoes\""],
             "autonomia" => ["descricao" => "as autonomias de cada relógio, enxuto e rápido, para sistemas de fora, em segundos inteiros: prevista (cheio, pelo cadastro), atual (cheio, pela conta do sistema com o gasto medido), estimada (quanto ainda dura seguindo o plano), restante_em_uso (no pulso sem tirar), restante_guardado (parado) e quando acaba (acaba_em_unixtimestamp, acaba_em_segundos, acaba_em_datacomtz); null com o motivo em motivos",
@@ -2885,7 +2986,7 @@ if (!$token_ok && $quem === "") {
             "ajuda" => ["descricao" => "esta explicação: os recursos, os parâmetros, as ações de escrita com os campos, os exemplos, o dicionário de todos os campos (campos) e as funções do motor; com parte=manual, o manual (veja manual); com parte=reconstrucao, a reconstrução (veja reconstrucao)",
                 "parametros" => ["parte" => "manual: em vez desta explicação, o texto da página Ajuda (o mesmo que recurso=manual); reconstrucao: o roteiro para reescrever a aplicação do zero (o mesmo que recurso=reconstrucao)"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=ajuda&parte=reconstrucao\""],
-            "manual" => ["descricao" => "o texto da página Ajuda: os trechos do README para quem usa (a ideia central, como funciona, o cadastro campo por campo, a Configuração, um dia com o sistema, as telas, as perguntas frequentes e como reescrever o sistema do zero), em markdown, inteiro e seção por seção (título, nível, âncora e texto); sem o README.md na pasta: 404. O mesmo que recurso=ajuda&parte=manual",
+            "manual" => ["descricao" => "o texto da página Ajuda: os trechos do README para quem usa (a ideia central, como funciona, o cadastro campo por campo, a Configuração, um dia com o sistema, as telas, as perguntas frequentes e como reescrever o sistema do zero), em markdown, inteiro e seção por seção (título, nível, âncora e texto), e já em HTML com o sumário, como a página Ajuda mostra; sem o README.md na pasta: 404; responde mesmo com o banco desatualizado. O mesmo que recurso=ajuda&parte=manual",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha -g \"http://servidor/relojoeiro/api.php?recurso=manual&mostrar[secoes]=titulo,ancora\""],
             "reconstrucao" => ["descricao" => "o roteiro para reescrever a aplicação inteira do zero, em qualquer linguagem e banco, chegando ao mesmo sistema: o que ele é, os princípios, a arquitetura, a ordem de construção e as regras de cada parte (árvore e campos, lançamentos, fórmulas, avisos, gasto medido, critérios, rodízio e escala, pulso sozinho, cron, mensagens e agenda, documentos, telas, segurança, testes), o modelo de dados lido do próprio banco (tabelas, colunas, chaves, índices e regras de validação) e as listas do código (funções das fórmulas, tipos de campo, formatos de lançamento, repetições, dias da semana, âncoras, canais, migrações e as constantes do config.php). O mesmo que recurso=ajuda&parte=reconstrucao",
@@ -3528,6 +3629,11 @@ if (!$token_ok && $quem === "") {
                 "relogios[].tipo" => "o grupo do relógio (o nome)",
                 "relogios[].ultimo" => "a última vez no pulso (número inteiro: instante Unix (segundos desde 01/01/1970 UTC); 0: nunca)",
                 "relogios[].ultimo_txt" => "a mesma por extenso (\"agora · 14:32\", \"25/09 21:53\", \"nunca\")",
+                "totais" => "os totais da coleção inteira (a tabela da página Hoje soma só os relógios que os filtros dela deixam à mostra)",
+                "totais.disponiveis" => "quantos estão disponíveis para o rodízio",
+                "totais.em_uso" => "quantos estão em uso agora",
+                "totais.relogios" => "quantos relógios há",
+                "totais.valor" => "a soma do valor pago (valor_compra) de todos, em R$ (os sem valor contam 0)",
                 "uso_inicio" => "a hora em que o relógio do dia vai para o pulso (HH:MM)",
             ],
             "ficha" => [
@@ -3705,6 +3811,13 @@ if (!$token_ok && $quem === "") {
                 "canais.<canal>.tipos" => "o nome do campo do formulário (acao=salvar) com os tipos que vão pelo canal (alerta_tipos[], agenda_tipos[])",
                 "chave_agenda" => "a chave do Google lida no caminho configurado; null: não lida",
                 "chave_agenda.client_email" => "o e-mail da conta de serviço (compartilhar a agenda com ele)",
+                "cron_estado" => "a situação do cron, como a Configuração mostra (o cron roda a cada minuto)",
+                "cron_estado.crontab" => "a linha do crontab que roda o sistema (com a pasta dele)",
+                "cron_estado.erro" => "o erro guardado da última execução com erro (null: sem erro; some na primeira execução sem erro)",
+                "cron_estado.minutos" => "há quantos minutos ele rodou pela última vez (null: nunca rodou)",
+                "cron_estado.situacao" => "nunca (ainda não rodou), parado (mais de 10 minutos sem rodar) ou rodando",
+                "cron_estado.texto" => "a frase da Configuração (\"Cron rodando: última execução às 10:41.\"; parado e nunca trazem a linha do crontab)",
+                "cron_estado.ultima" => "quando rodou pela última vez (AAAA-MM-DD HH:MM:SS, no fuso do sistema; null: nunca rodou)",
                 "config.ag_padrao" => "a mensagem padrão da agenda: a primeira linha é o título do evento, o resto a descrição",
                 "config.agenda_antecedencia" => "com quantos dias de antecedência os eventos são criados na agenda",
                 "config.agenda_ativa" => "1: cria os eventos no Google Agenda; 0: não",
@@ -4087,6 +4200,21 @@ if (!$token_ok && $quem === "") {
                 "plano[].origem" => "sorteio (pelo modo) ou manual (escolhido à mão: \"Usando hoje\" ou trocar_dia)",
                 "plano[].relogio" => "o nome dele",
                 "plano[].relogio_id" => "o relógio do dia",
+                "plano_fim" => "o último dia gravado no plano (AAAA-MM-DD; null: plano vazio), qualquer que seja o período pedido",
+                "resumo" => "o resumo do período (os dias da resposta de hoje em diante), como a página Plano mostra",
+                "resumo.ate" => "o último dia contado (null: nenhum)",
+                "resumo.de" => "o primeiro dia contado (null: nenhum)",
+                "resumo.dias" => "quantos dias o período tem no plano",
+                "resumo.relogios[]" => "cada relógio com dia no período, do que tem mais dias ao que tem menos (no empate, pelo nome)",
+                "resumo.relogios[].a_mao" => "quantos desses dias foram escolhidos à mão (o trocar por… ou o estou usando)",
+                "resumo.relogios[].dias" => "quantos dias ele tem no período",
+                "resumo.relogios[].porcentagem" => "a parte do período, em % (uma casa)",
+                "resumo.relogios[].proximo" => "o próximo dia dele no período (AAAA-MM-DD)",
+                "resumo.relogios[].relogio" => "o nome do relógio",
+                "resumo.relogios[].relogio_id" => "o número do relógio",
+                "resumo.sem_dias[]" => "os relógios disponíveis sem nenhum dia no período",
+                "resumo.sem_dias[].id" => "o número do relógio",
+                "resumo.sem_dias[].nome" => "o nome do relógio",
                 "relogios[]" => "os relógios, para trocar o de um dia (trocar_dia)",
                 "relogios[].disponivel" => "verdadeiro ou falso: entra no rodízio (só o disponível pode ser escolhido para um dia)",
                 "relogios[].id" => "o número do relógio",
@@ -4213,6 +4341,11 @@ if (!$token_ok && $quem === "") {
                 "secoes[].ancora" => "a âncora do título, como a do GitHub e a da página Ajuda (ajuda.php#ancora)",
                 "secoes[].texto" => "o texto da seção até o próximo título, em markdown (tabelas, listas, código, imagens)",
                 "markdown" => "o manual inteiro, em markdown: o que a página Ajuda converte para HTML",
+                "html" => "o manual inteiro já em HTML, como a página Ajuda mostra: títulos com âncora, parágrafos, listas, tabelas, código, imagens e as legendas (o diagrama mermaid fica de fora)",
+                "sumario[]" => "o sumário da página Ajuda: os títulos de nível 2 e 3, na ordem",
+                "sumario[].ancora" => "a âncora do título (ajuda.php#ancora)",
+                "sumario[].nivel" => "o nível do título: 2 ou 3",
+                "sumario[].titulo" => "o título em texto puro (sem a marcação do markdown)",
             ],
             "reconstrucao" => [
                 "o_que_e" => "o que o sistema é e faz, num parágrafo",
@@ -4296,7 +4429,7 @@ if (!$token_ok && $quem === "") {
             "404" => "recurso desconhecido (com recursos, a lista deles), ou o relógio, a foto, o documento (ou o arquivo dele) ou o README.md (recurso=manual) que não existe",
             "409" => "o banco recusou a gravação (um registro que outro ainda usa, um valor repetido, ou um valor fora das regras de validação do banco: o nome da regra, ck_<tabela>_<o quê>, vem no detalhe)",
             "413" => "o envio passou do limite do PHP do servidor (post_max_size): um arquivo grande demais",
-            "500" => "sistema parado (token ou fuso inválido no config.php) ou erro interno", "503" => "banco desatualizado (só recurso=migracoes responde) ou banco fora do ar"],
+            "500" => "sistema parado (token ou fuso inválido no config.php) ou erro interno", "503" => "banco desatualizado (só recurso=migracoes responde, e o recurso=manual, que não usa o banco) ou banco fora do ar"],
         "motor" => array_map(function ($f) { return $f[2]; }, $GLOBALS["FUNCOES"]),
         "escrita_das_formulas" => "números com vírgula ou ponto; textos entre aspas; argumentos separados por ponto e vírgula; operações + - * / ^; "
             . "comparações = <> < <= > >= (dão 1 ou 0); variáveis: os identificadores dos campos e das fórmulas; vazio se propaga; divisão por zero: vazio",
