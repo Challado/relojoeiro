@@ -3326,7 +3326,9 @@ if (!$token_ok && $quem === "") {
         "lancamentos" => count($ids_rel) === 0 ? [] : linhas("SELECT l.id, l.relogio_id, r.nome AS relogio, t.identificador AS tipo, l.inicio, l.fim, l.valor, l.origem
             FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id JOIN relogio r ON r.id = l.relogio_id WHERE l.relogio_id IN (" . implode(",", $ids_rel) . ")
             AND l.inicio < ? AND COALESCE(l.fim, l.inicio) >= ? ORDER BY l.inicio " . ($asc ? "ASC, l.id ASC" : "DESC, l.id DESC") . " LIMIT " . $por_h,
-            [date("Y-m-d H:i:s", min($per[1], 253402300799)), date("Y-m-d H:i:s", $per[0])])];
+            // o teto do período sem "ate": 9999-12-31 23:59:59 no fuso do sistema (o instante dele em UTC, num fuso a leste de UTC,
+            // vira o ano 10000, que o MySQL compara como texto e não acha nada, e o Firebird recusa)
+            [date("Y-m-d H:i:s", min($per[1], (int)strtotime("9999-12-31 23:59:59"))), date("Y-m-d H:i:s", $per[0])])];
 } elseif ($recurso === "previsao") {
     $ids_p = array_values(array_filter(array_map("intval", explode(",", (string)($_REQUEST["relogio"] ?? "")))));
     $prev = [];

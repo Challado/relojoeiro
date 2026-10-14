@@ -52,4 +52,26 @@ em UTC já é o dia seguinte) e logo depois da meia-noite. O token que ele manda
 
 Rode os bancos **ao mesmo tempo**, cada um no seu servidor: com minutos de diferença entre as rodadas, as contas que andam
 com o tempo passam da folga. O resultado esperado é `0 diferenças graves`; as leves (`--leves` mostra) são os números
-dentro dos textos, como "há 3 min", e os arredondamentos bem na fronteira, como 23,499 e 23,501.
+dentro dos textos, como "há 3 min", os arredondamentos bem na fronteira, como 23,499 e 23,501, e o tamanho do arquivo da
+cópia de segurança (comprimido, com o nome do banco e a hora no cabeçalho: até 2% de diferença).
+
+O roteiro não deixa o resultado depender do segundo em que cada passo cai, nem da hora do dia em que ele roda:
+
+- as sessões "há N minutos" (o sol, o winder, o carregador) contam todas do minuto em que o roteiro começa; o carregador é
+  fechado e aberto de novo (`alternar`) num mesmo instante, há 90 minutos, longe da virada de uma hora cheia;
+- antes de cada escrita do rodízio e dos modos (as que podem trocar o relógio de hoje), ele espera o segundo virar: a sessão
+  do rodízio de cada relógio que passa por hoje dura ao menos 1 s (a que abre e fecha no mesmo segundo sumiria num banco e
+  ficaria noutro);
+- o que ele lança no passado fica longe das bordas das janelas das fórmulas (os últimos 30 dias), que andam com a hora do
+  dia, e a reserva do automático não chega perto de zero hoje;
+- a menos de 3 minutos de uma das horas em que o sistema muda de comportamento (a meia-noite, 06:30, 07:00, 07:30, 18:00,
+  20:00 e 22:00: as rodadas do cron, o horário de uso e o sol que fecha sozinho), ele espera a hora passar antes de começar.
+
+E o que cresce enquanto o roteiro roda (a sessão no pulso aberta desde o começo do horário de uso) tem folga de 2 minutos na
+comparação: os valores em segundos e as contas em horas das fórmulas (`HORAS("pulso"; 30)`).
+
+**Em todas as horas do dia.** Com o [`faketime`](https://github.com/wolfcw/libfaketime) (`apt install faketime`), o roteiro roda
+num horário simulado: `faketime -f "+3600s" ...` adianta o relógio do servidor `php -S`, do roteiro e do cron em uma hora. Só
+o SQLite e o Firebird servem para isso (neles, o "agora" vem todo do PHP); o MySQL e o PostgreSQL usam o relógio do próprio
+servidor do banco no `NOW()`. Rodando os dois juntos em cada horário (de hora em hora e logo depois das viradas: 00:02, 07:32,
+18:02, 22:02), o resultado esperado é o mesmo `0 diferenças graves` em todos.

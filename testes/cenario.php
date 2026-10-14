@@ -24,8 +24,27 @@ if ($fuso !== "" && !@date_default_timezone_set($fuso)) {
     fwrite(STDERR, "Fuso desconhecido: " . $fuso . "\n");
     exit(1);
 }
+// As horas em que o sistema muda de comportamento: a meia-noite (o dia de hoje), as rodadas do cron (06:30 e 20:00), o começo do
+// horário de uso (07:00, o da instalação, e 07:30, o que o roteiro configura: a sessão do rodízio de hoje abre ou não), as
+// 18:00 (a sessão no sol fecha sozinha) e o fim do uso (22:00). Uma rodada que cruza uma delas sai diferente de outra que roda
+// inteira antes; a menos de 3 minutos de uma, o roteiro espera ela passar (os bancos, rodando juntos, esperam todos)
+foreach (["00:00", "06:30", "07:00", "07:30", "18:00", "20:00", "22:00"] as $virada) {
+    $em = strtotime(date("Y-m-d") . " " . $virada);
+    if ($em <= time()) {
+        $em = strtotime("+1 day", $em);
+    }
+    if ($em - time() <= 180) {
+        fwrite(STDERR, "Esperando passar das " . $virada . " (" . ($em - time() + 2) . " s)\n");
+        sleep(max(0, $em - time() + 2));
+    }
+}
 $falhas = [];
 $passo = 0;
+// o minuto em que o roteiro começa: as sessões "há N minutos" contam todas dele (e não de agora, que anda de um passo para
+// outro: duas que caíssem uma de cada lado da virada do minuto dariam durações diferentes em bancos diferentes)
+$MINUTO = intdiv(time(), 60) * 60;
+// o instante da última escrita que pode trocar o relógio de hoje (rodízio e modos)
+$ultima_troca = 0;
 
 function chamar($metodo, $params = [])
 {
@@ -45,9 +64,19 @@ function chamar($metodo, $params = [])
 // uma escrita: guarda a resposta (o ok, a mensagem, os erros) para comparar, e devolve o id
 function escrever($params, $espera_ok = true)
 {
-    global $foto, $falhas, $passo;
+    global $foto, $falhas, $passo, $ultima_troca;
     $passo++;
+    // as escritas que podem trocar o relógio de hoje (rodízio, modos) fecham a sessão do rodízio do anterior agora e abrem a do
+    // novo agora: uma sessão que abre e fecha no mesmo segundo some (0 s), e no segundo seguinte fica (1 s). Antes de cada uma,
+    // o segundo vira: a sessão de cada relógio que passa por hoje dura ao menos 1 s em qualquer banco, rápido ou lento
+    $troca = in_array($params["recurso"], ["rodizio", "modos"], true);
+    while ($troca && time() <= $ultima_troca) {
+        usleep(20000);
+    }
     $r = chamar("POST", $params);
+    if ($troca) {
+        $ultima_troca = time();
+    }
     $j = $r["json"] ?? [];
     $foto["escritas"][sprintf("%03d", $passo) . " " . $params["recurso"] . "." . $params["acao"]] = ["codigo" => $r["codigo"], "resposta" => $j ?? $r["cru"]];
     if ($espera_ok && !($j["ok"] ?? false)) {
@@ -79,10 +108,12 @@ function dia($dias_atras, $hora)
     return date("Y-m-d", strtotime("-" . (int)$dias_atras . " days")) . " " . $hora;
 }
 
-// um instante de agora há pouco (minutos atrás): o que tem de estar no passado mesmo rodando logo depois da meia-noite
+// um instante de agora há pouco (minutos antes do minuto em que o roteiro começou): o que tem de estar no passado mesmo
+// rodando logo depois da meia-noite
 function ha_minutos($minutos)
 {
-    return date("Y-m-d H:i", time() - (int)$minutos * 60);
+    global $MINUTO;
+    return date("Y-m-d H:i", $MINUTO - (int)$minutos * 60);
 }
 
 $foto = ["escritas" => [], "leituras" => [], "cron" => []];
@@ -140,11 +171,15 @@ $lanc("periodo", "smart", "pulso", ["inicio" => dia(3, "08:00"), "fim" => dia(3,
 $lanc("lancar", "smart", "carga", ["valor" => "71.5", "quando" => dia(2, "12:00"), "medir" => 0]);
 $lanc("lancar", "smart", "carga", ["valor" => 64, "quando" => dia(1, "18:00")]);
 $lanc("periodo", "auto", "pulso", ["inicio" => dia(2, "08:00"), "fim" => dia(2, "22:00")]);
-$lanc("lancar", "auto", "corda", ["quando" => dia(1, "07:00")]);
+// a corda ontem às 15:06: a reserva (41 h) acaba amanhã às 08:06, e hoje fica entre 8 h e 32 h a qualquer hora (perto de zero,
+// os segundos entre um banco e outro passariam da folga)
+$lanc("lancar", "auto", "corda", ["quando" => dia(1, "15:06")]);
 $lanc("periodo", "auto2", "winder", ["inicio" => dia(4, "08:00"), "fim" => dia(4, "20:00")]);
 $lanc("periodo", "auto2", "pulso", ["inicio" => dia(9, "08:00"), "fim" => dia(9, "22:00")]);
-$lanc("periodo", "manual", "pulso", ["inicio" => dia(30, "09:00"), "fim" => dia(30, "19:00")]);
-$lanc("lancar", "manual", "corda", ["quando" => dia(30, "09:00")]);
+// há 29 dias, e não 30: as fórmulas de uso olham os últimos 30 dias (HORAS("pulso"; 30), CONTAR("pulso"; 30)), e essa borda
+// (agora menos 30 dias) passaria por dentro do período conforme a hora do dia
+$lanc("periodo", "manual", "pulso", ["inicio" => dia(29, "09:00"), "fim" => dia(29, "19:00")]);
+$lanc("lancar", "manual", "corda", ["quando" => dia(29, "09:00")]);
 $lanc("lancar", "pilha", "pilha", ["quando" => dia(400, "10:00")]);
 $lanc("periodo", "solar", "sol", ["inicio" => dia(8, "10:00"), "fim" => dia(8, "16:00")]);
 $lanc("iniciar", "solar", "sol", ["quando" => ha_minutos(20)]);
@@ -152,15 +187,20 @@ $lanc("iniciar", "auto2", "winder", ["quando" => ha_minutos(30)]);
 $lanc("encerrar", "auto2", "winder", ["quando" => ha_minutos(25)]);
 // o carregador: um período que já passou e um aberto agora (o estado vira "No carregador" e o aviso Carregar some)
 $lanc("periodo", "smart", "carregador", ["inicio" => dia(7, "20:00"), "fim" => dia(7, "23:00")]);
-$lanc("iniciar", "smart", "carregador", ["quando" => ha_minutos(300)]);   // cheio: a carga fica em 100, igual em qualquer banco
+// há 5h30 (cheio: a carga fica em 100, igual em qualquer banco). A meia hora: a linha do tempo junta esta sessão com a que o
+// alternar abre logo depois (são seguidas), e a duração delas é lida com alguns segundos de diferença em cada banco; em 5h
+// redondas, ela saía "5h" num e "5h 1min" noutro; em 5h30, "5h 30min" e "5h 31min" (só números num texto)
+$lanc("iniciar", "smart", "carregador", ["quando" => ha_minutos(330)]);
 $lanc("lancar", "crono", "banho_ultrassom", ["quando" => dia(1, "15:00")]);
 $id_errado = $lanc("lancar", "crono", "banho_ultrassom", ["quando" => dia(1, "16:00")]);
 escrever(["recurso" => "lancamento", "acao" => "excluir", "id" => $id_errado]);
 escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["pilha"], "tipo" => "sol"], false);   // o tipo não vale para ele
 escrever(["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel["pilha"], "tipo" => "carregador"], false);   // só onde vale a leitura de carga
-// alternar: fecha a sessão aberta e abre de novo (um botão só no celular); não vale para o que não é sessão
-$lanc("alternar", "smart", "carregador");
-$lanc("alternar", "smart", "carregador");
+// alternar: fecha a sessão aberta e abre de novo (um botão só no celular); não vale para o que não é sessão. As duas no mesmo
+// instante, há 90 minutos (com "agora", elas caíam às vezes em segundos diferentes e a linha do tempo ganhava 1 s de repouso
+// entre elas)
+$lanc("alternar", "smart", "carregador", ["quando" => ha_minutos(90)]);
+$lanc("alternar", "smart", "carregador", ["quando" => ha_minutos(90)]);
 escrever(["recurso" => "lancamento", "acao" => "alternar", "relogio_id" => $rel["smart"], "tipo" => "carga"], false);
 escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["smart"], "tipo" => "carga", "valor" => 50, "quando" => date("Y-m-d H:i", time() + 86400)], false);
 
