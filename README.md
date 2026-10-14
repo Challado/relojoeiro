@@ -435,6 +435,11 @@ que fazer, com filtros em cada coluna e o total gasto na coleção.</sub>
 <sub>O histórico de um relógio: cada trecho no pulso, em repouso ou no winder, e cada leitura de carga, com o tempo e a
 porcentagem em cada estado.</sub>
 
+![No celular: a página Hoje, a lista dos relógios em cartões e o painel de um relógio em tela cheia](docs/telas/celular.png)
+
+<sub>No celular: o menu fica recolhido numa barra, as tabelas viram cartões (nada passa da largura da tela) e o painel do
+relógio abre em tela cheia; o "voltar" do aparelho fecha o painel.</sub>
+
 | Página | Para que serve |
 |---|---|
 | **Hoje** (`index.php`) | A tela principal. Mostra o relógio do dia, os avisos de hoje (atrasados e em breve) com o botão que resolve cada um, os próximos dias do plano e o modo de rodízio, que se troca ali mesmo. Abaixo fica a tabela da coleção, com filtros e ordenação por tipo, estado, carga, última vez usado, próxima manutenção, data e valor da compra. Clicar num relógio abre o **painel** ao lado. |

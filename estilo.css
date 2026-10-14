@@ -252,7 +252,19 @@ table.relogios tr.fds td { background: #f4f6f8; }
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "hoje" "detalhe";
   }
-  .col-detalhe { position: static; max-height: none; }
+  /* o painel do relógio cobre a tela inteira, por cima da página, e o × (que acompanha a rolagem) volta para a lista */
+  .painel .col-detalhe {
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 30;
+    max-height: none; border: 0; border-radius: 0; padding: .8rem .9rem 3rem;
+    overflow-y: auto; overscroll-behavior: contain;
+  }
+  body:has(.painel:not(.sem-selecao)) { overflow: hidden; }
+  .painel .fechar-painel {
+    position: sticky; top: 0; z-index: 2; float: none; display: flex; margin: 0 0 .6rem auto;
+    width: auto; height: 2.4rem; padding: 0 .9rem; border-radius: 999px; font-size: 1.2rem; color: var(--tinta);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .18);
+  }
+  .painel .fechar-painel::after { content: " Fechar"; font-size: .9rem; }
   #tabela-relogios th:nth-child(3), #tabela-relogios td:nth-child(3),
   #tabela-relogios th:nth-child(7), #tabela-relogios td:nth-child(7),
   #tabela-relogios th:nth-child(10), #tabela-relogios td:nth-child(10) { display: none; }
@@ -816,3 +828,152 @@ main.plano h3 { margin: 1.4rem 0 .4rem; font-size: 1rem; }
 table.dias-plano td.dia { width: 7rem; white-space: nowrap; }
 table.dias-plano tr.de-hoje td:first-child { box-shadow: inset 3px 0 0 var(--safira); }
 table.resumo-plano { max-width: 44rem; }
+
+/* ---------- celular ---------- */
+/* o menu: na tela grande o botão não existe e os itens ficam na barra, como sempre */
+.menu-botao { display: none; }
+.menu-itens { display: contents; }
+.ver-mais-dias { display: none; }
+
+@media (max-width: 700px) {
+  /* campos com letra de 16 px: com menos que isso o iPhone aproxima a página inteira ao tocar no campo */
+  select, textarea, input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):not([type=range]) { font-size: 16px !important; }
+
+  /* o menu recolhido: a barra (que acompanha a rolagem) mostra a página atual, e o botão abre a lista em duas colunas */
+  .topo { display: block; position: sticky; top: 0; z-index: 20; padding: .4rem .75rem; }
+  .topo .menu-botao {
+    display: flex; justify-content: space-between; width: 100%; min-height: 2.6rem; padding: 0 .1rem;
+    background: transparent; border: 0; color: #fff; font-size: 1.05rem; font-weight: 600;
+  }
+  .topo .menu-botao:focus-visible { outline-color: #fff; }
+  .menu-abre { font-size: .9rem; font-weight: 400; color: #dfe5eb; border: 1px solid #4a5665; border-radius: 8px; padding: .25rem .75rem; }
+  .menu-abre::before { content: "\2630\00a0"; }
+  .topo.aberto .menu-abre::before { content: "\2715\00a0"; }
+  .menu-itens { display: none; }
+  .topo.aberto .menu-itens { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; padding: .5rem 0 .4rem; }
+  .topo .menu-itens a { padding: .7rem .8rem; border-radius: 8px; background: #27323f; color: #dfe5eb; }
+  .topo .menu-itens a.ativo { background: var(--safira); color: #fff; border-bottom: 0; }
+
+  /* menos margem em volta, mais tela para o conteúdo */
+  main { padding: 1rem .75rem 3rem; }
+  .painel { padding: .75rem .6rem 3rem; gap: .9rem; }
+  section { margin-bottom: 1.6rem; }
+  h1 { font-size: 1.6rem; }
+  .hoje h1 { font-size: 2rem; }
+  .hoje { padding: 1rem; }
+  .cartao-config, .config-grade .modo, .previa-msg { padding: .8rem; }
+  .cartao-config + .cartao-config { margin-top: .8rem; }
+  .titulo-secao { flex-wrap: wrap; gap: .5rem; }
+  .modo-rodizio summary { flex-wrap: wrap; gap: .1rem .6rem; }
+  .filtros-plano label { flex: 1 1 9rem; }
+  .filtros-plano select { width: 100%; }
+  main.ajuda h2, main.ajuda h3, main.ajuda h4 { scroll-margin-top: 4rem; }
+
+  /* as listas da página Hoje e do Plano deixam de ser tabela: cada linha vira um cartão, e nada passa da largura da tela */
+  .avisos table.relogios, .avisos table.relogios tbody,
+  #bloco-proximos table.relogios, #bloco-proximos table.relogios tbody,
+  table.dias-plano, table.dias-plano tbody,
+  table.lista-execucoes, table.lista-execucoes tbody { display: block; }
+  .avisos table.relogios thead, #bloco-proximos table.relogios thead, table.lista-execucoes thead { display: none; }
+  .avisos table.relogios td, #bloco-proximos table.relogios td, table.dias-plano td, table.lista-execucoes td {
+    display: block; padding: 0; border: 0; width: auto; background: none; white-space: normal; text-align: left;
+  }
+
+  /* "Hoje é dia de": o que fazer e o relógio na primeira linha, o porquê embaixo, e o campo com o botão na largura toda */
+  .avisos table.relogios tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: .15rem .6rem; padding: .7rem .8rem; border-bottom: 1px solid var(--aco); }
+  .avisos table.relogios tr:last-child { border-bottom: 0; }
+  .avisos table.relogios td:nth-child(1) { font-weight: 600; }
+  .avisos table.relogios td:nth-child(3) { flex-basis: 100%; color: var(--cinza); font-size: .85rem; }
+  .avisos table.relogios td.botao-aviso { flex-basis: 100%; }
+  .avisos table.relogios td.botao-aviso:empty { display: none; }
+  .avisos table.relogios td.botao-aviso form { display: flex; margin-top: .4rem; }
+  .avisos table.relogios td.botao-aviso input[type=text] { flex: 1; width: auto; min-width: 0; }
+  .avisos table.relogios td.botao-aviso button { flex: 1; }
+
+  /* os dias do plano: o dia à esquerda; o relógio (com o motivo) em cima; embaixo o lembrete e o "trocar por…" */
+  #bloco-proximos table.relogios tr, table.dias-plano tr {
+    display: grid; grid-template-columns: 3.2rem minmax(0, 1fr) auto; gap: .25rem .6rem; align-items: center;
+    padding: .55rem .7rem; border-bottom: 1px solid var(--aco);
+  }
+  #bloco-proximos table.relogios tr:last-child, table.dias-plano tr:last-child { border-bottom: 0; }
+  #bloco-proximos table.relogios tr.fds, table.dias-plano tr.fds { background: #f4f6f8; }
+  #bloco-proximos table.relogios td:nth-child(1), table.dias-plano td:nth-child(1) { grid-row: 1 / 3; align-self: start; font-variant-numeric: tabular-nums; }
+  #bloco-proximos table.relogios td:nth-child(1) small, table.dias-plano td:nth-child(1) small { display: block; }
+  #bloco-proximos table.relogios td:nth-child(2), table.dias-plano td:nth-child(2) { grid-column: 2 / 4; font-weight: 600; }
+  #bloco-proximos table.relogios td:nth-child(3), table.dias-plano td:nth-child(3) { grid-column: 2; grid-row: 2; font-size: .85rem; color: var(--ambar); }
+  #bloco-proximos table.relogios td.trocar, table.dias-plano td.trocar { grid-column: 3; grid-row: 2; }
+  #bloco-proximos table.relogios td[colspan] { grid-column: 1 / -1; grid-row: auto; }
+  table.dias-plano tr.de-hoje { box-shadow: inset 3px 0 0 var(--safira); }
+  table.dias-plano tr.de-hoje td:first-child { box-shadow: none; }
+  form.trocar-dia select { width: 8.2rem; padding: 0 .4rem; }
+  /* na página Hoje, só a primeira semana; o botão mostra o resto (o plano inteiro tem a página dele) */
+  #bloco-proximos:not(.todos-os-dias) tr.dia-alem { display: none; }
+  #bloco-proximos:not(.todos-os-dias) .ver-mais-dias { display: flex; width: 100%; margin-top: .5rem; }
+
+  /* execuções do cron: quando, duração e situação numa linha, e o registro embaixo, na largura toda */
+  table.lista-execucoes tr { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .8rem; padding: .6rem .7rem; border-bottom: 1px solid var(--aco); }
+  table.lista-execucoes tr.linha-erro { background: #fdf2f1; }
+  table.lista-execucoes td:nth-child(4) { flex-basis: 100%; }
+
+  /* Configuração, "O que vai para onde": cada aviso num cartão, com os canais lado a lado e o nome de cada um na frente */
+  table.canais, table.canais tbody { display: block; }
+  table.canais thead { display: none; }
+  table.canais tbody tr { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem 1.1rem; padding: .65rem .7rem; border-bottom: 1px solid var(--aco); }
+  table.canais tbody tr.linha-corpo { display: block; padding: 0 .7rem; }
+  table.canais tbody tr td:nth-child(n) { display: block; padding: 0; border: 0; width: auto; text-align: left; white-space: normal; }
+  table.canais tbody tr:not(.linha-corpo) td:first-child { flex-basis: 100%; font-weight: 600; }
+  table.canais tbody td[data-rotulo]:not(:first-child)::before { content: attr(data-rotulo) "\00a0"; color: var(--cinza); font-size: .82rem; }
+  table.canais td.proprios label { margin: 0 0 0 .6rem; }
+
+  /* a tabela dos relógios vira uma lista de cartões: nome e estado; tipo, última vez no pulso e carga; o que fazer e em
+     quanto tempo. Os filtros que ficam: a busca pelo nome, o tipo e o estado */
+  #tabela-relogios, #tabela-relogios thead, #tabela-relogios tbody, #tabela-relogios tfoot { display: block; width: 100%; min-width: 0; }
+  #tabela-relogios thead tr:first-child { display: none; }
+  #tabela-relogios tr.filtros { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem .5rem; padding: .6rem .7rem; background: #eef1f4; border-bottom: 1px solid var(--aco-escuro); }
+  #tabela-relogios tr.filtros td { display: none; padding: 0; border: 0; background: none; }
+  #tabela-relogios tr.filtros td:nth-child(2), #tabela-relogios tr.filtros td:nth-child(3), #tabela-relogios tr.filtros td:nth-child(4) { display: block; }
+  #tabela-relogios tr.filtros td:nth-child(2) { grid-column: 1 / -1; }
+  #tabela-relogios tr.filtros td:nth-child(3)::before { content: "Tipo"; }
+  #tabela-relogios tr.filtros td:nth-child(4)::before { content: "Estado"; }
+  #tabela-relogios tr.filtros td::before { display: block; font-size: .75rem; color: var(--cinza); }
+  #tabela-relogios tr.filtros input, #tabela-relogios tr.filtros select { padding: 0 .5rem; border-radius: 8px; }
+  #tabela-relogios tbody tr { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .6rem; padding: .65rem .7rem; border-bottom: 1px solid var(--aco); }
+  #tabela-relogios tbody tr::before, #tabela-relogios tbody tr::after { content: ""; flex-basis: 100%; }
+  #tabela-relogios tbody tr::before { order: 3; }
+  #tabela-relogios tbody tr::after { order: 7; }
+  #tabela-relogios tbody td { display: none; padding: 0; border: 0; background: none; white-space: normal; }
+  #tabela-relogios tbody td[colspan] { display: block; }
+  #tabela-relogios tbody tr.selecionado { background: #e3eaf5; }
+  #tabela-relogios tbody tr.de-hoje { box-shadow: inset 3px 0 0 var(--safira); }
+  #tabela-relogios tbody tr.pendente:not(.de-hoje) { box-shadow: inset 3px 0 0 var(--ambar); }
+  #tabela-relogios tbody tr[data-id] td:nth-child(2) { display: block; order: 1; flex: 1 1 0; min-width: 0; font-size: 1rem; }
+  #tabela-relogios tbody tr[data-id] td:nth-child(4) { display: block; order: 2; }
+  #tabela-relogios tbody tr[data-id] td:nth-child(3) { display: block; order: 4; font-size: .85rem; color: var(--cinza); }
+  #tabela-relogios tbody tr[data-id] td:nth-child(6) { display: block; order: 5; font-size: .85rem; color: var(--cinza); }
+  #tabela-relogios tbody tr[data-id] td:nth-child(6)::before { content: "\00b7\00a0no pulso: "; }
+  #tabela-relogios tbody tr[data-id] td:nth-child(5) { display: block; order: 6; margin-left: auto; }
+  #tabela-relogios tbody tr[data-id] td.fazer { display: block; order: 8; font-size: .9rem; }
+  #tabela-relogios tbody tr[data-id]:has(td.fazer) td.col-em { display: block; order: 9; margin-left: auto; font-size: .85rem; }
+  #tabela-relogios .nome-rel img, #tabela-relogios .nome-rel .sem-mini { width: 36px; height: 36px; border-radius: 7px; }
+  #tabela-relogios .nome-rel a { white-space: normal; }
+  #tabela-relogios tfoot tr { display: flex; justify-content: space-between; gap: .6rem; padding: .55rem .7rem; background: #eef1f4; }
+  #tabela-relogios tfoot td { display: block; padding: 0; border: 0; background: none; white-space: normal; }
+
+  /* as tabelas dos cadastros (Cadastros, Critérios, Grupos, Configuração) viram fichas: a primeira coluna é o título, e
+     cada uma das outras leva o nome da coluna ao lado (o data-rotulo, posto pelo api.js) */
+  .rolagem > table.compacta:not(.tabela-faixas), .rolagem > table.compacta:not(.tabela-faixas) > tbody { display: block; }
+  .rolagem > table.compacta:not(.tabela-faixas) > thead { display: none; }
+  .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr { display: block; padding: .65rem 0; border-bottom: 1px solid var(--aco-escuro); }
+  .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr:last-child { border-bottom: 0; }
+  .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr > td {
+    display: block; position: relative; min-height: 1.5rem; padding: .15rem 0; border: 0; text-align: left; white-space: normal; font-size: .92rem;
+  }
+  .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr > td[data-rotulo] { padding-left: 37%; }
+  .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr > td[data-rotulo]::before {
+    content: attr(data-rotulo); position: absolute; left: 0; top: .25rem; width: 34%; color: var(--cinza);
+    font: 400 .78rem/1.25 "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+  .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr > td:first-child { padding-left: 0; font-weight: 600; font-size: 1rem; }
+  .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr > td:first-child::before { content: none; }
+  .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr > td:empty { display: none; }
+}

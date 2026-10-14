@@ -67,6 +67,36 @@ function minusculo(t) {
   return String(t).toLowerCase();
 }
 
+// No celular as tabelas dos cadastros viram fichas (estilo.css), e cada célula mostra ao lado o título da sua coluna: ele
+// vai no data-rotulo. Vale para toda tabela com cabeçalho, também as montadas depois (as linhas com colspan ficam sem).
+function rotularTabelas() {
+  document.querySelectorAll("table").forEach(function (t) {
+    var titulos = t.tHead && t.tHead.rows.length > 0 ? Array.prototype.map.call(t.tHead.rows[0].cells, function (c) { return c.textContent.trim(); }) : [];
+    Array.prototype.forEach.call(titulos.length > 0 ? t.tBodies : [], function (corpo) {
+      Array.prototype.forEach.call(corpo.rows, function (tr) {
+        if (tr.cells.length === titulos.length) {
+          Array.prototype.forEach.call(tr.cells, function (td, i) {
+            if (titulos[i] !== "" && td.getAttribute("data-rotulo") !== titulos[i]) {
+              td.setAttribute("data-rotulo", titulos[i]);
+            }
+          });
+        }
+      });
+    });
+  });
+}
+var rotulosPedidos = false;
+new MutationObserver(function () {
+  if (!rotulosPedidos) {
+    rotulosPedidos = true;
+    setTimeout(function () {
+      rotulosPedidos = false;
+      rotularTabelas();
+    }, 0);
+  }
+}).observe(document.body, {childList: true, subtree: true});
+rotularTabelas();
+
 // O que a API respondeu com erro: banco desatualizado vai para a Configuração (que aplica); o resto vira uma exceção
 function tratarResposta(resp) {
   return resp.json().catch(function () { return {}; }).then(function (dados) {

@@ -104,13 +104,15 @@ function recarregarHoje() {
     // cada dia com o "trocar por…" (o relógio escolhido à mão fica marcado), e o link para o plano inteiro
     document.getElementById("bloco-proximos").innerHTML = el("h2", {}, "Próximos dias " + el("a", {"class": "ver-plano", "href": "plano.php"}, "ver o plano inteiro →"))
       + el("table", {"class": "relogios"}, el("thead", {}, el("tr", {}, el("th", {}, "Dia") + el("th", {}, "Relógio") + el("th", {}, "Lembrete") + el("th", {}, "")))
-      + el("tbody", {}, d.plano.map(function (p) {
+      + el("tbody", {}, d.plano.map(function (p, i) {
         var dia = diaDaSemana(p.data);
-        return el("tr", {"class": dia >= 6 ? "fds" : ""}, el("td", {}, dataBr(p.data, true) + " " + el("small", {}, CURTO[dia]))
+        return el("tr", {"class": ((dia >= 6 ? "fds" : "") + (i >= 7 ? " dia-alem" : "")).trim()}, el("td", {}, dataBr(p.data, true) + " " + el("small", {}, CURTO[dia]))
           + el("td", {}, h(p.relogio) + (p.origem === "manual" ? " " + el("small", {"class": "a-mao"}, "à mão") : "")
             + (p.motivo ? el("small", {"class": "motivo"}, h(p.motivo)) : "")) + el("td", {}, h(p.acao || ""))
           + el("td", {"class": "trocar"}, formTrocarDia(p, d.relogios, d.data)));
-      }).join("") + (d.plano.length === 0 ? el("tr", {}, el("td", {"colspan": "4"}, "Neste modo o sorteio é feito dia a dia.")) : "")));
+      }).join("") + (d.plano.length === 0 ? el("tr", {}, el("td", {"colspan": "4"}, "Neste modo o sorteio é feito dia a dia.")) : "")))
+      // no celular a lista começa com a primeira semana (estilo.css), e este botão mostra os outros dias
+      + (d.plano.length > 7 ? el("button", {"type": "button", "class": "leve ver-mais-dias", "data-ver-dias": true}, "Mostrar os " + d.plano.length + " dias") : "");
 
     // O quadro "Modo de rodízio": fechado mostra o modo atual; aberto, edita (os blocos de cada modo, a forma de escolha, a
     // garantia de rodízio) e sorteia de novo
@@ -248,6 +250,13 @@ function recarregarHoje() {
     window.trocarLinhasDaTabela(linhas + (lista.length === 0 ? el("tr", {}, el("td", {"colspan": "10"}, "Nenhum relógio cadastrado. Use o botão Novo relógio.")) : ""));
   });
 }
+
+// "Mostrar os N dias" dos próximos dias (só aparece no celular): fica aberto até a página ser recarregada
+document.addEventListener("click", function (ev) {
+  if (ev.target.closest("[data-ver-dias]")) {
+    document.getElementById("bloco-proximos").classList.add("todos-os-dias");
+  }
+});
 
 // ao abrir: a página, e o relógio pedido (index.php?r=3) ou o cadastro de um novo (index.php?novo=1) no painel
 recarregarHoje().then(function () {
