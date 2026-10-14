@@ -23,8 +23,11 @@ function ler($consulta)
     $lingua = (string)getenv("LINGUA");
     $consulta .= $lingua !== "" ? ($consulta !== "" ? "&" : "") . "lingua=" . rawurlencode($lingua) : "";
     $corpo = @file_get_contents($API . ($consulta !== "" ? "?" . $consulta : ""), false, $ctx);
-    if (preg_match('/Falta a tradução[^"]*/u', (string)$corpo, $m) === 1) {
-        fwrite(STDERR, $consulta . ": " . stripslashes($m[0]) . "\n");
+    // só o erro de verdade (o "erro"/"detalhe" da resposta): o manual e a ajuda citam a própria mensagem como exemplo
+    $j = json_decode((string)$corpo, true);
+    $erro = is_array($j) ? trim((string)($j["erro"] ?? "") . " " . (string)($j["detalhe"] ?? "")) : "";
+    if (preg_match('/Falta a tradução.*/u', $erro, $m) === 1) {
+        fwrite(STDERR, $consulta . ": " . $m[0] . "\n");
     }
     // objetos como objetos: um {} vazio não pode virar uma lista vazia
     return json_decode((string)$corpo, false);
