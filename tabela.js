@@ -212,7 +212,7 @@
       if (d > 0) {
         partes = [[d, "d"], [h, "h"]];
       }
-      var txt = partes.filter(function (p) { return p[0] > 0; }).map(function (p) { return p[0] + p[1]; }).join(" ");
+      var txt = partes.filter(function (p) { return p[0] > 0; }).map(function (p) { return p[0] + p[1]; }).join("\u00a0");   // "2d 10h" não quebra; o "atrasado" pode ir para cima
       if (txt === "") {
         txt = "agora";
       } else if (dif < 0) {
@@ -233,6 +233,31 @@
 
     // linhas montadas com os dados da API (ao abrir e depois de cada lançamento, sem recarregar a página): troca as
     // linhas e reaplica a ordem e os filtros que estavam escolhidos (as opções dos filtros podem ter chegado agora)
+    // As 11 colunas sempre, em qualquer tela: quando a tabela inteira não cabe na largura que tem (celular, tablet, o
+    // painel aberto ao lado), cada relógio vira um cartão com todos os campos (estilo.css, .em-cartoes). A conta é com
+    // todos os relógios à mostra, para um filtro não trocar a forma da lista; tudo no mesmo quadro, sem piscar
+    var rolagem = document.getElementById("rolagem-relogios");
+    var ajustarForma = function () {
+      if (!rolagem) {
+        return;
+      }
+      var escondidos = Array.prototype.filter.call(corpo.rows, function (tr) { return tr.hidden; });
+      escondidos.forEach(function (tr) { tr.hidden = false; });
+      tabela.classList.remove("em-cartoes");
+      var naoCabe = tabela.offsetWidth > rolagem.clientWidth;
+      escondidos.forEach(function (tr) { tr.hidden = true; });
+      tabela.classList.toggle("em-cartoes", naoCabe);
+    };
+    if (rolagem && window.ResizeObserver) {
+      var largura = -1;
+      new ResizeObserver(function () {
+        if (rolagem.clientWidth !== largura) {
+          largura = rolagem.clientWidth;
+          ajustarForma();
+        }
+      }).observe(rolagem);
+    }
+
     window.trocarLinhasDaTabela = function (html) {
       corpo.innerHTML = html;
       original = Array.prototype.slice.call(corpo.querySelectorAll("tr[data-id]"));
@@ -240,8 +265,10 @@
         campo.value = st.f[campo.dataset.filtro] || "";
       });
       aplicar();
+      ajustarForma();
     };
 
     aplicar();
+    ajustarForma();
   }
 })();

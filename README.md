@@ -726,8 +726,9 @@ porcentagem em cada estado.</sub>
 
 ![No celular: a página Hoje, a lista dos relógios em cartões e o painel de um relógio em tela cheia](docs/telas/celular.png)
 
-<sub>No celular: o menu fica recolhido numa barra, as tabelas viram cartões (nada passa da largura da tela) e o painel do
-relógio abre em tela cheia; o "voltar" do aparelho fecha o painel.</sub>
+<sub>No celular: o menu fica recolhido numa barra, as tabelas viram cartões (nada passa da largura da tela, e nenhum campo
+some: cada cartão de relógio traz as 11 colunas da tabela) e o painel do relógio abre em tela cheia; o "voltar" do aparelho fecha
+o painel.</sub>
 
 **Celular, tablet e computador**, com o mesmo visual:
 
@@ -737,9 +738,14 @@ relógio abre em tela cheia; o "voltar" do aparelho fecha o painel.</sub>
 | de 901 a 1199 px (tablet deitado, notebook pequeno) | o menu na barra; o relógio aberto "ao lado da lista" desliza por cima, pela direita, com o fundo escurecido, em vez de espremer a lista |
 | 1200 px ou mais (computador) | o painel ao lado da lista (ou a janela flutuante, conforme a Configuração) |
 
-Em todos, a tabela dos relógios esconde as colunas menos importantes (a data da compra e o tipo, depois o código e a próxima
-manutenção, depois a última vez usado, depois o valor) conforme o espaço que ela tem de verdade, com ou sem o painel aberto: ela
-nunca fica cortada.
+**A mesma informação em todos.** A tabela dos relógios tem sempre as 11 colunas (código, relógio, tipo, estado, carga, última
+vez usado, próxima manutenção, em, o que fazer, comprado em e valor), os 10 filtros e a ordem por qualquer coluna, no
+computador, no tablet e no celular; nada é escondido por falta de espaço. Quando a tabela inteira cabe na largura que ela tem de
+verdade (com ou sem o painel aberto ao lado), ela aparece como tabela, e o texto de uma célula quebra linha só se precisar.
+Quando não cabe, cada relógio vira um cartão com os mesmos 11 campos, na mesma ordem, cada um com o nome da coluna em cima
+(em duas colunas no celular, em cinco no tablet), os títulos viram os botões de **Ordenar por** e os filtros ficam todos, com o
+nome em cima. A troca é medida com os dados de verdade (um nome comprido ou um valor alto contam), e não pela largura da tela.
+Os **Próximos dias** também mostram todos os dias da escala em qualquer tela.
 
 | Página | Para que serve |
 |---|---|
