@@ -750,8 +750,9 @@
  *     relogios[].medicoes[].inicio   quando foi a leitura de antes (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].medicoes[].lancamento_id
  *                                    o lançamento (a leitura) que fechou a medição
- *     relogios[].medicoes[].medida   o que foi medido: uso (o gasto por dia de uso, quando o intervalo teve meio dia de uso ou mais) ou repouso (o
- *                                    gasto por dia guardado)
+ *     relogios[].medicoes[].medida   o gasto do intervalo sozinho, no histórico: uso (o gasto por dia de uso, quando o intervalo teve
+ *                                    meio dia de uso ou mais, ou mais dias de uso que fora) ou repouso (o gasto por dia fora do pulso);
+ *                                    o gasto que vale sai de todas as medições juntas
  *     relogios[].medicoes[].na_media verdadeiro ou falso: entra na média agora (usada e dentro da janela da Configuração, medicao_janela_dias)
  *     relogios[].medicoes[].peso_horas
  *                                    o peso da medição na média: as horas que ela cobriu, no pulso (uso) ou guardado (repouso) (número)
@@ -1052,8 +1053,9 @@
  *     relogio.medicoes[].inicio      quando foi a leitura de antes (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.medicoes[].lancamento_id
  *                                    o lançamento (a leitura) que fechou a medição
- *     relogio.medicoes[].medida      o que foi medido: uso (o gasto por dia de uso, quando o intervalo teve meio dia de uso ou mais) ou repouso (o
- *                                    gasto por dia guardado)
+ *     relogio.medicoes[].medida      o gasto do intervalo sozinho, no histórico: uso (o gasto por dia de uso, quando o intervalo teve
+ *                                    meio dia de uso ou mais, ou mais dias de uso que fora) ou repouso (o gasto por dia fora do pulso);
+ *                                    o gasto que vale sai de todas as medições juntas
  *     relogio.medicoes[].na_media    verdadeiro ou falso: entra na média agora (usada e dentro da janela da Configuração, medicao_janela_dias)
  *     relogio.medicoes[].peso_horas  o peso da medição na média: as horas que ela cobriu, no pulso (uso) ou guardado (repouso) (número)
  *     relogio.medicoes[].taxa        o gasto medido, em % por dia de uso (uso) ou por dia guardado (repouso) (número)
@@ -2830,7 +2832,7 @@ if (!$token_ok && $quem === "") {
                 "relogios[].medicoes[].id" => "o número da medição",
                 "relogios[].medicoes[].inicio" => "quando foi a leitura de antes (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogios[].medicoes[].lancamento_id" => "o lançamento (a leitura) que fechou a medição",
-                "relogios[].medicoes[].medida" => "o que foi medido: uso (o gasto por dia de uso, quando o intervalo teve meio dia de uso ou mais) ou repouso (o gasto por dia guardado)",
+                "relogios[].medicoes[].medida" => "o gasto do intervalo sozinho, no histórico: uso (o gasto por dia de uso, quando o intervalo teve meio dia de uso ou mais, ou mais dias de uso que fora) ou repouso (o gasto por dia fora do pulso); o gasto que vale sai de todas as medições juntas",
                 "relogios[].medicoes[].na_media" => "verdadeiro ou falso: entra na média agora (usada e dentro da janela da Configuração, medicao_janela_dias)",
                 "relogios[].medicoes[].peso_horas" => "o peso da medição na média: as horas que ela cobriu, no pulso (uso) ou guardado (repouso) (número)",
                 "relogios[].medicoes[].taxa" => "o gasto medido, em % por dia de uso (uso) ou por dia guardado (repouso) (número)",
@@ -3063,7 +3065,7 @@ if (!$token_ok && $quem === "") {
                 "relogio.medicoes[].id" => "o número da medição",
                 "relogio.medicoes[].inicio" => "quando foi a leitura de antes (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogio.medicoes[].lancamento_id" => "o lançamento (a leitura) que fechou a medição",
-                "relogio.medicoes[].medida" => "o que foi medido: uso (o gasto por dia de uso, quando o intervalo teve meio dia de uso ou mais) ou repouso (o gasto por dia guardado)",
+                "relogio.medicoes[].medida" => "o gasto do intervalo sozinho, no histórico: uso (o gasto por dia de uso, quando o intervalo teve meio dia de uso ou mais, ou mais dias de uso que fora) ou repouso (o gasto por dia fora do pulso); o gasto que vale sai de todas as medições juntas",
                 "relogio.medicoes[].na_media" => "verdadeiro ou falso: entra na média agora (usada e dentro da janela da Configuração, medicao_janela_dias)",
                 "relogio.medicoes[].peso_horas" => "o peso da medição na média: as horas que ela cobriu, no pulso (uso) ou guardado (repouso) (número)",
                 "relogio.medicoes[].taxa" => "o gasto medido, em % por dia de uso (uso) ou por dia guardado (repouso) (número)",

@@ -170,9 +170,25 @@ leitura diferente da prevista, o plano se corrige sozinho.
 ### Gasto medido pelas leituras
 
 O cadastro do smartwatch diz "dura 5 dias". A realidade discorda, e muda conforme a bateria envelhece. Por isso, **cada leitura
-de carga que você lança é comparada com a anterior**: o sistema separa as horas no pulso das horas guardado e calcula o gasto
-real, em % por dia de uso e em % por dia guardado. A média das medições dos últimos dias (pesada pelas horas de cada uma) passa
-a valer nas previsões, e o histórico mostra a bateria perdendo fôlego com o tempo.
+de carga que você lança é comparada com a anterior**, e o intervalo entre as duas vira uma medição: quanto caiu, quantas horas
+ele passou no pulso e quantas fora do pulso (guardado, desligado). O horário de uso da Configuração conta como pulso sozinho, e
+as suas marcações (*Pôs*, *Tirou*) mandam.
+
+Cada medição é uma conta com dois gastos desconhecidos:
+
+```text
+queda = dias de uso × gasto em uso + dias fora do pulso × gasto fora do pulso
+```
+
+Com as medições dos últimos dias (90, na Configuração), o sistema acha **os dois gastos juntos**: os que melhor explicam todas
+as quedas (mínimos quadrados, e cada medição pesa as horas que cobriu). Uma noite entre duas leituras (só fora do pulso) acerta o
+gasto fora do pulso; os dias no pulso, já sabendo esse, acertam o gasto em uso. Entra toda medição de 1 hora ou mais, até a sem
+queda nenhuma (ela diz que o gasto é pequeno): a curta, em que o arredondamento da leitura (o relógio mostra a carga em números
+inteiros) pesa mais, entra com peso pequeno. Quanto mais leituras, mais preciso.
+
+Quando as medições ainda não separam os dois (só leituras com o relógio guardado, por exemplo), vale a média das medições de
+cada gasto; sem nenhuma nos últimos dias, as de antes. Os gastos medidos valem no lugar do cadastro nas previsões, e o histórico
+mostra a bateria perdendo fôlego com o tempo. Uma subida na leitura é recarga: novo ponto de partida, sem medir.
 
 ---
 

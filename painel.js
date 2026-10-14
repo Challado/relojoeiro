@@ -278,14 +278,14 @@ function abrirNoPainel(id) {
         // as medições do gasto pelas leituras (as 10 mais recentes) e se cada uma entra na média
         var med = "";
         if (r.medicoes.length > 0) {
-          med = el("h3", {}, "Medições do gasto") + el("p", {"class": "nota"}, "Cada leitura comparada com a anterior. A média usa as medições dos últimos "
-              + r.medicao_janela_dias + " dias, pesadas pelas horas de cada uma (a janela fica na Configuração).")
+          med = el("h3", {}, "Medições do gasto") + el("p", {"class": "nota"}, "Cada leitura comparada com a anterior. Os dois gastos (em uso e fora do pulso) saem juntos das medições dos últimos "
+              + r.medicao_janela_dias + " dias, pesadas pelas horas de cada uma (a janela fica na Configuração); o gasto de cada linha é só o dela.")
             + el("table", {"class": "historico-curto medicoes"}, el("thead", {}, el("tr", {}, el("th", {}, "Quando") + el("th", {}, "Leituras") + el("th", {}, "Horas")
-              + el("th", {}, "Gasto medido") + el("th", {}, "Na média")))
+              + el("th", {}, "Gasto medido") + el("th", {}, "Na conta")))
               + el("tbody", {}, r.medicoes.slice(0, 10).map(function (m) {
                 return el("tr", {}, el("td", {}, dataBr(m.fim, true) + " " + horaBr(m.fim)) + el("td", {}, num(m.de_valor, 1) + " → " + num(m.ate_valor, 1))
-                  + el("td", {}, num(m.horas_pulso, 1) + " h no pulso, " + num(m.horas_guardado, 1) + " h guardado")
-                  + el("td", {}, num(m.taxa, 2) + "% por dia " + (m.medida === "uso" ? "de uso" : "guardado"))
+                  + el("td", {}, num(m.horas_pulso, 1) + " h no pulso, " + num(m.horas_guardado, 1) + " h fora")
+                  + el("td", {}, num(m.taxa, 2) + "% por dia " + (m.medida === "uso" ? "de uso" : "fora do pulso"))
                   + el("td", {}, m.na_media ? "sim" : (m.usada ? "não (fora da janela)" : "não (só histórico)")));
               }).join("")));
         }

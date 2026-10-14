@@ -637,8 +637,8 @@ function op_lancamento($acao, $d)
                         . ". Novo ponto de partida.";
                 } elseif ($estimada !== null && $v > $estimada + $folga) {
                     $msg .= " Carregado em parte: pela estimativa ele estava com ~" . (int)round($estimada) . $un . ". Novo ponto de partida, sem medir o gasto deste intervalo.";
-                } elseif ($horas < 12) {
-                    $msg .= " " . $de . ": menos de 12 horas desde a leitura anterior, pouco tempo para medir o gasto." . $pela_estimativa;
+                } elseif ($horas < 1) {
+                    $msg .= " " . $de . ": menos de 1 hora desde a leitura anterior, pouco tempo para medir o gasto." . $pela_estimativa;
                 } else {
                     // as horas no pulso entre as duas leituras (as sessões juntas, sem contar duas vezes a mesma hora)
                     $h_pulso = 0.0;
@@ -656,32 +656,36 @@ function op_lancamento($acao, $d)
                     $h_dia = (strtotime("2000-01-01 " . cfg("uso_fim")) - strtotime("2000-01-01 " . cfg("uso_inicio"))) / 3600;
                     $dias_uso = $h_pulso / max(1, $h_dia);
                     $dias_guardado = $h_guardado / 24;
-                    $tempo = ($h_pulso >= 1 ? (int)round($h_pulso) . " h no pulso e " : "") . (int)round($h_guardado) . " h guardado";
-                    // com pelo menos meio dia de uso, o intervalo mede o uso (descontando o gasto guardado que vale); com menos, mede
-                    // o guardado (descontando o pouco de uso com o gasto em uso que vale)
-                    $medida = $dias_uso >= 0.5 ? "uso" : "repouso";
+                    $tempo = ($h_pulso >= 1 ? (int)round($h_pulso) . " h no pulso e " : "") . (int)round($h_guardado) . " h fora do pulso";
+                    // todo intervalo entra na conta dos dois gastos (gasto_medido), até o sem queda nenhuma: ele diz que o gasto é
+                    // pequeno. O gasto do intervalo sozinho fica no histórico: com pelo menos meio dia de uso, ou mais dias de uso que
+                    // fora do pulso, o de uso (descontando o fora do pulso que valia); senão, o de fora (descontando o pouco de uso)
+                    $medida = $dias_uso >= 0.5 || $dias_uso >= $dias_guardado ? "uso" : "repouso";
                     $taxa = $medida === "uso" ? ($queda - $dias_guardado * (float)$conta["taxa_repouso"]) / $dias_uso
                         : ($queda - $dias_uso * (float)$conta["taxa_uso"]) / max(0.01, $dias_guardado);
-                    $nome_taxa = $medida === "uso" ? "% por dia de uso" : "% por dia guardado";
-                    if ($taxa <= 0) {
-                        $msg .= " " . $de . ": " . $tempo . ". A queda foi pequena demais para separar do que já se sabe; nada foi medido." . $pela_estimativa;
-                    } else {
-                        $taxa = round(min(100, $taxa), 3);
-                        $usada = !array_key_exists("medir", $d) || (string)$d["medir"] === "1";
-                        sql("INSERT INTO medicao (relogio_id, lancamento_id, medida, taxa, de_valor, ate_valor, inicio, fim, horas_pulso, horas_guardado, peso_horas, usada, criado)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())", [$rid, $id, $medida, $taxa, $anterior, $v, date("Y-m-d H:i:s", $t1), date("Y-m-d H:i:s", $q),
-                            round($h_pulso, 2), round($h_guardado, 2), round($medida === "uso" ? $h_pulso : $h_guardado, 2), $usada ? 1 : 0]);
-                        $msg .= " " . $de . ": " . $tempo . ", " . str_replace(".", ",", (string)(0 + round($taxa, 2))) . $nome_taxa . "." . $pela_estimativa;
-                        if ($usada) {
-                            // a média nova, na janela da Configuração (a mesma conta da função MEDIDO)
-                            $janela = max(1, (int)cfg("medicao_janela_dias"));
-                            $m = linha("SELECT COUNT(*) AS n, SUM(taxa * peso_horas) / SUM(peso_horas) AS media FROM medicao WHERE relogio_id = ? AND medida = ? AND usada = 1
-                                AND fim <= ? AND fim > ?", [$rid, $medida, date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $q - $janela * 86400)]);
-                            $msg .= " Entrou na média: " . str_replace(".", ",", (string)(0 + round((float)$m["media"], 2))) . $nome_taxa . ", de " . (int)$m["n"]
-                                . ((int)$m["n"] === 1 ? " medição" : " medições") . " dos últimos " . $janela . " dias.";
-                        } else {
-                            $msg .= " Entrou só no histórico.";
+                    $taxa = round(max(0, min(100, $taxa)), 3);
+                    $usada = !array_key_exists("medir", $d) || (string)$d["medir"] === "1";
+                    sql("INSERT INTO medicao (relogio_id, lancamento_id, medida, taxa, de_valor, ate_valor, inicio, fim, horas_pulso, horas_guardado, peso_horas, usada, criado)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())", [$rid, $id, $medida, $taxa, $anterior, $v, date("Y-m-d H:i:s", $t1), date("Y-m-d H:i:s", $q),
+                        round($h_pulso, 2), round($h_guardado, 2), round($medida === "uso" ? $h_pulso : $h_guardado, 2), $usada ? 1 : 0]);
+                    $msg .= " " . $de . ": " . $tempo . "." . $pela_estimativa;
+                    if ($usada) {
+                        // os dois gastos que passam a valer, com esta medição junto (a mesma conta da função MEDIDO)
+                        $g = gasto_medido(linhas("SELECT medida, taxa, peso_horas, fim, horas_pulso, horas_guardado, de_valor, ate_valor FROM medicao
+                            WHERE relogio_id = ? AND usada = 1 ORDER BY fim, id", [$rid]), $q);
+                        $num = function ($x) { return str_replace(".", ",", (string)(0 + round((float)$x, 2))); };
+                        $partes = [];
+                        if ($g["uso"] !== null) {
+                            $partes[] = "em uso " . $num($g["uso"]) . "% por dia de uso";
                         }
+                        if ($g["repouso"] !== null) {
+                            $partes[] = "fora do pulso " . $num($g["repouso"]) . "% por dia";
+                        }
+                        $msg .= " Gasto medido agora" . (count($partes) > 0 ? ": " . implode(", ", $partes) : ": ainda sem como separar") . " ("
+                            . ($g["conjunta"] ? "os dois juntos, de " : "") . $g["n"] . ($g["n"] === 1 ? " medição" : " medições") . " dos últimos "
+                            . max(1, (int)cfg("medicao_janela_dias")) . " dias).";
+                    } else {
+                        $msg .= " Entrou só no histórico.";
                     }
                 }
             }
