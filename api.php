@@ -2682,7 +2682,7 @@ if (!$token_ok && $quem === "") {
 } elseif ($recurso === "ficha") {
     require __DIR__ . "/api/ficha.php";
 } elseif ($recurso === "config") {
-    require __DIR__ . "/api/config.php";
+    require __DIR__ . "/api/configuracao.php";
 } elseif ($recurso === "historico") {
     require __DIR__ . "/api/historico.php";
 } elseif ($recurso === "previsao") {
