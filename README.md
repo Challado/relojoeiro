@@ -136,7 +136,14 @@ Cada grupo, e até cada relógio, pode ter o seu próprio conjunto. O smartwatch
 agora e quantos dias ela aguenta), para não sortear um relógio que vai morrer ao meio-dia. A página **Critérios** mostra a
 conta inteira de cada nota: cada faixa, cada peso e cada ponto.
 
-E existe uma **garantia de rodízio**: nenhum relógio passa de N dias parado (21 por padrão).
+E existe uma **garantia de rodízio**: nenhum relógio passa de N dias parado (21 por padrão). Ela vale **antes** da nota: se
+algum candidato já passou do limite, ele ganha direto, o mais tempo parado primeiro (um relógio nunca usado conta como o mais
+parado de todos). Só quando ninguém passou do limite é que a nota decide.
+
+Para você nunca ficar na dúvida, **cada dia do plano guarda o motivo da escolha**, numa frase, e ela aparece embaixo do
+relógio na página Hoje e na página Plano: *"Garantia de rodízio: nunca usado, além do limite de 21 dias sem uso"*, *"Sorteio
+pela nota, entre 5 candidatos: nota 70,2, 16,4% de chance"*, *"A maior nota (91,2)"*, *"O mesmo relógio da semana no bloco
+Segunda a sexta"*, *"Escolhido à mão"*.
 
 ### Os modos de rodízio
 
@@ -620,6 +627,12 @@ comportamento do sistema antigo foi portado.
 Não. O uso do relógio do dia é registrado sozinho, no horário de uso. Você só lança o que o sistema não tem como saber: a corda,
 a leitura de carga do smartwatch, o sol, o winder, a troca de pilha e o dia em que usou outro relógio. E cada aviso já traz o
 botão que o resolve.
+
+**Por que saiu este relógio, e não outro?**
+Olhe embaixo do nome dele, na página **Hoje** ou na **Plano**: cada dia traz o motivo da escolha. Se for *"Garantia de
+rodízio"*, ele estava parado além do limite (ou nunca tinha sido usado) e passou na frente de todos, qualquer que fosse a nota;
+sortear de novo dá o mesmo resultado enquanto ele não for usado. Se for *"Sorteio pela nota"*, a frase traz a nota e a chance
+que ele tinha. Um dia sem motivo foi gravado antes de o sistema guardar isso: sorteie de novo para ele aparecer.
 
 **E se eu não quiser usar o relógio sorteado?**
 Em **Próximos dias** (na página Hoje) ou na página **Plano**, cada dia tem o **trocar por…**: escolha o relógio e clique em

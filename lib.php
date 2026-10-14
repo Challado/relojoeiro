@@ -291,6 +291,7 @@ $MIGRACOES = [
     "v8" => ["migracao_v8.sql", "a condição \"vale quando\" nos tipos de lançamento e nos avisos; o automático sem corda recebe \"Pôr no winder\" em vez de \"Dar corda\"", "aviso.condicao"],
     "v9" => ["migracao_v9.sql", "o limite de carga, geral e por relógio: carregar, pôr no sol e dar corda só quando a carga chega a ele", "campo.identificador=carga_minima"],
     "v10" => ["migracao_v10.sql", "os avisos de carga pelo estado de agora: no winder ou no pulso (o automático carrega no pulso), sem aviso de winder ou de corda; no sol, sem aviso de sol; a data do \"Carregar\" pelo gasto de agora (no pulso, o de uso; guardado, o de guardado)", "config.chave=migracao_v10"],
+    "v11" => ["migracao_v11.sql", "o motivo de cada escolha do plano: por que aquele relógio saiu naquele dia (a garantia de rodízio, a nota, o sorteio, a escolha à mão)", "plano.motivo"],
 ];
 
 // As migrações que faltam aplicar neste banco: as da lista cuja marca ainda não existe. A marca: uma tabela, uma coluna
@@ -1311,6 +1312,18 @@ function plano_do_dia($data)
     return linha("SELECT p.*, r.nome FROM plano p JOIN relogio r ON r.id = p.relogio_id WHERE p.data = ?", [$data]);
 }
 
+// Para o motivo de uma escolha do plano (a frase que diz por que aquele relógio saiu): os dias sem uso por extenso
+// ("nunca usado", "parado há 23 dias") e a nota com vírgula ("91,2")
+function motivo_parado($dias_sem_uso)
+{
+    return $dias_sem_uso >= 9999 ? "nunca usado" : "parado há " . str_replace(".", ",", (string)round($dias_sem_uso, $dias_sem_uso < 10 ? 1 : 0)) . " dias";
+}
+
+function motivo_nota($nota)
+{
+    return str_replace(".", ",", (string)round((float)$nota, 1));
+}
+
 // Monta o plano que falta, de hoje até $ate (padrão: o domingo desta semana; no domingo, também a segunda, para o aviso
 // da véspera). Cada dia sai do bloco do modo ativo que cobre aquele dia da semana: o relógio fixo do bloco; ou, num bloco
 // de um por bloco, o mesmo relógio já sorteado para o bloco nesta semana; ou um sorteio entre os disponíveis do ponto do
@@ -1332,7 +1345,8 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
         $no_pulso = $manter_pulso ? valor("SELECT l.relogio_id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
             WHERE t.identificador = 'pulso' AND l.origem = 'rodizio' AND DATE(l.inicio) = ? ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [$hoje->format("Y-m-d")]) : null;
         if (plano_do_dia($hoje->format("Y-m-d")) === null && $no_pulso !== null) {
-            sql("INSERT INTO plano (data, relogio_id, bloco_id, origem, criado) VALUES (?, ?, NULL, 'manual', NOW())", [$hoje->format("Y-m-d"), (int)$no_pulso]);
+            sql("INSERT INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, NULL, 'manual', ?, NOW())",
+                [$hoje->format("Y-m-d"), (int)$no_pulso, "Já estava no pulso pelo rodízio quando o plano de hoje foi montado."]);
         }
         $blocos = linhas("SELECT * FROM modo_bloco WHERE modo_id = ? ORDER BY ordem, id", [(int)$modo["id"]]);
         if ($ate === null) {
@@ -1367,15 +1381,20 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                 }
                 if ($bloco !== null) {
                     $escolhido = null;
+                    // o motivo: a frase que fica no plano dizendo por que este relógio saiu (a escolha em si não muda por ela)
+                    $motivo = "";
                     if ($bloco["relogio_id"] !== null && (int)valor("SELECT disponivel FROM relogio WHERE id = ?", [(int)$bloco["relogio_id"]]) === 1) {
                         $escolhido = (int)$bloco["relogio_id"];
+                        $motivo = "Relógio fixo do bloco " . $bloco["nome"] . ".";
                     } elseif ($bloco["um_por"] === "bloco") {
                         $seg = $dia->modify("monday this week");
                         $v = valor("SELECT relogio_id FROM plano WHERE bloco_id = ? AND data BETWEEN ? AND ? ORDER BY data LIMIT 1",
                             [(int)$bloco["id"], $seg->format("Y-m-d"), $seg->modify("+6 days")->format("Y-m-d")]);
                         $escolhido = $v !== null ? (int)$v : null;
+                        $motivo = "O mesmo relógio da semana no bloco " . $bloco["nome"] . " (um relógio para o bloco inteiro).";
                     }
                     if ($escolhido === null) {
+                        $fora = [];
                         $cands = [];
                         foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY id") as $r) {
                             if ($bloco["no_id"] === null || in_array((int)$bloco["no_id"], no_cadeia($r["no_id"] ?? 0), true)) {
@@ -1384,6 +1403,9 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                         }
                         $ontem = valor("SELECT relogio_id FROM plano WHERE data = ?", [$dia->modify("-1 day")->format("Y-m-d")]);
                         if ($ontem !== null && count($cands) > 1) {
+                            if (isset($cands[(int)$ontem])) {
+                                $fora[] = "o de ontem (" . $cands[(int)$ontem]["nome"] . ") ficou de fora";
+                            }
                             unset($cands[(int)$ontem]);
                         }
                         // o ciclo (se o modo usa): os que já passaram no ciclo atual ficam de fora, pelo plano desde a segunda-feira da semana
@@ -1392,6 +1414,9 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                                 [$dia->modify("monday this week")->format("Y-m-d"), $dia->modify("-1 day")->format("Y-m-d")]));
                             $restam = array_diff_key($cands, array_flip(ciclo_atual($seq, array_keys($cands))));
                             if (count($restam) > 0) {
+                                if (count($restam) < count($cands)) {
+                                    $fora[] = "pelo ciclo, " . (count($cands) - count($restam)) . " que já passaram na semana ficaram de fora";
+                                }
                                 $cands = $restam;
                             }
                         }
@@ -1402,20 +1427,34 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                                 $dsu = variavel_valor("dias_sem_uso", $ctx);
                                 $info[$cid] = ["dsu" => is_numeric($dsu) ? (float)$dsu : 9999.0, "nota" => nota_do_relogio($r, $m_ini)["nota"]];
                             }
+                            $entre = count($cands) === 1 ? "único candidato do bloco " . $bloco["nome"] : "entre " . count($cands) . " candidatos";
                             $max = (int)cfg("max_sem_uso");
                             $parados = array_filter($info, function ($x) use ($max) { return $x["dsu"] > $max; });
                             if ($max > 0 && count($parados) > 0 && $modo["selecao"] !== "aleatorio") {
                                 uasort($parados, function ($x, $y) { return $y["dsu"] <=> $x["dsu"]; });
                                 $escolhido = (int)array_key_first($parados);
+                                // os empatados com ele no tempo parado (os nunca usados empatam entre si): sai o cadastrado primeiro
+                                $empatados = [];
+                                foreach ($parados as $cid => $x) {
+                                    if ($cid !== $escolhido && $x["dsu"] == $parados[$escolhido]["dsu"]) {
+                                        $empatados[] = $cands[$cid]["nome"];
+                                    }
+                                }
+                                $motivo = "Garantia de rodízio: " . motivo_parado($parados[$escolhido]["dsu"]) . ", além do limite de " . $max . " dias sem uso"
+                                    . (count($parados) > 1 ? " (" . count($parados) . " além do limite; sai o mais tempo parado)" : "") . "."
+                                    . (count($empatados) > 0 ? " Empatado com " . implode(", ", $empatados) . ": saiu o cadastrado primeiro." : "");
                             } elseif ($modo["selecao"] === "aleatorio") {
                                 $ids = array_keys($cands);
                                 $escolhido = $ids[sorteio(0, count($ids) - 1)];
+                                $motivo = "Sorteio simples, " . $entre . ", todos com a mesma chance.";
                             } elseif ($modo["selecao"] === "fifo") {
                                 uasort($info, function ($x, $y) { return $y["dsu"] <=> $x["dsu"]; });
                                 $escolhido = (int)array_key_first($info);
+                                $motivo = "Fila: o mais tempo sem uso (" . motivo_parado($info[$escolhido]["dsu"]) . "), " . $entre . ".";
                             } elseif ($modo["selecao"] === "inteligente") {
                                 uasort($info, function ($x, $y) { return $y["nota"] <=> $x["nota"]; });
                                 $escolhido = (int)array_key_first($info);
+                                $motivo = "A maior nota (" . motivo_nota($info[$escolhido]["nota"]) . "), " . $entre . ".";
                             } else {
                                 // com sorteio: a nota de cada um é a chance dele (no mínimo 1)
                                 $total = 0;
@@ -1429,11 +1468,22 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                                         $escolhido = $cid;
                                     }
                                 }
+                                if ($escolhido !== null) {
+                                    $motivo = "Sorteio pela nota, " . $entre . ": nota " . motivo_nota($info[$escolhido]["nota"]) . ", "
+                                        . motivo_nota(round(max(1, $info[$escolhido]["nota"]) * 100) * 100 / max(1, $total)) . "% de chance.";
+                                }
+                            }
+                            if (count($fora) > 0 && $motivo !== "") {
+                                $motivo .= " " . ucfirst(implode("; ", $fora)) . ".";
+                            }
+                            if ($bloco["um_por"] === "bloco" && $escolhido !== null) {
+                                $motivo .= " Fica o bloco " . $bloco["nome"] . " inteiro.";
                             }
                         }
                     }
                     if ($escolhido !== null) {
-                        sql("INSERT INTO plano (data, relogio_id, bloco_id, origem, criado) VALUES (?, ?, ?, 'sorteio', NOW())", [$dia->format("Y-m-d"), $escolhido, (int)$bloco["id"]]);
+                        sql("INSERT INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, ?, 'sorteio', ?, NOW())",
+                            [$dia->format("Y-m-d"), $escolhido, (int)$bloco["id"], $motivo !== "" ? corta_texto($motivo, 300) : null]);
                     }
                 }
             }
@@ -2001,6 +2051,8 @@ function gerar_escala($ini)
             WHERE t.identificador = 'pulso' AND l.origem = 'rodizio' ORDER BY l.inicio DESC, l.id DESC LIMIT 1");
         $no_bloco = 0;
         $bloco_fim = $ini->modify("-1 day");
+        $bloco_ini = $ini;
+        $motivo_bloco = "";
         $acoes = [];
         // o ciclo: a sequência dos relógios que entraram (o plano desde a segunda-feira da semana em que a escala começa, e o
         // que a escala for escolhendo; o ciclo fecha quando todos passaram, e começa outro, pelo período inteiro da escala)
@@ -2018,10 +2070,15 @@ function gerar_escala($ini)
                 while (($manuais[$ate->modify("+1 day")->format("Y-m-d")] ?? 0) === $novo && $ate < $fim) {
                     $ate = $ate->modify("+1 day");
                 }
+                $motivo_bloco = "Escolhido à mão.";
             } elseif (!isset($manuais[$data]) && ($no_bloco === 0 || $d > $bloco_fim) && $bloco !== null) {
+                // o motivo: a frase que fica no plano dizendo por que este relógio saiu (a escolha em si não muda por ela)
+                $motivo_bloco = "";
                 if ($bloco["relogio_id"] !== null && isset($rels[(int)$bloco["relogio_id"]])) {
                     $novo = (int)$bloco["relogio_id"];
+                    $motivo_bloco = "Relógio fixo do bloco " . $bloco["nome"] . ".";
                 } else {
+                    $fora = [];
                     $cands = [];
                     foreach ($rels as $cid => $r) {
                         if ($aceita($bloco, $r)) {
@@ -2031,29 +2088,45 @@ function gerar_escala($ini)
                         }
                     }
                     if (count($cands) > 1 && isset($cands[$ultimo])) {
+                        $fora[] = "o de antes (" . $rels[$ultimo]["nome"] . ") ficou de fora";
                         unset($cands[$ultimo]);
                     }
                     // o ciclo (se o modo usa): os que já passaram no ciclo atual ficam de fora
                     if ((int)($modo["ciclo"] ?? 0) === 1 && count($cands) > 1) {
                         $restam = array_diff_key($cands, array_flip(ciclo_atual($sequencia, array_keys($cands))));
                         if (count($restam) > 0) {
+                            if (count($restam) < count($cands)) {
+                                $fora[] = "pelo ciclo, " . (count($cands) - count($restam)) . " que já passaram ficaram de fora";
+                            }
                             $cands = $restam;
                         }
                     }
+                    $todos = count($cands);
                     // garantia de rodízio: quem chegou ao limite de dias sem uso passa na frente, o mais tempo parado primeiro
                     $max = (int)cfg("max_sem_uso");
+                    $garantia = "";
                     if ($max > 0 && count($cands) > 0 && max($cands) >= $max) {
                         $mais = max($cands);
                         $cands = array_filter($cands, function ($x) use ($mais) { return $x == $mais; });
+                        $garantia = "Garantia de rodízio: " . motivo_parado($mais) . ", no limite de " . $max . " dias sem uso";
                     }
                     // a maior nota no dia simulado; um valor minúsculo só desempata notas iguais
                     $melhor = -1.0;
+                    $nota_dele = 0.0;
                     foreach (array_keys($cands) as $cid) {
-                        $nota = nota_do_relogio($rels[$cid], $m_ini)["nota"] + sorteio(0, 1000) / 100000;
+                        $nota_sem = nota_do_relogio($rels[$cid], $m_ini)["nota"];
+                        $nota = $nota_sem + sorteio(0, 1000) / 100000;
                         if ($nota > $melhor) {
                             $melhor = $nota;
                             $novo = $cid;
+                            $nota_dele = $nota_sem;
                         }
+                    }
+                    if ($novo > 0) {
+                        $motivo_bloco = ($garantia !== ""
+                            ? $garantia . (count($cands) > 1 ? "; entre os " . count($cands) . " empatados no tempo parado, a maior nota (" . motivo_nota($nota_dele) . ")" : "") . "."
+                            : "A maior nota do dia (" . motivo_nota($nota_dele) . "), " . ($todos === 1 ? "único candidato" : "entre " . $todos . " candidatos") . ".")
+                            . (count($fora) > 0 ? " " . ucfirst(implode("; ", $fora)) . "." : "");
                     }
                 }
                 if ($novo > 0) {
@@ -2078,6 +2151,7 @@ function gerar_escala($ini)
                 // um bloco novo: as sessões no pulso de todos os dias dele, e os avisos conferidos no começo e no fim de cada dia
                 $no_bloco = $novo;
                 $bloco_fim = $ate;
+                $bloco_ini = $d;
                 $ultimo = $novo;
                 $sequencia[] = $novo;
                 $pontos = [$m_ini];
@@ -2120,9 +2194,15 @@ function gerar_escala($ini)
                 $textos[] = $a["nome"] . ": " . $rels[$x[0]]["nome"] . ($horas > 0 ? " (" . str_replace(".", ",", (string)(0 + $horas)) . " h)" : "");
             }
             if ($no_bloco > 0 && $d <= $bloco_fim) {
-                sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, acao, criado) VALUES (?, ?, ?, ?, ?, NOW())",
+                // o motivo do dia: no primeiro dia do bloco, o da escolha (e quantos dias ele fica); nos seguintes, que ele segue
+                $dias_bloco = (int)$bloco_ini->diff($bloco_fim)->days + 1;
+                $dia_bloco = (int)$bloco_ini->diff($d)->days + 1;
+                $motivo = isset($manuais[$data]) ? "Escolhido à mão." : ($dia_bloco === 1
+                    ? $motivo_bloco . ($dias_bloco > 1 ? " Fica " . $dias_bloco . " dias seguidos." : "")
+                    : "Segue no pulso: dia " . $dia_bloco . " de " . $dias_bloco . " seguidos.");
+                sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, acao, motivo, criado) VALUES (?, ?, ?, ?, ?, ?, NOW())",
                     [$data, $no_bloco, isset($manuais[$data]) || $bloco === null ? null : (int)$bloco["id"], isset($manuais[$data]) ? "manual" : "sorteio",
-                    count($textos) > 0 ? corta_texto(implode("; ", $textos), 500) : null]);
+                    count($textos) > 0 ? corta_texto(implode("; ", $textos), 500) : null, $motivo !== "" ? corta_texto($motivo, 300) : null]);
                 $gravados++;
             }
         }

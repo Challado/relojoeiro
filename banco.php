@@ -906,10 +906,13 @@ function sql_dml($p, $banco)
             }
             $chave = banco_chave_primaria($tabela);
             $outras = array_values(array_diff($colunas, $chave));
-            $fim_insert = " ON CONFLICT (" . implode(", ", $chave) . ") DO " . (count($outras) === 0 ? "NOTHING" : "UPDATE SET "
-                . implode(", ", array_map(function ($c) {
-                    return $c . " = EXCLUDED." . $c;
-                }, $outras)));
+            // as colunas que o comando não cita voltam ao padrão, como no REPLACE do MySQL (que apaga a linha e grava de novo)
+            $trocas = array_merge(array_map(function ($c) {
+                return $c . " = EXCLUDED." . $c;
+            }, $outras), array_map(function ($c) {
+                return $c . " = DEFAULT";
+            }, array_values(array_diff(banco_colunas($tabela), $colunas, $chave))));
+            $fim_insert = " ON CONFLICT (" . implode(", ", $chave) . ") DO " . (count($trocas) === 0 ? "NOTHING" : "UPDATE SET " . implode(", ", $trocas));
             $saida[] = ["w", "INSERT"];
             continue;
         }
@@ -1047,6 +1050,16 @@ function banco_chave_primaria($tabela)
         if (count($cache[$tabela]) === 0) {
             throw new BancoErro("REPLACE INTO " . $tabela . ": a tabela não tem chave primária");
         }
+    }
+    return $cache[$tabela];
+}
+
+// As colunas de uma tabela no Postgres, na ordem (para o REPLACE INTO: as que o comando não cita voltam ao padrão)
+function banco_colunas($tabela)
+{
+    static $cache = [];
+    if (!isset($cache[$tabela])) {
+        $cache[$tabela] = array_column(linhas("SELECT column_name AS c FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? ORDER BY ordinal_position", [$tabela]), "c");
     }
     return $cache[$tabela];
 }

@@ -34,7 +34,8 @@ function recarregarHoje() {
     if (d.dia) {
       texto += el("h1", {}, el("a", {"href": "index.php?r=" + d.dia.relogio_id, "data-abrir": d.dia.relogio_id}, h(d.dia.relogio)))
         + el("p", {"class": "periodo"}, el("span", {"class": "janela"}, h(d.dia.ate)) + " " + h(t ? t.tipo : ""))
-        + (d.dia.acao ? el("p", {"class": "acao"}, h(d.dia.acao)) : "");
+        + (d.dia.acao ? el("p", {"class": "acao"}, h(d.dia.acao)) : "")
+        + (d.dia.motivo ? el("p", {"class": "motivo"}, el("strong", {}, "Por que ele: ") + h(d.dia.motivo)) : "");
     } else {
       texto += el("h1", {}, "Nenhum relógio para hoje")
         + el("p", {}, "Nenhum relógio disponível no grupo deste dia. Mude o grupo no modo de rodízio ou marque um relógio como disponível.");
@@ -99,14 +100,15 @@ function recarregarHoje() {
     }
     document.getElementById("bloco-avisos").innerHTML = res;
 
-    // "Próximos dias": o plano, com o lembrete de cada dia
+    // "Próximos dias": o plano, com o lembrete de cada dia e, embaixo do relógio, o motivo da escolha
     // cada dia com o "trocar por…" (o relógio escolhido à mão fica marcado), e o link para o plano inteiro
     document.getElementById("bloco-proximos").innerHTML = el("h2", {}, "Próximos dias " + el("a", {"class": "ver-plano", "href": "plano.php"}, "ver o plano inteiro →"))
       + el("table", {"class": "relogios"}, el("thead", {}, el("tr", {}, el("th", {}, "Dia") + el("th", {}, "Relógio") + el("th", {}, "Lembrete") + el("th", {}, "")))
       + el("tbody", {}, d.plano.map(function (p) {
         var dia = diaDaSemana(p.data);
         return el("tr", {"class": dia >= 6 ? "fds" : ""}, el("td", {}, dataBr(p.data, true) + " " + el("small", {}, CURTO[dia]))
-          + el("td", {}, h(p.relogio) + (p.origem === "manual" ? " " + el("small", {"class": "a-mao"}, "à mão") : "")) + el("td", {}, h(p.acao || ""))
+          + el("td", {}, h(p.relogio) + (p.origem === "manual" ? " " + el("small", {"class": "a-mao"}, "à mão") : "")
+            + (p.motivo ? el("small", {"class": "motivo"}, h(p.motivo)) : "")) + el("td", {}, h(p.acao || ""))
           + el("td", {"class": "trocar"}, formTrocarDia(p, d.relogios, d.data)));
       }).join("") + (d.plano.length === 0 ? el("tr", {}, el("td", {"colspan": "4"}, "Neste modo o sorteio é feito dia a dia.")) : "")));
 

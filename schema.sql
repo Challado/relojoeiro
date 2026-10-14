@@ -594,6 +594,14 @@ UPDATE aviso SET expressao = 'SE(EM_SESSAO("sol"); NADA(); AGORA() + (energia - 
 -- a marca de que a v10 foi aplicada: por último, para uma v10 que parou no meio continuar pendente
 INSERT IGNORE INTO config (chave, valor) VALUES ('migracao_v10', '1');
 
+-- ---------------------------------------------------------------------------------------------------------------------
+-- Migração v11 (já incluída na instalação nova)
+-- ---------------------------------------------------------------------------------------------------------------------
+-- o motivo de cada escolha do plano, numa frase: o relógio fixo do bloco, o mesmo da semana no bloco, a garantia de
+-- rodízio (parado além do limite), a maior nota, o sorteio pela nota (com a chance que ele tinha), a fila, o sorteio
+-- simples, ou a escolha à mão
+ALTER TABLE plano ADD COLUMN motivo VARCHAR(300) NULL AFTER acao;
+
 -- critérios iniciais (o "restaurar" da página Critérios lê daqui até o fim do arquivo)
 -- critérios de todos os relógios
 INSERT INTO criterio_parametro (id, escopo_no_id, escopo_relogio_id, nome, peso, ordem) VALUES (1, NULL, NULL, 'Tempo sem uso', 40, 1);

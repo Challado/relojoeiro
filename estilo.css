@@ -804,6 +804,10 @@ form.trocar-dia select { font-size: .82rem; padding: .1rem .2rem; width: 9rem; }
 form.trocar-dia button { padding: .1rem .55rem; font-size: .82rem; }
 td.trocar { text-align: right; white-space: nowrap; width: 1%; }
 small.a-mao { color: var(--ambar); font-weight: 600; }
+/* o motivo da escolha de um dia do plano: embaixo do relógio, discreto */
+.motivo { display: block; margin: .15rem 0 0; color: var(--cinza); font-size: .8rem; font-weight: normal; line-height: 1.35; }
+p.motivo { font-size: .88rem; margin: .5rem 0 0; }
+p.motivo strong { color: var(--tinta); font-weight: 600; }
 h2 a.ver-plano { font-size: .85rem; font-weight: 400; margin-left: .6rem; color: var(--safira); }
 main.plano { max-width: 64rem; }
 main.plano h3 { margin: 1.4rem 0 .4rem; font-size: 1rem; }
