@@ -888,12 +888,21 @@ dela (o cookie `lingua`, por um ano) e não muda a das outras. Quem ainda não e
 (Configuração › Geral); sem padrão, o do navegador (se for um dos seis), senão português. As datas e os números seguem o
 idioma: 13/10/2026 e 1.234,56 em português, 10/13/2026 e 1,234.56 em inglês, 2026-10-13 em chinês.
 
-Todo texto das telas passa por uma função, `t("o texto em português")`: o português é a chave, e cada idioma tem o seu
-dicionário em `textos/<idioma>/telas.php` (o texto em português => a tradução). As telas recebem o dicionário da API
-(`recurso=textos`), que também diz o idioma, o locale e os idiomas do sistema. Um texto com partes que mudam leva
-parâmetros, `t("Excluir {1}?", {1: nome})`, trocados depois da tradução, na ordem que o idioma pedir. O que falta num
-dicionário sai em português. `php testes/textos.php` confere os cinco dicionários contra o código: o texto que falta, o que
-sobrou e o parâmetro diferente.
+Todo texto passa por uma função, `t("o texto em português")`, no PHP (a API, o cron, os scripts) e no JavaScript das
+telas: o português é a chave, e cada idioma tem **um arquivo só**, `textos/<idioma>.php` (`textos/en.php`,
+`textos/es.php`...), com o texto em português => a tradução, dividido em partes (`telas`, `api`, e as da documentação). O
+PHP carrega o arquivo uma vez e o `t()` vale em todo lugar; as telas recebem a parte `telas` da API (`recurso=textos`),
+que também diz o idioma, o locale, os formatos e os idiomas do sistema. Um texto com partes que mudam leva parâmetros,
+`t("Excluir {1}?", {1: nome})`, trocados depois da tradução, na ordem que o idioma pedir.
+
+O que falta num idioma sai em português, para nada parar no uso. Para achar o que falta:
+
+- `php testes/textos.php` confere todos os arquivos contra o código, de uma vez, inclusive as mensagens que quase nunca
+  aparecem: o arquivo, a parte e o texto que falta (`textos/en.php · telas: falta "Excluir este relógio"`), o que sobrou e
+  o parâmetro diferente. O teste de paridade e o GitHub rodam o mesmo a cada push.
+- Com `define("TEXTOS_ESTRITO", true);` no `config.php` (para quem está traduzindo), a tradução que falta **para com erro**
+  na API e no cron (*Falta a tradução em en (textos/en.php): "..."*), e nas telas aparece entre ⟦ ⟧, com o erro no
+  console do navegador.
 
 **Para pôr um idioma novo** (o alemão, por exemplo), nada no código muda:
 
@@ -903,13 +912,14 @@ sobrou e o parâmetro diferente.
    passam a aceitar o idioma na hora.
 2. Os dicionários: `php testes/textos.php --faltam telas > faltam.json` lista os textos (em português) que o idioma ainda
    não tem; traduza num JSON `{"o texto em português": "a tradução", ...}`, mantendo os parâmetros entre chaves, e junte com
-   `php testes/textos.php --juntar de telas traducao.json`, que grava o `textos/de/telas.php` na ordem do código.
+   `php testes/textos.php --juntar de telas traducao.json`, que grava o `textos/de.php` na ordem do código (o mesmo para as
+   outras partes: `api`, `ajuda`...). Ou escreva direto no `textos/de.php`, copiando o de outro idioma.
 3. `php testes/textos.php` tem de terminar sem falta (o teste de paridade confere o mesmo), e
    `LINGUA=de testes/paridade.sh --layout sqlite` confere as telas no idioma novo: textos mais longos podem quebrar um botão.
 
 As mensagens da API e do cron e a documentação (esta ajuda, a da API e a reconstrução) ainda saem em português; elas passam
-para os idiomas nas próximas versões, pelo mesmo caminho (`textos/<idioma>/api.php`, `ajuda.php`, `manual.php` e
-`reconstrucao.php`). Os nomes que você cadastra (grupos, campos, tipos de lançamento, avisos, modos, os relógios) ficam como
+para os idiomas nas próximas versões, pelo mesmo caminho (as partes `api`, `ajuda`, `manual` e `reconstrucao` do
+`textos/<idioma>.php`). Os nomes que você cadastra (grupos, campos, tipos de lançamento, avisos, modos, os relógios) ficam como
 você escreveu.
 
 ---
@@ -1532,7 +1542,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | [`pagina.php`](pagina.php) | o topo com o menu e o fim das páginas (o login é da API: `recurso=entrar`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |
 | [`estilo.css`](estilo.css) | o visual |
-| [`textos/`](textos/) | os idiomas: `funcoes.php` (a função `t()`, o idioma do pedido, as datas e os números de cada idioma) e uma pasta por idioma com os dicionários (`telas.php`: o texto em português => a tradução); abertos direto não fazem nada |
+| [`textos/`](textos/) | os idiomas: `funcoes.php` (a função `t()`, a lista dos idiomas, o idioma do pedido, as datas e os números de cada idioma) e um arquivo por idioma (`en.php`, `zh-CN.php`, `hi.php`, `es.php`, `fr.php`: o texto em português => a tradução, por parte); abertos direto não fazem nada |
 | [`schema.sql`](schema.sql) | a estrutura do banco e o conjunto inicial (grupos, campos, fórmulas, avisos, modos, critérios) |
 | `migracao_v2.sql` … `migracao_v24.sql` | as migrações, aplicadas pela página Configuração |
 | [`config.exemplo.php`](config.exemplo.php) | o modelo do `config.php` |
@@ -1570,7 +1580,7 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
    (`testes/paridade.sh --layout sqlite`): `0 problemas`.
 7. **Todo texto novo passa pelo `t()`** (o `api.js` e o `textos/funcoes.php` têm a função), com o português como chave e os
    parâmetros entre chaves: `t("Excluir {1}?", {1: nome})`, nunca `"Excluir " + nome + "?"`. Depois, traduza nos cinco
-   dicionários de `textos/` e rode `php testes/textos.php` (o teste de paridade também roda): tem de terminar sem falta.
+   arquivos de `textos/` e rode `php testes/textos.php` (o teste de paridade também roda): tem de terminar sem falta.
 8. Abra o pull request contando o que muda para quem usa e como você testou.
 
 ---

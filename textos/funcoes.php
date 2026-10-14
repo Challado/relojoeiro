@@ -1,11 +1,14 @@
 <?php
-// Os idiomas do sistema. Todo texto que alguém lê (as telas, as mensagens da API, a ajuda, o manual, a reconstrução) passa
-// por t("o texto em português", ["parametro" => valor]): o português é a chave (como no gettext) e cada idioma tem o seu
-// dicionário em textos/<idioma>/<parte>.php (telas: o que as páginas e os scripts escrevem; api: as mensagens e os textos
-// da API e do cron; ajuda, manual e reconstrucao: a documentação). O que falta num idioma sai em português. Os parâmetros
+// Os idiomas do sistema. Todo texto que alguém lê (as telas, as mensagens da API e do cron, a ajuda, o manual, a reconstrução)
+// passa por t("o texto em português", ["parametro" => valor]): o português é a chave (como no gettext), e cada idioma tem um
+// arquivo só, textos/<idioma>.php, com as traduções divididas em partes (telas: o que as páginas e os scripts escrevem, e que
+// vai para o navegador; api: as mensagens da API e do cron; ajuda, manual e reconstrucao: a documentação). Os parâmetros
 // entre chaves ({nome}) são trocados depois da tradução, em qualquer ordem que o idioma pedir.
+// O que falta num idioma sai em português; com TEXTOS_ESTRITO = true no config.php (para quem traduz), o t() para com o erro
+// "Falta a tradução em en (textos/en.php): ..." e as telas mostram o texto entre ⟦ ⟧. php testes/textos.php confere tudo de
+// uma vez, sem abrir nenhuma tela.
 // O idioma de um pedido: lingua= no pedido, senão o cookie lingua (o seletor do menu), senão o padrão da instalação (a
-// Configuração), senão o Accept-Language do navegador, senão português. testes/textos.php confere os dicionários.
+// Configuração), senão o Accept-Language do navegador, senão português.
 // Esta pasta não abre pelo navegador (o .htaccess e o nginx-relogios.conf bloqueiam); aberto direto, não faz nada.
 if (count(get_included_files()) === 1) {
     http_response_code(404);
@@ -14,7 +17,7 @@ if (count(get_included_files()) === 1) {
 
 // os idiomas, na ordem do menu: o código, o nome no próprio idioma, o curto (o seletor do menu), o locale (BCP 47: os números
 // nas telas), a data (com o ano e a curta, sem ele; d, m e Y como no date() do PHP) e os separadores dos números (o decimal e o
-// de milhar). Um idioma novo é uma linha aqui e os dicionários em textos/<código>/ (veja o README, "Os idiomas").
+// de milhar). Um idioma novo é uma linha aqui e o arquivo textos/<código>.php (veja o README, "Os idiomas").
 const LINGUAS = [
     "pt-BR" => ["nome" => "Português", "curto" => "PT", "locale" => "pt-BR", "data" => "d/m/Y", "data_curta" => "d/m", "decimal" => ",", "milhar" => "."],
     "en" => ["nome" => "English", "curto" => "EN", "locale" => "en-US", "data" => "m/d/Y", "data_curta" => "m/d", "decimal" => ".", "milhar" => ","],
@@ -23,12 +26,11 @@ const LINGUAS = [
     "es" => ["nome" => "Español", "curto" => "ES", "locale" => "es-ES", "data" => "d/m/Y", "data_curta" => "d/m", "decimal" => ",", "milhar" => "."],
     "fr" => ["nome" => "Français", "curto" => "FR", "locale" => "fr-FR", "data" => "d/m/Y", "data_curta" => "d/m", "decimal" => ",", "milhar" => " "],
 ];
-// as partes dos dicionários: as duas primeiras sempre; as da documentação, quando um texto não é achado nelas
+// as partes do arquivo de cada idioma
 const TEXTOS_PARTES = ["telas", "api", "ajuda", "manual", "reconstrucao"];
 
 $GLOBALS["LINGUA"] = "pt-BR";
-$GLOBALS["TEXTOS"] = [];
-$GLOBALS["TEXTOS_LIDAS"] = [];
+$GLOBALS["TEXTOS"] = null;
 
 // um código de idioma conhecido (aceita en-GB, es-MX, zh, pt...: o mais perto que o sistema tem); null se nenhum
 function lingua_valida($l)
@@ -70,8 +72,7 @@ function lingua_do_pedido($padrao = null)
 function lingua_definir($l)
 {
     $GLOBALS["LINGUA"] = lingua_valida($l) ?? "pt-BR";
-    $GLOBALS["TEXTOS"] = [];
-    $GLOBALS["TEXTOS_LIDAS"] = [];
+    $GLOBALS["TEXTOS"] = null;
 }
 
 function lingua_atual()
@@ -79,15 +80,29 @@ function lingua_atual()
     return $GLOBALS["LINGUA"];
 }
 
-// uma parte do dicionário de um idioma (o arquivo devolve um array: o texto em português => a tradução)
+// o arquivo de um idioma (textos/<idioma>.php: as partes, cada uma o texto em português => a tradução)
+function textos_arquivo($l)
+{
+    static $lidos = [];
+    if (!isset($lidos[$l])) {
+        $arq = __DIR__ . "/" . $l . ".php";
+        $x = $l !== "pt-BR" && is_file($arq) ? include $arq : [];
+        $lidos[$l] = is_array($x) ? $x : [];
+    }
+    return $lidos[$l];
+}
+
+// uma parte do arquivo de um idioma
 function textos_parte($l, $parte)
 {
-    $arq = __DIR__ . "/" . $l . "/" . $parte . ".php";
-    if ($l === "pt-BR" || !is_file($arq)) {
-        return [];
-    }
-    $x = include $arq;
+    $x = textos_arquivo($l)[$parte] ?? [];
     return is_array($x) ? $x : [];
+}
+
+// o modo estrito (TEXTOS_ESTRITO = true no config.php): a tradução que falta para com erro, em vez de sair em português
+function textos_estrito()
+{
+    return defined("TEXTOS_ESTRITO") && TEXTOS_ESTRITO === true;
 }
 
 // o texto no idioma do pedido, com os parâmetros trocados ({nome} => o valor)
@@ -95,23 +110,17 @@ function t($s, $p = [])
 {
     $s = (string)$s;
     $l = $GLOBALS["LINGUA"];
-    if ($l !== "pt-BR") {
-        if (count($GLOBALS["TEXTOS_LIDAS"]) === 0) {
-            foreach (["api", "telas"] as $parte) {
-                $GLOBALS["TEXTOS"] += textos_parte($l, $parte);
-                $GLOBALS["TEXTOS_LIDAS"][$parte] = true;
-            }
-        }
-        if (!isset($GLOBALS["TEXTOS"][$s]) && count($GLOBALS["TEXTOS_LIDAS"]) < count(TEXTOS_PARTES)) {
-            foreach (TEXTOS_PARTES as $parte) {
-                if (!isset($GLOBALS["TEXTOS_LIDAS"][$parte])) {
-                    $GLOBALS["TEXTOS"] += textos_parte($l, $parte);
-                    $GLOBALS["TEXTOS_LIDAS"][$parte] = true;
-                }
+    if ($l !== "pt-BR" && $s !== "") {
+        if ($GLOBALS["TEXTOS"] === null) {
+            $GLOBALS["TEXTOS"] = [];
+            foreach (textos_arquivo($l) as $parte) {
+                $GLOBALS["TEXTOS"] += is_array($parte) ? $parte : [];
             }
         }
         if (isset($GLOBALS["TEXTOS"][$s]) && $GLOBALS["TEXTOS"][$s] !== "") {
             $s = $GLOBALS["TEXTOS"][$s];
+        } elseif (textos_estrito()) {
+            throw new Error("Falta a tradução em " . $l . " (textos/" . $l . ".php): \"" . $s . "\"");
         }
     }
     if (count($p) > 0) {

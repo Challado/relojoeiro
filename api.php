@@ -2443,11 +2443,14 @@
  *     formato.decimal                o separador decimal: vírgula ou ponto
  *     formato.milhar                 o separador de milhar: ponto, vírgula ou espaço (fr)
  *     padrao                         o idioma padrão da instalação (config.idioma); null: não escolhido
+ *     estrito                        o modo estrito (TEXTOS_ESTRITO no config.php): a tradução que falta aparece entre ⟦ ⟧ nas telas, com o
+ *                                    erro no console, em vez de sair em português
  *     linguas[]                      os idiomas do sistema, na ordem do menu
  *     linguas[].codigo               o código
  *     linguas[].nome                 o nome no próprio idioma
  *     linguas[].locale               o locale
- *     textos                         o dicionário das telas: o texto em português => a tradução (vazio em português)
+ *     textos                         o dicionário das telas (a parte telas do textos/<idioma>.php): o texto em português => a tradução
+ *                                    (vazio em português)
  *     textos.<texto em português>    a tradução
  *   recurso=rodizio_manual
  *     de                             o primeiro dia do período (AAAA-MM-DD)
@@ -2953,7 +2956,7 @@ if ($recurso === "textos") {
     $l = LINGUAS[lingua_atual()];
     $saida = ["lingua" => lingua_atual(), "locale" => $l["locale"],
         "formato" => ["data" => $l["data"], "data_curta" => $l["data_curta"], "decimal" => $l["decimal"], "milhar" => $l["milhar"]],
-        "padrao" => lingua_valida($lingua_padrao),
+        "padrao" => lingua_valida($lingua_padrao), "estrito" => textos_estrito(),
         "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"], "locale" => LINGUAS[$k]["locale"]]; }, array_keys(LINGUAS)),
         "textos" => (object)textos_parte(lingua_atual(), "telas")];
     if (strtolower((string)($_REQUEST["formato"] ?? "")) === "js") {
