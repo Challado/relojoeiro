@@ -1307,5 +1307,7 @@ form.apagar-periodo, form.apagar-tudo { display: flex; flex-direction: column; g
 .apagar-plano form.apagar-periodo { margin-top: 0; padding-top: 0; border-top: 0; }
 .linha-apagar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .6rem 1rem; }
 .linha-apagar label.check { flex-direction: row; align-items: center; gap: .35rem; padding-bottom: .45rem; }
-.apagar-plano > p.nota:last-child { margin-top: 1rem; }
+/* na página Plano, o apagar é o rodapé: depois de tudo, separado por uma linha mais forte */
+footer.apagar-plano { margin-top: 3rem; border-top: 3px solid var(--aco-escuro); }
+footer.apagar-plano h2 { margin-top: 0; }
 #proximos-lista nav.paginas, #plano nav.paginas { margin: .6rem 0 .4rem; }

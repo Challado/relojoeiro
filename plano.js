@@ -29,10 +29,9 @@ function montarPlano() {
       return el("option", {"value": String(r.id), "selected": filtro.relogio === String(r.id)}, h(r.nome));
     }).join(""))));
 
-  // apagar o que um período tem (e sortear de novo, ou deixar livre); escolher os relógios dia a dia é no Rodízio manual
-  res += el("section", {"class": "cartao-config apagar-plano"}, formApagarPeriodo(d.hoje) + formApagarTudo()
-    + el("p", {"class": "nota"}, "Para escolher os relógios de um período, dia a dia: na página " + el("a", {"href": "index.php#manual"}, "Hoje")
-      + ", no quadro Modo de rodízio, escolha \"Rodízio manual\"."));
+  // escolher os relógios de um período, dia a dia, é no Rodízio manual (o apagar fica no rodapé da página)
+  res += el("p", {"class": "nota"}, "Para escolher os relógios de um período, dia a dia: na página " + el("a", {"href": "index.php#manual"}, "Hoje")
+    + ", no quadro Modo de rodízio, escolha \"Rodízio manual\". Para apagar a programação, veja o fim desta página.");
 
   // o resumo, da API: quantos dias cada relógio tem no período, a porcentagem, o próximo dia e quantos foram à mão
   var rs = d.resumo;
@@ -74,6 +73,9 @@ function montarPlano() {
     + navPaginas(dd.pagina, dd.paginas, "plano-pagina")
     + (dd.paginas > 1 ? el("p", {"class": "nota"}, "Página " + dd.pagina + " de " + dd.paginas + " · " + dd.total + " dias, " + dd.por_pagina + " por página (o \"Mostrar até\" da "
       + el("a", {"href": "configuracao.php"}, "Configuração") + ").") : ""));
+
+  // o rodapé: apagar o que um período tem (e sortear de novo, ou deixar livre) e apagar tudo, depois de tudo o mais
+  res += el("footer", {"class": "cartao-config apagar-plano", "id": "apagar"}, el("h2", {}, "Apagar a programação") + formApagarPeriodo(d.hoje) + formApagarTudo());
 
   var main = document.getElementById("plano");
   main.innerHTML = res;

@@ -429,23 +429,10 @@ const RECONSTRUCAO_TELAS = [
                         . "Filtros lado a lado: Período (Próximos 30 dias, Próximos 90 dias (o padrão), Próximo ano, Próximos 2 anos, "
                         . "Tudo; trocar relê a API) e Relógio (Todos e cada um; filtra o dia a dia na tela).",
                 ]],
-                ["titulo" => "Apagar a programação (um cartão)", "itens" => [
-                    "\"Apagar um período\" (o rótulo em cinza): numa linha que quebra, \"De\" e \"Até\" (datas, de hoje em diante, "
-                        . "obrigatórias), \"Depois\" (lista: \"e sortear de novo\" = rodizio periodo_sortear; \"e deixar livre\" = "
-                        . "periodo_livre) e o botão leve \"Apagar\". Embaixo, a explicação da opção escolhida (\"Tudo o que o período tem, "
-                        . "de amanhã em diante (escolhido à mão, sorteado ou livre), sai, e o modo de rodízio sorteia os dias outra vez.\" "
-                        . "/ \"... sai, e os dias ficam livres: sem relógio e sem sorteio, para você escolher cada um ...\"). Confirma "
-                        . "\"Apagar o que o período tem e sortear de novo? Os dias escolhidos à mão nele também saem.\" (ou \"... e deixar "
-                        . "os dias livres, sem relógio? ...\").",
-                    "Abaixo de uma linha, \"Apagar tudo\": a caixa \"Excluindo hoje (apaga também o dia de hoje)\" e o botão leve "
-                        . "\"Apagar tudo\" (rodizio apagar_tudo, com hoje=1 marcada), e a nota \"Limpa toda a programação, de amanhã em "
-                        . "diante: os dias escolhidos à mão, os sorteados e os livres. Marcando \"Excluindo hoje\", apaga de hoje em diante "
-                        . "(se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora). Depois, o modo de rodízio "
-                        . "monta o plano de novo, do zero.\" Confirma (com hoje: \"Apagar toda a programação, de hoje em diante (escolhidos "
-                        . "à mão, sorteados e dias livres)? O modo de rodízio monta o plano de novo, e hoje pode sair outro relógio, que "
-                        . "passa a ser o do pulso a partir de agora.\"; sem: \"... de amanhã em diante ...; hoje continua como está.\").",
-                    "Por último, a nota \"Para escolher os relógios de um período, dia a dia: na página Hoje, no quadro Modo de "
-                        . "rodízio, escolha \"Rodízio manual\".\" (o link Hoje vai para index.php#manual).",
+                ["titulo" => "O período à mão", "itens" => [
+                    "Uma nota: \"Para escolher os relógios de um período, dia a dia: na página Hoje, no quadro Modo de rodízio, "
+                        . "escolha \"Rodízio manual\". Para apagar a programação, veja o fim desta página.\" (o link Hoje vai para "
+                        . "index.php#manual).",
                 ]],
                 ["titulo" => "Resumo do período (<n> dias)", "itens" => [
                     "Tabela Relógio, Dias, %, Próximo dia (\"DD/MM/AAAA seg\"), À mão; do que tem mais dias ao que tem menos. "
@@ -461,6 +448,23 @@ const RECONSTRUCAO_TELAS = [
                         . "pagina e relogio: o filtro de relógio relê a API), de \"Mostrar até\" em \"Mostrar até\" (a Configuração, padrão "
                         . "31); passando disso, o navegador de páginas embaixo (cada página relê a API e rola até o dia a dia) e \"Página "
                         . "N de M · <total> dias, <n> por página (o \"Mostrar até\" da Configuração).\"",
+                ]],
+                ["titulo" => "Rodapé: Apagar a programação (um cartão no fim da página, depois do dia a dia, separado por uma margem grande e "
+                    . "uma borda de 3px aço escuro em cima)", "itens" => [
+                    "Título h2 \"Apagar a programação\". \"Apagar um período\" (o rótulo em cinza): numa linha que quebra, \"De\" e \"Até\" "
+                        . "(datas, de hoje em diante, obrigatórias), \"Depois\" (lista: \"e sortear de novo\" = rodizio periodo_sortear; \"e "
+                        . "deixar livre\" = periodo_livre) e o botão leve \"Apagar\". Embaixo, a explicação da opção escolhida (\"Tudo o que "
+                        . "o período tem, de amanhã em diante (escolhido à mão, sorteado ou livre), sai, e o modo de rodízio sorteia os "
+                        . "dias outra vez.\" / \"... sai, e os dias ficam livres: sem relógio e sem sorteio, para você escolher cada um "
+                        . "...\"). Confirma \"Apagar o que o período tem e sortear de novo? Os dias escolhidos à mão nele também saem.\" (ou "
+                        . "\"... e deixar os dias livres, sem relógio? ...\").",
+                    "Abaixo de uma linha, \"Apagar tudo\": a caixa \"Excluindo hoje (apaga também o dia de hoje)\" e o botão leve "
+                        . "\"Apagar tudo\" (rodizio apagar_tudo, com hoje=1 marcada), e a nota \"Limpa toda a programação, de amanhã em "
+                        . "diante: os dias escolhidos à mão, os sorteados e os livres. Marcando \"Excluindo hoje\", apaga de hoje em diante "
+                        . "(se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora). Depois, o modo de rodízio "
+                        . "monta o plano de novo, do zero.\" Confirma (com hoje: \"Apagar toda a programação, de hoje em diante (escolhidos "
+                        . "à mão, sorteados e dias livres)? O modo de rodízio monta o plano de novo, e hoje pode sair outro relógio, que "
+                        . "passa a ser o do pulso a partir de agora.\"; sem: \"... de amanhã em diante ...; hoje continua como está.\").",
                 ]],
             ],
         ],
