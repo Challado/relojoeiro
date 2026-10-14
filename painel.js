@@ -15,6 +15,34 @@ function mostrarCamposDoTipo(form) {
   }
 }
 
+// Num formulário com menus que escolhem partes (select[data-mostra] e as partes com data-grupo e data-valor): fica à vista,
+// e vai no envio, só a parte da opção escolhida em cada menu; uma parte dentro de outra escondida também se esconde. Os
+// campos das partes escondidas ficam desativados, para não irem no envio nem barrarem o envio com um "obrigatório"
+function aplicarEscolhas(form) {
+  var escolha = {};
+  form.querySelectorAll("select[data-mostra]").forEach(function (s) {
+    escolha[s.getAttribute("data-mostra")] = s.value;
+  });
+  form.querySelectorAll("[data-grupo]").forEach(function (parte) {
+    var dentro = parte.parentElement.closest("[data-grupo]");
+    parte.hidden = escolha[parte.getAttribute("data-grupo")] !== parte.getAttribute("data-valor") || (dentro !== null && dentro.hidden);
+  });
+  form.querySelectorAll("input, select, textarea, button").forEach(function (c) {
+    c.disabled = c.closest("[data-grupo][hidden]") !== null;
+  });
+}
+
+// O que fazer numa sessão, pelo nome dela: "No pulso" vira "Pôr no pulso" e "Tirar do pulso"; "Na caixa", "Pôr na caixa" e
+// "Tirar da caixa"; um nome de outro jeito, "Começar: <nome>" e "Terminar: <nome>"
+function acaoSessao(nome, tirar) {
+  var m = /^(no|na|nos|nas)\s+(.+)$/i.exec(nome);
+  if (!m) {
+    return (tirar ? "Terminar: " : "Começar: ") + nome;
+  }
+  var artigo = m[1].toLowerCase();
+  return tirar ? "Tirar " + {"no": "do", "na": "da", "nos": "dos", "nas": "das"}[artigo] + " " + m[2] : "Pôr " + artigo + " " + m[2];
+}
+
 // Segundos por extenso, com as duas maiores partes: "1a 5m", "5d 3h", "12h 22min", "40min"
 function duracao(seg) {
   var partes = [[31557600, "a"], [2629800, "m"], [86400, "d"], [3600, "h"], [60, "min"]];
@@ -173,71 +201,97 @@ function abrirNoPainel(id) {
       blocos += el("section", {}, el("h2", {}, "Compra") + compra);
       blocos += el("section", {}, el("h2", {}, "Próximas manutenções") + (r.manutencoes.length === 0 ? el("p", {}, "Nada previsto.")
         : r.manutencoes.map(function (m) { return el("p", {}, el("strong", {}, dataBr(m.data)) + " " + h(m.nome)); }).join("")));
-      // lançar: uma linha por tipo (sessão: Pôs e Tirou; instantâneo: o botão), o período que já passou, e a leitura com valor
+      // marcar: um quadro só. O menu diz o que aconteceu, e embaixo aparecem só os campos daquilo: pôr ou tirar (cada sessão,
+      // só o que cabe agora), uma marcação de um momento (corda, pilha...), a leitura (carga), um período que já passou, ou
+      // corrigir uma marcação dos últimos 14 dias (um segundo menu escolhe qual)
       var lancar = "";
       if (r.tipos.length > 0) {
-        var linhas = "";
         var sessoes = r.tipos.filter(function (t) { return t.formato === "sessao"; });
+        var opcoes = {agora: "", passou: "", corrigir: ""};
+        var partes = "";
+        var parte = function (grupo, valor, conteudo) {
+          return el("div", {"class": "marcar-campos", "data-grupo": grupo, "data-valor": valor, "hidden": true}, conteudo);
+        };
+        var quando = function (rotulo) {
+          return el("label", {}, rotulo + " " + el("input", {"type": "datetime-local", "name": "quando", "max": momentoLocal(agora)})
+            + el("small", {}, "Vazio: agora."));
+        };
+        var momento = function (nome, valor, obrigatorio) {
+          return el("input", {"type": "datetime-local", "name": nome, "value": valor, "max": momentoLocal(agora), "required": obrigatorio});
+        };
         r.tipos.forEach(function (t) {
-          if (t.formato !== "valor") {
-            var botoes = t.formato === "sessao"
-              ? el("button", {"name": "acao", "value": "iniciar", "class": "leve", "disabled": t.aberta !== null}, "Pôs") + " "
-                + el("button", {"name": "acao", "value": "encerrar", "class": "leve", "disabled": t.aberta === null}, "Tirou")
-              : el("button", {"name": "acao", "value": "lancar", "class": "leve"}, h(t.nome));
-            var aberta = t.aberta !== null ? el("small", {"class": "sessao-aberta"}, h(t.aberta.texto)) : "";
-            // a hora do Pôs e do Tirou: vazia, agora; preenchida, a que você esqueceu de marcar (ontem às 22:30)
-            var quando = t.formato === "sessao" ? el("label", {"class": "quando-lancar", "title": "Vazio: agora. Preencha para marcar uma hora que já passou."},
-              "às " + el("input", {"type": "datetime-local", "name": "quando", "max": momentoLocal(agora)})) : "";
-            linhas += el("form", {"data-recurso": "lancamento", "class": "linha-lancar"}, el("input", {"type": "hidden", "name": "relogio_id", "value": id})
-              + el("input", {"type": "hidden", "name": "tipo", "value": t.identificador}) + el("span", {"class": "grupo"}, h(t.nome)) + el("span", {"class": "botoes-grupo"}, botoes) + quando + aberta);
-          }
-        });
-        lancar += el("div", {"class": "lancar-grupos"}, linhas);
-        if (sessoes.length > 0) {
-          lancar += el("details", {"class": "periodo-pulso"}, el("summary", {}, "Registrar um período que já passou, " + h(sessoes.map(function (t) { return minusculo(t.nome); }).join(" ou ")))
-            + el("form", {"data-recurso": "lancamento"}, el("input", {"type": "hidden", "name": "acao", "value": "periodo"}) + el("input", {"type": "hidden", "name": "relogio_id", "value": id})
-              + el("label", {}, "Onde " + el("select", {"name": "tipo"}, sessoes.map(function (t) { return el("option", {"value": t.identificador}, h(t.nome)); }).join("")))
-              + el("label", {}, "De " + el("input", {"type": "datetime-local", "name": "inicio", "value": momentoLocal(new Date(agora.getTime() - 3600000)), "required": true}))
-              + el("label", {}, "Até " + el("input", {"type": "datetime-local", "name": "fim", "value": momentoLocal(agora), "required": true}))
-              + el("button", {"class": "leve"}, "Registrar")));
-        }
-        r.tipos.forEach(function (t) {
-          if (t.formato === "valor") {
-            lancar += el("form", {"data-recurso": "lancamento", "class": "form-carga"}, el("p", {"class": "estado-linha"}, "Estado agora " + el("span", {"class": "estado " + (r.em_uso ? "estado-uso" : "estado-repouso")},
-                r.em_uso ? "Em uso" : "Em repouso")) + el("input", {"type": "hidden", "name": "acao", "value": "lancar"}) + el("input", {"type": "hidden", "name": "relogio_id", "value": id})
-              + el("input", {"type": "hidden", "name": "tipo", "value": t.identificador})
-              + el("label", {}, h(t.nome) + " agora" + (r.carga !== null && t.unidade === "%" ? " " + el("small", {}, "(estimada ~" + r.carga + "%)") : "") + " "
-                + el("span", {}, el("input", {"type": "text", "inputmode": "decimal", "name": "valor", "required": true}) + " " + h(t.unidade)))
+          var chave = "t-" + t.identificador;
+          var base = el("input", {"type": "hidden", "name": "tipo", "value": t.identificador});
+          if (t.formato === "sessao") {
+            var tirar = t.aberta !== null;
+            var verbo = acaoSessao(t.nome, tirar);
+            opcoes.agora += el("option", {"value": chave}, h(verbo));
+            partes += parte("marcar", chave, base + el("input", {"type": "hidden", "name": "acao", "value": tirar ? "encerrar" : "iniciar"})
+              + (tirar ? el("p", {"class": "marcar-estado"}, h(t.aberta.texto)) : "")
+              + quando(tirar ? "Tirou às" : "Pôs às") + el("button", {}, h(verbo)));
+          } else if (t.formato === "valor") {
+            opcoes.agora += el("option", {"value": chave}, h(t.nome));
+            partes += parte("marcar", chave, base + el("input", {"type": "hidden", "name": "acao", "value": "lancar"})
+              + el("p", {"class": "marcar-estado"}, "Agora " + el("span", {"class": "estado " + (r.em_uso ? "estado-uso" : "estado-repouso")}, r.em_uso ? "em uso" : "em repouso")
+                + (r.carga !== null && t.unidade === "%" ? " " + el("small", {}, "estimada ~" + r.carga + "%") : ""))
+              + el("label", {}, "Leitura " + el("span", {"class": "com-unidade"}, el("input", {"type": "text", "inputmode": "decimal", "name": "valor", "required": true}) + " " + h(t.unidade)))
+              + quando("Lida às")
               + (t.mede_gasto ? el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "medir", "value": "0"})
                 + el("input", {"type": "checkbox", "name": "medir", "value": "1", "checked": true}) + " Atualizar o gasto com esta medição") : "")
-              + el("button", {"class": "leve"}, "Informar " + h(minusculo(t.nome))));
+              + el("button", {}, "Informar " + h(minusculo(t.nome))));
+          } else {
+            opcoes.agora += el("option", {"value": chave}, h(t.nome));
+            partes += parte("marcar", chave, base + el("input", {"type": "hidden", "name": "acao", "value": "lancar"})
+              + quando("Quando") + el("button", {}, "Marcar " + h(minusculo(t.nome))));
           }
         });
-        // corrigir marcações: os lançamentos dos últimos 14 dias, cada um com o que dá para mudar, e excluir
-        if (r.lancamentos_recentes.length > 0) {
-          lancar += el("details", {"class": "corrigir"}, el("summary", {}, "Corrigir marcações (últimos 14 dias)")
-            + el("p", {"class": "nota"}, "Esqueceu o Tirou à noite? Ponha a hora certa no fim da sessão. Fim vazio: a sessão continua aberta.")
-            + r.lancamentos_recentes.map(function (l) {
-              var campos = "";
-              var programado = l.fim !== null && instante(l.fim) > agora.getTime();
-              if (l.formato === "sessao") {
-                campos = el("label", {}, "De " + el("input", {"type": "datetime-local", "name": "inicio", "value": l.inicio.substring(0, 16).replace(" ", "T"), "max": momentoLocal(agora), "required": true}))
-                  + (programado
-                    ? el("span", {"class": "nota"}, "até " + horaBr(l.fim) + " (o fim do horário de uso)")
-                    : el("label", {}, "Até " + el("input", {"type": "datetime-local", "name": "fim", "value": l.fim === null ? "" : l.fim.substring(0, 16).replace(" ", "T"), "max": momentoLocal(agora)})));
-              } else {
-                campos = el("label", {}, "Quando " + el("input", {"type": "datetime-local", "name": "inicio", "value": l.inicio.substring(0, 16).replace(" ", "T"), "max": momentoLocal(agora), "required": true}))
-                  + (l.formato === "valor" ? el("label", {}, "Valor " + el("input", {"type": "text", "inputmode": "decimal", "name": "valor", "value": num(l.valor, 1), "required": true}) + " " + h(l.unidade)) : "");
-              }
-              return el("form", {"data-recurso": "lancamento", "class": "linha-corrigir"}, el("input", {"type": "hidden", "name": "id", "value": l.id})
-                + el("input", {"type": "hidden", "name": "relogio_id", "value": id})
-                + el("span", {"class": "grupo"}, h(l.nome) + (l.origem === "rodizio" ? " " + el("small", {}, "(rodízio)") : ""))
-                + campos + el("span", {"class": "botoes-grupo"}, el("button", {"name": "acao", "value": "alterar", "class": "leve"}, "Salvar")
-                  + " " + el("button", {"name": "acao", "value": "excluir", "class": "leve discreto", "formnovalidate": true,
-                    "onclick": "return confirm(" + JSON.stringify("Excluir " + l.nome + " de " + dataBr(l.inicio, true) + " " + horaBr(l.inicio) + "?") + ")"}, "Excluir")));
-            }).join(""));
+        // um período inteiro que já passou: onde (se houver mais de uma sessão), de e até
+        if (sessoes.length > 0) {
+          opcoes.passou += el("option", {"value": "periodo"}, "Um período que já passou (" + h(sessoes.map(function (t) { return minusculo(t.nome); }).join(", ")) + ")");
+          partes += parte("marcar", "periodo", el("input", {"type": "hidden", "name": "acao", "value": "periodo"})
+            + (sessoes.length > 1
+              ? el("label", {}, "Onde " + el("select", {"name": "tipo"}, sessoes.map(function (t) { return el("option", {"value": t.identificador}, h(t.nome)); }).join("")))
+              : el("input", {"type": "hidden", "name": "tipo", "value": sessoes[0].identificador}))
+            + el("label", {}, "De " + momento("inicio", momentoLocal(new Date(agora.getTime() - 3600000)), true))
+            + el("label", {}, "Até " + momento("fim", momentoLocal(agora), true))
+            + el("button", {}, "Registrar o período"));
         }
-        lancar = el("h2", {}, "Lançar") + el("div", {"class": "acoes-cartao"}, lancar);
+        // corrigir: o segundo menu escolhe a marcação, e embaixo aparecem os campos dela, com Salvar e Excluir
+        if (r.lancamentos_recentes.length > 0) {
+          opcoes.corrigir += el("option", {"value": "corrigir"}, "Corrigir ou excluir uma marcação (últimos 14 dias)");
+          var qual = "";
+          var campos = "";
+          r.lancamentos_recentes.forEach(function (l) {
+            var programado = l.fim !== null && instante(l.fim) > agora.getTime();
+            var desc = dataBr(l.inicio, true) + " " + horaBr(l.inicio) + " · " + l.nome
+              + (l.formato === "sessao" ? (l.fim === null ? " (aberta)" : " até " + horaBr(l.fim)) : "")
+              + (l.formato === "valor" ? ": " + num(l.valor, 1) + " " + l.unidade : "") + (l.origem === "rodizio" ? " (rodízio)" : "");
+            qual += el("option", {"value": String(l.id)}, h(desc));
+            var desta = "";
+            if (l.formato === "sessao") {
+              desta = el("label", {}, "De " + momento("inicio", l.inicio.substring(0, 16).replace(" ", "T"), true))
+                + (programado
+                  ? el("p", {"class": "nota"}, "Até " + horaBr(l.fim) + " (o fim do horário de uso).")
+                  : el("label", {}, "Até " + momento("fim", l.fim === null ? "" : l.fim.substring(0, 16).replace(" ", "T"), false)
+                    + el("small", {}, "Vazio: a sessão continua aberta.")));
+            } else {
+              desta = el("label", {}, "Quando " + momento("inicio", l.inicio.substring(0, 16).replace(" ", "T"), true))
+                + (l.formato === "valor" ? el("label", {}, "Valor " + el("span", {"class": "com-unidade"}, el("input", {"type": "text", "inputmode": "decimal", "name": "valor", "value": num(l.valor, 1), "required": true}) + " " + h(l.unidade))) : "");
+            }
+            campos += parte("corrigir", String(l.id), el("input", {"type": "hidden", "name": "id", "value": l.id}) + desta
+              + el("span", {"class": "marcar-botoes"}, el("button", {"name": "acao", "value": "alterar"}, "Salvar")
+                + el("button", {"name": "acao", "value": "excluir", "class": "leve discreto", "formnovalidate": true,
+                  "onclick": "return confirm(" + JSON.stringify("Excluir " + l.nome + " de " + dataBr(l.inicio, true) + " " + horaBr(l.inicio) + "?") + ")"}, "Excluir")));
+          });
+          partes += parte("marcar", "corrigir", el("p", {"class": "nota"}, "Esqueceu o Tirou à noite? Escolha a sessão e ponha a hora certa no fim.")
+            + el("label", {}, "Qual marcação " + el("select", {"data-mostra": "corrigir"}, el("option", {"value": ""}, "— escolha —") + qual)) + campos);
+        }
+        var menu = el("option", {"value": ""}, "— escolha —")
+          + (opcoes.agora !== "" ? el("optgroup", {"label": "Agora, ou numa hora que você disser"}, opcoes.agora) : "")
+          + (opcoes.passou !== "" ? el("optgroup", {"label": "Algo que já passou"}, opcoes.passou) : "")
+          + (opcoes.corrigir !== "" ? el("optgroup", {"label": "Corrigir"}, opcoes.corrigir) : "");
+        lancar = el("h2", {}, "Marcar") + el("form", {"data-recurso": "lancamento", "class": "marcar"}, el("input", {"type": "hidden", "name": "relogio_id", "value": id})
+          + el("label", {"class": "marcar-o-que"}, "O que você quer marcar? " + el("select", {"data-mostra": "marcar"}, menu)) + partes);
       }
       res += el("div", {"class": "ficha-topo"}, el("div", {"class": "ficha-foto"}, foto)
         + el("div", {"class": "ficha-dados"}, el("p", {"class": "data"}, h(r.tipo) + " · " + h(r.caminho) + (r.observacao ? " · " + h(r.observacao) : ""))
@@ -379,6 +433,7 @@ function abrirNoPainel(id) {
     painel.innerHTML = el("div", {"class": "detalhe", "data-id": id}, res);
 
     document.querySelectorAll("form.cadastro").forEach(mostrarCamposDoTipo);
+    document.querySelectorAll("form.marcar").forEach(aplicarEscolhas);
     // o painel aberto sempre tem o "×" para fechar (só na página Hoje; a ficha não fecha)
     if (!painel.hidden && document.querySelector(".painel") && !painel.querySelector("[data-fechar-painel]")) {
       var fechar = document.createElement("button");
@@ -415,6 +470,9 @@ function abrirNoPainel(id) {
 document.addEventListener("change", function (ev) {
   if (ev.target.matches(".campo-subtipo")) {
     mostrarCamposDoTipo(ev.target.form);
+  }
+  if (ev.target.matches("select[data-mostra]")) {
+    aplicarEscolhas(ev.target.form);
   }
 });
 
