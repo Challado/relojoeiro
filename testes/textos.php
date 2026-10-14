@@ -3,8 +3,8 @@
 // (o texto em português); cada idioma tem de ter todas as chaves, com tradução, e nenhuma que o código não usa mais, e os
 // mesmos parâmetros ({nome}) da chave. Lista o idioma, o arquivo e o texto de cada problema, de uma vez só. O arquivo é
 // dividido em partes: telas (os .js e as páginas), api (o núcleo, as gravações, a API e o cron), ajuda (api/ajuda.php),
-// reconstrucao (reconstrucao.php), manual (os textos do manual) e cadastro (os textos do cadastro inicial: os de
-// CADASTRO_TEXTOS, no lib.php, achados instalando o schema.sql num SQLite temporário). Confere também os textos longos: o
+// reconstrucao (reconstrucao.php), manual (os textos do manual) e cadastro (os textos do cadastro inicial: os do
+// modelo.json, pelo modelo_textos do colecoes.php). Confere também os textos longos: o
 // manual de cada idioma (textos/manual/<idioma>.md) e o README de cada idioma (testes/readme.php --conferir).
 //   php testes/textos.php                       confere tudo (sai com 1 se faltar ou sobrar algo)
 //   php testes/textos.php --faltam <parte>      as chaves da parte que faltam em algum idioma, em JSON (para traduzir)
@@ -27,7 +27,7 @@ function parte_do_arquivo($rel)
     if ($rel === "reconstrucao.php") {
         return "reconstrucao";
     }
-    if (strpos($rel, "/") === false && !in_array($rel, ["lib.php", "operacoes.php", "banco.php", "api.php", "cron.php", "instalar.php", "importar.php", "criar_usuario.php", "config.exemplo.php"], true)) {
+    if (strpos($rel, "/") === false && !in_array($rel, ["lib.php", "operacoes.php", "colecoes.php", "alertas.php", "contas.php", "banco.php", "api.php", "cron.php", "instalar.php", "importar.php", "criar_usuario.php", "config.exemplo.php"], true)) {
         return "telas";
     }
     return "api";
@@ -114,26 +114,22 @@ function chaves_do_codigo($raiz)
     return array_map("array_keys", $partes);
 }
 
-// os textos do cadastro inicial: instala o schema.sql num SQLite temporário (em português) e lê as colunas de CADASTRO_TEXTOS
+// os textos do cadastro inicial: os do modelo.json que entram no idioma de quem cria a coleção (modelo_textos, no
+// colecoes.php); e a marca do manual (o sha1 do original, para conferir as traduções do manual)
 function chaves_do_cadastro($raiz)
 {
     $pasta = sys_get_temp_dir() . "/relojoeiro-textos-" . getmypid();
     @mkdir($pasta, 0775, true);
-    $codigo = 'require "lib.php"; lingua_definir("pt-BR"); $r = instalar_banco(); if (!$r["ok"]) { fwrite(STDERR, implode("; ", $r["erros"])); exit(1); }'
-        . ' $res = []; foreach (CADASTRO_TEXTOS as [$t, $c, $o]) { foreach (linhas("SELECT DISTINCT " . $c . " AS v FROM " . $t . ($o !== "" ? " WHERE " . $o : "")) as $l) { $res[] = (string)$l["v"]; } }'
-        . ' echo json_encode(["cadastro" => $res, "manual" => sha1(manual_original())], JSON_UNESCAPED_UNICODE);';
+    $codigo = 'require "lib.php"; lingua_definir("pt-BR"); echo json_encode(["cadastro" => modelo_textos(), "manual" => sha1(manual_original())], JSON_UNESCAPED_UNICODE);';
     $cmd = "cd " . escapeshellarg($raiz) . " && RELOGIOS_CONFIG=" . escapeshellarg($raiz . "/testes/config.teste.php") . " RELOGIOS_DB=sqlite RELOGIOS_TESTE_PASTA="
         . escapeshellarg($pasta) . " php -r " . escapeshellarg($codigo);
     $saida = shell_exec($cmd);
-    foreach (glob($pasta . "/*") ?: [] as $f) {
-        is_file($f) ? @unlink($f) : null;
-    }
     @rmdir($pasta);
     $lista = json_decode((string)$saida, true);
     $GLOBALS["MANUAL_SHA1"] = $lista["manual"] ?? "";
     $lista = $lista["cadastro"] ?? null;
     if (!is_array($lista)) {
-        fwrite(STDERR, "Não consegui instalar o schema.sql num SQLite temporário para achar os textos do cadastro.\n");
+        fwrite(STDERR, "Não consegui ler os textos do modelo.json.\n");
         exit(2);
     }
     $res = [];

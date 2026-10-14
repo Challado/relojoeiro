@@ -1,0 +1,11 @@
+-- Migração v25: várias pessoas, cada uma com as suas coleções (o banco multiusuário, na 3ª forma normal, tudo em cascata).
+-- Não há SQL aqui: a mudança é grande demais para ALTER TABLE nos quatro bancos (o Firebird nem renomeia tabela), então o
+-- passo em PHP (migracao_v25, no colecoes.php) faz assim:
+--   1. copia o banco antigo inteiro para um arquivo (relojoeiro-antes-da-v25.jsonl.gz, na pasta das cópias de segurança, na
+--      dos documentos ou na temporária do PHP; o formato da cópia de segurança, com o conteúdo dos documentos);
+--   2. apaga as tabelas antigas e cria a estrutura nova (o schema.sql);
+--   3. volta cada registro na forma nova, com os mesmos códigos: o usuário mais antigo vira o master e o dono da coleção 1
+--      e da árvore (a raiz nova fica em cima dos grupos de antes); os outros usuários, membros da coleção; o que estava
+--      vazio ("na raiz", "todos") passa para a raiz; a configuração se divide entre a coleção e o sistema; o Telegram
+--      (MSG_ENDPOINT) vira o destino webhook "Telegram" e o Google Agenda, a agenda "Google".
+-- Se parar no meio, aplicar de novo recomeça o passo 3 a partir do mesmo arquivo.

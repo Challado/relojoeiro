@@ -1,4 +1,4 @@
-<!-- origem: 2555db405552e06af2ee272b37999de5bf60aa96 -->
+<!-- origem: c314f20bdec70dd175b1d7d18ba361d94cbc2c2a -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -330,6 +330,57 @@ is no need to touch the record. The record's "Drain in use" and "Drain when stor
 
 ---
 
+## Several people: accounts, collections and access {#várias-pessoas-contas-coleções-e-acesso}
+
+The system belongs to **several people**, each with their own **account**, and each account with **its own collections**. A
+collection has its watches, history, plan, Settings, message destinations and calendars; what you see and save on any page
+always belongs to the collection chosen in the **menu selector** (it shows up when there is more than one). The first user of
+the installation is the **master**: they take care of the whole system.
+
+| Concept | What it is |
+|---|---|
+| **Account** | the login, the password, the e-mail (to recover the password, receive invitations and notices) and the language. Each person takes care of their own in **My account** (menu **Account**). |
+| **Collection** | a named set of watches belonging to an **owner**. A person can have several ("My collection", "My father's"). It is born **with the starter set** (the groups, fields, formulas, alerts, criteria and modes ready, in the creator's language), **empty** (only the root of the tree) or **with a tree of yours that already exists**. |
+| **Group tree** | the groups and their definitions (fields, entry types, formulas, alerts, document categories, group criteria). It belongs to the owner and can serve **several of their collections**: what changes in it applies to all. In **My account** you can copy, rename and delete the trees. |
+| **Member** | someone who sees another person's collection (and uses it: marks, logs, changes the day). |
+| **Everything of an owner** | someone who sees **all** of a person's collections, also the ones they create later. |
+| **Master** | sees all collections, takes care of the accounts (**Users**), the backup and the migrations. |
+
+**How someone gets into a collection that isn't theirs:**
+
+- **Invitation:** in **Approvals**, the owner types the e-mail and chooses what the person will see (one collection, or
+  everything of theirs). An e-mail goes out with a link (it lasts `CONVITE_DIAS` days, 7 without the line): whoever has no
+  account creates one through the link, and whoever has one signs in and accepts. A **member's** invitation waits for the owner
+  to approve. Without e-mail on the server, the link shows on the screen, to send however you like.
+- **Request:** in **My account** (or right at sign-up), the person asks for access to a collection, or to everything of an
+  owner, with a note. The owner gets an e-mail and approves or declines in **Approvals**; the person gets the answer by e-mail.
+- **By the master:** in **Users**, **Give access**.
+
+In **Approvals**, the owner also sees **who sees their collections** and removes someone's access; in **My account**, anyone
+can **leave** a collection that isn't theirs. Unanswered invitations and requests go away by themselves after `CONVITE_DIAS`
+days.
+
+**The open sign-up** (the `cadastro.php` page, without login, with the **Create account** link): the person chooses the login,
+the password, the e-mail, the language and how to start (a collection with the starter set, an empty one, or asking for access
+to someone's). An account created this way is a **demo** for `DEMO_DIAS` days (30 without the line): the menu shows **Demo: N
+days**, an e-mail warns 7 days and 1 day before, and, once expired, the cron deletes the account with everything that is
+theirs. The master **makes the account official** (or extends it) in **Users**. With `CADASTRO_ABERTO = false` in
+`config.php`, sign-up closes: only those the master creates or who have an invitation get in. The page also has **Forgot my
+password**: the link to choose a new password goes by e-mail and lasts 2 hours.
+
+**The master's panel** (**Users**) shows each account with the e-mail, the role, the last access, when it expires, the
+collections (with how many watches) and what else it sees, and the actions: **View as** (the whole system as that person sees
+it, with a bar at the top and the button to go back), **Make official**, **Extend**, **Back to demo**, **Block**, **Edit** (the
+login, the e-mail, the language, the role), **Change the password**, **Transfer the collection** (to another owner: the tree
+goes along, or, if it serves other collections of the previous owner, the new owner gets a copy), **Give access** and
+**Delete**. A common account left with nothing (no collection, no access, no request or invitation waiting) goes away by
+itself.
+
+**Deleting, anywhere, first tells you what goes along.** Deleting a collection, a tree, an account, a watch, a field, a
+destination... first shows the list of what goes along (*"Goes along: 4 field values, 2 entries, 12 plan days..."*, with the
+affected collections: a tree serves several) and only deletes after you confirm. The document files leave the disk at once.
+Through the API, every deletion asks for `confirmar=1`.
+
 ## Each watch's record, field by field {#o-cadastro-de-cada-relógio-campo-por-campo}
 
 Every watch has a **name**, a **group**, a **status in the collection**, **available** and a **photo**. The rest are **fields**, and which fields a watch has
@@ -397,8 +448,10 @@ documents** button, open that watch's **Documents** page in a new tab. There:
   - **XML:** if it is an **NF-e** (the XML of the Brazilian electronic invoice), the page shows the summary: the issuer, the
     number, the series, the date, the value, the products and the access key. And the **Download the XML** button.
   - **Audio:** the player. **Any other file:** the **Download** button.
-- **Edit** (the title, the date, the category, the description) and **Delete**, on each document; the one for photos and videos
-  is in the **Edit or delete photos and videos** list, at the end of the page.
+- **The ⋮ menu of each file:** each photo (in the corner of the thumbnail), each video in the list, each file card and the
+  photo viewer itself have the **⋮** button, which opens **Open**, **Download**, **Edit** (a window over the page, with the
+  title, the date, the category, the description and the copy in the database) and **Delete** (shows what goes along and asks
+  for confirmation).
 - At the top, the choice of watch: **All** shows the documents of the whole collection.
 
 **Where the files are kept:** in a **server folder** (`DOCUMENTOS_PASTA` in `config.php`, outside the published folder), from
@@ -439,8 +492,9 @@ minute; the folder of a watch that no longer exists (`r<number>`) is deleted who
 document is deleted (only after 10 minutes, because an upload may be halfway). Everything it does goes into the log (**Cron
 runs**).
 
-Deleting a document deletes the file and the copy in the database; deleting the watch deletes its documents. Without the
-folder configured, the page says what is missing and doesn't accept uploads.
+Deleting a document deletes the file and the copy in the database; deleting the watch (or the collection, the tree, the
+account) deletes its documents, and the files leave the folder at once. Without the folder configured, the page says what is
+missing and doesn't accept uploads.
 
 The documents don't enter any calculation: they are for reference. The numbers the system uses (the power reserve, the
 autonomy, the sun time to fill...) stay in the record's fields. A manual the manufacturer only publishes as a web page (Casio
@@ -681,8 +735,9 @@ The autonomies come out in seconds in the API (`recurso=autonomia`) and in words
 
 ## Settings, option by option {#a-configuração-opção-por-opção}
 
-The **Settings** page keeps the options of the whole system. In parentheses, each one's name in the API (`recurso=config`,
-under the `config` key), for those who automate; the default of a new installation comes at the end of each line.
+The **Settings** page keeps the options **of the collection** (each collection has its own). In parentheses, each one's name in
+the API (`recurso=config`, under the `config` key), for those who automate; the default of a new collection comes at the end of
+each line.
 
 ### General {#geral}
 
@@ -700,46 +755,65 @@ under the `config` key), for those who automate; the default of a new installati
 | **Rotation guarantee** (`max_sem_uso`) | no watch goes more than these days without use: the one that does goes ahead of all. 0 turns it off. Default: 21. |
 | **Idle alert: days without going on the wrist** (`encostado_dias`) | after how many days without going on the wrist a watch in the collection gets the **Idle** alert (in **Today is the day for**: *Idle*, *"the limit of days without going on the wrist was due 2d ago, 10/11/2026 18:00"*). From 1 to 3650. Default: 30. The alert is turned off in **Definitions › Alerts**. |
 | **Measured consumption: the last days** (`medicao_janela_dias`) | the window of the [consumption measured by the readings](#gasto-medido-pelas-leituras): older measurements leave the calculation. From 1 to 3650. Default: 90. |
-| **System address** (`url_sistema`) | the address that the `{link}` placeholder puts in the messages and in the calendar. Default: empty. |
+| **System address** (`url_sistema`) | the address that the `{link}` placeholder puts in the messages and in the calendar, and the one of the links in the e-mails, the ICS and the Outlook return. It belongs to the whole system: only the master changes it. Default: empty (the address the page was opened from). |
 | **Next days: show up to** (`proximos_por_pagina`) and **Plan: show up to** (`plano_por_pagina`) | how many days the **Next days** on the Today page and the **Day by day** on the Plan page show at a time (from 1 to 366). Beyond that, the page navigator appears below: **<** (previous), the numbers (the first, the last and up to two on each side of the current one, with … in the gaps) and **>** (next); resting the mouse on it, the tip says *Previous*, *Next* or *Page N*. Default: 7 and 31. |
-| **Default language** (`idioma`) | the language of the screens for whoever hasn't chosen their own in the menu selector yet (see [The languages](#os-idiomas)): Portuguese, English, Chinese, Hindi, Spanish or French. Default: empty (the browser's, otherwise Portuguese). |
+| **Default language** (`idioma`) | the collection's language: the one of the screens for whoever hasn't chosen their own (in the menu selector or in **My account**; see [The languages](#os-idiomas)) and the one of the messages and calendars without a language of their own: Portuguese, English, Chinese, Hindi, Spanish or French. Default: the one of whoever created the collection. |
 | **Open the watch on the Today page** (`painel_modo`) | **Next to the list** (`lado`): the clicked watch opens in a panel on the right, and the list stays in view. **In a large floating window** (`flutuante`): it opens in the middle of the screen, over the page, with the background darkened and the boxes side by side; it closes with the ×, Esc or a click outside. On the phone, both cover the whole screen. Default: next to the list. |
 | **Highlight at the top of the Today page** (`destaque_hoje`) | **The watch of the day** (`dia`): the big box at the top of the Today page shows the watch of the day (the plan's), with until when it stays and why it came up. **The watch on the wrist now** (`pulso`): it shows the watch that is on the wrist, even if it isn't the day's (with *on the wrist now* and, below, *Watch of the day: …*, which opens the day's); with more than one on the wrist, the last one put on; with none on the wrist, the day's stays, with the notice *No watch on the wrist now*. The data below (state, charge, the Put on/Took off the wrist button, the photo) are those of the highlighted watch. Default: the watch of the day. |
 
 On the page, each option is on one line, with the name on the left and the field on the right, in boxes (Daily routine,
-Limits and calculations, Screens, Cron, Draws, Telegram, Google Calendar); the **Save settings** button is on a bar fixed at
-the bottom of the screen.
+Limits and calculations, Screens, Cron, Draws, Messages and calendars); the **Save settings** button is on a bar fixed at the
+bottom of the screen.
 
-### Telegram and Google Calendar {#telegram-e-google-agenda}
+### Messages and calendars {#mensagens-e-agendas}
 
-| Option | What it does |
-|---|---|
-| **Send alerts** (`mensagens_ativas`) | turns sending via Telegram on and off (the address of the message API is in `config.php`). Default: on. |
-| **Google Calendar active** (`agenda_ativa`) | turns the creation of events in the calendar on and off. Default: off. |
-| **Calendar id** (`agenda_id`) and **key** (`agenda_chave`) | the Google calendar and the path, on the server, of the service account's JSON key (empty: `google-conta-servico.json` in the system folder). See [Google Calendar](#google-agenda). |
-| **Lead time** (`agenda_antecedencia`) | how many days in advance the events go into the calendar. From 1 to 365. Default: 30. |
-| **Default message** of each channel (`tg_padrao`, `ag_padrao`) | the text of every alert that has no message of its own, with the placeholders (`{acao}`, `{relogio}`, `{motivo}`, `{carga}`, `{ate}`, `{link}`...; the **Insert placeholder** button shows them all). In the calendar, the first line is the event title and the rest, the description. |
-| **What goes where** (in the form, `alerta_tipos[]` and `agenda_tipos[]`; in the database, the `envia` column of the `canal_aviso` table) | the table that marks, for each type of alert (the day, the eve, each registered alert and each custom event), whether it goes via Telegram and to the calendar. A new custom event is born already ticked for Telegram. |
-| **Custom message** of an alert on a channel (in the form, `tg_proprio_<tipo>` and `tg_corpo_<tipo>`; in the calendar, `ag_proprio_<tipo>` and `ag_corpo_<tipo>`; in the database, the `propria` and `corpo` columns of the `canal_aviso` table) | ticked, that alert goes out with its own text on that channel, instead of the default message. |
-| **Custom events** | your own reminders (clean the straps, review the collection), with a name, when they fire (once, every day, on weekdays, on a day of the month or every N days), the time and, if you want, a watch. They go out through the channels like the alerts. |
-| **Test morning**, **Test evening**, **Create test event**, **Remove test event**, **Sync now** | send the morning or evening message right away, create (10 minutes from now) or delete a test event in the calendar, and sync the calendar now, without waiting for the cron. |
+The messages and the calendars have pages of their own, opened from the **Messages and calendars** box in Settings:
 
-The **How it goes out today** preview shows today's messages and events exactly as they will go out.
+- **Destinations** (`destinos.php`): where the collection's messages go. Each destination is a **webhook** (an HTTP request:
+  Telegram, n8n, Home Assistant, any bridge), an **e-mail** (through the e-mail server in `config.php`) or **Web Push** (the
+  notifications on the phone and in the browser of someone who sees the collection). Each has the name, **On**, the
+  **language**, the **default message** (with the placeholders `{acao}`, `{relogio}`, `{motivo}`, `{carga}`, `{ate}`,
+  `{link}`...; the **Insert placeholder** button shows them all) and **What it receives**: each type of alert (the watch of the
+  day, the eve, each alert in the definitions and each custom event), with **Customize**, which opens that alert's own text on
+  that destination. **Send a test**, **Send the morning one now** and **Send the night one now** test right away, and **How it
+  goes out today** shows the text of each time.
+- **Calendars** (`agendas.php`): **Google Calendar**, a **CalDAV** (Nextcloud, **iCloud**, Fastmail), **Outlook** (Microsoft
+  365, Outlook.com) or an **ICS link** (an address to subscribe to in any calendar app, even Google and Outlook). Each has the
+  name, **On**, **Events up to how many days ahead** (30 on a new one), the language, the **event template** (the first line is
+  the title; the rest, the description) and **What it receives**. **Sync now**, **Create a test event** (10 minutes from now)
+  and **Remove the test event**; below, **What has to be in it now**. The system creates, updates and deletes only the events
+  it created itself; the ones already past stay, as history.
+
+The passwords, keys and tokens of the calendars and the webhook headers are **encrypted in the database** and never go back to
+the screen. How to set up each service on the server: see [Destinations and calendars on the
+server](#destinos-e-agendas-no-servidor).
+
+**Custom events** (in Settings): your own reminders (clean the straps, review the collection), with a name, when they fire
+(once, every day, on weekdays, on a day of the month or every N days), the time and, if you want, a watch. The table shows
+each one with **Goes to** (the destinations and calendars that receive it); a new event already goes to all destinations.
 
 ### What the system keeps by itself {#o-que-o-sistema-guarda-sozinho}
 
 These don't appear as options: the system notes them for itself, and the API shows them. (The rotation mode in use isn't
-here: it is the `ativo` column of the `modo` table, and it is changed on the Today page.)
+here: it is the `ativo` column of the `modo` table, and it is changed on the Today page.) In the collection (the `config`
+table):
 
 | Key | What it is |
 |---|---|
 | `escala_fim`, `escala_gerada` | until which day the smart schedule goes and when it was generated. |
 | `ultima_manha`, `ultima_noite` | the day of the last morning and evening round (so as not to run twice). |
+| `na_hora_enviados` | the "right away" alerts that already went and are still due (`relogio_id:aviso`): they don't go again; they leave the list when they stop being due. |
+
+And of the whole system (the `sistema` table):
+
+| Key | What it is |
+|---|---|
 | `cron_ultima_execucao`, `cron_erro`, `cron_registro` | when the cron ran, the last error (empty: none) and the log of the last round with activity. |
-| `agenda_teste_id` | the calendar's test event, while it exists. |
-| `na_hora_enviados` | the "right away" alerts that already went via Telegram and are still due (`relogio_id:aviso`): they don't go again; they leave the list when they stop being due. |
 | `backup_ultima` | when the last backup was made. |
-| `migracao_v10`, `migracao_v12`, `migracao_v16`, `migracao_v17`, `migracao_v18`, `migracao_v19`, `migracao_v20` | the marks that these migrations were applied (the others are marked by the database structure itself). |
+| `aleatorio_ultima`, `aleatorio_fora` | the source of the last batch of random numbers and since when the outside services have failed. |
+| `url_sistema`, `idioma` | the system address and the installation language. |
+| `demo_avisos` | the demo account expiry notices already sent (so as not to send them twice). |
+| `migracao_v25` | the mark that migration v25 (the move to several people) was applied. |
 
 ## A day with Relógios 2 {#um-dia-com-o-relógios-2}
 
@@ -802,6 +876,11 @@ five on the tablet), the headings become the **Sort by** buttons and all the fil
 measured with the real data (a long name or a large value count), not by the width of the screen. The **Next days** also show
 all the days of the schedule on any screen.
 
+**The menu** has, on the right, what belongs to whoever is signed in: the **collection selector** (with more than one; other
+people's with the owner's name), **Approvals (N)** when there are requests or invitations waiting, **Demo: N days** on the demo
+account and the language. The master viewing the system as another person sees a bar at the top, **Viewing as...**, with the
+button to go back.
+
 **Each watch's state** says where it is now: **In use** (green, on the wrist), the name of the open session when it is
 somewhere else, like **In the sun**, **On the winder** or **On the charger** (orange), **At rest** (red, stored) and
 **Unavailable** (grey, out of rotation and stored) or **Lent** (grey: with someone else). The **State** filter has each one of
@@ -821,12 +900,17 @@ comes in here by its name.
 | **Exact time** (`hora.php`) | The server's time to set the watches: a dial with hands and the digital time moving second by second (set by the API, discounting the request time; below, how far the device's clock is fast or slow), the date in words and the UTC time; the **Time zone and UTC** boxes (the time zone, the offset, Zulu time, the military letter of the time zone, like *P (Papa)*, and the date-time group, *131433P OCT 26*), **Calendar** (day of the year, ISO week, quarter, Julian day, Unix) and **Moon** (the phase, the age, the illuminated part and the next full and new moons, by the mean cycle: it can be off by a day); and **How to set it**. It reads the API again every minute. Through the API: `recurso=hora_certa`. |
 | **Documents** (`documentos.php`) | The documents of a watch (or of all), opened from the watch page: uploading several files, one tab per category, the full-screen photo gallery with a slideshow, the videos in sequence in the chosen order, the PDF viewer, the summary of the NF-e from the XML, and download for the rest. See [The watch's documents](#os-documentos-do-relógio). |
 | **History** (`historico.php`) | A watch's timeline: in use by the rotation, on the wrist outside the rotation, on the winder, in the sun, at rest, and each winding, charge and battery change. It shows how much time and what percentage it spent in each state, with a period and state filter. |
-| **Settings** (`configuracao.php`) | The **Backup** (the folder's backups, with **Download** and **Restore**, and **Make a backup now**). The times (morning, evening, use), Telegram, Google Calendar, each channel's default message, the **"What goes where"** table (which alert goes out on which channel), the custom events, the **"How it goes out today"** preview and the button that applies the database migrations. |
+| **Settings** (`configuracao.php`) | The collection's options (the times, the limits, the screens, the language), the cron status, the **Messages and calendars** box (the destinations and calendars, with the links to their pages), the custom events, the **Backup** (master only: the folder's backups, with **Download** and **Restore**, and **Make a backup now**) and the button that applies the database migrations. See [Settings, option by option](#a-configuração-opção-por-opção). |
+| **Destinations** (`destinos.php`) | Where the collection's messages go: each webhook, e-mail or Web Push, with the message, the language, what it receives, the tests and how it goes out today. See [Messages and calendars](#mensagens-e-agendas). |
+| **Calendars** (`agendas.php`) | The collection's calendars (Google, CalDAV, Outlook, ICS link), with the event template, what it receives, the sync, the test event and what has to be in it now. |
 | **Criteria** (`criterios.php`) | The criteria sets per place (all watches, a group or a watch), with parameters, subparameters, ranges and each watch's score with the calculation open. It has **Restore the initial criteria**. |
 | **Groups** (`grupos.php`) | The tree: create, rename, move, sort, delete (what belonged to the group goes to the one above) and choose each watch's group. |
 | **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), alerts, rotation modes and the document categories: everything the system uses that isn't code. |
 | **Cron runs** (`execucoes.php`) | What the cron did in each round, how long it took and the errors, with filters. |
-| **Users** (`usuarios.php`) | Who has access: create a user or change the password. |
+| **My account** (`conta.php`, the **Account** menu) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection, your data (the e-mail, the language, the password), the **API tokens** (for your scripts), the **notifications on this device** (Web Push) and deleting the account. See [Several people](#várias-pessoas-contas-coleções-e-acesso). |
+| **Approvals** (`aprovacoes.php`) | The access requests to your collections (approve, decline), the invitations members made that wait for you, **Invite** (by e-mail), the invitations you made and who sees your collections (remove access). The menu shows **Approvals (N)** when something is waiting. |
+| **Users** (`usuarios.php`, master only) | The accounts panel: each one with what it has and the actions (view as, make official, extend, block, edit, change the password, transfer a collection, give access, delete) and creating an account. |
+| **Create account** (`cadastro.php`, without login) | The open sign-up: the new account (with a collection, or asking for access), the invitation that arrived by e-mail and **Forgot my password**. |
 | **Help** (`ajuda.php`) | This guide inside the system: the central idea, how it works, each watch's record field by field, the charge alerts, the screens and the frequently asked questions (the same sections of the README, read from it; the API returns the same text in `recurso=manual`). |
 
 ### The languages {#os-idiomas}
@@ -902,6 +986,19 @@ On its **Documents** page (from the watch page: **Open the documents**). Choose 
 Photos, Videos, Miscellaneous), the files, and upload. The photos become a gallery with a slideshow, the videos play in
 sequence, the PDF opens in the viewer and the invoice XML shows the summary. A manual that only exists as a web page becomes a
 PDF through the browser (**Print → Save as PDF**).
+
+**Can my wife (or a friend) see my collection?**
+Yes. In **Approvals**, **Invite**: her e-mail and what she will see (one collection, or everything of yours). She gets a link:
+without an account, she creates one through it; with an account, she signs in and accepts. Or she asks for access herself (in
+**My account**, or right at sign-up), and you approve. To remove the access later: **Approvals › Who sees your collections**.
+
+**Can I have more than one collection?**
+Yes: **My account › New collection**. It can use a group tree you already have (the definitions are shared: a new field applies
+to both) or start with its own. The menu selector switches collections.
+
+**I created the account through sign-up: will it disappear?**
+The open sign-up account is a demo for 30 days (the server's `DEMO_DIAS`). An e-mail warns 7 days and 1 day before; to keep
+it, ask the administrator to make it official. Once expired, it goes with its collections.
 
 **Why did this watch come up, and not another one?**
 Look below its name, on the **Today** or the **Plan** page: each day comes with the reason for the choice. If it is
@@ -1024,6 +1121,9 @@ browser).
   the backups folder and restore.
 - **Through the API:** `recurso=backup` (the status and the copies; `arquivo=` downloads one), and the `fazer` and `restaurar`
   writes.
+- **What was deleted stays in the earlier backups.** Deleting an account, a collection or a watch removes everything from
+  the database and the files from the folder at once, but the backups made before keep what was there, until they leave by
+  the `BACKUP_MANTER` rule (7 days, without the line). To remove it for good, also delete the old backups from the folder.
 - **To turn it off** (another routine already copies the database, or it is a test installation): `define("BACKUP_ATIVO", false);`
   in `config.php`. The cron makes no copy, the `fazer` write is refused and the **Backup** box disappears from Settings, along
   with the warning that the folder is missing.

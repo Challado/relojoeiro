@@ -2,7 +2,8 @@
 // categoria; dentro dela, cada arquivo abre pelo tipo: as fotos numa galeria (o visor em tela cheia, com setas, teclado,
 // deslize e apresentação), os vídeos em sequência (marcados, na ordem escolhida), o PDF no visualizador do navegador, o
 // XML da nota com o resumo dela, o áudio no player, e o resto para baixar. O envio é um arquivo por vez (com a miniatura de
-// cada foto, feita aqui no navegador), com o andamento; editar e excluir vão pelos formulários comuns (recurso=documentos).
+// cada foto, feita aqui no navegador), com o andamento; abrir, baixar, editar e excluir ficam no menu ⋮ de cada um (e do
+// visor), e gravam pelos formulários comuns (recurso=documentos).
 var q = new URLSearchParams(window.location.search);
 var rid = parseInt(q.get("relogio") || "0", 10);
 var aba = q.get("cat") || "";
@@ -45,25 +46,106 @@ function nomeRelogio(id) {
   dados.relogios.forEach(function (r) { if (r.id === id) { res = r.nome; } });
   return res;
 }
-// editar (título, data, categoria, descrição) e excluir um documento
+// editar um documento (título, data, categoria, descrição e, quando é ele quem decide, a cópia no banco): o formulário que
+// abre na janela do "Editar" do menu ⋮
 function formEditar(x) {
-  return el("details", {"class": "doc-editar"}, el("summary", {}, "editar")
-    + el("form", {"data-recurso": "documentos", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": "alterar"}) + el("input", {"type": "hidden", "name": "id", "value": x.id})
-      + el("label", {}, t("Título {1}", {1: el("input", {"name": "titulo", "value": x.titulo, "maxlength": "200", "required": true})}))
-      + el("label", {}, t("Data {1}", {1: el("input", {"type": "date", "name": "data", "value": x.data || ""})}))
-      + el("label", {}, t("Categoria {1}", {1: el("select", {"name": "categoria_id"}, dados.categorias.map(function (c) {
-        return el("option", {"value": c.id, "selected": c.id === x.categoria_id}, h(c.nome));
-      }).join(""))}))
-      + el("label", {"style": "grid-column: 1 / -1"}, t("Descrição {1}", {1: el("textarea", {"name": "descricao", "rows": "2"}, h(x.descricao || ""))}))
-      // a escolha do próprio arquivo só aparece quando é ele quem decide: nem o config.php nem o relógio decidem por cima
-      + (dados.copia_sistema === null && x.copia_por !== "relogio" ? el("label", {"class": "check", "style": "grid-column: 1 / -1"},
-        el("input", {"type": "hidden", "name": "copia_banco", "value": "0"})
-        + el("input", {"type": "checkbox", "name": "copia_banco", "value": "1", "checked": x.copia_banco}) + t(" Guardar a cópia deste arquivo no banco")) : "")
-      + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, t("Salvar"))))
-    + el("form", {"data-recurso": "documentos", "onsubmit": "return confirm(" + JSON.stringify(t("Excluir {1}? O arquivo sai do servidor.", {1: x.titulo})) + ")"},
-      el("input", {"type": "hidden", "name": "acao", "value": "excluir"}) + el("input", {"type": "hidden", "name": "id", "value": x.id})
-      + el("button", {"class": "leve discreto"}, t("Excluir"))));
+  return el("form", {"data-recurso": "documentos", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": "alterar"}) + el("input", {"type": "hidden", "name": "id", "value": x.id})
+    + el("label", {}, t("Título {1}", {1: el("input", {"name": "titulo", "value": x.titulo, "maxlength": "200", "required": true})}))
+    + el("label", {}, t("Data {1}", {1: el("input", {"type": "date", "name": "data", "value": x.data || ""})}))
+    + el("label", {}, t("Categoria {1}", {1: el("select", {"name": "categoria_id"}, dados.categorias.map(function (c) {
+      return el("option", {"value": c.id, "selected": c.id === x.categoria_id}, h(c.nome));
+    }).join(""))}))
+    + el("label", {"style": "grid-column: 1 / -1"}, t("Descrição {1}", {1: el("textarea", {"name": "descricao", "rows": "3"}, h(x.descricao || ""))}))
+    // a escolha do próprio arquivo só aparece quando é ele quem decide: nem o config.php nem o relógio decidem por cima
+    + (dados.copia_sistema === null && x.copia_por !== "relogio" ? el("label", {"class": "check", "style": "grid-column: 1 / -1"},
+      el("input", {"type": "hidden", "name": "copia_banco", "value": "0"})
+      + el("input", {"type": "checkbox", "name": "copia_banco", "value": "1", "checked": x.copia_banco}) + t(" Guardar a cópia deste arquivo no banco")) : "")
+    + el("div", {"class": "botoes"}, el("button", {}, t("Salvar")) + el("button", {"type": "button", "class": "leve", "data-doc-fechar": "1"}, t("Cancelar"))));
 }
+
+// O menu ⋮ de um documento (na foto da galeria, no vídeo, no cartão do arquivo e no visor das fotos): Abrir (a foto em tela
+// cheia, o vídeo no player, o PDF e o resto noutra aba), Baixar, Editar (a janela com o formulário) e Excluir (a API mostra
+// o que sai junto e pede a confirmação)
+function menuDoc(x, comAbrir) {
+  return el("div", {"class": "doc-menu"}, el("button", {"type": "button", "class": "doc-menu-botao", "aria-haspopup": "true", "aria-expanded": "false",
+      "aria-label": t("Ações de {1}", {1: x.titulo}), "title": t("Abrir, baixar, editar ou excluir")}, "⋮")
+    + el("div", {"class": "doc-menu-lista", "role": "menu", "hidden": true},
+      (comAbrir ? el("button", {"type": "button", "role": "menuitem", "data-doc-abrir": x.id}, t("Abrir")) : "")
+      + el("a", {"href": x.url + "&baixar=1", "role": "menuitem"}, t("Baixar"))
+      + el("button", {"type": "button", "role": "menuitem", "data-doc-editar": x.id}, t("Editar"))
+      + el("form", {"data-recurso": "documentos"}, el("input", {"type": "hidden", "name": "acao", "value": "excluir"}) + el("input", {"type": "hidden", "name": "id", "value": x.id})
+        + el("button", {"role": "menuitem", "class": "perigo"}, t("Excluir")))));
+}
+function docPorId(id) {
+  return dados.documentos.filter(function (y) { return y.id === id; })[0];
+}
+function fecharMenus(exceto) {
+  document.querySelectorAll(".doc-menu-lista").forEach(function (l) {
+    if (l !== exceto && !l.hidden) {
+      l.hidden = true;
+      l.parentNode.querySelector(".doc-menu-botao").setAttribute("aria-expanded", "false");
+    }
+  });
+}
+// a janela do Editar
+function abrirEditar(x) {
+  var dlg = document.getElementById("doc-dialogo");
+  if (!dlg) {
+    dlg = document.createElement("dialog");
+    dlg.id = "doc-dialogo";
+    dlg.className = "doc-dialogo";
+    document.body.appendChild(dlg);
+  }
+  dlg.innerHTML = el("h2", {}, t("Editar {1}", {1: h(x.titulo)})) + el("p", {"class": "nota"}, h(x.nome)) + formEditar(x);
+  dlg.showModal();
+  dlg.querySelector("input[name=titulo]").focus();
+}
+document.addEventListener("click", function (ev) {
+  var b = ev.target.closest(".doc-menu-botao");
+  if (b) {
+    var lista = b.parentNode.querySelector(".doc-menu-lista");
+    fecharMenus(lista);
+    lista.hidden = !lista.hidden;
+    b.setAttribute("aria-expanded", lista.hidden ? "false" : "true");
+    if (!lista.hidden) {
+      lista.querySelector("[role=menuitem]").focus();
+    }
+    return;
+  }
+  var item = ev.target.closest("[data-doc-abrir], [data-doc-editar], [data-doc-fechar]");
+  if (!ev.target.closest(".doc-menu-lista button[role=menuitem]")) {
+    fecharMenus(null);
+  }
+  if (item === null) {
+    return;
+  }
+  if (item.hasAttribute("data-doc-fechar")) {
+    document.getElementById("doc-dialogo").close();
+    return;
+  }
+  var x = docPorId(parseInt(item.getAttribute(item.hasAttribute("data-doc-abrir") ? "data-doc-abrir" : "data-doc-editar"), 10));
+  fecharMenus(null);
+  if (!x) {
+    return;
+  }
+  if (item.hasAttribute("data-doc-editar")) {
+    abrirEditar(x);
+  } else if (x.familia === "imagem") {
+    abrirVisor(fotos.indexOf(x));
+  } else if (x.familia === "video") {
+    fila = [x.id];
+    tocar(0);
+  } else {
+    window.open(x.url, "_blank", "noopener");
+  }
+});
+// Esc fecha o menu aberto antes de qualquer outra coisa (o visor, por baixo, continua aberto)
+document.addEventListener("keydown", function (ev) {
+  if (ev.key === "Escape" && document.querySelector(".doc-menu-lista:not([hidden])")) {
+    ev.stopImmediatePropagation();
+    fecharMenus(null);
+  }
+}, true);
 // quem pede a cópia no banco: o sistema (config.php), o relógio ou o próprio arquivo
 var COPIA_POR = {sistema: t("o config.php guarda todos"), relogio: t("o relógio guarda todos os dele"), arquivo: t("pedida neste arquivo")};
 // o nome do arquivo, o tamanho e onde ele está guardado: na pasta, no banco, e quem pediu a cópia no banco
@@ -136,9 +218,9 @@ function montar() {
     res += el("section", {"class": "doc-secao"}, el("h2", {}, t("Fotos ({1})", {1: fotos.length}))
       + el("p", {}, el("button", {"type": "button", "class": "leve", "data-apresentacao": "1"}, t("▶ Apresentação")) + " " + el("span", {"class": "nota"}, t("Toque numa foto para ver em tela cheia.")))
       + el("div", {"class": "galeria"}, fotos.map(function (x, i) {
-        return el("button", {"type": "button", "class": "galeria-foto", "data-foto": i, "title": x.titulo},
+        return el("div", {"class": "galeria-item"}, el("button", {"type": "button", "class": "galeria-foto", "data-foto": i, "title": x.titulo},
           el("img", {"src": x.url + (x.miniatura ? "&mini=1" : ""), "alt": h(x.titulo), "loading": "lazy"})
-          + el("span", {}, h(x.titulo) + (x.data ? " · " + dataBr(x.data, true) : "")));
+          + el("span", {}, h(x.titulo) + (x.data ? " · " + dataBr(x.data, true) : ""))) + menuDoc(x, true));
       }).join("")));
   }
   // os vídeos: a lista para marcar e ordenar, e o player
@@ -161,12 +243,6 @@ function montar() {
   var outros = docs.filter(function (x) { return x.familia !== "imagem" && x.familia !== "video"; });
   if (outros.length > 0) {
     res += el("section", {"class": "doc-secao"}, el("h2", {}, t("Arquivos ({1})", {1: outros.length})) + outros.map(cartao).join(""));
-  }
-  // as fotos e os vídeos também se editam aqui embaixo, numa lista só
-  var midia = fotos.concat(videos);
-  if (midia.length > 0) {
-    res += el("details", {"class": "doc-secao"}, el("summary", {}, t("Editar ou excluir fotos e vídeos"))
-      + midia.map(function (x) { return el("div", {"class": "doc-cartao"}, sobre(x, true) + guardado(x) + formEditar(x)); }).join(""));
   }
   document.getElementById("documentos").innerHTML = res;
   desenharVideos();
@@ -214,7 +290,7 @@ function cartao(x) {
   } else {
     corpo = el("p", {}, linkBaixar(x));
   }
-  return el("div", {"class": "doc-cartao"}, sobre(x, true) + guardado(x) + corpo + formEditar(x));
+  return el("div", {"class": "doc-cartao com-menu"}, menuDoc(x, true) + sobre(x, true) + guardado(x) + corpo);
 }
 
 // a lista dos vídeos, na ordem escolhida, com a marca de cada um
@@ -228,7 +304,8 @@ function desenharVideos() {
     return el("li", {}, el("label", {"class": "check"}, el("input", {"type": "checkbox", "data-marca": vid, "checked": marcados[vid] === true}) + " " + sobre(x, true))
       + el("span", {"class": "nota"}, tamanho(x.tamanho)) + " "
       + el("button", {"type": "button", "class": "leve discreto", "data-sobe": i, "disabled": i === 0, "aria-label": t("Subir")}, "↑")
-      + el("button", {"type": "button", "class": "leve discreto", "data-desce": i, "disabled": i === ordemVideos.length - 1, "aria-label": t("Descer")}, "↓"));
+      + el("button", {"type": "button", "class": "leve discreto", "data-desce": i, "disabled": i === ordemVideos.length - 1, "aria-label": t("Descer")}, "↓")
+      + menuDoc(x, true) + guardado(x));
   }).join("");
 }
 
@@ -272,7 +349,7 @@ function desenharVisor() {
   var x = fotos[atual];
   visor.innerHTML = el("div", {"class": "visor-topo"}, el("span", {}, (atual + 1) + t(" de ") + fotos.length)
     + el("span", {}, el("button", {"type": "button", "class": "visor-apres"}, apresentacao ? t("❚❚ Parar") : t("▶ Apresentação"))
-      + el("a", {"href": x.url + "&baixar=1", "class": "botao-link"}, t("Baixar")) + el("button", {"type": "button", "class": "visor-fechar", "aria-label": t("Fechar")}, t("×"))))
+      + menuDoc(x, false) + el("button", {"type": "button", "class": "visor-fechar", "aria-label": t("Fechar")}, t("×"))))
     + el("div", {"class": "visor-foto"}, el("button", {"type": "button", "class": "visor-ant", "aria-label": t("Anterior")}, "‹")
       + el("img", {"src": x.url, "alt": h(x.titulo)}) + el("button", {"type": "button", "class": "visor-prox", "aria-label": t("Próxima")}, "›"))
     + el("div", {"class": "visor-legenda"}, el("strong", {}, h(x.titulo)) + (x.data ? " · " + dataBr(x.data) : "") + (x.descricao ? el("p", {}, h(x.descricao)) : ""));
@@ -320,7 +397,9 @@ visor.addEventListener("click", function (ev) {
   }
 });
 document.addEventListener("keydown", function (ev) {
-  if (visor.hidden) {
+  // com a janela do Editar aberta, o teclado é dela
+  var dlg = document.getElementById("doc-dialogo");
+  if (visor.hidden || (dlg && dlg.open)) {
     return;
   }
   if (ev.key === "ArrowLeft") {
@@ -503,9 +582,16 @@ function recarregar() {
   });
 }
 
-// editar e excluir (os formulários comuns): o recado e a página de novo
+// editar e excluir (o menu ⋮): fecha a janela do Editar e o visor (a foto pode ter saído), e o recado e a página de novo
 aoGravar = function (form, res) {
   recado = textoResposta(res);
+  var dlg = document.getElementById("doc-dialogo");
+  if (dlg && dlg.open && res.ok) {
+    dlg.close();
+  }
+  if (!visor.hidden && res.ok) {
+    fecharVisor();
+  }
   recarregar().then(function () {
     window.scrollTo(0, 0);
   });

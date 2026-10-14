@@ -6,43 +6,72 @@
 // As telas (reconstrucao_telas()) são a especificação visual: o visual com os valores exatos, o menu e cada página com as tabelas, os
 // campos, os botões e as mensagens; quem muda uma tela muda também a especificação dela aqui.
 // A API (cada consulta, cada escrita e cada campo das respostas) está no recurso=ajuda; o cadastro inicial (campos, tipos,
-// fórmulas, avisos, critérios e modos que vêm prontos) está no schema.sql e no recurso=cadastros e recurso=criterios.
+// fórmulas, avisos, critérios e modos que vêm prontos) está no modelo.json e no recurso=cadastros e recurso=criterios.
 
 // O que cada tabela guarda (o resto, as colunas e as regras, vem do banco)
 function reconstrucao_tabelas()
 {
     return [
-    "agenda_evento" => t('os eventos que o sistema criou no Google Agenda: a chave (o que o evento é: o tipo, o relógio e o dia), o id no Google, a data, o título e a assinatura (o resumo do conteúdo, para saber se mudou)'),
-    "aviso" => t('os avisos do cadastro: o identificador, o nome, a fórmula da data prevista (expressao), a condição (vale quando), a antecedência em dias, o texto, se está ativo, o grupo da versão (no_id; vazio: todos), o tipo de lançamento que resolve, como a escala simula a solução (escala, simula_valor, simula_horas) e se entra na agenda só dentro da janela ou sempre'),
-    "campo" => t('os campos do cadastro dos relógios: o identificador (o nome nas fórmulas), o nome, o tipo, a unidade, o valor padrão, o grupo em que vale (vazio: todos) e a ordem'),
+    "acesso_dono" => t('quem vê todas as coleções de um dono, também as que ele criar depois, e desde quando'),
+    "acessorio" => t('os acessórios de uma coleção: o nome, o tipo e a observação'),
+    "acessorio_relogio" => t('o relógio de que um acessório é (sem linha: solto)'),
+    "agenda" => t('as agendas de uma coleção: o tipo (google, caldav, outlook, ics), o nome, se está ativa, a janela em dias, o modelo do evento, o idioma e o evento de teste'),
+    "agenda_aviso" => t('o que uma agenda recebe: cada tipo de aviso, se envia'),
+    "agenda_caldav" => t('o CalDAV de uma agenda: o endereço do calendário, o usuário e a senha (cifrada)'),
+    "agenda_evento" => t('os eventos personalizados que uma agenda recebe'),
+    "agenda_google" => t('o Google Agenda de uma agenda: o id da agenda e a chave da conta de serviço (cifrada)'),
+    "agenda_ics" => t('o link ICS de uma agenda: o token secreto do link'),
+    "agenda_outlook" => t('o Outlook de uma agenda: a conta, o calendário e o token de renovação (cifrado)'),
+    "agenda_sincronizado" => t('os eventos que o sistema criou em cada agenda: a chave (o que o evento é: o tipo, o relógio e o dia), o id no serviço, a data, o título e a assinatura (o resumo do conteúdo, para saber se mudou)'),
+    "api_token" => t('os tokens de API de cada conta: o nome e o hash (o token só aparece ao criar), quando foi criado e o último uso'),
+    "aviso" => t('os avisos do cadastro: o identificador, o nome, a fórmula da data prevista (expressao), a condição (vale quando), a antecedência em dias, o texto, se está ativo, o grupo da versão, a escala, a simulação, se vai para a agenda, o tipo de lançamento que o resolve e se avisa na hora'),
+    "campo" => t('os campos do cadastro dos relógios, por árvore: o identificador (o nome nas fórmulas), o nome, o tipo, a unidade, o valor padrão, o grupo em que vale (a raiz: todos), a ordem e se vale só nos desejados'),
     "campo_opcao" => t('as opções de um campo do tipo lista, em ordem (sem repetir, sem diferenciar maiúsculas e acentos)'),
     "campo_valor" => t('o valor de cada campo em cada relógio (texto normalizado pelo tipo do campo: número com ponto, data AAAA-MM-DD, sim/não 1 ou 0)'),
-    "canal_aviso" => t('para cada canal (tg: Telegram, ag: Google Agenda) e cada tipo de aviso (dia, vespera, o identificador de um aviso) ou evento personalizado: se ele vai pelo canal, se tem mensagem própria e o texto dela'),
-    "config" => t('os valores soltos da Configuração (horários, limites, mensagens padrão, marcas do sistema), chave e valor'),
+    "colecao" => t('as coleções: o dono, a raiz da árvore que ela usa (uma árvore do mesmo dono), o nome (sem repetir entre as do dono) e quando foi criada'),
+    "colecao_usuario" => t('os membros de uma coleção (o dono não entra aqui) e desde quando'),
+    "config" => t('os valores soltos da Configuração de cada coleção (horários, limites, o idioma), chave e valor'),
+    "convite" => t('os convites para uma coleção ou para tudo de um dono (um ou outro): o e-mail, quem convidou, o estado (pendente: espera o dono; aprovado: enviado), o hash do token do link e até quando vale'),
     "criterio_faixa" => t('as faixas de um subparâmetro: de um número até outro (ou sem limite) ou uma categoria, e a nota (0 a 100) que o valor ganha nela'),
-    "criterio_parametro" => t('os parâmetros de um conjunto de critérios: o lugar (todos, um grupo ou um relógio), o nome, o peso (%) e a ordem'),
+    "criterio_parametro" => t('os parâmetros de um conjunto de critérios: o lugar (um grupo da árvore, a raiz para todos, ou um relógio: um ou outro), o nome, o peso (%) e a ordem'),
     "criterio_sub" => t('os subparâmetros de um parâmetro: o nome, a variável que mede (um campo ou uma fórmula), o peso dentro do parâmetro (%) e a ordem'),
-    "cron_execucao" => t('cada execução do cron que registrou algo: início, fim, duração, o registro em texto, se teve erro e se teve atividade'),
-    "documento" => t('os documentos de cada relógio: a categoria, o título, a data, a descrição, o nome e o tipo do arquivo, o tamanho, o caminho na pasta (arquivo e miniatura), se a cópia no banco está completa (no_banco), se o próprio arquivo pede a cópia (copia_banco) e o SHA-256'),
-    "documento_categoria" => t('as categorias dos documentos (Manual, Nota fiscal, Fotos...): identificador, nome e ordem'),
+    "cron_execucao" => t('cada execução do cron que registrou algo: início, fim, duração, o registro do sistema em texto, se teve erro e se teve atividade'),
+    "cron_execucao_colecao" => t('o registro de cada coleção numa execução do cron, se teve erro e se teve atividade'),
+    "destino" => t('os destinos das mensagens de uma coleção: o tipo (webhook, email, webpush), o nome, se está ligado, a mensagem padrão e o idioma'),
+    "destino_aviso" => t('o que um destino recebe: cada tipo de aviso (dia, vespera, o identificador de um aviso), se envia e o texto próprio'),
+    "destino_email" => t('para quem vai o e-mail de um destino'),
+    "destino_evento" => t('os eventos personalizados que um destino recebe, com o texto próprio'),
+    "destino_webhook" => t('o webhook de um destino: o método, o endereço, o formato (query, form, json) e o corpo JSON opcional'),
+    "destino_webhook_cabecalho" => t('os cabeçalhos do pedido de um webhook (o valor cifrado: pode ter um token)'),
+    "destino_webhook_campo" => t('os campos do pedido de um webhook, em ordem, com {titulo} e {mensagem} no valor'),
+    "destino_webpush" => t('o usuário cujos aparelhos recebem o Web Push de um destino'),
+    "documento" => t('os documentos de cada relógio: a categoria, o título, a data, a descrição, o nome e o tipo do arquivo, o tamanho, o caminho na pasta (arquivo e miniatura), se a cópia no banco está completa e se o arquivo pede a cópia'),
+    "documento_categoria" => t('as categorias dos documentos (Manual, Nota fiscal, Fotos...), por árvore: identificador, nome e ordem'),
     "documento_categoria_aceita" => t('as famílias de arquivo que uma categoria aceita (imagem, video, audio, pdf, xml); nenhuma: qualquer arquivo'),
     "documento_parte" => t('a cópia de um documento dentro do banco, em pedaços de 4 MB (parte 0, 1, 2...; a parte -1 é a miniatura)'),
     "evento_dia" => t('os dias da semana de um evento personalizado semanal (1 segunda a 7 domingo)'),
     "evento_disparo" => t('cada ocorrência de um evento personalizado que já disparou (para não disparar duas vezes)'),
-    "evento_personalizado" => t('os lembretes do usuário: nome, se está ativo, a repetição (uma vez, todo dia, em dias da semana, todo mês, a cada N dias), a data de início, a hora, o dia do mês, o intervalo e o relógio (opcional)'),
-    "formula" => t('as fórmulas do cadastro: o identificador (o nome nas outras fórmulas, nos avisos e nos critérios), o nome, a expressão, a unidade e o grupo da versão (no_id; vazio: todos). A mesma fórmula pode ter uma versão por grupo: vale a do grupo mais perto do relógio'),
+    "evento_personalizado" => t('os lembretes de uma coleção: nome, se está ativo, a repetição (uma vez, todo dia, em dias da semana, todo mês, a cada N dias), a data de início, a hora, o dia do mês e o intervalo'),
+    "evento_relogio" => t('o relógio de um evento personalizado (sem linha: um evento geral)'),
+    "formula" => t('as fórmulas do cadastro: o identificador (o nome nas outras fórmulas, nos avisos e nos critérios), o nome, a expressão, a unidade e o grupo da versão (a raiz: todos). A mesma fórmula pode ter uma versão por grupo; vale a do grupo mais perto do relógio'),
     "foto" => t('a foto de cada relógio (a imagem inteira, o tipo e quando foi trocada)'),
     "lancamento" => t('o histórico de cada relógio: o tipo, o início (o instante, num instantâneo), o fim (numa sessão; vazio: aberta), o valor (numa leitura) e a origem (manual, rodizio, importado)'),
-    "lancamento_tipo" => t('os tipos de lançamento: identificador, nome, formato (instantâneo, com valor ou sessão), unidade, a hora em que a sessão esquecida fecha sozinha (fecha_as), o grupo, a ordem, se a sessão é exclusiva (o relógio fica num lugar só), se a leitura mede o gasto e a condição (vale quando)'),
+    "lancamento_tipo" => t('os tipos de lançamento: identificador, nome, formato (instantâneo, com valor ou sessão), unidade, a hora em que a sessão esquecida fecha sozinha (fecha_as), o grupo, a ordem, se a sessão é exclusiva, se a leitura mede o gasto e a condição (vale quando)'),
     "medicao" => t('cada medição do gasto: o lançamento (a leitura) que a fechou, se mede o uso ou o repouso, o gasto achado (% por dia), as duas leituras, o intervalo, as horas no pulso e fora, o peso (horas) e se entra na média'),
-    "modo" => t('os modos de rodízio: nome, a forma de escolha, a ordem, o horizonte da escala inteligente (escala_dias; vazio: o modo sorteia pelos blocos), o ciclo e a marca do modo em uso (1 no ativo, vazio nos outros: no máximo um)'),
-    "modo_bloco" => t('os blocos de um modo: nome, de onde sortear (um grupo; vazio: todos), um relógio por dia ou um para o bloco inteiro, o relógio fixo (opcional) e a ordem'),
+    "modo" => t('os modos de rodízio de uma coleção: nome, a forma de escolha, a ordem, o horizonte da escala inteligente (escala_dias; vazio: o modo sorteia pelos blocos), o ciclo e a marca do modo em uso (1 no ativo, vazio nos outros)'),
+    "modo_bloco" => t('os blocos de um modo: nome, de onde sortear (um grupo; a raiz: todos), um relógio por dia ou um para o bloco inteiro e a ordem'),
     "modo_bloco_dia" => t('os dias da semana de um bloco (1 segunda a 7 domingo; um dia em um bloco só)'),
-    "no" => t('a árvore dos grupos: o nome, o grupo de cima (vazio: a raiz) e a ordem entre irmãos'),
-    "plano" => t('o relógio de cada dia: o relógio, o bloco do modo que o escolheu, a origem (sorteio ou manual), a ação do dia (o que fazer antes de usar), o motivo da escolha e quando foi gravado'),
-    "relogio" => t('os relógios: nome, grupo, se está disponível para o rodízio, se pede a cópia no banco de todos os documentos e quando foi cadastrado'),
-    "plano_livre" => t('os dias livres do plano: sem relógio e sem sorteio (nem a escala), para escolher à mão'),
-    "usuario" => t('quem entra no site: o login e o hash da senha (password_hash)'),
+    "modo_bloco_relogio" => t('o relógio fixo de um bloco (sem linha: sorteia)'),
+    "no" => t('a árvore dos grupos: a raiz (sem pai) é a árvore inteira e guarda o dono; cada grupo aponta para o de cima; o nome e a ordem entre irmãos. Uma árvore serve a várias coleções do mesmo dono'),
+    "pedido" => t('os pedidos de acesso de uma conta a uma coleção ou a tudo de um dono (um ou outro), com o recado e até quando espera'),
+    "plano" => t('o relógio de cada dia de uma coleção: o relógio, a origem (sorteio ou manual), a ação do dia (o que fazer antes de usar), o motivo da escolha e quando foi gravado'),
+    "plano_bloco" => t('o bloco do modo que escolheu o relógio do dia (sem linha: escolhido à mão)'),
+    "plano_livre" => t('os dias livres do plano de uma coleção: sem relógio e sem sorteio (nem a escala), para escolher à mão'),
+    "push_inscricao" => t('os aparelhos (navegadores) de cada conta inscritos no Web Push: o endereço, as chaves do navegador (p256dh, auth) e o nome do aparelho'),
+    "relogio" => t('os relógios de uma coleção: nome, apelido (para distinguir dois iguais), grupo, se está disponível para o rodízio, a situação na coleção (posse), se pede a cópia no banco de todos os documentos e quando foi cadastrado'),
+    "sistema" => t('os valores do sistema inteiro: as marcas do cron, da cópia de segurança, do aleatório, das migrações, o endereço do sistema, o idioma da instalação e os avisos de vencimento já mandados'),
+    "usuario" => t('as contas: o login, o e-mail (para recuperar a senha, os convites e os avisos da conta), o hash da senha (password_hash), o papel (master: cuida do sistema inteiro; comum), o idioma, quando vence (a conta de demonstração; vazio: oficial), se está bloqueada, quando foi criada e o último acesso'),
+    "usuario_token" => t('os links de Esqueci a senha: o hash do token e até quando vale (2 horas)'),
     ];
 }
 
@@ -53,18 +82,28 @@ function reconstrucao_config_php()
     "DB_TIPO" => t('mysql (MySQL ou MariaDB, o padrão), pgsql (PostgreSQL), sqlite ou firebird (Firebird 3+)'),
     "DB_HOST, DB_PORTA, DB_NOME, DB_USUARIO, DB_SENHA" => t('o servidor do banco (MySQL, PostgreSQL e Firebird; no Firebird, DB_NOME é o caminho do arquivo .fdb no servidor ou um apelido, e DB_HOST vazio abre o arquivo direto)'),
     "DB_ARQUIVO" => t('o arquivo do banco (SQLite), fora da pasta publicada'),
-    "API_TOKEN" => t('obrigatório, com pelo menos 10 caracteres: sem ele o sistema inteiro para (as páginas, a API e o cron dizem o motivo)'),
+    "API_TOKEN" => t('obrigatório, com pelo menos 10 caracteres: o token do servidor (vale como o master mais antigo); sem ele o sistema inteiro para (as páginas, a API e o cron dizem o motivo)'),
+    "SEGREDO_CHAVE" => t('opcional: a chave que cifra os segredos guardados no banco (as senhas do CalDAV, as chaves do Google, os tokens do Outlook, os cabeçalhos dos webhooks); sem ela, o API_TOKEN (trocar a chave perde os segredos guardados)'),
     "FUSO" => t('o fuso horário do sistema e das datas gravadas (vazio: o do PHP)'),
-    "MSG_ENDPOINT, MSG_DESTINATARIO, MSG_TITULO" => t('a API de mensagem (Telegram): um GET com destinatario, titulo e mensagem; resposta 2xx é sucesso; sem o endereço, nada é enviado'),
+    "CADASTRO_ABERTO" => t('opcional: false fecha o cadastro aberto (cadastro.php): só entra quem o master cria ou quem tem um convite; sem a linha, aberto'),
+    "DEMO_DIAS" => t('opcional: os dias da conta de demonstração, a criada pelo cadastro aberto (padrão 30; 0: a conta já nasce oficial). Vencida, o cron a apaga com tudo'),
+    "CONVITE_DIAS" => t('opcional: quantos dias um convite ou um pedido de acesso espera (padrão 7); depois, o cron apaga'),
+    "EMAIL_METODO, EMAIL_REMETENTE" => t('o envio de e-mail (os destinos de e-mail, o Esqueci a senha, os convites, os avisos da conta): smtp ou mail (o mail() do PHP); o remetente (sem ele, o SMTP_USUARIO). Sem EMAIL_METODO e com SMTP_HOST, vale smtp'),
+    "SMTP_HOST, SMTP_PORTA, SMTP_SEGURANCA, SMTP_USUARIO, SMTP_SENHA" => t('o servidor SMTP: o endereço, a porta (padrão 587, ou 465 com ssl), a segurança (tls: STARTTLS, o padrão; ssl: TLS desde o começo; nenhuma) e o login'),
+    "IMAP_HOST, IMAP_PORTA, IMAP_SEGURANCA, IMAP_USUARIO, IMAP_SENHA, IMAP_PASTA_ENVIADOS" => t('opcional: guarda uma cópia de cada e-mail enviado na pasta Enviados (padrão Sent) da conta, por IMAP'),
+    "POP_HOST, POP_PORTA, POP_SEGURANCA, POP_USUARIO, POP_SENHA" => t('opcional: só para o teste do e-mail conferir a caixa por POP3 (alguns provedores pedem o POP antes do SMTP)'),
+    "VAPID_PUBLICA, VAPID_PRIVADA, VAPID_ASSUNTO" => t('o Web Push: o par de chaves VAPID em base64url (o master gera em Minha conta) e o assunto (mailto: ou o endereço do sistema)'),
+    "OUTLOOK_CLIENTE_ID, OUTLOOK_CLIENTE_SEGREDO" => t('o aplicativo registrado na Microsoft (Entra ID) para as agendas do Outlook; o endereço de retorno é api.php?recurso=outlook_retorno. Sem eles, o Outlook fica de fora (use o link ICS)'),
+    "MSG_ENDPOINT, MSG_DESTINATARIO, MSG_TITULO" => t('só para a migração v25: a API de mensagem antiga (Telegram) vira o primeiro destino webhook da coleção; MSG_TITULO continua sendo o título das mensagens'),
     "DOCUMENTOS_PASTA" => t('a pasta dos arquivos dos documentos, fora da pasta publicada, com escrita para o PHP'),
     "DOCUMENTOS_LIMITE (e o nome antigo MANUAL_LIMITE)" => t('o maior documento aceito, em bytes (sem ele: 100 MB; 0 ou -1: sem limite do sistema)'),
     "DOCUMENTOS_COPIA_BANCO" => t('a cópia dos documentos no banco para o sistema inteiro: true, todos; false, nenhum; ausente, o relógio e o arquivo decidem'),
     "TEXTOS_ESTRITO" => t('opcional, para quem traduz: true faz a tradução que falta parar com erro (na API e no cron; nas telas, o texto aparece entre ⟦ ⟧ e o erro vai para o console)'),
     "BACKUP_ATIVO" => t('opcional: false desliga a cópia de segurança (sem cópia automática, sem a escrita fazer e sem o quadro da Configuração); sem a linha, ligada'),
-    "BACKUP_PASTA, BACKUP_MANTER, BACKUP_DOCUMENTOS" => t('a cópia de segurança do banco: a pasta (fora da publicada; sem ela, não há cópia automática), quantas ficam (padrão 7) e se leva o conteúdo dos documentos (padrão: não)'),
+    "BACKUP_PASTA, BACKUP_MANTER, BACKUP_DOCUMENTOS" => t('a cópia de segurança do banco: a pasta (fora da publicada; sem ela, não há cópia automática), quantas ficam (padrão 7) e se leva o conteúdo dos documentos guardado no banco'),
     "ANTIGO_HOST, ANTIGO_PORTA, ANTIGO_USUARIO, ANTIGO_SENHA" => t('só para importar o sistema anterior (importar.php)'),
     "ALEATORIO_RANDOMORG_URL, ALEATORIO_ANU_URL" => t('só para testes: as fontes dos números aleatórios (RANDOM.ORG e ANU QRNG); trocadas, os sorteios pedem os números a um servidor de teste'),
-    "GOOGLE_TOKEN_URL, GOOGLE_API_URL" => t('só para testes: os endereços do Google que a agenda usa (o do token e o da API do Google Agenda); trocados, a sincronização conversa com um servidor de teste'),
+    "GOOGLE_TOKEN_URL, GOOGLE_API_URL, OUTLOOK_LOGIN_URL, OUTLOOK_GRAPH_URL" => t('só para testes: os endereços do Google e da Microsoft que as agendas usam; trocados, a sincronização conversa com um servidor de teste'),
     ];
 }
 
@@ -126,7 +165,7 @@ function reconstrucao_telas()
         ]],
     ],
     "menu" => [
-        "como" => t('Na barra escura do topo, nessa ordem, em todas as páginas; o da página atual em branco e sublinhado. A Ficha, o Histórico e os Documentos não estão no menu: abrem do painel do relógio (o histórico e os documentos numa aba nova). No celular (até 900px): a barra, presa no alto ao rolar, mostra o nome da página atual à esquerda e o botão "☰ Menu" à direita; aberto, ele vira "✕ Menu" e os itens aparecem em duas colunas, cada um num botão escuro (#27323f), o atual em safira. Depois do último item, o seletor do idioma: uma caixa pequena com o código curto de cada idioma (PT, EN, 中文, हिं, ES, FR; o nome inteiro na dica); escolher grava o cookie lingua (um ano, o caminho todo) e abre a página de novo nele. Os rótulos abaixo são os do português: em outro idioma, as traduções do dicionário das telas.'),
+        "como" => t('Na barra escura do topo, nessa ordem, em todas as páginas; o da página atual em branco e sublinhado. A Ficha, o Histórico e os Documentos não estão no menu: abrem do painel do relógio (o histórico e os documentos numa aba nova). No celular (até 900px): a barra, presa no alto ao rolar, mostra o nome da página atual à esquerda e o botão "☰ Menu" à direita; aberto, ele vira "✕ Menu" e os itens aparecem em duas colunas, cada um num botão escuro (#27323f), o atual em safira. Depois do último item, o seletor do idioma: uma caixa pequena com o código curto de cada idioma (PT, EN, 中文, हिं, ES, FR; o nome inteiro na dica); escolher grava o cookie lingua (um ano, o caminho todo) e abre a página de novo nele. Os rótulos abaixo são os do português: em outro idioma, as traduções do dicionário das telas. À direita, antes do idioma, o que é de quem entrou (recurso=conta, parte=menu): com mais de uma coleção, o seletor da coleção (grava o cookie colecao e abre a página de novo; o nome, e "· <dono>" nas dos outros); "Aprovações (N)" em âmbar quando há pedidos ou convites esperando; "Demo: N dias" em âmbar na conta de demonstração. O Usuários só aparece para o master. O master vendo como outro usuário: uma faixa âmbar acima de tudo, "Vendo como <login>: o que aparece e o que se grava é da conta dele." e o botão "Voltar a ser <master>". A conta sem coleção nenhuma (409 sem_colecao) vai para Minha conta. A página pública (cadastro.php) não tem menu, só o idioma.'),
         "itens" => [
             ["pagina" => "index.php", "rotulo" => "Hoje"],
             ["pagina" => "plano.php", "rotulo" => "Plano"],
@@ -139,6 +178,7 @@ function reconstrucao_telas()
             ["pagina" => "criterios.php", "rotulo" => t('Critérios')],
             ["pagina" => "grupos.php", "rotulo" => "Grupos"],
             ["pagina" => "execucoes.php", "rotulo" => t('Execuções do cron')],
+            ["pagina" => "conta.php", "rotulo" => t('Conta')],
             ["pagina" => "usuarios.php", "rotulo" => t('Usuários')],
             ["pagina" => "cadastros.php", "rotulo" => "Cadastros"],
             ["pagina" => "ajuda.php", "rotulo" => "Ajuda"],
@@ -383,40 +423,32 @@ function reconstrucao_telas()
                 "recurso=backup",
             ],
             "grava" => [
-                t('config: salvar, evento_salvar, evento_excluir, testar_manha, testar_noite, teste_agenda_criar, teste_agenda_remover, sincronizar'),
-                t('migracoes: aplicar'),
-                t('backup: fazer, restaurar'),
+                t('config: salvar, evento_salvar, evento_excluir'),
+                t('migracoes: aplicar (só o master)'),
+                t('backup: fazer, restaurar (só o master)'),
             ],
             "partes" => [
                 ["titulo" => t('Banco desatualizado (só quando há migração pendente)'), "itens" => [
-                    t('Um cartão só: "O banco está desatualizado", a explicação ("Esta versão do sistema precisa de migrações que ainda não foram aplicadas... as páginas, a API e o cron ficam parados..."), a tabela das pendentes (versão em negrito, o que traz, o arquivo em código), o botão "Aplicar agora" (migracoes aplicar) e a nota de como rodar na mão. Depois de aplicar: "Atualização do banco", o resultado e "Continuar para a Configuração".'),
+                    t('Um cartão só: "O banco está desatualizado", a explicação ("Esta versão do sistema precisa de migrações que ainda não foram aplicadas... as páginas, a API e o cron ficam parados..."), a tabela das pendentes (versão em negrito, o que traz, o arquivo em código) e o botão "Aplicar as migrações" (só o master aplica; a v25 guarda antes uma cópia do banco antigo em relojoeiro-antes-da-v25.jsonl.gz).'),
                 ]],
                 ["titulo" => t('Os quadros do alto (uma grade de 3 colunas; um formulário só, salvo pela barra do pé)'), "itens" => [
                     t('Cada opção numa linha: o rótulo à esquerda e o campo à direita, alinhados na mesma coluna em todos os quadros; caixas de marcar no lugar do campo; textos longos com o rótulo em cima e o campo na largura toda. Cada quadro com a explicação embaixo.'),
                     t('Rotina do dia: Manhã: relógio do dia e avisos (hora); Noite: preparar o de amanhã (hora); No pulso a partir de (hora); Pôr no pulso sozinho (caixa); No pulso até (hora); Tirar do pulso sozinho (caixa); Sessão no sol esquecida fecha às (hora).'),
-                    t('Limites e contas: Carregar quando a carga chegar a (%) (1 a 99, padrão 20); Solar: pôr no sol quando chegar a (%) (1 a 99, padrão 70); Gasto medido: média dos últimos (dias) (1 a 3650, padrão 90); Aviso Encostado: dias sem ir ao pulso (1 a 3650, padrão 30; encostado_dias).'),
-                    t('Telas: Abrir o relógio na página Hoje (Ao lado da lista; Numa janela flutuante, grande); Destaque no alto da página Hoje (O relógio do dia; O relógio no pulso agora: destaque_hoje dia ou pulso, com a nota "Destaque: ..."); "Próximos dias (página Hoje): mostrar até (dias por página)" e "Plano: mostrar até (dias por página)" (números de 1 a 366, com o valor de mostrar_ate da API: padrão 7 e 31); Endereço do sistema (a âncora {link}); e a nota sobre o Mostrar até (passando disso, as páginas embaixo: <, os números, >).'),
-                    t('Cron: "Cron rodando: última execução às HH:MM." (nota) ou, em âmbar, "O cron ainda não rodou" / "O cron não roda desde ..." com a linha do crontab em código; o erro guardado numa caixa ("O cron está com erro"); o link "Ver todas as execuções do cron" e o "Registro da última rodada" (abre e fecha).'),
-                    t('Sorteios (só leitura): "Os números vêm de": "1. RANDOM.ORG (ruído atmosférico) · 2. fora do ar, ANU QRNG (quântico) · 3. sem os dois, o gerador seguro do PHP"; "Último lote": "<fonte> em DD/MM/AAAA HH:MM" (aleatorio.ultimo_lote da API) ou "nenhum ainda"; com os dois fora, "Serviços fora" em âmbar: "os dois sem responder desde DD/MM/AAAA HH:MM; o sistema tenta de novo depois de 10 minutos". A nota: "Todo sorteio do sistema (o rodízio totalmente aleatório, o sorteio pela nota e o desempate de notas iguais na escala) usa estes números. Eles chegam num lote, e cada sorteio usa só o que precisa, sem viés."'),
-                    t('Telegram (API de alerta): Enviar alertas (caixa). Google Agenda: Criar eventos na agenda (caixa), Antecedência dos eventos (dias, 1 a 365), ID da agenda, Caminho da chave JSON no servidor; a chave encontrada ("Compartilhe a agenda com <e-mail>") ou não; os botões leves "Criar evento de teste" e "Remover evento de teste".'),
+                    t('Limites e contas: Carregar quando a carga chegar a (%); Solar: pôr no sol quando chegar a (%); Gasto medido: média dos últimos (dias); Aviso Encostado: dias sem ir ao pulso; Máximo de dias sem uso; Previsão: limite (%).'),
+                    t('Telas: Abrir o relógio na página Hoje (Ao lado da lista; Numa janela flutuante, grande); Destaque no alto da página Hoje; Próximos dias e Plano: mostrar até (dias); Idioma padrão da coleção; Endereço do sistema (a âncora {link}: só o master muda; para os outros, o texto).'),
+                    t('Cron: "Cron rodando: última execução às HH:MM." (nota) ou, em âmbar, "O cron ainda não rodou" / "O cron não roda desde ..." com a linha do crontab em código; o erro guardado numa caixa; o link "Ver todas as execuções do cron" e o registro da última rodada (o master vê o do sistema; os outros, o da coleção).'),
+                    t('Sorteios (só leitura): de onde vêm os números (RANDOM.ORG, ANU QRNG, o gerador seguro do PHP) e o último lote.'),
                 ]],
-                ["titulo" => t('Mensagem padrão'), "itens" => [
-                    t('Um cartão por canal (Telegram, Google Agenda), lado a lado: o nome do canal, a lista "Inserir âncora" (põe {ancora} onde está o cursor), o texto (7 linhas) e a ajuda do canal. Embaixo, "O que cada âncora vira" (abre e fecha: a tabela {ancora} → o que é).'),
-                ]],
-                ["titulo" => t('O que vai para onde'), "itens" => [
-                    t('Tabela: Aviso (o nome; nos eventos personalizados, em negrito, com "editar" e "excluir"), Quando, uma coluna por canal com uma caixa centrada (vai ou não), e Personalizar (uma caixa por canal). Marcar Personalizar abre, na linha de baixo, o texto daquele aviso naquele canal, com "Inserir âncora" e a dica "Vazio usa a mensagem padrão do <canal>".'),
+                ["titulo" => t('Mensagens e agendas'), "itens" => [
+                    t('Um quadro com dois lados: "Destinos das mensagens" (cada destino com o nome, o tipo e "(desligado)" quando está; o link para a página Destinos; vazio: "Nenhum ainda: as mensagens da manhã, da noite e os avisos não saem para lugar nenhum.") e "Agendas" (cada agenda; o link para a página Agendas; vazio: "Nenhuma ainda."), e a explicação "Um destino é um webhook (Telegram, n8n...), um e-mail ou o Web Push do navegador; uma agenda é o Google, um CalDAV (Nextcloud, iCloud, Fastmail), o Outlook ou um link ICS...".'),
                     t('A barra de salvar no pé: "As mudanças desta página valem depois de salvar." e o botão "Salvar configuração" (config salvar).'),
                 ]],
                 ["titulo" => t('Eventos personalizados'), "itens" => [
-                    t('A explicação e um quadro que abre e fecha ("Novo evento" ou "Editar o evento <nome>"): Nome (obrigatório), Relógio (opcional: "Nenhum, é um evento geral" e os relógios), Quando dispara (uma vez, todo dia, toda semana, todo mês, a cada N dias), e só os campos da repetição escolhida: Data / A partir de, Hora (obrigatória), Dia do mês (1 a 31), A cada quantos dias, Dias da semana (caixas seg a dom); Ativo; as próximas vezes (na edição); botão "Criar evento" / "Salvar alterações" e "cancelar".'),
+                    t('A tabela dos eventos: Evento (o nome), Quando (a repetição por extenso), Relógio, Vai para (os destinos e as agendas que recebem) e as ações Editar e Excluir (Excluir mostra o que sai junto e pede a confirmação). Embaixo, o quadro que abre e fecha ("Novo evento" ou "Editar o evento <nome>"): Nome (obrigatório), Relógio (opcional), Quando dispara (uma vez, todo dia, toda semana, todo mês, a cada N dias), e só os campos da repetição escolhida. O evento novo já vai para todos os destinos.'),
                 ]],
-                ["titulo" => t('Cópia de segurança (no fim da página, depois de Como sai hoje)'), "itens" => [
-                    t('Título "Cópia de segurança". Com a pasta: a nota "Uma cópia do banco inteiro por dia, na rodada da noite, guardando as 7 mais novas, sem (ou com) o conteúdo dos documentos... Última: DD/MM/AAAA HH:MM." (ou "Nenhuma feita ainda."); sem a pasta, em âmbar: "A cópia automática está desligada: <motivo>. Ponha no config.php a BACKUP_PASTA, uma pasta do servidor fora da pasta publicada."'),
-                    t('A tabela compacta das cópias (da mais nova para a mais velha): Cópia (o nome do arquivo em fonte fixa), Feita em, Tamanho ("7 KB"), Documentos (com/sem) e, à direita, "Baixar" (link leve para api.php?recurso=backup&arquivo=<nome>) e "Restaurar" (discreto; confirma "Voltar o banco para a cópia de DD/MM/AAAA HH:MM? Tudo o que foi feito depois some. Antes, o sistema guarda uma cópia do que está agora."; backup restaurar). Embaixo, o botão leve "Fazer uma cópia agora" (backup fazer).'),
-                    t('Com BACKUP_ATIVO = false no config.php, a seção inteira não aparece (nem o aviso de que falta a pasta).'),
-                ]],
-                ["titulo" => t('Como sai hoje'), "itens" => [
-                    t('Três caixas lado a lado: Telegram de manhã e Telegram à noite (o texto como sai, em fonte fixa, ou "(nada a enviar)", e o botão leve "Enviar agora"); Agenda (os próximos eventos com a data, a hora, o título em negrito e a descrição, quantos o sistema já criou, e "Sincronizar agora").'),
+                ["titulo" => t('Cópia de segurança (no fim da página; só o master)'), "itens" => [
+                    t('Título "Cópia de segurança". Com a pasta: a nota "Uma cópia do banco inteiro por dia, na rodada da noite, guardando as N mais novas, sem (ou com) o conteúdo dos documentos... Última: DD/MM/AAAA HH:MM."; sem a pasta, em âmbar, o aviso de que falta a BACKUP_PASTA.'),
+                    t('A tabela compacta das cópias (da mais nova para a mais velha): Cópia (o nome do arquivo em fonte fixa), Feita em, Tamanho, Documentos (com/sem) e, à direita, "Baixar" e "Restaurar" (confirma antes). Com BACKUP_ATIVO = false, a seção inteira não aparece.'),
                 ]],
             ],
         ],
@@ -527,7 +559,7 @@ function reconstrucao_telas()
                 ["titulo" => t('Abas e conteúdo'), "itens" => [
                     t('Abas "Todos (N)" e cada categoria "(N)". Fotos: a galeria (quadrados de 140px, 100px no celular, com o título e a data) e o botão "▶ Apresentação"; tocar numa foto abre o visor em tela cheia (fundo #080b0f): "N de M", "▶ Apresentação" / "❚❚ Parar" (troca a cada 4 s), "Baixar", "×"; ‹ e › nos lados, setas do teclado, deslizar o dedo, Esc fecha, espaço liga a apresentação; a legenda embaixo.'),
                     t('Vídeos: o player e a lista para marcar e ordenar (↑ ↓), "▶ Assistir os marcados" (tocam em sequência; "‹ Anterior", "Próximo ›", "Fechar"). Arquivos: um cartão por arquivo com o título, a data, a categoria em etiqueta, a descrição, o nome, o tamanho e onde está guardado; PDF: "Ver aqui" (abre embutido), "Abrir noutra aba", "Baixar"; XML de NF-e: a tabela Emitente, Nota, Valor, Produto(s), Chave e "Baixar o XML"; áudio: o player; o resto: "Baixar".'),
-                    t('Em cada arquivo, "editar" (abre e fecha): Título, Data, Categoria, Descrição, a cópia no banco (quando cabe), "Salvar" e "Excluir" (confirma "Excluir <título>? O arquivo sai do servidor."). Fotos e vídeos se editam numa lista à parte, "Editar ou excluir fotos e vídeos".'),
+                    t('Cada foto (no canto de cima da miniatura), cada vídeo da lista, cada cartão de arquivo e o visor das fotos têm o botão redondo "⋮" (a dica "Abrir, baixar, editar ou excluir"): ele abre o menu Abrir (a foto no visor, o vídeo no player, o PDF e o resto noutra aba; não aparece no visor), Baixar, Editar e Excluir (em vermelho). Um menu aberto de cada vez; um clique fora ou Esc fecha. Editar abre uma janela por cima da página ("Editar <título>", o nome do arquivo, e Título, Data, Categoria, Descrição, a cópia no banco quando cabe, "Salvar" e "Cancelar"); com ela aberta, as setas e o espaço do visor não agem. Excluir mostra o que sai junto ("Sai junto: o arquivo no disco (6 KB).") e pede a confirmação; excluiu no visor, o visor fecha.'),
                 ]],
             ],
         ],
@@ -576,11 +608,127 @@ function reconstrucao_telas()
                 "recurso=usuarios",
             ],
             "grava" => [
-                t('usuarios: salvar, excluir'),
+                t('usuarios: salvar, alterar, oficializar, prorrogar, voltar_demo, bloquear, transferir, dar_acesso, excluir'),
             ],
             "partes" => [
-                ["titulo" => "Tudo", "itens" => [
-                    t('h1 "Usuários". Cartão "Quem acessa": tabela Login ("você" em etiqueta azul no próprio), Criado em, e Excluir (menos no próprio; confirma). Cartão "Criar usuário ou trocar senha": Login, Senha (pelo menos 6 caracteres, campo de senha), "Se o login já existir, a senha dele é trocada." e "Salvar usuário". Recusado: o erro no topo.'),
+                ["titulo" => t('O painel do master'), "itens" => [
+                    t('h1 "Usuários". Cartão "Contas (N)": a tabela Login (com os selos "master" em azul, "demo" e "bloqueada" e "você"), E-mail, Criada em, Último acesso, Vence (a data e "(N dias)", ou "não vence"), Coleções (cada uma com "(N relógios)"), Vê também (as coleções de outros e "tudo de <dono>") e, à direita, "Ações", que abre: "Ver como <login>" (grava o cookie como e abre o Hoje como ele), "Tornar oficial" (na demo) ou "Voltar a demo (dias)", "Prorrogar (dias)", "Bloquear"/"Desbloquear", o quadro Alterar (Login, E-mail, Idioma, Papel, "Salvar"), a senha nova com "Trocar a senha", "Transferir a coleção" (a coleção e o novo dono), "Dar acesso" (uma coleção de outro ou "Tudo de <dono>") e "Excluir" (mostra o que sai junto: as coleções, os relógios, os arquivos).'),
+                    t('Cartão "Criar conta": Login, Senha (pelo menos 6 caracteres), E-mail, Coleção (uma com o conjunto inicial; uma vazia; nenhuma), a nota "A conta criada aqui é oficial (não vence). Se o login já existir, só a senha dele é trocada." e "Criar conta".'),
+                    t('Quem não é o master vê só "Só o administrador (master) cuida das contas. As suas coisas ficam em Minha conta.".'),
+                ]],
+            ],
+        ],
+        [
+            "id" => "conta",
+            "pagina" => "conta.php",
+            "titulo" => t('Minha conta'),
+            "endereco" => t('conta.php; ?convite=<token> aceita o convite ao abrir'),
+            "le" => [
+                t('recurso=conta'),
+                t('recurso=cadastro (a lista das coleções e dos donos)'),
+            ],
+            "grava" => [
+                t('conta: alterar, token_criar, token_revogar, push_inscrever, push_cancelar, push_testar, email_testar, vapid_gerar, excluir'),
+                t('colecoes: criar, renomear, excluir, arvore_copiar, arvore_renomear, arvore_excluir'),
+                t('pedidos: pedir, cancelar'),
+                t('acessos: sair'),
+                t('convites: aceitar'),
+            ],
+            "partes" => [
+                ["titulo" => t('Coleções'), "itens" => [
+                    t('Tabela Coleção, Dono, Você é (sua, membro, master) e as ações: "Abrir" (grava o cookie colecao) ou "aberta"; nas suas, "Renomear" (abre o nome e "Salvar") e "Excluir" (mostra o que sai junto); nas dos outros, "Sair". Sem nenhuma: o aviso âmbar "Você ainda não vê nenhuma coleção: crie uma aqui embaixo, ou peça acesso à de alguém (e espere a aprovação)." Embaixo, "Nova coleção": Nome, Começa (com o conjunto inicial; vazia; com uma árvore minha que já existe, que abre a escolha da Árvore) e "Criar coleção" (a nova passa a ser a do menu).'),
+                ]],
+                ["titulo" => t('Árvores de grupos'), "itens" => [
+                    t('Só quando há: a explicação ("A árvore guarda os grupos e o cadastro deles... Uma árvore pode servir a várias coleções suas: o que muda nela vale para todas.") e a tabela Árvore, Grupos, Usada por, com "Renomear ou copiar" (o nome e "Renomear"; "Cópia de <nome>" e "Copiar") e "Excluir" (mostra as coleções que saem junto).'),
+                ]],
+                ["titulo" => t('Pedir acesso'), "itens" => [
+                    t('Os pedidos esperando (O quê, Pedido em, Vence em, "Cancelar"), quantos convites há para o seu e-mail ("aceite pelo link que chegou nele"), e o formulário: Acesso a (cada coleção dos outros, "<nome> (de <dono>)", e "Tudo de <dono> (N coleções, e as que vierem)"), Recado para o dono e "Pedir acesso". A nota "O dono (ou o administrador) aprova...".'),
+                ]],
+                ["titulo" => t('Seus dados'), "itens" => [
+                    t('Login, os selos master e demonstração, desde quando; na demonstração, o aviso âmbar "Conta de demonstração: vence em N dias (data)..."; o formulário E-mail, Idioma (O da coleção e os seis), Senha atual (só para trocar a senha), Senha nova, a nota e "Salvar".'),
+                ]],
+                ["titulo" => t('Tokens de API'), "itens" => [
+                    t('A explicação (cabeçalho X-Api-Token; vale como o seu login; só aparece ao criar); o token recém-criado numa caixa tracejada em fonte fixa (para copiar); a tabela Nome, Criado em, Último uso e "Revogar"; o formulário com o nome ("onde vai usar") e "Criar token".'),
+                ]],
+                ["titulo" => t('Notificações neste aparelho (Web Push)'), "itens" => [
+                    t('Sem as chaves no servidor, o aviso âmbar; sem suporte no navegador, a nota (no iPhone, adicionar à tela de início); senão "Receber notificações neste aparelho" (pede a permissão, registra o push.js e inscreve). A tabela dos aparelhos (Aparelho, Desde, "Desligar") e "Mandar uma notificação de teste". Para o master, "Chaves do Web Push (master)": "Gerar chaves" mostra as duas linhas para o config.php.'),
+                ]],
+                ["titulo" => t('Servidor de e-mail (só o master)'), "itens" => [
+                    t('A nota (configurado ou não) e, configurado, o endereço (para; vazio: só a conexão) e "Testar o e-mail".'),
+                ]],
+                ["titulo" => t('Excluir a conta'), "itens" => [
+                    t('A explicação do que sai e "Excluir a minha conta" (botão vermelho; a API mostra tudo o que sai junto e pede a confirmação; depois, vai para o cadastro).'),
+                ]],
+            ],
+        ],
+        [
+            "id" => "aprovacoes",
+            "pagina" => "aprovacoes.php",
+            "titulo" => t('Aprovações e convites'),
+            "endereco" => t('aprovacoes.php'),
+            "le" => [
+                t('recurso=aprovacoes'),
+                t('recurso=conta, parte=menu (o seu login)'),
+            ],
+            "grava" => [
+                t('pedidos: aprovar, recusar'),
+                t('convites: convidar, aprovar, recusar, reenviar, cancelar'),
+                t('acessos: remover'),
+            ],
+            "partes" => [
+                ["titulo" => t('Tudo'), "itens" => [
+                    t('h1 "Aprovações e convites". "Pedidos de acesso": Quem (o login e o e-mail), Pede, Recado, Vence em, "Aprovar" e "Recusar" (ou "Nenhum pedido esperando."). "Convites esperando a sua aprovação" (só quando há): E-mail, Quem convidou, Para, Vence em, "Aprovar e enviar", "Recusar". "Convidar": a explicação (o link vale N dias; quem não tem conta cria pelo link; o convite de um membro espera o dono), sem e-mail no servidor o aviso âmbar (o link aparece aqui, numa caixa para copiar), E-mail, Para ver (as coleções que você vê e "Tudo meu") e "Convidar". "Convites que você fez": E-mail, Para, Situação (enviado, esperando o dono), Vence em, "Reenviar" e "Cancelar". "Quem vê as suas coleções": Quem, Vê, Desde e "Tirar o acesso" (confirma) ou "Só você.".'),
+                ]],
+            ],
+        ],
+        [
+            "id" => "cadastro",
+            "pagina" => "cadastro.php",
+            "titulo" => t('Criar conta'),
+            "endereco" => t('cadastro.php; ?convite=<token> (o convite); ?senha=<token> (a senha nova)'),
+            "le" => [
+                t('recurso=cadastro (sem login)'),
+            ],
+            "grava" => [
+                t('cadastro: criar_conta, esqueci_senha, nova_senha'),
+            ],
+            "partes" => [
+                ["titulo" => t('Tudo'), "itens" => [
+                    t('A página pública: sem menu (só o idioma), sem login. Normal: h1 "Criar conta", o formulário Login (sem dois-pontos), Senha, E-mail (largo), Idioma, "Para começar" (Uma coleção minha, com o conjunto inicial; Uma coleção minha, vazia; Pedir acesso à coleção de alguém, que abre Acesso a e Recado), a nota da demonstração ("A conta nova é de demonstração por N dias...") e "Criar conta"; "Já tem conta? Entrar"; e "Esqueci a senha" (o e-mail ou o login e "Mandar o link"; sem e-mail no servidor, a nota). Cadastro fechado: o aviso âmbar. Com convite: "Você foi convidado para ver <alvo>.", "Já tem conta? Entre e aceite o convite" (conta.php?convite=...) e, se o e-mail não tem conta, o formulário com o e-mail já preenchido e a caixa "Criar também uma coleção minha". Com o link da senha: "Senha nova" e "Trocar a senha". Depois de criar ou trocar: "Pronto", a mensagem e o botão "Entrar".'),
+                ]],
+            ],
+        ],
+        [
+            "id" => "destinos",
+            "pagina" => "destinos.php",
+            "titulo" => t('Destinos'),
+            "endereco" => t('destinos.php#destino-<id>'),
+            "le" => [
+                t('recurso=destinos'),
+            ],
+            "grava" => [
+                t('destinos: salvar, testar, excluir'),
+            ],
+            "partes" => [
+                ["titulo" => t('Tudo'), "itens" => [
+                    t('h1 "Destinos das mensagens", os links "← Configuração" e "Agendas" e a explicação. Cada destino num cartão (id destino-<id>): Nome, Ligado, Idioma (O da coleção e os seis), o que é do tipo (o webhook: Método, Endereço, A mensagem vai (na URL, como formulário, como JSON), a tabela dos Campos com duas linhas vazias, o Corpo JSON, a tabela dos Cabeçalhos, com o valor escondido ("(guardado; vazio mantém)"); o e-mail: Para, e o aviso âmbar sem e-mail no servidor; o Web Push: Para os aparelhos de (quem vê a coleção), quantos aparelhos, o link para Minha conta, e o aviso âmbar sem as chaves), a Mensagem padrão com "Inserir âncora", "O que recebe" (a tabela Recebe, Aviso, Quando, Texto: a caixa de cada tipo e o "Personalizar" que abre o texto próprio com "Inserir âncora"), "Salvar", "Mandar um teste", "Mandar a da manhã agora", "Mandar a da noite agora", "Excluir", e "Como sai hoje" (De manhã, À noite, o texto em fonte fixa ou "(nada a enviar)"). No fim, "Novo destino": o tipo e o nome, "Criar".'),
+                ]],
+            ],
+        ],
+        [
+            "id" => "agendas",
+            "pagina" => "agendas.php",
+            "titulo" => t('Agendas'),
+            "endereco" => t('agendas.php#agenda-<id>; ?recado=<texto> (a volta da Microsoft)'),
+            "le" => [
+                t('recurso=agendas'),
+            ],
+            "grava" => [
+                t('agendas: salvar, sincronizar, teste_criar, teste_remover, novo_link, outlook_conectar, excluir'),
+            ],
+            "partes" => [
+                ["titulo" => t('Tudo'), "itens" => [
+                    t('h1 "Agendas", os links "← Configuração" e "Destinos" e a explicação ("...O cron sincroniza de manhã e à noite; o link ICS o app de agenda lê quando quiser."). Cada agenda num cartão: Nome, Ligada, Eventos até quantos dias à frente, Idioma, o que é do tipo (Google: ID da agenda e a chave, o JSON colado; o caminho no servidor só o master; CalDAV: Endereço do calendário, Usuário, Senha, com a dica do Nextcloud, do iCloud e do Fastmail; Outlook: a conta conectada ou não, o calendário, "Conectar ao Outlook" (vai para a Microsoft e volta com o recado), e sem o aplicativo no servidor o aviso âmbar; link ICS: o link para assinar, com as dicas do Google, do Outlook e do iPhone, e "Trocar o link", que confirma), o Modelo do evento com "Inserir âncora" ("A primeira linha é o título do evento; o resto, a descrição."), "O que recebe", "Salvar", "Sincronizar agora", "Criar evento de teste" / "Remover evento de teste", "Excluir", e "O que tem de estar nela agora" (a data, a hora, o título e a descrição dos primeiros eventos, ou "Nada previsto no período."). No fim, "Nova agenda": o tipo e o nome, "Criar".'),
                 ]],
             ],
         ],
@@ -658,7 +806,18 @@ function reconstrucao_codigo()
     "cadastros.php" => ["tela", t('o esqueleto da página Cadastros')],
     "cadastros.js" => ["tela", t('a página Cadastros: as abas Campos, Tipos de lançamento, Fórmulas, Avisos, Modos de rodízio e Categorias de documentos')],
     "usuarios.php" => ["tela", t('o esqueleto da página Usuários')],
-    "usuarios.js" => ["tela", t('a página Usuários: quem acessa e criar usuário ou trocar a senha')],
+    "usuarios.js" => ["tela", t('a página Usuários: o painel do master (cada conta com o que tem e as ações: ver como, oficializar, prorrogar, voltar a demo, bloquear, alterar, trocar a senha, transferir, dar acesso, excluir) e criar conta')],
+    "conta.php" => ["tela", t('o esqueleto da página Minha conta')],
+    "conta.js" => ["tela", t('a página Minha conta: as coleções, as árvores, pedir acesso, os dados, os tokens, as notificações deste aparelho, o servidor de e-mail (master) e excluir a conta')],
+    "aprovacoes.php" => ["tela", t('o esqueleto da página Aprovações')],
+    "aprovacoes.js" => ["tela", t('a página Aprovações: os pedidos, os convites a aprovar, convidar, os convites feitos e quem vê as suas coleções')],
+    "cadastro.php" => ["tela", t('o esqueleto da página pública Criar conta (sem menu, sem login)')],
+    "cadastro.js" => ["tela", t('a página Criar conta: o cadastro aberto, o convite, o esqueci a senha e a senha nova')],
+    "destinos.php" => ["tela", t('o esqueleto da página Destinos')],
+    "destinos.js" => ["tela", t('a página Destinos: cada destino das mensagens (webhook, e-mail, Web Push), o que recebe, o teste e como sai hoje')],
+    "agendas.php" => ["tela", t('o esqueleto da página Agendas')],
+    "agendas.js" => ["tela", t('a página Agendas: cada agenda (Google, CalDAV, Outlook, link ICS), o que recebe, a sincronização, o evento de teste e o que tem de estar nela')],
+    "push.js" => ["tela", t('o service worker do Web Push: mostra a notificação que chega e, no clique, abre o sistema')],
     "ajuda.php" => ["tela", t('o esqueleto da página Ajuda')],
     "ajuda.js" => ["tela", t('a página Ajuda: o sumário e o manual em HTML (recurso=manual)')],
     "api.php" => ["api", t('a API, a porta única: a autenticação, o formato, a ordem dos recursos (cada um no seu arquivo da pasta api/, ou ali mesmo, os pequenos), os filtros, o JSON e o XML, e no cabeçalho a documentação inteira')],
@@ -667,6 +826,8 @@ function reconstrucao_codigo()
     "api/hoje.php" => ["api", t('recurso=hoje: tudo o que a página Hoje mostra')],
     "api/ficha.php" => ["api", t('recurso=ficha: tudo o que o painel de um relógio mostra (ou o cadastro de um novo)')],
     "api/configuracao.php" => ["api", t('recurso=config: a Configuração inteira')],
+    "api/destinos.php" => ["api", t('recurso=destinos: os destinos das mensagens da coleção, o que cada um recebe e a prévia de hoje')],
+    "api/agendas.php" => ["api", t('recurso=agendas: as agendas da coleção, o que cada uma recebe e o que tem de estar nela agora')],
     "api/desejos.php" => ["api", t('recurso=desejos: a lista de desejos e os relógios fora da coleção')],
     "api/passaporte.php" => ["api", t('recurso=passaporte: a ficha de um relógio para imprimir, tudo já em texto')],
     "api/galeria.php" => ["api", t('recurso=galeria: a coleção em fotos, por grupo')],
@@ -687,13 +848,17 @@ function reconstrucao_codigo()
     "api/escrita.php" => ["api", t('as escritas (POST): cada recurso e ação vai para a função dele no operacoes.php, que valida, grava e responde')],
     "lib.php" => ["api", t('o núcleo: o token, o login, a árvore, os campos, os lançamentos, o motor das fórmulas, os avisos, os critérios, o rodízio, a escala e as listas do código')],
     "operacoes.php" => ["api", t('as escritas: cada ação valida, grava e devolve ok, mensagem e erros (a API chama estas funções)')],
+    "colecoes.php" => ["api", t('as coleções no núcleo: a coleção do pedido, os ids da raiz, o modelo.json (a árvore e a coleção novas), os segredos cifrados, a tabela sistema, a migração v25, o usuário do pedido, as coleções que cada um vê, excluir com os arquivos, a limpeza das contas e o impacto das exclusões')],
+    "alertas.php" => ["api", t('os alertas: o pedido HTTP (e a conferência dos endereços de fora), os destinos (webhook, e-mail por SMTP/IMAP/POP, Web Push com VAPID), as mensagens da manhã e da noite, as agendas (Google, CalDAV, Outlook, o link ICS) e a sincronização')],
+    "contas.php" => ["api", t('as contas: o cadastro aberto, Minha conta, as coleções e as árvores (copiar, transferir), os acessos, os convites, os pedidos, os tokens pessoais, o Vendo como e o painel do master')],
+    "modelo.json" => ["banco", t('o conjunto inicial de uma coleção nova, sem códigos fixos (os grupos por apelido): os grupos, os campos, os tipos, as fórmulas, os avisos, os critérios, as categorias, os modos, a configuração e as mensagens padrão, em português')],
     "banco.php" => ["api", t('o banco: MySQL/MariaDB, PostgreSQL, SQLite ou Firebird, o SQL escrito uma vez só e traduzido para cada um, e o catálogo do modelo')],
     "reconstrucao.php" => ["api", t('a reconstrução (recurso=reconstrucao): as regras de cada parte, a especificação das telas e esta lista do código')],
     "cron.php" => ["linha_de_comando", t('o cron, a cada minuto: as mensagens, o pulso sozinho, a agenda, a manutenção dos documentos, sempre mudo e registrado no banco')],
     "instalar.php" => ["linha_de_comando", t('a instalação pelo servidor (a mesma do POST recurso=instalacao)')],
     "importar.php" => ["linha_de_comando", t('a importação do sistema antigo pelo servidor (a mesma do POST recurso=importacao)')],
     "criar_usuario.php" => ["linha_de_comando", t('criar um usuário ou trocar a senha pelo servidor (o mesmo do POST recurso=usuarios, acao=salvar)')],
-    "schema.sql" => ["banco", t('o banco inicial (no dialeto do MySQL, traduzido para os outros) e o cadastro que vem pronto, com os critérios iniciais')],
+    "schema.sql" => ["banco", t('a estrutura do banco (no dialeto do MySQL, traduzida para os outros): as tabelas, as chaves e as regras, sem dados')],
     "config.exemplo.php" => ["servidor", t('o modelo do config.php, com cada constante explicada (o config.php de verdade não sai: veja nao_mostrados)')],
     ".htaccess" => ["servidor", t('o Apache: o que abre pelo navegador e o que fica bloqueado')],
     "nginx-relogios.conf" => ["servidor", t('o nginx: o mesmo bloqueio do .htaccess')],
@@ -838,7 +1003,7 @@ function codigo_da_pagina($pagina)
 
 function reconstrucao()
 {
-    global $FUNCOES, $TIPOS_CAMPO, $FORMATOS_LANCAMENTO, $REPETICOES, $ANCORAS, $CANAIS, $MIGRACOES, $DIAS_SEMANA;
+    global $FUNCOES, $TIPOS_CAMPO, $FORMATOS_LANCAMENTO, $REPETICOES, $ANCORAS, $MIGRACOES, $DIAS_SEMANA;
     $secao = function ($id, $titulo, $itens) {
         return ["id" => $id, "titulo" => $titulo, "itens" => $itens];
     };
@@ -859,12 +1024,12 @@ function reconstrucao()
         $migracoes[] = ["versao" => $v, "arquivo" => $m[0], "traz" => $m[1], "passo_em_php" => isset($m[3])];
     }
     return [
-        "o_que_e" => t('O Relojoeiro (Relógios 2) planeja o rodízio de uma coleção de relógios: escolhe o relógio de cada dia pela nota de cada um (critérios com pesos) e pelas regras do modo de rodízio, acompanha a energia de cada um (bateria, reserva de marcha, carga de luz, vida da pilha) pelas fórmulas do cadastro e pelo histórico de lançamentos, avisa o que fazer (carregar, dar corda, pôr no sol, trocar a pilha, revisão) pelo Telegram e pelo Google Agenda, mede o gasto real da bateria pelas leituras e guarda os documentos de cada relógio. Esta resposta é o roteiro para reescrever o sistema inteiro do zero e chegar ao mesmo comportamento.'),
+        "o_que_e" => t('O Relojoeiro (Relógios 2) planeja o rodízio de uma coleção de relógios: escolhe o relógio de cada dia pela nota de cada um (critérios com pesos) e pelas regras do modo de rodízio, acompanha a energia de cada um (bateria, reserva de marcha, carga de luz, vida da pilha) pelas fórmulas do cadastro e pelo histórico de lançamentos, avisa o que fazer (carregar, dar corda, pôr no sol, trocar a pilha, revisão) pelos destinos das mensagens (Telegram e outros webhooks, e-mail, Web Push) e pelas agendas (Google, CalDAV, Outlook, link ICS), mede o gasto real da bateria pelas leituras e guarda os documentos de cada relógio. Esta resposta é o roteiro para reescrever o sistema inteiro do zero e chegar ao mesmo comportamento. Várias pessoas usam o mesmo sistema: cada conta tem as suas coleções (cada uma com os relógios, o histórico, o plano, as mensagens e as agendas), numa árvore de grupos que pode servir a várias coleções do mesmo dono, e pode ver as coleções de outros, por convite ou por pedido aprovado.'),
         "como_usar" => [
             t('Leia as seções na ordem: os princípios e a arquitetura, a ordem de construção, e cada módulo com as suas regras.'),
             t('O modelo de dados (modelo_de_dados) é o do banco em uso agora, lido dele: tabelas, colunas, chaves, índices e regras de validação. Os tipos vêm no dialeto desse banco; o dialeto de referência (MySQL) está no schema.sql.'),
             t('O contrato da API (cada consulta com parâmetros e exemplo, cada escrita com ações e campos, e o significado de cada campo das respostas) está em api.php?recurso=ajuda: a reescrita deve responder igual, para as telas, os scripts e quem integra continuarem funcionando.'),
-            t('O conhecimento sobre relógios não está no código: está no cadastro inicial (schema.sql, a partir de "-- critérios iniciais" para os critérios; os campos, os tipos de lançamento, as fórmulas, os avisos e os modos nas migrações). Leia também por recurso=cadastros e recurso=criterios. A reescrita traz esse cadastro como dado, não como código.'),
+            t('O conhecimento sobre relógios não está no código: está no modelo.json (o conjunto inicial de uma coleção nova: os grupos, os campos, os tipos de lançamento, as fórmulas, os avisos, os critérios dos grupos, as categorias, os modos, a configuração e as mensagens padrão, sem nenhum código fixo: os grupos se citam por apelido). O schema.sql só tem a estrutura. Leia também por recurso=cadastros e recurso=criterios. A reescrita traz esse cadastro como dado, não como código, no idioma de quem cria a coleção.'),
             t('As telas (telas) são a especificação visual: o visual com os valores exatos, o menu e cada página, parte por parte, com cada tabela, campo, botão e mensagem, palavra por palavra. A reescrita reproduz a mesma interface, não uma parecida: o que está lá existe, e o que não está não existe. As capturas em docs/telas/ mostram o resultado.'),
             t('O código de verdade, como está agora, sai pelo recurso=codigo (a lista em codigo, abaixo): o CSS, o JavaScript, cada página e o HTML que ela entrega ao navegador, a API, o banco e o resto, lido do disco na hora (arquivo=<nome>; cru=1 para o arquivo puro). Cada página em telas diz os arquivos dela (codigo). O que não sai (o config.php, as chaves, os dados) está em codigo.nao_mostrados, com o que ver no lugar.'),
             t('O README.md explica cada tela e cada opção para quem usa (as seções para quem usa saem também pela API, em recurso=manual: o texto da página Ajuda); o testes/cenario.php é o roteiro de aceitação (veja a seção testes).'),
@@ -875,6 +1040,8 @@ function reconstrucao()
                 t('Tudo pela API: as páginas só desenham; toda leitura e toda gravação passa pela API, a mesma que um script usa. Nenhuma regra de negócio no navegador além de mostrar e esconder campos.'),
                 t('Falha segura: sem token válido, com o fuso inválido ou com o banco desatualizado (migração pendente), o sistema para e diz o motivo (a API responde 500 ou 503, o cron registra e não faz nada), em vez de rodar pela metade.'),
                 t('O banco se defende: relacional e normalizado, toda ligação é chave estrangeira (obrigatória: some junto, ON DELETE CASCADE; opcional: a ligação se desfaz, SET NULL), nenhuma lista guardada como texto, e regras de validação (CHECK, NOT NULL, UNIQUE) iguais às da tela. Uma gravação errada é recusada pelo banco venha de onde vier (a API responde 409 com a regra quebrada).'),
+                t('Cada coisa é de alguém: a coleção tem um dono, a árvore de grupos tem um dono, e tudo o que se lê ou se grava vale na coleção do pedido. A separação é do núcleo, não de cada consulta: a camada do banco reescreve cada comando para enxergar só a coleção (e a árvore dela), e quem não vê uma coleção recebe 404, como se ela não existisse.'),
+                t('Nada some sem aviso: toda exclusão mostra antes o que sai junto (seguindo o banco em cascata, no banco inteiro: uma árvore serve a várias coleções) e só apaga com a confirmação; os arquivos do disco saem junto, na hora.'),
                 t('Os mesmos resultados em MySQL/MariaDB, PostgreSQL, SQLite e Firebird: o SQL do sistema é escrito uma vez só; o que muda de banco para banco fica numa camada de tradução. Maiúsculas e acentos não contam nos textos curtos ("Relógio" = "RELOGIO"), em todos; no MySQL/MariaDB, toda tabela em utf8mb4_unicode_ci (a utf8mb4_general_ci, padrão do MariaDB, ordena diferente); no Firebird, a collation UNICODE_CI_AI.'),
                 t('Datas e horas no fuso do sistema (FUSO). Nas fórmulas, o tempo é contado em dias no horário local: a meia-noite local de qualquer data é um número inteiro e a fração é a hora do dia; assim uma data e o agora entram na mesma conta sem o fuso aparecer.'),
                 t('O cron é mudo e rastreável: roda a cada minuto, não escreve na saída, e registra no banco o que fez.'),
@@ -882,18 +1049,18 @@ function reconstrucao()
             ]),
             $secao("arquitetura", t('A arquitetura'), [
                 t('Um back-end único, a API (api.php): GET lê (recurso=...), POST grava (recurso=... e acao=...). Responde JSON (ou XML com formato=xml). O api.php faz a porta (a autenticação, o formato, a ordem dos recursos, os filtros e a resposta); cada recurso grande fica num arquivo da pasta api/ (api/hoje.php, api/ficha.php, api/ajuda.php...), que roda dentro dele, com as mesmas variáveis. Autenticação em todo pedido: o token (cabeçalho X-Api-Token ou parâmetro token, igual ao API_TOKEN) ou o login do site (HTTP Basic com usuário e senha da tabela usuario, senha com password_hash).'),
-                t('Um núcleo (lib.php): o motor das fórmulas, as variáveis de cada relógio, os avisos, as notas, o plano, a escala, a previsão, o gasto medido, o pulso sozinho, a linha do tempo, as mensagens, a agenda e os documentos.'),
-                t('As gravações (operacoes.php): uma função por recurso (op_relogio, op_lancamento, op_campos...), que valida tudo, grava e devolve {ok, mensagem, erros[], ...}. A tela e a API chamam as mesmas.'),
+                t('Um núcleo (lib.php): o motor das fórmulas, as variáveis de cada relógio, os avisos, as notas, o plano, a escala, a previsão, o gasto medido, o pulso sozinho, a linha do tempo e os documentos; o colecoes.php (o escopo da coleção, o modelo.json, os segredos cifrados, a configuração do sistema, a migração v25, o impacto das exclusões); o alertas.php (os destinos das mensagens: webhook, e-mail por SMTP com cópia por IMAP, Web Push com VAPID; as agendas: Google, CalDAV, Outlook, ICS); o contas.php (o cadastro aberto, a conta, as coleções e as árvores, os convites, os pedidos, os tokens e o painel do master).'),
+                t('As gravações (operacoes.php e, as das contas, contas.php): uma função por recurso (op_relogio, op_lancamento, op_campos, op_conta, op_colecoes...), que valida tudo, grava e devolve {ok, mensagem, erros[], ...}. A tela e a API chamam as mesmas.'),
                 t('O banco (banco.php): a conexão com as extensões do PHP (mysqli, pgsql, sqlite3, pdo_firebird), parâmetros sempre por ? (nunca texto colado no SQL), e a tradução do dialeto do MySQL para os outros: AUTO_INCREMENT, ENUM (vira CHECK ... IN), TINYINT, DATETIME, os INDEX dentro do CREATE TABLE, AFTER, MODIFY COLUMN (o SQLite refaz a tabela), INSERT IGNORE, REPLACE INTO, NOW(), <=>, LIKE sem diferenciar maiúsculas; no Firebird, também LIMIT/OFFSET (OFFSET ... ROWS FETCH NEXT ... ROWS ONLY), DATE(x) (CAST AS DATE), CONCAT (||), LENGTH/LEAST/GREATEST (OCTET_LENGTH/MINVALUE/MAXVALUE), o SELECT sem FROM (FROM RDB$DATABASE), o INSERT de várias linhas (um por linha), a tabela no (palavra reservada: "NO"), nomes de índice e de regra com até 31 letras, o TEXT como VARCHAR(8191) e a chave única de várias colunas com coluna vazia como índice único de uma expressão; e três comandos próprios das migrações: ALTER FOREIGN KEY, DROP COLUMN e ADD CONSTRAINT ... CHECK (trocando a regra sem perder a anterior se os dados não cumprem a nova).'),
-                t('As páginas (index.php, plano.php, desejos.php, estatisticas.php, hora.php, acessorios.php, galeria.php, passaporte.php, ficha.php, documentos.php, historico.php, configuracao.php, criterios.php, grupos.php, cadastros.php, execucoes.php, usuarios.php, ajuda.php) só entregam o esqueleto, sem conferir nem o login; o JavaScript de cada uma (hoje.js, painel.js, configuracao.js, ajuda.js...) chama a API e monta a tela, sem fazer conta: resumos, porcentagens e situações (o resumo do plano, a porcentagem de cada estado no histórico, o peso efetivo dos critérios, a situação do cron, o manual em HTML) vêm prontos da API. Formulários com data-recurso gravam pela API e a página se remonta com a resposta.'),
+                t('As páginas (index.php, plano.php, desejos.php, estatisticas.php, hora.php, acessorios.php, galeria.php, passaporte.php, ficha.php, documentos.php, historico.php, configuracao.php, criterios.php, grupos.php, cadastros.php, execucoes.php, conta.php, aprovacoes.php, usuarios.php, destinos.php, agendas.php, ajuda.php, e a pública cadastro.php) só entregam o esqueleto, sem conferir nem o login; o JavaScript de cada uma (hoje.js, painel.js, configuracao.js, ajuda.js...) chama a API e monta a tela, sem fazer conta: resumos, porcentagens e situações (o resumo do plano, a porcentagem de cada estado no histórico, o peso efetivo dos critérios, a situação do cron, o manual em HTML) vêm prontos da API. Formulários com data-recurso gravam pela API e a página se remonta com a resposta.'),
                 t('A API faz tudo, inclusive o que vem antes das telas: a instalação do banco vazio (recurso=instalacao, pelo token), o primeiro usuário (recurso=usuarios pelo token), a importação do sistema anterior (recurso=importacao) e o login das páginas (recurso=entrar: a página sem login recebe 401 da API, o api.js manda para api.php?recurso=entrar&volta=<a página>, o navegador pede o usuário e a senha e a API devolve para a página). Os scripts de linha de comando (instalar.php, criar_usuario.php, importar.php) só chamam as mesmas operações.'),
                 t('Fora da API, só o cron (cron.php), a cada minuto pela linha de comando, com as mesmas funções que a API usa; o que ele fez sai em recurso=cron.'),
                 t('Sem framework e sem dependências: PHP 8.1+ e JavaScript puro. A reescrita pode usar outra pilha, desde que mantenha o contrato da API, o modelo de dados e as regras.'),
             ]),
             $secao("ordem", t('A ordem de construção'), [
-                t('1. O banco: as tabelas do modelo_de_dados, com as chaves e as regras; a instalação (o schema inteiro num banco vazio) e as migrações (uma lista ordenada; cada uma com o SQL, um passo opcional em programa, e uma marca de aplicada: uma tabela, uma coluna ou uma linha da config; com alguma pendente, o sistema para e a Configuração mostra o botão de aplicar).'),
-                t('2. O cadastro inicial (a árvore Smartwatch / Tradicional › Mecânico › Automático e Corda manual / Tradicional › Quartzo › Pilha e Solar, os campos, os tipos de lançamento, as fórmulas, os avisos, os critérios e os modos) como dados.'),
-                t('3. A autenticação (token e HTTP Basic) e o esqueleto da API: os formatos, os erros (400, 401, 404, 409, 413, 500, 503) e os filtros genéricos de qualquer consulta (incluir, excluir, f[], busca, ordem, limite, pagina, mostrar).'),
+                t('1. O banco: as tabelas do modelo_de_dados, com as chaves e as regras; a instalação (o schema inteiro num banco vazio) e as migrações (uma lista ordenada; cada uma com o SQL, um passo opcional em programa, e uma marca de aplicada: uma tabela, uma coluna ou uma linha da tabela sistema; com alguma pendente, o sistema para e a Configuração mostra o botão de aplicar). A v25 refaz o banco inteiro: copia tudo para um arquivo, cria a estrutura nova e devolve os registros na forma nova, com os mesmos ids.'),
+                t('2. O conjunto inicial (modelo.json: a árvore Smartwatch / Tradicional › Mecânico › Automático e Corda manual / Tradicional › Quartzo › Pilha e Solar, os campos, os tipos de lançamento, as fórmulas, os avisos, os critérios, as categorias e os modos) como dados, entrando no idioma de quem cria a coleção.'),
+                t('3. As contas e a autenticação (o login HTTP Basic, o token pessoal, o token do servidor), a coleção do pedido e o escopo dela no banco, e o esqueleto da API: os formatos, os erros (400, 401, 403, 404, 409, 413, 500, 503) e os filtros genéricos de qualquer consulta (incluir, excluir, f[], busca, ordem, limite, pagina, mostrar).'),
                 t('4. A árvore, os campos (com a validação do valor pelo tipo), os relógios e as fotos.'),
                 t('5. Os tipos de lançamento e os lançamentos (instantâneo, com valor, sessão; sessão exclusiva fecha as outras exclusivas no mesmo instante; sem sobreposição de sessões do mesmo tipo), e a linha do tempo.'),
                 t('6. O motor das fórmulas (abaixo), as variáveis de um relógio e o botão Testar.'),
@@ -901,9 +1068,9 @@ function reconstrucao()
                 t('8. O gasto medido pelas leituras e a previsão da energia (autonomia).'),
                 t('9. Os critérios e a nota; os modos de rodízio, o plano, a garantia de rodízio, trocar o dia, sortear de novo; a escala inteligente.'),
                 t('10. O pulso sozinho e as sessões esquecidas; o cron.'),
-                t('11. As mensagens (Telegram), a agenda (Google), os eventos personalizados e a tabela "O que vai para onde".'),
+                t('11. Os destinos das mensagens (webhook, e-mail, Web Push), as agendas (Google, CalDAV, Outlook, link ICS) e os eventos personalizados, cada um com o que recebe e o seu modelo.'),
                 t('12. Os documentos (pasta, cópia no banco em três níveis, galeria, vídeos, PDF, NF-e) e a manutenção deles no cron.'),
-                t('13. As telas, os usuários, as execuções do cron, a ajuda (o README dentro do sistema: os mesmos trechos que recurso=manual devolve) e a importação do sistema anterior.'),
+                t('13. As telas, as contas (o cadastro aberto, Minha conta, as Aprovações, o painel do master), as execuções do cron, a ajuda (o README dentro do sistema: os mesmos trechos que recurso=manual devolve) e a importação do sistema anterior.'),
                 t('14. A aceitação: o roteiro de testes nos quatro bancos dá as mesmas respostas (seção testes).'),
             ]),
             $secao("arvore_campos", t('A árvore, os campos e os relógios'), [
@@ -934,7 +1101,7 @@ function reconstrucao()
                 t('Um aviso tem uma fórmula que dá a data prevista (expressao, em dias), uma condição (vale quando), a antecedência (0 a 3650 dias), o texto (até 300, com {relogio}, {data}, {quando} e {limite}), o tipo de lançamento que resolve (o botão na tela Hoje), se está ativo, uma versão por grupo (como as fórmulas), e como a escala simula a solução (escala: nao, uso ou sempre; o valor ou as horas simuladas) e se entra na agenda só dentro da janela de antecedência ou sempre.'),
                 t('Um relógio fora da coleção (desejado, vendido, arquivado) não tem aviso nenhum (o emprestado tem). O aviso vale para um relógio disponível quando a condição dá verdadeiro e a data prevista existe; sai hoje quando a data menos a antecedência já chegou. Estado: atrasado (a data passou) ou em breve. O aviso de um relógio com uma sessão aberta à mão (carregando, no sol) não vai para a agenda enquanto ela estiver aberta: a data andaria a cada conta.'),
                 t('Os avisos de carga usam o limite de carga: o do relógio (campo carga_minima), senão o geral da Configuração (carga_limiar); o solar usa sol_limiar. A data do Carregar é pelo gasto do estado de agora (no pulso, o de uso; guardado, o de guardado); no carregador, o Carregar some e vale o Tirar do carregador (carregado: vence quando a bateria enche no carregador).'),
-                t('Um aviso pode ser "na hora" (na_hora): além do alerta da manhã, o cron manda pelo Telegram no minuto em que ele vence, uma vez, e guarda quais já foram (config.na_hora_enviados, relogio_id:identificador); um aviso sai da lista quando deixa de vencer. O botão do aviso na página Hoje vem da API (resolve.acao e resolve.botao): a sessão que resolve, aberta, se encerra ("Tirou do carregador"); fechada, se inicia ("Pôs no sol"); a leitura se informa.'),
+                t('Um aviso pode ser "na hora" (na_hora): além do alerta da manhã, o cron manda pelos destinos que o recebem no minuto em que ele vence, uma vez, e guarda quais já foram (config.na_hora_enviados, relogio_id:identificador); um aviso sai da lista quando deixa de vencer. O botão do aviso na página Hoje vem da API (resolve.acao e resolve.botao): a sessão que resolve, aberta, se encerra ("Tirou do carregador"); fechada, se inicia ("Pôs no sol"); a leitura se informa.'),
                 t('O aviso Encostado (encostado, de todos os relógios, resolve com o pulso) é só cadastro: a data prevista é PADRAO(ULTIMA_DATA("pulso"); data_compra) + CONFIG("encostado_dias") (a Configuração, padrão 30), antecedência 0; sem nunca ter ido ao pulso nem data da compra, não avisa. Não entra na próxima manutenção nem no "O que fazer": a tabela da coleção tem a coluna Encostado, o cartão do dia mostra a falta quando já venceu, e o quadro Agora do painel também.'),
                 t('A visão de cada relógio (a tabela da página Hoje e o painel): em uso ou em repouso desde quando, a carga estimada agora e de onde vem (a fórmula energia e a origem), a situação (frases curtas: autonomia restante, reserva...), a próxima manutenção (o aviso mais perto, sem o Encostado), o que fazer e a coluna Encostado.'),
             ]),
@@ -968,17 +1135,24 @@ function reconstrucao()
             ]),
             $secao("cron", t('O cron'), [
                 t('A cada minuto: confere o token, o fuso e as migrações (pendente: registra e para); apaga execuções antigas (sem atividade, 7 dias; com atividade ou erro, 1 ano); monta o dia do plano que falta; fecha as sessões esquecidas; abre a sessão no pulso do dia; dispara os eventos personalizados no minuto marcado (depois de uma parada de até 7 dias, sai uma vez só, sem repetir); a manutenção dos documentos.'),
-                t('Na hora da manhã (horario_manha), uma vez por dia: refaz a escala a partir do estado real, manda o Telegram do dia (o relógio de hoje e os avisos) e sincroniza a agenda. Na hora da noite (horario_noite): o Telegram da véspera (o relógio de amanhã e o que preparar) e a sincronização; conta os documentos perdidos; e, com a BACKUP_PASTA no config.php, faz a cópia de segurança do banco.'),
-                t('Os avisos na hora, a cada minuto: os vencidos agora (de todos os relógios) que ainda não foram vão pelo Telegram.'),
+                t('Por coleção, na hora da manhã dela (horario_manha), uma vez por dia: refaz a escala a partir do estado real, manda a mensagem do dia (o relógio de hoje e os avisos) por cada destino ligado e sincroniza as agendas. Na hora da noite (horario_noite): a da véspera (o relógio de amanhã e o que preparar) e a sincronização; conta os documentos. O sistema inteiro, a cada minuto: a limpeza das contas (o aviso de vencimento da demonstração, 7 dias e 1 dia antes, por e-mail; a conta vencida sai com tudo; os convites, os pedidos e os links de senha vencidos saem; a conta comum sem nada sai), a manutenção dos documentos e, depois das 20h, uma vez por dia, a cópia de segurança.'),
+                t('Os avisos na hora, a cada minuto, em cada coleção: os vencidos agora que ainda não foram vão pelos destinos que os recebem.'),
                 t('A cópia de segurança: um arquivo relojoeiro-AAAA-MM-DD-HHMMSS.jsonl.gz na BACKUP_PASTA (fora da pasta publicada: dentro dela, recusada), JSON Lines comprimido, o mesmo nos quatro bancos: a primeira linha é o cabeçalho (relojoeiro_copia 1, criada, banco, versao: a última migração, documentos, tabelas); depois, para cada tabela, uma linha {tabela, colunas, binarias} e uma linha por registro com a lista dos valores (binários em base64). As tabelas vêm na ordem em que voltam (a citada antes da que cita; a que cita a si mesma, a árvore, volta em rodadas). Ficam as BACKUP_MANTER mais novas (padrão 7). O conteúdo dos documentos (documento_parte) só com BACKUP_DOCUMENTOS = true. Restaurar: só da mesma versão; antes, uma cópia do que está agora; depois, numa transação, apaga tudo (na ordem inversa) e grava a cópia; sem o conteúdo dos documentos, documento.no_banco volta a 0.'),
                 t('Com BACKUP_ATIVO = false no config.php, o cron não faz a cópia de segurança e a escrita fazer é recusada.'),
-                t('Mudo: avisos do PHP e erros entram no registro, nunca na saída. Grava em cron_execucao o que fez (só quando fez algo, ou deu erro), o último erro em config.cron_erro (sai na primeira execução sem erro) e a última rodada com atividade em config.cron_registro. Erro fatal sem banco vai para um arquivo na pasta temporária. Opções: --forcar (manhã e noite agora) e -v (mostra o registro).'),
+                t('Mudo: avisos do PHP e erros entram no registro, nunca na saída. Grava em cron_execucao o que fez o sistema (só quando fez algo, ou deu erro) e em cron_execucao_colecao o de cada coleção; o último erro em sistema.cron_erro (sai na primeira execução sem erro) e a última rodada com atividade em sistema.cron_registro. Erro fatal sem banco vai para um arquivo na pasta temporária.'),
             ]),
-            $secao("mensagens", t('As mensagens, a agenda e os eventos personalizados'), [
-                t('Dois canais (listas.canais): Telegram (tg) e Google Agenda (ag). Cada tipo de aviso (dia, vespera, o identificador de cada aviso e ev<id> de cada evento personalizado) é marcado ou não para cada canal, e pode ter mensagem própria no canal; sem ela, vale a mensagem padrão do canal (tg_padrao, ag_padrao). As mensagens têm âncoras entre chaves (listas.ancoras), trocadas pelos valores na hora.'),
-                t('O Telegram vai por uma API de mensagem (MSG_ENDPOINT): GET com destinatario, titulo e mensagem; partes de até 3000 caracteres (as mensagens do mesmo horário vão juntas, separadas por uma linha em branco).'),
-                t('A agenda: uma conta de serviço do Google (a chave JSON no servidor; token por JWT RS256, escopo do Calendar). O sistema calcula o que tem de estar na agenda (de hoje até agenda_antecedencia dias: os avisos marcados para a agenda, no horário da manhã do dia previsto; o relógio do dia e a véspera, pelo plano; as ocorrências dos eventos), cada item com uma chave estável; cria o que falta, atualiza o que mudou (pela assinatura), apaga o que deixou de valer; o que já passou fica. Na agenda, a primeira linha do modelo é o título e o resto a descrição.'),
-                t('Evento personalizado: nome, ativo, repetição (listas.repeticoes), data (uma vez; a cada N dias: a partir dela), hora, dias da semana, dia do mês (1 a 31; mês sem o dia, o último), intervalo (1 a 3650), relógio opcional (com ele, as âncoras do relógio funcionam). Só o que a repetição usa fica gravado. Novo, já vai pelo Telegram.'),
+            $secao("mensagens", t('As mensagens, as agendas e os eventos personalizados'), [
+                t('Os destinos (listas.tipos_de_destino) de cada coleção: webhook (um pedido HTTP GET, POST ou PUT, com a mensagem na URL, como formulário ou como JSON, os campos e os cabeçalhos, estes cifrados; o Telegram é um webhook), e-mail (pelo SMTP do config.php, com STARTTLS ou TLS, e a cópia em Enviados por IMAP) e Web Push (os aparelhos de um usuário que vê a coleção; aes128gcm e VAPID ES256). Cada um tem a mensagem padrão (o modelo, com as âncoras) e o idioma, e escolhe o que recebe: o relógio do dia, a véspera, cada aviso e cada evento personalizado, cada um com o texto próprio opcional. Os itens do mesmo horário vão juntos; o webhook manda em partes de até 3000 caracteres.'),
+                t('As agendas (listas.tipos_de_agenda): Google Agenda (uma conta de serviço; token por JWT RS256), CalDAV (Nextcloud, iCloud com senha de app, Fastmail: um PUT de um .ics por evento), Outlook (o Microsoft Graph, com a conta conectada pelo OAuth do aplicativo registrado) e o link ICS (um calendário que o app de agenda assina; sem login, pela chave secreta do link). O sistema calcula o que tem de estar em cada uma (de hoje até janela_dias: os avisos marcados para ela, no horário da manhã do dia previsto; o relógio do dia e a véspera, pelo plano; os eventos personalizados) e deixa a agenda igual: cria o que falta, atualiza o que mudou (a assinatura do título e da descrição) e apaga o que deixou de valer; o que já passou fica, como histórico.'),
+                t('Os segredos (senhas, chaves, tokens, cabeçalhos) ficam cifrados no banco (AES-256-GCM, com a SEGREDO_CHAVE do config.php; sem ela, o API_TOKEN) e nunca voltam para a tela: a resposta diz só se estão preenchidos. Fora das coleções do master, os endereços que o usuário escreve (webhook, CalDAV, Web Push) têm de ser da internet: nada da rede do servidor.'),
+                t('Evento personalizado: nome, ativo, repetição (listas.repeticoes), data (uma vez; a cada N dias: a partir dela), hora, dias da semana, dia do mês (1 a 31; mês sem o dia, o último), intervalo (1 a 3650), relógio opcional (com ele, as âncoras do relógio funcionam). Só o que a repetição usa fica gravado. O evento novo vai para todos os destinos da coleção; cada disparo fica gravado, para não disparar duas vezes.'),
+            ]),
+            $secao("contas", t('As contas, as coleções e o acesso'), [
+                t('Contas: o login (sem dois-pontos), o e-mail, a senha (o hash), o papel (master: cuida do sistema inteiro, vê todas as coleções e o painel das contas; comum), o idioma, e o vencimento da conta de demonstração. O primeiro usuário é o master. A conta criada pelo cadastro aberto (cadastro.php, CADASTRO_ABERTO) é de demonstração por DEMO_DIAS dias, com aviso por e-mail 7 dias e 1 dia antes; vencida, o cron a apaga com tudo. O master oficializa, prorroga, volta a demonstração, bloqueia, transfere uma coleção, dá acesso, exclui e vê o sistema como outro usuário (Vendo como).'),
+                t('Coleções e árvores: cada coleção tem um dono e usa uma árvore de grupos do mesmo dono; uma árvore pode servir a várias coleções, e o cadastro dela (campos, tipos, fórmulas, avisos, categorias, critérios dos grupos) vale em todas. A coleção nova nasce com o conjunto inicial (numa árvore nova), vazia (só a raiz) ou numa árvore que já existe. Transferir uma coleção leva a árvore junto quando só ela a usa; senão, o novo dono ganha uma cópia da árvore e a coleção passa para a cópia (os relógios, os valores, os lançamentos, os documentos e os blocos dos modos acompanham os ids novos).'),
+                t('O acesso: o dono vê as suas; um membro vê uma coleção (colecao_usuario); quem tem tudo de um dono vê todas as dele, também as que vierem (acesso_dono). Entra-se por convite (o dono, ou o master, convida por e-mail com um link de token; o convite de um membro espera o dono aprovar; quem não tem conta cria pelo link) ou por pedido (o pedido espera o dono, ou o master, aprovar; aprovado ou recusado, a pessoa recebe um e-mail). Convites e pedidos vencem em CONVITE_DIAS dias. A conta comum que fica sem nada (sem coleção, sem acesso, sem pedido nem convite) sai.'),
+                t('O escopo: a coleção do pedido (colecao=, o cookie do seletor do menu, ou a primeira) decide tudo o que se lê e se grava: a camada do banco reescreve cada SELECT, UPDATE e DELETE para enxergar só as linhas da coleção e da árvore dela (a raiz da árvore não aparece, e as colunas que a citam leem vazio, como no tempo de uma pessoa só). A configuração é por coleção; os valores do sistema inteiro (o cron, a cópia de segurança, o aleatório, as migrações, o endereço do sistema) ficam na tabela sistema.'),
+                t('Os tokens pessoais (Minha conta) valem como o login do dono; o token do servidor (API_TOKEN) vale como o master mais antigo. O Esqueci a senha manda um link de token (2 horas) por e-mail.'),
             ]),
             $secao("documentos", t('Os documentos de cada relógio'), [
                 t('Qualquer arquivo, cada um numa categoria (as que aceitam só algumas famílias recusam as outras), com título, data e descrição. O tipo vem do conteúdo do arquivo; quando o conteúdo diz pouco (texto, binário genérico, zip), da extensão. A família decide como abre: imagem (galeria com visor em tela cheia e apresentação, com a miniatura feita no navegador), vídeo (player, em sequência na ordem escolhida), PDF (visualizador), XML (o resumo da NF-e: emitente, número, série, data, valor, chave e produtos; lido sem baixar nada de fora), o resto para baixar. Inline só o que o navegador mostra sem rodar nada (HTML, SVG e XML sempre como download); atende pedido de pedaço (Range).'),
@@ -996,11 +1170,11 @@ function reconstrucao()
                 t('A especificação completa, tela por tela, está em telas (abaixo): o visual com os valores exatos (cores, letras, controles, componentes, larguras), o menu, e cada página com o endereço, o que ela lê e grava na API, e as partes em ordem com cada tabela, campo, botão e mensagem. Aqui, o resumo.'),
                 t('Hoje: no alto, o destaque: o relógio do dia ou, com destaque_hoje = pulso, o que está no pulso agora (a API escolhe: destaque.relogio_id) (com o Pôs e o Tirou), "Hoje é dia de" (os avisos com o botão que resolve), os próximos dias com o motivo e o trocar por…, o modo de rodízio (troca ali mesmo), e a tabela da coleção com filtros e ordenação; clicar num relógio abre o painel dele, ao lado da lista ou numa janela flutuante (painel_modo).'),
                 t('O painel (e a ficha, a mesma coisa numa página): a cabeça (foto, grupo, nome, marcas), quadros alinhados numa grade (Agora, Previsão, Gasto da bateria, Autonomia, Rodízio, Compra, Documentos, Próximas manutenções), cada um com rótulo e valor em duas colunas; o quadro Marcar (um menu só, "O que você quer marcar?", e embaixo só os campos daquilo); Editar cadastro; o gráfico da carga com as medições; os dados do relógio (o cadastro com a origem de cada valor e o resultado de cada fórmula com a versão); o histórico recente.'),
-                t('Plano, Histórico, Documentos, Configuração (quadros com uma opção por linha e a barra de salvar presa no pé), Critérios, Grupos, Cadastros, Execuções do cron, Usuários e Ajuda (as seções do README).'),
+                t('Plano, Histórico, Documentos (com o menu ⋮ em cada arquivo), Configuração (quadros com uma opção por linha e a barra de salvar presa no pé), Destinos, Agendas, Critérios, Grupos, Cadastros, Execuções do cron, Minha conta, Aprovações, Usuários (o painel do master), Ajuda (as seções do README) e o cadastro aberto.'),
                 t('Três tamanhos com o mesmo sistema visual: até 900 px (celular e tablet de pé) o menu fica recolhido, as tabelas viram cartões e o relógio abre em tela cheia (o voltar do aparelho fecha); de 901 a 1199 px o painel ao lado desliza por cima, pela direita. A mesma informação em todos os tamanhos: nenhuma coluna, filtro ou dia é escondido por falta de espaço. A tabela dos relógios tem sempre as 12 colunas; quando a tabela inteira não cabe na largura que tem (medida com os dados, com ou sem o painel aberto), cada relógio vira um cartão com os mesmos 12 campos na mesma ordem, cada um com o nome da coluna em cima (2 colunas no celular, 5 no tablet), os títulos viram botões de ordenar e os 11 filtros ficam todos. Campos com letra de 16 px no celular (o iPhone não aproxima a tela).'),
             ]),
             $secao("seguranca", t('Segurança'), [
-                t('Todo pedido da API exige autenticação (o token ou o login do site); as páginas são só o esqueleto, sem dado nenhum, e quem chega sem login vai para o login da API. O cron e os scripts só pela linha de comando. Os arquivos internos (núcleo, banco, configuração, scripts, testes, dados, os que começam com ponto) ficam bloqueados no servidor web (.htaccess e nginx-relogios.conf).'),
+                t('Todo pedido da API exige autenticação (o login do site, um token pessoal ou o token do servidor), menos o cadastro aberto, o link ICS e os textos das telas; as páginas são só o esqueleto, sem dado nenhum, e quem chega sem login vai para o login da API. Cada pedido só vê a coleção dele (o escopo é do banco), e a coleção que ele não vê responde 404. A cópia de segurança e as migrações são só do master. O cron e os scripts só pela linha de comando. Os arquivos internos (núcleo, banco, configuração, scripts, testes, dados, os que começam com ponto) ficam bloqueados no servidor web (.htaccess e nginx).'),
                 t('SQL sempre com parâmetros; textos escapados no HTML; XML da NF-e lido sem entidades nem rede; arquivos servidos inline só dos tipos seguros; senhas com password_hash; o token comparado em tempo constante.'),
                 t('Senhas: só o hash, pelo password_hash do PHP (bcrypt, $2y$<custo>$<sal de 22><resultado de 31>); o login confere com o password_verify (o bcrypt da senha digitada com o sal e o custo do hash). A API entrega o login e o hash de cada usuário (recurso=usuarios: senha_hash, senha_algoritmo, senha_custo) e aceita criar um usuário pelo hash de outro sistema (usuarios/salvar com senha_hash; bcrypt $2y$, $2b$ ou $2a$, ou argon2; o $2b$ guardado como $2y$, o mesmo cálculo). A reescrita tem de conferir pelo mesmo bcrypt, para os usuários migrarem com a mesma senha. Os arquivos dos documentos só pelo recurso=documento.'),
             ]),
@@ -1018,7 +1192,7 @@ function reconstrucao()
         "codigo" => codigo_lista(false),
         "modelo_de_dados" => [
             "banco" => banco_tipo(),
-            "como_ler" => t('Cada tabela com as colunas (nome, tipo no dialeto do banco em uso, se aceita vazio, o padrão), a chave primária, as chaves estrangeiras (a coluna, a tabela.coluna de referência e o que acontece ao apagar a linha de cima: CASCADE some junto, SET NULL desfaz a ligação), as chaves únicas, os índices e as regras de validação (CHECK). As colunas de texto curto não diferenciam maiúsculas nem acentos. Três referências ficam pelo nome, de propósito: as fórmulas e os critérios citam campos e fórmulas pelo identificador, e canal_aviso.tipo cita o aviso pelo identificador (vale para todas as versões dele).'),
+            "como_ler" => t('Cada tabela com as colunas (nome, tipo no dialeto do banco em uso, se aceita vazio, o padrão), a chave primária, as chaves estrangeiras (a coluna, a tabela.coluna de referência e o que acontece ao apagar a linha de cima: CASCADE some junto, SET NULL desfaz a ligação), as chaves únicas, os índices e as regras de validação (CHECK). As colunas de texto curto não diferenciam maiúsculas nem acentos. Três referências ficam pelo nome, de propósito: as fórmulas e os critérios citam campos e fórmulas pelo identificador, e destino_aviso.tipo_aviso e agenda_aviso.tipo_aviso citam o aviso pelo identificador (vale para todas as versões dele).'),
             "tabelas" => $tabelas,
         ],
         "listas" => [
@@ -1028,7 +1202,8 @@ function reconstrucao()
             "repeticoes" => $lista($REPETICOES, "repeticao"),
             "dias_da_semana" => array_map(function ($n, $nome) { return ["dia" => (int)$n, "nome" => $nome]; }, array_keys($DIAS_SEMANA), $DIAS_SEMANA),
             "ancoras" => $lista($ANCORAS, "ancora"),
-            "canais" => array_map(function ($k, $c) { return ["canal" => $k, "nome" => $c["nome"], "ajuda" => $c["ajuda"]]; }, array_keys($CANAIS), $CANAIS),
+            "tipos_de_destino" => array_map(function ($k, $n) { return ["tipo" => $k, "nome" => t($n)]; }, array_keys(DESTINO_TIPOS), DESTINO_TIPOS),
+            "tipos_de_agenda" => array_map(function ($k, $n) { return ["tipo" => $k, "nome" => t($n)]; }, array_keys(AGENDA_TIPOS), AGENDA_TIPOS),
             "migracoes" => $migracoes,
             "config_php" => array_map(function ($k, $v) { return ["constante" => $k, "descricao" => $v]; }, array_keys(reconstrucao_config_php()), reconstrucao_config_php()),
         ],

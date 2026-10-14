@@ -8,11 +8,25 @@
  * ---------------------------------------------------------------------------------------------
  *   O config.php tem de definir API_TOKEN com pelo menos 10 caracteres (sem contar espaços nas pontas); sem isso o
  *   sistema inteiro para e responde 500 {"erro": "Sistema parado: ..."}.
- *   Todo pedido, consulta ou escrita, exige o token ou o login do site (HTTP Basic):
+ *   Todo pedido, consulta ou escrita, exige o login do site (HTTP Basic: o usuário e a senha de uma conta), um token pessoal
+ *   (Minha conta, Tokens de API: vale como o login do dono dele) ou o token do servidor (o API_TOKEN: vale como o master mais
+ *   antigo), no cabeçalho X-Api-Token ou no parâmetro token:
  *     curl -H "X-Api-Token: segredo" "http://servidor/relojoeiro/api.php"
  *     http://servidor/relojoeiro/api.php?token=segredo
  *     curl -u lucas:senha "http://servidor/relojoeiro/api.php"
- *   Sem nenhum dos dois: 401. O token é comparado sem os espaços das pontas.
+ *   Sem nenhum: 401. O token é comparado sem os espaços das pontas. A conta bloqueada, ou a de demonstração vencida, não entra.
+ *   Só o cadastro aberto (recurso=cadastro), o link ICS (recurso=ics) e os textos das telas (recurso=textos) respondem sem login.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * COLEÇÕES
+ * ---------------------------------------------------------------------------------------------
+ *   Cada pedido vale numa coleção: colecao=<id>, senão o cookie colecao (o seletor do menu), senão a primeira que o usuário vê
+ *   (a dele). A que ele não vê: 404. Tudo o que se lê e se grava é dessa coleção; a árvore de grupos e o cadastro dela (campos,
+ *   tipos, fórmulas, avisos, categorias, critérios dos grupos) são da árvore que a coleção usa, comum a todas as coleções do
+ *   mesmo dono que usam a mesma árvore. Sem coleção nenhuma, só a conta responde (409 com "sem_colecao" nos outros recursos).
+ *   O master vê todas; com como=<login> (ou o cookie como, da faixa "Vendo como" das páginas) ele vê e grava como o outro.
+ *   Toda exclusão é em dois passos: sem confirmar=1, nada sai, e a resposta (409) traz "confirmar": true e "impacto" (o que sai
+ *   junto, em cascata, no banco inteiro); com confirmar=1, apaga, e os arquivos dos documentos saem do disco na hora.
  *
  * ---------------------------------------------------------------------------------------------
  * FORMATO
@@ -55,15 +69,17 @@
  *     "plano":             [{"data", "relogio_id", "relogio", "bloco_id", "bloco", "origem" (sorteio ou manual), "acao" (o que fazer
  *                          no dia, anotado pela escala), "motivo" (por que este relógio saiu), "criado"}]  o plano inteiro gravado, do primeiro dia ao último (a escala
  *                          de dois anos sai inteira)
- *     "config":            {chave: valor}  toda a configuração, inclusive o caminho da chave do Google (agenda_chave)
+ *     "config":            {chave: valor}  toda a configuração da coleção
  *     "eventos":           [os eventos personalizados, como em recurso=eventos, com todos os disparos]
- *     "agenda":            {"criados": [os eventos que o sistema criou no Google Agenda: {"chave", "google_id", "data", "titulo",
- *                          "assinatura", "criado"}], "desejados": [o que tem de estar na agenda agora, como em recurso=agenda]}
+ *     "destinos":          [os destinos das mensagens, como em recurso=destinos, sem a prévia]
+ *     "agendas":           [as agendas, como em recurso=agendas, com "criados": os eventos que o sistema criou em cada uma:
+ *                          {"chave", "externo_id", "data", "titulo", "assinatura", "criado"}]
+ *     "agendas_desejadas": [{"agenda_id", "agenda", "eventos": [o que tem de estar nela agora]}]
  *     "criterios":         os critérios inteiros, como em recurso=criterios: os conjuntos por lugar (parâmetros, subparâmetros,
  *                          faixas), as variáveis que podem medir, a nota de cada relógio com a conta, os lugares e os modos
  *     "cron":              {"ultima" (a última execução), "erro" (o erro guardado; vazio: sem erro), "execucoes": [todas as
  *                          guardadas, da mais recente: {"id", "inicio", "fim", "duracao_ms", "teve_atividade", "teve_erro", "registro"}]}
- *     "usuarios":          [{"login", "criado"}]  (a senha nunca sai)
+ *     "usuarios":          [{"login", "criado", ...}]  (o master vê todos, os outros a si mesmos; a senha nunca sai)
  *     "migracoes":         {"pendentes": []}  (com alguma pendente, a API responde 503 e só recurso=migracoes funciona)
  *     "avisos":            [{"id", "identificador", "nome", "expressao" (a data prevista), "antecedencia_dias", "texto", "resolve",
  *                          "ativo", "no_id", "lugar", "escala" (nao, uso, sempre), "simula_valor", "simula_horas", "agenda" (janela
@@ -150,17 +166,27 @@
  *                            "relogio", "origem", "motivo", "livre", "escolha"}], "relogios": [os disponíveis: {"id", "nome"}],
  *                            "decida_por_mim" (o critério)}. Período inválido: 400 com "erro". Gravar: recurso=rodizio, acao=manual
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=rodizio_manual&de=2026-12-20&ate=2027-01-05&pagina=2"
- *   recurso=eventos          os eventos personalizados: {"eventos": [{"id", "nome", "ativo", "repeticao" (uma, diaria,
+ *   recurso=eventos          os eventos personalizados da coleção: {"eventos": [{"id", "nome", "ativo", "repeticao" (uma, diaria,
  *                            semanal, mensal, intervalo), "descricao" ("seg, qua 20:00"), "hora", "data_inicio", "dias_semana",
- *                            "dia_mes", "intervalo_dias", "relogio_id", "relogio", "telegram" e "agenda" (se vai por cada canal, em
- *                            "O que vai para onde"), "criado", "proximas" (as 10
- *                            próximas ocorrências, no próximo ano), "disparos": [{"ocorrencia", "disparado"}]}]}
+ *                            "dia_mes", "intervalo_dias", "relogio_id", "relogio", "destinos" e "agendas" (os nomes dos que recebem o
+ *                            evento), "criado", "proximas" (as 10 próximas ocorrências, no próximo ano), "disparos": [{"ocorrencia",
+ *                            "disparado"}]}]}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=eventos"
- *   recurso=agenda           o Google Agenda: {"ativa", "agenda_id", "janela_dias", "chave_ok" (a chave JSON foi lida e o Google
- *                            deu o token; só é conferido com agenda_id preenchido), "desejados": [o que tem de estar na agenda:
- *                            {"chave", "data", "hora", "momento", "tipo", "relogio_id", "relogio", "acao", "motivo", "titulo",
- *                            "descricao"}], "criados": [os eventos criados pelo sistema]}
- *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=agenda"
+ *   recurso=destinos         os destinos das mensagens (webhook, e-mail, Web Push): {"destinos": [{"id", "nome", "tipo", "tipo_nome", "ativo",
+ *                            "modelo", "idioma", "recebe": [{"tipo", "nome", "quando", "envia", "modelo"}], "webhook" ({"metodo", "url",
+ *                            "formato", "corpo_json", "campos", "cabecalhos": [{"nome", "preenchido"}]}), "email" ({"para"}), "webpush"
+ *                            ({"usuario_id", "usuario", "aparelhos"}), "previa": {"manha", "noite"}}], "tipos", "avisos", "ancoras",
+ *                            "linguas", "padrao", "email": {"configurado", "metodo"}, "push": {"configurado", "chave_publica"}, "usuarios"}
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=destinos"
+ *   recurso=agendas          as agendas (Google, CalDAV, Outlook, link ICS): {"agendas": [{"id", "nome", "tipo", "tipo_nome", "ativa",
+ *                            "janela_dias", "modelo", "idioma", "recebe", "sincronizados", "teste_id", "google" ({"calendario_id", "chave",
+ *                            "caminho", "conta_servico"}), "caldav" ({"url", "usuario", "senha_preenchida"}), "outlook" ({"conta",
+ *                            "calendario_id", "conectada", "configurado", "retorno"}), "ics" ({"link"}), "previa": [eventos], "previstos"}],
+ *                            "tipos", "avisos", "ancoras", "linguas", "padrao", "outlook": {"configurado", "retorno"}, "pasta"}
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=agendas"
+ *   recurso=ics chave=...    o calendário de uma agenda ICS (text/calendar), sem login, pela chave secreta do link
+ *                            Ex.: curl "http://servidor/relojoeiro/api.php?recurso=ics&chave=Xy3..."
+ *   recurso=outlook_retorno  a volta da Microsoft depois de Conectar ao Outlook (code, state): guarda a conexão e vai para Agendas (302)
  *   recurso=autonomia        [relogio=ids] as autonomias de cada relógio, enxuto e rápido, para sistemas de fora: quanto dura cheio pelo
  *                            cadastro (autonomia_prevista) e pela conta do sistema com o gasto medido (autonomia_atual), quanto ainda
  *                            dura a partir de agora seguindo o plano (autonomia_estimada), no pulso sem tirar (restante_em_uso) e
@@ -205,17 +231,14 @@
  *                            "unidade", "opcoes", "padrao", "no_id", "valor"}], "grupos": [{"id", "caminho", "cadeia"}]}. Sem relogio:
  *                            só "campos" e "grupos" (o cadastro de um relógio novo); relógio que não existe: 404
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=ficha&relogio=10"
- *   recurso=config           tudo o que a página Configuração mostra: {"config": {chave: valor} (inclusive agenda_chave), "mostrar_ate":
+ *   recurso=config           tudo o que a página Configuração mostra (da coleção): {"config": {chave: valor}, "linguas", "mostrar_ate":
  *                            {"proximos", "plano"} (quantos dias por página, já com o padrão), "aleatorio": {"fontes", "ultimo_lote",
  *                            "fora_desde"} (de onde vêm os números dos sorteios: RANDOM.ORG, senão ANU QRNG, senão o random_int), "sol_fim",
- *                            "chave_agenda": {"client_email"} (a chave JSON foi lida; null: não), "pasta", "canais" (tg e ag: o nome,
- *                            a lista de avisos e a ajuda), "ancoras", "repeticoes", "tipos": [cada tipo de aviso: {"tipo" (dia, vespera,
- *                            o identificador do aviso, ev<id>), "nome", "quando", "evento" (o id, se for um evento), "canais": {"tg": {
- *                            "marcado", "proprio", "corpo"}, "ag": {...}}}], "eventos": [como em recurso=eventos, com "proximas_60" (as
- *                            5 dos próximos 60 dias)], "relogios": [{"id", "nome", "disponivel"}], "previa": {"manha", "noite" (as
- *                            mensagens do Telegram como sairiam agora), "agenda" (os 8 primeiros eventos: {"data", "hora", "titulo",
- *                            "descricao"}), "sincronizados"}, "cron_estado": {"situacao" (nunca, parado ou rodando), "ultima",
- *                            "minutos", "texto", "crontab", "erro"}}
+ *                            "sistema": {"url_sistema", "pode_mudar"} (o endereço do sistema: só o master muda), "repeticoes", "eventos":
+ *                            [como em recurso=eventos, com "proximas_60" (as 5 dos próximos 60 dias)], "relogios": [{"id", "nome",
+ *                            "disponivel"}], "destinos": [{"id", "nome", "tipo", "ativo"}], "agendas": [{"id", "nome", "tipo", "ativa"}],
+ *                            "cron_estado": {"situacao" (nunca, parado ou rodando), "ultima", "minutos", "texto", "crontab", "erro",
+ *                            "registro"}}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=config"
  *   recurso=cron             as execuções do cron: de, ate (data, ou data e hora; cron_de e cron_ate também valem), situacao
  *                            (atividade, o padrão; erro, nada ou todas; cron_situacao também vale), busca (texto no registro;
@@ -232,9 +255,26 @@
  *                            tem), "formulas", "avisos" (todas as versões, como no banco), "modos" (com "blocos"), "modo_ativo",
  *                            "max_sem_uso", "grupos", "relogios", "funcoes" (as do motor), "tipos_de_campo", "formatos_de_lancamento"}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=cadastros"
- *   recurso=usuarios         {"usuarios": [{"login", "criado", "senha_hash", "senha_algoritmo", "senha_custo"}], "voce" (o login de quem
- *                            pediu, pelo site; vazio pelo token)}. O hash serve para migrar os usuários com a mesma senha (veja SENHAS)
+ *   recurso=usuarios         o master: o painel das contas: {"usuarios": [{"id", "login", "email", "papel" (master ou comum), "idioma",
+ *                            "criado", "ultimo_acesso", "expira_em", "demo", "dias_restantes", "bloqueado", "colecoes": [{"id", "nome",
+ *                            "relogios"}], "membro_de", "tudo_de", "pedidos", "tokens", "senha_hash", "senha_algoritmo", "senha_custo"}],
+ *                            "voce", "demo_dias", "colecoes"}; os outros, só a si mesmos ({"login", "criado", "senha_hash"...}). O hash
+ *                            serve para migrar os usuários com a mesma senha (veja SENHAS)
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=usuarios"
+ *   recurso=conta            Minha conta: {"usuario", "vendo_como", "colecoes", "colecao", "papel", "arvores", "pedidos", "convites",
+ *                            "aprovacoes", "tokens", "push": {"configurado", "chave_publica", "aparelhos"}, "email_configurado",
+ *                            "demo_dias", "linguas"}; parte=menu: só o que o menu das páginas usa (o seletor da coleção, a demonstração,
+ *                            as aprovações, a faixa Vendo como)
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=conta"
+ *   recurso=colecoes         {"colecoes": [{"id", "nome", "dono_id", "dono", "papel", "no_id"}], "colecao", "arvores": [{"id", "nome",
+ *                            "grupos", "colecoes"}]}
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=colecoes"
+ *   recurso=aprovacoes       {"pedidos", "convites_a_aprovar", "convites_feitos", "acessos": {"colecoes": [{"id", "nome", "membros"}],
+ *                            "tudo"}, "minhas_colecoes", "pode_convidar", "email_configurado", "convite_dias"}
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=aprovacoes"
+ *   recurso=cadastro         (sem login) o cadastro aberto: {"aberto", "demo_dias", "email_configurado", "linguas", "colecoes", "donos",
+ *                            "convite"} (convite=<token>: o convite do link)
+ *                            Ex.: curl "http://servidor/relojoeiro/api.php?recurso=cadastro"
  *   recurso=migracoes        {"pendentes": [{"versao", "arquivo", "traz"}]} (lista vazia: o banco está em dia)
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=migracoes"
  *   recurso=instalacao       a situação da instalação (responde também com o banco vazio, pelo token): {"banco" (mysql, pgsql,
@@ -365,7 +405,8 @@
  * ESCRITA (POST)  tudo o que o sistema faz, com as validações e as mensagens das operações (operacoes.php)
  * ---------------------------------------------------------------------------------------------
  *   Campos em formulário ou em JSON no corpo (Content-Type: application/json); recurso e acao nos campos ou na URL.
- *   Resposta: {"ok", "mensagem", "erros": [...], "id"}; 400 quando recusado (os erros dizem por quê).
+ *   Resposta: {"ok", "mensagem", "erros": [...], "id"}; 400 quando recusado (os erros dizem por quê). Toda exclusão pede
+ *   confirmar=1: sem ele, 409 com "confirmar": true e "impacto" (o que sai junto), e nada é apagado.
  *   recurso=arvore            novo (nome, pai_id: 0 = na raiz), renomear (id, nome), mover (id, pai_id), ordem (id, direcao:
  *                             sobe ou desce), excluir (id: o que é dele sobe para o ponto de cima: os pontos de dentro, os
  *                             relógios, os campos, os tipos de lançamento, as fórmulas e os avisos, menos as versões de fórmulas e
@@ -382,19 +423,19 @@
  *                            Ex. novo: curl -u lucas:senha -d recurso=campos -d acao=novo -d identificador=resistencia_agua -d "nome=Resistência à água" -d tipo=inteiro -d unidade=m -d no_id=0 http://servidor/relojoeiro/api.php
  *                            Ex. alterar: curl -u lucas:senha -d recurso=campos -d acao=alterar -d id=21 -d "nome=Resistência (m)" http://servidor/relojoeiro/api.php
  *                            Ex. ordem: curl -u lucas:senha -d recurso=campos -d acao=ordem -d id=21 -d direcao=sobe http://servidor/relojoeiro/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=campos -d acao=excluir -d id=21 http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=campos -d acao=excluir -d id=21 -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=lancamento_tipos  novo, alterar (id): identificador, nome, formato (instantaneo, valor, sessao), unidade, fecha_as,
  *                             exclusiva (1 ou 0, só sessão), mede_gasto (1 ou 0, só com valor: cada leitura mede o gasto), condicao
  *                             (vale quando: uma fórmula, 1 vale e 0 não; vazia, vale sempre; ex.: corda_manual), no_id;
  *                             excluir (id)
  *                            Ex. novo: curl -u lucas:senha -d recurso=lancamento_tipos -d acao=novo -d identificador=banho_ultrassom -d "nome=Banho ultrassônico" -d formato=instantaneo -d no_id=0 http://servidor/relojoeiro/api.php
  *                            Ex. alterar: curl -u lucas:senha -d recurso=lancamento_tipos -d acao=alterar -d id=11 -d fecha_as=18:00 http://servidor/relojoeiro/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=lancamento_tipos -d acao=excluir -d id=11 http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=lancamento_tipos -d acao=excluir -d id=11 -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=formulas          nova (identificador, nome, expressao, unidade, no_id: fórmula nova, ou mais uma versão da que
  *                             existe, em outro ponto), alterar (id: nome, expressao, unidade, no_id), excluir (id)
  *                            Ex. nova: curl -u lucas:senha -d recurso=formulas -d acao=nova -d identificador=idade_dias -d "nome=Idade (dias)" --data-urlencode "expressao=AGORA() - data_compra" -d unidade=dias -d no_id=0 http://servidor/relojoeiro/api.php
  *                            Ex. alterar: curl -u lucas:senha -d recurso=formulas -d acao=alterar -d id=17 --data-urlencode "expressao=ARREDONDA(AGORA() - data_compra)" http://servidor/relojoeiro/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=formulas -d acao=excluir -d id=17 http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=formulas -d acao=excluir -d id=17 -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=relogio           salvar (id: 0 ou ausente cria; nome, no_id, disponivel, copia_banco (1: a cópia no banco de todos os
  *                             documentos dele; o cron copia ou tira aos poucos), valores[identificador]: só muda o que vier;
  *                             valor vazio apaga; inválido fica o que estava e a mensagem diz), excluir (id),
@@ -402,7 +443,7 @@
  *                            Ex. salvar: curl -u lucas:senha -d recurso=relogio -d acao=salvar -d id=10 -d "valores[preferencia]=80" -d disponivel=1 http://servidor/relojoeiro/api.php
  *                            Ex. foto: curl -u lucas:senha -d recurso=relogio -d acao=foto -d id=10 --data-urlencode foto_base64@foto.b64 http://servidor/relojoeiro/api.php
  *                            Ex. remover_foto: curl -u lucas:senha -d recurso=relogio -d acao=remover_foto -d id=10 http://servidor/relojoeiro/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=relogio -d acao=excluir -d id=15 http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=relogio -d acao=excluir -d id=15 -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=documentos        enviar (relogio_id, categoria_id, titulo, data AAAA-MM-DD, descricao, copia_banco (1: pede a cópia
  *                             destes arquivos no banco) e o arquivo: arquivos[] como upload, vários de uma vez, ou
  *                             arquivo_base64 com arquivo_nome; a miniatura de uma foto, opcional: miniatura (upload) ou
@@ -412,12 +453,12 @@
  *                             config.php, pelo relógio ou pelo próprio arquivo), também para o banco
  *                            Ex. enviar: curl -u lucas:senha -F recurso=documentos -F acao=enviar -F relogio_id=10 -F categoria_id=2 -F "arquivos[]=@nota.pdf" http://servidor/relojoeiro/api.php
  *                            Ex. alterar: curl -u lucas:senha -d recurso=documentos -d acao=alterar -d id=7 -d "titulo=No casamento" -d data=2026-09-20 http://servidor/relojoeiro/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=documentos -d acao=excluir -d id=7 http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=documentos -d acao=excluir -d id=7 -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=documento_categorias nova (identificador, nome, aceita[]: imagem, video, audio, pdf, xml; nenhum: qualquer
  *                             arquivo; ordem), alterar (id: nome, aceita[], ordem; o identificador não muda), excluir (id; só
  *                             sem documentos)
  *                            Ex. nova: curl -u lucas:senha -d recurso=documento_categorias -d acao=nova -d identificador=garantia -d nome=Garantia -d "aceita[]=pdf" http://servidor/relojoeiro/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=documento_categorias -d acao=excluir -d id=7 http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=documento_categorias -d acao=excluir -d id=7 -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=lancamento        lancar (relogio_id, tipo, valor, quando: AAAA-MM-DD HH:MM, vazio = agora; medir: 1 (padrão) ou 0,
  *                             num tipo que mede o gasto: com 1 a medição entra na média, com 0 fica só no histórico — a caixa
  *                             "Atualizar o gasto com esta medição"; a mensagem traz a conta), iniciar (relogio_id,
@@ -434,7 +475,7 @@
  *                            Ex. encerrar: curl -u lucas:senha -d recurso=lancamento -d acao=encerrar -d relogio_id=4 -d tipo=sol http://servidor/relojoeiro/api.php
  *                            Ex. periodo: curl -u lucas:senha -d recurso=lancamento -d acao=periodo -d relogio_id=3 -d tipo=winder -d "inicio=2026-09-26 20:00" -d "fim=2026-09-27 07:00" http://servidor/relojoeiro/api.php
  *                            Ex. alterar: curl -u lucas:senha -d recurso=lancamento -d acao=alterar -d id=42 -d valor=70 http://servidor/relojoeiro/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=lancamento -d acao=excluir -d id=42 http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=lancamento -d acao=excluir -d id=42 -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=avisos            novo (identificador, nome, expressao: a data prevista, condicao: vale quando (uma fórmula, 1 vale e 0
  *                             não; vazia, vale sempre; ex.: corda_manual = 0), antecedencia_dias, texto com {relogio},
  *                             {data}, {quando} e {limite}, resolve: o tipo de lançamento, ativo, no_id, escala: nao, uso (conferido no
@@ -445,7 +486,7 @@
  *                             resolvido; o "Tirar do carregador" vem assim), alterar (id), excluir (id)
  *                            Ex. novo: curl -u lucas:senha -d recurso=avisos -d acao=novo -d identificador=pulseira -d "nome=Trocar a pulseira" --data-urlencode "expressao=data_compra + 365" -d antecedencia_dias=15 -d "texto=vence {quando}, {data}" -d no_id=0 http://servidor/relojoeiro/api.php
  *                            Ex. alterar: curl -u lucas:senha -d recurso=avisos -d acao=alterar -d id=9 -d antecedencia_dias=30 http://servidor/relojoeiro/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=avisos -d acao=excluir -d id=9 http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=avisos -d acao=excluir -d id=9 -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=criterios         escopo: "" (todos), g:<ponto> ou r:<relógio>. conjunto_criar (escopo, origem: herdado ou vazio),
  *                             conjunto_excluir (escopo), param_novo (escopo, nome, peso), param_pesos (escopo, nome[id], peso[id]:
  *                             todos os do conjunto, somando 100), param_excluir (id), sub_novo (parametro_id, nome, variavel
@@ -508,36 +549,60 @@
  *                             excluir (id: não o ativo)
  *                            Ex. salvar: curl -u lucas:senha -d recurso=modos -d acao=salvar -d id=0 -d "nome=Só smartwatch" -d selecao=inteligente -d "blocos[0][nome]=Todo dia" -d "blocos[0][dias][]=1" -d "blocos[0][dias][]=7" -d "blocos[0][no_id]=1" -d "blocos[0][um_por]=dia" http://servidor/relojoeiro/api.php
  *                            Ex. ativar: curl -u lucas:senha -d recurso=modos -d acao=ativar -d id=5 http://servidor/relojoeiro/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=modos -d acao=excluir -d id=6 http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=modos -d acao=excluir -d id=6 -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=config            salvar (horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (a sessão no sol esquecida fecha
  *                             a essa hora): HH:MM; pulso_auto_inicio e pulso_auto_fim (1 ou 0: pôr no pulso sozinho no
  *                             início do horário de uso, tirar sozinho no fim; 0: só pelo Pôs, só pelo Tirou); carga_limiar (1 a 99: carregar nessa carga, o geral); sol_limiar (1 a 99: o
- *                             solar vai para o sol nessa carga); url_sistema; painel_modo (lado: o relógio abre no painel ao lado da
+ *                             solar vai para o sol nessa carga); painel_modo (lado: o relógio abre no painel ao lado da
  *                             lista; flutuante: numa janela grande por cima da página); destaque_hoje (dia: o destaque no alto da
  *                             página Hoje é o relógio do dia; pulso: o relógio no pulso agora); proximos_por_pagina e plano_por_pagina (1 a
  *                             366: o "Mostrar até", quantos dias os Próximos dias da página Hoje e o dia a dia da página Plano
- *                             mostram por página; padrão 7 e 31);
- *                             alerta_ativo (ou mensagens_ativas) e agenda_ativa: 1 ou 0; agenda_id; agenda_chave; agenda_antecedencia
- *                             (1 a 365); max_sem_uso (0 a 365); previsao_limite (0 a 100); medicao_janela_dias (1 a 3650: a média
- *                             do gasto medido usa as medições destes últimos dias); os canais: alerta_tipos[] e agenda_tipos[]
- *                             (os tipos de aviso que vão por cada um: dia, vespera, os identificadores dos avisos, ev<id>), tg_padrao
- *                             e ag_padrao (a mensagem padrão), tg_proprio_<tipo> e ag_proprio_<tipo> (1 ou 0), tg_corpo_<tipo> e
- *                             ag_corpo_<tipo> (a mensagem personalizada); só o que vier), testar_manha, testar_noite (mandam a
- *                             mensagem agora), evento_salvar (evento_id ou id: 0 cria; nome, ativo, repeticao, hora, data_inicio,
- *                             dias_semana, dia_mes, intervalo_dias, relogio_id; o evento novo já vai pelo Telegram), evento_excluir
- *                             (evento_id ou id), teste_agenda_criar, teste_agenda_remover, sincronizar
- *                            Ex. salvar: curl -u lucas:senha -d recurso=config -d acao=salvar -d horario_manha=06:30 -d alerta_ativo=1 --data-urlencode "tg_padrao={acao}: {relogio}" -d tg_proprio_corda=1 --data-urlencode "tg_corpo_corda=Corda no {relogio}!" http://servidor/relojoeiro/api.php
- *                            Ex. testar_manha: curl -u lucas:senha -d recurso=config -d acao=testar_manha http://servidor/relojoeiro/api.php
- *                            Ex. testar_noite: curl -u lucas:senha -d recurso=config -d acao=testar_noite http://servidor/relojoeiro/api.php
+ *                             mostram por página; padrão 7 e 31); idioma (o da coleção); max_sem_uso (0 a 365); previsao_limite (0 a
+ *                             100); medicao_janela_dias (1 a 3650: a média do gasto medido usa as medições destes últimos dias);
+ *                             encostado_dias; url_sistema (do sistema inteiro: só o master); só o que vier), evento_salvar (evento_id
+ *                             ou id: 0 cria; nome, ativo, repeticao, hora, data_inicio, dias_semana, dia_mes, intervalo_dias,
+ *                             relogio_id; o evento novo já vai para todos os destinos), evento_excluir (evento_id ou id, confirmar=1)
+ *                            Ex. salvar: curl -u lucas:senha -d recurso=config -d acao=salvar -d horario_manha=06:30 -d carga_limiar=25 http://servidor/relojoeiro/api.php
  *                            Ex. evento_salvar: curl -u lucas:senha -d recurso=config -d acao=evento_salvar -d evento_id=0 -d "nome=Limpar as pulseiras" -d repeticao=semanal -d "dias_semana[]=1" -d "dias_semana[]=4" -d hora=20:00 http://servidor/relojoeiro/api.php
- *                            Ex. evento_excluir: curl -u lucas:senha -d recurso=config -d acao=evento_excluir -d evento_id=3 http://servidor/relojoeiro/api.php
- *                            Ex. teste_agenda_criar: curl -u lucas:senha -d recurso=config -d acao=teste_agenda_criar http://servidor/relojoeiro/api.php
- *                            Ex. teste_agenda_remover: curl -u lucas:senha -d recurso=config -d acao=teste_agenda_remover http://servidor/relojoeiro/api.php
- *                            Ex. sincronizar: curl -u lucas:senha -d recurso=config -d acao=sincronizar http://servidor/relojoeiro/api.php
- *   recurso=usuarios          salvar (login, senha; ou login e senha_hash, o hash de outro sistema: veja SENHAS), excluir (login). O
- *                             primeiro usuário sai pelo token (sem usuários, o login não entra)
+ *                            Ex. evento_excluir: curl -u lucas:senha -d recurso=config -d acao=evento_excluir -d evento_id=3 -d confirmar=1 http://servidor/relojoeiro/api.php
+ *   recurso=destinos          salvar (id: 0 cria; tipo (webhook, email, webpush; só ao criar), nome, ativo, idioma, modelo, envia[] (os
+ *                             tipos que recebe), modelo_<tipo>; webhook: metodo, url, formato (query, form, json), campo_nome[] e
+ *                             campo_valor[], corpo_json, cabecalho_nome[] e cabecalho_valor[] (cifrados); email: para; webpush:
+ *                             usuario_id), testar (id, qual: texto, manha ou noite), excluir (id, confirmar=1)
+ *                            Ex. salvar: curl -u lucas:senha -d recurso=destinos -d acao=salvar -d id=0 -d tipo=email -d "nome=E-mail" -d para=eu@exemplo.com http://servidor/relojoeiro/api.php
+ *                            Ex. testar: curl -u lucas:senha -d recurso=destinos -d acao=testar -d id=1 -d qual=manha http://servidor/relojoeiro/api.php
+ *   recurso=agendas           salvar (id: 0 cria; tipo (google, caldav, outlook, ics; só ao criar), nome, ativa, janela_dias, idioma,
+ *                             modelo, envia[]; google: calendario_id, chave_json; caldav: url, usuario, senha; outlook: calendario_id),
+ *                             sincronizar (id), teste_criar (id), teste_remover (id), novo_link (id: ICS), outlook_conectar (id:
+ *                             devolve url, a página da Microsoft), excluir (id, confirmar=1)
+ *                            Ex. salvar: curl -u lucas:senha -d recurso=agendas -d acao=salvar -d id=0 -d tipo=ics -d "nome=Celular" http://servidor/relojoeiro/api.php
+ *                            Ex. sincronizar: curl -u lucas:senha -d recurso=agendas -d acao=sincronizar -d id=1 http://servidor/relojoeiro/api.php
+ *   recurso=usuarios          salvar (login, senha; ou login e senha_hash, o hash de outro sistema: veja SENHAS; a conta nova, só o
+ *                             master: email, idioma, colecao_nova: modelo, vazia ou nenhuma). Só o master: alterar (usuario_id ou login;
+ *                             novo_login, email, idioma, papel), oficializar, prorrogar (dias), voltar_demo (dias), bloquear (bloqueado
+ *                             1 ou 0), transferir (colecao_id, para: o novo dono), dar_acesso (colecao_id ou dono_id), excluir (login,
+ *                             confirmar=1). O primeiro usuário sai pelo token (sem usuários, o login não entra) e é o master
  *                            Ex. salvar: curl -u lucas:senha -d recurso=usuarios -d acao=salvar -d login=visitante -d senha=segredo123 http://servidor/relojoeiro/api.php
- *                            Ex. excluir: curl -u lucas:senha -d recurso=usuarios -d acao=excluir -d login=visitante http://servidor/relojoeiro/api.php
+ *                            Ex. oficializar: curl -u lucas:senha -d recurso=usuarios -d acao=oficializar -d login=visitante http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=usuarios -d acao=excluir -d login=visitante -d confirmar=1 http://servidor/relojoeiro/api.php
+ *   recurso=conta             alterar (email, idioma, senha_atual e senha), token_criar (nome: devolve o token, só agora), token_revogar
+ *                             (id), push_inscrever (endpoint, p256dh, auth, aparelho), push_cancelar (id), push_testar, excluir
+ *                             (confirmar=1: a conta com tudo); só o master: email_testar (para), vapid_gerar
+ *                            Ex. token_criar: curl -u lucas:senha -d recurso=conta -d acao=token_criar -d "nome=Atalho" http://servidor/relojoeiro/api.php
+ *   recurso=colecoes          criar (nome, opcao: modelo, vazia ou arvore com arvore_id), renomear (id, nome), excluir (id, confirmar=1),
+ *                             arvore_copiar (arvore_id, nome), arvore_renomear (arvore_id, nome), arvore_excluir (arvore_id, confirmar=1)
+ *                            Ex. criar: curl -u lucas:senha -d recurso=colecoes -d acao=criar -d "nome=Do meu pai" -d opcao=modelo http://servidor/relojoeiro/api.php
+ *   recurso=acessos           remover (usuario_id; colecao_id ou dono_id; confirmar=1: o dono tira o acesso de alguém), sair (colecao_id
+ *                             ou dono_id, confirmar=1)
+ *                            Ex. sair: curl -u maria:senha -d recurso=acessos -d acao=sair -d colecao_id=1 -d confirmar=1 http://servidor/relojoeiro/api.php
+ *   recurso=convites          convidar (email; colecao_id ou dono_id), aprovar (id), recusar (id), reenviar (id), cancelar (id), aceitar
+ *                             (token: quem já tem conta)
+ *                            Ex. convidar: curl -u lucas:senha -d recurso=convites -d acao=convidar -d email=amigo@exemplo.com -d colecao_id=1 http://servidor/relojoeiro/api.php
+ *   recurso=pedidos           pedir (colecao_id ou dono_id, mensagem), aprovar (id), recusar (id), cancelar (id)
+ *                            Ex. pedir: curl -u maria:senha -d recurso=pedidos -d acao=pedir -d dono=lucas http://servidor/relojoeiro/api.php
+ *   recurso=cadastro          (sem login) criar_conta (login, senha, email, idioma, opcao: modelo, vazia ou pedir (colecao_id ou dono_id,
+ *                             mensagem); convite: o token do link), esqueci_senha (email ou login), nova_senha (token, senha)
+ *                            Ex. criar_conta: curl -d recurso=cadastro -d acao=criar_conta -d login=maria -d senha=segredo123 -d email=maria@exemplo.com -d opcao=modelo http://servidor/relojoeiro/api.php
  *   recurso=migracoes         aplicar: aplica as migrações pendentes, na ordem: o SQL de cada uma e, se ela tiver, o passo em PHP (a única escrita
  *                            aceita com o banco desatualizado)
  *                            Ex. aplicar: curl -u lucas:senha -d recurso=migracoes -d acao=aplicar http://servidor/relojoeiro/api.php
@@ -566,28 +631,6 @@
  *   segundos são inteiros.
  *
  *   api.php (sem recurso)
- *     agenda.criados[]               os eventos que o sistema criou no Google Agenda
- *     agenda.criados[].assinatura    a marca do título e da descrição com que foi criado (mudou: o evento é atualizado na próxima
- *                                    sincronização)
- *     agenda.criados[].chave         a identificação do evento (a mesma dos desejados)
- *     agenda.criados[].criado        quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
- *     agenda.criados[].data          o dia do evento (texto AAAA-MM-DD)
- *     agenda.criados[].google_id     o id do evento no Google
- *     agenda.criados[].titulo        o título com que foi criado
- *     agenda.desejados[]             o que tem de estar no Google Agenda agora: os avisos marcados para a agenda, o relógio do dia, a
- *                                    véspera e os eventos
- *     agenda.desejados[].chave       a identificação do evento na agenda (a mesma enquanto nada mudar; é o que o sistema usa para atualizar
- *                                    ou remover)
- *     agenda.desejados[].data        o dia do evento na agenda (texto AAAA-MM-DD)
- *     agenda.desejados[].descricao   a descrição do evento, montada pela mensagem do canal da agenda
- *     agenda.desejados[].fazer       a ação ("Dar corda", "Usar hoje", o nome do evento) — a âncora {acao}
- *     agenda.desejados[].hora        a hora do evento na agenda (HH:MM)
- *     agenda.desejados[].momento     o instante previsto do que motivou o evento (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
- *     agenda.desejados[].motivo      o porquê ("a reserva acaba em 3h, 28/09 10:53") — a âncora {motivo}
- *     agenda.desejados[].relogio     o nome do relógio; vazio num evento geral
- *     agenda.desejados[].relogio_id  o relógio do evento; null num evento geral
- *     agenda.desejados[].tipo        o tipo: dia, vespera, o identificador do aviso, ou ev<id> (evento personalizado)
- *     agenda.desejados[].titulo      o título do evento, montado pela mensagem do canal da agenda
  *     arvore[]                       os grupos, em ordem de árvore
  *     arvore[].caminho               o caminho por extenso ("Tradicional › Quartzo › Solar")
  *     arvore[].id                    o número do grupo
@@ -625,20 +668,10 @@
  *     campos[].padrao                o valor usado quando o relógio não tem o campo preenchido (texto; null: nenhum)
  *     campos[].tipo                  inteiro, decimal, sim_nao, data, lista ou texto
  *     campos[].unidade               a unidade (texto; vazio: nenhuma)
- *     config.ag_padrao               a mensagem padrão da agenda: a primeira linha é o título do evento, o resto a descrição
- *     config.agenda_antecedencia     com quantos dias de antecedência os eventos são criados na agenda
- *     config.agenda_ativa            1: cria os eventos no Google Agenda; 0: não
- *     config.agenda_chave            o caminho da chave JSON da conta de serviço do Google, no servidor
- *     config.agenda_id               o id da agenda do Google
- *     config.agenda_teste_id         o id do evento de teste na agenda (vazio: nenhum)
  *     config.carga_limiar            o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se
  *                                    preenchido, vale no lugar)
- *     config.cron_erro               o erro guardado da última execução com erro (texto; vazio: sem erro)
- *     config.cron_registro           o registro da última rodada com atividade (texto)
- *     config.cron_ultima_execucao    quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     config.na_hora_enviados        os avisos "na hora" que já foram pelo Telegram e ainda estão vencidos (relogio_id:identificador,
  *                                    separados por vírgula): o cron não manda de novo
- *     config.backup_ultima           quando foi feita a última cópia de segurança (texto AAAA-MM-DD HH:MM:SS)
  *     config.escala_fim              até que dia vai a escala inteligente gerada (texto AAAA-MM-DD; vazio fora da escala)
  *     config.escala_gerada           o dia em que a escala foi gerada pela última vez (texto AAAA-MM-DD)
  *     config.horario_manha           a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)
@@ -649,32 +682,19 @@
  *     config.encostado_dias          o aviso Encostado: depois de quantos dias sem ir ao pulso um relógio da coleção é avisado (1 a 3650;
  *                                    padrão 30)
  *     config.idioma                  o idioma padrão da instalação (pt-BR, en, zh-CN, hi, es, fr; vazio: o do navegador, senão português)
- *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
  *     config.painel_modo             como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela
  *                                    grande por cima da página); vazio: lado
  *     config.destaque_hoje           o destaque no alto da página Hoje: dia (o relógio do dia, o do plano) ou pulso (o relógio no pulso
  *                                    agora; sem nenhum no pulso, o do dia); vazio: dia
  *     config.proximos_por_pagina     o "Mostrar até" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)
  *     config.plano_por_pagina        o "Mostrar até" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)
- *     config.aleatorio_ultima        a fonte do último lote de números aleatórios e quando (o sistema grava; só leitura)
- *     config.aleatorio_fora          quando os dois serviços de números aleatórios falharam (segundos desde 1970; vazio: no ar); o sistema
- *                                    grava; só leitura
- *     config.migracao_v10            marca de que a migração v10 foi aplicada (1)
- *     config.migracao_v12            marca de que a migração v12 foi aplicada (1)
- *     config.migracao_v16            marca de que a migração v16 foi aplicada (1)
- *     config.migracao_v17            marca de que a migração v17 foi aplicada (1)
- *     config.migracao_v18            marca de que a migração v18 foi aplicada (1)
- *     config.migracao_v19            marca de que a migração v19 foi aplicada (1)
- *     config.migracao_v20            marca de que a migração v20 foi aplicada (1)
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso);
  *                                    0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
  *     config.sol_limiar              no solar, a carga (%) em que ele deve ir para o sol
- *     config.tg_padrao               a mensagem padrão do Telegram, com âncoras ({acao}, {relogio}, {motivo}...)
  *     config.ultima_manha            o dia da última rodada da manhã do cron (texto AAAA-MM-DD)
  *     config.ultima_noite            o dia da última rodada da noite do cron (texto AAAA-MM-DD)
- *     config.url_sistema             o endereço do sistema, para a âncora {link}
  *     config.uso_fim                 a hora em que ele sai do pulso (HH:MM)
  *     config.uso_inicio              a hora em que o relógio do dia vai para o pulso (HH:MM)
  *     criterios.conjuntos[]          os conjuntos de critérios, um por lugar que tem critérios próprios
@@ -785,7 +805,6 @@
  *     cron.execucoes[].teve_erro     verdadeiro ou falso: houve erro
  *     cron.ultima                    quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     eventos[]                      os eventos personalizados (avisos seus, com horário e repetição próprios)
- *     eventos[].agenda               verdadeiro ou falso: o evento vai para o Google Agenda
  *     eventos[].ativo                verdadeiro ou falso: o evento dispara
  *     eventos[].criado               quando o evento foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     eventos[].data_inicio          a data (uma vez só) ou o começo da contagem (a cada N dias) (texto AAAA-MM-DD); null nas outras
@@ -804,7 +823,6 @@
  *     eventos[].relogio              o nome desse relógio; null: evento geral
  *     eventos[].relogio_id           o relógio do evento (as âncoras dele funcionam na mensagem); null: evento geral
  *     eventos[].repeticao            quando dispara: uma (uma vez só), diaria, semanal, mensal ou intervalo (a cada N dias)
- *     eventos[].telegram             verdadeiro ou falso: o evento vai pelo Telegram (marcado em "O que vai para onde")
  *     formulas[]                     as fórmulas (cada identificador pode ter uma versão por grupo; vale a do grupo mais perto do relógio)
  *     formulas[].expressao           a conta (texto, na escrita das fórmulas do motor)
  *     formulas[].id                  o número da versão
@@ -1146,6 +1164,118 @@
  *     relogios[].documentos[].titulo o título
  *     relogios[].documentos[].url    o endereço do arquivo, relativo à pasta do sistema (api.php?recurso=documento&id=...)
  *     relogios[].documentos[].nfe    sempre null aqui: o resumo da NF-e vem no recurso=documentos
+ *     destinos[]                     os destinos das mensagens da coleção (webhook, e-mail, Web Push)
+ *     destinos[].id                  o id do destino
+ *     destinos[].nome                o nome (Telegram, E-mail da família...)
+ *     destinos[].tipo                webhook, email ou webpush
+ *     destinos[].tipo_nome           o nome do tipo, por extenso
+ *     destinos[].ativo               verdadeiro ou falso: manda (desligado, não sai nada por ele)
+ *     destinos[].modelo              a mensagem padrão dele, com as âncoras ({acao}, {relogio}, {motivo}...): cada item vira uma linha por
+ *                                    ela
+ *     destinos[].idioma              o idioma das mensagens dele (pt-BR, en, zh-CN, hi, es ou fr); null: o da coleção
+ *     destinos[].recebe[]            o que ele recebe: cada tipo de aviso (o relógio do dia, a véspera, cada aviso do cadastro, cada evento
+ *                                    personalizado)
+ *     destinos[].recebe[].tipo       o tipo: dia, vespera, o identificador do aviso, ou ev<id> (evento personalizado)
+ *     destinos[].recebe[].nome       o nome do tipo
+ *     destinos[].recebe[].quando     quando sai (manhã, noite, na hora...)
+ *     destinos[].recebe[].envia      verdadeiro ou falso: recebe esse tipo
+ *     destinos[].recebe[].modelo     o texto próprio desse tipo (com as âncoras); null: a mensagem padrão
+ *     destinos[].webhook             o que é do webhook (null nos outros tipos)
+ *     destinos[].webhook.metodo      GET, POST ou PUT
+ *     destinos[].webhook.url         o endereço
+ *     destinos[].webhook.formato     como a mensagem vai: query (na URL), form (formulário) ou json
+ *     destinos[].webhook.corpo_json  o corpo JSON próprio, com {titulo} e {mensagem} (null: os campos viram o objeto)
+ *     destinos[].webhook.campos[]    os campos do pedido
+ *     destinos[].webhook.campos[].nome
+ *                                    o nome do campo
+ *     destinos[].webhook.campos[].valor
+ *                                    o valor, com {titulo} e {mensagem}
+ *     destinos[].webhook.cabecalhos[]
+ *                                    os cabeçalhos do pedido (o valor fica cifrado no banco e nunca sai)
+ *     destinos[].webhook.cabecalhos[].nome
+ *                                    o nome do cabeçalho
+ *     destinos[].webhook.cabecalhos[].preenchido
+ *                                    verdadeiro ou falso: tem valor guardado
+ *     destinos[].email               o que é do e-mail (null nos outros tipos)
+ *     destinos[].email.para          para quem (um ou mais endereços, separados por vírgula)
+ *     destinos[].webpush             o que é do Web Push (null nos outros tipos)
+ *     destinos[].webpush.usuario_id  o usuário que recebe (nos aparelhos dele)
+ *     destinos[].webpush.usuario     o login dele
+ *     destinos[].webpush.aparelhos   quantos aparelhos dele estão inscritos
+ *     agendas[]                      as agendas da coleção (Google Agenda, CalDAV, Outlook, link ICS)
+ *     agendas[].id                   o id da agenda
+ *     agendas[].nome                 o nome
+ *     agendas[].tipo                 google, caldav, outlook ou ics
+ *     agendas[].tipo_nome            o nome do tipo, por extenso
+ *     agendas[].ativa                verdadeiro ou falso: o sistema mantém os eventos nela
+ *     agendas[].janela_dias          quantos dias à frente ficam na agenda
+ *     agendas[].modelo               o modelo do evento: a primeira linha é o título, o resto a descrição, com as âncoras
+ *     agendas[].idioma               o idioma dos eventos dela; null: o da coleção
+ *     agendas[].recebe[]             o que ele recebe: cada tipo de aviso (o relógio do dia, a véspera, cada aviso do cadastro, cada evento
+ *                                    personalizado)
+ *     agendas[].recebe[].tipo        o tipo: dia, vespera, o identificador do aviso, ou ev<id> (evento personalizado)
+ *     agendas[].recebe[].nome        o nome do tipo
+ *     agendas[].recebe[].quando      quando sai (manhã, noite, na hora...)
+ *     agendas[].recebe[].envia       verdadeiro ou falso: recebe esse tipo
+ *     agendas[].recebe[].modelo      o texto próprio desse tipo (com as âncoras); null: a mensagem padrão
+ *     agendas[].sincronizados        quantos eventos o sistema criou nela (e acompanha)
+ *     agendas[].teste_id             o id do evento de teste nela; null: nenhum
+ *     agendas[].google               o que é do Google Agenda (null nos outros tipos)
+ *     agendas[].google.calendario_id o id da agenda do Google
+ *     agendas[].google.chave         a chave da conta de serviço: json (colada, cifrada no banco), caminho (um arquivo no servidor) ou
+ *                                    nenhuma
+ *     agendas[].google.caminho       o caminho do arquivo da chave (só quando a chave é um caminho)
+ *     agendas[].google.conta_servico o e-mail da conta de serviço (compartilhe a agenda com ele, com permissão de alterar)
+ *     agendas[].caldav               o que é do CalDAV (null nos outros tipos)
+ *     agendas[].caldav.url           o endereço do calendário
+ *     agendas[].caldav.usuario       o usuário
+ *     agendas[].caldav.senha_preenchida
+ *                                    verdadeiro ou falso: tem senha guardada (cifrada; nunca sai)
+ *     agendas[].outlook              o que é do Outlook (null nos outros tipos)
+ *     agendas[].outlook.conta        a conta Microsoft conectada; null: ainda não
+ *     agendas[].outlook.calendario_id
+ *                                    o id do calendário; null: o principal
+ *     agendas[].outlook.conectada    verdadeiro ou falso: a conta Microsoft está conectada
+ *     agendas[].outlook.configurado  verdadeiro ou falso: o servidor tem o aplicativo da Microsoft (OUTLOOK_CLIENTE_ID)
+ *     agendas[].outlook.retorno      o endereço de retorno para registrar no aplicativo da Microsoft
+ *     agendas[].ics                  o que é do link ICS (null nos outros tipos)
+ *     agendas[].ics.link             o link para assinar no app de agenda (quem tem o link vê os eventos)
+ *     agendas[].criados[]            os eventos que o sistema criou nela
+ *     agendas[].criados[].chave      a identificação do evento (a mesma dos desejados)
+ *     agendas[].criados[].externo_id o id do evento no serviço da agenda
+ *     agendas[].criados[].data       o dia do evento (texto AAAA-MM-DD)
+ *     agendas[].criados[].titulo     o título com que foi criado
+ *     agendas[].criados[].assinatura a marca do título e da descrição com que foi criado (mudou: o sistema atualiza o evento)
+ *     agendas[].criados[].criado     quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     agendas_desejadas[]            o que tem de estar em cada agenda agora, pelo que ela recebe
+ *     agendas_desejadas[].agenda_id  o id da agenda
+ *     agendas_desejadas[].agenda     o nome da agenda
+ *     agendas_desejadas[].eventos[]  os eventos
+ *     agendas_desejadas[].eventos[].chave
+ *                                    a identificação do evento na agenda (a mesma enquanto nada mudar; é o que o sistema usa para atualizar
+ *                                    ou remover)
+ *     agendas_desejadas[].eventos[].tipo
+ *                                    o tipo: dia, vespera, o identificador do aviso, ou ev<id> (evento personalizado)
+ *     agendas_desejadas[].eventos[].relogio_id
+ *                                    o relógio do evento; null num evento geral
+ *     agendas_desejadas[].eventos[].relogio
+ *                                    o nome do relógio; vazio num evento geral
+ *     agendas_desejadas[].eventos[].data
+ *                                    o dia do evento na agenda (texto AAAA-MM-DD)
+ *     agendas_desejadas[].eventos[].hora
+ *                                    a hora do evento na agenda (HH:MM)
+ *     agendas_desejadas[].eventos[].fazer
+ *                                    a ação ("Dar corda", "Usar hoje", o nome do evento): a âncora {acao}
+ *     agendas_desejadas[].eventos[].motivo
+ *                                    o porquê ("a reserva acaba em 3h, 28/09 10:53"): a âncora {motivo}
+ *     agendas_desejadas[].eventos[].momento
+ *                                    o instante previsto do que motivou o evento (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     agendas_desejadas[].eventos[].titulo
+ *                                    o título do evento, montado pelo modelo da agenda (a primeira linha)
+ *     agendas_desejadas[].eventos[].descricao
+ *                                    a descrição do evento, montada pelo modelo da agenda (o resto)
+ *     eventos[].destinos[]           os nomes dos destinos que recebem o evento
+ *     eventos[].agendas[]            os nomes das agendas que recebem o evento
  *   recurso=autonomia
  *     calculado_em_unixtimestamp     o instante da conta (número inteiro: instante Unix (segundos desde 01/01/1970 UTC))
  *     relogios[]                     um relógio por item, com as autonomias
@@ -1657,12 +1787,6 @@
  *                                    decidem
  *     relogio.documentos.total       quantos documentos ele tem
  *   recurso=config
- *     ancoras.<ancora>               cada âncora que as mensagens aceitam ({relogio}, {acao}...) e o que ela vira
- *     canais.<canal>.ajuda           a explicação do canal
- *     canais.<canal>.nome            o nome do canal (Telegram, Google Agenda)
- *     canais.<canal>.tipos           o nome do campo do formulário (acao=salvar) com os tipos que vão pelo canal (alerta_tipos[],
- *                                    agenda_tipos[])
- *     chave_agenda                   a chave do Google lida no caminho configurado; null: não lida
  *     mostrar_ate                    quantos dias as listas mostram por página (o "Mostrar até" da Configuração, já com o padrão)
  *     mostrar_ate.proximos           os Próximos dias da página Hoje (proximos_por_pagina; padrão 7)
  *     mostrar_ate.plano              o dia a dia da página Plano (plano_por_pagina; padrão 31)
@@ -1672,7 +1796,6 @@
  *     aleatorio.ultimo_lote          a fonte do último lote de números e quando ("RANDOM.ORG em AAAA-MM-DD HH:MM:SS"); null: nenhum ainda
  *     aleatorio.fora_desde           desde quando os dois serviços estão sem responder (AAAA-MM-DD HH:MM:SS): por 10 minutos o sistema nem
  *                                    tenta e usa o gerador do PHP; null: no ar (ou não se sabe)
- *     chave_agenda.client_email      o e-mail da conta de serviço (compartilhar a agenda com ele)
  *     cron_estado                    a situação do cron, como a Configuração mostra (o cron roda a cada minuto)
  *     cron_estado.crontab            a linha do crontab que roda o sistema (com a pasta dele)
  *     cron_estado.erro               o erro guardado da última execução com erro (null: sem erro; some na primeira execução sem erro)
@@ -1681,20 +1804,10 @@
  *     cron_estado.texto              a frase da Configuração ("Cron rodando: última execução às 10:41."; parado e nunca trazem a linha do
  *                                    crontab)
  *     cron_estado.ultima             quando rodou pela última vez (AAAA-MM-DD HH:MM:SS, no fuso do sistema; null: nunca rodou)
- *     config.ag_padrao               a mensagem padrão da agenda: a primeira linha é o título do evento, o resto a descrição
- *     config.agenda_antecedencia     com quantos dias de antecedência os eventos são criados na agenda
- *     config.agenda_ativa            1: cria os eventos no Google Agenda; 0: não
- *     config.agenda_chave            o caminho da chave JSON da conta de serviço do Google, no servidor
- *     config.agenda_id               o id da agenda do Google
- *     config.agenda_teste_id         o id do evento de teste na agenda (vazio: nenhum)
  *     config.carga_limiar            o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se
  *                                    preenchido, vale no lugar)
- *     config.cron_erro               o erro guardado da última execução com erro (texto; vazio: sem erro)
- *     config.cron_registro           o registro da última rodada com atividade (texto)
- *     config.cron_ultima_execucao    quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     config.na_hora_enviados        os avisos "na hora" que já foram pelo Telegram e ainda estão vencidos (relogio_id:identificador,
  *                                    separados por vírgula): o cron não manda de novo
- *     config.backup_ultima           quando foi feita a última cópia de segurança (texto AAAA-MM-DD HH:MM:SS)
  *     config.escala_fim              até que dia vai a escala inteligente gerada (texto AAAA-MM-DD; vazio fora da escala)
  *     config.escala_gerada           o dia em que a escala foi gerada pela última vez (texto AAAA-MM-DD)
  *     config.horario_manha           a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)
@@ -1709,36 +1822,22 @@
  *     linguas[]                      os idiomas do sistema, na ordem (o menu Idioma padrão)
  *     linguas[].codigo               o código (pt-BR, en, zh-CN, hi, es, fr)
  *     linguas[].nome                 o nome no próprio idioma
- *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
  *     config.painel_modo             como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela
  *                                    grande por cima da página); vazio: lado
  *     config.destaque_hoje           o destaque no alto da página Hoje: dia (o relógio do dia, o do plano) ou pulso (o relógio no pulso
  *                                    agora; sem nenhum no pulso, o do dia); vazio: dia
  *     config.proximos_por_pagina     o "Mostrar até" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)
  *     config.plano_por_pagina        o "Mostrar até" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)
- *     config.aleatorio_ultima        a fonte do último lote de números aleatórios e quando (o sistema grava; só leitura)
- *     config.aleatorio_fora          quando os dois serviços de números aleatórios falharam (segundos desde 1970; vazio: no ar); o sistema
- *                                    grava; só leitura
- *     config.migracao_v10            marca de que a migração v10 foi aplicada (1)
- *     config.migracao_v12            marca de que a migração v12 foi aplicada (1)
- *     config.migracao_v16            marca de que a migração v16 foi aplicada (1)
- *     config.migracao_v17            marca de que a migração v17 foi aplicada (1)
- *     config.migracao_v18            marca de que a migração v18 foi aplicada (1)
- *     config.migracao_v19            marca de que a migração v19 foi aplicada (1)
- *     config.migracao_v20            marca de que a migração v20 foi aplicada (1)
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso);
  *                                    0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
  *     config.sol_limiar              no solar, a carga (%) em que ele deve ir para o sol
- *     config.tg_padrao               a mensagem padrão do Telegram, com âncoras ({acao}, {relogio}, {motivo}...)
  *     config.ultima_manha            o dia da última rodada da manhã do cron (texto AAAA-MM-DD)
  *     config.ultima_noite            o dia da última rodada da noite do cron (texto AAAA-MM-DD)
- *     config.url_sistema             o endereço do sistema, para a âncora {link}
  *     config.uso_fim                 a hora em que ele sai do pulso (HH:MM)
  *     config.uso_inicio              a hora em que o relógio do dia vai para o pulso (HH:MM)
  *     eventos[]                      os eventos personalizados (avisos seus, com horário e repetição próprios)
- *     eventos[].agenda               verdadeiro ou falso: o evento vai para o Google Agenda
  *     eventos[].ativo                verdadeiro ou falso: o evento dispara
  *     eventos[].criado               quando o evento foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     eventos[].data_inicio          a data (uma vez só) ou o começo da contagem (a cada N dias) (texto AAAA-MM-DD); null nas outras
@@ -1758,30 +1857,29 @@
  *     eventos[].relogio              o nome desse relógio; null: evento geral
  *     eventos[].relogio_id           o relógio do evento (as âncoras dele funcionam na mensagem); null: evento geral
  *     eventos[].repeticao            quando dispara: uma (uma vez só), diaria, semanal, mensal ou intervalo (a cada N dias)
- *     eventos[].telegram             verdadeiro ou falso: o evento vai pelo Telegram (marcado em "O que vai para onde")
- *     pasta                          a pasta do sistema no servidor (para a linha do crontab)
- *     previa.agenda[]                os 8 primeiros eventos da agenda
- *     previa.agenda[].data           o dia
- *     previa.agenda[].descricao      a descrição
- *     previa.agenda[].hora           a hora
- *     previa.agenda[].titulo         o título
- *     previa.manha                   a mensagem da manhã do Telegram como sairia agora (texto)
- *     previa.noite                   a mensagem da noite como sairia agora (texto; vazio: nada a enviar)
- *     previa.sincronizados           quantos eventos o sistema tem na agenda
  *     relogios[]                     os relógios (a lista do evento)
  *     relogios[].disponivel          verdadeiro ou falso
  *     relogios[].id                  o número
  *     relogios[].nome                o nome
  *     repeticoes.<repeticao>         cada repetição de evento e o nome dela
  *     sol_fim                        a hora em que a sessão no sol esquecida aberta fecha (HH:MM)
- *     tipos[]                        os tipos de aviso ("O que vai para onde"): o dia, a véspera, os avisos cadastrados e os eventos
- *     tipos[].canais.<canal>.corpo   a mensagem personalizada (texto)
- *     tipos[].canais.<canal>.marcado verdadeiro ou falso: o tipo vai por esse canal
- *     tipos[].canais.<canal>.proprio verdadeiro ou falso: tem mensagem personalizada nesse canal
- *     tipos[].evento                 o id do evento personalizado; null nos outros
- *     tipos[].nome                   o nome
- *     tipos[].quando                 manhã ou noite
- *     tipos[].tipo                   o tipo (dia, vespera, identificador, ev<id>)
+ *     sistema                        o que é do sistema inteiro (não da coleção)
+ *     sistema.url_sistema            o endereço do sistema, para os links das mensagens ({link}), do ICS e do Outlook (vazio: o do pedido)
+ *     sistema.pode_mudar             verdadeiro ou falso: quem pede pode mudar (só o master)
+ *     destinos[]                     o resumo dos destinos da coleção (a página Destinos tem o resto)
+ *     destinos[].id                  o id
+ *     destinos[].nome                o nome
+ *     destinos[].tipo                webhook, email ou webpush
+ *     destinos[].ativo               verdadeiro ou falso: manda
+ *     agendas[]                      o resumo das agendas da coleção (a página Agendas tem o resto)
+ *     agendas[].id                   o id
+ *     agendas[].nome                 o nome
+ *     agendas[].tipo                 google, caldav, outlook ou ics
+ *     agendas[].ativa                verdadeiro ou falso: o sistema mantém os eventos nela
+ *     cron_estado.registro           o registro da última rodada com atividade (o master vê o do sistema inteiro; os outros, o da coleção);
+ *                                    null: nenhum
+ *     eventos[].destinos[]           os nomes dos destinos que recebem o evento
+ *     eventos[].agendas[]            os nomes das agendas que recebem o evento
  *   recurso=cron
  *     execucoes[]                    as execuções do cron guardadas (sem atividade: 7 dias; com atividade ou erro: 1 ano), da mais recente
  *     execucoes[].duracao_ms         quanto durou, em milissegundos (número inteiro)
@@ -1912,6 +2010,7 @@
  *                                    o identificador (minúsculas, números e _)
  *     documento_categorias[].nome    o nome
  *     documento_categorias[].ordem   a ordem em que ela aparece (número)
+ *     modos[].colecao_id             a coleção do modo
  *   recurso=calcular
  *     expressao                      a fórmula calculada
  *     resultados[]                   o resultado em cada relógio
@@ -2495,7 +2594,6 @@
  *                                    de amanhã (se houver outro), empate pelo cadastrado primeiro; decidido ao gravar
  *   recurso=eventos
  *     eventos[]                      os eventos personalizados (avisos seus, com horário e repetição próprios)
- *     eventos[].agenda               verdadeiro ou falso: o evento vai para o Google Agenda
  *     eventos[].ativo                verdadeiro ou falso: o evento dispara
  *     eventos[].criado               quando o evento foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     eventos[].data_inicio          a data (uma vez só) ou o começo da contagem (a cada N dias) (texto AAAA-MM-DD); null nas outras
@@ -2514,34 +2612,295 @@
  *     eventos[].relogio              o nome desse relógio; null: evento geral
  *     eventos[].relogio_id           o relógio do evento (as âncoras dele funcionam na mensagem); null: evento geral
  *     eventos[].repeticao            quando dispara: uma (uma vez só), diaria, semanal, mensal ou intervalo (a cada N dias)
- *     eventos[].telegram             verdadeiro ou falso: o evento vai pelo Telegram (marcado em "O que vai para onde")
- *   recurso=agenda
- *     agenda_id                      o id da agenda
- *     ativa                          verdadeiro ou falso: a agenda está ligada
- *     chave_ok                       verdadeiro ou falso: a chave do Google foi lida e o Google aceitou
- *     criados[]                      os eventos que o sistema criou no Google Agenda
- *     criados[].assinatura           a marca do título e da descrição com que foi criado (mudou: o evento é atualizado na próxima
- *                                    sincronização)
- *     criados[].chave                a identificação do evento (a mesma dos desejados)
- *     criados[].criado               quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
- *     criados[].data                 o dia do evento (texto AAAA-MM-DD)
- *     criados[].google_id            o id do evento no Google
- *     criados[].titulo               o título com que foi criado
- *     desejados[]                    o que tem de estar no Google Agenda agora: os avisos marcados para a agenda, o relógio do dia, a
- *                                    véspera e os eventos
- *     desejados[].chave              a identificação do evento na agenda (a mesma enquanto nada mudar; é o que o sistema usa para atualizar
+ *     eventos[].destinos[]           os nomes dos destinos que recebem o evento
+ *     eventos[].agendas[]            os nomes das agendas que recebem o evento
+ *   recurso=destinos
+ *     destinos[]                     os destinos das mensagens da coleção (webhook, e-mail, Web Push)
+ *     destinos[].id                  o id do destino
+ *     destinos[].nome                o nome (Telegram, E-mail da família...)
+ *     destinos[].tipo                webhook, email ou webpush
+ *     destinos[].tipo_nome           o nome do tipo, por extenso
+ *     destinos[].ativo               verdadeiro ou falso: manda (desligado, não sai nada por ele)
+ *     destinos[].modelo              a mensagem padrão dele, com as âncoras ({acao}, {relogio}, {motivo}...): cada item vira uma linha por
+ *                                    ela
+ *     destinos[].idioma              o idioma das mensagens dele (pt-BR, en, zh-CN, hi, es ou fr); null: o da coleção
+ *     destinos[].recebe[]            o que ele recebe: cada tipo de aviso (o relógio do dia, a véspera, cada aviso do cadastro, cada evento
+ *                                    personalizado)
+ *     destinos[].recebe[].tipo       o tipo: dia, vespera, o identificador do aviso, ou ev<id> (evento personalizado)
+ *     destinos[].recebe[].nome       o nome do tipo
+ *     destinos[].recebe[].quando     quando sai (manhã, noite, na hora...)
+ *     destinos[].recebe[].envia      verdadeiro ou falso: recebe esse tipo
+ *     destinos[].recebe[].modelo     o texto próprio desse tipo (com as âncoras); null: a mensagem padrão
+ *     destinos[].webhook             o que é do webhook (null nos outros tipos)
+ *     destinos[].webhook.metodo      GET, POST ou PUT
+ *     destinos[].webhook.url         o endereço
+ *     destinos[].webhook.formato     como a mensagem vai: query (na URL), form (formulário) ou json
+ *     destinos[].webhook.corpo_json  o corpo JSON próprio, com {titulo} e {mensagem} (null: os campos viram o objeto)
+ *     destinos[].webhook.campos[]    os campos do pedido
+ *     destinos[].webhook.campos[].nome
+ *                                    o nome do campo
+ *     destinos[].webhook.campos[].valor
+ *                                    o valor, com {titulo} e {mensagem}
+ *     destinos[].webhook.cabecalhos[]
+ *                                    os cabeçalhos do pedido (o valor fica cifrado no banco e nunca sai)
+ *     destinos[].webhook.cabecalhos[].nome
+ *                                    o nome do cabeçalho
+ *     destinos[].webhook.cabecalhos[].preenchido
+ *                                    verdadeiro ou falso: tem valor guardado
+ *     destinos[].email               o que é do e-mail (null nos outros tipos)
+ *     destinos[].email.para          para quem (um ou mais endereços, separados por vírgula)
+ *     destinos[].webpush             o que é do Web Push (null nos outros tipos)
+ *     destinos[].webpush.usuario_id  o usuário que recebe (nos aparelhos dele)
+ *     destinos[].webpush.usuario     o login dele
+ *     destinos[].webpush.aparelhos   quantos aparelhos dele estão inscritos
+ *     destinos[].previa              o que sairia por ele hoje
+ *     destinos[].previa.manha        a mensagem da manhã como sairia agora (texto; vazio: nada)
+ *     destinos[].previa.noite        a mensagem da noite como sairia agora (texto; vazio: nada)
+ *     tipos[]                        os tipos possíveis
+ *     tipos[].tipo                   o tipo
+ *     tipos[].nome                   o nome do tipo
+ *     ancoras.<ancora>               cada âncora que o modelo aceita ({relogio}, {acao}...) e o que ela vira
+ *     linguas[]                      os idiomas
+ *     linguas[].codigo               o código (pt-BR, en...)
+ *     linguas[].nome                 o nome do idioma
+ *     avisos[]                       os tipos de aviso que um destino ou uma agenda pode receber
+ *     avisos[].tipo                  o tipo (dia, vespera, o identificador do aviso, ev<id>)
+ *     avisos[].nome                  o nome
+ *     avisos[].quando                quando sai
+ *     padrao.modelo                  a mensagem padrão do modelo, no idioma da coleção (a de um destino novo)
+ *     email.configurado              verdadeiro ou falso: o servidor manda e-mail (EMAIL_METODO ou SMTP_HOST no config.php)
+ *     email.metodo                   smtp ou mail; null: não configurado
+ *     push.configurado               verdadeiro ou falso: o servidor tem as chaves do Web Push (VAPID_PUBLICA e VAPID_PRIVADA)
+ *     push.chave_publica             a chave pública VAPID (base64url); null: não configurado
+ *     usuarios[]                     quem vê a coleção (o Web Push vai para os aparelhos de um deles)
+ *     usuarios[].id                  o id
+ *     usuarios[].login               o login
+ *   recurso=agendas
+ *     agendas[]                      as agendas da coleção (Google Agenda, CalDAV, Outlook, link ICS)
+ *     agendas[].id                   o id da agenda
+ *     agendas[].nome                 o nome
+ *     agendas[].tipo                 google, caldav, outlook ou ics
+ *     agendas[].tipo_nome            o nome do tipo, por extenso
+ *     agendas[].ativa                verdadeiro ou falso: o sistema mantém os eventos nela
+ *     agendas[].janela_dias          quantos dias à frente ficam na agenda
+ *     agendas[].modelo               o modelo do evento: a primeira linha é o título, o resto a descrição, com as âncoras
+ *     agendas[].idioma               o idioma dos eventos dela; null: o da coleção
+ *     agendas[].recebe[]             o que ele recebe: cada tipo de aviso (o relógio do dia, a véspera, cada aviso do cadastro, cada evento
+ *                                    personalizado)
+ *     agendas[].recebe[].tipo        o tipo: dia, vespera, o identificador do aviso, ou ev<id> (evento personalizado)
+ *     agendas[].recebe[].nome        o nome do tipo
+ *     agendas[].recebe[].quando      quando sai (manhã, noite, na hora...)
+ *     agendas[].recebe[].envia       verdadeiro ou falso: recebe esse tipo
+ *     agendas[].recebe[].modelo      o texto próprio desse tipo (com as âncoras); null: a mensagem padrão
+ *     agendas[].sincronizados        quantos eventos o sistema criou nela (e acompanha)
+ *     agendas[].teste_id             o id do evento de teste nela; null: nenhum
+ *     agendas[].google               o que é do Google Agenda (null nos outros tipos)
+ *     agendas[].google.calendario_id o id da agenda do Google
+ *     agendas[].google.chave         a chave da conta de serviço: json (colada, cifrada no banco), caminho (um arquivo no servidor) ou
+ *                                    nenhuma
+ *     agendas[].google.caminho       o caminho do arquivo da chave (só quando a chave é um caminho)
+ *     agendas[].google.conta_servico o e-mail da conta de serviço (compartilhe a agenda com ele, com permissão de alterar)
+ *     agendas[].caldav               o que é do CalDAV (null nos outros tipos)
+ *     agendas[].caldav.url           o endereço do calendário
+ *     agendas[].caldav.usuario       o usuário
+ *     agendas[].caldav.senha_preenchida
+ *                                    verdadeiro ou falso: tem senha guardada (cifrada; nunca sai)
+ *     agendas[].outlook              o que é do Outlook (null nos outros tipos)
+ *     agendas[].outlook.conta        a conta Microsoft conectada; null: ainda não
+ *     agendas[].outlook.calendario_id
+ *                                    o id do calendário; null: o principal
+ *     agendas[].outlook.conectada    verdadeiro ou falso: a conta Microsoft está conectada
+ *     agendas[].outlook.configurado  verdadeiro ou falso: o servidor tem o aplicativo da Microsoft (OUTLOOK_CLIENTE_ID)
+ *     agendas[].outlook.retorno      o endereço de retorno para registrar no aplicativo da Microsoft
+ *     agendas[].ics                  o que é do link ICS (null nos outros tipos)
+ *     agendas[].ics.link             o link para assinar no app de agenda (quem tem o link vê os eventos)
+ *     agendas[].previa[]             os primeiros (até 12) eventos que têm de estar nela agora
+ *     agendas[].previa[].chave       a identificação do evento na agenda (a mesma enquanto nada mudar; é o que o sistema usa para atualizar
  *                                    ou remover)
- *     desejados[].data               o dia do evento na agenda (texto AAAA-MM-DD)
- *     desejados[].descricao          a descrição do evento, montada pela mensagem do canal da agenda
- *     desejados[].fazer              a ação ("Dar corda", "Usar hoje", o nome do evento) — a âncora {acao}
- *     desejados[].hora               a hora do evento na agenda (HH:MM)
- *     desejados[].momento            o instante previsto do que motivou o evento (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
- *     desejados[].motivo             o porquê ("a reserva acaba em 3h, 28/09 10:53") — a âncora {motivo}
- *     desejados[].relogio            o nome do relógio; vazio num evento geral
- *     desejados[].relogio_id         o relógio do evento; null num evento geral
- *     desejados[].tipo               o tipo: dia, vespera, o identificador do aviso, ou ev<id> (evento personalizado)
- *     desejados[].titulo             o título do evento, montado pela mensagem do canal da agenda
- *     janela_dias                    a antecedência da agenda, em dias
+ *     agendas[].previa[].tipo        o tipo: dia, vespera, o identificador do aviso, ou ev<id> (evento personalizado)
+ *     agendas[].previa[].relogio_id  o relógio do evento; null num evento geral
+ *     agendas[].previa[].relogio     o nome do relógio; vazio num evento geral
+ *     agendas[].previa[].data        o dia do evento na agenda (texto AAAA-MM-DD)
+ *     agendas[].previa[].hora        a hora do evento na agenda (HH:MM)
+ *     agendas[].previa[].fazer       a ação ("Dar corda", "Usar hoje", o nome do evento): a âncora {acao}
+ *     agendas[].previa[].motivo      o porquê ("a reserva acaba em 3h, 28/09 10:53"): a âncora {motivo}
+ *     agendas[].previa[].momento     o instante previsto do que motivou o evento (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     agendas[].previa[].titulo      o título do evento, montado pelo modelo da agenda (a primeira linha)
+ *     agendas[].previa[].descricao   a descrição do evento, montada pelo modelo da agenda (o resto)
+ *     agendas[].previstos            quantos eventos têm de estar nela agora
+ *     tipos[]                        os tipos possíveis
+ *     tipos[].tipo                   o tipo
+ *     tipos[].nome                   o nome do tipo
+ *     ancoras.<ancora>               cada âncora que o modelo aceita ({relogio}, {acao}...) e o que ela vira
+ *     linguas[]                      os idiomas
+ *     linguas[].codigo               o código (pt-BR, en...)
+ *     linguas[].nome                 o nome do idioma
+ *     avisos[]                       os tipos de aviso que um destino ou uma agenda pode receber
+ *     avisos[].tipo                  o tipo (dia, vespera, o identificador do aviso, ev<id>)
+ *     avisos[].nome                  o nome
+ *     avisos[].quando                quando sai
+ *     padrao.modelo                  o modelo padrão do evento, no idioma da coleção
+ *     padrao.janela_dias             a janela padrão, em dias
+ *     outlook.configurado            verdadeiro ou falso: o servidor tem o aplicativo da Microsoft (OUTLOOK_CLIENTE_ID e
+ *                                    OUTLOOK_CLIENTE_SEGREDO)
+ *     outlook.retorno                o endereço de retorno para registrar no aplicativo da Microsoft
+ *     pasta                          a pasta do sistema no servidor, para o caminho da chave do Google (só o master; null para os outros)
+ *   recurso=conta
+ *     usuario                        quem pede (null: o token do servidor sem nenhum usuário)
+ *     usuario.id                     o id
+ *     usuario.login                  o login
+ *     usuario.email                  o e-mail; null: nenhum
+ *     usuario.papel                  master ou comum
+ *     usuario.idioma                 o idioma; null: o da coleção
+ *     usuario.criado                 quando a conta foi criada
+ *     usuario.ultimo_acesso          o último acesso
+ *     usuario.expira_em              quando a conta de demonstração vence; null: oficial
+ *     usuario.demo                   verdadeiro ou falso: de demonstração
+ *     usuario.dias_restantes         quantos dias faltam; null: oficial
+ *     usuario.bloqueado              verdadeiro ou falso: bloqueada
+ *     vendo_como                     o master vendo como outro usuário: {login (o usuário visto), master (quem está vendo)}; null: não
+ *     vendo_como.login               o login do usuário visto
+ *     vendo_como.master              o login do master
+ *     papel                          o seu papel na coleção do pedido: dono, membro ou master
+ *     colecoes[]                     as coleções que você vê: as suas primeiro, depois pelo nome
+ *     colecoes[].id                  o id
+ *     colecoes[].nome                o nome
+ *     colecoes[].dono_id             o id do dono
+ *     colecoes[].dono                o login do dono
+ *     colecoes[].papel               o seu papel nela: dono, membro ou master
+ *     colecoes[].no_id               a raiz da árvore de grupos que ela usa
+ *     colecao                        o id da coleção do pedido; null: nenhuma
+ *     arvores[]                      as suas árvores de grupos
+ *     arvores[].id                   o id (a raiz da árvore)
+ *     arvores[].nome                 o nome
+ *     arvores[].grupos               quantos grupos tem (sem a raiz)
+ *     arvores[].colecoes[]           as coleções que usam a árvore
+ *     arvores[].colecoes[].id        o id
+ *     arvores[].colecoes[].nome      o nome
+ *     pedidos[]                      os seus pedidos de acesso esperando resposta
+ *     pedidos[].id                   o id
+ *     pedidos[].alvo                 o que foi pedido, por extenso
+ *     pedidos[].criado               quando
+ *     pedidos[].expira               até quando espera
+ *     convites[]                     os convites para o seu e-mail (aceite pelo link do e-mail)
+ *     convites[].id                  o id
+ *     convites[].alvo                o que o convite dá
+ *     convites[].expira              até quando vale
+ *     aprovacoes                     quantos pedidos e convites esperam a sua resposta (página Aprovações)
+ *     tokens[]                       os seus tokens de API (o token mesmo só aparece ao criar)
+ *     tokens[].id                    o id
+ *     tokens[].nome                  o nome (onde ele é usado)
+ *     tokens[].criado                quando foi criado
+ *     tokens[].ultimo_uso            o último uso; null: nunca
+ *     push                           o Web Push
+ *     push.configurado               verdadeiro ou falso: o servidor tem as chaves VAPID
+ *     push.chave_publica             a chave pública VAPID (o navegador inscreve com ela); null: não configurado
+ *     push.aparelhos[]               os seus aparelhos inscritos
+ *     push.aparelhos[].id            o id
+ *     push.aparelhos[].aparelho      o nome do aparelho (o navegador)
+ *     push.aparelhos[].criada        desde quando
+ *     push.aparelhos[].endpoint_hash a marca do endereço do aparelho (para o navegador saber se já está inscrito)
+ *     email_configurado              verdadeiro ou falso: o servidor manda e-mail
+ *     demo_dias                      os dias da conta de demonstração
+ *     master                         (parte=menu) verdadeiro ou falso: quem pede é o master (ou o master vendo como outro)
+ *     linguas[]                      os idiomas
+ *     linguas[].codigo               o código
+ *     linguas[].nome                 o nome
+ *   recurso=colecoes
+ *     colecoes[]                     as coleções que você vê: as suas primeiro, depois pelo nome
+ *     colecoes[].id                  o id
+ *     colecoes[].nome                o nome
+ *     colecoes[].dono_id             o id do dono
+ *     colecoes[].dono                o login do dono
+ *     colecoes[].papel               o seu papel nela: dono, membro (é membro ou vê tudo do dono) ou master
+ *     colecoes[].no_id               a raiz da árvore de grupos que ela usa
+ *     colecao                        o id da coleção do pedido; null: nenhuma
+ *     arvores[]                      as suas árvores de grupos
+ *     arvores[].id                   o id (a raiz da árvore)
+ *     arvores[].nome                 o nome
+ *     arvores[].grupos               quantos grupos tem (sem a raiz)
+ *     arvores[].colecoes[]           as coleções que usam a árvore
+ *     arvores[].colecoes[].id        o id
+ *     arvores[].colecoes[].nome      o nome
+ *   recurso=aprovacoes
+ *     pedidos[]                      os pedidos de acesso que você aprova
+ *     pedidos[].id                   o id
+ *     pedidos[].login                quem pede
+ *     pedidos[].email                o e-mail de quem pede
+ *     pedidos[].colecao_id           a coleção pedida; null: tudo de um dono
+ *     pedidos[].dono_id              o dono de quem se pede tudo; null: uma coleção
+ *     pedidos[].alvo                 o que foi pedido, por extenso
+ *     pedidos[].mensagem             o recado de quem pede
+ *     pedidos[].criado               quando
+ *     pedidos[].expira               até quando espera
+ *     convites_a_aprovar[]           os convites que membros fizeram para as suas coleções, esperando você
+ *     convites_feitos[]              os convites que você fez
+ *     convites_a_aprovar[].id        o id
+ *     convites_a_aprovar[].email     para quem
+ *     convites_a_aprovar[].por       o login de quem convidou
+ *     convites_a_aprovar[].por_id    o id de quem convidou
+ *     convites_a_aprovar[].estado    pendente (espera o dono) ou aprovado (enviado)
+ *     convites_a_aprovar[].colecao_id
+ *                                    a coleção; null: tudo de um dono
+ *     convites_a_aprovar[].dono_id   o dono; null: uma coleção
+ *     convites_a_aprovar[].alvo      o que o convite dá
+ *     convites_a_aprovar[].criado    quando
+ *     convites_a_aprovar[].expira    até quando vale
+ *     convites_feitos[].id           o id
+ *     convites_feitos[].email        para quem
+ *     convites_feitos[].por          o seu login
+ *     convites_feitos[].por_id       o seu id
+ *     convites_feitos[].estado       pendente (espera o dono) ou aprovado (enviado)
+ *     convites_feitos[].colecao_id   a coleção; null: tudo de um dono
+ *     convites_feitos[].dono_id      o dono; null: uma coleção
+ *     convites_feitos[].alvo         o que o convite dá
+ *     convites_feitos[].criado       quando
+ *     convites_feitos[].expira       até quando vale
+ *     acessos                        quem vê as suas coleções
+ *     acessos.colecoes[]             cada coleção sua
+ *     acessos.colecoes[].id          o id
+ *     acessos.colecoes[].nome        o nome
+ *     acessos.colecoes[].membros[]   os membros dela
+ *     acessos.colecoes[].membros[].usuario_id
+ *                                    o id do membro
+ *     acessos.colecoes[].membros[].login
+ *                                    o login
+ *     acessos.colecoes[].membros[].desde
+ *                                    desde quando
+ *     acessos.tudo[]                 quem vê tudo seu
+ *     acessos.tudo[].usuario_id      o id
+ *     acessos.tudo[].login           o login
+ *     acessos.tudo[].desde           desde quando
+ *     minhas_colecoes[]              as suas coleções
+ *     minhas_colecoes[].id           o id
+ *     minhas_colecoes[].nome         o nome
+ *     pode_convidar[]                as coleções para onde você pode convidar
+ *     pode_convidar[].id             o id
+ *     pode_convidar[].nome           o nome
+ *     pode_convidar[].dono           o login do dono
+ *     pode_convidar[].papel          o seu papel nela
+ *     email_configurado              verdadeiro ou falso: o servidor manda e-mail (sem ele, o link do convite aparece para você mandar)
+ *     convite_dias                   quantos dias um convite ou um pedido espera (CONVITE_DIAS)
+ *   recurso=cadastro
+ *     aberto                         verdadeiro ou falso: o cadastro está aberto (CADASTRO_ABERTO); fechado, só com convite
+ *     demo_dias                      os dias da conta de demonstração (0: a conta nasce oficial)
+ *     email_configurado              verdadeiro ou falso: o servidor manda e-mail (o Esqueci a senha precisa dele)
+ *     linguas[]                      os idiomas
+ *     linguas[].codigo               o código
+ *     linguas[].nome                 o nome
+ *     colecoes[]                     as coleções (para pedir acesso; vazio com o cadastro fechado)
+ *     colecoes[].id                  o id
+ *     colecoes[].nome                o nome
+ *     colecoes[].dono                o login do dono
+ *     donos[]                        os donos com alguma coleção (para pedir acesso a tudo de um)
+ *     donos[].id                     o id
+ *     donos[].login                  o login
+ *     donos[].colecoes               quantas coleções
+ *     convite                        com convite=<token>: o convite; false: não vale mais; null: sem convite
+ *     convite.email                  para quem
+ *     convite.alvo                   o que ele dá
+ *     convite.expira                 até quando vale
+ *     convite.tem_conta              verdadeiro ou falso: o e-mail já tem conta (então é entrar e aceitar)
  *   recurso=usuarios
  *     usuarios[]                     quem acessa
  *     usuarios[].criado              quando foi criado
@@ -2554,6 +2913,34 @@
  *                                    Levado para outro sistema que confira por bcrypt, o usuário entra lá com a mesma senha; e volta para
  *                                    cá por usuarios/salvar com senha_hash
  *     voce                           o login de quem pediu (pelo site; vazio pelo token)
+ *     usuarios[].id                  o id (só o master vê)
+ *     usuarios[].email               o e-mail (para recuperar a senha, os convites e os avisos)
+ *     usuarios[].papel               master (cuida do sistema inteiro) ou comum
+ *     usuarios[].idioma              o idioma dele; null: o da coleção
+ *     usuarios[].ultimo_acesso       o último acesso (texto AAAA-MM-DD HH:MM:SS); null: nunca entrou
+ *     usuarios[].expira_em           quando a conta de demonstração vence (texto AAAA-MM-DD HH:MM:SS); null: a conta é oficial
+ *     usuarios[].demo                verdadeiro ou falso: é de demonstração
+ *     usuarios[].dias_restantes      quantos dias faltam para vencer; null: oficial
+ *     usuarios[].bloqueado           verdadeiro ou falso: bloqueada pelo master (não entra)
+ *     usuarios[].colecoes[]          as coleções dele (o dono)
+ *     usuarios[].colecoes[].id       o id
+ *     usuarios[].colecoes[].nome     o nome
+ *     usuarios[].colecoes[].relogios quantos relógios
+ *     usuarios[].membro_de[]         as coleções de outros de que ele é membro
+ *     usuarios[].membro_de[].id      o id
+ *     usuarios[].membro_de[].nome    o nome
+ *     usuarios[].membro_de[].dono    o login do dono
+ *     usuarios[].tudo_de[]           os logins dos donos de quem ele vê tudo
+ *     usuarios[].pedidos             quantos pedidos de acesso dele esperam
+ *     usuarios[].tokens              quantos tokens de API ele tem
+ *     colecoes[]                     todas as coleções (para transferir e dar acesso)
+ *     colecoes[].id                  o id
+ *     colecoes[].nome                o nome
+ *     colecoes[].dono_id             o id do dono
+ *     colecoes[].dono                o login do dono
+ *     colecoes[].papel               o papel de quem pede nela: dono, membro ou master
+ *     colecoes[].no_id               a raiz da árvore de grupos que ela usa
+ *     demo_dias                      os dias da conta de demonstração (DEMO_DIAS; 0: as contas novas já nascem oficiais)
  *   recurso=migracoes
  *     pendentes[]                    as migrações do banco que faltam aplicar (vazio: em dia)
  *     pendentes[].arquivo            o arquivo .sql
@@ -2807,10 +3194,6 @@
  *     listas.ancoras[]               as âncoras das mensagens (entre chaves no texto)
  *     listas.ancoras[].ancora        a âncora, sem as chaves
  *     listas.ancoras[].descricao     o que ela vira
- *     listas.canais[]                os canais das mensagens
- *     listas.canais[].canal          o código do canal (tg: Telegram, ag: Google Agenda)
- *     listas.canais[].nome           o nome
- *     listas.canais[].ajuda          como a mensagem sai nele
  *     listas.migracoes[]             as migrações, na ordem
  *     listas.migracoes[].versao      a versão (v2, v3...)
  *     listas.migracoes[].arquivo     o arquivo do SQL dela
@@ -2820,6 +3203,12 @@
  *     listas.config_php[]            as constantes do config.php
  *     listas.config_php[].constante  o nome (ou os nomes) da constante
  *     listas.config_php[].descricao  para que ela serve
+ *     listas.tipos_de_destino[]      os tipos de destino das mensagens
+ *     listas.tipos_de_destino[].tipo o código (webhook, email, webpush)
+ *     listas.tipos_de_destino[].nome o nome
+ *     listas.tipos_de_agenda[]       os tipos de agenda
+ *     listas.tipos_de_agenda[].tipo  o código (google, caldav, outlook, ics)
+ *     listas.tipos_de_agenda[].nome  o nome
  *   recurso=backup
  *     ativo                          falso: a cópia de segurança está desligada no config.php (BACKUP_ATIVO = false): o cron não faz cópia,
  *                                    a escrita fazer é recusada e a Configuração não mostra o quadro Cópia de segurança
@@ -2907,11 +3296,14 @@
  *   302 recurso=entrar com o login certo e volta=<página>: vai para a página
  *   401 {"erro"}: sem o token nem o login do site, ou com eles errados; sem nenhum usuário (ou com o banco vazio), também
  *       "sem_usuarios": true e "como" (o que fazer: instalar, criar o primeiro usuário pelo token)
- *   404 {"erro"}: recurso desconhecido (com "recursos", a lista deles), ou o relógio, a foto, o documento (ou o arquivo dele) ou o
+ *   404 {"erro"}: recurso desconhecido (com "recursos", a lista deles), a coleção que você não vê (colecao=), o link ICS desconhecido, ou o relógio, a foto, o documento (ou o arquivo dele) ou o
  *       README.md (recurso=manual) que não existe, ou um arquivo que não sai pelo recurso=codigo ({"erro", e "o_que_ver" no
  *       que fica de fora de propósito, como o config.php, ou "arquivos", os que saem)
- *   409 {"erro": "o banco recusou a gravação: ...", "detalhe"} (um registro que outro ainda usa, um valor repetido, ou um valor fora
- *       das regras de validação do banco: o nome da regra, ck_<tabela>_<o quê>, vem no detalhe)
+ *   403 {"erro"}: a cópia de segurança e as migrações, por quem não é o master
+ *   409 {"ok": false, "confirmar": true, "impacto"}: uma exclusão sem confirmar=1 (nada foi apagado; o impacto diz o que sai junto);
+ *       {"erro", "sem_colecao": true}: a conta sem coleção nenhuma (só a conta responde); ou {"erro": "o banco recusou a gravação:
+ *       ...", "detalhe"} (um registro que outro ainda usa, um valor repetido, ou um valor fora das regras de validação do banco: o
+ *       nome da regra, ck_<tabela>_<o quê>, vem no detalhe)
  *   413 {"ok": false, "erros": [...]} (o envio passou do post_max_size do PHP: um arquivo grande demais)
  *   500 {"erro": "Sistema parado: ..."} (token ou fuso inválido no config.php) ou {"erro": "erro interno", "detalhe"}
  *   503 {"erro": "o banco está desatualizado: ...", "pendentes"}: só recurso=migracoes (e recurso=manual e recurso=codigo, que não usam o banco)
@@ -2936,6 +3328,10 @@ require __DIR__ . "/api/funcoes.php";
 $token = (string)($_SERVER["HTTP_X_API_TOKEN"] ?? ($_REQUEST["token"] ?? ""));
 $quem = usuario_autenticado();
 $token_ok = hash_equals(trim((string)API_TOKEN), trim($token));
+// o token pessoal (Minha conta) vale como o login do dono dele
+if (!$token_ok && $quem === "" && $token !== "") {
+    $quem = usuario_por_token($token);
+}
 $escrita = $_SERVER["REQUEST_METHOD"] === "POST";
 $d = $_POST;
 if ($escrita && stripos($_SERVER["CONTENT_TYPE"] ?? "", "json") !== false) {
@@ -2954,11 +3350,35 @@ $saida = [];
 $pendentes = migracoes_pendentes();
 // o banco vazio (antes da instalação): só a instalação responde
 $banco_vazio = count($pendentes) > 0 && count(banco_tabelas()) === 0;
-// o idioma do pedido: lingua=, o cookie do seletor do menu, o padrão da instalação (a Configuração), o Accept-Language
+// quem pede (o login, ou o token: o API_TOKEN do config.php vale como o master mais antigo) e em que coleção (colecao=, o
+// cookie do seletor do menu, ou a primeira que ele vê): o escopo do banco, daqui para a frente, é o dessa coleção
+$em_dia = !$banco_vazio && count($pendentes) === 0;
+if ($em_dia && $token_ok && usuario_atual() === null) {
+    usuario_definir(sem_escopo(function () { return linha("SELECT * FROM usuario WHERE papel = 'master' ORDER BY id LIMIT 1"); }));
+}
+// o master vendo o sistema como outro usuário (como=<login>, ou o cookie da faixa "Vendo como" das páginas)
+if ($em_dia && usuario_master()) {
+    $como = vendo_como($_REQUEST["como"] ?? ($_COOKIE["como"] ?? ""));
+    if ($como !== null) {
+        $quem = $como;
+        header("X-Vendo-Como: " . rawurlencode($como));
+    }
+}
+$colecao_negada = false;
+if ($em_dia && usuario_atual() !== null) {
+    $c_pedida = colecao_escolher(usuario_atual(), $d["colecao"] ?? ($_REQUEST["colecao"] ?? null), $_COOKIE["colecao"] ?? null);
+    if ($c_pedida === false) {
+        $colecao_negada = true;
+    } elseif ($c_pedida !== null) {
+        banco_escopo($c_pedida);
+    }
+}
+// o idioma do pedido: lingua=, o cookie do seletor do menu, o do usuário, o da coleção (a Configuração), o da instalação,
+// o Accept-Language
 $lingua_padrao = null;
-if (!$banco_vazio) {
+if ($em_dia) {
     try {
-        $lingua_padrao = cfg("idioma");
+        $lingua_padrao = lingua_valida(usuario_atual()["idioma"] ?? null) ?? (lingua_valida(cfg("idioma")) ?? lingua_valida(sis("idioma")));
     } catch (Throwable $e) {
         $lingua_padrao = null;
     }
@@ -2982,6 +3402,27 @@ if ($recurso === "textos") {
         header("Cache-Control: private, max-age=" . (isset($_REQUEST["v"]) ? 86400 : 0));
         echo "window.TEXTOS_API = " . json_encode($saida, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . ";\n";
         exit;
+    }
+} elseif ($recurso === "ics" && $em_dia) {
+    // o link ICS de uma agenda: sem login, pela chave secreta do link (quem tem o link vê os eventos)
+    $ics = ics_feed((string)($_REQUEST["chave"] ?? ""));
+    if ($ics === null) {
+        $codigo = 404;
+        $saida = ["erro" => t("link de agenda desconhecido")];
+    } else {
+        header("Content-Type: text/calendar; charset=utf-8");
+        header("Content-Disposition: inline; filename=\"relojoeiro.ics\"");
+        echo $ics;
+        exit;
+    }
+} elseif ($recurso === "cadastro" && $em_dia) {
+    // o cadastro aberto (a página cadastro.php): sem login. Lê (se está aberto, as coleções e os donos, o convite) e grava
+    // (criar a conta, esqueci a senha, a senha nova pelo link)
+    if ($escrita) {
+        $saida = op_cadastro($acao, $d);
+        $codigo = $saida["ok"] ? 200 : 400;
+    } else {
+        $saida = cadastro_consulta($_REQUEST["convite"] ?? null);
     }
 } elseif (!$token_ok && $quem === "") {
     $codigo = 401;
@@ -3019,6 +3460,11 @@ if ($recurso === "textos") {
         header("Location: " . $volta);
     }
     $saida = ["usuario" => $quem !== "" ? $quem : null, "por" => $quem !== "" ? "login" : "token", "volta" => $volta !== "" ? $volta : null];
+} elseif (($recurso === "backup" || ($recurso === "migracoes" && $escrita)) && !$token_ok && !usuario_master() && banco_tem_coluna("usuario", "papel")) {
+    // o banco inteiro (a cópia de segurança, as migrações) é do sistema: só o master (num banco de antes da v25, sem papéis,
+    // qualquer um que entra, como antes)
+    $codigo = 403;
+    $saida = ["erro" => t("só o master cuida da cópia de segurança e das migrações do banco")];
 } elseif ($recurso === "migracoes" && $banco_vazio) {
     $codigo = 503;
     $saida = ["erro" => t("o banco está vazio: instale (POST recurso=instalacao, acao=instalar)"), "proximo_passo" => instalacao_situacao()["proximo_passo"]];
@@ -3033,6 +3479,15 @@ if ($recurso === "textos") {
     $saida = ["erro" => t("o banco está desatualizado: aplique as migrações (POST recurso=migracoes, acao=aplicar)"), "pendentes" => array_map(function ($v, $m) {
         return ["versao" => $v, "arquivo" => $m[0], "traz" => $m[1]];
     }, array_keys($pendentes), array_values($pendentes))];
+} elseif ($colecao_negada) {
+    // uma coleção que ele não vê: como se não existisse
+    $codigo = 404;
+    $saida = ["erro" => t("coleção não encontrada")];
+} elseif (colecao_atual() === null && !$sem_banco && !in_array($recurso, ["usuarios", "conta", "colecoes", "acessos", "pedidos", "convites", "aprovacoes", "ajuda", "reconstrucao"], true)) {
+    // sem coleção nenhuma (a conta que só pediu acesso e espera a aprovação; o token sem nenhum usuário): só a conta responde
+    $codigo = 409;
+    $saida = ["erro" => usuario_atual() === null ? t("nenhum usuário cadastrado: crie o primeiro com o token (POST recurso=usuarios, acao=salvar, login e senha); ele ganha a primeira coleção, com o conjunto inicial")
+        : t("você ainda não tem coleção: crie uma (POST recurso=colecoes, acao=criar) ou espere a aprovação do seu pedido de acesso"), "sem_colecao" => true];
 } elseif ($escrita) {
     require __DIR__ . "/api/escrita.php";
 } elseif ($recurso === "importacao") {
@@ -3137,12 +3592,36 @@ if ($recurso === "textos") {
     }
 } elseif ($recurso === "eventos") {
     $saida = ["eventos" => array_map("evento_legivel", eventos_com_dias(linhas("SELECT * FROM evento_personalizado ORDER BY nome")))];
-} elseif ($recurso === "agenda") {
-    $saida = ["ativa" => cfg("agenda_ativa") === "1", "agenda_id" => cfg("agenda_id"), "janela_dias" => (int)cfg("agenda_antecedencia"),
-        "chave_ok" => cfg("agenda_id") !== "" ? google_token() !== false : null, "desejados" => agenda_legivel(),
-        "criados" => linhas("SELECT chave, google_id, data, titulo, assinatura, criado FROM agenda_evento ORDER BY data, chave")];
+} elseif ($recurso === "destinos") {
+    require __DIR__ . "/api/destinos.php";
+} elseif ($recurso === "agendas") {
+    require __DIR__ . "/api/agendas.php";
+} elseif ($recurso === "outlook_retorno") {
+    // a volta da página da Microsoft (code e state): a conexão vai para a agenda (da coleção dela, se você a vê) e a página
+    // Agendas abre com o recado
+    $aid = (int)explode(".", (string)($_REQUEST["state"] ?? ""))[0];
+    $col_o = sem_escopo(function () use ($aid) { return valor("SELECT colecao_id FROM agenda WHERE id = ?", [$aid]); });
+    if ($col_o !== null && in_array((int)$col_o, array_column(colecoes_visiveis(usuario_atual()), "id"), true)) {
+        banco_escopo((int)$col_o);
+        setcookie("colecao", (string)(int)$col_o, ["path" => "/", "samesite" => "Lax"]);
+        [$ok_o, $msg_o] = isset($_REQUEST["error"]) ? [false, t("A Microsoft não autorizou: {1}", [1 => (string)($_REQUEST["error_description"] ?? $_REQUEST["error"])])]
+            : outlook_conectar_retorno((string)($_REQUEST["code"] ?? ""), (string)($_REQUEST["state"] ?? ""));
+    } else {
+        [$ok_o, $msg_o] = [false, t("Agenda não encontrada.")];
+    }
+    $codigo = 302;
+    header("Location: agendas.php?recado=" . rawurlencode($msg_o) . "#agenda-" . $aid);
+    $saida = ["ok" => $ok_o, "mensagem" => $msg_o];
 } elseif ($recurso === "usuarios") {
-    $saida = ["usuarios" => usuarios_catalogo(), "voce" => $quem];
+    // o master: o painel (todos, com o que cada um tem, e as coleções, para transferir e dar acesso); os outros, só a si mesmos
+    $saida = usuario_master() ? ["usuarios" => usuarios_painel(), "voce" => $quem, "demo_dias" => demo_dias(), "colecoes" => colecoes_visiveis(usuario_atual())]
+        : ["usuarios" => usuarios_catalogo(), "voce" => $quem];
+} elseif ($recurso === "conta") {
+    $saida = ($_REQUEST["parte"] ?? "") === "menu" ? conta_menu() : conta_consulta();
+} elseif ($recurso === "colecoes") {
+    $saida = ["colecoes" => colecoes_visiveis(usuario_atual()), "colecao" => colecao_atual(), "arvores" => usuario_atual() !== null ? arvores_do_dono((int)usuario_atual()["id"]) : []];
+} elseif ($recurso === "aprovacoes") {
+    $saida = usuario_atual() !== null ? aprovacoes_consulta() : ["erro" => t("Entre com um usuário (o token do servidor não tem conta).")];
 } elseif ($recurso === "cron") {
     require __DIR__ . "/api/cron.php";
 } elseif ($recurso === "arvore") {
@@ -3178,7 +3657,7 @@ if ($recurso === "textos") {
 } else {
     $codigo = 404;
     $saida = ["erro" => t("recurso desconhecido"), "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "hora_certa", "acessorios", "passaporte", "galeria", "textos", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "hora_certa", "acessorios", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

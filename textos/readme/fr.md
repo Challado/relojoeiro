@@ -1,4 +1,4 @@
-<!-- origem: a00d1e4d31146c4c8ac7a17bb30250c9218279d4 -->
+<!-- origem: ef0f54a0dfded956a32fb3baebbb29996ddbf324 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -6,7 +6,7 @@
 
 > **La rotation intelligente d'une collection de montres.** Chaque jour, il dit quelle montre va au poignet, rappelle de
 > remonter, de charger, de mettre au soleil et de changer la pile, et fait porter toute la collection, pas seulement la
-> préférée.
+> préférée. Plusieurs personnes utilisent le même système, chacune avec ses collections, et partagent ce qu'elles veulent.
 
 ![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-777bb4?logo=php&logoColor=white)
 ![SQLite, MySQL/MariaDB, PostgreSQL ou Firebird](https://img.shields.io/badge/base%20de%20donn%C3%A9es-SQLite%20%7C%20MySQL%20%7C%20PostgreSQL%20%7C%20Firebird-336791)
@@ -24,7 +24,7 @@ flottante, par-dessus la page).</sub>
 | | |
 |---|---|
 | **[Pourquoi il existe](#por-que-isso-existe)** · [L'idée centrale](#a-ideia-central-o-sistema-não-sabe-nada-de-relógios) · [Comment ça marche](#como-funciona) · [Une journée avec lui](#um-dia-com-o-relógios-2) | **[Essayez en 1 minute](#experimente-em-1-minuto)** · [Les écrans](#as-telas) · [L'API](#a-api-uma-porta-só-para-tudo) · [Installation](#instalação) |
-| [Questions fréquentes](#perguntas-frequentes) · [Comment c'est à l'intérieur](#como-é-por-dentro) | [Comment contribuer](#como-contribuir) · [Licence](#licença) |
+| [Plusieurs personnes](#várias-pessoas-contas-coleções-e-acesso) ·[Questions fréquentes](#perguntas-frequentes) · [Comment c'est à l'intérieur](#como-é-por-dentro) | [Comment contribuer](#como-contribuir) · [Licence](#licença) |
 
 ---
 
@@ -92,17 +92,23 @@ les filtres du tableau laissent visible). C'est pourquoi **tout ce que fait l'é
 automatisations, raccourcis sur le téléphone, intégration avec Home Assistant, un widget.
 
 L'API fait aussi ce qui vient avant et autour des écrans : elle **installe la base** (`recurso=instalacao`), **crée le premier
-utilisateur** (`recurso=usuarios`, avec le jeton), **importe l'ancien système** (`recurso=importacao`) et fait la **connexion
-des pages** (`recurso=entrar` : les pages ne vérifient rien, elles livrent seulement le squelette ; qui arrive sans connexion
-est envoyé à l'API, qui demande l'utilisateur et le mot de passe et le renvoie à la page). Les scripts en ligne de commande
-(`instalar.php`, `criar_usuario.php`, `importar.php`) sont des raccourcis : ils appellent les mêmes opérations de l'API.
+utilisateur** (`recurso=usuarios`, avec le jeton), **importe le système précédent** (`recurso=importacao`), l'**inscription
+ouverte** (`recurso=cadastro`, sans identifiant), les **comptes** (`conta`, `colecoes`, `acessos`, `convites`, `pedidos`,
+`aprovacoes`) et fait l'**identification des pages** (`recurso=entrar` : les pages ne vérifient rien, elles ne livrent que le
+squelette ; qui arrive sans identifiant est envoyé à l'API, qui demande l'utilisateur et le mot de passe et le renvoie à la
+page). Les scripts en ligne de commande (`instalar.php`, `criar_usuario.php`, `importar.php`) sont des raccourcis : ils
+appellent les mêmes opérations de l'API.
 
-En dehors de l'API, il n'y a que le **cron** (`cron.php`, l'horloge du système : il construit le plan, ouvre et ferme la
-session du jour, envoie les messages, synchronise l'agenda, déclenche les événements et s'occupe des copies des documents),
-qui utilise les mêmes fonctions que l'API ; ce qu'on peut demander sur le moment a une action dans l'API (`testar_manha`,
-`testar_noite`, `sincronizar`, `resortear`...), et ce qu'il a fait apparaît dans `recurso=cron`.
+Hors de l'API, il n'y a que le **cron** (`cron.php`, l'horloge du système : il monte le plan, ouvre et ferme la session du
+jour, envoie les messages, synchronise les agendas, déclenche les événements et s'occupe des copies des documents), qui utilise
+les mêmes fonctions que l'API ; ce qu'on peut demander sur le moment a une action dans l'API (le `testar` des destinations, le
+`sincronizar` des agendas, le `resortear`...), et ce qu'il a fait apparaît dans `recurso=cron`.
 
-**Authentification :** le jeton (`X-Api-Token: ...` ou `?token=...`) ou la connexion du site (HTTP Basic).
+**Authentification :** l'identifiant du site (HTTP Basic), un **jeton personnel** (créé dans **Mon compte**, il vaut comme
+votre identifiant) ou le jeton du serveur (l'`API_TOKEN`, il vaut comme le master), dans l'en-tête `X-Api-Token` ou dans
+`?token=...`. **La collection :** `colecao=<id>` (sans lui, celle du sélecteur du menu, sinon votre première) ; une que vous
+ne voyez pas répond 404. **Supprimer** demande `confirmar=1` : sans lui, la réponse (409) dit ce qui partirait avec et rien
+n'est effacé.
 **Format :** JSON par défaut, ou XML avec `formato=xml`. **Langue :** `lingua=fr` (ou l'en-tête `Accept-Language`) : les
 messages, l'aide et la reconstruction sortent dans cette langue.
 
@@ -142,14 +148,17 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `autonomia` | combien de temps tient chaque montre, en secondes, épuré pour les systèmes extérieurs (`relogio=` un id ou plusieurs ; sans lui, toutes) |
 | `historico` | la chronologie d'une montre, avec le temps dans chaque état. `relogio=` (un id ou plusieurs ; `relogio_id` vaut aussi ; sans lui, toutes), `de=` et `ate=` (date, ou date et heure : la période qui croise l'intervalle entre), `estado=` (`rodizio`, `pulso`, `repouso`, `marca` ou un type de session comme `winder` et `sol` ; un ou plusieurs ; `linha_estado` vaut aussi), `ordem=` (`desc`, par défaut, ou `asc`), `limite=` (par défaut 100, maximum 1000) et `pagina=` |
 | `criterios` | les ensembles de critères et la note de chaque montre avec le calcul |
-| `eventos`, `agenda` | les événements personnalisés ; ce qui doit être dans Google Agenda |
-| `config`, `cron` | la configuration (avec les messages, l'aperçu et la situation du cron : jamais exécuté, arrêté ou en marche) ; les exécutions du cron, avec le résumé de la période. Dans le `cron` : `de=` et `ate=` (date, ou date et heure), `situacao=` (`atividade`, par défaut ; `erro`, `nada` ou `todas`), `busca=` (texte dans le journal), `limite=` (par défaut 100, maximum 1000) et `pagina=` ; chacun vaut aussi avec `cron_` devant (`cron_de`...) |
+| `eventos`, `destinos`, `agendas` | les événements personnalisés ; les destinations des messages, avec ce que chacune reçoit et l'aperçu du jour ; les agendas, avec ce qui doit être dans chacune |
+| `ics` | le calendrier d'une agenda de type lien ICS (sans identifiant, par la clé du lien) |
+| `config`, `cron` | la configuration de la collection (avec le résumé des destinations et des agendas et l'état du cron : jamais exécuté, arrêté ou en marche) ; les exécutions du cron, avec le résumé de la période. Dans `cron` : `de=` et `ate=` (date, ou date et heure), `situacao=` (`atividade`, par défaut ; `erro`, `nada` ou `todas`), `busca=` (texte dans le journal), `limite=` (100 par défaut, 1000 au maximum) et `pagina=` ; chacun vaut aussi avec `cron_` devant (`cron_de`...) |
 | `arvore`, `cadastros` | les groupes ; tout ce que montre la page Définitions |
 | `calcular` | le résultat d'une formule (`expressao=`) sur les montres (`relogio=` un id ou plusieurs ; sans lui, toutes), sans enregistrer, avec les parties du calcul ; formule mal écrite : 400 avec les erreurs |
 | `foto` | la photo d'une montre (`relogio=<id>`) : l'image, pas du JSON |
 | `documentos` | les documents d'une montre (`relogio=<id>` ; sans lui, de toutes), avec les catégories, le résumé de la NF-e de chaque XML, le dossier et la limite |
 | `documento` | le fichier d'un document (`id=<id>`) : pour afficher (image, vidéo, audio, PDF, texte) ou pour télécharger (le reste, ou avec `baixar=1`) ; `mini=1` est la vignette de la photo. Il sert des morceaux (Range), pour que la vidéo avance |
-| `usuarios`, `migracoes` | les identifiants, chacun avec le hash du mot de passe (pour migrer avec le même mot de passe : voir [Les utilisateurs et les mots de passe](#os-usuários-e-as-senhas)) ; les migrations qui restent à appliquer |
+| `usuarios`, `migracoes` | le master : le panneau des comptes, chacun avec ce qu'il a et le hash du mot de passe (pour migrer avec le même mot de passe : voir [Les utilisateurs et les mots de passe](#os-usuários-e-as-senhas)) ; les autres, seulement leur propre compte ; les migrations qui restent à appliquer |
+| `conta`, `colecoes`, `aprovacoes` | Mon compte (les collections, les arbres, les demandes, les jetons, les appareils du Web Push ; `parte=menu` : seulement ce qu'utilise le menu) ; les collections et les arbres ; la page Approbations |
+| `cadastro` | l'inscription ouverte, sans identifiant : si elle est ouverte, les collections et les propriétaires (pour demander l'accès) et l'invitation (`convite=<token>`) |
 | `instalacao` | la situation de l'installation : la base, si elle est vide, installée et à jour, combien d'utilisateurs et la prochaine étape. Répond aussi avec la base vide, avec le jeton |
 | `backup` | la sauvegarde de la base : si elle est activée, si le dossier convient, combien sont gardées, la dernière et les copies du dossier ; `arquivo=` en télécharge une |
 | `importacao` | ce qu'utilise l'importation de l'ancien système : le serveur de l'ancienne base (sans le mot de passe), si PHP a MySQL et si cette base a déjà des montres |
@@ -173,8 +182,14 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (et `ordem` dans les champs) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
-| `config` | `salvar`, `evento_salvar`, `evento_excluir`, `testar_manha`, `testar_noite`, `teste_agenda_criar`, `teste_agenda_remover`, `sincronizar` |
-| `usuarios` | `salvar` (avec le `senha`, ou avec le `senha_hash` d'un autre système ; le premier utilisateur, avec le jeton), `excluir` |
+| `config` | `salvar`, `evento_salvar`, `evento_excluir` |
+| `destinos` | `salvar` (webhook, e-mail ou Web Push, avec ce qu'elle reçoit), `testar` (`qual=` : texte, matin ou soir), `excluir` |
+| `agendas` | `salvar` (Google, CalDAV, Outlook ou ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
+| `usuarios` | `salvar` (avec le `senha`, ou avec le `senha_hash` d'un autre système ; le premier utilisateur, avec le jeton, est le master) et, seulement le master : `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
+| `conta` | `alterar` (e-mail, langue, mot de passe), `token_criar`, `token_revogar`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir` ; seulement le master : `email_testar`, `vapid_gerar` |
+| `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
+| `acessos`, `convites`, `pedidos` | `remover`, `sair` ; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar` ; `pedir`, `aprovar`, `recusar`, `cancelar` |
+| `cadastro` | sans identifiant : `criar_conta`, `esqueci_senha`, `nova_senha` |
 | `migracoes` | `aplicar` |
 | `instalacao` | `instalar` (seulement sur une base vide, avec le jeton) |
 | `backup` | `fazer` (une sauvegarde maintenant), `restaurar` (`arquivo=` : ramène la base à cette copie, en gardant d'abord une copie de ce qui existe maintenant) |
@@ -188,8 +203,9 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `400` | écriture refusée par les validations (les erreurs disent pourquoi), ou une formule mal écrite dans le `calcular` |
 | `302` | `recurso=entrar` avec la bonne connexion et `volta=` : va à la page |
 | `401` | sans le jeton ni la connexion du site, ou avec eux erronés ; sans aucun utilisateur (ou avec la base vide), la réponse dit quoi faire (`sem_usuarios` et `como`) |
-| `404` | ressource inconnue (la réponse apporte la liste des ressources), ou la montre, la photo, le document (ou son fichier) ou le `README.md` (dans le `manual`) qui n'existe pas, ou un fichier qui ne sort pas par le `codigo` (avec `o_que_ver` pour ce qui est laissé de côté exprès, comme le `config.php`) |
-| `409` | la base a refusé l'écriture : un enregistrement qu'un autre utilise encore, une valeur répétée, ou une valeur hors des règles de validation de la base (le nom de la règle vient avec) |
+| `403` | la sauvegarde et les migrations, par qui n'est pas le master |
+| `404` | ressource inconnue (la réponse apporte la liste des ressources), la collection que vous ne voyez pas, ou la montre, la photo, le document (ou son fichier) ou le `README.md` (dans `manual`) qui n'existe pas, ou un fichier qui ne sort pas par `codigo` (avec `o_que_ver` pour ce qui reste exclu exprès, comme le `config.php`) |
+| `409` | une suppression sans `confirmar=1` (avec `impacto` : ce qui partirait avec ; rien n'a été effacé) ; le compte sans aucune collection (`sem_colecao`) ; ou la base a refusé l'écriture : un enregistrement qu'un autre utilise encore, une valeur répétée, ou une valeur hors des règles de validation de la base (le nom de la règle vient avec) |
 | `413` | l'envoi a dépassé la limite du PHP du serveur (`post_max_size`) : un fichier trop grand |
 | `500` | système arrêté (l'`API_TOKEN` ou le `FUSO` du `config.php` invalide) ou une erreur interne |
 | `503` | base pas à jour (seul `recurso=migracoes` répond, et l'écriture `migracoes`/`aplicar` ; et le `manual` et le `codigo`, qui n'utilisent pas la base), base vide (avant l'installation seul `instalacao` répond, et le `manual` et le `codigo`) ou base hors service |
@@ -203,7 +219,7 @@ de passe tapé avec le sel et le coût qui sont dans le hash et compare (`passwo
 hashs différents à chaque fois, et tous correspondent.
 
 **Pour emmener les utilisateurs vers un autre système**, emportez l'identifiant et le `senha_hash` de chacun
-(`recurso=usuarios`) et, là-bas, vérifiez le mot de passe tapé contre le hash avec le bcrypt du langage : chacun se connecte
+(`recurso=usuarios`, par le master) et, là-bas, vérifiez le mot de passe tapé contre le hash avec le bcrypt du langage : chacun se connecte
 avec le même mot de passe que toujours. `$2y$` (PHP) et `$2b$` (les autres langages) sont le même calcul ; si la bibliothèque
 refuse le `$2y$`, changez le début en `$2b$`. **Pour faire venir des utilisateurs d'un autre système**, envoyez le hash de
 là-bas : `recurso=usuarios`, `acao=salvar`, `login` et `senha_hash` (bcrypt `$2y$`, `$2b$` ou `$2a$`, ou argon2).
@@ -250,7 +266,7 @@ la requête). Le dictionnaire a une seule source, celui de l'aide ; celui de l'e
 
 ## Installation {#instalação}
 
-**Prérequis :** PHP 8.1+ avec `curl` et `openssl` (celui-ci seulement pour Google Agenda), un serveur web (nginx ou Apache), le
+**Prérequis :** PHP 8.1+ avec `curl` et `openssl` (les webhooks, l'e-mail, le Web Push, les agendas et les secrets chiffrés), un serveur web (nginx ou Apache), le
 cron et **une de ces bases de données**, chacune par son extension PHP :
 
 | Base | Extension PHP | Version | Quand la choisir |
@@ -268,7 +284,8 @@ exécute le même scénario sur les quatre bases et compare tout ce que renvoie 
 git clone https://github.com/Challado/relojoeiro.git /var/www/relojoeiro
 cd /var/www/relojoeiro
 
-# 2. la configuration : la base (DB_TIPO), le jeton de l'API, le fuseau, les messages, le dossier des documents
+# 2. la configuration : la base (DB_TIPO), le jeton de l'API, le fuseau, le dossier des documents et, si vous voulez,
+#    l'e-mail, le Web Push, Outlook et les règles de l'inscription ouverte (voir le tableau du config.php, plus bas)
 cp config.exemplo.php config.php
 nano config.php
 #    le dossier des documents (DOCUMENTOS_PASTA), hors du dossier publié, accessible en écriture à l'utilisateur de PHP :
@@ -286,7 +303,7 @@ php instalar.php --lingua=fr
 #    ou par l'API, avec le jeton du config.php (la langue : lingua=fr, comme dans toute requête) :
 #    curl -H "X-Api-Token: $TOKEN" -d recurso=instalacao -d acao=instalar -d lingua=fr http://serveur/relojoeiro/api.php
 
-# 5. le premier utilisateur (le mot de passe est demandé sans s'afficher)
+# 5. le premier utilisateur, le master, avec sa collection (le mot de passe est demandé sans s'afficher)
 php criar_usuario.php votre_identifiant
 #    ou par l'API, avec le jeton :
 #    curl -H "X-Api-Token: $TOKEN" -d recurso=usuarios -d acao=salvar -d login=votre_identifiant -d senha=... http://serveur/relojoeiro/api.php
@@ -326,8 +343,10 @@ point, y compris le dossier `.git`, qui vient avec le `git clone`. Le projet app
 Pour vérifier, ouvrez `https://votre-serveur/relojoeiro/config.php` et `https://votre-serveur/relojoeiro/.git/config` : les deux
 doivent donner **403**.
 
-**8. Ouvrez-le dans le navigateur** et connectez-vous avec l'utilisateur créé. L'ensemble initial est déjà là : enregistrez vos
-montres dans **Aujourd'hui → Nouvelle montre**, choisissez le groupe de chacune et remplissez les champs.
+**8. Ouvrez-le dans le navigateur** et connectez-vous avec l'utilisateur créé. L'ensemble initial est déjà là : enregistrez
+vos montres dans **Aujourd'hui → Nouvelle montre**, choisissez le groupe de chacune et remplissez les champs. Dans **Mon
+compte**, indiquez votre e-mail. Les autres personnes entrent par **Créer un compte** (`cadastro.php`), par une invitation de
+votre part, ou le master crée le compte dans **Utilisateurs**.
 
 ### Le `config.php` {#o-configphp}
 
@@ -338,7 +357,15 @@ montres dans **Aujourd'hui → Nouvelle montre**, choisissez le groupe de chacun
 | `DB_ARQUIVO` | le fichier de la base (SQLite), hors du dossier publié |
 | `API_TOKEN` | **obligatoire**, avec 10 caractères ou plus. Sans lui, tout le système s'arrête et dit pourquoi. |
 | `FUSO` | le fuseau horaire, comme `America/Sao_Paulo`. Vide ou absent : celui de PHP (`date.timezone` dans le php.ini). Il vaut pour tout, y compris pour les dates que la base enregistre |
-| `MSG_ENDPOINT`, `MSG_DESTINATARIO`, `MSG_TITULO` | les messages (voir ci-dessous). Sans l'adresse, rien n'est envoyé. |
+| `SEGREDO_CHAVE` | facultatif : la clé qui chiffre dans la base les mots de passe CalDAV, les clés Google, les jetons Outlook et les en-têtes des webhooks. Sans elle, l'`API_TOKEN` (changer la clé fait perdre les secrets stockés : il suffit de les saisir à nouveau) |
+| `MSG_TITULO` | le titre des messages (le `{titulo}` des webhooks, le sujet de l'e-mail, le titre du Web Push). Par défaut : Relógios |
+| `MSG_ENDPOINT`, `MSG_DESTINATARIO` | seulement pour la migration v25 : l'ancienne API de messages (Telegram) devient la première destination webhook de la collection |
+| `CADASTRO_ABERTO`, `DEMO_DIAS`, `CONVITE_DIAS` | facultatifs : l'inscription ouverte (`false` : fermée, seulement sur invitation ; sans la ligne, ouverte), les jours du compte de démonstration (30 par défaut ; `0` : le compte naît officiel) et les jours qu'attend une invitation ou une demande (7 par défaut) |
+| `EMAIL_METODO`, `EMAIL_REMETENTE`, `SMTP_HOST`, `SMTP_PORTA`, `SMTP_SEGURANCA`, `SMTP_USUARIO`, `SMTP_SENHA` | l'e-mail : `smtp` (le serveur indiqué ; la sécurité `tls`, par défaut, `ssl` ou `nenhuma`) ou `mail` (le `mail()` de PHP), et l'expéditeur. Sans aucun, aucun e-mail ne part |
+| `IMAP_HOST`, `IMAP_PORTA`, `IMAP_SEGURANCA`, `IMAP_USUARIO`, `IMAP_SENHA`, `IMAP_PASTA_ENVIADOS` | facultatifs : une copie de chaque e-mail envoyé dans le dossier Envoyés du compte |
+| `POP_HOST`, `POP_PORTA`, `POP_SEGURANCA`, `POP_USUARIO`, `POP_SENHA` | facultatifs : seulement pour que le test de l'e-mail vérifie la boîte par POP3 |
+| `VAPID_PUBLICA`, `VAPID_PRIVADA`, `VAPID_ASSUNTO` | le Web Push : la paire de clés (le master la génère dans **Mon compte**) et le sujet (`mailto:...`) |
+| `OUTLOOK_CLIENTE_ID`, `OUTLOOK_CLIENTE_SEGREDO` | l'application enregistrée chez Microsoft, pour les agendas Outlook (voir plus bas) |
 | `DOCUMENTOS_PASTA` | le dossier des fichiers des documents (le manuel, la facture, les photos, les vidéos), **hors du dossier publié**, accessible en écriture à l'utilisateur de PHP. Sans lui, la page Documents signale qu'il manque et n'accepte pas d'envois. Ex. : `define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
 | `DOCUMENTOS_COPIA_BANCO` | facultatif : la sauvegarde des documents dans la base, pour tout le système. `true` : tout fichier va aussi dans la base ; `false` : aucun n'y va ; sans elle : chaque montre et chaque fichier décident. Voir [Les documents de la montre](#os-documentos-do-relógio). |
 | `BACKUP_PASTA`, `BACKUP_MANTER`, `BACKUP_DOCUMENTOS` | facultatifs : la sauvegarde de la base (voir [Sauvegarde](#cópia-de-segurança)). Le dossier, **hors du dossier publié** (sans lui, pas de copie automatique) ; combien sont gardées (par défaut 7) ; et si elle emporte le contenu des documents gardé dans la base (par défaut : non). |
@@ -346,7 +373,7 @@ montres dans **Aujourd'hui → Nouvelle montre**, choisissez le groupe de chacun
 | `DOCUMENTOS_LIMITE` | facultatif : le plus grand document accepté, en octets. Sans elle, 100 Mo (`104857600`) ; `0` ou `-1`, pas de limite du système. `MANUAL_LIMITE`, l'ancien nom, vaut encore quand elle n'existe pas. Les limites de PHP et de nginx s'appliquent toujours (voir [La taille des envois](#o-tamanho-dos-envios-os-documentos)). Ex. : `define("DOCUMENTOS_LIMITE", 524288000);` pour 500 Mo |
 | `ANTIGO_HOST`, `ANTIGO_PORTA`, `ANTIGO_USUARIO`, `ANTIGO_SENHA` | facultatifs, seulement pour le `importar.php` avec ce système sur Postgres, SQLite ou Firebird : où se trouve le MySQL de l'ancien système |
 | `ALEATORIO_RANDOMORG_URL`, `ALEATORIO_ANU_URL` | facultatifs, seulement pour les tests : les adresses des sources des nombres aléatoires (`https://www.random.org/integers/` et `https://qrng.anu.edu.au/API/jsonI.php`). Changées, les tirages demandent les nombres à un serveur de test |
-| `GOOGLE_TOKEN_URL`, `GOOGLE_API_URL` | facultatifs, seulement pour les tests : les adresses de Google qu'utilise l'agenda (celle du jeton, `https://oauth2.googleapis.com/token`, et celle de l'API, `https://www.googleapis.com/calendar/v3`). Changées, la synchronisation de l'agenda parle à un serveur de test au lieu de Google |
+| `GOOGLE_TOKEN_URL`, `GOOGLE_API_URL`, `OUTLOOK_LOGIN_URL`, `OUTLOOK_GRAPH_URL` | facultatifs, seulement pour les tests : les adresses de Google et de Microsoft qu'utilisent les agendas. Changées, la synchronisation parle à un serveur de test |
 | `TEXTOS_ESTRITO` | facultatif, pour qui traduit : `true` fait qu'une traduction manquante s'arrête sur une erreur (voir [Les langues](#os-idiomas)) |
 
 Le système lit le `config.php` de son dossier. Une variable d'environnement du serveur, `RELOGIOS_CONFIG`, désigne un autre
@@ -354,24 +381,43 @@ fichier à la place : c'est ce qu'utilise le test de parité (`testes/paridade.s
 [`testes/config.teste.php`](testes/config.teste.php)), pour tourner sans toucher au vrai `config.php`. Sur une installation
 normale, ne la définissez pas.
 
-### Les messages par Telegram {#mensagens-pelo-telegram}
+### Destinations et agendas sur le serveur {#destinos-e-agendas-no-servidor}
 
-Le système ne parle pas directement à l'API de Telegram : il appelle **une adresse HTTP à vous** (`MSG_ENDPOINT`) avec
-`?destinatario=...&titulo=...&mensagem=...` et considère le message envoyé si la réponse est 2xx. Cela vous laisse utiliser
-votre bot, un webhook, n8n, Home Assistant ou n'importe quel relais de messages. Les longs messages sont découpés en parties.
-Dans la **Configuration** se trouvent les boutons **Envoyer maintenant** (matin et soir) pour tester.
+Chaque collection crée ses destinations et ses agendas sur les pages **Destinations** et **Agendas**. Ce qui demande une
+configuration sur le serveur :
 
-### Google Agenda {#google-agenda}
+- **Telegram (un webhook) :** créez un bot avec @BotFather (il donne le jeton) et trouvez votre `chat_id` (envoyez un message
+  au bot et ouvrez `https://api.telegram.org/bot<token>/getUpdates`). Dans **Destinations**, un webhook : méthode `GET` ou
+  `POST`, adresse `https://api.telegram.org/bot<token>/sendMessage`, les champs `chat_id` = le numéro et `text` =
+  `{mensagem}`. N'importe quelle autre passerelle (n8n, Home Assistant, votre propre adresse) marche pareil : le système envoie
+  `{titulo}` et `{mensagem}` là où vous les avez mis, et considère l'envoi fait si la réponse est 2xx. Les longs messages sont
+  découpés en parties.
+- **E-mail :** le serveur SMTP dans le `config.php` (`SMTP_HOST`, le port, la sécurité, l'utilisateur et le mot de passe ;
+  sur Gmail et Outlook, un mot de passe d'application) et l'`EMAIL_REMETENTE` ; ou `EMAIL_METODO = "mail"`, avec un sendmail
+  sur le serveur. Avec les `IMAP_*`, chaque e-mail envoyé reçoit une copie dans Envoyés. Le master le teste dans **Mon compte
+  › Serveur d'e-mail**.
+- **Web Push :** le site doit s'ouvrir en **https**. Le master génère les clés dans **Mon compte › Clés du Web Push** et copie
+  les deux lignes dans le `config.php`. Ensuite, chaque personne active les notifications sur son appareil, dans **Mon
+  compte** (sur l'iPhone, ajoutez d'abord le site à l'écran d'accueil), et une destination Web Push envoie aux appareils de
+  la personne qu'elle désigne.
+- **Google Agenda :** dans Google Cloud, créez un **compte de service** et téléchargez la clé JSON ; partagez votre agenda avec
+  l'e-mail du compte de service, avec le droit de modifier les événements ; dans **Agendas**, collez le JSON de la clé (il
+  reste chiffré dans la base) et l'ID de l'agenda. Seul le master peut, à la place du JSON, donner le chemin d'un fichier sur
+  le serveur.
+- **CalDAV (Nextcloud, iCloud, Fastmail) :** l'adresse du calendrier, l'utilisateur et le mot de passe. Sur **iCloud**, un
+  **mot de passe pour app** (appleid.apple.com › Mots de passe pour app) et l'adresse du calendrier sur `caldav.icloud.com`.
+- **Outlook :** enregistrez une application dans le portail de Microsoft (**Entra ID › Inscriptions d'applications**), avec
+  la permission `Calendars.ReadWrite` et l'adresse de retour `https://<votre serveur>/relojoeiro/api.php?recurso=outlook_retorno`
+  (la page Agendas montre l'adresse exacte) ; mettez l'ID et le secret dans le `config.php` (`OUTLOOK_CLIENTE_ID` et
+  `OUTLOOK_CLIENTE_SEGREDO`). Dans **Agendas**, **Se connecter à Outlook** mène à la page de Microsoft et revient connecté.
+  Sans l'application, utilisez un lien ICS : Outlook s'y abonne.
+- **Lien ICS :** rien à configurer. L'agenda donne un lien secret auquel s'abonner dans n'importe quelle application (Google :
+  **Autres agendas › À partir de l'URL** ; Outlook : **S'abonner à partir du web** ; iPhone : **Calendrier avec abonnement**) ;
+  **Changer le lien** désactive le précédent.
 
-1. Dans Google Cloud, créez un **compte de service** et téléchargez la clé JSON.
-2. Gardez la clé **sur le serveur, hors du dossier public et hors du dépôt** (le `.gitignore` bloque déjà les noms courants).
-3. Partagez votre agenda avec l'adresse du compte de service, avec la permission de modifier les événements.
-4. Dans la **Configuration**, indiquez l'ID de l'agenda et le chemin de la clé, activez l'agenda et cliquez sur
-   **Synchroniser maintenant**.
-
-Le système crée, met à jour et supprime seulement les événements qu'il a créés lui-même, sans doublons. La routine (charger,
-remonter, soleil) entre dans la fenêtre d'anticipation, et l'entretien (pile, révision, garantie) entre à n'importe quelle
-date.
+Hors des collections du master, les adresses que quelqu'un saisit (webhook, CalDAV) doivent être sur internet : le système
+refuse celles du réseau du serveur lui-même (`127.0.0.1`, `192.168.x`...), pour que personne n'utilise le serveur pour
+sonder son réseau.
 
 ### La taille des envois (les documents) {#o-tamanho-dos-envios-os-documentos}
 
@@ -395,8 +441,16 @@ avec le code `413` et la limite du serveur. Sur Apache, il n'y a pas de limite �
 ### Les mises à jour de la base {#atualizações-do-banco}
 
 Après la mise à jour du code, s'il y a une nouvelle migration (`migracao_v*.sql`), l'API répond `503` et la page
-**Configuration** montre le bouton pour l'appliquer. Le cron s'arrête aussi et note la raison, au lieu de tourner à moitié. Sur
-une nouvelle installation, le `schema.sql` apporte déjà toutes les migrations.
+**Configuration** montre le bouton pour l'appliquer (seul le master l'applique). Le cron s'arrête aussi et enregistre le
+motif, au lieu de tourner à moitié. Sur une nouvelle installation, le `schema.sql` apporte déjà la structure de toutes les
+migrations, et l'ensemble initial vient du `modelo.json`, à la création du premier utilisateur.
+
+**La migration v25 (plusieurs personnes)** refait toute la base : elle garde d'abord une copie de tout dans
+`relojoeiro-antes-da-v25.jsonl.gz` (dans la `BACKUP_PASTA`, ou dans le dossier temporaire), crée la nouvelle structure et
+remet chaque enregistrement sous la nouvelle forme, avec les mêmes numéros (les montres, les documents et les saisies gardent
+leur id habituel). L'utilisateur le plus ancien devient le master et le propriétaire de la collection et de l'arbre ; les
+autres, membres de la collection. Telegram (`MSG_ENDPOINT`) devient la première destination webhook, et Google Agenda, le
+premier agenda. Si elle s'arrête en cours, le même bouton la refait à partir de la copie.
 
 Le `schema.sql` et chaque migration sont **un seul fichier pour les quatre bases** : la structure (`CREATE TABLE`,
 `ALTER TABLE`) est écrite dans le dialecte de MySQL, et le [`banco.php`](banco.php) la traduit pour Postgres, SQLite et
@@ -440,9 +494,8 @@ Configuration, et aussi dans le `instalar.php`.
   - les noms d'index et de règle de plus de 31 caractères gardent seulement un morceau du md5 du nom entier à la fin, et la
     table `no` est un mot réservé : dans un programme extérieur (`isql-fb`, FlameRobin), écrivez `"NO"`, entre guillemets et
     en majuscules ;
-  - la clé unique de plusieurs colonnes où l'une peut rester vide (la `canal_aviso`) devient un index unique sur une
-    expression, car sur Firebird deux lignes avec la même valeur et l'autre colonne vide comptent comme répétées (sur MySQL,
-    non) ;
+  - la clé unique sur plusieurs colonnes dont l'une peut rester vide devient un index unique sur une expression, car sur
+    Firebird deux lignes avec la même valeur et l'autre colonne vide comptent comme répétées (sur MySQL, non) ;
   - l'heure du `NOW()` vient de PHP (Firebird n'a pas de fuseau par connexion), dans le `FUSO` du `config.php`, comme pour
     les autres.
 - **L'ordre des colonnes** d'une migration avec `AFTER` ne vaut que sur MySQL : sur les autres, la nouvelle colonne va à la fin
@@ -485,18 +538,28 @@ comportement de l'ancien système a été porté.
   [Le modèle de la base](#o-modelo-do-banco)).
 - **À l'épreuve des erreurs :** sans jeton valide ou avec la base pas à jour, le système s'arrête et explique la raison, au
   lieu de tourner à moitié.
+- **Plusieurs personnes, séparées par la base :** chaque requête vaut dans une collection, et la couche de la base réécrit
+  chaque requête pour ne voir qu'elle (et son arbre) ; aucun écran ni aucune ressource n'a besoin de penser à filtrer. Une
+  collection que vous ne voyez pas répond 404, comme si elle n'existait pas.
 - **Six langues :** tout texte passe par `t()`, avec le portugais comme clé et un fichier par langue (voir
   [Les langues](#os-idiomas)).
 
 ### Le modèle de la base {#o-modelo-do-banco}
 
-La base est relationnelle et normalisée (depuis la migration v16) : chaque chose dans une table, chaque lien entre tables une
-**clé étrangère**, et aucune liste gardée comme texte dans un champ. Supprimer directement dans la base ne laisse rien en
+La base est relationnelle et normalisée (depuis la migration v16 ; depuis la v25, en 60 tables) : chaque chose dans une
+table, chaque lien entre tables une **clé étrangère**, et aucune liste stockée comme texte dans un champ. Les comptes
+(`usuario`), les collections (`colecao`, avec le propriétaire et la racine de l'arbre), les membres (`colecao_usuario`),
+l'accès à tout d'un propriétaire (`acesso_dono`), les invitations, les demandes, les jetons, les appareils du Web Push, les
+destinations (`destino` et une table par type) et les agendas (`agenda` et une table par type). L'arbre (`no`) a la racine
+avec le propriétaire et les groupes qui pointent vers celui du dessus ; ses définitions (champs, types, formules, alertes,
+catégories) pointent vers un groupe de l'arbre ; ce qui est à la collection (montres, modes, plan, événements,
+configuration, accessoires) pointe vers la collection. Les liens facultatifs sont devenus des tables d'une ligne (la montre
+d'un accessoire, la montre fixe d'un bloc, le bloc d'un jour du plan). Effacer directement dans la base ne laisse rien en
 suspens :
 
 | Le lien | À la suppression du parent | Où |
 |---|---|---|
-| obligatoire (la ligne n'existe pas sans le parent) | **disparaît avec lui** (`ON DELETE CASCADE`) | un groupe emporte les groupes qu'il contient, les montres, les champs, les types de saisie, les formules et ses alertes ; une montre emporte les saisies, les valeurs, les photos, les documents, le plan et ses propres critères ; une saisie emporte la mesure de consommation ; et ainsi de suite |
+| obligatoire (la ligne n'existe pas sans celle du dessus) | **disparaît avec** (`ON DELETE CASCADE`) | un compte emporte ses collections et ses arbres ; une collection emporte les montres, les modes, le plan, les destinations et les agendas ; un arbre emporte les collections qui l'utilisent ; un groupe emporte les groupes qu'il contient, les montres, les champs, les types de saisie, les formules et ses alertes ; une montre emporte les saisies, les valeurs, les photos, les documents, le plan et ses critères propres ; une saisie emporte la mesure de la dépense ; et ainsi de suite |
 | facultatif (la colonne accepte le vide) | **le lien se défait** (`ON DELETE SET NULL`) | la montre d'un événement personnalisé, le groupe et la montre fixe d'un bloc de mode, le bloc d'un jour du plan, le type de saisie qui résout une alerte, la montre d'un accessoire (l'accessoire devient indépendant) |
 
 Par l'écran (**Groupes**, Supprimer), supprimer un groupe passe toujours d'abord ce qui lui appartenait (les groupes qu'il
@@ -505,14 +568,15 @@ supprime directement dans la base.
 
 Les listes sont devenues des tables : les jours d'un bloc de mode (`modo_bloco_dia`) et d'un événement hebdomadaire
 (`evento_dia`), les types de fichier qu'accepte une catégorie de documents (`documento_categoria_aceita`), les options d'un
-champ de liste (`campo_opcao`) et, pour chaque canal et chaque type d'alerte, s'il part, s'il a son propre message et son texte
-(`canal_aviso`). Le mode en usage est la colonne `ativo` du mode, et la mesure de consommation arrive à la montre par la saisie
-qui l'a fermée. La table `config` ne garde que des valeurs isolées (horaires, seuils, marques).
+champ liste (`campo_opcao`) et, pour chaque destination et chaque agenda, ce qu'elles reçoivent (`destino_aviso`,
+`destino_evento`, `agenda_aviso`, `agenda_evento`). Le mode en usage est la colonne `ativo` du mode, et la mesure de la
+dépense arrive à la montre par la saisie qui l'a fermée. La table `config` ne garde que les valeurs isolées de chaque
+collection, et la `sistema`, celles de tout le système.
 
-Trois références restent **par le nom**, exprès : les formules et les critères citent les champs et les formules par
-l'identifiant (c'est le texte que vous écrivez, comme `HORAS("pulso"; 30)`), et le `canal_aviso` cite l'alerte par
-l'identifiant, car une alerte peut avoir plusieurs versions (une par groupe) et le canal vaut pour toutes. Quand la dernière
-version d'une alerte est supprimée, le système supprime avec elle ses lignes dans le `canal_aviso`.
+Trois références passent **par le nom**, exprès : les formules et les critères citent champs et formules par l'identifiant
+(c'est le texte que vous écrivez, comme `HORAS("pulso"; 30)`), et le `destino_aviso` et l'`agenda_aviso` citent l'alerte
+par l'identifiant, car une alerte peut avoir plusieurs versions (une par groupe) et le choix vaut pour toutes. Quand la
+dernière version d'une alerte est effacée, le système efface ses lignes avec elle.
 
 **La base valide ce qu'elle garde** (depuis la migration v17), avec les outils du SQL standard, et pas seulement le système :
 une écriture erronée est refusée d'où qu'elle vienne (l'écran, l'API, quelqu'un qui touche directement la base). L'API répond
@@ -558,17 +622,22 @@ vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des
 |---|---|
 | [`api.php`](api.php) | l'API, la porte de toute lecture et écriture (l'authentification, le format, l'ordre des ressources, les filtres, la réponse), avec la documentation complète dans l'en-tête |
 | [`api/`](api/) | les grosses ressources de l'API, un fichier chacune (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `ajuda.php`...), plus ses fonctions (`funcoes.php`) et les écritures (`escrita.php`) : elles tournent dans le `api.php`, et ouvertes directement elles ne font rien (le `.htaccess` et le `nginx-relogios.conf` bloquent le dossier) |
-| [`lib.php`](lib.php) | le noyau : connexion, arbre, moteur de formules, alertes, critères, rotation, planning, messages, agenda |
+| [`lib.php`](lib.php) | le noyau : identification, arbre, moteur de formules, alertes, critères, rotation, planning, documents |
+| [`colecoes.php`](colecoes.php) | les collections dans le noyau : la portée de la requête, le `modelo.json`, les secrets chiffrés, la table `sistema`, la migration v25 et l'impact des suppressions |
+| [`alertas.php`](alertas.php) | les destinations (webhook, e-mail, Web Push) et les agendas (Google, CalDAV, Outlook, ICS) |
+| [`contas.php`](contas.php) | les comptes : l'inscription ouverte, Mon compte, les collections et les arbres, les invitations, les demandes, les jetons et le panneau du master |
 | [`banco.php`](banco.php) | la base : la connexion à MySQL, Postgres, SQLite ou Firebird, et la traduction du SQL de l'une à l'autre |
 | [`operacoes.php`](operacoes.php) | les règles de chaque écriture : validations et messages |
 | [`cron.php`](cron.php) | le plan, la session du jour, les passages du matin et du soir, les événements, l'agenda et l'entretien des documents |
-| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `usuarios.php` | les pages (seulement le squelette) |
+| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | les pages (seulement le squelette ; `cadastro.php` est la page publique) |
+| `push.js` | le service worker du Web Push |
 | `ajuda.php` | la page d'aide : seulement le squelette ; le `ajuda.js` demande le texte à l'API (`recurso=manual` : les sections du README pour les utilisateurs, déjà en HTML, converties dans le `lib.php`) |
 | [`pagina.php`](pagina.php) | le haut avec le menu et la fin des pages (la connexion appartient à l'API : `recurso=entrar`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | les écrans, construits dans le navigateur à partir de l'API |
 | [`estilo.css`](estilo.css) | l'apparence |
 | [`textos/`](textos/) | les langues : `funcoes.php` (la fonction `t()`, la liste des langues, la langue de la requête, les dates et les nombres de chaque langue) et un fichier par langue (`en.php`, `zh-CN.php`, `hi.php`, `es.php`, `fr.php` : le texte en portugais => la traduction, par partie) ; ouverts directement, ils ne font rien |
-| [`schema.sql`](schema.sql) | la structure de la base et l'ensemble initial (groupes, champs, formules, alertes, modes, critères) |
+| [`schema.sql`](schema.sql) | la structure de la base (seulement la structure : sans données) |
+| [`modelo.json`](modelo.json) | l'ensemble initial d'une nouvelle collection (groupes, champs, types, formules, alertes, critères, catégories, modes, messages), sans codes fixes |
 | `migracao_v2.sql` … `migracao_v24.sql` | les migrations, appliquées par la page Configuration |
 | [`config.exemplo.php`](config.exemplo.php) | le modèle du `config.php` |
 | [`instalar.php`](instalar.php) | installe le `schema.sql` sur la base du `config.php`, n'importe laquelle (la même chose que `recurso=instalacao`) |
@@ -593,8 +662,8 @@ Les améliorations sont les bienvenues, et le chemin passe toujours par ce dép�
 2. Faites un fork sur GitHub, créez une branche et faites le changement. Le fork sert seulement à préparer la proposition (voir
    la [licence](#licença)).
 3. **Suivez la manière du code :** PHP et JavaScript purs, sans dépendances, commentaires et messages en portugais (les
-   traductions vont dans `textos/`). Ce qui est connaissance sur les montres va dans les définitions (`schema.sql`), pas dans le
-   code.
+   traductions vont dans `textos/`). Ce qui est connaissance sur les montres va dans l'ensemble initial (`modelo.json`), pas
+   dans le code.
 4. Vous avez changé la base ? Créez une `migracao_vN.sql` et enregistrez-la dans `$MIGRACOES` dans le `lib.php` : la structure
    dans le dialecte de MySQL, les données en SQL commun aux quatre bases (voir [Les mises à jour de la base](#atualizações-do-banco)).
 5. Vous avez changé l'API ? **Expliquez chaque nouveau champ** dans le dictionnaire de l'aide : le `"campos"` du

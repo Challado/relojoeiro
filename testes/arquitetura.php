@@ -8,7 +8,7 @@
 //   3. A rede das telas é só a API: fetch e XMLHttpRequest só no api.js e no documentos.js (o envio com o andamento),
 //      sempre para o api.php; nenhum .js cita um .php que não seja o api.php ou uma página; sem eval nem new Function.
 //   4. O banco só é tocado pelo núcleo, pela API e pelo cron: as funções do banco.php só são chamadas no banco.php,
-//      lib.php, operacoes.php, api.php, api/, cron.php e reconstrucao.php. Os scripts de linha de comando (instalar,
+//      lib.php, operacoes.php, colecoes.php, alertas.php, contas.php, api.php, api/, cron.php e reconstrucao.php. Os scripts de linha de comando (instalar,
 //      criar_usuario, importar) não tocam no banco: só chamam operações que a API também chama.
 //   5. Os pedaços do api.php (api/*.php) não fazem nada abertos direto: começam pela guarda RELOJOEIRO_API.
 //   6. Pela web abrem só as páginas, o api.php e o que elas carregam: todo .php interno está bloqueado no .htaccess e no
@@ -50,7 +50,7 @@ $php = array_values(array_filter($repo, function ($f) { return substr($f, -4) ==
 $js = array_values(array_filter($repo, function ($f) { return substr($f, -3) === ".js" && strpos($f, "/") === false && is_file($f); }));
 
 // os .php da raiz: os internos (núcleo, banco, scripts) e as páginas (o resto, menos o api.php)
-const INTERNOS = ["lib.php", "banco.php", "config.php", "config.exemplo.php", "operacoes.php", "pagina.php", "cron.php", "importar.php",
+const INTERNOS = ["lib.php", "banco.php", "config.php", "config.exemplo.php", "operacoes.php", "colecoes.php", "alertas.php", "contas.php", "pagina.php", "cron.php", "importar.php",
     "instalar.php", "criar_usuario.php", "reconstrucao.php"];
 $raiz_php = array_values(array_filter($php, function ($f) { return strpos($f, "/") === false; }));
 $paginas = array_values(array_filter($raiz_php, function ($f) { return !in_array($f, INTERNOS, true) && $f !== "api.php"; }));
@@ -135,7 +135,7 @@ foreach ($paginas as $f) {
 }
 $idiomas = definidas("textos/funcoes.php");
 $nucleo = [];
-foreach (array_merge(["lib.php", "banco.php", "operacoes.php", "cron.php", "reconstrucao.php"], glob("api/*.php")) as $f) {
+foreach (array_merge(["lib.php", "banco.php", "operacoes.php", "colecoes.php", "alertas.php", "contas.php", "cron.php", "reconstrucao.php"], glob("api/*.php")) as $f) {
     $nucleo = array_merge($nucleo, definidas($f));
 }
 $fora = array_intersect(chamadas("pagina.php"), $nucleo);
@@ -191,7 +191,7 @@ foreach ($js as $f) {
 
 // ---------- 4. quem toca no banco ----------
 $banco = definidas("banco.php");
-$pode_banco = array_merge(["banco.php", "lib.php", "operacoes.php", "api.php", "cron.php", "reconstrucao.php"], glob("api/*.php"));
+$pode_banco = array_merge(["banco.php", "lib.php", "operacoes.php", "colecoes.php", "alertas.php", "contas.php", "api.php", "cron.php", "reconstrucao.php"], glob("api/*.php"));
 foreach ($php as $f) {
     if (strpos($f, "testes/") === 0 || in_array($f, $pode_banco, true)) {
         continue;
@@ -285,12 +285,13 @@ foreach ($mm as $x) {
 }
 $funcoes_op["usuarios"] = "op_usuarios";
 $funcoes_op["importacao"] = "op_importacao";
-$ops_txt = (string)file_get_contents("operacoes.php");
+$funcoes_op["cadastro"] = "op_cadastro";
+$ops_txt = (string)file_get_contents("operacoes.php") . (string)file_get_contents("contas.php");
 $acoes_codigo = [];
 foreach ($funcoes_op as $r => $fn) {
     $ini = strpos($ops_txt, "function " . $fn . "(");
     if ($ini === false) {
-        falha("7", $fn . "(): a função de escrita de " . $r . " não está no operacoes.php");
+        falha("7", $fn . "(): a função de escrita de " . $r . " não está no operacoes.php nem no contas.php");
         continue;
     }
     $fim = strpos($ops_txt, "\nfunction ", $ini + 10);

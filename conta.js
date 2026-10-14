@@ -1,0 +1,233 @@
+// Minha conta: lê recurso=conta (e recurso=cadastro, a lista das coleções e dos donos para pedir acesso) e monta os quadros.
+// Com conta.php?convite=<token> (o link do convite, para quem já tem conta), aceita o convite ao abrir.
+var recadoConta = "";
+var tokenNovo = null;
+
+aoGravar = function (form, res, dados) {
+  recadoConta = textoResposta(res);
+  tokenNovo = res.token ? {nome: dados.get("nome"), token: res.token} : null;
+  if (res.ok && dados.get("recurso") === "conta" && dados.get("acao") === "excluir") {
+    window.location = "cadastro.php";
+    return;
+  }
+  // a coleção nova (ou a que acabou de entrar): ela passa a ser a do menu
+  if (res.ok && dados.get("recurso") === "colecoes" && dados.get("acao") === "criar" && res.id) {
+    document.cookie = "colecao=" + res.id + "; path=/; max-age=31536000; SameSite=Lax";
+  }
+  carregarConta().then(function () {
+    window.scrollTo(0, 0);
+  });
+};
+
+function formAcao(recurso, acao, campos, botao, classe) {
+  return el("form", {"data-recurso": recurso, "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": acao})
+    + Object.keys(campos).map(function (k) { return el("input", {"type": "hidden", "name": k, "value": campos[k]}); }).join("")
+    + el("button", {"class": classe || "leve"}, botao));
+}
+
+function quadroColecoes(d) {
+  var linhas = d.colecoes.map(function (c) {
+    var acoes = c.id !== d.colecao ? el("button", {"type": "button", "class": "leve", "onclick": "escolherColecao(" + c.id + "); return false"}, t("Abrir")) : el("span", {"class": "estado estado-atividade"}, t("aberta"));
+    if (c.papel === "dono" || (c.papel === "master" && d.usuario.papel === "master")) {
+      acoes += el("details", {"class": "acoes-usuario"}, el("summary", {}, t("Renomear"))
+        + el("form", {"data-recurso": "colecoes", "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": "renomear"}) + el("input", {"type": "hidden", "name": "id", "value": c.id})
+          + el("input", {"name": "nome", "value": c.nome, "required": true, "maxlength": "120", "aria-label": t("Nome da coleção")}) + el("button", {"class": "leve"}, t("Salvar"))))
+        + formAcao("colecoes", "excluir", {id: c.id}, t("Excluir"), "leve perigo");
+    } else {
+      acoes += formAcao("acessos", "sair", {colecao_id: c.id}, t("Sair"), "leve perigo");
+    }
+    var papel = {dono: t("sua"), membro: t("membro"), master: t("master")}[c.papel] || c.papel;
+    return el("tr", {}, el("td", {}, h(c.nome)) + el("td", {}, h(c.dono)) + el("td", {}, papel) + el("td", {"class": "acoes-linha"}, acoes));
+  }).join("");
+  var arvores = d.arvores.map(function (a) { return el("option", {"value": a.id}, h(a.nome)); }).join("");
+  return el("section", {"class": "cartao-config", "id": "colecoes"}, el("h2", {}, t("Coleções"))
+    + (d.colecoes.length === 0 ? el("p", {"class": "alerta-cron"}, t("Você ainda não vê nenhuma coleção: crie uma aqui embaixo, ou peça acesso à de alguém (e espere a aprovação)."))
+      : el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Coleção")) + el("th", {}, t("Dono")) + el("th", {}, t("Você é")) + el("th", {}, "")))
+        + el("tbody", {}, linhas))))
+    + el("h3", {}, t("Nova coleção")) + el("form", {"data-recurso": "colecoes", "class": "campos"}, el("input", {"type": "hidden", "name": "acao", "value": "criar"})
+      + parCampo(t("Nome"), el("input", {"name": "nome", "required": true, "maxlength": "120"}))
+      + parCampo(t("Começa"), el("select", {"name": "opcao", "onchange": "this.form.querySelector('[data-sub]').hidden = this.value !== 'arvore'"},
+        el("option", {"value": "modelo"}, t("com o conjunto inicial (grupos, campos, fórmulas, avisos e critérios)")) + el("option", {"value": "vazia"}, t("vazia (só a raiz da árvore)"))
+        + (arvores !== "" ? el("option", {"value": "arvore"}, t("com uma árvore minha que já existe (o cadastro fica em comum)")) : "")))
+      + el("div", {"data-sub": true, "hidden": true}, parCampo(t("Árvore"), el("select", {"name": "arvore_id"}, arvores)))
+      + el("div", {"class": "botoes"}, el("button", {}, t("Criar coleção")))));
+}
+
+function quadroArvores(d) {
+  if (d.arvores.length === 0) {
+    return "";
+  }
+  return el("section", {"class": "cartao-config", "id": "arvores"}, el("h2", {}, t("Árvores de grupos"))
+    + el("p", {"class": "nota"}, t("A árvore guarda os grupos e o cadastro deles (campos, tipos de lançamento, fórmulas, avisos, categorias e critérios). Uma árvore pode servir a várias coleções suas: o que muda nela vale para todas."))
+    + el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Árvore")) + el("th", {}, t("Grupos")) + el("th", {}, t("Usada por")) + el("th", {}, "")))
+      + el("tbody", {}, d.arvores.map(function (a) {
+        return el("tr", {}, el("td", {}, h(a.nome)) + el("td", {"class": "num"}, a.grupos) + el("td", {}, a.colecoes.map(function (c) { return h(c.nome); }).join(", ") || el("span", {"class": "nota"}, t("nenhuma coleção")))
+          + el("td", {"class": "acoes-linha"}, el("details", {"class": "acoes-usuario"}, el("summary", {}, t("Renomear ou copiar"))
+            + el("form", {"data-recurso": "colecoes", "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": "arvore_renomear"}) + el("input", {"type": "hidden", "name": "arvore_id", "value": a.id})
+              + el("input", {"name": "nome", "value": a.nome, "required": true, "maxlength": "80", "aria-label": t("Nome da árvore")}) + el("button", {"class": "leve"}, t("Renomear")))
+            + el("form", {"data-recurso": "colecoes", "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": "arvore_copiar"}) + el("input", {"type": "hidden", "name": "arvore_id", "value": a.id})
+              + el("input", {"name": "nome", "value": t("Cópia de {1}", {1: a.nome}), "required": true, "maxlength": "80", "aria-label": t("Nome da cópia")}) + el("button", {"class": "leve"}, t("Copiar"))))
+            + formAcao("colecoes", "arvore_excluir", {arvore_id: a.id}, t("Excluir"), "leve perigo")));
+      }).join("")))));
+}
+
+function quadroPedir(d, cad) {
+  var pedidos = d.pedidos.map(function (p) {
+    return el("tr", {}, el("td", {}, h(p.alvo)) + el("td", {}, dataBr(p.criado)) + el("td", {}, dataBr(p.expira)) + el("td", {"class": "acoes-linha"}, formAcao("pedidos", "cancelar", {id: p.id}, t("Cancelar"), "leve perigo")));
+  }).join("");
+  var alvos = (cad.colecoes || []).filter(function (c) {
+    return !d.colecoes.some(function (v) { return v.id === c.id; });
+  }).map(function (c) { return el("option", {"value": "c:" + c.id}, h(t("{1} (de {2})", {1: c.nome, 2: c.dono}))); }).join("")
+    + (cad.donos || []).filter(function (o) { return o.login !== d.usuario.login; }).map(function (o) { return el("option", {"value": "d:" + o.id}, h(t("Tudo de {1} ({2} coleções, e as que vierem)", {1: o.login, 2: o.colecoes}))); }).join("");
+  return el("section", {"class": "cartao-config", "id": "pedir"}, el("h2", {}, t("Pedir acesso"))
+    + (pedidos !== "" ? el("h3", {}, t("Esperando resposta")) + el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("O quê")) + el("th", {}, t("Pedido em")) + el("th", {}, t("Vence em")) + el("th", {}, "")))
+      + el("tbody", {}, pedidos))) : "")
+    + (d.convites.length > 0 ? el("p", {"class": "nota"}, t("Há {1} convite(s) para o seu e-mail: aceite pelo link que chegou nele.", {1: d.convites.length})) : "")
+    + (alvos === "" ? el("p", {"class": "nota"}, t("Não há outra coleção para pedir.")) : el("form", {"data-recurso": "pedidos", "class": "campos", "onsubmit": "var v = this.alvo.value.split(':'); this.colecao_id.value = v[0] === 'c' ? v[1] : ''; this.dono_id.value = v[0] === 'd' ? v[1] : ''"},
+      el("input", {"type": "hidden", "name": "acao", "value": "pedir"}) + el("input", {"type": "hidden", "name": "colecao_id", "value": ""}) + el("input", {"type": "hidden", "name": "dono_id", "value": ""})
+      + parCampo(t("Acesso a"), el("select", {"name": "alvo", "required": true}, alvos), "largo")
+      + parCampo(t("Recado para o dono (opcional)"), el("input", {"name": "mensagem", "maxlength": "500"}), "largo")
+      + el("div", {"class": "botoes"}, el("button", {}, t("Pedir acesso")))))
+    + el("p", {"class": "nota"}, t("O dono (ou o administrador) aprova. Pedidos sem resposta saem sozinhos depois de alguns dias.")));
+}
+
+function quadroDados(d) {
+  var u = d.usuario;
+  return el("section", {"class": "cartao-config", "id": "dados"}, el("h2", {}, t("Seus dados"))
+    + el("p", {}, t("Login: {1}", {1: el("strong", {}, h(u.login))}) + (u.papel === "master" ? el("span", {"class": "selo master"}, t("master")) : "")
+      + (u.demo ? el("span", {"class": "selo demo"}, t("demonstração")) : "") + " · " + t("desde {1}", {1: dataBr(u.criado)}))
+    + (u.demo ? el("p", {"class": "alerta-cron"}, t("Conta de demonstração: vence em {1} dias ({2}). Depois disso, ela e as suas coleções são apagadas. Para continuar, peça ao administrador para torná-la oficial.", {1: u.dias_restantes, 2: dataBr(u.expira_em)})) : "")
+    + el("form", {"data-recurso": "conta", "class": "campos"}, el("input", {"type": "hidden", "name": "acao", "value": "alterar"})
+      + parCampo(t("E-mail"), el("input", {"type": "email", "name": "email", "value": u.email || "", "maxlength": "200", "autocomplete": "email"}), "largo")
+      + parCampo(t("Idioma"), el("select", {"name": "idioma"}, el("option", {"value": "", "selected": !u.idioma}, t("O da coleção")) + d.linguas.map(function (l) {
+        return el("option", {"value": l.codigo, "selected": u.idioma === l.codigo}, h(l.nome));
+      }).join("")))
+      + parCampo(t("Senha atual (só para trocar a senha)"), el("input", {"type": "password", "name": "senha_atual", "autocomplete": "current-password"}))
+      + parCampo(t("Senha nova (pelo menos 6 caracteres)"), el("input", {"type": "password", "name": "senha", "minlength": "6", "autocomplete": "new-password"}))
+      + el("p", {"class": "nota"}, t("O e-mail serve para recuperar a senha, receber os convites e os avisos da conta. Trocou a senha: o navegador pede o login de novo."))
+      + el("div", {"class": "botoes"}, el("button", {}, t("Salvar")))));
+}
+
+function quadroTokens(d) {
+  return el("section", {"class": "cartao-config", "id": "tokens"}, el("h2", {}, t("Tokens de API"))
+    + el("p", {"class": "nota"}, t("Para scripts e automações (cabeçalho X-Api-Token): o token vale como o seu login, com as suas coleções. Ele só aparece quando é criado."))
+    + (tokenNovo ? el("p", {}, t("Token {1}:", {1: h(tokenNovo.nome)})) + el("p", {"class": "token-novo"}, h(tokenNovo.token)) : "")
+    + (d.tokens.length > 0 ? el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Nome")) + el("th", {}, t("Criado em")) + el("th", {}, t("Último uso")) + el("th", {}, "")))
+      + el("tbody", {}, d.tokens.map(function (k) {
+        return el("tr", {}, el("td", {}, h(k.nome)) + el("td", {}, dataBr(k.criado)) + el("td", {}, k.ultimo_uso ? dataBr(k.ultimo_uso) + " " + horaBr(k.ultimo_uso) : "—")
+          + el("td", {"class": "acoes-linha"}, formAcao("conta", "token_revogar", {id: k.id}, t("Revogar"), "leve perigo")));
+      }).join("")))) : "")
+    + el("form", {"data-recurso": "conta", "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": "token_criar"})
+      + el("input", {"name": "nome", "required": true, "maxlength": "80", "placeholder": t("onde vai usar (ex.: atalho do celular)"), "aria-label": t("Nome do token")}) + el("button", {}, t("Criar token"))));
+}
+
+function quadroPush(d) {
+  var p = d.push;
+  var res = el("h2", {}, t("Notificações neste aparelho (Web Push)"));
+  if (!p.configurado) {
+    res += el("p", {"class": "alerta-cron"}, t("O Web Push não está configurado no servidor (VAPID_PUBLICA e VAPID_PRIVADA no config.php)."));
+  } else if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    res += el("p", {"class": "nota"}, t("Este navegador não recebe notificações (no iPhone, primeiro adicione o site à tela de início)."));
+  } else {
+    res += el("p", {"class": "nota"}, t("Ligue para receber neste aparelho as mensagens dos destinos do tipo Web Push que apontam para você."))
+      + el("div", {"class": "botoes"}, el("button", {"type": "button", "onclick": "ligarPush()"}, t("Receber notificações neste aparelho")));
+  }
+  if (p.aparelhos.length > 0) {
+    res += el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Aparelho")) + el("th", {}, t("Desde")) + el("th", {}, "")))
+      + el("tbody", {}, p.aparelhos.map(function (a) {
+        return el("tr", {}, el("td", {}, h(a.aparelho || t("(sem nome)"))) + el("td", {}, dataBr(a.criada)) + el("td", {"class": "acoes-linha"}, formAcao("conta", "push_cancelar", {id: a.id}, t("Desligar"), "leve perigo")));
+      }).join(""))))
+      + formAcao("conta", "push_testar", {}, t("Mandar uma notificação de teste"));
+  }
+  if (d.usuario.papel === "master") {
+    res += el("details", {}, el("summary", {}, t("Chaves do Web Push (master)")) + el("p", {"class": "nota"}, t("Gera um par novo de chaves VAPID para pôr no config.php. Trocar as chaves desliga os aparelhos já inscritos."))
+      + formAcao("conta", "vapid_gerar", {}, t("Gerar chaves")) + (CHAVES_VAPID ? el("pre", {"class": "token-novo"}, h(CHAVES_VAPID)) : ""));
+  }
+  return el("section", {"class": "cartao-config", "id": "push"}, res);
+}
+var CHAVES_VAPID = null;
+
+// Liga o Web Push neste navegador: registra o push.js (o service worker), inscreve com a chave pública do servidor e manda
+// a inscrição para a API
+function ligarPush() {
+  var chave = CONTA.push.chave_publica;
+  var bruta = atob(chave.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((chave.length + 3) % 4));
+  var bytes = new Uint8Array(bruta.length);
+  for (var i = 0; i < bruta.length; i++) {
+    bytes[i] = bruta.charCodeAt(i);
+  }
+  Notification.requestPermission().then(function (perm) {
+    if (perm !== "granted") {
+      throw new Error(t("as notificações foram bloqueadas no navegador"));
+    }
+    return navigator.serviceWorker.register("push.js");
+  }).then(function () {
+    return navigator.serviceWorker.ready;
+  }).then(function (reg) {
+    return reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: bytes});
+  }).then(function (insc) {
+    var j = insc.toJSON();
+    return enviar({recurso: "conta", acao: "push_inscrever", endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, aparelho: navigator.userAgent.substr(0, 200)});
+  }).then(function (res) {
+    recadoConta = textoResposta(res);
+    return carregarConta();
+  }).catch(function (e) {
+    recadoConta = t("Não consegui ligar as notificações: {1}", {1: e.message});
+    carregarConta();
+  });
+}
+
+// o servidor (só o master): o teste do e-mail do config.php
+function quadroServidor(d) {
+  if (d.usuario.papel !== "master") {
+    return "";
+  }
+  return el("section", {"class": "cartao-config", "id": "servidor"}, el("h2", {}, t("Servidor de e-mail (master)"))
+    + el("p", {"class": "nota"}, d.email_configurado ? t("Confere a conexão do SMTP (e do IMAP e do POP, se configurados) e manda um e-mail de teste.")
+      : t("O envio de e-mail não está configurado no servidor: veja EMAIL_METODO e SMTP_* no config.php."))
+    + (d.email_configurado ? el("form", {"data-recurso": "conta", "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": "email_testar"})
+      + el("input", {"type": "email", "name": "para", "value": d.usuario.email || "", "placeholder": t("para (vazio: só a conexão)"), "aria-label": t("Para")})
+      + el("button", {"class": "leve"}, t("Testar o e-mail"))) : ""));
+}
+
+function quadroExcluir(d) {
+  return el("section", {"class": "cartao-config", "id": "excluir"}, el("h2", {}, t("Excluir a conta"))
+    + el("p", {"class": "nota"}, t("Sai a conta com tudo o que é dela: as suas coleções (com os relógios, o histórico e os arquivos), as suas árvores, os seus acessos e os seus tokens. Antes de apagar, a API mostra tudo o que sai junto."))
+    + formAcao("conta", "excluir", {}, t("Excluir a minha conta"), "perigo"));
+}
+
+var CONTA = null;
+function carregarConta() {
+  return Promise.all([api({recurso: "conta"}), api({recurso: "cadastro"}).catch(function () { return {}; })]).then(function (r) {
+    var d = r[0];
+    CONTA = d;
+    var res = el("h1", {}, t("Minha conta")) + (recadoConta !== "" ? el("p", {"class": "acao"}, h(recadoConta)) : "");
+    recadoConta = "";
+    if (d.aprovacoes > 0) {
+      res += el("p", {"class": "alerta-cron"}, t("{1} pedido(s) ou convite(s) esperam a sua resposta em {2}.", {1: d.aprovacoes, 2: el("a", {"href": "aprovacoes.php"}, t("Aprovações"))}));
+    }
+    res += quadroColecoes(d) + quadroArvores(d) + quadroPedir(d, r[1])
+      + el("p", {"class": "nota"}, t("Para convidar alguém para as suas coleções, ou ver quem as vê: {1}.", {1: el("a", {"href": "aprovacoes.php"}, t("Aprovações e convites"))}))
+      + quadroDados(d) + quadroTokens(d) + quadroPush(d) + quadroServidor(d) + quadroExcluir(d);
+    document.getElementById("conta").innerHTML = res;
+  });
+}
+
+// o "Gerar chaves" mostra as linhas para o config.php
+var gravarConta = aoGravar;
+aoGravar = function (form, res, dados) {
+  CHAVES_VAPID = res.config || null;
+  gravarConta(form, res, dados);
+};
+
+// o link do convite para quem já tem conta: aceita ao abrir
+var conviteUrl = new URLSearchParams(window.location.search).get("convite");
+(conviteUrl ? enviar({recurso: "convites", acao: "aceitar", token: conviteUrl}).then(function (res) {
+  recadoConta = textoResposta(res);
+  if (res.ok && res.colecao_id) {
+    document.cookie = "colecao=" + res.colecao_id + "; path=/; max-age=31536000; SameSite=Lax";
+  }
+  history.replaceState(null, "", "conta.php");
+}) : Promise.resolve()).then(carregarConta).catch(function (e) {
+  document.getElementById("conta").innerHTML = el("p", {"class": "acao"}, t("Não consegui ler a conta: {1}", {1: h(e.message)}));
+});

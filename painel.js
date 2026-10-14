@@ -446,7 +446,7 @@ function abrirNoPainel(id) {
       res += cadastro;
     } else {
       res += el("details", {"class": "cadastro-painel"}, el("summary", {}, t("Editar cadastro")) + cadastro
-        + el("form", {"data-recurso": "relogio", "class": "excluir", "onsubmit": "return confirm(" + JSON.stringify(t("Excluir {1} com todo o histórico e a foto?", {1: r.nome})) + ")"},
+        + el("form", {"data-recurso": "relogio", "class": "excluir"},
           el("input", {"type": "hidden", "name": "acao", "value": "excluir"}) + el("input", {"type": "hidden", "name": "id", "value": id}) + el("button", {"class": "leve discreto"}, t("Excluir este relógio"))));
       // o gráfico das leituras de carga
       if (r.leituras.length > 0 || r.previsao.aplica) {

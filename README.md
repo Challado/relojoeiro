@@ -3,7 +3,8 @@
 🌐 **Português** · [English](README.en.md) · [中文](README.zh-CN.md) · [हिन्दी](README.hi.md) · [Español](README.es.md) · [Français](README.fr.md)
 
 > **O rodízio inteligente de uma coleção de relógios.** Todo dia ele diz qual relógio vai para o pulso, lembra de dar corda,
-> carregar, pôr no sol e trocar a pilha, e faz a coleção inteira ser usada, e não só o favorito.
+> carregar, pôr no sol e trocar a pilha, e faz a coleção inteira ser usada, e não só o favorito. Várias pessoas usam o mesmo
+> sistema, cada uma com as suas coleções, e compartilham o que quiserem.
 
 ![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-777bb4?logo=php&logoColor=white)
 ![SQLite, MySQL/MariaDB, PostgreSQL ou Firebird](https://img.shields.io/badge/banco-SQLite%20%7C%20MySQL%20%7C%20PostgreSQL%20%7C%20Firebird-336791)
@@ -20,7 +21,7 @@ Tissot, aberto ao lado (na Configuração ele pode abrir flutuante, por cima da 
 | | |
 |---|---|
 | **[Por que existe](#por-que-isso-existe)** · [A ideia central](#a-ideia-central-o-sistema-não-sabe-nada-de-relógios) · [Como funciona](#como-funciona) · [Um dia com ele](#um-dia-com-o-relógios-2) | **[Experimente em 1 minuto](#experimente-em-1-minuto)** · [As telas](#as-telas) · [A API](#a-api-uma-porta-só-para-tudo) · [Instalação](#instalação) |
-| [Perguntas frequentes](#perguntas-frequentes) · [Como é por dentro](#como-é-por-dentro) | [Como contribuir](#como-contribuir) · [Licença](#licença) · [In English](#in-english) |
+| [Várias pessoas](#várias-pessoas-contas-coleções-e-acesso) · [Perguntas frequentes](#perguntas-frequentes) · [Como é por dentro](#como-é-por-dentro) | [Como contribuir](#como-contribuir) · [Licença](#licença) · [In English](#in-english) |
 
 ---
 
@@ -363,6 +364,53 @@ mexer no cadastro. O "Decaimento em uso" e o "Decaimento guardado" do cadastro s
 
 ---
 
+## Várias pessoas: contas, coleções e acesso
+
+O sistema é de **várias pessoas**, cada uma com a **conta** dela, e cada conta com **as suas coleções**. Uma coleção tem os
+relógios, o histórico, o plano, a Configuração, os destinos das mensagens e as agendas dela; o que se vê e o que se grava em
+qualquer página é sempre da coleção escolhida no **seletor do menu** (ele aparece com mais de uma). O primeiro usuário da
+instalação é o **master**: cuida do sistema inteiro.
+
+| Conceito | O que é |
+|---|---|
+| **Conta** | o login, a senha, o e-mail (para recuperar a senha, receber os convites e os avisos) e o idioma. Cada um cuida da sua em **Minha conta** (menu **Conta**). |
+| **Coleção** | um conjunto de relógios de um **dono**, com nome. Uma pessoa pode ter várias ("Minha coleção", "Os do meu pai"). Nasce **com o conjunto inicial** (os grupos, campos, fórmulas, avisos, critérios e modos prontos, no idioma de quem cria), **vazia** (só a raiz da árvore) ou **com uma árvore sua que já existe**. |
+| **Árvore de grupos** | os grupos e o cadastro deles (campos, tipos de lançamento, fórmulas, avisos, categorias de documentos, critérios dos grupos). É do dono e pode servir a **várias coleções dele**: o que muda nela vale para todas. Em **Minha conta** dá para copiar, renomear e excluir as árvores. |
+| **Membro** | quem vê uma coleção de outra pessoa (e usa: marca, lança, troca o dia). |
+| **Tudo de um dono** | quem vê **todas** as coleções de alguém, também as que ele criar depois. |
+| **Master** | vê todas as coleções, cuida das contas (**Usuários**), da cópia de segurança e das migrações. |
+
+**Como alguém entra numa coleção que não é dele:**
+
+- **Convite:** em **Aprovações**, o dono escreve o e-mail e escolhe o que ele vai ver (uma coleção, ou tudo dele). Sai um
+  e-mail com um link (vale `CONVITE_DIAS` dias, 7 sem a linha): quem não tem conta cria pelo link, e quem tem entra e aceita.
+  O convite de um **membro** espera o dono aprovar. Sem e-mail no servidor, o link aparece na tela, para mandar como quiser.
+- **Pedido:** em **Minha conta** (ou já no cadastro), a pessoa pede acesso a uma coleção, ou a tudo de um dono, com um recado.
+  O dono recebe um e-mail e aprova ou recusa em **Aprovações**; a pessoa recebe a resposta por e-mail.
+- **Pelo master:** em **Usuários**, **Dar acesso**.
+
+Em **Aprovações**, o dono vê também **quem vê as coleções dele** e tira o acesso de alguém; em **Minha conta**, cada um pode
+**sair** de uma coleção que não é dele. Convites e pedidos sem resposta saem sozinhos depois de `CONVITE_DIAS` dias.
+
+**O cadastro aberto** (a página `cadastro.php`, sem login, com o link **Criar conta**): a pessoa escolhe o login, a senha, o
+e-mail, o idioma e como começa (uma coleção com o conjunto inicial, uma vazia, ou pedir acesso à de alguém). A conta criada assim
+é **de demonstração** por `DEMO_DIAS` dias (30 sem a linha): o menu mostra **Demo: N dias**, um e-mail avisa 7 dias e 1 dia antes,
+e, vencida, o cron apaga a conta com tudo o que é dela. O master **torna a conta oficial** (ou prorroga) em **Usuários**. Com
+`CADASTRO_ABERTO = false` no `config.php`, o cadastro fecha: só entra quem o master cria ou quem tem um convite. A página tem
+também o **Esqueci a senha**: o link para escolher uma senha nova vai por e-mail e vale 2 horas.
+
+**O painel do master** (**Usuários**) mostra cada conta com o e-mail, o papel, o último acesso, quando vence, as coleções (com
+quantos relógios) e o que mais ela vê, e as ações: **Ver como** (o sistema inteiro como aquela pessoa vê, com uma faixa no alto
+e o botão de voltar), **Tornar oficial**, **Prorrogar**, **Voltar a demo**, **Bloquear**, **Alterar** (o login, o e-mail, o
+idioma, o papel), **Trocar a senha**, **Transferir a coleção** (para outro dono: a árvore vai junto, ou, se ela serve a outras
+coleções do dono de antes, o novo dono ganha uma cópia), **Dar acesso** e **Excluir**. Uma conta comum que fica sem nada (sem
+coleção, sem acesso, sem pedido nem convite esperando) sai sozinha.
+
+**Excluir, em qualquer lugar, avisa antes o que sai junto.** Excluir uma coleção, uma árvore, uma conta, um relógio, um campo,
+um destino... mostra antes a lista do que vai junto (*"Sai junto: 4 valores de campo, 2 lançamentos, 12 dias do plano..."*,
+com as coleções atingidas: uma árvore serve a várias) e só apaga depois de você confirmar. Os arquivos dos documentos saem do
+disco na hora. Pela API, toda exclusão pede `confirmar=1`.
+
 ## O cadastro de cada relógio, campo por campo
 
 Todo relógio tem **nome**, **grupo**, **situação na coleção**, **disponível** e **foto**. O resto são **campos**, e quais campos um relógio tem depende
@@ -429,8 +477,9 @@ documentos**, abrem a página **Documentos** daquele relógio numa aba nova. Lá
   - **XML:** se for uma **NF-e** (o XML da nota fiscal eletrônica), a página mostra o resumo: o emitente, o número, a série, a
     data, o valor, os produtos e a chave de acesso. E o botão **Baixar o XML**.
   - **Áudio:** o player. **Qualquer outro arquivo:** o botão **Baixar**.
-- **Editar** (o título, a data, a categoria, a descrição) e **Excluir**, em cada documento; o das fotos e dos vídeos fica na
-  lista **Editar ou excluir fotos e vídeos**, no fim da página.
+- **O menu ⋮ de cada arquivo:** cada foto (no canto da miniatura), cada vídeo da lista, cada cartão de arquivo e o próprio
+  visor das fotos têm o botão **⋮**, que abre **Abrir**, **Baixar**, **Editar** (uma janela por cima da página, com o título, a
+  data, a categoria, a descrição e a cópia no banco) e **Excluir** (mostra o que sai junto e pede a confirmação).
 - No alto, a escolha do relógio: **Todos** mostra os documentos da coleção inteira.
 
 **Onde os arquivos ficam:** numa **pasta do servidor** (o `DOCUMENTOS_PASTA` do `config.php`, fora da pasta publicada), de onde
@@ -468,8 +517,8 @@ pede perde (se o arquivo da pasta confere), até 256 MB por minuto; a pasta de u
 existe mais (`r<número>`) é apagada inteira; e o arquivo da pasta que não é de nenhum documento é apagado (só depois de 10
 minutos, porque um envio pode estar no meio). Tudo o que ele faz entra no registro (**Execuções do cron**).
 
-Excluir um documento apaga o arquivo e a cópia no banco; excluir o relógio apaga os documentos dele. Sem a pasta configurada,
-a página avisa o que falta e não aceita envios.
+Excluir um documento apaga o arquivo e a cópia no banco; excluir o relógio (ou a coleção, a árvore, a conta) apaga os
+documentos dele, e os arquivos saem da pasta na hora. Sem a pasta configurada, a página avisa o que falta e não aceita envios.
 
 Os documentos não entram em nenhuma conta: são para consultar. Os números que o sistema usa (a reserva de marcha, a autonomia,
 o tempo de sol para encher...) continuam nos campos do cadastro. O manual que o fabricante publica só como página da internet
@@ -708,8 +757,8 @@ As autonomias saem em segundos para a API (`recurso=autonomia`) e por extenso na
 
 ## A Configuração, opção por opção
 
-A página **Configuração** guarda as opções do sistema inteiro. Entre parênteses, o nome de cada uma na API (`recurso=config`,
-na chave `config`), para quem automatiza; o padrão de uma instalação nova vem no fim de cada linha.
+A página **Configuração** guarda as opções **da coleção** (cada coleção tem as suas). Entre parênteses, o nome de cada uma na API
+(`recurso=config`, na chave `config`), para quem automatiza; o padrão de uma coleção nova vem no fim de cada linha.
 
 ### Geral
 
@@ -727,45 +776,61 @@ na chave `config`), para quem automatiza; o padrão de uma instalação nova vem
 | **Garantia de rodízio** (`max_sem_uso`) | nenhum relógio passa mais que esses dias sem uso: o que passa entra na frente de todos. 0 desliga. Padrão: 21. |
 | **Aviso Encostado: dias sem ir ao pulso** (`encostado_dias`) | depois de quantos dias sem ir ao pulso um relógio da coleção ganha o aviso **Encostado** (em **Hoje é dia de**: *Encostado*, *"o limite de dias sem ir ao pulso vence há 2d, 11/10/2026 18:00"*). De 1 a 3650. Padrão: 30. O aviso se desliga em **Cadastros › Avisos**. |
 | **Gasto medido: os últimos dias** (`medicao_janela_dias`) | a janela do [gasto medido pelas leituras](#gasto-medido-pelas-leituras): as medições mais velhas saem da conta. De 1 a 3650. Padrão: 90. |
-| **Endereço do sistema** (`url_sistema`) | o endereço que a âncora `{link}` põe nas mensagens e na agenda. Padrão: vazio. |
+| **Endereço do sistema** (`url_sistema`) | o endereço que a âncora `{link}` põe nas mensagens e na agenda, e o dos links dos e-mails, do ICS e do retorno do Outlook. É do sistema inteiro: só o master muda. Padrão: vazio (o endereço por onde a página foi aberta). |
 | **Próximos dias: mostrar até** (`proximos_por_pagina`) e **Plano: mostrar até** (`plano_por_pagina`) | quantos dias os **Próximos dias** da página Hoje e o **Dia a dia** da página Plano mostram de cada vez (de 1 a 366). Passando disso, embaixo aparece o navegador das páginas: **<** (anterior), os números (a primeira, a última e até duas de cada lado da atual, com … nos saltos) e **>** (próxima); parando o mouse em cima, a dica diz *Anterior*, *Próximo* ou *Página N*. Padrão: 7 e 31. |
-| **Idioma padrão** (`idioma`) | o idioma das telas para quem ainda não escolheu o seu no seletor do menu (veja [Os idiomas](#os-idiomas)): português, inglês, chinês, hindi, espanhol ou francês. Padrão: vazio (o do navegador, senão português). |
+| **Idioma padrão** (`idioma`) | o idioma da coleção: o das telas para quem não escolheu o seu (no seletor do menu ou em **Minha conta**; veja [Os idiomas](#os-idiomas)) e o das mensagens e das agendas sem idioma próprio: português, inglês, chinês, hindi, espanhol ou francês. Padrão: o de quem criou a coleção. |
 | **Abrir o relógio na página Hoje** (`painel_modo`) | **Ao lado da lista** (`lado`): o relógio clicado abre num painel à direita, e a lista continua à vista. **Numa janela flutuante, grande** (`flutuante`): abre no meio da tela, por cima da página, com o fundo escurecido e os quadros lado a lado; fecha no ×, no Esc ou num clique fora. No celular, os dois cobrem a tela inteira. Padrão: ao lado. |
 | **Destaque no alto da página Hoje** (`destaque_hoje`) | **O relógio do dia** (`dia`): o quadro grande no alto da página Hoje mostra o relógio do dia (o do plano), com até quando ele fica e por que saiu. **O relógio no pulso agora** (`pulso`): mostra o relógio que está no pulso, mesmo que não seja o do dia (com *no pulso agora* e, embaixo, *Relógio do dia: …*, que abre o do dia); com mais de um no pulso, o que foi por último; sem nenhum no pulso, fica o do dia, com o aviso *Nenhum relógio no pulso agora*. Os dados embaixo (estado, carga, o botão Pôs/Tirou do pulso, a foto) são os do relógio do destaque. Padrão: o relógio do dia. |
 
 Na página, cada opção fica numa linha, com o nome à esquerda e o campo à direita, em quadros (Rotina do dia, Limites e contas,
-Telas, Cron, Sorteios, Telegram, Google Agenda); o botão **Salvar configuração** fica numa barra presa no pé da tela.
+Telas, Cron, Sorteios, Mensagens e agendas); o botão **Salvar configuração** fica numa barra presa no pé da tela.
 
-### Telegram e Google Agenda
+### Mensagens e agendas
 
-| Opção | O que faz |
-|---|---|
-| **Enviar alertas** (`mensagens_ativas`) | liga e desliga o envio pelo Telegram (o endereço da API de mensagem fica no `config.php`). Padrão: ligado. |
-| **Google Agenda ativa** (`agenda_ativa`) | liga e desliga a criação dos eventos na agenda. Padrão: desligada. |
-| **Id da agenda** (`agenda_id`) e **chave** (`agenda_chave`) | a agenda do Google e o caminho, no servidor, da chave JSON da conta de serviço (vazio: a `google-conta-servico.json` na pasta do sistema). Veja [Google Agenda](#google-agenda). |
-| **Antecedência** (`agenda_antecedencia`) | com quantos dias de antecedência os eventos entram na agenda. De 1 a 365. Padrão: 30. |
-| **Mensagem padrão** de cada canal (`tg_padrao`, `ag_padrao`) | o texto de todo aviso que não tem mensagem própria, com as âncoras (`{acao}`, `{relogio}`, `{motivo}`, `{carga}`, `{ate}`, `{link}`...; o botão **Inserir âncora** mostra todas). Na agenda, a primeira linha é o título do evento e o resto, a descrição. |
-| **O que vai para onde** (no formulário, `alerta_tipos[]` e `agenda_tipos[]`; no banco, a coluna `envia` da tabela `canal_aviso`) | a tabela que marca, para cada tipo de aviso (o dia, a véspera, cada aviso cadastrado e cada evento personalizado), se ele vai pelo Telegram e pela agenda. Um evento personalizado novo já nasce marcado no Telegram. |
-| **Mensagem personalizada** de um aviso num canal (no formulário, `tg_proprio_<tipo>` e `tg_corpo_<tipo>`; na agenda, `ag_proprio_<tipo>` e `ag_corpo_<tipo>`; no banco, as colunas `propria` e `corpo` da tabela `canal_aviso`) | marcada, aquele aviso sai com o texto dele naquele canal, em vez da mensagem padrão. |
-| **Eventos personalizados** | lembretes seus (limpar as pulseiras, revisar a coleção), com nome, quando disparam (uma vez, todo dia, em dias da semana, num dia do mês ou a cada N dias), a hora e, se quiser, um relógio. Saem pelos canais como os avisos. |
-| **Testar manhã**, **Testar noite**, **Criar evento de teste**, **Remover evento de teste**, **Sincronizar agora** | mandam a mensagem da manhã ou da noite na hora, criam (daqui a 10 minutos) ou apagam um evento de teste na agenda, e acertam a agenda agora, sem esperar o cron. |
+As mensagens e as agendas têm páginas próprias, abertas pelo quadro **Mensagens e agendas** da Configuração:
 
-A prévia **Como sai hoje** mostra as mensagens e os eventos de hoje exatamente como vão sair.
+- **Destinos** (`destinos.php`): para onde vão as mensagens da coleção. Cada destino é um **webhook** (um pedido HTTP:
+  o Telegram, o n8n, o Home Assistant, qualquer ponte), um **e-mail** (pelo servidor de e-mail do `config.php`) ou o **Web
+  Push** (as notificações no celular e no navegador de alguém que vê a coleção). Cada um tem o nome, **Ligado**, o **idioma**,
+  a **mensagem padrão** (com as âncoras `{acao}`, `{relogio}`, `{motivo}`, `{carga}`, `{ate}`, `{link}`...; o botão **Inserir
+  âncora** mostra todas) e **O que recebe**: cada tipo de aviso (o relógio do dia, a véspera, cada aviso do cadastro e cada
+  evento personalizado), com o **Personalizar**, que abre o texto próprio daquele aviso naquele destino. **Mandar um teste**,
+  **Mandar a da manhã agora** e **Mandar a da noite agora** testam na hora, e **Como sai hoje** mostra o texto de cada horário.
+- **Agendas** (`agendas.php`): o **Google Agenda**, um **CalDAV** (Nextcloud, **iCloud**, Fastmail), o **Outlook** (Microsoft
+  365, Outlook.com) ou um **link ICS** (um endereço para assinar em qualquer app de agenda, até no Google e no Outlook). Cada
+  uma tem o nome, **Ligada**, **Eventos até quantos dias à frente** (30 numa nova), o idioma, o **modelo do evento** (a
+  primeira linha é o título; o resto, a descrição) e **O que recebe**. **Sincronizar agora**, **Criar evento de teste** (daqui
+  a 10 minutos) e **Remover evento de teste**; embaixo, **O que tem de estar nela agora**. O sistema cria, atualiza e apaga só
+  os eventos que ele mesmo criou; os que já passaram ficam, como histórico.
+
+As senhas, as chaves e os tokens das agendas e os cabeçalhos dos webhooks ficam **cifrados no banco** e nunca voltam para a
+tela. Como configurar cada serviço no servidor: veja [Destinos e agendas no servidor](#destinos-e-agendas-no-servidor).
+
+**Eventos personalizados** (na Configuração): lembretes seus (limpar as pulseiras, revisar a coleção), com nome, quando
+disparam (uma vez, todo dia, em dias da semana, num dia do mês ou a cada N dias), a hora e, se quiser, um relógio. A tabela
+mostra cada um com **Vai para** (os destinos e as agendas que o recebem); um evento novo já vai para todos os destinos.
 
 ### O que o sistema guarda sozinho
 
 Estas não aparecem como opção: o sistema anota para ele mesmo, e a API mostra. (O modo de rodízio em uso não fica aqui: é a
-coluna `ativo` da tabela `modo`, e troca-se na página Hoje.)
+coluna `ativo` da tabela `modo`, e troca-se na página Hoje.) Na coleção (a tabela `config`):
 
 | Chave | O que é |
 |---|---|
 | `escala_fim`, `escala_gerada` | até que dia vai a escala inteligente e quando ela foi gerada. |
 | `ultima_manha`, `ultima_noite` | o dia da última rodada da manhã e da noite (para não rodar duas vezes). |
+| `na_hora_enviados` | os avisos "na hora" que já foram e ainda estão vencidos (`relogio_id:aviso`): não vão de novo; saem da lista quando deixam de vencer. |
+
+E do sistema inteiro (a tabela `sistema`):
+
+| Chave | O que é |
+|---|---|
 | `cron_ultima_execucao`, `cron_erro`, `cron_registro` | quando o cron rodou, o último erro (vazio: nenhum) e o registro da última rodada com atividade. |
-| `agenda_teste_id` | o evento de teste da agenda, enquanto existir. |
-| `na_hora_enviados` | os avisos "na hora" que já foram pelo Telegram e ainda estão vencidos (`relogio_id:aviso`): não vão de novo; saem da lista quando deixam de vencer. |
 | `backup_ultima` | quando foi feita a última cópia de segurança. |
-| `migracao_v10`, `migracao_v12`, `migracao_v16`, `migracao_v17`, `migracao_v18`, `migracao_v19`, `migracao_v20` | as marcas de que essas migrações foram aplicadas (as outras se marcam pela própria estrutura do banco). |
+| `aleatorio_ultima`, `aleatorio_fora` | a fonte do último lote de números aleatórios e desde quando os serviços de fora falharam. |
+| `url_sistema`, `idioma` | o endereço do sistema e o idioma da instalação. |
+| `demo_avisos` | os avisos de vencimento da conta de demonstração que já foram (para não mandar duas vezes). |
+| `migracao_v25` | a marca de que a migração v25 (a passagem para várias pessoas) foi aplicada. |
 
 ## Um dia com o Relógios 2
 
@@ -856,6 +921,10 @@ Quando não cabe, cada relógio vira um cartão com os mesmos 12 campos, na mesm
 nome em cima. A troca é medida com os dados de verdade (um nome comprido ou um valor alto contam), e não pela largura da tela.
 Os **Próximos dias** também mostram todos os dias da escala em qualquer tela.
 
+**O menu** tem, à direita, o que é de quem entrou: o **seletor da coleção** (com mais de uma; as dos outros com o nome do dono),
+**Aprovações (N)** quando há pedidos ou convites esperando, **Demo: N dias** na conta de demonstração e o idioma. O master
+vendo o sistema como outra pessoa vê uma faixa no alto, **Vendo como...**, com o botão para voltar.
+
 **O estado de cada relógio** diz onde ele está agora: **Em uso** (verde, no pulso), o nome da sessão aberta quando ele está
 noutro lugar, como **No sol**, **No winder** ou **No carregador** (laranja), **Em repouso** (vermelho, guardado) e
 **Indisponível** (cinza, fora do rodízio e guardado) ou **Emprestado** (cinza: com outra pessoa). O filtro **Estado** traz cada um deles. No painel, o estado vem com o
@@ -874,12 +943,17 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | **Hora certa** (`hora.php`) | A hora do servidor para acertar os relógios: um mostrador de ponteiros e a hora digital andando segundo a segundo (acertados pela API, descontando o tempo do pedido; embaixo, quanto o relógio do aparelho está adiantado ou atrasado), a data por extenso e a hora UTC; os quadros **Fuso e UTC** (o fuso, o deslocamento, a hora Zulu, a letra militar do fuso, como *P (Papa)*, e o grupo data-hora, *131433P OCT 26*), **Calendário** (dia do ano, semana ISO, trimestre, dia juliano, Unix) e **Lua** (a fase, a idade, a parte iluminada e as próximas cheia e nova, pelo ciclo médio: pode errar por um dia); e **Como acertar**. Lê a API de novo a cada minuto. Pela API: `recurso=hora_certa`. |
 | **Documentos** (`documentos.php`) | Os documentos de um relógio (ou de todos), aberta pela ficha: o envio de vários arquivos, uma aba por categoria, a galeria das fotos em tela cheia com apresentação, os vídeos em sequência na ordem escolhida, o visualizador de PDF, o resumo da NF-e do XML, e o download do resto. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 | **Histórico** (`historico.php`) | A linha do tempo de um relógio: em uso pelo rodízio, no pulso fora do rodízio, no winder, no sol, em repouso, e cada corda, carga e troca de pilha. Mostra quanto tempo e que porcentagem ficou em cada estado, com filtro de período e de estado. |
-| **Configuração** (`configuracao.php`) | A **Cópia de segurança** (as cópias da pasta, com **Baixar** e **Restaurar**, e o **Fazer uma cópia agora**). Os horários (manhã, noite, uso), o Telegram, o Google Agenda, a mensagem padrão de cada canal, a tabela **"O que vai para onde"** (qual aviso sai por qual canal), os eventos personalizados, a prévia **"Como sai hoje"** e o botão que aplica as migrações do banco. |
+| **Configuração** (`configuracao.php`) | As opções da coleção (os horários, os limites, as telas, o idioma), a situação do cron, o quadro **Mensagens e agendas** (os destinos e as agendas, com os links das páginas deles), os eventos personalizados, a **Cópia de segurança** (só o master: as cópias da pasta, com **Baixar** e **Restaurar**, e o **Fazer uma cópia agora**) e o botão que aplica as migrações do banco. Veja [A Configuração, opção por opção](#a-configuração-opção-por-opção). |
+| **Destinos** (`destinos.php`) | Para onde vão as mensagens da coleção: cada webhook, e-mail ou Web Push, com a mensagem, o idioma, o que recebe, os testes e como sai hoje. Veja [Mensagens e agendas](#mensagens-e-agendas). |
+| **Agendas** (`agendas.php`) | As agendas da coleção (Google, CalDAV, Outlook, link ICS), com o modelo do evento, o que recebe, a sincronização, o evento de teste e o que tem de estar nela agora. |
 | **Critérios** (`criterios.php`) | Os conjuntos de critérios por lugar (todos os relógios, um grupo ou um relógio), com parâmetros, subparâmetros, faixas e a nota de cada relógio com a conta aberta. Tem **Restaurar os critérios iniciais**. |
 | **Grupos** (`grupos.php`) | A árvore: criar, renomear, mover, ordenar, excluir (o que era do grupo passa para o de cima) e escolher o grupo de cada relógio. |
 | **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), avisos, modos de rodízio e as categorias de documentos: tudo o que o sistema usa e que não é código. |
 | **Execuções do cron** (`execucoes.php`) | O que o cron fez a cada rodada, quanto tempo levou e os erros, com filtros. |
-| **Usuários** (`usuarios.php`) | Quem acessa: criar um usuário ou trocar a senha. |
+| **Minha conta** (`conta.php`, o menu **Conta**) | As coleções que você vê (abrir, criar, renomear, excluir, sair), as suas árvores de grupos (copiar, renomear, excluir), pedir acesso à coleção de alguém, os seus dados (o e-mail, o idioma, a senha), os **tokens de API** (para os seus scripts), as **notificações neste aparelho** (o Web Push) e excluir a conta. Veja [Várias pessoas](#várias-pessoas-contas-coleções-e-acesso). |
+| **Aprovações** (`aprovacoes.php`) | Os pedidos de acesso às suas coleções (aprovar, recusar), os convites que membros fizeram e esperam você, **Convidar** (por e-mail), os convites que você fez e quem vê as suas coleções (tirar o acesso). O menu mostra **Aprovações (N)** quando há algo esperando. |
+| **Usuários** (`usuarios.php`, só o master) | O painel das contas: cada uma com o que tem e as ações (ver como, tornar oficial, prorrogar, bloquear, alterar, trocar a senha, transferir uma coleção, dar acesso, excluir) e criar uma conta. |
+| **Criar conta** (`cadastro.php`, sem login) | O cadastro aberto: a conta nova (com uma coleção, ou pedindo acesso), o convite que chegou por e-mail e o **Esqueci a senha**. |
 | **Ajuda** (`ajuda.php`) | Este guia dentro do sistema: a ideia central, como funciona, o cadastro de cada relógio campo por campo, os avisos de carga, as telas e as perguntas frequentes (as mesmas seções deste README, lidas dele; a API devolve o mesmo texto em `recurso=manual`). |
 
 ### Os idiomas
@@ -950,17 +1024,21 @@ na tela fica só o que é dela: filtrar, ordenar e somar o que os filtros da tab
 **tudo o que a tela faz, um script também faz**: automações, atalhos no celular, integração com o Home Assistant, um widget.
 
 A API faz também o que vem antes e em volta das telas: **instala o banco** (`recurso=instalacao`), **cria o primeiro usuário**
-(`recurso=usuarios`, pelo token), **importa o sistema anterior** (`recurso=importacao`) e faz o **login das páginas**
+(`recurso=usuarios`, pelo token), **importa o sistema anterior** (`recurso=importacao`), o **cadastro aberto** (`recurso=cadastro`,
+sem login), as **contas** (`conta`, `colecoes`, `acessos`, `convites`, `pedidos`, `aprovacoes`) e faz o **login das páginas**
 (`recurso=entrar`: as páginas não conferem nada, só entregam o esqueleto; quem chega sem login é mandado para a API, que pede o
 usuário e a senha e devolve para a página). Os scripts de linha de comando (`instalar.php`, `criar_usuario.php`,
 `importar.php`) são atalhos: chamam as mesmas operações da API.
 
 Fora da API fica só o **cron** (`cron.php`, o relógio do sistema: monta o plano, abre e fecha a sessão do dia, manda as
 mensagens, sincroniza a agenda, dispara os eventos e cuida das cópias dos documentos), que usa as mesmas funções que a API usa;
-o que dá para pedir na hora tem ação na API (`testar_manha`, `testar_noite`, `sincronizar`, `resortear`...), e o que ele fez
+o que dá para pedir na hora tem ação na API (o `testar` dos destinos, o `sincronizar` das agendas, o `resortear`...), e o que ele fez
 aparece em `recurso=cron`.
 
-**Autenticação:** o token (`X-Api-Token: ...` ou `?token=...`) ou o login do site (HTTP Basic).
+**Autenticação:** o login do site (HTTP Basic), um **token pessoal** (criado em **Minha conta**, vale como o seu login) ou o token
+do servidor (o `API_TOKEN`, vale como o master), no cabeçalho `X-Api-Token` ou em `?token=...`. **A coleção:** `colecao=<id>`
+(sem ele, a do seletor do menu, senão a primeira sua); uma que você não vê responde 404. **Excluir** pede `confirmar=1`: sem
+ele, a resposta (409) diz o que sairia junto e nada é apagado.
 **Formato:** JSON por padrão, ou XML com `formato=xml`. **Idioma:** `lingua=en` (ou o cabeçalho `Accept-Language`): as
 mensagens, a ajuda e a reconstrução saem nesse idioma.
 
@@ -1000,14 +1078,17 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `autonomia` | quanto cada relógio dura, em segundos, enxuto para sistemas de fora (`relogio=` um id ou vários; sem ele, todos) |
 | `historico` | a linha do tempo de um relógio, com o tempo em cada estado. `relogio=` (um id ou vários; `relogio_id` também vale; sem ele, todos), `de=` e `ate=` (data, ou data e hora: entra o trecho que cruza o período), `estado=` (`rodizio`, `pulso`, `repouso`, `marca` ou um tipo de sessão como `winder` e `sol`; um ou vários; `linha_estado` também vale), `ordem=` (`desc`, o padrão, ou `asc`), `limite=` (padrão 100, máximo 1000) e `pagina=` |
 | `criterios` | os conjuntos de critérios e a nota de cada relógio com a conta |
-| `eventos`, `agenda` | os eventos personalizados; o que tem de estar no Google Agenda |
-| `config`, `cron` | a configuração (com as mensagens, a prévia e a situação do cron: nunca rodou, parado ou rodando); as execuções do cron, com o resumo do período. No `cron`: `de=` e `ate=` (data, ou data e hora), `situacao=` (`atividade`, o padrão; `erro`, `nada` ou `todas`), `busca=` (texto no registro), `limite=` (padrão 100, máximo 1000) e `pagina=`; cada um também vale com `cron_` na frente (`cron_de`...) |
+| `eventos`, `destinos`, `agendas` | os eventos personalizados; os destinos das mensagens, com o que cada um recebe e a prévia de hoje; as agendas, com o que tem de estar em cada uma |
+| `ics` | o calendário de uma agenda do tipo link ICS (sem login, pela chave do link) |
+| `config`, `cron` | a configuração da coleção (com o resumo dos destinos e das agendas e a situação do cron: nunca rodou, parado ou rodando); as execuções do cron, com o resumo do período. No `cron`: `de=` e `ate=` (data, ou data e hora), `situacao=` (`atividade`, o padrão; `erro`, `nada` ou `todas`), `busca=` (texto no registro), `limite=` (padrão 100, máximo 1000) e `pagina=`; cada um também vale com `cron_` na frente (`cron_de`...) |
 | `arvore`, `cadastros` | os grupos; tudo o que a página Cadastros mostra |
 | `calcular` | o resultado de uma fórmula (`expressao=`) nos relógios (`relogio=` um id ou vários; sem ele, todos), sem gravar, com as partes da conta; fórmula mal escrita: 400 com os erros |
 | `foto` | a foto de um relógio (`relogio=<id>`): a imagem, não JSON |
 | `documentos` | os documentos de um relógio (`relogio=<id>`; sem ele, de todos), com as categorias, o resumo da NF-e de cada XML, a pasta e o limite |
 | `documento` | o arquivo de um documento (`id=<id>`): para mostrar (imagem, vídeo, áudio, PDF, texto) ou para baixar (o resto, ou com `baixar=1`); `mini=1` é a miniatura da foto. Atende pedaços (Range), para o vídeo avançar |
-| `usuarios`, `migracoes` | os logins, cada um com o hash da senha (para migrar com a mesma senha: veja [Os usuários e as senhas](#os-usuários-e-as-senhas)); as migrações que faltam aplicar |
+| `usuarios`, `migracoes` | o master: o painel das contas, cada uma com o que tem e o hash da senha (para migrar com a mesma senha: veja [Os usuários e as senhas](#os-usuários-e-as-senhas)); os outros, só a própria conta; as migrações que faltam aplicar |
+| `conta`, `colecoes`, `aprovacoes` | Minha conta (as coleções, as árvores, os pedidos, os tokens, os aparelhos do Web Push; `parte=menu`: só o do menu); as coleções e as árvores; a página Aprovações |
+| `cadastro` | o cadastro aberto, sem login: se está aberto, as coleções e os donos (para pedir acesso) e o convite (`convite=<token>`) |
 | `instalacao` | a situação da instalação: o banco, se está vazio, instalado e em dia, quantos usuários e o próximo passo. Responde também com o banco vazio, pelo token |
 | `backup` | a cópia de segurança do banco: se está ligada, se a pasta serve, quantas ficam, a última e as cópias da pasta; `arquivo=` baixa uma |
 | `importacao` | o que a importação do sistema anterior usa: o servidor do banco antigo (sem a senha), se o PHP tem o MySQL e se este banco já tem relógios |
@@ -1031,8 +1112,14 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (e `ordem` nos campos) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
-| `config` | `salvar`, `evento_salvar`, `evento_excluir`, `testar_manha`, `testar_noite`, `teste_agenda_criar`, `teste_agenda_remover`, `sincronizar` |
-| `usuarios` | `salvar` (com a `senha`, ou com o `senha_hash` de outro sistema; o primeiro usuário, pelo token), `excluir` |
+| `config` | `salvar`, `evento_salvar`, `evento_excluir` |
+| `destinos` | `salvar` (webhook, e-mail ou Web Push, com o que recebe), `testar` (`qual=`: texto, manhã ou noite), `excluir` |
+| `agendas` | `salvar` (Google, CalDAV, Outlook ou ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
+| `usuarios` | `salvar` (com a `senha`, ou com o `senha_hash` de outro sistema; o primeiro usuário, pelo token, é o master) e, só o master: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
+| `conta` | `alterar` (e-mail, idioma, senha), `token_criar`, `token_revogar`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir`; só o master: `email_testar`, `vapid_gerar` |
+| `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
+| `acessos`, `convites`, `pedidos` | `remover`, `sair`; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar`; `pedir`, `aprovar`, `recusar`, `cancelar` |
+| `cadastro` | sem login: `criar_conta`, `esqueci_senha`, `nova_senha` |
 | `migracoes` | `aplicar` |
 | `instalacao` | `instalar` (só num banco vazio, pelo token) |
 | `backup` | `fazer` (uma cópia de segurança agora), `restaurar` (`arquivo=`: volta o banco para aquela cópia, guardando antes uma do que está agora) |
@@ -1046,8 +1133,9 @@ por motivo) numa escrita recusada:
 | `400` | escrita recusada pelas validações (os erros dizem por quê), ou uma fórmula mal escrita no `calcular` |
 | `302` | `recurso=entrar` com o login certo e `volta=`: vai para a página |
 | `401` | sem o token nem o login do site, ou com eles errados; sem nenhum usuário (ou com o banco vazio), a resposta diz o que fazer (`sem_usuarios` e `como`) |
-| `404` | recurso desconhecido (a resposta traz a lista dos recursos), ou o relógio, a foto, o documento (ou o arquivo dele) ou o `README.md` (no `manual`) que não existe, ou um arquivo que não sai pelo `codigo` (com `o_que_ver` no que fica de fora de propósito, como o `config.php`) |
-| `409` | o banco recusou a gravação: um registro que outro ainda usa, um valor repetido, ou um valor fora das regras de validação do banco (vem o nome da regra) |
+| `403` | a cópia de segurança e as migrações, por quem não é o master |
+| `404` | recurso desconhecido (a resposta traz a lista dos recursos), a coleção que você não vê, ou o relógio, a foto, o documento (ou o arquivo dele) ou o `README.md` (no `manual`) que não existe, ou um arquivo que não sai pelo `codigo` (com `o_que_ver` no que fica de fora de propósito, como o `config.php`) |
+| `409` | uma exclusão sem `confirmar=1` (com `impacto`: o que sairia junto; nada foi apagado); a conta sem coleção nenhuma (`sem_colecao`); ou o banco recusou a gravação: um registro que outro ainda usa, um valor repetido, ou um valor fora das regras de validação do banco (vem o nome da regra) |
 | `413` | o envio passou do limite do PHP do servidor (`post_max_size`): um arquivo grande demais |
 | `500` | sistema parado (o `API_TOKEN` ou o `FUSO` do `config.php` inválido) ou um erro interno |
 | `503` | banco desatualizado (só `recurso=migracoes` responde, e a escrita `migracoes`/`aplicar`; e o `manual` e o `codigo`, que não usam o banco), banco vazio (antes da instalação só `instalacao` responde, e o `manual` e o `codigo`) ou banco fora do ar |
@@ -1059,7 +1147,7 @@ caracteres, `$2y$12$...`: o `$2y$`, o custo (12 quer dizer 2¹² rodadas), o sal
 resultado (31). O hash não se desfaz em senha: no login, o sistema calcula o bcrypt da senha digitada com o sal e o custo que
 estão no hash e compara (`password_verify`). A mesma senha dá hashes diferentes a cada vez, e todos conferem.
 
-**Para levar os usuários para outro sistema**, leve o login e o `senha_hash` de cada um (`recurso=usuarios`) e, lá, confira a
+**Para levar os usuários para outro sistema**, leve o login e o `senha_hash` de cada um (`recurso=usuarios`, pelo master) e, lá, confira a
 senha digitada contra o hash com o bcrypt da linguagem: cada um entra com a mesma senha de sempre. `$2y$` (PHP) e `$2b$` (as
 outras linguagens) são o mesmo cálculo; se a biblioteca recusar o `$2y$`, troque o começo por `$2b$`. **Para trazer usuários
 de outro sistema**, mande o hash de lá: `recurso=usuarios`, `acao=salvar`, `login` e `senha_hash` (bcrypt `$2y$`, `$2b$` ou
@@ -1106,7 +1194,7 @@ cabeçalho é gerado dele (`php testes/dicionario.php --gravar`).
 
 ## Instalação
 
-**Requisitos:** PHP 8.1+ com `curl` e `openssl` (este só para o Google Agenda), um servidor web (nginx ou Apache), o cron e
+**Requisitos:** PHP 8.1+ com `curl` e `openssl` (os webhooks, o e-mail, o Web Push, as agendas e os segredos cifrados), um servidor web (nginx ou Apache), o cron e
 **um destes bancos**, cada um pela extensão do PHP:
 
 | Banco | Extensão do PHP | Versão | Quando escolher |
@@ -1124,7 +1212,8 @@ roteiro nos quatro bancos e compara tudo o que a API devolve.
 git clone https://github.com/Challado/relojoeiro.git /var/www/relojoeiro
 cd /var/www/relojoeiro
 
-# 2. a configuração: o banco (DB_TIPO), o token da API, o fuso, as mensagens, a pasta dos documentos
+# 2. a configuração: o banco (DB_TIPO), o token da API, o fuso, a pasta dos documentos e, se quiser, o e-mail, o Web Push,
+#    o Outlook e as regras do cadastro aberto (veja a tabela do config.php, abaixo)
 cp config.exemplo.php config.php
 nano config.php
 #    a pasta dos documentos (DOCUMENTOS_PASTA), fora da pasta publicada, com escrita para o usuário do PHP:
@@ -1142,7 +1231,7 @@ php instalar.php
 #    ou pela API, com o token do config.php (o idioma: lingua=en, como em qualquer pedido):
 #    curl -H "X-Api-Token: $TOKEN" -d recurso=instalacao -d acao=instalar http://servidor/relojoeiro/api.php
 
-# 5. o primeiro usuário (a senha é pedida sem aparecer)
+# 5. o primeiro usuário, o master, com a coleção dele (a senha é pedida sem aparecer)
 php criar_usuario.php seu_login
 #    ou pela API, com o token:
 #    curl -H "X-Api-Token: $TOKEN" -d recurso=usuarios -d acao=salvar -d login=seu_login -d senha=... http://servidor/relojoeiro/api.php
@@ -1181,7 +1270,8 @@ Para conferir, abra `https://seu-servidor/relojoeiro/config.php` e `https://seu-
 têm de dar **403**.
 
 **8. Abra no navegador** e entre com o usuário criado. O conjunto inicial já está lá: cadastre seus relógios em
-**Hoje → Novo relógio**, escolha o grupo de cada um e preencha os campos.
+**Hoje → Novo relógio**, escolha o grupo de cada um e preencha os campos. Em **Minha conta**, ponha o seu e-mail. As outras
+pessoas entram pelo **Criar conta** (`cadastro.php`), por um convite seu, ou o master cria a conta em **Usuários**.
 
 ### O `config.php`
 
@@ -1192,7 +1282,15 @@ têm de dar **403**.
 | `DB_ARQUIVO` | o arquivo do banco (SQLite), fora da pasta publicada |
 | `API_TOKEN` | **obrigatório**, com 10 caracteres ou mais. Sem ele o sistema inteiro para e diz por quê. |
 | `FUSO` | o fuso horário, como `America/Sao_Paulo`. Vazio ou ausente: o do PHP (`date.timezone` no php.ini). Vale para tudo, inclusive para as datas que o banco grava |
-| `MSG_ENDPOINT`, `MSG_DESTINATARIO`, `MSG_TITULO` | as mensagens (veja abaixo). Sem o endereço, nada é enviado. |
+| `SEGREDO_CHAVE` | opcional: a chave que cifra no banco as senhas do CalDAV, as chaves do Google, os tokens do Outlook e os cabeçalhos dos webhooks. Sem ela, o `API_TOKEN` (trocar a chave perde os segredos guardados: é só digitar de novo) |
+| `MSG_TITULO` | o título das mensagens (o `{titulo}` dos webhooks, o assunto do e-mail, o título do Web Push). Padrão: Relógios |
+| `MSG_ENDPOINT`, `MSG_DESTINATARIO` | só para a migração v25: a API de mensagem antiga (Telegram) vira o primeiro destino webhook da coleção |
+| `CADASTRO_ABERTO`, `DEMO_DIAS`, `CONVITE_DIAS` | opcionais: o cadastro aberto (`false`: fechado, só com convite; sem a linha, aberto), os dias da conta de demonstração (padrão 30; `0`: a conta já nasce oficial) e os dias que um convite ou um pedido espera (padrão 7) |
+| `EMAIL_METODO`, `EMAIL_REMETENTE`, `SMTP_HOST`, `SMTP_PORTA`, `SMTP_SEGURANCA`, `SMTP_USUARIO`, `SMTP_SENHA` | o e-mail: `smtp` (o servidor dado; a segurança `tls`, o padrão, `ssl` ou `nenhuma`) ou `mail` (o `mail()` do PHP), e o remetente. Sem nenhum, nenhum e-mail sai |
+| `IMAP_HOST`, `IMAP_PORTA`, `IMAP_SEGURANCA`, `IMAP_USUARIO`, `IMAP_SENHA`, `IMAP_PASTA_ENVIADOS` | opcionais: uma cópia de cada e-mail enviado na pasta Enviados da conta |
+| `POP_HOST`, `POP_PORTA`, `POP_SEGURANCA`, `POP_USUARIO`, `POP_SENHA` | opcionais: só para o teste do e-mail conferir a caixa por POP3 |
+| `VAPID_PUBLICA`, `VAPID_PRIVADA`, `VAPID_ASSUNTO` | o Web Push: o par de chaves (o master gera em **Minha conta**) e o assunto (`mailto:...`) |
+| `OUTLOOK_CLIENTE_ID`, `OUTLOOK_CLIENTE_SEGREDO` | o aplicativo registrado na Microsoft, para as agendas do Outlook (veja abaixo) |
 | `DOCUMENTOS_PASTA` | a pasta dos arquivos dos documentos (o manual, a nota, fotos, vídeos), **fora da pasta publicada**, com permissão de escrita para o usuário do PHP. Sem ela, a página Documentos avisa que falta e não aceita envios. Ex.: `define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
 | `DOCUMENTOS_COPIA_BANCO` | opcional: a cópia de segurança dos documentos dentro do banco, para o sistema inteiro. `true`: todo arquivo vai também para o banco; `false`: nenhum vai; sem ela: cada relógio e cada arquivo decidem. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 | `BACKUP_PASTA`, `BACKUP_MANTER`, `BACKUP_DOCUMENTOS` | opcionais: a cópia de segurança do banco (veja [Cópia de segurança](#cópia-de-segurança)). A pasta, **fora da pasta publicada** (sem ela, não há cópia automática); quantas ficam (padrão 7); e se leva o conteúdo dos documentos guardado no banco (padrão: não). |
@@ -1200,29 +1298,43 @@ têm de dar **403**.
 | `DOCUMENTOS_LIMITE` | opcional: o maior documento aceito, em bytes. Sem ela, 100 MB (`104857600`); `0` ou `-1`, sem limite do sistema. O `MANUAL_LIMITE`, o nome antigo, ainda vale quando ela não existe. O limite do PHP e o do nginx continuam valendo (veja [O tamanho dos envios](#o-tamanho-dos-envios-os-documentos)). Ex.: `define("DOCUMENTOS_LIMITE", 524288000);` para 500 MB |
 | `ANTIGO_HOST`, `ANTIGO_PORTA`, `ANTIGO_USUARIO`, `ANTIGO_SENHA` | opcionais, só para o `importar.php` com este sistema no Postgres, no SQLite ou no Firebird: onde está o MySQL do sistema anterior |
 | `ALEATORIO_RANDOMORG_URL`, `ALEATORIO_ANU_URL` | opcionais, só para testes: os endereços das fontes dos números aleatórios (`https://www.random.org/integers/` e `https://qrng.anu.edu.au/API/jsonI.php`). Trocados, os sorteios pedem os números a um servidor de teste |
-| `GOOGLE_TOKEN_URL`, `GOOGLE_API_URL` | opcionais, só para testes: os endereços do Google que a agenda usa (o do token, `https://oauth2.googleapis.com/token`, e o da API, `https://www.googleapis.com/calendar/v3`). Trocados, a sincronização da agenda conversa com um servidor de teste em vez do Google |
+| `GOOGLE_TOKEN_URL`, `GOOGLE_API_URL`, `OUTLOOK_LOGIN_URL`, `OUTLOOK_GRAPH_URL` | opcionais, só para testes: os endereços do Google e da Microsoft que as agendas usam. Trocados, a sincronização conversa com um servidor de teste |
 | `TEXTOS_ESTRITO` | opcional, para quem está traduzindo: `true` faz a tradução que falta parar com erro (veja [Os idiomas](#os-idiomas)) |
 
 O sistema lê o `config.php` da pasta dele. Uma variável de ambiente do servidor, `RELOGIOS_CONFIG`, aponta outro arquivo no
 lugar: é o que o teste de paridade usa (`testes/paridade.sh`, com o [`testes/config.teste.php`](testes/config.teste.php)), para
 rodar sem tocar no `config.php` de verdade. Numa instalação normal, não a defina.
 
-### Mensagens pelo Telegram
+### Destinos e agendas no servidor
 
-O sistema não fala direto com a API do Telegram: ele chama **um endereço HTTP seu** (`MSG_ENDPOINT`) com
-`?destinatario=...&titulo=...&mensagem=...` e considera enviado se a resposta for 2xx. Isso deixa você usar o seu bot, um
-webhook, o n8n, o Home Assistant ou qualquer ponte de mensagens. Mensagens longas são divididas em partes. Na
-**Configuração** há os botões **Enviar agora** (manhã e noite) para testar.
+Cada coleção cria os destinos e as agendas dela nas páginas **Destinos** e **Agendas**. O que precisa de configuração no servidor:
 
-### Google Agenda
+- **Telegram (um webhook):** crie um bot com o @BotFather (ele dá o token) e descubra o seu `chat_id` (mande uma mensagem ao bot
+  e abra `https://api.telegram.org/bot<token>/getUpdates`). Em **Destinos**, um webhook: método `GET` ou `POST`, endereço
+  `https://api.telegram.org/bot<token>/sendMessage`, os campos `chat_id` = o número e `text` = `{mensagem}`. Qualquer outra
+  ponte (n8n, Home Assistant, o seu próprio endereço) funciona igual: o sistema manda `{titulo}` e `{mensagem}` onde você
+  pôs, e considera enviado se a resposta for 2xx. Mensagens longas são divididas em partes.
+- **E-mail:** o servidor SMTP no `config.php` (`SMTP_HOST`, a porta, a segurança, o usuário e a senha; no Gmail e no Outlook,
+  uma senha de app) e o `EMAIL_REMETENTE`; ou `EMAIL_METODO = "mail"`, com um sendmail no servidor. Com o `IMAP_*`, cada e-mail
+  enviado ganha uma cópia em Enviados. O master testa em **Minha conta › Servidor de e-mail**.
+- **Web Push:** o site tem de abrir por **https**. O master gera as chaves em **Minha conta › Chaves do Web Push** e copia as
+  duas linhas para o `config.php`. Depois, cada pessoa liga as notificações no aparelho dela, em **Minha conta**
+  (no iPhone, primeiro adicione o site à tela de início), e um destino Web Push manda para os aparelhos de quem ele aponta.
+- **Google Agenda:** no Google Cloud, crie uma **conta de serviço** e baixe a chave JSON; compartilhe a sua agenda com o e-mail
+  da conta de serviço, com permissão de alterar eventos; em **Agendas**, cole o JSON da chave (ele fica cifrado no banco) e o
+  ID da agenda. Só o master pode, no lugar do JSON, dar o caminho de um arquivo no servidor.
+- **CalDAV (Nextcloud, iCloud, Fastmail):** o endereço do calendário, o usuário e a senha. No **iCloud**, uma **senha de app**
+  (appleid.apple.com › Senhas de app) e o endereço do calendário em `caldav.icloud.com`.
+- **Outlook:** registre um aplicativo no portal da Microsoft (**Entra ID › Registros de aplicativo**), com a permissão
+  `Calendars.ReadWrite` e o endereço de retorno `https://<o seu servidor>/relojoeiro/api.php?recurso=outlook_retorno`
+  (a página Agendas mostra o endereço exato); ponha o ID e o segredo no `config.php` (`OUTLOOK_CLIENTE_ID` e
+  `OUTLOOK_CLIENTE_SEGREDO`). Em **Agendas**, **Conectar ao Outlook** leva à página da Microsoft e volta conectado. Sem o
+  aplicativo, use um link ICS: o Outlook o assina.
+- **Link ICS:** nada a configurar. A agenda dá um link secreto para assinar em qualquer app (Google: **Outras agendas › Do URL**;
+  Outlook: **Assinar da Web**; iPhone: **Calendário assinado**); **Trocar o link** desliga o de antes.
 
-1. No Google Cloud, crie uma **conta de serviço** e baixe a chave JSON.
-2. Guarde a chave **no servidor, fora da pasta pública e fora do repositório** (o `.gitignore` já bloqueia os nomes comuns).
-3. Compartilhe a sua agenda com o e-mail da conta de serviço, com permissão de alterar eventos.
-4. Na **Configuração**, informe o ID da agenda e o caminho da chave, ligue a agenda e clique em **Sincronizar agora**.
-
-O sistema cria, atualiza e remove só os eventos que ele mesmo criou, sem duplicar. A rotina (carregar, corda, sol) entra
-dentro da janela de antecedência, e a manutenção (pilha, revisão, garantia) entra em qualquer data.
+Fora das coleções do master, os endereços que alguém escreve (webhook, CalDAV) têm de ser da internet: o sistema recusa os da
+rede do próprio servidor (`127.0.0.1`, `192.168.x`...), para ninguém usar o servidor para sondar a rede dele.
 
 ### O tamanho dos envios (os documentos)
 
@@ -1244,8 +1356,15 @@ do `post_max_size` volta com o código `413` e o limite do servidor. No Apache n
 ### Atualizações do banco
 
 Depois de atualizar o código, se houver migração nova (`migracao_v*.sql`), a API responde `503` e a página **Configuração**
-mostra o botão para aplicá-la. O cron também para e registra o motivo, em vez de rodar pela metade. Numa instalação nova, o
-`schema.sql` já traz todas as migrações.
+mostra o botão para aplicá-la (só o master aplica). O cron também para e registra o motivo, em vez de rodar pela metade. Numa
+instalação nova, o `schema.sql` já traz a estrutura de todas as migrações, e o conjunto inicial vem do `modelo.json`, quando o
+primeiro usuário é criado.
+
+**A migração v25 (várias pessoas)** refaz o banco inteiro: guarda antes uma cópia de tudo em
+`relojoeiro-antes-da-v25.jsonl.gz` (na `BACKUP_PASTA`, ou na pasta temporária), cria a estrutura nova e devolve cada registro na
+forma nova, com os mesmos números (os relógios, os documentos e os lançamentos continuam com o id de sempre). O usuário mais
+antigo vira o master e o dono da coleção e da árvore; os outros, membros da coleção. O Telegram (`MSG_ENDPOINT`) vira o
+primeiro destino webhook, e o Google Agenda, a primeira agenda. Se parar no meio, o mesmo botão refaz a partir da cópia.
 
 O `schema.sql` e cada migração são **um arquivo só para os quatro bancos**: a estrutura (`CREATE TABLE`, `ALTER TABLE`) é
 escrita no dialeto do MySQL, e o [`banco.php`](banco.php) traduz para o Postgres, o SQLite e o Firebird (`AUTO_INCREMENT`,
@@ -1288,8 +1407,8 @@ também no `instalar.php`.
     MySQL, 65535 bytes), porque viram `VARCHAR(8191)` (o `BLOB` de texto volta vazio como nulo no PHP);
   - os nomes de índice e de regra passam de 31 letras só com um pedaço do md5 do nome inteiro no fim, e a tabela `no` é
     palavra reservada: num programa de fora (o `isql-fb`, o FlameRobin), escreva `"NO"`, entre aspas e em maiúsculas;
-  - a chave única de várias colunas em que uma pode ficar vazia (a `canal_aviso`) vira um índice único de uma expressão,
-    porque no Firebird duas linhas com o mesmo valor e a outra coluna vazia contam como repetidas (no MySQL, não);
+  - a chave única de várias colunas em que uma pode ficar vazia vira um índice único de uma expressão, porque no Firebird
+    duas linhas com o mesmo valor e a outra coluna vazia contam como repetidas (no MySQL, não);
   - a hora do `NOW()` vem do PHP (o Firebird não tem fuso por conexão), no `FUSO` do `config.php`, como nos outros.
 - **A ordem das colunas** de uma migração com `AFTER` só vale no MySQL: nos outros a coluna nova vai para o fim da tabela
   (muda só a ordem das chaves no JSON da API).
@@ -1316,6 +1435,19 @@ Na página **Documentos** dele (pela ficha: **Abrir os documentos**). Escolha a 
 (XML), Fotos, Vídeos, Diversos), os arquivos, e envie. As fotos viram uma galeria com apresentação, os vídeos tocam em
 sequência, o PDF abre no visualizador e o XML da nota mostra o resumo. O manual que só existe como página da internet vira PDF
 pelo navegador (**Imprimir → Salvar como PDF**).
+
+**Minha esposa (ou um amigo) pode ver a minha coleção?**
+Pode. Em **Aprovações**, **Convidar**: o e-mail dela e o que ela vai ver (uma coleção, ou tudo seu). Ela recebe um link: sem
+conta, cria uma por ele; com conta, entra e aceita. Ou ela mesma pede acesso (em **Minha conta**, ou já no cadastro), e você
+aprova. Para tirar o acesso depois: **Aprovações › Quem vê as suas coleções**.
+
+**Dá para ter mais de uma coleção?**
+Dá: **Minha conta › Nova coleção**. Ela pode usar uma árvore de grupos que você já tem (o cadastro fica em comum: um campo novo
+vale nas duas) ou começar com a sua própria. O seletor do menu troca de coleção.
+
+**Criei a conta pelo cadastro e ela vai sumir?**
+A conta do cadastro aberto é de demonstração por 30 dias (o `DEMO_DIAS` do servidor). Um e-mail avisa 7 dias e 1 dia antes; para
+continuar, peça ao administrador para torná-la oficial. Vencida, ela sai com as coleções dela.
 
 **Por que saiu este relógio, e não outro?**
 Olhe embaixo do nome dele, na página **Hoje** ou na **Plano**: cada dia traz o motivo da escolha. Se for *"Garantia de
@@ -1433,6 +1565,9 @@ nova, as mais velhas saem. A pasta dentro da publicada é recusada (qualquer um 
 - **Para mudar de banco** (do SQLite para o MySQL, por exemplo): instale o banco novo, aplique as migrações, ponha a cópia na
   pasta das cópias e restaure.
 - **Pela API:** `recurso=backup` (a situação e as cópias; `arquivo=` baixa uma), e as escritas `fazer` e `restaurar`.
+- **O que foi excluído continua nas cópias de antes.** Excluir uma conta, uma coleção ou um relógio tira tudo do banco e os
+  arquivos da pasta na hora, mas as cópias de segurança feitas antes guardam o que havia, até saírem pela regra do
+  `BACKUP_MANTER` (7 dias, sem a linha). Para tirar de vez, apague também as cópias velhas da pasta.
 - **Para desligar** (outra rotina já copia o banco, ou é uma instalação de teste): `define("BACKUP_ATIVO", false);` no
   `config.php`. O cron não faz cópia, a escrita `fazer` é recusada e o quadro **Cópia de segurança** some da Configuração,
   com o aviso de que falta a pasta.
@@ -1490,17 +1625,26 @@ o hash existe).
 - **Banco que se defende:** relacional e normalizado, com chaves estrangeiras e regras de validação (`CHECK`, `NOT NULL`,
   `UNIQUE`) nos quatro bancos: uma gravação errada é recusada pelo próprio banco (veja [O modelo do banco](#o-modelo-do-banco)).
 - **Falha segura:** sem token válido ou com o banco desatualizado, o sistema para e explica o motivo, em vez de rodar pela metade.
+- **Várias pessoas, separadas pelo banco:** cada pedido vale numa coleção, e a camada do banco reescreve cada consulta para
+  enxergar só ela (e a árvore dela); nenhuma tela ou recurso precisa lembrar de filtrar. Uma coleção que você não vê responde
+  404, como se não existisse.
 - **Seis idiomas:** todo texto passa pelo `t()`, com o português como chave e um arquivo por idioma (veja
   [Os idiomas](#os-idiomas)).
 
 ### O modelo do banco
 
-O banco é relacional e normalizado (desde a migração v16): cada coisa numa tabela, cada ligação entre tabelas uma **chave
-estrangeira**, e nenhuma lista guardada como texto dentro de um campo. Apagar direto no banco não deixa nada solto:
+O banco é relacional e normalizado (desde a migração v16; desde a v25, em 60 tabelas): cada coisa numa tabela, cada ligação
+entre tabelas uma **chave estrangeira**, e nenhuma lista guardada como texto dentro de um campo. As contas (`usuario`), as
+coleções (`colecao`, com o dono e a raiz da árvore), os membros (`colecao_usuario`), o acesso a tudo de um dono (`acesso_dono`),
+os convites, os pedidos, os tokens, os aparelhos do Web Push, os destinos (`destino` e uma tabela por tipo) e as agendas
+(`agenda` e uma tabela por tipo). A árvore (`no`) tem a raiz com o dono e os grupos apontando para o de cima; o cadastro dela
+(campos, tipos, fórmulas, avisos, categorias) aponta para um grupo da árvore; o que é da coleção (relógios, modos, plano,
+eventos, configuração, acessórios) aponta para a coleção. As ligações opcionais viraram tabelas de uma linha (o relógio de um
+acessório, o relógio fixo de um bloco, o bloco de um dia do plano). Apagar direto no banco não deixa nada solto:
 
 | A ligação | Ao apagar o de cima | Onde |
 |---|---|---|
-| obrigatória (a linha não existe sem o de cima) | **some junto** (`ON DELETE CASCADE`) | um grupo leva os grupos de dentro, os relógios, os campos, os tipos de lançamento, as fórmulas e os avisos dele; um relógio leva os lançamentos, os valores, as fotos, os documentos, o plano e os critérios próprios; um lançamento leva a medição do gasto; e assim por diante |
+| obrigatória (a linha não existe sem o de cima) | **some junto** (`ON DELETE CASCADE`) | uma conta leva as coleções e as árvores dela; uma coleção leva os relógios, os modos, o plano, os destinos e as agendas; uma árvore leva as coleções que a usam; um grupo leva os grupos de dentro, os relógios, os campos, os tipos de lançamento, as fórmulas e os avisos dele; um relógio leva os lançamentos, os valores, as fotos, os documentos, o plano e os critérios próprios; um lançamento leva a medição do gasto; e assim por diante |
 | opcional (a coluna aceita vazio) | **a ligação se desfaz** (`ON DELETE SET NULL`) | o relógio de um evento personalizado, o grupo e o relógio fixo de um bloco de modo, o bloco de um dia do plano, o tipo de lançamento que resolve um aviso, o relógio de um acessório (o acessório fica solto) |
 
 Pela tela (**Grupos**, Excluir), apagar um grupo continua passando antes o que era dele (os grupos de dentro, os relógios,
@@ -1508,14 +1652,14 @@ os campos, os tipos, as fórmulas e os avisos) para o grupo de cima; a cascata v
 
 As listas viraram tabelas: os dias de um bloco de modo (`modo_bloco_dia`) e de um evento semanal (`evento_dia`), os tipos de
 arquivo que uma categoria de documentos aceita (`documento_categoria_aceita`), as opções de um campo de lista
-(`campo_opcao`) e, para cada canal e cada tipo de aviso, se ele vai, se tem mensagem própria e o texto dela (`canal_aviso`).
-O modo em uso é a coluna `ativo` do modo, e a medição do gasto chega ao relógio pelo lançamento que a fechou. A tabela
-`config` guarda só valores soltos (horários, limites, marcas).
+(`campo_opcao`) e, para cada destino e cada agenda, o que eles recebem (`destino_aviso`, `destino_evento`, `agenda_aviso`,
+`agenda_evento`). O modo em uso é a coluna `ativo` do modo, e a medição do gasto chega ao relógio pelo lançamento que a fechou.
+A tabela `config` guarda só os valores soltos de cada coleção, e a `sistema`, os do sistema inteiro.
 
 Três referências ficam **pelo nome**, de propósito: as fórmulas e os critérios citam campos e fórmulas pelo identificador
-(é o texto que você escreve, como `HORAS("pulso"; 30)`), e o `canal_aviso` cita o aviso pelo identificador, porque um aviso
-pode ter várias versões (uma por grupo) e o canal vale para todas. Quando a última versão de um aviso é apagada, o sistema
-apaga junto as linhas dele no `canal_aviso`.
+(é o texto que você escreve, como `HORAS("pulso"; 30)`), e o `destino_aviso` e o `agenda_aviso` citam o aviso pelo
+identificador, porque um aviso pode ter várias versões (uma por grupo) e a escolha vale para todas. Quando a última versão de
+um aviso é apagada, o sistema apaga junto as linhas dele.
 
 **O banco valida o que guarda** (desde a migração v17), com os recursos do SQL padrão, e não só o sistema: uma gravação
 errada é recusada venha de onde vier (a tela, a API, alguém mexendo direto no banco). A API responde `409`, com o nome da
@@ -1560,18 +1704,23 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 |---|---|
 | [`api.php`](api.php) | a API, a porta de toda leitura e escrita (a autenticação, o formato, a ordem dos recursos, os filtros, a resposta), com a documentação completa no cabeçalho |
 | [`api/`](api/) | os recursos grandes da API, um arquivo cada (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `ajuda.php`...), mais as funções dela (`funcoes.php`) e as escritas (`escrita.php`): rodam dentro do `api.php`, e abertos direto não fazem nada (o `.htaccess` e o `nginx-relogios.conf` bloqueiam a pasta) |
-| [`lib.php`](lib.php) | o núcleo: login, árvore, motor de fórmulas, avisos, critérios, rodízio, escala, mensagens, agenda |
+| [`lib.php`](lib.php) | o núcleo: login, árvore, motor de fórmulas, avisos, critérios, rodízio, escala, documentos |
+| [`colecoes.php`](colecoes.php) | as coleções no núcleo: o escopo do pedido, o `modelo.json`, os segredos cifrados, a tabela `sistema`, a migração v25 e o impacto das exclusões |
+| [`alertas.php`](alertas.php) | os destinos (webhook, e-mail, Web Push) e as agendas (Google, CalDAV, Outlook, ICS) |
+| [`contas.php`](contas.php) | as contas: o cadastro aberto, Minha conta, as coleções e as árvores, os convites, os pedidos, os tokens e o painel do master |
 | [`banco.php`](banco.php) | o banco: a conexão com o MySQL, o Postgres, o SQLite ou o Firebird, e a tradução do SQL de um para outro |
 | [`operacoes.php`](operacoes.php) | as regras de cada gravação: validações e mensagens |
 | [`cron.php`](cron.php) | o plano, a sessão do dia, as rodadas da manhã e da noite, os eventos, a agenda e a manutenção dos documentos |
-| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `usuarios.php` | as páginas (só o esqueleto) |
+| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | as páginas (só o esqueleto; a `cadastro.php` é a pública) |
+| `push.js` | o service worker do Web Push |
 | `ajuda.php` | a página de ajuda: só o esqueleto; o `ajuda.js` pede o texto à API (`recurso=manual`: as seções do README para quem usa, já em HTML, convertidas no `lib.php`) |
 | [`pagina.php`](pagina.php) | o topo com o menu e o fim das páginas (o login é da API: `recurso=entrar`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |
 | [`estilo.css`](estilo.css) | o visual |
 | [`textos/`](textos/) | os idiomas: `funcoes.php` (a função `t()`, a lista dos idiomas, o idioma do pedido, as datas e os números de cada idioma) e um arquivo por idioma (`en.php`, `zh-CN.php`, `hi.php`, `es.php`, `fr.php`: o texto em português => a tradução, por parte); abertos direto não fazem nada |
-| [`schema.sql`](schema.sql) | a estrutura do banco e o conjunto inicial (grupos, campos, fórmulas, avisos, modos, critérios) |
-| `migracao_v2.sql` … `migracao_v24.sql` | as migrações, aplicadas pela página Configuração |
+| [`schema.sql`](schema.sql) | a estrutura do banco (só a estrutura: sem dados) |
+| [`modelo.json`](modelo.json) | o conjunto inicial de uma coleção nova (grupos, campos, tipos, fórmulas, avisos, critérios, categorias, modos, mensagens), sem códigos fixos |
+| `migracao_v2.sql` … `migracao_v25.sql` | as migrações, aplicadas pela página Configuração |
 | [`config.exemplo.php`](config.exemplo.php) | o modelo do `config.php` |
 | [`instalar.php`](instalar.php) | instala o `schema.sql` no banco do `config.php`, qualquer um dos três (o mesmo que `recurso=instalacao`) |
 | [`criar_usuario.php`](criar_usuario.php) | cria um usuário ou troca a senha, pela linha de comando (o mesmo que `recurso=usuarios`, `acao=salvar`) |
@@ -1594,7 +1743,7 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
 2. Faça um fork no GitHub, crie uma branch e faça a mudança. O fork serve só para preparar a proposta (veja a
    [licença](#licença)).
 3. **Siga o jeito do código:** PHP e JavaScript puros, sem dependências, comentários e mensagens em português (as traduções
-   vão em `textos/`). O que é conhecimento sobre relógios vai para o cadastro (`schema.sql`), não para o código.
+   vão em `textos/`). O que é conhecimento sobre relógios vai para o conjunto inicial (`modelo.json`), não para o código.
 4. Mudou o banco? Crie uma `migracao_vN.sql` e registre em `$MIGRACOES` no `lib.php`: a estrutura no dialeto do MySQL, os
    dados em SQL comum aos quatro bancos (veja [Atualizações do banco](#atualizações-do-banco)).
 5. Mudou a API? **Explique cada campo novo** no dicionário da ajuda: o `"campos"` do `recurso=ajuda`, no `api/ajuda.php` (a seção do
@@ -1648,9 +1797,10 @@ Para qualquer outro uso, peça autorização pelo GitHub ([Challado](https://git
 
 **Relojoeiro** ("watchmaker") is a self-hosted rotation planner for watch collections. Every day it picks which watch goes on
 your wrist, scoring each one by the criteria you set (days unworn, balance of use, your preference, battery or power reserve),
-and it can plan weeks or months ahead by simulating each watch's charge day by day. It reminds you, by Telegram and Google
-Calendar, to wind the automatic, charge the smartwatch, put the solar in the sun and replace the battery, and it learns each
-smartwatch's real battery drain from your readings. Everything about watches (types, fields, formulas, alerts) is data you
+and it can plan weeks or months ahead by simulating each watch's charge day by day. It reminds you (by Telegram or any
+webhook, e-mail, Web Push, and Google, CalDAV/iCloud, Outlook or ICS calendars) to wind the automatic, charge the smartwatch,
+put the solar in the sun and replace the battery, and it learns each smartwatch's real battery drain from your readings.
+Several people share one install, each with their own collections, sharing them by invitation or request. Everything about watches (types, fields, formulas, alerts) is data you
 edit, not code. PHP 8.1+ with SQLite, MySQL/MariaDB, PostgreSQL or Firebird, no dependencies, and a complete REST API
 (`api.php?recurso=ajuda`).
 

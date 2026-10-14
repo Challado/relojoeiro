@@ -69,7 +69,8 @@ function evento_legivel($ev)
         "dia_mes" => $ev["dia_mes"] === null ? null : (int)$ev["dia_mes"], "intervalo_dias" => $ev["intervalo_dias"] === null ? null : (int)$ev["intervalo_dias"],
         "relogio_id" => $ev["relogio_id"] === null ? null : (int)$ev["relogio_id"],
         "relogio" => $ev["relogio_id"] === null ? null : valor("SELECT nome FROM relogio WHERE id = ?", [(int)$ev["relogio_id"]]),
-        "telegram" => canal_aviso("tg", "ev" . $ev["id"])["envia"], "agenda" => canal_aviso("ag", "ev" . $ev["id"])["envia"],
+        "destinos" => array_values(array_map(function ($x) { return $x["nome"]; }, array_filter(destinos(), function ($x) use ($ev) { return alvo_envia($x, "ev" . $ev["id"]); }))),
+        "agendas" => array_values(array_map(function ($x) { return $x["nome"]; }, array_filter(agendas(), function ($x) use ($ev) { return alvo_envia($x, "ev" . $ev["id"]); }))),
         "criado" => $ev["criado"],
         "proximas" => (int)$ev["ativo"] === 1 ? array_map(function ($t) { return date("Y-m-d H:i:s", $t); }, array_slice(ocorrencias($ev, time() + 1, time() + 366 * 86400), 0, 10)) : [],
         "disparos" => linhas("SELECT ocorrencia, disparado FROM evento_disparo WHERE evento_id = ? ORDER BY ocorrencia DESC", [(int)$ev["id"]])];
@@ -114,24 +115,94 @@ function plano_resumo($plano, $hoje)
 // minuto) ou rodando; com a última execução, há quantos minutos, a frase e a linha do crontab
 function cron_estado()
 {
-    $ultima = cfg("cron_ultima_execucao");
+    $ultima = sis("cron_ultima_execucao");
     $minutos = $ultima !== "" ? max(0, (int)floor((time() - strtotime($ultima)) / 60)) : null;
     $situacao = $ultima === "" ? "nunca" : ($minutos > 10 ? "parado" : "rodando");
     $linha = "* * * * * php " . dirname(__DIR__) . "/cron.php";
     $texto = $situacao === "nunca" ? t("O cron ainda não rodou. Linha do crontab: {1}", [1 => $linha])
         : ($situacao === "parado" ? t("O cron não roda desde {1}. Confira o crontab: {2}", [1 => data_txt(strtotime($ultima), true, true), 2 => $linha])
             : t("Cron rodando: última execução às {1}.", [1 => date("H:i", strtotime($ultima))]));
+    // o registro da última rodada e o erro: o master vê os do sistema inteiro; os outros, os da coleção do pedido
+    if (usuario_master() || colecao_atual() === null) {
+        $registro = sis("cron_registro");
+        $erro = sis("cron_erro");
+    } else {
+        $u = linha("SELECT c.registro, c.teve_erro, e.inicio FROM cron_execucao_colecao c JOIN cron_execucao e ON e.id = c.execucao_id ORDER BY e.inicio DESC, e.id DESC LIMIT 1");
+        $registro = $u ? date("Y-m-d H:i", strtotime($u["inicio"])) . "\n" . $u["registro"] : "";
+        $erro = $u && (int)$u["teve_erro"] === 1 ? $registro : "";
+    }
     return ["situacao" => $situacao, "ultima" => $ultima !== "" ? $ultima : null, "minutos" => $minutos, "texto" => $texto, "crontab" => $linha,
-        "erro" => cfg("cron_erro") !== "" ? cfg("cron_erro") : null];
+        "erro" => $erro !== "" ? $erro : null, "registro" => $registro !== "" ? $registro : null];
 }
 
-// O que tem de estar na agenda, com o título e a descrição pelo modelo
-function agenda_legivel()
+// O que cada destino ou agenda recebe, para a resposta: cada tipo (dia, vespera, os avisos, os eventos) com o nome, se vai
+// e o modelo próprio (null: a mensagem padrão)
+function recebe_legivel($alvo)
 {
-    return array_map(function ($m) {
-        return array_merge($m, evento_formatado($m));
-    }, agenda_desejada(new DateTimeImmutable("today")));
+    $res = [];
+    foreach (tipos_de_aviso() as $k => $t) {
+        $res[] = ["tipo" => $k, "nome" => $t[0], "quando" => $t[1], "envia" => alvo_envia($alvo, $k), "modelo" => $alvo["avisos"][$k]["modelo"] ?? null];
+    }
+    return $res;
 }
+
+// Um destino para a resposta (os segredos nunca saem: só se estão preenchidos)
+function destino_legivel($d)
+{
+    $x = ["id" => $d["id"], "nome" => $d["nome"], "tipo" => $d["tipo"], "tipo_nome" => t(DESTINO_TIPOS[$d["tipo"]]), "ativo" => $d["ativo"], "modelo" => $d["modelo"],
+        "idioma" => $d["idioma"], "recebe" => recebe_legivel($d), "webhook" => null, "email" => null, "webpush" => null];
+    if ($d["tipo"] === "webhook") {
+        $x["webhook"] = ["metodo" => $d["webhook"]["metodo"], "url" => $d["webhook"]["url"], "formato" => $d["webhook"]["formato"], "corpo_json" => $d["webhook"]["corpo_json"],
+            "campos" => $d["webhook"]["campos"], "cabecalhos" => array_map(function ($c) { return ["nome" => $c["nome"], "preenchido" => (string)segredo_abrir($c["valor_cifrado"]) !== ""]; },
+                $d["webhook"]["cabecalhos"])];
+    } elseif ($d["tipo"] === "email") {
+        $x["email"] = ["para" => $d["email"]["para"]];
+    } else {
+        $u = $d["webpush"]["usuario_id"];
+        $x["webpush"] = ["usuario_id" => $u, "usuario" => $u === null ? null : sem_escopo(function () use ($u) { return valor("SELECT login FROM usuario WHERE id = ?", [$u]); }),
+            "aparelhos" => $u === null ? 0 : (int)sem_escopo(function () use ($u) { return valor("SELECT COUNT(*) FROM push_inscricao WHERE usuario_id = ?", [$u]); })];
+    }
+    return $x;
+}
+
+// Uma agenda para a resposta (os segredos nunca saem: só se estão preenchidos; o link ICS sai, para quem vê a coleção)
+function agenda_legivel($ag)
+{
+    $x = ["id" => $ag["id"], "nome" => $ag["nome"], "tipo" => $ag["tipo"], "tipo_nome" => t(AGENDA_TIPOS[$ag["tipo"]]), "ativa" => $ag["ativa"],
+        "janela_dias" => $ag["janela_dias"], "modelo" => $ag["modelo"], "idioma" => $ag["idioma"], "recebe" => recebe_legivel($ag),
+        "sincronizados" => $ag["sincronizados"], "teste_id" => $ag["teste_id"], "google" => null, "caldav" => null, "outlook" => null, "ics" => null];
+    if ($ag["tipo"] === "google") {
+        $chave = (string)segredo_abrir($ag["google"]["chave_json_cifrada"] ?? "");
+        $json = ltrim($chave) !== "" && ltrim($chave)[0] === "{" ? json_decode($chave, true) : null;
+        $x["google"] = ["calendario_id" => $ag["google"]["calendario_id"] ?? "", "chave" => $json !== null ? "json" : (trim($chave) !== "" ? "caminho" : "nenhuma"),
+            "caminho" => $json === null && trim($chave) !== "" ? trim($chave) : null, "conta_servico" => is_array($json) ? ($json["client_email"] ?? null) : null];
+    } elseif ($ag["tipo"] === "caldav") {
+        $x["caldav"] = ["url" => $ag["caldav"]["url"] ?? "", "usuario" => $ag["caldav"]["usuario"] ?? "", "senha_preenchida" => (string)segredo_abrir($ag["caldav"]["senha_cifrada"] ?? "") !== ""];
+    } elseif ($ag["tipo"] === "outlook") {
+        $x["outlook"] = ["conta" => $ag["outlook"]["conta"] ?? null, "calendario_id" => $ag["outlook"]["calendario_id"] ?? null,
+            "conectada" => segredo_abrir($ag["outlook"]["refresh_token_cifrado"] ?? "") !== null, "configurado" => trim((string)cfg_php("OUTLOOK_CLIENTE_ID", "")) !== "",
+            "retorno" => outlook_retorno_url()];
+    } else {
+        $x["ics"] = ["link" => ics_link($ag)];
+    }
+    return $x;
+}
+
+// O que tem de estar em cada agenda ativa, com o título e a descrição pelo modelo dela
+function agendas_desejadas()
+{
+    $res = [];
+    foreach (agendas() as $ag) {
+        $antes = lingua_atual();
+        lingua_definir(alvo_idioma($ag));
+        $res[] = ["agenda_id" => $ag["id"], "agenda" => $ag["nome"], "eventos" => array_map(function ($m) use ($ag) {
+            return array_merge($m, evento_formatado($m, $ag));
+        }, agenda_desejada(new DateTimeImmutable("today"), $ag))];
+        lingua_definir($antes);
+    }
+    return $res;
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Filtros de qualquer consulta (GET): valem para toda lista da resposta, pelo caminho dela ("relogios", "plano",
 // "relogios.lancamentos", "criterios.notas"...), e para todo campo de cada item (com ponto para entrar num objeto:

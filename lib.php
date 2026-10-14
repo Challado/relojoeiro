@@ -154,7 +154,7 @@ function aleatorio_16()
 function aleatorio_lote($n)
 {
     static $falhou = [];
-    $fora = function_exists("cfg") ? (int)cfg("aleatorio_fora") : 0;
+    $fora = function_exists("sis") ? (int)sis("aleatorio_fora") : 0;
     $tentar = $fora === 0 || time() - $fora > 600;
     $pegar = function ($url) {
         if (!function_exists("curl_init")) {
@@ -208,20 +208,20 @@ function aleatorio_lote($n)
         $fonte = t("gerador seguro do PHP (random_int)");
         if ($tentar && function_exists("cfg_set")) {
             try {
-                cfg_set("aleatorio_fora", (string)time());
+                sis_set("aleatorio_fora", (string)time());
             } catch (Throwable $e) {
                 // sem banco: só não anota
             }
         }
     } elseif ($fora !== 0 && function_exists("cfg_set")) {
         try {
-            cfg_set("aleatorio_fora", "");
+            sis_set("aleatorio_fora", "");
         } catch (Throwable $e) {
         }
     }
     if (function_exists("cfg_set")) {
         try {
-            cfg_set("aleatorio_ultima", t("{1} em {2}", [1 => $fonte, 2 => date("Y-m-d H:i:s")]));
+            sis_set("aleatorio_ultima", t("{1} em {2}", [1 => $fonte, 2 => date("Y-m-d H:i:s")]));
         } catch (Throwable $e) {
         }
     }
@@ -241,13 +241,17 @@ function mesmo_nome($a, $b)
 // Os pontos da árvore, por id (lidos uma vez por requisição; $recarregar depois de mudar a árvore)
 function nos_todos($recarregar = false)
 {
-    static $n = null;
+    // guardado por coleção (o cron passa por todas)
+    static $todos_ = [];
+    $k_ = (int)colecao_atual();
+    $n = $todos_[$k_] ?? null;
     if ($n === null || $recarregar) {
         $n = [];
         foreach (linhas("SELECT * FROM no ORDER BY ordem, nome") as $x) {
             $n[(int)$x["id"]] = $x;
         }
     }
+    $todos_[$k_] = $n;
     return $n;
 }
 
@@ -313,13 +317,17 @@ $TIPOS_CAMPO = [
 // Todos os campos, por identificador (uma vez por requisição)
 function campos_todos($recarregar = false)
 {
-    static $c = null;
+    // guardado por coleção (o cron passa por todas)
+    static $todos_ = [];
+    $k_ = (int)colecao_atual();
+    $c = $todos_[$k_] ?? null;
     if ($c === null || $recarregar) {
         $c = [];
         foreach (campos_com_opcoes(linhas("SELECT * FROM campo ORDER BY ordem, nome")) as $x) {
             $c[$x["identificador"]] = $x;
         }
     }
+    $todos_[$k_] = $c;
     return $c;
 }
 
@@ -414,13 +422,17 @@ $FORMATOS_LANCAMENTO = ["instantaneo" => tk("Instantâneo"), "valor" => tk("Inst
 
 function lancamento_tipos($recarregar = false)
 {
-    static $t = null;
+    // guardado por coleção (o cron passa por todas)
+    static $todos_ = [];
+    $k_ = (int)colecao_atual();
+    $t = $todos_[$k_] ?? null;
     if ($t === null || $recarregar) {
         $t = [];
         foreach (linhas("SELECT * FROM lancamento_tipo ORDER BY ordem, nome") as $x) {
             $t[$x["identificador"]] = $x;
         }
     }
+    $todos_[$k_] = $t;
     return $t;
 }
 
@@ -484,6 +496,7 @@ $MIGRACOES = [
     "v22" => ["migracao_v22.sql", tk("a situação de cada relógio na coleção (na coleção, desejado, emprestado, vendido ou arquivado: fora da coleção, ele sai do rodízio e dos avisos, e a ficha e o histórico ficam) e a lista de desejos; os campos Marca, Referência e Link, e, só nos desejados, Preço-alvo e Prioridade"), "relogio.posse"],
     "v23" => ["migracao_v23.sql", tk("o aviso Encostado: um relógio da coleção que passou do limite de dias sem ir ao pulso (a Configuração, \"Aviso Encostado: dias sem ir ao pulso\", padrão 30)"), "config.chave=encostado_dias"],
     "v24" => ["migracao_v24.sql", tk("os acessórios: pulseiras, caixas, estojos, ferramentas, carregadores, peças e o que mais for, de um relógio ou soltos (a página Acessórios e o quadro Acessórios do relógio)"), "acessorio"],
+    "v25" => ["migracao_v25.sql", tk("várias pessoas, cada uma com as suas coleções: usuários (master e comum, conta demo e oficial), coleções com membros, convites e pedidos de acesso, árvores de grupos que servem a várias coleções do mesmo dono, destinos de alerta (webhook, e-mail, Web Push) e agendas (Google, CalDAV, Outlook, link ICS); o banco inteiro em cascata, na 3ª forma normal. O banco antigo é copiado para um arquivo antes, e o usuário mais antigo vira o master e o dono da coleção"), "sistema.chave=migracao_v25", "migracao_v25"],
 ];
 
 // O passo em PHP da v16, depois do SQL dela: as opções de cada campo do tipo lista (o texto, uma por linha) viram linhas da
@@ -526,7 +539,12 @@ function usuarios_catalogo()
     return array_map(function ($u) {
         $info = senha_hash_info((string)$u["senha_hash"]);
         return ["login" => $u["login"], "criado" => $u["criado"], "senha_hash" => $u["senha_hash"], "senha_algoritmo" => $info[0], "senha_custo" => $info[1]];
-    }, linhas("SELECT login, criado, senha_hash FROM usuario ORDER BY login"));
+    }, sem_escopo(function () {
+        // o master vê todos; os outros, só a si mesmos
+        $u = usuario_atual();
+        return usuario_master() || $u === null ? linhas("SELECT login, criado, senha_hash FROM usuario ORDER BY login")
+            : linhas("SELECT login, criado, senha_hash FROM usuario WHERE id = ?", [(int)$u["id"]]);
+    }));
 }
 
 // O algoritmo e o custo de um hash de senha: bcrypt ($2y$, $2b$ ou $2a$, o custo no começo: $2y$12$...) ou o que o
@@ -556,56 +574,23 @@ function instalar_banco()
     }
     $inicio = microtime(true);
     $n = banco_script((string)file_get_contents(__DIR__ . "/schema.sql"));
-    foreach ($MIGRACOES as $m) {
-        if (isset($m[3])) {
-            call_user_func($m[3]);
+    // o schema.sql já é a estrutura de agora: as migrações ficam só com a marca (a v25 em diante, que têm a marca no banco
+    // novo; o passo em PHP de cada uma sabe que é uma instalação nova)
+    foreach ($MIGRACOES as $v => $m) {
+        if ((int)substr($v, 1) >= 25 && isset($m[3])) {
+            call_user_func($m[3], true);
         }
     }
     $pendentes = migracoes_pendentes();
     if (count($pendentes) > 0) {
         return ["ok" => false, "mensagem" => "", "erros" => [t("A instalação terminou, mas faltam as migrações {1}: o schema.sql está incompleto.", [1 => implode(", ", array_keys($pendentes))])]];
     }
-    // num idioma que não é o português: o cadastro inicial nesse idioma, e ele vira o padrão da instalação
-    if (lingua_atual() !== "pt-BR") {
-        cadastro_traduzir(lingua_atual());
-        cfg_set("idioma", lingua_atual());
-    }
+    // o idioma da instalação (o padrão de quem não escolheu): o do pedido. O conjunto inicial entra com o primeiro usuário,
+    // na coleção dele (o modelo.json, no idioma dele)
+    sis_set("idioma", lingua_atual());
     $seg = round(microtime(true) - $inicio, 1);
     return ["ok" => true, "mensagem" => t("Banco instalado ({1}): {2} comandos, {3} tabelas, em {4} s. Agora crie o primeiro usuário (recurso=usuarios, acao=salvar, com o token).", [1 => ["mysql" => "MySQL/MariaDB", "pgsql" => "PostgreSQL", "sqlite" => "SQLite", "firebird" => t("Firebird")][banco_tipo()], 2 => $n, 3 => count(banco_tabelas()), 4 => decimal_txt($seg, 6)]),
         "erros" => [], "comandos" => $n, "tabelas" => count(banco_tabelas()), "segundos" => $seg];
-}
-
-// Os textos do cadastro inicial (o que o schema.sql grava: os grupos, os campos, os tipos de lançamento, as fórmulas, os avisos,
-// os modos, os critérios, as categorias e as mensagens padrão): [tabela, coluna, condição]. Estão em português no schema.sql;
-// a parte "cadastro" dos arquivos dos idiomas traz a tradução de cada um (testes/textos.php os acha instalando o schema.sql)
-const CADASTRO_TEXTOS = [
-    ["no", "nome", ""], ["campo", "nome", ""], ["campo_opcao", "valor", ""], ["lancamento_tipo", "nome", ""], ["formula", "nome", ""],
-    ["aviso", "nome", ""], ["aviso", "texto", ""], ["modo", "nome", ""], ["canal_aviso", "corpo", ""], ["documento_categoria", "nome", ""],
-    ["criterio_parametro", "nome", ""], ["criterio_sub", "nome", ""], ["criterio_faixa", "categoria", ""],
-    ["config", "valor", "chave IN ('tg_padrao', 'tg_corpo_dia', 'tg_corpo_vespera', 'ag_padrao')"],
-];
-
-// Os textos do cadastro inicial no idioma do pedido: cada valor em português que tem tradução na parte "cadastro" vira a
-// tradução (as opções das listas e as categorias das faixas dos critérios trocam juntas, e continuam batendo). A instalação
-// num idioma chama esta; o "Restaurar os critérios iniciais" também, só nas tabelas dos critérios ($so) e no idioma da
-// instalação. O que você escreveu depois fica como está
-function cadastro_traduzir($lingua, $so = null)
-{
-    $dic = textos_parte($lingua, "cadastro");
-    $n = 0;
-    foreach (CADASTRO_TEXTOS as [$tabela, $coluna, $onde]) {
-        if ($so !== null && !in_array($tabela, $so, true)) {
-            continue;
-        }
-        foreach (linhas("SELECT DISTINCT " . $coluna . " AS v FROM " . $tabela . ($onde !== "" ? " WHERE " . $onde : "")) as $l) {
-            $v = (string)$l["v"];
-            if ($v !== "" && isset($dic[$v]) && $dic[$v] !== "" && $dic[$v] !== $v) {
-                sql("UPDATE " . $tabela . " SET " . $coluna . " = ? WHERE " . $coluna . " = ?" . ($onde !== "" ? " AND " . $onde : ""), [$dic[$v], $v]);
-                $n++;
-            }
-        }
-    }
-    return $n;
 }
 
 // A situação da instalação (recurso=instalacao): o banco, se está vazio, instalado e em dia, e quantos usuários tem
@@ -625,20 +610,28 @@ function instalacao_situacao()
 function migracoes_pendentes()
 {
     global $MIGRACOES;
-    return array_filter($MIGRACOES, function ($m) {
-        foreach (explode("|", $m[2]) as $uma) {
-            $linha = explode("=", $uma, 2);
-            $marca = explode(".", $linha[0]);
-            if (count($linha) === 2) {
-                $existe = banco_tem_tabela($marca[0]) && (int)valor("SELECT COUNT(*) FROM " . $marca[0] . " WHERE " . $marca[1] . " = ?", [$linha[1]]) > 0;
-            } else {
-                $existe = count($marca) === 2 ? banco_tem_coluna($marca[0], $marca[1]) : banco_tem_tabela($marca[0]);
-            }
-            if ($existe) {
+    // a v25 refaz o banco inteiro: na estrutura nova (com a tabela sistema), as de antes ficam para trás (as marcas delas
+    // não existem mais); a estrutura nova sem a marca da v25 é a v25 que parou no meio
+    $nova = banco_tem_tabela("sistema");
+    return sem_escopo(function () use ($MIGRACOES, $nova) {
+        return array_filter($MIGRACOES, function ($m, $v) use ($nova) {
+            if ($nova && (int)substr($v, 1) < 25) {
                 return false;
             }
-        }
-        return true;
+            foreach (explode("|", $m[2]) as $uma) {
+                $linha = explode("=", $uma, 2);
+                $marca = explode(".", $linha[0]);
+                if (count($linha) === 2) {
+                    $existe = banco_tem_tabela($marca[0]) && (int)valor("SELECT COUNT(*) FROM " . $marca[0] . " WHERE " . $marca[1] . " = ?", [$linha[1]]) > 0;
+                } else {
+                    $existe = count($marca) === 2 ? banco_tem_coluna($marca[0], $marca[1]) : banco_tem_tabela($marca[0]);
+                }
+                if ($existe) {
+                    return false;
+                }
+            }
+            return true;
+        }, ARRAY_FILTER_USE_BOTH);
     });
 }
 
@@ -858,13 +851,17 @@ function formula_referencias($arvore)
 // Todas as fórmulas: [identificador => [linhas, uma por ponto da árvore em que foi definida]]
 function formulas_todas($recarregar = false)
 {
-    static $f = null;
+    // guardado por coleção (o cron passa por todas)
+    static $todos_ = [];
+    $k_ = (int)colecao_atual();
+    $f = $todos_[$k_] ?? null;
     if ($f === null || $recarregar) {
         $f = [];
         foreach (linhas("SELECT * FROM formula ORDER BY identificador, id") as $x) {
             $f[$x["identificador"]][] = $x;
         }
     }
+    $todos_[$k_] = $f;
     return $f;
 }
 
@@ -1418,13 +1415,17 @@ function duracao_texto($dias)
 // Todos os avisos: [identificador => [versões]]
 function avisos_todos($recarregar = false)
 {
-    static $a = null;
+    // guardado por coleção (o cron passa por todas)
+    static $todos_ = [];
+    $k_ = (int)colecao_atual();
+    $a = $todos_[$k_] ?? null;
     if ($a === null || $recarregar) {
         $a = [];
         foreach (linhas(AVISO_SELECT . " ORDER BY a.identificador, a.id") as $x) {
             $a[$x["identificador"]][] = $x;
         }
     }
+    $todos_[$k_] = $a;
     return $a;
 }
 
@@ -1512,22 +1513,27 @@ function avisos_na_hora_vencidos($momento)
 // ---------------------------------------------------------------------------------------------------------------------
 function cfg($chave, $novo = null)
 {
-    static $cache = null;
-    if ($cache === null) {
-        $cache = [];
-        foreach (linhas("SELECT chave, valor FROM config") as $c) {
-            $cache[$c["chave"]] = $c["valor"];
+    // a configuração da coleção do pedido (sem coleção, só o idioma da instalação)
+    static $cache = [];
+    $c = colecao_atual();
+    if ($c === null) {
+        return $chave === "idioma" ? sis("idioma") : "";
+    }
+    if (!isset($cache[$c])) {
+        $cache[$c] = [];
+        foreach (linhas("SELECT chave, valor FROM config") as $x) {
+            $cache[$c][$x["chave"]] = $x["valor"];
         }
     }
     if ($novo !== null) {
-        $cache[$chave] = $novo;
+        $cache[$c][$chave] = $novo;
     }
-    return $cache[$chave] ?? "";
+    return $cache[$c][$chave] ?? "";
 }
 
 function cfg_set($chave, $valor)
 {
-    sql("REPLACE INTO config (chave, valor) VALUES (?, ?)", [$chave, (string)$valor]);
+    sql("REPLACE INTO config (colecao_id, chave, valor) VALUES (?, ?, ?)", [colecao_atual(), $chave, (string)$valor]);
     cfg($chave, (string)$valor);
 }
 
@@ -1547,11 +1553,20 @@ function usuario_autenticado()
         }
     }
     $res = "";
-    // banco vazio (antes da instalação): ninguém entra pelo login, só pelo token
+    // banco vazio (antes da instalação): ninguém entra pelo login, só pelo token. A conta bloqueada pelo master, ou a demo
+    // que venceu (o cron a apaga logo), não entra
     if ($login !== "" && banco_tem_tabela("usuario")) {
-        $hash = valor("SELECT senha_hash FROM usuario WHERE login = ?", [$login]);
-        if ($hash && password_verify($senha, $hash)) {
-            $res = $login;
+        $u = sem_escopo(function () use ($login) { return linha("SELECT * FROM usuario WHERE login = ?", [$login]); });
+        if ($u && password_verify($senha, (string)$u["senha_hash"]) && (int)($u["bloqueado"] ?? 0) === 0
+            && (($u["expira_em"] ?? null) === null || strtotime((string)$u["expira_em"]) > time())) {
+            $res = (string)$u["login"];
+            if (array_key_exists("papel", $u)) {
+                usuario_definir($u);
+                // o último acesso (no máximo uma gravação por minuto)
+                if ($u["ultimo_acesso"] === null || strtotime((string)$u["ultimo_acesso"]) < time() - 60) {
+                    sem_escopo(function () use ($u) { sql("UPDATE usuario SET ultimo_acesso = NOW() WHERE id = ?", [(int)$u["id"]]); });
+                }
+            }
         }
     }
     return $res;
@@ -1564,7 +1579,10 @@ function usuario_autenticado()
 // ---------------------------------------------------------------------------------------------------------------------
 function criterios_config($recarregar = false)
 {
-    static $cfg = null;
+    // guardado por coleção (o cron passa por todas)
+    static $todos_ = [];
+    $k_ = (int)colecao_atual();
+    $cfg = $todos_[$k_] ?? null;
     if ($cfg === null || $recarregar) {
         $cfg = [];
         foreach (linhas("SELECT * FROM criterio_parametro ORDER BY ordem, id") as $p) {
@@ -1577,6 +1595,7 @@ function criterios_config($recarregar = false)
             $cfg[$chave][] = $p;
         }
     }
+    $todos_[$k_] = $cfg;
     return $cfg;
 }
 
@@ -1730,8 +1749,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
         $no_pulso = $manter_pulso ? valor("SELECT l.relogio_id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
             WHERE t.identificador = 'pulso' AND l.origem = 'rodizio' AND DATE(l.inicio) = ? ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [$hoje->format("Y-m-d")]) : null;
         if (plano_do_dia($hoje->format("Y-m-d")) === null && $no_pulso !== null && !dia_livre($hoje->format("Y-m-d"))) {
-            sql("INSERT INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, NULL, 'manual', ?, NOW())",
-                [$hoje->format("Y-m-d"), (int)$no_pulso, t("Já estava no pulso pelo rodízio quando o plano de hoje foi montado.")]);
+            plano_gravar($hoje->format("Y-m-d"), (int)$no_pulso, null, "manual", t("Já estava no pulso pelo rodízio quando o plano de hoje foi montado."));
         }
         $blocos = modo_blocos((int)$modo["id"]);
         if ($ate === null) {
@@ -1864,8 +1882,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                         }
                     }
                     if ($escolhido !== null) {
-                        sql("INSERT INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, ?, 'sorteio', ?, NOW())",
-                            [$dia->format("Y-m-d"), $escolhido, (int)$bloco["id"], $motivo !== "" ? corta_texto($motivo, 300) : null]);
+                        plano_gravar($dia->format("Y-m-d"), $escolhido, (int)$bloco["id"], "sorteio", $motivo !== "" ? corta_texto($motivo, 300) : null);
                     }
                 }
             }
@@ -2047,11 +2064,13 @@ function ini_bytes($v)
 // O modo de rodízio ativo (o id; 0: nenhum): a marca "ativo" da tabela modo (um só tem a marca)
 function modo_ativo($recarregar = false)
 {
-    static $id = null;
-    if ($id === null || $recarregar) {
-        $id = (int)(valor("SELECT id FROM modo WHERE ativo = 1 ORDER BY id LIMIT 1") ?? 0);
+    // guardado por coleção (o cron passa por todas)
+    static $ids = [];
+    $k = (int)colecao_atual();
+    if (!isset($ids[$k]) || $recarregar) {
+        $ids[$k] = (int)(valor("SELECT id FROM modo WHERE ativo = 1 ORDER BY id LIMIT 1") ?? 0);
     }
-    return $id;
+    return $ids[$k];
 }
 
 // Os blocos de um modo, na ordem, cada um com os dias da semana dele (a tabela modo_bloco_dia) em "dias": "1,2,3,4,5"
@@ -2503,13 +2522,17 @@ function documentos_copia_sistema()
 // A marca copia_banco de um relógio (lidas todas uma vez por requisição; $recarregar depois de mudar uma)
 function relogio_copia_banco($rid, $recarregar = false)
 {
-    static $marcas = null;
+    // guardado por coleção (o cron passa por todas)
+    static $todos_ = [];
+    $k_ = (int)colecao_atual();
+    $marcas = $todos_[$k_] ?? null;
     if ($marcas === null || $recarregar) {
         $marcas = [];
         foreach (linhas("SELECT id, copia_banco FROM relogio") as $r) {
             $marcas[(int)$r["id"]] = (int)$r["copia_banco"] === 1;
         }
     }
+    $todos_[$k_] = $marcas;
     return $marcas[(int)$rid] ?? false;
 }
 
@@ -2918,18 +2941,6 @@ function texto_ate($data, $quando)
     return $fim === $data ? t("só {1}", [1 => $quando]) : t("até {1}, {2}", [1 => $dias[(int)date("N", strtotime($fim))], 2 => data_txt(strtotime($fim), false, true)]);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// As mensagens, como no sistema antigo: dois canais (Telegram e Google Agenda), cada um com a sua mensagem padrão e os
-// avisos que vão por ele; cada aviso pode ter a sua mensagem personalizada em cada canal. As âncoras entre chaves viram
-// os valores na hora de enviar.
-// ---------------------------------------------------------------------------------------------------------------------
-$CANAIS = [
-    "tg" => ["nome" => "Telegram", "tipos" => "alerta_tipos",       // "tipos": o campo do formulário com os tipos que vão (alerta_tipos[])
-        "ajuda" => tk("Cada aviso vira uma mensagem com este texto. As do mesmo horário vão juntas, separadas por uma linha em branco.")],
-    "ag" => ["nome" => tk("Google Agenda"), "tipos" => "agenda_tipos",
-        "ajuda" => tk("Cada aviso vira um evento. A primeira linha é o título do evento; o resto, a descrição.")],
-];
-
 // Âncoras dos modelos de mensagem: {nome} vira o valor na hora de enviar
 $ANCORAS = [
     "relogio" => tk("Nome do relógio"),
@@ -2957,7 +2968,7 @@ $REPETICOES = ["uma" => tk("Uma vez"), "diaria" => tk("Todo dia"), "semanal" => 
 $DIAS_SEMANA = [1 => tk("Segunda"), 2 => tk("Terça"), 3 => tk("Quarta"), 4 => tk("Quinta"), 5 => tk("Sexta"), 6 => tk("Sábado"), 7 => tk("Domingo")];
 $CURTO = [1 => tk("seg"), 2 => tk("ter"), 3 => tk("qua"), 4 => tk("qui"), 5 => tk("sex"), 6 => tk("sáb"), 7 => tk("dom")];
 // as listas acima saem no idioma de cada pedido (o lingua_definir() as refaz; textos/funcoes.php)
-textos_globais(["TIPOS_CAMPO", "FORMATOS_LANCAMENTO", "MIGRACOES", "FUNCOES", "CANAIS", "ANCORAS", "REPETICOES", "DIAS_SEMANA", "CURTO"]);
+textos_globais(["TIPOS_CAMPO", "FORMATOS_LANCAMENTO", "MIGRACOES", "FUNCOES", "ANCORAS", "REPETICOES", "DIAS_SEMANA", "CURTO"]);
 
 // Tipos de aviso: o relógio do dia, a véspera, os avisos cadastrados (pelo identificador) e os eventos criados na
 // Configuração ("ev<id>"). Cada um: [nome, quando sai]
@@ -3081,7 +3092,7 @@ function avisos_de_hoje()
 function contexto_mensagem($id, $extra, $hoje)
 {
     $dias = ["", t("segunda"), t("terça"), t("quarta"), t("quinta"), t("sexta"), t("sábado"), t("domingo")];
-    $url = rtrim(cfg("url_sistema"), "/");
+    $url = rtrim(sis("url_sistema"), "/");
     $dia = plano_do_dia($hoje->format("Y-m-d"));
     $amanha = plano_do_dia($hoje->modify("+1 day")->format("Y-m-d"));
     $ctx = [
@@ -3141,142 +3152,6 @@ function eventos_com_dias($eventos)
 
 // Os avisos com o identificador do tipo de lançamento que resolve cada um em "resolve" (a chave estrangeira é resolve_tipo_id)
 const AVISO_SELECT = "SELECT a.*, t.identificador AS resolve FROM aviso a LEFT JOIN lancamento_tipo t ON t.id = a.resolve_tipo_id";
-
-// O que vai por um canal (tg, ag) para um tipo (dia, vespera, o identificador de um aviso, ev<id> de um evento): a linha da
-// tabela canal_aviso, {envia, propria, corpo}; sem linha, nada vai e não há mensagem própria
-function canal_aviso($canal, $tipo, $recarregar = false)
-{
-    static $todas = null;
-    if ($todas === null || $recarregar) {
-        $todas = [];
-        foreach (linhas("SELECT * FROM canal_aviso") as $l) {
-            $todas[$l["canal"] . "|" . ($l["evento_id"] !== null ? "ev" . (int)$l["evento_id"] : $l["tipo"])] = ["envia" => (int)$l["envia"] === 1,
-                "propria" => (int)$l["propria"] === 1, "corpo" => (string)$l["corpo"]];
-        }
-    }
-    return $tipo === null ? $todas : ($todas[$canal . "|" . $tipo] ?? ["envia" => false, "propria" => false, "corpo" => ""]);
-}
-
-// Os tipos que vão por um canal
-function canal_tipos($canal)
-{
-    $res = [];
-    foreach (canal_aviso($canal, null) as $k => $l) {
-        if ($l["envia"] && strpos($k, $canal . "|") === 0) {
-            $res[] = substr($k, strlen($canal) + 1);
-        }
-    }
-    return $res;
-}
-
-// Grava o que vai por um canal para um tipo: só as chaves que vierem em $dados (envia, propria, corpo); a linha é criada se
-// não existe. Um evento (ev<id>) entra pelo número dele, a chave estrangeira
-function canal_gravar($canal, $tipo, $dados)
-{
-    $ev = preg_match("/^ev(\d+)\$/", $tipo, $m) === 1 ? (int)$m[1] : null;
-    $onde = $ev !== null ? "canal = ? AND evento_id = ?" : "canal = ? AND tipo = ?";
-    $chave = [$canal, $ev !== null ? $ev : $tipo];
-    if (valor("SELECT id FROM canal_aviso WHERE " . $onde, $chave) === null) {
-        sql("INSERT INTO canal_aviso (canal, tipo, evento_id, envia, propria, corpo) VALUES (?, ?, ?, 0, 0, NULL)", [$canal, $ev !== null ? null : $tipo, $ev]);
-    }
-    foreach (["envia" => "envia", "propria" => "propria", "corpo" => "corpo"] as $k => $col) {
-        if (array_key_exists($k, $dados)) {
-            $v = $k === "corpo" ? $dados[$k] : ($dados[$k] ? 1 : 0);
-            sql("UPDATE canal_aviso SET " . $col . " = ? WHERE " . $onde, array_merge([$v], $chave));
-        }
-    }
-    canal_aviso($canal, null, true);
-}
-
-// O modelo de um aviso num canal: o personalizado do tipo, se marcado e preenchido; senão a mensagem padrão do canal
-function modelo_do_aviso($canal, $tipo)
-{
-    $l = canal_aviso($canal, $tipo);
-    return $l["propria"] && trim((string)$l["corpo"]) !== "" ? $l["corpo"] : cfg($canal . "_padrao");
-}
-
-// Telegram: cada aviso é uma mensagem pelo seu modelo; as do mesmo horário vão agrupadas, separadas por linha em branco.
-// Sem avisos, não há mensagem.
-function mensagem_telegram($itens, $hoje)
-{
-    $blocos = [];
-    foreach ($itens as $it) {
-        $blocos[] = aplicar_modelo(modelo_do_aviso("tg", $it["tipo"]), contexto_mensagem($it["id"], ["acao" => $it["fazer"], "motivo" => $it["motivo"],
-            "ate" => $it["ate"], "tipo_aviso" => $it["tipo"], "quantidade" => (string)count($itens)], $hoje));
-    }
-    return implode("\n\n", array_filter($blocos, function ($b) { return $b !== ""; }));
-}
-
-// A mensagem da manhã: o relógio do dia e os avisos atrasados ou em breve, só os marcados para o Telegram
-function montar_mensagem($hoje)
-{
-    $tipos = canal_tipos("tg");
-    $itens = [];
-    $dia = plano_do_dia($hoje->format("Y-m-d"));
-    if (in_array("dia", $tipos, true) && $dia) {
-        $ate = texto_ate($dia["data"], "hoje");
-        $itens[] = ["tipo" => "dia", "id" => (int)$dia["relogio_id"], "fazer" => t("Usar hoje"), "motivo" => $ate, "ate" => $ate];
-    }
-    foreach (avisos_de_hoje() as $x) {
-        if (in_array($x[1]["identificador"], $tipos, true)) {
-            $itens[] = ["tipo" => $x[1]["identificador"], "id" => (int)$x[0]["id"], "fazer" => $x[1]["nome"], "motivo" => $x[1]["texto"], "ate" => ""];
-        }
-    }
-    return mensagem_telegram($itens, $hoje);
-}
-
-// Aviso da noite: se amanhã entra outro relógio, o que fazer hoje para ele estar pronto (os avisos dele no instante em que
-// o uso de amanhã começa; nenhum: "É só usar.")
-function montar_mensagem_noite($hoje)
-{
-    $itens = [];
-    $d = plano_do_dia($hoje->modify("+1 day")->format("Y-m-d"));
-    $h = plano_do_dia($hoje->format("Y-m-d"));
-    if ($d && in_array("vespera", canal_tipos("tg"), true) && (!$h || (int)$h["relogio_id"] !== (int)$d["relogio_id"])) {
-        $preparo = preparo_do_dia(linha("SELECT * FROM relogio WHERE id = ?", [(int)$d["relogio_id"]]), $d["data"]);
-        $itens[] = ["tipo" => "vespera", "id" => (int)$d["relogio_id"], "fazer" => t("Preparar para amanhã"),
-            "motivo" => count($preparo) > 0 ? implode("\n", $preparo) : t("É só usar."), "ate" => texto_ate($d["data"], t("amanhã"))];
-    }
-    return mensagem_telegram($itens, $hoje);
-}
-
-// Envia uma mensagem longa em partes: o Telegram aceita uns 4.000 caracteres, e a API de mensagem recebe o texto na URL;
-// passando de 3.000, quebra entre um bloco e outro (linha em branco) e as partes vão uma atrás da outra. Devolve quantas
-// partes falharam.
-function enviar_em_partes($texto, $titulo)
-{
-    $partes = [];
-    $atual = "";
-    foreach (explode("\n\n", $texto) as $bloco) {
-        if ($atual !== "" && strlen($atual) + 2 + strlen($bloco) > 3000) {
-            $partes[] = $atual;
-            $atual = "";
-        }
-        $atual = $atual === "" ? $bloco : $atual . "\n\n" . $bloco;
-    }
-    if ($atual !== "") {
-        $partes[] = $atual;
-    }
-    // cada parte pela API de mensagem do config.php (MSG_ENDPOINT, MSG_DESTINATARIO): sem endereço, ou resposta fora de 2xx, é falha
-    $falhas = 0;
-    // o endereço pode ser qualquer coisa escrita no config.php (ou não estar lá); o @var diz isso às ferramentas de análise
-    /** @var mixed $endpoint */
-    $endpoint = defined("MSG_ENDPOINT") ? constant("MSG_ENDPOINT") : "";
-    foreach ($partes as $parte) {
-        $codigo = 0;
-        if (is_string($endpoint) && $endpoint !== "") {
-            $ch = curl_init($endpoint . "?" . http_build_query(["destinatario" => defined("MSG_DESTINATARIO") ? constant("MSG_DESTINATARIO") : "",
-                "titulo" => $titulo, "mensagem" => $parte]));
-            curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 10, CURLOPT_TIMEOUT => 30, CURLOPT_USERAGENT => "Relogios2/1.0"]);
-            curl_exec($ch);
-            $codigo = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        }
-        if ($codigo < 200 || $codigo >= 300) {
-            $falhas++;
-        }
-    }
-    return $falhas;
-}
 
 // A chave do lugar de um parâmetro: "" (todos), "g:<id>" ou "r:<id>"
 
@@ -3604,9 +3479,8 @@ function gerar_escala($ini)
                 $motivo = isset($manuais[$data]) ? t("Escolhido à mão.") : ($dia_bloco === 1
                     ? $motivo_bloco . ($dias_bloco > 1 ? t(" Fica {1} dias seguidos.", [1 => $dias_bloco]) : "")
                     : t("Segue no pulso: dia {1} de {2} seguidos.", [1 => $dia_bloco, 2 => $dias_bloco]));
-                sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, acao, motivo, criado) VALUES (?, ?, ?, ?, ?, ?, NOW())",
-                    [$data, $no_bloco, isset($manuais[$data]) || $bloco === null ? null : (int)$bloco["id"], isset($manuais[$data]) ? "manual" : "sorteio",
-                    count($textos) > 0 ? corta_texto(implode("; ", $textos), 500) : null, $motivo !== "" ? corta_texto($motivo, 300) : null]);
+                plano_gravar($data, $no_bloco, isset($manuais[$data]) || $bloco === null ? null : (int)$bloco["id"], isset($manuais[$data]) ? "manual" : "sorteio",
+                    $motivo !== "" ? corta_texto($motivo, 300) : null, count($textos) > 0 ? corta_texto(implode("; ", $textos), 500) : null, true);
                 $gravados++;
             }
         }
@@ -4073,206 +3947,6 @@ function ocorrencias($ev, $de, $ate)
     return $lista;
 }
 
-// O que tem de estar na agenda, de hoje até o fim da janela (agenda_antecedencia dias), só os tipos marcados para a agenda
-// (canal_aviso, canal ag): os avisos dos relógios disponíveis que não estão com uma sessão aberta à mão (carregando: a data andaria a
-// cada conta; volta quando a sessão fechar), no horário da manhã do dia previsto (vencido: hoje) — a rotina (agenda "janela"
-// no aviso) só dentro da janela, a manutenção ("sempre") em qualquer data; o relógio do dia e a véspera, a partir do plano;
-// e as ocorrências dos eventos personalizados. Cada item: chave (a mesma enquanto nada mudar), data, hora, momento (o
-// instante previsto), tipo, relogio_id, relogio, fazer e motivo.
-function agenda_desejada($hoje)
-{
-    $lista = [];
-    $tipos = canal_tipos("ag");
-    $janela = max(0, (int)cfg("agenda_antecedencia"));
-    $limite = $hoje->modify("+" . $janela . " days")->format("Y-m-d");
-    $manha = cfg("horario_manha") !== "" ? cfg("horario_manha") : "06:30";
-    foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY nome") as $r) {
-        if (valor("SELECT l.id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'sessao' AND l.fim IS NULL LIMIT 1", [(int)$r["id"]]) === null) {
-            foreach (avisos_do_relogio($r, time()) as $a) {
-                $data = max($hoje->format("Y-m-d"), substr($a["data"], 0, 10));
-                if (in_array($a["identificador"], $tipos, true) && ($a["agenda"] === "sempre" || $data <= $limite)) {
-                    // o motivo: o texto do aviso, com o "quando" contado do começo do evento (não muda a cada sincronização)
-                    $falta = (strtotime($a["data"]) - strtotime($data . " " . $manha)) / 86400;
-                    $quando = duracao_texto($falta) === "" ? t("agora") : ($falta >= 0 ? t("em {1}", [1 => duracao_texto($falta)]) : t("há {1}", [1 => duracao_texto($falta)]));
-                    $lista[] = ["chave" => $a["identificador"] . ":" . $r["id"] . ":" . $data, "data" => $data, "hora" => $manha, "momento" => $a["data"],
-                        "tipo" => $a["identificador"], "relogio_id" => (int)$r["id"], "relogio" => $r["nome"], "fazer" => $a["nome"],
-                        "motivo" => str_replace(["{relogio}", "{data}", "{quando}"], [$r["nome"], data_txt(strtotime($a["data"]), true), $quando], $a["modelo"])];
-                }
-            }
-        }
-    }
-    // o relógio do dia (o primeiro dia de cada vez que ele entra) e a véspera, a partir do plano
-    $anterior = 0;
-    foreach (linhas("SELECT p.data, p.relogio_id, r.* FROM plano p JOIN relogio r ON r.id = p.relogio_id WHERE p.data BETWEEN ? AND ? ORDER BY p.data",
-        [$hoje->modify("-1 day")->format("Y-m-d"), $limite]) as $p) {
-        if ($anterior !== (int)$p["relogio_id"] && $p["data"] >= $hoje->format("Y-m-d")) {
-            if (in_array("dia", $tipos, true)) {
-                $lista[] = ["chave" => "dia:" . $p["relogio_id"] . ":" . $p["data"], "data" => $p["data"], "hora" => $manha, "momento" => $p["data"] . " " . $manha . ":00",
-                    "tipo" => "dia", "relogio_id" => (int)$p["relogio_id"], "relogio" => $p["nome"], "fazer" => t("Usar hoje"),
-                    "motivo" => t("Usar {1}.", [1 => texto_ate($p["data"], t("neste dia"))])];
-            }
-            $vespera = date("Y-m-d", strtotime($p["data"] . " -1 day"));
-            if (in_array("vespera", $tipos, true) && $vespera >= $hoje->format("Y-m-d")) {
-                $r_v = $p;
-                $r_v["id"] = $p["relogio_id"];
-                $preparo = preparo_do_dia($r_v, $p["data"]);
-                $lista[] = ["chave" => "vespera:" . $p["relogio_id"] . ":" . $vespera, "data" => $vespera, "hora" => cfg("horario_noite"),
-                    "momento" => $vespera . " " . cfg("horario_noite") . ":00", "tipo" => "vespera", "relogio_id" => (int)$p["relogio_id"], "relogio" => $p["nome"],
-                    "fazer" => t("Preparar para amanhã"), "motivo" => count($preparo) > 0 ? implode("\n", $preparo) : t("É só usar.")];
-            }
-        }
-        $anterior = (int)$p["relogio_id"];
-    }
-    $fim = strtotime($limite . " 23:59:59");
-    foreach (eventos_com_dias(linhas("SELECT * FROM evento_personalizado WHERE ativo = 1")) as $ev) {
-        if (in_array("ev" . $ev["id"], $tipos, true)) {
-            foreach (ocorrencias($ev, max(time(), strtotime($ev["criado"])), $fim) as $ts) {
-                $lista[] = ["chave" => "ev" . $ev["id"] . ":" . (int)$ev["relogio_id"] . ":" . date("Y-m-d-H-i", $ts), "data" => date("Y-m-d", $ts), "hora" => date("H:i", $ts),
-                    "momento" => date("Y-m-d H:i:s", $ts), "tipo" => "ev" . $ev["id"], "relogio_id" => (int)$ev["relogio_id"],
-                    "relogio" => $ev["relogio_id"] !== null ? (string)valor("SELECT nome FROM relogio WHERE id = ?", [(int)$ev["relogio_id"]]) : "",
-                    "fazer" => $ev["nome"], "motivo" => ""];
-            }
-        }
-    }
-    usort($lista, function ($a, $b) { return strcmp($a["data"] . $a["hora"], $b["data"] . $b["hora"]); });
-    return $lista;
-}
-
-// Evento da agenda pelo seu modelo (o personalizado do tipo, ou a mensagem padrão da agenda): a primeira linha é o título,
-// o resto é a descrição
-function evento_formatado($m)
-{
-    $dias = ["", t("segunda"), t("terça"), t("quarta"), t("quinta"), t("sexta"), t("sábado"), t("domingo")];
-    $ctx = contexto_mensagem((int)$m["relogio_id"], ["acao" => $m["fazer"], "motivo" => $m["motivo"], "ate" => $m["tipo"] === "dia" ? $m["motivo"] : "",
-        "tipo_aviso" => $m["tipo"], "data" => data_txt(strtotime($m["data"])), "hora" => $m["hora"], "dia_semana" => $dias[(int)date("N", strtotime($m["data"]))]],
-        new DateTimeImmutable("today"));
-    $partes = explode("\n", aplicar_modelo(modelo_do_aviso("ag", $m["tipo"]), $ctx), 2);
-    return ["titulo" => trim($partes[0]) !== "" ? trim($partes[0]) : $m["fazer"], "descricao" => isset($partes[1]) ? trim($partes[1]) : ""];
-}
-
-// Os endereços do Google (o config.php pode trocar, para testes)
-if (!defined("GOOGLE_TOKEN_URL")) {
-    define("GOOGLE_TOKEN_URL", "https://oauth2.googleapis.com/token");
-}
-if (!defined("GOOGLE_API_URL")) {
-    define("GOOGLE_API_URL", "https://www.googleapis.com/calendar/v3");
-}
-
-// O token de acesso do Google pela conta de serviço (a chave JSON em agenda_chave; vazio: google-conta-servico.json na
-// pasta do sistema), uma vez por requisição; false se não houver chave ou o Google recusar
-function google_token()
-{
-    static $token = null;
-    if ($token === null) {
-        $token = false;
-        // caminho vazio ou arquivo ilegível: sem chave (no PHP 8, ler caminho vazio é erro fatal)
-        $caminho = cfg("agenda_chave") !== "" ? cfg("agenda_chave") : __DIR__ . "/google-conta-servico.json";
-        $json = is_file($caminho) && is_readable($caminho) ? file_get_contents($caminho) : false;
-        $chave = $json ? json_decode($json, true) : null;
-        if (is_array($chave) && !empty($chave["private_key"]) && !empty($chave["client_email"])) {
-            $b64 = function ($x) {
-                return rtrim(strtr(base64_encode($x), "+/", "-_"), "=");
-            };
-            $agora = time();
-            $cabeca = $b64(json_encode(["alg" => "RS256", "typ" => "JWT"]));
-            $corpo = $b64(json_encode(["iss" => $chave["client_email"], "scope" => "https://www.googleapis.com/auth/calendar", "aud" => GOOGLE_TOKEN_URL,
-                "iat" => $agora, "exp" => $agora + 3600]));
-            $assinatura = "";
-            if (@openssl_sign($cabeca . "." . $corpo, $assinatura, $chave["private_key"], "sha256WithRSAEncryption")) {
-                $ch = curl_init(GOOGLE_TOKEN_URL);
-                curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15,
-                    CURLOPT_POSTFIELDS => http_build_query(["grant_type" => "urn:ietf:params:oauth:grant-type:jwt-bearer", "assertion" => $cabeca . "." . $corpo . "." . $b64($assinatura)])]);
-                $resp = json_decode((string)curl_exec($ch), true);
-                if (!empty($resp["access_token"])) {
-                    $token = $resp["access_token"];
-                }
-            }
-        }
-    }
-    return $token;
-}
-
-// Um pedido à API do Google Agenda: [código HTTP, resposta decodificada]
-function google_api($metodo, $caminho, $corpo)
-{
-    $ch = curl_init(GOOGLE_API_URL . $caminho);
-    $cab = ["Authorization: Bearer " . google_token()];
-    $opcoes = [CURLOPT_CUSTOMREQUEST => $metodo, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20];
-    if ($corpo !== null) {
-        $cab[] = "Content-Type: application/json";
-        $opcoes[CURLOPT_POSTFIELDS] = json_encode($corpo);
-    }
-    $opcoes[CURLOPT_HTTPHEADER] = $cab;
-    curl_setopt_array($ch, $opcoes);
-    $resp = curl_exec($ch);
-    return [(int)curl_getinfo($ch, CURLINFO_HTTP_CODE), json_decode((string)$resp, true)];
-}
-
-// Deixa a agenda igual ao que tem de estar nela (agenda_desejada): cria o que falta, atualiza o que mudou de título ou de
-// descrição, e apaga o que deixou de valer. Os eventos que já passaram ficam na agenda, como histórico.
-function sincronizar_agenda($hoje)
-{
-    $res = ["criados" => 0, "atualizados" => 0, "removidos" => 0, "erros" => 0, "mensagem" => ""];
-    if (cfg("agenda_id") === "") {
-        $res["mensagem"] = t("Informe o ID da agenda na configuração.");
-    } elseif (!google_token()) {
-        $res["mensagem"] = t("Não autenticou no Google: confira o caminho da chave JSON e se a Calendar API está ativa no projeto.");
-    } else {
-        $desejados = [];
-        foreach (agenda_desejada($hoje) as $m) {
-            $desejados[$m["chave"]] = $m;
-        }
-        $cal = rawurlencode(cfg("agenda_id"));
-        $existentes = [];
-        foreach (linhas("SELECT * FROM agenda_evento") as $ev) {
-            $existentes[$ev["chave"]] = $ev;
-            if (!isset($desejados[$ev["chave"]])) {
-                if ($ev["data"] < $hoje->format("Y-m-d")) {
-                    sql("DELETE FROM agenda_evento WHERE chave = ?", [$ev["chave"]]);
-                } else {
-                    $r = google_api("DELETE", "/calendars/" . $cal . "/events/" . rawurlencode($ev["google_id"]), null);
-                    if (in_array($r[0], [200, 204, 404, 410], true)) {
-                        sql("DELETE FROM agenda_evento WHERE chave = ?", [$ev["chave"]]);
-                        $res["removidos"]++;
-                    } else {
-                        $res["erros"]++;
-                    }
-                }
-            }
-        }
-        foreach ($desejados as $chave => $m) {
-            $f = evento_formatado($m);
-            $assinatura = md5($f["titulo"] . "\n" . $f["descricao"]);
-            if (isset($existentes[$chave])) {
-                if ($existentes[$chave]["assinatura"] !== $assinatura) {
-                    $r = google_api("PATCH", "/calendars/" . $cal . "/events/" . rawurlencode($existentes[$chave]["google_id"]), ["summary" => $f["titulo"], "description" => $f["descricao"]]);
-                    if ($r[0] >= 200 && $r[0] < 300) {
-                        sql("UPDATE agenda_evento SET titulo = ?, assinatura = ? WHERE chave = ?", [corta_texto($f["titulo"], 255), $assinatura, $chave]);
-                        $res["atualizados"]++;
-                    } else {
-                        $res["erros"]++;
-                    }
-                }
-            } else {
-                $inicio = new DateTimeImmutable($m["data"] . " " . $m["hora"]);
-                $r = google_api("POST", "/calendars/" . $cal . "/events", ["summary" => $f["titulo"], "description" => $f["descricao"],
-                    "start" => ["dateTime" => $inicio->format("Y-m-d\\TH:i:s"), "timeZone" => date_default_timezone_get()],
-                    "end" => ["dateTime" => $inicio->modify("+15 minutes")->format("Y-m-d\\TH:i:s"), "timeZone" => date_default_timezone_get()],
-                    "reminders" => ["useDefault" => false, "overrides" => [["method" => "popup", "minutes" => 0]]],
-                    "extendedProperties" => ["private" => ["relogios_chave" => $chave]]]);
-                if ($r[0] >= 200 && $r[0] < 300 && !empty($r[1]["id"])) {
-                    sql("INSERT INTO agenda_evento (chave, google_id, data, titulo, assinatura, criado) VALUES (?, ?, ?, ?, ?, NOW())",
-                        [$chave, $r[1]["id"], $m["data"], corta_texto($f["titulo"], 255), $assinatura]);
-                    $res["criados"]++;
-                } else {
-                    $res["erros"]++;
-                }
-            }
-        }
-    }
-    return $res;
-}
-
 // O manual: os trechos do README.md que a página Ajuda mostra (as seções para quem usa: sem a instalação, a API e o código),
 // na ordem dele, cada um da seção do primeiro título até antes da do segundo. A página Ajuda (ajuda.php) converte para HTML;
 // a API (recurso=manual, ou recurso=ajuda&parte=manual) devolve o mesmo texto, em markdown e seção por seção
@@ -4642,38 +4316,15 @@ function backup_fazer()
         $nome = "relojoeiro-" . date("Y-m-d-His") . ".jsonl.gz";
     }
     $parcial = $pasta . "/." . $nome . ".parcial";
-    $gz = gzopen($parcial, "wb6");
-    if (!$gz) {
+    $docs = backup_com_documentos();
+    try {
+        $linhas = banco_despejar($parcial, $docs);
+    } catch (Throwable $e) {
+        @unlink($parcial);
         return ["ok" => false, "mensagem" => "", "erros" => [t("Não consegui criar o arquivo da cópia na pasta das cópias.")], "arquivo" => null];
     }
-    $docs = backup_com_documentos();
-    $tabelas = array_values(array_filter(backup_tabelas(), function ($t) use ($docs) { return $docs || $t[0] !== "documento_parte"; }));
-    gzwrite($gz, json_encode(["relojoeiro_copia" => 1, "criada" => date("Y-m-d H:i:s"), "banco" => banco_tipo(), "versao" => array_key_last($MIGRACOES),
-        "documentos" => $docs, "tabelas" => array_column($tabelas, 0)], JSON_UNESCAPED_UNICODE) . "\n");
-    $linhas = 0;
-    foreach ($tabelas as [$nome_t, $colunas, $binarias, $chave]) {
-        gzwrite($gz, json_encode(["tabela" => $nome_t, "colunas" => $colunas, "binarias" => $binarias], JSON_UNESCAPED_UNICODE) . "\n");
-        // de pouco em pouco (o conteúdo dos documentos vem em pedaços de 4 MB)
-        $lote = in_array($nome_t, ["documento_parte", "foto"], true) ? 2 : 500;
-        for ($de = 0; ; $de += $lote) {
-            $regs = linhas("SELECT * FROM " . $nome_t . " ORDER BY " . implode(", ", $chave) . " LIMIT " . $lote . " OFFSET " . $de);
-            foreach ($regs as $reg) {
-                $vals = [];
-                foreach ($colunas as $c) {
-                    $v = $reg[$c] ?? null;
-                    $vals[] = $v !== null && in_array($c, $binarias, true) ? base64_encode((string)$v) : $v;
-                }
-                gzwrite($gz, json_encode($vals, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) . "\n");
-                $linhas++;
-            }
-            if (count($regs) < $lote) {
-                break;
-            }
-        }
-    }
-    gzclose($gz);
     rename($parcial, $pasta . "/" . $nome);
-    cfg_set("backup_ultima", date("Y-m-d H:i:s"));
+    sis_set("backup_ultima", date("Y-m-d H:i:s"));
     // as mais velhas que passam do limite saem
     $apagadas = 0;
     foreach (array_slice(backup_lista(), backup_manter()) as $velha) {
@@ -4686,10 +4337,63 @@ function backup_fazer()
         "erros" => [], "arquivo" => $nome];
 }
 
+// Grava o banco inteiro num arquivo (o formato da cópia de segurança: JSON Lines com gzip; a primeira linha diz o que é, e
+// cada tabela vem com as colunas e depois um registro por linha, o binário em base64). As tabelas na ordem em que voltam
+// (a citada antes da que cita); $docs: com o conteúdo dos documentos (documento_parte). Sem escopo: o banco inteiro.
+// Devolve quantos registros foram
+function banco_despejar($arquivo, $docs)
+{
+    global $MIGRACOES;
+    return sem_escopo(function () use ($arquivo, $docs, $MIGRACOES) {
+        $gz = gzopen($arquivo, "wb6");
+        if (!$gz) {
+            throw new RuntimeException(t("não consegui criar {1}", [1 => $arquivo]));
+        }
+        $tabelas = array_values(array_filter(backup_tabelas(), function ($t) use ($docs) { return $docs || $t[0] !== "documento_parte"; }));
+        // a versão em que o banco está: a última migração, ou a de antes da primeira que falta
+        $versoes = array_keys($MIGRACOES);
+        $falta = array_key_first(migracoes_pendentes());
+        $versao = $falta === null ? end($versoes) : ($versoes[array_search($falta, $versoes, true) - 1] ?? "v1");
+        gzwrite($gz, json_encode(["relojoeiro_copia" => 1, "criada" => date("Y-m-d H:i:s"), "banco" => banco_tipo(), "versao" => $versao,
+            "documentos" => $docs, "tabelas" => array_column($tabelas, 0)], JSON_UNESCAPED_UNICODE) . "\n");
+        $linhas = 0;
+        foreach ($tabelas as [$nome_t, $colunas, $binarias, $chave]) {
+            gzwrite($gz, json_encode(["tabela" => $nome_t, "colunas" => $colunas, "binarias" => $binarias], JSON_UNESCAPED_UNICODE) . "\n");
+            // de pouco em pouco (o conteúdo dos documentos vem em pedaços de 4 MB)
+            $lote = in_array($nome_t, ["documento_parte", "foto"], true) ? 2 : 500;
+            for ($de = 0; ; $de += $lote) {
+                $regs = linhas("SELECT * FROM " . $nome_t . " ORDER BY " . implode(", ", $chave) . " LIMIT " . $lote . " OFFSET " . $de);
+                foreach ($regs as $reg) {
+                    $vals = [];
+                    foreach ($colunas as $c) {
+                        $v = $reg[$c] ?? null;
+                        $vals[] = $v !== null && in_array($c, $binarias, true) ? base64_encode((string)$v) : $v;
+                    }
+                    gzwrite($gz, json_encode($vals, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) . "\n");
+                    $linhas++;
+                }
+                if (count($regs) < $lote) {
+                    break;
+                }
+            }
+        }
+        gzclose($gz);
+        return $linhas;
+    });
+}
+
 // Volta o banco para uma cópia: antes, faz uma cópia do que está agora; depois, num passo só (se algo falha, nada muda),
 // apaga todos os registros e grava os da cópia. Só uma cópia da mesma versão do sistema (a mesma última migração). Sem o
 // conteúdo dos documentos na cópia, os documentos voltam sem a cópia no banco, e o cron refaz a que for pedida.
 function backup_restaurar($arquivo)
+{
+    // o banco inteiro, de todas as coleções: sem escopo
+    return sem_escopo(function () use ($arquivo) {
+        return backup_restaurar_tudo($arquivo);
+    });
+}
+
+function backup_restaurar_tudo($arquivo)
 {
     global $MIGRACOES;
     $caminho = backup_caminho($arquivo);
@@ -4797,9 +4501,15 @@ function backup_restaurar($arquivo)
     }
     gzclose($gz);
     banco_ajustar_ids();
-    cfg_set("backup_ultima", (string)preg_replace("/^relojoeiro-(\\d{4}-\\d{2}-\\d{2})-(\\d{2})(\\d{2})(\\d{2}).*\$/", "\$1 \$2:\$3:\$4", $antes["arquivo"]));
+    sis_set("backup_ultima", (string)preg_replace("/^relojoeiro-(\\d{4}-\\d{2}-\\d{2})-(\\d{2})(\\d{2})(\\d{2}).*\$/", "\$1 \$2:\$3:\$4", $antes["arquivo"]));
     return ["ok" => true, "mensagem" => t("Banco restaurado da cópia {1} ({2} registros). O que estava antes foi guardado em {3}.", [1 => $arquivo, 2 => $n, 3 => $antes["arquivo"]]), "erros" => []];
 }
 
+// as coleções (o escopo do pedido, o modelo.json, os segredos, a configuração do sistema, a migração v25)
+require_once __DIR__ . "/colecoes.php";
+// os alertas (os destinos das mensagens, as agendas, o e-mail, o Web Push)
+require_once __DIR__ . "/alertas.php";
+// as contas (o cadastro, a conta, as coleções, os convites, os pedidos e o painel do master)
+require_once __DIR__ . "/contas.php";
 // o back-end de escrita (as operações que as páginas e a API chamam)
 require_once __DIR__ . "/operacoes.php";
