@@ -65,8 +65,16 @@ if ($ERRO_TOKEN !== "") {
 // ---------------------------------------------------------------------------------------------------------------------
 require_once __DIR__ . "/banco.php";
 
-// O sorteio: aleatório de verdade (random_int). Com a variável de ambiente RELOGIOS_SEMENTE (os testes de paridade entre
-// os bancos), repetível: a mesma semente dá os mesmos sorteios em cada pedido e em cada rodada do cron
+// O sorteio: um número inteiro de $min a $max, todos com a mesma chance. A aleatoriedade vem de fora, nesta ordem:
+//   1. RANDOM.ORG (www.random.org): ruído atmosférico (a variação das micro-ondas do ar, convertida em bits);
+//   2. fora do ar, o ANU QRNG (qrng.anu.edu.au, o endereço antigo, que responde sem chave): flutuações quânticas da luz;
+//   3. sem os dois (sem internet, cota esgotada), o gerador seguro do PHP (random_int: o do sistema operacional, como o
+//      secrets do Python).
+// Os números vêm num lote de 16 bits cada (aleatorio_lote), guardado na memória do pedido; o sorteio junta quantos pedaços
+// de 16 bits precisar e descarta o que passa do último múltiplo inteiro da faixa (sem viés: cada resultado com a mesma
+// chance). Se os dois serviços falham, o sistema não tenta de novo por 10 minutos (config aleatorio_fora) e usa o do PHP.
+// Com a variável de ambiente RELOGIOS_SEMENTE (os testes de paridade entre os bancos), repetível: a mesma semente dá os
+// mesmos sorteios em cada pedido e em cada rodada do cron, sem rede
 function sorteio($min, $max)
 {
     static $semente = null;
@@ -77,7 +85,143 @@ function sorteio($min, $max)
             mt_srand($semente);
         }
     }
-    return $semente === false ? random_int($min, $max) : mt_rand($min, $max);
+    $min = (int)$min;
+    $max = (int)$max;
+    if ($max <= $min) {
+        return $min;
+    }
+    if ($semente !== false) {
+        aleatorio_fonte("semente de teste");
+        return mt_rand($min, $max);
+    }
+    $faixa = $max - $min + 1;
+    $pedacos = 1;
+    while ($pedacos < 3 && 65536 ** $pedacos < $faixa) {
+        $pedacos++;
+    }
+    $espaco = 65536 ** $pedacos;
+    $limite = $espaco - ($espaco % $faixa);
+    for ($tentativa = 0; $tentativa < 100; $tentativa++) {
+        $v = 0;
+        for ($i = 0; $i < $pedacos; $i++) {
+            $v = $v * 65536 + aleatorio_16();
+        }
+        if ($v < $limite) {
+            return $min + $v % $faixa;
+        }
+    }
+    return random_int($min, $max);
+}
+
+// A fonte do último número sorteado (RANDOM.ORG, ANU QRNG, o gerador do PHP ou a semente de teste): o motivo do sorteio
+// diz de onde veio
+function aleatorio_fonte($nova = null)
+{
+    static $fonte = "";
+    if ($nova !== null) {
+        $fonte = $nova;
+    }
+    return $fonte;
+}
+
+// Os endereços das fontes (o config.php pode trocar, para testes)
+if (!defined("ALEATORIO_RANDOMORG_URL")) {
+    define("ALEATORIO_RANDOMORG_URL", "https://www.random.org/integers/");
+}
+if (!defined("ALEATORIO_ANU_URL")) {
+    define("ALEATORIO_ANU_URL", "https://qrng.anu.edu.au/API/jsonI.php");
+}
+
+// Um número de 16 bits (0 a 65535) do lote; o lote vazio busca outro (64 números) na primeira fonte que responder
+function aleatorio_16()
+{
+    static $lote = [];
+    static $fonte = "";
+    if (count($lote) === 0) {
+        [$lote, $fonte] = aleatorio_lote(64);
+    }
+    aleatorio_fonte($fonte);
+    return array_shift($lote);
+}
+
+// Um lote de $n números de 16 bits: [números, fonte]. RANDOM.ORG; senão o ANU QRNG; senão o random_int do PHP. Cada
+// serviço tem 4 segundos; a falha dos dois fica anotada (aleatorio_fora) e por 10 minutos nem se tenta. A fonte de cada
+// lote buscado fica na configuração (aleatorio_ultima: a fonte e quando), para a Configuração e a API mostrarem
+function aleatorio_lote($n)
+{
+    static $falhou = [];
+    $fora = function_exists("cfg") ? (int)cfg("aleatorio_fora") : 0;
+    $tentar = $fora === 0 || time() - $fora > 600;
+    $pegar = function ($url) {
+        if (!function_exists("curl_init")) {
+            return null;
+        }
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 4, CURLOPT_TIMEOUT => 4, CURLOPT_USERAGENT => "Relojoeiro/1.0 (rodizio de relogios)"]);
+        $corpo = curl_exec($ch);
+        $codigo = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        return $codigo === 200 && is_string($corpo) ? $corpo : null;
+    };
+    $valido = function ($lista) use ($n) {
+        if (!is_array($lista) || count($lista) !== $n) {
+            return null;
+        }
+        $res = [];
+        foreach ($lista as $x) {
+            if (!is_numeric($x) || (int)$x < 0 || (int)$x > 65535 || (string)(int)$x !== trim((string)$x)) {
+                return null;
+            }
+            $res[] = (int)$x;
+        }
+        return $res;
+    };
+    $lote = null;
+    $fonte = "";
+    if ($tentar && !isset($falhou["random.org"])) {
+        $corpo = $pegar(ALEATORIO_RANDOMORG_URL . "?" . http_build_query(["num" => $n, "min" => 0, "max" => 65535, "col" => 1, "base" => 10, "format" => "plain", "rnd" => "new"]));
+        $lote = $corpo !== null ? $valido(preg_split("/\\s+/", trim($corpo))) : null;
+        if ($lote !== null) {
+            $fonte = "RANDOM.ORG";
+        } else {
+            $falhou["random.org"] = true;
+        }
+    }
+    if ($lote === null && $tentar && !isset($falhou["anu"])) {
+        $corpo = $pegar(ALEATORIO_ANU_URL . "?" . http_build_query(["length" => $n, "type" => "uint16"]));
+        $j = $corpo !== null ? json_decode($corpo, true) : null;
+        $lote = is_array($j) && ($j["success"] ?? false) === true ? $valido($j["data"] ?? null) : null;
+        if ($lote !== null) {
+            $fonte = "ANU QRNG";
+        } else {
+            $falhou["anu"] = true;
+        }
+    }
+    if ($lote === null) {
+        $lote = [];
+        for ($i = 0; $i < $n; $i++) {
+            $lote[] = random_int(0, 65535);
+        }
+        $fonte = "gerador seguro do PHP (random_int)";
+        if ($tentar && function_exists("cfg_set")) {
+            try {
+                cfg_set("aleatorio_fora", (string)time());
+            } catch (Throwable $e) {
+                // sem banco: só não anota
+            }
+        }
+    } elseif ($fora !== 0 && function_exists("cfg_set")) {
+        try {
+            cfg_set("aleatorio_fora", "");
+        } catch (Throwable $e) {
+        }
+    }
+    if (function_exists("cfg_set")) {
+        try {
+            cfg_set("aleatorio_ultima", $fonte . " em " . date("Y-m-d H:i:s"));
+        } catch (Throwable $e) {
+        }
+    }
+    return [$lote, $fonte];
 }
 
 // Dois nomes iguais, sem diferenciar maiúsculas de minúsculas, inclusive acentuadas (É = é), sem depender do mbstring
@@ -1641,7 +1785,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                             } elseif ($modo["selecao"] === "aleatorio") {
                                 $ids = array_keys($cands);
                                 $escolhido = $ids[sorteio(0, count($ids) - 1)];
-                                $motivo = "Sorteio simples, " . $entre . ", todos com a mesma chance.";
+                                $motivo = "Sorteio simples, " . $entre . ", todos com a mesma chance (" . aleatorio_fonte() . ").";
                             } elseif ($modo["selecao"] === "fifo") {
                                 uasort($info, function ($x, $y) { return $y["dsu"] <=> $x["dsu"]; });
                                 $escolhido = (int)array_key_first($info);
@@ -1665,7 +1809,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                                 }
                                 if ($escolhido !== null) {
                                     $motivo = "Sorteio pela nota, " . $entre . ": nota " . motivo_nota($info[$escolhido]["nota"]) . ", "
-                                        . motivo_nota(round(max(1, $info[$escolhido]["nota"]) * 100) * 100 / max(1, $total)) . "% de chance.";
+                                        . motivo_nota(round(max(1, $info[$escolhido]["nota"]) * 100) * 100 / max(1, $total)) . "% de chance (" . aleatorio_fonte() . ").";
                                 }
                             }
                             if (count($fora) > 0 && $motivo !== "") {
@@ -3203,23 +3347,25 @@ function gerar_escala($ini)
                         $cands = array_filter($cands, function ($x) use ($mais) { return $x == $mais; });
                         $garantia = "no limite de " . $max . " dias sem uso";
                     }
-                    // a maior nota no dia simulado; um valor minúsculo só desempata notas iguais
-                    $melhor = -1.0;
-                    $nota_dele = 0.0;
+                    // a maior nota no dia simulado; notas iguais (as empatadas na maior) se desempatam por sorteio
+                    $notas = [];
                     foreach (array_keys($cands) as $cid) {
-                        $nota_sem = nota_do_relogio($rels[$cid], $m_ini)["nota"];
-                        $nota = $nota_sem + sorteio(0, 1000) / 100000;
-                        if ($nota > $melhor) {
-                            $melhor = $nota;
-                            $novo = $cid;
-                            $nota_dele = $nota_sem;
-                        }
+                        $notas[$cid] = nota_do_relogio($rels[$cid], $m_ini)["nota"];
+                    }
+                    $nota_dele = count($notas) > 0 ? max($notas) : 0.0;
+                    $empatados = array_keys(array_filter($notas, function ($x) use ($nota_dele) { return $x == $nota_dele; }));
+                    $desempate = "";
+                    if (count($empatados) === 1) {
+                        $novo = $empatados[0];
+                    } elseif (count($empatados) > 1) {
+                        $novo = $empatados[sorteio(0, count($empatados) - 1)];
+                        $desempate = " Empatado na nota com " . (count($empatados) - 1) . (count($empatados) === 2 ? " outro" : " outros") . ": saiu no sorteio (" . aleatorio_fonte() . ").";
                     }
                     if ($novo > 0) {
                         $motivo_bloco = ($garantia !== ""
                             ? "Garantia de rodízio: " . motivo_parado($cands[$novo], $nunca[$novo]) . ", " . $garantia . (count($cands) > 1 ? "; entre os " . count($cands) . " empatados no tempo parado, a maior nota (" . motivo_nota($nota_dele) . ")" : "") . "."
                             : "A maior nota do dia (" . motivo_nota($nota_dele) . "), " . ($todos === 1 ? "único candidato" : "entre " . $todos . " candidatos") . ".")
-                            . (count($fora) > 0 ? " " . ucfirst(implode("; ", $fora)) . "." : "");
+                            . $desempate . (count($fora) > 0 ? " " . ucfirst(implode("; ", $fora)) . "." : "");
                     }
                 }
                 if ($novo > 0) {

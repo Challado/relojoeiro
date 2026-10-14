@@ -201,7 +201,8 @@
  *                            só "campos" e "grupos" (o cadastro de um relógio novo); relógio que não existe: 404
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=ficha&relogio=10"
  *   recurso=config           tudo o que a página Configuração mostra: {"config": {chave: valor} (inclusive agenda_chave), "mostrar_ate":
- *                            {"proximos", "plano"} (quantos dias por página, já com o padrão), "sol_fim",
+ *                            {"proximos", "plano"} (quantos dias por página, já com o padrão), "aleatorio": {"fontes", "ultimo_lote",
+ *                            "fora_desde"} (de onde vêm os números dos sorteios: RANDOM.ORG, senão ANU QRNG, senão o random_int), "sol_fim",
  *                            "chave_agenda": {"client_email"} (a chave JSON foi lida; null: não), "pasta", "canais" (tg e ag: o nome,
  *                            a lista de avisos e a ajuda), "ancoras", "repeticoes", "tipos": [cada tipo de aviso: {"tipo" (dia, vespera,
  *                            o identificador do aviso, ev<id>), "nome", "quando", "evento" (o id, se for um evento), "canais": {"tg": {
@@ -638,6 +639,9 @@
  *                                    grande por cima da página); vazio: lado
  *     config.proximos_por_pagina     o "Mostrar até" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)
  *     config.plano_por_pagina        o "Mostrar até" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)
+ *     config.aleatorio_ultima        a fonte do último lote de números aleatórios e quando (o sistema grava; só leitura)
+ *     config.aleatorio_fora          quando os dois serviços de números aleatórios falharam (segundos desde 1970; vazio: no ar); o sistema
+ *                                    grava; só leitura
  *     config.migracao_v10            marca de que a migração v10 foi aplicada (1)
  *     config.migracao_v12            marca de que a migração v12 foi aplicada (1)
  *     config.migracao_v16            marca de que a migração v16 foi aplicada (1)
@@ -1516,6 +1520,12 @@
  *     mostrar_ate                    quantos dias as listas mostram por página (o "Mostrar até" da Configuração, já com o padrão)
  *     mostrar_ate.proximos           os Próximos dias da página Hoje (proximos_por_pagina; padrão 7)
  *     mostrar_ate.plano              o dia a dia da página Plano (plano_por_pagina; padrão 31)
+ *     aleatorio                      de onde vêm os números dos sorteios: RANDOM.ORG (ruído atmosférico); fora do ar, ANU QRNG (quântico);
+ *                                    sem os dois, o gerador seguro do PHP (random_int)
+ *     aleatorio.fontes[]             as fontes, na ordem em que o sistema tenta: RANDOM.ORG, ANU QRNG, gerador seguro do PHP (random_int)
+ *     aleatorio.ultimo_lote          a fonte do último lote de números e quando ("RANDOM.ORG em AAAA-MM-DD HH:MM:SS"); null: nenhum ainda
+ *     aleatorio.fora_desde           desde quando os dois serviços estão sem responder (AAAA-MM-DD HH:MM:SS): por 10 minutos o sistema nem
+ *                                    tenta e usa o gerador do PHP; null: no ar (ou não se sabe)
  *     chave_agenda.client_email      o e-mail da conta de serviço (compartilhar a agenda com ele)
  *     cron_estado                    a situação do cron, como a Configuração mostra (o cron roda a cada minuto)
  *     cron_estado.crontab            a linha do crontab que roda o sistema (com a pasta dele)
@@ -1549,6 +1559,9 @@
  *                                    grande por cima da página); vazio: lado
  *     config.proximos_por_pagina     o "Mostrar até" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)
  *     config.plano_por_pagina        o "Mostrar até" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)
+ *     config.aleatorio_ultima        a fonte do último lote de números aleatórios e quando (o sistema grava; só leitura)
+ *     config.aleatorio_fora          quando os dois serviços de números aleatórios falharam (segundos desde 1970; vazio: no ar); o sistema
+ *                                    grava; só leitura
  *     config.migracao_v10            marca de que a migração v10 foi aplicada (1)
  *     config.migracao_v12            marca de que a migração v12 foi aplicada (1)
  *     config.migracao_v16            marca de que a migração v16 foi aplicada (1)
@@ -3229,7 +3242,9 @@ if (!$token_ok && $quem === "") {
             $previa[] = array_merge(["data" => $m["data"], "hora" => $m["hora"]], evento_formatado($m));
         }
     }
-    $saida = ["config" => (object)$valores_c, "mostrar_ate" => ["proximos" => proximos_por_pagina(), "plano" => plano_por_pagina()], "sol_fim" => isset(lancamento_tipos()["sol"]) && lancamento_tipos()["sol"]["fecha_as"] !== null ? substr(lancamento_tipos()["sol"]["fecha_as"], 0, 5) : "",
+    $saida = ["config" => (object)$valores_c, "mostrar_ate" => ["proximos" => proximos_por_pagina(), "plano" => plano_por_pagina()],
+        "aleatorio" => ["fontes" => ["RANDOM.ORG", "ANU QRNG", "gerador seguro do PHP (random_int)"], "ultimo_lote" => cfg("aleatorio_ultima") !== "" ? cfg("aleatorio_ultima") : null,
+            "fora_desde" => cfg("aleatorio_fora") !== "" ? date("Y-m-d H:i:s", (int)cfg("aleatorio_fora")) : null], "sol_fim" => isset(lancamento_tipos()["sol"]) && lancamento_tipos()["sol"]["fecha_as"] !== null ? substr(lancamento_tipos()["sol"]["fecha_as"], 0, 5) : "",
         "chave_agenda" => is_array($json_c) && !empty($json_c["private_key"]) && !empty($json_c["client_email"]) ? ["client_email" => $json_c["client_email"]] : null,
         "pasta" => __DIR__, "canais" => $CANAIS, "ancoras" => $ANCORAS, "repeticoes" => $REPETICOES, "tipos" => $tipos_c,
         "eventos" => array_map(function ($ev) {
@@ -3503,7 +3518,7 @@ if (!$token_ok && $quem === "") {
             "ficha" => ["descricao" => "tudo o que o painel de um relógio mostra: agora, carga e de onde vem, situação, nota, quando entra no rodízio, compra, próximas manutenções, previsão, o gasto da bateria, quantos documentos o relógio tem em cada categoria, os tipos de lançamento dele (com a sessão aberta), as últimas leituras, as marcações dos últimos 14 dias, o resumo do histórico e o cadastro; sem relogio, só o cadastro de um relógio novo; relógio que não existe: 404",
                 "parametros" => ["relogio" => "o id do relógio (vazio: o cadastro de um relógio novo)"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=ficha&relogio=10\""],
-            "config" => ["descricao" => "tudo o que a página Configuração mostra: os valores (inclusive o caminho da chave do Google), o Mostrar até de cada lista (mostrar_ate), os canais com a mensagem padrão e a personalizada de cada tipo de aviso, os eventos personalizados, a chave do Google lida ou não, como as mensagens e a agenda saem agora e a situação do cron (nunca rodou, parado ou rodando)",
+            "config" => ["descricao" => "tudo o que a página Configuração mostra: os valores (inclusive o caminho da chave do Google), o Mostrar até de cada lista (mostrar_ate), de onde vêm os números dos sorteios (aleatorio: RANDOM.ORG, senão ANU QRNG, senão o gerador seguro do PHP; o último lote), os canais com a mensagem padrão e a personalizada de cada tipo de aviso, os eventos personalizados, a chave do Google lida ou não, como as mensagens e a agenda saem agora e a situação do cron (nunca rodou, parado ou rodando)",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=config\""],
             "cron" => ["descricao" => "as execuções do cron, com o resumo do período (total, com atividade, com erro, a mais lenta) e páginas; sem atividade elas ficam 7 dias, com atividade ou erro, 1 ano",
@@ -3837,6 +3852,8 @@ if (!$token_ok && $quem === "") {
                 "config.painel_modo" => "como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela grande por cima da página); vazio: lado",
                 "config.proximos_por_pagina" => "o \"Mostrar até\" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)",
                 "config.plano_por_pagina" => "o \"Mostrar até\" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)",
+                "config.aleatorio_ultima" => "a fonte do último lote de números aleatórios e quando (o sistema grava; só leitura)",
+                "config.aleatorio_fora" => "quando os dois serviços de números aleatórios falharam (segundos desde 1970; vazio: no ar); o sistema grava; só leitura",
                 "config.migracao_v10" => "marca de que a migração v10 foi aplicada (1)",
                 "config.migracao_v12" => "marca de que a migração v12 foi aplicada (1)",
                 "config.migracao_v16" => "marca de que a migração v16 foi aplicada (1)",
@@ -4479,6 +4496,10 @@ if (!$token_ok && $quem === "") {
                 "mostrar_ate" => "quantos dias as listas mostram por página (o \"Mostrar até\" da Configuração, já com o padrão)",
                 "mostrar_ate.proximos" => "os Próximos dias da página Hoje (proximos_por_pagina; padrão 7)",
                 "mostrar_ate.plano" => "o dia a dia da página Plano (plano_por_pagina; padrão 31)",
+                "aleatorio" => "de onde vêm os números dos sorteios: RANDOM.ORG (ruído atmosférico); fora do ar, ANU QRNG (quântico); sem os dois, o gerador seguro do PHP (random_int)",
+                "aleatorio.fontes[]" => "as fontes, na ordem em que o sistema tenta: RANDOM.ORG, ANU QRNG, gerador seguro do PHP (random_int)",
+                "aleatorio.ultimo_lote" => "a fonte do último lote de números e quando (\"RANDOM.ORG em AAAA-MM-DD HH:MM:SS\"); null: nenhum ainda",
+                "aleatorio.fora_desde" => "desde quando os dois serviços estão sem responder (AAAA-MM-DD HH:MM:SS): por 10 minutos o sistema nem tenta e usa o gerador do PHP; null: no ar (ou não se sabe)",
                 "chave_agenda.client_email" => "o e-mail da conta de serviço (compartilhar a agenda com ele)",
                 "cron_estado" => "a situação do cron, como a Configuração mostra (o cron roda a cada minuto)",
                 "cron_estado.crontab" => "a linha do crontab que roda o sistema (com a pasta dele)",
@@ -4509,6 +4530,8 @@ if (!$token_ok && $quem === "") {
                 "config.painel_modo" => "como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela grande por cima da página); vazio: lado",
                 "config.proximos_por_pagina" => "o \"Mostrar até\" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)",
                 "config.plano_por_pagina" => "o \"Mostrar até\" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)",
+                "config.aleatorio_ultima" => "a fonte do último lote de números aleatórios e quando (o sistema grava; só leitura)",
+                "config.aleatorio_fora" => "quando os dois serviços de números aleatórios falharam (segundos desde 1970; vazio: no ar); o sistema grava; só leitura",
                 "config.migracao_v10" => "marca de que a migração v10 foi aplicada (1)",
                 "config.migracao_v12" => "marca de que a migração v12 foi aplicada (1)",
                 "config.migracao_v16" => "marca de que a migração v16 foi aplicada (1)",

@@ -3,7 +3,7 @@
 var SELECOES = {
   inteligente: ["Inteligente", "vai o relógio com a maior nota nos critérios"],
   ponderado: ["Inteligente com sorteio", "sorteio em que a nota de cada relógio é a chance dele: variedade sem perder o critério"],
-  aleatorio: ["Totalmente aleatório", "todos com a mesma chance, sem olhar os critérios (gerador do sistema, random_int)"],
+  aleatorio: ["Totalmente aleatório", "todos com a mesma chance, sem olhar os critérios (os números do RANDOM.ORG; fora do ar, do ANU QRNG; sem os dois, do gerador seguro do PHP)"],
   fifo: ["Fila (FIFO)", "vai o que está há mais tempo sem uso: todos passam pelo pulso em rodízio"]
 };
 var q = new URLSearchParams(window.location.search);
