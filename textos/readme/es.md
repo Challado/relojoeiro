@@ -1,4 +1,4 @@
-<!-- origem: 9ba6f9a327b420b14dba0f4e47cdc4ef9bd0a853 -->
+<!-- origem: 255c473400fc71a243c73f847080bcd82a18dc3a -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -7,6 +7,9 @@
 > **La rotación inteligente de una colección de relojes.** Cada día dice qué reloj va a la muñeca, recuerda dar cuerda,
 > cargar, poner al sol y cambiar la pila, y hace que se use toda la colección, y no solo el favorito. Varias personas usan
 > el mismo sistema, cada una con sus colecciones, y comparten lo que quieran.
+
+**[▶ Pruébelo ahora, sin instalar nada](https://servidor2.lucas.inf.br/relojoeiro/cadastro.php)**: cree una cuenta de demostración en el servidor del proyecto
+(vale 30 días, ya con una colección lista para que registre sus relojes).
 
 ![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-777bb4?logo=php&logoColor=white)
 ![SQLite, MySQL/MariaDB, PostgreSQL o Firebird](https://img.shields.io/badge/base%20de%20datos-SQLite%20%7C%20MySQL%20%7C%20PostgreSQL%20%7C%20Firebird-336791)
@@ -51,7 +54,11 @@ Y en Google Calendar están el cambio de pila del Casio en noviembre y la revisi
 <!-- parte 2 -->
 ## Pruébelo en 1 minuto {#experimente-em-1-minuto}
 
-Solo necesita PHP 8.1+ con la extensión `sqlite3`: sin servidor web y sin servidor de base de datos.
+**Sin instalar:** cree una cuenta de demostración en
+[servidor2.lucas.inf.br/relojoeiro](https://servidor2.lucas.inf.br/relojoeiro/cadastro.php) (vale 30 días; la cuenta nace con una
+colección y el conjunto inicial, y solo usted ve lo que registre en ella).
+
+**En su máquina:** solo necesita PHP 8.1+ con la extensión `sqlite3`: sin servidor web y sin servidor de base de datos.
 
 ```sh
 git clone https://github.com/Challado/relojoeiro.git && cd relojoeiro

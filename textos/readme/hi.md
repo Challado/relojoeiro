@@ -1,4 +1,4 @@
-<!-- origem: 9ba6f9a327b420b14dba0f4e47cdc4ef9bd0a853 -->
+<!-- origem: 255c473400fc71a243c73f847080bcd82a18dc3a -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -7,6 +7,9 @@
 > **घड़ियों के संग्रह का स्मार्ट रोटेशन।** हर दिन बताता है कि कौन सी घड़ी कलाई पर जाएगी, चाबी देने, चार्ज करने, धूप में
 > रखने और बैटरी बदलने की याद दिलाता है, और पूरा संग्रह पहना जाए यह सुनिश्चित करता है, सिर्फ़ पसंदीदा नहीं। कई लोग एक ही
 > सिस्टम का उपयोग करते हैं, हर एक अपने संग्रहों के साथ, और जो चाहें साझा करते हैं।
+
+**[▶ अभी आज़माएँ, कुछ भी इंस्टॉल किए बिना](https://servidor2.lucas.inf.br/relojoeiro/cadastro.php)**: प्रोजेक्ट के सर्वर पर एक डेमो खाता बनाएँ (30 दिन
+मान्य, अपनी घड़ियाँ दर्ज करने के लिए तैयार एक संग्रह के साथ)।
 
 ![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-777bb4?logo=php&logoColor=white)
 ![SQLite, MySQL/MariaDB, PostgreSQL या Firebird](https://img.shields.io/badge/database-SQLite%20%7C%20MySQL%20%7C%20PostgreSQL%20%7C%20Firebird-336791)
@@ -49,7 +52,10 @@
 <!-- parte 2 -->
 ## 1 मिनट में आज़माएँ {#experimente-em-1-minuto}
 
-बस `sqlite3` एक्सटेंशन वाला PHP 8.1+ चाहिए: न वेब सर्वर, न डेटाबेस सर्वर।
+**बिना इंस्टॉल किए:** [servidor2.lucas.inf.br/relojoeiro](https://servidor2.lucas.inf.br/relojoeiro/cadastro.php) पर एक डेमो खाता बनाएँ
+(30 दिन मान्य; खाता एक संग्रह और प्रारंभिक सेट के साथ बनता है, और उसमें आप जो दर्ज करते हैं वह केवल आप देखते हैं)।
+
+**अपनी मशीन पर:** बस `sqlite3` एक्सटेंशन वाला PHP 8.1+ चाहिए: न वेब सर्वर, न डेटाबेस सर्वर।
 
 ```sh
 git clone https://github.com/Challado/relojoeiro.git && cd relojoeiro

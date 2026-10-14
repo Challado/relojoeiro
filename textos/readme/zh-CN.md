@@ -1,10 +1,12 @@
-<!-- origem: 9ba6f9a327b420b14dba0f4e47cdc4ef9bd0a853 -->
+<!-- origem: 255c473400fc71a243c73f847080bcd82a18dc3a -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
 🌐 [Português](README.md) · [English](README.en.md) · **中文** · [हिन्दी](README.hi.md) · [Español](README.es.md) · [Français](README.fr.md)
 
 > **手表收藏的智能轮换。** 每天告诉你哪块表上腕，提醒你上链、充电、晒太阳和换电池，让整个收藏都被佩戴，而不只是最喜欢的那一块。多人可以使用同一个系统，每人有自己的收藏，想分享什么就分享什么。
+
+**[▶ 立即试用，无需安装](https://servidor2.lucas.inf.br/relojoeiro/cadastro.php)**：在项目的服务器上创建一个演示账户（有效 30 天，已带一个可以录入你的手表的收藏）。
 
 ![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-777bb4?logo=php&logoColor=white)
 ![SQLite、MySQL/MariaDB、PostgreSQL 或 Firebird](https://img.shields.io/badge/%E6%95%B0%E6%8D%AE%E5%BA%93-SQLite%20%7C%20MySQL%20%7C%20PostgreSQL%20%7C%20Firebird-336791)
@@ -43,7 +45,9 @@ Google 日历里则记着 Casio 十一月的换电池和 Tissot 2027 年的保�
 <!-- parte 2 -->
 ## 1 分钟试用 {#experimente-em-1-minuto}
 
-只需要带 `sqlite3` 扩展的 PHP 8.1+：不需要 Web 服务器，也不需要数据库服务器。
+**无需安装：**在 [servidor2.lucas.inf.br/relojoeiro](https://servidor2.lucas.inf.br/relojoeiro/cadastro.php) 创建一个演示账户（有效 30 天；账户创建时就带一个收藏和初始集合，你录入的内容只有你能看到）。
+
+**在你自己的机器上：**只需要带 `sqlite3` 扩展的 PHP 8.1+：不需要 Web 服务器，也不需要数据库服务器。
 
 ```sh
 git clone https://github.com/Challado/relojoeiro.git && cd relojoeiro

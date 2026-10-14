@@ -1,4 +1,4 @@
-<!-- origem: 9ba6f9a327b420b14dba0f4e47cdc4ef9bd0a853 -->
+<!-- origem: 255c473400fc71a243c73f847080bcd82a18dc3a -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -7,6 +7,9 @@
 > **The smart rotation of a watch collection.** Every day it says which watch goes on the wrist, reminds you to wind,
 > charge, put in the sun and change the battery, and makes the whole collection get worn, not just the favorite. Several
 > people use the same system, each with their own collections, and share whatever they want.
+
+**[▶ Try it now, without installing anything](https://servidor2.lucas.inf.br/relojoeiro/cadastro.php)**: create a demo account on the project's server (it lasts 30
+days, already with a collection ready for you to add your watches).
 
 ![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-777bb4?logo=php&logoColor=white)
 ![SQLite, MySQL/MariaDB, PostgreSQL or Firebird](https://img.shields.io/badge/database-SQLite%20%7C%20MySQL%20%7C%20PostgreSQL%20%7C%20Firebird-336791)
@@ -50,7 +53,11 @@ And Google Calendar has the Casio's battery change in November and the Tissot's 
 <!-- parte 2 -->
 ## Try it in 1 minute {#experimente-em-1-minuto}
 
-All you need is PHP 8.1+ with the `sqlite3` extension: no web server and no database server.
+**Without installing:** create a demo account at
+[servidor2.lucas.inf.br/relojoeiro](https://servidor2.lucas.inf.br/relojoeiro/cadastro.php) (it lasts 30 days; the account is born
+with a collection and the starter set, and only you see what you add to it).
+
+**On your machine:** all you need is PHP 8.1+ with the `sqlite3` extension: no web server and no database server.
 
 ```sh
 git clone https://github.com/Challado/relojoeiro.git && cd relojoeiro

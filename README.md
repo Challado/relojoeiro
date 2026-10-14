@@ -6,6 +6,9 @@
 > carregar, pôr no sol e trocar a pilha, e faz a coleção inteira ser usada, e não só o favorito. Várias pessoas usam o mesmo
 > sistema, cada uma com as suas coleções, e compartilham o que quiserem.
 
+**[▶ Experimente agora, sem instalar nada](https://servidor2.lucas.inf.br/relojoeiro/cadastro.php)**: crie uma conta de
+demonstração no servidor do projeto (vale 30 dias, já com uma coleção pronta para você cadastrar os seus relógios).
+
 ![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-777bb4?logo=php&logoColor=white)
 ![SQLite, MySQL/MariaDB, PostgreSQL ou Firebird](https://img.shields.io/badge/banco-SQLite%20%7C%20MySQL%20%7C%20PostgreSQL%20%7C%20Firebird-336791)
 ![sem dependências](https://img.shields.io/badge/depend%C3%AAncias-nenhuma-2ea44f)
@@ -858,7 +861,11 @@ vai durar nos próximos dias.
 
 ## Experimente em 1 minuto
 
-Só precisa do PHP 8.1+ com a extensão `sqlite3`: sem servidor web e sem servidor de banco.
+**Sem instalar:** crie uma conta de demonstração em
+[servidor2.lucas.inf.br/relojoeiro](https://servidor2.lucas.inf.br/relojoeiro/cadastro.php) (vale 30 dias; a conta nasce
+com uma coleção e o conjunto inicial, e só você vê o que cadastrar nela).
+
+**Na sua máquina:** só precisa do PHP 8.1+ com a extensão `sqlite3`: sem servidor web e sem servidor de banco.
 
 ```sh
 git clone https://github.com/Challado/relojoeiro.git && cd relojoeiro

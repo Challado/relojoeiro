@@ -6,6 +6,9 @@
 > remonter, de charger, de mettre au soleil et de changer la pile, et fait porter toute la collection, pas seulement la
 > préférée. Plusieurs personnes utilisent le même système, chacune avec ses collections, et partagent ce qu'elles veulent.
 
+**[▶ Essayez maintenant, sans rien installer](https://servidor2.lucas.inf.br/relojoeiro/cadastro.php)** : créez un compte de démonstration sur le serveur du
+projet (valable 30 jours, déjà avec une collection prête pour enregistrer vos montres).
+
 ![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-777bb4?logo=php&logoColor=white)
 ![SQLite, MySQL/MariaDB, PostgreSQL ou Firebird](https://img.shields.io/badge/base%20de%20donn%C3%A9es-SQLite%20%7C%20MySQL%20%7C%20PostgreSQL%20%7C%20Firebird-336791)
 ![sans dépendances](https://img.shields.io/badge/d%C3%A9pendances-aucune-2ea44f)
@@ -908,7 +911,11 @@ jours.
 ---
 ## Essayez en 1 minute
 
-Il suffit de PHP 8.1+ avec l'extension `sqlite3` : pas de serveur web ni de serveur de base de données.
+**Sans installer :** créez un compte de démonstration sur
+[servidor2.lucas.inf.br/relojoeiro](https://servidor2.lucas.inf.br/relojoeiro/cadastro.php) (valable 30 jours ; le compte naît avec
+une collection et l'ensemble initial, et vous seul voyez ce que vous y enregistrez).
+
+**Sur votre machine :** il suffit de PHP 8.1+ avec l'extension `sqlite3` : pas de serveur web ni de serveur de base de données.
 
 ```sh
 git clone https://github.com/Challado/relojoeiro.git && cd relojoeiro
