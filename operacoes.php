@@ -137,7 +137,7 @@ function op_arvore($acao, $d)
         }
         if (count($erros) === 0 && $acao === "novo") {
             sql("INSERT INTO no (pai_id, nome, ordem) VALUES (?, ?, ?)", [$pai, $nome, (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM no WHERE pai_id <=> ?", [$pai])]);
-            $id = (int)db()->insert_id;
+            $id = ultimo_id();
             nos_todos(true);
             $msg = no_caminho($id) . " criado.";
         } elseif (count($erros) === 0) {
@@ -177,21 +177,30 @@ function op_arvore($acao, $d)
     } elseif ($acao === "excluir" && isset($n[$id])) {
         $cima = $n[$id]["pai_id"] !== null ? (int)$n[$id]["pai_id"] : null;
         $destino = no_caminho($cima);
-        // fórmulas: sobem, menos as que o ponto de cima já tem com o mesmo identificador
-        $saem = [];
-        foreach (linhas("SELECT id, identificador FROM formula WHERE no_id = ?", [$id]) as $f) {
-            if ((int)valor("SELECT COUNT(*) FROM formula WHERE identificador = ? AND no_id <=> ?", [$f["identificador"], $cima]) > 0) {
-                sql("DELETE FROM formula WHERE id = ?", [$f["id"]]);
-                $saem[] = $f["identificador"];
+        // fórmulas e avisos (uma versão por ponto): sobem, menos os que o ponto de cima já tem com o mesmo identificador
+        $saem = ["formula" => [], "aviso" => []];
+        foreach (array_keys($saem) as $tabela) {
+            foreach (linhas("SELECT id, identificador FROM " . $tabela . " WHERE no_id = ?", [$id]) as $f) {
+                if ((int)valor("SELECT COUNT(*) FROM " . $tabela . " WHERE identificador = ? AND no_id <=> ?", [$f["identificador"], $cima]) > 0) {
+                    sql("DELETE FROM " . $tabela . " WHERE id = ?", [$f["id"]]);
+                    $saem[$tabela][] = $f["identificador"];
+                }
             }
         }
-        foreach (["no" => "pai_id", "relogio" => "no_id", "campo" => "no_id", "lancamento_tipo" => "no_id", "formula" => "no_id"] as $tabela => $coluna) {
+        // os critérios próprios dele saem (o banco apaga junto): os relógios passam a usar os do ponto de cima
+        $criterios = (int)valor("SELECT COUNT(*) FROM criterio_parametro WHERE escopo_no_id = ?", [$id]);
+        // o resto sobe: os pontos de dentro, os relógios, os campos, os tipos de lançamento, as fórmulas, os avisos, e os
+        // blocos dos modos que sorteavam dele (passam a sortear do ponto de cima)
+        foreach (["no" => "pai_id", "relogio" => "no_id", "campo" => "no_id", "lancamento_tipo" => "no_id", "formula" => "no_id", "aviso" => "no_id",
+            "modo_bloco" => "no_id"] as $tabela => $coluna) {
             sql("UPDATE " . $tabela . " SET " . $coluna . " = ? WHERE " . $coluna . " = ?", [$cima, $id]);
         }
         sql("DELETE FROM no WHERE id = ?", [$id]);
         nos_todos(true);
         $msg = $n[$id]["nome"] . " excluído; o que era dele foi para " . $destino . "."
-            . (count($saem) > 0 ? " Saíram as versões dele das fórmulas que " . $destino . " já tinha: " . implode(", ", $saem) . "." : "");
+            . (count($saem["formula"]) > 0 ? " Saíram as versões dele das fórmulas que " . $destino . " já tinha: " . implode(", ", $saem["formula"]) . "." : "")
+            . (count($saem["aviso"]) > 0 ? " Saíram as versões dele dos avisos que " . $destino . " já tinha: " . implode(", ", $saem["aviso"]) . "." : "")
+            . ($criterios > 0 ? " Os critérios próprios dele saíram: os relógios dele usam os do lugar mais perto, acima." : "");
     }
     return resultado($erros, $msg, ["id" => $id]);
 }
@@ -264,7 +273,7 @@ function op_campos($acao, $d)
             if ($acao === "novo") {
                 sql("INSERT INTO campo (identificador, nome, tipo, unidade, opcoes, padrao, no_id, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     array_merge($dados, [(int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM campo")]));
-                $id = (int)db()->insert_id;
+                $id = ultimo_id();
                 $msg = "Campo " . $c["nome"] . " criado, para " . no_caminho($no) . ". Nas fórmulas: " . $c["identificador"] . ".";
             } else {
                 sql("UPDATE campo SET identificador = ?, nome = ?, tipo = ?, unidade = ?, opcoes = ?, padrao = ?, no_id = ? WHERE id = ?", array_merge($dados, [$id]));
@@ -360,7 +369,7 @@ function op_lancamento_tipos($acao, $d)
                     [$ident, $nome, $formato, $unidade, $fecha !== "" ? $fecha : null, $formato === "sessao" ? $exclusiva : 0, $formato === "valor" ? $mede_gasto : 0,
                     $condicao !== "" ? $condicao : null, $no,
                     (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM lancamento_tipo")]);
-                $id = (int)db()->insert_id;
+                $id = ultimo_id();
                 $msg = "Tipo de lançamento " . $nome . " criado, para " . no_caminho($no) . ".";
             } else {
                 sql("UPDATE lancamento_tipo SET identificador = ?, nome = ?, formato = ?, unidade = ?, fecha_as = ?, exclusiva = ?, mede_gasto = ?, condicao = ?, no_id = ? WHERE id = ?",
@@ -427,7 +436,7 @@ function op_formulas($acao, $d)
         if (count($erros) === 0) {
             if ($acao === "nova") {
                 sql("INSERT INTO formula (identificador, nome, expressao, unidade, no_id) VALUES (?, ?, ?, ?, ?)", [$ident, $nome, $expr, $unidade, $no]);
-                $id = (int)db()->insert_id;
+                $id = ultimo_id();
                 $msg = "Fórmula " . $ident . " gravada para " . no_caminho($no) . ".";
             } else {
                 sql("UPDATE formula SET nome = ?, expressao = ?, unidade = ?, no_id = ? WHERE id = ?", [$nome, $expr, $unidade, $no, $id]);
@@ -480,7 +489,7 @@ function op_relogio($acao, $d)
                 sql("UPDATE relogio SET nome = ?, no_id = ?, disponivel = ? WHERE id = ?", [$nome, $no, $disp, $id]);
             } else {
                 sql("INSERT INTO relogio (nome, no_id, disponivel, criado) VALUES (?, ?, ?, NOW())", [$nome, $no, $disp]);
-                $id = (int)db()->insert_id;
+                $id = ultimo_id();
             }
             // os valores: só dos campos que valem para o relógio (no ponto em que ficou)
             $campos = campos_do_relogio(["no_id" => $no]);
@@ -594,7 +603,7 @@ function op_lancamento($acao, $d)
             // o gasto medido: a leitura de antes (do mesmo tipo), a estimativa e os gastos que valiam, tudo antes de gravar esta
             $mede = $t["formato"] === "valor" && (int)($t["mede_gasto"] ?? 0) === 1
                 && valor("SELECT id FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio > ?", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q)]) === null;
-            $antes = $mede ? linha("SELECT inicio, valor FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? ORDER BY inicio DESC LIMIT 1",
+            $antes = $mede ? linha("SELECT inicio, valor FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? ORDER BY inicio DESC, id DESC LIMIT 1",
                 [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q)]) : null;
             $conta = [];
             if ($antes) {
@@ -606,7 +615,7 @@ function op_lancamento($acao, $d)
             }
             sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, NULL, ?, 'manual', NOW())",
                 [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), $t["formato"] === "valor" ? $v : null]);
-            $id = (int)db()->insert_id;
+            $id = ultimo_id();
             $msg = "Lançado no " . $r["nome"] . ": " . $t["nome"] . ($t["formato"] === "valor" ? " " . str_replace('.', ',', (string)$v) . ($t["unidade"] !== "" ? " " . $t["unidade"] : "") : "")
                 . ($q < $agora - 60 ? " em " . date("d/m/Y H:i", $q) : "") . ".";
             if ($mede && !$antes) {
@@ -635,7 +644,7 @@ function op_lancamento($acao, $d)
                     $h_pulso = 0.0;
                     $fim_ate_agora = $t1;
                     foreach (linhas("SELECT l.inicio, l.fim FROM lancamento l JOIN lancamento_tipo tp ON tp.id = l.tipo_id WHERE l.relogio_id = ? AND tp.identificador = 'pulso'
-                        AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?) ORDER BY l.inicio", [$rid, date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $t1)]) as $sp) {
+                        AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?) ORDER BY l.inicio, l.id", [$rid, date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $t1)]) as $sp) {
                         $a = max($fim_ate_agora, strtotime($sp["inicio"]));
                         $b = min($q, $sp["fim"] === null ? $q : strtotime($sp["fim"]));
                         if ($b > $a) {
@@ -707,14 +716,14 @@ function op_lancamento($acao, $d)
             }
             if (count($erros) === 0) {
                 sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, NULL, NULL, 'manual', NOW())", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q)]);
-                $id = (int)db()->insert_id;
+                $id = ultimo_id();
                 $msg = $r["nome"] . ": " . $t["nome"] . " desde " . date("d/m H:i", $q) . "." . (count($fechadas) > 0 ? " Fechado no mesmo instante: " . implode(", ", $fechadas) . "." : "");
             }
         }
     } elseif ($acao === "encerrar") {
         $q = $momento($d["quando"] ?? "");
         // a sessão aberta agora: sem fim, ou com o fim ainda no futuro (a de rodízio já nasce com o fim do horário de uso)
-        $aberta = linha("SELECT * FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim > ?) ORDER BY inicio DESC LIMIT 1",
+        $aberta = linha("SELECT * FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim > ?) ORDER BY inicio DESC, id DESC LIMIT 1",
             [$rid, (int)$t["id"], date("Y-m-d H:i:s", $agora), date("Y-m-d H:i:s", $agora)]);
         if ($q === false) {
             $erros[] = "Quando: AAAA-MM-DD HH:MM, até agora (vazio: agora).";
@@ -754,7 +763,7 @@ function op_lancamento($acao, $d)
         } elseif ($acao === "periodo") {
             sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, ?, NULL, 'manual', NOW())",
                 [$rid, (int)$t["id"], date("Y-m-d H:i:s", $ini), date("Y-m-d H:i:s", $fim)]);
-            $id = (int)db()->insert_id;
+            $id = ultimo_id();
             $msg = "Lançado no " . $r["nome"] . ": " . $t["nome"] . " de " . date("d/m H:i", $ini) . " a " . date("d/m H:i", $fim) . ".";
         } else {
             sql("UPDATE lancamento SET inicio = ?, fim = ?, valor = ? WHERE id = ?", [date("Y-m-d H:i:s", $ini), $fim === null ? null : date("Y-m-d H:i:s", $fim), $v, $id]);
@@ -850,7 +859,7 @@ function op_avisos($acao, $d)
             if ($acao === "novo") {
                 sql("INSERT INTO aviso (identificador, nome, expressao, condicao, antecedencia_dias, texto, resolve, ativo, no_id, escala, simula_valor, simula_horas, agenda)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", array_merge([$ident], $dados));
-                $id = (int)db()->insert_id;
+                $id = ultimo_id();
                 $msg = "Aviso " . $nome . " gravado para " . no_caminho($no) . ".";
             } else {
                 sql("UPDATE aviso SET nome = ?, expressao = ?, condicao = ?, antecedencia_dias = ?, texto = ?, resolve = ?, ativo = ?, no_id = ?, escala = ?,
@@ -938,10 +947,10 @@ function op_criterios($acao, $d)
             // copia o conjunto herdado inteiro: parâmetros, subparâmetros e faixas
             foreach (criterios_config()[$origem] as $p) {
                 sql("INSERT INTO criterio_parametro (escopo_no_id, escopo_relogio_id, nome, peso, ordem) VALUES (?, ?, ?, ?, ?)", [$col[0], $col[1], $p["nome"], $p["peso"], $p["ordem"]]);
-                $np = (int)db()->insert_id;
+                $np = ultimo_id();
                 foreach ($p["subs"] as $sb) {
                     sql("INSERT INTO criterio_sub (parametro_id, nome, variavel, peso, ordem) VALUES (?, ?, ?, ?, ?)", [$np, $sb["nome"], $sb["variavel"], $sb["peso"], $sb["ordem"]]);
-                    $ns = (int)db()->insert_id;
+                    $ns = ultimo_id();
                     foreach ($sb["faixas"] as $f) {
                         sql("INSERT INTO criterio_faixa (sub_id, de, ate, categoria, nota) VALUES (?, ?, ?, ?, ?)", [$ns, $f["de"], $f["ate"], $f["categoria"], $f["nota"]]);
                     }
@@ -986,7 +995,7 @@ function op_criterios($acao, $d)
             sql("INSERT INTO criterio_parametro (escopo_no_id, escopo_relogio_id, nome, peso, ordem) VALUES (?, ?, ?, ?, ?)",
                 [$col[0], $col[1], $nome, count($outros) > 0 ? $peso : 100, (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM criterio_parametro WHERE " . $do_lugar, $col)]);
             // o id logo depois do INSERT (a consulta do nome do lugar, abaixo, zeraria o insert_id)
-            $ancora = "p" . db()->insert_id;
+            $ancora = "p" . ultimo_id();
             $ok = "Parâmetro " . $nome . " incluído em " . escopo_texto($escopo) . " com " . pct_br(count($outros) > 0 ? $peso : 100) . "."
                 . (count($conta) > 0 ? " Os outros abriram espaço na proporção de cada um: " . implode("; ", $conta) . "." : "")
                 . " Inclua os subparâmetros dele: sem nenhum, ele não entra na conta.";
@@ -1075,7 +1084,7 @@ function op_criterios($acao, $d)
             $conta = count($outros) > 0 ? $regrava("criterio_sub", $outros, round(100 - $peso, 2)) : [];
             sql("INSERT INTO criterio_sub (parametro_id, nome, variavel, peso, ordem) VALUES (?, ?, ?, ?, ?)",
                 [$pid, $nome, $metrica, count($outros) > 0 ? $peso : 100, (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM criterio_sub WHERE parametro_id = ?", [$pid])]);
-            $sid = (int)db()->insert_id;
+            $sid = ultimo_id();
             // faixas iniciais, válidas, para ajustar: uma faixa cobrindo tudo, ou uma por categoria, todas com nota 50
             if ($METRICAS[$metrica]["tipo"] === "categoria") {
                 foreach ($METRICAS[$metrica]["valores"] as $cat) {
@@ -1334,12 +1343,8 @@ function op_criterios($acao, $d)
             $erros[] = "Não encontrei os critérios iniciais no arquivo schema.sql.";
         } else {
             sql("DELETE FROM criterio_parametro");
-            foreach (explode(";\n", substr((string)$semente, $ini)) as $comando) {
-                $comando = trim((string)preg_replace("/^--.*\$/m", "", $comando));
-                if ($comando !== "") {
-                    sql($comando);
-                }
-            }
+            // os comandos até o fim do arquivo, traduzidos para o banco em uso (e os ids andam depois dos gravados)
+            banco_script(substr((string)$semente, $ini));
             $ok = "Critérios iniciais restaurados.";
             $escopo = "";
             $ancora = "lugares";
@@ -1552,7 +1557,7 @@ function op_modos($acao, $d)
             } else {
                 sql("INSERT INTO modo (nome, selecao, escala_dias, ciclo, ordem) VALUES (?, ?, ?, ?, ?)", [$nome, $sel, $escala_dias, $ciclo,
                     (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM modo")]);
-                $id = (int)db()->insert_id;
+                $id = ultimo_id();
             }
             if ($blocos !== null) {
                 sql("DELETE FROM modo_bloco WHERE modo_id = ?", [$id]);
@@ -1764,7 +1769,7 @@ function op_config($acao, $d)
                 sql("INSERT INTO evento_personalizado (nome, ativo, repeticao, data_inicio, hora, dias_semana, dia_mes, intervalo_dias, relogio_id, criado)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", array_merge($dados, [date("Y-m-d H:i:s")]));
                 // evento novo já sai pelo Telegram; os canais se ajustam na tabela
-                $id = (int)db()->insert_id;
+                $id = ultimo_id();
                 cfg_set("alerta_tipos", trim(cfg("alerta_tipos") . ",ev" . $id, ","));
             }
             $msg = "Evento salvo.";

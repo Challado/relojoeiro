@@ -3,11 +3,15 @@ config.php
 google-conta-servico.json
 *.json.key
 
-# bancos, dumps e backups
+# bancos, dumps e backups (e o arquivo do SQLite, se ficar aqui)
 *.sql.gz
 *.sql.bz2
 *.sql.zip
 *.dump
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.db
 *.bak
 *.backup
 dados_*.sql

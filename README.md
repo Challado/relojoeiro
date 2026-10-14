@@ -3,7 +3,7 @@
 > **O rodízio inteligente de uma coleção de relógios.** Todo dia ele diz qual relógio vai para o pulso, lembra de dar corda,
 > carregar, pôr no sol e trocar a pilha, e faz a coleção inteira ser usada, e não só o favorito.
 
-PHP 8.1+ · MySQL/MariaDB · sem framework · sem dependências · API REST completa · Telegram · Google Agenda
+PHP 8.1+ · SQLite, MySQL/MariaDB ou PostgreSQL · sem framework · sem dependências · API REST completa · Telegram · Google Agenda
 
 ---
 
@@ -243,42 +243,61 @@ cabeçalho do [`api.php`](api.php) e na própria API: `api.php?recurso=ajuda`.
 
 ## Instalação
 
-**Requisitos:** PHP 8.1+ com `mysqli`, `curl` e `openssl` (este só para o Google Agenda), MySQL ou MariaDB com utf8mb4, um servidor web (nginx ou Apache) e o cron.
+**Requisitos:** PHP 8.1+ com `curl` e `openssl` (este só para o Google Agenda), um servidor web (nginx ou Apache), o cron e
+**um destes bancos**, cada um pela extensão nativa do PHP:
+
+| Banco | Extensão do PHP | Versão | Quando escolher |
+|---|---|---|---|
+| **SQLite** | `sqlite3` | 3.35+ (testado no 3.53) | o mais simples: um arquivo só, sem servidor de banco. Sobra para uma coleção pessoal, até num Raspberry Pi |
+| **MySQL / MariaDB** | `mysqli` | com utf8mb4 (testado no MariaDB 11.4) | a hospedagem já tem, ou você já usa |
+| **PostgreSQL** | `pgsql` | 12+, com ICU, o padrão (testado no 18) | você já tem um Postgres rodando |
+
+O sistema se comporta igual nos três. Isso é conferido pelo teste de paridade ([`testes/`](testes/)), que roda o mesmo
+roteiro nos três bancos e compara tudo o que a API devolve.
 
 ```sh
 # 1. o código
 git clone https://github.com/Challado/relojoeiro.git /var/www/relogios
 cd /var/www/relogios
 
-# 2. o banco
-mysql -u root -p -e "CREATE DATABASE relogios2 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
-mysql -u root -p --default-character-set=utf8mb4 relogios2 < schema.sql
-
-# 3. a configuração (banco, token da API, fuso, mensagens)
+# 2. a configuração: o banco (DB_TIPO), o token da API, o fuso, as mensagens
 cp config.exemplo.php config.php
 nano config.php
 
-# 4. o primeiro usuário (a senha é pedida sem aparecer)
+# 3. o banco vazio (só no MySQL e no Postgres; o SQLite cria o arquivo sozinho)
+#    MySQL:    mysql -u root -p -e "CREATE DATABASE relogios2 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+#    Postgres: createdb -U postgres relogios2
+
+# 4. a instalação: a estrutura e o conjunto inicial, traduzidos para o banco do config.php
+php instalar.php
+
+# 5. o primeiro usuário (a senha é pedida sem aparecer)
 php criar_usuario.php seu_login
 
-# 5. o cron, a cada minuto (ele é mudo: não escreve nada e não manda e-mail)
+# 6. o cron, a cada minuto (ele é mudo: não escreve nada e não manda e-mail)
 ( crontab -l; echo "* * * * * php /var/www/relogios/cron.php" ) | crontab -
 ```
 
-**6. O servidor web.** O [`nginx-relogios.conf`](nginx-relogios.conf) tem um bloco pronto que deixa abrir só as páginas e o
-`api.php`, e bloqueia o núcleo, a configuração, o cron, os scripts e os arquivos `.sql`, `.json` e `.md`. **Não deixe
-`config.php` nem `lib.php` acessíveis pela web.** No Apache, faça o equivalente com `<FilesMatch>`.
+No SQLite, ponha o arquivo do banco (`DB_ARQUIVO`) **fora da pasta que o servidor web publica**, numa pasta em que o
+usuário do PHP possa escrever (o SQLite cria ao lado os arquivos `-wal` e `-shm`).
 
-**7. Abra no navegador** e entre com o usuário criado. O conjunto inicial já está lá: cadastre seus relógios em
+**7. O servidor web.** O [`nginx-relogios.conf`](nginx-relogios.conf) tem um bloco pronto que deixa abrir só as páginas e o
+`api.php`, e bloqueia o núcleo, o banco, a configuração, o cron, os scripts, os testes e os arquivos `.sql`, `.json`, `.md` e
+`.sqlite`. **Não deixe `config.php`, `lib.php` nem `banco.php` acessíveis pela web.** No Apache, faça o equivalente com
+`<FilesMatch>`.
+
+**8. Abra no navegador** e entre com o usuário criado. O conjunto inicial já está lá: cadastre seus relógios em
 **Hoje → Novo relógio**, escolha o grupo de cada um e preencha os campos.
 
 ### O `config.php`
 
 | Constante | Para quê |
 |---|---|
-| `DB_HOST`, `DB_NOME`, `DB_USUARIO`, `DB_SENHA` | o banco |
+| `DB_TIPO` | o banco: `mysql` (o padrão, vale para o MariaDB), `pgsql` ou `sqlite` |
+| `DB_HOST`, `DB_PORTA`, `DB_NOME`, `DB_USUARIO`, `DB_SENHA` | o servidor do banco (MySQL e Postgres); `DB_PORTA` 0 é a porta padrão |
+| `DB_ARQUIVO` | o arquivo do banco (SQLite), fora da pasta publicada |
 | `API_TOKEN` | **obrigatório**, com 10 caracteres ou mais. Sem ele o sistema inteiro para e diz por quê. |
-| `FUSO` | o fuso horário, como `America/Sao_Paulo` |
+| `FUSO` | o fuso horário, como `America/Sao_Paulo`. Vazio ou ausente: o do PHP (`date.timezone` no php.ini). Vale para tudo, inclusive para as datas que o banco grava |
 | `MSG_ENDPOINT`, `MSG_DESTINATARIO`, `MSG_TITULO` | as mensagens (veja abaixo). Sem o endereço, nada é enviado. |
 
 ### Mensagens pelo Telegram
@@ -303,6 +322,24 @@ dentro da janela de antecedência, e a manutenção (pilha, revisão, garantia) 
 Depois de atualizar o código, se houver migração nova (`migracao_v*.sql`), a API responde `503` e a página **Configuração**
 mostra o botão para aplicá-la. O cron também para e registra o motivo, em vez de rodar pela metade. Numa instalação nova, o
 `schema.sql` já traz todas as migrações.
+
+O `schema.sql` e cada migração são **um arquivo só para os três bancos**: a estrutura (`CREATE TABLE`, `ALTER TABLE`) é
+escrita no dialeto do MySQL, e o [`banco.php`](banco.php) traduz para o Postgres e o SQLite (`AUTO_INCREMENT`, `ENUM`,
+`TINYINT`, `DATETIME`, os `INDEX` dentro da tabela, o `AFTER` e o `MODIFY COLUMN`, que no SQLite refaz a tabela). Os dados
+(`INSERT`, `UPDATE`) vão em SQL comum aos três: nada de `GROUP_CONCAT`, `IF()` ou `FIND_IN_SET`. `INSERT IGNORE`,
+`REPLACE INTO`, `NOW()`, `LEAST`, `<=>` e `CONCAT` podem (o `CONCAT` sem argumento NULL: no Postgres o NULL vira texto
+vazio, no MySQL o resultado vira NULL). As migrações v2 a v8 são de antes disso e existem só para atualizar bancos MySQL
+antigos: um banco Postgres ou SQLite já nasce na versão atual.
+
+### Diferenças entre os bancos que você pode notar
+
+- **Maiúsculas e acentos:** como no MySQL, "Relógio" e "RELOGIO" são o mesmo nome, na busca, na ordem e no login. No
+  Postgres, isso vem de uma collation ICU (`ci`) que o `instalar.php` cria. No SQLite, de uma função do PHP; por isso, num
+  programa de fora (o `sqlite3` da linha de comando, o DB Browser), ordenar ou comparar essas colunas dá o erro "no such
+  collation sequence: ci". Ler e exportar funciona normalmente.
+- **A ordem das colunas** de uma migração com `AFTER` só vale no MySQL: nos outros a coluna nova vai para o fim da tabela
+  (muda só a ordem das chaves no JSON da API).
+- **Os ids** podem pular números diferentes em cada banco (o MySQL reserva ids em bloco em alguns `INSERT ... SELECT`).
 
 ### Vindo do sistema anterior
 
@@ -341,7 +378,9 @@ Pode. As telas usam exatamente a mesma API.
 
 ## Como é por dentro
 
-- **PHP 8.1+ puro e MySQL/MariaDB.** Sem framework, sem Composer e sem dependências, para rodar em qualquer hospedagem com PHP.
+- **PHP 8.1+ puro, com SQLite, MySQL/MariaDB ou PostgreSQL.** Sem framework, sem Composer e sem dependências, para rodar em
+  qualquer hospedagem com PHP. Cada banco pela extensão nativa do PHP (`sqlite3`, `mysqli`, `pgsql`); o SQL do sistema é
+  escrito uma vez só e o [`banco.php`](banco.php) traduz o que muda de um banco para outro.
 - **Motor de fórmulas próprio**, com análise sintática, funções de histórico, versões por grupo e dependências entre fórmulas.
 - **Simulação:** a escala e as previsões simulam lançamentos futuros e recalculam as fórmulas dia a dia, sem gravar nada.
 - **Front-end em HTML e JavaScript puro.** Cada página PHP só confere o login e entrega o esqueleto; o `.js` dela chama a API e
@@ -355,7 +394,8 @@ Pode. As telas usam exatamente a mesma API.
 | Arquivo | O que é |
 |---|---|
 | [`api.php`](api.php) | a API: toda leitura e escrita, com a documentação completa no cabeçalho |
-| [`lib.php`](lib.php) | o núcleo: banco, login, árvore, motor de fórmulas, avisos, critérios, rodízio, escala, mensagens, agenda |
+| [`lib.php`](lib.php) | o núcleo: login, árvore, motor de fórmulas, avisos, critérios, rodízio, escala, mensagens, agenda |
+| [`banco.php`](banco.php) | o banco: a conexão com o MySQL, o Postgres ou o SQLite, e a tradução do SQL de um para outro |
 | [`operacoes.php`](operacoes.php) | as regras de cada gravação: validações e mensagens |
 | [`cron.php`](cron.php) | o plano, a sessão do dia, as rodadas da manhã e da noite, os eventos e a agenda |
 | `index.php`, `ficha.php`, `historico.php`, `configuracao.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `usuarios.php` | as páginas (só o esqueleto) |
@@ -365,9 +405,11 @@ Pode. As telas usam exatamente a mesma API.
 | [`schema.sql`](schema.sql) | a estrutura do banco e o conjunto inicial (grupos, campos, fórmulas, avisos, modos, critérios) |
 | `migracao_v2.sql` … `migracao_v8.sql` | as migrações, aplicadas pela página Configuração |
 | [`config.exemplo.php`](config.exemplo.php) | o modelo do `config.php` |
+| [`instalar.php`](instalar.php) | instala o `schema.sql` no banco do `config.php`, qualquer um dos três |
 | [`criar_usuario.php`](criar_usuario.php) | cria um usuário ou troca a senha, pela linha de comando |
 | [`importar.php`](importar.php) | importa os dados do sistema anterior |
 | [`nginx-relogios.conf`](nginx-relogios.conf) | o bloco do nginx que protege os arquivos internos |
+| [`testes/`](testes/) | o teste de paridade: o mesmo roteiro pela API em cada banco, e o comparador das respostas |
 | [`PORTE.md`](PORTE.md), [`PARIDADE.md`](PARIDADE.md) | o registro do porte da versão anterior |
 
 ---

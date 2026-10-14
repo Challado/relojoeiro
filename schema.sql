@@ -1,6 +1,9 @@
 -- Relógios 2: o banco. O código só tem mecanismos; o conteúdo é cadastro.
--- Instala no banco que você indicar (vazio): mysql -u root -p --default-character-set=utf8mb4 relogios < schema.sql
+-- Instala no banco do config.php (vazio), seja ele MySQL/MariaDB, PostgreSQL ou SQLite: php instalar.php
+-- (no MySQL também dá direto: mysql -u root -p --default-character-set=utf8mb4 relogios < schema.sql)
 -- Depois, para trazer os dados do sistema antigo: php importar.php relogios   (veja o importar.php)
+-- Um arquivo só para os três bancos: a estrutura (CREATE TABLE, ALTER TABLE) no dialeto do MySQL, que o banco.php
+-- traduz para o PostgreSQL e o SQLite; os dados (INSERT, UPDATE) em SQL comum aos três. O mesmo vale para as migrações.
 SET NAMES utf8mb4;
 
 -- a árvore de classificação: cada relógio fica num ponto; cada ponto pode ter campos, lançamentos e fórmulas
@@ -421,15 +424,11 @@ INSERT IGNORE INTO config (chave, valor) VALUES
 INSERT IGNORE INTO config (chave, valor)
     SELECT 'ag_padrao', COALESCE((SELECT valor FROM config WHERE chave = 'agenda_modelo'),
         '{acao}: {relogio}\n{motivo}\n\n{relogio} (código {codigo}, {tipo}) · {estado} · carga {carga}\n{link}');
-INSERT IGNORE INTO config (chave, valor)
-    SELECT 'alerta_tipos', CONCAT('dia,vespera,garantia,carregar,carga_baixa,leitura,corda,sol,pilha,revisao',
-        COALESCE((SELECT CONCAT(',', GROUP_CONCAT(CONCAT('ev', id) ORDER BY id)) FROM evento_personalizado WHERE telegram = 1), ''));
-INSERT IGNORE INTO config (chave, valor)
-    SELECT 'agenda_tipos', CONCAT_WS(',',
-        IF((SELECT valor FROM config WHERE chave = 'agenda_dia') = '1', 'dia', NULL),
-        IF((SELECT valor FROM config WHERE chave = 'agenda_vespera') = '1', 'vespera', NULL),
-        (SELECT GROUP_CONCAT(DISTINCT identificador ORDER BY identificador) FROM aviso WHERE agenda <> 'nao'),
-        (SELECT GROUP_CONCAT(CONCAT('ev', id) ORDER BY id) FROM evento_personalizado WHERE agenda = 1));
+-- (numa instalação nova ainda não há eventos, a agenda do dia e da véspera estão desligadas e os avisos que vão para a
+-- agenda são estes; a migracao_v5.sql, que atualiza um banco que já existe, monta as listas a partir do que ele tem)
+INSERT IGNORE INTO config (chave, valor) VALUES
+    ('alerta_tipos', 'dia,vespera,garantia,carregar,carga_baixa,leitura,corda,sol,pilha,revisao'),
+    ('agenda_tipos', 'carregar,corda,pilha,revisao,sol');
 
 -- o texto que um evento personalizado tinha vira a personalizada dele no Telegram; os canais de cada evento ficam nas
 -- listas acima, e o texto e as caixas saem do evento (no antigo, o evento só tem quando dispara)
@@ -535,7 +534,8 @@ INSERT INTO aviso (identificador, nome, expressao, condicao, antecedencia_dias, 
     FROM aviso WHERE identificador = 'corda' AND no_id = 3 AND NOT EXISTS (SELECT 1 FROM (SELECT id FROM aviso WHERE identificador = 'winder') x) LIMIT 1;
 
 -- o aviso novo vai pelos mesmos canais que o de corda
-UPDATE config SET valor = CONCAT(valor, ',winder') WHERE chave IN ('alerta_tipos', 'agenda_tipos') AND FIND_IN_SET('corda', valor) > 0 AND FIND_IN_SET('winder', valor) = 0;
+UPDATE config SET valor = CONCAT(valor, ',winder') WHERE chave IN ('alerta_tipos', 'agenda_tipos')
+    AND CONCAT(',', valor, ',') LIKE '%,corda,%' AND CONCAT(',', valor, ',') NOT LIKE '%,winder,%';
 
 -- critérios iniciais (o "restaurar" da página Critérios lê daqui até o fim do arquivo)
 -- critérios de todos os relógios

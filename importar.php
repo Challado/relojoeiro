@@ -1,6 +1,8 @@
 <?php
 // Traz os dados do sistema antigo para este banco: php importar.php <banco antigo> [--substituir]
-// Os dois bancos no mesmo servidor, com o usuário do config.php. Traz: a árvore (os grupos, com os mesmos números), os
+// O banco antigo é MySQL/MariaDB: com este sistema também no MySQL, os dois no mesmo servidor, com o usuário do config.php;
+// com este no PostgreSQL ou no SQLite, o servidor antigo vem de ANTIGO_HOST, ANTIGO_PORTA, ANTIGO_USUARIO e ANTIGO_SENHA
+// no config.php (o que faltar vem do DB_* dele). Traz: a árvore (os grupos, com os mesmos números), os
 // relógios, as fotos, os usuários, os valores dos campos (cada coluna do cadastro antigo no campo equivalente, só nos
 // relógios em que o campo vale) e o histórico, como lançamentos (sessões no pulso, no winder e no sol; leituras de
 // carga; cordas; trocas de pilha; revisões; as marcações antigas sem duração). O plano, a configuração e os critérios
@@ -16,12 +18,19 @@ if (preg_match("/^[A-Za-z0-9_]+\$/", $banco) !== 1) {
     fwrite(STDERR, "Uso: php importar.php <banco antigo> [--substituir]\n");
     exit(1);
 }
+$de_antigo = function ($nome, $padrao) {
+    return defined("ANTIGO_" . $nome) ? constant("ANTIGO_" . $nome) : (banco_tipo() === "mysql" && defined("DB_" . $nome) ? constant("DB_" . $nome) : $padrao);
+};
+$antigo_usuario = (string)$de_antigo("USUARIO", "root");
 try {
-    $antigo = new mysqli(DB_HOST, DB_USUARIO, DB_SENHA, $banco);
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+    $porta = (int)$de_antigo("PORTA", 0);
+    $antigo = new mysqli((string)$de_antigo("HOST", "127.0.0.1"), $antigo_usuario, (string)$de_antigo("SENHA", ""), $banco, $porta > 0 ? $porta : null);
     $antigo->set_charset("utf8mb4");
 } catch (mysqli_sql_exception $e) {
-    fwrite(STDERR, "Não consegui abrir o banco " . $banco . " com o usuário do config.php (" . DB_USUARIO . "): " . $e->getMessage() . "\n"
-        . "O usuário precisa poder ler o banco antigo. No mysql, como root: GRANT SELECT ON " . $banco . ".* TO '" . DB_USUARIO . "'@'localhost';\n");
+    fwrite(STDERR, "Não consegui abrir o banco antigo " . $banco . " com o usuário " . $antigo_usuario . ": " . $e->getMessage() . "\n"
+        . "O usuário precisa poder ler o banco antigo. No mysql, como root: GRANT SELECT ON " . $banco . ".* TO '" . $antigo_usuario . "'@'localhost';\n"
+        . (banco_tipo() === "mysql" ? "" : "Com este sistema no " . banco_tipo() . ", diga onde está o MySQL antigo no config.php: ANTIGO_HOST, ANTIGO_PORTA, ANTIGO_USUARIO, ANTIGO_SENHA.\n"));
     exit(1);
 }
 $ler = function ($comando) use ($antigo) {
@@ -32,7 +41,7 @@ if ((int)valor("SELECT COUNT(*) FROM relogio") > 0 && !in_array("--substituir", 
     exit(1);
 }
 $conta = [];
-db()->begin_transaction();
+banco_inicio();
 sql("DELETE FROM lancamento");
 sql("DELETE FROM campo_valor");
 sql("DELETE FROM foto");
@@ -147,7 +156,9 @@ foreach ($ler("SELECT * FROM uso_periodo ORDER BY inicio") as $p) {
         [(int)$p["relogio_id"], $tipos[$tipo[0]], $p["inicio"], $p["fim"], $tipo[1]]);
     $conta["lançamentos"]++;
 }
-db()->commit();
+banco_confirma();
+// os ids gravados com os mesmos números do antigo: o próximo id de cada tabela passa deles (no Postgres, aqui)
+banco_ajustar_ids();
 
 echo "Importado de " . $banco . ":\n";
 foreach ($conta as $o_que => $n) {
