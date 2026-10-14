@@ -216,8 +216,15 @@ function abrirNoPainel(id) {
         .concat(r.situacao.map(function (l, i) { return [i === 0 ? "Situação" : "", h(l)]; }))
         .concat(ultima ? [["Última leitura", num(ultima.valor, 1) + h(ultima.unidade) + " " + el("small", {}, dataBr(ultima.inicio, true) + " " + horaBr(ultima.inicio))]] : [])));
       if (r.previsao.aplica) {
+        // as frases da previsão e, embaixo, de onde vem cada número da conta: o que é (e como foi medido), o valor e a origem
+        var contaPrev = r.previsao.conta.length === 0 ? "" : el("h3", {"class": "conta-titulo"}, "De onde vem a conta")
+          + el("table", {"class": "tabela-dados conta-previsao"}, el("tbody", {}, r.previsao.conta.map(function (cc) {
+            return el("tr", {"class": cc.valor === null ? "vazio" : ""}, el("td", {}, h(cc.nome) + (cc.detalhe ? el("small", {}, h(cc.detalhe)) : ""))
+              + el("td", {"class": "valor"}, cc.valor === null ? "—" : num(cc.valor, 2) + (cc.unidade !== "" ? el("small", {}, h(cc.unidade)) : ""))
+              + el("td", {"class": "origem-celula"}, el("span", {"class": "origem origem-" + (cc.origem === "padrão" ? "padrao" : cc.origem)}, h(cc.origem))));
+          }).join("")));
         blocos += quadro("Previsão", r.previsao.linhas.length === 0 ? el("p", {"class": "nota"}, "Informe a carga atual para o sistema começar a prever.")
-          : el("ul", {"class": "linhas"}, r.previsao.linhas.map(function (l) { return el("li", {}, h(l)); }).join("")));
+          : el("ul", {"class": "linhas"}, r.previsao.linhas.map(function (l) { return el("li", {}, h(l)); }).join("")) + contaPrev);
       }
       // os dois gastos: o que vale na conta, e de onde ele vem (o medido pelas leituras, o do cadastro)
       var gs = r.previsao.gasto;
@@ -433,9 +440,7 @@ function abrirNoPainel(id) {
               return "<circle cx=\"" + xy[0] + "\" cy=\"" + xy[1] + "\" r=\"4\" class=\"" + (r.leituras[i].em_uso ? "ponto-uso" : "ponto-repouso") + "\"/>";
             }).join("")
             + "</svg>" + el("p", {"class": "nota"}, el("span", {"class": "bolinha ponto-uso"}, "") + " leitura em uso " + el("span", {"class": "bolinha ponto-repouso"}, "") + " em repouso. "
-              + de + " a " + ate + ", de 0 a 100%." + (r.previsao.conta.length > 0 ? " Conta: " + h(r.previsao.conta.map(function (cc) {
-                return cc.nome + ": " + (cc.valor === null ? "vazio" : num(cc.valor, 2) + (cc.unidade !== "" ? " " + cc.unidade : "") + " (" + cc.origem + ")");
-              }).join("; ")) + "." : ""));
+              + de + " a " + ate + ", de 0 a 100%. De onde vem cada número da conta: no quadro Previsão.");
         }
         // as medições do gasto pelas leituras (as 10 mais recentes) e se cada uma entra na média
         var med = "";

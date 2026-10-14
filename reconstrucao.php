@@ -359,8 +359,11 @@ const RECONSTRUCAO_TELAS = [
                         . "\"indisponível\", \"relógio de hoje\".",
                     "Os quadros, numa grade (lado a lado onde cabem): Agora (pares: Estado (\"No carregador desde 06:30\", na cor do "
                         . "estado); Carga com a barra e \"~68%\" e de onde vem; Situação, uma linha por item; Última leitura); Previsão (só "
-                        . "nos que têm leitura: as frases da API, ou \"Informe a carga atual para o sistema começar a prever.\"); Gasto da "
-                        . "bateria (No pulso, Fora do pulso: o que vale \"% por dia\" e embaixo se é medido ou do cadastro; Janela "
+                        . "nos que têm leitura: as frases da API, ou \"Informe a carga atual para o sistema começar a prever.\"; embaixo, "
+                        . "\"De onde vem a conta\" (título pequeno em maiúsculas cinza) e a tabela da previsao.conta, uma linha por número: "
+                        . "o nome (e, menor, embaixo, o detalhe de como o gasto foi medido), o valor (com a unidade menor embaixo; \"—\" "
+                        . "se vazio, a linha em cinza) e a origem em etiqueta: informado azul, padrão âmbar, medido verde, vazio cinza); "
+                        . "Gasto da bateria (No pulso, Fora do pulso: o que vale \"% por dia\" e embaixo se é medido ou do cadastro; Janela "
                         . "anterior; Medições; no rodapé \"Medições mais velhas que a janela saem da conta...\"); Autonomia (Cheio, pelo "
                         . "cadastro; Cheio, pela conta; Acaba, seguindo o plano (data e hora, e \"em <duração>\"); No pulso sem tirar; "
                         . "Guardado; sem dado, o motivo em cinza); Rodízio (Nota com o link \"ver a conta\" (Critérios, numa aba nova); "
@@ -396,11 +399,12 @@ const RECONSTRUCAO_TELAS = [
                         . "quando o config.php não decide); botão \"Cadastrar relógio\" ou \"Salvar alterações\" (relogio salvar). Embaixo, "
                         . "\"Excluir este relógio\" (discreto; confirma \"Excluir <nome> com todo o histórico e a foto?\").",
                     "Carga ao longo do tempo (largo; nos que têm leitura): um gráfico de linha das leituras (eixo de 0 a 100%, "
-                        . "guias em 0, 50 e 100%, pontos verdes em uso e vermelhos em repouso, a linha em safira), com a legenda e a "
-                        . "conta da previsão; com menos de duas leituras, \"O gráfico aparece a partir de duas leituras de carga.\" "
-                        . "Embaixo, \"Medições do gasto\": tabela Quando, Leituras (\"89 → 75\"), Horas (\"14 h no pulso, 2 h fora\"), Gasto "
-                        . "medido (\"% por dia de uso\" ou \"fora do pulso\"), Na conta (sim; não (fora da janela); não (só histórico)), as "
-                        . "10 mais recentes.",
+                        . "guias em 0, 50 e 100%, pontos verdes em uso e vermelhos em repouso, a linha em safira), com a legenda "
+                        . "(\"leitura em uso\", \"em repouso\", o período, \"de 0 a 100%\" e \"De onde vem cada número da conta: no quadro "
+                        . "Previsão.\"); com menos de duas leituras, \"O gráfico aparece a partir de duas leituras de carga.\" Embaixo, "
+                        . "\"Medições do gasto\": tabela Quando, Leituras (\"89 → 75\"), Horas (\"14 h no pulso, 2 h fora\"), Gasto medido (\"% "
+                        . "por dia de uso\" ou \"fora do pulso\"), Na conta (sim; não (fora da janela); não (só histórico)), as 10 mais "
+                        . "recentes.",
                     "Dados do relógio (largo): duas tabelas lado a lado (o valor numérico, a data e o sim/não numa linha só; o "
                         . "valor de texto, como a observação ou uma fórmula que dá texto, quebra a linha dentro da coluna, sem invadir a "
                         . "tabela do lado): Cadastro (Campo, Valor, Origem com a etiqueta informado/padrão/vazio) e Calculado agora "
