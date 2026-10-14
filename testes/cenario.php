@@ -1,6 +1,6 @@
 <?php
 // O roteiro de paridade: faz pela API o que uma pessoa faz no sistema (cadastra relógios de cada tipo, lança cordas,
-// cargas, sol, winder e pilha, monta a escala, mexe nos critérios, nos eventos e nas fotos, roda o cron) e no fim tira a
+// cargas, sol, winder, carregador e pilha, monta a escala, mexe nos critérios, nos eventos e nas fotos, roda o cron) e no fim tira a
 // "fotografia" de tudo o que a API devolve. Rodado contra cada banco (MySQL, Postgres, SQLite) num banco recém-instalado,
 // as fotografias têm de sair iguais; o testes/comparar.php diz onde não saíram.
 //   php testes/cenario.php http://127.0.0.1:8081/api.php saida.json
@@ -150,10 +150,14 @@ $lanc("periodo", "solar", "sol", ["inicio" => dia(8, "10:00"), "fim" => dia(8, "
 $lanc("iniciar", "solar", "sol", ["quando" => ha_minutos(20)]);
 $lanc("iniciar", "auto2", "winder", ["quando" => ha_minutos(30)]);
 $lanc("encerrar", "auto2", "winder", ["quando" => ha_minutos(25)]);
+// o carregador: um período que já passou e um aberto agora (o estado vira "No carregador" e o aviso Carregar some)
+$lanc("periodo", "smart", "carregador", ["inicio" => dia(7, "20:00"), "fim" => dia(7, "23:00")]);
+$lanc("iniciar", "smart", "carregador", ["quando" => ha_minutos(15)]);
 $lanc("lancar", "crono", "banho_ultrassom", ["quando" => dia(1, "15:00")]);
 $id_errado = $lanc("lancar", "crono", "banho_ultrassom", ["quando" => dia(1, "16:00")]);
 escrever(["recurso" => "lancamento", "acao" => "excluir", "id" => $id_errado]);
 escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["pilha"], "tipo" => "sol"], false);   // o tipo não vale para ele
+escrever(["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel["pilha"], "tipo" => "carregador"], false);   // só onde vale a leitura de carga
 escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["smart"], "tipo" => "carga", "valor" => 50, "quando" => date("Y-m-d H:i", time() + 86400)], false);
 
 // ---------- os critérios ----------

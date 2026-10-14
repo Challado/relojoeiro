@@ -49,7 +49,7 @@ topo("Relógio de hoje", "index.php");
             <td data-rotulo="Código"><input data-filtro="codigo" aria-label="Filtrar por código" placeholder="nº" class="curto"></td>
             <td data-rotulo="Relógio"><input data-filtro="nome" aria-label="Filtrar por nome" placeholder="buscar"></td>
             <td data-rotulo="Tipo"><select data-filtro="tipo" aria-label="Filtrar por tipo"><option value="">Todos</option></select></td>
-            <td data-rotulo="Estado"><select data-filtro="estado" aria-label="Filtrar por estado"><option value="">Todos</option><option>Em uso</option><option>Em repouso</option><option>Indisponível</option></select></td>
+            <td data-rotulo="Estado"><select data-filtro="estado" aria-label="Filtrar por estado"><option value="">Todos</option></select></td>
             <td data-rotulo="Carga"><select data-filtro="carga" aria-label="Filtrar por carga"><option value="">Todas</option><option value="20">≤ 20%</option><option value="50">≤ 50%</option></select></td>
             <td data-rotulo="Última vez usado"><select data-filtro="ultimo" aria-label="Filtrar pela última vez usado"><option value="">Todos</option><option value="7">7 dias</option><option value="mais7">+7 dias</option><option value="nunca">nunca</option></select></td>
             <td data-rotulo="Próxima manutenção"><select data-filtro="manut" aria-label="Filtrar pela próxima manutenção"><option value="">Todas</option><option value="0">até hoje</option><option value="7">7 dias</option><option value="30">30 dias</option></select></td>

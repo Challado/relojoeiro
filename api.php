@@ -159,8 +159,10 @@
  *                            {"identificador", "nome", "formato", "unidade"} (o lançamento do botão)}], "plano": [os próximos 62 dias:
  *                            {"data", "relogio_id", "relogio", "acao", "motivo", "origem"}], "proxima_semana": {"segunda", "domingo", "ja_montada"}, "modos":
  *                            [{"id", "nome", "selecao", "escala_dias", "blocos": [{"id", "nome", "dias", "no_id", "um_por", "relogio_id"}]}],
- *                            "grupos": [{"id", "nome", "profundidade", "caminho"}], "avisos_nomes", "relogios": [{"id", "nome",
- *                            "disponivel", "tipo" (o grupo), "em_uso", "agora" ("Em repouso desde 21:40"), "carga" (%), "carga_de" (de onde
+ *                            "grupos": [{"id", "nome", "profundidade", "caminho"}], "avisos_nomes", "estados" (o filtro Estado),
+ *                            "relogios": [{"id", "nome", "disponivel", "tipo" (o grupo), "em_uso", "estado" (uso, sessao, repouso ou
+ *                            indisponivel), "estado_texto" ("Em uso", "No sol", "No carregador", "Em repouso", "Indisponível"),
+ *                            "estado_ordem", "agora" ("No sol desde 09:12"), "carga" (%), "carga_de" (de onde
  *                            vem), "ultimo" (a última vez no pulso, em segundos), "ultimo_txt", "situacao": [linhas], "manutencao":
  *                            {"nome", "data", "momento", "falta"} (o aviso mais perto), "compra": {"data", "valor", "loja", "garantia_ate"},
  *                            "leitura": {"inicio", "valor", "unidade"} (a última), "de_hoje", "com_aviso", "foto" (a versão)}], "totais":
@@ -169,7 +171,8 @@
  *   recurso=ficha            relogio=<id>: tudo o que o painel de um relógio mostra: {"hoje", "copia_sistema", "painel_modo",
  *                            "relogio": {"id", "nome", "no_id",
  *                            "disponivel", "copia_banco", "tipo", "caminho", "observacao", "foto", "documentos": {"total",
- *                            "categorias": [{"id", "nome", "documentos"}], "pasta_ok", "copia_sistema"}, "em_uso", "agora", "carga",
+ *                            "categorias": [{"id", "nome", "documentos"}], "pasta_ok", "copia_sistema"}, "em_uso", "estado",
+ *                            "estado_texto", "agora", "carga",
  *                            "carga_de", "situacao", "nota": {"nota", "conjunto_texto"}, "proxima" (a próxima entrada no plano), "proxima_ate", "escala_fim",
  *                            "compra", "manutencoes": [{"data", "nome"}], "previsao" (como em recurso=previsao), "tipos": [os lançamentos
  *                            do relógio: {"identificador", "nome", "formato", "unidade", "aberta": {"inicio", "rodizio", "texto"}}],
@@ -575,6 +578,7 @@
  *     config.migracao_v12            marca de que a migração v12 foi aplicada (1)
  *     config.migracao_v16            marca de que a migração v16 foi aplicada (1)
  *     config.migracao_v17            marca de que a migração v17 foi aplicada (1)
+ *     config.migracao_v18            marca de que a migração v18 foi aplicada (1)
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso); 0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
@@ -1072,6 +1076,8 @@
  *     avisos[].resolve.unidade       a unidade do valor
  *     avisos[].texto                 o motivo por extenso
  *     avisos_nomes[]                 os nomes dos avisos (o filtro "O que fazer" da tabela)
+ *     estados[]                      os estados da tabela, na ordem (o filtro Estado): "Em uso", o nome de cada sessão que não é o pulso
+ *                                    ("No sol", "No winder", "No carregador"...), "Em repouso" e "Indisponível"
  *     comecou                        verdadeiro ou falso: o dia já começou no pulso (há relógio do dia e: pondo no pulso sozinho,
  *                                    passou do uso_inicio; senão, ele já foi posto no pulso hoje)
  *     pulso_poe_sozinho              verdadeiro: o relógio do dia entra no pulso sozinho no início do horário de uso; falso: só pelo Pôs
@@ -1121,7 +1127,8 @@
  *     proxima_semana.ja_montada      verdadeiro ou falso: a próxima semana já está no plano
  *     proxima_semana.segunda         a segunda-feira da próxima semana (texto AAAA-MM-DD)
  *     relogios[]                     a tabela dos relógios
- *     relogios[].agora               o estado por extenso ("Em uso desde 07:00")
+ *     relogios[].agora               o estado por extenso, desde quando ("Em uso desde 07:00", "No sol desde 09:12", "Em repouso desde
+ *                                    21:40")
  *     relogios[].carga               a energia agora, em % inteiro; null: indisponível ou sem dados
  *     relogios[].carga_de            de onde vem a energia ("bateria do smartwatch") ou por que não há
  *     relogios[].com_aviso           verdadeiro ou falso: tem aviso hoje
@@ -1132,6 +1139,12 @@
  *     relogios[].de_hoje             verdadeiro ou falso: é o relógio de hoje
  *     relogios[].disponivel          verdadeiro ou falso: entra no rodízio
  *     relogios[].em_uso              verdadeiro ou falso: no pulso agora
+ *     relogios[].estado              o estado na tabela: uso (no pulso), sessao (numa sessão que não é o pulso: no sol, no winder, no
+ *                                    carregador...), repouso ou indisponivel (o indisponível parado; no pulso ou numa sessão, vale o que
+ *                                    ele está fazendo)
+ *     relogios[].estado_texto        o estado como a tabela mostra: "Em uso", o nome da sessão aberta ("No sol", "No carregador"; duas
+ *                                    juntas: "No sol · No winder"), "Em repouso" ou "Indisponível"
+ *     relogios[].estado_ordem        a ordem do estado na tabela: 0 em uso, 1 numa sessão, 2 em repouso, 3 indisponível
  *     relogios[].foto                a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC), para o endereço dela); null: sem
  *                                    foto
  *     relogios[].id                  o número (código)
@@ -1145,7 +1158,8 @@
  *     relogios[].manutencao.momento  o instante previsto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC))
  *     relogios[].manutencao.nome     o aviso
  *     relogios[].nome                o nome
- *     relogios[].situacao[]          as frases de situação ("Autonomia restante 1d 23min")
+ *     relogios[].situacao[]          as frases de situação: as sessões abertas que o estado não mostra e a autonomia restante ("Autonomia
+ *                                    restante 1d 23min")
  *     relogios[].tipo                o grupo do relógio (o nome)
  *     relogios[].ultimo              a última vez no pulso (número inteiro: instante Unix (segundos desde 01/01/1970 UTC); 0: nunca)
  *     relogios[].ultimo_txt          a mesma por extenso ("agora · 14:32", "25/09 21:53", "nunca")
@@ -1178,7 +1192,8 @@
  *     painel_modo                    como o relógio abre na página Hoje (a Configuração): lado (no painel à direita da lista, o padrão) ou
  *                                    flutuante (numa janela grande por cima da página); no celular, os dois cobrem a tela
  *     relogio                        o relógio; null: o cadastro de um relógio novo
- *     relogio.agora                  o estado por extenso
+ *     relogio.agora                  o estado por extenso, desde quando ("Em uso desde 07:00", "No sol desde 09:12", "Em repouso desde
+ *                                    21:40")
  *     relogio.autonomia              as autonomias do relógio (as mesmas do recurso autonomia)
  *     relogio.autonomia.acaba_em_datacomtz
  *                                    quando acaba, em ISO 8601 com o fuso (texto, ex.: 2026-10-02T18:40:00-03:00); null com o motivo
@@ -1241,6 +1256,10 @@
  *     relogio.copia_banco            verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da
  *                                    cópia; o DOCUMENTOS_COPIA_BANCO do config.php, se definido, vale por cima)
  *     relogio.em_uso                 verdadeiro ou falso: no pulso agora
+ *     relogio.estado                 o estado agora: uso (no pulso), sessao (numa sessão que não é o pulso: no sol, no winder, no
+ *                                    carregador...) ou repouso
+ *     relogio.estado_texto           o estado como a tela mostra: "Em uso", o nome da sessão aberta ("No sol", "No carregador"; duas
+ *                                    juntas: "No sol · No winder") ou "Em repouso"
  *     relogio.escala_fim             até que dia vai a escala (null fora da escala)
  *     relogio.foto                   a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
  *     relogio.id                     o número (código)
@@ -1363,7 +1382,7 @@
  *     relogio.proxima                o próximo dia no plano (texto AAAA-MM-DD); null: não está no plano
  *     relogio.proxima_ate            até quando ele fica nesse dia
  *     relogio.registros              quantos registros tem a linha do tempo inteira
- *     relogio.situacao[]             as frases de situação
+ *     relogio.situacao[]             as frases de situação: as sessões abertas que o estado não mostra e a autonomia restante
  *     relogio.tipo                   o nome do grupo
  *     relogio.tipos[]                os tipos de lançamento do relógio (os botões de Lançar)
  *     relogio.tipos[].aberta         a sessão aberta desse tipo agora; null: nenhuma
@@ -1429,6 +1448,7 @@
  *     config.migracao_v12            marca de que a migração v12 foi aplicada (1)
  *     config.migracao_v16            marca de que a migração v16 foi aplicada (1)
  *     config.migracao_v17            marca de que a migração v17 foi aplicada (1)
+ *     config.migracao_v18            marca de que a migração v18 foi aplicada (1)
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso); 0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
@@ -2806,11 +2826,15 @@ if (!$token_ok && $quem === "") {
     $rels = [];
     foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
         $v = visao_relogio($r, $agora);
+        // o estado na tabela: o indisponível parado aparece como indisponível; no pulso ou numa sessão, o que ele está fazendo
+        $estado_h = $v["estado"] === "repouso" && (int)$r["disponivel"] !== 1 ? "indisponivel" : $v["estado"];
         $val = valores_do_relogio((int)$r["id"]);
         $leitura = linha("SELECT l.inicio, l.valor, t.unidade FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'valor'
             ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [(int)$r["id"]]);
         $rels[] = ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1, "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "—",
-            "em_uso" => $v["em_uso"], "agora" => $v["texto"], "carga" => (int)$r["disponivel"] === 1 ? $v["energia"] : null, "carga_de" => $v["de"], "ultimo" => $v["ultimo"],
+            "em_uso" => $v["em_uso"], "estado" => $estado_h, "estado_texto" => $estado_h === "indisponivel" ? "Indisponível" : $v["estado_texto"],
+            "estado_ordem" => ["uso" => 0, "sessao" => 1, "repouso" => 2, "indisponivel" => 3][$estado_h],
+            "agora" => $v["texto"], "carga" => (int)$r["disponivel"] === 1 ? $v["energia"] : null, "carga_de" => $v["de"], "ultimo" => $v["ultimo"],
             "ultimo_txt" => $v["em_uso"] ? "agora · " . date("H:i", $agora) : ($v["ultimo"] > 0 ? date(date("Y", $v["ultimo"]) === date("Y", $agora) ? "d/m H:i" : "d/m/Y H:i", $v["ultimo"]) : "nunca"),
             "situacao" => $v["situacao"], "manutencao" => $v["prox"] ? ["nome" => $v["prox"]["nome"], "data" => max($hoje->format("Y-m-d"), substr($v["prox"]["data"], 0, 10)),
                 "momento" => $v["prox_momento"], "falta" => $v["prox_falta"]] : null,
@@ -2838,6 +2862,9 @@ if (!$token_ok && $quem === "") {
         "escala_fim" => cfg("escala_fim") !== "" ? cfg("escala_fim") : null, "max_sem_uso" => (int)cfg("max_sem_uso"),
         "dia" => $dia ? ["data" => $dia["data"], "relogio_id" => (int)$dia["relogio_id"], "relogio" => $dia["nome"], "ate" => texto_ate($dia["data"], "hoje"), "acao" => $dia["acao"], "motivo" => $dia["motivo"]] : null,
         "avisos" => $avisos_h,
+        // os estados da tabela, na ordem (o filtro Estado): em uso, cada sessão que não é o pulso, em repouso e indisponível
+        "estados" => array_merge(["Em uso"], array_column(linhas("SELECT nome FROM lancamento_tipo WHERE formato = 'sessao' AND identificador <> 'pulso' ORDER BY ordem, id"), "nome"),
+            ["Em repouso", "Indisponível"]),
         "plano" => array_map(function ($p) { return ["data" => $p["data"], "relogio_id" => (int)$p["relogio_id"], "relogio" => $p["nome"], "acao" => $p["acao"], "motivo" => $p["motivo"], "origem" => $p["origem"]]; },
             linhas("SELECT p.*, r.nome FROM plano p JOIN relogio r ON r.id = p.relogio_id WHERE p.data >= ? ORDER BY p.data LIMIT 62", [$hoje->format("Y-m-d")])),
         "proxima_semana" => ["segunda" => $seg->format("Y-m-d"), "domingo" => $seg->modify("+6 days")->format("Y-m-d"),
@@ -2901,7 +2928,7 @@ if (!$token_ok && $quem === "") {
                 $cats = array_values(array_filter(documento_categorias_lista($id), function ($c) { return $c["documentos"] > 0; }));
                 return ["total" => array_sum(array_column($cats, "documentos")), "categorias" => array_map(function ($c) { return ["id" => $c["id"], "nome" => $c["nome"], "documentos" => $c["documentos"]]; }, $cats),
                     "pasta_ok" => documentos_pasta() !== null, "copia_sistema" => documentos_copia_sistema()];
-            })(), "em_uso" => $v["em_uso"], "agora" => $v["texto"], "carga" => $v["energia"], "carga_de" => $v["de"], "situacao" => $v["situacao"],
+            })(), "em_uso" => $v["em_uso"], "estado" => $v["estado"], "estado_texto" => $v["estado_texto"], "agora" => $v["texto"], "carga" => $v["energia"], "carga_de" => $v["de"], "situacao" => $v["situacao"],
             "nota" => $nota ? ["nota" => $nota["nota"], "conjunto_texto" => $nota["conjunto_texto"]] : null,
             "proxima" => $proxima, "proxima_ate" => $proxima !== null ? texto_ate($proxima, "neste dia") : null,
             "escala_fim" => valor("SELECT escala_dias FROM modo WHERE id = ?", [modo_ativo()]) !== null ? cfg("escala_fim") : null,
@@ -3532,6 +3559,7 @@ if (!$token_ok && $quem === "") {
                 "config.migracao_v12" => "marca de que a migração v12 foi aplicada (1)",
                 "config.migracao_v16" => "marca de que a migração v16 foi aplicada (1)",
                 "config.migracao_v17" => "marca de que a migração v17 foi aplicada (1)",
+                "config.migracao_v18" => "marca de que a migração v18 foi aplicada (1)",
                 "config.pulso_auto_fim" => "1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o \"fecha às\" do tipo No pulso); 0: só pelo Tirou",
                 "config.pulso_auto_inicio" => "1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs",
                 "config.previsao_limite" => "o limite de carga da previsão do smartwatch, em %",
@@ -3879,6 +3907,7 @@ if (!$token_ok && $quem === "") {
                 "avisos[].resolve.unidade" => "a unidade do valor",
                 "avisos[].texto" => "o motivo por extenso",
                 "avisos_nomes[]" => "os nomes dos avisos (o filtro \"O que fazer\" da tabela)",
+                "estados[]" => "os estados da tabela, na ordem (o filtro Estado): \"Em uso\", o nome de cada sessão que não é o pulso (\"No sol\", \"No winder\", \"No carregador\"...), \"Em repouso\" e \"Indisponível\"",
                 "comecou" => "verdadeiro ou falso: o dia já começou no pulso (há relógio do dia e: pondo no pulso sozinho, passou do uso_inicio; senão, ele já foi posto no pulso hoje)",
                 "pulso_poe_sozinho" => "verdadeiro: o relógio do dia entra no pulso sozinho no início do horário de uso; falso: só pelo Pôs",
                 "pulso_tira_sozinho" => "verdadeiro: o relógio sai do pulso sozinho no fim do horário de uso; falso: só pelo Tirou",
@@ -3926,7 +3955,7 @@ if (!$token_ok && $quem === "") {
                 "proxima_semana.ja_montada" => "verdadeiro ou falso: a próxima semana já está no plano",
                 "proxima_semana.segunda" => "a segunda-feira da próxima semana (texto AAAA-MM-DD)",
                 "relogios[]" => "a tabela dos relógios",
-                "relogios[].agora" => "o estado por extenso (\"Em uso desde 07:00\")",
+                "relogios[].agora" => "o estado por extenso, desde quando (\"Em uso desde 07:00\", \"No sol desde 09:12\", \"Em repouso desde 21:40\")",
                 "relogios[].carga" => "a energia agora, em % inteiro; null: indisponível ou sem dados",
                 "relogios[].carga_de" => "de onde vem a energia (\"bateria do smartwatch\") ou por que não há",
                 "relogios[].com_aviso" => "verdadeiro ou falso: tem aviso hoje",
@@ -3937,6 +3966,9 @@ if (!$token_ok && $quem === "") {
                 "relogios[].de_hoje" => "verdadeiro ou falso: é o relógio de hoje",
                 "relogios[].disponivel" => "verdadeiro ou falso: entra no rodízio",
                 "relogios[].em_uso" => "verdadeiro ou falso: no pulso agora",
+                "relogios[].estado" => "o estado na tabela: uso (no pulso), sessao (numa sessão que não é o pulso: no sol, no winder, no carregador...), repouso ou indisponivel (o indisponível parado; no pulso ou numa sessão, vale o que ele está fazendo)",
+                "relogios[].estado_texto" => "o estado como a tabela mostra: \"Em uso\", o nome da sessão aberta (\"No sol\", \"No carregador\"; duas juntas: \"No sol · No winder\"), \"Em repouso\" ou \"Indisponível\"",
+                "relogios[].estado_ordem" => "a ordem do estado na tabela: 0 em uso, 1 numa sessão, 2 em repouso, 3 indisponível",
                 "relogios[].foto" => "a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC), para o endereço dela); null: sem foto",
                 "relogios[].id" => "o número (código)",
                 "relogios[].leitura" => "a última leitura com valor; null: nenhuma",
@@ -3949,7 +3981,7 @@ if (!$token_ok && $quem === "") {
                 "relogios[].manutencao.momento" => "o instante previsto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC))",
                 "relogios[].manutencao.nome" => "o aviso",
                 "relogios[].nome" => "o nome",
-                "relogios[].situacao[]" => "as frases de situação (\"Autonomia restante 1d 23min\")",
+                "relogios[].situacao[]" => "as frases de situação: as sessões abertas que o estado não mostra e a autonomia restante (\"Autonomia restante 1d 23min\")",
                 "relogios[].tipo" => "o grupo do relógio (o nome)",
                 "relogios[].ultimo" => "a última vez no pulso (número inteiro: instante Unix (segundos desde 01/01/1970 UTC); 0: nunca)",
                 "relogios[].ultimo_txt" => "a mesma por extenso (\"agora · 14:32\", \"25/09 21:53\", \"nunca\")",
@@ -3978,7 +4010,7 @@ if (!$token_ok && $quem === "") {
                 "copia_sistema" => "a cópia no banco pelo config.php (DOCUMENTOS_COPIA_BANCO), que vale sobre o relógio e o arquivo: verdadeiro, todo arquivo vai; falso, nenhum vai; null (sem a constante), cada relógio decide (a caixa do cadastro só aparece então)",
                 "painel_modo" => "como o relógio abre na página Hoje (a Configuração): lado (no painel à direita da lista, o padrão) ou flutuante (numa janela grande por cima da página); no celular, os dois cobrem a tela",
                 "relogio" => "o relógio; null: o cadastro de um relógio novo",
-                "relogio.agora" => "o estado por extenso",
+                "relogio.agora" => "o estado por extenso, desde quando (\"Em uso desde 07:00\", \"No sol desde 09:12\", \"Em repouso desde 21:40\")",
                 "relogio.autonomia" => "as autonomias do relógio (as mesmas do recurso autonomia)",
                 "relogio.autonomia.acaba_em_datacomtz" => "quando acaba, em ISO 8601 com o fuso (texto, ex.: 2026-10-02T18:40:00-03:00); null com o motivo",
                 "relogio.autonomia.acaba_em_segundos" => "quantos segundos faltam para acabar, a partir de calculado_em_unixtimestamp (número inteiro, em segundos; igual a autonomia_estimada); null com o motivo",
@@ -4018,6 +4050,8 @@ if (!$token_ok && $quem === "") {
                 "relogio.disponivel" => "verdadeiro ou falso: entra no rodízio",
                 "relogio.copia_banco" => "verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da cópia; o DOCUMENTOS_COPIA_BANCO do config.php, se definido, vale por cima)",
                 "relogio.em_uso" => "verdadeiro ou falso: no pulso agora",
+                "relogio.estado" => "o estado agora: uso (no pulso), sessao (numa sessão que não é o pulso: no sol, no winder, no carregador...) ou repouso",
+                "relogio.estado_texto" => "o estado como a tela mostra: \"Em uso\", o nome da sessão aberta (\"No sol\", \"No carregador\"; duas juntas: \"No sol · No winder\") ou \"Em repouso\"",
                 "relogio.escala_fim" => "até que dia vai a escala (null fora da escala)",
                 "relogio.foto" => "a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto",
                 "relogio.id" => "o número (código)",
@@ -4107,7 +4141,7 @@ if (!$token_ok && $quem === "") {
                 "relogio.proxima" => "o próximo dia no plano (texto AAAA-MM-DD); null: não está no plano",
                 "relogio.proxima_ate" => "até quando ele fica nesse dia",
                 "relogio.registros" => "quantos registros tem a linha do tempo inteira",
-                "relogio.situacao[]" => "as frases de situação",
+                "relogio.situacao[]" => "as frases de situação: as sessões abertas que o estado não mostra e a autonomia restante",
                 "relogio.tipo" => "o nome do grupo",
                 "relogio.tipos[]" => "os tipos de lançamento do relógio (os botões de Lançar)",
                 "relogio.tipos[].aberta" => "a sessão aberta desse tipo agora; null: nenhuma",
@@ -4164,6 +4198,7 @@ if (!$token_ok && $quem === "") {
                 "config.migracao_v12" => "marca de que a migração v12 foi aplicada (1)",
                 "config.migracao_v16" => "marca de que a migração v16 foi aplicada (1)",
                 "config.migracao_v17" => "marca de que a migração v17 foi aplicada (1)",
+                "config.migracao_v18" => "marca de que a migração v18 foi aplicada (1)",
                 "config.pulso_auto_fim" => "1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o \"fecha às\" do tipo No pulso); 0: só pelo Tirou",
                 "config.pulso_auto_inicio" => "1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs",
                 "config.previsao_limite" => "o limite de carga da previsão do smartwatch, em %",

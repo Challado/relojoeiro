@@ -47,7 +47,7 @@ function recarregarHoje() {
         el("input", {"type": "hidden", "name": "acao", "value": t.em_uso ? "encerrar" : "iniciar"}) + el("input", {"type": "hidden", "name": "tipo", "value": "pulso"})
         + el("input", {"type": "hidden", "name": "relogio_id", "value": t.id}) + el("input", {"type": "hidden", "name": "r", "value": t.id})
         + el("button", {"class": "leve"}, t.em_uso ? "Tirou do pulso" : "Pôs no pulso"));
-      var info = el("dt", {}, "Agora") + el("dd", {}, el("span", {"class": "estado " + (t.em_uso ? "estado-uso" : "estado-repouso")}, h(t.agora)) + marcar)
+      var info = el("dt", {}, "Agora") + el("dd", {}, el("span", {"class": "estado estado-" + t.estado}, h(t.agora)) + marcar)
         + el("dt", {}, "Carga") + el("dd", {}, t.carga !== null
           ? el("span", {"class": "carga-linha" + (t.carga <= 20 ? " baixa" : "")}, el("span", {"class": "barra"}, el("span", {"style": "width: " + t.carga + "%"}, "")) + " " + el("strong", {}, t.carga + "%"))
             + " " + el("small", {}, h(t.carga_de))
@@ -218,14 +218,13 @@ function recarregarHoje() {
     });
     tipos.sort();
     document.querySelector("[data-filtro=tipo]").innerHTML = el("option", {"value": ""}, "Todos") + tipos.map(function (t) { return el("option", {}, h(t)); }).join("");
+    document.querySelector("[data-filtro=estado]").innerHTML = el("option", {"value": ""}, "Todos") + d.estados.map(function (t) { return el("option", {}, h(t)); }).join("");
     document.querySelector("[data-filtro=fazer]").innerHTML = el("option", {"value": ""}, "Todos") + d.avisos_nomes.map(function (t) { return el("option", {}, h(t)); }).join("");
     var ano = String(new Date().getFullYear());
     var linhas = lista.map(function (x) {
-      var estadoOrdem = !x.disponivel ? 2 : (x.em_uso ? 0 : 1);
-      var estadoTxt = !x.disponivel ? "Indisponível" : (x.em_uso ? "Em uso" : "Em repouso");
       var m = x.manutencao;
       var atrasado = m && m.momento > 0 && m.momento * 1000 <= Date.now();
-      return el("tr", {"data-id": x.id, "tabindex": "0", "data-codigo": x.id, "data-nome": x.nome, "data-tipo": x.tipo, "data-estado": estadoOrdem, "data-estado-txt": estadoTxt,
+      return el("tr", {"data-id": x.id, "tabindex": "0", "data-codigo": x.id, "data-nome": x.nome, "data-tipo": x.tipo, "data-estado": x.estado_ordem, "data-estado-txt": x.estado_texto,
         "data-carga": x.carga === null ? "" : x.carga, "data-ultimo": x.ultimo, "data-manut": m ? m.data : "", "data-em": m && m.momento > 0 ? m.momento : "", "data-fazer": m ? m.nome : "",
         "data-compra": x.compra.data || "", "data-valor": x.compra.valor === null ? "" : x.compra.valor,
         "class": ((x.de_hoje ? "de-hoje " : "") + (x.com_aviso ? "pendente " : "") + (x.disponivel ? "" : "indisponivel ") + (x.id === sel ? "selecionado" : "")).trim()},
@@ -233,7 +232,7 @@ function recarregarHoje() {
         + el("td", {"class": "col-nome"}, el("div", {"class": "nome-rel"}, (x.foto !== null ? el("img", {"src": "api.php?recurso=foto&relogio=" + x.id + "&v=" + x.foto, "alt": ""}) : el("span", {"class": "sem-mini"}, ""))
           + el("a", {"href": "index.php?r=" + x.id, "title": x.nome}, h(x.nome))))
         + el("td", {"data-rotulo": "Tipo"}, h(x.tipo))
-        + el("td", {"data-rotulo": "Estado"}, el("span", {"class": "estado " + (estadoOrdem === 0 ? "estado-uso" : (estadoOrdem === 1 ? "estado-repouso" : "estado-indisponivel"))}, estadoTxt))
+        + el("td", {"data-rotulo": "Estado"}, el("span", {"class": "estado estado-" + x.estado}, h(x.estado_texto)))
         + el("td", {"data-rotulo": "Carga"}, x.carga !== null
           ? el("div", {"class": "carga-cel" + (x.carga <= 20 ? " baixa" : ""), "title": x.carga_de}, el("div", {"class": "carga-linha"}, el("span", {"class": "barra"}, el("span", {"style": "width: " + x.carga + "%"}, ""))
             + " " + el("strong", {}, x.carga + "%")))

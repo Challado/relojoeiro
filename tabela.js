@@ -39,7 +39,8 @@
       if (f.tipo && tr.dataset.tipo !== f.tipo) {
         ok = false;
       }
-      if (f.estado && tr.dataset.estadoTxt !== f.estado) {
+      // duas sessões abertas juntas vêm como "No sol · No winder": vale cada uma
+      if (f.estado && tr.dataset.estadoTxt.split(" · ").indexOf(f.estado) < 0) {
         ok = false;
       }
       if (f.carga && (tr.dataset.carga === "" || Number(tr.dataset.carga) > Number(f.carga))) {

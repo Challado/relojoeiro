@@ -373,6 +373,8 @@ p.conta-carga {
 }
 .estado-uso { background: #e3f3e6; color: #1e6b2e; border-color: #a9d8b3; }
 .estado-repouso { background: #fbe8e6; color: #9b2c22; border-color: #efb5ae; }
+/* numa sessão que não é o pulso (no sol, no winder, no carregador): a cor das outras sessões no histórico */
+.estado-sessao { background: #fff4e0; color: #8a5a00; border-color: #efd29a; }
 table.compacta tr.marco td { color: var(--cinza); font-size: .85rem; }
 table.compacta td:last-child { text-align: right; }
 .grafico .ponto-uso { fill: #2e8b45; }

@@ -72,8 +72,8 @@ const RECONSTRUCAO_TELAS = [
                 . "carga baixa: âmbar #a8661a. Fundo de cartões, quadros e tabelas: papel #fbfcfd.",
             "Etiquetas de estado (pílulas): em uso: fundo #e3f3e6, texto #1e6b2e, borda #a9d8b3. Em repouso e erro: fundo #fbe8e6, "
                 . "texto #9b2c22, borda #efb5ae. Indisponível e sem atividade: fundo #eef1f4, texto cinza, borda aço escuro. Atividade, "
-                . "\"você\" e \"relógio de hoje\": fundo #e6eef8, texto #1f4f8f, borda #b8cbe6. Outras sessões e carga: fundo #fff4e0, texto "
-                . "#8a5a00, borda #efd29a.",
+                . "\"você\" e \"relógio de hoje\": fundo #e6eef8, texto #1f4f8f, borda #b8cbe6. Numa sessão que não é o pulso (no sol, no "
+                . "winder, no carregador), outras sessões e carga: fundo #fff4e0, texto #8a5a00, borda #efd29a.",
             "Origem de um valor do cadastro: \"informado\" em azul (#e6eef8 / #1f4f8f / #b8cbe6), \"padrão\" em bege (#fbf1e3 / #8a5a00 "
                 . "/ #ecd2a8), \"vazio\" sem etiqueta e com a linha em cinza.",
             "Atrasado (um prazo vencido, \"faltam\" e \"passa\" das somas): texto #9b2c22 em negrito. Caixa de erros de gravação: fundo "
@@ -207,11 +207,12 @@ const RECONSTRUCAO_TELAS = [
                     "À esquerda: \"<Dia da semana>, DD/MM/AAAA · <nome do modo>\" em cinza; o nome do relógio do dia em h1 (link que "
                         . "abre o painel); a janela de data com o \"até\" (\"só hoje\", \"até sexta, 02/10\") e o tipo dele; o lembrete do dia "
                         . "em âmbar (\"Pôr no winder: <relógio> (8 h)\"); \"Por que ele: <motivo>\" (o motivo em cinza).",
-                    "No meio, em pares: Agora (a etiqueta \"Em uso desde 07:00\" ou \"Em repouso desde ...\" e o botão leve \"Pôs no "
-                        . "pulso\" / \"Tirou do pulso\", que manda lancamento iniciar/encerrar do tipo pulso); Carga (a barra, o % e de onde "
-                        . "vem, ou só o texto); Última leitura (\"89% em 06/10 21:30\", se houver); Situação (as linhas da API); Próxima "
-                        . "manutenção (\"<nome> · <data ou hoje> (<falta>)\", a falta em vermelho se atrasada, ou \"nenhuma prevista\"); "
-                        . "Compra (\"R\$ valor · loja · data\"); Garantia (\"até DD/MM/AAAA\", \"(vencida)\" se passou); Código.",
+                    "No meio, em pares: Agora (a etiqueta \"Em uso desde 07:00\", \"No sol desde 09:12\" ou \"Em repouso desde ...\", na "
+                        . "cor do estado, e o botão leve \"Pôs no pulso\" / \"Tirou do pulso\", que manda lancamento iniciar/encerrar do tipo "
+                        . "pulso); Carga (a barra, o % e de onde vem, ou só o texto); Última leitura (\"89% em 06/10 21:30\", se houver); "
+                        . "Situação (as linhas da API); Próxima manutenção (\"<nome> · <data ou hoje> (<falta>)\", a falta em vermelho se "
+                        . "atrasada, ou \"nenhuma prevista\"); Compra (\"R\$ valor · loja · data\"); Garantia (\"até DD/MM/AAAA\", \"(vencida)\" "
+                        . "se passou); Código.",
                     "À direita: a foto do relógio (ou o quadrado \"Sem foto\"), que abre o painel.",
                     "Sem relógio para hoje: h1 \"Nenhum relógio para hoje\" e \"Nenhum relógio disponível no grupo deste dia. Mude o "
                         . "grupo no modo de rodízio ou marque um relógio como disponível.\"",
@@ -257,15 +258,17 @@ const RECONSTRUCAO_TELAS = [
                     "Título \"Relógios\" com \"<mostrados> de <total> relógios · <n> em uso\" em cinza e, à direita, os botões \"Limpar "
                         . "filtros\" (leve) e \"Novo relógio\" (abre o cadastro no painel).",
                     "11 colunas, todas ordenáveis clicando no título (▲ ou ▼ ao lado; clicar de novo inverte; vazios sempre por "
-                        . "último): Código, Relógio (miniatura e nome em negrito), Tipo, Estado (Em uso / Em repouso / Indisponível, em "
-                        . "etiqueta), Carga (barra e %, ou o texto de por que não tem), Última vez usado, Próxima manutenção (data ou "
-                        . "\"hoje\"), Em (quanto falta; atrasado em vermelho negrito; atualizado a cada minuto), O que fazer (em âmbar "
-                        . "negrito), Comprado em, Valor (à direita, \"R\$ 1.234,56\").",
+                        . "último): Código, Relógio (miniatura e nome em negrito), Tipo, Estado (o estado_texto da API em etiqueta, na "
+                        . "cor do estado: Em uso verde, a sessão aberta (No sol, No winder, No carregador) laranja, Em repouso vermelho, "
+                        . "Indisponível cinza), Carga (barra e %, ou o texto de por que não tem), Última vez usado, Próxima manutenção "
+                        . "(data ou \"hoje\"), Em (quanto falta; atrasado em vermelho negrito; atualizado a cada minuto), O que fazer (em "
+                        . "âmbar negrito), Comprado em, Valor (à direita, \"R\$ 1.234,56\").",
                     "Uma linha de filtros embaixo dos títulos: Código (\"nº\"), Relógio (\"buscar\" no nome), Tipo (os tipos que "
-                        . "existem), Estado (Todos, Em uso, Em repouso, Indisponível), Carga (Todas, ≤ 20%, ≤ 50%), Última vez usado "
-                        . "(Todos, 7 dias, +7 dias, nunca), Próxima manutenção (Todas, até hoje, 7 dias, 30 dias), O que fazer (os avisos "
-                        . "que existem), Comprado em (Todas, 30 dias, 90 dias, este ano, sem data), Valor (Todos, ≤ 500, 500–1.500, > "
-                        . "1.500, sem valor). A ordem e os filtros ficam guardados na sessão do navegador.",
+                        . "existem), Estado (Todos e os estados da API, na ordem: Em uso, cada sessão, Em repouso, Indisponível), Carga "
+                        . "(Todas, ≤ 20%, ≤ 50%), Última vez usado (Todos, 7 dias, +7 dias, nunca), Próxima manutenção (Todas, até hoje, "
+                        . "7 dias, 30 dias), O que fazer (os avisos que existem), Comprado em (Todas, 30 dias, 90 dias, este ano, sem "
+                        . "data), Valor (Todos, ≤ 500, 500–1.500, > 1.500, sem valor). A ordem e os filtros ficam guardados na sessão do "
+                        . "navegador.",
                     "Ordem inicial: os disponíveis primeiro (o de hoje, depois os com aviso), os indisponíveis no fim e em cinza. A "
                         . "linha do relógio de hoje tem a faixa safira à esquerda; a de um com aviso, a âmbar. Clicar numa linha (ou "
                         . "Enter nela) abre o relógio no painel. Rodapé: \"Total dos relógios mostrados\" e a soma dos valores, à direita. "
@@ -282,18 +285,18 @@ const RECONSTRUCAO_TELAS = [
                         . "escolhida, aparece a prévia e o botão \"Salvar foto\": relogio foto) e, com foto, \"Remover foto\" (discreto; "
                         . "confirma \"Remover a foto?\"); ao lado \"<tipo> · <caminho no grupo>\" em cinza, o nome em h1, a observação, e as "
                         . "etiquetas: em uso/em repouso, \"indisponível\", \"relógio de hoje\".",
-                    "Os quadros, numa grade (lado a lado onde cabem): Agora (pares: Estado; Carga com a barra e \"~68%\" e de onde "
-                        . "vem; Situação, uma linha por item; Última leitura); Previsão (só nos que têm leitura: as frases da API, ou "
-                        . "\"Informe a carga atual para o sistema começar a prever.\"); Gasto da bateria (No pulso, Fora do pulso: o que "
-                        . "vale \"% por dia\" e embaixo se é medido ou do cadastro; Janela anterior; Medições; no rodapé \"Medições mais "
-                        . "velhas que a janela saem da conta...\"); Autonomia (Cheio, pelo cadastro; Cheio, pela conta; Acaba, seguindo o "
-                        . "plano (data e hora, e \"em <duração>\"); No pulso sem tirar; Guardado; sem dado, o motivo em cinza); Rodízio "
-                        . "(Nota com o link \"ver a conta\" (Critérios, numa aba nova); Critérios de; Próxima vez; no rodapé o botão leve "
-                        . "\"Usando hoje\" (rodizio usando, com confirmação), se ele está disponível e não é o de hoje); Compra (Valor "
-                        . "pago, Loja, Comprado em com \"há N dias\", Garantia \"até\" ou \"vencida em\"; sem nada: \"Sem dados da compra. "
-                        . "Preencha em \"Editar cadastro\".\"); Documentos (cada categoria com \"N arquivos\", link para a página Documentos "
-                        . "numa aba nova; o botão \"Enviar documentos\" ou \"Abrir os documentos\"); Próximas manutenções (data em negrito e "
-                        . "o nome; ou \"Nada previsto.\").",
+                    "Os quadros, numa grade (lado a lado onde cabem): Agora (pares: Estado (\"No carregador desde 06:30\", na cor do "
+                        . "estado); Carga com a barra e \"~68%\" e de onde vem; Situação, uma linha por item; Última leitura); Previsão (só "
+                        . "nos que têm leitura: as frases da API, ou \"Informe a carga atual para o sistema começar a prever.\"); Gasto da "
+                        . "bateria (No pulso, Fora do pulso: o que vale \"% por dia\" e embaixo se é medido ou do cadastro; Janela "
+                        . "anterior; Medições; no rodapé \"Medições mais velhas que a janela saem da conta...\"); Autonomia (Cheio, pelo "
+                        . "cadastro; Cheio, pela conta; Acaba, seguindo o plano (data e hora, e \"em <duração>\"); No pulso sem tirar; "
+                        . "Guardado; sem dado, o motivo em cinza); Rodízio (Nota com o link \"ver a conta\" (Critérios, numa aba nova); "
+                        . "Critérios de; Próxima vez; no rodapé o botão leve \"Usando hoje\" (rodizio usando, com confirmação), se ele está "
+                        . "disponível e não é o de hoje); Compra (Valor pago, Loja, Comprado em com \"há N dias\", Garantia \"até\" ou "
+                        . "\"vencida em\"; sem nada: \"Sem dados da compra. Preencha em \"Editar cadastro\".\"); Documentos (cada categoria com "
+                        . "\"N arquivos\", link para a página Documentos numa aba nova; o botão \"Enviar documentos\" ou \"Abrir os "
+                        . "documentos\"); Próximas manutenções (data em negrito e o nome; ou \"Nada previsto.\").",
                     "Marcar (um quadro na largura toda): \"O que você quer marcar?\" com uma lista em grupos: \"Agora, ou numa hora "
                         . "que você disser\" (cada sessão como verbo: \"Pôr no sol\" / \"Tirar do sol\" conforme está aberta; cada tipo com "
                         . "valor pelo nome; cada instantâneo pelo nome), \"Algo que já passou\" (\"Um período que já passou (<sessões>)\") e "
@@ -1032,6 +1035,11 @@ function reconstrucao()
                 "A linha do tempo de um relógio divide o histórico em trechos contínuos: em uso pelo rodízio, no pulso fora do rodízio, em cada tipo "
                     . "de sessão (no winder, no sol...) e em repouso (o que sobra); e as marcações (corda, carga, pilha, revisão) como pontos, sem "
                     . "duração. O resumo dá o tempo e a porcentagem em cada estado.",
+                "O estado de agora de um relógio: em uso (uma sessão no pulso aberta), numa sessão (outra sessão aberta: o estado é o nome do tipo, "
+                    . "\"No sol\", \"No winder\", \"No carregador\"; duas juntas, \"No sol · No winder\") ou em repouso; na tabela da página Hoje, o "
+                    . "indisponível em repouso aparece como indisponível. Com o desde quando: o começo da sessão no pulso, o da sessão mais recente, ou "
+                    . "o fim da última no pulso (\"Em repouso desde 21:40\"). A sessão esquecida aberta conta só até o \"fecha às\" dela. O pulso é o "
+                    . "único tipo que o código conhece pelo identificador; os outros entram pelo nome.",
             ]),
             $secao("formulas", "O motor das fórmulas", [
                 "A sintaxe é a de uma planilha: números com vírgula ou ponto, textos entre aspas, ; separando os argumentos, + - * / ^ (a potência "
