@@ -253,23 +253,23 @@ O `api.php` é o **único back-end**. As páginas são só a tela: o JavaScript 
 
 ```sh
 # tudo o que está no sistema, sem as fotos
-curl -u usuario:senha "http://servidor/relogios2/api.php?foto=nao"
+curl -u usuario:senha "http://servidor/relojoeiro/api.php?foto=nao"
 
 # o que a página Hoje mostra
-curl -H "X-Api-Token: $TOKEN" "http://servidor/relogios2/api.php?recurso=hoje"
+curl -H "X-Api-Token: $TOKEN" "http://servidor/relojoeiro/api.php?recurso=hoje"
 
 # os relógios que acabam nas próximas 24 horas, só o nome e quando
-curl -u usuario:senha -g "http://servidor/relogios2/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz"
+curl -u usuario:senha -g "http://servidor/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz"
 
 # lançar uma leitura de carga (e medir o gasto)
-curl -u usuario:senha -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://servidor/relogios2/api.php
+curl -u usuario:senha -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://servidor/relojoeiro/api.php
 
 # pôr no sol agora... e tirar depois
-curl -u usuario:senha -d recurso=lancamento -d acao=iniciar  -d relogio_id=4 -d tipo=sol http://servidor/relogios2/api.php
-curl -u usuario:senha -d recurso=lancamento -d acao=encerrar -d relogio_id=4 -d tipo=sol http://servidor/relogios2/api.php
+curl -u usuario:senha -d recurso=lancamento -d acao=iniciar  -d relogio_id=4 -d tipo=sol http://servidor/relojoeiro/api.php
+curl -u usuario:senha -d recurso=lancamento -d acao=encerrar -d relogio_id=4 -d tipo=sol http://servidor/relojoeiro/api.php
 
 # testar uma fórmula em dois relógios, sem gravar
-curl -u usuario:senha -G "http://servidor/relogios2/api.php" -d recurso=calcular --data-urlencode "expressao=energia * 2" -d relogio=10,12
+curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcular --data-urlencode "expressao=energia * 2" -d relogio=10,12
 ```
 
 **Consultas:** `hoje`, `ficha`, `avisos`, `plano`, `previsao`, `autonomia`, `historico`, `criterios`, `eventos`, `agenda`,
@@ -315,8 +315,8 @@ roteiro nos três bancos e compara tudo o que a API devolve.
 
 ```sh
 # 1. o código
-git clone https://github.com/Challado/relojoeiro.git /var/www/relogios
-cd /var/www/relogios
+git clone https://github.com/Challado/relojoeiro.git /var/www/relojoeiro
+cd /var/www/relojoeiro
 
 # 2. a configuração: o banco (DB_TIPO), o token da API, o fuso, as mensagens
 cp config.exemplo.php config.php
@@ -333,7 +333,7 @@ php instalar.php
 php criar_usuario.php seu_login
 
 # 6. o cron, a cada minuto (ele é mudo: não escreve nada e não manda e-mail)
-( crontab -l; echo "* * * * * php /var/www/relogios/cron.php" ) | crontab -
+( crontab -l; echo "* * * * * php /var/www/relojoeiro/cron.php" ) | crontab -
 ```
 
 No SQLite, ponha o arquivo do banco (`DB_ARQUIVO`) **fora da pasta que o servidor web publica**, numa pasta em que o
