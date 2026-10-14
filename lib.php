@@ -4177,18 +4177,10 @@ function manual_html($md)
 // estão na pasta dos documentos.
 // ---------------------------------------------------------------------------------------------------------------------
 // A cópia de segurança pode ser desligada no config.php (BACKUP_ATIVO = false): sem cópia automática, sem a ação fazer e
-// sem o quadro da Configuração (nem o aviso de que falta a pasta). Sem a linha: ligada. Desligam também o 0 e os textos
-// "false", "0", "nao", "não", "no" e "off" (a linha escrita com aspas, ou com o número)
+// sem o quadro da Configuração (nem o aviso de que falta a pasta). Sem a linha: ligada
 function backup_ativo()
 {
-    if (!defined("BACKUP_ATIVO")) {
-        return true;
-    }
-    $v = BACKUP_ATIVO;
-    if (is_string($v)) {
-        return !in_array(mb_strtolower(trim($v), "UTF-8"), ["false", "0", "nao", "não", "no", "off", ""], true);
-    }
-    return (bool)$v;
+    return !defined("BACKUP_ATIVO") || BACKUP_ATIVO !== false;
 }
 
 function backup_pasta_erro()
