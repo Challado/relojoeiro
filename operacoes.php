@@ -464,8 +464,9 @@ function op_formulas($acao, $d)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Relógios. Ações: salvar (id: 0 ou ausente cria; nome, no_id, disponivel (1 ou 0), valores[identificador]: só muda o
-// que vier no pedido; valor vazio apaga; valor inválido fica o que estava, e a mensagem diz quais), excluir (id), foto
+// Relógios. Ações: salvar (id: 0 ou ausente cria; nome, no_id, disponivel (1 ou 0), copia_banco (1 ou 0: a cópia no banco
+// de todos os documentos dele), valores[identificador]: só muda o que vier no pedido; valor vazio apaga; valor inválido
+// fica o que estava, e a mensagem diz quais), excluir (id), foto
 // (id, foto_base64: JPEG, PNG ou WebP, até 4 MB), remover_foto (id). Os documentos do relógio: op_documentos.
 // ---------------------------------------------------------------------------------------------------------------------
 function op_relogio($acao, $d)
@@ -480,6 +481,7 @@ function op_relogio($acao, $d)
         $nome = array_key_exists("nome", $d) ? trim((string)$d["nome"]) : ($atual["nome"] ?? "");
         $no = array_key_exists("no_id", $d) ? no_do_pedido($d["no_id"]) : ($atual ? ($atual["no_id"] === null ? null : (int)$atual["no_id"]) : null);
         $disp = array_key_exists("disponivel", $d) ? ((string)$d["disponivel"] === "1" ? 1 : 0) : ($atual ? (int)$atual["disponivel"] : 1);
+        $copia = array_key_exists("copia_banco", $d) ? ((string)$d["copia_banco"] === "1" ? 1 : 0) : ($atual ? (int)$atual["copia_banco"] : 0);
         if ($nome === "" || strlen($nome) > 120) {
             $erros[] = "Dê um nome ao relógio (até 120 caracteres).";
         }
@@ -488,11 +490,12 @@ function op_relogio($acao, $d)
         }
         if (count($erros) === 0) {
             if ($atual) {
-                sql("UPDATE relogio SET nome = ?, no_id = ?, disponivel = ? WHERE id = ?", [$nome, $no, $disp, $id]);
+                sql("UPDATE relogio SET nome = ?, no_id = ?, disponivel = ?, copia_banco = ? WHERE id = ?", [$nome, $no, $disp, $copia, $id]);
             } else {
-                sql("INSERT INTO relogio (nome, no_id, disponivel, criado) VALUES (?, ?, ?, NOW())", [$nome, $no, $disp]);
+                sql("INSERT INTO relogio (nome, no_id, disponivel, copia_banco, criado) VALUES (?, ?, ?, ?, NOW())", [$nome, $no, $disp, $copia]);
                 $id = ultimo_id();
             }
+            relogio_copia_banco($id, true);
             // os valores: só dos campos que valem para o relógio (no ponto em que ficou)
             $campos = campos_do_relogio(["no_id" => $no]);
             $ignorados = [];
@@ -510,7 +513,14 @@ function op_relogio($acao, $d)
                     }
                 }
             }
-            $msg = ($atual ? "Relógio " . $nome . " salvo." : "Relógio " . $nome . " criado " . ($no === null ? "na raiz da árvore" : "em " . no_caminho($no)) . ".")
+            // a marca da cópia no banco mudou: o cron copia (ou tira) os documentos dele aos poucos
+            $aviso_copia = "";
+            if ($atual && $copia !== (int)$atual["copia_banco"] && (int)valor("SELECT COUNT(*) FROM documento WHERE relogio_id = ?", [$id]) > 0) {
+                $sistema = documentos_copia_sistema();
+                $aviso_copia = $sistema !== null ? " (A cópia no banco dos documentos não muda: o config.php decide por todos, DOCUMENTOS_COPIA_BANCO = " . ($sistema ? "true" : "false") . ".)"
+                    : ($copia === 1 ? " Os documentos dele vão para o banco aos poucos, pelo cron." : " As cópias no banco dos documentos dele que não pedem a própria cópia saem aos poucos, pelo cron (os arquivos continuam na pasta).");
+            }
+            $msg = ($atual ? "Relógio " . $nome . " salvo." : "Relógio " . $nome . " criado " . ($no === null ? "na raiz da árvore" : "em " . no_caminho($no)) . ".") . $aviso_copia
                 . (count($ignorados) > 0 ? " Não gravei: " . implode("; ", $ignorados) . ". Ficou o que já estava." : "");
         }
     } elseif ($acao === "excluir" && $atual) {
@@ -546,9 +556,10 @@ function op_relogio($acao, $d)
 // ---------------------------------------------------------------------------------------------------------------------
 // Documentos de um relógio. Ações: enviar (relogio_id, categoria_id, titulo, data AAAA-MM-DD, descricao e os arquivos: no
 // campo arquivos[] (vários, como upload), ou arquivo (um), ou arquivo_base64 com o nome em arquivo_nome; a miniatura de
-// uma foto, opcional, em miniatura (uma por envio: a do primeiro arquivo) ou miniatura_base64), alterar (id: categoria_id,
-// titulo, data, descricao; só muda o que vier), excluir (id: o documento, o arquivo dele e a cópia no banco). O arquivo vai
-// para a pasta e, com a cópia de segurança ligada (DOCUMENTOS_COPIA_BANCO), também para o banco, em pedaços.
+// uma foto, opcional, em miniatura (uma por envio: a do primeiro arquivo) ou miniatura_base64; copia_banco: 1 pede a cópia
+// no banco destes arquivos), alterar (id: categoria_id, titulo, data, descricao, copia_banco; só muda o que vier), excluir
+// (id: o documento, o arquivo dele e a cópia no banco). O arquivo vai para a pasta e, se a cópia é pedida (pelo sistema,
+// pelo relógio ou pelo próprio arquivo: documento_copia_por), também para o banco, em pedaços.
 // ---------------------------------------------------------------------------------------------------------------------
 function op_documentos($acao, $d)
 {
@@ -570,6 +581,8 @@ function op_documentos($acao, $d)
         $erros[] = "A data tem de ser AAAA-MM-DD (ou vazia).";
     }
     $titulo = trim((string)($d["titulo"] ?? ($atual["titulo"] ?? "")));
+    // a cópia no banco pedida pelo próprio arquivo (o sistema e o relógio, se pedem, valem por cima dela)
+    $copia = array_key_exists("copia_banco", $d) ? ((string)$d["copia_banco"] === "1" ? 1 : 0) : ($atual ? (int)$atual["copia_banco"] : 0);
     $descricao = array_key_exists("descricao", $d) ? trim((string)$d["descricao"]) : ($atual ? (string)$atual["descricao"] : "");
     if (mb_strlen($titulo) > 200) {
         $erros[] = "O título vai até 200 caracteres.";
@@ -625,6 +638,7 @@ function op_documentos($acao, $d)
         $aceita = $cat ? documento_familias_aceitas($cat["aceita"]) : [];
         $nomes_fam = ["imagem" => "imagens", "video" => "vídeos", "audio" => "áudios", "pdf" => "PDF", "xml" => "XML"];
         $avisos = [];
+        $copiados_banco = 0;
         if (count($erros) === 0) {
             foreach ($arquivos as $k => $a) {
                 list($nome, $tmp, $bin, $erro) = $a;
@@ -669,12 +683,14 @@ function op_documentos($acao, $d)
                 }
                 $t = $titulo !== "" ? $titulo : mb_substr(pathinfo($nome, PATHINFO_FILENAME), 0, 200);
                 try {
-                    sql("INSERT INTO documento (relogio_id, categoria_id, titulo, data, descricao, nome, tipo, tamanho, arquivo, miniatura, criado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
-                        [(int)$r["id"], (int)$cat["id"], $t !== "" ? $t : $nome, $data, $descricao !== "" ? $descricao : null, $nome, $tipo, $tamanho, $arquivo, $arq_mini]);
+                    sql("INSERT INTO documento (relogio_id, categoria_id, titulo, data, descricao, nome, tipo, tamanho, arquivo, miniatura, copia_banco, criado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                        [(int)$r["id"], (int)$cat["id"], $t !== "" ? $t : $nome, $data, $descricao !== "" ? $descricao : null, $nome, $tipo, $tamanho, $arquivo, $arq_mini, $copia]);
                     $ids[] = ultimo_id();
-                    // a cópia de segurança no banco, em pedaços; se falhar, o documento fica (o cron tenta de novo)
-                    if (documentos_copia_banco()) {
-                        $erro_copia = documento_copiar_para_banco(linha("SELECT * FROM documento WHERE id = ?", [end($ids)]));
+                    // a cópia de segurança no banco, em pedaços, se alguém a pede; se falhar, o documento fica (o cron tenta de novo)
+                    $novo_doc = linha("SELECT * FROM documento WHERE id = ?", [end($ids)]);
+                    if (documento_copia_por($novo_doc) !== null) {
+                        $copiados_banco++;
+                        $erro_copia = documento_copiar_para_banco($novo_doc);
                         if ($erro_copia !== "") {
                             $avisos[] = $nome . ": a cópia no banco falhou (" . $erro_copia . "); o cron tenta de novo";
                         }
@@ -685,7 +701,8 @@ function op_documentos($acao, $d)
                 }
             }
             if (count($ids) > 0) {
-                $msg = (count($ids) === 1 ? "1 documento guardado" : count($ids) . " documentos guardados") . " em " . $cat["nome"] . " do " . $r["nome"] . "."
+                $msg = (count($ids) === 1 ? "1 documento guardado" : count($ids) . " documentos guardados") . " em " . $cat["nome"] . " do " . $r["nome"]
+                    . ($copiados_banco > 0 ? ", na pasta e no banco." : ", só na pasta (sem cópia no banco).")
                     . (count($avisos) > 0 ? " Atenção: " . implode("; ", $avisos) . "." : "");
                 $id = $ids[0];
             }
@@ -708,8 +725,21 @@ function op_documentos($acao, $d)
                 $erros[] = "Dê um título ao documento.";
             }
             if (count($erros) === 0) {
-                sql("UPDATE documento SET categoria_id = ?, titulo = ?, data = ?, descricao = ? WHERE id = ?", [(int)$cat["id"], $titulo, $data, $descricao !== "" ? $descricao : null, $id]);
+                sql("UPDATE documento SET categoria_id = ?, titulo = ?, data = ?, descricao = ?, copia_banco = ? WHERE id = ?",
+                    [(int)$cat["id"], $titulo, $data, $descricao !== "" ? $descricao : null, $copia, $id]);
                 $msg = "Documento " . $titulo . " salvo.";
+                // a cópia no banco segue o pedido na hora: entra se agora alguém pede, sai se ninguém mais pede
+                $doc = linha("SELECT * FROM documento WHERE id = ?", [$id]);
+                $por = documento_copia_por($doc);
+                if ($por !== null && (int)$doc["no_banco"] !== 1) {
+                    $erro_copia = documento_copiar_para_banco($doc);
+                    $msg .= $erro_copia === "" ? " A cópia foi para o banco." : " A cópia no banco falhou (" . $erro_copia . "); o cron tenta de novo.";
+                } elseif ($por === null && (int)$doc["no_banco"] === 1) {
+                    $erro_copia = documento_tirar_do_banco($doc);
+                    $msg .= $erro_copia === "" ? " A cópia saiu do banco (o arquivo continua na pasta)." : " A cópia continua no banco: " . $erro_copia . ".";
+                } elseif ($copia === 1 && $por === null) {
+                    $msg .= " A cópia não vai para o banco: o config.php (DOCUMENTOS_COPIA_BANCO = false) não deixa.";
+                }
             }
         }
     } else {

@@ -324,6 +324,7 @@ $MIGRACOES = [
     "v14" => ["migracao_v14.sql", "os documentos de cada relógio: qualquer arquivo (manual, nota fiscal em PDF e em XML, fotos, vídeos, diversos), numa categoria, com a página Documentos (galeria, vídeos em sequência, visualizador de PDF, resumo da nota); os manuais da v13 passam para lá", "documento"],
     "v15" => ["migracao_v15.sql", "a cópia de segurança de cada documento dentro do banco (em pedaços de 4 MB): o arquivo que sumir da pasta volta sozinho do banco; o cron copia os que já existem e limpa a pasta (relógio excluído, arquivo sem documento)", "documento_parte"],
     "v16" => ["migracao_v16.sql", "o banco no modelo relacional estrito: toda ligação é chave estrangeira, com cascata (ou, se opcional, desfazendo a ligação); as listas guardadas num campo (dias dos blocos e dos eventos, tipos aceitos, opções de um campo) viram tabelas; as mensagens e os canais saem da configuração para a tabela canal_aviso; o modo ativo vira uma marca no modo; a tabela manual sai (os manuais viram documentos)", "config.chave=migracao_v16", "migracao_v16_dados"],
+    "v17" => ["migracao_v17.sql", "o banco valida o que guarda: regras (CHECK) em cada tabela, a origem dos lançamentos e do plano numa lista fechada, no máximo um modo em uso, um arquivo por documento; e a cópia dos documentos no banco em três níveis: o sistema (config.php), o relógio e o próprio arquivo", "config.chave=migracao_v17"],
 ];
 
 // O passo em PHP da v16, depois do SQL dela: as opções de cada campo do tipo lista (o texto, uma por linha) viram linhas da
@@ -1616,7 +1617,9 @@ function modo_blocos($modo_id)
 // Ativa um modo, e só ele
 function modo_ativar($id)
 {
-    sql("UPDATE modo SET ativo = CASE WHEN id = ? THEN 1 ELSE 0 END", [(int)$id]);
+    // a marca é 1 no modo em uso e vazia nos outros (a chave única não deixa haver dois 1): primeiro sai, depois entra
+    sql("UPDATE modo SET ativo = NULL WHERE ativo IS NOT NULL AND id <> ?", [(int)$id]);
+    sql("UPDATE modo SET ativo = 1 WHERE id = ?", [(int)$id]);
     modo_ativo(true);
 }
 
@@ -1763,7 +1766,7 @@ function documento_info($d, $com_nfe = true)
         "data" => $d["data"] === null ? null : substr((string)$d["data"], 0, 10), "descricao" => $d["descricao"], "nome" => $d["nome"], "tipo" => $d["tipo"],
         "familia" => $familia, "tamanho" => (int)$d["tamanho"], "miniatura" => $d["miniatura"] !== null && $d["miniatura"] !== "", "criado" => $d["criado"],
         "url" => "api.php?recurso=documento&id=" . (int)$d["id"], "no_disco" => documentos_pasta() !== null && is_file(documentos_pasta() . "/" . $d["arquivo"]),
-        "no_banco" => (int)($d["no_banco"] ?? 0) === 1, "nfe" => null];
+        "no_banco" => (int)($d["no_banco"] ?? 0) === 1, "copia_banco" => (int)($d["copia_banco"] ?? 0) === 1, "copia_por" => documento_copia_por($d), "nfe" => null];
     if ($com_nfe && $familia === "xml" && documentos_pasta() !== null) {
         $res["nfe"] = nfe_resumo(documentos_pasta() . "/" . $d["arquivo"]);
     }
@@ -1888,10 +1891,58 @@ function documento_apagar_arquivos($d)
     }
 }
 
-// A cópia de segurança dos documentos no banco está ligada: o DOCUMENTOS_COPIA_BANCO do config.php (sem ele, ligada)
-function documentos_copia_banco()
+// A cópia de segurança dos documentos no banco tem três níveis, e o de cima vale sobre os de baixo:
+// 1. o sistema: o DOCUMENTOS_COPIA_BANCO do config.php. true: todo arquivo vai também para o banco; false: nenhum vai (nem
+//    o que o relógio ou o arquivo pedem); sem ele (null): quem decide é o relógio e o arquivo;
+// 2. o relógio: a marca copia_banco dele. Marcada, todo arquivo dele vai para o banco, inclusive os que já estavam;
+// 3. o arquivo: a marca copia_banco do documento, escolhida no envio ou depois, em editar.
+function documentos_copia_sistema()
 {
-    return !defined("DOCUMENTOS_COPIA_BANCO") || (bool)DOCUMENTOS_COPIA_BANCO;
+    return defined("DOCUMENTOS_COPIA_BANCO") ? (bool)DOCUMENTOS_COPIA_BANCO : null;
+}
+
+// A marca copia_banco de um relógio (lidas todas uma vez por requisição; $recarregar depois de mudar uma)
+function relogio_copia_banco($rid, $recarregar = false)
+{
+    static $marcas = null;
+    if ($marcas === null || $recarregar) {
+        $marcas = [];
+        foreach (linhas("SELECT id, copia_banco FROM relogio") as $r) {
+            $marcas[(int)$r["id"]] = (int)$r["copia_banco"] === 1;
+        }
+    }
+    return $marcas[(int)$rid] ?? false;
+}
+
+// Quem pede a cópia de um documento no banco: "sistema", "relogio" ou "arquivo" (o primeiro nível que pede); null: ninguém
+// pede (o arquivo fica só na pasta), ou o sistema não deixa
+function documento_copia_por($d)
+{
+    $sistema = documentos_copia_sistema();
+    if ($sistema !== null) {
+        return $sistema ? "sistema" : null;
+    }
+    if (relogio_copia_banco((int)$d["relogio_id"])) {
+        return "relogio";
+    }
+    return (int)($d["copia_banco"] ?? 0) === 1 ? "arquivo" : null;
+}
+
+// Tira do banco a cópia de um documento que ninguém mais pede, mas só se o arquivo da pasta está lá e é o mesmo da cópia (o
+// SHA-256 confere): o documento nunca fica sem as duas. Devolve "" se tirou, ou o motivo de não ter tirado
+function documento_tirar_do_banco($d)
+{
+    $pasta = documentos_pasta();
+    $caminho = $pasta !== null ? $pasta . "/" . $d["arquivo"] : null;
+    if ($caminho === null || !is_file($caminho)) {
+        return "o arquivo não está na pasta (a cópia no banco é a única)";
+    }
+    if ($d["hash"] === null || $d["hash"] === "" || hash_file("sha256", $caminho) !== $d["hash"]) {
+        return "o arquivo da pasta não confere com a cópia no banco";
+    }
+    sql("UPDATE documento SET no_banco = 0, hash = NULL WHERE id = ?", [(int)$d["id"]]);
+    sql("DELETE FROM documento_parte WHERE documento_id = ?", [(int)$d["id"]]);
+    return "";
 }
 
 // O tamanho de cada pedaço da cópia no banco: 4 MB cabem em qualquer max_allowed_packet do MySQL (o menor padrão é 16 MB)
@@ -2020,7 +2071,9 @@ function apagar_pasta($pasta)
 
 // A manutenção dos documentos, que o cron roda a cada minuto. Devolve as linhas do registro (vazio: nada a fazer):
 // 1. o documento cujo arquivo sumiu da pasta volta do banco (a cópia de segurança);
-// 2. o documento que ainda não tem cópia no banco ganha (até $orcamento bytes por rodada, para não pesar);
+// 2. o documento que tem a cópia pedida (documento_copia_por: o sistema, o relógio ou o próprio arquivo) e ainda não a tem
+//    no banco ganha (até $orcamento bytes por rodada, para não pesar); o que tem a cópia e ninguém mais pede perde (só se o
+//    arquivo da pasta confere com ela: documento_tirar_do_banco);
 // 3. a pasta de um relógio que não existe mais sai inteira (r<id>), e o arquivo que não é de nenhum documento sai (só os
 //    de mais de 10 minutos: um envio pode estar no meio); o documento de um relógio que não existe mais sai do banco.
 // Com $diario, conta também os documentos perdidos (sem o arquivo na pasta e sem a cópia no banco).
@@ -2041,7 +2094,8 @@ function documentos_manutencao($orcamento, $diario = false)
     $copiados = 0;
     $falhas = [];
     $usados = [];
-    foreach (linhas("SELECT id, relogio_id, titulo, arquivo, miniatura, no_banco, hash, tamanho FROM documento ORDER BY id") as $d) {
+    $tirados = 0;
+    foreach (linhas("SELECT id, relogio_id, titulo, arquivo, miniatura, no_banco, copia_banco, hash, tamanho FROM documento ORDER BY id") as $d) {
         $usados[$d["arquivo"]] = true;
         if ($d["miniatura"] !== null && $d["miniatura"] !== "") {
             $usados[$d["miniatura"]] = true;
@@ -2054,13 +2108,19 @@ function documentos_manutencao($orcamento, $diario = false)
             } elseif (!$tem) {
                 $perdidos++;
             }
-        } elseif ((int)$d["no_banco"] !== 1 && documentos_copia_banco() && $orcamento > 0) {
+        } elseif ((int)$d["no_banco"] !== 1 && documento_copia_por($d) !== null && $orcamento > 0) {
             $erro = documento_copiar_para_banco(linha("SELECT * FROM documento WHERE id = ?", [(int)$d["id"]]));
             if ($erro === "") {
                 $copiados++;
                 $orcamento -= (int)$d["tamanho"];
             } else {
                 $falhas[] = $d["titulo"] . " (" . $erro . ")";
+            }
+        } elseif ((int)$d["no_banco"] === 1 && documento_copia_por($d) === null && $orcamento > 0) {
+            // conferir o arquivo (o SHA-256) também pesa: conta no orçamento da rodada
+            $orcamento -= (int)$d["tamanho"];
+            if (documento_tirar_do_banco($d) === "") {
+                $tirados++;
             }
         }
     }
@@ -2069,6 +2129,9 @@ function documentos_manutencao($orcamento, $diario = false)
     }
     if ($copiados > 0) {
         $log[] = "documentos: " . $copiados . ($copiados === 1 ? " documento copiado" : " documentos copiados") . " para o banco";
+    }
+    if ($tirados > 0) {
+        $log[] = "documentos: " . $tirados . ($tirados === 1 ? " cópia tirada" : " cópias tiradas") . " do banco (ninguém mais pede; o arquivo continua na pasta)";
     }
     if (count($falhas) > 0) {
         $log[] = "erro: a cópia no banco falhou: " . implode("; ", array_slice($falhas, 0, 5));

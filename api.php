@@ -35,7 +35,7 @@
  *                          relógio fica num lugar só (abrir fecha a outra exclusiva aberta; períodos não se sobrepõem)
  *     "formulas":          [{"id", "identificador", "nome", "expressao", "unidade", "no_id", "lugar", "usa": {"variaveis",
  *                          "lancamentos"}}]  a mesma fórmula pode ter uma versão por ponto; vale a do mais perto do relógio
- *     "relogios":          [{"id", "nome", "no_id", "lugar", "disponivel", "criado",
+ *     "relogios":          [{"id", "nome", "no_id", "lugar", "disponivel", "copia_banco", "criado",
  *                          "foto": {"tipo", "atualizada_em", "base64"} ou null,
  *                          "documentos": [os documentos, como em recurso=documentos, sem o resumo da NF-e],
  *                          "campos": [{"identificador", "nome", "tipo", "unidade", "valor" (o gravado), "valor_usado" (com o padrão)}],
@@ -82,11 +82,12 @@
  *   recurso=foto relogio=3   a imagem (não é JSON)
  *                            Ex.: curl -u lucas:senha -o foto.jpg "http://servidor/relojoeiro/api.php?recurso=foto&relogio=10"
  *   recurso=documentos       [relogio=<id>; sem ele, de todos] os documentos (o manual, a nota fiscal, fotos, vídeos...):
- *                            {"relogio": {"id", "nome"} ou null, "pasta_ok", "copia_banco", "pasta_erro", "limite" (bytes; null: sem limite),
+ *                            {"relogio": {"id", "nome", "copia_banco"} ou null, "pasta_ok", "copia_sistema", "pasta_erro", "limite" (bytes;
+ *                            null: sem limite),
  *                            "categorias": [{"id", "identificador", "nome", "aceita", "ordem", "documentos"}], "relogios": [{"id",
  *                            "nome", "documentos"}], "documentos": [{"id", "relogio_id", "categoria_id", "titulo", "data",
  *                            "descricao", "nome", "tipo", "familia", "tamanho", "miniatura", "criado", "url", "no_disco", "no_banco",
- *                            "nfe"}]}
+ *                            "copia_banco", "copia_por", "nfe"}]}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=documentos&relogio=10"
  *   recurso=documento id=7   o arquivo de um documento (não é JSON). Imagens, vídeos, áudios, PDF e texto vêm para mostrar;
  *                            o resto (inclusive XML, HTML e SVG), para baixar. baixar=1: sempre para baixar. mini=1: a
@@ -161,9 +162,9 @@
  *                            "leitura": {"inicio", "valor", "unidade"} (a última), "de_hoje", "com_aviso", "foto" (a versão)}]}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=hoje"
  *   recurso=ficha            relogio=<id>: tudo o que o painel de um relógio mostra: {"hoje", "relogio": {"id", "nome", "no_id",
- *                            "disponivel", "tipo", "caminho", "observacao", "foto", "documentos": {"total", "categorias": [{"id",
- *                            "nome", "documentos"}], "pasta_ok"}, "em_uso", "agora", "carga", "carga_de", "situacao",
- *                            "nota": {"nota", "conjunto_texto"}, "proxima" (a próxima entrada no plano), "proxima_ate", "escala_fim",
+ *                            "disponivel", "copia_banco", "tipo", "caminho", "observacao", "foto", "documentos": {"total",
+ *                            "categorias": [{"id", "nome", "documentos"}], "pasta_ok", "copia_sistema"}, "em_uso", "agora", "carga",
+ *                            "carga_de", "situacao", "nota": {"nota", "conjunto_texto"}, "proxima" (a próxima entrada no plano), "proxima_ate", "escala_fim",
  *                            "compra", "manutencoes": [{"data", "nome"}], "previsao" (como em recurso=previsao), "tipos": [os lançamentos
  *                            do relógio: {"identificador", "nome", "formato", "unidade", "aberta": {"inicio", "rodizio", "texto"}}],
  *                            "leituras": [as 40 últimas com valor: {"inicio", "valor", "unidade", "em_uso"}], "linha_do_tempo" (as 5
@@ -281,18 +282,21 @@
  *                            Ex. nova: curl -u lucas:senha -d recurso=formulas -d acao=nova -d identificador=idade_dias -d "nome=Idade (dias)" --data-urlencode "expressao=AGORA() - data_compra" -d unidade=dias -d no_id=0 http://servidor/relojoeiro/api.php
  *                            Ex. alterar: curl -u lucas:senha -d recurso=formulas -d acao=alterar -d id=17 --data-urlencode "expressao=ARREDONDA(AGORA() - data_compra)" http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=formulas -d acao=excluir -d id=17 http://servidor/relojoeiro/api.php
- *   recurso=relogio           salvar (id: 0 ou ausente cria; nome, no_id, disponivel, valores[identificador]: só muda o que
- *                             vier; valor vazio apaga; inválido fica o que estava e a mensagem diz), excluir (id),
+ *   recurso=relogio           salvar (id: 0 ou ausente cria; nome, no_id, disponivel, copia_banco (1: a cópia no banco de todos os
+ *                             documentos dele; o cron copia ou tira aos poucos), valores[identificador]: só muda o que vier;
+ *                             valor vazio apaga; inválido fica o que estava e a mensagem diz), excluir (id),
  *                             foto (id, foto_base64), remover_foto (id)
  *                            Ex. salvar: curl -u lucas:senha -d recurso=relogio -d acao=salvar -d id=10 -d "valores[preferencia]=80" -d disponivel=1 http://servidor/relojoeiro/api.php
  *                            Ex. foto: curl -u lucas:senha -d recurso=relogio -d acao=foto -d id=10 --data-urlencode foto_base64@foto.b64 http://servidor/relojoeiro/api.php
  *                            Ex. remover_foto: curl -u lucas:senha -d recurso=relogio -d acao=remover_foto -d id=10 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=relogio -d acao=excluir -d id=15 http://servidor/relojoeiro/api.php
- *   recurso=documentos        enviar (relogio_id, categoria_id, titulo, data AAAA-MM-DD, descricao e o arquivo: arquivos[]
- *                             como upload, vários de uma vez, ou arquivo_base64 com arquivo_nome; a miniatura de uma foto,
- *                             opcional: miniatura (upload) ou miniatura_base64; título vazio: o nome do arquivo), alterar (id:
- *                             categoria_id, titulo, data, descricao; só muda o que vier), excluir (id: o documento, o arquivo
- *                             e a cópia no banco). O arquivo vai para a pasta e, com a cópia ligada, também para o banco
+ *   recurso=documentos        enviar (relogio_id, categoria_id, titulo, data AAAA-MM-DD, descricao, copia_banco (1: pede a cópia
+ *                             destes arquivos no banco) e o arquivo: arquivos[] como upload, vários de uma vez, ou
+ *                             arquivo_base64 com arquivo_nome; a miniatura de uma foto, opcional: miniatura (upload) ou
+ *                             miniatura_base64; título vazio: o nome do arquivo), alterar (id: categoria_id, titulo, data,
+ *                             descricao, copia_banco; só muda o que vier; a cópia entra ou sai do banco na hora), excluir (id: o
+ *                             documento, o arquivo e a cópia no banco). O arquivo vai para a pasta e, se a cópia é pedida (pelo
+ *                             config.php, pelo relógio ou pelo próprio arquivo), também para o banco
  *                            Ex. enviar: curl -u lucas:senha -F recurso=documentos -F acao=enviar -F relogio_id=10 -F categoria_id=2 -F "arquivos[]=@nota.pdf" http://servidor/relojoeiro/api.php
  *                            Ex. alterar: curl -u lucas:senha -d recurso=documentos -d acao=alterar -d id=7 -d "titulo=No casamento" -d data=2026-09-20 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=documentos -d acao=excluir -d id=7 http://servidor/relojoeiro/api.php
@@ -478,6 +482,7 @@
  *     config.migracao_v10            marca de que a migração v10 foi aplicada (1)
  *     config.migracao_v12            marca de que a migração v12 foi aplicada (1)
  *     config.migracao_v16            marca de que a migração v16 foi aplicada (1)
+ *     config.migracao_v17            marca de que a migração v17 foi aplicada (1)
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso); 0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
@@ -722,6 +727,8 @@
  *                                    o valor que as contas usam: o gravado, ou o padrão do campo
  *     relogios[].criado              quando foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].disponivel          verdadeiro ou falso: entra no rodízio
+ *     relogios[].copia_banco         verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da
+ *                                    cópia; o DOCUMENTOS_COPIA_BANCO do config.php, se definido, vale por cima)
  *     relogios[].em_uso              verdadeiro ou falso: o relógio está com uma sessão no pulso aberta agora
  *     relogios[].energia             a energia agora, em % inteiro (a fórmula energia: bateria, reserva, luz ou pilha); null sem dados para calcular
  *     relogios[].formulas[]          o resultado agora de cada fórmula que vale para ele
@@ -902,6 +909,13 @@
  *     relogios[].documentos[].no_banco
  *                                    verdadeiro: a cópia de segurança do arquivo está completa no banco (se ele sumir da pasta, volta
  *                                    dali)
+ *     relogios[].documentos[].copia_banco
+ *                                    verdadeiro: o próprio arquivo pede a cópia no banco (o terceiro nível; o relógio e o config.php, se
+ *                                    pedem, valem por cima)
+ *     relogios[].documentos[].copia_por
+ *                                    quem pede a cópia no banco: sistema (o DOCUMENTOS_COPIA_BANCO = true do config.php), relogio (a marca
+ *                                    do relógio) ou arquivo (a marca do próprio arquivo); null: ninguém pede, ou o config.php (false) não
+ *                                    deixa, e o arquivo fica só na pasta (a cópia que houver, o cron tira)
  *     relogios[].documentos[].relogio_id
  *                                    o relógio dele
  *     relogios[].documentos[].tamanho
@@ -1114,6 +1128,8 @@
  *     relogio.dados[].valor_usado    o valor que as contas usam: o informado, senão o padrão do campo (null: nenhum)
  *     relogio.desde                  desde quando (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.disponivel             verdadeiro ou falso: entra no rodízio
+ *     relogio.copia_banco            verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da
+ *                                    cópia; o DOCUMENTOS_COPIA_BANCO do config.php, se definido, vale por cima)
  *     relogio.em_uso                 verdadeiro ou falso: no pulso agora
  *     relogio.escala_fim             até que dia vai a escala (null fora da escala)
  *     relogio.foto                   a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
@@ -1260,6 +1276,10 @@
  *     relogio.documentos.categorias[].nome
  *                                    o nome da categoria
  *     relogio.documentos.pasta_ok    verdadeiro: a pasta dos documentos (DOCUMENTOS_PASTA do config.php) está pronta para receber arquivos
+ *     relogio.documentos.copia_sistema
+ *                                    a cópia no banco pelo config.php (DOCUMENTOS_COPIA_BANCO), que vale sobre o relógio e o arquivo:
+ *                                    verdadeiro, todo arquivo vai; falso, nenhum vai; null (sem a constante), cada relógio e cada arquivo
+ *                                    decidem
  *     relogio.documentos.total       quantos documentos ele tem
  *   recurso=config
  *     ancoras.<ancora>               cada âncora que as mensagens aceitam ({relogio}, {acao}...) e o que ela vira
@@ -1288,6 +1308,7 @@
  *     config.migracao_v10            marca de que a migração v10 foi aplicada (1)
  *     config.migracao_v12            marca de que a migração v12 foi aplicada (1)
  *     config.migracao_v16            marca de que a migração v16 foi aplicada (1)
+ *     config.migracao_v17            marca de que a migração v17 foi aplicada (1)
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso); 0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
@@ -1752,12 +1773,15 @@
  *     pendentes[].versao             a versão (v2, v3...)
  *
  *   recurso=documentos
- *     relogio                        o relógio pedido: {id, nome}; null: os documentos de todos
+ *     relogio                        o relógio pedido: {id, nome, copia_banco}; null: os documentos de todos
  *     relogio.id                     o número do relógio
  *     relogio.nome                   o nome do relógio
+ *     relogio.copia_banco            verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da
+ *                                    cópia; o DOCUMENTOS_COPIA_BANCO do config.php, se definido, vale por cima)
  *     pasta_ok                       verdadeiro: a pasta dos documentos (DOCUMENTOS_PASTA do config.php) existe e aceita gravar
- *     copia_banco                    verdadeiro: a cópia de segurança dos documentos no banco está ligada (o DOCUMENTOS_COPIA_BANCO do
- *                                    config.php; sem ele, ligada)
+ *     copia_sistema                  a cópia no banco pelo config.php (DOCUMENTOS_COPIA_BANCO), que vale sobre o relógio e o arquivo:
+ *                                    verdadeiro, todo arquivo vai; falso, nenhum vai; null (sem a constante), cada relógio e cada arquivo
+ *                                    decidem
  *     pasta_erro                     o motivo de a pasta não servir (texto); null: ela serve
  *     limite                         o maior arquivo aceito, em bytes (número inteiro): o DOCUMENTOS_LIMITE do config.php (sem ele, 100
  *                                    MB), ou menos pelo upload_max_filesize e o post_max_size do PHP; null: sem limite
@@ -1787,6 +1811,11 @@
  *                                    próxima rodada do cron; sem a cópia no banco, está perdido)
  *     documentos[].no_banco          verdadeiro: a cópia de segurança do arquivo está completa no banco (se ele sumir da pasta, volta
  *                                    dali)
+ *     documentos[].copia_banco       verdadeiro: o próprio arquivo pede a cópia no banco (o terceiro nível; o relógio e o config.php, se
+ *                                    pedem, valem por cima)
+ *     documentos[].copia_por         quem pede a cópia no banco: sistema (o DOCUMENTOS_COPIA_BANCO = true do config.php), relogio (a marca
+ *                                    do relógio) ou arquivo (a marca do próprio arquivo); null: ninguém pede, ou o config.php (false) não
+ *                                    deixa, e o arquivo fica só na pasta (a cópia que houver, o cron tira)
  *     documentos[].relogio_id        o relógio dele
  *     documentos[].tamanho           o tamanho do arquivo, em bytes (número inteiro)
  *     documentos[].tipo              o tipo do arquivo (MIME): image/jpeg, video/mp4, application/pdf, application/xml...
@@ -1821,7 +1850,8 @@
  * ERROS  (no formato pedido)
  * ---------------------------------------------------------------------------------------------
  *   400 pedido recusado (os erros dizem por quê)      401 sem token nem login      404 recurso ou relógio que não existe
- *   409 {"erro": "o banco recusou a gravação: ...", "detalhe"} (um registro que outro ainda usa, ou um valor repetido)
+ *   409 {"erro": "o banco recusou a gravação: ...", "detalhe"} (um registro que outro ainda usa, um valor repetido, ou um valor fora
+ *       das regras de validação do banco: o nome da regra, ck_<tabela>_<o quê>, vem no detalhe)
  *   413 {"ok": false, "erros": [...]} (o envio passou do post_max_size do PHP: um arquivo grande demais)
  *   500 {"erro": "Sistema parado: ..."} (token ou fuso inválido no config.php) ou {"erro": "erro interno", "detalhe"}
  *   503 {"erro": "o banco está desatualizado: ...", "pendentes"}: só recurso=migracoes responde até aplicar
@@ -2128,8 +2158,8 @@ function responde($codigo, $saida, $formato)
 set_exception_handler(function ($t) use ($formato) {
     if ($t instanceof BancoErro && $t->integridade) {
         // o banco recusou a gravação: um registro que outro ainda usa, ou um valor repetido onde não pode
-        responde(409, ["erro" => "o banco recusou a gravação: ela quebraria uma ligação entre os dados (um registro que outro ainda usa, "
-            . "ou um valor repetido onde não pode)", "detalhe" => $t->getMessage()], $formato);
+        responde(409, ["erro" => "o banco recusou a gravação: ela quebraria uma regra dos dados (um registro que outro ainda usa, "
+            . "um valor repetido onde não pode, ou um valor fora das regras de validação do banco)", "detalhe" => $t->getMessage()], $formato);
         return;
     }
     $banco = $t instanceof BancoErro || $t instanceof mysqli_sql_exception;
@@ -2231,12 +2261,13 @@ if (!$token_ok && $quem === "") {
 } elseif ($recurso === "documentos") {
     // os documentos de um relógio (relogio=<id>; sem ele, de todos), com as categorias, os relógios, a pasta e o limite
     $rid = (int)($_REQUEST["relogio"] ?? 0);
-    $r = $rid > 0 ? linha("SELECT id, nome FROM relogio WHERE id = ?", [$rid]) : null;
+    $r = $rid > 0 ? linha("SELECT id, nome, copia_banco FROM relogio WHERE id = ?", [$rid]) : null;
     if ($rid > 0 && !$r) {
         $codigo = 404;
         $saida = ["erro" => "relógio não encontrado"];
     } else {
-        $saida = ["relogio" => $r ? ["id" => (int)$r["id"], "nome" => $r["nome"]] : null, "pasta_ok" => documentos_pasta() !== null, "copia_banco" => documentos_copia_banco(),
+        $saida = ["relogio" => $r ? ["id" => (int)$r["id"], "nome" => $r["nome"], "copia_banco" => (int)$r["copia_banco"] === 1] : null, "pasta_ok" => documentos_pasta() !== null,
+            "copia_sistema" => documentos_copia_sistema(),
             "pasta_erro" => documentos_pasta_erro() !== "" ? documentos_pasta_erro() : null, "limite" => documentos_limite(),
             "categorias" => documento_categorias_lista($r ? $rid : null),
             "relogios" => array_map(function ($x) { return ["id" => (int)$x["id"], "nome" => $x["nome"], "documentos" => (int)$x["documentos"]]; },
@@ -2378,11 +2409,12 @@ if (!$token_ok && $quem === "") {
         $foto = valor("SELECT atualizado FROM foto WHERE relogio_id = ?", [$id]);
         $nota = (int)$r["disponivel"] === 1 ? nota_do_relogio($r, $agora) : null;
         $saida["relogio"] = ["id" => $id, "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? 0 : (int)$r["no_id"], "disponivel" => (int)$r["disponivel"] === 1,
+            "copia_banco" => (int)$r["copia_banco"] === 1,
             "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "sem grupo", "caminho" => no_caminho($r["no_id"]), "observacao" => $valores["observacao"] ?? null,
             "foto" => $foto !== null ? strtotime($foto) : null, "documentos" => (function () use ($id) {
                 $cats = array_values(array_filter(documento_categorias_lista($id), function ($c) { return $c["documentos"] > 0; }));
                 return ["total" => array_sum(array_column($cats, "documentos")), "categorias" => array_map(function ($c) { return ["id" => $c["id"], "nome" => $c["nome"], "documentos" => $c["documentos"]]; }, $cats),
-                    "pasta_ok" => documentos_pasta() !== null];
+                    "pasta_ok" => documentos_pasta() !== null, "copia_sistema" => documentos_copia_sistema()];
             })(), "em_uso" => $v["em_uso"], "agora" => $v["texto"], "carga" => $v["energia"], "carga_de" => $v["de"], "situacao" => $v["situacao"],
             "nota" => $nota ? ["nota" => $nota["nota"], "conjunto_texto" => $nota["conjunto_texto"]] : null,
             "proxima" => $proxima, "proxima_ate" => $proxima !== null ? texto_ate($proxima, "neste dia") : null,
@@ -2584,7 +2616,8 @@ if (!$token_ok && $quem === "") {
     $com_id = function ($linhas) {
         return array_map(function ($x) {
             foreach (["id", "no_id", "ordem", "ativo", "exclusiva", "mede_gasto", "modo_id", "relogio_id", "escala_dias", "ciclo", "resolve_tipo_id"] as $k) {
-                if (array_key_exists($k, $x) && $x[$k] !== null) {
+                // a marca do modo em uso é 1 ou vazia (NULL) no banco: aqui, 1 ou 0
+                if (array_key_exists($k, $x) && ($x[$k] !== null || ($k === "ativo" && array_key_exists("selecao", $x)))) {
                     $x[$k] = (int)$x[$k];
                 }
             }
@@ -2735,15 +2768,15 @@ if (!$token_ok && $quem === "") {
                 "excluir" => ["campos" => "id (a versão)", "exemplo" => "curl -u lucas:senha -d recurso=formulas -d acao=excluir -d id=17 http://servidor/relojoeiro/api.php"],
             ],
             "relogio" => [
-                "salvar" => ["campos" => "id (0 ou ausente cria), nome, no_id, disponivel (1 ou 0), valores[<identificador do campo>]: só muda o que vier; valor vazio apaga", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=salvar -d id=10 -d \"valores[preferencia]=80\" -d disponivel=1 http://servidor/relojoeiro/api.php"],
+                "salvar" => ["campos" => "id (0 ou ausente cria), nome, no_id, disponivel (1 ou 0), copia_banco (1 ou 0: a cópia no banco de todos os documentos dele; o cron copia ou tira aos poucos), valores[<identificador do campo>]: só muda o que vier; valor vazio apaga", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=salvar -d id=10 -d \"valores[preferencia]=80\" -d disponivel=1 http://servidor/relojoeiro/api.php"],
                 "foto" => ["campos" => "id, foto_base64 (JPEG, PNG ou WebP, até 4 MB; data:image/...;base64,... ou só o base64)", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=foto -d id=10 --data-urlencode foto_base64@foto.b64 http://servidor/relojoeiro/api.php"],
                 "remover_foto" => ["campos" => "id", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=remover_foto -d id=10 http://servidor/relojoeiro/api.php"],
                 "excluir" => ["campos" => "id (com todo o histórico, a foto e os documentos, inclusive os arquivos deles)", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=excluir -d id=15 http://servidor/relojoeiro/api.php"],
             ],
             "documentos" => [
-                "enviar" => ["campos" => "relogio_id, categoria_id, titulo (vazio: o nome do arquivo), data (AAAA-MM-DD), descricao e o arquivo: arquivos[] (upload; vários de uma vez) ou arquivo_base64 com arquivo_nome; a miniatura de uma foto, opcional: miniatura (upload, JPEG, PNG ou WebP até 1 MB) ou miniatura_base64. Cada arquivo até o limite (recurso=documentos, limite) e do tipo que a categoria aceita. O arquivo vai para a pasta e, com a cópia de segurança ligada, também para o banco, em pedaços de 4 MB (se a cópia falhar, o documento fica e a mensagem avisa; o cron tenta de novo). Responde ids: os documentos guardados",
+                "enviar" => ["campos" => "relogio_id, categoria_id, titulo (vazio: o nome do arquivo), data (AAAA-MM-DD), descricao, copia_banco (1: pede a cópia destes arquivos no banco; o config.php e o relógio, se pedem, valem por cima) e o arquivo: arquivos[] (upload; vários de uma vez) ou arquivo_base64 com arquivo_nome; a miniatura de uma foto, opcional: miniatura (upload, JPEG, PNG ou WebP até 1 MB) ou miniatura_base64. Cada arquivo até o limite (recurso=documentos, limite) e do tipo que a categoria aceita. O arquivo vai para a pasta e, se a cópia é pedida (pelo config.php, pelo relógio ou pelo próprio arquivo), também para o banco, em pedaços de 4 MB (se a cópia falhar, o documento fica e a mensagem avisa; o cron tenta de novo). Responde ids: os documentos guardados",
                     "exemplo" => "curl -u lucas:senha -F recurso=documentos -F acao=enviar -F relogio_id=10 -F categoria_id=2 -F \"arquivos[]=@nota.pdf\" http://servidor/relojoeiro/api.php"],
-                "alterar" => ["campos" => "id, categoria_id, titulo, data, descricao: só muda o que vier", "exemplo" => "curl -u lucas:senha -d recurso=documentos -d acao=alterar -d id=7 -d \"titulo=No casamento\" -d data=2026-09-20 http://servidor/relojoeiro/api.php"],
+                "alterar" => ["campos" => "id, categoria_id, titulo, data, descricao, copia_banco (1 ou 0): só muda o que vier; a cópia entra ou sai do banco na hora (só sai se o arquivo da pasta confere com ela)", "exemplo" => "curl -u lucas:senha -d recurso=documentos -d acao=alterar -d id=7 -d \"titulo=No casamento\" -d data=2026-09-20 http://servidor/relojoeiro/api.php"],
                 "excluir" => ["campos" => "id: o documento, o arquivo dele na pasta e a cópia no banco", "exemplo" => "curl -u lucas:senha -d recurso=documentos -d acao=excluir -d id=7 http://servidor/relojoeiro/api.php"],
             ],
             "documento_categorias" => [
@@ -2920,6 +2953,7 @@ if (!$token_ok && $quem === "") {
                 "config.migracao_v10" => "marca de que a migração v10 foi aplicada (1)",
                 "config.migracao_v12" => "marca de que a migração v12 foi aplicada (1)",
                 "config.migracao_v16" => "marca de que a migração v16 foi aplicada (1)",
+                "config.migracao_v17" => "marca de que a migração v17 foi aplicada (1)",
                 "config.pulso_auto_fim" => "1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o \"fecha às\" do tipo No pulso); 0: só pelo Tirou",
                 "config.pulso_auto_inicio" => "1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs",
                 "config.previsao_limite" => "o limite de carga da previsão do smartwatch, em %",
@@ -3106,6 +3140,7 @@ if (!$token_ok && $quem === "") {
                 "relogios[].campos[].valor_usado" => "o valor que as contas usam: o gravado, ou o padrão do campo",
                 "relogios[].criado" => "quando foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogios[].disponivel" => "verdadeiro ou falso: entra no rodízio",
+                "relogios[].copia_banco" => "verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da cópia; o DOCUMENTOS_COPIA_BANCO do config.php, se definido, vale por cima)",
                 "relogios[].em_uso" => "verdadeiro ou falso: o relógio está com uma sessão no pulso aberta agora",
                 "relogios[].energia" => "a energia agora, em % inteiro (a fórmula energia: bateria, reserva, luz ou pilha); null sem dados para calcular",
                 "relogios[].formulas[]" => "o resultado agora de cada fórmula que vale para ele",
@@ -3218,6 +3253,8 @@ if (!$token_ok && $quem === "") {
                 "relogios[].documentos[].nome" => "o nome do arquivo enviado",
                 "relogios[].documentos[].no_disco" => "verdadeiro: o arquivo está na pasta dos documentos (falso: ele volta do banco quando for pedido ou na próxima rodada do cron; sem a cópia no banco, está perdido)",
                 "relogios[].documentos[].no_banco" => "verdadeiro: a cópia de segurança do arquivo está completa no banco (se ele sumir da pasta, volta dali)",
+                "relogios[].documentos[].copia_banco" => "verdadeiro: o próprio arquivo pede a cópia no banco (o terceiro nível; o relógio e o config.php, se pedem, valem por cima)",
+                "relogios[].documentos[].copia_por" => "quem pede a cópia no banco: sistema (o DOCUMENTOS_COPIA_BANCO = true do config.php), relogio (a marca do relógio) ou arquivo (a marca do próprio arquivo); null: ninguém pede, ou o config.php (false) não deixa, e o arquivo fica só na pasta (a cópia que houver, o cron tira)",
                 "relogios[].documentos[].relogio_id" => "o relógio dele",
                 "relogios[].documentos[].tamanho" => "o tamanho do arquivo, em bytes (número inteiro)",
                 "relogios[].documentos[].tipo" => "o tipo do arquivo (MIME): image/jpeg, video/mp4, application/pdf, application/xml...",
@@ -3391,6 +3428,7 @@ if (!$token_ok && $quem === "") {
                 "relogio.dados[].valor_usado" => "o valor que as contas usam: o informado, senão o padrão do campo (null: nenhum)",
                 "relogio.desde" => "desde quando (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogio.disponivel" => "verdadeiro ou falso: entra no rodízio",
+                "relogio.copia_banco" => "verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da cópia; o DOCUMENTOS_COPIA_BANCO do config.php, se definido, vale por cima)",
                 "relogio.em_uso" => "verdadeiro ou falso: no pulso agora",
                 "relogio.escala_fim" => "até que dia vai a escala (null fora da escala)",
                 "relogio.foto" => "a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto",
@@ -3499,6 +3537,7 @@ if (!$token_ok && $quem === "") {
                 "relogio.documentos.categorias[].id" => "o número da categoria (para documentos.php?relogio=...&cat=...)",
                 "relogio.documentos.categorias[].nome" => "o nome da categoria",
                 "relogio.documentos.pasta_ok" => "verdadeiro: a pasta dos documentos (DOCUMENTOS_PASTA do config.php) está pronta para receber arquivos",
+                "relogio.documentos.copia_sistema" => "a cópia no banco pelo config.php (DOCUMENTOS_COPIA_BANCO), que vale sobre o relógio e o arquivo: verdadeiro, todo arquivo vai; falso, nenhum vai; null (sem a constante), cada relógio e cada arquivo decidem",
                 "relogio.documentos.total" => "quantos documentos ele tem",
             ],
             "config" => [
@@ -3528,6 +3567,7 @@ if (!$token_ok && $quem === "") {
                 "config.migracao_v10" => "marca de que a migração v10 foi aplicada (1)",
                 "config.migracao_v12" => "marca de que a migração v12 foi aplicada (1)",
                 "config.migracao_v16" => "marca de que a migração v16 foi aplicada (1)",
+                "config.migracao_v17" => "marca de que a migração v17 foi aplicada (1)",
                 "config.pulso_auto_fim" => "1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o \"fecha às\" do tipo No pulso); 0: só pelo Tirou",
                 "config.pulso_auto_inicio" => "1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs",
                 "config.previsao_limite" => "o limite de carga da previsão do smartwatch, em %",
@@ -3953,11 +3993,12 @@ if (!$token_ok && $quem === "") {
                 "pendentes[].versao" => "a versão (v2, v3...)",
             ],
             "documentos" => [
-                "relogio" => "o relógio pedido: {id, nome}; null: os documentos de todos",
+                "relogio" => "o relógio pedido: {id, nome, copia_banco}; null: os documentos de todos",
                 "relogio.id" => "o número do relógio",
                 "relogio.nome" => "o nome do relógio",
+                "relogio.copia_banco" => "verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da cópia; o DOCUMENTOS_COPIA_BANCO do config.php, se definido, vale por cima)",
                 "pasta_ok" => "verdadeiro: a pasta dos documentos (DOCUMENTOS_PASTA do config.php) existe e aceita gravar",
-                "copia_banco" => "verdadeiro: a cópia de segurança dos documentos no banco está ligada (o DOCUMENTOS_COPIA_BANCO do config.php; sem ele, ligada)",
+                "copia_sistema" => "a cópia no banco pelo config.php (DOCUMENTOS_COPIA_BANCO), que vale sobre o relógio e o arquivo: verdadeiro, todo arquivo vai; falso, nenhum vai; null (sem a constante), cada relógio e cada arquivo decidem",
                 "pasta_erro" => "o motivo de a pasta não servir (texto); null: ela serve",
                 "limite" => "o maior arquivo aceito, em bytes (número inteiro): o DOCUMENTOS_LIMITE do config.php (sem ele, 100 MB), ou menos pelo upload_max_filesize e o post_max_size do PHP; null: sem limite",
                 "relogios[]" => "todos os relógios, pelo nome (para escolher outro)",
@@ -3982,6 +4023,8 @@ if (!$token_ok && $quem === "") {
                 "documentos[].nome" => "o nome do arquivo enviado",
                 "documentos[].no_disco" => "verdadeiro: o arquivo está na pasta dos documentos (falso: ele volta do banco quando for pedido ou na próxima rodada do cron; sem a cópia no banco, está perdido)",
                 "documentos[].no_banco" => "verdadeiro: a cópia de segurança do arquivo está completa no banco (se ele sumir da pasta, volta dali)",
+                "documentos[].copia_banco" => "verdadeiro: o próprio arquivo pede a cópia no banco (o terceiro nível; o relógio e o config.php, se pedem, valem por cima)",
+                "documentos[].copia_por" => "quem pede a cópia no banco: sistema (o DOCUMENTOS_COPIA_BANCO = true do config.php), relogio (a marca do relógio) ou arquivo (a marca do próprio arquivo); null: ninguém pede, ou o config.php (false) não deixa, e o arquivo fica só na pasta (a cópia que houver, o cron tira)",
                 "documentos[].relogio_id" => "o relógio dele",
                 "documentos[].tamanho" => "o tamanho do arquivo, em bytes (número inteiro)",
                 "documentos[].tipo" => "o tipo do arquivo (MIME): image/jpeg, video/mp4, application/pdf, application/xml...",
@@ -4014,7 +4057,7 @@ if (!$token_ok && $quem === "") {
             "recurso" => "o recurso (vazio: tudo)", "acao" => "a ação (escrita)", "formato" => "json (padrão) ou xml", "token" => "o token da API; também no cabeçalho X-Api-Token, ou o login do site (HTTP Basic) no lugar dele",
         ],
         "erros" => ["400" => "pedido recusado (os erros dizem por quê)", "401" => "sem token nem login", "404" => "recurso ou relógio que não existe",
-            "409" => "o banco recusou a gravação (um registro que outro ainda usa, ou um valor repetido)",
+            "409" => "o banco recusou a gravação (um registro que outro ainda usa, um valor repetido, ou um valor fora das regras de validação do banco: o nome da regra, ck_<tabela>_<o quê>, vem no detalhe)",
             "413" => "o envio passou do limite do PHP do servidor (post_max_size): um arquivo grande demais",
             "500" => "sistema parado (token ou fuso inválido no config.php) ou erro interno", "503" => "banco desatualizado (só recurso=migracoes responde) ou banco fora do ar"],
         "motor" => array_map(function ($f) { return $f[2]; }, $GLOBALS["FUNCOES"]),
@@ -4070,7 +4113,7 @@ if (!$token_ok && $quem === "") {
         }
         $foto = linha("SELECT tipo, atualizado" . ($com_foto ? ", dados" : "") . " FROM foto WHERE relogio_id = ?", [(int)$r["id"]]);
         $relogios[] = ["id" => (int)$r["id"], "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? null : (int)$r["no_id"], "lugar" => no_caminho($r["no_id"]),
-            "disponivel" => (int)$r["disponivel"] === 1, "criado" => $r["criado"],
+            "disponivel" => (int)$r["disponivel"] === 1, "copia_banco" => (int)$r["copia_banco"] === 1, "criado" => $r["criado"],
             "foto" => $foto ? ["tipo" => $foto["tipo"], "atualizada_em" => $foto["atualizado"], "base64" => $com_foto ? base64_encode($foto["dados"]) : null] : null,
             "documentos" => array_map(function ($x) { return documento_info($x, false); }, documentos_do_relogio((int)$r["id"])),
             "campos" => $cs, "formulas" => $fs, "avisos" => avisos_do_relogio($r, time()),

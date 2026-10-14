@@ -370,6 +370,9 @@ function abrirNoPainel(id) {
     }
     cad += el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "disponivel", "value": "0"}) + el("input", {"type": "checkbox", "name": "disponivel", "value": "1",
       "checked": novo || r.disponivel}) + " Disponível para o rodízio")
+      + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "copia_banco", "value": "0"}) + el("input", {"type": "checkbox", "name": "copia_banco", "value": "1",
+        "checked": !novo && r.copia_banco}) + " Guardar no banco a cópia de todos os documentos dele"
+        + (!novo && r.documentos && r.documentos.copia_sistema !== null ? " " + el("small", {}, "(hoje quem decide é o config.php: " + (r.documentos.copia_sistema ? "todos vão" : "nenhum vai") + ")") : ""))
       + el("div", {"class": "botoes"}, el("button", {}, novo ? "Cadastrar relógio" : "Salvar alterações"));
     var cadastro = el("form", {"data-recurso": "relogio", "class": "cadastro"}, cad);
     if (novo) {

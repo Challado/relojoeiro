@@ -55,16 +55,23 @@ function formEditar(x) {
         return el("option", {"value": c.id, "selected": c.id === x.categoria_id}, h(c.nome));
       }).join("")))
       + el("label", {"style": "grid-column: 1 / -1"}, "Descrição " + el("textarea", {"name": "descricao", "rows": "2"}, h(x.descricao || "")))
+      + el("label", {"class": "check", "style": "grid-column: 1 / -1"}, el("input", {"type": "hidden", "name": "copia_banco", "value": "0"})
+        + el("input", {"type": "checkbox", "name": "copia_banco", "value": "1", "checked": x.copia_banco}) + " Guardar a cópia deste arquivo no banco"
+        + (x.copia_por === "sistema" || x.copia_por === "relogio" ? " " + el("small", {}, "(já vai: " + (x.copia_por === "sistema" ? "o config.php guarda todos" : "o relógio guarda todos os dele") + ")")
+          : (dados.copia_sistema === false ? " " + el("small", {}, "(o config.php não deixa)") : "")))
       + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, "Salvar")))
     + el("form", {"data-recurso": "documentos", "onsubmit": "return confirm(" + JSON.stringify("Excluir " + x.titulo + "? O arquivo sai do servidor.") + ")"},
       el("input", {"type": "hidden", "name": "acao", "value": "excluir"}) + el("input", {"type": "hidden", "name": "id", "value": x.id})
       + el("button", {"class": "leve discreto"}, "Excluir")));
 }
-// o nome do arquivo, o tamanho e onde ele está guardado (o aviso só quando falta a cópia no banco ou o arquivo na pasta)
+// quem pede a cópia no banco: o sistema (config.php), o relógio ou o próprio arquivo
+var COPIA_POR = {sistema: "o config.php guarda todos", relogio: "o relógio guarda todos os dele", arquivo: "pedida neste arquivo"};
+// o nome do arquivo, o tamanho e onde ele está guardado: na pasta, no banco, e quem pediu a cópia no banco
 function guardado(x) {
-  return el("p", {"class": "nota"}, h(x.nome) + " · " + tamanho(x.tamanho)
-    + (!x.no_disco ? " · " + el("strong", {}, x.no_banco ? "fora da pasta (volta do banco ao abrir)" : "o arquivo sumiu da pasta e não tem cópia no banco") : "")
-    + (x.no_disco && !x.no_banco && dados.copia_banco ? " · ainda sem a cópia no banco (o cron faz)" : ""));
+  var onde = !x.no_disco ? el("strong", {}, x.no_banco ? "fora da pasta (volta do banco ao abrir)" : "o arquivo sumiu da pasta e não tem cópia no banco")
+    : x.no_banco ? (x.copia_por ? "na pasta e no banco (" + COPIA_POR[x.copia_por] + ")" : "na pasta e no banco (ninguém mais pede a cópia: o cron a tira)")
+      : x.copia_por ? "na pasta; a cópia no banco ainda vai (" + COPIA_POR[x.copia_por] + "; o cron faz)" : "só na pasta";
+  return el("p", {"class": "nota"}, h(x.nome) + " · " + tamanho(x.tamanho) + " · " + onde);
 }
 function linkBaixar(x, rotulo) {
   return el("a", {"href": x.url + "&baixar=1", "class": "botao-link"}, rotulo || "Baixar");
@@ -81,8 +88,17 @@ function montar() {
   if (recado !== "") {
     res += el("p", {"class": "acao"}, h(recado));
   }
-  if (d.pasta_ok && !d.copia_banco) {
-    res += el("p", {"class": "nota"}, "A cópia de segurança dos documentos no banco está desligada (DOCUMENTOS_COPIA_BANCO no config.php): os arquivos ficam só na pasta.");
+  // a cópia no banco: o config.php vale por todos; sem ele, o relógio (aqui) e cada arquivo (no envio e em editar)
+  if (d.pasta_ok && d.copia_sistema === true) {
+    res += el("p", {"class": "nota"}, "Cópia no banco: o config.php (DOCUMENTOS_COPIA_BANCO) manda guardar todo arquivo também no banco.");
+  } else if (d.pasta_ok && d.copia_sistema === false) {
+    res += el("p", {"class": "nota"}, "Cópia no banco: o config.php (DOCUMENTOS_COPIA_BANCO = false) não deixa; os arquivos ficam só na pasta.");
+  } else if (d.pasta_ok && d.relogio) {
+    res += el("form", {"data-recurso": "relogio", "class": "linha"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
+      + el("input", {"type": "hidden", "name": "id", "value": d.relogio.id}) + el("input", {"type": "hidden", "name": "copia_banco", "value": d.relogio.copia_banco ? "0" : "1"})
+      + el("span", {"class": "nota"}, d.relogio.copia_banco ? "Cópia no banco: todos os arquivos do " + h(d.relogio.nome) + " vão também para o banco. "
+        : "Cópia no banco: só os arquivos marcados vão também para o banco. ")
+      + el("button", {"class": "leve"}, d.relogio.copia_banco ? "Só os marcados" : "Guardar todos os dele no banco"));
   }
   if (!d.pasta_ok) {
     res += el("p", {"class": "acao"}, "Os documentos ainda não podem ser guardados: " + h(d.pasta_erro) + ".");
@@ -99,6 +115,8 @@ function montar() {
         + el("label", {}, "Data " + el("input", {"type": "date", "name": "data"}))
         + el("label", {"style": "grid-column: 1 / -1"}, "Descrição " + el("textarea", {"name": "descricao", "rows": "2", "placeholder": "a ocasião, o que é, onde foi..."}))
         + el("label", {"style": "grid-column: 1 / -1"}, "Arquivos (pode escolher vários) " + el("input", {"type": "file", "name": "arquivos", "id": "envio-arquivos", "multiple": true, "required": true}))
+        + (d.copia_sistema === null && !d.relogio.copia_banco ? el("label", {"class": "check", "style": "grid-column: 1 / -1"},
+          el("input", {"type": "checkbox", "name": "copia_banco", "value": "1"}) + " Guardar a cópia destes arquivos também no banco") : "")
         + el("p", {"class": "nota", "style": "grid-column: 1 / -1"}, "Qualquer arquivo" + (d.limite !== null ? ", até " + tamanho(d.limite) + " cada" : ", de qualquer tamanho")
           + ". O título, a data e a descrição valem para todos os escolhidos; depois cada um se edita sozinho.")
         + el("div", {"class": "botoes"}, el("button", {}, "Enviar") + " " + el("span", {"id": "envio-andamento", "class": "nota"}, ""))));
@@ -416,6 +434,7 @@ function enviarUm(form, arquivo, mini, rotulo) {
     fd.append("acao", "enviar");
     fd.append("relogio_id", rid);
     ["categoria_id", "titulo", "data", "descricao"].forEach(function (k) { fd.append(k, form.elements[k].value); });
+    fd.append("copia_banco", form.elements.copia_banco && form.elements.copia_banco.checked ? "1" : "0");
     fd.append("arquivos[]", arquivo, arquivo.name);
     if (mini) {
       fd.append("miniatura", mini, "miniatura.jpg");
