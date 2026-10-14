@@ -75,3 +75,33 @@ num horário simulado: `faketime -f "+3600s" ...` adianta o relógio do servidor
 o SQLite e o Firebird servem para isso (neles, o "agora" vem todo do PHP); o MySQL e o PostgreSQL usam o relógio do próprio
 servidor do banco no `NOW()`. Rodando os dois juntos em cada horário (de hora em hora e logo depois das viradas: 00:02, 07:32,
 18:02, 22:02), o resultado esperado é o mesmo `0 diferenças graves` em todos.
+
+# Conferência do layout
+
+O `testes/layout.cjs` abre todas as telas num navegador de verdade (o Chromium, pelo
+[Playwright](https://playwright.dev/)), em 15 tamanhos: computador (1100, 1152, 1280, 1366, 1440, 1536 e 1920px), tablet de pé
+(768 e 820px) e deitado (1024 e 1180px) e celular (320, 360, 390 e 412px). Em cada uma, mede o que quebra:
+
+- a página que rola de lado;
+- o elemento que sai da caixa (o quadro, o cartão, a etiqueta) em que está;
+- a etiqueta com fundo ou borda partida em duas linhas, e o botão com o texto partido ("Abrir" numa linha, "foto" na outra);
+- o texto cortado;
+- irmãos que ficam um por cima do outro.
+
+As telas: a Hoje (com o Rodízio manual aberto, e com o painel de cada relógio ao lado e na janela flutuante), a Ficha de cada
+relógio e a de um relógio novo, o Histórico, o Plano, os Critérios, os Grupos, os Cadastros, a Configuração, os Documentos, as
+Execuções, os Usuários e a Ajuda. Abre os quadros recolhidos (`<details>`) e passa por cada opção dos menus que mostram partes
+(o quadro Marcar), para conferir também o que só aparece depois de um clique.
+
+Ele usa o banco do cenário. Depois do `cenario.php`, com o servidor ainda no ar:
+
+```sh
+npm install -g playwright        # uma vez (e o Chromium: npx playwright install chromium)
+BASE=http://127.0.0.1:8101/ node testes/layout.cjs
+```
+
+O resultado esperado é `{} 0 problemas`. Em `testes/layout/` (fora do git) ficam uma captura de cada tela em cada tamanho, o
+`relatorio.tsv` (um problema por linha) e o `agrupado.txt` (o mesmo problema com os tamanhos em que aparece). Para conferir só
+uma parte, os dois argumentos filtram o nome da tela e o do tamanho: `node testes/layout.cjs "ficha" "cel-"`. Os dados do cenário
+são curtos; para pegar o que só quebra com o nome comprido de verdade, vale rodar também depois de dar nomes longos a alguns
+relógios e grupos e pôr foto em alguns (a cabeça do painel muda com a foto: os botões Abrir, Trocar e Remover foto).
