@@ -25,7 +25,7 @@ if (($_REQUEST["de"] ?? "") === "tudo") {
 }
 if ($de_e === null || $ate_e === null) {
     $codigo = 400;
-    $saida = ["erro" => "de e ate: datas AAAA-MM-DD (de também aceita tudo: desde o primeiro uso)"];
+    $saida = ["erro" => t("de e ate: datas AAAA-MM-DD (de também aceita tudo: desde o primeiro uso)")];
     return;
 }
 if ($ate_e > $hoje_e) {
@@ -33,7 +33,7 @@ if ($ate_e > $hoje_e) {
 }
 if ($de_e > $ate_e) {
     $codigo = 400;
-    $saida = ["erro" => "de depois de ate (o período vai até hoje)"];
+    $saida = ["erro" => t("de depois de ate (o período vai até hoje)")];
     return;
 }
 if ((int)$de_e->diff($ate_e)->days > 3660) {
@@ -108,11 +108,11 @@ foreach ($todos_r as $r) {
     // a tendência: as horas da segunda metade do período comparadas com as da primeira (uma diferença de até 20%, ou de menos de
     // uma hora, é estável)
     if ($s1 + $s2 < 3600 || $dias_e < 14) {
-        $tend = ["sem_dados", "poucos dados"];
+        $tend = ["sem_dados", t("poucos dados")];
     } elseif (abs($s2 - $s1) < 3600 || abs($s2 - $s1) <= 0.2 * max($s1, $s2)) {
-        $tend = ["estavel", "estável"];
+        $tend = ["estavel", t("estável")];
     } else {
-        $tend = $s2 > $s1 ? ["sobe", "usando mais"] : ["desce", "usando menos"];
+        $tend = $s2 > $s1 ? ["sobe", t("usando mais")] : ["desce", t("usando menos")];
     }
     // a última vez no pulso: no pulso agora, hoje; senão, o fim da última sessão (ou a última marcação antiga)
     $no_pulso = (int)valor("SELECT COUNT(*) FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.identificador = 'pulso' AND l.fim IS NULL", [$id]) > 0;
@@ -124,8 +124,8 @@ foreach ($todos_r as $r) {
     $du = isset(formulas_todas()["dias_de_uso"]) ? variavel_valor("dias_de_uso", $c) : null;
     $c = ["r" => $r, "momento" => $agora_e, "rastro" => [], "pilha" => [], "valores" => $v];
     $cpu = isset(formulas_todas()["custo_por_uso"]) ? variavel_valor("custo_por_uso", $c) : null;
-    $rels_e[] = ["id" => $id, "nome" => $r["nome"], "tipo" => isset($n_e[(int)$r["no_id"]]) ? $n_e[(int)$r["no_id"]]["nome"] : "sem grupo",
-        "posse" => posse_de($r), "posse_texto" => POSSES[posse_de($r)],
+    $rels_e[] = ["id" => $id, "nome" => $r["nome"], "tipo" => isset($n_e[(int)$r["no_id"]]) ? $n_e[(int)$r["no_id"]]["nome"] : t("sem grupo"),
+        "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]),
         "usos" => count($dias_uso[$id] ?? []), "horas" => round($s / 3600, 1),
         "porcentagem" => $tot_seg > 0 ? round($s * 100 / $tot_seg, 1) : 0.0,
         "ultimo_uso" => $ultimo !== "" ? substr($ultimo, 0, 10) : null,
@@ -147,7 +147,7 @@ foreach ($rels_e as &$x) {
 unset($x);
 
 // por dia da semana e por mês (as horas de todos), com a altura da barra comparada com a maior
-$nomes_dia = [1 => "segunda", 2 => "terça", 3 => "quarta", 4 => "quinta", 5 => "sexta", 6 => "sábado", 7 => "domingo"];
+$nomes_dia = [1 => t("segunda"), 2 => t("terça"), 3 => t("quarta"), 4 => t("quinta"), 5 => t("sexta"), 6 => t("sábado"), 7 => t("domingo")];
 $meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 $sem = [];
 foreach ($nomes_dia as $k => $nome) {
@@ -218,10 +218,10 @@ $distribuir = function ($titulo, $ident, $de_quem) use ($colecao, $seg) {
     }, $partes))];
 };
 $distr = [
-    $distribuir("Grupo", "grupo", function ($r) { return $r["no_id"] === null ? "(na raiz)" : no_caminho($r["no_id"]); }),
-    $distribuir("Marca", "marca", function ($r) use ($valores_e) { return $valores_e[(int)$r["id"]]["marca"] ?? null; }),
-    $distribuir("Ano da compra", "ano_compra", function ($r) use ($valores_e) { $d = (string)($valores_e[(int)$r["id"]]["data_compra"] ?? ""); return $d !== "" ? substr($d, 0, 4) : null; }),
-    $distribuir("Situação", "posse", function ($r) { return POSSES[posse_de($r)]; }),
+    $distribuir(t("Grupo"), "grupo", function ($r) { return $r["no_id"] === null ? t("(na raiz)") : no_caminho($r["no_id"]); }),
+    $distribuir(t("Marca"), "marca", function ($r) use ($valores_e) { return $valores_e[(int)$r["id"]]["marca"] ?? null; }),
+    $distribuir(t("Ano da compra"), "ano_compra", function ($r) use ($valores_e) { $d = (string)($valores_e[(int)$r["id"]]["data_compra"] ?? ""); return $d !== "" ? substr($d, 0, 4) : null; }),
+    $distribuir(t("Situação"), "posse", function ($r) { return t(POSSES[posse_de($r)]); }),
 ];
 foreach (campos_todos() as $ident => $c) {
     if ($c["tipo"] === "lista" && (int)($c["so_desejado"] ?? 0) === 0) {

@@ -15,8 +15,8 @@ $agora_h = (int)floor($micro_h);
 $local_h = (new DateTimeImmutable("@" . $agora_h))->setTimezone(new DateTimeZone(date_default_timezone_get()));
 $utc_h = (new DateTimeImmutable("@" . $agora_h))->setTimezone(new DateTimeZone("UTC"));
 $desl_h = $local_h->getOffset();
-$semana_h = ["", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo"];
-$meses_h = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+$semana_h = ["", t("segunda-feira"), t("terça-feira"), t("quarta-feira"), t("quinta-feira"), t("sexta-feira"), t("sábado"), t("domingo")];
+$meses_h = [t("janeiro"), t("fevereiro"), t("março"), t("abril"), t("maio"), t("junho"), t("julho"), t("agosto"), t("setembro"), t("outubro"), t("novembro"), t("dezembro")];
 $meses_mil = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
 // a letra militar do fuso (o alfabeto da OTAN): A a M (sem J) a leste, N a Y a oeste, Z no UTC; fuso fora da hora cheia: sem letra
@@ -38,9 +38,9 @@ $idade = fmod($jd_h - 2451550.1, $ciclo);
 if ($idade < 0) {
     $idade += $ciclo;
 }
-$fases = [[1.84566, "nova", "Lua nova", "🌑"], [5.53699, "crescente", "Crescente", "🌒"], [9.22831, "quarto_crescente", "Quarto crescente", "🌓"],
-    [12.91963, "crescente_gibosa", "Crescente gibosa", "🌔"], [16.61096, "cheia", "Lua cheia", "🌕"], [20.30228, "minguante_gibosa", "Minguante gibosa", "🌖"],
-    [23.99361, "quarto_minguante", "Quarto minguante", "🌗"], [27.68493, "minguante", "Minguante", "🌘"], [99, "nova", "Lua nova", "🌑"]];
+$fases = [[1.84566, "nova", t("Lua nova"), "🌑"], [5.53699, "crescente", t("Crescente"), "🌒"], [9.22831, "quarto_crescente", t("Quarto crescente"), "🌓"],
+    [12.91963, "crescente_gibosa", t("Crescente gibosa"), "🌔"], [16.61096, "cheia", t("Lua cheia"), "🌕"], [20.30228, "minguante_gibosa", t("Minguante gibosa"), "🌖"],
+    [23.99361, "quarto_minguante", t("Quarto minguante"), "🌗"], [27.68493, "minguante", t("Minguante"), "🌘"], [99, "nova", t("Lua nova"), "🌑"]];
 foreach ($fases as $f) {
     if ($idade < $f[0]) {
         $fase = $f;
@@ -59,7 +59,7 @@ $ano_h = (int)$local_h->format("Y");
 $saida = ["agora" => $agora_h, "agora_ms" => (int)round($micro_h * 1000),
     "local" => ["data" => $local_h->format("Y-m-d"), "hora" => $local_h->format("H:i:s"), "iso8601" => $local_h->format("c"),
         "dia_semana" => $semana_h[(int)$local_h->format("N")],
-        "texto" => $semana_h[(int)$local_h->format("N")] . ", " . (int)$local_h->format("j") . " de " . $meses_h[(int)$local_h->format("n") - 1] . " de " . $ano_h],
+        "texto" => t("{1}, {2} de {3} de {4}", [1 => $semana_h[(int)$local_h->format("N")], 2 => (int)$local_h->format("j"), 3 => $meses_h[(int)$local_h->format("n") - 1], 4 => $ano_h])],
     "fuso" => ["nome" => date_default_timezone_get(), "deslocamento" => $local_h->format("P"), "segundos" => $desl_h, "abreviacao" => $local_h->format("T"),
         "horario_de_verao" => $local_h->format("I") === "1"],
     "utc" => ["data" => $utc_h->format("Y-m-d"), "hora" => $utc_h->format("H:i:s"), "iso8601" => $utc_h->format("Y-m-d\\TH:i:s\\Z")],
@@ -72,6 +72,4 @@ $saida = ["agora" => $agora_h, "agora_ms" => (int)round($micro_h * 1000),
     "lua" => ["fase" => $fase[1], "nome" => $fase[2], "simbolo" => $fase[3], "idade_dias" => round($idade, 1),
         "iluminacao" => round((1 - cos(2 * M_PI * $idade / $ciclo)) / 2 * 100, 1),
         "proxima_cheia" => $proxima($ciclo / 2), "proxima_nova" => $proxima($ciclo)],
-    "como_acertar" => "Puxe a coroa com o ponteiro dos segundos no 12 (ele para nos relógios com parada de segundos, o hack), ponha os ponteiros "
-        . "um ou dois minutos à frente e empurre a coroa quando o segundo chegar ao :00 da hora certa. Num relógio com data, troque a data longe "
-        . "da meia-noite (fora das 21h às 3h), para não forçar o mecanismo."];
+    "como_acertar" => t("Puxe a coroa com o ponteiro dos segundos no 12 (ele para nos relógios com parada de segundos, o hack), ponha os ponteiros um ou dois minutos à frente e empurre a coroa quando o segundo chegar ao :00 da hora certa. Num relógio com data, troque a data longe da meia-noite (fora das 21h às 3h), para não forçar o mecanismo.")];

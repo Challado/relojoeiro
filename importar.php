@@ -10,7 +10,7 @@ if (PHP_SAPI !== "cli") {
 }
 $banco = $argv[1] ?? "";
 if (preg_match("/^[A-Za-z0-9_]+\$/", $banco) !== 1) {
-    fwrite(STDERR, "Uso: php importar.php <banco antigo> [--substituir]\n");
+    fwrite(STDERR, t("Uso: php importar.php <banco antigo> [--substituir]\n"));
     exit(1);
 }
 $res = op_importacao("importar", ["banco" => $banco, "substituir" => in_array("--substituir", $argv, true) ? "1" : ""]);
@@ -18,7 +18,7 @@ if (!$res["ok"]) {
     fwrite(STDERR, implode("\n", $res["erros"]) . "\n");
     exit(1);
 }
-echo "Importado de " . $banco . ":\n";
+echo t("Importado de {1}:\n", [1 => $banco]);
 foreach ($res["contagem"] as $o_que => $n) {
     echo "  " . $o_que . ": " . $n . "\n";
 }

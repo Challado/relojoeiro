@@ -19,12 +19,24 @@ $inicio = microtime(true);
 $falar = in_array("-v", $argv, true);
 $forcar = in_array("--forcar", $argv, true);
 $log = [];
+// os erros do registro são contados à parte, pelo registro_erro() do lib.php (o texto sai no idioma da instalação: não dá
+// para achar o erro pela palavra)
+$GLOBALS["REGISTRO_ERROS"] = 0;
+
+// a linha do registro da sincronização da agenda (com erro, conta como erro)
+function cron_agenda($r)
+{
+    $p = [1 => $r["criados"], 2 => $r["atualizados"], 3 => $r["removidos"], 4 => $r["erros"], 5 => $r["mensagem"]];
+    return $r["mensagem"] !== "" || $r["erros"] > 0
+        ? registro_erro(t("erro na agenda: {1} criados, {2} atualizados, {3} removidos, {4} recusados {5}", $p))
+        : t("agenda: {1} criados, {2} atualizados, {3} removidos, {4} recusados {5}", $p);
+}
 
 // nada de erro na saída: avisos do PHP entram no registro
 ini_set("display_errors", "0");
 ini_set("log_errors", "0");
 set_error_handler(function ($nivel, $texto, $arquivo, $linha) use (&$log) {
-    $log[] = "aviso do PHP: " . $texto . " (" . basename($arquivo) . ":" . $linha . ")";
+    $log[] = registro_erro(t("aviso do PHP: {1} ({2}:{3})", [1 => $texto, 2 => basename($arquivo), 3 => $linha]));
     return true;
 });
 
@@ -32,10 +44,10 @@ set_error_handler(function ($nivel, $texto, $arquivo, $linha) use (&$log) {
 register_shutdown_function(function () use (&$log, $falar, $inicio) {
     $e = error_get_last();
     if ($e && in_array($e["type"], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
-        $log[] = "erro fatal: " . $e["message"] . " (" . basename($e["file"]) . ":" . $e["line"] . ")";
+        $log[] = registro_erro(t("erro fatal: {1} ({2}:{3})", [1 => $e["message"], 2 => basename($e["file"]), 3 => $e["line"]]));
     }
     $texto = date("Y-m-d H:i") . "\n" . implode("\n", $log);
-    $teve_erro = count(preg_grep("/^(erro|aviso do PHP)/", $log)) > 0;
+    $teve_erro = $GLOBALS["REGISTRO_ERROS"] > 0;
     if (count($log) > 0) {
         $gravou = false;
         try {
@@ -85,9 +97,9 @@ try {
     $pendentes = migracoes_pendentes();
     if ($ERRO_TOKEN !== "") {
         // token da API inválido: o sistema inteiro para, o cron também (registra o motivo, sem escrever na saída)
-        $log[] = "erro: " . $ERRO_TOKEN;
+        $log[] = registro_erro(t("erro: {1}", [1 => $ERRO_TOKEN]));
     } elseif (count($pendentes) > 0) {
-        $log[] = "erro: o banco está desatualizado, falta aplicar " . implode(", ", array_keys($pendentes)) . ". Aplique pela tela de Configuração.";
+        $log[] = registro_erro(t("erro: o banco está desatualizado, falta aplicar {1}. Aplique pela tela de Configuração.", [1 => implode(", ", array_keys($pendentes))]));
     } else {
         // as mensagens (o Telegram, a agenda) e o registro saem no idioma da instalação (a Configuração)
         lingua_definir(cfg("idioma"));
@@ -103,7 +115,7 @@ try {
         garantir_plano($hoje);
         $novos = (int)valor("SELECT COUNT(*) FROM plano WHERE data >= ?", [$hoje->format("Y-m-d")]) - $antes;
         if ($novos > 0) {
-            $log[] = "plano: " . $novos . ($novos === 1 ? " dia montado" : " dias montados") . ", pelo modo " . valor("SELECT nome FROM modo WHERE id = ?", [modo_ativo()]);
+            $log[] = t("plano: {1}{2}, pelo modo {3}", [1 => $novos, 2 => $novos === 1 ? t(" dia montado") : t(" dias montados"), 3 => valor("SELECT nome FROM modo WHERE id = ?", [modo_ativo()])]);
         }
         // as sessões esquecidas abertas ganham o fim no "fecha às" do tipo (o No pulso, tirando sozinho, no fim do horário de uso)
         fechar_esquecidas(time());
@@ -112,9 +124,9 @@ try {
         sessao_do_dia(time());
         if ((int)valor("SELECT COUNT(*) FROM lancamento WHERE origem = 'rodizio'") > $sessoes) {
             $p = plano_do_dia($hoje->format("Y-m-d"));
-            $log[] = "sessão do dia no pulso aberta: " . ($p["nome"] ?? "?");
+            $log[] = t("sessão do dia no pulso aberta: {1}", [1 => $p["nome"] ?? "?"]);
         }
-        $titulo = defined("MSG_TITULO") ? (string)constant("MSG_TITULO") : "Relógios";
+        $titulo = defined("MSG_TITULO") ? (string)constant("MSG_TITULO") : t("Relógios");
 
         // os documentos: o arquivo que sumiu da pasta volta da cópia no banco; o que ainda não tem cópia ganha (até 256 MB por
         // minuto); a pasta de um relógio que não existe mais e o arquivo que não é de nenhum documento saem. Os perdidos (sem
@@ -126,48 +138,46 @@ try {
 
         // ---------- manhã ----------
         if ($forcar || ($agora >= cfg("horario_manha") && cfg("ultima_manha") !== $hoje->format("Y-m-d"))) {
-            $log[] = "rodada da manhã";
+            $log[] = t("rodada da manhã");
             // a escala se replaneja a partir do estado real; os outros modos só sorteiam na virada do período.
             // O período no pulso de cada dia é criado pela sessao_do_dia, a partir do plano.
             if (valor("SELECT escala_dias FROM modo WHERE id = ?", [modo_ativo()]) !== null) {
                 $n = gerar_escala($hoje);
-                $log[] = "escala refeita a partir do estado real: " . $n . ($n === 1 ? " dia" : " dias") . ", até " . date("d/m/Y", strtotime(cfg("escala_fim")));
+                $log[] = t("escala refeita a partir do estado real: {1}{2}, até {3}", [1 => $n, 2 => $n === 1 ? " dia" : " dias", 3 => data_txt(strtotime(cfg("escala_fim")))]);
             }
             garantir_plano($hoje);
             sessao_do_dia(time());
             $texto = montar_mensagem($hoje);
             if (cfg("mensagens_ativas") === "1" && $texto !== "") {
-                $log[] = enviar_em_partes($texto, $titulo) === 0 ? "alerta da manhã enviado" : "erro: a API de alerta não aceitou o alerta da manhã";
+                $log[] = enviar_em_partes($texto, $titulo) === 0 ? t("alerta da manhã enviado") : registro_erro(t("erro: a API de alerta não aceitou o alerta da manhã"));
             } else {
-                $log[] = $texto === "" ? "manhã: nada a avisar" : "manhã: alerta desligado";
+                $log[] = $texto === "" ? t("manhã: nada a avisar") : t("manhã: alerta desligado");
             }
             if (cfg("agenda_ativa") === "1") {
                 $r = sincronizar_agenda($hoje);
-                $log[] = ($r["mensagem"] !== "" || $r["erros"] > 0 ? "erro na agenda: " : "agenda: ") . $r["criados"] . " criados, " . $r["atualizados"] . " atualizados, "
-                    . $r["removidos"] . " removidos, " . $r["erros"] . " recusados " . $r["mensagem"];
+                $log[] = cron_agenda($r);
             }
             cfg_set("ultima_manha", $hoje->format("Y-m-d"));
         }
 
         // ---------- noite ----------
         if ($forcar || ($agora >= cfg("horario_noite") && cfg("ultima_noite") !== $hoje->format("Y-m-d"))) {
-            $log[] = "rodada da noite";
+            $log[] = t("rodada da noite");
             garantir_plano($hoje);
             $texto = montar_mensagem_noite($hoje);
             if (cfg("mensagens_ativas") === "1" && $texto !== "") {
-                $log[] = enviar_em_partes($texto, "Relógio de amanhã") === 0 ? "alerta da noite enviado" : "erro: a API de alerta não aceitou o alerta da noite";
+                $log[] = enviar_em_partes($texto, t("Relógio de amanhã")) === 0 ? t("alerta da noite enviado") : registro_erro(t("erro: a API de alerta não aceitou o alerta da noite"));
             } else {
-                $log[] = $texto === "" ? "noite: amanhã continua o mesmo relógio, nada a preparar" : "noite: alerta desligado";
+                $log[] = $texto === "" ? t("noite: amanhã continua o mesmo relógio, nada a preparar") : t("noite: alerta desligado");
             }
             if (cfg("agenda_ativa") === "1") {
                 $r = sincronizar_agenda($hoje);
-                $log[] = ($r["mensagem"] !== "" || $r["erros"] > 0 ? "erro na agenda: " : "agenda: ") . $r["criados"] . " criados, " . $r["atualizados"] . " atualizados, "
-                    . $r["removidos"] . " removidos, " . $r["erros"] . " recusados " . $r["mensagem"];
+                $log[] = cron_agenda($r);
             }
             // a cópia de segurança do banco, uma por dia (só com a BACKUP_PASTA no config.php)
             if (defined("BACKUP_PASTA") && trim((string)BACKUP_PASTA) !== "") {
                 $b = backup_fazer();
-                $log[] = $b["ok"] ? "cópia de segurança: " . $b["mensagem"] : "erro na cópia de segurança: " . implode(" ", $b["erros"]);
+                $log[] = $b["ok"] ? t("cópia de segurança: {1}", [1 => $b["mensagem"]]) : registro_erro(t("erro na cópia de segurança: {1}", [1 => implode(" ", $b["erros"])]));
             }
             cfg_set("ultima_noite", $hoje->format("Y-m-d"));
         }
@@ -182,15 +192,15 @@ try {
             $chave = $x[0]["id"] . ":" . $x[1]["identificador"];
             $agora_vencidos[] = $chave;
             if (!in_array($chave, $ja, true)) {
-                $log[] = "aviso na hora: " . $x[1]["nome"] . " (" . $x[0]["nome"] . ")";
+                $log[] = t("aviso na hora: {1} ({2})", [1 => $x[1]["nome"], 2 => $x[0]["nome"]]);
                 if (canal_aviso("tg", $x[1]["identificador"])["envia"]) {
                     $itens_h[] = ["tipo" => $x[1]["identificador"], "id" => (int)$x[0]["id"], "fazer" => $x[1]["nome"], "motivo" => $x[1]["texto"], "ate" => ""];
                 }
             }
         }
         if (count($itens_h) > 0) {
-            $log[] = cfg("mensagens_ativas") !== "1" ? "avisos na hora: alerta desligado"
-                : (enviar_em_partes(mensagem_telegram($itens_h, $hoje), $titulo) === 0 ? "avisos na hora enviados ao Telegram" : "erro: a API de alerta não aceitou os avisos na hora");
+            $log[] = cfg("mensagens_ativas") !== "1" ? t("avisos na hora: alerta desligado")
+                : (enviar_em_partes(mensagem_telegram($itens_h, $hoje), $titulo) === 0 ? t("avisos na hora enviados ao Telegram") : registro_erro(t("erro: a API de alerta não aceitou os avisos na hora")));
         }
         if (implode(",", $agora_vencidos) !== implode(",", $ja)) {
             cfg_set("na_hora_enviados", implode(",", $agora_vencidos));
@@ -213,22 +223,22 @@ try {
                 if (canal_aviso("tg", "ev" . $ev["id"])["envia"]) {
                     $itens_ev[] = ["tipo" => "ev" . $ev["id"], "id" => (int)$ev["relogio_id"], "fazer" => $ev["nome"], "motivo" => "", "ate" => ""];
                 }
-                $log[] = "evento \"" . $ev["nome"] . "\" disparou" . (count($vencidas) > 1 ? " (" . count($vencidas) . " ocorrências atrasadas, enviado uma vez)" : "");
+                $log[] = "evento \"" . $ev["nome"] . "\" disparou" . (count($vencidas) > 1 ? t(" ({1} ocorrências atrasadas, enviado uma vez)", [1 => count($vencidas)]) : "");
             }
         }
         if (count($itens_ev) > 0) {
             if (cfg("mensagens_ativas") === "1") {
-                $log[] = enviar_em_partes(mensagem_telegram($itens_ev, $hoje), $titulo) === 0 ? "eventos enviados ao Telegram" : "erro: a API de alerta não aceitou os eventos";
+                $log[] = enviar_em_partes(mensagem_telegram($itens_ev, $hoje), $titulo) === 0 ? t("eventos enviados ao Telegram") : registro_erro(t("erro: a API de alerta não aceitou os eventos"));
             } else {
-                $log[] = "eventos: alerta desligado";
+                $log[] = t("eventos: alerta desligado");
             }
         }
 
         // saiu de um erro (guardado, ou no último registro): registra que voltou ao normal; o erro guardado é limpo no encerramento
-        if ($houve_erro && count(preg_grep("/^(erro|aviso do PHP)/", $log)) === 0) {
-            $log[] = "voltou a rodar sem erro";
+        if ($houve_erro && $GLOBALS["REGISTRO_ERROS"] === 0) {
+            $log[] = t("voltou a rodar sem erro");
         }
     }
 } catch (Throwable $t) {
-    $log[] = "erro: " . $t->getMessage() . " (" . basename($t->getFile()) . ":" . $t->getLine() . ")";
+    $log[] = registro_erro(t("erro: {1} ({2}:{3})", [1 => $t->getMessage(), 2 => basename($t->getFile()), 3 => $t->getLine()]));
 }

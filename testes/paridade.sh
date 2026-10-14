@@ -14,6 +14,8 @@
 # Depois da comparação, confere a documentação: o cabeçalho do api.php é o que a ajuda gera (testes/dicionario.php), os
 # dicionários dos idiomas têm todos os textos do código (testes/textos.php) e todo
 # campo das respostas está explicado na ajuda (testes/campos.php, no servidor do primeiro banco).
+# LINGUA=en roda o roteiro e a conferência dos campos nesse idioma (e o layout, com --layout); TESTE_ESTRITO=1 liga o modo
+# estrito dos idiomas no servidor de teste: a tradução que falta para com erro e aparece no registro do roteiro.
 # Outras variáveis: TESTE_PORTA (a primeira porta, padrão 8101; uma por banco), RELOGIOS_TESTE_PASTA (a pasta da rodada;
 # padrão: uma nova, temporária). Termina com 0 se tudo saiu igual, sem escrita recusada (e sem problema de layout).
 set -u

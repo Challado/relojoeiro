@@ -13,7 +13,7 @@ if (!defined("RELOJOEIRO_API")) {
 $r = linha("SELECT * FROM relogio WHERE id = ?", [(int)($_REQUEST["relogio"] ?? 0)]);
 if (!$r) {
     $codigo = 404;
-    $saida = ["erro" => "relógio não encontrado (relogio=<id>)"];
+    $saida = ["erro" => t("relógio não encontrado (relogio=<id>)")];
     return;
 }
 $id = (int)$r["id"];
@@ -27,15 +27,15 @@ $texto_valor = function ($c, $v) {
         return null;
     }
     if ($c["tipo"] === "data") {
-        return date("d/m/Y", strtotime(substr((string)$v, 0, 10)));
+        return data_txt(strtotime(substr((string)$v, 0, 10)));
     }
     if ($c["tipo"] === "sim_nao") {
-        return (string)$v === "1" ? "sim" : "não";
+        return (string)$v === "1" ? t("sim") : t("não");
     }
     if ($c["tipo"] === "decimal" || $c["tipo"] === "inteiro") {
-        $num = $c["tipo"] === "inteiro" ? number_format((float)$v, 0, ",", ".") : rtrim(rtrim(number_format((float)$v, 2, ",", "."), "0"), ",");
+        $num = $c["tipo"] === "inteiro" ? numero_txt((float)$v, 0) : numero_txt((float)$v, 2, 0);
         if ($c["unidade"] === "R$") {
-            return "R$ " . number_format((float)$v, 2, ",", ".");
+            return dinheiro_txt((float)$v);
         }
         return $num . ($c["unidade"] !== "" ? " " . $c["unidade"] : "");
     }
@@ -78,7 +78,7 @@ foreach (documento_categorias_lista() as $c) {
 $foto_p = valor("SELECT atualizado FROM foto WHERE relogio_id = ?", [$id]);
 $saida = ["gerado_em" => date("Y-m-d H:i:s", $agora_p),
     "relogio" => ["id" => $id, "nome" => $r["nome"], "caminho" => no_caminho($r["no_id"]),
-        "tipo" => isset($n_p[(int)$r["no_id"]]) ? $n_p[(int)$r["no_id"]]["nome"] : "sem grupo", "posse" => posse_de($r), "posse_texto" => POSSES[posse_de($r)],
+        "tipo" => isset($n_p[(int)$r["no_id"]]) ? $n_p[(int)$r["no_id"]]["nome"] : t("sem grupo"), "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]),
         "disponivel" => (int)$r["disponivel"] === 1, "criado" => $r["criado"], "foto" => $foto_p !== null ? strtotime($foto_p) : null,
         "marca" => ($valores["marca"] ?? "") !== "" ? $valores["marca"] : null, "referencia" => ($valores["referencia"] ?? "") !== "" ? $valores["referencia"] : null,
         "observacao" => ($valores["observacao"] ?? "") !== "" ? $valores["observacao"] : null],

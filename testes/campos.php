@@ -19,7 +19,13 @@ function ler($consulta)
 {
     global $API, $TOKEN;
     $ctx = stream_context_create(["http" => ["header" => "X-Api-Token: " . $TOKEN . "\r\n", "ignore_errors" => true, "timeout" => 120]]);
+    // LINGUA=en: as respostas nesse idioma (com o servidor em modo estrito, TESTE_ESTRITO=1, a tradução que falta aparece aqui)
+    $lingua = (string)getenv("LINGUA");
+    $consulta .= $lingua !== "" ? ($consulta !== "" ? "&" : "") . "lingua=" . rawurlencode($lingua) : "";
     $corpo = @file_get_contents($API . ($consulta !== "" ? "?" . $consulta : ""), false, $ctx);
+    if (preg_match('/Falta a tradução[^"]*/u', (string)$corpo, $m) === 1) {
+        fwrite(STDERR, $consulta . ": " . stripslashes($m[0]) . "\n");
+    }
     // objetos como objetos: um {} vazio não pode virar uma lista vazia
     return json_decode((string)$corpo, false);
 }

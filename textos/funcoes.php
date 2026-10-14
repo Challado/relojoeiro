@@ -31,6 +31,8 @@ const TEXTOS_PARTES = ["telas", "api", "ajuda", "manual", "reconstrucao"];
 
 $GLOBALS["LINGUA"] = "pt-BR";
 $GLOBALS["TEXTOS"] = null;
+$GLOBALS["TEXTOS_TK"] = [];
+$GLOBALS["TEXTOS_GLOBAIS"] = [];
 
 // um código de idioma conhecido (aceita en-GB, es-MX, zh, pt...: o mais perto que o sistema tem); null se nenhum
 function lingua_valida($l)
@@ -73,6 +75,10 @@ function lingua_definir($l)
 {
     $GLOBALS["LINGUA"] = lingua_valida($l) ?? "pt-BR";
     $GLOBALS["TEXTOS"] = null;
+    // as listas do código montadas ao carregar (antes do idioma do pedido) saem de novo, no idioma
+    foreach ($GLOBALS["TEXTOS_GLOBAIS"] as $nome => $original) {
+        $GLOBALS[$nome] = textos_traduzir_lista($original);
+    }
 }
 
 function lingua_atual()
@@ -133,10 +139,36 @@ function t($s, $p = [])
     return $s;
 }
 
-// marca um texto do dicionário que é traduzido depois, num t($variavel) (a conferência dos dicionários acha a chave aqui)
+// marca um texto do dicionário que é traduzido depois, num t($variavel) ou numa lista registrada (textos_globais) (a
+// conferência dos dicionários acha a chave aqui)
 function tk($s)
 {
+    $GLOBALS["TEXTOS_TK"][$s] = true;
     return $s;
+}
+
+// as listas globais do código com textos marcados por tk() (os dias, os canais, as funções das fórmulas...): montadas ao
+// carregar o arquivo, em português; registradas aqui, o lingua_definir() as refaz no idioma do pedido
+function textos_globais($nomes)
+{
+    foreach ($nomes as $nome) {
+        if (!isset($GLOBALS["TEXTOS_GLOBAIS"][$nome])) {
+            $GLOBALS["TEXTOS_GLOBAIS"][$nome] = $GLOBALS[$nome];
+        }
+        $GLOBALS[$nome] = textos_traduzir_lista($GLOBALS["TEXTOS_GLOBAIS"][$nome]);
+    }
+}
+
+// uma lista com os textos marcados por tk() traduzidos (o resto, como os identificadores, fica como está)
+function textos_traduzir_lista($x)
+{
+    if (is_array($x)) {
+        foreach ($x as $k => $v) {
+            $x[$k] = textos_traduzir_lista($v);
+        }
+        return $x;
+    }
+    return is_string($x) && isset($GLOBALS["TEXTOS_TK"][$x]) ? t($x) : $x;
 }
 
 // o mesmo, pronto para o HTML (o texto e os atributos das páginas): os < > & " escapados
@@ -168,6 +200,13 @@ function numero_txt($n, $casas = 2, $minimo = null)
         $s = rtrim($s, $dec);
     }
     return $s;
+}
+
+// um número sem o separador de milhar, com até $casas decimais (sem os zeros que sobram), no separador decimal do idioma
+function decimal_txt($n, $casas = 2)
+{
+    $s = rtrim(rtrim(number_format(round((float)$n, (int)$casas), (int)$casas, ".", ""), "0"), ".");
+    return str_replace(".", LINGUAS[$GLOBALS["LINGUA"]]["decimal"], $s === "-0" ? "0" : $s);
 }
 
 function dinheiro_txt($v)

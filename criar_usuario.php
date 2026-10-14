@@ -11,11 +11,11 @@ if (PHP_SAPI !== "cli") {
 $login = trim($argv[1] ?? "");
 $senha = $argv[2] ?? "";
 if ($login === "") {
-    fwrite(STDERR, "Uso: php criar_usuario.php <login> [senha]\n");
+    fwrite(STDERR, t("Uso: php criar_usuario.php <login> [senha]\n"));
     exit(1);
 }
 if ($senha === "") {
-    echo "Senha para " . $login . ": ";
+    echo t("Senha para {1}: ", [1 => $login]);
     system("stty -echo");
     $senha = trim((string)fgets(STDIN));
     system("stty echo");

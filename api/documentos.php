@@ -12,7 +12,7 @@ $rid = (int)($_REQUEST["relogio"] ?? 0);
 $r = $rid > 0 ? linha("SELECT id, nome, copia_banco FROM relogio WHERE id = ?", [$rid]) : null;
 if ($rid > 0 && !$r) {
     $codigo = 404;
-    $saida = ["erro" => "relógio não encontrado"];
+    $saida = ["erro" => t("relógio não encontrado")];
 } else {
     $saida = ["relogio" => $r ? ["id" => (int)$r["id"], "nome" => $r["nome"], "copia_banco" => (int)$r["copia_banco"] === 1] : null, "pasta_ok" => documentos_pasta() !== null,
         "copia_sistema" => documentos_copia_sistema(),

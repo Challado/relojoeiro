@@ -118,9 +118,9 @@ function cron_estado()
     $minutos = $ultima !== "" ? max(0, (int)floor((time() - strtotime($ultima)) / 60)) : null;
     $situacao = $ultima === "" ? "nunca" : ($minutos > 10 ? "parado" : "rodando");
     $linha = "* * * * * php " . dirname(__DIR__) . "/cron.php";
-    $texto = $situacao === "nunca" ? "O cron ainda não rodou. Linha do crontab: " . $linha
-        : ($situacao === "parado" ? "O cron não roda desde " . date("d/m H:i", strtotime($ultima)) . ". Confira o crontab: " . $linha
-            : "Cron rodando: última execução às " . date("H:i", strtotime($ultima)) . ".");
+    $texto = $situacao === "nunca" ? t("O cron ainda não rodou. Linha do crontab: {1}", [1 => $linha])
+        : ($situacao === "parado" ? t("O cron não roda desde {1}. Confira o crontab: {2}", [1 => data_txt(strtotime($ultima), true, true), 2 => $linha])
+            : t("Cron rodando: última execução às {1}.", [1 => date("H:i", strtotime($ultima))]));
     return ["situacao" => $situacao, "ultima" => $ultima !== "" ? $ultima : null, "minutos" => $minutos, "texto" => $texto, "crontab" => $linha,
         "erro" => cfg("cron_erro") !== "" ? cfg("cron_erro") : null];
 }
@@ -300,12 +300,12 @@ function montar_criterios()
         }, $ps)];
     }
     // os lugares que podem ter critérios (todos, cada grupo em ordem de árvore, cada relógio), de quem cada um herda, e os modos
-    $lugares = [["escopo" => "", "texto" => "Todos os relógios"]];
+    $lugares = [["escopo" => "", "texto" => t("Todos os relógios")]];
     foreach (nos_em_ordem() as $o) {
-        $lugares[] = ["escopo" => "g:" . $o[0], "texto" => "Grupo: " . no_caminho($o[0])];
+        $lugares[] = ["escopo" => "g:" . $o[0], "texto" => t("Grupo: {1}", [1 => no_caminho($o[0])])];
     }
     foreach (linhas("SELECT id, nome FROM relogio ORDER BY nome") as $x) {
-        $lugares[] = ["escopo" => "r:" . $x["id"], "texto" => "Relógio: " . $x["nome"]];
+        $lugares[] = ["escopo" => "r:" . $x["id"], "texto" => t("Relógio: {1}", [1 => $x["nome"]])];
     }
     foreach ($lugares as $i => $l) {
         $lugares[$i]["lugar"] = escopo_texto($l["escopo"]);
@@ -338,10 +338,9 @@ function responde($codigo, $saida, $formato)
 set_exception_handler(function ($t) use ($formato) {
     if ($t instanceof BancoErro && $t->integridade) {
         // o banco recusou a gravação: um registro que outro ainda usa, ou um valor repetido onde não pode
-        responde(409, ["erro" => "o banco recusou a gravação: ela quebraria uma regra dos dados (um registro que outro ainda usa, "
-            . "um valor repetido onde não pode, ou um valor fora das regras de validação do banco)", "detalhe" => $t->getMessage()], $formato);
+        responde(409, ["erro" => t("o banco recusou a gravação: ela quebraria uma regra dos dados (um registro que outro ainda usa, um valor repetido onde não pode, ou um valor fora das regras de validação do banco)"), "detalhe" => $t->getMessage()], $formato);
         return;
     }
     $banco = $t instanceof BancoErro || $t instanceof mysqli_sql_exception;
-    responde($banco ? 503 : 500, ["erro" => $banco ? "o banco de dados não respondeu" : "erro interno", "detalhe" => $t->getMessage()], $formato);
+    responde($banco ? 503 : 500, ["erro" => $banco ? t("o banco de dados não respondeu") : t("erro interno"), "detalhe" => $t->getMessage()], $formato);
 });

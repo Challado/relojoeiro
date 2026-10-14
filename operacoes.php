@@ -11,7 +11,7 @@ if (realpath($_SERVER["SCRIPT_FILENAME"] ?? "") === __FILE__) {
 // Porcentagem para mostrar: "12,5%"
 function pct_br($v)
 {
-    return str_replace('.', ',', (string)(0 + round((float)$v, 2))) . '%';
+    return decimal_txt(round((float)$v, 2), 6) . '%';
 }
 function numero_br($v)
 {
@@ -23,7 +23,7 @@ function numero_br($v)
 function resultado($erros, $mensagem, $extra = [])
 {
     if (count($erros) === 0 && $mensagem === "") {
-        $erros[] = "Ação desconhecida ou item não encontrado.";
+        $erros[] = t("Ação desconhecida ou item não encontrado.");
     }
     return array_merge(["ok" => count($erros) === 0, "mensagem" => count($erros) === 0 ? $mensagem : "", "erros" => $erros], $extra);
 }
@@ -59,12 +59,12 @@ function formulas_que_usam($nome, $tipo)
     }
     foreach (avisos_todos() as $ident => $versoes) {
         foreach ($versoes as $a) {
-            $contas[] = ["a data do aviso " . $ident . " (" . no_caminho($a["no_id"]) . ")", $a["expressao"]];
-            $contas[] = ["o vale quando do aviso " . $ident . " (" . no_caminho($a["no_id"]) . ")", $a["condicao"] ?? ""];
+            $contas[] = [t("a data do aviso {1} ({2})", [1 => $ident, 2 => no_caminho($a["no_id"])]), $a["expressao"]];
+            $contas[] = [t("o vale quando do aviso {1} ({2})", [1 => $ident, 2 => no_caminho($a["no_id"])]), $a["condicao"] ?? ""];
         }
     }
     foreach (lancamento_tipos() as $ident => $t) {
-        $contas[] = ["o vale quando do tipo " . $ident, $t["condicao"] ?? ""];
+        $contas[] = [t("o vale quando do tipo {1}", [1 => $ident]), $t["condicao"] ?? ""];
     }
     $res = [];
     foreach ($contas as $c) {
@@ -75,7 +75,7 @@ function formulas_que_usam($nome, $tipo)
                     $res[] = $c[0];
                 }
             } catch (ErroFormula $e) {
-                $res[] = $c[0] . ", com erro de escrita";
+                $res[] = t("{1}, com erro de escrita", [1 => $c[0]]);
             }
         }
     }
@@ -102,9 +102,9 @@ function op_arvore($acao, $d)
         foreach ((array)($d["grupo"] ?? []) as $rid => $gid) {
             $no = no_do_pedido($gid);
             if (valor("SELECT id FROM relogio WHERE id = ?", [(int)$rid]) === null) {
-                $erros[] = "Relógio " . (int)$rid . " não encontrado.";
+                $erros[] = t("Relógio {1} não encontrado.", [1 => (int)$rid]);
             } elseif ($no === false) {
-                $erros[] = "Grupo " . $gid . " não encontrado.";
+                $erros[] = t("Grupo {1} não encontrado.", [1 => $gid]);
             } else {
                 $novos[(int)$rid] = $no;
             }
@@ -117,50 +117,50 @@ function op_arvore($acao, $d)
                     $mudou++;
                 }
             }
-            $msg = $mudou === 0 ? "Nada mudou." : "Grupo alterado em " . $mudou . ($mudou === 1 ? " relógio." : " relógios.");
+            $msg = $mudou === 0 ? t("Nada mudou.") : t("Grupo alterado em {1}{2}", [1 => $mudou, 2 => $mudou === 1 ? t(" relógio.") : t(" relógios.")]);
         }
     } elseif ($acao === "novo" || $acao === "renomear") {
         $pai_do_nome = $acao === "novo" ? $pai : ($n[$id]["pai_id"] ?? null);
         if ($acao === "renomear" && !isset($n[$id])) {
-            $erros[] = "Ponto da árvore não encontrado.";
+            $erros[] = t("Ponto da árvore não encontrado.");
         }
         if ($acao === "novo" && $pai === false) {
-            $erros[] = "O ponto de cima não existe.";
+            $erros[] = t("O ponto de cima não existe.");
         }
         if ($nome === "" || strlen($nome) > 80) {
-            $erros[] = "Dê um nome (até 80 caracteres).";
+            $erros[] = t("Dê um nome (até 80 caracteres).");
         }
         foreach ($n as $nid => $x) {
             if ((string)$x["pai_id"] === (string)$pai_do_nome && $nid !== $id && mesmo_nome($x["nome"], $nome)) {
-                $erros[] = "Já existe " . $x["nome"] . " neste mesmo lugar da árvore.";
+                $erros[] = t("Já existe {1} neste mesmo lugar da árvore.", [1 => $x["nome"]]);
             }
         }
         if (count($erros) === 0 && $acao === "novo") {
             sql("INSERT INTO no (pai_id, nome, ordem) VALUES (?, ?, ?)", [$pai, $nome, (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM no WHERE pai_id <=> ?", [$pai])]);
             $id = ultimo_id();
             nos_todos(true);
-            $msg = no_caminho($id) . " criado.";
+            $msg = t("{1} criado.", [1 => no_caminho($id)]);
         } elseif (count($erros) === 0) {
             sql("UPDATE no SET nome = ? WHERE id = ?", [$nome, $id]);
             nos_todos(true);
-            $msg = "Renomeado: " . no_caminho($id) . ".";
+            $msg = t("Renomeado: {1}.", [1 => no_caminho($id)]);
         }
     } elseif ($acao === "mover") {
         if (!isset($n[$id]) || $pai === false) {
-            $erros[] = "Ponto da árvore não encontrado.";
+            $erros[] = t("Ponto da árvore não encontrado.");
         } elseif ($pai !== null && in_array($id, no_cadeia($pai), true)) {
-            $erros[] = "Um ponto não pode ir para dentro dele mesmo, nem de um ponto de dentro dele.";
+            $erros[] = t("Um ponto não pode ir para dentro dele mesmo, nem de um ponto de dentro dele.");
         } else {
             foreach ($n as $nid => $x) {
                 if ((string)$x["pai_id"] === (string)$pai && $nid !== $id && mesmo_nome($x["nome"], $n[$id]["nome"])) {
-                    $erros[] = "Já existe " . $x["nome"] . " no destino.";
+                    $erros[] = t("Já existe {1} no destino.", [1 => $x["nome"]]);
                 }
             }
         }
         if (count($erros) === 0) {
             sql("UPDATE no SET pai_id = ?, ordem = ? WHERE id = ?", [$pai, (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM no WHERE pai_id <=> ?", [$pai]), $id]);
             nos_todos(true);
-            $msg = "Movido: agora é " . no_caminho($id) . ".";
+            $msg = t("Movido: agora é {1}.", [1 => no_caminho($id)]);
         }
     } elseif ($acao === "ordem" && isset($n[$id])) {
         $irmaos = array_map("intval", array_column(linhas("SELECT id FROM no WHERE pai_id <=> ? ORDER BY ordem, nome", [$n[$id]["pai_id"]]), "id"));
@@ -173,7 +173,7 @@ function op_arvore($acao, $d)
         foreach ($irmaos as $k => $iid) {
             sql("UPDATE no SET ordem = ? WHERE id = ?", [$k + 1, $iid]);
         }
-        $msg = "Ordem alterada.";
+        $msg = t("Ordem alterada.");
     } elseif ($acao === "excluir" && isset($n[$id])) {
         $cima = $n[$id]["pai_id"] !== null ? (int)$n[$id]["pai_id"] : null;
         $destino = no_caminho($cima);
@@ -197,10 +197,7 @@ function op_arvore($acao, $d)
         }
         sql("DELETE FROM no WHERE id = ?", [$id]);
         nos_todos(true);
-        $msg = $n[$id]["nome"] . " excluído; o que era dele foi para " . $destino . "."
-            . (count($saem["formula"]) > 0 ? " Saíram as versões dele das fórmulas que " . $destino . " já tinha: " . implode(", ", $saem["formula"]) . "." : "")
-            . (count($saem["aviso"]) > 0 ? " Saíram as versões dele dos avisos que " . $destino . " já tinha: " . implode(", ", $saem["aviso"]) . "." : "")
-            . ($criterios > 0 ? " Os critérios próprios dele saíram: os relógios dele usam os do lugar mais perto, acima." : "");
+        $msg = t("{1} excluído; o que era dele foi para {2}.{3}{4}{5}", [1 => $n[$id]["nome"], 2 => $destino, 3 => count($saem["formula"]) > 0 ? t(" Saíram as versões dele das fórmulas que {1} já tinha: {2}.", [1 => $destino, 2 => implode(", ", $saem["formula"])]) : "", 4 => count($saem["aviso"]) > 0 ? t(" Saíram as versões dele dos avisos que {1} já tinha: {2}.", [1 => $destino, 2 => implode(", ", $saem["aviso"])]) : "", 5 => $criterios > 0 ? t(" Os critérios próprios dele saíram: os relógios dele usam os do lugar mais perto, acima.") : ""]);
     }
     return resultado($erros, $msg, ["id" => $id]);
 }
@@ -218,7 +215,7 @@ function op_campos($acao, $d)
     $id = (int)($d["id"] ?? 0);
     $atual = $id > 0 ? (campos_com_opcoes(linhas("SELECT * FROM campo WHERE id = ?", [$id]))[0] ?? null) : null;
     if (($acao === "alterar" || $acao === "excluir" || $acao === "ordem") && !$atual) {
-        $erros[] = "Campo não encontrado.";
+        $erros[] = t("Campo não encontrado.");
     } elseif ($acao === "novo" || $acao === "alterar") {
         $c = [
             "identificador" => trim((string)($d["identificador"] ?? ($atual["identificador"] ?? ""))),
@@ -232,29 +229,29 @@ function op_campos($acao, $d)
         // só na lista de desejos: o campo aparece só nos relógios desejados (o preço-alvo, a prioridade)
         $so_desejado = array_key_exists("so_desejado", $d) ? ((string)$d["so_desejado"] === "1" ? 1 : 0) : (int)($atual["so_desejado"] ?? 0);
         if (!identificador_valido($c["identificador"])) {
-            $erros[] = "Identificador: minúsculas, números e _, começando por letra, até 40 (é o nome nas fórmulas).";
+            $erros[] = t("Identificador: minúsculas, números e _, começando por letra, até 40 (é o nome nas fórmulas).");
         } elseif ((int)valor("SELECT COUNT(*) FROM campo WHERE identificador = ? AND id <> ?", [$c["identificador"], $id]) > 0 || isset(formulas_todas()[$c["identificador"]])) {
-            $erros[] = "Já existe um campo ou uma fórmula com o identificador " . $c["identificador"] . ".";
+            $erros[] = t("Já existe um campo ou uma fórmula com o identificador {1}.", [1 => $c["identificador"]]);
         }
         if ($atual && $c["identificador"] !== $atual["identificador"] && count(formulas_que_usam($atual["identificador"], "variaveis")) > 0) {
-            $erros[] = "Não dá para renomear " . $atual["identificador"] . ": estas fórmulas usam: " . implode(", ", formulas_que_usam($atual["identificador"], "variaveis")) . ".";
+            $erros[] = t("Não dá para renomear {1}: estas fórmulas usam: {2}.", [1 => $atual["identificador"], 2 => implode(", ", formulas_que_usam($atual["identificador"], "variaveis"))]);
         }
         if ($c["nome"] === "" || strlen($c["nome"]) > 120) {
-            $erros[] = "Dê um nome ao campo (até 120 caracteres).";
+            $erros[] = t("Dê um nome ao campo (até 120 caracteres).");
         }
         if (!isset($TIPOS_CAMPO[$c["tipo"]])) {
-            $erros[] = "Tipo: " . implode(", ", array_keys($TIPOS_CAMPO)) . ".";
+            $erros[] = t("Tipo: {1}.", [1 => implode(", ", array_keys($TIPOS_CAMPO))]);
         }
         if ($c["tipo"] === "lista" && count(array_filter(explode("\n", $c["opcoes"]))) === 0) {
-            $erros[] = "Uma lista precisa de pelo menos uma opção (uma por linha).";
+            $erros[] = t("Uma lista precisa de pelo menos uma opção (uma por linha).");
         }
         if ($no === false) {
-            $erros[] = "O ponto da árvore não existe.";
+            $erros[] = t("O ponto da árvore não existe.");
         }
         if (count($erros) === 0 && $c["padrao"] !== "") {
             $p = valor_para_campo($c, $c["padrao"]);
             if ($p[1] !== "") {
-                $erros[] = "Valor padrão: " . $p[1] . ".";
+                $erros[] = t("Valor padrão: {1}.", [1 => $p[1]]);
             }
             $c["padrao"] = $p[0] ?? "";
         }
@@ -267,7 +264,7 @@ function op_campos($acao, $d)
                 }
             }
             if (count($nao_servem) > 0) {
-                $erros[] = "Estes valores não servem no tipo ou nas opções novas: " . implode(", ", $nao_servem) . ". Acerte-os antes.";
+                $erros[] = t("Estes valores não servem no tipo ou nas opções novas: {1}. Acerte-os antes.", [1 => implode(", ", $nao_servem)]);
             }
         }
         if (count($erros) === 0) {
@@ -276,10 +273,10 @@ function op_campos($acao, $d)
                 sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, so_desejado, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     array_merge($dados, [(int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM campo")]));
                 $id = ultimo_id();
-                $msg = "Campo " . $c["nome"] . " criado, para " . no_caminho($no) . ". Nas fórmulas: " . $c["identificador"] . ".";
+                $msg = t("Campo {1} criado, para {2}. Nas fórmulas: {3}.", [1 => $c["nome"], 2 => no_caminho($no), 3 => $c["identificador"]]);
             } else {
                 sql("UPDATE campo SET identificador = ?, nome = ?, tipo = ?, unidade = ?, padrao = ?, no_id = ?, so_desejado = ? WHERE id = ?", array_merge($dados, [$id]));
-                $msg = "Campo " . $c["nome"] . " salvo.";
+                $msg = t("Campo {1} salvo.", [1 => $c["nome"]]);
             }
             // as opções da lista (só no tipo lista; nos outros, nenhuma)
             campo_gravar_opcoes($id, $c["tipo"] === "lista" ? $c["opcoes"] : "");
@@ -288,12 +285,12 @@ function op_campos($acao, $d)
     } elseif ($acao === "excluir") {
         $usam = formulas_que_usam($atual["identificador"], "variaveis");
         if (count($usam) > 0) {
-            $erros[] = "Não dá para excluir " . $atual["identificador"] . ": estas fórmulas usam: " . implode(", ", $usam) . ".";
+            $erros[] = t("Não dá para excluir {1}: estas fórmulas usam: {2}.", [1 => $atual["identificador"], 2 => implode(", ", $usam)]);
         } else {
             $n = (int)valor("SELECT COUNT(*) FROM campo_valor WHERE campo_id = ?", [$id]);
             sql("DELETE FROM campo WHERE id = ?", [$id]);
             campos_todos(true);
-            $msg = "Campo " . $atual["nome"] . " excluído" . ($n > 0 ? ", com os valores dele em " . $n . ($n === 1 ? " relógio." : " relógios.") : ".");
+            $msg = t("Campo {1} excluído{2}", [1 => $atual["nome"], 2 => $n > 0 ? t(", com os valores dele em {1}{2}", [1 => $n, 2 => $n === 1 ? t(" relógio.") : t(" relógios.")]) : "."]);
         }
     } elseif ($acao === "ordem") {
         $todos = array_map("intval", array_column(linhas("SELECT id FROM campo ORDER BY ordem, nome"), "id"));
@@ -306,7 +303,7 @@ function op_campos($acao, $d)
         foreach ($todos as $k => $iid) {
             sql("UPDATE campo SET ordem = ? WHERE id = ?", [$k + 1, $iid]);
         }
-        $msg = "Ordem alterada.";
+        $msg = t("Ordem alterada.");
     }
     return resultado($erros, $msg, ["id" => $id]);
 }
@@ -327,7 +324,7 @@ function op_lancamento_tipos($acao, $d)
     $atual = $id > 0 ? linha("SELECT * FROM lancamento_tipo WHERE id = ?", [$id]) : null;
     $com_lancamentos = $atual ? (int)valor("SELECT COUNT(*) FROM lancamento WHERE tipo_id = ?", [$id]) : 0;
     if (($acao === "alterar" || $acao === "excluir") && !$atual) {
-        $erros[] = "Tipo de lançamento não encontrado.";
+        $erros[] = t("Tipo de lançamento não encontrado.");
     } elseif ($acao === "novo" || $acao === "alterar") {
         $ident = trim((string)($d["identificador"] ?? ($atual["identificador"] ?? "")));
         $nome = trim((string)($d["nome"] ?? ($atual["nome"] ?? "")));
@@ -339,33 +336,33 @@ function op_lancamento_tipos($acao, $d)
         $condicao = trim((string)($d["condicao"] ?? ($atual["condicao"] ?? "")));
         if ($condicao !== "") {
             foreach (formula_validar("", $condicao) as $e) {
-                $erros[] = "Vale quando: " . $e . ".";
+                $erros[] = t("Vale quando: {1}.", [1 => $e]);
             }
         }
         $no = array_key_exists("no_id", $d) ? no_do_pedido($d["no_id"]) : ($atual ? ($atual["no_id"] === null ? null : (int)$atual["no_id"]) : null);
         if ($fecha !== "" && preg_match("/^([01][0-9]|2[0-3]):[0-5][0-9]\$/", $fecha) !== 1) {
-            $erros[] = "Fecha sozinho às: uma hora HH:MM, ou vazio.";
+            $erros[] = t("Fecha sozinho às: uma hora HH:MM, ou vazio.");
         } elseif ($fecha !== "" && $formato !== "sessao") {
-            $erros[] = "Fecha sozinho às só vale para sessão (com início e fim).";
+            $erros[] = t("Fecha sozinho às só vale para sessão (com início e fim).");
         }
         if (!identificador_valido($ident)) {
-            $erros[] = "Identificador: minúsculas, números e _, começando por letra, até 40 (é o nome nas fórmulas: HORAS(\"" . ($ident !== "" ? $ident : "pulso") . "\"; 30)).";
+            $erros[] = t("Identificador: minúsculas, números e _, começando por letra, até 40 (é o nome nas fórmulas: HORAS(\"{1}\"; 30)).", [1 => $ident !== "" ? $ident : "pulso"]);
         } elseif ((int)valor("SELECT COUNT(*) FROM lancamento_tipo WHERE identificador = ? AND id <> ?", [$ident, $id]) > 0) {
-            $erros[] = "Já existe um tipo de lançamento " . $ident . ".";
+            $erros[] = t("Já existe um tipo de lançamento {1}.", [1 => $ident]);
         }
         if ($atual && $ident !== $atual["identificador"] && count(formulas_que_usam($atual["identificador"], "lancamentos")) > 0) {
-            $erros[] = "Não dá para renomear " . $atual["identificador"] . ": estas fórmulas usam: " . implode(", ", formulas_que_usam($atual["identificador"], "lancamentos")) . ".";
+            $erros[] = t("Não dá para renomear {1}: estas fórmulas usam: {2}.", [1 => $atual["identificador"], 2 => implode(", ", formulas_que_usam($atual["identificador"], "lancamentos"))]);
         }
         if ($nome === "" || strlen($nome) > 120) {
-            $erros[] = "Dê um nome (até 120 caracteres).";
+            $erros[] = t("Dê um nome (até 120 caracteres).");
         }
         if (!isset($FORMATOS_LANCAMENTO[$formato])) {
-            $erros[] = "Formato: " . implode(", ", array_keys($FORMATOS_LANCAMENTO)) . ".";
+            $erros[] = t("Formato: {1}.", [1 => implode(", ", array_keys($FORMATOS_LANCAMENTO))]);
         } elseif ($atual && $formato !== $atual["formato"] && $com_lancamentos > 0) {
-            $erros[] = "Não dá para mudar o formato: já há " . $com_lancamentos . " lançamentos deste tipo.";
+            $erros[] = t("Não dá para mudar o formato: já há {1} lançamentos deste tipo.", [1 => $com_lancamentos]);
         }
         if ($no === false) {
-            $erros[] = "O ponto da árvore não existe.";
+            $erros[] = t("O ponto da árvore não existe.");
         }
         if (count($erros) === 0) {
             if ($acao === "novo") {
@@ -374,25 +371,25 @@ function op_lancamento_tipos($acao, $d)
                     $condicao !== "" ? $condicao : null, $no,
                     (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM lancamento_tipo")]);
                 $id = ultimo_id();
-                $msg = "Tipo de lançamento " . $nome . " criado, para " . no_caminho($no) . ".";
+                $msg = t("Tipo de lançamento {1} criado, para {2}.", [1 => $nome, 2 => no_caminho($no)]);
             } else {
                 sql("UPDATE lancamento_tipo SET identificador = ?, nome = ?, formato = ?, unidade = ?, fecha_as = ?, exclusiva = ?, mede_gasto = ?, condicao = ?, no_id = ? WHERE id = ?",
                     [$ident, $nome, $formato, $unidade, $fecha !== "" ? $fecha : null, $formato === "sessao" ? $exclusiva : 0, $formato === "valor" ? $mede_gasto : 0,
                     $condicao !== "" ? $condicao : null, $no, $id]);
-                $msg = "Tipo de lançamento " . $nome . " salvo.";
+                $msg = t("Tipo de lançamento {1} salvo.", [1 => $nome]);
             }
             lancamento_tipos(true);
         }
     } elseif ($acao === "excluir") {
         $usam = formulas_que_usam($atual["identificador"], "lancamentos");
         if ($com_lancamentos > 0) {
-            $erros[] = "Não dá para excluir " . $atual["nome"] . ": há " . $com_lancamentos . " lançamentos deste tipo.";
+            $erros[] = t("Não dá para excluir {1}: há {2} lançamentos deste tipo.", [1 => $atual["nome"], 2 => $com_lancamentos]);
         } elseif (count($usam) > 0) {
-            $erros[] = "Não dá para excluir " . $atual["identificador"] . ": estas fórmulas usam: " . implode(", ", $usam) . ".";
+            $erros[] = t("Não dá para excluir {1}: estas fórmulas usam: {2}.", [1 => $atual["identificador"], 2 => implode(", ", $usam)]);
         } else {
             sql("DELETE FROM lancamento_tipo WHERE id = ?", [$id]);
             lancamento_tipos(true);
-            $msg = "Tipo de lançamento " . $atual["nome"] . " excluído.";
+            $msg = t("Tipo de lançamento {1} excluído.", [1 => $atual["nome"]]);
         }
     }
     return resultado($erros, $msg, ["id" => $id]);
@@ -410,7 +407,7 @@ function op_formulas($acao, $d)
     $id = (int)($d["id"] ?? 0);
     $atual = $id > 0 ? linha("SELECT * FROM formula WHERE id = ?", [$id]) : null;
     if (($acao === "alterar" || $acao === "excluir") && !$atual) {
-        $erros[] = "Fórmula não encontrada.";
+        $erros[] = t("Fórmula não encontrada.");
     } elseif ($acao === "nova" || $acao === "alterar") {
         $ident = $atual ? $atual["identificador"] : trim((string)($d["identificador"] ?? ""));
         $nome = trim((string)($d["nome"] ?? ($atual["nome"] ?? "")));
@@ -418,33 +415,33 @@ function op_formulas($acao, $d)
         $unidade = trim((string)($d["unidade"] ?? ($atual["unidade"] ?? "")));
         $no = array_key_exists("no_id", $d) ? no_do_pedido($d["no_id"]) : ($atual ? ($atual["no_id"] === null ? null : (int)$atual["no_id"]) : null);
         if (!identificador_valido($ident)) {
-            $erros[] = "Identificador: minúsculas, números e _, começando por letra, até 40 (é o nome da fórmula nas outras fórmulas).";
+            $erros[] = t("Identificador: minúsculas, números e _, começando por letra, até 40 (é o nome da fórmula nas outras fórmulas).");
         } elseif (isset(campos_todos()[$ident])) {
-            $erros[] = "Já existe um campo com o identificador " . $ident . ".";
+            $erros[] = t("Já existe um campo com o identificador {1}.", [1 => $ident]);
         }
         if ($nome === "" || strlen($nome) > 120) {
-            $erros[] = "Dê um nome à fórmula (até 120 caracteres).";
+            $erros[] = t("Dê um nome à fórmula (até 120 caracteres).");
         }
         if ($no === false) {
-            $erros[] = "O ponto da árvore não existe.";
+            $erros[] = t("O ponto da árvore não existe.");
         } elseif ((int)valor("SELECT COUNT(*) FROM formula WHERE identificador = ? AND no_id <=> ? AND id <> ?", [$ident, $no, $id]) > 0) {
-            $erros[] = "A fórmula " . $ident . " já tem uma versão em " . no_caminho($no) . ": altere aquela.";
+            $erros[] = t("A fórmula {1} já tem uma versão em {2}: altere aquela.", [1 => $ident, 2 => no_caminho($no)]);
         }
         if ($expr === "") {
-            $erros[] = "Escreva o cálculo.";
+            $erros[] = t("Escreva o cálculo.");
         } else {
             foreach (formula_validar($ident, $expr) as $e) {
-                $erros[] = "Cálculo: " . $e . ".";
+                $erros[] = t("Cálculo: {1}.", [1 => $e]);
             }
         }
         if (count($erros) === 0) {
             if ($acao === "nova") {
                 sql("INSERT INTO formula (identificador, nome, expressao, unidade, no_id) VALUES (?, ?, ?, ?, ?)", [$ident, $nome, $expr, $unidade, $no]);
                 $id = ultimo_id();
-                $msg = "Fórmula " . $ident . " gravada para " . no_caminho($no) . ".";
+                $msg = t("Fórmula {1} gravada para {2}.", [1 => $ident, 2 => no_caminho($no)]);
             } else {
                 sql("UPDATE formula SET nome = ?, expressao = ?, unidade = ?, no_id = ? WHERE id = ?", [$nome, $expr, $unidade, $no, $id]);
-                $msg = "Fórmula " . $ident . " (" . no_caminho($no) . ") salva.";
+                $msg = t("Fórmula {1} ({2}) salva.", [1 => $ident, 2 => no_caminho($no)]);
             }
             formulas_todas(true);
         }
@@ -454,12 +451,11 @@ function op_formulas($acao, $d)
             return strpos($x, $atual["identificador"] . " (") !== 0;
         });
         if ($versoes <= 1 && count($usam) > 0) {
-            $erros[] = "Não dá para excluir " . $atual["identificador"] . ": estas fórmulas usam: " . implode(", ", $usam) . ".";
+            $erros[] = t("Não dá para excluir {1}: estas fórmulas usam: {2}.", [1 => $atual["identificador"], 2 => implode(", ", $usam)]);
         } else {
             sql("DELETE FROM formula WHERE id = ?", [$id]);
             formulas_todas(true);
-            $msg = "A versão de " . $atual["identificador"] . " para " . no_caminho($atual["no_id"]) . " foi excluída."
-                . ($versoes > 1 ? " Os relógios dali passam a usar a versão de cima." : "");
+            $msg = t("A versão de {1} para {2} foi excluída.{3}", [1 => $atual["identificador"], 2 => no_caminho($atual["no_id"]), 3 => $versoes > 1 ? t(" Os relógios dali passam a usar a versão de cima.") : ""]);
         }
     }
     return resultado($erros, $msg, ["id" => $id]);
@@ -478,7 +474,7 @@ function op_relogio($acao, $d)
     $id = (int)($d["id"] ?? 0);
     $atual = $id > 0 ? linha("SELECT * FROM relogio WHERE id = ?", [$id]) : null;
     if ($id > 0 && !$atual) {
-        $erros[] = "Relógio não encontrado.";
+        $erros[] = t("Relógio não encontrado.");
     } elseif ($acao === "salvar") {
         $nome = array_key_exists("nome", $d) ? trim((string)$d["nome"]) : ($atual["nome"] ?? "");
         $no = array_key_exists("no_id", $d) ? no_do_pedido($d["no_id"]) : ($atual ? ($atual["no_id"] === null ? null : (int)$atual["no_id"]) : null);
@@ -490,23 +486,23 @@ function op_relogio($acao, $d)
         $posse = array_key_exists("posse", $d) ? (string)$d["posse"] : ($posse_antes ?? "colecao");
         $nota_posse = "";
         if (!isset(POSSES[$posse])) {
-            $erros[] = "Situação na coleção: colecao, desejado, emprestado, vendido ou arquivado.";
+            $erros[] = t("Situação na coleção: colecao, desejado, emprestado, vendido ou arquivado.");
         } elseif ($posse !== "colecao") {
             if ($disp === 1 && array_key_exists("disponivel", $d) && $posse_antes !== null) {
-                $nota_posse = " Fora da coleção, ele fica indisponível para o rodízio.";
+                $nota_posse = t(" Fora da coleção, ele fica indisponível para o rodízio.");
             }
             $disp = 0;
         } elseif ($posse_antes !== null && $posse_antes !== "colecao") {
             if (!array_key_exists("disponivel", $d)) {
                 $disp = 1;
             }
-            $nota_posse = " Entrou na coleção" . ($disp === 1 ? ": disponível para o rodízio." : " (indisponível para o rodízio, como pedido).");
+            $nota_posse = t(" Entrou na coleção{1}", [1 => $disp === 1 ? t(": disponível para o rodízio.") : t(" (indisponível para o rodízio, como pedido).")]);
         }
         if ($nome === "" || strlen($nome) > 120) {
-            $erros[] = "Dê um nome ao relógio (até 120 caracteres).";
+            $erros[] = t("Dê um nome ao relógio (até 120 caracteres).");
         }
         if ($no === false) {
-            $erros[] = "O ponto da árvore não existe.";
+            $erros[] = t("O ponto da árvore não existe.");
         }
         if (count($erros) === 0) {
             if ($atual) {
@@ -524,7 +520,7 @@ function op_relogio($acao, $d)
                 if (count($abertas) > 0) {
                     sql("UPDATE lancamento SET fim = ? WHERE relogio_id = ? AND fim IS NULL AND id IN (" . implode(", ", array_map(function ($x) { return (int)$x["id"]; }, $abertas)) . ")",
                         [date("Y-m-d H:i:s"), $id]);
-                    $nota_posse .= " Fechei agora: " . implode(", ", array_map(function ($x) { return mb_strtolower($x["nome"], "UTF-8"); }, $abertas)) . ".";
+                    $nota_posse .= t(" Fechei agora: {1}.", [1 => implode(", ", array_map(function ($x) { return mb_strtolower($x["nome"], "UTF-8"); }, $abertas))]);
                 }
                 $amanha = (new DateTimeImmutable("today"))->modify("+1 day");
                 $tirados = (int)valor("SELECT COUNT(*) FROM plano WHERE relogio_id = ? AND data >= ?", [$id, $amanha->format("Y-m-d")]);
@@ -535,7 +531,7 @@ function op_relogio($acao, $d)
                     } else {
                         garantir_plano(new DateTimeImmutable("today"));
                     }
-                    $nota_posse .= " Saiu do plano de amanhã em diante (" . $tirados . ($tirados === 1 ? " dia sorteado" : " dias sorteados") . " de novo).";
+                    $nota_posse .= t(" Saiu do plano de amanhã em diante ({1}{2} de novo).", [1 => $tirados, 2 => $tirados === 1 ? t(" dia sorteado") : t(" dias sorteados")]);
                 }
             }
             // os valores: só dos campos que valem para o relógio (no ponto e na situação em que ficou)
@@ -543,7 +539,7 @@ function op_relogio($acao, $d)
             $ignorados = [];
             foreach ((array)($d["valores"] ?? []) as $ident => $v) {
                 if (!isset($campos[$ident])) {
-                    $ignorados[] = $ident . (isset(campos_do_relogio(["no_id" => $no, "posse" => "desejado"])[$ident]) ? " (só nos desejados)" : " (não é campo de " . no_caminho($no) . ")");
+                    $ignorados[] = $ident . (isset(campos_do_relogio(["no_id" => $no, "posse" => "desejado"])[$ident]) ? t(" (só nos desejados)") : t(" (não é campo de {1})", [1 => no_caminho($no)]));
                 } else {
                     $conf = valor_para_campo($campos[$ident], $v);
                     if ($conf[1] !== "") {
@@ -559,12 +555,11 @@ function op_relogio($acao, $d)
             $aviso_copia = "";
             if ($atual && $copia !== (int)$atual["copia_banco"] && (int)valor("SELECT COUNT(*) FROM documento WHERE relogio_id = ?", [$id]) > 0) {
                 $sistema = documentos_copia_sistema();
-                $aviso_copia = $sistema !== null ? " (A cópia no banco dos documentos não muda: o config.php decide por todos, DOCUMENTOS_COPIA_BANCO = " . ($sistema ? "true" : "false") . ".)"
-                    : ($copia === 1 ? " Os documentos dele vão para o banco aos poucos, pelo cron." : " As cópias no banco dos documentos dele que não pedem a própria cópia saem aos poucos, pelo cron (os arquivos continuam na pasta).");
+                $aviso_copia = $sistema !== null ? t(" (A cópia no banco dos documentos não muda: o config.php decide por todos, DOCUMENTOS_COPIA_BANCO = {1}.)", [1 => $sistema ? "true" : "false"])
+                    : ($copia === 1 ? t(" Os documentos dele vão para o banco aos poucos, pelo cron.") : t(" As cópias no banco dos documentos dele que não pedem a própria cópia saem aos poucos, pelo cron (os arquivos continuam na pasta)."));
             }
-            $msg = ($atual ? "Relógio " . $nome . " salvo." : "Relógio " . $nome . " criado " . ($no === null ? "na raiz da árvore" : "em " . no_caminho($no))
-                . ($posse !== "colecao" ? " (" . mb_strtolower(POSSES[$posse], "UTF-8") . ")" : "") . ".") . $nota_posse . $aviso_copia
-                . (count($ignorados) > 0 ? " Não gravei: " . implode("; ", $ignorados) . ". Ficou o que já estava." : "");
+            $msg = ($atual ? t("Relógio {1} salvo.", [1 => $nome]) : t("Relógio {1} criado {2}{3}.", [1 => $nome, 2 => $no === null ? t("na raiz da árvore") : "em " . no_caminho($no), 3 => $posse !== "colecao" ? " (" . mb_strtolower(POSSES[$posse], "UTF-8") . ")" : ""])) . $nota_posse . $aviso_copia
+                . (count($ignorados) > 0 ? t(" Não gravei: {1}. Ficou o que já estava.", [1 => implode("; ", $ignorados)]) : "");
         }
     } elseif ($acao === "excluir" && $atual) {
         // os arquivos dos documentos saem da pasta (as linhas saem com o relógio, pelo banco)
@@ -573,8 +568,7 @@ function op_relogio($acao, $d)
         }
         $n_aces = (int)valor("SELECT COUNT(*) FROM acessorio WHERE relogio_id = ?", [$id]);
         sql("DELETE FROM relogio WHERE id = ?", [$id]);
-        $msg = "Relógio " . $atual["nome"] . " excluído, com os valores, a foto, os documentos e os lançamentos dele."
-            . ($n_aces > 0 ? " " . ($n_aces === 1 ? "O acessório dele ficou solto." : "Os " . $n_aces . " acessórios dele ficaram soltos.") : "");
+        $msg = t("Relógio {1} excluído, com os valores, a foto, os documentos e os lançamentos dele.{2}", [1 => $atual["nome"], 2 => $n_aces > 0 ? " " . ($n_aces === 1 ? t("O acessório dele ficou solto.") : t("Os {1} acessórios dele ficaram soltos.", [1 => $n_aces])) : ""]);
         $id = 0;
     } elseif ($acao === "foto" && $atual) {
         $b64 = (string)($d["foto_base64"] ?? "");
@@ -584,16 +578,16 @@ function op_relogio($acao, $d)
         $bin = base64_decode($b64, true);
         $info = $bin !== false && strlen($bin) > 0 && strlen($bin) <= 4 * 1024 * 1024 ? @getimagesizefromstring($bin) : false;
         if (!$info || !in_array($info["mime"], ["image/jpeg", "image/png", "image/webp"], true)) {
-            $erros[] = "A foto não foi aceita: tem de ser JPEG, PNG ou WebP, de até 4 MB.";
+            $erros[] = t("A foto não foi aceita: tem de ser JPEG, PNG ou WebP, de até 4 MB.");
         } else {
             sql("REPLACE INTO foto (relogio_id, tipo, dados, atualizado) VALUES (?, ?, ?, NOW())", [$id, $info["mime"], $bin]);
-            $msg = "Foto de " . $atual["nome"] . " salva.";
+            $msg = t("Foto de {1} salva.", [1 => $atual["nome"]]);
         }
     } elseif ($acao === "remover_foto" && $atual) {
         sql("DELETE FROM foto WHERE relogio_id = ?", [$id]);
-        $msg = "Foto de " . $atual["nome"] . " removida.";
+        $msg = t("Foto de {1} removida.", [1 => $atual["nome"]]);
     } elseif ($id === 0) {
-        $erros[] = "Informe o relógio (id).";
+        $erros[] = t("Informe o relógio (id).");
     }
     return resultado($erros, $msg, ["id" => $id]);
 }
@@ -614,7 +608,7 @@ function op_documentos($acao, $d)
     $atual = $id > 0 ? linha("SELECT * FROM documento WHERE id = ?", [$id]) : null;
     $pasta = documentos_pasta();
     if ($pasta === null && $acao !== "excluir" && $acao !== "alterar") {
-        $erros[] = "Não dá para guardar documentos: " . documentos_pasta_erro() . ".";
+        $erros[] = t("Não dá para guardar documentos: {1}.", [1 => documentos_pasta_erro()]);
         return resultado($erros, $msg, ["id" => $id, "ids" => []]);
     }
     // a categoria do pedido (ou a de antes) e as famílias que ela aceita
@@ -623,20 +617,20 @@ function op_documentos($acao, $d)
     $data = array_key_exists("data", $d) ? trim((string)$d["data"]) : ($atual ? (string)$atual["data"] : "");
     $data = $data === "" ? null : substr($data, 0, 10);
     if ($data !== null && (preg_match("/^\\d{4}-\\d{2}-\\d{2}$/", $data) !== 1 || !checkdate((int)substr($data, 5, 2), (int)substr($data, 8, 2), (int)substr($data, 0, 4)))) {
-        $erros[] = "A data tem de ser AAAA-MM-DD (ou vazia).";
+        $erros[] = t("A data tem de ser AAAA-MM-DD (ou vazia).");
     }
     $titulo = trim((string)($d["titulo"] ?? ($atual["titulo"] ?? "")));
     // a cópia no banco pedida pelo próprio arquivo (o sistema e o relógio, se pedem, valem por cima dela)
     $copia = array_key_exists("copia_banco", $d) ? ((string)$d["copia_banco"] === "1" ? 1 : 0) : ($atual ? (int)$atual["copia_banco"] : 0);
     $descricao = array_key_exists("descricao", $d) ? trim((string)$d["descricao"]) : ($atual ? (string)$atual["descricao"] : "");
     if (mb_strlen($titulo) > 200) {
-        $erros[] = "O título vai até 200 caracteres.";
+        $erros[] = t("O título vai até 200 caracteres.");
     }
     $ids = [];
     if ($acao === "enviar") {
         $r = linha("SELECT id, nome FROM relogio WHERE id = ?", [(int)($d["relogio_id"] ?? 0)]);
         if (!$r) {
-            $erros[] = "Relógio não encontrado.";
+            $erros[] = t("Relógio não encontrado.");
         }
         if (!$cat) {
             $erros[] = "Escolha a categoria.";
@@ -659,7 +653,7 @@ function op_documentos($acao, $d)
             $b64 = (string)$d["arquivo_base64"];
             $bin = base64_decode(strpos($b64, "base64,") !== false ? substr($b64, strpos($b64, "base64,") + 7) : $b64, true);
             if ($bin === false) {
-                $erros[] = "O arquivo_base64 não é base64.";
+                $erros[] = t("O arquivo_base64 não é base64.");
             } else {
                 $arquivos[] = [trim((string)($d["arquivo_nome"] ?? "")) !== "" ? (string)$d["arquivo_nome"] : "arquivo", null, $bin, UPLOAD_ERR_OK];
             }
@@ -681,7 +675,7 @@ function op_documentos($acao, $d)
         }
         $limite = documentos_limite();
         $aceita = $cat ? documento_familias_aceitas($cat["aceita"]) : [];
-        $nomes_fam = ["imagem" => "imagens", "video" => "vídeos", "audio" => "áudios", "pdf" => "PDF", "xml" => "XML"];
+        $nomes_fam = ["imagem" => "imagens", "video" => t("vídeos"), "audio" => t("áudios"), "pdf" => "PDF", "xml" => "XML"];
         $avisos = [];
         $copiados_banco = 0;
         if (count($erros) === 0) {
@@ -690,33 +684,33 @@ function op_documentos($acao, $d)
                 $nome = trim(preg_replace("/[\\x00-\\x1f]/", "", basename(str_replace("\\", "/", $nome))));
                 $nome = $nome !== "" ? mb_substr($nome, 0, 255) : "arquivo";
                 if ($erro === UPLOAD_ERR_INI_SIZE || $erro === UPLOAD_ERR_FORM_SIZE) {
-                    $erros[] = $nome . ": passou do tamanho que o servidor aceita (o upload_max_filesize do php.ini" . ($limite !== null ? ", " . tamanho_texto($limite) : "") . ").";
+                    $erros[] = t("{1}: passou do tamanho que o servidor aceita (o upload_max_filesize do php.ini{2}).", [1 => $nome, 2 => $limite !== null ? ", " . tamanho_texto($limite) : ""]);
                     continue;
                 }
                 if ($erro !== UPLOAD_ERR_OK || ($tmp !== null && !is_uploaded_file($tmp))) {
-                    $erros[] = $nome . ": não chegou inteiro (erro " . $erro . " no envio). Tente de novo.";
+                    $erros[] = t("{1}: não chegou inteiro (erro {2} no envio). Tente de novo.", [1 => $nome, 2 => $erro]);
                     continue;
                 }
                 $tamanho = $tmp !== null ? (int)filesize($tmp) : strlen($bin);
                 if ($tamanho === 0) {
-                    $erros[] = $nome . ": o arquivo está vazio.";
+                    $erros[] = t("{1}: o arquivo está vazio.", [1 => $nome]);
                     continue;
                 }
                 if ($limite !== null && $tamanho > $limite) {
-                    $erros[] = $nome . ": tem " . tamanho_texto($tamanho) . "; o servidor aceita até " . tamanho_texto($limite) . ".";
+                    $erros[] = t("{1}: tem {2}; o servidor aceita até {3}.", [1 => $nome, 2 => tamanho_texto($tamanho), 3 => tamanho_texto($limite)]);
                     continue;
                 }
                 $arquivo = documento_novo_arquivo($pasta, (int)$r["id"], $nome);
                 $ok = $tmp !== null ? @move_uploaded_file($tmp, $pasta . "/" . $arquivo) : @file_put_contents($pasta . "/" . $arquivo, $bin) === $tamanho;
                 if (!$ok) {
-                    $erros[] = $nome . ": não consegui gravar na pasta dos documentos.";
+                    $erros[] = t("{1}: não consegui gravar na pasta dos documentos.", [1 => $nome]);
                     continue;
                 }
                 $tipo = documento_tipo($pasta . "/" . $arquivo, $nome);
                 $familia = documento_familia($tipo, $nome);
                 if (count($aceita) > 0 && !in_array($familia, $aceita, true)) {
                     @unlink($pasta . "/" . $arquivo);
-                    $erros[] = $nome . ": a categoria " . $cat["nome"] . " aceita só " . implode(", ", array_map(function ($f) use ($nomes_fam) { return $nomes_fam[$f] ?? $f; }, $aceita)) . ".";
+                    $erros[] = t("{1}: a categoria {2} aceita só {3}.", [1 => $nome, 2 => $cat["nome"], 3 => implode(", ", array_map(function ($f) use ($nomes_fam) { return $nomes_fam[$f] ?? $f; }, $aceita))]);
                     continue;
                 }
                 $arq_mini = null;
@@ -737,58 +731,56 @@ function op_documentos($acao, $d)
                         $copiados_banco++;
                         $erro_copia = documento_copiar_para_banco($novo_doc);
                         if ($erro_copia !== "") {
-                            $avisos[] = $nome . ": a cópia no banco falhou (" . $erro_copia . "); o cron tenta de novo";
+                            $avisos[] = t("{1}: a cópia no banco falhou ({2}); o cron tenta de novo", [1 => $nome, 2 => $erro_copia]);
                         }
                     }
                 } catch (BancoErro $e) {
                     documento_apagar_arquivos(["arquivo" => $arquivo, "miniatura" => $arq_mini]);
-                    $erros[] = $nome . ": o banco recusou (" . $e->getMessage() . ").";
+                    $erros[] = t("{1}: o banco recusou ({2}).", [1 => $nome, 2 => $e->getMessage()]);
                 }
             }
             if (count($ids) > 0) {
-                $msg = (count($ids) === 1 ? "1 documento guardado" : count($ids) . " documentos guardados") . " em " . $cat["nome"] . " do " . $r["nome"]
-                    . ($copiados_banco > 0 ? ", na pasta e no banco." : ", só na pasta (sem cópia no banco).")
-                    . (count($avisos) > 0 ? " Atenção: " . implode("; ", $avisos) . "." : "");
+                $msg = t("{1} em {2} do {3}{4}{5}", [1 => count($ids) === 1 ? t("1 documento guardado") : t("{1} documentos guardados", [1 => count($ids)]), 2 => $cat["nome"], 3 => $r["nome"], 4 => $copiados_banco > 0 ? t(", na pasta e no banco.") : t(", só na pasta (sem cópia no banco)."), 5 => count($avisos) > 0 ? t(" Atenção: {1}.", [1 => implode("; ", $avisos)]) : ""]);
                 $id = $ids[0];
             }
         }
     } elseif ($acao === "alterar" || $acao === "excluir") {
         if (!$atual) {
-            $erros[] = "Documento não encontrado.";
+            $erros[] = t("Documento não encontrado.");
         } elseif ($acao === "excluir") {
             documento_apagar_arquivos($atual);
             sql("DELETE FROM documento WHERE id = ?", [$id]);
-            $msg = "Documento " . $atual["titulo"] . " excluído.";
+            $msg = t("Documento {1} excluído.", [1 => $atual["titulo"]]);
         } else {
             if (!$cat) {
-                $erros[] = "A categoria não existe.";
+                $erros[] = t("A categoria não existe.");
             } elseif ((int)$cat["id"] !== (int)$atual["categoria_id"] && count(documento_familias_aceitas($cat["aceita"])) > 0
                 && !in_array(documento_familia($atual["tipo"], $atual["nome"]), documento_familias_aceitas($cat["aceita"]), true)) {
-                $erros[] = "A categoria " . $cat["nome"] . " não aceita este tipo de arquivo (" . $atual["tipo"] . ").";
+                $erros[] = t("A categoria {1} não aceita este tipo de arquivo ({2}).", [1 => $cat["nome"], 2 => $atual["tipo"]]);
             }
             if ($titulo === "") {
-                $erros[] = "Dê um título ao documento.";
+                $erros[] = t("Dê um título ao documento.");
             }
             if (count($erros) === 0) {
                 sql("UPDATE documento SET categoria_id = ?, titulo = ?, data = ?, descricao = ?, copia_banco = ? WHERE id = ?",
                     [(int)$cat["id"], $titulo, $data, $descricao !== "" ? $descricao : null, $copia, $id]);
-                $msg = "Documento " . $titulo . " salvo.";
+                $msg = t("Documento {1} salvo.", [1 => $titulo]);
                 // a cópia no banco segue o pedido na hora: entra se agora alguém pede, sai se ninguém mais pede
                 $doc = linha("SELECT * FROM documento WHERE id = ?", [$id]);
                 $por = documento_copia_por($doc);
                 if ($por !== null && (int)$doc["no_banco"] !== 1) {
                     $erro_copia = documento_copiar_para_banco($doc);
-                    $msg .= $erro_copia === "" ? " A cópia foi para o banco." : " A cópia no banco falhou (" . $erro_copia . "); o cron tenta de novo.";
+                    $msg .= $erro_copia === "" ? t(" A cópia foi para o banco.") : t(" A cópia no banco falhou ({1}); o cron tenta de novo.", [1 => $erro_copia]);
                 } elseif ($por === null && (int)$doc["no_banco"] === 1) {
                     $erro_copia = documento_tirar_do_banco($doc);
-                    $msg .= $erro_copia === "" ? " A cópia saiu do banco (o arquivo continua na pasta)." : " A cópia continua no banco: " . $erro_copia . ".";
+                    $msg .= $erro_copia === "" ? t(" A cópia saiu do banco (o arquivo continua na pasta).") : t(" A cópia continua no banco: {1}.", [1 => $erro_copia]);
                 } elseif ($copia === 1 && $por === null) {
-                    $msg .= " A cópia não vai para o banco: o config.php (DOCUMENTOS_COPIA_BANCO = false) não deixa.";
+                    $msg .= t(" A cópia não vai para o banco: o config.php (DOCUMENTOS_COPIA_BANCO = false) não deixa.");
                 }
             }
         }
     } else {
-        $erros[] = "Ação desconhecida: use enviar, alterar ou excluir.";
+        $erros[] = t("Ação desconhecida: use enviar, alterar ou excluir.");
     }
     return resultado($erros, $msg, ["id" => $id, "ids" => $ids]);
 }
@@ -805,7 +797,7 @@ function op_documento_categorias($acao, $d)
     $id = (int)($d["id"] ?? 0);
     $atual = $id > 0 ? documento_categoria_linha($id) : null;
     if (($acao === "alterar" || $acao === "excluir") && !$atual) {
-        $erros[] = "Categoria não encontrada.";
+        $erros[] = t("Categoria não encontrada.");
     } elseif ($acao === "nova" || $acao === "alterar") {
         $ident = $atual ? $atual["identificador"] : trim((string)($d["identificador"] ?? ""));
         $nome = trim((string)($d["nome"] ?? ($atual["nome"] ?? "")));
@@ -813,40 +805,40 @@ function op_documento_categorias($acao, $d)
         $aceita = array_values(array_unique(array_filter(array_map("trim", $aceita), function ($x) { return $x !== ""; })));
         $ordem = array_key_exists("ordem", $d) && trim((string)$d["ordem"]) !== "" ? (int)$d["ordem"] : ($atual ? (int)$atual["ordem"] : (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM documento_categoria"));
         if (!identificador_valido($ident)) {
-            $erros[] = "Identificador: minúsculas, números e _, começando por letra, até 40.";
+            $erros[] = t("Identificador: minúsculas, números e _, começando por letra, até 40.");
         } elseif (!$atual && valor("SELECT id FROM documento_categoria WHERE identificador = ?", [$ident]) !== null) {
-            $erros[] = "Já existe a categoria " . $ident . ".";
+            $erros[] = t("Já existe a categoria {1}.", [1 => $ident]);
         }
         if ($nome === "" || mb_strlen($nome) > 120) {
-            $erros[] = "Dê um nome à categoria (até 120 caracteres).";
+            $erros[] = t("Dê um nome à categoria (até 120 caracteres).");
         }
         foreach ($aceita as $f) {
             if (!in_array($f, ["imagem", "video", "audio", "pdf", "xml"], true)) {
-                $erros[] = "Tipo aceito desconhecido: " . $f . " (use imagem, video, audio, pdf ou xml; nenhum: qualquer arquivo).";
+                $erros[] = t("Tipo aceito desconhecido: {1} (use imagem, video, audio, pdf ou xml; nenhum: qualquer arquivo).", [1 => $f]);
             }
         }
         if (count($erros) === 0) {
             if ($atual) {
                 sql("UPDATE documento_categoria SET nome = ?, ordem = ? WHERE id = ?", [$nome, $ordem, $id]);
                 documento_categoria_gravar_aceita($id, $aceita);
-                $msg = "Categoria " . $nome . " salva.";
+                $msg = t("Categoria {1} salva.", [1 => $nome]);
             } else {
                 sql("INSERT INTO documento_categoria (identificador, nome, ordem) VALUES (?, ?, ?)", [$ident, $nome, $ordem]);
                 $id = ultimo_id();
                 documento_categoria_gravar_aceita($id, $aceita);
-                $msg = "Categoria " . $nome . " criada.";
+                $msg = t("Categoria {1} criada.", [1 => $nome]);
             }
         }
     } elseif ($acao === "excluir") {
         $n = (int)valor("SELECT COUNT(*) FROM documento WHERE categoria_id = ?", [$id]);
         if ($n > 0) {
-            $erros[] = "A categoria " . $atual["nome"] . " tem " . $n . ($n === 1 ? " documento" : " documentos") . ": passe para outra categoria ou exclua antes.";
+            $erros[] = t("A categoria {1} tem {2}{3}: passe para outra categoria ou exclua antes.", [1 => $atual["nome"], 2 => $n, 3 => $n === 1 ? " documento" : " documentos"]);
         } else {
             sql("DELETE FROM documento_categoria WHERE id = ?", [$id]);
-            $msg = "Categoria " . $atual["nome"] . " excluída.";
+            $msg = t("Categoria {1} excluída.", [1 => $atual["nome"]]);
         }
     } else {
-        $erros[] = "Ação desconhecida: use nova, alterar ou excluir.";
+        $erros[] = t("Ação desconhecida: use nova, alterar ou excluir.");
     }
     return resultado($erros, $msg, ["id" => $id]);
 }
@@ -862,24 +854,24 @@ function op_acessorios($acao, $d)
     $id = (int)($d["id"] ?? 0);
     $atual = $id > 0 ? linha("SELECT * FROM acessorio WHERE id = ?", [$id]) : null;
     if ($id > 0 && !$atual) {
-        $erros[] = "Acessório não encontrado.";
+        $erros[] = t("Acessório não encontrado.");
     } elseif ($acao === "salvar") {
         $nome = array_key_exists("nome", $d) ? trim((string)$d["nome"]) : (string)($atual["nome"] ?? "");
         $tipo = array_key_exists("tipo", $d) ? trim((string)$d["tipo"]) : (string)($atual["tipo"] ?? "pulseira");
         $rel = array_key_exists("relogio_id", $d) ? (int)$d["relogio_id"] : ($atual && $atual["relogio_id"] !== null ? (int)$atual["relogio_id"] : 0);
         $obs = array_key_exists("observacao", $d) ? trim((string)$d["observacao"]) : (string)($atual["observacao"] ?? "");
         if ($nome === "" || mb_strlen($nome) > 120) {
-            $erros[] = "Dê um nome ao acessório (até 120 caracteres).";
+            $erros[] = t("Dê um nome ao acessório (até 120 caracteres).");
         }
         if (!isset(ACESSORIO_TIPOS[$tipo])) {
-            $erros[] = "Tipo: " . implode(", ", array_keys(ACESSORIO_TIPOS)) . ".";
+            $erros[] = t("Tipo: {1}.", [1 => implode(", ", array_keys(ACESSORIO_TIPOS))]);
         }
         $r = $rel > 0 ? linha("SELECT id, nome FROM relogio WHERE id = ?", [$rel]) : null;
         if ($rel > 0 && !$r) {
-            $erros[] = "Relógio não encontrado (0: o acessório fica solto).";
+            $erros[] = t("Relógio não encontrado (0: o acessório fica solto).");
         }
         if (mb_strlen($obs) > 1000) {
-            $erros[] = "A observação vai até 1000 caracteres.";
+            $erros[] = t("A observação vai até 1000 caracteres.");
         }
         if (count($erros) === 0) {
             $vals = [$nome, $tipo, $rel > 0 ? $rel : null, $obs !== "" ? $obs : null];
@@ -889,16 +881,16 @@ function op_acessorios($acao, $d)
                 sql("INSERT INTO acessorio (nome, tipo, relogio_id, observacao, criado) VALUES (?, ?, ?, ?, NOW())", $vals);
                 $id = ultimo_id();
             }
-            $msg = "Acessório " . $nome . " (" . mb_strtolower(ACESSORIO_TIPOS[$tipo], "UTF-8") . ")" . ($atual ? " salvo" : " cadastrado") . ($r ? ", do " . $r["nome"] : ", solto (de nenhum relógio)") . ".";
+            $msg = t("Acessório {1} ({2}){3}{4}.", [1 => $nome, 2 => mb_strtolower(t(ACESSORIO_TIPOS[$tipo]), "UTF-8"), 3 => $atual ? t(" salvo") : t(" cadastrado"), 4 => $r ? t(", do {1}", [1 => $r["nome"]]) : t(", solto (de nenhum relógio)")]);
         }
     } elseif ($acao === "excluir" && $atual) {
         sql("DELETE FROM acessorio WHERE id = ?", [$id]);
-        $msg = "Acessório " . $atual["nome"] . " excluído.";
+        $msg = t("Acessório {1} excluído.", [1 => $atual["nome"]]);
         $id = 0;
     } elseif ($acao === "excluir") {
-        $erros[] = "Informe o acessório (id).";
+        $erros[] = t("Informe o acessório (id).");
     } else {
-        $erros[] = "Ação desconhecida: use salvar ou excluir.";
+        $erros[] = t("Ação desconhecida: use salvar ou excluir.");
     }
     return resultado($erros, $msg, ["id" => $id]);
 }
@@ -963,24 +955,24 @@ function op_lancamento($acao, $d)
             [$rid, $ignorar, date("Y-m-d H:i:s", $b), date("Y-m-d H:i:s", $a)]);
     };
     if (($acao === "alterar" || $acao === "excluir") && !$existente) {
-        $erros[] = "Lançamento não encontrado.";
+        $erros[] = t("Lançamento não encontrado.");
     } elseif ($hoje_pedido && !$p_hoje) {
-        $erros[] = "Nenhum relógio para hoje no plano (relogio_id=hoje).";
+        $erros[] = t("Nenhum relógio para hoje no plano (relogio_id=hoje).");
     } elseif (!$r) {
-        $erros[] = "Relógio não encontrado (relogio_id).";
+        $erros[] = t("Relógio não encontrado (relogio_id).");
     } elseif (!$t) {
-        $erros[] = "Tipo de lançamento desconhecido para " . $r["nome"] . ": use um destes: " . implode(", ", array_keys(lancamento_tipos_do_relogio($r))) . ".";
+        $erros[] = t("Tipo de lançamento desconhecido para {1}: use um destes: {2}.", [1 => $r["nome"], 2 => implode(", ", array_keys(lancamento_tipos_do_relogio($r)))]);
     } elseif ($acao === "alternar") {
-        $erros[] = $t["nome"] . " não é uma sessão: alternar vale só para as sessões (abre a fechada, fecha a aberta).";
+        $erros[] = t("{1} não é uma sessão: alternar vale só para as sessões (abre a fechada, fecha a aberta).", [1 => $t["nome"]]);
     } elseif ($acao === "lancar") {
         $q = $momento($d["quando"] ?? "");
         $v = numero_br($d["valor"] ?? "");
         if ($t["formato"] === "sessao") {
-            $erros[] = $t["nome"] . " é uma sessão: use iniciar e encerrar, ou periodo.";
+            $erros[] = t("{1} é uma sessão: use iniciar e encerrar, ou periodo.", [1 => $t["nome"]]);
         } elseif ($q === false) {
-            $erros[] = "Quando: AAAA-MM-DD HH:MM, até agora (vazio: agora).";
+            $erros[] = t("Quando: AAAA-MM-DD HH:MM, até agora (vazio: agora).");
         } elseif ($t["formato"] === "valor" && $v === null) {
-            $erros[] = $t["nome"] . " precisa de um valor (número" . ($t["unidade"] !== "" ? ", em " . $t["unidade"] : "") . ").";
+            $erros[] = t("{1} precisa de um valor (número{2}).", [1 => $t["nome"], 2 => $t["unidade"] !== "" ? ", em " . $t["unidade"] : ""]);
         } else {
             // o gasto medido: a leitura de antes (do mesmo tipo), a estimativa e os gastos que valiam, tudo antes de gravar esta
             $mede = $t["formato"] === "valor" && (int)($t["mede_gasto"] ?? 0) === 1
@@ -998,10 +990,9 @@ function op_lancamento($acao, $d)
             sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, NULL, ?, 'manual', NOW())",
                 [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), $t["formato"] === "valor" ? $v : null]);
             $id = ultimo_id();
-            $msg = "Lançado no " . $r["nome"] . ": " . $t["nome"] . ($t["formato"] === "valor" ? " " . str_replace('.', ',', (string)$v) . ($t["unidade"] !== "" ? " " . $t["unidade"] : "") : "")
-                . ($q < $agora - 60 ? " em " . date("d/m/Y H:i", $q) : "") . ".";
+            $msg = t("Lançado no {1}: {2}{3}{4}.", [1 => $r["nome"], 2 => $t["nome"], 3 => $t["formato"] === "valor" ? " " . decimal_txt($v, 6) . ($t["unidade"] !== "" ? " " . $t["unidade"] : "") : "", 4 => $q < $agora - 60 ? " em " . data_txt($q, true) : ""]);
             if ($mede && !$antes) {
-                $msg .= " Primeira leitura: é o ponto de partida.";
+                $msg .= t(" Primeira leitura: é o ponto de partida.");
             } elseif ($antes) {
                 $t1 = strtotime($antes["inicio"]);
                 $horas = ($q - $t1) / 3600;
@@ -1011,21 +1002,19 @@ function op_lancamento($acao, $d)
                 // folga para não confundir recarga com estimativa um pouco errada: metade da queda esperada, no mínimo 10 pontos
                 $folga = max(10, $estimada === null ? 0 : ($anterior - $estimada) * 0.5);
                 $un = $t["unidade"];
-                $de = "De " . str_replace(".", ",", (string)(0 + $anterior)) . $un . " em " . date("d/m H:i", $t1) . " a " . str_replace(".", ",", (string)(0 + $v)) . $un
-                    . ($q < $agora - 60 ? " em " . date("d/m H:i", $q) : " agora");
-                $pela_estimativa = $estimada === null ? "" : " A estimativa era ~" . (int)round($estimada) . $un . ".";
+                $de = t("De {1}{2} em {3} a {4}{5}{6}", [1 => decimal_txt($anterior, 6), 2 => $un, 3 => data_txt($t1, true, true), 4 => decimal_txt($v, 6), 5 => $un, 6 => $q < $agora - 60 ? t(" em {1}", [1 => data_txt($q, true, true)]) : t(" agora")]);
+                $pela_estimativa = $estimada === null ? "" : t(" A estimativa era ~{1}{2}.", [1 => (int)round($estimada), 2 => $un]);
                 if ($queda < 0) {
-                    $msg .= " Carregado: a leitura anterior era " . str_replace(".", ",", (string)(0 + $anterior)) . $un . ($estimada === null ? "" : " e a estimativa ~" . (int)round($estimada) . $un)
-                        . ". Novo ponto de partida.";
+                    $msg .= t(" Carregado: a leitura anterior era {1}{2}{3}. Novo ponto de partida.", [1 => decimal_txt($anterior, 6), 2 => $un, 3 => $estimada === null ? "" : " e a estimativa ~" . (int)round($estimada) . $un]);
                 } elseif ($estimada !== null && $v > $estimada + $folga) {
-                    $msg .= " Carregado em parte: pela estimativa ele estava com ~" . (int)round($estimada) . $un . ". Novo ponto de partida, sem medir o gasto deste intervalo.";
+                    $msg .= t(" Carregado em parte: pela estimativa ele estava com ~{1}{2}. Novo ponto de partida, sem medir o gasto deste intervalo.", [1 => (int)round($estimada), 2 => $un]);
                 } elseif (($outra = valor("SELECT t.nome FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'sessao'
                     AND t.identificador <> 'pulso' AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?) ORDER BY l.inicio DESC, l.id DESC LIMIT 1",
                     [$rid, date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $t1)])) !== null) {
                     // o gasto medido conta só pulso e guardado: com outra sessão no meio (o carregador), o intervalo não mede
-                    $msg .= " " . $de . ": teve " . $outra . " no meio. Novo ponto de partida, sem medir o gasto deste intervalo." . $pela_estimativa;
+                    $msg .= t(" {1}: teve {2} no meio. Novo ponto de partida, sem medir o gasto deste intervalo.{3}", [1 => $de, 2 => $outra, 3 => $pela_estimativa]);
                 } elseif ($horas < 1) {
-                    $msg .= " " . $de . ": menos de 1 hora desde a leitura anterior, pouco tempo para medir o gasto." . $pela_estimativa;
+                    $msg .= t(" {1}: menos de 1 hora desde a leitura anterior, pouco tempo para medir o gasto.{2}", [1 => $de, 2 => $pela_estimativa]);
                 } else {
                     // as horas no pulso entre as duas leituras
                     $h_pulso = horas_no_pulso($rid, $t1, $q);
@@ -1033,7 +1022,7 @@ function op_lancamento($acao, $d)
                     $h_dia = (strtotime("2000-01-01 " . cfg("uso_fim")) - strtotime("2000-01-01 " . cfg("uso_inicio"))) / 3600;
                     $dias_uso = $h_pulso / max(1, $h_dia);
                     $dias_guardado = $h_guardado / 24;
-                    $tempo = ($h_pulso >= 1 ? (int)round($h_pulso) . " h no pulso e " : "") . (int)round($h_guardado) . " h fora do pulso";
+                    $tempo = t("{1}{2} h fora do pulso", [1 => $h_pulso >= 1 ? t("{1} h no pulso e ", [1 => (int)round($h_pulso)]) : "", 2 => (int)round($h_guardado)]);
                     // todo intervalo entra na conta dos dois gastos (gasto_medido), até o sem queda nenhuma: ele diz que o gasto é
                     // pequeno. O gasto do intervalo sozinho fica no histórico: com pelo menos meio dia de uso, ou mais dias de uso que
                     // fora do pulso, o de uso (descontando o fora do pulso que valia); senão, o de fora (descontando o pouco de uso)
@@ -1050,19 +1039,17 @@ function op_lancamento($acao, $d)
                         // os dois gastos que passam a valer, com esta medição junto (a mesma conta da função MEDIDO)
                         $g = gasto_medido(linhas("SELECT m.medida, m.taxa, m.peso_horas, m.fim, m.horas_pulso, m.horas_guardado, m.de_valor, m.ate_valor FROM medicao m
                             JOIN lancamento l ON l.id = m.lancamento_id WHERE l.relogio_id = ? AND m.usada = 1 ORDER BY m.fim, m.id", [$rid]), $q);
-                        $num = function ($x) { return str_replace(".", ",", (string)(0 + round((float)$x, 2))); };
+                        $num = function ($x) { return decimal_txt(round((float)$x, 2), 6); };
                         $partes = [];
                         if ($g["uso"] !== null) {
-                            $partes[] = "em uso " . $num($g["uso"]) . "% por dia de uso";
+                            $partes[] = t("em uso {1}% por dia de uso", [1 => $num($g["uso"])]);
                         }
                         if ($g["repouso"] !== null) {
-                            $partes[] = "fora do pulso " . $num($g["repouso"]) . "% por dia";
+                            $partes[] = t("fora do pulso {1}% por dia", [1 => $num($g["repouso"])]);
                         }
-                        $msg .= " Gasto medido agora" . (count($partes) > 0 ? ": " . implode(", ", $partes) : ": ainda sem como separar") . " ("
-                            . ($g["conjunta"] ? "os dois juntos, de " : "") . $g["n"] . ($g["n"] === 1 ? " medição" : " medições") . " dos últimos "
-                            . max(1, (int)cfg("medicao_janela_dias")) . " dias).";
+                        $msg .= t(" Gasto medido agora{1} ({2}{3}{4} dos últimos {5} dias).", [1 => count($partes) > 0 ? ": " . implode(", ", $partes) : t(": ainda sem como separar"), 2 => $g["conjunta"] ? t("os dois juntos, de ") : "", 3 => $g["n"], 4 => $g["n"] === 1 ? t(" medição") : t(" medições"), 5 => max(1, (int)cfg("medicao_janela_dias"))]);
                     } else {
-                        $msg .= " Entrou só no histórico.";
+                        $msg .= t(" Entrou só no histórico.");
                     }
                 }
             }
@@ -1070,11 +1057,11 @@ function op_lancamento($acao, $d)
     } elseif ($acao === "iniciar") {
         $q = $momento($d["quando"] ?? "");
         if ($t["formato"] !== "sessao") {
-            $erros[] = $t["nome"] . " não é uma sessão: use lancar.";
+            $erros[] = t("{1} não é uma sessão: use lancar.", [1 => $t["nome"]]);
         } elseif ($q === false) {
-            $erros[] = "Quando: AAAA-MM-DD HH:MM, até agora (vazio: agora).";
+            $erros[] = t("Quando: AAAA-MM-DD HH:MM, até agora (vazio: agora).");
         } elseif (valor("SELECT id FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim > ?)", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $q)]) !== null) {
-            $erros[] = $r["nome"] . " já está com " . $t["nome"] . " aberto.";
+            $erros[] = t("{1} já está com {2} aberto.", [1 => $r["nome"], 2 => $t["nome"]]);
         } else {
             $fechadas = [];
             if ((int)$t["exclusiva"] === 1) {
@@ -1084,8 +1071,7 @@ function op_lancamento($acao, $d)
                     WHERE l.relogio_id = ? AND t.exclusiva = 1 AND l.inicio > ? AND l.inicio <= ? LIMIT 1",
                     [$rid, date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $agora)]);
                 if ($conflito) {
-                    $erros[] = "Nesse momento " . $r["nome"] . " já estava em " . $conflito["nome"] . " (de " . date("d/m H:i", strtotime($conflito["inicio"])) . " a "
-                        . ($conflito["fim"] === null ? "agora" : date("d/m H:i", strtotime($conflito["fim"]))) . "): o relógio fica num lugar só.";
+                    $erros[] = t("Nesse momento {1} já estava em {2} (de {3} a {4}): o relógio fica num lugar só.", [1 => $r["nome"], 2 => $conflito["nome"], 3 => data_txt(strtotime($conflito["inicio"]), true, true), 4 => $conflito["fim"] === null ? "agora" : data_txt(strtotime($conflito["fim"]), true, true)]);
                 } else {
                     // o relógio num lugar só: a exclusiva aberta em outro lugar fecha no mesmo instante
                     foreach (linhas("SELECT l.id, t.nome FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.exclusiva = 1 AND l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?)",
@@ -1103,7 +1089,7 @@ function op_lancamento($acao, $d)
                 $origem = $t["identificador"] === "pulso" && $p_dia && (int)$p_dia["relogio_id"] === $rid ? "rodizio" : "manual";
                 sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, NULL, NULL, ?, NOW())", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), $origem]);
                 $id = ultimo_id();
-                $msg = $r["nome"] . ": " . $t["nome"] . " desde " . date("d/m H:i", $q) . "." . (count($fechadas) > 0 ? " Fechado no mesmo instante: " . implode(", ", $fechadas) . "." : "");
+                $msg = t("{1}: {2} desde {3}.{4}", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($q, true, true), 4 => count($fechadas) > 0 ? t(" Fechado no mesmo instante: {1}.", [1 => implode(", ", $fechadas)]) : ""]);
             }
         }
     } elseif ($acao === "encerrar") {
@@ -1112,16 +1098,16 @@ function op_lancamento($acao, $d)
         $aberta = linha("SELECT * FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim > ?) ORDER BY inicio DESC, id DESC LIMIT 1",
             [$rid, (int)$t["id"], date("Y-m-d H:i:s", $agora), date("Y-m-d H:i:s", $agora)]);
         if ($q === false) {
-            $erros[] = "Quando: AAAA-MM-DD HH:MM, até agora (vazio: agora).";
+            $erros[] = t("Quando: AAAA-MM-DD HH:MM, até agora (vazio: agora).");
         } elseif (!$aberta) {
-            $erros[] = $r["nome"] . " não está com " . $t["nome"] . " aberto.";
+            $erros[] = t("{1} não está com {2} aberto.", [1 => $r["nome"], 2 => $t["nome"]]);
         } elseif ($q < strtotime($aberta["inicio"])) {
-            $erros[] = "Quando: AAAA-MM-DD HH:MM, não antes do início (" . date("d/m H:i", strtotime($aberta["inicio"])) . ") e até agora (vazio: agora).";
+            $erros[] = t("Quando: AAAA-MM-DD HH:MM, não antes do início ({1}) e até agora (vazio: agora).", [1 => data_txt(strtotime($aberta["inicio"]), true, true)]);
         } else {
             sql("UPDATE lancamento SET fim = ? WHERE id = ?", [date("Y-m-d H:i:s", $q), (int)$aberta["id"]]);
             $id = (int)$aberta["id"];
             $min = (int)round(($q - strtotime($aberta["inicio"])) / 60);
-            $msg = $r["nome"] . ": encerrada a sessão " . $t["nome"] . " (" . intdiv($min, 60) . " h " . ($min % 60) . " min).";
+            $msg = t("{1}: encerrada a sessão {2} ({3} h {4} min).", [1 => $r["nome"], 2 => $t["nome"], 3 => intdiv($min, 60), 4 => $min % 60]);
         }
     } elseif ($acao === "periodo" || $acao === "alterar") {
         // o período (ou a correção): início e fim no passado, fim depois do início, e sem sobrepor outra exclusiva
@@ -1135,29 +1121,28 @@ function op_lancamento($acao, $d)
         }
         $v = $formato === "valor" ? (array_key_exists("valor", $d) ? numero_br($d["valor"]) : (float)$existente["valor"]) : null;
         if ($acao === "periodo" && $formato !== "sessao") {
-            $erros[] = $t["nome"] . " não é uma sessão: use lancar.";
+            $erros[] = t("{1} não é uma sessão: use lancar.", [1 => $t["nome"]]);
         } elseif ($ini === false || $fim === false) {
-            $erros[] = "Início e fim: AAAA-MM-DD HH:MM, até agora.";
+            $erros[] = t("Início e fim: AAAA-MM-DD HH:MM, até agora.");
         } elseif ($fim !== null && $fim <= $ini) {
-            $erros[] = "O fim tem de ser depois do início.";
+            $erros[] = t("O fim tem de ser depois do início.");
         } elseif ($formato === "valor" && $v === null) {
-            $erros[] = $t["nome"] . " precisa de um valor.";
+            $erros[] = t("{1} precisa de um valor.", [1 => $t["nome"]]);
         } elseif ((int)$t["exclusiva"] === 1 && count($sobrepostas($ini, $fim ?? $agora, $id)) > 0) {
             $s = $sobrepostas($ini, $fim ?? $agora, $id)[0];
-            $erros[] = $r["nome"] . " já estava em " . $s["nome"] . " de " . date("d/m H:i", strtotime($s["inicio"])) . " a "
-                . ($s["fim"] === null ? "agora" : date("d/m H:i", strtotime($s["fim"]))) . ": o relógio fica num lugar só.";
+            $erros[] = t("{1} já estava em {2} de {3} a {4}: o relógio fica num lugar só.", [1 => $r["nome"], 2 => $s["nome"], 3 => data_txt(strtotime($s["inicio"]), true, true), 4 => $s["fim"] === null ? "agora" : data_txt(strtotime($s["fim"]), true, true)]);
         } elseif ($acao === "periodo") {
             sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, ?, NULL, 'manual', NOW())",
                 [$rid, (int)$t["id"], date("Y-m-d H:i:s", $ini), date("Y-m-d H:i:s", $fim)]);
             $id = ultimo_id();
-            $msg = "Lançado no " . $r["nome"] . ": " . $t["nome"] . " de " . date("d/m H:i", $ini) . " a " . date("d/m H:i", $fim) . ".";
+            $msg = t("Lançado no {1}: {2} de {3} a {4}.", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true), 4 => data_txt($fim, true, true)]);
         } else {
             sql("UPDATE lancamento SET inicio = ?, fim = ?, valor = ? WHERE id = ?", [date("Y-m-d H:i:s", $ini), $fim === null ? null : date("Y-m-d H:i:s", $fim), $v, $id]);
-            $msg = "Corrigido no " . $r["nome"] . ": " . $t["nome"] . ".";
+            $msg = t("Corrigido no {1}: {2}.", [1 => $r["nome"], 2 => $t["nome"]]);
         }
     } elseif ($acao === "excluir") {
         sql("DELETE FROM lancamento WHERE id = ?", [$id]);
-        $msg = "Excluído do " . $r["nome"] . ": " . $existente["tipo_nome"] . " de " . date("d/m/Y H:i", strtotime($existente["inicio"])) . ".";
+        $msg = t("Excluído do {1}: {2} de {3}.", [1 => $r["nome"], 2 => $existente["tipo_nome"], 3 => data_txt(strtotime($existente["inicio"]), true)]);
         $id = 0;
     }
     // o pulso mudou no passado (Pôs ou Tirou com hora, período, correção, exclusão): as medições do gasto que cobrem o trecho
@@ -1191,7 +1176,7 @@ function op_avisos($acao, $d)
     $id = (int)($d["id"] ?? 0);
     $atual = $id > 0 ? linha(AVISO_SELECT . " WHERE a.id = ?", [$id]) : null;
     if (($acao === "alterar" || $acao === "excluir") && !$atual) {
-        $erros[] = "Aviso não encontrado.";
+        $erros[] = t("Aviso não encontrado.");
     } elseif ($acao === "novo" || $acao === "alterar") {
         $ident = $atual ? $atual["identificador"] : trim((string)($d["identificador"] ?? ""));
         $nome = trim((string)($d["nome"] ?? ($atual["nome"] ?? "")));
@@ -1210,45 +1195,45 @@ function op_avisos($acao, $d)
             $bruto = array_key_exists($k, $d) ? trim((string)$d[$k]) : ($atual[$k] ?? "");
             $simula[$k] = $bruto === null || $bruto === "" ? null : numero_br($bruto);
             if ($bruto !== null && $bruto !== "" && ($simula[$k] === null || $simula[$k] < 0 || ($k === "simula_horas" && $simula[$k] > 48))) {
-                $erros[] = $k === "simula_valor" ? "Valor simulado na escala: um número (vazio: nenhum)." : "Horas simuladas na escala: de 0 a 48 (vazio: nenhuma).";
+                $erros[] = $k === "simula_valor" ? t("Valor simulado na escala: um número (vazio: nenhum).") : t("Horas simuladas na escala: de 0 a 48 (vazio: nenhuma).");
             }
         }
         if (!in_array($escala, ["nao", "uso", "sempre"], true)) {
-            $erros[] = "Na escala: nao, uso ou sempre.";
+            $erros[] = t("Na escala: nao, uso ou sempre.");
         }
         if (!in_array($agenda, ["janela", "sempre"], true)) {
-            $erros[] = "Na agenda: janela (só dentro da antecedência da agenda) ou sempre (qualquer data).";
+            $erros[] = t("Na agenda: janela (só dentro da antecedência da agenda) ou sempre (qualquer data).");
         }
         if (!identificador_valido($ident)) {
-            $erros[] = "Identificador: minúsculas, números e _, começando por letra, até 40.";
+            $erros[] = t("Identificador: minúsculas, números e _, começando por letra, até 40.");
         }
         if ($nome === "" || strlen($nome) > 120) {
-            $erros[] = "Dê um nome ao aviso (até 120 caracteres).";
+            $erros[] = t("Dê um nome ao aviso (até 120 caracteres).");
         }
         if ($texto === "" || strlen($texto) > 300) {
-            $erros[] = "Escreva o texto do aviso (até 300 caracteres; pode usar {relogio}, {data}, {quando} e {limite}).";
+            $erros[] = t("Escreva o texto do aviso (até 300 caracteres; pode usar {relogio}, {data}, {quando} e {limite}).");
         }
         if ($ante === null || $ante < 0 || $ante > 3650) {
-            $erros[] = "Antecedência: de 0 a 3650 dias.";
+            $erros[] = t("Antecedência: de 0 a 3650 dias.");
         }
         if ($resolve !== "" && !isset(lancamento_tipos()[$resolve])) {
-            $erros[] = "Resolve: tipo de lançamento desconhecido (" . $resolve . ").";
+            $erros[] = t("Resolve: tipo de lançamento desconhecido ({1}).", [1 => $resolve]);
         }
         if ($no === false) {
-            $erros[] = "O ponto da árvore não existe.";
+            $erros[] = t("O ponto da árvore não existe.");
         } elseif ((int)valor("SELECT COUNT(*) FROM aviso WHERE identificador = ? AND no_id <=> ? AND id <> ?", [$ident, $no, $id]) > 0) {
-            $erros[] = "O aviso " . $ident . " já tem uma versão em " . no_caminho($no) . ": altere aquela.";
+            $erros[] = t("O aviso {1} já tem uma versão em {2}: altere aquela.", [1 => $ident, 2 => no_caminho($no)]);
         }
         if ($expr === "") {
-            $erros[] = "Escreva a fórmula da data prevista.";
+            $erros[] = t("Escreva a fórmula da data prevista.");
         } else {
             foreach (formula_validar("", $expr) as $e) {
-                $erros[] = "Data prevista: " . $e . ".";
+                $erros[] = t("Data prevista: {1}.", [1 => $e]);
             }
         }
         if ($condicao !== "") {
             foreach (formula_validar("", $condicao) as $e) {
-                $erros[] = "Vale quando: " . $e . ".";
+                $erros[] = t("Vale quando: {1}.", [1 => $e]);
             }
         }
         if (count($erros) === 0) {
@@ -1258,11 +1243,11 @@ function op_avisos($acao, $d)
                 sql("INSERT INTO aviso (identificador, nome, expressao, condicao, antecedencia_dias, texto, resolve_tipo_id, ativo, no_id, escala, simula_valor, simula_horas, agenda, na_hora)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", array_merge([$ident], $dados));
                 $id = ultimo_id();
-                $msg = "Aviso " . $nome . " gravado para " . no_caminho($no) . ".";
+                $msg = t("Aviso {1} gravado para {2}.", [1 => $nome, 2 => no_caminho($no)]);
             } else {
                 sql("UPDATE aviso SET nome = ?, expressao = ?, condicao = ?, antecedencia_dias = ?, texto = ?, resolve_tipo_id = ?, ativo = ?, no_id = ?, escala = ?,
                     simula_valor = ?, simula_horas = ?, agenda = ?, na_hora = ? WHERE id = ?", array_merge($dados, [$id]));
-                $msg = "Aviso " . $nome . " (" . no_caminho($no) . ") salvo.";
+                $msg = t("Aviso {1} ({2}) salvo.", [1 => $nome, 2 => no_caminho($no)]);
             }
             avisos_todos(true);
         }
@@ -1275,7 +1260,7 @@ function op_avisos($acao, $d)
             canal_aviso("tg", null, true);
         }
         avisos_todos(true);
-        $msg = "A versão do aviso " . $atual["nome"] . " para " . no_caminho($atual["no_id"]) . " foi excluída.";
+        $msg = t("A versão do aviso {1} para {2} foi excluída.", [1 => $atual["nome"], 2 => no_caminho($atual["no_id"])]);
     }
     return resultado($erros, $msg, ["id" => $id]);
 }
@@ -1336,7 +1321,7 @@ function op_criterios($acao, $d)
     };
     $escopo = $escopo_de($d["escopo"] ?? "");
     if ($escopo === false) {
-        $erros[] = "Lugar desconhecido: use \"\" (todos), g:<id> de um ponto da árvore ou r:<id> de um relógio.";
+        $erros[] = t("Lugar desconhecido: use \"\" (todos), g:<id> de um ponto da árvore ou r:<id> de um relógio.");
         $escopo = "";
     }
     $col = $colunas($escopo);
@@ -1346,7 +1331,7 @@ function op_criterios($acao, $d)
         $ja_tem = (int)valor("SELECT COUNT(*) FROM criterio_parametro WHERE " . $do_lugar, $col);
         $origem = conjunto_herdado($escopo);
         if ($ja_tem > 0) {
-            $erros[] = escopo_texto($escopo) . " já tem critérios próprios.";
+            $erros[] = t("{1} já tem critérios próprios.", [1 => escopo_texto($escopo)]);
         } elseif (($d["origem"] ?? "herdado") === "herdado" && $origem !== null) {
             // copia o conjunto herdado inteiro: parâmetros, subparâmetros e faixas
             foreach (criterios_config()[$origem] as $p) {
@@ -1360,22 +1345,21 @@ function op_criterios($acao, $d)
                     }
                 }
             }
-            $ok = escopo_texto($escopo) . " agora tem critérios próprios, copiados dos de " . escopo_texto($origem) . ". Ajuste à vontade: os de " . escopo_texto($origem) . " não mudam.";
+            $ok = t("{1} agora tem critérios próprios, copiados dos de {2}. Ajuste à vontade: os de {3} não mudam.", [1 => escopo_texto($escopo), 2 => escopo_texto($origem), 3 => escopo_texto($origem)]);
         } else {
             sql("INSERT INTO criterio_parametro (escopo_no_id, escopo_relogio_id, nome, peso, ordem) VALUES (?, ?, 'Novo parâmetro', 100, 1)", $col);
-            $ok = escopo_texto($escopo) . " agora tem critérios próprios, começando com um parâmetro de 100%: renomeie e inclua os subparâmetros dele.";
+            $ok = t("{1} agora tem critérios próprios, começando com um parâmetro de 100%: renomeie e inclua os subparâmetros dele.", [1 => escopo_texto($escopo)]);
         }
         $ancora = "conjunto";
     }
     if ($acao === "conjunto_excluir" && count($erros) === 0) {
         $n = (int)valor("SELECT COUNT(*) FROM criterio_parametro WHERE " . $do_lugar, $col);
         if ($n === 0) {
-            $erros[] = escopo_texto($escopo) . " não tem critérios próprios.";
+            $erros[] = t("{1} não tem critérios próprios.", [1 => escopo_texto($escopo)]);
         } else {
             sql("DELETE FROM criterio_parametro WHERE " . $do_lugar, $col);
             $herda = conjunto_herdado($escopo);
-            $ok = "Os critérios próprios de " . escopo_texto($escopo) . " foram excluídos (" . $n . ($n === 1 ? " parâmetro)." : " parâmetros).")
-                . ($escopo === "" ? " Relógio sem conjunto mais perto fica com nota neutra, 50." : " Agora usa os de " . ($herda !== null ? escopo_texto($herda) : "nenhum lugar (nota neutra, 50)") . ".");
+            $ok = t("Os critérios próprios de {1} foram excluídos ({2}{3}{4}", [1 => escopo_texto($escopo), 2 => $n, 3 => $n === 1 ? t(" parâmetro).") : t(" parâmetros)."), 4 => $escopo === "" ? t(" Relógio sem conjunto mais perto fica com nota neutra, 50.") : t(" Agora usa os de {1}.", [1 => $herda !== null ? escopo_texto($herda) : t("nenhum lugar (nota neutra, 50)")])]);
             $ancora = "conjunto";
         }
     }
@@ -1389,10 +1373,10 @@ function op_criterios($acao, $d)
             $outros[(int)$q["id"]] = (float)$q["peso"];
         }
         if ($nome === "" || strlen($nome) > 80) {
-            $erros[] = "Dê um nome ao parâmetro (até 80 caracteres).";
+            $erros[] = t("Dê um nome ao parâmetro (até 80 caracteres).");
         }
         if ($peso === null || $peso <= 0 || $peso > 100 || (count($outros) > 0 && $peso >= 100)) {
-            $erros[] = count($outros) > 0 ? "O peso do parâmetro novo vai de 0,01% a 99,99%: os outros do conjunto precisam de algum espaço." : "O peso vai de 0,01% a 100%.";
+            $erros[] = count($outros) > 0 ? t("O peso do parâmetro novo vai de 0,01% a 99,99%: os outros do conjunto precisam de algum espaço.") : t("O peso vai de 0,01% a 100%.");
         }
         if (count($erros) === 0) {
             $conta = count($outros) > 0 ? $regrava("criterio_parametro", $outros, round(100 - $peso, 2)) : [];
@@ -1400,9 +1384,7 @@ function op_criterios($acao, $d)
                 [$col[0], $col[1], $nome, count($outros) > 0 ? $peso : 100, (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM criterio_parametro WHERE " . $do_lugar, $col)]);
             // o id logo depois do INSERT (a consulta do nome do lugar, abaixo, zeraria o insert_id)
             $ancora = "p" . ultimo_id();
-            $ok = "Parâmetro " . $nome . " incluído em " . escopo_texto($escopo) . " com " . pct_br(count($outros) > 0 ? $peso : 100) . "."
-                . (count($conta) > 0 ? " Os outros abriram espaço na proporção de cada um: " . implode("; ", $conta) . "." : "")
-                . " Inclua os subparâmetros dele: sem nenhum, ele não entra na conta.";
+            $ok = t("Parâmetro {1} incluído em {2} com {3}.{4} Inclua os subparâmetros dele: sem nenhum, ele não entra na conta.", [1 => $nome, 2 => escopo_texto($escopo), 3 => pct_br(count($outros) > 0 ? $peso : 100), 4 => count($conta) > 0 ? t(" Os outros abriram espaço na proporção de cada um: {1}.", [1 => implode("; ", $conta)]) : ""]);
         }
     }
     if ($acao === "param_pesos" && count($erros) === 0) {
@@ -1413,28 +1395,28 @@ function op_criterios($acao, $d)
             $nome = trim((string)($d["nome"][$id] ?? ""));
             $do_conjunto = (int)valor("SELECT COUNT(*) FROM criterio_parametro WHERE id = ? AND " . $do_lugar, [(int)$id, $col[0], $col[1]]) === 1;
             if (!$do_conjunto) {
-                $erros[] = "O parâmetro " . (int)$id . " não é de " . escopo_texto($escopo) . ".";
+                $erros[] = t("O parâmetro {1} não é de {2}.", [1 => (int)$id, 2 => escopo_texto($escopo)]);
             }
             if ($p === null || $p < 0 || $p > 100) {
-                $erros[] = "Peso inválido em " . ($nome !== "" ? $nome : "um parâmetro") . ": use um número de 0 a 100.";
+                $erros[] = t("Peso inválido em {1}: use um número de 0 a 100.", [1 => $nome !== "" ? $nome : t("um parâmetro")]);
             }
             if ($nome === "" || strlen($nome) > 80) {
-                $erros[] = "Todo parâmetro precisa de nome (até 80 caracteres).";
+                $erros[] = t("Todo parâmetro precisa de nome (até 80 caracteres).");
             }
             $soma += (float)$p;
             $validos[(int)$id] = [$nome, $p];
         }
         if (count($erros) === 0 && count($validos) !== (int)valor("SELECT COUNT(*) FROM criterio_parametro WHERE " . $do_lugar, $col)) {
-            $erros[] = "Mande o peso de todos os parâmetros de " . escopo_texto($escopo) . " de uma vez: a soma é do conjunto inteiro.";
+            $erros[] = t("Mande o peso de todos os parâmetros de {1} de uma vez: a soma é do conjunto inteiro.", [1 => escopo_texto($escopo)]);
         }
         if (count($erros) === 0 && abs($soma - 100) > 0.005) {
-            $erros[] = "A soma dos parâmetros de " . escopo_texto($escopo) . " dá " . pct_br($soma) . ($soma > 100 ? ": passa " . pct_br($soma - 100) : ": faltam " . pct_br(100 - $soma)) . ". Ela precisa dar exatamente 100%.";
+            $erros[] = t("A soma dos parâmetros de {1} dá {2}{3}. Ela precisa dar exatamente 100%.", [1 => escopo_texto($escopo), 2 => pct_br($soma), 3 => $soma > 100 ? ": passa " . pct_br($soma - 100) : ": faltam " . pct_br(100 - $soma)]);
         }
         if (count($erros) === 0) {
             foreach ($validos as $id => $v) {
                 sql("UPDATE criterio_parametro SET nome = ?, peso = ? WHERE id = ?", [$v[0], $v[1], $id]);
             }
-            $ok = "Parâmetros de " . escopo_texto($escopo) . " salvos. Soma: 100%.";
+            $ok = t("Parâmetros de {1} salvos. Soma: 100%.", [1 => escopo_texto($escopo)]);
             $ancora = "conjunto";
         } else {
             $recusado = "param_pesos";
@@ -1443,7 +1425,7 @@ function op_criterios($acao, $d)
     if ($acao === "param_excluir") {
         $p = linha("SELECT * FROM criterio_parametro WHERE id = ?", [(int)($d["id"] ?? 0)]);
         if (!$p) {
-            $erros[] = "Parâmetro não encontrado.";
+            $erros[] = t("Parâmetro não encontrado.");
         } else {
             $escopo = escopo_chave($p);
             $col = $colunas($escopo);
@@ -1454,8 +1436,7 @@ function op_criterios($acao, $d)
             $conta = $regrava("criterio_parametro", $outros, 100);
             sql("DELETE FROM criterio_parametro WHERE id = ?", [$p["id"]]);
             $erros = [];
-            $ok = "Parâmetro " . $p["nome"] . " excluído de " . escopo_texto($escopo) . "."
-                . (count($conta) > 0 ? " O peso dele foi dividido na proporção de cada um: " . implode("; ", $conta) . "." : " O lugar ficou sem parâmetros e volta a herdar os critérios de cima.");
+            $ok = t("Parâmetro {1} excluído de {2}.{3}", [1 => $p["nome"], 2 => escopo_texto($escopo), 3 => count($conta) > 0 ? t(" O peso dele foi dividido na proporção de cada um: {1}.", [1 => implode("; ", $conta)]) : t(" O lugar ficou sem parâmetros e volta a herdar os critérios de cima.")]);
             $ancora = "conjunto";
         }
     }
@@ -1473,16 +1454,16 @@ function op_criterios($acao, $d)
         }
         $erros = [];
         if (!$p) {
-            $erros[] = "Parâmetro não encontrado.";
+            $erros[] = t("Parâmetro não encontrado.");
         }
         if ($nome === "" || strlen($nome) > 80) {
-            $erros[] = "Dê um nome ao subparâmetro (até 80 caracteres).";
+            $erros[] = t("Dê um nome ao subparâmetro (até 80 caracteres).");
         }
         if (!isset($METRICAS[$metrica])) {
-            $erros[] = "Escolha o que o subparâmetro mede.";
+            $erros[] = t("Escolha o que o subparâmetro mede.");
         }
         if ($peso === null || $peso <= 0 || $peso > 100 || (count($outros) > 0 && $peso >= 100)) {
-            $erros[] = count($outros) > 0 ? "O peso do subparâmetro novo vai de 0,01% a 99,99%: os outros do parâmetro precisam de algum espaço." : "O peso vai de 0,01% a 100%.";
+            $erros[] = count($outros) > 0 ? t("O peso do subparâmetro novo vai de 0,01% a 99,99%: os outros do parâmetro precisam de algum espaço.") : t("O peso vai de 0,01% a 100%.");
         }
         if (count($erros) === 0) {
             $conta = count($outros) > 0 ? $regrava("criterio_sub", $outros, round(100 - $peso, 2)) : [];
@@ -1498,9 +1479,7 @@ function op_criterios($acao, $d)
                 sql("INSERT INTO criterio_faixa (sub_id, de, ate, nota) VALUES (?, 0, NULL, 50)", [$sid]);
             }
             $escopo = escopo_chave($p);
-            $ok = "Subparâmetro " . $nome . " incluído em " . $p["nome"] . " com " . pct_br(count($outros) > 0 ? $peso : 100) . "."
-                . (count($conta) > 0 ? " Os outros abriram espaço na proporção de cada um: " . implode("; ", $conta) . "." : "")
-                . " Ele começou com nota 50 em tudo: ajuste as faixas.";
+            $ok = t("Subparâmetro {1} incluído em {2} com {3}.{4} Ele começou com nota 50 em tudo: ajuste as faixas.", [1 => $nome, 2 => $p["nome"], 3 => pct_br(count($outros) > 0 ? $peso : 100), 4 => count($conta) > 0 ? t(" Os outros abriram espaço na proporção de cada um: {1}.", [1 => implode("; ", $conta)]) : ""]);
             $ancora = "s" . $sid;
         }
     }
@@ -1514,31 +1493,31 @@ function op_criterios($acao, $d)
             $pv = numero_br($v);
             $nome = trim((string)($d["nome"][$id] ?? ""));
             if ((int)valor("SELECT COUNT(*) FROM criterio_sub WHERE id = ? AND parametro_id = ?", [(int)$id, $pid]) !== 1) {
-                $erros[] = "O subparâmetro " . (int)$id . " não é deste parâmetro.";
+                $erros[] = t("O subparâmetro {1} não é deste parâmetro.", [1 => (int)$id]);
             }
             if ($pv === null || $pv < 0 || $pv > 100) {
-                $erros[] = "Peso inválido em " . ($nome !== "" ? $nome : "um subparâmetro") . ": use um número de 0 a 100.";
+                $erros[] = t("Peso inválido em {1}: use um número de 0 a 100.", [1 => $nome !== "" ? $nome : t("um subparâmetro")]);
             }
             if ($nome === "" || strlen($nome) > 80) {
-                $erros[] = "Todo subparâmetro precisa de nome (até 80 caracteres).";
+                $erros[] = t("Todo subparâmetro precisa de nome (até 80 caracteres).");
             }
             $soma += (float)$pv;
             $validos[(int)$id] = [$nome, $pv];
         }
         if (!$p) {
-            $erros[] = "Parâmetro não encontrado.";
+            $erros[] = t("Parâmetro não encontrado.");
         } elseif (count($erros) === 0 && count($validos) !== (int)valor("SELECT COUNT(*) FROM criterio_sub WHERE parametro_id = ?", [$pid])) {
-            $erros[] = "Mande o peso de todos os subparâmetros de " . $p["nome"] . " de uma vez: a soma é do parâmetro inteiro.";
+            $erros[] = t("Mande o peso de todos os subparâmetros de {1} de uma vez: a soma é do parâmetro inteiro.", [1 => $p["nome"]]);
         }
         if ($p && count($erros) === 0 && abs($soma - 100) > 0.005) {
-            $erros[] = "A soma dos subparâmetros de " . $p["nome"] . " dá " . pct_br($soma) . ($soma > 100 ? ": passa " . pct_br($soma - 100) : ": faltam " . pct_br(100 - $soma)) . ". Ela precisa dar exatamente 100%.";
+            $erros[] = t("A soma dos subparâmetros de {1} dá {2}{3}. Ela precisa dar exatamente 100%.", [1 => $p["nome"], 2 => pct_br($soma), 3 => $soma > 100 ? ": passa " . pct_br($soma - 100) : ": faltam " . pct_br(100 - $soma)]);
         }
         if (count($erros) === 0) {
             foreach ($validos as $id => $v) {
                 sql("UPDATE criterio_sub SET nome = ?, peso = ? WHERE id = ?", [$v[0], $v[1], $id]);
             }
             $escopo = escopo_chave($p);
-            $ok = "Subparâmetros de " . $p["nome"] . " salvos. Soma: 100%.";
+            $ok = t("Subparâmetros de {1} salvos. Soma: 100%.", [1 => $p["nome"]]);
             $ancora = "p" . $pid;
         } else {
             $recusado = "sub_pesos:" . $pid;
@@ -1551,7 +1530,7 @@ function op_criterios($acao, $d)
         $sub = linha("SELECT s.*, p.escopo_no_id, p.escopo_relogio_id FROM criterio_sub s JOIN criterio_parametro p ON p.id = s.parametro_id WHERE s.id = ?", [(int)($d["id"] ?? 0)]);
         $erros = [];
         if (!$sub) {
-            $erros[] = "Subparâmetro não encontrado.";
+            $erros[] = t("Subparâmetro não encontrado.");
         } else {
             $outros = [];
             foreach (linhas("SELECT id, peso FROM criterio_sub WHERE parametro_id = ? AND id <> ?", [$sub["parametro_id"], $sub["id"]]) as $q) {
@@ -1560,7 +1539,7 @@ function op_criterios($acao, $d)
             $conta = $regrava("criterio_sub", $outros, 100);
             sql("DELETE FROM criterio_sub WHERE id = ?", [$sub["id"]]);
             $escopo = escopo_chave($sub);
-            $ok = "Subparâmetro " . $sub["nome"] . " excluído." . (count($conta) > 0 ? " O peso dele foi dividido na proporção de cada um: " . implode("; ", $conta) . "." : " O parâmetro ficou sem subparâmetros e não entra na conta até ganhar um.");
+            $ok = t("Subparâmetro {1} excluído.{2}", [1 => $sub["nome"], 2 => count($conta) > 0 ? t(" O peso dele foi dividido na proporção de cada um: {1}.", [1 => implode("; ", $conta)]) : t(" O parâmetro ficou sem subparâmetros e não entra na conta até ganhar um.")]);
             $ancora = "p" . $sub["parametro_id"];
         }
     }
@@ -1570,9 +1549,9 @@ function op_criterios($acao, $d)
         $metrica = (string)($d["variavel"] ?? ($d["metrica"] ?? ""));
         $erros = [];
         if (!$sub || !isset($METRICAS[$metrica])) {
-            $erros[] = "Escolha o subparâmetro e a medida nova.";
+            $erros[] = t("Escolha o subparâmetro e a medida nova.");
         } elseif ($metrica === $sub["variavel"]) {
-            $erros[] = $sub["nome"] . " já mede isso: nada mudou.";
+            $erros[] = t("{1} já mede isso: nada mudou.", [1 => $sub["nome"]]);
         } else {
             sql("UPDATE criterio_sub SET variavel = ? WHERE id = ?", [$metrica, $sub["id"]]);
             sql("DELETE FROM criterio_faixa WHERE sub_id = ?", [$sub["id"]]);
@@ -1584,7 +1563,7 @@ function op_criterios($acao, $d)
                 sql("INSERT INTO criterio_faixa (sub_id, de, ate, nota) VALUES (?, 0, NULL, 50)", [$sub["id"]]);
             }
             $escopo = escopo_chave($sub);
-            $ok = $sub["nome"] . " agora mede: " . $METRICAS[$metrica]["nome"] . ". As faixas recomeçaram com nota 50 em tudo: ajuste-as.";
+            $ok = t("{1} agora mede: {2}. As faixas recomeçaram com nota 50 em tudo: ajuste-as.", [1 => $sub["nome"], 2 => $METRICAS[$metrica]["nome"]]);
             $ancora = "s" . $sub["id"];
         }
     }
@@ -1595,9 +1574,9 @@ function op_criterios($acao, $d)
         $destino = linha("SELECT * FROM criterio_parametro WHERE id = ?", [(int)($d["parametro_id"] ?? 0)]);
         $erros = [];
         if (!$sub || !$destino) {
-            $erros[] = "Escolha o subparâmetro e o parâmetro de destino.";
+            $erros[] = t("Escolha o subparâmetro e o parâmetro de destino.");
         } elseif ((int)$destino["id"] === (int)$sub["parametro_id"]) {
-            $erros[] = $sub["nome"] . " já está em " . $destino["nome"] . ": nada mudou.";
+            $erros[] = t("{1} já está em {2}: nada mudou.", [1 => $sub["nome"], 2 => $destino["nome"]]);
         } else {
             $origem = [];
             foreach (linhas("SELECT id, peso FROM criterio_sub WHERE parametro_id = ? AND id <> ?", [$sub["parametro_id"], $sub["id"]]) as $q) {
@@ -1613,8 +1592,7 @@ function op_criterios($acao, $d)
             sql("UPDATE criterio_sub SET parametro_id = ?, peso = ?, ordem = ? WHERE id = ?",
                 [$destino["id"], $peso, (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM criterio_sub WHERE parametro_id = ?", [$destino["id"]]), $sub["id"]]);
             $escopo = escopo_chave($destino);
-            $ok = $sub["nome"] . " foi para " . $destino["nome"] . " (" . escopo_texto($escopo) . ") com " . pct_br($peso) . "."
-                . (count($conta) > 0 ? " Os dois parâmetros se reequilibraram na proporção: " . implode("; ", $conta) . "." : "");
+            $ok = t("{1} foi para {2} ({3}) com {4}.{5}", [1 => $sub["nome"], 2 => $destino["nome"], 3 => escopo_texto($escopo), 4 => pct_br($peso), 5 => count($conta) > 0 ? t(" Os dois parâmetros se reequilibraram na proporção: {1}.", [1 => implode("; ", $conta)]) : ""]);
             $ancora = "p" . $destino["id"];
         }
     }
@@ -1625,7 +1603,7 @@ function op_criterios($acao, $d)
         $item = linha("SELECT * FROM " . $tabela . " WHERE id = ?", [$id]);
         $erros = [];
         if (!$item) {
-            $erros[] = "Não encontrado.";
+            $erros[] = t("Não encontrado.");
         } else {
             if ($tabela === "criterio_sub") {
                 $irmaos = array_column(linhas("SELECT id FROM criterio_sub WHERE parametro_id = ? ORDER BY ordem, id", [$item["parametro_id"]]), "id");
@@ -1644,7 +1622,7 @@ function op_criterios($acao, $d)
             foreach ($irmaos as $n => $iid) {
                 sql("UPDATE " . $tabela . " SET ordem = ? WHERE id = ?", [$n + 1, $iid]);
             }
-            $ok = "Ordem alterada.";
+            $ok = t("Ordem alterada.");
             $ancora = $tabela === "criterio_sub" ? "p" . $item["parametro_id"] : "conjunto";
         }
     }
@@ -1667,21 +1645,21 @@ function op_criterios($acao, $d)
                 }
             }
             if (count($lista) === 0) {
-                $erros[] = "Precisa de pelo menos uma faixa.";
+                $erros[] = t("Precisa de pelo menos uma faixa.");
             }
             foreach ($lista as $f) {
                 $n = numero_br($f["nota"]);
                 if ($n === null || $n < 0 || $n > 100) {
-                    $erros[] = "Faixa " . $f["linha"] . ": a nota vai de 0 a 100.";
+                    $erros[] = t("Faixa {1}: a nota vai de 0 a 100.", [1 => $f["linha"]]);
                 }
             }
             if ($m["tipo"] === "categoria") {
                 $vistas = [];
                 foreach ($lista as $f) {
                     if (!in_array($f["categoria"], $m["valores"], true)) {
-                        $erros[] = "Faixa " . $f["linha"] . ": escolha uma categoria da lista.";
+                        $erros[] = t("Faixa {1}: escolha uma categoria da lista.", [1 => $f["linha"]]);
                     } elseif (isset($vistas[$f["categoria"]])) {
-                        $erros[] = "A categoria " . $f["categoria"] . " aparece mais de uma vez.";
+                        $erros[] = t("A categoria {1} aparece mais de uma vez.", [1 => $f["categoria"]]);
                     }
                     $vistas[$f["categoria"]] = true;
                 }
@@ -1690,10 +1668,10 @@ function op_criterios($acao, $d)
                 // e a última vai até o maior valor possível (ou sem limite): todo valor cai em exatamente uma faixa
                 foreach ($lista as $f) {
                     if (numero_br($f["de"]) === null || numero_br($f["de"]) < 0) {
-                        $erros[] = "Faixa " . $f["linha"] . ": o \"de\" precisa ser um número a partir de 0.";
+                        $erros[] = t("Faixa {1}: o \"de\" precisa ser um número a partir de 0.", [1 => $f["linha"]]);
                     }
                     if ($f["ate"] !== "" && (numero_br($f["ate"]) === null || (numero_br($f["de"]) !== null && numero_br($f["ate"]) <= numero_br($f["de"])))) {
-                        $erros[] = "Faixa " . $f["linha"] . ": o \"até\" precisa ser maior que o \"de\" (ou vazio, sem limite).";
+                        $erros[] = t("Faixa {1}: o \"até\" precisa ser maior que o \"de\" (ou vazio, sem limite).", [1 => $f["linha"]]);
                     }
                 }
                 if (count($erros) === 0) {
@@ -1701,21 +1679,21 @@ function op_criterios($acao, $d)
                         return numero_br($a["de"]) <=> numero_br($b["de"]);
                     });
                     if (numero_br($lista[0]["de"]) != 0) {
-                        $erros[] = "A primeira faixa precisa começar em 0 (hoje começa em " . $lista[0]["de"] . "): senão os valores abaixo ficam sem nota.";
+                        $erros[] = t("A primeira faixa precisa começar em 0 (hoje começa em {1}): senão os valores abaixo ficam sem nota.", [1 => $lista[0]["de"]]);
                     }
                     for ($i = 1; $i < count($lista); $i++) {
                         $anterior = $lista[$i - 1]["ate"];
                         if ($anterior === "") {
-                            $erros[] = "A faixa que começa em " . $lista[$i - 1]["de"] . " está sem limite, mas há outra depois dela: só a última pode ficar sem limite.";
+                            $erros[] = t("A faixa que começa em {1} está sem limite, mas há outra depois dela: só a última pode ficar sem limite.", [1 => $lista[$i - 1]["de"]]);
                         } elseif (numero_br($anterior) < numero_br($lista[$i]["de"])) {
-                            $erros[] = "Buraco entre " . $anterior . " e " . $lista[$i]["de"] . ": os valores nesse intervalo ficam sem nota.";
+                            $erros[] = t("Buraco entre {1} e {2}: os valores nesse intervalo ficam sem nota.", [1 => $anterior, 2 => $lista[$i]["de"]]);
                         } elseif (numero_br($anterior) > numero_br($lista[$i]["de"])) {
-                            $erros[] = "Sobreposição: uma faixa vai até " . $anterior . " e a seguinte começa em " . $lista[$i]["de"] . ".";
+                            $erros[] = t("Sobreposição: uma faixa vai até {1} e a seguinte começa em {2}.", [1 => $anterior, 2 => $lista[$i]["de"]]);
                         }
                     }
                     $ultima = $lista[count($lista) - 1]["ate"];
                     if ($ultima !== "" && ($m["max"] === null || numero_br($ultima) < $m["max"])) {
-                        $erros[] = "A última faixa vai até " . $ultima . ($m["max"] === null ? ", e esta medida não tem limite: deixe o \"até\" dela vazio." : ", mas a medida vai até " . $m["max"] . ".");
+                        $erros[] = t("A última faixa vai até {1}{2}", [1 => $ultima, 2 => $m["max"] === null ? t(", e esta medida não tem limite: deixe o \"até\" dela vazio.") : t(", mas a medida vai até {1}.", [1 => $m["max"]])]);
                     }
                 }
             }
@@ -1728,7 +1706,7 @@ function op_criterios($acao, $d)
                         sql("INSERT INTO criterio_faixa (sub_id, de, ate, nota) VALUES (?, ?, ?, ?)", [$sid, numero_br($f["de"]), $f["ate"] === "" ? null : numero_br($f["ate"]), numero_br($f["nota"])]);
                     }
                 }
-                $ok = "Faixas de " . $sub["nome"] . " salvas.";
+                $ok = t("Faixas de {1} salvas.", [1 => $sub["nome"]]);
                 $escopo = escopo_chave(linha("SELECT * FROM criterio_parametro WHERE id = ?", [$sub["parametro_id"]]));
                 $ancora = "s" . $sid;
             } else {
@@ -1744,19 +1722,19 @@ function op_criterios($acao, $d)
         $semente = file_get_contents(__DIR__ . "/schema.sql");
         $ini = strpos((string)$semente, "-- critérios iniciais");
         if ($ini === false) {
-            $erros[] = "Não encontrei os critérios iniciais no arquivo schema.sql.";
+            $erros[] = t("Não encontrei os critérios iniciais no arquivo schema.sql.");
         } else {
             sql("DELETE FROM criterio_parametro");
             // os comandos até o fim do arquivo, traduzidos para o banco em uso (e os ids andam depois dos gravados)
             banco_script(substr((string)$semente, $ini));
-            $ok = "Critérios iniciais restaurados.";
+            $ok = t("Critérios iniciais restaurados.");
             $escopo = "";
             $ancora = "lugares";
         }
     }
 
     if (count($erros) === 0 && $ok === "") {
-        $erros[] = "Ação desconhecida ou item não encontrado.";
+        $erros[] = t("Ação desconhecida ou item não encontrado.");
     }
     return ["ok" => count($erros) === 0, "mensagem" => $ok, "erros" => $erros, "escopo" => $escopo, "ancora" => $ancora, "recusado" => $recusado];
 }
@@ -1820,7 +1798,7 @@ function op_rodizio($acao, $d)
         $id_modo = (int)($d["modo"] ?? 0);
         $m = linha("SELECT * FROM modo WHERE id = ?", [$id_modo]);
         if (!$m) {
-            $erros[] = "Modo não encontrado.";
+            $erros[] = t("Modo não encontrado.");
         } else {
             // os blocos do modo, com o que veio do quadro (grupo ou relógio fixo, e um por dia)
             $blocos = [];
@@ -1850,7 +1828,7 @@ function op_rodizio($acao, $d)
                 }
             }
             $erros = $res["erros"];
-            $msg = $res["ok"] ? "Modo aplicado: " . $m["nome"] . ". " . $res["mensagem"] : "";
+            $msg = $res["ok"] ? t("Modo aplicado: {1}. {2}", [1 => $m["nome"], 2 => $res["mensagem"]]) : "";
         }
     } elseif ($acao === "resortear" || $acao === "resortear_hoje") {
         $antes = plano_do_dia($hoje->format("Y-m-d"));
@@ -1867,7 +1845,7 @@ function op_rodizio($acao, $d)
             // o de hoje trocado pelo sorteio: o motivo é o do sorteio
             $troca_hoje((int)$depois["relogio_id"], $depois["motivo"] ?? null);
         }
-        $msg = "Sorteado de novo" . ($desde > $hoje ? " a partir de amanhã; hoje continua o " . ($antes["nome"] ?? "mesmo") : "") . "." . ($depois ? " Hoje: " . $depois["nome"] . "." : "");
+        $msg = t("Sorteado de novo{1}.{2}", [1 => $desde > $hoje ? t(" a partir de amanhã; hoje continua o {1}", [1 => $antes["nome"] ?? "mesmo"]) : "", 2 => $depois ? " Hoje: " . $depois["nome"] . "." : ""]);
     } elseif ($acao === "sem_relogio") {
         // hoje sem relógio: o dia fica livre (sem relógio e sem sorteio, como os dias livres do plano) e a sessão do rodízio de
         // hoje termina agora (o tempo que ele já ficou no pulso conta; a que ainda nem começou sai). Os outros dias não mudam.
@@ -1889,29 +1867,27 @@ function op_rodizio($acao, $d)
         }
         sql("DELETE FROM plano WHERE data = ?", [$dia]);
         sql("INSERT IGNORE INTO plano_livre (data, criado) VALUES (?, NOW())", [$dia]);
-        $msg = "Hoje sem relógio: o dia ficou livre" . ($antes ? " (era o " . $antes["nome"] . ")" : "") . "."
-            . ($tirou !== "" ? " O " . $tirou . " saiu do pulso agora; o tempo que ele já ficou conta." : " Nenhum relógio vai ao pulso pelo rodízio hoje.")
-            . " Mudou de ideia? Escolha um relógio para hoje (o \"escolher…\") ou sorteie de novo inclusive hoje.";
+        $msg = t("Hoje sem relógio: o dia ficou livre{1}.{2} Mudou de ideia? Escolha um relógio para hoje (o \"escolher…\") ou sorteie de novo inclusive hoje.", [1 => $antes ? " (era o " . $antes["nome"] . ")" : "", 2 => $tirou !== "" ? t(" O {1} saiu do pulso agora; o tempo que ele já ficou conta.", [1 => $tirou]) : t(" Nenhum relógio vai ao pulso pelo rodízio hoje.")]);
     } elseif ($acao === "usando") {
         $r = linha("SELECT * FROM relogio WHERE id = ?", [(int)($d["relogio_id"] ?? 0)]);
         if (!$r) {
-            $erros[] = "Relógio não encontrado.";
+            $erros[] = t("Relógio não encontrado.");
         } else {
             $antes = plano_do_dia($hoje->format("Y-m-d"));
-            $troca_hoje((int)$r["id"], "Escolhido à mão: você marcou que está usando este hoje.");
-            $msg = "Hoje: " . $r["nome"] . ", a partir de agora.";
+            $troca_hoje((int)$r["id"], t("Escolhido à mão: você marcou que está usando este hoje."));
+            $msg = t("Hoje: {1}, a partir de agora.", [1 => $r["nome"]]);
             if ($escala) {
                 // os dias seguidos que o relógio de antes ainda teria ficam com o escolhido; a escala é refeita depois deles
                 $dia = $hoje->modify("+1 day");
                 $p = plano_do_dia($dia->format("Y-m-d"));
                 for ($n = 0; $antes && $p && (int)$p["relogio_id"] === (int)$antes["relogio_id"] && $n < 366; $n++) {
                     sql("UPDATE plano SET relogio_id = ?, origem = 'manual', acao = NULL, motivo = ? WHERE data = ?",
-                        [(int)$r["id"], "Escolhido à mão: segue o relógio que você pôs no pulso.", $dia->format("Y-m-d")]);
+                        [(int)$r["id"], t("Escolhido à mão: segue o relógio que você pôs no pulso."), $dia->format("Y-m-d")]);
                     $dia = $dia->modify("+1 day");
                     $p = plano_do_dia($dia->format("Y-m-d"));
                 }
                 gerar_escala($dia);
-                $msg .= " Fica até " . $dia->modify("-1 day")->format("d/m") . "; a escala foi refeita a partir de " . $dia->format("d/m") . ".";
+                $msg .= t(" Fica até {1}; a escala foi refeita a partir de {2}.", [1 => $dia->modify("-1 day")->format("d/m"), 2 => $dia->format("d/m")]);
             }
         }
     } elseif ($acao === "trocar_dia") {
@@ -1922,15 +1898,15 @@ function op_rodizio($acao, $d)
         $novo = (int)($d["relogio_id"] ?? 0);
         $r = $novo > 0 ? linha("SELECT * FROM relogio WHERE id = ?", [$novo]) : null;
         if (!$dt || $dt->format("Y-m-d") !== $data) {
-            $erros[] = "Data: AAAA-MM-DD.";
+            $erros[] = t("Data: AAAA-MM-DD.");
         } elseif ($dt < $hoje) {
-            $erros[] = "O dia " . $dt->format("d/m") . " já passou: o que foi usado nele se corrige nas marcações (o quadro \"Corrigir marcações\" no painel do relógio).";
+            $erros[] = t("O dia {1} já passou: o que foi usado nele se corrige nas marcações (o quadro \"Corrigir marcações\" no painel do relógio).", [1 => $dt->format("d/m")]);
         } elseif ($novo > 0 && !$r) {
-            $erros[] = "Relógio não encontrado.";
+            $erros[] = t("Relógio não encontrado.");
         } elseif ($r && (int)$r["disponivel"] !== 1) {
-            $erros[] = $r["nome"] . " está indisponível: marque como disponível no cadastro dele antes.";
+            $erros[] = t("{1} está indisponível: marque como disponível no cadastro dele antes.", [1 => $r["nome"]]);
         } elseif ($novo === 0 && $dt == $hoje) {
-            $erros[] = "Para sortear hoje de novo, use \"Sortear de novo\" no quadro do modo de rodízio.";
+            $erros[] = t("Para sortear hoje de novo, use \"Sortear de novo\" no quadro do modo de rodízio.");
         } elseif ($dt == $hoje) {
             return op_rodizio("usando", ["relogio_id" => $novo]);
         } elseif ($novo === 0) {
@@ -1943,15 +1919,15 @@ function op_rodizio($acao, $d)
                 garantir_plano($dt, $dt);
             }
             $p = plano_do_dia($data);
-            $msg = $dt->format("d/m") . ": volta a ser sorteado" . ($p ? " (" . $p["nome"] . ")" : "") . ".";
+            $msg = t("{1}: volta a ser sorteado{2}.", [1 => $dt->format("d/m"), 2 => $p ? " (" . $p["nome"] . ")" : ""]);
         } else {
             sql("DELETE FROM plano_livre WHERE data = ?", [$data]);
-            sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, NULL, 'manual', ?, NOW())", [$data, $novo, "Escolhido à mão."]);
+            sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, NULL, 'manual', ?, NOW())", [$data, $novo, t("Escolhido à mão.")]);
             if ($escala) {
                 // a escala refeita a partir do dia trocado: ele fica, e os seguintes (e o que fazer antes de cada um) se ajustam
                 gerar_escala($dt);
             }
-            $msg = $dt->format("d/m") . ": " . $r["nome"] . ", escolhido à mão." . ($escala ? " A escala foi refeita a partir desse dia." : "");
+            $msg = t("{1}: {2}, escolhido à mão.{3}", [1 => $dt->format("d/m"), 2 => $r["nome"], 3 => $escala ? t(" A escala foi refeita a partir desse dia.") : ""]);
         }
     } elseif ($acao === "periodo" || $acao === "periodo_sortear" || $acao === "periodo_livre") {
         // um período escolhido à mão: de, ate (AAAA-MM-DD, de hoje em diante, até 2 anos), relogio_ids (um ou vários, na ordem:
@@ -1968,19 +1944,19 @@ function op_rodizio($acao, $d)
             $rels_p[] = linha("SELECT * FROM relogio WHERE id = ?", [$x]);
         }
         if (!$de_p || $de_p->format("Y-m-d") !== (string)$d["de"] || !$ate_p || $ate_p->format("Y-m-d") !== (string)$d["ate"]) {
-            $erros[] = "De e até: datas AAAA-MM-DD.";
+            $erros[] = t("De e até: datas AAAA-MM-DD.");
         } elseif ($de_p < $hoje) {
-            $erros[] = "O período começa num dia que já passou: o que foi usado se corrige nas marcações.";
+            $erros[] = t("O período começa num dia que já passou: o que foi usado se corrige nas marcações.");
         } elseif ($ate_p < $de_p) {
-            $erros[] = "O fim do período vem antes do começo.";
+            $erros[] = t("O fim do período vem antes do começo.");
         } elseif ($de_p->diff($ate_p)->days > 730) {
-            $erros[] = "Um período de até 2 anos.";
+            $erros[] = t("Um período de até 2 anos.");
         } elseif ($acao === "periodo_sortear" || $acao === "periodo_livre") {
             // de amanhã em diante (hoje já tem o relógio do pulso: troque pelo "Sortear de novo" ou pelo "trocar por…")
             $desde_p = max($de_p, $hoje->modify("+1 day"));
             $faixa = [$desde_p->format("Y-m-d"), $ate_p->format("Y-m-d")];
             if ($desde_p > $ate_p) {
-                $erros[] = "O período tem só hoje: troque o relógio de hoje pelo \"Sortear de novo\" ou pelo \"trocar por…\".";
+                $erros[] = t("O período tem só hoje: troque o relógio de hoje pelo \"Sortear de novo\" ou pelo \"trocar por…\".");
             } else {
                 $n_p = (int)valor("SELECT COUNT(*) FROM plano WHERE data BETWEEN ? AND ?", $faixa) + (int)valor("SELECT COUNT(*) FROM plano_livre WHERE data BETWEEN ? AND ?", $faixa);
                 sql("DELETE FROM plano WHERE data BETWEEN ? AND ?", $faixa);
@@ -1999,24 +1975,22 @@ function op_rodizio($acao, $d)
                 }
                 $faixa_txt = $desde_p->format("d/m") . " a " . $ate_p->format("d/m");
                 $msg = $acao === "periodo_livre"
-                    ? "De " . $faixa_txt . ": " . $livres . ($livres === 1 ? " dia livre" : " dias livres") . ", sem relógio e sem sorteio" . ($n_p > 0 ? " (o que estava gravado saiu)" : "")
-                        . ". Escolha o relógio de cada um em \"escolher…\", ou no Rodízio manual."
-                    : "De " . $faixa_txt . ": " . ($n_p > 0 ? "o que estava gravado saiu e " : "") . "o período foi sorteado de novo"
-                        . ($escala ? " (a escala foi refeita a partir de " . $desde_p->format("d/m") . ")"
-                            : ($ate_p > $hoje->modify((int)$hoje->format("N") === 7 ? "+1 day" : "sunday this week") ? "; os dias depois desta semana são sorteados quando a semana deles chegar" : "")) . ".";
+                    ? t("De {1}: {2}{3}, sem relógio e sem sorteio{4}. Escolha o relógio de cada um em \"escolher…\", ou no Rodízio manual.", [1 => $faixa_txt, 2 => $livres, 3 => $livres === 1 ? t(" dia livre") : t(" dias livres"), 4 => $n_p > 0 ? t(" (o que estava gravado saiu)") : ""])
+                    : t("De {1}: {2}o período foi sorteado de novo{3}.", [1 => $faixa_txt, 2 => $n_p > 0 ? t("o que estava gravado saiu e ") : "", 3 => $escala ? t(" (a escala foi refeita a partir de {1})", [1 => $desde_p->format("d/m")])
+                            : ($ate_p > $hoje->modify((int)$hoje->format("N") === 7 ? "+1 day" : "sunday this week") ? t("; os dias depois desta semana são sorteados quando a semana deles chegar") : "")]);
             }
         } elseif (count($ids_p) === 0) {
-            $erros[] = "Escolha pelo menos um relógio para o período.";
+            $erros[] = t("Escolha pelo menos um relógio para o período.");
         } elseif (in_array(null, $rels_p, true) || in_array(false, $rels_p, true)) {
-            $erros[] = "Relógio não encontrado.";
+            $erros[] = t("Relógio não encontrado.");
         } elseif (!ctype_digit($cada) || (int)$cada < 1 || (int)$cada > 365) {
-            $erros[] = "Dias seguidos de cada: de 1 a 365.";
+            $erros[] = t("Dias seguidos de cada: de 1 a 365.");
         } else {
             $fora = array_values(array_filter($rels_p, function ($r) { return (int)$r["disponivel"] !== 1; }));
             if (count($fora) > 0) {
-                $erros[] = implode(", ", array_column($fora, "nome")) . (count($fora) === 1 ? " está indisponível" : " estão indisponíveis") . ": marque como disponível no cadastro antes.";
+                $erros[] = t("{1}{2}: marque como disponível no cadastro antes.", [1 => implode(", ", array_column($fora, "nome")), 2 => count($fora) === 1 ? t(" está indisponível") : t(" estão indisponíveis")]);
             } else {
-                $motivo_p = "Escolhido à mão para o período de " . $de_p->format("d/m") . " a " . $ate_p->format("d/m") . ".";
+                $motivo_p = t("Escolhido à mão para o período de {1} a {2}.", [1 => $de_p->format("d/m"), 2 => $ate_p->format("d/m")]);
                 sql("DELETE FROM plano_livre WHERE data BETWEEN ? AND ?", [$de_p->format("Y-m-d"), $ate_p->format("Y-m-d")]);
                 $i = 0;
                 for ($dia = $de_p; $dia <= $ate_p; $dia = $dia->modify("+1 day"), $i++) {
@@ -2032,9 +2006,7 @@ function op_rodizio($acao, $d)
                     // a escala refeita a partir do começo do período: os dias dele ficam, e o resto se ajusta
                     gerar_escala($de_p);
                 }
-                $msg = "De " . $de_p->format("d/m") . " a " . $ate_p->format("d/m") . ": " . $i . ($i === 1 ? " dia escolhido" : " dias escolhidos") . " à mão ("
-                    . implode(", ", array_column($rels_p, "nome")) . (count($rels_p) > 1 ? ", nessa ordem, " . ((int)$cada === 1 ? "um por dia" : $cada . " dias seguidos cada") : "") . ")."
-                    . ($escala ? " A escala foi refeita a partir de " . $de_p->format("d/m") . "." : "");
+                $msg = t("De {1} a {2}: {3}{4} à mão ({5}{6}).{7}", [1 => $de_p->format("d/m"), 2 => $ate_p->format("d/m"), 3 => $i, 4 => $i === 1 ? t(" dia escolhido") : t(" dias escolhidos"), 5 => implode(", ", array_column($rels_p, "nome")), 6 => count($rels_p) > 1 ? t(", nessa ordem, {1}", [1 => (int)$cada === 1 ? t("um por dia") : t("{1} dias seguidos cada", [1 => $cada])]) : "", 7 => $escala ? t(" A escala foi refeita a partir de {1}.", [1 => $de_p->format("d/m")]) : ""]);
             }
         }
     } elseif ($acao === "apagar_tudo") {
@@ -2056,10 +2028,7 @@ function op_rodizio($acao, $d)
             $troca_hoje((int)$depois["relogio_id"], $depois["motivo"] ?? null);
         }
         $modo_t = valor("SELECT nome FROM modo WHERE id = ?", [modo_ativo()]);
-        $msg = "Programação apagada " . ($com_hoje ? "de hoje em diante" : "de amanhã em diante") . ": " . $n_t . ($n_t === 1 ? " dia" : " dias")
-            . " (escolhidos à mão, sorteados e livres). O plano foi montado de novo pelo modo " . ($modo_t ?? "ativo")
-            . ($escala ? " (a escala inteira)" : " (até domingo; as semanas seguintes, quando chegarem)") . "."
-            . ($com_hoje && $depois ? " Hoje: " . $depois["nome"] . "." : "");
+        $msg = t("Programação apagada {1}: {2}{3} (escolhidos à mão, sorteados e livres). O plano foi montado de novo pelo modo {4}{5}.{6}", [1 => $com_hoje ? t("de hoje em diante") : t("de amanhã em diante"), 2 => $n_t, 3 => $n_t === 1 ? " dia" : " dias", 4 => $modo_t ?? "ativo", 5 => $escala ? t(" (a escala inteira)") : t(" (até domingo; as semanas seguintes, quando chegarem)"), 6 => $com_hoje && $depois ? " Hoje: " . $depois["nome"] . "." : ""]);
     } elseif ($acao === "manual") {
         // o rodízio manual: de, ate, dias[AAAA-MM-DD] = o id do relógio, "auto" (Decida por mim) ou "livre" (dia livre).
         // O dia que não vem fica com a escolha de partida (a escolha à mão que ele já tem; senão, Decida por mim)
@@ -2075,7 +2044,7 @@ function op_rodizio($acao, $d)
         } else {
             foreach (array_keys($vindos) as $k) {
                 if (!is_string($k) || $k < $de_m->format("Y-m-d") || $k > $ate_m->format("Y-m-d") || DateTimeImmutable::createFromFormat("!Y-m-d", $k) === false) {
-                    $erros[] = "O dia " . $k . " está fora do período.";
+                    $erros[] = t("O dia {1} está fora do período.", [1 => $k]);
                 }
             }
             for ($dia = $de_m; $dia <= $ate_m; $dia = $dia->modify("+1 day")) {
@@ -2088,16 +2057,16 @@ function op_rodizio($acao, $d)
                 } elseif (ctype_digit($v) && isset($disp[(int)$v])) {
                     $escolhas[$data] = (int)$v;
                 } else {
-                    $erros[] = $dia->format("d/m") . ": escolha um relógio disponível, \"auto\" (Decida por mim) ou \"livre\".";
+                    $erros[] = t("{1}: escolha um relógio disponível, \"auto\" (Decida por mim) ou \"livre\".", [1 => $dia->format("d/m")]);
                 }
                 if (($escolhas[$data] ?? null) === "livre" && $dia == $hoje) {
-                    $erros[] = "Hoje não pode ficar livre: hoje já tem o relógio do pulso (troque por outro, ou Decida por mim).";
+                    $erros[] = t("Hoje não pode ficar livre: hoje já tem o relógio do pulso (troque por outro, ou Decida por mim).");
                 }
             }
         }
         if (count($erros) === 0) {
             $decididos = rodizio_manual_decidir($de_m, $ate_m, $escolhas);
-            $motivo_m = "Escolhido à mão no rodízio manual de " . $de_m->format("d/m") . " a " . $ate_m->format("d/m") . ".";
+            $motivo_m = t("Escolhido à mão no rodízio manual de {1} a {2}.", [1 => $de_m->format("d/m"), 2 => $ate_m->format("d/m")]);
             $n = ["mao" => 0, "decididos" => 0, "livres" => 0, "mantidos" => 0];
             foreach ($escolhas as $data => $e) {
                 $eh_hoje = $data === $hoje->format("Y-m-d");
@@ -2130,26 +2099,24 @@ function op_rodizio($acao, $d)
                 gerar_escala($de_m);
             }
             $partes = [];
-            foreach ([["mao", "escolhido por você", "escolhidos por você"], ["decididos", "decidido pelo sistema", "decididos pelo sistema"], ["livres", "livre", "livres"],
-                ["mantidos", "como já estava", "como já estavam"]] as [$k, $um, $varios]) {
+            foreach ([["mao", t("escolhido por você"), t("escolhidos por você")], ["decididos", t("decidido pelo sistema"), t("decididos pelo sistema")], ["livres", "livre", "livres"],
+                ["mantidos", t("como já estava"), t("como já estavam")]] as [$k, $um, $varios]) {
                 if ($n[$k] > 0) {
-                    $partes[] = $n[$k] . " " . ($n[$k] === 1 ? "dia " . $um : "dias " . $varios);
+                    $partes[] = $n[$k] . " " . ($n[$k] === 1 ? t("dia {1}", [1 => $um]) : t("dias {1}", [1 => $varios]));
                 }
             }
-            $msg = "Rodízio manual de " . $de_m->format("d/m") . " a " . $ate_m->format("d/m") . " gravado" . (count($partes) > 0 ? ": " . implode(", ", $partes) : "") . "."
-                . ($escala ? " A escala foi refeita a partir de " . $de_m->format("d/m") . "." : "")
-                . " Fora do período, vale o modo de rodízio de sempre.";
+            $msg = t("Rodízio manual de {1} a {2} gravado{3}.{4} Fora do período, vale o modo de rodízio de sempre.", [1 => $de_m->format("d/m"), 2 => $ate_m->format("d/m"), 3 => count($partes) > 0 ? ": " . implode(", ", $partes) : "", 4 => $escala ? t(" A escala foi refeita a partir de {1}.", [1 => $de_m->format("d/m")]) : ""]);
         }
     } elseif ($acao === "proxima_semana") {
         if ($escala) {
-            $erros[] = "Na escala inteligente não há próxima semana para montar: a escala segue o próprio período (até " . date("d/m/Y", strtotime(cfg("escala_fim"))) . "). Sortear de novo refaz a escala.";
+            $erros[] = t("Na escala inteligente não há próxima semana para montar: a escala segue o próprio período (até {1}). Sortear de novo refaz a escala.", [1 => data_txt(strtotime(cfg("escala_fim")))]);
         } elseif ((int)$hoje->format("N") !== 7) {
-            $erros[] = "A próxima semana só se monta no domingo. Nos outros dias, sortear de novo refaz até o domingo desta semana.";
+            $erros[] = t("A próxima semana só se monta no domingo. Nos outros dias, sortear de novo refaz até o domingo desta semana.");
         } else {
             $seg = $hoje->modify("+1 day");
             sql("DELETE FROM plano WHERE data BETWEEN ? AND ? AND origem <> 'manual'", [$seg->format("Y-m-d"), $seg->modify("+6 days")->format("Y-m-d")]);
             garantir_plano($seg, $seg->modify("+6 days"));
-            $msg = "Semana de " . $seg->format("d/m") . " a " . $seg->modify("+6 days")->format("d/m") . " montada.";
+            $msg = t("Semana de {1} a {2} montada.", [1 => $seg->format("d/m"), 2 => $seg->modify("+6 days")->format("d/m")]);
         }
     }
     return resultado($erros, $msg);
@@ -2170,7 +2137,7 @@ function op_modos($acao, $d)
     $id = (int)($d["id"] ?? 0);
     $atual = $id > 0 ? linha("SELECT * FROM modo WHERE id = ?", [$id]) : null;
     if ($id > 0 && !$atual) {
-        $erros[] = "Modo não encontrado.";
+        $erros[] = t("Modo não encontrado.");
     } elseif ($acao === "salvar") {
         $nome = trim((string)($d["nome"] ?? ($atual["nome"] ?? "")));
         $sel = (string)($d["selecao"] ?? ($atual["selecao"] ?? "ponderado"));
@@ -2178,23 +2145,23 @@ function op_modos($acao, $d)
         $escala_dias = array_key_exists("escala_dias", $d) ? trim((string)$d["escala_dias"]) : ($atual["escala_dias"] ?? "");
         $escala_dias = $escala_dias === null || $escala_dias === "" || (string)$escala_dias === "0" ? null : $escala_dias;
         if ($escala_dias !== null && (!ctype_digit((string)$escala_dias) || (int)$escala_dias < 7 || (int)$escala_dias > 730)) {
-            $erros[] = "Escala inteligente: de 7 a 730 dias (vazio: o modo sorteia pelos blocos).";
+            $erros[] = t("Escala inteligente: de 7 a 730 dias (vazio: o modo sorteia pelos blocos).");
         }
         $blocos = $d["blocos"] ?? null;
         if (is_string($blocos)) {
             $blocos = json_decode($blocos, true);
         }
         if ($nome === "" || strlen($nome) > 80) {
-            $erros[] = "Dê um nome ao modo (até 80 caracteres).";
+            $erros[] = t("Dê um nome ao modo (até 80 caracteres).");
         }
         if (!in_array($sel, ["inteligente", "ponderado", "aleatorio", "fifo"], true)) {
-            $erros[] = "Forma de escolha: inteligente, ponderado, aleatorio ou fifo.";
+            $erros[] = t("Forma de escolha: inteligente, ponderado, aleatorio ou fifo.");
         }
         $limpos = [];
         $dias_usados = [];
         if ($blocos !== null) {
             if (!is_array($blocos) || count($blocos) === 0) {
-                $erros[] = "Um modo precisa de pelo menos um bloco de dias.";
+                $erros[] = t("Um modo precisa de pelo menos um bloco de dias.");
             } else {
                 foreach ($blocos as $k => $b) {
                     $dias = array_values(array_unique(array_map("intval", (array)($b["dias"] ?? []))));
@@ -2202,25 +2169,25 @@ function op_modos($acao, $d)
                     $no = no_do_pedido($b["no_id"] ?? "");
                     $fixo = (int)($b["relogio_id"] ?? 0);
                     if (count($dias) === 0 || min($dias) < 1 || max($dias) > 7) {
-                        $erros[] = "Bloco " . ($k + 1) . ": escolha os dias (1 a 7).";
+                        $erros[] = t("Bloco {1}: escolha os dias (1 a 7).", [1 => $k + 1]);
                     }
                     foreach ($dias as $x) {
                         if (isset($dias_usados[$x])) {
-                            $erros[] = "O dia " . $x . " está em mais de um bloco.";
+                            $erros[] = t("O dia {1} está em mais de um bloco.", [1 => $x]);
                         }
                         $dias_usados[$x] = true;
                     }
                     if ($no === false) {
-                        $erros[] = "Bloco " . ($k + 1) . ": o ponto da árvore não existe.";
+                        $erros[] = t("Bloco {1}: o ponto da árvore não existe.", [1 => $k + 1]);
                     }
                     if ($fixo > 0 && valor("SELECT id FROM relogio WHERE id = ?", [$fixo]) === null) {
-                        $erros[] = "Bloco " . ($k + 1) . ": o relógio fixo não existe.";
+                        $erros[] = t("Bloco {1}: o relógio fixo não existe.", [1 => $k + 1]);
                     }
-                    $limpos[] = [trim((string)($b["nome"] ?? "")) !== "" ? trim((string)$b["nome"]) : "Bloco " . ($k + 1), implode(",", $dias), $no, ($b["um_por"] ?? "dia") === "bloco" ? "bloco" : "dia", $fixo > 0 ? $fixo : null];
+                    $limpos[] = [trim((string)($b["nome"] ?? "")) !== "" ? trim((string)$b["nome"]) : t("Bloco {1}", [1 => $k + 1]), implode(",", $dias), $no, ($b["um_por"] ?? "dia") === "bloco" ? "bloco" : "dia", $fixo > 0 ? $fixo : null];
                 }
             }
         } elseif (!$atual) {
-            $erros[] = "Um modo novo precisa dos blocos de dias.";
+            $erros[] = t("Um modo novo precisa dos blocos de dias.");
         }
         if (count($erros) === 0) {
             $escala_dias = $escala_dias === null ? null : (int)$escala_dias;
@@ -2246,7 +2213,7 @@ function op_modos($acao, $d)
                 cfg_set("escala_fim", "");
                 garantir_plano(new DateTimeImmutable("today"));
             }
-            $msg = "Modo " . $nome . " salvo" . (count($dias_usados) > 0 && count($dias_usados) < 7 ? " (os dias sem bloco ficam sem relógio sorteado)" : "") . ".";
+            $msg = t("Modo {1} salvo{2}.", [1 => $nome, 2 => count($dias_usados) > 0 && count($dias_usados) < 7 ? t(" (os dias sem bloco ficam sem relógio sorteado)") : ""]);
         }
     } elseif ($acao === "ativar" && $atual) {
         modo_ativar($id);
@@ -2254,14 +2221,13 @@ function op_modos($acao, $d)
         // a escala de antes (se havia) acaba aqui: a do modo novo começa um período novo
         cfg_set("escala_fim", "");
         garantir_plano(new DateTimeImmutable("today"));
-        $msg = "Modo ativo: " . $atual["nome"] . ". O plano de amanhã em diante foi refeito"
-            . ($atual["escala_dias"] !== null ? " (escala até " . date("d/m/Y", strtotime(cfg("escala_fim"))) . ")" : "") . ".";
+        $msg = t("Modo ativo: {1}. O plano de amanhã em diante foi refeito{2}.", [1 => $atual["nome"], 2 => $atual["escala_dias"] !== null ? t(" (escala até {1})", [1 => data_txt(strtotime(cfg("escala_fim")))]) : ""]);
     } elseif ($acao === "excluir" && $atual) {
         if (modo_ativo() === $id) {
-            $erros[] = "Não dá para excluir o modo ativo: ative outro antes.";
+            $erros[] = t("Não dá para excluir o modo ativo: ative outro antes.");
         } else {
             sql("DELETE FROM modo WHERE id = ?", [$id]);
-            $msg = "Modo " . $atual["nome"] . " excluído.";
+            $msg = t("Modo {1} excluído.", [1 => $atual["nome"]]);
         }
     }
     return resultado($erros, $msg, ["id" => $id]);
@@ -2300,64 +2266,64 @@ function op_config($acao, $d)
     if ($acao === "salvar") {
         foreach (["horario_manha", "horario_noite", "sol_fim"] as $k) {
             if (array_key_exists($k, $d) && preg_match($hora_ok, (string)$d[$k]) !== 1) {
-                $erros[] = $k . ": uma hora HH:MM.";
+                $erros[] = t("{1}: uma hora HH:MM.", [1 => $k]);
             }
         }
         if ((array_key_exists("uso_inicio", $d) || array_key_exists("uso_fim", $d)) && (preg_match($hora_ok, (string)($d["uso_inicio"] ?? cfg("uso_inicio"))) !== 1
             || preg_match($hora_ok, (string)($d["uso_fim"] ?? cfg("uso_fim"))) !== 1 || (string)($d["uso_fim"] ?? cfg("uso_fim")) <= (string)($d["uso_inicio"] ?? cfg("uso_inicio")))) {
-            $erros[] = "Relógio no pulso: duas horas HH:MM, o fim depois do início.";
+            $erros[] = t("Relógio no pulso: duas horas HH:MM, o fim depois do início.");
         }
         if (array_key_exists("carga_limiar", $d) && (!ctype_digit(trim((string)$d["carga_limiar"])) || (int)$d["carga_limiar"] < 1 || (int)$d["carga_limiar"] > 99)) {
-            $erros[] = "Carregar: o limite é uma carga de 1 a 99%.";
+            $erros[] = t("Carregar: o limite é uma carga de 1 a 99%.");
         }
         if (array_key_exists("sol_limiar", $d) && (!ctype_digit(trim((string)$d["sol_limiar"])) || (int)$d["sol_limiar"] < 1 || (int)$d["sol_limiar"] > 99)) {
-            $erros[] = "Solar: o limite é uma carga de 1 a 99%.";
+            $erros[] = t("Solar: o limite é uma carga de 1 a 99%.");
         }
         if (array_key_exists("max_sem_uso", $d) && (!ctype_digit(trim((string)$d["max_sem_uso"])) || (int)$d["max_sem_uso"] > 365)) {
-            $erros[] = "Garantia de rodízio: de 0 a 365 dias.";
+            $erros[] = t("Garantia de rodízio: de 0 a 365 dias.");
         }
         if (array_key_exists("agenda_antecedencia", $d) && (!ctype_digit(trim((string)$d["agenda_antecedencia"])) || (int)$d["agenda_antecedencia"] < 1 || (int)$d["agenda_antecedencia"] > 365)) {
-            $erros[] = "Agenda: de 1 a 365 dias de antecedência.";
+            $erros[] = t("Agenda: de 1 a 365 dias de antecedência.");
         }
         if (array_key_exists("medicao_janela_dias", $d) && (!ctype_digit(trim((string)$d["medicao_janela_dias"])) || (int)$d["medicao_janela_dias"] < 1 || (int)$d["medicao_janela_dias"] > 3650)) {
-            $erros[] = "Gasto medido: a média usa de 1 a 3650 dias de medições.";
+            $erros[] = t("Gasto medido: a média usa de 1 a 3650 dias de medições.");
         }
         if (array_key_exists("encostado_dias", $d) && (!ctype_digit(trim((string)$d["encostado_dias"])) || (int)$d["encostado_dias"] < 1 || (int)$d["encostado_dias"] > 3650)) {
-            $erros[] = "Aviso Encostado: de 1 a 3650 dias sem ir ao pulso.";
+            $erros[] = t("Aviso Encostado: de 1 a 3650 dias sem ir ao pulso.");
         }
         if (array_key_exists("previsao_limite", $d) && (numero_br($d["previsao_limite"]) === null || numero_br($d["previsao_limite"]) < 0 || numero_br($d["previsao_limite"]) > 100)) {
-            $erros[] = "Previsão: o limite é uma carga de 0 a 100%.";
+            $erros[] = t("Previsão: o limite é uma carga de 0 a 100%.");
         }
         if (array_key_exists("url_sistema", $d) && trim((string)$d["url_sistema"]) !== "" && preg_match("#^https?://#i", trim((string)$d["url_sistema"])) !== 1) {
-            $erros[] = "Endereço do sistema: começando por http:// ou https:// (vazio: sem link).";
+            $erros[] = t("Endereço do sistema: começando por http:// ou https:// (vazio: sem link).");
         }
-        foreach (["proximos_por_pagina" => "Próximos dias", "plano_por_pagina" => "Plano"] as $k => $onde) {
+        foreach (["proximos_por_pagina" => t("Próximos dias"), "plano_por_pagina" => t("Plano")] as $k => $onde) {
             if (array_key_exists($k, $d) && (!ctype_digit(trim((string)$d[$k])) || (int)$d[$k] < 1 || (int)$d[$k] > 366)) {
-                $erros[] = $onde . ": mostrar até de 1 a 366 dias por página.";
+                $erros[] = t("{1}: mostrar até de 1 a 366 dias por página.", [1 => $onde]);
             }
         }
         if (array_key_exists("painel_modo", $d) && !in_array((string)$d["painel_modo"], ["lado", "flutuante"], true)) {
-            $erros[] = "Abrir o relógio: lado (ao lado da lista) ou flutuante (numa janela grande por cima da página).";
+            $erros[] = t("Abrir o relógio: lado (ao lado da lista) ou flutuante (numa janela grande por cima da página).");
         }
         if (array_key_exists("idioma", $d) && !isset(LINGUAS[(string)$d["idioma"]])) {
             $erros[] = t("Idioma: {linguas}.", ["linguas" => implode(", ", array_keys(LINGUAS))]);
         }
         if (array_key_exists("destaque_hoje", $d) && !in_array((string)$d["destaque_hoje"], ["dia", "pulso"], true)) {
-            $erros[] = "Destaque da página Hoje: dia (o relógio do dia) ou pulso (o relógio no pulso agora).";
+            $erros[] = t("Destaque da página Hoje: dia (o relógio do dia) ou pulso (o relógio no pulso agora).");
         }
         foreach (["agenda_id" => 255, "agenda_chave" => 500] as $k => $max) {
             if (array_key_exists($k, $d) && strlen(trim((string)$d[$k])) > $max) {
-                $erros[] = $k . ": até " . $max . " caracteres.";
+                $erros[] = t("{1}: até {2} caracteres.", [1 => $k, 2 => $max]);
             }
         }
         $tipos_todos = tipos_de_aviso();
         foreach ($CANAIS as $canal => $c) {
             if (array_key_exists($canal . "_padrao", $d) && strlen((string)$d[$canal . "_padrao"]) > 4000) {
-                $erros[] = "A mensagem padrão do " . $c["nome"] . " vai até 4000 caracteres.";
+                $erros[] = t("A mensagem padrão do {1} vai até 4000 caracteres.", [1 => $c["nome"]]);
             }
             foreach ((array)($d[$c["tipos"]] ?? []) as $t) {
                 if ($t !== "" && !isset($tipos_todos[$t])) {
-                    $erros[] = $c["tipos"] . ": aviso desconhecido (" . $t . ").";
+                    $erros[] = t("{1}: aviso desconhecido ({2}).", [1 => $c["tipos"], 2 => $t]);
                 }
             }
         }
@@ -2412,18 +2378,18 @@ function op_config($acao, $d)
                     }
                 }
             }
-            $msg = "Configuração salva.";
+            $msg = t("Configuração salva.");
         }
     } elseif ($acao === "testar_manha" || $acao === "testar_noite") {
         garantir_plano($hoje);
         $texto = $acao === "testar_manha" ? montar_mensagem($hoje) : montar_mensagem_noite($hoje);
         if ($texto === "") {
-            $msg = $acao === "testar_manha" ? "A mensagem da manhã está vazia: nenhum aviso marcado para o Telegram tem o que dizer hoje."
-                : "Nada a enviar hoje à noite: amanhã continua o mesmo relógio, ou a véspera está desmarcada para o Telegram.";
-        } elseif (enviar_em_partes($texto, defined("MSG_TITULO") ? (string)constant("MSG_TITULO") : "Relógios") === 0) {
-            $msg = $acao === "testar_manha" ? "Mensagem da manhã enviada." : "Mensagem da noite enviada.";
+            $msg = $acao === "testar_manha" ? t("A mensagem da manhã está vazia: nenhum aviso marcado para o Telegram tem o que dizer hoje.")
+                : t("Nada a enviar hoje à noite: amanhã continua o mesmo relógio, ou a véspera está desmarcada para o Telegram.");
+        } elseif (enviar_em_partes($texto, defined("MSG_TITULO") ? (string)constant("MSG_TITULO") : t("Relógios")) === 0) {
+            $msg = $acao === "testar_manha" ? t("Mensagem da manhã enviada.") : t("Mensagem da noite enviada.");
         } else {
-            $erros[] = "A API de alerta não respondeu com sucesso. Confira o endereço no config.php.";
+            $erros[] = t("A API de alerta não respondeu com sucesso. Confira o endereço no config.php.");
         }
     } elseif ($acao === "evento_salvar") {
         $id = (int)($d["evento_id"] ?? ($d["id"] ?? 0));
@@ -2445,28 +2411,28 @@ function op_config($acao, $d)
         }
         $d_ok = DateTimeImmutable::createFromFormat("!Y-m-d", $data_ini);
         if ($id > 0 && !$atual) {
-            $erros[] = "Evento não encontrado.";
+            $erros[] = t("Evento não encontrado.");
         }
         if ($nome === "" || strlen($nome) > 120) {
-            $erros[] = "Dê um nome ao evento (até 120 caracteres).";
+            $erros[] = t("Dê um nome ao evento (até 120 caracteres).");
         }
         if (!isset($REPETICOES[$rep])) {
-            $erros[] = "Quando dispara: uma, diaria, semanal, mensal ou intervalo.";
+            $erros[] = t("Quando dispara: uma, diaria, semanal, mensal ou intervalo.");
         }
         if (preg_match($hora_ok, $hora) !== 1) {
-            $erros[] = "Hora: HH:MM.";
+            $erros[] = t("Hora: HH:MM.");
         }
         if (($rep === "uma" || $rep === "intervalo") && !($d_ok && $d_ok->format("Y-m-d") === $data_ini)) {
-            $erros[] = "Uma vez: informe a data (AAAA-MM-DD).";
+            $erros[] = t("Uma vez: informe a data (AAAA-MM-DD).");
         }
         if ($rep === "semanal" && count($dias) === 0) {
-            $erros[] = "Em dias da semana: marque pelo menos um dia.";
+            $erros[] = t("Em dias da semana: marque pelo menos um dia.");
         }
         if ($rep === "mensal" && ($dia_mes < 1 || $dia_mes > 31)) {
-            $erros[] = "Dia do mês: de 1 a 31.";
+            $erros[] = t("Dia do mês: de 1 a 31.");
         }
         if ($rep === "intervalo" && ($intervalo < 1 || $intervalo > 3650)) {
-            $erros[] = "A cada quantos dias: de 1 a 3650.";
+            $erros[] = t("A cada quantos dias: de 1 a 3650.");
         }
         // relógio do evento: um disponível, ou o que o evento já tinha (não troca sozinho); outro qualquer fica sem relógio
         if ($rid > 0 && (int)valor("SELECT COUNT(*) FROM relogio WHERE id = ? AND disponivel = 1", [$rid]) === 0 && (int)($atual["relogio_id"] ?? 0) !== $rid) {
@@ -2493,52 +2459,52 @@ function op_config($acao, $d)
                     sql("INSERT INTO evento_dia (evento_id, dia) VALUES (?, ?)", [$id, $dia]);
                 }
             }
-            $msg = "Evento salvo.";
+            $msg = t("Evento salvo.");
             $extra["id"] = $id;
         }
     } elseif ($acao === "evento_excluir") {
         $id = (int)($d["evento_id"] ?? ($d["id"] ?? 0));
         $ev = linha("SELECT * FROM evento_personalizado WHERE id = ?", [$id]);
         if (!$ev) {
-            $erros[] = "Evento não encontrado.";
+            $erros[] = t("Evento não encontrado.");
         } else {
             // os canais e os textos dele (canal_aviso) e os dias (evento_dia) saem junto, pelo banco (chave estrangeira em cascata)
             sql("DELETE FROM evento_personalizado WHERE id = ?", [$id]);
             canal_aviso("tg", null, true);
-            $msg = "Evento excluído.";
+            $msg = t("Evento excluído.");
         }
     } elseif ($acao === "teste_agenda_criar") {
         // um evento de teste daqui a 10 minutos, pelo modelo do relógio do dia; o id fica para poder removê-lo
         if (cfg("agenda_id") === "") {
-            $erros[] = "Informe o ID da agenda antes de testar.";
+            $erros[] = t("Informe o ID da agenda antes de testar.");
         } elseif (!google_token()) {
-            $erros[] = "Não autenticou no Google: confira o caminho da chave JSON e se a Calendar API está ativa no projeto.";
+            $erros[] = t("Não autenticou no Google: confira o caminho da chave JSON e se a Calendar API está ativa no projeto.");
         } else {
             $dia = plano_do_dia($hoje->format("Y-m-d"));
             $inicio = new DateTimeImmutable("+10 minutes");
             $f = evento_formatado(["tipo" => "dia", "relogio_id" => $dia ? (int)$dia["relogio_id"] : 0, "data" => $inicio->format("Y-m-d"), "hora" => $inicio->format("H:i"),
-                "fazer" => "Usar hoje", "motivo" => $dia ? texto_ate($dia["data"], "hoje") : "evento de teste do sistema"]);
+                "fazer" => t("Usar hoje"), "motivo" => $dia ? texto_ate($dia["data"], "hoje") : t("evento de teste do sistema")]);
             $r = google_api("POST", "/calendars/" . rawurlencode(cfg("agenda_id")) . "/events", ["summary" => "[TESTE] " . $f["titulo"],
-                "description" => $f["descricao"] . "\n\nEvento de teste criado pela tela de Configuração do sistema de relógios.",
+                "description" => t("{1}\n\nEvento de teste criado pela tela de Configuração do sistema de relógios.", [1 => $f["descricao"]]),
                 "start" => ["dateTime" => $inicio->format("Y-m-d\\TH:i:s"), "timeZone" => date_default_timezone_get()],
                 "end" => ["dateTime" => $inicio->modify("+15 minutes")->format("Y-m-d\\TH:i:s"), "timeZone" => date_default_timezone_get()]]);
             if ($r[0] >= 200 && $r[0] < 300 && !empty($r[1]["id"])) {
                 cfg_set("agenda_teste_id", $r[1]["id"]);
-                $msg = "Evento de teste criado para hoje às " . $inicio->format("H:i") . ": \"[TESTE] " . $f["titulo"] . "\". Confira no Google Agenda.";
+                $msg = t("Evento de teste criado para hoje às {1}: \"[TESTE] {2}\". Confira no Google Agenda.", [1 => $inicio->format("H:i"), 2 => $f["titulo"]]);
             } else {
-                $erros[] = "O Google recusou o evento (código " . $r[0] . "). Confira o ID da agenda e se ela foi compartilhada com a conta de serviço, com permissão para fazer alterações nos eventos.";
+                $erros[] = t("O Google recusou o evento (código {1}). Confira o ID da agenda e se ela foi compartilhada com a conta de serviço, com permissão para fazer alterações nos eventos.", [1 => $r[0]]);
             }
         }
     } elseif ($acao === "teste_agenda_remover") {
         if (cfg("agenda_teste_id") === "") {
-            $erros[] = "Não há evento de teste para remover.";
+            $erros[] = t("Não há evento de teste para remover.");
         } else {
             $r = google_api("DELETE", "/calendars/" . rawurlencode(cfg("agenda_id")) . "/events/" . rawurlencode(cfg("agenda_teste_id")), null);
             if (in_array($r[0], [200, 204, 404, 410], true)) {
                 cfg_set("agenda_teste_id", "");
-                $msg = "Evento de teste removido da agenda.";
+                $msg = t("Evento de teste removido da agenda.");
             } else {
-                $erros[] = "O Google não removeu o evento de teste (código " . $r[0] . ").";
+                $erros[] = t("O Google não removeu o evento de teste (código {1}).", [1 => $r[0]]);
             }
         }
     } elseif ($acao === "sincronizar") {
@@ -2546,9 +2512,9 @@ function op_config($acao, $d)
         if ($r["mensagem"] !== "") {
             $erros[] = $r["mensagem"];
         } elseif ($r["erros"] > 0) {
-            $erros[] = "Agenda: " . $r["criados"] . " criados, " . $r["atualizados"] . " atualizados, " . $r["removidos"] . " removidos e " . $r["erros"] . " recusados pelo Google.";
+            $erros[] = t("Agenda: {1} criados, {2} atualizados, {3} removidos e {4} recusados pelo Google.", [1 => $r["criados"], 2 => $r["atualizados"], 3 => $r["removidos"], 4 => $r["erros"]]);
         } else {
-            $msg = "Agenda sincronizada: " . $r["criados"] . " criados, " . $r["atualizados"] . " atualizados, " . $r["removidos"] . " removidos.";
+            $msg = t("Agenda sincronizada: {1} criados, {2} atualizados, {3} removidos.", [1 => $r["criados"], 2 => $r["atualizados"], 3 => $r["removidos"]]);
         }
         $extra = ["criados" => $r["criados"], "atualizados" => $r["atualizados"], "removidos" => $r["removidos"], "recusados" => $r["erros"]];
     }
@@ -2570,34 +2536,34 @@ function op_usuarios($acao, $d, $atual)
     $hash_pronto = trim((string)($d["senha_hash"] ?? ""));
     if ($acao === "salvar") {
         if ($alvo === "" || strlen($alvo) > 60) {
-            $erros[] = "Informe o login (até 60 caracteres).";
+            $erros[] = t("Informe o login (até 60 caracteres).");
         } elseif ($hash_pronto !== "" && $nova !== "") {
-            $erros[] = "Mande a senha ou o senha_hash, não os dois.";
+            $erros[] = t("Mande a senha ou o senha_hash, não os dois.");
         } elseif ($hash_pronto !== "" && (strlen($hash_pronto) > 255 || senha_hash_info($hash_pronto)[0] === null)) {
-            $erros[] = "senha_hash: um hash que o password_verify do PHP entenda (bcrypt, que começa com \$2y\$, \$2b\$ ou \$2a\$, ou argon2, com \$argon2).";
+            $erros[] = t("senha_hash: um hash que o password_verify do PHP entenda (bcrypt, que começa com \$2y\$, \$2b\$ ou \$2a\$, ou argon2, com \$argon2).");
         } elseif ($hash_pronto === "" && strlen($nova) < 6) {
-            $erros[] = "Informe uma senha de pelo menos 6 caracteres (ou o senha_hash de outro sistema).";
+            $erros[] = t("Informe uma senha de pelo menos 6 caracteres (ou o senha_hash de outro sistema).");
         } else {
             // o $2b$ (o bcrypt de Python, Node, Java...) é o mesmo cálculo que o $2y$ do PHP: guarda como $2y$
             $hash = $hash_pronto !== "" ? (strncmp($hash_pronto, '$2b$', 4) === 0 ? '$2y$' . substr($hash_pronto, 4) : $hash_pronto) : password_hash($nova, PASSWORD_DEFAULT);
             if (valor("SELECT id FROM usuario WHERE login = ?", [$alvo])) {
                 sql("UPDATE usuario SET senha_hash = ? WHERE login = ?", [$hash, $alvo]);
-                $msg = "Senha de " . $alvo . " trocada" . ($hash_pronto !== "" ? " (pelo hash informado)." : ".");
+                $msg = t("Senha de {1} trocada{2}", [1 => $alvo, 2 => $hash_pronto !== "" ? t(" (pelo hash informado).") : "."]);
             } else {
                 sql("INSERT INTO usuario (login, senha_hash, criado) VALUES (?, ?, NOW())", [$alvo, $hash]);
-                $msg = "Usuário " . $alvo . " criado" . ($hash_pronto !== "" ? " (pelo hash informado: entra com a senha do outro sistema)." : ".");
+                $msg = t("Usuário {1} criado{2}", [1 => $alvo, 2 => $hash_pronto !== "" ? t(" (pelo hash informado: entra com a senha do outro sistema).") : "."]);
             }
         }
     } elseif ($acao === "excluir") {
         if (!valor("SELECT id FROM usuario WHERE login = ?", [$alvo])) {
-            $erros[] = "Usuário não encontrado.";
+            $erros[] = t("Usuário não encontrado.");
         } elseif ($alvo === $atual) {
-            $erros[] = "Você não pode excluir o usuário com que está conectado.";
+            $erros[] = t("Você não pode excluir o usuário com que está conectado.");
         } elseif ((int)valor("SELECT COUNT(*) FROM usuario") <= 1) {
-            $erros[] = "Precisa sobrar pelo menos um usuário.";
+            $erros[] = t("Precisa sobrar pelo menos um usuário.");
         } else {
             sql("DELETE FROM usuario WHERE login = ?", [$alvo]);
-            $msg = "Usuário " . $alvo . " excluído.";
+            $msg = t("Usuário {1} excluído.", [1 => $alvo]);
         }
     }
     return resultado($erros, $msg);
@@ -2628,21 +2594,21 @@ function importacao_situacao()
     return ["servidor_antigo" => ["host" => $sv["host"], "porta" => $sv["porta"] > 0 ? $sv["porta"] : null, "usuario" => $sv["usuario"],
         "de_onde" => defined("ANTIGO_HOST") || defined("ANTIGO_USUARIO") ? "ANTIGO_* do config.php" : "DB_* do config.php"],
         "mysqli" => class_exists("mysqli"), "relogios_neste_banco" => $n, "precisa_substituir" => $n > 0,
-        "traz" => ["a árvore (os grupos, com os mesmos números)", "os relógios", "as fotos", "os usuários", "os valores dos campos", "o histórico, como lançamentos"]];
+        "traz" => [t("a árvore (os grupos, com os mesmos números)"), t("os relógios"), t("as fotos"), t("os usuários"), t("os valores dos campos"), t("o histórico, como lançamentos")]];
 }
 
 // A importação (descrita acima, em importacao_servidor): confere o pedido, abre o banco antigo e traz tudo de uma vez
 function op_importacao($acao, $d)
 {
     if ($acao !== "importar") {
-        return ["ok" => false, "mensagem" => "", "erros" => ["Ação desconhecida: use importar."]];
+        return ["ok" => false, "mensagem" => "", "erros" => [t("Ação desconhecida: use importar.")]];
     }
     $banco = trim((string)($d["banco"] ?? ""));
     if (preg_match("/^[A-Za-z0-9_]+\$/", $banco) !== 1) {
-        return ["ok" => false, "mensagem" => "", "erros" => ["banco: o nome do banco antigo (letras, números e _)."]];
+        return ["ok" => false, "mensagem" => "", "erros" => [t("banco: o nome do banco antigo (letras, números e _).")]];
     }
     if (!class_exists("mysqli")) {
-        return ["ok" => false, "mensagem" => "", "erros" => ["O PHP não tem a extensão do MySQL (mysqli): o banco antigo é MySQL/MariaDB."]];
+        return ["ok" => false, "mensagem" => "", "erros" => [t("O PHP não tem a extensão do MySQL (mysqli): o banco antigo é MySQL/MariaDB.")]];
     }
     $sv = importacao_servidor();
     try {
@@ -2650,15 +2616,13 @@ function op_importacao($acao, $d)
         $antigo = new mysqli($sv["host"], $sv["usuario"], $sv["senha"], $banco, $sv["porta"] > 0 ? $sv["porta"] : null);
         $antigo->set_charset("utf8mb4");
     } catch (mysqli_sql_exception $e) {
-        return ["ok" => false, "mensagem" => "", "erros" => ["Não consegui abrir o banco antigo " . $banco . " com o usuário " . $sv["usuario"] . ": " . $e->getMessage() . ". "
-            . "O usuário precisa poder ler o banco antigo. No mysql, como root: GRANT SELECT ON " . $banco . ".* TO '" . $sv["usuario"] . "'@'localhost';"
-            . (banco_tipo() === "mysql" ? "" : " Com este sistema no " . banco_tipo() . ", diga onde está o MySQL antigo no config.php: ANTIGO_HOST, ANTIGO_PORTA, ANTIGO_USUARIO, ANTIGO_SENHA.")]];
+        return ["ok" => false, "mensagem" => "", "erros" => [t("Não consegui abrir o banco antigo {1} com o usuário {2}: {3}. O usuário precisa poder ler o banco antigo. No mysql, como root: GRANT SELECT ON {4}.* TO '{5}'@'localhost';{6}", [1 => $banco, 2 => $sv["usuario"], 3 => $e->getMessage(), 4 => $banco, 5 => $sv["usuario"], 6 => banco_tipo() === "mysql" ? "" : t(" Com este sistema no {1}, diga onde está o MySQL antigo no config.php: ANTIGO_HOST, ANTIGO_PORTA, ANTIGO_USUARIO, ANTIGO_SENHA.", [1 => banco_tipo()])])]];
     }
     $ler = function ($comando) use ($antigo) {
         return $antigo->query($comando)->fetch_all(MYSQLI_ASSOC);
     };
     if ((int)valor("SELECT COUNT(*) FROM relogio") > 0 && (string)($d["substituir"] ?? "") !== "1") {
-        return ["ok" => false, "mensagem" => "", "erros" => ["Este banco já tem relógios. Para apagar e importar de novo: substituir=1 (na linha de comando, --substituir)."]];
+        return ["ok" => false, "mensagem" => "", "erros" => [t("Este banco já tem relógios. Para apagar e importar de novo: substituir=1 (na linha de comando, --substituir).")]];
     }
     try {
         $conta = importacao_trazer($ler);
@@ -2669,13 +2633,13 @@ function op_importacao($acao, $d)
         } catch (Throwable $x) {
             // a transação já tinha acabado
         }
-        return ["ok" => false, "mensagem" => "", "erros" => ["A importação parou e nada foi gravado: " . $e->getMessage()]];
+        return ["ok" => false, "mensagem" => "", "erros" => [t("A importação parou e nada foi gravado: {1}", [1 => $e->getMessage()])]];
     }
     $partes = [];
     foreach ($conta as $o_que => $n) {
         $partes[] = $o_que . ": " . $n;
     }
-    return ["ok" => true, "mensagem" => "Importado de " . $banco . ": " . implode("; ", $partes) . ".", "erros" => [], "contagem" => $conta];
+    return ["ok" => true, "mensagem" => t("Importado de {1}: {2}.", [1 => $banco, 2 => implode("; ", $partes)]), "erros" => [], "contagem" => $conta];
 }
 
 // O que a importação traz, numa transação (op_importacao chama, com a leitura do banco antigo): devolve quantos de cada
@@ -2700,24 +2664,24 @@ function importacao_trazer($ler)
         sql("UPDATE no SET pai_id = ? WHERE id = ?", [$g["pai_id"] === null ? null : (int)$g["pai_id"], (int)$g["id"]]);
     }
     nos_todos(true);
-    $conta["pontos da árvore"] = count($ler("SELECT id FROM grupo"));
+    $conta[t("pontos da árvore")] = count($ler("SELECT id FROM grupo"));
 
     // os relógios, com os mesmos números
     foreach ($ler("SELECT * FROM relogio ORDER BY id") as $r) {
         sql("INSERT INTO relogio (id, nome, no_id, disponivel, criado) VALUES (?, ?, ?, ?, NOW())",
             [(int)$r["id"], $r["nome"], $r["grupo_id"] === null ? null : (int)$r["grupo_id"], (int)$r["disponivel"]]);
     }
-    $conta["relógios"] = count($ler("SELECT id FROM relogio"));
+    $conta[t("relógios")] = count($ler("SELECT id FROM relogio"));
 
     foreach ($ler("SELECT * FROM foto") as $f) {
         sql("INSERT INTO foto (relogio_id, tipo, dados, atualizado) VALUES (?, ?, ?, ?)", [(int)$f["relogio_id"], $f["tipo"], $f["dados"], $f["atualizado"]]);
     }
-    $conta["fotos"] = count($ler("SELECT relogio_id FROM foto"));
+    $conta[t("fotos")] = count($ler("SELECT relogio_id FROM foto"));
 
     foreach ($ler("SELECT * FROM usuario") as $u) {
         sql("REPLACE INTO usuario (login, senha_hash, criado) VALUES (?, ?, ?)", [$u["login"], $u["senha_hash"], $u["criado"]]);
     }
-    $conta["usuários"] = count($ler("SELECT id FROM usuario"));
+    $conta[t("usuários")] = count($ler("SELECT id FROM usuario"));
 
     // os valores: coluna antiga => campo (o identificador); só nos relógios em que o campo vale, e só valores que servem
     $colunas = ["obs" => "observacao", "preferencia" => "preferencia", "data_compra" => "data_compra", "valor_compra" => "valor_compra", "loja" => "loja",
@@ -2726,23 +2690,23 @@ function importacao_trazer($ler)
         "carga_pulso_horas" => "carga_pulso_horas", "carga_pulso_reserva" => "carga_pulso_reserva", "carga_winder_horas" => "carga_winder_horas",
         "carga_winder_reserva" => "carga_winder_reserva", "reserva_dias" => "reserva_dias", "carga_sol_horas" => "carga_sol_horas", "data_pilha" => "data_pilha",
         "vida_pilha_meses" => "vida_pilha_meses"];
-    $conta["valores"] = 0;
-    $conta["valores de campo que não vale para o relógio (não trazidos)"] = 0;
-    $conta["valores que não servem no campo (não trazidos)"] = 0;
+    $conta[t("valores")] = 0;
+    $conta[t("valores de campo que não vale para o relógio (não trazidos)")] = 0;
+    $conta[t("valores que não servem no campo (não trazidos)")] = 0;
     $existem = array_column($ler("SHOW COLUMNS FROM relogio"), "Field");
     foreach ($ler("SELECT * FROM relogio") as $r) {
         $campos = campos_do_relogio(["no_id" => $r["grupo_id"]]);
         foreach ($colunas as $col => $ident) {
             if (in_array($col, $existem, true) && $r[$col] !== null && trim((string)$r[$col]) !== "") {
                 if (!isset($campos[$ident])) {
-                    $conta["valores de campo que não vale para o relógio (não trazidos)"]++;
+                    $conta[t("valores de campo que não vale para o relógio (não trazidos)")]++;
                 } else {
                     $v = valor_para_campo($campos[$ident], $r[$col]);
                     if ($v[1] !== "" || $v[0] === null) {
-                        $conta["valores que não servem no campo (não trazidos)"]++;
+                        $conta[t("valores que não servem no campo (não trazidos)")]++;
                     } else {
                         sql("INSERT INTO campo_valor (relogio_id, campo_id, valor) VALUES (?, ?, ?)", [(int)$r["id"], (int)$campos[$ident]["id"], $v[0]]);
-                        $conta["valores"]++;
+                        $conta[t("valores")]++;
                     }
                 }
             }
@@ -2770,24 +2734,24 @@ function importacao_trazer($ler)
         $dias_controlados[$x["dia"]] = true;
     }
     $de_evento = ["carga" => "carga", "corda" => "corda", "pilha" => "pilha", "revisao" => "revisao", "sol" => "sol_antigo", "winder" => "winder_antigo", "pulso" => "pulso_antigo"];
-    $conta["lançamentos"] = 0;
-    $conta["marcações \"relógio do dia\" em dia sem período (viraram uma sessão no pulso, no horário de uso)"] = 0;
-    $conta["marcações \"relógio do dia\" em dia com período (não trazidas: o uso vem dos períodos)"] = 0;
+    $conta[t("lançamentos")] = 0;
+    $conta[t("marcações \"relógio do dia\" em dia sem período (viraram uma sessão no pulso, no horário de uso)")] = 0;
+    $conta[t("marcações \"relógio do dia\" em dia com período (não trazidas: o uso vem dos períodos)")] = 0;
     foreach ($ler("SELECT * FROM evento ORDER BY quando") as $e) {
         if (isset($de_evento[$e["tipo"]]) && isset($tipos[$de_evento[$e["tipo"]]])) {
             sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, NULL, ?, 'importado', NOW())",
                 [(int)$e["relogio_id"], $tipos[$de_evento[$e["tipo"]]], $e["quando"], $e["valor"] === null ? null : (float)$e["valor"]]);
-            $conta["lançamentos"]++;
+            $conta[t("lançamentos")]++;
         } elseif ($e["tipo"] === "uso" && !isset($dias_controlados[substr($e["quando"], 0, 10)])) {
             // como no sistema antigo: o dia inteiro no pulso, do início ao fim do horário de uso
             $dia = substr($e["quando"], 0, 10);
             sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, ?, NULL, 'importado', NOW())",
                 [(int)$e["relogio_id"], $tipos["pulso"], $dia . " " . ($cfg_antiga["uso_inicio"] ?? "07:00") . ":00", $dia . " " . ($cfg_antiga["uso_fim"] ?? "22:00") . ":00"]);
             $dias_controlados[$dia] = true;
-            $conta["marcações \"relógio do dia\" em dia sem período (viraram uma sessão no pulso, no horário de uso)"]++;
-            $conta["lançamentos"]++;
+            $conta[t("marcações \"relógio do dia\" em dia sem período (viraram uma sessão no pulso, no horário de uso)")]++;
+            $conta[t("lançamentos")]++;
         } else {
-            $conta["marcações \"relógio do dia\" em dia com período (não trazidas: o uso vem dos períodos)"]++;
+            $conta[t("marcações \"relógio do dia\" em dia com período (não trazidas: o uso vem dos períodos)")]++;
         }
     }
     $de_periodo = ["rodizio" => ["pulso", "rodizio"], "pulso" => ["pulso", "manual"], "winder" => ["winder", "manual"], "sol" => ["sol", "manual"]];
@@ -2795,7 +2759,7 @@ function importacao_trazer($ler)
         $tipo = $de_periodo[$p["tipo"] ?? "rodizio"] ?? ["pulso", "manual"];
         sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, ?, NULL, ?, NOW())",
             [(int)$p["relogio_id"], $tipos[$tipo[0]], $p["inicio"], $p["fim"], $tipo[1]]);
-        $conta["lançamentos"]++;
+        $conta[t("lançamentos")]++;
     }
     banco_confirma();
     // os ids gravados com os mesmos números do antigo: o próximo id de cada tabela passa deles (no Postgres, aqui)

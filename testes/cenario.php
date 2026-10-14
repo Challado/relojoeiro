@@ -51,12 +51,19 @@ $ultima_troca = 0;
 function chamar($metodo, $params = [])
 {
     global $API, $TOKEN;
+    // LINGUA=en: o roteiro inteiro nesse idioma (com TESTE_ESTRITO=1, a tradução que falta aparece no registro do roteiro)
+    if ((string)getenv("LINGUA") !== "") {
+        $params["lingua"] = (string)getenv("LINGUA");
+    }
     $ch = curl_init($metodo === "GET" ? $API . "?" . http_build_query($params) : $API);
     curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_HTTPHEADER => ["X-Api-Token: " . $TOKEN], CURLOPT_TIMEOUT => 120]);
     if ($metodo === "POST") {
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
     }
     $corpo = (string)curl_exec($ch);
+    if (preg_match('/Falta a tradução[^"]*/u', $corpo, $m) === 1) {
+        fwrite(STDERR, "IDIOMA " . ($params["recurso"] ?? "") . " " . ($params["acao"] ?? "") . ": " . stripslashes($m[0]) . "\n");
+    }
     $codigo = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $tipo = (string)curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
     $json = json_decode($corpo, true);

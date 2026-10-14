@@ -13,10 +13,10 @@ require_once __DIR__ . "/lib.php";
 try {
     $res = instalar_banco();
 } catch (BancoErro $e) {
-    $res = ["ok" => false, "erros" => ["Erro na instalação: " . $e->getMessage()]];
+    $res = ["ok" => false, "erros" => [t("Erro na instalação: {1}", [1 => $e->getMessage()])]];
 }
 if (!$res["ok"]) {
     fwrite(STDERR, implode("\n", $res["erros"]) . "\n");
     exit(1);
 }
-echo $res["mensagem"] . "\nPela linha de comando: php criar_usuario.php <login>\n";
+echo t("{1}\nPela linha de comando: php criar_usuario.php <login>\n", [1 => $res["mensagem"]]);

@@ -2968,17 +2968,16 @@ if ($recurso === "textos") {
 } elseif (!$token_ok && $quem === "") {
     $codigo = 401;
     header("WWW-Authenticate: Basic realm=\"Relogios\", charset=\"UTF-8\"");
-    $saida = ["erro" => "falta autenticação: o token (cabeçalho X-Api-Token ou parâmetro token) ou o login do site (HTTP Basic)"];
+    $saida = ["erro" => t("falta autenticação: o token (cabeçalho X-Api-Token ou parâmetro token) ou o login do site (HTTP Basic)")];
     // sem nenhum usuário, o login não tem como dar certo: diz como criar o primeiro
     if ($banco_vazio || !banco_tem_tabela("usuario") || (int)valor("SELECT COUNT(*) FROM usuario") === 0) {
         $saida["sem_usuarios"] = true;
-        $saida["como"] = $banco_vazio ? "o banco está vazio: instale com o token (POST recurso=instalacao, acao=instalar) e crie o primeiro usuário (POST recurso=usuarios, acao=salvar, login e senha)"
-            : "nenhum usuário cadastrado: crie o primeiro com o token (POST recurso=usuarios, acao=salvar, login e senha) ou no servidor (php criar_usuario.php <login>)";
+        $saida["como"] = $banco_vazio ? t("o banco está vazio: instale com o token (POST recurso=instalacao, acao=instalar) e crie o primeiro usuário (POST recurso=usuarios, acao=salvar, login e senha)")
+            : t("nenhum usuário cadastrado: crie o primeiro com o token (POST recurso=usuarios, acao=salvar, login e senha) ou no servidor (php criar_usuario.php <login>)");
     }
 } elseif ($envio_grande) {
     $codigo = 413;
-    $saida = ["ok" => false, "mensagem" => "", "erros" => ["O envio tem " . str_replace(".", ",", (string)round((int)$_SERVER["CONTENT_LENGTH"] / 1048576, 1))
-        . " MB e passou do limite do PHP do servidor (post_max_size = " . ini_get("post_max_size") . "). Envie um arquivo menor ou aumente o limite no php.ini."]];
+    $saida = ["ok" => false, "mensagem" => "", "erros" => [t("O envio tem {1} MB e passou do limite do PHP do servidor (post_max_size = {2}). Envie um arquivo menor ou aumente o limite no php.ini.", [1 => str_replace(".", ",", (string)round((int)$_SERVER["CONTENT_LENGTH"] / 1048576, 1)), 2 => ini_get("post_max_size")])]];
 } elseif ($recurso === "instalacao") {
     // a instalação: a situação (o banco, se está vazio e em dia, quantos usuários) e instalar, só num banco vazio
     if ($escrita && $acao === "instalar") {
@@ -2986,7 +2985,7 @@ if ($recurso === "textos") {
         $codigo = $saida["ok"] ? 200 : 400;
     } elseif ($escrita) {
         $codigo = 400;
-        $saida = ["ok" => false, "mensagem" => "", "erros" => ["Ação desconhecida: use instalar."]];
+        $saida = ["ok" => false, "mensagem" => "", "erros" => [t("Ação desconhecida: use instalar.")]];
     } else {
         $saida = instalacao_situacao();
     }
@@ -3004,16 +3003,16 @@ if ($recurso === "textos") {
     $saida = ["usuario" => $quem !== "" ? $quem : null, "por" => $quem !== "" ? "login" : "token", "volta" => $volta !== "" ? $volta : null];
 } elseif ($recurso === "migracoes" && $banco_vazio) {
     $codigo = 503;
-    $saida = ["erro" => "o banco está vazio: instale (POST recurso=instalacao, acao=instalar)", "proximo_passo" => instalacao_situacao()["proximo_passo"]];
+    $saida = ["erro" => t("o banco está vazio: instale (POST recurso=instalacao, acao=instalar)"), "proximo_passo" => instalacao_situacao()["proximo_passo"]];
 } elseif ($recurso === "migracoes") {
     require __DIR__ . "/api/migracoes.php";
 } elseif ($banco_vazio && !$sem_banco) {
     $codigo = 503;
-    $saida = ["erro" => "o banco está vazio: instale (POST recurso=instalacao, acao=instalar)", "proximo_passo" => instalacao_situacao()["proximo_passo"]];
+    $saida = ["erro" => t("o banco está vazio: instale (POST recurso=instalacao, acao=instalar)"), "proximo_passo" => instalacao_situacao()["proximo_passo"]];
 } elseif (count($pendentes) > 0 && !$sem_banco) {
     // banco desatualizado: só as migrações respondem (e o manual e o código, que não usam o banco: a página Ajuda continua abrindo)
     $codigo = 503;
-    $saida = ["erro" => "o banco está desatualizado: aplique as migrações (POST recurso=migracoes, acao=aplicar)", "pendentes" => array_map(function ($v, $m) {
+    $saida = ["erro" => t("o banco está desatualizado: aplique as migrações (POST recurso=migracoes, acao=aplicar)"), "pendentes" => array_map(function ($v, $m) {
         return ["versao" => $v, "arquivo" => $m[0], "traz" => $m[1]];
     }, array_keys($pendentes), array_values($pendentes))];
 } elseif ($escrita) {
@@ -3031,7 +3030,7 @@ if ($recurso === "textos") {
         exit;
     }
     $codigo = 404;
-    $saida = ["erro" => "sem foto para esse relógio"];
+    $saida = ["erro" => t("sem foto para esse relógio")];
 } elseif ($recurso === "documento") {
     require __DIR__ . "/api/documento.php";
 } elseif ($recurso === "documentos") {
@@ -3099,9 +3098,9 @@ if ($recurso === "textos") {
         $lista_a = array_values(array_filter($lista_a, function ($a) { return $a["relogio_id"] === null; }));
     }
     $saida = ["acessorios" => $lista_a,
-        "tipos" => array_map(function ($k) { return ["valor" => $k, "nome" => ACESSORIO_TIPOS[$k]]; }, array_keys(ACESSORIO_TIPOS)),
+        "tipos" => array_map(function ($k) { return ["valor" => $k, "nome" => t(ACESSORIO_TIPOS[$k])]; }, array_keys(ACESSORIO_TIPOS)),
         "por_tipo" => array_values(array_filter(array_map(function ($k) use ($lista_a) {
-            return ["tipo" => $k, "nome" => ACESSORIO_TIPOS[$k], "quantos" => count(array_filter($lista_a, function ($a) use ($k) { return $a["tipo"] === $k; }))];
+            return ["tipo" => $k, "nome" => t(ACESSORIO_TIPOS[$k]), "quantos" => count(array_filter($lista_a, function ($a) use ($k) { return $a["tipo"] === $k; }))];
         }, array_keys(ACESSORIO_TIPOS)), function ($x) { return $x["quantos"] > 0; })),
         "soltos" => count(array_filter($lista_a, function ($a) { return $a["relogio_id"] === null; })),
         "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "posse" => posse_de($r)]; }, linhas("SELECT * FROM relogio ORDER BY nome"))];
@@ -3141,7 +3140,7 @@ if ($recurso === "textos") {
     $md = manual_markdown();
     if ($md === "") {
         $codigo = 404;
-        $saida = ["erro" => "o README.md não está na pasta do sistema"];
+        $saida = ["erro" => t("o README.md não está na pasta do sistema")];
     } else {
         [$html_m, $sumario_m] = manual_html($md);
         $saida = ["fonte" => "README.md", "trechos" => array_map(function ($t) { return ["de" => $t[0], "ate" => $t[1]]; }, MANUAL_TRECHOS),
@@ -3160,7 +3159,7 @@ if ($recurso === "textos") {
     require __DIR__ . "/api/tudo.php";
 } else {
     $codigo = 404;
-    $saida = ["erro" => "recurso desconhecido", "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
+    $saida = ["erro" => t("recurso desconhecido"), "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
         "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "hora_certa", "acessorios", "passaporte", "galeria", "textos", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
@@ -3190,7 +3189,7 @@ if (!$escrita && $codigo === 200 && is_array($saida)) {
             $conta = ["listas" => 0, "antes" => 0, "depois" => 0, "devolvidos" => 0];
             filtrar_lista($saida, explode(".", (string)$caminho), $regras, $conta);
             if ($conta["listas"] === 0) {
-                $info["ignorados"][] = $caminho . ": não há lista nesse caminho";
+                $info["ignorados"][] = t("{1}: não há lista nesse caminho", [1 => $caminho]);
             } else {
                 $info["listas"][$caminho] = ["antes" => $conta["antes"], "passaram" => $conta["depois"], "devolvidos" => $conta["devolvidos"],
                     "pagina" => $regras["pagina"], "limite" => $regras["limite"] > 0 ? $regras["limite"] : null];
@@ -3200,7 +3199,7 @@ if (!$escrita && $codigo === 200 && is_array($saida)) {
         if (!array_is_list($saida)) {
             foreach (array_merge($partes_pedidas["incluir"], $partes_pedidas["excluir"]) as $parte) {
                 if (!array_key_exists($parte, $saida)) {
-                    $info["ignorados"][] = $parte . ": a resposta não tem essa parte";
+                    $info["ignorados"][] = t("{1}: a resposta não tem essa parte", [1 => $parte]);
                 }
             }
             $saida = array_filter($saida, function ($parte) use ($partes_pedidas) {

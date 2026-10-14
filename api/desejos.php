@@ -15,12 +15,12 @@ foreach (linhas("SELECT relogio_id, atualizado FROM foto") as $f) {
 $desejados = [];
 $fora_d = [];
 foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
-    $base = ["id" => (int)$r["id"], "nome" => $r["nome"], "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "sem grupo",
+    $base = ["id" => (int)$r["id"], "nome" => $r["nome"], "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : t("sem grupo"),
         "caminho" => no_caminho($r["no_id"]), "foto" => $fotos_d[(int)$r["id"]] ?? null, "criado" => $r["criado"]];
     if (posse_de($r) === "desejado") {
         $desejados[] = array_merge($base, desejo_do_relogio(valores_do_relogio((int)$r["id"])));
     } elseif (posse_de($r) !== "colecao") {
-        $fora_d[] = array_merge($base, ["posse" => posse_de($r), "posse_texto" => POSSES[posse_de($r)]]);
+        $fora_d[] = array_merge($base, ["posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)])]);
     }
 }
 // a lista: a prioridade mais alta primeiro, depois pelo nome

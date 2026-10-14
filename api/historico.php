@@ -24,7 +24,7 @@ foreach (["de" => 0, "ate" => 1] as $campo => $pos) {
             $per[$pos] = $campo === "de" ? strtotime($v) : strtotime($v) + 1;
             $filtro[$campo] = $v;
         } else {
-            $ignorados[] = $campo . " = " . $v . " (formato: AAAA-MM-DD ou AAAA-MM-DD HH:MM)";
+            $ignorados[] = t("{1} = {2} (formato: AAAA-MM-DD ou AAAA-MM-DD HH:MM)", [1 => $campo, 2 => $v]);
         }
     }
 }
@@ -40,7 +40,7 @@ foreach ($rels_h as $x) {
     $todas = linha_do_tempo((int)$x["id"], 0, PHP_INT_MAX, [])["linhas"];
     $rx = linha("SELECT no_id FROM relogio WHERE id = ?", [(int)$x["id"]]);
     $foto_h = valor("SELECT atualizado FROM foto WHERE relogio_id = ?", [(int)$x["id"]]);
-    $resumos[(string)$x["id"]] = array_merge(["relogio" => $x["nome"], "tipo" => isset(nos_todos()[(int)$rx["no_id"]]) ? nos_todos()[(int)$rx["no_id"]]["nome"] : "sem grupo",
+    $resumos[(string)$x["id"]] = array_merge(["relogio" => $x["nome"], "tipo" => isset(nos_todos()[(int)$rx["no_id"]]) ? nos_todos()[(int)$rx["no_id"]]["nome"] : t("sem grupo"),
         "foto" => $foto_h !== null ? strtotime($foto_h) : null, "registros" => count($todas),
         "desde" => count($todas) > 0 ? date("Y-m-d H:i:s", $todas[count($todas) - 1]["inicio"]) : null], resumo_do_tempo($f_h));
 }

@@ -31,11 +31,11 @@ $ERRO_TOKEN = "";
 /** @var mixed $token_cfg */
 $token_cfg = defined("API_TOKEN") ? constant("API_TOKEN") : null;
 if (!defined("API_TOKEN")) {
-    $ERRO_TOKEN = "o config.php não define API_TOKEN";
+    $ERRO_TOKEN = tk("o config.php não define API_TOKEN");
 } elseif ($token_cfg === null) {
     $ERRO_TOKEN = "API_TOKEN está nulo no config.php";
 } elseif (!is_string($token_cfg)) {
-    $ERRO_TOKEN = "API_TOKEN no config.php tem de ser um texto, entre aspas";
+    $ERRO_TOKEN = tk("API_TOKEN no config.php tem de ser um texto, entre aspas");
 } elseif (trim($token_cfg) === "") {
     $ERRO_TOKEN = "API_TOKEN está em branco no config.php";
 } elseif (strlen(trim($token_cfg)) < 10) {
@@ -95,7 +95,7 @@ function sorteio($min, $max)
         return $min;
     }
     if ($semente !== false) {
-        aleatorio_fonte("semente de teste");
+        aleatorio_fonte(t("semente de teste"));
         return mt_rand($min, $max);
     }
     $faixa = $max - $min + 1;
@@ -205,7 +205,7 @@ function aleatorio_lote($n)
         for ($i = 0; $i < $n; $i++) {
             $lote[] = random_int(0, 65535);
         }
-        $fonte = "gerador seguro do PHP (random_int)";
+        $fonte = t("gerador seguro do PHP (random_int)");
         if ($tentar && function_exists("cfg_set")) {
             try {
                 cfg_set("aleatorio_fora", (string)time());
@@ -221,7 +221,7 @@ function aleatorio_lote($n)
     }
     if (function_exists("cfg_set")) {
         try {
-            cfg_set("aleatorio_ultima", $fonte . " em " . date("Y-m-d H:i:s"));
+            cfg_set("aleatorio_ultima", t("{1} em {2}", [1 => $fonte, 2 => date("Y-m-d H:i:s")]));
         } catch (Throwable $e) {
         }
     }
@@ -294,7 +294,7 @@ function no_caminho($id)
 {
     $n = nos_todos();
     $cadeia = no_cadeia($id);
-    return count($cadeia) > 0 ? implode(" › ", array_map(function ($x) use ($n) { return $n[$x]["nome"]; }, $cadeia)) : "todos os relógios";
+    return count($cadeia) > 0 ? implode(" › ", array_map(function ($x) use ($n) { return $n[$x]["nome"]; }, $cadeia)) : t("todos os relógios");
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -302,12 +302,12 @@ function no_caminho($id)
 // tudo abaixo dele (os de cada nível somam). O valor de cada relógio fica em campo_valor.
 // ---------------------------------------------------------------------------------------------------------------------
 $TIPOS_CAMPO = [
-    "inteiro" => "Número inteiro",
-    "decimal" => "Número decimal",
-    "sim_nao" => "Sim ou não (nas contas: 1 ou 0)",
-    "data" => "Data (nas contas: por DIAS_DESDE, DIAS_ATE e SOMA_MESES)",
-    "lista" => "Lista de opções (compara e dá faixa por categoria)",
-    "texto" => "Texto (compara e dá faixa por categoria)",
+    "inteiro" => tk("Número inteiro"),
+    "decimal" => tk("Número decimal"),
+    "sim_nao" => tk("Sim ou não (nas contas: 1 ou 0)"),
+    "data" => tk("Data (nas contas: por DIAS_DESDE, DIAS_ATE e SOMA_MESES)"),
+    "lista" => tk("Lista de opções (compara e dá faixa por categoria)"),
+    "texto" => tk("Texto (compara e dá faixa por categoria)"),
 ];
 
 // Todos os campos, por identificador (uma vez por requisição)
@@ -385,22 +385,22 @@ function valor_para_campo($c, $v)
     $res = [null, ""];
     if ($v !== "") {
         if ($c["tipo"] === "inteiro") {
-            $res = preg_match("/^-?[0-9]+\$/", $v) === 1 ? [(string)(int)$v, ""] : [null, "tem de ser um número inteiro"];
+            $res = preg_match("/^-?[0-9]+\$/", $v) === 1 ? [(string)(int)$v, ""] : [null, t("tem de ser um número inteiro")];
         } elseif ($c["tipo"] === "decimal") {
             // aceita "1.079,99", "1079,99" ou "1079.99"
             $n = strpos($v, ',') !== false ? str_replace(',', '.', str_replace('.', "", $v)) : $v;
-            $res = is_numeric($n) ? [(string)(0 + (float)$n), ""] : [null, "tem de ser um número"];
+            $res = is_numeric($n) ? [(string)(0 + (float)$n), ""] : [null, t("tem de ser um número")];
         } elseif ($c["tipo"] === "sim_nao") {
             $s = strtolower($v);
-            $res = in_array($s, ["1", "sim", "s", "true"], true) ? ["1", ""] : (in_array($s, ["0", "não", "nao", "n", "false"], true) ? ["0", ""] : [null, "tem de ser sim ou não"]);
+            $res = in_array($s, ["1", "sim", "s", "true"], true) ? ["1", ""] : (in_array($s, ["0", "não", "nao", "n", "false"], true) ? ["0", ""] : [null, t("tem de ser sim ou não")]);
         } elseif ($c["tipo"] === "data") {
             $d = DateTimeImmutable::createFromFormat("!Y-m-d", $v);
-            $res = $d && $d->format("Y-m-d") === $v ? [$v, ""] : [null, "tem de ser uma data AAAA-MM-DD"];
+            $res = $d && $d->format("Y-m-d") === $v ? [$v, ""] : [null, t("tem de ser uma data AAAA-MM-DD")];
         } elseif ($c["tipo"] === "lista") {
             $opcoes = array_values(array_filter(array_map("trim", explode("\n", (string)$c["opcoes"]))));
-            $res = in_array($v, $opcoes, true) ? [$v, ""] : [null, "tem de ser uma das opções: " . implode(", ", $opcoes)];
+            $res = in_array($v, $opcoes, true) ? [$v, ""] : [null, t("tem de ser uma das opções: {1}", [1 => implode(", ", $opcoes)])];
         } else {
-            $res = strlen($v) <= 1000 ? [$v, ""] : [null, "passa de 1000 caracteres"];
+            $res = strlen($v) <= 1000 ? [$v, ""] : [null, t("passa de 1000 caracteres")];
         }
     }
     return $res;
@@ -410,7 +410,7 @@ function valor_para_campo($c, $v)
 // Tipos de lançamento: o que se registra num relógio. Formato: instantaneo (corda), valor (leitura de carga em %) ou
 // sessao (no pulso, no winder, no sol: com início e fim). Os lançamentos ficam em "lancamento".
 // ---------------------------------------------------------------------------------------------------------------------
-$FORMATOS_LANCAMENTO = ["instantaneo" => "Instantâneo", "valor" => "Instantâneo com valor", "sessao" => "Sessão, com início e fim"];
+$FORMATOS_LANCAMENTO = ["instantaneo" => tk("Instantâneo"), "valor" => tk("Instantâneo com valor"), "sessao" => tk("Sessão, com início e fim")];
 
 function lancamento_tipos($recarregar = false)
 {
@@ -461,30 +461,29 @@ function condicao_vale($expressao, $r, $momento)
 // só para os quatro bancos: o DDL no dialeto do MySQL (o banco.php traduz) e os dados em SQL comum aos quatro.
 // ---------------------------------------------------------------------------------------------------------------------
 $MIGRACOES = [
-    "v2" => ["migracao_v2.sql", "lançamentos pela API, com sessões exclusivas (o relógio num lugar só), avisos cadastráveis e a autonomia restante", "aviso"],
-    "v3" => ["migracao_v3.sql", "modos de rodízio cadastráveis, o plano, os critérios por lugar e o cron", "modo"],
-    "v4" => ["migracao_v4.sql", "a escala inteligente, os eventos personalizados, o Google Agenda, a previsão do smartwatch e a linha do tempo", "evento_personalizado"],
-    "v5" => ["migracao_v5.sql", "as telas e as mensagens do sistema antigo: canais com mensagem padrão e personalizada, avisos de carga baixa e de leitura, "
-        . "limite do solar, e o registro completo do cron", "cron_execucao.teve_atividade"],
-    "v6" => ["migracao_v6.sql", "o gasto medido pelas leituras (a média dos últimos dias) e as autonomias em segundos", "medicao"],
-    "v7" => ["migracao_v7.sql", "o ciclo no rodízio (opção de cada modo, desligada por padrão): um relógio só volta depois que todos do bloco passaram", "modo.ciclo"],
-    "v8" => ["migracao_v8.sql", "a condição \"vale quando\" nos tipos de lançamento e nos avisos; o automático sem corda recebe \"Pôr no winder\" em vez de \"Dar corda\"", "aviso.condicao"],
-    "v9" => ["migracao_v9.sql", "o limite de carga, geral e por relógio: carregar, pôr no sol e dar corda só quando a carga chega a ele", "campo.identificador=carga_minima"],
-    "v10" => ["migracao_v10.sql", "os avisos de carga pelo estado de agora: no winder ou no pulso (o automático carrega no pulso), sem aviso de winder ou de corda; no sol, sem aviso de sol; a data do \"Carregar\" pelo gasto de agora (no pulso, o de uso; guardado, o de guardado)", "config.chave=migracao_v10"],
-    "v11" => ["migracao_v11.sql", "o motivo de cada escolha do plano: por que aquele relógio saiu naquele dia (a garantia de rodízio, a nota, o sorteio, a escolha à mão)", "plano.motivo"],
-    "v12" => ["migracao_v12.sql", "os dias sem uso de um relógio nunca usado contam desde a compra (antes valiam 9999 para todos: empatavam na garantia de rodízio)", "config.chave=migracao_v12"],
-    "v13" => ["migracao_v13.sql", "o manual de cada relógio: um arquivo (PDF ou imagem) guardado no banco, que se envia e se abre pela ficha", "manual|documento"],
-    "v14" => ["migracao_v14.sql", "os documentos de cada relógio: qualquer arquivo (manual, nota fiscal em PDF e em XML, fotos, vídeos, diversos), numa categoria, com a página Documentos (galeria, vídeos em sequência, visualizador de PDF, resumo da nota); os manuais da v13 passam para lá", "documento"],
-    "v15" => ["migracao_v15.sql", "a cópia de segurança de cada documento dentro do banco (em pedaços de 4 MB): o arquivo que sumir da pasta volta sozinho do banco; o cron copia os que já existem e limpa a pasta (relógio excluído, arquivo sem documento)", "documento_parte"],
-    "v16" => ["migracao_v16.sql", "o banco no modelo relacional estrito: toda ligação é chave estrangeira, com cascata (ou, se opcional, desfazendo a ligação); as listas guardadas num campo (dias dos blocos e dos eventos, tipos aceitos, opções de um campo) viram tabelas; as mensagens e os canais saem da configuração para a tabela canal_aviso; o modo ativo vira uma marca no modo; a tabela manual sai (os manuais viram documentos)", "config.chave=migracao_v16", "migracao_v16_dados"],
-    "v17" => ["migracao_v17.sql", "o banco valida o que guarda: regras (CHECK) em cada tabela, a origem dos lançamentos e do plano numa lista fechada, no máximo um modo em uso, um arquivo por documento; e a cópia dos documentos no banco em três níveis: o sistema (config.php), o relógio e o próprio arquivo", "config.chave=migracao_v17"],
-    "v18" => ["migracao_v18.sql", "o carregador: a sessão \"No carregador\" onde vale a leitura de carga (o smartwatch), o estado do relógio mostra a sessão aberta (no sol, no winder, no carregador) e, no carregador, o aviso \"Carregar\" não aparece", "config.chave=migracao_v18"],
-    "v19" => ["migracao_v19.sql", "o solar carrega também no pulso: uma parte do que ganharia no sol direto, pelo campo \"No pulso: quanto carrega, comparado ao sol direto\" (padrão 25%; 0 é o de antes, a carga parada)", "config.chave=migracao_v19"],
-    "v20" => ["migracao_v20.sql", "o smartwatch carrega no carregador (o campo \"No carregador: horas para encher\"), o aviso \"Tirar do carregador\" que sai na hora pelo Telegram (os avisos \"na hora\"), as fórmulas \"Dias de uso\" e \"Custo por uso\", e no MySQL/MariaDB as tabelas em utf8mb4_unicode_ci", "config.chave=migracao_v20", "migracao_v20_dados"],
-    "v21" => ["migracao_v21.sql", "os dias livres do plano: o \"Deixar o período livre\" da página Plano apaga o que foi gerado e deixa os dias sem relógio, sem sorteio, para você escolher à mão", "plano_livre"],
-    "v22" => ["migracao_v22.sql", "a situação de cada relógio na coleção (na coleção, desejado, emprestado, vendido ou arquivado: fora da coleção, ele sai do rodízio e dos avisos, e a ficha e o histórico ficam) e a lista de desejos; os campos Marca, Referência e Link, e, só nos desejados, Preço-alvo e Prioridade", "relogio.posse"],
-    "v23" => ["migracao_v23.sql", "o aviso Encostado: um relógio da coleção que passou do limite de dias sem ir ao pulso (a Configuração, \"Aviso Encostado: dias sem ir ao pulso\", padrão 30)", "config.chave=encostado_dias"],
-    "v24" => ["migracao_v24.sql", "os acessórios: pulseiras, caixas, estojos, ferramentas, carregadores, peças e o que mais for, de um relógio ou soltos (a página Acessórios e o quadro Acessórios do relógio)", "acessorio"],
+    "v2" => ["migracao_v2.sql", tk("lançamentos pela API, com sessões exclusivas (o relógio num lugar só), avisos cadastráveis e a autonomia restante"), "aviso"],
+    "v3" => ["migracao_v3.sql", tk("modos de rodízio cadastráveis, o plano, os critérios por lugar e o cron"), "modo"],
+    "v4" => ["migracao_v4.sql", tk("a escala inteligente, os eventos personalizados, o Google Agenda, a previsão do smartwatch e a linha do tempo"), "evento_personalizado"],
+    "v5" => ["migracao_v5.sql", tk("as telas e as mensagens do sistema antigo: canais com mensagem padrão e personalizada, avisos de carga baixa e de leitura, limite do solar, e o registro completo do cron"), "cron_execucao.teve_atividade"],
+    "v6" => ["migracao_v6.sql", tk("o gasto medido pelas leituras (a média dos últimos dias) e as autonomias em segundos"), "medicao"],
+    "v7" => ["migracao_v7.sql", tk("o ciclo no rodízio (opção de cada modo, desligada por padrão): um relógio só volta depois que todos do bloco passaram"), "modo.ciclo"],
+    "v8" => ["migracao_v8.sql", tk("a condição \"vale quando\" nos tipos de lançamento e nos avisos; o automático sem corda recebe \"Pôr no winder\" em vez de \"Dar corda\""), "aviso.condicao"],
+    "v9" => ["migracao_v9.sql", tk("o limite de carga, geral e por relógio: carregar, pôr no sol e dar corda só quando a carga chega a ele"), "campo.identificador=carga_minima"],
+    "v10" => ["migracao_v10.sql", tk("os avisos de carga pelo estado de agora: no winder ou no pulso (o automático carrega no pulso), sem aviso de winder ou de corda; no sol, sem aviso de sol; a data do \"Carregar\" pelo gasto de agora (no pulso, o de uso; guardado, o de guardado)"), "config.chave=migracao_v10"],
+    "v11" => ["migracao_v11.sql", tk("o motivo de cada escolha do plano: por que aquele relógio saiu naquele dia (a garantia de rodízio, a nota, o sorteio, a escolha à mão)"), "plano.motivo"],
+    "v12" => ["migracao_v12.sql", tk("os dias sem uso de um relógio nunca usado contam desde a compra (antes valiam 9999 para todos: empatavam na garantia de rodízio)"), "config.chave=migracao_v12"],
+    "v13" => ["migracao_v13.sql", tk("o manual de cada relógio: um arquivo (PDF ou imagem) guardado no banco, que se envia e se abre pela ficha"), "manual|documento"],
+    "v14" => ["migracao_v14.sql", tk("os documentos de cada relógio: qualquer arquivo (manual, nota fiscal em PDF e em XML, fotos, vídeos, diversos), numa categoria, com a página Documentos (galeria, vídeos em sequência, visualizador de PDF, resumo da nota); os manuais da v13 passam para lá"), "documento"],
+    "v15" => ["migracao_v15.sql", tk("a cópia de segurança de cada documento dentro do banco (em pedaços de 4 MB): o arquivo que sumir da pasta volta sozinho do banco; o cron copia os que já existem e limpa a pasta (relógio excluído, arquivo sem documento)"), "documento_parte"],
+    "v16" => ["migracao_v16.sql", tk("o banco no modelo relacional estrito: toda ligação é chave estrangeira, com cascata (ou, se opcional, desfazendo a ligação); as listas guardadas num campo (dias dos blocos e dos eventos, tipos aceitos, opções de um campo) viram tabelas; as mensagens e os canais saem da configuração para a tabela canal_aviso; o modo ativo vira uma marca no modo; a tabela manual sai (os manuais viram documentos)"), "config.chave=migracao_v16", "migracao_v16_dados"],
+    "v17" => ["migracao_v17.sql", tk("o banco valida o que guarda: regras (CHECK) em cada tabela, a origem dos lançamentos e do plano numa lista fechada, no máximo um modo em uso, um arquivo por documento; e a cópia dos documentos no banco em três níveis: o sistema (config.php), o relógio e o próprio arquivo"), "config.chave=migracao_v17"],
+    "v18" => ["migracao_v18.sql", tk("o carregador: a sessão \"No carregador\" onde vale a leitura de carga (o smartwatch), o estado do relógio mostra a sessão aberta (no sol, no winder, no carregador) e, no carregador, o aviso \"Carregar\" não aparece"), "config.chave=migracao_v18"],
+    "v19" => ["migracao_v19.sql", tk("o solar carrega também no pulso: uma parte do que ganharia no sol direto, pelo campo \"No pulso: quanto carrega, comparado ao sol direto\" (padrão 25%; 0 é o de antes, a carga parada)"), "config.chave=migracao_v19"],
+    "v20" => ["migracao_v20.sql", tk("o smartwatch carrega no carregador (o campo \"No carregador: horas para encher\"), o aviso \"Tirar do carregador\" que sai na hora pelo Telegram (os avisos \"na hora\"), as fórmulas \"Dias de uso\" e \"Custo por uso\", e no MySQL/MariaDB as tabelas em utf8mb4_unicode_ci"), "config.chave=migracao_v20", "migracao_v20_dados"],
+    "v21" => ["migracao_v21.sql", tk("os dias livres do plano: o \"Deixar o período livre\" da página Plano apaga o que foi gerado e deixa os dias sem relógio, sem sorteio, para você escolher à mão"), "plano_livre"],
+    "v22" => ["migracao_v22.sql", tk("a situação de cada relógio na coleção (na coleção, desejado, emprestado, vendido ou arquivado: fora da coleção, ele sai do rodízio e dos avisos, e a ficha e o histórico ficam) e a lista de desejos; os campos Marca, Referência e Link, e, só nos desejados, Preço-alvo e Prioridade"), "relogio.posse"],
+    "v23" => ["migracao_v23.sql", tk("o aviso Encostado: um relógio da coleção que passou do limite de dias sem ir ao pulso (a Configuração, \"Aviso Encostado: dias sem ir ao pulso\", padrão 30)"), "config.chave=encostado_dias"],
+    "v24" => ["migracao_v24.sql", tk("os acessórios: pulseiras, caixas, estojos, ferramentas, carregadores, peças e o que mais for, de um relógio ou soltos (a página Acessórios e o quadro Acessórios do relógio)"), "acessorio"],
 ];
 
 // O passo em PHP da v16, depois do SQL dela: as opções de cada campo do tipo lista (o texto, uma por linha) viram linhas da
@@ -549,8 +548,7 @@ function instalar_banco()
     global $MIGRACOES;
     $tabelas = banco_tabelas();
     if (count($tabelas) > 0) {
-        return ["ok" => false, "mensagem" => "", "erros" => ["O banco já tem tabelas (" . implode(", ", array_slice($tabelas, 0, 5)) . (count($tabelas) > 5 ? "..." : "")
-            . "): a instalação é só num banco vazio. Para atualizar um banco que já existe, aplique as migrações (recurso=migracoes, acao=aplicar)."]];
+        return ["ok" => false, "mensagem" => "", "erros" => [t("O banco já tem tabelas ({1}{2}): a instalação é só num banco vazio. Para atualizar um banco que já existe, aplique as migrações (recurso=migracoes, acao=aplicar).", [1 => implode(", ", array_slice($tabelas, 0, 5)), 2 => count($tabelas) > 5 ? "..." : ""])]];
     }
     if (banco_tipo() === "pgsql") {
         // maiúsculas e acentos não contam nas colunas de texto curto, como no MySQL: "Relógio" = "RELOGIO"
@@ -565,11 +563,10 @@ function instalar_banco()
     }
     $pendentes = migracoes_pendentes();
     if (count($pendentes) > 0) {
-        return ["ok" => false, "mensagem" => "", "erros" => ["A instalação terminou, mas faltam as migrações " . implode(", ", array_keys($pendentes)) . ": o schema.sql está incompleto."]];
+        return ["ok" => false, "mensagem" => "", "erros" => [t("A instalação terminou, mas faltam as migrações {1}: o schema.sql está incompleto.", [1 => implode(", ", array_keys($pendentes))])]];
     }
     $seg = round(microtime(true) - $inicio, 1);
-    return ["ok" => true, "mensagem" => "Banco instalado (" . ["mysql" => "MySQL/MariaDB", "pgsql" => "PostgreSQL", "sqlite" => "SQLite", "firebird" => "Firebird"][banco_tipo()] . "): " . $n
-        . " comandos, " . count(banco_tabelas()) . " tabelas, em " . str_replace(".", ",", (string)$seg) . " s. Agora crie o primeiro usuário (recurso=usuarios, acao=salvar, com o token).",
+    return ["ok" => true, "mensagem" => t("Banco instalado ({1}): {2} comandos, {3} tabelas, em {4} s. Agora crie o primeiro usuário (recurso=usuarios, acao=salvar, com o token).", [1 => ["mysql" => "MySQL/MariaDB", "pgsql" => "PostgreSQL", "sqlite" => "SQLite", "firebird" => t("Firebird")][banco_tipo()], 2 => $n, 3 => count(banco_tabelas()), 4 => decimal_txt($seg, 6)]),
         "erros" => [], "comandos" => $n, "tabelas" => count(banco_tabelas()), "segundos" => $seg];
 }
 
@@ -580,9 +577,9 @@ function instalacao_situacao()
     $vazio = count($tabelas) === 0;
     $pendentes = $vazio ? [] : array_keys(migracoes_pendentes());
     $usuarios = !$vazio && banco_tem_tabela("usuario") ? (int)valor("SELECT COUNT(*) FROM usuario") : 0;
-    $proximo = $vazio ? "instalar: POST recurso=instalacao, acao=instalar"
-        : (count($pendentes) > 0 ? "aplicar as migrações: POST recurso=migracoes, acao=aplicar"
-            : ($usuarios === 0 ? "criar o primeiro usuário: POST recurso=usuarios, acao=salvar, login e senha (com o token)" : "nada: o sistema está pronto"));
+    $proximo = $vazio ? t("instalar: POST recurso=instalacao, acao=instalar")
+        : (count($pendentes) > 0 ? t("aplicar as migrações: POST recurso=migracoes, acao=aplicar")
+            : ($usuarios === 0 ? t("criar o primeiro usuário: POST recurso=usuarios, acao=salvar, login e senha (com o token)") : t("nada: o sistema está pronto")));
     return ["banco" => banco_tipo(), "vazio" => $vazio, "instalado" => !$vazio, "tabelas" => count($tabelas), "em_dia" => !$vazio && count($pendentes) === 0,
         "migracoes_pendentes" => array_values($pendentes), "usuarios" => $usuarios, "proximo_passo" => $proximo];
 }
@@ -621,38 +618,35 @@ function migracoes_pendentes()
 // As funções: nome => [mínimo de argumentos, máximo (null: sem limite), descrição, histórico (o 1º argumento é um tipo
 // de lançamento, entre aspas)]
 $FUNCOES = [
-    "MIN" => [1, null, "o menor dos valores (ignora os vazios)", false],
-    "MAX" => [1, null, "o maior dos valores (ignora os vazios)", false],
-    "SE" => [3, 3, "SE(condição; se verdadeira; se falsa)", false],
-    "E" => [1, null, "1 se todas as condições são verdadeiras", false],
-    "OU" => [1, null, "1 se alguma condição é verdadeira", false],
-    "NAO" => [1, 1, "inverte a condição", false],
-    "LIMITA" => [3, 3, "LIMITA(x; mínimo; máximo)", false],
+    "MIN" => [1, null, tk("o menor dos valores (ignora os vazios)"), false],
+    "MAX" => [1, null, tk("o maior dos valores (ignora os vazios)"), false],
+    "SE" => [3, 3, tk("SE(condição; se verdadeira; se falsa)"), false],
+    "E" => [1, null, tk("1 se todas as condições são verdadeiras"), false],
+    "OU" => [1, null, tk("1 se alguma condição é verdadeira"), false],
+    "NAO" => [1, 1, tk("inverte a condição"), false],
+    "LIMITA" => [3, 3, tk("LIMITA(x; mínimo; máximo)"), false],
     "ARREDONDA" => [1, 2, "ARREDONDA(x; casas)", false],
-    "ABS" => [1, 1, "o valor sem sinal", false],
-    "PADRAO" => [2, 2, "PADRAO(x; valor se x estiver vazio)", false],
-    "VAZIO" => [1, 1, "1 se o valor está vazio", false],
-    "NADA" => [0, 0, "o vazio, de propósito (ex.: SE(condição; NADA(); conta))", false],
-    "HOJE" => [0, 0, "a data de hoje (em dias)", false],
-    "AGORA" => [0, 0, "o instante de agora (em dias, com a fração do dia)", false],
-    "HORAS_USO" => [0, 0, "as horas de um dia de uso, pelo horário de uso da Configuração (das 7h às 22h: 15)", false],
-    "MEDIDO" => [1, 1, "MEDIDO(\"uso\") ou MEDIDO(\"repouso\"): o gasto medido pelas leituras, em % por dia (de uso ou fora do pulso): os dois saem juntos das medições dos últimos dias da Configuração (cada intervalo entre duas leituras: a queda = dias de uso × gasto em uso + dias fora × gasto fora), pesadas pelas horas; quando elas não separam os dois, a média das medições de cada um; sem nenhuma nesses dias, a última; sem nenhuma, vazio", false],
-    "CONFIG" => [1, 1, "CONFIG(\"chave\"): um número da Configuração (ex.: CONFIG(\"sol_limiar\"), o limite do solar); vazio se não for número", false],
-    "DIAS_DESDE" => [1, 1, "dias desde uma data", false],
-    "DIAS_ATE" => [1, 1, "dias até uma data (negativo: já passou)", false],
-    "SOMA_MESES" => [2, 2, "SOMA_MESES(data; meses): a data somada de meses, pelo calendário", false],
-    "ULTIMO_VALOR" => [1, 1, "ULTIMO_VALOR(\"tipo\"): o valor do último lançamento daquele tipo", true],
-    "ULTIMA_DATA" => [1, 1, "ULTIMA_DATA(\"tipo\"): quando foi o último (numa sessão, o fim; aberta: agora)", true],
-    "DIAS_DESDE_ULTIMO" => [1, 1, "DIAS_DESDE_ULTIMO(\"tipo\"): dias desde o último (sessão aberta: 0)", true],
-    "HORAS" => [2, 2, "HORAS(\"sessão\"; dias): horas naquela sessão nos últimos N dias", true],
-    "HORAS_APOS" => [2, 2, "HORAS_APOS(\"sessão\"; \"tipo\"): horas naquela sessão desde o último lançamento do outro tipo", true],
-    "CONTAR" => [2, 2, "CONTAR(\"tipo\"; dias): quantos lançamentos (ou dias com sessão) nos últimos N dias", true],
-    "EM_SESSAO" => [1, 1, "EM_SESSAO(\"sessão\"): 1 se a sessão está aberta agora", true],
-    "ACUMULA" => [3, null, "ACUMULA(início; máximo; perda por hora; \"tipo\"; efeito; ...): um saldo que percorre o histórico: "
-        . "numa sessão da lista, ganha o efeito por hora (negativo: perde); num lançamento instantâneo da lista, passa a valer o efeito; num "
-        . "lançamento com valor (uma leitura), passa a valer a leitura vezes o efeito (1: a própria leitura); no resto, perde a perda por hora; "
-        . "sempre entre 0 e o máximo", true],
-    "MEDIA_COLECAO" => [1, 1, "MEDIA_COLECAO(\"variável\"): a média daquela variável nos relógios disponíveis", false],
+    "ABS" => [1, 1, tk("o valor sem sinal"), false],
+    "PADRAO" => [2, 2, tk("PADRAO(x; valor se x estiver vazio)"), false],
+    "VAZIO" => [1, 1, tk("1 se o valor está vazio"), false],
+    "NADA" => [0, 0, tk("o vazio, de propósito (ex.: SE(condição; NADA(); conta))"), false],
+    "HOJE" => [0, 0, tk("a data de hoje (em dias)"), false],
+    "AGORA" => [0, 0, tk("o instante de agora (em dias, com a fração do dia)"), false],
+    "HORAS_USO" => [0, 0, tk("as horas de um dia de uso, pelo horário de uso da Configuração (das 7h às 22h: 15)"), false],
+    "MEDIDO" => [1, 1, tk("MEDIDO(\"uso\") ou MEDIDO(\"repouso\"): o gasto medido pelas leituras, em % por dia (de uso ou fora do pulso): os dois saem juntos das medições dos últimos dias da Configuração (cada intervalo entre duas leituras: a queda = dias de uso × gasto em uso + dias fora × gasto fora), pesadas pelas horas; quando elas não separam os dois, a média das medições de cada um; sem nenhuma nesses dias, a última; sem nenhuma, vazio"), false],
+    "CONFIG" => [1, 1, tk("CONFIG(\"chave\"): um número da Configuração (ex.: CONFIG(\"sol_limiar\"), o limite do solar); vazio se não for número"), false],
+    "DIAS_DESDE" => [1, 1, tk("dias desde uma data"), false],
+    "DIAS_ATE" => [1, 1, tk("dias até uma data (negativo: já passou)"), false],
+    "SOMA_MESES" => [2, 2, tk("SOMA_MESES(data; meses): a data somada de meses, pelo calendário"), false],
+    "ULTIMO_VALOR" => [1, 1, tk("ULTIMO_VALOR(\"tipo\"): o valor do último lançamento daquele tipo"), true],
+    "ULTIMA_DATA" => [1, 1, tk("ULTIMA_DATA(\"tipo\"): quando foi o último (numa sessão, o fim; aberta: agora)"), true],
+    "DIAS_DESDE_ULTIMO" => [1, 1, tk("DIAS_DESDE_ULTIMO(\"tipo\"): dias desde o último (sessão aberta: 0)"), true],
+    "HORAS" => [2, 2, tk("HORAS(\"sessão\"; dias): horas naquela sessão nos últimos N dias"), true],
+    "HORAS_APOS" => [2, 2, tk("HORAS_APOS(\"sessão\"; \"tipo\"): horas naquela sessão desde o último lançamento do outro tipo"), true],
+    "CONTAR" => [2, 2, tk("CONTAR(\"tipo\"; dias): quantos lançamentos (ou dias com sessão) nos últimos N dias"), true],
+    "EM_SESSAO" => [1, 1, tk("EM_SESSAO(\"sessão\"): 1 se a sessão está aberta agora"), true],
+    "ACUMULA" => [3, null, tk("ACUMULA(início; máximo; perda por hora; \"tipo\"; efeito; ...): um saldo que percorre o histórico: numa sessão da lista, ganha o efeito por hora (negativo: perde); num lançamento instantâneo da lista, passa a valer o efeito; num lançamento com valor (uma leitura), passa a valer a leitura vezes o efeito (1: a própria leitura); no resto, perde a perda por hora; sempre entre 0 e o máximo"), true],
+    "MEDIA_COLECAO" => [1, 1, tk("MEDIA_COLECAO(\"variável\"): a média daquela variável nos relógios disponíveis"), false],
 ];
 
 class ErroFormula extends Exception
@@ -685,7 +679,7 @@ function formula_ler($f)
         } elseif ($c === '"') {
             $fim = strpos($f, '"', $i + 1);
             if ($fim === false) {
-                throw new ErroFormula("texto aberto na posição " . ($i + 1) . ": falta fechar as aspas");
+                throw new ErroFormula(t("texto aberto na posição {1}: falta fechar as aspas", [1 => $i + 1]));
             }
             $p[] = ["txt", substr($f, $i + 1, $fim - $i - 1), $i];
             $i = $fim + 1;
@@ -703,16 +697,16 @@ function formula_ler($f)
             $p[] = [$c, $c, $i];
             $i++;
         } else {
-            throw new ErroFormula("caractere inesperado \"" . $c . "\" na posição " . ($i + 1));
+            throw new ErroFormula(t("caractere inesperado \"{1}\" na posição {2}", [1 => $c, 2 => $i + 1]));
         }
     }
     $st = ["p" => $p, "i" => 0];
     if (count($p) === 0) {
-        throw new ErroFormula("a fórmula está vazia");
+        throw new ErroFormula(t("a fórmula está vazia"));
     }
     $arvore = formula_ler_nivel($st, 0);
     if ($st["i"] < count($p)) {
-        throw new ErroFormula("\"" . $p[$st["i"]][1] . "\" sobrando na posição " . ($p[$st["i"]][2] + 1));
+        throw new ErroFormula(t("\"{1}\" sobrando na posição {2}", [1 => $p[$st["i"]][1], 2 => $p[$st["i"]][2] + 1]));
     }
     return $arvore;
 }
@@ -724,7 +718,7 @@ function formula_ler_nivel(&$st, $nivel)
 {
     global $FUNCOES;
     $t = $st["p"][$st["i"]] ?? ["fim", "", -1];
-    $onde = $t[2] >= 0 ? "na posição " . ($t[2] + 1) : "no fim";
+    $onde = $t[2] >= 0 ? t("na posição {1}", [1 => $t[2] + 1]) : t("no fim");
     if ($nivel === 0) {
         $res = formula_ler_nivel($st, 1);
         $t = $st["p"][$st["i"]] ?? ["fim", "", -1];
@@ -757,13 +751,13 @@ function formula_ler_nivel(&$st, $nivel)
         } elseif ($t[0] === "(") {
             $res = formula_ler_nivel($st, 0);
             if (($st["p"][$st["i"]][0] ?? "") !== ")") {
-                throw new ErroFormula("falta fechar o parêntese " . (isset($st["p"][$st["i"]]) ? "na posição " . ($st["p"][$st["i"]][2] + 1) : "no fim"));
+                throw new ErroFormula(t("falta fechar o parêntese {1}", [1 => isset($st["p"][$st["i"]]) ? t("na posição {1}", [1 => $st["p"][$st["i"]][2] + 1]) : t("no fim")]));
             }
             $st["i"]++;
         } elseif ($t[0] === "id" && ($st["p"][$st["i"]][0] ?? "") === "(") {
             $nome = strtoupper($t[1]);
             if (!isset($FUNCOES[$nome])) {
-                throw new ErroFormula("função desconhecida " . $t[1] . " " . $onde);
+                throw new ErroFormula(t("função desconhecida {1} {2}", [1 => $t[1], 2 => $onde]));
             }
             $st["i"]++;
             $args = [];
@@ -775,20 +769,18 @@ function formula_ler_nivel(&$st, $nivel)
                 }
             }
             if (($st["p"][$st["i"]][0] ?? "") !== ")") {
-                throw new ErroFormula("falta fechar os argumentos de " . $nome . " " . (isset($st["p"][$st["i"]]) ? "na posição " . ($st["p"][$st["i"]][2] + 1) : "no fim")
-                    . " (os argumentos se separam com ponto e vírgula)");
+                throw new ErroFormula(t("falta fechar os argumentos de {1} {2} (os argumentos se separam com ponto e vírgula)", [1 => $nome, 2 => isset($st["p"][$st["i"]]) ? t("na posição {1}", [1 => $st["p"][$st["i"]][2] + 1]) : t("no fim")]));
             }
             $st["i"]++;
             $d = $FUNCOES[$nome];
             if (count($args) < $d[0] || ($d[1] !== null && count($args) > $d[1])) {
-                throw new ErroFormula($nome . " recebe " . ($d[1] === null ? "pelo menos " . $d[0] : ($d[0] === $d[1] ? $d[0] : "de " . $d[0] . " a " . $d[1]))
-                    . " argumento(s), e recebeu " . count($args) . " " . $onde);
+                throw new ErroFormula(t("{1} recebe {2} argumento(s), e recebeu {3} {4}", [1 => $nome, 2 => $d[1] === null ? t("pelo menos {1}", [1 => $d[0]]) : ($d[0] === $d[1] ? $d[0] : t("de {1} a {2}", [1 => $d[0], 2 => $d[1]])), 3 => count($args), 4 => $onde]));
             }
             $res = ["f", $nome, $args];
         } elseif ($t[0] === "id") {
             $res = ["v", $t[1]];
         } else {
-            throw new ErroFormula($t[0] === "fim" ? "a fórmula acabou antes do esperado" : "\"" . $t[1] . "\" fora do lugar " . $onde);
+            throw new ErroFormula($t[0] === "fim" ? t("a fórmula acabou antes do esperado") : t("\"{1}\" fora do lugar {2}", [1 => $t[1], 2 => $onde]));
         }
     }
     return $res;
@@ -1319,12 +1311,12 @@ function formula_validar($ident, $expressao)
         $conhecidas = array_merge(array_keys(campos_todos()), array_keys(formulas_todas()), [$ident]);
         foreach ($refs["variaveis"] as $v) {
             if (!in_array($v, $conhecidas, true)) {
-                $erros[] = "variável desconhecida: " . $v . " (não é campo nem fórmula)";
+                $erros[] = t("variável desconhecida: {1} (não é campo nem fórmula)", [1 => $v]);
             }
         }
         foreach ($refs["lancamentos"] as $t) {
             if (!isset(lancamento_tipos()[$t])) {
-                $erros[] = "tipo de lançamento desconhecido: \"" . $t . "\"";
+                $erros[] = t("tipo de lançamento desconhecido: \"{1}\"", [1 => $t]);
             }
         }
         // o círculo: a partir das variáveis desta fórmula, seguindo as fórmulas (todas as versões de cada uma), chega-se a ela?
@@ -1339,7 +1331,7 @@ function formula_validar($ident, $expressao)
                 $item = array_pop($visitar);
                 $v = $item[0];
                 if ($v === $ident) {
-                    $erros[] = "a fórmula depende dela mesma: " . implode(" → ", $item[1]);
+                    $erros[] = t("a fórmula depende dela mesma: {1}", [1 => implode(" → ", $item[1])]);
                     $visitar = [];
                 } elseif (!isset($vistas[$v]) && isset(formulas_todas()[$v])) {
                     $vistas[$v] = true;
@@ -1349,14 +1341,14 @@ function formula_validar($ident, $expressao)
                                 $visitar[] = [$prox, array_merge($item[1], [$prox])];
                             }
                         } catch (ErroFormula $e) {
-                            $erros[] = "a fórmula " . $v . " usada aqui está com erro de escrita";
+                            $erros[] = t("a fórmula {1} usada aqui está com erro de escrita", [1 => $v]);
                         }
                     }
                 }
             }
         }
     } catch (ErroFormula $e) {
-        $erros[] = "erro de escrita: " . $e->getMessage();
+        $erros[] = t("erro de escrita: {1}", [1 => $e->getMessage()]);
     }
     return $erros;
 }
@@ -1373,12 +1365,12 @@ function duracao_texto($dias)
 {
     $min = (int)round(abs((float)$dias) * 1440);
     $partes = [];
-    foreach ([["a", 525960], ["m", 43830], ["d", 1440], ["h", 60], ["min", 1]] as $u) {
+    foreach ([[tk("{n}a"), 525960], [tk("{n}m"), 43830], [tk("{n}d"), 1440], [tk("{n}h"), 60], [tk("{n}min"), 1]] as $u) {
         if (count($partes) < 2 && ($min >= $u[1] || count($partes) > 0)) {
             $n = intdiv($min, $u[1]);
             $min -= $n * $u[1];
             if ($n > 0) {
-                $partes[] = $n . $u[0];
+                $partes[] = t($u[0], ["n" => $n]);
             }
         }
     }
@@ -1427,12 +1419,12 @@ function avisos_do_relogio($r, $momento, $so = null)
                 $modelo = $a["texto"];
                 if (strpos($modelo, "{limite}") !== false) {
                     $lim = isset(formulas_todas()["limite_carga"]) ? variavel_valor("limite_carga", $ctx) : null;
-                    $modelo = is_numeric($lim) ? str_replace("{limite}", str_replace(".", ",", (string)round((float)$lim, 1)), $modelo)
+                    $modelo = is_numeric($lim) ? str_replace("{limite}", decimal_txt((float)$lim, 1), $modelo)
                         : str_replace(["{limite}%", "{limite}"], "o limite", $modelo);
                 }
                 $falta = (float)$data - $agora_d;
                 // o quanto falta (ou passou), por extenso (as duas maiores partes)
-                $quando = duracao_texto($falta) === "" ? "agora" : ($falta >= 0 ? "em " : "há ") . duracao_texto($falta);
+                $quando = duracao_texto($falta) === "" ? t("agora") : ($falta >= 0 ? t("em {1}", [1 => duracao_texto($falta)]) : t("há {1}", [1 => duracao_texto($falta)]));
                 $ts = (int)round((float)$data * 86400);
                 $data_txt = gmdate("d/m/Y H:i", $ts);
                 // escala, simula_*, agenda e modelo: para a escala inteligente e a agenda (o modelo é o texto sem as trocas, só com o {limite})
@@ -1553,9 +1545,9 @@ function criterios_config($recarregar = false)
 // O lugar por extenso: "todos os relógios", o caminho do ponto, ou "relógio: nome"
 function escopo_texto($chave)
 {
-    $res = "todos os relógios";
+    $res = t("todos os relógios");
     if (strpos((string)$chave, "r:") === 0) {
-        $res = "relógio: " . (valor("SELECT nome FROM relogio WHERE id = ?", [(int)substr($chave, 2)]) ?? "excluído");
+        $res = t("relógio: {1}", [1 => valor("SELECT nome FROM relogio WHERE id = ?", [(int)substr($chave, 2)]) ?? t("excluído")]);
     } elseif (strpos((string)$chave, "g:") === 0) {
         $res = no_caminho((int)substr($chave, 2));
     }
@@ -1656,11 +1648,11 @@ function plano_do_dia($data)
 // ("nunca usado", "parado há 23 dias") e a nota com vírgula ("91,2")
 function motivo_parado($dias_sem_uso, $nunca_usado = false)
 {
-    $dias = str_replace(".", ",", (string)round($dias_sem_uso, $dias_sem_uso < 10 ? 1 : 0)) . " dias";
+    $dias = t("{1} dias", [1 => decimal_txt($dias_sem_uso, $dias_sem_uso < 10 ? 1 : 0)]);
     if ($dias_sem_uso >= 9999) {
-        return "nunca usado";
+        return t("nunca usado");
     }
-    return $nunca_usado ? "nunca usado, na coleção há " . $dias : "parado há " . $dias;
+    return $nunca_usado ? t("nunca usado, na coleção há {1}", [1 => $dias]) : t("parado há {1}", [1 => $dias]);
 }
 
 // O relógio nunca foi ao pulso (nem nos dias do plano já simulados)? Pela mesma conta das fórmulas. Os dias sem uso de um
@@ -1676,7 +1668,7 @@ function nunca_no_pulso(&$ctx)
 
 function motivo_nota($nota)
 {
-    return str_replace(".", ",", (string)round((float)$nota, 1));
+    return decimal_txt((float)$nota, 1);
 }
 
 // Monta o plano que falta, de hoje até $ate (padrão: o domingo desta semana; no domingo, também a segunda, para o aviso
@@ -1701,7 +1693,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
             WHERE t.identificador = 'pulso' AND l.origem = 'rodizio' AND DATE(l.inicio) = ? ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [$hoje->format("Y-m-d")]) : null;
         if (plano_do_dia($hoje->format("Y-m-d")) === null && $no_pulso !== null && !dia_livre($hoje->format("Y-m-d"))) {
             sql("INSERT INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, NULL, 'manual', ?, NOW())",
-                [$hoje->format("Y-m-d"), (int)$no_pulso, "Já estava no pulso pelo rodízio quando o plano de hoje foi montado."]);
+                [$hoje->format("Y-m-d"), (int)$no_pulso, t("Já estava no pulso pelo rodízio quando o plano de hoje foi montado.")]);
         }
         $blocos = modo_blocos((int)$modo["id"]);
         if ($ate === null) {
@@ -1740,13 +1732,13 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                     $motivo = "";
                     if ($bloco["relogio_id"] !== null && (int)valor("SELECT disponivel FROM relogio WHERE id = ?", [(int)$bloco["relogio_id"]]) === 1) {
                         $escolhido = (int)$bloco["relogio_id"];
-                        $motivo = "Relógio fixo do bloco " . $bloco["nome"] . ".";
+                        $motivo = t("Relógio fixo do bloco {1}.", [1 => $bloco["nome"]]);
                     } elseif ($bloco["um_por"] === "bloco") {
                         $seg = $dia->modify("monday this week");
                         $v = valor("SELECT relogio_id FROM plano WHERE bloco_id = ? AND data BETWEEN ? AND ? ORDER BY data LIMIT 1",
                             [(int)$bloco["id"], $seg->format("Y-m-d"), $seg->modify("+6 days")->format("Y-m-d")]);
                         $escolhido = $v !== null ? (int)$v : null;
-                        $motivo = "O mesmo relógio da semana no bloco " . $bloco["nome"] . " (um relógio para o bloco inteiro).";
+                        $motivo = t("O mesmo relógio da semana no bloco {1} (um relógio para o bloco inteiro).", [1 => $bloco["nome"]]);
                     }
                     if ($escolhido === null) {
                         $fora = [];
@@ -1759,7 +1751,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                         $ontem = valor("SELECT relogio_id FROM plano WHERE data = ?", [$dia->modify("-1 day")->format("Y-m-d")]);
                         if ($ontem !== null && count($cands) > 1) {
                             if (isset($cands[(int)$ontem])) {
-                                $fora[] = "o de ontem (" . $cands[(int)$ontem]["nome"] . ") ficou de fora";
+                                $fora[] = t("o de ontem ({1}) ficou de fora", [1 => $cands[(int)$ontem]["nome"]]);
                             }
                             unset($cands[(int)$ontem]);
                         }
@@ -1770,7 +1762,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                             $restam = array_diff_key($cands, array_flip(ciclo_atual($seq, array_keys($cands))));
                             if (count($restam) > 0) {
                                 if (count($restam) < count($cands)) {
-                                    $fora[] = "pelo ciclo, " . (count($cands) - count($restam)) . " que já passaram na semana ficaram de fora";
+                                    $fora[] = t("pelo ciclo, {1} que já passaram na semana ficaram de fora", [1 => count($cands) - count($restam)]);
                                 }
                                 $cands = $restam;
                             }
@@ -1782,7 +1774,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                                 $dsu = variavel_valor("dias_sem_uso", $ctx);
                                 $info[$cid] = ["dsu" => is_numeric($dsu) ? (float)$dsu : 9999.0, "nota" => nota_do_relogio($r, $m_ini)["nota"], "nunca" => nunca_no_pulso($ctx)];
                             }
-                            $entre = count($cands) === 1 ? "único candidato do bloco " . $bloco["nome"] : "entre " . count($cands) . " candidatos";
+                            $entre = count($cands) === 1 ? t("único candidato do bloco {1}", [1 => $bloco["nome"]]) : t("entre {1} candidatos", [1 => count($cands)]);
                             $max = (int)cfg("max_sem_uso");
                             $parados = array_filter($info, function ($x) use ($max) { return $x["dsu"] > $max; });
                             if ($max > 0 && count($parados) > 0 && $modo["selecao"] !== "aleatorio") {
@@ -1795,21 +1787,19 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                                         $empatados[] = $cands[$cid]["nome"];
                                     }
                                 }
-                                $motivo = "Garantia de rodízio: " . motivo_parado($parados[$escolhido]["dsu"], $parados[$escolhido]["nunca"]) . ", além do limite de " . $max . " dias sem uso"
-                                    . (count($parados) > 1 ? " (" . count($parados) . " além do limite; sai o mais tempo parado)" : "") . "."
-                                    . (count($empatados) > 0 ? " Empatado com " . implode(", ", $empatados) . ": saiu o cadastrado primeiro." : "");
+                                $motivo = t("Garantia de rodízio: {1}, além do limite de {2} dias sem uso{3}.{4}", [1 => motivo_parado($parados[$escolhido]["dsu"], $parados[$escolhido]["nunca"]), 2 => $max, 3 => count($parados) > 1 ? t(" ({1} além do limite; sai o mais tempo parado)", [1 => count($parados)]) : "", 4 => count($empatados) > 0 ? t(" Empatado com {1}: saiu o cadastrado primeiro.", [1 => implode(", ", $empatados)]) : ""]);
                             } elseif ($modo["selecao"] === "aleatorio") {
                                 $ids = array_keys($cands);
                                 $escolhido = $ids[sorteio(0, count($ids) - 1)];
-                                $motivo = "Sorteio simples, " . $entre . ", todos com a mesma chance (" . aleatorio_fonte() . ").";
+                                $motivo = t("Sorteio simples, {1}, todos com a mesma chance ({2}).", [1 => $entre, 2 => aleatorio_fonte()]);
                             } elseif ($modo["selecao"] === "fifo") {
                                 uasort($info, function ($x, $y) { return $y["dsu"] <=> $x["dsu"]; });
                                 $escolhido = (int)array_key_first($info);
-                                $motivo = "Fila: o mais tempo sem uso (" . motivo_parado($info[$escolhido]["dsu"], $info[$escolhido]["nunca"]) . "), " . $entre . ".";
+                                $motivo = t("Fila: o mais tempo sem uso ({1}), {2}.", [1 => motivo_parado($info[$escolhido]["dsu"], $info[$escolhido]["nunca"]), 2 => $entre]);
                             } elseif ($modo["selecao"] === "inteligente") {
                                 uasort($info, function ($x, $y) { return $y["nota"] <=> $x["nota"]; });
                                 $escolhido = (int)array_key_first($info);
-                                $motivo = "A maior nota (" . motivo_nota($info[$escolhido]["nota"]) . "), " . $entre . ".";
+                                $motivo = t("A maior nota ({1}), {2}.", [1 => motivo_nota($info[$escolhido]["nota"]), 2 => $entre]);
                             } else {
                                 // com sorteio: a nota de cada um é a chance dele (no mínimo 1)
                                 $total = 0;
@@ -1824,15 +1814,14 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                                     }
                                 }
                                 if ($escolhido !== null) {
-                                    $motivo = "Sorteio pela nota, " . $entre . ": nota " . motivo_nota($info[$escolhido]["nota"]) . ", "
-                                        . motivo_nota(round(max(1, $info[$escolhido]["nota"]) * 100) * 100 / max(1, $total)) . "% de chance (" . aleatorio_fonte() . ").";
+                                    $motivo = t("Sorteio pela nota, {1}: nota {2}, {3}% de chance ({4}).", [1 => $entre, 2 => motivo_nota($info[$escolhido]["nota"]), 3 => motivo_nota(round(max(1, $info[$escolhido]["nota"]) * 100) * 100 / max(1, $total)), 4 => aleatorio_fonte()]);
                                 }
                             }
                             if (count($fora) > 0 && $motivo !== "") {
                                 $motivo .= " " . ucfirst(implode("; ", $fora)) . ".";
                             }
                             if ($bloco["um_por"] === "bloco" && $escolhido !== null) {
-                                $motivo .= " Fica o bloco " . $bloco["nome"] . " inteiro.";
+                                $motivo .= t(" Fica o bloco {1} inteiro.", [1 => $bloco["nome"]]);
                             }
                         }
                     }
@@ -1863,11 +1852,11 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
 
 const RODIZIO_MANUAL_POR_PAGINA = 7;
 
-const RODIZIO_MANUAL_CRITERIO = "Decida por mim: o sistema escolhe pela nota dos critérios (os que você cadastra em Critérios: dias sem uso, "
-    . "equilíbrio, preferência, carga...), recalculada no começo de cada dia, com os dias anteriores do período (os que você escolheu e os que "
-    . "ele decidiu) já contados como uso; a garantia de rodízio vem na frente (quem passou do limite de dias sem uso, o mais tempo parado "
-    . "primeiro); e o relógio de ontem e o de amanhã ficam de fora, se houver outro. Empate: o cadastrado primeiro. A decisão é feita ao "
-    . "gravar e fica gravada no plano, com o motivo; hoje, com \"Decida por mim\", continua o relógio que já está no plano.";
+// o critério do "Decida por mim" do rodízio manual, como a API o explica
+function rodizio_manual_criterio()
+{
+    return t("Decida por mim: o sistema escolhe pela nota dos critérios (os que você cadastra em Critérios: dias sem uso, equilíbrio, preferência, carga...), recalculada no começo de cada dia, com os dias anteriores do período (os que você escolheu e os que ele decidiu) já contados como uso; a garantia de rodízio vem na frente (quem passou do limite de dias sem uso, o mais tempo parado primeiro); e o relógio de ontem e o de amanhã ficam de fora, se houver outro. Empate: o cadastrado primeiro. A decisão é feita ao gravar e fica gravada no plano, com o motivo; hoje, com \"Decida por mim\", continua o relógio que já está no plano.");
+}
 
 // O período do rodízio manual: de e ate (AAAA-MM-DD), de hoje em diante, até 2 anos. Devolve [de, ate, erro]
 function rodizio_manual_periodo($de, $ate)
@@ -1877,13 +1866,13 @@ function rodizio_manual_periodo($de, $ate)
     $ate_p = DateTimeImmutable::createFromFormat("!Y-m-d", (string)$ate);
     $erro = null;
     if (!$de_p || $de_p->format("Y-m-d") !== (string)$de || !$ate_p || $ate_p->format("Y-m-d") !== (string)$ate) {
-        $erro = "De e até: datas AAAA-MM-DD.";
+        $erro = t("De e até: datas AAAA-MM-DD.");
     } elseif ($de_p < $hoje) {
-        $erro = "O período começa num dia que já passou: o que foi usado se corrige nas marcações.";
+        $erro = t("O período começa num dia que já passou: o que foi usado se corrige nas marcações.");
     } elseif ($ate_p < $de_p) {
-        $erro = "O fim do período vem antes do começo.";
+        $erro = t("O fim do período vem antes do começo.");
     } elseif ($de_p->diff($ate_p)->days > 730) {
-        $erro = "Um período de até 2 anos.";
+        $erro = t("Um período de até 2 anos.");
     }
     return [$de_p, $ate_p, $erro];
 }
@@ -1906,7 +1895,7 @@ function rodizio_manual_pagina($de, $ate, $pagina)
     $paginas = (int)ceil($total / RODIZIO_MANUAL_POR_PAGINA);
     $pagina = max(1, min($paginas, (int)$pagina));
     $hoje = date("Y-m-d");
-    $nomes = [1 => "segunda", 2 => "terça", 3 => "quarta", 4 => "quinta", 5 => "sexta", 6 => "sábado", 7 => "domingo"];
+    $nomes = [1 => t("segunda"), 2 => t("terça"), 3 => t("quarta"), 4 => t("quinta"), 5 => t("sexta"), 6 => t("sábado"), 7 => t("domingo")];
     $dias = [];
     $ini = $de->modify("+" . (($pagina - 1) * RODIZIO_MANUAL_POR_PAGINA) . " days");
     for ($i = 0, $dia = $ini; $i < RODIZIO_MANUAL_POR_PAGINA && $dia <= $ate; $i++, $dia = $dia->modify("+1 day")) {
@@ -1920,10 +1909,10 @@ function rodizio_manual_pagina($de, $ate, $pagina)
     return ["de" => $de->format("Y-m-d"), "ate" => $ate->format("Y-m-d"), "total_dias" => $total, "por_pagina" => RODIZIO_MANUAL_POR_PAGINA,
         "pagina" => $pagina, "paginas" => $paginas, "dias" => $dias,
         "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"]]; }, linhas("SELECT id, nome FROM relogio WHERE disponivel = 1 ORDER BY nome")),
-        "decida_por_mim" => RODIZIO_MANUAL_CRITERIO];
+        "decida_por_mim" => rodizio_manual_criterio()];
 }
 
-// O "Decida por mim": o relógio de cada dia "auto" do período, em ordem, pelo critério de RODIZIO_MANUAL_CRITERIO. De hoje
+// O "Decida por mim": o relógio de cada dia "auto" do período, em ordem, pelo critério de rodizio_manual_criterio(). De hoje
 // até o fim do período, cada dia vira uma sessão simulada no pulso (os do plano antes do período, os escolhidos e os
 // decididos), para os dias seguintes verem esse uso. $escolhas: [AAAA-MM-DD => id | "livre" | "auto"], todos os dias do
 // período. Devolve [AAAA-MM-DD => [relogio_id, motivo]] dos dias decididos
@@ -1959,7 +1948,7 @@ function rodizio_manual_decidir($de, $ate, $escolhas)
             $cands = $rels;
             $fora = [];
             $amanha = $escolhas[$dia->modify("+1 day")->format("Y-m-d")] ?? null;
-            foreach ([[$anterior, "o de ontem"], [is_int($amanha) ? $amanha : null, "o de amanhã"]] as [$x, $qual]) {
+            foreach ([[$anterior, t("o de ontem")], [is_int($amanha) ? $amanha : null, t("o de amanhã")]] as [$x, $qual]) {
                 if ($x !== null && isset($cands[$x]) && count($cands) > 1) {
                     $fora[] = $qual . " (" . $cands[$x]["nome"] . ")";
                     unset($cands[$x]);
@@ -1971,20 +1960,19 @@ function rodizio_manual_decidir($de, $ate, $escolhas)
                 $dsu = variavel_valor("dias_sem_uso", $ctx);
                 $info[$cid] = ["dsu" => is_numeric($dsu) ? (float)$dsu : 9999.0, "nota" => nota_do_relogio($r, $m_ini)["nota"], "nunca" => nunca_no_pulso($ctx)];
             }
-            $entre = count($cands) === 1 ? "o único candidato" : "entre " . count($cands) . " candidatos";
+            $entre = count($cands) === 1 ? t("o único candidato") : t("entre {1} candidatos", [1 => count($cands)]);
             $parados = array_filter($info, function ($x) use ($max) { return $x["dsu"] > $max; });
             if ($max > 0 && count($parados) > 0) {
                 uasort($parados, function ($x, $y) { return $y["dsu"] <=> $x["dsu"]; });
                 $escolhido = (int)array_key_first($parados);
-                $motivo = "Decida por mim, pela garantia de rodízio: " . motivo_parado($parados[$escolhido]["dsu"], $parados[$escolhido]["nunca"])
-                    . ", além do limite de " . $max . " dias sem uso, " . $entre . ".";
+                $motivo = t("Decida por mim, pela garantia de rodízio: {1}, além do limite de {2} dias sem uso, {3}.", [1 => motivo_parado($parados[$escolhido]["dsu"], $parados[$escolhido]["nunca"]), 2 => $max, 3 => $entre]);
             } else {
                 uasort($info, function ($x, $y) { return $y["nota"] <=> $x["nota"]; });
                 $escolhido = (int)array_key_first($info);
-                $motivo = "Decida por mim: a maior nota (" . motivo_nota($info[$escolhido]["nota"]) . "), " . $entre . ".";
+                $motivo = t("Decida por mim: a maior nota ({1}), {2}.", [1 => motivo_nota($info[$escolhido]["nota"]), 2 => $entre]);
             }
             if (count($fora) > 0) {
-                $motivo .= " " . ucfirst(implode(" e ", $fora)) . (count($fora) > 1 ? " ficaram" : " ficou") . " de fora.";
+                $motivo .= t(" {1}{2} de fora.", [1 => ucfirst(implode(" e ", $fora)), 2 => count($fora) > 1 ? " ficaram" : " ficou"]);
             }
             $res[$data] = [$escolhido, corta_texto($motivo, 300)];
         }
@@ -2068,14 +2056,14 @@ function documentos_pasta_erro()
     static $erro = null;
     if ($erro === null) {
         if (!defined("DOCUMENTOS_PASTA") || trim((string)DOCUMENTOS_PASTA) === "") {
-            $erro = "falta a pasta dos documentos: o DOCUMENTOS_PASTA do config.php (uma pasta do servidor fora da pasta publicada)";
+            $erro = t("falta a pasta dos documentos: o DOCUMENTOS_PASTA do config.php (uma pasta do servidor fora da pasta publicada)");
         } else {
             $pasta = rtrim((string)DOCUMENTOS_PASTA, "/\\");
             if (!is_dir($pasta)) {
                 @mkdir($pasta, 0750, true);
             }
-            $erro = !is_dir($pasta) ? "a pasta dos documentos (" . $pasta . ") não existe e não consegui criá-la"
-                : (!is_writable($pasta) ? "a pasta dos documentos (" . $pasta . ") não aceita gravar: dê permissão de escrita ao usuário do PHP" : "");
+            $erro = !is_dir($pasta) ? t("a pasta dos documentos ({1}) não existe e não consegui criá-la", [1 => $pasta])
+                : (!is_writable($pasta) ? t("a pasta dos documentos ({1}) não aceita gravar: dê permissão de escrita ao usuário do PHP", [1 => $pasta]) : "");
         }
     }
     return $erro;
@@ -2103,7 +2091,7 @@ function documentos_limite()
 // Um tamanho de arquivo para as mensagens: "850 KB", "3,2 MB"
 function tamanho_texto($bytes)
 {
-    return $bytes < 1048576 ? max(1, (int)round($bytes / 1024)) . " KB" : str_replace(".", ",", (string)round($bytes / 1048576, 1)) . " MB";
+    return $bytes < 1048576 ? t("{1} KB", [1 => max(1, (int)round($bytes / 1024))]) : t("{1} MB", [1 => decimal_txt($bytes / 1048576, 1)]);
 }
 
 // O tipo (MIME) de um arquivo: pelo conteúdo (a extensão fileinfo do PHP) e, quando ele não diz, pela extensão do nome
@@ -2340,7 +2328,7 @@ function plano_por_pagina()
 // (sorteio, manual ou livre), "acao", "motivo"}]}. Os Próximos dias da página Hoje e o dia a dia da página Plano
 function plano_pagina($de, $ate, $relogio_id, $pagina, $por)
 {
-    $curto = [1 => "seg", 2 => "ter", 3 => "qua", 4 => "qui", 5 => "sex", 6 => "sáb", 7 => "dom"];
+    $curto = [1 => t("seg"), 2 => t("ter"), 3 => t("qua"), 4 => t("qui"), 5 => t("sex"), 6 => t("sáb"), 7 => t("dom")];
     $hoje = date("Y-m-d");
     $faixa = [$de !== "" ? $de : "0001-01-01", $ate !== "" ? $ate : "9999-12-31"];
     $dias = [];
@@ -2375,6 +2363,8 @@ function painel_modo()
 // fica indisponível: o banco garante, ck_relogio_posse_disponivel); "colecao" e "emprestado" são da coleção (contam no valor e
 // nas listas da página Hoje); "desejado" é a lista de desejos; "vendido" e "arquivado" saem das listas e guardam a ficha
 const POSSES = ["colecao" => "Na coleção", "desejado" => "Desejado", "emprestado" => "Emprestado", "vendido" => "Vendido", "arquivado" => "Arquivado"];
+// os nomes, para os dicionários dos idiomas: saem traduzidos no uso, t(POSSES[...])
+tk("Na coleção"); tk("Desejado"); tk("Emprestado"); tk("Vendido"); tk("Arquivado");
 
 function posse_de($r)
 {
@@ -2408,12 +2398,14 @@ function da_colecao($r)
 // Os tipos de acessório (ck_acessorio_tipo), na ordem, com o nome
 const ACESSORIO_TIPOS = ["pulseira" => "Pulseira", "caixa" => "Caixa", "estojo" => "Estojo", "ferramenta" => "Ferramenta", "carregador" => "Carregador",
     "peca" => "Peça", "outro" => "Outro"];
+// os nomes, para os dicionários dos idiomas: saem traduzidos no uso, t(ACESSORIO_TIPOS[...])
+tk("Pulseira"); tk("Caixa"); tk("Estojo"); tk("Ferramenta"); tk("Carregador"); tk("Peça"); tk("Outro");
 
 // Os acessórios (de um relógio, ou todos: null), pelo tipo e pelo nome, prontos para a API
 function acessorios_lista($relogio_id = null)
 {
     return array_map(function ($a) {
-        return ["id" => (int)$a["id"], "nome" => $a["nome"], "tipo" => $a["tipo"], "tipo_texto" => ACESSORIO_TIPOS[$a["tipo"]] ?? $a["tipo"],
+        return ["id" => (int)$a["id"], "nome" => $a["nome"], "tipo" => $a["tipo"], "tipo_texto" => isset(ACESSORIO_TIPOS[$a["tipo"]]) ? t(ACESSORIO_TIPOS[$a["tipo"]]) : $a["tipo"],
             "relogio_id" => $a["relogio_id"] === null ? null : (int)$a["relogio_id"], "relogio" => $a["relogio"],
             "observacao" => $a["observacao"] !== null && $a["observacao"] !== "" ? $a["observacao"] : null, "criado" => $a["criado"]];
     }, linhas("SELECT a.*, r.nome AS relogio FROM acessorio a LEFT JOIN relogio r ON r.id = a.relogio_id"
@@ -2450,14 +2442,14 @@ function destaque_da_pagina_hoje($rels, $dia)
     if ($mostra === "pulso" && $pulso_id !== null) {
         $id = $pulso_id;
         $e = $pulso_id === $dia_id ? "dia" : "pulso";
-        $texto = $pulso_id === $dia_id ? "O relógio do dia, no pulso agora." : "No pulso agora" . ($dia_id !== null ? "; o relógio do dia é outro." : "; hoje não tem relógio do dia.");
+        $texto = $pulso_id === $dia_id ? t("O relógio do dia, no pulso agora.") : t("No pulso agora{1}", [1 => $dia_id !== null ? t("; o relógio do dia é outro.") : t("; hoje não tem relógio do dia.")]);
     } else {
         $id = $dia_id;
         $e = "dia";
-        $texto = $mostra === "pulso" ? "Nenhum relógio no pulso agora: aqui, o relógio do dia." : "O relógio do dia.";
+        $texto = $mostra === "pulso" ? t("Nenhum relógio no pulso agora: aqui, o relógio do dia.") : t("O relógio do dia.");
     }
     return ["mostra" => $mostra, "relogio_id" => $id, "e" => $e, "do_dia" => $id !== null && $id === $dia_id, "no_pulso" => $id !== null && $id === $pulso_id,
-        "texto" => $id === null ? "Nenhum relógio para hoje e nenhum no pulso." : $texto];
+        "texto" => $id === null ? t("Nenhum relógio para hoje e nenhum no pulso.") : $texto];
 }
 
 // A cópia de segurança dos documentos no banco tem três níveis, e o de cima vale sobre os de baixo:
@@ -2504,10 +2496,10 @@ function documento_tirar_do_banco($d)
     $pasta = documentos_pasta();
     $caminho = $pasta !== null ? $pasta . "/" . $d["arquivo"] : null;
     if ($caminho === null || !is_file($caminho)) {
-        return "o arquivo não está na pasta (a cópia no banco é a única)";
+        return t("o arquivo não está na pasta (a cópia no banco é a única)");
     }
     if ($d["hash"] === null || $d["hash"] === "" || hash_file("sha256", $caminho) !== $d["hash"]) {
-        return "o arquivo da pasta não confere com a cópia no banco";
+        return t("o arquivo da pasta não confere com a cópia no banco");
     }
     sql("UPDATE documento SET no_banco = 0, hash = NULL WHERE id = ?", [(int)$d["id"]]);
     sql("DELETE FROM documento_parte WHERE documento_id = ?", [(int)$d["id"]]);
@@ -2525,7 +2517,7 @@ function documento_copiar_para_banco($d)
     $pasta = documentos_pasta();
     $caminho = $pasta !== null ? $pasta . "/" . $d["arquivo"] : null;
     if ($caminho === null || !is_file($caminho)) {
-        return "o arquivo não está na pasta";
+        return t("o arquivo não está na pasta");
     }
     try {
         sql("DELETE FROM documento_parte WHERE documento_id = ?", [(int)$d["id"]]);
@@ -2638,6 +2630,14 @@ function apagar_pasta($pasta)
     return $n;
 }
 
+// uma linha de erro do registro do cron: conta o erro (o texto sai no idioma da instalação, então o erro não se acha pela
+// palavra) e devolve o texto
+function registro_erro($texto)
+{
+    $GLOBALS["REGISTRO_ERROS"] = ($GLOBALS["REGISTRO_ERROS"] ?? 0) + 1;
+    return $texto;
+}
+
 // A manutenção dos documentos, que o cron roda a cada minuto. Devolve as linhas do registro (vazio: nada a fazer):
 // 1. o documento cujo arquivo sumiu da pasta volta do banco (a cópia de segurança);
 // 2. o documento que tem a cópia pedida (documento_copia_por: o sistema, o relógio ou o próprio arquivo) e ainda não a tem
@@ -2656,7 +2656,7 @@ function documentos_manutencao($orcamento, $diario = false)
     $orfaos = (int)valor("SELECT COUNT(*) FROM documento WHERE relogio_id NOT IN (SELECT id FROM relogio)");
     if ($orfaos > 0) {
         sql("DELETE FROM documento WHERE relogio_id NOT IN (SELECT id FROM relogio)");
-        $log[] = "documentos: " . $orfaos . ($orfaos === 1 ? " documento de relógio que não existe mais apagado" : " documentos de relógios que não existem mais apagados");
+        $log[] = t("documentos: {1}{2}", [1 => $orfaos, 2 => $orfaos === 1 ? t(" documento de relógio que não existe mais apagado") : t(" documentos de relógios que não existem mais apagados")]);
     }
     $restaurados = [];
     $perdidos = 0;
@@ -2694,19 +2694,19 @@ function documentos_manutencao($orcamento, $diario = false)
         }
     }
     if (count($restaurados) > 0) {
-        $log[] = "documentos: " . count($restaurados) . (count($restaurados) === 1 ? " arquivo sumido da pasta, recriado" : " arquivos sumidos da pasta, recriados") . " a partir do banco: " . implode(", ", array_slice($restaurados, 0, 10));
+        $log[] = t("documentos: {1}{2} a partir do banco: {3}", [1 => count($restaurados), 2 => count($restaurados) === 1 ? t(" arquivo sumido da pasta, recriado") : t(" arquivos sumidos da pasta, recriados"), 3 => implode(", ", array_slice($restaurados, 0, 10))]);
     }
     if ($copiados > 0) {
-        $log[] = "documentos: " . $copiados . ($copiados === 1 ? " documento copiado" : " documentos copiados") . " para o banco";
+        $log[] = t("documentos: {1}{2} para o banco", [1 => $copiados, 2 => $copiados === 1 ? t(" documento copiado") : t(" documentos copiados")]);
     }
     if ($tirados > 0) {
-        $log[] = "documentos: " . $tirados . ($tirados === 1 ? " cópia tirada" : " cópias tiradas") . " do banco (ninguém mais pede; o arquivo continua na pasta)";
+        $log[] = t("documentos: {1}{2} do banco (ninguém mais pede; o arquivo continua na pasta)", [1 => $tirados, 2 => $tirados === 1 ? t(" cópia tirada") : t(" cópias tiradas")]);
     }
     if (count($falhas) > 0) {
-        $log[] = "erro: a cópia no banco falhou: " . implode("; ", array_slice($falhas, 0, 5));
+        $log[] = registro_erro(t("erro: a cópia no banco falhou: {1}", [1 => implode("; ", array_slice($falhas, 0, 5))]));
     }
     if ($diario && $perdidos > 0) {
-        $log[] = "aviso: " . $perdidos . ($perdidos === 1 ? " documento sem o arquivo" : " documentos sem o arquivo") . " na pasta e sem a cópia no banco (perdidos: exclua-os na página Documentos)";
+        $log[] = t("aviso: {1}{2} na pasta e sem a cópia no banco (perdidos: exclua-os na página Documentos)", [1 => $perdidos, 2 => $perdidos === 1 ? t(" documento sem o arquivo") : t(" documentos sem o arquivo")]);
     }
     // a pasta: as dos relógios que não existem mais, e os arquivos de nenhum documento
     $relogios = [];
@@ -2734,10 +2734,10 @@ function documentos_manutencao($orcamento, $diario = false)
         }
     }
     if (count($pastas_apagadas) > 0) {
-        $log[] = "documentos: pastas de relógios que não existem mais apagadas: " . implode(", ", $pastas_apagadas);
+        $log[] = t("documentos: pastas de relógios que não existem mais apagadas: {1}", [1 => implode(", ", $pastas_apagadas)]);
     }
     if ($soltos > 0) {
-        $log[] = "documentos: " . $soltos . ($soltos === 1 ? " arquivo que não era de nenhum documento apagado" : " arquivos que não eram de nenhum documento apagados") . " da pasta";
+        $log[] = t("documentos: {1}{2} da pasta", [1 => $soltos, 2 => $soltos === 1 ? t(" arquivo que não era de nenhum documento apagado") : t(" arquivos que não eram de nenhum documento apagados")]);
     }
     return $log;
 }
@@ -2866,7 +2866,7 @@ function dias_livres($de, $ate)
 // "só hoje" / "só amanhã" (conforme $quando), ou "até sexta, 02/10": até o último dia seguido do mesmo relógio no plano
 function texto_ate($data, $quando)
 {
-    $dias = ["", "segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"];
+    $dias = ["", t("segunda"), t("terça"), t("quarta"), t("quinta"), t("sexta"), t("sábado"), t("domingo")];
     $p = plano_do_dia($data);
     $fim = $data;
     $prox = date("Y-m-d", strtotime($data . " +1 day"));
@@ -2877,7 +2877,7 @@ function texto_ate($data, $quando)
         $prox = date("Y-m-d", strtotime($prox . " +1 day"));
         $q = plano_do_dia($prox);
     }
-    return $fim === $data ? "só " . $quando : "até " . $dias[(int)date("N", strtotime($fim))] . ", " . date("d/m", strtotime($fim));
+    return $fim === $data ? t("só {1}", [1 => $quando]) : t("até {1}, {2}", [1 => $dias[(int)date("N", strtotime($fim))], 2 => data_txt(strtotime($fim), false, true)]);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -2887,46 +2887,48 @@ function texto_ate($data, $quando)
 // ---------------------------------------------------------------------------------------------------------------------
 $CANAIS = [
     "tg" => ["nome" => "Telegram", "tipos" => "alerta_tipos",       // "tipos": o campo do formulário com os tipos que vão (alerta_tipos[])
-        "ajuda" => "Cada aviso vira uma mensagem com este texto. As do mesmo horário vão juntas, separadas por uma linha em branco."],
-    "ag" => ["nome" => "Google Agenda", "tipos" => "agenda_tipos",
-        "ajuda" => "Cada aviso vira um evento. A primeira linha é o título do evento; o resto, a descrição."],
+        "ajuda" => tk("Cada aviso vira uma mensagem com este texto. As do mesmo horário vão juntas, separadas por uma linha em branco.")],
+    "ag" => ["nome" => tk("Google Agenda"), "tipos" => "agenda_tipos",
+        "ajuda" => tk("Cada aviso vira um evento. A primeira linha é o título do evento; o resto, a descrição.")],
 ];
 
 // Âncoras dos modelos de mensagem: {nome} vira o valor na hora de enviar
 $ANCORAS = [
-    "relogio" => "Nome do relógio",
-    "codigo" => "Código do relógio",
-    "tipo" => "Tipo: o grupo do relógio (Smartwatch, Automático, Solar...)",
-    "estado" => "O estado agora: em uso, em repouso ou a sessão aberta (no sol, no winder, no carregador...)",
-    "carga" => "Carga em %: bateria, reserva, luz ou pilha",
-    "acao" => "O que fazer: Dar corda, Carregar...",
-    "motivo" => "Por quê, com os números: a reserva acaba em 3h...",
-    "aviso" => "Nome do tipo de aviso",
-    "ate" => "Até quando fica no pulso: só hoje, até sexta...",
-    "ultimo_uso" => "Última vez que foi usado",
-    "data" => "Data do aviso ou do evento",
-    "hora" => "Hora do aviso ou do evento",
-    "dia_semana" => "Dia da semana",
-    "relogio_do_dia" => "O relógio de hoje",
-    "relogio_de_amanha" => "O relógio de amanhã",
-    "quantidade" => "Quantos avisos a mensagem tem",
-    "modo" => "Modo de rodízio",
-    "link" => "Endereço do sistema (no aviso de um relógio, a ficha dele)",
+    "relogio" => tk("Nome do relógio"),
+    "codigo" => tk("Código do relógio"),
+    "tipo" => tk("Tipo: o grupo do relógio (Smartwatch, Automático, Solar...)"),
+    "estado" => tk("O estado agora: em uso, em repouso ou a sessão aberta (no sol, no winder, no carregador...)"),
+    "carga" => tk("Carga em %: bateria, reserva, luz ou pilha"),
+    "acao" => tk("O que fazer: Dar corda, Carregar..."),
+    "motivo" => tk("Por quê, com os números: a reserva acaba em 3h..."),
+    "aviso" => tk("Nome do tipo de aviso"),
+    "ate" => tk("Até quando fica no pulso: só hoje, até sexta..."),
+    "ultimo_uso" => tk("Última vez que foi usado"),
+    "data" => tk("Data do aviso ou do evento"),
+    "hora" => tk("Hora do aviso ou do evento"),
+    "dia_semana" => tk("Dia da semana"),
+    "relogio_do_dia" => tk("O relógio de hoje"),
+    "relogio_de_amanha" => tk("O relógio de amanhã"),
+    "quantidade" => tk("Quantos avisos a mensagem tem"),
+    "modo" => tk("Modo de rodízio"),
+    "link" => tk("Endereço do sistema (no aviso de um relógio, a ficha dele)"),
 ];
 
 // Repetições dos eventos personalizados
-$REPETICOES = ["uma" => "Uma vez", "diaria" => "Todo dia", "semanal" => "Em dias da semana", "mensal" => "Todo mês", "intervalo" => "A cada N dias"];
-$DIAS_SEMANA = [1 => "Segunda", 2 => "Terça", 3 => "Quarta", 4 => "Quinta", 5 => "Sexta", 6 => "Sábado", 7 => "Domingo"];
-$CURTO = [1 => "seg", 2 => "ter", 3 => "qua", 4 => "qui", 5 => "sex", 6 => "sáb", 7 => "dom"];
+$REPETICOES = ["uma" => tk("Uma vez"), "diaria" => tk("Todo dia"), "semanal" => tk("Em dias da semana"), "mensal" => tk("Todo mês"), "intervalo" => "A cada N dias"];
+$DIAS_SEMANA = [1 => tk("Segunda"), 2 => tk("Terça"), 3 => tk("Quarta"), 4 => tk("Quinta"), 5 => tk("Sexta"), 6 => tk("Sábado"), 7 => tk("Domingo")];
+$CURTO = [1 => tk("seg"), 2 => tk("ter"), 3 => tk("qua"), 4 => tk("qui"), 5 => tk("sex"), 6 => tk("sáb"), 7 => tk("dom")];
+// as listas acima saem no idioma de cada pedido (o lingua_definir() as refaz; textos/funcoes.php)
+textos_globais(["TIPOS_CAMPO", "FORMATOS_LANCAMENTO", "MIGRACOES", "FUNCOES", "CANAIS", "ANCORAS", "REPETICOES", "DIAS_SEMANA", "CURTO"]);
 
 // Tipos de aviso: o relógio do dia, a véspera, os avisos cadastrados (pelo identificador) e os eventos criados na
 // Configuração ("ev<id>"). Cada um: [nome, quando sai]
 function tipos_de_aviso()
 {
-    $lista = ["dia" => ["Relógio do dia", "manhã"], "vespera" => ["Véspera: preparar o relógio de amanhã", "noite"]];
+    $lista = ["dia" => [t("Relógio do dia"), t("manhã")], "vespera" => [t("Véspera: preparar o relógio de amanhã"), "noite"]];
     // os avisos na ordem em que foram cadastrados
     foreach (linhas("SELECT identificador, MIN(id) AS primeiro FROM aviso GROUP BY identificador ORDER BY primeiro") as $a) {
-        $lista[$a["identificador"]] = [avisos_todos()[$a["identificador"]][0]["nome"], "manhã"];
+        $lista[$a["identificador"]] = [avisos_todos()[$a["identificador"]][0]["nome"], t("manhã")];
     }
     foreach (eventos_com_dias(linhas("SELECT * FROM evento_personalizado ORDER BY nome")) as $ev) {
         $lista["ev" . $ev["id"]] = [$ev["nome"], descricao_repeticao($ev)];
@@ -2944,9 +2946,9 @@ function visao_relogio($r, $agora)
     $f_en = isset(formulas_todas()["energia"]) ? mais_perto(formulas_todas()["energia"], $r) : null;
     // de onde vem a energia: o nome da versão da fórmula, depois dos dois pontos ("Energia agora: bateria do smartwatch")
     // (sem as explicações entre parênteses no fim, como o "(0 a 100)")
-    $de = $f_en === null ? "sem medida de carga" : (is_numeric($energia) ? trim((string)preg_replace(["/^[^:]*:/u", "/(\\s*\\([^()]*\\))+\$/u"], "", $f_en["nome"])) : "sem dados para calcular");
+    $de = $f_en === null ? t("sem medida de carga") : (is_numeric($energia) ? trim((string)preg_replace(["/^[^:]*:/u", "/(\\s*\\([^()]*\\))+\$/u"], "", $f_en["nome"])) : t("sem dados para calcular"));
     if ((int)$r["disponivel"] !== 1) {
-        $de = "indisponível";
+        $de = t("indisponível");
     }
     // as sessões abertas agora; a esquecida aberta conta só até o "fecha às" do tipo, no dia em que começou
     $abertas = [];
@@ -2977,24 +2979,24 @@ function visao_relogio($r, $agora)
     foreach ($sessoes as $i => $a) {
         if ($pulso !== null || $i < count($sessoes) - 1) {
             $min = (int)floor(($agora - $a["inicio"]) / 60);
-            $situacao[] = $a["nome"] . " desde " . date("H:i", $a["inicio"]) . " (" . intdiv($min, 60) . " h " . ($min % 60) . " min)";
+            $situacao[] = t("{1} desde {2} ({3} h {4} min)", [1 => $a["nome"], 2 => date("H:i", $a["inicio"]), 3 => intdiv($min, 60), 4 => $min % 60]);
         }
     }
     // o estado: em uso (no pulso), numa sessão (no sol, no winder, no carregador: o nome do tipo) ou em repouso. Em uso desde o
     // começo da sessão no pulso; numa sessão, desde o começo da mais recente; em repouso, desde o fim da última no pulso
     $estado = $pulso !== null ? "uso" : (count($sessoes) > 0 ? "sessao" : "repouso");
-    $estado_texto = $estado === "uso" ? "Em uso" : ($estado === "sessao" ? implode(" · ", array_column($sessoes, "nome")) : "Em repouso");
+    $estado_texto = $estado === "uso" ? t("Em uso") : ($estado === "sessao" ? implode(" · ", array_column($sessoes, "nome")) : t("Em repouso"));
     $ultima = count($sessoes) > 0 ? $sessoes[count($sessoes) - 1] : null;
     $desde = $pulso !== null ? $pulso["inicio"] : ($ultima !== null ? $ultima["inicio"] : ($ult_pulso > 0 ? $ult_pulso : null));
-    $texto = $pulso !== null ? "Em uso" : ($ultima !== null ? $ultima["nome"] : "Em repouso");
+    $texto = $pulso !== null ? t("Em uso") : ($ultima !== null ? $ultima["nome"] : t("Em repouso"));
     if ($desde !== null) {
-        $texto .= " desde " . (date("Y-m-d", $desde) === date("Y-m-d", $agora) ? date("H:i", $desde)
-            : (date("Y-m-d", $desde) === date("Y-m-d", $agora - 86400) ? date("H:i", $desde) . " de ontem" : date("d/m H:i", $desde)));
+        $texto .= t(" desde {1}", [1 => date("Y-m-d", $desde) === date("Y-m-d", $agora) ? date("H:i", $desde)
+            : (date("Y-m-d", $desde) === date("Y-m-d", $agora - 86400) ? t("{1} de ontem", [1 => date("H:i", $desde)]) : data_txt($desde, true, true))]);
     }
     $ctx = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => $ctx["valores"]];
     $autonomia = isset(formulas_todas()["autonomia_restante"]) ? variavel_valor("autonomia_restante", $ctx) : null;
     if (is_numeric($autonomia)) {
-        $situacao[] = "Autonomia restante " . (duracao_texto((float)$autonomia / 86400) !== "" ? duracao_texto((float)$autonomia / 86400) : "esgotada");
+        $situacao[] = t("Autonomia restante {1}", [1 => duracao_texto((float)$autonomia / 86400) !== "" ? duracao_texto((float)$autonomia / 86400) : "esgotada"]);
     }
     $avisos = avisos_do_relogio($r, $agora);
     $prox = count($avisos) > 0 ? $avisos[0] : null;
@@ -3002,7 +3004,7 @@ function visao_relogio($r, $agora)
         "estado" => $estado, "estado_texto" => $estado_texto,
         "texto" => $texto, "ultimo" => $pulso !== null ? $agora : $ult_pulso, "situacao" => $situacao, "abertas" => $abertas, "avisos" => $avisos,
         "prox" => $prox, "prox_momento" => $prox ? (int)strtotime($prox["data"]) : 0,
-        "prox_falta" => $prox ? ($prox["falta_dias"] < 0 ? "atrasado " : "") . (duracao_texto($prox["falta_dias"]) !== "" ? duracao_texto($prox["falta_dias"]) : "agora") : "—"];
+        "prox_falta" => $prox ? ($prox["falta_dias"] < 0 ? t("atrasado ") : "") . (duracao_texto($prox["falta_dias"]) !== "" ? duracao_texto($prox["falta_dias"]) : t("agora")) : "—"];
 }
 
 // Os avisos de hoje ("Hoje é dia de"): os atrasados ou em breve dos relógios disponíveis, do mais urgente ao mais distante.
@@ -3024,7 +3026,7 @@ function avisos_de_hoje()
 // Valores das âncoras. Com $id, os do relógio; sempre, os gerais. $extra sobrepõe.
 function contexto_mensagem($id, $extra, $hoje)
 {
-    $dias = ["", "segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"];
+    $dias = ["", t("segunda"), t("terça"), t("quarta"), t("quinta"), t("sexta"), t("sábado"), t("domingo")];
     $url = rtrim(cfg("url_sistema"), "/");
     $dia = plano_do_dia($hoje->format("Y-m-d"));
     $amanha = plano_do_dia($hoje->modify("+1 day")->format("Y-m-d"));
@@ -3044,7 +3046,7 @@ function contexto_mensagem($id, $extra, $hoje)
         $ctx["tipo"] = isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "";
         $ctx["estado"] = function_exists("mb_strtolower") ? mb_strtolower($v["estado_texto"], "UTF-8") : strtolower($v["estado_texto"]);
         $ctx["carga"] = $v["energia"] !== null ? $v["energia"] . "%" : $v["de"];
-        $ctx["ultimo_uso"] = $v["ultimo"] > 0 ? date("d/m H:i", $v["ultimo"]) : "nunca";
+        $ctx["ultimo_uso"] = $v["ultimo"] > 0 ? data_txt($v["ultimo"], true, true) : "nunca";
         if ($url !== "") {
             $ctx["link"] = $url . "/index.php?r=" . $id;
         }
@@ -3159,7 +3161,7 @@ function montar_mensagem($hoje)
     $dia = plano_do_dia($hoje->format("Y-m-d"));
     if (in_array("dia", $tipos, true) && $dia) {
         $ate = texto_ate($dia["data"], "hoje");
-        $itens[] = ["tipo" => "dia", "id" => (int)$dia["relogio_id"], "fazer" => "Usar hoje", "motivo" => $ate, "ate" => $ate];
+        $itens[] = ["tipo" => "dia", "id" => (int)$dia["relogio_id"], "fazer" => t("Usar hoje"), "motivo" => $ate, "ate" => $ate];
     }
     foreach (avisos_de_hoje() as $x) {
         if (in_array($x[1]["identificador"], $tipos, true)) {
@@ -3178,8 +3180,8 @@ function montar_mensagem_noite($hoje)
     $h = plano_do_dia($hoje->format("Y-m-d"));
     if ($d && in_array("vespera", canal_tipos("tg"), true) && (!$h || (int)$h["relogio_id"] !== (int)$d["relogio_id"])) {
         $preparo = preparo_do_dia(linha("SELECT * FROM relogio WHERE id = ?", [(int)$d["relogio_id"]]), $d["data"]);
-        $itens[] = ["tipo" => "vespera", "id" => (int)$d["relogio_id"], "fazer" => "Preparar para amanhã",
-            "motivo" => count($preparo) > 0 ? implode("\n", $preparo) : "É só usar.", "ate" => texto_ate($d["data"], "amanhã")];
+        $itens[] = ["tipo" => "vespera", "id" => (int)$d["relogio_id"], "fazer" => t("Preparar para amanhã"),
+            "motivo" => count($preparo) > 0 ? implode("\n", $preparo) : t("É só usar."), "ate" => texto_ate($d["data"], t("amanhã"))];
     }
     return mensagem_telegram($itens, $hoje);
 }
@@ -3414,13 +3416,13 @@ function gerar_escala($ini)
                 while (($manuais[$ate->modify("+1 day")->format("Y-m-d")] ?? 0) === $novo && $ate < $fim) {
                     $ate = $ate->modify("+1 day");
                 }
-                $motivo_bloco = "Escolhido à mão.";
+                $motivo_bloco = t("Escolhido à mão.");
             } elseif (!isset($manuais[$data]) && ($no_bloco === 0 || $d > $bloco_fim) && $bloco !== null) {
                 // o motivo: a frase que fica no plano dizendo por que este relógio saiu (a escolha em si não muda por ela)
                 $motivo_bloco = "";
                 if ($bloco["relogio_id"] !== null && isset($rels[(int)$bloco["relogio_id"]])) {
                     $novo = (int)$bloco["relogio_id"];
-                    $motivo_bloco = "Relógio fixo do bloco " . $bloco["nome"] . ".";
+                    $motivo_bloco = t("Relógio fixo do bloco {1}.", [1 => $bloco["nome"]]);
                 } else {
                     $fora = [];
                     $cands = [];
@@ -3434,7 +3436,7 @@ function gerar_escala($ini)
                         }
                     }
                     if (count($cands) > 1 && isset($cands[$ultimo])) {
-                        $fora[] = "o de antes (" . $rels[$ultimo]["nome"] . ") ficou de fora";
+                        $fora[] = t("o de antes ({1}) ficou de fora", [1 => $rels[$ultimo]["nome"]]);
                         unset($cands[$ultimo]);
                     }
                     // o ciclo (se o modo usa): os que já passaram no ciclo atual ficam de fora
@@ -3442,7 +3444,7 @@ function gerar_escala($ini)
                         $restam = array_diff_key($cands, array_flip(ciclo_atual($sequencia, array_keys($cands))));
                         if (count($restam) > 0) {
                             if (count($restam) < count($cands)) {
-                                $fora[] = "pelo ciclo, " . (count($cands) - count($restam)) . " que já passaram ficaram de fora";
+                                $fora[] = t("pelo ciclo, {1} que já passaram ficaram de fora", [1 => count($cands) - count($restam)]);
                             }
                             $cands = $restam;
                         }
@@ -3454,7 +3456,7 @@ function gerar_escala($ini)
                     if ($max > 0 && count($cands) > 0 && max($cands) >= $max) {
                         $mais = max($cands);
                         $cands = array_filter($cands, function ($x) use ($mais) { return $x == $mais; });
-                        $garantia = "no limite de " . $max . " dias sem uso";
+                        $garantia = t("no limite de {1} dias sem uso", [1 => $max]);
                     }
                     // a maior nota no dia simulado; notas iguais (as empatadas na maior) se desempatam por sorteio
                     $notas = [];
@@ -3468,12 +3470,12 @@ function gerar_escala($ini)
                         $novo = $empatados[0];
                     } elseif (count($empatados) > 1) {
                         $novo = $empatados[sorteio(0, count($empatados) - 1)];
-                        $desempate = " Empatado na nota com " . (count($empatados) - 1) . (count($empatados) === 2 ? " outro" : " outros") . ": saiu no sorteio (" . aleatorio_fonte() . ").";
+                        $desempate = t(" Empatado na nota com {1}{2}: saiu no sorteio ({3}).", [1 => count($empatados) - 1, 2 => count($empatados) === 2 ? " outro" : " outros", 3 => aleatorio_fonte()]);
                     }
                     if ($novo > 0) {
                         $motivo_bloco = ($garantia !== ""
-                            ? "Garantia de rodízio: " . motivo_parado($cands[$novo], $nunca[$novo]) . ", " . $garantia . (count($cands) > 1 ? "; entre os " . count($cands) . " empatados no tempo parado, a maior nota (" . motivo_nota($nota_dele) . ")" : "") . "."
-                            : "A maior nota do dia (" . motivo_nota($nota_dele) . "), " . ($todos === 1 ? "único candidato" : "entre " . $todos . " candidatos") . ".")
+                            ? t("Garantia de rodízio: {1}, {2}{3}.", [1 => motivo_parado($cands[$novo], $nunca[$novo]), 2 => $garantia, 3 => count($cands) > 1 ? t("; entre os {1} empatados no tempo parado, a maior nota ({2})", [1 => count($cands), 2 => motivo_nota($nota_dele)]) : ""])
+                            : t("A maior nota do dia ({1}), {2}.", [1 => motivo_nota($nota_dele), 2 => $todos === 1 ? t("único candidato") : "entre " . $todos . " candidatos"]))
                             . $desempate . (count($fora) > 0 ? " " . ucfirst(implode("; ", $fora)) . "." : "");
                     }
                 }
@@ -3539,15 +3541,15 @@ function gerar_escala($ini)
                 if ($t && ($t["formato"] === "instantaneo" || $horas > 0 || ($t["formato"] === "valor" && $a["simula_valor"] !== null))) {
                     simular_lancamento($x[0], $a["resolve"], max($agora, (int)round($m_ini - $horas * 3600)), $m_ini, $a["simula_valor"]);
                 }
-                $textos[] = $a["nome"] . ": " . $rels[$x[0]]["nome"] . ($horas > 0 ? " (" . str_replace(".", ",", (string)(0 + $horas)) . " h)" : "");
+                $textos[] = $a["nome"] . ": " . $rels[$x[0]]["nome"] . ($horas > 0 ? " (" . decimal_txt($horas, 6) . " h)" : "");
             }
             if ($no_bloco > 0 && $d <= $bloco_fim) {
                 // o motivo do dia: no primeiro dia do bloco, o da escolha (e quantos dias ele fica); nos seguintes, que ele segue
                 $dias_bloco = (int)$bloco_ini->diff($bloco_fim)->days + 1;
                 $dia_bloco = (int)$bloco_ini->diff($d)->days + 1;
-                $motivo = isset($manuais[$data]) ? "Escolhido à mão." : ($dia_bloco === 1
-                    ? $motivo_bloco . ($dias_bloco > 1 ? " Fica " . $dias_bloco . " dias seguidos." : "")
-                    : "Segue no pulso: dia " . $dia_bloco . " de " . $dias_bloco . " seguidos.");
+                $motivo = isset($manuais[$data]) ? t("Escolhido à mão.") : ($dia_bloco === 1
+                    ? $motivo_bloco . ($dias_bloco > 1 ? t(" Fica {1} dias seguidos.", [1 => $dias_bloco]) : "")
+                    : t("Segue no pulso: dia {1} de {2} seguidos.", [1 => $dia_bloco, 2 => $dias_bloco]));
                 sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, acao, motivo, criado) VALUES (?, ?, ?, ?, ?, ?, NOW())",
                     [$data, $no_bloco, isset($manuais[$data]) || $bloco === null ? null : (int)$bloco["id"], isset($manuais[$data]) ? "manual" : "sorteio",
                     count($textos) > 0 ? corta_texto(implode("; ", $textos), 500) : null, $motivo !== "" ? corta_texto($motivo, 300) : null]);
@@ -3596,7 +3598,7 @@ function previsao_energia($r, $agora)
             $vazio = false;
             foreach ($ctx["rastro"] as $nome => $v) {
                 if (isset($campos[$nome])) {
-                    $origem = ($valores[$nome] ?? "") !== "" ? "informado" : ($v === null ? "vazio" : "padrão");
+                    $origem = ($valores[$nome] ?? "") !== "" ? "informado" : ($v === null ? "vazio" : t("padrão"));
                     $vazio = $vazio || $origem === "vazio";
                     $res["conta"][] = ["campo" => $nome, "nome" => $campos[$nome]["nome"], "detalhe" => null, "valor" => $v, "unidade" => $campos[$nome]["unidade"],
                         "origem" => $origem];
@@ -3608,13 +3610,12 @@ function previsao_energia($r, $agora)
             $medicoes = linhas("SELECT m.medida, m.taxa, m.peso_horas, m.fim, m.horas_pulso, m.horas_guardado, m.de_valor, m.ate_valor FROM medicao m
                 JOIN lancamento l ON l.id = m.lancamento_id WHERE l.relogio_id = ? AND m.usada = 1 ORDER BY m.fim, m.id", [(int)$r["id"]]);
             $g = gasto_medido($medicoes, $agora);
-            $como = $g["n"] === 0 ? "a última medição; nenhuma nos últimos " . $janela . " dias"
-                : ($g["conjunta"] ? "conta dos dois gastos juntos, com " : "média de ") . $g["n"] . ($g["n"] === 1 ? " medição" : " medições")
-                    . " dos últimos " . $janela . " dias";
-            foreach (["uso" => "Gasto em uso medido", "repouso" => "Gasto fora do pulso medido"] as $medida => $nome_m) {
+            $como = $g["n"] === 0 ? t("a última medição; nenhuma nos últimos {1} dias", [1 => $janela])
+                : t("{1}{2}{3} dos últimos {4} dias", [1 => $g["conjunta"] ? t("conta dos dois gastos juntos, com ") : t("média de "), 2 => $g["n"], 3 => $g["n"] === 1 ? t(" medição") : t(" medições"), 4 => $janela]);
+            foreach (["uso" => t("Gasto em uso medido"), "repouso" => t("Gasto fora do pulso medido")] as $medida => $nome_m) {
                 if ($g[$medida] !== null) {
                     $res["conta"][] = ["campo" => "MEDIDO(\"" . $medida . "\")", "nome" => $nome_m, "detalhe" => $como, "valor" => round($g[$medida], 3),
-                        "unidade" => $medida === "uso" ? "% por dia de uso" : "% por dia fora do pulso", "origem" => "medido"];
+                        "unidade" => $medida === "uso" ? t("% por dia de uso") : t("% por dia fora do pulso"), "origem" => "medido"];
                     if ($medida === "uso") {
                         $vazio = false;
                     }
@@ -3641,12 +3642,11 @@ function previsao_energia($r, $agora)
             if (is_numeric($dura)) {
                 $res["dura_dias"] = round((float)$dura, 1);
                 $res["dura_ate"] = $hoje->modify("+" . max(0, (int)floor((float)$dura)) . " days")->format("Y-m-d");
-                $res["linhas"][] = "Se usar a partir de hoje: dura ~" . str_replace(".", ",", (string)$res["dura_dias"]) . ($res["dura_dias"] == 1 ? " dia" : " dias")
-                    . ", até " . date("d/m", strtotime($res["dura_ate"])) . ".";
+                $res["linhas"][] = t("Se usar a partir de hoje: dura ~{1}{2}, até {3}.", [1 => decimal_txt($res["dura_dias"], 6), 2 => $res["dura_dias"] == 1 ? " dia" : " dias", 3 => data_txt(strtotime($res["dura_ate"]), false, true)]);
             }
             // parado: o primeiro dia em que a energia fica no limite ou abaixo (a energia guardada só cai; procura por metades)
             if ($energia <= $res["limite"]) {
-                $res["linhas"][] = "Já está abaixo de " . str_replace(".", ",", (string)(0 + $res["limite"])) . "%. Guardado assim, a bateria se desgasta.";
+                $res["linhas"][] = t("Já está abaixo de {1}%. Guardado assim, a bateria se desgasta.", [1 => decimal_txt($res["limite"], 6)]);
             } else {
                 $baixo = 0;
                 $alto = 366;
@@ -3665,9 +3665,9 @@ function previsao_energia($r, $agora)
                     }
                     $chega = $hoje->modify("+" . $alto . " days");
                     $res["chega_limite_em"] = $chega->format("Y-m-d");
-                    $res["linhas"][] = "Parado, chega a " . str_replace(".", ",", (string)(0 + $res["limite"])) . "% em " . $chega->format($chega->format("Y") === $hoje->format("Y") ? "d/m" : "d/m/Y") . ".";
+                    $res["linhas"][] = t("Parado, chega a {1}% em {2}.", [1 => decimal_txt($res["limite"], 6), 2 => $chega->format($chega->format("Y") === $hoje->format("Y") ? "d/m" : "d/m/Y")]);
                 } else {
-                    $res["linhas"][] = "Parado, fica acima de " . str_replace(".", ",", (string)(0 + $res["limite"])) . "% por mais de um ano.";
+                    $res["linhas"][] = t("Parado, fica acima de {1}% por mais de um ano.", [1 => decimal_txt($res["limite"], 6)]);
                 }
             }
             // a próxima entrada no rodízio (o primeiro dia dele no plano a partir de hoje, se não for hoje) e os dias seguidos dele
@@ -3697,18 +3697,17 @@ function previsao_energia($r, $agora)
                     $res["carga_na_entrada"] = (int)round((float)$na_entrada);
                     $res["precisa"] = (float)$no_fim <= 0 ? 100 : (int)ceil(100 - (float)$no_fim);
                     $res["carregar_antes"] = (float)$na_entrada < $res["precisa"];
-                    $res["linhas"][] = "Entra no rodízio em " . date("d/m", strtotime($proxima)) . " com ~" . $res["carga_na_entrada"] . "%; precisa de "
-                        . $res["precisa"] . "%" . ($res["carregar_antes"] ? ". Carregar antes." : ". Dá conta.");
+                    $res["linhas"][] = t("Entra no rodízio em {1} com ~{2}%; precisa de {3}%{4}", [1 => data_txt(strtotime($proxima), false, true), 2 => $res["carga_na_entrada"], 3 => $res["precisa"], 4 => $res["carregar_antes"] ? t(". Carregar antes.") : t(". Dá conta.")]);
                 }
             }
             // a confiança: a leitura envelhece; alta só com leitura de até 2 dias e nenhum campo da conta vazio
             $idade = ($agora - strtotime($leitura["inicio"])) / 86400;
-            $res["confianca"] = $idade <= 2 && !$vazio ? "alta" : ($idade <= 7 ? "média" : "baixa");
+            $res["confianca"] = $idade <= 2 && !$vazio ? "alta" : ($idade <= 7 ? t("média") : "baixa");
             // hoje, ontem, ou há quantos dias de calendário
             $dias_leitura = (int)(new DateTimeImmutable(substr($leitura["inicio"], 0, 10)))->diff($hoje)->days;
-            $quando = $dias_leitura === 0 ? "hoje" : ($dias_leitura === 1 ? "ontem" : "há " . $dias_leitura . " dias");
+            $quando = $dias_leitura === 0 ? "hoje" : ($dias_leitura === 1 ? "ontem" : t("há {1} dias", [1 => $dias_leitura]));
             // (de onde vem cada número da conta vai à parte, em "conta": a tela mostra numa tabela)
-            $res["linhas"][] = "Confiança " . $res["confianca"] . ": leitura de " . str_replace(".", ",", (string)(0 + $res["leitura"])) . $leitura["unidade"] . " feita " . $quando . ".";
+            $res["linhas"][] = t("Confiança {1}: leitura de {2}{3} feita {4}.", [1 => $res["confianca"], 2 => decimal_txt($res["leitura"], 6), 3 => $leitura["unidade"], 4 => $quando]);
         }
     }
     return $res;
@@ -3815,13 +3814,13 @@ function autonomia_do_relogio($r, $agora)
     foreach (["autonomia_prevista", "autonomia_atual"] as $k) {
         if ($res[$k] === null) {
             $res["motivos"][$k] = isset(formulas_todas()[$k]) && mais_perto(formulas_todas()[$k], $r) !== null
-                ? "falta no cadastro do relógio um dado que a fórmula " . $k . " usa" : "não há fórmula " . $k . " para o grupo deste relógio";
+                ? t("falta no cadastro do relógio um dado que a fórmula {1} usa", [1 => $k]) : t("não há fórmula {1} para o grupo deste relógio", [1 => $k]);
         }
     }
-    foreach (["restante_em_uso" => "no pulso direto", "restante_guardado" => "guardado", "autonomia_estimada" => "seguindo o plano"] as $k => $como) {
+    foreach (["restante_em_uso" => t("no pulso direto"), "restante_guardado" => "guardado", "autonomia_estimada" => t("seguindo o plano")] as $k => $como) {
         if ($res[$k] === null) {
-            $res["motivos"][$k] = $energia === null ? "sem dados para calcular a energia agora (ex.: smartwatch sem nenhuma leitura, solar sem nenhum sol registrado)"
-                : "a energia não chega a zero em até 10 anos " . $como . ($k === "restante_em_uso" ? " (no pulso, o relógio pode se recarregar)" : "");
+            $res["motivos"][$k] = $energia === null ? t("sem dados para calcular a energia agora (ex.: smartwatch sem nenhuma leitura, solar sem nenhum sol registrado)")
+                : t("a energia não chega a zero em até 10 anos {1}{2}", [1 => $como, 2 => $k === "restante_em_uso" ? t(" (no pulso, o relógio pode se recarregar)") : ""]);
         }
     }
     foreach (["acaba_em_unixtimestamp", "acaba_em_segundos", "acaba_em_datacomtz"] as $k) {
@@ -3838,14 +3837,14 @@ function autonomia_do_relogio($r, $agora)
 // repouso (o resto) e as marcações instantâneas. [estado => texto]
 function estados_da_linha()
 {
-    $res = ["rodizio" => "em uso", "pulso" => "fora do rodízio"];
+    $res = ["rodizio" => t("em uso"), "pulso" => t("fora do rodízio")];
     foreach (lancamento_tipos() as $ident => $t) {
         if ($t["formato"] === "sessao" && $ident !== "pulso") {
             // minúsculas sem depender do mbstring ("No winder" → "no winder")
             $res[$ident] = function_exists("mb_strtolower") ? mb_strtolower((string)$t["nome"], "UTF-8") : strtolower((string)$t["nome"]);
         }
     }
-    return array_merge($res, ["repouso" => "em repouso", "marca" => "marcação"]);
+    return array_merge($res, ["repouso" => t("em repouso"), "marca" => t("marcação")]);
 }
 
 // A linha do tempo de um relógio, do primeiro lançamento até agora: trechos contínuos, cada um com o seu estado (em uso
@@ -3883,7 +3882,7 @@ function linha_do_tempo($id, $de, $ate, $estados)
             }
         } else {
             $marcas[] = ["inicio" => $ini, "fim" => null, "estado" => "marca", "tipo" => $l["identificador"], "em_andamento" => false,
-                "texto" => $l["nome"] . ($l["valor"] !== null ? " " . str_replace(".", ",", (string)(0 + (float)$l["valor"])) . $l["unidade"] : ""), "nome" => $l["nome"]];
+                "texto" => $l["nome"] . ($l["valor"] !== null ? " " . decimal_txt((float)$l["valor"], 6) . $l["unidade"] : ""), "nome" => $l["nome"]];
         }
     }
     $trechos = [];
@@ -3960,13 +3959,13 @@ function linha_do_tempo($id, $de, $ate, $estados)
 // "todo dia 20:00", "seg, qua 20:00", "dia 1 do mês, 09:00", "a cada 90 dias, 09:00, desde 01/09/2026", "25/09/2026 14:00"
 function descricao_repeticao($ev)
 {
-    $dias = ["", "seg", "ter", "qua", "qui", "sex", "sáb", "dom"];
+    $dias = ["", t("seg"), t("ter"), t("qua"), t("qui"), t("sex"), t("sáb"), t("dom")];
     $hora = substr((string)$ev["hora"], 0, 5);
     $txt = $hora;
     if ($ev["repeticao"] === "uma") {
-        $txt = date("d/m/Y", strtotime((string)$ev["data_inicio"])) . " " . $hora;
+        $txt = data_txt(strtotime((string)$ev["data_inicio"])) . " " . $hora;
     } elseif ($ev["repeticao"] === "diaria") {
-        $txt = "todo dia " . $hora;
+        $txt = t("todo dia {1}", [1 => $hora]);
     } elseif ($ev["repeticao"] === "semanal") {
         $nomes = [];
         foreach (explode(",", (string)$ev["dias_semana"]) as $n) {
@@ -3976,9 +3975,9 @@ function descricao_repeticao($ev)
         }
         $txt = implode(", ", $nomes) . " " . $hora;
     } elseif ($ev["repeticao"] === "mensal") {
-        $txt = "dia " . (int)$ev["dia_mes"] . " do mês, " . $hora;
+        $txt = t("dia {1} do mês, {2}", [1 => (int)$ev["dia_mes"], 2 => $hora]);
     } elseif ($ev["repeticao"] === "intervalo") {
-        $txt = "a cada " . (int)$ev["intervalo_dias"] . " dias, " . $hora . ($ev["data_inicio"] ? ", desde " . date("d/m/Y", strtotime($ev["data_inicio"])) : "");
+        $txt = t("a cada {1} dias, {2}{3}", [1 => (int)$ev["intervalo_dias"], 2 => $hora, 3 => $ev["data_inicio"] ? ", desde " . data_txt(strtotime($ev["data_inicio"])) : ""]);
     }
     if ((int)$ev["ativo"] !== 1) {
         $txt .= " · pausado";
@@ -4040,10 +4039,10 @@ function agenda_desejada($hoje)
                 if (in_array($a["identificador"], $tipos, true) && ($a["agenda"] === "sempre" || $data <= $limite)) {
                     // o motivo: o texto do aviso, com o "quando" contado do começo do evento (não muda a cada sincronização)
                     $falta = (strtotime($a["data"]) - strtotime($data . " " . $manha)) / 86400;
-                    $quando = duracao_texto($falta) === "" ? "agora" : ($falta >= 0 ? "em " : "há ") . duracao_texto($falta);
+                    $quando = duracao_texto($falta) === "" ? t("agora") : ($falta >= 0 ? t("em {1}", [1 => duracao_texto($falta)]) : t("há {1}", [1 => duracao_texto($falta)]));
                     $lista[] = ["chave" => $a["identificador"] . ":" . $r["id"] . ":" . $data, "data" => $data, "hora" => $manha, "momento" => $a["data"],
                         "tipo" => $a["identificador"], "relogio_id" => (int)$r["id"], "relogio" => $r["nome"], "fazer" => $a["nome"],
-                        "motivo" => str_replace(["{relogio}", "{data}", "{quando}"], [$r["nome"], date("d/m/Y H:i", strtotime($a["data"])), $quando], $a["modelo"])];
+                        "motivo" => str_replace(["{relogio}", "{data}", "{quando}"], [$r["nome"], data_txt(strtotime($a["data"]), true), $quando], $a["modelo"])];
                 }
             }
         }
@@ -4055,8 +4054,8 @@ function agenda_desejada($hoje)
         if ($anterior !== (int)$p["relogio_id"] && $p["data"] >= $hoje->format("Y-m-d")) {
             if (in_array("dia", $tipos, true)) {
                 $lista[] = ["chave" => "dia:" . $p["relogio_id"] . ":" . $p["data"], "data" => $p["data"], "hora" => $manha, "momento" => $p["data"] . " " . $manha . ":00",
-                    "tipo" => "dia", "relogio_id" => (int)$p["relogio_id"], "relogio" => $p["nome"], "fazer" => "Usar hoje",
-                    "motivo" => "Usar " . texto_ate($p["data"], "neste dia") . "."];
+                    "tipo" => "dia", "relogio_id" => (int)$p["relogio_id"], "relogio" => $p["nome"], "fazer" => t("Usar hoje"),
+                    "motivo" => t("Usar {1}.", [1 => texto_ate($p["data"], t("neste dia"))])];
             }
             $vespera = date("Y-m-d", strtotime($p["data"] . " -1 day"));
             if (in_array("vespera", $tipos, true) && $vespera >= $hoje->format("Y-m-d")) {
@@ -4065,7 +4064,7 @@ function agenda_desejada($hoje)
                 $preparo = preparo_do_dia($r_v, $p["data"]);
                 $lista[] = ["chave" => "vespera:" . $p["relogio_id"] . ":" . $vespera, "data" => $vespera, "hora" => cfg("horario_noite"),
                     "momento" => $vespera . " " . cfg("horario_noite") . ":00", "tipo" => "vespera", "relogio_id" => (int)$p["relogio_id"], "relogio" => $p["nome"],
-                    "fazer" => "Preparar para amanhã", "motivo" => count($preparo) > 0 ? implode("\n", $preparo) : "É só usar."];
+                    "fazer" => t("Preparar para amanhã"), "motivo" => count($preparo) > 0 ? implode("\n", $preparo) : t("É só usar.")];
             }
         }
         $anterior = (int)$p["relogio_id"];
@@ -4089,9 +4088,9 @@ function agenda_desejada($hoje)
 // o resto é a descrição
 function evento_formatado($m)
 {
-    $dias = ["", "segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"];
+    $dias = ["", t("segunda"), t("terça"), t("quarta"), t("quinta"), t("sexta"), t("sábado"), t("domingo")];
     $ctx = contexto_mensagem((int)$m["relogio_id"], ["acao" => $m["fazer"], "motivo" => $m["motivo"], "ate" => $m["tipo"] === "dia" ? $m["motivo"] : "",
-        "tipo_aviso" => $m["tipo"], "data" => date("d/m/Y", strtotime($m["data"])), "hora" => $m["hora"], "dia_semana" => $dias[(int)date("N", strtotime($m["data"]))]],
+        "tipo_aviso" => $m["tipo"], "data" => data_txt(strtotime($m["data"])), "hora" => $m["hora"], "dia_semana" => $dias[(int)date("N", strtotime($m["data"]))]],
         new DateTimeImmutable("today"));
     $partes = explode("\n", aplicar_modelo(modelo_do_aviso("ag", $m["tipo"]), $ctx), 2);
     return ["titulo" => trim($partes[0]) !== "" ? trim($partes[0]) : $m["fazer"], "descricao" => isset($partes[1]) ? trim($partes[1]) : ""];
@@ -4161,9 +4160,9 @@ function sincronizar_agenda($hoje)
 {
     $res = ["criados" => 0, "atualizados" => 0, "removidos" => 0, "erros" => 0, "mensagem" => ""];
     if (cfg("agenda_id") === "") {
-        $res["mensagem"] = "Informe o ID da agenda na configuração.";
+        $res["mensagem"] = t("Informe o ID da agenda na configuração.");
     } elseif (!google_token()) {
-        $res["mensagem"] = "Não autenticou no Google: confira o caminho da chave JSON e se a Calendar API está ativa no projeto.";
+        $res["mensagem"] = t("Não autenticou no Google: confira o caminho da chave JSON e se a Calendar API está ativa no projeto.");
     } else {
         $desejados = [];
         foreach (agenda_desejada($hoje) as $m) {
@@ -4408,22 +4407,22 @@ function manual_html($md)
 function backup_pasta_erro()
 {
     if (!defined("BACKUP_PASTA") || trim((string)BACKUP_PASTA) === "") {
-        return "sem BACKUP_PASTA no config.php: a cópia de segurança automática está desligada";
+        return t("sem BACKUP_PASTA no config.php: a cópia de segurança automática está desligada");
     }
     $pasta = rtrim((string)BACKUP_PASTA, "/\\");
     if (!is_dir($pasta)) {
         @mkdir($pasta, 0750, true);
     }
     if (!is_dir($pasta)) {
-        return "a pasta das cópias (" . $pasta . ") não existe e não consegui criá-la";
+        return t("a pasta das cópias ({1}) não existe e não consegui criá-la", [1 => $pasta]);
     }
     if (!is_writable($pasta)) {
-        return "a pasta das cópias (" . $pasta . ") não aceita gravar: dê permissão de escrita ao usuário do PHP";
+        return t("a pasta das cópias ({1}) não aceita gravar: dê permissão de escrita ao usuário do PHP", [1 => $pasta]);
     }
     $real = realpath($pasta);
     $sistema = realpath(__DIR__);
     if ($real !== false && $sistema !== false && ($real === $sistema || strpos($real . DIRECTORY_SEPARATOR, $sistema . DIRECTORY_SEPARATOR) === 0)) {
-        return "a pasta das cópias está dentro da pasta publicada do sistema: qualquer um baixaria o banco pelo navegador. Use uma pasta fora dela";
+        return t("a pasta das cópias está dentro da pasta publicada do sistema: qualquer um baixaria o banco pelo navegador. Use uma pasta fora dela");
     }
     return "";
 }
@@ -4504,7 +4503,7 @@ function backup_lista()
             gzclose($gz);
         }
         $bytes = (int)filesize($c);
-        $res[] = ["arquivo" => basename($c), "bytes" => $bytes, "tamanho" => $bytes < 1048576 ? max(1, (int)round($bytes / 1024)) . " KB" : str_replace(".", ",", (string)round($bytes / 1048576, 1)) . " MB",
+        $res[] = ["arquivo" => basename($c), "bytes" => $bytes, "tamanho" => $bytes < 1048576 ? t("{1} KB", [1 => max(1, (int)round($bytes / 1024))]) : t("{1} MB", [1 => decimal_txt($bytes / 1048576, 1)]),
             "criada" => is_array($cab) ? ($cab["criada"] ?? null) : null,
             "documentos" => is_array($cab) && !empty($cab["documentos"]), "versao" => is_array($cab) ? ($cab["versao"] ?? null) : null];
     }
@@ -4526,7 +4525,7 @@ function backup_fazer()
     global $MIGRACOES;
     $pasta = backup_pasta();
     if ($pasta === null) {
-        return ["ok" => false, "mensagem" => "", "erros" => ["Não fiz a cópia: " . backup_pasta_erro() . "."], "arquivo" => null];
+        return ["ok" => false, "mensagem" => "", "erros" => [t("Não fiz a cópia: {1}.", [1 => backup_pasta_erro()])], "arquivo" => null];
     }
     $nome = "relojoeiro-" . date("Y-m-d-His") . ".jsonl.gz";
     // segundos iguais (duas no mesmo segundo): a próxima espera o nome ficar livre
@@ -4537,7 +4536,7 @@ function backup_fazer()
     $parcial = $pasta . "/." . $nome . ".parcial";
     $gz = gzopen($parcial, "wb6");
     if (!$gz) {
-        return ["ok" => false, "mensagem" => "", "erros" => ["Não consegui criar o arquivo da cópia na pasta das cópias."], "arquivo" => null];
+        return ["ok" => false, "mensagem" => "", "erros" => [t("Não consegui criar o arquivo da cópia na pasta das cópias.")], "arquivo" => null];
     }
     $docs = backup_com_documentos();
     $tabelas = array_values(array_filter(backup_tabelas(), function ($t) use ($docs) { return $docs || $t[0] !== "documento_parte"; }));
@@ -4574,9 +4573,8 @@ function backup_fazer()
             $apagadas++;
         }
     }
-    return ["ok" => true, "mensagem" => "Cópia de segurança feita: " . $nome . " (" . (filesize($pasta . "/" . $nome) < 1048576 ? max(1, (int)round(filesize($pasta . "/" . $nome) / 1024)) . " KB, "
-        : str_replace(".", ",", (string)round(filesize($pasta . "/" . $nome) / 1048576, 1)) . " MB, ")
-        . $linhas . " registros" . ($docs ? ", com o conteúdo dos documentos" : "") . ")." . ($apagadas > 0 ? " " . $apagadas . ($apagadas === 1 ? " cópia velha apagada." : " cópias velhas apagadas.") : ""),
+    return ["ok" => true, "mensagem" => t("Cópia de segurança feita: {1} ({2}{3} registros{4}).{5}", [1 => $nome, 2 => filesize($pasta . "/" . $nome) < 1048576 ? max(1, (int)round(filesize($pasta . "/" . $nome) / 1024)) . " KB, "
+        : decimal_txt(filesize($pasta . "/" . $nome) / 1048576, 1) . " MB, ", 3 => $linhas, 4 => $docs ? t(", com o conteúdo dos documentos") : "", 5 => $apagadas > 0 ? " " . $apagadas . ($apagadas === 1 ? t(" cópia velha apagada.") : t(" cópias velhas apagadas.")) : ""]),
         "erros" => [], "arquivo" => $nome];
 }
 
@@ -4588,23 +4586,22 @@ function backup_restaurar($arquivo)
     global $MIGRACOES;
     $caminho = backup_caminho($arquivo);
     if ($caminho === null) {
-        return ["ok" => false, "mensagem" => "", "erros" => [backup_pasta() === null ? "Sem a pasta das cópias: " . backup_pasta_erro() . "." : "Cópia não encontrada: " . $arquivo . "."]];
+        return ["ok" => false, "mensagem" => "", "erros" => [backup_pasta() === null ? t("Sem a pasta das cópias: {1}.", [1 => backup_pasta_erro()]) : t("Cópia não encontrada: {1}.", [1 => $arquivo])]];
     }
     $gz = gzopen($caminho, "rb");
     $cab = json_decode((string)gzgets($gz, 1 << 20), true);
     if (!is_array($cab) || ($cab["relojoeiro_copia"] ?? null) !== 1) {
         gzclose($gz);
-        return ["ok" => false, "mensagem" => "", "erros" => ["O arquivo " . $arquivo . " não é uma cópia do Relojoeiro."]];
+        return ["ok" => false, "mensagem" => "", "erros" => [t("O arquivo {1} não é uma cópia do Relojoeiro.", [1 => $arquivo])]];
     }
     if (($cab["versao"] ?? "") !== array_key_last($MIGRACOES)) {
         gzclose($gz);
-        return ["ok" => false, "mensagem" => "", "erros" => ["A cópia é da versão " . ($cab["versao"] ?? "?") . " do banco e este está na " . array_key_last($MIGRACOES)
-            . ": volte a cópia num sistema da mesma versão."]];
+        return ["ok" => false, "mensagem" => "", "erros" => [t("A cópia é da versão {1} do banco e este está na {2}: volte a cópia num sistema da mesma versão.", [1 => $cab["versao"] ?? "?", 2 => array_key_last($MIGRACOES)])]];
     }
     $antes = backup_fazer();
     if (!$antes["ok"]) {
         gzclose($gz);
-        return ["ok" => false, "mensagem" => "", "erros" => array_merge(["Não restaurei: a cópia do que está agora falhou."], $antes["erros"])];
+        return ["ok" => false, "mensagem" => "", "erros" => array_merge([t("Não restaurei: a cópia do que está agora falhou.")], $antes["erros"])];
     }
     $todas = backup_tabelas();
     $info = [];
@@ -4657,7 +4654,7 @@ function backup_restaurar($arquivo)
                     }
                 }
                 if (count($resto) === count($esperando)) {
-                    throw new RuntimeException("a tabela " . $tabela . " cita registros que não estão na cópia");
+                    throw new RuntimeException(t("a tabela {1} cita registros que não estão na cópia", [1 => $tabela]));
                 }
                 $esperando = $resto;
             }
@@ -4667,7 +4664,7 @@ function backup_restaurar($arquivo)
             if (is_array($x) && isset($x["tabela"])) {
                 $soltar();
                 if (!isset($info[$x["tabela"]])) {
-                    throw new RuntimeException("a tabela " . $x["tabela"] . " da cópia não existe neste banco");
+                    throw new RuntimeException(t("a tabela {1} da cópia não existe neste banco", [1 => $x["tabela"]]));
                 }
                 $tabela = $x["tabela"];
                 $colunas = $x["colunas"];
@@ -4688,12 +4685,12 @@ function backup_restaurar($arquivo)
     } catch (Throwable $e) {
         banco_desfaz();
         gzclose($gz);
-        return ["ok" => false, "mensagem" => "", "erros" => ["Não restaurei (o banco ficou como estava): " . $e->getMessage() . "."]];
+        return ["ok" => false, "mensagem" => "", "erros" => [t("Não restaurei (o banco ficou como estava): {1}.", [1 => $e->getMessage()])]];
     }
     gzclose($gz);
     banco_ajustar_ids();
     cfg_set("backup_ultima", (string)preg_replace("/^relojoeiro-(\\d{4}-\\d{2}-\\d{2})-(\\d{2})(\\d{2})(\\d{2}).*\$/", "\$1 \$2:\$3:\$4", $antes["arquivo"]));
-    return ["ok" => true, "mensagem" => "Banco restaurado da cópia " . $arquivo . " (" . $n . " registros). O que estava antes foi guardado em " . $antes["arquivo"] . ".", "erros" => []];
+    return ["ok" => true, "mensagem" => t("Banco restaurado da cópia {1} ({2} registros). O que estava antes foi guardado em {3}.", [1 => $arquivo, 2 => $n, 3 => $antes["arquivo"]]), "erros" => []];
 }
 
 // o back-end de escrita (as operações que as páginas e a API chamam)

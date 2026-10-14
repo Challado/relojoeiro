@@ -17,11 +17,11 @@ if ($arq === "") {
     $saida = codigo_lista(($_REQUEST["conteudo"] ?? "") === "1");
 } elseif (!isset(codigo_arquivos()[$arq])) {
     $codigo = 404;
-    $saida = count($fora) > 0 ? ["erro" => $arq . " não sai pela API: " . $fora[0]["por_que"], "o_que_ver" => $fora[0]["o_que_ver"]]
-        : ["erro" => "esse arquivo não é do sistema (os que saem estão em arquivos)", "arquivos" => array_keys(codigo_arquivos())];
+    $saida = count($fora) > 0 ? ["erro" => t("{1} não sai pela API: {2}", [1 => $arq, 2 => $fora[0]["por_que"]]), "o_que_ver" => $fora[0]["o_que_ver"]]
+        : ["erro" => t("esse arquivo não é do sistema (os que saem estão em arquivos)"), "arquivos" => array_keys(codigo_arquivos())];
 } elseif ($html && !in_array($arq, codigo_paginas(), true)) {
     $codigo = 400;
-    $saida = ["erro" => "html=1 só vale para uma página: " . implode(", ", codigo_paginas())];
+    $saida = ["erro" => t("html=1 só vale para uma página: {1}", [1 => implode(", ", codigo_paginas())])];
 } elseif (($_REQUEST["cru"] ?? "") === "1") {
     // puro, sem JSON: o texto como text/plain (o navegador mostra, não roda), a imagem como imagem
     header("Content-Type: " . ($html ? "text/plain; charset=utf-8" : codigo_tipo($arq)[2]));

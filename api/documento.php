@@ -21,4 +21,4 @@ if ($caminho !== null && strpos($caminho, "..") === false && is_file($caminho)) 
     exit;
 }
 $codigo = 404;
-$saida = ["erro" => $doc ? "o arquivo do documento não está na pasta dos documentos" . ($pasta === null ? " (" . documentos_pasta_erro() . ")" : ((int)$doc["no_banco"] === 1 ? " e a cópia no banco não pôde ser recriada" : " e não tem cópia no banco")) : "documento não encontrado"];
+$saida = ["erro" => $doc ? t("o arquivo do documento não está na pasta dos documentos{1}", [1 => $pasta === null ? " (" . documentos_pasta_erro() . ")" : ((int)$doc["no_banco"] === 1 ? t(" e a cópia no banco não pôde ser recriada") : t(" e não tem cópia no banco"))]) : t("documento não encontrado")];
