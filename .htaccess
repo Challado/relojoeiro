@@ -1,6 +1,7 @@
 # Relojoeiro no Apache (2.4, e também o 2.2): o equivalente do nginx-relogios.conf. Abrem pelo navegador só as páginas,
 # o api.php e o que elas carregam (estilo.css, os .js, as imagens); ficam bloqueados os arquivos internos (o núcleo, o
-# banco, a configuração, o cron, os scripts), os de dados, os testes e o que começa com ponto (.git, .gitignore...).
+# banco, a configuração, o cron, os scripts, os pedaços do api.php na pasta api/), os de dados, os testes e o que começa
+# com ponto (.git, .gitignore...).
 # A pasta precisa de "AllowOverride All" na configuração do Apache (quase toda hospedagem já vem assim); sem ele, este
 # arquivo é ignorado e nada fica bloqueado.
 
@@ -36,7 +37,8 @@ Options -Indexes
     </IfModule>
 </FilesMatch>
 
-# as pastas inteiras: os testes e o repositório do git (quem instalou com git clone tem a pasta .git aqui)
+# as pastas inteiras: os testes, os pedaços do api.php (a pasta api/: só rodam dentro dele) e o repositório do git (quem
+# instalou com git clone tem a pasta .git aqui)
 <IfModule mod_alias.c>
-    RedirectMatch 403 /(testes|\.git)(/|$)
+    RedirectMatch 403 /(testes|api|\.git)(/|$)
 </IfModule>

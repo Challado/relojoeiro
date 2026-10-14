@@ -887,7 +887,25 @@ const RECONSTRUCAO_CODIGO = [
     "usuarios.js" => ["tela", "a página Usuários: quem acessa e criar usuário ou trocar a senha"],
     "ajuda.php" => ["tela", "o esqueleto da página Ajuda"],
     "ajuda.js" => ["tela", "a página Ajuda: o sumário e o manual em HTML (recurso=manual)"],
-    "api.php" => ["api", "a API, a porta única: a autenticação, cada consulta e cada escrita, os filtros, o JSON e o XML, e no cabeçalho a documentação inteira"],
+    "api.php" => ["api", "a API, a porta única: a autenticação, o formato, a ordem dos recursos (cada um no seu arquivo da pasta api/, ou ali mesmo, os pequenos), os filtros, o JSON e o XML, e no cabeçalho a documentação inteira"],
+    "api/funcoes.php" => ["api", "as funções que só a API usa (o XML, os textos legíveis do tempo, do plano, dos eventos e da agenda, os filtros das listas e a resposta) e o tratamento dos erros"],
+    "api/tudo.php" => ["api", "api.php sem recurso: tudo o que está guardado"],
+    "api/hoje.php" => ["api", "recurso=hoje: tudo o que a página Hoje mostra"],
+    "api/ficha.php" => ["api", "recurso=ficha: tudo o que o painel de um relógio mostra (ou o cadastro de um novo)"],
+    "api/config.php" => ["api", "recurso=config: a Configuração inteira"],
+    "api/historico.php" => ["api", "recurso=historico: a linha do tempo de um relógio, com os filtros e o resumo"],
+    "api/plano.php" => ["api", "recurso=plano: o plano dia a dia, o resumo por relógio e as páginas"],
+    "api/cron.php" => ["api", "recurso=cron: as execuções do cron, com os filtros, o resumo e as páginas"],
+    "api/arvore.php" => ["api", "recurso=arvore: a árvore dos grupos e o grupo de cada relógio"],
+    "api/cadastros.php" => ["api", "recurso=cadastros: os campos, os tipos de lançamento, as fórmulas, os avisos, os modos e as categorias"],
+    "api/calcular.php" => ["api", "recurso=calcular: o resultado de uma fórmula para um relógio (ou para todos)"],
+    "api/documentos.php" => ["api", "recurso=documentos: os documentos de um relógio (ou de todos), as categorias e o limite"],
+    "api/documento.php" => ["api", "recurso=documento: um arquivo de um documento (o original, a miniatura, a página de um PDF)"],
+    "api/backup.php" => ["api", "recurso=backup: as cópias de segurança da pasta, e uma cópia para baixar (arquivo=)"],
+    "api/migracoes.php" => ["api", "recurso=migracoes: as migrações pendentes do banco (a leitura) e aplicar (a escrita)"],
+    "api/codigo.php" => ["api", "recurso=codigo: o código do sistema como está agora, arquivo por arquivo"],
+    "api/ajuda.php" => ["api", "recurso=ajuda: a documentação da API (cada consulta, cada escrita e o dicionário dos campos, a fonte única dele)"],
+    "api/escrita.php" => ["api", "as escritas (POST): cada recurso e ação vai para a função dele no operacoes.php, que valida, grava e responde"],
     "lib.php" => ["api", "o núcleo: o token, o login, a árvore, os campos, os lançamentos, o motor das fórmulas, os avisos, os critérios, o rodízio, a escala e as listas do código"],
     "operacoes.php" => ["api", "as escritas: cada ação valida, grava e devolve ok, mensagem e erros (a API chama estas funções)"],
     "banco.php" => ["api", "o banco: MySQL/MariaDB, PostgreSQL, SQLite ou Firebird, o SQL escrito uma vez só e traduzido para cada um, e o catálogo do modelo"],
@@ -1096,6 +1114,8 @@ function reconstrucao()
             ]),
             $secao("arquitetura", "A arquitetura", [
                 "Um back-end único, a API (api.php): GET lê (recurso=...), POST grava (recurso=... e acao=...). Responde JSON (ou XML com formato=xml). "
+                    . "O api.php faz a porta (a autenticação, o formato, a ordem dos recursos, os filtros e a resposta); cada recurso grande fica num "
+                    . "arquivo da pasta api/ (api/hoje.php, api/ficha.php, api/ajuda.php...), que roda dentro dele, com as mesmas variáveis. "
                     . "Autenticação em todo pedido: o token (cabeçalho X-Api-Token ou parâmetro token, igual ao API_TOKEN) ou o login do site (HTTP Basic "
                     . "com usuário e senha da tabela usuario, senha com password_hash).",
                 "Um núcleo (lib.php): o motor das fórmulas, as variáveis de cada relógio, os avisos, as notas, o plano, a escala, a previsão, o gasto "
