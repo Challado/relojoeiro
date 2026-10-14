@@ -2344,6 +2344,89 @@
  *     relogios[].id                  o número (código)
  *     relogios[].nome                o nome
  *     relogios[].posse               a situação na coleção
+ *   recurso=passaporte
+ *     gerado_em                      quando foi gerado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     relogio                        quem ele é
+ *     relogio.id                     o número (código)
+ *     relogio.nome                   o nome
+ *     relogio.caminho                o caminho do grupo ("todos os relógios" na raiz)
+ *     relogio.tipo                   o grupo (o nome; "sem grupo" na raiz)
+ *     relogio.posse                  a situação na coleção
+ *     relogio.posse_texto            a mesma por extenso
+ *     relogio.disponivel             verdadeiro: está no rodízio
+ *     relogio.criado                 quando entrou no sistema (texto AAAA-MM-DD HH:MM:SS)
+ *     relogio.foto                   a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
+ *     relogio.marca                  a marca (null)
+ *     relogio.referencia             a referência (null)
+ *     relogio.observacao             a observação (null)
+ *     cadastro[]                     os campos preenchidos do cadastro (os que valem para ele), na ordem, já em texto
+ *     cadastro[].identificador       o campo
+ *     cadastro[].nome                o nome do campo
+ *     cadastro[].valor               o valor em texto: data DD/MM/AAAA, sim ou não, número com vírgula e a unidade (R$ 1.200,50; 40 h)
+ *     compra                         a compra
+ *     compra.data                    a data (texto AAAA-MM-DD; null)
+ *     compra.valor                   o valor pago, em R$ (null)
+ *     compra.loja                    onde comprou (null)
+ *     compra.garantia_ate            a garantia até (texto AAAA-MM-DD; null)
+ *     uso                            o uso desde sempre
+ *     uso.primeira_vez               a primeira vez no pulso (texto AAAA-MM-DD; null: nunca)
+ *     uso.ultima_vez                 a última vez no pulso (hoje, se está no pulso; null: nunca)
+ *     uso.no_pulso_agora             verdadeiro: está no pulso agora
+ *     uso.horas_no_pulso             as horas no pulso desde sempre (uma casa)
+ *     uso.dias_de_uso                os dias de uso (a fórmula dias_de_uso; null sem ela)
+ *     uso.custo_por_uso              o custo por uso (a fórmula custo_por_uso), em R$; null
+ *     marcacoes[]                    cada tipo de marcação instantânea (corda, troca de pilha, revisão...) que ele tem, da mais recente
+ *                                    para a mais antiga
+ *     marcacoes[].tipo               o tipo de lançamento (o identificador)
+ *     marcacoes[].nome               o nome
+ *     marcacoes[].vezes              quantas vezes
+ *     marcacoes[].ultima             a última (texto AAAA-MM-DD)
+ *     servicos[]                     as revisões e as trocas de pilha, da mais recente para a mais antiga
+ *     servicos[].data                quando (texto AAAA-MM-DD)
+ *     servicos[].tipo                revisao ou pilha
+ *     servicos[].nome                o nome do tipo
+ *     acessorios[]                   os acessórios dele (como em recurso=acessorios)
+ *     acessorios[].id                o número do acessório
+ *     acessorios[].nome              o nome
+ *     acessorios[].tipo              o tipo
+ *     acessorios[].tipo_texto        o tipo por extenso
+ *     acessorios[].relogio_id        este relógio
+ *     acessorios[].relogio           o nome dele
+ *     acessorios[].observacao        a observação (null)
+ *     acessorios[].criado            quando foi cadastrado
+ *     documentos[]                   os documentos dele, por categoria e data
+ *     documentos[].id                o número do documento
+ *     documentos[].categoria         o nome da categoria
+ *     documentos[].titulo            o título
+ *     documentos[].data              a data do documento (texto AAAA-MM-DD; null)
+ *     documentos[].nome              o nome do arquivo
+ *     proximos_avisos[]              os próximos avisos (até 8), do mais urgente ao mais distante
+ *     proximos_avisos[].nome         o aviso
+ *     proximos_avisos[].data         a data prevista (texto AAAA-MM-DD)
+ *     proximos_avisos[].texto        o motivo por extenso
+ *   recurso=galeria
+ *     gerado_em                      quando foi gerado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     todos                          verdadeiro: com os de fora da coleção (posse=todos)
+ *     total                          quantos relógios
+ *     valor_total                    a soma do valor pago, em R$
+ *     com_foto                       quantos têm foto
+ *     grupos[]                       os grupos, pelo caminho ("(na raiz)" primeiro)
+ *     grupos[].caminho               o caminho do grupo
+ *     grupos[].relogios[]            os relógios do grupo, pelo nome
+ *     grupos[].relogios[].id         o número (código)
+ *     grupos[].relogios[].nome       o nome
+ *     grupos[].relogios[].tipo       o grupo (o nome; "sem grupo" na raiz)
+ *     grupos[].relogios[].posse      a situação na coleção
+ *     grupos[].relogios[].posse_texto
+ *                                    a mesma por extenso
+ *     grupos[].relogios[].foto       a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
+ *     grupos[].relogios[].marca      a marca (null)
+ *     grupos[].relogios[].referencia a referência (null)
+ *     grupos[].relogios[].ano_compra o ano da compra (null)
+ *     grupos[].relogios[].valor_compra
+ *                                    o valor pago, em R$ (null)
+ *     grupos[].relogios[].dias_de_uso
+ *                                    os dias de uso (a fórmula dias_de_uso; null)
  *   recurso=rodizio_manual
  *     de                             o primeiro dia do período (AAAA-MM-DD)
  *     ate                            o último dia do período (AAAA-MM-DD)
@@ -2953,6 +3036,10 @@ if (!$token_ok && $quem === "") {
     require __DIR__ . "/api/estatisticas.php";
 } elseif ($recurso === "hora_certa") {
     require __DIR__ . "/api/hora_certa.php";
+} elseif ($recurso === "passaporte") {
+    require __DIR__ . "/api/passaporte.php";
+} elseif ($recurso === "galeria") {
+    require __DIR__ . "/api/galeria.php";
 } elseif ($recurso === "acessorios") {
     // os acessórios (de todos os relógios, ou de um: relogio=id; relogio=0, só os soltos), os tipos e os relógios (o menu)
     $rq_a = $_REQUEST["relogio"] ?? "";
@@ -3023,7 +3110,7 @@ if (!$token_ok && $quem === "") {
 } else {
     $codigo = 404;
     $saida = ["erro" => "recurso desconhecido", "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "hora_certa", "acessorios", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "hora_certa", "acessorios", "passaporte", "galeria", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

@@ -90,6 +90,8 @@ $consultas = [
     "estatisticas" => ["recurso=estatisticas", "recurso=estatisticas&de=tudo"],
     "hora_certa" => ["recurso=hora_certa"],
     "acessorios" => ["recurso=acessorios", "recurso=acessorios&relogio=0"],
+    "passaporte" => $para_cada("recurso=passaporte&relogio=%d"),
+    "galeria" => ["recurso=galeria", "recurso=galeria&posse=todos"],
     "rodizio_manual" => ["recurso=rodizio_manual&de=" . $hoje . "&ate=" . $daqui20 . "&pagina=1", "recurso=rodizio_manual&de=" . $hoje . "&ate=" . $daqui20 . "&pagina=3"],
     "eventos" => ["recurso=eventos"],
     "agenda" => ["recurso=agenda"],

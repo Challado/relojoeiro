@@ -460,6 +460,10 @@ ler("2 tudo", ["foto" => "nao"]);
 foreach (["hoje", "avisos", "criterios", "historico", "plano", "eventos", "arvore", "cadastros", "config"] as $r) {
     ler("2 " . $r, ["recurso" => $r]);
 }
+// o passaporte de um relógio, um que não existe, e a galeria
+ler("2 passaporte", ["recurso" => "passaporte", "relogio" => $rel["auto2"]]);
+ler("2 passaporte que nao existe", ["recurso" => "passaporte", "relogio" => 99999]);
+ler("2 galeria", ["recurso" => "galeria", "posse" => "todos"]);
 // as estatísticas: os últimos 90 dias, desde o começo, e um período recusado
 ler("2 estatisticas", ["recurso" => "estatisticas"]);
 ler("2 estatisticas desde o comeco", ["recurso" => "estatisticas", "de" => "tudo"]);
