@@ -902,6 +902,8 @@ const RECONSTRUCAO_CODIGO = [
     "nginx-relogios.conf" => ["servidor", "o nginx: o mesmo bloqueio do .htaccess"],
     "testes/cenario.php" => ["testes", "o roteiro de aceitação: faz pela API o que uma pessoa faz e tira a fotografia de tudo o que a API devolve"],
     "testes/comparar.php" => ["testes", "compara duas fotografias do cenário (os quatro bancos, ou a reescrita com a versão atual)"],
+    "testes/paridade.sh" => ["testes", "o teste de paridade com um comando: os quatro bancos ao mesmo tempo, numa pasta temporária, e a comparação"],
+    "testes/config.teste.php" => ["testes", "o config dos testes (o acesso aos bancos pelo ambiente), apontado por RELOGIOS_CONFIG: o config.php de verdade fica intocado"],
     "testes/layout.cjs" => ["testes", "a conferência do layout: todas as telas num navegador, em 15 tamanhos, procurando o que quebra"],
     "testes/README.md" => ["testes", "como rodar o teste de paridade e a conferência do layout"],
     "README.md" => ["documentacao", "o manual inteiro: para quem usa, a instalação, a API e como é por dentro"],
@@ -1399,7 +1401,9 @@ function reconstrucao()
                 "testes/cenario.php faz pela API o que uma pessoa faz (cadastra relógios de cada tipo, lança cordas, cargas, sol, winder e pilha, monta a "
                     . "escala, mexe nos critérios, nos eventos e nas fotos, roda o cron) e tira a fotografia de tudo o que a API devolve; "
                     . "testes/comparar.php compara duas fotografias. Com RELOGIOS_SEMENTE (o sorteio fica previsível), o roteiro rodado em MySQL, "
-                    . "PostgreSQL, SQLite e Firebird, num banco recém-instalado, tem de dar as mesmas respostas; e a reescrita, as mesmas da versão atual.",
+                    . "PostgreSQL, SQLite e Firebird, num banco recém-instalado, tem de dar as mesmas respostas; e a reescrita, as mesmas da versão atual. "
+                    . "testes/paridade.sh faz tudo com um comando (os bancos recriados, a instalação, o usuário, os servidores, o roteiro e a comparação), "
+                    . "com o config de teste apontado pela variável de ambiente RELOGIOS_CONFIG (o núcleo carrega o arquivo que ela diz; sem ela, o config.php).",
                 "Além disso: nenhuma escrita do roteiro recusada; o dicionário da ajuda explica todos os campos das respostas; as telas sem erro de "
                     . "JavaScript e sem rolagem lateral no celular, no tablet e no computador.",
                 "testes/layout.cjs abre todas as telas (com os quadros recolhidos abertos e cada opção dos menus que mostram partes) num navegador, "

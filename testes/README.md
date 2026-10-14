@@ -13,44 +13,52 @@ pela API, do jeito que uma pessoa usa o sistema:
 
 ## Como rodar
 
-1. Um `config.php` de teste que escolhe o banco pelo ambiente, por exemplo:
+Com os bancos no ar (MySQL/MariaDB, PostgreSQL e Firebird; o SQLite não precisa de servidor), um comando faz tudo:
 
-   ```php
-   $b = getenv("RELOGIOS_DB") ?: "mysql";
-   define("DB_TIPO", $b);
-   define("DB_HOST", $b === "firebird" ? "localhost" : "127.0.0.1");
-   define("DB_PORTA", $b === "pgsql" ? 5432 : ($b === "firebird" ? 0 : 3306));
-   define("DB_NOME", $b === "firebird" ? "/var/lib/firebird/3.0/data/relogios_teste.fdb" : "relogios_teste");
-   define("DB_USUARIO", $b === "pgsql" ? "postgres" : ($b === "firebird" ? "SYSDBA" : "root"));
-   define("DB_SENHA", "...");
-   define("DB_ARQUIVO", "/tmp/relogios_teste.sqlite");
-   define("API_TOKEN", "token-de-teste-123");
-   define("FUSO", "America/Sao_Paulo");
-   define("MSG_ENDPOINT", "");
-   define("MSG_DESTINATARIO", "");
-   define("MSG_TITULO", "Relógios");
-   ```
+```sh
+testes/paridade.sh                      # os quatro, ao mesmo tempo; o SQLite é a referência
+testes/paridade.sh sqlite mysql         # só esses (o primeiro é a referência)
+testes/paridade.sh --layout sqlite      # e, no fim, a conferência do layout (veja abaixo) no primeiro
+testes/paridade.sh --manter sqlite      # deixa o servidor no ar no fim, para olhar as telas (Ctrl+C derruba)
+```
 
-2. Para cada banco: o banco vazio (no Firebird, `CREATE DATABASE ... DEFAULT CHARACTER SET UTF8` pelo `isql-fb`), `php instalar.php`, `php criar_usuario.php teste senha123`, e um servidor com a
-   semente dos sorteios fixa. Sem a semente, a escala desempata ao acaso e o plano muda de uma rodada para outra.
+Para cada banco ele apaga e recria o banco de teste, roda `instalar.php` e `criar_usuario.php teste senha123`, sobe um
+servidor `php -S` com a semente dos sorteios fixa (`RELOGIOS_SEMENTE=42`; sem ela, a escala desempata ao acaso e o plano muda
+de uma rodada para outra) e roda o `cenario.php`; depois compara a fotografia de cada banco com a do primeiro. O resultado
+esperado é `Tudo igual.` (e o comando termina com 0). Tudo fica numa pasta temporária nova (a fotografia, o log e a comparação
+de cada banco), que ele diz no começo.
 
-   ```sh
-   RELOGIOS_SEMENTE=42 RELOGIOS_DB=sqlite php -S 127.0.0.1:8083 -t .
-   ```
+O `config.php` de verdade não é lido nem tocado: o sistema roda com o [`config.teste.php`](config.teste.php), apontado pela
+variável `RELOGIOS_CONFIG` (o `lib.php` usa o arquivo que ela diz; sem ela, o `config.php` da pasta, como sempre). O acesso aos
+bancos vem do ambiente, com o padrão de uma máquina de desenvolvimento:
 
-3. O cenário, com o mesmo ambiente (ele roda o cron como processo filho), e a comparação:
+| Variável | Padrão | |
+|---|---|---|
+| `TESTE_BANCO` | `relogios_teste` | o banco no MySQL e no PostgreSQL. **Ele é apagado e recriado**: o nome tem de ter "teste" |
+| `TESTE_MYSQL_HOST`, `_PORTA`, `_USUARIO`, `_SENHA` | `127.0.0.1`, `3306`, `teste`, `teste` | o MySQL/MariaDB |
+| `TESTE_PG_HOST`, `_PORTA`, `_USUARIO`, `_SENHA` | `127.0.0.1`, `5432`, `postgres`, `teste` | o PostgreSQL |
+| `TESTE_FB_ARQUIVO`, `TESTE_FB_USUARIO`, `TESTE_FB_SENHA` | `/var/lib/firebird/3.0/data/relogios_teste.fdb`, `SYSDBA`, `masterkey` | o Firebird (o arquivo também é apagado e recriado; tem de ter "teste" no nome) |
+| `TESTE_PORTA` | `8101` | a porta do primeiro servidor (uma por banco, em sequência) |
+| `RELOGIOS_TESTE_PASTA` | uma pasta temporária nova | onde fica tudo da rodada |
 
-   ```sh
-   RELOGIOS_SEMENTE=42 RELOGIOS_DB=sqlite php testes/cenario.php http://127.0.0.1:8083/api.php sqlite.json
-   php testes/comparar.php mysql.json sqlite.json
-   ```
+Ele usa o `psql`, o `mysql` e o `isql-fb` para recriar os bancos, e o `curl` para esperar o servidor subir.
 
-O cenário monta as datas e horas no mesmo fuso do sistema: o `FUSO` do `config.php` da pasta do sistema (ou a variável
-`RELOGIOS_FUSO`, se o sistema estiver noutro lugar). Assim ele roda em qualquer hora do dia, inclusive à noite no Brasil (quando
-em UTC já é o dia seguinte) e logo depois da meia-noite. O token que ele manda é o do `config.php` de teste do exemplo acima
-(`token-de-teste-123`); com outro `API_TOKEN`, passe-o na variável `RELOGIOS_TOKEN`.
+Na mão, sem o `paridade.sh`: um `config.php` de teste (o `config.teste.php` serve, com `RELOGIOS_CONFIG`), para cada banco o
+banco vazio, `php instalar.php`, `php criar_usuario.php teste senha123` e um servidor com a semente
+(`RELOGIOS_SEMENTE=42 RELOGIOS_DB=sqlite php -S 127.0.0.1:8083 -t .`), o cenário com o mesmo ambiente (ele roda o cron como
+processo filho) e a comparação:
 
-Rode os bancos **ao mesmo tempo**, cada um no seu servidor: com minutos de diferença entre as rodadas, as contas que andam
+```sh
+RELOGIOS_SEMENTE=42 RELOGIOS_DB=sqlite php testes/cenario.php http://127.0.0.1:8083/api.php sqlite.json
+php testes/comparar.php mysql.json sqlite.json
+```
+
+O cenário monta as datas e horas no mesmo fuso do sistema: o `FUSO` do config do sistema (o de `RELOGIOS_CONFIG`; sem ela, o
+`config.php` da pasta; ou a variável `RELOGIOS_FUSO`, se o sistema estiver noutro lugar). Assim ele roda em qualquer hora do
+dia, inclusive à noite no Brasil (quando em UTC já é o dia seguinte) e logo depois da meia-noite. O token que ele manda é o do
+`config.teste.php` (`token-de-teste-123`); com outro `API_TOKEN`, passe-o na variável `RELOGIOS_TOKEN`.
+
+Os bancos rodam **ao mesmo tempo** (o `paridade.sh` faz assim), cada um no seu servidor: com minutos de diferença entre as rodadas, as contas que andam
 com o tempo passam da folga. O resultado esperado é `0 diferenças graves`; as leves (`--leves` mostra) são os números
 dentro dos textos, como "há 3 min", os arredondamentos bem na fronteira, como 23,499 e 23,501, e o tamanho do arquivo da
 cópia de segurança (comprimido, com o nome do banco e a hora no cabeçalho: até 2% de diferença).
@@ -85,7 +93,7 @@ O `testes/layout.cjs` abre todas as telas num navegador de verdade (o Chromium, 
 - a página que rola de lado;
 - o elemento que sai da caixa (o quadro, o cartão, a etiqueta) em que está;
 - a etiqueta com fundo ou borda partida em duas linhas, e o botão com o texto partido ("Abrir" numa linha, "foto" na outra);
-- o texto cortado;
+- o texto cortado, e o conteúdo (um texto que não quebra, uma etiqueta) que passa da caixa do próprio elemento;
 - irmãos que ficam um por cima do outro.
 
 As telas: a Hoje (com o Rodízio manual aberto, e com o painel de cada relógio ao lado e na janela flutuante), a Ficha de cada
@@ -93,12 +101,14 @@ relógio e a de um relógio novo, o Histórico, o Plano, os Critérios, os Grupo
 Execuções, os Usuários e a Ajuda. Abre os quadros recolhidos (`<details>`) e passa por cada opção dos menus que mostram partes
 (o quadro Marcar), para conferir também o que só aparece depois de um clique.
 
-Ele usa o banco do cenário. Depois do `cenario.php`, com o servidor ainda no ar:
+Ele usa o banco do cenário. O jeito simples é pelo `paridade.sh`, que roda o cenário e depois a conferência:
 
 ```sh
 npm install -g playwright        # uma vez (e o Chromium: npx playwright install chromium)
-BASE=http://127.0.0.1:8101/ node testes/layout.cjs
+testes/paridade.sh --layout sqlite
 ```
+
+Ou, com um servidor do cenário no ar (o `--manter` deixa): `BASE=http://127.0.0.1:8101/ node testes/layout.cjs`.
 
 O resultado esperado é `{} 0 problemas`. Em `testes/layout/` (fora do git) ficam uma captura de cada tela em cada tamanho, o
 `relatorio.tsv` (um problema por linha) e o `agrupado.txt` (o mesmo problema com os tamanhos em que aparece). Para conferir só

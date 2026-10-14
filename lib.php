@@ -2,7 +2,9 @@
 // Relógios 2: o núcleo. O código só tem mecanismos genéricos; o conteúdo (a árvore, os campos, os lançamentos, as
 // fórmulas, os critérios, os modos) é tudo cadastro. Aqui: o banco, o token obrigatório, o login, a árvore, os campos com
 // os seus valores, os tipos de lançamento e o motor de cálculo (as fórmulas).
-require_once __DIR__ . "/config.php";
+// O config.php da pasta do sistema; RELOGIOS_CONFIG (uma variável de ambiente do servidor) aponta outro, para os testes rodarem
+// sem tocar no config.php de verdade (testes/paridade.sh). Sem ela, o de sempre
+require_once getenv("RELOGIOS_CONFIG") ?: __DIR__ . "/config.php";
 
 // O fuso: o FUSO do config.php; sem ele (ou vazio), o do PHP (date.timezone no php.ini; sem nada lá, UTC). Um nome que o
 // PHP não conhece para o sistema, como o token abaixo: rodar com a hora errada é pior que não rodar.
