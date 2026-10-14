@@ -157,7 +157,7 @@ const RECONSTRUCAO_TELAS = [
                 . "aparelho fecha o painel; as grades viram uma coluna. De 901 a 1199px (tablet deitado): o painel \"ao lado\" desliza por "
                 . "cima, pela direita, com até 30rem, cantos 16px à esquerda e o fundo escurecido. De 1200px em diante: o painel ao lado.",
             "Nenhuma página rola de lado, em nenhum tamanho. A mesma informação em todos os tamanhos: nada é escondido por falta de "
-                . "espaço (a tabela dos relógios vira cartões com todos os campos quando as 11 colunas não cabem).",
+                . "espaço (a tabela dos relógios vira cartões com todos os campos quando as 12 colunas não cabem).",
             "As tabelas de um quadro se arrumam pela largura do quadro (container queries), não pela da tela: o mesmo quadro é "
                 . "estreito no painel ao lado e largo na ficha. Até 40rem, as Medições do gasto viram cartões; até 26rem, as tabelas dos "
                 . "Dados do relógio ficam mais justas e o valor quebra a linha.",
@@ -263,7 +263,8 @@ const RECONSTRUCAO_TELAS = [
                         . "cor do estado, e o botão leve \"Pôs no pulso\" / \"Tirou do pulso\", que manda lancamento iniciar/encerrar do tipo "
                         . "pulso); Carga (a barra, o % e de onde vem, ou só o texto); Última leitura (\"89% em 06/10 21:30\", se houver); "
                         . "Situação (as linhas da API); Próxima manutenção (\"<nome> · <data ou hoje> (<falta>)\", a falta em vermelho se "
-                        . "atrasada, ou \"nenhuma prevista\"); Compra (\"R\$ valor · loja · data\"); Garantia (\"até DD/MM/AAAA\", \"(vencida)\" "
+                        . "atrasada, ou \"nenhuma prevista\"; o aviso mais perto, sem o Encostado); Encostado (só quando o aviso já venceu: "
+                        . "a falta em vermelho); Compra (\"R\$ valor · loja · data\"); Garantia (\"até DD/MM/AAAA\", \"(vencida)\" "
                         . "se passou); Código.",
                     "À direita: a foto do relógio (ou o quadrado \"Sem foto\"), que abre o painel.",
                     "Hoje livre (hoje_livre da API: o Sem relógio hoje, ou um período livre): h1 \"Hoje sem relógio\", a janela \"dia livre\", "
@@ -341,16 +342,18 @@ const RECONSTRUCAO_TELAS = [
                 ["titulo" => "Relógios (a tabela da coleção)", "itens" => [
                     "Título \"Relógios\" com \"<mostrados> de <total> relógios · <n> em uso\" em cinza e, à direita, os botões \"Limpar "
                         . "filtros\" (leve) e \"Novo relógio\" (abre o cadastro no painel).",
-                    "11 colunas, todas ordenáveis clicando no título (▲ ou ▼ ao lado; clicar de novo inverte; vazios sempre por "
+                    "12 colunas, todas ordenáveis clicando no título (▲ ou ▼ ao lado; clicar de novo inverte; vazios sempre por "
                         . "último): Código, Relógio (miniatura e nome em negrito), Tipo, Estado (o estado_texto da API em etiqueta, na "
                         . "cor do estado: Em uso verde, a sessão aberta (No sol, No winder, No carregador) laranja, Em repouso vermelho, "
                         . "Indisponível cinza), Carga (barra e %, ou o texto de por que não tem), Última vez usado, Próxima manutenção "
                         . "(data ou \"hoje\"), Em (quanto falta; atrasado em vermelho negrito; atualizado a cada minuto), O que fazer (em "
-                        . "âmbar negrito), Comprado em, Valor (à direita, \"R\$ 1.234,56\").",
+                        . "âmbar negrito; o aviso de manutenção mais perto, sem o Encostado), Encostado (quanto falta para o limite de dias "
+                        . "sem ir ao pulso, ou \"atrasado …\" em vermelho negrito quando já passou; \"—\" sem data; atualizado a cada minuto), Comprado em, Valor (à direita, \"R\$ 1.234,56\").",
                     "Uma linha de filtros embaixo dos títulos: Código (\"nº\"), Relógio (\"buscar\" no nome), Tipo (os tipos que "
                         . "existem), Estado (Todos e os estados da API, na ordem: Em uso, cada sessão, Em repouso, Indisponível), Carga "
                         . "(Todas, ≤ 20%, ≤ 50%), Última vez usado (Todos, 7 dias, +7 dias, nunca), Próxima manutenção (Todas, até hoje, "
-                        . "7 dias, 30 dias), O que fazer (os avisos que existem), Comprado em (Todas, 30 dias, 90 dias, este ano, sem "
+                        . "7 dias, 30 dias), O que fazer (os avisos de manutenção, sem o Encostado), Encostado (Todos, Encostados, Dentro do "
+                        . "prazo, sem data), Comprado em (Todas, 30 dias, 90 dias, este ano, sem "
                         . "data), Valor (Todos, ≤ 500, 500–1.500, > 1.500, sem valor). A ordem e os filtros ficam guardados na sessão do "
                         . "navegador.",
                     "Ordem inicial: os disponíveis primeiro (o de hoje, depois os com aviso), os indisponíveis no fim e em cinza. A "
@@ -358,7 +361,7 @@ const RECONSTRUCAO_TELAS = [
                         . "Enter nela) abre o relógio no painel. Rodapé: \"Total dos relógios mostrados\" e a soma dos valores, à direita. "
                         . "Sem relógios: \"Nenhum relógio cadastrado. Use o botão Novo relógio.\"; com filtros que não deixam nenhum: "
                         . "\"Nenhum relógio com esses filtros.\"",
-                    "Quando as 11 colunas não cabem na largura que a tabela tem: cada relógio vira um cartão, com a foto e o nome "
+                    "Quando as 12 colunas não cabem na largura que a tabela tem: cada relógio vira um cartão, com a foto e o nome "
                         . "na linha de cima e embaixo os mesmos campos com o nome da coluna em cima, em colunas iguais (5; 2 no celular); "
                         . "os títulos viram botões \"Ordenar por\" e os filtros ficam todos, com o nome em cima.",
                 ]],
@@ -379,7 +382,8 @@ const RECONSTRUCAO_TELAS = [
                         . "coleção\" e preencha a compra.\") e o de Documentos; os quadros largos (Dados, Histórico) e o Editar cadastro "
                         . "continuam.",
                     "Os quadros, numa grade (lado a lado onde cabem): Agora (pares: Estado (\"No carregador desde 06:30\", na cor do "
-                        . "estado); Carga com a barra e \"~68%\" e de onde vem; Situação, uma linha por item; Última leitura); Previsão (só "
+                        . "estado); Carga com a barra e \"~68%\" e de onde vem; Encostado (a falta, em vermelho negrito se já passou do limite "
+                        . "de dias sem ir ao pulso; só quando há data); Situação, uma linha por item; Última leitura); Previsão (só "
                         . "nos que têm leitura: as frases da API, ou \"Informe a carga atual para o sistema começar a prever.\"; embaixo, "
                         . "\"De onde vem a conta\" (título pequeno em maiúsculas cinza) e a tabela da previsao.conta, uma linha por número: "
                         . "o nome (e, menor, embaixo, o detalhe de como o gasto foi medido), o valor (com a unidade menor embaixo; \"—\" "
@@ -1045,7 +1049,7 @@ const RECONSTRUCAO_TELAS = [
     ],
     "capturas" => [
         ["arquivo" => "docs/telas/hoje.png", "mostra" => "a página Hoje no computador, com o painel ao lado"],
-        ["arquivo" => "docs/telas/colecao.png", "mostra" => "a tabela dos relógios com as 11 colunas e os filtros"],
+        ["arquivo" => "docs/telas/colecao.png", "mostra" => "a tabela dos relógios com as 12 colunas e os filtros"],
         ["arquivo" => "docs/telas/historico.png", "mostra" => "o histórico de um relógio"],
         ["arquivo" => "docs/telas/cadastros.png", "mostra" => "a aba Campos dos Cadastros"],
         ["arquivo" => "docs/telas/celular.png", "mostra" => "no celular: a Hoje, os cartões dos relógios e o painel em tela cheia"],
@@ -1065,7 +1069,7 @@ const RECONSTRUCAO_CODIGO = [
     "textos/<idioma>.php" => ["tela", "o arquivo de um idioma (en, zh-CN, hi, es, fr): o texto em português => a tradução, por parte (telas, api, ajuda, manual, reconstrucao), gerado e conferido por testes/textos.php; o que falta sai em português, ou para com erro no modo estrito (TEXTOS_ESTRITO)"],
     "index.php" => ["tela", "o esqueleto da página Hoje (o meio, a tabela dos relógios com os títulos e os filtros, e o painel)"],
     "hoje.js" => ["tela", "a página Hoje: o relógio do dia, os avisos de hoje, os próximos dias, o modo de rodízio e as linhas da tabela dos relógios"],
-    "tabela.js" => ["tela", "a tabela dos relógios: ordenar, filtrar e virar cartões quando as 11 colunas não cabem"],
+    "tabela.js" => ["tela", "a tabela dos relógios: ordenar, filtrar e virar cartões quando as 12 colunas não cabem"],
     "painel.js" => ["tela", "o painel do relógio (na página Hoje e na Ficha): os quadros, o Marcar, o Editar cadastro, o gráfico da carga, os dados e o histórico"],
     "foto.js" => ["tela", "a foto reduzida no navegador antes de enviar (1200 px, JPEG 85%), com a prévia"],
     "ficha.php" => ["tela", "a página Ficha do relógio: o painel do relógio numa página própria"],
@@ -1475,10 +1479,11 @@ function reconstrucao()
                     . "carregador\"); fechada, se inicia (\"Pôs no sol\"); a leitura se informa.",
                 "O aviso Encostado (encostado, de todos os relógios, resolve com o pulso) é só cadastro: a data prevista é PADRAO(ULTIMA_DATA(\"pulso\"); "
                     . "data_compra) + CONFIG(\"encostado_dias\") (a Configuração, padrão 30), antecedência 0; sem nunca ter ido ao pulso nem data da "
-                    . "compra, não avisa.",
+                    . "compra, não avisa. Não entra na próxima manutenção nem no \"O que fazer\": a tabela da coleção tem a coluna Encostado, o "
+                    . "cartão do dia mostra a falta quando já venceu, e o quadro Agora do painel também.",
                 "A visão de cada relógio (a tabela da página Hoje e o painel): em uso ou em repouso desde quando, a carga estimada agora e de onde vem "
                     . "(a fórmula energia e a origem), a situação (frases curtas: autonomia restante, reserva...), a próxima manutenção (o aviso mais "
-                    . "perto) e o que fazer.",
+                    . "perto, sem o Encostado), o que fazer e a coluna Encostado.",
             ]),
             $secao("gasto", "O gasto medido pelas leituras e a autonomia", [
                 "Cada leitura de carga de um tipo que mede o gasto é comparada com a anterior do mesmo relógio: o intervalo vira uma medição, com a "
@@ -1665,9 +1670,9 @@ function reconstrucao()
                 "Três tamanhos com o mesmo sistema visual: até 900 px (celular e tablet de pé) o menu fica recolhido, as tabelas viram cartões e o "
                     . "relógio abre em tela cheia (o voltar do aparelho fecha); de 901 a 1199 px o painel ao lado desliza por cima, pela direita. A "
                     . "mesma informação em todos os tamanhos: nenhuma coluna, filtro ou dia é escondido por falta de espaço. A tabela dos relógios tem "
-                    . "sempre as 11 colunas; quando a tabela inteira não cabe na largura que tem (medida com os dados, com ou sem o painel aberto), "
-                    . "cada relógio vira um cartão com os mesmos 11 campos na mesma ordem, cada um com o nome da coluna em cima (2 colunas no "
-                    . "celular, 5 no tablet), os títulos viram botões de ordenar e os 10 filtros ficam todos. Campos com letra de 16 px no "
+                    . "sempre as 12 colunas; quando a tabela inteira não cabe na largura que tem (medida com os dados, com ou sem o painel aberto), "
+                    . "cada relógio vira um cartão com os mesmos 12 campos na mesma ordem, cada um com o nome da coluna em cima (2 colunas no "
+                    . "celular, 5 no tablet), os títulos viram botões de ordenar e os 11 filtros ficam todos. Campos com letra de 16 px no "
                     . "celular (o iPhone não aproxima a tela).",
             ]),
             $secao("seguranca", "Segurança", [

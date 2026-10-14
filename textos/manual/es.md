@@ -1,4 +1,4 @@
-<!-- origem: bad7f593746b4239d3060efb0bd4665e7674a122 -->
+<!-- origem: 7e8e0f2a7cb20422db64bcf9965d08e5bd376fb0 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -611,7 +611,7 @@ Los avisos del conjunto inicial, con el identificador (su nombre en las fórmula
 | Cambiar la pila | `pilha` | Pila | Cambio de pila |
 | Revisión | `revisao` | Tradicional | Revisión |
 | Garantía venciendo | `garantia` | todos | (nada: solo avisa) |
-| Arrinconado | `encostado` | todos (los de la colección, disponibles) | En la muñeca. Vence cuando el reloj pasa el límite de días sin ir a la muñeca (Configuración, **Aviso Arrinconado: días sin ir a la muñeca**, predeterminado 30), contados desde la última vez en la muñeca (nunca usado, desde la fecha de compra; sin ambas, sin aviso). |
+| Arrinconado | `encostado` | todos (los de la colección, disponibles) | En la muñeca. Vence cuando el reloj pasa el límite de días sin ir a la muñeca (Configuración, **Aviso Arrinconado: días sin ir a la muñeca**, predeterminado 30), contados desde la última vez en la muñeca (nunca usado, desde la fecha de compra; sin ambas, sin aviso). No entra en el próximo mantenimiento ni en **Qué hacer**: la tabla tiene la columna **Arrinconado**, con cuánto falta o cuánto pasó. |
 
 Los avisos van en el aviso de la mañana. Un aviso marcado **en el acto** (en **Definiciones › Avisos**, la casilla *en el
 acto*) también sale por Telegram **en el minuto en que vence**, una sola vez, hasta que se resuelve: así llega el **Quitar del
@@ -758,10 +758,10 @@ previsión: el plan, la escala y cuánto va a durar la carga en los próximos d�
 ---
 ## Las pantallas {#as-telas}
 
-![La colección: cada reloj con el tipo, el estado, la carga, la última vez en la muñeca, el próximo mantenimiento y qué hacer](docs/telas/colecao.png)
+![La colección: cada reloj con el tipo, el estado, la carga, la última vez en la muñeca, el próximo mantenimiento, qué hacer y si está arrinconado](docs/telas/colecao.png)
 
 <sub>La tabla de la colección, en la página Hoy: tipo, estado, carga o reserva ahora, última vez en la muñeca, próximo
-mantenimiento y qué hacer, con filtros en cada columna y el total gastado en la colección.</sub>
+mantenimiento, qué hacer y la columna Arrinconado, con filtros en cada columna y el total gastado en la colección.</sub>
 
 ![La línea de tiempo de un smartwatch: las sesiones en la muñeca, el reposo y las lecturas de carga](docs/telas/historico.png)
 
@@ -771,7 +771,7 @@ porcentaje en cada estado.</sub>
 ![En el móvil: la página Hoy, la lista de relojes en tarjetas y el panel de un reloj a pantalla completa](docs/telas/celular.png)
 
 <sub>En el móvil: el menú se pliega en una barra, las tablas se vuelven tarjetas (nada pasa del ancho de la pantalla, y
-ningún campo desaparece: cada tarjeta de reloj trae las 11 columnas de la tabla) y el panel del reloj se abre a pantalla
+ningún campo desaparece: cada tarjeta de reloj trae las 12 columnas de la tabla) y el panel del reloj se abre a pantalla
 completa; el "atrás" del aparato cierra el panel.</sub>
 
 **Móvil, tableta y ordenador**, con el mismo aspecto:
@@ -782,11 +782,11 @@ completa; el "atrás" del aparato cierra el panel.</sub>
 | de 901 a 1199 px (tableta en horizontal, portátil pequeño) | el menú en la barra; el reloj abierto "al lado de la lista" se desliza desde la derecha, con el fondo oscurecido, en lugar de apretar la lista |
 | 1200 px o más (ordenador) | el panel al lado de la lista (o la ventana flotante, según la Configuración) |
 
-**La misma información en todos.** La tabla de relojes siempre tiene las 11 columnas (código, reloj, tipo, estado, carga,
-último uso, próximo mantenimiento, en, qué hacer, comprado el y valor), los 10 filtros y la ordenación por cualquier columna, en
+**La misma información en todos.** La tabla de relojes siempre tiene las 12 columnas (código, reloj, tipo, estado, carga,
+último uso, próximo mantenimiento, en, qué hacer, arrinconado, comprado el y valor), los 11 filtros y la ordenación por cualquier columna, en
 el ordenador, la tableta y el móvil; nada se esconde por falta de espacio. Cuando la tabla entera cabe en el ancho que
 realmente tiene (con o sin el panel abierto al lado), aparece como tabla, y el texto de una celda solo se parte si hace falta.
-Cuando no cabe, cada reloj se vuelve una tarjeta con los mismos 11 campos, en el mismo orden, cada uno con el nombre de la
+Cuando no cabe, cada reloj se vuelve una tarjeta con los mismos 12 campos, en el mismo orden, cada uno con el nombre de la
 columna encima (en dos columnas en el móvil, en cinco en la tableta), los encabezados se vuelven los botones **Ordenar por** y
 todos los filtros se quedan, con el nombre encima. El cambio se mide con los datos reales (un nombre largo o un valor grande
 cuentan), no por el ancho de la pantalla. Los **Próximos días** también muestran todos los días de la programación en

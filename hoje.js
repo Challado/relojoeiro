@@ -112,6 +112,9 @@ function recarregarHoje() {
         ? h(item.manutencao.nome) + " · " + (item.manutencao.data === d.data ? "hoje" : dataBr(item.manutencao.data)) + " "
           + el("span", {"class": "em" + (item.manutencao.momento > 0 && item.manutencao.momento * 1000 <= Date.now() ? " atrasado" : "")}, "(" + h(item.manutencao.falta) + ")")
         : t("nenhuma prevista"));
+      if (item.encostado && item.encostado.estado !== "ok") {
+        info += el("dt", {}, t("Encostado")) + el("dd", {}, el("span", {"class": "em atrasado"}, h(item.encostado.falta)));
+      }
       if (item.compra.valor !== null || item.compra.data !== null) {
         info += el("dt", {}, t("Compra")) + el("dd", {}, (item.compra.valor !== null ? t("R$ ") + reais(item.compra.valor) : "") + (item.compra.loja !== null ? " · " + h(item.compra.loja) : "")
           + (item.compra.data !== null ? " · " + dataBr(item.compra.data) : ""));
@@ -270,9 +273,12 @@ function recarregarHoje() {
     var ano = String(new Date().getFullYear());
     var linhas = lista.map(function (x) {
       var m = x.manutencao;
+      var e = x.encostado;
       var atrasado = m && m.momento > 0 && m.momento * 1000 <= Date.now();
+      var encAtrasado = e && e.estado !== "ok";
       return el("tr", {"data-id": x.id, "tabindex": "0", "data-codigo": x.id, "data-nome": x.nome, "data-tipo": x.tipo, "data-estado": x.estado_ordem, "data-estado-txt": x.estado_texto,
         "data-carga": x.carga === null ? "" : x.carga, "data-ultimo": x.ultimo, "data-manut": m ? m.data : "", "data-em": m && m.momento > 0 ? m.momento : "", "data-fazer": m ? m.nome : "",
+        "data-encostado": e && e.momento > 0 ? e.momento : "", "data-encostado-estado": !e ? "" : (e.estado === "ok" ? "prazo" : "sim"),
         "data-compra": x.compra.data || "", "data-valor": x.compra.valor === null ? "" : x.compra.valor,
         "class": ((x.de_hoje ? "de-hoje " : "") + (x.com_aviso ? "pendente " : "") + (x.disponivel ? "" : "indisponivel ") + (x.id === sel ? "selecionado" : "")).trim()},
         el("td", {"class": "col-codigo", "data-rotulo": t("Código")}, String(x.id))
@@ -288,6 +294,7 @@ function recarregarHoje() {
         + el("td", {"data-rotulo": t("Próxima manutenção")}, m ? (m.data === d.data ? "hoje" : dataBr(m.data)) : "—")
         + el("td", {"class": "col-em" + (atrasado ? " atrasado" : ""), "data-rotulo": t("Em"), "data-momento": m && m.momento > 0 ? m.momento : null}, m ? h(m.falta).replace(/(\d[a-z]*) (?=\d)/g, "$1&nbsp;") : "—")
         + el("td", {"class": m ? "fazer" : "", "data-rotulo": t("O que fazer")}, m ? h(m.nome) : "—")
+        + el("td", {"class": "col-encostado" + (encAtrasado ? " atrasado" : ""), "data-rotulo": t("Encostado"), "data-momento": e && e.momento > 0 ? e.momento : null}, e ? h(e.falta).replace(/(\d[a-z]*) (?=\d)/g, "$1&nbsp;") : "—")
         + el("td", {"data-rotulo": t("Comprado em")}, x.compra.data ? dataBr(x.compra.data) : "—")
         + el("td", {"class": "col-valor", "data-rotulo": t("Valor")}, x.compra.valor !== null ? t("R$ ") + reais(x.compra.valor) : "—"));
     }).join("");
@@ -298,7 +305,7 @@ function recarregarHoje() {
       desejos.textContent = [d.totais.desejados > 0 ? t("Desejos ({1})", {1: d.totais.desejados}) : "", d.totais.fora > d.totais.desejados ? t("Fora da coleção ({1})", {1: d.totais.fora - d.totais.desejados}) : ""]
         .filter(function (item) { return item !== ""; }).join(" · ");
     }
-    window.trocarLinhasDaTabela(linhas + (lista.length === 0 ? el("tr", {}, el("td", {"colspan": "11"}, t("Nenhum relógio cadastrado. Use o botão Novo relógio."))) : ""));
+    window.trocarLinhasDaTabela(linhas + (lista.length === 0 ? el("tr", {}, el("td", {"colspan": "12"}, t("Nenhum relógio cadastrado. Use o botão Novo relógio."))) : ""));
   });
 }
 

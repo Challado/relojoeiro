@@ -1,4 +1,4 @@
-<!-- origem: bad7f593746b4239d3060efb0bd4665e7674a122 -->
+<!-- origem: 7e8e0f2a7cb20422db64bcf9965d08e5bd376fb0 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -622,7 +622,7 @@ The alerts of the initial set, with the identifier (their name in the formulas, 
 | Change the battery | `pilha` | Battery | Battery change |
 | Service | `revisao` | Traditional | Service |
 | Warranty expiring | `garantia` | all | (nothing: it only alerts) |
-| Idle | `encostado` | all (those in the collection, available) | Put on the wrist. It comes due when the watch passes the limit of days without going on the wrist (Settings, **Idle alert: days without going on the wrist**, default 30), counted from the last time on the wrist (never worn, from the purchase date; without both, no alert). |
+| Idle | `encostado` | all (those in the collection, available) | Put on the wrist. It comes due when the watch passes the limit of days without going on the wrist (Settings, **Idle alert: days without going on the wrist**, default 30), counted from the last time on the wrist (never worn, from the purchase date; without both, no alert). It does not take the next service or **What to do**: the table has its own **Idle** column, with how long is left or how long it is overdue. |
 
 The alerts go in the morning alert. An alert marked **right away** (in **Definitions › Alerts**, the *right away* box) also goes
 via Telegram **in the minute it comes due**, only once, until it is resolved: that's how **Take off the charger** arrives when
@@ -769,10 +769,10 @@ plan, the schedule and how long the charge will last in the next days.
 
 ## The screens {#as-telas}
 
-![The collection: each watch with the type, the state, the charge, the last time on the wrist, the next service and what to do](docs/telas/colecao.png)
+![The collection: each watch with the type, the state, the charge, the last time on the wrist, the next service, what to do and whether it is idle](docs/telas/colecao.png)
 
-<sub>The collection table, on the Today page: type, state, charge or reserve now, last time on the wrist, next service and what
-to do, with filters on each column and the total spent on the collection.</sub>
+<sub>The collection table, on the Today page: type, state, charge or reserve now, last time on the wrist, next service, what
+to do and the Idle column, with filters on each column and the total spent on the collection.</sub>
 
 ![A smartwatch's timeline: the wrist sessions, the rest and the charge readings](docs/telas/historico.png)
 
@@ -782,7 +782,7 @@ percentage in each state.</sub>
 ![On the phone: the Today page, the list of watches as cards and a watch's panel full screen](docs/telas/celular.png)
 
 <sub>On the phone: the menu is folded into a bar, the tables become cards (nothing goes beyond the width of the screen, and no
-field disappears: each watch card brings the table's 11 columns) and the watch's panel opens full screen; the device's "back"
+field disappears: each watch card brings the table's 12 columns) and the watch's panel opens full screen; the device's "back"
 closes the panel.</sub>
 
 **Phone, tablet and computer**, with the same look:
@@ -793,11 +793,11 @@ closes the panel.</sub>
 | from 901 to 1199 px (tablet lying down, small notebook) | the menu in the bar; the watch opened "next to the list" slides over from the right, with the background darkened, instead of squeezing the list |
 | 1200 px or more (computer) | the panel next to the list (or the floating window, according to Settings) |
 
-**The same information on all of them.** The watch table always has the 11 columns (code, watch, type, state, charge, last
-worn, next service, in, what to do, bought on and value), the 10 filters and sorting by any column, on the computer, the tablet
+**The same information on all of them.** The watch table always has the 12 columns (code, watch, type, state, charge, last
+worn, next service, in, what to do, idle, bought on and value), the 11 filters and sorting by any column, on the computer, the tablet
 and the phone; nothing is hidden for lack of space. When the whole table fits the width it really has (with or without the
 panel open next to it), it appears as a table, and a cell's text wraps only if it needs to. When it doesn't fit, each watch
-becomes a card with the same 11 fields, in the same order, each with the column name above it (in two columns on the phone, in
+becomes a card with the same 12 fields, in the same order, each with the column name above it (in two columns on the phone, in
 five on the tablet), the headings become the **Sort by** buttons and all the filters stay, with the name above. The switch is
 measured with the real data (a long name or a large value count), not by the width of the screen. The **Next days** also show
 all the days of the schedule on any screen.

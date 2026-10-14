@@ -434,7 +434,7 @@ fieldset.compra legend { font-size: .9rem; font-weight: 600; color: var(--cinza)
 #tabela-relogios tfoot td { background: #eef1f4; border-top: 1px solid var(--aco-escuro); font-weight: 600; padding: .5rem .6rem; text-align: right; }
 #tabela-relogios tfoot .rotulo-total { margin-right: 1rem; color: var(--cinza); font-weight: 500; }
 #tabela-relogios tfoot #total-valor { white-space: nowrap; font-variant-numeric: tabular-nums; }
-/* as 11 colunas sempre (no computador, no tablet e no celular a mesma informação): a tabela ocupa a largura que tem, e o
+/* as 12 colunas sempre (no computador, no tablet e no celular a mesma informação): a tabela ocupa a largura que tem, e o
    texto das células quebra linha só quando falta espaço; o que é um valor só (código, carga, estado, valor) não quebra */
 #tabela-relogios { width: 100%; min-width: 0; }
 #tabela-relogios td, #tabela-relogios th { white-space: normal; padding-top: .32rem; padding-bottom: .32rem; }
@@ -564,8 +564,8 @@ nav.paginas span.atual { background: var(--safira); color: #fff; border-color: v
 .modo-rodizio .bloco-5x2 label.check { flex-direction: row; align-items: center; gap: .3rem; padding-bottom: .35rem; }
 
 /* coluna "Em": quanto falta para a próxima manutenção */
-#tabela-relogios .col-em { font-variant-numeric: tabular-nums; }
-#tabela-relogios td.col-em.atrasado { color: #9b2c22; font-weight: 600; }
+#tabela-relogios .col-em, #tabela-relogios .col-encostado { font-variant-numeric: tabular-nums; }
+#tabela-relogios td.col-em.atrasado, #tabela-relogios td.col-encostado.atrasado { color: #9b2c22; font-weight: 600; }
 
 /* ---------- quadro "Hoje": texto, informações do relógio do dia e a foto no canto direito ---------- */
 .hoje.com-relogio { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 24rem) 12rem; gap: 1.5rem; align-items: start; }
@@ -581,7 +581,7 @@ nav.paginas span.atual { background: var(--safira); color: #fff; border-color: v
 .hoje-info .barra span { display: block; height: 100%; background: var(--safira); }
 .hoje-info .carga-linha.baixa .barra span { background: var(--ambar); }
 .hoje-info .em { color: var(--cinza); }
-.hoje-info .em.atrasado { color: #9b2c22; font-weight: 600; }
+.hoje-info .em.atrasado, .quadro .em.atrasado { color: #9b2c22; font-weight: 600; }
 .hoje-foto { display: block; }
 .hoje-foto img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; border: 1px solid var(--aco-escuro); background: #fff; }
 .hoje-foto .sem-foto { aspect-ratio: 1; }
@@ -1259,7 +1259,7 @@ a.hoje-foto, a.hoje-foto * { text-decoration: none; }
   .painel:not(.modo-flutuante) .fechar-painel { position: sticky; top: 0; z-index: 3; box-shadow: 0 1px 4px rgba(0, 0, 0, .15); background: var(--papel); }
 }
 
-/* ---------- a tabela dos relógios quando as 11 colunas não cabem (celular, tablet, o painel aberto ao lado): cada relógio
+/* ---------- a tabela dos relógios quando as 12 colunas não cabem (celular, tablet, o painel aberto ao lado): cada relógio
    vira um cartão com TODOS os campos da tabela, cada um com o nome da coluna em cima, na mesma ordem; os títulos viram os
    botões de ordenar e os filtros ficam todos, com o nome em cima. Nada some: a mesma informação do computador. Quem decide
    é o tabela.js (a classe em-cartoes), medindo se a tabela inteira cabe na largura que ela tem de verdade ---------- */
