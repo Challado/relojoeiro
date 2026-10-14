@@ -558,21 +558,25 @@
  *
  * ---------------------------------------------------------------------------------------------
  * DICIONÁRIO DOS CAMPOS  (o que é, para que serve e que valor tem cada campo; o mesmo está em recurso=ajuda, "campos")
+ *   Gerado do "campos" da ajuda por testes/dicionario.php: não escreva aqui. Escreva lá e rode php testes/dicionario.php --gravar
  * ---------------------------------------------------------------------------------------------
- *   [] no caminho: uma lista (o campo é de cada item); <...>: uma chave que varia (o identificador de um campo, um estado,
- *   uma função...). Datas e horas no fuso do sistema (o FUSO do config.php; sem ele, o do PHP, date.timezone); "null": sem valor. Números de tempo em segundos são inteiros.
+ *   [] no caminho: uma lista (o campo é de cada item); <...>: uma chave que varia (o identificador de um campo, um estado, uma função...).
+ *   Datas e horas no fuso do sistema (o FUSO do config.php; sem ele, o do PHP, date.timezone); null: sem valor. Números de tempo em
+ *   segundos são inteiros.
  *
  *   api.php (sem recurso)
  *     agenda.criados[]               os eventos que o sistema criou no Google Agenda
- *     agenda.criados[].assinatura    a marca do título e da descrição com que foi criado (mudou: o evento é atualizado na próxima sincronização)
+ *     agenda.criados[].assinatura    a marca do título e da descrição com que foi criado (mudou: o evento é atualizado na próxima
+ *                                    sincronização)
  *     agenda.criados[].chave         a identificação do evento (a mesma dos desejados)
  *     agenda.criados[].criado        quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     agenda.criados[].data          o dia do evento (texto AAAA-MM-DD)
  *     agenda.criados[].google_id     o id do evento no Google
  *     agenda.criados[].titulo        o título com que foi criado
- *     agenda.desejados[]             o que tem de estar no Google Agenda agora: os avisos marcados para a agenda, o relógio do dia, a véspera e os
- *                                    eventos
- *     agenda.desejados[].chave       a identificação do evento na agenda (a mesma enquanto nada mudar; é o que o sistema usa para atualizar ou remover)
+ *     agenda.desejados[]             o que tem de estar no Google Agenda agora: os avisos marcados para a agenda, o relógio do dia, a
+ *                                    véspera e os eventos
+ *     agenda.desejados[].chave       a identificação do evento na agenda (a mesma enquanto nada mudar; é o que o sistema usa para atualizar
+ *                                    ou remover)
  *     agenda.desejados[].data        o dia do evento na agenda (texto AAAA-MM-DD)
  *     agenda.desejados[].descricao   a descrição do evento, montada pela mensagem do canal da agenda
  *     agenda.desejados[].fazer       a ação ("Dar corda", "Usar hoje", o nome do evento) — a âncora {acao}
@@ -596,8 +600,8 @@
  *                                    manhã
  *     avisos[].antecedencia_dias     com quantos dias antes ele entra "em breve" (número)
  *     avisos[].ativo                 o aviso vale
- *     avisos[].condicao              vale quando: uma fórmula que diz para quais relógios do grupo o aviso vale (1 vale, 0 não; ex.: corda_manual = 0,
- *                                    só o automático sem corda); null: vale para todos
+ *     avisos[].condicao              vale quando: uma fórmula que diz para quais relógios do grupo o aviso vale (1 vale, 0 não; ex.:
+ *                                    corda_manual = 0, só o automático sem corda); null: vale para todos
  *     avisos[].escala                na escala inteligente: nao, uso ou sempre
  *     avisos[].expressao             a fórmula da data prevista
  *     avisos[].id                    o número da versão
@@ -626,7 +630,8 @@
  *     config.agenda_chave            o caminho da chave JSON da conta de serviço do Google, no servidor
  *     config.agenda_id               o id da agenda do Google
  *     config.agenda_teste_id         o id do evento de teste na agenda (vazio: nenhum)
- *     config.carga_limiar            o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se preenchido, vale no lugar)
+ *     config.carga_limiar            o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se
+ *                                    preenchido, vale no lugar)
  *     config.cron_erro               o erro guardado da última execução com erro (texto; vazio: sem erro)
  *     config.cron_registro           o registro da última rodada com atividade (texto)
  *     config.cron_ultima_execucao    quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
@@ -638,7 +643,8 @@
  *     config.horario_manha           a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)
  *     config.horario_noite           a hora da rodada da noite: preparar o relógio de amanhã (HH:MM)
  *     config.max_sem_uso             a garantia de rodízio: nenhum relógio passa desses dias sem uso (0 desliga)
- *     config.medicao_janela_dias     a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a última)
+ *     config.medicao_janela_dias     a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a
+ *                                    última)
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
  *     config.painel_modo             como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela
  *                                    grande por cima da página); vazio: lado
@@ -656,7 +662,8 @@
  *     config.migracao_v18            marca de que a migração v18 foi aplicada (1)
  *     config.migracao_v19            marca de que a migração v19 foi aplicada (1)
  *     config.migracao_v20            marca de que a migração v20 foi aplicada (1)
- *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso); 0: só pelo Tirou
+ *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso);
+ *                                    0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
  *     config.sol_limiar              no solar, a carga (%) em que ele deve ir para o sol
@@ -724,8 +731,8 @@
  *     criterios.modos[].ativo        verdadeiro ou falso: é o modo em uso
  *     criterios.modos[].escala       verdadeiro ou falso: o modo é escala inteligente (escolhe sempre pela maior nota)
  *     criterios.modos[].nome         o nome do modo
- *     criterios.modos[].selecao      a forma de escolha: inteligente (a maior nota), ponderado (sorteio pela nota), aleatorio ou fifo (o mais tempo sem
- *                                    uso)
+ *     criterios.modos[].selecao      a forma de escolha: inteligente (a maior nota), ponderado (sorteio pela nota), aleatorio ou fifo (o
+ *                                    mais tempo sem uso)
  *     criterios.notas[]              a nota de cada relógio agora, com a conta
  *     criterios.notas[].conjunto     o lugar dos critérios usados: "" (todos), g:<grupo> ou r:<relógio>; null: nenhum (nota neutra, 50)
  *     criterios.notas[].conjunto_texto
@@ -737,7 +744,8 @@
  *     criterios.notas[].conta[].parametro
  *                                    o nome do parâmetro
  *     criterios.notas[].conta[].peso_efetivo
- *                                    o peso no conjunto: peso do subparâmetro × peso do parâmetro, reescalado sem os que não se aplicam, em % (número)
+ *                                    o peso no conjunto: peso do subparâmetro × peso do parâmetro, reescalado sem os que não se aplicam, em
+ *                                    % (número)
  *     criterios.notas[].conta[].pontos
  *                                    nota × peso efetivo ÷ 100 (número): quanto somou na nota
  *     criterios.notas[].conta[].subparametro
@@ -753,7 +761,8 @@
  *     criterios.notas[].relogio_id   o relógio
  *     criterios.variaveis.<variavel> o que um subparâmetro pode medir: cada campo (menos texto) e cada fórmula, pelo identificador
  *     criterios.variaveis.<variavel>.max
- *                                    o limite da medida (a última faixa vai até ele ou sem limite): o que o nome diz em "(0 a N)"; null: sem limite
+ *                                    o limite da medida (a última faixa vai até ele ou sem limite): o que o nome diz em "(0 a N)"; null:
+ *                                    sem limite
  *     criterios.variaveis.<variavel>.nome
  *                                    o nome (com a unidade)
  *     criterios.variaveis.<variavel>.tipo
@@ -803,8 +812,8 @@
  *     formulas[].usa.lancamentos[]   os tipos de lançamento que a conta usa
  *     formulas[].usa.variaveis[]     os campos e fórmulas que a conta usa
  *     lancamento_tipos[]             os tipos de lançamento: o que se registra num relógio
- *     lancamento_tipos[].condicao    vale quando: uma fórmula que diz para quais relógios do grupo o tipo vale (1 vale, 0 não; ex.: corda_manual, só
- *                                    quem aceita corda); null: vale para todos
+ *     lancamento_tipos[].condicao    vale quando: uma fórmula que diz para quais relógios do grupo o tipo vale (1 vale, 0 não; ex.:
+ *                                    corda_manual, só quem aceita corda); null: vale para todos
  *     lancamento_tipos[].exclusiva   a sessão é exclusiva: o relógio fica num lugar só (abrir fecha a outra exclusiva)
  *     lancamento_tipos[].fecha_as    sessão esquecida aberta fecha sozinha a essa hora do dia em que começou (HH:MM; null: não fecha)
  *     lancamento_tipos[].formato     instantaneo (uma marcação: corda), valor (uma leitura: carga) ou sessao (com início e fim: pulso, sol)
@@ -831,8 +840,8 @@
  *     modos[].blocos[].nome          o nome do bloco
  *     modos[].blocos[].relogio_id    o relógio fixo do bloco; null: sorteia
  *     modos[].blocos[].um_por        dia (um relógio por dia) ou bloco (um para o bloco inteiro na semana)
- *     modos[].ciclo                  (verdadeiro ou falso) o modo usa o ciclo: um relógio só volta depois que todos os disponíveis do bloco passaram na
- *                                    semana (na escala, pelo período dela); dentro do ciclo, a forma de escolha decide a ordem
+ *     modos[].ciclo                  (verdadeiro ou falso) o modo usa o ciclo: um relógio só volta depois que todos os disponíveis do bloco
+ *                                    passaram na semana (na escala, pelo período dela); dentro do ciclo, a forma de escolha decide a ordem
  *     modos[].escala_dias            escala inteligente com esse horizonte, em dias (7 a 730); null: sorteio pelos blocos
  *     modos[].id                     o número do modo
  *     modos[].nome                   o nome do modo
@@ -849,7 +858,8 @@
  *     plano[].bloco_id               o bloco do modo que escolheu o dia; null: escala ou manual
  *     plano[].criado                 quando o dia foi gravado no plano (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     plano[].data                   o dia (texto AAAA-MM-DD)
- *     plano[].motivo                 por que este relógio saiu neste dia, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à mão); null: o dia foi gravado antes de o sistema guardar o motivo
+ *     plano[].motivo                 por que este relógio saiu neste dia, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à
+ *                                    mão); null: o dia foi gravado antes de o sistema guardar o motivo
  *     plano[].origem                 sorteio (pelo modo) ou manual ("Usando hoje")
  *     plano[].relogio                o nome dele
  *     plano[].relogio_id             o relógio do dia
@@ -857,29 +867,33 @@
  *                                    o período livre")
  *     relogios[]                     os relógios, com tudo o que se sabe de cada um
  *     relogios[].acaba_em_datacomtz  quando acaba, em ISO 8601 com o fuso (texto, ex.: 2026-10-02T18:40:00-03:00); null com o motivo
- *     relogios[].acaba_em_segundos   quantos segundos faltam para acabar, a partir de calculado_em_unixtimestamp (número inteiro, em segundos; igual a
- *                                    autonomia_estimada); null com o motivo
+ *     relogios[].acaba_em_segundos   quantos segundos faltam para acabar, a partir de calculado_em_unixtimestamp (número inteiro, em
+ *                                    segundos; igual a autonomia_estimada); null com o motivo
  *     relogios[].acaba_em_unixtimestamp
- *                                    quando a energia chega a zero seguindo o plano (número inteiro: instante Unix (segundos desde 01/01/1970 UTC));
- *                                    null com o motivo
- *     relogios[].autonomia_atual     quanto o relógio dura com a carga cheia, pela conta do sistema (número inteiro, em segundos): no smartwatch, pelo
- *                                    gasto em uso medido pelas leituras (a média da janela da Configuração), senão pelo informado; nos outros, igual à
- *                                    prevista; a diferença para a prevista mostra a bateria envelhecendo; a fórmula autonomia_atual
- *     relogios[].autonomia_estimada  quanto ainda dura a partir de agora, seguindo o plano (número inteiro, em segundos): usado nos dias em que está no
- *                                    rodízio, guardado nos outros; o mesmo número de acaba_em_segundos; null com o motivo em motivos
- *     relogios[].autonomia_prevista  quanto o relógio dura com a carga cheia, pelo cadastro (número inteiro, em segundos): a autonomia do smartwatch, a
- *                                    reserva de marcha do mecânico, a reserva do solar ou a vida da pilha; a fórmula autonomia_prevista; null se falta
- *                                    o dado no cadastro
- *     relogios[].avisos[]            os avisos do relógio agora (os que valem para ele e têm data prevista), do mais urgente ao mais distante
- *     relogios[].avisos[].agenda     a data na agenda: janela (só dentro da antecedência da agenda) ou sempre (qualquer data); se vai pela agenda é a
- *                                    Configuração
+ *                                    quando a energia chega a zero seguindo o plano (número inteiro: instante Unix (segundos desde
+ *                                    01/01/1970 UTC)); null com o motivo
+ *     relogios[].autonomia_atual     quanto o relógio dura com a carga cheia, pela conta do sistema (número inteiro, em segundos): no
+ *                                    smartwatch, pelo gasto em uso medido pelas leituras (a média da janela da Configuração), senão pelo
+ *                                    informado; nos outros, igual à prevista; a diferença para a prevista mostra a bateria envelhecendo; a
+ *                                    fórmula autonomia_atual
+ *     relogios[].autonomia_estimada  quanto ainda dura a partir de agora, seguindo o plano (número inteiro, em segundos): usado nos dias em
+ *                                    que está no rodízio, guardado nos outros; o mesmo número de acaba_em_segundos; null com o motivo em
+ *                                    motivos
+ *     relogios[].autonomia_prevista  quanto o relógio dura com a carga cheia, pelo cadastro (número inteiro, em segundos): a autonomia do
+ *                                    smartwatch, a reserva de marcha do mecânico, a reserva do solar ou a vida da pilha; a fórmula
+ *                                    autonomia_prevista; null se falta o dado no cadastro
+ *     relogios[].avisos[]            os avisos do relógio agora (os que valem para ele e têm data prevista), do mais urgente ao mais
+ *                                    distante
+ *     relogios[].avisos[].agenda     a data na agenda: janela (só dentro da antecedência da agenda) ou sempre (qualquer data); se vai pela
+ *                                    agenda é a Configuração
  *     relogios[].avisos[].na_hora    verdadeiro: o aviso vai pelo Telegram no minuto em que vence (uma vez), além do alerta da manhã
  *     relogios[].avisos[].data       a data prevista, pela fórmula do aviso (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].avisos[].escala     na escala inteligente: nao, uso (conferido no relógio do dia) ou sempre (também nos guardados)
  *     relogios[].avisos[].estado     atrasado (a data passou), em_breve (dentro da antecedência) ou ok
  *     relogios[].avisos[].falta_dias quanto falta para a data prevista, em dias (número; negativo: já passou)
  *     relogios[].avisos[].identificador
- *                                    o aviso (corda, carregar, sol, pilha, revisao, garantia, carga_baixa, leitura, ou um que você cadastrou)
+ *                                    o aviso (corda, carregar, sol, pilha, revisao, garantia, carga_baixa, leitura, ou um que você
+ *                                    cadastrou)
  *     relogios[].avisos[].modelo     o texto do cadastro, sem trocar as âncoras (só o {limite})
  *     relogios[].avisos[].nome       o nome do aviso ("Dar corda") — a âncora {acao}
  *     relogios[].avisos[].resolve    o tipo de lançamento que resolve o aviso (o botão na tela Hoje); null: nenhum
@@ -890,8 +904,8 @@
  *     relogios[].avisos[].texto      o motivo por extenso, com {relogio}, {data}, {quando} e {limite} trocados — a âncora {motivo}
  *     relogios[].avisos[].versao     o lugar da árvore da versão do aviso usada (texto)
  *     relogios[].calculado_em_unixtimestamp
- *                                    o instante em que as autonomias foram calculadas (número inteiro: instante Unix (segundos desde 01/01/1970 UTC));
- *                                    segundos que faltam agora = acaba_em_unixtimestamp − hora atual
+ *                                    o instante em que as autonomias foram calculadas (número inteiro: instante Unix (segundos desde
+ *                                    01/01/1970 UTC)); segundos que faltam agora = acaba_em_unixtimestamp − hora atual
  *     relogios[].campos[]            os campos do cadastro que valem para ele
  *     relogios[].campos[].identificador
  *                                    o campo
@@ -906,7 +920,8 @@
  *     relogios[].copia_banco         verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da
  *                                    cópia; o DOCUMENTOS_COPIA_BANCO do config.php, se definido, vale por cima)
  *     relogios[].em_uso              verdadeiro ou falso: o relógio está com uma sessão no pulso aberta agora
- *     relogios[].energia             a energia agora, em % inteiro (a fórmula energia: bateria, reserva, luz ou pilha); null sem dados para calcular
+ *     relogios[].energia             a energia agora, em % inteiro (a fórmula energia: bateria, reserva, luz ou pilha); null sem dados para
+ *                                    calcular
  *     relogios[].formulas[]          o resultado agora de cada fórmula que vale para ele
  *     relogios[].formulas[].identificador
  *                                    a fórmula
@@ -923,16 +938,18 @@
  *     relogios[].lancamentos[]       todos os lançamentos do relógio, do mais antigo para o mais recente
  *     relogios[].lancamentos[].criado
  *                                    quando foi gravado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
- *     relogios[].lancamentos[].fim   o fim da sessão (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null: marcação, leitura, ou sessão aberta
+ *     relogios[].lancamentos[].fim   o fim da sessão (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null: marcação, leitura, ou sessão
+ *                                    aberta
  *     relogios[].lancamentos[].id    o número do lançamento
  *     relogios[].lancamentos[].inicio
- *                                    quando (a marcação ou a leitura), ou o começo da sessão (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *                                    quando (a marcação ou a leitura), ou o começo da sessão (texto AAAA-MM-DD HH:MM:SS, no fuso do
+ *                                    sistema)
  *     relogios[].lancamentos[].origem
  *                                    manual (lançado por alguém), rodizio (a sessão do dia, pelo cron) ou importado
  *     relogios[].lancamentos[].tipo  o identificador do tipo
  *     relogios[].lancamentos[].valor o valor da leitura (número); null nos outros
- *     relogios[].linha_do_tempo[]    os trechos da linha do tempo do relógio, do mais recente para o mais antigo: cada trecho é um período contínuo num
- *                                    estado, ou uma marcação (um lançamento instantâneo)
+ *     relogios[].linha_do_tempo[]    os trechos da linha do tempo do relógio, do mais recente para o mais antigo: cada trecho é um período
+ *                                    contínuo num estado, ou uma marcação (um lançamento instantâneo)
  *     relogios[].linha_do_tempo[].duracao
  *                                    a mesma duração por extenso ("2d 3h", "40min"); null numa marcação
  *     relogios[].linha_do_tempo[].duracao_seg
@@ -940,8 +957,8 @@
  *     relogios[].linha_do_tempo[].em_andamento
  *                                    verdadeiro ou falso: o trecho ainda não terminou (o fim é o momento da consulta)
  *     relogios[].linha_do_tempo[].estado
- *                                    o estado do trecho: rodizio (no pulso pelo rodízio), pulso (no pulso fora do rodízio), o identificador de um tipo
- *                                    de sessão (winder, sol...), repouso (parado) ou marca (uma marcação)
+ *                                    o estado do trecho: rodizio (no pulso pelo rodízio), pulso (no pulso fora do rodízio), o identificador
+ *                                    de um tipo de sessão (winder, sol...), repouso (parado) ou marca (uma marcação)
  *     relogios[].linha_do_tempo[].fim
  *                                    quando o trecho terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null numa marcação
  *     relogios[].linha_do_tempo[].inicio
@@ -949,10 +966,11 @@
  *     relogios[].linha_do_tempo[].texto
  *                                    o trecho por extenso, como a tela mostra ("em uso", "no sol", "Leitura de carga 80%")
  *     relogios[].linha_do_tempo[].tipo
- *                                    o identificador do tipo de lançamento que originou o trecho (pulso, sol, corda, carga...); null no repouso
+ *                                    o identificador do tipo de lançamento que originou o trecho (pulso, sol, corda, carga...); null no
+ *                                    repouso
  *     relogios[].lugar               o grupo por extenso
- *     relogios[].medicoes[]          as medições do gasto pelas leituras (cada leitura de um tipo que mede o gasto, comparada com a anterior), da mais
- *                                    recente para a mais antiga
+ *     relogios[].medicoes[]          as medições do gasto pelas leituras (cada leitura de um tipo que mede o gasto, comparada com a
+ *                                    anterior), da mais recente para a mais antiga
  *     relogios[].medicoes[].ate_valor
  *                                    a leitura que fechou a medição (número)
  *     relogios[].medicoes[].criado   quando a medição foi gravada (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
@@ -966,38 +984,41 @@
  *     relogios[].medicoes[].inicio   quando foi a leitura de antes (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].medicoes[].lancamento_id
  *                                    o lançamento (a leitura) que fechou a medição
- *     relogios[].medicoes[].medida   o gasto do intervalo sozinho, no histórico: uso (o gasto por dia de uso, quando o intervalo teve
- *                                    meio dia de uso ou mais, ou mais dias de uso que fora) ou repouso (o gasto por dia fora do pulso);
- *                                    o gasto que vale sai de todas as medições juntas
- *     relogios[].medicoes[].na_media verdadeiro ou falso: entra na média agora (usada e dentro da janela da Configuração, medicao_janela_dias)
+ *     relogios[].medicoes[].medida   o gasto do intervalo sozinho, no histórico: uso (o gasto por dia de uso, quando o intervalo teve meio
+ *                                    dia de uso ou mais, ou mais dias de uso que fora) ou repouso (o gasto por dia fora do pulso); o gasto
+ *                                    que vale sai de todas as medições juntas
+ *     relogios[].medicoes[].na_media verdadeiro ou falso: entra na média agora (usada e dentro da janela da Configuração,
+ *                                    medicao_janela_dias)
  *     relogios[].medicoes[].peso_horas
  *                                    o peso da medição na média: as horas que ela cobriu, no pulso (uso) ou guardado (repouso) (número)
  *     relogios[].medicoes[].taxa     o gasto medido, em % por dia de uso (uso) ou por dia guardado (repouso) (número)
- *     relogios[].medicoes[].usada    verdadeiro ou falso: a caixa "Atualizar o gasto com esta medição" estava marcada (entra na média); falso: só
- *                                    histórico
+ *     relogios[].medicoes[].usada    verdadeiro ou falso: a caixa "Atualizar o gasto com esta medição" estava marcada (entra na média);
+ *                                    falso: só histórico
  *     relogios[].motivos             por que cada campo acima ficou null (objeto; vazio quando todos foram calculados)
- *     relogios[].motivos.<campo>     o motivo de o campo <campo> estar null (texto), ex.: sem dados para calcular a energia; não chega a zero em até 10
- *                                    anos
+ *     relogios[].motivos.<campo>     o motivo de o campo <campo> estar null (texto), ex.: sem dados para calcular a energia; não chega a
+ *                                    zero em até 10 anos
  *     relogios[].no_id               o grupo do relógio; null: na raiz
  *     relogios[].nome                o nome do relógio
- *     relogios[].previsao            a previsão da energia (só nos relógios com leitura, como o smartwatch): as frases da tela e os mesmos números
+ *     relogios[].previsao            a previsão da energia (só nos relógios com leitura, como o smartwatch): as frases da tela e os mesmos
+ *                                    números
  *     relogios[].previsao.aplica     verdadeiro ou falso: o relógio tem leitura com valor (senão os outros campos ficam vazios)
  *     relogios[].previsao.carga_na_entrada
  *                                    com quanto ele entra nesse dia, em % (número)
  *     relogios[].previsao.carregar_antes
  *                                    verdadeiro ou falso: a carga na entrada não basta (é preciso carregar antes)
  *     relogios[].previsao.chega_limite_em
- *                                    quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se passa de um ano
- *     relogios[].previsao.confianca  a confiança da conta: alta (leitura de até 2 dias e nenhum dado vazio, ou gasto em uso medido), media ou baixa
- *                                    (leitura com mais de 7 dias)
+ *                                    quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se passa
+ *                                    de um ano
+ *     relogios[].previsao.confianca  a confiança da conta: alta (leitura de até 2 dias e nenhum dado vazio, ou gasto em uso medido), media
+ *                                    ou baixa (leitura com mais de 7 dias)
  *     relogios[].previsao.conta[]    de onde vem cada número da conta: os campos do cadastro usados e o gasto medido pelas leituras
  *     relogios[].previsao.conta[].campo
  *                                    o identificador do campo, ou MEDIDO("uso") / MEDIDO("repouso") para o gasto medido
  *     relogios[].previsao.conta[].nome
  *                                    o nome do campo (ou do gasto medido, com quantas medições entraram)
  *     relogios[].previsao.conta[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo), vazio (sem valor) ou medido (pelas
- *                                    leituras)
+ *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo), vazio (sem valor) ou medido
+ *                                    (pelas leituras)
  *     relogios[].previsao.conta[].unidade
  *                                    a unidade do valor (texto)
  *     relogios[].previsao.conta[].valor
@@ -1005,7 +1026,8 @@
  *     relogios[].previsao.dura_ate   até que dia a carga aguenta se usar a partir de hoje (texto AAAA-MM-DD)
  *     relogios[].previsao.dura_dias  quantos dias de uso a carga de agora aguenta (número, dias; a fórmula dias_de_carga)
  *     relogios[].previsao.energia    a energia agora, em % (número; null sem leitura)
- *     relogios[].previsao.gasto      os dois gastos da bateria lado a lado (as fórmulas taxa_uso e taxa_repouso; null se o relógio não as tem)
+ *     relogios[].previsao.gasto      os dois gastos da bateria lado a lado (as fórmulas taxa_uso e taxa_repouso; null se o relógio não as
+ *                                    tem)
  *     relogios[].previsao.gasto.conjunta
  *                                    true: os dois gastos saem juntos da conta das medições; false: a média das medições de cada um
  *     relogios[].previsao.gasto.janela_dias
@@ -1037,17 +1059,17 @@
  *     relogios[].previsao.precisa    quanto ele precisa ter na entrada para os dias seguidos no pulso, em % (número)
  *     relogios[].previsao.proxima_entrada
  *                                    o próximo dia em que o relógio entra no rodízio (texto AAAA-MM-DD); null se não está no plano
- *     relogios[].restante_em_uso     quanto ainda dura a partir de agora se ficar no pulso sem tirar, o dia todo (número inteiro, em segundos); null
- *                                    com o motivo (ex.: o automático no pulso se recarrega e não acaba)
- *     relogios[].restante_guardado   quanto ainda dura a partir de agora se ficar parado depois do que já está lançado (número inteiro, em segundos);
- *                                    null com o motivo
+ *     relogios[].restante_em_uso     quanto ainda dura a partir de agora se ficar no pulso sem tirar, o dia todo (número inteiro, em
+ *                                    segundos); null com o motivo (ex.: o automático no pulso se recarrega e não acaba)
+ *     relogios[].restante_guardado   quanto ainda dura a partir de agora se ficar parado depois do que já está lançado (número inteiro, em
+ *                                    segundos); null com o motivo
  *     relogios[].resumo_do_tempo.marcacoes.<tipo_de_marcacao>
  *                                    quantas marcações de cada tipo (corda, carga, pilha...) (número)
  *     relogios[].resumo_do_tempo.tempo.<estado>.porcentagem
  *                                    a parte desse estado no tempo total, em %
  *     relogios[].resumo_do_tempo.tempo.<estado>.segundos
- *                                    quanto tempo o relógio passou no estado <estado> (rodizio, pulso, winder, sol, repouso...), número inteiro, em
- *                                    segundos
+ *                                    quanto tempo o relógio passou no estado <estado> (rodizio, pulso, winder, sol, repouso...), número
+ *                                    inteiro, em segundos
  *     relogios[].resumo_do_tempo.tempo.<estado>.texto
  *                                    o mesmo tempo por extenso
  *     usuarios[]                     quem acessa o site, com o hash da senha (a senha não existe no sistema)
@@ -1060,7 +1082,6 @@
  *                                    resultado (31). Não se desfaz em senha: confere-se a senha digitada contra ele (veja senhas na ajuda).
  *                                    Levado para outro sistema que confira por bcrypt, o usuário entra lá com a mesma senha; e volta para
  *                                    cá por usuarios/salvar com senha_hash
- *
  *     documento_categorias[]         as categorias dos documentos, na ordem
  *     documento_categorias[].aceita[]
  *                                    os tipos de arquivo que ela aceita (imagem, video, audio, pdf, xml); lista vazia: qualquer arquivo
@@ -1090,8 +1111,7 @@
  *                                    verdadeiro: o arquivo está na pasta dos documentos (falso: ele volta do banco quando for pedido ou na
  *                                    próxima rodada do cron; sem a cópia no banco, está perdido)
  *     relogios[].documentos[].no_banco
- *                                    verdadeiro: a cópia de segurança do arquivo está completa no banco (se ele sumir da pasta, volta
- *                                    dali)
+ *                                    verdadeiro: a cópia de segurança do arquivo está completa no banco (se ele sumir da pasta, volta dali)
  *     relogios[].documentos[].copia_banco
  *                                    verdadeiro: o próprio arquivo pede a cópia no banco (o terceiro nível; o relógio e o config.php, se
  *                                    pedem, valem por cima)
@@ -1111,36 +1131,38 @@
  *     calculado_em_unixtimestamp     o instante da conta (número inteiro: instante Unix (segundos desde 01/01/1970 UTC))
  *     relogios[]                     um relógio por item, com as autonomias
  *     relogios[].acaba_em_datacomtz  quando acaba, em ISO 8601 com o fuso (texto, ex.: 2026-10-02T18:40:00-03:00); null com o motivo
- *     relogios[].acaba_em_segundos   quantos segundos faltam para acabar, a partir de calculado_em_unixtimestamp (número inteiro, em segundos; igual a
- *                                    autonomia_estimada); null com o motivo
+ *     relogios[].acaba_em_segundos   quantos segundos faltam para acabar, a partir de calculado_em_unixtimestamp (número inteiro, em
+ *                                    segundos; igual a autonomia_estimada); null com o motivo
  *     relogios[].acaba_em_unixtimestamp
- *                                    quando a energia chega a zero seguindo o plano (número inteiro: instante Unix (segundos desde 01/01/1970 UTC));
- *                                    null com o motivo
- *     relogios[].autonomia_atual     quanto o relógio dura com a carga cheia, pela conta do sistema (número inteiro, em segundos): no smartwatch, pelo
- *                                    gasto em uso medido pelas leituras (a média da janela da Configuração), senão pelo informado; nos outros, igual à
- *                                    prevista; a diferença para a prevista mostra a bateria envelhecendo; a fórmula autonomia_atual
- *     relogios[].autonomia_estimada  quanto ainda dura a partir de agora, seguindo o plano (número inteiro, em segundos): usado nos dias em que está no
- *                                    rodízio, guardado nos outros; o mesmo número de acaba_em_segundos; null com o motivo em motivos
- *     relogios[].autonomia_prevista  quanto o relógio dura com a carga cheia, pelo cadastro (número inteiro, em segundos): a autonomia do smartwatch, a
- *                                    reserva de marcha do mecânico, a reserva do solar ou a vida da pilha; a fórmula autonomia_prevista; null se falta
- *                                    o dado no cadastro
+ *                                    quando a energia chega a zero seguindo o plano (número inteiro: instante Unix (segundos desde
+ *                                    01/01/1970 UTC)); null com o motivo
+ *     relogios[].autonomia_atual     quanto o relógio dura com a carga cheia, pela conta do sistema (número inteiro, em segundos): no
+ *                                    smartwatch, pelo gasto em uso medido pelas leituras (a média da janela da Configuração), senão pelo
+ *                                    informado; nos outros, igual à prevista; a diferença para a prevista mostra a bateria envelhecendo; a
+ *                                    fórmula autonomia_atual
+ *     relogios[].autonomia_estimada  quanto ainda dura a partir de agora, seguindo o plano (número inteiro, em segundos): usado nos dias em
+ *                                    que está no rodízio, guardado nos outros; o mesmo número de acaba_em_segundos; null com o motivo em
+ *                                    motivos
+ *     relogios[].autonomia_prevista  quanto o relógio dura com a carga cheia, pelo cadastro (número inteiro, em segundos): a autonomia do
+ *                                    smartwatch, a reserva de marcha do mecânico, a reserva do solar ou a vida da pilha; a fórmula
+ *                                    autonomia_prevista; null se falta o dado no cadastro
  *     relogios[].calculado_em_unixtimestamp
- *                                    o instante em que as autonomias foram calculadas (número inteiro: instante Unix (segundos desde 01/01/1970 UTC));
- *                                    segundos que faltam agora = acaba_em_unixtimestamp − hora atual
+ *                                    o instante em que as autonomias foram calculadas (número inteiro: instante Unix (segundos desde
+ *                                    01/01/1970 UTC)); segundos que faltam agora = acaba_em_unixtimestamp − hora atual
  *     relogios[].disponivel          verdadeiro ou falso: entra no rodízio
  *     relogios[].em_uso              verdadeiro ou falso: o relógio está com uma sessão no pulso aberta agora
- *     relogios[].energia             a energia agora, em % inteiro (a fórmula energia: bateria, reserva, luz ou pilha); null sem dados para calcular
+ *     relogios[].energia             a energia agora, em % inteiro (a fórmula energia: bateria, reserva, luz ou pilha); null sem dados para
+ *                                    calcular
  *     relogios[].id                  o número (código)
  *     relogios[].lugar               o grupo por extenso
  *     relogios[].motivos             por que cada campo acima ficou null (objeto; vazio quando todos foram calculados)
- *     relogios[].motivos.<campo>     o motivo de o campo <campo> estar null (texto), ex.: sem dados para calcular a energia; não chega a zero em até 10
- *                                    anos
+ *     relogios[].motivos.<campo>     o motivo de o campo <campo> estar null (texto), ex.: sem dados para calcular a energia; não chega a
+ *                                    zero em até 10 anos
  *     relogios[].nome                o nome
- *     relogios[].restante_em_uso     quanto ainda dura a partir de agora se ficar no pulso sem tirar, o dia todo (número inteiro, em segundos); null
- *                                    com o motivo (ex.: o automático no pulso se recarrega e não acaba)
- *     relogios[].restante_guardado   quanto ainda dura a partir de agora se ficar parado depois do que já está lançado (número inteiro, em segundos);
- *                                    null com o motivo
- *
+ *     relogios[].restante_em_uso     quanto ainda dura a partir de agora se ficar no pulso sem tirar, o dia todo (número inteiro, em
+ *                                    segundos); null com o motivo (ex.: o automático no pulso se recarrega e não acaba)
+ *     relogios[].restante_guardado   quanto ainda dura a partir de agora se ficar parado depois do que já está lançado (número inteiro, em
+ *                                    segundos); null com o motivo
  *   recurso=hoje
  *     agora                          o instante da resposta (número inteiro: instante Unix (segundos desde 01/01/1970 UTC))
  *     avisos[]                       os avisos de hoje (atrasados ou em breve), um por relógio e aviso
@@ -1161,8 +1183,8 @@
  *     avisos_nomes[]                 os nomes dos avisos (o filtro "O que fazer" da tabela)
  *     estados[]                      os estados da tabela, na ordem (o filtro Estado): "Em uso", o nome de cada sessão que não é o pulso
  *                                    ("No sol", "No winder", "No carregador"...), "Em repouso" e "Indisponível"
- *     comecou                        verdadeiro ou falso: o dia já começou no pulso (há relógio do dia e: pondo no pulso sozinho,
- *                                    passou do uso_inicio; senão, ele já foi posto no pulso hoje)
+ *     comecou                        verdadeiro ou falso: o dia já começou no pulso (há relógio do dia e: pondo no pulso sozinho, passou do
+ *                                    uso_inicio; senão, ele já foi posto no pulso hoje)
  *     pulso_poe_sozinho              verdadeiro: o relógio do dia entra no pulso sozinho no início do horário de uso; falso: só pelo Pôs
  *     pulso_tira_sozinho             verdadeiro: o relógio sai do pulso sozinho no fim do horário de uso; falso: só pelo Tirou
  *     data                           hoje (texto AAAA-MM-DD)
@@ -1170,7 +1192,8 @@
  *     dia.acao                       o lembrete do dia; null: nada
  *     dia.ate                        até quando ele fica ("só hoje", "até sexta, 02/10")
  *     dia.data                       hoje
- *     dia.motivo                     por que ele saiu hoje, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à mão); null: não foi guardado
+ *     dia.motivo                     por que ele saiu hoje, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à mão); null:
+ *                                    não foi guardado
  *     dia.relogio                    o nome dele
  *     dia.relogio_id                 o relógio de hoje
  *     destaque                       o relógio do destaque no alto da página (a Configuração destaque_hoje), já escolhido pela API
@@ -1205,15 +1228,16 @@
  *     modos[].blocos[].nome          o nome
  *     modos[].blocos[].relogio_id    o relógio fixo; null: sorteia
  *     modos[].blocos[].um_por        dia ou bloco
- *     modos[].ciclo                  (verdadeiro ou falso) o modo usa o ciclo: um relógio só volta depois que todos os disponíveis do bloco passaram na
- *                                    semana (na escala, pelo período dela); dentro do ciclo, a forma de escolha decide a ordem
+ *     modos[].ciclo                  (verdadeiro ou falso) o modo usa o ciclo: um relógio só volta depois que todos os disponíveis do bloco
+ *                                    passaram na semana (na escala, pelo período dela); dentro do ciclo, a forma de escolha decide a ordem
  *     modos[].escala_dias            o horizonte da escala; null: sorteio
  *     modos[].id                     o número
  *     modos[].nome                   o nome
  *     modos[].selecao                a forma de escolha
  *     plano[]                        os próximos 62 dias do plano
  *     plano[].acao                   o lembrete do dia; null
- *     plano[].motivo                 por que este relógio saiu neste dia, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à mão); null: o dia foi gravado antes de o sistema guardar o motivo
+ *     plano[].motivo                 por que este relógio saiu neste dia, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à
+ *                                    mão); null: o dia foi gravado antes de o sistema guardar o motivo
  *     plano[].origem                 sorteio (pelo modo) ou manual (escolhido à mão: "trocar por…" ou "Usando hoje")
  *     plano[].data                   o dia
  *     plano[].relogio                o nome
@@ -1262,8 +1286,8 @@
  *     relogios[].estado_texto        o estado como a tabela mostra: "Em uso", o nome da sessão aberta ("No sol", "No carregador"; duas
  *                                    juntas: "No sol · No winder"), "Em repouso" ou "Indisponível"
  *     relogios[].estado_ordem        a ordem do estado na tabela: 0 em uso, 1 numa sessão, 2 em repouso, 3 indisponível
- *     relogios[].foto                a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC), para o endereço dela); null: sem
- *                                    foto
+ *     relogios[].foto                a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC), para o endereço
+ *                                    dela); null: sem foto
  *     relogios[].id                  o número (código)
  *     relogios[].leitura             a última leitura com valor; null: nenhuma
  *     relogios[].leitura.inicio      quando (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
@@ -1287,7 +1311,6 @@
  *     totais.relogios                quantos relógios há
  *     totais.valor                   a soma do valor pago (valor_compra) de todos, em R$ (os sem valor contam 0)
  *     uso_inicio                     a hora em que o relógio do dia vai para o pulso (HH:MM)
- *
  *   recurso=ficha
  *     campos[]                       os campos do cadastro
  *     campos[].identificador         o campo
@@ -1315,37 +1338,40 @@
  *     relogio.autonomia.acaba_em_datacomtz
  *                                    quando acaba, em ISO 8601 com o fuso (texto, ex.: 2026-10-02T18:40:00-03:00); null com o motivo
  *     relogio.autonomia.acaba_em_segundos
- *                                    quantos segundos faltam para acabar, a partir de calculado_em_unixtimestamp (número inteiro, em segundos; igual a
- *                                    autonomia_estimada); null com o motivo
+ *                                    quantos segundos faltam para acabar, a partir de calculado_em_unixtimestamp (número inteiro, em
+ *                                    segundos; igual a autonomia_estimada); null com o motivo
  *     relogio.autonomia.acaba_em_unixtimestamp
- *                                    quando a energia chega a zero seguindo o plano (número inteiro: instante Unix (segundos desde 01/01/1970 UTC));
- *                                    null com o motivo
+ *                                    quando a energia chega a zero seguindo o plano (número inteiro: instante Unix (segundos desde
+ *                                    01/01/1970 UTC)); null com o motivo
  *     relogio.autonomia.autonomia_atual
- *                                    quanto o relógio dura com a carga cheia, pela conta do sistema (número inteiro, em segundos): no smartwatch, pelo
- *                                    gasto em uso medido pelas leituras (a média da janela da Configuração), senão pelo informado; nos outros, igual à
- *                                    prevista; a diferença para a prevista mostra a bateria envelhecendo; a fórmula autonomia_atual
+ *                                    quanto o relógio dura com a carga cheia, pela conta do sistema (número inteiro, em segundos): no
+ *                                    smartwatch, pelo gasto em uso medido pelas leituras (a média da janela da Configuração), senão pelo
+ *                                    informado; nos outros, igual à prevista; a diferença para a prevista mostra a bateria envelhecendo; a
+ *                                    fórmula autonomia_atual
  *     relogio.autonomia.autonomia_estimada
- *                                    quanto ainda dura a partir de agora, seguindo o plano (número inteiro, em segundos): usado nos dias em que está no
- *                                    rodízio, guardado nos outros; o mesmo número de acaba_em_segundos; null com o motivo em motivos
+ *                                    quanto ainda dura a partir de agora, seguindo o plano (número inteiro, em segundos): usado nos dias em
+ *                                    que está no rodízio, guardado nos outros; o mesmo número de acaba_em_segundos; null com o motivo em
+ *                                    motivos
  *     relogio.autonomia.autonomia_prevista
- *                                    quanto o relógio dura com a carga cheia, pelo cadastro (número inteiro, em segundos): a autonomia do smartwatch, a
- *                                    reserva de marcha do mecânico, a reserva do solar ou a vida da pilha; a fórmula autonomia_prevista; null se falta
- *                                    o dado no cadastro
+ *                                    quanto o relógio dura com a carga cheia, pelo cadastro (número inteiro, em segundos): a autonomia do
+ *                                    smartwatch, a reserva de marcha do mecânico, a reserva do solar ou a vida da pilha; a fórmula
+ *                                    autonomia_prevista; null se falta o dado no cadastro
  *     relogio.autonomia.calculado_em_unixtimestamp
- *                                    o instante em que as autonomias foram calculadas (número inteiro: instante Unix (segundos desde 01/01/1970 UTC));
- *                                    segundos que faltam agora = acaba_em_unixtimestamp − hora atual
+ *                                    o instante em que as autonomias foram calculadas (número inteiro: instante Unix (segundos desde
+ *                                    01/01/1970 UTC)); segundos que faltam agora = acaba_em_unixtimestamp − hora atual
  *     relogio.autonomia.em_uso       verdadeiro ou falso: o relógio está com uma sessão no pulso aberta agora
- *     relogio.autonomia.energia      a energia agora, em % inteiro (a fórmula energia: bateria, reserva, luz ou pilha); null sem dados para calcular
+ *     relogio.autonomia.energia      a energia agora, em % inteiro (a fórmula energia: bateria, reserva, luz ou pilha); null sem dados para
+ *                                    calcular
  *     relogio.autonomia.motivos      por que cada campo acima ficou null (objeto; vazio quando todos foram calculados)
  *     relogio.autonomia.motivos.<campo>
- *                                    o motivo de o campo <campo> estar null (texto), ex.: sem dados para calcular a energia; não chega a zero em até 10
- *                                    anos
+ *                                    o motivo de o campo <campo> estar null (texto), ex.: sem dados para calcular a energia; não chega a
+ *                                    zero em até 10 anos
  *     relogio.autonomia.restante_em_uso
- *                                    quanto ainda dura a partir de agora se ficar no pulso sem tirar, o dia todo (número inteiro, em segundos); null
- *                                    com o motivo (ex.: o automático no pulso se recarrega e não acaba)
+ *                                    quanto ainda dura a partir de agora se ficar no pulso sem tirar, o dia todo (número inteiro, em
+ *                                    segundos); null com o motivo (ex.: o automático no pulso se recarrega e não acaba)
  *     relogio.autonomia.restante_guardado
- *                                    quanto ainda dura a partir de agora se ficar parado depois do que já está lançado (número inteiro, em segundos);
- *                                    null com o motivo
+ *                                    quanto ainda dura a partir de agora se ficar parado depois do que já está lançado (número inteiro, em
+ *                                    segundos); null com o motivo
  *     relogio.calculos[]             o resultado agora de cada fórmula que vale para o relógio
  *     relogio.calculos[].identificador
  *                                    a fórmula
@@ -1364,7 +1390,8 @@
  *     relogio.compra.dias_de_uso     em quantos dias ele foi ao pulso (a fórmula dias_de_uso); null: sem a fórmula
  *     relogio.compra.custo_por_uso   o valor pago dividido pelos dias de uso, em R$ (a fórmula custo_por_uso); null: sem o valor pago ou
  *                                    sem nenhum dia de uso
- *     relogio.dados[]                os campos do cadastro que valem para o relógio (os do grupo dele e dos de cima), com o valor que as contas usam
+ *     relogio.dados[]                os campos do cadastro que valem para o relógio (os do grupo dele e dos de cima), com o valor que as
+ *                                    contas usam
  *     relogio.dados[].identificador  o campo
  *     relogio.dados[].nome           o nome do campo
  *     relogio.dados[].origem         de onde vem o valor usado: informado, padrão (o do campo) ou vazio
@@ -1385,25 +1412,35 @@
  *     relogio.foto                   a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
  *     relogio.dica_foto              a dica da foto no painel (aparece com o mouse parado em cima dela), em linhas: o nome, o grupo e o
  *                                    código; o estado e a carga; a nota e o próximo dia no rodízio (ou indisponível); a compra (data e
- *                                    valor); e "Duplo clique (ou \"Abrir foto\", embaixo): a foto em tamanho grande."
+ *                                    valor); e a frase: Duplo clique (ou "Abrir foto", embaixo): a foto em tamanho grande.
  *     relogio.id                     o número (código)
  *     relogio.leituras[]             as 40 últimas leituras com valor (o gráfico)
  *     relogio.leituras[].em_uso      verdadeiro ou falso: a leitura foi feita com o relógio no pulso
  *     relogio.leituras[].inicio      quando
- *     relogio.lancamentos_recentes[] os lançamentos dos últimos 14 dias e a sessão ainda aberta, do mais recente ao mais antigo (até 40): o que o quadro "Corrigir marcações" do painel mostra
- *     relogio.lancamentos_recentes[].fim quando a sessão terminou (texto AAAA-MM-DD HH:MM:SS); null: ainda aberta, ou um lançamento instantâneo
- *     relogio.lancamentos_recentes[].formato instantaneo, valor ou sessao
- *     relogio.lancamentos_recentes[].id o número do lançamento (para recurso=lancamento, acao=alterar ou excluir)
- *     relogio.lancamentos_recentes[].inicio quando foi (a sessão: quando começou), texto AAAA-MM-DD HH:MM:SS
- *     relogio.lancamentos_recentes[].nome o nome do tipo de lançamento
- *     relogio.lancamentos_recentes[].origem manual, rodizio (a sessão do dia) ou importado
- *     relogio.lancamentos_recentes[].tipo o identificador do tipo de lançamento (pulso, carga, corda...)
- *     relogio.lancamentos_recentes[].unidade a unidade do valor (texto; vazio sem valor)
- *     relogio.lancamentos_recentes[].valor o valor (número), num lançamento com valor; null nos outros
+ *     relogio.lancamentos_recentes[] os lançamentos dos últimos 14 dias e a sessão ainda aberta, do mais recente ao mais antigo (até 40): o
+ *                                    que o quadro "Corrigir marcações" do painel mostra
+ *     relogio.lancamentos_recentes[].fim
+ *                                    quando a sessão terminou (texto AAAA-MM-DD HH:MM:SS); null: ainda aberta, ou um lançamento instantâneo
+ *     relogio.lancamentos_recentes[].formato
+ *                                    instantaneo, valor ou sessao
+ *     relogio.lancamentos_recentes[].id
+ *                                    o número do lançamento (para recurso=lancamento, acao=alterar ou excluir)
+ *     relogio.lancamentos_recentes[].inicio
+ *                                    quando foi (a sessão: quando começou), texto AAAA-MM-DD HH:MM:SS
+ *     relogio.lancamentos_recentes[].nome
+ *                                    o nome do tipo de lançamento
+ *     relogio.lancamentos_recentes[].origem
+ *                                    manual, rodizio (a sessão do dia) ou importado
+ *     relogio.lancamentos_recentes[].tipo
+ *                                    o identificador do tipo de lançamento (pulso, carga, corda...)
+ *     relogio.lancamentos_recentes[].unidade
+ *                                    a unidade do valor (texto; vazio sem valor)
+ *     relogio.lancamentos_recentes[].valor
+ *                                    o valor (número), num lançamento com valor; null nos outros
  *     relogio.leituras[].unidade     a unidade
  *     relogio.leituras[].valor       o valor
- *     relogio.linha_do_tempo[]       os trechos da linha do tempo do relógio, os 5 mais recentes: cada trecho é um período contínuo num estado, ou uma
- *                                    marcação (um lançamento instantâneo)
+ *     relogio.linha_do_tempo[]       os trechos da linha do tempo do relógio, os 5 mais recentes: cada trecho é um período contínuo num
+ *                                    estado, ou uma marcação (um lançamento instantâneo)
  *     relogio.linha_do_tempo[].duracao
  *                                    a mesma duração por extenso ("2d 3h", "40min"); null numa marcação
  *     relogio.linha_do_tempo[].duracao_seg
@@ -1411,19 +1448,20 @@
  *     relogio.linha_do_tempo[].em_andamento
  *                                    verdadeiro ou falso: o trecho ainda não terminou (o fim é o momento da consulta)
  *     relogio.linha_do_tempo[].estado
- *                                    o estado do trecho: rodizio (no pulso pelo rodízio), pulso (no pulso fora do rodízio), o identificador de um tipo
- *                                    de sessão (winder, sol...), repouso (parado) ou marca (uma marcação)
+ *                                    o estado do trecho: rodizio (no pulso pelo rodízio), pulso (no pulso fora do rodízio), o identificador
+ *                                    de um tipo de sessão (winder, sol...), repouso (parado) ou marca (uma marcação)
  *     relogio.linha_do_tempo[].fim   quando o trecho terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null numa marcação
  *     relogio.linha_do_tempo[].inicio
  *                                    quando o trecho começou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.linha_do_tempo[].texto o trecho por extenso, como a tela mostra ("em uso", "no sol", "Leitura de carga 80%")
- *     relogio.linha_do_tempo[].tipo  o identificador do tipo de lançamento que originou o trecho (pulso, sol, corda, carga...); null no repouso
+ *     relogio.linha_do_tempo[].tipo  o identificador do tipo de lançamento que originou o trecho (pulso, sol, corda, carga...); null no
+ *                                    repouso
  *     relogio.manutencoes[]          as 5 próximas manutenções (avisos)
  *     relogio.manutencoes[].data     a data (texto AAAA-MM-DD)
  *     relogio.manutencoes[].nome     o aviso
  *     relogio.medicao_janela_dias    a janela da média do gasto medido, em dias (a da Configuração)
- *     relogio.medicoes[]             as medições do gasto pelas leituras (cada leitura de um tipo que mede o gasto, comparada com a anterior), da mais
- *                                    recente para a mais antiga
+ *     relogio.medicoes[]             as medições do gasto pelas leituras (cada leitura de um tipo que mede o gasto, comparada com a
+ *                                    anterior), da mais recente para a mais antiga
  *     relogio.medicoes[].ate_valor   a leitura que fechou a medição (número)
  *     relogio.medicoes[].criado      quando a medição foi gravada (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.medicoes[].de_valor    a leitura de antes (número, na unidade da leitura)
@@ -1435,43 +1473,47 @@
  *     relogio.medicoes[].inicio      quando foi a leitura de antes (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.medicoes[].lancamento_id
  *                                    o lançamento (a leitura) que fechou a medição
- *     relogio.medicoes[].medida      o gasto do intervalo sozinho, no histórico: uso (o gasto por dia de uso, quando o intervalo teve
- *                                    meio dia de uso ou mais, ou mais dias de uso que fora) ou repouso (o gasto por dia fora do pulso);
- *                                    o gasto que vale sai de todas as medições juntas
- *     relogio.medicoes[].na_media    verdadeiro ou falso: entra na média agora (usada e dentro da janela da Configuração, medicao_janela_dias)
+ *     relogio.medicoes[].medida      o gasto do intervalo sozinho, no histórico: uso (o gasto por dia de uso, quando o intervalo teve meio
+ *                                    dia de uso ou mais, ou mais dias de uso que fora) ou repouso (o gasto por dia fora do pulso); o gasto
+ *                                    que vale sai de todas as medições juntas
+ *     relogio.medicoes[].na_media    verdadeiro ou falso: entra na média agora (usada e dentro da janela da Configuração,
+ *                                    medicao_janela_dias)
  *     relogio.medicoes[].peso_horas  o peso da medição na média: as horas que ela cobriu, no pulso (uso) ou guardado (repouso) (número)
  *     relogio.medicoes[].taxa        o gasto medido, em % por dia de uso (uso) ou por dia guardado (repouso) (número)
- *     relogio.medicoes[].usada       verdadeiro ou falso: a caixa "Atualizar o gasto com esta medição" estava marcada (entra na média); falso: só
- *                                    histórico
+ *     relogio.medicoes[].usada       verdadeiro ou falso: a caixa "Atualizar o gasto com esta medição" estava marcada (entra na média);
+ *                                    falso: só histórico
  *     relogio.no_id                  o grupo (0: na raiz)
  *     relogio.nome                   o nome
  *     relogio.nota                   a nota nos critérios; null: indisponível
  *     relogio.nota.conjunto_texto    de onde vêm os critérios
  *     relogio.nota.nota              a nota, de 0 a 100
  *     relogio.observacao             a observação do cadastro (null)
- *     relogio.previsao               a previsão da energia (só nos relógios com leitura, como o smartwatch): as frases da tela e os mesmos números
+ *     relogio.previsao               a previsão da energia (só nos relógios com leitura, como o smartwatch): as frases da tela e os mesmos
+ *                                    números
  *     relogio.previsao.aplica        verdadeiro ou falso: o relógio tem leitura com valor (senão os outros campos ficam vazios)
  *     relogio.previsao.carga_na_entrada
  *                                    com quanto ele entra nesse dia, em % (número)
  *     relogio.previsao.carregar_antes
  *                                    verdadeiro ou falso: a carga na entrada não basta (é preciso carregar antes)
  *     relogio.previsao.chega_limite_em
- *                                    quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se passa de um ano
- *     relogio.previsao.confianca     a confiança da conta: alta (leitura de até 2 dias e nenhum dado vazio, ou gasto em uso medido), media ou baixa
- *                                    (leitura com mais de 7 dias)
+ *                                    quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se passa
+ *                                    de um ano
+ *     relogio.previsao.confianca     a confiança da conta: alta (leitura de até 2 dias e nenhum dado vazio, ou gasto em uso medido), media
+ *                                    ou baixa (leitura com mais de 7 dias)
  *     relogio.previsao.conta[]       de onde vem cada número da conta: os campos do cadastro usados e o gasto medido pelas leituras
  *     relogio.previsao.conta[].campo o identificador do campo, ou MEDIDO("uso") / MEDIDO("repouso") para o gasto medido
  *     relogio.previsao.conta[].nome  o nome do campo (ou do gasto medido, com quantas medições entraram)
  *     relogio.previsao.conta[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo), vazio (sem valor) ou medido (pelas
- *                                    leituras)
+ *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo), vazio (sem valor) ou medido
+ *                                    (pelas leituras)
  *     relogio.previsao.conta[].unidade
  *                                    a unidade do valor (texto)
  *     relogio.previsao.conta[].valor o valor usado na conta (número; null se vazio)
  *     relogio.previsao.dura_ate      até que dia a carga aguenta se usar a partir de hoje (texto AAAA-MM-DD)
  *     relogio.previsao.dura_dias     quantos dias de uso a carga de agora aguenta (número, dias; a fórmula dias_de_carga)
  *     relogio.previsao.energia       a energia agora, em % (número; null sem leitura)
- *     relogio.previsao.gasto         os dois gastos da bateria lado a lado (as fórmulas taxa_uso e taxa_repouso; null se o relógio não as tem)
+ *     relogio.previsao.gasto         os dois gastos da bateria lado a lado (as fórmulas taxa_uso e taxa_repouso; null se o relógio não as
+ *                                    tem)
  *     relogio.previsao.gasto.conjunta
  *                                    true: os dois gastos saem juntos da conta das medições; false: a média das medições de cada um
  *     relogio.previsao.gasto.janela_dias
@@ -1518,7 +1560,6 @@
  *     relogio.tipos[].mede_gasto     verdadeiro ou falso: a leitura mede o gasto (a caixa aparece)
  *     relogio.tipos[].nome           o nome
  *     relogio.tipos[].unidade        a unidade do valor
- *
  *     relogio.documentos             os documentos do relógio, resumidos (a lista: recurso=documentos&relogio=id)
  *     relogio.documentos.categorias[]
  *                                    as categorias em que ele tem documentos, na ordem
@@ -1538,7 +1579,8 @@
  *     ancoras.<ancora>               cada âncora que as mensagens aceitam ({relogio}, {acao}...) e o que ela vira
  *     canais.<canal>.ajuda           a explicação do canal
  *     canais.<canal>.nome            o nome do canal (Telegram, Google Agenda)
- *     canais.<canal>.tipos           o nome do campo do formulário (acao=salvar) com os tipos que vão pelo canal (alerta_tipos[], agenda_tipos[])
+ *     canais.<canal>.tipos           o nome do campo do formulário (acao=salvar) com os tipos que vão pelo canal (alerta_tipos[],
+ *                                    agenda_tipos[])
  *     chave_agenda                   a chave do Google lida no caminho configurado; null: não lida
  *     mostrar_ate                    quantos dias as listas mostram por página (o "Mostrar até" da Configuração, já com o padrão)
  *     mostrar_ate.proximos           os Próximos dias da página Hoje (proximos_por_pagina; padrão 7)
@@ -1564,7 +1606,8 @@
  *     config.agenda_chave            o caminho da chave JSON da conta de serviço do Google, no servidor
  *     config.agenda_id               o id da agenda do Google
  *     config.agenda_teste_id         o id do evento de teste na agenda (vazio: nenhum)
- *     config.carga_limiar            o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se preenchido, vale no lugar)
+ *     config.carga_limiar            o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se
+ *                                    preenchido, vale no lugar)
  *     config.cron_erro               o erro guardado da última execução com erro (texto; vazio: sem erro)
  *     config.cron_registro           o registro da última rodada com atividade (texto)
  *     config.cron_ultima_execucao    quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
@@ -1576,7 +1619,8 @@
  *     config.horario_manha           a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)
  *     config.horario_noite           a hora da rodada da noite: preparar o relógio de amanhã (HH:MM)
  *     config.max_sem_uso             a garantia de rodízio: nenhum relógio passa desses dias sem uso (0 desliga)
- *     config.medicao_janela_dias     a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a última)
+ *     config.medicao_janela_dias     a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a
+ *                                    última)
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
  *     config.painel_modo             como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela
  *                                    grande por cima da página); vazio: lado
@@ -1594,7 +1638,8 @@
  *     config.migracao_v18            marca de que a migração v18 foi aplicada (1)
  *     config.migracao_v19            marca de que a migração v19 foi aplicada (1)
  *     config.migracao_v20            marca de que a migração v20 foi aplicada (1)
- *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso); 0: só pelo Tirou
+ *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso);
+ *                                    0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
  *     config.sol_limiar              no solar, a carga (%) em que ele deve ir para o sol
@@ -1649,7 +1694,6 @@
  *     tipos[].nome                   o nome
  *     tipos[].quando                 manhã ou noite
  *     tipos[].tipo                   o tipo (dia, vespera, identificador, ev<id>)
- *
  *   recurso=cron
  *     execucoes[]                    as execuções do cron guardadas (sem atividade: 7 dias; com atividade ou erro: 1 ano), da mais recente
  *     execucoes[].duracao_ms         quanto durou, em milissegundos (número inteiro)
@@ -1672,7 +1716,6 @@
  *     resumo.total                   quantas execuções no período
  *     total                          quantas passaram nos filtros
  *     ultima                         quando o cron rodou pela última vez
- *
  *   recurso=arvore
  *     grupos[]                       os grupos em ordem de árvore
  *     grupos[].cadeia[]              os ids do grupo e dos de cima
@@ -1689,7 +1732,6 @@
  *     relogios[].id                  o número
  *     relogios[].no_id               o grupo (0: raiz)
  *     relogios[].nome                o nome
- *
  *   recurso=cadastros
  *     avisos[]                       os avisos cadastrados (cada identificador pode ter uma versão por grupo)
  *     avisos[].agenda                a data na agenda: janela (só dentro da antecedência da agenda) ou sempre
@@ -1697,8 +1739,8 @@
  *                                    manhã
  *     avisos[].antecedencia_dias     com quantos dias antes ele entra "em breve" (número)
  *     avisos[].ativo                 o aviso vale
- *     avisos[].condicao              vale quando: uma fórmula que diz para quais relógios do grupo o aviso vale (1 vale, 0 não; ex.: corda_manual = 0,
- *                                    só o automático sem corda); null: vale para todos
+ *     avisos[].condicao              vale quando: uma fórmula que diz para quais relógios do grupo o aviso vale (1 vale, 0 não; ex.:
+ *                                    corda_manual = 0, só o automático sem corda); null: vale para todos
  *     avisos[].escala                na escala inteligente: nao, uso ou sempre
  *     avisos[].expressao             a fórmula da data prevista
  *     avisos[].id                    o número da versão
@@ -1734,8 +1776,8 @@
  *     grupos[].caminho               o caminho
  *     grupos[].id                    o número
  *     lancamento_tipos[]             os tipos de lançamento: o que se registra num relógio
- *     lancamento_tipos[].condicao    vale quando: uma fórmula que diz para quais relógios do grupo o tipo vale (1 vale, 0 não; ex.: corda_manual, só
- *                                    quem aceita corda); null: vale para todos
+ *     lancamento_tipos[].condicao    vale quando: uma fórmula que diz para quais relógios do grupo o tipo vale (1 vale, 0 não; ex.:
+ *                                    corda_manual, só quem aceita corda); null: vale para todos
  *     lancamento_tipos[].exclusiva   a sessão é exclusiva: o relógio fica num lugar só (abrir fecha a outra exclusiva)
  *     lancamento_tipos[].fecha_as    sessão esquecida aberta fecha sozinha a essa hora do dia em que começou (HH:MM; null: não fecha)
  *     lancamento_tipos[].formato     instantaneo (uma marcação: corda), valor (uma leitura: carga) ou sessao (com início e fim: pulso, sol)
@@ -1771,7 +1813,6 @@
  *     relogios[].id                  o número
  *     relogios[].nome                o nome
  *     tipos_de_campo.<tipo_de_campo> cada tipo de campo e o nome
- *
  *     documento_categorias[]         as categorias dos documentos, na ordem
  *     documento_categorias[].aceita[]
  *                                    os tipos de arquivo que ela aceita (imagem, video, audio, pdf, xml); lista vazia: qualquer arquivo
@@ -1789,18 +1830,18 @@
  *     resultados[].relogio           o nome
  *     resultados[].relogio_id        o relógio
  *     resultados[].valor             o resultado (número ou texto; null: vazio)
- *
  *   recurso=avisos
  *     avisos[]                       os avisos de todos os relógios agora, do mais urgente ao mais distante
- *     avisos[].agenda                a data na agenda: janela (só dentro da antecedência da agenda) ou sempre (qualquer data); se vai pela agenda é a
- *                                    Configuração
+ *     avisos[].agenda                a data na agenda: janela (só dentro da antecedência da agenda) ou sempre (qualquer data); se vai pela
+ *                                    agenda é a Configuração
  *     avisos[].na_hora               verdadeiro: o aviso vai pelo Telegram no minuto em que vence (uma vez), além do alerta da manhã
  *     avisos[].data                  a data prevista, pela fórmula do aviso (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     avisos[].disponivel            verdadeiro ou falso: o relógio entra no rodízio
  *     avisos[].escala                na escala inteligente: nao, uso (conferido no relógio do dia) ou sempre (também nos guardados)
  *     avisos[].estado                atrasado (a data passou), em_breve (dentro da antecedência) ou ok
  *     avisos[].falta_dias            quanto falta para a data prevista, em dias (número; negativo: já passou)
- *     avisos[].identificador         o aviso (corda, carregar, sol, pilha, revisao, garantia, carga_baixa, leitura, ou um que você cadastrou)
+ *     avisos[].identificador         o aviso (corda, carregar, sol, pilha, revisao, garantia, carga_baixa, leitura, ou um que você
+ *                                    cadastrou)
  *     avisos[].modelo                o texto do cadastro, sem trocar as âncoras (só o {limite})
  *     avisos[].nome                  o nome do aviso ("Dar corda") — a âncora {acao}
  *     avisos[].relogio               o nome
@@ -1810,7 +1851,6 @@
  *     avisos[].simula_valor          o valor do lançamento que a escala simula para resolver o aviso (leitura) (número; null: nenhum)
  *     avisos[].texto                 o motivo por extenso, com {relogio}, {data}, {quando} e {limite} trocados — a âncora {motivo}
  *     avisos[].versao                o lugar da árvore da versão do aviso usada (texto)
- *
  *   recurso=criterios
  *     conjuntos[]                    os conjuntos de critérios, um por lugar que tem critérios próprios
  *     conjuntos[].escopo             o lugar: "" (todos os relógios), g:<grupo> ou r:<relógio>
@@ -1863,8 +1903,8 @@
  *     modos[].ativo                  verdadeiro ou falso: é o modo em uso
  *     modos[].escala                 verdadeiro ou falso: o modo é escala inteligente (escolhe sempre pela maior nota)
  *     modos[].nome                   o nome do modo
- *     modos[].selecao                a forma de escolha: inteligente (a maior nota), ponderado (sorteio pela nota), aleatorio ou fifo (o mais tempo sem
- *                                    uso)
+ *     modos[].selecao                a forma de escolha: inteligente (a maior nota), ponderado (sorteio pela nota), aleatorio ou fifo (o
+ *                                    mais tempo sem uso)
  *     notas[]                        a nota de cada relógio agora, com a conta
  *     notas[].conjunto               o lugar dos critérios usados: "" (todos), g:<grupo> ou r:<relógio>; null: nenhum (nota neutra, 50)
  *     notas[].conjunto_texto         esse lugar por extenso
@@ -1872,7 +1912,8 @@
  *     notas[].conta[].faixa          a faixa em que o valor caiu ("30 a 50", ou a categoria)
  *     notas[].conta[].nota           a nota da faixa, de 0 a 100 (número)
  *     notas[].conta[].parametro      o nome do parâmetro
- *     notas[].conta[].peso_efetivo   o peso no conjunto: peso do subparâmetro × peso do parâmetro, reescalado sem os que não se aplicam, em % (número)
+ *     notas[].conta[].peso_efetivo   o peso no conjunto: peso do subparâmetro × peso do parâmetro, reescalado sem os que não se aplicam, em
+ *                                    % (número)
  *     notas[].conta[].pontos         nota × peso efetivo ÷ 100 (número): quanto somou na nota
  *     notas[].conta[].subparametro   o nome do subparâmetro
  *     notas[].conta[].valor          o valor medido (número, ou o texto de uma lista)
@@ -1883,11 +1924,11 @@
  *     notas[].relogio                o nome do relógio
  *     notas[].relogio_id             o relógio
  *     variaveis.<variavel>           o que um subparâmetro pode medir: cada campo (menos texto) e cada fórmula, pelo identificador
- *     variaveis.<variavel>.max       o limite da medida (a última faixa vai até ele ou sem limite): o que o nome diz em "(0 a N)"; null: sem limite
+ *     variaveis.<variavel>.max       o limite da medida (a última faixa vai até ele ou sem limite): o que o nome diz em "(0 a N)"; null:
+ *                                    sem limite
  *     variaveis.<variavel>.nome      o nome (com a unidade)
  *     variaveis.<variavel>.tipo      numero ou categoria (campo de lista)
  *     variaveis.<variavel>.valores[] as categorias possíveis (campo de lista); vazio nos números
- *
  *   recurso=historico
  *     estados.<estado>               cada estado possível da linha do tempo e o nome dele
  *     filtro.ate                     o fim pedido (null)
@@ -1905,19 +1946,20 @@
  *     lancamentos[].relogio_id       o relógio
  *     lancamentos[].tipo             o tipo
  *     lancamentos[].valor            o valor (null)
- *     linhas[]                       os trechos da linha do tempo do relógio, do mais recente para o mais antigo: cada trecho é um período contínuo num
- *                                    estado, ou uma marcação (um lançamento instantâneo)
+ *     linhas[]                       os trechos da linha do tempo do relógio, do mais recente para o mais antigo: cada trecho é um período
+ *                                    contínuo num estado, ou uma marcação (um lançamento instantâneo)
  *     linhas[].duracao               a mesma duração por extenso ("2d 3h", "40min"); null numa marcação
  *     linhas[].duracao_seg           quanto o trecho durou, número inteiro, em segundos; null numa marcação
  *     linhas[].em_andamento          verdadeiro ou falso: o trecho ainda não terminou (o fim é o momento da consulta)
- *     linhas[].estado                o estado do trecho: rodizio (no pulso pelo rodízio), pulso (no pulso fora do rodízio), o identificador de um tipo
- *                                    de sessão (winder, sol...), repouso (parado) ou marca (uma marcação)
+ *     linhas[].estado                o estado do trecho: rodizio (no pulso pelo rodízio), pulso (no pulso fora do rodízio), o identificador
+ *                                    de um tipo de sessão (winder, sol...), repouso (parado) ou marca (uma marcação)
  *     linhas[].fim                   quando o trecho terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null numa marcação
  *     linhas[].inicio                quando o trecho começou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     linhas[].relogio               o nome
  *     linhas[].relogio_id            o relógio
  *     linhas[].texto                 o trecho por extenso, como a tela mostra ("em uso", "no sol", "Leitura de carga 80%")
- *     linhas[].tipo                  o identificador do tipo de lançamento que originou o trecho (pulso, sol, corda, carga...); null no repouso
+ *     linhas[].tipo                  o identificador do tipo de lançamento que originou o trecho (pulso, sol, corda, carga...); null no
+ *                                    repouso
  *     pagina                         a página
  *     paginas                        quantas páginas
  *     por_pagina                     quantas por página
@@ -1935,26 +1977,27 @@
  *                                    por extenso
  *     resumo.<relogio_id>.tipo       o grupo
  *     total                          quantas linhas passaram nos filtros
- *
  *   recurso=previsao
  *     previsoes[]                    a previsão de cada relógio com leitura
  *     previsoes[].aplica             verdadeiro ou falso: o relógio tem leitura com valor (senão os outros campos ficam vazios)
  *     previsoes[].carga_na_entrada   com quanto ele entra nesse dia, em % (número)
  *     previsoes[].carregar_antes     verdadeiro ou falso: a carga na entrada não basta (é preciso carregar antes)
- *     previsoes[].chega_limite_em    quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se passa de um ano
- *     previsoes[].confianca          a confiança da conta: alta (leitura de até 2 dias e nenhum dado vazio, ou gasto em uso medido), media ou baixa
- *                                    (leitura com mais de 7 dias)
+ *     previsoes[].chega_limite_em    quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se passa
+ *                                    de um ano
+ *     previsoes[].confianca          a confiança da conta: alta (leitura de até 2 dias e nenhum dado vazio, ou gasto em uso medido), media
+ *                                    ou baixa (leitura com mais de 7 dias)
  *     previsoes[].conta[]            de onde vem cada número da conta: os campos do cadastro usados e o gasto medido pelas leituras
  *     previsoes[].conta[].campo      o identificador do campo, ou MEDIDO("uso") / MEDIDO("repouso") para o gasto medido
  *     previsoes[].conta[].nome       o nome do campo (ou do gasto medido, com quantas medições entraram)
- *     previsoes[].conta[].origem     de onde veio: informado (no cadastro do relógio), padrão (o do campo), vazio (sem valor) ou medido (pelas
- *                                    leituras)
+ *     previsoes[].conta[].origem     de onde veio: informado (no cadastro do relógio), padrão (o do campo), vazio (sem valor) ou medido
+ *                                    (pelas leituras)
  *     previsoes[].conta[].unidade    a unidade do valor (texto)
  *     previsoes[].conta[].valor      o valor usado na conta (número; null se vazio)
  *     previsoes[].dura_ate           até que dia a carga aguenta se usar a partir de hoje (texto AAAA-MM-DD)
  *     previsoes[].dura_dias          quantos dias de uso a carga de agora aguenta (número, dias; a fórmula dias_de_carga)
  *     previsoes[].energia            a energia agora, em % (número; null sem leitura)
- *     previsoes[].gasto              os dois gastos da bateria lado a lado (as fórmulas taxa_uso e taxa_repouso; null se o relógio não as tem)
+ *     previsoes[].gasto              os dois gastos da bateria lado a lado (as fórmulas taxa_uso e taxa_repouso; null se o relógio não as
+ *                                    tem)
  *     previsoes[].gasto.conjunta     true: os dois gastos saem juntos da conta das medições; false: a média das medições de cada um
  *     previsoes[].gasto.janela_dias  a janela do gasto medido (medicao_janela_dias da Configuração), em dias (número)
  *     previsoes[].gasto.medicoes     quantas medições há na janela (número)
@@ -1979,9 +2022,15 @@
  *     previsoes[].proxima_entrada    o próximo dia em que o relógio entra no rodízio (texto AAAA-MM-DD); null se não está no plano
  *     previsoes[].relogio            o nome
  *     previsoes[].relogio_id         o relógio
- *
  *   recurso=plano
  *     escala_fim                     até que dia vai a escala (null fora da escala)
+ *     modo                           o nome do modo em uso
+ *     plano[]                        o plano gravado: o relógio de cada dia
+ *     plano[].acao                   o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nada
+ *     plano[].bloco                  o nome desse bloco
+ *     plano[].bloco_id               o bloco do modo que escolheu o dia; null: escala ou manual
+ *     plano[].criado                 quando o dia foi gravado no plano (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     plano[].data                   o dia (texto AAAA-MM-DD)
  *     hoje                           hoje (texto AAAA-MM-DD)
  *     livres[]                       os dias livres do período (texto AAAA-MM-DD): sem relógio e sem sorteio, para escolher à mão (o
  *                                    "Deixar o período livre"); a página Plano os põe entre os dias do plano
@@ -2004,14 +2053,8 @@
  *     dia_a_dia.dias[].origem        sorteio, manual (escolhido à mão) ou livre (dia livre: sem relógio e sem sorteio, para escolher à mão)
  *     dia_a_dia.dias[].acao          o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nenhum
  *     dia_a_dia.dias[].motivo        por que o relógio está no dia; null: nenhum
- *     modo                           o nome do modo em uso
- *     plano[]                        o plano gravado: o relógio de cada dia
- *     plano[].acao                   o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nada
- *     plano[].bloco                  o nome desse bloco
- *     plano[].bloco_id               o bloco do modo que escolheu o dia; null: escala ou manual
- *     plano[].criado                 quando o dia foi gravado no plano (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
- *     plano[].data                   o dia (texto AAAA-MM-DD)
- *     plano[].motivo                 por que este relógio saiu neste dia, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à mão); null: o dia foi gravado antes de o sistema guardar o motivo
+ *     plano[].motivo                 por que este relógio saiu neste dia, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à
+ *                                    mão); null: o dia foi gravado antes de o sistema guardar o motivo
  *     plano[].origem                 sorteio (pelo modo) ou manual (escolhido à mão: "Usando hoje" ou trocar_dia)
  *     plano[].relogio                o nome dele
  *     plano[].relogio_id             o relógio do dia
@@ -2034,7 +2077,6 @@
  *     relogios[].disponivel          verdadeiro ou falso: entra no rodízio (só o disponível pode ser escolhido para um dia)
  *     relogios[].id                  o número do relógio
  *     relogios[].nome                o nome
- *
  *   recurso=proximos
  *     por_pagina                     quantos dias vêm por página (o "Mostrar até" da Configuração, ou o por_pagina pedido)
  *     pagina                         a página que veio (1: a primeira)
@@ -2051,7 +2093,6 @@
  *     dias[].origem                  sorteio, manual (escolhido à mão) ou livre (dia livre: sem relógio e sem sorteio, para escolher à mão)
  *     dias[].acao                    o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nenhum
  *     dias[].motivo                  por que o relógio está no dia; null: nenhum
- *
  *   recurso=rodizio_manual
  *     de                             o primeiro dia do período (AAAA-MM-DD)
  *     ate                            o último dia do período (AAAA-MM-DD)
@@ -2078,7 +2119,6 @@
  *     decida_por_mim                 o critério do Decida por mim, em texto: a nota dos critérios recalculada dia a dia com os dias
  *                                    anteriores do período contados como uso, a garantia de rodízio na frente, sem o relógio de ontem nem o
  *                                    de amanhã (se houver outro), empate pelo cadastrado primeiro; decidido ao gravar
- *
  *   recurso=eventos
  *     eventos[]                      os eventos personalizados (avisos seus, com horário e repetição próprios)
  *     eventos[].agenda               verdadeiro ou falso: o evento vai para o Google Agenda
@@ -2101,21 +2141,22 @@
  *     eventos[].relogio_id           o relógio do evento (as âncoras dele funcionam na mensagem); null: evento geral
  *     eventos[].repeticao            quando dispara: uma (uma vez só), diaria, semanal, mensal ou intervalo (a cada N dias)
  *     eventos[].telegram             verdadeiro ou falso: o evento vai pelo Telegram (marcado em "O que vai para onde")
- *
  *   recurso=agenda
  *     agenda_id                      o id da agenda
  *     ativa                          verdadeiro ou falso: a agenda está ligada
  *     chave_ok                       verdadeiro ou falso: a chave do Google foi lida e o Google aceitou
  *     criados[]                      os eventos que o sistema criou no Google Agenda
- *     criados[].assinatura           a marca do título e da descrição com que foi criado (mudou: o evento é atualizado na próxima sincronização)
+ *     criados[].assinatura           a marca do título e da descrição com que foi criado (mudou: o evento é atualizado na próxima
+ *                                    sincronização)
  *     criados[].chave                a identificação do evento (a mesma dos desejados)
  *     criados[].criado               quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     criados[].data                 o dia do evento (texto AAAA-MM-DD)
  *     criados[].google_id            o id do evento no Google
  *     criados[].titulo               o título com que foi criado
- *     desejados[]                    o que tem de estar no Google Agenda agora: os avisos marcados para a agenda, o relógio do dia, a véspera e os
- *                                    eventos
- *     desejados[].chave              a identificação do evento na agenda (a mesma enquanto nada mudar; é o que o sistema usa para atualizar ou remover)
+ *     desejados[]                    o que tem de estar no Google Agenda agora: os avisos marcados para a agenda, o relógio do dia, a
+ *                                    véspera e os eventos
+ *     desejados[].chave              a identificação do evento na agenda (a mesma enquanto nada mudar; é o que o sistema usa para atualizar
+ *                                    ou remover)
  *     desejados[].data               o dia do evento na agenda (texto AAAA-MM-DD)
  *     desejados[].descricao          a descrição do evento, montada pela mensagem do canal da agenda
  *     desejados[].fazer              a ação ("Dar corda", "Usar hoje", o nome do evento) — a âncora {acao}
@@ -2127,7 +2168,6 @@
  *     desejados[].tipo               o tipo: dia, vespera, o identificador do aviso, ou ev<id> (evento personalizado)
  *     desejados[].titulo             o título do evento, montado pela mensagem do canal da agenda
  *     janela_dias                    a antecedência da agenda, em dias
- *
  *   recurso=usuarios
  *     usuarios[]                     quem acessa
  *     usuarios[].criado              quando foi criado
@@ -2140,7 +2180,6 @@
  *                                    Levado para outro sistema que confira por bcrypt, o usuário entra lá com a mesma senha; e volta para
  *                                    cá por usuarios/salvar com senha_hash
  *     voce                           o login de quem pediu (pelo site; vazio pelo token)
- *
  *   recurso=migracoes
  *     pendentes[]                    as migrações do banco que faltam aplicar (vazio: em dia)
  *     pendentes[].arquivo            o arquivo .sql
@@ -2170,7 +2209,6 @@
  *     por                            como o pedido entrou: login (o do site, HTTP Basic) ou token
  *     usuario                        o login de quem entrou (null pelo token)
  *     volta                          a página para onde ele foi mandado (302), ou null
- *
  *   recurso=documentos
  *     relogio                        o relógio pedido: {id, nome, copia_banco}; null: os documentos de todos
  *     relogio.id                     o número do relógio
@@ -2208,8 +2246,7 @@
  *     documentos[].nome              o nome do arquivo enviado
  *     documentos[].no_disco          verdadeiro: o arquivo está na pasta dos documentos (falso: ele volta do banco quando for pedido ou na
  *                                    próxima rodada do cron; sem a cópia no banco, está perdido)
- *     documentos[].no_banco          verdadeiro: a cópia de segurança do arquivo está completa no banco (se ele sumir da pasta, volta
- *                                    dali)
+ *     documentos[].no_banco          verdadeiro: a cópia de segurança do arquivo está completa no banco (se ele sumir da pasta, volta dali)
  *     documentos[].copia_banco       verdadeiro: o próprio arquivo pede a cópia no banco (o terceiro nível; o relógio e o config.php, se
  *                                    pedem, valem por cima)
  *     documentos[].copia_por         quem pede a cópia no banco: sistema (o DOCUMENTOS_COPIA_BANCO = true do config.php), relogio (a marca
@@ -2324,7 +2361,8 @@
  *     codigo.nao_mostrados[].o_que_ver
  *                                    onde está o que a reescrita precisa saber dele
  *     modelo_de_dados                o modelo de dados, lido do próprio banco em uso (o que vale agora, depois de todas as migrações)
- *     modelo_de_dados.banco          o banco de onde o modelo foi lido: mysql, pgsql, sqlite ou firebird (os tipos das colunas vêm no dialeto dele)
+ *     modelo_de_dados.banco          o banco de onde o modelo foi lido: mysql, pgsql, sqlite ou firebird (os tipos das colunas vêm no
+ *                                    dialeto dele)
  *     modelo_de_dados.como_ler       como ler as tabelas, e as três referências que ficam pelo nome, de propósito
  *     modelo_de_dados.tabelas[]      cada tabela, em ordem alfabética
  *     modelo_de_dados.tabelas[].tabela
@@ -2408,7 +2446,8 @@
  *     listas.config_php[].constante  o nome (ou os nomes) da constante
  *     listas.config_php[].descricao  para que ela serve
  *   recurso=backup
- *     pasta_ok                       verdadeiro: a pasta das cópias (BACKUP_PASTA do config.php) existe, aceita gravar e fica fora da pasta publicada
+ *     pasta_ok                       verdadeiro: a pasta das cópias (BACKUP_PASTA do config.php) existe, aceita gravar e fica fora da pasta
+ *                                    publicada
  *     pasta_erro                     por que a pasta não serve (sem BACKUP_PASTA, não existe, sem permissão de escrita, ou dentro da pasta
  *                                    publicada); null: serve
  *     manter                         quantas cópias ficam na pasta (BACKUP_MANTER; padrão 7): a cada cópia nova, as mais velhas que passam
@@ -3824,7 +3863,7 @@ if (!$token_ok && $quem === "") {
             ],
         ],
         "campos" => [
-            "como_ler" => "[] no caminho: uma lista (o campo é de cada item); <...>: uma chave que varia. Datas e horas no fuso do sistema (o FUSO do config.php; sem ele, o do PHP, date.timezone); null: sem valor. Números de tempo em segundos são inteiros.",
+            "como_ler" => "[] no caminho: uma lista (o campo é de cada item); <...>: uma chave que varia (o identificador de um campo, um estado, uma função...). Datas e horas no fuso do sistema (o FUSO do config.php; sem ele, o do PHP, date.timezone); null: sem valor. Números de tempo em segundos são inteiros.",
             "api.php (sem recurso)" => [
                 "agenda.criados[]" => "os eventos que o sistema criou no Google Agenda",
                 "agenda.criados[].assinatura" => "a marca do título e da descrição com que foi criado (mudou: o evento é atualizado na próxima sincronização)",
@@ -4438,7 +4477,7 @@ if (!$token_ok && $quem === "") {
                 "relogio.estado_texto" => "o estado como a tela mostra: \"Em uso\", o nome da sessão aberta (\"No sol\", \"No carregador\"; duas juntas: \"No sol · No winder\") ou \"Em repouso\"",
                 "relogio.escala_fim" => "até que dia vai a escala (null fora da escala)",
                 "relogio.foto" => "a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto",
-                "relogio.dica_foto" => "a dica da foto no painel (aparece com o mouse parado em cima dela), em linhas: o nome, o grupo e o código; o estado e a carga; a nota e o próximo dia no rodízio (ou indisponível); a compra (data e valor); e a frase do duplo clique (Duplo clique, ou Abrir foto embaixo: a foto em tamanho grande)",
+                "relogio.dica_foto" => "a dica da foto no painel (aparece com o mouse parado em cima dela), em linhas: o nome, o grupo e o código; o estado e a carga; a nota e o próximo dia no rodízio (ou indisponível); a compra (data e valor); e a frase: Duplo clique (ou \"Abrir foto\", embaixo): a foto em tamanho grande.",
                 "relogio.id" => "o número (código)",
                 "relogio.leituras[]" => "as 40 últimas leituras com valor (o gráfico)",
                 "relogio.leituras[].em_uso" => "verdadeiro ou falso: a leitura foi feita com o relógio no pulso",

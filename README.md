@@ -1005,7 +1005,8 @@ Os campos aninhados funcionam com ponto, como `formulas.energia.valor`, `campos.
 comparados sem diferenciar maiúsculas e acentos.
 
 📖 **A documentação completa** (cada consulta, cada escrita com exemplo e o dicionário de todos os campos das respostas) está no
-cabeçalho do [`api.php`](api.php) e na própria API: `api.php?recurso=ajuda`.
+cabeçalho do [`api.php`](api.php) e na própria API: `api.php?recurso=ajuda`. O dicionário tem uma fonte só, o da ajuda; o do
+cabeçalho é gerado dele (`php testes/dicionario.php --gravar`).
 
 ---
 
@@ -1481,10 +1482,14 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
    conhecimento sobre relógios vai para o cadastro (`schema.sql`), não para o código.
 4. Mudou o banco? Crie uma `migracao_vN.sql` e registre em `$MIGRACOES` no `lib.php`: a estrutura no dialeto do MySQL, os
    dados em SQL comum aos quatro bancos (veja [Atualizações do banco](#atualizações-do-banco)).
-5. **Rode o teste de paridade** ([`testes/`](testes/)) nos quatro bancos antes de mandar: `testes/paridade.sh`, com os
-   bancos no ar, tem de terminar com `Tudo igual.` Mexeu nas telas? Rode também a conferência do layout
+5. Mudou a API? **Explique cada campo novo** no dicionário da ajuda: o `"campos"` do `recurso=ajuda`, no `api.php` (a seção do
+   recurso, com o caminho do campo como chave). Ele é a fonte única: o dicionário do cabeçalho do `api.php` é gerado dele, com
+   `php testes/dicionario.php --gravar` (não escreva no cabeçalho à mão).
+6. **Rode o teste de paridade** ([`testes/`](testes/)) nos quatro bancos antes de mandar: `testes/paridade.sh`, com os
+   bancos no ar, tem de terminar com `Tudo igual.` Ele confere também a documentação: o cabeçalho é o que a ajuda gera, e
+   todo campo das respostas está explicado. Mexeu nas telas? Rode também a conferência do layout
    (`testes/paridade.sh --layout sqlite`): `0 problemas`.
-6. Abra o pull request contando o que muda para quem usa e como você testou.
+7. Abra o pull request contando o que muda para quem usa e como você testou.
 
 ---
 
