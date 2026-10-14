@@ -102,9 +102,22 @@ flowchart LR
 
 ### O motor de fórmulas
 
-As fórmulas são escritas como numa planilha, com `;` separando os argumentos. Além do básico (`SE`, `E`, `OU`, `MIN`, `MAX`,
-`LIMITA`, `ARREDONDA`, `PADRAO`, `VAZIO`, `HOJE`, `AGORA`, `DIAS_ATE`, `SOMA_MESES`...), o motor tem funções que leem o
-histórico de cada relógio:
+As fórmulas são escritas como numa planilha: números com vírgula ou ponto, textos entre aspas, `;` separando os argumentos,
+as operações `+ - * / ^` e as comparações `= <> < <= > >=` (que dão 1 ou 0). Um valor vazio se propaga pela conta, e a divisão
+por zero dá vazio. O básico:
+
+| Função | O que devolve |
+|---|---|
+| `SE(condição; se verdadeira; se falsa)`, `E(...)`, `OU(...)`, `NAO(x)` | a lógica: `E` dá 1 se todas são verdadeiras, `OU` se alguma é, `NAO` inverte |
+| `MIN(...)`, `MAX(...)` | o menor e o maior dos valores (ignoram os vazios) |
+| `LIMITA(x; mín; máx)`, `ARREDONDA(x; casas)`, `ABS(x)` | x preso na faixa; arredondado; sem sinal |
+| `PADRAO(x; outro)`, `VAZIO(x)`, `NADA()` | x, ou o outro se x estiver vazio; 1 se x está vazio; o vazio, de propósito (`SE(condição; NADA(); conta)`) |
+| `HOJE()`, `AGORA()` | a data de hoje e o instante de agora, em dias (o agora com a fração do dia) |
+| `DIAS_DESDE(data)`, `DIAS_ATE(data)`, `SOMA_MESES(data; meses)` | dias desde e até uma data (negativo: já passou); a data somada de meses, pelo calendário |
+| `HORAS_USO()` | as horas de um dia de uso, pelo horário de uso da Configuração (das 7h às 22h: 15) |
+| `CONFIG("chave")` | um número da Configuração, como `CONFIG("sol_limiar")` |
+
+E as que leem o histórico de cada relógio:
 
 | Função | O que devolve |
 |---|---|
@@ -115,8 +128,8 @@ histórico de cada relógio:
 | `HORAS_APOS("pulso"; "carga")` | horas no pulso desde a última leitura de carga |
 | `ACUMULA(início; máx; perda/h; "tipo"; efeito; ...)` | um saldo que percorre o histórico: perde com o tempo e ganha com cada lançamento |
 | `MEDIDO("uso")` / `MEDIDO("repouso")` | o gasto real de bateria, medido pelas suas leituras de carga |
+| `EM_SESSAO("winder")` | 1 se a sessão está aberta agora (o relógio está no winder) |
 | `MEDIA_COLECAO("uso_30d")` | a média de uma variável na coleção inteira |
-| `CONFIG("sol_limiar")` | um número da Configuração |
 
 Na página **Cadastros** toda fórmula tem o botão **Testar em todos os relógios**, que mostra o resultado em cada relógio antes
 de gravar.
@@ -135,6 +148,71 @@ Os critérios que vêm prontos, para todos os relógios:
 Cada grupo, e até cada relógio, pode ter o seu próprio conjunto. O smartwatch, por exemplo, também pesa a **energia** (a carga
 agora e quantos dias ela aguenta), para não sortear um relógio que vai morrer ao meio-dia. A página **Critérios** mostra a
 conta inteira de cada nota: cada faixa, cada peso e cada ponto.
+
+Os conjuntos que vêm prontos, completos. A nota de um parâmetro é a média das notas dos subparâmetros, pelo peso de cada um; a
+nota do relógio é a média dos parâmetros, pelo peso. Cada subparâmetro lê uma variável (um campo ou uma fórmula) e dá a nota
+pela faixa em que o valor cai; o subparâmetro sem valor (um campo vazio, um valor fora de toda faixa) fica de fora, e os outros
+dividem o peso dele. Tudo se edita na página **Critérios**, e **Restaurar os critérios iniciais** volta a estes.
+
+**Todos os relógios**
+
+| Parâmetro | Peso | Subparâmetro (a variável, o peso dentro do parâmetro) | As faixas: o valor → a nota |
+|---|---:|---|---|
+| Tempo sem uso | 40 | Dias sem uso (`dias_sem_uso`) | 0 a 1 → 0; 1 a 3 → 30; 3 a 7 → 60; 7 a 14 → 80; 14 a 30 → 95; 30 ou mais → 100 |
+| Equilíbrio de uso | 30 | Uso nos últimos 30 dias, comparado com a média (`uso_vs_media`) | 0 a 25 → 100; 25 a 60 → 80; 60 a 100 → 60; 100 a 140 → 35; 140 a 200 → 15; 200 ou mais → 0 |
+| Preferência | 20 | Sua nota para o relógio (`preferencia`) | 0 a 20 → 0; 20 a 40 → 25; 40 a 60 → 50; 60 a 80 → 75; 80 a 100 → 100 |
+| Novidade e valor | 10 | Novidade: dias desde a compra (`dias_desde_compra`, 60) | 0 a 15 → 100; 15 a 45 → 80; 45 a 120 → 55; 120 a 365 → 40; 365 ou mais → 30 |
+|  |  | Aproveitar o investimento: valor pago (`valor_compra`, 40) | 0 a 300 → 30; 300 a 800 → 50; 800 a 1500 → 70; 1500 ou mais → 90 |
+
+**Smartwatch**
+
+| Parâmetro | Peso | Subparâmetro (a variável, o peso dentro do parâmetro) | As faixas: o valor → a nota |
+|---|---:|---|---|
+| Energia | 30 | Carga agora (%) (`energia`, 50) | 0 a 15 → 0; 15 a 30 → 25; 30 a 50 → 55; 50 a 80 → 85; 80 a 100 → 100 |
+|  |  | Dias de uso que a carga aguenta (`dias_de_carga`, 50) | 0 a 1 → 0; 1 a 2 → 30; 2 a 4 → 60; 4 a 7 → 85; 7 ou mais → 100 |
+| Autonomia | 15 | Autonomia do smartwatch (`autonomia_dias`) | 0 a 2 → 10; 2 a 4 → 40; 4 a 7 → 70; 7 a 14 → 90; 14 ou mais → 100 |
+| Tempo sem uso | 25 | Dias sem uso (`dias_sem_uso`) | 0 a 1 → 0; 1 a 3 → 30; 3 a 7 → 60; 7 a 14 → 80; 14 a 30 → 95; 30 ou mais → 100 |
+| Equilíbrio de uso | 15 | Uso nos últimos 30 dias, comparado com a média (`uso_vs_media`) | 0 a 25 → 100; 25 a 60 → 80; 60 a 100 → 60; 100 a 140 → 35; 140 a 200 → 15; 200 ou mais → 0 |
+| Preferência | 10 | Sua nota para o relógio (`preferencia`) | 0 a 20 → 0; 20 a 40 → 25; 40 a 60 → 50; 60 a 80 → 75; 80 a 100 → 100 |
+| Novidade e valor | 5 | Novidade: dias desde a compra (`dias_desde_compra`, 60) | 0 a 15 → 100; 15 a 45 → 80; 45 a 120 → 55; 120 a 365 → 40; 365 ou mais → 30 |
+|  |  | Aproveitar o investimento: valor pago (`valor_compra`, 40) | 0 a 300 → 30; 300 a 800 → 50; 800 a 1500 → 70; 1500 ou mais → 90 |
+
+**Tradicional › Mecânico**
+
+| Parâmetro | Peso | Subparâmetro (a variável, o peso dentro do parâmetro) | As faixas: o valor → a nota |
+|---|---:|---|---|
+| Reserva de marcha | 25 | Reserva agora (%): vazia, precisa rodar (`energia`) | 0 a 10 → 100; 10 a 30 → 85; 30 a 60 → 60; 60 a 90 → 35; 90 a 100 → 20 |
+| Cuidado mecânico | 15 | Parado precisa rodar (lubrificação) (`dias_sem_uso`, 50) | 0 a 7 → 20; 7 a 30 → 60; 30 a 90 → 90; 90 ou mais → 100 |
+|  |  | Revisão em dia (`dias_ate_revisao`, 50) | 0 a 30 → 20; 30 a 180 → 60; 180 ou mais → 100 |
+| Tempo sem uso | 25 | Dias sem uso (`dias_sem_uso`) | 0 a 1 → 0; 1 a 3 → 30; 3 a 7 → 60; 7 a 14 → 80; 14 a 30 → 95; 30 ou mais → 100 |
+| Equilíbrio de uso | 20 | Uso nos últimos 30 dias, comparado com a média (`uso_vs_media`) | 0 a 25 → 100; 25 a 60 → 80; 60 a 100 → 60; 100 a 140 → 35; 140 a 200 → 15; 200 ou mais → 0 |
+| Preferência | 10 | Sua nota para o relógio (`preferencia`) | 0 a 20 → 0; 20 a 40 → 25; 40 a 60 → 50; 60 a 80 → 75; 80 a 100 → 100 |
+| Novidade e valor | 5 | Novidade: dias desde a compra (`dias_desde_compra`, 60) | 0 a 15 → 100; 15 a 45 → 80; 45 a 120 → 55; 120 a 365 → 40; 365 ou mais → 30 |
+|  |  | Aproveitar o investimento: valor pago (`valor_compra`, 40) | 0 a 300 → 30; 300 a 800 → 50; 800 a 1500 → 70; 1500 ou mais → 90 |
+
+**Tradicional › Quartzo › Pilha**
+
+| Parâmetro | Peso | Subparâmetro (a variável, o peso dentro do parâmetro) | As faixas: o valor → a nota |
+|---|---:|---|---|
+| Vida da pilha | 15 | Vida da pilha (%) (`energia`) | 0 a 10 → 10; 10 a 30 → 50; 30 a 100 → 70 |
+| Revisão | 10 | Revisão em dia (`dias_ate_revisao`) | 0 a 30 → 20; 30 a 180 → 60; 180 ou mais → 100 |
+| Tempo sem uso | 35 | Dias sem uso (`dias_sem_uso`) | 0 a 1 → 0; 1 a 3 → 30; 3 a 7 → 60; 7 a 14 → 80; 14 a 30 → 95; 30 ou mais → 100 |
+| Equilíbrio de uso | 25 | Uso nos últimos 30 dias, comparado com a média (`uso_vs_media`) | 0 a 25 → 100; 25 a 60 → 80; 60 a 100 → 60; 100 a 140 → 35; 140 a 200 → 15; 200 ou mais → 0 |
+| Preferência | 10 | Sua nota para o relógio (`preferencia`) | 0 a 20 → 0; 20 a 40 → 25; 40 a 60 → 50; 60 a 80 → 75; 80 a 100 → 100 |
+| Novidade e valor | 5 | Novidade: dias desde a compra (`dias_desde_compra`, 60) | 0 a 15 → 100; 15 a 45 → 80; 45 a 120 → 55; 120 a 365 → 40; 365 ou mais → 30 |
+|  |  | Aproveitar o investimento: valor pago (`valor_compra`, 40) | 0 a 300 → 30; 300 a 800 → 50; 800 a 1500 → 70; 1500 ou mais → 90 |
+
+**Tradicional › Quartzo › Solar**
+
+| Parâmetro | Peso | Subparâmetro (a variável, o peso dentro do parâmetro) | As faixas: o valor → a nota |
+|---|---:|---|---|
+| Luz | 25 | Carga de luz (%) (`energia`) | 0 a 30 → 80; 30 a 70 → 65; 70 a 100 → 50 |
+| Revisão | 10 | Revisão em dia (`dias_ate_revisao`) | 0 a 30 → 20; 30 a 180 → 60; 180 ou mais → 100 |
+| Tempo sem uso | 30 | Dias sem uso (`dias_sem_uso`) | 0 a 1 → 0; 1 a 3 → 30; 3 a 7 → 60; 7 a 14 → 80; 14 a 30 → 95; 30 ou mais → 100 |
+| Equilíbrio de uso | 20 | Uso nos últimos 30 dias, comparado com a média (`uso_vs_media`) | 0 a 25 → 100; 25 a 60 → 80; 60 a 100 → 60; 100 a 140 → 35; 140 a 200 → 15; 200 ou mais → 0 |
+| Preferência | 10 | Sua nota para o relógio (`preferencia`) | 0 a 20 → 0; 20 a 40 → 25; 40 a 60 → 50; 60 a 80 → 75; 80 a 100 → 100 |
+| Novidade e valor | 5 | Novidade: dias desde a compra (`dias_desde_compra`, 60) | 0 a 15 → 100; 15 a 45 → 80; 45 a 120 → 55; 120 a 365 → 40; 365 ou mais → 30 |
+|  |  | Aproveitar o investimento: valor pago (`valor_compra`, 40) | 0 a 300 → 30; 300 a 800 → 50; 800 a 1500 → 70; 1500 ou mais → 90 |
 
 E existe uma **garantia de rodízio**: nenhum relógio passa de N dias parado (21 por padrão). Ela vale **antes** da nota: se
 algum candidato já passou do limite, ele ganha direto, o mais tempo parado primeiro. Só quando ninguém passou do limite é
@@ -247,18 +325,39 @@ cadastro, não código: dá para mudar tudo na página **Cadastros**, e criar os
 | **Grupo** | o lugar dele na árvore. Decide os campos, as fórmulas (a "carga" de um smartwatch é a bateria; a de um mecânico, a reserva de marcha) e os avisos que ele recebe. |
 | **Disponível** | desmarcado, ele sai do rodízio e dos avisos (no conserto, emprestado, vendido), mas o histórico fica. |
 | **Foto** | só para a tela. |
+| **Manual** | o manual do relógio (PDF ou imagem), guardado no próprio banco: abre pela ficha, em qualquer aparelho. Veja [O manual do relógio](#o-manual-do-relógio). |
+
+### O manual do relógio
+
+Cada relógio guarda **um arquivo de manual**: um PDF, ou uma imagem (JPEG, PNG ou WebP) para o manual que veio só como folheto
+ou foto. Ele fica no banco, junto com o resto, e vai junto no backup do banco.
+
+Na ficha do relógio, o quadro **Manual**:
+
+- **Abrir o manual** abre o arquivo numa aba nova (o PDF, no leitor do navegador). Ao lado: o nome do arquivo, o tamanho e o dia
+  em que foi enviado.
+- **Escolher o arquivo** e **Salvar manual** envia; com um manual já guardado, o botão vira **Trocar manual**, e o novo
+  substitui o antigo.
+- **Remover manual** apaga o arquivo. Excluir o relógio também apaga o manual dele.
+
+O tamanho máximo é **12 MB**, ou menos se o PHP do servidor aceitar menos num envio: o quadro mostra o limite que vale (veja
+[O tamanho dos envios](#o-tamanho-dos-envios-o-manual) na instalação). O manual que o fabricante publica só como página da
+internet (a Casio faz assim) vira PDF pelo próprio navegador: abra a página e use **Imprimir → Salvar como PDF**.
+
+O manual não entra em nenhuma conta: é para consultar. Os números que o sistema usa (a reserva de marcha, a autonomia, o tempo
+de sol para encher...) continuam nos campos do cadastro.
 
 ### Todos os relógios
 
 | Campo | Vazio | O que é e para que serve |
 |---|---|---|
-| **Observação** | | Texto livre. Não entra em nenhuma conta. |
-| **Sua nota para o relógio (0 a 100)** | 50 | O quanto você gosta dele. Entra no critério *Preferência* (peso 20 no conjunto de todos os relógios): nota maior, mais chance no sorteio. |
-| **Data da compra** | | Entra no critério *Novidade e valor*: o relógio recém-chegado sobe no sorteio (até 15 dias: nota 100; depois de um ano: 30), para você aproveitar a novidade. |
-| **Valor pago** (R$) | | Também no critério *Novidade e valor* (*aproveitar o investimento*): o mais caro sobe um pouco (até R$ 300: nota 30; acima de R$ 1.500: 90). |
-| **Onde comprou** | | Texto, mostrado no quadro Compra. Não entra em conta. |
-| **Garantia até** | | Data. O aviso *"Garantia vencendo"* sai 30 dias antes. |
-| **Avisar quando a carga chegar a** (%) | o geral | O **limite de carga** deste relógio: o ponto em que sai o aviso de carregar (smartwatch), de pôr no sol (solar) ou de dar corda/pôr no winder (mecânico). Vazio, vale o geral do tipo: no smartwatch, o da Configuração (*"Carregar quando a carga estimada chegar a"*, 20%); no solar, o do solar na Configuração (70%); no mecânico, 0% (a reserva acabando). Veja [Os avisos de carga](#os-avisos-de-carga). |
+| **Observação** `observacao` | | Texto livre. Não entra em nenhuma conta. |
+| **Sua nota para o relógio (0 a 100)** `preferencia` | 50 | O quanto você gosta dele. Entra no critério *Preferência* (peso 20 no conjunto de todos os relógios): nota maior, mais chance no sorteio. |
+| **Data da compra** `data_compra` | | Entra no critério *Novidade e valor*: o relógio recém-chegado sobe no sorteio (até 15 dias: nota 100; depois de um ano: 30), para você aproveitar a novidade. |
+| **Valor pago** (R$) `valor_compra` | | Também no critério *Novidade e valor* (*aproveitar o investimento*): o mais caro sobe um pouco (até R$ 300: nota 30; acima de R$ 1.500: 90). |
+| **Onde comprou** `loja` | | Texto, mostrado no quadro Compra. Não entra em conta. |
+| **Garantia até** `garantia_ate` | | Data. O aviso *"Garantia vencendo"* sai 30 dias antes. |
+| **Avisar quando a carga chegar a** (%) `carga_minima` | o geral | O **limite de carga** deste relógio: o ponto em que sai o aviso de carregar (smartwatch), de pôr no sol (solar) ou de dar corda/pôr no winder (mecânico). Vazio, vale o geral do tipo: no smartwatch, o da Configuração (*"Carregar quando a carga estimada chegar a"*, 20%); no solar, o do solar na Configuração (70%); no mecânico, 0% (a reserva acabando). Veja [Os avisos de carga](#os-avisos-de-carga). |
 
 ### Smartwatch
 
@@ -268,9 +367,9 @@ carga fica desconhecida.
 
 | Campo | Vazio | O que é e para que serve |
 |---|---|---|
-| **Autonomia em uso real** (dias) | 5 | Quantos **dias de uso** a bateria cheia aguenta no seu uso de verdade (não o do fabricante). Dá o gasto em uso: 100 ÷ autonomia. Com 1,5 dia, o gasto é 66,7% por dia de uso. Também decide quantos dias seguidos ele fica na escala inteligente (o que a bateria aguenta, de 1 a 7). |
-| **Decaimento em uso** (% por dia) | 100 ÷ autonomia | O gasto em uso, direto. Preenchido, vale no lugar da conta pela autonomia. |
-| **Decaimento guardado** (% por dia) | 0,1 | Quanto ele perde desligado na gaveta. |
+| **Autonomia em uso real** (dias) `autonomia_dias` | 5 | Quantos **dias de uso** a bateria cheia aguenta no seu uso de verdade (não o do fabricante). Dá o gasto em uso: 100 ÷ autonomia. Com 1,5 dia, o gasto é 66,7% por dia de uso. Também decide quantos dias seguidos ele fica na escala inteligente (o que a bateria aguenta, de 1 a 7). |
+| **Decaimento em uso** (% por dia) `decaimento_uso` | 100 ÷ autonomia | O gasto em uso, direto. Preenchido, vale no lugar da conta pela autonomia. |
+| **Decaimento guardado** (% por dia) `decaimento_repouso` | 0,1 | Quanto ele perde desligado na gaveta. |
 
 Dois detalhes que mudam a conta:
 
@@ -288,8 +387,8 @@ agora é 89 − 0,19 = **88,8%**. Se você puser no pulso agora, com 66,7% por d
 
 | Campo | Vazio | O que é e para que serve |
 |---|---|---|
-| **Última revisão** | | Data da última revisão no relojoeiro. Um lançamento de *Revisão* mais recente vale no lugar. |
-| **Revisão a cada** (meses) | | O intervalo entre revisões (um mecânico costuma ser a cada 4 ou 5 anos: 48 ou 60). O aviso *"Revisão"* sai 30 dias antes e vai para a agenda. Vazio: nenhum aviso. |
+| **Última revisão** `data_revisao` | | Data da última revisão no relojoeiro. Um lançamento de *Revisão* mais recente vale no lugar. |
+| **Revisão a cada** (meses) `intervalo_revisao_meses` | | O intervalo entre revisões (um mecânico costuma ser a cada 4 ou 5 anos: 48 ou 60). O aviso *"Revisão"* sai 30 dias antes e vai para a agenda. Vazio: nenhum aviso. |
 
 ### Mecânico (automático e corda manual)
 
@@ -297,8 +396,8 @@ A "carga" do mecânico é a **reserva de marcha que sobra**, em horas (e em %, d
 
 | Campo | Vazio | O que é e para que serve |
 |---|---|---|
-| **Reserva de marcha** (h) | 40 | Quanto tempo o relógio **anda sozinho, com a corda cheia, até parar**: o tanque dele. Vem na especificação do calibre (*power reserve*): Orient F6922, ~40 h; Seiko 4R35, ~41 h; Tissot Powermatic 80, ~80 h. É o **100%** do relógio. Parado (guardado), a reserva perde **1 hora a cada hora**: cheio às 20h com 40 h de reserva, ele para às 12h de dois dias depois. |
-| **Aceita corda pela coroa** | sim | Se dá para dar corda girando a coroa. **Sim**: o relógio tem o botão **Corda** (que enche a reserva) e recebe o aviso *"Dar corda"*. **Não** (alguns Seiko 5 e Orient mais antigos): sem botão de corda, e o aviso é *"Pôr no winder"*. Não desmarque num relógio do grupo Corda manual: o aviso de winder só existe no grupo Automático, e ele ficaria sem aviso nenhum. |
+| **Reserva de marcha** (h) `reserva_horas` | 40 | Quanto tempo o relógio **anda sozinho, com a corda cheia, até parar**: o tanque dele. Vem na especificação do calibre (*power reserve*): Orient F6922, ~40 h; Seiko 4R35, ~41 h; Tissot Powermatic 80, ~80 h. É o **100%** do relógio. Parado (guardado), a reserva perde **1 hora a cada hora**: cheio às 20h com 40 h de reserva, ele para às 12h de dois dias depois. |
+| **Aceita corda pela coroa** `corda_manual` | sim | Se dá para dar corda girando a coroa. **Sim**: o relógio tem o botão **Corda** (que enche a reserva) e recebe o aviso *"Dar corda"*. **Não** (alguns Seiko 5 e Orient mais antigos): sem botão de corda, e o aviso é *"Pôr no winder"*. Não desmarque num relógio do grupo Corda manual: o aviso de winder só existe no grupo Automático, e ele ficaria sem aviso nenhum. |
 
 ### Automático
 
@@ -307,10 +406,10 @@ braço (e o winder) dá**, em forma de proporção: *"tantas horas aqui me dão 
 
 | Campo | Vazio | O que é e para que serve |
 |---|---|---|
-| **No pulso: horas de uso** | 8 | Um tempo de uso no braço... |
-| **No pulso: reserva que essas horas dão** (h) | 36 | ...e quanto de reserva esse tempo dá. Com 8 h e 36 h: cada hora no pulso soma 36 ÷ 8 = **4,5 h** de reserva. |
-| **No winder: horas** | o do pulso | O mesmo, no winder (a caixa que gira o relógio)... |
-| **No winder: reserva que essas horas dão** (h) | o do pulso | ...e quanto de reserva esse tempo no winder dá. Com 4 h e 40 h: 10 h de reserva por hora de winder. Vazios, vale a proporção do pulso. |
+| **No pulso: horas de uso** `carga_pulso_horas` | 8 | Um tempo de uso no braço... |
+| **No pulso: reserva que essas horas dão** (h) `carga_pulso_reserva` | 36 | ...e quanto de reserva esse tempo dá. Com 8 h e 36 h: cada hora no pulso soma 36 ÷ 8 = **4,5 h** de reserva. |
+| **No winder: horas** `carga_winder_horas` | o do pulso | O mesmo, no winder (a caixa que gira o relógio)... |
+| **No winder: reserva que essas horas dão** (h) `carga_winder_reserva` | o do pulso | ...e quanto de reserva esse tempo no winder dá. Com 4 h e 40 h: 10 h de reserva por hora de winder. Vazios, vale a proporção do pulso. |
 
 Como a conta anda, com os padrões (reserva de 40 h, 8 h de pulso dando 36 h):
 
@@ -346,8 +445,8 @@ A "carga" da pilha é a **vida que sobra**, em % da vida inteira.
 
 | Campo | Vazio | O que é e para que serve |
 |---|---|---|
-| **Última troca de pilha** | | Quando a pilha foi trocada. Um lançamento de *Troca de pilha* mais recente vale no lugar. |
-| **Vida da pilha** (meses) | 24 | Quanto dura uma pilha nesse relógio. A pilha vence na última troca + a vida; o aviso *"Trocar a pilha"* sai 30 dias antes e vai para a agenda. |
+| **Última troca de pilha** `data_pilha` | | Quando a pilha foi trocada. Um lançamento de *Troca de pilha* mais recente vale no lugar. |
+| **Vida da pilha** (meses) `vida_pilha_meses` | 24 | Quanto dura uma pilha nesse relógio. A pilha vence na última troca + a vida; o aviso *"Trocar a pilha"* sai 30 dias antes e vai para a agenda. |
 
 ### Quartzo › Solar
 
@@ -355,8 +454,8 @@ A "carga" do solar é a **carga de luz**, em %. Enquanto você não registrar ne
 
 | Campo | Vazio | O que é e para que serve |
 |---|---|---|
-| **Reserva de energia** (dias) | 180 | Quanto tempo ele anda **no escuro**, de cheio até parar (a especificação diz algo como *"6 meses de reserva"*). No escuro, perde 100 ÷ 180 ≈ 0,56% por dia. |
-| **Sol direto para encher** (h) | 10 | Quantas horas de sol direto levam de vazio a cheio. Cada hora na sessão *No sol* soma 100 ÷ 10 = 10%. No pulso a carga fica parada (a luz do dia repõe o que ele gasta). |
+| **Reserva de energia** (dias) `reserva_dias` | 180 | Quanto tempo ele anda **no escuro**, de cheio até parar (a especificação diz algo como *"6 meses de reserva"*). No escuro, perde 100 ÷ 180 ≈ 0,56% por dia. |
+| **Sol direto para encher** (h) `carga_sol_horas` | 10 | Quantas horas de sol direto levam de vazio a cheio. Cada hora na sessão *No sol* soma 100 ÷ 10 = 10%. No pulso a carga fica parada (a luz do dia repõe o que ele gasta). |
 
 ### Os avisos de carga
 
@@ -381,7 +480,117 @@ resolve. Também estão lá o *"Informar a carga"* (pede uma leitura depois de 3
 fórmula é o número de dias) e o *"Carga baixa"* (o smartwatch guardado chegando ao limite; vem desligado, porque o *"Carregar"*
 já cobre esse caso).
 
+Os avisos do cadastro inicial, com o identificador (o nome deles nas fórmulas, na Configuração e na API):
+
+| Aviso | Identificador | Para quem | Resolve com |
+|---|---|---|---|
+| Carregar | `carregar` | Smartwatch | uma leitura de carga |
+| Informar a carga | `leitura` | Smartwatch | uma leitura de carga |
+| Carga baixa *(vem desligado)* | `carga_baixa` | Smartwatch | uma leitura de carga |
+| Dar corda | `corda` | Mecânico (com *Aceita corda pela coroa*) | a Corda |
+| Pôr no winder | `winder` | Automático (sem corda pela coroa) | o No winder |
+| Pôr no sol | `sol` | Solar | o No sol |
+| Trocar a pilha | `pilha` | Pilha | a Troca de pilha |
+| Revisão | `revisao` | Tradicional | a Revisão |
+| Garantia vencendo | `garantia` | todos | (nada: só avisa) |
+
+Além deles, a mensagem tem dois tipos que não são cadastro: o **dia** (`dia`, o relógio de hoje, de manhã) e a **véspera**
+(`vespera`, o de amanhã, à noite). Cada evento personalizado entra como `ev<id>`.
+
 ---
+
+### Os tipos de lançamento do cadastro inicial
+
+Um lançamento é tudo o que se marca num relógio. Cada tipo vale para um grupo e para os de baixo dele.
+
+| Tipo | Formato | Para quem | O que é |
+|---|---|---|---|
+| **No pulso** (`pulso`) | sessão | todos | o tempo no pulso: o **Pôs** e o **Tirou**, ou o pulso sozinho no horário de uso. Esquecida aberta, fecha às 22h. |
+| **Leitura de carga** (`carga`) | valor | Smartwatch | a carga que o relógio mostra, em %. Cada leitura mede o gasto (veja [Gasto medido pelas leituras](#gasto-medido-pelas-leituras)). |
+| **Corda** (`corda`) | instantâneo | Mecânico (com *Aceita corda pela coroa*) | encheu a reserva de marcha. |
+| **No winder** (`winder`) | sessão | Automático | o tempo no winder: a reserva sobe. |
+| **No sol** (`sol`) | sessão | Solar | o tempo no sol: a carga de luz sobe. Esquecida aberta, fecha às 18h (a Configuração muda). |
+| **Troca de pilha** (`pilha`) | instantâneo | Pilha | pilha nova: a vida da pilha recomeça. |
+| **Revisão** (`revisao`) | instantâneo | Tradicional | a revisão feita: a contagem até a próxima recomeça. |
+| **No pulso**, **Winder** e **Sol** *(marcação antiga, sem duração)* (`pulso_antigo`, `winder_antigo`, `sol_antigo`) | instantâneo | os mesmos | as marcações que vieram do sistema anterior, que guardava só o momento e não a duração. Contam como "usou", "encheu no winder" e "encheu no sol" naquele momento. Não se lançam mais pela tela. |
+
+Um formato **sessão** tem começo e fim (pôr e tirar); **instantâneo** é um momento; **valor** é um momento com um número. Um
+relógio fica num lugar só: abrir uma sessão (pulso, winder, sol) fecha a outra que estiver aberta.
+
+### As fórmulas do cadastro inicial
+
+As fórmulas transformam o cadastro e o histórico em números. A mesma fórmula pode ter uma versão por grupo, e vale a do grupo
+mais perto do relógio. Todas se editam e se testam em **Cadastros**.
+
+| Fórmula | O que calcula |
+|---|---|
+| `energia` (%) | a carga de agora, de 0 a 100. **Smartwatch:** a última leitura menos o gasto no pulso (horas no pulso ÷ 15 × gasto em uso) e menos o gasto fora (o resto do tempo × gasto fora). **Mecânico:** a reserva que sobra ÷ a reserva de marcha. **Solar:** a carga de luz (perde no escuro pela reserva de energia, ganha no sol pelo tempo de sol para encher, fica parada no pulso; sem nenhum sol marcado, desconhecida). **Pilha:** quanto falta da vida da pilha. |
+| `reserva_restante` (h) | **Mecânico:** a reserva de marcha que sobra. Perde 1 hora por hora; no pulso o automático ganha pelos campos *No pulso*; no winder, pelos campos *No winder*; a corda (e as marcações antigas) enchem. |
+| `taxa_uso`, `taxa_repouso` (% por dia) | **Smartwatch:** o gasto no pulso e o gasto fora que valem: o medido pelas leituras, senão o do cadastro. |
+| `dias_de_carga` (dias) | **Smartwatch:** quantos dias de uso a carga de agora aguenta. |
+| `dias_seguidos` (dias) | **Smartwatch:** quantos dias seguidos ele fica na escala inteligente: o que a bateria cheia dá, de 1 a 7. |
+| `limite_carga` (%) | o limite de carga do relógio: o campo dele, senão o geral da Configuração (no solar, o do solar; no mecânico, 0, a reserva acabando). |
+| `autonomia_prevista` (s) | quanto dura cheio, pelo cadastro: a autonomia do smartwatch, a reserva de marcha, a reserva de energia do solar, a vida da pilha. |
+| `autonomia_atual` (s) | quanto dura cheio, pela conta: no smartwatch, com o gasto medido; nos outros, igual à prevista. |
+| `autonomia_restante` (s) | quanto ainda dura no regime em que cada um se esgota: o smartwatch usando, o mecânico parado, o solar no escuro, a pilha até o fim da vida. |
+| `dias_sem_uso` (dias) | dias desde a última vez no pulso; nunca usado, desde a compra; sem data de compra, 9999. |
+| `uso_30d` (dias) | quantos dias com uso nos últimos 30. |
+| `uso_vs_media` (%) | o uso nos últimos 30 dias comparado com a média da coleção (100: na média). |
+| `dias_desde_compra` (dias) | dias desde a compra. |
+| `dias_ate_revisao` (dias) | **Tradicional:** dias até a próxima revisão (0: vencida), pela última revisão e pelo intervalo do cadastro. |
+
+As autonomias saem em segundos para a API (`recurso=autonomia`) e por extenso na ficha (o quadro **Autonomia**).
+
+## A Configuração, opção por opção
+
+A página **Configuração** guarda as opções do sistema inteiro. Entre parênteses, o nome de cada uma na API (`recurso=config`,
+na chave `config`), para quem automatiza; o padrão de uma instalação nova vem no fim de cada linha.
+
+### Geral
+
+| Opção | O que faz |
+|---|---|
+| **Horário de uso, início e fim** (`uso_inicio`, `uso_fim`) | o período do dia em que um relógio está no pulso. Vale para o plano, as previsões e o "dia de uso" do gasto medido (das 7h às 22h, 15 horas). Padrão: 07:00 e 22:00. |
+| **Pôr no pulso sozinho** (`pulso_auto_inicio`) | a caixa ao lado do início: marcada, o relógio do dia entra no pulso sozinho no início do horário de uso; desmarcada, só pelo **Pôs**. Padrão: marcada. |
+| **Tirar do pulso sozinho** (`pulso_auto_fim`) | a caixa ao lado do fim: marcada, ele sai do pulso sozinho no fim do horário de uso (é o "fecha às" do tipo No pulso); desmarcada, só pelo **Tirou**. Padrão: marcada. |
+| **Rodada da manhã** (`horario_manha`) | a hora em que o cron manda a mensagem do dia (o relógio de hoje e os avisos) e refaz o plano a partir do que aconteceu. Padrão: 06:30. |
+| **Rodada da noite** (`horario_noite`) | a hora da mensagem da véspera: o relógio de amanhã e o que preparar. Padrão: 20:00. |
+| **A sessão no sol esquecida fecha às** (`sol_fim`, que grava o "fecha às" do tipo No sol) | quem pôs no sol e esqueceu do **Tirou** tem a sessão fechada nessa hora. Padrão: 18:00. |
+| **Limite de carga** (`carga_limiar`) | a carga (%) em que os avisos mandam carregar ou dar corda; o campo **Limite de carga** de um relógio vale no lugar dele. De 1 a 99. Padrão: 20. |
+| **Limite do solar** (`sol_limiar`) | a carga (%) em que o solar deve ir para o sol. De 1 a 99. Padrão: 70. |
+| **Limite da previsão** (`previsao_limite`) | a carga (%) que a previsão do smartwatch usa para "chega ao limite em...". De 0 a 100. Padrão: 20. |
+| **Garantia de rodízio** (`max_sem_uso`) | nenhum relógio passa mais que esses dias sem uso: o que passa entra na frente de todos. 0 desliga. Padrão: 21. |
+| **Gasto medido: os últimos dias** (`medicao_janela_dias`) | a janela do [gasto medido pelas leituras](#gasto-medido-pelas-leituras): as medições mais velhas saem da conta. De 1 a 3650. Padrão: 90. |
+| **Endereço do sistema** (`url_sistema`) | o endereço que a âncora `{link}` põe nas mensagens e na agenda. Padrão: vazio. |
+
+### Telegram e Google Agenda
+
+| Opção | O que faz |
+|---|---|
+| **Enviar alertas** (`mensagens_ativas`) | liga e desliga o envio pelo Telegram (o endereço da API de mensagem fica no `config.php`). Padrão: ligado. |
+| **Google Agenda ativa** (`agenda_ativa`) | liga e desliga a criação dos eventos na agenda. Padrão: desligada. |
+| **Id da agenda** (`agenda_id`) e **chave** (`agenda_chave`) | a agenda do Google e o caminho, no servidor, da chave JSON da conta de serviço (vazio: a `google-conta-servico.json` na pasta do sistema). Veja [Google Agenda](#google-agenda). |
+| **Antecedência** (`agenda_antecedencia`) | com quantos dias de antecedência os eventos entram na agenda. De 1 a 365. Padrão: 30. |
+| **Mensagem padrão** de cada canal (`tg_padrao`, `ag_padrao`) | o texto de todo aviso que não tem mensagem própria, com as âncoras (`{acao}`, `{relogio}`, `{motivo}`, `{carga}`, `{ate}`, `{link}`...; o botão **Inserir âncora** mostra todas). Na agenda, a primeira linha é o título do evento e o resto, a descrição. |
+| **O que vai para onde** (`alerta_tipos`, `agenda_tipos`) | a tabela que marca, para cada tipo de aviso (o dia, a véspera, cada aviso cadastrado e cada evento personalizado), se ele vai pelo Telegram e pela agenda. |
+| **Mensagem personalizada** de um aviso num canal (`tg_proprio_<tipo>` e `tg_corpo_<tipo>`; na agenda, `ag_proprio_<tipo>` e `ag_corpo_<tipo>`) | marcada, aquele aviso sai com o texto dele naquele canal, em vez da mensagem padrão. |
+| **Eventos personalizados** | lembretes seus (limpar as pulseiras, revisar a coleção), com nome, quando disparam (uma vez, todo dia, em dias da semana, num dia do mês ou a cada N dias), a hora e, se quiser, um relógio. Saem pelos canais como os avisos. |
+| **Testar manhã**, **Testar noite**, **Criar evento de teste**, **Remover evento de teste**, **Sincronizar agora** | mandam a mensagem da manhã ou da noite na hora, criam (daqui a 10 minutos) ou apagam um evento de teste na agenda, e acertam a agenda agora, sem esperar o cron. |
+
+A prévia **Como sai hoje** mostra as mensagens e os eventos de hoje exatamente como vão sair.
+
+### O que o sistema guarda sozinho
+
+Estas não aparecem como opção: o sistema anota para ele mesmo, e a API mostra.
+
+| Chave | O que é |
+|---|---|
+| `modo_ativo` | o modo de rodízio em uso (troca-se na página Hoje). |
+| `escala_fim`, `escala_gerada` | até que dia vai a escala inteligente e quando ela foi gerada. |
+| `ultima_manha`, `ultima_noite` | o dia da última rodada da manhã e da noite (para não rodar duas vezes). |
+| `cron_ultima_execucao`, `cron_erro`, `cron_registro` | quando o cron rodou, o último erro (vazio: nenhum) e o registro da última rodada com atividade. |
+| `agenda_teste_id` | o evento de teste da agenda, enquanto existir. |
+| `migracao_v10`, `migracao_v12` | as marcas de que essas migrações foram aplicadas (as outras se marcam pela própria estrutura do banco). |
 
 ## Um dia com o Relógios 2
 
@@ -458,7 +667,7 @@ relógio abre em tela cheia; o "voltar" do aparelho fecha o painel.</sub>
 |---|---|
 | **Hoje** (`index.php`) | A tela principal. Mostra o relógio do dia, os avisos de hoje (atrasados e em breve) com o botão que resolve cada um, os próximos dias do plano e o modo de rodízio, que se troca ali mesmo. Abaixo fica a tabela da coleção, com filtros e ordenação por tipo, estado, carga, última vez usado, próxima manutenção, data e valor da compra. Clicar num relógio abre o **painel** ao lado. |
 | **Plano** (`plano.php`) | O plano inteiro, de hoje até o fim (na escala inteligente, um ou dois anos), mês a mês: o relógio de cada dia, o lembrete e o **trocar por…**. Filtra por período (30 dias, 90, um ano, dois, tudo) e por relógio, e mostra quantos dias cada relógio tem no período, a porcentagem e o próximo dia dele. |
-| **Painel / Ficha** (`ficha.php`) | Tudo sobre um relógio: foto, estado agora (*"Em repouso desde 21:40"*), carga, nota com a conta, próxima entrada no plano, previsão da bateria, o gasto da bateria no pulso e fora (o medido e o do cadastro), as últimas leituras, a linha do tempo recente, o quadro **Marcar** e o cadastro completo, editável. O **Marcar** é um menu só, *O que você quer marcar?*: pôr ou tirar do pulso, do winder ou do sol, corda, troca de pilha, leitura de carga, um período que já passou ou corrigir uma marcação; embaixo aparecem só os campos daquilo. |
+| **Painel / Ficha** (`ficha.php`) | Tudo sobre um relógio: foto, estado agora (*"Em repouso desde 21:40"*), carga, nota com a conta, próxima entrada no plano, previsão da bateria, o gasto da bateria no pulso e fora (o medido e o do cadastro), as últimas leituras, a linha do tempo recente, o quadro **Manual** (abrir, enviar, trocar ou remover o manual do relógio), o quadro **Marcar** e o cadastro completo, editável. O **Marcar** é um menu só, *O que você quer marcar?*: pôr ou tirar do pulso, do winder ou do sol, corda, troca de pilha, leitura de carga, um período que já passou ou corrigir uma marcação; embaixo aparecem só os campos daquilo. |
 | **Histórico** (`historico.php`) | A linha do tempo de um relógio: em uso pelo rodízio, no pulso fora do rodízio, no winder, no sol, em repouso, e cada corda, carga e troca de pilha. Mostra quanto tempo e que porcentagem ficou em cada estado, com filtro de período e de estado. |
 | **Configuração** (`configuracao.php`) | Os horários (manhã, noite, uso), o Telegram, o Google Agenda, a mensagem padrão de cada canal, a tabela **"O que vai para onde"** (qual aviso sai por qual canal), os eventos personalizados, a prévia **"Como sai hoje"** e o botão que aplica as migrações do banco. |
 | **Critérios** (`criterios.php`) | Os conjuntos de critérios por lugar (todos os relógios, um grupo ou um relógio), com parâmetros, subparâmetros, faixas e a nota de cada relógio com a conta aberta. Tem **Restaurar os critérios iniciais**. |
@@ -499,11 +708,42 @@ curl -u usuario:senha -d recurso=lancamento -d acao=encerrar -d relogio_id=4 -d 
 curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcular --data-urlencode "expressao=energia * 2" -d relogio=10,12
 ```
 
-**Consultas:** `hoje`, `ficha`, `avisos`, `plano`, `previsao`, `autonomia`, `historico`, `criterios`, `eventos`, `agenda`,
-`config`, `cron`, `arvore`, `cadastros`, `usuarios`, `migracoes`, `calcular`, `foto` e `ajuda`.
+**Consultas** (`GET`, com `recurso=`):
 
-**Escritas:** relógios, lançamentos, grupos, campos, tipos de lançamento, fórmulas, avisos, critérios, modos, rodízio
-(sortear de novo, "estou usando este"), configuração, eventos e usuários, todas com as mesmas validações e mensagens da tela.
+| Recurso | Devolve |
+|---|---|
+| *(nenhum)* | tudo o que está guardado: a árvore, os campos, os tipos de lançamento, as fórmulas, os avisos, os relógios (com os valores, as fórmulas calculadas, os avisos, os lançamentos, a previsão, a foto e as informações do manual), os modos, o plano, a configuração, os eventos, a agenda, os critérios, o cron, os usuários e as migrações. Só a senha fica de fora. `foto=nao` deixa as fotos de fora. |
+| `hoje` | o que a página Hoje mostra: o relógio do dia, os avisos, os próximos dias, os modos e a tabela da coleção |
+| `ficha` | o que o painel de um relógio mostra (`relogio=<id>`): agora, carga, nota, previsão, gasto da bateria, manual, marcações recentes, cadastro |
+| `plano` | o plano gravado, dia a dia, com o motivo de cada escolha |
+| `avisos` | os avisos de todos os relógios, do mais urgente ao mais distante |
+| `previsao` | a previsão da bateria dos relógios com leitura de carga |
+| `autonomia` | quanto cada relógio dura, em segundos, enxuto para sistemas de fora |
+| `historico` | a linha do tempo de um relógio, com o tempo em cada estado |
+| `criterios` | os conjuntos de critérios e a nota de cada relógio com a conta |
+| `eventos`, `agenda` | os eventos personalizados; o que tem de estar no Google Agenda |
+| `config`, `cron` | a configuração (com as mensagens e a prévia); as execuções do cron |
+| `arvore`, `cadastros` | os grupos; tudo o que a página Cadastros mostra |
+| `calcular` | o resultado de uma fórmula (`expressao=`) nos relógios, sem gravar |
+| `foto`, `manual` | a foto e o manual de um relógio (`relogio=<id>`): o arquivo, não JSON |
+| `usuarios`, `migracoes` | os logins; as migrações que faltam aplicar |
+| `ajuda` | a documentação inteira: cada consulta, cada escrita, cada campo de cada resposta e as funções do motor |
+
+**Escritas** (`POST`, com `recurso=` e `acao=`), todas com as mesmas validações e mensagens da tela:
+
+| Recurso | Ações |
+|---|---|
+| `relogio` | `salvar` (criar ou alterar), `excluir`, `foto`, `remover_foto`, `manual`, `remover_manual` |
+| `lancamento` | `lancar` (corda, carga, pilha...), `iniciar` e `encerrar` (pôr e tirar do pulso, do winder, do sol), `periodo` (um período que já passou), `alterar`, `excluir` |
+| `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |
+| `modos` | `salvar`, `ativar`, `excluir` |
+| `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (grupos) e `relogios` (o grupo de cada relógio) |
+| `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (e `ordem` nos campos) |
+| `formulas` | `nova`, `alterar`, `excluir` |
+| `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
+| `config` | `salvar`, `evento_salvar`, `evento_excluir`, `testar_manha`, `testar_noite`, `teste_agenda_criar`, `teste_agenda_remover`, `sincronizar` |
+| `usuarios` | `salvar`, `excluir` |
+| `migracoes` | `aplicar` |
 
 **Filtros genéricos** funcionam em qualquer lista de qualquer resposta:
 
@@ -576,7 +816,8 @@ pasta `.git`, que vem junto com o `git clone`. O projeto traz isso pronto para o
   também faz o login do site funcionar quando o PHP roda por FastCGI (PHP-FPM, a maioria das hospedagens), caso em que o
   Apache não repassaria a senha para o PHP.
 - **nginx:** copie o bloco do [`nginx-relogios.conf`](nginx-relogios.conf) para dentro do `server` do seu site (ajuste
-  `/relojoeiro/` e o endereço do PHP-FPM).
+  `/relojoeiro/` e o endereço do PHP-FPM). Ele traz também o `client_max_body_size 16m`, para o envio do manual (veja
+  [O tamanho dos envios](#o-tamanho-dos-envios-o-manual)).
 
 Para conferir, abra `https://seu-servidor/relojoeiro/config.php` e `https://seu-servidor/relojoeiro/.git/config`: os dois
 têm de dar **403**.
@@ -611,6 +852,22 @@ webhook, o n8n, o Home Assistant ou qualquer ponte de mensagens. Mensagens longa
 
 O sistema cria, atualiza e remove só os eventos que ele mesmo criou, sem duplicar. A rotina (carregar, corda, sol) entra
 dentro da janela de antecedência, e a manutenção (pilha, revisão, garantia) entra em qualquer data.
+
+### O tamanho dos envios (o manual)
+
+O manual de um relógio sobe inteiro num envio, e três limites do servidor podem recusar um arquivo grande antes do sistema. O
+sistema aceita até **12 MB**; para chegar lá:
+
+| Onde | O limite | O padrão | Para o manual de 12 MB |
+|---|---|---|---|
+| `php.ini` | `upload_max_filesize` (o arquivo) e `post_max_size` (o envio inteiro) | 2M e 8M | `upload_max_filesize = 12M` e `post_max_size = 16M` |
+| nginx | `client_max_body_size` | 1m | `16m` (já vem no [`nginx-relogios.conf`](nginx-relogios.conf)) |
+| MySQL/MariaDB | `max_allowed_packet` | 16M a 64M, conforme a versão | maior que o arquivo (o padrão já basta) |
+
+O quadro **Manual** da ficha mostra o limite que vale de verdade: os 12 MB, ou menos, pelo `php.ini`. Um arquivo acima dele é
+recusado com a mensagem do tamanho; um envio acima do `post_max_size` volta com o código `413` e o limite do servidor; se o
+banco cortar o arquivo no caminho, o sistema percebe (ele relê o que gravou), apaga o pedaço e avisa. No Apache não há limite a
+mexer, além do `php.ini`.
 
 ### Atualizações do banco
 
@@ -650,6 +907,10 @@ comportamento do sistema antigo foi portado.
 Não. O uso do relógio do dia é registrado sozinho, no horário de uso. Você só lança o que o sistema não tem como saber: a corda,
 a leitura de carga do smartwatch, o sol, o winder, a troca de pilha e o dia em que usou outro relógio. E cada aviso já traz o
 botão que o resolve.
+
+**Onde guardo o manual do relógio?**
+Na ficha dele, no quadro **Manual**: escolha o PDF (ou a foto do folheto) e salve. Ele fica no banco e abre em qualquer
+aparelho. O manual que só existe como página da internet vira PDF pelo navegador (**Imprimir → Salvar como PDF**).
 
 **Por que saiu este relógio, e não outro?**
 Olhe embaixo do nome dele, na página **Hoje** ou na **Plano**: cada dia traz o motivo da escolha. Se for *"Garantia de
@@ -717,7 +978,7 @@ Pode. As telas usam exatamente a mesma API.
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |
 | [`estilo.css`](estilo.css) | o visual |
 | [`schema.sql`](schema.sql) | a estrutura do banco e o conjunto inicial (grupos, campos, fórmulas, avisos, modos, critérios) |
-| `migracao_v2.sql` … `migracao_v8.sql` | as migrações, aplicadas pela página Configuração |
+| `migracao_v2.sql` … `migracao_v13.sql` | as migrações, aplicadas pela página Configuração |
 | [`config.exemplo.php`](config.exemplo.php) | o modelo do `config.php` |
 | [`instalar.php`](instalar.php) | instala o `schema.sql` no banco do `config.php`, qualquer um dos três |
 | [`criar_usuario.php`](criar_usuario.php) | cria um usuário ou troca a senha, pela linha de comando |

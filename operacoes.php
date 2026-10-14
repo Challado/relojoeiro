@@ -464,7 +464,8 @@ function op_formulas($acao, $d)
 // ---------------------------------------------------------------------------------------------------------------------
 // Relógios. Ações: salvar (id: 0 ou ausente cria; nome, no_id, disponivel (1 ou 0), valores[identificador]: só muda o
 // que vier no pedido; valor vazio apaga; valor inválido fica o que estava, e a mensagem diz quais), excluir (id), foto
-// (id, foto_base64: JPEG, PNG ou WebP, até 4 MB), remover_foto (id).
+// (id, foto_base64: JPEG, PNG ou WebP, até 4 MB), remover_foto (id), manual (id e o arquivo: enviado como arquivo, no campo
+// manual, ou em manual_base64 com o nome em manual_nome; PDF, JPEG, PNG ou WebP, até manual_limite()), remover_manual (id).
 // ---------------------------------------------------------------------------------------------------------------------
 function op_relogio($acao, $d)
 {
@@ -513,7 +514,7 @@ function op_relogio($acao, $d)
         }
     } elseif ($acao === "excluir" && $atual) {
         sql("DELETE FROM relogio WHERE id = ?", [$id]);
-        $msg = "Relógio " . $atual["nome"] . " excluído, com os valores, a foto e os lançamentos dele.";
+        $msg = "Relógio " . $atual["nome"] . " excluído, com os valores, a foto, o manual e os lançamentos dele.";
         $id = 0;
     } elseif ($acao === "foto" && $atual) {
         $b64 = (string)($d["foto_base64"] ?? "");
@@ -531,6 +532,76 @@ function op_relogio($acao, $d)
     } elseif ($acao === "remover_foto" && $atual) {
         sql("DELETE FROM foto WHERE relogio_id = ?", [$id]);
         $msg = "Foto de " . $atual["nome"] . " removida.";
+    } elseif ($acao === "manual" && $atual) {
+        // o arquivo chega como arquivo (o formulário da ficha; curl -F manual=@arquivo.pdf) ou em base64 (JSON)
+        $limite = manual_limite();
+        $mb = tamanho_texto($limite);
+        $arq = $_FILES["manual"] ?? null;
+        $bin = false;
+        $nome = "";
+        if (is_array($arq) && (int)$arq["error"] !== UPLOAD_ERR_NO_FILE) {
+            if ((int)$arq["error"] === UPLOAD_ERR_INI_SIZE || (int)$arq["error"] === UPLOAD_ERR_FORM_SIZE) {
+                $erros[] = "O manual passou do tamanho que o servidor aceita (" . $mb . ").";
+            } elseif ((int)$arq["error"] !== UPLOAD_ERR_OK || !is_uploaded_file($arq["tmp_name"])) {
+                $erros[] = "O manual não chegou inteiro (erro " . (int)$arq["error"] . " no envio). Tente de novo.";
+            } else {
+                $bin = (string)file_get_contents($arq["tmp_name"]);
+                $nome = (string)$arq["name"];
+            }
+        } elseif (trim((string)($d["manual_base64"] ?? "")) !== "") {
+            $b64 = (string)$d["manual_base64"];
+            if (strpos($b64, "base64,") !== false) {
+                $b64 = substr($b64, strpos($b64, "base64,") + 7);
+            }
+            $bin = base64_decode($b64, true);
+            $nome = (string)($d["manual_nome"] ?? "");
+            if ($bin === false) {
+                $erros[] = "O manual_base64 não é base64.";
+            }
+        } else {
+            $erros[] = "Escolha o arquivo do manual.";
+        }
+        $tipo = null;
+        if ($bin !== false && count($erros) === 0) {
+            if (strlen($bin) === 0) {
+                $erros[] = "O arquivo do manual está vazio.";
+            } elseif (strlen($bin) > $limite) {
+                $erros[] = "O manual tem " . tamanho_texto(strlen($bin)) . "; o servidor aceita até " . $mb . ".";
+            } elseif (substr($bin, 0, 5) === "%PDF-") {
+                $tipo = "application/pdf";
+            } else {
+                $info = @getimagesizefromstring($bin);
+                if ($info && in_array($info["mime"], ["image/jpeg", "image/png", "image/webp"], true)) {
+                    $tipo = $info["mime"];
+                } else {
+                    $erros[] = "O manual não foi aceito: tem de ser PDF, JPEG, PNG ou WebP.";
+                }
+            }
+        }
+        if ($tipo !== null) {
+            // o nome do arquivo, sem a pasta; sem nome, "manual" com a extensão do tipo
+            $nome = trim(preg_replace("/[\\x00-\\x1f]/", "", basename(str_replace("\\", "/", $nome))));
+            if ($nome === "") {
+                $nome = "manual." . ["application/pdf" => "pdf", "image/jpeg" => "jpg", "image/png" => "png", "image/webp" => "webp"][$tipo];
+            }
+            $nome = mb_substr($nome, 0, 200);
+            try {
+                sql("REPLACE INTO manual (relogio_id, nome, tipo, tamanho, dados, atualizado) VALUES (?, ?, ?, ?, ?, NOW())", [$id, $nome, $tipo, strlen($bin), $bin]);
+                // relido para conferir: o arquivo grande que o banco cortasse no caminho não fica como se estivesse inteiro
+                $volta = valor("SELECT dados FROM manual WHERE relogio_id = ?", [$id]);
+                if ($volta === null || md5((string)$volta) !== md5($bin)) {
+                    sql("DELETE FROM manual WHERE relogio_id = ?", [$id]);
+                    $erros[] = "O banco não guardou o manual inteiro. No MySQL/MariaDB, o max_allowed_packet do servidor tem de ser maior que o arquivo.";
+                } else {
+                    $msg = "Manual de " . $atual["nome"] . " salvo (" . $nome . ", " . tamanho_texto(strlen($bin)) . ").";
+                }
+            } catch (BancoErro $e) {
+                $erros[] = "O banco recusou o manual (" . $e->getMessage() . "). No MySQL/MariaDB, o max_allowed_packet do servidor tem de ser maior que o arquivo.";
+            }
+        }
+    } elseif ($acao === "remover_manual" && $atual) {
+        sql("DELETE FROM manual WHERE relogio_id = ?", [$id]);
+        $msg = "Manual de " . $atual["nome"] . " removido.";
     } elseif ($id === 0) {
         $erros[] = "Informe o relógio (id).";
     }

@@ -293,6 +293,7 @@ $MIGRACOES = [
     "v10" => ["migracao_v10.sql", "os avisos de carga pelo estado de agora: no winder ou no pulso (o automático carrega no pulso), sem aviso de winder ou de corda; no sol, sem aviso de sol; a data do \"Carregar\" pelo gasto de agora (no pulso, o de uso; guardado, o de guardado)", "config.chave=migracao_v10"],
     "v11" => ["migracao_v11.sql", "o motivo de cada escolha do plano: por que aquele relógio saiu naquele dia (a garantia de rodízio, a nota, o sorteio, a escolha à mão)", "plano.motivo"],
     "v12" => ["migracao_v12.sql", "os dias sem uso de um relógio nunca usado contam desde a compra (antes valiam 9999 para todos: empatavam na garantia de rodízio)", "config.chave=migracao_v12"],
+    "v13" => ["migracao_v13.sql", "o manual de cada relógio: um arquivo (PDF ou imagem) guardado no banco, que se envia e se abre pela ficha", "manual"],
 ];
 
 // As migrações que faltam aplicar neste banco: as da lista cuja marca ainda não existe. A marca: uma tabela, uma coluna
@@ -1517,6 +1518,53 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
         $GLOBALS["SIMULACAO"] = [];
         $GLOBALS["SIMULACAO_VERSAO"]++;
     }
+}
+
+// Um tamanho do php.ini ("8M", "2G", "512K", "1048576") em bytes; 0: sem limite ou não informado
+function ini_bytes($v)
+{
+    $v = trim((string)$v);
+    $n = (float)$v;
+    switch (strtolower(substr($v, -1))) {
+        case "g":
+            $n *= 1024;
+            // segue
+        case "m":
+            $n *= 1024;
+            // segue
+        case "k":
+            $n *= 1024;
+    }
+    return max(0, (int)$n);
+}
+
+// O maior manual aceito, em bytes: 12 MB, ou menos se o PHP do servidor aceitar menos num envio (upload_max_filesize e
+// post_max_size do php.ini; o envio leva também o resto do formulário, daí a folga de 64 KB)
+function manual_limite()
+{
+    $limite = 12 * 1024 * 1024;
+    $arquivo = ini_bytes(ini_get("upload_max_filesize"));
+    $envio = ini_bytes(ini_get("post_max_size"));
+    if ($arquivo > 0) {
+        $limite = min($limite, $arquivo);
+    }
+    if ($envio > 0) {
+        $limite = min($limite, max(0, $envio - 64 * 1024));
+    }
+    return $limite;
+}
+
+// Um tamanho de arquivo para as mensagens: "850 KB", "3,2 MB"
+function tamanho_texto($bytes)
+{
+    return $bytes < 1048576 ? max(1, (int)round($bytes / 1024)) . " KB" : str_replace(".", ",", (string)round($bytes / 1048576, 1)) . " MB";
+}
+
+// O manual de um relógio, sem o arquivo: {"nome", "tipo", "tamanho", "atualizado_em"}; null se não tem
+function manual_info($rid)
+{
+    $m = linha("SELECT nome, tipo, tamanho, atualizado FROM manual WHERE relogio_id = ?", [(int)$rid]);
+    return $m ? ["nome" => $m["nome"], "tipo" => $m["tipo"], "tamanho" => (int)$m["tamanho"], "atualizado_em" => $m["atualizado"]] : null;
 }
 
 // O relógio do dia entra no pulso sozinho no início do horário de uso (a Configuração, ao lado do horário; é o padrão).
