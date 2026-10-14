@@ -4271,8 +4271,51 @@ function manual_ancora($titulo)
     return str_replace(" ", "-", trim((string)$t));
 }
 
-// O markdown do manual (vazio: o README.md não está na pasta do sistema)
-function manual_markdown()
+// Um título do manual: [o texto, a âncora]. A tradução do manual escreve a âncora do original no fim do título,
+// "## The central idea {#a-ideia-central}": assim os links de uma seção para outra (#a-ideia-central) valem em todo idioma
+function manual_titulo($t)
+{
+    $t = trim($t);
+    if (preg_match('/^(.*?)\s*\{#([^}]+)\}$/u', $t, $m) === 1) {
+        return [$m[1], $m[2]];
+    }
+    return [$t, manual_ancora($t)];
+}
+
+// O manual traduzido de um idioma (textos/manual/<idioma>.md): [a origem, o markdown], ou null. A primeira linha diz de
+// que versão do original ele é a tradução (<!-- origem: o sha1 do manual em português -->)
+function manual_traduzido($lingua)
+{
+    $arq = __DIR__ . "/textos/manual/" . $lingua . ".md";
+    if ($lingua === "pt-BR" || !is_file($arq)) {
+        return null;
+    }
+    $s = str_replace("\r\n", "\n", (string)file_get_contents($arq));
+    $origem = preg_match('/^<!-- origem: ([0-9a-f]+) -->\n/', $s, $m) === 1 ? $m[1] : "";
+    return [$origem, $origem !== "" ? substr($s, strlen($m[0])) : $s];
+}
+
+// O markdown do manual no idioma do pedido: a tradução em textos/manual/<idioma>.md; sem ela, o original em português (as
+// seções do README.md; vazio: o README.md não está na pasta do sistema). Com TEXTOS_ESTRITO, a tradução que falta ou ficou
+// para trás (o README mudou depois dela) para com erro, como no t()
+function manual_markdown($lingua = null)
+{
+    $lingua = $lingua ?? lingua_atual();
+    $md = manual_original();
+    if ($lingua !== "pt-BR") {
+        $tr = manual_traduzido($lingua);
+        if ($tr !== null && ($tr[0] === sha1($md) || !textos_estrito())) {
+            return $tr[1];
+        }
+        if (textos_estrito()) {
+            throw new Error("Falta a tradução em " . $lingua . " (textos/manual/" . $lingua . ".md): " . ($tr === null ? "o manual" : "o manual mudou"));
+        }
+    }
+    return $md;
+}
+
+// O manual em português: as seções do README.md para quem usa (MANUAL_TRECHOS)
+function manual_original()
 {
     $readme = str_replace("\r\n", "\n", (string)@file_get_contents(__DIR__ . "/README.md"));
     $md = "";
@@ -4301,7 +4344,8 @@ function manual_secoes($md)
             if ($atual !== null) {
                 $secoes[] = $atual;
             }
-            $atual = ["nivel" => strlen($m[1]), "titulo" => trim($m[2]), "ancora" => manual_ancora(trim($m[2])), "texto" => ""];
+            [$tit, $anc] = manual_titulo($m[2]);
+            $atual = ["nivel" => strlen($m[1]), "titulo" => $tit, "ancora" => $anc, "texto" => ""];
         } elseif ($atual !== null) {
             $atual["texto"] .= $l . "\n";
         }
@@ -4366,7 +4410,7 @@ function manual_html($md)
         } elseif (preg_match("/^(#{2,4})\\s+(.*)$/", $l, $m) === 1) {
             $fecha_par();
             $nivel = strlen($m[1]);
-            $ancora = manual_ancora($m[2]);
+            [$m[2], $ancora] = manual_titulo($m[2]);
             $html .= "<h" . $nivel . " id=\"" . htmlspecialchars($ancora, ENT_QUOTES, "UTF-8") . "\">" . manual_linha($m[2]) . "</h" . $nivel . ">\n";
             if ($nivel <= 3) {
                 $sumario[] = [$nivel, $m[2], $ancora];

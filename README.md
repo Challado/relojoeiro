@@ -927,10 +927,17 @@ O cadastro inicial (os grupos, os campos, os tipos de lançamento, as fórmulas,
 categorias e as mensagens padrão que vêm na instalação) sai no idioma da instalação: `php instalar.php --lingua=en`, ou a
 instalação pela API com `lingua=en`, grava esses nomes em inglês e deixa o inglês como padrão (a parte `cadastro` do
 `textos/<idioma>.php`; `testes/textos.php` acha os textos instalando o `schema.sql` num SQLite temporário). Uma instalação
-que já existe não muda. A documentação (esta ajuda, a da API e a reconstrução) passa para os idiomas pelo mesmo caminho (as
-partes `ajuda`, `manual` e `reconstrucao` do `textos/<idioma>.php`).
-Os nomes que você cadastra (grupos, campos, tipos de lançamento, avisos, modos, os relógios) ficam
-como você escreveu.
+que já existe não muda.
+
+Esta ajuda (as seções do README que a página **Ajuda** mostra) tem a tradução inteira de cada idioma em
+`textos/manual/<idioma>.md`, que começa com a origem: `<!-- origem: ... -->`, a marca da versão do original de que ela é a
+tradução. `php testes/textos.php --manual` dá o original com a marca do momento, o ponto de partida de uma tradução nova;
+quando o README muda, `php testes/textos.php` acusa as traduções que ficaram para trás, e até serem refeitas elas continuam
+valendo (no modo estrito, param com erro). Os títulos traduzidos terminam com a âncora do original, `{#a-ideia-central}`, e
+os links de uma seção para outra valem em todo idioma. A documentação para quem programa (a ajuda da API e a reconstrução)
+continua em português.
+
+Os nomes que você cadastra (grupos, campos, tipos de lançamento, avisos, modos, os relógios) ficam como você escreveu.
 
 ---
 
