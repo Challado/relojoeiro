@@ -1012,6 +1012,9 @@ table.tabela-dados th:first-child, table.tabela-dados td:first-child { padding-l
 table.tabela-dados th:last-child, table.tabela-dados td:last-child { padding-right: 0; }
 table.tabela-dados tbody tr:last-child td { border-bottom: 0; }
 table.tabela-dados td.valor { white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* um valor de texto (a observação, uma fórmula que dá texto) quebra a linha dentro da coluna, sem invadir a tabela do lado */
+table.tabela-dados td.valor.texto { white-space: normal; overflow-wrap: anywhere; min-width: 8rem; }
+.dados-grade > div { min-width: 0; }
 table.tabela-dados td.versao { color: var(--cinza); font-size: .8rem; }
 table.tabela-dados td small { display: block; color: var(--cinza); font-size: .76rem; }
 table.tabela-dados tr.vazio td { color: var(--cinza); }
