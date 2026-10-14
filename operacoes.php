@@ -1727,6 +1727,11 @@ function op_criterios($acao, $d)
             sql("DELETE FROM criterio_parametro");
             // os comandos até o fim do arquivo, traduzidos para o banco em uso (e os ids andam depois dos gravados)
             banco_script(substr((string)$semente, $ini));
+            // no idioma da instalação, como na instalação
+            $lingua_inst = lingua_valida(cfg("idioma"));
+            if ($lingua_inst !== null && $lingua_inst !== "pt-BR") {
+                cadastro_traduzir($lingua_inst, ["criterio_parametro", "criterio_sub", "criterio_faixa"]);
+            }
             $ok = t("Critérios iniciais restaurados.");
             $escopo = "";
             $ancora = "lugares";

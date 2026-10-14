@@ -3,7 +3,8 @@
 // (o texto em português); cada idioma tem de ter todas as chaves, com tradução, e nenhuma que o código não usa mais, e os
 // mesmos parâmetros ({nome}) da chave. Lista o idioma, o arquivo e o texto de cada problema, de uma vez só. O arquivo é
 // dividido em partes: telas (os .js e as páginas), api (o núcleo, as gravações, a API e o cron), ajuda (api/ajuda.php),
-// reconstrucao (reconstrucao.php) e manual (os textos do manual).
+// reconstrucao (reconstrucao.php), manual (os textos do manual) e cadastro (os textos do cadastro inicial: os de
+// CADASTRO_TEXTOS, no lib.php, achados instalando o schema.sql num SQLite temporário).
 //   php testes/textos.php                       confere tudo (sai com 1 se faltar ou sobrar algo)
 //   php testes/textos.php --faltam <parte>      as chaves da parte que faltam em algum idioma, em JSON (para traduzir)
 //   php testes/textos.php --juntar <idioma> <parte> traducoes.json   junta as traduções (um objeto chave => tradução) ao
@@ -104,7 +105,40 @@ function chaves_do_codigo($raiz)
             $partes["manual"][$c] = true;
         }
     }
+    foreach (chaves_do_cadastro($raiz) as $c) {
+        $partes["cadastro"][$c] = true;
+    }
     return array_map("array_keys", $partes);
+}
+
+// os textos do cadastro inicial: instala o schema.sql num SQLite temporário (em português) e lê as colunas de CADASTRO_TEXTOS
+function chaves_do_cadastro($raiz)
+{
+    $pasta = sys_get_temp_dir() . "/relojoeiro-textos-" . getmypid();
+    @mkdir($pasta, 0775, true);
+    $codigo = 'require "lib.php"; lingua_definir("pt-BR"); $r = instalar_banco(); if (!$r["ok"]) { fwrite(STDERR, implode("; ", $r["erros"])); exit(1); }'
+        . ' $res = []; foreach (CADASTRO_TEXTOS as [$t, $c, $o]) { foreach (linhas("SELECT DISTINCT " . $c . " AS v FROM " . $t . ($o !== "" ? " WHERE " . $o : "")) as $l) { $res[] = (string)$l["v"]; } }'
+        . ' echo json_encode($res, JSON_UNESCAPED_UNICODE);';
+    $cmd = "cd " . escapeshellarg($raiz) . " && RELOGIOS_CONFIG=" . escapeshellarg($raiz . "/testes/config.teste.php") . " RELOGIOS_DB=sqlite RELOGIOS_TESTE_PASTA="
+        . escapeshellarg($pasta) . " php -r " . escapeshellarg($codigo);
+    $saida = shell_exec($cmd);
+    foreach (glob($pasta . "/*") ?: [] as $f) {
+        is_file($f) ? @unlink($f) : null;
+    }
+    @rmdir($pasta);
+    $lista = json_decode((string)$saida, true);
+    if (!is_array($lista)) {
+        fwrite(STDERR, "Não consegui instalar o schema.sql num SQLite temporário para achar os textos do cadastro.\n");
+        exit(2);
+    }
+    $res = [];
+    foreach ($lista as $v) {
+        // só o que tem texto (as âncoras {relogio} sozinhas e os números não se traduzem)
+        if (preg_match('/\p{L}{2}/u', preg_replace('/\{[a-z_]+\}/', "", $v)) === 1) {
+            $res[$v] = true;
+        }
+    }
+    return array_keys($res);
 }
 
 function parametros($s)
