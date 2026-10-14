@@ -62,6 +62,72 @@ function formTrocarDia(p, relogios, hoje) {
     + el("button", {"class": "leve", "hidden": true}, "Trocar"));
 }
 
+// O navegador de páginas (Próximos dias, Plano, Rodízio manual): "<" (Anterior), os números (a primeira, a última e até 2 de
+// cada lado da atual, com "…" nos saltos; a atual marcada) e ">" (Próximo). Cada botão leva o número da página no atributo
+// data-<atributo>; quem usa escuta o clique. Uma página só: nada
+function navPaginas(pagina, paginas, atributo) {
+  if (paginas <= 1) {
+    return "";
+  }
+  var botao = function (n, texto, dica) {
+    var a = {"type": "button", "class": "leve", "disabled": n < 1 || n > paginas, "title": dica, "aria-label": dica};
+    a["data-" + atributo] = n;
+    return el("button", a, texto);
+  };
+  var res = botao(pagina - 1, "&lt;", "Anterior");
+  var ultimo = 0;
+  for (var n = 1; n <= paginas; n++) {
+    if (n === 1 || n === paginas || Math.abs(n - pagina) <= 2) {
+      if (ultimo > 0 && n > ultimo + 1) {
+        res += el("span", {"class": "reticencias"}, "…");
+      }
+      res += n === pagina ? el("span", {"class": "atual", "aria-current": "page", "title": "Página " + n}, String(n)) : botao(n, String(n), "Página " + n);
+      ultimo = n;
+    }
+  }
+  res += botao(pagina + 1, "&gt;", "Próximo");
+  return el("nav", {"class": "paginas", "aria-label": "Páginas"}, res);
+}
+
+// Apagar o que um período do plano tem (página Plano e quadro Modo de rodízio): de, até e o que fazer depois: sortear de
+// novo pelo modo (rodizio periodo_sortear) ou deixar os dias livres, sem relógio (periodo_livre). Vale de amanhã em diante.
+// hoje: AAAA-MM-DD
+function formApagarPeriodo(hoje) {
+  var acoes = [["periodo_sortear", "e sortear de novo", "Tudo o que o período tem, de amanhã em diante (escolhido à mão, sorteado ou livre), sai, e o modo de rodízio sorteia os dias outra vez.",
+    "Apagar o que o período tem e sortear de novo? Os dias escolhidos à mão nele também saem."],
+    ["periodo_livre", "e deixar livre", "Tudo o que o período tem, de amanhã em diante, sai, e os dias ficam livres: sem relógio e sem sorteio, para você escolher cada um (no \"escolher…\" do dia ou no Rodízio manual).",
+    "Apagar o que o período tem e deixar os dias livres, sem relógio? Os dias escolhidos à mão nele também saem."]];
+  return el("form", {"data-recurso": "rodizio", "class": "apagar-periodo", "onsubmit": "var o = this.acao.options[this.acao.selectedIndex]; return confirm(o.getAttribute('data-confirma'))"},
+    el("span", {"class": "campo-principal"}, "Apagar um período")
+    + el("div", {"class": "linha-apagar"}, el("label", {}, "De " + el("input", {"type": "date", "name": "de", "min": hoje, "required": true}))
+      + el("label", {}, "Até " + el("input", {"type": "date", "name": "ate", "min": hoje, "required": true}))
+      + el("label", {}, "Depois " + el("select", {"name": "acao"}, acoes.map(function (a) {
+        return el("option", {"value": a[0], "data-explica": a[2], "data-confirma": a[3]}, h(a[1]));
+      }).join("")))
+      + el("button", {"class": "leve"}, "Apagar"))
+    + el("p", {"class": "nota", "data-explica-apagar": true}, h(acoes[0][2])));
+}
+
+// Apagar tudo (página Plano e quadro Modo de rodízio): toda a programação de amanhã em diante (com "Excluindo hoje", de hoje
+// em diante) sai: os dias escolhidos à mão, os sorteados e os livres; o modo de rodízio monta o plano de novo (rodizio apagar_tudo)
+function formApagarTudo() {
+  return el("form", {"data-recurso": "rodizio", "class": "apagar-tudo", "onsubmit": "return confirm(this.hoje.checked "
+      + "? 'Apagar toda a programação, de hoje em diante (escolhidos à mão, sorteados e dias livres)? O modo de rodízio monta o plano de novo, e hoje pode sair outro relógio, que passa a ser o do pulso a partir de agora.' "
+      + ": 'Apagar toda a programação, de amanhã em diante (escolhidos à mão, sorteados e dias livres)? O modo de rodízio monta o plano de novo; hoje continua como está.')"},
+    el("input", {"type": "hidden", "name": "acao", "value": "apagar_tudo"})
+    + el("span", {"class": "campo-principal"}, "Apagar tudo")
+    + el("div", {"class": "linha-apagar"}, el("label", {"class": "check"}, el("input", {"type": "checkbox", "name": "hoje", "value": "1"}) + " Excluindo hoje (apaga também o dia de hoje)")
+      + el("button", {"class": "leve"}, "Apagar tudo"))
+    + el("p", {"class": "nota"}, "Limpa toda a programação, de amanhã em diante: os dias escolhidos à mão, os sorteados e os livres. Marcando \"Excluindo hoje\", apaga de hoje em diante "
+      + "(se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora). Depois, o modo de rodízio monta o plano de novo, do zero."));
+}
+
+document.addEventListener("change", function (ev) {
+  if (ev.target.matches(".apagar-periodo select[name=acao]")) {
+    ev.target.closest("form").querySelector("[data-explica-apagar]").textContent = ev.target.options[ev.target.selectedIndex].getAttribute("data-explica");
+  }
+});
+
 // Os dias do plano com os dias livres no meio, na ordem das datas (um dia livre: sem relógio, para escolher à mão)
 function comLivres(plano, livres) {
   return plano.concat((livres || []).map(function (dt) {

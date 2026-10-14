@@ -1676,7 +1676,9 @@ function op_criterios($acao, $d)
 // periodo_sortear (de, ate: tudo o que o período tem, de amanhã em diante, sai e ele é sorteado de novo), periodo_livre (de,
 // ate: tudo sai e os dias ficam livres: sem relógio e sem sorteio, para escolher à mão), manual (o rodízio manual: de, ate,
 // dias[AAAA-MM-DD] = o id do relógio, auto (Decida por mim: o sistema decide ao gravar, rodizio_manual_decidir) ou livre;
-// o dia que não vem fica com a escolha de partida; tudo grava como escolhido à mão). Os dias escolhidos à mão e os
+// o dia que não vem fica com a escolha de partida; tudo grava como escolhido à mão), apagar_tudo (toda a programação de
+// amanhã em diante, à mão, sorteada e livre, sai; hoje=1: de hoje em diante; o modo ativo monta o plano de novo; hoje, se
+// mudar, o novo vai para o pulso a partir de agora). Os dias escolhidos à mão e os
 // livres, de amanhã em diante, ficam quando se sorteia de novo ou se monta a próxima semana.
 // Na escala inteligente: sortear de novo refaz a escala (do mesmo jeito: de amanhã, ou inclusive hoje); usando segura o
 // escolhido nos dias que faltavam do bloco de hoje e refaz a escala depois deles; a próxima semana não existe (a escala
@@ -1875,7 +1877,7 @@ function op_rodizio($acao, $d)
                 $faixa_txt = $desde_p->format("d/m") . " a " . $ate_p->format("d/m");
                 $msg = $acao === "periodo_livre"
                     ? "De " . $faixa_txt . ": " . $livres . ($livres === 1 ? " dia livre" : " dias livres") . ", sem relógio e sem sorteio" . ($n_p > 0 ? " (o que estava gravado saiu)" : "")
-                        . ". Escolha o relógio de cada um em \"trocar por…\", ou os relógios do período."
+                        . ". Escolha o relógio de cada um em \"escolher…\", ou no Rodízio manual."
                     : "De " . $faixa_txt . ": " . ($n_p > 0 ? "o que estava gravado saiu e " : "") . "o período foi sorteado de novo"
                         . ($escala ? " (a escala foi refeita a partir de " . $desde_p->format("d/m") . ")"
                             : ($ate_p > $hoje->modify((int)$hoje->format("N") === 7 ? "+1 day" : "sunday this week") ? "; os dias depois desta semana são sorteados quando a semana deles chegar" : "")) . ".";
@@ -1912,6 +1914,29 @@ function op_rodizio($acao, $d)
                     . ($escala ? " A escala foi refeita a partir de " . $de_p->format("d/m") . "." : "");
             }
         }
+    } elseif ($acao === "apagar_tudo") {
+        // apaga toda a programação de amanhã em diante (com hoje=1, de hoje em diante): os dias escolhidos à mão, os sorteados
+        // e os livres; depois o modo ativo monta o plano de novo (o sorteio até domingo, ou a escala inteira). Hoje, se mudar, o
+        // novo passa a ser o do pulso a partir de agora
+        $com_hoje = in_array((string)($d["hoje"] ?? "0"), ["1", "on", "sim", "true"], true);
+        $desde_t = $com_hoje ? $hoje : $hoje->modify("+1 day");
+        $antes = plano_do_dia($hoje->format("Y-m-d"));
+        $n_t = (int)valor("SELECT COUNT(*) FROM plano WHERE data >= ?", [$desde_t->format("Y-m-d")]) + (int)valor("SELECT COUNT(*) FROM plano_livre WHERE data >= ?", [$desde_t->format("Y-m-d")]);
+        sql("DELETE FROM plano WHERE data >= ?", [$desde_t->format("Y-m-d")]);
+        sql("DELETE FROM plano_livre WHERE data >= ?", [$desde_t->format("Y-m-d")]);
+        if ($escala) {
+            gerar_escala($desde_t);
+        }
+        garantir_plano($hoje, null, !$com_hoje);
+        $depois = plano_do_dia($hoje->format("Y-m-d"));
+        if ($com_hoje && $depois && (!$antes || (int)$antes["relogio_id"] !== (int)$depois["relogio_id"])) {
+            $troca_hoje((int)$depois["relogio_id"], $depois["motivo"] ?? null);
+        }
+        $modo_t = valor("SELECT nome FROM modo WHERE id = ?", [modo_ativo()]);
+        $msg = "Programação apagada " . ($com_hoje ? "de hoje em diante" : "de amanhã em diante") . ": " . $n_t . ($n_t === 1 ? " dia" : " dias")
+            . " (escolhidos à mão, sorteados e livres). O plano foi montado de novo pelo modo " . ($modo_t ?? "ativo")
+            . ($escala ? " (a escala inteira)" : " (até domingo; as semanas seguintes, quando chegarem)") . "."
+            . ($com_hoje && $depois ? " Hoje: " . $depois["nome"] . "." : "");
     } elseif ($acao === "manual") {
         // o rodízio manual: de, ate, dias[AAAA-MM-DD] = o id do relógio, "auto" (Decida por mim) ou "livre" (dia livre).
         // O dia que não vem fica com a escolha de partida (a escolha à mão que ele já tem; senão, Decida por mim)
@@ -2180,6 +2205,11 @@ function op_config($acao, $d)
         if (array_key_exists("url_sistema", $d) && trim((string)$d["url_sistema"]) !== "" && preg_match("#^https?://#i", trim((string)$d["url_sistema"])) !== 1) {
             $erros[] = "Endereço do sistema: começando por http:// ou https:// (vazio: sem link).";
         }
+        foreach (["proximos_por_pagina" => "Próximos dias", "plano_por_pagina" => "Plano"] as $k => $onde) {
+            if (array_key_exists($k, $d) && (!ctype_digit(trim((string)$d[$k])) || (int)$d[$k] < 1 || (int)$d[$k] > 366)) {
+                $erros[] = $onde . ": mostrar até de 1 a 366 dias por página.";
+            }
+        }
         if (array_key_exists("painel_modo", $d) && !in_array((string)$d["painel_modo"], ["lado", "flutuante"], true)) {
             $erros[] = "Abrir o relógio: lado (ao lado da lista) ou flutuante (numa janela grande por cima da página).";
         }
@@ -2201,7 +2231,7 @@ function op_config($acao, $d)
         }
         if (count($erros) === 0) {
             foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "agenda_antecedencia", "agenda_id", "agenda_chave", "url_sistema", "carga_limiar",
-                "sol_limiar", "medicao_janela_dias", "painel_modo"] as $k) {
+                "sol_limiar", "medicao_janela_dias", "painel_modo", "proximos_por_pagina", "plano_por_pagina"] as $k) {
                 if (array_key_exists($k, $d)) {
                     cfg_set($k, trim((string)$d[$k]));
                 }

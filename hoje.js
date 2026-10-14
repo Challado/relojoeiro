@@ -20,9 +20,42 @@ function mostrarRecado(texto) {
   p.hidden = texto.trim() === "";
 }
 
+// a página dos Próximos dias que está à mostra (fica a mesma quando a página Hoje se remonta depois de uma gravação)
+var paginaProximos = 1;
+var dadosHoje = null;
+
+// Os Próximos dias de uma página (px: o "proximos" da API, já com os dias livres no meio), com o navegador embaixo
+function proximosHtml(px) {
+  return el("table", {"class": "relogios"}, el("thead", {}, el("tr", {}, el("th", {}, "Dia") + el("th", {}, "Relógio") + el("th", {}, "Lembrete") + el("th", {}, "")))
+    + el("tbody", {}, px.dias.map(function (p) {
+      return el("tr", {"class": p.dia_semana >= 6 ? "fds" : ""}, el("td", {}, dataBr(p.data, true) + " " + el("small", {}, p.dia_semana_curto))
+        + el("td", {}, celulaDoDia(p)) + el("td", {}, h(p.acao || ""))
+        + el("td", {"class": "trocar"}, formTrocarDia(p, dadosHoje.relogios, dadosHoje.data)));
+    }).join("") + (px.total === 0 ? el("tr", {}, el("td", {"colspan": "4"}, "Neste modo o sorteio é feito dia a dia.")) : "")))
+    + navPaginas(px.pagina, px.paginas, "proximos-pagina")
+    + (px.paginas > 1 ? el("p", {"class": "nota"}, "Página " + px.pagina + " de " + px.paginas + " · " + px.total + " dias no plano, " + px.por_pagina + " por página "
+      + "(o \"Mostrar até\" da " + el("a", {"href": "configuracao.php"}, "Configuração") + ").") : "");
+}
+
+// a troca de página dos Próximos dias lê só eles (recurso=proximos)
+document.addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-proximos-pagina]");
+  if (b && !b.disabled) {
+    paginaProximos = parseInt(b.getAttribute("data-proximos-pagina"), 10);
+    api({recurso: "proximos", pagina: paginaProximos}).then(function (px) {
+      paginaProximos = px.pagina;
+      document.getElementById("proximos-lista").innerHTML = proximosHtml(px);
+    }).catch(function (e) {
+      mostrarRecado("Não consegui ler os próximos dias: " + e.message);
+    });
+  }
+});
+
 // lê a página inteira da API e monta os blocos
 function recarregarHoje() {
-  return api({recurso: "hoje"}).then(function (d) {
+  return api({recurso: "hoje", proximos_pagina: paginaProximos}).then(function (d) {
+    dadosHoje = d;
+    paginaProximos = d.proximos.pagina;
     // o quadro "Hoje": o relógio do dia, até quando, o tipo, o lembrete, e ao lado as informações dele e a foto
     var t = null;
     d.relogios.forEach(function (x) {
@@ -100,14 +133,9 @@ function recarregarHoje() {
 
     // "Próximos dias": o plano, com o lembrete de cada dia e, embaixo do relógio, o motivo da escolha
     // cada dia com o "trocar por…" (o relógio escolhido à mão fica marcado), e o link para o plano inteiro
+    // de "Mostrar até" em "Mostrar até" dias (a Configuração), com as páginas embaixo
     document.getElementById("bloco-proximos").innerHTML = el("h2", {}, "Próximos dias " + el("a", {"class": "ver-plano", "href": "plano.php"}, "ver o plano inteiro →"))
-      + el("table", {"class": "relogios"}, el("thead", {}, el("tr", {}, el("th", {}, "Dia") + el("th", {}, "Relógio") + el("th", {}, "Lembrete") + el("th", {}, "")))
-      + el("tbody", {}, comLivres(d.plano, d.livres).map(function (p) {
-        var dia = diaDaSemana(p.data);
-        return el("tr", {"class": dia >= 6 ? "fds" : ""}, el("td", {}, dataBr(p.data, true) + " " + el("small", {}, CURTO[dia]))
-          + el("td", {}, celulaDoDia(p)) + el("td", {}, h(p.acao || ""))
-          + el("td", {"class": "trocar"}, formTrocarDia(p, d.relogios, d.data)));
-      }).join("") + (d.plano.length === 0 ? el("tr", {}, el("td", {"colspan": "4"}, "Neste modo o sorteio é feito dia a dia.")) : "")));
+      + el("div", {"id": "proximos-lista"}, proximosHtml(d.proximos));
 
     // O quadro "Modo de rodízio": fechado mostra o modo atual; aberto, edita (os blocos de cada modo, a forma de escolha, a
     // garantia de rodízio) e sorteia de novo
@@ -207,7 +235,7 @@ function recarregarHoje() {
       + el("p", {"class": "acao", "id": "manual-recado", "hidden": true}, "")
       + el("div", {"id": "manual-dias"}, ""));
     document.getElementById("bloco-modo").innerHTML = el("details", {}, el("summary", {}, el("span", {"class": "rotulo"}, "Modo de rodízio") + " " + el("strong", {}, h(modo ? modo.nome : "nenhum")) + " "
-      + el("span", {"class": "nota"}, "· " + (escala ? "pela maior nota" : h(modo ? SELECOES[modo.selecao][0] : ""))) + " " + el("span", {"class": "editar"}, "editar")) + formModo + formManual + formSorteio);
+      + el("span", {"class": "nota"}, "· " + (escala ? "pela maior nota" : h(modo ? SELECOES[modo.selecao][0] : ""))) + " " + el("span", {"class": "editar"}, "editar")) + formModo + formManual + formSorteio + formApagarPeriodo(d.data) + formApagarTudo());
     mostrarModo();
 
     // A tabela dos relógios: disponíveis primeiro (o de hoje, depois os com aviso), indisponíveis no fim; na tela, a ordem e os
@@ -320,35 +348,14 @@ function manualHtml(r) {
       + el("td", {"data-rotulo": "No plano agora"}, agora)
       + el("td", {"data-rotulo": "Relógio do dia"}, el("select", {"data-dia": dia.data, "aria-label": "Relógio de " + dataBr(dia.data)}, opcoes)));
   }).join("");
-  var nav = "";
-  if (r.paginas > 1) {
-    var botao = function (n, texto, atual) {
-      return atual ? el("span", {"class": "atual"}, texto) : el("button", {"type": "button", "class": "leve", "data-manual-pagina": n, "disabled": n < 1 || n > r.paginas}, texto);
-    };
-    nav += botao(r.pagina - 1, "‹ Anterior", false);
-    var ultimo = 0;
-    for (var n = 1; n <= r.paginas; n++) {
-      if (n === 1 || n === r.paginas || Math.abs(n - r.pagina) <= 2) {
-        if (ultimo > 0 && n > ultimo + 1) {
-          nav += el("span", {"class": "reticencias"}, "…");
-        }
-        nav += botao(n, String(n), n === r.pagina);
-        ultimo = n;
-      }
-    }
-    nav += botao(r.pagina + 1, "Próxima ›", false);
-    nav = el("nav", {"class": "paginas", "aria-label": "Páginas do período"}, nav);
-  }
+  var nav = navPaginas(r.pagina, r.paginas, "manual-pagina");
   return el("table", {"class": "compacta manual-tabela"}, el("thead", {}, el("tr", {}, el("th", {}, "Dia") + el("th", {}, "No plano agora") + el("th", {}, "Relógio do dia"))) + el("tbody", {}, linhas))
     + nav
     + el("p", {"class": "nota"}, "Página " + r.pagina + " de " + r.paginas + " · " + r.total_dias + (r.total_dias === 1 ? " dia" : " dias") + ", de " + dataBr(r.de) + " a " + dataBr(r.ate)
       + ". O que você escolhe fica guardado enquanto você anda pelas páginas; nada muda antes de gravar.")
-    + el("div", {"class": "botoes"}, el("button", {"name": "acao", "value": "manual"}, "Gravar o rodízio manual")
-      + " " + el("button", {"class": "leve", "name": "acao", "value": "periodo_sortear"}, "Sortear de novo o período")
-      + " " + el("button", {"class": "leve", "name": "acao", "value": "periodo_livre"}, "Deixar o período livre"))
+    + el("div", {"class": "botoes"}, el("button", {"name": "acao", "value": "manual"}, "Gravar o rodízio manual"))
     + el("p", {"class": "nota"}, h(r.decida_por_mim))
-    + el("p", {"class": "nota"}, "\"Sortear de novo o período\" apaga o que ele tem (à mão ou sorteado) e o modo de sempre sorteia outra vez; \"Deixar o período livre\" apaga e não sorteia: "
-      + "cada dia fica para você escolher. Os dois valem de amanhã em diante e não usam as escolhas desta lista.");
+    + el("p", {"class": "nota"}, "Para apagar o que um período tem (e sortear de novo, ou deixar os dias livres): \"Apagar um período\", embaixo deste quadro, ou na página " + el("a", {"href": "plano.php"}, "Plano") + ".");
 }
 
 document.addEventListener("click", function (ev) {
@@ -385,13 +392,8 @@ document.addEventListener("submit", function (ev) {
   if (!manual.de) {
     return;
   }
-  var periodo = dataBr(manual.de) + " a " + dataBr(manual.ate);
-  var pergunta = {
-    manual: "Gravar o rodízio manual de " + periodo + "? Os dias ficam com os relógios escolhidos; os de \"Decida por mim\" são decididos agora pelo sistema.",
-    periodo_sortear: "Tudo o que o período de " + periodo + " tem (à mão ou sorteado) sai e o modo de sempre sorteia de novo, de amanhã em diante. Continuar?",
-    periodo_livre: "Tudo o que o período de " + periodo + " tem sai e os dias ficam livres, sem relógio, de amanhã em diante. Continuar?"
-  }[acao];
-  if (!confirm(pergunta)) {
+  var pergunta = "Gravar o rodízio manual de " + dataBr(manual.de) + " a " + dataBr(manual.ate) + "? Os dias ficam com os relógios escolhidos; os de \"Decida por mim\" são decididos agora pelo sistema.";
+  if (acao !== "manual" || !confirm(pergunta)) {
     return;
   }
   var dados = new FormData();
@@ -399,11 +401,9 @@ document.addEventListener("submit", function (ev) {
   dados.append("acao", acao);
   dados.append("de", manual.de);
   dados.append("ate", manual.ate);
-  if (acao === "manual") {
-    Object.keys(manual.escolhas).forEach(function (dt) {
-      dados.append("dias[" + dt + "]", manual.escolhas[dt]);
-    });
-  }
+  Object.keys(manual.escolhas).forEach(function (dt) {
+    dados.append("dias[" + dt + "]", manual.escolhas[dt]);
+  });
   var botoes = ev.target.querySelectorAll("button");
   botoes.forEach(function (b) { b.disabled = true; });
   enviar(dados).then(function (res) {

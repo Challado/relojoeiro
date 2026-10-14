@@ -1300,3 +1300,12 @@ body.com-foto-ampliada { overflow: hidden; }
 .rodizio-manual nav.paginas { margin: .2rem 0 0; align-items: center; }
 nav.paginas button { min-height: 0; padding: .3rem .65rem; font-size: .9rem; }
 nav.paginas .reticencias { border: 0; padding: .3rem .2rem; }
+
+/* apagar um período e apagar tudo (quadro Modo de rodízio e página Plano): como o "Sortear de novo", cada um abaixo de uma
+   linha, com os campos numa linha só (que quebra no celular) */
+form.apagar-periodo, form.apagar-tudo { display: flex; flex-direction: column; gap: .35rem; margin-top: 1rem; padding-top: .9rem; border-top: 1px solid var(--aco); }
+.apagar-plano form.apagar-periodo { margin-top: 0; padding-top: 0; border-top: 0; }
+.linha-apagar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .6rem 1rem; }
+.linha-apagar label.check { flex-direction: row; align-items: center; gap: .35rem; padding-bottom: .45rem; }
+.apagar-plano > p.nota:last-child { margin-top: 1rem; }
+#proximos-lista nav.paginas, #plano nav.paginas { margin: .6rem 0 .4rem; }

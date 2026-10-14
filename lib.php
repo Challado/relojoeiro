@@ -2160,6 +2160,52 @@ function documento_apagar_arquivos($d)
 
 // Como o relógio abre na página Hoje (a Configuração): "lado", no painel à direita da lista (o padrão), ou "flutuante",
 // numa janela grande por cima da página. No celular, os dois cobrem a tela inteira
+// Quantos dias cada página mostra (a Configuração, "Mostrar até"): os Próximos dias da página Hoje (padrão 7) e o dia a dia
+// da página Plano (padrão 31). De 1 a 366
+function proximos_por_pagina()
+{
+    $n = (int)cfg("proximos_por_pagina");
+    return $n >= 1 && $n <= 366 ? $n : 7;
+}
+
+function plano_por_pagina()
+{
+    $n = (int)cfg("plano_por_pagina");
+    return $n >= 1 && $n <= 366 ? $n : 31;
+}
+
+// Uma página dos dias do plano, de $de a $ate (vazio: sem limite), com os dias livres no meio (sem o filtro de relógio),
+// na ordem das datas: {"por_pagina", "pagina", "paginas", "total", "relogio" (o filtro, ou null), "dias": [{"data",
+// "dia_semana" (1 segunda ... 7 domingo), "dia_semana_curto" (seg... dom), "hoje", "relogio_id", "relogio", "origem"
+// (sorteio, manual ou livre), "acao", "motivo"}]}. Os Próximos dias da página Hoje e o dia a dia da página Plano
+function plano_pagina($de, $ate, $relogio_id, $pagina, $por)
+{
+    $curto = [1 => "seg", 2 => "ter", 3 => "qua", 4 => "qui", 5 => "sex", 6 => "sáb", 7 => "dom"];
+    $hoje = date("Y-m-d");
+    $faixa = [$de !== "" ? $de : "0001-01-01", $ate !== "" ? $ate : "9999-12-31"];
+    $dias = [];
+    foreach (linhas("SELECT p.data, p.relogio_id, r.nome, p.origem, p.acao, p.motivo FROM plano p JOIN relogio r ON r.id = p.relogio_id
+        WHERE p.data >= ? AND p.data <= ?" . ($relogio_id !== null ? " AND p.relogio_id = " . (int)$relogio_id : "") . " ORDER BY p.data", $faixa) as $p) {
+        $dias[substr((string)$p["data"], 0, 10)] = ["relogio_id" => (int)$p["relogio_id"], "relogio" => $p["nome"], "origem" => $p["origem"], "acao" => $p["acao"], "motivo" => $p["motivo"]];
+    }
+    if ($relogio_id === null) {
+        foreach (dias_livres($de, $ate) as $l) {
+            $dias[$l] = ["relogio_id" => null, "relogio" => null, "origem" => "livre", "acao" => null, "motivo" => null];
+        }
+    }
+    ksort($dias);
+    $total = count($dias);
+    $por = max(1, min(366, (int)$por));
+    $paginas = max(1, (int)ceil($total / $por));
+    $pagina = max(1, min($paginas, (int)$pagina));
+    $lista = [];
+    foreach (array_slice($dias, ($pagina - 1) * $por, $por, true) as $data => $x) {
+        $n = (int)date("N", strtotime($data));
+        $lista[] = array_merge(["data" => $data, "dia_semana" => $n, "dia_semana_curto" => $curto[$n], "hoje" => $data === $hoje], $x);
+    }
+    return ["por_pagina" => $por, "pagina" => $pagina, "paginas" => $paginas, "total" => $total, "relogio" => $relogio_id, "dias" => $lista];
+}
+
 function painel_modo()
 {
     return cfg("painel_modo") === "flutuante" ? "flutuante" : "lado";
