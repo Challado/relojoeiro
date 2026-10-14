@@ -95,7 +95,8 @@
  *                            de, ate: data (AAAA-MM-DD: "de" às 00:00:00, "ate" às 23:59:59) ou data e hora (AAAA-MM-DD HH:MM[:SS],
  *                            espaço ou T); entra a linha que cruza o período. estado=rodizio,pulso,winder,sol,repouso,marca (um ou
  *                            vários; linha_estado também vale; sem ele, todos). limite (por página, padrão 100, máximo 1000),
- *                            pagina, ordem=asc|desc (padrão: mais recente primeiro).
+ *                            pagina, ordem=asc|desc (padrão: mais recente primeiro; dois no mesmo instante, pela ordem em que foram
+ *                            lançados).
  *                            {"filtro": {"relogios", "de", "ate", "estados", "ordem", "ignorados"}, "estados": {estado: texto},
  *                            "total", "pagina", "por_pagina", "paginas", "resumo": {"<id>": {"relogio", "tempo": {estado: {"segundos",
  *                            "texto", "porcentagem"}}, "marcacoes": {tipo: quantas}}}, "linhas": [{"relogio_id", "relogio", "inicio",
@@ -236,8 +237,10 @@
  *   Campos em formulário ou em JSON no corpo (Content-Type: application/json); recurso e acao nos campos ou na URL.
  *   Resposta: {"ok", "mensagem", "erros": [...], "id"}; 400 quando recusado (os erros dizem por quê).
  *   recurso=arvore            novo (nome, pai_id: 0 = na raiz), renomear (id, nome), mover (id, pai_id), ordem (id, direcao:
- *                             sobe ou desce), excluir (id: o que é dele sobe para o ponto de cima), relogios (grupo[<relógio>]:
- *                             o grupo de cada relógio, 0 = na raiz)
+ *                             sobe ou desce), excluir (id: o que é dele sobe para o ponto de cima: os pontos de dentro, os
+ *                             relógios, os campos, os tipos de lançamento, as fórmulas e os avisos, menos as versões de fórmulas e
+ *                             avisos que o de cima já tem, que saem; os blocos dos modos que sorteavam dele passam a sortear do de
+ *                             cima; os critérios próprios dele saem), relogios (grupo[<relógio>]: o grupo de cada relógio, 0 = na raiz)
  *                            Ex. novo: curl -u lucas:senha -d recurso=arvore -d acao=novo -d "nome=Cronógrafos" -d pai_id=2 http://servidor/relogios2/api.php
  *                            Ex. renomear: curl -u lucas:senha -d recurso=arvore -d acao=renomear -d id=5 -d "nome=Automáticos" http://servidor/relogios2/api.php
  *                            Ex. mover: curl -u lucas:senha -d recurso=arvore -d acao=mover -d id=5 -d pai_id=0 http://servidor/relogios2/api.php
@@ -362,13 +365,13 @@
  * DICIONÁRIO DOS CAMPOS  (o que é, para que serve e que valor tem cada campo; o mesmo está em recurso=ajuda, "campos")
  * ---------------------------------------------------------------------------------------------
  *   [] no caminho: uma lista (o campo é de cada item); <...>: uma chave que varia (o identificador de um campo, um estado,
- *   uma função...). Datas e horas no fuso do servidor; "null": sem valor. Números de tempo em segundos são inteiros.
+ *   uma função...). Datas e horas no fuso do sistema (o FUSO do config.php; sem ele, o do PHP, date.timezone); "null": sem valor. Números de tempo em segundos são inteiros.
  *
  *   api.php (sem recurso)
  *     agenda.criados[]               os eventos que o sistema criou no Google Agenda
  *     agenda.criados[].assinatura    a marca do título e da descrição com que foi criado (mudou: o evento é atualizado na próxima sincronização)
  *     agenda.criados[].chave         a identificação do evento (a mesma dos desejados)
- *     agenda.criados[].criado        quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     agenda.criados[].criado        quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     agenda.criados[].data          o dia do evento (texto AAAA-MM-DD)
  *     agenda.criados[].google_id     o id do evento no Google
  *     agenda.criados[].titulo        o título com que foi criado
@@ -379,7 +382,7 @@
  *     agenda.desejados[].descricao   a descrição do evento, montada pela mensagem do canal da agenda
  *     agenda.desejados[].fazer       a ação ("Dar corda", "Usar hoje", o nome do evento) — a âncora {acao}
  *     agenda.desejados[].hora        a hora do evento na agenda (HH:MM)
- *     agenda.desejados[].momento     o instante previsto do que motivou o evento (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     agenda.desejados[].momento     o instante previsto do que motivou o evento (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     agenda.desejados[].motivo      o porquê ("a reserva acaba em 3h, 28/09 10:53") — a âncora {motivo}
  *     agenda.desejados[].relogio     o nome do relógio; vazio num evento geral
  *     agenda.desejados[].relogio_id  o relógio do evento; null num evento geral
@@ -433,7 +436,7 @@
  *                                    ev<id>)
  *     config.cron_erro               o erro guardado da última execução com erro (texto; vazio: sem erro)
  *     config.cron_registro           o registro da última rodada com atividade (texto)
- *     config.cron_ultima_execucao    quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     config.cron_ultima_execucao    quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     config.escala_fim              até que dia vai a escala inteligente gerada (texto AAAA-MM-DD; vazio fora da escala)
  *     config.escala_gerada           o dia em que a escala foi gerada pela última vez (texto AAAA-MM-DD)
  *     config.horario_manha           a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)
@@ -547,31 +550,31 @@
  *     cron.erro                      o erro guardado (texto; vazio: sem erro; some na primeira execução sem erro)
  *     cron.execucoes[]               as execuções do cron guardadas (sem atividade: 7 dias; com atividade ou erro: 1 ano), da mais recente
  *     cron.execucoes[].duracao_ms    quanto durou, em milissegundos (número inteiro)
- *     cron.execucoes[].fim           quando terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     cron.execucoes[].fim           quando terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     cron.execucoes[].id            o número da execução
- *     cron.execucoes[].inicio        quando começou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     cron.execucoes[].inicio        quando começou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     cron.execucoes[].registro      o que foi feito, linha por linha (texto; vazio: nada a fazer)
  *     cron.execucoes[].teve_atividade
  *                                    verdadeiro ou falso: fez alguma coisa (rodada, plano, evento, sincronização)
  *     cron.execucoes[].teve_erro     verdadeiro ou falso: houve erro
- *     cron.ultima                    quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     cron.ultima                    quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     eventos[]                      os eventos personalizados (avisos seus, com horário e repetição próprios)
  *     eventos[].agenda               verdadeiro ou falso: o evento vai para o Google Agenda
  *     eventos[].ativo                verdadeiro ou falso: o evento dispara
- *     eventos[].criado               quando o evento foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     eventos[].criado               quando o evento foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     eventos[].data_inicio          a data (uma vez só) ou o começo da contagem (a cada N dias) (texto AAAA-MM-DD); null nas outras
  *     eventos[].descricao            a repetição por extenso ("seg, qua 20:00")
  *     eventos[].dia_mes              o dia do mês (mensal), de 1 a 31; null nas outras
  *     eventos[].dias_semana          os dias da semana (semanal), de 1 (segunda) a 7 (domingo), separados por vírgula; null nas outras
  *     eventos[].disparos[]           as vezes em que já disparou
- *     eventos[].disparos[].disparado quando o cron mandou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     eventos[].disparos[].disparado quando o cron mandou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     eventos[].disparos[].ocorrencia
- *                                    a vez que disparou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor, a do cadastro)
+ *                                    a vez que disparou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema, a do cadastro)
  *     eventos[].hora                 a hora do disparo (HH:MM)
  *     eventos[].id                   o número do evento (o tipo dele nos canais é ev<id>)
  *     eventos[].intervalo_dias       de quantos em quantos dias (intervalo); null nas outras
  *     eventos[].nome                 o nome do evento (texto)
- *     eventos[].proximas[]           as 10 próximas vezes em que dispara (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     eventos[].proximas[]           as 10 próximas vezes em que dispara (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     eventos[].relogio              o nome desse relógio; null: evento geral
  *     eventos[].relogio_id           o relógio do evento (as âncoras dele funcionam na mensagem); null: evento geral
  *     eventos[].repeticao            quando dispara: uma (uma vez só), diaria, semanal, mensal ou intervalo (a cada N dias)
@@ -631,7 +634,7 @@
  *     plano[].acao                   o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nada
  *     plano[].bloco                  o nome desse bloco
  *     plano[].bloco_id               o bloco do modo que escolheu o dia; null: escala ou manual
- *     plano[].criado                 quando o dia foi gravado no plano (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     plano[].criado                 quando o dia foi gravado no plano (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     plano[].data                   o dia (texto AAAA-MM-DD)
  *     plano[].origem                 sorteio (pelo modo) ou manual ("Usando hoje")
  *     plano[].relogio                o nome dele
@@ -654,7 +657,7 @@
  *     relogios[].avisos[]            os avisos do relógio agora (os que valem para ele e têm data prevista), do mais urgente ao mais distante
  *     relogios[].avisos[].agenda     a data na agenda: janela (só dentro da antecedência da agenda) ou sempre (qualquer data); se vai pela agenda é a
  *                                    Configuração
- *     relogios[].avisos[].data       a data prevista, pela fórmula do aviso (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     relogios[].avisos[].data       a data prevista, pela fórmula do aviso (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].avisos[].escala     na escala inteligente: nao, uso (conferido no relógio do dia) ou sempre (também nos guardados)
  *     relogios[].avisos[].estado     atrasado (a data passou), em_breve (dentro da antecedência) ou ok
  *     relogios[].avisos[].falta_dias quanto falta para a data prevista, em dias (número; negativo: já passou)
@@ -681,7 +684,7 @@
  *     relogios[].campos[].valor      o valor gravado no relógio (texto; null: não preenchido)
  *     relogios[].campos[].valor_usado
  *                                    o valor que as contas usam: o gravado, ou o padrão do campo
- *     relogios[].criado              quando foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     relogios[].criado              quando foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].disponivel          verdadeiro ou falso: entra no rodízio
  *     relogios[].em_uso              verdadeiro ou falso: o relógio está com uma sessão no pulso aberta agora
  *     relogios[].energia             a energia agora, em % inteiro (a fórmula energia: bateria, reserva, luz ou pilha); null sem dados para calcular
@@ -693,18 +696,18 @@
  *     relogios[].formulas[].valor    o resultado agora (número ou texto; null: vazio)
  *     relogios[].formulas[].versao   o grupo da versão usada
  *     relogios[].foto                a foto; null: sem foto
- *     relogios[].foto.atualizada_em  quando a foto foi trocada (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     relogios[].foto.atualizada_em  quando a foto foi trocada (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].foto.base64         a imagem em base64; null com foto=nao
  *     relogios[].foto.tipo           o tipo da imagem (image/jpeg, image/png, image/webp)
  *     relogios[].id                  o número (código) do relógio
  *     relogios[].lancamento_tipos[]  os identificadores dos tipos de lançamento que valem para ele (texto)
  *     relogios[].lancamentos[]       todos os lançamentos do relógio, do mais antigo para o mais recente
  *     relogios[].lancamentos[].criado
- *                                    quando foi gravado (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
- *     relogios[].lancamentos[].fim   o fim da sessão (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor); null: marcação, leitura, ou sessão aberta
+ *                                    quando foi gravado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     relogios[].lancamentos[].fim   o fim da sessão (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null: marcação, leitura, ou sessão aberta
  *     relogios[].lancamentos[].id    o número do lançamento
  *     relogios[].lancamentos[].inicio
- *                                    quando (a marcação ou a leitura), ou o começo da sessão (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *                                    quando (a marcação ou a leitura), ou o começo da sessão (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].lancamentos[].origem
  *                                    manual (lançado por alguém), rodizio (a sessão do dia, pelo cron) ou importado
  *     relogios[].lancamentos[].tipo  o identificador do tipo
@@ -721,9 +724,9 @@
  *                                    o estado do trecho: rodizio (no pulso pelo rodízio), pulso (no pulso fora do rodízio), o identificador de um tipo
  *                                    de sessão (winder, sol...), repouso (parado) ou marca (uma marcação)
  *     relogios[].linha_do_tempo[].fim
- *                                    quando o trecho terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor); null numa marcação
+ *                                    quando o trecho terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null numa marcação
  *     relogios[].linha_do_tempo[].inicio
- *                                    quando o trecho começou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *                                    quando o trecho começou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].linha_do_tempo[].texto
  *                                    o trecho por extenso, como a tela mostra ("em uso", "no sol", "Leitura de carga 80%")
  *     relogios[].linha_do_tempo[].tipo
@@ -733,15 +736,15 @@
  *                                    recente para a mais antiga
  *     relogios[].medicoes[].ate_valor
  *                                    a leitura que fechou a medição (número)
- *     relogios[].medicoes[].criado   quando a medição foi gravada (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     relogios[].medicoes[].criado   quando a medição foi gravada (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].medicoes[].de_valor a leitura de antes (número, na unidade da leitura)
- *     relogios[].medicoes[].fim      quando foi a leitura que fechou a medição (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     relogios[].medicoes[].fim      quando foi a leitura que fechou a medição (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].medicoes[].horas_guardado
  *                                    as horas guardado entre as duas leituras (número)
  *     relogios[].medicoes[].horas_pulso
  *                                    as horas no pulso entre as duas leituras (número)
  *     relogios[].medicoes[].id       o número da medição
- *     relogios[].medicoes[].inicio   quando foi a leitura de antes (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     relogios[].medicoes[].inicio   quando foi a leitura de antes (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].medicoes[].lancamento_id
  *                                    o lançamento (a leitura) que fechou a medição
  *     relogios[].medicoes[].medida   o que foi medido: uso (o gasto por dia de uso, quando o intervalo teve meio dia de uso ou mais) ou repouso (o
@@ -764,7 +767,7 @@
  *     relogios[].previsao.carregar_antes
  *                                    verdadeiro ou falso: a carga na entrada não basta (é preciso carregar antes)
  *     relogios[].previsao.chega_limite_em
- *                                    quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor); null se passa de um ano
+ *                                    quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se passa de um ano
  *     relogios[].previsao.confianca  a confiança da conta: alta (leitura de até 2 dias e nenhum dado vazio, ou gasto em uso medido), media ou baixa
  *                                    (leitura com mais de 7 dias)
  *     relogios[].previsao.conta[]    de onde vem cada número da conta: os campos do cadastro usados e o gasto medido pelas leituras
@@ -783,7 +786,7 @@
  *     relogios[].previsao.dura_dias  quantos dias de uso a carga de agora aguenta (número, dias; a fórmula dias_de_carga)
  *     relogios[].previsao.energia    a energia agora, em % (número; null sem leitura)
  *     relogios[].previsao.leitura    a última leitura, no valor informado (número)
- *     relogios[].previsao.leitura_em quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     relogios[].previsao.leitura_em quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].previsao.limite     o limite de carga da Configuração (previsao_limite), em % (número)
  *     relogios[].previsao.linhas[]   as frases da previsão, como a tela mostra (texto)
  *     relogios[].previsao.precisa    quanto ele precisa ter na entrada para os dias seguidos no pulso, em % (número)
@@ -803,7 +806,7 @@
  *     relogios[].resumo_do_tempo.tempo.<estado>.texto
  *                                    o mesmo tempo por extenso
  *     usuarios[]                     quem acessa o site (as senhas nunca saem)
- *     usuarios[].criado              quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     usuarios[].criado              quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     usuarios[].login               o login
  *
  *   recurso=autonomia
@@ -913,7 +916,7 @@
  *                                    foto
  *     relogios[].id                  o número (código)
  *     relogios[].leitura             a última leitura com valor; null: nenhuma
- *     relogios[].leitura.inicio      quando (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     relogios[].leitura.inicio      quando (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].leitura.unidade     a unidade
  *     relogios[].leitura.valor       o valor
  *     relogios[].manutencao          o aviso mais perto; null: nenhum
@@ -1002,7 +1005,7 @@
  *     relogio.dados[].unidade        a unidade (texto)
  *     relogio.dados[].valor          o valor informado no relógio (texto; null: não preenchido)
  *     relogio.dados[].valor_usado    o valor que as contas usam: o informado, senão o padrão do campo (null: nenhum)
- *     relogio.desde                  desde quando (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     relogio.desde                  desde quando (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.disponivel             verdadeiro ou falso: entra no rodízio
  *     relogio.em_uso                 verdadeiro ou falso: no pulso agora
  *     relogio.escala_fim             até que dia vai a escala (null fora da escala)
@@ -1024,9 +1027,9 @@
  *     relogio.linha_do_tempo[].estado
  *                                    o estado do trecho: rodizio (no pulso pelo rodízio), pulso (no pulso fora do rodízio), o identificador de um tipo
  *                                    de sessão (winder, sol...), repouso (parado) ou marca (uma marcação)
- *     relogio.linha_do_tempo[].fim   quando o trecho terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor); null numa marcação
+ *     relogio.linha_do_tempo[].fim   quando o trecho terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null numa marcação
  *     relogio.linha_do_tempo[].inicio
- *                                    quando o trecho começou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *                                    quando o trecho começou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.linha_do_tempo[].texto o trecho por extenso, como a tela mostra ("em uso", "no sol", "Leitura de carga 80%")
  *     relogio.linha_do_tempo[].tipo  o identificador do tipo de lançamento que originou o trecho (pulso, sol, corda, carga...); null no repouso
  *     relogio.manutencoes[]          as 5 próximas manutenções (avisos)
@@ -1036,14 +1039,14 @@
  *     relogio.medicoes[]             as medições do gasto pelas leituras (cada leitura de um tipo que mede o gasto, comparada com a anterior), da mais
  *                                    recente para a mais antiga
  *     relogio.medicoes[].ate_valor   a leitura que fechou a medição (número)
- *     relogio.medicoes[].criado      quando a medição foi gravada (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     relogio.medicoes[].criado      quando a medição foi gravada (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.medicoes[].de_valor    a leitura de antes (número, na unidade da leitura)
- *     relogio.medicoes[].fim         quando foi a leitura que fechou a medição (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     relogio.medicoes[].fim         quando foi a leitura que fechou a medição (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.medicoes[].horas_guardado
  *                                    as horas guardado entre as duas leituras (número)
  *     relogio.medicoes[].horas_pulso as horas no pulso entre as duas leituras (número)
  *     relogio.medicoes[].id          o número da medição
- *     relogio.medicoes[].inicio      quando foi a leitura de antes (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     relogio.medicoes[].inicio      quando foi a leitura de antes (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.medicoes[].lancamento_id
  *                                    o lançamento (a leitura) que fechou a medição
  *     relogio.medicoes[].medida      o que foi medido: uso (o gasto por dia de uso, quando o intervalo teve meio dia de uso ou mais) ou repouso (o
@@ -1066,7 +1069,7 @@
  *     relogio.previsao.carregar_antes
  *                                    verdadeiro ou falso: a carga na entrada não basta (é preciso carregar antes)
  *     relogio.previsao.chega_limite_em
- *                                    quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor); null se passa de um ano
+ *                                    quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se passa de um ano
  *     relogio.previsao.confianca     a confiança da conta: alta (leitura de até 2 dias e nenhum dado vazio, ou gasto em uso medido), media ou baixa
  *                                    (leitura com mais de 7 dias)
  *     relogio.previsao.conta[]       de onde vem cada número da conta: os campos do cadastro usados e o gasto medido pelas leituras
@@ -1082,7 +1085,7 @@
  *     relogio.previsao.dura_dias     quantos dias de uso a carga de agora aguenta (número, dias; a fórmula dias_de_carga)
  *     relogio.previsao.energia       a energia agora, em % (número; null sem leitura)
  *     relogio.previsao.leitura       a última leitura, no valor informado (número)
- *     relogio.previsao.leitura_em    quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     relogio.previsao.leitura_em    quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.previsao.limite        o limite de carga da Configuração (previsao_limite), em % (número)
  *     relogio.previsao.linhas[]      as frases da previsão, como a tela mostra (texto)
  *     relogio.previsao.precisa       quanto ele precisa ter na entrada para os dias seguidos no pulso, em % (número)
@@ -1095,7 +1098,7 @@
  *     relogio.tipo                   o nome do grupo
  *     relogio.tipos[]                os tipos de lançamento do relógio (os botões de Lançar)
  *     relogio.tipos[].aberta         a sessão aberta desse tipo agora; null: nenhuma
- *     relogio.tipos[].aberta.inicio  desde quando (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     relogio.tipos[].aberta.inicio  desde quando (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.tipos[].aberta.rodizio verdadeiro ou falso: é a sessão do rodízio
  *     relogio.tipos[].aberta.texto   por extenso ("desde 07:00 (3 h 12 min)")
  *     relogio.tipos[].formato        instantaneo, valor ou sessao
@@ -1124,7 +1127,7 @@
  *                                    ev<id>)
  *     config.cron_erro               o erro guardado da última execução com erro (texto; vazio: sem erro)
  *     config.cron_registro           o registro da última rodada com atividade (texto)
- *     config.cron_ultima_execucao    quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     config.cron_ultima_execucao    quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     config.escala_fim              até que dia vai a escala inteligente gerada (texto AAAA-MM-DD; vazio fora da escala)
  *     config.escala_gerada           o dia em que a escala foi gerada pela última vez (texto AAAA-MM-DD)
  *     config.horario_manha           a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)
@@ -1144,20 +1147,20 @@
  *     eventos[]                      os eventos personalizados (avisos seus, com horário e repetição próprios)
  *     eventos[].agenda               verdadeiro ou falso: o evento vai para o Google Agenda
  *     eventos[].ativo                verdadeiro ou falso: o evento dispara
- *     eventos[].criado               quando o evento foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     eventos[].criado               quando o evento foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     eventos[].data_inicio          a data (uma vez só) ou o começo da contagem (a cada N dias) (texto AAAA-MM-DD); null nas outras
  *     eventos[].descricao            a repetição por extenso ("seg, qua 20:00")
  *     eventos[].dia_mes              o dia do mês (mensal), de 1 a 31; null nas outras
  *     eventos[].dias_semana          os dias da semana (semanal), de 1 (segunda) a 7 (domingo), separados por vírgula; null nas outras
  *     eventos[].disparos[]           as vezes em que já disparou
- *     eventos[].disparos[].disparado quando o cron mandou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     eventos[].disparos[].disparado quando o cron mandou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     eventos[].disparos[].ocorrencia
- *                                    a vez que disparou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor, a do cadastro)
+ *                                    a vez que disparou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema, a do cadastro)
  *     eventos[].hora                 a hora do disparo (HH:MM)
  *     eventos[].id                   o número do evento (o tipo dele nos canais é ev<id>)
  *     eventos[].intervalo_dias       de quantos em quantos dias (intervalo); null nas outras
  *     eventos[].nome                 o nome do evento (texto)
- *     eventos[].proximas[]           as 10 próximas vezes em que dispara (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     eventos[].proximas[]           as 10 próximas vezes em que dispara (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     eventos[].proximas_60[]        as 5 próximas vezes nos próximos 60 dias
  *     eventos[].relogio              o nome desse relógio; null: evento geral
  *     eventos[].relogio_id           o relógio do evento (as âncoras dele funcionam na mensagem); null: evento geral
@@ -1190,15 +1193,15 @@
  *   recurso=cron
  *     execucoes[]                    as execuções do cron guardadas (sem atividade: 7 dias; com atividade ou erro: 1 ano), da mais recente
  *     execucoes[].duracao_ms         quanto durou, em milissegundos (número inteiro)
- *     execucoes[].fim                quando terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     execucoes[].fim                quando terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     execucoes[].id                 o número da execução
- *     execucoes[].inicio             quando começou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     execucoes[].inicio             quando começou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     execucoes[].registro           o que foi feito, linha por linha (texto; vazio: nada a fazer)
  *     execucoes[].teve_atividade     verdadeiro ou falso: fez alguma coisa (rodada, plano, evento, sincronização)
  *     execucoes[].teve_erro          verdadeiro ou falso: houve erro
  *     filtro.ate                     o fim do período
  *     filtro.busca                   o texto pedido
- *     filtro.de                      o começo do período pedido (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     filtro.de                      o começo do período pedido (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     filtro.situacao                a situação pedida (atividade, erro, nada, todas)
  *     pagina                         a página
  *     paginas                        quantas páginas
@@ -1317,7 +1320,7 @@
  *     avisos[]                       os avisos de todos os relógios agora, do mais urgente ao mais distante
  *     avisos[].agenda                a data na agenda: janela (só dentro da antecedência da agenda) ou sempre (qualquer data); se vai pela agenda é a
  *                                    Configuração
- *     avisos[].data                  a data prevista, pela fórmula do aviso (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     avisos[].data                  a data prevista, pela fórmula do aviso (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     avisos[].disponivel            verdadeiro ou falso: o relógio entra no rodízio
  *     avisos[].escala                na escala inteligente: nao, uso (conferido no relógio do dia) ou sempre (também nos guardados)
  *     avisos[].estado                atrasado (a data passou), em_breve (dentro da antecedência) ou ok
@@ -1413,7 +1416,7 @@
  *   recurso=historico
  *     estados.<estado>               cada estado possível da linha do tempo e o nome dele
  *     filtro.ate                     o fim pedido (null)
- *     filtro.de                      o começo pedido (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor; null)
+ *     filtro.de                      o começo pedido (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema; null)
  *     filtro.estados[]               os estados pedidos
  *     filtro.ignorados[]             o que foi pedido e não existe
  *     filtro.ordem                   desc ou asc
@@ -1434,8 +1437,8 @@
  *     linhas[].em_andamento          verdadeiro ou falso: o trecho ainda não terminou (o fim é o momento da consulta)
  *     linhas[].estado                o estado do trecho: rodizio (no pulso pelo rodízio), pulso (no pulso fora do rodízio), o identificador de um tipo
  *                                    de sessão (winder, sol...), repouso (parado) ou marca (uma marcação)
- *     linhas[].fim                   quando o trecho terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor); null numa marcação
- *     linhas[].inicio                quando o trecho começou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     linhas[].fim                   quando o trecho terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null numa marcação
+ *     linhas[].inicio                quando o trecho começou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     linhas[].relogio               o nome
  *     linhas[].relogio_id            o relógio
  *     linhas[].texto                 o trecho por extenso, como a tela mostra ("em uso", "no sol", "Leitura de carga 80%")
@@ -1463,7 +1466,7 @@
  *     previsoes[].aplica             verdadeiro ou falso: o relógio tem leitura com valor (senão os outros campos ficam vazios)
  *     previsoes[].carga_na_entrada   com quanto ele entra nesse dia, em % (número)
  *     previsoes[].carregar_antes     verdadeiro ou falso: a carga na entrada não basta (é preciso carregar antes)
- *     previsoes[].chega_limite_em    quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor); null se passa de um ano
+ *     previsoes[].chega_limite_em    quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se passa de um ano
  *     previsoes[].confianca          a confiança da conta: alta (leitura de até 2 dias e nenhum dado vazio, ou gasto em uso medido), media ou baixa
  *                                    (leitura com mais de 7 dias)
  *     previsoes[].conta[]            de onde vem cada número da conta: os campos do cadastro usados e o gasto medido pelas leituras
@@ -1477,7 +1480,7 @@
  *     previsoes[].dura_dias          quantos dias de uso a carga de agora aguenta (número, dias; a fórmula dias_de_carga)
  *     previsoes[].energia            a energia agora, em % (número; null sem leitura)
  *     previsoes[].leitura            a última leitura, no valor informado (número)
- *     previsoes[].leitura_em         quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     previsoes[].leitura_em         quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     previsoes[].limite             o limite de carga da Configuração (previsao_limite), em % (número)
  *     previsoes[].linhas[]           as frases da previsão, como a tela mostra (texto)
  *     previsoes[].precisa            quanto ele precisa ter na entrada para os dias seguidos no pulso, em % (número)
@@ -1492,7 +1495,7 @@
  *     plano[].acao                   o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nada
  *     plano[].bloco                  o nome desse bloco
  *     plano[].bloco_id               o bloco do modo que escolheu o dia; null: escala ou manual
- *     plano[].criado                 quando o dia foi gravado no plano (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     plano[].criado                 quando o dia foi gravado no plano (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     plano[].data                   o dia (texto AAAA-MM-DD)
  *     plano[].origem                 sorteio (pelo modo) ou manual ("Usando hoje")
  *     plano[].relogio                o nome dele
@@ -1502,20 +1505,20 @@
  *     eventos[]                      os eventos personalizados (avisos seus, com horário e repetição próprios)
  *     eventos[].agenda               verdadeiro ou falso: o evento vai para o Google Agenda
  *     eventos[].ativo                verdadeiro ou falso: o evento dispara
- *     eventos[].criado               quando o evento foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     eventos[].criado               quando o evento foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     eventos[].data_inicio          a data (uma vez só) ou o começo da contagem (a cada N dias) (texto AAAA-MM-DD); null nas outras
  *     eventos[].descricao            a repetição por extenso ("seg, qua 20:00")
  *     eventos[].dia_mes              o dia do mês (mensal), de 1 a 31; null nas outras
  *     eventos[].dias_semana          os dias da semana (semanal), de 1 (segunda) a 7 (domingo), separados por vírgula; null nas outras
  *     eventos[].disparos[]           as vezes em que já disparou
- *     eventos[].disparos[].disparado quando o cron mandou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     eventos[].disparos[].disparado quando o cron mandou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     eventos[].disparos[].ocorrencia
- *                                    a vez que disparou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor, a do cadastro)
+ *                                    a vez que disparou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema, a do cadastro)
  *     eventos[].hora                 a hora do disparo (HH:MM)
  *     eventos[].id                   o número do evento (o tipo dele nos canais é ev<id>)
  *     eventos[].intervalo_dias       de quantos em quantos dias (intervalo); null nas outras
  *     eventos[].nome                 o nome do evento (texto)
- *     eventos[].proximas[]           as 10 próximas vezes em que dispara (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     eventos[].proximas[]           as 10 próximas vezes em que dispara (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     eventos[].relogio              o nome desse relógio; null: evento geral
  *     eventos[].relogio_id           o relógio do evento (as âncoras dele funcionam na mensagem); null: evento geral
  *     eventos[].repeticao            quando dispara: uma (uma vez só), diaria, semanal, mensal ou intervalo (a cada N dias)
@@ -1528,7 +1531,7 @@
  *     criados[]                      os eventos que o sistema criou no Google Agenda
  *     criados[].assinatura           a marca do título e da descrição com que foi criado (mudou: o evento é atualizado na próxima sincronização)
  *     criados[].chave                a identificação do evento (a mesma dos desejados)
- *     criados[].criado               quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     criados[].criado               quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     criados[].data                 o dia do evento (texto AAAA-MM-DD)
  *     criados[].google_id            o id do evento no Google
  *     criados[].titulo               o título com que foi criado
@@ -1539,7 +1542,7 @@
  *     desejados[].descricao          a descrição do evento, montada pela mensagem do canal da agenda
  *     desejados[].fazer              a ação ("Dar corda", "Usar hoje", o nome do evento) — a âncora {acao}
  *     desejados[].hora               a hora do evento na agenda (HH:MM)
- *     desejados[].momento            o instante previsto do que motivou o evento (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)
+ *     desejados[].momento            o instante previsto do que motivou o evento (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     desejados[].motivo             o porquê ("a reserva acaba em 3h, 28/09 10:53") — a âncora {motivo}
  *     desejados[].relogio            o nome do relógio; vazio num evento geral
  *     desejados[].relogio_id         o relógio do evento; null num evento geral
@@ -2360,7 +2363,7 @@ if (!$token_ok && $quem === "") {
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?recurso=criterios\""],
             "historico" => ["descricao" => "a linha do tempo: trechos contínuos por estado (rodizio, pulso fora do rodízio, cada tipo de sessão, repouso) e as marcações, com o resumo do tempo em cada estado e os lançamentos crus do período",
-                "parametros" => ["relogio" => "um id ou vários (relogio_id também vale; vazio: todos)", "de, ate" => "data ou data e hora; entra a linha que cruza o período", "estado" => "rodizio, pulso, winder, sol, repouso, marca... (um ou vários; linha_estado também vale)", "limite" => "por página (padrão 100, máximo 1000)", "pagina" => "a página", "ordem" => "desc (padrão, mais recente primeiro) ou asc"],
+                "parametros" => ["relogio" => "um id ou vários (relogio_id também vale; vazio: todos)", "de, ate" => "data ou data e hora; entra a linha que cruza o período", "estado" => "rodizio, pulso, winder, sol, repouso, marca... (um ou vários; linha_estado também vale)", "limite" => "por página (padrão 100, máximo 1000)", "pagina" => "a página", "ordem" => "desc (padrão, mais recente primeiro) ou asc; dois no mesmo instante saem pela ordem em que foram lançados (o id)"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relogios2/api.php?recurso=historico&relogio=3&de=2026-09-01&estado=marca\""],
             "previsao" => ["descricao" => "a previsão da energia dos relógios com leitura (o smartwatch): quanto dura usando, quando chega ao limite parado, com quanto entra no próximo rodízio e quanto precisa, e a confiança da conta",
                 "parametros" => ["relogio" => "um id ou vários (vazio: todos)"],
@@ -2399,7 +2402,9 @@ if (!$token_ok && $quem === "") {
                 "renomear" => ["campos" => "id, nome", "exemplo" => "curl -u lucas:senha -d recurso=arvore -d acao=renomear -d id=5 -d \"nome=Automáticos\" http://servidor/relogios2/api.php"],
                 "mover" => ["campos" => "id, pai_id (0 = na raiz; não pode ir para dentro dele mesmo)", "exemplo" => "curl -u lucas:senha -d recurso=arvore -d acao=mover -d id=5 -d pai_id=0 http://servidor/relogios2/api.php"],
                 "ordem" => ["campos" => "id, direcao (sobe ou desce)", "exemplo" => "curl -u lucas:senha -d recurso=arvore -d acao=ordem -d id=5 -d direcao=sobe http://servidor/relogios2/api.php"],
-                "excluir" => ["campos" => "id; o que é dele (subgrupos, relógios, campos, tipos de lançamento, fórmulas) sobe para o de cima; os critérios próprios saem", "exemplo" => "curl -u lucas:senha -d recurso=arvore -d acao=excluir -d id=5 http://servidor/relogios2/api.php"],
+                "excluir" => ["campos" => "id; o que é dele (subgrupos, relógios, campos, tipos de lançamento, fórmulas, avisos) sobe para o de cima, menos as "
+                    . "versões de fórmulas e avisos que o de cima já tem (essas saem); os blocos dos modos que sorteavam dele passam a sortear do de cima; "
+                    . "os critérios próprios saem (os relógios usam os do lugar mais perto, acima)", "exemplo" => "curl -u lucas:senha -d recurso=arvore -d acao=excluir -d id=5 http://servidor/relogios2/api.php"],
                 "relogios" => ["campos" => "grupo[<id do relógio>] = o grupo (0 = na raiz), um ou vários", "exemplo" => "curl -u lucas:senha -d recurso=arvore -d acao=relogios -d \"grupo[13]=1\" -d \"grupo[4]=8\" http://servidor/relogios2/api.php"],
             ],
             "campos" => [
@@ -2517,12 +2522,12 @@ if (!$token_ok && $quem === "") {
             ],
         ],
         "campos" => [
-            "como_ler" => "[] no caminho: uma lista (o campo é de cada item); <...>: uma chave que varia. Datas e horas no fuso do servidor; null: sem valor. Números de tempo em segundos são inteiros.",
+            "como_ler" => "[] no caminho: uma lista (o campo é de cada item); <...>: uma chave que varia. Datas e horas no fuso do sistema (o FUSO do config.php; sem ele, o do PHP, date.timezone); null: sem valor. Números de tempo em segundos são inteiros.",
             "api.php (sem recurso)" => [
                 "agenda.criados[]" => "os eventos que o sistema criou no Google Agenda",
                 "agenda.criados[].assinatura" => "a marca do título e da descrição com que foi criado (mudou: o evento é atualizado na próxima sincronização)",
                 "agenda.criados[].chave" => "a identificação do evento (a mesma dos desejados)",
-                "agenda.criados[].criado" => "quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "agenda.criados[].criado" => "quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "agenda.criados[].data" => "o dia do evento (texto AAAA-MM-DD)",
                 "agenda.criados[].google_id" => "o id do evento no Google",
                 "agenda.criados[].titulo" => "o título com que foi criado",
@@ -2532,7 +2537,7 @@ if (!$token_ok && $quem === "") {
                 "agenda.desejados[].descricao" => "a descrição do evento, montada pela mensagem do canal da agenda",
                 "agenda.desejados[].fazer" => "a ação (\"Dar corda\", \"Usar hoje\", o nome do evento) — a âncora {acao}",
                 "agenda.desejados[].hora" => "a hora do evento na agenda (HH:MM)",
-                "agenda.desejados[].momento" => "o instante previsto do que motivou o evento (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "agenda.desejados[].momento" => "o instante previsto do que motivou o evento (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "agenda.desejados[].motivo" => "o porquê (\"a reserva acaba em 3h, 28/09 10:53\") — a âncora {motivo}",
                 "agenda.desejados[].relogio" => "o nome do relógio; vazio num evento geral",
                 "agenda.desejados[].relogio_id" => "o relógio do evento; null num evento geral",
@@ -2584,7 +2589,7 @@ if (!$token_ok && $quem === "") {
                 "config.alerta_tipos" => "os tipos de aviso que vão pelo Telegram, separados por vírgula (dia, vespera, os identificadores dos avisos, ev<id>)",
                 "config.cron_erro" => "o erro guardado da última execução com erro (texto; vazio: sem erro)",
                 "config.cron_registro" => "o registro da última rodada com atividade (texto)",
-                "config.cron_ultima_execucao" => "quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "config.cron_ultima_execucao" => "quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "config.escala_fim" => "até que dia vai a escala inteligente gerada (texto AAAA-MM-DD; vazio fora da escala)",
                 "config.escala_gerada" => "o dia em que a escala foi gerada pela última vez (texto AAAA-MM-DD)",
                 "config.horario_manha" => "a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)",
@@ -2663,29 +2668,29 @@ if (!$token_ok && $quem === "") {
                 "cron.erro" => "o erro guardado (texto; vazio: sem erro; some na primeira execução sem erro)",
                 "cron.execucoes[]" => "as execuções do cron guardadas (sem atividade: 7 dias; com atividade ou erro: 1 ano), da mais recente",
                 "cron.execucoes[].duracao_ms" => "quanto durou, em milissegundos (número inteiro)",
-                "cron.execucoes[].fim" => "quando terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "cron.execucoes[].fim" => "quando terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "cron.execucoes[].id" => "o número da execução",
-                "cron.execucoes[].inicio" => "quando começou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "cron.execucoes[].inicio" => "quando começou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "cron.execucoes[].registro" => "o que foi feito, linha por linha (texto; vazio: nada a fazer)",
                 "cron.execucoes[].teve_atividade" => "verdadeiro ou falso: fez alguma coisa (rodada, plano, evento, sincronização)",
                 "cron.execucoes[].teve_erro" => "verdadeiro ou falso: houve erro",
-                "cron.ultima" => "quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "cron.ultima" => "quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "eventos[]" => "os eventos personalizados (avisos seus, com horário e repetição próprios)",
                 "eventos[].agenda" => "verdadeiro ou falso: o evento vai para o Google Agenda",
                 "eventos[].ativo" => "verdadeiro ou falso: o evento dispara",
-                "eventos[].criado" => "quando o evento foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "eventos[].criado" => "quando o evento foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "eventos[].data_inicio" => "a data (uma vez só) ou o começo da contagem (a cada N dias) (texto AAAA-MM-DD); null nas outras",
                 "eventos[].descricao" => "a repetição por extenso (\"seg, qua 20:00\")",
                 "eventos[].dia_mes" => "o dia do mês (mensal), de 1 a 31; null nas outras",
                 "eventos[].dias_semana" => "os dias da semana (semanal), de 1 (segunda) a 7 (domingo), separados por vírgula; null nas outras",
                 "eventos[].disparos[]" => "as vezes em que já disparou",
-                "eventos[].disparos[].disparado" => "quando o cron mandou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
-                "eventos[].disparos[].ocorrencia" => "a vez que disparou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor, a do cadastro)",
+                "eventos[].disparos[].disparado" => "quando o cron mandou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
+                "eventos[].disparos[].ocorrencia" => "a vez que disparou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema, a do cadastro)",
                 "eventos[].hora" => "a hora do disparo (HH:MM)",
                 "eventos[].id" => "o número do evento (o tipo dele nos canais é ev<id>)",
                 "eventos[].intervalo_dias" => "de quantos em quantos dias (intervalo); null nas outras",
                 "eventos[].nome" => "o nome do evento (texto)",
-                "eventos[].proximas[]" => "as 10 próximas vezes em que dispara (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "eventos[].proximas[]" => "as 10 próximas vezes em que dispara (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "eventos[].relogio" => "o nome desse relógio; null: evento geral",
                 "eventos[].relogio_id" => "o relógio do evento (as âncoras dele funcionam na mensagem); null: evento geral",
                 "eventos[].repeticao" => "quando dispara: uma (uma vez só), diaria, semanal, mensal ou intervalo (a cada N dias)",
@@ -2740,7 +2745,7 @@ if (!$token_ok && $quem === "") {
                 "plano[].acao" => "o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nada",
                 "plano[].bloco" => "o nome desse bloco",
                 "plano[].bloco_id" => "o bloco do modo que escolheu o dia; null: escala ou manual",
-                "plano[].criado" => "quando o dia foi gravado no plano (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "plano[].criado" => "quando o dia foi gravado no plano (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "plano[].data" => "o dia (texto AAAA-MM-DD)",
                 "plano[].origem" => "sorteio (pelo modo) ou manual (\"Usando hoje\")",
                 "plano[].relogio" => "o nome dele",
@@ -2754,7 +2759,7 @@ if (!$token_ok && $quem === "") {
                 "relogios[].autonomia_prevista" => "quanto o relógio dura com a carga cheia, pelo cadastro (número inteiro, em segundos): a autonomia do smartwatch, a reserva de marcha do mecânico, a reserva do solar ou a vida da pilha; a fórmula autonomia_prevista; null se falta o dado no cadastro",
                 "relogios[].avisos[]" => "os avisos do relógio agora (os que valem para ele e têm data prevista), do mais urgente ao mais distante",
                 "relogios[].avisos[].agenda" => "a data na agenda: janela (só dentro da antecedência da agenda) ou sempre (qualquer data); se vai pela agenda é a Configuração",
-                "relogios[].avisos[].data" => "a data prevista, pela fórmula do aviso (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "relogios[].avisos[].data" => "a data prevista, pela fórmula do aviso (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogios[].avisos[].escala" => "na escala inteligente: nao, uso (conferido no relógio do dia) ou sempre (também nos guardados)",
                 "relogios[].avisos[].estado" => "atrasado (a data passou), em_breve (dentro da antecedência) ou ok",
                 "relogios[].avisos[].falta_dias" => "quanto falta para a data prevista, em dias (número; negativo: já passou)",
@@ -2774,7 +2779,7 @@ if (!$token_ok && $quem === "") {
                 "relogios[].campos[].unidade" => "a unidade",
                 "relogios[].campos[].valor" => "o valor gravado no relógio (texto; null: não preenchido)",
                 "relogios[].campos[].valor_usado" => "o valor que as contas usam: o gravado, ou o padrão do campo",
-                "relogios[].criado" => "quando foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "relogios[].criado" => "quando foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogios[].disponivel" => "verdadeiro ou falso: entra no rodízio",
                 "relogios[].em_uso" => "verdadeiro ou falso: o relógio está com uma sessão no pulso aberta agora",
                 "relogios[].energia" => "a energia agora, em % inteiro (a fórmula energia: bateria, reserva, luz ou pilha); null sem dados para calcular",
@@ -2785,16 +2790,16 @@ if (!$token_ok && $quem === "") {
                 "relogios[].formulas[].valor" => "o resultado agora (número ou texto; null: vazio)",
                 "relogios[].formulas[].versao" => "o grupo da versão usada",
                 "relogios[].foto" => "a foto; null: sem foto",
-                "relogios[].foto.atualizada_em" => "quando a foto foi trocada (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "relogios[].foto.atualizada_em" => "quando a foto foi trocada (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogios[].foto.base64" => "a imagem em base64; null com foto=nao",
                 "relogios[].foto.tipo" => "o tipo da imagem (image/jpeg, image/png, image/webp)",
                 "relogios[].id" => "o número (código) do relógio",
                 "relogios[].lancamento_tipos[]" => "os identificadores dos tipos de lançamento que valem para ele (texto)",
                 "relogios[].lancamentos[]" => "todos os lançamentos do relógio, do mais antigo para o mais recente",
-                "relogios[].lancamentos[].criado" => "quando foi gravado (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
-                "relogios[].lancamentos[].fim" => "o fim da sessão (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor); null: marcação, leitura, ou sessão aberta",
+                "relogios[].lancamentos[].criado" => "quando foi gravado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
+                "relogios[].lancamentos[].fim" => "o fim da sessão (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null: marcação, leitura, ou sessão aberta",
                 "relogios[].lancamentos[].id" => "o número do lançamento",
-                "relogios[].lancamentos[].inicio" => "quando (a marcação ou a leitura), ou o começo da sessão (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "relogios[].lancamentos[].inicio" => "quando (a marcação ou a leitura), ou o começo da sessão (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogios[].lancamentos[].origem" => "manual (lançado por alguém), rodizio (a sessão do dia, pelo cron) ou importado",
                 "relogios[].lancamentos[].tipo" => "o identificador do tipo",
                 "relogios[].lancamentos[].valor" => "o valor da leitura (número); null nos outros",
@@ -2803,20 +2808,20 @@ if (!$token_ok && $quem === "") {
                 "relogios[].linha_do_tempo[].duracao_seg" => "quanto o trecho durou, número inteiro, em segundos; null numa marcação",
                 "relogios[].linha_do_tempo[].em_andamento" => "verdadeiro ou falso: o trecho ainda não terminou (o fim é o momento da consulta)",
                 "relogios[].linha_do_tempo[].estado" => "o estado do trecho: rodizio (no pulso pelo rodízio), pulso (no pulso fora do rodízio), o identificador de um tipo de sessão (winder, sol...), repouso (parado) ou marca (uma marcação)",
-                "relogios[].linha_do_tempo[].fim" => "quando o trecho terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor); null numa marcação",
-                "relogios[].linha_do_tempo[].inicio" => "quando o trecho começou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "relogios[].linha_do_tempo[].fim" => "quando o trecho terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null numa marcação",
+                "relogios[].linha_do_tempo[].inicio" => "quando o trecho começou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogios[].linha_do_tempo[].texto" => "o trecho por extenso, como a tela mostra (\"em uso\", \"no sol\", \"Leitura de carga 80%\")",
                 "relogios[].linha_do_tempo[].tipo" => "o identificador do tipo de lançamento que originou o trecho (pulso, sol, corda, carga...); null no repouso",
                 "relogios[].lugar" => "o grupo por extenso",
                 "relogios[].medicoes[]" => "as medições do gasto pelas leituras (cada leitura de um tipo que mede o gasto, comparada com a anterior), da mais recente para a mais antiga",
                 "relogios[].medicoes[].ate_valor" => "a leitura que fechou a medição (número)",
-                "relogios[].medicoes[].criado" => "quando a medição foi gravada (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "relogios[].medicoes[].criado" => "quando a medição foi gravada (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogios[].medicoes[].de_valor" => "a leitura de antes (número, na unidade da leitura)",
-                "relogios[].medicoes[].fim" => "quando foi a leitura que fechou a medição (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "relogios[].medicoes[].fim" => "quando foi a leitura que fechou a medição (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogios[].medicoes[].horas_guardado" => "as horas guardado entre as duas leituras (número)",
                 "relogios[].medicoes[].horas_pulso" => "as horas no pulso entre as duas leituras (número)",
                 "relogios[].medicoes[].id" => "o número da medição",
-                "relogios[].medicoes[].inicio" => "quando foi a leitura de antes (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "relogios[].medicoes[].inicio" => "quando foi a leitura de antes (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogios[].medicoes[].lancamento_id" => "o lançamento (a leitura) que fechou a medição",
                 "relogios[].medicoes[].medida" => "o que foi medido: uso (o gasto por dia de uso, quando o intervalo teve meio dia de uso ou mais) ou repouso (o gasto por dia guardado)",
                 "relogios[].medicoes[].na_media" => "verdadeiro ou falso: entra na média agora (usada e dentro da janela da Configuração, medicao_janela_dias)",
@@ -2831,7 +2836,7 @@ if (!$token_ok && $quem === "") {
                 "relogios[].previsao.aplica" => "verdadeiro ou falso: o relógio tem leitura com valor (senão os outros campos ficam vazios)",
                 "relogios[].previsao.carga_na_entrada" => "com quanto ele entra nesse dia, em % (número)",
                 "relogios[].previsao.carregar_antes" => "verdadeiro ou falso: a carga na entrada não basta (é preciso carregar antes)",
-                "relogios[].previsao.chega_limite_em" => "quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor); null se passa de um ano",
+                "relogios[].previsao.chega_limite_em" => "quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se passa de um ano",
                 "relogios[].previsao.confianca" => "a confiança da conta: alta (leitura de até 2 dias e nenhum dado vazio, ou gasto em uso medido), media ou baixa (leitura com mais de 7 dias)",
                 "relogios[].previsao.conta[]" => "de onde vem cada número da conta: os campos do cadastro usados e o gasto medido pelas leituras",
                 "relogios[].previsao.conta[].campo" => "o identificador do campo, ou MEDIDO(\"uso\") / MEDIDO(\"repouso\") para o gasto medido",
@@ -2843,7 +2848,7 @@ if (!$token_ok && $quem === "") {
                 "relogios[].previsao.dura_dias" => "quantos dias de uso a carga de agora aguenta (número, dias; a fórmula dias_de_carga)",
                 "relogios[].previsao.energia" => "a energia agora, em % (número; null sem leitura)",
                 "relogios[].previsao.leitura" => "a última leitura, no valor informado (número)",
-                "relogios[].previsao.leitura_em" => "quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "relogios[].previsao.leitura_em" => "quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogios[].previsao.limite" => "o limite de carga da Configuração (previsao_limite), em % (número)",
                 "relogios[].previsao.linhas[]" => "as frases da previsão, como a tela mostra (texto)",
                 "relogios[].previsao.precisa" => "quanto ele precisa ter na entrada para os dias seguidos no pulso, em % (número)",
@@ -2855,7 +2860,7 @@ if (!$token_ok && $quem === "") {
                 "relogios[].resumo_do_tempo.tempo.<estado>.segundos" => "quanto tempo o relógio passou no estado <estado> (rodizio, pulso, winder, sol, repouso...), número inteiro, em segundos",
                 "relogios[].resumo_do_tempo.tempo.<estado>.texto" => "o mesmo tempo por extenso",
                 "usuarios[]" => "quem acessa o site (as senhas nunca saem)",
-                "usuarios[].criado" => "quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "usuarios[].criado" => "quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "usuarios[].login" => "o login",
             ],
             "autonomia" => [
@@ -2950,7 +2955,7 @@ if (!$token_ok && $quem === "") {
                 "relogios[].foto" => "a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC), para o endereço dela); null: sem foto",
                 "relogios[].id" => "o número (código)",
                 "relogios[].leitura" => "a última leitura com valor; null: nenhuma",
-                "relogios[].leitura.inicio" => "quando (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "relogios[].leitura.inicio" => "quando (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogios[].leitura.unidade" => "a unidade",
                 "relogios[].leitura.valor" => "o valor",
                 "relogios[].manutencao" => "o aviso mais perto; null: nenhum",
@@ -3017,7 +3022,7 @@ if (!$token_ok && $quem === "") {
                 "relogio.dados[].unidade" => "a unidade (texto)",
                 "relogio.dados[].valor" => "o valor informado no relógio (texto; null: não preenchido)",
                 "relogio.dados[].valor_usado" => "o valor que as contas usam: o informado, senão o padrão do campo (null: nenhum)",
-                "relogio.desde" => "desde quando (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "relogio.desde" => "desde quando (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogio.disponivel" => "verdadeiro ou falso: entra no rodízio",
                 "relogio.em_uso" => "verdadeiro ou falso: no pulso agora",
                 "relogio.escala_fim" => "até que dia vai a escala (null fora da escala)",
@@ -3033,8 +3038,8 @@ if (!$token_ok && $quem === "") {
                 "relogio.linha_do_tempo[].duracao_seg" => "quanto o trecho durou, número inteiro, em segundos; null numa marcação",
                 "relogio.linha_do_tempo[].em_andamento" => "verdadeiro ou falso: o trecho ainda não terminou (o fim é o momento da consulta)",
                 "relogio.linha_do_tempo[].estado" => "o estado do trecho: rodizio (no pulso pelo rodízio), pulso (no pulso fora do rodízio), o identificador de um tipo de sessão (winder, sol...), repouso (parado) ou marca (uma marcação)",
-                "relogio.linha_do_tempo[].fim" => "quando o trecho terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor); null numa marcação",
-                "relogio.linha_do_tempo[].inicio" => "quando o trecho começou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "relogio.linha_do_tempo[].fim" => "quando o trecho terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null numa marcação",
+                "relogio.linha_do_tempo[].inicio" => "quando o trecho começou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogio.linha_do_tempo[].texto" => "o trecho por extenso, como a tela mostra (\"em uso\", \"no sol\", \"Leitura de carga 80%\")",
                 "relogio.linha_do_tempo[].tipo" => "o identificador do tipo de lançamento que originou o trecho (pulso, sol, corda, carga...); null no repouso",
                 "relogio.manutencoes[]" => "as 5 próximas manutenções (avisos)",
@@ -3043,13 +3048,13 @@ if (!$token_ok && $quem === "") {
                 "relogio.medicao_janela_dias" => "a janela da média do gasto medido, em dias (a da Configuração)",
                 "relogio.medicoes[]" => "as medições do gasto pelas leituras (cada leitura de um tipo que mede o gasto, comparada com a anterior), da mais recente para a mais antiga",
                 "relogio.medicoes[].ate_valor" => "a leitura que fechou a medição (número)",
-                "relogio.medicoes[].criado" => "quando a medição foi gravada (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "relogio.medicoes[].criado" => "quando a medição foi gravada (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogio.medicoes[].de_valor" => "a leitura de antes (número, na unidade da leitura)",
-                "relogio.medicoes[].fim" => "quando foi a leitura que fechou a medição (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "relogio.medicoes[].fim" => "quando foi a leitura que fechou a medição (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogio.medicoes[].horas_guardado" => "as horas guardado entre as duas leituras (número)",
                 "relogio.medicoes[].horas_pulso" => "as horas no pulso entre as duas leituras (número)",
                 "relogio.medicoes[].id" => "o número da medição",
-                "relogio.medicoes[].inicio" => "quando foi a leitura de antes (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "relogio.medicoes[].inicio" => "quando foi a leitura de antes (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogio.medicoes[].lancamento_id" => "o lançamento (a leitura) que fechou a medição",
                 "relogio.medicoes[].medida" => "o que foi medido: uso (o gasto por dia de uso, quando o intervalo teve meio dia de uso ou mais) ou repouso (o gasto por dia guardado)",
                 "relogio.medicoes[].na_media" => "verdadeiro ou falso: entra na média agora (usada e dentro da janela da Configuração, medicao_janela_dias)",
@@ -3066,7 +3071,7 @@ if (!$token_ok && $quem === "") {
                 "relogio.previsao.aplica" => "verdadeiro ou falso: o relógio tem leitura com valor (senão os outros campos ficam vazios)",
                 "relogio.previsao.carga_na_entrada" => "com quanto ele entra nesse dia, em % (número)",
                 "relogio.previsao.carregar_antes" => "verdadeiro ou falso: a carga na entrada não basta (é preciso carregar antes)",
-                "relogio.previsao.chega_limite_em" => "quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor); null se passa de um ano",
+                "relogio.previsao.chega_limite_em" => "quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se passa de um ano",
                 "relogio.previsao.confianca" => "a confiança da conta: alta (leitura de até 2 dias e nenhum dado vazio, ou gasto em uso medido), media ou baixa (leitura com mais de 7 dias)",
                 "relogio.previsao.conta[]" => "de onde vem cada número da conta: os campos do cadastro usados e o gasto medido pelas leituras",
                 "relogio.previsao.conta[].campo" => "o identificador do campo, ou MEDIDO(\"uso\") / MEDIDO(\"repouso\") para o gasto medido",
@@ -3078,7 +3083,7 @@ if (!$token_ok && $quem === "") {
                 "relogio.previsao.dura_dias" => "quantos dias de uso a carga de agora aguenta (número, dias; a fórmula dias_de_carga)",
                 "relogio.previsao.energia" => "a energia agora, em % (número; null sem leitura)",
                 "relogio.previsao.leitura" => "a última leitura, no valor informado (número)",
-                "relogio.previsao.leitura_em" => "quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "relogio.previsao.leitura_em" => "quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogio.previsao.limite" => "o limite de carga da Configuração (previsao_limite), em % (número)",
                 "relogio.previsao.linhas[]" => "as frases da previsão, como a tela mostra (texto)",
                 "relogio.previsao.precisa" => "quanto ele precisa ter na entrada para os dias seguidos no pulso, em % (número)",
@@ -3090,7 +3095,7 @@ if (!$token_ok && $quem === "") {
                 "relogio.tipo" => "o nome do grupo",
                 "relogio.tipos[]" => "os tipos de lançamento do relógio (os botões de Lançar)",
                 "relogio.tipos[].aberta" => "a sessão aberta desse tipo agora; null: nenhuma",
-                "relogio.tipos[].aberta.inicio" => "desde quando (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "relogio.tipos[].aberta.inicio" => "desde quando (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "relogio.tipos[].aberta.rodizio" => "verdadeiro ou falso: é a sessão do rodízio",
                 "relogio.tipos[].aberta.texto" => "por extenso (\"desde 07:00 (3 h 12 min)\")",
                 "relogio.tipos[].formato" => "instantaneo, valor ou sessao",
@@ -3118,7 +3123,7 @@ if (!$token_ok && $quem === "") {
                 "config.alerta_tipos" => "os tipos de aviso que vão pelo Telegram, separados por vírgula (dia, vespera, os identificadores dos avisos, ev<id>)",
                 "config.cron_erro" => "o erro guardado da última execução com erro (texto; vazio: sem erro)",
                 "config.cron_registro" => "o registro da última rodada com atividade (texto)",
-                "config.cron_ultima_execucao" => "quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "config.cron_ultima_execucao" => "quando o cron rodou pela última vez (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "config.escala_fim" => "até que dia vai a escala inteligente gerada (texto AAAA-MM-DD; vazio fora da escala)",
                 "config.escala_gerada" => "o dia em que a escala foi gerada pela última vez (texto AAAA-MM-DD)",
                 "config.horario_manha" => "a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)",
@@ -3138,19 +3143,19 @@ if (!$token_ok && $quem === "") {
                 "eventos[]" => "os eventos personalizados (avisos seus, com horário e repetição próprios)",
                 "eventos[].agenda" => "verdadeiro ou falso: o evento vai para o Google Agenda",
                 "eventos[].ativo" => "verdadeiro ou falso: o evento dispara",
-                "eventos[].criado" => "quando o evento foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "eventos[].criado" => "quando o evento foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "eventos[].data_inicio" => "a data (uma vez só) ou o começo da contagem (a cada N dias) (texto AAAA-MM-DD); null nas outras",
                 "eventos[].descricao" => "a repetição por extenso (\"seg, qua 20:00\")",
                 "eventos[].dia_mes" => "o dia do mês (mensal), de 1 a 31; null nas outras",
                 "eventos[].dias_semana" => "os dias da semana (semanal), de 1 (segunda) a 7 (domingo), separados por vírgula; null nas outras",
                 "eventos[].disparos[]" => "as vezes em que já disparou",
-                "eventos[].disparos[].disparado" => "quando o cron mandou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
-                "eventos[].disparos[].ocorrencia" => "a vez que disparou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor, a do cadastro)",
+                "eventos[].disparos[].disparado" => "quando o cron mandou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
+                "eventos[].disparos[].ocorrencia" => "a vez que disparou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema, a do cadastro)",
                 "eventos[].hora" => "a hora do disparo (HH:MM)",
                 "eventos[].id" => "o número do evento (o tipo dele nos canais é ev<id>)",
                 "eventos[].intervalo_dias" => "de quantos em quantos dias (intervalo); null nas outras",
                 "eventos[].nome" => "o nome do evento (texto)",
-                "eventos[].proximas[]" => "as 10 próximas vezes em que dispara (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "eventos[].proximas[]" => "as 10 próximas vezes em que dispara (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "eventos[].proximas_60[]" => "as 5 próximas vezes nos próximos 60 dias",
                 "eventos[].relogio" => "o nome desse relógio; null: evento geral",
                 "eventos[].relogio_id" => "o relógio do evento (as âncoras dele funcionam na mensagem); null: evento geral",
@@ -3183,15 +3188,15 @@ if (!$token_ok && $quem === "") {
             "cron" => [
                 "execucoes[]" => "as execuções do cron guardadas (sem atividade: 7 dias; com atividade ou erro: 1 ano), da mais recente",
                 "execucoes[].duracao_ms" => "quanto durou, em milissegundos (número inteiro)",
-                "execucoes[].fim" => "quando terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "execucoes[].fim" => "quando terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "execucoes[].id" => "o número da execução",
-                "execucoes[].inicio" => "quando começou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "execucoes[].inicio" => "quando começou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "execucoes[].registro" => "o que foi feito, linha por linha (texto; vazio: nada a fazer)",
                 "execucoes[].teve_atividade" => "verdadeiro ou falso: fez alguma coisa (rodada, plano, evento, sincronização)",
                 "execucoes[].teve_erro" => "verdadeiro ou falso: houve erro",
                 "filtro.ate" => "o fim do período",
                 "filtro.busca" => "o texto pedido",
-                "filtro.de" => "o começo do período pedido (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "filtro.de" => "o começo do período pedido (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "filtro.situacao" => "a situação pedida (atividade, erro, nada, todas)",
                 "pagina" => "a página",
                 "paginas" => "quantas páginas",
@@ -3305,7 +3310,7 @@ if (!$token_ok && $quem === "") {
             "avisos" => [
                 "avisos[]" => "os avisos de todos os relógios agora, do mais urgente ao mais distante",
                 "avisos[].agenda" => "a data na agenda: janela (só dentro da antecedência da agenda) ou sempre (qualquer data); se vai pela agenda é a Configuração",
-                "avisos[].data" => "a data prevista, pela fórmula do aviso (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "avisos[].data" => "a data prevista, pela fórmula do aviso (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "avisos[].disponivel" => "verdadeiro ou falso: o relógio entra no rodízio",
                 "avisos[].escala" => "na escala inteligente: nao, uso (conferido no relógio do dia) ou sempre (também nos guardados)",
                 "avisos[].estado" => "atrasado (a data passou), em_breve (dentro da antecedência) ou ok",
@@ -3385,7 +3390,7 @@ if (!$token_ok && $quem === "") {
             "historico" => [
                 "estados.<estado>" => "cada estado possível da linha do tempo e o nome dele",
                 "filtro.ate" => "o fim pedido (null)",
-                "filtro.de" => "o começo pedido (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor; null)",
+                "filtro.de" => "o começo pedido (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema; null)",
                 "filtro.estados[]" => "os estados pedidos",
                 "filtro.ignorados[]" => "o que foi pedido e não existe",
                 "filtro.ordem" => "desc ou asc",
@@ -3404,8 +3409,8 @@ if (!$token_ok && $quem === "") {
                 "linhas[].duracao_seg" => "quanto o trecho durou, número inteiro, em segundos; null numa marcação",
                 "linhas[].em_andamento" => "verdadeiro ou falso: o trecho ainda não terminou (o fim é o momento da consulta)",
                 "linhas[].estado" => "o estado do trecho: rodizio (no pulso pelo rodízio), pulso (no pulso fora do rodízio), o identificador de um tipo de sessão (winder, sol...), repouso (parado) ou marca (uma marcação)",
-                "linhas[].fim" => "quando o trecho terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor); null numa marcação",
-                "linhas[].inicio" => "quando o trecho começou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "linhas[].fim" => "quando o trecho terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null numa marcação",
+                "linhas[].inicio" => "quando o trecho começou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "linhas[].relogio" => "o nome",
                 "linhas[].relogio_id" => "o relógio",
                 "linhas[].texto" => "o trecho por extenso, como a tela mostra (\"em uso\", \"no sol\", \"Leitura de carga 80%\")",
@@ -3429,7 +3434,7 @@ if (!$token_ok && $quem === "") {
                 "previsoes[].aplica" => "verdadeiro ou falso: o relógio tem leitura com valor (senão os outros campos ficam vazios)",
                 "previsoes[].carga_na_entrada" => "com quanto ele entra nesse dia, em % (número)",
                 "previsoes[].carregar_antes" => "verdadeiro ou falso: a carga na entrada não basta (é preciso carregar antes)",
-                "previsoes[].chega_limite_em" => "quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor); null se passa de um ano",
+                "previsoes[].chega_limite_em" => "quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se passa de um ano",
                 "previsoes[].confianca" => "a confiança da conta: alta (leitura de até 2 dias e nenhum dado vazio, ou gasto em uso medido), media ou baixa (leitura com mais de 7 dias)",
                 "previsoes[].conta[]" => "de onde vem cada número da conta: os campos do cadastro usados e o gasto medido pelas leituras",
                 "previsoes[].conta[].campo" => "o identificador do campo, ou MEDIDO(\"uso\") / MEDIDO(\"repouso\") para o gasto medido",
@@ -3441,7 +3446,7 @@ if (!$token_ok && $quem === "") {
                 "previsoes[].dura_dias" => "quantos dias de uso a carga de agora aguenta (número, dias; a fórmula dias_de_carga)",
                 "previsoes[].energia" => "a energia agora, em % (número; null sem leitura)",
                 "previsoes[].leitura" => "a última leitura, no valor informado (número)",
-                "previsoes[].leitura_em" => "quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "previsoes[].leitura_em" => "quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "previsoes[].limite" => "o limite de carga da Configuração (previsao_limite), em % (número)",
                 "previsoes[].linhas[]" => "as frases da previsão, como a tela mostra (texto)",
                 "previsoes[].precisa" => "quanto ele precisa ter na entrada para os dias seguidos no pulso, em % (número)",
@@ -3456,7 +3461,7 @@ if (!$token_ok && $quem === "") {
                 "plano[].acao" => "o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nada",
                 "plano[].bloco" => "o nome desse bloco",
                 "plano[].bloco_id" => "o bloco do modo que escolheu o dia; null: escala ou manual",
-                "plano[].criado" => "quando o dia foi gravado no plano (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "plano[].criado" => "quando o dia foi gravado no plano (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "plano[].data" => "o dia (texto AAAA-MM-DD)",
                 "plano[].origem" => "sorteio (pelo modo) ou manual (\"Usando hoje\")",
                 "plano[].relogio" => "o nome dele",
@@ -3466,19 +3471,19 @@ if (!$token_ok && $quem === "") {
                 "eventos[]" => "os eventos personalizados (avisos seus, com horário e repetição próprios)",
                 "eventos[].agenda" => "verdadeiro ou falso: o evento vai para o Google Agenda",
                 "eventos[].ativo" => "verdadeiro ou falso: o evento dispara",
-                "eventos[].criado" => "quando o evento foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "eventos[].criado" => "quando o evento foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "eventos[].data_inicio" => "a data (uma vez só) ou o começo da contagem (a cada N dias) (texto AAAA-MM-DD); null nas outras",
                 "eventos[].descricao" => "a repetição por extenso (\"seg, qua 20:00\")",
                 "eventos[].dia_mes" => "o dia do mês (mensal), de 1 a 31; null nas outras",
                 "eventos[].dias_semana" => "os dias da semana (semanal), de 1 (segunda) a 7 (domingo), separados por vírgula; null nas outras",
                 "eventos[].disparos[]" => "as vezes em que já disparou",
-                "eventos[].disparos[].disparado" => "quando o cron mandou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
-                "eventos[].disparos[].ocorrencia" => "a vez que disparou (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor, a do cadastro)",
+                "eventos[].disparos[].disparado" => "quando o cron mandou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
+                "eventos[].disparos[].ocorrencia" => "a vez que disparou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema, a do cadastro)",
                 "eventos[].hora" => "a hora do disparo (HH:MM)",
                 "eventos[].id" => "o número do evento (o tipo dele nos canais é ev<id>)",
                 "eventos[].intervalo_dias" => "de quantos em quantos dias (intervalo); null nas outras",
                 "eventos[].nome" => "o nome do evento (texto)",
-                "eventos[].proximas[]" => "as 10 próximas vezes em que dispara (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "eventos[].proximas[]" => "as 10 próximas vezes em que dispara (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "eventos[].relogio" => "o nome desse relógio; null: evento geral",
                 "eventos[].relogio_id" => "o relógio do evento (as âncoras dele funcionam na mensagem); null: evento geral",
                 "eventos[].repeticao" => "quando dispara: uma (uma vez só), diaria, semanal, mensal ou intervalo (a cada N dias)",
@@ -3491,7 +3496,7 @@ if (!$token_ok && $quem === "") {
                 "criados[]" => "os eventos que o sistema criou no Google Agenda",
                 "criados[].assinatura" => "a marca do título e da descrição com que foi criado (mudou: o evento é atualizado na próxima sincronização)",
                 "criados[].chave" => "a identificação do evento (a mesma dos desejados)",
-                "criados[].criado" => "quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "criados[].criado" => "quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "criados[].data" => "o dia do evento (texto AAAA-MM-DD)",
                 "criados[].google_id" => "o id do evento no Google",
                 "criados[].titulo" => "o título com que foi criado",
@@ -3501,7 +3506,7 @@ if (!$token_ok && $quem === "") {
                 "desejados[].descricao" => "a descrição do evento, montada pela mensagem do canal da agenda",
                 "desejados[].fazer" => "a ação (\"Dar corda\", \"Usar hoje\", o nome do evento) — a âncora {acao}",
                 "desejados[].hora" => "a hora do evento na agenda (HH:MM)",
-                "desejados[].momento" => "o instante previsto do que motivou o evento (texto AAAA-MM-DD HH:MM:SS, no fuso do servidor)",
+                "desejados[].momento" => "o instante previsto do que motivou o evento (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "desejados[].motivo" => "o porquê (\"a reserva acaba em 3h, 28/09 10:53\") — a âncora {motivo}",
                 "desejados[].relogio" => "o nome do relógio; vazio num evento geral",
                 "desejados[].relogio_id" => "o relógio do evento; null num evento geral",
