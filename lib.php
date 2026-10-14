@@ -288,7 +288,8 @@ $MIGRACOES = [
         . "limite do solar, e o registro completo do cron", "cron_execucao.teve_atividade"],
     "v6" => ["migracao_v6.sql", "o gasto medido pelas leituras (a média dos últimos dias) e as autonomias em segundos", "medicao"],
     "v7" => ["migracao_v7.sql", "o ciclo no rodízio (opção de cada modo, desligada por padrão): um relógio só volta depois que todos do bloco passaram", "modo.ciclo"],
-    "v8" => ["migracao_v8.sql", "a condição \"vale quando\" nos tipos de lançamento e nos avisos; o automático sem corda recebe \"Pôr no winder\" em vez de \"Dar corda\"", "aviso.condicao"],    "v9" => ["migracao_v9.sql", "o limite de carga, geral e por relógio: carregar, pôr no sol e dar corda só quando a carga chega a ele", "campo.identificador=carga_minima"],
+    "v8" => ["migracao_v8.sql", "a condição \"vale quando\" nos tipos de lançamento e nos avisos; o automático sem corda recebe \"Pôr no winder\" em vez de \"Dar corda\"", "aviso.condicao"],
+    "v9" => ["migracao_v9.sql", "o limite de carga, geral e por relógio: carregar, pôr no sol e dar corda só quando a carga chega a ele", "campo.identificador=carga_minima"],
     "v10" => ["migracao_v10.sql", "os avisos de carga pelo estado de agora: no winder ou no pulso (o automático carrega no pulso), sem aviso de winder ou de corda; no sol, sem aviso de sol; a data do \"Carregar\" pelo gasto de agora (no pulso, o de uso; guardado, o de guardado)", "config.chave=migracao_v10"],
 ];
 
