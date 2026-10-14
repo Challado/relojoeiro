@@ -161,7 +161,7 @@
  *                            {"nome", "data", "momento", "falta"} (o aviso mais perto), "compra": {"data", "valor", "loja", "garantia_ate"},
  *                            "leitura": {"inicio", "valor", "unidade"} (a última), "de_hoje", "com_aviso", "foto" (a versão)}]}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=hoje"
- *   recurso=ficha            relogio=<id>: tudo o que o painel de um relógio mostra: {"hoje", "relogio": {"id", "nome", "no_id",
+ *   recurso=ficha            relogio=<id>: tudo o que o painel de um relógio mostra: {"hoje", "copia_sistema", "relogio": {"id", "nome", "no_id",
  *                            "disponivel", "copia_banco", "tipo", "caminho", "observacao", "foto", "documentos": {"total",
  *                            "categorias": [{"id", "nome", "documentos"}], "pasta_ok", "copia_sistema"}, "em_uso", "agora", "carga",
  *                            "carga_de", "situacao", "nota": {"nota", "conjunto_texto"}, "proxima" (a próxima entrada no plano), "proxima_ate", "escala_fim",
@@ -1067,6 +1067,9 @@
  *     grupos[].caminho               o caminho
  *     grupos[].id                    o número
  *     hoje                           hoje (texto AAAA-MM-DD)
+ *     copia_sistema                  a cópia no banco pelo config.php (DOCUMENTOS_COPIA_BANCO), que vale sobre o relógio e o arquivo:
+ *                                    verdadeiro, todo arquivo vai; falso, nenhum vai; null (sem a constante), cada relógio decide (a caixa
+ *                                    do cadastro só aparece então)
  *     relogio                        o relógio; null: o cadastro de um relógio novo
  *     relogio.agora                  o estado por extenso
  *     relogio.autonomia              as autonomias do relógio (as mesmas do recurso autonomia)
@@ -2376,7 +2379,7 @@ if (!$token_ok && $quem === "") {
         $campos[] = ["identificador" => $ident, "nome" => $c["nome"], "tipo" => $c["tipo"], "unidade" => $c["unidade"], "opcoes" => array_values(array_filter(array_map("trim", explode("\n", (string)$c["opcoes"])))),
             "padrao" => $c["padrao"], "no_id" => $c["no_id"] === null ? 0 : (int)$c["no_id"], "valor" => $valores[$ident] ?? null];
     }
-    $saida = ["hoje" => $hoje->format("Y-m-d"), "relogio" => null, "campos" => $campos,
+    $saida = ["hoje" => $hoje->format("Y-m-d"), "relogio" => null, "copia_sistema" => documentos_copia_sistema(), "campos" => $campos,
         "grupos" => array_map(function ($o) use ($n) { return ["id" => $o[0], "caminho" => no_caminho($o[0]), "cadeia" => no_cadeia($o[0])]; }, nos_em_ordem())];
     if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
         $codigo = 404;
@@ -3389,6 +3392,7 @@ if (!$token_ok && $quem === "") {
                 "grupos[].caminho" => "o caminho",
                 "grupos[].id" => "o número",
                 "hoje" => "hoje (texto AAAA-MM-DD)",
+                "copia_sistema" => "a cópia no banco pelo config.php (DOCUMENTOS_COPIA_BANCO), que vale sobre o relógio e o arquivo: verdadeiro, todo arquivo vai; falso, nenhum vai; null (sem a constante), cada relógio decide (a caixa do cadastro só aparece então)",
                 "relogio" => "o relógio; null: o cadastro de um relógio novo",
                 "relogio.agora" => "o estado por extenso",
                 "relogio.autonomia" => "as autonomias do relógio (as mesmas do recurso autonomia)",
