@@ -312,7 +312,7 @@ pulso e de winder.
     │   └── Corda manual  (nada a mais: no pulso ele não se carrega)
     └── Quartzo
         ├── Pilha         Última troca de pilha, Vida da pilha
-        └── Solar         Reserva de energia, Sol direto para encher
+        └── Solar         Reserva de energia, Sol direto para encher, No pulso: quanto carrega
 ```
 
 Campo vazio vale o **padrão** do cadastro (a coluna "vazio" nas tabelas abaixo). Os campos, os grupos e os padrões são
@@ -517,7 +517,8 @@ A "carga" do solar é a **carga de luz**, em %. Enquanto você não registrar ne
 | Campo | Vazio | O que é e para que serve |
 |---|---|---|
 | **Reserva de energia** (dias) `reserva_dias` | 180 | Quanto tempo ele anda **no escuro**, de cheio até parar (a especificação diz algo como *"6 meses de reserva"*). No escuro, perde 100 ÷ 180 ≈ 0,56% por dia. |
-| **Sol direto para encher** (h) `carga_sol_horas` | 10 | Quantas horas de sol direto levam de vazio a cheio. Cada hora na sessão *No sol* soma 100 ÷ 10 = 10%. No pulso a carga fica parada (a luz do dia repõe o que ele gasta). |
+| **Sol direto para encher** (h) `carga_sol_horas` | 10 | Quantas horas de sol direto levam de vazio a cheio. Cada hora na sessão *No sol* soma 100 ÷ 10 = 10%. |
+| **No pulso: quanto carrega, comparado ao sol direto** (%) `luz_pulso` | 25 | No pulso o solar também carrega, com a luz do dia: essa porcentagem do que ele ganharia no sol direto. Com 25% e o sol enchendo em 10 h, cada hora no pulso soma 2,5% (um dia de 14 h no pulso, 35%). 0: no pulso a carga fica parada. |
 
 ### Os avisos de carga
 
@@ -587,7 +588,7 @@ mais perto do relógio. Todas se editam e se testam em **Cadastros**.
 
 | Fórmula | O que calcula |
 |---|---|
-| `energia` (%) | a carga de agora, de 0 a 100. **Smartwatch:** a última leitura menos o gasto no pulso (horas no pulso ÷ 15 × gasto em uso) e menos o gasto fora (o resto do tempo × gasto fora). **Mecânico:** a reserva que sobra ÷ a reserva de marcha. **Solar:** a carga de luz (perde no escuro pela reserva de energia, ganha no sol pelo tempo de sol para encher, fica parada no pulso; sem nenhum sol marcado, desconhecida). **Pilha:** quanto falta da vida da pilha. |
+| `energia` (%) | a carga de agora, de 0 a 100. **Smartwatch:** a última leitura menos o gasto no pulso (horas no pulso ÷ 15 × gasto em uso) e menos o gasto fora (o resto do tempo × gasto fora). **Mecânico:** a reserva que sobra ÷ a reserva de marcha. **Solar:** a carga de luz (perde no escuro pela reserva de energia, ganha no sol pelo tempo de sol para encher, e no pulso uma parte disso (*No pulso: quanto carrega*); sem nenhum sol marcado, desconhecida). **Pilha:** quanto falta da vida da pilha. |
 | `reserva_restante` (h) | **Mecânico:** a reserva de marcha que sobra. Perde 1 hora por hora; no pulso o automático ganha pelos campos *No pulso*; no winder, pelos campos *No winder*; a corda (e as marcações antigas) enchem. |
 | `taxa_uso`, `taxa_repouso` (% por dia) | **Smartwatch:** o gasto no pulso e o gasto fora que valem: o medido pelas leituras, senão o do cadastro. |
 | `dias_de_carga` (dias) | **Smartwatch:** quantos dias de uso a carga de agora aguenta. |
@@ -657,7 +658,7 @@ coluna `ativo` da tabela `modo`, e troca-se na página Hoje.)
 | `ultima_manha`, `ultima_noite` | o dia da última rodada da manhã e da noite (para não rodar duas vezes). |
 | `cron_ultima_execucao`, `cron_erro`, `cron_registro` | quando o cron rodou, o último erro (vazio: nenhum) e o registro da última rodada com atividade. |
 | `agenda_teste_id` | o evento de teste da agenda, enquanto existir. |
-| `migracao_v10`, `migracao_v12`, `migracao_v16`, `migracao_v17`, `migracao_v18` | as marcas de que essas migrações foram aplicadas (as outras se marcam pela própria estrutura do banco). |
+| `migracao_v10`, `migracao_v12`, `migracao_v16`, `migracao_v17`, `migracao_v18`, `migracao_v19` | as marcas de que essas migrações foram aplicadas (as outras se marcam pela própria estrutura do banco). |
 
 ## Um dia com o Relógios 2
 
@@ -1272,7 +1273,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |
 | [`estilo.css`](estilo.css) | o visual |
 | [`schema.sql`](schema.sql) | a estrutura do banco e o conjunto inicial (grupos, campos, fórmulas, avisos, modos, critérios) |
-| `migracao_v2.sql` … `migracao_v18.sql` | as migrações, aplicadas pela página Configuração |
+| `migracao_v2.sql` … `migracao_v19.sql` | as migrações, aplicadas pela página Configuração |
 | [`config.exemplo.php`](config.exemplo.php) | o modelo do `config.php` |
 | [`instalar.php`](instalar.php) | instala o `schema.sql` no banco do `config.php`, qualquer um dos três (o mesmo que `recurso=instalacao`) |
 | [`criar_usuario.php`](criar_usuario.php) | cria um usuário ou troca a senha, pela linha de comando (o mesmo que `recurso=usuarios`, `acao=salvar`) |

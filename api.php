@@ -579,6 +579,7 @@
  *     config.migracao_v16            marca de que a migração v16 foi aplicada (1)
  *     config.migracao_v17            marca de que a migração v17 foi aplicada (1)
  *     config.migracao_v18            marca de que a migração v18 foi aplicada (1)
+ *     config.migracao_v19            marca de que a migração v19 foi aplicada (1)
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso); 0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
@@ -1449,6 +1450,7 @@
  *     config.migracao_v16            marca de que a migração v16 foi aplicada (1)
  *     config.migracao_v17            marca de que a migração v17 foi aplicada (1)
  *     config.migracao_v18            marca de que a migração v18 foi aplicada (1)
+ *     config.migracao_v19            marca de que a migração v19 foi aplicada (1)
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso); 0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
@@ -3560,6 +3562,7 @@ if (!$token_ok && $quem === "") {
                 "config.migracao_v16" => "marca de que a migração v16 foi aplicada (1)",
                 "config.migracao_v17" => "marca de que a migração v17 foi aplicada (1)",
                 "config.migracao_v18" => "marca de que a migração v18 foi aplicada (1)",
+                "config.migracao_v19" => "marca de que a migração v19 foi aplicada (1)",
                 "config.pulso_auto_fim" => "1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o \"fecha às\" do tipo No pulso); 0: só pelo Tirou",
                 "config.pulso_auto_inicio" => "1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs",
                 "config.previsao_limite" => "o limite de carga da previsão do smartwatch, em %",
@@ -4199,6 +4202,7 @@ if (!$token_ok && $quem === "") {
                 "config.migracao_v16" => "marca de que a migração v16 foi aplicada (1)",
                 "config.migracao_v17" => "marca de que a migração v17 foi aplicada (1)",
                 "config.migracao_v18" => "marca de que a migração v18 foi aplicada (1)",
+                "config.migracao_v19" => "marca de que a migração v19 foi aplicada (1)",
                 "config.pulso_auto_fim" => "1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o \"fecha às\" do tipo No pulso); 0: só pelo Tirou",
                 "config.pulso_auto_inicio" => "1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs",
                 "config.previsao_limite" => "o limite de carga da previsão do smartwatch, em %",
