@@ -88,6 +88,7 @@ $consultas = [
     "proximos" => ["recurso=proximos", "recurso=proximos&pagina=2&por_pagina=3"],
     "desejos" => ["recurso=desejos"],
     "estatisticas" => ["recurso=estatisticas", "recurso=estatisticas&de=tudo"],
+    "hora_certa" => ["recurso=hora_certa"],
     "rodizio_manual" => ["recurso=rodizio_manual&de=" . $hoje . "&ate=" . $daqui20 . "&pagina=1", "recurso=rodizio_manual&de=" . $hoje . "&ate=" . $daqui20 . "&pagina=3"],
     "eventos" => ["recurso=eventos"],
     "agenda" => ["recurso=agenda"],

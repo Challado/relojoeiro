@@ -193,7 +193,7 @@ const RECONSTRUCAO_TELAS = [
                 . "2,4rem) no canto de cima, à direita. Fecha com o ×, com um clique fora da foto ou com Esc (o Esc fecha só a foto: o "
                 . "painel por baixo continua aberto); enquanto aberta, a página não rola.",
             "O título da aba do navegador é o título da página (\"Relógio de hoje\", \"Plano\", \"Configuração\", \"Critérios de escolha\", "
-                . "\"Grupos de relógios\", \"Execuções do cron\", \"Usuários\", \"Cadastros\", \"Ajuda\", \"Ficha do relógio\", \"Documentos\", \"Desejos\", \"Estatísticas\"; no "
+                . "\"Grupos de relógios\", \"Execuções do cron\", \"Usuários\", \"Cadastros\", \"Ajuda\", \"Ficha do relógio\", \"Documentos\", \"Desejos\", \"Estatísticas\", \"Hora certa\"; no "
                 . "histórico, \"Histórico — <relógio>\").",
             "O navegador de páginas (Próximos dias, Dia a dia do Plano, Rodízio manual): botões leves pequenos (padding .3rem "
                 . ".65rem, letra .9rem) numa linha que quebra: \"<\" (dica \"Anterior\"; desativado na primeira), os números (a 1, a última e "
@@ -212,6 +212,7 @@ const RECONSTRUCAO_TELAS = [
             ["pagina" => "plano.php", "rotulo" => "Plano"],
             ["pagina" => "desejos.php", "rotulo" => "Desejos"],
             ["pagina" => "estatisticas.php", "rotulo" => "Estatísticas"],
+            ["pagina" => "hora.php", "rotulo" => "Hora certa"],
             ["pagina" => "configuracao.php", "rotulo" => "Configuração"],
             ["pagina" => "criterios.php", "rotulo" => "Critérios"],
             ["pagina" => "grupos.php", "rotulo" => "Grupos"],
@@ -527,6 +528,33 @@ const RECONSTRUCAO_TELAS = [
                     "Cartão com a nota e as divisões em grade (lado a lado onde cabem, cada uma com pelo menos 22rem): h3 com o título e a "
                         . "tabela nome, \"<n> relógios\", a barra com a porcentagem e as horas; numa divisão estreita (até 26rem), cada linha em "
                         . "duas: o nome em negrito em cima e os números embaixo.",
+                ]],
+            ],
+        ],
+        [
+            "id" => "hora",
+            "pagina" => "hora.php",
+            "titulo" => "Hora certa",
+            "endereco" => "hora.php",
+            "le" => [
+                "recurso=hora_certa (ao abrir e a cada minuto)",
+            ],
+            "grava" => [],
+            "partes" => [
+                ["titulo" => "O relógio", "itens" => [
+                    "h1 \"Hora certa\" com \"<fuso> · UTC<deslocamento>\" em cinza. Um cartão com o mostrador em SVG (até 15rem: caixa branca de "
+                        . "borda escura, 60 marcas, as das horas grossas; ponteiros das horas e dos minutos escuros e arredondados, o dos segundos "
+                        . "vermelho fino, o eixo vermelho) e ao lado (embaixo, no celular) a hora digital grande (HH:MM:SS, números de largura "
+                        . "fixa), a data por extenso, a hora UTC em cinza e a nota \"O relógio deste aparelho está certo (menos de meio segundo de "
+                        . "diferença).\" ou \"... está <n> s adiantado/atrasado.\" e de onde vem a hora.",
+                    "O relógio da página: a diferença é agora_ms menos o meio do pedido (antes e depois); a cada virada de segundo do relógio "
+                        . "acertado, os ponteiros e a hora digital andam (no fuso.segundos da API); a cada minuto, lê a API de novo.",
+                ]],
+                ["titulo" => "Os quadros", "itens" => [
+                    "Três cartões lado a lado (um embaixo do outro até 900px), com pares rótulo/valor: Fuso e UTC (Fuso com a abreviação, "
+                        . "Deslocamento, UTC (Zulu), Letra militar \"P (Papa)\", Grupo data-hora local e Zulu em código, ISO 8601), Calendário (Hoje, "
+                        . "Dia do ano \"286 de 365 · faltam 79\", Semana (ISO), Trimestre, Dia juliano, Unix) e Lua (Fase com o símbolo, Idade, "
+                        . "Iluminada, Próxima cheia, Próxima nova e a nota do ciclo médio). Embaixo, o cartão Como acertar com o texto da API.",
                 ]],
             ],
         ],
@@ -977,6 +1005,8 @@ const RECONSTRUCAO_CODIGO = [
     "desejos.php" => ["tela", "o esqueleto da página Desejos"],
     "desejos.js" => ["tela", "a página Desejos: a lista de desejos (com o Comprei) e os relógios fora da coleção"],
     "estatisticas.php" => ["tela", "o esqueleto da página Estatísticas"],
+    "hora.php" => ["tela", "o esqueleto da página Hora certa"],
+    "hora.js" => ["tela", "a página Hora certa: o mostrador e a hora digital andando, acertados pela API, e os quadros do fuso, do calendário e da lua"],
     "estatisticas.js" => ["tela", "a página Estatísticas: o período, o resumo, cada relógio, os gráficos em SVG e a coleção"],
     "historico.php" => ["tela", "o esqueleto da página Histórico"],
     "historico.js" => ["tela", "a página Histórico de um relógio: os filtros, o resumo do tempo e a linha do tempo"],
@@ -995,6 +1025,7 @@ const RECONSTRUCAO_CODIGO = [
     "api/ficha.php" => ["api", "recurso=ficha: tudo o que o painel de um relógio mostra (ou o cadastro de um novo)"],
     "api/configuracao.php" => ["api", "recurso=config: a Configuração inteira"],
     "api/desejos.php" => ["api", "recurso=desejos: a lista de desejos e os relógios fora da coleção"],
+    "api/hora_certa.php" => ["api", "recurso=hora_certa: a hora do servidor, o fuso, o UTC, a letra militar, o calendário e a lua (sem banco)"],
     "api/estatisticas.php" => ["api", "recurso=estatisticas: o uso da coleção num período, por relógio, dia da semana e mês, e a distribuição da coleção"],
     "api/historico.php" => ["api", "recurso=historico: a linha do tempo de um relógio, com os filtros e o resumo"],
     "api/plano.php" => ["api", "recurso=plano: o plano dia a dia, o resumo por relógio e as páginas"],
@@ -1233,7 +1264,7 @@ function reconstrucao()
                     . "linha), a tabela no (palavra reservada: \"NO\"), nomes de índice e de regra com até 31 letras, o TEXT como VARCHAR(8191) e a chave "
                     . "única de várias colunas com coluna vazia como índice único de uma expressão; e três comandos próprios das migrações: ALTER FOREIGN "
                     . "KEY, DROP COLUMN e ADD CONSTRAINT ... CHECK (trocando a regra sem perder a anterior se os dados não cumprem a nova).",
-                "As páginas (index.php, plano.php, desejos.php, estatisticas.php, ficha.php, documentos.php, historico.php, configuracao.php, criterios.php, grupos.php, "
+                "As páginas (index.php, plano.php, desejos.php, estatisticas.php, hora.php, ficha.php, documentos.php, historico.php, configuracao.php, criterios.php, grupos.php, "
                     . "cadastros.php, execucoes.php, usuarios.php, ajuda.php) só entregam o esqueleto, sem conferir nem o login; o JavaScript de cada uma "
                     . "(hoje.js, painel.js, configuracao.js, ajuda.js...) chama a API e monta a tela, sem fazer conta: resumos, porcentagens e situações "
                     . "(o resumo do plano, a porcentagem de cada estado no histórico, o peso efetivo dos critérios, a situação do cron, o manual "
@@ -1515,6 +1546,14 @@ function reconstrucao()
                     . "os dias de uso desde sempre são as fórmulas custo_por_uso e dias_de_uso. A coleção (na coleção e emprestados) é dividida "
                     . "por grupo, marca, ano da compra, situação e cada campo de lista (menos os só dos desejados). Período padrão: os últimos 90 "
                     . "dias; até hoje; no máximo 3661 dias; de=tudo: desde o primeiro uso.",
+            ]),
+            $secao("hora_certa", "A hora certa", [
+                "recurso=hora_certa não usa o banco: a hora do servidor (microtime) no fuso do sistema e em UTC; a letra militar do fuso pelo "
+                    . "deslocamento em horas cheias (A a M sem J a leste, N a Y a oeste, Z no UTC; fora da hora cheia, nenhuma); o grupo data-hora "
+                    . "DDHHMM + letra + mês em inglês + ano com dois dígitos; o calendário pelo formato de datas (z, L, W, o); o dia juliano = "
+                    . "segundos / 86400 + 2440587,5; a lua pela idade no ciclo sinódico médio de 29,530588853 dias a partir da lua nova de "
+                    . "06/01/2000 18:14 UTC (dia juliano 2451550,1), a parte iluminada (1 - cos(2π idade/ciclo)) / 2 e a fase pelos oitavos do "
+                    . "ciclo (os limites 1,85; 5,54; 9,23; 12,92; 16,61; 20,30; 23,99; 27,68 dias).",
             ]),
             $secao("telas", "As telas", [
                 "A especificação completa, tela por tela, está em telas (abaixo): o visual com os valores exatos (cores, letras, controles, "

@@ -1440,3 +1440,19 @@ table.tabela-distribuicao td { padding: .3rem .4rem; overflow-wrap: break-word; 
   .graficos-estatisticas { grid-template-columns: minmax(0, 1fr); }
   .resumo-estatisticas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ---------- Hora certa: o mostrador, a hora digital e os quadros ---------- */
+.relogio-certo { display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+svg.mostrador { width: min(15rem, 100%); height: auto; flex: none; }
+svg.mostrador .caixa { fill: #fff; stroke: var(--tinta); stroke-width: 3; }
+svg.mostrador .marca-h { stroke: var(--tinta); stroke-width: 3; }
+svg.mostrador .marca-m { stroke: var(--aco-escuro); stroke-width: 1; }
+svg.mostrador .p-hora { stroke: var(--tinta); stroke-width: 6; stroke-linecap: round; }
+svg.mostrador .p-min { stroke: var(--tinta); stroke-width: 4; stroke-linecap: round; }
+svg.mostrador .p-seg { stroke: #b3261e; stroke-width: 1.5; stroke-linecap: round; }
+svg.mostrador .eixo { fill: #b3261e; }
+.digital-bloco { min-width: 0; flex: 1 1 14rem; }
+.digital { font-size: clamp(2.6rem, 9vw, 4.5rem); font-weight: 700; margin: 0; font-variant-numeric: tabular-nums; letter-spacing: .02em; line-height: 1.1; }
+.data-longa { font-size: 1.1rem; margin: .3rem 0 .6rem; }
+.grade-hora .cartao-config { min-width: 0; }
+.lua-simbolo { font-size: 1.3rem; vertical-align: -.1rem; }
