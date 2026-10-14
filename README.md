@@ -11,8 +11,9 @@
 
 ![A página Hoje: o relógio do dia, o que fazer hoje, a escala dos próximos dias e o painel de um relógio](docs/telas/hoje.png)
 
-<sub>A página **Hoje** com uma coleção real de 14 relógios: o do dia (o Orient automático, com o lembrete de pôr no winder), o
-que fazer hoje, a escala inteligente dos próximos dias e, à direita, o painel do San Martin.</sub>
+<sub>A página **Hoje** com uma coleção de demonstração de 8 relógios (modelos comuns, seis semanas de uso lançadas pela API): o
+do dia (o Casio, no pulso desde as 7h), o que fazer hoje, a escala inteligente dos próximos dias e, à direita, o painel do
+Tissot, aberto ao lado (na Configuração ele pode abrir flutuante, por cima da página).</sub>
 
 | | |
 |---|---|

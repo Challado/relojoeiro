@@ -12,6 +12,18 @@ if (PHP_SAPI !== "cli" || count($argv) < 3) {
 $API = $argv[1];
 $SAIDA = $argv[2];
 $TOKEN = getenv("RELOGIOS_TOKEN") ?: "token-de-teste-123";
+// O fuso do sistema: as datas e horas que o roteiro manda (o "quando" de cada lançamento) a API lê no FUSO do config.php.
+// Montadas em outro fuso, elas caem fora do lugar: à noite no Brasil já é o dia seguinte em UTC, e "hoje 00:20" vira uma
+// hora no futuro, que a API recusa. O fuso vem da variável RELOGIOS_FUSO ou, sem ela, do config.php da pasta do sistema
+$fuso = (string)getenv("RELOGIOS_FUSO");
+if ($fuso === "" && is_file(__DIR__ . "/../config.php")) {
+    require __DIR__ . "/../config.php";
+    $fuso = defined("FUSO") ? trim((string)constant("FUSO")) : "";
+}
+if ($fuso !== "" && !@date_default_timezone_set($fuso)) {
+    fwrite(STDERR, "Fuso desconhecido: " . $fuso . "\n");
+    exit(1);
+}
 $falhas = [];
 $passo = 0;
 
@@ -65,6 +77,12 @@ function cron()
 function dia($dias_atras, $hora)
 {
     return date("Y-m-d", strtotime("-" . (int)$dias_atras . " days")) . " " . $hora;
+}
+
+// um instante de agora há pouco (minutos atrás): o que tem de estar no passado mesmo rodando logo depois da meia-noite
+function ha_minutos($minutos)
+{
+    return date("Y-m-d H:i", time() - (int)$minutos * 60);
 }
 
 $foto = ["escritas" => [], "leituras" => [], "cron" => []];
@@ -129,9 +147,9 @@ $lanc("periodo", "manual", "pulso", ["inicio" => dia(30, "09:00"), "fim" => dia(
 $lanc("lancar", "manual", "corda", ["quando" => dia(30, "09:00")]);
 $lanc("lancar", "pilha", "pilha", ["quando" => dia(400, "10:00")]);
 $lanc("periodo", "solar", "sol", ["inicio" => dia(8, "10:00"), "fim" => dia(8, "16:00")]);
-$lanc("iniciar", "solar", "sol", ["quando" => dia(0, "00:20")]);
-$lanc("iniciar", "auto2", "winder", ["quando" => dia(0, "00:10")]);
-$lanc("encerrar", "auto2", "winder", ["quando" => dia(0, "00:15")]);
+$lanc("iniciar", "solar", "sol", ["quando" => ha_minutos(20)]);
+$lanc("iniciar", "auto2", "winder", ["quando" => ha_minutos(30)]);
+$lanc("encerrar", "auto2", "winder", ["quando" => ha_minutos(25)]);
 $lanc("lancar", "crono", "banho_ultrassom", ["quando" => dia(1, "15:00")]);
 $id_errado = $lanc("lancar", "crono", "banho_ultrassom", ["quando" => dia(1, "16:00")]);
 escrever(["recurso" => "lancamento", "acao" => "excluir", "id" => $id_errado]);
