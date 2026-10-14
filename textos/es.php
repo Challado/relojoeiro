@@ -877,6 +877,7 @@ Los criterios propios del grupo ({1} parámetros) se eliminarán; los relojes pa
         'Filtrar pela próxima manutenção' => 'Filtrar por el próximo mantenimiento',
         'até hoje' => 'hasta hoy',
         'Filtrar pelo que fazer' => 'Filtrar por qué hacer',
+        'Encostado' => 'Arrinconado',
         'Filtrar por encostado' => 'Filtrar por arrinconado',
         'Encostados' => 'Arrinconados',
         'Dentro do prazo' => 'Dentro del plazo',
