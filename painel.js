@@ -245,7 +245,7 @@ function abrirNoPainel(id) {
         + el("form", {"data-recurso": "relogio", "class": "linha"}, el("input", {"type": "hidden", "name": "acao", "value": "manual"}) + el("input", {"type": "hidden", "name": "id", "value": id})
           + el("input", {"type": "file", "name": "manual", "accept": "application/pdf,image/jpeg,image/png,image/webp", "required": true, "aria-label": "Escolher o arquivo do manual"})
           + el("button", {"class": "leve"}, man !== null ? "Trocar manual" : "Salvar manual"))
-        + el("p", {"class": "nota"}, "PDF, JPEG, PNG ou WebP, até " + mb(r.manual_limite) + ". O manual que só existe como página da internet: abra no navegador e use Imprimir → Salvar como PDF.")
+        + el("p", {"class": "nota"}, "PDF, JPEG, PNG ou WebP" + (r.manual_limite !== null ? ", até " + mb(r.manual_limite) : ", de qualquer tamanho") + ". O manual que só existe como página da internet: abra no navegador e use Imprimir → Salvar como PDF.")
         + (man !== null ? el("form", {"data-recurso": "relogio", "onsubmit": "return confirm('Remover o manual?')"}, el("input", {"type": "hidden", "name": "acao", "value": "remover_manual"})
           + el("input", {"type": "hidden", "name": "id", "value": id}) + el("button", {"class": "leve discreto"}, "Remover manual")) : ""));
       blocos += el("section", {}, el("h2", {}, "Próximas manutenções") + (r.manutencoes.length === 0 ? el("p", {}, "Nada previsto.")

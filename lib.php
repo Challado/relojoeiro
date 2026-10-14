@@ -1538,11 +1538,13 @@ function ini_bytes($v)
     return max(0, (int)$n);
 }
 
-// O maior manual aceito, em bytes: 12 MB, ou menos se o PHP do servidor aceitar menos num envio (upload_max_filesize e
-// post_max_size do php.ini; o envio leva também o resto do formulário, daí a folga de 64 KB)
+// O maior manual aceito, em bytes: o MANUAL_LIMITE do config.php (sem ele, 12 MB; 0 ou negativo, como o -1: sem limite do
+// sistema), ou menos se o PHP do servidor aceitar menos num envio (upload_max_filesize e post_max_size do php.ini; o envio
+// leva também o resto do formulário, daí a folga de 64 KB). null: nenhum limite, nem do sistema nem do PHP
 function manual_limite()
 {
-    $limite = 12 * 1024 * 1024;
+    $limite = defined("MANUAL_LIMITE") ? (int)MANUAL_LIMITE : 12 * 1024 * 1024;
+    $limite = $limite > 0 ? $limite : PHP_INT_MAX;
     $arquivo = ini_bytes(ini_get("upload_max_filesize"));
     $envio = ini_bytes(ini_get("post_max_size"));
     if ($arquivo > 0) {
@@ -1551,7 +1553,7 @@ function manual_limite()
     if ($envio > 0) {
         $limite = min($limite, max(0, $envio - 64 * 1024));
     }
-    return $limite;
+    return $limite === PHP_INT_MAX ? null : $limite;
 }
 
 // Um tamanho de arquivo para as mensagens: "850 KB", "3,2 MB"

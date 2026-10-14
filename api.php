@@ -1105,7 +1105,8 @@
  *     relogio.manual.nome            o nome do arquivo enviado
  *     relogio.manual.tamanho         o tamanho do arquivo, em bytes (número inteiro)
  *     relogio.manual.tipo            o tipo do arquivo (application/pdf, image/jpeg, image/png, image/webp)
- *     relogio.manual_limite          o maior manual que o servidor aceita, em bytes (12 MB, ou menos pelo upload_max_filesize e o post_max_size do PHP)
+ *     relogio.manual_limite          o maior manual que o servidor aceita, em bytes (número inteiro): o MANUAL_LIMITE do config.php
+ *                                    (sem ele, 12 MB), ou menos pelo upload_max_filesize e o post_max_size do PHP; null: sem limite nenhum
  *     relogio.manutencoes[]          as 5 próximas manutenções (avisos)
  *     relogio.manutencoes[].data     a data (texto AAAA-MM-DD)
  *     relogio.manutencoes[].nome     o aviso
@@ -2592,7 +2593,7 @@ if (!$token_ok && $quem === "") {
                 "salvar" => ["campos" => "id (0 ou ausente cria), nome, no_id, disponivel (1 ou 0), valores[<identificador do campo>]: só muda o que vier; valor vazio apaga", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=salvar -d id=10 -d \"valores[preferencia]=80\" -d disponivel=1 http://servidor/relojoeiro/api.php"],
                 "foto" => ["campos" => "id, foto_base64 (JPEG, PNG ou WebP, até 4 MB; data:image/...;base64,... ou só o base64)", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=foto -d id=10 --data-urlencode foto_base64@foto.b64 http://servidor/relojoeiro/api.php"],
                 "remover_foto" => ["campos" => "id", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=remover_foto -d id=10 http://servidor/relojoeiro/api.php"],
-                "manual" => ["campos" => "id e o arquivo: no campo manual, enviado como arquivo (multipart), ou manual_base64 com o nome em manual_nome; PDF, JPEG, PNG ou WebP, até relogio.manual_limite da ficha (12 MB, ou menos pelo PHP do servidor)",
+                "manual" => ["campos" => "id e o arquivo: no campo manual, enviado como arquivo (multipart), ou manual_base64 com o nome em manual_nome; PDF, JPEG, PNG ou WebP, até relogio.manual_limite da ficha (12 MB, ou o MANUAL_LIMITE do config.php; ou menos pelo PHP do servidor)",
                     "exemplo" => "curl -u lucas:senha -F recurso=relogio -F acao=manual -F id=10 -F manual=@manual.pdf http://servidor/relojoeiro/api.php"],
                 "remover_manual" => ["campos" => "id", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=remover_manual -d id=10 http://servidor/relojoeiro/api.php"],
                 "excluir" => ["campos" => "id (com todo o histórico, a foto e o manual)", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=excluir -d id=15 http://servidor/relojoeiro/api.php"],
@@ -3255,7 +3256,7 @@ if (!$token_ok && $quem === "") {
                 "relogio.manual.nome" => "o nome do arquivo enviado",
                 "relogio.manual.tamanho" => "o tamanho do arquivo, em bytes (número inteiro)",
                 "relogio.manual.tipo" => "o tipo do arquivo (application/pdf, image/jpeg, image/png, image/webp)",
-                "relogio.manual_limite" => "o maior manual que o servidor aceita, em bytes (12 MB, ou menos pelo upload_max_filesize e o post_max_size do PHP)",
+                "relogio.manual_limite" => "o maior manual que o servidor aceita, em bytes (número inteiro): o MANUAL_LIMITE do config.php (sem ele, 12 MB), ou menos pelo upload_max_filesize e o post_max_size do PHP; null: sem limite nenhum",
                 "relogio.manutencoes[]" => "as 5 próximas manutenções (avisos)",
                 "relogio.manutencoes[].data" => "a data (texto AAAA-MM-DD)",
                 "relogio.manutencoes[].nome" => "o aviso",

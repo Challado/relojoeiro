@@ -340,7 +340,8 @@ Na ficha do relógio, o quadro **Manual**:
   substitui o antigo.
 - **Remover manual** apaga o arquivo. Excluir o relógio também apaga o manual dele.
 
-O tamanho máximo é **12 MB**, ou menos se o PHP do servidor aceitar menos num envio: o quadro mostra o limite que vale (veja
+O tamanho máximo é **12 MB** (o `MANUAL_LIMITE` do `config.php` muda), ou menos se o PHP do servidor aceitar menos num envio:
+o quadro mostra o limite que vale (veja
 [O tamanho dos envios](#o-tamanho-dos-envios-o-manual) na instalação). O manual que o fabricante publica só como página da
 internet (a Casio faz assim) vira PDF pelo próprio navegador: abra a página e use **Imprimir → Salvar como PDF**.
 
@@ -835,6 +836,8 @@ têm de dar **403**.
 | `API_TOKEN` | **obrigatório**, com 10 caracteres ou mais. Sem ele o sistema inteiro para e diz por quê. |
 | `FUSO` | o fuso horário, como `America/Sao_Paulo`. Vazio ou ausente: o do PHP (`date.timezone` no php.ini). Vale para tudo, inclusive para as datas que o banco grava |
 | `MSG_ENDPOINT`, `MSG_DESTINATARIO`, `MSG_TITULO` | as mensagens (veja abaixo). Sem o endereço, nada é enviado. |
+| `MANUAL_LIMITE` | opcional: o maior manual de relógio aceito, em bytes. Sem ela, 12 MB (`12582912`); `0` ou `-1`, sem limite do sistema. O limite do PHP e o do nginx continuam valendo (veja [O tamanho dos envios](#o-tamanho-dos-envios-o-manual)). Ex.: `define("MANUAL_LIMITE", 26214400);` para 25 MB |
+| `ANTIGO_HOST`, `ANTIGO_PORTA`, `ANTIGO_USUARIO`, `ANTIGO_SENHA` | opcionais, só para o `importar.php` com este sistema no Postgres ou no SQLite: onde está o MySQL do sistema anterior |
 
 ### Mensagens pelo Telegram
 
@@ -856,15 +859,18 @@ dentro da janela de antecedência, e a manutenção (pilha, revisão, garantia) 
 ### O tamanho dos envios (o manual)
 
 O manual de um relógio sobe inteiro num envio, e três limites do servidor podem recusar um arquivo grande antes do sistema. O
-sistema aceita até **12 MB**; para chegar lá:
+sistema aceita até **12 MB**, e o `MANUAL_LIMITE` do `config.php` muda isso (em bytes; `0` ou `-1`: sem limite do sistema).
+Para o manual de 12 MB:
 
 | Onde | O limite | O padrão | Para o manual de 12 MB |
 |---|---|---|---|
 | `php.ini` | `upload_max_filesize` (o arquivo) e `post_max_size` (o envio inteiro) | 2M e 8M | `upload_max_filesize = 12M` e `post_max_size = 16M` |
 | nginx | `client_max_body_size` | 1m | `16m` (já vem no [`nginx-relogios.conf`](nginx-relogios.conf)) |
 | MySQL/MariaDB | `max_allowed_packet` | 16M a 64M, conforme a versão | maior que o arquivo (o padrão já basta) |
+| `php.ini` | `memory_limit` | 128M | o padrão basta; para manuais bem maiores (com o `MANUAL_LIMITE` alto ou sem limite), umas 4 vezes o arquivo: o PHP guarda o arquivo, confere o que o banco gravou e, no envio em base64, o texto dele |
 
-O quadro **Manual** da ficha mostra o limite que vale de verdade: os 12 MB, ou menos, pelo `php.ini`. Um arquivo acima dele é
+O quadro **Manual** da ficha mostra o limite que vale de verdade: os 12 MB (ou o `MANUAL_LIMITE`), ou menos, pelo `php.ini`;
+sem limite nenhum, ele diz "de qualquer tamanho". Um arquivo acima dele é
 recusado com a mensagem do tamanho; um envio acima do `post_max_size` volta com o código `413` e o limite do servidor; se o
 banco cortar o arquivo no caminho, o sistema percebe (ele relê o que gravou), apaga o pedaço e avisa. No Apache não há limite a
 mexer, além do `php.ini`.
