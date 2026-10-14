@@ -771,3 +771,23 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 .detalhe .dados-relogio h3, .detalhe section h3 { font-size: .85rem; margin: .6rem 0 .2rem; color: var(--tinta); }
 .detalhe table.historico-curto.medicoes td, .detalhe table.historico-curto.dados td { overflow-wrap: normal; word-break: normal; }
 .detalhe table.historico-curto.dados td.nota { font-size: .72rem; }
+
+/* ajuda: o texto do README, com o sumário no alto e as tabelas que rolam de lado no celular */
+main.ajuda { max-width: 60rem; }
+main.ajuda h2 { font-size: 1.45rem; margin: 2.4rem 0 .6rem; padding-top: 1rem; border-top: 1px solid var(--aco-escuro); }
+main.ajuda h3 { font-size: 1.12rem; margin: 1.8rem 0 .5rem; }
+main.ajuda h4 { font-size: 1rem; margin: 1.3rem 0 .4rem; }
+main.ajuda h2, main.ajuda h3, main.ajuda h4 { scroll-margin-top: 1rem; }
+main.ajuda p, main.ajuda li { max-width: 46rem; }
+main.ajuda code { font-family: ui-monospace, Consolas, monospace; font-size: .86em; background: var(--papel); border: 1px solid var(--aco-escuro); border-radius: 4px; padding: 0 .25em; }
+main.ajuda pre { font-family: ui-monospace, Consolas, monospace; font-size: .85rem; background: var(--papel); border: 1px solid var(--aco-escuro); border-radius: 8px; padding: .8rem 1rem; overflow-x: auto; }
+main.ajuda img { max-width: 100%; height: auto; border: 1px solid var(--aco-escuro); border-radius: 8px; margin-top: .5rem; }
+main.ajuda a { color: var(--safira); }
+main.ajuda .ajuda-tabela { overflow-x: auto; margin: .6rem 0 1rem; }
+main.ajuda .ajuda-tabela table { min-width: 34rem; }
+main.ajuda .ajuda-tabela td { vertical-align: top; font-size: .95rem; }
+.ajuda-sumario { background: var(--papel); border: 1px solid var(--aco-escuro); border-radius: 10px; padding: .9rem 1.2rem; }
+.ajuda-sumario h2 { border: 0 !important; padding: 0 !important; margin: 0 0 .4rem !important; font-size: 1rem !important; }
+.ajuda-sumario ul { margin: 0; padding: 0; list-style: none; columns: 2 16rem; column-gap: 2rem; }
+.ajuda-sumario li { padding: .12rem 0; break-inside: avoid; }
+.ajuda-sumario li.nivel-3 { padding-left: 1rem; font-size: .92rem; }

@@ -13,12 +13,13 @@ if ($USUARIO === "") {
     exit;
 }
 
-// O começo de uma página, como no sistema antigo: o cabeçalho e o menu (Cadastros no fim, a única página que o antigo não
-// tinha). Cada página abre o seu <main> e mostra as suas mensagens.
+// O começo de uma página, como no sistema antigo: o cabeçalho e o menu (Cadastros e Ajuda no fim, as páginas que o antigo
+// não tinha). Cada página abre o seu <main> e mostra as suas mensagens.
 function topo($titulo, $ativo)
 {
     $menu = ["index.php" => "Hoje", "configuracao.php" => "Configuração", "criterios.php" => "Critérios", "grupos.php" => "Grupos",
-        "execucoes.php" => "Execuções do cron", "usuarios.php" => "Usuários", "cadastros.php" => "Cadastros"];
+        "execucoes.php" => "Execuções do cron", "usuarios.php" => "Usuários", "cadastros.php" => "Cadastros",
+        "ajuda.php" => "Ajuda"];
     echo "<!doctype html>\n<html lang=\"pt-BR\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>" . htmlspecialchars($titulo, ENT_QUOTES, "UTF-8") . "</title>\n"
         . "<link rel=\"stylesheet\" href=\"estilo.css?v=" . (int)@filemtime(__DIR__ . "/estilo.css") . "\">\n</head>\n<body>\n<nav class=\"topo\">\n";
     foreach ($menu as $url => $nome) {

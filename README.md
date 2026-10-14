@@ -407,6 +407,7 @@ porcentagem em cada estado.</sub>
 | **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), avisos e modos de rodízio: tudo o que o sistema usa e que não é código. |
 | **Execuções do cron** (`execucoes.php`) | O que o cron fez a cada rodada, quanto tempo levou e os erros, com filtros. |
 | **Usuários** (`usuarios.php`) | Quem acessa: criar um usuário ou trocar a senha. |
+| **Ajuda** (`ajuda.php`) | Este guia dentro do sistema: a ideia central, como funciona, o cadastro de cada relógio campo por campo, os avisos de carga, as telas e as perguntas frequentes (as mesmas seções deste README, lidas dele). |
 
 ---
 
@@ -634,6 +635,7 @@ Pode. As telas usam exatamente a mesma API.
 | [`operacoes.php`](operacoes.php) | as regras de cada gravação: validações e mensagens |
 | [`cron.php`](cron.php) | o plano, a sessão do dia, as rodadas da manhã e da noite, os eventos e a agenda |
 | `index.php`, `ficha.php`, `historico.php`, `configuracao.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `usuarios.php` | as páginas (só o esqueleto) |
+| `ajuda.php` | a página de ajuda: as seções do README para quem usa, convertidas para HTML |
 | [`pagina.php`](pagina.php) | o login do site e o menu |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |
 | [`estilo.css`](estilo.css) | o visual |
