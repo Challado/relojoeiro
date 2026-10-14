@@ -1891,6 +1891,13 @@ function documento_apagar_arquivos($d)
     }
 }
 
+// Como o relógio abre na página Hoje (a Configuração): "lado", no painel à direita da lista (o padrão), ou "flutuante",
+// numa janela grande por cima da página. No celular, os dois cobrem a tela inteira
+function painel_modo()
+{
+    return cfg("painel_modo") === "flutuante" ? "flutuante" : "lado";
+}
+
 // A cópia de segurança dos documentos no banco tem três níveis, e o de cima vale sobre os de baixo:
 // 1. o sistema: o DOCUMENTOS_COPIA_BANCO do config.php. true: todo arquivo vai também para o banco; false: nenhum vai (nem
 //    o que o relógio ou o arquivo pedem); sem ele (null): quem decide é o relógio e o arquivo;

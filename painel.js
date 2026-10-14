@@ -90,6 +90,21 @@ function campoCadastro(c) {
   return res;
 }
 
+// Um quadro do painel: o título, o conteúdo e, se houver, o rodapé (os botões, sempre no pé do quadro: os quadros da mesma
+// linha da grade têm a mesma altura, e os botões ficam alinhados)
+function quadro(titulo, corpo, rodape, classe) {
+  return el("section", {"class": "quadro" + (classe ? " " + classe : "")}, el("h2", {}, h(titulo)) + el("div", {"class": "quadro-corpo"}, corpo)
+    + (rodape ? el("div", {"class": "quadro-rodape"}, rodape) : ""));
+}
+
+// Pares rótulo e valor alinhados em duas colunas (o rótulo vazio continua a linha de cima). O valor já vem em HTML; um
+// <small> dentro dele vira a explicação embaixo do valor
+function pares(lista, classe) {
+  return el("dl", {"class": "pares" + (classe ? " " + classe : "")}, lista.map(function (x) {
+    return el("dt", {}, x[0] === "" ? "" : x[0]) + el("dd", {}, x[1]);
+  }).join(""));
+}
+
 // mostra ou esconde o painel; escondido, o meio da página ocupa a largura toda
 function mostrarPainel(mostrar) {
   var painel = document.getElementById("detalhe");
@@ -142,6 +157,16 @@ function abrirNoPainel(id) {
   return api(id > 0 ? {recurso: "ficha", relogio: id} : {recurso: "ficha"}).then(function (d) {
     var noIndex = document.querySelector(".painel") !== null;
     if (noIndex) {
+      // como ele abre (a Configuração): ao lado da lista, ou numa janela flutuante grande, com o fundo escurecido (um clique
+      // no fundo fecha, como o × e o Esc)
+      var area = document.querySelector(".painel");
+      area.classList.toggle("modo-flutuante", d.painel_modo === "flutuante");
+      if (d.painel_modo === "flutuante" && !area.querySelector(".fundo-painel")) {
+        var fundo = document.createElement("div");
+        fundo.className = "fundo-painel";
+        fundo.setAttribute("data-fechar-painel", "");
+        area.insertBefore(fundo, painel);
+      }
       mostrarPainel(true);
     }
     // O painel inteiro de um relógio (ou o cadastro de um novo), no HTML do painel do sistema antigo
@@ -159,13 +184,16 @@ function abrirNoPainel(id) {
     if (novo) {
       res += el("h1", {}, "Novo relógio");
     } else {
+      // a foto, com os botões dela embaixo: escolher (o campo de arquivo fica escondido atrás do botão), salvar e remover
       var foto = r.foto !== null ? el("img", {"src": "api.php?recurso=foto&relogio=" + id + "&v=" + r.foto, "alt": "Foto do " + r.nome}) : el("div", {"class": "sem-foto"}, "Sem foto");
-      foto += el("form", {"data-recurso": "relogio", "class": "linha"}, el("input", {"type": "hidden", "name": "acao", "value": "foto"}) + el("input", {"type": "hidden", "name": "id", "value": id})
-        + el("input", {"type": "hidden", "name": "foto_base64", "id": "foto_base64_" + id}) + el("input", {"type": "file", "accept": "image/*", "data-foto": "foto_base64_" + id,
-          "data-previa": "previa_" + id, "aria-label": "Escolher foto"}) + el("img", {"id": "previa_" + id, "class": "previa", "hidden": true, "alt": ""})
-        + el("button", {"class": "leve"}, r.foto !== null ? "Trocar foto" : "Salvar foto"));
+      foto += el("form", {"data-recurso": "relogio", "class": "foto-acoes"}, el("input", {"type": "hidden", "name": "acao", "value": "foto"}) + el("input", {"type": "hidden", "name": "id", "value": id})
+        + el("input", {"type": "hidden", "name": "foto_base64", "id": "foto_base64_" + id})
+        + el("label", {"class": "botao-arquivo"}, el("input", {"type": "file", "accept": "image/*", "data-foto": "foto_base64_" + id, "data-previa": "previa_" + id,
+          "data-salvar": "salvar_foto_" + id, "aria-label": "Escolher foto"}) + (r.foto !== null ? "Trocar foto" : "Escolher foto"))
+        + el("img", {"id": "previa_" + id, "class": "previa", "hidden": true, "alt": ""})
+        + el("button", {"id": "salvar_foto_" + id, "hidden": true}, "Salvar foto"));
       if (r.foto !== null) {
-        foto += el("form", {"data-recurso": "relogio", "onsubmit": "return confirm('Remover a foto?')"}, el("input", {"type": "hidden", "name": "acao", "value": "remover_foto"})
+        foto += el("form", {"data-recurso": "relogio", "class": "foto-remover", "onsubmit": "return confirm('Remover a foto?')"}, el("input", {"type": "hidden", "name": "acao", "value": "remover_foto"})
           + el("input", {"type": "hidden", "name": "id", "value": id}) + el("button", {"class": "leve discreto"}, "Remover foto"));
       }
       // no rodízio: quando entra (e até quando fica), ou por que não entra
@@ -180,72 +208,70 @@ function abrirNoPainel(id) {
         proxima = "Não entra na escala atual, que vai até " + dataBr(r.escala_fim) + ".";
       }
       var ultima = r.leituras.length > 0 ? r.leituras[r.leituras.length - 1] : null;
-      var blocos = el("section", {}, el("h2", {}, "Agora") + el("p", {}, el("span", {"class": "estado " + (r.em_uso ? "estado-uso" : "estado-repouso")}, h(r.agora)))
-        + el("p", {}, r.carga !== null ? "Carga agora ~" + r.carga + "% (" + h(r.carga_de) + ")" : "Carga: " + h(r.carga_de))
-        + r.situacao.map(function (l) { return el("p", {}, h(l)); }).join("")
-        + (ultima ? el("p", {}, el("small", {}, "Última leitura " + num(ultima.valor, 1) + h(ultima.unidade) + " em " + dataBr(ultima.inicio, true) + " " + horaBr(ultima.inicio))) : ""));
+      var nada = function (motivo) { return el("span", {"class": "nota"}, h(motivo || "sem dados")); };
+      // Agora: o estado, a carga (com a barra) e o que o sistema sabe da situação
+      var carga = r.carga !== null
+        ? el("span", {"class": "carga-linha" + (r.carga <= 20 ? " baixa" : "")}, el("span", {"class": "barra"}, el("span", {"style": "width:" + Math.max(0, Math.min(100, r.carga)) + "%"}, ""))
+          + el("strong", {}, "~" + r.carga + "%")) + el("small", {}, h(r.carga_de))
+        : nada(r.carga_de);
+      var blocos = quadro("Agora", pares([["Estado", el("span", {"class": "estado " + (r.em_uso ? "estado-uso" : "estado-repouso")}, h(r.agora))], ["Carga", carga]]
+        .concat(r.situacao.map(function (l, i) { return [i === 0 ? "Situação" : "", h(l)]; }))
+        .concat(ultima ? [["Última leitura", num(ultima.valor, 1) + h(ultima.unidade) + " " + el("small", {}, dataBr(ultima.inicio, true) + " " + horaBr(ultima.inicio))]] : [])));
       if (r.previsao.aplica) {
-        blocos += el("section", {}, el("h2", {}, "Previsão") + (r.previsao.linhas.length === 0 ? el("p", {}, "Informe a carga atual para o sistema começar a prever.")
-          : r.previsao.linhas.map(function (l) { return el("p", {}, h(l)); }).join("")));
+        blocos += quadro("Previsão", r.previsao.linhas.length === 0 ? el("p", {"class": "nota"}, "Informe a carga atual para o sistema começar a prever.")
+          : el("ul", {"class": "linhas"}, r.previsao.linhas.map(function (l) { return el("li", {}, h(l)); }).join("")));
       }
-      // os dois gastos lado a lado: o do cadastro, o medido pelas leituras (nesta janela e na anterior) e o que vale na conta
+      // os dois gastos: o que vale na conta, e de onde ele vem (o medido pelas leituras, o do cadastro)
       var gs = r.previsao.gasto;
       if (gs) {
         var pct = function (v) { return num(v, 2) + "%"; };
-        var linhaGasto = function (rotulo, por, x) {
-          return el("p", {}, rotulo + ": " + el("strong", {}, x.vale !== null ? pct(x.vale) + " " + por : "sem dados")
-            + " " + el("span", {"class": "nota"}, "(" + (x.medido !== null ? "medido; o cadastro diz " + (x.cadastro !== null ? pct(x.cadastro) : "nada") : "do cadastro, sem medição") + ")"));
+        var gasto = function (por, x) {
+          return x.vale !== null ? el("strong", {}, pct(x.vale)) + " " + por + el("small", {}, x.medido !== null ? "medido; o cadastro diz " + (x.cadastro !== null ? pct(x.cadastro) : "nada") : "do cadastro, sem medição")
+            : nada();
         };
-        var antes = gs.uso.antes !== null || gs.repouso.antes !== null
-          ? el("p", {"class": "nota"}, "Nos " + gs.janela_dias + " dias antes desses (" + gs.medicoes_antes + (gs.medicoes_antes === 1 ? " medição" : " medições") + "): "
-            + (gs.uso.antes !== null ? pct(gs.uso.antes) + " no pulso" : "") + (gs.uso.antes !== null && gs.repouso.antes !== null ? " e " : "")
-            + (gs.repouso.antes !== null ? pct(gs.repouso.antes) + " fora" : "") + ".")
-          : "";
-        blocos += el("section", {}, el("h2", {}, "Gasto da bateria")
-          + linhaGasto("No pulso", "por dia de uso", gs.uso) + linhaGasto("Fora do pulso (desligado)", "por dia", gs.repouso) + antes
-          + el("p", {"class": "nota"}, (gs.medicoes > 0 ? "Pelas " + gs.medicoes + (gs.medicoes === 1 ? " medição" : " medições") + " dos últimos " + gs.janela_dias + " dias"
-              + (gs.conjunta ? ", os dois gastos saem juntos da conta." : "; elas ainda não separam bem os dois, então vale a média de cada um.")
-              : "Nenhuma medição nos últimos " + gs.janela_dias + " dias" + (gs.uso.medido !== null || gs.repouso.medido !== null ? ": vale a conta com as de antes." : "."))
-            + " Medições mais velhas que isso saem da conta: se a bateria envelhecer e gastar mais, o medido sobe sozinho."));
+        var linhasGasto = [["No pulso", gasto("por dia de uso", gs.uso)], ["Fora do pulso", gasto("por dia", gs.repouso)]];
+        if (gs.uso.antes !== null || gs.repouso.antes !== null) {
+          linhasGasto.push(["Janela anterior", (gs.uso.antes !== null ? pct(gs.uso.antes) + " no pulso" : "") + (gs.uso.antes !== null && gs.repouso.antes !== null ? " · " : "")
+            + (gs.repouso.antes !== null ? pct(gs.repouso.antes) + " fora" : "") + el("small", {}, gs.medicoes_antes + (gs.medicoes_antes === 1 ? " medição" : " medições") + ", nos " + gs.janela_dias + " dias antes")]);
+        }
+        linhasGasto.push(["Medições", gs.medicoes > 0 ? gs.medicoes + " nos últimos " + gs.janela_dias + " dias"
+          + el("small", {}, gs.conjunta ? "os dois gastos saem juntos da conta" : "ainda não separam bem os dois: vale a média de cada um")
+          : "nenhuma nos últimos " + gs.janela_dias + " dias" + (gs.uso.medido !== null || gs.repouso.medido !== null ? el("small", {}, "vale a conta com as de antes") : "")]);
+        blocos += quadro("Gasto da bateria", pares(linhasGasto), el("p", {"class": "nota"}, "Medições mais velhas que a janela saem da conta: se a bateria envelhecer e gastar mais, o medido sobe sozinho."));
       }
       // a autonomia: cheio pelo cadastro e pela conta (com o gasto medido), quanto ainda dura e quando acaba
       var au = r.autonomia;
-      var linhaAu = function (rotulo, seg, motivo) {
-        return el("p", {}, rotulo + ": " + (seg !== null ? el("strong", {}, duracao(seg)) : el("span", {"class": "nota"}, h(motivo || "sem dados"))));
-      };
-      blocos += el("section", {}, el("h2", {}, "Autonomia")
-        + linhaAu("Cheio, pelo cadastro", au.autonomia_prevista, au.motivos.autonomia_prevista)
-        + linhaAu("Cheio, pela conta", au.autonomia_atual, au.motivos.autonomia_atual)
-        + (au.acaba_em_unixtimestamp !== null ? el("p", {}, "Seguindo o plano, acaba " + el("strong", {}, dataBr(au.acaba_em_datacomtz.substr(0, 10),
-            au.acaba_em_datacomtz.substr(0, 4) === hoje.substr(0, 4)) + " "
-            + au.acaba_em_datacomtz.substr(11, 5)) + " " + el("span", {"class": "nota"}, "(em " + duracao(au.acaba_em_segundos) + ")"))
-          : linhaAu("Seguindo o plano", null, au.motivos.autonomia_estimada))
-        + linhaAu("No pulso sem tirar, dura", au.restante_em_uso, au.restante_em_uso === null && au.energia !== null ? "não acaba (no pulso ele se recarrega)" : au.motivos.restante_em_uso)
-        + linhaAu("Guardado, dura", au.restante_guardado, au.motivos.restante_guardado));
-      blocos += el("section", {}, el("h2", {}, "Rodízio")
-        + (r.nota !== null ? el("p", {}, "Nota nos critérios: " + el("strong", {}, num(r.nota.nota, 1)) + " " + el("span", {"class": "nota"}, "(critérios de " + h(r.nota.conjunto_texto) + ")")
-          + " " + el("a", {"href": "criterios.php?relogio=" + id + "#r" + id, "target": "_blank", "rel": "noopener"}, "ver a conta")) : "")
-        + el("p", {}, h(proxima))
-        + (r.disponivel && r.proxima !== hoje ? el("form", {"data-recurso": "rodizio", "onsubmit": "return confirm(" + JSON.stringify("Usar o " + r.nome
+      var dura = function (seg, motivo) { return seg !== null ? el("strong", {}, duracao(seg)) : nada(motivo); };
+      blocos += quadro("Autonomia", pares([
+        ["Cheio, pelo cadastro", dura(au.autonomia_prevista, au.motivos.autonomia_prevista)],
+        ["Cheio, pela conta", dura(au.autonomia_atual, au.motivos.autonomia_atual)],
+        ["Acaba, seguindo o plano", au.acaba_em_unixtimestamp !== null ? el("strong", {}, dataBr(au.acaba_em_datacomtz.substr(0, 10), au.acaba_em_datacomtz.substr(0, 4) === hoje.substr(0, 4))
+          + " " + au.acaba_em_datacomtz.substr(11, 5)) + el("small", {}, "em " + duracao(au.acaba_em_segundos)) : nada(au.motivos.autonomia_estimada)],
+        ["No pulso sem tirar", dura(au.restante_em_uso, au.restante_em_uso === null && au.energia !== null ? "não acaba (no pulso ele se recarrega)" : au.motivos.restante_em_uso)],
+        ["Guardado", dura(au.restante_guardado, au.motivos.restante_guardado)]]));
+      blocos += quadro("Rodízio", pares([
+        ["Nota", r.nota !== null ? el("strong", {}, num(r.nota.nota, 1)) + " " + el("a", {"href": "criterios.php?relogio=" + id + "#r" + id, "target": "_blank", "rel": "noopener"}, "ver a conta") : nada("fora do rodízio")],
+        ["Critérios de", r.nota !== null ? h(r.nota.conjunto_texto) : "—"],
+        ["Próxima vez", h(proxima)]]),
+        r.disponivel && r.proxima !== hoje ? el("form", {"data-recurso": "rodizio", "onsubmit": "return confirm(" + JSON.stringify("Usar o " + r.nome
           + " hoje? Ele passa a ser o relógio do rodízio no período atual e o plano é refeito.") + ")"}, el("input", {"type": "hidden", "name": "acao", "value": "usando"})
-          + el("input", {"type": "hidden", "name": "relogio_id", "value": id}) + el("button", {"class": "largo"}, "Usando hoje")) : ""));
+          + el("input", {"type": "hidden", "name": "relogio_id", "value": id}) + el("button", {"class": "leve"}, "Usando hoje")) : "");
       var c = r.compra;
-      var compra = c.data === null && c.valor === null && c.loja === null ? el("p", {}, "Sem dados da compra. Preencha em \"Editar cadastro\".")
-        : el("p", {}, (c.valor !== null ? el("strong", {}, "R$ " + reais(c.valor)) : "") + (c.loja !== null ? " · " + h(c.loja) : ""))
-          + (c.data !== null ? el("p", {}, "Comprado em " + dataBr(c.data) + ", há " + Math.round((instante(hoje) - instante(c.data)) / 86400000) + " dias") : "")
-          + (c.garantia_ate !== null ? el("p", {}, (c.garantia_ate >= hoje ? "Garantia até " : "Garantia vencida em ") + dataBr(c.garantia_ate)) : "");
-      blocos += el("section", {}, el("h2", {}, "Compra") + compra);
+      blocos += quadro("Compra", c.data === null && c.valor === null && c.loja === null && c.garantia_ate === null
+        ? el("p", {"class": "nota"}, "Sem dados da compra. Preencha em \"Editar cadastro\".")
+        : pares([["Valor pago", c.valor !== null ? el("strong", {}, "R$ " + reais(c.valor)) : "—"], ["Loja", c.loja !== null ? h(c.loja) : "—"],
+          ["Comprado em", c.data !== null ? dataBr(c.data) + el("small", {}, "há " + Math.round((instante(hoje) - instante(c.data)) / 86400000) + " dias") : "—"],
+          ["Garantia", c.garantia_ate !== null ? (c.garantia_ate >= hoje ? "até " : "vencida em ") + dataBr(c.garantia_ate) : "—"]]));
       // os documentos: quantos em cada categoria, cada uma abrindo a página Documentos (numa aba nova) já nela
       var dc = r.documentos;
-      blocos += el("section", {"class": "documentos-ficha"}, el("h2", {}, "Documentos")
-        + (dc.total === 0 ? el("p", {}, "Nenhum ainda: o manual, a nota fiscal, fotos, vídeos...")
-          : el("p", {}, dc.categorias.map(function (c) {
-            return el("a", {"href": "documentos.php?relogio=" + id + "&cat=" + c.id, "target": "_blank", "rel": "noopener"}, h(c.nome)) + " (" + c.documentos + ")";
-          }).join(" · ")))
-        + (dc.pasta_ok ? "" : el("p", {"class": "nota"}, "Para guardar documentos, falta a pasta deles no config.php (DOCUMENTOS_PASTA)."))
-        + el("p", {}, el("a", {"href": "documentos.php?relogio=" + id, "target": "_blank", "rel": "noopener", "class": "botao-link"}, dc.total === 0 ? "Enviar documentos" : "Abrir os documentos")));
-      blocos += el("section", {}, el("h2", {}, "Próximas manutenções") + (r.manutencoes.length === 0 ? el("p", {}, "Nada previsto.")
-        : r.manutencoes.map(function (m) { return el("p", {}, el("strong", {}, dataBr(m.data)) + " " + h(m.nome)); }).join("")));
+      blocos += quadro("Documentos", (dc.total === 0 ? el("p", {"class": "nota"}, "Nenhum ainda: o manual, a nota fiscal, fotos, vídeos...")
+          : pares(dc.categorias.map(function (cat) {
+            return [h(cat.nome), el("a", {"href": "documentos.php?relogio=" + id + "&cat=" + cat.id, "target": "_blank", "rel": "noopener"}, cat.documentos + (cat.documentos === 1 ? " arquivo" : " arquivos"))];
+          })))
+        + (dc.pasta_ok ? "" : el("p", {"class": "nota"}, "Para guardar documentos, falta a pasta deles no config.php (DOCUMENTOS_PASTA).")),
+        el("a", {"href": "documentos.php?relogio=" + id, "target": "_blank", "rel": "noopener", "class": "botao leve"}, dc.total === 0 ? "Enviar documentos" : "Abrir os documentos"), "documentos-ficha");
+      blocos += quadro("Próximas manutenções", r.manutencoes.length === 0 ? el("p", {"class": "nota"}, "Nada previsto.")
+        : pares(r.manutencoes.map(function (m) { return [dataBr(m.data), h(m.nome)]; }), "datas"));
       // marcar: um quadro só. O menu diz o que aconteceu, e embaixo aparecem só os campos daquilo: pôr ou tirar (cada sessão,
       // só o que cabe agora), uma marcação de um momento (corda, pilha...), a leitura (carga), um período que já passou, ou
       // corrigir uma marcação dos últimos 14 dias (um segundo menu escolhe qual)
@@ -335,12 +361,17 @@ function abrirNoPainel(id) {
           + (opcoes.agora !== "" ? el("optgroup", {"label": "Agora, ou numa hora que você disser"}, opcoes.agora) : "")
           + (opcoes.passou !== "" ? el("optgroup", {"label": "Algo que já passou"}, opcoes.passou) : "")
           + (opcoes.corrigir !== "" ? el("optgroup", {"label": "Corrigir"}, opcoes.corrigir) : "");
-        lancar = el("h2", {}, "Marcar") + el("form", {"data-recurso": "lancamento", "class": "marcar"}, el("input", {"type": "hidden", "name": "relogio_id", "value": id})
-          + el("label", {"class": "marcar-o-que"}, "O que você quer marcar? " + el("select", {"data-mostra": "marcar"}, menu)) + partes);
+        lancar = quadro("Marcar", el("form", {"data-recurso": "lancamento", "class": "marcar"}, el("input", {"type": "hidden", "name": "relogio_id", "value": id})
+          + el("label", {"class": "marcar-o-que"}, "O que você quer marcar? " + el("select", {"data-mostra": "marcar"}, menu)) + partes), "", "quadro-marcar");
       }
-      res += el("div", {"class": "ficha-topo"}, el("div", {"class": "ficha-foto"}, foto)
-        + el("div", {"class": "ficha-dados"}, el("p", {"class": "data"}, h(r.tipo) + " · " + h(r.caminho) + (r.observacao ? " · " + h(r.observacao) : ""))
-          + el("h1", {}, h(r.nome)) + el("div", {"class": "blocos"}, blocos) + lancar));
+      // a cabeça: a foto e quem ele é (o grupo, o nome e as marcas de agora); embaixo, os quadros, todos alinhados numa grade
+      res += el("div", {"class": "ficha-cabeca"}, el("div", {"class": "ficha-foto"}, foto)
+        + el("div", {"class": "ficha-identidade"}, el("p", {"class": "data"}, h(r.tipo) + " · " + h(r.caminho))
+          + el("h1", {}, h(r.nome)) + (r.observacao ? el("p", {"class": "observacao"}, h(r.observacao)) : "")
+          + el("p", {"class": "marcas"}, el("span", {"class": "estado " + (r.em_uso ? "estado-uso" : "estado-repouso")}, h(r.em_uso ? "em uso" : "em repouso"))
+            + (r.disponivel ? "" : " " + el("span", {"class": "estado estado-indisponivel"}, "indisponível"))
+            + (r.proxima === hoje ? " " + el("span", {"class": "estado estado-atividade"}, "relógio de hoje") : ""))))
+        + el("div", {"class": "quadros"}, blocos + lancar);
     }
     // o cadastro: nome, grupo, os campos (cada um no grupo em que vale), a compra agrupada, a observação, a foto (novo) e o disponível
     var compraIds = ["data_compra", "valor_compra", "loja", "garantia_ate"];
@@ -409,7 +440,7 @@ function abrirNoPainel(id) {
         if (r.medicoes.length > 0) {
           med = el("h3", {}, "Medições do gasto") + el("p", {"class": "nota"}, "Cada leitura comparada com a anterior. Os dois gastos (em uso e fora do pulso) saem juntos das medições dos últimos "
               + r.medicao_janela_dias + " dias, pesadas pelas horas de cada uma (a janela fica na Configuração); o gasto de cada linha é só o dela.")
-            + el("table", {"class": "historico-curto medicoes"}, el("thead", {}, el("tr", {}, el("th", {}, "Quando") + el("th", {}, "Leituras") + el("th", {}, "Horas")
+            + el("table", {"class": "tabela-dados medicoes"}, el("thead", {}, el("tr", {}, el("th", {}, "Quando") + el("th", {}, "Leituras") + el("th", {}, "Horas")
               + el("th", {}, "Gasto medido") + el("th", {}, "Na conta")))
               + el("tbody", {}, r.medicoes.slice(0, 10).map(function (m) {
                 return el("tr", {}, el("td", {}, dataBr(m.fim, true) + " " + horaBr(m.fim)) + el("td", {}, num(m.de_valor, 1) + " → " + num(m.ate_valor, 1))
@@ -418,7 +449,7 @@ function abrirNoPainel(id) {
                   + el("td", {}, m.na_media ? "sim" : (m.usada ? "não (fora da janela)" : "não (só histórico)")));
               }).join("")));
         }
-        res += el("section", {}, el("h2", {}, "Carga ao longo do tempo") + grafico + med);
+        res += quadro("Carga ao longo do tempo", grafico + med, "", "largo");
       }
       // os dados do relógio: o cadastro que vale para ele (o informado, senão o padrão do campo) e o resultado de cada fórmula agora
       var valorCampo = function (c) {
@@ -446,15 +477,18 @@ function abrirNoPainel(id) {
         }
         return res2;
       };
-      res += el("section", {"class": "dados-relogio"}, el("h2", {}, "Dados do relógio")
-        + el("div", {"class": "dados-grade"}, el("div", {}, el("h3", {}, "Cadastro") + el("table", {"class": "historico-curto dados"}, el("thead", {}, el("tr", {}, el("th", {}, "Campo")
+      // duas tabelas lado a lado: o cadastro (o valor e de onde ele vem) e o resultado de cada fórmula agora (com a versão)
+      res += quadro("Dados do relógio", el("div", {"class": "dados-grade"},
+        el("div", {}, el("h3", {}, "Cadastro") + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, "Campo")
             + el("th", {}, "Valor") + el("th", {}, "Origem"))) + el("tbody", {}, r.dados.map(function (c) {
-              return el("tr", {}, el("td", {}, h(c.nome)) + el("td", {}, valorCampo(c)) + el("td", {"class": "nota"}, c.origem));
+              return el("tr", {"class": c.origem === "vazio" ? "vazio" : ""}, el("td", {}, h(c.nome)) + el("td", {"class": "valor"}, valorCampo(c))
+                + el("td", {}, el("span", {"class": "origem origem-" + (c.origem === "padrão" ? "padrao" : c.origem)}, h(c.origem))));
             }).join(""))))
-          + el("div", {}, el("h3", {}, "Calculado agora") + el("table", {"class": "historico-curto dados"}, el("thead", {}, el("tr", {}, el("th", {}, "Fórmula")
+          + el("div", {}, el("h3", {}, "Calculado agora") + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, "Fórmula")
             + el("th", {}, "Valor") + el("th", {}, "Versão"))) + el("tbody", {}, r.calculos.map(function (x) {
-              return el("tr", {}, el("td", {}, h(x.nome) + " " + el("small", {"class": "nota"}, h(x.identificador))) + el("td", {}, valorCalculo(x)) + el("td", {"class": "nota"}, h(x.versao)));
-            }).join(""))))));
+              return el("tr", {}, el("td", {}, h(x.nome) + el("code", {"class": "ident"}, h(x.identificador))) + el("td", {"class": "valor"}, valorCalculo(x))
+                + el("td", {"class": "versao"}, h(x.versao)));
+            }).join(""))))), "", "largo");
       // o histórico: no painel só o resumo; a linha do tempo inteira fica em historico.php, que abre numa aba nova
       var hist = el("p", {"class": "nota"}, "Nada lançado ainda.");
       if (r.linha_do_tempo.length > 0) {
@@ -466,17 +500,17 @@ function abrirNoPainel(id) {
         });
         hist = el("p", {"class": "nota"}, r.registros + " registros desde " + dataBr(r.desde) + " " + horaBr(r.desde) + "."
             + (ultimo ? " Agora " + h(ultimo.texto) + " há " + h(ultimo.duracao || "menos de 1 minuto") + "." : ""))
-          + el("table", {"class": "historico-curto"}, el("thead", {}, el("tr", {}, el("th", {}, "Quando") + el("th", {}, "Duração") + el("th", {}, "Estado")))
+          + el("table", {"class": "tabela-dados historico-curto"}, el("thead", {}, el("tr", {}, el("th", {}, "Quando") + el("th", {}, "Duração") + el("th", {}, "Estado")))
             + el("tbody", {}, r.linha_do_tempo.map(function (l) {
               var classe = l.estado === "rodizio" || l.estado === "pulso" ? "uso" : (l.estado === "repouso" ? "repouso" : "carga");
               return el("tr", {"class": l.estado === "marca" ? "marca" : ""}, el("td", {}, dataBr(l.inicio, true) + " " + horaBr(l.inicio)
                   + (l.fim !== null ? el("small", {}, "até " + (l.fim.substr(0, 10) === l.inicio.substr(0, 10) ? horaBr(l.fim) : dataBr(l.fim, true) + " " + horaBr(l.fim))) : ""))
                 + el("td", {}, l.fim === null ? "—" : h(l.duracao))
                 + el("td", {}, l.estado === "marca" ? h(l.texto) : el("span", {"class": "estado estado-" + classe}, h(l.texto)) + (l.em_andamento ? el("small", {}, "em andamento") : "")));
-            }).join("")))
-          + el("a", {"class": "botao leve", "href": "historico.php?id=" + id, "target": "_blank", "rel": "noopener"}, "Abrir o histórico completo");
+            }).join("")));
       }
-      res += el("section", {"class": "historico"}, el("h2", {}, "Histórico") + hist);
+      res += quadro("Histórico", hist, r.linha_do_tempo.length > 0 ? el("a", {"class": "botao leve", "href": "historico.php?id=" + id, "target": "_blank", "rel": "noopener"}, "Abrir o histórico completo") : "",
+        "largo historico");
     }
     painel.innerHTML = el("div", {"class": "detalhe", "data-id": id}, res);
 

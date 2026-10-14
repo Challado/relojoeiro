@@ -285,7 +285,6 @@ a.nome-hoje:hover { text-decoration: underline; }
 main.ficha { max-width: 72rem; }
 .seletor { display: flex; align-items: center; gap: .6rem; margin-bottom: 1.25rem; }
 .seletor select { min-width: 18rem; }
-.ficha-topo { display: grid; grid-template-columns: 22rem minmax(0, 1fr); gap: 2rem; align-items: start; margin-bottom: 2rem; }
 .ficha-foto img:not(.previa) { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 14px; border: 1px solid var(--aco-escuro); background: #fff; }
 .sem-foto {
   aspect-ratio: 1;
@@ -299,36 +298,13 @@ main.ficha { max-width: 72rem; }
 .ficha-foto form { margin-top: .6rem; }
 .ficha-foto input[type=file] { font-size: .85rem; max-width: 100%; }
 button.discreto { border-color: transparent; font-size: .85rem; padding: 0 .45rem; }
-.ficha-dados h1 { margin-bottom: 1rem; }
-.blocos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
-.blocos section {
-  margin: 0;
-  background: var(--papel);
-  border: 1px solid var(--aco-escuro);
-  border-radius: 10px;
-  padding: .8rem .9rem;
-}
-.blocos h2 { font-size: .95rem; margin-bottom: .4rem; color: var(--cinza); font-weight: 600; }
-.blocos p { margin: .25rem 0; }
 .grafico { width: 100%; height: auto; background: var(--papel); border: 1px solid var(--aco-escuro); border-radius: 10px; }
 .grafico .guia { stroke: var(--aco); stroke-width: 1; }
 .grafico .linha-carga { fill: none; stroke: var(--safira); stroke-width: 2; }
 .grafico .ponto { fill: var(--safira); }
 
-@media (max-width: 900px) {
-  .ficha-topo { grid-template-columns: minmax(0, 1fr); }
-  .ficha-foto { max-width: 22rem; }
-  .blocos { grid-template-columns: minmax(0, 1fr); }
-}
 
 /* ---------- a ficha dentro do painel da direita ---------- */
-.col-detalhe .ficha-topo { grid-template-columns: minmax(0, 1fr); gap: 1rem; margin-bottom: 1rem; }
-.col-detalhe .ficha-foto img:not(.previa) { aspect-ratio: 4 / 3; }
-.col-detalhe .sem-foto { aspect-ratio: 4 / 1.2; }
-.col-detalhe h1 { font-size: 1.6rem; margin: .1rem 0 .8rem; }
-.col-detalhe .blocos { grid-template-columns: minmax(0, 1fr); gap: .6rem; }
-.col-detalhe section { margin-bottom: 1.25rem; }
-.col-detalhe .blocos section { margin: 0; }
 table.compacta { width: 100%; border-collapse: collapse; font-size: .88rem; background: transparent; }
 table.compacta td { padding: .3rem .2rem; border-bottom: 1px solid var(--aco); }
 details.cadastro-painel {
@@ -627,7 +603,6 @@ main.pagina-historico { max-width: 80rem; }
 table.lista-historico td { white-space: nowrap; font-variant-numeric: tabular-nums; }
 table.lista-historico tr.marca td { color: var(--cinza); }
 table.lista-historico td small { color: var(--cinza); margin-left: .3rem; }
-.col-detalhe .historico .botao { display: inline-block; margin-top: .2rem; }
 @media (max-width: 700px) {
   /* celular: a tabela fica na largura da tela e tudo quebra a linha quando precisa (nada cortado, sem barra lateral) */
   main.pagina-historico table.lista-historico { table-layout: fixed; width: 100%; min-width: 0; }
@@ -638,17 +613,6 @@ table.lista-historico td small { color: var(--cinza); margin-left: .3rem; }
   .cabeca-historico img { width: 4rem; height: 4rem; }
 }
 
-/* últimos 5 registros no painel: três colunas desenhadas para a largura do painel; o estado quebra a linha se precisar,
-   nada é cortado. Classe própria (sem "compacta"), para nenhuma regra geral de tabela passar por cima */
-.col-detalhe table.historico-curto { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: .8rem; margin: .3rem 0 .7rem; }
-.col-detalhe table.historico-curto th { font-size: .7rem; color: var(--cinza); font-weight: 600; text-align: left; padding: .25rem .3rem; border-bottom: 1px solid var(--aco); }
-.col-detalhe table.historico-curto th:nth-child(1) { width: 34%; }
-.col-detalhe table.historico-curto th:nth-child(2) { width: 22%; }
-.col-detalhe table.historico-curto th:nth-child(3) { width: 44%; }
-.col-detalhe table.historico-curto td { padding: .35rem .3rem; vertical-align: top; border-bottom: 1px solid var(--aco); white-space: normal; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
-.col-detalhe table.historico-curto td small { display: block; color: var(--cinza); font-size: .72rem; }
-.col-detalhe table.historico-curto tr.marca td { color: var(--cinza); }
-.col-detalhe table.historico-curto .estado { font-size: .7rem; white-space: normal; }
 
 /* ---------- página dos critérios ---------- */
 main.pagina-criterios { max-width: 80rem; }
@@ -755,14 +719,6 @@ td.celula-peso { white-space: nowrap; }
 .dias-semana label { display: inline-flex; flex-direction: row; gap: .2rem; margin-right: .5rem; }
 td.num, th.num { text-align: right; white-space: nowrap; }
 
-/* painel do relógio: as medições do gasto e os dados do relógio (tabelas com as colunas do tamanho do conteúdo) */
-.detalhe table.historico-curto.medicoes th, .detalhe table.historico-curto.dados th { width: auto; }
-.detalhe table.historico-curto.medicoes, .detalhe table.historico-curto.dados { table-layout: auto; }
-.detalhe table.historico-curto.dados td:nth-child(2) { font-variant-numeric: tabular-nums; }
-.detalhe .dados-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 0 1.2rem; }
-.detalhe .dados-relogio h3, .detalhe section h3 { font-size: .85rem; margin: .6rem 0 .2rem; color: var(--tinta); }
-.detalhe table.historico-curto.medicoes td, .detalhe table.historico-curto.dados td { overflow-wrap: normal; word-break: normal; }
-.detalhe table.historico-curto.dados td.nota { font-size: .72rem; }
 
 /* ajuda: o texto do README, com o sumário no alto e as tabelas que rolam de lado no celular */
 main.ajuda { max-width: 60rem; }
@@ -1020,4 +976,261 @@ body.com-visor { overflow: hidden; }
   .galeria { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
   .visor-ant, .visor-prox { width: 2.4rem; height: 3.2rem; font-size: 1.8rem; }
   .pdf-visor iframe { height: 70vh; }
+}
+
+/* ---------- o painel do relógio (a ficha): a cabeça, os quadros numa grade e os pares rótulo/valor alinhados ---------- */
+/* a cabeça: a foto (com os botões dela embaixo) e quem ele é */
+.ficha-cabeca { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: 1.4rem; align-items: start; margin-bottom: 1.25rem; }
+.ficha-foto img:not(.previa), .ficha-foto .sem-foto { width: 100%; aspect-ratio: 1; }
+.ficha-foto .sem-foto { font-size: .9rem; }
+.ficha-foto form { margin: 0; }
+.foto-acoes { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .55rem !important; }
+.foto-acoes .previa { width: 100%; max-width: none; }
+.foto-remover button { width: 100%; }
+.ficha-identidade { min-width: 0; }
+.ficha-identidade .data { color: var(--cinza); margin: .2rem 0 0; font-size: .9rem; }
+.ficha-identidade h1 { margin: .2rem 0 .6rem; overflow-wrap: anywhere; }
+.ficha-identidade .observacao { margin: 0 0 .6rem; }
+.marcas { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0; }
+/* o campo de arquivo atrás de um botão do sistema (o do navegador é diferente em cada um e não alinha com nada) */
+.botao-arquivo {
+  position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center;
+  min-height: var(--altura-controle); padding: .3rem 1rem; border: 1px solid var(--safira); border-radius: 8px;
+  color: var(--safira); background: transparent; cursor: pointer; font-size: .95rem;
+}
+.botao-arquivo input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.botao-arquivo:focus-within { outline: 2px solid var(--safira); outline-offset: 2px; }
+
+/* os quadros: numa grade que se ajusta à largura (uma coluna no painel ao lado, três ou quatro na janela flutuante e na
+   ficha); os da mesma linha têm a mesma altura, e o rodapé (os botões) fica sempre no pé */
+.quadros { display: grid; grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); gap: 1rem; align-items: stretch; margin-bottom: 1rem; }
+.quadro {
+  margin: 0; min-width: 0; display: flex; flex-direction: column; gap: .55rem;
+  background: var(--papel); border: 1px solid var(--aco-escuro); border-radius: 12px; padding: .85rem 1rem;
+}
+.quadro > h2 {
+  margin: 0; padding-bottom: .45rem; border-bottom: 1px solid var(--aco);
+  font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--cinza);
+}
+.quadro-corpo { flex: 1; min-width: 0; }
+.quadro-corpo > p:first-child { margin-top: 0; }
+.quadro-corpo > p:last-child { margin-bottom: 0; }
+.quadro-rodape { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; align-items: center; padding-top: .6rem; border-top: 1px solid var(--aco); }
+.quadro-rodape form { margin: 0; }
+.quadro-rodape > .nota { margin: 0; flex: 1 1 100%; text-align: left; }
+.quadro.largo, .quadro-marcar { grid-column: 1 / -1; }
+.detalhe > .quadro { margin-bottom: 1rem; }
+.quadro ul.linhas { margin: 0; padding-left: 1.1rem; }
+.quadro ul.linhas li { margin: .2rem 0; }
+
+/* rótulo e valor em duas colunas, uma linha fina entre os pares: tudo alinhado */
+dl.pares { display: grid; grid-template-columns: fit-content(55%) minmax(0, 1fr); margin: 0; font-size: .93rem; }
+dl.pares dt, dl.pares dd { padding: .4rem 0; border-bottom: 1px solid var(--aco); }
+dl.pares dt { color: var(--cinza); font-size: .85rem; padding-right: 1rem; }
+dl.pares dd { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+dl.pares dd small { display: block; color: var(--cinza); font-size: .78rem; margin-top: .1rem; }
+dl.pares dt:nth-last-child(2), dl.pares dd:last-child { border-bottom: 0; }
+dl.pares dt:empty { border-top: 0; }
+dl.pares.datas dt { color: var(--tinta); font-weight: 600; font-size: .9rem; }
+.quadro .carga-linha { display: inline-flex; align-items: center; gap: .45rem; }
+.quadro .barra { width: 70px; height: 7px; border-radius: 4px; background: var(--aco); overflow: hidden; display: inline-block; }
+.quadro .barra span { display: block; height: 100%; background: var(--safira); }
+.quadro .carga-linha.baixa .barra span { background: var(--ambar); }
+
+/* as tabelas do painel (dados, medições, histórico): o título discreto, os números alinhados, nada cortado */
+table.tabela-dados { width: 100%; border-collapse: collapse; background: transparent; border-radius: 0; font-size: .88rem; }
+table.tabela-dados th { font-size: .74rem; color: var(--cinza); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; padding: .3rem .5rem; border-bottom: 1px solid var(--aco-escuro); }
+table.tabela-dados td { padding: .42rem .5rem; border-bottom: 1px solid var(--aco); vertical-align: top; }
+table.tabela-dados th:first-child, table.tabela-dados td:first-child { padding-left: 0; }
+table.tabela-dados th:last-child, table.tabela-dados td:last-child { padding-right: 0; }
+table.tabela-dados tbody tr:last-child td { border-bottom: 0; }
+table.tabela-dados td.valor { white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.tabela-dados td.versao { color: var(--cinza); font-size: .8rem; }
+table.tabela-dados td small { display: block; color: var(--cinza); font-size: .76rem; }
+table.tabela-dados tr.vazio td { color: var(--cinza); }
+table.tabela-dados tr.marca td { color: var(--cinza); }
+table.tabela-dados code.ident { display: block; font-size: .74rem; color: var(--cinza); font-family: ui-monospace, Consolas, monospace; }
+.origem { display: inline-block; font-size: .72rem; padding: .05rem .5rem; border-radius: 999px; border: 1px solid var(--aco-escuro); color: var(--cinza); white-space: nowrap; }
+.origem-informado { background: #e6eef8; color: #1f4f8f; border-color: #b8cbe6; }
+.origem-padrao { background: #fbf1e3; color: #8a5a00; border-color: #ecd2a8; }
+.dados-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem 1.75rem; }
+.dados-grade h3 { font-size: .9rem; margin: 0 0 .3rem; }
+
+/* editar cadastro: os campos numa grade, todos da mesma largura; o grupo, a compra e os botões na linha inteira */
+.detalhe .cadastro { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: .8rem 1rem; max-width: none; align-items: end; }
+.detalhe .cadastro > label:not(.check) { font-size: .85rem; color: var(--cinza); }
+.detalhe .cadastro > label:has(.campo-subtipo), .detalhe .cadastro > fieldset.compra, .detalhe .cadastro > .botoes, .detalhe .cadastro > .regra-pulso { grid-column: 1 / -1; }
+.detalhe .cadastro > label small { color: var(--cinza); font-size: .78rem; }
+.detalhe .cadastro label.check { padding-bottom: .5rem; color: var(--tinta); }
+.detalhe fieldset.compra { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: .8rem 1rem; padding: .7rem .8rem .8rem; }
+.detalhe fieldset.compra label { font-size: .85rem; color: var(--cinza); }
+
+/* marcar: a lista do que aconteceu e, embaixo, os campos daquilo lado a lado, alinhados pela base */
+.quadro-marcar form.marcar { max-width: none; margin: 0; }
+.quadro-marcar .marcar-o-que { max-width: 34rem; }
+.quadro-marcar .marcar-campos { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: .7rem 1rem; align-items: end; }
+.quadro-marcar .marcar-campos > p, .quadro-marcar .marcar-campos > .marcar-campos, .quadro-marcar .marcar-campos > label:has(select[data-mostra]) { grid-column: 1 / -1; }
+.quadro-marcar .marcar-campos > button, .quadro-marcar .marcar-campos > .marcar-botoes { justify-self: start; }
+
+/* no painel ao lado da lista (estreito): a foto menor ao lado do nome, e tudo numa coluna */
+.col-detalhe .ficha-cabeca { grid-template-columns: 6rem minmax(0, 1fr); gap: .9rem; margin-bottom: 1rem; padding-right: 2.2rem; }
+.col-detalhe .ficha-identidade h1 { font-size: 1.45rem; }
+.col-detalhe .foto-acoes .botao-arquivo, .col-detalhe .foto-acoes button { font-size: .8rem; padding: .2rem .4rem; min-height: 2rem; width: 100%; }
+.col-detalhe .quadros { grid-template-columns: minmax(0, 1fr); gap: .7rem; }
+.col-detalhe .dados-grade { grid-template-columns: minmax(0, 1fr); }
+.col-detalhe .quadro-marcar .marcar-campos { grid-template-columns: minmax(0, 1fr); }
+.col-detalhe .detalhe .cadastro { grid-template-columns: minmax(0, 1fr); }
+
+/* a janela flutuante (Configuração: abrir o relógio "numa janela flutuante"): grande, no meio da tela, por cima da página
+   com o fundo escurecido; a lista fica com a largura toda. No celular, como o painel ao lado: a tela inteira */
+.fundo-painel { display: none; }
+@media (min-width: 801px) {
+  .painel.modo-flutuante, .painel.modo-flutuante.sem-selecao { grid-template-columns: minmax(0, 1fr); grid-template-areas: "hoje"; }
+  .painel.modo-flutuante .col-detalhe {
+    grid-area: auto; position: fixed; z-index: 40; top: 3vh; bottom: 3vh; left: 50%; transform: translateX(-50%);
+    width: min(78rem, 94vw); max-height: none; overflow-y: auto; overscroll-behavior: contain;
+    padding: 1.25rem 1.6rem 1.75rem; border-radius: 16px; box-shadow: 0 24px 70px rgba(10, 16, 24, .45);
+  }
+  .painel.modo-flutuante:not(.sem-selecao) .fundo-painel { display: block; position: fixed; inset: 0; z-index: 35; background: rgba(16, 22, 29, .55); }
+  body:has(.painel.modo-flutuante:not(.sem-selecao)) { overflow: hidden; }
+  .painel.modo-flutuante .fechar-painel {
+    position: sticky; top: 0; z-index: 3; float: right; margin: -.4rem -.5rem 0 .5rem;
+    width: 2.4rem; height: 2.4rem; font-size: 1.4rem; box-shadow: 0 1px 4px rgba(0, 0, 0, .15);
+  }
+  .painel.modo-flutuante .ficha-cabeca { grid-template-columns: 10rem minmax(0, 1fr); gap: 1.4rem; padding-right: 2.5rem; }
+  .painel.modo-flutuante .ficha-identidade h1 { font-size: clamp(1.8rem, 3vw, 2.6rem); }
+  .painel.modo-flutuante .foto-acoes .botao-arquivo, .painel.modo-flutuante .foto-acoes button { font-size: .9rem; min-height: var(--altura-controle); }
+  .painel.modo-flutuante .quadros { grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); gap: 1rem; }
+  .painel.modo-flutuante .dados-grade { grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }
+  .painel.modo-flutuante .quadro-marcar .marcar-campos { grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); }
+  .painel.modo-flutuante .detalhe .cadastro { grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); }
+}
+@media (max-width: 700px) {
+  .ficha-cabeca { grid-template-columns: 6.5rem minmax(0, 1fr); gap: .9rem; }
+  .ficha-identidade h1 { font-size: 1.5rem; }
+  .foto-acoes .botao-arquivo, .foto-acoes button { font-size: .8rem; padding: .2rem .4rem; min-height: 2rem; width: 100%; }
+  .quadros { grid-template-columns: minmax(0, 1fr); gap: .7rem; }
+  dl.pares { grid-template-columns: fit-content(48%) minmax(0, 1fr); }
+}
+
+/* um link com cara de botão: o cheio (a ação principal) e o leve (contorno), iguais aos botões */
+a.botao { display: inline-flex; align-items: center; justify-content: center; min-height: var(--altura-controle); padding: .3rem 1rem; border: 1px solid var(--safira); border-radius: 8px; font-size: .95rem; line-height: 1.2; }
+a.botao.leve { background: transparent; color: var(--safira); }
+a.botao:hover { filter: brightness(1.08); }
+
+/* ---------- Configuração: quadros da mesma altura numa grade; em cada um, uma opção por linha, o rótulo à esquerda e o
+   campo à direita, na mesma coluna em todos; salvar numa barra presa no pé da tela ---------- */
+.config-grade { grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr)); align-items: stretch; }
+/* só nas grades (os quadros da mesma linha com a mesma altura, o pé no fundo): os outros quadros ficam como sempre */
+.config-grade > .cartao-config, .modelos > .cartao-config { display: flex; flex-direction: column; gap: .6rem; }
+.cartao-config > h2 { margin-bottom: .75rem; }
+.config-grade > .cartao-config > h2 { margin-bottom: 0; }
+.cartao-config > h2, .previa-msg > h3 {
+  margin: 0; padding-bottom: .45rem; border-bottom: 1px solid var(--aco);
+  font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--cinza);
+}
+.cartao-corpo { flex: 1; min-width: 0; }
+.cartao-corpo > p:first-child { margin-top: 0; }
+.cartao-pe { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding-top: .6rem; border-top: 1px solid var(--aco); }
+.cartao-pe > .nota { flex: 1 1 100%; margin: 0; }
+.campos { display: grid; }
+.par-campo { display: grid; grid-template-columns: minmax(0, 1fr) 10.5rem; align-items: center; gap: .9rem; padding: .45rem 0; border-bottom: 1px solid var(--aco); font-size: .93rem; }
+.par-campo:last-child { border-bottom: 0; }
+.par-campo .controle { display: flex; min-width: 0; }
+.par-campo .controle input:not([type=checkbox]), .par-campo .controle select { width: 100%; }
+.par-campo.check .controle { align-items: center; }
+.par-campo.check input[type=checkbox] { width: 1.15rem; height: 1.15rem; margin: 0; }
+.par-campo.largo { grid-template-columns: minmax(0, 1fr); gap: .3rem; }
+.config .cartao-config .alerta-cron, .config .cartao-config .erro-cron { margin: 0 0 .5rem; }
+.modelos { align-items: stretch; }
+.modelos .cartao-config .campo-modelo { margin: 0; display: flex; flex-direction: column; gap: .4rem; height: 100%; }
+.modelos .rotulo-modelo h3 { margin: 0; font-size: 1rem; }
+table.canais { max-width: none; }
+.config-grade:has(.previa-msg) { align-items: stretch; }
+.previa-msg { display: flex; flex-direction: column; gap: .5rem; }
+.previa-msg > form { margin-top: auto; padding-top: .6rem; border-top: 1px solid var(--aco); }
+.previa-msg > .nota { margin: .2rem 0 0; }
+.barra-salvar {
+  position: sticky; bottom: 0; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .4rem 1rem;
+  margin: 1.25rem 0 2rem; padding: .7rem 1rem; background: rgba(251, 252, 253, .96); border: 1px solid var(--aco-escuro);
+  border-radius: 12px; box-shadow: 0 -6px 18px rgba(16, 22, 29, .08);
+}
+.barra-salvar .nota { margin: 0; }
+/* o evento personalizado: os campos numa grade, o resto na linha inteira */
+.form-evento { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: .8rem 1rem; align-items: end; }
+.form-evento > label:not(.check) { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; color: var(--cinza); }
+.form-evento > label input, .form-evento > label select { width: 100%; }
+.form-evento > .linha-campos, .form-evento > fieldset, .form-evento > .nota, .form-evento > .botoes { grid-column: 1 / -1; }
+.form-evento .linha-campos { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: .8rem 1rem; }
+.form-evento .linha-campos label { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; color: var(--cinza); }
+.form-evento .linha-campos input { width: 100%; }
+.form-evento > label.check { flex-direction: row; display: flex; align-items: center; gap: .45rem; padding-bottom: .5rem; }
+details.novo-evento { max-width: none; }
+@media (max-width: 700px) {
+  .config-grade { grid-template-columns: minmax(0, 1fr); }
+  .par-campo { grid-template-columns: minmax(0, 1fr) 8.5rem; gap: .6rem; }
+  .par-campo.largo { grid-template-columns: minmax(0, 1fr); }
+  .barra-salvar { justify-content: stretch; }
+  .barra-salvar .nota { display: none; }
+  .barra-salvar button { flex: 1; }
+}
+
+/* ---------- as ações de cada linha das tabelas (Editar, ↑ ↓, Excluir): botões pequenos, iguais, à direita ---------- */
+.acoes-linha { white-space: nowrap; text-align: right; }
+td.acoes-linha { width: 1%; }
+.acoes-linha form { display: inline-flex !important; margin: 0; vertical-align: middle; }
+.acoes-linha a, .acoes-linha button, .acoes-ev a, .acoes-ev button {
+  display: inline-flex; align-items: center; justify-content: center; height: 1.9rem; min-height: 1.9rem; padding: 0 .6rem; margin: 0 0 0 .25rem;
+  font-size: .82rem; font-weight: 500; border: 1px solid var(--aco-escuro); border-radius: 6px; background: #fff; color: var(--safira);
+  text-decoration: none; vertical-align: middle; cursor: pointer;
+}
+.acoes-linha button[name=direcao] { width: 1.9rem; padding: 0; font-size: .95rem; }
+.acoes-linha a:hover, .acoes-linha button:hover, .acoes-ev a:hover, .acoes-ev button:hover { background: #eef3fa; }
+.acoes-linha .perigo, .acoes-ev .perigo { color: #9b2c22; border-color: #efb5ae; }
+.acoes-linha .perigo:hover, .acoes-ev .perigo:hover { background: #fbe8e6; }
+.acoes-ev { margin-left: .4rem; }
+.acoes-ev button.discreto { padding: 0 .6rem; font-size: .82rem; background: #fff; border: 1px solid #efb5ae; }
+td.ident { white-space: nowrap; }
+
+/* ---------- formulários em grade (Novo campo, Novo tipo...): cada campo com o título em cima, todos da mesma largura e
+   alinhados pelo alto; o texto longo e os botões na linha inteira ---------- */
+.form-grade { align-items: start; gap: .8rem 1rem; }
+.form-grade > label input, .form-grade > label select, .form-grade > label textarea { width: 100%; }
+.form-grade > label:has(textarea), .form-grade > .botoes, .form-grade > fieldset, .form-grade > .nota, .form-grade > p { grid-column: 1 / -1; }
+.form-grade > label.check { flex-direction: row; align-items: center; gap: .45rem; color: var(--tinta); align-self: end; min-height: var(--altura-controle); }
+.form-grade > .botoes { justify-content: flex-start; padding-top: .2rem; }
+.cartao-config > h3[id=form], .cartao-config h3#form { margin: 1.4rem 0 .6rem; padding-top: 1rem; border-top: 1px solid var(--aco); }
+
+/* tabelas compactas (os cadastros): o título de cada coluna exatamente em cima do conteúdo dela */
+table.compacta th, table.compacta td { padding: .45rem .5rem; }
+table.compacta th { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--aco-escuro); }
+table.compacta td { vertical-align: middle; }
+
+/* quadros um embaixo do outro: sempre com espaço entre eles (dentro de uma grade, quem separa é a grade) */
+:not(.config-grade):not(.modelos) > .cartao-config + .cartao-config { margin-top: 1rem; }
+/* botões depois de uma tabela: separados dela, alinhados à esquerda */
+.rolagem + .botoes, table + .botoes, .rolagem + form .botoes { margin-top: .9rem; }
+
+/* a árvore dos grupos: o nome (com o Renomear) numa largura fixa, quantos relógios no meio, as ações sempre à direita */
+.no-arvore { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .9rem; }
+.no-arvore > form.inline { flex: 0 0 auto; }
+.no-arvore > form.inline input[name=nome] { width: 16rem; }
+.no-arvore > .nota { flex: 1 1 10rem; }
+.no-arvore > .acoes-linha { margin-left: auto; }
+.no-arvore > form.inline button.discreto { border: 1px solid var(--aco-escuro); background: #fff; height: 1.9rem; min-height: 1.9rem; font-size: .82rem; padding: 0 .6rem; }
+@media (max-width: 700px) { .no-arvore > form.inline input[name=nome] { width: 11rem; } }
+/* plano: o resumo na mesma largura da tabela dos dias, uma embaixo da outra */
+table.resumo-plano { max-width: none; }
+/* filtros das execuções: todos os campos com a mesma letra */
+form.filtros-execucoes > label input, form.filtros-execucoes > label select { font-size: .95rem; }
+/* filtros no alto de uma página (Plano, Documentos): campos e botões alinhados pela base */
+.filtros-plano { align-items: flex-end; }
+/* o aviso da cópia no banco, com o botão do relógio: o texto e o botão na mesma linha, centrados */
+.documentos form.linha { margin: 0 0 1rem; }
+/* a foto do relógio do dia: sem sublinhado no "Sem foto" */
+a.hoje-foto, a.hoje-foto * { text-decoration: none; }
+@media (max-width: 700px) {
+  /* no celular, as ações de cada ficha numa linha só, à esquerda */
+  .rolagem > table.compacta > tbody > tr > td.acoes-linha { display: flex !important; flex-wrap: wrap; gap: .4rem; padding-top: .5rem; width: auto; }
+  .acoes-linha a, .acoes-linha button { margin-left: 0; }
 }

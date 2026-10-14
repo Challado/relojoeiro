@@ -32,7 +32,7 @@ function botaoLinha(acao, id, rotulo, confirma, extra) {
     el("input", {"type": "hidden", "name": "acao", "value": acao}) + el("input", {"type": "hidden", "name": "id", "value": id}) + (extra || el("button", {"class": "leve discreto"}, rotulo)));
 }
 function linkEditar(id) {
-  return el("a", {"href": "cadastros.php?aba=" + aba + "&editar=" + id + "#form"}, "editar");
+  return el("a", {"href": "cadastros.php?aba=" + aba + "&editar=" + id + "#form"}, "Editar");
 }
 function vazio(v) {
   return v === null || v === undefined ? "" : v;
@@ -54,7 +54,7 @@ function recarregarCadastros() {
         + el("p", {"class": "nota"}, "Cada campo vale para o ponto da árvore escolhido e tudo abaixo dele (os de cada nível somam) e aparece no cadastro desses relógios. O identificador é o nome do campo nas fórmulas.")
         + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, ["Campo", "Identificador", "Tipo", "Vale para", "Padrão", ""].map(function (t) { return el("th", {}, t); }).join("")))
           + el("tbody", {}, d.campos.map(function (c) {
-            return el("tr", {}, el("td", {}, h(c.nome) + (c.unidade !== "" ? " (" + h(c.unidade) + ")" : "")) + el("td", {"class": "formula"}, h(c.identificador)) + el("td", {}, h(d.tipos_de_campo[c.tipo]))
+            return el("tr", {}, el("td", {}, h(c.nome) + (c.unidade !== "" ? " (" + h(c.unidade) + ")" : "")) + el("td", {"class": "formula ident"}, h(c.identificador)) + el("td", {}, h(d.tipos_de_campo[c.tipo]))
               + el("td", {"class": "nota"}, h(caminho(d, c.no_id))) + el("td", {}, h(vazio(c.padrao)))
               + el("td", {"class": "acoes-linha"}, linkEditar(c.id) + " " + botaoLinha("ordem", c.id, "", null, el("button", {"class": "leve discreto", "name": "direcao", "value": "sobe"}, "↑")
                 + el("button", {"class": "leve discreto", "name": "direcao", "value": "desce"}, "↓")) + botaoLinha("excluir", c.id, "Excluir", "Excluir o campo " + c.nome + " e os valores dele?")));
@@ -78,7 +78,7 @@ function recarregarCadastros() {
         + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, "Tipo") + el("th", {}, "Identificador") + el("th", {}, "Formato") + el("th", {}, "Fecha sozinho às")
             + el("th", {}, "Exclusiva") + el("th", {}, "Mede o gasto") + el("th", {}, "Vale quando") + el("th", {}, "Vale para") + el("th", {"class": "num"}, "Lançamentos") + el("th", {}, "")))
           + el("tbody", {}, d.lancamento_tipos.map(function (t) {
-            return el("tr", {}, el("td", {}, h(t.nome)) + el("td", {"class": "formula"}, h(t.identificador)) + el("td", {}, h(d.formatos_de_lancamento[t.formato]) + (t.unidade !== "" ? " (" + h(t.unidade) + ")" : ""))
+            return el("tr", {}, el("td", {}, h(t.nome)) + el("td", {"class": "formula ident"}, h(t.identificador)) + el("td", {}, h(d.formatos_de_lancamento[t.formato]) + (t.unidade !== "" ? " (" + h(t.unidade) + ")" : ""))
               + el("td", {}, h(String(vazio(t.fecha_as)).substr(0, 5))) + el("td", {}, t.exclusiva === 1 ? "sim" : "") + el("td", {}, t.mede_gasto === 1 ? "sim" : "") + el("td", {"class": "formula"}, h(vazio(t.condicao))) + el("td", {"class": "nota"}, h(caminho(d, t.no_id))) + el("td", {"class": "num"}, String(t.lancamentos))
               + el("td", {"class": "acoes-linha"}, linkEditar(t.id) + " " + botaoLinha("excluir", t.id, "Excluir", "Excluir o tipo " + t.nome + "?")));
           }).join(""))))
@@ -226,7 +226,7 @@ function recarregarCadastros() {
         + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, ["Categoria", "Identificador", "Aceita", "Ordem", "Documentos", ""].map(function (t, i) {
             return el("th", {"class": i === 3 || i === 4 ? "num" : null}, t);
           }).join(""))) + el("tbody", {}, d.documento_categorias.map(function (c) {
-            return el("tr", {}, el("td", {}, h(c.nome)) + el("td", {"class": "formula"}, h(c.identificador))
+            return el("tr", {}, el("td", {}, h(c.nome)) + el("td", {"class": "formula ident"}, h(c.identificador))
               + el("td", {}, c.aceita.length === 0 ? "qualquer arquivo" : h(c.aceita.map(function (x) { return FAMILIAS[x] || x; }).join(", ")))
               + el("td", {"class": "num"}, String(c.ordem)) + el("td", {"class": "num"}, String(c.documentos))
               + el("td", {"class": "acoes-linha"}, linkEditar(c.id) + (c.documentos === 0 ? " " + botaoLinha("excluir", c.id, "Excluir", "Excluir a categoria " + c.nome + "?") : "")));

@@ -18,6 +18,11 @@ document.addEventListener("change", function (ev) {
         previa.src = destino.value;
         previa.hidden = false;
       }
+      // o botão de salvar a foto aparece quando há uma foto escolhida
+      var salvar = campo.getAttribute("data-salvar") ? document.getElementById(campo.getAttribute("data-salvar")) : null;
+      if (salvar) {
+        salvar.hidden = false;
+      }
       URL.revokeObjectURL(img.src);
     };
     img.onerror = function () {

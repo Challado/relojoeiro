@@ -9,6 +9,18 @@ function listaAncoras(d, alvo, rotulo) {
   }).join(""));
 }
 
+// Um quadro da Configuração: o título, o conteúdo e, se houver, o pé (a explicação e os botões, sempre embaixo: os quadros
+// da mesma linha têm a mesma altura)
+function cartao(titulo, corpo, pe) {
+  return el("section", {"class": "cartao-config"}, el("h2", {}, h(titulo)) + el("div", {"class": "cartao-corpo"}, corpo) + (pe ? el("div", {"class": "cartao-pe"}, pe) : ""));
+}
+
+// Uma opção numa linha: o rótulo à esquerda e o campo à direita, na mesma coluna em todos os quadros. "check": a caixa no
+// lugar do campo; "largo": o rótulo em cima e o campo na largura toda (textos longos, como um endereço)
+function parCampo(rotulo, controle, tipo) {
+  return el("label", {"class": "par-campo" + (tipo ? " " + tipo : "")}, el("span", {"class": "rotulo"}, h(rotulo)) + el("span", {"class": "controle"}, controle));
+}
+
 // Evento personalizado: mostra só os campos da repetição escolhida
 function mostrarRepeticao() {
   var repeticao = document.getElementById("ev-repeticao");
@@ -68,42 +80,46 @@ function recarregarConfig(aplicadas) {
         if (cfg("cron_registro") !== "") {
           cron += el("details", {"class": "registro-cron"}, el("summary", {}, "Registro da última rodada") + el("pre", {}, h(cfg("cron_registro"))));
         }
-        var geral = el("section", {"class": "cartao-config"}, el("h2", {}, "Geral") + el("div", {"class": "cadastro"},
-          el("label", {}, "Manhã: relógio do dia e avisos " + el("input", {"type": "time", "name": "horario_manha", "value": cfg("horario_manha")}))
-          + el("label", {}, "Noite: preparar o relógio de amanhã " + el("input", {"type": "time", "name": "horario_noite", "value": cfg("horario_noite")}))
-          // o horário de uso, cada ponta com a sua caixa: pôr no pulso sozinho no início, tirar sozinho no fim
-          + el("div", {"class": "horario-auto"}, el("label", {}, "Relógio no pulso a partir de " + el("input", {"type": "time", "name": "uso_inicio", "value": cfg("uso_inicio")}))
-            + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "pulso_auto_inicio", "value": "0"}) + el("input", {"type": "checkbox", "name": "pulso_auto_inicio", "value": "1",
-              "checked": cfg("pulso_auto_inicio") !== "0"}) + " pôr no pulso sozinho"))
-          + el("div", {"class": "horario-auto"}, el("label", {}, "Até " + el("input", {"type": "time", "name": "uso_fim", "value": cfg("uso_fim")}))
-            + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "pulso_auto_fim", "value": "0"}) + el("input", {"type": "checkbox", "name": "pulso_auto_fim", "value": "1",
-              "checked": cfg("pulso_auto_fim") !== "0"}) + " tirar do pulso sozinho"))
-          + el("p", {"class": "nota"}, "Sem <strong>pôr sozinho</strong>, o relógio do dia só entra no pulso pelo <strong>Pôs no pulso</strong> (no quadro de hoje ou no painel do relógio). "
-            + "Sem <strong>tirar sozinho</strong>, ele só sai pelo <strong>Tirou do pulso</strong>: esquecido, continua contando como no pulso. "
-            + "O horário de uso continua valendo para o plano e as previsões dos próximos dias.")
-          + el("label", {}, "Sessão no sol esquecida aberta fecha às " + el("input", {"type": "time", "name": "sol_fim", "value": d.sol_fim}))
-          + el("label", {}, "Carregar quando a carga estimada chegar a (%) " + el("input", {"type": "number", "min": "1", "max": "99", "name": "carga_limiar", "value": cfg("carga_limiar") !== "" ? cfg("carga_limiar") : "20"}))
-          + el("label", {}, "Solar: pôr no sol quando a carga estimada chegar a (%) " + el("input", {"type": "number", "min": "1", "max": "99", "name": "sol_limiar", "value": cfg("sol_limiar") !== "" ? cfg("sol_limiar") : "70"}))
-          + el("label", {}, "Gasto medido pelas leituras: média das medições dos últimos (dias) " + el("input", {"type": "number", "min": "1", "max": "3650", "name": "medicao_janela_dias",
-            "value": cfg("medicao_janela_dias") !== "" ? cfg("medicao_janela_dias") : "90"}))
-          + el("label", {}, "Endereço do sistema, para a âncora {link} " + el("input", {"name": "url_sistema", "value": cfg("url_sistema"), "placeholder": "http://servidor/relogios"}))
-          + el("p", {"class": "nota"}, "O cron roda a cada minuto e faz cada rodada uma vez por dia, a partir dos horários da manhã e da noite. Fora do pulso, o relógio conta como guardado (desligado).")
-          + cron));
-        var telegram = el("section", {"class": "cartao-config"}, el("h2", {}, "Telegram (API de alerta)") + el("div", {"class": "cadastro"},
-          el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "alerta_ativo", "value": "0"}) + el("input", {"type": "checkbox", "name": "alerta_ativo", "value": "1",
-            "checked": cfg("mensagens_ativas") === "1"}) + " Enviar alertas")
-          + el("p", {"class": "nota"}, "O endereço e o destinatário ficam no config.php. O texto das mensagens é montado pelos modelos abaixo, em \"Formato das mensagens\".")));
-        var agenda = el("section", {"class": "cartao-config"}, el("h2", {}, "Google Agenda") + el("div", {"class": "cadastro"},
-          el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "agenda_ativa", "value": "0"}) + el("input", {"type": "checkbox", "name": "agenda_ativa", "value": "1",
-            "checked": cfg("agenda_ativa") === "1"}) + " Criar eventos na agenda")
-          + el("label", {}, "ID da agenda " + el("input", {"name": "agenda_id", "value": cfg("agenda_id"), "placeholder": "xxxx@group.calendar.google.com"}))
-          + el("label", {}, "Caminho da chave JSON no servidor " + el("input", {"name": "agenda_chave", "value": cfg("agenda_chave"), "placeholder": d.pasta + "/google-conta-servico.json"}))
+        // ---------- os quadros do alto: cada opção numa linha, o rótulo à esquerda e o campo à direita, todos alinhados ----------
+        var hora = function (nome, valor) { return el("input", {"type": "time", "name": nome, "value": valor}); };
+        var numero = function (nome, valor, min, max) { return el("input", {"type": "number", "min": min, "max": max, "name": nome, "value": valor}); };
+        var marca = function (nome, ligado) {
+          return el("input", {"type": "hidden", "name": nome, "value": "0"}) + el("input", {"type": "checkbox", "name": nome, "value": "1", "checked": ligado});
+        };
+        var rotina = cartao("Rotina do dia", el("div", {"class": "campos"},
+          parCampo("Manhã: relógio do dia e avisos", hora("horario_manha", cfg("horario_manha")))
+          + parCampo("Noite: preparar o de amanhã", hora("horario_noite", cfg("horario_noite")))
+          + parCampo("No pulso a partir de", hora("uso_inicio", cfg("uso_inicio")))
+          + parCampo("Pôr no pulso sozinho", marca("pulso_auto_inicio", cfg("pulso_auto_inicio") !== "0"), "check")
+          + parCampo("No pulso até", hora("uso_fim", cfg("uso_fim")))
+          + parCampo("Tirar do pulso sozinho", marca("pulso_auto_fim", cfg("pulso_auto_fim") !== "0"), "check")
+          + parCampo("Sessão no sol esquecida fecha às", hora("sol_fim", d.sol_fim))),
+          el("p", {"class": "nota"}, "Sem <strong>pôr sozinho</strong>, o relógio do dia só entra no pulso pelo <strong>Pôs no pulso</strong>; sem <strong>tirar sozinho</strong>, só sai pelo "
+            + "<strong>Tirou do pulso</strong> (esquecido, continua contando como no pulso). O horário de uso vale sempre para o plano e as previsões. Fora do pulso, o relógio conta como guardado."));
+        var limites = cartao("Limites e contas", el("div", {"class": "campos"},
+          parCampo("Carregar quando a carga chegar a (%)", numero("carga_limiar", cfg("carga_limiar") !== "" ? cfg("carga_limiar") : "20", "1", "99"))
+          + parCampo("Solar: pôr no sol quando chegar a (%)", numero("sol_limiar", cfg("sol_limiar") !== "" ? cfg("sol_limiar") : "70", "1", "99"))
+          + parCampo("Gasto medido: média dos últimos (dias)", numero("medicao_janela_dias", cfg("medicao_janela_dias") !== "" ? cfg("medicao_janela_dias") : "90", "1", "3650"))),
+          el("p", {"class": "nota"}, "O limite de carga de um relógio (no cadastro dele) vale no lugar do geral. Medições do gasto mais velhas que a janela saem da média."));
+        var tela = cartao("Telas", el("div", {"class": "campos"},
+          parCampo("Abrir o relógio na página Hoje", el("select", {"name": "painel_modo"}, el("option", {"value": "lado", "selected": cfg("painel_modo") !== "flutuante"}, "Ao lado da lista")
+            + el("option", {"value": "flutuante", "selected": cfg("painel_modo") === "flutuante"}, "Numa janela flutuante, grande")))
+          + parCampo("Endereço do sistema (a âncora {link})", el("input", {"name": "url_sistema", "value": cfg("url_sistema"), "placeholder": "http://servidor/relogios"}), "largo")),
+          el("p", {"class": "nota"}, "<strong>Ao lado da lista:</strong> o relógio clicado abre num painel à direita, e a lista continua à vista. <strong>Numa janela flutuante:</strong> abre grande, "
+            + "no meio da tela, com os quadros lado a lado; fecha no ×, no Esc ou num clique fora. No celular, os dois cobrem a tela inteira."));
+        var quadroCron = cartao("Cron", cron);
+        var telegram = cartao("Telegram (API de alerta)", el("div", {"class": "campos"}, parCampo("Enviar alertas", marca("alerta_ativo", cfg("mensagens_ativas") === "1"), "check")),
+          el("p", {"class": "nota"}, "O endereço e o destinatário ficam no config.php. O texto de cada aviso vem da mensagem padrão do Telegram ou da personalizada dele, em \"O que vai para onde\"."));
+        var agenda = cartao("Google Agenda", el("div", {"class": "campos"},
+          parCampo("Criar eventos na agenda", marca("agenda_ativa", cfg("agenda_ativa") === "1"), "check")
+          + parCampo("Antecedência dos eventos (dias)", numero("agenda_antecedencia", cfg("agenda_antecedencia"), "1", "365"))
+          + parCampo("ID da agenda", el("input", {"name": "agenda_id", "value": cfg("agenda_id"), "placeholder": "xxxx@group.calendar.google.com"}), "largo")
+          + parCampo("Caminho da chave JSON no servidor", el("input", {"name": "agenda_chave", "value": cfg("agenda_chave"), "placeholder": d.pasta + "/google-conta-servico.json"}), "largo"))
           + (d.chave_agenda ? el("p", {"class": "nota"}, "Chave encontrada. Compartilhe a agenda com " + el("strong", {"class": "quebra"}, h(d.chave_agenda.client_email)) + ", com permissão para fazer alterações nos eventos.")
-            : el("p", {"class": "nota"}, "Nenhuma chave válida nesse caminho. Confira o nome do arquivo e se o usuário do PHP-FPM (www-data) tem permissão de leitura."))
-          + el("label", {}, "Criar os eventos com quantos dias de antecedência " + el("input", {"type": "number", "min": "1", "max": "365", "name": "agenda_antecedencia", "value": cfg("agenda_antecedencia")}))
-          + el("div", {"class": "botoes-teste"}, el("button", {"type": "submit", "form": "f-teste-criar", "class": "leve"}, "Criar evento de teste")
-            + el("button", {"type": "submit", "form": "f-teste-remover", "class": "leve", "disabled": cfg("agenda_teste_id") === ""}, "Remover evento de teste"))
-          + el("p", {"class": "nota"}, "O teste cria um evento daqui a 10 minutos, já no formato dos modelos. Salve a configuração antes de testar.")));
+            : el("p", {"class": "nota"}, "Nenhuma chave válida nesse caminho. Confira o nome do arquivo e se o usuário do PHP-FPM (www-data) tem permissão de leitura.")),
+          el("p", {"class": "nota"}, "O teste cria um evento daqui a 10 minutos, no formato dos modelos. Salve antes de testar.")
+          + el("button", {"type": "submit", "form": "f-teste-criar", "class": "leve"}, "Criar evento de teste")
+          + el("button", {"type": "submit", "form": "f-teste-remover", "class": "leve", "disabled": cfg("agenda_teste_id") === ""}, "Remover evento de teste"));
         // ---------- Mensagem padrão ----------
         var modelos = Object.keys(d.canais).map(function (canal) {
           var cn = d.canais[canal];
@@ -146,10 +162,9 @@ function recarregarConfig(aplicadas) {
           + el("div", {"class": "rolagem"}, el("table", {"class": "relogios canais"}, el("thead", {}, el("tr", {}, el("th", {}, "Aviso") + el("th", {}, "Quando")
             + canais.map(function (canal) { return el("th", {"class": "centro"}, h(d.canais[canal].nome)); }).join("") + el("th", {}, "Personalizar"))) + el("tbody", {}, linhas))));
         res += el("form", {"data-recurso": "config", "id": "form-config"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
-          + el("div", {"class": "config-grade"}, geral + telegram + agenda) + padrao + paraOnde
-          + el("p", {"class": "novo-evento-link"}, el("a", {"href": "configuracao.php?novo_evento=1#personalizados", "class": "botao"}, "Novo evento") + " "
-            + el("span", {"class": "nota"}, "Um aviso seu, com horário e repetição próprios: todo dia, em dias da semana, todo mês, a cada N dias ou uma vez só."))
-          + el("div", {"class": "botoes salvar"}, el("button", {}, "Salvar configuração")));
+          + el("div", {"class": "config-grade"}, rotina + limites + tela + quadroCron + telegram + agenda) + padrao + paraOnde
+          // salvar: uma barra presa no pé da tela enquanto a página rola, com o botão sempre no mesmo lugar
+          + el("div", {"class": "barra-salvar"}, el("span", {"class": "nota"}, "As mudanças desta página valem depois de salvar.") + el("button", {}, "Salvar configuração")));
         res += el("form", {"data-recurso": "config", "id": "f-evento-excluir"}, el("input", {"type": "hidden", "name": "acao", "value": "evento_excluir"}));
         // ---------- o cadastro de um evento ----------
         var q = new URLSearchParams(window.location.search);
@@ -183,8 +198,10 @@ function recarregarConfig(aplicadas) {
             : "nenhuma nos próximos 60 dias") + ".") : "")
           + el("p", {"class": "nota"}, "Depois de salvar, o evento aparece na tabela \"O que vai para onde\", onde se escolhem os canais e o texto de cada um. Evento novo já vem marcado para o Telegram.")
           + el("div", {"class": "botoes"}, el("button", {}, edit ? "Salvar alterações" : "Criar evento") + (edit ? " " + el("a", {"href": "configuracao.php#personalizados"}, "cancelar") : ""));
-        res += el("section", {"id": "personalizados"}, el("details", {"class": "cartao-config novo-evento", "open": edit !== null || q.has("novo_evento")},
-          el("summary", {}, edit ? "Editar o evento " + h(edit.nome) : "Novo evento") + el("form", {"data-recurso": "config", "class": "cadastro form-evento"}, formEvento)));
+        res += el("section", {"id": "personalizados"}, el("h2", {}, "Eventos personalizados")
+          + el("p", {"class": "nota"}, "Um aviso seu, com horário e repetição próprios: todo dia, em dias da semana, todo mês, a cada N dias ou uma vez só. Os eventos já criados estão na tabela acima (editar e excluir ficam no nome deles).")
+          + el("details", {"class": "cartao-config novo-evento", "open": edit !== null || q.has("novo_evento")},
+          el("summary", {}, edit ? "Editar o evento " + h(edit.nome) : "Novo evento") + el("form", {"data-recurso": "config", "class": "form-evento"}, formEvento)));
         res += el("form", {"data-recurso": "config", "id": "f-teste-criar"}, el("input", {"type": "hidden", "name": "acao", "value": "teste_agenda_criar"}))
           + el("form", {"data-recurso": "config", "id": "f-teste-remover"}, el("input", {"type": "hidden", "name": "acao", "value": "teste_agenda_remover"}));
         // ---------- Como sai hoje ----------
