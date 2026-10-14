@@ -340,7 +340,11 @@ function reconstrucao()
                     . "configuração, scripts, testes, dados, os que começam com ponto) ficam bloqueados no servidor web (.htaccess e nginx-relogios.conf).",
                 "SQL sempre com parâmetros; textos escapados no HTML; XML da NF-e lido sem entidades nem rede; arquivos servidos inline só dos tipos "
                     . "seguros; senhas com password_hash; o token comparado em tempo constante.",
-                "A API nunca devolve senhas; os arquivos dos documentos só pelo recurso=documento.",
+                "Senhas: só o hash, pelo password_hash do PHP (bcrypt, \$2y\$<custo>\$<sal de 22><resultado de 31>); o login confere com o "
+                    . "password_verify (o bcrypt da senha digitada com o sal e o custo do hash). A API entrega o login e o hash de cada usuário "
+                    . "(recurso=usuarios: senha_hash, senha_algoritmo, senha_custo) e aceita criar um usuário pelo hash de outro sistema (usuarios/salvar "
+                    . "com senha_hash; bcrypt \$2y\$, \$2b\$ ou \$2a\$, ou argon2; o \$2b\$ guardado como \$2y\$, o mesmo cálculo). A reescrita "
+                    . "tem de conferir pelo mesmo bcrypt, para os usuários migrarem com a mesma senha. Os arquivos dos documentos só pelo recurso=documento.",
             ]),
             $secao("testes", "Os testes e a aceitação", [
                 "testes/cenario.php faz pela API o que uma pessoa faz (cadastra relógios de cada tipo, lança cordas, cargas, sol, winder e pilha, monta a "

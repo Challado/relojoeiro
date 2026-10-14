@@ -810,7 +810,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 
 | Recurso | Devolve |
 |---|---|
-| *(nenhum)* | tudo o que está guardado: a árvore, os campos, os tipos de lançamento, as fórmulas, os avisos, os relógios (com os valores, as fórmulas calculadas, os avisos, os lançamentos, a previsão, a foto e os dados dos documentos), as categorias dos documentos, os modos, o plano, a configuração, os eventos, a agenda, os critérios, o cron, os usuários e as migrações. Só a senha fica de fora. `foto=nao` deixa as fotos de fora. |
+| *(nenhum)* | tudo o que está guardado: a árvore, os campos, os tipos de lançamento, as fórmulas, os avisos, os relógios (com os valores, as fórmulas calculadas, os avisos, os lançamentos, a previsão, a foto e os dados dos documentos), as categorias dos documentos, os modos, o plano, a configuração, os eventos, a agenda, os critérios, o cron, os usuários (com o hash da senha: a senha não existe no sistema) e as migrações. `foto=nao` deixa as fotos de fora. |
 | `hoje` | o que a página Hoje mostra: o relógio do dia, os avisos, os próximos dias, os modos, a tabela da coleção e os totais dela (quantos relógios, disponíveis, em uso e o valor pago) |
 | `ficha` | o que o painel de um relógio mostra (`relogio=<id>`; sem ele, só o cadastro de um relógio novo): agora, carga, nota, previsão, gasto da bateria, quantos documentos em cada categoria, marcações recentes, cadastro |
 | `plano` | o plano gravado, dia a dia, com o motivo de cada escolha, e o resumo do período como a página Plano mostra (quantos dias cada relógio tem, a porcentagem, o próximo dia, quantos à mão, quem ficou sem dia). `de=` e `ate=` (AAAA-MM-DD; sem eles, o plano inteiro) ou `dias=N` (os próximos N dias; `dias=todos`, de hoje até o fim) |
@@ -826,7 +826,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `foto` | a foto de um relógio (`relogio=<id>`): a imagem, não JSON |
 | `documentos` | os documentos de um relógio (`relogio=<id>`; sem ele, de todos), com as categorias, o resumo da NF-e de cada XML, a pasta e o limite |
 | `documento` | o arquivo de um documento (`id=<id>`): para mostrar (imagem, vídeo, áudio, PDF, texto) ou para baixar (o resto, ou com `baixar=1`); `mini=1` é a miniatura da foto. Atende pedaços (Range), para o vídeo avançar |
-| `usuarios`, `migracoes` | os logins; as migrações que faltam aplicar |
+| `usuarios`, `migracoes` | os logins, cada um com o hash da senha (para migrar com a mesma senha: veja [Os usuários e as senhas](#os-usuários-e-as-senhas)); as migrações que faltam aplicar |
 | `instalacao` | a situação da instalação: o banco, se está vazio, instalado e em dia, quantos usuários e o próximo passo. Responde também com o banco vazio, pelo token |
 | `importacao` | o que a importação do sistema anterior usa: o servidor do banco antigo (sem a senha), se o PHP tem o MySQL e se este banco já tem relógios |
 | `entrar` | o login das páginas: sem login, 401 (o navegador pede o usuário e a senha); com login, volta para a página de `volta=` (302) ou diz quem entrou |
@@ -849,7 +849,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
 | `config` | `salvar`, `evento_salvar`, `evento_excluir`, `testar_manha`, `testar_noite`, `teste_agenda_criar`, `teste_agenda_remover`, `sincronizar` |
-| `usuarios` | `salvar` (o primeiro usuário, pelo token), `excluir` |
+| `usuarios` | `salvar` (com a `senha`, ou com o `senha_hash` de outro sistema; o primeiro usuário, pelo token), `excluir` |
 | `migracoes` | `aplicar` |
 | `instalacao` | `instalar` (só num banco vazio, pelo token) |
 | `importacao` | `importar` (`banco=` o nome do banco antigo; `substituir=1` quando este banco já tem relógios; parou no meio, nada fica gravado) |
@@ -867,6 +867,36 @@ por motivo) numa escrita recusada:
 | `413` | o envio passou do limite do PHP do servidor (`post_max_size`): um arquivo grande demais |
 | `500` | sistema parado (o `API_TOKEN` ou o `FUSO` do `config.php` inválido) ou um erro interno |
 | `503` | banco desatualizado (só `recurso=migracoes` responde, e a escrita `migracoes`/`aplicar`; e o `manual`, que não usa o banco), banco vazio (antes da instalação só `instalacao` responde, e o `manual`) ou banco fora do ar |
+
+### Os usuários e as senhas
+
+A senha não fica guardada em lugar nenhum: fica só o **hash** dela, feito pelo `password_hash` do PHP (bcrypt). O hash tem 60
+caracteres, `$2y$12$...`: o `$2y$`, o custo (12 quer dizer 2¹² rodadas), o sal (22 caracteres, sorteado a cada senha) e o
+resultado (31). O hash não se desfaz em senha: no login, o sistema calcula o bcrypt da senha digitada com o sal e o custo que
+estão no hash e compara (`password_verify`). A mesma senha dá hashes diferentes a cada vez, e todos conferem.
+
+**Para levar os usuários para outro sistema**, leve o login e o `senha_hash` de cada um (`recurso=usuarios`) e, lá, confira a
+senha digitada contra o hash com o bcrypt da linguagem: cada um entra com a mesma senha de sempre. `$2y$` (PHP) e `$2b$` (as
+outras linguagens) são o mesmo cálculo; se a biblioteca recusar o `$2y$`, troque o começo por `$2b$`. **Para trazer usuários
+de outro sistema**, mande o hash de lá: `recurso=usuarios`, `acao=salvar`, `login` e `senha_hash` (bcrypt `$2y$`, `$2b$` ou
+`$2a$`, ou argon2).
+
+| Linguagem | Conferir a senha | Fazer o hash |
+|---|---|---|
+| PHP | `password_verify($senha, $hash)` | `password_hash($senha, PASSWORD_DEFAULT)` |
+| Python (`pip install bcrypt`) | `bcrypt.checkpw(senha.encode(), hash.encode())` | `bcrypt.hashpw(senha.encode(), bcrypt.gensalt()).decode()` |
+| Node (`npm install bcryptjs`) | `require("bcryptjs").compareSync(senha, hash)` | `require("bcryptjs").hashSync(senha, 12)` |
+| Java (Spring Security) | `new BCryptPasswordEncoder().matches(senha, hash)` | `new BCryptPasswordEncoder().encode(senha)` |
+| C# (BCrypt.Net-Next) | `BCrypt.Net.BCrypt.Verify(senha, hash)` | `BCrypt.Net.BCrypt.HashPassword(senha)` |
+
+```sh
+# o catálogo: login e hash de cada um
+curl -u usuario:senha "http://servidor/relojoeiro/api.php?recurso=usuarios"
+
+# trazer um usuário de outro sistema, com a senha que ele já tinha
+curl -u usuario:senha --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=maria \
+     --data-urlencode 'senha_hash=$2b$12$...' http://servidor/relojoeiro/api.php
+```
 
 **Filtros genéricos** funcionam em qualquer lista de qualquer resposta:
 

@@ -9,7 +9,7 @@ pela API, do jeito que uma pessoa usa o sistema:
   leituras) num JSON.
 - [`comparar.php`](comparar.php) compara duas fotografias e aponta cada diferença. Como o sistema calcula tudo a partir de
   agora, e as rodadas acontecem com alguns segundos de diferença, os horários e as contas que andam com o tempo têm uma
-  pequena folga. O resto tem de sair idêntico, inclusive o tipo de cada valor (`5` não é `"5"`).
+  pequena folga; e o hash das senhas, que tem um sal sorteado a cada cálculo, conta só pelo algoritmo. O resto tem de sair idêntico, inclusive o tipo de cada valor (`5` não é `"5"`).
 
 ## Como rodar
 

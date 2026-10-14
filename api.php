@@ -24,7 +24,7 @@
  * ---------------------------------------------------------------------------------------------
  *   (sem recurso)   tudo o que está guardado, sem filtro: {"arvore", "campos", "lancamento_tipos", "formulas", "avisos",
  *                   "relogios", "modos", "plano", "config", "eventos", "agenda", "criterios", "cron", "usuarios", "migracoes",
- *                   "motor"}. Só a senha dos usuários fica de fora. Parâmetro foto=nao deixa as fotos de fora (senão vêm em
+ *                   "motor"}. A senha dos usuários não existe no sistema: sai o hash dela (veja SENHAS). Parâmetro foto=nao deixa as fotos de fora (senão vêm em
  *                   base64). Os arquivos dos documentos não vêm aqui (só os dados de cada um): recurso=documento. Para pegar só uma parte, ou filtrar, ordenar e paginar qualquer lista: veja FILTROS, abaixo.
  *     "arvore":            [{"id", "pai_id", "nome", "ordem", "caminho", "profundidade"}]  em ordem de árvore
  *     "campos":            [{"id", "identificador", "nome", "tipo", "unidade", "opcoes", "padrao", "no_id", "lugar", "ordem"}]
@@ -203,7 +203,8 @@
  *                            tem), "formulas", "avisos" (todas as versões, como no banco), "modos" (com "blocos"), "modo_ativo",
  *                            "max_sem_uso", "grupos", "relogios", "funcoes" (as do motor), "tipos_de_campo", "formatos_de_lancamento"}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=cadastros"
- *   recurso=usuarios         {"usuarios": [{"login", "criado"}], "voce" (o login de quem pediu, pelo site; vazio pelo token)} (senhas nunca saem)
+ *   recurso=usuarios         {"usuarios": [{"login", "criado", "senha_hash", "senha_algoritmo", "senha_custo"}], "voce" (o login de quem
+ *                            pediu, pelo site; vazio pelo token)}. O hash serve para migrar os usuários com a mesma senha (veja SENHAS)
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=usuarios"
  *   recurso=migracoes        {"pendentes": [{"versao", "arquivo", "traz"}]} (lista vazia: o banco está em dia)
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=migracoes"
@@ -237,7 +238,32 @@
  *                            regras, lidas do próprio banco]}, "listas": {as funções das fórmulas, os tipos de campo, os formatos de
  *                            lançamento, as repetições, os dias da semana, as âncoras, os canais, as migrações e as constantes do config.php}}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=reconstrucao"
- *   Não é exportado: a senha dos usuários.
+ *   A senha dos usuários não existe no sistema: sai o hash dela (recurso=usuarios), e o bloco SENHAS ensina a conferir e a migrar.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * SENHAS  (os usuários e como migrar com eles: o mesmo texto está em recurso=ajuda, em "senhas")
+ * ---------------------------------------------------------------------------------------------
+ *   como_fica      a senha não fica guardada em lugar nenhum: fica só o hash dela, feito pelo password_hash do PHP com
+ *                  PASSWORD_DEFAULT (bcrypt). O hash tem 60 caracteres: $2y$, o custo com dois dígitos e $ (12 é 2^12 rodadas),
+ *                  o sal (22 caracteres, sorteado a cada senha) e o resultado (31). O sal e o custo vão dentro do próprio hash
+ *   como_confere   o hash não se desfaz em senha (é de mão única). Para conferir, calcula-se o bcrypt da senha digitada com o
+ *                  sal e o custo que estão no hash e compara-se com o resultado: é o que o password_verify do PHP faz no login.
+ *                  A mesma senha dá hashes diferentes a cada cálculo (o sal muda), e todos conferem
+ *   migrar_daqui   leve o login e o senha_hash de cada um (recurso=usuarios, ou a resposta sem recurso) e, no outro sistema,
+ *                  confira a senha digitada contra o hash com o bcrypt dele: cada um entra lá com a mesma senha de sempre. $2y$
+ *                  (PHP) e $2b$ (Python, Node, Java, C#...) são o mesmo cálculo; se a biblioteca recusar o $2y$, troque o
+ *                  começo por $2b$
+ *   migrar_para_ca POST recurso=usuarios, acao=salvar, login e senha_hash (um bcrypt $2y$, $2b$ ou $2a$, ou um argon2): o
+ *                  usuário entra aqui com a senha que tinha lá, sem ninguém saber qual é (o $2b$ é guardado como $2y$, o mesmo
+ *                  cálculo)
+ *   php            conferir: password_verify($senha, $hash); fazer: password_hash($senha, PASSWORD_DEFAULT)
+ *   python         pip install bcrypt; conferir: bcrypt.checkpw(senha.encode(), hash.encode()); fazer:
+ *                  bcrypt.hashpw(senha.encode(), bcrypt.gensalt()).decode()
+ *   node           npm install bcryptjs; conferir: require("bcryptjs").compareSync(senha, hash); fazer:
+ *                  require("bcryptjs").hashSync(senha, 12)
+ *   java           Spring Security: new BCryptPasswordEncoder().matches(senha, hash) (com jBCrypt, BCrypt.checkpw(senha, hash)
+ *                  trocando $2y$ por $2a$)
+ *   csharp         BCrypt.Net-Next: BCrypt.Net.BCrypt.Verify(senha, hash)
  *
  * ---------------------------------------------------------------------------------------------
  * FILTROS  (em qualquer consulta: a resposta sem parâmetros e todos os recursos acima)
@@ -428,7 +454,8 @@
  *                            Ex. teste_agenda_criar: curl -u lucas:senha -d recurso=config -d acao=teste_agenda_criar http://servidor/relojoeiro/api.php
  *                            Ex. teste_agenda_remover: curl -u lucas:senha -d recurso=config -d acao=teste_agenda_remover http://servidor/relojoeiro/api.php
  *                            Ex. sincronizar: curl -u lucas:senha -d recurso=config -d acao=sincronizar http://servidor/relojoeiro/api.php
- *   recurso=usuarios          salvar (login, senha), excluir (login). O primeiro usuário sai pelo token (sem usuários, o login não entra)
+ *   recurso=usuarios          salvar (login, senha; ou login e senha_hash, o hash de outro sistema: veja SENHAS), excluir (login). O
+ *                             primeiro usuário sai pelo token (sem usuários, o login não entra)
  *                            Ex. salvar: curl -u lucas:senha -d recurso=usuarios -d acao=salvar -d login=visitante -d senha=segredo123 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=usuarios -d acao=excluir -d login=visitante http://servidor/relojoeiro/api.php
  *   recurso=migracoes         aplicar: aplica as migrações pendentes, na ordem: o SQL de cada uma e, se ela tiver, o passo em PHP (a única escrita
@@ -920,9 +947,16 @@
  *                                    segundos
  *     relogios[].resumo_do_tempo.tempo.<estado>.texto
  *                                    o mesmo tempo por extenso
- *     usuarios[]                     quem acessa o site (as senhas nunca saem)
+ *     usuarios[]                     quem acessa o site, com o hash da senha (a senha não existe no sistema)
  *     usuarios[].criado              quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     usuarios[].login               o login
+ *     usuarios[].senha_algoritmo     o cálculo do hash: bcrypt (o padrão do password_hash do PHP), ou argon2i/argon2id
+ *     usuarios[].senha_custo         o custo do bcrypt (quantas rodadas: 2 elevado a ele), que também está escrito no próprio hash
+ *                                    ($2y$12$...: 12); null no argon2
+ *     usuarios[].senha_hash          o hash da senha (a senha não existe no sistema): $2y$<custo>$ seguido do sal (22 caracteres) e do
+ *                                    resultado (31). Não se desfaz em senha: confere-se a senha digitada contra ele (veja senhas na ajuda).
+ *                                    Levado para outro sistema que confira por bcrypt, o usuário entra lá com a mesma senha; e volta para
+ *                                    cá por usuarios/salvar com senha_hash
  *
  *     documento_categorias[]         as categorias dos documentos, na ordem
  *     documento_categorias[].aceita[]
@@ -1846,6 +1880,13 @@
  *     usuarios[]                     quem acessa
  *     usuarios[].criado              quando foi criado
  *     usuarios[].login               o login
+ *     usuarios[].senha_algoritmo     o cálculo do hash: bcrypt (o padrão do password_hash do PHP), ou argon2i/argon2id
+ *     usuarios[].senha_custo         o custo do bcrypt (quantas rodadas: 2 elevado a ele), que também está escrito no próprio hash
+ *                                    ($2y$12$...: 12); null no argon2
+ *     usuarios[].senha_hash          o hash da senha (a senha não existe no sistema): $2y$<custo>$ seguido do sal (22 caracteres) e do
+ *                                    resultado (31). Não se desfaz em senha: confere-se a senha digitada contra ele (veja senhas na ajuda).
+ *                                    Levado para outro sistema que confira por bcrypt, o usuário entra lá com a mesma senha; e volta para
+ *                                    cá por usuarios/salvar com senha_hash
  *     voce                           o login de quem pediu (pelo site; vazio pelo token)
  *
  *   recurso=migracoes
@@ -2884,7 +2925,7 @@ if (!$token_ok && $quem === "") {
         "chave_ok" => cfg("agenda_id") !== "" ? google_token() !== false : null, "desejados" => agenda_legivel(),
         "criados" => linhas("SELECT chave, google_id, data, titulo, assinatura, criado FROM agenda_evento ORDER BY data, chave")];
 } elseif ($recurso === "usuarios") {
-    $saida = ["usuarios" => linhas("SELECT login, criado FROM usuario ORDER BY login"), "voce" => $quem];
+    $saida = ["usuarios" => usuarios_catalogo(), "voce" => $quem];
 } elseif ($recurso === "cron") {
     // as execuções do cron, com filtro de período (cron_de e cron_ate, ou de e ate: data, ou data e hora), situação
     // (atividade, erro, nada ou todas; padrão: atividade) e texto no registro (cron_busca ou busca), resumo do período e páginas
@@ -3005,7 +3046,7 @@ if (!$token_ok && $quem === "") {
         "sem_parametros" => "api.php devolve tudo o que está guardado, sem filtro: arvore, campos, lancamento_tipos, formulas, avisos, relogios (com os valores "
             . "dos campos, o resultado de cada fórmula, os avisos, os lançamentos, a previsão e a linha do tempo inteira com o resumo), modos, plano (inteiro), "
             . "config (inteira), eventos (com os disparos), agenda, criterios (com a nota de cada relógio), cron (todas as execuções guardadas), usuarios "
-            . "(os logins), migracoes e motor, e as categorias dos documentos (documento_categorias). Só a senha dos usuários fica de fora. Os arquivos dos documentos não vêm (só os dados de cada um, em relogios[].documentos): eles saem pelo recurso=documento. "
+            . "(os logins), migracoes e motor, e as categorias dos documentos (documento_categorias). A senha dos usuários não existe no sistema: sai o hash dela (veja senhas). Os arquivos dos documentos não vêm (só os dados de cada um, em relogios[].documentos): eles saem pelo recurso=documento. "
             . "Para pegar só uma parte, ou filtrar, ordenar e paginar: veja filtros.",
         "autenticacao" => "token (cabeçalho X-Api-Token ou parâmetro token; o API_TOKEN do config.php, obrigatório, com pelo menos 10 caracteres) "
             . "ou o login do site (HTTP Basic), em todo pedido. Ex.: curl -H \"X-Api-Token: segredo\" http://servidor/relojoeiro/api.php?recurso=hoje; curl -u lucas:senha http://servidor/relojoeiro/api.php?recurso=hoje",
@@ -3065,7 +3106,7 @@ if (!$token_ok && $quem === "") {
             "documento" => ["descricao" => "o arquivo de um documento (não é JSON): imagens, vídeos, áudios, PDF e texto vêm para mostrar; o resto (inclusive XML, HTML e SVG), para baixar; aceita o pedido de um pedaço (Range), que o vídeo usa para avançar; se o arquivo sumiu da pasta, ele é recriado antes a partir da cópia no banco",
                 "parametros" => ["id" => "o id do documento", "baixar" => "1: sempre para baixar", "mini" => "1: a miniatura da foto (sem ela, a foto)"],
                 "exemplo" => "curl -u lucas:senha -o nota.pdf \"http://servidor/relojoeiro/api.php?recurso=documento&id=7\""],
-            "usuarios" => ["descricao" => "os logins (as senhas nunca saem) e quem está pedindo (pelo login do site)",
+            "usuarios" => ["descricao" => "os logins, cada um com o hash da senha (o algoritmo e o custo), para migrar os usuários com a mesma senha (veja senhas), e quem está pedindo (pelo login do site); a senha não existe no sistema",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=usuarios\""],
             "migracoes" => ["descricao" => "as migrações que faltam aplicar no banco (lista vazia: está em dia); com o banco desatualizado, só ele (e o manual, que não usa o banco) responde",
@@ -3192,7 +3233,7 @@ if (!$token_ok && $quem === "") {
                 "sincronizar" => ["campos" => "(nada): sincroniza o Google Agenda agora", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=sincronizar http://servidor/relojoeiro/api.php"],
             ],
             "usuarios" => [
-                "salvar" => ["campos" => "login, senha (6 caracteres ou mais; login que existe: troca a senha); o primeiro usuário sai pelo token (sem usuários, o login não entra)", "exemplo" => "curl -u lucas:senha -d recurso=usuarios -d acao=salvar -d login=visitante -d senha=segredo123 http://servidor/relojoeiro/api.php"],
+                "salvar" => ["campos" => "login, senha (6 caracteres ou mais; login que existe: troca a senha); ou login e senha_hash (o hash de outro sistema, bcrypt ou argon2: o usuário entra com a senha de lá; veja senhas); o primeiro usuário sai pelo token (sem usuários, o login não entra)", "exemplo" => "curl -u lucas:senha -d recurso=usuarios -d acao=salvar -d login=visitante -d senha=segredo123 http://servidor/relojoeiro/api.php"],
                 "excluir" => ["campos" => "login (não o próprio)", "exemplo" => "curl -u lucas:senha -d recurso=usuarios -d acao=excluir -d login=visitante http://servidor/relojoeiro/api.php"],
             ],
             "migracoes" => [
@@ -3204,6 +3245,17 @@ if (!$token_ok && $quem === "") {
             "importacao" => [
                 "importar" => ["campos" => "banco (o nome do banco antigo, MySQL/MariaDB), substituir (1: apaga antes os relógios e o histórico deste banco; obrigatório quando ele já tem relógios): traz a árvore, os relógios, as fotos, os usuários, os valores dos campos e o histórico, tudo numa transação (parou no meio: nada fica gravado); a resposta traz contagem (quantos de cada)", "exemplo" => "curl -u lucas:senha -d recurso=importacao -d acao=importar -d banco=relogios -d substituir=1 http://servidor/relojoeiro/api.php"],
             ],
+        ],
+        "senhas" => [
+            "como_fica" => "a senha não fica guardada em lugar nenhum: fica só o hash dela, feito pelo password_hash do PHP com PASSWORD_DEFAULT (bcrypt). O hash tem 60 caracteres: \$2y\$, o custo com dois dígitos e \$ (12 é 2^12 rodadas), o sal (22 caracteres, sorteado a cada senha) e o resultado (31). O sal e o custo vão dentro do próprio hash",
+            "como_confere" => "o hash não se desfaz em senha (é de mão única). Para conferir, calcula-se o bcrypt da senha digitada com o sal e o custo que estão no hash e compara-se com o resultado: é o que o password_verify do PHP faz no login. A mesma senha dá hashes diferentes a cada cálculo (o sal muda), e todos conferem",
+            "migrar_daqui" => "leve o login e o senha_hash de cada um (recurso=usuarios, ou a resposta sem recurso) e, no outro sistema, confira a senha digitada contra o hash com o bcrypt dele: cada um entra lá com a mesma senha de sempre. \$2y\$ (PHP) e \$2b\$ (Python, Node, Java, C#...) são o mesmo cálculo; se a biblioteca recusar o \$2y\$, troque o começo por \$2b\$",
+            "migrar_para_ca" => "POST recurso=usuarios, acao=salvar, login e senha_hash (um bcrypt \$2y\$, \$2b\$ ou \$2a\$, ou um argon2): o usuário entra aqui com a senha que tinha lá, sem ninguém saber qual é (o \$2b\$ é guardado como \$2y\$, o mesmo cálculo)",
+            "php" => "conferir: password_verify(\$senha, \$hash); fazer: password_hash(\$senha, PASSWORD_DEFAULT)",
+            "python" => "pip install bcrypt; conferir: bcrypt.checkpw(senha.encode(), hash.encode()); fazer: bcrypt.hashpw(senha.encode(), bcrypt.gensalt()).decode()",
+            "node" => "npm install bcryptjs; conferir: require(\"bcryptjs\").compareSync(senha, hash); fazer: require(\"bcryptjs\").hashSync(senha, 12)",
+            "java" => "Spring Security: new BCryptPasswordEncoder().matches(senha, hash) (com jBCrypt, BCrypt.checkpw(senha, hash) trocando \$2y\$ por \$2a\$)",
+            "csharp" => "BCrypt.Net-Next: BCrypt.Net.BCrypt.Verify(senha, hash)",
         ],
         "filtros" => [
             "onde" => "em qualquer consulta: a resposta sem parâmetros e todos os recursos",
@@ -3595,9 +3647,12 @@ if (!$token_ok && $quem === "") {
                 "relogios[].resumo_do_tempo.tempo.<estado>.porcentagem" => "a parte desse estado no tempo total, em %",
                 "relogios[].resumo_do_tempo.tempo.<estado>.segundos" => "quanto tempo o relógio passou no estado <estado> (rodizio, pulso, winder, sol, repouso...), número inteiro, em segundos",
                 "relogios[].resumo_do_tempo.tempo.<estado>.texto" => "o mesmo tempo por extenso",
-                "usuarios[]" => "quem acessa o site (as senhas nunca saem)",
+                "usuarios[]" => "quem acessa o site, com o hash da senha (a senha não existe no sistema)",
                 "usuarios[].criado" => "quando foi criado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "usuarios[].login" => "o login",
+                "usuarios[].senha_algoritmo" => "o cálculo do hash: bcrypt (o padrão do password_hash do PHP), ou argon2i/argon2id",
+                "usuarios[].senha_custo" => "o custo do bcrypt (quantas rodadas: 2 elevado a ele), que também está escrito no próprio hash ($2y$12$...: 12); null no argon2",
+                "usuarios[].senha_hash" => "o hash da senha (a senha não existe no sistema): $2y$<custo>$ seguido do sal (22 caracteres) e do resultado (31). Não se desfaz em senha: confere-se a senha digitada contra ele (veja senhas na ajuda). Levado para outro sistema que confira por bcrypt, o usuário entra lá com a mesma senha; e volta para cá por usuarios/salvar com senha_hash",
                 "documento_categorias[]" => "as categorias dos documentos, na ordem",
                 "documento_categorias[].aceita[]" => "os tipos de arquivo que ela aceita (imagem, video, audio, pdf, xml); lista vazia: qualquer arquivo",
                 "documento_categorias[].documentos" => "quantos documentos ela tem",
@@ -4377,6 +4432,9 @@ if (!$token_ok && $quem === "") {
                 "usuarios[]" => "quem acessa",
                 "usuarios[].criado" => "quando foi criado",
                 "usuarios[].login" => "o login",
+                "usuarios[].senha_algoritmo" => "o cálculo do hash: bcrypt (o padrão do password_hash do PHP), ou argon2i/argon2id",
+                "usuarios[].senha_custo" => "o custo do bcrypt (quantas rodadas: 2 elevado a ele), que também está escrito no próprio hash ($2y$12$...: 12); null no argon2",
+                "usuarios[].senha_hash" => "o hash da senha (a senha não existe no sistema): $2y$<custo>$ seguido do sal (22 caracteres) e do resultado (31). Não se desfaz em senha: confere-se a senha digitada contra ele (veja senhas na ajuda). Levado para outro sistema que confira por bcrypt, o usuário entra lá com a mesma senha; e volta para cá por usuarios/salvar com senha_hash",
                 "voce" => "o login de quem pediu (pelo site; vazio pelo token)",
             ],
             "migracoes" => [
@@ -4664,7 +4722,7 @@ if (!$token_ok && $quem === "") {
             return ["id" => (int)$x["id"], "inicio" => $x["inicio"], "fim" => $x["fim"], "duracao_ms" => (int)$x["duracao_ms"], "teve_atividade" => (int)$x["teve_atividade"] === 1,
                 "teve_erro" => (int)$x["teve_erro"] === 1, "registro" => $x["registro"]];
         }, linhas("SELECT * FROM cron_execucao ORDER BY inicio DESC, id DESC"))],
-        "usuarios" => linhas("SELECT login, criado FROM usuario ORDER BY login"),
+        "usuarios" => usuarios_catalogo(),
         "migracoes" => ["pendentes" => []],
         "motor" => ["funcoes" => array_map(function ($f) { return $f[2]; }, $FUNCOES), "tipos_de_campo" => $TIPOS_CAMPO, "formatos_de_lancamento" => $FORMATOS_LANCAMENTO]];
 } else {
