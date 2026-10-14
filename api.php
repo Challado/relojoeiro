@@ -23,7 +23,7 @@
  * CONSULTA (GET)
  * ---------------------------------------------------------------------------------------------
  *   (sem recurso)   tudo o que está guardado, sem filtro: {"arvore", "campos", "lancamento_tipos", "formulas", "avisos",
- *                   "relogios", "modos", "plano", "config", "eventos", "agenda", "criterios", "cron", "usuarios", "migracoes",
+ *                   "relogios", "modos", "plano", "plano_livre", "config", "eventos", "agenda", "criterios", "cron", "usuarios", "migracoes",
  *                   "motor"}. A senha dos usuários não existe no sistema: sai o hash dela (veja SENHAS). Parâmetro foto=nao deixa as fotos de fora (senão vêm em
  *                   base64). Os arquivos dos documentos não vêm aqui (só os dados de cada um): recurso=documento. Para pegar só uma parte, ou filtrar, ordenar e paginar qualquer lista: veja FILTROS, abaixo.
  *     "arvore":            [{"id", "pai_id", "nome", "ordem", "caminho", "profundidade"}]  em ordem de árvore
@@ -129,7 +129,8 @@
  *   recurso=plano            [de, ate: AAAA-MM-DD; ou dias=N: os próximos N dias, de hoje em diante; dias=todos: de hoje até o fim]
  *                            o plano gravado (sem nada: inteiro), com "escala_fim", o último dia gravado e o modo ativo, e o resumo do
  *                            período como a página Plano mostra: {"modo", "escala_fim", "plano_fim", "hoje", "plano": [como em "plano"
- *                            acima], "resumo": {"de", "ate", "dias", "relogios": [{"relogio_id", "relogio", "dias", "porcentagem",
+ *                            acima], "livres": [os dias livres do período: sem relógio e sem sorteio], "resumo": {"de", "ate", "dias",
+ *                            "relogios": [{"relogio_id", "relogio", "dias", "porcentagem",
  *                            "proximo", "a_mao"}], "sem_dias": [{"id", "nome"}]}, "relogios"}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=plano&de=2026-10-01&ate=2026-10-31"
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=plano&dias=90"
@@ -156,8 +157,9 @@
  *                            "modo": {"id", "nome", "selecao", "escala_dias"}, "escala_fim", "max_sem_uso", "dia": {"data", "relogio_id",
  *                            "relogio", "ate" ("só hoje", "até sexta, 02/10"), "acao" (o lembrete do dia), "motivo" (por que ele saiu)}, "avisos": [os de hoje, atrasados
  *                            ou em breve: {"relogio_id", "relogio", "identificador", "nome", "texto" (o motivo), "estado", "resolve":
- *                            {"identificador", "nome", "formato", "unidade"} (o lançamento do botão)}], "plano": [os próximos 62 dias:
- *                            {"data", "relogio_id", "relogio", "acao", "motivo", "origem"}], "proxima_semana": {"segunda", "domingo", "ja_montada"}, "modos":
+ *                            {"identificador", "nome", "formato", "unidade", "acao", "botao"} (o lançamento do botão)}], "plano": [os
+ *                            próximos 62 dias: {"data", "relogio_id", "relogio", "acao", "motivo", "origem"}], "livres": [os dias livres
+ *                            dos próximos 62 dias], "proxima_semana": {"segunda", "domingo", "ja_montada"}, "modos":
  *                            [{"id", "nome", "selecao", "escala_dias", "blocos": [{"id", "nome", "dias", "no_id", "um_por", "relogio_id"}]}],
  *                            "grupos": [{"id", "nome", "profundidade", "caminho"}], "avisos_nomes", "estados" (o filtro Estado),
  *                            "relogios": [{"id", "nome", "disponivel", "tipo" (o grupo), "em_uso", "estado" (uso, sessao, repouso ou
@@ -450,9 +452,11 @@
  *                             hoje, como o usando; 0: o dia volta a ser sorteado), proxima_semana (só no domingo: a semana
  *                             seguinte inteira), periodo (de, ate: AAAA-MM-DD, de hoje até 2 anos; relogio_ids[]: um ou vários, na
  *                             ordem; dias_cada (padrão 1): os dias do período ficam escolhidos à mão, cada relógio dias_cada dias
- *                             seguidos, e depois do último volta ao primeiro), periodo_sortear (de, ate: os dias escolhidos à mão do
- *                             período, de amanhã em diante, voltam a ser sorteados). Os dias escolhidos à mão de amanhã em diante
- *                             ficam quando se sorteia de novo ou se monta a próxima semana.
+ *                             seguidos, e depois do último volta ao primeiro), periodo_sortear (de, ate: tudo o que o período tem,
+ *                             de amanhã em diante, à mão, sorteado ou livre, sai e ele é sorteado de novo), periodo_livre (de, ate:
+ *                             tudo sai e os dias ficam livres: sem relógio e sem sorteio, para escolher à mão; trocar_dia ou periodo
+ *                             num dia livre o tira de lá). Os dias escolhidos à mão e os livres, de amanhã em diante, ficam quando se
+ *                             sorteia de novo ou se monta a próxima semana.
  *                             Na escala inteligente: sortear de novo refaz a escala; usando segura o escolhido nos dias que
  *                             faltavam do bloco de hoje e refaz a escala depois deles; proxima_semana é recusada
  *                            Ex. modo: curl -u lucas:senha -d recurso=rodizio -d acao=modo -d modo=2 -d "bloco_alvo[8]=1" -d "bloco_cada_dia[8]=1" -d selecao=ponderado -d max_sem_uso=21 http://servidor/relojoeiro/api.php
@@ -463,6 +467,7 @@
  *                            Ex. proxima_semana: curl -u lucas:senha -d recurso=rodizio -d acao=proxima_semana http://servidor/relojoeiro/api.php
  *                            Ex. periodo: curl -u lucas:senha -d recurso=rodizio -d acao=periodo -d de=2026-12-20 -d ate=2027-01-05 -d "relogio_ids[]=12" -d "relogio_ids[]=7" -d dias_cada=2 http://servidor/relojoeiro/api.php
  *                            Ex. periodo_sortear: curl -u lucas:senha -d recurso=rodizio -d acao=periodo_sortear -d de=2026-12-20 -d ate=2027-01-05 http://servidor/relojoeiro/api.php
+ *                            Ex. periodo_livre: curl -u lucas:senha -d recurso=rodizio -d acao=periodo_livre -d de=2026-12-20 -d ate=2027-01-05 http://servidor/relojoeiro/api.php
  *   recurso=modos             salvar (id: 0 cria; nome, selecao: inteligente, ponderado, aleatorio ou fifo; escala_dias: vazio ou 0
  *                             = sorteio pelos blocos, 7 a 730 = escala inteligente com esse horizonte; blocos: [{nome, dias:
  *                             [1..7], no_id (0: todos), um_por: bloco ou dia, relogio_id: fixo (0: sorteia)}], substitui os
@@ -807,6 +812,8 @@
  *     plano[].origem                 sorteio (pelo modo) ou manual ("Usando hoje")
  *     plano[].relogio                o nome dele
  *     plano[].relogio_id             o relógio do dia
+ *     plano_livre[]                  os dias livres do plano (texto AAAA-MM-DD): sem relógio e sem sorteio, para escolher à mão (o "Deixar
+ *                                    o período livre")
  *     relogios[]                     os relógios, com tudo o que se sabe de cada um
  *     relogios[].acaba_em_datacomtz  quando acaba, em ISO 8601 com o fuso (texto, ex.: 2026-10-02T18:40:00-03:00); null com o motivo
  *     relogios[].acaba_em_segundos   quantos segundos faltam para acabar, a partir de calculado_em_unixtimestamp (número inteiro, em segundos; igual a
@@ -1158,6 +1165,8 @@
  *     plano[].data                   o dia
  *     plano[].relogio                o nome
  *     plano[].relogio_id             o relógio
+ *     livres[]                       os dias livres dos próximos 62 dias (texto AAAA-MM-DD): sem relógio e sem sorteio, para escolher à
+ *                                    mão; a tela os põe entre os dias do plano
  *     proxima_semana.domingo         o domingo dela
  *     proxima_semana.ja_montada      verdadeiro ou falso: a próxima semana já está no plano
  *     proxima_semana.segunda         a segunda-feira da próxima semana (texto AAAA-MM-DD)
@@ -1882,6 +1891,8 @@
  *   recurso=plano
  *     escala_fim                     até que dia vai a escala (null fora da escala)
  *     hoje                           hoje (texto AAAA-MM-DD)
+ *     livres[]                       os dias livres do período (texto AAAA-MM-DD): sem relógio e sem sorteio, para escolher à mão (o
+ *                                    "Deixar o período livre"); a página Plano os põe entre os dias do plano
  *     modo                           o nome do modo em uso
  *     plano[]                        o plano gravado: o relógio de cada dia
  *     plano[].acao                   o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nada
@@ -2962,6 +2973,8 @@ if (!$token_ok && $quem === "") {
             ["Em repouso", "Indisponível"]),
         "plano" => array_map(function ($p) { return ["data" => $p["data"], "relogio_id" => (int)$p["relogio_id"], "relogio" => $p["nome"], "acao" => $p["acao"], "motivo" => $p["motivo"], "origem" => $p["origem"]]; },
             linhas("SELECT p.*, r.nome FROM plano p JOIN relogio r ON r.id = p.relogio_id WHERE p.data >= ? ORDER BY p.data LIMIT 62", [$hoje->format("Y-m-d")])),
+        // os dias livres dos próximos 62 dias (sem relógio e sem sorteio: para escolher à mão)
+        "livres" => dias_livres($hoje->format("Y-m-d"), $hoje->modify("+61 days")->format("Y-m-d")),
         "proxima_semana" => ["segunda" => $seg->format("Y-m-d"), "domingo" => $seg->modify("+6 days")->format("Y-m-d"),
             "ja_montada" => (int)valor("SELECT COUNT(*) FROM plano WHERE data BETWEEN ? AND ?", [$seg->format("Y-m-d"), $seg->modify("+6 days")->format("Y-m-d")]) > 1],
         "modos" => $modos_h,
@@ -3181,7 +3194,8 @@ if (!$token_ok && $quem === "") {
     }
     $plano_p = plano_legivel($de_p, $ate_p);
     $saida = ["modo" => valor("SELECT nome FROM modo WHERE id = ?", [modo_ativo()]), "escala_fim" => cfg("escala_fim") !== "" ? cfg("escala_fim") : null,
-        "plano_fim" => valor("SELECT MAX(data) FROM plano"), "hoje" => date("Y-m-d"), "plano" => $plano_p, "resumo" => plano_resumo($plano_p, date("Y-m-d")),
+        "plano_fim" => valor("SELECT MAX(data) FROM plano"), "hoje" => date("Y-m-d"), "plano" => $plano_p, "livres" => dias_livres($de_p, $ate_p),
+        "resumo" => plano_resumo($plano_p, date("Y-m-d")),
         "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1]; },
             linhas("SELECT id, nome, disponivel FROM relogio ORDER BY nome"))];
 } elseif ($recurso === "eventos") {
@@ -3379,7 +3393,7 @@ if (!$token_ok && $quem === "") {
             "previsao" => ["descricao" => "a previsão da energia dos relógios com leitura (o smartwatch): quanto dura usando, quando chega ao limite parado, com quanto entra no próximo rodízio e quanto precisa, e a confiança da conta",
                 "parametros" => ["relogio" => "um id ou vários (vazio: todos)"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=previsao&relogio=10\""],
-            "plano" => ["descricao" => "o plano gravado (a escala de dois anos sai inteira), com o modo ativo, o fim da escala e o último dia gravado; cada dia com o relógio, o bloco, a origem (sorteio ou manual) e o lembrete; e o resumo do período (de hoje em diante), como a página Plano mostra: quantos dias cada relógio tem, a porcentagem, o próximo dia, quantos à mão e os relógios sem nenhum dia",
+            "plano" => ["descricao" => "o plano gravado (a escala de dois anos sai inteira), com o modo ativo, o fim da escala e o último dia gravado; cada dia com o relógio, o bloco, a origem (sorteio ou manual) e o lembrete; os dias livres do período (sem relógio e sem sorteio, para escolher à mão); e o resumo do período (de hoje em diante), como a página Plano mostra: quantos dias cada relógio tem, a porcentagem, o próximo dia, quantos à mão e os relógios sem nenhum dia",
                 "parametros" => ["de, ate" => "datas AAAA-MM-DD (vazio: o plano inteiro)", "dias" => "N: os próximos N dias, de hoje em diante (no lugar de de e ate); todos: de hoje até o fim do plano"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=plano&de=2026-10-01&ate=2026-10-31\""],
             "eventos" => ["descricao" => "os eventos personalizados, com quando disparam, se vão pelo Telegram e pela agenda, as 10 próximas ocorrências e os disparos",
@@ -3517,7 +3531,8 @@ if (!$token_ok && $quem === "") {
                 "usando" => ["campos" => "relogio_id: o relógio de hoje, a partir de agora (na escala, fica os dias que faltavam do bloco de hoje)", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=usando -d relogio_id=12 http://servidor/relojoeiro/api.php"],
                 "trocar_dia" => ["campos" => "data (AAAA-MM-DD, de hoje em diante), relogio_id: o relógio daquele dia, escolhido à mão (hoje: como o usando; na escala, ela é refeita a partir do dia); relogio_id 0: o dia volta a ser sorteado", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=trocar_dia -d data=2026-10-09 -d relogio_id=12 http://servidor/relojoeiro/api.php"],
                 "periodo" => ["campos" => "de, ate (AAAA-MM-DD, de hoje até 2 anos), relogio_ids[] (um ou vários, na ordem), dias_cada (padrão 1): os dias do período ficam escolhidos à mão, cada relógio dias_cada dias seguidos, e depois do último volta ao primeiro (hoje: o primeiro passa a ser o do pulso a partir de agora; na escala, ela é refeita a partir do começo do período)", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=periodo -d de=2026-12-20 -d ate=2027-01-05 -d \"relogio_ids[]=12\" -d \"relogio_ids[]=7\" -d dias_cada=2 http://servidor/relojoeiro/api.php"],
-                "periodo_sortear" => ["campos" => "de, ate: os dias escolhidos à mão do período, de amanhã em diante, voltam a ser sorteados (os dias escolhidos à mão ficam quando se sorteia de novo ou se monta a próxima semana)", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=periodo_sortear -d de=2026-12-20 -d ate=2027-01-05 http://servidor/relojoeiro/api.php"],
+                "periodo_sortear" => ["campos" => "de, ate: tudo o que o período tem, de amanhã em diante (à mão, sorteado ou livre), sai e ele é sorteado de novo (os dias escolhidos à mão e os livres ficam quando se sorteia de novo ou se monta a próxima semana)", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=periodo_sortear -d de=2026-12-20 -d ate=2027-01-05 http://servidor/relojoeiro/api.php"],
+                "periodo_livre" => ["campos" => "de, ate: tudo o que o período tem, de amanhã em diante, sai e os dias ficam livres: sem relógio e sem sorteio (nem a escala), para escolher à mão (trocar_dia ou periodo num dia livre o tira de lá)", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=periodo_livre -d de=2026-12-20 -d ate=2027-01-05 http://servidor/relojoeiro/api.php"],
                 "proxima_semana" => ["campos" => "(nada): só no domingo, monta ou refaz a semana seguinte inteira; recusada na escala", "exemplo" => "curl -u lucas:senha -d recurso=rodizio -d acao=proxima_semana http://servidor/relojoeiro/api.php"],
             ],
             "modos" => [
@@ -3837,6 +3852,7 @@ if (!$token_ok && $quem === "") {
                 "plano[].origem" => "sorteio (pelo modo) ou manual (\"Usando hoje\")",
                 "plano[].relogio" => "o nome dele",
                 "plano[].relogio_id" => "o relógio do dia",
+                "plano_livre[]" => "os dias livres do plano (texto AAAA-MM-DD): sem relógio e sem sorteio, para escolher à mão (o \"Deixar o período livre\")",
                 "relogios[]" => "os relógios, com tudo o que se sabe de cada um",
                 "relogios[].acaba_em_datacomtz" => "quando acaba, em ISO 8601 com o fuso (texto, ex.: 2026-10-02T18:40:00-03:00); null com o motivo",
                 "relogios[].acaba_em_segundos" => "quantos segundos faltam para acabar, a partir de calculado_em_unixtimestamp (número inteiro, em segundos; igual a autonomia_estimada); null com o motivo",
@@ -4076,6 +4092,7 @@ if (!$token_ok && $quem === "") {
                 "plano[].data" => "o dia",
                 "plano[].relogio" => "o nome",
                 "plano[].relogio_id" => "o relógio",
+                "livres[]" => "os dias livres dos próximos 62 dias (texto AAAA-MM-DD): sem relógio e sem sorteio, para escolher à mão; a tela os põe entre os dias do plano",
                 "proxima_semana.domingo" => "o domingo dela",
                 "proxima_semana.ja_montada" => "verdadeiro ou falso: a próxima semana já está no plano",
                 "proxima_semana.segunda" => "a segunda-feira da próxima semana (texto AAAA-MM-DD)",
@@ -4689,6 +4706,7 @@ if (!$token_ok && $quem === "") {
                 "plano[].criado" => "quando o dia foi gravado no plano (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)",
                 "plano[].data" => "o dia (texto AAAA-MM-DD)",
                 "hoje" => "hoje (texto AAAA-MM-DD)",
+                "livres[]" => "os dias livres do período (texto AAAA-MM-DD): sem relógio e sem sorteio, para escolher à mão (o \"Deixar o período livre\"); a página Plano os põe entre os dias do plano",
                 "plano[].motivo" => "por que este relógio saiu neste dia, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à mão); null: o dia foi gravado antes de o sistema guardar o motivo",
                 "plano[].origem" => "sorteio (pelo modo) ou manual (escolhido à mão: \"Usando hoje\" ou trocar_dia)",
                 "plano[].relogio" => "o nome dele",
@@ -5149,7 +5167,7 @@ if (!$token_ok && $quem === "") {
         }
     }
     $saida = ["arvore" => $arvore, "campos" => $campos, "lancamento_tipos" => $tipos_l, "formulas" => $formulas, "avisos" => $avisos, "relogios" => $relogios,
-        "documento_categorias" => documento_categorias_lista(), "modos" => $modos, "plano" => plano_legivel("", ""), "config" => (object)$config,
+        "documento_categorias" => documento_categorias_lista(), "modos" => $modos, "plano" => plano_legivel("", ""), "plano_livre" => dias_livres("", ""), "config" => (object)$config,
         "eventos" => array_map("evento_legivel", eventos_com_dias(linhas("SELECT * FROM evento_personalizado ORDER BY nome"))),
         "agenda" => ["criados" => linhas("SELECT chave, google_id, data, titulo, assinatura, criado FROM agenda_evento ORDER BY data, chave"), "desejados" => agenda_legivel()],
         "criterios" => montar_criterios(),

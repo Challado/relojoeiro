@@ -1032,6 +1032,16 @@ INSERT INTO formula (identificador, nome, expressao, unidade, no_id)
 -- a marca de aplicada (numa instalação nova, as tabelas do MySQL já nascem em utf8mb4_unicode_ci)
 INSERT IGNORE INTO config (chave, valor) VALUES ('migracao_v20', '1');
 
+-- Migração v21: os dias livres do plano. Um dia livre não tem relógio e o sistema não sorteia nada para ele (nem o
+-- sorteio, nem a escala): fica para você escolher à mão (o "trocar por…" ou os relógios de um período). Vem do "Deixar o
+-- período livre" da página Plano (rodizio, acao=periodo_livre); escolher um relógio para o dia, ou sortear de novo o período,
+-- tira o dia daqui.
+
+CREATE TABLE plano_livre (
+    data        DATE PRIMARY KEY,
+    criado      DATETIME NOT NULL
+) ENGINE=InnoDB;
+
 -- critérios iniciais (o "restaurar" da página Critérios lê daqui até o fim do arquivo)
 -- critérios de todos os relógios
 INSERT INTO criterio_parametro (id, escopo_no_id, escopo_relogio_id, nome, peso, ordem) VALUES (1, NULL, NULL, 'Tempo sem uso', 40, 1);

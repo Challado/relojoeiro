@@ -49,17 +49,30 @@ function instante(t) {
 }
 
 // Trocar o relógio de um dia do plano (Hoje e Plano): a lista dos relógios disponíveis e o botão; no dia escolhido à mão
-// (de amanhã em diante), também "voltar a sortear". p: o dia do plano (data, relogio_id, origem); hoje: AAAA-MM-DD
+// ou livre (de amanhã em diante), também "voltar a sortear". p: o dia do plano (data, relogio_id, origem); hoje: AAAA-MM-DD
 function formTrocarDia(p, relogios, hoje) {
-  var opcoes = el("option", {"value": "", "selected": true, "disabled": true}, "trocar por…")
+  var opcoes = el("option", {"value": "", "selected": true, "disabled": true}, p.origem === "livre" ? "escolher…" : "trocar por…")
     + relogios.filter(function (r) { return r.disponivel && r.id !== p.relogio_id; }).map(function (r) {
       return el("option", {"value": r.id}, h(r.nome));
     }).join("")
-    + (p.origem === "manual" && p.data > hoje ? el("option", {"value": "0"}, "↺ voltar a sortear") : "");
+    + ((p.origem === "manual" || p.origem === "livre") && p.data > hoje ? el("option", {"value": "0"}, "↺ voltar a sortear") : "");
   return el("form", {"data-recurso": "rodizio", "class": "trocar-dia"}, el("input", {"type": "hidden", "name": "acao", "value": "trocar_dia"})
     + el("input", {"type": "hidden", "name": "data", "value": p.data})
     + el("select", {"name": "relogio_id", "required": true, "aria-label": "Trocar o relógio de " + dataBr(p.data), "onchange": "this.form.querySelector('button').hidden = false"}, opcoes)
     + el("button", {"class": "leve", "hidden": true}, "Trocar"));
+}
+
+// Os dias do plano com os dias livres no meio, na ordem das datas (um dia livre: sem relógio, para escolher à mão)
+function comLivres(plano, livres) {
+  return plano.concat((livres || []).map(function (dt) {
+    return {data: dt, relogio_id: null, relogio: null, origem: "livre", acao: null, motivo: null};
+  })).sort(function (a, b) { return a.data < b.data ? -1 : (a.data > b.data ? 1 : 0); });
+}
+
+// A célula do relógio de um dia do plano: o nome (com "à mão"), ou "livre", e o motivo embaixo
+function celulaDoDia(p) {
+  return p.origem === "livre" ? el("span", {"class": "nota"}, "livre: escolha à mão") + " " + el("small", {"class": "a-mao"}, "livre")
+    : h(p.relogio) + (p.origem === "manual" ? " " + el("small", {"class": "a-mao"}, "à mão") : "") + (p.motivo ? el("small", {"class": "motivo"}, h(p.motivo)) : "");
 }
 
 // Minúsculas, para os botões ("No sol" → "Pôs no sol")

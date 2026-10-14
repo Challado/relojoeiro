@@ -1673,8 +1673,9 @@ function op_criterios($acao, $d)
 // ser o relógio de hoje, a partir de agora), trocar_dia (data, relogio_id: o relógio daquele dia, à mão; hoje, como o
 // usando; 0: o dia volta a ser sorteado), proxima_semana (só no domingo: monta ou refaz a semana seguinte inteira),
 // periodo (de, ate, relogio_ids em ordem, dias_cada: os dias do período escolhidos à mão, em rodízio entre eles),
-// periodo_sortear (de, ate: os dias escolhidos à mão do período voltam a ser sorteados). Os dias escolhidos à mão de amanhã
-// em diante ficam quando se sorteia de novo ou se monta a próxima semana.
+// periodo_sortear (de, ate: tudo o que o período tem, de amanhã em diante, sai e ele é sorteado de novo), periodo_livre (de,
+// ate: tudo sai e os dias ficam livres: sem relógio e sem sorteio, para escolher à mão). Os dias escolhidos à mão e os
+// livres, de amanhã em diante, ficam quando se sorteia de novo ou se monta a próxima semana.
 // Na escala inteligente: sortear de novo refaz a escala (do mesmo jeito: de amanhã, ou inclusive hoje); usando segura o
 // escolhido nos dias que faltavam do bloco de hoje e refaz a escala depois deles; a próxima semana não existe (a escala
 // segue o próprio período).
@@ -1693,6 +1694,7 @@ function op_rodizio($acao, $d)
     $troca_hoje = function ($novo_id, $motivo) use ($hoje, $agora, $ini_uso, $fim_uso) {
         $tipo = lancamento_tipos()["pulso"] ?? null;
         $dia = $hoje->format("Y-m-d");
+        sql("DELETE FROM plano_livre WHERE data = ?", [$dia]);
         sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, NULL, 'manual', ?, NOW())", [$dia, $novo_id, $motivo]);
         if ($tipo) {
             foreach (linhas("SELECT id, relogio_id, inicio FROM lancamento WHERE tipo_id = ? AND origem = 'rodizio' AND DATE(inicio) = ? AND relogio_id <> ?", [(int)$tipo["id"], $dia, $novo_id]) as $l) {
@@ -1752,6 +1754,7 @@ function op_rodizio($acao, $d)
         $desde = ($acao === "resortear_hoje" || !$comecou) ? $hoje : $hoje->modify("+1 day");
         // os dias escolhidos à mão de amanhã em diante ficam (um período que você montou não some no sorteio); hoje, sorteia
         sql("DELETE FROM plano WHERE data >= ? AND (origem <> 'manual' OR data = ?)", [$desde->format("Y-m-d"), $hoje->format("Y-m-d")]);
+        sql("DELETE FROM plano_livre WHERE data = ? AND data >= ?", [$hoje->format("Y-m-d"), $desde->format("Y-m-d")]);
         if ($escala) {
             gerar_escala($desde);
         }
@@ -1804,6 +1807,7 @@ function op_rodizio($acao, $d)
         } elseif ($dt == $hoje) {
             return op_rodizio("usando", ["relogio_id" => $novo]);
         } elseif ($novo === 0) {
+            sql("DELETE FROM plano_livre WHERE data = ?", [$data]);
             if ($escala) {
                 sql("UPDATE plano SET origem = 'sorteio' WHERE data = ?", [$data]);
                 gerar_escala($dt);
@@ -1814,6 +1818,7 @@ function op_rodizio($acao, $d)
             $p = plano_do_dia($data);
             $msg = $dt->format("d/m") . ": volta a ser sorteado" . ($p ? " (" . $p["nome"] . ")" : "") . ".";
         } else {
+            sql("DELETE FROM plano_livre WHERE data = ?", [$data]);
             sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, NULL, 'manual', ?, NOW())", [$data, $novo, "Escolhido à mão."]);
             if ($escala) {
                 // a escala refeita a partir do dia trocado: ele fica, e os seguintes (e o que fazer antes de cada um) se ajustam
@@ -1821,10 +1826,11 @@ function op_rodizio($acao, $d)
             }
             $msg = $dt->format("d/m") . ": " . $r["nome"] . ", escolhido à mão." . ($escala ? " A escala foi refeita a partir desse dia." : "");
         }
-    } elseif ($acao === "periodo" || $acao === "periodo_sortear") {
+    } elseif ($acao === "periodo" || $acao === "periodo_sortear" || $acao === "periodo_livre") {
         // um período escolhido à mão: de, ate (AAAA-MM-DD, de hoje em diante, até 2 anos), relogio_ids (um ou vários, na ordem:
         // um por dia, e depois do último volta ao primeiro; dias_cada: quantos dias seguidos cada um fica). periodo_sortear:
-        // os dias escolhidos à mão do período (de amanhã em diante) voltam a ser sorteados
+        // tudo o que o período tem (de amanhã em diante: à mão, sorteado ou livre) sai e ele é sorteado de novo. periodo_livre:
+        // tudo sai e os dias ficam livres (sem relógio e sem sorteio, para escolher à mão)
         $de_p = DateTimeImmutable::createFromFormat("!Y-m-d", (string)($d["de"] ?? ""));
         $ate_p = DateTimeImmutable::createFromFormat("!Y-m-d", (string)($d["ate"] ?? ""));
         $ids_p = $d["relogio_ids"] ?? [];
@@ -1842,18 +1848,36 @@ function op_rodizio($acao, $d)
             $erros[] = "O fim do período vem antes do começo.";
         } elseif ($de_p->diff($ate_p)->days > 730) {
             $erros[] = "Um período de até 2 anos.";
-        } elseif ($acao === "periodo_sortear") {
+        } elseif ($acao === "periodo_sortear" || $acao === "periodo_livre") {
+            // de amanhã em diante (hoje já tem o relógio do pulso: troque pelo "Sortear de novo" ou pelo "trocar por…")
             $desde_p = max($de_p, $hoje->modify("+1 day"));
-            $n_p = (int)valor("SELECT COUNT(*) FROM plano WHERE data BETWEEN ? AND ? AND origem = 'manual'", [$desde_p->format("Y-m-d"), $ate_p->format("Y-m-d")]);
-            if ($escala) {
-                sql("UPDATE plano SET origem = 'sorteio' WHERE data BETWEEN ? AND ? AND origem = 'manual'", [$desde_p->format("Y-m-d"), $ate_p->format("Y-m-d")]);
-                gerar_escala($desde_p);
+            $faixa = [$desde_p->format("Y-m-d"), $ate_p->format("Y-m-d")];
+            if ($desde_p > $ate_p) {
+                $erros[] = "O período tem só hoje: troque o relógio de hoje pelo \"Sortear de novo\" ou pelo \"trocar por…\".";
             } else {
-                sql("DELETE FROM plano WHERE data BETWEEN ? AND ? AND origem = 'manual'", [$desde_p->format("Y-m-d"), $ate_p->format("Y-m-d")]);
-                garantir_plano($hoje);
+                $n_p = (int)valor("SELECT COUNT(*) FROM plano WHERE data BETWEEN ? AND ?", $faixa) + (int)valor("SELECT COUNT(*) FROM plano_livre WHERE data BETWEEN ? AND ?", $faixa);
+                sql("DELETE FROM plano WHERE data BETWEEN ? AND ?", $faixa);
+                sql("DELETE FROM plano_livre WHERE data BETWEEN ? AND ?", $faixa);
+                $livres = 0;
+                if ($acao === "periodo_livre") {
+                    for ($dia = $desde_p; $dia <= $ate_p; $dia = $dia->modify("+1 day"), $livres++) {
+                        sql("INSERT INTO plano_livre (data, criado) VALUES (?, NOW())", [$dia->format("Y-m-d")]);
+                    }
+                }
+                if ($escala) {
+                    // a escala refeita a partir do começo do período: os dias livres ficam sem relógio, o resto se ajusta
+                    gerar_escala($desde_p);
+                } else {
+                    garantir_plano($hoje);
+                }
+                $faixa_txt = $desde_p->format("d/m") . " a " . $ate_p->format("d/m");
+                $msg = $acao === "periodo_livre"
+                    ? "De " . $faixa_txt . ": " . $livres . ($livres === 1 ? " dia livre" : " dias livres") . ", sem relógio e sem sorteio" . ($n_p > 0 ? " (o que estava gravado saiu)" : "")
+                        . ". Escolha o relógio de cada um em \"trocar por…\", ou os relógios do período."
+                    : "De " . $faixa_txt . ": " . ($n_p > 0 ? "o que estava gravado saiu e " : "") . "o período foi sorteado de novo"
+                        . ($escala ? " (a escala foi refeita a partir de " . $desde_p->format("d/m") . ")"
+                            : ($ate_p > $hoje->modify((int)$hoje->format("N") === 7 ? "+1 day" : "sunday this week") ? "; os dias depois desta semana são sorteados quando a semana deles chegar" : "")) . ".";
             }
-            $msg = $n_p === 0 ? "Nenhum dia escolhido à mão de " . $desde_p->format("d/m") . " a " . $ate_p->format("d/m") . "."
-                : $n_p . ($n_p === 1 ? " dia volta" : " dias voltam") . " a ser " . ($n_p === 1 ? "sorteado" : "sorteados") . ", de " . $desde_p->format("d/m") . " a " . $ate_p->format("d/m") . ".";
         } elseif (count($ids_p) === 0) {
             $erros[] = "Escolha pelo menos um relógio para o período.";
         } elseif (in_array(null, $rels_p, true) || in_array(false, $rels_p, true)) {
@@ -1866,6 +1890,7 @@ function op_rodizio($acao, $d)
                 $erros[] = implode(", ", array_column($fora, "nome")) . (count($fora) === 1 ? " está indisponível" : " estão indisponíveis") . ": marque como disponível no cadastro antes.";
             } else {
                 $motivo_p = "Escolhido à mão para o período de " . $de_p->format("d/m") . " a " . $ate_p->format("d/m") . ".";
+                sql("DELETE FROM plano_livre WHERE data BETWEEN ? AND ?", [$de_p->format("Y-m-d"), $ate_p->format("Y-m-d")]);
                 $i = 0;
                 for ($dia = $de_p; $dia <= $ate_p; $dia = $dia->modify("+1 day"), $i++) {
                     $r = $rels_p[intdiv($i, (int)$cada) % count($rels_p)];
