@@ -1,4 +1,4 @@
-<!-- origem: 7e8e0f2a7cb20422db64bcf9965d08e5bd376fb0 -->
+<!-- origem: e78ace35ad4be783d31c41ad9b2a09624a96763c -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -901,7 +901,7 @@ qu'elle traduit. `php testes/textos.php --manual` donne l'original avec la marqu
 traduction ; quand le README change, `php testes/textos.php` signale les traductions restées en arrière, et tant qu'elles ne
 sont pas refaites elles continuent de s'appliquer (en mode strict, elles s'arrêtent sur une erreur). Les titres traduits se
 terminent par l'ancre de l'original, `{#a-ideia-central}`, et les liens d'une section à l'autre fonctionnent dans toutes les
-langues. La documentation pour les programmeurs (l'aide de l'API et la reconstruction) reste en portugais.
+langues. La documentation pour les programmeurs (l'aide de l'API, `recurso=ajuda`, et la reconstruction, `recurso=reconstrucao`) sort dans la langue de la demande : le portugais passe par `t()`, et la traduction est dans les parties `ajuda` et `reconstrucao` de `textos/<langue>.php`.
 
 Les noms que vous enregistrez (groupes, champs, types de saisie, alertes, modes, les montres) restent tels que vous les avez
 écrits.

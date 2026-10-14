@@ -1,4 +1,4 @@
-<!-- origem: 7e8e0f2a7cb20422db64bcf9965d08e5bd376fb0 -->
+<!-- origem: e78ace35ad4be783d31c41ad9b2a09624a96763c -->
 
 ## 核心理念：系统对手表一无所知 {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -664,7 +664,7 @@ API 的消息（每次写入的回复、错误、查询中的文本）使用请�
 
 初始设置（安装时自带的分组、字段、记录类型、公式、提醒、模式、标准、类别和默认消息）使用安装的语言：`php instalar.php --lingua=en`，或通过 API 安装时带上 `lingua=en`，会以英语保存这些名称，并把英语设为默认语言（`textos/<语言>.php` 中的 `cadastro` 部分；`testes/textos.php` 通过把 `schema.sql` 安装到临时 SQLite 中来找到这些文本）。已有的安装不会改变。
 
-这份帮助（**帮助**页面显示的 README 章节）在 `textos/manual/<语言>.md` 中有每种语言的完整翻译，文件以来源标记开头：`<!-- origem: ... -->`，即所翻译的原文版本的标记。`php testes/textos.php --manual` 给出带当前标记的原文，作为新翻译的起点；README 改变后，`php testes/textos.php` 会指出落后的翻译，在重新翻译之前它们仍然有效（在严格模式下会报错停止）。翻译后的标题以原文的锚点结尾，如 `{#a-ideia-central}`，章节之间的链接在所有语言中都能使用。面向程序员的文档（API 帮助和重建说明）仍为葡萄牙语。
+这份帮助（**帮助**页面显示的 README 章节）在 `textos/manual/<语言>.md` 中有每种语言的完整翻译，文件以来源标记开头：`<!-- origem: ... -->`，即所翻译的原文版本的标记。`php testes/textos.php --manual` 给出带当前标记的原文，作为新翻译的起点；README 改变后，`php testes/textos.php` 会指出落后的翻译，在重新翻译之前它们仍然有效（在严格模式下会报错停止）。翻译后的标题以原文的锚点结尾，如 `{#a-ideia-central}`，章节之间的链接在所有语言中都能使用。面向程序员的文档（API 帮助 `recurso=ajuda`，以及重建说明 `recurso=reconstrucao`）按请求的语言返回：葡萄牙语原文经过 `t()`，译文在 `textos/<语言>.php` 的 `ajuda` 和 `reconstrucao` 部分。
 
 你录入的名称（分组、字段、记录类型、提醒、模式、手表）保持你写的样子。
 

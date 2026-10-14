@@ -1,4 +1,4 @@
-<!-- origem: 7e8e0f2a7cb20422db64bcf9965d08e5bd376fb0 -->
+<!-- origem: e78ace35ad4be783d31c41ad9b2a09624a96763c -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -875,8 +875,7 @@ Esta ayuda (las secciones del README que muestra la página **Ayuda**) tiene la 
 traduce. `php testes/textos.php --manual` da el original con la marca actual, el punto de partida de una traducción nueva;
 cuando el README cambia, `php testes/textos.php` señala las traducciones que se quedaron atrás, y hasta que se rehagan siguen
 valiendo (en el modo estricto, se detienen con un error). Los títulos traducidos terminan con el ancla del original,
-`{#a-ideia-central}`, y los enlaces de una sección a otra funcionan en todos los idiomas. La documentación para quien programa
-(la ayuda de la API y la reconstrucción) sigue en portugués.
+`{#a-ideia-central}`, y los enlaces de una sección a otra funcionan en todos los idiomas. La documentación para quien programa (la ayuda de la API, `recurso=ajuda`, y la reconstrucción, `recurso=reconstrucao`) sale en el idioma del pedido: el portugués pasa por `t()`, y la traducción queda en las partes `ajuda` y `reconstrucao` de `textos/<idioma>.php`.
 
 Los nombres que usted registra (grupos, campos, tipos de registro, avisos, modos, los relojes) quedan como usted los escribió.
 
