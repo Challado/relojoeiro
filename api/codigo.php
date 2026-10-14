@@ -12,7 +12,7 @@ if (!defined("RELOJOEIRO_API")) {
 require_once dirname(__DIR__) . "/reconstrucao.php";
 $arq = (string)($_REQUEST["arquivo"] ?? "");
 $html = ($_REQUEST["html"] ?? "") === "1";
-$fora = array_values(array_filter(RECONSTRUCAO_NAO_MOSTRADOS, function ($x) use ($arq) { return $x["arquivo"] === $arq; }));
+$fora = array_values(array_filter(reconstrucao_nao_mostrados(), function ($x) use ($arq) { return $x["arquivo"] === $arq; }));
 if ($arq === "") {
     $saida = codigo_lista(($_REQUEST["conteudo"] ?? "") === "1");
 } elseif (!isset(codigo_arquivos()[$arq])) {
