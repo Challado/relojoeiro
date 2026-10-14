@@ -88,6 +88,13 @@ function gerar($campos, $larg, $col)
 }
 
 [$arq_fonte, $corpo] = achar_fonte($raiz);
+if (!function_exists("t")) {
+    // a ajuda guarda o texto em t("..."): aqui o cabeçalho fica no português original
+    function t($s, $p = [])
+    {
+        return $s;
+    }
+}
 $campos = eval("return [" . $corpo . "];");
 if (!is_array($campos) || !isset($campos["como_ler"])) {
     fwrite(STDERR, "O \"campos\" da ajuda em " . basename($arq_fonte) . " não virou um array com o \"como_ler\".\n");

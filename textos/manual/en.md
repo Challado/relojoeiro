@@ -1,4 +1,4 @@
-<!-- origem: 7e8e0f2a7cb20422db64bcf9965d08e5bd376fb0 -->
+<!-- origem: e78ace35ad4be783d31c41ad9b2a09624a96763c -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -884,8 +884,7 @@ This help (the README sections that the **Help** page shows) has each language's
 it translates. `php testes/textos.php --manual` gives the original with the current mark, the starting point of a new
 translation; when the README changes, `php testes/textos.php` flags the translations that fell behind, and until they are
 redone they still apply (in strict mode, they stop with an error). Translated headings end with the original's anchor,
-`{#a-ideia-central}`, and the links from one section to another work in every language. The documentation for programmers
-(the API help and the rebuild) stays in Portuguese.
+`{#a-ideia-central}`, and the links from one section to another work in every language. The documentation for programmers (the API help, `recurso=ajuda`, and the rebuild, `recurso=reconstrucao`) comes out in the language of the request: the Portuguese goes through `t()`, and the translation is in the `ajuda` and `reconstrucao` parts of `textos/<language>.php`.
 
 The names you register (groups, fields, entry types, alerts, modes, the watches) stay as you wrote them.
 

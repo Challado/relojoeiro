@@ -934,8 +934,7 @@ Esta ajuda (as seções do README que a página **Ajuda** mostra) tem a traduç�
 tradução. `php testes/textos.php --manual` dá o original com a marca do momento, o ponto de partida de uma tradução nova;
 quando o README muda, `php testes/textos.php` acusa as traduções que ficaram para trás, e até serem refeitas elas continuam
 valendo (no modo estrito, param com erro). Os títulos traduzidos terminam com a âncora do original, `{#a-ideia-central}`, e
-os links de uma seção para outra valem em todo idioma. A documentação para quem programa (a ajuda da API e a reconstrução)
-continua em português.
+os links de uma seção para outra valem em todo idioma. A documentação para quem programa (a ajuda da API, `recurso=ajuda`, e a reconstrução, `recurso=reconstrucao`) sai no idioma do pedido: o português passa por `t()`, e a tradução fica nas partes `ajuda` e `reconstrucao` de `textos/<idioma>.php`.
 
 Os nomes que você cadastra (grupos, campos, tipos de lançamento, avisos, modos, os relógios) ficam como você escreveu.
 
