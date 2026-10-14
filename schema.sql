@@ -671,6 +671,23 @@ INSERT INTO documento_categoria (identificador, nome, aceita, ordem) VALUES
     ('videos', 'Vídeos', 'video', 5),
     ('diversos', 'Diversos', '', 6);
 
+-- ---------------------------------------------------------------------------------------------------------------------
+-- Migração v15 (já incluída na instalação nova)
+-- ---------------------------------------------------------------------------------------------------------------------
+-- a cópia de segurança de cada documento dentro do banco, em pedaços de 4 MB; o arquivo que sumir da pasta volta do banco
+-- no_banco: 1, a cópia no banco está completa; hash: o SHA-256 do arquivo, para conferir a cópia ao recriar
+ALTER TABLE documento ADD COLUMN no_banco TINYINT NOT NULL DEFAULT 0 AFTER miniatura;
+ALTER TABLE documento ADD COLUMN hash VARCHAR(64) NULL AFTER no_banco;
+
+-- os pedaços do arquivo de cada documento, na ordem (parte 0, 1, 2...); a parte -1 é a miniatura da foto
+CREATE TABLE documento_parte (
+    documento_id  INT NOT NULL,
+    parte         INT NOT NULL,
+    dados         MEDIUMBLOB NOT NULL,
+    PRIMARY KEY (documento_id, parte),
+    FOREIGN KEY (documento_id) REFERENCES documento(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- critérios iniciais (o "restaurar" da página Critérios lê daqui até o fim do arquivo)
 -- critérios de todos os relógios
 INSERT INTO criterio_parametro (id, escopo_no_id, escopo_relogio_id, nome, peso, ordem) VALUES (1, NULL, NULL, 'Tempo sem uso', 40, 1);

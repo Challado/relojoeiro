@@ -82,14 +82,16 @@
  *   recurso=foto relogio=3   a imagem (não é JSON)
  *                            Ex.: curl -u lucas:senha -o foto.jpg "http://servidor/relojoeiro/api.php?recurso=foto&relogio=10"
  *   recurso=documentos       [relogio=<id>; sem ele, de todos] os documentos (o manual, a nota fiscal, fotos, vídeos...):
- *                            {"relogio": {"id", "nome"} ou null, "pasta_ok", "pasta_erro", "limite" (bytes; null: sem limite),
+ *                            {"relogio": {"id", "nome"} ou null, "pasta_ok", "copia_banco", "pasta_erro", "limite" (bytes; null: sem limite),
  *                            "categorias": [{"id", "identificador", "nome", "aceita", "ordem", "documentos"}], "relogios": [{"id",
  *                            "nome", "documentos"}], "documentos": [{"id", "relogio_id", "categoria_id", "titulo", "data",
- *                            "descricao", "nome", "tipo", "familia", "tamanho", "miniatura", "criado", "url", "nfe"}]}
+ *                            "descricao", "nome", "tipo", "familia", "tamanho", "miniatura", "criado", "url", "no_disco", "no_banco",
+ *                            "nfe"}]}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=documentos&relogio=10"
  *   recurso=documento id=7   o arquivo de um documento (não é JSON). Imagens, vídeos, áudios, PDF e texto vêm para mostrar;
  *                            o resto (inclusive XML, HTML e SVG), para baixar. baixar=1: sempre para baixar. mini=1: a
- *                            miniatura da foto (sem ela, a foto). Aceita o pedido de um pedaço (Range), que o vídeo usa.
+ *                            miniatura da foto (sem ela, a foto). Aceita o pedido de um pedaço (Range), que o vídeo usa. Se o
+ *                            arquivo sumiu da pasta, ele é recriado antes a partir da cópia no banco.
  *                            Ex.: curl -u lucas:senha -o nota.pdf "http://servidor/relojoeiro/api.php?recurso=documento&id=7"
  *   recurso=criterios        {"conjuntos": [{"escopo" ("" todos, "g:<ponto>", "r:<relógio>"), "lugar", "usado_por": [ids],
  *                            "parametros": [{"id", "ordem", "escopo_no_id", "escopo_relogio_id", "nome", "peso", "subparametros":
@@ -289,7 +291,8 @@
  *   recurso=documentos        enviar (relogio_id, categoria_id, titulo, data AAAA-MM-DD, descricao e o arquivo: arquivos[]
  *                             como upload, vários de uma vez, ou arquivo_base64 com arquivo_nome; a miniatura de uma foto,
  *                             opcional: miniatura (upload) ou miniatura_base64; título vazio: o nome do arquivo), alterar (id:
- *                             categoria_id, titulo, data, descricao; só muda o que vier), excluir (id: o documento e o arquivo)
+ *                             categoria_id, titulo, data, descricao; só muda o que vier), excluir (id: o documento, o arquivo
+ *                             e a cópia no banco). O arquivo vai para a pasta e, com a cópia ligada, também para o banco
  *                            Ex. enviar: curl -u lucas:senha -F recurso=documentos -F acao=enviar -F relogio_id=10 -F categoria_id=2 -F "arquivos[]=@nota.pdf" http://servidor/relojoeiro/api.php
  *                            Ex. alterar: curl -u lucas:senha -d recurso=documentos -d acao=alterar -d id=7 -d "titulo=No casamento" -d data=2026-09-20 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=documentos -d acao=excluir -d id=7 http://servidor/relojoeiro/api.php
@@ -897,6 +900,12 @@
  *     relogios[].documentos[].miniatura
  *                                    verdadeiro: a foto tem miniatura (recurso=documento com mini=1)
  *     relogios[].documentos[].nome   o nome do arquivo enviado
+ *     relogios[].documentos[].no_disco
+ *                                    verdadeiro: o arquivo está na pasta dos documentos (falso: ele volta do banco quando for pedido ou na
+ *                                    próxima rodada do cron; sem a cópia no banco, está perdido)
+ *     relogios[].documentos[].no_banco
+ *                                    verdadeiro: a cópia de segurança do arquivo está completa no banco (se ele sumir da pasta, volta
+ *                                    dali)
  *     relogios[].documentos[].relogio_id
  *                                    o relógio dele
  *     relogios[].documentos[].tamanho
@@ -1754,6 +1763,8 @@
  *     relogio.id                     o número do relógio
  *     relogio.nome                   o nome do relógio
  *     pasta_ok                       verdadeiro: a pasta dos documentos (DOCUMENTOS_PASTA do config.php) existe e aceita gravar
+ *     copia_banco                    verdadeiro: a cópia de segurança dos documentos no banco está ligada (o DOCUMENTOS_COPIA_BANCO do
+ *                                    config.php; sem ele, ligada)
  *     pasta_erro                     o motivo de a pasta não servir (texto); null: ela serve
  *     limite                         o maior arquivo aceito, em bytes (número inteiro): o DOCUMENTOS_LIMITE do config.php (sem ele, 100
  *                                    MB), ou menos pelo upload_max_filesize e o post_max_size do PHP; null: sem limite
@@ -1779,6 +1790,10 @@
  *     documentos[].id                o número do documento (para recurso=documento e para alterar ou excluir)
  *     documentos[].miniatura         verdadeiro: a foto tem miniatura (recurso=documento com mini=1)
  *     documentos[].nome              o nome do arquivo enviado
+ *     documentos[].no_disco          verdadeiro: o arquivo está na pasta dos documentos (falso: ele volta do banco quando for pedido ou na
+ *                                    próxima rodada do cron; sem a cópia no banco, está perdido)
+ *     documentos[].no_banco          verdadeiro: a cópia de segurança do arquivo está completa no banco (se ele sumir da pasta, volta
+ *                                    dali)
  *     documentos[].relogio_id        o relógio dele
  *     documentos[].tamanho           o tamanho do arquivo, em bytes (número inteiro)
  *     documentos[].tipo              o tipo do arquivo (MIME): image/jpeg, video/mp4, application/pdf, application/xml...
@@ -2206,12 +2221,16 @@ if (!$token_ok && $quem === "") {
     $pasta = documentos_pasta();
     $mini = ($_REQUEST["mini"] ?? "") === "1" && $doc && $doc["miniatura"] !== null && $doc["miniatura"] !== "";
     $caminho = $doc && $pasta !== null ? $pasta . "/" . ($mini ? $doc["miniatura"] : $doc["arquivo"]) : null;
+    // o arquivo sumiu da pasta: volta da cópia no banco antes de sair
+    if ($caminho !== null && strpos($caminho, "..") === false && !is_file($caminho)) {
+        documento_restaurar($doc);
+    }
     if ($caminho !== null && strpos($caminho, "..") === false && is_file($caminho)) {
         documento_enviar($doc, $caminho, ($_REQUEST["baixar"] ?? "") === "1", $mini);
         exit;
     }
     $codigo = 404;
-    $saida = ["erro" => $doc ? "o arquivo do documento não está na pasta dos documentos" . ($pasta === null ? " (" . documentos_pasta_erro() . ")" : "") : "documento não encontrado"];
+    $saida = ["erro" => $doc ? "o arquivo do documento não está na pasta dos documentos" . ($pasta === null ? " (" . documentos_pasta_erro() . ")" : ((int)$doc["no_banco"] === 1 ? " e a cópia no banco não pôde ser recriada" : " e não tem cópia no banco")) : "documento não encontrado"];
 } elseif ($recurso === "documentos") {
     // os documentos de um relógio (relogio=<id>; sem ele, de todos), com as categorias, os relógios, a pasta e o limite
     mover_manuais();
@@ -2221,7 +2240,7 @@ if (!$token_ok && $quem === "") {
         $codigo = 404;
         $saida = ["erro" => "relógio não encontrado"];
     } else {
-        $saida = ["relogio" => $r ? ["id" => (int)$r["id"], "nome" => $r["nome"]] : null, "pasta_ok" => documentos_pasta() !== null,
+        $saida = ["relogio" => $r ? ["id" => (int)$r["id"], "nome" => $r["nome"]] : null, "pasta_ok" => documentos_pasta() !== null, "copia_banco" => documentos_copia_banco(),
             "pasta_erro" => documentos_pasta_erro() !== "" ? documentos_pasta_erro() : null, "limite" => documentos_limite(),
             "categorias" => documento_categorias_lista($r ? $rid : null),
             "relogios" => array_map(function ($x) { return ["id" => (int)$x["id"], "nome" => $x["nome"], "documentos" => (int)$x["documentos"]]; },
@@ -2670,10 +2689,10 @@ if (!$token_ok && $quem === "") {
             "foto" => ["descricao" => "a foto de um relógio (a imagem, não é JSON)",
                 "parametros" => ["relogio" => "o id do relógio"],
                 "exemplo" => "curl -u lucas:senha -o foto.jpg \"http://servidor/relojoeiro/api.php?recurso=foto&relogio=10\""],
-            "documentos" => ["descricao" => "os documentos de um relógio (ou de todos): o manual, a nota fiscal em PDF e em XML (com o resumo da NF-e), fotos, vídeos e o que mais for, com as categorias (e quantos documentos cada uma tem), os relógios (com quantos), se a pasta dos documentos está pronta e o maior arquivo aceito",
+            "documentos" => ["descricao" => "os documentos de um relógio (ou de todos): o manual, a nota fiscal em PDF e em XML (com o resumo da NF-e), fotos, vídeos e o que mais for, com as categorias (e quantos documentos cada uma tem), os relógios (com quantos), se a pasta dos documentos está pronta, se a cópia de segurança no banco está ligada, onde está cada arquivo (na pasta, no banco) e o maior arquivo aceito",
                 "parametros" => ["relogio" => "o id do relógio (sem ele: de todos)"],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=documentos&relogio=10\""],
-            "documento" => ["descricao" => "o arquivo de um documento (não é JSON): imagens, vídeos, áudios, PDF e texto vêm para mostrar; o resto (inclusive XML, HTML e SVG), para baixar; aceita o pedido de um pedaço (Range), que o vídeo usa para avançar",
+            "documento" => ["descricao" => "o arquivo de um documento (não é JSON): imagens, vídeos, áudios, PDF e texto vêm para mostrar; o resto (inclusive XML, HTML e SVG), para baixar; aceita o pedido de um pedaço (Range), que o vídeo usa para avançar; se o arquivo sumiu da pasta, ele é recriado antes a partir da cópia no banco",
                 "parametros" => ["id" => "o id do documento", "baixar" => "1: sempre para baixar", "mini" => "1: a miniatura da foto (sem ela, a foto)"],
                 "exemplo" => "curl -u lucas:senha -o nota.pdf \"http://servidor/relojoeiro/api.php?recurso=documento&id=7\""],
             "usuarios" => ["descricao" => "os logins (as senhas nunca saem) e quem está pedindo (pelo login do site)",
@@ -2726,10 +2745,10 @@ if (!$token_ok && $quem === "") {
                 "excluir" => ["campos" => "id (com todo o histórico, a foto e os documentos, inclusive os arquivos deles)", "exemplo" => "curl -u lucas:senha -d recurso=relogio -d acao=excluir -d id=15 http://servidor/relojoeiro/api.php"],
             ],
             "documentos" => [
-                "enviar" => ["campos" => "relogio_id, categoria_id, titulo (vazio: o nome do arquivo), data (AAAA-MM-DD), descricao e o arquivo: arquivos[] (upload; vários de uma vez) ou arquivo_base64 com arquivo_nome; a miniatura de uma foto, opcional: miniatura (upload, JPEG, PNG ou WebP até 1 MB) ou miniatura_base64. Cada arquivo até o limite (recurso=documentos, limite) e do tipo que a categoria aceita. Responde ids: os documentos guardados",
+                "enviar" => ["campos" => "relogio_id, categoria_id, titulo (vazio: o nome do arquivo), data (AAAA-MM-DD), descricao e o arquivo: arquivos[] (upload; vários de uma vez) ou arquivo_base64 com arquivo_nome; a miniatura de uma foto, opcional: miniatura (upload, JPEG, PNG ou WebP até 1 MB) ou miniatura_base64. Cada arquivo até o limite (recurso=documentos, limite) e do tipo que a categoria aceita. O arquivo vai para a pasta e, com a cópia de segurança ligada, também para o banco, em pedaços de 4 MB (se a cópia falhar, o documento fica e a mensagem avisa; o cron tenta de novo). Responde ids: os documentos guardados",
                     "exemplo" => "curl -u lucas:senha -F recurso=documentos -F acao=enviar -F relogio_id=10 -F categoria_id=2 -F \"arquivos[]=@nota.pdf\" http://servidor/relojoeiro/api.php"],
                 "alterar" => ["campos" => "id, categoria_id, titulo, data, descricao: só muda o que vier", "exemplo" => "curl -u lucas:senha -d recurso=documentos -d acao=alterar -d id=7 -d \"titulo=No casamento\" -d data=2026-09-20 http://servidor/relojoeiro/api.php"],
-                "excluir" => ["campos" => "id: o documento e o arquivo dele, na pasta", "exemplo" => "curl -u lucas:senha -d recurso=documentos -d acao=excluir -d id=7 http://servidor/relojoeiro/api.php"],
+                "excluir" => ["campos" => "id: o documento, o arquivo dele na pasta e a cópia no banco", "exemplo" => "curl -u lucas:senha -d recurso=documentos -d acao=excluir -d id=7 http://servidor/relojoeiro/api.php"],
             ],
             "documento_categorias" => [
                 "nova" => ["campos" => "identificador, nome, aceita[] (imagem, video, audio, pdf, xml; nenhum: qualquer arquivo), ordem (vazio: no fim)", "exemplo" => "curl -u lucas:senha -d recurso=documento_categorias -d acao=nova -d identificador=garantia -d nome=Garantia -d \"aceita[]=pdf\" http://servidor/relojoeiro/api.php"],
@@ -3205,6 +3224,8 @@ if (!$token_ok && $quem === "") {
                 "relogios[].documentos[].id" => "o número do documento (para recurso=documento e para alterar ou excluir)",
                 "relogios[].documentos[].miniatura" => "verdadeiro: a foto tem miniatura (recurso=documento com mini=1)",
                 "relogios[].documentos[].nome" => "o nome do arquivo enviado",
+                "relogios[].documentos[].no_disco" => "verdadeiro: o arquivo está na pasta dos documentos (falso: ele volta do banco quando for pedido ou na próxima rodada do cron; sem a cópia no banco, está perdido)",
+                "relogios[].documentos[].no_banco" => "verdadeiro: a cópia de segurança do arquivo está completa no banco (se ele sumir da pasta, volta dali)",
                 "relogios[].documentos[].relogio_id" => "o relógio dele",
                 "relogios[].documentos[].tamanho" => "o tamanho do arquivo, em bytes (número inteiro)",
                 "relogios[].documentos[].tipo" => "o tipo do arquivo (MIME): image/jpeg, video/mp4, application/pdf, application/xml...",
@@ -3946,6 +3967,7 @@ if (!$token_ok && $quem === "") {
                 "relogio.id" => "o número do relógio",
                 "relogio.nome" => "o nome do relógio",
                 "pasta_ok" => "verdadeiro: a pasta dos documentos (DOCUMENTOS_PASTA do config.php) existe e aceita gravar",
+                "copia_banco" => "verdadeiro: a cópia de segurança dos documentos no banco está ligada (o DOCUMENTOS_COPIA_BANCO do config.php; sem ele, ligada)",
                 "pasta_erro" => "o motivo de a pasta não servir (texto); null: ela serve",
                 "limite" => "o maior arquivo aceito, em bytes (número inteiro): o DOCUMENTOS_LIMITE do config.php (sem ele, 100 MB), ou menos pelo upload_max_filesize e o post_max_size do PHP; null: sem limite",
                 "relogios[]" => "todos os relógios, pelo nome (para escolher outro)",
@@ -3968,6 +3990,8 @@ if (!$token_ok && $quem === "") {
                 "documentos[].id" => "o número do documento (para recurso=documento e para alterar ou excluir)",
                 "documentos[].miniatura" => "verdadeiro: a foto tem miniatura (recurso=documento com mini=1)",
                 "documentos[].nome" => "o nome do arquivo enviado",
+                "documentos[].no_disco" => "verdadeiro: o arquivo está na pasta dos documentos (falso: ele volta do banco quando for pedido ou na próxima rodada do cron; sem a cópia no banco, está perdido)",
+                "documentos[].no_banco" => "verdadeiro: a cópia de segurança do arquivo está completa no banco (se ele sumir da pasta, volta dali)",
                 "documentos[].relogio_id" => "o relógio dele",
                 "documentos[].tamanho" => "o tamanho do arquivo, em bytes (número inteiro)",
                 "documentos[].tipo" => "o tipo do arquivo (MIME): image/jpeg, video/mp4, application/pdf, application/xml...",

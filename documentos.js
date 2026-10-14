@@ -60,6 +60,12 @@ function formEditar(x) {
       el("input", {"type": "hidden", "name": "acao", "value": "excluir"}) + el("input", {"type": "hidden", "name": "id", "value": x.id})
       + el("button", {"class": "leve discreto"}, "Excluir")));
 }
+// o nome do arquivo, o tamanho e onde ele está guardado (o aviso só quando falta a cópia no banco ou o arquivo na pasta)
+function guardado(x) {
+  return el("p", {"class": "nota"}, h(x.nome) + " · " + tamanho(x.tamanho)
+    + (!x.no_disco ? " · " + el("strong", {}, x.no_banco ? "fora da pasta (volta do banco ao abrir)" : "o arquivo sumiu da pasta e não tem cópia no banco") : "")
+    + (x.no_disco && !x.no_banco && dados.copia_banco ? " · ainda sem a cópia no banco (o cron faz)" : ""));
+}
 function linkBaixar(x, rotulo) {
   return el("a", {"href": x.url + "&baixar=1", "class": "botao-link"}, rotulo || "Baixar");
 }
@@ -74,6 +80,9 @@ function montar() {
       + (d.relogio ? " " + el("a", {"href": "ficha.php?id=" + rid}, "a ficha do relógio") : ""));
   if (recado !== "") {
     res += el("p", {"class": "acao"}, h(recado));
+  }
+  if (d.pasta_ok && !d.copia_banco) {
+    res += el("p", {"class": "nota"}, "A cópia de segurança dos documentos no banco está desligada (DOCUMENTOS_COPIA_BANCO no config.php): os arquivos ficam só na pasta.");
   }
   if (!d.pasta_ok) {
     res += el("p", {"class": "acao"}, "Os documentos ainda não podem ser guardados: " + h(d.pasta_erro) + ".");
@@ -139,7 +148,7 @@ function montar() {
   var midia = fotos.concat(videos);
   if (midia.length > 0) {
     res += el("details", {"class": "doc-secao"}, el("summary", {}, "Editar ou excluir fotos e vídeos")
-      + midia.map(function (x) { return el("div", {"class": "doc-cartao"}, sobre(x, true) + el("p", {"class": "nota"}, h(x.nome) + " · " + tamanho(x.tamanho)) + formEditar(x)); }).join(""));
+      + midia.map(function (x) { return el("div", {"class": "doc-cartao"}, sobre(x, true) + guardado(x) + formEditar(x)); }).join(""));
   }
   document.getElementById("documentos").innerHTML = res;
   desenharVideos();
@@ -187,7 +196,7 @@ function cartao(x) {
   } else {
     corpo = el("p", {}, linkBaixar(x));
   }
-  return el("div", {"class": "doc-cartao"}, sobre(x, true) + el("p", {"class": "nota"}, h(x.nome) + " · " + tamanho(x.tamanho)) + corpo + formEditar(x));
+  return el("div", {"class": "doc-cartao"}, sobre(x, true) + guardado(x) + corpo + formEditar(x));
 }
 
 // a lista dos vídeos, na ordem escolhida, com a marca de cada um
