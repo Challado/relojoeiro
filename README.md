@@ -3,7 +3,21 @@
 > **O rodízio inteligente de uma coleção de relógios.** Todo dia ele diz qual relógio vai para o pulso, lembra de dar corda,
 > carregar, pôr no sol e trocar a pilha, e faz a coleção inteira ser usada, e não só o favorito.
 
-PHP 8.1+ · SQLite, MySQL/MariaDB ou PostgreSQL · sem framework · sem dependências · API REST completa · Telegram · Google Agenda · [código-fonte disponível](#licença)
+![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-777bb4?logo=php&logoColor=white)
+![SQLite, MySQL/MariaDB ou PostgreSQL](https://img.shields.io/badge/banco-SQLite%20%7C%20MySQL%20%7C%20PostgreSQL-336791)
+![sem dependências](https://img.shields.io/badge/depend%C3%AAncias-nenhuma-2ea44f)
+![API REST](https://img.shields.io/badge/API-REST%20%2B%20JSON%2FXML-0366d6)
+[![licença](https://img.shields.io/badge/licen%C3%A7a-c%C3%B3digo--fonte%20dispon%C3%ADvel-orange)](#licença)
+
+![A página Hoje: o relógio do dia, o que fazer hoje, a escala dos próximos dias e o painel de um relógio](docs/telas/hoje.png)
+
+<sub>A página **Hoje** com uma coleção real de 14 relógios: o do dia (o Orient automático, com o lembrete de pôr no winder), o
+que fazer hoje, a escala inteligente dos próximos dias e, à direita, o painel do San Martin.</sub>
+
+| | |
+|---|---|
+| **[Por que existe](#por-que-isso-existe)** · [A ideia central](#a-ideia-central-o-sistema-não-sabe-nada-de-relógios) · [Como funciona](#como-funciona) · [Um dia com ele](#um-dia-com-o-relógios-2) | **[Experimente em 1 minuto](#experimente-em-1-minuto)** · [As telas](#as-telas) · [A API](#a-api-uma-porta-só-para-tudo) · [Instalação](#instalação) |
+| [Perguntas frequentes](#perguntas-frequentes) · [Como é por dentro](#como-é-por-dentro) | [Como contribuir](#como-contribuir) · [Licença](#licença) · [In English](#in-english) |
 
 ---
 
@@ -47,6 +61,11 @@ cronógrafos tenham peso diferente no sorteio? É cadastro. Quer um aviso de "tr
 
 O sistema já vem com um conjunto inicial completo (smartwatch, automático, corda manual, pilha e solar, com as fórmulas, os
 avisos e os critérios de cada um), que você ajusta à sua coleção.
+
+![Os campos do cadastro: cada um com o identificador que as fórmulas usam, o tipo, o grupo para o qual vale e o valor padrão](docs/telas/cadastros.png)
+
+<sub>Os campos do cadastro. Cada um vale para um grupo e tudo abaixo dele (a reserva de marcha só nos mecânicos, a vida da
+pilha só nos de pilha), e o identificador é o nome que ele tem nas fórmulas.</sub>
 
 ---
 
@@ -169,7 +188,46 @@ a valer nas previsões, e o histórico mostra a bateria perdendo fôlego com o t
 
 ---
 
+## Experimente em 1 minuto
+
+Só precisa do PHP 8.1+ com a extensão `sqlite3`: sem servidor web e sem servidor de banco.
+
+```sh
+git clone https://github.com/Challado/relojoeiro.git && cd relojoeiro
+cp config.exemplo.php config.php
+```
+
+No `config.php`, troque duas linhas para usar o SQLite (o arquivo do banco fica ao lado da pasta):
+
+```php
+define("DB_TIPO", "sqlite");
+define("DB_ARQUIVO", __DIR__ . "/../relogios.sqlite");
+```
+
+```sh
+php instalar.php              # a estrutura e o conjunto inicial
+php criar_usuario.php voce    # pede a senha
+php -S localhost:8000         # e abra http://localhost:8000
+```
+
+Cadastre alguns relógios em **Hoje → Novo relógio**. Para montar a escala sem esperar o cron, rode `php cron.php --forcar`.
+
+> O servidor embutido do PHP (`php -S`) é só para experimentar: ele entrega qualquer arquivo da pasta, inclusive o
+> `config.php`. Para usar de verdade, siga a [Instalação](#instalação).
+
+---
+
 ## As telas
+
+![A coleção: cada relógio com o tipo, o estado, a carga, a última vez no pulso, a próxima manutenção e o que fazer](docs/telas/colecao.png)
+
+<sub>A tabela da coleção, na página Hoje: tipo, estado, carga ou reserva agora, última vez no pulso, próxima manutenção e o
+que fazer, com filtros em cada coluna e o total gasto na coleção.</sub>
+
+![A linha do tempo de um smartwatch: as sessões no pulso, o repouso e as leituras de carga](docs/telas/historico.png)
+
+<sub>O histórico de um relógio: cada trecho no pulso, em repouso ou no winder, e cada leitura de carga, com o tempo e a
+porcentagem em cada estado.</sub>
 
 | Página | Para que serve |
 |---|---|
@@ -410,7 +468,25 @@ Pode. As telas usam exatamente a mesma API.
 | [`importar.php`](importar.php) | importa os dados do sistema anterior |
 | [`nginx-relogios.conf`](nginx-relogios.conf) | o bloco do nginx que protege os arquivos internos |
 | [`testes/`](testes/) | o teste de paridade: o mesmo roteiro pela API em cada banco, e o comparador das respostas |
+| [`docs/telas/`](docs/telas/) | as capturas de tela deste README |
 | [`PORTE.md`](PORTE.md), [`PARIDADE.md`](PARIDADE.md) | o registro do porte da versão anterior |
+
+---
+
+## Como contribuir
+
+Melhorias são bem-vindas, e o caminho é sempre este repositório:
+
+1. Para uma mudança grande, **abra uma issue antes** e conte o que pretende: evita trabalho que não vai entrar.
+2. Faça um fork no GitHub, crie uma branch e faça a mudança. O fork serve só para preparar a proposta (veja a
+   [licença](#licença)).
+3. **Siga o jeito do código:** PHP e JavaScript puros, sem dependências, comentários e mensagens em português. O que é
+   conhecimento sobre relógios vai para o cadastro (`schema.sql`), não para o código.
+4. Mudou o banco? Crie uma `migracao_vN.sql` e registre em `$MIGRACOES` no `lib.php`: a estrutura no dialeto do MySQL, os
+   dados em SQL comum aos três bancos (veja [Atualizações do banco](#atualizações-do-banco)).
+5. **Rode o teste de paridade** ([`testes/`](testes/)) nos três bancos antes de mandar: o resultado tem de ser
+   `0 diferenças graves`.
+6. Abra o pull request contando o que muda para quem usa e como você testou.
 
 ---
 
@@ -434,6 +510,22 @@ Para qualquer outro uso, peça autorização pelo GitHub ([Challado](https://git
 > ação penal (a Lei 9.609/98 trata a violação de direito de autor de software como crime). Mesmo quem acha que está certo
 > pode ter de se defender, e isso custa tempo e advogado. **Na dúvida, pergunte antes:** a resposta é de graça, a
 > discussão depois não é.
+
+---
+
+## In English
+
+**Relojoeiro** ("watchmaker") is a self-hosted rotation planner for watch collections. Every day it picks which watch goes on
+your wrist, scoring each one by the criteria you set (days unworn, balance of use, your preference, battery or power reserve),
+and it can plan weeks or months ahead by simulating each watch's charge day by day. It reminds you, by Telegram and Google
+Calendar, to wind the automatic, charge the smartwatch, put the solar in the sun and replace the battery, and it learns each
+smartwatch's real battery drain from your readings. Everything about watches (types, fields, formulas, alerts) is data you
+edit, not code. PHP 8.1+ with SQLite, MySQL/MariaDB or PostgreSQL, no dependencies, and a complete REST API
+(`api.php?recurso=ajuda`).
+
+The interface and the documentation are in Portuguese. The code is **source-available, not open source**: you may install,
+use and modify it for yourself, and contribute back through pull requests, but you may not publish derived projects or
+redistribute it (see [`LICENSE`](LICENSE), in Portuguese). Contributions are welcome.
 
 ---
 
