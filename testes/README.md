@@ -94,7 +94,14 @@ O `testes/layout.cjs` abre todas as telas num navegador de verdade (o Chromium, 
 - o elemento que sai da caixa (o quadro, o cartão, a etiqueta) em que está;
 - a etiqueta com fundo ou borda partida em duas linhas, e o botão com o texto partido ("Abrir" numa linha, "foto" na outra);
 - o texto cortado, e o conteúdo (um texto que não quebra, uma etiqueta) que passa da caixa do próprio elemento;
-- irmãos que ficam um por cima do outro.
+- irmãos que ficam um por cima do outro;
+- o painel que rola na vertical (o painel do relógio ao lado da lista) e, por dentro, ficou mais largo que ele. Dentro dele, o
+  conteúdo é conferido como o resto: só uma área que rola **só de lado** (uma tabela larga numa `.rolagem`) pode passar da
+  largura de propósito.
+
+Antes de conferir, ele deixa os dados do cenário "feios" de propósito, pela API: nomes longos de relógio e de grupo, uma
+observação comprida e fotos (a cabeça do painel muda com elas). O cenário tem nomes e números curtos, e o que quebra no uso de
+verdade é o comprido. `ESTRESSE=0` confere com os dados como estão.
 
 As telas: a Hoje (com o Rodízio manual aberto, e com o painel de cada relógio ao lado e na janela flutuante), a Ficha de cada
 relógio e a de um relógio novo, o Histórico, o Plano, os Critérios, os Grupos, os Cadastros, a Configuração, os Documentos, as

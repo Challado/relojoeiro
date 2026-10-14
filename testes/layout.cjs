@@ -2,6 +2,8 @@
 // 412px), procurando o que quebra: a página que rola de lado, o elemento que sai da caixa (o quadro, o cartão) em que está, a
 // etiqueta (com fundo ou borda) partida em duas linhas, o texto cortado, o botão com o texto partido ("Abrir" numa linha, "foto"
 // na outra) e irmãos sobrepostos. Abre os <details> e passa por cada opção dos menus que mostram partes (o quadro Marcar).
+// Antes, deixa os dados do cenário "feios" de propósito (nomes longos, observação comprida, fotos: veja estressar); ESTRESSE=0
+// confere com os dados como estão.
 // Roda sobre o banco do cenário (testes/cenario.php: os relógios 1, 3, 4, 5, 7 e 8) e precisa do Playwright com o Chromium:
 //   BASE=http://127.0.0.1:8101/ RELOGIOS_USUARIO=teste RELOGIOS_SENHA=senha123 node testes/layout.cjs [página] [tela]
 // (página e tela: um filtro, expressão regular, no nome; ex.: node testes/layout.cjs "ficha" "cel-"). Grava em testes/layout/
@@ -95,13 +97,26 @@ function examinar(seletorRaiz) {
       .filter((e) => !e.parentElement || e.parentElement.getBoundingClientRect().right <= vw + 1).slice(0, 4).map(nomear);
     probs.push({ tipo: 'rolagem-lateral', det: 'scrollWidth ' + sw + ' > ' + vw, quem: culpados.join(' | ') });
   }
+  // rola de lado de propósito (uma tabela larga dentro de .rolagem): o ancestral rola na horizontal e não na vertical. Um painel
+  // que rola na vertical (o painel do relógio ao lado da lista) também fica com overflow-x auto, mas o que passa da largura
+  // dele é defeito: o conteúdo dele é conferido como o resto
+  const rolaDeLado = (a) => {
+    const cs = getComputedStyle(a);
+    return /(auto|scroll)/.test(cs.overflowX) && a.scrollHeight <= a.clientHeight + 1;
+  };
   const rolaveis = (e) => {
     for (let a = e.parentElement; a && a !== document.body; a = a.parentElement) {
-      const cs = getComputedStyle(a);
-      if (/(auto|scroll)/.test(cs.overflowX)) return true;
+      if (rolaDeLado(a)) return true;
     }
     return false;
   };
+  // um painel que rola na vertical e, por dentro, ficou mais largo que ele (o conteúdo vaza para o lado)
+  for (const a of raiz.querySelectorAll('*')) {
+    const cs = getComputedStyle(a);
+    if (/(auto|scroll)/.test(cs.overflowY) && a.scrollHeight > a.clientHeight + 1 && a.scrollWidth > a.clientWidth + 1 && visivel(a)) {
+      probs.push({ tipo: 'painel-rola-de-lado', det: a.scrollWidth + ' > ' + a.clientWidth, quem: nomear(a) });
+    }
+  }
   const todos = [...raiz.querySelectorAll('*')].filter(visivel);
   for (const e of todos) {
     const cs = getComputedStyle(e);
@@ -122,7 +137,7 @@ function examinar(seletorRaiz) {
         const pai = e.parentElement;
         const rp = pai.getBoundingClientRect();
         const paiSai = pai !== a && Math.max(rp.right - dentroDir, dentroEsq - rp.left) > 1.5;
-        if (sai > 1.5 && ca.overflowX === 'visible' && !paiSai) {
+        if (sai > 1.5 && (ca.overflowX === 'visible' || !rolaDeLado(a)) && !paiSai) {
           probs.push({ tipo: 'sai-da-caixa', det: Math.round(sai) + 'px para fora de ' + nomear(a).split(' > ').pop(), quem: nomear(e) });
         }
         break;
@@ -198,7 +213,12 @@ async function auditarTela(b, tela, fp, relatorio, total) {
         const res = await r.fetch(); const j = await res.json(); j.painel_modo = 'flutuante'; r.fulfill({ response: res, json: j });
       });
     }
-    await p.goto(BASE + pg.url, { waitUntil: 'networkidle' });
+    // com muitas telas ao mesmo tempo o servidor de teste demora: prazo maior, e uma segunda tentativa
+    try {
+      await p.goto(BASE + pg.url, { waitUntil: 'networkidle', timeout: 90000 });
+    } catch (e) {
+      await p.goto(BASE + pg.url, { waitUntil: 'networkidle', timeout: 90000 });
+    }
     await p.waitForTimeout(300);
     if (pg.abrir) {
       const lnk = await p.$('#tabela-relogios tbody tr');
@@ -237,9 +257,41 @@ async function auditarTela(b, tela, fp, relatorio, total) {
   await c.close();
 }
 
+// Os dados de estresse: o cenário tem nomes e números curtos, e o que quebra no uso de verdade é o comprido. Antes de conferir,
+// pela própria API, o banco do cenário fica "feio" de propósito: nomes longos de relógio e de grupo, uma observação comprida e
+// fotos (a cabeça do painel muda com elas). Só no banco do cenário (ele é apagado e recriado a cada rodada); ESTRESSE=0 deixa
+// os dados como estão.
+async function estressar() {
+  const api = async (campos) => {
+    const corpo = new URLSearchParams();
+    for (const [k, v] of Object.entries(campos)) corpo.append(k, String(v));
+    const r = await fetch(BASE + 'api.php', { method: 'POST', body: corpo,
+      headers: { Authorization: 'Basic ' + Buffer.from(USUARIO + ':' + SENHA).toString('base64') } });
+    const j = await r.json().catch(() => ({}));
+    return j.ok === true;
+  };
+  const resultados = [];
+  // um PNG de 1x1 (a foto)
+  const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYPgPAAEDAQAIicLsAAAAAElFTkSuQmCC';
+  const nomes = { 3: 'Orient Bambino Version 2 Open Heart Automático RA-AC0001S10B', 5: 'Casio F-91W-1YEF Edição Comemorativa de 35 anos' };
+  for (const [id, nome] of Object.entries(nomes)) {
+    resultados.push(await api({ recurso: 'relogio', acao: 'salvar', id, nome }));
+  }
+  resultados.push(await api({ recurso: 'relogio', acao: 'salvar', id: 1, 'valores[observacao]':
+    'Comprado na viagem de 2024; a pulseira original foi trocada pela de silicone preta, e a de couro está guardada na caixa azul junto com o carregador reserva.' }));
+  resultados.push(await api({ recurso: 'arvore', acao: 'renomear', id: 4, nome: 'Automático com reserva de marcha estendida de 80 horas' }));
+  for (const id of [1, 3, 4, 5]) {
+    resultados.push(await api({ recurso: 'relogio', acao: 'foto', id, foto_base64: png }));
+  }
+  return resultados.filter((x) => x).length + ' de ' + resultados.length;
+}
+
 (async () => {
   const fp = process.argv[2] ? new RegExp(process.argv[2]) : null;
   const ft = process.argv[3] ? new RegExp(process.argv[3]) : null;
+  if (process.env.ESTRESSE !== '0') {
+    console.log('dados de estresse: ' + (await estressar()) + ' gravações aceitas');
+  }
   const b = await chromium.launch();
   const total = {};
   const relatorio = [];

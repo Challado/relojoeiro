@@ -83,7 +83,8 @@ rodar() {
   if curl -s -o /dev/null "http://127.0.0.1:$porta/"; then
     echo "A porta $porta já está ocupada (outro servidor no ar?): use TESTE_PORTA para escolher outra" >> "$log"; return 1
   fi
-  php -S "127.0.0.1:$porta" -t "$RAIZ" > "$PASTA/$b.servidor.log" 2>&1 &
+  # 4 processos: a conferência do layout abre as telas em 15 tamanhos ao mesmo tempo
+  PHP_CLI_SERVER_WORKERS=4 php -S "127.0.0.1:$porta" -t "$RAIZ" > "$PASTA/$b.servidor.log" 2>&1 &
   echo $! > "$PASTA/$b.pid"
   local n=0
   until curl -s -o /dev/null "http://127.0.0.1:$porta/api.php"; do

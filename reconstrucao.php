@@ -158,6 +158,9 @@ const RECONSTRUCAO_TELAS = [
                 . "cima, pela direita, com até 30rem, cantos 16px à esquerda e o fundo escurecido. De 1200px em diante: o painel ao lado.",
             "Nenhuma página rola de lado, em nenhum tamanho. A mesma informação em todos os tamanhos: nada é escondido por falta de "
                 . "espaço (a tabela dos relógios vira cartões com todos os campos quando as 11 colunas não cabem).",
+            "As tabelas de um quadro se arrumam pela largura do quadro (container queries), não pela da tela: o mesmo quadro é "
+                . "estreito no painel ao lado e largo na ficha. Até 40rem, as Medições do gasto viram cartões; até 26rem, as tabelas dos "
+                . "Dados do relógio ficam mais justas e o valor quebra a linha.",
             "Nada sai da caixa em que está, de 320px (celular pequeno) a 1920px: as grades de colunas automáticas encolhem a coluna "
                 . "mínima até a largura da tela; um grupo de campos (fieldset) e os menus dentro dele encolhem com a tela (um menu de "
                 . "nome comprido não vaza); o menu de escolher o relógio da Ficha fica na largura da tela; o código comprido da Ajuda "
@@ -402,9 +405,10 @@ const RECONSTRUCAO_TELAS = [
                         . "guias em 0, 50 e 100%, pontos verdes em uso e vermelhos em repouso, a linha em safira), com a legenda "
                         . "(\"leitura em uso\", \"em repouso\", o período, \"de 0 a 100%\" e \"De onde vem cada número da conta: no quadro "
                         . "Previsão.\"); com menos de duas leituras, \"O gráfico aparece a partir de duas leituras de carga.\" Embaixo, "
-                        . "\"Medições do gasto\": tabela Quando, Leituras (\"89 → 75\"), Horas (\"14 h no pulso, 2 h fora\"), Gasto medido (\"% "
-                        . "por dia de uso\" ou \"fora do pulso\"), Na conta (sim; não (fora da janela); não (só histórico)), as 10 mais "
-                        . "recentes.",
+                        . "\"Medições do gasto\" (no quadro estreito, até 40rem, como no painel ao lado: cada medição vira um cartão, a "
+                        . "data em negrito e embaixo cada valor com o nome da coluna em maiúsculas cinza na frente): tabela Quando, "
+                        . "Leituras (\"89 → 75\"), Horas (\"14 h no pulso, 2 h fora\"), Gasto medido (\"% por dia de uso\" ou \"fora do pulso\"), "
+                        . "Na conta (sim; não (fora da janela); não (só histórico)), as 10 mais recentes.",
                     "Dados do relógio (largo): duas tabelas lado a lado (o valor numérico, a data e o sim/não numa linha só; o "
                         . "valor de texto, como a observação ou uma fórmula que dá texto, quebra a linha dentro da coluna, sem invadir a "
                         . "tabela do lado): Cadastro (Campo, Valor, Origem com a etiqueta informado/padrão/vazio) e Calculado agora "
@@ -928,7 +932,7 @@ const RECONSTRUCAO_CODIGO = [
     "testes/config.teste.php" => ["testes", "o config dos testes (o acesso aos bancos pelo ambiente), apontado por RELOGIOS_CONFIG: o config.php de verdade fica intocado"],
     "testes/dicionario.php" => ["testes", "gera o dicionário dos campos do cabeçalho do api.php a partir do da ajuda (a fonte única), e confere que batem"],
     "testes/campos.php" => ["testes", "confere que todo campo das respostas da API está explicado no dicionário da ajuda"],
-    "testes/layout.cjs" => ["testes", "a conferência do layout: todas as telas num navegador, em 15 tamanhos, procurando o que quebra"],
+    "testes/layout.cjs" => ["testes", "a conferência do layout: todas as telas num navegador, em 15 tamanhos, com dados de estresse, procurando o que quebra"],
     "testes/README.md" => ["testes", "como rodar o teste de paridade e a conferência do layout"],
     "README.md" => ["documentacao", "o manual inteiro: para quem usa, a instalação, a API e como é por dentro"],
     "PORTE.md" => ["documentacao", "o que o sistema antigo fazia e onde está no novo"],

@@ -997,6 +997,9 @@ body.com-visor { overflow: hidden; }
 .quadro {
   margin: 0; min-width: 0; display: flex; flex-direction: column; gap: .55rem;
   background: var(--papel); border: 1px solid var(--aco-escuro); border-radius: 12px; padding: .85rem 1rem;
+  /* o quadro sabe a própria largura (as regras @container quadro, no fim): o mesmo quadro é estreito no painel ao lado e
+     largo na ficha, e as tabelas dele se arrumam pela largura dele, não pela da tela */
+  container: quadro / inline-size;
 }
 .quadro > h2 {
   margin: 0; padding-bottom: .45rem; border-bottom: 1px solid var(--aco);
@@ -1358,3 +1361,25 @@ footer.apagar-plano h2 { margin-top: 0; }
 }
 /* o botão discreto de texto comprido ("Excluir os critérios próprios de todos os relógios") quebra a linha no celular, alinhado à esquerda */
 form.excluir-conjunto button.discreto { white-space: normal; text-align: left; }
+
+/* ---------- as tabelas do quadro estreito (o painel ao lado da lista, o celular, o tablet de pé) ---------- */
+/* as medições do gasto: cada linha vira um cartão: a data em negrito e, embaixo, cada valor com o nome da coluna na frente (o
+   data-rotulo, que o api.js põe em toda célula a partir do título da coluna) */
+@container quadro (max-width: 40rem) {
+  table.tabela-dados.medicoes thead { display: none; }
+  table.tabela-dados.medicoes, table.tabela-dados.medicoes tbody { display: block; }
+  table.tabela-dados.medicoes tr { display: block; padding: .5rem 0; border-bottom: 1px solid var(--aco); }
+  table.tabela-dados.medicoes tbody tr:last-child { border-bottom: 0; }
+  table.tabela-dados.medicoes td { display: block; padding: .05rem 0; border: 0; white-space: normal; }
+  table.tabela-dados.medicoes td:first-child { font-weight: 600; padding-bottom: .15rem; }
+  table.tabela-dados.medicoes td:not(:first-child)[data-rotulo]::before { content: attr(data-rotulo); color: var(--cinza); font-size: .7rem;
+    text-transform: uppercase; letter-spacing: .04em; margin-right: .4rem; }
+}
+/* os dados do relógio (campo, valor, origem; fórmula, valor, versão): menos folga entre as colunas, e o valor quebra a linha */
+@container quadro (max-width: 26rem) {
+  table.tabela-dados th, table.tabela-dados td { padding-left: .3rem; padding-right: .3rem; }
+  table.tabela-dados td { overflow-wrap: anywhere; }
+  table.tabela-dados td.valor { white-space: normal; }
+  table.tabela-dados td.valor.texto { min-width: 0; }
+  table.tabela-dados th { letter-spacing: 0; }
+}
