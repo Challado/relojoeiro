@@ -877,6 +877,7 @@ Les critères propres du groupe ({1} paramètres) seront supprimés ; les montre
         'Filtrar pela próxima manutenção' => 'Filtrer par prochain entretien',
         'até hoje' => 'jusqu\'à aujourd\'hui',
         'Filtrar pelo que fazer' => 'Filtrer par ce qu\'il faut faire',
+        'Encostado' => 'Délaissée',
         'Filtrar por encostado' => 'Filtrer par délaissée',
         'Encostados' => 'Délaissées',
         'Dentro do prazo' => 'Dans le délai',

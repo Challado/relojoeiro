@@ -877,6 +877,7 @@ Os critérios próprios do grupo ({1} parâmetros) serão excluídos; os relógi
         'Filtrar pela próxima manutenção' => 'अगली सर्विस से फ़िल्टर करें',
         'até hoje' => 'आज तक',
         'Filtrar pelo que fazer' => 'करने वाले काम से फ़िल्टर करें',
+        'Encostado' => 'पड़ी हुई',
         'Filtrar por encostado' => 'पड़ी हुई से फ़िल्टर करें',
         'Encostados' => 'पड़ी हुई',
         'Dentro do prazo' => 'समय-सीमा के भीतर',

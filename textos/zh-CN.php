@@ -877,6 +877,7 @@ Os critérios próprios do grupo ({1} parâmetros) serão excluídos; os relógi
         'Filtrar pela próxima manutenção' => '按下次保养筛选',
         'até hoje' => '截至今天',
         'Filtrar pelo que fazer' => '按要做的事筛选',
+        'Encostado' => '闲置',
         'Filtrar por encostado' => '按闲置筛选',
         'Encostados' => '闲置',
         'Dentro do prazo' => '未到期',

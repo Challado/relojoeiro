@@ -877,6 +877,7 @@ The group\'s own criteria ({1} parameters) will be deleted; the watches will use
         'Filtrar pela próxima manutenção' => 'Filter by next service',
         'até hoje' => 'by today',
         'Filtrar pelo que fazer' => 'Filter by what to do',
+        'Encostado' => 'Idle',
         'Filtrar por encostado' => 'Filter by idle',
         'Encostados' => 'Idle',
         'Dentro do prazo' => 'Within the limit',
