@@ -602,6 +602,18 @@ INSERT IGNORE INTO config (chave, valor) VALUES ('migracao_v10', '1');
 -- simples, ou a escolha à mão
 ALTER TABLE plano ADD COLUMN motivo VARCHAR(300) NULL AFTER acao;
 
+-- ---------------------------------------------------------------------------------------------------------------------
+-- Migração v12 (já incluída na instalação nova)
+-- ---------------------------------------------------------------------------------------------------------------------
+-- os dias sem uso de um relógio que nunca foi ao pulso contam desde a compra (antes valiam 9999 para todos os nunca
+-- usados: empatavam entre si na garantia de rodízio, e um relógio comprado ontem já passava na frente de todos). Sem data
+-- de compra, continua 9999
+UPDATE formula SET expressao = 'PADRAO(DIAS_DESDE_ULTIMO("pulso"); PADRAO(DIAS_DESDE(data_compra); 9999))'
+    WHERE identificador = 'dias_sem_uso' AND expressao = 'PADRAO(DIAS_DESDE_ULTIMO("pulso"); 9999)';
+
+-- a marca de que a v12 foi aplicada
+INSERT IGNORE INTO config (chave, valor) VALUES ('migracao_v12', '1');
+
 -- critérios iniciais (o "restaurar" da página Critérios lê daqui até o fim do arquivo)
 -- critérios de todos os relógios
 INSERT INTO criterio_parametro (id, escopo_no_id, escopo_relogio_id, nome, peso, ordem) VALUES (1, NULL, NULL, 'Tempo sem uso', 40, 1);
