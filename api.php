@@ -446,6 +446,7 @@
  *     config.max_sem_uso             a garantia de rodízio: nenhum relógio passa desses dias sem uso (0 desliga)
  *     config.medicao_janela_dias     a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a última)
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
+ *     config.migracao_v10            marca de que a migração v10 foi aplicada (1)
  *     config.modo_ativo              o id do modo de rodízio em uso
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
  *     config.sol_limiar              no solar, a carga (%) em que ele deve ir para o sol
@@ -1138,6 +1139,7 @@
  *     config.max_sem_uso             a garantia de rodízio: nenhum relógio passa desses dias sem uso (0 desliga)
  *     config.medicao_janela_dias     a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a última)
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
+ *     config.migracao_v10            marca de que a migração v10 foi aplicada (1)
  *     config.modo_ativo              o id do modo de rodízio em uso
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
  *     config.sol_limiar              no solar, a carga (%) em que ele deve ir para o sol
@@ -2601,6 +2603,7 @@ if (!$token_ok && $quem === "") {
                 "config.max_sem_uso" => "a garantia de rodízio: nenhum relógio passa desses dias sem uso (0 desliga)",
                 "config.medicao_janela_dias" => "a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a última)",
                 "config.mensagens_ativas" => "1: o Telegram (a API de alerta) envia; 0: não envia",
+                "config.migracao_v10" => "marca de que a migração v10 foi aplicada (1)",
                 "config.modo_ativo" => "o id do modo de rodízio em uso",
                 "config.previsao_limite" => "o limite de carga da previsão do smartwatch, em %",
                 "config.sol_limiar" => "no solar, a carga (%) em que ele deve ir para o sol",
@@ -3136,6 +3139,7 @@ if (!$token_ok && $quem === "") {
                 "config.max_sem_uso" => "a garantia de rodízio: nenhum relógio passa desses dias sem uso (0 desliga)",
                 "config.medicao_janela_dias" => "a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a última)",
                 "config.mensagens_ativas" => "1: o Telegram (a API de alerta) envia; 0: não envia",
+                "config.migracao_v10" => "marca de que a migração v10 foi aplicada (1)",
                 "config.modo_ativo" => "o id do modo de rodízio em uso",
                 "config.previsao_limite" => "o limite de carga da previsão do smartwatch, em %",
                 "config.sol_limiar" => "no solar, a carga (%) em que ele deve ir para o sol",
