@@ -1579,7 +1579,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | [`reconstrucao.php`](reconstrucao.php) | o roteiro para reescrever o sistema do zero (o `recurso=reconstrucao` da API) |
 | [`.htaccess`](.htaccess) | a proteção dos arquivos internos no Apache (e o login do site com o PHP por FastCGI) |
 | [`nginx-relogios.conf`](nginx-relogios.conf) | o bloco do nginx que protege os arquivos internos |
-| [`testes/`](testes/) | o teste de paridade: o mesmo roteiro pela API em cada banco, e o comparador das respostas; a conferência do layout de todas as telas, do celular ao computador (`layout.cjs`; `LINGUA=en` confere num idioma); a dos dicionários dos idiomas (`textos.php`); e a montagem do README de cada idioma (`readme.php`) |
+| [`testes/`](testes/) | o teste de paridade: o mesmo roteiro pela API em cada banco, e o comparador das respostas; a conferência do layout de todas as telas, do celular ao computador (`layout.cjs`; `LINGUA=en` confere num idioma); a dos dicionários dos idiomas (`textos.php`); a montagem do README de cada idioma (`readme.php`); e a conferência da arquitetura (`arquitetura.php`: as regras que o código tem de seguir) |
 | [`docs/telas/`](docs/telas/) | as capturas de tela deste README |
 | `README.en.md`, `README.zh-CN.md`, `README.hi.md`, `README.es.md`, `README.fr.md` | este README nos outros idiomas. Não se editam à mão: o [`testes/readme.php`](testes/readme.php) monta cada um juntando o manual traduzido (`textos/manual/<idioma>.md`, as seções que a Ajuda mostra) e o resto traduzido (`textos/readme/<idioma>.md`: o começo, Experimente, a API, a Instalação, Como é por dentro, Como contribuir e a Licença) |
 | [`PORTE.md`](PORTE.md) | o registro do porte da versão anterior |
@@ -1604,7 +1604,11 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
    no `main`: o teste de paridade, a documentação e o layout, em [`.github/workflows/testes.yml`](.github/workflows/testes.yml);
    o resultado aparece na aba **Actions** e no ✓ / ✗ ao lado de cada commit): `testes/paridade.sh`, com os
    bancos no ar, tem de terminar com `Tudo igual.` Ele confere também a documentação: o cabeçalho é o que a ajuda gera, e
-   todo campo das respostas está explicado. Mexeu nas telas? Rode também a conferência do layout
+   todo campo das respostas está explicado. Confere a arquitetura ([`testes/arquitetura.php`](testes/arquitetura.php), que
+   o GitHub roda também num passo rápido, sem banco): as páginas só montam o esqueleto, a rede das telas é só a API, o
+   banco só é tocado pelo núcleo, pela API e pelo cron, os arquivos internos ficam bloqueados pela web, toda ação e toda
+   constante do `config.php` estão documentadas, e as outras regras listadas no começo do arquivo. E falha se o PHP der
+   qualquer aviso (Warning, Notice, Deprecated) durante a rodada. Mexeu nas telas? Rode também a conferência do layout
    (`testes/paridade.sh --layout sqlite`): `0 problemas`.
 7. **Todo texto novo passa pelo `t()`** (o `api.js` e o `textos/funcoes.php` têm a função), com o português como chave e os
    parâmetros entre chaves: `t("Excluir {1}?", {1: nome})`, nunca `"Excluir " + nome + "?"`. Depois, traduza nos cinco

@@ -1611,7 +1611,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | [`reconstrucao.php`](reconstrucao.php) | the script to rewrite the system from scratch (the API's `recurso=reconstrucao`) |
 | [`.htaccess`](.htaccess) | the protection of the internal files on Apache (and the site login with PHP through FastCGI) |
 | [`nginx-relogios.conf`](nginx-relogios.conf) | the nginx block that protects the internal files |
-| [`testes/`](testes/) | the parity test: the same script through the API on each database, and the comparer of the responses; the layout check of all the screens, from phone to computer (`layout.cjs`; `LINGUA=en` checks in a language); the check of the languages' dictionaries (`textos.php`); and the assembly of each language's README (`readme.php`) |
+| [`testes/`](testes/) | the parity test: the same script through the API on each database, and the comparer of the responses; the layout check of all the screens, from phone to computer (`layout.cjs`; `LINGUA=en` checks in a language); the check of the languages' dictionaries (`textos.php`); the assembly of each language's README (`readme.php`); and the architecture check (`arquitetura.php`: the rules the code has to follow) |
 | [`docs/telas/`](docs/telas/) | the screenshots of this README |
 | `README.md`, `README.en.md`, `README.zh-CN.md`, `README.hi.md`, `README.es.md`, `README.fr.md` | this README: the original, in Portuguese, and the other languages. These aren't edited by hand: [`testes/readme.php`](testes/readme.php) assembles each one by joining the translated manual (`textos/manual/<language>.md`, the sections the Help shows) and the translated rest (`textos/readme/<language>.md`: the beginning, Try it, the API, the Installation, How it is inside, How to contribute and the License) |
 | [`PORTE.md`](PORTE.md) | the record of the port of the previous version |
@@ -1636,7 +1636,11 @@ Improvements are welcome, and the way is always this repository:
    `main`: the parity test, the documentation and the layout, in [`.github/workflows/testes.yml`](.github/workflows/testes.yml);
    the result shows in the **Actions** tab and in the ✓ / ✗ next to each commit): `testes/paridade.sh`, with the databases
    up, has to end with `Tudo igual.` It also checks the documentation: the header is what the help generates, and every field
-   of the responses is explained. Touched the screens? Also run the layout check (`testes/paridade.sh --layout sqlite`):
+   of the responses is explained. It checks the architecture ([`testes/arquitetura.php`](testes/arquitetura.php), which GitHub
+   also runs in a quick step, without a database): the pages only build the skeleton, the screens' network is only the API,
+   the database is only touched by the core, the API and the cron, the internal files are blocked over the web, every action
+   and every `config.php` constant is documented, and the other rules listed at the top of the file. And it fails if PHP gives
+   any warning (Warning, Notice, Deprecated) during the round. Touched the screens? Also run the layout check (`testes/paridade.sh --layout sqlite`):
    `0 problemas`.
 7. **Every new text goes through `t()`** (`api.js` and `textos/funcoes.php` have the function), with the Portuguese as the key
    and the parameters in braces: `t("Excluir {1}?", {1: nome})`, never `"Excluir " + nome + "?"`. Then translate it in the

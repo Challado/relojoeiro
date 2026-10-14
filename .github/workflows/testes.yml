@@ -12,6 +12,24 @@ permissions:
   contents: read
 
 jobs:
+  arquitetura:
+    name: Arquitetura, idiomas e documentação (sem banco)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: sqlite3, mbstring, curl
+          coverage: none
+      - name: Arquitetura (as regras do código)
+        run: php testes/arquitetura.php
+      - name: Idiomas (os dicionários, os manuais e os READMEs traduzidos)
+        run: php testes/textos.php
+      - name: Documentação da API (o cabeçalho do api.php é o que a ajuda gera)
+        run: php testes/dicionario.php
+
   paridade:
     name: Paridade (SQLite, PostgreSQL, MariaDB)
     runs-on: ubuntu-latest

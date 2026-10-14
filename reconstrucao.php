@@ -59,6 +59,7 @@ function reconstrucao_config_php()
     "DOCUMENTOS_PASTA" => t('a pasta dos arquivos dos documentos, fora da pasta publicada, com escrita para o PHP'),
     "DOCUMENTOS_LIMITE (e o nome antigo MANUAL_LIMITE)" => t('o maior documento aceito, em bytes (sem ele: 100 MB; 0 ou -1: sem limite do sistema)'),
     "DOCUMENTOS_COPIA_BANCO" => t('a cópia dos documentos no banco para o sistema inteiro: true, todos; false, nenhum; ausente, o relógio e o arquivo decidem'),
+    "TEXTOS_ESTRITO" => t('opcional, para quem traduz: true faz a tradução que falta parar com erro (na API e no cron; nas telas, o texto aparece entre ⟦ ⟧ e o erro vai para o console)'),
     "BACKUP_ATIVO" => t('opcional: false desliga a cópia de segurança (sem cópia automática, sem a escrita fazer e sem o quadro da Configuração); sem a linha, ligada'),
     "BACKUP_PASTA, BACKUP_MANTER, BACKUP_DOCUMENTOS" => t('a cópia de segurança do banco: a pasta (fora da publicada; sem ela, não há cópia automática), quantas ficam (padrão 7) e se leva o conteúdo dos documentos (padrão: não)'),
     "ANTIGO_HOST, ANTIGO_PORTA, ANTIGO_USUARIO, ANTIGO_SENHA" => t('só para importar o sistema anterior (importar.php)'),
@@ -711,6 +712,7 @@ function reconstrucao_codigo()
     ".gitattributes" => ["repositorio", t('as quebras de linha (LF em tudo) e os binários')],
     ".github/workflows/testes.yml" => ["repositorio", t('os testes no GitHub a cada push no main: a paridade nos bancos (com a documentação da API) e o layout das telas')],
     "testes/textos.php" => ["testes", t('confere os dicionários dos idiomas com o código (o texto que falta, o que sobra, o parâmetro diferente) e a origem de cada manual traduzido; junta traduções novas (--juntar)')],
+    "testes/arquitetura.php" => ["testes", t('a conferência da arquitetura: as páginas sem banco, a rede das telas só pela API, o banco só no núcleo, na API e no cron, os scripts de linha de comando como atalhos da API, a guarda do api/, o bloqueio pela web, a API e o config.php documentados, as migrações e o repositório')],
     "testes/readme.php" => ["testes", t('monta o README de cada idioma (README.<idioma>.md) a partir do manual traduzido e do resto traduzido, e confere que estão em dia (--conferir)')],
     ];
     // os arquivos de cada idioma (o português é o próprio código e o README.md)
