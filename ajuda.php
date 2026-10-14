@@ -1,21 +1,9 @@
 <?php
 // Ajuda: como o sistema funciona, os campos do cadastro, os avisos e as telas. O texto é o do README.md (as seções para
-// quem usa: sem a instalação, a API e o código), convertido para HTML aqui, para a ajuda e o README nunca discordarem.
+// quem usa: sem a instalação, a API e o código; os trechos e a leitura ficam no lib.php, manual_markdown, que a API também
+// usa em recurso=manual), convertido para HTML aqui, para a ajuda e o README nunca discordarem.
 // Não lê o banco: só o README.md do lado do servidor (o navegador não abre o .md: o .htaccess e o nginx bloqueiam).
 require_once __DIR__ . "/pagina.php";
-
-// as seções do README que vão para a ajuda, na ordem dele: da primeira até antes da segunda (vazio: até a próxima seção de
-// mesmo nível)
-const AJUDA_TRECHOS = [["A ideia central", "Experimente em 1 minuto"], ["As telas", "A API"], ["Perguntas frequentes", "Como é por dentro"]];
-
-// A âncora de um título, como a do GitHub (os links do README para as próprias seções funcionam aqui também): minúsculas,
-// sem pontuação, espaços viram hífens; as letras acentuadas ficam
-function ajuda_ancora($titulo)
-{
-    $t = function_exists("mb_strtolower") ? mb_strtolower($titulo, "UTF-8") : strtolower($titulo);
-    $t = preg_replace("/[^\\p{L}\\p{N} _-]/u", "", $t);
-    return str_replace(" ", "-", trim((string)$t));
-}
 
 // O que vai dentro de uma linha: escapa o HTML e troca `código`, **negrito**, *itálico*, ![imagem](...) e [link](...)
 function ajuda_linha($s)
@@ -68,7 +56,7 @@ function ajuda_html($md)
         } elseif (preg_match("/^(#{2,4})\\s+(.*)$/", $l, $m) === 1) {
             $fecha_par();
             $nivel = strlen($m[1]);
-            $ancora = ajuda_ancora($m[2]);
+            $ancora = manual_ancora($m[2]);
             $html .= "<h" . $nivel . " id=\"" . htmlspecialchars($ancora, ENT_QUOTES, "UTF-8") . "\">" . ajuda_linha($m[2]) . "</h" . $nivel . ">\n";
             if ($nivel <= 3) {
                 $sumario[] = [$nivel, $m[2], $ancora];
@@ -133,17 +121,7 @@ function ajuda_html($md)
     return [$html, $sumario];
 }
 
-// os trechos do README
-$readme = (string)@file_get_contents(__DIR__ . "/README.md");
-$md = "";
-foreach (AJUDA_TRECHOS as $t) {
-    $ini = strpos($readme, "\n## " . $t[0]);
-    $fim = $ini === false ? false : strpos($readme, "\n## " . $t[1], $ini + 1);
-    if ($ini !== false) {
-        $md .= substr($readme, $ini, $fim === false ? null : $fim - $ini) . "\n";
-    }
-}
-[$conteudo, $sumario] = ajuda_html($md);
+[$conteudo, $sumario] = ajuda_html(manual_markdown());
 
 topo("Ajuda", "ajuda.php");
 ?>
