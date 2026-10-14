@@ -93,6 +93,8 @@ $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => c
     "plano" => array_map(function ($p) { return ["data" => $p["data"], "relogio_id" => (int)$p["relogio_id"], "relogio" => $p["nome"], "acao" => $p["acao"], "motivo" => $p["motivo"], "origem" => $p["origem"]]; },
         linhas("SELECT p.*, r.nome FROM plano p JOIN relogio r ON r.id = p.relogio_id WHERE p.data >= ? ORDER BY p.data LIMIT 62", [$hoje->format("Y-m-d")])),
     // os dias livres dos próximos 62 dias (sem relógio e sem sorteio: para escolher à mão)
+    // hoje é um dia livre (o "Sem relógio hoje", ou um período livre): sem relógio do dia, para escolher à mão
+    "hoje_livre" => dia_livre($hoje->format("Y-m-d")),
     "livres" => dias_livres($hoje->format("Y-m-d"), $hoje->modify("+61 days")->format("Y-m-d")),
     // os Próximos dias da página, uma página por vez (o "Mostrar até" da Configuração), com os dias livres no meio
     "proximos" => plano_pagina($hoje->format("Y-m-d"), "", null, (int)($_REQUEST["proximos_pagina"] ?? 1),

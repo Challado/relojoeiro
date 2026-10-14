@@ -77,7 +77,17 @@ function recarregarHoje() {
         + el("p", {"class": "periodo"}, el("span", {"class": "janela"}, h(d.dia.ate)) + " " + h(t ? t.tipo : ""))
         + (d.dia.acao ? el("p", {"class": "acao"}, h(d.dia.acao)) : "")
         + (d.dia.motivo ? el("p", {"class": "motivo"}, el("strong", {}, "Por que ele: ") + h(d.dia.motivo)) : "")
-        + (dz.mostra === "pulso" && !dz.no_pulso ? el("p", {"class": "nota"}, h(dz.texto)) : "");
+        + (dz.mostra === "pulso" && !dz.no_pulso ? el("p", {"class": "nota"}, h(dz.texto)) : "")
+        // sem relógio hoje: o dia fica livre e a sessão do rodízio termina agora
+        + el("form", {"data-recurso": "rodizio", "class": "sem-relogio", "onsubmit": "return confirm(" + JSON.stringify("Hoje sem relógio? O dia fica livre: o " + d.dia.relogio
+          + " sai do rodízio de hoje (se já está no pulso pelo rodízio, sai agora; o tempo que ficou conta). Os outros dias não mudam.") + ")"},
+          el("input", {"type": "hidden", "name": "acao", "value": "sem_relogio"}) + el("button", {"class": "leve discreto"}, "Sem relógio hoje"));
+    } else if (d.hoje_livre) {
+      // o dia livre: escolher um relógio para hoje (o mesmo "escolher…" dos dias livres), ou deixar assim
+      texto += el("h1", {}, "Hoje sem relógio")
+        + el("p", {"class": "periodo"}, el("span", {"class": "janela"}, "dia livre"))
+        + el("p", {}, "Nenhum relógio vai ao pulso pelo rodízio hoje. Quer usar um? Escolha abaixo, ou sorteie de novo (inclusive hoje) no quadro do modo de rodízio.")
+        + formTrocarDia({data: d.data, relogio_id: null, origem: "livre"}, d.relogios, d.data);
     } else {
       texto += el("h1", {}, "Nenhum relógio para hoje")
         + el("p", {}, "Nenhum relógio disponível no grupo deste dia. Mude o grupo no modo de rodízio ou marque um relógio como disponível.");

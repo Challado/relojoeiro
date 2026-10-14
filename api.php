@@ -1258,6 +1258,8 @@
  *     plano[].relogio_id             o relógio
  *     livres[]                       os dias livres dos próximos 62 dias (texto AAAA-MM-DD): sem relógio e sem sorteio, para escolher à
  *                                    mão; a tela os põe entre os dias do plano
+ *     hoje_livre                     verdadeiro: hoje é um dia livre (o Sem relógio hoje, ou um período livre): sem relógio do dia; a tela
+ *                                    mostra "Hoje sem relógio" com o escolher…
  *     proximos                       os Próximos dias da página, uma página por vez (proximos_pagina=N; por_pagina=N, sem ele o "Mostrar
  *                                    até" da Configuração, proximos_por_pagina, padrão 7), de hoje até o fim do plano, com os dias livres
  *                                    no meio; a troca de página lê só eles (recurso=proximos)

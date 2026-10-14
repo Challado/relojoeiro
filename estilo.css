@@ -587,6 +587,8 @@ nav.paginas span.atual { background: var(--safira); color: #fff; border-color: v
 /* a largura que conta é a da coluna da página (com o painel do relógio aberto ao lado ela encolhe), e não a da tela: a
    coluna é um container (coluna-hoje), e o quadro passa para duas colunas e depois para a foto pequena conforme ela */
 .col-hoje { container: coluna-hoje / inline-size; }
+.hoje form.sem-relogio { margin: .6rem 0 0; }
+.hoje .trocar-dia { margin-top: .4rem; }
 .hoje h1, .hoje .data { overflow-wrap: anywhere; hyphens: auto; }
 @container coluna-hoje (max-width: 62rem) {
   .hoje.com-relogio { grid-template-columns: minmax(0, 1fr) 9rem; }
