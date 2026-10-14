@@ -1072,6 +1072,15 @@ INSERT INTO campo_opcao (campo_id, ordem, valor)
 INSERT INTO campo_opcao (campo_id, ordem, valor)
     SELECT c.id, 3, 'Baixa' FROM campo c WHERE c.identificador = 'prioridade_desejo' AND NOT EXISTS (SELECT 1 FROM campo_opcao o WHERE o.campo_id = c.id AND o.ordem = 3);
 
+-- Migração v23: o aviso Encostado (um relógio que passou do limite de dias sem ir ao pulso)
+INSERT INTO aviso (identificador, nome, expressao, condicao, antecedencia_dias, texto, resolve_tipo_id, ativo, escala, simula_valor, simula_horas, agenda, na_hora, no_id)
+    SELECT 'encostado', 'Encostado', 'PADRAO(ULTIMA_DATA("pulso"); data_compra) + CONFIG("encostado_dias")', NULL, 0,
+        'o limite de dias sem ir ao pulso vence {quando}, {data}', (SELECT id FROM lancamento_tipo WHERE identificador = 'pulso'), 1, 'nao', NULL, NULL, 'janela', 0, NULL
+    FROM (SELECT COUNT(*) AS n FROM aviso WHERE identificador = 'encostado') x WHERE x.n = 0;
+
+-- o limite (e a marca de aplicada, por último: se parar no meio, continua pendente)
+INSERT IGNORE INTO config (chave, valor) VALUES ('encostado_dias', '30');
+
 -- critérios iniciais (o "restaurar" da página Critérios lê daqui até o fim do arquivo)
 -- critérios de todos os relógios
 INSERT INTO criterio_parametro (id, escopo_no_id, escopo_relogio_id, nome, peso, ordem) VALUES (1, NULL, NULL, 'Tempo sem uso', 40, 1);

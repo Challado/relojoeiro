@@ -580,7 +580,8 @@ const RECONSTRUCAO_TELAS = [
                         . "(hora); Pôr no pulso sozinho (caixa); No pulso até (hora); Tirar do pulso sozinho (caixa); Sessão no sol "
                         . "esquecida fecha às (hora).",
                     "Limites e contas: Carregar quando a carga chegar a (%) (1 a 99, padrão 20); Solar: pôr no sol quando chegar a "
-                        . "(%) (1 a 99, padrão 70); Gasto medido: média dos últimos (dias) (1 a 3650, padrão 90).",
+                        . "(%) (1 a 99, padrão 70); Gasto medido: média dos últimos (dias) (1 a 3650, padrão 90); Aviso Encostado: dias sem ir ao "
+                        . "pulso (1 a 3650, padrão 30; encostado_dias).",
                     "Telas: Abrir o relógio na página Hoje (Ao lado da lista; Numa janela flutuante, grande); Destaque no alto da "
                         . "página Hoje (O relógio do dia; O relógio no pulso agora: destaque_hoje dia ou pulso, com a nota \"Destaque: "
                         . "...\"); \"Próximos dias (página Hoje): mostrar até (dias por página)\" e \"Plano: mostrar até (dias por página)\" "
@@ -1297,7 +1298,7 @@ function reconstrucao()
                     . "texto (até 300, com {relogio}, {data}, {quando} e {limite}), o tipo de lançamento que resolve (o botão na tela Hoje), se está ativo, "
                     . "uma versão por grupo (como as fórmulas), e como a escala simula a solução (escala: nao, uso ou sempre; o valor ou as horas "
                     . "simuladas) e se entra na agenda só dentro da janela de antecedência ou sempre.",
-                "O aviso vale para um relógio disponível quando a condição dá verdadeiro e a data prevista existe; sai hoje quando a data menos a "
+                "Um relógio fora da coleção (desejado, vendido, arquivado) não tem aviso nenhum (o emprestado tem). O aviso vale para um relógio disponível quando a condição dá verdadeiro e a data prevista existe; sai hoje quando a data menos a "
                     . "antecedência já chegou. Estado: atrasado (a data passou) ou em breve. O aviso de um relógio com uma sessão aberta à mão "
                     . "(carregando, no sol) não vai para a agenda enquanto ela estiver aberta: a data andaria a cada conta.",
                 "Os avisos de carga usam o limite de carga: o do relógio (campo carga_minima), senão o geral da Configuração (carga_limiar); o solar "
@@ -1307,6 +1308,9 @@ function reconstrucao()
                     . "guarda quais já foram (config.na_hora_enviados, relogio_id:identificador); um aviso sai da lista quando deixa de vencer. O botão "
                     . "do aviso na página Hoje vem da API (resolve.acao e resolve.botao): a sessão que resolve, aberta, se encerra (\"Tirou do "
                     . "carregador\"); fechada, se inicia (\"Pôs no sol\"); a leitura se informa.",
+                "O aviso Encostado (encostado, de todos os relógios, resolve com o pulso) é só cadastro: a data prevista é PADRAO(ULTIMA_DATA(\"pulso\"); "
+                    . "data_compra) + CONFIG(\"encostado_dias\") (a Configuração, padrão 30), antecedência 0; sem nunca ter ido ao pulso nem data da "
+                    . "compra, não avisa.",
                 "A visão de cada relógio (a tabela da página Hoje e o painel): em uso ou em repouso desde quando, a carga estimada agora e de onde vem "
                     . "(a fórmula energia e a origem), a situação (frases curtas: autonomia restante, reserva...), a próxima manutenção (o aviso mais "
                     . "perto) e o que fazer.",

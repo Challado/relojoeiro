@@ -645,6 +645,8 @@
  *     config.max_sem_uso             a garantia de rodízio: nenhum relógio passa desses dias sem uso (0 desliga)
  *     config.medicao_janela_dias     a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a
  *                                    última)
+ *     config.encostado_dias          o aviso Encostado: depois de quantos dias sem ir ao pulso um relógio da coleção é avisado (1 a 3650;
+ *                                    padrão 30)
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
  *     config.painel_modo             como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela
  *                                    grande por cima da página); vazio: lado
@@ -1662,6 +1664,8 @@
  *     config.max_sem_uso             a garantia de rodízio: nenhum relógio passa desses dias sem uso (0 desliga)
  *     config.medicao_janela_dias     a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a
  *                                    última)
+ *     config.encostado_dias          o aviso Encostado: depois de quantos dias sem ir ao pulso um relógio da coleção é avisado (1 a 3650;
+ *                                    padrão 30)
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
  *     config.painel_modo             como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela
  *                                    grande por cima da página); vazio: lado
