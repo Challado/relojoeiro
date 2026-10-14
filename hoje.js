@@ -131,9 +131,13 @@ function recarregarHoje() {
         return el("option", {"value": "r:" + r.id, "selected": atual === "r:" + r.id}, h(r.nome) + (r.disponivel ? "" : " (indisponível: o dia sorteia outro do mesmo grupo)"));
       }).join(""));
     };
+    // o "Rodízio manual" no fim da lista: não é um modo; escolhe o relógio de cada dia de um período (o modo de sempre continua)
     var ladoModo = el("label", {"class": "campo-principal"}, "Modo de rodízio " + el("select", {"name": "modo"}, d.modos.map(function (m) {
       return el("option", {"value": m.id, "selected": modo !== null && m.id === modo.id}, h(m.nome));
-    }).join("")));
+    }).join("") + el("option", {"value": "manual"}, "Rodízio manual")));
+    ladoModo += el("p", {"class": "nota explicacao", "data-explica-modo": "manual"}, "Você escolhe o relógio de cada dia de um período. Ponha o começo e o fim e clique em OK: "
+      + "os dias aparecem de 7 em 7, cada um com a lista dos relógios, \"Decida por mim\" (o sistema escolhe) e \"Sem relógio (dia livre)\". "
+      + "Fora do período, continua valendo o modo de rodízio de sempre (" + h(modo ? modo.nome : "nenhum") + ").");
     d.modos.forEach(function (m) {
       ladoModo += el("p", {"class": "nota explicacao", "data-explica-modo": m.id}, h(m.escala_dias !== null
         ? "Monta o plano do período inteiro de uma vez, simulando a carga de cada relógio dia a dia, com os lembretes de carregar, dar corda e pôr no sol. É refeita toda manhã a partir do estado real."
@@ -165,9 +169,9 @@ function recarregarHoje() {
     var formModo = el("form", {"data-recurso": "rodizio", "onsubmit": "return confirm(" + JSON.stringify(d.comecou ? "Trocar o modo refaz o plano a partir de amanhã; hoje continua o "
         + nomeHoje + ". Continuar?" : "Trocar o modo apaga o plano atual. Continuar?") + ")"},
       el("input", {"type": "hidden", "name": "acao", "value": "modo"})
-      + el("div", {"class": "modo-grade", "data-selecoes": JSON.stringify(selModos), "data-escalas": JSON.stringify(escalas)}, el("div", {"class": "modo-lado"}, ladoModo) + el("div", {"class": "modo-lado"}, ladoSelecao))
-      + el("button", {}, "Aplicar modo")
-      + el("p", {"class": "nota"}, "Trocar o modo apaga o plano atual e gera outro" + (d.comecou ? " a partir de amanhã: hoje continua o " + h(nomeHoje)
+      + el("div", {"class": "modo-grade", "data-selecoes": JSON.stringify(selModos), "data-escalas": JSON.stringify(escalas)}, el("div", {"class": "modo-lado"}, ladoModo) + el("div", {"class": "modo-lado", "data-nao-manual": true}, ladoSelecao))
+      + el("button", {"data-nao-manual": true}, "Aplicar modo")
+      + el("p", {"class": "nota", "data-nao-manual": true}, "Trocar o modo apaga o plano atual e gera outro" + (d.comecou ? " a partir de amanhã: hoje continua o " + h(nomeHoje)
         + ", que já está no pulso (para trocar hoje, use \"Usando hoje\")" : " a partir de hoje") + ". O histórico de uso, corda, sol e carga continua. Os modos e os blocos de dias se cadastram em "
         + el("a", {"href": "cadastros.php?aba=modos"}, "Cadastros") + "."));
     // sortear de novo: as ações possíveis agora, com a explicação e a confirmação de cada uma
@@ -188,15 +192,22 @@ function recarregarHoje() {
         (ps.ja_montada ? "Refaz" : "Monta") + " a semana seguinte inteira, de segunda a domingo, pelo modo atual. Só no domingo.",
         (ps.ja_montada ? "Sortear de novo" : "Montar") + " a semana de " + dataBr(ps.segunda, true) + " a " + dataBr(ps.domingo, true) + "?" + (ps.ja_montada ? " O que já estava montado para ela é refeito." : ""), domingo]);
     }
-    var formSorteio = el("form", {"data-recurso": "rodizio", "class": "sortear-de-novo", "onsubmit": "var o = this.acao.options[this.acao.selectedIndex]; return confirm(o.getAttribute('data-confirma'))"},
+    var formSorteio = el("form", {"data-recurso": "rodizio", "class": "sortear-de-novo", "data-nao-manual": true, "onsubmit": "var o = this.acao.options[this.acao.selectedIndex]; return confirm(o.getAttribute('data-confirma'))"},
       el("label", {"class": "campo-principal", "for": "acao-sorteio"}, "Sortear de novo")
       + el("div", {"class": "linha-sorteio"}, el("select", {"name": "acao", "id": "acao-sorteio"}, sorteios.map(function (s) {
         return el("option", {"value": s[0], "disabled": !s[4], "data-explica": s[2], "data-confirma": s[3]}, h(s[1]));
       }).join("")) + el("button", {"class": "leve"}, "Sortear"))
       + el("p", {"class": "nota", "data-explica-sorteio": true}, h(sorteios[0][2])));
     // remontado, o quadro volta fechado, como no sistema antigo depois de aplicar
+    // o rodízio manual: o período e, depois do OK, os dias dele de 7 em 7 (manualCarregar)
+    var formManual = el("form", {"class": "rodizio-manual", "id": "form-manual", "data-so-manual": true, "hidden": true},
+      el("div", {"class": "manual-periodo"}, el("label", {}, "De " + el("input", {"type": "date", "name": "de", "min": d.data, "value": d.data, "required": true}))
+        + el("label", {}, "Até " + el("input", {"type": "date", "name": "ate", "min": d.data, "required": true}))
+        + el("button", {"type": "button", "id": "manual-ok"}, "OK"))
+      + el("p", {"class": "acao", "id": "manual-recado", "hidden": true}, "")
+      + el("div", {"id": "manual-dias"}, ""));
     document.getElementById("bloco-modo").innerHTML = el("details", {}, el("summary", {}, el("span", {"class": "rotulo"}, "Modo de rodízio") + " " + el("strong", {}, h(modo ? modo.nome : "nenhum")) + " "
-      + el("span", {"class": "nota"}, "· " + (escala ? "pela maior nota" : h(modo ? SELECOES[modo.selecao][0] : ""))) + " " + el("span", {"class": "editar"}, "editar")) + formModo + formSorteio);
+      + el("span", {"class": "nota"}, "· " + (escala ? "pela maior nota" : h(modo ? SELECOES[modo.selecao][0] : ""))) + " " + el("span", {"class": "editar"}, "editar")) + formModo + formManual + formSorteio);
     mostrarModo();
 
     // A tabela dos relógios: disponíveis primeiro (o de hoje, depois os com aviso), indisponíveis no fim; na tela, a ordem e os
@@ -248,6 +259,17 @@ function recarregarHoje() {
 // ao abrir: a página, e o relógio pedido (index.php?r=3) ou o cadastro de um novo (index.php?novo=1) no painel
 recarregarHoje().then(function () {
   var parametros = new URLSearchParams(window.location.search);
+  // index.php#manual (o link da página Plano): o quadro Modo de rodízio aberto, no Rodízio manual
+  if (window.location.hash === "#manual") {
+    var quadro = document.querySelector("#bloco-modo details");
+    var sel = document.querySelector("select[name=modo]");
+    if (quadro && sel) {
+      quadro.open = true;
+      sel.value = "manual";
+      mostrarModo();
+      quadro.scrollIntoView({block: "start"});
+    }
+  }
   if (parametros.get("r")) {
     abrirNoPainel(parseInt(parametros.get("r"), 10)).catch(function (e) {
       mostrarRecado("Não abri o relógio " + parametros.get("r") + ": " + e.message + ".");
@@ -258,4 +280,148 @@ recarregarHoje().then(function () {
   }
 }).catch(function (e) {
   mostrarRecado("Não consegui ler os dados: " + e.message);
+});
+
+// O rodízio manual (quadro Modo de rodízio, opção "Rodízio manual"): o período carregado e o que você mudou em cada dia
+// (data: id do relógio, "auto" ou "livre"), guardado enquanto você anda pelas páginas; o que não mudou vai como a API
+// mostrou. Gravar manda tudo de uma vez (recurso=rodizio, acao=manual)
+var manual = {de: "", ate: "", escolhas: {}};
+
+function manualRecado(texto, erro) {
+  var p = document.getElementById("manual-recado");
+  if (p) {
+    p.textContent = texto;
+    p.hidden = texto === "";
+    p.classList.toggle("erro", !!erro);
+  }
+}
+
+function manualCarregar(pagina) {
+  var caixa = document.getElementById("manual-dias");
+  caixa.innerHTML = el("p", {"class": "nota"}, "Carregando os dias…");
+  api({recurso: "rodizio_manual", de: manual.de, ate: manual.ate, pagina: pagina}).then(function (r) {
+    caixa.innerHTML = manualHtml(r);
+  }).catch(function (e) {
+    caixa.innerHTML = "";
+    manualRecado(e.message, true);
+  });
+}
+
+function manualHtml(r) {
+  var linhas = r.dias.map(function (dia) {
+    var atual = manual.escolhas[dia.data] !== undefined ? manual.escolhas[dia.data] : String(dia.escolha);
+    var opcoes = el("option", {"value": "auto", "selected": atual === "auto"}, "Decida por mim")
+      + el("optgroup", {"label": "Relógios"}, r.relogios.map(function (x) {
+        return el("option", {"value": String(x.id), "selected": atual === String(x.id)}, h(x.nome));
+      }).join(""))
+      + (dia.hoje ? "" : el("option", {"value": "livre", "selected": atual === "livre"}, "Sem relógio (dia livre)"));
+    var agora = dia.livre ? el("span", {"class": "nota"}, "dia livre") : (dia.relogio !== null ? h(dia.relogio) + " " + el("small", {"class": "a-mao"}, dia.origem === "manual" ? "à mão" : "sorteado") : el("span", {"class": "nota"}, "—"));
+    return el("tr", {"class": dia.dia_semana >= 6 ? "fds" : ""}, el("td", {"data-rotulo": "Dia"}, dataBr(dia.data, true) + " " + el("small", {}, dia.dia_semana_nome + (dia.hoje ? " · hoje" : "")))
+      + el("td", {"data-rotulo": "No plano agora"}, agora)
+      + el("td", {"data-rotulo": "Relógio do dia"}, el("select", {"data-dia": dia.data, "aria-label": "Relógio de " + dataBr(dia.data)}, opcoes)));
+  }).join("");
+  var nav = "";
+  if (r.paginas > 1) {
+    var botao = function (n, texto, atual) {
+      return atual ? el("span", {"class": "atual"}, texto) : el("button", {"type": "button", "class": "leve", "data-manual-pagina": n, "disabled": n < 1 || n > r.paginas}, texto);
+    };
+    nav += botao(r.pagina - 1, "‹ Anterior", false);
+    var ultimo = 0;
+    for (var n = 1; n <= r.paginas; n++) {
+      if (n === 1 || n === r.paginas || Math.abs(n - r.pagina) <= 2) {
+        if (ultimo > 0 && n > ultimo + 1) {
+          nav += el("span", {"class": "reticencias"}, "…");
+        }
+        nav += botao(n, String(n), n === r.pagina);
+        ultimo = n;
+      }
+    }
+    nav += botao(r.pagina + 1, "Próxima ›", false);
+    nav = el("nav", {"class": "paginas", "aria-label": "Páginas do período"}, nav);
+  }
+  return el("table", {"class": "compacta manual-tabela"}, el("thead", {}, el("tr", {}, el("th", {}, "Dia") + el("th", {}, "No plano agora") + el("th", {}, "Relógio do dia"))) + el("tbody", {}, linhas))
+    + nav
+    + el("p", {"class": "nota"}, "Página " + r.pagina + " de " + r.paginas + " · " + r.total_dias + (r.total_dias === 1 ? " dia" : " dias") + ", de " + dataBr(r.de) + " a " + dataBr(r.ate)
+      + ". O que você escolhe fica guardado enquanto você anda pelas páginas; nada muda antes de gravar.")
+    + el("div", {"class": "botoes"}, el("button", {"name": "acao", "value": "manual"}, "Gravar o rodízio manual")
+      + " " + el("button", {"class": "leve", "name": "acao", "value": "periodo_sortear"}, "Sortear de novo o período")
+      + " " + el("button", {"class": "leve", "name": "acao", "value": "periodo_livre"}, "Deixar o período livre"))
+    + el("p", {"class": "nota"}, h(r.decida_por_mim))
+    + el("p", {"class": "nota"}, "\"Sortear de novo o período\" apaga o que ele tem (à mão ou sorteado) e o modo de sempre sorteia outra vez; \"Deixar o período livre\" apaga e não sorteia: "
+      + "cada dia fica para você escolher. Os dois valem de amanhã em diante e não usam as escolhas desta lista.");
+}
+
+document.addEventListener("click", function (ev) {
+  if (ev.target.id === "manual-ok") {
+    var form = ev.target.form;
+    if (!form.de.value || !form.ate.value) {
+      manualRecado("Ponha o começo e o fim do período.", true);
+      return;
+    }
+    if (form.de.value !== manual.de || form.ate.value !== manual.ate) {
+      manual = {de: form.de.value, ate: form.ate.value, escolhas: {}};
+    }
+    manualRecado("", false);
+    manualCarregar(1);
+  }
+  var pag = ev.target.closest("[data-manual-pagina]");
+  if (pag && !pag.disabled) {
+    manualCarregar(parseInt(pag.getAttribute("data-manual-pagina"), 10));
+  }
+});
+
+document.addEventListener("change", function (ev) {
+  if (ev.target.matches("#manual-dias select[data-dia]")) {
+    manual.escolhas[ev.target.getAttribute("data-dia")] = ev.target.value;
+  }
+});
+
+document.addEventListener("submit", function (ev) {
+  if (ev.target.id !== "form-manual") {
+    return;
+  }
+  ev.preventDefault();
+  var acao = ev.submitter && ev.submitter.value ? ev.submitter.value : "manual";
+  if (!manual.de) {
+    return;
+  }
+  var periodo = dataBr(manual.de) + " a " + dataBr(manual.ate);
+  var pergunta = {
+    manual: "Gravar o rodízio manual de " + periodo + "? Os dias ficam com os relógios escolhidos; os de \"Decida por mim\" são decididos agora pelo sistema.",
+    periodo_sortear: "Tudo o que o período de " + periodo + " tem (à mão ou sorteado) sai e o modo de sempre sorteia de novo, de amanhã em diante. Continuar?",
+    periodo_livre: "Tudo o que o período de " + periodo + " tem sai e os dias ficam livres, sem relógio, de amanhã em diante. Continuar?"
+  }[acao];
+  if (!confirm(pergunta)) {
+    return;
+  }
+  var dados = new FormData();
+  dados.append("recurso", "rodizio");
+  dados.append("acao", acao);
+  dados.append("de", manual.de);
+  dados.append("ate", manual.ate);
+  if (acao === "manual") {
+    Object.keys(manual.escolhas).forEach(function (dt) {
+      dados.append("dias[" + dt + "]", manual.escolhas[dt]);
+    });
+  }
+  var botoes = ev.target.querySelectorAll("button");
+  botoes.forEach(function (b) { b.disabled = true; });
+  enviar(dados).then(function (res) {
+    botoes.forEach(function (b) { b.disabled = false; });
+    if (!res.ok) {
+      // recusado: o quadro fica como está, com o que você escolheu, e o motivo em cima
+      manualRecado(textoResposta(res), true);
+      return;
+    }
+    manual = {de: "", ate: "", escolhas: {}};
+    if (window.mostrarRecado) {
+      window.mostrarRecado(textoResposta(res));
+    }
+    if (window.recarregarHoje) {
+      window.recarregarHoje();
+    }
+  }).catch(function (e) {
+    botoes.forEach(function (b) { b.disabled = false; });
+    manualRecado("Não consegui gravar: " + e.message + ". Confira a conexão e tente de novo.", true);
+  });
 });

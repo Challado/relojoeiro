@@ -332,6 +332,14 @@ escrever(["recurso" => "rodizio", "acao" => "periodo_livre", "de" => $em(11), "a
 escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(12), "relogio_id" => $rel["crono"]]);
 escrever(["recurso" => "rodizio", "acao" => "resortear"]);
 ler("plano com livres", ["recurso" => "plano", "dias" => 30]);
+// o rodízio manual: os dias de um período de 7 em 7; gravar com um relógio escolhido, um dia livre e o resto no Decida por
+// mim (decidido ao gravar, pela nota, sem repetir o de ontem e o de amanhã). Um período no passado e um relógio que não
+// existe são recusados
+ler("rodizio manual", ["recurso" => "rodizio_manual", "de" => $em(16), "ate" => $em(25), "pagina" => 2]);
+escrever(["recurso" => "rodizio", "acao" => "manual", "de" => $em(16), "ate" => $em(25), "dias" => [$em(16) => $rel["manual"], $em(18) => "livre", $em(19) => "auto"]]);
+ler("rodizio manual gravado", ["recurso" => "rodizio_manual", "de" => $em(16), "ate" => $em(25)]);
+ler("rodizio manual recusado", ["recurso" => "rodizio_manual", "de" => substr(dia(3, "00:00"), 0, 10), "ate" => $em(2)]);
+escrever(["recurso" => "rodizio", "acao" => "manual", "de" => $em(16), "ate" => $em(17), "dias" => [$em(17) => 99999]], false);
 escrever(["recurso" => "rodizio", "acao" => "periodo", "de" => substr(dia(3, "00:00"), 0, 10), "ate" => $em(2), "relogio_ids" => [$rel["solar"]]], false);
 // o lançamento no relógio do dia, sem saber o id dele
 escrever(["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => "hoje", "tipo" => "pulso", "inicio" => dia(20, "08:00"), "fim" => dia(20, "09:00")]);

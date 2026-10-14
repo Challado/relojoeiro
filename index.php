@@ -108,6 +108,14 @@ function mostrarModo() {
     document.querySelectorAll("[data-explica-modo]").forEach(function (e) {
       e.hidden = e.getAttribute("data-explica-modo") !== modo.value;
     });
+    // o "Rodízio manual" (não é um modo): no lugar da forma de escolha, do Aplicar e do Sortear de novo, o período dia a dia
+    var manual = modo.value === "manual";
+    document.querySelectorAll("[data-nao-manual]").forEach(function (e) {
+      e.hidden = manual;
+    });
+    document.querySelectorAll("[data-so-manual]").forEach(function (e) {
+      e.hidden = !manual;
+    });
     // lidas do próprio quadro, que é trocado depois de cada envio (o script, não)
     var grade = document.querySelector(".modo-grade");
     var salvas = grade ? JSON.parse(grade.getAttribute("data-selecoes")) : {};

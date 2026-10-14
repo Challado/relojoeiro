@@ -1,12 +1,12 @@
 // Página Plano: o plano gravado de hoje em diante, com filtro de período e de relógio, o resumo de quantos dias cada relógio
 // tem no período (o período e o resumo vêm da API: recurso=plano, dias=N), em cada dia o "trocar por…" (recurso=rodizio,
-// acao=trocar_dia) e a escolha dos relógios de um período (acao=periodo e periodo_sortear). Remontada depois de cada troca.
+// acao=trocar_dia). Os relógios de um período, dia a dia, se escolhem no Rodízio manual (quadro Modo de rodízio, na
+// página Hoje). Remontada depois de cada troca.
 var MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 var SEMANA = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
 var filtro = {dias: "90", relogio: ""};
 var dados = null;
 var recado = "";
-var periodoAberto = false;
 
 function montarPlano() {
   var d = dados;
@@ -27,25 +27,9 @@ function montarPlano() {
       return el("option", {"value": String(r.id), "selected": filtro.relogio === String(r.id)}, h(r.nome));
     }).join(""))));
 
-  // escolher os relógios de um período: de, até, os relógios na ordem da lista (um por dia, ou N dias seguidos cada, e depois
-  // do último volta ao primeiro); e voltar a sortear os dias escolhidos à mão do período
-  res += el("details", {"class": "cartao-config periodo-mao", "open": periodoAberto}, el("summary", {}, "Escolher os relógios de um período")
-    + el("form", {"data-recurso": "rodizio", "class": "form-grade", "id": "form-periodo", "onsubmit": "return confirm(event.submitter && event.submitter.value === 'periodo_sortear' "
-      + "? 'Tudo o que o período tem (à mão ou sorteado) sai e ele é sorteado de novo. Continuar?' : (event.submitter && event.submitter.value === 'periodo_livre' "
-      + "? 'Tudo o que o período tem sai e os dias ficam livres, sem relógio, para você escolher à mão. Continuar?' : 'Os dias do período ficam com estes relógios, escolhidos à mão. Continuar?'))"},
-      el("input", {"type": "hidden", "name": "acao", "value": "periodo"})
-      + el("label", {}, "De " + el("input", {"type": "date", "name": "de", "min": d.hoje, "required": true}))
-      + el("label", {}, "Até " + el("input", {"type": "date", "name": "ate", "min": d.hoje, "required": true}))
-      + el("label", {}, "Dias seguidos de cada " + el("input", {"type": "number", "name": "dias_cada", "min": "1", "max": "365", "value": "1", "class": "curto"}))
-      + el("label", {}, "Incluir relógio " + el("select", {"id": "periodo-incluir"}, el("option", {"value": ""}, "escolha…") + d.relogios.filter(function (r) { return r.disponivel; }).map(function (r) {
-        return el("option", {"value": String(r.id)}, h(r.nome));
-      }).join("")))
-      + el("ol", {"id": "periodo-lista", "class": "periodo-lista", "style": "grid-column: 1 / -1"}, "")
-      + el("p", {"class": "nota", "style": "grid-column: 1 / -1"}, "Os relógios entram na ordem da lista: um por dia (ou os dias seguidos de cada), e depois do último volta ao primeiro; com um só, ele fica o período inteiro. "
-        + "Os dias ficam escolhidos à mão: sortear de novo não mexe neles. Não gostou? \"Sortear de novo o período\" apaga o que o período tem (à mão ou sorteado) e sorteia outra vez; "
-        + "\"Deixar o período livre\" apaga e não sorteia nada: cada dia fica para você escolher em \"trocar por…\". Os dois valem de amanhã em diante; só pedem o De e o Até.")
-      + el("div", {"class": "botoes"}, el("button", {}, "Aplicar ao período") + " " + el("button", {"class": "leve", "name": "acao", "value": "periodo_sortear", "formnovalidate": true}, "Sortear de novo o período")
-        + " " + el("button", {"class": "leve", "name": "acao", "value": "periodo_livre", "formnovalidate": true}, "Deixar o período livre"))));
+  // escolher os relógios de um período, dia a dia: no quadro Modo de rodízio da página Hoje (Rodízio manual)
+  res += el("p", {"class": "nota"}, "Para escolher os relógios de um período, dia a dia: na página " + el("a", {"href": "index.php#manual"}, "Hoje")
+    + ", no quadro Modo de rodízio, escolha \"Rodízio manual\".");
 
   // o resumo, da API: quantos dias cada relógio tem no período, a porcentagem, o próximo dia e quantos foram à mão
   var rs = d.resumo;
@@ -101,24 +85,7 @@ function recarregarPlano() {
 
 aoGravar = function (form, res) {
   recado = textoResposta(res);
-  periodoAberto = form.id === "form-periodo" && !res.ok;
   recarregarPlano();
 };
-
-// o período: escolher um relógio na lista "Incluir relógio" põe ele no fim da ordem; o × tira
-document.addEventListener("change", function (ev) {
-  if (ev.target.id === "periodo-incluir" && ev.target.value !== "") {
-    var sel = ev.target;
-    var nome = sel.options[sel.selectedIndex].text;
-    document.getElementById("periodo-lista").insertAdjacentHTML("beforeend", el("li", {}, el("input", {"type": "hidden", "name": "relogio_ids[]", "value": sel.value})
-      + h(nome) + " " + el("button", {"type": "button", "class": "discreto periodo-tirar", "aria-label": "Tirar " + nome}, "×")));
-    sel.value = "";
-  }
-});
-document.addEventListener("click", function (ev) {
-  if (ev.target.classList.contains("periodo-tirar")) {
-    ev.target.parentNode.remove();
-  }
-});
 
 recarregarPlano();

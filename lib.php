@@ -1695,6 +1695,151 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
     }
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// O rodízio manual (o "Rodízio manual" do quadro Modo de rodízio): você escolhe o relógio de cada dia de um período. Cada
+// dia tem um seletor com os relógios disponíveis, "Decida por mim" e "Sem relógio (dia livre)". O modo ativo continua
+// valendo fora do período.
+// ---------------------------------------------------------------------------------------------------------------------
+
+const RODIZIO_MANUAL_POR_PAGINA = 7;
+
+const RODIZIO_MANUAL_CRITERIO = "Decida por mim: o sistema escolhe pela nota dos critérios (os que você cadastra em Critérios: dias sem uso, "
+    . "equilíbrio, preferência, carga...), recalculada no começo de cada dia, com os dias anteriores do período (os que você escolheu e os que "
+    . "ele decidiu) já contados como uso; a garantia de rodízio vem na frente (quem passou do limite de dias sem uso, o mais tempo parado "
+    . "primeiro); e o relógio de ontem e o de amanhã ficam de fora, se houver outro. Empate: o cadastrado primeiro. A decisão é feita ao "
+    . "gravar e fica gravada no plano, com o motivo; hoje, com \"Decida por mim\", continua o relógio que já está no plano.";
+
+// O período do rodízio manual: de e ate (AAAA-MM-DD), de hoje em diante, até 2 anos. Devolve [de, ate, erro]
+function rodizio_manual_periodo($de, $ate)
+{
+    $hoje = new DateTimeImmutable("today");
+    $de_p = DateTimeImmutable::createFromFormat("!Y-m-d", (string)$de);
+    $ate_p = DateTimeImmutable::createFromFormat("!Y-m-d", (string)$ate);
+    $erro = null;
+    if (!$de_p || $de_p->format("Y-m-d") !== (string)$de || !$ate_p || $ate_p->format("Y-m-d") !== (string)$ate) {
+        $erro = "De e até: datas AAAA-MM-DD.";
+    } elseif ($de_p < $hoje) {
+        $erro = "O período começa num dia que já passou: o que foi usado se corrige nas marcações.";
+    } elseif ($ate_p < $de_p) {
+        $erro = "O fim do período vem antes do começo.";
+    } elseif ($de_p->diff($ate_p)->days > 730) {
+        $erro = "Um período de até 2 anos.";
+    }
+    return [$de_p, $ate_p, $erro];
+}
+
+// O que o seletor de um dia mostra de partida: o relógio escolhido à mão (o id), "livre" (dia livre) ou "auto" (o
+// "Decida por mim": o dia sorteado ou ainda sem relógio)
+function rodizio_manual_escolha($p, $livre)
+{
+    if ($p && $p["origem"] === "manual") {
+        return (int)$p["relogio_id"];
+    }
+    return $livre ? "livre" : "auto";
+}
+
+// Uma página do período (7 dias): cada dia com o dia da semana, o que o plano tem agora (o relógio, a origem, o motivo,
+// se é dia livre) e a escolha de partida do seletor; e as páginas, os relógios disponíveis e o critério do "Decida por mim"
+function rodizio_manual_pagina($de, $ate, $pagina)
+{
+    $total = $de->diff($ate)->days + 1;
+    $paginas = (int)ceil($total / RODIZIO_MANUAL_POR_PAGINA);
+    $pagina = max(1, min($paginas, (int)$pagina));
+    $hoje = date("Y-m-d");
+    $nomes = [1 => "segunda", 2 => "terça", 3 => "quarta", 4 => "quinta", 5 => "sexta", 6 => "sábado", 7 => "domingo"];
+    $dias = [];
+    $ini = $de->modify("+" . (($pagina - 1) * RODIZIO_MANUAL_POR_PAGINA) . " days");
+    for ($i = 0, $dia = $ini; $i < RODIZIO_MANUAL_POR_PAGINA && $dia <= $ate; $i++, $dia = $dia->modify("+1 day")) {
+        $data = $dia->format("Y-m-d");
+        $p = plano_do_dia($data);
+        $livre = dia_livre($data);
+        $dias[] = ["data" => $data, "dia_semana" => (int)$dia->format("N"), "dia_semana_nome" => $nomes[(int)$dia->format("N")], "hoje" => $data === $hoje,
+            "relogio_id" => $p ? (int)$p["relogio_id"] : null, "relogio" => $p ? $p["nome"] : null, "origem" => $p ? $p["origem"] : null,
+            "motivo" => $p ? $p["motivo"] : null, "livre" => $livre, "escolha" => rodizio_manual_escolha($p, $livre)];
+    }
+    return ["de" => $de->format("Y-m-d"), "ate" => $ate->format("Y-m-d"), "total_dias" => $total, "por_pagina" => RODIZIO_MANUAL_POR_PAGINA,
+        "pagina" => $pagina, "paginas" => $paginas, "dias" => $dias,
+        "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"]]; }, linhas("SELECT id, nome FROM relogio WHERE disponivel = 1 ORDER BY nome")),
+        "decida_por_mim" => RODIZIO_MANUAL_CRITERIO];
+}
+
+// O "Decida por mim": o relógio de cada dia "auto" do período, em ordem, pelo critério de RODIZIO_MANUAL_CRITERIO. De hoje
+// até o fim do período, cada dia vira uma sessão simulada no pulso (os do plano antes do período, os escolhidos e os
+// decididos), para os dias seguintes verem esse uso. $escolhas: [AAAA-MM-DD => id | "livre" | "auto"], todos os dias do
+// período. Devolve [AAAA-MM-DD => [relogio_id, motivo]] dos dias decididos
+function rodizio_manual_decidir($de, $ate, $escolhas)
+{
+    $hoje = new DateTimeImmutable("today");
+    $agora = time();
+    $pulso = lancamento_tipos()["pulso"] ?? null;
+    $rels = [];
+    foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY id") as $r) {
+        $rels[(int)$r["id"]] = $r;
+    }
+    $max = (int)cfg("max_sem_uso");
+    $res = [];
+    $anterior = null;
+    $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+    $GLOBALS["SIMULACAO"] = [];
+    $GLOBALS["SIMULACAO_VERSAO"] = ($GLOBALS["SIMULACAO_VERSAO"] ?? 0) + 1;
+    for ($dia = $hoje; $dia <= $ate; $dia = $dia->modify("+1 day")) {
+        $data = $dia->format("Y-m-d");
+        $ini_u = strtotime($data . " " . cfg("uso_inicio"));
+        $fim_u = strtotime($data . " " . cfg("uso_fim"));
+        $m_ini = max($agora, $ini_u);
+        $e = $dia < $de ? null : ($escolhas[$data] ?? "auto");
+        $escolhido = null;
+        if ($e === null || ($e === "auto" && $dia == $hoje && plano_do_dia($data) !== null)) {
+            // antes do período (e hoje, no "Decida por mim"): o que o plano já tem
+            $p = plano_do_dia($data);
+            $escolhido = $p ? (int)$p["relogio_id"] : null;
+        } elseif (is_int($e)) {
+            $escolhido = $e;
+        } elseif ($e === "auto" && count($rels) > 0) {
+            $cands = $rels;
+            $fora = [];
+            $amanha = $escolhas[$dia->modify("+1 day")->format("Y-m-d")] ?? null;
+            foreach ([[$anterior, "o de ontem"], [is_int($amanha) ? $amanha : null, "o de amanhã"]] as [$x, $qual]) {
+                if ($x !== null && isset($cands[$x]) && count($cands) > 1) {
+                    $fora[] = $qual . " (" . $cands[$x]["nome"] . ")";
+                    unset($cands[$x]);
+                }
+            }
+            $info = [];
+            foreach ($cands as $cid => $r) {
+                $ctx = ["r" => $r, "momento" => $m_ini, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio($cid)];
+                $dsu = variavel_valor("dias_sem_uso", $ctx);
+                $info[$cid] = ["dsu" => is_numeric($dsu) ? (float)$dsu : 9999.0, "nota" => nota_do_relogio($r, $m_ini)["nota"], "nunca" => nunca_no_pulso($ctx)];
+            }
+            $entre = count($cands) === 1 ? "o único candidato" : "entre " . count($cands) . " candidatos";
+            $parados = array_filter($info, function ($x) use ($max) { return $x["dsu"] > $max; });
+            if ($max > 0 && count($parados) > 0) {
+                uasort($parados, function ($x, $y) { return $y["dsu"] <=> $x["dsu"]; });
+                $escolhido = (int)array_key_first($parados);
+                $motivo = "Decida por mim, pela garantia de rodízio: " . motivo_parado($parados[$escolhido]["dsu"], $parados[$escolhido]["nunca"])
+                    . ", além do limite de " . $max . " dias sem uso, " . $entre . ".";
+            } else {
+                uasort($info, function ($x, $y) { return $y["nota"] <=> $x["nota"]; });
+                $escolhido = (int)array_key_first($info);
+                $motivo = "Decida por mim: a maior nota (" . motivo_nota($info[$escolhido]["nota"]) . "), " . $entre . ".";
+            }
+            if (count($fora) > 0) {
+                $motivo .= " " . ucfirst(implode(" e ", $fora)) . (count($fora) > 1 ? " ficaram" : " ficou") . " de fora.";
+            }
+            $res[$data] = [$escolhido, corta_texto($motivo, 300)];
+        }
+        // o dia vira uma sessão simulada no pulso (se ainda não tem a do rodízio): só o uso, como no sorteio
+        if ($escolhido !== null && $pulso && $fim_u > $agora && valor("SELECT id FROM lancamento WHERE tipo_id = ? AND origem = 'rodizio' AND DATE(inicio) = ?",
+            [(int)$pulso["id"], $data]) === null) {
+            simular_lancamento($escolhido, "pulso", $m_ini, $fim_u, null, true);
+        }
+        $anterior = $escolhido;
+    }
+    $GLOBALS["SIMULACAO"] = [];
+    $GLOBALS["SIMULACAO_VERSAO"]++;
+    return $res;
+}
+
 // Um tamanho do php.ini ("8M", "2G", "512K", "1048576") em bytes; 0: sem limite ou não informado
 function ini_bytes($v)
 {
