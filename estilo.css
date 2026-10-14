@@ -977,3 +977,47 @@ table.resumo-plano { max-width: 44rem; }
   .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr > td:first-child::before { content: none; }
   .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr > td:empty { display: none; }
 }
+
+/* os documentos de um relógio: a galeria das fotos, o visor em tela cheia, o player dos vídeos, o PDF e os cartões */
+.documentos .doc-secao { margin: 1.2rem 0; }
+.documentos .envio-docs { background: var(--papel); border: 1px solid var(--aco); border-radius: 10px; padding: .6rem .9rem; margin: .8rem 0; }
+.documentos .envio-docs summary { cursor: pointer; font-weight: 600; }
+.galeria { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .6rem; }
+.galeria-foto { display: flex; flex-direction: column; gap: .25rem; padding: 0; border: 1px solid var(--aco); border-radius: 8px; background: var(--papel); overflow: hidden; cursor: pointer; text-align: left; }
+.galeria-foto img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block; background: #e9edf1; }
+.galeria-foto span { font-size: .8rem; padding: 0 .4rem .35rem; color: var(--cinza); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.doc-cartao { background: var(--papel); border: 1px solid var(--aco); border-radius: 10px; padding: .6rem .8rem; margin: .5rem 0; }
+.doc-cartao p { margin: .3rem 0; }
+.doc-descricao { margin: .25rem 0; white-space: pre-line; }
+.doc-editar summary { cursor: pointer; color: var(--safira); font-size: .85rem; }
+.etiqueta { font-size: .75rem; padding: .05rem .4rem; border: 1px solid var(--aco); border-radius: .3rem; color: var(--cinza); }
+.botao-link { display: inline-block; padding: .3rem .7rem; border: 1px solid var(--aco); border-radius: .4rem; text-decoration: none; color: var(--safira); font-size: .9rem; }
+.pdf-visor iframe { width: 100%; height: 80vh; border: 1px solid var(--aco); border-radius: 8px; background: #fff; }
+.nfe { border-collapse: collapse; font-size: .9rem; margin: .4rem 0; }
+.nfe th { text-align: left; color: var(--cinza); font-weight: 600; padding: .15rem .8rem .15rem 0; vertical-align: top; white-space: nowrap; }
+.nfe td { padding: .15rem 0; overflow-wrap: anywhere; }
+.lista-videos { padding-left: 1.4rem; }
+.lista-videos li { margin: .35rem 0; }
+.lista-videos li .check { display: inline; }
+.player:empty { display: none; }
+.player { background: #10161d; border-radius: 10px; padding: .6rem; margin: .6rem 0; color: #e8edf2; }
+.player video { width: 100%; max-height: 70vh; background: #000; border-radius: 6px; display: block; }
+.player-topo { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .4rem; align-items: center; margin-bottom: .5rem; }
+.player-topo button { margin-left: .3rem; }
+.visor { position: fixed; inset: 0; z-index: 9000; background: #080b0f; color: #eef2f6; display: flex; flex-direction: column; }
+.visor-topo { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: .5rem .8rem; }
+.visor-topo button, .visor-topo .botao-link { margin-left: .4rem; background: transparent; color: #eef2f6; border: 1px solid rgba(255, 255, 255, .35); border-radius: .4rem; padding: .3rem .7rem; cursor: pointer; }
+.visor-fechar { font-size: 1.3rem; line-height: 1; }
+.visor-foto { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; position: relative; }
+.visor-foto img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.visor-ant, .visor-prox { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0, 0, 0, .35); color: #fff; border: 0; font-size: 2.4rem; width: 3rem; height: 4rem; cursor: pointer; border-radius: .4rem; }
+.visor-ant { left: .4rem; }
+.visor-prox { right: .4rem; }
+.visor-legenda { padding: .5rem .9rem .9rem; text-align: center; }
+.visor-legenda p { margin: .2rem 0 0; white-space: pre-line; color: #c9d2db; }
+body.com-visor { overflow: hidden; }
+@media (max-width: 700px) {
+  .galeria { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+  .visor-ant, .visor-prox { width: 2.4rem; height: 3.2rem; font-size: 1.8rem; }
+  .pdf-visor iframe { height: 70vh; }
+}
