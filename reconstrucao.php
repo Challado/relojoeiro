@@ -45,8 +45,8 @@ const RECONSTRUCAO_TABELAS = [
 
 // As constantes do config.php
 const RECONSTRUCAO_CONFIG_PHP = [
-    "DB_TIPO" => "mysql (MySQL ou MariaDB, o padrão), pgsql (PostgreSQL) ou sqlite",
-    "DB_HOST, DB_PORTA, DB_NOME, DB_USUARIO, DB_SENHA" => "o servidor do banco (MySQL e PostgreSQL)",
+    "DB_TIPO" => "mysql (MySQL ou MariaDB, o padrão), pgsql (PostgreSQL), sqlite ou firebird (Firebird 3+)",
+    "DB_HOST, DB_PORTA, DB_NOME, DB_USUARIO, DB_SENHA" => "o servidor do banco (MySQL, PostgreSQL e Firebird; no Firebird, DB_NOME é o caminho do arquivo .fdb no servidor ou um apelido, e DB_HOST vazio abre o arquivo direto)",
     "DB_ARQUIVO" => "o arquivo do banco (SQLite), fora da pasta publicada",
     "API_TOKEN" => "obrigatório, com pelo menos 10 caracteres: sem ele o sistema inteiro para (as páginas, a API e o cron dizem o motivo)",
     "FUSO" => "o fuso horário do sistema e das datas gravadas (vazio: o do PHP)",
@@ -797,7 +797,7 @@ const RECONSTRUCAO_CODIGO = [
     "api.php" => ["api", "a API, a porta única: a autenticação, cada consulta e cada escrita, os filtros, o JSON e o XML, e no cabeçalho a documentação inteira"],
     "lib.php" => ["api", "o núcleo: o token, o login, a árvore, os campos, os lançamentos, o motor das fórmulas, os avisos, os critérios, o rodízio, a escala e as listas do código"],
     "operacoes.php" => ["api", "as escritas: cada ação valida, grava e devolve ok, mensagem e erros (a API chama estas funções)"],
-    "banco.php" => ["api", "o banco: MySQL/MariaDB, PostgreSQL ou SQLite, o SQL escrito uma vez só e traduzido para cada um, e o catálogo do modelo"],
+    "banco.php" => ["api", "o banco: MySQL/MariaDB, PostgreSQL, SQLite ou Firebird, o SQL escrito uma vez só e traduzido para cada um, e o catálogo do modelo"],
     "reconstrucao.php" => ["api", "a reconstrução (recurso=reconstrucao): as regras de cada parte, a especificação das telas e esta lista do código"],
     "cron.php" => ["linha_de_comando", "o cron, a cada minuto: as mensagens, o pulso sozinho, a agenda, a manutenção dos documentos, sempre mudo e registrado no banco"],
     "instalar.php" => ["linha_de_comando", "a instalação pelo servidor (a mesma do POST recurso=instalacao)"],
@@ -808,7 +808,7 @@ const RECONSTRUCAO_CODIGO = [
     ".htaccess" => ["servidor", "o Apache: o que abre pelo navegador e o que fica bloqueado"],
     "nginx-relogios.conf" => ["servidor", "o nginx: o mesmo bloqueio do .htaccess"],
     "testes/cenario.php" => ["testes", "o roteiro de aceitação: faz pela API o que uma pessoa faz e tira a fotografia de tudo o que a API devolve"],
-    "testes/comparar.php" => ["testes", "compara duas fotografias do cenário (os três bancos, ou a reescrita com a versão atual)"],
+    "testes/comparar.php" => ["testes", "compara duas fotografias do cenário (os quatro bancos, ou a reescrita com a versão atual)"],
     "testes/README.md" => ["testes", "como rodar o teste de paridade"],
     "README.md" => ["documentacao", "o manual inteiro: para quem usa, a instalação, a API e como é por dentro"],
     "PORTE.md" => ["documentacao", "o que o sistema antigo fazia e onde está no novo"],
@@ -823,7 +823,7 @@ const RECONSTRUCAO_NAO_MOSTRADOS = [
         "o_que_ver" => "o config.exemplo.php (o modelo, com cada constante explicada) e listas.config_php no recurso=reconstrucao"],
     ["arquivo" => "a chave JSON do Google (google-conta-servico.json ou o caminho da Configuração)", "por_que" => "é uma credencial",
         "o_que_ver" => "a seção mensagens do recurso=reconstrucao e o README (Google Agenda): como criar a conta de serviço e a chave"],
-    ["arquivo" => "o banco de dados (o servidor MySQL/PostgreSQL, ou o arquivo do SQLite)", "por_que" => "são os dados, não o código",
+    ["arquivo" => "o banco de dados (o servidor MySQL/PostgreSQL/Firebird, ou o arquivo do SQLite)", "por_que" => "são os dados, não o código",
         "o_que_ver" => "o modelo em modelo_de_dados (recurso=reconstrucao) e os dados pela própria API (api.php sem recurso: tudo o que está guardado)"],
     ["arquivo" => "a pasta dos documentos (DOCUMENTOS_PASTA)", "por_que" => "são os arquivos de cada relógio, não o código",
         "o_que_ver" => "recurso=documentos (a lista) e recurso=documento (cada arquivo)"],
@@ -986,9 +986,10 @@ function reconstrucao()
                 "O banco se defende: relacional e normalizado, toda ligação é chave estrangeira (obrigatória: some junto, ON DELETE CASCADE; opcional: "
                     . "a ligação se desfaz, SET NULL), nenhuma lista guardada como texto, e regras de validação (CHECK, NOT NULL, UNIQUE) iguais às da "
                     . "tela. Uma gravação errada é recusada pelo banco venha de onde vier (a API responde 409 com a regra quebrada).",
-                "Os mesmos resultados em MySQL/MariaDB, PostgreSQL e SQLite: o SQL do sistema é escrito uma vez só; o que muda de banco para banco "
-                    . "fica numa camada de tradução. Maiúsculas e acentos não contam nos textos curtos (\"Relógio\" = \"RELOGIO\"), em todos; no "
-                    . "MySQL/MariaDB, toda tabela em utf8mb4_unicode_ci (a utf8mb4_general_ci, padrão do MariaDB, ordena diferente).",
+                "Os mesmos resultados em MySQL/MariaDB, PostgreSQL, SQLite e Firebird: o SQL do sistema é escrito uma vez só; o que muda de banco "
+                    . "para banco fica numa camada de tradução. Maiúsculas e acentos não contam nos textos curtos (\"Relógio\" = \"RELOGIO\"), em todos; no "
+                    . "MySQL/MariaDB, toda tabela em utf8mb4_unicode_ci (a utf8mb4_general_ci, padrão do MariaDB, ordena diferente); no Firebird, a "
+                    . "collation UNICODE_CI_AI.",
                 "Datas e horas no fuso do sistema (FUSO). Nas fórmulas, o tempo é contado em dias no horário local: a meia-noite local de qualquer "
                     . "data é um número inteiro e a fração é a hora do dia; assim uma data e o agora entram na mesma conta sem o fuso aparecer.",
                 "O cron é mudo e rastreável: roda a cada minuto, não escreve na saída, e registra no banco o que fez.",
@@ -1002,11 +1003,14 @@ function reconstrucao()
                     . "medido, o pulso sozinho, a linha do tempo, as mensagens, a agenda e os documentos.",
                 "As gravações (operacoes.php): uma função por recurso (op_relogio, op_lancamento, op_campos...), que valida tudo, grava e devolve "
                     . "{ok, mensagem, erros[], ...}. A tela e a API chamam as mesmas.",
-                "O banco (banco.php): a conexão com as extensões nativas (mysqli, pgsql, sqlite3), parâmetros sempre por ? (nunca texto colado no SQL), "
-                    . "e a tradução do dialeto do MySQL para os outros: AUTO_INCREMENT, ENUM (vira CHECK ... IN), TINYINT, DATETIME, os INDEX dentro do "
-                    . "CREATE TABLE, AFTER, MODIFY COLUMN (o SQLite refaz a tabela), INSERT IGNORE, REPLACE INTO, NOW(), <=>, LIKE sem diferenciar "
-                    . "maiúsculas; e três comandos próprios das migrações: ALTER FOREIGN KEY, DROP COLUMN e ADD CONSTRAINT ... CHECK (trocando a regra "
-                    . "sem perder a anterior se os dados não cumprem a nova).",
+                "O banco (banco.php): a conexão com as extensões do PHP (mysqli, pgsql, sqlite3, pdo_firebird), parâmetros sempre por ? (nunca texto "
+                    . "colado no SQL), e a tradução do dialeto do MySQL para os outros: AUTO_INCREMENT, ENUM (vira CHECK ... IN), TINYINT, DATETIME, os INDEX "
+                    . "dentro do CREATE TABLE, AFTER, MODIFY COLUMN (o SQLite refaz a tabela), INSERT IGNORE, REPLACE INTO, NOW(), <=>, LIKE sem diferenciar "
+                    . "maiúsculas; no Firebird, também LIMIT/OFFSET (OFFSET ... ROWS FETCH NEXT ... ROWS ONLY), DATE(x) (CAST AS DATE), CONCAT (||), "
+                    . "LENGTH/LEAST/GREATEST (OCTET_LENGTH/MINVALUE/MAXVALUE), o SELECT sem FROM (FROM RDB\$DATABASE), o INSERT de várias linhas (um por "
+                    . "linha), a tabela no (palavra reservada: \"NO\"), nomes de índice e de regra com até 31 letras, o TEXT como VARCHAR(8191) e a chave "
+                    . "única de várias colunas com coluna vazia como índice único de uma expressão; e três comandos próprios das migrações: ALTER FOREIGN "
+                    . "KEY, DROP COLUMN e ADD CONSTRAINT ... CHECK (trocando a regra sem perder a anterior se os dados não cumprem a nova).",
                 "As páginas (index.php, plano.php, ficha.php, documentos.php, historico.php, configuracao.php, criterios.php, grupos.php, "
                     . "cadastros.php, execucoes.php, usuarios.php, ajuda.php) só entregam o esqueleto, sem conferir nem o login; o JavaScript de cada uma "
                     . "(hoje.js, painel.js, configuracao.js, ajuda.js...) chama a API e monta a tela, sem fazer conta: resumos, porcentagens e situações "
@@ -1042,7 +1046,7 @@ function reconstrucao()
                 "12. Os documentos (pasta, cópia no banco em três níveis, galeria, vídeos, PDF, NF-e) e a manutenção deles no cron.",
                 "13. As telas, os usuários, as execuções do cron, a ajuda (o README dentro do sistema: os mesmos trechos que recurso=manual devolve) "
                     . "e a importação do sistema anterior.",
-                "14. A aceitação: o roteiro de testes nos três bancos dá as mesmas respostas (seção testes).",
+                "14. A aceitação: o roteiro de testes nos quatro bancos dá as mesmas respostas (seção testes).",
             ]),
             $secao("arvore_campos", "A árvore, os campos e os relógios", [
                 "A árvore de grupos tem quantos níveis o usuário quiser; um relógio fica num grupo só (ou na raiz). Tudo o que se cadastra num grupo "
@@ -1186,7 +1190,7 @@ function reconstrucao()
                     . "sincronização; conta os documentos perdidos; e, com a BACKUP_PASTA no config.php, faz a cópia de segurança do banco.",
                 "Os avisos na hora, a cada minuto: os vencidos agora (de todos os relógios) que ainda não foram vão pelo Telegram.",
                 "A cópia de segurança: um arquivo relojoeiro-AAAA-MM-DD-HHMMSS.jsonl.gz na BACKUP_PASTA (fora da pasta publicada: dentro dela, "
-                    . "recusada), JSON Lines comprimido, o mesmo nos três bancos: a primeira linha é o cabeçalho (relojoeiro_copia 1, criada, banco, "
+                    . "recusada), JSON Lines comprimido, o mesmo nos quatro bancos: a primeira linha é o cabeçalho (relojoeiro_copia 1, criada, banco, "
                     . "versao: a última migração, documentos, tabelas); depois, para cada tabela, uma linha {tabela, colunas, binarias} e uma linha "
                     . "por registro com a lista dos valores (binários em base64). As tabelas vêm na ordem em que voltam (a citada antes da que cita; "
                     . "a que cita a si mesma, a árvore, volta em rodadas). Ficam as BACKUP_MANTER mais novas (padrão 7). O conteúdo dos documentos "
@@ -1264,7 +1268,7 @@ function reconstrucao()
                 "testes/cenario.php faz pela API o que uma pessoa faz (cadastra relógios de cada tipo, lança cordas, cargas, sol, winder e pilha, monta a "
                     . "escala, mexe nos critérios, nos eventos e nas fotos, roda o cron) e tira a fotografia de tudo o que a API devolve; "
                     . "testes/comparar.php compara duas fotografias. Com RELOGIOS_SEMENTE (o sorteio fica previsível), o roteiro rodado em MySQL, "
-                    . "PostgreSQL e SQLite, num banco recém-instalado, tem de dar as mesmas respostas; e a reescrita, as mesmas da versão atual.",
+                    . "PostgreSQL, SQLite e Firebird, num banco recém-instalado, tem de dar as mesmas respostas; e a reescrita, as mesmas da versão atual.",
                 "Além disso: nenhuma escrita do roteiro recusada; o dicionário da ajuda explica todos os campos das respostas; as telas sem erro de "
                     . "JavaScript e sem rolagem lateral no celular, no tablet e no computador.",
             ]),

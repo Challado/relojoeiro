@@ -1,18 +1,24 @@
 <?php
-// Relógios 2: o banco. O sistema fala com MySQL/MariaDB, PostgreSQL ou SQLite, cada um pela extensão nativa do PHP
-// (mysqli, pgsql, sqlite3), escolhido por DB_TIPO no config.php ("mysql", o padrão; "pgsql"; "sqlite"). O resto do
-// código escreve o SQL uma vez só, no dialeto do MySQL, e chama sql(), linhas(), linha(), valor(); daqui para dentro:
+// Relógios 2: o banco. O sistema fala com MySQL/MariaDB, PostgreSQL, SQLite ou Firebird, cada um pela extensão do PHP
+// (mysqli, pgsql, sqlite3, pdo_firebird), escolhido por DB_TIPO no config.php ("mysql", o padrão; "pgsql"; "sqlite";
+// "firebird"). O resto do código escreve o SQL uma vez só, no dialeto do MySQL, e chama sql(), linhas(), linha(), valor();
+// daqui para dentro:
 //   - a tradução: o "?" vira $1, $2... no Postgres; REPLACE INTO, INSERT IGNORE e NOW() viram o equivalente de cada banco;
 //     os NULL vêm primeiro no ORDER BY crescente, como no MySQL; os textos com barra invertida ('a\nb') viram o texto
-//     que o MySQL entende; no DDL (a instalação e as migrações): AUTO_INCREMENT, ENUM, TINYINT, DATETIME, os INDEX dentro
-//     do CREATE TABLE, o AFTER e o MODIFY COLUMN;
-//   - os valores que voltam iguais nos três: inteiro como inteiro, decimal como texto com as casas ("68.00"), data e hora
-//     como "2026-09-27 14:05:00", o binário (a foto) como binário;
+//     que o MySQL entende; no Firebird, também o LIMIT/OFFSET (OFFSET ... ROWS FETCH NEXT ... ROWS ONLY), o DATE(x)
+//     (CAST(x AS DATE)), o <=> (IS NOT DISTINCT FROM), a tabela "no" (uma palavra reservada dele: vai entre aspas, "NO")
+//     e o INSERT com várias linhas (um INSERT por linha); no DDL (a instalação e as migrações): AUTO_INCREMENT, ENUM,
+//     TINYINT, DATETIME, os INDEX dentro do CREATE TABLE, o AFTER e o MODIFY COLUMN, e no Firebird os nomes de índice e de
+//     regra com mais de 31 letras (encurtados com um pedaço do md5 do nome inteiro);
+//   - os valores que voltam iguais nos quatro: inteiro como inteiro, decimal como texto com as casas ("68.00"), data e
+//     hora como "2026-09-27 14:05:00", o binário (a foto) como binário;
 //   - maiúsculas e acentos: no MySQL, "Relógio" = "relogio" (a collation do banco). Nos outros, as colunas VARCHAR ganham
-//     a collation "ci", que faz o mesmo: no Postgres, uma collation ICU não determinística; no SQLite, uma função do PHP.
-//     As colunas TEXT (os textos longos: fórmulas, mensagens, registros) ficam na comparação exata.
+//     a collation que faz o mesmo: no Postgres, "ci", uma collation ICU não determinística; no SQLite, "ci", uma função
+//     do PHP; no Firebird, UNICODE_CI_AI (também nas colunas TEXT, como no MySQL). No Postgres e no SQLite, as colunas
+//     TEXT (os textos longos: fórmulas, mensagens, registros) ficam na comparação exata. No Firebird, o TEXT é um
+//     VARCHAR(8191): o texto longo vai até 8191 letras (no MySQL, 65535 bytes).
 // O schema.sql (a instalação) e as migrações futuras continuam num arquivo só: o DDL no dialeto do MySQL (a tradução
-// cuida do resto) e os dados em SQL comum aos três bancos.
+// cuida do resto) e os dados em SQL comum aos quatro bancos.
 
 class BancoErro extends RuntimeException
 {
@@ -28,11 +34,19 @@ class BancoErro extends RuntimeException
 }
 
 // O erro de cada extensão como BancoErro, dizendo se foi uma regra de integridade (chave estrangeira, chave única, NOT NULL,
-// CHECK): SQLSTATE 23xxx no MySQL e no Postgres (e o 3819 do CHECK no MySQL 8), o código 19 (SQLITE_CONSTRAINT) no SQLite
+// CHECK): SQLSTATE 23xxx no MySQL e no Postgres (e o 3819 do CHECK no MySQL 8), o código 19 (SQLITE_CONSTRAINT) no SQLite,
+// e no Firebird o SQLSTATE 23xxx ou os códigos SQL -530 (chave estrangeira), -803 (chave única), -297 (CHECK) e -625 (NOT NULL)
 function banco_erro($e)
 {
     if ($e instanceof BancoErro) {
         return $e;
+    }
+    if ($e instanceof PDOException) {
+        $info = $e->errorInfo ?? [];
+        $estado = (string)($info[0] ?? $e->getCode());
+        $codigo = (int)($info[1] ?? 0);
+        $msg = trim((string)preg_replace("/\\s+/", " ", (string)($info[2] ?? $e->getMessage())));
+        return new BancoErro($msg !== "" ? $msg : $e->getMessage(), $codigo, $e, strpos($estado, "23") === 0 || in_array($codigo, [-530, -803, -297, -625], true));
     }
     if ($e instanceof mysqli_sql_exception) {
         // a regra de validação (CHECK) quebrada: no MariaDB vem como 23000; no MySQL 8, o erro 3819 (SQLSTATE HY000)
@@ -52,9 +66,11 @@ function banco_tipo()
             $tipo = "pgsql";
         } elseif ($tipo === "sqlite3") {
             $tipo = "sqlite";
+        } elseif ($tipo === "fb" || $tipo === "interbase") {
+            $tipo = "firebird";
         }
-        if (!in_array($tipo, ["mysql", "pgsql", "sqlite"], true)) {
-            throw new BancoErro("DB_TIPO no config.php tem de ser mysql, pgsql ou sqlite (está \"" . $tipo . "\")");
+        if (!in_array($tipo, ["mysql", "pgsql", "sqlite", "firebird"], true)) {
+            throw new BancoErro("DB_TIPO no config.php tem de ser mysql, pgsql, sqlite ou firebird (está \"" . $tipo . "\")");
         }
     }
     return $tipo;
@@ -142,6 +158,21 @@ function db()
                 return in_array(null, $a, true) ? null : max($a);
             });
             break;
+        case "firebird":
+            if (!extension_loaded("pdo_firebird")) {
+                throw new BancoErro("o PHP não tem a extensão pdo_firebird (no php.ini: extension=pdo_firebird)");
+            }
+            // o banco: DB_NOME é o caminho do arquivo .fdb no servidor (ou um apelido do databases.conf); DB_HOST vazio
+            // abre o arquivo direto, sem servidor (o Firebird embutido)
+            $host = trim((string)(defined("DB_HOST") ? DB_HOST : ""));
+            $dsn = "firebird:dbname=" . ($host !== "" ? $host . ($porta > 0 ? "/" . $porta : "") . ":" : "") . DB_NOME . ";charset=UTF8";
+            try {
+                $c = new PDO($dsn, DB_USUARIO, DB_SENHA, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_CASE => PDO::CASE_LOWER]);
+            } catch (PDOException $e) {
+                $c = null;
+                throw new BancoErro("não consegui abrir o banco no Firebird: " . trim($e->getMessage()));
+            }
+            break;
     }
     return $c;
 }
@@ -202,6 +233,9 @@ function ultimo_id()
             return (int)db()->insert_id;
         case "pgsql":
             return (int)valor("SELECT lastval()");
+        case "firebird":
+            // o id que o RETURNING id do último INSERT devolveu (banco_executar)
+            return (int)banco_fb_ultimo_id();
         default:
             return (int)db()->lastInsertRowID();
     }
@@ -319,6 +353,9 @@ function banco_executar($comando, $params = [])
             }
             pg_free_result($res);
             return [$nomes, $linhas];
+
+        case "firebird":
+            return banco_fb_executar($comando, $params);
 
         default:
             try {
@@ -459,6 +496,108 @@ function banco_sqlite_tipos($limpar = false)
     return $cache;
 }
 
+// Firebird: executa com os parâmetros. Antes: a hora de agora no lugar do NOW() (a do PHP, no fuso do sistema: o Firebird
+// não tem fuso por conexão), as datas como o MySQL guarda, e o RETURNING id no INSERT de uma linha numa tabela com id
+// automático (o ultimo_id()). O INSERT IGNORE (marcado /*IGNORE*/ na tradução) não para numa chave repetida
+function banco_fb_executar($comando, $params)
+{
+    $comando = banco_fb_agora($comando);
+    $ignorar = strncmp($comando, "/*IGNORE*/", 10) === 0;
+    $retorna = false;
+    if (preg_match("/^(?:\\/\\*IGNORE\\*\\/ )?INSERT INTO (\\w+|\"\\w+\") ?\\([^)]*\\) ?VALUES ?\\(/i", $comando, $m) === 1
+        && stripos($comando, " RETURNING ") === false && in_array(strtolower(trim($m[1], "\"")), banco_fb_identidades(), true)) {
+        $comando = rtrim($comando, " ;") . " RETURNING id";
+        $retorna = true;
+    }
+    try {
+        $st = db()->prepare($comando);
+        foreach ($params as $i => $p) {
+            if ($p === null) {
+                $st->bindValue($i + 1, null, PDO::PARAM_NULL);
+            } elseif (is_int($p) || is_bool($p)) {
+                $st->bindValue($i + 1, (int)$p, PDO::PARAM_INT);
+            } elseif (is_float($p)) {
+                $st->bindValue($i + 1, (string)$p, PDO::PARAM_STR);
+            } elseif (banco_binario((string)$p)) {
+                $st->bindValue($i + 1, (string)$p, PDO::PARAM_LOB);
+            } else {
+                $st->bindValue($i + 1, banco_sqlite_data((string)$p), PDO::PARAM_STR);
+            }
+        }
+        $st->execute();
+    } catch (PDOException $e) {
+        $erro = banco_erro($e);
+        if ($ignorar && $erro->integridade && in_array($erro->getCode(), [-803], true)) {
+            return null;
+        }
+        throw $erro;
+    }
+    if ($retorna) {
+        $l = $st->fetch(PDO::FETCH_NUM);
+        $st->closeCursor();
+        banco_fb_ultimo_id($l !== false ? (int)$l[0] : 0);
+        return null;
+    }
+    $n = $st->columnCount();
+    if ($n === 0) {
+        return null;
+    }
+    $nomes = [];
+    for ($i = 0; $i < $n; $i++) {
+        $nomes[] = strtolower((string)$st->getColumnMeta($i)["name"]);
+    }
+    $linhas = $st->fetchAll(PDO::FETCH_NUM);
+    $st->closeCursor();
+    return [$nomes, $linhas];
+}
+
+// O id do último INSERT no Firebird (guardado pelo banco_fb_executar)
+function banco_fb_ultimo_id($novo = null)
+{
+    static $id = 0;
+    if ($novo !== null) {
+        $id = $novo;
+    }
+    return $id;
+}
+
+// O NOW() traduzido para o Firebird é CAST('@@AGORA@@' AS TIMESTAMP): aqui a marca vira a hora do PHP, na hora de rodar
+// (a tradução fica guardada e a hora muda)
+function banco_fb_agora($comando)
+{
+    return strpos($comando, "'@@AGORA@@'") === false ? $comando : str_replace("'@@AGORA@@'", "'" . date("Y-m-d H:i:s") . "'", $comando);
+}
+
+// As tabelas do Firebird com a coluna id automática (IDENTITY), em minúsculas. Muda com o DDL (limpar)
+function banco_fb_identidades($limpar = false)
+{
+    static $cache = null;
+    if ($limpar) {
+        $cache = null;
+        return [];
+    }
+    if ($cache === null) {
+        $cache = [];
+        foreach (db()->query("SELECT TRIM(RDB\$RELATION_NAME) FROM RDB\$RELATION_FIELDS WHERE RDB\$FIELD_NAME = 'ID' AND RDB\$IDENTITY_TYPE IS NOT NULL")->fetchAll(PDO::FETCH_NUM) as $l) {
+            $cache[] = strtolower($l[0]);
+        }
+    }
+    return $cache;
+}
+
+// Um nome do Firebird: até 31 letras. O nome maior (de um índice, de uma regra) vira o começo dele, "_" e 8 letras do
+// md5 do nome inteiro (o mesmo nome dá sempre o mesmo encurtado)
+function banco_fb_nome($nome)
+{
+    return strlen($nome) <= 31 ? $nome : substr($nome, 0, 22) . "_" . substr(md5($nome), 0, 8);
+}
+
+// O nome de uma tabela no SQL do banco em uso: no Firebird, "no" é palavra reservada e vai entre aspas, em maiúsculas
+function banco_tabela_sql($tabela)
+{
+    return banco_tipo() === "firebird" && strtolower($tabela) === "no" ? "\"NO\"" : $tabela;
+}
+
 // Um comando sem parâmetros, direto (o DDL, a sessão): sem prepare
 function banco_direto($comando, $c = null)
 {
@@ -483,6 +622,22 @@ function banco_direto($comando, $c = null)
                     }
                 }
                 break;
+            case "firebird":
+                $comando = banco_fb_agora($comando);
+                try {
+                    // (prepare e execute, e não o exec: no pdo_firebird, o exec perde a mensagem do erro)
+                    $c->prepare($comando)->execute();
+                    if (preg_match("/^\\s*(CREATE|ALTER|DROP|RECREATE)\\s/i", $comando) === 1) {
+                        banco_fb_transacao("firmar");
+                    }
+                } catch (PDOException $e) {
+                    $erro = banco_erro($e);
+                    if (strncmp($comando, "/*IGNORE*/", 10) === 0 && $erro->getCode() === -803) {
+                        break;
+                    }
+                    throw $erro;
+                }
+                break;
             default:
                 $c->exec($comando);
         }
@@ -495,19 +650,88 @@ function banco_direto($comando, $c = null)
     }
 }
 
+// A transação. No Firebird, pelo PDO (fora dela, cada comando se confirma sozinho)
 function banco_inicio()
 {
+    if (banco_tipo() === "firebird") {
+        banco_fb_transacao("inicio");
+        return;
+    }
     banco_direto(banco_tipo() === "mysql" ? "START TRANSACTION" : "BEGIN");
 }
 
 function banco_confirma()
 {
+    if (banco_tipo() === "firebird") {
+        banco_fb_transacao("confirma");
+        return;
+    }
     banco_direto("COMMIT");
 }
 
 function banco_desfaz()
 {
+    if (banco_tipo() === "firebird") {
+        banco_fb_transacao("desfaz");
+        return;
+    }
     banco_direto("ROLLBACK");
+}
+
+// Firebird: a transação pelo PDO. O pdo_firebird antigo (o do PHP 8.3) deixa a transação do autocommit sempre aberta e
+// recusa o beginTransaction ("There is already an active transaction"): aí o autocommit desliga (o que estava aberto se
+// confirma), a transação abre, e no fim o autocommit volta
+function banco_fb_transacao($acao)
+{
+    static $aberta = false;
+    static $religar = false;
+    $c = db();
+    if ($acao === "aberta") {
+        return $aberta;
+    }
+    try {
+        if ($acao === "firmar") {
+            // depois de uma mudança de estrutura, fora de uma transação: a confirmação de verdade (no pdo_firebird antigo,
+            // o autocommit só confirma "retendo" a transação, e a tabela mudada fica inacessível até ela fechar)
+            if (!$aberta) {
+                $c->setAttribute(PDO::ATTR_AUTOCOMMIT, false);
+                $c->setAttribute(PDO::ATTR_AUTOCOMMIT, true);
+            }
+            return;
+        }
+        if ($acao === "inicio") {
+            try {
+                $c->beginTransaction();
+            } catch (PDOException $e) {
+                if (stripos($e->getMessage(), "active transaction") === false) {
+                    throw $e;
+                }
+                $c->setAttribute(PDO::ATTR_AUTOCOMMIT, false);
+                $religar = true;
+                $c->beginTransaction();
+            }
+            $aberta = true;
+            return;
+        }
+        if (!$aberta) {
+            return;
+        }
+        $aberta = false;
+        try {
+            if ($acao === "confirma") {
+                $c->commit();
+            } else {
+                $c->rollBack();
+            }
+        } finally {
+            if ($religar) {
+                $religar = false;
+                $c->setAttribute(PDO::ATTR_AUTOCOMMIT, true);
+            }
+        }
+    } catch (PDOException $e) {
+        throw banco_erro($e);
+    }
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -521,6 +745,8 @@ function banco_tem_tabela($tabela)
             return (int)valor("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?", [$tabela]) > 0;
         case "pgsql":
             return (int)valor("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = ?", [$tabela]) > 0;
+        case "firebird":
+            return (int)valor("SELECT COUNT(*) FROM RDB\$RELATIONS WHERE RDB\$RELATION_NAME = ? AND COALESCE(RDB\$SYSTEM_FLAG, 0) = 0", [strtoupper($tabela)]) > 0;
         default:
             return (int)valor("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?", [$tabela]) > 0;
     }
@@ -533,6 +759,8 @@ function banco_tem_coluna($tabela, $coluna)
             return (int)valor("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?", [$tabela, $coluna]) > 0;
         case "pgsql":
             return (int)valor("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? AND column_name = ?", [$tabela, $coluna]) > 0;
+        case "firebird":
+            return (int)valor("SELECT COUNT(*) FROM RDB\$RELATION_FIELDS WHERE RDB\$RELATION_NAME = ? AND RDB\$FIELD_NAME = ?", [strtoupper($tabela), strtoupper($coluna)]) > 0;
         default:
             return banco_tem_tabela($tabela) && (int)valor("SELECT COUNT(*) FROM pragma_table_info(?) WHERE name = ?", [$tabela, $coluna]) > 0;
     }
@@ -545,6 +773,8 @@ function banco_tem_indice($tabela, $indice)
             return (int)valor("SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?", [$tabela, $indice]) > 0;
         case "pgsql":
             return (int)valor("SELECT COUNT(*) FROM pg_indexes WHERE schemaname = current_schema() AND tablename = ? AND indexname = ?", [$tabela, $indice]) > 0;
+        case "firebird":
+            return (int)valor("SELECT COUNT(*) FROM RDB\$INDICES WHERE RDB\$RELATION_NAME = ? AND RDB\$INDEX_NAME = ?", [strtoupper($tabela), strtoupper(banco_fb_nome($indice))]) > 0;
         default:
             return (int)valor("SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND tbl_name = ? AND name = ?", [$tabela, $indice]) > 0;
     }
@@ -557,6 +787,9 @@ function banco_tabelas()
             return array_column(linhas("SELECT table_name AS t FROM information_schema.tables WHERE table_schema = DATABASE()"), "t");
         case "pgsql":
             return array_column(linhas("SELECT table_name AS t FROM information_schema.tables WHERE table_schema = current_schema()"), "t");
+        case "firebird":
+            return array_map("strtolower", array_column(linhas("SELECT TRIM(RDB\$RELATION_NAME) AS t FROM RDB\$RELATIONS WHERE COALESCE(RDB\$SYSTEM_FLAG, 0) = 0
+                AND RDB\$VIEW_BLR IS NULL ORDER BY 1"), "t"));
         default:
             return array_column(linhas("SELECT name AS t FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"), "t");
     }
@@ -587,14 +820,25 @@ function banco_script($texto)
             continue;
         }
         foreach (sql_traduzir($comando) as $parte) {
-            if (is_array($parte)) {
+            if (is_array($parte) && $parte[0] === "firebird_modificar") {
+                firebird_modificar_coluna($parte[1], $parte[2]);
+            } elseif (is_array($parte) && $parte[0] === "firebird_se_nao_existe") {
+                if (!banco_tem_tabela($parte[1])) {
+                    foreach ($parte[2] as $x) {
+                        banco_direto($x);
+                    }
+                }
+            } elseif (is_array($parte)) {
                 sqlite_modificar_coluna($parte[1], $parte[2]);
             } else {
                 banco_direto($parte);
             }
         }
-        // o id gravado explícito: no MySQL o próximo id passa dele sozinho; no Postgres, logo em seguida, aqui
-        if (banco_tipo() === "pgsql" && preg_match("/^\\s*INSERT\\s+(IGNORE\\s+)?INTO\\s+`?(\\w+)`?\\s*\\(\\s*`?id`?\\s*[,)]/i", $comando, $m) === 1) {
+        if (banco_tipo() === "firebird" && preg_match("/^\\s*(CREATE|ALTER|DROP)\\s/i", $comando) === 1) {
+            banco_fb_limpar();
+        }
+        // o id gravado explícito: no MySQL o próximo id passa dele sozinho; no Postgres e no Firebird, logo em seguida, aqui
+        if (in_array(banco_tipo(), ["pgsql", "firebird"], true) && preg_match("/^\\s*INSERT\\s+(IGNORE\\s+)?INTO\\s+`?(\\w+)`?\\s*\\(\\s*`?id`?\\s*[,)]/i", $comando, $m) === 1) {
             banco_ajustar_id($m[2]);
         }
         $n++;
@@ -602,13 +846,31 @@ function banco_script($texto)
     if (banco_tipo() === "sqlite") {
         banco_sqlite_tipos(true);
     }
+    if (banco_tipo() === "firebird") {
+        banco_fb_limpar();
+    }
     banco_ajustar_ids();
     return $n;
 }
 
-// Postgres: o próximo id de cada tabela depois do maior gravado (depois de gravar ids explícitos). Nos outros é sozinho.
+// Firebird: esquece o que guardou da estrutura (depois do DDL)
+function banco_fb_limpar()
+{
+    banco_fb_identidades(true);
+    banco_chave_primaria(null);
+    banco_colunas(null);
+}
+
+// Postgres e Firebird: o próximo id de cada tabela depois do maior gravado (depois de gravar ids explícitos). Nos outros é
+// sozinho.
 function banco_ajustar_ids()
 {
+    if (banco_tipo() === "firebird") {
+        foreach (banco_fb_identidades() as $t) {
+            banco_ajustar_id($t);
+        }
+        return;
+    }
     if (banco_tipo() !== "pgsql") {
         return;
     }
@@ -619,6 +881,19 @@ function banco_ajustar_ids()
 
 function banco_ajustar_id($tabela)
 {
+    if (banco_tipo() === "firebird") {
+        // o contador da coluna IDENTITY: o próximo id é o valor dele mais 1 (RESTART WITH n faz o próximo ser n + 1)
+        $gerador = trim((string)valor("SELECT RDB\$GENERATOR_NAME FROM RDB\$RELATION_FIELDS WHERE RDB\$RELATION_NAME = ? AND RDB\$FIELD_NAME = 'ID'", [strtoupper($tabela)]));
+        if ($gerador === "") {
+            return;
+        }
+        $atual = (int)valor("SELECT GEN_ID(\"" . str_replace("\"", "\"\"", $gerador) . "\", 0) FROM RDB\$DATABASE");
+        $maior = (int)valor("SELECT COALESCE(MAX(id), 0) FROM " . banco_tabela_sql($tabela));
+        if ($maior > $atual) {
+            banco_direto("ALTER TABLE " . banco_tabela_sql($tabela) . " ALTER COLUMN id RESTART WITH " . $maior);
+        }
+        return;
+    }
     if (banco_tipo() !== "pgsql") {
         return;
     }
@@ -681,7 +956,27 @@ function banco_regra($tabela, $nome, $condicao)
         // a condição no dialeto do banco (o LIKE nas colunas "ci" do Postgres, o <=>)
         $condicao = sql_texto(sql_dml(sql_pedacos($condicao), $banco), $banco);
     }
+    if ($banco === "firebird") {
+        $nome = banco_fb_nome($nome);
+    }
     $regra = "CONSTRAINT " . $nome . " CHECK (" . $condicao . ")";
+    if ($banco === "firebird") {
+        // a de antes sai e a nova entra numa transação só: se as linhas não cumprem a regra nova, a de antes fica
+        $t = banco_tabela_sql($tabela);
+        $existe = (int)valor("SELECT COUNT(*) FROM RDB\$RELATION_CONSTRAINTS WHERE RDB\$RELATION_NAME = ? AND RDB\$CONSTRAINT_NAME = ?", [strtoupper($tabela), strtoupper($nome)]) > 0;
+        banco_inicio();
+        try {
+            if ($existe) {
+                banco_direto("ALTER TABLE " . $t . " DROP CONSTRAINT " . $nome);
+            }
+            banco_direto("ALTER TABLE " . $t . " ADD " . $regra);
+            banco_confirma();
+        } catch (Throwable $e) {
+            banco_desfaz();
+            throw $e;
+        }
+        return;
+    }
     if ($banco === "sqlite") {
         sqlite_refazer($tabela, function ($partes) use ($nome, $regra) {
             $fica = [];
@@ -728,9 +1023,13 @@ function banco_regra($tabela, $nome, $condicao)
     banco_direto("ALTER TABLE `" . $tabela . "` ADD " . $regra);
 }
 
-// Os nomes das chaves estrangeiras de uma coluna (MySQL e Postgres)
+// Os nomes das chaves estrangeiras de uma coluna (MySQL, Postgres e Firebird)
 function banco_nomes_chaves($tabela, $coluna)
 {
+    if (banco_tipo() === "firebird") {
+        return array_column(linhas("SELECT TRIM(c.RDB\$CONSTRAINT_NAME) AS n FROM RDB\$RELATION_CONSTRAINTS c JOIN RDB\$INDEX_SEGMENTS s ON s.RDB\$INDEX_NAME = c.RDB\$INDEX_NAME
+            WHERE c.RDB\$CONSTRAINT_TYPE = 'FOREIGN KEY' AND c.RDB\$RELATION_NAME = ? AND s.RDB\$FIELD_NAME = ?", [strtoupper($tabela), strtoupper($coluna)]), "n");
+    }
     if (banco_tipo() === "mysql") {
         return array_column(linhas("SELECT CONSTRAINT_NAME AS n FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
             AND COLUMN_NAME = ? AND REFERENCED_TABLE_NAME IS NOT NULL", [$tabela, $coluna]), "n");
@@ -756,10 +1055,28 @@ function banco_chave_estrangeira($tabela, $coluna, $ref, $ref_coluna, $acao)
         return;
     }
     $q = banco_tipo() === "mysql" ? "`" : "\"";
+    $nome_novo = $tabela . "_" . $coluna . "_fk";
+    if (banco_tipo() === "firebird") {
+        // a chave nova numa transação só com a saída da antiga
+        $nova = "FOREIGN KEY (" . $coluna . ") REFERENCES " . banco_tabela_sql($ref) . "(" . $ref_coluna . ") ON DELETE " . $acao;
+        $nome_novo = banco_fb_nome($nome_novo);
+        banco_inicio();
+        try {
+            foreach (banco_nomes_chaves($tabela, $coluna) as $nome) {
+                banco_direto("ALTER TABLE " . banco_tabela_sql($tabela) . " DROP CONSTRAINT " . $q . $nome . $q);
+            }
+            banco_direto("ALTER TABLE " . banco_tabela_sql($tabela) . " ADD CONSTRAINT " . $nome_novo . " " . $nova);
+            banco_confirma();
+        } catch (Throwable $e) {
+            banco_desfaz();
+            throw $e;
+        }
+        return;
+    }
     foreach (banco_nomes_chaves($tabela, $coluna) as $nome) {
         banco_direto("ALTER TABLE " . $tabela . (banco_tipo() === "mysql" ? " DROP FOREIGN KEY " : " DROP CONSTRAINT ") . $q . $nome . $q);
     }
-    banco_direto("ALTER TABLE " . $tabela . " ADD CONSTRAINT " . $tabela . "_" . $coluna . "_fk " . $nova);
+    banco_direto("ALTER TABLE " . $tabela . " ADD CONSTRAINT " . $nome_novo . " " . $nova);
 }
 
 function banco_remover_coluna($tabela, $coluna)
@@ -781,6 +1098,26 @@ function banco_remover_coluna($tabela, $coluna)
         foreach (banco_nomes_chaves($tabela, $coluna) as $nome) {
             banco_direto("ALTER TABLE `" . $tabela . "` DROP FOREIGN KEY `" . $nome . "`");
         }
+    }
+    if (banco_tipo() === "firebird") {
+        // no Firebird a coluna só sai depois das chaves estrangeiras, dos índices e das regras que a usam
+        $t = banco_tabela_sql($tabela);
+        foreach (banco_nomes_chaves($tabela, $coluna) as $nome) {
+            banco_direto("ALTER TABLE " . $t . " DROP CONSTRAINT \"" . $nome . "\"");
+        }
+        foreach (linhas("SELECT DISTINCT TRIM(i.RDB\$INDEX_NAME) AS n FROM RDB\$INDICES i JOIN RDB\$INDEX_SEGMENTS s ON s.RDB\$INDEX_NAME = i.RDB\$INDEX_NAME
+            LEFT JOIN RDB\$RELATION_CONSTRAINTS c ON c.RDB\$INDEX_NAME = i.RDB\$INDEX_NAME
+            WHERE i.RDB\$RELATION_NAME = ? AND s.RDB\$FIELD_NAME = ? AND c.RDB\$CONSTRAINT_NAME IS NULL", [strtoupper($tabela), strtoupper($coluna)]) as $ix) {
+            banco_direto("DROP INDEX \"" . $ix["n"] . "\"");
+        }
+        foreach (linhas("SELECT DISTINCT TRIM(c.RDB\$CONSTRAINT_NAME) AS n FROM RDB\$RELATION_CONSTRAINTS c JOIN RDB\$CHECK_CONSTRAINTS k ON k.RDB\$CONSTRAINT_NAME = c.RDB\$CONSTRAINT_NAME
+            JOIN RDB\$DEPENDENCIES d ON d.RDB\$DEPENDENT_NAME = k.RDB\$TRIGGER_NAME
+            WHERE c.RDB\$CONSTRAINT_TYPE = 'CHECK' AND c.RDB\$RELATION_NAME = ? AND d.RDB\$DEPENDED_ON_NAME = ? AND d.RDB\$FIELD_NAME = ?",
+            [strtoupper($tabela), strtoupper($tabela), strtoupper($coluna)]) as $k) {
+            banco_direto("ALTER TABLE " . $t . " DROP CONSTRAINT \"" . $k["n"] . "\"");
+        }
+        banco_direto("ALTER TABLE " . $t . " DROP " . $coluna);
+        return;
     }
     banco_direto("ALTER TABLE " . $tabela . " DROP COLUMN " . $coluna);
 }
@@ -846,6 +1183,98 @@ function sqlite_modificar_coluna($tabela, $definicao)
         }
         return $partes;
     });
+}
+
+// Firebird: o MODIFY COLUMN em passos, cada um só se a coluna de agora (no catálogo) é diferente: a regra do ENUM sai, o
+// tipo muda (um texto não encurta no Firebird: fica o tamanho de antes, e a regra nova cuida dos valores), o NOT NULL, o
+// valor padrão, e a regra nova entra. Tudo numa transação: se algo falha, a coluna fica como estava
+function firebird_modificar_coluna($tabela, $definicao)
+{
+    $c = sql_coluna($definicao, "firebird", $tabela);
+    $t = banco_tabela_sql($tabela);
+    $col = $c["nome"];
+    $atual = linha("SELECT f.RDB\$FIELD_TYPE AS ft, f.RDB\$FIELD_SUB_TYPE AS st, f.RDB\$CHARACTER_LENGTH AS tam, f.RDB\$FIELD_PRECISION AS pr, f.RDB\$FIELD_SCALE AS es,
+        rf.RDB\$NULL_FLAG AS nn, rf.RDB\$DEFAULT_SOURCE AS padrao FROM RDB\$RELATION_FIELDS rf JOIN RDB\$FIELDS f ON f.RDB\$FIELD_NAME = rf.RDB\$FIELD_SOURCE
+        WHERE rf.RDB\$RELATION_NAME = ? AND rf.RDB\$FIELD_NAME = ?", [strtoupper($tabela), strtoupper($col)]);
+    if ($atual === null) {
+        throw new BancoErro("MODIFY COLUMN: a tabela " . $tabela . " não tem a coluna " . $col);
+    }
+    $tipo_atual = banco_fb_tipo($atual);
+    $tipo_novo = preg_replace("/ CHARACTER SET UTF8\$/", "", $c["tipo"]);
+    $regra = banco_fb_nome($tabela . "_" . $col . "_check");
+    $tem_regra = (int)valor("SELECT COUNT(*) FROM RDB\$RELATION_CONSTRAINTS WHERE RDB\$RELATION_NAME = ? AND RDB\$CONSTRAINT_NAME = ?", [strtoupper($tabela), strtoupper($regra)]) > 0;
+    $comandos = [];
+    if ($tem_regra) {
+        $comandos[] = "ALTER TABLE " . $t . " DROP CONSTRAINT " . $regra;
+    }
+    if ($tipo_novo !== $tipo_atual) {
+        $encurta = preg_match("/^VARCHAR\\((\\d+)\\)\$/", $tipo_novo, $a) === 1 && preg_match("/^VARCHAR\\((\\d+)\\)\$/", $tipo_atual, $b) === 1 && (int)$a[1] < (int)$b[1];
+        if (!$encurta) {
+            $comandos[] = "ALTER TABLE " . $t . " ALTER COLUMN " . $col . " TYPE " . $c["tipo"];
+        }
+    }
+    if ($c["nao_nulo"] !== ((int)$atual["nn"] === 1)) {
+        $comandos[] = "ALTER TABLE " . $t . " ALTER " . $col . ($c["nao_nulo"] ? " SET NOT NULL" : " DROP NOT NULL");
+    }
+    $padrao_atual = trim((string)preg_replace("/^\\s*DEFAULT\\s+/i", "", (string)$atual["padrao"]));
+    if ($c["padrao"] !== null && $c["padrao"] !== $padrao_atual) {
+        $comandos[] = "ALTER TABLE " . $t . " ALTER COLUMN " . $col . " SET DEFAULT " . $c["padrao"];
+    } elseif ($c["padrao"] === null && $padrao_atual !== "") {
+        $comandos[] = "ALTER TABLE " . $t . " ALTER COLUMN " . $col . " DROP DEFAULT";
+    }
+    if ($c["check"] !== "") {
+        $comandos[] = "ALTER TABLE " . $t . " ADD" . $c["check"];
+    }
+    if (count($comandos) === 0) {
+        return;
+    }
+    banco_inicio();
+    try {
+        foreach ($comandos as $x) {
+            banco_direto($x);
+        }
+        banco_confirma();
+    } catch (Throwable $e) {
+        banco_desfaz();
+        throw $e;
+    }
+}
+
+// O tipo de uma coluna do Firebird, lido do catálogo (RDB$FIELDS), no jeito que a tradução escreve: INTEGER, SMALLINT,
+// BIGINT, VARCHAR(n), BLOB SUB_TYPE TEXT, BLOB SUB_TYPE BINARY, DECIMAL(p,e), TIMESTAMP, DATE, TIME, DOUBLE PRECISION
+function banco_fb_tipo($f)
+{
+    $ft = (int)$f["ft"];
+    $escala = -(int)($f["es"] ?? 0);
+    if (in_array($ft, [7, 8, 16], true) && $escala > 0) {
+        return "DECIMAL(" . (int)$f["pr"] . "," . $escala . ")";
+    }
+    switch ($ft) {
+        case 7:
+            return "SMALLINT";
+        case 8:
+            return "INTEGER";
+        case 16:
+            return "BIGINT";
+        case 10:
+        case 27:
+            return "DOUBLE PRECISION";
+        case 12:
+            return "DATE";
+        case 13:
+            return "TIME";
+        case 35:
+            return "TIMESTAMP";
+        case 14:
+            return "CHAR(" . (int)$f["tam"] . ")";
+        case 37:
+            return "VARCHAR(" . (int)$f["tam"] . ")";
+        case 261:
+            return (int)$f["st"] === 1 ? "BLOB SUB_TYPE TEXT" : "BLOB SUB_TYPE BINARY";
+        case 23:
+            return "BOOLEAN";
+    }
+    return "TIPO " . $ft;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -940,7 +1369,16 @@ function sql_texto($pedacos, $banco = null)
                 $s .= $banco === "pgsql" ? "\$" . (++$n) : "?";
                 break;
             case "q":
-                $s .= $banco === "mysql" ? "`" . $p[1] . "`" : "\"" . $p[1] . "\"";
+                if ($banco === "firebird") {
+                    // no Firebird o nome entre aspas diferencia maiúsculas: vai sem aspas (menos o "NO", reservado)
+                    $s .= strtolower($p[1]) === "no" ? "\"NO\"" : $p[1];
+                } else {
+                    $s .= $banco === "mysql" ? "`" . $p[1] . "`" : "\"" . $p[1] . "\"";
+                }
+                break;
+            case "w":
+                // a tabela "no" (escrita em minúsculas; o NO de "NO ACTION" fica)
+                $s .= $banco === "firebird" && $p[1] === "no" ? "\"NO\"" : $p[1];
                 break;
             default:
                 $s .= $p[1];
@@ -1068,6 +1506,11 @@ function sql_traduzir($comando)
         $saida = sql_criar_tabela($comando, $banco);
     } elseif (strpos($inicio, "ALTER TABLE") === 0) {
         $saida = sql_alterar_tabela($comando, $banco);
+    } elseif ($banco === "firebird") {
+        // o Firebird não tem o INSERT de várias linhas: um INSERT por linha
+        $saida = array_map(function ($x) use ($banco) {
+            return sql_texto(sql_dml($x, $banco), $banco);
+        }, sql_linhas_do_insert($p));
     } else {
         $saida = [sql_texto(sql_dml($p, $banco), $banco)];
     }
@@ -1077,9 +1520,58 @@ function sql_traduzir($comando)
     return $cache[$comando] = $saida;
 }
 
-// O DML: INSERT IGNORE, REPLACE INTO, NOW() e a ordem dos NULL
+// Um INSERT ... VALUES (...), (...) (sem parâmetros) dividido num INSERT por linha; outro comando volta como está
+function sql_linhas_do_insert($p)
+{
+    $n = count($p);
+    $valores = null;
+    $tem_param = false;
+    foreach ($p as $i => $x) {
+        if ($x[0] === "w" && strtoupper($x[1]) === "VALUES" && $valores === null) {
+            $valores = $i;
+        }
+        $tem_param = $tem_param || $x[0] === "p";
+    }
+    if ($valores === null || $tem_param || !($p[0][0] === "w" && strtoupper($p[0][1]) === "INSERT")) {
+        return [$p];
+    }
+    $grupos = [];
+    $nivel = 0;
+    $atual = [];
+    for ($i = $valores + 1; $i < $n; $i++) {
+        $x = $p[$i];
+        if ($x[1] === "(" && $x[0] === "o") {
+            $nivel++;
+        } elseif ($x[1] === ")" && $x[0] === "o") {
+            $nivel--;
+        }
+        if ($nivel === 0 && $x[0] === "o" && ($x[1] === "," || $x[1] === ";")) {
+            $grupos[] = $atual;
+            $atual = [];
+            continue;
+        }
+        if ($nivel === 0 && $x[0] !== "o" && $x[0] !== "e") {
+            // algo depois das linhas (ON DUPLICATE KEY...): como está
+            return [$p];
+        }
+        $atual[] = $x;
+    }
+    $grupos[] = $atual;
+    if (count($grupos) < 2) {
+        return [$p];
+    }
+    $cabeca = array_slice($p, 0, $valores + 1);
+    return array_map(function ($g) use ($cabeca) {
+        return array_merge($cabeca, [["e", " "]], $g);
+    }, $grupos);
+}
+
+// O DML: INSERT IGNORE, REPLACE INTO, NOW() e a ordem dos NULL (e no Firebird o LIMIT, o DATE() e o <=>)
 function sql_dml($p, $banco)
 {
+    if ($banco === "firebird") {
+        $p = sql_fb_replace($p);
+    }
     $n = count($p);
     $prox = function ($i) use ($p, $n) {
         for ($j = $i + 1; $j < $n; $j++) {
@@ -1094,13 +1586,62 @@ function sql_dml($p, $banco)
     };
     $saida = [];
     $fim_insert = null;
+    $fechar = [];
+    $antes = [];
+    $no_fim = "";
+    if ($banco === "firebird" && ($p[0][1] ?? "") === "UPDATE OR INSERT") {
+        $fim_insert = $p[0][2];
+    }
+    if ($banco === "firebird") {
+        // o SELECT sem FROM (SELECT 'x', 1) ganha o FROM RDB$DATABASE, a tabela de uma linha só do Firebird
+        for ($i = 0; $i < $n; $i++) {
+            if ($p[$i][0] !== "w" || strtoupper($p[$i][1]) !== "SELECT") {
+                continue;
+            }
+            $nivel = 0;
+            $tem_from = false;
+            for ($k = $i + 1; $k < $n; $k++) {
+                $y = $p[$k];
+                if ($y[0] === "o" && $y[1] === "(") {
+                    $nivel++;
+                } elseif ($y[0] === "o" && $y[1] === ")") {
+                    if ($nivel === 0) {
+                        break;
+                    }
+                    $nivel--;
+                } elseif ($nivel === 0 && $y[0] === "w" && in_array(strtoupper($y[1]), ["FROM", "UNION"], true)) {
+                    $tem_from = $tem_from || strtoupper($y[1]) === "FROM";
+                    break;
+                }
+            }
+            if (!$tem_from) {
+                if ($k >= $n) {
+                    $no_fim .= " FROM RDB\$DATABASE";
+                } else {
+                    $antes[$k] = ($antes[$k] ?? "") . " FROM RDB\$DATABASE ";
+                }
+            }
+        }
+    }
     for ($i = 0; $i < $n; $i++) {
         $x = $p[$i];
-        // INSERT IGNORE INTO: SQLite INSERT OR IGNORE; Postgres ON CONFLICT DO NOTHING no fim
+        if (isset($antes[$i])) {
+            $saida[] = ["w", $antes[$i]];
+        }
+        if (isset($fechar[$i])) {
+            foreach ((array)$fechar[$i] as $y) {
+                $saida[] = is_array($y) ? $y : ["w", $y];
+            }
+            continue;
+        }
+        // INSERT IGNORE INTO: SQLite INSERT OR IGNORE; Postgres ON CONFLICT DO NOTHING no fim; Firebird: a marca /*IGNORE*/
+        // no começo (o banco_executar não para na chave repetida)
         if ($palavra($i, "INSERT") && $palavra($prox($i), "IGNORE")) {
             $j = $prox($i);
-            $saida[] = ["w", "INSERT"];
-            if ($banco === "sqlite") {
+            $saida[] = ["w", $banco === "firebird" ? "/*IGNORE*/ INSERT" : "INSERT"];
+            if ($banco === "firebird") {
+                // nada no fim
+            } elseif ($banco === "sqlite") {
                 $saida[] = ["e", " "];
                 $saida[] = ["w", "OR IGNORE"];
             } else {
@@ -1134,9 +1675,92 @@ function sql_dml($p, $banco)
         }
         // a <=> b: igual, e NULL <=> NULL é verdadeiro. Postgres: IS NOT DISTINCT FROM; SQLite: IS
         if ($x[1] === "<" && ($p[$i + 1][1] ?? "") === "=" && ($p[$i + 2][1] ?? "") === ">") {
-            $saida[] = ["w", $banco === "pgsql" ? "IS NOT DISTINCT FROM" : "IS"];
+            $saida[] = ["w", $banco === "pgsql" || $banco === "firebird" ? "IS NOT DISTINCT FROM" : "IS"];
             $i += 2;
             continue;
+        }
+        if ($banco === "firebird") {
+            // NOW(): a hora do PHP, posta na hora de rodar (banco_fb_agora)
+            if ($palavra($i, "NOW")) {
+                $a = $prox($i);
+                $f = $a === null ? null : $prox($a);
+                if ($a !== null && $p[$a][1] === "(" && $f !== null && $p[$f][1] === ")") {
+                    $saida[] = ["w", "CAST('@@AGORA@@' AS TIMESTAMP)"];
+                    $i = $f;
+                    continue;
+                }
+            }
+            // as funções com outro nome: LENGTH (bytes) OCTET_LENGTH; LEAST e GREATEST: MINVALUE e MAXVALUE
+            if ($x[0] === "w" && ($a = $prox($i)) !== null && $p[$a][1] === "(" && in_array(strtoupper($x[1]), ["LENGTH", "LEAST", "GREATEST"], true)) {
+                $saida[] = ["w", ["LENGTH" => "OCTET_LENGTH", "LEAST" => "MINVALUE", "GREATEST" => "MAXVALUE"][strtoupper($x[1])]];
+                continue;
+            }
+            // CONCAT(a, b, ...): (a || b || ...); o parâmetro sozinho ganha um tipo (CAST(? AS VARCHAR(8191))), que o || exige
+            if ($palavra($i, "CONCAT") && ($a = $prox($i)) !== null && $p[$a][1] === "(") {
+                $nivel = 0;
+                $inicio_arg = $a + 1;
+                for ($k = $a; $k < $n; $k++) {
+                    $y = $p[$k];
+                    if ($y[0] === "o" && $y[1] === "(") {
+                        $nivel++;
+                        continue;
+                    }
+                    if ($y[0] === "o" && ($y[1] === ")" || $y[1] === ",") && $nivel === 1) {
+                        $arg = array_values(array_filter(range($inicio_arg, $k - 1), function ($z) use ($p) { return $p[$z][0] !== "e"; }));
+                        if (count($arg) === 1 && $p[$arg[0]][0] === "p") {
+                            $fechar[$arg[0]] = [["w", "CAST("], ["p", "?"], ["w", " AS VARCHAR(8191))"]];
+                        }
+                        $inicio_arg = $k + 1;
+                        if ($y[1] === ",") {
+                            $fechar[$k] = " ||";
+                            continue;
+                        }
+                    }
+                    if ($y[0] === "o" && $y[1] === ")" && --$nivel === 0) {
+                        break;
+                    }
+                }
+                $saida[] = ["o", "("];
+                $i = $a;
+                continue;
+            }
+            // DATE(x): CAST(x AS DATE)
+            if ($palavra($i, "DATE") && ($a = $prox($i)) !== null && $p[$a][1] === "(") {
+                $nivel = 0;
+                for ($k = $a; $k < $n; $k++) {
+                    if ($p[$k][0] === "o" && $p[$k][1] === "(") {
+                        $nivel++;
+                    } elseif ($p[$k][0] === "o" && $p[$k][1] === ")" && --$nivel === 0) {
+                        break;
+                    }
+                }
+                $fechar[$k] = " AS DATE)";
+                $saida[] = ["w", "CAST("];
+                $i = $a;
+                continue;
+            }
+            // LIMIT n [OFFSET m] (ou LIMIT m, n): OFFSET m ROWS FETCH NEXT n ROWS ONLY
+            if ($palavra($i, "LIMIT") && ($a = $prox($i)) !== null) {
+                $lim = $p[$a];
+                $desloc = null;
+                $fim = $a;
+                $b = $prox($a);
+                if ($b !== null && $p[$b][1] === ",") {
+                    $desloc = $lim;
+                    $fim = $prox($b);
+                    $lim = $p[$fim];
+                } elseif ($palavra($b, "OFFSET")) {
+                    $fim = $prox($b);
+                    $desloc = $p[$fim];
+                }
+                if ($desloc !== null) {
+                    array_push($saida, ["w", "OFFSET"], ["e", " "], $desloc, ["w", " ROWS FETCH NEXT "], $lim, ["w", " ROWS ONLY"]);
+                } else {
+                    array_push($saida, ["w", "FETCH FIRST "], $lim, ["w", " ROWS ONLY"]);
+                }
+                $i = $fim;
+                continue;
+            }
         }
         // LIKE: no MySQL não diferencia maiúsculas (no SQLite o LIKE já é assim). No Postgres, ILIKE; mas ele não funciona
         // nas colunas com a collation "ci" (nem o LIKE, antes da versão 18): a expressão da esquerda vai para a collation
@@ -1247,6 +1871,12 @@ function sql_dml($p, $banco)
         }
         $saida[] = $x;
     }
+    if ($no_fim !== "") {
+        while (count($saida) > 0 && ($saida[count($saida) - 1][0] === "e" || $saida[count($saida) - 1][1] === ";")) {
+            array_pop($saida);
+        }
+        $saida[] = ["w", $no_fim];
+    }
     if ($fim_insert !== null) {
         while (count($saida) > 0 && ($saida[count($saida) - 1][0] === "e" || $saida[count($saida) - 1][1] === ";")) {
             array_pop($saida);
@@ -1256,10 +1886,142 @@ function sql_dml($p, $banco)
     return $saida;
 }
 
-// As colunas da chave primária de uma tabela no Postgres (para o REPLACE INTO)
+// Firebird: REPLACE INTO t (colunas) VALUES (...) vira UPDATE OR INSERT INTO t (colunas) VALUES (...) MATCHING (chave),
+// com a chave primária (ou a chave única) que o comando cita inteira. As colunas que o comando não cita voltam ao padrão
+// delas (entram no comando com o valor padrão), como no REPLACE do MySQL, que apaga a linha e grava de novo. O primeiro
+// pedaço da saída leva o MATCHING no terceiro item (o sql_dml põe no fim)
+function sql_fb_replace($p)
+{
+    $n = count($p);
+    $ws = [];
+    foreach ($p as $i => $x) {
+        if ($x[0] !== "e") {
+            $ws[] = $i;
+        }
+        if (count($ws) === 4) {
+            break;
+        }
+    }
+    if (count($ws) < 4 || !($p[$ws[0]][0] === "w" && strtoupper($p[$ws[0]][1]) === "REPLACE" && strtoupper($p[$ws[1]][1]) === "INTO" && $p[$ws[3]][1] === "(")) {
+        return $p;
+    }
+    $tabela = strtolower($p[$ws[2]][1]);
+    $colunas = [];
+    for ($j = $ws[3] + 1; $j < $n && $p[$j][1] !== ")"; $j++) {
+        if ($p[$j][0] === "w" || $p[$j][0] === "q") {
+            $colunas[] = strtolower($p[$j][1]);
+        }
+    }
+    $fecha_colunas = $j;
+    $chave = banco_chave_primaria($tabela);
+    if (count(array_diff($chave, $colunas)) > 0) {
+        foreach (banco_fb_unicas($tabela) as $u) {
+            if (count(array_diff($u, $colunas)) === 0) {
+                $chave = $u;
+                break;
+            }
+        }
+    }
+    $padroes = banco_fb_padroes($tabela);
+    $faltam = array_values(array_diff(array_keys($padroes), $colunas, $chave));
+    // o grupo dos valores: o parêntese depois de VALUES
+    $valores = null;
+    for ($j = $fecha_colunas; $j < $n; $j++) {
+        if ($p[$j][0] === "w" && strtoupper($p[$j][1]) === "VALUES") {
+            $valores = $j;
+            break;
+        }
+    }
+    $fecha_valores = null;
+    if ($valores !== null) {
+        $nivel = 0;
+        for ($j = $valores + 1; $j < $n; $j++) {
+            if ($p[$j][0] === "o" && $p[$j][1] === "(") {
+                $nivel++;
+            } elseif ($p[$j][0] === "o" && $p[$j][1] === ")" && --$nivel === 0) {
+                $fecha_valores = $j;
+                break;
+            }
+        }
+    }
+    $saida = [["w", "UPDATE OR INSERT", " MATCHING (" . implode(", ", $chave) . ")"]];
+    for ($j = $ws[0] + 1; $j < $n; $j++) {
+        if ($j === $fecha_colunas) {
+            foreach ($faltam as $c) {
+                array_push($saida, ["o", ","], ["e", " "], ["w", $c]);
+            }
+        }
+        if ($j === $fecha_valores) {
+            foreach ($faltam as $c) {
+                array_push($saida, ["o", ","], ["e", " "], ["w", $padroes[$c]]);
+            }
+        }
+        $saida[] = $p[$j];
+    }
+    return $saida;
+}
+
+// Firebird: as colunas de uma tabela com o valor padrão de cada uma no SQL ("NULL" sem padrão), menos a do id automático
+function banco_fb_padroes($tabela)
+{
+    static $cache = [];
+    if ($tabela === null) {
+        $cache = [];
+        return [];
+    }
+    if (!isset($cache[$tabela])) {
+        $cache[$tabela] = [];
+        foreach (linhas("SELECT TRIM(rf.RDB\$FIELD_NAME) AS c, rf.RDB\$DEFAULT_SOURCE AS d, rf.RDB\$IDENTITY_TYPE AS i FROM RDB\$RELATION_FIELDS rf
+            WHERE rf.RDB\$RELATION_NAME = ? ORDER BY rf.RDB\$FIELD_POSITION", [strtoupper($tabela)]) as $c) {
+            if ($c["i"] !== null) {
+                continue;
+            }
+            $d = trim((string)preg_replace("/^\\s*DEFAULT\\s+/i", "", (string)$c["d"]));
+            $cache[$tabela][strtolower($c["c"])] = $d !== "" ? $d : "NULL";
+        }
+    }
+    return $cache[$tabela];
+}
+
+// Firebird: as chaves únicas de uma tabela (listas de colunas)
+function banco_fb_unicas($tabela)
+{
+    $u = [];
+    foreach (linhas("SELECT TRIM(c.RDB\$CONSTRAINT_NAME) AS n, TRIM(s.RDB\$FIELD_NAME) AS c FROM RDB\$RELATION_CONSTRAINTS c JOIN RDB\$INDEX_SEGMENTS s ON s.RDB\$INDEX_NAME = c.RDB\$INDEX_NAME
+        WHERE c.RDB\$RELATION_NAME = ? AND c.RDB\$CONSTRAINT_TYPE = 'UNIQUE' ORDER BY c.RDB\$CONSTRAINT_NAME, s.RDB\$FIELD_POSITION", [strtoupper($tabela)]) as $l) {
+        $u[$l["n"]][] = strtolower($l["c"]);
+    }
+    foreach (linhas("SELECT TRIM(i.RDB\$INDEX_NAME) AS n, TRIM(s.RDB\$FIELD_NAME) AS c FROM RDB\$INDICES i JOIN RDB\$INDEX_SEGMENTS s ON s.RDB\$INDEX_NAME = i.RDB\$INDEX_NAME
+        LEFT JOIN RDB\$RELATION_CONSTRAINTS k ON k.RDB\$INDEX_NAME = i.RDB\$INDEX_NAME
+        WHERE i.RDB\$RELATION_NAME = ? AND i.RDB\$UNIQUE_FLAG = 1 AND k.RDB\$CONSTRAINT_NAME IS NULL ORDER BY i.RDB\$INDEX_NAME, s.RDB\$FIELD_POSITION", [strtoupper($tabela)]) as $l) {
+        $u[$l["n"]][] = strtolower($l["c"]);
+    }
+    foreach (linhas("SELECT TRIM(i.RDB\$INDEX_NAME) AS n, CAST(i.RDB\$DESCRIPTION AS VARCHAR(2000)) AS d FROM RDB\$INDICES i
+        WHERE i.RDB\$RELATION_NAME = ? AND i.RDB\$UNIQUE_FLAG = 1 AND i.RDB\$EXPRESSION_BLR IS NOT NULL", [strtoupper($tabela)]) as $l) {
+        if (preg_match("/^unica:(.+)\$/", (string)$l["d"], $m) === 1) {
+            $u[$l["n"]] = explode(",", $m[1]);
+        }
+    }
+    return array_values($u);
+}
+
+// As colunas da chave primária de uma tabela no Postgres e no Firebird (para o REPLACE INTO); null esquece o guardado
 function banco_chave_primaria($tabela)
 {
     static $cache = [];
+    if ($tabela === null) {
+        $cache = [];
+        banco_fb_padroes(null);
+        return [];
+    }
+    if (!isset($cache[$tabela]) && banco_tipo() === "firebird") {
+        $cache[$tabela] = array_map("strtolower", array_column(linhas("SELECT TRIM(s.RDB\$FIELD_NAME) AS c FROM RDB\$RELATION_CONSTRAINTS c
+            JOIN RDB\$INDEX_SEGMENTS s ON s.RDB\$INDEX_NAME = c.RDB\$INDEX_NAME WHERE c.RDB\$RELATION_NAME = ? AND c.RDB\$CONSTRAINT_TYPE = 'PRIMARY KEY'
+            ORDER BY s.RDB\$FIELD_POSITION", [strtoupper($tabela)]), "c"));
+        if (count($cache[$tabela]) === 0) {
+            throw new BancoErro("REPLACE INTO " . $tabela . ": a tabela não tem chave primária");
+        }
+    }
     if (!isset($cache[$tabela])) {
         $cache[$tabela] = array_column(linhas("SELECT a.attname AS c FROM pg_index i JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
             WHERE i.indrelid = to_regclass(?) AND i.indisprimary ORDER BY array_position(i.indkey, a.attnum)", [$tabela]), "c");
@@ -1270,10 +2032,15 @@ function banco_chave_primaria($tabela)
     return $cache[$tabela];
 }
 
-// As colunas de uma tabela no Postgres, na ordem (para o REPLACE INTO: as que o comando não cita voltam ao padrão)
+// As colunas de uma tabela no Postgres, na ordem (para o REPLACE INTO: as que o comando não cita voltam ao padrão); null
+// esquece o guardado
 function banco_colunas($tabela)
 {
     static $cache = [];
+    if ($tabela === null) {
+        $cache = [];
+        return [];
+    }
     if (!isset($cache[$tabela])) {
         $cache[$tabela] = array_column(linhas("SELECT column_name AS c FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? ORDER BY ordinal_position", [$tabela]), "c");
     }
@@ -1290,6 +2057,9 @@ function sql_coluna($def, $banco, $tabela)
     }
     [, , $nome, $tipo, , $args, $resto] = $m;
     $tipo = strtoupper($tipo);
+    if ($banco === "firebird") {
+        return sql_coluna_fb($nome, $tipo, $args, $resto, $tabela);
+    }
     $auto = preg_match("/\\bAUTO_INCREMENT\\b/i", $resto) === 1;
     $resto = trim((string)preg_replace("/\\s*\\bAUTO_INCREMENT\\b/i", "", $resto));
     $check = "";
@@ -1356,6 +2126,89 @@ function sql_coluna($def, $banco, $tabela)
     return ["nome" => $nome, "sql" => $nome . " " . $novo . ($resto !== "" ? " " . $resto : "") . $check, "tipo" => $novo, "check" => $check, "resto" => $resto];
 }
 
+// A coluna no Firebird. A ordem dele: nome tipo [DEFAULT x] [NOT NULL] [restrições] [COLLATE]. Os tipos: INTEGER (com
+// AUTO_INCREMENT, GENERATED BY DEFAULT AS IDENTITY), SMALLINT (o TINYINT), VARCHAR(n) CHARACTER SET UTF8 (também o ENUM,
+// com a regra de validação com nome: tabela_coluna_check), VARCHAR(8191) (o TEXT), DECIMAL, TIMESTAMP (o DATETIME),
+// DATE, TIME e BLOB SUB_TYPE BINARY (o BLOB). Os de texto na collation UNICODE_CI_AI (sem maiúsculas nem acentos, como o
+// MySQL). A coluna de uma chave primária é NOT NULL (o Firebird exige)
+function sql_coluna_fb($nome, $tipo, $args, $resto, $tabela)
+{
+    $auto = preg_match("/\\bAUTO_INCREMENT\\b/i", $resto) === 1;
+    $resto = (string)preg_replace("/\\s*\\bAUTO_INCREMENT\\b/i", "", $resto);
+    $padrao = null;
+    if (preg_match("/\\s*\\bDEFAULT\\s+('(?:[^']|'')*'|[\\w.-]+)/i", $resto, $d) === 1) {
+        $padrao = sql_texto(sql_pedacos($d[1]), "firebird");
+        $resto = str_replace($d[0], "", $resto);
+    }
+    $nao_nulo = preg_match("/\\bNOT\\s+NULL\\b/i", $resto) === 1 || preg_match("/\\bPRIMARY\\s+KEY\\b/i", $resto) === 1;
+    $resto = (string)preg_replace("/\\s*\\bNOT\\s+NULL\\b/i", "", $resto);
+    $resto = (string)preg_replace("/(?<!\\bSET)\\s+NULL\\b|^\\s*NULL\\b/i", "", $resto);
+    $resto = sql_texto(sql_pedacos(trim($resto)), "firebird");
+    $texto = false;
+    $check = "";
+    switch ($tipo) {
+        case "INT":
+        case "INTEGER":
+        case "BIGINT":
+        case "SMALLINT":
+        case "TINYINT":
+            if ($auto) {
+                $novo = "INTEGER GENERATED BY DEFAULT AS IDENTITY";
+                $nao_nulo = false;
+            } else {
+                $novo = $tipo === "BIGINT" ? "BIGINT" : ($tipo === "TINYINT" || $tipo === "SMALLINT" ? "SMALLINT" : "INTEGER");
+            }
+            break;
+        case "VARCHAR":
+        case "CHAR":
+            $novo = "VARCHAR(" . trim($args) . ") CHARACTER SET UTF8";
+            $texto = true;
+            break;
+        case "ENUM":
+            $valores = array_map("trim", sql_dividir($args));
+            $maior = 1;
+            foreach ($valores as $v) {
+                $maior = max($maior, strlen($v) - 2);
+            }
+            $novo = "VARCHAR(" . $maior . ") CHARACTER SET UTF8";
+            $texto = true;
+            $check = " CONSTRAINT " . banco_fb_nome($tabela . "_" . $nome . "_check") . " CHECK (" . $nome . " IN (" . implode(", ", $valores) . "))";
+            break;
+        case "TEXT":
+        case "MEDIUMTEXT":
+        case "LONGTEXT":
+            // o maior VARCHAR do Firebird em UTF-8 (32765 bytes). Não o BLOB SUB_TYPE TEXT: o pdo_firebird (até o PHP 8.4)
+            // devolve o BLOB vazio como NULL, e o BLOB não entra em ORDER BY, GROUP BY nem DISTINCT
+            $novo = "VARCHAR(8191) CHARACTER SET UTF8";
+            $texto = true;
+            break;
+        case "DECIMAL":
+        case "NUMERIC":
+            $novo = "DECIMAL(" . preg_replace("/\\s+/", "", $args) . ")";
+            break;
+        case "DATETIME":
+        case "TIMESTAMP":
+            $novo = "TIMESTAMP";
+            break;
+        case "TIME":
+            $novo = "TIME";
+            break;
+        case "DATE":
+            $novo = "DATE";
+            break;
+        case "BLOB":
+        case "MEDIUMBLOB":
+        case "LONGBLOB":
+            $novo = "BLOB SUB_TYPE BINARY";
+            break;
+        default:
+            throw new BancoErro("não sei traduzir o tipo " . $tipo . " da coluna " . $tabela . "." . $nome);
+    }
+    $sql = $nome . " " . $novo . ($padrao !== null ? " DEFAULT " . $padrao : "") . ($nao_nulo ? " NOT NULL" : "") . ($resto !== "" ? " " . $resto : "") . $check
+        . ($texto ? " COLLATE UNICODE_CI_AI" : "");
+    return ["nome" => $nome, "sql" => $sql, "tipo" => $novo, "check" => $check, "resto" => $resto, "padrao" => $padrao, "nao_nulo" => $nao_nulo];
+}
+
 function sql_criar_tabela($comando, $banco)
 {
     if (preg_match("/^\\s*CREATE\\s+TABLE\\s+(IF\\s+NOT\\s+EXISTS\\s+)?`?(\\w+)`?\\s*\\((.*)\\)([^)]*)\$/is", $comando, $m) !== 1) {
@@ -1364,23 +2217,74 @@ function sql_criar_tabela($comando, $banco)
     $tabela = $m[2];
     $defs = [];
     $indices = [];
-    foreach (sql_dividir($m[3]) as $parte) {
+    $partes = sql_dividir($m[3]);
+    // no Firebird, as colunas da chave primária são NOT NULL
+    $chave = [];
+    foreach ($partes as $parte) {
+        if (preg_match("/^\\s*PRIMARY\\s+KEY\\s*\\((.*)\\)\\s*\$/is", $parte, $x) === 1) {
+            $chave = array_map(function ($c) { return strtolower(trim($c, " `\"")); }, explode(",", $x[1]));
+        }
+    }
+    // as colunas que aceitam vazio (para a chave única no Firebird)
+    $vazias = [];
+    foreach ($partes as $parte) {
         $parte = trim((string)preg_replace("/\\s+/", " ", $parte));
+        if (preg_match("/^(PRIMARY|FOREIGN|UNIQUE|CONSTRAINT|CHECK|INDEX|KEY)\\b/i", $parte) !== 1 && preg_match("/\\b(NOT NULL|PRIMARY KEY)\\b/i", $parte) !== 1
+            && !in_array(strtolower(trim((string)preg_split("/\\s+/", $parte)[0], "`")), $chave, true)) {
+            $vazias[] = strtolower(trim((string)preg_split("/\\s+/", $parte)[0], "`"));
+        }
+    }
+    foreach ($partes as $parte) {
+        $parte = trim((string)preg_replace("/\\s+/", " ", $parte));
+        if ($banco === "firebird" && preg_match("/^UNIQUE\\s*\\((.*)\\)\$/i", $parte, $x) === 1) {
+            $cols = array_map(function ($c) { return strtolower(trim($c, " `\"")); }, explode(",", $x[1]));
+            if (count($cols) > 1 && count(array_intersect($cols, $vazias)) > 0) {
+                // no Firebird, a chave única de várias colunas não aceita duas linhas iguais com uma coluna vazia (o MySQL
+                // aceita): vira um índice único de uma expressão, vazia quando uma das colunas está vazia (as linhas
+                // vazias não se repetem). As colunas ficam na descrição do índice (o catálogo lê de lá)
+                $nome_ix = banco_fb_nome($tabela . "_" . implode("_", $cols) . "_uq");
+                $indices[] = "CREATE UNIQUE INDEX " . $nome_ix . " ON " . banco_tabela_sql_em($tabela, $banco) . " COMPUTED BY (CASE WHEN "
+                    . implode(" IS NULL OR ", $cols) . " IS NULL THEN NULL ELSE " . implode(" || '|' || ", $cols) . " END)";
+                $indices[] = "COMMENT ON INDEX " . $nome_ix . " IS 'unica:" . implode(",", $cols) . "'";
+                continue;
+            }
+        }
         if (preg_match("/^(UNIQUE\\s+)?(INDEX|KEY)\\s*(`?\\w+`?\\s*)?\\((.*)\\)\$/i", $parte, $x) === 1) {
             $cols = str_replace("`", "", $x[4]);
-            $indices[] = "CREATE " . ($x[1] !== "" ? "UNIQUE " : "") . "INDEX " . $tabela . "_" . preg_replace("/\\W+/", "_", $cols) . "_idx ON " . $tabela . " (" . $cols . ")";
+            $nome_ix = $tabela . "_" . preg_replace("/\\W+/", "_", $cols) . "_idx";
+            $indices[] = "CREATE " . ($x[1] !== "" ? "UNIQUE " : "") . "INDEX " . ($banco === "firebird" ? banco_fb_nome($nome_ix) : $nome_ix) . " ON " . banco_tabela_sql_em($tabela, $banco) . " (" . $cols . ")";
         } elseif (preg_match("/^(PRIMARY\\s+KEY|FOREIGN\\s+KEY|UNIQUE|CONSTRAINT|CHECK)\\b/i", $parte) === 1) {
+            if ($banco === "firebird" && preg_match("/^CONSTRAINT\\s+`?(\\w+)`?\\s+(.*)\$/is", $parte, $x) === 1) {
+                $parte = "CONSTRAINT " . banco_fb_nome($x[1]) . " " . $x[2];
+            }
             $defs[] = sql_texto(sql_pedacos($parte), $banco);
         } else {
+            if ($banco === "firebird" && in_array(strtolower(trim((string)preg_split("/\\s+/", $parte)[0], "`")), $chave, true) && stripos($parte, "NOT NULL") === false) {
+                $parte .= " NOT NULL";
+            }
             $defs[] = sql_coluna($parte, $banco, $tabela)["sql"];
         }
     }
+    if ($banco === "firebird") {
+        // o Firebird 3 não tem o IF NOT EXISTS: a marca vai para o banco_script decidir
+        $criar = "CREATE TABLE " . banco_tabela_sql_em($tabela, $banco) . " (\n    " . implode(",\n    ", $defs) . "\n)";
+        return $m[1] !== "" ? [["firebird_se_nao_existe", $tabela, array_merge([$criar], $indices)]] : array_merge([$criar], $indices);
+    }
     return array_merge(["CREATE TABLE " . ($m[1] !== "" ? "IF NOT EXISTS " : "") . $tabela . " (\n    " . implode(",\n    ", $defs) . "\n)"], $indices);
+}
+
+// O nome de uma tabela no SQL de um banco (a "no", reservada no Firebird, entre aspas)
+function banco_tabela_sql_em($tabela, $banco)
+{
+    return $banco === "firebird" && strtolower($tabela) === "no" ? "\"NO\"" : $tabela;
 }
 
 function sql_alterar_tabela($comando, $banco)
 {
     $comando = trim((string)preg_replace("/\\s+/", " ", $comando));
+    if ($banco === "firebird") {
+        return sql_alterar_tabela_fb($comando);
+    }
     if (preg_match("/^ALTER TABLE `?(\\w+)`? ADD (COLUMN )?(.*?)( AFTER `?\\w+`?| FIRST)?\$/i", $comando, $m) === 1 && preg_match("/^(INDEX|KEY|UNIQUE|CONSTRAINT|FOREIGN|PRIMARY)\\b/i", $m[3]) !== 1) {
         return ["ALTER TABLE " . $m[1] . " ADD COLUMN " . sql_coluna($m[3], $banco, $m[1])["sql"]];
     }
@@ -1407,6 +2311,27 @@ function sql_alterar_tabela($comando, $banco)
             $saida[] = "ALTER TABLE " . $t . " ADD CONSTRAINT " . $t . "_" . $nome . "_check" . $c["check"];
         }
         return $saida;
+    }
+    throw new BancoErro("não sei traduzir: " . substr($comando, 0, 120));
+}
+
+// O ALTER TABLE no Firebird: ADD sem a palavra COLUMN, o índice com nome de até 31 letras, DROP sem COLUMN, e o MODIFY
+// pelo firebird_modificar_coluna (que confere a coluna de agora no catálogo)
+function sql_alterar_tabela_fb($comando)
+{
+    if (preg_match("/^ALTER TABLE `?(\\w+)`? ADD (COLUMN )?(.*?)( AFTER `?\\w+`?| FIRST)?\$/i", $comando, $m) === 1 && preg_match("/^(INDEX|KEY|UNIQUE|CONSTRAINT|FOREIGN|PRIMARY)\\b/i", $m[3]) !== 1) {
+        return ["ALTER TABLE " . banco_tabela_sql_em($m[1], "firebird") . " ADD " . sql_coluna($m[3], "firebird", $m[1])["sql"]];
+    }
+    if (preg_match("/^ALTER TABLE `?(\\w+)`? ADD (UNIQUE )?(INDEX|KEY) (`?\\w+`? )?\\((.*)\\)\$/i", $comando, $m) === 1) {
+        $cols = str_replace("`", "", $m[5]);
+        $nome = trim($m[4], " `") !== "" ? trim($m[4], " `") : $m[1] . "_" . preg_replace("/\\W+/", "_", $cols) . "_idx";
+        return ["CREATE " . ($m[2] !== "" ? "UNIQUE " : "") . "INDEX " . banco_fb_nome($nome) . " ON " . banco_tabela_sql_em($m[1], "firebird") . " (" . $cols . ")"];
+    }
+    if (preg_match("/^ALTER TABLE `?(\\w+)`? DROP (COLUMN )?`?(\\w+)`?\$/i", $comando, $m) === 1) {
+        return ["ALTER TABLE " . banco_tabela_sql_em($m[1], "firebird") . " DROP " . $m[3]];
+    }
+    if (preg_match("/^ALTER TABLE `?(\\w+)`? MODIFY (COLUMN )?(.*?)( AFTER `?\\w+`?| FIRST)?\$/i", $comando, $m) === 1) {
+        return [["firebird_modificar", $m[1], $m[3]]];
     }
     throw new BancoErro("não sei traduzir: " . substr($comando, 0, 120));
 }
@@ -1459,6 +2384,8 @@ function banco_catalogo()
                     $x["regras"][] = ["nome" => null, "condicao" => $m[2]];
                 }
             }
+        } elseif ($tipo === "firebird") {
+            $x = banco_catalogo_fb($t, $x);
         } elseif ($tipo === "mysql") {
             foreach (linhas("SELECT COLUMN_NAME AS n, COLUMN_TYPE AS t, IS_NULLABLE AS v, COLUMN_DEFAULT AS d, COLUMN_KEY AS k FROM information_schema.COLUMNS
                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION", [$t]) as $c) {
@@ -1522,4 +2449,64 @@ function banco_catalogo()
         $res[] = $x;
     }
     return $res;
+}
+
+// O catálogo de uma tabela no Firebird (as tabelas RDB$ do próprio banco). Os nomes saem em minúsculas
+function banco_catalogo_fb($t, $x)
+{
+    $T = strtoupper($t);
+    foreach (linhas("SELECT TRIM(rf.RDB\$FIELD_NAME) AS n, f.RDB\$FIELD_TYPE AS ft, f.RDB\$FIELD_SUB_TYPE AS st, f.RDB\$CHARACTER_LENGTH AS tam, f.RDB\$FIELD_PRECISION AS pr,
+        f.RDB\$FIELD_SCALE AS es, rf.RDB\$NULL_FLAG AS nn, rf.RDB\$DEFAULT_SOURCE AS d, rf.RDB\$IDENTITY_TYPE AS i FROM RDB\$RELATION_FIELDS rf
+        JOIN RDB\$FIELDS f ON f.RDB\$FIELD_NAME = rf.RDB\$FIELD_SOURCE WHERE rf.RDB\$RELATION_NAME = ? ORDER BY rf.RDB\$FIELD_POSITION", [$T]) as $c) {
+        $padrao = $c["d"] !== null ? trim((string)preg_replace("/^\\s*DEFAULT\\s+/i", "", (string)$c["d"])) : null;
+        $padrao = $padrao === null || strtoupper($padrao) === "NULL" ? null : $padrao;
+        $x["colunas"][] = ["nome" => strtolower($c["n"]), "tipo" => banco_fb_tipo($c) . ($c["i"] !== null ? " GENERATED BY DEFAULT AS IDENTITY" : ""),
+            "vazio" => (int)$c["nn"] !== 1 && $c["i"] === null, "padrao" => $padrao];
+    }
+    $restricoes = [];
+    foreach (linhas("SELECT TRIM(c.RDB\$CONSTRAINT_NAME) AS n, TRIM(c.RDB\$CONSTRAINT_TYPE) AS ti, TRIM(s.RDB\$FIELD_NAME) AS col FROM RDB\$RELATION_CONSTRAINTS c
+        JOIN RDB\$INDEX_SEGMENTS s ON s.RDB\$INDEX_NAME = c.RDB\$INDEX_NAME WHERE c.RDB\$RELATION_NAME = ? ORDER BY c.RDB\$CONSTRAINT_NAME, s.RDB\$FIELD_POSITION", [$T]) as $k) {
+        $restricoes[$k["n"]]["tipo"] = $k["ti"];
+        $restricoes[$k["n"]]["cols"][] = strtolower($k["col"]);
+    }
+    foreach ($restricoes as $nome => $r) {
+        if ($r["tipo"] === "PRIMARY KEY") {
+            $x["chave_primaria"] = $r["cols"];
+        } elseif ($r["tipo"] === "UNIQUE") {
+            $x["unicas"][] = $r["cols"];
+        }
+    }
+    foreach (linhas("SELECT TRIM(c.RDB\$CONSTRAINT_NAME) AS n, TRIM(r.RDB\$DELETE_RULE) AS d, TRIM(u.RDB\$RELATION_NAME) AS rt,
+        (SELECT TRIM(s.RDB\$FIELD_NAME) FROM RDB\$INDEX_SEGMENTS s WHERE s.RDB\$INDEX_NAME = u.RDB\$INDEX_NAME AND s.RDB\$FIELD_POSITION = 0) AS rc
+        FROM RDB\$RELATION_CONSTRAINTS c JOIN RDB\$REF_CONSTRAINTS r ON r.RDB\$CONSTRAINT_NAME = c.RDB\$CONSTRAINT_NAME
+        JOIN RDB\$RELATION_CONSTRAINTS u ON u.RDB\$CONSTRAINT_NAME = r.RDB\$CONST_NAME_UQ
+        WHERE c.RDB\$RELATION_NAME = ? AND c.RDB\$CONSTRAINT_TYPE = 'FOREIGN KEY'", [$T]) as $f) {
+        $x["chaves_estrangeiras"][] = ["coluna" => $restricoes[$f["n"]]["cols"][0] ?? "", "referencia" => strtolower($f["rt"]) . "." . strtolower((string)$f["rc"]),
+            "ao_apagar" => strtoupper((string)$f["d"])];
+    }
+    usort($x["chaves_estrangeiras"], function ($a, $b) { return strcmp($a["coluna"], $b["coluna"]); });
+    $ix = [];
+    foreach (linhas("SELECT TRIM(i.RDB\$INDEX_NAME) AS n, i.RDB\$UNIQUE_FLAG AS u, TRIM(s.RDB\$FIELD_NAME) AS col FROM RDB\$INDICES i
+        JOIN RDB\$INDEX_SEGMENTS s ON s.RDB\$INDEX_NAME = i.RDB\$INDEX_NAME LEFT JOIN RDB\$RELATION_CONSTRAINTS k ON k.RDB\$INDEX_NAME = i.RDB\$INDEX_NAME
+        WHERE i.RDB\$RELATION_NAME = ? AND k.RDB\$CONSTRAINT_NAME IS NULL ORDER BY i.RDB\$INDEX_NAME, s.RDB\$FIELD_POSITION", [$T]) as $i) {
+        $ix[$i["n"]]["unico"] = (int)$i["u"] === 1;
+        $ix[$i["n"]]["cols"][] = strtolower($i["col"]);
+    }
+    // os índices de uma expressão (a chave única com colunas que aceitam vazio): as colunas vêm da descrição
+    foreach (linhas("SELECT i.RDB\$UNIQUE_FLAG AS u, CAST(i.RDB\$DESCRIPTION AS VARCHAR(2000)) AS d FROM RDB\$INDICES i
+        WHERE i.RDB\$RELATION_NAME = ? AND i.RDB\$EXPRESSION_BLR IS NOT NULL ORDER BY i.RDB\$INDEX_NAME", [$T]) as $i) {
+        if (preg_match("/^unica:(.+)\$/", (string)$i["d"], $m) === 1) {
+            $ix[] = ["unico" => (int)$i["u"] === 1, "cols" => explode(",", $m[1])];
+        }
+    }
+    foreach ($ix as $i) {
+        $x[$i["unico"] ? "unicas" : "indices"][] = $i["cols"];
+    }
+    foreach (linhas("SELECT DISTINCT TRIM(c.RDB\$CONSTRAINT_NAME) AS n, CAST(g.RDB\$TRIGGER_SOURCE AS VARCHAR(8000)) AS q FROM RDB\$RELATION_CONSTRAINTS c
+        JOIN RDB\$CHECK_CONSTRAINTS k ON k.RDB\$CONSTRAINT_NAME = c.RDB\$CONSTRAINT_NAME JOIN RDB\$TRIGGERS g ON g.RDB\$TRIGGER_NAME = k.RDB\$TRIGGER_NAME
+        WHERE c.RDB\$RELATION_NAME = ? AND c.RDB\$CONSTRAINT_TYPE = 'CHECK' ORDER BY 1", [$T]) as $r) {
+        // (a regra sem nome ganha do Firebird um nome INTEG_n: sai sem nome, como nos outros bancos)
+        $x["regras"][] = ["nome" => stripos($r["n"], "INTEG_") === 0 ? null : strtolower($r["n"]), "condicao" => trim((string)preg_replace("/^\\s*CHECK\\s*\\((.*)\\)\\s*\$/s", "\$1", (string)$r["q"]))];
+    }
+    return $x;
 }

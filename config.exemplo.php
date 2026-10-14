@@ -1,9 +1,12 @@
 <?php
 // Copie para config.php e preencha. O config.php não vai nos pacotes: o seu fica.
 
-// o banco: "mysql" (MySQL ou MariaDB, o padrão), "pgsql" (PostgreSQL) ou "sqlite" (SQLite, um arquivo só, sem servidor)
+// o banco: "mysql" (MySQL ou MariaDB, o padrão), "pgsql" (PostgreSQL), "sqlite" (SQLite, um arquivo só, sem servidor) ou
+// "firebird" (Firebird 3 ou mais novo)
 define("DB_TIPO", "mysql");
-// MySQL e PostgreSQL: o servidor, a porta (0: a padrão, 3306 ou 5432), o banco, o usuário e a senha
+// MySQL, PostgreSQL e Firebird: o servidor, a porta (0: a padrão, 3306, 5432 ou 3050), o banco, o usuário e a senha. No
+// Firebird, DB_NOME é o caminho do arquivo .fdb no servidor (ex.: /var/lib/firebird/3.0/data/relogios2.fdb) ou um apelido
+// do databases.conf, e DB_HOST vazio abre o arquivo direto, sem servidor (o Firebird embutido)
 define("DB_HOST", "127.0.0.1");
 define("DB_PORTA", 0);
 define("DB_NOME", "relogios2");

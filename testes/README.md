@@ -1,6 +1,6 @@
 # Teste de paridade entre os bancos
 
-O sistema tem de se comportar igual no MySQL/MariaDB, no PostgreSQL e no SQLite. Este teste confere isso de ponta a ponta,
+O sistema tem de se comportar igual no MySQL/MariaDB, no PostgreSQL, no SQLite e no Firebird. Este teste confere isso de ponta a ponta,
 pela API, do jeito que uma pessoa usa o sistema:
 
 - [`cenario.php`](cenario.php) faz ~100 escritas pela API: cadastra relógios de cada tipo; lança cordas, cargas, sol, winder
@@ -18,10 +18,10 @@ pela API, do jeito que uma pessoa usa o sistema:
    ```php
    $b = getenv("RELOGIOS_DB") ?: "mysql";
    define("DB_TIPO", $b);
-   define("DB_HOST", "127.0.0.1");
-   define("DB_PORTA", $b === "pgsql" ? 5432 : 3306);
-   define("DB_NOME", "relogios_teste");
-   define("DB_USUARIO", $b === "pgsql" ? "postgres" : "root");
+   define("DB_HOST", $b === "firebird" ? "localhost" : "127.0.0.1");
+   define("DB_PORTA", $b === "pgsql" ? 5432 : ($b === "firebird" ? 0 : 3306));
+   define("DB_NOME", $b === "firebird" ? "/var/lib/firebird/3.0/data/relogios_teste.fdb" : "relogios_teste");
+   define("DB_USUARIO", $b === "pgsql" ? "postgres" : ($b === "firebird" ? "SYSDBA" : "root"));
    define("DB_SENHA", "...");
    define("DB_ARQUIVO", "/tmp/relogios_teste.sqlite");
    define("API_TOKEN", "token-de-teste-123");
@@ -31,7 +31,7 @@ pela API, do jeito que uma pessoa usa o sistema:
    define("MSG_TITULO", "Relógios");
    ```
 
-2. Para cada banco: o banco vazio, `php instalar.php`, `php criar_usuario.php teste senha123`, e um servidor com a
+2. Para cada banco: o banco vazio (no Firebird, `CREATE DATABASE ... DEFAULT CHARACTER SET UTF8` pelo `isql-fb`), `php instalar.php`, `php criar_usuario.php teste senha123`, e um servidor com a
    semente dos sorteios fixa. Sem a semente, a escala desempata ao acaso e o plano muda de uma rodada para outra.
 
    ```sh
