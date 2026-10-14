@@ -270,15 +270,14 @@ para segredo.
 No rodapé da página **Plano** (o lugar principal: o quadro **Apagar a programação**, no fim da página, depois do dia a dia) e
 no quadro **Modo de rodízio** da página Hoje (cada um abaixo de uma linha, como o **Sortear de novo**):
 
-- **Apagar um período**: **De**, **Até** e **Depois**: *e sortear de novo* (tudo o que o período tem, de amanhã em diante,
-  escolhido à mão, sorteado ou livre, sai, e o modo de rodízio sorteia os dias outra vez) ou *e deixar livre* (sai tudo e os
-  dias ficam livres: sem relógio e sem sorteio, para você escolher cada um no **escolher…** do dia ou no Rodízio manual).
-  O botão **Apagar** pede confirmação.
+- **Apagar um período**: **De** e **Até**; um dos dois pode ficar vazio (só o **De** apaga dele até o fim do plano; só o
+  **Até**, de amanhã até ele). Os dias do período saem do plano, de amanhã em diante (os escolhidos à mão, os sorteados e os
+  livres), e o modo de rodízio monta esses dias de novo. O botão **Apagar** pede confirmação.
 - **Apagar tudo**: limpa toda a programação, de amanhã em diante: os dias escolhidos à mão, os sorteados e os livres.
   Marcando **Excluindo hoje**, apaga de hoje em diante (se sair outro relógio para hoje, ele passa a ser o do pulso a partir
   de agora). Depois, o modo de rodízio monta o plano de novo, do zero: no sorteio por blocos, até domingo (as semanas
   seguintes, quando chegarem); na escala inteligente, a escala inteira. A programação não fica vazia porque o sistema sempre
-  monta os dias que faltam pelo modo ativo; para dias sem relógio, use **Apagar um período… e deixar livre**.
+  monta os dias que faltam pelo modo ativo; para dias sem relógio, marque *livre* no Rodízio manual.
 
 ### O rodízio manual
 
@@ -294,7 +293,7 @@ cada dia de um período (as férias, uma viagem, um mês inteiro). Ponha o come�
 - **Gravar o rodízio manual** grava o período inteiro: os dias com relógio ficam escolhidos à mão, os de *Decida por mim* são
   decididos na hora pelo sistema e também ficam gravados (o motivo de cada um aparece no plano), e os livres ficam sem
   relógio. Se hoje está no período e você escolheu outro relógio, ele passa a ser o do pulso a partir de agora;
-- para apagar o que um período tem (e sortear de novo, ou deixar os dias livres) ou apagar tudo, veja
+- para apagar os dias de um período (o modo de rodízio monta esses dias de novo) ou apagar tudo, veja
   [Apagar a programação](#apagar-a-programação).
 
 Fora do período, continua valendo o modo de rodízio de sempre. Os dias escolhidos à mão ficam mesmo quando você sorteia de
@@ -933,7 +932,7 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | Página | Para que serve |
 |---|---|
 | **Hoje** (`index.php`) | A tela principal. Mostra no alto o relógio do dia (ou, conforme a Configuração, o que está no pulso agora; com o botão discreto **Sem relógio hoje**, e, num dia livre, **Hoje sem relógio** com o **escolher…**), os avisos de hoje (atrasados e em breve) com o botão que resolve cada um, os próximos dias do plano (de "Mostrar até" em "Mostrar até" dias, com as páginas embaixo) e o modo de rodízio, que se troca ali mesmo (com **Apagar um período** e **Apagar tudo**) (e, nele, o **Rodízio manual**: os relógios de um período, dia a dia; veja [O rodízio manual](#o-rodízio-manual)). Abaixo fica a tabela da coleção, com filtros e ordenação por tipo, estado, carga, última vez usado, próxima manutenção, data e valor da compra. Clicar num relógio abre o **painel** dele: ao lado da lista ou numa janela flutuante grande, como estiver na Configuração (**Abrir o relógio na página Hoje**). |
-| **Plano** (`plano.php`) | O plano inteiro, de hoje até o fim (na escala inteligente, um ou dois anos), mês a mês: o relógio de cada dia, o lembrete e o **trocar por…**. Filtra por período (30 dias, 90, um ano, dois, tudo) e por relógio; o dia a dia vem de "Mostrar até" em "Mostrar até" dias (a Configuração), com as páginas embaixo (**<**, os números, **>**); e mostra quantos dias cada relógio tem no período, a porcentagem e o próximo dia dele. Para escolher os relógios de um período, dia a dia, ela leva ao **Rodízio manual** (na página Hoje). No rodapé, **Apagar a programação**: **Apagar um período** (e sortear de novo, ou deixar livre) e **Apagar tudo** (veja [Apagar a programação](#apagar-a-programação)). |
+| **Plano** (`plano.php`) | O plano inteiro, de hoje até o fim (na escala inteligente, um ou dois anos), mês a mês: o relógio de cada dia, o lembrete e o **trocar por…**. Filtra por período (30 dias, 90, um ano, dois, tudo) e por relógio; o dia a dia vem de "Mostrar até" em "Mostrar até" dias (a Configuração), com as páginas embaixo (**<**, os números, **>**); e mostra quantos dias cada relógio tem no período, a porcentagem e o próximo dia dele. Para escolher os relógios de um período, dia a dia, ela leva ao **Rodízio manual** (na página Hoje). No rodapé, **Apagar a programação**: **Apagar um período** (os dias saem e o modo monta de novo) e **Apagar tudo** (veja [Apagar a programação](#apagar-a-programação)). |
 | **Painel / Ficha** (`ficha.php`) | Tudo sobre um relógio, em quadros alinhados numa grade (cada quadro com o rótulo de cada informação à esquerda e o valor à direita): foto, estado agora (*"Em repouso desde 21:40"*, *"No sol desde 09:12"*), carga, nota com a conta, próxima entrada no plano, previsão da bateria, o gasto da bateria no pulso e fora (o medido e o do cadastro), as últimas leituras, a linha do tempo recente, o quadro **Compra** (o valor pago, a loja, a garantia e o **custo por uso**: o valor pago dividido pelos dias de uso), o quadro **Documentos** (quantos em cada categoria, e o link para a página Documentos), o quadro **Marcar** e o cadastro completo, editável (com a **Situação na coleção**). Num relógio **Desejado**, no lugar dos quadros do dia a dia, o quadro **Desejo** (a marca, a referência, o preço-alvo, a prioridade e o link) e os documentos; num emprestado, vendido ou arquivado, a marca da situação ao lado do estado. Na página da ficha, o seletor traz os relógios da coleção e, separados, os de **Fora da coleção**. O **Marcar** é um menu só, *O que você quer marcar?*: pôr ou tirar do pulso, do winder, do sol ou do carregador, corda, troca de pilha, leitura de carga, um período que já passou ou corrigir uma marcação; embaixo aparecem só os campos daquilo. |
 | **Desejos** (`desejos.php`) | A **lista de desejos**: os relógios desejados, da prioridade mais alta para a mais baixa, cada um com a foto, a marca e a referência, a prioridade, o preço-alvo, o grupo, o link da página dele e o botão **Comprei** (põe na coleção e abre a ficha, para preencher a compra), com a soma dos preços-alvo; o botão **Novo desejo**; e, embaixo, **Fora da coleção**: os emprestados, vendidos e arquivados, com **Voltar para a coleção**. Na página Hoje, o botão **Desejos (N)** ao lado do **Novo relógio** leva a ela (só quando há algum). Veja [A lista de desejos](#a-lista-de-desejos). |
 | **Estatísticas** (`estatisticas.php`) | O uso da coleção num período (**De**, **Até**; os atalhos 30 dias, 90 dias, 1 ano e desde o começo; padrão: os últimos 90 dias): o resumo (dias com relógio no pulso, horas no pulso e por dia, relógios usados e sem uso, o custo por uso médio e o valor da coleção, o mais e o menos usado); **Cada relógio**, do mais usado ao menos usado: dias de uso, horas, a parte de cada um (com a barra), o custo por uso, há quantos dias não vai ao pulso e a tendência (↑ usando mais, ↓ usando menos, → estável: a segunda metade do período comparada com a primeira); os gráficos **Por dia da semana** e **Por mês** (as horas no pulso); e **A coleção**: os relógios divididos por grupo, marca, ano da compra, situação e cada campo de lista (como o Estilo), com quantos, a parte e as horas de cada parte. Pela API: `recurso=estatisticas`. |
@@ -1106,7 +1105,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `documentos` | `enviar` (um ou vários arquivos, com a categoria, o título, a data, a descrição e, numa foto, a miniatura), `alterar`, `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (só sem documentos) |
 | `lancamento` | `lancar` (corda, carga, pilha...), `iniciar` e `encerrar` (pôr e tirar do pulso, do winder, do sol, do carregador), `alternar` (fecha a sessão se está aberta, abre se está fechada: um botão só no celular), `periodo` (um período que já passou), `alterar`, `excluir`. Em todas, `relogio_id=hoje` é o relógio do dia |
-| `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `periodo` (os relógios de um período, na ordem: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (apaga o que o período tem e sorteia de novo), `periodo_livre` (apaga e deixa os dias livres, sem sorteio), `manual` (o Rodízio manual: `de`, `ate`, `dias[AAAA-MM-DD]` = o id do relógio, `auto` ou `livre`), `apagar_tudo` (toda a programação de amanhã em diante sai; `hoje=1`: de hoje em diante; o modo monta o plano de novo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |
+| `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `periodo` (os relógios de um período, na ordem: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (apaga os dias do período e o modo monta de novo; só `de`: até o fim do plano; só `ate`: de amanhã até ele), `periodo_livre` (apaga e deixa os dias livres, sem sorteio; as mesmas datas), `manual` (o Rodízio manual: `de`, `ate`, `dias[AAAA-MM-DD]` = o id do relógio, `auto` ou `livre`), `apagar_tudo` (toda a programação de amanhã em diante sai; `hoje=1`: de hoje em diante; o modo monta o plano de novo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (grupos) e `relogios` (o grupo de cada relógio) |
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (e `ordem` nos campos) |
@@ -1479,12 +1478,13 @@ você sorteia de novo ou monta a próxima semana. (Pela API, há também a açã
 ordem, N dias seguidos cada.)
 
 **Não gostei do que saiu num período. Como apago?**
-No rodapé da página **Plano** (ou no quadro **Modo de rodízio** da página Hoje), em **Apagar um período**: ponha o começo e o fim e
-escolha *e sortear de novo* (apaga tudo o que o período tem, escolhido à mão ou sorteado, e sorteia outra vez) ou *e deixar
-livre* (apaga e não sorteia nada: os dias aparecem como *livre: escolha à mão*, e nem o sorteio nem a escala põem relógio
-neles). Cada dia livre se escolhe no **escolher…** do próprio dia (ou no Rodízio manual); **↺ voltar a sortear** devolve o
-dia ao sorteio. Vale de amanhã em diante (hoje já tem o relógio no pulso: para ele, o **Sortear de novo** do modo de rodízio
-ou o **trocar por…**). Num dia livre que chega, não há relógio do dia: o pulso sozinho não põe nenhum, e você escolhe.
+No rodapé da página **Plano** (ou no quadro **Modo de rodízio** da página Hoje), em **Apagar um período**: ponha o começo, o
+fim ou os dois (só o começo: dele até o fim do plano; só o fim: de amanhã até ele) e clique em **Apagar**. Os dias saem do
+plano (os escolhidos à mão, os sorteados e os livres) e o modo de rodízio monta esses dias de novo. Vale de amanhã em diante
+(hoje já tem o relógio no pulso: para ele, o **Sortear de novo** do modo de rodízio ou o **trocar por…**). Para deixar dias
+sem relógio, marque *livre* no Rodízio manual: eles aparecem como *livre: escolha à mão*, nem o sorteio nem a escala põem
+relógio neles, cada um se escolhe no **escolher…** do próprio dia e **↺ voltar a sortear** devolve o dia ao sorteio. Num dia
+livre que chega, não há relógio do dia: o pulso sozinho não põe nenhum, e você escolhe.
 Para recomeçar do zero: **Apagar tudo** (com **Excluindo hoje**, também hoje). Veja [Apagar a programação](#apagar-a-programação).
 
 **O relógio está no carregador (ou no sol): o que aparece?**

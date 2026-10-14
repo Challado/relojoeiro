@@ -1,4 +1,4 @@
-<!-- origem: c314f20bdec70dd175b1d7d18ba361d94cbc2c2a -->
+<!-- origem: c554e7429ec789b068c03c9d861c8a9f4ebe4127 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -225,16 +225,16 @@ continuent d'utiliser le générateur de PHP, car un nombre qui voyage sur inter
 En bas de la page **Plan** (l'endroit principal : le cadre **Effacer la programmation**, à la fin de la page, après le jour
 par jour) et dans le cadre **Mode de rotation** de la page Aujourd'hui (chacun sous une ligne, comme **Refaire le tirage**) :
 
-- **Effacer une période** : **De**, **À** et **Ensuite** : *et refaire le tirage* (tout ce que contient la période, à partir
-  de demain, choisi à la main, tiré ou libre, disparaît, et le mode de rotation tire de nouveau les jours) ou *et laisser
-  libre* (tout disparaît et les jours restent libres : sans montre et sans tirage, pour que vous choisissiez chacun dans le
-  **choisir…** du jour ou dans la Rotation manuelle). Le bouton **Effacer** demande confirmation.
+- **Effacer une période** : **De** et **À** ; l'un des deux peut rester vide (seulement **De** efface de lui jusqu'à la fin
+  du plan ; seulement **À**, de demain jusqu'à lui). Les jours de la période quittent le plan, à partir de demain (ceux
+  choisis à la main, ceux tirés et les libres), et le mode de rotation refait ces jours. Le bouton **Effacer** demande
+  confirmation.
 - **Tout effacer** : vide toute la programmation, à partir de demain : les jours choisis à la main, les tirés et les libres.
   En cochant **Y compris aujourd'hui**, il efface à partir d'aujourd'hui (si une autre montre sort pour aujourd'hui, elle
   devient celle au poignet dès maintenant). Ensuite le mode de rotation reconstruit le plan, de zéro : dans le tirage par
   blocs, jusqu'au dimanche (les semaines suivantes, quand elles arrivent) ; dans le planning intelligent, tout le planning.
   La programmation ne reste pas vide car le système construit toujours les jours manquants avec le mode actif ; pour des
-  jours sans montre, utilisez **Effacer une période… et laisser libre**.
+  jours sans montre, cochez *libre* dans la Rotation manuelle.
 
 ### La rotation manuelle {#o-rodízio-manual}
 
@@ -252,7 +252,7 @@ choisissez vous-même la montre de chaque jour d'une période (les vacances, un 
   en *Décider pour moi* sont décidés sur-le-champ par le système et enregistrés aussi (la raison de chacun apparaît dans le
   plan), et les libres restent sans montre. Si aujourd'hui fait partie de la période et que vous avez choisi une autre
   montre, elle devient celle au poignet dès maintenant ;
-- pour effacer ce que contient une période (et refaire le tirage, ou laisser les jours libres) ou tout effacer, voir
+- pour effacer les jours d'une période (le mode de rotation refait ces jours) ou tout effacer, voir
   [Effacer la programmation](#apagar-a-programação).
 
 Hors de la période, le mode de rotation habituel s'applique toujours. Les jours choisis à la main restent même quand vous
@@ -907,7 +907,7 @@ que vous enregistrez apparaît ici sous son nom.
 | Page | À quoi elle sert |
 |---|---|
 | **Aujourd'hui** (`index.php`) | L'écran principal. Il montre en haut la montre du jour (ou, selon la Configuration, celle qui est au poignet maintenant ; avec le bouton discret **Jour sans montre**, et, un jour libre, **Aujourd'hui sans montre** avec le **choisir…**), les alertes du jour (en retard et bientôt) avec le bouton qui résout chacune, les prochains jours du plan (« Afficher jusqu'à » jours à la fois, avec les pages en dessous) et le mode de rotation, qui se change sur place (avec **Effacer une période** et **Tout effacer**) (et, dedans, la **Rotation manuelle** : les montres d'une période, jour par jour ; voir [La rotation manuelle](#o-rodízio-manual)). En dessous se trouve le tableau de la collection, avec des filtres et le tri par type, état, charge, dernier port, prochain entretien, date et prix d'achat. Cliquer sur une montre ouvre son **panneau** : à côté de la liste ou dans une grande fenêtre flottante, selon la Configuration (**Ouvrir la montre sur la page Aujourd'hui**). |
-| **Plan** (`plano.php`) | Le plan entier, d'aujourd'hui jusqu'à la fin (dans le planning intelligent, un ou deux ans), mois par mois : la montre de chaque jour, le rappel et le **remplacer par…**. Il filtre par période (30 jours, 90, un an, deux, tout) et par montre ; le jour par jour vient par « Afficher jusqu'à » jours (la Configuration), avec les pages en dessous (**<**, les numéros, **>**) ; et il montre combien de jours chaque montre a dans la période, le pourcentage et son prochain jour. Pour choisir les montres d'une période, jour par jour, il mène à la **Rotation manuelle** (sur la page Aujourd'hui). En bas, **Effacer la programmation** : **Effacer une période** (et refaire le tirage, ou laisser libre) et **Tout effacer** (voir [Effacer la programmation](#apagar-a-programação)). |
+| **Plan** (`plano.php`) | Le plan entier, d'aujourd'hui jusqu'à la fin (dans le planning intelligent, un ou deux ans), mois par mois : la montre de chaque jour, le rappel et le **remplacer par…**. Il filtre par période (30 jours, 90, un an, deux, tout) et par montre ; le jour par jour vient par « Afficher jusqu'à » jours (la Configuration), avec les pages en dessous (**<**, les numéros, **>**) ; et il montre combien de jours chaque montre a dans la période, le pourcentage et son prochain jour. Pour choisir les montres d'une période, jour par jour, il mène à la **Rotation manuelle** (sur la page Aujourd'hui). En bas, **Effacer la programmation** : **Effacer une période** (les jours partent et le mode les refait) et **Tout effacer** (voir [Effacer la programmation](#apagar-a-programação)). |
 | **Panneau / Fiche** (`ficha.php`) | Tout sur une montre, dans des cadres alignés sur une grille (chaque cadre avec l'étiquette de chaque donnée à gauche et la valeur à droite) : photo, état actuel (*« Au repos depuis 21:40 »*, *« Au soleil depuis 09:12 »*), charge, note avec le calcul, prochaine entrée dans le plan, prévision de la batterie, la consommation de la batterie au poignet et hors du poignet (la mesurée et celle de la fiche), les derniers relevés, la chronologie récente, le cadre **Achat** (le prix payé, la boutique, la garantie et le **coût par port** : le prix payé divisé par les jours d'usage), le cadre **Documents** (combien dans chaque catégorie, et le lien vers la page Documents), le cadre **Marquer** et la fiche complète, modifiable (avec la **Situation dans la collection**). Sur une montre **Désirée**, à la place des cadres du quotidien, le cadre **Envie** (la marque, la référence, le prix cible, la priorité et le lien) et les documents ; sur une prêtée, vendue ou archivée, la marque de la situation à côté de l'état. Sur la page de la fiche, le sélecteur contient les montres de la collection et, à part, celles **Hors de la collection**. Le **Marquer** est un seul menu, *Que voulez-vous marquer ?* : mettre ou retirer du poignet, du remontoir, du soleil ou du chargeur, remontage, changement de pile, relevé de charge, une période déjà passée ou corriger un marquage ; en dessous apparaissent seulement les champs correspondants. |
 | **Envies** (`desejos.php`) | La **liste d'envies** : les montres désirées, de la priorité la plus haute à la plus basse, chacune avec la photo, la marque et la référence, la priorité, le prix cible, le groupe, le lien vers sa page et le bouton **Achetée** (la met dans la collection et ouvre la fiche, pour remplir l'achat), avec la somme des prix cibles ; le bouton **Nouvelle envie** ; et, en dessous, **Hors de la collection** : les prêtées, vendues et archivées, avec **Retour dans la collection**. Sur la page Aujourd'hui, le bouton **Envies (N)** à côté de **Nouvelle montre** y mène (seulement quand il y en a). Voir [La liste d'envies](#a-lista-de-desejos). |
 | **Statistiques** (`estatisticas.php`) | L'usage de la collection sur une période (**De**, **À** ; les raccourcis 30 jours, 90 jours, 1 an et depuis le début ; par défaut : les 90 derniers jours) : le résumé (jours avec une montre au poignet, heures au poignet et par jour, montres portées et non portées, le coût par port moyen et la valeur de la collection, la plus et la moins portée) ; **Chaque montre**, de la plus portée à la moins : jours d'usage, heures, la part de chacune (avec la barre), le coût par port, depuis combien de jours elle n'est pas allée au poignet et la tendance (↑ portée davantage, ↓ portée moins, → stable : la seconde moitié de la période comparée à la première) ; les graphiques **Par jour de la semaine** et **Par mois** (les heures au poignet) ; et **La collection** : les montres réparties par groupe, marque, année d'achat, situation et chaque champ de liste (comme Style), avec combien, la part et les heures de chaque partie. Par l'API : `recurso=estatisticas`. |
@@ -1054,14 +1054,14 @@ d'affilée chacune.)
 
 **Ce qui est sorti sur une période ne me plaît pas. Comment l'effacer ?**
 En bas de la page **Plan** (ou dans le cadre **Mode de rotation** de la page Aujourd'hui), dans **Effacer une période** :
-indiquez le début et la fin et choisissez *et refaire le tirage* (efface tout ce que contient la période, choisi à la main ou
-tiré, et retire au sort) ou *et laisser libre* (efface et ne tire rien : les jours apparaissent comme *libre : choisir à la
-main*, et ni le tirage ni le planning n'y mettent de montre). Chaque jour libre se choisit dans le **choisir…** du jour
-lui-même (ou dans la Rotation manuelle) ; **↺ retirer au sort** rend le jour au tirage. Cela vaut à partir de demain
-(aujourd'hui a déjà la montre au poignet : pour lui, le **Refaire le tirage** du mode de rotation ou le **remplacer par…**). Un
-jour libre qui arrive n'a pas de montre du jour : le poignet automatique n'en met aucune, et c'est vous qui choisissez. Pour
-repartir de zéro : **Tout effacer** (avec **Y compris aujourd'hui**, aujourd'hui aussi). Voir
-[Effacer la programmation](#apagar-a-programação).
+indiquez le début, la fin ou les deux (seulement le début : de lui jusqu'à la fin du plan ; seulement la fin : de demain
+jusqu'à elle) et cliquez sur **Effacer**. Les jours quittent le plan (ceux choisis à la main, ceux tirés et les libres) et le
+mode de rotation refait ces jours. Cela vaut à partir de demain (aujourd'hui a déjà la montre au poignet : pour elle, le
+**Refaire le tirage** du mode de rotation ou le **remplacer par…**). Pour laisser des jours sans montre, cochez *libre* dans
+la Rotation manuelle : ils apparaissent comme *libre : choisissez à la main*, ni le tirage ni le planning n'y mettent de
+montre, chacun se choisit dans le **choisir…** du jour même et **↺ retirer au sort** rend le jour au tirage. Un jour libre
+qui arrive n'a pas de montre du jour : le poignet automatique n'en met aucune, et vous choisissez. Pour repartir de zéro :
+**Tout effacer** (avec **Y compris aujourd'hui**, aujourd'hui aussi). Voir [Effacer la programmation](#apagar-a-programação).
 
 **La montre est sur le chargeur (ou au soleil) : qu'est-ce qui s'affiche ?**
 L'état montre où elle est (*Sur le chargeur depuis 06:30*). Sur la smartwatch, la batterie monte selon le champ *Sur le

@@ -517,8 +517,9 @@
  *                             hoje, como o usando; 0: o dia volta a ser sorteado), proxima_semana (só no domingo: a semana
  *                             seguinte inteira), periodo (de, ate: AAAA-MM-DD, de hoje até 2 anos; relogio_ids[]: um ou vários, na
  *                             ordem; dias_cada (padrão 1): os dias do período ficam escolhidos à mão, cada relógio dias_cada dias
- *                             seguidos, e depois do último volta ao primeiro), periodo_sortear (de, ate: tudo o que o período tem,
- *                             de amanhã em diante, à mão, sorteado ou livre, sai e ele é sorteado de novo), periodo_livre (de, ate:
+ *                             seguidos, e depois do último volta ao primeiro), periodo_sortear (de, ate, um dos dois pode faltar: sem
+ *                             o de, de amanhã; sem o ate, até o último dia do plano; os dias do período, de amanhã em diante, à mão,
+ *                             sorteados ou livres, saem do plano e o modo monta esses dias de novo), periodo_livre (de, ate, idem:
  *                             tudo sai e os dias ficam livres: sem relógio e sem sorteio, para escolher à mão; trocar_dia ou periodo
  *                             num dia livre o tira de lá), manual (o Rodízio manual: de, ate; dias[AAAA-MM-DD]: o id do relógio,
  *                             auto (Decida por mim: o sistema decide ao gravar, pelo critério do recurso=rodizio_manual) ou livre

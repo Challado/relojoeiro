@@ -379,7 +379,7 @@ function manualHtml(r) {
     + el("p", {"class": "nota"}, t("Página {1} de {2} · {3}{4}, de {5} a {6}. O que você escolhe fica guardado enquanto você anda pelas páginas; nada muda antes de gravar.", {1: r.pagina, 2: r.paginas, 3: r.total_dias, 4: r.total_dias === 1 ? t(" dia") : t(" dias"), 5: dataBr(r.de), 6: dataBr(r.ate)}))
     + el("div", {"class": "botoes"}, el("button", {"name": "acao", "value": "manual"}, t("Gravar o rodízio manual")))
     + el("p", {"class": "nota"}, h(r.decida_por_mim))
-    + el("p", {"class": "nota"}, t("Para apagar o que um período tem (e sortear de novo, ou deixar os dias livres): \"Apagar um período\", embaixo deste quadro, ou na página {1}.", {1: el("a", {"href": "plano.php"}, t("Plano"))}));
+    + el("p", {"class": "nota"}, t("Para apagar os dias de um período (o modo de rodízio monta esses dias de novo): \"Apagar um período\", embaixo deste quadro, ou na página {1}.", {1: el("a", {"href": "plano.php"}, t("Plano"))}));
 }
 
 document.addEventListener("click", function (ev) {

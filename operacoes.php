@@ -1936,10 +1936,21 @@ function op_rodizio($acao, $d)
     } elseif ($acao === "periodo" || $acao === "periodo_sortear" || $acao === "periodo_livre") {
         // um período escolhido à mão: de, ate (AAAA-MM-DD, de hoje em diante, até 2 anos), relogio_ids (um ou vários, na ordem:
         // um por dia, e depois do último volta ao primeiro; dias_cada: quantos dias seguidos cada um fica). periodo_sortear:
-        // tudo o que o período tem (de amanhã em diante: à mão, sorteado ou livre) sai e ele é sorteado de novo. periodo_livre:
-        // tudo sai e os dias ficam livres (sem relógio e sem sorteio, para escolher à mão)
-        $de_p = DateTimeImmutable::createFromFormat("!Y-m-d", (string)($d["de"] ?? ""));
-        $ate_p = DateTimeImmutable::createFromFormat("!Y-m-d", (string)($d["ate"] ?? ""));
+        // tudo o que o período tem (de amanhã em diante: à mão, sorteado ou livre) sai da tabela e o modo de rodízio monta os
+        // dias de novo. periodo_livre: tudo sai e os dias ficam livres (sem relógio e sem sorteio, para escolher à mão). Nos
+        // dois, um dos lados pode faltar: sem o de, de amanhã; sem o ate, até o último dia do plano
+        $apagar_p = $acao !== "periodo";
+        $de_txt = trim((string)($d["de"] ?? ""));
+        $ate_txt = trim((string)($d["ate"] ?? ""));
+        if ($apagar_p && $de_txt === "" && $ate_txt !== "") {
+            $de_txt = $hoje->modify("+1 day")->format("Y-m-d");
+        }
+        if ($apagar_p && $ate_txt === "" && $de_txt !== "") {
+            $ultimo_p = max((string)valor("SELECT MAX(data) FROM plano"), (string)valor("SELECT MAX(data) FROM plano_livre"));
+            $ate_txt = max(substr($ultimo_p, 0, 10), $de_txt);
+        }
+        $de_p = DateTimeImmutable::createFromFormat("!Y-m-d", $de_txt);
+        $ate_p = DateTimeImmutable::createFromFormat("!Y-m-d", $ate_txt);
         $ids_p = $d["relogio_ids"] ?? [];
         $ids_p = array_values(array_filter(array_map("intval", is_array($ids_p) ? $ids_p : explode(",", (string)$ids_p))));
         $cada = trim((string)($d["dias_cada"] ?? "1"));
@@ -1947,13 +1958,15 @@ function op_rodizio($acao, $d)
         foreach ($ids_p as $x) {
             $rels_p[] = linha("SELECT * FROM relogio WHERE id = ?", [$x]);
         }
-        if (!$de_p || $de_p->format("Y-m-d") !== (string)$d["de"] || !$ate_p || $ate_p->format("Y-m-d") !== (string)$d["ate"]) {
+        if ($apagar_p && $de_txt === "" && $ate_txt === "") {
+            $erros[] = t("Dê o começo, o fim ou os dois (para apagar tudo, use o Apagar tudo).");
+        } elseif (!$de_p || $de_p->format("Y-m-d") !== $de_txt || !$ate_p || $ate_p->format("Y-m-d") !== $ate_txt) {
             $erros[] = t("De e até: datas AAAA-MM-DD.");
         } elseif ($de_p < $hoje) {
             $erros[] = t("O período começa num dia que já passou: o que foi usado se corrige nas marcações.");
         } elseif ($ate_p < $de_p) {
             $erros[] = t("O fim do período vem antes do começo.");
-        } elseif ($de_p->diff($ate_p)->days > 730) {
+        } elseif (!$apagar_p && $de_p->diff($ate_p)->days > 730) {
             $erros[] = t("Um período de até 2 anos.");
         } elseif ($acao === "periodo_sortear" || $acao === "periodo_livre") {
             // de amanhã em diante (hoje já tem o relógio do pulso: troque pelo "Sortear de novo" ou pelo "trocar por…")
@@ -1977,10 +1990,12 @@ function op_rodizio($acao, $d)
                 } else {
                     garantir_plano($hoje);
                 }
-                $faixa_txt = $desde_p->format("d/m") . " a " . $ate_p->format("d/m");
+                // a data com o ano quando o período passa deste ano
+                $fmt_p = $ate_p->format("Y") !== $hoje->format("Y") ? "d/m/Y" : "d/m";
+                $faixa_txt = $desde_p->format($fmt_p) . " a " . $ate_p->format($fmt_p);
                 $msg = $acao === "periodo_livre"
                     ? t("De {1}: {2}{3}, sem relógio e sem sorteio{4}. Escolha o relógio de cada um em \"escolher…\", ou no Rodízio manual.", [1 => $faixa_txt, 2 => $livres, 3 => $livres === 1 ? t(" dia livre") : t(" dias livres"), 4 => $n_p > 0 ? t(" (o que estava gravado saiu)") : ""])
-                    : t("De {1}: {2}o período foi sorteado de novo{3}.", [1 => $faixa_txt, 2 => $n_p > 0 ? t("o que estava gravado saiu e ") : "", 3 => $escala ? t(" (a escala foi refeita a partir de {1})", [1 => $desde_p->format("d/m")])
+                    : t("De {1}: {2}o período foi sorteado de novo{3}.", [1 => $faixa_txt, 2 => $n_p > 0 ? ($n_p === 1 ? t("1 dia saiu do plano e ") : t("{1} dias saíram do plano e ", [1 => $n_p])) : "", 3 => $escala ? t(" (a escala foi refeita a partir de {1})", [1 => $desde_p->format($fmt_p)])
                             : ($ate_p > $hoje->modify((int)$hoje->format("N") === 7 ? "+1 day" : "sunday this week") ? t("; os dias depois desta semana são sorteados quando a semana deles chegar") : "")]);
             }
         } elseif (count($ids_p) === 0) {

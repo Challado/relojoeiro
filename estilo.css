@@ -1524,8 +1524,11 @@ svg.mostrador .eixo { fill: #b3261e; }
 .selo.master { background: #1f4f8f; color: #fff; }
 .selo.demo { background: #fbf1e3; color: #8a4f0e; }
 .selo.bloqueado { background: #f7dede; color: #8f1f1f; }
-.acoes-usuario summary { cursor: pointer; color: var(--safira); }
-.acoes-usuario form { margin: .4rem 0; }
+tr.linha-acoes-usuario > td { background: #f6f8fb; padding: .6rem .75rem; }
+.acoes-usuario { display: flex; flex-wrap: wrap; gap: .5rem .75rem; align-items: center; }
+.acoes-usuario h4 { flex-basis: 100%; margin: .4rem 0 0; }
+.acoes-usuario form.campos { flex-basis: 100%; max-width: 40rem; }
+.acoes-usuario form { margin: 0; }
 .cadastro-pagina { max-width: 40rem; }
 .campos .opcoes-conta { border: 0; padding: .4rem 0; margin: 0; }
 .campos .opcoes-conta label { display: flex; gap: .45rem; align-items: baseline; margin: .35rem 0; width: 100%; }

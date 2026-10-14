@@ -70,7 +70,7 @@ function montarPlano() {
     + navPaginas(dd.pagina, dd.paginas, "plano-pagina")
     + (dd.paginas > 1 ? el("p", {"class": "nota"}, t("Página {1} de {2} · {3} dias, {4} por página (o \"Mostrar até\" da {5}).", {1: dd.pagina, 2: dd.paginas, 3: dd.total, 4: dd.por_pagina, 5: el("a", {"href": "configuracao.php"}, t("Configuração"))})) : ""));
 
-  // o rodapé: apagar o que um período tem (e sortear de novo, ou deixar livre) e apagar tudo, depois de tudo o mais
+  // o rodapé: apagar os dias de um período (o modo monta de novo) e apagar tudo, depois de tudo o mais
   res += el("footer", {"class": "cartao-config apagar-plano", "id": "apagar"}, el("h2", {}, t("Apagar a programação")) + formApagarPeriodo(d.hoje) + formApagarTudo());
 
   var main = document.getElementById("plano");

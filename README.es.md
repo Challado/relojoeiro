@@ -267,15 +267,15 @@ generador de PHP, porque un número que viaja por internet no sirve para secreto
 Al pie de la página **Plan** (el lugar principal: el cuadro **Borrar la programación**, al final de la página, después del día
 a día) y en el cuadro **Modo de rotación** de la página Hoy (cada uno debajo de una línea, como **Sortear de nuevo**):
 
-- **Borrar un período**: **Desde**, **Hasta** y **Después**: *y sortear de nuevo* (todo lo que tiene el período, de mañana en
-  adelante, elegido a mano, sorteado o libre, se va, y el modo de rotación vuelve a sortear los días) o *y dejar libre* (todo
-  se va y los días quedan libres: sin reloj y sin sorteo, para que usted elija cada uno en el **elegir…** del día o en la
-  Rotación manual). El botón **Borrar** pide confirmación.
+- **Borrar un período**: **Desde** y **Hasta**; uno de los dos puede quedar vacío (solo **Desde** borra desde él hasta el
+  final del plan; solo **Hasta**, desde mañana hasta él). Los días del período salen del plan, de mañana en adelante (los
+  elegidos a mano, los sorteados y los libres), y el modo de rotación vuelve a montar esos días. El botón **Borrar** pide
+  confirmación.
 - **Borrar todo**: limpia toda la programación, de mañana en adelante: los días elegidos a mano, los sorteados y los libres.
   Marcando **Incluyendo hoy**, borra de hoy en adelante (si sale otro reloj para hoy, pasa a ser el de la muñeca desde ese
   momento). Después el modo de rotación vuelve a armar el plan, desde cero: en el sorteo por bloques, hasta el domingo (las
   semanas siguientes, cuando lleguen); en la escala inteligente, toda la escala. La programación no queda vacía porque el
-  sistema siempre arma los días que faltan con el modo activo; para días sin reloj, use **Borrar un período… y dejar libre**.
+  sistema siempre arma los días que faltan con el modo activo; para días sin reloj, marque *libre* en la Rotación manual.
 
 ### La rotación manual
 
@@ -292,7 +292,7 @@ haga clic en **OK**:
 - **Guardar la rotación manual** guarda todo el período: los días con reloj quedan elegidos a mano, los de *Decide por mí* los
   decide el sistema en ese momento y también se guardan (el motivo de cada uno aparece en el plan), y los libres quedan sin
   reloj. Si hoy está en el período y usted eligió otro reloj, pasa a ser el de la muñeca desde ese momento;
-- para borrar lo que tiene un período (y sortear de nuevo, o dejar los días libres) o borrarlo todo, vea
+- para borrar los días de un período (el modo de rotación vuelve a montar esos días) o borrarlo todo, vea
   [Borrar la programación](#borrar-la-programación).
 
 Fuera del período, sigue valiendo el modo de rotación de siempre. Los días elegidos a mano se mantienen aunque sortee de nuevo
@@ -954,7 +954,7 @@ que usted registre entra aquí con su nombre.
 | Página | Para qué sirve |
 |---|---|
 | **Hoy** (`index.php`) | La pantalla principal. Muestra arriba el reloj del día (o, según la Configuración, el que está en la muñeca ahora; con el botón discreto **Sin reloj hoy**, y, en un día libre, **Hoy sin reloj** con el **elegir…**), los avisos de hoy (atrasados y próximos) con el botón que resuelve cada uno, los próximos días del plan (de "Mostrar hasta" en "Mostrar hasta" días, con las páginas debajo) y el modo de rotación, que se cambia ahí mismo (con **Borrar un período** y **Borrar todo**) (y, en él, la **Rotación manual**: los relojes de un período, día a día; vea [La rotación manual](#la-rotación-manual)). Debajo está la tabla de la colección, con filtros y ordenación por tipo, estado, carga, último uso, próximo mantenimiento, fecha y valor de compra. Hacer clic en un reloj abre su **panel**: al lado de la lista o en una ventana flotante grande, según la Configuración (**Abrir el reloj en la página Hoy**). |
-| **Plan** (`plano.php`) | El plan entero, de hoy hasta el final (en la escala inteligente, uno o dos años), mes a mes: el reloj de cada día, el recordatorio y el **cambiar por…**. Filtra por período (30 días, 90, un año, dos, todo) y por reloj; el día a día viene de "Mostrar hasta" en "Mostrar hasta" días (la Configuración), con las páginas debajo (**<**, los números, **>**); y muestra cuántos días tiene cada reloj en el período, el porcentaje y su próximo día. Para elegir los relojes de un período, día a día, lleva a la **Rotación manual** (en la página Hoy). Al pie, **Borrar la programación**: **Borrar un período** (y sortear de nuevo, o dejar libre) y **Borrar todo** (vea [Borrar la programación](#borrar-la-programación)). |
+| **Plan** (`plano.php`) | El plan entero, de hoy hasta el final (en la escala inteligente, uno o dos años), mes a mes: el reloj de cada día, el recordatorio y el **cambiar por…**. Filtra por período (30 días, 90, un año, dos, todo) y por reloj; el día a día viene de "Mostrar hasta" en "Mostrar hasta" días (la Configuración), con las páginas debajo (**<**, los números, **>**); y muestra cuántos días tiene cada reloj en el período, el porcentaje y su próximo día. Para elegir los relojes de un período, día a día, lleva a la **Rotación manual** (en la página Hoy). Al pie, **Borrar la programación**: **Borrar un período** (los días salen y el modo los vuelve a montar) y **Borrar todo** (vea [Borrar la programación](#borrar-la-programación)). |
 | **Panel / Ficha** (`ficha.php`) | Todo sobre un reloj, en cuadros alineados en una cuadrícula (cada cuadro con la etiqueta de cada dato a la izquierda y el valor a la derecha): foto, estado ahora (*"En reposo desde 21:40"*, *"Al sol desde 09:12"*), carga, nota con la cuenta, próxima entrada en el plan, previsión de la batería, el consumo de la batería en la muñeca y fuera (el medido y el de la ficha), las últimas lecturas, la línea de tiempo reciente, el cuadro **Compra** (el valor pagado, la tienda, la garantía y el **costo por uso**: el valor pagado dividido por los días de uso), el cuadro **Documentos** (cuántos en cada categoría, y el enlace a la página Documentos), el cuadro **Marcar** y la ficha completa, editable (con la **Situación en la colección**). En un reloj **Deseado**, en lugar de los cuadros del día a día, el cuadro **Deseo** (la marca, la referencia, el precio objetivo, la prioridad y el enlace) y los documentos; en uno prestado, vendido o archivado, la marca de la situación al lado del estado. En la página de la ficha, el selector trae los relojes de la colección y, aparte, los de **Fuera de la colección**. El **Marcar** es un solo menú, *¿Qué quiere marcar?*: poner o quitar de la muñeca, del winder, del sol o del cargador, cuerda, cambio de pila, lectura de carga, un período que ya pasó o corregir una marca; debajo aparecen solo los campos de eso. |
 | **Deseos** (`desejos.php`) | La **lista de deseos**: los relojes deseados, de la prioridad más alta a la más baja, cada uno con la foto, la marca y la referencia, la prioridad, el precio objetivo, el grupo, el enlace a su página y el botón **Lo compré** (lo pone en la colección y abre la ficha, para completar la compra), con la suma de los precios objetivo; el botón **Nuevo deseo**; y, debajo, **Fuera de la colección**: los prestados, vendidos y archivados, con **Volver a la colección**. En la página Hoy, el botón **Deseos (N)** al lado de **Nuevo reloj** lleva a ella (solo cuando hay alguno). Vea [La lista de deseos](#la-lista-de-deseos). |
 | **Estadísticas** (`estatisticas.php`) | El uso de la colección en un período (**Desde**, **Hasta**; los atajos 30 días, 90 días, 1 año y desde el principio; predeterminado: los últimos 90 días): el resumen (días con reloj en la muñeca, horas en la muñeca y por día, relojes usados y sin uso, el costo por uso medio y el valor de la colección, el más y el menos usado); **Cada reloj**, del más usado al menos: días de uso, horas, la parte de cada uno (con la barra), el costo por uso, cuántos días hace que fue a la muñeca y la tendencia (↑ usando más, ↓ usando menos, → estable: la segunda mitad del período comparada con la primera); los gráficos **Por día de la semana** y **Por mes** (las horas en la muñeca); y **La colección**: los relojes divididos por grupo, marca, año de compra, situación y cada campo de lista (como Estilo), con cuántos, la parte y las horas de cada parte. Por la API: `recurso=estatisticas`. |
@@ -1130,7 +1130,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `documentos` | `enviar` (uno o varios archivos, con la categoría, el título, la fecha, la descripción y, en una foto, la miniatura), `alterar`, `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (solo sin documentos) |
 | `lancamento` | `lancar` (cuerda, carga, pila...), `iniciar` y `encerrar` (poner y quitar de la muñeca, del winder, del sol, del cargador), `alternar` (cierra la sesión si está abierta, la abre si está cerrada: un solo botón en el móvil), `periodo` (un período que ya pasó), `alterar`, `excluir`. En todas, `relogio_id=hoje` es el reloj del día |
-| `rodizio` | `usando` (estoy usando este hoy), `trocar_dia` (el reloj de un día), `periodo` (los relojes de un período, en orden: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (borra lo que tiene el período y sortea de nuevo), `periodo_livre` (borra y deja los días libres, sin sorteo), `manual` (la Rotación manual: `de`, `ate`, `dias[AAAA-MM-DD]` = el id del reloj, `auto` o `livre`), `apagar_tudo` (toda la programación de mañana en adelante se va; `hoje=1`: de hoy en adelante; el modo arma el plan de nuevo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (cambiar el modo) |
+| `rodizio` | `usando` (estoy usando este hoy), `trocar_dia` (el reloj de un día), `periodo` (los relojes de un período, en orden: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (borra los días del período y el modo los vuelve a montar; solo `de`: hasta el final del plan; solo `ate`: desde mañana hasta él), `periodo_livre` (borra y deja los días libres, sin sorteo; las mismas fechas), `manual` (la Rotación manual: `de`, `ate`, `dias[AAAA-MM-DD]` = el id del reloj, `auto` o `livre`), `apagar_tudo` (toda la programación de mañana en adelante se va; `hoje=1`: de hoy en adelante; el modo arma el plan de nuevo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (cambiar el modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (grupos) y `relogios` (el grupo de cada reloj) |
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (y `ordem` en los campos) |
@@ -1516,14 +1516,15 @@ aunque sortee de nuevo o arme la semana siguiente. (Por la API existe también l
 relojes en orden, N días seguidos cada uno.)
 
 **No me gustó lo que salió en un período. ¿Cómo lo borro?**
-Al pie de la página **Plan** (o en el cuadro **Modo de rotación** de la página Hoy), en **Borrar un período**: ponga el inicio y
-el fin y elija *y sortear de nuevo* (borra todo lo que tiene el período, elegido a mano o sorteado, y sortea de nuevo) o *y
-dejar libre* (borra y no sortea nada: los días aparecen como *libre: elija a mano*, y ni el sorteo ni la escala les ponen
-reloj). Cada día libre se elige en el **elegir…** del propio día (o en la Rotación manual); **↺ volver a sortear** devuelve el
-día al sorteo. Vale de mañana en adelante (hoy ya tiene el reloj en la muñeca: para él, el **Sortear de nuevo** del modo de
-rotación o el **cambiar por…**). En un día libre que llega, no hay reloj del día: la muñeca automática no pone ninguno, y usted
-elige. Para empezar de cero: **Borrar todo** (con **Incluyendo hoy**, también hoy). Vea
-[Borrar la programación](#borrar-la-programación).
+Al pie de la página **Plan** (o en el cuadro **Modo de rotación** de la página Hoy), en **Borrar un período**: ponga el
+inicio, el final o los dos (solo el inicio: desde él hasta el final del plan; solo el final: desde mañana hasta él) y haga
+clic en **Borrar**. Los días salen del plan (los elegidos a mano, los sorteados y los libres) y el modo de rotación vuelve a
+montar esos días. Vale de mañana en adelante (hoy ya tiene el reloj en la muñeca: para él, el **Sortear de nuevo** del modo
+de rotación o el **cambiar por…**). Para dejar días sin reloj, marque *libre* en la Rotación manual: aparecen como *libre:
+elija a mano*, ni el sorteo ni la escala les ponen reloj, cada uno se elige en el **elegir…** del propio día y **↺ volver a
+sortear** devuelve el día al sorteo. En un día libre que llega, no hay reloj del día: la muñeca automática no pone ninguno, y
+usted elige. Para empezar de cero: **Borrar todo** (con **Incluyendo hoy**, también hoy). Vea [Borrar la
+programación](#borrar-la-programación).
 
 **El reloj está en el cargador (o al sol): ¿qué aparece?**
 El estado muestra dónde está (*En el cargador desde 06:30*). En el smartwatch, la batería sube según el campo *En el cargador:

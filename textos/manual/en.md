@@ -1,4 +1,4 @@
-<!-- origem: c314f20bdec70dd175b1d7d18ba361d94cbc2c2a -->
+<!-- origem: c554e7429ec789b068c03c9d861c8a9f4ebe4127 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -228,15 +228,14 @@ secrets.
 At the bottom of the **Plan** page (the main place: the **Erase the schedule** box, at the end of the page, after the day by
 day) and in the **Rotation mode** box on the Today page (each below a line, like **Draw again**):
 
-- **Erase a period**: **From**, **To** and **Then**: *and draw again* (everything the period has, from tomorrow on, chosen by
-  hand, drawn or free, goes away, and the rotation mode draws the days again) or *and leave free* (everything goes away and
-  the days are left free: no watch and no draw, for you to choose each one in the day's **choose…** or in the Manual
-  rotation). The **Erase** button asks for confirmation.
+- **Erase a period**: **From** and **To**; one of the two can stay empty (only **From** erases from it to the end of the
+  plan; only **To**, from tomorrow to it). The period's days leave the plan, from tomorrow on (the ones chosen by hand, the
+  drawn ones and the free ones), and the rotation mode builds these days again. The **Erase** button asks for confirmation.
 - **Erase all**: clears the whole schedule, from tomorrow on: the days chosen by hand, the drawn ones and the free ones.
   Ticking **Including today**, it erases from today on (if another watch comes up for today, it becomes the one on the wrist
   from now on). Then the rotation mode builds the plan again, from scratch: in the draw by blocks, up to Sunday (the following
   weeks, when they come); in the smart schedule, the whole schedule. The schedule doesn't stay empty because the system always
-  builds the missing days by the active mode; for days without a watch, use **Erase a period… and leave free**.
+  builds the missing days by the active mode; for days without a watch, mark *free* in the Manual rotation.
 
 ### The manual rotation {#o-rodízio-manual}
 
@@ -253,7 +252,7 @@ each day of a period yourself (the holidays, a trip, a whole month). Set the sta
 - **Save the manual rotation** saves the whole period: the days with a watch are chosen by hand, the *Decide for me* ones are
   decided right then by the system and are also saved (the reason for each one appears in the plan), and the free ones are
   left without a watch. If today is in the period and you chose another watch, it becomes the one on the wrist from now on;
-- to erase what a period has (and draw again, or leave the days free) or erase everything, see
+- to erase a period's days (the rotation mode builds these days again) or erase everything, see
   [Erase the schedule](#apagar-a-programação).
 
 Outside the period, the usual rotation mode still applies. The days chosen by hand stay even when you draw again or the cron
@@ -890,7 +889,7 @@ comes in here by its name.
 | Page | What it's for |
 |---|---|
 | **Today** (`index.php`) | The main screen. It shows at the top the watch of the day (or, according to Settings, the one on the wrist now; with the discreet **No watch today** button, and, on a free day, **Watch-free today** with **choose…**), today's alerts (overdue and soon) with the button that resolves each one, the next days of the plan ("Show up to" days at a time, with the pages below) and the rotation mode, which is changed right there (with **Erase a period** and **Erase all**) (and, in it, the **Manual rotation**: the watches of a period, day by day; see [The manual rotation](#o-rodízio-manual)). Below is the collection table, with filters and sorting by type, state, charge, last worn, next service, purchase date and value. Clicking a watch opens its **panel**: next to the list or in a large floating window, as set in Settings (**Open the watch on the Today page**). |
-| **Plan** (`plano.php`) | The whole plan, from today to the end (in the smart schedule, one or two years), month by month: each day's watch, the reminder and **change to…**. It filters by period (30 days, 90, one year, two, all) and by watch; the day by day comes "Show up to" days at a time (Settings), with the pages below (**<**, the numbers, **>**); and it shows how many days each watch has in the period, the percentage and its next day. To choose the watches for a period, day by day, it leads to the **Manual rotation** (on the Today page). At the bottom, **Erase the schedule**: **Erase a period** (and draw again, or leave free) and **Erase all** (see [Erase the schedule](#apagar-a-programação)). |
+| **Plan** (`plano.php`) | The whole plan, from today to the end (in the smart schedule, one or two years), month by month: each day's watch, the reminder and **change to…**. It filters by period (30 days, 90, one year, two, all) and by watch; the day by day comes "Show up to" days at a time (Settings), with the pages below (**<**, the numbers, **>**); and it shows how many days each watch has in the period, the percentage and its next day. To choose the watches for a period, day by day, it leads to the **Manual rotation** (on the Today page). At the bottom, **Erase the schedule**: **Erase a period** (the days go and the mode builds them again) and **Erase all** (see [Erase the schedule](#apagar-a-programação)). |
 | **Panel / Watch page** (`ficha.php`) | Everything about a watch, in boxes aligned on a grid (each box with each item's label on the left and the value on the right): photo, state now (*"At rest since 21:40"*, *"In the sun since 09:12"*), charge, score with the calculation, next entry in the plan, battery forecast, the battery consumption on the wrist and off (the measured one and the record's), the last readings, the recent timeline, the **Purchase** box (the price paid, the store, the warranty and the **cost per use**: the price paid divided by the days of use), the **Documents** box (how many in each category, and the link to the Documents page), the **Mark** box and the complete, editable record (with the **Status in the collection**). On a **Wished** watch, instead of the day-to-day boxes, the **Wish** box (the brand, the reference, the target price, the priority and the link) and the documents; on a lent, sold or archived one, the status mark next to the state. On the watch page, the selector has the watches in the collection and, separately, those **Outside the collection**. **Mark** is a single menu, *What do you want to mark?*: put on or take off the wrist, the winder, the sun or the charger, winding, battery change, charge reading, a period that has passed or fix a mark; below appear only the fields for that. |
 | **Wishlist** (`desejos.php`) | The **wishlist**: the wished watches, from the highest priority to the lowest, each with the photo, the brand and the reference, the priority, the target price, the group, the link to its page and the **I bought it** button (puts it in the collection and opens its page, to fill in the purchase), with the sum of the target prices; the **New wish** button; and, below, **Outside the collection**: the lent, sold and archived ones, with **Back to the collection**. On the Today page, the **Wishlist (N)** button next to **New watch** leads to it (only when there is one). See [The wishlist](#a-lista-de-desejos). |
 | **Statistics** (`estatisticas.php`) | The collection's use in a period (**From**, **To**; the shortcuts 30 days, 90 days, 1 year and since the beginning; default: the last 90 days): the summary (days with a watch on the wrist, hours on the wrist and per day, watches worn and unworn, the average cost per use and the collection's value, the most and the least worn); **Each watch**, from the most worn to the least: days of use, hours, each one's share (with the bar), the cost per use, how many days since it last went on the wrist and the trend (↑ wearing more, ↓ wearing less, → stable: the second half of the period compared to the first); the **By day of the week** and **By month** charts (the hours on the wrist); and **The collection**: the watches divided by group, brand, purchase year, status and each list field (like Style), with how many, the share and the hours of each part. Through the API: `recurso=estatisticas`. |
@@ -1030,14 +1029,15 @@ you draw again or build the next week. (Through the API, there is also the `peri
 in order, N days in a row each.)
 
 **I didn't like what came up in a period. How do I erase it?**
-At the bottom of the **Plan** page (or in the **Rotation mode** box on the Today page), in **Erase a period**: set the start
-and the end and choose *and draw again* (it erases everything the period has, chosen by hand or drawn, and draws again) or
-*and leave free* (it erases and draws nothing: the days appear as *free: choose by hand*, and neither the draw nor the schedule
-puts a watch on them). Each free day is chosen in the day's own **choose…** (or in the Manual rotation); **↺ draw again**
-returns the day to the draw. It applies from tomorrow on (today already has the watch on the wrist: for it, the rotation mode's
-**Draw again** or **change to…**). On a free day that arrives, there is no watch of the day: the automatic wrist puts none on,
-and you choose. To start over from scratch: **Erase all** (with **Including today**, today too). See
-[Erase the schedule](#apagar-a-programação).
+At the bottom of the **Plan** page (or in the **Rotation mode** box on the Today page), in **Erase a period**: set the start,
+the end or both (only the start: from it to the end of the plan; only the end: from tomorrow to it) and click **Erase**. The
+days leave the plan (the ones chosen by hand, the drawn ones and the free ones) and the rotation mode builds these days again.
+It applies from tomorrow on (today already has the watch on the wrist: for it, the rotation mode's **Draw again** or the
+**change to…**). To leave days without a watch, mark *free* in the Manual rotation: they show as *free: choose by hand*,
+neither the draw nor the schedule puts a watch on them, each one is chosen in the day's own **choose…**, and **↺ draw again**
+returns the day to the draw. On a free day that arrives, there is no watch of the day: the automatic wrist doesn't put any,
+and you choose. To start over from scratch: **Erase all** (with **Including today**, today too). See [Erase the
+schedule](#apagar-a-programação).
 
 **The watch is on the charger (or in the sun): what shows?**
 The state shows where it is (*On the charger since 06:30*). On the smartwatch, the battery goes up by the *On the charger:

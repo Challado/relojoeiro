@@ -138,23 +138,18 @@ function navPaginas(pagina, paginas, atributo) {
   return el("nav", {"class": "paginas", "aria-label": t("Páginas")}, res);
 }
 
-// Apagar o que um período do plano tem (página Plano e quadro Modo de rodízio): de, até e o que fazer depois: sortear de
-// novo pelo modo (rodizio periodo_sortear) ou deixar os dias livres, sem relógio (periodo_livre). Vale de amanhã em diante.
-// hoje: AAAA-MM-DD
+// Apagar um período do plano (página Plano e quadro Modo de rodízio): os dias saem da tabela, de amanhã em diante, e o modo de
+// rodízio monta esses dias de novo (rodizio periodo_sortear). Um dos lados pode ficar vazio: sem o começo, de amanhã até o
+// fim; sem o fim, do começo até o último dia do plano. hoje: AAAA-MM-DD
 function formApagarPeriodo(hoje) {
-  var acoes = [["periodo_sortear", t("e sortear de novo"), t("Tudo o que o período tem, de amanhã em diante (escolhido à mão, sorteado ou livre), sai, e o modo de rodízio sorteia os dias outra vez."),
-    t("Apagar o que o período tem e sortear de novo? Os dias escolhidos à mão nele também saem.")],
-    ["periodo_livre", t("e deixar livre"), t("Tudo o que o período tem, de amanhã em diante, sai, e os dias ficam livres: sem relógio e sem sorteio, para você escolher cada um (no \"escolher…\" do dia ou no Rodízio manual)."),
-    t("Apagar o que o período tem e deixar os dias livres, sem relógio? Os dias escolhidos à mão nele também saem.")]];
-  return el("form", {"data-recurso": "rodizio", "class": "apagar-periodo", "onsubmit": "var o = this.acao.options[this.acao.selectedIndex]; return confirm(o.getAttribute('data-confirma'))"},
-    el("span", {"class": "campo-principal"}, t("Apagar um período"))
-    + el("div", {"class": "linha-apagar"}, el("label", {}, t("De {1}", {1: el("input", {"type": "date", "name": "de", "min": hoje, "required": true})}))
-      + el("label", {}, t("Até {1}", {1: el("input", {"type": "date", "name": "ate", "min": hoje, "required": true})}))
-      + el("label", {}, t("Depois {1}", {1: el("select", {"name": "acao"}, acoes.map(function (a) {
-        return el("option", {"value": a[0], "data-explica": a[2], "data-confirma": a[3]}, h(a[1]));
-      }).join(""))}))
+  return el("form", {"data-recurso": "rodizio", "class": "apagar-periodo", "onsubmit": "return confirm(this.getAttribute('data-confirma'))",
+      "data-confirma": t("Apagar os dias deste período do plano (escolhidos à mão, sorteados e livres)? O modo de rodízio monta esses dias de novo.")},
+    el("input", {"type": "hidden", "name": "acao", "value": "periodo_sortear"})
+    + el("span", {"class": "campo-principal"}, t("Apagar um período"))
+    + el("div", {"class": "linha-apagar"}, el("label", {}, t("De {1}", {1: el("input", {"type": "date", "name": "de", "min": hoje})}))
+      + el("label", {}, t("Até {1}", {1: el("input", {"type": "date", "name": "ate", "min": hoje})}))
       + el("button", {"class": "leve"}, t("Apagar")))
-    + el("p", {"class": "nota", "data-explica-apagar": true}, h(acoes[0][2])));
+    + el("p", {"class": "nota"}, t("Os dias do período saem do plano, de amanhã em diante (os escolhidos à mão, os sorteados e os livres), e o modo de rodízio monta esses dias de novo. Pode deixar um lado vazio: só o começo apaga dele até o fim do plano; só o fim apaga de amanhã até ele.")));
 }
 
 // Apagar tudo (página Plano e quadro Modo de rodízio): toda a programação de amanhã em diante (com "Excluindo hoje", de hoje
@@ -169,12 +164,6 @@ function formApagarTudo() {
       + el("button", {"class": "leve"}, t("Apagar tudo")))
     + el("p", {"class": "nota"}, t("Limpa toda a programação, de amanhã em diante: os dias escolhidos à mão, os sorteados e os livres. Marcando \"Excluindo hoje\", apaga de hoje em diante (se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora). Depois, o modo de rodízio monta o plano de novo, do zero.")));
 }
-
-document.addEventListener("change", function (ev) {
-  if (ev.target.matches(".apagar-periodo select[name=acao]")) {
-    ev.target.closest("form").querySelector("[data-explica-apagar]").textContent = ev.target.options[ev.target.selectedIndex].getAttribute("data-explica");
-  }
-});
 
 // Os dias do plano com os dias livres no meio, na ordem das datas (um dia livre: sem relógio, para escolher à mão)
 function comLivres(plano, livres) {
