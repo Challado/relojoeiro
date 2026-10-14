@@ -578,6 +578,10 @@ function op_lancamento($acao, $d)
     $rid = $existente ? (int)$existente["relogio_id"] : (int)($d["relogio_id"] ?? 0);
     $r = linha("SELECT * FROM relogio WHERE id = ?", [$rid]);
     $t = $existente ? lancamento_tipos()[$existente["tipo"]] : ($r ? (lancamento_tipos_do_relogio($r)[(string)($d["tipo"] ?? "")] ?? null) : null);
+    // as sessões esquecidas abertas do relógio fecham antes (o Pôs de hoje não esbarra na de ontem, nem o Tirou a estica)
+    if ($r) {
+        fechar_esquecidas($agora, $rid);
+    }
     // sessões exclusivas do relógio que se sobrepõem a [a, b) (fora a $ignorar)
     $sobrepostas = function ($a, $b, $ignorar) use ($rid) {
         return linhas("SELECT l.id, t.nome, l.inicio, l.fim FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
@@ -719,7 +723,12 @@ function op_lancamento($acao, $d)
                 }
             }
             if (count($erros) === 0) {
-                sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, NULL, NULL, 'manual', NOW())", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q)]);
+                // o Pôs no relógio do dia é o uso do rodízio (não "fora do rodízio"): sem pôr sozinho, é ele que abre o dia; pondo
+                // sozinho, um Pôs antes do início do horário já conta como a sessão do dia (o cron não abre outra). Aberta até o
+                // Tirou, ou até o "fecha às" do tipo (o fim do horário de uso, tirando sozinho)
+                $p_dia = plano_do_dia(date("Y-m-d", $q));
+                $origem = $t["identificador"] === "pulso" && $p_dia && (int)$p_dia["relogio_id"] === $rid ? "rodizio" : "manual";
+                sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, NULL, NULL, ?, NOW())", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), $origem]);
                 $id = ultimo_id();
                 $msg = $r["nome"] . ": " . $t["nome"] . " desde " . date("d/m H:i", $q) . "." . (count($fechadas) > 0 ? " Fechado no mesmo instante: " . implode(", ", $fechadas) . "." : "");
             }
@@ -1380,7 +1389,7 @@ function op_rodizio($acao, $d)
     $hoje = new DateTimeImmutable("today");
     $ini_uso = strtotime($hoje->format("Y-m-d") . " " . cfg("uso_inicio"));
     $fim_uso = strtotime($hoje->format("Y-m-d") . " " . cfg("uso_fim"));
-    $comecou = $agora >= $ini_uso;
+    $comecou = dia_comecou($agora);
     // troca o relógio de hoje a partir de agora: a sessão de rodízio do anterior termina agora (ou sai, se nem começou)
     // e a do novo começa agora (se ainda está no horário de uso)
     $troca_hoje = function ($novo_id) use ($hoje, $agora, $ini_uso, $fim_uso) {
@@ -1392,12 +1401,14 @@ function op_rodizio($acao, $d)
                 if (strtotime($l["inicio"]) >= $agora) {
                     sql("DELETE FROM lancamento WHERE id = ?", [(int)$l["id"]]);
                 } else {
-                    sql("UPDATE lancamento SET fim = LEAST(fim, ?) WHERE id = ?", [date("Y-m-d H:i:s", $agora), (int)$l["id"]]);
+                    // fecha agora a que ainda está aberta (sem fim, pelas marcações, ou com o fim ainda por vir)
+                    sql("UPDATE lancamento SET fim = ? WHERE id = ? AND (fim IS NULL OR fim > ?)", [date("Y-m-d H:i:s", $agora), (int)$l["id"], date("Y-m-d H:i:s", $agora)]);
                 }
             }
-            if ($agora < $fim_uso && valor("SELECT id FROM lancamento WHERE tipo_id = ? AND origem = 'rodizio' AND DATE(inicio) = ? AND relogio_id = ?", [(int)$tipo["id"], $dia, $novo_id]) === null) {
+            // sem pôr no pulso sozinho, o novo só entra no pulso pelo Pôs
+            if (pulso_poe_sozinho() && $agora < $fim_uso && valor("SELECT id FROM lancamento WHERE tipo_id = ? AND origem = 'rodizio' AND DATE(inicio) = ? AND relogio_id = ?", [(int)$tipo["id"], $dia, $novo_id]) === null) {
                 sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, ?, NULL, 'rodizio', NOW())",
-                    [$novo_id, (int)$tipo["id"], date("Y-m-d H:i:s", max($agora, $ini_uso)), date("Y-m-d H:i:s", $fim_uso)]);
+                    [$novo_id, (int)$tipo["id"], date("Y-m-d H:i:s", max($agora, $ini_uso)), pulso_tira_sozinho() ? date("Y-m-d H:i:s", $fim_uso) : null]);
             }
         }
     };
@@ -1600,7 +1611,9 @@ function op_modos($acao, $d)
 //   salvar: horario_manha, horario_noite, uso_inicio e uso_fim (HH:MM; o horário de uso só grava com os dois válidos e o fim
 //           depois do início); sol_fim (a sessão no sol esquecida aberta fecha a essa hora: o "fecha às" do tipo sol);
 //           sol_limiar (1 a 99: o solar vai para o sol quando a carga estimada chega a essa %); url_sistema (para a âncora
-//           {link}); alerta_ativo (1 ou 0: mandar as mensagens pelo Telegram); agenda_ativa (1 ou 0); agenda_id; agenda_chave
+//           {link}); pulso_auto_inicio (1 ou 0: o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo
+//           Pôs); pulso_auto_fim (1 ou 0: sai sozinho no fim do horário de uso, o "fecha às" do tipo No pulso; 0: só pelo
+//           Tirou); alerta_ativo (1 ou 0: mandar as mensagens pelo Telegram); agenda_ativa (1 ou 0); agenda_id; agenda_chave
 //           (o caminho da chave JSON; vazio: a google-conta-servico.json na pasta do sistema); agenda_antecedencia (1 a 365);
 //           max_sem_uso (0 a 365); previsao_limite (0 a 100); medicao_janela_dias (1 a 3650: a média do gasto medido usa as
 //           medições destes últimos dias); os canais: alerta_tipos[] e agenda_tipos[] (os avisos que vão
@@ -1683,10 +1696,15 @@ function op_config($acao, $d)
                 cfg_set("previsao_limite", (string)numero_br($d["previsao_limite"]));
             }
             // "Enviar alertas" é a chave mensagens_ativas (alerta_ativo, o nome antigo, também vale)
-            foreach (["alerta_ativo" => "mensagens_ativas", "mensagens_ativas" => "mensagens_ativas", "agenda_ativa" => "agenda_ativa"] as $k => $chave) {
+            foreach (["alerta_ativo" => "mensagens_ativas", "mensagens_ativas" => "mensagens_ativas", "agenda_ativa" => "agenda_ativa",
+                "pulso_auto_inicio" => "pulso_auto_inicio", "pulso_auto_fim" => "pulso_auto_fim"] as $k => $chave) {
                 if (array_key_exists($k, $d)) {
                     cfg_set($chave, (string)$d[$k] === "1" ? "1" : "0");
                 }
+            }
+            // tirando do pulso sozinho, o "fecha às" do tipo No pulso é o fim do horário de uso; sem tirar sozinho, nenhum (só o Tirou)
+            if ((array_key_exists("pulso_auto_fim", $d) || array_key_exists("uso_fim", $d)) && isset(lancamento_tipos()["pulso"])) {
+                sql("UPDATE lancamento_tipo SET fecha_as = ? WHERE identificador = 'pulso'", [pulso_tira_sozinho() ? cfg("uso_fim") . ":00" : null]);
             }
             foreach ($CANAIS as $canal => $c) {
                 if (array_key_exists($c["tipos"], $d)) {

@@ -41,7 +41,12 @@ function recarregarHoje() {
     }
     var res = el("div", {"class": "hoje-texto"}, texto);
     if (t) {
-      var info = el("dt", {}, "Agora") + el("dd", {}, el("span", {"class": "estado " + (t.em_uso ? "estado-uso" : "estado-repouso")}, h(t.agora)))
+      // o Pôs e o Tirou do relógio do dia (as marcações mandam, com ou sem o pulso sozinho da Configuração)
+      var marcar = " " + el("form", {"data-recurso": "lancamento", "class": "marcar-pulso"},
+        el("input", {"type": "hidden", "name": "acao", "value": t.em_uso ? "encerrar" : "iniciar"}) + el("input", {"type": "hidden", "name": "tipo", "value": "pulso"})
+        + el("input", {"type": "hidden", "name": "relogio_id", "value": t.id}) + el("input", {"type": "hidden", "name": "r", "value": t.id})
+        + el("button", {"class": "leve"}, t.em_uso ? "Tirou do pulso" : "Pôs no pulso"));
+      var info = el("dt", {}, "Agora") + el("dd", {}, el("span", {"class": "estado " + (t.em_uso ? "estado-uso" : "estado-repouso")}, h(t.agora)) + marcar)
         + el("dt", {}, "Carga") + el("dd", {}, t.carga !== null
           ? el("span", {"class": "carga-linha" + (t.carga <= 20 ? " baixa" : "")}, el("span", {"class": "barra"}, el("span", {"style": "width: " + t.carga + "%"}, "")) + " " + el("strong", {}, t.carga + "%"))
             + " " + el("small", {}, h(t.carga_de))

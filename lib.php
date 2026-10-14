@@ -1449,10 +1449,55 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
     }
 }
 
+// O relógio do dia entra no pulso sozinho no início do horário de uso (a Configuração, ao lado do horário; é o padrão).
+// Desligado, ele só entra pelo Pôs.
+function pulso_poe_sozinho()
+{
+    return cfg("pulso_auto_inicio") !== "0";
+}
+
+// O relógio sai do pulso sozinho no fim do horário de uso (a Configuração, ao lado do horário; é o padrão): o "fecha às" do
+// tipo No pulso segue o fim do horário. Desligado, ele só sai pelo Tirou.
+function pulso_tira_sozinho()
+{
+    return cfg("pulso_auto_fim") !== "0";
+}
+
+// As sessões esquecidas abertas (sem fim) de um tipo que fecha sozinho ("fecha às"): passaram da hora, ganham o fim nela, no
+// dia em que começaram (a conta já as tratava assim; gravado, o Pôs do dia seguinte não esbarra nela, e o Tirou não a
+// estica até agora). $relogio: só as desse relógio (null: todas).
+function fechar_esquecidas($agora, $relogio = null)
+{
+    foreach (linhas("SELECT l.id, l.inicio, t.fecha_as FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
+        WHERE l.fim IS NULL AND t.formato = 'sessao' AND t.fecha_as IS NOT NULL" . ($relogio !== null ? " AND l.relogio_id = ?" : ""),
+        $relogio !== null ? [(int)$relogio] : []) as $l) {
+        $fecha = max(strtotime($l["inicio"]), (int)strtotime(substr($l["inicio"], 0, 10) . " " . $l["fecha_as"]));
+        if ($fecha <= $agora) {
+            sql("UPDATE lancamento SET fim = ? WHERE id = ?", [date("Y-m-d H:i:s", $fecha), (int)$l["id"]]);
+        }
+    }
+}
+
+// O dia de hoje já começou no pulso: pondo sozinho, passou o início do horário de uso; senão, o relógio do dia já foi posto
+// no pulso hoje (a sessão do rodízio de hoje já começou)
+function dia_comecou($agora)
+{
+    $hoje = date("Y-m-d", $agora);
+    if (pulso_poe_sozinho()) {
+        return $agora >= strtotime($hoje . " " . cfg("uso_inicio"));
+    }
+    return valor("SELECT l.id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE t.identificador = 'pulso' AND l.origem = 'rodizio'
+        AND l.inicio >= ? AND l.inicio <= ? LIMIT 1", [$hoje . " 00:00:00", date("Y-m-d H:i:s", $agora)]) !== null;
+}
+
 // A sessão no pulso do relógio do dia: no horário de uso, o relógio do plano de hoje ganha uma sessão "pulso" de origem
-// rodízio, do início ao fim do horário de uso. Uma por dia.
+// rodízio, do início do horário de uso até o fim dele (ou, sem tirar sozinho, até o Tirou). Uma por dia. Sem pôr sozinho,
+// nada: a sessão é a do Pôs.
 function sessao_do_dia($agora)
 {
+    if (!pulso_poe_sozinho()) {
+        return;
+    }
     $hoje = date("Y-m-d", $agora);
     $ini = strtotime($hoje . " " . cfg("uso_inicio"));
     $fim = strtotime($hoje . " " . cfg("uso_fim"));
@@ -1462,7 +1507,7 @@ function sessao_do_dia($agora)
     if ($p && $tipo && $agora >= $ini && $agora < $fim && valor("SELECT id FROM lancamento WHERE tipo_id = ? AND origem = 'rodizio' AND DATE(inicio) = ?",
         [(int)$tipo["id"], $hoje]) === null) {
         sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, ?, NULL, 'rodizio', NOW())",
-            [(int)$p["relogio_id"], (int)$tipo["id"], date("Y-m-d H:i:s", $ini), date("Y-m-d H:i:s", $fim)]);
+            [(int)$p["relogio_id"], (int)$tipo["id"], date("Y-m-d H:i:s", $ini), pulso_tira_sozinho() ? date("Y-m-d H:i:s", $fim) : null]);
     }
 }
 
