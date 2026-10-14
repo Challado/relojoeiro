@@ -1,4 +1,4 @@
-<!-- origem: e78ace35ad4be783d31c41ad9b2a09624a96763c -->
+<!-- origem: 2555db405552e06af2ee272b37999de5bf60aa96 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1013,6 +1013,9 @@ descargar la base por el navegador).
 - **Para cambiar de base** (de SQLite a MySQL, por ejemplo): instale la base nueva, aplique las migraciones, ponga la copia en
   la carpeta de copias y restaure.
 - **Por la API:** `recurso=backup` (el estado y las copias; `arquivo=` descarga una), y las escrituras `fazer` y `restaurar`.
+- **Para desactivarla** (otra rutina ya copia la base, o es una instalación de prueba): `define("BACKUP_ATIVO", false);` en el
+  `config.php`. El cron no hace copia, la escritura `fazer` se rechaza y el cuadro **Copia de seguridad** desaparece de la
+  Configuración, junto con el aviso de que falta la carpeta.
 
 ## Reescribir el sistema desde cero {#reescrever-o-sistema-do-zero}
 

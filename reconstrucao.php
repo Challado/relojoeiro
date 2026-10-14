@@ -59,6 +59,7 @@ function reconstrucao_config_php()
     "DOCUMENTOS_PASTA" => t('a pasta dos arquivos dos documentos, fora da pasta publicada, com escrita para o PHP'),
     "DOCUMENTOS_LIMITE (e o nome antigo MANUAL_LIMITE)" => t('o maior documento aceito, em bytes (sem ele: 100 MB; 0 ou -1: sem limite do sistema)'),
     "DOCUMENTOS_COPIA_BANCO" => t('a cópia dos documentos no banco para o sistema inteiro: true, todos; false, nenhum; ausente, o relógio e o arquivo decidem'),
+    "BACKUP_ATIVO" => t('opcional: false desliga a cópia de segurança (sem cópia automática, sem a escrita fazer e sem o quadro da Configuração); sem a linha, ligada'),
     "BACKUP_PASTA, BACKUP_MANTER, BACKUP_DOCUMENTOS" => t('a cópia de segurança do banco: a pasta (fora da publicada; sem ela, não há cópia automática), quantas ficam (padrão 7) e se leva o conteúdo dos documentos (padrão: não)'),
     "ANTIGO_HOST, ANTIGO_PORTA, ANTIGO_USUARIO, ANTIGO_SENHA" => t('só para importar o sistema anterior (importar.php)'),
     "ALEATORIO_RANDOMORG_URL, ALEATORIO_ANU_URL" => t('só para testes: as fontes dos números aleatórios (RANDOM.ORG e ANU QRNG); trocadas, os sorteios pedem os números a um servidor de teste'),
@@ -411,6 +412,7 @@ function reconstrucao_telas()
                 ["titulo" => t('Cópia de segurança (no fim da página, depois de Como sai hoje)'), "itens" => [
                     t('Título "Cópia de segurança". Com a pasta: a nota "Uma cópia do banco inteiro por dia, na rodada da noite, guardando as 7 mais novas, sem (ou com) o conteúdo dos documentos... Última: DD/MM/AAAA HH:MM." (ou "Nenhuma feita ainda."); sem a pasta, em âmbar: "A cópia automática está desligada: <motivo>. Ponha no config.php a BACKUP_PASTA, uma pasta do servidor fora da pasta publicada."'),
                     t('A tabela compacta das cópias (da mais nova para a mais velha): Cópia (o nome do arquivo em fonte fixa), Feita em, Tamanho ("7 KB"), Documentos (com/sem) e, à direita, "Baixar" (link leve para api.php?recurso=backup&arquivo=<nome>) e "Restaurar" (discreto; confirma "Voltar o banco para a cópia de DD/MM/AAAA HH:MM? Tudo o que foi feito depois some. Antes, o sistema guarda uma cópia do que está agora."; backup restaurar). Embaixo, o botão leve "Fazer uma cópia agora" (backup fazer).'),
+                    t('Com BACKUP_ATIVO = false no config.php, a seção inteira não aparece (nem o aviso de que falta a pasta).'),
                 ]],
                 ["titulo" => t('Como sai hoje'), "itens" => [
                     t('Três caixas lado a lado: Telegram de manhã e Telegram à noite (o texto como sai, em fonte fixa, ou "(nada a enviar)", e o botão leve "Enviar agora"); Agenda (os próximos eventos com a data, a hora, o título em negrito e a descrição, quantos o sistema já criou, e "Sincronizar agora").'),
@@ -614,7 +616,7 @@ function reconstrucao_telas()
 // Ponha aqui também.
 function reconstrucao_codigo()
 {
-    return [
+    $lista = [
     "pagina.php" => ["tela", t('a base de todas as páginas: topo() (o head, o menu e o título) e rodape() (os scripts, com a data do arquivo na URL)')],
     "estilo.css" => ["tela", t('o estilo de todas as páginas: as cores, as letras, os controles, os componentes e os tamanhos de tela')],
     "api.js" => ["tela", t('a base do JavaScript das páginas: os textos no idioma (t(), com o dicionário de recurso=textos), ler e gravar pela API, os formatos do idioma (número, dinheiro, data, hora), o login, os formulários que gravam, as tabelas que viram fichas no celular')],
@@ -708,7 +710,19 @@ function reconstrucao_codigo()
     ".gitignore" => ["repositorio", t('o que nunca entra no repositório (a configuração, as chaves, os bancos)')],
     ".gitattributes" => ["repositorio", t('as quebras de linha (LF em tudo) e os binários')],
     ".github/workflows/testes.yml" => ["repositorio", t('os testes no GitHub a cada push no main: a paridade nos bancos (com a documentação da API) e o layout das telas')],
+    "testes/textos.php" => ["testes", t('confere os dicionários dos idiomas com o código (o texto que falta, o que sobra, o parâmetro diferente) e a origem de cada manual traduzido; junta traduções novas (--juntar)')],
+    "testes/readme.php" => ["testes", t('monta o README de cada idioma (README.<idioma>.md) a partir do manual traduzido e do resto traduzido, e confere que estão em dia (--conferir)')],
     ];
+    // os arquivos de cada idioma (o português é o próprio código e o README.md)
+    foreach (array_keys(LINGUAS) as $l) {
+        if ($l !== "pt-BR") {
+            $lista["textos/" . $l . ".php"] = ["tela", t('o dicionário do idioma {1}: o texto em português => a tradução, por parte (telas, api, cadastro, ajuda, reconstrucao)', [1 => $l])];
+            $lista["textos/manual/" . $l . ".md"] = ["documentacao", t('o manual da página Ajuda no idioma {1} (as seções do README para quem usa), com a origem na primeira linha', [1 => $l])];
+            $lista["textos/readme/" . $l . ".md"] = ["documentacao", t('o resto do README no idioma {1} (o que não está no manual), com a origem na primeira linha', [1 => $l])];
+            $lista["README." . $l . ".md"] = ["documentacao", t('o README no idioma {1}, montado por testes/readme.php (não editar à mão)', [1 => $l])];
+        }
+    }
+    return $lista;
 }
 
 // O que fica de fora de propósito, e o que ver no lugar
@@ -955,6 +969,7 @@ function reconstrucao()
                 t('Na hora da manhã (horario_manha), uma vez por dia: refaz a escala a partir do estado real, manda o Telegram do dia (o relógio de hoje e os avisos) e sincroniza a agenda. Na hora da noite (horario_noite): o Telegram da véspera (o relógio de amanhã e o que preparar) e a sincronização; conta os documentos perdidos; e, com a BACKUP_PASTA no config.php, faz a cópia de segurança do banco.'),
                 t('Os avisos na hora, a cada minuto: os vencidos agora (de todos os relógios) que ainda não foram vão pelo Telegram.'),
                 t('A cópia de segurança: um arquivo relojoeiro-AAAA-MM-DD-HHMMSS.jsonl.gz na BACKUP_PASTA (fora da pasta publicada: dentro dela, recusada), JSON Lines comprimido, o mesmo nos quatro bancos: a primeira linha é o cabeçalho (relojoeiro_copia 1, criada, banco, versao: a última migração, documentos, tabelas); depois, para cada tabela, uma linha {tabela, colunas, binarias} e uma linha por registro com a lista dos valores (binários em base64). As tabelas vêm na ordem em que voltam (a citada antes da que cita; a que cita a si mesma, a árvore, volta em rodadas). Ficam as BACKUP_MANTER mais novas (padrão 7). O conteúdo dos documentos (documento_parte) só com BACKUP_DOCUMENTOS = true. Restaurar: só da mesma versão; antes, uma cópia do que está agora; depois, numa transação, apaga tudo (na ordem inversa) e grava a cópia; sem o conteúdo dos documentos, documento.no_banco volta a 0.'),
+                t('Com BACKUP_ATIVO = false no config.php, o cron não faz a cópia de segurança e a escrita fazer é recusada.'),
                 t('Mudo: avisos do PHP e erros entram no registro, nunca na saída. Grava em cron_execucao o que fez (só quando fez algo, ou deu erro), o último erro em config.cron_erro (sai na primeira execução sem erro) e a última rodada com atividade em config.cron_registro. Erro fatal sem banco vai para um arquivo na pasta temporária. Opções: --forcar (manhã e noite agora) e -v (mostra o registro).'),
             ]),
             $secao("mensagens", t('As mensagens, a agenda e os eventos personalizados'), [

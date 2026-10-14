@@ -232,8 +232,8 @@ function recarregarConfig(aplicadas) {
           }).join("") + (p.agenda.length === 0 ? el("p", {"class": "nota"}, t("Nada previsto no período.")) : "")
             + el("p", {"class": "nota"}, t("{1} eventos criados pelo sistema estão na agenda. Mudou um modelo? Sincronize: os eventos já criados são atualizados.", {1: p.sincronizados}))
             + el("form", {"data-recurso": "config"}, el("input", {"type": "hidden", "name": "acao", "value": "sincronizar"}) + el("button", {"class": "leve"}, t("Sincronizar agora"))))));
-        // ---------- Cópia de segurança ----------
-        res += el("section", {"id": "copia"}, el("h2", {}, t("Cópia de segurança"))
+        // ---------- Cópia de segurança (desligada no config.php, BACKUP_ATIVO = false: o quadro nem aparece) ----------
+        res += bk.ativo === false ? "" : el("section", {"id": "copia"}, el("h2", {}, t("Cópia de segurança"))
           + (bk.pasta_ok
             ? el("p", {"class": "nota"}, t("Uma cópia do banco inteiro por dia, na rodada da noite, guardando as {1} mais novas, {2} o conteúdo dos documentos (os arquivos já ficam na pasta deles). A cópia volta em qualquer um dos três bancos, na mesma versão do sistema. {3}", {1: bk.manter, 2: bk.documentos ? "com" : "sem", 3: bk.ultima ? t("Última: {1} {2}.", {1: dataBr(bk.ultima), 2: horaBr(bk.ultima)}) : t("Nenhuma feita ainda.")}))
             : el("p", {"class": "alerta-cron"}, t("A cópia automática está desligada: {1}. Ponha no config.php a BACKUP_PASTA, uma pasta do servidor fora da pasta publicada.", {1: h(bk.pasta_erro)})))

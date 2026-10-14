@@ -4,7 +4,8 @@
 // mesmos parâmetros ({nome}) da chave. Lista o idioma, o arquivo e o texto de cada problema, de uma vez só. O arquivo é
 // dividido em partes: telas (os .js e as páginas), api (o núcleo, as gravações, a API e o cron), ajuda (api/ajuda.php),
 // reconstrucao (reconstrucao.php), manual (os textos do manual) e cadastro (os textos do cadastro inicial: os de
-// CADASTRO_TEXTOS, no lib.php, achados instalando o schema.sql num SQLite temporário).
+// CADASTRO_TEXTOS, no lib.php, achados instalando o schema.sql num SQLite temporário). Confere também os textos longos: o
+// manual de cada idioma (textos/manual/<idioma>.md) e o README de cada idioma (testes/readme.php --conferir).
 //   php testes/textos.php                       confere tudo (sai com 1 se faltar ou sobrar algo)
 //   php testes/textos.php --faltam <parte>      as chaves da parte que faltam em algum idioma, em JSON (para traduzir)
 //   php testes/textos.php --manual               o manual em português (as seções do README.md que a Ajuda mostra), com a linha da
@@ -260,6 +261,14 @@ foreach ($outras as $l) {
     } elseif ($origem !== $GLOBALS["MANUAL_SHA1"]) {
         $problemas[] = "textos/manual/" . $l . ".md: o manual mudou no README.md depois desta tradução (origem " . substr($origem, 0, 10) . ", agora "
             . substr($GLOBALS["MANUAL_SHA1"], 0, 10) . "): traduza as mudanças e ponha a origem nova na primeira linha";
+    }
+}
+// o README de cada idioma (README.<idioma>.md): o resto traduzido em dia com o README.md, e o arquivo montado em dia
+// (testes/readme.php, num processo à parte, como o cadastro)
+exec(escapeshellarg(PHP_BINARY) . " " . escapeshellarg($RAIZ . "/testes/readme.php") . " --conferir 2>&1", $saida_readme, $erro_readme);
+if ($erro_readme !== 0) {
+    foreach ($saida_readme as $linha) {
+        $problemas[] = $linha;
     }
 }
 if (count($problemas) > 0) {

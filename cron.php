@@ -174,8 +174,8 @@ try {
                 $r = sincronizar_agenda($hoje);
                 $log[] = cron_agenda($r);
             }
-            // a cópia de segurança do banco, uma por dia (só com a BACKUP_PASTA no config.php)
-            if (defined("BACKUP_PASTA") && trim((string)BACKUP_PASTA) !== "") {
+            // a cópia de segurança do banco, uma por dia (só com a BACKUP_PASTA no config.php, e sem BACKUP_ATIVO = false)
+            if (backup_ativo() && defined("BACKUP_PASTA") && trim((string)BACKUP_PASTA) !== "") {
                 $b = backup_fazer();
                 $log[] = $b["ok"] ? t("cópia de segurança: {1}", [1 => $b["mensagem"]]) : registro_erro(t("erro na cópia de segurança: {1}", [1 => implode(" ", $b["erros"])]));
             }

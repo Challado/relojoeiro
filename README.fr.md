@@ -1,0 +1,1727 @@
+# ⌚ Relojoeiro — Relógios 2
+
+🌐 [Português](README.md) · [English](README.en.md) · [中文](README.zh-CN.md) · [हिन्दी](README.hi.md) · [Español](README.es.md) · **Français**
+
+> **La rotation intelligente d'une collection de montres.** Chaque jour, il dit quelle montre va au poignet, rappelle de
+> remonter, de charger, de mettre au soleil et de changer la pile, et fait porter toute la collection, pas seulement la
+> préférée.
+
+![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-777bb4?logo=php&logoColor=white)
+![SQLite, MySQL/MariaDB, PostgreSQL ou Firebird](https://img.shields.io/badge/base%20de%20donn%C3%A9es-SQLite%20%7C%20MySQL%20%7C%20PostgreSQL%20%7C%20Firebird-336791)
+![sans dépendances](https://img.shields.io/badge/d%C3%A9pendances-aucune-2ea44f)
+![API REST](https://img.shields.io/badge/API-REST%20%2B%20JSON%2FXML-0366d6)
+[![licence](https://img.shields.io/badge/licence-code%20source%20disponible-orange)](#licence)
+
+![La page Aujourd'hui : la montre du jour, quoi faire aujourd'hui, le planning des prochains jours et le panneau d'une montre](docs/telas/hoje.png)
+
+<sub>La page **Aujourd'hui** avec une collection de démonstration de 8 montres (des modèles courants, six semaines de port
+saisies par l'API) : celle du jour (la Casio, au poignet depuis 7 h), quoi faire aujourd'hui, le planning intelligent des
+prochains jours et, à droite, le panneau de la Tissot, ouvert à côté (dans la Configuration, il peut s'ouvrir en fenêtre
+flottante, par-dessus la page).</sub>
+
+| | |
+|---|---|
+| **[Pourquoi il existe](#pourquoi-cela-existe)** · [L'idée centrale](#lidée-centrale--le-système-ne-sait-rien-des-montres) · [Comment ça marche](#comment-ça-marche) · [Une journée avec lui](#une-journée-avec-relógios-2) | **[Essayez en 1 minute](#essayez-en-1-minute)** · [Les écrans](#les-écrans) · [L'API](#lapi--une-seule-porte-pour-tout) · [Installation](#installation) |
+| [Questions fréquentes](#questions-fréquentes) · [Comment c'est à l'intérieur](#comment-cest-à-lintérieur) | [Comment contribuer](#comment-contribuer) · [Licence](#licence) |
+
+---
+
+## Pourquoi cela existe
+
+Qui collectionne les montres connaît la scène :
+
+- **La préférée va au poignet tous les jours**, et celle que vous avez achetée avec tant d'amour dort dans le tiroir depuis
+  deux mois.
+- **L'automatique s'arrête** parce que personne ne l'a portée le week-end, et vous voilà à régler à nouveau l'heure, la date
+  et la phase de lune.
+- **La solaire se décharge dans le noir** de la boîte, sans que vous le remarquiez.
+- **La pile s'épuise sans prévenir**, justement sur la montre que vous vouliez porter aujourd'hui.
+- **La smartwatch se réveille sans batterie** le jour où c'était son tour.
+- **La révision de la mécanique** (« tous les 5 ans ») et **la garantie** (« elle expire en mars ? ») restent dans la mémoire,
+  c'est-à-dire nulle part.
+
+Un tableur règle la moitié du problème : il se souvient, mais il ne décide pas. **Relógios 2** décide. Il sait depuis combien
+de temps chaque montre est au repos, quelle charge elle a maintenant, à quel point vous l'aimez et combien elle a été portée
+par rapport aux autres. Avec cela, il construit le plan des prochains jours, ou des deux prochaines années, avec les rappels
+déjà au bon endroit.
+
+Le matin arrive un message sur Telegram : *« Aujourd'hui : Seiko 5. Remonter l'Orient (la réserve s'épuise à 15 h). »*
+Le soir, un autre : *« Demain : Xiaomi Band. Charger avant de dormir : elle atteint 20 % demain à 14 h. »*
+Et Google Agenda contient le changement de pile de la Casio en novembre et la révision de la Tissot en 2027.
+
+## L'idée centrale : le système ne sait rien des montres
+
+C'est la décision de conception la plus importante, et c'est ce qui rend le système utile pour n'importe quelle collection.
+**Le code n'a que des mécanismes ; toute la connaissance sur les montres, ce sont des données que vous enregistrez.**
+
+Il ne « sait » pas qu'une automatique a une réserve de marche, ni qu'une solaire se recharge au soleil. Tout cela est écrit
+dans des formules enregistrées, que vous lisez, modifiez et testez à l'écran :
+
+```text
+Réserve restante de la mécanique =
+  ACUMULA(0; reserva_horas; 1;                                  ← commence à 0, le maximum est la réserve, perd 1 h par heure
+          "pulso";  carga_pulso_reserva / carga_pulso_horas;    ← chaque heure au poignet recharge d'autant
+          "winder"; carga_winder_reserva / carga_winder_horas;  ← chaque heure sur le remontoir, d'autant
+          "corda";  reserva_horas)                              ← le remontage la remplit
+```
+
+Vous voulez noter le « changement de bracelet », un « bain à ultrasons » ou un champ « étanchéité » ? Ce sont des données.
+Vous voulez que les chronographes pèsent autrement dans le tirage ? Ce sont des données. Une alerte pour « changer le
+bracelet en cuir chaque année » ? Aussi.
+
+Le système arrive avec un ensemble initial complet (smartwatch, automatique, remontage manuel, pile et solaire, avec les
+formules, les alertes et les critères de chacune), que vous ajustez à votre collection.
+
+![Les champs des définitions : chacun avec l'identifiant utilisé par les formules, le type, le groupe auquel il s'applique et la valeur par défaut](docs/telas/cadastros.png)
+
+<sub>Les champs des définitions. Chacun s'applique à un groupe et à tout ce qui est en dessous (la réserve de marche
+seulement sur les mécaniques, la durée de vie de la pile seulement sur les montres à pile), et l'identifiant est son nom dans
+les formules.</sub>
+
+---
+
+## Comment ça marche
+
+```mermaid
+flowchart LR
+    A[Définitions<br/>montres, champs,<br/>groupes] --> F[Formules<br/>énergie, réserve,<br/>autonomie]
+    L[Saisies<br/>poignet, remontage, charge,<br/>soleil, remontoir, pile] --> F
+    F --> AV[Alertes<br/>charger, remonter,<br/>mettre au soleil, pile...]
+    F --> C[Critères<br/>note de 0 à 100<br/>par montre]
+    C --> M[Mode de rotation<br/>tirage ou<br/>planning intelligent]
+    AV --> M
+    M --> P[Plan<br/>la montre de chaque jour<br/>+ quoi faire]
+    P --> T[Telegram<br/>matin et soir]
+    P --> G[Google Agenda]
+    AV --> T
+    AV --> G
+```
+
+### Les concepts, un par un
+
+| Concept | Ce que c'est | Exemple |
+|---|---|---|
+| **Groupes** (l'arbre) | Le classement de la collection, sur autant de niveaux que vous voulez. Tout ce qui est enregistré dans un groupe vaut pour lui et pour tout ce qui est en dessous. | `Traditionnelle › Mécanique › Automatique` |
+| **Champs** | Les données de chaque montre, définies par vous : texte, nombre, date, oui/non ou liste, avec unité et valeur par défaut. | `reserva_horas = 40 h`, `data_pilha`, `loja` |
+| **Types de saisie** | Ce qui arrive à une montre. Cela peut être **instantané** (remontage, changement de pile), **avec une valeur** (relevé de charge : 68 %) ou une **session** avec début et fin (au poignet, sur le remontoir, au soleil). | `sol` : une session qui se ferme seule à 18 h si vous oubliez |
+| **Formules** | Des calculs sur les champs et les saisies. Une même formule peut avoir **une version par groupe**, et c'est celle du groupe le plus proche de la montre qui s'applique. | `energia` est la batterie sur la smartwatch, la réserve sur la mécanique, la lumière sur la solaire et la durée de vie de la pile sur la quartz |
+| **Alertes** | Une date prévue par formule, une avance, un texte et la saisie qui résout l'alerte. | *« Remonter l'Orient : la réserve s'épuise à 15 h »*, et le bouton **Remontage** la résout |
+| **Seuil de charge** | La charge à laquelle la montre demande de l'attention : charger la smartwatch, mettre la solaire au soleil, remonter la mécanique. L'alerte ne part que lorsque la charge l'atteint. Chaque montre peut avoir le sien (champ *« Alerter quand la charge atteint »*) ; vide, c'est celui de la Configuration qui s'applique. | smartwatch à 20 % (le général), la Samsung à 30 % (le sien) |
+| **Critères** | Comment chaque montre reçoit une note de 0 à 100 pour le tirage : des paramètres pondérés, des sous-paramètres qui mesurent un champ ou une formule, et des tranches qui transforment la valeur en note. | *Temps sans usage* (40 %) : de 0 à 1 jour donne 0, 30 jours ou plus donne 100 |
+| **Modes de rotation** | Les règles du plan : des blocs de jours de la semaine, dans quel groupe tirer, une montre par jour ou une pour tout le bloc, une montre fixe et la méthode de choix. | *« Smartwatch du lundi au vendredi, une traditionnelle par jour le week-end »* |
+| **Plan** | La montre de chaque jour, avec quoi faire (*charger avant*, *remonter*, *mettre sur le remontoir*). | `lun 10/06 · Xiaomi Band · charger avant de porter` |
+
+### Le moteur de formules
+
+Les formules s'écrivent comme dans un tableur : nombres avec virgule ou point, textes entre guillemets, `;` pour séparer les
+arguments, les opérations `+ - * / ^` et les comparaisons `= <> < <= > >=` (qui donnent 1 ou 0). Une valeur vide se propage
+dans le calcul, et la division par zéro donne vide. L'essentiel :
+
+| Fonction | Ce qu'elle renvoie |
+|---|---|
+| `SE(condition; si vrai; si faux)`, `E(...)`, `OU(...)`, `NAO(x)` | la logique : `E` donne 1 si toutes sont vraies, `OU` si l'une l'est, `NAO` inverse |
+| `MIN(...)`, `MAX(...)` | la plus petite et la plus grande des valeurs (ignorent les vides) |
+| `LIMITA(x; min; max)`, `ARREDONDA(x; décimales)`, `ABS(x)` | x maintenu dans l'intervalle ; arrondi ; sans signe |
+| `PADRAO(x; autre)`, `VAZIO(x)`, `NADA()` | x, ou l'autre si x est vide ; 1 si x est vide ; vide, exprès (`SE(condition; NADA(); calcul)`) |
+| `HOJE()`, `AGORA()` | la date du jour et l'instant actuel, en jours (maintenant avec la fraction du jour) |
+| `DIAS_DESDE(date)`, `DIAS_ATE(date)`, `SOMA_MESES(date; mois)` | jours depuis et jusqu'à une date (négatif : déjà passée) ; la date plus des mois, selon le calendrier |
+| `HORAS_USO()` | les heures d'une journée de port, selon l'horaire de port de la Configuration (de 7 h à 22 h : 15) |
+| `CONFIG("clé")` | un nombre de la Configuration, comme `CONFIG("sol_limiar")` |
+
+Et celles qui lisent l'historique de chaque montre :
+
+| Fonction | Ce qu'elle renvoie |
+|---|---|
+| `HORAS("pulso"; 30)` | heures au poignet sur les 30 derniers jours |
+| `CONTAR("pulso"; 30)` | combien de jours portés sur les 30 derniers jours |
+| `DIAS_DESDE_ULTIMO("pulso")` | jours depuis la dernière fois au poignet |
+| `ULTIMO_VALOR("carga")` / `ULTIMA_DATA("pilha")` | le dernier relevé / la date de la dernière saisie |
+| `HORAS_APOS("pulso"; "carga")` | heures au poignet depuis le dernier relevé de charge |
+| `ACUMULA(début; max; perte/h; "type"; effet; ...)` | un solde qui parcourt l'historique : il baisse avec le temps et monte à chaque saisie |
+| `MEDIDO("uso")` / `MEDIDO("repouso")` | la consommation réelle de la batterie, mesurée par vos relevés de charge |
+| `EM_SESSAO("winder")` | 1 si la session est ouverte en ce moment (la montre est sur le remontoir) |
+| `MEDIA_COLECAO("uso_30d")` | la moyenne d'une variable sur toute la collection |
+
+Sur la page **Définitions**, chaque formule a le bouton **Tester sur toutes les montres**, qui montre le résultat sur chaque
+montre avant d'enregistrer.
+
+### La note de chaque montre (critères)
+
+Les critères fournis, pour toutes les montres :
+
+| Paramètre | Poids | Mesure |
+|---|---:|---|
+| Temps sans usage | 40 | jours depuis la dernière fois au poignet : plus elle reste au repos, plus la note est haute |
+| Équilibre d'usage | 30 | usage sur les 30 derniers jours comparé à la moyenne de la collection : la moins portée monte |
+| Préférence | 20 | votre note pour la montre (0 à 100) |
+| Nouveauté et valeur | 10 | depuis quand elle a été achetée et combien elle a coûté (rentabiliser l'investissement) |
+
+Chaque groupe, et même chaque montre, peut avoir son propre ensemble. La smartwatch, par exemple, pèse aussi l'**énergie** (la
+charge actuelle et combien de jours elle tient), pour ne pas tirer une montre qui va s'éteindre à midi. La page **Critères**
+montre tout le calcul de chaque note : chaque tranche, chaque poids et chaque point.
+
+Les ensembles fournis, en entier. La note d'un paramètre est la moyenne des notes de ses sous-paramètres, selon le poids de
+chacun ; la note de la montre est la moyenne des paramètres, selon leur poids. Chaque sous-paramètre lit une variable (un champ
+ou une formule) et donne la note selon la tranche où tombe la valeur ; un sous-paramètre sans valeur (un champ vide, une valeur
+hors de toute tranche) est laissé de côté, et les autres se partagent son poids. Tout se modifie sur la page **Critères**, et
+**Restaurer les critères initiaux** revient à ceux-ci.
+
+**Toutes les montres**
+
+| Paramètre | Poids | Sous-paramètre (la variable, le poids dans le paramètre) | Les tranches : la valeur → la note |
+|---|---:|---|---|
+| Temps sans usage | 40 | Jours sans usage (`dias_sem_uso`) | 0 à 1 → 0; 1 à 3 → 30; 3 à 7 → 60; 7 à 14 → 80; 14 à 30 → 95; 30 ou plus → 100 |
+| Équilibre d'usage | 30 | Usage sur les 30 derniers jours, comparé à la moyenne (`uso_vs_media`) | 0 à 25 → 100; 25 à 60 → 80; 60 à 100 → 60; 100 à 140 → 35; 140 à 200 → 15; 200 ou plus → 0 |
+| Préférence | 20 | Votre note pour la montre (`preferencia`) | 0 à 20 → 0; 20 à 40 → 25; 40 à 60 → 50; 60 à 80 → 75; 80 à 100 → 100 |
+| Nouveauté et valeur | 10 | Nouveauté : jours depuis l'achat (`dias_desde_compra`, 60) | 0 à 15 → 100; 15 à 45 → 80; 45 à 120 → 55; 120 à 365 → 40; 365 ou plus → 30 |
+|  |  | Rentabiliser l'investissement : prix payé (`valor_compra`, 40) | 0 à 300 → 30; 300 à 800 → 50; 800 à 1500 → 70; 1500 ou plus → 90 |
+
+**Smartwatch**
+
+| Paramètre | Poids | Sous-paramètre (la variable, le poids dans le paramètre) | Les tranches : la valeur → la note |
+|---|---:|---|---|
+| Énergie | 30 | Charge maintenant (%) (`energia`, 50) | 0 à 15 → 0; 15 à 30 → 25; 30 à 50 → 55; 50 à 80 → 85; 80 à 100 → 100 |
+|  |  | Jours d'usage que tient la charge (`dias_de_carga`, 50) | 0 à 1 → 0; 1 à 2 → 30; 2 à 4 → 60; 4 à 7 → 85; 7 ou plus → 100 |
+| Autonomie | 15 | Autonomie de la smartwatch (`autonomia_dias`) | 0 à 2 → 10; 2 à 4 → 40; 4 à 7 → 70; 7 à 14 → 90; 14 ou plus → 100 |
+| Temps sans usage | 25 | Jours sans usage (`dias_sem_uso`) | 0 à 1 → 0; 1 à 3 → 30; 3 à 7 → 60; 7 à 14 → 80; 14 à 30 → 95; 30 ou plus → 100 |
+| Équilibre d'usage | 15 | Usage sur les 30 derniers jours, comparé à la moyenne (`uso_vs_media`) | 0 à 25 → 100; 25 à 60 → 80; 60 à 100 → 60; 100 à 140 → 35; 140 à 200 → 15; 200 ou plus → 0 |
+| Préférence | 10 | Votre note pour la montre (`preferencia`) | 0 à 20 → 0; 20 à 40 → 25; 40 à 60 → 50; 60 à 80 → 75; 80 à 100 → 100 |
+| Nouveauté et valeur | 5 | Nouveauté : jours depuis l'achat (`dias_desde_compra`, 60) | 0 à 15 → 100; 15 à 45 → 80; 45 à 120 → 55; 120 à 365 → 40; 365 ou plus → 30 |
+|  |  | Rentabiliser l'investissement : prix payé (`valor_compra`, 40) | 0 à 300 → 30; 300 à 800 → 50; 800 à 1500 → 70; 1500 ou plus → 90 |
+
+**Traditionnelle › Mécanique**
+
+| Paramètre | Poids | Sous-paramètre (la variable, le poids dans le paramètre) | Les tranches : la valeur → la note |
+|---|---:|---|---|
+| Réserve de marche | 25 | Réserve maintenant (%) : vide, elle doit tourner (`energia`) | 0 à 10 → 100; 10 à 30 → 85; 30 à 60 → 60; 60 à 90 → 35; 90 à 100 → 20 |
+| Soin mécanique | 15 | À l'arrêt, elle doit tourner (lubrification) (`dias_sem_uso`, 50) | 0 à 7 → 20; 7 à 30 → 60; 30 à 90 → 90; 90 ou plus → 100 |
+|  |  | Révision à jour (`dias_ate_revisao`, 50) | 0 à 30 → 20; 30 à 180 → 60; 180 ou plus → 100 |
+| Temps sans usage | 25 | Jours sans usage (`dias_sem_uso`) | 0 à 1 → 0; 1 à 3 → 30; 3 à 7 → 60; 7 à 14 → 80; 14 à 30 → 95; 30 ou plus → 100 |
+| Équilibre d'usage | 20 | Usage sur les 30 derniers jours, comparé à la moyenne (`uso_vs_media`) | 0 à 25 → 100; 25 à 60 → 80; 60 à 100 → 60; 100 à 140 → 35; 140 à 200 → 15; 200 ou plus → 0 |
+| Préférence | 10 | Votre note pour la montre (`preferencia`) | 0 à 20 → 0; 20 à 40 → 25; 40 à 60 → 50; 60 à 80 → 75; 80 à 100 → 100 |
+| Nouveauté et valeur | 5 | Nouveauté : jours depuis l'achat (`dias_desde_compra`, 60) | 0 à 15 → 100; 15 à 45 → 80; 45 à 120 → 55; 120 à 365 → 40; 365 ou plus → 30 |
+|  |  | Rentabiliser l'investissement : prix payé (`valor_compra`, 40) | 0 à 300 → 30; 300 à 800 → 50; 800 à 1500 → 70; 1500 ou plus → 90 |
+
+**Traditionnelle › Quartz › Pile**
+
+| Paramètre | Poids | Sous-paramètre (la variable, le poids dans le paramètre) | Les tranches : la valeur → la note |
+|---|---:|---|---|
+| Durée de vie de la pile | 15 | Vie de la pile (%) (`energia`) | 0 à 10 → 10; 10 à 30 → 50; 30 à 100 → 70 |
+| Révision | 10 | Révision à jour (`dias_ate_revisao`) | 0 à 30 → 20; 30 à 180 → 60; 180 ou plus → 100 |
+| Temps sans usage | 35 | Jours sans usage (`dias_sem_uso`) | 0 à 1 → 0; 1 à 3 → 30; 3 à 7 → 60; 7 à 14 → 80; 14 à 30 → 95; 30 ou plus → 100 |
+| Équilibre d'usage | 25 | Usage sur les 30 derniers jours, comparé à la moyenne (`uso_vs_media`) | 0 à 25 → 100; 25 à 60 → 80; 60 à 100 → 60; 100 à 140 → 35; 140 à 200 → 15; 200 ou plus → 0 |
+| Préférence | 10 | Votre note pour la montre (`preferencia`) | 0 à 20 → 0; 20 à 40 → 25; 40 à 60 → 50; 60 à 80 → 75; 80 à 100 → 100 |
+| Nouveauté et valeur | 5 | Nouveauté : jours depuis l'achat (`dias_desde_compra`, 60) | 0 à 15 → 100; 15 à 45 → 80; 45 à 120 → 55; 120 à 365 → 40; 365 ou plus → 30 |
+|  |  | Rentabiliser l'investissement : prix payé (`valor_compra`, 40) | 0 à 300 → 30; 300 à 800 → 50; 800 à 1500 → 70; 1500 ou plus → 90 |
+
+**Traditionnelle › Quartz › Solaire**
+
+| Paramètre | Poids | Sous-paramètre (la variable, le poids dans le paramètre) | Les tranches : la valeur → la note |
+|---|---:|---|---|
+| Lumière | 25 | Charge lumineuse (%) (`energia`) | 0 à 30 → 80; 30 à 70 → 65; 70 à 100 → 50 |
+| Révision | 10 | Révision à jour (`dias_ate_revisao`) | 0 à 30 → 20; 30 à 180 → 60; 180 ou plus → 100 |
+
+Et il existe une **garantie de rotation** : aucune montre ne reste plus de N jours au repos (21 par défaut). Elle s'applique
+**avant** la note : si un candidat a déjà dépassé la limite, il gagne directement, celui au repos depuis le plus longtemps
+d'abord. Ce n'est que lorsque personne n'a dépassé la limite que la note décide.
+
+Les jours au repos sont la formule **Jours sans usage**, que vous pouvez modifier dans Définitions : les jours depuis la
+dernière fois au poignet et, pour une montre **jamais portée**, les jours depuis l'achat (sans date d'achat, 9999, la plus au
+repos de toutes). Ainsi une montre achetée hier ne passe pas devant tout le monde, et deux jamais portées ne sont pas à égalité :
+celle achetée plus tôt attend depuis plus longtemps.
+
+Pour que vous ne restiez jamais dans le doute, **chaque jour du plan garde la raison du choix**, en une phrase, qui apparaît
+sous la montre sur la page Aujourd'hui et sur la page Plan : *« Garantie de rotation : jamais portée, dans la collection
+depuis 38 jours, au-delà de la limite de 21 jours sans usage »*, *« Tirage selon la note, parmi 5 candidates : note 70,2,
+16,4 % de chances »*, *« La meilleure note (91,2) »*, *« La même montre de la semaine dans le bloc Lundi à vendredi »*,
+*« Choisie à la main »*.
+### Les modes de rotation
+
+Un mode est fait de **blocs de jours de la semaine**. Chaque bloc dit où tirer (un groupe, toute la collection ou une montre
+fixe) et s'il s'agit d'**une montre par jour** ou d'**une pour tout le bloc**. Ceux-ci sont fournis :
+
+- **Une par semaine** : une traditionnelle toute la semaine.
+- **Semaine et week-end** : la smartwatch du lundi au vendredi et une traditionnelle par jour le samedi et le dimanche.
+- **Par jour de la semaine** : une montre différente chaque jour.
+- **Aléatoire chaque jour**.
+- **Planning intelligent** : voir plus bas.
+
+Le choix dans le bloc peut se faire par la **meilleure note**, par **tirage selon la note** (la note devient la chance),
+**au hasard** ou par **file d'attente** (celle qui attend depuis le plus longtemps). Avec le **cycle** activé, une montre ne
+revient qu'après que toutes les disponibles du bloc ont eu leur tour.
+
+**D'où vient le tirage.** Tout tirage du système (le mode entièrement aléatoire, le tirage selon la note et le départage des
+notes égales dans le planning intelligent) utilise des nombres vraiment aléatoires, venus de l'extérieur, dans cet ordre :
+
+1. **[RANDOM.ORG](https://www.random.org/)** : du hasard tiré du bruit atmosphérique (il mesure la variation des micro-ondes
+   dans l'air et la transforme en bits) ;
+2. quand il est en panne (ou que le quota du jour est épuisé), **ANU QRNG**, le générateur quantique de l'Université
+   nationale australienne (il mesure des fluctuations quantiques de la lumière). Le système utilise l'ancienne adresse,
+   `qrng.anu.edu.au/API/jsonI.php`, qui répond sans clé (la nouvelle, `api.quantumnumbers.anu.edu.au`, exige une clé d'API) ;
+3. sans les deux (pas d'internet sur le serveur, par exemple), le **générateur sécurisé de PHP** (`random_int`, celui du
+   système d'exploitation : l'équivalent du `secrets` de Python).
+
+Les nombres arrivent par lot (64 nombres de 16 bits par requête), et chaque tirage n'utilise que ce dont il a besoin, en
+écartant ce qui dépasse le dernier multiple entier de l'intervalle : chaque résultat a exactement la même chance. Chaque
+service a 4 secondes pour répondre ; si les deux échouent, le système utilise celui de PHP et ne réessaie pas pendant 10
+minutes (ainsi aucune page ne reste à attendre). La raison de chaque jour tiré dit d'où vient le nombre (*« Tirage simple,
+parmi 4 candidates, toutes avec la même chance (RANDOM.ORG). »*), et la **Configuration** montre le dernier lot (le cadre
+**Tirages**). Ce qui est secret n'utilise pas ces services : le sel des mots de passe et les noms des fichiers des documents
+continuent d'utiliser le générateur de PHP, car un nombre qui voyage sur internet ne convient pas aux secrets.
+
+### Effacer la programmation
+
+En bas de la page **Plan** (l'endroit principal : le cadre **Effacer la programmation**, à la fin de la page, après le jour
+par jour) et dans le cadre **Mode de rotation** de la page Aujourd'hui (chacun sous une ligne, comme **Refaire le tirage**) :
+
+- **Effacer une période** : **De**, **À** et **Ensuite** : *et refaire le tirage* (tout ce que contient la période, à partir
+  de demain, choisi à la main, tiré ou libre, disparaît, et le mode de rotation tire de nouveau les jours) ou *et laisser
+  libre* (tout disparaît et les jours restent libres : sans montre et sans tirage, pour que vous choisissiez chacun dans le
+  **choisir…** du jour ou dans la Rotation manuelle). Le bouton **Effacer** demande confirmation.
+- **Tout effacer** : vide toute la programmation, à partir de demain : les jours choisis à la main, les tirés et les libres.
+  En cochant **Y compris aujourd'hui**, il efface à partir d'aujourd'hui (si une autre montre sort pour aujourd'hui, elle
+  devient celle au poignet dès maintenant). Ensuite le mode de rotation reconstruit le plan, de zéro : dans le tirage par
+  blocs, jusqu'au dimanche (les semaines suivantes, quand elles arrivent) ; dans le planning intelligent, tout le planning.
+  La programmation ne reste pas vide car le système construit toujours les jours manquants avec le mode actif ; pour des
+  jours sans montre, utilisez **Effacer une période… et laisser libre**.
+
+### La rotation manuelle
+
+Dans le cadre **Mode de rotation** de la page Aujourd'hui, la dernière option de la liste est **Rotation manuelle** : vous
+choisissez vous-même la montre de chaque jour d'une période (les vacances, un voyage, un mois entier). Indiquez le début
+(**De**) et la fin (**À**) et cliquez sur **OK** :
+
+- les jours apparaissent **7 par 7**, avec la date, le jour de la semaine, ce que le plan prévoit ce jour-là et un sélecteur ;
+- au-delà de 7 jours, les pages sont en dessous : **‹ Précédent**, **1 2 3 …**, **Suivant ›**. Ce que vous choisissez sur
+  une page est conservé pendant que vous parcourez les autres ; rien ne change avant d'enregistrer ;
+- le sélecteur de chaque jour contient les montres disponibles, **Décider pour moi** et **Sans montre (jour libre)**. Au
+  départ, il montre la montre que le jour a déjà choisie à la main ; un jour libre apparaît comme libre ; et le reste (tiré
+  ou encore sans montre), comme *Décider pour moi* ;
+- **Enregistrer la rotation manuelle** enregistre toute la période : les jours avec une montre sont choisis à la main, ceux
+  en *Décider pour moi* sont décidés sur-le-champ par le système et enregistrés aussi (la raison de chacun apparaît dans le
+  plan), et les libres restent sans montre. Si aujourd'hui fait partie de la période et que vous avez choisi une autre
+  montre, elle devient celle au poignet dès maintenant ;
+- pour effacer ce que contient une période (et refaire le tirage, ou laisser les jours libres) ou tout effacer, voir
+  [Effacer la programmation](#effacer-la-programmation).
+
+Hors de la période, le mode de rotation habituel s'applique toujours. Les jours choisis à la main restent même quand vous
+refaites le tirage ou que le cron construit la semaine suivante ; dans le planning intelligent, celui-ci est refait autour
+d'eux.
+
+**Le critère de *Décider pour moi* :**
+1. la **note des critères** (ceux que vous définissez dans **Critères** : jours sans usage, équilibre, préférence,
+   charge...), calculée au début de chaque jour, avec les jours précédents de la période (ceux que vous avez choisis et ceux
+   qu'il a décidés) déjà comptés comme usage ;
+2. la **garantie de rotation** passe d'abord : celle qui a dépassé la limite de jours sans usage passe en premier, celle au
+   repos depuis le plus longtemps avant ;
+3. la montre d'**hier** et celle de **demain** sont écartées, s'il y en a une autre. Ainsi une montre ne se répète pas juste à
+   côté de celle que vous avez choisie ;
+4. en cas d'égalité, celle enregistrée en premier gagne.
+
+Aujourd'hui, avec *Décider pour moi*, la montre déjà prévue dans le plan reste.
+
+### Le planning intelligent
+
+C'est le mode le plus complet. Au lieu de tirer semaine après semaine, il **planifie de 7 jours à 2 ans d'un coup**, en
+simulant jour par jour :
+
+1. il calcule la note de chaque montre avec l'état simulé de ce jour-là ;
+2. il choisit la montre ; la smartwatch reste au poignet le nombre de jours que tient la batterie (jusqu'à 7) ;
+3. il simule le port (la session au poignet pendant l'horaire de port) et son effet sur la charge et la réserve de toutes ;
+4. il vérifie les alertes : si la montre choisie va avoir besoin d'une charge ou d'un remontage, il note l'action sur le jour
+   (*« charger avant de porter »*) et simule la saisie qui la résout ;
+5. il passe au jour suivant.
+
+Chaque matin, le cron **replanifie à partir de l'état réel**. Si vous avez porté une autre montre, oublié de charger ou saisi
+un relevé différent de celui prévu, le plan se corrige.
+
+### Consommation mesurée par les relevés
+
+La fiche de la smartwatch dit « tient 5 jours ». La réalité n'est pas d'accord, et elle change à mesure que la batterie
+vieillit. C'est pourquoi **chaque relevé de charge que vous saisissez est comparé au précédent**, et l'intervalle entre les
+deux devient une mesure : de combien elle a baissé, combien d'heures elle a passé au poignet et combien hors du poignet
+(rangée, éteinte). L'horaire de port de la Configuration compte comme poignet à lui seul, et vos marquages (*Mise au
+poignet*, *Retirée du poignet*) priment.
+
+Chaque mesure est une équation à deux consommations inconnues :
+
+```text
+baisse = jours d'usage × consommation en usage + jours hors du poignet × consommation hors du poignet
+```
+
+Avec les mesures des derniers jours (90, dans la Configuration), le système trouve **les deux consommations ensemble** :
+celles qui expliquent le mieux toutes les baisses (moindres carrés, et chaque mesure pèse les heures qu'elle a couvertes).
+Une nuit entre deux relevés (seulement hors du poignet) fixe la consommation hors du poignet ; les jours au poignet, celle-ci
+étant connue, fixent la consommation en usage. Toute mesure d'une heure ou plus entre, même celle qui n'a pas baissé du tout
+(elle dit que la consommation est faible) : la courte, où l'arrondi du relevé (la montre affiche la charge en nombres entiers)
+pèse davantage, entre avec un faible poids. Plus il y a de relevés, plus c'est précis.
+
+Quand les mesures ne séparent pas encore les deux (seulement des relevés avec la montre rangée, par exemple), c'est la moyenne
+des mesures de chaque consommation qui s'applique ; s'il n'y en a aucune dans les derniers jours, les précédentes. Les
+consommations mesurées remplacent celles de la fiche dans les prévisions, et l'historique montre la batterie qui s'essouffle
+avec le temps. Une hausse du relevé est une recharge : un nouveau point de départ, sans mesure. Et un intervalle avec une
+autre session au milieu (la montre est allée sur le chargeur) ne mesure pas non plus : la mesure ne sait séparer que poignet
+et rangée.
+
+Peu importe que vous saisissiez le relevé juste après *Retirée du poignet* ou juste après *Mise au poignet* : le relevé n'est
+ni « en usage » ni « au repos ». Ce qui compte, c'est l'intervalle jusqu'au précédent, découpé par les marquages minute par
+minute. Un relevé à 22 h 05, après une journée entière au poignet, mesure presque uniquement la consommation en usage ; celui
+de 7 h 05 le lendemain mesure la nuit éteinte.
+
+Les deux consommations sont dans le cadre **Consommation de la batterie**, sur la page de la montre :
+
+- **Au poignet** et **Hors du poignet (éteinte)** : la consommation qui compte dans le calcul, en gras, et d'où elle vient
+  (mesurée, avec celle de la fiche à côté pour comparer, ou seulement celle de la fiche, quand il n'y a pas encore de mesure).
+- **Dans les 90 jours précédents** : les deux consommations mesurées dans la fenêtre précédente. C'est la comparaison qui
+  montre la batterie qui vieillit : si la consommation au poignet est passée de 4,9 % à 5,7 %, elle ne tient plus la charge
+  comme avant.
+
+Les mesures plus anciennes que la fenêtre sortent d'elles-mêmes du calcul. C'est pourquoi l'ajustement au vieillissement est
+automatique : inutile de toucher à la fiche. La « Consommation en usage » et la « Consommation au repos » de la fiche ne
+s'appliquent que tant qu'il n'y a pas de mesure.
+
+---
+
+## La fiche de chaque montre, champ par champ
+
+Chaque montre a un **nom**, un **groupe**, une **situation dans la collection**, **disponible** et une **photo**. Le reste, ce sont des **champs**, et les champs
+qu'une montre possède dépendent de son **groupe** : tout ce qui est enregistré dans un groupe vaut pour lui et pour tous les
+groupes en dessous. C'est pourquoi « être automatique » n'est pas une case à part : c'est être dans le groupe
+**Automatique** (ou dans un de ses sous-groupes), et hériter ainsi des champs du poignet et du remontoir.
+
+```text
+(toutes les montres)      Observation, Votre note, Achat, Garantie, Seuil de charge, Marque, Référence, Lien
+                          (seulement pour les désirées : Prix cible, Priorité de l'envie)
+├── Smartwatch            Autonomie en usage réel, Consommation en usage, Consommation au repos, Sur le chargeur : heures pour remplir
+└── Traditionnelle        Dernière révision, Révision tous les
+    ├── Mécanique         Réserve de marche, Se remonte par la couronne
+    │   ├── Automatique   Au poignet : heures / réserve, Sur le remontoir : heures / réserve
+    │   └── Remontage manuel (rien de plus : au poignet elle ne se charge pas)
+    └── Quartz
+        ├── Pile          Dernier changement de pile, Durée de vie de la pile
+        └── Solaire       Réserve d'énergie, Soleil direct pour remplir, Au poignet : combien elle se charge
+```
+
+Un champ vide prend la valeur **par défaut** de la fiche (la colonne « vide » des tableaux ci-dessous). Les champs, les groupes
+et les valeurs par défaut sont des données, pas du code : vous pouvez tout changer sur la page **Définitions**, et créer les
+vôtres.
+
+### L'essentiel de la montre
+
+| Champ | Ce que c'est |
+|---|---|
+| **Nom** | comment elle apparaît partout : à l'écran, sur Telegram et dans l'agenda. |
+| **Groupe** | sa place dans l'arbre. Il décide des champs, des formules (la « charge » d'une smartwatch est la batterie ; celle d'une mécanique, la réserve de marche) et des alertes qu'elle reçoit. |
+| **Situation dans la collection** | **Dans la collection** (le cas habituel), **Désirée** (la liste d'envies : pas encore à vous), **Prêtée** (elle est à vous, mais quelqu'un d'autre l'a), **Vendue** ou **Archivée**. Seul ce qui est dans la collection entre dans la rotation : dans les autres situations la montre est indisponible (la base de données le garantit : la règle `ck_relogio_posse_disponivel`), elle sort du tirage, du planning et des alertes, et, quand elle quitte la collection, ses sessions ouvertes (au poignet, au soleil, sur le chargeur) se ferment aussitôt et ses jours dans le plan à partir de demain sont retirés et tirés de nouveau (aujourd'hui reste, mais elle ne va plus au poignet toute seule : changez-la dans **remplacer par…**). Sa fiche, ses documents et son historique restent. La prêtée reste dans le tableau de la page Aujourd'hui (avec l'état **Prêtée**) et dans la valeur de la collection ; la désirée, la vendue et l'archivée quittent le tableau et apparaissent sur la page **Envies** (et dans le sélecteur de la fiche, sous **Hors de la collection**). En revenant à **Dans la collection**, elle redevient disponible. Voir [La liste d'envies](#la-liste-denvies). |
+| **Disponible** | décochée, elle sort de la rotation et des alertes (chez l'horloger, en pause), mais l'historique reste. Hors de la collection, elle est toujours décochée (et le champ disparaît de la fiche). |
+| **Garder une copie de tous ses documents dans la base** | cochée, chaque fichier de la montre (le manuel, la facture, les photos, les vidéos) va aussi dans la base de données, comme sauvegarde. N'apparaît que quand le `config.php` ne décide pas pour toutes (sans `DOCUMENTOS_COPIA_BANCO`). Voir [Les documents de la montre](#les-documents-de-la-montre) : c'est le deuxième des trois niveaux de la copie. |
+| **Photo** | seulement pour l'écran. Dans le détail de la montre (le panneau, ou la fiche), en posant la souris sur la photo, un résumé apparaît (le nom, le groupe et le code ; l'état et la charge ; la note et le prochain jour dans la rotation ; l'achat) ainsi que le rappel du double-clic. Un **double-clic** dessus, ou le bouton **Ouvrir la photo** en dessous, ouvre la photo dans une fenêtre flottante, à sa taille (seulement dans le détail : sur les autres photos, comme celle de *Aujourd'hui, c'est le jour de* et les vignettes de la liste, le clic ouvre la montre) ; une photo plus grande que l'écran apparaît à l'échelle, sans déformation, à la plus grande taille qui tient dans le moniteur (et dans la fenêtre du navigateur), avec la taille réelle et l'échelle en dessous. Elle se ferme avec le ×, d'un clic à l'extérieur ou avec Échap. |
+| **Accessoires** | les bracelets, la boîte, l'étui, les outils, le chargeur, les pièces : le cadre **Accessoires** du panneau montre les siens (le type, le nom et l'observation), et la page **Accessoires** les ajoute et les modifie (un accessoire peut appartenir à une montre ou être indépendant, servant à plusieurs). |
+| **Documents** | le manuel, la facture (en PDF et XML), les photos souvenirs, les vidéos et tout le reste. Voir [Les documents de la montre](#les-documents-de-la-montre). |
+### Les documents de la montre
+
+Chaque montre garde **autant de fichiers que vous voulez**, de tout type, chacun dans une **catégorie** : le manuel, la facture
+en PDF, le XML de la facture, des photos souvenirs, des vidéos, un tableur, n'importe quoi. Chaque document a :
+
+| Donnée | Ce que c'est |
+|---|---|
+| **Catégorie** | où il va. Celles fournies : **Manuel** (`manual`, tout fichier), **Facture** (`nota_fiscal`, PDF ou image), **Facture (XML)** (`nota_xml`, XML), **Photos** (`fotos`, images), **Vidéos** (`videos`, vidéos) et **Divers** (`diversos`, tout fichier). Ce sont des données : créez-les, renommez-les ou supprimez-les dans **Définitions → Catégories de documents**. |
+| **Titre** | comment il apparaît. Vide à l'envoi : le nom du fichier. |
+| **Date** | la date du document : l'occasion de la photo, le jour de la vidéo, la date de la facture. Facultative. |
+| **Description** | texte libre : *« au mariage de mon cousin »*, *« le premier changement de bracelet »*. Facultative. |
+| **Le fichier** | tout fichier, jusqu'à la limite du serveur (voir [La taille des envois](#la-taille-des-envois-les-documents)). |
+
+Sur la fiche de la montre, le cadre **Documents** montre combien la montre en a dans chaque catégorie ; chaque catégorie, et le
+bouton **Ouvrir les documents**, ouvrent la page **Documents** de cette montre dans un nouvel onglet. Là :
+
+- **Envoyer des fichiers :** la catégorie, le titre, la date, la description et les fichiers. Vous pouvez en choisir
+  **plusieurs à la fois** (un album entier) : ils montent un par un, avec la progression en pourcentage, et le titre, la date
+  et la description valent pour tous (ensuite chacun se modifie séparément). La catégorie n'accepte que ses types : une photo
+  n'entre pas dans **Vidéos**.
+- **Un onglet par catégorie**, et **Tous**. Dedans, chaque fichier s'ouvre **selon son type**, pas selon la catégorie :
+  - **Photos :** une galerie de vignettes. Une photo s'ouvre **en plein écran**, avec la date et la description en dessous ;
+    on passe à la suivante avec les flèches de l'écran, celles du clavier ou en glissant sur le téléphone. **▶ Diaporama**
+    avance tout seul toutes les 4 secondes (la barre d'espace le lance et l'arrête ; Échap ferme). Les vignettes sont faites
+    par le navigateur à l'envoi, donc la galerie s'ouvre vite même avec de grandes photos.
+  - **Vidéos :** la liste, avec une case sur chacune et les flèches **↑** et **↓** pour les mettre dans l'ordre. **▶ Regarder
+    celles cochées** joue celles cochées l'une après l'autre, dans le lecteur de la page, avec **Précédent** et **Suivant**.
+    On peut avancer et reculer dans la vidéo.
+  - **PDF :** **Voir ici** ouvre le lecteur PDF du navigateur dans la page ; **Ouvrir dans un autre onglet** et
+    **Télécharger**.
+  - **XML :** si c'est une **NF-e** (le XML de la facture électronique brésilienne), la page montre le résumé : l'émetteur,
+    le numéro, la série, la date, le montant, les produits et la clé d'accès. Et le bouton **Télécharger le XML**.
+  - **Audio :** le lecteur. **Tout autre fichier :** le bouton **Télécharger**.
+- **Modifier** (le titre, la date, la catégorie, la description) et **Supprimer**, sur chaque document ; pour les photos et
+  les vidéos, c'est dans la liste **Modifier ou supprimer des photos et des vidéos**, à la fin de la page.
+- En haut, le choix de la montre : **Tous** montre les documents de toute la collection.
+
+**Où sont gardés les fichiers :** dans un **dossier du serveur** (le `DOCUMENTOS_PASTA` du `config.php`, hors du dossier
+publié), d'où la page les sert, **et, si vous le demandez, aussi dans la base de données**, entiers, en sauvegarde (la table
+`documento_parte`, en morceaux de 4 Mo : ainsi une grande vidéo ne bute pas sur la limite d'une commande MySQL ni sur la
+mémoire de PHP). Pour ce qui a la copie, **la sauvegarde de la base suffit** : la base restaurée sur un nouveau serveur, avec
+le dossier vide, chaque fichier revient tout seul dans le dossier quand on l'ouvre, ou au prochain passage du cron. En le
+recréant, le système compare le fichier au SHA-256 gardé à l'envoi ; un fichier qui ne correspond pas n'est pas recréé. Un
+document qui a perdu le fichier **et** la copie dans la base est perdu : la page prévient, et le passage du soir du cron note
+combien il y en a.
+
+**Ce qui va dans la base : trois niveaux**, et celui du dessus l'emporte sur ceux du dessous :
+
+| Niveau | Où on le choisit | Ce qu'il fait |
+|---|---|---|
+| 1. **Le système** | `DOCUMENTOS_COPIA_BANCO` dans le `config.php` | `true` : **tout** fichier, de toute montre, va aussi dans la base. `false` : **aucun** n'y va (pas même ce que demandent la montre ou le fichier). Sans la ligne : les deux niveaux du dessous décident. |
+| 2. **La montre** | la case **Garder une copie de tous ses documents dans la base**, sur la fiche de la montre (ou le bouton **Tout garder dans la base**, sur sa page Documents) | cochée, chaque fichier de cette montre va dans la base, ceux qui existent et ceux à venir. |
+| 3. **Le fichier** | la case **Garder aussi une copie de ces fichiers dans la base**, à l'envoi, ou **Garder une copie de ce fichier dans la base**, en modification | seul ce fichier va dans la base. |
+
+**L'écran ne montre que le choix de celui qui décide :** avec `DOCUMENTOS_COPIA_BANCO` dans le `config.php` (`true` ou
+`false`), ni la case de la montre ni celle des fichiers n'apparaissent (la page Documents dit seulement ce qu'ordonne le
+`config.php`) ; avec la montre qui garde tout, la case de ses fichiers n'apparaît pas (ni à l'envoi ni en modification),
+seulement le bouton **Seulement ceux cochés**, pour revenir en arrière.
+
+Cochée à un niveau et le fichier n'a pas encore la copie : à l'envoi et en modification elle part tout de suite ; en cochant
+la montre, le cron copie ses fichiers petit à petit. Décochée et personne d'autre ne la demande : en modification la copie est
+retirée tout de suite, et par la montre le cron la retire petit à petit ; **la copie n'est retirée que si le fichier du
+dossier est là et lui correspond** (le SHA-256), pour que le document ne reste jamais sans les deux. Les documents qui avaient
+déjà la copie avant la migration v17 ont été marqués sur le fichier lui-même : rien n'est sorti de la base.
+
+La base grossit de la taille des fichiers copiés : une vidéo de 500 Mo, c'est 500 Mo de plus dans la base et dans sa
+sauvegarde. Sur la page, chaque fichier dit où il est (seulement dans le dossier, dans le dossier et dans la base, hors du
+dossier) et qui a demandé la copie (le `config.php`, la montre ou le fichier lui-même).
+
+**Le nettoyage, par le cron (chaque minute) :** le fichier disparu du dossier revient de la base ; le document dont la copie
+est demandée et qui ne l'a pas encore dans la base (la montre vient d'être cochée, ou une copie qui a échoué) la reçoit, et
+celui qui a la copie que plus personne ne demande la perd (si le fichier du dossier correspond), jusqu'à 256 Mo par minute ;
+le dossier d'une montre qui n'existe plus (`r<numéro>`) est supprimé en entier ; et un fichier du dossier qui n'appartient à
+aucun document est supprimé (seulement après 10 minutes, car un envoi peut être en cours). Tout ce qu'il fait va dans le
+journal (**Exécutions du cron**).
+
+Supprimer un document supprime le fichier et la copie dans la base ; supprimer la montre supprime ses documents. Sans le
+dossier configuré, la page dit ce qui manque et n'accepte pas d'envois.
+
+Les documents n'entrent dans aucun calcul : ils servent à consulter. Les nombres utilisés par le système (la réserve de
+marche, l'autonomie, le temps de soleil pour remplir...) restent dans les champs de la fiche. Un manuel que le fabricant ne
+publie que sous forme de page web (Casio le fait) devient un PDF avec le navigateur lui-même : ouvrez la page et utilisez
+**Imprimer → Enregistrer au format PDF**.
+
+L'ancien système gardait un manuel par montre dans une table à part de la base (migration v13). La migration v16 fait passer
+chacun dans les documents, dans la catégorie **Manuel** (avec la copie dans la base), et supprime la table ; le fichier revient
+tout seul dans le dossier la minute suivante, grâce au cron (le même qui récupère un fichier manquant).
+
+### Toutes les montres
+
+| Champ | Vide | Ce que c'est et à quoi ça sert |
+|---|---|---|
+| **Observation** `observacao` | | Texte libre. N'entre dans aucun calcul. |
+| **Votre note pour la montre (0 à 100)** `preferencia` | 50 | À quel point vous l'aimez. Entre dans le critère *Préférence* (poids 20 dans l'ensemble de toutes les montres) : note plus haute, plus de chances au tirage. |
+| **Date d'achat** `data_compra` | | Entre dans le critère *Nouveauté et valeur* : la montre qui vient d'arriver monte dans le tirage (jusqu'à 15 jours : note 100 ; après un an : 30), pour profiter de la nouveauté. |
+| **Prix payé** (R$) `valor_compra` | | Aussi dans le critère *Nouveauté et valeur* (*rentabiliser l'investissement*) : la plus chère monte un peu (jusqu'à 300 R$ : note 30 ; au-dessus de 1 500 R$ : 90). |
+| **Lieu d'achat** `loja` | | Texte, affiché dans le cadre Achat. N'entre dans aucun calcul. |
+| **Garantie jusqu'au** `garantia_ate` | | Date. L'alerte *« Garantie qui expire »* part 30 jours avant. |
+| **Marque** `marca` | | Texte. N'entre dans aucun calcul ; apparaît dans la liste d'envies. |
+| **Référence (le modèle)** `referencia` | | Texte : le modèle, la référence du fabricant. Apparaît dans la liste d'envies. |
+| **Lien (la page de la montre)** `link` | | L'adresse de la page de la montre (la boutique, le fabricant). Dans la liste d'envies, il devient le lien **ouvrir la page** (seulement ceux qui commencent par `http://` ou `https://`). |
+| **Alerter quand la charge atteint** (%) `carga_minima` | le général | Le **seuil de charge** de cette montre : le point où part l'alerte pour charger (smartwatch), mettre au soleil (solaire) ou remonter/mettre sur le remontoir (mécanique). Vide, c'est le général du type qui s'applique : sur la smartwatch, celui de la Configuration (*« Charger quand la charge estimée atteint »*, 20 %) ; sur la solaire, celui de la solaire dans la Configuration (70 %) ; sur la mécanique, 0 % (la réserve qui s'épuise). Voir [Les alertes de charge](#les-alertes-de-charge). |
+
+### La liste d'envies
+
+Une montre que vous voulez acheter entre dans le système comme **Désirée** (sur la page **Envies**, le bouton **Nouvelle
+envie** ; ou, sur la fiche de n'importe quelle montre, la **Situation dans la collection**). Elle n'entre ni dans la rotation,
+ni dans le plan, ni dans les alertes ; elle a la fiche, la photo et les documents comme n'importe quelle autre (l'annonce, la
+photo de la vitrine), et deux champs de plus, qui n'apparaissent que sur elle (la marque **seulement pour les désirées** du
+champ, sur la page Définitions) :
+
+| Champ | Vide | Ce que c'est et à quoi ça sert |
+|---|---|---|
+| **Prix cible (jusqu'à combien payer)** (R$) `preco_alvo` | | Combien vous êtes prêt à payer. La page Envies additionne les prix cibles de la liste. |
+| **Priorité de l'envie** `prioridade_desejo` | | Haute, Moyenne ou Basse (les options du champ : vous pouvez les changer sur la page Définitions). La liste va de la plus haute à la plus basse ; sans priorité, à la fin. |
+
+Dans le panneau d'une montre désirée, à la place des cadres du quotidien (maintenant, charge, note, plan, achat, Marquer),
+apparaît le cadre **Envie** : la marque, la référence, le prix cible, la priorité et le lien. **Vous l'avez achetée ?** Sur la
+page Envies, le bouton **Achetée** met la montre dans la collection (disponible pour la rotation) et ouvre sa fiche, pour
+remplir l'achat (la date, le prix, la boutique) : l'historique commence là. Les champs réservés aux désirées restent
+enregistrés, mais disparaissent de la fiche. Par l'API : `recurso=desejos` (la liste) et `recurso=relogio`, `acao=salvar`,
+`posse=colecao` (le Achetée).
+
+### Smartwatch
+
+La « charge » de la smartwatch est la batterie, en %. Le système ne lit pas la batterie de la montre : il l'**estime** à
+partir du dernier **relevé de charge** que vous avez saisi, en retirant ce qu'elle a consommé depuis (au poignet et rangée) et
+en ajoutant ce qu'elle a chargé sur le chargeur (la session **Sur le chargeur**). Sans aucun relevé, la charge est inconnue.
+
+| Champ | Vide | Ce que c'est et à quoi ça sert |
+|---|---|---|
+| **Autonomie en usage réel** (jours) `autonomia_dias` | 5 | Combien de **jours d'usage** dure une batterie pleine dans votre usage réel (pas celle du fabricant). Elle donne la consommation en usage : 100 ÷ autonomie. Avec 1,5 jour, la consommation est de 66,7 % par jour d'usage. Elle décide aussi combien de jours d'affilée elle reste dans le planning intelligent (ce que tient la batterie, de 1 à 7). |
+| **Consommation en usage** (% par jour) `decaimento_uso` | 100 ÷ autonomie | La consommation en usage, directement. Remplie, elle remplace le calcul par l'autonomie. |
+| **Consommation au repos** (% par jour) `decaimento_repouso` | 0,1 | Combien elle perd éteinte dans le tiroir. |
+| **Sur le chargeur : heures pour remplir, à vide** (h) `carga_carregador_horas` | 2 | Combien d'heures sur le chargeur la font passer de 0 à 100 %. Chaque heure dans la session *Sur le chargeur* ajoute 100 ÷ 2 = 50 %, jusqu'à 100 %. Quand elle est pleine, l'alerte **Retirer du chargeur** arrive à échéance. En la retirant, un relevé de charge remet le calcul d'aplomb (il l'emporte). |
+
+Deux détails qui changent le calcul :
+
+- **Le « jour d'usage » est l'horaire de port de la Configuration** (de 7 h à 22 h : 15 heures), pas 24 heures. Qui la porte
+  de 7 h à 22 h avec 66,7 % par jour d'usage consomme 4,4 % par heure au poignet.
+- **Vos relevés l'emportent.** Quand il y a des mesures de consommation (voir [Consommation mesurée par les relevés](#consommation-mesurée-par-les-relevés)),
+  elles remplacent les deux consommations. L'ordre est : **la mesurée, sinon la saisie, sinon le calcul par l'autonomie**. Le
+  panneau de la montre montre laquelle s'applique et d'où elle vient.
+
+Exemple : le dernier relevé était de 89 % à 23 h 58 hier, et depuis elle est restée rangée 1,9 jour à 0,1 % par jour. La
+charge actuelle est 89 − 0,19 = **88,8 %**. Si vous la mettez au poignet maintenant, à 66,7 % par jour d'usage, elle atteint
+20 % en (88,8 − 20) ÷ 66,7 = 1 jour d'usage ; rangée, en (88,8 − 20) ÷ 0,1 = 688 jours.
+
+### Traditionnelle (toutes celles qui ne sont pas des smartwatches)
+
+| Champ | Vide | Ce que c'est et à quoi ça sert |
+|---|---|---|
+| **Dernière révision** `data_revisao` | | Date de la dernière révision chez l'horloger. Une saisie *Révision* plus récente prend sa place. |
+| **Révision tous les** (mois) `intervalo_revisao_meses` | | L'intervalle entre révisions (une mécanique, c'est souvent tous les 4 ou 5 ans : 48 ou 60). L'alerte *« Révision »* part 30 jours avant et va dans l'agenda. Vide : pas d'alerte. |
+
+### Mécanique (automatique et remontage manuel)
+
+La « charge » de la mécanique est la **réserve de marche restante**, en heures (et en %, de la réserve pleine).
+
+| Champ | Vide | Ce que c'est et à quoi ça sert |
+|---|---|---|
+| **Réserve de marche** (h) `reserva_horas` | 40 | Combien de temps la montre **fonctionne seule, entièrement remontée, jusqu'à s'arrêter** : son réservoir. Cela figure dans la spécification du calibre (*power reserve*) : Orient F6922, ~40 h ; Seiko 4R35, ~41 h ; Tissot Powermatic 80, ~80 h. C'est le **100 %** de la montre. À l'arrêt (rangée), la réserve perd **1 heure par heure** : pleine à 20 h avec 40 h de réserve, elle s'arrête à midi deux jours plus tard. |
+| **Se remonte par la couronne** `corda_manual` | oui | Si on peut la remonter en tournant la couronne. **Oui** : la montre a le bouton **Remontage** (qui remplit la réserve) et reçoit l'alerte *« Remonter »*. **Non** (certaines Seiko 5 et Orient anciennes) : pas de bouton de remontage, et l'alerte est *« Mettre sur le remontoir »*. Ne la décochez pas sur une montre du groupe Remontage manuel : l'alerte du remontoir n'existe que dans le groupe Automatique, et elle se retrouverait sans aucune alerte. |
+
+### Automatique
+
+L'automatique a un **rotor** qui tourne avec le mouvement du bras et la remonte toute seule. Ces champs disent **combien de
+remontage donnent le bras (et le remontoir)**, en proportion : *« tant d'heures ici me donnent tant d'heures de réserve »*.
+
+| Champ | Vide | Ce que c'est et à quoi ça sert |
+|---|---|---|
+| **Au poignet : heures d'usage** `carga_pulso_horas` | 8 | Un temps de port au bras... |
+| **Au poignet : réserve que donnent ces heures** (h) `carga_pulso_reserva` | 36 | ...et combien de réserve ce temps donne. Avec 8 h et 36 h : chaque heure au poignet ajoute 36 ÷ 8 = **4,5 h** de réserve. |
+| **Sur le remontoir : heures** `carga_winder_horas` | celui du poignet | La même chose, sur le remontoir (la boîte qui fait tourner la montre)... |
+| **Sur le remontoir : réserve que donnent ces heures** (h) `carga_winder_reserva` | celui du poignet | ...et combien de réserve donne ce temps sur le remontoir. Avec 4 h et 40 h : 10 h de réserve par heure sur le remontoir. Vide, c'est la proportion du poignet qui s'applique. |
+
+Comment se fait le calcul, avec les valeurs par défaut (réserve de 40 h, 8 h au poignet donnant 36 h) :
+
+| Ce qui s'est passé | Réserve |
+|---|---|
+| À l'arrêt depuis des jours | 0 h (arrêtée) |
+| Portée de 8 h à midi (4 h × 4,5) | 18 h |
+| Rangée de midi à 20 h (−8 h) | 10 h |
+| Portée toute la journée, de 7 h à 22 h (15 h × 4,5 = 67 h, mais le maximum est la réserve) | 40 h (pleine) |
+| Remontée | 40 h (pleine) |
+
+**Pourquoi deux nombres au lieu d'un ?** Parce que c'est ainsi qu'on le perçoit en pratique : *« je l'ai portée une journée de
+travail et elle a tenu jusqu'au lendemain après-midi »*. Et parce que le remontage que donne le bras dépend de vous : qui bouge
+beaucoup le bras remonte davantage, qui reste assis toute la journée remonte moins. Cela vaut la peine de l'ajuster à votre
+usage.
+
+**Comment trouver vos nombres :**
+
+- **Réserve de marche :** dans la spécification du calibre, ou en mesurant : remontez-la à fond (ou laissez-la bien chargée),
+  laissez-la immobile et notez combien de temps elle fonctionne jusqu'à s'arrêter.
+- **Poignet :** commencez avec la montre arrêtée, portez-la quelques heures et notez combien, retirez-la et notez combien de
+  temps elle fonctionne encore. Portée 6 h et elle a fonctionné 24 h de plus ensuite : enregistrez **6** et **24**.
+- **Remontoir :** la même chose, avec la montre arrêtée : X heures sur le remontoir, retirez-la et voyez combien de temps elle
+  fonctionne. Cela dépend de la programmation du remontoir (tours par jour et sens).
+
+### Remontage manuel
+
+Elle n'a pas de champs en plus, et c'est ce qui la distingue de l'automatique : **au poignet elle ne se charge pas**. La
+réserve ne fait que baisser (1 h par heure, au bras ou dans le tiroir) et ne se remplit qu'avec le **remontage**. L'alerte
+*« Remonter »* part même quand elle est au poignet.
+
+### Quartz › Pile
+
+La « charge » de la pile est la **durée de vie restante**, en % de la durée de vie totale.
+
+| Champ | Vide | Ce que c'est et à quoi ça sert |
+|---|---|---|
+| **Dernier changement de pile** `data_pilha` | | Quand la pile a été changée. Une saisie *Changement de pile* plus récente prend sa place. |
+| **Durée de vie de la pile** (mois) `vida_pilha_meses` | 24 | Combien de temps dure une pile dans cette montre. La pile arrive à échéance au dernier changement + la durée de vie ; l'alerte *« Changer la pile »* part 30 jours avant et va dans l'agenda. |
+
+### Quartz › Solaire
+
+La « charge » de la solaire est la **charge lumineuse**, en %. Tant que vous n'avez saisi aucune session au soleil, elle est
+inconnue.
+
+| Champ | Vide | Ce que c'est et à quoi ça sert |
+|---|---|---|
+| **Réserve d'énergie** (jours) `reserva_dias` | 180 | Combien de temps elle fonctionne **dans le noir**, de pleine jusqu'à s'arrêter (la spécification dit quelque chose comme *« 6 mois de réserve »*). Dans le noir, elle perd 100 ÷ 180 ≈ 0,56 % par jour. |
+| **Soleil direct pour remplir** (h) `carga_sol_horas` | 10 | Combien d'heures de soleil direct la font passer de vide à pleine. Chaque heure dans la session *Au soleil* ajoute 100 ÷ 10 = 10 %. |
+| **Au poignet : combien elle se charge, comparé au soleil direct** (%) `luz_pulso` | 25 | Au poignet, la solaire se charge aussi, avec la lumière du jour : ce pourcentage de ce qu'elle gagnerait au soleil direct. Avec 25 % et le soleil qui la remplit en 10 h, chaque heure au poignet ajoute 2,5 % (une journée de 14 heures au poignet, 35 %). 0 : au poignet la charge ne bouge pas. |
+### Les alertes de charge
+
+Les alertes de charge partent quand la charge **atteint le seuil de charge de la montre** (le champ *« Alerter quand la charge
+atteint »*, ou le général), et elles regardent l'**état actuel** :
+
+| Type | Alerte | Quand elle part | Pendant qu'elle se charge |
+|---|---|---|---|
+| Smartwatch | **Charger** | la batterie a atteint le seuil (20 %) | — |
+| Automatique qui se remonte | **Remonter** | une demi-journée avant que la réserve atteigne le seuil (0 % : l'arrêt) | au poignet ou sur le remontoir : pas d'alerte |
+| Automatique sans remontage par la couronne | **Mettre sur le remontoir** | une demi-journée avant que la réserve atteigne le seuil | au poignet ou sur le remontoir : pas d'alerte |
+| Remontage manuel | **Remonter** | une demi-journée avant que la réserve atteigne le seuil | (elle ne se charge pas au poignet : elle alerte) |
+| Solaire | **Mettre au soleil** | la lumière a atteint le seuil (70 %) | au soleil : pas d'alerte |
+| Pile | **Changer la pile** | 30 jours avant l'échéance de la pile | — |
+
+La date de chaque alerte apparaît dans le panneau comme **Prochain entretien**. Sur la smartwatch, elle est calculée par la
+consommation de l'état actuel : au poignet, par la consommation en usage ; rangée, par la consommation au repos. Et le
+planning intelligent, qui simule les jours de port, note dans le plan quoi faire avant (*« charger avant de porter »*,
+*« remonter »*) quand la montre choisie va atteindre le seuil le jour prévu.
+
+Toutes ces alertes sont des données (la page **Définitions → Alertes**) : la formule de la date, l'avance, le texte et la
+saisie qui la résout. Il y a aussi *« Noter la charge »* (demande un relevé après 3 jours sans aucun ; activée par défaut, et
+le **3** de la formule est le nombre de jours) et *« Charge faible »* (la smartwatch rangée qui atteint le seuil ; désactivée
+par défaut, car *« Charger »* couvre déjà ce cas).
+
+Les alertes de l'ensemble initial, avec l'identifiant (leur nom dans les formules, dans la Configuration et dans l'API) :
+
+| Alerte | Identifiant | Pour qui | Résolue par |
+|---|---|---|---|
+| Charger | `carregar` | Smartwatch | un relevé de charge (sur le chargeur, l'alerte n'apparaît pas) |
+| Retirer du chargeur *(part immédiatement)* | `carregado` | Smartwatch | Sur le chargeur, en fermant (le bouton devient **Retirée du chargeur**). Elle arrive à échéance quand la batterie se remplit sur le chargeur et part par Telegram **dans la minute où elle arrive à échéance**. |
+| Noter la charge | `leitura` | Smartwatch | un relevé de charge |
+| Charge faible *(désactivée par défaut)* | `carga_baixa` | Smartwatch | un relevé de charge |
+| Remonter | `corda` | Mécanique (avec *Se remonte par la couronne*) | Remontage |
+| Mettre sur le remontoir | `winder` | Automatique (sans remontage par la couronne) | Sur le remontoir |
+| Mettre au soleil | `sol` | Solaire | Au soleil |
+| Changer la pile | `pilha` | Pile | Changement de pile |
+| Révision | `revisao` | Traditionnelle | Révision |
+| Garantie qui expire | `garantia` | toutes | (rien : elle alerte seulement) |
+| Délaissée | `encostado` | toutes (celles de la collection, disponibles) | Au poignet. Elle arrive à échéance quand la montre dépasse la limite de jours sans aller au poignet (Configuration, **Alerte Délaissée : jours sans aller au poignet**, 30 par défaut), comptés depuis la dernière fois au poignet (jamais portée, depuis la date d'achat ; sans les deux, pas d'alerte). Elle n'entre pas dans le prochain entretien ni dans **Quoi faire** : le tableau a la colonne **Délaissée**, avec combien il reste ou depuis combien c'est dépassé. |
+
+Les alertes partent dans l'alerte du matin. Une alerte marquée **immédiate** (dans **Définitions › Alertes**, la case
+*immédiate*) part aussi par Telegram **dans la minute où elle arrive à échéance**, une seule fois, jusqu'à ce qu'elle soit
+résolue : c'est ainsi qu'arrive le **Retirer du chargeur** quand la batterie est pleine. Dans **Aujourd'hui, c'est le jour
+de**, le bouton est celui du type qui la résout : *Mettre au soleil* avec la session fermée, *Retirée du chargeur* avec la
+session ouverte, *Noter le relevé de charge* avec le champ de la valeur.
+
+En plus d'elles, le message a deux types qui ne sont pas des données : le **jour** (`dia`, la montre d'aujourd'hui, le matin)
+et la **veille** (`vespera`, celle de demain, le soir). Chaque événement personnalisé entre comme `ev<id>`.
+
+---
+
+### Les types de saisie de l'ensemble initial
+
+Une saisie, c'est tout ce que vous marquez sur une montre. Chaque type vaut pour un groupe et pour ceux en dessous.
+
+| Type | Format | Pour qui | Ce que c'est |
+|---|---|---|---|
+| **Au poignet** (`pulso`) | session | toutes | le temps au poignet : **Mise au poignet** et **Retirée du poignet**, ou le poignet automatique pendant l'horaire de port. Oubliée ouverte, elle se ferme à 22 h. |
+| **Relevé de charge** (`carga`) | valeur | Smartwatch | la charge que la montre affiche, en %. Chaque relevé mesure la consommation (voir [Consommation mesurée par les relevés](#consommation-mesurée-par-les-relevés)). |
+| **Remontage** (`corda`) | instantané | Mécanique (avec *Se remonte par la couronne*) | a rempli la réserve de marche. |
+| **Sur le remontoir** (`winder`) | session | Automatique | le temps sur le remontoir : la réserve monte. |
+| **Au soleil** (`sol`) | session | Solaire | le temps au soleil : la charge lumineuse monte. Oubliée ouverte, elle se ferme à 18 h (la Configuration le change). |
+| **Sur le chargeur** (`carregador`) | session | Smartwatch | le temps sur le chargeur : l'état de la montre affiche *Sur le chargeur*, la batterie monte selon le champ *Sur le chargeur : heures pour remplir*, l'alerte **Charger** disparaît et, quand elle est pleine, arrive le **Retirer du chargeur**. En la retirant, un relevé de charge remet le calcul d'aplomb. |
+| **Changement de pile** (`pilha`) | instantané | Pile | pile neuve : la durée de vie de la pile recommence. |
+| **Révision** (`revisao`) | instantané | Traditionnelle | la révision faite : le compte jusqu'à la suivante recommence. |
+| **Au poignet**, **Remontoir** et **Soleil** *(ancien marquage, sans durée)* (`pulso_antigo`, `winder_antigo`, `sol_antigo`) | instantané | les mêmes | les marquages venus de l'ancien système, qui ne gardait que le moment et pas la durée. Ils comptent comme « portée », « remplie sur le remontoir » et « remplie au soleil » à ce moment-là. On ne les saisit plus depuis l'écran. |
+
+Un format **session** a un début et une fin (mettre et retirer) ; **instantané** est un moment ; **valeur** est un moment avec
+un nombre. Une montre n'est qu'à un seul endroit : ouvrir une session (poignet, remontoir, soleil, chargeur) ferme l'autre qui
+est ouverte.
+
+### Les formules de l'ensemble initial
+
+Les formules transforment la fiche et l'historique en nombres. Une même formule peut avoir une version par groupe, et c'est
+celle du groupe le plus proche de la montre qui s'applique. Toutes se modifient et se testent dans **Définitions**.
+
+| Formule | Ce qu'elle calcule |
+|---|---|
+| `energia` (%) | la charge actuelle, de 0 à 100. **Smartwatch :** elle parcourt l'historique depuis le dernier relevé : le relevé vaut tel quel ; chaque heure au poignet retire la consommation en usage ÷ 15 (les heures d'une journée de port), chaque heure sur le chargeur ajoute 100 ÷ *heures pour remplir*, et le reste du temps retire la consommation éteinte ÷ 24 ; toujours entre 0 et 100. **Mécanique :** la réserve restante ÷ la réserve de marche. **Solaire :** la charge lumineuse (elle baisse dans le noir selon la réserve d'énergie, monte au soleil selon le temps de soleil pour remplir, et au poignet d'une partie de cela (*Au poignet : combien elle se charge*) ; sans aucun soleil marqué, inconnue). **Pile :** ce qui reste de la durée de vie de la pile. |
+| `reserva_restante` (h) | **Mécanique :** la réserve de marche restante. Elle perd 1 heure par heure ; au poignet l'automatique gagne selon les champs *Au poignet* ; sur le remontoir, selon les champs *Sur le remontoir* ; le remontage (et les anciens marquages) la remplit. |
+| `taxa_uso`, `taxa_repouso` (% par jour) | **Smartwatch :** la consommation au poignet et hors du poignet qui s'appliquent : celle mesurée par les relevés, sinon celle de la fiche. |
+| `dias_de_carga` (jours) | **Smartwatch :** combien de jours d'usage tient la charge actuelle. |
+| `dias_seguidos` (jours) | **Smartwatch :** combien de jours d'affilée elle reste dans le planning intelligent : ce que donne la batterie pleine, de 1 à 7. |
+| `limite_carga` (%) | le seuil de charge de la montre : son champ, sinon le général de la Configuration (sur la solaire, celui de la solaire ; sur la mécanique, 0, la réserve qui s'épuise). |
+| `autonomia_prevista` (s) | combien de temps elle tient pleine, selon la fiche : l'autonomie de la smartwatch, la réserve de marche, la réserve d'énergie de la solaire, la durée de vie de la pile. |
+| `autonomia_atual` (s) | combien de temps elle tient pleine, selon le calcul : sur la smartwatch, avec la consommation mesurée ; sur les autres, comme la prévue. |
+| `autonomia_restante` (s) | combien de temps elle tient encore dans le régime où chacune se décharge : la smartwatch en usage, la mécanique à l'arrêt, la solaire dans le noir, la pile jusqu'à la fin de sa vie. |
+| `dias_sem_uso` (jours) | jours depuis la dernière fois au poignet ; jamais portée, depuis l'achat ; sans date d'achat, 9999. |
+| `uso_30d` (jours) | combien de jours portés sur les 30 derniers. |
+| `uso_vs_media` (%) | l'usage sur les 30 derniers jours comparé à la moyenne de la collection (100 : dans la moyenne). |
+| `dias_desde_compra` (jours) | jours depuis l'achat. |
+| `dias_de_uso` (jours) | combien de jours la montre est allée au poignet (les anciens marquages aussi). |
+| `custo_por_uso` (R$) | le prix payé divisé par les jours d'usage : combien chaque port a coûté jusqu'ici (cela apparaît dans le cadre **Achat** de la fiche). Sans le prix payé, ou sans aucun jour d'usage, vide. |
+| `dias_ate_revisao` (jours) | **Traditionnelle :** jours jusqu'à la prochaine révision (0 : en retard), selon la dernière révision et l'intervalle de la fiche. |
+
+Les autonomies sortent en secondes dans l'API (`recurso=autonomia`) et en mots sur la fiche (le cadre **Autonomie**).
+
+## La Configuration, option par option
+
+La page **Configuration** garde les options de tout le système. Entre parenthèses, le nom de chacune dans l'API
+(`recurso=config`, sous la clé `config`), pour qui automatise ; la valeur par défaut d'une nouvelle installation figure à la fin
+de chaque ligne.
+
+### Général
+
+| Option | Ce qu'elle fait |
+|---|---|
+| **Horaire de port, début et fin** (`uso_inicio`, `uso_fim`) | la période de la journée où une montre est au poignet. Elle vaut pour le plan, les prévisions et le « jour d'usage » de la consommation mesurée (de 7 h à 22 h, 15 heures). Par défaut : 07:00 et 22:00. |
+| **Mettre au poignet tout seul** (`pulso_auto_inicio`) | la case à côté du début : cochée, la montre du jour va toute seule au poignet au début de l'horaire de port ; décochée, seulement par **Mise au poignet**. Si à cette heure elle est ailleurs (sur le chargeur, au soleil, sur le remontoir), elle attend qu'elle en sorte, et la période au poignet commence quand elle en est sortie. Par défaut : cochée. |
+| **Retirer du poignet tout seul** (`pulso_auto_fim`) | la case à côté de la fin : cochée, elle quitte le poignet toute seule à la fin de l'horaire de port (c'est le « se ferme à » du type Au poignet) ; décochée, seulement par **Retirée du poignet**. Par défaut : cochée. |
+| **Passage du matin** (`horario_manha`) | l'heure où le cron envoie le message du jour (la montre d'aujourd'hui et les alertes) et refait le plan avec ce qui s'est passé. Par défaut : 06:30. |
+| **Passage du soir** (`horario_noite`) | l'heure du message de la veille : la montre de demain et quoi préparer. Par défaut : 20:00. |
+| **La session de soleil oubliée se ferme à** (`sol_fim`, qui enregistre le « se ferme à » du type Au soleil) | si vous l'avez mise au soleil et oublié le **Retirée**, la session se ferme à cette heure. Par défaut : 18:00. |
+| **Seuil de charge** (`carga_limiar`) | la charge (%) à laquelle les alertes disent de charger ou de remonter ; le champ **Seuil de charge** d'une montre prend sa place. De 1 à 99. Par défaut : 20. |
+| **Seuil de la solaire** (`sol_limiar`) | la charge (%) à laquelle la solaire doit aller au soleil. De 1 à 99. Par défaut : 70. |
+| **Seuil de la prévision** (`previsao_limite`) | la charge (%) qu'utilise la prévision de la smartwatch pour « atteint le seuil dans... ». De 0 à 100. Par défaut : 20. |
+| **Garantie de rotation** (`max_sem_uso`) | aucune montre ne reste plus de ces jours sans usage : celle qui les dépasse passe devant toutes. 0 la désactive. Par défaut : 21. |
+| **Alerte Délaissée : jours sans aller au poignet** (`encostado_dias`) | après combien de jours sans aller au poignet une montre de la collection reçoit l'alerte **Délaissée** (dans **Aujourd'hui, c'est le jour de** : *Délaissée*, *« la limite de jours sans aller au poignet a expiré il y a 2j, 10/11/2026 18:00 »*). De 1 à 3650. Par défaut : 30. L'alerte se désactive dans **Définitions › Alertes**. |
+| **Consommation mesurée : les derniers jours** (`medicao_janela_dias`) | la fenêtre de la [consommation mesurée par les relevés](#consommation-mesurée-par-les-relevés) : les mesures plus anciennes sortent du calcul. De 1 à 3650. Par défaut : 90. |
+| **Adresse du système** (`url_sistema`) | l'adresse que le repère `{link}` met dans les messages et dans l'agenda. Par défaut : vide. |
+| **Prochains jours : afficher jusqu'à** (`proximos_por_pagina`) et **Plan : afficher jusqu'à** (`plano_por_pagina`) | combien de jours affichent à la fois les **Prochains jours** de la page Aujourd'hui et le **Jour par jour** de la page Plan (de 1 à 366). Au-delà, le paginateur apparaît en dessous : **<** (précédent), les numéros (le premier, le dernier et jusqu'à deux de chaque côté de l'actuel, avec … dans les trous) et **>** (suivant) ; en posant la souris dessus, l'info-bulle dit *Précédent*, *Suivant* ou *Page N*. Par défaut : 7 et 31. |
+| **Langue par défaut** (`idioma`) | la langue des écrans pour qui n'a pas encore choisi la sienne dans le sélecteur du menu (voir [Les langues](#les-langues)) : portugais, anglais, chinois, hindi, espagnol ou français. Par défaut : vide (celle du navigateur, sinon le portugais). |
+| **Ouvrir la montre sur la page Aujourd'hui** (`painel_modo`) | **À côté de la liste** (`lado`) : la montre cliquée s'ouvre dans un panneau à droite, et la liste reste visible. **Dans une grande fenêtre flottante** (`flutuante`) : elle s'ouvre au milieu de l'écran, par-dessus la page, avec le fond assombri et les cadres côte à côte ; elle se ferme avec le ×, Échap ou un clic à l'extérieur. Sur le téléphone, les deux occupent tout l'écran. Par défaut : à côté de la liste. |
+| **Mise en avant en haut de la page Aujourd'hui** (`destaque_hoje`) | **La montre du jour** (`dia`) : le grand cadre en haut de la page Aujourd'hui montre la montre du jour (celle du plan), avec jusqu'à quand elle reste et pourquoi elle est sortie. **La montre au poignet maintenant** (`pulso`) : il montre la montre qui est au poignet, même si ce n'est pas celle du jour (avec *au poignet maintenant* et, en dessous, *Montre du jour : …*, qui ouvre celle du jour) ; avec plus d'une au poignet, la dernière mise ; sans aucune au poignet, celle du jour reste, avec l'avis *Aucune montre au poignet maintenant*. Les données en dessous (état, charge, le bouton Mise au poignet/Retirée du poignet, la photo) sont celles de la montre mise en avant. Par défaut : la montre du jour. |
+
+Sur la page, chaque option est sur une ligne, avec le nom à gauche et le champ à droite, dans des cadres (Routine du jour,
+Seuils et calculs, Écrans, Cron, Tirages, Telegram, Google Agenda) ; le bouton **Enregistrer la configuration** est sur une
+barre fixée en bas de l'écran.
+
+### Telegram et Google Agenda
+
+| Option | Ce qu'elle fait |
+|---|---|
+| **Envoyer les alertes** (`mensagens_ativas`) | active et désactive l'envoi par Telegram (l'adresse de l'API de messages est dans le `config.php`). Par défaut : activé. |
+| **Google Agenda actif** (`agenda_ativa`) | active et désactive la création d'événements dans l'agenda. Par défaut : désactivé. |
+| **Id de l'agenda** (`agenda_id`) et **clé** (`agenda_chave`) | l'agenda Google et le chemin, sur le serveur, de la clé JSON du compte de service (vide : le `google-conta-servico.json` dans le dossier du système). Voir [Google Agenda](#google-agenda). |
+| **Anticipation** (`agenda_antecedencia`) | combien de jours à l'avance les événements entrent dans l'agenda. De 1 à 365. Par défaut : 30. |
+| **Message par défaut** de chaque canal (`tg_padrao`, `ag_padrao`) | le texte de toute alerte qui n'a pas de message propre, avec les repères (`{acao}`, `{relogio}`, `{motivo}`, `{carga}`, `{ate}`, `{link}`... ; le bouton **Insérer un repère** les montre tous). Dans l'agenda, la première ligne est le titre de l'événement et le reste, la description. |
+| **Ce qui va où** (dans le formulaire, `alerta_tipos[]` et `agenda_tipos[]` ; dans la base, la colonne `envia` de la table `canal_aviso`) | le tableau qui indique, pour chaque type d'alerte (le jour, la veille, chaque alerte enregistrée et chaque événement personnalisé), s'il part par Telegram et dans l'agenda. Un nouvel événement personnalisé naît déjà coché pour Telegram. |
+| **Message propre** d'une alerte sur un canal (dans le formulaire, `tg_proprio_<tipo>` et `tg_corpo_<tipo>` ; dans l'agenda, `ag_proprio_<tipo>` et `ag_corpo_<tipo>` ; dans la base, les colonnes `propria` et `corpo` de la table `canal_aviso`) | coché, cette alerte part avec son propre texte sur ce canal, à la place du message par défaut. |
+| **Événements personnalisés** | vos propres rappels (nettoyer les bracelets, passer la collection en revue), avec un nom, quand ils se déclenchent (une fois, tous les jours, en semaine, un jour du mois ou tous les N jours), l'heure et, si vous voulez, une montre. Ils partent par les canaux comme les alertes. |
+| **Tester le matin**, **Tester le soir**, **Créer un événement de test**, **Supprimer l'événement de test**, **Synchroniser maintenant** | envoient le message du matin ou du soir tout de suite, créent (dans 10 minutes) ou suppriment un événement de test dans l'agenda, et synchronisent l'agenda maintenant, sans attendre le cron. |
+
+L'aperçu **Ce qui part aujourd'hui** montre les messages et les événements d'aujourd'hui exactement comme ils vont partir.
+
+### Ce que le système garde tout seul
+
+Celles-ci n'apparaissent pas comme options : le système les note pour lui-même, et l'API les montre. (Le mode de rotation en
+usage n'est pas ici : c'est la colonne `ativo` de la table `modo`, et on le change sur la page Aujourd'hui.)
+
+| Clé | Ce que c'est |
+|---|---|
+| `escala_fim`, `escala_gerada` | jusqu'à quel jour va le planning intelligent et quand il a été généré. |
+| `ultima_manha`, `ultima_noite` | le jour du dernier passage du matin et du soir (pour ne pas les exécuter deux fois). |
+| `cron_ultima_execucao`, `cron_erro`, `cron_registro` | quand le cron s'est exécuté, la dernière erreur (vide : aucune) et le journal du dernier passage avec de l'activité. |
+| `agenda_teste_id` | l'événement de test de l'agenda, tant qu'il existe. |
+| `na_hora_enviados` | les alertes « immédiates » déjà parties par Telegram et toujours échues (`relogio_id:aviso`) : elles ne repartent pas ; elles quittent la liste quand elles ne sont plus échues. |
+| `backup_ultima` | quand la dernière sauvegarde a été faite. |
+| `migracao_v10`, `migracao_v12`, `migracao_v16`, `migracao_v17`, `migracao_v18`, `migracao_v19`, `migracao_v20` | les marques indiquant que ces migrations ont été appliquées (les autres sont marquées par la structure même de la base). |
+
+## Une journée avec Relógios 2
+
+| Quand | Ce qui se passe |
+|---|---|
+| **06:30** | Le cron fait le passage du matin : il replanifie le planning, synchronise Google Agenda et envoie le Telegram avec la montre du jour et les alertes. |
+| **07:00** | L'horaire de port commence : le système ouvre tout seul la session **au poignet** de la montre du jour (origine `rodizio`). |
+| **Pendant la journée** | Vous ouvrez la page **Aujourd'hui** et résolvez les alertes d'une touche (*Remontage*, *Charger*, *Mettre au soleil*). Si vous avez changé de montre, cliquez sur **Porter la...** et le plan s'ajuste. |
+| **20:00** | Le passage du soir envoie le Telegram : *« Demain : ... Préparer : charger ce soir. »* |
+| **22:00** | Fin de l'horaire de port : la session au poignet se ferme. Une session oubliée ouverte se ferme aussi toute seule à l'heure enregistrée dans le type. |
+| **Chaque minute** | Le cron vérifie s'il reste un jour du plan à construire et déclenche les événements personnalisés à la minute prévue. |
+
+**Mettre au poignet et retirer du poignet tout seul est facultatif**, chaque extrémité avec sa case, à côté de l'horaire de
+port dans la **Configuration** :
+
+| Case | Cochée (par défaut) | Décochée |
+|---|---|---|
+| **mettre au poignet tout seul** (à côté de *« de »*) | à 7 h la montre du jour va au poignet | elle n'y va que par **Mise au poignet** |
+| **retirer du poignet tout seul** (à côté de *« jusqu'à »*) | à 22 h elle quitte le poignet, même oubliée | elle ne le quitte que par **Retirée du poignet** : oubliée, elle continue de compter comme au poignet |
+
+Les boutons **Mise au poignet** et **Retirée du poignet** de la montre du jour sont dans le cadre d'aujourd'hui (et ceux de
+n'importe quelle montre, dans le cadre **Marquer** de son panneau), et ce qui a été marqué compte toujours : un *Retirée* à
+21 h termine l'usage à 21 h, et une *Mise* à 6 h 30 commence à 6 h 30, cases cochées ou non. Dans tous les cas, l'horaire de
+port continue de valoir pour ce qui est prévision : le plan, le planning et combien de temps la charge va tenir les prochains
+jours.
+
+---
+## Essayez en 1 minute
+
+Il suffit de PHP 8.1+ avec l'extension `sqlite3` : pas de serveur web ni de serveur de base de données.
+
+```sh
+git clone https://github.com/Challado/relojoeiro.git && cd relojoeiro
+cp config.exemplo.php config.php
+```
+
+Dans le `config.php`, changez deux lignes pour utiliser SQLite (le fichier de la base est placé à côté du dossier) :
+
+```php
+define("DB_TIPO", "sqlite");
+define("DB_ARQUIVO", __DIR__ . "/../relogios.sqlite");
+```
+
+```sh
+php instalar.php --lingua=fr  # la structure et l'ensemble initial (en français)
+php criar_usuario.php vous    # demande le mot de passe
+php -S localhost:8000         # et ouvrez http://localhost:8000
+```
+
+Enregistrez quelques montres dans **Aujourd'hui → Nouvelle montre**. Pour construire le planning sans attendre le cron, lancez
+`php cron.php --forcar`.
+
+> Le serveur intégré de PHP (`php -S`) sert seulement à essayer : il livre n'importe quel fichier du dossier, y compris le
+> `config.php`. Pour un vrai usage, suivez l'[Installation](#installation).
+
+---
+
+## Les écrans
+
+![La collection : chaque montre avec le type, l'état, la charge, la dernière fois au poignet, le prochain entretien, quoi faire et si elle est délaissée](docs/telas/colecao.png)
+
+<sub>Le tableau de la collection, sur la page Aujourd'hui : type, état, charge ou réserve actuelle, dernière fois au poignet,
+prochain entretien, quoi faire et la colonne Délaissée, avec des filtres sur chaque colonne et le total dépensé pour la collection.</sub>
+
+![La chronologie d'une smartwatch : les sessions au poignet, le repos et les relevés de charge](docs/telas/historico.png)
+
+<sub>L'historique d'une montre : chaque période au poignet, au repos ou sur le remontoir, et chaque relevé de charge, avec le
+temps et le pourcentage dans chaque état.</sub>
+
+![Sur le téléphone : la page Aujourd'hui, la liste des montres en cartes et le panneau d'une montre en plein écran](docs/telas/celular.png)
+
+<sub>Sur le téléphone : le menu se replie dans une barre, les tableaux deviennent des cartes (rien ne dépasse la largeur de
+l'écran, et aucun champ ne disparaît : chaque carte de montre reprend les 12 colonnes du tableau) et le panneau de la montre
+s'ouvre en plein écran ; le « retour » de l'appareil ferme le panneau.</sub>
+
+**Téléphone, tablette et ordinateur**, avec le même aspect :
+
+| Écran | Comment c'est |
+|---|---|
+| jusqu'à 900 px (téléphone, et tablette en portrait) | le menu replié dans une barre, les tableaux en cartes, la montre en plein écran, les champs avec un texte de 16 px (l'iPhone ne zoome pas au toucher) |
+| de 901 à 1199 px (tablette en paysage, petit portable) | le menu dans la barre ; la montre ouverte « à côté de la liste » glisse depuis la droite, avec le fond assombri, au lieu de comprimer la liste |
+| 1200 px ou plus (ordinateur) | le panneau à côté de la liste (ou la fenêtre flottante, selon la Configuration) |
+
+**Les mêmes informations partout.** Le tableau des montres a toujours les 12 colonnes (code, montre, type, état, charge,
+dernier port, prochain entretien, dans, quoi faire, délaissée, achetée le et valeur), les 11 filtres et le tri par n'importe quelle
+colonne, sur l'ordinateur, la tablette et le téléphone ; rien n'est caché faute de place. Quand tout le tableau tient dans la
+largeur dont il dispose réellement (avec ou sans le panneau ouvert à côté), il apparaît sous forme de tableau, et le texte
+d'une cellule ne passe à la ligne que si nécessaire. Quand il ne tient pas, chaque montre devient une carte avec les mêmes 12
+champs, dans le même ordre, chacun avec le nom de la colonne au-dessus (sur deux colonnes sur le téléphone, sur cinq sur la
+tablette), les en-têtes deviennent les boutons **Trier par** et tous les filtres restent, avec le nom au-dessus. Le
+basculement se mesure avec les données réelles (un nom long ou une grande valeur comptent), pas avec la largeur de l'écran.
+Les **Prochains jours** montrent aussi tous les jours de la programmation sur n'importe quel écran.
+
+**L'état de chaque montre** dit où elle est maintenant : **En usage** (vert, au poignet), le nom de la session ouverte quand
+elle est ailleurs, comme **Au soleil**, **Sur le remontoir** ou **Sur le chargeur** (orange), **Au repos** (rouge, rangée)
+et **Indisponible** (gris, hors rotation et rangée) ou **Prêtée** (gris : chez quelqu'un d'autre). Le filtre **État** les a
+tous. Dans le panneau, l'état vient avec depuis quand (*« Au soleil depuis 09:12 »*). Tout type de saisie au format session
+que vous enregistrez apparaît ici sous son nom.
+
+| Page | À quoi elle sert |
+|---|---|
+| **Aujourd'hui** (`index.php`) | L'écran principal. Il montre en haut la montre du jour (ou, selon la Configuration, celle qui est au poignet maintenant ; avec le bouton discret **Jour sans montre**, et, un jour libre, **Aujourd'hui sans montre** avec le **choisir…**), les alertes du jour (en retard et bientôt) avec le bouton qui résout chacune, les prochains jours du plan (« Afficher jusqu'à » jours à la fois, avec les pages en dessous) et le mode de rotation, qui se change sur place (avec **Effacer une période** et **Tout effacer**) (et, dedans, la **Rotation manuelle** : les montres d'une période, jour par jour ; voir [La rotation manuelle](#la-rotation-manuelle)). En dessous se trouve le tableau de la collection, avec des filtres et le tri par type, état, charge, dernier port, prochain entretien, date et prix d'achat. Cliquer sur une montre ouvre son **panneau** : à côté de la liste ou dans une grande fenêtre flottante, selon la Configuration (**Ouvrir la montre sur la page Aujourd'hui**). |
+| **Plan** (`plano.php`) | Le plan entier, d'aujourd'hui jusqu'à la fin (dans le planning intelligent, un ou deux ans), mois par mois : la montre de chaque jour, le rappel et le **remplacer par…**. Il filtre par période (30 jours, 90, un an, deux, tout) et par montre ; le jour par jour vient par « Afficher jusqu'à » jours (la Configuration), avec les pages en dessous (**<**, les numéros, **>**) ; et il montre combien de jours chaque montre a dans la période, le pourcentage et son prochain jour. Pour choisir les montres d'une période, jour par jour, il mène à la **Rotation manuelle** (sur la page Aujourd'hui). En bas, **Effacer la programmation** : **Effacer une période** (et refaire le tirage, ou laisser libre) et **Tout effacer** (voir [Effacer la programmation](#effacer-la-programmation)). |
+| **Panneau / Fiche** (`ficha.php`) | Tout sur une montre, dans des cadres alignés sur une grille (chaque cadre avec l'étiquette de chaque donnée à gauche et la valeur à droite) : photo, état actuel (*« Au repos depuis 21:40 »*, *« Au soleil depuis 09:12 »*), charge, note avec le calcul, prochaine entrée dans le plan, prévision de la batterie, la consommation de la batterie au poignet et hors du poignet (la mesurée et celle de la fiche), les derniers relevés, la chronologie récente, le cadre **Achat** (le prix payé, la boutique, la garantie et le **coût par port** : le prix payé divisé par les jours d'usage), le cadre **Documents** (combien dans chaque catégorie, et le lien vers la page Documents), le cadre **Marquer** et la fiche complète, modifiable (avec la **Situation dans la collection**). Sur une montre **Désirée**, à la place des cadres du quotidien, le cadre **Envie** (la marque, la référence, le prix cible, la priorité et le lien) et les documents ; sur une prêtée, vendue ou archivée, la marque de la situation à côté de l'état. Sur la page de la fiche, le sélecteur contient les montres de la collection et, à part, celles **Hors de la collection**. Le **Marquer** est un seul menu, *Que voulez-vous marquer ?* : mettre ou retirer du poignet, du remontoir, du soleil ou du chargeur, remontage, changement de pile, relevé de charge, une période déjà passée ou corriger un marquage ; en dessous apparaissent seulement les champs correspondants. |
+| **Envies** (`desejos.php`) | La **liste d'envies** : les montres désirées, de la priorité la plus haute à la plus basse, chacune avec la photo, la marque et la référence, la priorité, le prix cible, le groupe, le lien vers sa page et le bouton **Achetée** (la met dans la collection et ouvre la fiche, pour remplir l'achat), avec la somme des prix cibles ; le bouton **Nouvelle envie** ; et, en dessous, **Hors de la collection** : les prêtées, vendues et archivées, avec **Retour dans la collection**. Sur la page Aujourd'hui, le bouton **Envies (N)** à côté de **Nouvelle montre** y mène (seulement quand il y en a). Voir [La liste d'envies](#la-liste-denvies). |
+| **Statistiques** (`estatisticas.php`) | L'usage de la collection sur une période (**De**, **À** ; les raccourcis 30 jours, 90 jours, 1 an et depuis le début ; par défaut : les 90 derniers jours) : le résumé (jours avec une montre au poignet, heures au poignet et par jour, montres portées et non portées, le coût par port moyen et la valeur de la collection, la plus et la moins portée) ; **Chaque montre**, de la plus portée à la moins : jours d'usage, heures, la part de chacune (avec la barre), le coût par port, depuis combien de jours elle n'est pas allée au poignet et la tendance (↑ portée davantage, ↓ portée moins, → stable : la seconde moitié de la période comparée à la première) ; les graphiques **Par jour de la semaine** et **Par mois** (les heures au poignet) ; et **La collection** : les montres réparties par groupe, marque, année d'achat, situation et chaque champ de liste (comme Style), avec combien, la part et les heures de chaque partie. Par l'API : `recurso=estatisticas`. |
+| **Accessoires** (`acessorios.php`) | Les bracelets, boîtes, étuis, outils, chargeurs, pièces et tout le reste : la liste (le nom, le type, la montre à laquelle il appartient, ou *indépendant*, et l'observation), avec le filtre **Montre** (tous, les indépendants ou ceux d'une montre ; le cadre **Accessoires** du panneau l'ouvre déjà filtrée), **Modifier** et **Supprimer** sur chacun, et en dessous le formulaire (**Nouvel accessoire** : nom, type, montre ou *indépendant (sert à plusieurs)* et observation). Supprimer une montre rend ses accessoires indépendants. Par l'API : `recurso=acessorios` (la liste) et l'écriture `acessorios` (`salvar`, `excluir`). |
+| **Galerie** (`galeria.php`) | La collection en photos, par groupe : chaque montre avec la photo (le lien vers la fiche), le nom, la marque et la référence, l'année et le prix d'achat et les jours d'usage ; en haut, combien, la valeur totale et combien ont une photo. **Aussi celles hors de la collection** montre les désirées, vendues et archivées (avec la marque de la situation). **Imprimer** : sur papier, quatre par ligne, sans le menu. Par l'API : `recurso=galeria`. |
+| **Passeport** (`passaporte.php`) | La fiche d'une montre à imprimer ou à enregistrer en PDF (le bouton **Passeport** du cadre Documents du panneau) : la photo, le nom, la marque et la référence, le groupe et la situation ; l'**Achat** ; l'**Usage** (la première et la dernière fois au poignet, les heures au poignet, les jours d'usage et le coût par port) ; la **Fiche** remplie ; les **Entretiens** (chaque type de marquage, combien de fois et le dernier ; les révisions et les changements de pile) ; les **Accessoires** ; les **Documents** ; et les **Prochaines alertes**. **Imprimer** : seules les données sortent sur le papier. Par l'API : `recurso=passaporte`. |
+| **Heure exacte** (`hora.php`) | L'heure du serveur pour régler les montres : un cadran à aiguilles et l'heure numérique qui avance seconde par seconde (réglée par l'API, en déduisant le temps de la requête ; en dessous, de combien l'horloge de l'appareil avance ou retarde), la date en toutes lettres et l'heure UTC ; les cadres **Fuseau et UTC** (le fuseau, le décalage, l'heure Zulu, la lettre militaire du fuseau, comme *P (Papa)*, et le groupe date-heure, *131433P OCT 26*), **Calendrier** (jour de l'année, semaine ISO, trimestre, jour julien, Unix) et **Lune** (la phase, l'âge, la partie éclairée et les prochaines pleine et nouvelle lunes, par le cycle moyen : cela peut varier d'un jour) ; et **Comment régler**. Elle relit l'API chaque minute. Par l'API : `recurso=hora_certa`. |
+| **Documents** (`documentos.php`) | Les documents d'une montre (ou de toutes), ouverts depuis la fiche : envoi de plusieurs fichiers, un onglet par catégorie, la galerie de photos en plein écran avec diaporama, les vidéos à la suite dans l'ordre choisi, le lecteur PDF, le résumé de la NF-e à partir du XML, et le téléchargement pour le reste. Voir [Les documents de la montre](#les-documents-de-la-montre). |
+| **Historique** (`historico.php`) | La chronologie d'une montre : en usage par la rotation, au poignet hors rotation, sur le remontoir, au soleil, au repos, et chaque remontage, charge et changement de pile. Il montre combien de temps et quel pourcentage elle a passé dans chaque état, avec un filtre de période et d'état. |
+| **Configuration** (`configuracao.php`) | La **Sauvegarde** (les sauvegardes du dossier, avec **Télécharger** et **Restaurer**, et **Faire une copie maintenant**). Les horaires (matin, soir, port), Telegram, Google Agenda, le message par défaut de chaque canal, le tableau **« Ce qui va où »** (quelle alerte part par quel canal), les événements personnalisés, l'aperçu **« Ce qui part aujourd'hui »** et le bouton qui applique les migrations de la base. |
+| **Critères** (`criterios.php`) | Les ensembles de critères par endroit (toutes les montres, un groupe ou une montre), avec paramètres, sous-paramètres, tranches et la note de chaque montre avec le calcul détaillé. Il y a **Restaurer les critères initiaux**. |
+| **Groupes** (`grupos.php`) | L'arbre : créer, renommer, déplacer, trier, supprimer (ce qui appartenait au groupe passe à celui du dessus) et choisir le groupe de chaque montre. |
+| **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), alertes, modes de rotation et catégories de documents : tout ce que le système utilise et qui n'est pas du code. |
+| **Exécutions du cron** (`execucoes.php`) | Ce que le cron a fait à chaque passage, combien de temps il a pris et les erreurs, avec des filtres. |
+| **Utilisateurs** (`usuarios.php`) | Qui a accès : créer un utilisateur ou changer le mot de passe. |
+| **Aide** (`ajuda.php`) | Ce guide dans le système : l'idée centrale, comment ça marche, la fiche de chaque montre champ par champ, les alertes de charge, les écrans et les questions fréquentes (les mêmes sections du README, lues depuis lui ; l'API renvoie le même texte dans `recurso=manual`). |
+
+### Les langues
+
+Les écrans parlent six langues : **portugais** (l'original), **anglais**, **chinois** (simplifié), **hindi**, **espagnol** et
+**français**. Chacun choisit la sienne dans le sélecteur à la fin du menu (PT, EN, 中文, हिं, ES, FR) ; le choix reste dans son
+navigateur (le cookie `lingua`, pendant un an) et ne change pas celui des autres. Qui n'a pas encore choisi voit la **langue
+par défaut** de l'installation (Configuration › Général) ; sans langue par défaut, celle du navigateur (si c'est l'une des
+six), sinon le portugais. Les dates et les nombres suivent la langue : 13/10/2026 et 1.234,56 en portugais, 10/13/2026 et
+1,234.56 en anglais, 2026-10-13 en chinois.
+
+Tout texte passe par une fonction, `t("le texte en portugais")`, dans le PHP (l'API, le cron, les scripts) et dans le
+JavaScript des écrans : le portugais est la clé, et chaque langue a **un seul fichier**, `textos/<langue>.php`
+(`textos/en.php`, `textos/es.php`...), avec le texte en portugais => la traduction, divisé en parties (`telas`, `api`, et
+celles de la documentation). Le PHP charge le fichier une fois et `t()` fonctionne partout ; les écrans reçoivent la partie
+`telas` de l'API (`recurso=textos`), qui donne aussi la langue, la locale, les formats et les langues du système. Un texte avec
+des parties variables prend des paramètres, `t("Excluir {1}?", {1: nome})`, remplacés après la traduction, dans l'ordre
+qu'exige la langue.
+
+Ce qui manque dans une langue sort en portugais, donc rien ne s'arrête à l'usage. Pour trouver ce qui manque :
+
+- `php testes/textos.php` confronte tous les fichiers au code, d'un coup, y compris les messages qui n'apparaissent presque
+  jamais : le fichier, la partie et le texte manquant (`textos/en.php · telas: falta "Excluir este relógio"`), ce qui est en
+  trop et le paramètre différent. Le test de parité et GitHub font de même à chaque push.
+- Avec `define("TEXTOS_ESTRITO", true);` dans le `config.php` (pour qui traduit), la traduction manquante **s'arrête sur une
+  erreur** dans l'API et le cron (*Falta a tradução em en (textos/en.php): "..."*), et sur les écrans elle apparaît entre
+  ⟦ ⟧, avec l'erreur dans la console du navigateur.
+
+**Pour ajouter une nouvelle langue** (l'allemand, par exemple), rien ne change dans le code :
+
+1. Une ligne dans `LINGUAS`, dans [`textos/funcoes.php`](textos/funcoes.php) : le code (`de`), le nom dans la langue elle-même
+   (`Deutsch`), la forme courte du menu (`DE`), la locale (`de-DE`), la date avec et sans l'année (`d.m.Y` et `d.m`, avec
+   `d`, `m` et `Y`) et les séparateurs de nombres (le décimal `,` et celui des milliers `.`). Le sélecteur du menu, la
+   Configuration, l'API et l'`Accept-Language` acceptent la langue aussitôt.
+2. Les dictionnaires : `php testes/textos.php --faltam telas > faltam.json` liste les textes (en portugais) que la langue n'a
+   pas encore ; traduisez-les dans un JSON `{"le texte en portugais": "la traduction", ...}`, en gardant les paramètres entre
+   accolades, et fusionnez avec `php testes/textos.php --juntar de telas traducao.json`, qui écrit `textos/de.php` dans
+   l'ordre du code (de même pour les autres parties : `api`, `ajuda`...). Ou écrivez directement dans `textos/de.php`, en
+   copiant celui d'une autre langue.
+3. `php testes/textos.php` doit se terminer sans rien de manquant (le test de parité vérifie la même chose), et
+   `LINGUA=de testes/paridade.sh --layout sqlite` vérifie les écrans dans la nouvelle langue : des textes plus longs peuvent
+   casser un bouton. Avec `TESTE_ESTRITO=1` devant, tout le script de test (toutes les écritures, lectures et passages du
+   cron) tourne dans cette langue en mode strict, et toute traduction manquante apparaît dans le journal du script.
+
+Les messages de l'API (ce que répond chaque écriture, les erreurs, les textes des consultations) sortent dans la langue de la
+requête ; ceux du cron (Telegram, l'agenda et le journal des exécutions), dans la langue par défaut de l'installation. Ce qui
+est enregistré dans la base, comme la raison de chaque jour du plan, reste dans la langue de celui qui l'a enregistré.
+
+L'ensemble initial (les groupes, les champs, les types de saisie, les formules, les alertes, les modes, les critères, les
+catégories et les messages par défaut fournis avec l'installation) sort dans la langue de l'installation : `php instalar.php
+--lingua=en`, ou l'installation par l'API avec `lingua=en`, enregistre ces noms en anglais et fait de l'anglais la langue par
+défaut (la partie `cadastro` de `textos/<langue>.php` ; `testes/textos.php` trouve les textes en installant le `schema.sql`
+dans un SQLite temporaire). Une installation existante ne change pas.
+
+Cette aide (les sections du README que montre la page **Aide**) a la traduction complète de chaque langue dans
+`textos/manual/<langue>.md`, qui commence par l'origine : `<!-- origem: ... -->`, la marque de la version de l'original
+qu'elle traduit. `php testes/textos.php --manual` donne l'original avec la marque actuelle, le point de départ d'une nouvelle
+traduction ; quand le README change, `php testes/textos.php` signale les traductions restées en arrière, et tant qu'elles ne
+sont pas refaites elles continuent de s'appliquer (en mode strict, elles s'arrêtent sur une erreur). Les titres traduits se
+terminent par l'ancre de l'original, `{#a-ideia-central}`, et les liens d'une section à l'autre fonctionnent dans toutes les
+langues. La documentation pour les programmeurs (l'aide de l'API, `recurso=ajuda`, et la reconstruction, `recurso=reconstrucao`) sort dans la langue de la demande : le portugais passe par `t()`, et la traduction est dans les parties `ajuda` et `reconstrucao` de `textos/<langue>.php`.
+
+Les noms que vous enregistrez (groupes, champs, types de saisie, alertes, modes, les montres) restent tels que vous les avez
+écrits.
+
+---
+## L'API : une seule porte pour tout
+
+Le `api.php` est le **seul back-end**. Les pages ne sont que l'écran : le JavaScript de chacune appelle l'API et construit le
+HTML, sans faire de calcul (les résumés, les pourcentages, les totaux et les situations, comme le résumé du Plan et la
+situation du cron, arrivent prêts de l'API ; l'écran ne garde que ce qui lui revient : filtrer, trier et additionner ce que
+les filtres du tableau laissent visible). C'est pourquoi **tout ce que fait l'écran, un script peut le faire aussi** :
+automatisations, raccourcis sur le téléphone, intégration avec Home Assistant, un widget.
+
+L'API fait aussi ce qui vient avant et autour des écrans : elle **installe la base** (`recurso=instalacao`), **crée le premier
+utilisateur** (`recurso=usuarios`, avec le jeton), **importe l'ancien système** (`recurso=importacao`) et fait la **connexion
+des pages** (`recurso=entrar` : les pages ne vérifient rien, elles livrent seulement le squelette ; qui arrive sans connexion
+est envoyé à l'API, qui demande l'utilisateur et le mot de passe et le renvoie à la page). Les scripts en ligne de commande
+(`instalar.php`, `criar_usuario.php`, `importar.php`) sont des raccourcis : ils appellent les mêmes opérations de l'API.
+
+En dehors de l'API, il n'y a que le **cron** (`cron.php`, l'horloge du système : il construit le plan, ouvre et ferme la
+session du jour, envoie les messages, synchronise l'agenda, déclenche les événements et s'occupe des copies des documents),
+qui utilise les mêmes fonctions que l'API ; ce qu'on peut demander sur le moment a une action dans l'API (`testar_manha`,
+`testar_noite`, `sincronizar`, `resortear`...), et ce qu'il a fait apparaît dans `recurso=cron`.
+
+**Authentification :** le jeton (`X-Api-Token: ...` ou `?token=...`) ou la connexion du site (HTTP Basic).
+**Format :** JSON par défaut, ou XML avec `formato=xml`. **Langue :** `lingua=fr` (ou l'en-tête `Accept-Language`) : les
+messages, l'aide et la reconstruction sortent dans cette langue.
+
+```sh
+# tout ce qui est dans le système, sans les photos
+curl -u utilisateur:motdepasse "http://serveur/relojoeiro/api.php?foto=nao"
+
+# ce que montre la page Aujourd'hui
+curl -H "X-Api-Token: $TOKEN" "http://serveur/relojoeiro/api.php?recurso=hoje"
+
+# les montres qui s'arrêtent dans les prochaines 24 heures, seulement le nom et quand
+curl -u utilisateur:motdepasse -g "http://serveur/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz"
+
+# saisir un relevé de charge (et mesurer la consommation)
+curl -u utilisateur:motdepasse -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://serveur/relojoeiro/api.php
+
+# mettre au soleil maintenant... et retirer plus tard
+curl -u utilisateur:motdepasse -d recurso=lancamento -d acao=iniciar  -d relogio_id=4 -d tipo=sol http://serveur/relojoeiro/api.php
+curl -u utilisateur:motdepasse -d recurso=lancamento -d acao=encerrar -d relogio_id=4 -d tipo=sol http://serveur/relojoeiro/api.php
+
+# tester une formule sur deux montres, sans enregistrer
+curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso=calcular --data-urlencode "expressao=energia * 2" -d relogio=10,12
+```
+
+**Consultations** (`GET`, avec `recurso=`) :
+
+| Ressource | Renvoie |
+|---|---|
+| *(aucune)* | tout ce qui est enregistré : l'arbre, les champs, les types de saisie, les formules, les alertes, les montres (avec les valeurs, les formules calculées, les alertes, les saisies, la prévision, la photo et les données des documents), les catégories des documents, les modes, le plan, la configuration, les événements, l'agenda, les critères, le cron, les utilisateurs (avec le hash du mot de passe : le mot de passe n'existe pas dans le système) et les migrations. `foto=nao` laisse les photos de côté. |
+| `hoje` | ce que montre la page Aujourd'hui : la montre du jour, les alertes, les prochains jours, les modes, le tableau de la collection et ses totaux (combien de montres, disponibles, en usage et le prix payé) |
+| `ficha` | ce que montre le panneau d'une montre (`relogio=<id>` ; sans lui, seulement la fiche d'une nouvelle montre) : maintenant, charge, note, prévision, consommation de la batterie, combien de documents dans chaque catégorie, marquages récents, fiche |
+| `proximos` | les Prochains jours de la page Aujourd'hui, une page (`pagina=`, `por_pagina=` ; sans lui, le « Afficher jusqu'à » de la Configuration), avec les jours libres au milieu |
+| `rodizio_manual` | la Rotation manuelle : les jours d'une période (`de=`, `ate=`) 7 par 7 (`pagina=`), chacun avec ce que le plan a maintenant et le choix de départ du sélecteur (la montre choisie à la main, `livre` ou `auto` : Décider pour moi), les montres disponibles et le critère du Décider pour moi |
+| `plano` | le plan enregistré, jour par jour, avec la raison de chaque choix, le résumé de la période tel que le montre la page Plan (combien de jours a chaque montre, le pourcentage, le prochain jour, combien à la main, qui est resté sans jour) et le `dia_a_dia` une page à la fois (`pagina=`, `por_pagina=`, `relogio=`). `de=` et `ate=` (AAAA-MM-JJ ; sans eux, tout le plan) ou `dias=N` (les N prochains jours ; `dias=todos`, d'aujourd'hui à la fin) |
+| `avisos` | les alertes de toutes les montres, de la plus urgente à la plus lointaine |
+| `previsao` | la prévision de la batterie des montres avec relevé de charge (`relogio=` un id ou plusieurs séparés par des virgules ; sans lui, toutes) |
+| `autonomia` | combien de temps tient chaque montre, en secondes, épuré pour les systèmes extérieurs (`relogio=` un id ou plusieurs ; sans lui, toutes) |
+| `historico` | la chronologie d'une montre, avec le temps dans chaque état. `relogio=` (un id ou plusieurs ; `relogio_id` vaut aussi ; sans lui, toutes), `de=` et `ate=` (date, ou date et heure : la période qui croise l'intervalle entre), `estado=` (`rodizio`, `pulso`, `repouso`, `marca` ou un type de session comme `winder` et `sol` ; un ou plusieurs ; `linha_estado` vaut aussi), `ordem=` (`desc`, par défaut, ou `asc`), `limite=` (par défaut 100, maximum 1000) et `pagina=` |
+| `criterios` | les ensembles de critères et la note de chaque montre avec le calcul |
+| `eventos`, `agenda` | les événements personnalisés ; ce qui doit être dans Google Agenda |
+| `config`, `cron` | la configuration (avec les messages, l'aperçu et la situation du cron : jamais exécuté, arrêté ou en marche) ; les exécutions du cron, avec le résumé de la période. Dans le `cron` : `de=` et `ate=` (date, ou date et heure), `situacao=` (`atividade`, par défaut ; `erro`, `nada` ou `todas`), `busca=` (texte dans le journal), `limite=` (par défaut 100, maximum 1000) et `pagina=` ; chacun vaut aussi avec `cron_` devant (`cron_de`...) |
+| `arvore`, `cadastros` | les groupes ; tout ce que montre la page Définitions |
+| `calcular` | le résultat d'une formule (`expressao=`) sur les montres (`relogio=` un id ou plusieurs ; sans lui, toutes), sans enregistrer, avec les parties du calcul ; formule mal écrite : 400 avec les erreurs |
+| `foto` | la photo d'une montre (`relogio=<id>`) : l'image, pas du JSON |
+| `documentos` | les documents d'une montre (`relogio=<id>` ; sans lui, de toutes), avec les catégories, le résumé de la NF-e de chaque XML, le dossier et la limite |
+| `documento` | le fichier d'un document (`id=<id>`) : pour afficher (image, vidéo, audio, PDF, texte) ou pour télécharger (le reste, ou avec `baixar=1`) ; `mini=1` est la vignette de la photo. Il sert des morceaux (Range), pour que la vidéo avance |
+| `usuarios`, `migracoes` | les identifiants, chacun avec le hash du mot de passe (pour migrer avec le même mot de passe : voir [Les utilisateurs et les mots de passe](#les-utilisateurs-et-les-mots-de-passe)) ; les migrations qui restent à appliquer |
+| `instalacao` | la situation de l'installation : la base, si elle est vide, installée et à jour, combien d'utilisateurs et la prochaine étape. Répond aussi avec la base vide, avec le jeton |
+| `backup` | la sauvegarde de la base : si elle est activée, si le dossier convient, combien sont gardées, la dernière et les copies du dossier ; `arquivo=` en télécharge une |
+| `importacao` | ce qu'utilise l'importation de l'ancien système : le serveur de l'ancienne base (sans le mot de passe), si PHP a MySQL et si cette base a déjà des montres |
+| `entrar` | la connexion des pages : sans connexion, 401 (le navigateur demande l'utilisateur et le mot de passe) ; avec connexion, retourne à la page de `volta=` (302) ou dit qui s'est connecté |
+| `ajuda` | toute la documentation : chaque consultation, chaque écriture, chaque champ de chaque réponse et les fonctions du moteur |
+| `manual` (ou `ajuda&parte=manual`) | le texte de la page **Aide** (les sections de ce README pour les utilisateurs : de l'idée centrale aux questions fréquentes), en markdown, entier et section par section, avec le titre, le niveau et l'ancre de chacune, et déjà en HTML avec le sommaire (la page Aide se construit à partir de lui) |
+| `reconstrucao` (ou `ajuda&parte=reconstrucao`) | le guide pour **réécrire tout le système à partir de zéro** (voir [Réécrire le système à partir de zéro](#réécrire-le-système-à-partir-de-zéro)) |
+| `codigo` (ou `ajuda&parte=codigo`) | **le code du système tel qu'il est maintenant**, lu sur le disque au moment même : chaque fichier avec la couche, ce que c'est, le langage, la taille, les lignes, le SHA-256 et la date, et ce qui est laissé de côté exprès (`nao_mostrados`). `arquivo=<nom>` apporte le contenu (l'image en base64 ; pour une page, aussi le HTML que reçoit le navigateur) ; `cru=1` apporte le fichier brut, sans JSON, pour le lire dans le navigateur ; `conteudo=1` les apporte tous (voir [Réécrire le système à partir de zéro](#réécrire-le-système-à-partir-de-zéro)) |
+
+**Écritures** (`POST`, avec `recurso=` et `acao=`), toutes avec les mêmes validations et messages que l'écran :
+
+| Ressource | Actions |
+|---|---|
+| `relogio` | `salvar` (créer ou modifier), `excluir` (avec les documents), `foto`, `remover_foto` |
+| `documentos` | `enviar` (un ou plusieurs fichiers, avec la catégorie, le titre, la date, la description et, pour une photo, la vignette), `alterar`, `excluir` |
+| `documento_categorias` | `nova`, `alterar`, `excluir` (seulement sans documents) |
+| `lancamento` | `lancar` (remontage, charge, pile...), `iniciar` et `encerrar` (mettre et retirer du poignet, du remontoir, du soleil, du chargeur), `alternar` (ferme la session si elle est ouverte, l'ouvre si elle est fermée : un seul bouton sur le téléphone), `periodo` (une période déjà passée), `alterar`, `excluir`. Dans toutes, `relogio_id=hoje` est la montre du jour |
+| `rodizio` | `usando` (je porte celle-ci aujourd'hui), `trocar_dia` (la montre d'un jour), `periodo` (les montres d'une période, dans l'ordre : `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (efface ce que contient la période et refait le tirage), `periodo_livre` (efface et laisse les jours libres, sans tirage), `manual` (la Rotation manuelle : `de`, `ate`, `dias[AAAA-MM-JJ]` = l'id de la montre, `auto` ou `livre`), `apagar_tudo` (toute la programmation à partir de demain disparaît ; `hoje=1` : à partir d'aujourd'hui ; le mode reconstruit le plan), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (changer le mode) |
+| `modos` | `salvar`, `ativar`, `excluir` |
+| `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (groupes) et `relogios` (le groupe de chaque montre) |
+| `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (et `ordem` dans les champs) |
+| `formulas` | `nova`, `alterar`, `excluir` |
+| `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
+| `config` | `salvar`, `evento_salvar`, `evento_excluir`, `testar_manha`, `testar_noite`, `teste_agenda_criar`, `teste_agenda_remover`, `sincronizar` |
+| `usuarios` | `salvar` (avec le `senha`, ou avec le `senha_hash` d'un autre système ; le premier utilisateur, avec le jeton), `excluir` |
+| `migracoes` | `aplicar` |
+| `instalacao` | `instalar` (seulement sur une base vide, avec le jeton) |
+| `backup` | `fazer` (une sauvegarde maintenant), `restaurar` (`arquivo=` : ramène la base à cette copie, en gardant d'abord une copie de ce qui existe maintenant) |
+| `importacao` | `importar` (`banco=` le nom de l'ancienne base ; `substituir=1` quand cette base a déjà des montres ; arrêté en cours de route, rien n'est enregistré) |
+
+**Les réponses d'erreur** disent la raison : `{"erro": "..."}` dans les consultations, et `{"ok": false, "mensagem", "erros": [...]}`
+(une erreur par raison) dans une écriture refusée :
+
+| Code | Quand |
+|---|---|
+| `400` | écriture refusée par les validations (les erreurs disent pourquoi), ou une formule mal écrite dans le `calcular` |
+| `302` | `recurso=entrar` avec la bonne connexion et `volta=` : va à la page |
+| `401` | sans le jeton ni la connexion du site, ou avec eux erronés ; sans aucun utilisateur (ou avec la base vide), la réponse dit quoi faire (`sem_usuarios` et `como`) |
+| `404` | ressource inconnue (la réponse apporte la liste des ressources), ou la montre, la photo, le document (ou son fichier) ou le `README.md` (dans le `manual`) qui n'existe pas, ou un fichier qui ne sort pas par le `codigo` (avec `o_que_ver` pour ce qui est laissé de côté exprès, comme le `config.php`) |
+| `409` | la base a refusé l'écriture : un enregistrement qu'un autre utilise encore, une valeur répétée, ou une valeur hors des règles de validation de la base (le nom de la règle vient avec) |
+| `413` | l'envoi a dépassé la limite du PHP du serveur (`post_max_size`) : un fichier trop grand |
+| `500` | système arrêté (l'`API_TOKEN` ou le `FUSO` du `config.php` invalide) ou une erreur interne |
+| `503` | base pas à jour (seul `recurso=migracoes` répond, et l'écriture `migracoes`/`aplicar` ; et le `manual` et le `codigo`, qui n'utilisent pas la base), base vide (avant l'installation seul `instalacao` répond, et le `manual` et le `codigo`) ou base hors service |
+
+### Les utilisateurs et les mots de passe
+
+Le mot de passe n'est gardé nulle part : seul son **hash** l'est, fait par le `password_hash` de PHP (bcrypt). Le hash a 60
+caractères, `$2y$12$...` : le `$2y$`, le coût (12 veut dire 2¹² tours), le sel (22 caractères, tiré au sort pour chaque mot
+de passe) et le résultat (31). Le hash ne redevient pas un mot de passe : à la connexion, le système calcule le bcrypt du mot
+de passe tapé avec le sel et le coût qui sont dans le hash et compare (`password_verify`). Le même mot de passe donne des
+hashs différents à chaque fois, et tous correspondent.
+
+**Pour emmener les utilisateurs vers un autre système**, emportez l'identifiant et le `senha_hash` de chacun
+(`recurso=usuarios`) et, là-bas, vérifiez le mot de passe tapé contre le hash avec le bcrypt du langage : chacun se connecte
+avec le même mot de passe que toujours. `$2y$` (PHP) et `$2b$` (les autres langages) sont le même calcul ; si la bibliothèque
+refuse le `$2y$`, changez le début en `$2b$`. **Pour faire venir des utilisateurs d'un autre système**, envoyez le hash de
+là-bas : `recurso=usuarios`, `acao=salvar`, `login` et `senha_hash` (bcrypt `$2y$`, `$2b$` ou `$2a$`, ou argon2).
+
+| Langage | Vérifier le mot de passe | Faire le hash |
+|---|---|---|
+| PHP | `password_verify($senha, $hash)` | `password_hash($senha, PASSWORD_DEFAULT)` |
+| Python (`pip install bcrypt`) | `bcrypt.checkpw(senha.encode(), hash.encode())` | `bcrypt.hashpw(senha.encode(), bcrypt.gensalt()).decode()` |
+| Node (`npm install bcryptjs`) | `require("bcryptjs").compareSync(senha, hash)` | `require("bcryptjs").hashSync(senha, 12)` |
+| Java (Spring Security) | `new BCryptPasswordEncoder().matches(senha, hash)` | `new BCryptPasswordEncoder().encode(senha)` |
+| C# (BCrypt.Net-Next) | `BCrypt.Net.BCrypt.Verify(senha, hash)` | `BCrypt.Net.BCrypt.HashPassword(senha)` |
+
+```sh
+# le catalogue : identifiant et hash de chacun
+curl -u utilisateur:motdepasse "http://serveur/relojoeiro/api.php?recurso=usuarios"
+
+# faire venir un utilisateur d'un autre système, avec le mot de passe qu'il avait déjà
+curl -u utilisateur:motdepasse --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=maria \
+     --data-urlencode 'senha_hash=$2b$12$...' http://serveur/relojoeiro/api.php
+```
+
+**Les filtres génériques** marchent sur n'importe quelle liste de n'importe quelle réponse :
+
+| Paramètre | Fait |
+|---|---|
+| `incluir=relogios,plano` / `excluir=motor` | seulement ces parties, ou toutes sauf celles-ci |
+| `f[lista][campo]=v` | égal à `v` (ou à l'une de plusieurs : `v1,v2`) |
+| `f[lista][campo][de]=` / `[ate]=` | intervalle de nombres ou de dates |
+| `f[lista][campo][contem]=` / `[diferente]=` / `[vazio]=1` | texte, exclusion, vide |
+| `busca[lista]=texto` | le texte dans n'importe quel champ |
+| `ordem[lista]=-campo` | trie (le `-` inverse) |
+| `limite[lista]=20&pagina[lista]=2` | pagination |
+| `mostrar[lista]=id,nome` | seulement ces champs |
+
+Les champs imbriqués marchent avec un point, comme `formulas.energia.valor`, `campos.loja.valor` et `compra.valor`. Les
+textes sont comparés sans distinguer majuscules et accents.
+
+📖 **La documentation complète** (chaque consultation, chaque écriture avec un exemple et le dictionnaire de tous les champs
+des réponses) est dans l'en-tête du [`api.php`](api.php) et dans l'API elle-même : `api.php?recurso=ajuda` (dans la langue de
+la requête). Le dictionnaire a une seule source, celui de l'aide ; celui de l'en-tête est généré à partir de lui
+(`php testes/dicionario.php --gravar`).
+
+---
+
+## Installation
+
+**Prérequis :** PHP 8.1+ avec `curl` et `openssl` (celui-ci seulement pour Google Agenda), un serveur web (nginx ou Apache), le
+cron et **une de ces bases de données**, chacune par son extension PHP :
+
+| Base | Extension PHP | Version | Quand la choisir |
+|---|---|---|---|
+| **SQLite** | `sqlite3` | 3.35+ (testé en 3.53) | la plus simple : un seul fichier, sans serveur de base. Largement suffisant pour une collection personnelle, même sur un Raspberry Pi |
+| **MySQL / MariaDB** | `mysqli` | avec utf8mb4 (testé sur MariaDB 11.4) | votre hébergement l'a déjà, ou vous l'utilisez déjà |
+| **PostgreSQL** | `pgsql` | 12+, avec ICU, par défaut (testé en 18) | vous avez déjà un Postgres qui tourne |
+| **Firebird** | `pdo_firebird` | 3.0+ (testé en 3.0.11, avec PHP 8.4) | vous avez déjà un Firebird qui tourne |
+
+Le système se comporte de la même façon sur les quatre. C'est vérifié par le test de parité ([`testes/`](testes/)), qui
+exécute le même scénario sur les quatre bases et compare tout ce que renvoie l'API.
+
+```sh
+# 1. le code
+git clone https://github.com/Challado/relojoeiro.git /var/www/relojoeiro
+cd /var/www/relojoeiro
+
+# 2. la configuration : la base (DB_TIPO), le jeton de l'API, le fuseau, les messages, le dossier des documents
+cp config.exemplo.php config.php
+nano config.php
+#    le dossier des documents (DOCUMENTOS_PASTA), hors du dossier publié, accessible en écriture à l'utilisateur de PHP :
+#    mkdir -p /var/lib/relogios2/documentos && chown www-data /var/lib/relogios2/documentos
+
+# 3. la base vide (seulement sur MySQL, Postgres et Firebird ; SQLite crée le fichier tout seul)
+#    MySQL:    mysql -u root -p -e "CREATE DATABASE relogios2 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+#    Postgres: createdb -U postgres relogios2
+#    Firebird: echo "CREATE DATABASE 'localhost:/var/lib/firebird/3.0/data/relogios2.fdb' USER 'SYSDBA' PASSWORD '...'
+#                    PAGE_SIZE 16384 DEFAULT CHARACTER SET UTF8;" | isql-fb -q
+
+# 4. l'installation : la structure et l'ensemble initial, traduits pour la base du config.php
+php instalar.php --lingua=fr
+#    l'ensemble initial sort dans cette langue, qui devient celle par défaut de l'installation (sans --lingua : portugais)
+#    ou par l'API, avec le jeton du config.php (la langue : lingua=fr, comme dans toute requête) :
+#    curl -H "X-Api-Token: $TOKEN" -d recurso=instalacao -d acao=instalar -d lingua=fr http://serveur/relojoeiro/api.php
+
+# 5. le premier utilisateur (le mot de passe est demandé sans s'afficher)
+php criar_usuario.php votre_identifiant
+#    ou par l'API, avec le jeton :
+#    curl -H "X-Api-Token: $TOKEN" -d recurso=usuarios -d acao=salvar -d login=votre_identifiant -d senha=... http://serveur/relojoeiro/api.php
+
+# 6. le cron, chaque minute (il est muet : il n'écrit rien et n'envoie pas de courriel)
+( crontab -l; echo "* * * * * php /var/www/relojoeiro/cron.php" ) | crontab -
+```
+
+Le `cron.php` a deux options, pour le lancer à la main : `--forcar` exécute maintenant le passage du matin et celui du soir,
+même s'ils ont déjà eu lieu aujourd'hui (il construit le planning, envoie les messages et synchronise l'agenda, s'ils sont
+activés), et `-v` affiche à l'écran le journal qu'il enregistre (le même que la page Exécutions du cron). Ex. :
+`php cron.php --forcar -v`.
+
+Sur SQLite, mettez le fichier de la base (`DB_ARQUIVO`) **hors du dossier que publie le serveur web**, dans un dossier où
+l'utilisateur de PHP peut écrire (SQLite crée à côté les fichiers `-wal` et `-shm`).
+
+Sur Firebird, la base doit être créée en **UTF8** (le `DEFAULT CHARACTER SET UTF8` ci-dessus). PHP a besoin de l'extension
+`pdo_firebird` : sur Debian et Ubuntu, le paquet `php8.4-interbase` (son ancien nom) et le client Firebird (`libfbclient2`),
+qui vient avec ; dans le `php.ini`, `extension=pdo_firebird`. Le serveur, le paquet `firebird3.0-server` (ou l'installateur
+du site de Firebird). Dans le `config.php`, `DB_NOME` est le chemin du fichier `.fdb` **sur le serveur de la base** (ou un
+alias du `databases.conf`), et `DB_USUARIO`/`DB_SENHA` un utilisateur Firebird (le `SYSDBA` ou un utilisateur créé pour le
+système).
+
+**7. Le serveur web.** Par le web, seules les pages, le `api.php` et ce qu'elles chargent (`estilo.css`, les `.js`, les images)
+peuvent s'ouvrir. Tout le reste est bloqué : le noyau (`lib.php`, `banco.php`, `operacoes.php`), le `config.php`, le cron, les
+scripts en ligne de commande, les tests, les fichiers `.sql`, `.json`, `.md` et `.sqlite`, et tout ce qui commence par un
+point, y compris le dossier `.git`, qui vient avec le `git clone`. Le projet apporte cela prêt pour les deux serveurs :
+
+- **Apache :** le [`.htaccess`](.htaccess) est déjà dans le dossier et marche tout seul. Le dossier a seulement besoin de
+  `AllowOverride All` dans la configuration d'Apache, le réglage par défaut de presque tout hébergement ; sans lui, le
+  `.htaccess` est ignoré et rien n'est bloqué. Il fait aussi marcher la connexion du site quand PHP tourne en FastCGI
+  (PHP-FPM, la plupart des hébergements), cas où Apache ne transmettrait pas le mot de passe à PHP.
+- **nginx :** copiez le bloc du [`nginx-relogios.conf`](nginx-relogios.conf) dans le `server` de votre site (ajustez
+  `/relojoeiro/` et l'adresse de PHP-FPM). Il apporte aussi le `client_max_body_size 512m`, pour l'envoi des documents (voir
+  [La taille des envois](#la-taille-des-envois-les-documents)).
+
+Pour vérifier, ouvrez `https://votre-serveur/relojoeiro/config.php` et `https://votre-serveur/relojoeiro/.git/config` : les deux
+doivent donner **403**.
+
+**8. Ouvrez-le dans le navigateur** et connectez-vous avec l'utilisateur créé. L'ensemble initial est déjà là : enregistrez vos
+montres dans **Aujourd'hui → Nouvelle montre**, choisissez le groupe de chacune et remplissez les champs.
+
+### Le `config.php`
+
+| Constante | Pour quoi |
+|---|---|
+| `DB_TIPO` | la base : `mysql` (par défaut, vaut pour MariaDB), `pgsql`, `sqlite` ou `firebird` |
+| `DB_HOST`, `DB_PORTA`, `DB_NOME`, `DB_USUARIO`, `DB_SENHA` | le serveur de la base (MySQL, Postgres et Firebird) ; `DB_PORTA` 0 est le port par défaut. Sur Firebird, `DB_NOME` est le chemin du fichier `.fdb` sur le serveur (ex. : `/var/lib/firebird/3.0/data/relogios2.fdb`) ou un alias du `databases.conf`, et un `DB_HOST` vide ouvre le fichier directement, sans serveur (le Firebird embarqué) |
+| `DB_ARQUIVO` | le fichier de la base (SQLite), hors du dossier publié |
+| `API_TOKEN` | **obligatoire**, avec 10 caractères ou plus. Sans lui, tout le système s'arrête et dit pourquoi. |
+| `FUSO` | le fuseau horaire, comme `America/Sao_Paulo`. Vide ou absent : celui de PHP (`date.timezone` dans le php.ini). Il vaut pour tout, y compris pour les dates que la base enregistre |
+| `MSG_ENDPOINT`, `MSG_DESTINATARIO`, `MSG_TITULO` | les messages (voir ci-dessous). Sans l'adresse, rien n'est envoyé. |
+| `DOCUMENTOS_PASTA` | le dossier des fichiers des documents (le manuel, la facture, les photos, les vidéos), **hors du dossier publié**, accessible en écriture à l'utilisateur de PHP. Sans lui, la page Documents signale qu'il manque et n'accepte pas d'envois. Ex. : `define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
+| `DOCUMENTOS_COPIA_BANCO` | facultatif : la sauvegarde des documents dans la base, pour tout le système. `true` : tout fichier va aussi dans la base ; `false` : aucun n'y va ; sans elle : chaque montre et chaque fichier décident. Voir [Les documents de la montre](#les-documents-de-la-montre). |
+| `BACKUP_PASTA`, `BACKUP_MANTER`, `BACKUP_DOCUMENTOS` | facultatifs : la sauvegarde de la base (voir [Sauvegarde](#sauvegarde)). Le dossier, **hors du dossier publié** (sans lui, pas de copie automatique) ; combien sont gardées (par défaut 7) ; et si elle emporte le contenu des documents gardé dans la base (par défaut : non). |
+| `BACKUP_ATIVO` | facultatif : `false` désactive la sauvegarde : pas de copie automatique, pas de **Faire une copie maintenant** et pas de cadre **Sauvegarde** dans la Configuration (ni l'avertissement que le dossier manque). Sans elle : activée |
+| `DOCUMENTOS_LIMITE` | facultatif : le plus grand document accepté, en octets. Sans elle, 100 Mo (`104857600`) ; `0` ou `-1`, pas de limite du système. `MANUAL_LIMITE`, l'ancien nom, vaut encore quand elle n'existe pas. Les limites de PHP et de nginx s'appliquent toujours (voir [La taille des envois](#la-taille-des-envois-les-documents)). Ex. : `define("DOCUMENTOS_LIMITE", 524288000);` pour 500 Mo |
+| `ANTIGO_HOST`, `ANTIGO_PORTA`, `ANTIGO_USUARIO`, `ANTIGO_SENHA` | facultatifs, seulement pour le `importar.php` avec ce système sur Postgres, SQLite ou Firebird : où se trouve le MySQL de l'ancien système |
+| `ALEATORIO_RANDOMORG_URL`, `ALEATORIO_ANU_URL` | facultatifs, seulement pour les tests : les adresses des sources des nombres aléatoires (`https://www.random.org/integers/` et `https://qrng.anu.edu.au/API/jsonI.php`). Changées, les tirages demandent les nombres à un serveur de test |
+| `GOOGLE_TOKEN_URL`, `GOOGLE_API_URL` | facultatifs, seulement pour les tests : les adresses de Google qu'utilise l'agenda (celle du jeton, `https://oauth2.googleapis.com/token`, et celle de l'API, `https://www.googleapis.com/calendar/v3`). Changées, la synchronisation de l'agenda parle à un serveur de test au lieu de Google |
+| `TEXTOS_ESTRITO` | facultatif, pour qui traduit : `true` fait qu'une traduction manquante s'arrête sur une erreur (voir [Les langues](#les-langues)) |
+
+Le système lit le `config.php` de son dossier. Une variable d'environnement du serveur, `RELOGIOS_CONFIG`, désigne un autre
+fichier à la place : c'est ce qu'utilise le test de parité (`testes/paridade.sh`, avec le
+[`testes/config.teste.php`](testes/config.teste.php)), pour tourner sans toucher au vrai `config.php`. Sur une installation
+normale, ne la définissez pas.
+
+### Les messages par Telegram
+
+Le système ne parle pas directement à l'API de Telegram : il appelle **une adresse HTTP à vous** (`MSG_ENDPOINT`) avec
+`?destinatario=...&titulo=...&mensagem=...` et considère le message envoyé si la réponse est 2xx. Cela vous laisse utiliser
+votre bot, un webhook, n8n, Home Assistant ou n'importe quel relais de messages. Les longs messages sont découpés en parties.
+Dans la **Configuration** se trouvent les boutons **Envoyer maintenant** (matin et soir) pour tester.
+
+### Google Agenda
+
+1. Dans Google Cloud, créez un **compte de service** et téléchargez la clé JSON.
+2. Gardez la clé **sur le serveur, hors du dossier public et hors du dépôt** (le `.gitignore` bloque déjà les noms courants).
+3. Partagez votre agenda avec l'adresse du compte de service, avec la permission de modifier les événements.
+4. Dans la **Configuration**, indiquez l'ID de l'agenda et le chemin de la clé, activez l'agenda et cliquez sur
+   **Synchroniser maintenant**.
+
+Le système crée, met à jour et supprime seulement les événements qu'il a créés lui-même, sans doublons. La routine (charger,
+remonter, soleil) entre dans la fenêtre d'anticipation, et l'entretien (pile, révision, garantie) entre à n'importe quelle
+date.
+
+### La taille des envois (les documents)
+
+Chaque document monte en un envoi (plusieurs fichiers choisis ensemble montent un par un), et trois limites du serveur peuvent
+refuser un gros fichier avant le système. Le système accepte jusqu'à **100 Mo** par fichier ; le `DOCUMENTOS_LIMITE` du
+`config.php` change cela (en octets ; `0` ou `-1` : pas de limite du système). Pour les vidéos de téléphone, pensez à environ
+500 Mo :
+
+| Où | La limite | Par défaut | Pour 500 Mo |
+|---|---|---|---|
+| `php.ini` | `upload_max_filesize` (le fichier) et `post_max_size` (l'envoi entier) | 2M et 8M | `upload_max_filesize = 500M` et `post_max_size = 512M` |
+| nginx | `client_max_body_size` | 1m | `512m` (déjà dans le [`nginx-relogios.conf`](nginx-relogios.conf)) |
+| `config.php` | `DOCUMENTOS_LIMITE` | 100 Mo | `524288000` |
+
+Le fichier va directement dans le dossier des documents ; la copie dans la base va en morceaux de 4 Mo, lus un à la fois : le
+`memory_limit` de PHP et le `max_allowed_packet` de MySQL (16 Mo ou plus) ne limitent pas la taille du fichier. La page
+Documents montre la limite qui s'applique vraiment (celle du système, ou moins à cause du `php.ini` ; sans aucune limite, « de
+toute taille »). Un fichier au-dessus est refusé avec le message de la taille ; un envoi au-dessus du `post_max_size` revient
+avec le code `413` et la limite du serveur. Sur Apache, il n'y a pas de limite à toucher, à part le `php.ini`.
+
+### Les mises à jour de la base
+
+Après la mise à jour du code, s'il y a une nouvelle migration (`migracao_v*.sql`), l'API répond `503` et la page
+**Configuration** montre le bouton pour l'appliquer. Le cron s'arrête aussi et note la raison, au lieu de tourner à moitié. Sur
+une nouvelle installation, le `schema.sql` apporte déjà toutes les migrations.
+
+Le `schema.sql` et chaque migration sont **un seul fichier pour les quatre bases** : la structure (`CREATE TABLE`,
+`ALTER TABLE`) est écrite dans le dialecte de MySQL, et le [`banco.php`](banco.php) la traduit pour Postgres, SQLite et
+Firebird (`AUTO_INCREMENT`, `ENUM`, `TINYINT`, `DATETIME`, les `INDEX` dans la table, le `AFTER` et le `MODIFY COLUMN`, qui sur
+SQLite refait la table). Les données (`INSERT`, `UPDATE`) vont en SQL commun aux quatre : pas de `GROUP_CONCAT`, `IF()` ni
+`FIND_IN_SET`. `INSERT IGNORE`, `REPLACE INTO`, `NOW()`, `LEAST`, `GREATEST`, `LENGTH`, `DATE()`, `<=>`, `LIMIT`/`OFFSET`, le
+`SELECT` sans `FROM`, l'`INSERT` de plusieurs lignes et `CONCAT` sont permis (le `CONCAT` sans argument NULL : sur Postgres le
+NULL devient du texte vide, sur MySQL le résultat devient NULL). Les migrations v2 à v8 datent d'avant et n'existent que pour
+mettre à jour d'anciennes bases MySQL : une base Postgres, SQLite ou Firebird naît déjà dans la version actuelle.
+
+Deux commandes qui n'existent ainsi dans aucune base, le `banco.php` les comprend et les fait à la manière de chacune :
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `ALTER TABLE t ALTER FOREIGN KEY (coluna) REFERENCES outra(id) ON DELETE CASCADE` (ou `SET NULL`) | remplace la clé étrangère de la colonne (ou la crée, s'il n'y en avait pas). Sur MySQL, Postgres et Firebird, cherche dans le catalogue le nom de l'ancienne clé, la supprime et crée la nouvelle (sur Firebird, dans une transaction) ; sur SQLite, refait la table. |
+| `ALTER TABLE t DROP COLUMN coluna` | supprime la colonne avec sa clé étrangère et ses index (SQLite refait la table ; Firebird supprime aussi d'abord les règles qui utilisent la colonne). |
+| `ALTER TABLE t ADD CONSTRAINT nome CHECK (condição)` | la règle de validation, avec un nom ; s'il en existe déjà une avec ce nom, elle est remplacée. Les lignes existantes doivent respecter la nouvelle règle, sinon la base refuse et la règle d'avant reste (sur Postgres et Firebird, dans une transaction ; sur MySQL, la nouvelle entre d'abord sous un nom provisoire ; sur SQLite, la table est refaite dans une transaction). |
+
+Et, pour qu'une migration arrêtée en cours de route puisse tourner à nouveau avec le même bouton : l'`ADD COLUMN` d'une colonne
+qui existe déjà et l'`ADD INDEX` avec le nom d'un index qui existe déjà ne font rien.
+
+Une migration peut aussi avoir une **étape en PHP**, pour ce que le SQL commun aux quatre ne fait pas (la v16 découpe le texte
+des options d'un champ, une par ligne, en lignes de la table `campo_opcao` ; la v20, sur MySQL/MariaDB, passe en
+`utf8mb4_unicode_ci` les tables créées dans une autre collation). Elle tourne juste après le SQL, par le bouton de la
+Configuration, et aussi dans le `instalar.php`.
+
+### Les différences entre les bases que vous pouvez remarquer
+
+- **L'ordre des textes sur MySQL/MariaDB :** toute table naît en `utf8mb4_unicode_ci`, quel que soit le réglage par défaut de
+  la base. MariaDB vient avec `utf8mb4_general_ci`, qui trie autrement que les autres bases (il met `dias_desde_compra` avant
+  `dias_de_carga`) ; une ancienne installation créée ainsi est convertie par la migration v20.
+- **Majuscules et accents :** comme sur MySQL, « Relógio » et « RELOGIO » sont le même nom, dans la recherche, dans le tri et à
+  la connexion. Sur Postgres, cela vient d'une collation ICU (`ci`) que crée le `instalar.php`. Sur SQLite, d'une fonction de
+  PHP ; c'est pourquoi, dans un programme extérieur (le `sqlite3` en ligne de commande, DB Browser), trier ou comparer ces
+  colonnes donne l'erreur « no such collation sequence: ci ». Lire et exporter marchent normalement. Sur Firebird, de la
+  collation `UNICODE_CI_AI`, sur toutes les colonnes de texte.
+- **Sur Firebird :**
+  - les textes longs (`TEXT` dans le `schema.sql` : les formules, les messages, le journal du cron) vont jusqu'à **8191
+    caractères** (sur MySQL, 65535 octets), car ils deviennent `VARCHAR(8191)` (le `BLOB` de texte revient vide comme nul en
+    PHP) ;
+  - les noms d'index et de règle de plus de 31 caractères gardent seulement un morceau du md5 du nom entier à la fin, et la
+    table `no` est un mot réservé : dans un programme extérieur (`isql-fb`, FlameRobin), écrivez `"NO"`, entre guillemets et
+    en majuscules ;
+  - la clé unique de plusieurs colonnes où l'une peut rester vide (la `canal_aviso`) devient un index unique sur une
+    expression, car sur Firebird deux lignes avec la même valeur et l'autre colonne vide comptent comme répétées (sur MySQL,
+    non) ;
+  - l'heure du `NOW()` vient de PHP (Firebird n'a pas de fuseau par connexion), dans le `FUSO` du `config.php`, comme pour
+    les autres.
+- **L'ordre des colonnes** d'une migration avec `AFTER` ne vaut que sur MySQL : sur les autres, la nouvelle colonne va à la fin
+  de la table (seul change l'ordre des clés dans le JSON de l'API).
+- **Les ids** peuvent sauter des numéros différents sur chaque base (MySQL réserve des ids par bloc dans certains
+  `INSERT ... SELECT`).
+
+### En venant de l'ancien système
+
+`php importar.php <ancienne_base>` (ou, par l'API, `recurso=importacao`, `acao=importar`, `banco=<ancienne_base>`) apporte
+l'arbre, les montres, les photos, les utilisateurs, les champs et tout l'historique (converti en saisies), en une seule
+transaction : s'il s'arrête en cours de route, rien n'est enregistré. Avec `--substituir` (dans l'API, `substituir=1`), il
+efface d'abord ce qui existe déjà dans cette base. Le [`PORTE.md`](PORTE.md) note, point par point, comment chaque
+comportement de l'ancien système a été porté.
+
+---
+
+## Questions fréquentes
+
+**Dois-je tout saisir à la main ?**
+Non. Le port de la montre du jour se saisit tout seul, pendant l'horaire de port. Vous ne saisissez que ce que le système n'a
+aucun moyen de savoir : le remontage, le relevé de charge de la smartwatch, le soleil, le remontoir, le changement de pile et
+le jour où vous avez porté une autre montre. Et chaque alerte arrive déjà avec le bouton qui la résout.
+
+**Où ranger le manuel, la facture et les photos de la montre ?**
+Sur sa page **Documents** (depuis la fiche : **Ouvrir les documents**). Choisissez la catégorie (Manuel, Facture, Facture
+(XML), Photos, Vidéos, Divers), les fichiers, et envoyez. Les photos deviennent une galerie avec diaporama, les vidéos se
+jouent à la suite, le PDF s'ouvre dans le lecteur et le XML de la facture montre le résumé. Un manuel qui n'existe que sous
+forme de page web devient un PDF par le navigateur (**Imprimer → Enregistrer au format PDF**).
+
+**Pourquoi cette montre est-elle sortie, et pas une autre ?**
+Regardez sous son nom, sur la page **Aujourd'hui** ou sur la page **Plan** : chaque jour vient avec la raison du choix. Si
+c'est *« Garantie de rotation »*, elle était au repos au-delà de la limite (ou n'a jamais été portée et est dans la collection
+depuis plus longtemps que la limite) et est passée devant toutes, quelle que soit la note ; refaire le tirage donne la même
+chose tant qu'elle n'est pas portée. Si c'est *« Tirage selon la note »*, la phrase donne la note et la chance qu'elle avait.
+Un jour sans raison a été enregistré avant que le système ne la garde : refaites le tirage pour qu'elle apparaisse.
+
+**Et si je ne veux pas porter la montre tirée ?**
+Dans **Prochains jours** (sur la page Aujourd'hui) ou sur la page **Plan**, chaque jour a le **remplacer par…** : choisissez
+la montre et cliquez sur **Changer**. Aujourd'hui, elle devient celle au poignet dès maintenant ; un jour à venir, seul ce
+jour change, et il est marqué *à la main*. Dans le planning intelligent, le plan est refait à partir du jour changé (les
+rappels de charge et de remontage des jours suivants s'ajustent). Sur un jour choisi à la main, la même liste a **retirer au
+sort**. Vous pouvez aussi **Refaire le tirage** à partir d'aujourd'hui ou de demain.
+
+**Et si aujourd'hui je ne veux porter aucune montre ?**
+Dans le cadre de la montre du jour, en haut de la page Aujourd'hui, **Jour sans montre** (demande confirmation) : le jour reste
+**libre**, sans montre et sans tirage, comme les jours libres du plan. Si la montre du jour était déjà au poignet par la
+rotation, elle le quitte maintenant (le temps déjà porté compte comme usage ; ce qui n'avait pas commencé ne compte pas), et
+aucune montre ne va toute seule au poignet aujourd'hui. Les autres jours ne changent pas. Vous avez changé d'avis ? Le cadre
+affiche alors **Aujourd'hui sans montre** avec le **choisir…** : la montre choisie va au poignet dès maintenant ; ou **Refaire
+le tirage** *y compris aujourd'hui*, dans le mode de rotation. Par l'API : `recurso=rodizio`, `acao=sem_relogio`.
+
+**Et si je veux choisir moi-même les montres d'une période ?**
+Dans le cadre **Mode de rotation** de la page Aujourd'hui, choisissez **Rotation manuelle**, indiquez le début et la fin et
+cliquez sur **OK** : les jours apparaissent 7 par 7 (avec les pages en dessous), et pour chacun vous choisissez la montre,
+**Décider pour moi** ou **Sans montre (jour libre)**. **Enregistrer la rotation manuelle** enregistre tout. Voir
+[La rotation manuelle](#la-rotation-manuelle). Ces jours restent même quand vous refaites le tirage ou construisez la semaine
+suivante. (Par l'API, il existe aussi l'action `periodo`, qui fait tourner une liste de montres dans l'ordre, N jours
+d'affilée chacune.)
+
+**Ce qui est sorti sur une période ne me plaît pas. Comment l'effacer ?**
+En bas de la page **Plan** (ou dans le cadre **Mode de rotation** de la page Aujourd'hui), dans **Effacer une période** :
+indiquez le début et la fin et choisissez *et refaire le tirage* (efface tout ce que contient la période, choisi à la main ou
+tiré, et retire au sort) ou *et laisser libre* (efface et ne tire rien : les jours apparaissent comme *libre : choisir à la
+main*, et ni le tirage ni le planning n'y mettent de montre). Chaque jour libre se choisit dans le **choisir…** du jour
+lui-même (ou dans la Rotation manuelle) ; **↺ retirer au sort** rend le jour au tirage. Cela vaut à partir de demain
+(aujourd'hui a déjà la montre au poignet : pour lui, le **Refaire le tirage** du mode de rotation ou le **remplacer par…**). Un
+jour libre qui arrive n'a pas de montre du jour : le poignet automatique n'en met aucune, et c'est vous qui choisissez. Pour
+repartir de zéro : **Tout effacer** (avec **Y compris aujourd'hui**, aujourd'hui aussi). Voir
+[Effacer la programmation](#effacer-la-programmation).
+
+**La montre est sur le chargeur (ou au soleil) : qu'est-ce qui s'affiche ?**
+L'état montre où elle est (*Sur le chargeur depuis 06:30*). Sur la smartwatch, la batterie monte selon le champ *Sur le
+chargeur : heures pour remplir* ; quand elle est pleine, l'alerte **Retirer du chargeur** part aussitôt par Telegram et
+apparaît dans **Aujourd'hui, c'est le jour de** avec le bouton **Retirée du chargeur**. Avec le poignet automatique activé, la
+montre du jour attend de quitter le chargeur avant d'aller au poignet.
+
+**J'ai oublié de marquer Retirée (ou Mise).**
+Dans le panneau de la montre, dans le cadre **Marquer**, choisissez dans le menu ce qui s'est passé (*Retirer du poignet*,
+*Mettre sur le remontoir*...) et remplissez l'heure. Elle arrive déjà avec l'heure du navigateur, et suit l'horloge tant que
+la page est ouverte : sans y toucher, c'est maintenant (l'instant exact, avec les secondes) ; modifiée, c'est l'heure que vous
+avez mise (hier à 22:30), et elle cesse de bouger. Corrigez seulement ce qui a changé (l'heure, le jour), sans tout choisir à
+nouveau. Effacée, c'est aussi maintenant. Si ce qui a été marqué est faux, choisissez **Corriger ou supprimer un marquage** :
+un second menu liste tout ce qui a été saisi ces 14 derniers jours, et en dessous apparaissent les champs de ce marquage (le
+début et la fin d'une session ; l'heure et la valeur d'un relevé). Changez ce qui est faux et cliquez sur **Enregistrer**, ou
+**Supprimer**. Corriger le poignet corrige aussi les mesures de consommation qui passent par cette période : une nuit comptée
+au poignet à cause d'un Retirée oublié ne pousse plus la consommation en usage vers le haut.
+
+**Une montre est chez l'horloger.**
+Décochez **Disponible** sur la fiche. Elle sort du tirage et des moyennes de la collection, mais l'historique reste.
+
+**J'ai un type de montre que le système ne connaît pas (une kinetic, une montre de poche...).**
+Créez un groupe pour elle, les champs, les types de saisie et une version de la formule `energia` dans ce groupe. Les alertes
+et critères des groupes du dessus continuent de s'appliquer, et vous ne redéfinissez que ce qui est différent.
+
+**L'automatique ne se remonte pas par la couronne.**
+Décochez le champ **Se remonte par la couronne** : l'alerte devient **Mettre sur le remontoir** au lieu de **Remonter**, et le
+planning simule une nuit sur le remontoir pour la résoudre.
+
+**Puis-je utiliser seulement l'API, sans les écrans ?**
+Oui. Les écrans utilisent exactement la même API.
+
+---
+
+## Marquer depuis le téléphone, d'une touche
+
+Tout ce que marque l'écran, l'API le marque, donc un raccourci sur l'écran d'accueil du téléphone fait **Mise au poignet**,
+**Retirée du poignet** ou **Sur le chargeur** sans ouvrir le site. Deux choses de l'API existent pour cela : `acao=alternar`
+(ouvre la session si elle est fermée, la ferme si elle est ouverte : un seul bouton pour mettre et retirer) et
+`relogio_id=hoje` (la montre du jour, sans avoir besoin de connaître son numéro). La réponse apporte le `mensagem` prêt à
+afficher (*« Xiaomi Band 8 : Au poignet depuis 10/12 07:19. »*).
+
+La requête est toujours la même, seuls changent le type (`pulso`, `carregador`, `sol`, `winder`) et la montre :
+
+```text
+POST https://votre-serveur/relojoeiro/api.php
+en-tête  X-Api-Token: <l'API_TOKEN du config.php>
+corps    recurso=lancamento&acao=alternar&relogio_id=hoje&tipo=pulso
+```
+
+- **iPhone (app Raccourcis) :** nouveau raccourci, action **Obtenir le contenu de l'URL** : l'adresse de l'`api.php`, méthode
+  **POST**, dans **En-têtes** le `X-Api-Token`, dans **Corps de la requête** le type **Formulaire** avec les champs `recurso`,
+  `acao`, `relogio_id` et `tipo`. Ensuite **Obtenir la valeur du dictionnaire** (clé `mensagem`) et **Afficher une
+  notification** avec elle. Ajoutez le raccourci à l'écran d'accueil ; un pour le poignet, un autre pour le chargeur.
+- **Android :** l'app **HTTP Shortcuts** (gratuite) fait la même chose : méthode POST, l'en-tête, les champs du formulaire et
+  « afficher la réponse » en notification ; chaque raccourci devient une icône sur l'écran d'accueil.
+- **Home Assistant :** un `rest_command` avec la même requête, appelé par un bouton, par une étiquette NFC sur la boîte de la
+  montre, ou par la prise intelligente du chargeur (allumée : `iniciar` sur le chargeur ; éteinte : `encerrar`).
+- **Pour une montre qui n'est pas celle du jour,** remplacez `hoje` par son numéro (l'`id`, sur la fiche ou dans l'API à
+  `recurso=hoje&mostrar[relogios]=id,nome`). Un relevé de charge est `acao=lancar&tipo=carga&valor=68`.
+
+Le jeton donne accès à tout : gardez-le seulement sur le téléphone (avec verrouillage de l'écran) et changez l'`API_TOKEN` si
+l'appareil est perdu.
+
+## Sauvegarde
+
+Avec `BACKUP_PASTA` dans le `config.php` (un dossier du serveur **hors du dossier publié**, accessible en écriture au PHP), le
+cron fait **une copie de toute la base par jour**, au passage du soir, et garde les `BACKUP_MANTER` plus récentes (7 par
+défaut) : à chaque nouvelle copie, les plus anciennes s'en vont. Un dossier à l'intérieur du dossier publié est refusé
+(n'importe qui pourrait télécharger la base par le navigateur).
+
+- **Le fichier** est `relojoeiro-AAAA-MM-DD-HHMMSS.jsonl.gz` : du JSON Lines compressé, une ligne par enregistrement, **le même
+  sur les quatre bases**. Une copie de MySQL revient dans PostgreSQL, SQLite ou Firebird, pourvu que le système soit à la même
+  version (la même dernière migration).
+- **Les documents :** les fichiers sont déjà dans leur dossier, et leur copie dans la base (qui peut être grande) n'entre dans
+  la sauvegarde qu'avec `BACKUP_DOCUMENTOS = true`. Sans cela, à la restauration, les documents reviennent sans la copie dans
+  la base et le cron refait celle qui est demandée.
+- **Dans la Configuration**, sous **Sauvegarde** : les copies du dossier (quand, la taille, avec ou sans documents),
+  **Télécharger** (gardez-en une hors du serveur de temps en temps), **Restaurer** et **Faire une copie maintenant**.
+- **Restaurer** ramène toute la base à cette copie : avant, le système garde une copie de ce qui existe maintenant (on peut
+  revenir) ; ensuite, en une seule fois, il remplace tous les enregistrements par ceux de la copie. Si quelque chose échoue en
+  cours de route, rien ne change.
+- **Pour changer de base** (de SQLite à MySQL, par exemple) : installez la nouvelle base, appliquez les migrations, mettez la
+  copie dans le dossier des sauvegardes et restaurez.
+- **Par l'API :** `recurso=backup` (l'état et les copies ; `arquivo=` en télécharge une), et les écritures `fazer` et
+  `restaurar`.
+- **Pour la désactiver** (une autre routine copie déjà la base, ou c'est une installation de test) : `define("BACKUP_ATIVO", false);`
+  dans le `config.php`. Le cron ne fait pas de copie, l'écriture `fazer` est refusée et le cadre **Sauvegarde** disparaît de la
+  Configuration, avec l'avertissement que le dossier manque.
+
+## Réécrire le système à partir de zéro
+
+Qui veut réécrire Relojoeiro, dans un autre langage, une autre base ou un autre framework, et arriver au même système, demande
+le guide à l'API : `api.php?recurso=reconstrucao` (le même que `api.php?recurso=ajuda&parte=reconstrucao`). Il apporte :
+
+| Partie | Ce qu'elle contient |
+|---|---|
+| `o_que_e`, `como_usar` | ce que fait le système et comment lire le guide (et où est le reste : l'API, l'ensemble initial, ce README, les tests) |
+| `secoes` | les principes (le système ne sait rien des montres, tout par l'API, à l'épreuve des erreurs, la base qui se défend seule, les quatre bases, le temps en jours), l'architecture, **l'ordre de construction** (de la base à l'acceptation, en 14 étapes) et les règles de chaque partie : arbre et champs, saisies et chronologie, le moteur de formules, alertes, consommation mesurée et autonomie, critères et note, modes de rotation, plan et planning intelligent, poignet automatique, cron, messages, agenda et événements, documents, écrans (téléphone, tablette et ordinateur), sécurité et tests |
+| `telas` | **la spécification visuelle, écran par écran**, pour que la réécriture reproduise la même interface (pas une semblable) : l'aspect avec les valeurs exactes (les couleurs en hexadécimal, les polices, la hauteur des champs et des boutons, chaque composant : carte, cadre, paires étiquette et valeur, tableau, étiquettes, barre de charge, onglets, barre d'enregistrement), les largeurs et ce qui change sur le téléphone, la tablette et l'ordinateur, le comportement commun (enregistrer, confirmer, sans login, base pas à jour, photos) ; le menu dans l'ordre ; et chaque page avec l'adresse, ce qu'elle lit et écrit dans l'API et les parties de haut en bas, avec chaque tableau (les colonnes), chaque formulaire (les champs avec étiquette, type, valeur par défaut et limites), chaque bouton (le texte et ce qu'il envoie à l'API) et chaque message, mot pour mot. Et les captures dans `docs/telas/` |
+| `modelo_de_dados` | **lu dans la base même en usage**, à ce moment-là : chaque table avec ce qu'elle garde, les colonnes (type, vide, valeur par défaut), la clé primaire, les clés étrangères (et ce qui se passe à la suppression), les uniques, les index et les règles de validation. Il n'est jamais en retard sur la version installée |
+| `listas` | les listes du code, lues elles aussi à ce moment-là : les fonctions des formules (avec les arguments et si elles lisent l'historique), les types de champ, les formats de saisie, les répétitions d'événements, les jours de la semaine, les repères des messages, les canaux, les migrations et les constantes du `config.php` |
+| `codigo` | la liste des fichiers du système (la même que `recurso=codigo`, sans le contenu) ; et chaque page de `telas` indique ses fichiers (`codigo`) |
+
+Le contrat de l'API (chaque consultation, chaque écriture et chaque champ) est dans `recurso=ajuda`, et la connaissance sur les
+montres (les champs, les formules, les alertes, les critères et les modes fournis) est dans le `schema.sql` et dans les
+ressources `cadastros` et `criterios` : le guide y renvoie. L'acceptation, c'est le `testes/cenario.php` : la réécriture doit
+donner les mêmes réponses.
+
+Et le code réel, tel qu'il est maintenant, sort par `recurso=codigo`, lu sur le disque au moment de la requête (ainsi il n'est
+jamais en retard sur une modification) : le CSS, le JavaScript, chaque page (et le HTML qu'elle livre au navigateur, déjà
+assemblé), l'API, le noyau, la base et les migrations, le serveur, les tests et les captures. Pour lire dans le navigateur, un
+fichier brut :
+
+```
+api.php?recurso=codigo                                   la liste : chaque fichier avec la couche, ce que c'est, la taille et le SHA-256
+api.php?recurso=codigo&arquivo=estilo.css&cru=1          le CSS, brut
+api.php?recurso=codigo&arquivo=hoje.js&cru=1             le JavaScript de la page Aujourd'hui, brut
+api.php?recurso=codigo&arquivo=index.php&html=1&cru=1    le HTML que la page Aujourd'hui livre au navigateur
+api.php?recurso=codigo&conteudo=1&f[arquivos][camada]=tela   tout ce qui est écran, d'un coup, en JSON
+```
+
+Seuls les fichiers du système sortent (ceux du dépôt). Ce qui est laissé de côté exprès vient dans `nao_mostrados`, chacun avec
+la raison et ce qu'il faut regarder à la place : le `config.php` (il contient les mots de passe : à la place, le
+`config.exemplo.php` et les constantes expliquées dans la reconstruction), la clé Google, la base de données (le modèle est dans
+la reconstruction et les données dans l'API), le dossier des documents et les mots de passe des utilisateurs (seul le hash
+existe).
+## Comment c'est à l'intérieur
+
+- **PHP 8.1+ pur, avec SQLite, MySQL/MariaDB, PostgreSQL ou Firebird.** Sans framework, sans Composer et sans dépendances, pour
+  tourner sur n'importe quel hébergement avec PHP. Chaque base par son extension PHP (`sqlite3`, `mysqli`, `pgsql`,
+  `pdo_firebird`) ; le SQL du système est écrit une seule fois et le [`banco.php`](banco.php) traduit ce qui change d'une base
+  à l'autre.
+- **Un moteur de formules maison**, avec analyse syntaxique, fonctions d'historique, versions par groupe et dépendances entre
+  formules.
+- **Simulation :** le planning et les prévisions simulent des saisies futures et recalculent les formules jour par jour, sans
+  rien enregistrer.
+- **Front-end en HTML et JavaScript purs.** Chaque page PHP livre seulement le squelette (elle ne vérifie même pas la
+  connexion : qui arrive sans connexion est envoyé à la connexion de l'API) ; son `.js` appelle l'API et construit l'écran.
+  Les scripts portent la date du fichier dans l'URL, pour que le cache du navigateur ne serve pas une ancienne version.
+- **Cron muet et traçable :** il tourne chaque minute, n'écrit rien en sortie et note chaque exécution dans la base (sans
+  activité, 7 jours ; avec activité ou erreur, 1 an). Une erreur fatale va dans la base ou, si même la base ne répond pas,
+  dans un fichier temporaire.
+- **Documents à l'épreuve des pertes :** chaque fichier reste dans le dossier et, si on le demande (le système, la montre ou le
+  fichier), entier, dans la base ; le cron recrée ce qui disparaît, copie ce qui manque et nettoie ce qui est en trop (voir
+  [Les documents de la montre](#les-documents-de-la-montre)).
+- **Une base qui se défend :** relationnelle et normalisée, avec des clés étrangères et des règles de validation (`CHECK`,
+  `NOT NULL`, `UNIQUE`) sur les quatre bases : une écriture erronée est refusée par la base elle-même (voir
+  [Le modèle de la base](#le-modèle-de-la-base)).
+- **À l'épreuve des erreurs :** sans jeton valide ou avec la base pas à jour, le système s'arrête et explique la raison, au
+  lieu de tourner à moitié.
+- **Six langues :** tout texte passe par `t()`, avec le portugais comme clé et un fichier par langue (voir
+  [Les langues](#les-langues)).
+
+### Le modèle de la base
+
+La base est relationnelle et normalisée (depuis la migration v16) : chaque chose dans une table, chaque lien entre tables une
+**clé étrangère**, et aucune liste gardée comme texte dans un champ. Supprimer directement dans la base ne laisse rien en
+suspens :
+
+| Le lien | À la suppression du parent | Où |
+|---|---|---|
+| obligatoire (la ligne n'existe pas sans le parent) | **disparaît avec lui** (`ON DELETE CASCADE`) | un groupe emporte les groupes qu'il contient, les montres, les champs, les types de saisie, les formules et ses alertes ; une montre emporte les saisies, les valeurs, les photos, les documents, le plan et ses propres critères ; une saisie emporte la mesure de consommation ; et ainsi de suite |
+| facultatif (la colonne accepte le vide) | **le lien se défait** (`ON DELETE SET NULL`) | la montre d'un événement personnalisé, le groupe et la montre fixe d'un bloc de mode, le bloc d'un jour du plan, le type de saisie qui résout une alerte, la montre d'un accessoire (l'accessoire devient indépendant) |
+
+Par l'écran (**Groupes**, Supprimer), supprimer un groupe passe toujours d'abord ce qui lui appartenait (les groupes qu'il
+contient, les montres, les champs, les types, les formules et les alertes) au groupe du dessus ; la cascade vaut pour qui
+supprime directement dans la base.
+
+Les listes sont devenues des tables : les jours d'un bloc de mode (`modo_bloco_dia`) et d'un événement hebdomadaire
+(`evento_dia`), les types de fichier qu'accepte une catégorie de documents (`documento_categoria_aceita`), les options d'un
+champ de liste (`campo_opcao`) et, pour chaque canal et chaque type d'alerte, s'il part, s'il a son propre message et son texte
+(`canal_aviso`). Le mode en usage est la colonne `ativo` du mode, et la mesure de consommation arrive à la montre par la saisie
+qui l'a fermée. La table `config` ne garde que des valeurs isolées (horaires, seuils, marques).
+
+Trois références restent **par le nom**, exprès : les formules et les critères citent les champs et les formules par
+l'identifiant (c'est le texte que vous écrivez, comme `HORAS("pulso"; 30)`), et le `canal_aviso` cite l'alerte par
+l'identifiant, car une alerte peut avoir plusieurs versions (une par groupe) et le canal vaut pour toutes. Quand la dernière
+version d'une alerte est supprimée, le système supprime avec elle ses lignes dans le `canal_aviso`.
+
+**La base valide ce qu'elle garde** (depuis la migration v17), avec les outils du SQL standard, et pas seulement le système :
+une écriture erronée est refusée d'où qu'elle vienne (l'écran, l'API, quelqu'un qui touche directement la base). L'API répond
+`409`, avec le nom de la règle enfreinte dans le détail.
+
+| Outil | Ce qu'il garantit |
+|---|---|
+| `NOT NULL` | ce qui est obligatoire est rempli (l'origine de chaque saisie et de chaque jour du plan, par exemple) |
+| `CHECK` | chaque valeur dans ce qui est valable. Il y a 54 règles, chacune avec un nom (`ck_<table>_<quoi>`) |
+| listes fermées (`ENUM`, qui sur les autres bases devient `CHECK ... IN`) | les valeurs qu'accepte une colonne : le format du type de saisie, la répétition de l'événement, l'origine de la saisie (`manual`, `rodizio`, `importado`) et du jour du plan (`sorteio`, `manual`)... |
+| `UNIQUE` | ce qui ne peut pas se répéter : l'identifiant d'un champ, d'un type, d'une catégorie ; le fichier d'un document ; **au plus un mode en usage** |
+| `FOREIGN KEY` | les liens (ci-dessus) |
+
+Les règles `CHECK`, par sujet :
+
+| Sujet | La base refuse |
+|---|---|
+| Textes | nom, identifiant, titre, texte d'alerte, formule et clé de la configuration vides ou seulement des espaces |
+| Marques oui/non | toute valeur autre que 0 et 1 (disponible, active, exclusive, mesure la consommation, utilisée, envoie, copie dans la base, seulement pour les désirées...) |
+| Montres | une situation dans la collection hors de la liste (`colecao`, `desejado`, `emprestado`, `vendido`, `arquivado`) ; une montre disponible hors de la collection |
+| Types de saisie | session exclusive hors du format session ; « mesure la consommation » hors du format avec valeur ; « se ferme à » hors du format session |
+| Saisies et mesures | fin avant le début ; consommation mesurée (taux) hors de 0 à 100 % ; heures négatives |
+| Alertes | anticipation hors de 0 à 3650 jours ; heures simulées dans le planning hors de 0 à 48 |
+| Critères | poids hors de 0 à 100 % ; note hors de 0 à 100 ; un ensemble de critères d'un groupe **et** d'une montre en même temps ; une tranche qui n'est ni numérique (avec « de ») ni de catégorie ; « de » négatif ; « à » qui ne dépasse pas le « de » |
+| Modes de rotation | planning intelligent hors de 7 à 730 jours ; jour de la semaine hors de 1 à 7 |
+| Événements personnalisés | ce que la répétition n'utilise pas (le jour du mois hors du mensuel, l'intervalle hors de « tous les N jours », la date hors de « une fois » et de « tous les N jours ») et l'absence de ce qu'elle utilise ; jour du mois hors de 1 à 31 ; intervalle hors de 1 à 3650 jours ; jour de la semaine hors de 1 à 7 |
+| Accessoires | nom vide ; un type hors de la liste (`pulseira`, `caixa`, `estojo`, `ferramenta`, `carregador`, `peca`, `outro`) |
+| Documents | taille zéro ; SHA-256 qui n'a pas 64 caractères ; partie de la copie dans la base en dessous de -1 (la -1 est la vignette) |
+| Photo de la montre | un type qui n'est pas une image |
+| Exécutions du cron | fin avant le début ; durée négative |
+
+**Au plus un mode en usage :** la marque `ativo` du mode vaut 1 pour celui en usage et vide (`NULL`) pour les autres, et la
+colonne a une clé unique. Le SQL standard permet de répéter le vide dans une clé unique, mais pas le 1 : deux modes en usage,
+la base refuse.
+
+Deux règles sont restées de côté à cause de MySQL 8, qui n'accepte pas de `CHECK` sur la colonne `id` (auto-incrément) ni sur
+une colonne de clé étrangère avec `ON DELETE SET NULL` : « un groupe n'est pas son propre parent » (le système le vérifie, et
+vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des liens facultatifs.
+
+### Fichiers
+
+| Fichier | Ce que c'est |
+|---|---|
+| [`api.php`](api.php) | l'API, la porte de toute lecture et écriture (l'authentification, le format, l'ordre des ressources, les filtres, la réponse), avec la documentation complète dans l'en-tête |
+| [`api/`](api/) | les grosses ressources de l'API, un fichier chacune (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `ajuda.php`...), plus ses fonctions (`funcoes.php`) et les écritures (`escrita.php`) : elles tournent dans le `api.php`, et ouvertes directement elles ne font rien (le `.htaccess` et le `nginx-relogios.conf` bloquent le dossier) |
+| [`lib.php`](lib.php) | le noyau : connexion, arbre, moteur de formules, alertes, critères, rotation, planning, messages, agenda |
+| [`banco.php`](banco.php) | la base : la connexion à MySQL, Postgres, SQLite ou Firebird, et la traduction du SQL de l'une à l'autre |
+| [`operacoes.php`](operacoes.php) | les règles de chaque écriture : validations et messages |
+| [`cron.php`](cron.php) | le plan, la session du jour, les passages du matin et du soir, les événements, l'agenda et l'entretien des documents |
+| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `usuarios.php` | les pages (seulement le squelette) |
+| `ajuda.php` | la page d'aide : seulement le squelette ; le `ajuda.js` demande le texte à l'API (`recurso=manual` : les sections du README pour les utilisateurs, déjà en HTML, converties dans le `lib.php`) |
+| [`pagina.php`](pagina.php) | le haut avec le menu et la fin des pages (la connexion appartient à l'API : `recurso=entrar`) |
+| `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | les écrans, construits dans le navigateur à partir de l'API |
+| [`estilo.css`](estilo.css) | l'apparence |
+| [`textos/`](textos/) | les langues : `funcoes.php` (la fonction `t()`, la liste des langues, la langue de la requête, les dates et les nombres de chaque langue) et un fichier par langue (`en.php`, `zh-CN.php`, `hi.php`, `es.php`, `fr.php` : le texte en portugais => la traduction, par partie) ; ouverts directement, ils ne font rien |
+| [`schema.sql`](schema.sql) | la structure de la base et l'ensemble initial (groupes, champs, formules, alertes, modes, critères) |
+| `migracao_v2.sql` … `migracao_v24.sql` | les migrations, appliquées par la page Configuration |
+| [`config.exemplo.php`](config.exemplo.php) | le modèle du `config.php` |
+| [`instalar.php`](instalar.php) | installe le `schema.sql` sur la base du `config.php`, n'importe laquelle (la même chose que `recurso=instalacao`) |
+| [`criar_usuario.php`](criar_usuario.php) | crée un utilisateur ou change le mot de passe, en ligne de commande (la même chose que `recurso=usuarios`, `acao=salvar`) |
+| [`importar.php`](importar.php) | importe les données de l'ancien système (la même chose que `recurso=importacao`) |
+| [`reconstrucao.php`](reconstrucao.php) | le guide pour réécrire le système à partir de zéro (le `recurso=reconstrucao` de l'API) |
+| [`.htaccess`](.htaccess) | la protection des fichiers internes sur Apache (et la connexion du site avec PHP en FastCGI) |
+| [`nginx-relogios.conf`](nginx-relogios.conf) | le bloc nginx qui protège les fichiers internes |
+| [`testes/`](testes/) | le test de parité : le même scénario par l'API sur chaque base, et le comparateur des réponses ; la vérification de la mise en page de tous les écrans, du téléphone à l'ordinateur (`layout.cjs` ; `LINGUA=en` vérifie dans une langue) ; celle des dictionnaires des langues (`textos.php`) ; et l'assemblage du README de chaque langue (`readme.php`) |
+| [`docs/telas/`](docs/telas/) | les captures d'écran de ce README |
+| `README.md`, `README.en.md`, `README.zh-CN.md`, `README.hi.md`, `README.es.md`, `README.fr.md` | ce README : l'original, en portugais, et les autres langues. Ils ne se modifient pas à la main : le [`testes/readme.php`](testes/readme.php) assemble chacun en joignant le manuel traduit (`textos/manual/<langue>.md`, les sections que montre l'Aide) et le reste traduit (`textos/readme/<langue>.md` : le début, Essayez, l'API, l'Installation, Comment c'est à l'intérieur, Comment contribuer et la Licence) |
+| [`PORTE.md`](PORTE.md) | le registre du portage de la version précédente |
+
+---
+
+## Comment contribuer
+
+Les améliorations sont les bienvenues, et le chemin passe toujours par ce dépôt :
+
+1. Pour un gros changement, **ouvrez d'abord une issue** et dites ce que vous comptez faire : cela évite un travail qui
+   n'entrera pas.
+2. Faites un fork sur GitHub, créez une branche et faites le changement. Le fork sert seulement à préparer la proposition (voir
+   la [licence](#licence)).
+3. **Suivez la manière du code :** PHP et JavaScript purs, sans dépendances, commentaires et messages en portugais (les
+   traductions vont dans `textos/`). Ce qui est connaissance sur les montres va dans les définitions (`schema.sql`), pas dans le
+   code.
+4. Vous avez changé la base ? Créez une `migracao_vN.sql` et enregistrez-la dans `$MIGRACOES` dans le `lib.php` : la structure
+   dans le dialecte de MySQL, les données en SQL commun aux quatre bases (voir [Les mises à jour de la base](#les-mises-à-jour-de-la-base)).
+5. Vous avez changé l'API ? **Expliquez chaque nouveau champ** dans le dictionnaire de l'aide : le `"campos"` du
+   `recurso=ajuda`, dans le `api/ajuda.php` (la section de la ressource, avec le chemin du champ comme clé). C'est la source
+   unique : le dictionnaire de l'en-tête du `api.php` est généré à partir de lui, avec `php testes/dicionario.php --gravar`
+   (n'écrivez pas dans l'en-tête à la main).
+6. **Lancez le test de parité** ([`testes/`](testes/)) sur les quatre bases avant d'envoyer (GitHub le lance aussi, à chaque
+   push sur `main` : le test de parité, la documentation et la mise en page, dans
+   [`.github/workflows/testes.yml`](.github/workflows/testes.yml) ; le résultat apparaît dans l'onglet **Actions** et dans le
+   ✓ / ✗ à côté de chaque commit) : `testes/paridade.sh`, avec les bases en marche, doit finir par `Tudo igual.` Il vérifie
+   aussi la documentation : l'en-tête est ce que génère l'aide, et chaque champ des réponses est expliqué. Vous avez touché aux
+   écrans ? Lancez aussi la vérification de la mise en page (`testes/paridade.sh --layout sqlite`) : `0 problemas`.
+7. **Tout nouveau texte passe par `t()`** (le `api.js` et le `textos/funcoes.php` ont la fonction), avec le portugais comme clé
+   et les paramètres entre accolades : `t("Excluir {1}?", {1: nome})`, jamais `"Excluir " + nome + "?"`. Ensuite, traduisez-le
+   dans les cinq fichiers de `textos/` et lancez `php testes/textos.php` (le test de parité le lance aussi) : il doit finir sans
+   rien de manquant. Vous avez changé le README ? Ses traductions portent la marque de la version qu'elles traduisent (la
+   première ligne de `textos/manual/<langue>.md` et de `textos/readme/<langue>.md`), et `php testes/textos.php` signale celle qui
+   est restée en arrière : traduisez le passage changé, mettez la nouvelle marque (`php testes/textos.php --manual` et
+   `php testes/readme.php --original` donnent l'original avec elle) et lancez `php testes/readme.php`, qui assemble à nouveau les
+   `README.<langue>.md`.
+8. Ouvrez la pull request en disant ce qui change pour l'utilisateur et comment vous avez testé.
+
+---
+
+## Licence
+
+Relojoeiro est **à code source disponible**, pas un logiciel libre : le code est visible, mais il a un propriétaire et des
+règles d'utilisation. En résumé (ce qui fait foi est le texte du [`LICENSE`](LICENSE), en portugais) :
+
+| ✅ Vous pouvez | ❌ Vous ne pouvez pas |
+|---|---|
+| l'installer et l'utiliser pour vous, votre famille ou votre entreprise | créer un nouveau projet basé sur ce code, en tout ou en partie, ni réécrit dans un autre langage |
+| modifier le code de votre installation | distribuer le code, original ou modifié, en dehors de ce dépôt |
+| proposer des améliorations par pull request ici | proposer le système comme service à d'autres personnes |
+| faire un fork sur GitHub pour préparer ces propositions | garder un fork comme projet séparé |
+
+Pour tout autre usage, demandez une autorisation par GitHub ([Challado](https://github.com/Challado)).
+
+> 💡 **Contribuez, ne copiez pas.** Être contributeur de Relojoeiro vaut bien mieux qu'un fork : votre amélioration profite à
+> tous, avec votre nom dans l'historique, et vous ne courez aucun risque. Un fork qui devient un projet à part viole la
+> licence, et les droits sur ce code sont défendus : demandes de retrait sur les plateformes, action en justice avec
+> dommages-intérêts et même action pénale (la loi brésilienne 9.609/98 traite la violation du droit d'auteur sur un logiciel
+> comme un délit). Même qui croit avoir raison peut devoir se défendre, et cela coûte du temps et des avocats. **Dans le doute,
+> demandez d'abord :** la réponse est gratuite, la dispute après ne l'est pas.
+
+---
+
+<p align="center"><sub>Fait pour ceux qui ont plus de montres que de poignets. ⌚</sub></p>

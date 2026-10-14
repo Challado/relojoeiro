@@ -2116,6 +2116,7 @@ $saida = [
             "listas.config_php[].descricao" => t('para que ela serve'),
         ],
         "backup" => [
+            "ativo" => t('falso: a cópia de segurança está desligada no config.php (BACKUP_ATIVO = false): o cron não faz cópia, a escrita fazer é recusada e a Configuração não mostra o quadro Cópia de segurança'),
             "pasta_ok" => t('verdadeiro: a pasta das cópias (BACKUP_PASTA do config.php) existe, aceita gravar e fica fora da pasta publicada'),
             "pasta_erro" => t('por que a pasta não serve (sem BACKUP_PASTA, não existe, sem permissão de escrita, ou dentro da pasta publicada); null: serve'),
             "manter" => t('quantas cópias ficam na pasta (BACKUP_MANTER; padrão 7): a cada cópia nova, as mais velhas que passam disso saem'),

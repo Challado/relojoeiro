@@ -1,5 +1,7 @@
 # ⌚ Relojoeiro — Relógios 2
 
+🌐 **Português** · [English](README.en.md) · [中文](README.zh-CN.md) · [हिन्दी](README.hi.md) · [Español](README.es.md) · [Français](README.fr.md)
+
 > **O rodízio inteligente de uma coleção de relógios.** Todo dia ele diz qual relógio vai para o pulso, lembra de dar corda,
 > carregar, pôr no sol e trocar a pilha, e faz a coleção inteira ser usada, e não só o favorito.
 
@@ -959,7 +961,8 @@ o que dá para pedir na hora tem ação na API (`testar_manha`, `testar_noite`, 
 aparece em `recurso=cron`.
 
 **Autenticação:** o token (`X-Api-Token: ...` ou `?token=...`) ou o login do site (HTTP Basic).
-**Formato:** JSON por padrão, ou XML com `formato=xml`.
+**Formato:** JSON por padrão, ou XML com `formato=xml`. **Idioma:** `lingua=en` (ou o cabeçalho `Accept-Language`): as
+mensagens, a ajuda e a reconstrução saem nesse idioma.
 
 ```sh
 # tudo o que está no sistema, sem as fotos
@@ -1006,7 +1009,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `documento` | o arquivo de um documento (`id=<id>`): para mostrar (imagem, vídeo, áudio, PDF, texto) ou para baixar (o resto, ou com `baixar=1`); `mini=1` é a miniatura da foto. Atende pedaços (Range), para o vídeo avançar |
 | `usuarios`, `migracoes` | os logins, cada um com o hash da senha (para migrar com a mesma senha: veja [Os usuários e as senhas](#os-usuários-e-as-senhas)); as migrações que faltam aplicar |
 | `instalacao` | a situação da instalação: o banco, se está vazio, instalado e em dia, quantos usuários e o próximo passo. Responde também com o banco vazio, pelo token |
-| `backup` | a cópia de segurança do banco: se a pasta serve, quantas ficam, a última e as cópias da pasta; `arquivo=` baixa uma |
+| `backup` | a cópia de segurança do banco: se está ligada, se a pasta serve, quantas ficam, a última e as cópias da pasta; `arquivo=` baixa uma |
 | `importacao` | o que a importação do sistema anterior usa: o servidor do banco antigo (sem a senha), se o PHP tem o MySQL e se este banco já tem relógios |
 | `entrar` | o login das páginas: sem login, 401 (o navegador pede o usuário e a senha); com login, volta para a página de `volta=` (302) ou diz quem entrou |
 | `ajuda` | a documentação inteira: cada consulta, cada escrita, cada campo de cada resposta e as funções do motor |
@@ -1096,7 +1099,7 @@ Os campos aninhados funcionam com ponto, como `formulas.energia.valor`, `campos.
 comparados sem diferenciar maiúsculas e acentos.
 
 📖 **A documentação completa** (cada consulta, cada escrita com exemplo e o dicionário de todos os campos das respostas) está no
-cabeçalho do [`api.php`](api.php) e na própria API: `api.php?recurso=ajuda`. O dicionário tem uma fonte só, o da ajuda; o do
+cabeçalho do [`api.php`](api.php) e na própria API: `api.php?recurso=ajuda` (no idioma do pedido). O dicionário tem uma fonte só, o da ajuda; o do
 cabeçalho é gerado dele (`php testes/dicionario.php --gravar`).
 
 ---
@@ -1193,10 +1196,12 @@ têm de dar **403**.
 | `DOCUMENTOS_PASTA` | a pasta dos arquivos dos documentos (o manual, a nota, fotos, vídeos), **fora da pasta publicada**, com permissão de escrita para o usuário do PHP. Sem ela, a página Documentos avisa que falta e não aceita envios. Ex.: `define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
 | `DOCUMENTOS_COPIA_BANCO` | opcional: a cópia de segurança dos documentos dentro do banco, para o sistema inteiro. `true`: todo arquivo vai também para o banco; `false`: nenhum vai; sem ela: cada relógio e cada arquivo decidem. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 | `BACKUP_PASTA`, `BACKUP_MANTER`, `BACKUP_DOCUMENTOS` | opcionais: a cópia de segurança do banco (veja [Cópia de segurança](#cópia-de-segurança)). A pasta, **fora da pasta publicada** (sem ela, não há cópia automática); quantas ficam (padrão 7); e se leva o conteúdo dos documentos guardado no banco (padrão: não). |
+| `BACKUP_ATIVO` | opcional: `false` desliga a cópia de segurança: sem cópia automática, sem **Fazer uma cópia agora** e sem o quadro **Cópia de segurança** na Configuração (nem o aviso de que falta a pasta). Sem ela: ligada |
 | `DOCUMENTOS_LIMITE` | opcional: o maior documento aceito, em bytes. Sem ela, 100 MB (`104857600`); `0` ou `-1`, sem limite do sistema. O `MANUAL_LIMITE`, o nome antigo, ainda vale quando ela não existe. O limite do PHP e o do nginx continuam valendo (veja [O tamanho dos envios](#o-tamanho-dos-envios-os-documentos)). Ex.: `define("DOCUMENTOS_LIMITE", 524288000);` para 500 MB |
 | `ANTIGO_HOST`, `ANTIGO_PORTA`, `ANTIGO_USUARIO`, `ANTIGO_SENHA` | opcionais, só para o `importar.php` com este sistema no Postgres, no SQLite ou no Firebird: onde está o MySQL do sistema anterior |
 | `ALEATORIO_RANDOMORG_URL`, `ALEATORIO_ANU_URL` | opcionais, só para testes: os endereços das fontes dos números aleatórios (`https://www.random.org/integers/` e `https://qrng.anu.edu.au/API/jsonI.php`). Trocados, os sorteios pedem os números a um servidor de teste |
 | `GOOGLE_TOKEN_URL`, `GOOGLE_API_URL` | opcionais, só para testes: os endereços do Google que a agenda usa (o do token, `https://oauth2.googleapis.com/token`, e o da API, `https://www.googleapis.com/calendar/v3`). Trocados, a sincronização da agenda conversa com um servidor de teste em vez do Google |
+| `TEXTOS_ESTRITO` | opcional, para quem está traduzindo: `true` faz a tradução que falta parar com erro (veja [Os idiomas](#os-idiomas)) |
 
 O sistema lê o `config.php` da pasta dele. Uma variável de ambiente do servidor, `RELOGIOS_CONFIG`, aponta outro arquivo no
 lugar: é o que o teste de paridade usa (`testes/paridade.sh`, com o [`testes/config.teste.php`](testes/config.teste.php)), para
@@ -1428,6 +1433,9 @@ nova, as mais velhas saem. A pasta dentro da publicada é recusada (qualquer um 
 - **Para mudar de banco** (do SQLite para o MySQL, por exemplo): instale o banco novo, aplique as migrações, ponha a cópia na
   pasta das cópias e restaure.
 - **Pela API:** `recurso=backup` (a situação e as cópias; `arquivo=` baixa uma), e as escritas `fazer` e `restaurar`.
+- **Para desligar** (outra rotina já copia o banco, ou é uma instalação de teste): `define("BACKUP_ATIVO", false);` no
+  `config.php`. O cron não faz cópia, a escrita `fazer` é recusada e o quadro **Cópia de segurança** some da Configuração,
+  com o aviso de que falta a pasta.
 
 ## Reescrever o sistema do zero
 
@@ -1482,6 +1490,8 @@ o hash existe).
 - **Banco que se defende:** relacional e normalizado, com chaves estrangeiras e regras de validação (`CHECK`, `NOT NULL`,
   `UNIQUE`) nos quatro bancos: uma gravação errada é recusada pelo próprio banco (veja [O modelo do banco](#o-modelo-do-banco)).
 - **Falha segura:** sem token válido ou com o banco desatualizado, o sistema para e explica o motivo, em vez de rodar pela metade.
+- **Seis idiomas:** todo texto passa pelo `t()`, com o português como chave e um arquivo por idioma (veja
+  [Os idiomas](#os-idiomas)).
 
 ### O modelo do banco
 
@@ -1569,8 +1579,9 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | [`reconstrucao.php`](reconstrucao.php) | o roteiro para reescrever o sistema do zero (o `recurso=reconstrucao` da API) |
 | [`.htaccess`](.htaccess) | a proteção dos arquivos internos no Apache (e o login do site com o PHP por FastCGI) |
 | [`nginx-relogios.conf`](nginx-relogios.conf) | o bloco do nginx que protege os arquivos internos |
-| [`testes/`](testes/) | o teste de paridade: o mesmo roteiro pela API em cada banco, e o comparador das respostas; a conferência do layout de todas as telas, do celular ao computador (`layout.cjs`; `LINGUA=en` confere num idioma); e a dos dicionários dos idiomas (`textos.php`) |
+| [`testes/`](testes/) | o teste de paridade: o mesmo roteiro pela API em cada banco, e o comparador das respostas; a conferência do layout de todas as telas, do celular ao computador (`layout.cjs`; `LINGUA=en` confere num idioma); a dos dicionários dos idiomas (`textos.php`); e a montagem do README de cada idioma (`readme.php`) |
 | [`docs/telas/`](docs/telas/) | as capturas de tela deste README |
+| `README.en.md`, `README.zh-CN.md`, `README.hi.md`, `README.es.md`, `README.fr.md` | este README nos outros idiomas. Não se editam à mão: o [`testes/readme.php`](testes/readme.php) monta cada um juntando o manual traduzido (`textos/manual/<idioma>.md`, as seções que a Ajuda mostra) e o resto traduzido (`textos/readme/<idioma>.md`: o começo, Experimente, a API, a Instalação, Como é por dentro, Como contribuir e a Licença) |
 | [`PORTE.md`](PORTE.md) | o registro do porte da versão anterior |
 
 ---
@@ -1582,8 +1593,8 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
 1. Para uma mudança grande, **abra uma issue antes** e conte o que pretende: evita trabalho que não vai entrar.
 2. Faça um fork no GitHub, crie uma branch e faça a mudança. O fork serve só para preparar a proposta (veja a
    [licença](#licença)).
-3. **Siga o jeito do código:** PHP e JavaScript puros, sem dependências, comentários e mensagens em português. O que é
-   conhecimento sobre relógios vai para o cadastro (`schema.sql`), não para o código.
+3. **Siga o jeito do código:** PHP e JavaScript puros, sem dependências, comentários e mensagens em português (as traduções
+   vão em `textos/`). O que é conhecimento sobre relógios vai para o cadastro (`schema.sql`), não para o código.
 4. Mudou o banco? Crie uma `migracao_vN.sql` e registre em `$MIGRACOES` no `lib.php`: a estrutura no dialeto do MySQL, os
    dados em SQL comum aos quatro bancos (veja [Atualizações do banco](#atualizações-do-banco)).
 5. Mudou a API? **Explique cada campo novo** no dicionário da ajuda: o `"campos"` do `recurso=ajuda`, no `api/ajuda.php` (a seção do
@@ -1598,6 +1609,10 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
 7. **Todo texto novo passa pelo `t()`** (o `api.js` e o `textos/funcoes.php` têm a função), com o português como chave e os
    parâmetros entre chaves: `t("Excluir {1}?", {1: nome})`, nunca `"Excluir " + nome + "?"`. Depois, traduza nos cinco
    arquivos de `textos/` e rode `php testes/textos.php` (o teste de paridade também roda): tem de terminar sem falta.
+   Mudou este README? As traduções dele têm a marca da versão que traduzem (a primeira linha de `textos/manual/<idioma>.md`
+   e de `textos/readme/<idioma>.md`), e o `php testes/textos.php` acusa a que ficou para trás: traduza o trecho mudado, ponha
+   a marca nova (`php testes/textos.php --manual` e `php testes/readme.php --original` dão o original com ela) e rode
+   `php testes/readme.php`, que monta de novo os `README.<idioma>.md`.
 8. Abra o pull request contando o que muda para quem usa e como você testou.
 
 ---
@@ -1635,9 +1650,11 @@ smartwatch's real battery drain from your readings. Everything about watches (ty
 edit, not code. PHP 8.1+ with SQLite, MySQL/MariaDB, PostgreSQL or Firebird, no dependencies, and a complete REST API
 (`api.php?recurso=ajuda`).
 
-The interface and the documentation are in Portuguese. The code is **source-available, not open source**: you may install,
-use and modify it for yourself, and contribute back through pull requests, but you may not publish derived projects or
-redistribute it (see [`LICENSE`](LICENSE), in Portuguese). Contributions are welcome.
+The screens, the API messages, the in-app help and this README come in six languages: Portuguese (the original), English,
+Chinese, Hindi, Spanish and French. **The full README in English is [`README.en.md`](README.en.md).** The code is
+**source-available, not open source**: you may install, use and modify it for yourself, and contribute back through pull
+requests, but you may not publish derived projects or redistribute it (see [`LICENSE`](LICENSE), in Portuguese).
+Contributions are welcome.
 
 ---
 

@@ -1,4 +1,4 @@
-<!-- origem: e78ace35ad4be783d31c41ad9b2a09624a96763c -->
+<!-- origem: 2555db405552e06af2ee272b37999de5bf60aa96 -->
 
 ## 核心理念：系统对手表一无所知 {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -741,6 +741,7 @@ POST https://你的服务器/relojoeiro/api.php
 - **恢复**会把整个数据库还原到那份备份：之前，系统会先保存一份当前内容的备份（可以回退）；然后一次性用备份中的记录替换所有记录。如果中途出错，什么都不会改变。
 - **更换数据库**（例如从 SQLite 换到 MySQL）：安装新数据库，应用迁移，把备份放进备份文件夹，然后恢复。
 - **通过 API：** `recurso=backup`（状态和备份列表；`arquivo=` 下载其中一份），以及写入操作 `fazer` 和 `restaurar`。
+- **关闭备份**（已有其他程序备份数据库，或者是测试安装）：在 `config.php` 中写 `define("BACKUP_ATIVO", false);`。cron 不再备份，写入操作 `fazer` 被拒绝，设置中的**备份**框也会消失，连同缺少文件夹的警告。
 
 ## 从零重写系统 {#reescrever-o-sistema-do-zero}
 
