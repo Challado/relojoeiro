@@ -3,6 +3,8 @@
 // chegar ao mesmo sistema. Sai pela API (recurso=ajuda&parte=reconstrucao, ou recurso=reconstrucao). O texto descreve o
 // que o sistema faz e as regras de cada parte; o modelo de dados e as listas (funções das fórmulas, tipos, âncoras,
 // repetições, canais, migrações) são lidos na hora do próprio banco e do código, então nunca ficam atrás da versão em uso.
+// As telas (RECONSTRUCAO_TELAS) são a especificação visual: o visual com os valores exatos, o menu e cada página com as tabelas, os
+// campos, os botões e as mensagens; quem muda uma tela muda também a especificação dela aqui.
 // A API (cada consulta, cada escrita e cada campo das respostas) está no recurso=ajuda; o cadastro inicial (campos, tipos,
 // fórmulas, avisos, critérios e modos que vêm prontos) está no schema.sql e no recurso=cadastros e recurso=criterios.
 
@@ -55,6 +57,667 @@ const RECONSTRUCAO_CONFIG_PHP = [
     "GOOGLE_TOKEN_URL, GOOGLE_API_URL" => "só para testes: os endereços do Google que a agenda usa (o do token e o da API do Google Agenda); trocados, a sincronização conversa com um servidor de teste",
 ];
 
+// As telas: o visual, o menu e cada página, como a reescrita tem de reproduzir (os textos entre aspas são os da tela)
+const RECONSTRUCAO_TELAS = [
+    "como_ler" => "A interface que a reescrita tem de reproduzir, tela por tela: o visual (cores, letras, controles e componentes, com os valores "
+        . "exatos), o menu, e cada página com o endereço, o que ela lê e grava na API, e as partes em ordem, com cada tabela (as "
+        . "colunas), cada formulário (os campos com o rótulo, o tipo, o padrão e os limites), cada botão (o texto e o que ele manda para "
+        . "a API) e cada mensagem. Os textos entre aspas são os da tela, palavra por palavra. As capturas em docs/telas/ mostram o "
+        . "resultado; o estilo.css é a referência de cada medida.",
+    "visual" => [
+        ["id" => "cores", "titulo" => "Cores", "itens" => [
+            "Fundo da página: aço #e4e8ec. Bordas: aço escuro #c3cad2. Texto: tinta #1c2530 (também o fundo da barra do menu). "
+                . "Rótulos e notas: cinza #6b7684. Botões, links, aba ativa, barras de carga: safira #1f4f8f. O que fazer, recados e "
+                . "carga baixa: âmbar #a8661a. Fundo de cartões, quadros e tabelas: papel #fbfcfd.",
+            "Etiquetas de estado (pílulas): em uso: fundo #e3f3e6, texto #1e6b2e, borda #a9d8b3. Em repouso e erro: fundo #fbe8e6, "
+                . "texto #9b2c22, borda #efb5ae. Indisponível e sem atividade: fundo #eef1f4, texto cinza, borda aço escuro. Atividade, "
+                . "\"você\" e \"relógio de hoje\": fundo #e6eef8, texto #1f4f8f, borda #b8cbe6. Outras sessões e carga: fundo #fff4e0, texto "
+                . "#8a5a00, borda #efd29a.",
+            "Origem de um valor do cadastro: \"informado\" em azul (#e6eef8 / #1f4f8f / #b8cbe6), \"padrão\" em bege (#fbf1e3 / #8a5a00 "
+                . "/ #ecd2a8), \"vazio\" sem etiqueta e com a linha em cinza.",
+            "Atrasado (um prazo vencido, \"faltam\" e \"passa\" das somas): texto #9b2c22 em negrito. Caixa de erros de gravação: fundo "
+                . "#fdf0ee, borda #e3b4ae, texto #7a2419, cantos 10px. Linha de execução com erro: fundo #fdf2f1.",
+        ]],
+        ["id" => "letras", "titulo" => "Letras e números", "itens" => [
+            "Fonte: \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif, 16px, entrelinha 1,5.",
+            "Título da página (h1): grande, de 2rem a 3,4rem conforme a largura (clamp(2rem, 6vw, 3.4rem)), negrito 700, "
+                . "espaçamento -0,02em, entrelinha 1,05. Título de seção (h2): 1,1rem. Notas e explicações: 0,92rem, cinza. Título dos "
+                . "quadros do painel do relógio: 0,78rem, maiúsculas, negrito, espaçado 0,06em, cinza, com uma linha embaixo. Números em "
+                . "tabelas e valores com algarismos de largura igual (tabular).",
+            "Formatos: data DD/MM/AAAA (curta: DD/MM); hora HH:MM; números com vírgula e sem zeros sobrando (1 casa por padrão); "
+                . "dinheiro \"R\$ 1.234,56\"; porcentagem \"12,5%\"; duração pelas duas maiores partes: \"1a 5m\", \"5d 3h\", \"12h 22min\", "
+                . "\"40min\", \"menos de 1min\"; dia da semana curto: seg, ter, qua, qui, sex, sáb, dom.",
+        ]],
+        ["id" => "controles", "titulo" => "Campos, listas e botões", "itens" => [
+            "Uma altura só para campo, lista e botão: 2,4rem, para ficarem alinhados lado a lado. Cantos 8px; campo e lista com "
+                . "borda 1px aço escuro e fundo branco; textarea com a mesma borda. Foco visível: contorno 2px safira afastado 2px. Campo "
+                . "numérico curto: 5,5rem. Números digitados aceitam vírgula ou ponto (teclado decimal no celular). No celular, os "
+                . "campos têm letra de 16px (o iPhone não aproxima a tela).",
+            "Botão principal: fundo safira, texto branco, borda safira, preenchimento 0,3rem 1rem. Botão \"leve\": fundo "
+                . "transparente, texto e borda safira (as ações secundárias). Botão \"discreto\": sem borda, 0,85rem, preenchimento lateral "
+                . "0,45rem (↑, ↓ e Excluir das linhas). O Excluir das ações de linha é vermelho: texto #9b2c22, borda #efb5ae, fundo "
+                . "#fbe8e6 ao passar o mouse.",
+            "Caixa de marcar (checkbox) sempre à esquerda do texto, na mesma linha. Rótulo de campo: acima do campo nas grades de "
+                . "formulário; à esquerda na Configuração (veja os componentes). Botões desativados durante o envio de um formulário.",
+        ]],
+        ["id" => "componentes", "titulo" => "Componentes", "itens" => [
+            "Barra do menu: fundo tinta, links #b9c3ce sem sublinhado; o da página atual em branco com uma linha branca de 2px "
+                . "embaixo.",
+            "Cartão (as seções das páginas de cadastro): fundo papel, borda 1px aço escuro, cantos 12px, preenchimento 1rem, título "
+                . "h2 em cima.",
+            "Quadro (o painel do relógio): igual ao cartão (cantos 12px, preenchimento 0,85rem 1rem), com o título em maiúsculas "
+                . "pequenas, o corpo, e um rodapé opcional (linha em cima, botões à direita, alinhados no pé: os quadros da mesma linha "
+                . "da grade têm a mesma altura). Quadro \"largo\" ocupa a linha inteira da grade.",
+            "Pares (rótulo e valor): duas colunas, o rótulo em cinza 0,85rem à esquerda (até 55% da largura), o valor à direita; "
+                . "uma linha fina aço entre os pares (a última sem); um texto menor (0,78rem, cinza) embaixo do valor é a explicação "
+                . "dele; rótulo vazio continua a linha de cima.",
+            "Tabela: fundo papel, cantos 10px, cabeçalho em cinza 0,9rem negrito, células com preenchimento 0,55rem 0,75rem e uma "
+                . "linha aço embaixo. Linha clicável: o fundo muda para #f1f4f8 ao passar e fica #e3eaf5 quando selecionada; fim de "
+                . "semana em #f4f6f8; o relógio de hoje com uma faixa safira de 3px na borda esquerda, e um com aviso pendente com a "
+                . "faixa âmbar. Tabela compacta (dos cadastros): 0,88rem, sem fundo próprio.",
+            "Etiqueta de estado: pílula com cantos arredondados por inteiro, 0,8rem negrito, preenchimento 0,12rem 0,55rem, cores "
+                . "em \"cores\".",
+            "Barra de carga: trilho aço com 7px de altura (44px na tabela, 56 a 70px nos quadros), preenchido em safira até a "
+                . "porcentagem (âmbar com carga até 20%), seguido do número em negrito (\"68%\"; estimado: \"~68%\") e, menor, de onde a "
+                . "carga vem.",
+            "Janela de data (o \"só hoje\" / \"até sexta, 02/10\" do relógio do dia): caixa branca, borda 2px tinta, cantos 3px, "
+                . "negrito, sombra interna fina, como a janela de data de um mostrador.",
+            "Recado (o resultado de uma gravação): um parágrafo âmbar em negrito no topo da área (ou do painel do relógio). Erros "
+                . "de gravação: a caixa vermelha clara com \"Não foi salvo:\" e um parágrafo por erro, no topo da página.",
+            "Abas (Cadastros e Documentos): links lado a lado com borda aço e cantos 0,4rem, preenchimento 0,35rem 0,8rem, texto "
+                . "safira; a ativa com fundo safira e texto branco.",
+            "Grade de formulário (form-grade): colunas de no mínimo 14rem lado a lado, o rótulo acima de cada campo; textareas, "
+                . "grupos de caixas e botões na linha inteira. Linha de inclusão: campos com o rótulo em cima, lado a lado, separados do "
+                . "resto por uma linha tracejada acima.",
+            "Barra de salvar (Configuração): presa no pé da tela enquanto a página rola (sticky), fundo papel quase opaco, borda, "
+                . "cantos 12px, sombra para cima; à esquerda \"As mudanças desta página valem depois de salvar.\", à direita o botão.",
+            "Sem foto: quadrado tracejado (2px aço escuro, cantos 14px) com \"Sem foto\" em cinza no meio. Foto: quadrada "
+                . "(recortada), cantos 14px, borda aço escuro. Miniatura na tabela: 28px (36px no celular), cantos 5px.",
+            "Ações de uma linha (Editar, ↑, ↓, Excluir): numa linha só, à direita da linha da tabela.",
+            "Resumo em números (Execuções e Histórico): uma grade de caixinhas (4 colunas; 2 no celular), cada uma com o número "
+                . "grande (1,4rem) e o que ele é embaixo em cinza; a de erros com fundo vermelho claro.",
+        ]],
+        ["id" => "layout", "titulo" => "Larguras e tamanhos de tela", "itens" => [
+            "Conteúdo centrado com margens de 1,25rem: largura máxima 56rem nas páginas comuns (Plano, Usuários), 72rem na Ficha, "
+                . "76rem na Configuração, Cadastros, Critérios, Grupos, Execuções e Histórico, 60rem na Ajuda. A página Hoje usa a "
+                . "largura toda.",
+            "Página Hoje: duas colunas, o meio e o painel do relógio com 22rem à direita, preso ao rolar (sticky) e com rolagem "
+                . "própria; sem relógio aberto, o meio ocupa tudo. Com a Configuração \"Numa janela flutuante, grande\": o relógio abre no "
+                . "meio da tela, até 78rem ou 94% da largura, de 3% do alto a 3% de baixo, cantos 16px, sombra forte, com o fundo "
+                . "escurecido (rgba(16, 22, 29, .55)) e os quadros lado a lado; fecha no ×, no Esc ou num clique no fundo.",
+            "Até 900px (celular e tablet de pé): o menu recolhido; as tabelas viram fichas (cada célula com o título da coluna ao "
+                . "lado) ou cartões; o painel do relógio cobre a tela inteira, com o botão \"× Fechar\" preso no alto, e o voltar do "
+                . "aparelho fecha o painel; as grades viram uma coluna. De 901 a 1199px (tablet deitado): o painel \"ao lado\" desliza por "
+                . "cima, pela direita, com até 30rem, cantos 16px à esquerda e o fundo escurecido. De 1200px em diante: o painel ao lado.",
+            "Nenhuma página rola de lado, em nenhum tamanho. A mesma informação em todos os tamanhos: nada é escondido por falta de "
+                . "espaço (a tabela dos relógios vira cartões com todos os campos quando as 11 colunas não cabem).",
+        ]],
+        ["id" => "comportamento", "titulo" => "Comportamento comum", "itens" => [
+            "Cada página entrega só o esqueleto; o JavaScript dela lê a API e monta a tela. Gravar é um formulário que manda um "
+                . "POST para a API (recurso e acao nos campos); depois a página se remonta com os dados novos, sem recarregar, e mostra a "
+                . "mensagem da API no topo (ou no painel do relógio, se a gravação era dele).",
+            "Antes de toda exclusão e de toda ação que refaz o plano, uma confirmação do navegador com o texto do que vai acontecer "
+                . "(os textos estão em cada página). Durante o envio os botões do formulário ficam desativados; se a conexão falhar: "
+                . "\"Não consegui gravar: <motivo>. Confira a conexão e tente de novo.\"",
+            "Sem login: a página manda para api.php?recurso=entrar&volta=<a página>, o navegador pede o usuário e a senha e volta. "
+                . "Banco desatualizado (503 com pendentes): a página vai para a Configuração, que mostra só o aviso e o \"Aplicar agora\". "
+                . "Erro ao ler: \"Não consegui ler <o quê>: <motivo>\" em âmbar, no lugar da página.",
+            "Fotos reduzidas no navegador antes de enviar: no máximo 1200px no lado maior, JPEG 85%, com a prévia na tela; imagem "
+                . "que não abre: alerta \"Não consegui abrir essa imagem. Use JPEG ou PNG.\".",
+            "O título da aba do navegador é o título da página (\"Relógio de hoje\", \"Plano\", \"Configuração\", \"Critérios de escolha\", "
+                . "\"Grupos de relógios\", \"Execuções do cron\", \"Usuários\", \"Cadastros\", \"Ajuda\", \"Ficha do relógio\", \"Documentos\"; no "
+                . "histórico, \"Histórico — <relógio>\").",
+        ]],
+    ],
+    "menu" => [
+        "como" => "Na barra escura do topo, nessa ordem, em todas as páginas; o da página atual em branco e sublinhado. A Ficha, o Histórico "
+            . "e os Documentos não estão no menu: abrem do painel do relógio (o histórico e os documentos numa aba nova). No celular (até "
+            . "900px): a barra, presa no alto ao rolar, mostra o nome da página atual à esquerda e o botão \"☰ Menu\" à direita; aberto, "
+            . "ele vira \"✕ Menu\" e os itens aparecem em duas colunas, cada um num botão escuro (#27323f), o atual em safira.",
+        "itens" => [
+            ["pagina" => "index.php", "rotulo" => "Hoje"],
+            ["pagina" => "plano.php", "rotulo" => "Plano"],
+            ["pagina" => "configuracao.php", "rotulo" => "Configuração"],
+            ["pagina" => "criterios.php", "rotulo" => "Critérios"],
+            ["pagina" => "grupos.php", "rotulo" => "Grupos"],
+            ["pagina" => "execucoes.php", "rotulo" => "Execuções do cron"],
+            ["pagina" => "usuarios.php", "rotulo" => "Usuários"],
+            ["pagina" => "cadastros.php", "rotulo" => "Cadastros"],
+            ["pagina" => "ajuda.php", "rotulo" => "Ajuda"],
+        ],
+    ],
+    "paginas" => [
+        [
+            "id" => "hoje",
+            "pagina" => "index.php",
+            "titulo" => "Relógio de hoje",
+            "endereco" => "index.php; index.php?r=<id> abre o relógio no painel; index.php?novo=1 abre o cadastro de um novo",
+            "le" => [
+                "recurso=hoje",
+                "recurso=ficha (o painel)",
+            ],
+            "grava" => [
+                "lancamento: iniciar, encerrar, lancar, periodo, alterar, excluir",
+                "rodizio: trocar_dia, modo, resortear, resortear_hoje, proxima_semana, usando",
+                "relogio: salvar, foto, remover_foto, excluir",
+            ],
+            "partes" => [
+                ["titulo" => "O relógio do dia (um cartão grande, no alto do meio)", "itens" => [
+                    "À esquerda: \"<Dia da semana>, DD/MM/AAAA · <nome do modo>\" em cinza; o nome do relógio do dia em h1 (link que "
+                        . "abre o painel); a janela de data com o \"até\" (\"só hoje\", \"até sexta, 02/10\") e o tipo dele; o lembrete do dia "
+                        . "em âmbar (\"Pôr no winder: <relógio> (8 h)\"); \"Por que ele: <motivo>\" (o motivo em cinza).",
+                    "No meio, em pares: Agora (a etiqueta \"Em uso desde 07:00\" ou \"Em repouso desde ...\" e o botão leve \"Pôs no "
+                        . "pulso\" / \"Tirou do pulso\", que manda lancamento iniciar/encerrar do tipo pulso); Carga (a barra, o % e de onde "
+                        . "vem, ou só o texto); Última leitura (\"89% em 06/10 21:30\", se houver); Situação (as linhas da API); Próxima "
+                        . "manutenção (\"<nome> · <data ou hoje> (<falta>)\", a falta em vermelho se atrasada, ou \"nenhuma prevista\"); "
+                        . "Compra (\"R\$ valor · loja · data\"); Garantia (\"até DD/MM/AAAA\", \"(vencida)\" se passou); Código.",
+                    "À direita: a foto do relógio (ou o quadrado \"Sem foto\"), que abre o painel.",
+                    "Sem relógio para hoje: h1 \"Nenhum relógio para hoje\" e \"Nenhum relógio disponível no grupo deste dia. Mude o "
+                        . "grupo no modo de rodízio ou marque um relógio como disponível.\"",
+                ]],
+                ["titulo" => "Hoje é dia de (só quando há aviso)", "itens" => [
+                    "Tabela com as colunas \"O que fazer\" (o nome do aviso; atrasado em vermelho), \"Relógio\" (link que abre o "
+                        . "painel), \"Por quê\" (o texto do aviso) e, à direita, o botão do lançamento que resolve: sessão: \"Pôs <nome em "
+                        . "minúsculas>\" (lancamento iniciar); com valor: um campo curto com a unidade de dica (\"%\") e \"Informar <nome>\" "
+                        . "(lancamento lancar com valor); instantâneo: o nome do tipo (lancamento lancar).",
+                ]],
+                ["titulo" => "Próximos dias", "itens" => [
+                    "Título \"Próximos dias\" com o link \"ver o plano inteiro →\" (plano.php). Tabela: Dia (\"DD/MM\" e o dia da semana "
+                        . "curto, menor), Relógio (o nome; \"à mão\" pequeno quando escolhido à mão; o motivo embaixo, menor), Lembrete, e "
+                        . "o \"trocar por…\". Fim de semana com fundo #f4f6f8. Sem plano: \"Neste modo o sorteio é feito dia a dia.\"",
+                    "\"trocar por…\": uma lista com os relógios disponíveis (menos o do dia) e, num dia de amanhã em diante escolhido "
+                        . "à mão, \"↺ voltar a sortear\" (valor 0); escolhido um, aparece o botão leve \"Trocar\" (rodizio trocar_dia com "
+                        . "data e relogio_id).",
+                ]],
+                ["titulo" => "Modo de rodízio (um quadro que abre e fecha)", "itens" => [
+                    "Fechado: \"Modo de rodízio\" (cinza) e o nome do modo em negrito, \"· <forma de escolha>\" (na escala: \"pela maior "
+                        . "nota\") e, à direita, o link \"editar\".",
+                    "Aberto, em duas colunas: à esquerda a lista \"Modo de rodízio\" (os modos), a explicação do modo escolhido "
+                        . "(escala: \"Monta o plano do período inteiro de uma vez...\"; sorteio: \"Cada bloco de dias sorteia entre os "
+                        . "relógios do grupo escolhido...\") e os campos do modo escolhido: na escala, \"Período\" (Uma semana, Um mês, Dois "
+                        . "meses, Meio ano, Um ano, Dois anos = 7, 30, 60, 180, 365, 730); para cada bloco, uma lista com o nome do "
+                        . "bloco (grupos \"Sortear entre\": Todos e cada grupo com recuo pela profundidade; \"Relógio fixo\": cada relógio "
+                        . "disponível) e, fora da escala, a caixa \"sortear um por dia\".",
+                    "À direita: \"Como escolher o relógio\" (Inteligente; Inteligente com sorteio; Totalmente aleatório; Fila (FIFO)) "
+                        . "com a explicação de cada uma (na escala, \"Como escolher o relógio: pela maior nota\"); \"Garantia de rodízio: "
+                        . "dias sem uso, no máximo\" (número de 0 a 365; só nas formas inteligente, com sorteio e na escala) com \"Quem "
+                        . "passa do limite tem prioridade, o mais tempo parado primeiro. 0 desliga. O mesmo valor vale para todos os "
+                        . "modos que usam a nota.\" e \"A nota vem dos critérios, que você cadastra.\"",
+                    "Botão \"Aplicar modo\" (rodizio modo), com a confirmação \"Trocar o modo apaga o plano atual. Continuar?\" (com o "
+                        . "dia já começado: \"Trocar o modo refaz o plano a partir de amanhã; hoje continua o <relógio>. Continuar?\") e a "
+                        . "nota sobre o histórico que continua e o link para Cadastros (os modos).",
+                    "\"Sortear de novo\": uma lista com as ações possíveis agora e o botão leve \"Sortear\": \"a partir de amanhã\" "
+                        . "(resortear) e \"inclusive hoje\" (resortear_hoje) com o dia já começado no pulso, ou \"a partir de hoje\" "
+                        . "(resortear); fora da escala, \"a próxima semana (DD/MM a DD/MM)\" (proxima_semana; só no domingo: nos outros "
+                        . "dias a opção vem desativada com \"— disponível no domingo\"). Embaixo, a explicação da opção escolhida; cada uma "
+                        . "tem a sua confirmação.",
+                ]],
+                ["titulo" => "Relógios (a tabela da coleção)", "itens" => [
+                    "Título \"Relógios\" com \"<mostrados> de <total> relógios · <n> em uso\" em cinza e, à direita, os botões \"Limpar "
+                        . "filtros\" (leve) e \"Novo relógio\" (abre o cadastro no painel).",
+                    "11 colunas, todas ordenáveis clicando no título (▲ ou ▼ ao lado; clicar de novo inverte; vazios sempre por "
+                        . "último): Código, Relógio (miniatura e nome em negrito), Tipo, Estado (Em uso / Em repouso / Indisponível, em "
+                        . "etiqueta), Carga (barra e %, ou o texto de por que não tem), Última vez usado, Próxima manutenção (data ou "
+                        . "\"hoje\"), Em (quanto falta; atrasado em vermelho negrito; atualizado a cada minuto), O que fazer (em âmbar "
+                        . "negrito), Comprado em, Valor (à direita, \"R\$ 1.234,56\").",
+                    "Uma linha de filtros embaixo dos títulos: Código (\"nº\"), Relógio (\"buscar\" no nome), Tipo (os tipos que "
+                        . "existem), Estado (Todos, Em uso, Em repouso, Indisponível), Carga (Todas, ≤ 20%, ≤ 50%), Última vez usado "
+                        . "(Todos, 7 dias, +7 dias, nunca), Próxima manutenção (Todas, até hoje, 7 dias, 30 dias), O que fazer (os avisos "
+                        . "que existem), Comprado em (Todas, 30 dias, 90 dias, este ano, sem data), Valor (Todos, ≤ 500, 500–1.500, > "
+                        . "1.500, sem valor). A ordem e os filtros ficam guardados na sessão do navegador.",
+                    "Ordem inicial: os disponíveis primeiro (o de hoje, depois os com aviso), os indisponíveis no fim e em cinza. A "
+                        . "linha do relógio de hoje tem a faixa safira à esquerda; a de um com aviso, a âmbar. Clicar numa linha (ou "
+                        . "Enter nela) abre o relógio no painel. Rodapé: \"Total dos relógios mostrados\" e a soma dos valores, à direita. "
+                        . "Sem relógios: \"Nenhum relógio cadastrado. Use o botão Novo relógio.\"; com filtros que não deixam nenhum: "
+                        . "\"Nenhum relógio com esses filtros.\"",
+                    "Quando as 11 colunas não cabem na largura que a tabela tem: cada relógio vira um cartão, com a foto e o nome "
+                        . "na linha de cima e embaixo os mesmos campos com o nome da coluna em cima, em colunas iguais (5; 2 no celular); "
+                        . "os títulos viram botões \"Ordenar por\" e os filtros ficam todos, com o nome em cima.",
+                ]],
+                ["titulo" => "O painel do relógio (à direita, flutuante ou em tela cheia)", "itens" => [
+                    "Um botão redondo \"×\" no canto (no celular \"× Fechar\") fecha o painel; Esc também. O endereço vira "
+                        . "index.php?r=<id>.",
+                    "Cabeça: a foto (ou \"Sem foto\") com os botões \"Escolher foto\" / \"Trocar foto\" (abre o seletor de arquivo; "
+                        . "escolhida, aparece a prévia e o botão \"Salvar foto\": relogio foto) e, com foto, \"Remover foto\" (discreto; "
+                        . "confirma \"Remover a foto?\"); ao lado \"<tipo> · <caminho no grupo>\" em cinza, o nome em h1, a observação, e as "
+                        . "etiquetas: em uso/em repouso, \"indisponível\", \"relógio de hoje\".",
+                    "Os quadros, numa grade (lado a lado onde cabem): Agora (pares: Estado; Carga com a barra e \"~68%\" e de onde "
+                        . "vem; Situação, uma linha por item; Última leitura); Previsão (só nos que têm leitura: as frases da API, ou "
+                        . "\"Informe a carga atual para o sistema começar a prever.\"); Gasto da bateria (No pulso, Fora do pulso: o que "
+                        . "vale \"% por dia\" e embaixo se é medido ou do cadastro; Janela anterior; Medições; no rodapé \"Medições mais "
+                        . "velhas que a janela saem da conta...\"); Autonomia (Cheio, pelo cadastro; Cheio, pela conta; Acaba, seguindo o "
+                        . "plano (data e hora, e \"em <duração>\"); No pulso sem tirar; Guardado; sem dado, o motivo em cinza); Rodízio "
+                        . "(Nota com o link \"ver a conta\" (Critérios, numa aba nova); Critérios de; Próxima vez; no rodapé o botão leve "
+                        . "\"Usando hoje\" (rodizio usando, com confirmação), se ele está disponível e não é o de hoje); Compra (Valor "
+                        . "pago, Loja, Comprado em com \"há N dias\", Garantia \"até\" ou \"vencida em\"; sem nada: \"Sem dados da compra. "
+                        . "Preencha em \"Editar cadastro\".\"); Documentos (cada categoria com \"N arquivos\", link para a página Documentos "
+                        . "numa aba nova; o botão \"Enviar documentos\" ou \"Abrir os documentos\"); Próximas manutenções (data em negrito e "
+                        . "o nome; ou \"Nada previsto.\").",
+                    "Marcar (um quadro na largura toda): \"O que você quer marcar?\" com uma lista em grupos: \"Agora, ou numa hora "
+                        . "que você disser\" (cada sessão como verbo: \"Pôr no sol\" / \"Tirar do sol\" conforme está aberta; cada tipo com "
+                        . "valor pelo nome; cada instantâneo pelo nome), \"Algo que já passou\" (\"Um período que já passou (<sessões>)\") e "
+                        . "\"Corrigir\" (\"Corrigir ou excluir uma marcação (últimos 14 dias)\"). Escolhido um, aparecem só os campos dele: "
+                        . "sessão: o estado aberto e \"Pôs às\" / \"Tirou às\" (data e hora, \"Vazio: agora.\") e o botão com o verbo; com "
+                        . "valor: \"Agora em uso/em repouso\" e a estimativa, \"Leitura\" (com a unidade), \"Lida às\", a caixa \"Atualizar o "
+                        . "gasto com esta medição\" (marcada; só nos tipos que medem o gasto) e \"Informar <nome>\"; instantâneo: \"Quando\" e "
+                        . "\"Marcar <nome>\"; período: \"Onde\" (se houver mais de uma sessão), \"De\" (uma hora atrás) e \"Até\" (agora) e "
+                        . "\"Registrar o período\"; corrigir: \"Qual marcação\" (\"DD/MM HH:MM · nome até HH:MM\", \"(aberta)\", \": 68 %\", "
+                        . "\"(rodízio)\") e os campos dela com \"Salvar\" e \"Excluir\" (confirma). Nada pode ser no futuro.",
+                    "Editar cadastro (um quadro que abre e fecha; no relógio novo, já aberto com o título \"Novo relógio\"): Nome "
+                        . "(obrigatório); Grupo (\"(na raiz)\" e cada grupo pelo caminho, com a nota \"os campos, os lançamentos e os "
+                        . "critérios de um grupo valem para tudo abaixo dele\"); depois os campos do cadastro, só os que valem para o "
+                        . "grupo escolhido (mudar o grupo mostra e esconde na hora): sim/não como caixa; lista como menu (com \"—\"); data "
+                        . "como campo de data; texto como campo; número como campo decimal, com o padrão de dica (\"vazio: 5\"); a Compra "
+                        . "num grupo com título (Data da compra, Valor pago, Onde comprou, Garantia até); a Observação; no novo, a Foto; "
+                        . "\"Disponível para o rodízio\" (marcada no novo); \"Guardar no banco a cópia de todos os documentos dele\" (só "
+                        . "quando o config.php não decide); botão \"Cadastrar relógio\" ou \"Salvar alterações\" (relogio salvar). Embaixo, "
+                        . "\"Excluir este relógio\" (discreto; confirma \"Excluir <nome> com todo o histórico e a foto?\").",
+                    "Carga ao longo do tempo (largo; nos que têm leitura): um gráfico de linha das leituras (eixo de 0 a 100%, "
+                        . "guias em 0, 50 e 100%, pontos verdes em uso e vermelhos em repouso, a linha em safira), com a legenda e a "
+                        . "conta da previsão; com menos de duas leituras, \"O gráfico aparece a partir de duas leituras de carga.\" "
+                        . "Embaixo, \"Medições do gasto\": tabela Quando, Leituras (\"89 → 75\"), Horas (\"14 h no pulso, 2 h fora\"), Gasto "
+                        . "medido (\"% por dia de uso\" ou \"fora do pulso\"), Na conta (sim; não (fora da janela); não (só histórico)), as "
+                        . "10 mais recentes.",
+                    "Dados do relógio (largo): duas tabelas lado a lado: Cadastro (Campo, Valor, Origem com a etiqueta "
+                        . "informado/padrão/vazio) e Calculado agora (Fórmula com o identificador em código, Valor com a unidade "
+                        . "(segundos por extenso), Versão).",
+                    "Histórico (largo): \"<n> registros desde DD/MM/AAAA HH:MM. Agora <estado> há <duração>.\" e a tabela das 5 "
+                        . "linhas mais recentes (Quando com \"até ...\" embaixo, Duração, Estado em etiqueta ou o texto da marcação) e o "
+                        . "botão leve \"Abrir o histórico completo\" (historico.php numa aba nova).",
+                    "Depois de gravar no painel, o recado aparece no topo do painel e a página e o painel se remontam sem perder os "
+                        . "quadros abertos nem a rolagem; excluir o relógio recarrega a página.",
+                ]],
+            ],
+        ],
+        [
+            "id" => "ficha",
+            "pagina" => "ficha.php",
+            "titulo" => "Ficha do relógio",
+            "endereco" => "ficha.php?id=<id> (sem id: o primeiro)",
+            "le" => [
+                "recurso=hoje (a lista)",
+                "recurso=ficha",
+            ],
+            "grava" => [
+                "as mesmas do painel do relógio",
+            ],
+            "partes" => [
+                ["titulo" => "Escolha e painel", "itens" => [
+                    "No alto, \"Relógio\" e uma lista com todos (os disponíveis primeiro, \"(indisponível)\" nos outros); trocar abre o "
+                        . "escolhido. Embaixo, o mesmo painel do relógio da página Hoje, numa página própria de até 72rem, com os "
+                        . "quadros lado a lado e sem o ×. Sem relógios: \"Nenhum relógio cadastrado. Cadastre o primeiro.\" (link para "
+                        . "index.php?novo=1).",
+                ]],
+            ],
+        ],
+        [
+            "id" => "plano",
+            "pagina" => "plano.php",
+            "titulo" => "Plano",
+            "endereco" => "plano.php",
+            "le" => [
+                "recurso=plano (com dias=30, 90, 365, 730 ou todos)",
+            ],
+            "grava" => [
+                "rodizio: trocar_dia",
+            ],
+            "partes" => [
+                ["titulo" => "Cabeça e filtros", "itens" => [
+                    "h1 \"Plano\" e a nota \"Modo: <modo> · a escala vai até DD/MM/AAAA · o plano gravado vai até DD/MM/AAAA. Troque o "
+                        . "relógio de qualquer dia em \"trocar por…\": o dia fica escolhido à mão (e a escala é refeita a partir dele).\" "
+                        . "Filtros lado a lado: Período (Próximos 30 dias, Próximos 90 dias (o padrão), Próximo ano, Próximos 2 anos, "
+                        . "Tudo; trocar relê a API) e Relógio (Todos e cada um; filtra o dia a dia na tela).",
+                ]],
+                ["titulo" => "Resumo do período (<n> dias)", "itens" => [
+                    "Tabela Relógio, Dias, %, Próximo dia (\"DD/MM/AAAA seg\"), À mão; do que tem mais dias ao que tem menos. "
+                        . "Embaixo, \"Sem nenhum dia no período: <relógios>.\" Sem dias: \"Nenhum dia no plano neste período.\"",
+                ]],
+                ["titulo" => "Dia a dia", "itens" => [
+                    "Um título por mês (\"Outubro de 2026\") e uma tabela de dias: o dia (\"DD/MM\" e o dia da semana, \"hoje\" no de "
+                        . "hoje, com a faixa safira), o relógio (com \"à mão\" e o motivo embaixo), o lembrete e o \"trocar por…\" (como na "
+                        . "página Hoje). Fim de semana com fundo cinza claro. Sem dias: \"Neste modo o sorteio é feito semana a semana: o "
+                        . "plano tem só a semana atual.\" ou \"Nenhum dia.\"",
+                ]],
+            ],
+        ],
+        [
+            "id" => "configuracao",
+            "pagina" => "configuracao.php",
+            "titulo" => "Configuração",
+            "endereco" => "configuracao.php; ?evento=<id> abre um evento para editar; #personalizados",
+            "le" => [
+                "recurso=migracoes (antes de tudo)",
+                "recurso=config",
+            ],
+            "grava" => [
+                "config: salvar, evento_salvar, evento_excluir, testar_manha, testar_noite, teste_agenda_criar, "
+                    . "teste_agenda_remover, sincronizar",
+                "migracoes: aplicar",
+            ],
+            "partes" => [
+                ["titulo" => "Banco desatualizado (só quando há migração pendente)", "itens" => [
+                    "Um cartão só: \"O banco está desatualizado\", a explicação (\"Esta versão do sistema precisa de migrações que "
+                        . "ainda não foram aplicadas... as páginas, a API e o cron ficam parados...\"), a tabela das pendentes (versão em "
+                        . "negrito, o que traz, o arquivo em código), o botão \"Aplicar agora\" (migracoes aplicar) e a nota de como rodar "
+                        . "na mão. Depois de aplicar: \"Atualização do banco\", o resultado e \"Continuar para a Configuração\".",
+                ]],
+                ["titulo" => "Os quadros do alto (uma grade de 3 colunas; um formulário só, salvo pela barra do pé)", "itens" => [
+                    "Cada opção numa linha: o rótulo à esquerda e o campo à direita, alinhados na mesma coluna em todos os quadros; "
+                        . "caixas de marcar no lugar do campo; textos longos com o rótulo em cima e o campo na largura toda. Cada quadro "
+                        . "com a explicação embaixo.",
+                    "Rotina do dia: Manhã: relógio do dia e avisos (hora); Noite: preparar o de amanhã (hora); No pulso a partir de "
+                        . "(hora); Pôr no pulso sozinho (caixa); No pulso até (hora); Tirar do pulso sozinho (caixa); Sessão no sol "
+                        . "esquecida fecha às (hora).",
+                    "Limites e contas: Carregar quando a carga chegar a (%) (1 a 99, padrão 20); Solar: pôr no sol quando chegar a "
+                        . "(%) (1 a 99, padrão 70); Gasto medido: média dos últimos (dias) (1 a 3650, padrão 90).",
+                    "Telas: Abrir o relógio na página Hoje (Ao lado da lista; Numa janela flutuante, grande); Endereço do sistema "
+                        . "(a âncora {link}).",
+                    "Cron: \"Cron rodando: última execução às HH:MM.\" (nota) ou, em âmbar, \"O cron ainda não rodou\" / \"O cron não "
+                        . "roda desde ...\" com a linha do crontab em código; o erro guardado numa caixa (\"O cron está com erro\"); o link "
+                        . "\"Ver todas as execuções do cron\" e o \"Registro da última rodada\" (abre e fecha).",
+                    "Telegram (API de alerta): Enviar alertas (caixa). Google Agenda: Criar eventos na agenda (caixa), Antecedência "
+                        . "dos eventos (dias, 1 a 365), ID da agenda, Caminho da chave JSON no servidor; a chave encontrada "
+                        . "(\"Compartilhe a agenda com <e-mail>\") ou não; os botões leves \"Criar evento de teste\" e \"Remover evento de "
+                        . "teste\".",
+                ]],
+                ["titulo" => "Mensagem padrão", "itens" => [
+                    "Um cartão por canal (Telegram, Google Agenda), lado a lado: o nome do canal, a lista \"Inserir âncora\" (põe "
+                        . "{ancora} onde está o cursor), o texto (7 linhas) e a ajuda do canal. Embaixo, \"O que cada âncora vira\" (abre e "
+                        . "fecha: a tabela {ancora} → o que é).",
+                ]],
+                ["titulo" => "O que vai para onde", "itens" => [
+                    "Tabela: Aviso (o nome; nos eventos personalizados, em negrito, com \"editar\" e \"excluir\"), Quando, uma coluna "
+                        . "por canal com uma caixa centrada (vai ou não), e Personalizar (uma caixa por canal). Marcar Personalizar abre, "
+                        . "na linha de baixo, o texto daquele aviso naquele canal, com \"Inserir âncora\" e a dica \"Vazio usa a mensagem "
+                        . "padrão do <canal>\".",
+                    "A barra de salvar no pé: \"As mudanças desta página valem depois de salvar.\" e o botão \"Salvar configuração\" "
+                        . "(config salvar).",
+                ]],
+                ["titulo" => "Eventos personalizados", "itens" => [
+                    "A explicação e um quadro que abre e fecha (\"Novo evento\" ou \"Editar o evento <nome>\"): Nome (obrigatório), "
+                        . "Relógio (opcional: \"Nenhum, é um evento geral\" e os relógios), Quando dispara (uma vez, todo dia, toda semana, "
+                        . "todo mês, a cada N dias), e só os campos da repetição escolhida: Data / A partir de, Hora (obrigatória), Dia "
+                        . "do mês (1 a 31), A cada quantos dias, Dias da semana (caixas seg a dom); Ativo; as próximas vezes (na edição); "
+                        . "botão \"Criar evento\" / \"Salvar alterações\" e \"cancelar\".",
+                ]],
+                ["titulo" => "Como sai hoje", "itens" => [
+                    "Três caixas lado a lado: Telegram de manhã e Telegram à noite (o texto como sai, em fonte fixa, ou \"(nada a "
+                        . "enviar)\", e o botão leve \"Enviar agora\"); Agenda (os próximos eventos com a data, a hora, o título em negrito "
+                        . "e a descrição, quantos o sistema já criou, e \"Sincronizar agora\").",
+                ]],
+            ],
+        ],
+        [
+            "id" => "criterios",
+            "pagina" => "criterios.php",
+            "titulo" => "Critérios de escolha",
+            "endereco" => "criterios.php?escopo=<\"\", g:<grupo> ou r:<relógio>>; ?relogio=<id> abre a conta dele",
+            "le" => [
+                "recurso=criterios",
+            ],
+            "grava" => [
+                "criterios: todas as ações",
+            ],
+            "partes" => [
+                ["titulo" => "Explicações", "itens" => [
+                    "h1 \"Critérios de escolha do relógio\". Cartão \"Como a nota funciona\" (lugar, conjunto, parâmetro, subparâmetro, "
+                        . "faixas, peso efetivo e nota final, em negrito os termos). Cartão \"Como a nota vira escolha\": as quatro formas "
+                        . "com a explicação, a tabela Modo de rodízio / Forma de escolha (\"(o modo atual)\") e a garantia de rodízio.",
+                ]],
+                ["titulo" => "Onde há critérios", "itens" => [
+                    "Tabela Lugar, Parâmetros (quantos), Usado por (\"N relógios\" e os nomes em cinza) e o link \"editar\". Em "
+                        . "vermelho: \"Há relógios sem conjunto nenhum (nota neutra, 50): ...\"",
+                ]],
+                ["titulo" => "O conjunto do lugar escolhido", "itens" => [
+                    "\"Editar os critérios de\" com a lista de todos os lugares (\"Todos os relógios\", \"Grupo: <caminho>\", \"Relógio: "
+                        . "<nome>\"; \"— com critérios próprios\" nos que têm) e \"Abrir\". Sem critérios próprios: \"<Lugar> não tem critérios "
+                        . "próprios: usa os de <lugar de cima>.\" e os botões \"Criar critérios próprios, copiando os de <lugar>\" e \"Criar "
+                        . "vazio\" (leve).",
+                    "Com critérios: \"Critérios de <lugar>\", \"Usado por N relógios: ...\" e a tabela Parâmetro (o nome editável), "
+                        . "Peso no conjunto (campo curto e \"%\"), Subparâmetros (link para a seção; \"(fora da conta)\" em vermelho se "
+                        . "nenhum), e ↑ ↓ Excluir; no rodapé \"Soma\" com a soma ao vivo e \"fecha 100%\" ou, em vermelho, \"faltam N%\" / "
+                        . "\"passa N%\"; botão \"Salvar parâmetros\". Excluir confirma mostrando como o peso se divide entre os que ficam. "
+                        . "Linha de inclusão: Novo parâmetro, Peso (%), \"Incluir\". Embaixo, \"Excluir os critérios próprios de <lugar>\" "
+                        . "(discreto, confirma).",
+                ]],
+                ["titulo" => "Cada parâmetro", "itens" => [
+                    "Um cartão por parâmetro: \"<nome> <peso> do conjunto de <lugar>\"; a tabela Subparâmetro, Mede, Peso no "
+                        . "parâmetro, Peso efetivo no conjunto (atualizado ao digitar), ↑ ↓ Excluir, com a soma no rodapé e \"Salvar "
+                        . "subparâmetros\".",
+                    "Para cada subparâmetro, \"Faixas de <nome>\" (abre e fecha, com quantas faixas e o que mede): numa medida "
+                        . "numérica, a tabela De, Até, Nota, Apagar; numa de categoria, Categoria (lista), Nota, Apagar; sempre uma linha "
+                        . "em branco para incluir, o botão \"+ faixa\" (mais uma linha) e \"Salvar faixas\"; a regra das faixas em nota. "
+                        . "Embaixo, \"Trocar a medida para\" (confirma: as faixas recomeçam) e \"Mover para o parâmetro\".",
+                    "Linha de inclusão: Novo subparâmetro, Mede (lista das medidas), Peso (%), \"Incluir\". Sem subparâmetros, em "
+                        . "vermelho: \"Sem subparâmetros: este parâmetro não entra na conta até ganhar um.\"",
+                ]],
+                ["titulo" => "A nota de cada relógio agora", "itens" => [
+                    "Um quadro que abre e fecha por relógio disponível, da maior nota para a menor: o nome em negrito, \"<grupo> · "
+                        . "critérios de <lugar>\" e a nota à direita; aberto, a tabela Parâmetro, Subparâmetro, Valor medido, Faixa, Nota, "
+                        . "Peso efetivo, Pontos, com a nota final no rodapé, e os links \"editar os critérios de <lugar>\" e \"critérios só "
+                        . "deste relógio\". Por fim, o cartão \"Restaurar os critérios iniciais\" com o botão leve \"Restaurar\" (confirma).",
+                ]],
+            ],
+        ],
+        [
+            "id" => "grupos",
+            "pagina" => "grupos.php",
+            "titulo" => "Grupos de relógios",
+            "endereco" => "grupos.php",
+            "le" => [
+                "recurso=arvore",
+            ],
+            "grava" => [
+                "arvore: novo, renomear, mover, ordem, excluir, relogios",
+            ],
+            "partes" => [
+                ["titulo" => "Árvore", "itens" => [
+                    "A explicação; a árvore como lista com recuo por nível. Cada grupo: o nome num campo com \"Renomear\" (discreto), "
+                        . "\"N relógios\" (\"· critérios próprios\" com link), ↑ ↓ e Excluir (confirma dizendo para onde vão os subgrupos, "
+                        . "os relógios e o que acontece com os critérios); os relógios dele em cinza embaixo; e \"subgrupo e mover\" (abre "
+                        . "e fecha): Novo subgrupo + \"Criar\", Mover para dentro de (só onde não forma ciclo) + \"Mover\". No fim: linha de "
+                        . "inclusão \"Novo grupo\", \"dentro de\" e \"Criar\". Sem grupos: \"Nenhum grupo ainda.\"",
+                ]],
+                ["titulo" => "O grupo de cada relógio", "itens" => [
+                    "Tabela Relógio (\"(indisponível)\" em cinza) e Grupo (lista com \"(na raiz)\" e os caminhos), e o botão \"Salvar "
+                        . "grupos\" (arvore relogios, todos de uma vez).",
+                ]],
+            ],
+        ],
+        [
+            "id" => "execucoes",
+            "pagina" => "execucoes.php",
+            "titulo" => "Execuções do cron",
+            "endereco" => "execucoes.php?de=&ate=&situacao=&busca=&por=&pagina= (os filtros no endereço)",
+            "le" => [
+                "recurso=cron",
+            ],
+            "grava" => [],
+            "partes" => [
+                ["titulo" => "Tudo", "itens" => [
+                    "Título com \"Última execução: DD/MM/AAAA HH:MM:SS\". Filtros num cartão: De, Até (padrão: os últimos 7 dias), "
+                        . "Situação (Com atividade (padrão), Com erro, Sem atividade, Todas), Texto no registro, Por página (25, 50, 100, "
+                        . "200), \"Filtrar\" e os atalhos hoje, 7 dias, 30 dias, erros do último ano.",
+                    "Resumo em 4 caixas: execuções no período, com atividade, com erro (vermelho se houver), a mais lenta. A nota "
+                        . "com quantas e a retenção. Tabela Início (data e a hora em negrito embaixo), Duração (\"850 ms\" ou \"1,5 s\"), "
+                        . "Situação (etiqueta erro / atividade / sem atividade), Registro (o texto em fonte fixa, ou \"nada a fazer neste "
+                        . "minuto\"); linha com erro em vermelho claro. Paginação: « primeira, ‹ anterior, até 3 números de cada lado, "
+                        . "próxima ›, última ».",
+                ]],
+            ],
+        ],
+        [
+            "id" => "historico",
+            "pagina" => "historico.php",
+            "titulo" => "Histórico — <relógio>",
+            "endereco" => "historico.php?id=<id>&de=&ate=&estado=&por=&pagina=",
+            "le" => [
+                "recurso=historico",
+            ],
+            "grava" => [],
+            "partes" => [
+                ["titulo" => "Tudo", "itens" => [
+                    "Cabeça com a foto, \"Histórico · <tipo> · código N\", o nome em h1 e \"<n> registros desde ...\". Filtros num "
+                        . "cartão: De, Até, Estado (Todos, Em uso, Fora do rodízio, cada tipo de sessão, Em repouso, Marcações), Por "
+                        . "página (25, 50, 100, Todos), \"Filtrar\" e os atalhos 7 dias, 30 dias, desde o começo.",
+                    "Resumo em caixas: o tempo em cada estado (\"5d 7h\" e \"em uso · 13%\") e a contagem de cada marcação. A nota de "
+                        . "quantos e de como ler os trechos. Tabela Início, Fim, Duração, Estado (etiqueta verde para uso, vermelha para "
+                        . "repouso, laranja para as outras sessões; marcação em cinza, só o texto; \"em andamento: o fim é o momento desta "
+                        . "consulta\"). Paginação: « mais recentes, ‹ anterior, números, próxima ›, mais antigos » e \"ver tudo\".",
+                ]],
+            ],
+        ],
+        [
+            "id" => "documentos",
+            "pagina" => "documentos.php",
+            "titulo" => "Documentos",
+            "endereco" => "documentos.php?relogio=<id>&cat=<categoria> (sem relógio: de todos)",
+            "le" => [
+                "recurso=documentos",
+                "recurso=documento (cada arquivo)",
+            ],
+            "grava" => [
+                "documentos: enviar, alterar, excluir",
+                "relogio: salvar (a cópia no banco do relógio)",
+            ],
+            "partes" => [
+                ["titulo" => "Cabeça", "itens" => [
+                    "h1 \"Documentos do <relógio>\" (ou \"de todos os relógios\"); a lista \"Relógio\" (Todos e cada um, com \"(N)\") e "
+                        . "\"Abrir a ficha do relógio\". A situação da cópia no banco (quem decide: o config.php, o relógio, com o botão "
+                        . "\"Guardar todos os dele no banco\" / \"Só os marcados\"). Sem a pasta: o motivo em âmbar.",
+                ]],
+                ["titulo" => "Enviar arquivos (abre e fecha; aberto quando não há nenhum; só com um relógio escolhido)", "itens" => [
+                    "Categoria (com o que ela aceita), Título (\"vazio: o nome do arquivo\"), Data, Descrição, Arquivos (vários; o "
+                        . "seletor só deixa os tipos da categoria), \"Guardar a cópia destes arquivos também no banco\" (só quando cabe ao "
+                        . "arquivo decidir), o limite de tamanho, \"Enviar\" e o andamento (\"Enviando 2 de 5: foto.jpg — 40%\"). Um arquivo "
+                        . "por vez, cada foto com a miniatura feita no navegador (480px, JPEG 80%). No fim: \"N documentos guardados.\" e "
+                        . "os erros.",
+                ]],
+                ["titulo" => "Abas e conteúdo", "itens" => [
+                    "Abas \"Todos (N)\" e cada categoria \"(N)\". Fotos: a galeria (quadrados de 140px, 100px no celular, com o título "
+                        . "e a data) e o botão \"▶ Apresentação\"; tocar numa foto abre o visor em tela cheia (fundo #080b0f): \"N de M\", \"▶ "
+                        . "Apresentação\" / \"❚❚ Parar\" (troca a cada 4 s), \"Baixar\", \"×\"; ‹ e › nos lados, setas do teclado, deslizar o "
+                        . "dedo, Esc fecha, espaço liga a apresentação; a legenda embaixo.",
+                    "Vídeos: o player e a lista para marcar e ordenar (↑ ↓), \"▶ Assistir os marcados\" (tocam em sequência; \"‹ "
+                        . "Anterior\", \"Próximo ›\", \"Fechar\"). Arquivos: um cartão por arquivo com o título, a data, a categoria em "
+                        . "etiqueta, a descrição, o nome, o tamanho e onde está guardado; PDF: \"Ver aqui\" (abre embutido), \"Abrir noutra "
+                        . "aba\", \"Baixar\"; XML de NF-e: a tabela Emitente, Nota, Valor, Produto(s), Chave e \"Baixar o XML\"; áudio: o "
+                        . "player; o resto: \"Baixar\".",
+                    "Em cada arquivo, \"editar\" (abre e fecha): Título, Data, Categoria, Descrição, a cópia no banco (quando cabe), "
+                        . "\"Salvar\" e \"Excluir\" (confirma \"Excluir <título>? O arquivo sai do servidor.\"). Fotos e vídeos se editam numa "
+                        . "lista à parte, \"Editar ou excluir fotos e vídeos\".",
+                ]],
+            ],
+        ],
+        [
+            "id" => "cadastros",
+            "pagina" => "cadastros.php",
+            "titulo" => "Cadastros",
+            "endereco" => "cadastros.php?aba=<campos|lancamentos|formulas|avisos|modos|documentos>&editar=<id>#form",
+            "le" => [
+                "recurso=cadastros",
+                "recurso=calcular (o testar)",
+            ],
+            "grava" => [
+                "campos, lancamento_tipos, formulas, avisos, modos, documento_categorias",
+            ],
+            "partes" => [
+                ["titulo" => "Em todas as abas", "itens" => [
+                    "h1 \"Cadastros\" e as abas Campos, Tipos de lançamento, Fórmulas, Avisos, Modos de rodízio, Categorias de "
+                        . "documentos. Cada aba é um cartão: o título, a explicação, a tabela com \"Editar\" (link que abre o formulário "
+                        . "embaixo com os dados, no #form) e Excluir em cada linha, e o formulário (\"Novo ...\" ou \"Alterar ...\", botão "
+                        . "\"Criar\" / \"Salvar\" e \"cancelar\"). Gravou: o recado no alto e a edição acaba; recusado: o que foi digitado fica "
+                        . "e os erros aparecem no topo.",
+                ]],
+                ["titulo" => "Campos", "itens" => [
+                    "Tabela Campo (\"(unidade)\"), Identificador (fonte fixa), Tipo, Vale para, Padrão, ações (Editar, ↑, ↓, Excluir "
+                        . "com confirmação \"Excluir o campo <nome> e os valores dele?\"). Formulário: Nome (até 120), Identificador (a-z, "
+                        . "0-9 e _; começa com letra; até 40), Tipo (Número inteiro, Número decimal, Sim ou não, Data, Lista de opções, "
+                        . "Texto), Unidade (até 20), Valor padrão, Vale para (\"todos os relógios\" e os grupos), Opções (lista: uma por "
+                        . "linha).",
+                ]],
+                ["titulo" => "Tipos de lançamento", "itens" => [
+                    "Tabela Tipo, Identificador, Formato (com a unidade), Fecha sozinho às, Exclusiva, Mede o gasto, Vale quando "
+                        . "(fonte fixa), Vale para, Lançamentos (quantos), ações. Formulário: Nome, Identificador, Formato (Instantâneo; "
+                        . "Instantâneo com valor; Sessão, com início e fim), Unidade (com valor), Fecha sozinho às (hora; vazio: não "
+                        . "fecha), Vale para, Vale quando (fórmula), as caixas \"sessão exclusiva (o relógio num lugar só)\" e \"mede o "
+                        . "gasto\".",
+                ]],
+                ["titulo" => "Fórmulas", "itens" => [
+                    "Tabela Fórmula (o nome e o identificador com a unidade), Versão para, Cálculo (fonte fixa), ações. Formulário: "
+                        . "Identificador (só na nova), Nome, Unidade, Versão para, Cálculo (textarea, fonte fixa). \"Testar uma fórmula "
+                        . "(sem gravar)\": o texto da fórmula e \"Testar em todos os relógios\" (recurso=calcular): a tabela Relógio, "
+                        . "Resultado, As partes da conta, ou os erros. \"As funções do motor\" (abre e fecha): cada função em negrito e a "
+                        . "explicação.",
+                ]],
+                ["titulo" => "Avisos", "itens" => [
+                    "Tabela Aviso, Versão para, Data prevista, Vale quando, Antecedência (\"N d\"), Resolve, Na escala (com o valor "
+                        . "ou as horas simuladas), Na agenda, Ativo, ações. Formulário: Identificador (na novo), Nome, Antecedência "
+                        . "(dias), Resolve (os tipos), Versão para, ativo, Na escala inteligente (não; no relógio do dia; sempre), "
+                        . "Escala: valor do lançamento simulado, Escala: horas da sessão simulada, Data na agenda (só dentro da "
+                        . "antecedência; qualquer data), Data prevista (fórmula), Vale quando (fórmula), Texto (até 300).",
+                ]],
+                ["titulo" => "Modos de rodízio", "itens" => [
+                    "Tabela Modo (\"(ativo)\"), Forma de escolha (\"· com ciclo\"), Blocos (nome e dias), ações (Editar; nos outros: "
+                        . "Ativar e Excluir). Formulário: Nome, Planejamento (sorteio pelos blocos; escala inteligente de 7 dias, 30 "
+                        . "dias, 60 dias, 6 meses, 1 ano, 2 anos), Forma de escolha, a caixa \"ciclo\", e a tabela dos blocos (os que "
+                        . "existem e duas linhas vazias): Bloco (nome), Dias (caixas seg a dom), Sortear de, Um por (um por dia; um por "
+                        . "bloco (na semana)), Relógio fixo (\"— sorteia —\" e os relógios). Bloco sem dia marcado sai.",
+                ]],
+                ["titulo" => "Categorias de documentos", "itens" => [
+                    "Tabela Categoria, Identificador, Aceita (\"qualquer arquivo\" ou as famílias), Ordem, Documentos, ações (Excluir "
+                        . "só sem documentos). Formulário: Nome, Identificador (na nova), Ordem (\"vazio: no fim\"), Aceita (caixas "
+                        . "imagens, vídeos, áudios, PDF, XML).",
+                ]],
+            ],
+        ],
+        [
+            "id" => "usuarios",
+            "pagina" => "usuarios.php",
+            "titulo" => "Usuários",
+            "endereco" => "usuarios.php",
+            "le" => [
+                "recurso=usuarios",
+            ],
+            "grava" => [
+                "usuarios: salvar, excluir",
+            ],
+            "partes" => [
+                ["titulo" => "Tudo", "itens" => [
+                    "h1 \"Usuários\". Cartão \"Quem acessa\": tabela Login (\"você\" em etiqueta azul no próprio), Criado em, e Excluir "
+                        . "(menos no próprio; confirma). Cartão \"Criar usuário ou trocar senha\": Login, Senha (pelo menos 6 caracteres, "
+                        . "campo de senha), \"Se o login já existir, a senha dele é trocada.\" e \"Salvar usuário\". Recusado: o erro no "
+                        . "topo.",
+                ]],
+            ],
+        ],
+        [
+            "id" => "ajuda",
+            "pagina" => "ajuda.php",
+            "titulo" => "Ajuda",
+            "endereco" => "ajuda.php#<âncora>",
+            "le" => [
+                "recurso=manual (o HTML e o sumário)",
+            ],
+            "grava" => [],
+            "partes" => [
+                ["titulo" => "Tudo", "itens" => [
+                    "h1 \"Ajuda\"; \"Nesta página\": o sumário com os títulos de nível 2 e 3 (recuados), cada um link para a sua "
+                        . "âncora; depois o manual em HTML, com as tabelas que rolam de lado no celular, as imagens com borda e cantos, o "
+                        . "código em fonte fixa. Abrindo com uma âncora no endereço, a página vai direto para ela.",
+                ]],
+            ],
+        ],
+    ],
+    "capturas" => [
+        ["arquivo" => "docs/telas/hoje.png", "mostra" => "a página Hoje no computador, com o painel ao lado"],
+        ["arquivo" => "docs/telas/colecao.png", "mostra" => "a tabela dos relógios com as 11 colunas e os filtros"],
+        ["arquivo" => "docs/telas/historico.png", "mostra" => "o histórico de um relógio"],
+        ["arquivo" => "docs/telas/cadastros.png", "mostra" => "a aba Campos dos Cadastros"],
+        ["arquivo" => "docs/telas/celular.png", "mostra" => "no celular: a Hoje, os cartões dos relógios e o painel em tela cheia"],
+    ],
+];
+
 function reconstrucao()
 {
     global $FUNCOES, $TIPOS_CAMPO, $FORMATOS_LANCAMENTO, $REPETICOES, $ANCORAS, $CANAIS, $MIGRACOES, $DIAS_SEMANA;
@@ -92,6 +755,9 @@ function reconstrucao()
             "O conhecimento sobre relógios não está no código: está no cadastro inicial (schema.sql, a partir de \"-- critérios iniciais\" para os "
                 . "critérios; os campos, os tipos de lançamento, as fórmulas, os avisos e os modos nas migrações). Leia também por "
                 . "recurso=cadastros e recurso=criterios. A reescrita traz esse cadastro como dado, não como código.",
+            "As telas (telas) são a especificação visual: o visual com os valores exatos, o menu e cada página, parte por parte, com cada "
+                . "tabela, campo, botão e mensagem, palavra por palavra. A reescrita reproduz a mesma interface, não uma parecida: o que está "
+                . "lá existe, e o que não está não existe. As capturas em docs/telas/ mostram o resultado.",
             "O README.md explica cada tela e cada opção para quem usa (as seções para quem usa saem também pela API, em recurso=manual: o texto da "
                 . "página Ajuda); o testes/cenario.php é o roteiro de aceitação (veja a seção testes).",
         ],
@@ -317,6 +983,9 @@ function reconstrucao()
                     . "nenhum documento sai (só depois de 10 minutos: um envio pode estar no meio). Os perdidos (sem arquivo e sem cópia) são contados à noite.",
             ]),
             $secao("telas", "As telas", [
+                "A especificação completa, tela por tela, está em telas (abaixo): o visual com os valores exatos (cores, letras, controles, "
+                    . "componentes, larguras), o menu, e cada página com o endereço, o que ela lê e grava na API, e as partes em ordem com cada "
+                    . "tabela, campo, botão e mensagem. Aqui, o resumo.",
                 "Hoje: o relógio do dia (com o Pôs e o Tirou), \"Hoje é dia de\" (os avisos com o botão que resolve), os próximos dias com o motivo e o "
                     . "trocar por…, o modo de rodízio (troca ali mesmo), e a tabela da coleção com filtros e ordenação; clicar num relógio abre o painel "
                     . "dele, ao lado da lista ou numa janela flutuante (painel_modo).",
@@ -355,6 +1024,7 @@ function reconstrucao()
                     . "JavaScript e sem rolagem lateral no celular, no tablet e no computador.",
             ]),
         ],
+        "telas" => RECONSTRUCAO_TELAS,
         "modelo_de_dados" => [
             "banco" => banco_tipo(),
             "como_ler" => "Cada tabela com as colunas (nome, tipo no dialeto do banco em uso, se aceita vazio, o padrão), a chave primária, as chaves "
