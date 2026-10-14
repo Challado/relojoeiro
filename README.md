@@ -1485,7 +1485,9 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
 5. Mudou a API? **Explique cada campo novo** no dicionário da ajuda: o `"campos"` do `recurso=ajuda`, no `api.php` (a seção do
    recurso, com o caminho do campo como chave). Ele é a fonte única: o dicionário do cabeçalho do `api.php` é gerado dele, com
    `php testes/dicionario.php --gravar` (não escreva no cabeçalho à mão).
-6. **Rode o teste de paridade** ([`testes/`](testes/)) nos quatro bancos antes de mandar: `testes/paridade.sh`, com os
+6. **Rode o teste de paridade** ([`testes/`](testes/)) nos quatro bancos antes de mandar (o GitHub também roda, a cada push
+   no `main`: o teste de paridade, a documentação e o layout, em [`.github/workflows/testes.yml`](.github/workflows/testes.yml);
+   o resultado aparece na aba **Actions** e no ✓ / ✗ ao lado de cada commit): `testes/paridade.sh`, com os
    bancos no ar, tem de terminar com `Tudo igual.` Ele confere também a documentação: o cabeçalho é o que a ajuda gera, e
    todo campo das respostas está explicado. Mexeu nas telas? Rode também a conferência do layout
    (`testes/paridade.sh --layout sqlite`): `0 problemas`.

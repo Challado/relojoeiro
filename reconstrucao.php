@@ -913,6 +913,7 @@ const RECONSTRUCAO_CODIGO = [
     "LICENSE" => ["documentacao", "a licença"],
     ".gitignore" => ["repositorio", "o que nunca entra no repositório (a configuração, as chaves, os bancos)"],
     ".gitattributes" => ["repositorio", "as quebras de linha (LF em tudo) e os binários"],
+    ".github/workflows/testes.yml" => ["repositorio", "os testes no GitHub a cada push no main: a paridade nos bancos (com a documentação da API) e o layout das telas"],
 ];
 
 // O que fica de fora de propósito, e o que ver no lugar
@@ -947,7 +948,7 @@ function codigo_arquivos()
 function codigo_tipo($arquivo)
 {
     $ext = strtolower(pathinfo($arquivo, PATHINFO_EXTENSION));
-    $linguagens = ["php" => "php", "js" => "javascript", "css" => "css", "sql" => "sql", "md" => "markdown", "conf" => "nginx", "png" => "png"];
+    $linguagens = ["php" => "php", "js" => "javascript", "css" => "css", "sql" => "sql", "md" => "markdown", "conf" => "nginx", "png" => "png", "yml" => "yaml", "sh" => "shell", "cjs" => "javascript"];
     $linguagem = $linguagens[$ext] ?? ($arquivo === ".htaccess" ? "apache" : "texto");
     return [$linguagem, $ext === "png", $ext === "png" ? "image/png" : "text/plain; charset=utf-8"];
 }
