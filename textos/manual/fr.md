@@ -1,4 +1,4 @@
-<!-- origem: e78ace35ad4be783d31c41ad9b2a09624a96763c -->
+<!-- origem: 2555db405552e06af2ee272b37999de5bf60aa96 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1046,6 +1046,9 @@ défaut) : à chaque nouvelle copie, les plus anciennes s'en vont. Un dossier à
   copie dans le dossier des sauvegardes et restaurez.
 - **Par l'API :** `recurso=backup` (l'état et les copies ; `arquivo=` en télécharge une), et les écritures `fazer` et
   `restaurar`.
+- **Pour la désactiver** (une autre routine copie déjà la base, ou c'est une installation de test) : `define("BACKUP_ATIVO", false);`
+  dans le `config.php`. Le cron ne fait pas de copie, l'écriture `fazer` est refusée et le cadre **Sauvegarde** disparaît de la
+  Configuration, avec l'avertissement que le dossier manque.
 
 ## Réécrire le système à partir de zéro {#reescrever-o-sistema-do-zero}
 

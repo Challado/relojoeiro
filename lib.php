@@ -4502,8 +4502,18 @@ function manual_html($md)
 // (documento_parte, a cópia deles no banco, que pode ser grande) só entra com BACKUP_DOCUMENTOS = true: os arquivos já
 // estão na pasta dos documentos.
 // ---------------------------------------------------------------------------------------------------------------------
+// A cópia de segurança pode ser desligada no config.php (BACKUP_ATIVO = false): sem cópia automática, sem a ação fazer e
+// sem o quadro da Configuração (nem o aviso de que falta a pasta). Sem a linha: ligada
+function backup_ativo()
+{
+    return !defined("BACKUP_ATIVO") || BACKUP_ATIVO !== false;
+}
+
 function backup_pasta_erro()
 {
+    if (!backup_ativo()) {
+        return t("a cópia de segurança está desligada no config.php (BACKUP_ATIVO = false)");
+    }
     if (!defined("BACKUP_PASTA") || trim((string)BACKUP_PASTA) === "") {
         return t("sem BACKUP_PASTA no config.php: a cópia de segurança automática está desligada");
     }

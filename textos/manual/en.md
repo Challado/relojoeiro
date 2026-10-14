@@ -1,4 +1,4 @@
-<!-- origem: e78ace35ad4be783d31c41ad9b2a09624a96763c -->
+<!-- origem: 2555db405552e06af2ee272b37999de5bf60aa96 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1024,6 +1024,9 @@ browser).
   the backups folder and restore.
 - **Through the API:** `recurso=backup` (the status and the copies; `arquivo=` downloads one), and the `fazer` and `restaurar`
   writes.
+- **To turn it off** (another routine already copies the database, or it is a test installation): `define("BACKUP_ATIVO", false);`
+  in `config.php`. The cron makes no copy, the `fazer` write is refused and the **Backup** box disappears from Settings, along
+  with the warning that the folder is missing.
 
 ## Rewrite the system from scratch {#reescrever-o-sistema-do-zero}
 

@@ -44,6 +44,10 @@ define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");
 // define("BACKUP_PASTA", "/var/lib/relojoeiro/copias");
 // define("BACKUP_MANTER", 7);
 // define("BACKUP_DOCUMENTOS", false);
+// Para não usar a cópia de segurança (outra rotina já copia o banco, ou é uma instalação de teste): false desliga a cópia
+// automática e a ação de fazer uma, e tira o quadro Cópia de segurança da Configuração (com o aviso de que falta a pasta).
+// Sem a linha: ligada
+// define("BACKUP_ATIVO", false);
 
 // só para o importar.php, com este sistema no PostgreSQL ou no SQLite: onde está o MySQL do sistema antigo
 // define("ANTIGO_HOST", "127.0.0.1");
