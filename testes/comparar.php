@@ -45,7 +45,11 @@ function numeros_iguais($x, $y, $chave)
         return true;
     }
     // o resto (energia, reserva, notas...) anda devagar com o tempo (uma sessão aberta cresce enquanto o cenário roda): 0,5% de folga
-    if ($chave === "porcentagem" && abs($x - $y) <= 0.5) {
+    if (in_array($chave, ["porcentagem", "porcentagem_horas", "barra"], true) && abs($x - $y) <= 0.5) {
+        return true;
+    }
+    // as horas no pulso das estatísticas (uma casa): a sessão aberta cresce enquanto o cenário roda, um passo do arredondamento
+    if (preg_match("/horas/", (string)$chave) === 1 && abs($x - $y) <= 0.1 + 1e-9) {
         return true;
     }
     // (e os valores bem pequenos, como os dias sem uso de quem acabou de sair do pulso: 3 ou 4 segundos em dias)

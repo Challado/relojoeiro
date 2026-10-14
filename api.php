@@ -867,6 +867,16 @@
  *     plano[].relogio_id             o relógio do dia
  *     plano_livre[]                  os dias livres do plano (texto AAAA-MM-DD): sem relógio e sem sorteio, para escolher à mão (o "Deixar
  *                                    o período livre")
+ *     acessorios[]                   os acessórios (como em recurso=acessorios): id, nome, tipo, tipo_texto, relogio_id (null: solto),
+ *                                    relogio, observacao, criado
+ *     acessorios[].id                o número do acessório
+ *     acessorios[].nome              o nome
+ *     acessorios[].tipo              pulseira, caixa, estojo, ferramenta, carregador, peca ou outro
+ *     acessorios[].tipo_texto        o tipo por extenso
+ *     acessorios[].relogio_id        o relógio de que ele é; null: solto
+ *     acessorios[].relogio           o nome desse relógio; null: solto
+ *     acessorios[].observacao        a observação (null)
+ *     acessorios[].criado            quando foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[]                     os relógios, com tudo o que se sabe de cada um
  *     relogios[].acaba_em_datacomtz  quando acaba, em ISO 8601 com o fuso (texto, ex.: 2026-10-02T18:40:00-03:00); null com o motivo
  *     relogios[].acaba_em_segundos   quantos segundos faltam para acabar, a partir de calculado_em_unixtimestamp (número inteiro, em
@@ -1435,6 +1445,18 @@
  *                                    disponivel é sempre falso)
  *     relogio.posse_texto            a mesma por extenso ("Na coleção", "Desejado"...)
  *     relogio.da_colecao             verdadeiro: é da coleção agora (na coleção ou emprestado); falso: desejado, vendido ou arquivado
+ *     relogio.acessorios[]           os acessórios dele (o quadro Acessórios), pelo tipo e pelo nome
+ *     relogio.acessorios[].id        o número do acessório
+ *     relogio.acessorios[].nome      o nome
+ *     relogio.acessorios[].tipo      pulseira, caixa, estojo, ferramenta, carregador, peca ou outro
+ *     relogio.acessorios[].tipo_texto
+ *                                    o tipo por extenso
+ *     relogio.acessorios[].relogio_id
+ *                                    este relógio
+ *     relogio.acessorios[].relogio   o nome dele
+ *     relogio.acessorios[].observacao
+ *                                    a observação (null)
+ *     relogio.acessorios[].criado    quando foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.desejo                 o que a lista de desejos mostra (o quadro Desejo do painel): só no desejado; null nos outros
  *     relogio.desejo.link            o link da página do relógio (o campo link; null)
  *     relogio.desejo.marca           a marca (o campo marca; null)
@@ -2300,6 +2322,28 @@
  *     lua.proxima_cheia              a próxima lua cheia (texto AAAA-MM-DD)
  *     lua.proxima_nova               a próxima lua nova (texto AAAA-MM-DD)
  *     como_acertar                   o passo a passo para acertar um relógio de ponteiros pela hora certa
+ *   recurso=acessorios
+ *     acessorios[]                   os acessórios, pelo tipo e pelo nome
+ *     acessorios[].id                o número do acessório
+ *     acessorios[].nome              o nome ("Pulseira NATO verde")
+ *     acessorios[].tipo              pulseira, caixa, estojo, ferramenta, carregador, peca ou outro
+ *     acessorios[].tipo_texto        o tipo por extenso ("Pulseira", "Peça")
+ *     acessorios[].relogio_id        o relógio de que ele é; null: solto (serve a vários)
+ *     acessorios[].relogio           o nome desse relógio; null: solto
+ *     acessorios[].observacao        a observação (null)
+ *     acessorios[].criado            quando foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     tipos[]                        os tipos de acessório, na ordem (o menu Tipo)
+ *     tipos[].valor                  o valor que vai na gravação (tipo)
+ *     tipos[].nome                   o nome
+ *     por_tipo[]                     quantos acessórios da lista há de cada tipo (só os tipos que têm algum)
+ *     por_tipo[].tipo                o tipo
+ *     por_tipo[].nome                o nome do tipo
+ *     por_tipo[].quantos             quantos
+ *     soltos                         quantos acessórios da lista são soltos (de nenhum relógio)
+ *     relogios[]                     todos os relógios, pelo nome (o menu Relógio)
+ *     relogios[].id                  o número (código)
+ *     relogios[].nome                o nome
+ *     relogios[].posse               a situação na coleção
  *   recurso=rodizio_manual
  *     de                             o primeiro dia do período (AAAA-MM-DD)
  *     ate                            o último dia do período (AAAA-MM-DD)
@@ -2909,6 +2953,20 @@ if (!$token_ok && $quem === "") {
     require __DIR__ . "/api/estatisticas.php";
 } elseif ($recurso === "hora_certa") {
     require __DIR__ . "/api/hora_certa.php";
+} elseif ($recurso === "acessorios") {
+    // os acessórios (de todos os relógios, ou de um: relogio=id; relogio=0, só os soltos), os tipos e os relógios (o menu)
+    $rq_a = $_REQUEST["relogio"] ?? "";
+    $lista_a = acessorios_lista(ctype_digit((string)$rq_a) && (int)$rq_a > 0 ? (int)$rq_a : null);
+    if ((string)$rq_a === "0") {
+        $lista_a = array_values(array_filter($lista_a, function ($a) { return $a["relogio_id"] === null; }));
+    }
+    $saida = ["acessorios" => $lista_a,
+        "tipos" => array_map(function ($k) { return ["valor" => $k, "nome" => ACESSORIO_TIPOS[$k]]; }, array_keys(ACESSORIO_TIPOS)),
+        "por_tipo" => array_values(array_filter(array_map(function ($k) use ($lista_a) {
+            return ["tipo" => $k, "nome" => ACESSORIO_TIPOS[$k], "quantos" => count(array_filter($lista_a, function ($a) use ($k) { return $a["tipo"] === $k; }))];
+        }, array_keys(ACESSORIO_TIPOS)), function ($x) { return $x["quantos"] > 0; })),
+        "soltos" => count(array_filter($lista_a, function ($a) { return $a["relogio_id"] === null; })),
+        "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "posse" => posse_de($r)]; }, linhas("SELECT * FROM relogio ORDER BY nome"))];
 } elseif ($recurso === "proximos") {
     // os Próximos dias da página Hoje, uma página (a troca de página não relê a página Hoje inteira)
     $saida = plano_pagina(date("Y-m-d"), "", null, (int)($_REQUEST["pagina"] ?? 1),
@@ -2965,7 +3023,7 @@ if (!$token_ok && $quem === "") {
 } else {
     $codigo = 404;
     $saida = ["erro" => "recurso desconhecido", "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "hora_certa", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "hora_certa", "acessorios", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

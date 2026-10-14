@@ -571,8 +571,10 @@ function op_relogio($acao, $d)
         foreach (linhas("SELECT arquivo, miniatura FROM documento WHERE relogio_id = ?", [$id]) as $doc) {
             documento_apagar_arquivos($doc);
         }
+        $n_aces = (int)valor("SELECT COUNT(*) FROM acessorio WHERE relogio_id = ?", [$id]);
         sql("DELETE FROM relogio WHERE id = ?", [$id]);
-        $msg = "Relógio " . $atual["nome"] . " excluído, com os valores, a foto, os documentos e os lançamentos dele.";
+        $msg = "Relógio " . $atual["nome"] . " excluído, com os valores, a foto, os documentos e os lançamentos dele."
+            . ($n_aces > 0 ? " " . ($n_aces === 1 ? "O acessório dele ficou solto." : "Os " . $n_aces . " acessórios dele ficaram soltos.") : "");
         $id = 0;
     } elseif ($acao === "foto" && $atual) {
         $b64 = (string)($d["foto_base64"] ?? "");
@@ -845,6 +847,58 @@ function op_documento_categorias($acao, $d)
         }
     } else {
         $erros[] = "Ação desconhecida: use nova, alterar ou excluir.";
+    }
+    return resultado($erros, $msg, ["id" => $id]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Acessórios. Ações: salvar (id: 0 ou ausente cria; nome, tipo (pulseira, caixa, estojo, ferramenta, carregador, peca, outro),
+// relogio_id (0: solto), observacao; só muda o que vier), excluir (id).
+// ---------------------------------------------------------------------------------------------------------------------
+function op_acessorios($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $id = (int)($d["id"] ?? 0);
+    $atual = $id > 0 ? linha("SELECT * FROM acessorio WHERE id = ?", [$id]) : null;
+    if ($id > 0 && !$atual) {
+        $erros[] = "Acessório não encontrado.";
+    } elseif ($acao === "salvar") {
+        $nome = array_key_exists("nome", $d) ? trim((string)$d["nome"]) : (string)($atual["nome"] ?? "");
+        $tipo = array_key_exists("tipo", $d) ? trim((string)$d["tipo"]) : (string)($atual["tipo"] ?? "pulseira");
+        $rel = array_key_exists("relogio_id", $d) ? (int)$d["relogio_id"] : ($atual && $atual["relogio_id"] !== null ? (int)$atual["relogio_id"] : 0);
+        $obs = array_key_exists("observacao", $d) ? trim((string)$d["observacao"]) : (string)($atual["observacao"] ?? "");
+        if ($nome === "" || mb_strlen($nome) > 120) {
+            $erros[] = "Dê um nome ao acessório (até 120 caracteres).";
+        }
+        if (!isset(ACESSORIO_TIPOS[$tipo])) {
+            $erros[] = "Tipo: " . implode(", ", array_keys(ACESSORIO_TIPOS)) . ".";
+        }
+        $r = $rel > 0 ? linha("SELECT id, nome FROM relogio WHERE id = ?", [$rel]) : null;
+        if ($rel > 0 && !$r) {
+            $erros[] = "Relógio não encontrado (0: o acessório fica solto).";
+        }
+        if (mb_strlen($obs) > 1000) {
+            $erros[] = "A observação vai até 1000 caracteres.";
+        }
+        if (count($erros) === 0) {
+            $vals = [$nome, $tipo, $rel > 0 ? $rel : null, $obs !== "" ? $obs : null];
+            if ($atual) {
+                sql("UPDATE acessorio SET nome = ?, tipo = ?, relogio_id = ?, observacao = ? WHERE id = ?", array_merge($vals, [$id]));
+            } else {
+                sql("INSERT INTO acessorio (nome, tipo, relogio_id, observacao, criado) VALUES (?, ?, ?, ?, NOW())", $vals);
+                $id = ultimo_id();
+            }
+            $msg = "Acessório " . $nome . " (" . mb_strtolower(ACESSORIO_TIPOS[$tipo], "UTF-8") . ")" . ($atual ? " salvo" : " cadastrado") . ($r ? ", do " . $r["nome"] : ", solto (de nenhum relógio)") . ".";
+        }
+    } elseif ($acao === "excluir" && $atual) {
+        sql("DELETE FROM acessorio WHERE id = ?", [$id]);
+        $msg = "Acessório " . $atual["nome"] . " excluído.";
+        $id = 0;
+    } elseif ($acao === "excluir") {
+        $erros[] = "Informe o acessório (id).";
+    } else {
+        $erros[] = "Ação desconhecida: use salvar ou excluir.";
     }
     return resultado($erros, $msg, ["id" => $id]);
 }
