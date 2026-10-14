@@ -1,0 +1,75 @@
+LICENÇA DE USO DO RELOJOEIRO (RELÓGIOS 2)
+Código-fonte disponível: uso e alteração permitidos; projetos derivados proibidos.
+
+Copyright (c) 2026 Lucas Bocchi (github.com/Challado). Todos os direitos reservados, exceto os concedidos abaixo.
+
+Este software (o código, os scripts, a estrutura do banco, as fórmulas e os cadastros iniciais, as telas e a
+documentação deste repositório) é protegido pela Lei 9.609/98 (Lei do Software) e pela Lei 9.610/98 (Lei de Direitos
+Autorais). Ele NÃO é software livre nem de código aberto: o código está à vista, mas o uso segue as regras abaixo.
+Usar, instalar ou alterar o software significa aceitar esta licença.
+
+
+1. O QUE VOCÊ PODE FAZER
+
+   a) Baixar, instalar e usar o software para você mesmo, para a sua família ou dentro da sua empresa, para cuidar dos
+      seus próprios relógios.
+   b) Alterar o software para adaptá-lo à sua própria instalação (novos campos, fórmulas, telas, correções).
+   c) Propor as suas alterações ao autor pelo repositório original (github.com/Challado/relojoeiro), por pull request.
+      Para isso, você pode fazer um fork no GitHub; o fork serve só para preparar essas propostas.
+   d) Fazer cópias de segurança da sua instalação.
+
+
+2. O QUE VOCÊ NÃO PODE FAZER
+
+   Sem autorização por escrito do autor, você não pode:
+
+   a) Criar ou publicar um projeto novo baseado neste software, no todo ou em parte: outro sistema, aplicativo,
+      biblioteca ou produto que use, copie, adapte, traduza ou reescreva o código dele, inclusive em outra linguagem
+      de programação.
+   b) Distribuir o software ou uma versão alterada dele: publicar, compartilhar, vender, alugar ou entregar cópias a
+      terceiros, em qualquer lugar ou formato, fora do repositório original.
+   c) Oferecer o software, alterado ou não, como serviço para terceiros (hospedagem, SaaS, instalação para clientes).
+   d) Manter um fork com vida própria: um fork que receba alterações que não são propostas ao repositório original,
+      ou que seja apresentado como um projeto separado.
+   e) Sublicenciar, ou conceder a outros qualquer direito sobre o software.
+   f) Remover ou alterar os avisos de autoria e esta licença.
+
+
+3. AS SUAS CONTRIBUIÇÕES
+
+   Ao enviar uma alteração ao repositório original (pull request, patch, issue com código), você declara que ela é
+   sua e concede ao autor, de graça, para sempre e de forma irrevogável, o direito de usá-la, alterá-la, incluí-la no
+   software e distribuí-la sob esta licença ou qualquer outra que o autor escolher.
+
+
+4. SEM GARANTIA
+
+   O software é fornecido "como está", sem garantia de nenhum tipo. O autor não responde por perdas, danos ou
+   prejuízos que o uso do software cause, inclusive a perda de dados ou um relógio parado.
+
+
+5. FIM DA LICENÇA
+
+   Se você descumprir esta licença, os direitos dela acabam na hora, sem aviso, e você deve apagar as cópias alteradas
+   que fez. O autor pode mudar esta licença nas versões futuras; a versão que você baixou continua valendo para ela.
+
+
+6. LEI E FORO
+
+   Esta licença segue as leis do Brasil. As dúvidas e disputas sobre ela serão resolvidas no foro do domicílio do autor.
+
+
+7. CONTRIBUA, NÃO COPIE
+
+   Quer melhorar o sistema? Contribua com o repositório original: a sua melhoria entra para todos, com o seu nome no
+   histórico. Fazer um fork para seguir um caminho próprio não é permitido, e o autor defende os direitos dele. Quem
+   copiar, distribuir ou criar um projeto a partir deste fora do que esta licença permite fica sujeito ao pedido de
+   remoção nas plataformas (GitHub e outras), à ação judicial para fazer parar o uso, com apreensão das cópias e
+   indenização (Lei 9.610/98, arts. 102 a 104; Lei 9.609/98, art. 14), e à ação penal (Lei 9.609/98, art. 12).
+
+   Mesmo quem acha que está certo, se usar o código de um jeito que esta licença não permite claramente, pode ter de se
+   defender, e isso custa tempo e advogado. Na dúvida, pergunte antes ao autor: a resposta é de graça, a discussão
+   depois não é.
+
+
+Para qualquer uso que esta licença não permite, peça autorização ao autor pelo GitHub (github.com/Challado).
