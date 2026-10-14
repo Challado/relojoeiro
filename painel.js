@@ -260,8 +260,10 @@ function abrirNoPainel(id) {
       blocos += quadro("Compra", c.data === null && c.valor === null && c.loja === null && c.garantia_ate === null
         ? el("p", {"class": "nota"}, "Sem dados da compra. Preencha em \"Editar cadastro\".")
         : pares([["Valor pago", c.valor !== null ? el("strong", {}, "R$ " + reais(c.valor)) : "—"], ["Loja", c.loja !== null ? h(c.loja) : "—"],
-          ["Comprado em", c.data !== null ? dataBr(c.data) + el("small", {}, "há " + Math.round((instante(hoje) - instante(c.data)) / 86400000) + " dias") : "—"],
-          ["Garantia", c.garantia_ate !== null ? (c.garantia_ate >= hoje ? "até " : "vencida em ") + dataBr(c.garantia_ate) : "—"]]));
+          ["Comprado em", c.data !== null ? dataBr(c.data) + el("small", {}, "há " + c.ha_dias + (c.ha_dias === 1 ? " dia" : " dias")) : "—"],
+          ["Garantia", c.garantia_ate !== null ? (c.garantia_ate >= hoje ? "até " : "vencida em ") + dataBr(c.garantia_ate) : "—"],
+          ["Custo por uso", c.custo_por_uso !== null ? el("strong", {}, "R$ " + reais(c.custo_por_uso)) + el("small", {}, c.dias_de_uso + (c.dias_de_uso === 1 ? " dia de uso" : " dias de uso"))
+            : nada(c.dias_de_uso === 0 ? "ainda não foi ao pulso" : "sem o valor pago")]]));
       // os documentos: quantos em cada categoria, cada uma abrindo a página Documentos (numa aba nova) já nela
       var dc = r.documentos;
       blocos += quadro("Documentos", (dc.total === 0 ? el("p", {"class": "nota"}, "Nenhum ainda: o manual, a nota fiscal, fotos, vídeos...")

@@ -278,7 +278,8 @@ inteiros) pesa mais, entra com peso pequeno. Quanto mais leituras, mais preciso.
 
 Quando as medições ainda não separam os dois (só leituras com o relógio guardado, por exemplo), vale a média das medições de
 cada gasto; sem nenhuma nos últimos dias, as de antes. Os gastos medidos valem no lugar do cadastro nas previsões, e o histórico
-mostra a bateria perdendo fôlego com o tempo. Uma subida na leitura é recarga: novo ponto de partida, sem medir.
+mostra a bateria perdendo fôlego com o tempo. Uma subida na leitura é recarga: novo ponto de partida, sem medir. E um intervalo
+com outra sessão no meio (o relógio foi para o carregador) também não mede: a medição só sabe separar pulso e guardado.
 
 Não importa se você lança a leitura logo depois do *Tirou* ou logo depois do *Pôs*: a leitura não é "de uso" nem "de repouso".
 O que conta é o intervalo até a anterior, dividido pelas marcações minuto a minuto. Uma leitura às 22h05, depois de um dia
@@ -305,7 +306,7 @@ pulso e de winder.
 
 ```text
 (todos os relógios)       Observação, Sua nota, Compra, Garantia, Limite de carga
-├── Smartwatch            Autonomia em uso real, Decaimento em uso, Decaimento guardado
+├── Smartwatch            Autonomia em uso real, Decaimento em uso, Decaimento guardado, No carregador: horas para encher
 └── Tradicional           Última revisão, Revisão a cada
     ├── Mecânico          Reserva de marcha, Aceita corda pela coroa
     │   ├── Automático    No pulso: horas / reserva, No winder: horas / reserva
@@ -424,14 +425,15 @@ no minuto seguinte, pelo cron (o mesmo que recupera um arquivo sumido).
 ### Smartwatch
 
 A "carga" do smartwatch é a bateria, em %. O sistema não lê a bateria do relógio: ela é **estimada** a partir da última
-**leitura de carga** que você lançou, descontando o que ele gastou desde então (no pulso e guardado). Sem nenhuma leitura, a
-carga fica desconhecida.
+**leitura de carga** que você lançou, descontando o que ele gastou desde então (no pulso e guardado) e somando o que ele carregou
+no carregador (a sessão **No carregador**). Sem nenhuma leitura, a carga fica desconhecida.
 
 | Campo | Vazio | O que é e para que serve |
 |---|---|---|
 | **Autonomia em uso real** (dias) `autonomia_dias` | 5 | Quantos **dias de uso** a bateria cheia aguenta no seu uso de verdade (não o do fabricante). Dá o gasto em uso: 100 ÷ autonomia. Com 1,5 dia, o gasto é 66,7% por dia de uso. Também decide quantos dias seguidos ele fica na escala inteligente (o que a bateria aguenta, de 1 a 7). |
 | **Decaimento em uso** (% por dia) `decaimento_uso` | 100 ÷ autonomia | O gasto em uso, direto. Preenchido, vale no lugar da conta pela autonomia. |
 | **Decaimento guardado** (% por dia) `decaimento_repouso` | 0,1 | Quanto ele perde desligado na gaveta. |
+| **No carregador: horas para encher, de vazio** (h) `carga_carregador_horas` | 2 | Quantas horas no carregador levam de 0 a 100%. Cada hora na sessão *No carregador* soma 100 ÷ 2 = 50%, até 100%. Quando enche, vence o aviso **Tirar do carregador**. Ao tirar, uma leitura de carga acerta a conta (ela manda). |
 
 Dois detalhes que mudam a conta:
 
@@ -548,6 +550,7 @@ Os avisos do cadastro inicial, com o identificador (o nome deles nas fórmulas, 
 | Aviso | Identificador | Para quem | Resolve com |
 |---|---|---|---|
 | Carregar | `carregar` | Smartwatch | uma leitura de carga (no carregador, o aviso não aparece) |
+| Tirar do carregador *(sai na hora)* | `carregado` | Smartwatch | o No carregador, fechando (o botão vira **Tirou do carregador**). Vence quando a bateria enche no carregador e vai pelo Telegram **no minuto em que vence**. |
 | Informar a carga | `leitura` | Smartwatch | uma leitura de carga |
 | Carga baixa *(vem desligado)* | `carga_baixa` | Smartwatch | uma leitura de carga |
 | Dar corda | `corda` | Mecânico (com *Aceita corda pela coroa*) | a Corda |
@@ -556,6 +559,11 @@ Os avisos do cadastro inicial, com o identificador (o nome deles nas fórmulas, 
 | Trocar a pilha | `pilha` | Pilha | a Troca de pilha |
 | Revisão | `revisao` | Tradicional | a Revisão |
 | Garantia vencendo | `garantia` | todos | (nada: só avisa) |
+
+Os avisos vão no alerta da manhã. Um aviso marcado **na hora** (em **Cadastros › Avisos**, a caixa *na hora*) vai também pelo
+Telegram **no minuto em que vence**, uma vez só, até ser resolvido: é assim que o **Tirar do carregador** chega quando a bateria
+enche. Em **Hoje é dia de**, o botão é o do tipo que resolve: *Pôs no sol* com a sessão fechada, *Tirou do carregador* com ela
+aberta, *Informar leitura de carga* com o campo do valor.
 
 Além deles, a mensagem tem dois tipos que não são cadastro: o **dia** (`dia`, o relógio de hoje, de manhã) e a **véspera**
 (`vespera`, o de amanhã, à noite). Cada evento personalizado entra como `ev<id>`.
@@ -573,7 +581,7 @@ Um lançamento é tudo o que se marca num relógio. Cada tipo vale para um grupo
 | **Corda** (`corda`) | instantâneo | Mecânico (com *Aceita corda pela coroa*) | encheu a reserva de marcha. |
 | **No winder** (`winder`) | sessão | Automático | o tempo no winder: a reserva sobe. |
 | **No sol** (`sol`) | sessão | Solar | o tempo no sol: a carga de luz sobe. Esquecida aberta, fecha às 18h (a Configuração muda). |
-| **No carregador** (`carregador`) | sessão | Smartwatch | o tempo no carregador: o estado do relógio mostra *No carregador* e o aviso **Carregar** some enquanto ele carrega. Ao tirar, informe a leitura de carga: é ela que diz quanto carregou. |
+| **No carregador** (`carregador`) | sessão | Smartwatch | o tempo no carregador: o estado do relógio mostra *No carregador*, a bateria sobe pelo campo *No carregador: horas para encher*, o aviso **Carregar** some e, quando enche, vem o **Tirar do carregador**. Ao tirar, uma leitura de carga acerta a conta. |
 | **Troca de pilha** (`pilha`) | instantâneo | Pilha | pilha nova: a vida da pilha recomeça. |
 | **Revisão** (`revisao`) | instantâneo | Tradicional | a revisão feita: a contagem até a próxima recomeça. |
 | **No pulso**, **Winder** e **Sol** *(marcação antiga, sem duração)* (`pulso_antigo`, `winder_antigo`, `sol_antigo`) | instantâneo | os mesmos | as marcações que vieram do sistema anterior, que guardava só o momento e não a duração. Contam como "usou", "encheu no winder" e "encheu no sol" naquele momento. Não se lançam mais pela tela. |
@@ -588,7 +596,7 @@ mais perto do relógio. Todas se editam e se testam em **Cadastros**.
 
 | Fórmula | O que calcula |
 |---|---|
-| `energia` (%) | a carga de agora, de 0 a 100. **Smartwatch:** a última leitura menos o gasto no pulso (horas no pulso ÷ 15 × gasto em uso) e menos o gasto fora (o resto do tempo × gasto fora). **Mecânico:** a reserva que sobra ÷ a reserva de marcha. **Solar:** a carga de luz (perde no escuro pela reserva de energia, ganha no sol pelo tempo de sol para encher, e no pulso uma parte disso (*No pulso: quanto carrega*); sem nenhum sol marcado, desconhecida). **Pilha:** quanto falta da vida da pilha. |
+| `energia` (%) | a carga de agora, de 0 a 100. **Smartwatch:** percorre o histórico desde a última leitura: a leitura vale como está; cada hora no pulso perde o gasto em uso ÷ 15 (as horas de um dia de uso), cada hora no carregador ganha 100 ÷ *horas para encher*, e o resto do tempo perde o gasto fora ÷ 24; sempre entre 0 e 100. **Mecânico:** a reserva que sobra ÷ a reserva de marcha. **Solar:** a carga de luz (perde no escuro pela reserva de energia, ganha no sol pelo tempo de sol para encher, e no pulso uma parte disso (*No pulso: quanto carrega*); sem nenhum sol marcado, desconhecida). **Pilha:** quanto falta da vida da pilha. |
 | `reserva_restante` (h) | **Mecânico:** a reserva de marcha que sobra. Perde 1 hora por hora; no pulso o automático ganha pelos campos *No pulso*; no winder, pelos campos *No winder*; a corda (e as marcações antigas) enchem. |
 | `taxa_uso`, `taxa_repouso` (% por dia) | **Smartwatch:** o gasto no pulso e o gasto fora que valem: o medido pelas leituras, senão o do cadastro. |
 | `dias_de_carga` (dias) | **Smartwatch:** quantos dias de uso a carga de agora aguenta. |
@@ -601,6 +609,8 @@ mais perto do relógio. Todas se editam e se testam em **Cadastros**.
 | `uso_30d` (dias) | quantos dias com uso nos últimos 30. |
 | `uso_vs_media` (%) | o uso nos últimos 30 dias comparado com a média da coleção (100: na média). |
 | `dias_desde_compra` (dias) | dias desde a compra. |
+| `dias_de_uso` (dias) | em quantos dias o relógio foi ao pulso (também as marcações antigas). |
+| `custo_por_uso` (R$) | o valor pago dividido pelos dias de uso: quanto cada uso já custou (sai no quadro **Compra** da ficha). Sem o valor pago, ou sem nenhum dia de uso, vazio. |
 | `dias_ate_revisao` (dias) | **Tradicional:** dias até a próxima revisão (0: vencida), pela última revisão e pelo intervalo do cadastro. |
 
 As autonomias saem em segundos para a API (`recurso=autonomia`) e por extenso na ficha (o quadro **Autonomia**).
@@ -615,7 +625,7 @@ na chave `config`), para quem automatiza; o padrão de uma instalação nova vem
 | Opção | O que faz |
 |---|---|
 | **Horário de uso, início e fim** (`uso_inicio`, `uso_fim`) | o período do dia em que um relógio está no pulso. Vale para o plano, as previsões e o "dia de uso" do gasto medido (das 7h às 22h, 15 horas). Padrão: 07:00 e 22:00. |
-| **Pôr no pulso sozinho** (`pulso_auto_inicio`) | a caixa ao lado do início: marcada, o relógio do dia entra no pulso sozinho no início do horário de uso; desmarcada, só pelo **Pôs**. Padrão: marcada. |
+| **Pôr no pulso sozinho** (`pulso_auto_inicio`) | a caixa ao lado do início: marcada, o relógio do dia entra no pulso sozinho no início do horário de uso; desmarcada, só pelo **Pôs**. Se nessa hora ele está noutro lugar (no carregador, no sol, no winder), espera ele sair de lá, e o período no pulso começa quando ele saiu. Padrão: marcada. |
 | **Tirar do pulso sozinho** (`pulso_auto_fim`) | a caixa ao lado do fim: marcada, ele sai do pulso sozinho no fim do horário de uso (é o "fecha às" do tipo No pulso); desmarcada, só pelo **Tirou**. Padrão: marcada. |
 | **Rodada da manhã** (`horario_manha`) | a hora em que o cron manda a mensagem do dia (o relógio de hoje e os avisos) e refaz o plano a partir do que aconteceu. Padrão: 06:30. |
 | **Rodada da noite** (`horario_noite`) | a hora da mensagem da véspera: o relógio de amanhã e o que preparar. Padrão: 20:00. |
@@ -658,7 +668,9 @@ coluna `ativo` da tabela `modo`, e troca-se na página Hoje.)
 | `ultima_manha`, `ultima_noite` | o dia da última rodada da manhã e da noite (para não rodar duas vezes). |
 | `cron_ultima_execucao`, `cron_erro`, `cron_registro` | quando o cron rodou, o último erro (vazio: nenhum) e o registro da última rodada com atividade. |
 | `agenda_teste_id` | o evento de teste da agenda, enquanto existir. |
-| `migracao_v10`, `migracao_v12`, `migracao_v16`, `migracao_v17`, `migracao_v18`, `migracao_v19` | as marcas de que essas migrações foram aplicadas (as outras se marcam pela própria estrutura do banco). |
+| `na_hora_enviados` | os avisos "na hora" que já foram pelo Telegram e ainda estão vencidos (`relogio_id:aviso`): não vão de novo; saem da lista quando deixam de vencer. |
+| `backup_ultima` | quando foi feita a última cópia de segurança. |
+| `migracao_v10`, `migracao_v12`, `migracao_v16`, `migracao_v17`, `migracao_v18`, `migracao_v19`, `migracao_v20` | as marcas de que essas migrações foram aplicadas (as outras se marcam pela própria estrutura do banco). |
 
 ## Um dia com o Relógios 2
 
@@ -757,11 +769,11 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | Página | Para que serve |
 |---|---|
 | **Hoje** (`index.php`) | A tela principal. Mostra o relógio do dia, os avisos de hoje (atrasados e em breve) com o botão que resolve cada um, os próximos dias do plano e o modo de rodízio, que se troca ali mesmo. Abaixo fica a tabela da coleção, com filtros e ordenação por tipo, estado, carga, última vez usado, próxima manutenção, data e valor da compra. Clicar num relógio abre o **painel** dele: ao lado da lista ou numa janela flutuante grande, como estiver na Configuração (**Abrir o relógio na página Hoje**). |
-| **Plano** (`plano.php`) | O plano inteiro, de hoje até o fim (na escala inteligente, um ou dois anos), mês a mês: o relógio de cada dia, o lembrete e o **trocar por…**. Filtra por período (30 dias, 90, um ano, dois, tudo) e por relógio, e mostra quantos dias cada relógio tem no período, a porcentagem e o próximo dia dele. |
-| **Painel / Ficha** (`ficha.php`) | Tudo sobre um relógio, em quadros alinhados numa grade (cada quadro com o rótulo de cada informação à esquerda e o valor à direita): foto, estado agora (*"Em repouso desde 21:40"*, *"No sol desde 09:12"*), carga, nota com a conta, próxima entrada no plano, previsão da bateria, o gasto da bateria no pulso e fora (o medido e o do cadastro), as últimas leituras, a linha do tempo recente, o quadro **Documentos** (quantos em cada categoria, e o link para a página Documentos), o quadro **Marcar** e o cadastro completo, editável. O **Marcar** é um menu só, *O que você quer marcar?*: pôr ou tirar do pulso, do winder ou do sol, corda, troca de pilha, leitura de carga, um período que já passou ou corrigir uma marcação; embaixo aparecem só os campos daquilo. |
+| **Plano** (`plano.php`) | Em **Escolher os relógios de um período**: de, até, os relógios na ordem e quantos dias seguidos cada um (as férias com estes três, um por dia), e o **Voltar a sortear o período**. O plano inteiro, de hoje até o fim (na escala inteligente, um ou dois anos), mês a mês: o relógio de cada dia, o lembrete e o **trocar por…**. Filtra por período (30 dias, 90, um ano, dois, tudo) e por relógio, e mostra quantos dias cada relógio tem no período, a porcentagem e o próximo dia dele. |
+| **Painel / Ficha** (`ficha.php`) | Tudo sobre um relógio, em quadros alinhados numa grade (cada quadro com o rótulo de cada informação à esquerda e o valor à direita): foto, estado agora (*"Em repouso desde 21:40"*, *"No sol desde 09:12"*), carga, nota com a conta, próxima entrada no plano, previsão da bateria, o gasto da bateria no pulso e fora (o medido e o do cadastro), as últimas leituras, a linha do tempo recente, o quadro **Compra** (o valor pago, a loja, a garantia e o **custo por uso**: o valor pago dividido pelos dias de uso), o quadro **Documentos** (quantos em cada categoria, e o link para a página Documentos), o quadro **Marcar** e o cadastro completo, editável. O **Marcar** é um menu só, *O que você quer marcar?*: pôr ou tirar do pulso, do winder, do sol ou do carregador, corda, troca de pilha, leitura de carga, um período que já passou ou corrigir uma marcação; embaixo aparecem só os campos daquilo. |
 | **Documentos** (`documentos.php`) | Os documentos de um relógio (ou de todos), aberta pela ficha: o envio de vários arquivos, uma aba por categoria, a galeria das fotos em tela cheia com apresentação, os vídeos em sequência na ordem escolhida, o visualizador de PDF, o resumo da NF-e do XML, e o download do resto. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 | **Histórico** (`historico.php`) | A linha do tempo de um relógio: em uso pelo rodízio, no pulso fora do rodízio, no winder, no sol, em repouso, e cada corda, carga e troca de pilha. Mostra quanto tempo e que porcentagem ficou em cada estado, com filtro de período e de estado. |
-| **Configuração** (`configuracao.php`) | Os horários (manhã, noite, uso), o Telegram, o Google Agenda, a mensagem padrão de cada canal, a tabela **"O que vai para onde"** (qual aviso sai por qual canal), os eventos personalizados, a prévia **"Como sai hoje"** e o botão que aplica as migrações do banco. |
+| **Configuração** (`configuracao.php`) | A **Cópia de segurança** (as cópias da pasta, com **Baixar** e **Restaurar**, e o **Fazer uma cópia agora**). Os horários (manhã, noite, uso), o Telegram, o Google Agenda, a mensagem padrão de cada canal, a tabela **"O que vai para onde"** (qual aviso sai por qual canal), os eventos personalizados, a prévia **"Como sai hoje"** e o botão que aplica as migrações do banco. |
 | **Critérios** (`criterios.php`) | Os conjuntos de critérios por lugar (todos os relógios, um grupo ou um relógio), com parâmetros, subparâmetros, faixas e a nota de cada relógio com a conta aberta. Tem **Restaurar os critérios iniciais**. |
 | **Grupos** (`grupos.php`) | A árvore: criar, renomear, mover, ordenar, excluir (o que era do grupo passa para o de cima) e escolher o grupo de cada relógio. |
 | **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), avisos, modos de rodízio e as categorias de documentos: tudo o que o sistema usa e que não é código. |
@@ -835,6 +847,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `documento` | o arquivo de um documento (`id=<id>`): para mostrar (imagem, vídeo, áudio, PDF, texto) ou para baixar (o resto, ou com `baixar=1`); `mini=1` é a miniatura da foto. Atende pedaços (Range), para o vídeo avançar |
 | `usuarios`, `migracoes` | os logins, cada um com o hash da senha (para migrar com a mesma senha: veja [Os usuários e as senhas](#os-usuários-e-as-senhas)); as migrações que faltam aplicar |
 | `instalacao` | a situação da instalação: o banco, se está vazio, instalado e em dia, quantos usuários e o próximo passo. Responde também com o banco vazio, pelo token |
+| `backup` | a cópia de segurança do banco: se a pasta serve, quantas ficam, a última e as cópias da pasta; `arquivo=` baixa uma |
 | `importacao` | o que a importação do sistema anterior usa: o servidor do banco antigo (sem a senha), se o PHP tem o MySQL e se este banco já tem relógios |
 | `entrar` | o login das páginas: sem login, 401 (o navegador pede o usuário e a senha); com login, volta para a página de `volta=` (302) ou diz quem entrou |
 | `ajuda` | a documentação inteira: cada consulta, cada escrita, cada campo de cada resposta e as funções do motor |
@@ -849,8 +862,8 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `relogio` | `salvar` (criar ou alterar), `excluir` (com os documentos), `foto`, `remover_foto` |
 | `documentos` | `enviar` (um ou vários arquivos, com a categoria, o título, a data, a descrição e, numa foto, a miniatura), `alterar`, `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (só sem documentos) |
-| `lancamento` | `lancar` (corda, carga, pilha...), `iniciar` e `encerrar` (pôr e tirar do pulso, do winder, do sol), `periodo` (um período que já passou), `alterar`, `excluir` |
-| `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |
+| `lancamento` | `lancar` (corda, carga, pilha...), `iniciar` e `encerrar` (pôr e tirar do pulso, do winder, do sol, do carregador), `alternar` (fecha a sessão se está aberta, abre se está fechada: um botão só no celular), `periodo` (um período que já passou), `alterar`, `excluir`. Em todas, `relogio_id=hoje` é o relógio do dia |
+| `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `periodo` (os relógios de um período, na ordem: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (o período volta a ser sorteado), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (grupos) e `relogios` (o grupo de cada relógio) |
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (e `ordem` nos campos) |
@@ -860,6 +873,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `usuarios` | `salvar` (com a `senha`, ou com o `senha_hash` de outro sistema; o primeiro usuário, pelo token), `excluir` |
 | `migracoes` | `aplicar` |
 | `instalacao` | `instalar` (só num banco vazio, pelo token) |
+| `backup` | `fazer` (uma cópia de segurança agora), `restaurar` (`arquivo=`: volta o banco para aquela cópia, guardando antes uma do que está agora) |
 | `importacao` | `importar` (`banco=` o nome do banco antigo; `substituir=1` quando este banco já tem relógios; parou no meio, nada fica gravado) |
 
 **As respostas de erro** dizem o motivo: `{"erro": "..."}` nas consultas, e `{"ok": false, "mensagem", "erros": [...]}` (um erro
@@ -1008,6 +1022,7 @@ têm de dar **403**.
 | `MSG_ENDPOINT`, `MSG_DESTINATARIO`, `MSG_TITULO` | as mensagens (veja abaixo). Sem o endereço, nada é enviado. |
 | `DOCUMENTOS_PASTA` | a pasta dos arquivos dos documentos (o manual, a nota, fotos, vídeos), **fora da pasta publicada**, com permissão de escrita para o usuário do PHP. Sem ela, a página Documentos avisa que falta e não aceita envios. Ex.: `define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
 | `DOCUMENTOS_COPIA_BANCO` | opcional: a cópia de segurança dos documentos dentro do banco, para o sistema inteiro. `true`: todo arquivo vai também para o banco; `false`: nenhum vai; sem ela: cada relógio e cada arquivo decidem. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
+| `BACKUP_PASTA`, `BACKUP_MANTER`, `BACKUP_DOCUMENTOS` | opcionais: a cópia de segurança do banco (veja [Cópia de segurança](#cópia-de-segurança)). A pasta, **fora da pasta publicada** (sem ela, não há cópia automática); quantas ficam (padrão 7); e se leva o conteúdo dos documentos guardado no banco (padrão: não). |
 | `DOCUMENTOS_LIMITE` | opcional: o maior documento aceito, em bytes. Sem ela, 100 MB (`104857600`); `0` ou `-1`, sem limite do sistema. O `MANUAL_LIMITE`, o nome antigo, ainda vale quando ela não existe. O limite do PHP e o do nginx continuam valendo (veja [O tamanho dos envios](#o-tamanho-dos-envios-os-documentos)). Ex.: `define("DOCUMENTOS_LIMITE", 524288000);` para 500 MB |
 | `ANTIGO_HOST`, `ANTIGO_PORTA`, `ANTIGO_USUARIO`, `ANTIGO_SENHA` | opcionais, só para o `importar.php` com este sistema no Postgres ou no SQLite: onde está o MySQL do sistema anterior |
 | `GOOGLE_TOKEN_URL`, `GOOGLE_API_URL` | opcionais, só para testes: os endereços do Google que a agenda usa (o do token, `https://oauth2.googleapis.com/token`, e o da API, `https://www.googleapis.com/calendar/v3`). Trocados, a sincronização da agenda conversa com um servidor de teste em vez do Google |
@@ -1072,10 +1087,15 @@ E, para uma migração que parou no meio poder rodar de novo pelo mesmo botão: 
 `ADD INDEX` com nome de um índice que já existe não fazem nada.
 
 Uma migração pode ter também um **passo em PHP**, para o que o SQL comum aos três não faz (a v16 quebra o texto das opções
-de um campo, uma por linha, em linhas da tabela `campo_opcao`). Ele roda logo depois do SQL, pelo botão da Configuração, e
+de um campo, uma por linha, em linhas da tabela `campo_opcao`; a v20, no MySQL/MariaDB, passa para `utf8mb4_unicode_ci` as
+tabelas criadas noutra collation). Ele roda logo depois do SQL, pelo botão da Configuração, e
 também no `instalar.php`.
 
 ### Diferenças entre os bancos que você pode notar
+
+- **A ordem dos textos no MySQL/MariaDB:** toda tabela nasce em `utf8mb4_unicode_ci`, qualquer que seja o padrão do banco. O
+  MariaDB vem com `utf8mb4_general_ci`, que ordena diferente dos outros bancos (põe `dias_desde_compra` antes de
+  `dias_de_carga`); uma instalação antiga criada assim é convertida pela migração v20.
 
 - **Maiúsculas e acentos:** como no MySQL, "Relógio" e "RELOGIO" são o mesmo nome, na busca, na ordem e no login. No
   Postgres, isso vem de uma collation ICU (`ci`) que o `instalar.php` cria. No SQLite, de uma função do PHP; por isso, num
@@ -1121,6 +1141,17 @@ escala inteligente, o plano é refeito a partir do dia trocado (os lembretes de 
 ajustam). Num dia escolhido à mão, a mesma lista tem **voltar a sortear**. Também dá para **Sortear de novo** a partir de hoje
 ou de amanhã.
 
+**E se eu quiser escolher eu mesmo os relógios de um período?**
+Na página **Plano**, abra **Escolher os relógios de um período**: ponha o começo e o fim, inclua os relógios na ordem que quiser
+(um só, ou vários) e, se quiser, quantos dias seguidos cada um fica. **Aplicar ao período** grava os dias como escolhidos à mão:
+com vários relógios, eles se revezam na ordem da lista, e depois do último volta o primeiro. Esses dias ficam mesmo quando você
+sorteia de novo ou monta a próxima semana; para devolvê-los ao sorteio, o mesmo quadro tem **Voltar a sortear o período**.
+
+**O relógio está no carregador (ou no sol): o que aparece?**
+O estado mostra onde ele está (*No carregador desde 06:30*). No smartwatch, a bateria sobe pelo campo *No carregador: horas
+para encher*; quando enche, o aviso **Tirar do carregador** sai na hora pelo Telegram e aparece em **Hoje é dia de** com o botão
+**Tirou do carregador**. Com o pulso sozinho ligado, o relógio do dia espera sair do carregador para ir ao pulso.
+
 **Esqueci de marcar o Tirou (ou o Pôs).**
 No painel do relógio, no quadro **Marcar**, escolha no menu o que aconteceu (*Tirar do pulso*, *Pôr no winder*...) e preencha
 a hora: vazia, é agora; preenchida, é a hora que você esqueceu (ontem às 22:30). Se o que foi marcado está errado, escolha
@@ -1144,6 +1175,54 @@ noite no winder para resolver.
 Pode. As telas usam exatamente a mesma API.
 
 ---
+
+## Marcar pelo celular, com um toque
+
+Tudo o que a tela marca, a API marca, então um atalho na tela inicial do celular faz o **Pôs**, o **Tirou** ou o **No
+carregador** sem abrir o site. Duas coisas da API existem para isso: `acao=alternar` (abre a sessão se está fechada, fecha se
+está aberta: um botão só para pôr e tirar) e `relogio_id=hoje` (o relógio do dia, sem precisar saber o número dele). A resposta
+traz a `mensagem` pronta para mostrar (*"Xiaomi Band 8: No pulso desde 12/10 07:19."*).
+
+O pedido é sempre o mesmo, mudando só o tipo (`pulso`, `carregador`, `sol`, `winder`) e o relógio:
+
+```text
+POST https://seu-servidor/relojoeiro/api.php
+cabeçalho  X-Api-Token: <o API_TOKEN do config.php>
+corpo      recurso=lancamento&acao=alternar&relogio_id=hoje&tipo=pulso
+```
+
+- **iPhone (app Atalhos):** novo atalho, ação **Obter Conteúdo do URL**: o endereço do `api.php`, método **POST**, em
+  **Cabeçalhos** o `X-Api-Token`, em **Corpo da Solicitação** o tipo **Formulário** com os campos `recurso`, `acao`,
+  `relogio_id` e `tipo`. Depois, **Obter Valor do Dicionário** (chave `mensagem`) e **Mostrar Notificação** com ele. Adicione o
+  atalho à Tela de Início; um para o pulso, outro para o carregador.
+- **Android:** o app **HTTP Shortcuts** (gratuito) faz o mesmo: método POST, o cabeçalho, os campos do formulário e "mostrar a
+  resposta" como notificação; cada atalho vira um ícone na tela inicial.
+- **Home Assistant:** um `rest_command` com o mesmo pedido, chamado por um botão, por um NFC na caixa dos relógios, ou pela
+  tomada inteligente do carregador (ligou: `iniciar` no carregador; desligou: `encerrar`).
+- **Para um relógio que não é o do dia,** troque `hoje` pelo número dele (o `id`, na ficha ou na API em
+  `recurso=hoje&mostrar[relogios]=id,nome`). Uma leitura de carga é `acao=lancar&tipo=carga&valor=68`.
+
+O token dá acesso a tudo: guarde-o só no celular (com bloqueio de tela) e troque o `API_TOKEN` se o aparelho for perdido.
+
+## Cópia de segurança
+
+Com a `BACKUP_PASTA` no `config.php` (uma pasta do servidor **fora da pasta publicada**, com escrita para o PHP), o cron faz
+**uma cópia do banco inteiro por dia**, na rodada da noite, e guarda as `BACKUP_MANTER` mais novas (padrão 7): a cada cópia
+nova, as mais velhas saem. A pasta dentro da publicada é recusada (qualquer um baixaria o banco pelo navegador).
+
+- **O arquivo** é `relojoeiro-AAAA-MM-DD-HHMMSS.jsonl.gz`: JSON Lines comprimido, uma linha por registro, **o mesmo nos três
+  bancos**. Uma cópia de um MySQL volta num PostgreSQL ou num SQLite, desde que o sistema esteja na mesma versão (a mesma
+  última migração).
+- **Os documentos:** os arquivos já ficam na pasta deles, e a cópia deles dentro do banco (que pode ser grande) só entra na
+  cópia de segurança com `BACKUP_DOCUMENTOS = true`. Sem ela, ao restaurar, os documentos voltam sem a cópia no banco e o cron
+  refaz a que for pedida.
+- **Na Configuração**, em **Cópia de segurança**: as cópias da pasta (quando, o tamanho, com ou sem documentos), **Baixar**
+  (guarde uma fora do servidor de vez em quando), **Restaurar** e **Fazer uma cópia agora**.
+- **Restaurar** volta o banco inteiro para aquela cópia: antes, o sistema guarda uma cópia do que está agora (dá para voltar
+  atrás); depois, num passo só, troca todos os registros pelos da cópia. Se algo falha no meio, nada muda.
+- **Para mudar de banco** (do SQLite para o MySQL, por exemplo): instale o banco novo, aplique as migrações, ponha a cópia na
+  pasta das cópias e restaure.
+- **Pela API:** `recurso=backup` (a situação e as cópias; `arquivo=` baixa uma), e as escritas `fazer` e `restaurar`.
 
 ## Reescrever o sistema do zero
 
@@ -1273,7 +1352,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |
 | [`estilo.css`](estilo.css) | o visual |
 | [`schema.sql`](schema.sql) | a estrutura do banco e o conjunto inicial (grupos, campos, fórmulas, avisos, modos, critérios) |
-| `migracao_v2.sql` … `migracao_v19.sql` | as migrações, aplicadas pela página Configuração |
+| `migracao_v2.sql` … `migracao_v20.sql` | as migrações, aplicadas pela página Configuração |
 | [`config.exemplo.php`](config.exemplo.php) | o modelo do `config.php` |
 | [`instalar.php`](instalar.php) | instala o `schema.sql` no banco do `config.php`, qualquer um dos três (o mesmo que `recurso=instalacao`) |
 | [`criar_usuario.php`](criar_usuario.php) | cria um usuário ou troca a senha, pela linha de comando (o mesmo que `recurso=usuarios`, `acao=salvar`) |

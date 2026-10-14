@@ -844,12 +844,20 @@ function op_lancamento($acao, $d)
         return $res;
     };
     $existente = $id > 0 ? linha("SELECT l.*, t.identificador AS tipo, t.formato, t.exclusiva, t.nome AS tipo_nome FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.id = ?", [$id]) : null;
-    $rid = $existente ? (int)$existente["relogio_id"] : (int)($d["relogio_id"] ?? 0);
+    // relogio_id=hoje: o relógio do dia, pelo plano (para um atalho no celular que não sabe o id)
+    $hoje_pedido = !$existente && strtolower(trim((string)($d["relogio_id"] ?? ""))) === "hoje";
+    $p_hoje = $hoje_pedido ? plano_do_dia(date("Y-m-d", $agora)) : null;
+    $rid = $existente ? (int)$existente["relogio_id"] : ($hoje_pedido ? ($p_hoje ? (int)$p_hoje["relogio_id"] : 0) : (int)($d["relogio_id"] ?? 0));
     $r = linha("SELECT * FROM relogio WHERE id = ?", [$rid]);
     $t = $existente ? lancamento_tipos()[$existente["tipo"]] : ($r ? (lancamento_tipos_do_relogio($r)[(string)($d["tipo"] ?? "")] ?? null) : null);
     // as sessões esquecidas abertas do relógio fecham antes (o Pôs de hoje não esbarra na de ontem, nem o Tirou a estica)
     if ($r) {
         fechar_esquecidas($agora, $rid);
+    }
+    // alternar: a sessão aberta se fecha, a fechada se abre (um botão só no celular: "pulso", "carregador")
+    if ($acao === "alternar" && $t && $t["formato"] === "sessao") {
+        $acao = valor("SELECT id FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim > ?) LIMIT 1",
+            [$rid, (int)$t["id"], date("Y-m-d H:i:s", $agora), date("Y-m-d H:i:s", $agora)]) !== null ? "encerrar" : "iniciar";
     }
     // sessões exclusivas do relógio que se sobrepõem a [a, b) (fora a $ignorar)
     $sobrepostas = function ($a, $b, $ignorar) use ($rid) {
@@ -859,10 +867,14 @@ function op_lancamento($acao, $d)
     };
     if (($acao === "alterar" || $acao === "excluir") && !$existente) {
         $erros[] = "Lançamento não encontrado.";
+    } elseif ($hoje_pedido && !$p_hoje) {
+        $erros[] = "Nenhum relógio para hoje no plano (relogio_id=hoje).";
     } elseif (!$r) {
         $erros[] = "Relógio não encontrado (relogio_id).";
     } elseif (!$t) {
         $erros[] = "Tipo de lançamento desconhecido para " . $r["nome"] . ": use um destes: " . implode(", ", array_keys(lancamento_tipos_do_relogio($r))) . ".";
+    } elseif ($acao === "alternar") {
+        $erros[] = $t["nome"] . " não é uma sessão: alternar vale só para as sessões (abre a fechada, fecha a aberta).";
     } elseif ($acao === "lancar") {
         $q = $momento($d["quando"] ?? "");
         $v = numero_br($d["valor"] ?? "");
@@ -910,6 +922,11 @@ function op_lancamento($acao, $d)
                         . ". Novo ponto de partida.";
                 } elseif ($estimada !== null && $v > $estimada + $folga) {
                     $msg .= " Carregado em parte: pela estimativa ele estava com ~" . (int)round($estimada) . $un . ". Novo ponto de partida, sem medir o gasto deste intervalo.";
+                } elseif (($outra = valor("SELECT t.nome FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'sessao'
+                    AND t.identificador <> 'pulso' AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?) ORDER BY l.inicio DESC, l.id DESC LIMIT 1",
+                    [$rid, date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $t1)])) !== null) {
+                    // o gasto medido conta só pulso e guardado: com outra sessão no meio (o carregador), o intervalo não mede
+                    $msg .= " " . $de . ": teve " . $outra . " no meio. Novo ponto de partida, sem medir o gasto deste intervalo." . $pela_estimativa;
                 } elseif ($horas < 1) {
                     $msg .= " " . $de . ": menos de 1 hora desde a leitura anterior, pouco tempo para medir o gasto." . $pela_estimativa;
                 } else {
@@ -1067,8 +1084,8 @@ function op_lancamento($acao, $d)
 // {quando}, {limite}), resolve (o tipo de lançamento que resolve; vazio: nenhum), ativo (1 ou 0), no_id: um aviso novo, ou mais
 // uma versão de um que existe, em outro ponto da árvore; escala: nao, uso ou sempre; simula_valor e simula_horas (o
 // lançamento que a escala simula; vazio: nenhum); agenda: janela (na agenda, só dentro da antecedência) ou sempre (qualquer
-// data; se vai ou não para a agenda é a Configuração, em "O que vai para onde")), alterar (id: o mesmo, menos o
-// identificador), excluir (id).
+// data; se vai ou não para a agenda é a Configuração, em "O que vai para onde"); na_hora (1 ou 0: o cron manda pelo Telegram
+// no minuto em que ele vence, uma vez, além do alerta da manhã)), alterar (id: o mesmo, menos o identificador), excluir (id).
 // ---------------------------------------------------------------------------------------------------------------------
 function op_avisos($acao, $d)
 {
@@ -1090,6 +1107,7 @@ function op_avisos($acao, $d)
         $no = array_key_exists("no_id", $d) ? no_do_pedido($d["no_id"]) : ($atual ? ($atual["no_id"] === null ? null : (int)$atual["no_id"]) : null);
         $escala = (string)($d["escala"] ?? ($atual["escala"] ?? "nao"));
         $agenda = (string)($d["agenda"] ?? ($atual["agenda"] ?? "janela"));
+        $na_hora = array_key_exists("na_hora", $d) ? ((string)$d["na_hora"] === "1" ? 1 : 0) : ($atual ? (int)$atual["na_hora"] : 0);
         $simula = [];
         foreach (["simula_valor", "simula_horas"] as $k) {
             $bruto = array_key_exists($k, $d) ? trim((string)$d[$k]) : ($atual[$k] ?? "");
@@ -1138,15 +1156,15 @@ function op_avisos($acao, $d)
         }
         if (count($erros) === 0) {
             $dados = [$nome, $expr, $condicao !== "" ? $condicao : null, $ante, $texto, $resolve !== "" ? (int)lancamento_tipos()[$resolve]["id"] : null, $ativo, $no, $escala,
-                $simula["simula_valor"], $simula["simula_horas"], $agenda];
+                $simula["simula_valor"], $simula["simula_horas"], $agenda, $na_hora];
             if ($acao === "novo") {
-                sql("INSERT INTO aviso (identificador, nome, expressao, condicao, antecedencia_dias, texto, resolve_tipo_id, ativo, no_id, escala, simula_valor, simula_horas, agenda)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", array_merge([$ident], $dados));
+                sql("INSERT INTO aviso (identificador, nome, expressao, condicao, antecedencia_dias, texto, resolve_tipo_id, ativo, no_id, escala, simula_valor, simula_horas, agenda, na_hora)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", array_merge([$ident], $dados));
                 $id = ultimo_id();
                 $msg = "Aviso " . $nome . " gravado para " . no_caminho($no) . ".";
             } else {
                 sql("UPDATE aviso SET nome = ?, expressao = ?, condicao = ?, antecedencia_dias = ?, texto = ?, resolve_tipo_id = ?, ativo = ?, no_id = ?, escala = ?,
-                    simula_valor = ?, simula_horas = ?, agenda = ? WHERE id = ?", array_merge($dados, [$id]));
+                    simula_valor = ?, simula_horas = ?, agenda = ?, na_hora = ? WHERE id = ?", array_merge($dados, [$id]));
                 $msg = "Aviso " . $nome . " (" . no_caminho($no) . ") salvo.";
             }
             avisos_todos(true);
@@ -1653,7 +1671,10 @@ function op_criterios($acao, $d)
 // se o dia ainda não começou no pulso, o plano novo vale já de hoje), resortear (refaz o plano de amanhã até domingo; se o dia ainda não começou no pulso, também hoje),
 // resortear_hoje (inclusive hoje: o sorteado passa a ser o do pulso a partir de agora), usando (relogio_id: este passa a
 // ser o relógio de hoje, a partir de agora), trocar_dia (data, relogio_id: o relógio daquele dia, à mão; hoje, como o
-// usando; 0: o dia volta a ser sorteado), proxima_semana (só no domingo: monta ou refaz a semana seguinte inteira).
+// usando; 0: o dia volta a ser sorteado), proxima_semana (só no domingo: monta ou refaz a semana seguinte inteira),
+// periodo (de, ate, relogio_ids em ordem, dias_cada: os dias do período escolhidos à mão, em rodízio entre eles),
+// periodo_sortear (de, ate: os dias escolhidos à mão do período voltam a ser sorteados). Os dias escolhidos à mão de amanhã
+// em diante ficam quando se sorteia de novo ou se monta a próxima semana.
 // Na escala inteligente: sortear de novo refaz a escala (do mesmo jeito: de amanhã, ou inclusive hoje); usando segura o
 // escolhido nos dias que faltavam do bloco de hoje e refaz a escala depois deles; a próxima semana não existe (a escala
 // segue o próprio período).
@@ -1729,7 +1750,8 @@ function op_rodizio($acao, $d)
     } elseif ($acao === "resortear" || $acao === "resortear_hoje") {
         $antes = plano_do_dia($hoje->format("Y-m-d"));
         $desde = ($acao === "resortear_hoje" || !$comecou) ? $hoje : $hoje->modify("+1 day");
-        sql("DELETE FROM plano WHERE data >= ?", [$desde->format("Y-m-d")]);
+        // os dias escolhidos à mão de amanhã em diante ficam (um período que você montou não some no sorteio); hoje, sorteia
+        sql("DELETE FROM plano WHERE data >= ? AND (origem <> 'manual' OR data = ?)", [$desde->format("Y-m-d"), $hoje->format("Y-m-d")]);
         if ($escala) {
             gerar_escala($desde);
         }
@@ -1799,6 +1821,70 @@ function op_rodizio($acao, $d)
             }
             $msg = $dt->format("d/m") . ": " . $r["nome"] . ", escolhido à mão." . ($escala ? " A escala foi refeita a partir desse dia." : "");
         }
+    } elseif ($acao === "periodo" || $acao === "periodo_sortear") {
+        // um período escolhido à mão: de, ate (AAAA-MM-DD, de hoje em diante, até 2 anos), relogio_ids (um ou vários, na ordem:
+        // um por dia, e depois do último volta ao primeiro; dias_cada: quantos dias seguidos cada um fica). periodo_sortear:
+        // os dias escolhidos à mão do período (de amanhã em diante) voltam a ser sorteados
+        $de_p = DateTimeImmutable::createFromFormat("!Y-m-d", (string)($d["de"] ?? ""));
+        $ate_p = DateTimeImmutable::createFromFormat("!Y-m-d", (string)($d["ate"] ?? ""));
+        $ids_p = $d["relogio_ids"] ?? [];
+        $ids_p = array_values(array_filter(array_map("intval", is_array($ids_p) ? $ids_p : explode(",", (string)$ids_p))));
+        $cada = trim((string)($d["dias_cada"] ?? "1"));
+        $rels_p = [];
+        foreach ($ids_p as $x) {
+            $rels_p[] = linha("SELECT * FROM relogio WHERE id = ?", [$x]);
+        }
+        if (!$de_p || $de_p->format("Y-m-d") !== (string)$d["de"] || !$ate_p || $ate_p->format("Y-m-d") !== (string)$d["ate"]) {
+            $erros[] = "De e até: datas AAAA-MM-DD.";
+        } elseif ($de_p < $hoje) {
+            $erros[] = "O período começa num dia que já passou: o que foi usado se corrige nas marcações.";
+        } elseif ($ate_p < $de_p) {
+            $erros[] = "O fim do período vem antes do começo.";
+        } elseif ($de_p->diff($ate_p)->days > 730) {
+            $erros[] = "Um período de até 2 anos.";
+        } elseif ($acao === "periodo_sortear") {
+            $desde_p = max($de_p, $hoje->modify("+1 day"));
+            $n_p = (int)valor("SELECT COUNT(*) FROM plano WHERE data BETWEEN ? AND ? AND origem = 'manual'", [$desde_p->format("Y-m-d"), $ate_p->format("Y-m-d")]);
+            if ($escala) {
+                sql("UPDATE plano SET origem = 'sorteio' WHERE data BETWEEN ? AND ? AND origem = 'manual'", [$desde_p->format("Y-m-d"), $ate_p->format("Y-m-d")]);
+                gerar_escala($desde_p);
+            } else {
+                sql("DELETE FROM plano WHERE data BETWEEN ? AND ? AND origem = 'manual'", [$desde_p->format("Y-m-d"), $ate_p->format("Y-m-d")]);
+                garantir_plano($hoje);
+            }
+            $msg = $n_p === 0 ? "Nenhum dia escolhido à mão de " . $desde_p->format("d/m") . " a " . $ate_p->format("d/m") . "."
+                : $n_p . ($n_p === 1 ? " dia volta" : " dias voltam") . " a ser " . ($n_p === 1 ? "sorteado" : "sorteados") . ", de " . $desde_p->format("d/m") . " a " . $ate_p->format("d/m") . ".";
+        } elseif (count($ids_p) === 0) {
+            $erros[] = "Escolha pelo menos um relógio para o período.";
+        } elseif (in_array(null, $rels_p, true) || in_array(false, $rels_p, true)) {
+            $erros[] = "Relógio não encontrado.";
+        } elseif (!ctype_digit($cada) || (int)$cada < 1 || (int)$cada > 365) {
+            $erros[] = "Dias seguidos de cada: de 1 a 365.";
+        } else {
+            $fora = array_values(array_filter($rels_p, function ($r) { return (int)$r["disponivel"] !== 1; }));
+            if (count($fora) > 0) {
+                $erros[] = implode(", ", array_column($fora, "nome")) . (count($fora) === 1 ? " está indisponível" : " estão indisponíveis") . ": marque como disponível no cadastro antes.";
+            } else {
+                $motivo_p = "Escolhido à mão para o período de " . $de_p->format("d/m") . " a " . $ate_p->format("d/m") . ".";
+                $i = 0;
+                for ($dia = $de_p; $dia <= $ate_p; $dia = $dia->modify("+1 day"), $i++) {
+                    $r = $rels_p[intdiv($i, (int)$cada) % count($rels_p)];
+                    if ($dia == $hoje) {
+                        // hoje: ele passa a ser o do pulso a partir de agora (como o usando)
+                        $troca_hoje((int)$r["id"], $motivo_p);
+                    } else {
+                        sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, NULL, 'manual', ?, NOW())", [$dia->format("Y-m-d"), (int)$r["id"], $motivo_p]);
+                    }
+                }
+                if ($escala) {
+                    // a escala refeita a partir do começo do período: os dias dele ficam, e o resto se ajusta
+                    gerar_escala($de_p);
+                }
+                $msg = "De " . $de_p->format("d/m") . " a " . $ate_p->format("d/m") . ": " . $i . ($i === 1 ? " dia escolhido" : " dias escolhidos") . " à mão ("
+                    . implode(", ", array_column($rels_p, "nome")) . (count($rels_p) > 1 ? ", nessa ordem, " . ((int)$cada === 1 ? "um por dia" : $cada . " dias seguidos cada") : "") . ")."
+                    . ($escala ? " A escala foi refeita a partir de " . $de_p->format("d/m") . "." : "");
+            }
+        }
     } elseif ($acao === "proxima_semana") {
         if ($escala) {
             $erros[] = "Na escala inteligente não há próxima semana para montar: a escala segue o próprio período (até " . date("d/m/Y", strtotime(cfg("escala_fim"))) . "). Sortear de novo refaz a escala.";
@@ -1806,7 +1892,7 @@ function op_rodizio($acao, $d)
             $erros[] = "A próxima semana só se monta no domingo. Nos outros dias, sortear de novo refaz até o domingo desta semana.";
         } else {
             $seg = $hoje->modify("+1 day");
-            sql("DELETE FROM plano WHERE data BETWEEN ? AND ?", [$seg->format("Y-m-d"), $seg->modify("+6 days")->format("Y-m-d")]);
+            sql("DELETE FROM plano WHERE data BETWEEN ? AND ? AND origem <> 'manual'", [$seg->format("Y-m-d"), $seg->modify("+6 days")->format("Y-m-d")]);
             garantir_plano($seg, $seg->modify("+6 days"));
             $msg = "Semana de " . $seg->format("d/m") . " a " . $seg->modify("+6 days")->format("d/m") . " montada.";
         }

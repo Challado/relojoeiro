@@ -1264,3 +1264,11 @@ a.hoje-foto, a.hoje-foto * { text-decoration: none; }
 @container (max-width: 559px) {
   #tabela-relogios.em-cartoes { --colunas: 2; }
 }
+
+/* ---------- plano: os relógios de um período ---------- */
+.periodo-mao { margin: 1rem 0; }
+.periodo-mao > summary { cursor: pointer; font-weight: 600; color: var(--safira); }
+.periodo-lista { margin: 0; padding-left: 1.4rem; }
+.periodo-lista:empty::before { content: "Nenhum relógio ainda: escolha em \"Incluir relógio\"."; color: var(--cinza); font-size: .92rem; margin-left: -1.4rem; }
+.periodo-lista li { margin: .2rem 0; }
+

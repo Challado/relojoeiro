@@ -327,6 +327,7 @@ $MIGRACOES = [
     "v17" => ["migracao_v17.sql", "o banco valida o que guarda: regras (CHECK) em cada tabela, a origem dos lançamentos e do plano numa lista fechada, no máximo um modo em uso, um arquivo por documento; e a cópia dos documentos no banco em três níveis: o sistema (config.php), o relógio e o próprio arquivo", "config.chave=migracao_v17"],
     "v18" => ["migracao_v18.sql", "o carregador: a sessão \"No carregador\" onde vale a leitura de carga (o smartwatch), o estado do relógio mostra a sessão aberta (no sol, no winder, no carregador) e, no carregador, o aviso \"Carregar\" não aparece", "config.chave=migracao_v18"],
     "v19" => ["migracao_v19.sql", "o solar carrega também no pulso: uma parte do que ganharia no sol direto, pelo campo \"No pulso: quanto carrega, comparado ao sol direto\" (padrão 25%; 0 é o de antes, a carga parada)", "config.chave=migracao_v19"],
+    "v20" => ["migracao_v20.sql", "o smartwatch carrega no carregador (o campo \"No carregador: horas para encher\"), o aviso \"Tirar do carregador\" que sai na hora pelo Telegram (os avisos \"na hora\"), as fórmulas \"Dias de uso\" e \"Custo por uso\", e no MySQL/MariaDB as tabelas em utf8mb4_unicode_ci", "config.chave=migracao_v20", "migracao_v20_dados"],
 ];
 
 // O passo em PHP da v16, depois do SQL dela: as opções de cada campo do tipo lista (o texto, uma por linha) viram linhas da
@@ -341,6 +342,20 @@ function migracao_v16_dados()
         banco_script("ALTER TABLE campo DROP COLUMN opcoes");
     }
     sql("INSERT IGNORE INTO config (chave, valor) VALUES ('migracao_v16', '1')");
+}
+
+// O passo em PHP da v20, depois do SQL dela: no MySQL/MariaDB, as tabelas com colunas de texto noutra collation que não a
+// do Unicode (a utf8mb4_general_ci, padrão do MariaDB, ordena "dias_de_carga" depois de "dias_desde_compra", e as listas
+// saíam numa ordem diferente da dos outros bancos) passam para utf8mb4_unicode_ci. As tabelas novas já nascem nela (o
+// banco.php põe a collation em todo CREATE TABLE do MySQL). Por último, a marca de que a v20 foi aplicada
+function migracao_v20_dados()
+{
+    if (banco_tipo() === "mysql") {
+        foreach (banco_tabelas_fora_da_collation() as $t) {
+            banco_direto("ALTER TABLE `" . str_replace("`", "``", $t) . "` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        }
+    }
+    sql("INSERT IGNORE INTO config (chave, valor) VALUES ('migracao_v20', '1')");
 }
 
 // As migrações que faltam aplicar neste banco: as da lista cuja marca ainda não existe. A marca: uma tabela, uma coluna
@@ -477,7 +492,8 @@ $FUNCOES = [
     "CONTAR" => [2, 2, "CONTAR(\"tipo\"; dias): quantos lançamentos (ou dias com sessão) nos últimos N dias", true],
     "EM_SESSAO" => [1, 1, "EM_SESSAO(\"sessão\"): 1 se a sessão está aberta agora", true],
     "ACUMULA" => [3, null, "ACUMULA(início; máximo; perda por hora; \"tipo\"; efeito; ...): um saldo que percorre o histórico: "
-        . "numa sessão da lista, ganha o efeito por hora; num lançamento instantâneo da lista, passa a valer o efeito; no resto, perde; "
+        . "numa sessão da lista, ganha o efeito por hora (negativo: perde); num lançamento instantâneo da lista, passa a valer o efeito; num "
+        . "lançamento com valor (uma leitura), passa a valer a leitura vezes o efeito (1: a própria leitura); no resto, perde a perda por hora; "
         . "sempre entre 0 e o máximo", true],
     "MEDIA_COLECAO" => [1, 1, "MEDIA_COLECAO(\"variável\"): a média daquela variável nos relógios disponíveis", false],
 ];
@@ -903,8 +919,9 @@ function formula_calcular($no, &$ctx)
                 }
             } elseif ($nome === "ACUMULA") {
                 // um saldo que percorre o histórico dos tipos da lista, do primeiro lançamento deles até o instante. Numa sessão da
-                // lista, ganha o efeito dela por hora (duas ao mesmo tempo: vale a de maior ganho); num lançamento instantâneo da
-                // lista, o saldo passa a valer o efeito; fora de sessão, perde a perda por hora. Sempre entre 0 e o máximo. Sem
+                // lista, ganha o efeito dela por hora (duas ao mesmo tempo: vale a de maior ganho; um efeito negativo é uma perda);
+                // num lançamento instantâneo da lista, o saldo passa a valer o efeito; num com valor, a leitura vezes o efeito;
+                // fora de sessão, perde a perda por hora. Sempre entre 0 e o máximo. Sem
                 // nenhum lançamento dos tipos da lista: vazio.
                 $inicio = formula_calcular($args[0], $ctx);
                 $maximo = formula_calcular($args[1], $ctx);
@@ -920,7 +937,9 @@ function formula_calcular($no, &$ctx)
                                 if ($l["formato"] === "sessao") {
                                     $sessoes[] = [$l["ini"], $l["fim_ate"], (float)$efeito];
                                 } else {
-                                    $marcas[] = [$l["ini"], (float)$efeito];
+                                    // o lançamento com valor (uma leitura): o saldo passa a valer a leitura vezes o efeito (1: a
+                                    // própria leitura); o instantâneo: o saldo passa a valer o efeito
+                                    $marcas[] = [$l["ini"], $l["formato"] === "valor" ? (float)$l["valor"] * (float)$efeito : (float)$efeito];
                                 }
                             }
                         }
@@ -1225,11 +1244,15 @@ function avisos_todos($recarregar = false)
 // Os avisos de um relógio num instante: cada aviso que vale para ele e tem data prevista (sem data: não se aplica agora).
 // estado: atrasado (a data passou), em_breve (dentro da antecedência) ou ok. texto: o do cadastro, com {relogio},
 // {data} (dd/mm/aaaa hh:mm), {quando} ("em 2d 3h", "há 5h", "agora") e {limite} (o limite de carga do relógio) trocados.
-function avisos_do_relogio($r, $momento)
+function avisos_do_relogio($r, $momento, $so = null)
 {
     $res = [];
     $agora_d = dias_de($momento);
     foreach (avisos_todos() as $ident => $versoes) {
+        // $so: só estes avisos (os identificadores), para não calcular os outros
+        if ($so !== null && !in_array($ident, $so, true)) {
+            continue;
+        }
         $a = mais_perto($versoes, $r);
         if ($a !== null && (int)$a["ativo"] === 1 && condicao_vale($a["condicao"] ?? null, $r, $momento)) {
             $ctx = ["r" => $r, "momento" => $momento, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio((int)$r["id"])];
@@ -1257,13 +1280,39 @@ function avisos_do_relogio($r, $momento)
                     "texto" => str_replace(["{relogio}", "{data}", "{quando}"], [$r["nome"], $data_txt, $quando], $modelo),
                     "resolve" => $a["resolve"], "versao" => no_caminho($a["no_id"]), "escala" => $a["escala"],
                     "simula_valor" => $a["simula_valor"] === null ? null : (float)$a["simula_valor"], "simula_horas" => $a["simula_horas"] === null ? null : (float)$a["simula_horas"],
-                    "agenda" => $a["agenda"], "modelo" => $modelo];
+                    "agenda" => $a["agenda"], "na_hora" => (int)($a["na_hora"] ?? 0) === 1, "modelo" => $modelo];
             }
         }
     }
     usort($res, function ($x, $y) {
         return $x["falta_dias"] <=> $y["falta_dias"];
     });
+    return $res;
+}
+
+// Os avisos "na hora" vencidos agora, de todos os relógios (também os indisponíveis: um relógio fora do rodízio ainda pode
+// estar no carregador): cada um [relógio, aviso]. O cron manda cada um pelo Telegram uma vez, até ele deixar de vencer
+function avisos_na_hora_vencidos($momento)
+{
+    $idents = [];
+    foreach (avisos_todos() as $ident => $versoes) {
+        foreach ($versoes as $a) {
+            if ((int)($a["na_hora"] ?? 0) === 1 && (int)$a["ativo"] === 1) {
+                $idents[] = $ident;
+                break;
+            }
+        }
+    }
+    $res = [];
+    if (count($idents) > 0) {
+        foreach (linhas("SELECT * FROM relogio ORDER BY nome, id") as $r) {
+            foreach (avisos_do_relogio($r, $momento, $idents) as $a) {
+                if ($a["na_hora"] && $a["falta_dias"] <= 0) {
+                    $res[] = [$r, $a];
+                }
+            }
+        }
+    }
     return $res;
 }
 
@@ -2327,7 +2376,8 @@ function dia_comecou($agora)
 
 // A sessão no pulso do relógio do dia: no horário de uso, o relógio do plano de hoje ganha uma sessão "pulso" de origem
 // rodízio, do início do horário de uso até o fim dele (ou, sem tirar sozinho, até o Tirou). Uma por dia. Sem pôr sozinho,
-// nada: a sessão é a do Pôs.
+// nada: a sessão é a do Pôs. Com o relógio noutra sessão exclusiva (no carregador, no sol, no winder), espera ele sair de lá,
+// e a sessão começa nessa hora.
 function sessao_do_dia($agora)
 {
     if (!pulso_poe_sozinho()) {
@@ -2341,8 +2391,17 @@ function sessao_do_dia($agora)
     // uma só por dia, de qualquer relógio: a troca do relógio do dia (usando hoje) fecha a de um e abre a do outro
     if ($p && $tipo && $agora >= $ini && $agora < $fim && valor("SELECT id FROM lancamento WHERE tipo_id = ? AND origem = 'rodizio' AND DATE(inicio) = ?",
         [(int)$tipo["id"], $hoje]) === null) {
+        // o relógio num lugar só: noutra sessão exclusiva agora (no carregador, no sol, no winder), ele não vai ao pulso sozinho
+        // (espera ele sair de lá); se saiu de uma depois do começo do horário, o pulso começa quando ele saiu
+        $outra = linha("SELECT MAX(CASE WHEN l.fim IS NULL OR l.fim > ? THEN 1 ELSE 0 END) AS aberta, MAX(l.fim) AS fim FROM lancamento l
+            JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.exclusiva = 1 AND t.id <> ? AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?)",
+            [date("Y-m-d H:i:s", $agora), (int)$p["relogio_id"], (int)$tipo["id"], date("Y-m-d H:i:s", $agora), date("Y-m-d H:i:s", $ini)]);
+        if ($outra && (int)$outra["aberta"] === 1) {
+            return;
+        }
+        $comeca = $outra && $outra["fim"] !== null ? max($ini, (int)strtotime($outra["fim"])) : $ini;
         sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, ?, NULL, 'rodizio', NOW())",
-            [(int)$p["relogio_id"], (int)$tipo["id"], date("Y-m-d H:i:s", $ini), pulso_tira_sozinho() ? date("Y-m-d H:i:s", $fim) : null]);
+            [(int)$p["relogio_id"], (int)$tipo["id"], date("Y-m-d H:i:s", $comeca), pulso_tira_sozinho() ? date("Y-m-d H:i:s", $fim) : null]);
     }
 }
 
@@ -3871,6 +3930,307 @@ function manual_html($md)
     }
     $fecha_par();
     return [$html, $sumario];
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// A cópia de segurança do banco: um arquivo por cópia na BACKUP_PASTA do config.php (uma pasta do servidor fora da
+// pasta publicada), relojoeiro-AAAA-MM-DD-HHMMSS.jsonl.gz: JSON Lines comprimido, o mesmo nos três bancos (uma cópia do
+// MySQL volta num PostgreSQL ou num SQLite da mesma versão). A primeira linha é o cabeçalho ({"relojoeiro_copia": 1,
+// "criada", "banco", "versao" (a última migração), "documentos" (se tem o conteúdo dos documentos), "tabelas"}); depois,
+// para cada tabela, uma linha {"tabela", "colunas", "binarias"} e uma linha por registro, a lista dos valores na ordem das
+// colunas (as colunas binárias em base64). As tabelas vêm na ordem em que voltam (a tabela citada antes da que cita).
+// O cron faz uma por dia, na rodada da noite, e guarda as BACKUP_MANTER mais novas (padrão 7). O conteúdo dos documentos
+// (documento_parte, a cópia deles no banco, que pode ser grande) só entra com BACKUP_DOCUMENTOS = true: os arquivos já
+// estão na pasta dos documentos.
+// ---------------------------------------------------------------------------------------------------------------------
+function backup_pasta_erro()
+{
+    if (!defined("BACKUP_PASTA") || trim((string)BACKUP_PASTA) === "") {
+        return "sem BACKUP_PASTA no config.php: a cópia de segurança automática está desligada";
+    }
+    $pasta = rtrim((string)BACKUP_PASTA, "/\\");
+    if (!is_dir($pasta)) {
+        @mkdir($pasta, 0750, true);
+    }
+    if (!is_dir($pasta)) {
+        return "a pasta das cópias (" . $pasta . ") não existe e não consegui criá-la";
+    }
+    if (!is_writable($pasta)) {
+        return "a pasta das cópias (" . $pasta . ") não aceita gravar: dê permissão de escrita ao usuário do PHP";
+    }
+    $real = realpath($pasta);
+    $sistema = realpath(__DIR__);
+    if ($real !== false && $sistema !== false && ($real === $sistema || strpos($real . DIRECTORY_SEPARATOR, $sistema . DIRECTORY_SEPARATOR) === 0)) {
+        return "a pasta das cópias está dentro da pasta publicada do sistema: qualquer um baixaria o banco pelo navegador. Use uma pasta fora dela";
+    }
+    return "";
+}
+
+function backup_pasta()
+{
+    return backup_pasta_erro() === "" ? rtrim((string)BACKUP_PASTA, "/\\") : null;
+}
+
+function backup_manter()
+{
+    return defined("BACKUP_MANTER") && (int)BACKUP_MANTER > 0 ? (int)BACKUP_MANTER : 7;
+}
+
+function backup_com_documentos()
+{
+    return defined("BACKUP_DOCUMENTOS") && BACKUP_DOCUMENTOS === true;
+}
+
+// As tabelas na ordem em que voltam: a citada por uma chave estrangeira antes da que cita (a referência à própria tabela,
+// como a árvore, fica de fora: os registros dela voltam em rodadas). Cada uma: [tabela, colunas, binárias, chave primária,
+// colunas que citam a própria tabela]
+function backup_tabelas()
+{
+    $cat = [];
+    foreach (banco_catalogo() as $t) {
+        $cat[$t["tabela"]] = $t;
+    }
+    $ordem = [];
+    $visitando = [];
+    $visitar = function ($nome) use (&$visitar, &$ordem, &$visitando, $cat) {
+        if (isset($ordem[$nome]) || isset($visitando[$nome]) || !isset($cat[$nome])) {
+            return;
+        }
+        $visitando[$nome] = true;
+        foreach ($cat[$nome]["chaves_estrangeiras"] as $f) {
+            $outra = explode(".", $f["referencia"])[0];
+            if ($outra !== $nome) {
+                $visitar($outra);
+            }
+        }
+        $ordem[$nome] = true;
+    };
+    foreach (array_keys($cat) as $nome) {
+        $visitar($nome);
+    }
+    $res = [];
+    foreach (array_keys($ordem) as $nome) {
+        $t = $cat[$nome];
+        $colunas = array_column($t["colunas"], "nome");
+        $binarias = array_values(array_map(function ($c) { return $c["nome"]; }, array_filter($t["colunas"], function ($c) {
+            return preg_match("/blob|bytea/i", (string)$c["tipo"]) === 1;
+        })));
+        $proprias = [];
+        foreach ($t["chaves_estrangeiras"] as $f) {
+            if (explode(".", $f["referencia"])[0] === $nome) {
+                $proprias[$f["coluna"]] = explode(".", $f["referencia"])[1];
+            }
+        }
+        $res[] = [$nome, $colunas, $binarias, count($t["chave_primaria"]) > 0 ? array_values($t["chave_primaria"]) : [$colunas[0]], $proprias];
+    }
+    return $res;
+}
+
+// As cópias que estão na pasta, da mais nova para a mais velha: [{arquivo, bytes, tamanho, criada, documentos, versao}]
+function backup_lista()
+{
+    $pasta = backup_pasta();
+    if ($pasta === null) {
+        return [];
+    }
+    $res = [];
+    foreach (glob($pasta . "/relojoeiro-*.jsonl.gz") ?: [] as $c) {
+        $gz = @gzopen($c, "rb");
+        $cab = $gz ? json_decode((string)gzgets($gz, 1 << 20), true) : null;
+        if ($gz) {
+            gzclose($gz);
+        }
+        $bytes = (int)filesize($c);
+        $res[] = ["arquivo" => basename($c), "bytes" => $bytes, "tamanho" => $bytes < 1048576 ? max(1, (int)round($bytes / 1024)) . " KB" : str_replace(".", ",", (string)round($bytes / 1048576, 1)) . " MB",
+            "criada" => is_array($cab) ? ($cab["criada"] ?? null) : null,
+            "documentos" => is_array($cab) && !empty($cab["documentos"]), "versao" => is_array($cab) ? ($cab["versao"] ?? null) : null];
+    }
+    usort($res, function ($a, $b) { return strcmp($b["arquivo"], $a["arquivo"]); });
+    return $res;
+}
+
+// O caminho de uma cópia pelo nome (só os nomes que o sistema dá, sem pasta), ou null
+function backup_caminho($arquivo)
+{
+    $pasta = backup_pasta();
+    $arquivo = (string)$arquivo;
+    return $pasta !== null && preg_match("/^relojoeiro-\\d{4}-\\d{2}-\\d{2}-\\d{6}\\.jsonl\\.gz\$/", $arquivo) === 1 && is_file($pasta . "/" . $arquivo) ? $pasta . "/" . $arquivo : null;
+}
+
+// Faz uma cópia agora e apaga as mais velhas que passam do BACKUP_MANTER. Devolve {ok, mensagem, erros, arquivo}
+function backup_fazer()
+{
+    global $MIGRACOES;
+    $pasta = backup_pasta();
+    if ($pasta === null) {
+        return ["ok" => false, "mensagem" => "", "erros" => ["Não fiz a cópia: " . backup_pasta_erro() . "."], "arquivo" => null];
+    }
+    $nome = "relojoeiro-" . date("Y-m-d-His") . ".jsonl.gz";
+    // segundos iguais (duas no mesmo segundo): a próxima espera o nome ficar livre
+    while (is_file($pasta . "/" . $nome)) {
+        sleep(1);
+        $nome = "relojoeiro-" . date("Y-m-d-His") . ".jsonl.gz";
+    }
+    $parcial = $pasta . "/." . $nome . ".parcial";
+    $gz = gzopen($parcial, "wb6");
+    if (!$gz) {
+        return ["ok" => false, "mensagem" => "", "erros" => ["Não consegui criar o arquivo da cópia na pasta das cópias."], "arquivo" => null];
+    }
+    $docs = backup_com_documentos();
+    $tabelas = array_values(array_filter(backup_tabelas(), function ($t) use ($docs) { return $docs || $t[0] !== "documento_parte"; }));
+    gzwrite($gz, json_encode(["relojoeiro_copia" => 1, "criada" => date("Y-m-d H:i:s"), "banco" => banco_tipo(), "versao" => array_key_last($MIGRACOES),
+        "documentos" => $docs, "tabelas" => array_column($tabelas, 0)], JSON_UNESCAPED_UNICODE) . "\n");
+    $linhas = 0;
+    foreach ($tabelas as [$nome_t, $colunas, $binarias, $chave]) {
+        gzwrite($gz, json_encode(["tabela" => $nome_t, "colunas" => $colunas, "binarias" => $binarias], JSON_UNESCAPED_UNICODE) . "\n");
+        // de pouco em pouco (o conteúdo dos documentos vem em pedaços de 4 MB)
+        $lote = in_array($nome_t, ["documento_parte", "foto"], true) ? 2 : 500;
+        for ($de = 0; ; $de += $lote) {
+            $regs = linhas("SELECT * FROM " . $nome_t . " ORDER BY " . implode(", ", $chave) . " LIMIT " . $lote . " OFFSET " . $de);
+            foreach ($regs as $reg) {
+                $vals = [];
+                foreach ($colunas as $c) {
+                    $v = $reg[$c] ?? null;
+                    $vals[] = $v !== null && in_array($c, $binarias, true) ? base64_encode((string)$v) : $v;
+                }
+                gzwrite($gz, json_encode($vals, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) . "\n");
+                $linhas++;
+            }
+            if (count($regs) < $lote) {
+                break;
+            }
+        }
+    }
+    gzclose($gz);
+    rename($parcial, $pasta . "/" . $nome);
+    cfg_set("backup_ultima", date("Y-m-d H:i:s"));
+    // as mais velhas que passam do limite saem
+    $apagadas = 0;
+    foreach (array_slice(backup_lista(), backup_manter()) as $velha) {
+        if (@unlink($pasta . "/" . $velha["arquivo"])) {
+            $apagadas++;
+        }
+    }
+    return ["ok" => true, "mensagem" => "Cópia de segurança feita: " . $nome . " (" . (filesize($pasta . "/" . $nome) < 1048576 ? max(1, (int)round(filesize($pasta . "/" . $nome) / 1024)) . " KB, "
+        : str_replace(".", ",", (string)round(filesize($pasta . "/" . $nome) / 1048576, 1)) . " MB, ")
+        . $linhas . " registros" . ($docs ? ", com o conteúdo dos documentos" : "") . ")." . ($apagadas > 0 ? " " . $apagadas . ($apagadas === 1 ? " cópia velha apagada." : " cópias velhas apagadas.") : ""),
+        "erros" => [], "arquivo" => $nome];
+}
+
+// Volta o banco para uma cópia: antes, faz uma cópia do que está agora; depois, num passo só (se algo falha, nada muda),
+// apaga todos os registros e grava os da cópia. Só uma cópia da mesma versão do sistema (a mesma última migração). Sem o
+// conteúdo dos documentos na cópia, os documentos voltam sem a cópia no banco, e o cron refaz a que for pedida.
+function backup_restaurar($arquivo)
+{
+    global $MIGRACOES;
+    $caminho = backup_caminho($arquivo);
+    if ($caminho === null) {
+        return ["ok" => false, "mensagem" => "", "erros" => [backup_pasta() === null ? "Sem a pasta das cópias: " . backup_pasta_erro() . "." : "Cópia não encontrada: " . $arquivo . "."]];
+    }
+    $gz = gzopen($caminho, "rb");
+    $cab = json_decode((string)gzgets($gz, 1 << 20), true);
+    if (!is_array($cab) || ($cab["relojoeiro_copia"] ?? null) !== 1) {
+        gzclose($gz);
+        return ["ok" => false, "mensagem" => "", "erros" => ["O arquivo " . $arquivo . " não é uma cópia do Relojoeiro."]];
+    }
+    if (($cab["versao"] ?? "") !== array_key_last($MIGRACOES)) {
+        gzclose($gz);
+        return ["ok" => false, "mensagem" => "", "erros" => ["A cópia é da versão " . ($cab["versao"] ?? "?") . " do banco e este está na " . array_key_last($MIGRACOES)
+            . ": volte a cópia num sistema da mesma versão."]];
+    }
+    $antes = backup_fazer();
+    if (!$antes["ok"]) {
+        gzclose($gz);
+        return ["ok" => false, "mensagem" => "", "erros" => array_merge(["Não restaurei: a cópia do que está agora falhou."], $antes["erros"])];
+    }
+    $todas = backup_tabelas();
+    $info = [];
+    foreach ($todas as $t) {
+        $info[$t[0]] = $t;
+    }
+    $n = 0;
+    banco_inicio();
+    try {
+        foreach (array_reverse(array_column($todas, 0)) as $t) {
+            sql("DELETE FROM " . $t);
+        }
+        $tabela = null;
+        $colunas = [];
+        $binarias = [];
+        $esperando = [];
+        $grava = function ($vals) use (&$tabela, &$colunas, &$binarias, &$n) {
+            $params = [];
+            foreach ($colunas as $i => $c) {
+                $v = $vals[$i] ?? null;
+                if ($v !== null && in_array($c, $binarias, true)) {
+                    $v = base64_decode((string)$v);
+                    // no PostgreSQL o binário vai em hexadecimal, também o que parece texto
+                    $v = banco_tipo() === "pgsql" ? "\\x" . bin2hex($v) : $v;
+                }
+                $params[] = $v;
+            }
+            sql("INSERT INTO " . $tabela . " (" . implode(", ", $colunas) . ") VALUES (" . implode(", ", array_fill(0, count($colunas), "?")) . ")", $params);
+            $n++;
+        };
+        // os registros que citam a própria tabela (a árvore) esperam o citado entrar
+        $soltar = function () use (&$esperando, &$tabela, &$colunas, &$info, $grava) {
+            $proprias = $tabela !== null ? $info[$tabela][4] : [];
+            $feitos = [];
+            while (count($esperando) > 0) {
+                $resto = [];
+                foreach ($esperando as $vals) {
+                    $pronto = true;
+                    foreach ($proprias as $col => $ref) {
+                        $v = $vals[array_search($col, $colunas, true)];
+                        if ($v !== null && !isset($feitos[(string)$v])) {
+                            $pronto = false;
+                        }
+                    }
+                    if ($pronto) {
+                        $grava($vals);
+                        $feitos[(string)$vals[array_search(reset($proprias), $colunas, true)]] = true;
+                    } else {
+                        $resto[] = $vals;
+                    }
+                }
+                if (count($resto) === count($esperando)) {
+                    throw new RuntimeException("a tabela " . $tabela . " cita registros que não estão na cópia");
+                }
+                $esperando = $resto;
+            }
+        };
+        while (($l = gzgets($gz, 64 << 20)) !== false) {
+            $x = json_decode($l, true);
+            if (is_array($x) && isset($x["tabela"])) {
+                $soltar();
+                if (!isset($info[$x["tabela"]])) {
+                    throw new RuntimeException("a tabela " . $x["tabela"] . " da cópia não existe neste banco");
+                }
+                $tabela = $x["tabela"];
+                $colunas = $x["colunas"];
+                $binarias = $x["binarias"];
+            } elseif (is_array($x) && $tabela !== null) {
+                if (count($info[$tabela][4]) > 0) {
+                    $esperando[] = $x;
+                } else {
+                    $grava($x);
+                }
+            }
+        }
+        $soltar();
+        if (empty($cab["documentos"]) && isset($info["documento"])) {
+            sql("UPDATE documento SET no_banco = 0");
+        }
+        banco_confirma();
+    } catch (Throwable $e) {
+        banco_desfaz();
+        gzclose($gz);
+        return ["ok" => false, "mensagem" => "", "erros" => ["Não restaurei (o banco ficou como estava): " . $e->getMessage() . "."]];
+    }
+    gzclose($gz);
+    banco_ajustar_ids();
+    cfg_set("backup_ultima", (string)preg_replace("/^relojoeiro-(\\d{4}-\\d{2}-\\d{2})-(\\d{2})(\\d{2})(\\d{2}).*\$/", "\$1 \$2:\$3:\$4", $antes["arquivo"]));
+    return ["ok" => true, "mensagem" => "Banco restaurado da cópia " . $arquivo . " (" . $n . " registros). O que estava antes foi guardado em " . $antes["arquivo"] . ".", "erros" => []];
 }
 
 // o back-end de escrita (as operações que as páginas e a API chamam)

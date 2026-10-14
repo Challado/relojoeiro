@@ -152,12 +152,16 @@ $lanc("iniciar", "auto2", "winder", ["quando" => ha_minutos(30)]);
 $lanc("encerrar", "auto2", "winder", ["quando" => ha_minutos(25)]);
 // o carregador: um período que já passou e um aberto agora (o estado vira "No carregador" e o aviso Carregar some)
 $lanc("periodo", "smart", "carregador", ["inicio" => dia(7, "20:00"), "fim" => dia(7, "23:00")]);
-$lanc("iniciar", "smart", "carregador", ["quando" => ha_minutos(15)]);
+$lanc("iniciar", "smart", "carregador", ["quando" => ha_minutos(300)]);   // cheio: a carga fica em 100, igual em qualquer banco
 $lanc("lancar", "crono", "banho_ultrassom", ["quando" => dia(1, "15:00")]);
 $id_errado = $lanc("lancar", "crono", "banho_ultrassom", ["quando" => dia(1, "16:00")]);
 escrever(["recurso" => "lancamento", "acao" => "excluir", "id" => $id_errado]);
 escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["pilha"], "tipo" => "sol"], false);   // o tipo não vale para ele
 escrever(["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel["pilha"], "tipo" => "carregador"], false);   // só onde vale a leitura de carga
+// alternar: fecha a sessão aberta e abre de novo (um botão só no celular); não vale para o que não é sessão
+$lanc("alternar", "smart", "carregador");
+$lanc("alternar", "smart", "carregador");
+escrever(["recurso" => "lancamento", "acao" => "alternar", "relogio_id" => $rel["smart"], "tipo" => "carga"], false);
 escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["smart"], "tipo" => "carga", "valor" => 50, "quando" => date("Y-m-d H:i", time() + 86400)], false);
 
 // ---------- os critérios ----------
@@ -316,6 +320,19 @@ escrever(["recurso" => "rodizio", "acao" => "resortear"]);
 if (date("N") === "7") {
     escrever(["recurso" => "rodizio", "acao" => "proxima_semana"]);
 }
+// os relógios de um período, escolhidos à mão: dois, na ordem, dois dias seguidos cada; o sortear de novo não mexe neles, e
+// depois uma parte do período volta ao sorteio. Um período no passado é recusado
+$em = function ($dias) { return date("Y-m-d", strtotime("+" . (int)$dias . " days")); };
+escrever(["recurso" => "rodizio", "acao" => "periodo", "de" => $em(10), "ate" => $em(15), "relogio_ids" => [$rel["manual"], $rel["crono"]], "dias_cada" => 2]);
+escrever(["recurso" => "rodizio", "acao" => "resortear"]);
+ler("plano com periodo", ["recurso" => "plano", "dias" => 30]);
+escrever(["recurso" => "rodizio", "acao" => "periodo_sortear", "de" => $em(14), "ate" => $em(15)]);
+escrever(["recurso" => "rodizio", "acao" => "periodo", "de" => substr(dia(3, "00:00"), 0, 10), "ate" => $em(2), "relogio_ids" => [$rel["solar"]]], false);
+// o lançamento no relógio do dia, sem saber o id dele
+escrever(["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => "hoje", "tipo" => "pulso", "inicio" => dia(20, "08:00"), "fim" => dia(20, "09:00")]);
+// um aviso que sai na hora
+escrever(["recurso" => "avisos", "acao" => "alterar", "id" => (int)(array_values(array_filter($cad["avisos"] ?? [], function ($a) { return $a["identificador"] === "leitura"; }))[0]["id"] ?? 0), "na_hora" => 1]);
+ler("backup", ["recurso" => "backup"]);
 escrever(["recurso" => "modos", "acao" => "excluir", "id" => $fila]);
 escrever(["recurso" => "config", "acao" => "evento_excluir", "id" => 1]);
 cron();

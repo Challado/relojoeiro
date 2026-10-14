@@ -54,7 +54,9 @@ function recarregarConfig(aplicadas) {
       }
       document.getElementById("configuracao").innerHTML = el("section", {"class": "cartao-config aviso-banco"}, res);
     } else {
-      return api({recurso: "config"}).then(function (d) {
+      return Promise.all([api({recurso: "config"}), api({recurso: "backup"})]).then(function (rs) {
+        var d = rs[0];
+        var bk = rs[1];
         var c = d.config;
         var cfg = function (k) { return c[k] === undefined ? "" : c[k]; };
         var res = "";
@@ -211,6 +213,22 @@ function recarregarConfig(aplicadas) {
           }).join("") + (p.agenda.length === 0 ? el("p", {"class": "nota"}, "Nada previsto no período.") : "")
             + el("p", {"class": "nota"}, p.sincronizados + " eventos criados pelo sistema estão na agenda. Mudou um modelo? Sincronize: os eventos já criados são atualizados.")
             + el("form", {"data-recurso": "config"}, el("input", {"type": "hidden", "name": "acao", "value": "sincronizar"}) + el("button", {"class": "leve"}, "Sincronizar agora")))));
+        // ---------- Cópia de segurança ----------
+        res += el("section", {"id": "copia"}, el("h2", {}, "Cópia de segurança")
+          + (bk.pasta_ok
+            ? el("p", {"class": "nota"}, "Uma cópia do banco inteiro por dia, na rodada da noite, guardando as " + bk.manter + " mais novas, "
+              + (bk.documentos ? "com" : "sem") + " o conteúdo dos documentos (os arquivos já ficam na pasta deles). A cópia volta em qualquer um dos três bancos, na mesma versão do sistema. "
+              + (bk.ultima ? "Última: " + dataBr(bk.ultima) + " " + horaBr(bk.ultima) + "." : "Nenhuma feita ainda."))
+            : el("p", {"class": "alerta-cron"}, "A cópia automática está desligada: " + h(bk.pasta_erro) + ". Ponha no config.php a BACKUP_PASTA, uma pasta do servidor fora da pasta publicada."))
+          + (bk.copias.length > 0 ? el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, ["Cópia", "Feita em", "Tamanho", "Documentos", ""].map(function (t) { return el("th", {}, t); }).join("")))
+            + el("tbody", {}, bk.copias.map(function (x) {
+              return el("tr", {}, el("td", {}, el("code", {}, h(x.arquivo))) + el("td", {}, x.criada ? dataBr(x.criada) + " " + horaBr(x.criada) : "—") + el("td", {}, h(x.tamanho))
+                + el("td", {}, x.documentos ? "com" : "sem") + el("td", {"class": "acoes-linha"}, el("a", {"href": "api.php?recurso=backup&arquivo=" + encodeURIComponent(x.arquivo), "class": "botao leve"}, "Baixar") + " "
+                + el("form", {"data-recurso": "backup", "onsubmit": "return confirm(" + JSON.stringify("Voltar o banco para a cópia de " + (x.criada ? dataBr(x.criada) + " " + horaBr(x.criada) : x.arquivo)
+                  + "? Tudo o que foi feito depois some. Antes, o sistema guarda uma cópia do que está agora.") + ")"}, el("input", {"type": "hidden", "name": "acao", "value": "restaurar"})
+                  + el("input", {"type": "hidden", "name": "arquivo", "value": x.arquivo}) + el("button", {"class": "discreto"}, "Restaurar"))));
+            }).join("")))) : "")
+          + (bk.pasta_ok ? el("form", {"data-recurso": "backup"}, el("input", {"type": "hidden", "name": "acao", "value": "fazer"}) + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, "Fazer uma cópia agora"))) : ""));
         document.getElementById("configuracao").innerHTML = res;
         mostrarRepeticao();
         if (window.location.hash) {

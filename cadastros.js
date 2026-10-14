@@ -141,15 +141,16 @@ function recarregarCadastros() {
         + el("p", {"class": "nota"}, "Cada aviso tem uma fórmula da data prevista; entra \"em breve\" dentro da antecedência e \"atrasado\" quando a data passa. O \"vale quando\" (uma fórmula) diz para quais relógios o aviso vale (ex.: corda_manual = 0, só para o automático sem corda); vazio, vale para todos do grupo. O texto é o motivo nas mensagens ({motivo}): "
           + "\"Dar corda: San Martin (a reserva acaba em 3h, 28/09/2026 10:53)\"; nele: {relogio}, {data}, {quando} e {limite} (o limite de carga do relógio). O tipo que resolve vira o botão na tela Hoje. Como as fórmulas, pode ter uma versão por ponto da árvore. "
           + "Na escala inteligente: \"no relógio do dia\" é conferido no escolhido, do começo ao fim do bloco dele; \"sempre\", também nos guardados, todo dia. O que vence vira o lembrete do dia, e o lançamento "
-          + "que resolve é simulado com o valor (leitura) ou as horas (sessão) do aviso. Se o aviso vai pelo Telegram e pela agenda é a Configuração, em \"O que vai para onde\"; aqui fica a data que ele usa na agenda.")
-        + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, ["Aviso", "Versão para", "Data prevista", "Vale quando", "Antecedência", "Resolve", "Na escala", "Na agenda", "Ativo", ""].map(function (t, i) {
+          + "que resolve é simulado com o valor (leitura) ou as horas (sessão) do aviso. Se o aviso vai pelo Telegram e pela agenda é a Configuração, em \"O que vai para onde\"; aqui fica a data que ele usa na agenda. "
+          + "\"Na hora\": além do alerta da manhã, o Telegram recebe o aviso no minuto em que ele vence (uma vez, até ele ser resolvido), como o \"Tirar do carregador\" quando a bateria enche.")
+        + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, ["Aviso", "Versão para", "Data prevista", "Vale quando", "Antecedência", "Resolve", "Na escala", "Na agenda", "Na hora", "Ativo", ""].map(function (t, i) {
             return el("th", {"class": i === 4 ? "num" : null}, t);
           }).join(""))) + el("tbody", {}, d.avisos.map(function (a) {
             return el("tr", {}, el("td", {}, h(a.nome) + " " + el("span", {"class": "nota formula"}, h(a.identificador))) + el("td", {"class": "nota"}, h(caminho(d, a.no_id))) + el("td", {"class": "formula"}, h(a.expressao))
               + el("td", {"class": "formula"}, h(vazio(a.condicao))) + el("td", {"class": "num"}, num(a.antecedencia_dias, 2) + " d") + el("td", {}, h(vazio(a.resolve)))
               + el("td", {}, h(ESCALA_A[a.escala]) + (a.simula_valor !== null ? " " + el("span", {"class": "nota"}, "(" + num(a.simula_valor, 2) + ")") : "")
                 + (a.simula_horas !== null ? " " + el("span", {"class": "nota"}, "(" + num(a.simula_horas, 2) + " h)") : ""))
-              + el("td", {}, h(AGENDA_A[a.agenda])) + el("td", {}, a.ativo === 1 ? "sim" : "não")
+              + el("td", {}, h(AGENDA_A[a.agenda])) + el("td", {}, a.na_hora === 1 ? "sim" : "não") + el("td", {}, a.ativo === 1 ? "sim" : "não")
               + el("td", {"class": "acoes-linha"}, linkEditar(a.id) + " " + botaoLinha("excluir", a.id, "Excluir", "Excluir esta versão do aviso?")));
           }).join(""))))
         + el("h3", {"id": "form"}, e ? "Alterar " + h(e.nome) : "Novo aviso (ou nova versão)")
@@ -162,6 +163,7 @@ function recarregarCadastros() {
           }).join("")))
           + el("label", {}, "Versão para " + el("select", {"name": "no_id"}, opcoesNo(d, f.no_id)))
           + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "ativo", "value": "0"}) + el("input", {"type": "checkbox", "name": "ativo", "value": "1", "checked": e ? e.ativo === 1 : true}) + " ativo")
+          + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "na_hora", "value": "0"}) + el("input", {"type": "checkbox", "name": "na_hora", "value": "1", "checked": e ? e.na_hora === 1 : false}) + " na hora (Telegram no minuto em que vence)")
           + el("label", {}, "Na escala inteligente " + el("select", {"name": "escala"}, Object.keys(ESCALA_A).map(function (k) { return el("option", {"value": k, "selected": (f.escala || "nao") === k}, h(ESCALA_A[k])); }).join("")))
           + el("label", {}, "Escala: valor do lançamento simulado (leitura) " + el("input", {"name": "simula_valor", "inputmode": "decimal", "value": f.simula_valor ? num(f.simula_valor, 2) : "", "placeholder": "ex.: 100"}))
           + el("label", {}, "Escala: horas da sessão simulada " + el("input", {"name": "simula_horas", "inputmode": "decimal", "value": f.simula_horas ? num(f.simula_horas, 2) : "", "placeholder": "ex.: 6"}))
