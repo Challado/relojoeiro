@@ -1,0 +1,42 @@
+# Relojoeiro no Apache (2.4, e também o 2.2): o equivalente do nginx-relogios.conf. Abrem pelo navegador só as páginas,
+# o api.php e o que elas carregam (estilo.css, os .js, as imagens); ficam bloqueados os arquivos internos (o núcleo, o
+# banco, a configuração, o cron, os scripts), os de dados, os testes e o que começa com ponto (.git, .gitignore...).
+# A pasta precisa de "AllowOverride All" na configuração do Apache (quase toda hospedagem já vem assim); sem ele, este
+# arquivo é ignorado e nada fica bloqueado.
+
+# sem listagem do conteúdo das pastas
+Options -Indexes
+
+# o login do site (HTTP Basic) chega ao PHP também quando ele roda por FastCGI ou CGI (PHP-FPM e a maioria das
+# hospedagens): sem isto o Apache não repassa o cabeçalho Authorization, e o login nunca é aceito
+<IfModule mod_setenvif.c>
+    SetEnvIf Authorization "(.+)" HTTP_AUTHORIZATION=$1
+</IfModule>
+
+# os arquivos internos do PHP: quem usa é a linha de comando e as outras páginas, nunca o navegador
+<FilesMatch "^(lib|banco|config|config\.exemplo|operacoes|pagina|cron|importar|instalar|criar_usuario)\.php$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# os de dados e de documentação (o schema, a chave do Google, o banco SQLite se ficar aqui, os .md) e os que começam com
+# ponto (.gitignore, .gitattributes, .htaccess)
+<FilesMatch "(\.(json|sql|conf|md|sqlite|sqlite-wal|sqlite-shm|db|log|bak)|^\..*)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# as pastas inteiras: os testes e o repositório do git (quem instalou com git clone tem a pasta .git aqui)
+<IfModule mod_alias.c>
+    RedirectMatch 403 /(testes|\.git)(/|$)
+</IfModule>

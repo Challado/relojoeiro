@@ -339,10 +339,20 @@ php criar_usuario.php seu_login
 No SQLite, ponha o arquivo do banco (`DB_ARQUIVO`) **fora da pasta que o servidor web publica**, numa pasta em que o
 usuário do PHP possa escrever (o SQLite cria ao lado os arquivos `-wal` e `-shm`).
 
-**7. O servidor web.** O [`nginx-relogios.conf`](nginx-relogios.conf) tem um bloco pronto que deixa abrir só as páginas e o
-`api.php`, e bloqueia o núcleo, o banco, a configuração, o cron, os scripts, os testes e os arquivos `.sql`, `.json`, `.md` e
-`.sqlite`. **Não deixe `config.php`, `lib.php` nem `banco.php` acessíveis pela web.** No Apache, faça o equivalente com
-`<FilesMatch>`.
+**7. O servidor web.** Pela web só podem abrir as páginas, o `api.php` e o que elas carregam (`estilo.css`, os `.js`, as
+imagens). Todo o resto fica bloqueado: o núcleo (`lib.php`, `banco.php`, `operacoes.php`), o `config.php`, o cron, os scripts
+de linha de comando, os testes, os arquivos `.sql`, `.json`, `.md` e `.sqlite`, e tudo o que começa com ponto, inclusive a
+pasta `.git`, que vem junto com o `git clone`. O projeto traz isso pronto para os dois servidores:
+
+- **Apache:** o [`.htaccess`](.htaccess) já vem na pasta e funciona sozinho. A pasta só precisa de `AllowOverride All` na
+  configuração do Apache, o padrão de quase toda hospedagem; sem ele, o `.htaccess` é ignorado e nada fica bloqueado. Ele
+  também faz o login do site funcionar quando o PHP roda por FastCGI (PHP-FPM, a maioria das hospedagens), caso em que o
+  Apache não repassaria a senha para o PHP.
+- **nginx:** copie o bloco do [`nginx-relogios.conf`](nginx-relogios.conf) para dentro do `server` do seu site (ajuste
+  `/relojoeiro/` e o endereço do PHP-FPM).
+
+Para conferir, abra `https://seu-servidor/relojoeiro/config.php` e `https://seu-servidor/relojoeiro/.git/config`: os dois
+têm de dar **403**.
 
 **8. Abra no navegador** e entre com o usuário criado. O conjunto inicial já está lá: cadastre seus relógios em
 **Hoje → Novo relógio**, escolha o grupo de cada um e preencha os campos.
@@ -466,6 +476,7 @@ Pode. As telas usam exatamente a mesma API.
 | [`instalar.php`](instalar.php) | instala o `schema.sql` no banco do `config.php`, qualquer um dos três |
 | [`criar_usuario.php`](criar_usuario.php) | cria um usuário ou troca a senha, pela linha de comando |
 | [`importar.php`](importar.php) | importa os dados do sistema anterior |
+| [`.htaccess`](.htaccess) | a proteção dos arquivos internos no Apache (e o login do site com o PHP por FastCGI) |
 | [`nginx-relogios.conf`](nginx-relogios.conf) | o bloco do nginx que protege os arquivos internos |
 | [`testes/`](testes/) | o teste de paridade: o mesmo roteiro pela API em cada banco, e o comparador das respostas |
 | [`docs/telas/`](docs/telas/) | as capturas de tela deste README |
