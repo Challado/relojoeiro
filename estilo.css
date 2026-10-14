@@ -572,7 +572,7 @@ details.periodo-pulso form { display: flex; flex-wrap: wrap; align-items: flex-e
 details.periodo-pulso label { display: flex; flex-direction: column; gap: .2rem; font-size: .85rem; }
 /* Lançar: uma linha por grupo (Corda, Winder, Pulso, Sol, Pilha, Revisão) */
 .lancar-grupos { display: flex; flex-direction: column; gap: .35rem; width: 100%; }
-.linha-lancar { display: grid; grid-template-columns: 4.5rem auto 1fr; align-items: center; gap: .5rem; }
+.linha-lancar { display: grid; grid-template-columns: 4.5rem auto 1fr; align-items: center; gap: .3rem .5rem; }
 .linha-lancar .grupo { font-size: .88rem; font-weight: 600; color: var(--cinza); }
 .linha-lancar .botoes-grupo { display: flex; gap: .3rem; }
 .linha-lancar button[disabled] { opacity: .35; cursor: not-allowed; }
@@ -799,3 +799,29 @@ form.marcar-pulso button { padding: .1rem .6rem; font-size: .85rem; }
 /* Configuração: cada ponta do horário de uso com a sua caixa (pôr no pulso sozinho, tirar sozinho) ao lado */
 .horario-auto { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .4rem 1rem; }
 .horario-auto label.check { padding-bottom: .35rem; }
+
+/* painel: a hora opcional do Pôs e do Tirou, e o quadro "Corrigir marcações" */
+.quando-lancar { display: inline-flex; align-items: center; gap: .3rem; font-size: .8rem; color: var(--cinza); grid-column: 2 / -1; grid-row: 2; }
+.quando-lancar input { font-size: .8rem; padding: .1rem .25rem; }
+details.corrigir { margin-top: .6rem; }
+details.corrigir summary { cursor: pointer; font-size: .9rem; color: var(--safira); }
+form.linha-corrigir { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .35rem .7rem; padding: .45rem 0; border-bottom: 1px solid var(--aco); font-size: .85rem; }
+form.linha-corrigir .grupo { min-width: 7rem; font-weight: 600; }
+form.linha-corrigir label { display: flex; flex-direction: column; gap: .1rem; font-size: .75rem; color: var(--cinza); }
+form.linha-corrigir input { font-size: .8rem; padding: .1rem .25rem; }
+form.linha-corrigir input[name=valor] { width: 4.5rem; }
+
+/* trocar o relógio de um dia (Hoje e Plano), e a página Plano */
+form.trocar-dia { display: inline-flex; gap: .3rem; align-items: center; }
+form.trocar-dia select { font-size: .82rem; padding: .1rem .2rem; width: 9rem; }
+form.trocar-dia button { padding: .1rem .55rem; font-size: .82rem; }
+td.trocar { text-align: right; white-space: nowrap; width: 1%; }
+small.a-mao { color: var(--ambar); font-weight: 600; }
+h2 a.ver-plano { font-size: .85rem; font-weight: 400; margin-left: .6rem; color: var(--safira); }
+main.plano { max-width: 64rem; }
+main.plano h3 { margin: 1.4rem 0 .4rem; font-size: 1rem; }
+.filtros-plano { display: flex; flex-wrap: wrap; gap: .6rem 1.4rem; margin: .8rem 0 1.2rem; }
+.filtros-plano label { display: flex; flex-direction: column; gap: .2rem; font-size: .9rem; }
+table.dias-plano td.dia { width: 7rem; white-space: nowrap; }
+table.dias-plano tr.de-hoje td:first-child { box-shadow: inset 3px 0 0 var(--safira); }
+table.resumo-plano { max-width: 44rem; }

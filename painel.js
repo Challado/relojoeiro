@@ -185,8 +185,11 @@ function abrirNoPainel(id) {
                 + el("button", {"name": "acao", "value": "encerrar", "class": "leve", "disabled": t.aberta === null}, "Tirou")
               : el("button", {"name": "acao", "value": "lancar", "class": "leve"}, h(t.nome));
             var aberta = t.aberta !== null ? el("small", {"class": "sessao-aberta"}, h(t.aberta.texto)) : "";
+            // a hora do Pôs e do Tirou: vazia, agora; preenchida, a que você esqueceu de marcar (ontem às 22:30)
+            var quando = t.formato === "sessao" ? el("label", {"class": "quando-lancar", "title": "Vazio: agora. Preencha para marcar uma hora que já passou."},
+              "às " + el("input", {"type": "datetime-local", "name": "quando", "max": momentoLocal(agora)})) : "";
             linhas += el("form", {"data-recurso": "lancamento", "class": "linha-lancar"}, el("input", {"type": "hidden", "name": "relogio_id", "value": id})
-              + el("input", {"type": "hidden", "name": "tipo", "value": t.identificador}) + el("span", {"class": "grupo"}, h(t.nome)) + el("span", {"class": "botoes-grupo"}, botoes) + aberta);
+              + el("input", {"type": "hidden", "name": "tipo", "value": t.identificador}) + el("span", {"class": "grupo"}, h(t.nome)) + el("span", {"class": "botoes-grupo"}, botoes) + quando + aberta);
           }
         });
         lancar += el("div", {"class": "lancar-grupos"}, linhas);
@@ -210,6 +213,30 @@ function abrirNoPainel(id) {
               + el("button", {"class": "leve"}, "Informar " + h(minusculo(t.nome))));
           }
         });
+        // corrigir marcações: os lançamentos dos últimos 14 dias, cada um com o que dá para mudar, e excluir
+        if (r.lancamentos_recentes.length > 0) {
+          lancar += el("details", {"class": "corrigir"}, el("summary", {}, "Corrigir marcações (últimos 14 dias)")
+            + el("p", {"class": "nota"}, "Esqueceu o Tirou à noite? Ponha a hora certa no fim da sessão. Fim vazio: a sessão continua aberta.")
+            + r.lancamentos_recentes.map(function (l) {
+              var campos = "";
+              var programado = l.fim !== null && instante(l.fim) > agora.getTime();
+              if (l.formato === "sessao") {
+                campos = el("label", {}, "De " + el("input", {"type": "datetime-local", "name": "inicio", "value": l.inicio.substring(0, 16).replace(" ", "T"), "max": momentoLocal(agora), "required": true}))
+                  + (programado
+                    ? el("span", {"class": "nota"}, "até " + horaBr(l.fim) + " (o fim do horário de uso)")
+                    : el("label", {}, "Até " + el("input", {"type": "datetime-local", "name": "fim", "value": l.fim === null ? "" : l.fim.substring(0, 16).replace(" ", "T"), "max": momentoLocal(agora)})));
+              } else {
+                campos = el("label", {}, "Quando " + el("input", {"type": "datetime-local", "name": "inicio", "value": l.inicio.substring(0, 16).replace(" ", "T"), "max": momentoLocal(agora), "required": true}))
+                  + (l.formato === "valor" ? el("label", {}, "Valor " + el("input", {"type": "text", "inputmode": "decimal", "name": "valor", "value": num(l.valor, 1), "required": true}) + " " + h(l.unidade)) : "");
+              }
+              return el("form", {"data-recurso": "lancamento", "class": "linha-corrigir"}, el("input", {"type": "hidden", "name": "id", "value": l.id})
+                + el("input", {"type": "hidden", "name": "relogio_id", "value": id})
+                + el("span", {"class": "grupo"}, h(l.nome) + (l.origem === "rodizio" ? " " + el("small", {}, "(rodízio)") : ""))
+                + campos + el("span", {"class": "botoes-grupo"}, el("button", {"name": "acao", "value": "alterar", "class": "leve"}, "Salvar")
+                  + " " + el("button", {"name": "acao", "value": "excluir", "class": "leve discreto", "formnovalidate": true,
+                    "onclick": "return confirm(" + JSON.stringify("Excluir " + l.nome + " de " + dataBr(l.inicio, true) + " " + horaBr(l.inicio) + "?") + ")"}, "Excluir")));
+            }).join(""));
+        }
         lancar = el("h2", {}, "Lançar") + el("div", {"class": "acoes-cartao"}, lancar);
       }
       res += el("div", {"class": "ficha-topo"}, el("div", {"class": "ficha-foto"}, foto)

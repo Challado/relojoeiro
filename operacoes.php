@@ -644,18 +644,8 @@ function op_lancamento($acao, $d)
                 } elseif ($horas < 1) {
                     $msg .= " " . $de . ": menos de 1 hora desde a leitura anterior, pouco tempo para medir o gasto." . $pela_estimativa;
                 } else {
-                    // as horas no pulso entre as duas leituras (as sessões juntas, sem contar duas vezes a mesma hora)
-                    $h_pulso = 0.0;
-                    $fim_ate_agora = $t1;
-                    foreach (linhas("SELECT l.inicio, l.fim FROM lancamento l JOIN lancamento_tipo tp ON tp.id = l.tipo_id WHERE l.relogio_id = ? AND tp.identificador = 'pulso'
-                        AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?) ORDER BY l.inicio, l.id", [$rid, date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $t1)]) as $sp) {
-                        $a = max($fim_ate_agora, strtotime($sp["inicio"]));
-                        $b = min($q, $sp["fim"] === null ? $q : strtotime($sp["fim"]));
-                        if ($b > $a) {
-                            $h_pulso += ($b - $a) / 3600;
-                            $fim_ate_agora = $b;
-                        }
-                    }
+                    // as horas no pulso entre as duas leituras
+                    $h_pulso = horas_no_pulso($rid, $t1, $q);
                     $h_guardado = $horas - $h_pulso;
                     $h_dia = (strtotime("2000-01-01 " . cfg("uso_fim")) - strtotime("2000-01-01 " . cfg("uso_inicio"))) / 3600;
                     $dias_uso = $h_pulso / max(1, $h_dia);
@@ -786,6 +776,17 @@ function op_lancamento($acao, $d)
         sql("DELETE FROM lancamento WHERE id = ?", [$id]);
         $msg = "Excluído do " . $r["nome"] . ": " . $existente["tipo_nome"] . " de " . date("d/m/Y H:i", strtotime($existente["inicio"])) . ".";
         $id = 0;
+    }
+    // o pulso mudou no passado (Pôs ou Tirou com hora, período, correção, exclusão): as medições do gasto que cobrem o trecho
+    // refazem as horas no pulso e fora
+    if (count($erros) === 0 && $t && $t["identificador"] === "pulso" && in_array($acao, ["iniciar", "encerrar", "periodo", "alterar", "excluir"], true)) {
+        $desde = [$agora];
+        foreach ([$q ?? null, $ini ?? null, $existente ? strtotime($existente["inicio"]) : null] as $x) {
+            if (is_int($x)) {
+                $desde[] = $x;
+            }
+        }
+        recalcular_medicoes($rid, min($desde), $agora + 1);
     }
     return resultado($erros, $msg, ["id" => $id]);
 }
@@ -1376,7 +1377,8 @@ function op_criterios($acao, $d)
 // um para o bloco; só nos blocos que vierem e fora da escala), selecao, escala_dias, max_sem_uso: grava o modo e ativa;
 // se o dia ainda não começou no pulso, o plano novo vale já de hoje), resortear (refaz o plano de amanhã até domingo; se o dia ainda não começou no pulso, também hoje),
 // resortear_hoje (inclusive hoje: o sorteado passa a ser o do pulso a partir de agora), usando (relogio_id: este passa a
-// ser o relógio de hoje, a partir de agora), proxima_semana (só no domingo: monta ou refaz a semana seguinte inteira).
+// ser o relógio de hoje, a partir de agora), trocar_dia (data, relogio_id: o relógio daquele dia, à mão; hoje, como o
+// usando; 0: o dia volta a ser sorteado), proxima_semana (só no domingo: monta ou refaz a semana seguinte inteira).
 // Na escala inteligente: sortear de novo refaz a escala (do mesmo jeito: de amanhã, ou inclusive hoje); usando segura o
 // escolhido nos dias que faltavam do bloco de hoje e refaz a escala depois deles; a próxima semana não existe (a escala
 // segue o próprio período).
@@ -1482,6 +1484,43 @@ function op_rodizio($acao, $d)
                 gerar_escala($dia);
                 $msg .= " Fica até " . $dia->modify("-1 day")->format("d/m") . "; a escala foi refeita a partir de " . $dia->format("d/m") . ".";
             }
+        }
+    } elseif ($acao === "trocar_dia") {
+        // o relógio de um dia do plano, à mão: hoje, como o "usando"; um dia que vem, só aquele dia (na escala, refeita a partir
+        // dele, com o dia fixo); relogio_id 0 desfaz a escolha à mão e o dia volta a ser sorteado
+        $data = (string)($d["data"] ?? "");
+        $dt = DateTimeImmutable::createFromFormat("!Y-m-d", $data);
+        $novo = (int)($d["relogio_id"] ?? 0);
+        $r = $novo > 0 ? linha("SELECT * FROM relogio WHERE id = ?", [$novo]) : null;
+        if (!$dt || $dt->format("Y-m-d") !== $data) {
+            $erros[] = "Data: AAAA-MM-DD.";
+        } elseif ($dt < $hoje) {
+            $erros[] = "O dia " . $dt->format("d/m") . " já passou: o que foi usado nele se corrige nas marcações (o quadro \"Corrigir marcações\" no painel do relógio).";
+        } elseif ($novo > 0 && !$r) {
+            $erros[] = "Relógio não encontrado.";
+        } elseif ($r && (int)$r["disponivel"] !== 1) {
+            $erros[] = $r["nome"] . " está indisponível: marque como disponível no cadastro dele antes.";
+        } elseif ($novo === 0 && $dt == $hoje) {
+            $erros[] = "Para sortear hoje de novo, use \"Sortear de novo\" no quadro do modo de rodízio.";
+        } elseif ($dt == $hoje) {
+            return op_rodizio("usando", ["relogio_id" => $novo]);
+        } elseif ($novo === 0) {
+            if ($escala) {
+                sql("UPDATE plano SET origem = 'sorteio' WHERE data = ?", [$data]);
+                gerar_escala($dt);
+            } else {
+                sql("DELETE FROM plano WHERE data = ?", [$data]);
+                garantir_plano($dt, $dt);
+            }
+            $p = plano_do_dia($data);
+            $msg = $dt->format("d/m") . ": volta a ser sorteado" . ($p ? " (" . $p["nome"] . ")" : "") . ".";
+        } else {
+            sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, criado) VALUES (?, ?, NULL, 'manual', NOW())", [$data, $novo]);
+            if ($escala) {
+                // a escala refeita a partir do dia trocado: ele fica, e os seguintes (e o que fazer antes de cada um) se ajustam
+                gerar_escala($dt);
+            }
+            $msg = $dt->format("d/m") . ": " . $r["nome"] . ", escolhido à mão." . ($escala ? " A escala foi refeita a partir desse dia." : "");
         }
     } elseif ($acao === "proxima_semana") {
         if ($escala) {

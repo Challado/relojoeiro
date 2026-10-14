@@ -17,7 +17,7 @@ if ($USUARIO === "") {
 // não tinha). Cada página abre o seu <main> e mostra as suas mensagens.
 function topo($titulo, $ativo)
 {
-    $menu = ["index.php" => "Hoje", "configuracao.php" => "Configuração", "criterios.php" => "Critérios", "grupos.php" => "Grupos",
+    $menu = ["index.php" => "Hoje", "plano.php" => "Plano", "configuracao.php" => "Configuração", "criterios.php" => "Critérios", "grupos.php" => "Grupos",
         "execucoes.php" => "Execuções do cron", "usuarios.php" => "Usuários", "cadastros.php" => "Cadastros",
         "ajuda.php" => "Ajuda"];
     echo "<!doctype html>\n<html lang=\"pt-BR\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>" . htmlspecialchars($titulo, ENT_QUOTES, "UTF-8") . "</title>\n"

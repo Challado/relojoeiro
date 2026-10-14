@@ -48,6 +48,20 @@ function instante(t) {
   return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]), Number(p[3] || 0), Number(p[4] || 0), Number(p[5] || 0)).getTime();
 }
 
+// Trocar o relógio de um dia do plano (Hoje e Plano): a lista dos relógios disponíveis e o botão; no dia escolhido à mão
+// (de amanhã em diante), também "voltar a sortear". p: o dia do plano (data, relogio_id, origem); hoje: AAAA-MM-DD
+function formTrocarDia(p, relogios, hoje) {
+  var opcoes = el("option", {"value": "", "selected": true, "disabled": true}, "trocar por…")
+    + relogios.filter(function (r) { return r.disponivel && r.id !== p.relogio_id; }).map(function (r) {
+      return el("option", {"value": r.id}, h(r.nome));
+    }).join("")
+    + (p.origem === "manual" && p.data > hoje ? el("option", {"value": "0"}, "↺ voltar a sortear") : "");
+  return el("form", {"data-recurso": "rodizio", "class": "trocar-dia"}, el("input", {"type": "hidden", "name": "acao", "value": "trocar_dia"})
+    + el("input", {"type": "hidden", "name": "data", "value": p.data})
+    + el("select", {"name": "relogio_id", "required": true, "aria-label": "Trocar o relógio de " + dataBr(p.data), "onchange": "this.form.querySelector('button').hidden = false"}, opcoes)
+    + el("button", {"class": "leve", "hidden": true}, "Trocar"));
+}
+
 // Minúsculas, para os botões ("No sol" → "Pôs no sol")
 function minusculo(t) {
   return String(t).toLowerCase();

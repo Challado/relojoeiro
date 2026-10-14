@@ -1463,6 +1463,38 @@ function pulso_tira_sozinho()
     return cfg("pulso_auto_fim") !== "0";
 }
 
+// As horas no pulso de um relógio entre dois instantes (as sessões juntas, sem contar duas vezes a mesma hora; a aberta, até
+// o fim do intervalo)
+function horas_no_pulso($rid, $de, $ate)
+{
+    $h = 0.0;
+    $ate_aqui = $de;
+    foreach (linhas("SELECT l.inicio, l.fim FROM lancamento l JOIN lancamento_tipo tp ON tp.id = l.tipo_id WHERE l.relogio_id = ? AND tp.identificador = 'pulso'
+        AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?) ORDER BY l.inicio, l.id", [(int)$rid, date("Y-m-d H:i:s", $ate), date("Y-m-d H:i:s", $de)]) as $sp) {
+        $a = max($ate_aqui, strtotime($sp["inicio"]));
+        $b = min($ate, $sp["fim"] === null ? $ate : strtotime($sp["fim"]));
+        if ($b > $a) {
+            $h += ($b - $a) / 3600;
+            $ate_aqui = $b;
+        }
+    }
+    return $h;
+}
+
+// Depois de corrigir o pulso de um relógio entre $de e $ate (uma sessão alterada, excluída ou lançada no passado), as
+// medições do gasto que cobrem esse trecho refazem as horas no pulso e fora dele (a queda entre as leituras não muda)
+function recalcular_medicoes($rid, $de, $ate)
+{
+    foreach (linhas("SELECT id, inicio, fim FROM medicao WHERE relogio_id = ? AND inicio < ? AND fim > ?", [(int)$rid, date("Y-m-d H:i:s", $ate), date("Y-m-d H:i:s", $de)]) as $m) {
+        $a = strtotime($m["inicio"]);
+        $b = strtotime($m["fim"]);
+        $hp = horas_no_pulso($rid, $a, $b);
+        $hg = ($b - $a) / 3600 - $hp;
+        sql("UPDATE medicao SET horas_pulso = ?, horas_guardado = ?, peso_horas = CASE WHEN medida = 'uso' THEN ? ELSE ? END WHERE id = ?",
+            [round($hp, 2), round($hg, 2), round($hp, 2), round($hg, 2), (int)$m["id"]]);
+    }
+}
+
 // As sessões esquecidas abertas (sem fim) de um tipo que fecha sozinho ("fecha às"): passaram da hora, ganham o fim nela, no
 // dia em que começaram (a conta já as tratava assim; gravado, o Pôs do dia seguinte não esbarra nela, e o Tirou não a
 // estica até agora). $relogio: só as desse relógio (null: todas).

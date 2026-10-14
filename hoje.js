@@ -100,11 +100,15 @@ function recarregarHoje() {
     document.getElementById("bloco-avisos").innerHTML = res;
 
     // "Próximos dias": o plano, com o lembrete de cada dia
-    document.getElementById("bloco-proximos").innerHTML = el("h2", {}, "Próximos dias") + el("table", {"class": "relogios"}, el("thead", {}, el("tr", {}, el("th", {}, "Dia") + el("th", {}, "Relógio") + el("th", {}, "Lembrete")))
+    // cada dia com o "trocar por…" (o relógio escolhido à mão fica marcado), e o link para o plano inteiro
+    document.getElementById("bloco-proximos").innerHTML = el("h2", {}, "Próximos dias " + el("a", {"class": "ver-plano", "href": "plano.php"}, "ver o plano inteiro →"))
+      + el("table", {"class": "relogios"}, el("thead", {}, el("tr", {}, el("th", {}, "Dia") + el("th", {}, "Relógio") + el("th", {}, "Lembrete") + el("th", {}, "")))
       + el("tbody", {}, d.plano.map(function (p) {
         var dia = diaDaSemana(p.data);
-        return el("tr", {"class": dia >= 6 ? "fds" : ""}, el("td", {}, dataBr(p.data, true) + " " + el("small", {}, CURTO[dia])) + el("td", {}, h(p.relogio)) + el("td", {}, h(p.acao || "")));
-      }).join("") + (d.plano.length === 0 ? el("tr", {}, el("td", {"colspan": "3"}, "Neste modo o sorteio é feito dia a dia.")) : "")));
+        return el("tr", {"class": dia >= 6 ? "fds" : ""}, el("td", {}, dataBr(p.data, true) + " " + el("small", {}, CURTO[dia]))
+          + el("td", {}, h(p.relogio) + (p.origem === "manual" ? " " + el("small", {"class": "a-mao"}, "à mão") : "")) + el("td", {}, h(p.acao || ""))
+          + el("td", {"class": "trocar"}, formTrocarDia(p, d.relogios, d.data)));
+      }).join("") + (d.plano.length === 0 ? el("tr", {}, el("td", {"colspan": "4"}, "Neste modo o sorteio é feito dia a dia.")) : "")));
 
     // O quadro "Modo de rodízio": fechado mostra o modo atual; aberto, edita (os blocos de cada modo, a forma de escolha, a
     // garantia de rodízio) e sorteia de novo
