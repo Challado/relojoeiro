@@ -908,6 +908,9 @@ function formula_calcular($no, &$ctx)
                 $res = floor($agora_d);
             } elseif ($nome === "AGORA") {
                 $res = $agora_d;
+            } elseif ($nome === "MEDIDO" && !empty($ctx["sem_medido"])) {
+                // a conta só com o cadastro (a tabela dos gastos da previsão mostra o que valeria sem as medições)
+                $res = null;
             } elseif ($nome === "MEDIDO") {
                 // as medições usadas do relógio, lidas uma vez por requisição; os gastos são os da janela que termina no
                 // instante da conta (gasto_medido), guardados pelo trecho de medições que entrou (a escala pede o mesmo muitas vezes)
@@ -2241,7 +2244,7 @@ function previsao_energia($r, $agora)
     $hoje = new DateTimeImmutable(date("Y-m-d", $agora));
     $res = ["aplica" => false, "linhas" => [], "energia" => null, "dura_dias" => null, "dura_ate" => null, "limite" => (float)(cfg("previsao_limite") !== "" ? cfg("previsao_limite") : 20),
         "chega_limite_em" => null, "proxima_entrada" => null, "carga_na_entrada" => null, "precisa" => null, "carregar_antes" => null,
-        "leitura" => null, "leitura_em" => null, "confianca" => null, "conta" => []];
+        "leitura" => null, "leitura_em" => null, "confianca" => null, "conta" => [], "gasto" => null];
     $tipos_valor = [];
     foreach (lancamento_tipos_do_relogio($r) as $ident => $t) {
         if ($t["formato"] === "valor") {
@@ -2274,8 +2277,9 @@ function previsao_energia($r, $agora)
             // o gasto medido pelas leituras (gasto_medido, na janela da Configuração): com o de uso medido, o campo vazio do
             // cadastro não pesa na confiança (a medição vale no lugar dele)
             $janela = max(1, (int)cfg("medicao_janela_dias"));
-            $g = gasto_medido(linhas("SELECT medida, taxa, peso_horas, fim, horas_pulso, horas_guardado, de_valor, ate_valor FROM medicao
-                WHERE relogio_id = ? AND usada = 1 ORDER BY fim, id", [(int)$r["id"]]), $agora);
+            $medicoes = linhas("SELECT medida, taxa, peso_horas, fim, horas_pulso, horas_guardado, de_valor, ate_valor FROM medicao
+                WHERE relogio_id = ? AND usada = 1 ORDER BY fim, id", [(int)$r["id"]]);
+            $g = gasto_medido($medicoes, $agora);
             $como = $g["n"] === 0 ? " (a última medição; nenhuma nos últimos " . $janela . " dias)"
                 : " (" . ($g["conjunta"] ? "conta dos dois gastos juntos, com " : "média de ") . $g["n"] . ($g["n"] === 1 ? " medição" : " medições")
                     . " dos últimos " . $janela . " dias)";
@@ -2288,6 +2292,22 @@ function previsao_energia($r, $agora)
                     }
                 }
             }
+            // os dois gastos lado a lado (as fórmulas taxa_uso e taxa_repouso): o do cadastro (a conta sem as medições), o medido
+            // nesta janela e na anterior (para ver o relógio envelhecer) e o que vale na conta
+            $agora_j = gasto_medido_desde($medicoes, $agora, $agora - $janela * 86400);
+            $antes_j = gasto_medido_desde($medicoes, $agora - $janela * 86400, $agora - 2 * $janela * 86400);
+            $gasto = ["janela_dias" => $janela, "medicoes" => $agora_j["n"], "conjunta" => $agora_j["conjunta"], "medicoes_antes" => $antes_j["n"]];
+            $tem = false;
+            foreach (["uso" => "taxa_uso", "repouso" => "taxa_repouso"] as $medida => $ident) {
+                $ctx = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => $valores];
+                $vale = variavel_valor($ident, $ctx);
+                $ctx = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => $valores, "sem_medido" => true];
+                $cadastro = variavel_valor($ident, $ctx);
+                $tem = $tem || is_numeric($vale);
+                $gasto[$medida] = ["cadastro" => is_numeric($cadastro) ? round((float)$cadastro, 3) : null, "medido" => $g[$medida],
+                    "antes" => $antes_j[$medida], "vale" => is_numeric($vale) ? round((float)$vale, 3) : null];
+            }
+            $res["gasto"] = $tem ? $gasto : null;
             $ctx = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => $valores];
             $dura = variavel_valor("dias_de_carga", $ctx);
             if (is_numeric($dura)) {
