@@ -101,7 +101,7 @@ try {
         garantir_plano($hoje);
         $novos = (int)valor("SELECT COUNT(*) FROM plano WHERE data >= ?", [$hoje->format("Y-m-d")]) - $antes;
         if ($novos > 0) {
-            $log[] = "plano: " . $novos . ($novos === 1 ? " dia montado" : " dias montados") . ", pelo modo " . valor("SELECT nome FROM modo WHERE id = ?", [(int)cfg("modo_ativo")]);
+            $log[] = "plano: " . $novos . ($novos === 1 ? " dia montado" : " dias montados") . ", pelo modo " . valor("SELECT nome FROM modo WHERE id = ?", [modo_ativo()]);
         }
         // as sessões esquecidas abertas ganham o fim no "fecha às" do tipo (o No pulso, tirando sozinho, no fim do horário de uso)
         fechar_esquecidas(time());
@@ -127,7 +127,7 @@ try {
             $log[] = "rodada da manhã";
             // a escala se replaneja a partir do estado real; os outros modos só sorteiam na virada do período.
             // O período no pulso de cada dia é criado pela sessao_do_dia, a partir do plano.
-            if (valor("SELECT escala_dias FROM modo WHERE id = ?", [(int)cfg("modo_ativo")]) !== null) {
+            if (valor("SELECT escala_dias FROM modo WHERE id = ?", [modo_ativo()]) !== null) {
                 $n = gerar_escala($hoje);
                 $log[] = "escala refeita a partir do estado real: " . $n . ($n === 1 ? " dia" : " dias") . ", até " . date("d/m/Y", strtotime(cfg("escala_fim")));
             }
@@ -168,7 +168,7 @@ try {
         // ---------- eventos personalizados ----------
         // dispara a ocorrência que venceu e ainda não saiu; depois de uma parada (até 7 dias), sai uma vez só
         $itens_ev = [];
-        foreach (linhas("SELECT * FROM evento_personalizado WHERE ativo = 1 ORDER BY id") as $ev) {
+        foreach (eventos_com_dias(linhas("SELECT * FROM evento_personalizado WHERE ativo = 1 ORDER BY id")) as $ev) {
             $vencidas = [];
             foreach (ocorrencias($ev, max(strtotime($ev["criado"]), time() - 7 * 86400), time()) as $ts) {
                 if (valor("SELECT evento_id FROM evento_disparo WHERE evento_id = ? AND ocorrencia = ?", [(int)$ev["id"], date("Y-m-d H:i:s", $ts)]) === null) {
@@ -179,7 +179,7 @@ try {
                 foreach ($vencidas as $ts) {
                     sql("INSERT INTO evento_disparo (evento_id, ocorrencia, disparado) VALUES (?, ?, ?)", [(int)$ev["id"], date("Y-m-d H:i:s", $ts), date("Y-m-d H:i:s")]);
                 }
-                if (in_array("ev" . $ev["id"], explode(",", cfg("alerta_tipos")), true)) {
+                if (canal_aviso("tg", "ev" . $ev["id"])["envia"]) {
                     $itens_ev[] = ["tipo" => "ev" . $ev["id"], "id" => (int)$ev["relogio_id"], "fazer" => $ev["nome"], "motivo" => "", "ate" => ""];
                 }
                 $log[] = "evento \"" . $ev["nome"] . "\" disparou" . (count($vencidas) > 1 ? " (" . count($vencidas) . " ocorrências atrasadas, enviado uma vez)" : "");

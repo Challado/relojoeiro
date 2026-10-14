@@ -216,7 +216,7 @@ function op_campos($acao, $d)
     $erros = [];
     $msg = "";
     $id = (int)($d["id"] ?? 0);
-    $atual = $id > 0 ? linha("SELECT * FROM campo WHERE id = ?", [$id]) : null;
+    $atual = $id > 0 ? (campos_com_opcoes(linhas("SELECT * FROM campo WHERE id = ?", [$id]))[0] ?? null) : null;
     if (($acao === "alterar" || $acao === "excluir" || $acao === "ordem") && !$atual) {
         $erros[] = "Campo não encontrado.";
     } elseif ($acao === "novo" || $acao === "alterar") {
@@ -269,16 +269,18 @@ function op_campos($acao, $d)
             }
         }
         if (count($erros) === 0) {
-            $dados = [$c["identificador"], $c["nome"], $c["tipo"], $c["unidade"], $c["tipo"] === "lista" ? $c["opcoes"] : null, $c["padrao"] !== "" ? $c["padrao"] : null, $no];
+            $dados = [$c["identificador"], $c["nome"], $c["tipo"], $c["unidade"], $c["padrao"] !== "" ? $c["padrao"] : null, $no];
             if ($acao === "novo") {
-                sql("INSERT INTO campo (identificador, nome, tipo, unidade, opcoes, padrao, no_id, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, ordem) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     array_merge($dados, [(int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM campo")]));
                 $id = ultimo_id();
                 $msg = "Campo " . $c["nome"] . " criado, para " . no_caminho($no) . ". Nas fórmulas: " . $c["identificador"] . ".";
             } else {
-                sql("UPDATE campo SET identificador = ?, nome = ?, tipo = ?, unidade = ?, opcoes = ?, padrao = ?, no_id = ? WHERE id = ?", array_merge($dados, [$id]));
+                sql("UPDATE campo SET identificador = ?, nome = ?, tipo = ?, unidade = ?, padrao = ?, no_id = ? WHERE id = ?", array_merge($dados, [$id]));
                 $msg = "Campo " . $c["nome"] . " salvo.";
             }
+            // as opções da lista (só no tipo lista; nos outros, nenhuma)
+            campo_gravar_opcoes($id, $c["tipo"] === "lista" ? $c["opcoes"] : "");
             campos_todos(true);
         }
     } elseif ($acao === "excluir") {
@@ -559,10 +561,9 @@ function op_documentos($acao, $d)
         $erros[] = "Não dá para guardar documentos: " . documentos_pasta_erro() . ".";
         return resultado($erros, $msg, ["id" => $id, "ids" => []]);
     }
-    mover_manuais();
     // a categoria do pedido (ou a de antes) e as famílias que ela aceita
     $cat_id = array_key_exists("categoria_id", $d) ? (int)$d["categoria_id"] : ($atual ? (int)$atual["categoria_id"] : 0);
-    $cat = linha("SELECT * FROM documento_categoria WHERE id = ?", [$cat_id]);
+    $cat = documento_categoria_linha($cat_id);
     $data = array_key_exists("data", $d) ? trim((string)$d["data"]) : ($atual ? (string)$atual["data"] : "");
     $data = $data === "" ? null : substr($data, 0, 10);
     if ($data !== null && (preg_match("/^\\d{4}-\\d{2}-\\d{2}$/", $data) !== 1 || !checkdate((int)substr($data, 5, 2), (int)substr($data, 8, 2), (int)substr($data, 0, 4)))) {
@@ -727,7 +728,7 @@ function op_documento_categorias($acao, $d)
     $erros = [];
     $msg = "";
     $id = (int)($d["id"] ?? 0);
-    $atual = $id > 0 ? linha("SELECT * FROM documento_categoria WHERE id = ?", [$id]) : null;
+    $atual = $id > 0 ? documento_categoria_linha($id) : null;
     if (($acao === "alterar" || $acao === "excluir") && !$atual) {
         $erros[] = "Categoria não encontrada.";
     } elseif ($acao === "nova" || $acao === "alterar") {
@@ -751,11 +752,13 @@ function op_documento_categorias($acao, $d)
         }
         if (count($erros) === 0) {
             if ($atual) {
-                sql("UPDATE documento_categoria SET nome = ?, aceita = ?, ordem = ? WHERE id = ?", [$nome, implode(",", $aceita), $ordem, $id]);
+                sql("UPDATE documento_categoria SET nome = ?, ordem = ? WHERE id = ?", [$nome, $ordem, $id]);
+                documento_categoria_gravar_aceita($id, $aceita);
                 $msg = "Categoria " . $nome . " salva.";
             } else {
-                sql("INSERT INTO documento_categoria (identificador, nome, aceita, ordem) VALUES (?, ?, ?, ?)", [$ident, $nome, implode(",", $aceita), $ordem]);
+                sql("INSERT INTO documento_categoria (identificador, nome, ordem) VALUES (?, ?, ?)", [$ident, $nome, $ordem]);
                 $id = ultimo_id();
+                documento_categoria_gravar_aceita($id, $aceita);
                 $msg = "Categoria " . $nome . " criada.";
             }
         }
@@ -895,14 +898,14 @@ function op_lancamento($acao, $d)
                         : ($queda - $dias_uso * (float)$conta["taxa_uso"]) / max(0.01, $dias_guardado);
                     $taxa = round(max(0, min(100, $taxa)), 3);
                     $usada = !array_key_exists("medir", $d) || (string)$d["medir"] === "1";
-                    sql("INSERT INTO medicao (relogio_id, lancamento_id, medida, taxa, de_valor, ate_valor, inicio, fim, horas_pulso, horas_guardado, peso_horas, usada, criado)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())", [$rid, $id, $medida, $taxa, $anterior, $v, date("Y-m-d H:i:s", $t1), date("Y-m-d H:i:s", $q),
+                    sql("INSERT INTO medicao (lancamento_id, medida, taxa, de_valor, ate_valor, inicio, fim, horas_pulso, horas_guardado, peso_horas, usada, criado)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())", [$id, $medida, $taxa, $anterior, $v, date("Y-m-d H:i:s", $t1), date("Y-m-d H:i:s", $q),
                         round($h_pulso, 2), round($h_guardado, 2), round($medida === "uso" ? $h_pulso : $h_guardado, 2), $usada ? 1 : 0]);
                     $msg .= " " . $de . ": " . $tempo . "." . $pela_estimativa;
                     if ($usada) {
                         // os dois gastos que passam a valer, com esta medição junto (a mesma conta da função MEDIDO)
-                        $g = gasto_medido(linhas("SELECT medida, taxa, peso_horas, fim, horas_pulso, horas_guardado, de_valor, ate_valor FROM medicao
-                            WHERE relogio_id = ? AND usada = 1 ORDER BY fim, id", [$rid]), $q);
+                        $g = gasto_medido(linhas("SELECT m.medida, m.taxa, m.peso_horas, m.fim, m.horas_pulso, m.horas_guardado, m.de_valor, m.ate_valor FROM medicao m
+                            JOIN lancamento l ON l.id = m.lancamento_id WHERE l.relogio_id = ? AND m.usada = 1 ORDER BY m.fim, m.id", [$rid]), $q);
                         $num = function ($x) { return str_replace(".", ",", (string)(0 + round((float)$x, 2))); };
                         $partes = [];
                         if ($g["uso"] !== null) {
@@ -1042,7 +1045,7 @@ function op_avisos($acao, $d)
     $erros = [];
     $msg = "";
     $id = (int)($d["id"] ?? 0);
-    $atual = $id > 0 ? linha("SELECT * FROM aviso WHERE id = ?", [$id]) : null;
+    $atual = $id > 0 ? linha(AVISO_SELECT . " WHERE a.id = ?", [$id]) : null;
     if (($acao === "alterar" || $acao === "excluir") && !$atual) {
         $erros[] = "Aviso não encontrado.";
     } elseif ($acao === "novo" || $acao === "alterar") {
@@ -1104,15 +1107,15 @@ function op_avisos($acao, $d)
             }
         }
         if (count($erros) === 0) {
-            $dados = [$nome, $expr, $condicao !== "" ? $condicao : null, $ante, $texto, $resolve !== "" ? $resolve : null, $ativo, $no, $escala, $simula["simula_valor"],
-                $simula["simula_horas"], $agenda];
+            $dados = [$nome, $expr, $condicao !== "" ? $condicao : null, $ante, $texto, $resolve !== "" ? (int)lancamento_tipos()[$resolve]["id"] : null, $ativo, $no, $escala,
+                $simula["simula_valor"], $simula["simula_horas"], $agenda];
             if ($acao === "novo") {
-                sql("INSERT INTO aviso (identificador, nome, expressao, condicao, antecedencia_dias, texto, resolve, ativo, no_id, escala, simula_valor, simula_horas, agenda)
+                sql("INSERT INTO aviso (identificador, nome, expressao, condicao, antecedencia_dias, texto, resolve_tipo_id, ativo, no_id, escala, simula_valor, simula_horas, agenda)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", array_merge([$ident], $dados));
                 $id = ultimo_id();
                 $msg = "Aviso " . $nome . " gravado para " . no_caminho($no) . ".";
             } else {
-                sql("UPDATE aviso SET nome = ?, expressao = ?, condicao = ?, antecedencia_dias = ?, texto = ?, resolve = ?, ativo = ?, no_id = ?, escala = ?,
+                sql("UPDATE aviso SET nome = ?, expressao = ?, condicao = ?, antecedencia_dias = ?, texto = ?, resolve_tipo_id = ?, ativo = ?, no_id = ?, escala = ?,
                     simula_valor = ?, simula_horas = ?, agenda = ? WHERE id = ?", array_merge($dados, [$id]));
                 $msg = "Aviso " . $nome . " (" . no_caminho($no) . ") salvo.";
             }
@@ -1120,6 +1123,12 @@ function op_avisos($acao, $d)
         }
     } elseif ($acao === "excluir") {
         sql("DELETE FROM aviso WHERE id = ?", [$id]);
+        // a última versão do aviso: o que ia por cada canal para ele sai (canal_aviso cita o aviso pelo identificador, que é
+        // o nome dele nas mensagens e nas fórmulas, como uma fórmula cita outra)
+        if ((int)valor("SELECT COUNT(*) FROM aviso WHERE identificador = ?", [$atual["identificador"]]) === 0) {
+            sql("DELETE FROM canal_aviso WHERE tipo = ?", [$atual["identificador"]]);
+            canal_aviso("tg", null, true);
+        }
         avisos_todos(true);
         $msg = "A versão do aviso " . $atual["nome"] . " para " . no_caminho($atual["no_id"]) . " foi excluída.";
     }
@@ -1650,7 +1659,7 @@ function op_rodizio($acao, $d)
             }
         }
     };
-    $escala = valor("SELECT escala_dias FROM modo WHERE id = ?", [(int)cfg("modo_ativo")]) !== null;
+    $escala = valor("SELECT escala_dias FROM modo WHERE id = ?", [modo_ativo()]) !== null;
     if ($acao === "modo") {
         $id_modo = (int)($d["modo"] ?? 0);
         $m = linha("SELECT * FROM modo WHERE id = ?", [$id_modo]);
@@ -1659,7 +1668,7 @@ function op_rodizio($acao, $d)
         } else {
             // os blocos do modo, com o que veio do quadro (grupo ou relógio fixo, e um por dia)
             $blocos = [];
-            foreach (linhas("SELECT * FROM modo_bloco WHERE modo_id = ? ORDER BY ordem, id", [$id_modo]) as $b) {
+            foreach (modo_blocos($id_modo) as $b) {
                 $veio = isset($d["bloco_alvo"][$b["id"]]);
                 $alvo = (string)($d["bloco_alvo"][$b["id"]] ?? ($b["relogio_id"] !== null ? "r:" . $b["relogio_id"] : (string)(int)$b["no_id"]));
                 $blocos[] = ["nome" => $b["nome"], "dias" => explode(",", $b["dias"]), "no_id" => strpos($alvo, "r:") === 0 ? ($b["no_id"] ?? "0") : $alvo,
@@ -1854,10 +1863,14 @@ function op_modos($acao, $d)
             if ($blocos !== null) {
                 sql("DELETE FROM modo_bloco WHERE modo_id = ?", [$id]);
                 foreach ($limpos as $k => $b) {
-                    sql("INSERT INTO modo_bloco (modo_id, nome, dias, no_id, um_por, relogio_id, ordem) VALUES (?, ?, ?, ?, ?, ?, ?)", [$id, $b[0], $b[1], $b[2], $b[3], $b[4], $k + 1]);
+                    sql("INSERT INTO modo_bloco (modo_id, nome, no_id, um_por, relogio_id, ordem) VALUES (?, ?, ?, ?, ?, ?)", [$id, $b[0], $b[2], $b[3], $b[4], $k + 1]);
+                    $bloco = ultimo_id();
+                    foreach (explode(",", $b[1]) as $dia) {
+                        sql("INSERT INTO modo_bloco_dia (bloco_id, dia) VALUES (?, ?)", [$bloco, (int)$dia]);
+                    }
                 }
             }
-            if ((int)cfg("modo_ativo") === $id) {
+            if (modo_ativo() === $id) {
                 sql("DELETE FROM plano WHERE data > ?", [date("Y-m-d")]);
                 cfg_set("escala_fim", "");
                 garantir_plano(new DateTimeImmutable("today"));
@@ -1865,7 +1878,7 @@ function op_modos($acao, $d)
             $msg = "Modo " . $nome . " salvo" . (count($dias_usados) > 0 && count($dias_usados) < 7 ? " (os dias sem bloco ficam sem relógio sorteado)" : "") . ".";
         }
     } elseif ($acao === "ativar" && $atual) {
-        cfg_set("modo_ativo", (string)$id);
+        modo_ativar($id);
         sql("DELETE FROM plano WHERE data > ?", [date("Y-m-d")]);
         // a escala de antes (se havia) acaba aqui: a do modo novo começa um período novo
         cfg_set("escala_fim", "");
@@ -1873,7 +1886,7 @@ function op_modos($acao, $d)
         $msg = "Modo ativo: " . $atual["nome"] . ". O plano de amanhã em diante foi refeito"
             . ($atual["escala_dias"] !== null ? " (escala até " . date("d/m/Y", strtotime(cfg("escala_fim"))) . ")" : "") . ".";
     } elseif ($acao === "excluir" && $atual) {
-        if ((int)cfg("modo_ativo") === $id) {
+        if (modo_ativo() === $id) {
             $erros[] = "Não dá para excluir o modo ativo: ative outro antes.";
         } else {
             sql("DELETE FROM modo WHERE id = ?", [$id]);
@@ -1896,7 +1909,8 @@ function op_modos($acao, $d)
 //           medições destes últimos dias); os canais: alerta_tipos[] e agenda_tipos[] (os avisos que vão
 //           por cada um: dia, vespera, os identificadores dos avisos e ev<id>), tg_padrao e ag_padrao (a mensagem padrão),
 //           tg_proprio_<tipo> e ag_proprio_<tipo> (1 ou 0: o aviso tem a sua personalizada no canal), tg_corpo_<tipo> e
-//           ag_corpo_<tipo> (o texto dela). Só o que vier no pedido muda.
+//           ag_corpo_<tipo> (o texto dela). Só o que vier no pedido muda. Os canais ficam na tabela canal_aviso (os nomes
+//           acima são os campos do pedido).
 //   testar_manha, testar_noite: mandam a mensagem agora
 //   evento_salvar (evento_id (ou id): 0 cria; nome, ativo, repeticao (uma, diaria, semanal, mensal, intervalo), hora (HH:MM),
 //           data_inicio (uma vez: a data; a cada N dias: desde quando, vazio: hoje), dias_semana (1 a 7, lista ou separados
@@ -1984,19 +1998,29 @@ function op_config($acao, $d)
                 sql("UPDATE lancamento_tipo SET fecha_as = ? WHERE identificador = 'pulso'", [pulso_tira_sozinho() ? cfg("uso_fim") . ":00" : null]);
             }
             foreach ($CANAIS as $canal => $c) {
+                // os tipos que vão pelo canal: os marcados; os outros, não (a tabela canal_aviso)
                 if (array_key_exists($c["tipos"], $d)) {
-                    cfg_set($c["tipos"], implode(",", array_values(array_filter((array)$d[$c["tipos"]], function ($t) { return $t !== ""; }))));
+                    $marcados = array_values(array_filter((array)$d[$c["tipos"]], function ($t) { return $t !== ""; }));
+                    foreach ($tipos_todos as $k => $t) {
+                        if (in_array($k, $marcados, true) !== canal_aviso($canal, $k)["envia"]) {
+                            canal_gravar($canal, $k, ["envia" => in_array($k, $marcados, true)]);
+                        }
+                    }
                 }
                 if (array_key_exists($canal . "_padrao", $d)) {
                     cfg_set($canal . "_padrao", str_replace("\r\n", "\n", (string)$d[$canal . "_padrao"]));
                 }
                 // a personalizada de cada aviso (o texto fica guardado mesmo desmarcado)
                 foreach ($tipos_todos as $k => $t) {
+                    $muda = [];
                     if (array_key_exists($canal . "_proprio_" . $k, $d)) {
-                        cfg_set($canal . "_proprio_" . $k, (string)$d[$canal . "_proprio_" . $k] === "1" ? "1" : "0");
+                        $muda["propria"] = (string)$d[$canal . "_proprio_" . $k] === "1";
                     }
                     if (array_key_exists($canal . "_corpo_" . $k, $d)) {
-                        cfg_set($canal . "_corpo_" . $k, str_replace("\r\n", "\n", (string)$d[$canal . "_corpo_" . $k]));
+                        $muda["corpo"] = str_replace("\r\n", "\n", (string)$d[$canal . "_corpo_" . $k]);
+                    }
+                    if (count($muda) > 0) {
+                        canal_gravar($canal, $k, $muda);
                     }
                 }
             }
@@ -2015,7 +2039,7 @@ function op_config($acao, $d)
         }
     } elseif ($acao === "evento_salvar") {
         $id = (int)($d["evento_id"] ?? ($d["id"] ?? 0));
-        $atual = $id > 0 ? linha("SELECT * FROM evento_personalizado WHERE id = ?", [$id]) : null;
+        $atual = $id > 0 ? (eventos_com_dias(linhas("SELECT * FROM evento_personalizado WHERE id = ?", [$id]))[0] ?? null) : null;
         $nome = trim((string)($d["nome"] ?? ($atual["nome"] ?? "")));
         $rep = (string)($d["repeticao"] ?? ($atual["repeticao"] ?? ""));
         $hora = substr(trim((string)($d["hora"] ?? ($atual["hora"] ?? ""))), 0, 5);
@@ -2062,17 +2086,24 @@ function op_config($acao, $d)
         }
         if (count($erros) === 0) {
             // só o que a repetição usa fica gravado
-            $dados = [$nome, $ativo, $rep, $rep === "uma" || $rep === "intervalo" ? $data_ini : null, $hora . ":00", $rep === "semanal" ? implode(",", $dias) : null,
+            $dados = [$nome, $ativo, $rep, $rep === "uma" || $rep === "intervalo" ? $data_ini : null, $hora . ":00",
                 $rep === "mensal" ? $dia_mes : null, $rep === "intervalo" ? $intervalo : null, $rid > 0 ? $rid : null];
             if ($atual) {
-                sql("UPDATE evento_personalizado SET nome = ?, ativo = ?, repeticao = ?, data_inicio = ?, hora = ?, dias_semana = ?, dia_mes = ?, intervalo_dias = ?,
+                sql("UPDATE evento_personalizado SET nome = ?, ativo = ?, repeticao = ?, data_inicio = ?, hora = ?, dia_mes = ?, intervalo_dias = ?,
                     relogio_id = ? WHERE id = ?", array_merge($dados, [$id]));
             } else {
-                sql("INSERT INTO evento_personalizado (nome, ativo, repeticao, data_inicio, hora, dias_semana, dia_mes, intervalo_dias, relogio_id, criado)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", array_merge($dados, [date("Y-m-d H:i:s")]));
+                sql("INSERT INTO evento_personalizado (nome, ativo, repeticao, data_inicio, hora, dia_mes, intervalo_dias, relogio_id, criado)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", array_merge($dados, [date("Y-m-d H:i:s")]));
                 // evento novo já sai pelo Telegram; os canais se ajustam na tabela
                 $id = ultimo_id();
-                cfg_set("alerta_tipos", trim(cfg("alerta_tipos") . ",ev" . $id, ","));
+                canal_gravar("tg", "ev" . $id, ["envia" => true]);
+            }
+            // os dias da semana (semanal): uma linha cada, na tabela evento_dia
+            sql("DELETE FROM evento_dia WHERE evento_id = ?", [$id]);
+            if ($rep === "semanal") {
+                foreach ($dias as $dia) {
+                    sql("INSERT INTO evento_dia (evento_id, dia) VALUES (?, ?)", [$id, $dia]);
+                }
             }
             $msg = "Evento salvo.";
             $extra["id"] = $id;
@@ -2083,12 +2114,9 @@ function op_config($acao, $d)
         if (!$ev) {
             $erros[] = "Evento não encontrado.";
         } else {
+            // os canais e os textos dele (canal_aviso) e os dias (evento_dia) saem junto, pelo banco (chave estrangeira em cascata)
             sql("DELETE FROM evento_personalizado WHERE id = ?", [$id]);
-            // tira o evento das listas de canais e apaga os textos personalizados dele
-            foreach ($CANAIS as $canal => $c) {
-                cfg_set($c["tipos"], implode(",", array_diff(explode(",", cfg($c["tipos"])), ["ev" . $id])));
-                sql("DELETE FROM config WHERE chave IN (?, ?)", [$canal . "_proprio_ev" . $id, $canal . "_corpo_ev" . $id]);
-            }
+            canal_aviso("tg", null, true);
             $msg = "Evento excluído.";
         }
     } elseif ($acao === "teste_agenda_criar") {

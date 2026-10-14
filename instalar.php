@@ -22,6 +22,12 @@ try {
     }
     $inicio = microtime(true);
     $n = banco_script((string)file_get_contents(__DIR__ . "/schema.sql"));
+    // os passos em PHP das migrações (o schema.sql já traz o SQL delas)
+    foreach ($MIGRACOES as $m) {
+        if (isset($m[3])) {
+            call_user_func($m[3]);
+        }
+    }
     $pendentes = migracoes_pendentes();
     if (count($pendentes) > 0) {
         fwrite(STDERR, "A instalação terminou, mas faltam as migrações " . implode(", ", array_keys($pendentes)) . ": o schema.sql está incompleto.\n");
