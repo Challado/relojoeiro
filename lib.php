@@ -288,15 +288,20 @@ $MIGRACOES = [
         . "limite do solar, e o registro completo do cron", "cron_execucao.teve_atividade"],
     "v6" => ["migracao_v6.sql", "o gasto medido pelas leituras (a média dos últimos dias) e as autonomias em segundos", "medicao"],
     "v7" => ["migracao_v7.sql", "o ciclo no rodízio (opção de cada modo, desligada por padrão): um relógio só volta depois que todos do bloco passaram", "modo.ciclo"],
-    "v8" => ["migracao_v8.sql", "a condição \"vale quando\" nos tipos de lançamento e nos avisos; o automático sem corda recebe \"Pôr no winder\" em vez de \"Dar corda\"", "aviso.condicao"],
+    "v8" => ["migracao_v8.sql", "a condição \"vale quando\" nos tipos de lançamento e nos avisos; o automático sem corda recebe \"Pôr no winder\" em vez de \"Dar corda\"", "aviso.condicao"],    "v9" => ["migracao_v9.sql", "o limite de carga, geral e por relógio: carregar, pôr no sol e dar corda só quando a carga chega a ele", "campo.identificador=carga_minima"],
 ];
 
-// As migrações que faltam aplicar neste banco: as da lista cuja marca ainda não existe
+// As migrações que faltam aplicar neste banco: as da lista cuja marca ainda não existe. A marca: uma tabela, uma coluna
+// (tabela.coluna) ou uma linha (tabela.coluna=valor, para a migração que só acrescenta cadastro)
 function migracoes_pendentes()
 {
     global $MIGRACOES;
     return array_filter($MIGRACOES, function ($m) {
-        $marca = explode(".", $m[2]);
+        $linha = explode("=", $m[2], 2);
+        $marca = explode(".", $linha[0]);
+        if (count($linha) === 2) {
+            return (int)valor("SELECT COUNT(*) FROM " . $marca[0] . " WHERE " . $marca[1] . " = ?", [$linha[1]]) === 0;
+        }
         return count($marca) === 2 ? !banco_tem_coluna($marca[0], $marca[1]) : !banco_tem_tabela($marca[0]);
     });
 }
@@ -1011,7 +1016,7 @@ function avisos_todos($recarregar = false)
 
 // Os avisos de um relógio num instante: cada aviso que vale para ele e tem data prevista (sem data: não se aplica agora).
 // estado: atrasado (a data passou), em_breve (dentro da antecedência) ou ok. texto: o do cadastro, com {relogio},
-// {data} (dd/mm/aaaa hh:mm) e {quando} ("em 2d 3h", "há 5h", "agora") trocados.
+// {data} (dd/mm/aaaa hh:mm), {quando} ("em 2d 3h", "há 5h", "agora") e {limite} (o limite de carga do relógio) trocados.
 function avisos_do_relogio($r, $momento)
 {
     $res = [];
@@ -1026,18 +1031,25 @@ function avisos_do_relogio($r, $momento)
                 $data = null;
             }
             if (is_numeric($data)) {
+                // {limite}: o limite de carga que vale para o relógio (o dele, senão o geral), trocado já no modelo
+                $modelo = $a["texto"];
+                if (strpos($modelo, "{limite}") !== false) {
+                    $lim = isset(formulas_todas()["limite_carga"]) ? variavel_valor("limite_carga", $ctx) : null;
+                    $modelo = is_numeric($lim) ? str_replace("{limite}", str_replace(".", ",", (string)round((float)$lim, 1)), $modelo)
+                        : str_replace(["{limite}%", "{limite}"], "o limite", $modelo);
+                }
                 $falta = (float)$data - $agora_d;
                 // o quanto falta (ou passou), por extenso (as duas maiores partes)
                 $quando = duracao_texto($falta) === "" ? "agora" : ($falta >= 0 ? "em " : "há ") . duracao_texto($falta);
                 $ts = (int)round((float)$data * 86400);
                 $data_txt = gmdate("d/m/Y H:i", $ts);
-                // escala, simula_*, agenda e modelo: para a escala inteligente e a agenda (o modelo é o texto sem as trocas)
+                // escala, simula_*, agenda e modelo: para a escala inteligente e a agenda (o modelo é o texto sem as trocas, só com o {limite})
                 $res[] = ["identificador" => $ident, "nome" => $a["nome"], "data" => gmdate("Y-m-d H:i:s", $ts), "falta_dias" => round($falta, 4),
                     "estado" => $falta < 0 ? "atrasado" : ($falta <= (float)$a["antecedencia_dias"] ? "em_breve" : "ok"),
-                    "texto" => str_replace(["{relogio}", "{data}", "{quando}"], [$r["nome"], $data_txt, $quando], $a["texto"]),
+                    "texto" => str_replace(["{relogio}", "{data}", "{quando}"], [$r["nome"], $data_txt, $quando], $modelo),
                     "resolve" => $a["resolve"], "versao" => no_caminho($a["no_id"]), "escala" => $a["escala"],
                     "simula_valor" => $a["simula_valor"] === null ? null : (float)$a["simula_valor"], "simula_horas" => $a["simula_horas"] === null ? null : (float)$a["simula_horas"],
-                    "agenda" => $a["agenda"], "modelo" => $a["texto"]];
+                    "agenda" => $a["agenda"], "modelo" => $modelo];
             }
         }
     }
