@@ -17,23 +17,26 @@ foreach (["de" => "00:00:00", "ate" => "23:59:59"] as $k => $hora) {
 }
 $situacao = in_array($_REQUEST["cron_situacao"] ?? ($_REQUEST["situacao"] ?? ""), ["atividade", "erro", "nada", "todas"], true) ? ($_REQUEST["cron_situacao"] ?? $_REQUEST["situacao"]) : "atividade";
 $busca = trim((string)($_REQUEST["cron_busca"] ?? ($_REQUEST["busca"] ?? "")));
+// o master vê as rodadas inteiras (o sistema e todas as coleções); os outros, só o que a rodada fez na coleção do pedido
+$fonte = usuario_master() ? "cron_execucao" : "(SELECT e.id, e.inicio, e.fim, e.duracao_ms, c.teve_atividade, c.teve_erro, c.registro FROM cron_execucao e
+    JOIN cron_execucao_colecao c ON c.execucao_id = e.id) x";
 $onde = "inicio BETWEEN ? AND ?";
 $params = [$per_c["de"], $per_c["ate"]];
 $resumo = linha("SELECT COUNT(*) AS total, COALESCE(SUM(teve_atividade), 0) AS atividade, COALESCE(SUM(teve_erro), 0) AS erros,
-        COALESCE(MAX(duracao_ms), 0) AS mais_lenta FROM cron_execucao WHERE " . $onde, $params);
+        COALESCE(MAX(duracao_ms), 0) AS mais_lenta FROM " . $fonte . " WHERE " . $onde, $params);
 $onde .= ["atividade" => " AND teve_atividade = 1", "erro" => " AND teve_erro = 1", "nada" => " AND teve_atividade = 0", "todas" => ""][$situacao];
 if ($busca !== "") {
     $onde .= " AND registro LIKE ?";
     $params[] = "%" . $busca . "%";
 }
-$total = (int)valor("SELECT COUNT(*) FROM cron_execucao WHERE " . $onde, $params);
+$total = (int)valor("SELECT COUNT(*) FROM " . $fonte . " WHERE " . $onde, $params);
 $por = max(1, min(1000, (int)($_REQUEST["limite"] ?? 100)));
 $paginas = max(1, (int)ceil($total / $por));
 $pagina = min($paginas, max(1, (int)($_REQUEST["pagina"] ?? 1)));
-$saida = ["filtro" => ["de" => $per_c["de"], "ate" => $per_c["ate"], "situacao" => $situacao, "busca" => $busca], "ultima" => cfg("cron_ultima_execucao"),
+$saida = ["filtro" => ["de" => $per_c["de"], "ate" => $per_c["ate"], "situacao" => $situacao, "busca" => $busca], "ultima" => sis("cron_ultima_execucao"),
     "resumo" => ["total" => (int)$resumo["total"], "atividade" => (int)$resumo["atividade"], "erros" => (int)$resumo["erros"], "mais_lenta_ms" => (int)$resumo["mais_lenta"]],
     "total" => $total, "pagina" => $pagina, "por_pagina" => $por, "paginas" => $paginas,
     "execucoes" => array_map(function ($x) {
         return ["id" => (int)$x["id"], "inicio" => $x["inicio"], "fim" => $x["fim"], "duracao_ms" => (int)$x["duracao_ms"], "teve_atividade" => (int)$x["teve_atividade"] === 1,
             "teve_erro" => (int)$x["teve_erro"] === 1, "registro" => $x["registro"]];
-    }, linhas("SELECT * FROM cron_execucao WHERE " . $onde . " ORDER BY inicio DESC, id DESC LIMIT " . $por . " OFFSET " . (($pagina - 1) * $por), $params))];
+    }, linhas("SELECT * FROM " . $fonte . " WHERE " . $onde . " ORDER BY inicio DESC, id DESC LIMIT " . $por . " OFFSET " . (($pagina - 1) * $por), $params))];

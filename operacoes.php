@@ -113,7 +113,7 @@ function op_arvore($acao, $d)
             $mudou = 0;
             foreach ($novos as $rid => $no) {
                 if ((int)valor("SELECT COALESCE(no_id, 0) FROM relogio WHERE id = ?", [$rid]) !== (int)$no) {
-                    sql("UPDATE relogio SET no_id = ? WHERE id = ?", [$no, $rid]);
+                    sql("UPDATE relogio SET no_id = ? WHERE id = ?", [no_gravar($no), $rid]);
                     $mudou++;
                 }
             }
@@ -136,7 +136,7 @@ function op_arvore($acao, $d)
             }
         }
         if (count($erros) === 0 && $acao === "novo") {
-            sql("INSERT INTO no (pai_id, nome, ordem) VALUES (?, ?, ?)", [$pai, $nome, (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM no WHERE pai_id <=> ?", [$pai])]);
+            sql("INSERT INTO no (pai_id, nome, ordem) VALUES (?, ?, ?)", [no_gravar($pai), $nome, (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM no WHERE pai_id <=> ?", [$pai])]);
             $id = ultimo_id();
             nos_todos(true);
             $msg = t("{1} criado.", [1 => no_caminho($id)]);
@@ -158,7 +158,7 @@ function op_arvore($acao, $d)
             }
         }
         if (count($erros) === 0) {
-            sql("UPDATE no SET pai_id = ?, ordem = ? WHERE id = ?", [$pai, (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM no WHERE pai_id <=> ?", [$pai]), $id]);
+            sql("UPDATE no SET pai_id = ?, ordem = ? WHERE id = ?", [no_gravar($pai), (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM no WHERE pai_id <=> ?", [$pai]), $id]);
             nos_todos(true);
             $msg = t("Movido: agora é {1}.", [1 => no_caminho($id)]);
         }
@@ -193,7 +193,7 @@ function op_arvore($acao, $d)
         // blocos dos modos que sorteavam dele (passam a sortear do ponto de cima)
         foreach (["no" => "pai_id", "relogio" => "no_id", "campo" => "no_id", "lancamento_tipo" => "no_id", "formula" => "no_id", "aviso" => "no_id",
             "modo_bloco" => "no_id"] as $tabela => $coluna) {
-            sql("UPDATE " . $tabela . " SET " . $coluna . " = ? WHERE " . $coluna . " = ?", [$cima, $id]);
+            sql("UPDATE " . $tabela . " SET " . $coluna . " = ? WHERE " . $coluna . " = ?", [no_gravar($cima), $id]);
         }
         sql("DELETE FROM no WHERE id = ?", [$id]);
         nos_todos(true);
@@ -268,7 +268,7 @@ function op_campos($acao, $d)
             }
         }
         if (count($erros) === 0) {
-            $dados = [$c["identificador"], $c["nome"], $c["tipo"], $c["unidade"], $c["padrao"] !== "" ? $c["padrao"] : null, $no, $so_desejado];
+            $dados = [$c["identificador"], $c["nome"], $c["tipo"], $c["unidade"], $c["padrao"] !== "" ? $c["padrao"] : null, no_gravar($no), $so_desejado];
             if ($acao === "novo") {
                 sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, so_desejado, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     array_merge($dados, [(int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM campo")]));
@@ -368,14 +368,14 @@ function op_lancamento_tipos($acao, $d)
             if ($acao === "novo") {
                 sql("INSERT INTO lancamento_tipo (identificador, nome, formato, unidade, fecha_as, exclusiva, mede_gasto, condicao, no_id, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     [$ident, $nome, $formato, $unidade, $fecha !== "" ? $fecha : null, $formato === "sessao" ? $exclusiva : 0, $formato === "valor" ? $mede_gasto : 0,
-                    $condicao !== "" ? $condicao : null, $no,
+                    $condicao !== "" ? $condicao : null, no_gravar($no),
                     (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM lancamento_tipo")]);
                 $id = ultimo_id();
                 $msg = t("Tipo de lançamento {1} criado, para {2}.", [1 => $nome, 2 => no_caminho($no)]);
             } else {
                 sql("UPDATE lancamento_tipo SET identificador = ?, nome = ?, formato = ?, unidade = ?, fecha_as = ?, exclusiva = ?, mede_gasto = ?, condicao = ?, no_id = ? WHERE id = ?",
                     [$ident, $nome, $formato, $unidade, $fecha !== "" ? $fecha : null, $formato === "sessao" ? $exclusiva : 0, $formato === "valor" ? $mede_gasto : 0,
-                    $condicao !== "" ? $condicao : null, $no, $id]);
+                    $condicao !== "" ? $condicao : null, no_gravar($no), $id]);
                 $msg = t("Tipo de lançamento {1} salvo.", [1 => $nome]);
             }
             lancamento_tipos(true);
@@ -436,11 +436,11 @@ function op_formulas($acao, $d)
         }
         if (count($erros) === 0) {
             if ($acao === "nova") {
-                sql("INSERT INTO formula (identificador, nome, expressao, unidade, no_id) VALUES (?, ?, ?, ?, ?)", [$ident, $nome, $expr, $unidade, $no]);
+                sql("INSERT INTO formula (identificador, nome, expressao, unidade, no_id) VALUES (?, ?, ?, ?, ?)", [$ident, $nome, $expr, $unidade, no_gravar($no)]);
                 $id = ultimo_id();
                 $msg = t("Fórmula {1} gravada para {2}.", [1 => $ident, 2 => no_caminho($no)]);
             } else {
-                sql("UPDATE formula SET nome = ?, expressao = ?, unidade = ?, no_id = ? WHERE id = ?", [$nome, $expr, $unidade, $no, $id]);
+                sql("UPDATE formula SET nome = ?, expressao = ?, unidade = ?, no_id = ? WHERE id = ?", [$nome, $expr, $unidade, no_gravar($no), $id]);
                 $msg = t("Fórmula {1} ({2}) salva.", [1 => $ident, 2 => no_caminho($no)]);
             }
             formulas_todas(true);
@@ -506,9 +506,9 @@ function op_relogio($acao, $d)
         }
         if (count($erros) === 0) {
             if ($atual) {
-                sql("UPDATE relogio SET nome = ?, no_id = ?, disponivel = ?, copia_banco = ?, posse = ? WHERE id = ?", [$nome, $no, $disp, $copia, $posse, $id]);
+                sql("UPDATE relogio SET nome = ?, no_id = ?, disponivel = ?, copia_banco = ?, posse = ? WHERE id = ?", [$nome, no_gravar($no), $disp, $copia, $posse, $id]);
             } else {
-                sql("INSERT INTO relogio (nome, no_id, disponivel, copia_banco, posse, criado) VALUES (?, ?, ?, ?, ?, NOW())", [$nome, $no, $disp, $copia, $posse]);
+                sql("INSERT INTO relogio (colecao_id, nome, no_id, disponivel, copia_banco, posse, criado) VALUES (?, ?, ?, ?, ?, ?, NOW())", [colecao_atual(), $nome, no_gravar($no), $disp, $copia, $posse]);
                 $id = ultimo_id();
             }
             relogio_copia_banco($id, true);
@@ -562,12 +562,13 @@ function op_relogio($acao, $d)
                 . (count($ignorados) > 0 ? t(" Não gravei: {1}. Ficou o que já estava.", [1 => implode("; ", $ignorados)]) : "");
         }
     } elseif ($acao === "excluir" && $atual) {
-        // os arquivos dos documentos saem da pasta (as linhas saem com o relógio, pelo banco)
+        // os arquivos dos documentos saem da pasta, e a pasta do relógio (r<id>) inteira (as linhas saem com o relógio, pelo banco)
         foreach (linhas("SELECT arquivo, miniatura FROM documento WHERE relogio_id = ?", [$id]) as $doc) {
             documento_apagar_arquivos($doc);
         }
         $n_aces = (int)valor("SELECT COUNT(*) FROM acessorio WHERE relogio_id = ?", [$id]);
         sql("DELETE FROM relogio WHERE id = ?", [$id]);
+        relogios_apagar_arquivos([$id]);
         $msg = t("Relógio {1} excluído, com os valores, a foto, os documentos e os lançamentos dele.{2}", [1 => $atual["nome"], 2 => $n_aces > 0 ? " " . ($n_aces === 1 ? t("O acessório dele ficou solto.") : t("Os {1} acessórios dele ficaram soltos.", [1 => $n_aces])) : ""]);
         $id = 0;
     } elseif ($acao === "foto" && $atual) {
@@ -823,7 +824,7 @@ function op_documento_categorias($acao, $d)
                 documento_categoria_gravar_aceita($id, $aceita);
                 $msg = t("Categoria {1} salva.", [1 => $nome]);
             } else {
-                sql("INSERT INTO documento_categoria (identificador, nome, ordem) VALUES (?, ?, ?)", [$ident, $nome, $ordem]);
+                sql("INSERT INTO documento_categoria (identificador, nome, ordem, no_id) VALUES (?, ?, ?, ?)", [$ident, $nome, $ordem, no_raiz()]);
                 $id = ultimo_id();
                 documento_categoria_gravar_aceita($id, $aceita);
                 $msg = t("Categoria {1} criada.", [1 => $nome]);
@@ -874,13 +875,14 @@ function op_acessorios($acao, $d)
             $erros[] = t("A observação vai até 1000 caracteres.");
         }
         if (count($erros) === 0) {
-            $vals = [$nome, $tipo, $rel > 0 ? $rel : null, $obs !== "" ? $obs : null];
             if ($atual) {
-                sql("UPDATE acessorio SET nome = ?, tipo = ?, relogio_id = ?, observacao = ? WHERE id = ?", array_merge($vals, [$id]));
+                sql("UPDATE acessorio SET nome = ?, tipo = ?, observacao = ? WHERE id = ?", [$nome, $tipo, $obs !== "" ? $obs : null, $id]);
             } else {
-                sql("INSERT INTO acessorio (nome, tipo, relogio_id, observacao, criado) VALUES (?, ?, ?, ?, NOW())", $vals);
+                sql("INSERT INTO acessorio (colecao_id, nome, tipo, observacao, criado) VALUES (?, ?, ?, ?, NOW())", [colecao_atual(), $nome, $tipo, $obs !== "" ? $obs : null]);
                 $id = ultimo_id();
             }
+            // o relógio do acessório (a ligação; 0: solto)
+            ligacao_relogio("acessorio_relogio", "acessorio_id", $id, $rel > 0 ? $rel : null);
             $msg = t("Acessório {1} ({2}){3}{4}.", [1 => $nome, 2 => mb_strtolower(t(ACESSORIO_TIPOS[$tipo]), "UTF-8"), 3 => $atual ? t(" salvo") : t(" cadastrado"), 4 => $r ? t(", do {1}", [1 => $r["nome"]]) : t(", solto (de nenhum relógio)")]);
         }
     } elseif ($acao === "excluir" && $atual) {
@@ -1237,7 +1239,7 @@ function op_avisos($acao, $d)
             }
         }
         if (count($erros) === 0) {
-            $dados = [$nome, $expr, $condicao !== "" ? $condicao : null, $ante, $texto, $resolve !== "" ? (int)lancamento_tipos()[$resolve]["id"] : null, $ativo, $no, $escala,
+            $dados = [$nome, $expr, $condicao !== "" ? $condicao : null, $ante, $texto, $resolve !== "" ? (int)lancamento_tipos()[$resolve]["id"] : null, $ativo, no_gravar($no), $escala,
                 $simula["simula_valor"], $simula["simula_horas"], $agenda, $na_hora];
             if ($acao === "novo") {
                 sql("INSERT INTO aviso (identificador, nome, expressao, condicao, antecedencia_dias, texto, resolve_tipo_id, ativo, no_id, escala, simula_valor, simula_horas, agenda, na_hora)
@@ -1253,11 +1255,13 @@ function op_avisos($acao, $d)
         }
     } elseif ($acao === "excluir") {
         sql("DELETE FROM aviso WHERE id = ?", [$id]);
-        // a última versão do aviso: o que ia por cada canal para ele sai (canal_aviso cita o aviso pelo identificador, que é
+        // a última versão do aviso: o que ia por cada destino e agenda para ele sai (cita o aviso pelo identificador, que é
         // o nome dele nas mensagens e nas fórmulas, como uma fórmula cita outra)
         if ((int)valor("SELECT COUNT(*) FROM aviso WHERE identificador = ?", [$atual["identificador"]]) === 0) {
-            sql("DELETE FROM canal_aviso WHERE tipo = ?", [$atual["identificador"]]);
-            canal_aviso("tg", null, true);
+            sql("DELETE FROM destino_aviso WHERE tipo_aviso = ?", [$atual["identificador"]]);
+            sql("DELETE FROM agenda_aviso WHERE tipo_aviso = ?", [$atual["identificador"]]);
+            destinos(true);
+            agendas(true);
         }
         avisos_todos(true);
         $msg = t("A versão do aviso {1} para {2} foi excluída.", [1 => $atual["nome"], 2 => no_caminho($atual["no_id"])]);
@@ -1325,6 +1329,8 @@ function op_criterios($acao, $d)
         $escopo = "";
     }
     $col = $colunas($escopo);
+    // para gravar: o lugar "todos" é a raiz da árvore (na leitura, a raiz aparece vazia)
+    $col_g = [$col[0] ?? ($col[1] === null ? no_raiz() : null), $col[1]];
 
     // ---------- o conjunto de um lugar ----------
     if ($acao === "conjunto_criar" && count($erros) === 0) {
@@ -1335,7 +1341,7 @@ function op_criterios($acao, $d)
         } elseif (($d["origem"] ?? "herdado") === "herdado" && $origem !== null) {
             // copia o conjunto herdado inteiro: parâmetros, subparâmetros e faixas
             foreach (criterios_config()[$origem] as $p) {
-                sql("INSERT INTO criterio_parametro (escopo_no_id, escopo_relogio_id, nome, peso, ordem) VALUES (?, ?, ?, ?, ?)", [$col[0], $col[1], $p["nome"], $p["peso"], $p["ordem"]]);
+                sql("INSERT INTO criterio_parametro (escopo_no_id, escopo_relogio_id, nome, peso, ordem) VALUES (?, ?, ?, ?, ?)", [$col_g[0], $col_g[1], $p["nome"], $p["peso"], $p["ordem"]]);
                 $np = ultimo_id();
                 foreach ($p["subs"] as $sb) {
                     sql("INSERT INTO criterio_sub (parametro_id, nome, variavel, peso, ordem) VALUES (?, ?, ?, ?, ?)", [$np, $sb["nome"], $sb["variavel"], $sb["peso"], $sb["ordem"]]);
@@ -1347,7 +1353,7 @@ function op_criterios($acao, $d)
             }
             $ok = t("{1} agora tem critérios próprios, copiados dos de {2}. Ajuste à vontade: os de {3} não mudam.", [1 => escopo_texto($escopo), 2 => escopo_texto($origem), 3 => escopo_texto($origem)]);
         } else {
-            sql("INSERT INTO criterio_parametro (escopo_no_id, escopo_relogio_id, nome, peso, ordem) VALUES (?, ?, 'Novo parâmetro', 100, 1)", $col);
+            sql("INSERT INTO criterio_parametro (escopo_no_id, escopo_relogio_id, nome, peso, ordem) VALUES (?, ?, ?, 100, 1)", [$col_g[0], $col_g[1], t("Novo parâmetro")]);
             $ok = t("{1} agora tem critérios próprios, começando com um parâmetro de 100%: renomeie e inclua os subparâmetros dele.", [1 => escopo_texto($escopo)]);
         }
         $ancora = "conjunto";
@@ -1357,7 +1363,9 @@ function op_criterios($acao, $d)
         if ($n === 0) {
             $erros[] = t("{1} não tem critérios próprios.", [1 => escopo_texto($escopo)]);
         } else {
-            sql("DELETE FROM criterio_parametro WHERE " . $do_lugar, $col);
+            foreach (array_column(linhas("SELECT id FROM criterio_parametro WHERE " . $do_lugar, $col), "id") as $pid) {
+                sql("DELETE FROM criterio_parametro WHERE id = ?", [(int)$pid]);
+            }
             $herda = conjunto_herdado($escopo);
             $ok = t("Os critérios próprios de {1} foram excluídos ({2}{3}{4}", [1 => escopo_texto($escopo), 2 => $n, 3 => $n === 1 ? t(" parâmetro).") : t(" parâmetros)."), 4 => $escopo === "" ? t(" Relógio sem conjunto mais perto fica com nota neutra, 50.") : t(" Agora usa os de {1}.", [1 => $herda !== null ? escopo_texto($herda) : t("nenhum lugar (nota neutra, 50)")])]);
             $ancora = "conjunto";
@@ -1381,7 +1389,7 @@ function op_criterios($acao, $d)
         if (count($erros) === 0) {
             $conta = count($outros) > 0 ? $regrava("criterio_parametro", $outros, round(100 - $peso, 2)) : [];
             sql("INSERT INTO criterio_parametro (escopo_no_id, escopo_relogio_id, nome, peso, ordem) VALUES (?, ?, ?, ?, ?)",
-                [$col[0], $col[1], $nome, count($outros) > 0 ? $peso : 100, (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM criterio_parametro WHERE " . $do_lugar, $col)]);
+                [$col_g[0], $col_g[1], $nome, count($outros) > 0 ? $peso : 100, (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM criterio_parametro WHERE " . $do_lugar, $col)]);
             // o id logo depois do INSERT (a consulta do nome do lugar, abaixo, zeraria o insert_id)
             $ancora = "p" . ultimo_id();
             $ok = t("Parâmetro {1} incluído em {2} com {3}.{4} Inclua os subparâmetros dele: sem nenhum, ele não entra na conta.", [1 => $nome, 2 => escopo_texto($escopo), 3 => pct_br(count($outros) > 0 ? $peso : 100), 4 => count($conta) > 0 ? t(" Os outros abriram espaço na proporção de cada um: {1}.", [1 => implode("; ", $conta)]) : ""]);
@@ -1716,26 +1724,17 @@ function op_criterios($acao, $d)
         }
     }
 
-    // restaurar: apaga todos os conjuntos e volta aos iniciais (o final do schema.sql)
+    // restaurar: apaga todos os conjuntos (os da árvore e os dos relógios da coleção) e volta aos do modelo.json, no idioma da
+    // coleção; cada grupo do modelo vai para o grupo da árvore com o mesmo caminho (sem ele, para a raiz)
     if ($acao === "restaurar") {
         $erros = [];
-        $semente = file_get_contents(__DIR__ . "/schema.sql");
-        $ini = strpos((string)$semente, "-- critérios iniciais");
-        if ($ini === false) {
-            $erros[] = t("Não encontrei os critérios iniciais no arquivo schema.sql.");
-        } else {
-            sql("DELETE FROM criterio_parametro");
-            // os comandos até o fim do arquivo, traduzidos para o banco em uso (e os ids andam depois dos gravados)
-            banco_script(substr((string)$semente, $ini));
-            // no idioma da instalação, como na instalação
-            $lingua_inst = lingua_valida(cfg("idioma"));
-            if ($lingua_inst !== null && $lingua_inst !== "pt-BR") {
-                cadastro_traduzir($lingua_inst, ["criterio_parametro", "criterio_sub", "criterio_faixa"]);
-            }
-            $ok = t("Critérios iniciais restaurados.");
-            $escopo = "";
-            $ancora = "lugares";
+        foreach (array_column(linhas("SELECT id FROM criterio_parametro"), "id") as $pid) {
+            sql("DELETE FROM criterio_parametro WHERE id = ?", [(int)$pid]);
         }
+        criterios_restaurar(lingua_valida(cfg("idioma")) ?? "pt-BR");
+        $ok = t("Critérios iniciais restaurados.");
+        $escopo = "";
+        $ancora = "lugares";
     }
 
     if (count($erros) === 0 && $ok === "") {
@@ -1779,7 +1778,7 @@ function op_rodizio($acao, $d)
         $tipo = lancamento_tipos()["pulso"] ?? null;
         $dia = $hoje->format("Y-m-d");
         sql("DELETE FROM plano_livre WHERE data = ?", [$dia]);
-        sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, NULL, 'manual', ?, NOW())", [$dia, $novo_id, $motivo]);
+        plano_gravar($dia, $novo_id, null, "manual", $motivo, null, true);
         if ($tipo) {
             foreach (linhas("SELECT id, relogio_id, inicio FROM lancamento WHERE tipo_id = ? AND origem = 'rodizio' AND DATE(inicio) = ? AND relogio_id <> ?", [(int)$tipo["id"], $dia, $novo_id]) as $l) {
                 if (strtotime($l["inicio"]) >= $agora) {
@@ -1871,7 +1870,7 @@ function op_rodizio($acao, $d)
             }
         }
         sql("DELETE FROM plano WHERE data = ?", [$dia]);
-        sql("INSERT IGNORE INTO plano_livre (data, criado) VALUES (?, NOW())", [$dia]);
+        plano_livre_marcar($dia);
         $msg = t("Hoje sem relógio: o dia ficou livre{1}.{2} Mudou de ideia? Escolha um relógio para hoje (o \"escolher…\") ou sorteie de novo inclusive hoje.", [1 => $antes ? " (era o " . $antes["nome"] . ")" : "", 2 => $tirou !== "" ? t(" O {1} saiu do pulso agora; o tempo que ele já ficou conta.", [1 => $tirou]) : t(" Nenhum relógio vai ao pulso pelo rodízio hoje.")]);
     } elseif ($acao === "usando") {
         $r = linha("SELECT * FROM relogio WHERE id = ?", [(int)($d["relogio_id"] ?? 0)]);
@@ -1927,7 +1926,7 @@ function op_rodizio($acao, $d)
             $msg = t("{1}: volta a ser sorteado{2}.", [1 => $dt->format("d/m"), 2 => $p ? " (" . $p["nome"] . ")" : ""]);
         } else {
             sql("DELETE FROM plano_livre WHERE data = ?", [$data]);
-            sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, NULL, 'manual', ?, NOW())", [$data, $novo, t("Escolhido à mão.")]);
+            plano_gravar($data, $novo, null, "manual", t("Escolhido à mão."), null, true);
             if ($escala) {
                 // a escala refeita a partir do dia trocado: ele fica, e os seguintes (e o que fazer antes de cada um) se ajustam
                 gerar_escala($dt);
@@ -1969,7 +1968,7 @@ function op_rodizio($acao, $d)
                 $livres = 0;
                 if ($acao === "periodo_livre") {
                     for ($dia = $desde_p; $dia <= $ate_p; $dia = $dia->modify("+1 day"), $livres++) {
-                        sql("INSERT INTO plano_livre (data, criado) VALUES (?, NOW())", [$dia->format("Y-m-d")]);
+                        plano_livre_marcar($dia->format("Y-m-d"));
                     }
                 }
                 if ($escala) {
@@ -2004,7 +2003,7 @@ function op_rodizio($acao, $d)
                         // hoje: ele passa a ser o do pulso a partir de agora (como o usando)
                         $troca_hoje((int)$r["id"], $motivo_p);
                     } else {
-                        sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, NULL, 'manual', ?, NOW())", [$dia->format("Y-m-d"), (int)$r["id"], $motivo_p]);
+                        plano_gravar($dia->format("Y-m-d"), (int)$r["id"], null, "manual", $motivo_p, null, true);
                     }
                 }
                 if ($escala) {
@@ -2079,7 +2078,7 @@ function op_rodizio($acao, $d)
                 $mantido = !array_key_exists($data, $vindos) && $e !== "auto";
                 if ($e === "livre") {
                     sql("DELETE FROM plano WHERE data = ?", [$data]);
-                    sql("INSERT IGNORE INTO plano_livre (data, criado) VALUES (?, NOW())", [$data]);
+                    plano_livre_marcar($data);
                     $n[$mantido ? "mantidos" : "livres"]++;
                     continue;
                 }
@@ -2096,7 +2095,7 @@ function op_rodizio($acao, $d)
                         $troca_hoje($rid, $motivo);
                     }
                 } elseif (!$antes || (int)$antes["relogio_id"] !== $rid || $antes["origem"] !== "manual" || !is_int($e)) {
-                    sql("REPLACE INTO plano (data, relogio_id, bloco_id, origem, motivo, criado) VALUES (?, ?, NULL, 'manual', ?, NOW())", [$data, $rid, $motivo]);
+                    plano_gravar($data, $rid, null, "manual", $motivo, null, true);
                 }
             }
             if ($escala) {
@@ -2199,15 +2198,16 @@ function op_modos($acao, $d)
             if ($atual) {
                 sql("UPDATE modo SET nome = ?, selecao = ?, escala_dias = ?, ciclo = ? WHERE id = ?", [$nome, $sel, $escala_dias, $ciclo, $id]);
             } else {
-                sql("INSERT INTO modo (nome, selecao, escala_dias, ciclo, ordem) VALUES (?, ?, ?, ?, ?)", [$nome, $sel, $escala_dias, $ciclo,
+                sql("INSERT INTO modo (colecao_id, nome, selecao, escala_dias, ciclo, ordem) VALUES (?, ?, ?, ?, ?, ?)", [colecao_atual(), $nome, $sel, $escala_dias, $ciclo,
                     (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM modo")]);
                 $id = ultimo_id();
             }
             if ($blocos !== null) {
                 sql("DELETE FROM modo_bloco WHERE modo_id = ?", [$id]);
                 foreach ($limpos as $k => $b) {
-                    sql("INSERT INTO modo_bloco (modo_id, nome, no_id, um_por, relogio_id, ordem) VALUES (?, ?, ?, ?, ?, ?)", [$id, $b[0], $b[2], $b[3], $b[4], $k + 1]);
+                    sql("INSERT INTO modo_bloco (modo_id, nome, no_id, um_por, ordem) VALUES (?, ?, ?, ?, ?)", [$id, $b[0], no_gravar($b[2]), $b[3], $k + 1]);
                     $bloco = ultimo_id();
+                    ligacao_relogio("modo_bloco_relogio", "bloco_id", $bloco, $b[4]);
                     foreach (explode(",", $b[1]) as $dia) {
                         sql("INSERT INTO modo_bloco_dia (bloco_id, dia) VALUES (?, ?)", [$bloco, (int)$dia]);
                     }
@@ -2245,24 +2245,17 @@ function op_modos($acao, $d)
 //           sol_limiar (1 a 99: o solar vai para o sol quando a carga estimada chega a essa %); url_sistema (para a âncora
 //           {link}); pulso_auto_inicio (1 ou 0: o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo
 //           Pôs); pulso_auto_fim (1 ou 0: sai sozinho no fim do horário de uso, o "fecha às" do tipo No pulso; 0: só pelo
-//           Tirou); alerta_ativo (1 ou 0: mandar as mensagens pelo Telegram); agenda_ativa (1 ou 0); agenda_id; agenda_chave
-//           (o caminho da chave JSON; vazio: a google-conta-servico.json na pasta do sistema); agenda_antecedencia (1 a 365);
-//           max_sem_uso (0 a 365); previsao_limite (0 a 100); medicao_janela_dias (1 a 3650: a média do gasto medido usa as
-//           medições destes últimos dias); os canais: alerta_tipos[] e agenda_tipos[] (os avisos que vão
-//           por cada um: dia, vespera, os identificadores dos avisos e ev<id>), tg_padrao e ag_padrao (a mensagem padrão),
-//           tg_proprio_<tipo> e ag_proprio_<tipo> (1 ou 0: o aviso tem a sua personalizada no canal), tg_corpo_<tipo> e
-//           ag_corpo_<tipo> (o texto dela). Só o que vier no pedido muda. Os canais ficam na tabela canal_aviso (os nomes
-//           acima são os campos do pedido).
-//   testar_manha, testar_noite: mandam a mensagem agora
+//           Tirou); max_sem_uso (0 a 365); previsao_limite (0 a 100); medicao_janela_dias (1 a 3650: a média do gasto medido
+//           usa as medições destes últimos dias); url_sistema só o master (é do sistema inteiro). Só o que vier no pedido muda.
+//           As mensagens e as agendas saem pelos destinos e pelas agendas (op_destinos, op_agendas).
 //   evento_salvar (evento_id (ou id): 0 cria; nome, ativo, repeticao (uma, diaria, semanal, mensal, intervalo), hora (HH:MM),
 //           data_inicio (uma vez: a data; a cada N dias: desde quando, vazio: hoje), dias_semana (1 a 7, lista ou separados
-//           por vírgula), dia_mes (1 a 31), intervalo_dias, relogio_id (0: nenhum)); o evento novo já vai pelo Telegram, e
-//           os canais e o texto de cada um se escolhem em "O que vai para onde". evento_excluir (evento_id ou id)
-//   teste_agenda_criar (um evento de teste daqui a 10 minutos), teste_agenda_remover, sincronizar (a agenda, agora)
+//           por vírgula), dia_mes (1 a 31), intervalo_dias, relogio_id (0: nenhum)); o evento novo já vai por todos os destinos
+//           da coleção (e por nenhuma agenda): cada destino e cada agenda escolhe o que recebe. evento_excluir (evento_id ou id)
 // ---------------------------------------------------------------------------------------------------------------------
 function op_config($acao, $d)
 {
-    global $CANAIS, $REPETICOES;
+    global $REPETICOES;
     $erros = [];
     $msg = "";
     $extra = [];
@@ -2287,9 +2280,6 @@ function op_config($acao, $d)
         if (array_key_exists("max_sem_uso", $d) && (!ctype_digit(trim((string)$d["max_sem_uso"])) || (int)$d["max_sem_uso"] > 365)) {
             $erros[] = t("Garantia de rodízio: de 0 a 365 dias.");
         }
-        if (array_key_exists("agenda_antecedencia", $d) && (!ctype_digit(trim((string)$d["agenda_antecedencia"])) || (int)$d["agenda_antecedencia"] < 1 || (int)$d["agenda_antecedencia"] > 365)) {
-            $erros[] = t("Agenda: de 1 a 365 dias de antecedência.");
-        }
         if (array_key_exists("medicao_janela_dias", $d) && (!ctype_digit(trim((string)$d["medicao_janela_dias"])) || (int)$d["medicao_janela_dias"] < 1 || (int)$d["medicao_janela_dias"] > 3650)) {
             $erros[] = t("Gasto medido: a média usa de 1 a 3650 dias de medições.");
         }
@@ -2301,6 +2291,8 @@ function op_config($acao, $d)
         }
         if (array_key_exists("url_sistema", $d) && trim((string)$d["url_sistema"]) !== "" && preg_match("#^https?://#i", trim((string)$d["url_sistema"])) !== 1) {
             $erros[] = t("Endereço do sistema: começando por http:// ou https:// (vazio: sem link).");
+        } elseif (array_key_exists("url_sistema", $d) && !usuario_master() && trim((string)$d["url_sistema"]) !== sis("url_sistema")) {
+            $erros[] = t("O endereço do sistema é do sistema inteiro: só o master muda.");
         }
         foreach (["proximos_por_pagina" => t("Próximos dias"), "plano_por_pagina" => t("Plano")] as $k => $onde) {
             if (array_key_exists($k, $d) && (!ctype_digit(trim((string)$d[$k])) || (int)$d[$k] < 1 || (int)$d[$k] > 366)) {
@@ -2316,25 +2308,11 @@ function op_config($acao, $d)
         if (array_key_exists("destaque_hoje", $d) && !in_array((string)$d["destaque_hoje"], ["dia", "pulso"], true)) {
             $erros[] = t("Destaque da página Hoje: dia (o relógio do dia) ou pulso (o relógio no pulso agora).");
         }
-        foreach (["agenda_id" => 255, "agenda_chave" => 500] as $k => $max) {
-            if (array_key_exists($k, $d) && strlen(trim((string)$d[$k])) > $max) {
-                $erros[] = t("{1}: até {2} caracteres.", [1 => $k, 2 => $max]);
-            }
-        }
-        $tipos_todos = tipos_de_aviso();
-        foreach ($CANAIS as $canal => $c) {
-            if (array_key_exists($canal . "_padrao", $d) && strlen((string)$d[$canal . "_padrao"]) > 4000) {
-                $erros[] = t("A mensagem padrão do {1} vai até 4000 caracteres.", [1 => $c["nome"]]);
-            }
-            foreach ((array)($d[$c["tipos"]] ?? []) as $t) {
-                if ($t !== "" && !isset($tipos_todos[$t])) {
-                    $erros[] = t("{1}: aviso desconhecido ({2}).", [1 => $c["tipos"], 2 => $t]);
-                }
-            }
-        }
         if (count($erros) === 0) {
-            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "agenda_antecedencia", "agenda_id", "agenda_chave", "url_sistema", "carga_limiar",
-                "sol_limiar", "medicao_janela_dias", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina"] as $k) {
+            if (array_key_exists("url_sistema", $d) && usuario_master()) {
+                sis_set("url_sistema", trim((string)$d["url_sistema"]));
+            }
+            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "carga_limiar", "sol_limiar", "medicao_janela_dias", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina"] as $k) {
                 if (array_key_exists($k, $d)) {
                     cfg_set($k, trim((string)$d[$k]));
                 }
@@ -2345,9 +2323,7 @@ function op_config($acao, $d)
             if (array_key_exists("previsao_limite", $d)) {
                 cfg_set("previsao_limite", (string)numero_br($d["previsao_limite"]));
             }
-            // "Enviar alertas" é a chave mensagens_ativas (alerta_ativo, o nome antigo, também vale)
-            foreach (["alerta_ativo" => "mensagens_ativas", "mensagens_ativas" => "mensagens_ativas", "agenda_ativa" => "agenda_ativa",
-                "pulso_auto_inicio" => "pulso_auto_inicio", "pulso_auto_fim" => "pulso_auto_fim"] as $k => $chave) {
+            foreach (["pulso_auto_inicio" => "pulso_auto_inicio", "pulso_auto_fim" => "pulso_auto_fim"] as $k => $chave) {
                 if (array_key_exists($k, $d)) {
                     cfg_set($chave, (string)$d[$k] === "1" ? "1" : "0");
                 }
@@ -2356,45 +2332,7 @@ function op_config($acao, $d)
             if ((array_key_exists("pulso_auto_fim", $d) || array_key_exists("uso_fim", $d)) && isset(lancamento_tipos()["pulso"])) {
                 sql("UPDATE lancamento_tipo SET fecha_as = ? WHERE identificador = 'pulso'", [pulso_tira_sozinho() ? cfg("uso_fim") . ":00" : null]);
             }
-            foreach ($CANAIS as $canal => $c) {
-                // os tipos que vão pelo canal: os marcados; os outros, não (a tabela canal_aviso)
-                if (array_key_exists($c["tipos"], $d)) {
-                    $marcados = array_values(array_filter((array)$d[$c["tipos"]], function ($t) { return $t !== ""; }));
-                    foreach ($tipos_todos as $k => $t) {
-                        if (in_array($k, $marcados, true) !== canal_aviso($canal, $k)["envia"]) {
-                            canal_gravar($canal, $k, ["envia" => in_array($k, $marcados, true)]);
-                        }
-                    }
-                }
-                if (array_key_exists($canal . "_padrao", $d)) {
-                    cfg_set($canal . "_padrao", str_replace("\r\n", "\n", (string)$d[$canal . "_padrao"]));
-                }
-                // a personalizada de cada aviso (o texto fica guardado mesmo desmarcado)
-                foreach ($tipos_todos as $k => $t) {
-                    $muda = [];
-                    if (array_key_exists($canal . "_proprio_" . $k, $d)) {
-                        $muda["propria"] = (string)$d[$canal . "_proprio_" . $k] === "1";
-                    }
-                    if (array_key_exists($canal . "_corpo_" . $k, $d)) {
-                        $muda["corpo"] = str_replace("\r\n", "\n", (string)$d[$canal . "_corpo_" . $k]);
-                    }
-                    if (count($muda) > 0) {
-                        canal_gravar($canal, $k, $muda);
-                    }
-                }
-            }
             $msg = t("Configuração salva.");
-        }
-    } elseif ($acao === "testar_manha" || $acao === "testar_noite") {
-        garantir_plano($hoje);
-        $texto = $acao === "testar_manha" ? montar_mensagem($hoje) : montar_mensagem_noite($hoje);
-        if ($texto === "") {
-            $msg = $acao === "testar_manha" ? t("A mensagem da manhã está vazia: nenhum aviso marcado para o Telegram tem o que dizer hoje.")
-                : t("Nada a enviar hoje à noite: amanhã continua o mesmo relógio, ou a véspera está desmarcada para o Telegram.");
-        } elseif (enviar_em_partes($texto, defined("MSG_TITULO") ? (string)constant("MSG_TITULO") : t("Relógios")) === 0) {
-            $msg = $acao === "testar_manha" ? t("Mensagem da manhã enviada.") : t("Mensagem da noite enviada.");
-        } else {
-            $erros[] = t("A API de alerta não respondeu com sucesso. Confira o endereço no config.php.");
         }
     } elseif ($acao === "evento_salvar") {
         $id = (int)($d["evento_id"] ?? ($d["id"] ?? 0));
@@ -2446,17 +2384,22 @@ function op_config($acao, $d)
         if (count($erros) === 0) {
             // só o que a repetição usa fica gravado
             $dados = [$nome, $ativo, $rep, $rep === "uma" || $rep === "intervalo" ? $data_ini : null, $hora . ":00",
-                $rep === "mensal" ? $dia_mes : null, $rep === "intervalo" ? $intervalo : null, $rid > 0 ? $rid : null];
+                $rep === "mensal" ? $dia_mes : null, $rep === "intervalo" ? $intervalo : null];
             if ($atual) {
-                sql("UPDATE evento_personalizado SET nome = ?, ativo = ?, repeticao = ?, data_inicio = ?, hora = ?, dia_mes = ?, intervalo_dias = ?,
-                    relogio_id = ? WHERE id = ?", array_merge($dados, [$id]));
+                sql("UPDATE evento_personalizado SET nome = ?, ativo = ?, repeticao = ?, data_inicio = ?, hora = ?, dia_mes = ?, intervalo_dias = ?
+                    WHERE id = ?", array_merge($dados, [$id]));
             } else {
-                sql("INSERT INTO evento_personalizado (nome, ativo, repeticao, data_inicio, hora, dia_mes, intervalo_dias, relogio_id, criado)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", array_merge($dados, [date("Y-m-d H:i:s")]));
-                // evento novo já sai pelo Telegram; os canais se ajustam na tabela
+                sql("INSERT INTO evento_personalizado (colecao_id, nome, ativo, repeticao, data_inicio, hora, dia_mes, intervalo_dias, criado)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", array_merge([colecao_atual()], $dados, [date("Y-m-d H:i:s")]));
+                // evento novo já sai por todos os destinos da coleção; cada destino se ajusta na tela Destinos
                 $id = ultimo_id();
-                canal_gravar("tg", "ev" . $id, ["envia" => true]);
+                foreach (array_keys(destinos(true)) as $did) {
+                    sql("INSERT INTO destino_evento (destino_id, evento_id, envia, modelo_proprio) VALUES (?, ?, 1, NULL)", [$did, $id]);
+                }
+                destinos(true);
             }
+            // o relógio do evento (a ligação; 0: nenhum)
+            ligacao_relogio("evento_relogio", "evento_id", $id, $rid > 0 ? $rid : null);
             // os dias da semana (semanal): uma linha cada, na tabela evento_dia
             sql("DELETE FROM evento_dia WHERE evento_id = ?", [$id]);
             if ($rep === "semanal") {
@@ -2473,105 +2416,407 @@ function op_config($acao, $d)
         if (!$ev) {
             $erros[] = t("Evento não encontrado.");
         } else {
-            // os canais e os textos dele (canal_aviso) e os dias (evento_dia) saem junto, pelo banco (chave estrangeira em cascata)
+            // o que ia por cada destino e cada agenda, e os dias (evento_dia), saem junto, pelo banco (chave estrangeira em cascata)
             sql("DELETE FROM evento_personalizado WHERE id = ?", [$id]);
-            canal_aviso("tg", null, true);
+            destinos(true);
+            agendas(true);
             $msg = t("Evento excluído.");
         }
-    } elseif ($acao === "teste_agenda_criar") {
-        // um evento de teste daqui a 10 minutos, pelo modelo do relógio do dia; o id fica para poder removê-lo
-        if (cfg("agenda_id") === "") {
-            $erros[] = t("Informe o ID da agenda antes de testar.");
-        } elseif (!google_token()) {
-            $erros[] = t("Não autenticou no Google: confira o caminho da chave JSON e se a Calendar API está ativa no projeto.");
-        } else {
-            $dia = plano_do_dia($hoje->format("Y-m-d"));
-            $inicio = new DateTimeImmutable("+10 minutes");
-            $f = evento_formatado(["tipo" => "dia", "relogio_id" => $dia ? (int)$dia["relogio_id"] : 0, "data" => $inicio->format("Y-m-d"), "hora" => $inicio->format("H:i"),
-                "fazer" => t("Usar hoje"), "motivo" => $dia ? texto_ate($dia["data"], "hoje") : t("evento de teste do sistema")]);
-            $r = google_api("POST", "/calendars/" . rawurlencode(cfg("agenda_id")) . "/events", ["summary" => "[TESTE] " . $f["titulo"],
-                "description" => t("{1}\n\nEvento de teste criado pela tela de Configuração do sistema de relógios.", [1 => $f["descricao"]]),
-                "start" => ["dateTime" => $inicio->format("Y-m-d\\TH:i:s"), "timeZone" => date_default_timezone_get()],
-                "end" => ["dateTime" => $inicio->modify("+15 minutes")->format("Y-m-d\\TH:i:s"), "timeZone" => date_default_timezone_get()]]);
-            if ($r[0] >= 200 && $r[0] < 300 && !empty($r[1]["id"])) {
-                cfg_set("agenda_teste_id", $r[1]["id"]);
-                $msg = t("Evento de teste criado para hoje às {1}: \"[TESTE] {2}\". Confira no Google Agenda.", [1 => $inicio->format("H:i"), 2 => $f["titulo"]]);
-            } else {
-                $erros[] = t("O Google recusou o evento (código {1}). Confira o ID da agenda e se ela foi compartilhada com a conta de serviço, com permissão para fazer alterações nos eventos.", [1 => $r[0]]);
-            }
-        }
-    } elseif ($acao === "teste_agenda_remover") {
-        if (cfg("agenda_teste_id") === "") {
-            $erros[] = t("Não há evento de teste para remover.");
-        } else {
-            $r = google_api("DELETE", "/calendars/" . rawurlencode(cfg("agenda_id")) . "/events/" . rawurlencode(cfg("agenda_teste_id")), null);
-            if (in_array($r[0], [200, 204, 404, 410], true)) {
-                cfg_set("agenda_teste_id", "");
-                $msg = t("Evento de teste removido da agenda.");
-            } else {
-                $erros[] = t("O Google não removeu o evento de teste (código {1}).", [1 => $r[0]]);
-            }
-        }
-    } elseif ($acao === "sincronizar") {
-        $r = sincronizar_agenda($hoje);
-        if ($r["mensagem"] !== "") {
-            $erros[] = $r["mensagem"];
-        } elseif ($r["erros"] > 0) {
-            $erros[] = t("Agenda: {1} criados, {2} atualizados, {3} removidos e {4} recusados pelo Google.", [1 => $r["criados"], 2 => $r["atualizados"], 3 => $r["removidos"], 4 => $r["erros"]]);
-        } else {
-            $msg = t("Agenda sincronizada: {1} criados, {2} atualizados, {3} removidos.", [1 => $r["criados"], 2 => $r["atualizados"], 3 => $r["removidos"]]);
-        }
-        $extra = ["criados" => $r["criados"], "atualizados" => $r["atualizados"], "removidos" => $r["removidos"], "recusados" => $r["erros"]];
     }
     return resultado($erros, $msg, $extra);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Usuários. Ações: salvar (login, senha: cria, ou troca a senha; pelo menos 6 caracteres), excluir (login: não o
-// conectado, e sobra pelo menos um). $atual: quem está fazendo.
+// O que um destino ou uma agenda recebe (o formulário das telas Destinos e Agendas): envia[] (os tipos marcados: dia, vespera,
+// o identificador de um aviso, ev<id> de um evento; com o envia[] vazio, nenhum) e modelo_<tipo> (o modelo próprio; vazio: a
+// mensagem padrão). Só o que vier no pedido muda. $tabela: destino ou agenda
 // ---------------------------------------------------------------------------------------------------------------------
-function op_usuarios($acao, $d, $atual)
+function recebe_gravar($tabela, $id, $d)
+{
+    $tipos = tipos_de_aviso();
+    $marcados = array_key_exists("envia", $d) ? array_values(array_filter((array)$d["envia"], function ($x) { return $x !== ""; })) : null;
+    foreach (array_keys($tipos) as $k) {
+        $ev = preg_match("/^ev(\d+)\$/", $k, $m) === 1 ? (int)$m[1] : null;
+        $atual = $ev !== null ? linha("SELECT envia" . ($tabela === "destino" ? ", modelo_proprio" : "") . " FROM " . $tabela . "_evento WHERE " . $tabela . "_id = ? AND evento_id = ?", [$id, $ev])
+            : linha("SELECT envia, modelo_proprio FROM " . $tabela . "_aviso WHERE " . $tabela . "_id = ? AND tipo_aviso = ?", [$id, $k]);
+        $envia = $marcados !== null ? (in_array($k, $marcados, true) ? 1 : 0) : (int)($atual["envia"] ?? 0);
+        $modelo = array_key_exists("modelo_" . $k, $d) ? (trim((string)$d["modelo_" . $k]) !== "" ? str_replace("\r\n", "\n", (string)$d["modelo_" . $k]) : null) : ($atual["modelo_proprio"] ?? null);
+        if ($atual === null && $envia === 0 && $modelo === null) {
+            continue;
+        }
+        if ($ev !== null) {
+            sql("DELETE FROM " . $tabela . "_evento WHERE " . $tabela . "_id = ? AND evento_id = ?", [$id, $ev]);
+            if ($tabela === "destino") {
+                sql("INSERT INTO destino_evento (destino_id, evento_id, envia, modelo_proprio) VALUES (?, ?, ?, ?)", [$id, $ev, $envia, $modelo]);
+            } else {
+                sql("INSERT INTO agenda_evento (agenda_id, evento_id, envia) VALUES (?, ?, ?)", [$id, $ev, $envia]);
+            }
+        } else {
+            sql("DELETE FROM " . $tabela . "_aviso WHERE " . $tabela . "_id = ? AND tipo_aviso = ?", [$id, $k]);
+            sql("INSERT INTO " . $tabela . "_aviso (" . $tabela . "_id, tipo_aviso, envia, modelo_proprio) VALUES (?, ?, ?, ?)", [$id, $k, $envia, $modelo]);
+        }
+    }
+}
+
+// Os erros comuns de destino e agenda: nome, modelo, idioma, os tipos marcados e os modelos próprios
+function recebe_erros($d, $tabela, $id)
+{
+    $erros = [];
+    if (array_key_exists("nome", $d) && (trim((string)$d["nome"]) === "" || mb_strlen(trim((string)$d["nome"])) > 80)) {
+        $erros[] = t("Dê um nome (até 80 caracteres).");
+    } elseif (array_key_exists("nome", $d) && valor("SELECT id FROM " . $tabela . " WHERE nome = ? AND id <> ?", [trim((string)$d["nome"]), $id]) !== null) {
+        $erros[] = t("Já existe {1} nesta coleção.", [1 => trim((string)$d["nome"])]);
+    }
+    if (array_key_exists("modelo", $d) && (trim((string)$d["modelo"]) === "" || strlen((string)$d["modelo"]) > 4000)) {
+        $erros[] = t("A mensagem padrão não pode ficar vazia e vai até 4000 caracteres.");
+    }
+    if (array_key_exists("idioma", $d) && (string)$d["idioma"] !== "" && !isset(LINGUAS[(string)$d["idioma"]])) {
+        $erros[] = t("Idioma: vazio (o da coleção) ou {1}.", [1 => implode(", ", array_keys(LINGUAS))]);
+    }
+    $tipos = tipos_de_aviso();
+    foreach ((array)($d["envia"] ?? []) as $x) {
+        if ($x !== "" && !isset($tipos[$x])) {
+            $erros[] = t("Aviso desconhecido: {1}.", [1 => $x]);
+        }
+    }
+    foreach ($d as $k => $v) {
+        if (strpos((string)$k, "modelo_") === 0 && strlen((string)$v) > 4000) {
+            $erros[] = t("Um modelo próprio vai até 4000 caracteres.");
+        }
+    }
+    return $erros;
+}
+
+// O que um destino ou uma agenda nova recebe: o do modelo.json (o relógio do dia, a véspera e os avisos, com os modelos
+// próprios do relógio do dia e da véspera) e, no destino, todos os eventos
+function recebe_inicial($tabela, $id)
+{
+    $m = modelo_ler()[$tabela === "destino" ? "mensagens" : "agenda"];
+    $tr = modelo_tradutor(lingua_valida(cfg("idioma")) ?? "pt-BR");
+    foreach ($m["avisos"] as $a) {
+        sql("INSERT INTO " . $tabela . "_aviso (" . $tabela . "_id, tipo_aviso, envia, modelo_proprio) VALUES (?, ?, ?, ?)", [$id, $a["tipo"], (int)$a["envia"], isset($a["modelo"]) ? $tr($a["modelo"]) : null]);
+    }
+    if ($tabela === "destino") {
+        foreach (linhas("SELECT id FROM evento_personalizado") as $ev) {
+            sql("INSERT INTO destino_evento (destino_id, evento_id, envia, modelo_proprio) VALUES (?, ?, 1, NULL)", [$id, (int)$ev["id"]]);
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Destinos (página Destinos, recurso=destinos). Ações:
+//   salvar (id: 0 cria; nome, tipo (webhook, email, webpush; só ao criar), ativo (1 ou 0), idioma (vazio: o da coleção),
+//     modelo (a mensagem padrão); o webhook: metodo (GET, POST, PUT), url, formato (query: os campos na URL; form; json),
+//     corpo_json (só no json: o modelo do corpo; vazio: os campos viram o objeto), campo_nome[] e campo_valor[] (os campos, na
+//     ordem: a lista inteira), cabecalho_nome[] e cabecalho_valor[] (os cabeçalhos; o valor vazio mantém o guardado); o
+//     e-mail: para (um ou mais endereços, separados por vírgula); o Web Push: usuario_id (quem vê a coleção; sem ele, você);
+//     e o que recebe: envia[] e modelo_<tipo>). Destino novo recebe o que o modelo.json diz.
+//   excluir (id); testar (id; qual: manha (a mensagem desta manhã), noite (a da noite) ou texto (uma mensagem de teste))
+// ---------------------------------------------------------------------------------------------------------------------
+function op_destinos($acao, $d)
 {
     $erros = [];
     $msg = "";
-    $alvo = trim((string)($d["login"] ?? ""));
-    $nova = (string)($d["senha"] ?? "");
-    // a senha, ou o hash pronto de outro sistema (senha_hash: bcrypt ou argon2, como os do password_hash do PHP), para
-    // trazer um usuário com a mesma senha sem saber qual é
-    $hash_pronto = trim((string)($d["senha_hash"] ?? ""));
-    if ($acao === "salvar") {
-        if ($alvo === "" || strlen($alvo) > 60) {
-            $erros[] = t("Informe o login (até 60 caracteres).");
-        } elseif ($hash_pronto !== "" && $nova !== "") {
-            $erros[] = t("Mande a senha ou o senha_hash, não os dois.");
-        } elseif ($hash_pronto !== "" && (strlen($hash_pronto) > 255 || senha_hash_info($hash_pronto)[0] === null)) {
-            $erros[] = t("senha_hash: um hash que o password_verify do PHP entenda (bcrypt, que começa com \$2y\$, \$2b\$ ou \$2a\$, ou argon2, com \$argon2).");
-        } elseif ($hash_pronto === "" && strlen($nova) < 6) {
-            $erros[] = t("Informe uma senha de pelo menos 6 caracteres (ou o senha_hash de outro sistema).");
-        } else {
-            // o $2b$ (o bcrypt de Python, Node, Java...) é o mesmo cálculo que o $2y$ do PHP: guarda como $2y$
-            $hash = $hash_pronto !== "" ? (strncmp($hash_pronto, '$2b$', 4) === 0 ? '$2y$' . substr($hash_pronto, 4) : $hash_pronto) : password_hash($nova, PASSWORD_DEFAULT);
-            if (valor("SELECT id FROM usuario WHERE login = ?", [$alvo])) {
-                sql("UPDATE usuario SET senha_hash = ? WHERE login = ?", [$hash, $alvo]);
-                $msg = t("Senha de {1} trocada{2}", [1 => $alvo, 2 => $hash_pronto !== "" ? t(" (pelo hash informado).") : "."]);
-            } else {
-                sql("INSERT INTO usuario (login, senha_hash, criado) VALUES (?, ?, NOW())", [$alvo, $hash]);
-                $msg = t("Usuário {1} criado{2}", [1 => $alvo, 2 => $hash_pronto !== "" ? t(" (pelo hash informado: entra com a senha do outro sistema).") : "."]);
+    $id = (int)($d["id"] ?? 0);
+    $todos = destinos(true);
+    $atual = $todos[$id] ?? null;
+    if ($id > 0 && $atual === null) {
+        $erros[] = t("Destino não encontrado.");
+    } elseif ($acao === "salvar") {
+        $tipo = $atual ? $atual["tipo"] : (string)($d["tipo"] ?? "");
+        if (!isset(DESTINO_TIPOS[$tipo])) {
+            $erros[] = t("Tipo: webhook, email ou webpush.");
+        }
+        if (!$atual && !array_key_exists("nome", $d)) {
+            $d["nome"] = t(DESTINO_TIPOS[$tipo] ?? "Destino");
+        }
+        $erros = array_merge($erros, recebe_erros($d, "destino", $id));
+        if ($tipo === "webhook") {
+            $w = $atual["webhook"] ?? ["metodo" => "GET", "url" => "", "formato" => "query", "corpo_json" => null];
+            $metodo = strtoupper((string)($d["metodo"] ?? $w["metodo"]));
+            $url = trim((string)($d["url"] ?? $w["url"]));
+            $formato = (string)($d["formato"] ?? $w["formato"]);
+            if (!in_array($metodo, ["GET", "POST", "PUT"], true)) {
+                $erros[] = t("Método: GET, POST ou PUT.");
+            }
+            if (preg_match("#^https?://\\S+\$#i", $url) !== 1 || strlen($url) > 1000) {
+                $erros[] = t("O endereço do webhook começa por http:// ou https:// (até 1000 caracteres).");
+            }
+            if (!in_array($formato, ["query", "form", "json"], true)) {
+                $erros[] = t("Formato: query (os campos na URL), form ou json.");
+            } elseif ($metodo === "GET" && $formato !== "query") {
+                $erros[] = t("No GET, os campos vão na URL (formato query).");
+            }
+            if (array_key_exists("corpo_json", $d) && trim((string)$d["corpo_json"]) !== ""
+                && json_decode(strtr((string)$d["corpo_json"], ["{titulo}" => "t", "{mensagem}" => "m"]), true) === null) {
+                $erros[] = t("O corpo JSON não é um JSON válido (os marcadores {titulo} e {mensagem} vão dentro das aspas).");
+            }
+        } elseif ($tipo === "email") {
+            $para = trim((string)($d["para"] ?? ($atual["email"]["para"] ?? "")));
+            $lista = array_filter(array_map("trim", explode(",", $para)));
+            if (count($lista) === 0 || strlen($para) > 500 || count(array_filter($lista, function ($x) { return filter_var($x, FILTER_VALIDATE_EMAIL) === false; })) > 0) {
+                $erros[] = t("Para: um ou mais e-mails, separados por vírgula.");
+            }
+        } elseif ($tipo === "webpush") {
+            $uid = (int)($d["usuario_id"] ?? ($atual["webpush"]["usuario_id"] ?? (usuario_atual()["id"] ?? 0)));
+            if (!in_array($uid, array_map("intval", array_column(membros_da_colecao(), "id")), true)) {
+                $erros[] = t("O Web Push vai para alguém que vê esta coleção.");
             }
         }
-    } elseif ($acao === "excluir") {
-        if (!valor("SELECT id FROM usuario WHERE login = ?", [$alvo])) {
-            $erros[] = t("Usuário não encontrado.");
-        } elseif ($alvo === $atual) {
-            $erros[] = t("Você não pode excluir o usuário com que está conectado.");
-        } elseif ((int)valor("SELECT COUNT(*) FROM usuario") <= 1) {
-            $erros[] = t("Precisa sobrar pelo menos um usuário.");
-        } else {
-            sql("DELETE FROM usuario WHERE login = ?", [$alvo]);
-            $msg = t("Usuário {1} excluído.", [1 => $alvo]);
+        if (count($erros) === 0) {
+            $nome = trim((string)($d["nome"] ?? $atual["nome"]));
+            $ativo = array_key_exists("ativo", $d) ? ((string)$d["ativo"] === "1" ? 1 : 0) : ($atual ? ($atual["ativo"] ? 1 : 0) : 1);
+            $idioma = array_key_exists("idioma", $d) ? ((string)$d["idioma"] !== "" ? (string)$d["idioma"] : null) : ($atual["idioma"] ?? null);
+            $modelo = array_key_exists("modelo", $d) ? str_replace("\r\n", "\n", (string)$d["modelo"]) : ($atual ? $atual["modelo"] : modelo_tradutor(lingua_valida(cfg("idioma")) ?? "pt-BR")(modelo_ler()["mensagens"]["modelo"]));
+            if ($atual) {
+                sql("UPDATE destino SET nome = ?, ativo = ?, idioma = ?, modelo = ? WHERE id = ?", [$nome, $ativo, $idioma, $modelo, $id]);
+            } else {
+                sql("INSERT INTO destino (colecao_id, nome, tipo, ativo, modelo, idioma, criado) VALUES (?, ?, ?, ?, ?, ?, NOW())", [colecao_atual(), $nome, $tipo, $ativo, $modelo, $idioma]);
+                $id = ultimo_id();
+                recebe_inicial("destino", $id);
+            }
+            if ($tipo === "webhook") {
+                sql("DELETE FROM destino_webhook_campo WHERE destino_id = ?", [$id]);
+                $cab_antes = [];
+                foreach (($atual["webhook"]["cabecalhos"] ?? []) as $c) {
+                    $cab_antes[$c["nome"]] = $c["valor_cifrado"];
+                }
+                if ($atual) {
+                    sql("UPDATE destino_webhook SET metodo = ?, url = ?, formato = ?, corpo_json = ? WHERE destino_id = ?",
+                        [$metodo, $url, $formato, $formato === "json" ? (array_key_exists("corpo_json", $d) ? (trim((string)$d["corpo_json"]) !== "" ? (string)$d["corpo_json"] : null) : $w["corpo_json"]) : null, $id]);
+                } else {
+                    sql("INSERT INTO destino_webhook (destino_id, metodo, url, formato, corpo_json) VALUES (?, ?, ?, ?, ?)",
+                        [$id, $metodo, $url, $formato, $formato === "json" && trim((string)($d["corpo_json"] ?? "")) !== "" ? (string)$d["corpo_json"] : null]);
+                }
+                // os campos: a lista que veio (sem ela, os de antes; no destino novo, titulo e mensagem)
+                $campos = array_key_exists("campo_nome", $d) ? array_map(null, (array)$d["campo_nome"], (array)($d["campo_valor"] ?? []))
+                    : ($atual ? array_map(function ($c) { return [$c["nome"], $c["valor"]]; }, $atual["webhook"]["campos"]) : [["titulo", "{titulo}"], ["mensagem", "{mensagem}"]]);
+                $ordem = 0;
+                $vistos = [];
+                foreach ($campos as [$cn, $cv]) {
+                    $cn = trim((string)$cn);
+                    if ($cn !== "" && !isset($vistos[$cn])) {
+                        $vistos[$cn] = true;
+                        sql("INSERT INTO destino_webhook_campo (destino_id, nome, valor, ordem) VALUES (?, ?, ?, ?)", [$id, corta_texto($cn, 80), (string)$cv, ++$ordem]);
+                    }
+                }
+                if (array_key_exists("cabecalho_nome", $d)) {
+                    sql("DELETE FROM destino_webhook_cabecalho WHERE destino_id = ?", [$id]);
+                    $vistos = [];
+                    foreach (array_map(null, (array)$d["cabecalho_nome"], (array)($d["cabecalho_valor"] ?? [])) as [$cn, $cv]) {
+                        $cn = trim((string)$cn);
+                        if ($cn !== "" && !isset($vistos[$cn]) && preg_match("/^[A-Za-z0-9-]+\$/", $cn) === 1) {
+                            $vistos[$cn] = true;
+                            $cifrado = (string)$cv !== "" ? segredo_cifrar((string)$cv) : ($cab_antes[$cn] ?? null);
+                            if ($cifrado !== null) {
+                                sql("INSERT INTO destino_webhook_cabecalho (destino_id, nome, valor_cifrado) VALUES (?, ?, ?)", [$id, $cn, $cifrado]);
+                            }
+                        }
+                    }
+                }
+            } elseif ($tipo === "email") {
+                sql("DELETE FROM destino_email WHERE destino_id = ?", [$id]);
+                sql("INSERT INTO destino_email (destino_id, para) VALUES (?, ?)", [$id, $para]);
+            } else {
+                sql("DELETE FROM destino_webpush WHERE destino_id = ?", [$id]);
+                sql("INSERT INTO destino_webpush (destino_id, usuario_id) VALUES (?, ?)", [$id, $uid]);
+            }
+            recebe_gravar("destino", $id, $d);
+            destinos(true);
+            $msg = $atual ? t("Destino {1} salvo.", [1 => $nome]) : t("Destino {1} criado.", [1 => $nome]);
         }
+    } elseif ($acao === "excluir" && $atual) {
+        sql("DELETE FROM destino WHERE id = ?", [$id]);
+        destinos(true);
+        $msg = t("Destino {1} excluído.", [1 => $atual["nome"]]);
+    } elseif ($acao === "testar" && $atual) {
+        $hoje = new DateTimeImmutable("today");
+        garantir_plano($hoje);
+        $qual = (string)($d["qual"] ?? "texto");
+        if ($qual === "manha" || $qual === "noite") {
+            $texto = mensagem_do_destino($atual, function () use ($hoje, $qual) { return $qual === "manha" ? itens_manha($hoje) : itens_noite($hoje); }, $hoje);
+        } else {
+            $texto = t("Teste do Relojoeiro: se esta mensagem chegou, o destino {1} está funcionando.", [1 => $atual["nome"]]);
+        }
+        if ($texto === "") {
+            $msg = t("Nada a enviar agora por {1}: nenhum item marcado para ele tem o que dizer.", [1 => $atual["nome"]]);
+        } else {
+            [$ok, $erro] = destino_enviar($atual, $texto, $qual === "noite" ? t("Relógio de amanhã") : (defined("MSG_TITULO") ? (string)constant("MSG_TITULO") : t("Relógios")));
+            if ($ok) {
+                $msg = t("Enviado para {1}.", [1 => $atual["nome"]]);
+            } else {
+                $erros[] = t("Não chegou a {1}: {2}", [1 => $atual["nome"], 2 => $erro]);
+            }
+        }
+    } else {
+        $erros[] = t("Ação desconhecida: use salvar, excluir ou testar.");
     }
-    return resultado($erros, $msg);
+    return resultado($erros, $msg, ["id" => $id]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Agendas (página Agendas, recurso=agendas). Ações:
+//   salvar (id: 0 cria; nome, tipo (google, caldav, outlook, ics; só ao criar), ativa (1 ou 0), janela_dias (1 a 365: quantos dias à frente os eventos entram),
+//     idioma (vazio: o da coleção), modelo (a primeira linha é o título do evento; o resto, a descrição); o Google:
+//     calendario_id e chave_json (o conteúdo da chave da conta de serviço, ou o caminho dela no servidor; vazio mantém); o
+//     CalDAV: url (o endereço do calendário), usuario e senha (vazia mantém; no iCloud, uma senha de app); o Outlook:
+//     calendario_id (vazio: o principal); e o que recebe: envia[] e modelo_<tipo>). Agenda nova recebe o que o modelo.json diz
+//   excluir (id), sincronizar (id), teste_criar (id: um evento daqui a 10 minutos), teste_remover (id), novo_link (id: o
+//   link ICS muda; o de antes para de funcionar), outlook_conectar (id: devolve o endereço da página da Microsoft)
+// ---------------------------------------------------------------------------------------------------------------------
+function op_agendas($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $extra = [];
+    $id = (int)($d["id"] ?? 0);
+    $todas = agendas(true);
+    $atual = $todas[$id] ?? null;
+    $hoje = new DateTimeImmutable("today");
+    if ($id > 0 && $atual === null) {
+        $erros[] = t("Agenda não encontrada.");
+    } elseif ($acao === "salvar") {
+        $tipo = $atual ? $atual["tipo"] : (string)($d["tipo"] ?? "");
+        if (!isset(AGENDA_TIPOS[$tipo])) {
+            $erros[] = t("Tipo: google, caldav, outlook ou ics.");
+        }
+        if (!$atual && !array_key_exists("nome", $d)) {
+            $d["nome"] = t(AGENDA_TIPOS[$tipo] ?? "Agenda");
+        }
+        $erros = array_merge($erros, recebe_erros($d, "agenda", $id));
+        if (array_key_exists("janela_dias", $d) && (!ctype_digit(trim((string)$d["janela_dias"])) || (int)$d["janela_dias"] < 1 || (int)$d["janela_dias"] > 365)) {
+            $erros[] = t("Agenda: de 1 a 365 dias de antecedência.");
+        }
+        if ($tipo === "google" && array_key_exists("calendario_id", $d) && (trim((string)$d["calendario_id"]) === "" || strlen(trim((string)$d["calendario_id"])) > 255)) {
+            $erros[] = t("Informe o ID da agenda do Google (até 255 caracteres).");
+        }
+        // a chave do Google: o JSON colado; o caminho de um arquivo no servidor, só o master (o arquivo é do servidor)
+        $chave_txt = trim((string)($d["chave_json"] ?? ""));
+        if ($tipo === "google" && $chave_txt !== "" && $chave_txt[0] !== "{" && !usuario_master()) {
+            $erros[] = t("Cole o conteúdo do arquivo JSON da chave (o caminho de um arquivo no servidor, só o master usa).");
+        } elseif ($tipo === "google" && $chave_txt !== "" && $chave_txt[0] === "{" && !is_array(json_decode($chave_txt, true))) {
+            $erros[] = t("A chave do Google não é um JSON válido: cole o arquivo inteiro, como o Google entregou.");
+        }
+        if ($tipo === "caldav") {
+            $url = trim((string)($d["url"] ?? ($atual["caldav"]["url"] ?? "")));
+            if (preg_match("#^https?://\\S+\$#i", $url) !== 1 || strlen($url) > 1000) {
+                $erros[] = t("O endereço do calendário CalDAV começa por http:// ou https://.");
+            }
+            if (trim((string)($d["usuario"] ?? ($atual["caldav"]["usuario"] ?? ""))) === "") {
+                $erros[] = t("Informe o usuário do CalDAV.");
+            }
+            if (!$atual && trim((string)($d["senha"] ?? "")) === "") {
+                $erros[] = t("Informe a senha do CalDAV (no iCloud, uma senha de app).");
+            }
+        }
+        if (count($erros) === 0) {
+            $nome = trim((string)($d["nome"] ?? $atual["nome"]));
+            $ativa = array_key_exists("ativa", $d) ? ((string)$d["ativa"] === "1" ? 1 : 0) : ($atual ? ($atual["ativa"] ? 1 : 0) : 1);
+            $ant = array_key_exists("janela_dias", $d) ? (int)$d["janela_dias"] : ($atual ? $atual["janela_dias"] : (int)modelo_ler()["agenda"]["janela_dias"]);
+            $idioma = array_key_exists("idioma", $d) ? ((string)$d["idioma"] !== "" ? (string)$d["idioma"] : null) : ($atual["idioma"] ?? null);
+            $modelo = array_key_exists("modelo", $d) ? str_replace("\r\n", "\n", (string)$d["modelo"]) : ($atual ? $atual["modelo"] : modelo_tradutor(lingua_valida(cfg("idioma")) ?? "pt-BR")(modelo_ler()["agenda"]["modelo"]));
+            if ($atual) {
+                sql("UPDATE agenda SET nome = ?, ativa = ?, janela_dias = ?, idioma = ?, modelo = ? WHERE id = ?", [$nome, $ativa, $ant, $idioma, $modelo, $id]);
+            } else {
+                sql("INSERT INTO agenda (colecao_id, nome, tipo, ativa, janela_dias, modelo, idioma, criado) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())", [colecao_atual(), $nome, $tipo, $ativa, $ant, $modelo, $idioma]);
+                $id = ultimo_id();
+                recebe_inicial("agenda", $id);
+            }
+            if ($tipo === "google") {
+                $cal = trim((string)($d["calendario_id"] ?? ($atual["google"]["calendario_id"] ?? "")));
+                $chave = array_key_exists("chave_json", $d) && trim((string)$d["chave_json"]) !== "" ? segredo_cifrar(trim((string)$d["chave_json"])) : ($atual["google"]["chave_json_cifrada"] ?? segredo_cifrar(""));
+                sql("DELETE FROM agenda_google WHERE agenda_id = ?", [$id]);
+                sql("INSERT INTO agenda_google (agenda_id, calendario_id, chave_json_cifrada) VALUES (?, ?, ?)", [$id, $cal, $chave]);
+            } elseif ($tipo === "caldav") {
+                $senha = trim((string)($d["senha"] ?? "")) !== "" ? segredo_cifrar((string)$d["senha"]) : $atual["caldav"]["senha_cifrada"];
+                sql("DELETE FROM agenda_caldav WHERE agenda_id = ?", [$id]);
+                sql("INSERT INTO agenda_caldav (agenda_id, url, usuario, senha_cifrada) VALUES (?, ?, ?, ?)", [$id, $url, trim((string)($d["usuario"] ?? $atual["caldav"]["usuario"])), $senha]);
+            } elseif ($tipo === "outlook") {
+                if ($atual) {
+                    sql("UPDATE agenda_outlook SET calendario_id = ? WHERE agenda_id = ?", [array_key_exists("calendario_id", $d) ? (trim((string)$d["calendario_id"]) !== "" ? trim((string)$d["calendario_id"]) : null) : ($atual["outlook"]["calendario_id"] ?? null), $id]);
+                } else {
+                    sql("INSERT INTO agenda_outlook (agenda_id, conta, calendario_id, refresh_token_cifrado) VALUES (?, NULL, ?, NULL)", [$id, trim((string)($d["calendario_id"] ?? "")) !== "" ? trim((string)$d["calendario_id"]) : null]);
+                }
+            } elseif (!$atual) {
+                $token = b64url(random_bytes(24));
+                sql("INSERT INTO agenda_ics (agenda_id, token_cifrado, token_hash) VALUES (?, ?, ?)", [$id, segredo_cifrar($token), hash("sha256", $token)]);
+            }
+            recebe_gravar("agenda", $id, $d);
+            agendas(true);
+            $msg = $atual ? t("Agenda {1} salva.", [1 => $nome]) : t("Agenda {1} criada.", [1 => $nome]);
+        }
+    } elseif ($acao === "excluir" && $atual) {
+        // os eventos de hoje em diante que ela criou saem da agenda de fora (o que já passou fica lá, como histórico)
+        $p = agenda_provedor($atual);
+        if ($p[0] === null) {
+            foreach (linhas("SELECT externo_id FROM agenda_sincronizado WHERE agenda_id = ? AND data >= ?", [$id, $hoje->format("Y-m-d")]) as $ev) {
+                $p[3]($ev["externo_id"]);
+            }
+        }
+        sql("DELETE FROM agenda WHERE id = ?", [$id]);
+        agendas(true);
+        $msg = t("Agenda {1} excluída.", [1 => $atual["nome"]]);
+    } elseif ($acao === "sincronizar" && $atual) {
+        $r = agenda_sincronizar($atual, $hoje);
+        if ($r["mensagem"] !== "") {
+            $erros[] = $r["mensagem"];
+        } elseif ($r["erros"] > 0) {
+            $erros[] = t("Agenda: {1} criados, {2} atualizados, {3} removidos e {4} recusados.", [1 => $r["criados"], 2 => $r["atualizados"], 3 => $r["removidos"], 4 => $r["erros"]]);
+        } else {
+            $msg = t("Agenda sincronizada: {1} criados, {2} atualizados, {3} removidos.", [1 => $r["criados"], 2 => $r["atualizados"], 3 => $r["removidos"]]);
+        }
+        $extra = ["criados" => $r["criados"], "atualizados" => $r["atualizados"], "removidos" => $r["removidos"], "recusados" => $r["erros"]];
+    } elseif ($acao === "teste_criar" && $atual) {
+        // um evento de teste daqui a 10 minutos, pelo modelo do relógio do dia; o id fica para poder removê-lo
+        $p = agenda_provedor($atual);
+        if ($p[0] !== null) {
+            $erros[] = $p[0];
+        } else {
+            $dia = plano_do_dia($hoje->format("Y-m-d"));
+            $inicio = new DateTimeImmutable("+10 minutes");
+            $m = ["chave" => "teste:" . time(), "tipo" => "dia", "relogio_id" => $dia ? (int)$dia["relogio_id"] : 0, "data" => $inicio->format("Y-m-d"), "hora" => $inicio->format("H:i"),
+                "fazer" => t("Usar hoje"), "motivo" => $dia ? texto_ate($dia["data"], "hoje") : t("evento de teste do sistema")];
+            $f = evento_formatado($m, $atual);
+            $f = ["titulo" => "[TESTE] " . $f["titulo"], "descricao" => t("{1}\n\nEvento de teste criado pela tela Agendas do Relojoeiro.", [1 => $f["descricao"]])];
+            if ($atual["teste_id"] !== null) {
+                $p[3]($atual["teste_id"]);
+            }
+            [$ok, $ext] = $p[1]($m, $f);
+            if ($ok) {
+                sql("UPDATE agenda SET teste_id = ? WHERE id = ?", [$ext, $id]);
+                $msg = t("Evento de teste criado para hoje às {1}: \"{2}\". Confira na agenda.", [1 => $inicio->format("H:i"), 2 => $f["titulo"]]);
+            } else {
+                $erros[] = t("A agenda recusou o evento de teste. Confira o calendário e a permissão de escrita.");
+            }
+        }
+    } elseif ($acao === "teste_remover" && $atual) {
+        $p = agenda_provedor($atual);
+        if ($atual["teste_id"] === null) {
+            $erros[] = t("Não há evento de teste para remover.");
+        } elseif ($p[0] !== null) {
+            $erros[] = $p[0];
+        } elseif ($p[3]($atual["teste_id"])) {
+            sql("UPDATE agenda SET teste_id = NULL WHERE id = ?", [$id]);
+            $msg = t("Evento de teste removido da agenda.");
+        } else {
+            $erros[] = t("A agenda não removeu o evento de teste.");
+        }
+    } elseif ($acao === "novo_link" && $atual && $atual["tipo"] === "ics") {
+        $token = b64url(random_bytes(24));
+        sql("UPDATE agenda_ics SET token_cifrado = ?, token_hash = ? WHERE agenda_id = ?", [segredo_cifrar($token), hash("sha256", $token), $id]);
+        $msg = t("Link novo criado: o de antes parou de funcionar. Assine o novo no app de agenda.");
+        $extra = ["link" => ics_link(agendas(true)[$id])];
+    } elseif ($acao === "outlook_conectar" && $atual && $atual["tipo"] === "outlook") {
+        if (trim((string)cfg_php("OUTLOOK_CLIENTE_ID", "")) === "") {
+            $erros[] = t("O Outlook não está configurado no servidor (OUTLOOK_CLIENTE_ID e OUTLOOK_CLIENTE_SEGREDO no config.php): use o link ICS.");
+        } else {
+            $msg = t("Abra o endereço para entrar na conta Microsoft e autorizar.");
+            $extra = ["url" => outlook_autorizar_url($id)];
+        }
+    } else {
+        $erros[] = t("Ação desconhecida: use salvar, excluir, sincronizar, teste_criar, teste_remover, novo_link ou outlook_conectar.");
+    }
+    return resultado($erros, $msg, array_merge(["id" => $id], $extra));
 }
 
 // A importação do sistema anterior (recurso=importacao, acao=importar; e o importar.php): traz do banco antigo (MySQL/
@@ -2657,34 +2902,68 @@ function importacao_trazer($ler)
     sql("DELETE FROM foto");
     sql("DELETE FROM relogio");
 
-    // a árvore: cada grupo com o mesmo número; primeiro sem o de cima, depois o de cima (a ordem dos números não importa)
+    // a árvore: cada grupo antigo vai para o grupo da árvore da coleção com o mesmo caminho de nomes (o pai antes do filho);
+    // o que não existe é criado. Os códigos novos são os do banco (outras coleções já usam números): $gmap e $rmap levam
+    // os antigos aos novos
+    $gmap = [];
+    $antigos = [];
     foreach ($ler("SELECT * FROM grupo") as $g) {
-        if (valor("SELECT id FROM no WHERE id = ?", [(int)$g["id"]]) !== null) {
-            sql("UPDATE no SET nome = ?, ordem = ? WHERE id = ?", [$g["nome"], (int)$g["ordem"], (int)$g["id"]]);
-        } else {
-            sql("INSERT INTO no (id, pai_id, nome, ordem) VALUES (?, NULL, ?, ?)", [(int)$g["id"], $g["nome"], (int)$g["ordem"]]);
-        }
+        $antigos[(int)$g["id"]] = $g;
     }
-    foreach ($ler("SELECT * FROM grupo") as $g) {
-        sql("UPDATE no SET pai_id = ? WHERE id = ?", [$g["pai_id"] === null ? null : (int)$g["pai_id"], (int)$g["id"]]);
+    while (count($antigos) > 0) {
+        $resto = [];
+        foreach ($antigos as $gid => $g) {
+            $pai_antigo = $g["pai_id"] === null ? null : (int)$g["pai_id"];
+            if ($pai_antigo !== null && !isset($gmap[$pai_antigo])) {
+                $resto[$gid] = $g;
+                continue;
+            }
+            $pai = $pai_antigo === null ? null : $gmap[$pai_antigo];
+            $ja = null;
+            foreach (linhas("SELECT id, nome FROM no WHERE pai_id <=> ?", [$pai]) as $x) {
+                if (mesmo_nome($x["nome"], $g["nome"])) {
+                    $ja = (int)$x["id"];
+                }
+            }
+            if ($ja === null) {
+                sql("INSERT INTO no (pai_id, nome, ordem) VALUES (?, ?, ?)", [no_gravar($pai), $g["nome"], (int)$g["ordem"]]);
+                $ja = ultimo_id();
+            }
+            $gmap[$gid] = $ja;
+        }
+        if (count($resto) === count($antigos)) {
+            break;
+        }
+        $antigos = $resto;
     }
     nos_todos(true);
     $conta[t("pontos da árvore")] = count($ler("SELECT id FROM grupo"));
 
-    // os relógios, com os mesmos números
+    // os relógios (com os códigos novos)
+    $rmap = [];
     foreach ($ler("SELECT * FROM relogio ORDER BY id") as $r) {
-        sql("INSERT INTO relogio (id, nome, no_id, disponivel, criado) VALUES (?, ?, ?, ?, NOW())",
-            [(int)$r["id"], $r["nome"], $r["grupo_id"] === null ? null : (int)$r["grupo_id"], (int)$r["disponivel"]]);
+        sql("INSERT INTO relogio (colecao_id, nome, no_id, disponivel, criado) VALUES (?, ?, ?, ?, NOW())",
+            [colecao_atual(), $r["nome"], no_gravar($r["grupo_id"] === null ? null : ($gmap[(int)$r["grupo_id"]] ?? null)), (int)$r["disponivel"]]);
+        $rmap[(int)$r["id"]] = ultimo_id();
     }
     $conta[t("relógios")] = count($ler("SELECT id FROM relogio"));
 
     foreach ($ler("SELECT * FROM foto") as $f) {
-        sql("INSERT INTO foto (relogio_id, tipo, dados, atualizado) VALUES (?, ?, ?, ?)", [(int)$f["relogio_id"], $f["tipo"], $f["dados"], $f["atualizado"]]);
+        if (isset($rmap[(int)$f["relogio_id"]])) {
+            sql("INSERT INTO foto (relogio_id, tipo, dados, atualizado) VALUES (?, ?, ?, ?)", [$rmap[(int)$f["relogio_id"]], $f["tipo"], $f["dados"], $f["atualizado"]]);
+        }
     }
     $conta[t("fotos")] = count($ler("SELECT relogio_id FROM foto"));
 
+    // os usuários do sistema antigo: os que ainda não existem entram como membros desta coleção (contas oficiais)
     foreach ($ler("SELECT * FROM usuario") as $u) {
-        sql("REPLACE INTO usuario (login, senha_hash, criado) VALUES (?, ?, ?)", [$u["login"], $u["senha_hash"], $u["criado"]]);
+        $existe = sem_escopo(function () use ($u) { return valor("SELECT id FROM usuario WHERE login = ?", [$u["login"]]); });
+        if ($existe === null) {
+            sem_escopo(function () use ($u) {
+                sql("INSERT INTO usuario (login, senha_hash, papel, criado) VALUES (?, ?, 'comum', ?)", [$u["login"], $u["senha_hash"], $u["criado"]]);
+                sql("INSERT INTO colecao_usuario (colecao_id, usuario_id, desde) VALUES (?, ?, NOW())", [colecao_atual() ?? 0, ultimo_id()]);
+            });
+        }
     }
     $conta[t("usuários")] = count($ler("SELECT id FROM usuario"));
 
@@ -2700,7 +2979,10 @@ function importacao_trazer($ler)
     $conta[t("valores que não servem no campo (não trazidos)")] = 0;
     $existem = array_column($ler("SHOW COLUMNS FROM relogio"), "Field");
     foreach ($ler("SELECT * FROM relogio") as $r) {
-        $campos = campos_do_relogio(["no_id" => $r["grupo_id"]]);
+        if (!isset($rmap[(int)$r["id"]])) {
+            continue;
+        }
+        $campos = campos_do_relogio(["no_id" => $r["grupo_id"] === null ? null : ($gmap[(int)$r["grupo_id"]] ?? null)]);
         foreach ($colunas as $col => $ident) {
             if (in_array($col, $existem, true) && $r[$col] !== null && trim((string)$r[$col]) !== "") {
                 if (!isset($campos[$ident])) {
@@ -2710,7 +2992,7 @@ function importacao_trazer($ler)
                     if ($v[1] !== "" || $v[0] === null) {
                         $conta[t("valores que não servem no campo (não trazidos)")]++;
                     } else {
-                        sql("INSERT INTO campo_valor (relogio_id, campo_id, valor) VALUES (?, ?, ?)", [(int)$r["id"], (int)$campos[$ident]["id"], $v[0]]);
+                        sql("INSERT INTO campo_valor (relogio_id, campo_id, valor) VALUES (?, ?, ?)", [$rmap[(int)$r["id"]], (int)$campos[$ident]["id"], $v[0]]);
                         $conta[t("valores")]++;
                     }
                 }
@@ -2743,6 +3025,10 @@ function importacao_trazer($ler)
     $conta[t("marcações \"relógio do dia\" em dia sem período (viraram uma sessão no pulso, no horário de uso)")] = 0;
     $conta[t("marcações \"relógio do dia\" em dia com período (não trazidas: o uso vem dos períodos)")] = 0;
     foreach ($ler("SELECT * FROM evento ORDER BY quando") as $e) {
+        if (!isset($rmap[(int)$e["relogio_id"]])) {
+            continue;
+        }
+        $e["relogio_id"] = $rmap[(int)$e["relogio_id"]];
         if (isset($de_evento[$e["tipo"]]) && isset($tipos[$de_evento[$e["tipo"]]])) {
             sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, NULL, ?, 'importado', NOW())",
                 [(int)$e["relogio_id"], $tipos[$de_evento[$e["tipo"]]], $e["quando"], $e["valor"] === null ? null : (float)$e["valor"]]);
@@ -2761,13 +3047,15 @@ function importacao_trazer($ler)
     }
     $de_periodo = ["rodizio" => ["pulso", "rodizio"], "pulso" => ["pulso", "manual"], "winder" => ["winder", "manual"], "sol" => ["sol", "manual"]];
     foreach ($ler("SELECT * FROM uso_periodo ORDER BY inicio") as $p) {
+        if (!isset($rmap[(int)$p["relogio_id"]])) {
+            continue;
+        }
+        $p["relogio_id"] = $rmap[(int)$p["relogio_id"]];
         $tipo = $de_periodo[$p["tipo"] ?? "rodizio"] ?? ["pulso", "manual"];
         sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, ?, NULL, ?, NOW())",
             [(int)$p["relogio_id"], $tipos[$tipo[0]], $p["inicio"], $p["fim"], $tipo[1]]);
         $conta[t("lançamentos")]++;
     }
     banco_confirma();
-    // os ids gravados com os mesmos números do antigo: o próximo id de cada tabela passa deles (no Postgres, aqui)
-    banco_ajustar_ids();
     return $conta;
 }

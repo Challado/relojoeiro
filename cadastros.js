@@ -26,9 +26,10 @@ function caminho(d, id) {
 function opcoesNo(d, sel) {
   return el("option", {"value": "0"}, t("todos os relógios")) + d.grupos.map(function (g) { return el("option", {"value": g.id, "selected": sel === g.id}, h(g.caminho)); }).join("");
 }
-// botões de uma linha da tabela: um formulário pequeno que grava pela API
+// botões de uma linha da tabela: um formulário pequeno que grava pela API (o Excluir não pergunta aqui: a API diz o que sai
+// junto e a pergunta vem com isso, no api.js)
 function botaoLinha(acao, id, rotulo, confirma, extra) {
-  return el("form", {"data-recurso": RECURSO[aba], "style": "display:inline", "onsubmit": confirma ? "return confirm(" + JSON.stringify(confirma) + ")" : null},
+  return el("form", {"data-recurso": RECURSO[aba], "style": "display:inline", "onsubmit": confirma && acao !== "excluir" ? "return confirm(" + JSON.stringify(confirma) + ")" : null},
     el("input", {"type": "hidden", "name": "acao", "value": acao}) + el("input", {"type": "hidden", "name": "id", "value": id}) + (extra || el("button", {"class": "leve discreto"}, rotulo)));
 }
 function linkEditar(id) {

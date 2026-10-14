@@ -33,7 +33,7 @@ api(filtro !== "" ? {recurso: "acessorios", relogio: filtro} : {recurso: "acesso
         + el("td", {}, a.relogio_id !== null ? el("a", {"href": "ficha.php?id=" + a.relogio_id}, h(a.relogio)) : el("span", {"class": "nota"}, t("solto")))
         + el("td", {"class": "nota"}, a.observacao !== null ? h(a.observacao) : "—")
         + el("td", {"class": "acoes-linha"}, el("a", {"href": "acessorios.php?" + new URLSearchParams({relogio: filtro, editar: a.id}).toString() + "#form"}, t("Editar")) + " "
-          + el("form", {"data-recurso": "acessorios", "class": "inline", "onsubmit": "return confirm(" + JSON.stringify(t("Excluir o acessório {1}?", {1: a.nome})) + ")"},
+          + el("form", {"data-recurso": "acessorios", "class": "inline"},
             el("input", {"type": "hidden", "name": "acao", "value": "excluir"}) + el("input", {"type": "hidden", "name": "id", "value": a.id})
             + el("button", {"class": "leve discreto"}, t("Excluir")))));
     }).join("") + (d.acessorios.length === 0 ? el("tr", {}, el("td", {"colspan": "5"}, t("Nenhum acessório{1}. Cadastre abaixo.", {1: nomeFiltro !== "" ? " " + h(nomeFiltro) : ""}))) : ""))));

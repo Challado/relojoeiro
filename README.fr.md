@@ -4,7 +4,7 @@
 
 > **La rotation intelligente d'une collection de montres.** Chaque jour, il dit quelle montre va au poignet, rappelle de
 > remonter, de charger, de mettre au soleil et de changer la pile, et fait porter toute la collection, pas seulement la
-> préférée.
+> préférée. Plusieurs personnes utilisent le même système, chacune avec ses collections, et partagent ce qu'elles veulent.
 
 ![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-777bb4?logo=php&logoColor=white)
 ![SQLite, MySQL/MariaDB, PostgreSQL ou Firebird](https://img.shields.io/badge/base%20de%20donn%C3%A9es-SQLite%20%7C%20MySQL%20%7C%20PostgreSQL%20%7C%20Firebird-336791)
@@ -22,7 +22,7 @@ flottante, par-dessus la page).</sub>
 | | |
 |---|---|
 | **[Pourquoi il existe](#pourquoi-cela-existe)** · [L'idée centrale](#lidée-centrale--le-système-ne-sait-rien-des-montres) · [Comment ça marche](#comment-ça-marche) · [Une journée avec lui](#une-journée-avec-relógios-2) | **[Essayez en 1 minute](#essayez-en-1-minute)** · [Les écrans](#les-écrans) · [L'API](#lapi--une-seule-porte-pour-tout) · [Installation](#installation) |
-| [Questions fréquentes](#questions-fréquentes) · [Comment c'est à l'intérieur](#comment-cest-à-lintérieur) | [Comment contribuer](#comment-contribuer) · [Licence](#licence) |
+| [Plusieurs personnes](#plusieurs-personnes--comptes-collections-et-accès) ·[Questions fréquentes](#questions-fréquentes) · [Comment c'est à l'intérieur](#comment-cest-à-lintérieur) | [Comment contribuer](#comment-contribuer) · [Licence](#licence) |
 
 ---
 
@@ -382,6 +382,59 @@ s'appliquent que tant qu'il n'y a pas de mesure.
 
 ---
 
+## Plusieurs personnes : comptes, collections et accès
+
+Le système appartient à **plusieurs personnes**, chacune avec son **compte**, et chaque compte avec **ses collections**. Une
+collection a ses montres, l'historique, le plan, la Configuration, les destinations des messages et les agendas ; ce que l'on
+voit et ce que l'on enregistre sur n'importe quelle page appartient toujours à la collection choisie dans le **sélecteur du
+menu** (il apparaît quand il y en a plus d'une). Le premier utilisateur de l'installation est le **master** : il s'occupe de
+tout le système.
+
+| Notion | Ce que c'est |
+|---|---|
+| **Compte** | l'identifiant, le mot de passe, l'e-mail (pour récupérer le mot de passe, recevoir les invitations et les avis) et la langue. Chacun s'occupe du sien dans **Mon compte** (menu **Compte**). |
+| **Collection** | un ensemble de montres d'un **propriétaire**, avec un nom. Une personne peut en avoir plusieurs (« Ma collection », « Celles de mon père »). Elle naît **avec l'ensemble initial** (les groupes, champs, formules, alertes, critères et modes prêts, dans la langue de qui la crée), **vide** (seulement la racine de l'arbre) ou **avec un de vos arbres qui existe déjà**. |
+| **Arbre de groupes** | les groupes et leurs définitions (champs, types de saisie, formules, alertes, catégories de documents, critères des groupes). Il appartient au propriétaire et peut servir à **plusieurs de ses collections** : ce qui change en lui vaut pour toutes. Dans **Mon compte**, on peut copier, renommer et supprimer les arbres. |
+| **Membre** | qui voit une collection d'une autre personne (et l'utilise : marque, saisit, change le jour). |
+| **Tout d'un propriétaire** | qui voit **toutes** les collections de quelqu'un, aussi celles qu'il créera plus tard. |
+| **Master** | voit toutes les collections, s'occupe des comptes (**Utilisateurs**), de la sauvegarde et des migrations. |
+
+**Comment quelqu'un entre dans une collection qui n'est pas la sienne :**
+
+- **Invitation :** dans **Approbations**, le propriétaire saisit l'e-mail et choisit ce que la personne verra (une collection,
+  ou tout ce qui est à lui). Un e-mail part avec un lien (valable `CONVITE_DIAS` jours, 7 sans la ligne) : qui n'a pas de
+  compte le crée par le lien, et qui en a un se connecte et accepte. L'invitation d'un **membre** attend l'approbation du
+  propriétaire. Sans e-mail sur le serveur, le lien apparaît à l'écran, pour l'envoyer comme on veut.
+- **Demande :** dans **Mon compte** (ou dès l'inscription), la personne demande l'accès à une collection, ou à tout ce qui est à
+  un propriétaire, avec un mot. Le propriétaire reçoit un e-mail et approuve ou refuse dans **Approbations** ; la personne
+  reçoit la réponse par e-mail.
+- **Par le master :** dans **Utilisateurs**, **Donner l'accès**.
+
+Dans **Approbations**, le propriétaire voit aussi **qui voit ses collections** et retire l'accès à quelqu'un ; dans **Mon
+compte**, chacun peut **quitter** une collection qui n'est pas la sienne. Les invitations et les demandes sans réponse partent
+toutes seules après `CONVITE_DIAS` jours.
+
+**L'inscription ouverte** (la page `cadastro.php`, sans identifiant, avec le lien **Créer un compte**) : la personne choisit
+l'identifiant, le mot de passe, l'e-mail, la langue et comment elle commence (une collection avec l'ensemble initial, une vide,
+ou demander l'accès à celle de quelqu'un). Le compte ainsi créé est **en démonstration** pendant `DEMO_DIAS` jours (30 sans la
+ligne) : le menu affiche **Démo : N jours**, un e-mail prévient 7 jours et 1 jour avant et, une fois expiré, le cron efface le
+compte avec tout ce qui est à lui. Le master **rend le compte officiel** (ou le prolonge) dans **Utilisateurs**. Avec
+`CADASTRO_ABERTO = false` dans le `config.php`, l'inscription ferme : n'entre que qui le master crée ou qui a une invitation.
+La page a aussi le **Mot de passe oublié** : le lien pour choisir un nouveau mot de passe part par e-mail et vaut 2 heures.
+
+**Le panneau du master** (**Utilisateurs**) montre chaque compte avec l'e-mail, le rôle, le dernier accès, quand il expire,
+les collections (avec combien de montres) et ce qu'il voit d'autre, et les actions : **Voir en tant que** (tout le système tel
+que cette personne le voit, avec une bande en haut et le bouton pour revenir), **Rendre officiel**, **Prolonger**, **Revenir en
+démo**, **Bloquer**, **Modifier** (l'identifiant, l'e-mail, la langue, le rôle), **Changer le mot de passe**, **Transférer la
+collection** (à un autre propriétaire : l'arbre part avec elle ou, s'il sert à d'autres collections de l'ancien propriétaire,
+le nouveau propriétaire en reçoit une copie), **Donner l'accès** et **Supprimer**. Un compte ordinaire qui se retrouve sans
+rien (sans collection, sans accès, sans demande ni invitation en attente) part tout seul.
+
+**Supprimer, partout, prévient d'abord de ce qui part avec.** Supprimer une collection, un arbre, un compte, une montre, un
+champ, une destination... montre d'abord la liste de ce qui part avec (*« Part avec : 4 valeurs de champ, 2 saisies, 12 jours
+du plan... »*, avec les collections touchées : un arbre sert à plusieurs) et n'efface qu'après votre confirmation. Les fichiers
+des documents quittent le disque aussitôt. Par l'API, toute suppression demande `confirmar=1`.
+
 ## La fiche de chaque montre, champ par champ
 
 Chaque montre a un **nom**, un **groupe**, une **situation dans la collection**, **disponible** et une **photo**. Le reste, ce sont des **champs**, et les champs
@@ -451,8 +504,10 @@ bouton **Ouvrir les documents**, ouvrent la page **Documents** de cette montre d
   - **XML :** si c'est une **NF-e** (le XML de la facture électronique brésilienne), la page montre le résumé : l'émetteur,
     le numéro, la série, la date, le montant, les produits et la clé d'accès. Et le bouton **Télécharger le XML**.
   - **Audio :** le lecteur. **Tout autre fichier :** le bouton **Télécharger**.
-- **Modifier** (le titre, la date, la catégorie, la description) et **Supprimer**, sur chaque document ; pour les photos et
-  les vidéos, c'est dans la liste **Modifier ou supprimer des photos et des vidéos**, à la fin de la page.
+- **Le menu ⋮ de chaque fichier :** chaque photo (dans le coin de la miniature), chaque vidéo de la liste, chaque carte de
+  fichier et la visionneuse de photos elle-même ont le bouton **⋮**, qui ouvre **Ouvrir**, **Télécharger**, **Modifier** (une
+  fenêtre au-dessus de la page, avec le titre, la date, la catégorie, la description et la copie dans la base) et
+  **Supprimer** (montre ce qui part avec et demande la confirmation).
 - En haut, le choix de la montre : **Tous** montre les documents de toute la collection.
 
 **Où sont gardés les fichiers :** dans un **dossier du serveur** (le `DOCUMENTOS_PASTA` du `config.php`, hors du dossier
@@ -494,8 +549,9 @@ le dossier d'une montre qui n'existe plus (`r<numéro>`) est supprimé en entier
 aucun document est supprimé (seulement après 10 minutes, car un envoi peut être en cours). Tout ce qu'il fait va dans le
 journal (**Exécutions du cron**).
 
-Supprimer un document supprime le fichier et la copie dans la base ; supprimer la montre supprime ses documents. Sans le
-dossier configuré, la page dit ce qui manque et n'accepte pas d'envois.
+Supprimer un document supprime le fichier et la copie dans la base ; supprimer la montre (ou la collection, l'arbre, le compte)
+supprime ses documents, et les fichiers quittent le dossier aussitôt. Sans le dossier configuré, la page signale ce qui manque
+et n'accepte pas d'envois.
 
 Les documents n'entrent dans aucun calcul : ils servent à consulter. Les nombres utilisés par le système (la réserve de
 marche, l'autonomie, le temps de soleil pour remplir...) restent dans les champs de la fiche. Un manuel que le fabricant ne
@@ -742,9 +798,9 @@ Les autonomies sortent en secondes dans l'API (`recurso=autonomia`) et en mots s
 
 ## La Configuration, option par option
 
-La page **Configuration** garde les options de tout le système. Entre parenthèses, le nom de chacune dans l'API
-(`recurso=config`, sous la clé `config`), pour qui automatise ; la valeur par défaut d'une nouvelle installation figure à la fin
-de chaque ligne.
+La page **Configuration** garde les options **de la collection** (chaque collection a les siennes). Entre parenthèses, le nom
+de chacune dans l'API (`recurso=config`, sous la clé `config`), pour qui automatise ; la valeur par défaut d'une nouvelle
+collection vient à la fin de chaque ligne.
 
 ### Général
 
@@ -762,46 +818,67 @@ de chaque ligne.
 | **Garantie de rotation** (`max_sem_uso`) | aucune montre ne reste plus de ces jours sans usage : celle qui les dépasse passe devant toutes. 0 la désactive. Par défaut : 21. |
 | **Alerte Délaissée : jours sans aller au poignet** (`encostado_dias`) | après combien de jours sans aller au poignet une montre de la collection reçoit l'alerte **Délaissée** (dans **Aujourd'hui, c'est le jour de** : *Délaissée*, *« la limite de jours sans aller au poignet a expiré il y a 2j, 10/11/2026 18:00 »*). De 1 à 3650. Par défaut : 30. L'alerte se désactive dans **Définitions › Alertes**. |
 | **Consommation mesurée : les derniers jours** (`medicao_janela_dias`) | la fenêtre de la [consommation mesurée par les relevés](#consommation-mesurée-par-les-relevés) : les mesures plus anciennes sortent du calcul. De 1 à 3650. Par défaut : 90. |
-| **Adresse du système** (`url_sistema`) | l'adresse que le repère `{link}` met dans les messages et dans l'agenda. Par défaut : vide. |
+| **Adresse du système** (`url_sistema`) | l'adresse que le repère `{link}` met dans les messages et dans l'agenda, et celle des liens des e-mails, de l'ICS et du retour d'Outlook. Elle est à tout le système : seul le master la change. Par défaut : vide (l'adresse par laquelle la page a été ouverte). |
 | **Prochains jours : afficher jusqu'à** (`proximos_por_pagina`) et **Plan : afficher jusqu'à** (`plano_por_pagina`) | combien de jours affichent à la fois les **Prochains jours** de la page Aujourd'hui et le **Jour par jour** de la page Plan (de 1 à 366). Au-delà, le paginateur apparaît en dessous : **<** (précédent), les numéros (le premier, le dernier et jusqu'à deux de chaque côté de l'actuel, avec … dans les trous) et **>** (suivant) ; en posant la souris dessus, l'info-bulle dit *Précédent*, *Suivant* ou *Page N*. Par défaut : 7 et 31. |
-| **Langue par défaut** (`idioma`) | la langue des écrans pour qui n'a pas encore choisi la sienne dans le sélecteur du menu (voir [Les langues](#les-langues)) : portugais, anglais, chinois, hindi, espagnol ou français. Par défaut : vide (celle du navigateur, sinon le portugais). |
+| **Langue par défaut** (`idioma`) | la langue de la collection : celle des écrans pour qui n'a pas choisi la sienne (dans le sélecteur du menu ou dans **Mon compte** ; voir [Les langues](#les-langues)) et celle des messages et des agendas sans langue propre : portugais, anglais, chinois, hindi, espagnol ou français. Par défaut : celle de qui a créé la collection. |
 | **Ouvrir la montre sur la page Aujourd'hui** (`painel_modo`) | **À côté de la liste** (`lado`) : la montre cliquée s'ouvre dans un panneau à droite, et la liste reste visible. **Dans une grande fenêtre flottante** (`flutuante`) : elle s'ouvre au milieu de l'écran, par-dessus la page, avec le fond assombri et les cadres côte à côte ; elle se ferme avec le ×, Échap ou un clic à l'extérieur. Sur le téléphone, les deux occupent tout l'écran. Par défaut : à côté de la liste. |
 | **Mise en avant en haut de la page Aujourd'hui** (`destaque_hoje`) | **La montre du jour** (`dia`) : le grand cadre en haut de la page Aujourd'hui montre la montre du jour (celle du plan), avec jusqu'à quand elle reste et pourquoi elle est sortie. **La montre au poignet maintenant** (`pulso`) : il montre la montre qui est au poignet, même si ce n'est pas celle du jour (avec *au poignet maintenant* et, en dessous, *Montre du jour : …*, qui ouvre celle du jour) ; avec plus d'une au poignet, la dernière mise ; sans aucune au poignet, celle du jour reste, avec l'avis *Aucune montre au poignet maintenant*. Les données en dessous (état, charge, le bouton Mise au poignet/Retirée du poignet, la photo) sont celles de la montre mise en avant. Par défaut : la montre du jour. |
 
-Sur la page, chaque option est sur une ligne, avec le nom à gauche et le champ à droite, dans des cadres (Routine du jour,
-Seuils et calculs, Écrans, Cron, Tirages, Telegram, Google Agenda) ; le bouton **Enregistrer la configuration** est sur une
-barre fixée en bas de l'écran.
+Sur la page, chaque option tient sur une ligne, avec le nom à gauche et le champ à droite, dans des cadres (Routine du jour,
+Limites et calculs, Écrans, Cron, Tirages, Messages et agendas) ; le bouton **Enregistrer la configuration** est sur une barre
+fixée en bas de l'écran.
 
-### Telegram et Google Agenda
+### Messages et agendas
 
-| Option | Ce qu'elle fait |
-|---|---|
-| **Envoyer les alertes** (`mensagens_ativas`) | active et désactive l'envoi par Telegram (l'adresse de l'API de messages est dans le `config.php`). Par défaut : activé. |
-| **Google Agenda actif** (`agenda_ativa`) | active et désactive la création d'événements dans l'agenda. Par défaut : désactivé. |
-| **Id de l'agenda** (`agenda_id`) et **clé** (`agenda_chave`) | l'agenda Google et le chemin, sur le serveur, de la clé JSON du compte de service (vide : le `google-conta-servico.json` dans le dossier du système). Voir [Google Agenda](#google-agenda). |
-| **Anticipation** (`agenda_antecedencia`) | combien de jours à l'avance les événements entrent dans l'agenda. De 1 à 365. Par défaut : 30. |
-| **Message par défaut** de chaque canal (`tg_padrao`, `ag_padrao`) | le texte de toute alerte qui n'a pas de message propre, avec les repères (`{acao}`, `{relogio}`, `{motivo}`, `{carga}`, `{ate}`, `{link}`... ; le bouton **Insérer un repère** les montre tous). Dans l'agenda, la première ligne est le titre de l'événement et le reste, la description. |
-| **Ce qui va où** (dans le formulaire, `alerta_tipos[]` et `agenda_tipos[]` ; dans la base, la colonne `envia` de la table `canal_aviso`) | le tableau qui indique, pour chaque type d'alerte (le jour, la veille, chaque alerte enregistrée et chaque événement personnalisé), s'il part par Telegram et dans l'agenda. Un nouvel événement personnalisé naît déjà coché pour Telegram. |
-| **Message propre** d'une alerte sur un canal (dans le formulaire, `tg_proprio_<tipo>` et `tg_corpo_<tipo>` ; dans l'agenda, `ag_proprio_<tipo>` et `ag_corpo_<tipo>` ; dans la base, les colonnes `propria` et `corpo` de la table `canal_aviso`) | coché, cette alerte part avec son propre texte sur ce canal, à la place du message par défaut. |
-| **Événements personnalisés** | vos propres rappels (nettoyer les bracelets, passer la collection en revue), avec un nom, quand ils se déclenchent (une fois, tous les jours, en semaine, un jour du mois ou tous les N jours), l'heure et, si vous voulez, une montre. Ils partent par les canaux comme les alertes. |
-| **Tester le matin**, **Tester le soir**, **Créer un événement de test**, **Supprimer l'événement de test**, **Synchroniser maintenant** | envoient le message du matin ou du soir tout de suite, créent (dans 10 minutes) ou suppriment un événement de test dans l'agenda, et synchronisent l'agenda maintenant, sans attendre le cron. |
+Les messages et les agendas ont leurs propres pages, ouvertes depuis le cadre **Messages et agendas** de la Configuration :
 
-L'aperçu **Ce qui part aujourd'hui** montre les messages et les événements d'aujourd'hui exactement comme ils vont partir.
+- **Destinations** (`destinos.php`) : où vont les messages de la collection. Chaque destination est un **webhook** (une requête
+  HTTP : Telegram, n8n, Home Assistant, n'importe quelle passerelle), un **e-mail** (par le serveur d'e-mail du `config.php`)
+  ou le **Web Push** (les notifications sur le téléphone et dans le navigateur de quelqu'un qui voit la collection). Chacune a
+  le nom, **Active**, la **langue**, le **message par défaut** (avec les repères `{acao}`, `{relogio}`, `{motivo}`, `{carga}`,
+  `{ate}`, `{link}`... ; le bouton **Insérer un repère** les montre tous) et **Ce qu'il reçoit** : chaque type d'alerte (la
+  montre du jour, la veille, chaque alerte des définitions et chaque événement personnalisé), avec **Personnaliser**, qui
+  ouvre le texte propre de cette alerte sur cette destination. **Envoyer un test**, **Envoyer celui du matin maintenant** et
+  **Envoyer celui du soir maintenant** testent aussitôt, et **Ce qui part aujourd'hui** montre le texte de chaque horaire.
+- **Agendas** (`agendas.php`) : **Google Agenda**, un **CalDAV** (Nextcloud, **iCloud**, Fastmail), **Outlook** (Microsoft
+  365, Outlook.com) ou un **lien ICS** (une adresse à laquelle s'abonner dans n'importe quelle application d'agenda, même
+  Google et Outlook). Chacune a le nom, **Active**, **Événements jusqu'à combien de jours à l'avance** (30 pour une nouvelle),
+  la langue, le **modèle de l'événement** (la première ligne est le titre ; le reste, la description) et **Ce qu'il reçoit**.
+  **Synchroniser maintenant**, **Créer un événement de test** (dans 10 minutes) et **Supprimer l'événement de test** ; en
+  dessous, **Ce qui doit y être maintenant**. Le système crée, met à jour et efface seulement les événements qu'il a lui-même
+  créés ; ceux qui sont déjà passés restent, comme historique.
+
+Les mots de passe, les clés et les jetons des agendas et les en-têtes des webhooks restent **chiffrés dans la base** et ne
+reviennent jamais à l'écran. Comment configurer chaque service sur le serveur : voir [Destinations et agendas sur le
+serveur](#destinations-et-agendas-sur-le-serveur).
+
+**Événements personnalisés** (dans la Configuration) : vos rappels (nettoyer les bracelets, réviser la collection), avec un
+nom, quand ils se déclenchent (une fois, tous les jours, certains jours de la semaine, un jour du mois ou tous les N jours),
+l'heure et, si vous voulez, une montre. Le tableau montre chacun avec **Va vers** (les destinations et les agendas qui le
+reçoivent) ; un nouvel événement va déjà vers toutes les destinations.
 
 ### Ce que le système garde tout seul
 
-Celles-ci n'apparaissent pas comme options : le système les note pour lui-même, et l'API les montre. (Le mode de rotation en
-usage n'est pas ici : c'est la colonne `ativo` de la table `modo`, et on le change sur la page Aujourd'hui.)
+Elles n'apparaissent pas comme options : le système les note pour lui-même, et l'API les montre. (Le mode de rotation en usage
+n'est pas ici : c'est la colonne `ativo` de la table `modo`, et il se change sur la page Aujourd'hui.) Dans la collection (la
+table `config`) :
 
 | Clé | Ce que c'est |
 |---|---|
 | `escala_fim`, `escala_gerada` | jusqu'à quel jour va le planning intelligent et quand il a été généré. |
-| `ultima_manha`, `ultima_noite` | le jour du dernier passage du matin et du soir (pour ne pas les exécuter deux fois). |
-| `cron_ultima_execucao`, `cron_erro`, `cron_registro` | quand le cron s'est exécuté, la dernière erreur (vide : aucune) et le journal du dernier passage avec de l'activité. |
-| `agenda_teste_id` | l'événement de test de l'agenda, tant qu'il existe. |
-| `na_hora_enviados` | les alertes « immédiates » déjà parties par Telegram et toujours échues (`relogio_id:aviso`) : elles ne repartent pas ; elles quittent la liste quand elles ne sont plus échues. |
+| `ultima_manha`, `ultima_noite` | le jour de la dernière tournée du matin et du soir (pour ne pas tourner deux fois). |
+| `na_hora_enviados` | les alertes « à l'heure » déjà parties et encore échues (`relogio_id:aviso`) : elles ne repartent pas ; elles quittent la liste quand elles cessent d'être échues. |
+
+Et de tout le système (la table `sistema`) :
+
+| Clé | Ce que c'est |
+|---|---|
+| `cron_ultima_execucao`, `cron_erro`, `cron_registro` | quand le cron a tourné, la dernière erreur (vide : aucune) et le journal de la dernière tournée avec activité. |
 | `backup_ultima` | quand la dernière sauvegarde a été faite. |
-| `migracao_v10`, `migracao_v12`, `migracao_v16`, `migracao_v17`, `migracao_v18`, `migracao_v19`, `migracao_v20` | les marques indiquant que ces migrations ont été appliquées (les autres sont marquées par la structure même de la base). |
+| `aleatorio_ultima`, `aleatorio_fora` | la source du dernier lot de nombres aléatoires et depuis quand les services extérieurs échouent. |
+| `url_sistema`, `idioma` | l'adresse du système et la langue de l'installation. |
+| `demo_avisos` | les avis d'expiration du compte de démonstration déjà envoyés (pour ne pas les envoyer deux fois). |
+| `migracao_v25` | la marque que la migration v25 (le passage à plusieurs personnes) a été appliquée. |
 
 ## Une journée avec Relógios 2
 
@@ -895,6 +972,11 @@ tablette), les en-têtes deviennent les boutons **Trier par** et tous les filtre
 basculement se mesure avec les données réelles (un nom long ou une grande valeur comptent), pas avec la largeur de l'écran.
 Les **Prochains jours** montrent aussi tous les jours de la programmation sur n'importe quel écran.
 
+**Le menu** a, à droite, ce qui est à la personne connectée : le **sélecteur de collection** (s'il y en a plus d'une ; celles
+des autres avec le nom du propriétaire), **Approbations (N)** quand des demandes ou des invitations attendent, **Démo : N
+jours** sur le compte de démonstration et la langue. Le master voyant le système comme une autre personne voit une bande en
+haut, **Vue en tant que...**, avec le bouton pour revenir.
+
 **L'état de chaque montre** dit où elle est maintenant : **En usage** (vert, au poignet), le nom de la session ouverte quand
 elle est ailleurs, comme **Au soleil**, **Sur le remontoir** ou **Sur le chargeur** (orange), **Au repos** (rouge, rangée)
 et **Indisponible** (gris, hors rotation et rangée) ou **Prêtée** (gris : chez quelqu'un d'autre). Le filtre **État** les a
@@ -914,12 +996,17 @@ que vous enregistrez apparaît ici sous son nom.
 | **Heure exacte** (`hora.php`) | L'heure du serveur pour régler les montres : un cadran à aiguilles et l'heure numérique qui avance seconde par seconde (réglée par l'API, en déduisant le temps de la requête ; en dessous, de combien l'horloge de l'appareil avance ou retarde), la date en toutes lettres et l'heure UTC ; les cadres **Fuseau et UTC** (le fuseau, le décalage, l'heure Zulu, la lettre militaire du fuseau, comme *P (Papa)*, et le groupe date-heure, *131433P OCT 26*), **Calendrier** (jour de l'année, semaine ISO, trimestre, jour julien, Unix) et **Lune** (la phase, l'âge, la partie éclairée et les prochaines pleine et nouvelle lunes, par le cycle moyen : cela peut varier d'un jour) ; et **Comment régler**. Elle relit l'API chaque minute. Par l'API : `recurso=hora_certa`. |
 | **Documents** (`documentos.php`) | Les documents d'une montre (ou de toutes), ouverts depuis la fiche : envoi de plusieurs fichiers, un onglet par catégorie, la galerie de photos en plein écran avec diaporama, les vidéos à la suite dans l'ordre choisi, le lecteur PDF, le résumé de la NF-e à partir du XML, et le téléchargement pour le reste. Voir [Les documents de la montre](#les-documents-de-la-montre). |
 | **Historique** (`historico.php`) | La chronologie d'une montre : en usage par la rotation, au poignet hors rotation, sur le remontoir, au soleil, au repos, et chaque remontage, charge et changement de pile. Il montre combien de temps et quel pourcentage elle a passé dans chaque état, avec un filtre de période et d'état. |
-| **Configuration** (`configuracao.php`) | La **Sauvegarde** (les sauvegardes du dossier, avec **Télécharger** et **Restaurer**, et **Faire une copie maintenant**). Les horaires (matin, soir, port), Telegram, Google Agenda, le message par défaut de chaque canal, le tableau **« Ce qui va où »** (quelle alerte part par quel canal), les événements personnalisés, l'aperçu **« Ce qui part aujourd'hui »** et le bouton qui applique les migrations de la base. |
+| **Configuration** (`configuracao.php`) | Les options de la collection (les horaires, les limites, les écrans, la langue), l'état du cron, le cadre **Messages et agendas** (les destinations et les agendas, avec les liens vers leurs pages), les événements personnalisés, la **Sauvegarde** (seulement le master : les sauvegardes du dossier, avec **Télécharger** et **Restaurer**, et **Faire une sauvegarde maintenant**) et le bouton qui applique les migrations de la base. Voir [La Configuration, option par option](#la-configuration-option-par-option). |
+| **Destinations** (`destinos.php`) | Où vont les messages de la collection : chaque webhook, e-mail ou Web Push, avec le message, la langue, ce qu'il reçoit, les tests et ce qui part aujourd'hui. Voir [Messages et agendas](#messages-et-agendas). |
+| **Agendas** (`agendas.php`) | Les agendas de la collection (Google, CalDAV, Outlook, lien ICS), avec le modèle de l'événement, ce qu'elle reçoit, la synchronisation, l'événement de test et ce qui doit y être maintenant. |
 | **Critères** (`criterios.php`) | Les ensembles de critères par endroit (toutes les montres, un groupe ou une montre), avec paramètres, sous-paramètres, tranches et la note de chaque montre avec le calcul détaillé. Il y a **Restaurer les critères initiaux**. |
 | **Groupes** (`grupos.php`) | L'arbre : créer, renommer, déplacer, trier, supprimer (ce qui appartenait au groupe passe à celui du dessus) et choisir le groupe de chaque montre. |
 | **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), alertes, modes de rotation et catégories de documents : tout ce que le système utilise et qui n'est pas du code. |
 | **Exécutions du cron** (`execucoes.php`) | Ce que le cron a fait à chaque passage, combien de temps il a pris et les erreurs, avec des filtres. |
-| **Utilisateurs** (`usuarios.php`) | Qui a accès : créer un utilisateur ou changer le mot de passe. |
+| **Mon compte** (`conta.php`, le menu **Compte**) | Les collections que vous voyez (ouvrir, créer, renommer, supprimer, quitter), vos arbres de groupes (copier, renommer, supprimer), demander l'accès à la collection de quelqu'un, vos données (l'e-mail, la langue, le mot de passe), les **jetons d'API** (pour vos scripts), les **notifications sur cet appareil** (le Web Push) et supprimer le compte. Voir [Plusieurs personnes](#plusieurs-personnes--comptes-collections-et-accès). |
+| **Approbations** (`aprovacoes.php`) | Les demandes d'accès à vos collections (approuver, refuser), les invitations que des membres ont faites et qui vous attendent, **Inviter** (par e-mail), les invitations que vous avez faites et qui voit vos collections (retirer l'accès). Le menu affiche **Approbations (N)** quand quelque chose attend. |
+| **Utilisateurs** (`usuarios.php`, seulement le master) | Le panneau des comptes : chacun avec ce qu'il a et les actions (voir en tant que, rendre officiel, prolonger, bloquer, modifier, changer le mot de passe, transférer une collection, donner l'accès, supprimer) et créer un compte. |
+| **Créer un compte** (`cadastro.php`, sans identifiant) | L'inscription ouverte : le nouveau compte (avec une collection, ou en demandant l'accès), l'invitation arrivée par e-mail et le **Mot de passe oublié**. |
 | **Aide** (`ajuda.php`) | Ce guide dans le système : l'idée centrale, comment ça marche, la fiche de chaque montre champ par champ, les alertes de charge, les écrans et les questions fréquentes (les mêmes sections du README, lues depuis lui ; l'API renvoie le même texte dans `recurso=manual`). |
 
 ### Les langues
@@ -995,17 +1082,23 @@ les filtres du tableau laissent visible). C'est pourquoi **tout ce que fait l'é
 automatisations, raccourcis sur le téléphone, intégration avec Home Assistant, un widget.
 
 L'API fait aussi ce qui vient avant et autour des écrans : elle **installe la base** (`recurso=instalacao`), **crée le premier
-utilisateur** (`recurso=usuarios`, avec le jeton), **importe l'ancien système** (`recurso=importacao`) et fait la **connexion
-des pages** (`recurso=entrar` : les pages ne vérifient rien, elles livrent seulement le squelette ; qui arrive sans connexion
-est envoyé à l'API, qui demande l'utilisateur et le mot de passe et le renvoie à la page). Les scripts en ligne de commande
-(`instalar.php`, `criar_usuario.php`, `importar.php`) sont des raccourcis : ils appellent les mêmes opérations de l'API.
+utilisateur** (`recurso=usuarios`, avec le jeton), **importe le système précédent** (`recurso=importacao`), l'**inscription
+ouverte** (`recurso=cadastro`, sans identifiant), les **comptes** (`conta`, `colecoes`, `acessos`, `convites`, `pedidos`,
+`aprovacoes`) et fait l'**identification des pages** (`recurso=entrar` : les pages ne vérifient rien, elles ne livrent que le
+squelette ; qui arrive sans identifiant est envoyé à l'API, qui demande l'utilisateur et le mot de passe et le renvoie à la
+page). Les scripts en ligne de commande (`instalar.php`, `criar_usuario.php`, `importar.php`) sont des raccourcis : ils
+appellent les mêmes opérations de l'API.
 
-En dehors de l'API, il n'y a que le **cron** (`cron.php`, l'horloge du système : il construit le plan, ouvre et ferme la
-session du jour, envoie les messages, synchronise l'agenda, déclenche les événements et s'occupe des copies des documents),
-qui utilise les mêmes fonctions que l'API ; ce qu'on peut demander sur le moment a une action dans l'API (`testar_manha`,
-`testar_noite`, `sincronizar`, `resortear`...), et ce qu'il a fait apparaît dans `recurso=cron`.
+Hors de l'API, il n'y a que le **cron** (`cron.php`, l'horloge du système : il monte le plan, ouvre et ferme la session du
+jour, envoie les messages, synchronise les agendas, déclenche les événements et s'occupe des copies des documents), qui utilise
+les mêmes fonctions que l'API ; ce qu'on peut demander sur le moment a une action dans l'API (le `testar` des destinations, le
+`sincronizar` des agendas, le `resortear`...), et ce qu'il a fait apparaît dans `recurso=cron`.
 
-**Authentification :** le jeton (`X-Api-Token: ...` ou `?token=...`) ou la connexion du site (HTTP Basic).
+**Authentification :** l'identifiant du site (HTTP Basic), un **jeton personnel** (créé dans **Mon compte**, il vaut comme
+votre identifiant) ou le jeton du serveur (l'`API_TOKEN`, il vaut comme le master), dans l'en-tête `X-Api-Token` ou dans
+`?token=...`. **La collection :** `colecao=<id>` (sans lui, celle du sélecteur du menu, sinon votre première) ; une que vous
+ne voyez pas répond 404. **Supprimer** demande `confirmar=1` : sans lui, la réponse (409) dit ce qui partirait avec et rien
+n'est effacé.
 **Format :** JSON par défaut, ou XML avec `formato=xml`. **Langue :** `lingua=fr` (ou l'en-tête `Accept-Language`) : les
 messages, l'aide et la reconstruction sortent dans cette langue.
 
@@ -1045,14 +1138,17 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `autonomia` | combien de temps tient chaque montre, en secondes, épuré pour les systèmes extérieurs (`relogio=` un id ou plusieurs ; sans lui, toutes) |
 | `historico` | la chronologie d'une montre, avec le temps dans chaque état. `relogio=` (un id ou plusieurs ; `relogio_id` vaut aussi ; sans lui, toutes), `de=` et `ate=` (date, ou date et heure : la période qui croise l'intervalle entre), `estado=` (`rodizio`, `pulso`, `repouso`, `marca` ou un type de session comme `winder` et `sol` ; un ou plusieurs ; `linha_estado` vaut aussi), `ordem=` (`desc`, par défaut, ou `asc`), `limite=` (par défaut 100, maximum 1000) et `pagina=` |
 | `criterios` | les ensembles de critères et la note de chaque montre avec le calcul |
-| `eventos`, `agenda` | les événements personnalisés ; ce qui doit être dans Google Agenda |
-| `config`, `cron` | la configuration (avec les messages, l'aperçu et la situation du cron : jamais exécuté, arrêté ou en marche) ; les exécutions du cron, avec le résumé de la période. Dans le `cron` : `de=` et `ate=` (date, ou date et heure), `situacao=` (`atividade`, par défaut ; `erro`, `nada` ou `todas`), `busca=` (texte dans le journal), `limite=` (par défaut 100, maximum 1000) et `pagina=` ; chacun vaut aussi avec `cron_` devant (`cron_de`...) |
+| `eventos`, `destinos`, `agendas` | les événements personnalisés ; les destinations des messages, avec ce que chacune reçoit et l'aperçu du jour ; les agendas, avec ce qui doit être dans chacune |
+| `ics` | le calendrier d'une agenda de type lien ICS (sans identifiant, par la clé du lien) |
+| `config`, `cron` | la configuration de la collection (avec le résumé des destinations et des agendas et l'état du cron : jamais exécuté, arrêté ou en marche) ; les exécutions du cron, avec le résumé de la période. Dans `cron` : `de=` et `ate=` (date, ou date et heure), `situacao=` (`atividade`, par défaut ; `erro`, `nada` ou `todas`), `busca=` (texte dans le journal), `limite=` (100 par défaut, 1000 au maximum) et `pagina=` ; chacun vaut aussi avec `cron_` devant (`cron_de`...) |
 | `arvore`, `cadastros` | les groupes ; tout ce que montre la page Définitions |
 | `calcular` | le résultat d'une formule (`expressao=`) sur les montres (`relogio=` un id ou plusieurs ; sans lui, toutes), sans enregistrer, avec les parties du calcul ; formule mal écrite : 400 avec les erreurs |
 | `foto` | la photo d'une montre (`relogio=<id>`) : l'image, pas du JSON |
 | `documentos` | les documents d'une montre (`relogio=<id>` ; sans lui, de toutes), avec les catégories, le résumé de la NF-e de chaque XML, le dossier et la limite |
 | `documento` | le fichier d'un document (`id=<id>`) : pour afficher (image, vidéo, audio, PDF, texte) ou pour télécharger (le reste, ou avec `baixar=1`) ; `mini=1` est la vignette de la photo. Il sert des morceaux (Range), pour que la vidéo avance |
-| `usuarios`, `migracoes` | les identifiants, chacun avec le hash du mot de passe (pour migrer avec le même mot de passe : voir [Les utilisateurs et les mots de passe](#les-utilisateurs-et-les-mots-de-passe)) ; les migrations qui restent à appliquer |
+| `usuarios`, `migracoes` | le master : le panneau des comptes, chacun avec ce qu'il a et le hash du mot de passe (pour migrer avec le même mot de passe : voir [Les utilisateurs et les mots de passe](#les-utilisateurs-et-les-mots-de-passe)) ; les autres, seulement leur propre compte ; les migrations qui restent à appliquer |
+| `conta`, `colecoes`, `aprovacoes` | Mon compte (les collections, les arbres, les demandes, les jetons, les appareils du Web Push ; `parte=menu` : seulement ce qu'utilise le menu) ; les collections et les arbres ; la page Approbations |
+| `cadastro` | l'inscription ouverte, sans identifiant : si elle est ouverte, les collections et les propriétaires (pour demander l'accès) et l'invitation (`convite=<token>`) |
 | `instalacao` | la situation de l'installation : la base, si elle est vide, installée et à jour, combien d'utilisateurs et la prochaine étape. Répond aussi avec la base vide, avec le jeton |
 | `backup` | la sauvegarde de la base : si elle est activée, si le dossier convient, combien sont gardées, la dernière et les copies du dossier ; `arquivo=` en télécharge une |
 | `importacao` | ce qu'utilise l'importation de l'ancien système : le serveur de l'ancienne base (sans le mot de passe), si PHP a MySQL et si cette base a déjà des montres |
@@ -1076,8 +1172,14 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (et `ordem` dans les champs) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
-| `config` | `salvar`, `evento_salvar`, `evento_excluir`, `testar_manha`, `testar_noite`, `teste_agenda_criar`, `teste_agenda_remover`, `sincronizar` |
-| `usuarios` | `salvar` (avec le `senha`, ou avec le `senha_hash` d'un autre système ; le premier utilisateur, avec le jeton), `excluir` |
+| `config` | `salvar`, `evento_salvar`, `evento_excluir` |
+| `destinos` | `salvar` (webhook, e-mail ou Web Push, avec ce qu'elle reçoit), `testar` (`qual=` : texte, matin ou soir), `excluir` |
+| `agendas` | `salvar` (Google, CalDAV, Outlook ou ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
+| `usuarios` | `salvar` (avec le `senha`, ou avec le `senha_hash` d'un autre système ; le premier utilisateur, avec le jeton, est le master) et, seulement le master : `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
+| `conta` | `alterar` (e-mail, langue, mot de passe), `token_criar`, `token_revogar`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir` ; seulement le master : `email_testar`, `vapid_gerar` |
+| `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
+| `acessos`, `convites`, `pedidos` | `remover`, `sair` ; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar` ; `pedir`, `aprovar`, `recusar`, `cancelar` |
+| `cadastro` | sans identifiant : `criar_conta`, `esqueci_senha`, `nova_senha` |
 | `migracoes` | `aplicar` |
 | `instalacao` | `instalar` (seulement sur une base vide, avec le jeton) |
 | `backup` | `fazer` (une sauvegarde maintenant), `restaurar` (`arquivo=` : ramène la base à cette copie, en gardant d'abord une copie de ce qui existe maintenant) |
@@ -1091,8 +1193,9 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `400` | écriture refusée par les validations (les erreurs disent pourquoi), ou une formule mal écrite dans le `calcular` |
 | `302` | `recurso=entrar` avec la bonne connexion et `volta=` : va à la page |
 | `401` | sans le jeton ni la connexion du site, ou avec eux erronés ; sans aucun utilisateur (ou avec la base vide), la réponse dit quoi faire (`sem_usuarios` et `como`) |
-| `404` | ressource inconnue (la réponse apporte la liste des ressources), ou la montre, la photo, le document (ou son fichier) ou le `README.md` (dans le `manual`) qui n'existe pas, ou un fichier qui ne sort pas par le `codigo` (avec `o_que_ver` pour ce qui est laissé de côté exprès, comme le `config.php`) |
-| `409` | la base a refusé l'écriture : un enregistrement qu'un autre utilise encore, une valeur répétée, ou une valeur hors des règles de validation de la base (le nom de la règle vient avec) |
+| `403` | la sauvegarde et les migrations, par qui n'est pas le master |
+| `404` | ressource inconnue (la réponse apporte la liste des ressources), la collection que vous ne voyez pas, ou la montre, la photo, le document (ou son fichier) ou le `README.md` (dans `manual`) qui n'existe pas, ou un fichier qui ne sort pas par `codigo` (avec `o_que_ver` pour ce qui reste exclu exprès, comme le `config.php`) |
+| `409` | une suppression sans `confirmar=1` (avec `impacto` : ce qui partirait avec ; rien n'a été effacé) ; le compte sans aucune collection (`sem_colecao`) ; ou la base a refusé l'écriture : un enregistrement qu'un autre utilise encore, une valeur répétée, ou une valeur hors des règles de validation de la base (le nom de la règle vient avec) |
 | `413` | l'envoi a dépassé la limite du PHP du serveur (`post_max_size`) : un fichier trop grand |
 | `500` | système arrêté (l'`API_TOKEN` ou le `FUSO` du `config.php` invalide) ou une erreur interne |
 | `503` | base pas à jour (seul `recurso=migracoes` répond, et l'écriture `migracoes`/`aplicar` ; et le `manual` et le `codigo`, qui n'utilisent pas la base), base vide (avant l'installation seul `instalacao` répond, et le `manual` et le `codigo`) ou base hors service |
@@ -1106,7 +1209,7 @@ de passe tapé avec le sel et le coût qui sont dans le hash et compare (`passwo
 hashs différents à chaque fois, et tous correspondent.
 
 **Pour emmener les utilisateurs vers un autre système**, emportez l'identifiant et le `senha_hash` de chacun
-(`recurso=usuarios`) et, là-bas, vérifiez le mot de passe tapé contre le hash avec le bcrypt du langage : chacun se connecte
+(`recurso=usuarios`, par le master) et, là-bas, vérifiez le mot de passe tapé contre le hash avec le bcrypt du langage : chacun se connecte
 avec le même mot de passe que toujours. `$2y$` (PHP) et `$2b$` (les autres langages) sont le même calcul ; si la bibliothèque
 refuse le `$2y$`, changez le début en `$2b$`. **Pour faire venir des utilisateurs d'un autre système**, envoyez le hash de
 là-bas : `recurso=usuarios`, `acao=salvar`, `login` et `senha_hash` (bcrypt `$2y$`, `$2b$` ou `$2a$`, ou argon2).
@@ -1153,7 +1256,7 @@ la requête). Le dictionnaire a une seule source, celui de l'aide ; celui de l'e
 
 ## Installation
 
-**Prérequis :** PHP 8.1+ avec `curl` et `openssl` (celui-ci seulement pour Google Agenda), un serveur web (nginx ou Apache), le
+**Prérequis :** PHP 8.1+ avec `curl` et `openssl` (les webhooks, l'e-mail, le Web Push, les agendas et les secrets chiffrés), un serveur web (nginx ou Apache), le
 cron et **une de ces bases de données**, chacune par son extension PHP :
 
 | Base | Extension PHP | Version | Quand la choisir |
@@ -1171,7 +1274,8 @@ exécute le même scénario sur les quatre bases et compare tout ce que renvoie 
 git clone https://github.com/Challado/relojoeiro.git /var/www/relojoeiro
 cd /var/www/relojoeiro
 
-# 2. la configuration : la base (DB_TIPO), le jeton de l'API, le fuseau, les messages, le dossier des documents
+# 2. la configuration : la base (DB_TIPO), le jeton de l'API, le fuseau, le dossier des documents et, si vous voulez,
+#    l'e-mail, le Web Push, Outlook et les règles de l'inscription ouverte (voir le tableau du config.php, plus bas)
 cp config.exemplo.php config.php
 nano config.php
 #    le dossier des documents (DOCUMENTOS_PASTA), hors du dossier publié, accessible en écriture à l'utilisateur de PHP :
@@ -1189,7 +1293,7 @@ php instalar.php --lingua=fr
 #    ou par l'API, avec le jeton du config.php (la langue : lingua=fr, comme dans toute requête) :
 #    curl -H "X-Api-Token: $TOKEN" -d recurso=instalacao -d acao=instalar -d lingua=fr http://serveur/relojoeiro/api.php
 
-# 5. le premier utilisateur (le mot de passe est demandé sans s'afficher)
+# 5. le premier utilisateur, le master, avec sa collection (le mot de passe est demandé sans s'afficher)
 php criar_usuario.php votre_identifiant
 #    ou par l'API, avec le jeton :
 #    curl -H "X-Api-Token: $TOKEN" -d recurso=usuarios -d acao=salvar -d login=votre_identifiant -d senha=... http://serveur/relojoeiro/api.php
@@ -1229,8 +1333,10 @@ point, y compris le dossier `.git`, qui vient avec le `git clone`. Le projet app
 Pour vérifier, ouvrez `https://votre-serveur/relojoeiro/config.php` et `https://votre-serveur/relojoeiro/.git/config` : les deux
 doivent donner **403**.
 
-**8. Ouvrez-le dans le navigateur** et connectez-vous avec l'utilisateur créé. L'ensemble initial est déjà là : enregistrez vos
-montres dans **Aujourd'hui → Nouvelle montre**, choisissez le groupe de chacune et remplissez les champs.
+**8. Ouvrez-le dans le navigateur** et connectez-vous avec l'utilisateur créé. L'ensemble initial est déjà là : enregistrez
+vos montres dans **Aujourd'hui → Nouvelle montre**, choisissez le groupe de chacune et remplissez les champs. Dans **Mon
+compte**, indiquez votre e-mail. Les autres personnes entrent par **Créer un compte** (`cadastro.php`), par une invitation de
+votre part, ou le master crée le compte dans **Utilisateurs**.
 
 ### Le `config.php`
 
@@ -1241,7 +1347,15 @@ montres dans **Aujourd'hui → Nouvelle montre**, choisissez le groupe de chacun
 | `DB_ARQUIVO` | le fichier de la base (SQLite), hors du dossier publié |
 | `API_TOKEN` | **obligatoire**, avec 10 caractères ou plus. Sans lui, tout le système s'arrête et dit pourquoi. |
 | `FUSO` | le fuseau horaire, comme `America/Sao_Paulo`. Vide ou absent : celui de PHP (`date.timezone` dans le php.ini). Il vaut pour tout, y compris pour les dates que la base enregistre |
-| `MSG_ENDPOINT`, `MSG_DESTINATARIO`, `MSG_TITULO` | les messages (voir ci-dessous). Sans l'adresse, rien n'est envoyé. |
+| `SEGREDO_CHAVE` | facultatif : la clé qui chiffre dans la base les mots de passe CalDAV, les clés Google, les jetons Outlook et les en-têtes des webhooks. Sans elle, l'`API_TOKEN` (changer la clé fait perdre les secrets stockés : il suffit de les saisir à nouveau) |
+| `MSG_TITULO` | le titre des messages (le `{titulo}` des webhooks, le sujet de l'e-mail, le titre du Web Push). Par défaut : Relógios |
+| `MSG_ENDPOINT`, `MSG_DESTINATARIO` | seulement pour la migration v25 : l'ancienne API de messages (Telegram) devient la première destination webhook de la collection |
+| `CADASTRO_ABERTO`, `DEMO_DIAS`, `CONVITE_DIAS` | facultatifs : l'inscription ouverte (`false` : fermée, seulement sur invitation ; sans la ligne, ouverte), les jours du compte de démonstration (30 par défaut ; `0` : le compte naît officiel) et les jours qu'attend une invitation ou une demande (7 par défaut) |
+| `EMAIL_METODO`, `EMAIL_REMETENTE`, `SMTP_HOST`, `SMTP_PORTA`, `SMTP_SEGURANCA`, `SMTP_USUARIO`, `SMTP_SENHA` | l'e-mail : `smtp` (le serveur indiqué ; la sécurité `tls`, par défaut, `ssl` ou `nenhuma`) ou `mail` (le `mail()` de PHP), et l'expéditeur. Sans aucun, aucun e-mail ne part |
+| `IMAP_HOST`, `IMAP_PORTA`, `IMAP_SEGURANCA`, `IMAP_USUARIO`, `IMAP_SENHA`, `IMAP_PASTA_ENVIADOS` | facultatifs : une copie de chaque e-mail envoyé dans le dossier Envoyés du compte |
+| `POP_HOST`, `POP_PORTA`, `POP_SEGURANCA`, `POP_USUARIO`, `POP_SENHA` | facultatifs : seulement pour que le test de l'e-mail vérifie la boîte par POP3 |
+| `VAPID_PUBLICA`, `VAPID_PRIVADA`, `VAPID_ASSUNTO` | le Web Push : la paire de clés (le master la génère dans **Mon compte**) et le sujet (`mailto:...`) |
+| `OUTLOOK_CLIENTE_ID`, `OUTLOOK_CLIENTE_SEGREDO` | l'application enregistrée chez Microsoft, pour les agendas Outlook (voir plus bas) |
 | `DOCUMENTOS_PASTA` | le dossier des fichiers des documents (le manuel, la facture, les photos, les vidéos), **hors du dossier publié**, accessible en écriture à l'utilisateur de PHP. Sans lui, la page Documents signale qu'il manque et n'accepte pas d'envois. Ex. : `define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
 | `DOCUMENTOS_COPIA_BANCO` | facultatif : la sauvegarde des documents dans la base, pour tout le système. `true` : tout fichier va aussi dans la base ; `false` : aucun n'y va ; sans elle : chaque montre et chaque fichier décident. Voir [Les documents de la montre](#les-documents-de-la-montre). |
 | `BACKUP_PASTA`, `BACKUP_MANTER`, `BACKUP_DOCUMENTOS` | facultatifs : la sauvegarde de la base (voir [Sauvegarde](#sauvegarde)). Le dossier, **hors du dossier publié** (sans lui, pas de copie automatique) ; combien sont gardées (par défaut 7) ; et si elle emporte le contenu des documents gardé dans la base (par défaut : non). |
@@ -1249,7 +1363,7 @@ montres dans **Aujourd'hui → Nouvelle montre**, choisissez le groupe de chacun
 | `DOCUMENTOS_LIMITE` | facultatif : le plus grand document accepté, en octets. Sans elle, 100 Mo (`104857600`) ; `0` ou `-1`, pas de limite du système. `MANUAL_LIMITE`, l'ancien nom, vaut encore quand elle n'existe pas. Les limites de PHP et de nginx s'appliquent toujours (voir [La taille des envois](#la-taille-des-envois-les-documents)). Ex. : `define("DOCUMENTOS_LIMITE", 524288000);` pour 500 Mo |
 | `ANTIGO_HOST`, `ANTIGO_PORTA`, `ANTIGO_USUARIO`, `ANTIGO_SENHA` | facultatifs, seulement pour le `importar.php` avec ce système sur Postgres, SQLite ou Firebird : où se trouve le MySQL de l'ancien système |
 | `ALEATORIO_RANDOMORG_URL`, `ALEATORIO_ANU_URL` | facultatifs, seulement pour les tests : les adresses des sources des nombres aléatoires (`https://www.random.org/integers/` et `https://qrng.anu.edu.au/API/jsonI.php`). Changées, les tirages demandent les nombres à un serveur de test |
-| `GOOGLE_TOKEN_URL`, `GOOGLE_API_URL` | facultatifs, seulement pour les tests : les adresses de Google qu'utilise l'agenda (celle du jeton, `https://oauth2.googleapis.com/token`, et celle de l'API, `https://www.googleapis.com/calendar/v3`). Changées, la synchronisation de l'agenda parle à un serveur de test au lieu de Google |
+| `GOOGLE_TOKEN_URL`, `GOOGLE_API_URL`, `OUTLOOK_LOGIN_URL`, `OUTLOOK_GRAPH_URL` | facultatifs, seulement pour les tests : les adresses de Google et de Microsoft qu'utilisent les agendas. Changées, la synchronisation parle à un serveur de test |
 | `TEXTOS_ESTRITO` | facultatif, pour qui traduit : `true` fait qu'une traduction manquante s'arrête sur une erreur (voir [Les langues](#les-langues)) |
 
 Le système lit le `config.php` de son dossier. Une variable d'environnement du serveur, `RELOGIOS_CONFIG`, désigne un autre
@@ -1257,24 +1371,43 @@ fichier à la place : c'est ce qu'utilise le test de parité (`testes/paridade.s
 [`testes/config.teste.php`](testes/config.teste.php)), pour tourner sans toucher au vrai `config.php`. Sur une installation
 normale, ne la définissez pas.
 
-### Les messages par Telegram
+### Destinations et agendas sur le serveur
 
-Le système ne parle pas directement à l'API de Telegram : il appelle **une adresse HTTP à vous** (`MSG_ENDPOINT`) avec
-`?destinatario=...&titulo=...&mensagem=...` et considère le message envoyé si la réponse est 2xx. Cela vous laisse utiliser
-votre bot, un webhook, n8n, Home Assistant ou n'importe quel relais de messages. Les longs messages sont découpés en parties.
-Dans la **Configuration** se trouvent les boutons **Envoyer maintenant** (matin et soir) pour tester.
+Chaque collection crée ses destinations et ses agendas sur les pages **Destinations** et **Agendas**. Ce qui demande une
+configuration sur le serveur :
 
-### Google Agenda
+- **Telegram (un webhook) :** créez un bot avec @BotFather (il donne le jeton) et trouvez votre `chat_id` (envoyez un message
+  au bot et ouvrez `https://api.telegram.org/bot<token>/getUpdates`). Dans **Destinations**, un webhook : méthode `GET` ou
+  `POST`, adresse `https://api.telegram.org/bot<token>/sendMessage`, les champs `chat_id` = le numéro et `text` =
+  `{mensagem}`. N'importe quelle autre passerelle (n8n, Home Assistant, votre propre adresse) marche pareil : le système envoie
+  `{titulo}` et `{mensagem}` là où vous les avez mis, et considère l'envoi fait si la réponse est 2xx. Les longs messages sont
+  découpés en parties.
+- **E-mail :** le serveur SMTP dans le `config.php` (`SMTP_HOST`, le port, la sécurité, l'utilisateur et le mot de passe ;
+  sur Gmail et Outlook, un mot de passe d'application) et l'`EMAIL_REMETENTE` ; ou `EMAIL_METODO = "mail"`, avec un sendmail
+  sur le serveur. Avec les `IMAP_*`, chaque e-mail envoyé reçoit une copie dans Envoyés. Le master le teste dans **Mon compte
+  › Serveur d'e-mail**.
+- **Web Push :** le site doit s'ouvrir en **https**. Le master génère les clés dans **Mon compte › Clés du Web Push** et copie
+  les deux lignes dans le `config.php`. Ensuite, chaque personne active les notifications sur son appareil, dans **Mon
+  compte** (sur l'iPhone, ajoutez d'abord le site à l'écran d'accueil), et une destination Web Push envoie aux appareils de
+  la personne qu'elle désigne.
+- **Google Agenda :** dans Google Cloud, créez un **compte de service** et téléchargez la clé JSON ; partagez votre agenda avec
+  l'e-mail du compte de service, avec le droit de modifier les événements ; dans **Agendas**, collez le JSON de la clé (il
+  reste chiffré dans la base) et l'ID de l'agenda. Seul le master peut, à la place du JSON, donner le chemin d'un fichier sur
+  le serveur.
+- **CalDAV (Nextcloud, iCloud, Fastmail) :** l'adresse du calendrier, l'utilisateur et le mot de passe. Sur **iCloud**, un
+  **mot de passe pour app** (appleid.apple.com › Mots de passe pour app) et l'adresse du calendrier sur `caldav.icloud.com`.
+- **Outlook :** enregistrez une application dans le portail de Microsoft (**Entra ID › Inscriptions d'applications**), avec
+  la permission `Calendars.ReadWrite` et l'adresse de retour `https://<votre serveur>/relojoeiro/api.php?recurso=outlook_retorno`
+  (la page Agendas montre l'adresse exacte) ; mettez l'ID et le secret dans le `config.php` (`OUTLOOK_CLIENTE_ID` et
+  `OUTLOOK_CLIENTE_SEGREDO`). Dans **Agendas**, **Se connecter à Outlook** mène à la page de Microsoft et revient connecté.
+  Sans l'application, utilisez un lien ICS : Outlook s'y abonne.
+- **Lien ICS :** rien à configurer. L'agenda donne un lien secret auquel s'abonner dans n'importe quelle application (Google :
+  **Autres agendas › À partir de l'URL** ; Outlook : **S'abonner à partir du web** ; iPhone : **Calendrier avec abonnement**) ;
+  **Changer le lien** désactive le précédent.
 
-1. Dans Google Cloud, créez un **compte de service** et téléchargez la clé JSON.
-2. Gardez la clé **sur le serveur, hors du dossier public et hors du dépôt** (le `.gitignore` bloque déjà les noms courants).
-3. Partagez votre agenda avec l'adresse du compte de service, avec la permission de modifier les événements.
-4. Dans la **Configuration**, indiquez l'ID de l'agenda et le chemin de la clé, activez l'agenda et cliquez sur
-   **Synchroniser maintenant**.
-
-Le système crée, met à jour et supprime seulement les événements qu'il a créés lui-même, sans doublons. La routine (charger,
-remonter, soleil) entre dans la fenêtre d'anticipation, et l'entretien (pile, révision, garantie) entre à n'importe quelle
-date.
+Hors des collections du master, les adresses que quelqu'un saisit (webhook, CalDAV) doivent être sur internet : le système
+refuse celles du réseau du serveur lui-même (`127.0.0.1`, `192.168.x`...), pour que personne n'utilise le serveur pour
+sonder son réseau.
 
 ### La taille des envois (les documents)
 
@@ -1298,8 +1431,16 @@ avec le code `413` et la limite du serveur. Sur Apache, il n'y a pas de limite �
 ### Les mises à jour de la base
 
 Après la mise à jour du code, s'il y a une nouvelle migration (`migracao_v*.sql`), l'API répond `503` et la page
-**Configuration** montre le bouton pour l'appliquer. Le cron s'arrête aussi et note la raison, au lieu de tourner à moitié. Sur
-une nouvelle installation, le `schema.sql` apporte déjà toutes les migrations.
+**Configuration** montre le bouton pour l'appliquer (seul le master l'applique). Le cron s'arrête aussi et enregistre le
+motif, au lieu de tourner à moitié. Sur une nouvelle installation, le `schema.sql` apporte déjà la structure de toutes les
+migrations, et l'ensemble initial vient du `modelo.json`, à la création du premier utilisateur.
+
+**La migration v25 (plusieurs personnes)** refait toute la base : elle garde d'abord une copie de tout dans
+`relojoeiro-antes-da-v25.jsonl.gz` (dans la `BACKUP_PASTA`, ou dans le dossier temporaire), crée la nouvelle structure et
+remet chaque enregistrement sous la nouvelle forme, avec les mêmes numéros (les montres, les documents et les saisies gardent
+leur id habituel). L'utilisateur le plus ancien devient le master et le propriétaire de la collection et de l'arbre ; les
+autres, membres de la collection. Telegram (`MSG_ENDPOINT`) devient la première destination webhook, et Google Agenda, le
+premier agenda. Si elle s'arrête en cours, le même bouton la refait à partir de la copie.
 
 Le `schema.sql` et chaque migration sont **un seul fichier pour les quatre bases** : la structure (`CREATE TABLE`,
 `ALTER TABLE`) est écrite dans le dialecte de MySQL, et le [`banco.php`](banco.php) la traduit pour Postgres, SQLite et
@@ -1343,9 +1484,8 @@ Configuration, et aussi dans le `instalar.php`.
   - les noms d'index et de règle de plus de 31 caractères gardent seulement un morceau du md5 du nom entier à la fin, et la
     table `no` est un mot réservé : dans un programme extérieur (`isql-fb`, FlameRobin), écrivez `"NO"`, entre guillemets et
     en majuscules ;
-  - la clé unique de plusieurs colonnes où l'une peut rester vide (la `canal_aviso`) devient un index unique sur une
-    expression, car sur Firebird deux lignes avec la même valeur et l'autre colonne vide comptent comme répétées (sur MySQL,
-    non) ;
+  - la clé unique sur plusieurs colonnes dont l'une peut rester vide devient un index unique sur une expression, car sur
+    Firebird deux lignes avec la même valeur et l'autre colonne vide comptent comme répétées (sur MySQL, non) ;
   - l'heure du `NOW()` vient de PHP (Firebird n'a pas de fuseau par connexion), dans le `FUSO` du `config.php`, comme pour
     les autres.
 - **L'ordre des colonnes** d'une migration avec `AFTER` ne vaut que sur MySQL : sur les autres, la nouvelle colonne va à la fin
@@ -1375,6 +1515,21 @@ Sur sa page **Documents** (depuis la fiche : **Ouvrir les documents**). Choisiss
 (XML), Photos, Vidéos, Divers), les fichiers, et envoyez. Les photos deviennent une galerie avec diaporama, les vidéos se
 jouent à la suite, le PDF s'ouvre dans le lecteur et le XML de la facture montre le résumé. Un manuel qui n'existe que sous
 forme de page web devient un PDF par le navigateur (**Imprimer → Enregistrer au format PDF**).
+
+**Ma femme (ou un ami) peut-elle voir ma collection ?**
+Oui. Dans **Approbations**, **Inviter** : son e-mail et ce qu'elle verra (une collection, ou tout ce qui est à vous). Elle
+reçoit un lien : sans compte, elle en crée un par ce lien ; avec un compte, elle se connecte et accepte. Ou elle demande
+elle-même l'accès (dans **Mon compte**, ou dès l'inscription), et vous approuvez. Pour retirer l'accès plus tard :
+**Approbations › Qui voit vos collections**.
+
+**Peut-on avoir plus d'une collection ?**
+Oui : **Mon compte › Nouvelle collection**. Elle peut utiliser un arbre de groupes que vous avez déjà (les définitions sont
+partagées : un nouveau champ vaut dans les deux) ou commencer avec le sien. Le sélecteur du menu change de collection.
+
+**J'ai créé le compte par l'inscription : va-t-il disparaître ?**
+Le compte de l'inscription ouverte est en démonstration pendant 30 jours (le `DEMO_DIAS` du serveur). Un e-mail prévient 7
+jours et 1 jour avant ; pour le garder, demandez à l'administrateur de le rendre officiel. Expiré, il part avec ses
+collections.
 
 **Pourquoi cette montre est-elle sortie, et pas une autre ?**
 Regardez sous son nom, sur la page **Aujourd'hui** ou sur la page **Plan** : chaque jour vient avec la raison du choix. Si
@@ -1502,6 +1657,10 @@ défaut) : à chaque nouvelle copie, les plus anciennes s'en vont. Un dossier à
   copie dans le dossier des sauvegardes et restaurez.
 - **Par l'API :** `recurso=backup` (l'état et les copies ; `arquivo=` en télécharge une), et les écritures `fazer` et
   `restaurar`.
+- **Ce qui a été supprimé reste dans les sauvegardes d'avant.** Supprimer un compte, une collection ou une montre retire tout
+  de la base et les fichiers du dossier aussitôt, mais les sauvegardes faites avant gardent ce qu'il y avait, jusqu'à ce
+  qu'elles partent selon la règle du `BACKUP_MANTER` (7 jours, sans la ligne). Pour l'effacer pour de bon, supprimez aussi les
+  anciennes sauvegardes du dossier.
 - **Pour la désactiver** (une autre routine copie déjà la base, ou c'est une installation de test) : `define("BACKUP_ATIVO", false);`
   dans le `config.php`. Le cron ne fait pas de copie, l'écriture `fazer` est refusée et le cadre **Sauvegarde** disparaît de la
   Configuration, avec l'avertissement que le dossier manque.
@@ -1567,18 +1726,28 @@ existe).
   [Le modèle de la base](#le-modèle-de-la-base)).
 - **À l'épreuve des erreurs :** sans jeton valide ou avec la base pas à jour, le système s'arrête et explique la raison, au
   lieu de tourner à moitié.
+- **Plusieurs personnes, séparées par la base :** chaque requête vaut dans une collection, et la couche de la base réécrit
+  chaque requête pour ne voir qu'elle (et son arbre) ; aucun écran ni aucune ressource n'a besoin de penser à filtrer. Une
+  collection que vous ne voyez pas répond 404, comme si elle n'existait pas.
 - **Six langues :** tout texte passe par `t()`, avec le portugais comme clé et un fichier par langue (voir
   [Les langues](#les-langues)).
 
 ### Le modèle de la base
 
-La base est relationnelle et normalisée (depuis la migration v16) : chaque chose dans une table, chaque lien entre tables une
-**clé étrangère**, et aucune liste gardée comme texte dans un champ. Supprimer directement dans la base ne laisse rien en
+La base est relationnelle et normalisée (depuis la migration v16 ; depuis la v25, en 60 tables) : chaque chose dans une
+table, chaque lien entre tables une **clé étrangère**, et aucune liste stockée comme texte dans un champ. Les comptes
+(`usuario`), les collections (`colecao`, avec le propriétaire et la racine de l'arbre), les membres (`colecao_usuario`),
+l'accès à tout d'un propriétaire (`acesso_dono`), les invitations, les demandes, les jetons, les appareils du Web Push, les
+destinations (`destino` et une table par type) et les agendas (`agenda` et une table par type). L'arbre (`no`) a la racine
+avec le propriétaire et les groupes qui pointent vers celui du dessus ; ses définitions (champs, types, formules, alertes,
+catégories) pointent vers un groupe de l'arbre ; ce qui est à la collection (montres, modes, plan, événements,
+configuration, accessoires) pointe vers la collection. Les liens facultatifs sont devenus des tables d'une ligne (la montre
+d'un accessoire, la montre fixe d'un bloc, le bloc d'un jour du plan). Effacer directement dans la base ne laisse rien en
 suspens :
 
 | Le lien | À la suppression du parent | Où |
 |---|---|---|
-| obligatoire (la ligne n'existe pas sans le parent) | **disparaît avec lui** (`ON DELETE CASCADE`) | un groupe emporte les groupes qu'il contient, les montres, les champs, les types de saisie, les formules et ses alertes ; une montre emporte les saisies, les valeurs, les photos, les documents, le plan et ses propres critères ; une saisie emporte la mesure de consommation ; et ainsi de suite |
+| obligatoire (la ligne n'existe pas sans celle du dessus) | **disparaît avec** (`ON DELETE CASCADE`) | un compte emporte ses collections et ses arbres ; une collection emporte les montres, les modes, le plan, les destinations et les agendas ; un arbre emporte les collections qui l'utilisent ; un groupe emporte les groupes qu'il contient, les montres, les champs, les types de saisie, les formules et ses alertes ; une montre emporte les saisies, les valeurs, les photos, les documents, le plan et ses critères propres ; une saisie emporte la mesure de la dépense ; et ainsi de suite |
 | facultatif (la colonne accepte le vide) | **le lien se défait** (`ON DELETE SET NULL`) | la montre d'un événement personnalisé, le groupe et la montre fixe d'un bloc de mode, le bloc d'un jour du plan, le type de saisie qui résout une alerte, la montre d'un accessoire (l'accessoire devient indépendant) |
 
 Par l'écran (**Groupes**, Supprimer), supprimer un groupe passe toujours d'abord ce qui lui appartenait (les groupes qu'il
@@ -1587,14 +1756,15 @@ supprime directement dans la base.
 
 Les listes sont devenues des tables : les jours d'un bloc de mode (`modo_bloco_dia`) et d'un événement hebdomadaire
 (`evento_dia`), les types de fichier qu'accepte une catégorie de documents (`documento_categoria_aceita`), les options d'un
-champ de liste (`campo_opcao`) et, pour chaque canal et chaque type d'alerte, s'il part, s'il a son propre message et son texte
-(`canal_aviso`). Le mode en usage est la colonne `ativo` du mode, et la mesure de consommation arrive à la montre par la saisie
-qui l'a fermée. La table `config` ne garde que des valeurs isolées (horaires, seuils, marques).
+champ liste (`campo_opcao`) et, pour chaque destination et chaque agenda, ce qu'elles reçoivent (`destino_aviso`,
+`destino_evento`, `agenda_aviso`, `agenda_evento`). Le mode en usage est la colonne `ativo` du mode, et la mesure de la
+dépense arrive à la montre par la saisie qui l'a fermée. La table `config` ne garde que les valeurs isolées de chaque
+collection, et la `sistema`, celles de tout le système.
 
-Trois références restent **par le nom**, exprès : les formules et les critères citent les champs et les formules par
-l'identifiant (c'est le texte que vous écrivez, comme `HORAS("pulso"; 30)`), et le `canal_aviso` cite l'alerte par
-l'identifiant, car une alerte peut avoir plusieurs versions (une par groupe) et le canal vaut pour toutes. Quand la dernière
-version d'une alerte est supprimée, le système supprime avec elle ses lignes dans le `canal_aviso`.
+Trois références passent **par le nom**, exprès : les formules et les critères citent champs et formules par l'identifiant
+(c'est le texte que vous écrivez, comme `HORAS("pulso"; 30)`), et le `destino_aviso` et l'`agenda_aviso` citent l'alerte
+par l'identifiant, car une alerte peut avoir plusieurs versions (une par groupe) et le choix vaut pour toutes. Quand la
+dernière version d'une alerte est effacée, le système efface ses lignes avec elle.
 
 **La base valide ce qu'elle garde** (depuis la migration v17), avec les outils du SQL standard, et pas seulement le système :
 une écriture erronée est refusée d'où qu'elle vienne (l'écran, l'API, quelqu'un qui touche directement la base). L'API répond
@@ -1640,17 +1810,22 @@ vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des
 |---|---|
 | [`api.php`](api.php) | l'API, la porte de toute lecture et écriture (l'authentification, le format, l'ordre des ressources, les filtres, la réponse), avec la documentation complète dans l'en-tête |
 | [`api/`](api/) | les grosses ressources de l'API, un fichier chacune (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `ajuda.php`...), plus ses fonctions (`funcoes.php`) et les écritures (`escrita.php`) : elles tournent dans le `api.php`, et ouvertes directement elles ne font rien (le `.htaccess` et le `nginx-relogios.conf` bloquent le dossier) |
-| [`lib.php`](lib.php) | le noyau : connexion, arbre, moteur de formules, alertes, critères, rotation, planning, messages, agenda |
+| [`lib.php`](lib.php) | le noyau : identification, arbre, moteur de formules, alertes, critères, rotation, planning, documents |
+| [`colecoes.php`](colecoes.php) | les collections dans le noyau : la portée de la requête, le `modelo.json`, les secrets chiffrés, la table `sistema`, la migration v25 et l'impact des suppressions |
+| [`alertas.php`](alertas.php) | les destinations (webhook, e-mail, Web Push) et les agendas (Google, CalDAV, Outlook, ICS) |
+| [`contas.php`](contas.php) | les comptes : l'inscription ouverte, Mon compte, les collections et les arbres, les invitations, les demandes, les jetons et le panneau du master |
 | [`banco.php`](banco.php) | la base : la connexion à MySQL, Postgres, SQLite ou Firebird, et la traduction du SQL de l'une à l'autre |
 | [`operacoes.php`](operacoes.php) | les règles de chaque écriture : validations et messages |
 | [`cron.php`](cron.php) | le plan, la session du jour, les passages du matin et du soir, les événements, l'agenda et l'entretien des documents |
-| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `usuarios.php` | les pages (seulement le squelette) |
+| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | les pages (seulement le squelette ; `cadastro.php` est la page publique) |
+| `push.js` | le service worker du Web Push |
 | `ajuda.php` | la page d'aide : seulement le squelette ; le `ajuda.js` demande le texte à l'API (`recurso=manual` : les sections du README pour les utilisateurs, déjà en HTML, converties dans le `lib.php`) |
 | [`pagina.php`](pagina.php) | le haut avec le menu et la fin des pages (la connexion appartient à l'API : `recurso=entrar`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | les écrans, construits dans le navigateur à partir de l'API |
 | [`estilo.css`](estilo.css) | l'apparence |
 | [`textos/`](textos/) | les langues : `funcoes.php` (la fonction `t()`, la liste des langues, la langue de la requête, les dates et les nombres de chaque langue) et un fichier par langue (`en.php`, `zh-CN.php`, `hi.php`, `es.php`, `fr.php` : le texte en portugais => la traduction, par partie) ; ouverts directement, ils ne font rien |
-| [`schema.sql`](schema.sql) | la structure de la base et l'ensemble initial (groupes, champs, formules, alertes, modes, critères) |
+| [`schema.sql`](schema.sql) | la structure de la base (seulement la structure : sans données) |
+| [`modelo.json`](modelo.json) | l'ensemble initial d'une nouvelle collection (groupes, champs, types, formules, alertes, critères, catégories, modes, messages), sans codes fixes |
 | `migracao_v2.sql` … `migracao_v24.sql` | les migrations, appliquées par la page Configuration |
 | [`config.exemplo.php`](config.exemplo.php) | le modèle du `config.php` |
 | [`instalar.php`](instalar.php) | installe le `schema.sql` sur la base du `config.php`, n'importe laquelle (la même chose que `recurso=instalacao`) |
@@ -1675,8 +1850,8 @@ Les améliorations sont les bienvenues, et le chemin passe toujours par ce dép�
 2. Faites un fork sur GitHub, créez une branche et faites le changement. Le fork sert seulement à préparer la proposition (voir
    la [licence](#licence)).
 3. **Suivez la manière du code :** PHP et JavaScript purs, sans dépendances, commentaires et messages en portugais (les
-   traductions vont dans `textos/`). Ce qui est connaissance sur les montres va dans les définitions (`schema.sql`), pas dans le
-   code.
+   traductions vont dans `textos/`). Ce qui est connaissance sur les montres va dans l'ensemble initial (`modelo.json`), pas
+   dans le code.
 4. Vous avez changé la base ? Créez une `migracao_vN.sql` et enregistrez-la dans `$MIGRACOES` dans le `lib.php` : la structure
    dans le dialecte de MySQL, les données en SQL commun aux quatre bases (voir [Les mises à jour de la base](#les-mises-à-jour-de-la-base)).
 5. Vous avez changé l'API ? **Expliquez chaque nouveau champ** dans le dictionnaire de l'aide : le `"campos"` du

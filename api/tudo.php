@@ -97,12 +97,17 @@ foreach (avisos_todos() as $versoes) {
 $saida = ["arvore" => $arvore, "campos" => $campos, "lancamento_tipos" => $tipos_l, "formulas" => $formulas, "avisos" => $avisos, "relogios" => $relogios,
     "documento_categorias" => documento_categorias_lista(), "modos" => $modos, "plano" => plano_legivel("", ""), "plano_livre" => dias_livres("", ""), "acessorios" => acessorios_lista(), "config" => (object)$config,
     "eventos" => array_map("evento_legivel", eventos_com_dias(linhas("SELECT * FROM evento_personalizado ORDER BY nome"))),
-    "agenda" => ["criados" => linhas("SELECT chave, google_id, data, titulo, assinatura, criado FROM agenda_evento ORDER BY data, chave"), "desejados" => agenda_legivel()],
+    "destinos" => array_values(array_map("destino_legivel", destinos())),
+    "agendas" => array_values(array_map(function ($ag) {
+        return array_merge(agenda_legivel($ag), ["criados" => linhas("SELECT chave, externo_id, data, titulo, assinatura, criado FROM agenda_sincronizado WHERE agenda_id = ? ORDER BY data, chave", [$ag["id"]])]);
+    }, agendas())),
+    "agendas_desejadas" => agendas_desejadas(),
     "criterios" => montar_criterios(),
-    "cron" => ["ultima" => cfg("cron_ultima_execucao"), "erro" => cfg("cron_erro"), "execucoes" => array_map(function ($x) {
+    "cron" => ["ultima" => sis("cron_ultima_execucao"), "erro" => sis("cron_erro"), "execucoes" => array_map(function ($x) {
         return ["id" => (int)$x["id"], "inicio" => $x["inicio"], "fim" => $x["fim"], "duracao_ms" => (int)$x["duracao_ms"], "teve_atividade" => (int)$x["teve_atividade"] === 1,
             "teve_erro" => (int)$x["teve_erro"] === 1, "registro" => $x["registro"]];
-    }, linhas("SELECT * FROM cron_execucao ORDER BY inicio DESC, id DESC"))],
+    }, linhas("SELECT e.id, e.inicio, e.fim, e.duracao_ms, c.teve_atividade, c.teve_erro, c.registro FROM cron_execucao e JOIN cron_execucao_colecao c ON c.execucao_id = e.id
+        ORDER BY e.inicio DESC, e.id DESC"))],
     "usuarios" => usuarios_catalogo(),
     "migracoes" => ["pendentes" => []],
     "motor" => ["funcoes" => array_map(function ($f) { return $f[2]; }, $FUNCOES), "tipos_de_campo" => $TIPOS_CAMPO, "formatos_de_lancamento" => $FORMATOS_LANCAMENTO]];

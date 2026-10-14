@@ -2,24 +2,12 @@
 // desatualizado (recurso=migracoes com pendentes), só o aviso e o botão de aplicar.
 var recadoConfig = "";
 
-// "Inserir âncora": a lista das âncoras, que põe a escolhida onde está o cursor do campo alvo
-function listaAncoras(d, alvo, rotulo) {
-  return el("select", {"class": "ancora", "data-alvo": alvo, "aria-label": rotulo}, el("option", {"value": ""}, t("Inserir âncora")) + Object.keys(d.ancoras).map(function (k) {
-    return el("option", {"value": "{" + k + "}"}, h("{" + k + "} " + d.ancoras[k]));
-  }).join(""));
-}
-
 // Um quadro da Configuração: o título, o conteúdo e, se houver, o pé (a explicação e os botões, sempre embaixo: os quadros
 // da mesma linha têm a mesma altura)
 function cartao(titulo, corpo, pe) {
   return el("section", {"class": "cartao-config"}, el("h2", {}, h(titulo)) + el("div", {"class": "cartao-corpo"}, corpo) + (pe ? el("div", {"class": "cartao-pe"}, pe) : ""));
 }
 
-// Uma opção numa linha: o rótulo à esquerda e o campo à direita, na mesma coluna em todos os quadros. "check": a caixa no
-// lugar do campo; "largo": o rótulo em cima e o campo na largura toda (textos longos, como um endereço)
-function parCampo(rotulo, controle, tipo) {
-  return el("label", {"class": "par-campo" + (tipo ? " " + tipo : "")}, el("span", {"class": "rotulo"}, h(rotulo)) + el("span", {"class": "controle"}, controle));
-}
 
 // Evento personalizado: mostra só os campos da repetição escolhida
 function mostrarRepeticao() {
@@ -53,7 +41,8 @@ function recarregarConfig(aplicadas) {
       }
       document.getElementById("configuracao").innerHTML = el("section", {"class": "cartao-config aviso-banco"}, res);
     } else {
-      return Promise.all([api({recurso: "config"}), api({recurso: "backup"})]).then(function (rs) {
+      // a cópia de segurança é do sistema inteiro: só o master vê (os outros recebem 403, e o quadro não aparece)
+      return Promise.all([api({recurso: "config"}), api({recurso: "backup"}).catch(function () { return null; })]).then(function (rs) {
         var d = rs[0];
         var bk = rs[1];
         var c = d.config;
@@ -68,12 +57,12 @@ function recarregarConfig(aplicadas) {
         var ce = d.cron_estado;
         var cron = ce.situacao === "rodando" ? el("p", {"class": "nota"}, h(ce.texto))
           : el("p", {"class": "alerta-cron"}, h(ce.texto.replace(ce.crontab, "")) + el("code", {}, h(ce.crontab)));
-        if (cfg("cron_erro") !== "") {
-          cron += el("div", {"class": "erro-cron"}, el("strong", {}, t("O cron está com erro")) + el("pre", {}, h(cfg("cron_erro"))) + el("span", {"class": "nota"}, t("Some sozinho na primeira execução sem erro.")));
+        if (ce.erro) {
+          cron += el("div", {"class": "erro-cron"}, el("strong", {}, t("O cron está com erro")) + el("pre", {}, h(ce.erro)) + el("span", {"class": "nota"}, t("Some sozinho na primeira execução sem erro.")));
         }
         cron += el("p", {"class": "nota"}, t("{1}, com filtro de datas e busca.", {1: el("a", {"href": "execucoes.php", "target": "_blank", "rel": "noopener"}, t("Ver todas as execuções do cron"))}));
-        if (cfg("cron_registro") !== "") {
-          cron += el("details", {"class": "registro-cron"}, el("summary", {}, t("Registro da última rodada")) + el("pre", {}, h(cfg("cron_registro"))));
+        if (ce.registro) {
+          cron += el("details", {"class": "registro-cron"}, el("summary", {}, t("Registro da última rodada")) + el("pre", {}, h(ce.registro)));
         }
         // ---------- os quadros do alto: cada opção numa linha, o rótulo à esquerda e o campo à direita, todos alinhados ----------
         var hora = function (nome, valor) { return el("input", {"type": "time", "name": nome, "value": valor}); };
@@ -108,7 +97,8 @@ function recarregarConfig(aplicadas) {
             + el("option", {"value": "pulso", "selected": cfg("destaque_hoje") === "pulso"}, t("O relógio no pulso agora"))))
           + parCampo(t("Próximos dias (página Hoje): mostrar até (dias por página)"), numero("proximos_por_pagina", String(d.mostrar_ate.proximos), "1", "366"))
           + parCampo(t("Plano: mostrar até (dias por página)"), numero("plano_por_pagina", String(d.mostrar_ate.plano), "1", "366"))
-          + parCampo(t("Endereço do sistema (a âncora {link})"), el("input", {"name": "url_sistema", "value": cfg("url_sistema"), "placeholder": "http://servidor/relogios"}), "largo")),
+          + parCampo(t("Endereço do sistema (a âncora {link})"), d.sistema.pode_mudar ? el("input", {"name": "url_sistema", "value": d.sistema.url_sistema, "placeholder": "http://servidor/relogios"})
+            : el("span", {}, d.sistema.url_sistema !== "" ? h(d.sistema.url_sistema) : t("(o do pedido; só o master muda)")), "largo")),
           el("p", {"class": "nota"}, t("<strong>Ao lado da lista:</strong> o relógio clicado abre num painel à direita, e a lista continua à vista. <strong>Numa janela flutuante:</strong> abre grande, ")
             + t("no meio da tela, com os quadros lado a lado; fecha no ×, no Esc ou num clique fora. No celular, os dois cobrem a tela inteira."))
           + el("p", {"class": "nota"}, t("<strong>Destaque:</strong> o quadro grande no alto da página Hoje mostra o relógio do dia (o do plano) ou o que está no pulso agora, ")
@@ -123,61 +113,28 @@ function recarregarConfig(aplicadas) {
           + parCampo(t("Último lote"), el("span", {}, al.ultimo_lote ? h(al.ultimo_lote.replace(/ em (\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2}).*/, " em $3/$2/$1 $4")) : t("nenhum ainda")))
           + (al.fora_desde ? parCampo(t("Serviços fora"), el("span", {"class": "acao"}, t("os dois sem responder desde {1} {2}; o sistema tenta de novo depois de 10 minutos", {1: dataBr(al.fora_desde), 2: horaBr(al.fora_desde)}))) : "")),
           el("p", {"class": "nota"}, t("Todo sorteio do sistema (o rodízio totalmente aleatório, o sorteio pela nota e o desempate de notas iguais na escala) usa estes números. Eles chegam num lote, e cada sorteio usa só o que precisa, sem viés.")));
-        var telegram = cartao(t("Telegram (API de alerta)"), el("div", {"class": "campos"}, parCampo(t("Enviar alertas"), marca("alerta_ativo", cfg("mensagens_ativas") === "1"), "check")),
-          el("p", {"class": "nota"}, t("O endereço e o destinatário ficam no config.php. O texto de cada aviso vem da mensagem padrão do Telegram ou da personalizada dele, em \"O que vai para onde\".")));
-        var agenda = cartao(t("Google Agenda"), el("div", {"class": "campos"},
-          parCampo(t("Criar eventos na agenda"), marca("agenda_ativa", cfg("agenda_ativa") === "1"), "check")
-          + parCampo(t("Antecedência dos eventos (dias)"), numero("agenda_antecedencia", cfg("agenda_antecedencia"), "1", "365"))
-          + parCampo(t("ID da agenda"), el("input", {"name": "agenda_id", "value": cfg("agenda_id"), "placeholder": t("xxxx@group.calendar.google.com")}), "largo")
-          + parCampo(t("Caminho da chave JSON no servidor"), el("input", {"name": "agenda_chave", "value": cfg("agenda_chave"), "placeholder": d.pasta + "/google-conta-servico.json"}), "largo"))
-          + (d.chave_agenda ? el("p", {"class": "nota"}, t("Chave encontrada. Compartilhe a agenda com {1}, com permissão para fazer alterações nos eventos.", {1: el("strong", {"class": "quebra"}, h(d.chave_agenda.client_email))}))
-            : el("p", {"class": "nota"}, t("Nenhuma chave válida nesse caminho. Confira o nome do arquivo e se o usuário do PHP-FPM (www-data) tem permissão de leitura."))),
-          el("p", {"class": "nota"}, t("O teste cria um evento daqui a 10 minutos, no formato dos modelos. Salve antes de testar."))
-          + el("button", {"type": "submit", "form": "f-teste-criar", "class": "leve"}, t("Criar evento de teste"))
-          + el("button", {"type": "submit", "form": "f-teste-remover", "class": "leve", "disabled": cfg("agenda_teste_id") === ""}, t("Remover evento de teste")));
-        // ---------- Mensagem padrão ----------
-        var modelos = Object.keys(d.canais).map(function (canal) {
-          var cn = d.canais[canal];
-          return el("div", {"class": "cartao-config"}, el("div", {"class": "campo-modelo"}, el("div", {"class": "rotulo-modelo"}, el("label", {"for": canal + "_padrao"}, el("h3", {}, h(cn.nome)))
-            + listaAncoras(d, canal + "_padrao", t("Inserir âncora na mensagem padrão do {1}", {1: cn.nome})))
-            + el("textarea", {"id": canal + "_padrao", "name": canal + "_padrao", "rows": "7"}, h(cfg(canal + "_padrao"))) + el("p", {"class": "nota"}, h(cn.ajuda))));
-        }).join("");
-        var padrao = el("section", {}, el("h2", {}, t("Mensagem padrão"))
-          + el("p", {"class": "nota"}, t("Todo aviso usa a mensagem padrão do canal, a não ser que tenha a sua personalizada, marcada em \"O que vai para onde\". As âncoras entre chaves, como {relogio}, viram os valores na hora de enviar; \"Inserir âncora\" põe uma onde está o cursor."))
-          + el("div", {"class": "modelos"}, modelos)
-          + el("details", {"class": "lista-ancoras"}, el("summary", {}, t("O que cada âncora vira")) + el("table", {"class": "compacta"}, el("tbody", {}, Object.keys(d.ancoras).map(function (k) {
-            return el("tr", {}, el("td", {}, el("code", {}, "{" + k + "}")) + el("td", {}, h(d.ancoras[k])));
-          }).join("")))));
-        // ---------- O que vai para onde ----------
-        var canais = Object.keys(d.canais);
-        var linhas = d.tipos.map(function (item) {
-          var nome = h(item.nome);
-          if (item.evento !== null) {
-            nome += " " + el("span", {"class": "acoes-ev"}, el("a", {"href": "configuracao.php?evento=" + item.evento + "#personalizados"}, "editar") + " "
-              + el("button", {"type": "submit", "form": "f-evento-excluir", "name": "evento_id", "value": item.evento, "class": "discreto",
-                "onclick": "return confirm(" + JSON.stringify(t("Excluir o evento {1}?", {1: item.nome})) + ")"}, "excluir"));
-          }
-          var linha = el("td", {}, nome) + el("td", {}, h(item.quando)) + canais.map(function (canal) {
-            return el("td", {"class": "centro"}, el("input", {"type": "checkbox", "name": d.canais[canal].tipos + "[]", "value": item.tipo, "checked": item.canais[canal].marcado,
-              "aria-label": t("{1} no {2}", {1: item.nome, 2: d.canais[canal].nome})}));
-          }).join("") + el("td", {"class": "proprios"}, canais.map(function (canal) {
-            return el("label", {"class": "check"}, el("input", {"type": "hidden", "name": canal + "_proprio_" + item.tipo, "value": "0"}) + el("input", {"type": "checkbox", "name": canal + "_proprio_" + item.tipo,
-              "value": "1", "data-mostra": "bloco_" + canal + "_" + item.tipo, "checked": item.canais[canal].proprio}) + " " + h(d.canais[canal].nome));
-          }).join(""));
-          var corpo = el("td", {"colspan": 3 + canais.length}, canais.map(function (canal) {
-            return el("div", {"class": "campo-modelo", "id": "bloco_" + canal + "_" + item.tipo, "hidden": !item.canais[canal].proprio}, el("div", {"class": "rotulo-modelo"},
-              el("label", {"for": canal + "_corpo_" + item.tipo}, t("{1}, personalizado no {2}", {1: h(item.nome), 2: h(d.canais[canal].nome)})) + listaAncoras(d, canal + "_corpo_" + item.tipo, t("Inserir âncora")))
-              + el("textarea", {"id": canal + "_corpo_" + item.tipo, "name": canal + "_corpo_" + item.tipo, "rows": "3", "placeholder": t("Vazio usa a mensagem padrão do {1}", {1: d.canais[canal].nome})}, h(item.canais[canal].corpo)));
-          }).join(""));
-          return el("tr", {"class": item.evento !== null ? "personalizado" : null}, linha) + el("tr", {"class": "linha-corpo"}, corpo);
-        }).join("");
-        var paraOnde = el("section", {}, el("h2", {}, t("O que vai para onde"))
-          + el("p", {"class": "nota"}, t("Marque \"Personalizar\" num canal para aquele aviso ter uma mensagem só dele, no lugar da mensagem padrão do canal. Cada canal tem a sua."))
-          + canais.map(function (canal) { return el("input", {"type": "hidden", "name": d.canais[canal].tipos + "[]", "value": ""}); }).join("")
-          + el("div", {"class": "rolagem"}, el("table", {"class": "relogios canais"}, el("thead", {}, el("tr", {}, el("th", {}, t("Aviso")) + el("th", {}, t("Quando"))
-            + canais.map(function (canal) { return el("th", {"class": "centro"}, h(d.canais[canal].nome)); }).join("") + el("th", {}, t("Personalizar")))) + el("tbody", {}, linhas))));
+        // os destinos das mensagens e as agendas têm as páginas deles: aqui, o resumo e o caminho
+        var listaAlvos = function (lista, campo, vazio) {
+          return lista.length > 0 ? el("ul", {"class": "lista-simples"}, lista.map(function (x) {
+            return el("li", {}, h(x.nome) + " " + el("span", {"class": "nota"}, "(" + h(x.tipo) + (x[campo] ? "" : ", " + t("desligado")) + ")"));
+          }).join("")) : el("p", {"class": "nota"}, vazio);
+        };
+        var alertas = cartao(t("Mensagens e agendas"), el("div", {"class": "campos"},
+          el("h3", {}, el("a", {"href": "destinos.php"}, t("Destinos das mensagens"))) + listaAlvos(d.destinos, "ativo", t("Nenhum ainda: as mensagens da manhã, da noite e os avisos não saem para lugar nenhum."))
+          + el("h3", {}, el("a", {"href": "agendas.php"}, t("Agendas"))) + listaAlvos(d.agendas, "ativa", t("Nenhuma ainda."))),
+          el("p", {"class": "nota"}, t("Um destino é um webhook (Telegram, n8n...), um e-mail ou o Web Push do navegador; uma agenda é o Google, um CalDAV (Nextcloud, iCloud, Fastmail), o Outlook ou um link ICS para assinar em qualquer app. Cada um escolhe o que recebe e tem a sua mensagem.")));
+        // os eventos personalizados: editar e excluir
+        var eventosLista = d.eventos.length === 0 ? el("p", {"class": "nota"}, t("Nenhum evento ainda."))
+          : el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados"}, el("thead", {}, el("tr", {}, [t("Evento"), t("Quando"), t("Relógio"), t("Vai para"), ""].map(function (x) { return el("th", {}, x); }).join("")))
+            + el("tbody", {}, d.eventos.map(function (ev) {
+              return el("tr", {"class": ev.ativo ? null : "inativo"}, el("td", {}, h(ev.nome) + (ev.ativo ? "" : " " + el("span", {"class": "nota"}, t("(desligado)"))))
+                + el("td", {}, h(ev.descricao)) + el("td", {}, ev.relogio ? h(ev.relogio) : "—")
+                + el("td", {}, h(ev.destinos.concat(ev.agendas).join(", ")) || "—")
+                + el("td", {"class": "acoes-linha"}, el("a", {"href": "configuracao.php?evento=" + ev.id + "#personalizados"}, t("Editar")) + " "
+                  + el("button", {"type": "submit", "form": "f-evento-excluir", "name": "evento_id", "value": ev.id, "class": "discreto"}, t("Excluir"))));
+            }).join(""))));
         res += el("form", {"data-recurso": "config", "id": "form-config"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
-          + el("div", {"class": "config-grade"}, rotina + limites + tela + quadroCron + sorteios + telegram + agenda) + padrao + paraOnde
+          + el("div", {"class": "config-grade"}, rotina + limites + tela + quadroCron + sorteios + alertas)
           // salvar: uma barra presa no pé da tela enquanto a página rola, com o botão sempre no mesmo lugar
           + el("div", {"class": "barra-salvar"}, el("span", {"class": "nota"}, t("As mudanças desta página valem depois de salvar.")) + el("button", {}, t("Salvar configuração"))));
         res += el("form", {"data-recurso": "config", "id": "f-evento-excluir"}, el("input", {"type": "hidden", "name": "acao", "value": "evento_excluir"}));
@@ -211,29 +168,15 @@ function recarregarConfig(aplicadas) {
           + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "ativo", "value": "0"}) + el("input", {"type": "checkbox", "name": "ativo", "value": "1", "checked": fe.ativo}) + t(" Ativo"))
           + (edit ? el("p", {"class": "nota"}, t("Próximas vezes: {1}.", {1: edit.proximas_60.length > 0 ? h(edit.proximas_60.map(function (item) { return dataBr(item, true) + " " + horaBr(item); }).join(", "))
             : t("nenhuma nos próximos 60 dias")})) : "")
-          + el("p", {"class": "nota"}, t("Depois de salvar, o evento aparece na tabela \"O que vai para onde\", onde se escolhem os canais e o texto de cada um. Evento novo já vem marcado para o Telegram."))
+          + el("p", {"class": "nota"}, t("Evento novo já vai por todos os destinos da coleção. Em cada destino e cada agenda (páginas Destinos e Agendas), escolha se ele vai e com que texto."))
           + el("div", {"class": "botoes"}, el("button", {}, edit ? t("Salvar alterações") : t("Criar evento")) + (edit ? " " + el("a", {"href": "configuracao.php#personalizados"}, "cancelar") : ""));
         res += el("section", {"id": "personalizados"}, el("h2", {}, t("Eventos personalizados"))
-          + el("p", {"class": "nota"}, t("Um aviso seu, com horário e repetição próprios: todo dia, em dias da semana, todo mês, a cada N dias ou uma vez só. Os eventos já criados estão na tabela acima (editar e excluir ficam no nome deles)."))
+          + el("p", {"class": "nota"}, t("Um aviso seu, com horário e repetição próprios: todo dia, em dias da semana, todo mês, a cada N dias ou uma vez só."))
+          + eventosLista
           + el("details", {"class": "cartao-config novo-evento", "open": edit !== null || q.has("novo_evento")},
           el("summary", {}, edit ? t("Editar o evento {1}", {1: h(edit.nome)}) : t("Novo evento")) + el("form", {"data-recurso": "config", "class": "form-evento"}, formEvento)));
-        res += el("form", {"data-recurso": "config", "id": "f-teste-criar"}, el("input", {"type": "hidden", "name": "acao", "value": "teste_agenda_criar"}))
-          + el("form", {"data-recurso": "config", "id": "f-teste-remover"}, el("input", {"type": "hidden", "name": "acao", "value": "teste_agenda_remover"}));
-        // ---------- Como sai hoje ----------
-        var p = d.previa;
-        res += el("section", {}, el("h2", {}, t("Como sai hoje")) + el("div", {"class": "config-grade"},
-          el("div", {"class": "previa-msg"}, el("h3", {}, t("Telegram de manhã")) + el("pre", {}, p.manha !== "" ? h(p.manha) : t("(nada a enviar)"))
-            + el("form", {"data-recurso": "config"}, el("input", {"type": "hidden", "name": "acao", "value": "testar_manha"}) + el("button", {"class": "leve"}, t("Enviar agora"))))
-          + el("div", {"class": "previa-msg"}, el("h3", {}, t("Telegram à noite")) + el("pre", {}, p.noite !== "" ? h(p.noite) : t("(nada a enviar: amanhã continua o mesmo relógio)"))
-            + el("form", {"data-recurso": "config"}, el("input", {"type": "hidden", "name": "acao", "value": "testar_noite"}) + el("button", {"class": "leve"}, t("Enviar agora"))))
-          + el("div", {"class": "previa-msg"}, el("h3", {}, t("Agenda")) + p.agenda.map(function (a) {
-            return el("div", {"class": "previa-evento"}, el("div", {"class": "quando"}, dataBr(a.data, true) + "/" + a.data.substr(2, 2) + " " + h(a.hora)) + el("strong", {}, h(a.titulo))
-              + (a.descricao !== "" ? el("pre", {}, h(a.descricao)) : ""));
-          }).join("") + (p.agenda.length === 0 ? el("p", {"class": "nota"}, t("Nada previsto no período.")) : "")
-            + el("p", {"class": "nota"}, t("{1} eventos criados pelo sistema estão na agenda. Mudou um modelo? Sincronize: os eventos já criados são atualizados.", {1: p.sincronizados}))
-            + el("form", {"data-recurso": "config"}, el("input", {"type": "hidden", "name": "acao", "value": "sincronizar"}) + el("button", {"class": "leve"}, t("Sincronizar agora"))))));
         // ---------- Cópia de segurança (desligada no config.php, BACKUP_ATIVO = false: o quadro nem aparece) ----------
-        res += bk.ativo === false ? "" : el("section", {"id": "copia"}, el("h2", {}, t("Cópia de segurança"))
+        res += bk === null || bk.ativo === false ? "" : el("section", {"id": "copia"}, el("h2", {}, t("Cópia de segurança"))
           + (bk.pasta_ok
             ? el("p", {"class": "nota"}, t("Uma cópia do banco inteiro por dia, na rodada da noite, guardando as {1} mais novas, {2} o conteúdo dos documentos (os arquivos já ficam na pasta deles). A cópia volta em qualquer um dos três bancos, na mesma versão do sistema. {3}", {1: bk.manter, 2: bk.documentos ? "com" : "sem", 3: bk.ultima ? t("Última: {1} {2}.", {1: dataBr(bk.ultima), 2: horaBr(bk.ultima)}) : t("Nenhuma feita ainda.")}))
             : el("p", {"class": "alerta-cron"}, t("A cópia automática está desligada: {1}. Ponha no config.php a BACKUP_PASTA, uma pasta do servidor fora da pasta publicada.", {1: h(bk.pasta_erro)})))
@@ -259,28 +202,8 @@ function recarregarConfig(aplicadas) {
 }
 
 document.addEventListener("change", function (ev) {
-  // "Inserir âncora": põe a âncora escolhida onde está o cursor do campo
-  if (ev.target.matches("select.ancora")) {
-    var sel = ev.target;
-    var alvo = document.getElementById(sel.dataset.alvo);
-    if (alvo && sel.value) {
-      var i = alvo.selectionStart;
-      var f = alvo.selectionEnd;
-      alvo.value = alvo.value.slice(0, i) + sel.value + alvo.value.slice(f);
-      alvo.focus();
-      alvo.selectionStart = alvo.selectionEnd = i + sel.value.length;
-    }
-    sel.value = "";
-  }
   if (ev.target.matches("#ev-repeticao")) {
     mostrarRepeticao();
-  }
-  // "Corpo próprio": mostra ou esconde o campo do texto daquele aviso
-  if (ev.target.matches("input[data-mostra]")) {
-    var bloco = document.getElementById(ev.target.dataset.mostra);
-    if (bloco) {
-      bloco.hidden = !ev.target.checked;
-    }
   }
 });
 

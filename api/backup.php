@@ -22,6 +22,6 @@ if ($arq_b !== "") {
     $saida = ["erro" => t("cópia não encontrada")];
 } else {
     $saida = ["ativo" => backup_ativo(), "pasta_ok" => backup_pasta() !== null, "pasta_erro" => backup_pasta_erro() !== "" ? backup_pasta_erro() : null, "manter" => backup_manter(),
-        "documentos" => backup_com_documentos(), "versao" => array_key_last($MIGRACOES), "ultima" => cfg("backup_ultima") !== "" ? cfg("backup_ultima") : null,
+        "documentos" => backup_com_documentos(), "versao" => array_key_last($MIGRACOES), "ultima" => sis("backup_ultima") !== "" ? sis("backup_ultima") : null,
         "copias" => backup_lista()];
 }

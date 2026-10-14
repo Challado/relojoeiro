@@ -127,9 +127,27 @@ function ha_minutos($minutos)
 
 $foto = ["escritas" => [], "leituras" => [], "cron" => []];
 
+// os grupos do conjunto inicial (o modelo.json), pelo nome: os códigos dependem do banco (as coleções de cada pessoa
+// dividem a mesma numeração). G(1) a G(8): Smartwatch, Tradicional, Mecânico, Automático, Corda manual, Quartzo, Pilha, Solar
+$GRUPOS = [];
+foreach ((chamar("GET", ["recurso" => "arvore"])["json"]["grupos"] ?? []) as $g) {
+    $GRUPOS[$g["caminho"]] = (int)$g["id"];
+}
+function G($n)
+{
+    global $GRUPOS;
+    $caminhos = [1 => "Smartwatch", 2 => "Tradicional", 3 => "Tradicional › Mecânico", 4 => "Tradicional › Mecânico › Automático", 5 => "Tradicional › Mecânico › Corda manual",
+        6 => "Tradicional › Quartzo", 7 => "Tradicional › Quartzo › Pilha", 8 => "Tradicional › Quartzo › Solar"];
+    if (!isset($GRUPOS[$caminhos[$n]])) {
+        fwrite(STDERR, "O grupo " . $caminhos[$n] . " não está na árvore (" . implode(", ", array_keys($GRUPOS)) . ")\n");
+        exit(1);
+    }
+    return $GRUPOS[$caminhos[$n]];
+}
+
 // ---------- a árvore e os cadastros ----------
-$cron_g = escrever(["recurso" => "arvore", "acao" => "novo", "nome" => "Cronógrafos", "pai_id" => 3]);
-escrever(["recurso" => "arvore", "acao" => "novo", "nome" => "cronógrafos", "pai_id" => 3], false);   // o mesmo nome, outra caixa
+$cron_g = escrever(["recurso" => "arvore", "acao" => "novo", "nome" => "Cronógrafos", "pai_id" => G(3)]);
+escrever(["recurso" => "arvore", "acao" => "novo", "nome" => "cronógrafos", "pai_id" => G(3)], false);   // o mesmo nome, outra caixa
 escrever(["recurso" => "arvore", "acao" => "renomear", "id" => $cron_g, "nome" => "Cronógrafos automáticos"]);
 escrever(["recurso" => "arvore", "acao" => "ordem", "id" => $cron_g, "direcao" => "sobe"]);
 escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "resistencia_agua", "nome" => "Resistência à água", "tipo" => "inteiro", "unidade" => "m", "no_id" => 0]);
@@ -143,25 +161,25 @@ escrever(["recurso" => "avisos", "acao" => "novo", "identificador" => "pulseira"
 // ---------- os relógios, um de cada tipo ----------
 $hoje = date("Y-m-d");
 $rel = [];
-$rel["smart"] = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Xiaomi Band 8", "no_id" => 1, "disponivel" => 1,
+$rel["smart"] = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Xiaomi Band 8", "no_id" => G(1), "disponivel" => 1,
     "valores" => ["preferencia" => 71, "autonomia_dias" => 14, "data_compra" => date("Y-m-d", strtotime("-200 days")), "valor_compra" => "249.90", "loja" => "AliExpress", "estilo" => "Esportivo"]]);
-$rel["auto"] = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Seiko 5 Sports", "no_id" => 4, "disponivel" => 1,
+$rel["auto"] = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Seiko 5 Sports", "no_id" => G(4), "disponivel" => 1,
     "valores" => ["preferencia" => 88, "reserva_horas" => 41, "data_compra" => date("Y-m-d", strtotime("-500 days")), "valor_compra" => "1890", "loja" => "Loja Física",
         "data_revisao" => date("Y-m-d", strtotime("-50 months")), "intervalo_revisao_meses" => 48, "resistencia_agua" => 100, "garantia_ate" => date("Y-m-d", strtotime("+20 days"))]]);
-$rel["auto2"] = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Orient Bambino", "no_id" => 4, "disponivel" => 1,
+$rel["auto2"] = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Orient Bambino", "no_id" => G(4), "disponivel" => 1,
     "valores" => ["preferencia" => 64, "reserva_horas" => 40, "corda_manual" => 0, "carga_winder_horas" => 6, "carga_winder_reserva" => 30, "valor_compra" => "1200.50"]]);
-$rel["manual"] = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Poljot corda manual", "no_id" => 5, "disponivel" => 1,
+$rel["manual"] = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Poljot corda manual", "no_id" => G(5), "disponivel" => 1,
     "valores" => ["preferencia" => 57, "reserva_horas" => 36]]);
-$rel["pilha"] = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Casio F-91W", "no_id" => 7, "disponivel" => 1,
+$rel["pilha"] = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Casio F-91W", "no_id" => G(7), "disponivel" => 1,
     "valores" => ["preferencia" => 45, "data_pilha" => date("Y-m-d", strtotime("-23 months")), "vida_pilha_meses" => 24, "valor_compra" => "99"]]);
-$rel["solar"] = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Citizen Eco-Drive", "no_id" => 8, "disponivel" => 1,
+$rel["solar"] = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Citizen Eco-Drive", "no_id" => G(8), "disponivel" => 1,
     "valores" => ["preferencia" => 79, "reserva_dias" => 180, "carga_sol_horas" => 10, "data_compra" => date("Y-m-d", strtotime("-10 days"))]]);
 $rel["crono"] = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Relógio Ácido Ômega", "no_id" => $cron_g, "disponivel" => 1,
     "valores" => ["preferencia" => 93, "reserva_horas" => 50]]);
-$rel["fora"] = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "No conserto", "no_id" => 6, "disponivel" => 0, "valores" => ["preferencia" => 30]]);
+$rel["fora"] = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "No conserto", "no_id" => G(6), "disponivel" => 0, "valores" => ["preferencia" => 30]]);
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto"], "valores" => ["preferencia" => "abc", "observacao" => "Presente do avô — ótimo"]], false);
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["smart"], "valores" => ["loja" => ""]]);
-escrever(["recurso" => "arvore", "acao" => "relogios", "grupo" => [$rel["crono"] => $cron_g, $rel["fora"] => 7]]);
+escrever(["recurso" => "arvore", "acao" => "relogios", "grupo" => [$rel["crono"] => $cron_g, $rel["fora"] => G(7)]]);
 // a foto: um PNG de 1x1 (o binário tem de voltar igual)
 $png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 escrever(["recurso" => "relogio", "acao" => "foto", "id" => $rel["auto"], "foto_base64" => $png]);
@@ -202,7 +220,7 @@ $lanc("periodo", "smart", "carregador", ["inicio" => dia(7, "20:00"), "fim" => d
 $lanc("iniciar", "smart", "carregador", ["quando" => ha_minutos(330)]);
 $lanc("lancar", "crono", "banho_ultrassom", ["quando" => dia(1, "15:00")]);
 $id_errado = $lanc("lancar", "crono", "banho_ultrassom", ["quando" => dia(1, "16:00")]);
-escrever(["recurso" => "lancamento", "acao" => "excluir", "id" => $id_errado]);
+escrever(["recurso" => "lancamento", "acao" => "excluir", "id" => $id_errado, "confirmar" => 1]);
 escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["pilha"], "tipo" => "sol"], false);   // o tipo não vale para ele
 escrever(["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel["pilha"], "tipo" => "carregador"], false);   // só onde vale a leitura de carga
 // alternar: fecha a sessão aberta e abre de novo (um botão só no celular); não vale para o que não é sessão. As duas no mesmo
@@ -216,7 +234,7 @@ escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["s
 // ---------- os critérios ----------
 escrever(["recurso" => "criterios", "acao" => "conjunto_criar", "escopo" => "r:" . $rel["crono"], "origem" => "herdado"]);
 escrever(["recurso" => "criterios", "acao" => "param_novo", "escopo" => "r:" . $rel["crono"], "nome" => "Estilo", "peso" => 15]);
-escrever(["recurso" => "criterios", "acao" => "param_novo", "escopo" => "g:1", "nome" => "Idade", "peso" => 10]);
+escrever(["recurso" => "criterios", "acao" => "param_novo", "escopo" => "g:" . G(1), "nome" => "Idade", "peso" => 10]);
 
 // ---------- os eventos, a configuração, os usuários ----------
 escrever(["recurso" => "config", "acao" => "salvar", "max_sem_uso" => 15, "previsao_limite" => 25, "uso_inicio" => "07:30", "uso_fim" => "22:00"]);
@@ -224,6 +242,17 @@ escrever(["recurso" => "config", "acao" => "evento_salvar", "id" => 0, "nome" =>
 escrever(["recurso" => "config", "acao" => "evento_salvar", "id" => 0, "nome" => "Ajustar a hora do Seiko", "repeticao" => "intervalo", "intervalo_dias" => 10, "hora" => "08:15", "relogio_id" => $rel["auto"]]);
 escrever(["recurso" => "usuarios", "acao" => "salvar", "login" => "maria", "senha" => "segredo123"]);
 escrever(["recurso" => "usuarios", "acao" => "salvar", "login" => "MARIA", "senha" => "outra12345"], false);
+
+// ---------- os destinos e as agendas (desligados: nada sai do servidor de teste; o link ICS é sorteado, e fica de fora) ----------
+escrever(["recurso" => "destinos", "acao" => "salvar", "id" => 0, "tipo" => "webhook", "nome" => "Telegram de teste", "ativo" => 0, "metodo" => "POST", "url" => "https://exemplo.invalid/enviar",
+    "formato" => "json", "campo_nome" => ["chat_id", "text"], "campo_valor" => ["123", "{mensagem}"], "cabecalho_nome" => ["Authorization"], "cabecalho_valor" => ["Bearer segredo"],
+    "envia" => ["dia", "vespera", "corda"], "modelo_corda" => "Corda no {relogio}!"]);
+escrever(["recurso" => "destinos", "acao" => "salvar", "id" => 0, "tipo" => "email", "nome" => "E-mail de teste", "ativo" => 0, "para" => "teste@exemplo.com"]);
+escrever(["recurso" => "destinos", "acao" => "salvar", "id" => 0, "tipo" => "webpush", "nome" => "Celular", "ativo" => 0, "usuario_id" => 1]);
+escrever(["recurso" => "destinos", "acao" => "salvar", "id" => 0, "tipo" => "webhook", "nome" => "Sem endereço", "url" => "ftp://x"], false);
+escrever(["recurso" => "agendas", "acao" => "salvar", "id" => 0, "tipo" => "caldav", "nome" => "CalDAV de teste", "ativa" => 0, "url" => "https://exemplo.invalid/cal/", "usuario" => "eu", "senha" => "segredo"]);
+escrever(["recurso" => "agendas", "acao" => "salvar", "id" => 0, "tipo" => "outlook", "nome" => "Outlook de teste", "ativa" => 0]);
+escrever(["recurso" => "agendas", "acao" => "salvar", "id" => 0, "tipo" => "google", "nome" => "Google de teste", "ativa" => 0, "calendario_id" => "teste@group.calendar.google.com"]);
 
 // ---------- o rodízio: a escala inteligente, e o cron ----------
 $modos = ler("modos (antes)", ["incluir" => "modos"]);
@@ -242,7 +271,7 @@ cron();
 
 // ---------- a fotografia ----------
 ler("tudo", ["foto" => "nao"]);
-foreach (["hoje", "avisos", "criterios", "historico", "previsao", "autonomia", "plano", "eventos", "agenda", "config", "arvore", "cadastros", "usuarios", "migracoes"] as $r) {
+foreach (["hoje", "avisos", "criterios", "historico", "previsao", "autonomia", "plano", "eventos", "destinos", "agendas", "config", "arvore", "cadastros", "usuarios", "migracoes"] as $r) {
     ler($r, ["recurso" => $r]);
 }
 foreach ($rel as $nome => $id) {
@@ -276,7 +305,7 @@ $param_smart = [];
 $nomes_param = [];
 $subs = [];
 foreach ($crit["conjuntos"] ?? [] as $cj) {
-    if ($cj["escopo"] === "g:1") {
+    if ($cj["escopo"] === "g:" . G(1)) {
         foreach ($cj["parametros"] as $pm) {
             $param_smart[] = (int)$pm["id"];
             $nomes_param[(int)$pm["id"]] = $pm["nome"];
@@ -287,7 +316,7 @@ foreach ($crit["conjuntos"] ?? [] as $cj) {
     }
 }
 if (count($param_smart) >= 2 && count($subs) >= 2) {
-    $pesos = ["recurso" => "criterios", "acao" => "param_pesos", "escopo" => "g:1"];
+    $pesos = ["recurso" => "criterios", "acao" => "param_pesos", "escopo" => "g:" . G(1)];
     foreach ($param_smart as $k => $id) {
         $pesos["peso"][$id] = $k === 0 ? 100 - 5 * (count($param_smart) - 1) : 5;
         $pesos["nome"][$id] = $nomes_param[$id];
@@ -308,12 +337,12 @@ if (count($param_smart) >= 2 && count($subs) >= 2) {
         }
     }
     escrever(["recurso" => "criterios", "acao" => "sub_excluir", "id" => $sub_novo]);
-    escrever(["recurso" => "criterios", "acao" => "param_pesos", "escopo" => "g:1", "peso" => [$param_smart[0] => 90]], false);
+    escrever(["recurso" => "criterios", "acao" => "param_pesos", "escopo" => "g:" . G(1), "peso" => [$param_smart[0] => 90]], false);
 }
 escrever(["recurso" => "criterios", "acao" => "conjunto_excluir", "escopo" => "r:" . $rel["crono"]]);
 ler("criterios editados", ["recurso" => "criterios"]);
 escrever(["recurso" => "criterios", "acao" => "restaurar"]);
-escrever(["recurso" => "criterios", "acao" => "param_novo", "escopo" => "g:3", "nome" => "Depois de restaurar", "peso" => 10]);
+escrever(["recurso" => "criterios", "acao" => "param_novo", "escopo" => "g:" . G(3), "nome" => "Depois de restaurar", "peso" => 10]);
 
 // os cadastros alterados e excluídos
 $cad = ler("cadastros (fase 2)", ["recurso" => "cadastros"]);
@@ -327,13 +356,13 @@ $id_de = function ($lista, $ident) use ($cad) {
 };
 escrever(["recurso" => "campos", "acao" => "alterar", "id" => $id_de("campos", "estilo"), "nome" => "Estilo do relógio", "opcoes" => "Social\nEsportivo\nMilitar\nDress"]);
 escrever(["recurso" => "campos", "acao" => "ordem", "id" => $id_de("campos", "estilo"), "direcao" => "sobe"]);
-escrever(["recurso" => "campos", "acao" => "excluir", "id" => $id_de("campos", "resistencia_agua")]);
+escrever(["recurso" => "campos", "acao" => "excluir", "id" => $id_de("campos", "resistencia_agua"), "confirmar" => 1]);
 escrever(["recurso" => "lancamento_tipos", "acao" => "alterar", "id" => $id_de("lancamento_tipos", "banho_ultrassom"), "nome" => "Banho de ultrassom"]);
-escrever(["recurso" => "lancamento_tipos", "acao" => "excluir", "id" => $id_de("lancamento_tipos", "banho_ultrassom")], false);   // tem lançamento
+escrever(["recurso" => "lancamento_tipos", "acao" => "excluir", "id" => $id_de("lancamento_tipos", "banho_ultrassom"), "confirmar" => 1], false);   // tem lançamento
 escrever(["recurso" => "formulas", "acao" => "alterar", "id" => $id_de("formulas", "idade_dias"), "expressao" => "ARREDONDA(HOJE() - data_compra; 1)"]);
-escrever(["recurso" => "formulas", "acao" => "excluir", "id" => $id_de("formulas", "idade_dias")]);
+escrever(["recurso" => "formulas", "acao" => "excluir", "id" => $id_de("formulas", "idade_dias"), "confirmar" => 1]);
 escrever(["recurso" => "avisos", "acao" => "alterar", "id" => $id_de("avisos", "pulseira"), "antecedencia_dias" => 30, "escala" => "sempre", "agenda" => "sempre"]);
-escrever(["recurso" => "avisos", "acao" => "excluir", "id" => $id_de("avisos", "pulseira")]);
+escrever(["recurso" => "avisos", "acao" => "excluir", "id" => $id_de("avisos", "pulseira"), "confirmar" => 1]);
 
 // a árvore: mover, excluir um grupo com relógio dentro (o relógio sobe), e excluir relógios (vão junto o histórico, a foto,
 // os valores dos campos e o plano)
@@ -341,13 +370,14 @@ $sub_g = escrever(["recurso" => "arvore", "acao" => "novo", "nome" => "Vintage",
 escrever(["recurso" => "arvore", "acao" => "mover", "id" => $sub_g, "pai_id" => 0]);
 escrever(["recurso" => "arvore", "acao" => "relogios", "grupo" => [$rel["manual"] => $sub_g]]);
 escrever(["recurso" => "arvore", "acao" => "excluir", "id" => $sub_g]);
-escrever(["recurso" => "arvore", "acao" => "excluir", "id" => 1]);   // o grupo dos smartwatches: os campos, as fórmulas, os avisos e o relógio sobem
+escrever(["recurso" => "arvore", "acao" => "excluir", "id" => G(1)]);   // o grupo dos smartwatches: os campos, as fórmulas, os avisos e o relógio sobem
 $lancs = ler("lancamentos do auto", ["incluir" => "relogios", "f" => ["relogios" => ["id" => $rel["auto"]]], "mostrar" => ["relogios" => "lancamentos"], "foto" => "nao"]);
 $l0 = $lancs["relogios"][0]["lancamentos"][0]["id"] ?? 0;
 escrever(["recurso" => "lancamento", "acao" => "alterar", "id" => $l0, "fim" => dia(2, "21:00")]);
 escrever(["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => $rel["auto"], "tipo" => "winder", "inicio" => dia(2, "20:00"), "fim" => dia(2, "23:00")], false);   // sobrepõe o pulso
-escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $rel["solar"]]);
-escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $rel["auto"]]);
+escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $rel["solar"]], false);   // sem confirmar: o impacto, e nada sai
+escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $rel["solar"], "confirmar" => 1]);
+escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $rel["auto"], "confirmar" => 1]);
 
 // os outros modos: semana e fim de semana (sorteio pela nota), fila com ciclo, aleatório; sortear de novo; a semana que vem
 $modos = ler("modos (fase 2)", ["incluir" => "modos"]);
@@ -359,7 +389,7 @@ escrever(["recurso" => "modos", "acao" => "ativar", "id" => $por_nome["Semana e 
 escrever(["recurso" => "rodizio", "acao" => "resortear"]);
 ler("plano ponderado", ["recurso" => "plano"]);
 $fila = escrever(["recurso" => "modos", "acao" => "salvar", "id" => 0, "nome" => "Fila com ciclo", "selecao" => "fifo", "ciclo" => 1,
-    "blocos" => [["nome" => "Dias úteis", "dias" => [1, 2, 3, 4, 5], "no_id" => 2, "um_por" => "dia", "relogio_id" => 0],
+    "blocos" => [["nome" => "Dias úteis", "dias" => [1, 2, 3, 4, 5], "no_id" => G(2), "um_por" => "dia", "relogio_id" => 0],
         ["nome" => "Fim de semana", "dias" => [6, 7], "no_id" => 0, "um_por" => "bloco", "relogio_id" => $rel["smart"]]]]);
 escrever(["recurso" => "modos", "acao" => "ativar", "id" => $fila]);
 escrever(["recurso" => "rodizio", "acao" => "resortear_hoje"]);
@@ -408,9 +438,9 @@ escrever(["recurso" => "avisos", "acao" => "alterar", "id" => (int)(array_values
 // a situação na coleção e a lista de desejos: dois desejados (o disponível pedido é ignorado, com a nota), um campo só nos
 // desejados, o preço-alvo recusado num relógio da coleção, uma situação que não existe; emprestar, vender (os dias dele no
 // plano de amanhã em diante são sorteados de novo), comprar o desejado e trazer o emprestado de volta
-$desejo = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Grand Seiko SBGA211", "no_id" => 4, "posse" => "desejado", "disponivel" => 1,
+$desejo = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Grand Seiko SBGA211", "no_id" => G(4), "posse" => "desejado", "disponivel" => 1,
     "valores" => ["marca" => "Grand Seiko", "referencia" => "SBGA211", "link" => "https://exemplo.com/sbga211", "preco_alvo" => "25.000,00", "prioridade_desejo" => "Alta"]]);
-$desejo2 = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Casio G-Shock GW-M5610", "no_id" => 8, "posse" => "desejado",
+$desejo2 = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Casio G-Shock GW-M5610", "no_id" => G(8), "posse" => "desejado",
     "valores" => ["marca" => "Casio", "prioridade_desejo" => "Baixa"]]);
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $desejo2, "disponivel" => 1]);
 escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "onde_vi", "nome" => "Onde vi", "tipo" => "texto", "no_id" => 0, "so_desejado" => 1]);
@@ -433,14 +463,14 @@ escrever(["recurso" => "acessorios", "acao" => "salvar", "nome" => "Caixa origin
 escrever(["recurso" => "acessorios", "acao" => "salvar", "nome" => "Chave de abrir fundo", "tipo" => "ferramenta", "relogio_id" => 0]);
 $temp = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Relógio de passagem", "no_id" => 0]);
 escrever(["recurso" => "acessorios", "acao" => "salvar", "nome" => "Carregador magnético", "tipo" => "carregador", "relogio_id" => $temp]);
-escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $temp]);
+escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $temp, "confirmar" => 1]);
 escrever(["recurso" => "acessorios", "acao" => "salvar", "nome" => "Chapéu", "tipo" => "chapeu"], false);
 escrever(["recurso" => "acessorios", "acao" => "salvar", "id" => $aces, "relogio_id" => $rel["crono"]]);
 escrever(["recurso" => "acessorios", "acao" => "salvar", "nome" => "Sem relógio", "relogio_id" => 99999], false);
 ler("acessorios", ["recurso" => "acessorios"]);
 ler("acessorios soltos", ["recurso" => "acessorios", "relogio" => 0]);
 ler("ficha com acessorios", ["recurso" => "ficha", "relogio" => $rel["crono"]]);
-escrever(["recurso" => "acessorios", "acao" => "excluir", "id" => $aces]);
+escrever(["recurso" => "acessorios", "acao" => "excluir", "id" => $aces, "confirmar" => 1]);
 // o aviso Encostado: com 5 dias, os relógios parados há mais tempo são avisados; 0 é recusado
 escrever(["recurso" => "config", "acao" => "salvar", "encostado_dias" => 5]);
 escrever(["recurso" => "config", "acao" => "salvar", "encostado_dias" => 0], false);
@@ -456,8 +486,8 @@ escrever(["recurso" => "rodizio", "acao" => "apagar_tudo"]);
 escrever(["recurso" => "rodizio", "acao" => "apagar_tudo", "hoje" => 1]);
 ler("plano depois de apagar tudo", ["recurso" => "plano", "dias" => 30]);
 ler("backup", ["recurso" => "backup"]);
-escrever(["recurso" => "modos", "acao" => "excluir", "id" => $fila]);
-escrever(["recurso" => "config", "acao" => "evento_excluir", "id" => 1]);
+escrever(["recurso" => "modos", "acao" => "excluir", "id" => $fila, "confirmar" => 1]);
+escrever(["recurso" => "config", "acao" => "evento_excluir", "id" => 1, "confirmar" => 1]);
 cron();
 
 // a fotografia de novo, depois de tudo. Antes, 2 segundos: o trecho que começou agora (a troca do relógio de hoje) já tem

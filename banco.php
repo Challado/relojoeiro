@@ -200,6 +200,297 @@ function banco_chave_ci($s)
 // Consultas
 // ---------------------------------------------------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------------------------------------------------
+// O escopo da coleção. Cada pedido trabalha numa coleção (e na árvore de grupos que ela usa): com o escopo ligado
+// (banco_escopo), todo comando passa por aqui antes da tradução, e cada tabela da coleção que ele lê (FROM e JOIN) vira
+// a visão só da coleção, um SELECT com a condição dela; o UPDATE e o DELETE ganham a mesma condição no WHERE. Assim nenhuma
+// consulta enxerga outra coleção, e o código continua escrevendo o SQL como se só houvesse uma.
+// A visão mostra também a forma de antes da coleção, para o código de sempre: a raiz da árvore (o grupo sem pai, que
+// guarda o dono) não aparece; quem aponta para ela aparece com o grupo vazio ("na raiz", "todos"); e as ligações opcionais
+// (o relógio de um acessório, de um evento, o relógio fixo de um bloco, o bloco de um dia do plano) aparecem como a
+// coluna de antes. Na gravação, o código põe a coleção e a raiz (colecao_id, no_raiz()) e grava as ligações.
+// Sem escopo (a instalação, as migrações, a cópia de segurança, o cron entre uma coleção e outra, o master no painel),
+// o comando vai como está: sem_escopo() roda um pedaço assim.
+// ---------------------------------------------------------------------------------------------------------------------
+
+// A condição de cada tabela da coleção, com as colunas dela: {C} é a coleção, {N} os grupos da árvore (menos a raiz), {R}
+// a raiz e {RC} os relógios da coleção
+const ESCOPO_CONDICOES = [
+    "no" => "id IN ({N})",
+    "relogio" => "colecao_id = {C}",
+    "campo" => "no_id IN ({NR})",
+    "lancamento_tipo" => "no_id IN ({NR})",
+    "formula" => "no_id IN ({NR})",
+    "aviso" => "no_id IN ({NR})",
+    "documento_categoria" => "no_id IN ({NR})",
+    "campo_opcao" => "campo_id IN (SELECT id FROM campo WHERE no_id IN ({NR}))",
+    "documento_categoria_aceita" => "categoria_id IN (SELECT id FROM documento_categoria WHERE no_id IN ({NR}))",
+    "criterio_parametro" => "(escopo_no_id IN ({NR}) OR escopo_relogio_id IN ({RC}))",
+    "criterio_sub" => "parametro_id IN (SELECT id FROM criterio_parametro WHERE escopo_no_id IN ({NR}) OR escopo_relogio_id IN ({RC}))",
+    "criterio_faixa" => "sub_id IN (SELECT s.id FROM criterio_sub s JOIN criterio_parametro p ON p.id = s.parametro_id WHERE p.escopo_no_id IN ({NR}) OR p.escopo_relogio_id IN ({RC}))",
+    "foto" => "relogio_id IN ({RC})",
+    "campo_valor" => "relogio_id IN ({RC})",
+    "lancamento" => "relogio_id IN ({RC})",
+    "medicao" => "lancamento_id IN (SELECT id FROM lancamento WHERE relogio_id IN ({RC}))",
+    "documento" => "relogio_id IN ({RC})",
+    "documento_parte" => "documento_id IN (SELECT id FROM documento WHERE relogio_id IN ({RC}))",
+    "acessorio" => "colecao_id = {C}",
+    "acessorio_relogio" => "relogio_id IN ({RC})",
+    "config" => "colecao_id = {C}",
+    "modo" => "colecao_id = {C}",
+    "modo_bloco" => "modo_id IN (SELECT id FROM modo WHERE colecao_id = {C})",
+    "modo_bloco_relogio" => "relogio_id IN ({RC})",
+    "modo_bloco_dia" => "bloco_id IN (SELECT b.id FROM modo_bloco b JOIN modo m ON m.id = b.modo_id WHERE m.colecao_id = {C})",
+    "plano" => "colecao_id = {C}",
+    "plano_bloco" => "colecao_id = {C}",
+    "plano_livre" => "colecao_id = {C}",
+    "evento_personalizado" => "colecao_id = {C}",
+    "evento_relogio" => "relogio_id IN ({RC})",
+    "evento_dia" => "evento_id IN (SELECT id FROM evento_personalizado WHERE colecao_id = {C})",
+    "evento_disparo" => "evento_id IN (SELECT id FROM evento_personalizado WHERE colecao_id = {C})",
+    "destino" => "colecao_id = {C}",
+    "destino_webhook" => "destino_id IN (SELECT id FROM destino WHERE colecao_id = {C})",
+    "destino_webhook_campo" => "destino_id IN (SELECT id FROM destino WHERE colecao_id = {C})",
+    "destino_webhook_cabecalho" => "destino_id IN (SELECT id FROM destino WHERE colecao_id = {C})",
+    "destino_email" => "destino_id IN (SELECT id FROM destino WHERE colecao_id = {C})",
+    "destino_webpush" => "destino_id IN (SELECT id FROM destino WHERE colecao_id = {C})",
+    "destino_aviso" => "destino_id IN (SELECT id FROM destino WHERE colecao_id = {C})",
+    "destino_evento" => "destino_id IN (SELECT id FROM destino WHERE colecao_id = {C})",
+    "agenda" => "colecao_id = {C}",
+    "agenda_google" => "agenda_id IN (SELECT id FROM agenda WHERE colecao_id = {C})",
+    "agenda_caldav" => "agenda_id IN (SELECT id FROM agenda WHERE colecao_id = {C})",
+    "agenda_outlook" => "agenda_id IN (SELECT id FROM agenda WHERE colecao_id = {C})",
+    "agenda_ics" => "agenda_id IN (SELECT id FROM agenda WHERE colecao_id = {C})",
+    "agenda_aviso" => "agenda_id IN (SELECT id FROM agenda WHERE colecao_id = {C})",
+    "agenda_evento" => "agenda_id IN (SELECT id FROM agenda WHERE colecao_id = {C})",
+    "agenda_sincronizado" => "agenda_id IN (SELECT id FROM agenda WHERE colecao_id = {C})",
+    "cron_execucao_colecao" => "colecao_id = {C}",
+];
+
+// As tabelas que a visão mostra na forma de antes: as colunas, na ordem; "*" marca a coluna que aponta para um grupo (a
+// raiz aparece vazia), e uma coluna com SQL é a ligação opcional, vista como a coluna de antes (t_ é a tabela)
+const ESCOPO_VISOES = [
+    "no" => ["id", "pai_id*", "dono_id", "nome", "ordem"],
+    "relogio" => ["id", "colecao_id", "nome", "apelido", "no_id*", "disponivel", "criado", "copia_banco", "posse"],
+    "campo" => ["id", "identificador", "nome", "tipo", "unidade", "padrao", "no_id*", "ordem", "so_desejado"],
+    "lancamento_tipo" => ["id", "identificador", "nome", "formato", "unidade", "fecha_as", "no_id*", "ordem", "exclusiva", "mede_gasto", "condicao"],
+    "formula" => ["id", "identificador", "nome", "expressao", "unidade", "no_id*"],
+    "aviso" => ["id", "identificador", "nome", "expressao", "antecedencia_dias", "texto", "ativo", "no_id*", "escala", "simula_valor", "simula_horas", "agenda",
+        "condicao", "resolve_tipo_id", "na_hora"],
+    "documento_categoria" => ["id", "identificador", "nome", "ordem", "no_id*"],
+    "criterio_parametro" => ["id", "escopo_no_id*", "escopo_relogio_id", "nome", "peso", "ordem"],
+    "modo_bloco" => ["id", "modo_id", "nome", "no_id*", "um_por", "ordem", "relogio_id" => "(SELECT x_.relogio_id FROM modo_bloco_relogio x_ WHERE x_.bloco_id = t_.id)"],
+    "acessorio" => ["id", "colecao_id", "nome", "tipo", "observacao", "criado", "relogio_id" => "(SELECT x_.relogio_id FROM acessorio_relogio x_ WHERE x_.acessorio_id = t_.id)"],
+    "evento_personalizado" => ["id", "colecao_id", "nome", "ativo", "repeticao", "data_inicio", "hora", "dia_mes", "intervalo_dias", "criado",
+        "relogio_id" => "(SELECT x_.relogio_id FROM evento_relogio x_ WHERE x_.evento_id = t_.id)"],
+    "plano" => ["colecao_id", "data", "relogio_id", "origem", "criado", "acao", "motivo",
+        "bloco_id" => "(SELECT x_.bloco_id FROM plano_bloco x_ WHERE x_.colecao_id = t_.colecao_id AND x_.data = t_.data)"],
+];
+
+// Liga o escopo numa coleção (null desliga). Guarda a raiz da árvore dela e os grupos da árvore, lidos sem escopo
+function banco_escopo($colecao_id)
+{
+    if ($colecao_id === null) {
+        $GLOBALS["BANCO_ESCOPO"] = null;
+        return null;
+    }
+    $GLOBALS["BANCO_ESCOPO"] = null;
+    $raiz = valor("SELECT no_id FROM colecao WHERE id = ?", [(int)$colecao_id]);
+    $GLOBALS["BANCO_ESCOPO"] = ["colecao" => (int)$colecao_id, "raiz" => $raiz === null ? 0 : (int)$raiz, "nos" => [], "versao" => 0];
+    // as contas guardadas das fórmulas (os lançamentos lidos, as médias) eram de outra coleção
+    $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+    banco_escopo_nos();
+    return $GLOBALS["BANCO_ESCOPO"];
+}
+
+// O escopo de agora: {colecao, raiz, nos}, ou null
+function banco_escopo_atual()
+{
+    return $GLOBALS["BANCO_ESCOPO"] ?? null;
+}
+
+// Relê os grupos da árvore da coleção do escopo (depois de criar um grupo): da raiz para baixo, nível a nível
+function banco_escopo_nos()
+{
+    $e = $GLOBALS["BANCO_ESCOPO"] ?? null;
+    if ($e === null) {
+        return;
+    }
+    $GLOBALS["BANCO_ESCOPO"] = null;
+    $nos = [];
+    $nivel = $e["raiz"] > 0 ? [$e["raiz"]] : [];
+    while (count($nivel) > 0) {
+        $nos = array_merge($nos, $nivel);
+        $nivel = array_map("intval", array_column(linhas("SELECT id FROM no WHERE pai_id IN (" . implode(", ", $nivel) . ")"), "id"));
+        $nivel = array_values(array_diff($nivel, $nos));
+    }
+    $e["nos"] = $nos;
+    static $versao = 0;
+    $e["versao"] = ++$versao;
+    $GLOBALS["BANCO_ESCOPO"] = $e;
+}
+
+// Roda uma função sem o escopo (e volta o escopo de antes, mesmo se ela falhar)
+function sem_escopo($f)
+{
+    $antes = $GLOBALS["BANCO_ESCOPO"] ?? null;
+    $GLOBALS["BANCO_ESCOPO"] = null;
+    try {
+        return $f();
+    } finally {
+        $GLOBALS["BANCO_ESCOPO"] = $antes;
+    }
+}
+
+// A condição de uma tabela no escopo de agora (as colunas sem prefixo; null: a tabela não é da coleção)
+function escopo_condicao($tabela, $e)
+{
+    if (!isset(ESCOPO_CONDICOES[$tabela])) {
+        return null;
+    }
+    $nos = array_values(array_diff($e["nos"], [$e["raiz"]]));
+    $troca = ["{C}" => (string)$e["colecao"], "{R}" => (string)$e["raiz"], "{N}" => count($nos) > 0 ? implode(", ", $nos) : "0",
+        "{NR}" => count($e["nos"]) > 0 ? implode(", ", $e["nos"]) : "0", "{RC}" => "SELECT id FROM relogio WHERE colecao_id = " . $e["colecao"]];
+    return strtr(ESCOPO_CONDICOES[$tabela], $troca);
+}
+
+// A visão de uma tabela no escopo: o SELECT que entra no lugar dela
+function escopo_visao($tabela, $e)
+{
+    $cond = escopo_condicao($tabela, $e);
+    if (!isset(ESCOPO_VISOES[$tabela])) {
+        return "(SELECT * FROM " . $tabela . " WHERE " . $cond . ")";
+    }
+    $cols = [];
+    foreach (ESCOPO_VISOES[$tabela] as $k => $c) {
+        if (is_string($k)) {
+            $cols[] = $c . " AS " . $k;
+        } elseif (substr($c, -1) === "*") {
+            $c = substr($c, 0, -1);
+            $cols[] = "CASE WHEN t_." . $c . " = " . $e["raiz"] . " THEN NULL ELSE t_." . $c . " END AS " . $c;
+        } else {
+            $cols[] = "t_." . $c;
+        }
+    }
+    // (as colunas da condição, sem prefixo, são as da tabela: a única do FROM)
+    return "(SELECT " . implode(", ", $cols) . " FROM " . $tabela . " t_ WHERE " . $cond . ")";
+}
+
+// O comando com o escopo aplicado (no dialeto do MySQL; a tradução vem depois)
+function escopo_aplicar($comando)
+{
+    $e = $GLOBALS["BANCO_ESCOPO"] ?? null;
+    if ($e === null) {
+        return $comando;
+    }
+    static $cache = [];
+    $chave = $e["colecao"] . ":" . $e["versao"] . ":" . $comando;
+    if (isset($cache[$chave])) {
+        return $cache[$chave];
+    }
+    $p = sql_pedacos($comando);
+    $n = count($p);
+    $prox = function ($i) use ($p, $n) {
+        for ($j = $i + 1; $j < $n; $j++) {
+            if ($p[$j][0] !== "e") {
+                return $j;
+            }
+        }
+        return null;
+    };
+    $w = function ($i) use ($p) {
+        return $i !== null && $p[$i][0] === "w" ? strtoupper($p[$i][1]) : null;
+    };
+    $primeira = $w($prox(-1));
+    if (!in_array($primeira, ["SELECT", "WITH", "INSERT", "REPLACE", "UPDATE", "DELETE"], true)) {
+        return $cache[$chave] = $comando;
+    }
+    $chaves = ["WHERE", "JOIN", "LEFT", "RIGHT", "INNER", "OUTER", "CROSS", "FULL", "ON", "GROUP", "ORDER", "LIMIT", "UNION", "SET", "USING",
+        "HAVING", "VALUES", "SELECT", "OFFSET", "FETCH", "FOR", "RETURNING", "EXCEPT", "INTERSECT"];
+    $troca = [];
+    $alvo = null;
+    $alvo_pos = null;
+    if ($primeira === "UPDATE") {
+        $alvo_pos = $prox($prox(-1));
+    } elseif ($primeira === "DELETE") {
+        $alvo_pos = $prox($prox($prox(-1)));
+    }
+    // (no INSERT e no REPLACE, a tabela de destino vem depois do INTO e fica como está: a gravação põe a coleção)
+    if ($alvo_pos !== null) {
+        $alvo = strtolower($p[$alvo_pos][1]);
+    }
+    $na_lista = false;
+    for ($i = 0; $i < $n; $i++) {
+        $kw = $w($i);
+        $tabela_em = null;
+        if ($kw === "FROM" || $kw === "JOIN") {
+            $tabela_em = $prox($i);
+            $na_lista = $kw === "FROM";
+        } elseif ($na_lista && $p[$i][0] === "o" && $p[$i][1] === ",") {
+            $tabela_em = $prox($i);
+        } elseif ($kw !== null && in_array($kw, $chaves, true)) {
+            $na_lista = false;
+        } elseif ($p[$i][0] === "o" && ($p[$i][1] === "(" || $p[$i][1] === ")")) {
+            $na_lista = false;
+        }
+        if ($tabela_em === null || !in_array($p[$tabela_em][0], ["w", "q"], true) || $tabela_em === $alvo_pos) {
+            continue;
+        }
+        $t = strtolower($p[$tabela_em][1]);
+        if (!isset(ESCOPO_CONDICOES[$t])) {
+            continue;
+        }
+        $depois = $prox($tabela_em);
+        $tem_apelido = $depois !== null && (($p[$depois][0] === "w" && !in_array(strtoupper($p[$depois][1]), $chaves, true)) || $p[$depois][0] === "q");
+        $troca[$tabela_em] = escopo_visao($t, $e) . ($tem_apelido ? "" : " " . $t);
+    }
+    $saida = "";
+    $fim_alvo = null;
+    if ($alvo !== null && ($primeira === "UPDATE" || $primeira === "DELETE") && isset(ESCOPO_CONDICOES[$alvo])) {
+        // o WHERE do nível de fora (e onde ele acaba: ORDER BY, LIMIT ou o fim)
+        $nivel = 0;
+        $onde = null;
+        $acaba = $n;
+        for ($i = 0; $i < $n; $i++) {
+            if ($p[$i][0] === "o" && $p[$i][1] === "(") {
+                $nivel++;
+            } elseif ($p[$i][0] === "o" && $p[$i][1] === ")") {
+                $nivel--;
+            } elseif ($nivel === 0 && $w($i) === "WHERE" && $onde === null) {
+                $onde = $i;
+            } elseif ($nivel === 0 && in_array($w($i), ["ORDER", "LIMIT", "RETURNING"], true) && $i > (int)$onde) {
+                $acaba = $i;
+                break;
+            }
+        }
+        $cond = escopo_condicao($alvo, $e) . ($alvo === "no" ? " AND id <> " . $e["raiz"] : "");
+        $fim_alvo = [$onde, $acaba, $cond];
+    }
+    for ($i = 0; $i < $n; $i++) {
+        if ($fim_alvo !== null && $i === $fim_alvo[1]) {
+            $saida .= $fim_alvo[0] !== null ? ") AND " . $fim_alvo[2] . " " : " WHERE " . $fim_alvo[2] . " ";
+        }
+        if (isset($troca[$i])) {
+            $saida .= $troca[$i];
+        } else {
+            $saida .= sql_texto([$p[$i]], "mysql");
+            if ($p[$i][0] === "e") {
+                $saida .= " ";
+            }
+        }
+        if ($fim_alvo !== null && $fim_alvo[0] === $i) {
+            $saida .= " (";
+        }
+    }
+    if ($fim_alvo !== null && $fim_alvo[1] === $n) {
+        $saida .= $fim_alvo[0] !== null ? ") AND " . $fim_alvo[2] : " WHERE " . $fim_alvo[2];
+    }
+    if (count($cache) > 4000) {
+        $cache = [];
+    }
+    return $cache[$chave] = trim($saida);
+}
+
 // Executa um comando com parâmetros (?); devolve as linhas (SELECT) ou true
 function sql($comando, $params = [])
 {
@@ -230,7 +521,7 @@ function ultimo_id()
 {
     switch (banco_tipo()) {
         case "mysql":
-            return (int)db()->insert_id;
+            return (int)($GLOBALS["BANCO_MYSQL_ID"] ?? db()->insert_id);
         case "pgsql":
             return (int)valor("SELECT lastval()");
         case "firebird":
@@ -257,6 +548,23 @@ function banco_linhas_assoc($r)
 
 // Executa e devolve [nomes das colunas, linhas (listas de valores)], ou null (o comando não devolve linhas)
 function banco_executar($comando, $params = [])
+{
+    unset($GLOBALS["BANCO_MYSQL_ID"]);
+    $r = banco_executar_cru(escopo_aplicar($comando), $params);
+    // um grupo novo entra na árvore do escopo. No MySQL, a consulta dos grupos zera o insert_id: o id do INSERT fica
+    // guardado para o ultimo_id(), até o próximo comando
+    if (isset($GLOBALS["BANCO_ESCOPO"]) && preg_match("/^\\s*INSERT\\s+(IGNORE\\s+)?INTO\\s+no\\b/i", $comando) === 1) {
+        $id = banco_tipo() === "mysql" ? (int)db()->insert_id : null;
+        banco_escopo_nos();
+        if ($id !== null) {
+            $GLOBALS["BANCO_MYSQL_ID"] = $id;
+        }
+    }
+    return $r;
+}
+
+// O comando no banco, sem o escopo
+function banco_executar_cru($comando, $params = [])
 {
     $params = array_values($params);
     $traduzido = sql_traduzir($comando);
@@ -515,7 +823,9 @@ function banco_fb_executar($comando, $params)
             if ($p === null) {
                 $st->bindValue($i + 1, null, PDO::PARAM_NULL);
             } elseif (is_int($p) || is_bool($p)) {
-                $st->bindValue($i + 1, (int)$p, PDO::PARAM_INT);
+                // como texto, como o número com casas: o pdo_firebird grava um inteiro numa coluna DECIMAL(6,2) sem a escala
+                // (100 vira 1,00); o banco converte o texto para o tipo da coluna
+                $st->bindValue($i + 1, (string)(int)$p, PDO::PARAM_STR);
             } elseif (is_float($p)) {
                 $st->bindValue($i + 1, (string)$p, PDO::PARAM_STR);
             } elseif (banco_binario((string)$p)) {
@@ -2257,6 +2567,11 @@ function sql_criar_tabela($comando, $banco)
             if ($banco === "firebird" && preg_match("/^CONSTRAINT\\s+`?(\\w+)`?\\s+(.*)\$/is", $parte, $x) === 1) {
                 $parte = "CONSTRAINT " . banco_fb_nome($x[1]) . " " . $x[2];
             }
+            if ($banco !== "mysql" && preg_match("/^((?:CONSTRAINT\\s+\\S+\\s+)?CHECK\\s*)\\((.*)\\)\$/is", $parte, $x) === 1) {
+                // a condição no dialeto do banco, como no banco_regra (o LIKE nas colunas "ci" do Postgres, o <=>)
+                $defs[] = $x[1] . "(" . sql_texto(sql_dml(sql_pedacos($x[2]), $banco), $banco) . ")";
+                continue;
+            }
             $defs[] = sql_texto(sql_pedacos($parte), $banco);
         } else {
             if ($banco === "firebird" && in_array(strtolower(trim((string)preg_split("/\\s+/", $parte)[0], "`")), $chave, true) && stripos($parte, "NOT NULL") === false) {
@@ -2361,8 +2676,16 @@ function banco_catalogo()
                 }
             }
             ksort($x["chave_primaria"]);
+            // (a chave de várias colunas vem numa linha por coluna, com o mesmo id: vira uma, com as colunas separadas por vírgula)
+            $fk = [];
             foreach (linhas("PRAGMA foreign_key_list(" . $t . ")") as $f) {
-                $x["chaves_estrangeiras"][] = ["coluna" => $f["from"], "referencia" => $f["table"] . "." . $f["to"], "ao_apagar" => strtoupper($f["on_delete"])];
+                $fk[$f["id"]]["de"][] = $f["from"];
+                $fk[$f["id"]]["para"][] = $f["to"];
+                $fk[$f["id"]]["tabela"] = $f["table"];
+                $fk[$f["id"]]["d"] = strtoupper($f["on_delete"]);
+            }
+            foreach ($fk as $f) {
+                $x["chaves_estrangeiras"][] = ["coluna" => implode(",", $f["de"]), "referencia" => $f["tabela"] . "." . implode(",", $f["para"]), "ao_apagar" => $f["d"]];
             }
             foreach (linhas("PRAGMA index_list(" . $t . ")") as $ix) {
                 if ($ix["origin"] === "pk") {
@@ -2404,10 +2727,17 @@ function banco_catalogo()
                 }
             }
             unset($ix);
-            foreach (linhas("SELECT k.COLUMN_NAME AS c, k.REFERENCED_TABLE_NAME AS rt, k.REFERENCED_COLUMN_NAME AS rc, r.DELETE_RULE AS d FROM information_schema.KEY_COLUMN_USAGE k
+            $fk = [];
+            foreach (linhas("SELECT k.CONSTRAINT_NAME AS n, k.COLUMN_NAME AS c, k.REFERENCED_TABLE_NAME AS rt, k.REFERENCED_COLUMN_NAME AS rc, r.DELETE_RULE AS d FROM information_schema.KEY_COLUMN_USAGE k
                 JOIN information_schema.REFERENTIAL_CONSTRAINTS r ON r.CONSTRAINT_SCHEMA = k.TABLE_SCHEMA AND r.CONSTRAINT_NAME = k.CONSTRAINT_NAME
-                WHERE k.TABLE_SCHEMA = DATABASE() AND k.TABLE_NAME = ? ORDER BY k.COLUMN_NAME", [$t]) as $f) {
-                $x["chaves_estrangeiras"][] = ["coluna" => $f["c"], "referencia" => $f["rt"] . "." . $f["rc"], "ao_apagar" => strtoupper($f["d"])];
+                WHERE k.TABLE_SCHEMA = DATABASE() AND k.TABLE_NAME = ? ORDER BY k.CONSTRAINT_NAME, k.ORDINAL_POSITION", [$t]) as $f) {
+                $fk[$f["n"]]["de"][] = $f["c"];
+                $fk[$f["n"]]["para"][] = $f["rc"];
+                $fk[$f["n"]]["tabela"] = $f["rt"];
+                $fk[$f["n"]]["d"] = strtoupper($f["d"]);
+            }
+            foreach ($fk as $f) {
+                $x["chaves_estrangeiras"][] = ["coluna" => implode(",", $f["de"]), "referencia" => $f["tabela"] . "." . implode(",", $f["para"]), "ao_apagar" => $f["d"]];
             }
             foreach (linhas("SELECT c.CONSTRAINT_NAME AS n, c.CHECK_CLAUSE AS q FROM information_schema.CHECK_CONSTRAINTS c JOIN information_schema.TABLE_CONSTRAINTS t
                 ON t.CONSTRAINT_SCHEMA = c.CONSTRAINT_SCHEMA AND t.CONSTRAINT_NAME = c.CONSTRAINT_NAME AND t.CONSTRAINT_TYPE = 'CHECK'
@@ -2423,7 +2753,7 @@ function banco_catalogo()
             foreach (linhas("SELECT c.conname AS n, c.contype AS ti, pg_get_constraintdef(c.oid) AS def, c.confdeltype AS d,
                 (SELECT string_agg(a.attname, ',' ORDER BY k.ordem) FROM unnest(c.conkey) WITH ORDINALITY AS k(num, ordem) JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.num) AS cols,
                 (SELECT r.relname FROM pg_class r WHERE r.oid = c.confrelid) AS rt,
-                (SELECT a.attname FROM pg_attribute a WHERE a.attrelid = c.confrelid AND a.attnum = c.confkey[1]) AS rc
+                (SELECT string_agg(a.attname, ',' ORDER BY k.ordem) FROM unnest(c.confkey) WITH ORDINALITY AS k(num, ordem) JOIN pg_attribute a ON a.attrelid = c.confrelid AND a.attnum = k.num) AS rc
                 FROM pg_constraint c JOIN pg_class t ON t.oid = c.conrelid WHERE t.relname = ? AND t.relnamespace = current_schema()::regnamespace ORDER BY c.conname", [$t]) as $k) {
                 $cols = explode(",", (string)$k["cols"]);
                 if ($k["ti"] === "p") {
@@ -2431,7 +2761,7 @@ function banco_catalogo()
                 } elseif ($k["ti"] === "u") {
                     $x["unicas"][] = $cols;
                 } elseif ($k["ti"] === "f") {
-                    $x["chaves_estrangeiras"][] = ["coluna" => $cols[0], "referencia" => $k["rt"] . "." . $k["rc"],
+                    $x["chaves_estrangeiras"][] = ["coluna" => implode(",", $cols), "referencia" => $k["rt"] . "." . $k["rc"],
                         "ao_apagar" => ["a" => "NO ACTION", "r" => "RESTRICT", "c" => "CASCADE", "n" => "SET NULL", "d" => "SET DEFAULT"][$k["d"]] ?? $k["d"]];
                 } elseif ($k["ti"] === "c") {
                     $x["regras"][] = ["nome" => $k["n"], "condicao" => preg_replace("/^CHECK \\((.*)\\)\$/s", "\$1", (string)$k["def"])];
@@ -2476,12 +2806,12 @@ function banco_catalogo_fb($t, $x)
             $x["unicas"][] = $r["cols"];
         }
     }
-    foreach (linhas("SELECT TRIM(c.RDB\$CONSTRAINT_NAME) AS n, TRIM(r.RDB\$DELETE_RULE) AS d, TRIM(u.RDB\$RELATION_NAME) AS rt,
-        (SELECT TRIM(s.RDB\$FIELD_NAME) FROM RDB\$INDEX_SEGMENTS s WHERE s.RDB\$INDEX_NAME = u.RDB\$INDEX_NAME AND s.RDB\$FIELD_POSITION = 0) AS rc
+    foreach (linhas("SELECT TRIM(c.RDB\$CONSTRAINT_NAME) AS n, TRIM(r.RDB\$DELETE_RULE) AS d, TRIM(u.RDB\$RELATION_NAME) AS rt, TRIM(u.RDB\$INDEX_NAME) AS ri
         FROM RDB\$RELATION_CONSTRAINTS c JOIN RDB\$REF_CONSTRAINTS r ON r.RDB\$CONSTRAINT_NAME = c.RDB\$CONSTRAINT_NAME
         JOIN RDB\$RELATION_CONSTRAINTS u ON u.RDB\$CONSTRAINT_NAME = r.RDB\$CONST_NAME_UQ
         WHERE c.RDB\$RELATION_NAME = ? AND c.RDB\$CONSTRAINT_TYPE = 'FOREIGN KEY'", [$T]) as $f) {
-        $x["chaves_estrangeiras"][] = ["coluna" => $restricoes[$f["n"]]["cols"][0] ?? "", "referencia" => strtolower($f["rt"]) . "." . strtolower((string)$f["rc"]),
+        $rc = array_map("strtolower", array_column(linhas("SELECT TRIM(s.RDB\$FIELD_NAME) AS c FROM RDB\$INDEX_SEGMENTS s WHERE s.RDB\$INDEX_NAME = ? ORDER BY s.RDB\$FIELD_POSITION", [$f["ri"]]), "c"));
+        $x["chaves_estrangeiras"][] = ["coluna" => implode(",", $restricoes[$f["n"]]["cols"] ?? []), "referencia" => strtolower($f["rt"]) . "." . implode(",", $rc),
             "ao_apagar" => strtoupper((string)$f["d"])];
     }
     usort($x["chaves_estrangeiras"], function ($a, $b) { return strcmp($a["coluna"], $b["coluna"]); });

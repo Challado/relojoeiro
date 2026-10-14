@@ -1,10 +1,10 @@
-<!-- origem: a00d1e4d31146c4c8ac7a17bb30250c9218279d4 -->
+<!-- origem: ef0f54a0dfded956a32fb3baebbb29996ddbf324 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
 🌐 [Português](README.md) · [English](README.en.md) · **中文** · [हिन्दी](README.hi.md) · [Español](README.es.md) · [Français](README.fr.md)
 
-> **手表收藏的智能轮换。** 它每天告诉你该戴哪块表，提醒你上链、充电、晒太阳和换电池，让整个收藏都被戴到，而不只是最喜欢的那块。
+> **手表收藏的智能轮换。** 每天告诉你哪块表上腕，提醒你上链、充电、晒太阳和换电池，让整个收藏都被佩戴，而不只是最喜欢的那一块。多人可以使用同一个系统，每人有自己的收藏，想分享什么就分享什么。
 
 ![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-777bb4?logo=php&logoColor=white)
 ![SQLite、MySQL/MariaDB、PostgreSQL 或 Firebird](https://img.shields.io/badge/%E6%95%B0%E6%8D%AE%E5%BA%93-SQLite%20%7C%20MySQL%20%7C%20PostgreSQL%20%7C%20Firebird-336791)
@@ -19,7 +19,7 @@
 | | |
 |---|---|
 | **[为什么存在](#por-que-isso-existe)** · [核心理念](#a-ideia-central-o-sistema-não-sabe-nada-de-relógios) · [工作原理](#como-funciona) · [它的一天](#um-dia-com-o-relógios-2) | **[1 分钟试用](#experimente-em-1-minuto)** · [界面](#as-telas) · [API](#a-api-uma-porta-só-para-tudo) · [安装](#instalação) |
-| [常见问题](#perguntas-frequentes) · [内部结构](#como-é-por-dentro) | [如何贡献](#como-contribuir) · [许可证](#licença) |
+| [多人使用](#várias-pessoas-contas-coleções-e-acesso) ·[常见问题](#perguntas-frequentes) · [内部结构](#como-é-por-dentro) | [如何贡献](#como-contribuir) · [许可证](#licença) |
 
 ---
 
@@ -74,11 +74,11 @@ php -S localhost:8000            # 然后打开 http://localhost:8000
 
 `api.php` 是**唯一的后端**。页面只是界面：每个页面的 JavaScript 调用 API 并生成 HTML，不做任何计算（摘要、百分比、合计和状态，例如计划摘要和 cron 的状态，都由 API 直接给出；界面只做属于自己的事：筛选、排序以及把表格筛选后显示的内容相加）。因此，**界面能做的一切，脚本也能做**：自动化、手机快捷方式、与 Home Assistant 集成、小组件。
 
-API 也负责界面之前和周边的事情：**安装数据库**（`recurso=instalacao`）、**创建第一个用户**（`recurso=usuarios`，使用令牌）、**导入旧系统**（`recurso=importacao`）以及**页面登录**（`recurso=entrar`：页面不做任何检查，只提供骨架；未登录的人会被送到 API，由 API 要求输入用户名和密码，然后再送回页面）。命令行脚本（`instalar.php`、`criar_usuario.php`、`importar.php`）只是快捷方式：它们调用相同的 API 操作。
+API 也负责界面之前和周边的事情：**安装数据库**（`recurso=instalacao`）、**创建第一个用户**（`recurso=usuarios`，使用令牌）、**导入旧系统**（`recurso=importacao`）、**公开注册**（`recurso=cadastro`，无需登录）、**账户**（`conta`、`colecoes`、`acessos`、`convites`、`pedidos`、`aprovacoes`），以及**页面登录**（`recurso=entrar`：页面什么都不检查，只提供骨架；未登录的访问者会被送到 API，由它询问用户名和密码，再送回页面）。命令行脚本（`instalar.php`、`criar_usuario.php`、`importar.php`）只是快捷方式：它们调用同样的 API 操作。
 
-API 之外只有 **cron**（`cron.php`，系统的时钟：生成计划，打开和关闭当天的时段，发送消息，同步日历，触发事件，照看文档的副本），它使用与 API 相同的函数；可以即时请求的事情在 API 中都有对应的操作（`testar_manha`、`testar_noite`、`sincronizar`、`resortear`……），它做过的事显示在 `recurso=cron` 中。
+API 之外只有 **cron**（`cron.php`，系统的时钟：生成计划、开始和结束当天的时段、发送消息、同步日历、触发事件并维护文档的副本），它使用与 API 相同的函数；可以随时请求的事情在 API 中都有对应的动作（推送目标的 `testar`、日历的 `sincronizar`、`resortear`……），它做过的事显示在 `recurso=cron` 中。
 
-**认证：** 令牌（`X-Api-Token: ...` 或 `?token=...`）或网站登录（HTTP Basic）。
+**认证：** 网站登录（HTTP Basic）、**个人令牌**（在**我的账户**中创建，等同于你的登录）或服务器令牌（`API_TOKEN`，等同于 master），放在 `X-Api-Token` 请求头或 `?token=...` 中。**收藏：** `colecao=<id>`（不传时使用菜单选择器中的收藏，否则是你的第一个）；你看不到的收藏返回 404。**删除**需要 `confirmar=1`：不带它时，响应（409）会说明会一并删除什么，什么都不会删除。
 **格式：** 默认 JSON，或使用 `formato=xml` 得到 XML。**语言：** `lingua=zh-CN`（或 `Accept-Language` 请求头）：消息、帮助和重建说明都以该语言输出。
 
 ```sh
@@ -117,14 +117,17 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `autonomia` | 每块手表还能撑多久，以秒为单位，为外部系统精简（`relogio=` 一个或多个 id；没有时为全部） |
 | `historico` | 一块手表的时间线，以及每种状态的时长。`relogio=`（一个或多个 id；`relogio_id` 也可以；没有时为全部）、`de=` 和 `ate=`（日期，或日期和时间：与时段相交的部分都会包含）、`estado=`（`rodizio`、`pulso`、`repouso`、`marca` 或某种时段类型如 `winder` 和 `sol`；一个或多个；`linha_estado` 也可以）、`ordem=`（`desc` 为默认，或 `asc`）、`limite=`（默认 100，最多 1000）和 `pagina=` |
 | `criterios` | 标准组以及每块手表带计算过程的分数 |
-| `eventos`、`agenda` | 自定义事件；需要出现在 Google 日历中的内容 |
-| `config`、`cron` | 设置（含消息、预览和 cron 状态：从未运行、已停止或运行中）；cron 的运行记录及时段摘要。在 `cron` 中：`de=` 和 `ate=`（日期，或日期和时间）、`situacao=`（`atividade` 为默认；`erro`、`nada` 或 `todas`）、`busca=`（日志中的文本）、`limite=`（默认 100，最多 1000）和 `pagina=`；每个参数前面加 `cron_` 也可以（`cron_de`……） |
+| `eventos`、`destinos`、`agendas` | 自定义事件；消息推送目标，含每个接收的内容和今天的预览；日历，含每个日历中应有的内容 |
+| `ics` | ICS 链接类型日历的日历内容（无需登录，凭链接的密钥） |
+| `config`、`cron` | 收藏的设置（含推送目标和日历的摘要以及 cron 状态：从未运行、已停止或运行中）；cron 的执行记录，含时段摘要。在 `cron` 中：`de=` 和 `ate=`（日期，或日期和时间）、`situacao=`（`atividade`，默认；`erro`、`nada` 或 `todas`）、`busca=`（日志中的文本）、`limite=`（默认 100，最多 1000）和 `pagina=`；每个参数也可以加 `cron_` 前缀（`cron_de`……） |
 | `arvore`、`cadastros` | 分组；定义页面显示的一切 |
 | `calcular` | 一个公式（`expressao=`）在手表上的结果（`relogio=` 一个或多个 id；没有时为全部），不保存，并给出计算的各部分；公式写错：返回 400 和错误 |
 | `foto` | 一块手表的照片（`relogio=<id>`）：图片本身，不是 JSON |
 | `documentos` | 一块手表的文档（`relogio=<id>`；没有时为全部），含类别、每个 XML 的 NF-e 摘要、文件夹和大小限制 |
 | `documento` | 一个文档的文件（`id=<id>`）：用于显示（图片、视频、音频、PDF、文本）或下载（其他，或使用 `baixar=1`）；`mini=1` 是照片的缩略图。支持分段（Range），方便视频快进 |
-| `usuarios`、`migracoes` | 登录名，每个都带密码哈希（用于用同一密码迁移：参见[用户与密码](#os-usuários-e-as-senhas)）；尚未应用的迁移 |
+| `usuarios`、`migracoes` | master：账户面板，每个账户含其拥有的内容和密码哈希（用于以相同密码迁移：参见[用户与密码](#os-usuários-e-as-senhas)）；其他人只有自己的账户；尚待应用的迁移 |
+| `conta`、`colecoes`、`aprovacoes` | 我的账户（收藏、树、申请、令牌、Web Push 设备；`parte=menu`：只返回菜单用的部分）；收藏和树；审批页面 |
+| `cadastro` | 公开注册，无需登录：是否开放、收藏和所有者（用于申请访问）以及邀请（`convite=<token>`） |
 | `instalacao` | 安装状态：数据库、是否为空、是否已安装并为最新、用户数量以及下一步。数据库为空时也会响应（使用令牌） |
 | `backup` | 数据库备份：是否开启、文件夹是否可用、保留多少份、最近一份以及文件夹中的备份；`arquivo=` 下载其中一份 |
 | `importacao` | 导入旧系统所用的信息：旧数据库服务器（不含密码）、PHP 是否有 MySQL，以及本数据库是否已有手表 |
@@ -148,8 +151,14 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `campos`、`avisos`、`lancamento_tipos` | `novo`、`alterar`、`excluir`（字段还有 `ordem`） |
 | `formulas` | `nova`、`alterar`、`excluir` |
 | `criterios` | `conjunto_criar`、`conjunto_excluir`、`param_novo`、`param_excluir`、`param_pesos`、`sub_novo`、`sub_excluir`、`sub_medida`、`sub_mover`、`sub_pesos`、`faixas`、`ordem`、`restaurar` |
-| `config` | `salvar`、`evento_salvar`、`evento_excluir`、`testar_manha`、`testar_noite`、`teste_agenda_criar`、`teste_agenda_remover`、`sincronizar` |
-| `usuarios` | `salvar`（带 `senha`，或带其他系统的 `senha_hash`；第一个用户使用令牌）、`excluir` |
+| `config` | `salvar`、`evento_salvar`、`evento_excluir` |
+| `destinos` | `salvar`（webhook、电子邮件或 Web Push，含接收内容）、`testar`（`qual=`：文本、早上或晚上）、`excluir` |
+| `agendas` | `salvar`（Google、CalDAV、Outlook 或 ICS）、`sincronizar`、`teste_criar`、`teste_remover`、`novo_link`（ICS）、`outlook_conectar`、`excluir` |
+| `usuarios` | `salvar`（带 `senha`，或带其他系统的 `senha_hash`；第一个用户使用令牌创建，是 master），以及仅限 master：`alterar`、`oficializar`、`prorrogar`、`voltar_demo`、`bloquear`、`transferir`、`dar_acesso`、`excluir` |
+| `conta` | `alterar`（电子邮件、语言、密码）、`token_criar`、`token_revogar`、`push_inscrever`、`push_cancelar`、`push_testar`、`excluir`；仅限 master：`email_testar`、`vapid_gerar` |
+| `colecoes` | `criar`、`renomear`、`excluir`、`arvore_copiar`、`arvore_renomear`、`arvore_excluir` |
+| `acessos`、`convites`、`pedidos` | `remover`、`sair`；`convidar`、`aprovar`、`recusar`、`reenviar`、`cancelar`、`aceitar`；`pedir`、`aprovar`、`recusar`、`cancelar` |
+| `cadastro` | 无需登录：`criar_conta`、`esqueci_senha`、`nova_senha` |
 | `migracoes` | `aplicar` |
 | `instalacao` | `instalar`（仅限空数据库，使用令牌） |
 | `backup` | `fazer`（立即备份）、`restaurar`（`arquivo=`：把数据库恢复到那份备份，恢复前先备份当前内容） |
@@ -162,8 +171,9 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `400` | 写入未通过校验（错误会说明原因），或 `calcular` 中的公式写错 |
 | `302` | `recurso=entrar` 登录正确且带 `volta=`：跳转到页面 |
 | `401` | 没有令牌或网站登录，或二者错误；没有任何用户（或数据库为空）时，响应会说明该怎么做（`sem_usuarios` 和 `como`） |
-| `404` | 未知资源（响应附带资源列表），或不存在的手表、照片、文档（或其文件）或 `README.md`（在 `manual` 中），或不能通过 `codigo` 输出的文件（有意排除的内容带 `o_que_ver`，例如 `config.php`） |
-| `409` | 数据库拒绝写入：记录仍被其他记录使用、值重复，或值不符合数据库的校验规则（会附带规则名） |
+| `403` | 不是 master 的人请求备份和迁移 |
+| `404` | 未知资源（响应会带上资源列表）、你看不到的收藏，或不存在的手表、照片、文档（或其文件）或 `README.md`（在 `manual` 中），或不通过 `codigo` 输出的文件（对于故意排除的内容如 `config.php`，带 `o_que_ver`） |
+| `409` | 没有 `confirmar=1` 的删除（带 `impacto`：会一并删除的内容；什么都没删）；没有任何收藏的账户（`sem_colecao`）；或数据库拒绝了写入：另一条记录仍在使用的记录、重复的值，或违反数据库校验规则的值（会给出规则名） |
 | `413` | 上传超过服务器 PHP 的限制（`post_max_size`）：文件太大 |
 | `500` | 系统停止（`config.php` 中的 `API_TOKEN` 或 `FUSO` 无效）或内部错误 |
 | `503` | 数据库过期（只有 `recurso=migracoes` 和写入 `migracoes`/`aplicar` 会响应；还有不使用数据库的 `manual` 和 `codigo`）、数据库为空（安装前只有 `instalacao` 会响应，还有 `manual` 和 `codigo`）或数据库无法连接 |
@@ -172,7 +182,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 
 密码不会保存在任何地方：只保存它的**哈希**，由 PHP 的 `password_hash`（bcrypt）生成。哈希有 60 个字符，`$2y$12$...`：`$2y$`、成本（12 表示 2¹² 轮）、盐（22 个字符，每个密码随机生成）和结果（31 个字符）。哈希无法还原成密码：登录时，系统用哈希中的盐和成本计算输入密码的 bcrypt 并进行比较（`password_verify`）。同一个密码每次得到的哈希都不同，但都能通过验证。
 
-**要把用户迁到另一个系统**，带上每个用户的登录名和 `senha_hash`（`recurso=usuarios`），在那边用该语言的 bcrypt 校验输入的密码与哈希：每个人都能用原来的密码登录。`$2y$`（PHP）和 `$2b$`（其他语言）是同一种计算；如果库拒绝 `$2y$`，把开头改成 `$2b$` 即可。**要从其他系统引入用户**，发送那边的哈希：`recurso=usuarios`、`acao=salvar`、`login` 和 `senha_hash`（bcrypt `$2y$`、`$2b$` 或 `$2a$`，或 argon2）。
+**要把用户迁到另一个系统**，带上每个用户的登录名和 `senha_hash`（`recurso=usuarios`，由 master），在那边用该语言的 bcrypt 校验输入的密码与哈希：每个人都能用原来的密码登录。`$2y$`（PHP）和 `$2b$`（其他语言）是同一种计算；如果库拒绝 `$2y$`，把开头改成 `$2b$` 即可。**要从其他系统引入用户**，发送那边的哈希：`recurso=usuarios`、`acao=salvar`、`login` 和 `senha_hash`（bcrypt `$2y$`、`$2b$` 或 `$2a$`，或 argon2）。
 
 | 语言 | 校验密码 | 生成哈希 |
 |---|---|---|
@@ -212,7 +222,7 @@ curl -u 用户:密码 --data-urlencode recurso=usuarios --data-urlencode acao=sa
 
 ## 安装 {#instalação}
 
-**要求：** PHP 8.1+，带 `curl` 和 `openssl`（后者仅用于 Google 日历）、一个 Web 服务器（nginx 或 Apache）、cron，以及**下列数据库之一**，各自通过对应的 PHP 扩展：
+**要求：** PHP 8.1+，带 `curl` 和 `openssl`（用于 webhook、电子邮件、Web Push、日历和加密的机密）、一个 Web 服务器（nginx 或 Apache）、cron，以及**下列数据库之一**，各自通过对应的 PHP 扩展：
 
 | 数据库 | PHP 扩展 | 版本 | 何时选择 |
 |---|---|---|---|
@@ -228,7 +238,8 @@ curl -u 用户:密码 --data-urlencode recurso=usuarios --data-urlencode acao=sa
 git clone https://github.com/Challado/relojoeiro.git /var/www/relojoeiro
 cd /var/www/relojoeiro
 
-# 2. 配置：数据库（DB_TIPO）、API 令牌、时区、消息、文档文件夹
+# 2. 配置：数据库（DB_TIPO）、API 令牌、时区、文档文件夹，以及可选的电子邮件、Web Push、Outlook 和公开注册的规则
+#    （参见下方 config.php 的表格）
 cp config.exemplo.php config.php
 nano config.php
 #    文档文件夹（DOCUMENTOS_PASTA），位于发布文件夹之外，PHP 用户可写：
@@ -246,7 +257,7 @@ php instalar.php --lingua=zh-CN
 #    或通过 API，使用 config.php 中的令牌（语言：lingua=zh-CN，与任何请求一样）：
 #    curl -H "X-Api-Token: $TOKEN" -d recurso=instalacao -d acao=instalar -d lingua=zh-CN http://服务器/relojoeiro/api.php
 
-# 5. 第一个用户（输入密码时不显示）
+# 5. 第一个用户，即 master，连同他的收藏（输入密码时不显示）
 php criar_usuario.php 你的登录名
 #    或通过 API，使用令牌：
 #    curl -H "X-Api-Token: $TOKEN" -d recurso=usuarios -d acao=salvar -d login=你的登录名 -d senha=... http://服务器/relojoeiro/api.php
@@ -268,7 +279,7 @@ php criar_usuario.php 你的登录名
 
 检查方法：打开 `https://你的服务器/relojoeiro/config.php` 和 `https://你的服务器/relojoeiro/.git/config`：两者都必须返回 **403**。
 
-**8. 在浏览器中打开**，用创建的用户登录。初始设置已经就绪：在 **今天 → 新手表** 中录入你的手表，为每块表选择分组并填写字段。
+**8. 在浏览器中打开**，用创建的用户登录。初始设置已经就绪：在 **今天 → 新手表** 中录入你的手表，为每块表选择分组并填写字段。在**我的账户**中填写你的电子邮件。其他人可以通过**创建账户**（`cadastro.php`）、你的邀请进入，或由 master 在**用户**中创建账户。
 
 ### `config.php` {#o-configphp}
 
@@ -279,7 +290,15 @@ php criar_usuario.php 你的登录名
 | `DB_ARQUIVO` | 数据库文件（SQLite），位于发布文件夹之外 |
 | `API_TOKEN` | **必填**，至少 10 个字符。没有它，整个系统会停止并说明原因。 |
 | `FUSO` | 时区，如 `America/Sao_Paulo`。为空或缺失：使用 PHP 的时区（php.ini 中的 `date.timezone`）。它适用于一切，包括数据库保存的日期 |
-| `MSG_ENDPOINT`、`MSG_DESTINATARIO`、`MSG_TITULO` | 消息（见下文）。没有地址时，什么都不发送。 |
+| `SEGREDO_CHAVE` | 可选：在数据库中加密 CalDAV 密码、Google 密钥、Outlook 令牌和 webhook 请求头的密钥。没有它则使用 `API_TOKEN`（更换密钥会丢失已保存的机密：重新填写即可） |
+| `MSG_TITULO` | 消息的标题（webhook 的 `{titulo}`、邮件主题、Web Push 标题）。默认：Relógios |
+| `MSG_ENDPOINT`、`MSG_DESTINATARIO` | 仅用于 v25 迁移：旧的消息 API（Telegram）成为收藏的第一个 webhook 推送目标 |
+| `CADASTRO_ABERTO`、`DEMO_DIAS`、`CONVITE_DIAS` | 可选：公开注册（`false`：关闭，只能凭邀请；没有这一行时开放）、演示账户的天数（默认 30；`0`：账户一创建即为正式）以及邀请或申请等待的天数（默认 7） |
+| `EMAIL_METODO`、`EMAIL_REMETENTE`、`SMTP_HOST`、`SMTP_PORTA`、`SMTP_SEGURANCA`、`SMTP_USUARIO`、`SMTP_SENHA` | 电子邮件：`smtp`（指定的服务器；安全方式 `tls` 为默认，或 `ssl`、`nenhuma`）或 `mail`（PHP 的 `mail()`），以及发件人。都没有时不会发出任何邮件 |
+| `IMAP_HOST`、`IMAP_PORTA`、`IMAP_SEGURANCA`、`IMAP_USUARIO`、`IMAP_SENHA`、`IMAP_PASTA_ENVIADOS` | 可选：在账户的“已发送”文件夹中保存每封已发送邮件的副本 |
+| `POP_HOST`、`POP_PORTA`、`POP_SEGURANCA`、`POP_USUARIO`、`POP_SENHA` | 可选：仅供邮件测试通过 POP3 检查邮箱 |
+| `VAPID_PUBLICA`、`VAPID_PRIVADA`、`VAPID_ASSUNTO` | Web Push：密钥对（master 在**我的账户**中生成）和主题（`mailto:...`） |
+| `OUTLOOK_CLIENTE_ID`、`OUTLOOK_CLIENTE_SEGREDO` | 在 Microsoft 注册的应用，用于 Outlook 日历（见下文） |
 | `DOCUMENTOS_PASTA` | 文档文件（说明书、发票、照片、视频）的文件夹，**位于发布文件夹之外**，PHP 用户可写。没有它，文档页面会提示缺少并且不接受上传。例如：`define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
 | `DOCUMENTOS_COPIA_BANCO` | 可选：在数据库中为文档保留备份，对整个系统生效。`true`：每个文件也都存入数据库；`false`：都不存；没有它：由每块手表和每个文件自己决定。参见[手表的文档](#os-documentos-do-relógio)。 |
 | `BACKUP_PASTA`、`BACKUP_MANTER`、`BACKUP_DOCUMENTOS` | 可选：数据库备份（参见[备份](#cópia-de-segurança)）。文件夹，**位于发布文件夹之外**（没有它就没有自动备份）；保留多少份（默认 7）；以及是否包含存放在数据库中的文档内容（默认：不包含）。 |
@@ -287,23 +306,24 @@ php criar_usuario.php 你的登录名
 | `DOCUMENTOS_LIMITE` | 可选：接受的最大文档大小，以字节为单位。没有它为 100 MB（`104857600`）；`0` 或 `-1` 表示系统不设限制。旧名称 `MANUAL_LIMITE` 在它不存在时仍然有效。PHP 和 nginx 的限制仍然生效（参见[上传大小](#o-tamanho-dos-envios-os-documentos)）。例如：`define("DOCUMENTOS_LIMITE", 524288000);` 表示 500 MB |
 | `ANTIGO_HOST`、`ANTIGO_PORTA`、`ANTIGO_USUARIO`、`ANTIGO_SENHA` | 可选，仅在本系统使用 Postgres、SQLite 或 Firebird 时供 `importar.php` 使用：旧系统的 MySQL 在哪里 |
 | `ALEATORIO_RANDOMORG_URL`、`ALEATORIO_ANU_URL` | 可选，仅用于测试：随机数来源的地址（`https://www.random.org/integers/` 和 `https://qrng.anu.edu.au/API/jsonI.php`）。更改后，抽选会向测试服务器索取数字 |
-| `GOOGLE_TOKEN_URL`、`GOOGLE_API_URL` | 可选，仅用于测试：日历使用的 Google 地址（令牌地址 `https://oauth2.googleapis.com/token` 和 API 地址 `https://www.googleapis.com/calendar/v3`）。更改后，日历同步会与测试服务器而不是 Google 通信 |
+| `GOOGLE_TOKEN_URL`、`GOOGLE_API_URL`、`OUTLOOK_LOGIN_URL`、`OUTLOOK_GRAPH_URL` | 可选，仅用于测试：日历使用的 Google 和 Microsoft 地址。改掉后，同步会与测试服务器通信 |
 | `TEXTOS_ESTRITO` | 可选，供翻译者使用：`true` 让缺少的翻译报错停止（参见[语言](#os-idiomas)） |
 
 系统读取它所在文件夹中的 `config.php`。服务器环境变量 `RELOGIOS_CONFIG` 可以指向另一个文件代替它：一致性测试就是这样用的（`testes/paridade.sh`，配合 [`testes/config.teste.php`](testes/config.teste.php)），以便在不碰真正的 `config.php` 的情况下运行。正常安装时不要设置它。
 
-### 通过 Telegram 发送消息 {#mensagens-pelo-telegram}
+### 服务器上的推送目标与日历 {#destinos-e-agendas-no-servidor}
 
-系统不直接与 Telegram API 通信：它调用**你自己的一个 HTTP 地址**（`MSG_ENDPOINT`），带上 `?destinatario=...&titulo=...&mensagem=...`，响应为 2xx 即视为已发送。这样你可以使用自己的机器人、webhook、n8n、Home Assistant 或任何消息桥接。长消息会被分成几段。**设置**中有**立即发送**按钮（早上和晚上）用于测试。
+每个收藏在**推送目标**和**日历**页面中创建自己的推送目标和日历。需要在服务器上配置的内容：
 
-### Google 日历 {#google-agenda}
+- **Telegram（一个 webhook）：**用 @BotFather 创建一个机器人（它会给出令牌），并找到你的 `chat_id`（给机器人发一条消息，然后打开 `https://api.telegram.org/bot<token>/getUpdates`）。在**推送目标**中新建一个 webhook：方法 `GET` 或 `POST`，地址 `https://api.telegram.org/bot<token>/sendMessage`，字段 `chat_id` = 该数字，`text` = `{mensagem}`。任何其他桥接服务（n8n、Home Assistant、你自己的地址）都一样：系统把 `{titulo}` 和 `{mensagem}` 放到你指定的位置，响应为 2xx 即视为发送成功。长消息会分段发送。
+- **电子邮件：**在 `config.php` 中配置 SMTP 服务器（`SMTP_HOST`、端口、安全方式、用户名和密码；Gmail 和 Outlook 需要应用专用密码）和 `EMAIL_REMETENTE`；或使用 `EMAIL_METODO = "mail"`，服务器上需有 sendmail。配置 `IMAP_*` 后，每封已发送的邮件都会在“已发送”中保存一份副本。master 可在**我的账户 › 邮件服务器**中测试。
+- **Web Push：**网站必须通过 **https** 打开。master 在**我的账户 › Web Push 密钥**中生成密钥，并把两行复制到 `config.php`。之后，每个人在**我的账户**中为自己的设备打开通知（在 iPhone 上，先把网站添加到主屏幕），Web Push 推送目标会发往它所指向的人的设备。
+- **Google 日历：**在 Google Cloud 中创建一个**服务账号**并下载 JSON 密钥；把你的日历共享给服务账号的电子邮件，并授予修改事件的权限；在**日历**中粘贴密钥的 JSON（它会加密保存在数据库中）和日历 ID。只有 master 可以不粘贴 JSON，而是填写服务器上某个文件的路径。
+- **CalDAV（Nextcloud、iCloud、Fastmail）：**日历地址、用户名和密码。在 **iCloud** 上使用**应用专用密码**（appleid.apple.com › App 专用密码），日历地址位于 `caldav.icloud.com`。
+- **Outlook：**在 Microsoft 门户（**Entra ID › 应用注册**）中注册一个应用，授予 `Calendars.ReadWrite` 权限，回调地址为 `https://<你的服务器>/relojoeiro/api.php?recurso=outlook_retorno`（日历页面会显示确切的地址）；把 ID 和密钥写入 `config.php`（`OUTLOOK_CLIENTE_ID` 和 `OUTLOOK_CLIENTE_SEGREDO`）。在**日历**中，**连接到 Outlook** 会跳转到 Microsoft 的页面，连接后返回。没有该应用时，请使用 ICS 链接：Outlook 可以订阅它。
+- **ICS 链接：**无需配置。日历会给出一个秘密链接，可在任何应用中订阅（Google：**其他日历 › 通过网址添加**；Outlook：**从 Web 订阅**；iPhone：**已订阅的日历**）；**更换链接**会让之前的链接失效。
 
-1. 在 Google Cloud 中创建一个**服务账号**并下载 JSON 密钥。
-2. 把密钥保存**在服务器上，位于公共文件夹之外，也在代码仓库之外**（`.gitignore` 已经屏蔽了常见的文件名）。
-3. 把你的日历共享给服务账号的电子邮件，并给予修改事件的权限。
-4. 在**设置**中填写日历 ID 和密钥路径，开启日历，然后点击**立即同步**。
-
-系统只创建、更新和删除它自己创建的事件，不会重复。日常事项（充电、上链、晒太阳）在提前量的时间窗口内加入，保养事项（电池、保养、保修）在任何日期都会加入。
+在 master 的收藏之外，别人填写的地址（webhook、CalDAV）必须位于互联网上：系统会拒绝服务器自身网络中的地址（`127.0.0.1`、`192.168.x`……），以免有人利用服务器探测它所在的网络。
 
 ### 上传大小（文档） {#o-tamanho-dos-envios-os-documentos}
 
@@ -319,7 +339,9 @@ php criar_usuario.php 你的登录名
 
 ### 数据库更新 {#atualizações-do-banco}
 
-更新代码后，如果有新的迁移（`migracao_v*.sql`），API 会返回 `503`，**设置**页面会显示应用迁移的按钮。cron 也会停止并记录原因，而不是只运行一半。新安装时，`schema.sql` 已经包含所有迁移。
+更新代码后，如果有新的迁移（`migracao_v*.sql`），API 会返回 `503`，**设置**页面会显示应用它的按钮（只有 master 能应用）。cron 也会停止并记录原因，而不是只运行一半。在新安装中，`schema.sql` 已经包含所有迁移的结构，初始集合在创建第一个用户时从 `modelo.json` 载入。
+
+**v25 迁移（多人使用）**会重建整个数据库：先把所有内容的副本保存到 `relojoeiro-antes-da-v25.jsonl.gz`（在 `BACKUP_PASTA` 中，或在临时文件夹中），创建新结构，再以新形式、相同的编号写回每条记录（手表、文档和记录保留原来的 id）。最早的用户成为 master，以及收藏和树的所有者；其他人成为该收藏的成员。Telegram（`MSG_ENDPOINT`）成为第一个 webhook 推送目标，Google 日历成为第一个日历。如果中途停止，同一个按钮会从副本重新执行。
 
 `schema.sql` 和每个迁移都是**四种数据库共用的一个文件**：结构（`CREATE TABLE`、`ALTER TABLE`）用 MySQL 方言书写，由 [`banco.php`](banco.php) 转换为 Postgres、SQLite 和 Firebird（`AUTO_INCREMENT`、`ENUM`、`TINYINT`、`DATETIME`、表内的 `INDEX`、`AFTER` 以及 `MODIFY COLUMN`，后者在 SQLite 上会重建表）。数据（`INSERT`、`UPDATE`）使用四种数据库通用的 SQL：不用 `GROUP_CONCAT`、`IF()` 或 `FIND_IN_SET`。`INSERT IGNORE`、`REPLACE INTO`、`NOW()`、`LEAST`、`GREATEST`、`LENGTH`、`DATE()`、`<=>`、`LIMIT`/`OFFSET`、不带 `FROM` 的 `SELECT`、多行 `INSERT` 和 `CONCAT` 都可以使用（`CONCAT` 不要带 NULL 参数：在 Postgres 中 NULL 会变成空文本，在 MySQL 中结果会变成 NULL）。迁移 v2 到 v8 早于这一做法，只用于升级旧的 MySQL 数据库：Postgres、SQLite 或 Firebird 数据库一创建就是当前版本。
 
@@ -342,7 +364,7 @@ php criar_usuario.php 你的登录名
 - **在 Firebird 上：**
   - 长文本（`schema.sql` 中的 `TEXT`：公式、消息、cron 日志）最多 **8191 个字符**（MySQL 上为 65535 字节），因为它们会变成 `VARCHAR(8191)`（文本 `BLOB` 在 PHP 中会以 null 的形式返回空值）；
   - 超过 31 个字符的索引名和规则名只在末尾保留完整名称 md5 的一部分，而 `no` 表是保留字：在外部程序中（`isql-fb`、FlameRobin），要写成带引号的大写 `"NO"`；
-  - 其中一列可以为空的多列唯一键（`canal_aviso`）会变成基于表达式的唯一索引，因为在 Firebird 上，值相同且另一列为空的两行会被视为重复（MySQL 上不会）；
+  - 多列唯一键中某一列可以为空时，会改为基于表达式的唯一索引，因为在 Firebird 中，值相同且另一列为空的两行被视为重复（在 MySQL 中则不会）；
   - `NOW()` 的时间来自 PHP（Firebird 没有按连接设置的时区），使用 `config.php` 中的 `FUSO`，与其他数据库一样。
 - **带 `AFTER` 的迁移中的列顺序**只在 MySQL 上有效：在其他数据库上，新列会放在表的末尾（只影响 API 的 JSON 中键的顺序）。
 - **id** 在不同数据库中可能跳过不同的数字（MySQL 在某些 `INSERT ... SELECT` 中会成块预留 id）。
@@ -364,22 +386,23 @@ php criar_usuario.php 你的登录名
 - **不会丢失的文档：** 每个文件都保存在文件夹中，如有要求（由系统、手表或文件本身决定），还会完整地保存在数据库中；cron 会重建丢失的文件、复制缺少的副本并清理多余的内容（参见[手表的文档](#os-documentos-do-relógio)）。
 - **能自我保护的数据库：** 关系型且规范化，四种数据库上都有外键和校验规则（`CHECK`、`NOT NULL`、`UNIQUE`）：错误的写入会被数据库本身拒绝（参见[数据库模型](#o-modelo-do-banco)）。
 - **安全失败：** 没有有效令牌或数据库过期时，系统会停止并说明原因，而不是只运行一半。
+- **多人使用，由数据库隔离：**每个请求作用于一个收藏，数据库层会改写每条查询，使其只能看到该收藏（及其树）；任何界面或资源都无需记得筛选。你看不到的收藏返回 404，如同不存在。
 - **六种语言：** 所有文本都经过 `t()`，以葡萄牙语为键，每种语言一个文件（参见[语言](#os-idiomas)）。
 
 ### 数据库模型 {#o-modelo-do-banco}
 
-数据库是关系型且规范化的（自迁移 v16 起）：每样东西一张表，表之间的每个关联都是一个**外键**，不会把列表当作文本存放在字段里。直接在数据库中删除也不会留下孤立的数据：
+数据库是关系型且规范化的（自 v16 迁移起；自 v25 起共 60 张表）：每样东西一张表，表之间的每个关联都是一个**外键**，没有任何列表以文本形式存放在字段中。账户（`usuario`）、收藏（`colecao`，含所有者和树的根）、成员（`colecao_usuario`）、对某个所有者全部内容的访问（`acesso_dono`）、邀请、申请、令牌、Web Push 设备、推送目标（`destino` 以及每种类型一张表）和日历（`agenda` 以及每种类型一张表）。树（`no`）的根保存所有者，各分组指向上一级；它的定义（字段、类型、公式、提醒、分类）指向树中的一个分组；属于收藏的内容（手表、模式、计划、事件、设置、配件）指向收藏。可选的关联变成了单行表（配件的手表、区块的固定手表、计划某天的区块）。直接在数据库中删除也不会留下悬空的数据：
 
 | 关联 | 删除上级时 | 适用于 |
 |---|---|---|
-| 必需（没有上级，这一行就不存在） | **一起删除**（`ON DELETE CASCADE`） | 分组会带走其下的分组、手表、字段、记录类型、公式和提醒；手表会带走记录、字段值、照片、文档、计划和它自己的标准；记录会带走消耗测量；以此类推 |
+| 必需（没有上级就没有这一行） | **一并删除**（`ON DELETE CASCADE`） | 账户会带走它的收藏和树；收藏会带走手表、模式、计划、推送目标和日历；树会带走使用它的收藏；分组会带走其中的分组、手表、字段、记录类型、公式和它的提醒；手表会带走记录、值、照片、文档、计划和它自己的标准；记录会带走消耗测量；依此类推 |
 | 可选（该列可以为空） | **解除关联**（`ON DELETE SET NULL`） | 自定义事件的手表、模式区块的分组和固定手表、计划某天的区块、消除提醒的记录类型、配件的手表（配件变为独立） |
 
 在界面上（**分组**，删除），删除分组时仍会先把属于它的内容（其下的分组、手表、字段、类型、公式和提醒）移到上一级分组；级联删除只针对直接在数据库中删除的情况。
 
-列表都变成了表：模式区块的星期（`modo_bloco_dia`）和每周事件的星期（`evento_dia`）、文档类别接受的文件类型（`documento_categoria_aceita`）、列表字段的选项（`campo_opcao`），以及每个渠道和每种提醒是否发送、是否有自己的消息及其文本（`canal_aviso`）。当前使用的模式是模式的 `ativo` 列，消耗测量通过结束它的那条记录关联到手表。`config` 表只保存零散的值（时间、阈值、标记）。
+列表变成了表：模式区块的日期（`modo_bloco_dia`）和每周事件的日期（`evento_dia`）、文档分类接受的文件类型（`documento_categoria_aceita`）、列表字段的选项（`campo_opcao`），以及每个推送目标和每个日历接收的内容（`destino_aviso`、`destino_evento`、`agenda_aviso`、`agenda_evento`）。当前使用的模式是模式的 `ativo` 列，消耗测量通过结束它的那条记录关联到手表。`config` 表只保存每个收藏的零散值，`sistema` 表保存整个系统的值。
 
-有三处引用**按名称**进行，这是有意为之：公式和标准按标识符引用字段和公式（就是你写的文本，如 `HORAS("pulso"; 30)`），`canal_aviso` 按标识符引用提醒，因为一个提醒可以有多个版本（每个分组一个），而渠道对所有版本都有效。删除提醒的最后一个版本时，系统会一并删除它在 `canal_aviso` 中的记录。
+有三种引用特意**通过名称**进行：公式和标准通过标识符引用字段和公式（就是你写的文本，例如 `HORAS("pulso"; 30)`），`destino_aviso` 和 `agenda_aviso` 通过标识符引用提醒，因为一个提醒可以有多个版本（每个分组一个），而选择对所有版本生效。当一个提醒的最后一个版本被删除时，系统会一并删除它的这些行。
 
 **数据库会校验它保存的内容**（自迁移 v17 起），使用标准 SQL 的功能，而不仅仅依靠系统：错误的写入无论来自哪里（界面、API、有人直接改数据库）都会被拒绝。API 返回 `409`，详情中带有被违反的规则名。
 
@@ -419,17 +442,22 @@ php criar_usuario.php 你的登录名
 |---|---|
 | [`api.php`](api.php) | API，所有读写的入口（认证、格式、资源顺序、筛选、响应），文件头中有完整文档 |
 | [`api/`](api/) | API 中较大的资源，每个一个文件（`hoje.php`、`ficha.php`、`configuracao.php`、`desejos.php`、`estatisticas.php`、`hora_certa.php`、`passaporte.php`、`galeria.php`、`ajuda.php`……），还有它的函数（`funcoes.php`）和写入（`escrita.php`）：它们在 `api.php` 内部运行，直接打开则什么都不做（`.htaccess` 和 `nginx-relogios.conf` 会阻止该文件夹） |
-| [`lib.php`](lib.php) | 核心：登录、树、公式引擎、提醒、标准、轮换、排程、消息、日历 |
+| [`lib.php`](lib.php) | 核心：登录、树、公式引擎、提醒、标准、轮换、排程、文档 |
+| [`colecoes.php`](colecoes.php) | 核心中的收藏部分：请求的作用范围、`modelo.json`、加密的机密、`sistema` 表、v25 迁移和删除的影响 |
+| [`alertas.php`](alertas.php) | 推送目标（webhook、电子邮件、Web Push）和日历（Google、CalDAV、Outlook、ICS） |
+| [`contas.php`](contas.php) | 账户：公开注册、我的账户、收藏和树、邀请、申请、令牌以及 master 面板 |
 | [`banco.php`](banco.php) | 数据库：与 MySQL、Postgres、SQLite 或 Firebird 的连接，以及 SQL 在它们之间的转换 |
 | [`operacoes.php`](operacoes.php) | 每次写入的规则：校验和消息 |
 | [`cron.php`](cron.php) | 计划、当天的时段、早上和晚上两轮、事件、日历以及文档的维护 |
-| `index.php`、`plano.php`、`desejos.php`、`estatisticas.php`、`hora.php`、`acessorios.php`、`galeria.php`、`passaporte.php`、`ficha.php`、`documentos.php`、`historico.php`、`configuracao.php`、`criterios.php`、`grupos.php`、`cadastros.php`、`execucoes.php`、`usuarios.php` | 各个页面（只有骨架） |
+| `index.php`、`plano.php`、`desejos.php`、`estatisticas.php`、`hora.php`、`acessorios.php`、`galeria.php`、`passaporte.php`、`ficha.php`、`documentos.php`、`historico.php`、`configuracao.php`、`destinos.php`、`agendas.php`、`criterios.php`、`grupos.php`、`cadastros.php`、`execucoes.php`、`conta.php`、`aprovacoes.php`、`usuarios.php`、`cadastro.php` | 页面（只有骨架；`cadastro.php` 是公开页面） |
+| `push.js` | Web Push 的 service worker |
 | `ajuda.php` | 帮助页面：只有骨架；`ajuda.js` 向 API 请求文本（`recurso=manual`：README 中面向用户的章节，已在 `lib.php` 中转换为 HTML） |
 | [`pagina.php`](pagina.php) | 页面顶部的菜单和页面结尾（登录属于 API：`recurso=entrar`） |
 | `api.js`、`hoje.js`、`painel.js`、`tabela.js`、`foto.js`…… | 各个界面，在浏览器中根据 API 生成 |
 | [`estilo.css`](estilo.css) | 外观 |
 | [`textos/`](textos/) | 语言：`funcoes.php`（`t()` 函数、语言列表、请求的语言、每种语言的日期和数字格式）以及每种语言一个文件（`en.php`、`zh-CN.php`、`hi.php`、`es.php`、`fr.php`：葡萄牙语文本 => 译文，按部分划分）；直接打开则什么都不做 |
-| [`schema.sql`](schema.sql) | 数据库结构和初始设置（分组、字段、公式、提醒、模式、标准） |
+| [`schema.sql`](schema.sql) | 数据库结构（只有结构：不含数据） |
+| [`modelo.json`](modelo.json) | 新收藏的初始集合（分组、字段、类型、公式、提醒、标准、分类、模式、消息），不含固定代码 |
 | `migracao_v2.sql` … `migracao_v24.sql` | 迁移，通过设置页面应用 |
 | [`config.exemplo.php`](config.exemplo.php) | `config.php` 的模板 |
 | [`instalar.php`](instalar.php) | 把 `schema.sql` 安装到 `config.php` 指定的数据库中，任何一种都可以（与 `recurso=instalacao` 相同） |
@@ -451,7 +479,7 @@ php criar_usuario.php 你的登录名
 
 1. 较大的改动，**请先开一个 issue** 说明你的打算：避免做了却无法合并的工作。
 2. 在 GitHub 上 fork，创建分支并修改。fork 只用于准备提案（参见[许可证](#licença)）。
-3. **遵循代码的风格：** 纯 PHP 和 JavaScript，没有依赖，注释和消息用葡萄牙语（翻译放在 `textos/` 中）。关于手表的知识放进定义（`schema.sql`），不放进代码。
+3. **遵循代码的风格：** 纯 PHP 和 JavaScript，无依赖，注释和消息使用葡萄牙语（翻译放在 `textos/` 中）。关于手表的知识放进初始集合（`modelo.json`），而不是代码中。
 4. 修改了数据库？创建一个 `migracao_vN.sql` 并在 `lib.php` 的 `$MIGRACOES` 中登记：结构用 MySQL 方言，数据用四种数据库通用的 SQL（参见[数据库更新](#atualizações-do-banco)）。
 5. 修改了 API？在帮助的词典中**解释每个新字段**：`api/ajuda.php` 中 `recurso=ajuda` 的 `"campos"`（资源对应的部分，以字段路径为键）。它是唯一的来源：`api.php` 文件头中的词典由它生成，使用 `php testes/dicionario.php --gravar`（不要手动修改文件头）。
 6. 提交之前，**在四种数据库上运行一致性测试**（[`testes/`](testes/)）（GitHub 也会在每次 push 到 `main` 时运行：一致性测试、文档和布局，见 [`.github/workflows/testes.yml`](.github/workflows/testes.yml)；结果显示在 **Actions** 标签页以及每个提交旁边的 ✓ / ✗ 中）：`testes/paridade.sh` 在数据库都运行时必须以 `Tudo igual.` 结束。它还会检查文档：文件头就是帮助生成的内容，响应的每个字段都有解释。它还检查架构（[`testes/arquitetura.php`](testes/arquitetura.php)，GitHub 也会在一个不需要数据库的快速步骤中运行它）：页面只提供骨架，界面的网络请求只经过 API，数据库只由核心、API 和 cron 访问，内部文件在 Web 上被屏蔽，每个操作和每个 `config.php` 常量都有文档，以及文件开头列出的其他规则。如果 PHP 在运行期间给出任何警告（Warning、Notice、Deprecated），它也会失败。修改了界面？还要运行布局检查（`testes/paridade.sh --layout sqlite`）：`0 problemas`。

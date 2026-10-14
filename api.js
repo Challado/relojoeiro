@@ -239,6 +239,10 @@ function tratarResposta(resp) {
     if (resp.status === 503 && dados.pendentes && window.location.pathname.indexOf("configuracao.php") < 0) {
       window.location = "configuracao.php";
     }
+    // a conta sem coleção (a que pediu acesso e espera; a que saiu de todas): Minha conta, que cria uma ou pede acesso
+    if (resp.status === 409 && dados.sem_colecao && window.location.pathname.indexOf("conta.php") < 0) {
+      window.location = "conta.php";
+    }
     // sem login: o login é da API (recurso=entrar), que pede o usuário e a senha e volta para esta página
     if (resp.status === 401) {
       window.location = "api.php?recurso=entrar&volta=" + encodeURIComponent((window.location.pathname.split("/").pop() || "index.php") + window.location.search + window.location.hash);
@@ -352,6 +356,19 @@ document.addEventListener("submit", function (ev) {
     });
     enviar(dados)
       .then(function (res) {
+        // a exclusão em dois passos: a API diz o que sai junto; só com a confirmação ela apaga
+        if (res.confirmar && res.impacto) {
+          if (!confirm(res.impacto.texto + "\n\n" + t("Excluir mesmo assim?"))) {
+            botoes.forEach(function (b) {
+              b.disabled = false;
+            });
+            return null;
+          }
+          dados.set("confirmar", "1");
+          return enviar(dados).then(function (res2) {
+            aoGravar(form, res2, dados);
+          });
+        }
         aoGravar(form, res, dados);
       })
       .catch(function (e) {
@@ -445,3 +462,93 @@ document.addEventListener("keydown", function (ev) {
     fecharFotoAmpliada();
   }
 }, true);
+
+// "Inserir âncora" nos modelos de mensagem (Destinos e Agendas): a lista das âncoras ({relogio}, {acao}...), que põe a
+// escolhida onde está o cursor do campo alvo (o id dele)
+function listaAncoras(ancoras, alvo, rotulo) {
+  return el("select", {"class": "ancora", "data-alvo": alvo, "aria-label": rotulo}, el("option", {"value": ""}, t("Inserir âncora")) + Object.keys(ancoras).map(function (k) {
+    return el("option", {"value": "{" + k + "}"}, h("{" + k + "} " + ancoras[k]));
+  }).join(""));
+}
+document.addEventListener("change", function (ev) {
+  if (ev.target.matches("select.ancora")) {
+    var sel = ev.target;
+    var alvo = document.getElementById(sel.dataset.alvo);
+    if (alvo && sel.value) {
+      var i = alvo.selectionStart;
+      var f = alvo.selectionEnd;
+      alvo.value = alvo.value.slice(0, i) + sel.value + alvo.value.slice(f);
+      alvo.focus();
+      alvo.selectionStart = alvo.selectionEnd = i + sel.value.length;
+    }
+    sel.value = "";
+  }
+});
+
+// "O que recebe" um destino ou uma agenda: cada tipo (o relógio do dia, a véspera, os avisos, os eventos) com a caixa
+// (envia[]) e, se $proprio, o modelo próprio (modelo_<tipo>; vazio: a mensagem padrão), dentro de um "Personalizar"
+function tabelaRecebe(prefixo, recebe, ancoras, proprio) {
+  return el("input", {"type": "hidden", "name": "envia[]", "value": ""}) + el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados recebe"},
+    el("thead", {}, el("tr", {}, el("th", {}, t("Recebe")) + el("th", {}, t("Aviso")) + el("th", {}, t("Quando")) + (proprio ? el("th", {}, t("Texto")) : "")))
+    + el("tbody", {}, recebe.map(function (r) {
+      var id = prefixo + "-m-" + r.tipo;
+      return el("tr", {}, el("td", {"class": "centro"}, el("input", {"type": "checkbox", "name": "envia[]", "value": r.tipo, "checked": r.envia, "aria-label": r.nome}))
+        + el("td", {}, h(r.nome)) + el("td", {"class": "nota"}, h(r.quando))
+        + (proprio ? el("td", {}, el("details", {"open": r.modelo !== null}, el("summary", {}, r.modelo !== null ? t("Personalizado") : t("Personalizar"))
+          + el("div", {"class": "campo-modelo"}, el("div", {"class": "rotulo-modelo"}, el("label", {"for": id}, t("Texto de {1}", {1: h(r.nome)})) + listaAncoras(ancoras, id, t("Inserir âncora")))
+            + el("textarea", {"id": id, "name": "modelo_" + r.tipo, "rows": "3", "placeholder": t("Vazio: a mensagem padrão")}, h(r.modelo || ""))))) : ""));
+    }).join(""))));
+}
+
+// Uma opção numa linha: o rótulo à esquerda e o campo à direita, na mesma coluna em todos os quadros (a Configuração, os Destinos, as Agendas, a Conta). "check": a caixa no
+// lugar do campo; "largo": o rótulo em cima e o campo na largura toda (textos longos, como um endereço)
+function parCampo(rotulo, controle, tipo) {
+  return el("label", {"class": "par-campo" + (tipo ? " " + tipo : "")}, el("span", {"class": "rotulo"}, h(rotulo)) + el("span", {"class": "controle"}, controle));
+}
+
+// O menu de quem entrou (recurso=conta, parte=menu; não na página pública do cadastro): o seletor da coleção (com mais de
+// uma: grava o cookie colecao e abre a página de novo), o aviso da conta de demonstração (os dias que faltam), as aprovações
+// que esperam (o link para a página Aprovações), o Usuários (só o master) e a faixa "Vendo como" (o master vendo o sistema
+// como outro usuário: o botão volta a ele, apagando o cookie como)
+var CONTA_MENU = null;
+function escolherColecao(id) {
+  document.cookie = "colecao=" + id + "; path=/; max-age=31536000; SameSite=Lax";
+  window.location.reload();
+}
+function verComo(login) {
+  document.cookie = "como=" + encodeURIComponent(login) + "; path=/; SameSite=Lax" + (login === "" ? "; max-age=0" : "");
+  document.cookie = "colecao=; path=/; max-age=0; SameSite=Lax";
+  window.location = "index.php";
+}
+var contaPronta = document.querySelector("[data-menu-conta]") ? api({recurso: "conta", parte: "menu"}).then(function (m) {
+  CONTA_MENU = m;
+  var lugar = document.querySelector("[data-menu-conta]");
+  var res = "";
+  if (m.colecoes.length > 1) {
+    res += el("label", {"class": "menu-colecao"}, el("span", {"class": "visualmente-oculto"}, t("Coleção")) + el("select", {"aria-label": t("Coleção"), "onchange": "escolherColecao(this.value)"},
+      m.colecoes.map(function (c) {
+        return el("option", {"value": c.id, "selected": c.id === m.colecao}, h(c.nome) + (c.papel !== "dono" ? " · " + h(c.dono) : ""));
+      }).join("")));
+  }
+  if (m.aprovacoes > 0) {
+    res += el("a", {"href": "aprovacoes.php", "class": "menu-aviso", "title": t("Pedidos e convites esperando a sua resposta")}, t("Aprovações ({1})", {1: m.aprovacoes}));
+  }
+  if (m.usuario && m.usuario.demo) {
+    res += el("a", {"href": "conta.php", "class": "menu-aviso", "title": t("Conta de demonstração: depois disso, ela e as suas coleções são apagadas. Peça ao administrador para torná-la oficial.")},
+      t("Demo: {1} dias", {1: m.usuario.dias_restantes}));
+  }
+  lugar.innerHTML = res;
+  if (m.master) {
+    document.querySelectorAll("[data-so-master]").forEach(function (a) {
+      a.hidden = false;
+    });
+  }
+  if (m.vendo_como) {
+    var faixa = document.createElement("div");
+    faixa.className = "faixa-vendo-como";
+    faixa.innerHTML = t("Vendo como {1}: o que aparece e o que se grava é da conta dele.", {1: el("strong", {}, h(m.vendo_como.login))}) + " "
+      + el("button", {"type": "button", "class": "leve", "onclick": "verComo('')"}, t("Voltar a ser {1}", {1: h(m.vendo_como.master)}));
+    document.body.insertBefore(faixa, document.body.firstChild);
+  }
+  return m;
+}).catch(function () { return null; }) : Promise.resolve(null);

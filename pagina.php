@@ -9,20 +9,25 @@ require_once __DIR__ . "/textos/funcoes.php";
 // O começo de uma página, como no sistema antigo: o cabeçalho e o menu (Cadastros e Ajuda no fim, as páginas que o antigo
 // não tinha) e o seletor do idioma. Cada página abre o seu <main> e mostra as suas mensagens. O idioma da página: o cookie
 // lingua (o seletor), senão o do navegador; a página não lê o banco, então o padrão da instalação chega pelo api.js (ele
-// grava o cookie e abre a página de novo, uma vez)
-function topo($titulo, $ativo)
+// grava o cookie e abre a página de novo, uma vez). O api.js completa o menu com o que é de quem entrou (recurso=conta,
+// parte=menu): o seletor da coleção, o aviso da conta de demonstração, as aprovações que esperam, a faixa "Vendo como" e o
+// Usuários (só o master). A página pública ($publica: o cadastro) não tem menu, só o idioma
+function topo($titulo, $ativo, $publica = false)
 {
     lingua_definir(lingua_do_pedido());
-    $menu = ["index.php" => t("Hoje"), "plano.php" => t("Plano"), "desejos.php" => t("Desejos"), "estatisticas.php" => t("Estatísticas"), "hora.php" => t("Hora certa"),
+    $menu = $publica ? [] : ["index.php" => t("Hoje"), "plano.php" => t("Plano"), "desejos.php" => t("Desejos"), "estatisticas.php" => t("Estatísticas"), "hora.php" => t("Hora certa"),
         "acessorios.php" => t("Acessórios"), "galeria.php" => t("Galeria"), "configuracao.php" => t("Configuração"), "criterios.php" => t("Critérios"), "grupos.php" => t("Grupos"),
-        "execucoes.php" => t("Execuções do cron"), "usuarios.php" => t("Usuários"), "cadastros.php" => t("Cadastros"), "ajuda.php" => t("Ajuda")];
+        "execucoes.php" => t("Execuções do cron"), "conta.php" => t("Conta"), "usuarios.php" => t("Usuários"), "cadastros.php" => t("Cadastros"), "ajuda.php" => t("Ajuda")];
     echo "<!doctype html>\n<html lang=\"" . lingua_atual() . "\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta name=\"theme-color\" content=\"#1c2530\">\n<title>" . htmlspecialchars(t($titulo), ENT_QUOTES, "UTF-8") . "</title>\n"
         . "<link rel=\"stylesheet\" href=\"estilo.css?v=" . (int)@filemtime(__DIR__ . "/estilo.css") . "\">\n</head>\n<body>\n<nav class=\"topo\">\n";
     // no celular o menu fica recolhido: uma barra com a página atual e o botão que abre a lista (na tela grande o botão some)
     echo "  <button type=\"button\" class=\"menu-botao\" aria-expanded=\"false\" aria-controls=\"menu-itens\"><span class=\"menu-pagina\">" . ($menu[$ativo] ?? htmlspecialchars(t($titulo), ENT_QUOTES, "UTF-8")) . "</span><span class=\"menu-abre\">" . t("Menu") . "</span></button>\n"
         . "  <div class=\"menu-itens\" id=\"menu-itens\">\n";
     foreach ($menu as $url => $nome) {
-        echo "    <a href=\"" . $url . "\"" . ($url === $ativo ? " class=\"ativo\"" : "") . ">" . htmlspecialchars($nome, ENT_QUOTES, "UTF-8") . "</a>\n";
+        echo "    <a href=\"" . $url . "\"" . ($url === $ativo ? " class=\"ativo\"" : "") . ($url === "usuarios.php" ? " data-so-master hidden" : "") . ">" . htmlspecialchars($nome, ENT_QUOTES, "UTF-8") . "</a>\n";
+    }
+    if (!$publica) {
+        echo "    <span class=\"menu-conta\" data-menu-conta></span>\n";
     }
     // o idioma: grava o cookie lingua (um ano) e abre a página de novo
     echo "    <label class=\"menu-lingua\"><span class=\"visualmente-oculto\">" . t("Idioma") . "</span><select aria-label=\"" . htmlspecialchars(t("Idioma"), ENT_QUOTES, "UTF-8") . "\" onchange=\"document.cookie = 'lingua=' + this.value + '; path=/; max-age=31536000; SameSite=Lax'; window.location.reload()\">";

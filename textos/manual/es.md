@@ -1,4 +1,4 @@
-<!-- origem: 2555db405552e06af2ee272b37999de5bf60aa96 -->
+<!-- origem: c314f20bdec70dd175b1d7d18ba361d94cbc2c2a -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -322,6 +322,56 @@ falta tocar la ficha. El "Consumo en uso" y el "Consumo guardado" de la ficha so
 
 ---
 
+## Varias personas: cuentas, colecciones y acceso {#várias-pessoas-contas-coleções-e-acesso}
+
+El sistema es de **varias personas**, cada una con su **cuenta**, y cada cuenta con **sus colecciones**. Una colección tiene sus
+relojes, el historial, el plan, la Configuración, los destinos de los mensajes y los calendarios; lo que se ve y lo que se
+guarda en cualquier página es siempre de la colección elegida en el **selector del menú** (aparece cuando hay más de una). El
+primer usuario de la instalación es el **master**: cuida de todo el sistema.
+
+| Concepto | Qué es |
+|---|---|
+| **Cuenta** | el usuario, la contraseña, el correo (para recuperar la contraseña, recibir las invitaciones y los avisos) y el idioma. Cada uno cuida de la suya en **Mi cuenta** (menú **Cuenta**). |
+| **Colección** | un conjunto de relojes de un **dueño**, con nombre. Una persona puede tener varias ("Mi colección", "Los de mi padre"). Nace **con el conjunto inicial** (los grupos, campos, fórmulas, avisos, criterios y modos listos, en el idioma de quien la crea), **vacía** (solo la raíz del árbol) o **con un árbol suyo que ya existe**. |
+| **Árbol de grupos** | los grupos y sus definiciones (campos, tipos de registro, fórmulas, avisos, categorías de documentos, criterios de los grupos). Es del dueño y puede servir a **varias colecciones suyas**: lo que cambia en él vale para todas. En **Mi cuenta** se pueden copiar, renombrar y eliminar los árboles. |
+| **Miembro** | quien ve una colección de otra persona (y la usa: marca, registra, cambia el día). |
+| **Todo de un dueño** | quien ve **todas** las colecciones de alguien, también las que cree después. |
+| **Master** | ve todas las colecciones, cuida de las cuentas (**Usuarios**), de la copia de seguridad y de las migraciones. |
+
+**Cómo entra alguien en una colección que no es suya:**
+
+- **Invitación:** en **Aprobaciones**, el dueño escribe el correo y elige lo que va a ver (una colección, o todo lo suyo). Sale
+  un correo con un enlace (vale `CONVITE_DIAS` días, 7 sin la línea): quien no tiene cuenta la crea por el enlace, y quien
+  tiene entra y acepta. La invitación de un **miembro** espera que el dueño la apruebe. Sin correo en el servidor, el enlace
+  aparece en la pantalla, para enviarlo como quiera.
+- **Solicitud:** en **Mi cuenta** (o ya en el registro), la persona pide acceso a una colección, o a todo lo de un dueño, con un
+  mensaje. El dueño recibe un correo y aprueba o rechaza en **Aprobaciones**; la persona recibe la respuesta por correo.
+- **Por el master:** en **Usuarios**, **Dar acceso**.
+
+En **Aprobaciones**, el dueño ve también **quién ve sus colecciones** y le quita el acceso a alguien; en **Mi cuenta**, cada uno
+puede **salir** de una colección que no es suya. Invitaciones y solicitudes sin respuesta se van solas después de
+`CONVITE_DIAS` días.
+
+**El registro abierto** (la página `cadastro.php`, sin login, con el enlace **Crear cuenta**): la persona elige el usuario, la
+contraseña, el correo, el idioma y cómo empieza (una colección con el conjunto inicial, una vacía, o pedir acceso a la de
+alguien). La cuenta creada así es **de demostración** por `DEMO_DIAS` días (30 sin la línea): el menú muestra **Demo: N días**,
+un correo avisa 7 días y 1 día antes y, vencida, el cron borra la cuenta con todo lo que es suyo. El master **hace oficial la
+cuenta** (o la prorroga) en **Usuarios**. Con `CADASTRO_ABERTO = false` en el `config.php`, el registro se cierra: solo entra
+quien el master crea o quien tiene una invitación. La página tiene también **Olvidé la contraseña**: el enlace para elegir una
+contraseña nueva va por correo y vale 2 horas.
+
+**El panel del master** (**Usuarios**) muestra cada cuenta con el correo, el papel, el último acceso, cuándo vence, las
+colecciones (con cuántos relojes) y qué más ve, y las acciones: **Ver como** (todo el sistema como lo ve esa persona, con una
+franja arriba y el botón para volver), **Hacer oficial**, **Prorrogar**, **Volver a demo**, **Bloquear**, **Cambiar** (el
+usuario, el correo, el idioma, el papel), **Cambiar la contraseña**, **Transferir la colección** (a otro dueño: el árbol va
+junto o, si sirve a otras colecciones del dueño anterior, el nuevo dueño recibe una copia), **Dar acceso** y **Eliminar**. Una
+cuenta común que se queda sin nada (sin colección, sin acceso, sin solicitud ni invitación esperando) sale sola.
+
+**Eliminar, en cualquier lugar, avisa antes de lo que sale junto.** Eliminar una colección, un árbol, una cuenta, un reloj, un
+campo, un destino... muestra antes la lista de lo que va junto (*"Sale junto: 4 valores de campo, 2 registros, 12 días del
+plan..."*, con las colecciones afectadas: un árbol sirve a varias) y solo borra después de que usted confirme. Los archivos de
+los documentos salen del disco en el momento. Por la API, toda eliminación pide `confirmar=1`.
+
 ## La ficha de cada reloj, campo por campo {#o-cadastro-de-cada-relógio-campo-por-campo}
 
 Todo reloj tiene **nombre**, **grupo**, **situación en la colección**, **disponible** y **foto**. El resto son **campos**, y qué campos tiene
@@ -388,8 +438,10 @@ En la ficha del reloj, el cuadro **Documentos** muestra cuántos tiene el reloj 
   - **XML:** si es una **NF-e** (el XML de la factura electrónica brasileña), la página muestra el resumen: el emisor, el
     número, la serie, la fecha, el valor, los productos y la clave de acceso. Y el botón **Descargar el XML**.
   - **Audio:** el reproductor. **Cualquier otro archivo:** el botón **Descargar**.
-- **Editar** (el título, la fecha, la categoría, la descripción) y **Eliminar**, en cada documento; el de fotos y videos está
-  en la lista **Editar o eliminar fotos y videos**, al final de la página.
+- **El menú ⋮ de cada archivo:** cada foto (en la esquina de la miniatura), cada vídeo de la lista, cada tarjeta de archivo y
+  el propio visor de fotos tienen el botón **⋮**, que abre **Abrir**, **Descargar**, **Editar** (una ventana sobre la página,
+  con el título, la fecha, la categoría, la descripción y la copia en la base de datos) y **Eliminar** (muestra lo que sale
+  junto y pide la confirmación).
 - Arriba, la elección del reloj: **Todos** muestra los documentos de toda la colección.
 
 **Dónde quedan los archivos:** en una **carpeta del servidor** (el `DOCUMENTOS_PASTA` del `config.php`, fuera de la carpeta
@@ -430,8 +482,9 @@ copia y ya nadie la pide la pierde (si el archivo de la carpeta coincide), hasta
 ya no existe (`r<número>`) se borra entera; y un archivo de la carpeta que no pertenece a ningún documento se borra (solo
 después de 10 minutos, porque un envío puede estar a medias). Todo lo que hace queda en el registro (**Ejecuciones del cron**).
 
-Eliminar un documento borra el archivo y la copia en la base; eliminar el reloj borra sus documentos. Sin la carpeta
-configurada, la página dice qué falta y no acepta envíos.
+Eliminar un documento borra el archivo y la copia en la base de datos; eliminar el reloj (o la colección, el árbol, la cuenta)
+borra sus documentos, y los archivos salen de la carpeta en el momento. Sin la carpeta configurada, la página avisa de lo que
+falta y no acepta envíos.
 
 Los documentos no entran en ningún cálculo: son de consulta. Los números que usa el sistema (la reserva de marcha, la
 autonomía, el tiempo de sol para llenar...) siguen en los campos de la ficha. Un manual que el fabricante solo publica como
@@ -670,9 +723,9 @@ Las autonomías salen en segundos en la API (`recurso=autonomia`) y en palabras 
 
 ## La Configuración, opción por opción {#a-configuração-opção-por-opção}
 
-La página **Configuración** guarda las opciones de todo el sistema. Entre paréntesis, el nombre de cada una en la API
-(`recurso=config`, en la clave `config`), para quien automatiza; el predeterminado de una instalación nueva va al final de
-cada línea.
+La página **Configuración** guarda las opciones **de la colección** (cada colección tiene las suyas). Entre paréntesis, el
+nombre de cada una en la API (`recurso=config`, en la clave `config`), para quien automatiza; el valor por defecto de una
+colección nueva va al final de cada línea.
 
 ### General {#geral}
 
@@ -690,46 +743,66 @@ cada línea.
 | **Garantía de rotación** (`max_sem_uso`) | ningún reloj pasa más de estos días sin uso: el que pasa va delante de todos. 0 la desactiva. Predeterminado: 21. |
 | **Aviso Arrinconado: días sin ir a la muñeca** (`encostado_dias`) | tras cuántos días sin ir a la muñeca un reloj de la colección recibe el aviso **Arrinconado** (en **Hoy toca**: *Arrinconado*, *"el límite de días sin ir a la muñeca venció hace 2d, 10/11/2026 18:00"*). De 1 a 3650. Predeterminado: 30. El aviso se desactiva en **Definiciones › Avisos**. |
 | **Consumo medido: los últimos días** (`medicao_janela_dias`) | la ventana del [consumo medido por las lecturas](#gasto-medido-pelas-leituras): las mediciones más antiguas salen de la cuenta. De 1 a 3650. Predeterminado: 90. |
-| **Dirección del sistema** (`url_sistema`) | la dirección que el marcador `{link}` pone en los mensajes y en el calendario. Predeterminado: vacío. |
+| **Dirección del sistema** (`url_sistema`) | la dirección que el marcador `{link}` pone en los mensajes y en el calendario, y la de los enlaces de los correos, del ICS y del retorno de Outlook. Es de todo el sistema: solo el master la cambia. Por defecto: vacía (la dirección por la que se abrió la página). |
 | **Próximos días: mostrar hasta** (`proximos_por_pagina`) y **Plan: mostrar hasta** (`plano_por_pagina`) | cuántos días muestran a la vez los **Próximos días** de la página Hoy y el **Día a día** de la página Plan (de 1 a 366). Pasado eso, aparece el paginador debajo: **<** (anterior), los números (el primero, el último y hasta dos a cada lado del actual, con … en los huecos) y **>** (siguiente); al detener el ratón encima, la ayuda dice *Anterior*, *Siguiente* o *Página N*. Predeterminado: 7 y 31. |
-| **Idioma predeterminado** (`idioma`) | el idioma de las pantallas para quien todavía no eligió el suyo en el selector del menú (vea [Los idiomas](#os-idiomas)): portugués, inglés, chino, hindi, español o francés. Predeterminado: vacío (el del navegador, si no portugués). |
+| **Idioma predeterminado** (`idioma`) | el idioma de la colección: el de las pantallas para quien no eligió el suyo (en el selector del menú o en **Mi cuenta**; vea [Los idiomas](#os-idiomas)) y el de los mensajes y los calendarios sin idioma propio: portugués, inglés, chino, hindi, español o francés. Por defecto: el de quien creó la colección. |
 | **Abrir el reloj en la página Hoy** (`painel_modo`) | **Al lado de la lista** (`lado`): el reloj pulsado se abre en un panel a la derecha, y la lista sigue a la vista. **En una ventana flotante, grande** (`flutuante`): se abre en el centro de la pantalla, sobre la página, con el fondo oscurecido y los cuadros lado a lado; se cierra con la ×, Esc o un clic fuera. En el móvil, los dos ocupan toda la pantalla. Predeterminado: al lado de la lista. |
 | **Destacado arriba de la página Hoy** (`destaque_hoje`) | **El reloj del día** (`dia`): el cuadro grande de arriba de la página Hoy muestra el reloj del día (el del plan), con hasta cuándo se queda y por qué salió. **El reloj en la muñeca ahora** (`pulso`): muestra el reloj que está en la muñeca, aunque no sea el del día (con *en la muñeca ahora* y, debajo, *Reloj del día: …*, que abre el del día); con más de uno en la muñeca, el último puesto; sin ninguno en la muñeca, se queda el del día, con el aviso *Ningún reloj en la muñeca ahora*. Los datos de debajo (estado, carga, el botón Me lo puse/Me lo quité, la foto) son los del reloj destacado. Predeterminado: el reloj del día. |
 
-En la página, cada opción está en una línea, con el nombre a la izquierda y el campo a la derecha, en cuadros (Rutina del día,
-Límites y cálculos, Pantallas, Cron, Sorteos, Telegram, Google Calendar); el botón **Guardar configuración** está en una barra
+En la página, cada opción está en una línea, con el nombre a la izquierda y el campo a la derecha, en recuadros (Rutina del
+día, Límites y cálculos, Pantallas, Cron, Sorteos, Mensajes y calendarios); el botón **Guardar configuración** está en una barra
 fija al pie de la pantalla.
 
-### Telegram y Google Calendar {#telegram-e-google-agenda}
+### Mensajes y calendarios {#mensagens-e-agendas}
 
-| Opción | Qué hace |
-|---|---|
-| **Enviar alertas** (`mensagens_ativas`) | activa y desactiva el envío por Telegram (la dirección de la API de mensajes está en el `config.php`). Predeterminado: activado. |
-| **Google Calendar activo** (`agenda_ativa`) | activa y desactiva la creación de eventos en el calendario. Predeterminado: desactivado. |
-| **Id del calendario** (`agenda_id`) y **clave** (`agenda_chave`) | el calendario de Google y la ruta, en el servidor, de la clave JSON de la cuenta de servicio (vacío: el `google-conta-servico.json` en la carpeta del sistema). Vea [Google Calendar](#google-agenda). |
-| **Antelación** (`agenda_antecedencia`) | con cuántos días de antelación los eventos entran en el calendario. De 1 a 365. Predeterminado: 30. |
-| **Mensaje predeterminado** de cada canal (`tg_padrao`, `ag_padrao`) | el texto de todo aviso que no tiene mensaje propio, con los marcadores (`{acao}`, `{relogio}`, `{motivo}`, `{carga}`, `{ate}`, `{link}`...; el botón **Insertar marcador** los muestra todos). En el calendario, la primera línea es el título del evento y el resto, la descripción. |
-| **Qué va adónde** (en el formulario, `alerta_tipos[]` y `agenda_tipos[]`; en la base, la columna `envia` de la tabla `canal_aviso`) | la tabla que marca, para cada tipo de aviso (el día, la víspera, cada aviso registrado y cada evento personalizado), si va por Telegram y al calendario. Un evento personalizado nuevo nace ya marcado para Telegram. |
-| **Mensaje propio** de un aviso en un canal (en el formulario, `tg_proprio_<tipo>` y `tg_corpo_<tipo>`; en el calendario, `ag_proprio_<tipo>` y `ag_corpo_<tipo>`; en la base, las columnas `propria` y `corpo` de la tabla `canal_aviso`) | marcado, ese aviso sale con su propio texto en ese canal, en lugar del mensaje predeterminado. |
-| **Eventos personalizados** | sus propios recordatorios (limpiar las correas, revisar la colección), con nombre, cuándo se disparan (una vez, todos los días, en días laborables, un día del mes o cada N días), la hora y, si quiere, un reloj. Salen por los canales como los avisos. |
-| **Probar mañana**, **Probar noche**, **Crear evento de prueba**, **Quitar evento de prueba**, **Sincronizar ahora** | envían el mensaje de la mañana o de la noche en el acto, crean (dentro de 10 minutos) o borran un evento de prueba en el calendario, y sincronizan el calendario ahora, sin esperar al cron. |
+Los mensajes y los calendarios tienen páginas propias, abiertas desde el recuadro **Mensajes y calendarios** de la Configuración:
 
-La vista previa **Cómo sale hoy** muestra los mensajes y eventos de hoy exactamente como van a salir.
+- **Destinos** (`destinos.php`): adónde van los mensajes de la colección. Cada destino es un **webhook** (una petición HTTP:
+  Telegram, n8n, Home Assistant, cualquier puente), un **correo** (por el servidor de correo del `config.php`) o el **Web Push**
+  (las notificaciones en el móvil y en el navegador de alguien que ve la colección). Cada uno tiene el nombre, **Activo**, el
+  **idioma**, el **mensaje por defecto** (con los marcadores `{acao}`, `{relogio}`, `{motivo}`, `{carga}`, `{ate}`,
+  `{link}`...; el botón **Insertar marcador** los muestra todos) y **Lo que recibe**: cada tipo de aviso (el reloj del día, la
+  víspera, cada aviso de las definiciones y cada evento personalizado), con **Personalizar**, que abre el texto propio de ese
+  aviso en ese destino. **Enviar una prueba**, **Enviar el de la mañana ahora** y **Enviar el de la noche ahora** prueban en el
+  momento, y **Cómo sale hoy** muestra el texto de cada horario.
+- **Calendarios** (`agendas.php`): **Google Calendar**, un **CalDAV** (Nextcloud, **iCloud**, Fastmail), **Outlook**
+  (Microsoft 365, Outlook.com) o un **enlace ICS** (una dirección para suscribirse en cualquier app de calendario, incluso en
+  Google y Outlook). Cada uno tiene el nombre, **Activo**, **Eventos hasta cuántos días adelante** (30 en uno nuevo), el
+  idioma, la **plantilla del evento** (la primera línea es el título; el resto, la descripción) y **Lo que recibe**.
+  **Sincronizar ahora**, **Crear evento de prueba** (dentro de 10 minutos) y **Quitar evento de prueba**; debajo, **Lo que
+  tiene que estar en él ahora**. El sistema crea, actualiza y borra solo los eventos que él mismo creó; los que ya pasaron se
+  quedan, como historial.
+
+Las contraseñas, las claves y los tokens de los calendarios y las cabeceras de los webhooks quedan **cifrados en la base de
+datos** y nunca vuelven a la pantalla. Cómo configurar cada servicio en el servidor: vea [Destinos y calendarios en el
+servidor](#destinos-e-agendas-no-servidor).
+
+**Eventos personalizados** (en la Configuración): recordatorios suyos (limpiar las correas, revisar la colección), con nombre,
+cuándo se disparan (una vez, todos los días, en días de la semana, en un día del mes o cada N días), la hora y, si quiere, un
+reloj. La tabla muestra cada uno con **Va a** (los destinos y los calendarios que lo reciben); un evento nuevo ya va a todos
+los destinos.
 
 ### Lo que el sistema guarda solo {#o-que-o-sistema-guarda-sozinho}
 
-Estas no aparecen como opciones: el sistema las anota para sí, y la API las muestra. (El modo de rotación en uso no está aquí:
-es la columna `ativo` de la tabla `modo`, y se cambia en la página Hoy.)
+Estas no aparecen como opción: el sistema las anota para sí mismo, y la API las muestra. (El modo de rotación en uso no está
+aquí: es la columna `ativo` de la tabla `modo`, y se cambia en la página Hoy.) En la colección (la tabla `config`):
 
 | Clave | Qué es |
 |---|---|
-| `escala_fim`, `escala_gerada` | hasta qué día va la escala inteligente y cuándo se generó. |
-| `ultima_manha`, `ultima_noite` | el día de la última vuelta de la mañana y de la noche (para no ejecutarlas dos veces). |
-| `cron_ultima_execucao`, `cron_erro`, `cron_registro` | cuándo se ejecutó el cron, el último error (vacío: ninguno) y el registro de la última vuelta con actividad. |
-| `agenda_teste_id` | el evento de prueba del calendario, mientras existe. |
-| `na_hora_enviados` | los avisos "en el acto" que ya salieron por Telegram y siguen vencidos (`relogio_id:aviso`): no vuelven a salir; salen de la lista cuando dejan de estar vencidos. |
+| `escala_fim`, `escala_gerada` | hasta qué día llega la escala inteligente y cuándo se generó. |
+| `ultima_manha`, `ultima_noite` | el día de la última ronda de la mañana y de la noche (para no ejecutarla dos veces). |
+| `na_hora_enviados` | los avisos "en el momento" que ya salieron y siguen vencidos (`relogio_id:aviso`): no vuelven a salir; dejan la lista cuando dejan de vencer. |
+
+Y de todo el sistema (la tabla `sistema`):
+
+| Clave | Qué es |
+|---|---|
+| `cron_ultima_execucao`, `cron_erro`, `cron_registro` | cuándo se ejecutó el cron, el último error (vacío: ninguno) y el registro de la última ronda con actividad. |
 | `backup_ultima` | cuándo se hizo la última copia de seguridad. |
-| `migracao_v10`, `migracao_v12`, `migracao_v16`, `migracao_v17`, `migracao_v18`, `migracao_v19`, `migracao_v20` | las marcas de que estas migraciones se aplicaron (las demás se marcan por la propia estructura de la base). |
+| `aleatorio_ultima`, `aleatorio_fora` | la fuente del último lote de números aleatorios y desde cuándo fallan los servicios de fuera. |
+| `url_sistema`, `idioma` | la dirección del sistema y el idioma de la instalación. |
+| `demo_avisos` | los avisos de vencimiento de la cuenta de demostración que ya salieron (para no enviarlos dos veces). |
+| `migracao_v25` | la marca de que se aplicó la migración v25 (el paso a varias personas). |
 
 ## Un día con Relógios 2 {#um-dia-com-o-relógios-2}
 
@@ -792,6 +865,11 @@ todos los filtros se quedan, con el nombre encima. El cambio se mide con los dat
 cuentan), no por el ancho de la pantalla. Los **Próximos días** también muestran todos los días de la programación en
 cualquier pantalla.
 
+**El menú** tiene, a la derecha, lo que es de quien entró: el **selector de colección** (con más de una; las de otros con el
+nombre del dueño), **Aprobaciones (N)** cuando hay solicitudes o invitaciones esperando, **Demo: N días** en la cuenta de
+demostración y el idioma. El master viendo el sistema como otra persona ve una franja arriba, **Viendo como...**, con el botón
+para volver.
+
 **El estado de cada reloj** dice dónde está ahora: **En uso** (verde, en la muñeca), el nombre de la sesión abierta cuando
 está en otro lugar, como **Al sol**, **En el winder** o **En el cargador** (naranja), **En reposo** (rojo, guardado) y **No
 disponible** (gris, fuera de la rotación y guardado) o **Prestado** (gris: con otra persona). El filtro **Estado** tiene cada
@@ -811,12 +889,17 @@ que usted registre entra aquí con su nombre.
 | **Hora exacta** (`hora.php`) | La hora del servidor para poner en hora los relojes: una esfera con agujas y la hora digital andando segundo a segundo (ajustada por la API, descontando el tiempo de la petición; debajo, cuánto adelanta o atrasa el reloj del aparato), la fecha en palabras y la hora UTC; los cuadros **Zona horaria y UTC** (la zona, el desfase, la hora Zulu, la letra militar de la zona, como *P (Papa)*, y el grupo fecha-hora, *131433P OCT 26*), **Calendario** (día del año, semana ISO, trimestre, día juliano, Unix) y **Luna** (la fase, la edad, la parte iluminada y las próximas lunas llena y nueva, por el ciclo medio: puede variar un día); y **Cómo ponerlo en hora**. Vuelve a leer la API cada minuto. Por la API: `recurso=hora_certa`. |
 | **Documentos** (`documentos.php`) | Los documentos de un reloj (o de todos), abiertos desde la ficha: envío de varios archivos, una pestaña por categoría, la galería de fotos a pantalla completa con presentación, los videos en secuencia en el orden elegido, el visor de PDF, el resumen de la NF-e a partir del XML, y descarga para el resto. Vea [Los documentos del reloj](#os-documentos-do-relógio). |
 | **Historial** (`historico.php`) | La línea de tiempo de un reloj: en uso por la rotación, en la muñeca fuera de la rotación, en el winder, al sol, en reposo, y cada cuerda, carga y cambio de pila. Muestra cuánto tiempo y qué porcentaje pasó en cada estado, con filtro de período y de estado. |
-| **Configuración** (`configuracao.php`) | La **Copia de seguridad** (las copias de la carpeta, con **Descargar** y **Restaurar**, y **Hacer una copia ahora**). Los horarios (mañana, noche, uso), Telegram, Google Calendar, el mensaje predeterminado de cada canal, la tabla **"Qué va adónde"** (qué aviso sale por qué canal), los eventos personalizados, la vista previa **"Cómo sale hoy"** y el botón que aplica las migraciones de la base. |
+| **Configuración** (`configuracao.php`) | Las opciones de la colección (los horarios, los límites, las pantallas, el idioma), la situación del cron, el recuadro **Mensajes y calendarios** (los destinos y los calendarios, con los enlaces a sus páginas), los eventos personalizados, la **Copia de seguridad** (solo el master: las copias de la carpeta, con **Descargar** y **Restaurar**, y **Hacer una copia ahora**) y el botón que aplica las migraciones de la base de datos. Vea [La Configuración, opción por opción](#a-configuração-opção-por-opção). |
+| **Destinos** (`destinos.php`) | Adónde van los mensajes de la colección: cada webhook, correo o Web Push, con el mensaje, el idioma, lo que recibe, las pruebas y cómo sale hoy. Vea [Mensajes y calendarios](#mensagens-e-agendas). |
+| **Calendarios** (`agendas.php`) | Los calendarios de la colección (Google, CalDAV, Outlook, enlace ICS), con la plantilla del evento, lo que recibe, la sincronización, el evento de prueba y lo que tiene que estar en él ahora. |
 | **Criterios** (`criterios.php`) | Los conjuntos de criterios por lugar (todos los relojes, un grupo o un reloj), con parámetros, subparámetros, rangos y la nota de cada reloj con la cuenta abierta. Tiene **Restaurar los criterios iniciales**. |
 | **Grupos** (`grupos.php`) | El árbol: crear, renombrar, mover, ordenar, eliminar (lo que era del grupo pasa al de arriba) y elegir el grupo de cada reloj. |
 | **Definiciones** (`cadastros.php`) | Campos, tipos de registro, fórmulas (con **Probar**), avisos, modos de rotación y las categorías de documentos: todo lo que el sistema usa que no es código. |
 | **Ejecuciones del cron** (`execucoes.php`) | Qué hizo el cron en cada vuelta, cuánto tardó y los errores, con filtros. |
-| **Usuarios** (`usuarios.php`) | Quién tiene acceso: crear usuario o cambiar la contraseña. |
+| **Mi cuenta** (`conta.php`, el menú **Cuenta**) | Las colecciones que ve (abrir, crear, renombrar, eliminar, salir), sus árboles de grupos (copiar, renombrar, eliminar), pedir acceso a la colección de alguien, sus datos (el correo, el idioma, la contraseña), los **tokens de API** (para sus scripts), las **notificaciones en este aparato** (el Web Push) y eliminar la cuenta. Vea [Varias personas](#várias-pessoas-contas-coleções-e-acesso). |
+| **Aprobaciones** (`aprovacoes.php`) | Las solicitudes de acceso a sus colecciones (aprobar, rechazar), las invitaciones que hicieron los miembros y le esperan, **Invitar** (por correo), las invitaciones que hizo y quién ve sus colecciones (quitar el acceso). El menú muestra **Aprobaciones (N)** cuando hay algo esperando. |
+| **Usuarios** (`usuarios.php`, solo el master) | El panel de las cuentas: cada una con lo que tiene y las acciones (ver como, hacer oficial, prorrogar, bloquear, cambiar, cambiar la contraseña, transferir una colección, dar acceso, eliminar) y crear una cuenta. |
+| **Crear cuenta** (`cadastro.php`, sin login) | El registro abierto: la cuenta nueva (con una colección, o pidiendo acceso), la invitación que llegó por correo y **Olvidé la contraseña**. |
 | **Ayuda** (`ajuda.php`) | Esta guía dentro del sistema: la idea central, cómo funciona, la ficha de cada reloj campo por campo, los avisos de carga, las pantallas y las preguntas frecuentes (las mismas secciones del README, leídas de él; la API devuelve el mismo texto en `recurso=manual`). |
 
 ### Los idiomas {#os-idiomas}
@@ -892,6 +975,19 @@ En su página **Documentos** (desde la ficha: **Abrir los documentos**). Elija l
 Fotos, Vídeos, Varios), los archivos, y envíe. Las fotos se convierten en una galería con presentación, los videos se
 reproducen en secuencia, el PDF se abre en el visor y el XML de la factura muestra el resumen. Un manual que solo existe como
 página web se convierte en PDF con el navegador (**Imprimir → Guardar como PDF**).
+
+**¿Mi esposa (o un amigo) puede ver mi colección?**
+Puede. En **Aprobaciones**, **Invitar**: su correo y lo que va a ver (una colección, o todo lo suyo). Recibe un enlace: sin
+cuenta, crea una con él; con cuenta, entra y acepta. O ella misma pide acceso (en **Mi cuenta**, o ya en el registro), y usted
+aprueba. Para quitar el acceso después: **Aprobaciones › Quién ve tus colecciones**.
+
+**¿Se puede tener más de una colección?**
+Sí: **Mi cuenta › Nueva colección**. Puede usar un árbol de grupos que usted ya tiene (las definiciones son comunes: un campo
+nuevo vale en las dos) o empezar con el suyo propio. El selector del menú cambia de colección.
+
+**Creé la cuenta por el registro: ¿va a desaparecer?**
+La cuenta del registro abierto es de demostración por 30 días (el `DEMO_DIAS` del servidor). Un correo avisa 7 días y 1 día
+antes; para seguir, pida al administrador que la haga oficial. Vencida, sale con sus colecciones.
 
 **¿Por qué salió este reloj, y no otro?**
 Mire debajo de su nombre, en la página **Hoy** o en la **Plan**: cada día viene con el motivo de la elección. Si es
@@ -1013,6 +1109,10 @@ descargar la base por el navegador).
 - **Para cambiar de base** (de SQLite a MySQL, por ejemplo): instale la base nueva, aplique las migraciones, ponga la copia en
   la carpeta de copias y restaure.
 - **Por la API:** `recurso=backup` (el estado y las copias; `arquivo=` descarga una), y las escrituras `fazer` y `restaurar`.
+- **Lo que se eliminó sigue en las copias de antes.** Eliminar una cuenta, una colección o un reloj quita todo de la base de
+  datos y los archivos de la carpeta en el momento, pero las copias de seguridad hechas antes guardan lo que había, hasta que
+  salgan por la regla del `BACKUP_MANTER` (7 días, sin la línea). Para quitarlo del todo, borre también las copias viejas de
+  la carpeta.
 - **Para desactivarla** (otra rutina ya copia la base, o es una instalación de prueba): `define("BACKUP_ATIVO", false);` en el
   `config.php`. El cron no hace copia, la escritura `fazer` se rechaza y el cuadro **Copia de seguridad** desaparece de la
   Configuración, junto con el aviso de que falta la carpeta.

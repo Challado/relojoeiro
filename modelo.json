@@ -1,0 +1,2545 @@
+{
+    "sobre": "O conjunto inicial de cada coleção nova (a instalação, o cadastro aberto, o Restaurar dos critérios). Sem códigos: cada grupo tem um apelido, e os outros itens citam o grupo pelo apelido (\"raiz\" é a árvore inteira); o aviso cita o tipo que o resolve pelo identificador. Os nomes e os textos estão em português e saem no idioma de quem cria a coleção (a parte \"cadastro\" de textos/<idioma>.php).",
+    "grupos": [
+        {
+            "apelido": "smartwatch",
+            "nome": "Smartwatch",
+            "pai": "raiz",
+            "ordem": 1
+        },
+        {
+            "apelido": "tradicional",
+            "nome": "Tradicional",
+            "pai": "raiz",
+            "ordem": 2
+        },
+        {
+            "apelido": "mecanico",
+            "nome": "Mecânico",
+            "pai": "tradicional",
+            "ordem": 1
+        },
+        {
+            "apelido": "automatico",
+            "nome": "Automático",
+            "pai": "mecanico",
+            "ordem": 1
+        },
+        {
+            "apelido": "corda_manual",
+            "nome": "Corda manual",
+            "pai": "mecanico",
+            "ordem": 2
+        },
+        {
+            "apelido": "quartzo",
+            "nome": "Quartzo",
+            "pai": "tradicional",
+            "ordem": 2
+        },
+        {
+            "apelido": "pilha",
+            "nome": "Pilha",
+            "pai": "quartzo",
+            "ordem": 1
+        },
+        {
+            "apelido": "solar",
+            "nome": "Solar",
+            "pai": "quartzo",
+            "ordem": 2
+        }
+    ],
+    "campos": [
+        {
+            "identificador": "observacao",
+            "nome": "Observação",
+            "tipo": "texto",
+            "unidade": "",
+            "padrao": null,
+            "grupo": "raiz",
+            "ordem": 1,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "preferencia",
+            "nome": "Sua nota para o relógio (0 a 100)",
+            "tipo": "inteiro",
+            "unidade": "",
+            "padrao": "50",
+            "grupo": "raiz",
+            "ordem": 2,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "data_compra",
+            "nome": "Data da compra",
+            "tipo": "data",
+            "unidade": "",
+            "padrao": null,
+            "grupo": "raiz",
+            "ordem": 3,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "valor_compra",
+            "nome": "Valor pago",
+            "tipo": "decimal",
+            "unidade": "R$",
+            "padrao": null,
+            "grupo": "raiz",
+            "ordem": 4,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "loja",
+            "nome": "Onde comprou",
+            "tipo": "texto",
+            "unidade": "",
+            "padrao": null,
+            "grupo": "raiz",
+            "ordem": 5,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "garantia_ate",
+            "nome": "Garantia até",
+            "tipo": "data",
+            "unidade": "",
+            "padrao": null,
+            "grupo": "raiz",
+            "ordem": 6,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "autonomia_dias",
+            "nome": "Autonomia em uso real",
+            "tipo": "decimal",
+            "unidade": "dias",
+            "padrao": "5",
+            "grupo": "smartwatch",
+            "ordem": 10,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "decaimento_uso",
+            "nome": "Decaimento em uso (vazio: 100 ÷ autonomia)",
+            "tipo": "decimal",
+            "unidade": "% por dia",
+            "padrao": null,
+            "grupo": "smartwatch",
+            "ordem": 11,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "decaimento_repouso",
+            "nome": "Decaimento guardado",
+            "tipo": "decimal",
+            "unidade": "% por dia",
+            "padrao": "0.1",
+            "grupo": "smartwatch",
+            "ordem": 12,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "data_revisao",
+            "nome": "Última revisão",
+            "tipo": "data",
+            "unidade": "",
+            "padrao": null,
+            "grupo": "tradicional",
+            "ordem": 20,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "intervalo_revisao_meses",
+            "nome": "Revisão a cada",
+            "tipo": "inteiro",
+            "unidade": "meses",
+            "padrao": null,
+            "grupo": "tradicional",
+            "ordem": 21,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "reserva_horas",
+            "nome": "Reserva de marcha",
+            "tipo": "inteiro",
+            "unidade": "h",
+            "padrao": "40",
+            "grupo": "mecanico",
+            "ordem": 30,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "corda_manual",
+            "nome": "Aceita corda pela coroa",
+            "tipo": "sim_nao",
+            "unidade": "",
+            "padrao": "1",
+            "grupo": "mecanico",
+            "ordem": 31,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "carga_pulso_horas",
+            "nome": "No pulso: horas de uso",
+            "tipo": "decimal",
+            "unidade": "h",
+            "padrao": "8",
+            "grupo": "automatico",
+            "ordem": 32,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "carga_pulso_reserva",
+            "nome": "No pulso: reserva que essas horas dão",
+            "tipo": "decimal",
+            "unidade": "h",
+            "padrao": "36",
+            "grupo": "automatico",
+            "ordem": 33,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "carga_winder_horas",
+            "nome": "No winder: horas",
+            "tipo": "decimal",
+            "unidade": "h",
+            "padrao": null,
+            "grupo": "automatico",
+            "ordem": 34,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "carga_winder_reserva",
+            "nome": "No winder: reserva que essas horas dão",
+            "tipo": "decimal",
+            "unidade": "h",
+            "padrao": null,
+            "grupo": "automatico",
+            "ordem": 35,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "reserva_dias",
+            "nome": "Reserva de energia (cheio até parar)",
+            "tipo": "decimal",
+            "unidade": "dias",
+            "padrao": "180",
+            "grupo": "solar",
+            "ordem": 40,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "carga_sol_horas",
+            "nome": "Sol direto para encher, de parado",
+            "tipo": "decimal",
+            "unidade": "h",
+            "padrao": "10",
+            "grupo": "solar",
+            "ordem": 41,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "data_pilha",
+            "nome": "Última troca de pilha",
+            "tipo": "data",
+            "unidade": "",
+            "padrao": null,
+            "grupo": "pilha",
+            "ordem": 50,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "vida_pilha_meses",
+            "nome": "Vida da pilha",
+            "tipo": "inteiro",
+            "unidade": "meses",
+            "padrao": "24",
+            "grupo": "pilha",
+            "ordem": 51,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "carga_minima",
+            "nome": "Avisar quando a carga chegar a (vazio: o geral)",
+            "tipo": "inteiro",
+            "unidade": "%",
+            "padrao": null,
+            "grupo": "raiz",
+            "ordem": 7,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "luz_pulso",
+            "nome": "No pulso: quanto carrega, comparado ao sol direto",
+            "tipo": "decimal",
+            "unidade": "%",
+            "padrao": "25",
+            "grupo": "solar",
+            "ordem": 42,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "carga_carregador_horas",
+            "nome": "No carregador: horas para encher, de vazio",
+            "tipo": "decimal",
+            "unidade": "h",
+            "padrao": "2",
+            "grupo": "smartwatch",
+            "ordem": 15,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "marca",
+            "nome": "Marca",
+            "tipo": "texto",
+            "unidade": "",
+            "padrao": null,
+            "grupo": "raiz",
+            "ordem": 7,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "referencia",
+            "nome": "Referência (o modelo)",
+            "tipo": "texto",
+            "unidade": "",
+            "padrao": null,
+            "grupo": "raiz",
+            "ordem": 8,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "link",
+            "nome": "Link (a página do relógio)",
+            "tipo": "texto",
+            "unidade": "",
+            "padrao": null,
+            "grupo": "raiz",
+            "ordem": 9,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "preco_alvo",
+            "nome": "Preço-alvo (até quanto pagar)",
+            "tipo": "decimal",
+            "unidade": "R$",
+            "padrao": null,
+            "grupo": "raiz",
+            "ordem": 10,
+            "so_desejado": 1
+        },
+        {
+            "identificador": "prioridade_desejo",
+            "nome": "Prioridade do desejo",
+            "tipo": "lista",
+            "unidade": "",
+            "padrao": null,
+            "grupo": "raiz",
+            "ordem": 11,
+            "so_desejado": 1,
+            "opcoes": [
+                "Alta",
+                "Média",
+                "Baixa"
+            ]
+        }
+    ],
+    "tipos": [
+        {
+            "identificador": "pulso",
+            "nome": "No pulso",
+            "formato": "sessao",
+            "unidade": "",
+            "fecha_as": "22:00",
+            "grupo": "raiz",
+            "ordem": 1,
+            "exclusiva": 1,
+            "mede_gasto": 0,
+            "condicao": null
+        },
+        {
+            "identificador": "carga",
+            "nome": "Leitura de carga",
+            "formato": "valor",
+            "unidade": "%",
+            "fecha_as": null,
+            "grupo": "smartwatch",
+            "ordem": 2,
+            "exclusiva": 0,
+            "mede_gasto": 1,
+            "condicao": null
+        },
+        {
+            "identificador": "corda",
+            "nome": "Corda",
+            "formato": "instantaneo",
+            "unidade": "",
+            "fecha_as": null,
+            "grupo": "mecanico",
+            "ordem": 3,
+            "exclusiva": 0,
+            "mede_gasto": 0,
+            "condicao": "corda_manual"
+        },
+        {
+            "identificador": "winder",
+            "nome": "No winder",
+            "formato": "sessao",
+            "unidade": "",
+            "fecha_as": null,
+            "grupo": "automatico",
+            "ordem": 4,
+            "exclusiva": 1,
+            "mede_gasto": 0,
+            "condicao": null
+        },
+        {
+            "identificador": "sol",
+            "nome": "No sol",
+            "formato": "sessao",
+            "unidade": "",
+            "fecha_as": "18:00",
+            "grupo": "solar",
+            "ordem": 5,
+            "exclusiva": 1,
+            "mede_gasto": 0,
+            "condicao": null
+        },
+        {
+            "identificador": "pilha",
+            "nome": "Troca de pilha",
+            "formato": "instantaneo",
+            "unidade": "",
+            "fecha_as": null,
+            "grupo": "pilha",
+            "ordem": 6,
+            "exclusiva": 0,
+            "mede_gasto": 0,
+            "condicao": null
+        },
+        {
+            "identificador": "revisao",
+            "nome": "Revisão",
+            "formato": "instantaneo",
+            "unidade": "",
+            "fecha_as": null,
+            "grupo": "tradicional",
+            "ordem": 7,
+            "exclusiva": 0,
+            "mede_gasto": 0,
+            "condicao": null
+        },
+        {
+            "identificador": "pulso_antigo",
+            "nome": "No pulso (marcação antiga, sem duração)",
+            "formato": "instantaneo",
+            "unidade": "",
+            "fecha_as": null,
+            "grupo": "raiz",
+            "ordem": 20,
+            "exclusiva": 0,
+            "mede_gasto": 0,
+            "condicao": null
+        },
+        {
+            "identificador": "winder_antigo",
+            "nome": "Winder (marcação antiga, sem duração)",
+            "formato": "instantaneo",
+            "unidade": "",
+            "fecha_as": null,
+            "grupo": "automatico",
+            "ordem": 21,
+            "exclusiva": 0,
+            "mede_gasto": 0,
+            "condicao": null
+        },
+        {
+            "identificador": "sol_antigo",
+            "nome": "Sol (marcação antiga, sem duração)",
+            "formato": "instantaneo",
+            "unidade": "",
+            "fecha_as": null,
+            "grupo": "solar",
+            "ordem": 22,
+            "exclusiva": 0,
+            "mede_gasto": 0,
+            "condicao": null
+        },
+        {
+            "identificador": "carregador",
+            "nome": "No carregador",
+            "formato": "sessao",
+            "unidade": "",
+            "fecha_as": null,
+            "grupo": "smartwatch",
+            "ordem": 2,
+            "exclusiva": 1,
+            "mede_gasto": 0,
+            "condicao": null
+        }
+    ],
+    "formulas": [
+        {
+            "identificador": "dias_sem_uso",
+            "nome": "Dias sem uso",
+            "expressao": "PADRAO(DIAS_DESDE_ULTIMO(\"pulso\"); PADRAO(DIAS_DESDE(data_compra); 9999))",
+            "unidade": "dias",
+            "grupo": "raiz"
+        },
+        {
+            "identificador": "uso_30d",
+            "nome": "Dias com uso nos últimos 30 dias",
+            "expressao": "CONTAR(\"pulso\"; 30)",
+            "unidade": "dias",
+            "grupo": "raiz"
+        },
+        {
+            "identificador": "uso_vs_media",
+            "nome": "Uso nos últimos 30 dias, comparado com a média da coleção",
+            "expressao": "SE(PADRAO(MEDIA_COLECAO(\"uso_30d\"); 0) > 0; uso_30d * 100 / MEDIA_COLECAO(\"uso_30d\"); 100)",
+            "unidade": "%",
+            "grupo": "raiz"
+        },
+        {
+            "identificador": "dias_desde_compra",
+            "nome": "Dias desde a compra",
+            "expressao": "DIAS_DESDE(data_compra)",
+            "unidade": "dias",
+            "grupo": "raiz"
+        },
+        {
+            "identificador": "energia",
+            "nome": "Energia agora: bateria do smartwatch (0 a 100)",
+            "expressao": "SE(VAZIO(ULTIMO_VALOR(\"carga\")); NADA(); ACUMULA(100; 100; taxa_repouso / 24; \"carga\"; 1; \"pulso\"; 0 - taxa_uso / HORAS_USO(); \"carregador\"; 100 / PADRAO(carga_carregador_horas; 2)))",
+            "unidade": "%",
+            "grupo": "smartwatch"
+        },
+        {
+            "identificador": "dias_de_carga",
+            "nome": "Dias de uso que a carga aguenta",
+            "expressao": "energia / taxa_uso",
+            "unidade": "dias",
+            "grupo": "smartwatch"
+        },
+        {
+            "identificador": "reserva_restante",
+            "nome": "Reserva de marcha que sobra",
+            "expressao": "ACUMULA(0; reserva_horas; 1; \"pulso\"; carga_pulso_reserva / carga_pulso_horas; \"winder\"; PADRAO(carga_winder_reserva; carga_pulso_reserva) / PADRAO(carga_winder_horas; carga_pulso_horas); \"corda\"; reserva_horas; \"winder_antigo\"; reserva_horas; \"pulso_antigo\"; reserva_horas)",
+            "unidade": "h",
+            "grupo": "mecanico"
+        },
+        {
+            "identificador": "energia",
+            "nome": "Energia agora: reserva de marcha do mecânico (0 a 100)",
+            "expressao": "LIMITA(reserva_restante * 100 / reserva_horas; 0; 100)",
+            "unidade": "%",
+            "grupo": "mecanico"
+        },
+        {
+            "identificador": "energia",
+            "nome": "Energia agora: carga de luz do solar (sem nenhum sol registrado: desconhecida) (0 a 100)",
+            "expressao": "SE(E(VAZIO(ULTIMA_DATA(\"sol\")); VAZIO(ULTIMA_DATA(\"sol_antigo\"))); NADA(); ACUMULA(CONFIG(\"sol_limiar\"); 100; 100 / (reserva_dias * 24); \"sol\"; 100 / carga_sol_horas; \"pulso\"; PADRAO(luz_pulso; 0) / carga_sol_horas; \"sol_antigo\"; 100))",
+            "unidade": "%",
+            "grupo": "solar"
+        },
+        {
+            "identificador": "energia",
+            "nome": "Energia agora: vida da pilha (0 a 100)",
+            "expressao": "LIMITA(DIAS_ATE(SOMA_MESES(MAX(ULTIMA_DATA(\"pilha\"); data_pilha); vida_pilha_meses)) * 100 / (vida_pilha_meses * 30.44); 0; 100)",
+            "unidade": "%",
+            "grupo": "pilha"
+        },
+        {
+            "identificador": "dias_ate_revisao",
+            "nome": "Dias até a revisão (0: vencida)",
+            "expressao": "MAX(0; DIAS_ATE(SOMA_MESES(MAX(ULTIMA_DATA(\"revisao\"); data_revisao); intervalo_revisao_meses)))",
+            "unidade": "dias",
+            "grupo": "tradicional"
+        },
+        {
+            "identificador": "autonomia_restante",
+            "nome": "Autonomia restante do smartwatch, usando",
+            "expressao": "energia / taxa_uso * 86400",
+            "unidade": "s",
+            "grupo": "smartwatch"
+        },
+        {
+            "identificador": "autonomia_restante",
+            "nome": "Autonomia restante do mecânico, parado",
+            "expressao": "reserva_restante * 3600",
+            "unidade": "s",
+            "grupo": "mecanico"
+        },
+        {
+            "identificador": "autonomia_restante",
+            "nome": "Autonomia restante do solar, no escuro",
+            "expressao": "energia / (100 / (reserva_dias * 24)) * 3600",
+            "unidade": "s",
+            "grupo": "solar"
+        },
+        {
+            "identificador": "autonomia_restante",
+            "nome": "Autonomia restante da pilha",
+            "expressao": "MAX(0; DIAS_ATE(SOMA_MESES(MAX(ULTIMA_DATA(\"pilha\"); data_pilha); vida_pilha_meses))) * 86400",
+            "unidade": "s",
+            "grupo": "pilha"
+        },
+        {
+            "identificador": "dias_seguidos",
+            "nome": "Dias seguidos na escala: o que a bateria dá, até 7",
+            "expressao": "LIMITA(ARREDONDA(100 / taxa_uso - 0,5); 1; 7)",
+            "unidade": "dias",
+            "grupo": "smartwatch"
+        },
+        {
+            "identificador": "taxa_uso",
+            "nome": "Gasto em uso que vale: o medido, senão o informado, senão 100 ÷ autonomia",
+            "expressao": "PADRAO(MEDIDO(\"uso\"); PADRAO(decaimento_uso; 100 / autonomia_dias))",
+            "unidade": "% por dia",
+            "grupo": "smartwatch"
+        },
+        {
+            "identificador": "taxa_repouso",
+            "nome": "Gasto guardado que vale: o medido, senão o do cadastro",
+            "expressao": "PADRAO(MEDIDO(\"repouso\"); decaimento_repouso)",
+            "unidade": "% por dia",
+            "grupo": "smartwatch"
+        },
+        {
+            "identificador": "autonomia_prevista",
+            "nome": "Autonomia prevista do smartwatch: a autonomia do cadastro",
+            "expressao": "autonomia_dias * 86400",
+            "unidade": "s",
+            "grupo": "smartwatch"
+        },
+        {
+            "identificador": "autonomia_prevista",
+            "nome": "Autonomia prevista do mecânico: a reserva de marcha do cadastro",
+            "expressao": "reserva_horas * 3600",
+            "unidade": "s",
+            "grupo": "mecanico"
+        },
+        {
+            "identificador": "autonomia_prevista",
+            "nome": "Autonomia prevista da pilha: a vida da pilha do cadastro",
+            "expressao": "vida_pilha_meses * 30,44 * 86400",
+            "unidade": "s",
+            "grupo": "pilha"
+        },
+        {
+            "identificador": "autonomia_prevista",
+            "nome": "Autonomia prevista do solar: a reserva de energia do cadastro",
+            "expressao": "reserva_dias * 86400",
+            "unidade": "s",
+            "grupo": "solar"
+        },
+        {
+            "identificador": "autonomia_atual",
+            "nome": "Autonomia atual do smartwatch: 100% pelo gasto em uso que vale (o medido, quando há)",
+            "expressao": "100 / taxa_uso * 86400",
+            "unidade": "s",
+            "grupo": "smartwatch"
+        },
+        {
+            "identificador": "autonomia_atual",
+            "nome": "Autonomia atual do mecânico: a reserva de marcha",
+            "expressao": "reserva_horas * 3600",
+            "unidade": "s",
+            "grupo": "mecanico"
+        },
+        {
+            "identificador": "autonomia_atual",
+            "nome": "Autonomia atual da pilha: a vida da pilha",
+            "expressao": "vida_pilha_meses * 30,44 * 86400",
+            "unidade": "s",
+            "grupo": "pilha"
+        },
+        {
+            "identificador": "autonomia_atual",
+            "nome": "Autonomia atual do solar: a reserva de energia",
+            "expressao": "reserva_dias * 86400",
+            "unidade": "s",
+            "grupo": "solar"
+        },
+        {
+            "identificador": "limite_carga",
+            "nome": "Limite de carga: o do relógio, senão o geral da Configuração",
+            "expressao": "PADRAO(carga_minima; CONFIG(\"carga_limiar\"))",
+            "unidade": "%",
+            "grupo": "raiz"
+        },
+        {
+            "identificador": "limite_carga",
+            "nome": "Limite de carga: o do relógio, senão o do solar na Configuração",
+            "expressao": "PADRAO(carga_minima; CONFIG(\"sol_limiar\"))",
+            "unidade": "%",
+            "grupo": "solar"
+        },
+        {
+            "identificador": "limite_carga",
+            "nome": "Limite de carga: o do relógio, senão 0 (a reserva acabando)",
+            "expressao": "PADRAO(carga_minima; 0)",
+            "unidade": "%",
+            "grupo": "mecanico"
+        },
+        {
+            "identificador": "dias_de_uso",
+            "nome": "Dias de uso: os dias em que ele foi ao pulso",
+            "expressao": "CONTAR(\"pulso\"; 36500) + CONTAR(\"pulso_antigo\"; 36500)",
+            "unidade": "dias",
+            "grupo": "raiz"
+        },
+        {
+            "identificador": "custo_por_uso",
+            "nome": "Custo por uso: o valor pago dividido pelos dias de uso",
+            "expressao": "SE(E(PADRAO(valor_compra; 0) > 0; dias_de_uso > 0); valor_compra / dias_de_uso; NADA())",
+            "unidade": "R$",
+            "grupo": "raiz"
+        }
+    ],
+    "avisos": [
+        {
+            "identificador": "garantia",
+            "nome": "Garantia vencendo",
+            "expressao": "garantia_ate",
+            "antecedencia_dias": 30,
+            "texto": "vence {quando}, {data}",
+            "ativo": 1,
+            "grupo": "raiz",
+            "escala": "nao",
+            "simula_valor": null,
+            "simula_horas": null,
+            "agenda": "janela",
+            "condicao": null,
+            "resolve": null,
+            "na_hora": 0
+        },
+        {
+            "identificador": "carregar",
+            "nome": "Carregar",
+            "expressao": "SE(EM_SESSAO(\"carregador\"); NADA(); SE(energia <= limite_carga; AGORA(); AGORA() + (energia - limite_carga) / SE(EM_SESSAO(\"pulso\"); taxa_uso; taxa_repouso)))",
+            "antecedencia_dias": 0,
+            "texto": "chega a {limite}% {quando}, {data}",
+            "ativo": 1,
+            "grupo": "smartwatch",
+            "escala": "uso",
+            "simula_valor": 100,
+            "simula_horas": null,
+            "agenda": "janela",
+            "condicao": null,
+            "resolve": "carga",
+            "na_hora": 0
+        },
+        {
+            "identificador": "corda",
+            "nome": "Dar corda",
+            "expressao": "SE(OU(EM_SESSAO(\"winder\"); E(EM_SESSAO(\"pulso\"); PADRAO(carga_pulso_reserva; 0) > 0)); NADA(); AGORA() + autonomia_restante / 86400 - limite_carga / 100 * reserva_horas / 24)",
+            "antecedencia_dias": 0.5,
+            "texto": "a reserva chega a {limite}% {quando}, {data}",
+            "ativo": 1,
+            "grupo": "mecanico",
+            "escala": "uso",
+            "simula_valor": null,
+            "simula_horas": null,
+            "agenda": "janela",
+            "condicao": "corda_manual",
+            "resolve": "corda",
+            "na_hora": 0
+        },
+        {
+            "identificador": "sol",
+            "nome": "Pôr no sol",
+            "expressao": "SE(EM_SESSAO(\"sol\"); NADA(); AGORA() + (energia - limite_carga) / (100 / reserva_dias))",
+            "antecedencia_dias": 0,
+            "texto": "a luz chega a {limite}% {quando}, {data}",
+            "ativo": 1,
+            "grupo": "solar",
+            "escala": "sempre",
+            "simula_valor": null,
+            "simula_horas": 6,
+            "agenda": "janela",
+            "condicao": null,
+            "resolve": "sol",
+            "na_hora": 0
+        },
+        {
+            "identificador": "pilha",
+            "nome": "Trocar a pilha",
+            "expressao": "SOMA_MESES(MAX(ULTIMA_DATA(\"pilha\"); data_pilha); vida_pilha_meses)",
+            "antecedencia_dias": 30,
+            "texto": "vence {quando}, {data}",
+            "ativo": 1,
+            "grupo": "pilha",
+            "escala": "nao",
+            "simula_valor": null,
+            "simula_horas": null,
+            "agenda": "sempre",
+            "condicao": null,
+            "resolve": "pilha",
+            "na_hora": 0
+        },
+        {
+            "identificador": "revisao",
+            "nome": "Revisão",
+            "expressao": "SOMA_MESES(MAX(ULTIMA_DATA(\"revisao\"); data_revisao); intervalo_revisao_meses)",
+            "antecedencia_dias": 30,
+            "texto": "vence {quando}, {data}",
+            "ativo": 1,
+            "grupo": "tradicional",
+            "escala": "nao",
+            "simula_valor": null,
+            "simula_horas": null,
+            "agenda": "sempre",
+            "condicao": null,
+            "resolve": "revisao",
+            "na_hora": 0
+        },
+        {
+            "identificador": "carga_baixa",
+            "nome": "Carga baixa",
+            "expressao": "AGORA() + (energia - limite_carga) / taxa_repouso",
+            "antecedencia_dias": 0,
+            "texto": "chega a {limite}% guardado {quando}, {data}",
+            "ativo": 0,
+            "grupo": "smartwatch",
+            "escala": "nao",
+            "simula_valor": null,
+            "simula_horas": null,
+            "agenda": "janela",
+            "condicao": null,
+            "resolve": "carga",
+            "na_hora": 0
+        },
+        {
+            "identificador": "leitura",
+            "nome": "Informar a carga",
+            "expressao": "PADRAO(ULTIMA_DATA(\"carga\"); AGORA() - 3) + 3",
+            "antecedencia_dias": 0,
+            "texto": "3 dias sem leitura {quando}, {data}",
+            "ativo": 1,
+            "grupo": "smartwatch",
+            "escala": "nao",
+            "simula_valor": null,
+            "simula_horas": null,
+            "agenda": "janela",
+            "condicao": null,
+            "resolve": "carga",
+            "na_hora": 0
+        },
+        {
+            "identificador": "winder",
+            "nome": "Pôr no winder",
+            "expressao": "SE(OU(EM_SESSAO(\"winder\"); E(EM_SESSAO(\"pulso\"); PADRAO(carga_pulso_reserva; 0) > 0)); NADA(); AGORA() + autonomia_restante / 86400 - limite_carga / 100 * reserva_horas / 24)",
+            "antecedencia_dias": 0.5,
+            "texto": "a reserva chega a {limite}% {quando}, {data}",
+            "ativo": 1,
+            "grupo": "automatico",
+            "escala": "uso",
+            "simula_valor": null,
+            "simula_horas": 8,
+            "agenda": "janela",
+            "condicao": "corda_manual = 0",
+            "resolve": "winder",
+            "na_hora": 0
+        },
+        {
+            "identificador": "carregado",
+            "nome": "Tirar do carregador",
+            "expressao": "SE(EM_SESSAO(\"carregador\"); AGORA() + (100 - energia) / (100 / PADRAO(carga_carregador_horas; 2)) / 24; NADA())",
+            "antecedencia_dias": 0,
+            "texto": "bateria cheia {quando}, {data}",
+            "ativo": 1,
+            "grupo": "smartwatch",
+            "escala": "nao",
+            "simula_valor": null,
+            "simula_horas": null,
+            "agenda": "janela",
+            "condicao": null,
+            "resolve": "carregador",
+            "na_hora": 1
+        },
+        {
+            "identificador": "encostado",
+            "nome": "Encostado",
+            "expressao": "PADRAO(ULTIMA_DATA(\"pulso\"); data_compra) + CONFIG(\"encostado_dias\")",
+            "antecedencia_dias": 0,
+            "texto": "o limite de dias sem ir ao pulso vence {quando}, {data}",
+            "ativo": 1,
+            "grupo": "raiz",
+            "escala": "nao",
+            "simula_valor": null,
+            "simula_horas": null,
+            "agenda": "janela",
+            "condicao": null,
+            "resolve": "pulso",
+            "na_hora": 0
+        }
+    ],
+    "criterios": [
+        {
+            "grupo": "raiz",
+            "nome": "Tempo sem uso",
+            "peso": 40,
+            "ordem": 1,
+            "subparametros": [
+                {
+                    "nome": "Dias sem uso",
+                    "variavel": "dias_sem_uso",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 1,
+                            "nota": 0
+                        },
+                        {
+                            "de": 1,
+                            "ate": 3,
+                            "nota": 30
+                        },
+                        {
+                            "de": 3,
+                            "ate": 7,
+                            "nota": 60
+                        },
+                        {
+                            "de": 7,
+                            "ate": 14,
+                            "nota": 80
+                        },
+                        {
+                            "de": 14,
+                            "ate": 30,
+                            "nota": 95
+                        },
+                        {
+                            "de": 30,
+                            "ate": null,
+                            "nota": 100
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "raiz",
+            "nome": "Equilíbrio de uso",
+            "peso": 30,
+            "ordem": 2,
+            "subparametros": [
+                {
+                    "nome": "Uso nos últimos 30 dias, comparado com a média",
+                    "variavel": "uso_vs_media",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 25,
+                            "nota": 100
+                        },
+                        {
+                            "de": 25,
+                            "ate": 60,
+                            "nota": 80
+                        },
+                        {
+                            "de": 60,
+                            "ate": 100,
+                            "nota": 60
+                        },
+                        {
+                            "de": 100,
+                            "ate": 140,
+                            "nota": 35
+                        },
+                        {
+                            "de": 140,
+                            "ate": 200,
+                            "nota": 15
+                        },
+                        {
+                            "de": 200,
+                            "ate": null,
+                            "nota": 0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "raiz",
+            "nome": "Preferência",
+            "peso": 20,
+            "ordem": 3,
+            "subparametros": [
+                {
+                    "nome": "Sua nota para o relógio",
+                    "variavel": "preferencia",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 20,
+                            "nota": 0
+                        },
+                        {
+                            "de": 20,
+                            "ate": 40,
+                            "nota": 25
+                        },
+                        {
+                            "de": 40,
+                            "ate": 60,
+                            "nota": 50
+                        },
+                        {
+                            "de": 60,
+                            "ate": 80,
+                            "nota": 75
+                        },
+                        {
+                            "de": 80,
+                            "ate": 100,
+                            "nota": 100
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "raiz",
+            "nome": "Novidade e valor",
+            "peso": 10,
+            "ordem": 4,
+            "subparametros": [
+                {
+                    "nome": "Novidade: dias desde a compra",
+                    "variavel": "dias_desde_compra",
+                    "peso": 60,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 15,
+                            "nota": 100
+                        },
+                        {
+                            "de": 15,
+                            "ate": 45,
+                            "nota": 80
+                        },
+                        {
+                            "de": 45,
+                            "ate": 120,
+                            "nota": 55
+                        },
+                        {
+                            "de": 120,
+                            "ate": 365,
+                            "nota": 40
+                        },
+                        {
+                            "de": 365,
+                            "ate": null,
+                            "nota": 30
+                        }
+                    ]
+                },
+                {
+                    "nome": "Aproveitar o investimento: valor pago",
+                    "variavel": "valor_compra",
+                    "peso": 40,
+                    "ordem": 2,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 300,
+                            "nota": 30
+                        },
+                        {
+                            "de": 300,
+                            "ate": 800,
+                            "nota": 50
+                        },
+                        {
+                            "de": 800,
+                            "ate": 1500,
+                            "nota": 70
+                        },
+                        {
+                            "de": 1500,
+                            "ate": null,
+                            "nota": 90
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "smartwatch",
+            "nome": "Energia",
+            "peso": 30,
+            "ordem": 1,
+            "subparametros": [
+                {
+                    "nome": "Carga agora (%)",
+                    "variavel": "energia",
+                    "peso": 50,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 15,
+                            "nota": 0
+                        },
+                        {
+                            "de": 15,
+                            "ate": 30,
+                            "nota": 25
+                        },
+                        {
+                            "de": 30,
+                            "ate": 50,
+                            "nota": 55
+                        },
+                        {
+                            "de": 50,
+                            "ate": 80,
+                            "nota": 85
+                        },
+                        {
+                            "de": 80,
+                            "ate": 100,
+                            "nota": 100
+                        }
+                    ]
+                },
+                {
+                    "nome": "Dias de uso que a carga aguenta",
+                    "variavel": "dias_de_carga",
+                    "peso": 50,
+                    "ordem": 2,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 1,
+                            "nota": 0
+                        },
+                        {
+                            "de": 1,
+                            "ate": 2,
+                            "nota": 30
+                        },
+                        {
+                            "de": 2,
+                            "ate": 4,
+                            "nota": 60
+                        },
+                        {
+                            "de": 4,
+                            "ate": 7,
+                            "nota": 85
+                        },
+                        {
+                            "de": 7,
+                            "ate": null,
+                            "nota": 100
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "smartwatch",
+            "nome": "Autonomia",
+            "peso": 15,
+            "ordem": 2,
+            "subparametros": [
+                {
+                    "nome": "Autonomia do smartwatch",
+                    "variavel": "autonomia_dias",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 2,
+                            "nota": 10
+                        },
+                        {
+                            "de": 2,
+                            "ate": 4,
+                            "nota": 40
+                        },
+                        {
+                            "de": 4,
+                            "ate": 7,
+                            "nota": 70
+                        },
+                        {
+                            "de": 7,
+                            "ate": 14,
+                            "nota": 90
+                        },
+                        {
+                            "de": 14,
+                            "ate": null,
+                            "nota": 100
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "smartwatch",
+            "nome": "Tempo sem uso",
+            "peso": 25,
+            "ordem": 3,
+            "subparametros": [
+                {
+                    "nome": "Dias sem uso",
+                    "variavel": "dias_sem_uso",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 1,
+                            "nota": 0
+                        },
+                        {
+                            "de": 1,
+                            "ate": 3,
+                            "nota": 30
+                        },
+                        {
+                            "de": 3,
+                            "ate": 7,
+                            "nota": 60
+                        },
+                        {
+                            "de": 7,
+                            "ate": 14,
+                            "nota": 80
+                        },
+                        {
+                            "de": 14,
+                            "ate": 30,
+                            "nota": 95
+                        },
+                        {
+                            "de": 30,
+                            "ate": null,
+                            "nota": 100
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "smartwatch",
+            "nome": "Equilíbrio de uso",
+            "peso": 15,
+            "ordem": 4,
+            "subparametros": [
+                {
+                    "nome": "Uso nos últimos 30 dias, comparado com a média",
+                    "variavel": "uso_vs_media",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 25,
+                            "nota": 100
+                        },
+                        {
+                            "de": 25,
+                            "ate": 60,
+                            "nota": 80
+                        },
+                        {
+                            "de": 60,
+                            "ate": 100,
+                            "nota": 60
+                        },
+                        {
+                            "de": 100,
+                            "ate": 140,
+                            "nota": 35
+                        },
+                        {
+                            "de": 140,
+                            "ate": 200,
+                            "nota": 15
+                        },
+                        {
+                            "de": 200,
+                            "ate": null,
+                            "nota": 0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "smartwatch",
+            "nome": "Preferência",
+            "peso": 10,
+            "ordem": 5,
+            "subparametros": [
+                {
+                    "nome": "Sua nota para o relógio",
+                    "variavel": "preferencia",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 20,
+                            "nota": 0
+                        },
+                        {
+                            "de": 20,
+                            "ate": 40,
+                            "nota": 25
+                        },
+                        {
+                            "de": 40,
+                            "ate": 60,
+                            "nota": 50
+                        },
+                        {
+                            "de": 60,
+                            "ate": 80,
+                            "nota": 75
+                        },
+                        {
+                            "de": 80,
+                            "ate": 100,
+                            "nota": 100
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "smartwatch",
+            "nome": "Novidade e valor",
+            "peso": 5,
+            "ordem": 6,
+            "subparametros": [
+                {
+                    "nome": "Novidade: dias desde a compra",
+                    "variavel": "dias_desde_compra",
+                    "peso": 60,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 15,
+                            "nota": 100
+                        },
+                        {
+                            "de": 15,
+                            "ate": 45,
+                            "nota": 80
+                        },
+                        {
+                            "de": 45,
+                            "ate": 120,
+                            "nota": 55
+                        },
+                        {
+                            "de": 120,
+                            "ate": 365,
+                            "nota": 40
+                        },
+                        {
+                            "de": 365,
+                            "ate": null,
+                            "nota": 30
+                        }
+                    ]
+                },
+                {
+                    "nome": "Aproveitar o investimento: valor pago",
+                    "variavel": "valor_compra",
+                    "peso": 40,
+                    "ordem": 2,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 300,
+                            "nota": 30
+                        },
+                        {
+                            "de": 300,
+                            "ate": 800,
+                            "nota": 50
+                        },
+                        {
+                            "de": 800,
+                            "ate": 1500,
+                            "nota": 70
+                        },
+                        {
+                            "de": 1500,
+                            "ate": null,
+                            "nota": 90
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "mecanico",
+            "nome": "Reserva de marcha",
+            "peso": 25,
+            "ordem": 1,
+            "subparametros": [
+                {
+                    "nome": "Reserva agora (%): vazia, precisa rodar",
+                    "variavel": "energia",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 10,
+                            "nota": 100
+                        },
+                        {
+                            "de": 10,
+                            "ate": 30,
+                            "nota": 85
+                        },
+                        {
+                            "de": 30,
+                            "ate": 60,
+                            "nota": 60
+                        },
+                        {
+                            "de": 60,
+                            "ate": 90,
+                            "nota": 35
+                        },
+                        {
+                            "de": 90,
+                            "ate": 100,
+                            "nota": 20
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "mecanico",
+            "nome": "Cuidado mecânico",
+            "peso": 15,
+            "ordem": 2,
+            "subparametros": [
+                {
+                    "nome": "Parado precisa rodar (lubrificação)",
+                    "variavel": "dias_sem_uso",
+                    "peso": 50,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 7,
+                            "nota": 20
+                        },
+                        {
+                            "de": 7,
+                            "ate": 30,
+                            "nota": 60
+                        },
+                        {
+                            "de": 30,
+                            "ate": 90,
+                            "nota": 90
+                        },
+                        {
+                            "de": 90,
+                            "ate": null,
+                            "nota": 100
+                        }
+                    ]
+                },
+                {
+                    "nome": "Revisão em dia",
+                    "variavel": "dias_ate_revisao",
+                    "peso": 50,
+                    "ordem": 2,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 30,
+                            "nota": 20
+                        },
+                        {
+                            "de": 30,
+                            "ate": 180,
+                            "nota": 60
+                        },
+                        {
+                            "de": 180,
+                            "ate": null,
+                            "nota": 100
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "mecanico",
+            "nome": "Tempo sem uso",
+            "peso": 25,
+            "ordem": 3,
+            "subparametros": [
+                {
+                    "nome": "Dias sem uso",
+                    "variavel": "dias_sem_uso",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 1,
+                            "nota": 0
+                        },
+                        {
+                            "de": 1,
+                            "ate": 3,
+                            "nota": 30
+                        },
+                        {
+                            "de": 3,
+                            "ate": 7,
+                            "nota": 60
+                        },
+                        {
+                            "de": 7,
+                            "ate": 14,
+                            "nota": 80
+                        },
+                        {
+                            "de": 14,
+                            "ate": 30,
+                            "nota": 95
+                        },
+                        {
+                            "de": 30,
+                            "ate": null,
+                            "nota": 100
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "mecanico",
+            "nome": "Equilíbrio de uso",
+            "peso": 20,
+            "ordem": 4,
+            "subparametros": [
+                {
+                    "nome": "Uso nos últimos 30 dias, comparado com a média",
+                    "variavel": "uso_vs_media",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 25,
+                            "nota": 100
+                        },
+                        {
+                            "de": 25,
+                            "ate": 60,
+                            "nota": 80
+                        },
+                        {
+                            "de": 60,
+                            "ate": 100,
+                            "nota": 60
+                        },
+                        {
+                            "de": 100,
+                            "ate": 140,
+                            "nota": 35
+                        },
+                        {
+                            "de": 140,
+                            "ate": 200,
+                            "nota": 15
+                        },
+                        {
+                            "de": 200,
+                            "ate": null,
+                            "nota": 0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "mecanico",
+            "nome": "Preferência",
+            "peso": 10,
+            "ordem": 5,
+            "subparametros": [
+                {
+                    "nome": "Sua nota para o relógio",
+                    "variavel": "preferencia",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 20,
+                            "nota": 0
+                        },
+                        {
+                            "de": 20,
+                            "ate": 40,
+                            "nota": 25
+                        },
+                        {
+                            "de": 40,
+                            "ate": 60,
+                            "nota": 50
+                        },
+                        {
+                            "de": 60,
+                            "ate": 80,
+                            "nota": 75
+                        },
+                        {
+                            "de": 80,
+                            "ate": 100,
+                            "nota": 100
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "mecanico",
+            "nome": "Novidade e valor",
+            "peso": 5,
+            "ordem": 6,
+            "subparametros": [
+                {
+                    "nome": "Novidade: dias desde a compra",
+                    "variavel": "dias_desde_compra",
+                    "peso": 60,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 15,
+                            "nota": 100
+                        },
+                        {
+                            "de": 15,
+                            "ate": 45,
+                            "nota": 80
+                        },
+                        {
+                            "de": 45,
+                            "ate": 120,
+                            "nota": 55
+                        },
+                        {
+                            "de": 120,
+                            "ate": 365,
+                            "nota": 40
+                        },
+                        {
+                            "de": 365,
+                            "ate": null,
+                            "nota": 30
+                        }
+                    ]
+                },
+                {
+                    "nome": "Aproveitar o investimento: valor pago",
+                    "variavel": "valor_compra",
+                    "peso": 40,
+                    "ordem": 2,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 300,
+                            "nota": 30
+                        },
+                        {
+                            "de": 300,
+                            "ate": 800,
+                            "nota": 50
+                        },
+                        {
+                            "de": 800,
+                            "ate": 1500,
+                            "nota": 70
+                        },
+                        {
+                            "de": 1500,
+                            "ate": null,
+                            "nota": 90
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "pilha",
+            "nome": "Vida da pilha",
+            "peso": 15,
+            "ordem": 1,
+            "subparametros": [
+                {
+                    "nome": "Vida da pilha (%)",
+                    "variavel": "energia",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 10,
+                            "nota": 10
+                        },
+                        {
+                            "de": 10,
+                            "ate": 30,
+                            "nota": 50
+                        },
+                        {
+                            "de": 30,
+                            "ate": 100,
+                            "nota": 70
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "pilha",
+            "nome": "Revisão",
+            "peso": 10,
+            "ordem": 2,
+            "subparametros": [
+                {
+                    "nome": "Revisão em dia",
+                    "variavel": "dias_ate_revisao",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 30,
+                            "nota": 20
+                        },
+                        {
+                            "de": 30,
+                            "ate": 180,
+                            "nota": 60
+                        },
+                        {
+                            "de": 180,
+                            "ate": null,
+                            "nota": 100
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "pilha",
+            "nome": "Tempo sem uso",
+            "peso": 35,
+            "ordem": 3,
+            "subparametros": [
+                {
+                    "nome": "Dias sem uso",
+                    "variavel": "dias_sem_uso",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 1,
+                            "nota": 0
+                        },
+                        {
+                            "de": 1,
+                            "ate": 3,
+                            "nota": 30
+                        },
+                        {
+                            "de": 3,
+                            "ate": 7,
+                            "nota": 60
+                        },
+                        {
+                            "de": 7,
+                            "ate": 14,
+                            "nota": 80
+                        },
+                        {
+                            "de": 14,
+                            "ate": 30,
+                            "nota": 95
+                        },
+                        {
+                            "de": 30,
+                            "ate": null,
+                            "nota": 100
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "pilha",
+            "nome": "Equilíbrio de uso",
+            "peso": 25,
+            "ordem": 4,
+            "subparametros": [
+                {
+                    "nome": "Uso nos últimos 30 dias, comparado com a média",
+                    "variavel": "uso_vs_media",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 25,
+                            "nota": 100
+                        },
+                        {
+                            "de": 25,
+                            "ate": 60,
+                            "nota": 80
+                        },
+                        {
+                            "de": 60,
+                            "ate": 100,
+                            "nota": 60
+                        },
+                        {
+                            "de": 100,
+                            "ate": 140,
+                            "nota": 35
+                        },
+                        {
+                            "de": 140,
+                            "ate": 200,
+                            "nota": 15
+                        },
+                        {
+                            "de": 200,
+                            "ate": null,
+                            "nota": 0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "pilha",
+            "nome": "Preferência",
+            "peso": 10,
+            "ordem": 5,
+            "subparametros": [
+                {
+                    "nome": "Sua nota para o relógio",
+                    "variavel": "preferencia",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 20,
+                            "nota": 0
+                        },
+                        {
+                            "de": 20,
+                            "ate": 40,
+                            "nota": 25
+                        },
+                        {
+                            "de": 40,
+                            "ate": 60,
+                            "nota": 50
+                        },
+                        {
+                            "de": 60,
+                            "ate": 80,
+                            "nota": 75
+                        },
+                        {
+                            "de": 80,
+                            "ate": 100,
+                            "nota": 100
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "pilha",
+            "nome": "Novidade e valor",
+            "peso": 5,
+            "ordem": 6,
+            "subparametros": [
+                {
+                    "nome": "Novidade: dias desde a compra",
+                    "variavel": "dias_desde_compra",
+                    "peso": 60,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 15,
+                            "nota": 100
+                        },
+                        {
+                            "de": 15,
+                            "ate": 45,
+                            "nota": 80
+                        },
+                        {
+                            "de": 45,
+                            "ate": 120,
+                            "nota": 55
+                        },
+                        {
+                            "de": 120,
+                            "ate": 365,
+                            "nota": 40
+                        },
+                        {
+                            "de": 365,
+                            "ate": null,
+                            "nota": 30
+                        }
+                    ]
+                },
+                {
+                    "nome": "Aproveitar o investimento: valor pago",
+                    "variavel": "valor_compra",
+                    "peso": 40,
+                    "ordem": 2,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 300,
+                            "nota": 30
+                        },
+                        {
+                            "de": 300,
+                            "ate": 800,
+                            "nota": 50
+                        },
+                        {
+                            "de": 800,
+                            "ate": 1500,
+                            "nota": 70
+                        },
+                        {
+                            "de": 1500,
+                            "ate": null,
+                            "nota": 90
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "solar",
+            "nome": "Luz",
+            "peso": 25,
+            "ordem": 1,
+            "subparametros": [
+                {
+                    "nome": "Carga de luz (%)",
+                    "variavel": "energia",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 30,
+                            "nota": 80
+                        },
+                        {
+                            "de": 30,
+                            "ate": 70,
+                            "nota": 65
+                        },
+                        {
+                            "de": 70,
+                            "ate": 100,
+                            "nota": 50
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "solar",
+            "nome": "Revisão",
+            "peso": 10,
+            "ordem": 2,
+            "subparametros": [
+                {
+                    "nome": "Revisão em dia",
+                    "variavel": "dias_ate_revisao",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 30,
+                            "nota": 20
+                        },
+                        {
+                            "de": 30,
+                            "ate": 180,
+                            "nota": 60
+                        },
+                        {
+                            "de": 180,
+                            "ate": null,
+                            "nota": 100
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "solar",
+            "nome": "Tempo sem uso",
+            "peso": 30,
+            "ordem": 3,
+            "subparametros": [
+                {
+                    "nome": "Dias sem uso",
+                    "variavel": "dias_sem_uso",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 1,
+                            "nota": 0
+                        },
+                        {
+                            "de": 1,
+                            "ate": 3,
+                            "nota": 30
+                        },
+                        {
+                            "de": 3,
+                            "ate": 7,
+                            "nota": 60
+                        },
+                        {
+                            "de": 7,
+                            "ate": 14,
+                            "nota": 80
+                        },
+                        {
+                            "de": 14,
+                            "ate": 30,
+                            "nota": 95
+                        },
+                        {
+                            "de": 30,
+                            "ate": null,
+                            "nota": 100
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "solar",
+            "nome": "Equilíbrio de uso",
+            "peso": 20,
+            "ordem": 4,
+            "subparametros": [
+                {
+                    "nome": "Uso nos últimos 30 dias, comparado com a média",
+                    "variavel": "uso_vs_media",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 25,
+                            "nota": 100
+                        },
+                        {
+                            "de": 25,
+                            "ate": 60,
+                            "nota": 80
+                        },
+                        {
+                            "de": 60,
+                            "ate": 100,
+                            "nota": 60
+                        },
+                        {
+                            "de": 100,
+                            "ate": 140,
+                            "nota": 35
+                        },
+                        {
+                            "de": 140,
+                            "ate": 200,
+                            "nota": 15
+                        },
+                        {
+                            "de": 200,
+                            "ate": null,
+                            "nota": 0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "solar",
+            "nome": "Preferência",
+            "peso": 10,
+            "ordem": 5,
+            "subparametros": [
+                {
+                    "nome": "Sua nota para o relógio",
+                    "variavel": "preferencia",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 20,
+                            "nota": 0
+                        },
+                        {
+                            "de": 20,
+                            "ate": 40,
+                            "nota": 25
+                        },
+                        {
+                            "de": 40,
+                            "ate": 60,
+                            "nota": 50
+                        },
+                        {
+                            "de": 60,
+                            "ate": 80,
+                            "nota": 75
+                        },
+                        {
+                            "de": 80,
+                            "ate": 100,
+                            "nota": 100
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "solar",
+            "nome": "Novidade e valor",
+            "peso": 5,
+            "ordem": 6,
+            "subparametros": [
+                {
+                    "nome": "Novidade: dias desde a compra",
+                    "variavel": "dias_desde_compra",
+                    "peso": 60,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 15,
+                            "nota": 100
+                        },
+                        {
+                            "de": 15,
+                            "ate": 45,
+                            "nota": 80
+                        },
+                        {
+                            "de": 45,
+                            "ate": 120,
+                            "nota": 55
+                        },
+                        {
+                            "de": 120,
+                            "ate": 365,
+                            "nota": 40
+                        },
+                        {
+                            "de": 365,
+                            "ate": null,
+                            "nota": 30
+                        }
+                    ]
+                },
+                {
+                    "nome": "Aproveitar o investimento: valor pago",
+                    "variavel": "valor_compra",
+                    "peso": 40,
+                    "ordem": 2,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 300,
+                            "nota": 30
+                        },
+                        {
+                            "de": 300,
+                            "ate": 800,
+                            "nota": 50
+                        },
+                        {
+                            "de": 800,
+                            "ate": 1500,
+                            "nota": 70
+                        },
+                        {
+                            "de": 1500,
+                            "ate": null,
+                            "nota": 90
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "categorias": [
+        {
+            "identificador": "manual",
+            "nome": "Manual",
+            "ordem": 1,
+            "grupo": "raiz",
+            "aceita": []
+        },
+        {
+            "identificador": "nota_fiscal",
+            "nome": "Nota fiscal",
+            "ordem": 2,
+            "grupo": "raiz",
+            "aceita": [
+                "imagem",
+                "pdf"
+            ]
+        },
+        {
+            "identificador": "nota_xml",
+            "nome": "Nota fiscal (XML)",
+            "ordem": 3,
+            "grupo": "raiz",
+            "aceita": [
+                "xml"
+            ]
+        },
+        {
+            "identificador": "fotos",
+            "nome": "Fotos",
+            "ordem": 4,
+            "grupo": "raiz",
+            "aceita": [
+                "imagem"
+            ]
+        },
+        {
+            "identificador": "videos",
+            "nome": "Vídeos",
+            "ordem": 5,
+            "grupo": "raiz",
+            "aceita": [
+                "video"
+            ]
+        },
+        {
+            "identificador": "diversos",
+            "nome": "Diversos",
+            "ordem": 6,
+            "grupo": "raiz",
+            "aceita": []
+        }
+    ],
+    "modos": [
+        {
+            "nome": "Um por semana",
+            "selecao": "ponderado",
+            "ordem": 1,
+            "escala_dias": null,
+            "ciclo": 0,
+            "ativo": false,
+            "blocos": [
+                {
+                    "nome": "A semana",
+                    "grupo": "tradicional",
+                    "um_por": "bloco",
+                    "ordem": 1,
+                    "dias": [
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6,
+                        7
+                    ]
+                }
+            ]
+        },
+        {
+            "nome": "Semana e fim de semana",
+            "selecao": "ponderado",
+            "ordem": 2,
+            "escala_dias": null,
+            "ciclo": 0,
+            "ativo": true,
+            "blocos": [
+                {
+                    "nome": "Segunda a sexta",
+                    "grupo": "smartwatch",
+                    "um_por": "bloco",
+                    "ordem": 1,
+                    "dias": [
+                        1,
+                        2,
+                        3,
+                        4,
+                        5
+                    ]
+                },
+                {
+                    "nome": "Sábado e domingo",
+                    "grupo": "tradicional",
+                    "um_por": "dia",
+                    "ordem": 2,
+                    "dias": [
+                        6,
+                        7
+                    ]
+                }
+            ]
+        },
+        {
+            "nome": "Por dia da semana",
+            "selecao": "ponderado",
+            "ordem": 3,
+            "escala_dias": null,
+            "ciclo": 0,
+            "ativo": false,
+            "blocos": [
+                {
+                    "nome": "Dias úteis",
+                    "grupo": "smartwatch",
+                    "um_por": "dia",
+                    "ordem": 1,
+                    "dias": [
+                        1,
+                        2,
+                        3,
+                        4,
+                        5
+                    ]
+                },
+                {
+                    "nome": "Fim de semana",
+                    "grupo": "tradicional",
+                    "um_por": "dia",
+                    "ordem": 2,
+                    "dias": [
+                        6,
+                        7
+                    ]
+                }
+            ]
+        },
+        {
+            "nome": "Aleatório todo dia",
+            "selecao": "aleatorio",
+            "ordem": 4,
+            "escala_dias": null,
+            "ciclo": 0,
+            "ativo": false,
+            "blocos": [
+                {
+                    "nome": "Todo dia",
+                    "grupo": "raiz",
+                    "um_por": "dia",
+                    "ordem": 1,
+                    "dias": [
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6,
+                        7
+                    ]
+                }
+            ]
+        },
+        {
+            "nome": "Escala inteligente",
+            "selecao": "inteligente",
+            "ordem": 5,
+            "escala_dias": 30,
+            "ciclo": 0,
+            "ativo": false,
+            "blocos": [
+                {
+                    "nome": "Todo dia",
+                    "grupo": "raiz",
+                    "um_por": "dia",
+                    "ordem": 1,
+                    "dias": [
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6,
+                        7
+                    ]
+                }
+            ]
+        }
+    ],
+    "config": {
+        "uso_inicio": "07:00",
+        "uso_fim": "22:00",
+        "horario_manha": "06:30",
+        "horario_noite": "20:00",
+        "max_sem_uso": "21",
+        "previsao_limite": "20",
+        "sol_limiar": "70",
+        "medicao_janela_dias": "90",
+        "carga_limiar": "20",
+        "encostado_dias": "30"
+    },
+    "mensagens": {
+        "modelo": "{acao}: {relogio}\n{motivo}",
+        "avisos": [
+            {
+                "tipo": "carga_baixa",
+                "envia": 1
+            },
+            {
+                "tipo": "carregado",
+                "envia": 1
+            },
+            {
+                "tipo": "carregar",
+                "envia": 1
+            },
+            {
+                "tipo": "corda",
+                "envia": 1
+            },
+            {
+                "tipo": "dia",
+                "envia": 1,
+                "modelo": "Hoje é o dia do {relogio}, {ate}. Carga: {carga}."
+            },
+            {
+                "tipo": "garantia",
+                "envia": 1
+            },
+            {
+                "tipo": "leitura",
+                "envia": 1
+            },
+            {
+                "tipo": "pilha",
+                "envia": 1
+            },
+            {
+                "tipo": "revisao",
+                "envia": 1
+            },
+            {
+                "tipo": "sol",
+                "envia": 1
+            },
+            {
+                "tipo": "vespera",
+                "envia": 1,
+                "modelo": "Amanhã é o dia do {relogio}, {ate}.\n{motivo}"
+            },
+            {
+                "tipo": "winder",
+                "envia": 1
+            }
+        ]
+    },
+    "agenda": {
+        "modelo": "{acao}: {relogio}\n{motivo}\n\n{relogio} (código {codigo}, {tipo}) · {estado} · carga {carga}\n{link}",
+        "janela_dias": 30,
+        "avisos": [
+            {
+                "tipo": "carga_baixa",
+                "envia": 0
+            },
+            {
+                "tipo": "carregar",
+                "envia": 1
+            },
+            {
+                "tipo": "corda",
+                "envia": 1
+            },
+            {
+                "tipo": "dia",
+                "envia": 0
+            },
+            {
+                "tipo": "garantia",
+                "envia": 0
+            },
+            {
+                "tipo": "leitura",
+                "envia": 0
+            },
+            {
+                "tipo": "pilha",
+                "envia": 1
+            },
+            {
+                "tipo": "revisao",
+                "envia": 1
+            },
+            {
+                "tipo": "sol",
+                "envia": 1
+            },
+            {
+                "tipo": "vespera",
+                "envia": 0
+            },
+            {
+                "tipo": "winder",
+                "envia": 1
+            }
+        ]
+    }
+}
