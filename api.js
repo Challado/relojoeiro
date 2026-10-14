@@ -227,6 +227,45 @@ function textoResposta(res) {
   return (res.mensagem || "") + (res.erros && res.erros.length > 0 ? " " + res.erros.join(" ") : "");
 }
 
+// Um instante no formato do campo de data e hora (AAAA-MM-DDTHH:MM), no fuso do navegador
+function momentoNavegador(d) {
+  return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-") + "T"
+    + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+}
+
+// Os campos de data e hora que andam com o relógio do navegador: data-agora vem com a hora de agora e acompanha o relógio
+// (a cada 15 s e ao clicar nele) até a pessoa mexer, e daí fica o que ela pôs; data-max-agora tem o máximo em agora, que
+// também anda (senão, com a página aberta há horas, o navegador recusaria uma hora depois de quando ela abriu)
+function acertarRelogios() {
+  var agora = momentoNavegador(new Date());
+  document.querySelectorAll("input[data-max-agora]").forEach(function (c) {
+    c.max = agora;
+  });
+  document.querySelectorAll("input[data-agora]").forEach(function (c) {
+    if (c !== document.activeElement) {
+      c.value = agora;
+    }
+  });
+}
+setInterval(acertarRelogios, 15000);
+document.addEventListener("focusin", function (ev) {
+  var c = ev.target;
+  if (c.matches && c.matches("input[data-agora], input[data-max-agora]")) {
+    var agora = momentoNavegador(new Date());
+    if (c.hasAttribute("data-max-agora")) {
+      c.max = agora;
+    }
+    if (c.hasAttribute("data-agora")) {
+      c.value = agora;
+    }
+  }
+});
+document.addEventListener("input", function (ev) {
+  if (ev.target.hasAttribute && ev.target.hasAttribute("data-agora")) {
+    ev.target.removeAttribute("data-agora");
+  }
+});
+
 // Formulários que gravam pela API (data-recurso): o envio vai para o api.php, e depois a página chama o que ela
 // registrou (aoGravar), com a resposta. O confirm() de alguns formulários já cancela o envio.
 // Campos dentro de um bloco escondido ([data-sub] escondido) não vão.
@@ -245,6 +284,13 @@ document.addEventListener("submit", function (ev) {
     var dados = new FormData(form);
     escondidos.forEach(function (c) {
       c.disabled = false;
+    });
+    // o campo de data e hora que ninguém mexeu (data-agora): "vazio" vai vazio (a API usa o agora dela, com os segundos);
+    // os outros vão com o minuto de agora
+    form.querySelectorAll("input[data-agora]").forEach(function (c) {
+      if (c.name && !c.disabled) {
+        dados.set(c.name, c.getAttribute("data-agora") === "vazio" ? "" : momentoNavegador(new Date()));
+      }
     });
     dados.append("recurso", form.getAttribute("data-recurso"));
     if (ev.submitter && ev.submitter.name) {
