@@ -609,8 +609,8 @@ antigos: um banco Postgres ou SQLite já nasce na versão atual.
 ### Vindo do sistema anterior
 
 `php importar.php <banco_antigo>` traz a árvore, os relógios, as fotos, os usuários, os campos e todo o histórico (convertido
-em lançamentos). Com `--substituir`, apaga antes o que já existe neste banco. [`PORTE.md`](PORTE.md) e
-[`PARIDADE.md`](PARIDADE.md) registram, item por item, como cada comportamento do sistema antigo foi portado.
+em lançamentos). Com `--substituir`, apaga antes o que já existe neste banco. O [`PORTE.md`](PORTE.md) registra, item por item, como cada
+comportamento do sistema antigo foi portado.
 
 ---
 
@@ -688,7 +688,7 @@ Pode. As telas usam exatamente a mesma API.
 | [`nginx-relogios.conf`](nginx-relogios.conf) | o bloco do nginx que protege os arquivos internos |
 | [`testes/`](testes/) | o teste de paridade: o mesmo roteiro pela API em cada banco, e o comparador das respostas |
 | [`docs/telas/`](docs/telas/) | as capturas de tela deste README |
-| [`PORTE.md`](PORTE.md), [`PARIDADE.md`](PARIDADE.md) | o registro do porte da versão anterior |
+| [`PORTE.md`](PORTE.md) | o registro do porte da versão anterior |
 
 ---
 
