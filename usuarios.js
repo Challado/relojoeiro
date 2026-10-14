@@ -1,5 +1,5 @@
-// Usuários: o painel do master (recurso=usuarios). Cada conta numa linha, com o que ela tem e as ações num "Ações" que
-// abre; embaixo, criar uma conta. Quem não é o master vê só a si mesmo e o caminho para Minha conta.
+// Usuários: o painel do master (recurso=usuarios). Cada conta numa linha, com o que ela tem; o botão "Ações" abre as
+// ações numa linha embaixo dela, da largura da tabela; embaixo, criar uma conta. Quem não é o master vê só a si mesmo e o caminho para Minha conta.
 var recadoUsuarios = "";
 
 aoGravar = function (form, res) {
@@ -57,7 +57,14 @@ function acoesDoUsuario(u, d) {
   if (u.login !== d.voce) {
     res += acaoUsuario(u, "excluir", "", t("Excluir"), "leve perigo");
   }
-  return el("details", {"class": "acoes-usuario"}, el("summary", {}, t("Ações")) + res);
+  return el("div", {"class": "acoes-usuario"}, res);
+}
+
+// abre e fecha a linha das ações de uma conta (a linha logo abaixo da do botão)
+function abrirAcoesUsuario(botao) {
+  var linha = botao.closest("tr").nextElementSibling;
+  linha.hidden = !linha.hidden;
+  botao.setAttribute("aria-expanded", linha.hidden ? "false" : "true");
 }
 
 function recarregarUsuarios() {
@@ -80,7 +87,8 @@ function recarregarUsuarios() {
             + el("td", {}, u.expira_em ? dataBr(u.expira_em) + " " + el("small", {"class": "nota"}, t("({1} dias)", {1: u.dias_restantes})) : t("não vence"))
             + el("td", {}, u.colecoes.map(function (c) { return h(c.nome) + " " + el("small", {"class": "nota"}, t("({1} relógios)", {1: c.relogios})); }).join(el("br")) || "—")
             + el("td", {}, ve.join(el("br")) || "—")
-            + el("td", {"class": "acoes-linha"}, acoesDoUsuario(u, d)));
+            + el("td", {"class": "acoes-linha"}, el("button", {"type": "button", "class": "leve", "aria-expanded": "false", "onclick": "abrirAcoesUsuario(this)"}, t("Ações"))))
+            + el("tr", {"class": "linha-acoes-usuario", "hidden": true}, el("td", {"colspan": "8"}, acoesDoUsuario(u, d)));
         }).join("")))));
     res += el("section", {"class": "cartao-config"}, el("h2", {}, t("Criar conta")) + el("form", {"data-recurso": "usuarios", "class": "campos"},
       el("input", {"type": "hidden", "name": "acao", "value": "salvar"})

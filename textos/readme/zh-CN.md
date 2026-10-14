@@ -1,4 +1,4 @@
-<!-- origem: ef0f54a0dfded956a32fb3baebbb29996ddbf324 -->
+<!-- origem: 9ba6f9a327b420b14dba0f4e47cdc4ef9bd0a853 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -145,7 +145,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `documentos` | `enviar`（一个或多个文件，带类别、标题、日期、描述，照片还带缩略图）、`alterar`、`excluir` |
 | `documento_categorias` | `nova`、`alterar`、`excluir`（仅在没有文档时） |
 | `lancamento` | `lancar`（上链、电量、电池……）、`iniciar` 和 `encerrar`（戴上和取下手腕、上链盒、晒太阳、充电器）、`alternar`（时段打开时关闭，关闭时打开：手机上一个按钮就够）、`periodo`（已经过去的一段时间）、`alterar`、`excluir`。所有操作中，`relogio_id=hoje` 都表示当天的手表 |
-| `rodizio` | `usando`（我今天戴的是这块）、`trocar_dia`（某一天的手表）、`periodo`（一个时段的手表，按顺序：`de`、`ate`、`relogio_ids[]`、`dias_cada`）、`periodo_sortear`（清除时段内容并重新抽选）、`periodo_livre`（清除并让这些天保持空闲，不抽选）、`manual`（手动轮换：`de`、`ate`、`dias[YYYY-MM-DD]` = 手表 id、`auto` 或 `livre`）、`apagar_tudo`（清除从明天起的全部安排；`hoje=1`：从今天起；模式会重新生成计划）、`resortear`、`resortear_hoje`、`proxima_semana`、`modo`（更换模式） |
+| `rodizio` | `usando`（我今天戴的是这块）、`trocar_dia`（某一天的手表）、`periodo`（一个时段的手表，按顺序：`de`、`ate`、`relogio_ids[]`、`dias_cada`）、`periodo_sortear`（删除时段内的日子，由模式重新安排；只填 `de`：到计划结束；只填 `ate`：从明天到它）、`periodo_livre`（清除并让这些天保持空闲，不抽选；日期规则相同）、`manual`（手动轮换：`de`、`ate`、`dias[YYYY-MM-DD]` = 手表 id、`auto` 或 `livre`）、`apagar_tudo`（清除从明天起的全部安排；`hoje=1`：从今天起；模式会重新生成计划）、`resortear`、`resortear_hoje`、`proxima_semana`、`modo`（更换模式） |
 | `modos` | `salvar`、`ativar`、`excluir` |
 | `arvore` | `novo`、`renomear`、`mover`、`ordem`、`excluir`（分组）以及 `relogios`（每块手表的分组） |
 | `campos`、`avisos`、`lancamento_tipos` | `novo`、`alterar`、`excluir`（字段还有 `ordem`） |

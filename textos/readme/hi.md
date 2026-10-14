@@ -1,4 +1,4 @@
-<!-- origem: ef0f54a0dfded956a32fb3baebbb29996ddbf324 -->
+<!-- origem: 9ba6f9a327b420b14dba0f4e47cdc4ef9bd0a853 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -167,7 +167,7 @@ curl -u upyogkarta:password -G "http://server/relojoeiro/api.php" -d recurso=cal
 | `documentos` | `enviar` (एक या कई फ़ाइलें, श्रेणी, शीर्षक, तारीख़, विवरण और, फ़ोटो में, थंबनेल के साथ), `alterar`, `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (सिर्फ़ बिना दस्तावेज़ों के) |
 | `lancamento` | `lancar` (चाबी, चार्ज, बैटरी...), `iniciar` और `encerrar` (कलाई, वाइंडर, धूप, चार्जर पर रखना और उतारना), `alternar` (सत्र खुला हो तो बंद करता है, बंद हो तो खोलता है: फ़ोन पर एक ही बटन), `periodo` (बीत चुकी अवधि), `alterar`, `excluir`। सबमें `relogio_id=hoje` दिन की घड़ी है |
-| `rodizio` | `usando` (आज मैं यह पहन रहा हूँ), `trocar_dia` (किसी दिन की घड़ी), `periodo` (किसी अवधि की घड़ियाँ, क्रम से: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (अवधि में जो है मिटाकर फिर से ड्रॉ करता है), `periodo_livre` (मिटाकर दिनों को बिना ड्रॉ ख़ाली छोड़ता है), `manual` (मैनुअल रोटेशन: `de`, `ate`, `dias[YYYY-MM-DD]` = घड़ी का id, `auto` या `livre`), `apagar_tudo` (कल से आगे का पूरा कार्यक्रम हटता है; `hoje=1`: आज से आगे; मोड योजना दोबारा बनाता है), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (मोड बदलना) |
+| `rodizio` | `usando` (आज मैं यह पहन रहा हूँ), `trocar_dia` (किसी दिन की घड़ी), `periodo` (किसी अवधि की घड़ियाँ, क्रम से: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (अवधि के दिन हटाता है और मोड उन्हें फिर से बनाता है; केवल `de`: योजना के अंत तक; केवल `ate`: कल से उस तक), `periodo_livre` (मिटाकर दिनों को बिना ड्रॉ ख़ाली छोड़ता है; वही तारीख़ें), `manual` (मैनुअल रोटेशन: `de`, `ate`, `dias[YYYY-MM-DD]` = घड़ी का id, `auto` या `livre`), `apagar_tudo` (कल से आगे का पूरा कार्यक्रम हटता है; `hoje=1`: आज से आगे; मोड योजना दोबारा बनाता है), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (मोड बदलना) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (समूह) और `relogios` (हर घड़ी का समूह) |
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (और फ़ील्ड में `ordem`) |
