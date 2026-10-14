@@ -344,6 +344,52 @@ function migracao_v16_dados()
 // As migrações que faltam aplicar neste banco: as da lista cuja marca ainda não existe. A marca: uma tabela, uma coluna
 // (tabela.coluna) ou uma linha (tabela.coluna=valor, para a migração que só acrescenta cadastro); várias separadas por |
 // valem uma ou outra (a v13 criou a tabela manual, que a v16 tira: depois dela, a marca é a tabela documento)
+// A instalação: o schema.sql no banco do config.php, cada comando traduzido para ele, e os passos em PHP das migrações
+// (o schema.sql já traz o SQL delas). Só num banco vazio. A API (recurso=instalacao, acao=instalar) e o instalar.php
+// chamam esta. Devolve {ok, mensagem, erros, comandos, tabelas, segundos}
+function instalar_banco()
+{
+    global $MIGRACOES;
+    $tabelas = banco_tabelas();
+    if (count($tabelas) > 0) {
+        return ["ok" => false, "mensagem" => "", "erros" => ["O banco já tem tabelas (" . implode(", ", array_slice($tabelas, 0, 5)) . (count($tabelas) > 5 ? "..." : "")
+            . "): a instalação é só num banco vazio. Para atualizar um banco que já existe, aplique as migrações (recurso=migracoes, acao=aplicar)."]];
+    }
+    if (banco_tipo() === "pgsql") {
+        // maiúsculas e acentos não contam nas colunas de texto curto, como no MySQL: "Relógio" = "RELOGIO"
+        banco_direto("CREATE COLLATION IF NOT EXISTS ci (provider = icu, locale = 'und-u-ks-level1', deterministic = false)");
+    }
+    $inicio = microtime(true);
+    $n = banco_script((string)file_get_contents(__DIR__ . "/schema.sql"));
+    foreach ($MIGRACOES as $m) {
+        if (isset($m[3])) {
+            call_user_func($m[3]);
+        }
+    }
+    $pendentes = migracoes_pendentes();
+    if (count($pendentes) > 0) {
+        return ["ok" => false, "mensagem" => "", "erros" => ["A instalação terminou, mas faltam as migrações " . implode(", ", array_keys($pendentes)) . ": o schema.sql está incompleto."]];
+    }
+    $seg = round(microtime(true) - $inicio, 1);
+    return ["ok" => true, "mensagem" => "Banco instalado (" . ["mysql" => "MySQL/MariaDB", "pgsql" => "PostgreSQL", "sqlite" => "SQLite"][banco_tipo()] . "): " . $n
+        . " comandos, " . count(banco_tabelas()) . " tabelas, em " . str_replace(".", ",", (string)$seg) . " s. Agora crie o primeiro usuário (recurso=usuarios, acao=salvar, com o token).",
+        "erros" => [], "comandos" => $n, "tabelas" => count(banco_tabelas()), "segundos" => $seg];
+}
+
+// A situação da instalação (recurso=instalacao): o banco, se está vazio, instalado e em dia, e quantos usuários tem
+function instalacao_situacao()
+{
+    $tabelas = banco_tabelas();
+    $vazio = count($tabelas) === 0;
+    $pendentes = $vazio ? [] : array_keys(migracoes_pendentes());
+    $usuarios = !$vazio && banco_tem_tabela("usuario") ? (int)valor("SELECT COUNT(*) FROM usuario") : 0;
+    $proximo = $vazio ? "instalar: POST recurso=instalacao, acao=instalar"
+        : (count($pendentes) > 0 ? "aplicar as migrações: POST recurso=migracoes, acao=aplicar"
+            : ($usuarios === 0 ? "criar o primeiro usuário: POST recurso=usuarios, acao=salvar, login e senha (com o token)" : "nada: o sistema está pronto"));
+    return ["banco" => banco_tipo(), "vazio" => $vazio, "instalado" => !$vazio, "tabelas" => count($tabelas), "em_dia" => !$vazio && count($pendentes) === 0,
+        "migracoes_pendentes" => array_values($pendentes), "usuarios" => $usuarios, "proximo_passo" => $proximo];
+}
+
 function migracoes_pendentes()
 {
     global $MIGRACOES;
@@ -1236,7 +1282,8 @@ function usuario_autenticado()
         }
     }
     $res = "";
-    if ($login !== "") {
+    // banco vazio (antes da instalação): ninguém entra pelo login, só pelo token
+    if ($login !== "" && banco_tem_tabela("usuario")) {
         $hash = valor("SELECT senha_hash FROM usuario WHERE login = ?", [$login]);
         if ($hash && password_verify($senha, $hash)) {
             $res = $login;

@@ -771,12 +771,16 @@ conta (os resumos, as porcentagens, os totais e as situações, como o resumo do
 na tela fica só o que é dela: filtrar, ordenar e somar o que os filtros da tabela deixam à mostra). Por isso,
 **tudo o que a tela faz, um script também faz**: automações, atalhos no celular, integração com o Home Assistant, um widget.
 
-Fora da API ficam só três coisas, de propósito: o **cron** (`cron.php`, o relógio do sistema: monta o plano, abre e fecha a
-sessão do dia, manda as mensagens, sincroniza a agenda, dispara os eventos e cuida das cópias dos documentos, com as mesmas
-funções que a API usa; o que dá para pedir na hora tem ação na API: `testar_manha`, `testar_noite`, `sincronizar`,
-`resortear`...), os **scripts de instalação** pela linha de comando (`instalar.php`, `criar_usuario.php` para o primeiro
-usuário e `importar.php`) e o **login das páginas** (cada página confere o login antes de entregar o esqueleto; a API confere
-de novo em cada pedido).
+A API faz também o que vem antes e em volta das telas: **instala o banco** (`recurso=instalacao`), **cria o primeiro usuário**
+(`recurso=usuarios`, pelo token), **importa o sistema anterior** (`recurso=importacao`) e faz o **login das páginas**
+(`recurso=entrar`: as páginas não conferem nada, só entregam o esqueleto; quem chega sem login é mandado para a API, que pede o
+usuário e a senha e devolve para a página). Os scripts de linha de comando (`instalar.php`, `criar_usuario.php`,
+`importar.php`) são atalhos: chamam as mesmas operações da API.
+
+Fora da API fica só o **cron** (`cron.php`, o relógio do sistema: monta o plano, abre e fecha a sessão do dia, manda as
+mensagens, sincroniza a agenda, dispara os eventos e cuida das cópias dos documentos), que usa as mesmas funções que a API usa;
+o que dá para pedir na hora tem ação na API (`testar_manha`, `testar_noite`, `sincronizar`, `resortear`...), e o que ele fez
+aparece em `recurso=cron`.
 
 **Autenticação:** o token (`X-Api-Token: ...` ou `?token=...`) ou o login do site (HTTP Basic).
 **Formato:** JSON por padrão, ou XML com `formato=xml`.
@@ -823,6 +827,9 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `documentos` | os documentos de um relógio (`relogio=<id>`; sem ele, de todos), com as categorias, o resumo da NF-e de cada XML, a pasta e o limite |
 | `documento` | o arquivo de um documento (`id=<id>`): para mostrar (imagem, vídeo, áudio, PDF, texto) ou para baixar (o resto, ou com `baixar=1`); `mini=1` é a miniatura da foto. Atende pedaços (Range), para o vídeo avançar |
 | `usuarios`, `migracoes` | os logins; as migrações que faltam aplicar |
+| `instalacao` | a situação da instalação: o banco, se está vazio, instalado e em dia, quantos usuários e o próximo passo. Responde também com o banco vazio, pelo token |
+| `importacao` | o que a importação do sistema anterior usa: o servidor do banco antigo (sem a senha), se o PHP tem o MySQL e se este banco já tem relógios |
+| `entrar` | o login das páginas: sem login, 401 (o navegador pede o usuário e a senha); com login, volta para a página de `volta=` (302) ou diz quem entrou |
 | `ajuda` | a documentação inteira: cada consulta, cada escrita, cada campo de cada resposta e as funções do motor |
 | `manual` (ou `ajuda&parte=manual`) | o texto da página **Ajuda** (as seções deste README para quem usa: da ideia central às perguntas frequentes), em markdown, inteiro e seção por seção, com o título, o nível e a âncora de cada uma, e já em HTML com o sumário (é dele que a página Ajuda se monta) |
 | `reconstrucao` (ou `ajuda&parte=reconstrucao`) | o roteiro para **reescrever o sistema inteiro do zero** (veja [Reescrever o sistema do zero](#reescrever-o-sistema-do-zero)) |
@@ -842,8 +849,10 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
 | `config` | `salvar`, `evento_salvar`, `evento_excluir`, `testar_manha`, `testar_noite`, `teste_agenda_criar`, `teste_agenda_remover`, `sincronizar` |
-| `usuarios` | `salvar`, `excluir` |
+| `usuarios` | `salvar` (o primeiro usuário, pelo token), `excluir` |
 | `migracoes` | `aplicar` |
+| `instalacao` | `instalar` (só num banco vazio, pelo token) |
+| `importacao` | `importar` (`banco=` o nome do banco antigo; `substituir=1` quando este banco já tem relógios; parou no meio, nada fica gravado) |
 
 **As respostas de erro** dizem o motivo: `{"erro": "..."}` nas consultas, e `{"ok": false, "mensagem", "erros": [...]}` (um erro
 por motivo) numa escrita recusada:
@@ -851,12 +860,13 @@ por motivo) numa escrita recusada:
 | Código | Quando |
 |---|---|
 | `400` | escrita recusada pelas validações (os erros dizem por quê), ou uma fórmula mal escrita no `calcular` |
-| `401` | sem o token nem o login do site, ou com eles errados |
+| `302` | `recurso=entrar` com o login certo e `volta=`: vai para a página |
+| `401` | sem o token nem o login do site, ou com eles errados; sem nenhum usuário (ou com o banco vazio), a resposta diz o que fazer (`sem_usuarios` e `como`) |
 | `404` | recurso desconhecido (a resposta traz a lista dos recursos), ou o relógio, a foto, o documento (ou o arquivo dele) ou o `README.md` (no `manual`) que não existe |
 | `409` | o banco recusou a gravação: um registro que outro ainda usa, um valor repetido, ou um valor fora das regras de validação do banco (vem o nome da regra) |
 | `413` | o envio passou do limite do PHP do servidor (`post_max_size`): um arquivo grande demais |
 | `500` | sistema parado (o `API_TOKEN` ou o `FUSO` do `config.php` inválido) ou um erro interno |
-| `503` | banco desatualizado (só `recurso=migracoes` responde, e a escrita `migracoes`/`aplicar`; e o `manual`, que não usa o banco) ou banco fora do ar |
+| `503` | banco desatualizado (só `recurso=migracoes` responde, e a escrita `migracoes`/`aplicar`; e o `manual`, que não usa o banco), banco vazio (antes da instalação só `instalacao` responde, e o `manual`) ou banco fora do ar |
 
 **Filtros genéricos** funcionam em qualquer lista de qualquer resposta:
 
@@ -910,9 +920,13 @@ nano config.php
 
 # 4. a instalação: a estrutura e o conjunto inicial, traduzidos para o banco do config.php
 php instalar.php
+#    ou pela API, com o token do config.php:
+#    curl -H "X-Api-Token: $TOKEN" -d recurso=instalacao -d acao=instalar http://servidor/relojoeiro/api.php
 
 # 5. o primeiro usuário (a senha é pedida sem aparecer)
 php criar_usuario.php seu_login
+#    ou pela API, com o token:
+#    curl -H "X-Api-Token: $TOKEN" -d recurso=usuarios -d acao=salvar -d login=seu_login -d senha=... http://servidor/relojoeiro/api.php
 
 # 6. o cron, a cada minuto (ele é mudo: não escreve nada e não manda e-mail)
 ( crontab -l; echo "* * * * * php /var/www/relojoeiro/cron.php" ) | crontab -
@@ -1035,8 +1049,9 @@ também no `instalar.php`.
 
 ### Vindo do sistema anterior
 
-`php importar.php <banco_antigo>` traz a árvore, os relógios, as fotos, os usuários, os campos e todo o histórico (convertido
-em lançamentos). Com `--substituir`, apaga antes o que já existe neste banco. O [`PORTE.md`](PORTE.md) registra, item por item, como cada
+`php importar.php <banco_antigo>` (ou, pela API, `recurso=importacao`, `acao=importar`, `banco=<banco_antigo>`) traz a árvore, os
+relógios, as fotos, os usuários, os campos e todo o histórico (convertido em lançamentos), numa transação só: se parar no meio,
+nada fica gravado. Com `--substituir` (na API, `substituir=1`), apaga antes o que já existe neste banco. O [`PORTE.md`](PORTE.md) registra, item por item, como cada
 comportamento do sistema antigo foi portado.
 
 ---
@@ -1115,7 +1130,8 @@ roteiro aponta para eles. A aceitação é o `testes/cenario.php`: a reescrita t
   escrito uma vez só e o [`banco.php`](banco.php) traduz o que muda de um banco para outro.
 - **Motor de fórmulas próprio**, com análise sintática, funções de histórico, versões por grupo e dependências entre fórmulas.
 - **Simulação:** a escala e as previsões simulam lançamentos futuros e recalculam as fórmulas dia a dia, sem gravar nada.
-- **Front-end em HTML e JavaScript puro.** Cada página PHP só confere o login e entrega o esqueleto; o `.js` dela chama a API e
+- **Front-end em HTML e JavaScript puro.** Cada página PHP só entrega o esqueleto (nem o login ela confere: quem chega sem login
+  é mandado para o login da API); o `.js` dela chama a API e
   monta a tela. Os scripts levam a data do arquivo na URL, para o cache do navegador não servir uma versão antiga.
 - **Cron mudo e rastreável:** roda a cada minuto, não escreve na saída e registra cada execução no banco (sem atividade, 7 dias;
   com atividade ou erro, 1 ano). Um erro fatal vai para o banco ou, se nem o banco responder, para um arquivo temporário.
@@ -1196,15 +1212,15 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | [`cron.php`](cron.php) | o plano, a sessão do dia, as rodadas da manhã e da noite, os eventos, a agenda e a manutenção dos documentos |
 | `index.php`, `plano.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `usuarios.php` | as páginas (só o esqueleto) |
 | `ajuda.php` | a página de ajuda: só o esqueleto; o `ajuda.js` pede o texto à API (`recurso=manual`: as seções do README para quem usa, já em HTML, convertidas no `lib.php`) |
-| [`pagina.php`](pagina.php) | o login do site e o menu |
+| [`pagina.php`](pagina.php) | o topo com o menu e o fim das páginas (o login é da API: `recurso=entrar`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |
 | [`estilo.css`](estilo.css) | o visual |
 | [`schema.sql`](schema.sql) | a estrutura do banco e o conjunto inicial (grupos, campos, fórmulas, avisos, modos, critérios) |
 | `migracao_v2.sql` … `migracao_v17.sql` | as migrações, aplicadas pela página Configuração |
 | [`config.exemplo.php`](config.exemplo.php) | o modelo do `config.php` |
-| [`instalar.php`](instalar.php) | instala o `schema.sql` no banco do `config.php`, qualquer um dos três |
-| [`criar_usuario.php`](criar_usuario.php) | cria um usuário ou troca a senha, pela linha de comando |
-| [`importar.php`](importar.php) | importa os dados do sistema anterior |
+| [`instalar.php`](instalar.php) | instala o `schema.sql` no banco do `config.php`, qualquer um dos três (o mesmo que `recurso=instalacao`) |
+| [`criar_usuario.php`](criar_usuario.php) | cria um usuário ou troca a senha, pela linha de comando (o mesmo que `recurso=usuarios`, `acao=salvar`) |
+| [`importar.php`](importar.php) | importa os dados do sistema anterior (o mesmo que `recurso=importacao`) |
 | [`reconstrucao.php`](reconstrucao.php) | o roteiro para reescrever o sistema do zero (o `recurso=reconstrucao` da API) |
 | [`.htaccess`](.htaccess) | a proteção dos arquivos internos no Apache (e o login do site com o PHP por FastCGI) |
 | [`nginx-relogios.conf`](nginx-relogios.conf) | o bloco do nginx que protege os arquivos internos |

@@ -207,6 +207,18 @@
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=usuarios"
  *   recurso=migracoes        {"pendentes": [{"versao", "arquivo", "traz"}]} (lista vazia: o banco está em dia)
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=migracoes"
+ *   recurso=instalacao       a situação da instalação (responde também com o banco vazio, pelo token): {"banco" (mysql, pgsql ou
+ *                            sqlite), "vazio", "instalado", "tabelas", "em_dia", "migracoes_pendentes": [versões], "usuarios" (quantos),
+ *                            "proximo_passo" (instalar, aplicar as migrações, criar o primeiro usuário ou nada)}
+ *                            Ex.: curl -H "X-Api-Token: segredo" "http://servidor/relojoeiro/api.php?recurso=instalacao"
+ *   recurso=importacao       o que a importação do sistema anterior usa: {"servidor_antigo": {"host", "porta", "usuario", "de_onde"} (sem a
+ *                            senha), "mysqli" (a extensão do MySQL no PHP), "relogios_neste_banco", "precisa_substituir", "traz": [o que ela
+ *                            traz]}
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=importacao"
+ *   recurso=entrar           o login das páginas: sem login, 401 (o navegador pede o usuário e a senha); com login, volta para a página
+ *                            de volta=<uma página do sistema> (302) ou diz quem entrou: {"usuario" (null pelo token), "por" (login ou
+ *                            token), "volta"}. É para onde o api.js manda quem abre uma página sem login
+ *                            Ex.: no navegador, http://servidor/relojoeiro/api.php?recurso=entrar&volta=index.php
  *   recurso=ajuda            esta documentação em JSON: cada consulta com a descrição, os parâmetros e um exemplo; cada escrita com as ações,
  *                            os campos de cada uma e um exemplo; o dicionário de todos os campos das respostas ("campos"); a
  *                            autenticação, o formato, os erros e as funções do motor. [parte=manual: o manual, abaixo;
@@ -416,12 +428,21 @@
  *                            Ex. teste_agenda_criar: curl -u lucas:senha -d recurso=config -d acao=teste_agenda_criar http://servidor/relojoeiro/api.php
  *                            Ex. teste_agenda_remover: curl -u lucas:senha -d recurso=config -d acao=teste_agenda_remover http://servidor/relojoeiro/api.php
  *                            Ex. sincronizar: curl -u lucas:senha -d recurso=config -d acao=sincronizar http://servidor/relojoeiro/api.php
- *   recurso=usuarios          salvar (login, senha), excluir (login)
+ *   recurso=usuarios          salvar (login, senha), excluir (login). O primeiro usuário sai pelo token (sem usuários, o login não entra)
  *                            Ex. salvar: curl -u lucas:senha -d recurso=usuarios -d acao=salvar -d login=visitante -d senha=segredo123 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=usuarios -d acao=excluir -d login=visitante http://servidor/relojoeiro/api.php
  *   recurso=migracoes         aplicar: aplica as migrações pendentes, na ordem: o SQL de cada uma e, se ela tiver, o passo em PHP (a única escrita
  *                            aceita com o banco desatualizado)
  *                            Ex. aplicar: curl -u lucas:senha -d recurso=migracoes -d acao=aplicar http://servidor/relojoeiro/api.php
+ *   recurso=instalacao        instalar: instala o banco do config.php, só num banco vazio (o schema.sql traduzido para o banco, com os
+ *                             passos em PHP das migrações), pelo token (antes da instalação não há usuários); a resposta traz
+ *                             "comandos", "tabelas" e "segundos". Depois: o primeiro usuário, em recurso=usuarios, acao=salvar
+ *                            Ex. instalar: curl -H "X-Api-Token: segredo" -d recurso=instalacao -d acao=instalar http://servidor/relojoeiro/api.php
+ *   recurso=importacao        importar (banco: o nome do banco antigo, MySQL/MariaDB; substituir=1: apaga antes os relógios e o histórico
+ *                             deste banco, obrigatório quando ele já tem relógios): traz a árvore, os relógios, as fotos, os usuários,
+ *                             os valores dos campos e o histórico; tudo numa transação (parou no meio: nada fica gravado); a resposta
+ *                             traz "contagem" (quantos de cada)
+ *                            Ex. importar: curl -u lucas:senha -d recurso=importacao -d acao=importar -d banco=relogios -d substituir=1 http://servidor/relojoeiro/api.php
  *
  * ---------------------------------------------------------------------------------------------
  * DICIONÁRIO DOS CAMPOS  (o que é, para que serve e que valor tem cada campo; o mesmo está em recurso=ajuda, "campos")
@@ -1832,6 +1853,30 @@
  *     pendentes[].arquivo            o arquivo .sql
  *     pendentes[].traz               o que a migração traz
  *     pendentes[].versao             a versão (v2, v3...)
+ *   recurso=instalacao
+ *     banco                          o banco do config.php: mysql, pgsql ou sqlite
+ *     em_dia                         instalado e sem migração pendente
+ *     instalado                      o banco tem as tabelas do sistema
+ *     migracoes_pendentes[]          as versões das migrações que faltam aplicar (vazio com o banco vazio ou em dia)
+ *     proximo_passo                  o que fazer agora: instalar (POST recurso=instalacao, acao=instalar), aplicar as migrações, criar o
+ *                                    primeiro usuário (POST recurso=usuarios, acao=salvar, com o token) ou nada
+ *     tabelas                        quantas tabelas o banco tem
+ *     usuarios                       quantos usuários existem (0: o login das páginas ainda não tem como entrar)
+ *     vazio                          o banco não tem nenhuma tabela: só a instalação responde, pelo token
+ *   recurso=importacao
+ *     mysqli                         o PHP tem a extensão do MySQL (mysqli), que a importação usa para ler o banco antigo
+ *     precisa_substituir             este banco já tem relógios: a importação pede substituir=1 (apaga antes os relógios e o histórico)
+ *     relogios_neste_banco           quantos relógios este banco tem agora
+ *     servidor_antigo                onde a importação procura o banco antigo (MySQL/MariaDB); a senha nunca sai
+ *     servidor_antigo.de_onde        de onde vêm esses dados: os ANTIGO_* do config.php, ou os DB_* (com este sistema no MySQL)
+ *     servidor_antigo.host           o servidor
+ *     servidor_antigo.porta          a porta (null: a padrão)
+ *     servidor_antigo.usuario        o usuário que lê o banco antigo
+ *     traz[]                         o que a importação traz, em texto
+ *   recurso=entrar
+ *     por                            como o pedido entrou: login (o do site, HTTP Basic) ou token
+ *     usuario                        o login de quem entrou (null pelo token)
+ *     volta                          a página para onde ele foi mandado (302), ou null
  *
  *   recurso=documentos
  *     relogio                        o relógio pedido: {id, nome, copia_banco}; null: os documentos de todos
@@ -2023,7 +2068,9 @@
  * ---------------------------------------------------------------------------------------------
  *   400 pedido recusado: uma escrita que não passou nas validações ({"ok": false, "mensagem", "erros": [...]}, um erro por
  *       motivo) ou uma fórmula mal escrita no recurso=calcular ({"erro", "erros"})
- *   401 {"erro"}: sem o token nem o login do site, ou com eles errados
+ *   302 recurso=entrar com o login certo e volta=<página>: vai para a página
+ *   401 {"erro"}: sem o token nem o login do site, ou com eles errados; sem nenhum usuário (ou com o banco vazio), também
+ *       "sem_usuarios": true e "como" (o que fazer: instalar, criar o primeiro usuário pelo token)
  *   404 {"erro"}: recurso desconhecido (com "recursos", a lista deles), ou o relógio, a foto, o documento (ou o arquivo dele) ou o
  *       README.md (recurso=manual) que não existe
  *   409 {"erro": "o banco recusou a gravação: ...", "detalhe"} (um registro que outro ainda usa, um valor repetido, ou um valor fora
@@ -2032,6 +2079,7 @@
  *   500 {"erro": "Sistema parado: ..."} (token ou fuso inválido no config.php) ou {"erro": "erro interno", "detalhe"}
  *   503 {"erro": "o banco está desatualizado: ...", "pendentes"}: só recurso=migracoes (e recurso=manual, que não usa o banco)
  *       responde até aplicar
+ *   503 {"erro": "o banco está vazio: ...", "proximo_passo"}: antes da instalação só recurso=instalacao (e recurso=manual) responde
  *   503 {"erro": "o banco de dados não respondeu", "detalhe"}
  */
 require_once __DIR__ . "/lib.php";
@@ -2402,14 +2450,48 @@ $saida = [];
 
 // as migrações pendentes: as da lista ($MIGRACOES, no lib.php) cuja marca (tabela ou tabela.coluna) ainda não existe
 $pendentes = migracoes_pendentes();
+// o banco vazio (antes da instalação): só a instalação responde
+$banco_vazio = count($pendentes) > 0 && count(banco_tabelas()) === 0;
 if (!$token_ok && $quem === "") {
     $codigo = 401;
     header("WWW-Authenticate: Basic realm=\"Relogios\", charset=\"UTF-8\"");
     $saida = ["erro" => "falta autenticação: o token (cabeçalho X-Api-Token ou parâmetro token) ou o login do site (HTTP Basic)"];
+    // sem nenhum usuário, o login não tem como dar certo: diz como criar o primeiro
+    if ($banco_vazio || !banco_tem_tabela("usuario") || (int)valor("SELECT COUNT(*) FROM usuario") === 0) {
+        $saida["sem_usuarios"] = true;
+        $saida["como"] = $banco_vazio ? "o banco está vazio: instale com o token (POST recurso=instalacao, acao=instalar) e crie o primeiro usuário (POST recurso=usuarios, acao=salvar, login e senha)"
+            : "nenhum usuário cadastrado: crie o primeiro com o token (POST recurso=usuarios, acao=salvar, login e senha) ou no servidor (php criar_usuario.php <login>)";
+    }
 } elseif ($envio_grande) {
     $codigo = 413;
     $saida = ["ok" => false, "mensagem" => "", "erros" => ["O envio tem " . str_replace(".", ",", (string)round((int)$_SERVER["CONTENT_LENGTH"] / 1048576, 1))
         . " MB e passou do limite do PHP do servidor (post_max_size = " . ini_get("post_max_size") . "). Envie um arquivo menor ou aumente o limite no php.ini."]];
+} elseif ($recurso === "instalacao") {
+    // a instalação: a situação (o banco, se está vazio e em dia, quantos usuários) e instalar, só num banco vazio
+    if ($escrita && $acao === "instalar") {
+        $saida = instalar_banco();
+        $codigo = $saida["ok"] ? 200 : 400;
+    } elseif ($escrita) {
+        $codigo = 400;
+        $saida = ["ok" => false, "mensagem" => "", "erros" => ["Ação desconhecida: use instalar."]];
+    } else {
+        $saida = instalacao_situacao();
+    }
+} elseif ($recurso === "entrar") {
+    // o login das páginas: quem chega sem login recebeu o 401 acima (o navegador pede o usuário e a senha); com o login
+    // certo, volta para a página de onde veio (volta=index.php?r=3, só uma página do sistema) ou diz quem entrou
+    $volta = (string)($_REQUEST["volta"] ?? "");
+    if (preg_match("/^[a-z_]+\\.php(\\?[^\\s#]*)?(#\\S*)?\$/", $volta) !== 1) {
+        $volta = "";
+    }
+    if ($volta !== "" && !$escrita) {
+        $codigo = 302;
+        header("Location: " . $volta);
+    }
+    $saida = ["usuario" => $quem !== "" ? $quem : null, "por" => $quem !== "" ? "login" : "token", "volta" => $volta !== "" ? $volta : null];
+} elseif ($recurso === "migracoes" && $banco_vazio) {
+    $codigo = 503;
+    $saida = ["erro" => "o banco está vazio: instale (POST recurso=instalacao, acao=instalar)", "proximo_passo" => instalacao_situacao()["proximo_passo"]];
 } elseif ($recurso === "migracoes") {
     // as migrações: a lista das pendentes, e aplicar (a única escrita aceita com o banco desatualizado)
     if ($escrita && $acao === "aplicar") {
@@ -2432,6 +2514,9 @@ if (!$token_ok && $quem === "") {
             return ["versao" => $v, "arquivo" => $m[0], "traz" => $m[1]];
         }, array_keys($pendentes), array_values($pendentes))];
     }
+} elseif ($banco_vazio && !($recurso === "manual" || ($recurso === "ajuda" && ($_REQUEST["parte"] ?? "") === "manual"))) {
+    $codigo = 503;
+    $saida = ["erro" => "o banco está vazio: instale (POST recurso=instalacao, acao=instalar)", "proximo_passo" => instalacao_situacao()["proximo_passo"]];
 } elseif (count($pendentes) > 0 && !($recurso === "manual" || ($recurso === "ajuda" && ($_REQUEST["parte"] ?? "") === "manual"))) {
     // banco desatualizado: só as migrações respondem (e o manual, que não usa o banco: a página Ajuda continua abrindo)
     $codigo = 503;
@@ -2446,10 +2531,16 @@ if (!$token_ok && $quem === "") {
         $saida = $ops[$recurso]($acao, $d);
     } elseif ($recurso === "usuarios") {
         $saida = op_usuarios($acao, $d, $quem !== "" ? $quem : "(token da API)");
+    } elseif ($recurso === "importacao") {
+        // a importação do sistema anterior pode demorar (o histórico inteiro): sem o limite de tempo do PHP
+        @set_time_limit(0);
+        $saida = op_importacao($acao, $d);
     } else {
-        $saida = ["ok" => false, "mensagem" => "", "erros" => ["este recurso não aceita escrita; os que aceitam: " . implode(", ", array_merge(array_keys($ops), ["usuarios"]))]];
+        $saida = ["ok" => false, "mensagem" => "", "erros" => ["este recurso não aceita escrita; os que aceitam: " . implode(", ", array_merge(array_keys($ops), ["usuarios", "importacao", "instalacao", "migracoes"]))]];
     }
     $codigo = $saida["ok"] ? 200 : 400;
+} elseif ($recurso === "importacao") {
+    $saida = importacao_situacao();
 } elseif ($recurso === "foto") {
     $f = linha("SELECT tipo, dados FROM foto WHERE relogio_id = ?", [(int)($_REQUEST["relogio"] ?? 0)]);
     if ($f) {
@@ -2980,6 +3071,15 @@ if (!$token_ok && $quem === "") {
             "migracoes" => ["descricao" => "as migrações que faltam aplicar no banco (lista vazia: está em dia); com o banco desatualizado, só ele (e o manual, que não usa o banco) responde",
                 "parametros" => [],
                 "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=migracoes\""],
+            "instalacao" => ["descricao" => "a situação da instalação: o banco, se está vazio, instalado e em dia, as migrações que faltam, quantos usuários há e o próximo passo (instalar, aplicar as migrações, criar o primeiro usuário ou nada); responde também com o banco vazio, pelo token",
+                "parametros" => [],
+                "exemplo" => "curl -H \"X-Api-Token: segredo\" \"http://servidor/relojoeiro/api.php?recurso=instalacao\""],
+            "importacao" => ["descricao" => "o que a importação do sistema anterior usa: o servidor do banco antigo (sem a senha) e de onde ele vem no config.php, se o PHP tem a extensão do MySQL, quantos relógios este banco já tem (com algum, a importação pede substituir=1) e o que ela traz",
+                "parametros" => [],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=importacao\""],
+            "entrar" => ["descricao" => "o login das páginas: sem login, 401 (o navegador pede o usuário e a senha); com login, vai para a página de volta (302) ou diz quem entrou (usuario, por, volta). É para onde o api.js manda quem abre uma página sem login",
+                "parametros" => ["volta" => "uma página do sistema para onde ir depois de entrar (index.php, plano.php?..., ajuda.php#...); outra coisa não vale"],
+                "exemplo" => "no navegador: http://servidor/relojoeiro/api.php?recurso=entrar&volta=index.php"],
             "autonomia" => ["descricao" => "as autonomias de cada relógio, enxuto e rápido, para sistemas de fora, em segundos inteiros: prevista (cheio, pelo cadastro), atual (cheio, pela conta do sistema com o gasto medido), estimada (quanto ainda dura seguindo o plano), restante_em_uso (no pulso sem tirar), restante_guardado (parado) e quando acaba (acaba_em_unixtimestamp, acaba_em_segundos, acaba_em_datacomtz); null com o motivo em motivos",
                 "parametros" => ["relogio" => "um id ou vários separados por vírgula (vazio: todos)"],
                 "exemplo" => "curl -u lucas:senha -g \"http://servidor/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz\""],
@@ -3092,11 +3192,17 @@ if (!$token_ok && $quem === "") {
                 "sincronizar" => ["campos" => "(nada): sincroniza o Google Agenda agora", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=sincronizar http://servidor/relojoeiro/api.php"],
             ],
             "usuarios" => [
-                "salvar" => ["campos" => "login, senha (6 caracteres ou mais; login que existe: troca a senha)", "exemplo" => "curl -u lucas:senha -d recurso=usuarios -d acao=salvar -d login=visitante -d senha=segredo123 http://servidor/relojoeiro/api.php"],
+                "salvar" => ["campos" => "login, senha (6 caracteres ou mais; login que existe: troca a senha); o primeiro usuário sai pelo token (sem usuários, o login não entra)", "exemplo" => "curl -u lucas:senha -d recurso=usuarios -d acao=salvar -d login=visitante -d senha=segredo123 http://servidor/relojoeiro/api.php"],
                 "excluir" => ["campos" => "login (não o próprio)", "exemplo" => "curl -u lucas:senha -d recurso=usuarios -d acao=excluir -d login=visitante http://servidor/relojoeiro/api.php"],
             ],
             "migracoes" => [
                 "aplicar" => ["campos" => "(nada): aplica as migrações pendentes, na ordem: o SQL de cada uma e, se ela tiver, o passo em PHP", "exemplo" => "curl -u lucas:senha -d recurso=migracoes -d acao=aplicar http://servidor/relojoeiro/api.php"],
+            ],
+            "instalacao" => [
+                "instalar" => ["campos" => "(nada): instala o banco do config.php, só num banco vazio (o schema.sql traduzido para o banco, com os passos em PHP das migrações), pelo token (antes da instalação não há usuários); a resposta traz comandos, tabelas e segundos. Depois: o primeiro usuário, em recurso=usuarios, acao=salvar", "exemplo" => "curl -H \"X-Api-Token: segredo\" -d recurso=instalacao -d acao=instalar http://servidor/relojoeiro/api.php"],
+            ],
+            "importacao" => [
+                "importar" => ["campos" => "banco (o nome do banco antigo, MySQL/MariaDB), substituir (1: apaga antes os relógios e o histórico deste banco; obrigatório quando ele já tem relógios): traz a árvore, os relógios, as fotos, os usuários, os valores dos campos e o histórico, tudo numa transação (parou no meio: nada fica gravado); a resposta traz contagem (quantos de cada)", "exemplo" => "curl -u lucas:senha -d recurso=importacao -d acao=importar -d banco=relogios -d substituir=1 http://servidor/relojoeiro/api.php"],
             ],
         ],
         "filtros" => [
@@ -4279,6 +4385,32 @@ if (!$token_ok && $quem === "") {
                 "pendentes[].traz" => "o que a migração traz",
                 "pendentes[].versao" => "a versão (v2, v3...)",
             ],
+            "instalacao" => [
+                "banco" => "o banco do config.php: mysql, pgsql ou sqlite",
+                "em_dia" => "instalado e sem migração pendente",
+                "instalado" => "o banco tem as tabelas do sistema",
+                "migracoes_pendentes[]" => "as versões das migrações que faltam aplicar (vazio com o banco vazio ou em dia)",
+                "proximo_passo" => "o que fazer agora: instalar (POST recurso=instalacao, acao=instalar), aplicar as migrações, criar o primeiro usuário (POST recurso=usuarios, acao=salvar, com o token) ou nada",
+                "tabelas" => "quantas tabelas o banco tem",
+                "usuarios" => "quantos usuários existem (0: o login das páginas ainda não tem como entrar)",
+                "vazio" => "o banco não tem nenhuma tabela: só a instalação responde, pelo token",
+            ],
+            "importacao" => [
+                "mysqli" => "o PHP tem a extensão do MySQL (mysqli), que a importação usa para ler o banco antigo",
+                "precisa_substituir" => "este banco já tem relógios: a importação pede substituir=1 (apaga antes os relógios e o histórico)",
+                "relogios_neste_banco" => "quantos relógios este banco tem agora",
+                "servidor_antigo" => "onde a importação procura o banco antigo (MySQL/MariaDB); a senha nunca sai",
+                "servidor_antigo.de_onde" => "de onde vêm esses dados: os ANTIGO_* do config.php, ou os DB_* (com este sistema no MySQL)",
+                "servidor_antigo.host" => "o servidor",
+                "servidor_antigo.porta" => "a porta (null: a padrão)",
+                "servidor_antigo.usuario" => "o usuário que lê o banco antigo",
+                "traz[]" => "o que a importação traz, em texto",
+            ],
+            "entrar" => [
+                "por" => "como o pedido entrou: login (o do site, HTTP Basic) ou token",
+                "usuario" => "o login de quem entrou (null pelo token)",
+                "volta" => "a página para onde ele foi mandado (302), ou null",
+            ],
             "documentos" => [
                 "relogio" => "o relógio pedido: {id, nome, copia_banco}; null: os documentos de todos",
                 "relogio.id" => "o número do relógio",
@@ -4425,11 +4557,12 @@ if (!$token_ok && $quem === "") {
             "recurso" => "o recurso (vazio: tudo)", "acao" => "a ação (escrita)", "formato" => "json (padrão) ou xml", "token" => "o token da API; também no cabeçalho X-Api-Token, ou o login do site (HTTP Basic) no lugar dele",
         ],
         "erros" => ["400" => "pedido recusado: uma escrita que não passou nas validações ({ok: false, mensagem, erros: [...]}, um erro por motivo) ou uma fórmula mal escrita no recurso=calcular ({erro, erros})",
-            "401" => "sem o token nem o login do site, ou com eles errados",
+            "302" => "recurso=entrar com o login certo e volta=<página>: vai para a página",
+            "401" => "sem o token nem o login do site, ou com eles errados; sem nenhum usuário (ou com o banco vazio), também sem_usuarios: true e como (o que fazer: instalar, criar o primeiro usuário pelo token)",
             "404" => "recurso desconhecido (com recursos, a lista deles), ou o relógio, a foto, o documento (ou o arquivo dele) ou o README.md (recurso=manual) que não existe",
             "409" => "o banco recusou a gravação (um registro que outro ainda usa, um valor repetido, ou um valor fora das regras de validação do banco: o nome da regra, ck_<tabela>_<o quê>, vem no detalhe)",
             "413" => "o envio passou do limite do PHP do servidor (post_max_size): um arquivo grande demais",
-            "500" => "sistema parado (token ou fuso inválido no config.php) ou erro interno", "503" => "banco desatualizado (só recurso=migracoes responde, e o recurso=manual, que não usa o banco) ou banco fora do ar"],
+            "500" => "sistema parado (token ou fuso inválido no config.php) ou erro interno", "503" => "banco desatualizado (só recurso=migracoes responde, e o recurso=manual, que não usa o banco), banco vazio (antes da instalação só recurso=instalacao responde, e o manual) ou banco fora do ar"],
         "motor" => array_map(function ($f) { return $f[2]; }, $GLOBALS["FUNCOES"]),
         "escrita_das_formulas" => "números com vírgula ou ponto; textos entre aspas; argumentos separados por ponto e vírgula; operações + - * / ^; "
             . "comparações = <> < <= > >= (dão 1 ou 0); variáveis: os identificadores dos campos e das fórmulas; vazio se propaga; divisão por zero: vazio",
@@ -4537,7 +4670,7 @@ if (!$token_ok && $quem === "") {
 } else {
     $codigo = 404;
     $saida = ["erro" => "recurso desconhecido", "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "ajuda", "manual", "reconstrucao"]];
+        "historico", "previsao", "plano", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "instalacao", "importacao", "entrar", "ajuda", "manual", "reconstrucao"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],
