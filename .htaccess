@@ -14,7 +14,7 @@ Options -Indexes
 </IfModule>
 
 # os arquivos internos do PHP: quem usa é a linha de comando e as outras páginas, nunca o navegador
-<FilesMatch "^(lib|banco|config|config\.exemplo|operacoes|pagina|cron|importar|instalar|criar_usuario)\.php$">
+<FilesMatch "^(lib|banco|config|config\.exemplo|operacoes|pagina|cron|importar|instalar|criar_usuario|reconstrucao)\.php$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

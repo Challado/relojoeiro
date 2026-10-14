@@ -1393,3 +1393,116 @@ function sql_alterar_tabela($comando, $banco)
     }
     throw new BancoErro("não sei traduzir: " . substr($comando, 0, 120));
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// O catálogo do banco: cada tabela com as colunas (o tipo no dialeto do banco em uso, se aceita vazio, o padrão), a chave
+// primária, as chaves estrangeiras (e o que acontece ao apagar a linha de cima), as chaves únicas, os índices e as regras
+// de validação (CHECK). Lido do próprio banco (o que está valendo agora, depois de todas as migrações): é o modelo de
+// dados que o recurso=ajuda&parte=reconstrucao devolve.
+// ---------------------------------------------------------------------------------------------------------------------
+function banco_catalogo()
+{
+    $res = [];
+    $tabelas = banco_tabelas();
+    sort($tabelas);
+    foreach ($tabelas as $t) {
+        if (strpos($t, "sqlite_") === 0) {
+            continue;
+        }
+        $x = ["tabela" => $t, "colunas" => [], "chave_primaria" => [], "chaves_estrangeiras" => [], "unicas" => [], "indices" => [], "regras" => []];
+        $tipo = banco_tipo();
+        if ($tipo === "sqlite") {
+            foreach (linhas("PRAGMA table_info(" . $t . ")") as $c) {
+                $x["colunas"][] = ["nome" => $c["name"], "tipo" => $c["type"], "vazio" => (int)$c["notnull"] === 0 && (int)$c["pk"] === 0, "padrao" => $c["dflt_value"]];
+                if ((int)$c["pk"] > 0) {
+                    $x["chave_primaria"][(int)$c["pk"] - 1] = $c["name"];
+                }
+            }
+            ksort($x["chave_primaria"]);
+            foreach (linhas("PRAGMA foreign_key_list(" . $t . ")") as $f) {
+                $x["chaves_estrangeiras"][] = ["coluna" => $f["from"], "referencia" => $f["table"] . "." . $f["to"], "ao_apagar" => strtoupper($f["on_delete"])];
+            }
+            foreach (linhas("PRAGMA index_list(" . $t . ")") as $ix) {
+                if ($ix["origin"] === "pk") {
+                    continue;
+                }
+                $cols = array_column(linhas("PRAGMA index_info(" . $ix["name"] . ")"), "name");
+                $x[(int)$ix["unique"] === 1 ? "unicas" : "indices"][] = $cols;
+            }
+            // as regras: as partes CHECK do CREATE TABLE (com nome: CONSTRAINT x CHECK; a de uma coluna ENUM: na coluna)
+            $criar = (string)valor("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", [$t]);
+            $abre = strpos($criar, "(");
+            foreach (sql_dividir(substr($criar, $abre + 1, strrpos($criar, ")") - $abre - 1)) as $p) {
+                $p = trim((string)preg_replace("/\\s+/", " ", $p));
+                if (preg_match("/^CONSTRAINT [\"`]?(\\w+)[\"`]? CHECK ?\\((.*)\\)\$/i", $p, $m) === 1) {
+                    $x["regras"][] = ["nome" => $m[1], "condicao" => $m[2]];
+                } elseif (preg_match("/^CHECK ?\\((.*)\\)\$/i", $p, $m) === 1) {
+                    $x["regras"][] = ["nome" => null, "condicao" => $m[1]];
+                } elseif (preg_match("/^[\"`]?(\\w+)[\"`]? .*\\bCHECK ?\\((.*)\\)\$/i", $p, $m) === 1) {
+                    $x["regras"][] = ["nome" => null, "condicao" => $m[2]];
+                }
+            }
+        } elseif ($tipo === "mysql") {
+            foreach (linhas("SELECT COLUMN_NAME AS n, COLUMN_TYPE AS t, IS_NULLABLE AS v, COLUMN_DEFAULT AS d, COLUMN_KEY AS k FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION", [$t]) as $c) {
+                $x["colunas"][] = ["nome" => $c["n"], "tipo" => $c["t"], "vazio" => $c["v"] === "YES", "padrao" => $c["d"]];
+            }
+            foreach (linhas("SELECT INDEX_NAME AS i, NON_UNIQUE AS nu, COLUMN_NAME AS c FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+                ORDER BY INDEX_NAME, SEQ_IN_INDEX", [$t]) as $s) {
+                $ix[$s["i"]]["cols"][] = $s["c"];
+                $ix[$s["i"]]["unico"] = (int)$s["nu"] === 0;
+            }
+            foreach ($ix ?? [] as $nome => $i) {
+                if ($nome === "PRIMARY") {
+                    $x["chave_primaria"] = $i["cols"];
+                } else {
+                    $x[$i["unico"] ? "unicas" : "indices"][] = $i["cols"];
+                }
+            }
+            unset($ix);
+            foreach (linhas("SELECT k.COLUMN_NAME AS c, k.REFERENCED_TABLE_NAME AS rt, k.REFERENCED_COLUMN_NAME AS rc, r.DELETE_RULE AS d FROM information_schema.KEY_COLUMN_USAGE k
+                JOIN information_schema.REFERENTIAL_CONSTRAINTS r ON r.CONSTRAINT_SCHEMA = k.TABLE_SCHEMA AND r.CONSTRAINT_NAME = k.CONSTRAINT_NAME
+                WHERE k.TABLE_SCHEMA = DATABASE() AND k.TABLE_NAME = ? ORDER BY k.COLUMN_NAME", [$t]) as $f) {
+                $x["chaves_estrangeiras"][] = ["coluna" => $f["c"], "referencia" => $f["rt"] . "." . $f["rc"], "ao_apagar" => strtoupper($f["d"])];
+            }
+            foreach (linhas("SELECT c.CONSTRAINT_NAME AS n, c.CHECK_CLAUSE AS q FROM information_schema.CHECK_CONSTRAINTS c JOIN information_schema.TABLE_CONSTRAINTS t
+                ON t.CONSTRAINT_SCHEMA = c.CONSTRAINT_SCHEMA AND t.CONSTRAINT_NAME = c.CONSTRAINT_NAME AND t.CONSTRAINT_TYPE = 'CHECK'
+                WHERE c.CONSTRAINT_SCHEMA = DATABASE() AND t.TABLE_NAME = ? ORDER BY c.CONSTRAINT_NAME", [$t]) as $r) {
+                $x["regras"][] = ["nome" => $r["n"], "condicao" => $r["q"]];
+            }
+        } else {
+            foreach (linhas("SELECT column_name AS n, CASE WHEN character_maximum_length IS NOT NULL THEN data_type || '(' || character_maximum_length || ')'
+                WHEN data_type = 'numeric' THEN data_type || '(' || numeric_precision || ',' || numeric_scale || ')' ELSE data_type END AS t, is_nullable AS v, column_default AS d
+                FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? ORDER BY ordinal_position", [$t]) as $c) {
+                $x["colunas"][] = ["nome" => $c["n"], "tipo" => $c["t"], "vazio" => $c["v"] === "YES", "padrao" => $c["d"]];
+            }
+            foreach (linhas("SELECT c.conname AS n, c.contype AS ti, pg_get_constraintdef(c.oid) AS def, c.confdeltype AS d,
+                (SELECT string_agg(a.attname, ',' ORDER BY k.ordem) FROM unnest(c.conkey) WITH ORDINALITY AS k(num, ordem) JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.num) AS cols,
+                (SELECT r.relname FROM pg_class r WHERE r.oid = c.confrelid) AS rt,
+                (SELECT a.attname FROM pg_attribute a WHERE a.attrelid = c.confrelid AND a.attnum = c.confkey[1]) AS rc
+                FROM pg_constraint c JOIN pg_class t ON t.oid = c.conrelid WHERE t.relname = ? AND t.relnamespace = current_schema()::regnamespace ORDER BY c.conname", [$t]) as $k) {
+                $cols = explode(",", (string)$k["cols"]);
+                if ($k["ti"] === "p") {
+                    $x["chave_primaria"] = $cols;
+                } elseif ($k["ti"] === "u") {
+                    $x["unicas"][] = $cols;
+                } elseif ($k["ti"] === "f") {
+                    $x["chaves_estrangeiras"][] = ["coluna" => $cols[0], "referencia" => $k["rt"] . "." . $k["rc"],
+                        "ao_apagar" => ["a" => "NO ACTION", "r" => "RESTRICT", "c" => "CASCADE", "n" => "SET NULL", "d" => "SET DEFAULT"][$k["d"]] ?? $k["d"]];
+                } elseif ($k["ti"] === "c") {
+                    $x["regras"][] = ["nome" => $k["n"], "condicao" => preg_replace("/^CHECK \\((.*)\\)\$/s", "\$1", (string)$k["def"])];
+                }
+            }
+            foreach (linhas("SELECT indexdef AS d FROM pg_indexes WHERE schemaname = current_schema() AND tablename = ?", [$t]) as $i) {
+                if (preg_match("/^CREATE (UNIQUE )?INDEX \\S+ ON \\S+ USING \\w+ \\((.*)\\)\$/", $i["d"], $m) === 1) {
+                    $cols = array_map("trim", explode(",", str_replace("\"", "", $m[2])));
+                    if ($cols !== $x["chave_primaria"] && !in_array($cols, $x["unicas"], true)) {
+                        $x[$m[1] !== "" ? "unicas" : "indices"][] = $cols;
+                    }
+                }
+            }
+        }
+        $res[] = $x;
+    }
+    return $res;
+}

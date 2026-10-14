@@ -161,7 +161,7 @@ function abrirNoPainel(id) {
       // no fundo fecha, como o × e o Esc)
       var area = document.querySelector(".painel");
       area.classList.toggle("modo-flutuante", d.painel_modo === "flutuante");
-      if (d.painel_modo === "flutuante" && !area.querySelector(".fundo-painel")) {
+      if (!area.querySelector(".fundo-painel")) {
         var fundo = document.createElement("div");
         fundo.className = "fundo-painel";
         fundo.setAttribute("data-fechar-painel", "");
@@ -542,7 +542,7 @@ function abrirNoPainel(id) {
         tr.classList.toggle("selecionado", tr.getAttribute("data-id") === String(id));
       });
       var endereco = id > 0 ? "index.php?r=" + id : "index.php?novo=1";
-      if (fechado && !painelNoHistorico && window.innerWidth <= 800 && window.location.search === "") {
+      if (fechado && !painelNoHistorico && window.innerWidth <= 900 && window.location.search === "") {
         history.pushState(null, "", endereco);
         painelNoHistorico = true;
       } else {

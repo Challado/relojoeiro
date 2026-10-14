@@ -203,8 +203,15 @@
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=migracoes"
  *   recurso=ajuda            esta documentação em JSON: cada consulta com a descrição, os parâmetros e um exemplo; cada escrita com as ações,
  *                            os campos de cada uma e um exemplo; o dicionário de todos os campos das respostas ("campos"); a
- *                            autenticação, o formato, os erros e as funções do motor
+ *                            autenticação, o formato, os erros e as funções do motor. [parte=reconstrucao: a reconstrução, abaixo]
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=ajuda"
+ *   recurso=reconstrucao     (ou recurso=ajuda&parte=reconstrucao) o roteiro para reescrever a aplicação inteira do zero, em qualquer
+ *                            linguagem e banco, chegando ao mesmo sistema: {"o_que_e", "como_usar": [textos], "secoes": [{"id", "titulo",
+ *                            "itens": [textos]}] (os princípios, a arquitetura, a ordem de construção e as regras de cada parte),
+ *                            "modelo_de_dados": {"banco", "como_ler", "tabelas": [cada tabela com as colunas, as chaves, os índices e as
+ *                            regras, lidas do próprio banco]}, "listas": {as funções das fórmulas, os tipos de campo, os formatos de
+ *                            lançamento, as repetições, os dias da semana, as âncoras, os canais, as migrações e as constantes do config.php}}
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=reconstrucao"
  *   Não é exportado: a senha dos usuários.
  *
  * ---------------------------------------------------------------------------------------------
@@ -1847,6 +1854,100 @@
  *                                    o valor do produto (número, em R$)
  *     documentos[].nfe.serie         a série da nota
  *     documentos[].nfe.valor         o valor total da nota (número, em R$)
+ *   recurso=reconstrucao
+ *     o_que_e                        o que o sistema é e faz, num parágrafo
+ *     como_usar[]                    como ler esta resposta e onde está o resto (a API em recurso=ajuda, o cadastro inicial no schema.sql e
+ *                                    em recurso=cadastros e recurso=criterios, o README, os testes)
+ *     secoes[]                       as partes do roteiro, na ordem: os princípios, a arquitetura, a ordem de construção e as regras de
+ *                                    cada parte do sistema
+ *     secoes[].id                    o nome curto da parte (principios, arquitetura, ordem, arvore_campos, lancamentos, formulas, avisos,
+ *                                    gasto, criterios, rodizio, pulso, cron, mensagens, documentos, telas, seguranca, testes)
+ *     secoes[].titulo                o título da parte
+ *     secoes[].itens[]               as regras e as explicações daquela parte, uma por texto
+ *     modelo_de_dados                o modelo de dados, lido do próprio banco em uso (o que vale agora, depois de todas as migrações)
+ *     modelo_de_dados.banco          o banco de onde o modelo foi lido: mysql, pgsql ou sqlite (os tipos das colunas vêm no dialeto dele)
+ *     modelo_de_dados.como_ler       como ler as tabelas, e as três referências que ficam pelo nome, de propósito
+ *     modelo_de_dados.tabelas[]      cada tabela, em ordem alfabética
+ *     modelo_de_dados.tabelas[].tabela
+ *                                    o nome da tabela
+ *     modelo_de_dados.tabelas[].descricao
+ *                                    o que a tabela guarda
+ *     modelo_de_dados.tabelas[].colunas[]
+ *                                    as colunas, na ordem da tabela
+ *     modelo_de_dados.tabelas[].colunas[].nome
+ *                                    o nome da coluna
+ *     modelo_de_dados.tabelas[].colunas[].tipo
+ *                                    o tipo, no dialeto do banco em uso
+ *     modelo_de_dados.tabelas[].colunas[].vazio
+ *                                    verdadeiro: aceita vazio (NULL)
+ *     modelo_de_dados.tabelas[].colunas[].padrao
+ *                                    o valor padrão, como o banco escreve (null: nenhum)
+ *     modelo_de_dados.tabelas[].chave_primaria[]
+ *                                    as colunas da chave primária
+ *     modelo_de_dados.tabelas[].chaves_estrangeiras[]
+ *                                    as ligações com outras tabelas
+ *     modelo_de_dados.tabelas[].chaves_estrangeiras[].coluna
+ *                                    a coluna desta tabela
+ *     modelo_de_dados.tabelas[].chaves_estrangeiras[].referencia
+ *                                    a tabela.coluna para onde ela aponta
+ *     modelo_de_dados.tabelas[].chaves_estrangeiras[].ao_apagar
+ *                                    o que acontece ao apagar a linha de cima: CASCADE (some junto) ou SET NULL (a ligação se desfaz)
+ *     modelo_de_dados.tabelas[].unicas[]
+ *                                    cada chave única: a lista das colunas dela
+ *     modelo_de_dados.tabelas[].unicas[][]
+ *                                    uma coluna da chave única, na ordem
+ *     modelo_de_dados.tabelas[].indices[]
+ *                                    cada índice que não é único: a lista das colunas dele
+ *     modelo_de_dados.tabelas[].indices[][]
+ *                                    uma coluna do índice, na ordem
+ *     modelo_de_dados.tabelas[].regras[]
+ *                                    as regras de validação (CHECK) da tabela, inclusive as das listas fechadas
+ *     modelo_de_dados.tabelas[].regras[].nome
+ *                                    o nome da regra (ck_<tabela>_<o quê>; null: a de uma lista fechada, sem nome)
+ *     modelo_de_dados.tabelas[].regras[].condicao
+ *                                    a condição que toda linha tem de cumprir, como o banco escreve
+ *     listas                         as listas do código que a reescrita precisa ter iguais
+ *     listas.funcoes_das_formulas[]  as funções do motor das fórmulas
+ *     listas.funcoes_das_formulas[].nome
+ *                                    o nome da função
+ *     listas.funcoes_das_formulas[].argumentos
+ *                                    quantos argumentos ela aceita ("2", "1 a 2", "3 ou mais")
+ *     listas.funcoes_das_formulas[].descricao
+ *                                    o que ela devolve
+ *     listas.funcoes_das_formulas[].le_historico
+ *                                    verdadeiro: lê os lançamentos do relógio (o primeiro argumento é um tipo de lançamento, entre aspas)
+ *     listas.tipos_de_campo[]        os tipos de campo do cadastro
+ *     listas.tipos_de_campo[].tipo   o tipo (inteiro, decimal, sim_nao, data, lista, texto)
+ *     listas.tipos_de_campo[].descricao
+ *                                    o que ele é, e como entra nas contas
+ *     listas.formatos_de_lancamento[]
+ *                                    os formatos dos tipos de lançamento
+ *     listas.formatos_de_lancamento[].formato
+ *                                    o formato (instantaneo, valor, sessao)
+ *     listas.formatos_de_lancamento[].descricao
+ *                                    o que ele é
+ *     listas.repeticoes[]            as repetições dos eventos personalizados
+ *     listas.repeticoes[].repeticao  a repetição (uma, diaria, semanal, mensal, intervalo)
+ *     listas.repeticoes[].descricao  como ela aparece na tela
+ *     listas.dias_da_semana[]        os dias da semana como o sistema numera
+ *     listas.dias_da_semana[].dia    o número (1 segunda a 7 domingo)
+ *     listas.dias_da_semana[].nome   o nome
+ *     listas.ancoras[]               as âncoras das mensagens (entre chaves no texto)
+ *     listas.ancoras[].ancora        a âncora, sem as chaves
+ *     listas.ancoras[].descricao     o que ela vira
+ *     listas.canais[]                os canais das mensagens
+ *     listas.canais[].canal          o código do canal (tg: Telegram, ag: Google Agenda)
+ *     listas.canais[].nome           o nome
+ *     listas.canais[].ajuda          como a mensagem sai nele
+ *     listas.migracoes[]             as migrações, na ordem
+ *     listas.migracoes[].versao      a versão (v2, v3...)
+ *     listas.migracoes[].arquivo     o arquivo do SQL dela
+ *     listas.migracoes[].traz        o que ela traz
+ *     listas.migracoes[].passo_em_php
+ *                                    verdadeiro: ela tem também um passo em programa, depois do SQL
+ *     listas.config_php[]            as constantes do config.php
+ *     listas.config_php[].constante  o nome (ou os nomes) da constante
+ *     listas.config_php[].descricao  para que ela serve
  *   _filtros (em qualquer consulta com filtros)
  *     _filtros                       aparece quando a consulta usa filtros (incluir, excluir, f, busca, ordem, limite, pagina, mostrar)
  *     _filtros.ignorados[]           o que foi pedido e não existe (caminho sem lista, parte que não existe)
@@ -2668,6 +2769,11 @@ if (!$token_ok && $quem === "") {
         }
         $saida = ["expressao" => $expr, "resultados" => $res];
     }
+} elseif ($recurso === "reconstrucao" || ($recurso === "ajuda" && ($_REQUEST["parte"] ?? "") === "reconstrucao")) {
+    // a reconstrução: o roteiro para reescrever a aplicação do zero (o texto em reconstrucao.php; o modelo de dados e as
+    // listas, lidos na hora do banco e do código)
+    require_once __DIR__ . "/reconstrucao.php";
+    $saida = reconstrucao();
 } elseif ($recurso === "ajuda") {
     // a mesma lista que está no cabeçalho deste arquivo: cada consulta com os parâmetros e um exemplo; cada escrita com as ações,
     // os campos de cada uma e um exemplo
@@ -2744,9 +2850,12 @@ if (!$token_ok && $quem === "") {
             "autonomia" => ["descricao" => "as autonomias de cada relógio, enxuto e rápido, para sistemas de fora, em segundos inteiros: prevista (cheio, pelo cadastro), atual (cheio, pela conta do sistema com o gasto medido), estimada (quanto ainda dura seguindo o plano), restante_em_uso (no pulso sem tirar), restante_guardado (parado) e quando acaba (acaba_em_unixtimestamp, acaba_em_segundos, acaba_em_datacomtz); null com o motivo em motivos",
                 "parametros" => ["relogio" => "um id ou vários separados por vírgula (vazio: todos)"],
                 "exemplo" => "curl -u lucas:senha -g \"http://servidor/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz\""],
-            "ajuda" => ["descricao" => "esta explicação: os recursos, os parâmetros, as ações de escrita com os campos, os exemplos, o dicionário de todos os campos (campos) e as funções do motor",
+            "ajuda" => ["descricao" => "esta explicação: os recursos, os parâmetros, as ações de escrita com os campos, os exemplos, o dicionário de todos os campos (campos) e as funções do motor; com parte=reconstrucao, a reconstrução (veja reconstrucao)",
+                "parametros" => ["parte" => "reconstrucao: em vez desta explicação, o roteiro para reescrever a aplicação do zero (o mesmo que recurso=reconstrucao)"],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=ajuda&parte=reconstrucao\""],
+            "reconstrucao" => ["descricao" => "o roteiro para reescrever a aplicação inteira do zero, em qualquer linguagem e banco, chegando ao mesmo sistema: o que ele é, os princípios, a arquitetura, a ordem de construção e as regras de cada parte (árvore e campos, lançamentos, fórmulas, avisos, gasto medido, critérios, rodízio e escala, pulso sozinho, cron, mensagens e agenda, documentos, telas, segurança, testes), o modelo de dados lido do próprio banco (tabelas, colunas, chaves, índices e regras de validação) e as listas do código (funções das fórmulas, tipos de campo, formatos de lançamento, repetições, dias da semana, âncoras, canais, migrações e as constantes do config.php). O mesmo que recurso=ajuda&parte=reconstrucao",
                 "parametros" => [],
-                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=ajuda\""],
+                "exemplo" => "curl -u lucas:senha \"http://servidor/relojoeiro/api.php?recurso=reconstrucao\""],
         ],
         "escrita" => [
             "como" => "POST, com os campos em formulário ou em JSON no corpo (Content-Type: application/json); recurso e acao nos campos ou na URL. "
@@ -4058,6 +4167,70 @@ if (!$token_ok && $quem === "") {
                 "documentos[].nfe.serie" => "a série da nota",
                 "documentos[].nfe.valor" => "o valor total da nota (número, em R$)",
             ],
+            "reconstrucao" => [
+                "o_que_e" => "o que o sistema é e faz, num parágrafo",
+                "como_usar[]" => "como ler esta resposta e onde está o resto (a API em recurso=ajuda, o cadastro inicial no schema.sql e em recurso=cadastros e recurso=criterios, o README, os testes)",
+                "secoes[]" => "as partes do roteiro, na ordem: os princípios, a arquitetura, a ordem de construção e as regras de cada parte do sistema",
+                "secoes[].id" => "o nome curto da parte (principios, arquitetura, ordem, arvore_campos, lancamentos, formulas, avisos, gasto, criterios, rodizio, pulso, cron, mensagens, documentos, telas, seguranca, testes)",
+                "secoes[].titulo" => "o título da parte",
+                "secoes[].itens[]" => "as regras e as explicações daquela parte, uma por texto",
+                "modelo_de_dados" => "o modelo de dados, lido do próprio banco em uso (o que vale agora, depois de todas as migrações)",
+                "modelo_de_dados.banco" => "o banco de onde o modelo foi lido: mysql, pgsql ou sqlite (os tipos das colunas vêm no dialeto dele)",
+                "modelo_de_dados.como_ler" => "como ler as tabelas, e as três referências que ficam pelo nome, de propósito",
+                "modelo_de_dados.tabelas[]" => "cada tabela, em ordem alfabética",
+                "modelo_de_dados.tabelas[].tabela" => "o nome da tabela",
+                "modelo_de_dados.tabelas[].descricao" => "o que a tabela guarda",
+                "modelo_de_dados.tabelas[].colunas[]" => "as colunas, na ordem da tabela",
+                "modelo_de_dados.tabelas[].colunas[].nome" => "o nome da coluna",
+                "modelo_de_dados.tabelas[].colunas[].tipo" => "o tipo, no dialeto do banco em uso",
+                "modelo_de_dados.tabelas[].colunas[].vazio" => "verdadeiro: aceita vazio (NULL)",
+                "modelo_de_dados.tabelas[].colunas[].padrao" => "o valor padrão, como o banco escreve (null: nenhum)",
+                "modelo_de_dados.tabelas[].chave_primaria[]" => "as colunas da chave primária",
+                "modelo_de_dados.tabelas[].chaves_estrangeiras[]" => "as ligações com outras tabelas",
+                "modelo_de_dados.tabelas[].chaves_estrangeiras[].coluna" => "a coluna desta tabela",
+                "modelo_de_dados.tabelas[].chaves_estrangeiras[].referencia" => "a tabela.coluna para onde ela aponta",
+                "modelo_de_dados.tabelas[].chaves_estrangeiras[].ao_apagar" => "o que acontece ao apagar a linha de cima: CASCADE (some junto) ou SET NULL (a ligação se desfaz)",
+                "modelo_de_dados.tabelas[].unicas[]" => "cada chave única: a lista das colunas dela",
+                "modelo_de_dados.tabelas[].unicas[][]" => "uma coluna da chave única, na ordem",
+                "modelo_de_dados.tabelas[].indices[]" => "cada índice que não é único: a lista das colunas dele",
+                "modelo_de_dados.tabelas[].indices[][]" => "uma coluna do índice, na ordem",
+                "modelo_de_dados.tabelas[].regras[]" => "as regras de validação (CHECK) da tabela, inclusive as das listas fechadas",
+                "modelo_de_dados.tabelas[].regras[].nome" => "o nome da regra (ck_<tabela>_<o quê>; null: a de uma lista fechada, sem nome)",
+                "modelo_de_dados.tabelas[].regras[].condicao" => "a condição que toda linha tem de cumprir, como o banco escreve",
+                "listas" => "as listas do código que a reescrita precisa ter iguais",
+                "listas.funcoes_das_formulas[]" => "as funções do motor das fórmulas",
+                "listas.funcoes_das_formulas[].nome" => "o nome da função",
+                "listas.funcoes_das_formulas[].argumentos" => "quantos argumentos ela aceita (\"2\", \"1 a 2\", \"3 ou mais\")",
+                "listas.funcoes_das_formulas[].descricao" => "o que ela devolve",
+                "listas.funcoes_das_formulas[].le_historico" => "verdadeiro: lê os lançamentos do relógio (o primeiro argumento é um tipo de lançamento, entre aspas)",
+                "listas.tipos_de_campo[]" => "os tipos de campo do cadastro",
+                "listas.tipos_de_campo[].tipo" => "o tipo (inteiro, decimal, sim_nao, data, lista, texto)",
+                "listas.tipos_de_campo[].descricao" => "o que ele é, e como entra nas contas",
+                "listas.formatos_de_lancamento[]" => "os formatos dos tipos de lançamento",
+                "listas.formatos_de_lancamento[].formato" => "o formato (instantaneo, valor, sessao)",
+                "listas.formatos_de_lancamento[].descricao" => "o que ele é",
+                "listas.repeticoes[]" => "as repetições dos eventos personalizados",
+                "listas.repeticoes[].repeticao" => "a repetição (uma, diaria, semanal, mensal, intervalo)",
+                "listas.repeticoes[].descricao" => "como ela aparece na tela",
+                "listas.dias_da_semana[]" => "os dias da semana como o sistema numera",
+                "listas.dias_da_semana[].dia" => "o número (1 segunda a 7 domingo)",
+                "listas.dias_da_semana[].nome" => "o nome",
+                "listas.ancoras[]" => "as âncoras das mensagens (entre chaves no texto)",
+                "listas.ancoras[].ancora" => "a âncora, sem as chaves",
+                "listas.ancoras[].descricao" => "o que ela vira",
+                "listas.canais[]" => "os canais das mensagens",
+                "listas.canais[].canal" => "o código do canal (tg: Telegram, ag: Google Agenda)",
+                "listas.canais[].nome" => "o nome",
+                "listas.canais[].ajuda" => "como a mensagem sai nele",
+                "listas.migracoes[]" => "as migrações, na ordem",
+                "listas.migracoes[].versao" => "a versão (v2, v3...)",
+                "listas.migracoes[].arquivo" => "o arquivo do SQL dela",
+                "listas.migracoes[].traz" => "o que ela traz",
+                "listas.migracoes[].passo_em_php" => "verdadeiro: ela tem também um passo em programa, depois do SQL",
+                "listas.config_php[]" => "as constantes do config.php",
+                "listas.config_php[].constante" => "o nome (ou os nomes) da constante",
+                "listas.config_php[].descricao" => "para que ela serve",
+            ],
             "_filtros (em qualquer consulta com filtros)" => [
                 "_filtros" => "aparece quando a consulta usa filtros (incluir, excluir, f, busca, ordem, limite, pagina, mostrar)",
                 "_filtros.ignorados[]" => "o que foi pedido e não existe (caminho sem lista, parte que não existe)",
@@ -4182,7 +4355,7 @@ if (!$token_ok && $quem === "") {
 } else {
     $codigo = 404;
     $saida = ["erro" => "recurso desconhecido", "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "ajuda"]];
+        "historico", "previsao", "plano", "eventos", "agenda", "foto", "documentos", "documento", "usuarios", "migracoes", "ajuda", "reconstrucao"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],
