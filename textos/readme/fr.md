@@ -1,4 +1,4 @@
-<!-- origem: d1ee6a6209d68a22db0ba092a88f18e01d2948ef -->
+<!-- origem: a00d1e4d31146c4c8ac7a17bb30250c9218279d4 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -577,7 +577,7 @@ vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des
 | [`reconstrucao.php`](reconstrucao.php) | le guide pour réécrire le système à partir de zéro (le `recurso=reconstrucao` de l'API) |
 | [`.htaccess`](.htaccess) | la protection des fichiers internes sur Apache (et la connexion du site avec PHP en FastCGI) |
 | [`nginx-relogios.conf`](nginx-relogios.conf) | le bloc nginx qui protège les fichiers internes |
-| [`testes/`](testes/) | le test de parité : le même scénario par l'API sur chaque base, et le comparateur des réponses ; la vérification de la mise en page de tous les écrans, du téléphone à l'ordinateur (`layout.cjs` ; `LINGUA=en` vérifie dans une langue) ; celle des dictionnaires des langues (`textos.php`) ; et l'assemblage du README de chaque langue (`readme.php`) |
+| [`testes/`](testes/) | le test de parité : le même scénario par l'API sur chaque base, et le comparateur des réponses ; la vérification de la mise en page de tous les écrans, du téléphone à l'ordinateur (`layout.cjs` ; `LINGUA=en` vérifie dans une langue) ; celle des dictionnaires des langues (`textos.php`) ; l'assemblage du README de chaque langue (`readme.php`) ; et la vérification de l'architecture (`arquitetura.php` : les règles que le code doit suivre) |
 | [`docs/telas/`](docs/telas/) | les captures d'écran de ce README |
 | `README.md`, `README.en.md`, `README.zh-CN.md`, `README.hi.md`, `README.es.md`, `README.fr.md` | ce README : l'original, en portugais, et les autres langues. Ils ne se modifient pas à la main : le [`testes/readme.php`](testes/readme.php) assemble chacun en joignant le manuel traduit (`textos/manual/<langue>.md`, les sections que montre l'Aide) et le reste traduit (`textos/readme/<langue>.md` : le début, Essayez, l'API, l'Installation, Comment c'est à l'intérieur, Comment contribuer et la Licence) |
 | [`PORTE.md`](PORTE.md) | le registre du portage de la version précédente |
@@ -605,7 +605,11 @@ Les améliorations sont les bienvenues, et le chemin passe toujours par ce dép�
    push sur `main` : le test de parité, la documentation et la mise en page, dans
    [`.github/workflows/testes.yml`](.github/workflows/testes.yml) ; le résultat apparaît dans l'onglet **Actions** et dans le
    ✓ / ✗ à côté de chaque commit) : `testes/paridade.sh`, avec les bases en marche, doit finir par `Tudo igual.` Il vérifie
-   aussi la documentation : l'en-tête est ce que génère l'aide, et chaque champ des réponses est expliqué. Vous avez touché aux
+   aussi la documentation : l'en-tête est ce que génère l'aide, et chaque champ des réponses est expliqué. Il vérifie l'architecture ([`testes/arquitetura.php`](testes/arquitetura.php), que GitHub
+   lance aussi dans une étape rapide, sans base) : les pages ne construisent que le squelette, le réseau des écrans n'est que
+   l'API, la base n'est touchée que par le noyau, l'API et le cron, les fichiers internes sont bloqués par le web, chaque action
+   et chaque constante du `config.php` sont documentées, et les autres règles listées au début du fichier. Et il échoue si PHP
+   donne le moindre avertissement (Warning, Notice, Deprecated) pendant le passage. Vous avez touché aux
    écrans ? Lancez aussi la vérification de la mise en page (`testes/paridade.sh --layout sqlite`) : `0 problemas`.
 7. **Tout nouveau texte passe par `t()`** (le `api.js` et le `textos/funcoes.php` ont la fonction), avec le portugais comme clé
    et les paramètres entre accolades : `t("Excluir {1}?", {1: nome})`, jamais `"Excluir " + nome + "?"`. Ensuite, traduisez-le

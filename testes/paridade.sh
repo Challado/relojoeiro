@@ -11,7 +11,8 @@
 #
 # Os bancos (MySQL/MariaDB, PostgreSQL, Firebird) têm de estar no ar; o acesso vem do ambiente (veja testes/config.teste.php).
 # O banco de teste é APAGADO e recriado a cada rodada: o nome (TESTE_BANCO, padrão relogios_teste) tem de ter "teste".
-# Depois da comparação, confere a documentação: o cabeçalho do api.php é o que a ajuda gera (testes/dicionario.php), os
+# Depois da comparação, confere que o PHP não deu nenhum aviso (Warning, Notice, Deprecated) durante a rodada, a
+# arquitetura (testes/arquitetura.php) e a documentação: o cabeçalho do api.php é o que a ajuda gera (testes/dicionario.php), os
 # dicionários dos idiomas têm todos os textos do código (testes/textos.php) e todo
 # campo das respostas está explicado na ajuda (testes/campos.php, no servidor do primeiro banco).
 # LINGUA=en roda o roteiro e a conferência dos campos nesse idioma (e o layout, com --layout); TESTE_ESTRITO=1 liga o modo
@@ -129,6 +130,23 @@ if [ -f "$PASTA/$REF.json" ]; then
   done
 else
   FALHOU=1
+fi
+
+# nenhum aviso do PHP durante a rodada (no servidor e no roteiro): um Warning, Notice ou Deprecated é defeito, mesmo que a
+# resposta saia certa
+for b in "${BANCOS[@]}"; do
+  avisos=$(grep -hE 'PHP (Warning|Notice|Deprecated|Fatal error|Parse error)' "$PASTA/$b.servidor.log" "$PASTA/$b.log" 2>/dev/null | sed -E 's/^\[[^]]*\] //' | sort | uniq -c | sort -rn)
+  if [ -n "$avisos" ]; then
+    FALHOU=1; echo "$b: o PHP deu avisos durante a rodada:"; echo "$avisos" | head -15 | sed 's/^/    /'
+  fi
+done
+
+# a arquitetura: as regras que o código tem de seguir (testes/arquitetura.php: as telas sem banco, a rede só pela API, o
+# banco só no núcleo, na API e no cron, o bloqueio pela web, a API e o config.php documentados, as migrações, o repositório)
+if php testes/arquitetura.php > "$PASTA/arquitetura.txt" 2>&1; then
+  echo "arquitetura: $(tail -1 "$PASTA/arquitetura.txt")"
+else
+  FALHOU=1; echo "arquitetura:"; sed 's/^/    /' "$PASTA/arquitetura.txt" | head -40
 fi
 
 # a documentação: o cabeçalho do api.php é o que a ajuda gera, e todo campo das respostas está explicado na ajuda

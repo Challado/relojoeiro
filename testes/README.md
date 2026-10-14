@@ -25,7 +25,10 @@ testes/paridade.sh --manter sqlite      # deixa o servidor no ar no fim, para ol
 Para cada banco ele apaga e recria o banco de teste, roda `instalar.php` e `criar_usuario.php teste senha123`, sobe um
 servidor `php -S` com a semente dos sorteios fixa (`RELOGIOS_SEMENTE=42`; sem ela, a escala desempata ao acaso e o plano muda
 de uma rodada para outra) e roda o `cenario.php`; depois compara a fotografia de cada banco com a do primeiro. O resultado
-esperado é `Tudo igual.` (e o comando termina com 0). Tudo fica numa pasta temporária nova (a fotografia, o log e a comparação
+esperado é `Tudo igual.` (e o comando termina com 0). Antes do resultado, ele confere que o PHP não deu nenhum aviso
+(Warning, Notice, Deprecated) no servidor nem no roteiro, roda a conferência da arquitetura (`arquitetura.php`, que também
+roda sozinha, sem banco: `php testes/arquitetura.php`; as regras estão no começo do arquivo), a dos idiomas (`textos.php`) e
+a da documentação (`dicionario.php` e `campos.php`). Tudo fica numa pasta temporária nova (a fotografia, o log e a comparação
 de cada banco), que ele diz no começo.
 
 O `config.php` de verdade não é lido nem tocado: o sistema roda com o [`config.teste.php`](config.teste.php), apontado pela
