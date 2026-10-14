@@ -383,6 +383,11 @@ escrever(["recurso" => "rodizio", "acao" => "manual", "de" => $em(16), "ate" => 
 // as listas em páginas (o "Mostrar até" da Configuração): os Próximos dias e o dia a dia do Plano, com o filtro de relógio
 escrever(["recurso" => "config", "acao" => "salvar", "proximos_por_pagina" => 3, "plano_por_pagina" => 5]);
 escrever(["recurso" => "config", "acao" => "salvar", "plano_por_pagina" => 0], false);
+// o destaque no alto da página Hoje (a Configuração): o relógio no pulso agora, e de volta ao relógio do dia
+escrever(["recurso" => "config", "acao" => "salvar", "destaque_hoje" => "pulso"]);
+ler("hoje com o destaque no pulso", ["recurso" => "hoje"]);
+escrever(["recurso" => "config", "acao" => "salvar", "destaque_hoje" => "agora"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "destaque_hoje" => "dia"]);
 ler("proximos pagina 2", ["recurso" => "proximos", "pagina" => 2]);
 ler("plano pagina 2", ["recurso" => "plano", "dias" => 30, "pagina" => 2]);
 ler("plano de um relogio", ["recurso" => "plano", "dias" => "todos", "relogio" => $rel["manual"]]);

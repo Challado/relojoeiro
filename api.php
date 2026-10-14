@@ -171,7 +171,9 @@
  *                                 curl -u lucas:senha -g "http://servidor/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz"
  *   recurso=hoje             tudo o que a página Hoje mostra: {"data", "agora", "uso_inicio", "comecou" (o dia já começou no pulso), "pulso_poe_sozinho", "pulso_tira_sozinho",
  *                            "modo": {"id", "nome", "selecao", "escala_dias"}, "escala_fim", "max_sem_uso", "dia": {"data", "relogio_id",
- *                            "relogio", "ate" ("só hoje", "até sexta, 02/10"), "acao" (o lembrete do dia), "motivo" (por que ele saiu)}, "avisos": [os de hoje, atrasados
+ *                            "relogio", "ate" ("só hoje", "até sexta, 02/10"), "acao" (o lembrete do dia), "motivo" (por que ele saiu)}, "destaque":
+ *                            {"mostra" (a Configuração: dia ou pulso), "relogio_id" (o relógio do destaque no alto da página: o do
+ *                            dia, ou o que está no pulso agora), "e" (dia ou pulso), "do_dia", "no_pulso", "texto"}, "avisos": [os de hoje, atrasados
  *                            ou em breve: {"relogio_id", "relogio", "identificador", "nome", "texto" (o motivo), "estado", "resolve":
  *                            {"identificador", "nome", "formato", "unidade", "acao", "botao"} (o lançamento do botão)}], "plano": [os
  *                            próximos 62 dias: {"data", "relogio_id", "relogio", "acao", "motivo", "origem"}], "livres": [os dias livres
@@ -184,7 +186,8 @@
  *                            "estado_ordem", "agora" ("No sol desde 09:12"), "carga" (%), "carga_de" (de onde
  *                            vem), "ultimo" (a última vez no pulso, em segundos), "ultimo_txt", "situacao": [linhas], "manutencao":
  *                            {"nome", "data", "momento", "falta"} (o aviso mais perto), "compra": {"data", "valor", "loja", "garantia_ate"},
- *                            "leitura": {"inicio", "valor", "unidade"} (a última), "de_hoje", "com_aviso", "foto" (a versão)}], "totais":
+ *                            "leitura": {"inicio", "valor", "unidade"} (a última), "de_hoje", "destaque" (é o do destaque no alto), "com_aviso",
+ *                            "foto" (a versão)}], "totais":
  *                            {"relogios", "disponiveis", "em_uso", "valor"} (da coleção inteira)}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=hoje"
  *   recurso=ficha            relogio=<id>: tudo o que o painel de um relógio mostra: {"hoje", "copia_sistema", "painel_modo",
@@ -509,7 +512,8 @@
  *                             a essa hora): HH:MM; pulso_auto_inicio e pulso_auto_fim (1 ou 0: pôr no pulso sozinho no
  *                             início do horário de uso, tirar sozinho no fim; 0: só pelo Pôs, só pelo Tirou); carga_limiar (1 a 99: carregar nessa carga, o geral); sol_limiar (1 a 99: o
  *                             solar vai para o sol nessa carga); url_sistema; painel_modo (lado: o relógio abre no painel ao lado da
- *                             lista; flutuante: numa janela grande por cima da página); proximos_por_pagina e plano_por_pagina (1 a
+ *                             lista; flutuante: numa janela grande por cima da página); destaque_hoje (dia: o destaque no alto da
+ *                             página Hoje é o relógio do dia; pulso: o relógio no pulso agora); proximos_por_pagina e plano_por_pagina (1 a
  *                             366: o "Mostrar até", quantos dias os Próximos dias da página Hoje e o dia a dia da página Plano
  *                             mostram por página; padrão 7 e 31);
  *                             alerta_ativo (ou mensagens_ativas) e agenda_ativa: 1 ou 0; agenda_id; agenda_chave; agenda_antecedencia
@@ -638,6 +642,8 @@
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
  *     config.painel_modo             como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela
  *                                    grande por cima da página); vazio: lado
+ *     config.destaque_hoje           o destaque no alto da página Hoje: dia (o relógio do dia, o do plano) ou pulso (o relógio no pulso
+ *                                    agora; sem nenhum no pulso, o do dia); vazio: dia
  *     config.proximos_por_pagina     o "Mostrar até" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)
  *     config.plano_por_pagina        o "Mostrar até" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)
  *     config.aleatorio_ultima        a fonte do último lote de números aleatórios e quando (o sistema grava; só leitura)
@@ -1167,6 +1173,18 @@
  *     dia.motivo                     por que ele saiu hoje, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à mão); null: não foi guardado
  *     dia.relogio                    o nome dele
  *     dia.relogio_id                 o relógio de hoje
+ *     destaque                       o relógio do destaque no alto da página (a Configuração destaque_hoje), já escolhido pela API
+ *     destaque.do_dia                verdadeiro: o relógio do destaque é o relógio do dia
+ *     destaque.e                     o que o relógio do destaque é: dia (o relógio do dia, no pulso ou não) ou pulso (outro relógio, no
+ *                                    pulso agora; o do dia fica no dia)
+ *     destaque.mostra                o que a Configuração pede: dia (o relógio do dia) ou pulso (o relógio no pulso agora)
+ *     destaque.no_pulso              verdadeiro: o relógio do destaque está no pulso agora (havendo mais de um no pulso, conta o que foi
+ *                                    por último)
+ *     destaque.relogio_id            o relógio do destaque; null: nenhum (sem relógio do dia e ninguém no pulso). No pulso: o que está no
+ *                                    pulso agora (havendo mais de um, o que foi ao pulso por último); ninguém no pulso, o relógio do dia
+ *     destaque.texto                 numa frase, por que é ele: O relógio do dia. / O relógio do dia, no pulso agora. / No pulso agora; o
+ *                                    relógio do dia é outro. / No pulso agora; hoje não tem relógio do dia. / Nenhum relógio no pulso
+ *                                    agora: aqui, o relógio do dia. / Nenhum relógio para hoje e nenhum no pulso.
  *     escala_fim                     até que dia vai a escala (texto AAAA-MM-DD); null fora da escala
  *     grupos[]                       os grupos, em ordem de árvore
  *     grupos[].caminho               o caminho
@@ -1235,6 +1253,7 @@
  *     relogios[].compra.loja         onde comprou (null)
  *     relogios[].compra.valor        o valor pago (número; null)
  *     relogios[].de_hoje             verdadeiro ou falso: é o relógio de hoje
+ *     relogios[].destaque            verdadeiro ou falso: é o relógio do destaque no alto da página (o mesmo de destaque.relogio_id)
  *     relogios[].disponivel          verdadeiro ou falso: entra no rodízio
  *     relogios[].em_uso              verdadeiro ou falso: no pulso agora
  *     relogios[].estado              o estado na tabela: uso (no pulso), sessao (numa sessão que não é o pulso: no sol, no winder, no
@@ -1561,6 +1580,8 @@
  *     config.mensagens_ativas        1: o Telegram (a API de alerta) envia; 0: não envia
  *     config.painel_modo             como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela
  *                                    grande por cima da página); vazio: lado
+ *     config.destaque_hoje           o destaque no alto da página Hoje: dia (o relógio do dia, o do plano) ou pulso (o relógio no pulso
+ *                                    agora; sem nenhum no pulso, o do dia); vazio: dia
  *     config.proximos_por_pagina     o "Mostrar até" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)
  *     config.plano_por_pagina        o "Mostrar até" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)
  *     config.aleatorio_ultima        a fonte do último lote de números aleatórios e quando (o sistema grava; só leitura)
@@ -3083,6 +3104,11 @@ if (!$token_ok && $quem === "") {
             "leitura" => $leitura ? ["inicio" => $leitura["inicio"], "valor" => (float)$leitura["valor"], "unidade" => $leitura["unidade"]] : null,
             "de_hoje" => $dia !== null && (int)$dia["relogio_id"] === (int)$r["id"], "com_aviso" => isset($pendentes_h[(int)$r["id"]]), "foto" => $fotos[(int)$r["id"]] ?? null];
     }
+    // o destaque no alto da página (a Configuração): o relógio do dia ou o que está no pulso agora; cada relógio diz se é ele
+    $destaque_h = destaque_da_pagina_hoje($rels, $dia);
+    foreach ($rels as $i => $r) {
+        $rels[$i]["destaque"] = $destaque_h["relogio_id"] === $r["id"];
+    }
     $modos_h = [];
     foreach (linhas("SELECT * FROM modo ORDER BY ordem, id") as $m) {
         $modos_h[] = ["id" => (int)$m["id"], "nome" => $m["nome"], "selecao" => $m["selecao"], "escala_dias" => $m["escala_dias"] === null ? null : (int)$m["escala_dias"], "ciclo" => (int)$m["ciclo"] === 1,
@@ -3101,6 +3127,7 @@ if (!$token_ok && $quem === "") {
         "modo" => $modo ? ["id" => (int)$modo["id"], "nome" => $modo["nome"], "selecao" => $modo["selecao"], "escala_dias" => $modo["escala_dias"] === null ? null : (int)$modo["escala_dias"]] : null,
         "escala_fim" => cfg("escala_fim") !== "" ? cfg("escala_fim") : null, "max_sem_uso" => (int)cfg("max_sem_uso"),
         "dia" => $dia ? ["data" => $dia["data"], "relogio_id" => (int)$dia["relogio_id"], "relogio" => $dia["nome"], "ate" => texto_ate($dia["data"], "hoje"), "acao" => $dia["acao"], "motivo" => $dia["motivo"]] : null,
+        "destaque" => $destaque_h,
         "avisos" => $avisos_h,
         // os estados da tabela, na ordem (o filtro Estado): em uso, cada sessão que não é o pulso, em repouso e indisponível
         "estados" => array_merge(["Em uso"], array_column(linhas("SELECT nome FROM lancamento_tipo WHERE formato = 'sessao' AND identificador <> 'pulso' ORDER BY ordem, id"), "nome"),
@@ -3724,7 +3751,7 @@ if (!$token_ok && $quem === "") {
                 "excluir" => ["campos" => "id (não o ativo)", "exemplo" => "curl -u lucas:senha -d recurso=modos -d acao=excluir -d id=6 http://servidor/relojoeiro/api.php"],
             ],
             "config" => [
-                "salvar" => ["campos" => "horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (HH:MM), pulso_auto_inicio e pulso_auto_fim (1 ou 0), carga_limiar (1 a 99), sol_limiar (1 a 99), url_sistema, painel_modo (lado: o relógio abre no painel ao lado da lista; flutuante: numa janela grande por cima da página), proximos_por_pagina e plano_por_pagina (1 a 366: o Mostrar até dos Próximos dias da página Hoje e do dia a dia da página Plano; padrão 7 e 31), alerta_ativo e agenda_ativa (1 ou 0), agenda_id, agenda_chave, agenda_antecedencia (1 a 365), max_sem_uso, previsao_limite, medicao_janela_dias (1 a 3650: a janela da média do gasto medido), alerta_tipos[] e agenda_tipos[] (os tipos de aviso de cada canal: dia, vespera, os identificadores dos avisos, ev<id>), tg_padrao e ag_padrao, tg_proprio_<tipo> e ag_proprio_<tipo> (1 ou 0), tg_corpo_<tipo> e ag_corpo_<tipo>; só o que vier muda", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=salvar -d horario_manha=06:30 -d alerta_ativo=1 --data-urlencode \"tg_padrao={acao}: {relogio}\" -d tg_proprio_corda=1 --data-urlencode \"tg_corpo_corda=Corda no {relogio}!\" http://servidor/relojoeiro/api.php"],
+                "salvar" => ["campos" => "horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (HH:MM), pulso_auto_inicio e pulso_auto_fim (1 ou 0), carga_limiar (1 a 99), sol_limiar (1 a 99), url_sistema, painel_modo (lado: o relógio abre no painel ao lado da lista; flutuante: numa janela grande por cima da página), destaque_hoje (dia: o destaque no alto da página Hoje é o relógio do dia; pulso: o relógio no pulso agora), proximos_por_pagina e plano_por_pagina (1 a 366: o Mostrar até dos Próximos dias da página Hoje e do dia a dia da página Plano; padrão 7 e 31), alerta_ativo e agenda_ativa (1 ou 0), agenda_id, agenda_chave, agenda_antecedencia (1 a 365), max_sem_uso, previsao_limite, medicao_janela_dias (1 a 3650: a janela da média do gasto medido), alerta_tipos[] e agenda_tipos[] (os tipos de aviso de cada canal: dia, vespera, os identificadores dos avisos, ev<id>), tg_padrao e ag_padrao, tg_proprio_<tipo> e ag_proprio_<tipo> (1 ou 0), tg_corpo_<tipo> e ag_corpo_<tipo>; só o que vier muda", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=salvar -d horario_manha=06:30 -d alerta_ativo=1 --data-urlencode \"tg_padrao={acao}: {relogio}\" -d tg_proprio_corda=1 --data-urlencode \"tg_corpo_corda=Corda no {relogio}!\" http://servidor/relojoeiro/api.php"],
                 "testar_manha" => ["campos" => "(nada): manda a mensagem da manhã agora", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=testar_manha http://servidor/relojoeiro/api.php"],
                 "testar_noite" => ["campos" => "(nada): manda a mensagem da noite agora", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=testar_noite http://servidor/relojoeiro/api.php"],
                 "evento_salvar" => ["campos" => "evento_id (ou id; 0 cria), nome, ativo, repeticao (uma, diaria, semanal, mensal, intervalo), hora (HH:MM), data_inicio, dias_semana (1 a 7), dia_mes, intervalo_dias, relogio_id; o evento novo já vai pelo Telegram", "exemplo" => "curl -u lucas:senha -d recurso=config -d acao=evento_salvar -d evento_id=0 -d \"nome=Limpar as pulseiras\" -d repeticao=semanal -d \"dias_semana[]=1\" -d \"dias_semana[]=4\" -d hora=20:00 http://servidor/relojoeiro/api.php"],
@@ -3873,6 +3900,7 @@ if (!$token_ok && $quem === "") {
                 "config.medicao_janela_dias" => "a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a última)",
                 "config.mensagens_ativas" => "1: o Telegram (a API de alerta) envia; 0: não envia",
                 "config.painel_modo" => "como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela grande por cima da página); vazio: lado",
+                "config.destaque_hoje" => "o destaque no alto da página Hoje: dia (o relógio do dia, o do plano) ou pulso (o relógio no pulso agora; sem nenhum no pulso, o do dia); vazio: dia",
                 "config.proximos_por_pagina" => "o \"Mostrar até\" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)",
                 "config.plano_por_pagina" => "o \"Mostrar até\" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)",
                 "config.aleatorio_ultima" => "a fonte do último lote de números aleatórios e quando (o sistema grava; só leitura)",
@@ -4247,6 +4275,13 @@ if (!$token_ok && $quem === "") {
                 "dia.motivo" => "por que ele saiu hoje, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à mão); null: não foi guardado",
                 "dia.relogio" => "o nome dele",
                 "dia.relogio_id" => "o relógio de hoje",
+                "destaque" => "o relógio do destaque no alto da página (a Configuração destaque_hoje), já escolhido pela API",
+                "destaque.do_dia" => "verdadeiro: o relógio do destaque é o relógio do dia",
+                "destaque.e" => "o que o relógio do destaque é: dia (o relógio do dia, no pulso ou não) ou pulso (outro relógio, no pulso agora; o do dia fica no dia)",
+                "destaque.mostra" => "o que a Configuração pede: dia (o relógio do dia) ou pulso (o relógio no pulso agora)",
+                "destaque.no_pulso" => "verdadeiro: o relógio do destaque está no pulso agora (havendo mais de um no pulso, conta o que foi por último)",
+                "destaque.relogio_id" => "o relógio do destaque; null: nenhum (sem relógio do dia e ninguém no pulso). No pulso: o que está no pulso agora (havendo mais de um, o que foi ao pulso por último); ninguém no pulso, o relógio do dia",
+                "destaque.texto" => "numa frase, por que é ele: O relógio do dia. / O relógio do dia, no pulso agora. / No pulso agora; o relógio do dia é outro. / No pulso agora; hoje não tem relógio do dia. / Nenhum relógio no pulso agora: aqui, o relógio do dia. / Nenhum relógio para hoje e nenhum no pulso.",
                 "escala_fim" => "até que dia vai a escala (texto AAAA-MM-DD); null fora da escala",
                 "grupos[]" => "os grupos, em ordem de árvore",
                 "grupos[].caminho" => "o caminho",
@@ -4309,6 +4344,7 @@ if (!$token_ok && $quem === "") {
                 "relogios[].compra.loja" => "onde comprou (null)",
                 "relogios[].compra.valor" => "o valor pago (número; null)",
                 "relogios[].de_hoje" => "verdadeiro ou falso: é o relógio de hoje",
+                "relogios[].destaque" => "verdadeiro ou falso: é o relógio do destaque no alto da página (o mesmo de destaque.relogio_id)",
                 "relogios[].disponivel" => "verdadeiro ou falso: entra no rodízio",
                 "relogios[].em_uso" => "verdadeiro ou falso: no pulso agora",
                 "relogios[].estado" => "o estado na tabela: uso (no pulso), sessao (numa sessão que não é o pulso: no sol, no winder, no carregador...), repouso ou indisponivel (o indisponível parado; no pulso ou numa sessão, vale o que ele está fazendo)",
@@ -4552,6 +4588,7 @@ if (!$token_ok && $quem === "") {
                 "config.medicao_janela_dias" => "a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a última)",
                 "config.mensagens_ativas" => "1: o Telegram (a API de alerta) envia; 0: não envia",
                 "config.painel_modo" => "como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela grande por cima da página); vazio: lado",
+                "config.destaque_hoje" => "o destaque no alto da página Hoje: dia (o relógio do dia, o do plano) ou pulso (o relógio no pulso agora; sem nenhum no pulso, o do dia); vazio: dia",
                 "config.proximos_por_pagina" => "o \"Mostrar até\" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)",
                 "config.plano_por_pagina" => "o \"Mostrar até\" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)",
                 "config.aleatorio_ultima" => "a fonte do último lote de números aleatórios e quando (o sistema grava; só leitura)",

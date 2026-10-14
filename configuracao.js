@@ -100,11 +100,15 @@ function recarregarConfig(aplicadas) {
         var tela = cartao("Telas", el("div", {"class": "campos"},
           parCampo("Abrir o relógio na página Hoje", el("select", {"name": "painel_modo"}, el("option", {"value": "lado", "selected": cfg("painel_modo") !== "flutuante"}, "Ao lado da lista")
             + el("option", {"value": "flutuante", "selected": cfg("painel_modo") === "flutuante"}, "Numa janela flutuante, grande")))
+          + parCampo("Destaque no alto da página Hoje", el("select", {"name": "destaque_hoje"}, el("option", {"value": "dia", "selected": cfg("destaque_hoje") !== "pulso"}, "O relógio do dia")
+            + el("option", {"value": "pulso", "selected": cfg("destaque_hoje") === "pulso"}, "O relógio no pulso agora")))
           + parCampo("Próximos dias (página Hoje): mostrar até (dias por página)", numero("proximos_por_pagina", String(d.mostrar_ate.proximos), "1", "366"))
           + parCampo("Plano: mostrar até (dias por página)", numero("plano_por_pagina", String(d.mostrar_ate.plano), "1", "366"))
           + parCampo("Endereço do sistema (a âncora {link})", el("input", {"name": "url_sistema", "value": cfg("url_sistema"), "placeholder": "http://servidor/relogios"}), "largo")),
           el("p", {"class": "nota"}, "<strong>Ao lado da lista:</strong> o relógio clicado abre num painel à direita, e a lista continua à vista. <strong>Numa janela flutuante:</strong> abre grande, "
             + "no meio da tela, com os quadros lado a lado; fecha no ×, no Esc ou num clique fora. No celular, os dois cobrem a tela inteira.")
+          + el("p", {"class": "nota"}, "<strong>Destaque:</strong> o quadro grande no alto da página Hoje mostra o relógio do dia (o do plano) ou o que está no pulso agora, "
+            + "mesmo que seja outro (o do dia aparece embaixo do nome). Sem nenhum relógio no pulso, fica o do dia.")
           + el("p", {"class": "nota"}, "<strong>Mostrar até:</strong> quantos dias os Próximos dias (página Hoje, padrão 7) e o dia a dia da página Plano (padrão 31) mostram de cada vez. "
             + "Passando disso, embaixo aparecem as páginas: &lt; (anterior), os números e &gt; (próxima)."));
         var quadroCron = cartao("Cron", cron);
