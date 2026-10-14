@@ -63,7 +63,8 @@ const RECONSTRUCAO_TELAS = [
         . "exatos), o menu, e cada página com o endereço, o que ela lê e grava na API, e as partes em ordem, com cada tabela (as "
         . "colunas), cada formulário (os campos com o rótulo, o tipo, o padrão e os limites), cada botão (o texto e o que ele manda para "
         . "a API) e cada mensagem. Os textos entre aspas são os da tela, palavra por palavra. As capturas em docs/telas/ mostram o "
-        . "resultado; o estilo.css é a referência de cada medida.",
+        . "resultado; o estilo.css é a referência de cada medida. O código de cada página, como está agora, sai pelo recurso=codigo (os "
+        . "arquivos dela em codigo; o HTML que ela entrega ao navegador em recurso=codigo&arquivo=<página>&html=1&cru=1).",
     "visual" => [
         ["id" => "cores", "titulo" => "Cores", "itens" => [
             "Fundo da página: aço #e4e8ec. Bordas: aço escuro #c3cad2. Texto: tinta #1c2530 (também o fundo da barra do menu). "
@@ -718,6 +719,174 @@ const RECONSTRUCAO_TELAS = [
     ],
 ];
 
+// O código do sistema como está agora, para a reescrita ler o original (recurso=codigo): cada arquivo com a camada e o que
+// ele é. O conteúdo é lido do disco na hora do pedido, então nunca fica atrás da versão em uso. Só saem os arquivos desta
+// lista, as migrações (as de $MIGRACOES) e as capturas das telas (as de RECONSTRUCAO_TELAS); o resto da pasta nunca sai, e
+// o que é de propósito fica de fora está em RECONSTRUCAO_NAO_MOSTRADOS, com o que ver no lugar. Arquivo novo no sistema?
+// Ponha aqui também.
+const RECONSTRUCAO_CODIGO = [
+    "pagina.php" => ["tela", "a base de todas as páginas: topo() (o head, o menu e o título) e rodape() (os scripts, com a data do arquivo na URL)"],
+    "estilo.css" => ["tela", "o estilo de todas as páginas: as cores, as letras, os controles, os componentes e os tamanhos de tela"],
+    "api.js" => ["tela", "a base do JavaScript das páginas: ler e gravar pela API, os formatos (número, dinheiro, data, hora), o login, os formulários que gravam, as tabelas que viram fichas no celular"],
+    "index.php" => ["tela", "o esqueleto da página Hoje (o meio, a tabela dos relógios com os títulos e os filtros, e o painel)"],
+    "hoje.js" => ["tela", "a página Hoje: o relógio do dia, os avisos de hoje, os próximos dias, o modo de rodízio e as linhas da tabela dos relógios"],
+    "tabela.js" => ["tela", "a tabela dos relógios: ordenar, filtrar e virar cartões quando as 11 colunas não cabem"],
+    "painel.js" => ["tela", "o painel do relógio (na página Hoje e na Ficha): os quadros, o Marcar, o Editar cadastro, o gráfico da carga, os dados e o histórico"],
+    "foto.js" => ["tela", "a foto reduzida no navegador antes de enviar (1200 px, JPEG 85%), com a prévia"],
+    "ficha.php" => ["tela", "a página Ficha do relógio: o painel do relógio numa página própria"],
+    "plano.php" => ["tela", "o esqueleto da página Plano"],
+    "plano.js" => ["tela", "a página Plano: o resumo do período e o dia a dia, mês a mês"],
+    "configuracao.php" => ["tela", "o esqueleto da página Configuração"],
+    "configuracao.js" => ["tela", "a página Configuração: o banco desatualizado, os quadros das opções, as mensagens, o que vai para onde, os eventos e como sai hoje"],
+    "criterios.php" => ["tela", "o esqueleto da página Critérios"],
+    "criterios.js" => ["tela", "a página Critérios: as explicações, os lugares, os parâmetros, os subparâmetros, as faixas e a nota de cada relógio"],
+    "grupos.php" => ["tela", "o esqueleto da página Grupos"],
+    "grupos.js" => ["tela", "a página Grupos: a árvore e o grupo de cada relógio"],
+    "execucoes.php" => ["tela", "o esqueleto da página Execuções do cron"],
+    "execucoes.js" => ["tela", "a página Execuções do cron: os filtros, o resumo, a tabela e a paginação"],
+    "historico.php" => ["tela", "o esqueleto da página Histórico"],
+    "historico.js" => ["tela", "a página Histórico de um relógio: os filtros, o resumo do tempo e a linha do tempo"],
+    "documentos.php" => ["tela", "o esqueleto da página Documentos"],
+    "documentos.js" => ["tela", "a página Documentos: o envio, as abas, a galeria com o visor, os vídeos, os PDFs, as NF-e e a edição"],
+    "cadastros.php" => ["tela", "o esqueleto da página Cadastros"],
+    "cadastros.js" => ["tela", "a página Cadastros: as abas Campos, Tipos de lançamento, Fórmulas, Avisos, Modos de rodízio e Categorias de documentos"],
+    "usuarios.php" => ["tela", "o esqueleto da página Usuários"],
+    "usuarios.js" => ["tela", "a página Usuários: quem acessa e criar usuário ou trocar a senha"],
+    "ajuda.php" => ["tela", "o esqueleto da página Ajuda"],
+    "ajuda.js" => ["tela", "a página Ajuda: o sumário e o manual em HTML (recurso=manual)"],
+    "api.php" => ["api", "a API, a porta única: a autenticação, cada consulta e cada escrita, os filtros, o JSON e o XML, e no cabeçalho a documentação inteira"],
+    "lib.php" => ["api", "o núcleo: o token, o login, a árvore, os campos, os lançamentos, o motor das fórmulas, os avisos, os critérios, o rodízio, a escala e as listas do código"],
+    "operacoes.php" => ["api", "as escritas: cada ação valida, grava e devolve ok, mensagem e erros (a API chama estas funções)"],
+    "banco.php" => ["api", "o banco: MySQL/MariaDB, PostgreSQL ou SQLite, o SQL escrito uma vez só e traduzido para cada um, e o catálogo do modelo"],
+    "reconstrucao.php" => ["api", "a reconstrução (recurso=reconstrucao): as regras de cada parte, a especificação das telas e esta lista do código"],
+    "cron.php" => ["linha_de_comando", "o cron, a cada minuto: as mensagens, o pulso sozinho, a agenda, a manutenção dos documentos, sempre mudo e registrado no banco"],
+    "instalar.php" => ["linha_de_comando", "a instalação pelo servidor (a mesma do POST recurso=instalacao)"],
+    "importar.php" => ["linha_de_comando", "a importação do sistema antigo pelo servidor (a mesma do POST recurso=importacao)"],
+    "criar_usuario.php" => ["linha_de_comando", "criar um usuário ou trocar a senha pelo servidor (o mesmo do POST recurso=usuarios, acao=salvar)"],
+    "schema.sql" => ["banco", "o banco inicial (no dialeto do MySQL, traduzido para os outros) e o cadastro que vem pronto, com os critérios iniciais"],
+    "config.exemplo.php" => ["servidor", "o modelo do config.php, com cada constante explicada (o config.php de verdade não sai: veja nao_mostrados)"],
+    ".htaccess" => ["servidor", "o Apache: o que abre pelo navegador e o que fica bloqueado"],
+    "nginx-relogios.conf" => ["servidor", "o nginx: o mesmo bloqueio do .htaccess"],
+    "testes/cenario.php" => ["testes", "o roteiro de aceitação: faz pela API o que uma pessoa faz e tira a fotografia de tudo o que a API devolve"],
+    "testes/comparar.php" => ["testes", "compara duas fotografias do cenário (os três bancos, ou a reescrita com a versão atual)"],
+    "testes/README.md" => ["testes", "como rodar o teste de paridade"],
+    "README.md" => ["documentacao", "o manual inteiro: para quem usa, a instalação, a API e como é por dentro"],
+    "PORTE.md" => ["documentacao", "o que o sistema antigo fazia e onde está no novo"],
+    "LICENSE" => ["documentacao", "a licença"],
+    ".gitignore" => ["repositorio", "o que nunca entra no repositório (a configuração, as chaves, os bancos)"],
+    ".gitattributes" => ["repositorio", "as quebras de linha (LF em tudo) e os binários"],
+];
+
+// O que fica de fora de propósito, e o que ver no lugar
+const RECONSTRUCAO_NAO_MOSTRADOS = [
+    ["arquivo" => "config.php", "por_que" => "tem as senhas do banco e o API_TOKEN",
+        "o_que_ver" => "o config.exemplo.php (o modelo, com cada constante explicada) e listas.config_php no recurso=reconstrucao"],
+    ["arquivo" => "a chave JSON do Google (google-conta-servico.json ou o caminho da Configuração)", "por_que" => "é uma credencial",
+        "o_que_ver" => "a seção mensagens do recurso=reconstrucao e o README (Google Agenda): como criar a conta de serviço e a chave"],
+    ["arquivo" => "o banco de dados (o servidor MySQL/PostgreSQL, ou o arquivo do SQLite)", "por_que" => "são os dados, não o código",
+        "o_que_ver" => "o modelo em modelo_de_dados (recurso=reconstrucao) e os dados pela própria API (api.php sem recurso: tudo o que está guardado)"],
+    ["arquivo" => "a pasta dos documentos (DOCUMENTOS_PASTA)", "por_que" => "são os arquivos de cada relógio, não o código",
+        "o_que_ver" => "recurso=documentos (a lista) e recurso=documento (cada arquivo)"],
+    ["arquivo" => "as senhas dos usuários", "por_que" => "não existem no sistema: só o hash",
+        "o_que_ver" => "recurso=usuarios (o login e o hash) e senhas na ajuda (como conferir e migrar)"],
+];
+
+// Os arquivos que saem pelo recurso=codigo, os que existem na pasta: [arquivo => [camada, o que é]]
+function codigo_arquivos()
+{
+    global $MIGRACOES;
+    $lista = RECONSTRUCAO_CODIGO;
+    foreach ($MIGRACOES as $versao => $m) {
+        $lista[$m[0]] = ["banco", "a migração " . $versao . ": " . $m[1]];
+    }
+    foreach (RECONSTRUCAO_TELAS["capturas"] as $c) {
+        $lista[$c["arquivo"]] = ["imagem", "a captura de tela: " . $c["mostra"]];
+    }
+    return array_filter($lista, function ($a) { return is_file(__DIR__ . "/" . $a); }, ARRAY_FILTER_USE_KEY);
+}
+
+// O tipo de um arquivo: [linguagem, binário?, o tipo para mostrar cru]
+function codigo_tipo($arquivo)
+{
+    $ext = strtolower(pathinfo($arquivo, PATHINFO_EXTENSION));
+    $linguagens = ["php" => "php", "js" => "javascript", "css" => "css", "sql" => "sql", "md" => "markdown", "conf" => "nginx", "png" => "png"];
+    $linguagem = $linguagens[$ext] ?? ($arquivo === ".htaccess" ? "apache" : "texto");
+    return [$linguagem, $ext === "png", $ext === "png" ? "image/png" : "text/plain; charset=utf-8"];
+}
+
+// Um arquivo: o que ele é e, com $conteudo, o conteúdo (texto como está; imagem em base64)
+function codigo_arquivo($arquivo, $conteudo)
+{
+    $caminho = __DIR__ . "/" . $arquivo;
+    [$linguagem, $binario] = codigo_tipo($arquivo);
+    $bytes = (string)file_get_contents($caminho);
+    $info = codigo_arquivos()[$arquivo];
+    $res = ["arquivo" => $arquivo, "camada" => $info[0], "o_que_e" => $info[1], "linguagem" => $linguagem, "bytes" => strlen($bytes),
+        "linhas" => $binario ? null : substr_count($bytes, "\n") + (substr($bytes, -1) === "\n" || $bytes === "" ? 0 : 1),
+        "sha256" => hash("sha256", $bytes), "alterado_em" => date("Y-m-d H:i:s", (int)filemtime($caminho)),
+        "ver" => "api.php?recurso=codigo&arquivo=" . rawurlencode($arquivo), "cru" => "api.php?recurso=codigo&arquivo=" . rawurlencode($arquivo) . "&cru=1"];
+    if ($conteudo) {
+        $res[$binario ? "conteudo_base64" : "conteudo"] = $binario ? base64_encode($bytes) : $bytes;
+    }
+    // uma página: os arquivos dela e o HTML que o navegador recebe
+    if (in_array($arquivo, codigo_paginas(), true)) {
+        $res["usa"] = codigo_da_pagina($arquivo);
+        $res["html_cru"] = "api.php?recurso=codigo&arquivo=" . rawurlencode($arquivo) . "&html=1&cru=1";
+        if ($conteudo) {
+            $res["html"] = codigo_html($arquivo);
+        }
+    }
+    return $res;
+}
+
+// As páginas do sistema (as da especificação das telas)
+function codigo_paginas()
+{
+    return array_column(RECONSTRUCAO_TELAS["paginas"], "pagina");
+}
+
+// O HTML que uma página entrega ao navegador, montado agora: as páginas não leem o banco nem conferem o login, só
+// escrevem o esqueleto (o topo() e o rodape() do pagina.php em volta do HTML dela)
+function codigo_html($pagina)
+{
+    ob_start();
+    include __DIR__ . "/" . $pagina;
+    return (string)ob_get_clean();
+}
+
+// A lista do código (recurso=codigo; $conteudo: com o conteúdo de cada arquivo)
+function codigo_lista($conteudo)
+{
+    return [
+        "como_usar" => "O código do sistema como está agora, lido do disco na hora: cada arquivo com a camada, o que ele é, o tamanho e o "
+            . "SHA-256. Um arquivo: arquivo=<nome> (o conteúdo como está, em conteudo; a imagem em conteudo_base64); com cru=1, o arquivo "
+            . "puro, sem JSON (texto como text/plain, para ler no navegador). Numa página, html traz o HTML que o navegador recebe, já montado "
+            . "(html=1 com cru=1: só ele), e usa, os arquivos que ela carrega. Todos de uma vez: conteudo=1 (com os filtros: "
+            . "f[arquivos][camada]=tela traz o HTML, o CSS e o JavaScript das telas). O que fica de fora de propósito está em nao_mostrados, com o que ver no lugar.",
+        "camadas" => [
+            ["camada" => "tela", "o_que_e" => "as páginas: o esqueleto em PHP, o estilo e o JavaScript que lê a API e monta a tela"],
+            ["camada" => "api", "o_que_e" => "o back-end: a API e o que ela usa (o núcleo, as escritas, o banco, a reconstrução)"],
+            ["camada" => "linha_de_comando", "o_que_e" => "o cron e os scripts do servidor"],
+            ["camada" => "banco", "o_que_e" => "o banco inicial e as migrações"],
+            ["camada" => "servidor", "o_que_e" => "a configuração do servidor web e o modelo do config.php"],
+            ["camada" => "testes", "o_que_e" => "o roteiro de aceitação e a comparação"],
+            ["camada" => "documentacao", "o_que_e" => "o README e os outros textos"],
+            ["camada" => "repositorio", "o_que_e" => "os arquivos do git"],
+            ["camada" => "imagem", "o_que_e" => "as capturas das telas"],
+        ],
+        "arquivos" => array_map(function ($a) use ($conteudo) { return codigo_arquivo($a, $conteudo); }, array_keys(codigo_arquivos())),
+        "nao_mostrados" => RECONSTRUCAO_NAO_MOSTRADOS,
+    ];
+}
+
+// Os arquivos de uma página: o pagina.php, o estilo, a própria página e os scripts que ela carrega (lidos do rodape([...]) dela)
+function codigo_da_pagina($pagina)
+{
+    $fonte = (string)@file_get_contents(__DIR__ . "/" . $pagina);
+    $scripts = preg_match('/rodape\(\[([^\]]*)\]\)/', $fonte, $m) === 1 && preg_match_all('/"([^"]+\.js)"/', $m[1], $s) > 0 ? $s[1] : [];
+    return array_values(array_unique(array_merge(["pagina.php", "estilo.css", $pagina], $scripts)));
+}
+
 function reconstrucao()
 {
     global $FUNCOES, $TIPOS_CAMPO, $FORMATOS_LANCAMENTO, $REPETICOES, $ANCORAS, $CANAIS, $MIGRACOES, $DIAS_SEMANA;
@@ -758,6 +927,10 @@ function reconstrucao()
             "As telas (telas) são a especificação visual: o visual com os valores exatos, o menu e cada página, parte por parte, com cada "
                 . "tabela, campo, botão e mensagem, palavra por palavra. A reescrita reproduz a mesma interface, não uma parecida: o que está "
                 . "lá existe, e o que não está não existe. As capturas em docs/telas/ mostram o resultado.",
+            "O código de verdade, como está agora, sai pelo recurso=codigo (a lista em codigo, abaixo): o CSS, o JavaScript, cada página e o "
+                . "HTML que ela entrega ao navegador, a API, o banco e o resto, lido do disco na hora (arquivo=<nome>; cru=1 para o arquivo puro). "
+                . "Cada página em telas diz os arquivos dela (codigo). O que não sai (o config.php, as chaves, os dados) está em codigo.nao_mostrados, "
+                . "com o que ver no lugar.",
             "O README.md explica cada tela e cada opção para quem usa (as seções para quem usa saem também pela API, em recurso=manual: o texto da "
                 . "página Ajuda); o testes/cenario.php é o roteiro de aceitação (veja a seção testes).",
         ],
@@ -1024,7 +1197,11 @@ function reconstrucao()
                     . "JavaScript e sem rolagem lateral no celular, no tablet e no computador.",
             ]),
         ],
-        "telas" => RECONSTRUCAO_TELAS,
+        // cada página com os arquivos dela (lidos da própria página: nunca ficam atrás)
+        "telas" => array_merge(RECONSTRUCAO_TELAS, ["paginas" => array_map(function ($p) {
+            return array_merge($p, ["codigo" => codigo_da_pagina($p["pagina"])]);
+        }, RECONSTRUCAO_TELAS["paginas"])]),
+        "codigo" => codigo_lista(false),
         "modelo_de_dados" => [
             "banco" => banco_tipo(),
             "como_ler" => "Cada tabela com as colunas (nome, tipo no dialeto do banco em uso, se aceita vazio, o padrão), a chave primária, as chaves "
