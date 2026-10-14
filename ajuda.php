@@ -8,6 +8,6 @@ topo("Ajuda", "ajuda.php");
 ?>
 
 <main class="ajuda" id="ajuda">
-  <h1>Ajuda</h1>
+  <h1><?= t("Ajuda") ?></h1>
 </main>
 <?php rodape(["api.js", "ajuda.js"]); ?>

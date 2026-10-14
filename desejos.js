@@ -26,39 +26,37 @@ aoGravar = function (form, res) {
 };
 
 api({recurso: "desejos"}).then(function (d) {
-  var res = el("div", {"class": "titulo-secao"}, el("h1", {}, "Lista de desejos")
-    + el("div", {"class": "botoes"}, el("a", {"class": "botao", "href": "index.php?novo=1&posse=desejado"}, "Novo desejo")));
-  res += el("p", {"class": "nota"}, d.desejados.length === 0 ? "Nenhum relógio na lista de desejos. Em \"Novo desejo\" (ou no cadastro de qualquer relógio, "
-      + "na \"Situação na coleção\"), um relógio desejado entra aqui: com a marca, a referência, o preço-alvo, a prioridade e o link. Ele não entra no rodízio nem nos avisos."
-    : d.desejados.length + (d.desejados.length === 1 ? " relógio desejado" : " relógios desejados") + ", a prioridade mais alta primeiro. Somando os preços-alvo: R$ " + reais(d.total_preco_alvo)
-      + (d.sem_preco_alvo > 0 ? " (" + d.sem_preco_alvo + " sem preço-alvo)" : "") + ". Comprou? \"Comprei\" põe o relógio na coleção (disponível para o rodízio) e abre a ficha dele, para preencher a compra.");
+  var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Lista de desejos"))
+    + el("div", {"class": "botoes"}, el("a", {"class": "botao", "href": "index.php?novo=1&posse=desejado"}, t("Novo desejo"))));
+  res += el("p", {"class": "nota"}, d.desejados.length === 0 ? t("Nenhum relógio na lista de desejos. Em \"Novo desejo\" (ou no cadastro de qualquer relógio, na \"Situação na coleção\"), um relógio desejado entra aqui: com a marca, a referência, o preço-alvo, a prioridade e o link. Ele não entra no rodízio nem nos avisos.")
+    : t("{1}{2}, a prioridade mais alta primeiro. Somando os preços-alvo: R$ {3}{4}. Comprou? \"Comprei\" põe o relógio na coleção (disponível para o rodízio) e abre a ficha dele, para preencher a compra.", {1: d.desejados.length, 2: d.desejados.length === 1 ? t(" relógio desejado") : t(" relógios desejados"), 3: reais(d.total_preco_alvo), 4: d.sem_preco_alvo > 0 ? t(" ({1} sem preço-alvo)", {1: d.sem_preco_alvo}) : ""}));
   if (d.desejados.length > 0) {
-    res += el("div", {"class": "rolagem"}, el("table", {"class": "relogios compacta lista-desejos"}, el("thead", {}, el("tr", {}, el("th", {}, "Relógio") + el("th", {}, "Prioridade")
-        + el("th", {}, "Preço-alvo") + el("th", {}, "Grupo") + el("th", {}, "Link") + el("th", {}, "")))
+    res += el("div", {"class": "rolagem"}, el("table", {"class": "relogios compacta lista-desejos"}, el("thead", {}, el("tr", {}, el("th", {}, t("Relógio")) + el("th", {}, t("Prioridade"))
+        + el("th", {}, t("Preço-alvo")) + el("th", {}, t("Grupo")) + el("th", {}, t("Link")) + el("th", {}, "")))
       + el("tbody", {}, d.desejados.map(function (x) {
         var modelo = [x.marca, x.referencia].filter(function (t) { return t !== null; }).join(" · ");
         return el("tr", {}, el("td", {}, nomeComFoto(x, h(modelo)))
           + el("td", {}, x.prioridade !== null ? h(x.prioridade) : "—")
-          + el("td", {"class": "valor"}, x.preco_alvo !== null ? "R$ " + reais(x.preco_alvo) : "—")
+          + el("td", {"class": "valor"}, x.preco_alvo !== null ? t("R$ ") + reais(x.preco_alvo) : "—")
           + el("td", {}, x.tipo === "sem grupo" ? "—" : h(x.caminho))
-          + el("td", {}, x.link !== null && /^https?:\/\//i.test(x.link) ? el("a", {"href": x.link, "target": "_blank", "rel": "noopener noreferrer", "class": "quebra"}, "abrir a página") : (x.link !== null ? h(x.link) : "—"))
-          + el("td", {"class": "acoes-desejo"}, botaoColecao(x, "Comprei", "Comprou o " + x.nome + "? Ele entra na coleção, disponível para o rodízio, e a ficha dele abre para você preencher a compra.")));
+          + el("td", {}, x.link !== null && /^https?:\/\//i.test(x.link) ? el("a", {"href": x.link, "target": "_blank", "rel": "noopener noreferrer", "class": "quebra"}, t("abrir a página")) : (x.link !== null ? h(x.link) : "—"))
+          + el("td", {"class": "acoes-desejo"}, botaoColecao(x, t("Comprei"), t("Comprou o {1}? Ele entra na coleção, disponível para o rodízio, e a ficha dele abre para você preencher a compra.", {1: x.nome}))));
       }).join(""))));
   }
-  res += el("h2", {}, "Fora da coleção");
-  res += el("p", {"class": "nota"}, d.fora.length === 0 ? "Nenhum relógio emprestado, vendido ou arquivado. No cadastro de um relógio, a \"Situação na coleção\" muda isso: fora dela, ele sai do rodízio, do plano e dos avisos; a ficha, os documentos e o histórico ficam."
-    : "Emprestados, vendidos e arquivados: fora do rodízio, do plano e dos avisos (o emprestado continua na tabela da página Hoje e no valor da coleção). A ficha, os documentos e o histórico ficam.");
+  res += el("h2", {}, t("Fora da coleção"));
+  res += el("p", {"class": "nota"}, d.fora.length === 0 ? t("Nenhum relógio emprestado, vendido ou arquivado. No cadastro de um relógio, a \"Situação na coleção\" muda isso: fora dela, ele sai do rodízio, do plano e dos avisos; a ficha, os documentos e o histórico ficam.")
+    : t("Emprestados, vendidos e arquivados: fora do rodízio, do plano e dos avisos (o emprestado continua na tabela da página Hoje e no valor da coleção). A ficha, os documentos e o histórico ficam."));
   if (d.fora.length > 0) {
-    res += el("div", {"class": "rolagem"}, el("table", {"class": "relogios compacta lista-fora"}, el("thead", {}, el("tr", {}, el("th", {}, "Relógio") + el("th", {}, "Situação")
-        + el("th", {}, "Grupo") + el("th", {}, "")))
+    res += el("div", {"class": "rolagem"}, el("table", {"class": "relogios compacta lista-fora"}, el("thead", {}, el("tr", {}, el("th", {}, t("Relógio")) + el("th", {}, t("Situação"))
+        + el("th", {}, t("Grupo")) + el("th", {}, "")))
       + el("tbody", {}, d.fora.map(function (x) {
         return el("tr", {}, el("td", {}, nomeComFoto(x, ""))
           + el("td", {}, el("span", {"class": "estado estado-posse"}, h(x.posse_texto.toLowerCase())))
           + el("td", {}, x.tipo === "sem grupo" ? "—" : h(x.caminho))
-          + el("td", {"class": "acoes-desejo"}, botaoColecao(x, "Voltar para a coleção", "Voltar o " + x.nome + " para a coleção? Ele fica disponível para o rodízio de novo.")));
+          + el("td", {"class": "acoes-desejo"}, botaoColecao(x, t("Voltar para a coleção"), t("Voltar o {1} para a coleção? Ele fica disponível para o rodízio de novo.", {1: x.nome}))));
       }).join(""))));
   }
   document.getElementById("desejos").innerHTML = res;
 }).catch(function (e) {
-  document.getElementById("desejos").innerHTML = el("p", {"class": "acao"}, "Não consegui ler a lista de desejos: " + h(e.message));
+  document.getElementById("desejos").innerHTML = el("p", {"class": "acao"}, t("Não consegui ler a lista de desejos: {1}", {1: h(e.message)}));
 });

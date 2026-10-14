@@ -10,37 +10,37 @@ api({recurso: "passaporte", relogio: id}).then(function (d) {
   var r = d.relogio;
   var c = d.compra;
   var u = d.uso;
-  var res = el("div", {"class": "barra-impressao"}, el("button", {"type": "button", "onclick": "window.print()"}, "Imprimir") + " "
-    + el("a", {"href": "ficha.php?id=" + r.id, "class": "botao leve"}, "Voltar para a ficha") + " " + el("span", {"class": "nota"}, "No papel saem só os dados (o \"Salvar como PDF\" do navegador guarda o arquivo)."));
-  res += el("header", {"class": "cabeca-impressa"}, (r.foto !== null ? el("img", {"src": "api.php?recurso=foto&relogio=" + r.id + "&v=" + r.foto, "alt": "Foto do " + r.nome}) : "")
-    + el("div", {}, el("p", {"class": "data"}, "Passaporte do relógio · código " + r.id) + el("h1", {}, h(r.nome))
+  var res = el("div", {"class": "barra-impressao"}, el("button", {"type": "button", "onclick": "window.print()"}, t("Imprimir")) + " "
+    + el("a", {"href": "ficha.php?id=" + r.id, "class": "botao leve"}, t("Voltar para a ficha")) + " " + el("span", {"class": "nota"}, t("No papel saem só os dados (o \"Salvar como PDF\" do navegador guarda o arquivo).")));
+  res += el("header", {"class": "cabeca-impressa"}, (r.foto !== null ? el("img", {"src": "api.php?recurso=foto&relogio=" + r.id + "&v=" + r.foto, "alt": t("Foto do {1}", {1: r.nome})}) : "")
+    + el("div", {}, el("p", {"class": "data"}, t("Passaporte do relógio · código {1}", {1: r.id})) + el("h1", {}, h(r.nome))
       + el("p", {}, [r.marca, r.referencia].filter(function (x) { return x !== null; }).map(h).join(" · ") + (r.marca || r.referencia ? " · " : "") + h(r.caminho))
-      + el("p", {"class": "nota"}, h(r.posse_texto) + (r.posse === "colecao" ? (r.disponivel ? " · no rodízio" : " · fora do rodízio") : "") + " · no sistema desde " + dataBr(r.criado))
+      + el("p", {"class": "nota"}, t("{1}{2} · no sistema desde {3}", {1: h(r.posse_texto), 2: r.posse === "colecao" ? (r.disponivel ? t(" · no rodízio") : t(" · fora do rodízio")) : "", 3: dataBr(r.criado)}))
       + (r.observacao !== null ? el("p", {}, h(r.observacao)) : "")));
   res += el("div", {"class": "grade-impressa"},
-    el("section", {}, el("h2", {}, "Compra") + (c.data === null && c.valor === null && c.loja === null && c.garantia_ate === null ? el("p", {"class": "nota"}, "Sem dados da compra.")
-      : linhas([["Data", c.data !== null ? dataBr(c.data) : null], ["Valor pago", c.valor !== null ? "R$ " + reais(c.valor) : null], ["Loja", c.loja !== null ? h(c.loja) : null],
-        ["Garantia até", c.garantia_ate !== null ? dataBr(c.garantia_ate) : null]])))
-    + el("section", {}, el("h2", {}, "Uso") + (u.primeira_vez === null ? el("p", {"class": "nota"}, "Ainda não foi ao pulso.")
-      : linhas([["Primeira vez no pulso", dataBr(u.primeira_vez)], ["Última vez", u.no_pulso_agora ? "no pulso agora" : dataBr(u.ultima_vez)],
-        ["Horas no pulso", num(u.horas_no_pulso, 1) + " h"], ["Dias de uso", u.dias_de_uso !== null ? String(u.dias_de_uso) : null],
-        ["Custo por uso", u.custo_por_uso !== null ? "R$ " + reais(u.custo_por_uso) : null]]))));
-  res += el("section", {}, el("h2", {}, "Cadastro") + (d.cadastro.length === 0 ? el("p", {"class": "nota"}, "Nada preenchido.")
+    el("section", {}, el("h2", {}, t("Compra")) + (c.data === null && c.valor === null && c.loja === null && c.garantia_ate === null ? el("p", {"class": "nota"}, t("Sem dados da compra."))
+      : linhas([[t("Data"), c.data !== null ? dataBr(c.data) : null], [t("Valor pago"), c.valor !== null ? t("R$ ") + reais(c.valor) : null], [t("Loja"), c.loja !== null ? h(c.loja) : null],
+        [t("Garantia até"), c.garantia_ate !== null ? dataBr(c.garantia_ate) : null]])))
+    + el("section", {}, el("h2", {}, t("Uso")) + (u.primeira_vez === null ? el("p", {"class": "nota"}, t("Ainda não foi ao pulso."))
+      : linhas([[t("Primeira vez no pulso"), dataBr(u.primeira_vez)], [t("Última vez"), u.no_pulso_agora ? t("no pulso agora") : dataBr(u.ultima_vez)],
+        [t("Horas no pulso"), num(u.horas_no_pulso, 1) + t(" h")], [t("Dias de uso"), u.dias_de_uso !== null ? String(u.dias_de_uso) : null],
+        [t("Custo por uso"), u.custo_por_uso !== null ? t("R$ ") + reais(u.custo_por_uso) : null]]))));
+  res += el("section", {}, el("h2", {}, t("Cadastro")) + (d.cadastro.length === 0 ? el("p", {"class": "nota"}, t("Nada preenchido."))
     : linhas(d.cadastro.map(function (x) { return [h(x.nome), h(x.valor)]; }))));
-  res += el("section", {}, el("h2", {}, "Manutenções") + (d.marcacoes.length === 0 ? el("p", {"class": "nota"}, "Nenhuma marcação.")
-    : linhas(d.marcacoes.map(function (m) { return [h(m.nome), m.vezes + (m.vezes === 1 ? " vez" : " vezes") + " · a última em " + dataBr(m.ultima)]; })))
-    + (d.servicos.length > 0 ? el("p", {"class": "nota"}, "Revisões e trocas de pilha: " + d.servicos.map(function (s) { return dataBr(s.data) + " (" + h(s.nome.toLowerCase()) + ")"; }).join(", ") + ".") : ""));
+  res += el("section", {}, el("h2", {}, t("Manutenções")) + (d.marcacoes.length === 0 ? el("p", {"class": "nota"}, t("Nenhuma marcação."))
+    : linhas(d.marcacoes.map(function (m) { return [h(m.nome), t("{1}{2} · a última em {3}", {1: m.vezes, 2: m.vezes === 1 ? t(" vez") : t(" vezes"), 3: dataBr(m.ultima)})]; })))
+    + (d.servicos.length > 0 ? el("p", {"class": "nota"}, t("Revisões e trocas de pilha: {1}.", {1: d.servicos.map(function (s) { return dataBr(s.data) + " (" + h(s.nome.toLowerCase()) + ")"; }).join(", ")})) : ""));
   res += el("div", {"class": "grade-impressa"},
-    el("section", {}, el("h2", {}, "Acessórios") + (d.acessorios.length === 0 ? el("p", {"class": "nota"}, "Nenhum.")
+    el("section", {}, el("h2", {}, t("Acessórios")) + (d.acessorios.length === 0 ? el("p", {"class": "nota"}, t("Nenhum."))
       : linhas(d.acessorios.map(function (a) { return [h(a.tipo_texto), h(a.nome) + (a.observacao !== null ? el("small", {}, h(a.observacao)) : "")]; }))))
-    + el("section", {}, el("h2", {}, "Documentos") + (d.documentos.length === 0 ? el("p", {"class": "nota"}, "Nenhum.")
+    + el("section", {}, el("h2", {}, t("Documentos")) + (d.documentos.length === 0 ? el("p", {"class": "nota"}, t("Nenhum."))
       : linhas(d.documentos.map(function (x) { return [h(x.categoria), h(x.titulo) + (x.data !== null ? " · " + dataBr(x.data) : "")]; })))));
   if (d.proximos_avisos.length > 0) {
-    res += el("section", {}, el("h2", {}, "Próximos avisos") + linhas(d.proximos_avisos.map(function (a) { return [h(a.nome), h(a.texto)]; })));
+    res += el("section", {}, el("h2", {}, t("Próximos avisos")) + linhas(d.proximos_avisos.map(function (a) { return [h(a.nome), h(a.texto)]; })));
   }
-  res += el("p", {"class": "nota rodape-impresso"}, "Gerado em " + dataBr(d.gerado_em) + " " + horaBr(d.gerado_em) + " pelo Relojoeiro.");
+  res += el("p", {"class": "nota rodape-impresso"}, t("Gerado em {1} {2} pelo Relojoeiro.", {1: dataBr(d.gerado_em), 2: horaBr(d.gerado_em)}));
   document.getElementById("passaporte").innerHTML = res;
-  document.title = "Passaporte — " + r.nome;
+  document.title = t("Passaporte — {1}", {1: r.nome});
 }).catch(function (e) {
-  document.getElementById("passaporte").innerHTML = el("p", {"class": "acao"}, "Não consegui ler o passaporte: " + h(e.message));
+  document.getElementById("passaporte").innerHTML = el("p", {"class": "acao"}, t("Não consegui ler o passaporte: {1}", {1: h(e.message)}));
 });

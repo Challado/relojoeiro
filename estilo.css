@@ -1493,3 +1493,13 @@ svg.mostrador .eixo { fill: #b3261e; }
   .galeria-relogios { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   a { color: inherit; text-decoration: none; }
 }
+
+/* ---------- o seletor do idioma, no fim do menu ---------- */
+.visualmente-oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.menu-lingua { margin-left: auto; display: flex; align-items: center; }
+.menu-lingua select { background: #27323f; color: #dfe5eb; border: 1px solid #3b4757; border-radius: 6px; padding: .15rem .35rem; font: inherit; font-size: .85rem; }
+@media (max-width: 900px) {
+  .topo.aberto .menu-itens .menu-lingua { grid-column: 1 / -1; margin: 0; }
+  .menu-lingua select { width: 100%; padding: .6rem .8rem; font-size: 16px; }
+}
+@media print { .menu-lingua { display: none; } }

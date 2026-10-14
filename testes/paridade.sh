@@ -11,7 +11,8 @@
 #
 # Os bancos (MySQL/MariaDB, PostgreSQL, Firebird) têm de estar no ar; o acesso vem do ambiente (veja testes/config.teste.php).
 # O banco de teste é APAGADO e recriado a cada rodada: o nome (TESTE_BANCO, padrão relogios_teste) tem de ter "teste".
-# Depois da comparação, confere a documentação: o cabeçalho do api.php é o que a ajuda gera (testes/dicionario.php) e todo
+# Depois da comparação, confere a documentação: o cabeçalho do api.php é o que a ajuda gera (testes/dicionario.php), os
+# dicionários dos idiomas têm todos os textos do código (testes/textos.php) e todo
 # campo das respostas está explicado na ajuda (testes/campos.php, no servidor do primeiro banco).
 # Outras variáveis: TESTE_PORTA (a primeira porta, padrão 8101; uma por banco), RELOGIOS_TESTE_PASTA (a pasta da rodada;
 # padrão: uma nova, temporária). Termina com 0 se tudo saiu igual, sem escrita recusada (e sem problema de layout).
@@ -133,6 +134,12 @@ if php testes/dicionario.php > "$PASTA/dicionario.txt" 2>&1; then
   echo "dicionário: $(tail -1 "$PASTA/dicionario.txt")"
 else
   FALHOU=1; echo "dicionário:"; sed 's/^/    /' "$PASTA/dicionario.txt"
+fi
+# os idiomas: os dicionários de cada um têm todos os textos do código, com os mesmos parâmetros
+if php testes/textos.php > "$PASTA/textos.txt" 2>&1; then
+  echo "idiomas: $(tail -1 "$PASTA/textos.txt")"
+else
+  FALHOU=1; echo "idiomas:"; sed 's/^/    /' "$PASTA/textos.txt" | head -40
 fi
 if [ -f "$PASTA/$REF.json" ]; then
   if php testes/campos.php "http://127.0.0.1:$PORTA0/api.php" > "$PASTA/campos.txt" 2>&1; then

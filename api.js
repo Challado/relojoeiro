@@ -1,6 +1,47 @@
 // A base das páginas: todo dado vem do api.php e toda gravação vai para ele. As páginas só montam o HTML.
 // O login do site (HTTP Basic) vai junto em cada pedido, pelo próprio navegador.
 
+// Os idiomas: todo texto das telas passa pela função t (o texto em português e os parâmetros entre chaves); o dicionário vem da API
+// (recurso=textos) antes de qualquer tela ser montada (o api() espera por ele). O que falta no dicionário sai em português.
+// O idioma é o do pedido: o seletor do menu (o cookie lingua), senão o padrão da instalação, senão o do navegador.
+// O dicionário chega antes deste script (a página carrega api.php?recurso=textos&formato=js, que põe window.TEXTOS_API); sem
+// ele (uma página que não carregou), pela API, e o api() espera
+var LINGUA = document.documentElement.lang || "pt-BR";
+var LOCALE = "pt-BR";
+var FORMATO = {data: "d/m/Y", data_curta: "d/m"};
+var TEXTOS = {};
+function usarTextos(d) {
+  if (d && d.lingua) {
+    TEXTOS = d.textos || {};
+    LOCALE = d.locale || "pt-BR";
+    FORMATO = d.formato || FORMATO;
+    LINGUA = d.lingua;
+    // sem idioma escolhido no menu (o cookie), vale o padrão da instalação: a página abre de novo nele, uma vez
+    if (d.padrao && d.padrao !== LINGUA && !/(^|;\s*)lingua=/.test(document.cookie)) {
+      document.cookie = "lingua=" + d.padrao + "; path=/; max-age=31536000; SameSite=Lax";
+      window.location.reload();
+    }
+  }
+}
+var textosProntos = window.TEXTOS_API ? Promise.resolve(usarTextos(window.TEXTOS_API))
+  : fetch("api.php?recurso=textos&lingua=" + encodeURIComponent(LINGUA), { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(usarTextos).catch(function () { return null; });
+
+// o texto no idioma, com os parâmetros trocados ({nome} pelo valor)
+function t(s, p) {
+  var res = Object.prototype.hasOwnProperty.call(TEXTOS, s) && TEXTOS[s] !== "" ? TEXTOS[s] : s;
+  if (p) {
+    Object.keys(p).forEach(function (k) {
+      res = res.split("{" + k + "}").join(String(p[k]));
+    });
+  }
+  return res;
+}
+
+// marca um texto do dicionário que é traduzido depois, num t(variável) (a conferência dos dicionários acha a chave aqui)
+function tk(s) {
+  return s;
+}
+
 // Texto seguro para pôr no HTML
 function h(t) {
   return String(t === null || t === undefined ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -20,21 +61,21 @@ function el(nome, atributos, conteudo) {
   return res + ">" + (conteudo === null ? "" : (conteudo || "")) + (["input", "img", "br"].indexOf(nome) >= 0 ? "" : "</" + nome + ">");
 }
 
-// Número com vírgula, sem zeros sobrando
+// Número no formato do idioma (a vírgula ou o ponto), sem zeros sobrando
 function num(v, casas) {
   var f = Math.pow(10, casas === undefined ? 1 : casas);
-  return v === null || v === undefined || v === "" ? "—" : String(Math.round(Number(v) * f) / f).replace(".", ",");
+  return v === null || v === undefined || v === "" ? "—" : (Math.round(Number(v) * f) / f).toLocaleString(LOCALE, { maximumFractionDigits: casas === undefined ? 1 : casas, useGrouping: false });
 }
 
-// Dinheiro: 1.234,56
+// Dinheiro, no formato do idioma: 1.234,56 (1,234.56 em inglês)
 function reais(v) {
-  return Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return Number(v).toLocaleString(LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// "AAAA-MM-DD..." para "DD/MM/AAAA" (curto: "DD/MM")
+// "AAAA-MM-DD..." para a data do idioma (o formato vem da API, com d, m e Y): 13/10/2026, 10/13/2026, 2026-10-13; curto: sem o ano
 function dataBr(t, curto) {
   var p = String(t).substr(0, 10).split("-");
-  return curto ? p[2] + "/" + p[1] : p[2] + "/" + p[1] + "/" + p[0];
+  return (curto ? FORMATO.data_curta : FORMATO.data).replace(/[dmY]/g, function (c) { return c === "d" ? p[2] : (c === "m" ? p[1] : p[0]); });
 }
 
 // "AAAA-MM-DD HH:MM:SS" para "HH:MM"
@@ -51,15 +92,15 @@ function instante(t) {
 // Trocar o relógio de um dia do plano (Hoje e Plano): a lista dos relógios disponíveis e o botão; no dia escolhido à mão
 // ou livre (de amanhã em diante), também "voltar a sortear". p: o dia do plano (data, relogio_id, origem); hoje: AAAA-MM-DD
 function formTrocarDia(p, relogios, hoje) {
-  var opcoes = el("option", {"value": "", "selected": true, "disabled": true}, p.origem === "livre" ? "escolher…" : "trocar por…")
+  var opcoes = el("option", {"value": "", "selected": true, "disabled": true}, p.origem === "livre" ? t("escolher…") : t("trocar por…"))
     + relogios.filter(function (r) { return r.disponivel && r.id !== p.relogio_id; }).map(function (r) {
       return el("option", {"value": r.id}, h(r.nome));
     }).join("")
-    + ((p.origem === "manual" || p.origem === "livre") && p.data > hoje ? el("option", {"value": "0"}, "↺ voltar a sortear") : "");
+    + ((p.origem === "manual" || p.origem === "livre") && p.data > hoje ? el("option", {"value": "0"}, t("↺ voltar a sortear")) : "");
   return el("form", {"data-recurso": "rodizio", "class": "trocar-dia"}, el("input", {"type": "hidden", "name": "acao", "value": "trocar_dia"})
     + el("input", {"type": "hidden", "name": "data", "value": p.data})
-    + el("select", {"name": "relogio_id", "required": true, "aria-label": "Trocar o relógio de " + dataBr(p.data), "onchange": "this.form.querySelector('button').hidden = false"}, opcoes)
-    + el("button", {"class": "leve", "hidden": true}, "Trocar"));
+    + el("select", {"name": "relogio_id", "required": true, "aria-label": t("Trocar o relógio de {1}", {1: dataBr(p.data)}), "onchange": "this.form.querySelector('button').hidden = false"}, opcoes)
+    + el("button", {"class": "leve", "hidden": true}, t("Trocar")));
 }
 
 // O navegador de páginas (Próximos dias, Plano, Rodízio manual): "<" (Anterior), os números (a primeira, a última e até 2 de
@@ -74,52 +115,51 @@ function navPaginas(pagina, paginas, atributo) {
     a["data-" + atributo] = n;
     return el("button", a, texto);
   };
-  var res = botao(pagina - 1, "&lt;", "Anterior");
+  var res = botao(pagina - 1, "&lt;", t("Anterior"));
   var ultimo = 0;
   for (var n = 1; n <= paginas; n++) {
     if (n === 1 || n === paginas || Math.abs(n - pagina) <= 2) {
       if (ultimo > 0 && n > ultimo + 1) {
         res += el("span", {"class": "reticencias"}, "…");
       }
-      res += n === pagina ? el("span", {"class": "atual", "aria-current": "page", "title": "Página " + n}, String(n)) : botao(n, String(n), "Página " + n);
+      res += n === pagina ? el("span", {"class": "atual", "aria-current": "page", "title": t("Página {1}", {1: n})}, String(n)) : botao(n, String(n), t("Página {1}", {1: n}));
       ultimo = n;
     }
   }
-  res += botao(pagina + 1, "&gt;", "Próximo");
-  return el("nav", {"class": "paginas", "aria-label": "Páginas"}, res);
+  res += botao(pagina + 1, "&gt;", t("Próximo"));
+  return el("nav", {"class": "paginas", "aria-label": t("Páginas")}, res);
 }
 
 // Apagar o que um período do plano tem (página Plano e quadro Modo de rodízio): de, até e o que fazer depois: sortear de
 // novo pelo modo (rodizio periodo_sortear) ou deixar os dias livres, sem relógio (periodo_livre). Vale de amanhã em diante.
 // hoje: AAAA-MM-DD
 function formApagarPeriodo(hoje) {
-  var acoes = [["periodo_sortear", "e sortear de novo", "Tudo o que o período tem, de amanhã em diante (escolhido à mão, sorteado ou livre), sai, e o modo de rodízio sorteia os dias outra vez.",
-    "Apagar o que o período tem e sortear de novo? Os dias escolhidos à mão nele também saem."],
-    ["periodo_livre", "e deixar livre", "Tudo o que o período tem, de amanhã em diante, sai, e os dias ficam livres: sem relógio e sem sorteio, para você escolher cada um (no \"escolher…\" do dia ou no Rodízio manual).",
-    "Apagar o que o período tem e deixar os dias livres, sem relógio? Os dias escolhidos à mão nele também saem."]];
+  var acoes = [["periodo_sortear", t("e sortear de novo"), t("Tudo o que o período tem, de amanhã em diante (escolhido à mão, sorteado ou livre), sai, e o modo de rodízio sorteia os dias outra vez."),
+    t("Apagar o que o período tem e sortear de novo? Os dias escolhidos à mão nele também saem.")],
+    ["periodo_livre", t("e deixar livre"), t("Tudo o que o período tem, de amanhã em diante, sai, e os dias ficam livres: sem relógio e sem sorteio, para você escolher cada um (no \"escolher…\" do dia ou no Rodízio manual)."),
+    t("Apagar o que o período tem e deixar os dias livres, sem relógio? Os dias escolhidos à mão nele também saem.")]];
   return el("form", {"data-recurso": "rodizio", "class": "apagar-periodo", "onsubmit": "var o = this.acao.options[this.acao.selectedIndex]; return confirm(o.getAttribute('data-confirma'))"},
-    el("span", {"class": "campo-principal"}, "Apagar um período")
-    + el("div", {"class": "linha-apagar"}, el("label", {}, "De " + el("input", {"type": "date", "name": "de", "min": hoje, "required": true}))
-      + el("label", {}, "Até " + el("input", {"type": "date", "name": "ate", "min": hoje, "required": true}))
-      + el("label", {}, "Depois " + el("select", {"name": "acao"}, acoes.map(function (a) {
+    el("span", {"class": "campo-principal"}, t("Apagar um período"))
+    + el("div", {"class": "linha-apagar"}, el("label", {}, t("De {1}", {1: el("input", {"type": "date", "name": "de", "min": hoje, "required": true})}))
+      + el("label", {}, t("Até {1}", {1: el("input", {"type": "date", "name": "ate", "min": hoje, "required": true})}))
+      + el("label", {}, t("Depois {1}", {1: el("select", {"name": "acao"}, acoes.map(function (a) {
         return el("option", {"value": a[0], "data-explica": a[2], "data-confirma": a[3]}, h(a[1]));
-      }).join("")))
-      + el("button", {"class": "leve"}, "Apagar"))
+      }).join(""))}))
+      + el("button", {"class": "leve"}, t("Apagar")))
     + el("p", {"class": "nota", "data-explica-apagar": true}, h(acoes[0][2])));
 }
 
 // Apagar tudo (página Plano e quadro Modo de rodízio): toda a programação de amanhã em diante (com "Excluindo hoje", de hoje
 // em diante) sai: os dias escolhidos à mão, os sorteados e os livres; o modo de rodízio monta o plano de novo (rodizio apagar_tudo)
 function formApagarTudo() {
-  return el("form", {"data-recurso": "rodizio", "class": "apagar-tudo", "onsubmit": "return confirm(this.hoje.checked "
-      + "? 'Apagar toda a programação, de hoje em diante (escolhidos à mão, sorteados e dias livres)? O modo de rodízio monta o plano de novo, e hoje pode sair outro relógio, que passa a ser o do pulso a partir de agora.' "
-      + ": 'Apagar toda a programação, de amanhã em diante (escolhidos à mão, sorteados e dias livres)? O modo de rodízio monta o plano de novo; hoje continua como está.')"},
+  return el("form", {"data-recurso": "rodizio", "class": "apagar-tudo", "onsubmit": "return confirm(this.getAttribute(this.hoje.checked ? 'data-confirma-hoje' : 'data-confirma'))",
+      "data-confirma-hoje": t("Apagar toda a programação, de hoje em diante (escolhidos à mão, sorteados e dias livres)? O modo de rodízio monta o plano de novo, e hoje pode sair outro relógio, que passa a ser o do pulso a partir de agora."),
+      "data-confirma": t("Apagar toda a programação, de amanhã em diante (escolhidos à mão, sorteados e dias livres)? O modo de rodízio monta o plano de novo; hoje continua como está.")},
     el("input", {"type": "hidden", "name": "acao", "value": "apagar_tudo"})
-    + el("span", {"class": "campo-principal"}, "Apagar tudo")
-    + el("div", {"class": "linha-apagar"}, el("label", {"class": "check"}, el("input", {"type": "checkbox", "name": "hoje", "value": "1"}) + " Excluindo hoje (apaga também o dia de hoje)")
-      + el("button", {"class": "leve"}, "Apagar tudo"))
-    + el("p", {"class": "nota"}, "Limpa toda a programação, de amanhã em diante: os dias escolhidos à mão, os sorteados e os livres. Marcando \"Excluindo hoje\", apaga de hoje em diante "
-      + "(se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora). Depois, o modo de rodízio monta o plano de novo, do zero."));
+    + el("span", {"class": "campo-principal"}, t("Apagar tudo"))
+    + el("div", {"class": "linha-apagar"}, el("label", {"class": "check"}, t("{1} Excluindo hoje (apaga também o dia de hoje)", {1: el("input", {"type": "checkbox", "name": "hoje", "value": "1"})}))
+      + el("button", {"class": "leve"}, t("Apagar tudo")))
+    + el("p", {"class": "nota"}, t("Limpa toda a programação, de amanhã em diante: os dias escolhidos à mão, os sorteados e os livres. Marcando \"Excluindo hoje\", apaga de hoje em diante (se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora). Depois, o modo de rodízio monta o plano de novo, do zero.")));
 }
 
 document.addEventListener("change", function (ev) {
@@ -137,8 +177,8 @@ function comLivres(plano, livres) {
 
 // A célula do relógio de um dia do plano: o nome (com "à mão"), ou "livre", e o motivo embaixo
 function celulaDoDia(p) {
-  return p.origem === "livre" ? el("span", {"class": "nota"}, "livre: escolha à mão") + " " + el("small", {"class": "a-mao"}, "livre")
-    : h(p.relogio) + (p.origem === "manual" ? " " + el("small", {"class": "a-mao"}, "à mão") : "") + (p.motivo ? el("small", {"class": "motivo"}, h(p.motivo)) : "");
+  return p.origem === "livre" ? el("span", {"class": "nota"}, t("livre: escolha à mão")) + " " + el("small", {"class": "a-mao"}, "livre")
+    : h(p.relogio) + (p.origem === "manual" ? " " + el("small", {"class": "a-mao"}, t("à mão")) : "") + (p.motivo ? el("small", {"class": "motivo"}, h(p.motivo)) : "");
 }
 
 // Minúsculas, para os botões ("No sol" → "Pôs no sol")
@@ -167,7 +207,7 @@ function rotularTabelas() {
 // As ações de uma linha (Editar, ↑ ↓, Excluir): o Excluir em vermelho, em todas as tabelas, também nas montadas depois
 function marcarAcoes() {
   document.querySelectorAll(".acoes-linha button, .acoes-ev button").forEach(function (b) {
-    if (/^\s*excluir/i.test(b.textContent) && !b.classList.contains("perigo")) {
+    if (b.textContent.trim().toLowerCase().indexOf(t("Excluir").toLowerCase()) === 0 && !b.classList.contains("perigo")) {
       b.classList.add("perigo");
     }
   });
@@ -197,7 +237,7 @@ function tratarResposta(resp) {
     }
     // a resposta vai junto no erro (dados.erros: o que a API explicou)
     if (!resp.ok && dados.ok === undefined) {
-      var erro = new Error(dados.erro || ("a API respondeu " + resp.status));
+      var erro = new Error(dados.erro || (t("a API respondeu {1}", {1: resp.status})));
       erro.dados = dados;
       throw erro;
     }
@@ -205,9 +245,11 @@ function tratarResposta(resp) {
   });
 }
 
-// Lê um recurso da API: api({recurso: "hoje"})
+// Lê um recurso da API: api({recurso: "hoje"}) (depois do dicionário do idioma: a tela que vem em seguida já sai traduzida)
 function api(parametros) {
-  return fetch("api.php?" + new URLSearchParams(parametros || {}).toString(), { credentials: "same-origin" }).then(tratarResposta);
+  return textosProntos.then(function () {
+    return fetch("api.php?" + new URLSearchParams(parametros || {}).toString(), { credentials: "same-origin" });
+  }).then(tratarResposta);
 }
 
 // Grava pela API: dados é um FormData ou um objeto; devolve {ok, mensagem, erros, ...}
@@ -308,7 +350,7 @@ document.addEventListener("submit", function (ev) {
         botoes.forEach(function (b) {
           b.disabled = false;
         });
-        alert("Não consegui gravar: " + e.message + ". Confira a conexão e tente de novo.");
+        alert(t("Não consegui gravar: {1}. Confira a conexão e tente de novo.", {1: e.message}));
       });
   }
 });
@@ -325,8 +367,8 @@ function fotoAmpliada(src, nome) {
   caixa.className = "foto-ampliada";
   caixa.setAttribute("role", "dialog");
   caixa.setAttribute("aria-modal", "true");
-  caixa.setAttribute("aria-label", nome || "Foto do relógio");
-  caixa.innerHTML = el("figure", {}, el("button", {"type": "button", "class": "fechar-foto", "aria-label": "Fechar", "title": "Fechar (Esc)"}, "×")
+  caixa.setAttribute("aria-label", nome || t("Foto do relógio"));
+  caixa.innerHTML = el("figure", {}, el("button", {"type": "button", "class": "fechar-foto", "aria-label": t("Fechar"), "title": t("Fechar (Esc)")}, t("×"))
     + el("img", {"src": src, "alt": nome || ""}) + el("figcaption", {}, h(nome || "")));
   document.body.appendChild(caixa);
   document.body.classList.add("com-foto-ampliada");
@@ -341,13 +383,12 @@ function fotoAmpliada(src, nome) {
     var escala = Math.min(1, largura / img.naturalWidth, altura / img.naturalHeight);
     img.style.width = Math.floor(img.naturalWidth * escala) + "px";
     img.style.height = Math.floor(img.naturalHeight * escala) + "px";
-    caixa.querySelector("figcaption").textContent = (nome ? nome + " · " : "") + img.naturalWidth + " × " + img.naturalHeight + " px"
-      + (escala < 1 ? " (mostrada a " + Math.round(escala * 100) + "%)" : "");
+    caixa.querySelector("figcaption").textContent = t("{1}{2} × {3} px{4}", {1: nome ? nome + " · " : "", 2: img.naturalWidth, 3: img.naturalHeight, 4: escala < 1 ? t(" (mostrada a {1}%)", {1: Math.round(escala * 100)}) : ""});
     caixa.classList.add("pronta");
   };
   img.addEventListener("load", ajustar);
   img.addEventListener("error", function () {
-    caixa.querySelector("figcaption").textContent = "Não consegui abrir a foto.";
+    caixa.querySelector("figcaption").textContent = t("Não consegui abrir a foto.");
     caixa.classList.add("pronta");
   });
   if (img.complete) {

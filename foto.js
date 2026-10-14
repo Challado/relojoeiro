@@ -26,7 +26,7 @@ document.addEventListener("change", function (ev) {
       URL.revokeObjectURL(img.src);
     };
     img.onerror = function () {
-      alert("Não consegui abrir essa imagem. Use JPEG ou PNG.");
+      alert(t("Não consegui abrir essa imagem. Use JPEG ou PNG."));
     };
     img.src = URL.createObjectURL(campo.files[0]);
   }

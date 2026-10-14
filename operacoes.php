@@ -2339,6 +2339,9 @@ function op_config($acao, $d)
         if (array_key_exists("painel_modo", $d) && !in_array((string)$d["painel_modo"], ["lado", "flutuante"], true)) {
             $erros[] = "Abrir o relógio: lado (ao lado da lista) ou flutuante (numa janela grande por cima da página).";
         }
+        if (array_key_exists("idioma", $d) && !isset(LINGUAS[(string)$d["idioma"]])) {
+            $erros[] = t("Idioma: {linguas}.", ["linguas" => implode(", ", array_keys(LINGUAS))]);
+        }
         if (array_key_exists("destaque_hoje", $d) && !in_array((string)$d["destaque_hoje"], ["dia", "pulso"], true)) {
             $erros[] = "Destaque da página Hoje: dia (o relógio do dia) ou pulso (o relógio no pulso agora).";
         }
@@ -2360,7 +2363,7 @@ function op_config($acao, $d)
         }
         if (count($erros) === 0) {
             foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "agenda_antecedencia", "agenda_id", "agenda_chave", "url_sistema", "carga_limiar",
-                "sol_limiar", "medicao_janela_dias", "encostado_dias", "painel_modo", "destaque_hoje", "proximos_por_pagina", "plano_por_pagina"] as $k) {
+                "sol_limiar", "medicao_janela_dias", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina"] as $k) {
                 if (array_key_exists($k, $d)) {
                     cfg_set($k, trim((string)$d[$k]));
                 }

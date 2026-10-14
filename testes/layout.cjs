@@ -8,13 +8,15 @@
 //   BASE=http://127.0.0.1:8101/ RELOGIOS_USUARIO=teste RELOGIOS_SENHA=senha123 node testes/layout.cjs [página] [tela]
 // (página e tela: um filtro, expressão regular, no nome; ex.: node testes/layout.cjs "ficha" "cel-"). Grava em testes/layout/
 // uma captura de cada tela, o relatorio.tsv (uma linha por problema) e o agrupado.txt (o mesmo problema com as telas em que
-// aparece). Termina com 0 se não achou nada, 1 se achou.
+// aparece). Termina com 0 se não achou nada, 1 se achou. LINGUA=en (zh-CN, hi, es, fr) confere as telas nesse idioma (o
+// cookie do seletor do menu); sem ela, em português.
 const { chromium, devices } = require(process.env.PLAYWRIGHT || require('child_process').execSync('npm root -g').toString().trim() + '/playwright');
 const fs = require('fs');
 const BASE = process.env.BASE || 'http://127.0.0.1:8101/';
 const USUARIO = process.env.RELOGIOS_USUARIO || 'teste';
 const SENHA = process.env.RELOGIOS_SENHA || 'senha123';
 const SAIDA = process.env.SAIDA || __dirname + '/layout';
+const LINGUA = process.env.LINGUA || '';
 fs.mkdirSync(SAIDA, { recursive: true });
 
 const TELAS = [
@@ -211,7 +213,8 @@ function examinar(seletorRaiz) {
 
 async function auditarTela(b, tela, fp, relatorio, total) {
   const { nome: _n, ...opts } = tela;
-  const c = await b.newContext({ ...opts, httpCredentials: { username: USUARIO, password: SENHA }, locale: 'pt-BR', timezoneId: 'America/Sao_Paulo' });
+  const c = await b.newContext({ ...opts, httpCredentials: { username: USUARIO, password: SENHA }, locale: LINGUA || 'pt-BR', timezoneId: 'America/Sao_Paulo' });
+  if (LINGUA) await c.addCookies([{ name: 'lingua', value: LINGUA, url: BASE }]);
   for (const pg of PAGINAS) {
     if (fp && !fp.test(pg.nome)) continue;
     const p = await c.newPage();

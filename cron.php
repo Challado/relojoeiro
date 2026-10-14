@@ -89,6 +89,8 @@ try {
     } elseif (count($pendentes) > 0) {
         $log[] = "erro: o banco está desatualizado, falta aplicar " . implode(", ", array_keys($pendentes)) . ". Aplique pela tela de Configuração.";
     } else {
+        // as mensagens (o Telegram, a agenda) e o registro saem no idioma da instalação (a Configuração)
+        lingua_definir(cfg("idioma"));
         cfg_set("cron_ultima_execucao", date("Y-m-d H:i:s"));
         // execuções antigas: sem atividade ficam 7 dias; com atividade ou erro, 1 ano
         sql("DELETE FROM cron_execucao WHERE teve_atividade = 0 AND inicio < ?", [date("Y-m-d H:i:s", time() - 7 * 86400)]);
