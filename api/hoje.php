@@ -57,6 +57,8 @@ foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
         "ultimo_txt" => $v["em_uso"] ? "agora · " . date("H:i", $agora) : ($v["ultimo"] > 0 ? date(date("Y", $v["ultimo"]) === date("Y", $agora) ? "d/m H:i" : "d/m/Y H:i", $v["ultimo"]) : "nunca"),
         "situacao" => $v["situacao"], "manutencao" => $v["prox"] ? ["nome" => $v["prox"]["nome"], "data" => max($hoje->format("Y-m-d"), substr($v["prox"]["data"], 0, 10)),
             "momento" => $v["prox_momento"], "falta" => $v["prox_falta"]] : null,
+        "encostado" => $v["encostado"] ? ["data" => max($hoje->format("Y-m-d"), substr($v["encostado"]["data"], 0, 10)),
+            "momento" => $v["encostado_momento"], "falta" => $v["encostado_falta"], "estado" => $v["encostado"]["estado"]] : null,
         "compra" => ["data" => $val["data_compra"] ?? null, "valor" => isset($val["valor_compra"]) ? (float)$val["valor_compra"] : null, "loja" => $val["loja"] ?? null,
             "garantia_ate" => $val["garantia_ate"] ?? null],
         "leitura" => $leitura ? ["inicio" => $leitura["inicio"], "valor" => (float)$leitura["valor"], "unidade" => $leitura["unidade"]] : null,
@@ -77,7 +79,11 @@ foreach (linhas("SELECT * FROM modo ORDER BY ordem, id") as $m) {
 }
 $seg = $hoje->modify("next monday");
 $avisos_nomes = [];
-foreach (avisos_todos() as $versoes) {
+foreach (avisos_todos() as $ident => $versoes) {
+    // o Encostado tem a coluna dele; não entra no filtro "O que fazer" (a manutenção)
+    if ($ident === "encostado") {
+        continue;
+    }
     $avisos_nomes[] = $versoes[0]["nome"];
 }
 $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => cfg("uso_inicio"), "comecou" => $dia !== null && dia_comecou($agora),

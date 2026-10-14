@@ -1,4 +1,4 @@
-<!-- origem: bad7f593746b4239d3060efb0bd4665e7674a122 -->
+<!-- origem: 7e8e0f2a7cb20422db64bcf9965d08e5bd376fb0 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -632,7 +632,7 @@ Les alertes de l'ensemble initial, avec l'identifiant (leur nom dans les formule
 | Changer la pile | `pilha` | Pile | Changement de pile |
 | Révision | `revisao` | Traditionnelle | Révision |
 | Garantie qui expire | `garantia` | toutes | (rien : elle alerte seulement) |
-| Délaissée | `encostado` | toutes (celles de la collection, disponibles) | Au poignet. Elle arrive à échéance quand la montre dépasse la limite de jours sans aller au poignet (Configuration, **Alerte Délaissée : jours sans aller au poignet**, 30 par défaut), comptés depuis la dernière fois au poignet (jamais portée, depuis la date d'achat ; sans les deux, pas d'alerte). |
+| Délaissée | `encostado` | toutes (celles de la collection, disponibles) | Au poignet. Elle arrive à échéance quand la montre dépasse la limite de jours sans aller au poignet (Configuration, **Alerte Délaissée : jours sans aller au poignet**, 30 par défaut), comptés depuis la dernière fois au poignet (jamais portée, depuis la date d'achat ; sans les deux, pas d'alerte). Elle n'entre pas dans le prochain entretien ni dans **Quoi faire** : le tableau a la colonne **Délaissée**, avec combien il reste ou depuis combien c'est dépassé. |
 
 Les alertes partent dans l'alerte du matin. Une alerte marquée **immédiate** (dans **Définitions › Alertes**, la case
 *immédiate*) part aussi par Telegram **dans la minute où elle arrive à échéance**, une seule fois, jusqu'à ce qu'elle soit
@@ -782,10 +782,10 @@ jours.
 ---
 ## Les écrans {#as-telas}
 
-![La collection : chaque montre avec le type, l'état, la charge, la dernière fois au poignet, le prochain entretien et quoi faire](docs/telas/colecao.png)
+![La collection : chaque montre avec le type, l'état, la charge, la dernière fois au poignet, le prochain entretien, quoi faire et si elle est délaissée](docs/telas/colecao.png)
 
 <sub>Le tableau de la collection, sur la page Aujourd'hui : type, état, charge ou réserve actuelle, dernière fois au poignet,
-prochain entretien et quoi faire, avec des filtres sur chaque colonne et le total dépensé pour la collection.</sub>
+prochain entretien, quoi faire et la colonne Délaissée, avec des filtres sur chaque colonne et le total dépensé pour la collection.</sub>
 
 ![La chronologie d'une smartwatch : les sessions au poignet, le repos et les relevés de charge](docs/telas/historico.png)
 
@@ -795,7 +795,7 @@ temps et le pourcentage dans chaque état.</sub>
 ![Sur le téléphone : la page Aujourd'hui, la liste des montres en cartes et le panneau d'une montre en plein écran](docs/telas/celular.png)
 
 <sub>Sur le téléphone : le menu se replie dans une barre, les tableaux deviennent des cartes (rien ne dépasse la largeur de
-l'écran, et aucun champ ne disparaît : chaque carte de montre reprend les 11 colonnes du tableau) et le panneau de la montre
+l'écran, et aucun champ ne disparaît : chaque carte de montre reprend les 12 colonnes du tableau) et le panneau de la montre
 s'ouvre en plein écran ; le « retour » de l'appareil ferme le panneau.</sub>
 
 **Téléphone, tablette et ordinateur**, avec le même aspect :
@@ -806,11 +806,11 @@ s'ouvre en plein écran ; le « retour » de l'appareil ferme le panneau.</sub>
 | de 901 à 1199 px (tablette en paysage, petit portable) | le menu dans la barre ; la montre ouverte « à côté de la liste » glisse depuis la droite, avec le fond assombri, au lieu de comprimer la liste |
 | 1200 px ou plus (ordinateur) | le panneau à côté de la liste (ou la fenêtre flottante, selon la Configuration) |
 
-**Les mêmes informations partout.** Le tableau des montres a toujours les 11 colonnes (code, montre, type, état, charge,
-dernier port, prochain entretien, dans, quoi faire, achetée le et valeur), les 10 filtres et le tri par n'importe quelle
+**Les mêmes informations partout.** Le tableau des montres a toujours les 12 colonnes (code, montre, type, état, charge,
+dernier port, prochain entretien, dans, quoi faire, délaissée, achetée le et valeur), les 11 filtres et le tri par n'importe quelle
 colonne, sur l'ordinateur, la tablette et le téléphone ; rien n'est caché faute de place. Quand tout le tableau tient dans la
 largeur dont il dispose réellement (avec ou sans le panneau ouvert à côté), il apparaît sous forme de tableau, et le texte
-d'une cellule ne passe à la ligne que si nécessaire. Quand il ne tient pas, chaque montre devient une carte avec les mêmes 11
+d'une cellule ne passe à la ligne que si nécessaire. Quand il ne tient pas, chaque montre devient une carte avec les mêmes 12
 champs, dans le même ordre, chacun avec le nom de la colonne au-dessus (sur deux colonnes sur le téléphone, sur cinq sur la
 tablette), les en-têtes deviennent les boutons **Trier par** et tous les filtres restent, avec le nom au-dessus. Le
 basculement se mesure avec les données réelles (un nom long ou une grande valeur comptent), pas avec la largeur de l'écran.

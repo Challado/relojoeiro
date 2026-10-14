@@ -43,6 +43,7 @@ topo("Relógio de hoje", "index.php");
             <th><button type="button" data-ordena="manut"><?= t("Próxima<br> manutenção") ?> <span></span></button></th>
             <th class="col-em"><button type="button" data-ordena="em" data-tipo-ordem="num"><?= t("Em") ?> <span></span></button></th>
             <th><button type="button" data-ordena="fazer"><?= t("O que<br> fazer") ?> <span></span></button></th>
+            <th class="col-encostado"><button type="button" data-ordena="encostado" data-tipo-ordem="num"><?= t("Encostado") ?> <span></span></button></th>
             <th><button type="button" data-ordena="compra"><?= t("Comprado<br> em") ?> <span></span></button></th>
             <th class="col-valor"><button type="button" data-ordena="valor" data-tipo-ordem="num"><?= t("Valor") ?> <span></span></button></th>
           </tr>
@@ -56,13 +57,14 @@ topo("Relógio de hoje", "index.php");
             <td data-rotulo="<?= te("Próxima manutenção") ?>"><select data-filtro="manut" aria-label="<?= te("Filtrar pela próxima manutenção") ?>"><option value=""><?= t("Todas") ?></option><option value="0"><?= t("até hoje") ?></option><option value="7"><?= t("7 dias") ?></option><option value="30"><?= t("30 dias") ?></option></select></td>
             <td class="col-em"></td>
             <td data-rotulo="<?= te("O que fazer") ?>"><select data-filtro="fazer" aria-label="<?= te("Filtrar pelo que fazer") ?>"><option value=""><?= t("Todos") ?></option></select></td>
+            <td data-rotulo="<?= te("Encostado") ?>"><select data-filtro="encostado" aria-label="<?= te("Filtrar por encostado") ?>"><option value=""><?= t("Todos") ?></option><option value="sim"><?= t("Encostados") ?></option><option value="prazo"><?= t("Dentro do prazo") ?></option><option value="sem"><?= t("sem data") ?></option></select></td>
             <td data-rotulo="<?= te("Comprado em") ?>"><select data-filtro="compra" aria-label="<?= te("Filtrar pela data da compra") ?>"><option value=""><?= t("Todas") ?></option><option value="30"><?= t("30 dias") ?></option><option value="90"><?= t("90 dias") ?></option><option value="ano"><?= t("este ano") ?></option><option value="sem"><?= t("sem data") ?></option></select></td>
             <td data-rotulo="<?= te("Valor") ?>"><select data-filtro="valor" aria-label="<?= te("Filtrar pelo valor") ?>"><option value=""><?= t("Todos") ?></option><option value="ate500">≤ 500</option><option value="500a1500">500–1.500</option><option value="acima1500"><?= t("&gt; 1.500") ?></option><option value="sem"><?= t("sem valor") ?></option></select></td>
           </tr>
         </thead>
         <tbody></tbody>
         <tfoot>
-          <tr><td colspan="11"><span class="rotulo-total"><?= t("Total dos relógios mostrados") ?></span> <span id="total-valor"></span></td></tr>
+          <tr><td colspan="12"><span class="rotulo-total"><?= t("Total dos relógios mostrados") ?></span> <span id="total-valor"></span></td></tr>
         </tfoot>
       </table>
       </div>

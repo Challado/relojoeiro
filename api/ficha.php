@@ -79,6 +79,8 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
                 $x = isset(formulas_todas()["custo_por_uso"]) ? variavel_valor("custo_por_uso", $c) : null;
                 return is_numeric($x) ? round((float)$x, 2) : null;
             })()],
+        "encostado" => $v["encostado"] ? ["data" => max($hoje->format("Y-m-d"), substr($v["encostado"]["data"], 0, 10)),
+            "momento" => $v["encostado_momento"], "falta" => $v["encostado_falta"], "estado" => $v["encostado"]["estado"]] : null,
         "manutencoes" => array_map(function ($a) use ($hoje) { return ["data" => max($hoje->format("Y-m-d"), substr($a["data"], 0, 10)), "nome" => $a["nome"]]; }, array_slice($v["avisos"], 0, 5)),
         "previsao" => previsao_energia($r, $agora), "tipos" => $tipos, "leituras" => $leituras,
         "medicoes" => medicoes_legivel($id), "medicao_janela_dias" => max(1, (int)cfg("medicao_janela_dias")),

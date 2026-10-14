@@ -2975,7 +2975,8 @@ function tipos_de_aviso()
 }
 
 // O que um relógio mostra na tela e nas mensagens: a energia (e de onde ela vem), se está em uso e desde quando, a última
-// vez no pulso, a situação (as sessões abertas e a autonomia restante) e a próxima manutenção (o aviso mais perto)
+// vez no pulso, a situação (as sessões abertas e a autonomia restante), a próxima manutenção (o aviso mais perto, sem o
+// Encostado: ele tem coluna própria) e o próprio Encostado
 function visao_relogio($r, $agora)
 {
     $id = (int)$r["id"];
@@ -3037,12 +3038,27 @@ function visao_relogio($r, $agora)
         $situacao[] = t("Autonomia restante {1}", [1 => duracao_texto((float)$autonomia / 86400) !== "" ? duracao_texto((float)$autonomia / 86400) : "esgotada"]);
     }
     $avisos = avisos_do_relogio($r, $agora);
-    $prox = count($avisos) > 0 ? $avisos[0] : null;
+    // o Encostado não é manutenção: não entra na próxima manutenção nem no "o que fazer"; a tabela tem a coluna dele
+    $encostado = null;
+    $manut = [];
+    foreach ($avisos as $a) {
+        if ($a["identificador"] === "encostado") {
+            $encostado = $a;
+        } else {
+            $manut[] = $a;
+        }
+    }
+    $prox = count($manut) > 0 ? $manut[0] : null;
+    $falta_de = function ($a) {
+        return ($a["falta_dias"] < 0 ? t("atrasado ") : "") . (duracao_texto($a["falta_dias"]) !== "" ? duracao_texto($a["falta_dias"]) : t("agora"));
+    };
     return ["energia" => is_numeric($energia) ? (int)round((float)$energia) : null, "de" => $de, "em_uso" => $pulso !== null, "pulso" => $pulso,
         "estado" => $estado, "estado_texto" => $estado_texto,
-        "texto" => $texto, "ultimo" => $pulso !== null ? $agora : $ult_pulso, "situacao" => $situacao, "abertas" => $abertas, "avisos" => $avisos,
+        "texto" => $texto, "ultimo" => $pulso !== null ? $agora : $ult_pulso, "situacao" => $situacao, "abertas" => $abertas, "avisos" => $manut,
         "prox" => $prox, "prox_momento" => $prox ? (int)strtotime($prox["data"]) : 0,
-        "prox_falta" => $prox ? ($prox["falta_dias"] < 0 ? t("atrasado ") : "") . (duracao_texto($prox["falta_dias"]) !== "" ? duracao_texto($prox["falta_dias"]) : t("agora")) : "—"];
+        "prox_falta" => $prox ? $falta_de($prox) : "—",
+        "encostado" => $encostado, "encostado_momento" => $encostado ? (int)strtotime($encostado["data"]) : 0,
+        "encostado_falta" => $encostado ? $falta_de($encostado) : "—"];
 }
 
 // Os avisos de hoje ("Hoje é dia de"): os atrasados ou em breve dos relógios disponíveis, do mais urgente ao mais distante.

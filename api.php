@@ -180,12 +180,13 @@
  *                            dos próximos 62 dias], "proximos": {os Próximos dias da página, uma página: como em recurso=proximos;
  *                            proximos_pagina=N escolhe a página}, "proxima_semana": {"segunda", "domingo", "ja_montada"}, "modos":
  *                            [{"id", "nome", "selecao", "escala_dias", "blocos": [{"id", "nome", "dias", "no_id", "um_por", "relogio_id"}]}],
- *                            "grupos": [{"id", "nome", "profundidade", "caminho"}], "avisos_nomes", "estados" (o filtro Estado),
+ *                            "grupos": [{"id", "nome", "profundidade", "caminho"}], "avisos_nomes" (o filtro O que fazer, sem o Encostado), "estados" (o filtro Estado),
  *                            "relogios": [{"id", "nome", "disponivel", "tipo" (o grupo), "em_uso", "estado" (uso, sessao, repouso ou
  *                            indisponivel), "estado_texto" ("Em uso", "No sol", "No carregador", "Em repouso", "Indisponível"),
  *                            "estado_ordem", "agora" ("No sol desde 09:12"), "carga" (%), "carga_de" (de onde
  *                            vem), "ultimo" (a última vez no pulso, em segundos), "ultimo_txt", "situacao": [linhas], "manutencao":
- *                            {"nome", "data", "momento", "falta"} (o aviso mais perto), "compra": {"data", "valor", "loja", "garantia_ate"},
+ *                            {"nome", "data", "momento", "falta"} (o aviso de manutenção mais perto, sem o Encostado), "encostado":
+ *                            {"data", "momento", "falta", "estado"} (o aviso Encostado; null sem data), "compra": {"data", "valor", "loja", "garantia_ate"},
  *                            "leitura": {"inicio", "valor", "unidade"} (a última), "de_hoje", "destaque" (é o do destaque no alto), "com_aviso",
  *                            "foto" (a versão)}], "totais":
  *                            {"relogios", "disponiveis", "em_uso", "valor"} (da coleção inteira)}
@@ -197,7 +198,7 @@
  *                            "categorias": [{"id", "nome", "documentos"}], "pasta_ok", "copia_sistema"}, "em_uso", "estado",
  *                            "estado_texto", "agora", "carga",
  *                            "carga_de", "situacao", "nota": {"nota", "conjunto_texto"}, "proxima" (a próxima entrada no plano), "proxima_ate", "escala_fim",
- *                            "compra", "manutencoes": [{"data", "nome"}], "previsao" (como em recurso=previsao), "tipos": [os lançamentos
+ *                            "compra", "encostado": {"data", "momento", "falta", "estado"} (o aviso Encostado; null sem data), "manutencoes": [{"data", "nome"}] (as 5 próximas, sem o Encostado), "previsao" (como em recurso=previsao), "tipos": [os lançamentos
  *                            do relógio: {"identificador", "nome", "formato", "unidade", "aberta": {"inicio", "rodizio", "texto"}}],
  *                            "leituras": [as 40 últimas com valor: {"inicio", "valor", "unidade", "em_uso"}], "linha_do_tempo" (as 5
  *                            linhas mais recentes), "registros", "desde"}, "campos": [o cadastro: {"identificador", "nome", "tipo",
@@ -1198,7 +1199,8 @@
  *                                    aberta: o Tirar do carregador) ou lancar (instantâneo ou leitura)
  *     avisos[].resolve.botao         o texto do botão ("Pôs no sol", "Tirou do carregador", "Informar leitura de carga", "Corda")
  *     avisos[].texto                 o motivo por extenso
- *     avisos_nomes[]                 os nomes dos avisos (o filtro "O que fazer" da tabela)
+ *     avisos_nomes[]                 os nomes dos avisos da manutenção (o filtro "O que fazer" da tabela; sem o Encostado, que tem a coluna
+ *                                    dele)
  *     fora_da_colecao                os relógios fora da coleção (desejados, vendidos, arquivados), fora da tabela: a página Desejos e o
  *                                    seletor da ficha
  *     fora_da_colecao[]              um relógio fora da coleção
@@ -1325,7 +1327,14 @@
  *     relogios[].leitura.inicio      quando (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].leitura.unidade     a unidade
  *     relogios[].leitura.valor       o valor
- *     relogios[].manutencao          o aviso mais perto; null: nenhum
+ *     relogios[].encostado           o aviso Encostado deste relógio (não entra na manutenção); null: sem data (nunca foi ao pulso e sem
+ *                                    data da compra)
+ *     relogios[].encostado.data      a data (texto AAAA-MM-DD; hoje se já passou)
+ *     relogios[].encostado.estado    atrasado (passou do limite de dias sem ir ao pulso), em_breve (vence agora) ou ok (ainda dentro do
+ *                                    prazo)
+ *     relogios[].encostado.falta     quanto falta, por extenso ("12d", "atrasado 40d")
+ *     relogios[].encostado.momento   o instante previsto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC))
+ *     relogios[].manutencao          o aviso de manutenção mais perto, sem o Encostado; null: nenhum
  *     relogios[].manutencao.data     a data (texto AAAA-MM-DD; hoje se já passou)
  *     relogios[].manutencao.falta    quanto falta, por extenso ("10h 49min", "atrasado 2d")
  *     relogios[].manutencao.momento  o instante previsto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC))
@@ -1519,7 +1528,13 @@
  *     relogio.linha_do_tempo[].texto o trecho por extenso, como a tela mostra ("em uso", "no sol", "Leitura de carga 80%")
  *     relogio.linha_do_tempo[].tipo  o identificador do tipo de lançamento que originou o trecho (pulso, sol, corda, carga...); null no
  *                                    repouso
- *     relogio.manutencoes[]          as 5 próximas manutenções (avisos)
+ *     relogio.encostado              o aviso Encostado deste relógio (o quadro Agora; não entra nas próximas manutenções); null: sem data
+ *     relogio.encostado.data         a data (texto AAAA-MM-DD; hoje se já passou)
+ *     relogio.encostado.estado       atrasado (passou do limite de dias sem ir ao pulso), em_breve (vence agora) ou ok (ainda dentro do
+ *                                    prazo)
+ *     relogio.encostado.falta        quanto falta, por extenso ("12d", "atrasado 40d")
+ *     relogio.encostado.momento      o instante previsto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC))
+ *     relogio.manutencoes[]          as 5 próximas manutenções (avisos, sem o Encostado)
  *     relogio.manutencoes[].data     a data (texto AAAA-MM-DD)
  *     relogio.manutencoes[].nome     o aviso
  *     relogio.medicao_janela_dias    a janela da média do gasto medido, em dias (a da Configuração)

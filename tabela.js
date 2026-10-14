@@ -66,6 +66,15 @@
       if (f.fazer && tr.dataset.fazer !== f.fazer) {
         ok = false;
       }
+      if (f.encostado === "sim" && tr.dataset.encostadoEstado !== "sim") {
+        ok = false;
+      }
+      if (f.encostado === "prazo" && tr.dataset.encostadoEstado !== "prazo") {
+        ok = false;
+      }
+      if (f.encostado === "sem" && tr.dataset.encostadoEstado !== "") {
+        ok = false;
+      }
       var compra = tr.dataset.compra ? new Date(tr.dataset.compra + "T00:00:00").getTime() : 0;
       if (f.compra === "sem" && compra !== 0) {
         ok = false;
@@ -99,7 +108,7 @@
         v = Number(tr.dataset[col]);
       } else if (col === "estado") {
         v = Number(tr.dataset.estado) * 100000 + Number(tr.dataset.codigo);
-      } else if (col === "carga" || col === "valor" || col === "em") {
+      } else if (col === "carga" || col === "valor" || col === "em" || col === "encostado") {
         v = tr.dataset[col] === "" ? null : Number(tr.dataset[col]);
       } else if (col === "nome") {
         v = tr.dataset.nome.toLowerCase();
@@ -234,7 +243,7 @@
 
     // linhas montadas com os dados da API (ao abrir e depois de cada lançamento, sem recarregar a página): troca as
     // linhas e reaplica a ordem e os filtros que estavam escolhidos (as opções dos filtros podem ter chegado agora)
-    // As 11 colunas sempre, em qualquer tela: quando a tabela inteira não cabe na largura que tem (celular, tablet, o
+    // As 12 colunas sempre, em qualquer tela: quando a tabela inteira não cabe na largura que tem (celular, tablet, o
     // painel aberto ao lado), cada relógio vira um cartão com todos os campos (estilo.css, .em-cartoes). A conta é com
     // todos os relógios à mostra, para um filtro não trocar a forma da lista; tudo no mesmo quadro, sem piscar
     var rolagem = document.getElementById("rolagem-relogios");

@@ -647,7 +647,7 @@ Os avisos do cadastro inicial, com o identificador (o nome deles nas fórmulas, 
 | Trocar a pilha | `pilha` | Pilha | a Troca de pilha |
 | Revisão | `revisao` | Tradicional | a Revisão |
 | Garantia vencendo | `garantia` | todos | (nada: só avisa) |
-| Encostado | `encostado` | todos (os da coleção, disponíveis) | o Pôs no pulso. Vence quando o relógio passa do limite de dias sem ir ao pulso (a Configuração, **Aviso Encostado: dias sem ir ao pulso**, padrão 30), contados da última vez no pulso (sem nunca ter ido, da data da compra; sem as duas, não avisa). |
+| Encostado | `encostado` | todos (os da coleção, disponíveis) | o Pôs no pulso. Vence quando o relógio passa do limite de dias sem ir ao pulso (a Configuração, **Aviso Encostado: dias sem ir ao pulso**, padrão 30), contados da última vez no pulso (sem nunca ter ido, da data da compra; sem as duas, não avisa). Não entra na próxima manutenção nem no **O que fazer**: a tabela tem a coluna **Encostado**, com quanto falta ou quanto passou. |
 
 Os avisos vão no alerta da manhã. Um aviso marcado **na hora** (em **Cadastros › Avisos**, a caixa *na hora*) vai também pelo
 Telegram **no minuto em que vence**, uma vez só, até ser resolvido: é assim que o **Tirar do carregador** chega quando a bateria
@@ -821,10 +821,10 @@ Cadastre alguns relógios em **Hoje → Novo relógio**. Para montar a escala se
 
 ## As telas
 
-![A coleção: cada relógio com o tipo, o estado, a carga, a última vez no pulso, a próxima manutenção e o que fazer](docs/telas/colecao.png)
+![A coleção: cada relógio com o tipo, o estado, a carga, a última vez no pulso, a próxima manutenção, o que fazer e se está encostado](docs/telas/colecao.png)
 
-<sub>A tabela da coleção, na página Hoje: tipo, estado, carga ou reserva agora, última vez no pulso, próxima manutenção e o
-que fazer, com filtros em cada coluna e o total gasto na coleção.</sub>
+<sub>A tabela da coleção, na página Hoje: tipo, estado, carga ou reserva agora, última vez no pulso, próxima manutenção, o
+que fazer e a coluna Encostado, com filtros em cada coluna e o total gasto na coleção.</sub>
 
 ![A linha do tempo de um smartwatch: as sessões no pulso, o repouso e as leituras de carga](docs/telas/historico.png)
 
@@ -834,7 +834,7 @@ porcentagem em cada estado.</sub>
 ![No celular: a página Hoje, a lista dos relógios em cartões e o painel de um relógio em tela cheia](docs/telas/celular.png)
 
 <sub>No celular: o menu fica recolhido numa barra, as tabelas viram cartões (nada passa da largura da tela, e nenhum campo
-some: cada cartão de relógio traz as 11 colunas da tabela) e o painel do relógio abre em tela cheia; o "voltar" do aparelho fecha
+some: cada cartão de relógio traz as 12 colunas da tabela) e o painel do relógio abre em tela cheia; o "voltar" do aparelho fecha
 o painel.</sub>
 
 **Celular, tablet e computador**, com o mesmo visual:
@@ -845,11 +845,11 @@ o painel.</sub>
 | de 901 a 1199 px (tablet deitado, notebook pequeno) | o menu na barra; o relógio aberto "ao lado da lista" desliza por cima, pela direita, com o fundo escurecido, em vez de espremer a lista |
 | 1200 px ou mais (computador) | o painel ao lado da lista (ou a janela flutuante, conforme a Configuração) |
 
-**A mesma informação em todos.** A tabela dos relógios tem sempre as 11 colunas (código, relógio, tipo, estado, carga, última
-vez usado, próxima manutenção, em, o que fazer, comprado em e valor), os 10 filtros e a ordem por qualquer coluna, no
+**A mesma informação em todos.** A tabela dos relógios tem sempre as 12 colunas (código, relógio, tipo, estado, carga, última
+vez usado, próxima manutenção, em, o que fazer, encostado, comprado em e valor), os 11 filtros e a ordem por qualquer coluna, no
 computador, no tablet e no celular; nada é escondido por falta de espaço. Quando a tabela inteira cabe na largura que ela tem de
 verdade (com ou sem o painel aberto ao lado), ela aparece como tabela, e o texto de uma célula quebra linha só se precisar.
-Quando não cabe, cada relógio vira um cartão com os mesmos 11 campos, na mesma ordem, cada um com o nome da coluna em cima
+Quando não cabe, cada relógio vira um cartão com os mesmos 12 campos, na mesma ordem, cada um com o nome da coluna em cima
 (em duas colunas no celular, em cinco no tablet), os títulos viram os botões de **Ordenar por** e os filtros ficam todos, com o
 nome em cima. A troca é medida com os dados de verdade (um nome comprido ou um valor alto contam), e não pela largura da tela.
 Os **Próximos dias** também mostram todos os dias da escala em qualquer tela.

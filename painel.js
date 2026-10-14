@@ -220,6 +220,7 @@ function abrirNoPainel(id) {
           + el("strong", {}, "~" + r.carga + "%")) + el("small", {}, h(r.carga_de))
         : nada(r.carga_de);
       var blocos = quadro(t("Agora"), pares([[t("Estado"), el("span", {"class": "estado estado-" + (r.estado)}, h(r.agora))], [t("Carga"), carga]]
+        .concat(r.encostado ? [[t("Encostado"), el("span", {"class": r.encostado.estado !== "ok" ? "em atrasado" : ""}, h(r.encostado.falta))]] : [])
         .concat(r.situacao.map(function (l, i) { return [i === 0 ? t("Situação") : "", h(l)]; }))
         .concat(ultima ? [[t("Última leitura"), num(ultima.valor, 1) + h(ultima.unidade) + " " + el("small", {}, dataBr(ultima.inicio, true) + " " + horaBr(ultima.inicio))]] : [])));
       if (r.previsao.aplica) {
