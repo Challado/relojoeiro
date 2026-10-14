@@ -1383,3 +1383,7 @@ form.excluir-conjunto button.discreto { white-space: normal; text-align: left; }
   table.tabela-dados td.valor.texto { min-width: 0; }
   table.tabela-dados th { letter-spacing: 0; }
 }
+/* a legenda do gráfico da carga: pares rótulo/valor, menores; os dois pontos lado a lado (ou um embaixo do outro, se não couber) */
+dl.pares.legenda-grafico { font-size: .85rem; margin-top: .2rem; }
+dl.pares.legenda-grafico dt, dl.pares.legenda-grafico dd { padding-top: .25rem; padding-bottom: .25rem; }
+.legenda-ponto { display: inline-block; margin-right: .9rem; white-space: nowrap; }
