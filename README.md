@@ -176,6 +176,172 @@ a valer nas previsões, e o histórico mostra a bateria perdendo fôlego com o t
 
 ---
 
+## O cadastro de cada relógio, campo por campo
+
+Todo relógio tem **nome**, **grupo**, **disponível** e **foto**. O resto são **campos**, e quais campos um relógio tem depende
+do **grupo** dele: tudo o que é cadastrado num grupo vale para ele e para todos os grupos abaixo. É por isso que "ser
+automático" não é uma marcação à parte: é estar no grupo **Automático** (ou num subgrupo dele), e com isso herdar os campos de
+pulso e de winder.
+
+```text
+(todos os relógios)       Observação, Sua nota, Compra, Garantia, Limite de carga
+├── Smartwatch            Autonomia em uso real, Decaimento em uso, Decaimento guardado
+└── Tradicional           Última revisão, Revisão a cada
+    ├── Mecânico          Reserva de marcha, Aceita corda pela coroa
+    │   ├── Automático    No pulso: horas / reserva, No winder: horas / reserva
+    │   └── Corda manual  (nada a mais: no pulso ele não se carrega)
+    └── Quartzo
+        ├── Pilha         Última troca de pilha, Vida da pilha
+        └── Solar         Reserva de energia, Sol direto para encher
+```
+
+Campo vazio vale o **padrão** do cadastro (a coluna "vazio" nas tabelas abaixo). Os campos, os grupos e os padrões são
+cadastro, não código: dá para mudar tudo na página **Cadastros**, e criar os seus.
+
+### O básico do relógio
+
+| Campo | O que é |
+|---|---|
+| **Nome** | como ele aparece em todo lugar: na tela, no Telegram e na agenda. |
+| **Grupo** | o lugar dele na árvore. Decide os campos, as fórmulas (a "carga" de um smartwatch é a bateria; a de um mecânico, a reserva de marcha) e os avisos que ele recebe. |
+| **Disponível** | desmarcado, ele sai do rodízio e dos avisos (no conserto, emprestado, vendido), mas o histórico fica. |
+| **Foto** | só para a tela. |
+
+### Todos os relógios
+
+| Campo | Vazio | O que é e para que serve |
+|---|---|---|
+| **Observação** | | Texto livre. Não entra em nenhuma conta. |
+| **Sua nota para o relógio (0 a 100)** | 50 | O quanto você gosta dele. Entra no critério *Preferência* (peso 20 no conjunto de todos os relógios): nota maior, mais chance no sorteio. |
+| **Data da compra** | | Entra no critério *Novidade e valor*: o relógio recém-chegado sobe no sorteio (até 15 dias: nota 100; depois de um ano: 30), para você aproveitar a novidade. |
+| **Valor pago** (R$) | | Também no critério *Novidade e valor* (*aproveitar o investimento*): o mais caro sobe um pouco (até R$ 300: nota 30; acima de R$ 1.500: 90). |
+| **Onde comprou** | | Texto, mostrado no quadro Compra. Não entra em conta. |
+| **Garantia até** | | Data. O aviso *"Garantia vencendo"* sai 30 dias antes. |
+| **Avisar quando a carga chegar a** (%) | o geral | O **limite de carga** deste relógio: o ponto em que sai o aviso de carregar (smartwatch), de pôr no sol (solar) ou de dar corda/pôr no winder (mecânico). Vazio, vale o geral do tipo: no smartwatch, o da Configuração (*"Carregar quando a carga estimada chegar a"*, 20%); no solar, o do solar na Configuração (70%); no mecânico, 0% (a reserva acabando). Veja [Os avisos de carga](#os-avisos-de-carga). |
+
+### Smartwatch
+
+A "carga" do smartwatch é a bateria, em %. O sistema não lê a bateria do relógio: ela é **estimada** a partir da última
+**leitura de carga** que você lançou, descontando o que ele gastou desde então (no pulso e guardado). Sem nenhuma leitura, a
+carga fica desconhecida.
+
+| Campo | Vazio | O que é e para que serve |
+|---|---|---|
+| **Autonomia em uso real** (dias) | 5 | Quantos **dias de uso** a bateria cheia aguenta no seu uso de verdade (não o do fabricante). Dá o gasto em uso: 100 ÷ autonomia. Com 1,5 dia, o gasto é 66,7% por dia de uso. Também decide quantos dias seguidos ele fica na escala inteligente (o que a bateria aguenta, de 1 a 7). |
+| **Decaimento em uso** (% por dia) | 100 ÷ autonomia | O gasto em uso, direto. Preenchido, vale no lugar da conta pela autonomia. |
+| **Decaimento guardado** (% por dia) | 0,1 | Quanto ele perde desligado na gaveta. |
+
+Dois detalhes que mudam a conta:
+
+- **"Dia de uso" é o horário de uso da Configuração** (das 7h às 22h: 15 horas), não 24 horas. Quem usa das 7h às 22h e tem
+  66,7% por dia de uso gasta 4,4% por hora no pulso.
+- **As suas leituras mandam.** Quando há medições do gasto (veja [Gasto medido pelas leituras](#gasto-medido-pelas-leituras)),
+  elas valem no lugar dos dois decaimentos. A ordem é: **o medido, senão o informado, senão a conta pela autonomia**. O painel
+  do relógio mostra qual está valendo e de onde veio.
+
+Exemplo: a última leitura foi 89% às 23h58 de ontem, e desde então ele ficou guardado por 1,9 dia com 0,1% por dia. A carga
+agora é 89 − 0,19 = **88,8%**. Se você puser no pulso agora, com 66,7% por dia de uso, ele chega a 20% em
+(88,8 − 20) ÷ 66,7 = 1 dia de uso; guardado, em (88,8 − 20) ÷ 0,1 = 688 dias.
+
+### Tradicional (todos os que não são smartwatch)
+
+| Campo | Vazio | O que é e para que serve |
+|---|---|---|
+| **Última revisão** | | Data da última revisão no relojoeiro. Um lançamento de *Revisão* mais recente vale no lugar. |
+| **Revisão a cada** (meses) | | O intervalo entre revisões (um mecânico costuma ser a cada 4 ou 5 anos: 48 ou 60). O aviso *"Revisão"* sai 30 dias antes e vai para a agenda. Vazio: nenhum aviso. |
+
+### Mecânico (automático e corda manual)
+
+A "carga" do mecânico é a **reserva de marcha que sobra**, em horas (e em %, da reserva cheia).
+
+| Campo | Vazio | O que é e para que serve |
+|---|---|---|
+| **Reserva de marcha** (h) | 40 | Quanto tempo o relógio **anda sozinho, com a corda cheia, até parar**: o tanque dele. Vem na especificação do calibre (*power reserve*): Orient F6922, ~40 h; Seiko 4R35, ~41 h; Tissot Powermatic 80, ~80 h. É o **100%** do relógio. Parado (guardado), a reserva perde **1 hora a cada hora**: cheio às 20h com 40 h de reserva, ele para às 12h de dois dias depois. |
+| **Aceita corda pela coroa** | sim | Se dá para dar corda girando a coroa. **Sim**: o relógio tem o botão **Corda** (que enche a reserva) e recebe o aviso *"Dar corda"*. **Não** (alguns Seiko 5 e Orient mais antigos): sem botão de corda, e o aviso é *"Pôr no winder"*. Não desmarque num relógio do grupo Corda manual: o aviso de winder só existe no grupo Automático, e ele ficaria sem aviso nenhum. |
+
+### Automático
+
+O automático tem um **rotor** que gira com o movimento do braço e dá corda sozinho. Estes campos dizem **quanto de corda o
+braço (e o winder) dá**, em forma de proporção: *"tantas horas aqui me dão tantas horas de reserva"*.
+
+| Campo | Vazio | O que é e para que serve |
+|---|---|---|
+| **No pulso: horas de uso** | 8 | Um tempo de uso no braço... |
+| **No pulso: reserva que essas horas dão** (h) | 36 | ...e quanto de reserva esse tempo dá. Com 8 h e 36 h: cada hora no pulso soma 36 ÷ 8 = **4,5 h** de reserva. |
+| **No winder: horas** | o do pulso | O mesmo, no winder (a caixa que gira o relógio)... |
+| **No winder: reserva que essas horas dão** (h) | o do pulso | ...e quanto de reserva esse tempo no winder dá. Com 4 h e 40 h: 10 h de reserva por hora de winder. Vazios, vale a proporção do pulso. |
+
+Como a conta anda, com os padrões (reserva de 40 h, 8 h de pulso dando 36 h):
+
+| O que aconteceu | Reserva |
+|---|---|
+| Parado há dias | 0 h (parado) |
+| Usou das 8h às 12h (4 h × 4,5) | 18 h |
+| Guardou das 12h às 20h (−8 h) | 10 h |
+| Usou o dia todo, das 7h às 22h (15 h × 4,5 = 67 h, mas o máximo é a reserva) | 40 h (cheio) |
+| Deu corda | 40 h (cheio) |
+
+**Por que dois números em vez de um?** Porque é assim que se percebe na prática: *"usei um dia de trabalho e ele aguentou até
+o dia seguinte à tarde"*. E porque o quanto o braço dá de corda depende de você: quem mexe muito o braço dá mais corda, quem
+passa o dia sentado dá menos. Vale ajustar para o seu uso.
+
+**Como achar os seus números:**
+
+- **Reserva de marcha:** pela especificação do calibre, ou medindo: dê corda cheia (ou deixe bem carregado), deixe parado e
+  anote quanto tempo ele anda até parar.
+- **Pulso:** comece com o relógio parado, use por algumas horas e anote quantas, tire e anote quanto tempo ele ainda anda. Usou
+  6 h e ele andou mais 24 h depois: cadastre **6** e **24**.
+- **Winder:** o mesmo, com o relógio parado: X horas no winder, tire e veja quanto tempo ele anda. Depende da programação do
+  winder (voltas por dia e sentido).
+
+### Corda manual
+
+Não tem campos a mais, e é isso que o diferencia do automático: **no pulso ele não se carrega**. A reserva só desce (1 h por
+hora, no braço ou na gaveta) e só enche com a **corda**. O aviso *"Dar corda"* sai mesmo com ele no pulso.
+
+### Quartzo › Pilha
+
+A "carga" da pilha é a **vida que sobra**, em % da vida inteira.
+
+| Campo | Vazio | O que é e para que serve |
+|---|---|---|
+| **Última troca de pilha** | | Quando a pilha foi trocada. Um lançamento de *Troca de pilha* mais recente vale no lugar. |
+| **Vida da pilha** (meses) | 24 | Quanto dura uma pilha nesse relógio. A pilha vence na última troca + a vida; o aviso *"Trocar a pilha"* sai 30 dias antes e vai para a agenda. |
+
+### Quartzo › Solar
+
+A "carga" do solar é a **carga de luz**, em %. Enquanto você não registrar nenhuma sessão no sol, ela fica desconhecida.
+
+| Campo | Vazio | O que é e para que serve |
+|---|---|---|
+| **Reserva de energia** (dias) | 180 | Quanto tempo ele anda **no escuro**, de cheio até parar (a especificação diz algo como *"6 meses de reserva"*). No escuro, perde 100 ÷ 180 ≈ 0,56% por dia. |
+| **Sol direto para encher** (h) | 10 | Quantas horas de sol direto levam de vazio a cheio. Cada hora na sessão *No sol* soma 100 ÷ 10 = 10%. No pulso a carga fica parada (a luz do dia repõe o que ele gasta). |
+
+### Os avisos de carga
+
+Os avisos de carga saem quando a carga **chega ao limite de carga** do relógio (o campo *"Avisar quando a carga chegar a"*, ou
+o geral), e olham o **estado de agora**:
+
+| Tipo | Aviso | Quando sai | Enquanto carrega |
+|---|---|---|---|
+| Smartwatch | **Carregar** | a bateria chegou ao limite (20%) | — |
+| Automático que aceita corda | **Dar corda** | meio dia antes de a reserva chegar ao limite (0%: parar) | no pulso ou no winder: sem aviso |
+| Automático sem corda pela coroa | **Pôr no winder** | meio dia antes de a reserva chegar ao limite | no pulso ou no winder: sem aviso |
+| Corda manual | **Dar corda** | meio dia antes de a reserva chegar ao limite | (ele não carrega no pulso: avisa) |
+| Solar | **Pôr no sol** | a luz chegou ao limite (70%) | no sol: sem aviso |
+| Pilha | **Trocar a pilha** | 30 dias antes de a pilha vencer | — |
+
+A data de cada aviso aparece no painel como **Próxima manutenção**. No smartwatch ela é calculada pelo gasto do estado de
+agora: no pulso, pelo gasto em uso; guardado, pelo gasto guardado. E a escala inteligente, que simula os dias de uso, anota no
+plano o que fazer antes (*"carregar antes de usar"*, *"dar corda"*) quando o relógio escolhido vai chegar ao limite no dia dele.
+
+Todos esses avisos são cadastro (página **Cadastros → Avisos**): a fórmula da data, a antecedência, o texto e o lançamento que
+resolve. Também estão lá o *"Informar a carga"* (pede uma leitura depois de 3 dias sem nenhuma; vem ligado, e o **3** da
+fórmula é o número de dias) e o *"Carga baixa"* (o smartwatch guardado chegando ao limite; vem desligado, porque o *"Carregar"*
+já cobre esse caso).
+
+---
+
 ## Um dia com o Relógios 2
 
 | Quando | O que acontece |
