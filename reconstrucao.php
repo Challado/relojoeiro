@@ -169,8 +169,9 @@ const RECONSTRUCAO_TELAS = [
                 . "Erro ao ler: \"Não consegui ler <o quê>: <motivo>\" em âmbar, no lugar da página.",
             "Fotos reduzidas no navegador antes de enviar: no máximo 1200px no lado maior, JPEG 85%, com a prévia na tela; imagem "
                 . "que não abre: alerta \"Não consegui abrir essa imagem. Use JPEG ou PNG.\".",
-            "A foto do relógio ampliada: duplo clique em qualquer foto dele (a do painel, a do \"Hoje é dia de\", a miniatura da "
-                . "lista, a do histórico; o cursor é a lupa de ampliar) abre por cima de tudo uma janela flutuante: fundo "
+            "A foto do relógio ampliada, só no detalhe do relógio (o painel, ou a ficha): duplo clique na foto (o cursor é a lupa "
+                . "de ampliar) ou o botão \"Abrir foto\" embaixo dela abre por cima de tudo uma janela flutuante (nas outras fotos, como a "
+                . "do \"Hoje é dia de\" e as miniaturas da lista, o clique abre o relógio e o duplo clique não faz nada a mais): fundo "
                 . "rgba(10,14,20,.82) na tela inteira, a foto no meio, no tamanho dela (os pixels da imagem em px da página), cantos 6px, "
                 . "fundo branco e sombra; maior que a área que se vê, em escala, sem deformar: a escala é o menor entre 1, (largura − "
                 . "32px) ÷ a largura da foto e (altura − 72px) ÷ a altura da foto, com a largura e a altura sendo o menor entre o monitor "
@@ -332,10 +333,13 @@ const RECONSTRUCAO_TELAS = [
                 ["titulo" => "O painel do relógio (à direita, flutuante ou em tela cheia)", "itens" => [
                     "Um botão redondo \"×\" no canto (no celular \"× Fechar\") fecha o painel; Esc também. O endereço vira "
                         . "index.php?r=<id>.",
-                    "Cabeça: a foto (ou \"Sem foto\") com os botões \"Escolher foto\" / \"Trocar foto\" (abre o seletor de arquivo; "
-                        . "escolhida, aparece a prévia e o botão \"Salvar foto\": relogio foto) e, com foto, \"Remover foto\" (discreto; "
-                        . "confirma \"Remover a foto?\"); ao lado \"<tipo> · <caminho no grupo>\" em cinza, o nome em h1, a observação, e as "
-                        . "etiquetas: em uso/em repouso, \"indisponível\", \"relógio de hoje\".",
+                    "Cabeça: a foto (ou \"Sem foto\"; com o mouse parado em cima, a dica relogio.dica_foto da API, em linhas: o nome, "
+                        . "o grupo e o código; o estado e a carga; a nota e o próximo dia no rodízio; a compra; e \"Duplo clique (ou "
+                        . "\"Abrir foto\", embaixo): a foto em tamanho grande.\") com os botões leves \"Abrir foto\" (só com foto: abre a foto "
+                        . "ampliada), \"Escolher foto\" / \"Trocar foto\" (abre o seletor de arquivo; escolhida, aparece a prévia e o botão "
+                        . "\"Salvar foto\": relogio foto) e, com foto, \"Remover foto\" (discreto; confirma \"Remover a foto?\"); ao lado "
+                        . "\"<tipo> · <caminho no grupo>\" em cinza, o nome em h1, a observação, e as etiquetas: em uso/em repouso, "
+                        . "\"indisponível\", \"relógio de hoje\".",
                     "Os quadros, numa grade (lado a lado onde cabem): Agora (pares: Estado (\"No carregador desde 06:30\", na cor do "
                         . "estado); Carga com a barra e \"~68%\" e de onde vem; Situação, uma linha por item; Última leitura); Previsão (só "
                         . "nos que têm leitura: as frases da API, ou \"Informe a carga atual para o sistema começar a prever.\"); Gasto da "
