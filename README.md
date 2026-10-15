@@ -249,6 +249,14 @@ A escolha dentro do bloco pode ser pela **maior nota**, por **sorteio pela nota*
 **fila** (quem está esperando há mais tempo). Com o **ciclo** ligado, um relógio só volta depois que todos os disponíveis do
 bloco passaram.
 
+**Até quando o plano vem montado.** No sorteio pelos blocos, o plano vai até domingo (no domingo, também a segunda, para o
+aviso da véspera), e a semana seguinte é sorteada quando ela começa. Para ver antes, o **Sortear de novo** tem **a próxima
+semana**, em qualquer dia: ela sai pelo modo atual, com os dias que ainda faltam desta semana contados como uso, como se você
+já tivesse usado os relógios do plano (o uso conta nos dias sem uso e na nota; a carga não, porque não se sabe se o relógio vai
+ser carregado). Cada dia é sorteado assim, com os anteriores do plano já no pulso, e por isso o relógio de segunda não volta
+na terça só por parecer parado. Depois de montada, o **Sortear de novo** refaz o plano até o fim dela, e os dias escolhidos à
+mão ficam. Na escala inteligente não há próxima semana: ela já planeja o próprio período.
+
 **De onde vem o sorteio.** Todo sorteio do sistema (o modo totalmente aleatório, o sorteio pela nota e o desempate de notas
 iguais na escala inteligente) usa números aleatórios de verdade, de fora, nesta ordem:
 
@@ -1467,7 +1475,7 @@ Em **Próximos dias** (na página Hoje) ou na página **Plano**, cada dia tem o 
 **Trocar**. Hoje, ele passa a ser o do pulso a partir de agora; num dia que vem, só aquele dia muda, e fica marcado *à mão*. Na
 escala inteligente, o plano é refeito a partir do dia trocado (os lembretes de carregar e de dar corda dos dias seguintes se
 ajustam). Num dia escolhido à mão, a mesma lista tem **voltar a sortear**. Também dá para **Sortear de novo** a partir de hoje
-ou de amanhã.
+ou de amanhã, ou montar **a próxima semana** em qualquer dia.
 
 **E se hoje eu não quiser usar relógio nenhum?**
 No quadro do relógio do dia, no alto da página Hoje, **Sem relógio hoje** (pede confirmação): o dia fica **livre**, sem

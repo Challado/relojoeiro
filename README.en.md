@@ -252,6 +252,14 @@ The choice within the block can be by the **highest score**, by **draw by score*
 by **queue** (whoever has been waiting the longest). With the **cycle** on, a watch only comes back after all the available
 ones in the block have had their turn.
 
+**How far ahead the plan is built.** In the draw by blocks, the plan goes up to Sunday (on Sunday, also Monday, for the
+day-before reminder), and the following week is drawn when it starts. To see it earlier, **Draw again** has **next week**, on
+any day: it comes out of the current mode, with the days still left this week counted as use, as if you had already worn the
+watches in the plan (the use counts in the days without use and in the score; the charge does not, because no one knows whether
+the watch will be charged). Each day is drawn this way, with the earlier days of the plan already on the wrist, which is why
+Monday's watch does not come back on Tuesday just because it looks idle. Once it is built, **Draw again** rebuilds the plan up
+to its end, and the days chosen by hand stay. On the smart schedule there is no next week: it already plans its own period.
+
 **Where the draw comes from.** Every draw in the system (the fully random mode, the draw by score and the tie-break of equal
 scores in the smart schedule) uses truly random numbers, from outside, in this order:
 
@@ -1503,7 +1511,7 @@ In **Next days** (on the Today page) or on the **Plan** page, each day has **cha
 **Change**. Today, it becomes the one on the wrist from now on; on an upcoming day, only that day changes, and it is marked
 *by hand*. In the smart schedule, the plan is rebuilt from the changed day (the charging and winding reminders of the following
 days adjust). On a day chosen by hand, the same list has **draw again**. You can also **Draw again** from today or from
-tomorrow.
+tomorrow, or build **next week** on any day.
 
 **What if today I don't want to wear any watch?**
 In the watch of the day box, at the top of the Today page, **No watch today** (it asks for confirmation): the day is left

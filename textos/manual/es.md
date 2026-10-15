@@ -1,4 +1,4 @@
-<!-- origem: c554e7429ec789b068c03c9d861c8a9f4ebe4127 -->
+<!-- origem: 815593cb524a1a15c9275900b6dda918aa3d289d -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -196,6 +196,14 @@ reloj fijo) y si es **un reloj por día** o **uno para todo el bloque**. Vienen 
 La elección dentro del bloque puede ser por la **mayor nota**, por **sorteo por la nota** (la nota se vuelve probabilidad),
 **aleatoria** o por **fila** (el que lleva más tiempo esperando). Con el **ciclo** activado, un reloj solo vuelve después de
 que todos los disponibles del bloque hayan tenido su turno.
+
+**Hasta cuándo se arma el plan.** En el sorteo por bloques, el plan llega hasta el domingo (el domingo, también el lunes,
+para el aviso de la víspera), y la semana siguiente se sortea cuando empieza. Para verla antes, **Sortear de nuevo** tiene **la
+próxima semana**, cualquier día: sale con el modo actual, con los días que aún faltan de esta semana contados como uso, como si
+ya hubiera usado los relojes del plan (el uso cuenta en los días sin uso y en la nota; la carga no, porque no se sabe si el reloj
+se va a cargar). Cada día se sortea así, con los anteriores del plan ya en la muñeca, y por eso el reloj del lunes no vuelve el
+martes solo por parecer parado. Una vez armada, **Sortear de nuevo** rehace el plan hasta su fin, y los días elegidos a mano se
+quedan. En la escala inteligente no hay próxima semana: ya planifica su propio período.
 
 **De dónde sale el sorteo.** Todo sorteo del sistema (el modo totalmente aleatorio, el sorteo por la nota y el desempate de
 notas iguales en la escala inteligente) usa números realmente aleatorios, de fuera, en este orden:
@@ -1001,7 +1009,7 @@ En **Próximos días** (en la página Hoy) o en la página **Plan**, cada día t
 en **Cambiar**. Hoy, pasa a ser el de la muñeca desde ese momento; en un día próximo, solo cambia ese día, y queda marcado
 *a mano*. En la escala inteligente, el plan se rehace a partir del día cambiado (los recordatorios de carga y cuerda de los días
 siguientes se ajustan). En un día elegido a mano, la misma lista tiene **volver a sortear**. También puede **Sortear de nuevo**
-desde hoy o desde mañana.
+desde hoy o desde mañana, o armar **la próxima semana** cualquier día.
 
 **¿Y si hoy no quiero usar ningún reloj?**
 En el cuadro del reloj del día, arriba de la página Hoy, **Sin reloj hoy** (pide confirmación): el día queda **libre**, sin

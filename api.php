@@ -511,11 +511,12 @@
  *   recurso=rodizio           modo (o quadro Modo de rodízio: modo (id), bloco_alvo[<bloco>] (0 ou o grupo; r:<id>, um relógio fixo),
  *                             bloco_cada_dia[<bloco>] (presente: um por dia), selecao, escala_dias, max_sem_uso: grava e ativa o modo;
  *                             se o dia ainda não começou no pulso, o plano novo vale já de hoje),
- *                             resortear (de amanhã até domingo; se o dia ainda não começou no pulso, também hoje), resortear_hoje
+ *                             resortear (de amanhã até domingo, ou até o fim da próxima semana, se ela já foi montada; se o dia
+ *                             ainda não começou no pulso, também hoje), resortear_hoje
  *                             (inclusive hoje: o sorteado passa a ser o do pulso a partir de agora), usando (relogio_id: o
  *                             relógio de hoje a partir de agora), trocar_dia (data, relogio_id: o relógio daquele dia, à mão;
- *                             hoje, como o usando; 0: o dia volta a ser sorteado), proxima_semana (só no domingo: a semana
- *                             seguinte inteira), periodo (de, ate: AAAA-MM-DD, de hoje até 2 anos; relogio_ids[]: um ou vários, na
+ *                             hoje, como o usando; 0: o dia volta a ser sorteado), proxima_semana (em qualquer dia: a semana
+ *                             seguinte inteira, com os dias que faltam desta já contados como uso), periodo (de, ate: AAAA-MM-DD, de hoje até 2 anos; relogio_ids[]: um ou vários, na
  *                             ordem; dias_cada (padrão 1): os dias do período ficam escolhidos à mão, cada relógio dias_cada dias
  *                             seguidos, e depois do último volta ao primeiro), periodo_sortear (de, ate, um dos dois pode faltar: sem
  *                             o de, de amanhã; sem o ate, até o último dia do plano; os dias do período, de amanhã em diante, à mão,

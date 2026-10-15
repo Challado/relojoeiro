@@ -1,4 +1,4 @@
-<!-- origem: c554e7429ec789b068c03c9d861c8a9f4ebe4127 -->
+<!-- origem: 815593cb524a1a15c9275900b6dda918aa3d289d -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -200,6 +200,15 @@ fixe) et s'il s'agit d'**une montre par jour** ou d'**une pour tout le bloc**. C
 Le choix dans le bloc peut se faire par la **meilleure note**, par **tirage selon la note** (la note devient la chance),
 **au hasard** ou par **file d'attente** (celle qui attend depuis le plus longtemps). Avec le **cycle** activé, une montre ne
 revient qu'après que toutes les disponibles du bloc ont eu leur tour.
+
+**Jusqu'à quand le plan est construit.** Dans le tirage par blocs, le plan va jusqu'à dimanche (le dimanche, aussi le lundi,
+pour le rappel de la veille), et la semaine suivante est tirée quand elle commence. Pour la voir avant, **Refaire le tirage** a
+**la semaine prochaine**, n'importe quel jour : elle sort selon le mode actuel, avec les jours qui restent cette semaine comptés
+comme utilisation, comme si vous aviez déjà porté les montres du plan (l'utilisation compte dans les jours sans utilisation et
+dans la note ; la charge non, parce qu'on ne sait pas si la montre sera chargée). Chaque jour est tiré ainsi, avec les jours
+précédents du plan déjà au poignet, et c'est pourquoi la montre du lundi ne revient pas le mardi juste parce qu'elle semble
+arrêtée. Une fois montée, **Refaire le tirage** refait le plan jusqu'à sa fin, et les jours choisis à la main restent. Dans le
+planning intelligent il n'y a pas de semaine prochaine : il planifie déjà sa propre période.
 
 **D'où vient le tirage.** Tout tirage du système (le mode entièrement aléatoire, le tirage selon la note et le départage des
 notes égales dans le planning intelligent) utilise des nombres vraiment aléatoires, venus de l'extérieur, dans cet ordre :
@@ -1034,7 +1043,8 @@ Dans **Prochains jours** (sur la page Aujourd'hui) ou sur la page **Plan**, chaq
 la montre et cliquez sur **Changer**. Aujourd'hui, elle devient celle au poignet dès maintenant ; un jour à venir, seul ce
 jour change, et il est marqué *à la main*. Dans le planning intelligent, le plan est refait à partir du jour changé (les
 rappels de charge et de remontage des jours suivants s'ajustent). Sur un jour choisi à la main, la même liste a **retirer au
-sort**. Vous pouvez aussi **Refaire le tirage** à partir d'aujourd'hui ou de demain.
+sort**. Vous pouvez aussi **Refaire le tirage** à partir d'aujourd'hui ou de demain, ou monter **la semaine prochaine**
+n'importe quel jour.
 
 **Et si aujourd'hui je ne veux porter aucune montre ?**
 Dans le cadre de la montre du jour, en haut de la page Aujourd'hui, **Jour sans montre** (demande confirmation) : le jour reste

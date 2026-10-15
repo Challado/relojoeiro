@@ -1747,10 +1747,10 @@ function op_criterios($acao, $d)
 // O rodízio. Ações: modo (o quadro Modo de rodízio da página Hoje: modo (o id do modo), bloco_alvo[<bloco>] (o grupo de
 // onde sortear, 0: todos; ou r:<id>, um relógio fixo), bloco_cada_dia[<bloco>] (presente: um relógio por dia; ausente:
 // um para o bloco; só nos blocos que vierem e fora da escala), selecao, escala_dias, max_sem_uso: grava o modo e ativa;
-// se o dia ainda não começou no pulso, o plano novo vale já de hoje), resortear (refaz o plano de amanhã até domingo; se o dia ainda não começou no pulso, também hoje),
+// se o dia ainda não começou no pulso, o plano novo vale já de hoje), resortear (refaz o plano de amanhã até domingo, ou até o fim da próxima semana, se ela já foi montada; se o dia ainda não começou no pulso, também hoje),
 // resortear_hoje (inclusive hoje: o sorteado passa a ser o do pulso a partir de agora), usando (relogio_id: este passa a
 // ser o relógio de hoje, a partir de agora), trocar_dia (data, relogio_id: o relógio daquele dia, à mão; hoje, como o
-// usando; 0: o dia volta a ser sorteado), proxima_semana (só no domingo: monta ou refaz a semana seguinte inteira),
+// usando; 0: o dia volta a ser sorteado), proxima_semana (em qualquer dia: monta ou refaz a semana seguinte inteira, com os dias que faltam desta já contados como uso),
 // periodo (de, ate, relogio_ids em ordem, dias_cada: os dias do período escolhidos à mão, em rodízio entre eles),
 // periodo_sortear (de, ate: tudo o que o período tem, de amanhã em diante, sai e ele é sorteado de novo), periodo_livre (de,
 // ate: tudo sai e os dias ficam livres: sem relógio e sem sorteio, para escolher à mão), manual (o rodízio manual: de, ate,
@@ -1837,13 +1837,19 @@ function op_rodizio($acao, $d)
     } elseif ($acao === "resortear" || $acao === "resortear_hoje") {
         $antes = plano_do_dia($hoje->format("Y-m-d"));
         $desde = ($acao === "resortear_hoje" || !$comecou) ? $hoje : $hoje->modify("+1 day");
+        // até onde o sorteio já ia (a próxima semana, se já foi montada): é refeito até lá, e não só até domingo
+        $fim_s = $escala ? null : valor("SELECT MAX(data) FROM plano WHERE data >= ? AND origem = 'sorteio'", [$desde->format("Y-m-d")]);
+        $ate_s = $hoje->modify((int)$hoje->format("N") === 7 ? "+1 day" : "sunday this week");
+        if ($fim_s !== null && (string)$fim_s > $ate_s->format("Y-m-d")) {
+            $ate_s = new DateTimeImmutable(substr((string)$fim_s, 0, 10));
+        }
         // os dias escolhidos à mão de amanhã em diante ficam (um período que você montou não some no sorteio); hoje, sorteia
         sql("DELETE FROM plano WHERE data >= ? AND (origem <> 'manual' OR data = ?)", [$desde->format("Y-m-d"), $hoje->format("Y-m-d")]);
         sql("DELETE FROM plano_livre WHERE data = ? AND data >= ?", [$hoje->format("Y-m-d"), $desde->format("Y-m-d")]);
         if ($escala) {
             gerar_escala($desde);
         }
-        garantir_plano($hoje, null, $acao !== "resortear_hoje");
+        garantir_plano($hoje, $escala ? null : $ate_s, $acao !== "resortear_hoje");
         $depois = plano_do_dia($hoje->format("Y-m-d"));
         if ($depois && (!$antes || (int)$antes["relogio_id"] !== (int)$depois["relogio_id"]) && ($acao === "resortear_hoje" || !$comecou)) {
             // o de hoje trocado pelo sorteio: o motivo é o do sorteio
@@ -2129,12 +2135,12 @@ function op_rodizio($acao, $d)
     } elseif ($acao === "proxima_semana") {
         if ($escala) {
             $erros[] = t("Na escala inteligente não há próxima semana para montar: a escala segue o próprio período (até {1}). Sortear de novo refaz a escala.", [1 => data_txt(strtotime(cfg("escala_fim")))]);
-        } elseif ((int)$hoje->format("N") !== 7) {
-            $erros[] = t("A próxima semana só se monta no domingo. Nos outros dias, sortear de novo refaz até o domingo desta semana.");
         } else {
-            $seg = $hoje->modify("+1 day");
+            // a semana que vem (no domingo, a de amanhã), em qualquer dia: o plano roda desde hoje, para que os dias que ainda
+            // faltam desta semana cheguem a ela como usados (a simulação no pulso), e só os dias dela são sorteados de novo
+            $seg = $hoje->modify("next monday");
             sql("DELETE FROM plano WHERE data BETWEEN ? AND ? AND origem <> 'manual'", [$seg->format("Y-m-d"), $seg->modify("+6 days")->format("Y-m-d")]);
-            garantir_plano($seg, $seg->modify("+6 days"));
+            garantir_plano($hoje, $seg->modify("+6 days"));
             $msg = t("Semana de {1} a {2} montada.", [1 => $seg->format("d/m"), 2 => $seg->modify("+6 days")->format("d/m")]);
         }
     }

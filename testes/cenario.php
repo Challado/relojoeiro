@@ -396,9 +396,10 @@ escrever(["recurso" => "rodizio", "acao" => "resortear_hoje"]);
 ler("plano fila", ["recurso" => "plano"]);
 escrever(["recurso" => "modos", "acao" => "ativar", "id" => $por_nome["Aleatório todo dia"] ?? 0]);
 escrever(["recurso" => "rodizio", "acao" => "resortear"]);
-if (date("N") === "7") {
-    escrever(["recurso" => "rodizio", "acao" => "proxima_semana"]);
-}
+// a próxima semana, em qualquer dia (com os dias que faltam desta já contados como uso); o sortear de novo depois vai até o fim dela
+escrever(["recurso" => "rodizio", "acao" => "proxima_semana"]);
+escrever(["recurso" => "rodizio", "acao" => "resortear"]);
+ler("plano com a próxima semana", ["recurso" => "plano"]);
 // os relógios de um período, escolhidos à mão: dois, na ordem, dois dias seguidos cada; o sortear de novo não mexe neles, e
 // depois uma parte do período é sorteada de novo e outra fica livre. Um período no passado é recusado
 $em = function ($dias) { return date("Y-m-d", strtotime("+" . (int)$dias . " days")); };
