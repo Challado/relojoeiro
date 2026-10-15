@@ -14,7 +14,8 @@
 # Depois da comparação, confere que o PHP não deu nenhum aviso (Warning, Notice, Deprecated) durante a rodada, a
 # arquitetura (testes/arquitetura.php) e a documentação: o cabeçalho do api.php é o que a ajuda gera (testes/dicionario.php), os
 # dicionários dos idiomas têm todos os textos do código (testes/textos.php) e todo
-# campo das respostas está explicado na ajuda (testes/campos.php, no servidor do primeiro banco).
+# campo das respostas está explicado na ajuda (testes/campos.php, no servidor do primeiro banco). Por último, em cada banco, o
+# isolamento entre contas (testes/isolamento.php): uma conta não vê nem muda o que é de outra pelo token pessoal.
 # LINGUA=en roda o roteiro e a conferência dos campos nesse idioma (e o layout, com --layout); TESTE_ESTRITO=1 liga o modo
 # estrito dos idiomas no servidor de teste: a tradução que falta para com erro e aparece no registro do roteiro.
 # Outras variáveis: TESTE_PORTA (a primeira porta, padrão 8101; uma por banco), RELOGIOS_TESTE_PASTA (a pasta da rodada;
@@ -173,6 +174,20 @@ if [ $LAYOUT -eq 1 ]; then
   echo "Conferência do layout no $REF:"
   if BASE="http://127.0.0.1:$PORTA0/" SAIDA="$PASTA/layout" node testes/layout.cjs; then :; else FALHOU=1; echo "    veja $PASTA/layout/agrupado.txt"; fi
 fi
+
+# o isolamento entre contas (testes/isolamento.php), em cada banco: a escrita das contas de teste vem depois da fotografia, da
+# conferência dos campos e do layout, para não mexer neles
+i=0
+for b in "${BANCOS[@]}"; do
+  if [ -f "$PASTA/$b.json" ]; then
+    if php testes/isolamento.php "http://127.0.0.1:$((PORTA0 + i))/api.php" > "$PASTA/$b.isolamento.txt" 2>&1; then
+      echo "isolamento $b: $(tail -1 "$PASTA/$b.isolamento.txt")"
+    else
+      FALHOU=1; echo "isolamento $b:"; sed 's/^/    /' "$PASTA/$b.isolamento.txt" | head -20
+    fi
+  fi
+  i=$((i + 1))
+done
 
 if [ $MANTER -eq 1 ]; then
   i=0

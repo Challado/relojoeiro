@@ -1,4 +1,4 @@
-<!-- origem: 255c473400fc71a243c73f847080bcd82a18dc3a -->
+<!-- origem: 809e9cba1b4d07551c5c984e00bd11bc15fb1b3d -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -160,7 +160,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `documento` | el archivo de un documento (`id=<id>`): para mostrar (imagen, video, audio, PDF, texto) o para descargar (el resto, o con `baixar=1`); `mini=1` es la miniatura de la foto. Atiende trozos (Range), para que el video avance |
 | `usuarios`, `migracoes` | el master: el panel de las cuentas, cada una con lo que tiene y el hash de la contraseña (para migrar con la misma contraseña: vea [Los usuarios y las contraseñas](#os-usuários-e-as-senhas)); los demás, solo su propia cuenta; las migraciones que faltan aplicar |
 | `conta`, `colecoes`, `aprovacoes` | Mi cuenta (las colecciones, los árboles, las solicitudes, los tokens, los aparatos del Web Push; `parte=menu`: solo lo del menú); las colecciones y los árboles; la página Aprobaciones |
-| `cadastro` | el registro abierto, sin login: si está abierto, las colecciones y los dueños (para pedir acceso) y la invitación (`convite=<token>`) |
+| `cadastro` | el registro abierto, sin login: si está abierto y la invitación (`convite=<token>`); ninguna lista de cuentas ni de colecciones (la solicitud de acceso es por el código que pasó el dueño) |
 | `instalacao` | la situación de la instalación: la base, si está vacía, instalada y al día, cuántos usuarios y el próximo paso. Responde también con la base vacía, con el token |
 | `backup` | la copia de seguridad de la base: si está activada, si la carpeta sirve, cuántas se guardan, la última y las copias de la carpeta; `arquivo=` descarga una |
 | `importacao` | lo que usa la importación del sistema anterior: el servidor de la base antigua (sin la contraseña), si PHP tiene MySQL y si esta base ya tiene relojes |

@@ -41,17 +41,14 @@ function formConta(d) {
     opcoes = el("input", {"type": "hidden", "name": "opcao", "value": "nenhuma"}) + el("input", {"type": "hidden", "name": "convite", "value": convite})
       + el("label", {"class": "check"}, el("input", {"type": "checkbox", "onchange": "this.form.opcao.value = this.checked ? 'modelo' : 'nenhuma'"}) + " " + t("Criar também uma coleção minha, com o conjunto inicial"));
   } else {
-    var alvos = d.colecoes.map(function (c) { return el("option", {"value": "c:" + c.id}, h(t("{1} (de {2})", {1: c.nome, 2: c.dono}))); }).join("")
-      + d.donos.map(function (o) { return el("option", {"value": "d:" + o.id}, h(t("Tudo de {1} ({2} coleções, e as que vierem)", {1: o.login, 2: o.colecoes}))); }).join("");
     opcoes = el("fieldset", {"class": "opcoes-conta"}, el("legend", {}, t("Para começar"))
       + el("label", {}, el("input", {"type": "radio", "name": "opcao", "value": "modelo", "checked": true}) + " " + t("Uma coleção minha, com o conjunto inicial (grupos, campos, fórmulas, avisos e critérios prontos)"))
       + el("label", {}, el("input", {"type": "radio", "name": "opcao", "value": "vazia"}) + " " + t("Uma coleção minha, vazia (eu monto tudo)"))
-      + (alvos !== "" ? el("label", {}, el("input", {"type": "radio", "name": "opcao", "value": "pedir"}) + " " + t("Pedir acesso à coleção de alguém")) : ""))
-      + (alvos !== "" ? el("div", {"data-pedir": true, "hidden": true}, el("input", {"type": "hidden", "name": "colecao_id", "value": ""}) + el("input", {"type": "hidden", "name": "dono_id", "value": ""})
-        + parCampo(t("Acesso a"), el("select", {"name": "alvo"}, alvos), "largo") + parCampo(t("Recado para o dono (opcional)"), el("input", {"name": "mensagem", "maxlength": "500"}), "largo")) : "");
+      + el("label", {}, el("input", {"type": "radio", "name": "opcao", "value": "pedir"}) + " " + t("Pedir acesso à coleção de alguém")))
+      + el("div", {"data-pedir": true, "hidden": true}, camposCodigoAcesso(false) + parCampo(t("Recado para o dono (opcional)"), el("input", {"name": "mensagem", "maxlength": "500"}), "largo"));
   }
   return el("section", {"class": "cartao-config"}, el("form", {"data-recurso": "cadastro", "class": "campos", "id": "form-conta",
-      "onsubmit": "if (this.alvo) { var v = this.alvo.value.split(':'); this.colecao_id.value = v[0] === 'c' ? v[1] : ''; this.dono_id.value = v[0] === 'd' ? v[1] : ''; }"},
+      "onsubmit": "acessoPorCodigo(this)"},
     el("input", {"type": "hidden", "name": "acao", "value": "criar_conta"})
     + parCampo(t("Login"), el("input", {"name": "login", "required": true, "maxlength": "60", "autocomplete": "username", "pattern": "[^:]+", "title": t("sem dois-pontos")}))
     + parCampo(t("Senha (pelo menos 6 caracteres)"), el("input", {"type": "password", "name": "senha", "required": true, "minlength": "6", "autocomplete": "new-password"}))
@@ -90,12 +87,13 @@ function montarCadastro() {
   });
 }
 
-// "Pedir acesso": mostra a escolha da coleção
+// "Pedir acesso": mostra o código (obrigatório só nessa opção)
 document.addEventListener("change", function (ev) {
   if (ev.target.name === "opcao" && ev.target.type === "radio") {
     var bloco = document.querySelector("[data-pedir]");
     if (bloco) {
       bloco.hidden = ev.target.value !== "pedir";
+      bloco.querySelector("[name=codigo]").required = ev.target.value === "pedir";
     }
   }
 });

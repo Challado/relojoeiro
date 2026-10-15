@@ -112,6 +112,14 @@ function alvo_texto($colecao_id, $dono_id)
     return $u ? t("todas as coleções de {1}", [1 => $u["login"]]) : t("um dono que não existe mais");
 }
 
+// O alvo de um pedido ainda não aprovado, para quem pediu: só o código que ele digitou ("a coleção de código 7", "todas as
+// coleções do dono de código 3"). O nome da coleção e o login do dono só aparecem depois da aprovação: quem tenta códigos ao
+// acaso não descobre quem tem conta
+function alvo_codigo($colecao_id, $dono_id)
+{
+    return $colecao_id !== null ? t("a coleção de código {1}", [1 => (int)$colecao_id]) : t("todas as coleções do dono de código {1}", [1 => (int)$dono_id]);
+}
+
 // Quem cuida de um alvo (aprova o pedido, o convite de um membro): o dono, e o master. Confere o usuário do pedido
 function cuida_do_alvo($colecao_id, $dono_id)
 {
@@ -156,16 +164,23 @@ function acesso_dar($uid, $colecao_id, $dono_id)
     });
 }
 
-// O alvo do pedido (colecao_id ou dono_id, um ou outro; o dono também pelo login: dono=<login>). [colecao_id, dono_id, erro]
-function alvo_do_pedido($d)
+// O alvo: colecao_id (uma coleção) ou dono_id (todas as coleções de um dono), um ou outro; para o master e para quem cuida das
+// próprias coleções (convites, acessos), o dono também pelo login: dono=<login>. Num pedido de acesso ($so_codigo: o pedido e o
+// cadastro), só pelo código (a chave) que o dono passou, nunca pelo login, e um erro só para o código que não serve: nada no
+// pedido diz quem tem conta. [colecao_id, dono_id, erro]
+function alvo_do_pedido($d, $so_codigo = false)
 {
     $c = (int)($d["colecao_id"] ?? 0);
     $dono = (int)($d["dono_id"] ?? 0);
-    if ($dono === 0 && trim((string)($d["dono"] ?? "")) !== "") {
+    if (!$so_codigo && $dono === 0 && trim((string)($d["dono"] ?? "")) !== "") {
         $dono = (int)sem_escopo(function () use ($d) { return valor("SELECT id FROM usuario WHERE login = ?", [trim((string)$d["dono"])]); });
     }
     if (($c > 0) === ($dono > 0)) {
-        return [null, null, t("Diga o alvo: colecao_id (uma coleção) ou dono_id (todas as coleções de um dono), um ou outro.")];
+        return [null, null, $so_codigo ? t("Diga o código: colecao_id (o código de uma coleção) ou dono_id (o código de um dono, para todas as coleções dele), um ou outro.")
+            : t("Diga o alvo: colecao_id (uma coleção) ou dono_id (todas as coleções de um dono), um ou outro.")];
+    }
+    if ($so_codigo && (($c > 0 && colecao_por_id($c) === null) || ($dono > 0 && (int)sem_escopo(function () use ($dono) { return valor("SELECT COUNT(*) FROM colecao WHERE dono_id = ?", [$dono]); }) === 0))) {
+        return [null, null, t("Nenhuma coleção com este código: confira o código que o dono passou.")];
     }
     if ($c > 0 && colecao_por_id($c) === null) {
         return [null, null, t("Coleção não encontrada.")];
@@ -335,7 +350,8 @@ function conta_consulta()
         return ["usuario" => usuario_publico($u), "vendo_como" => $real !== null ? ["login" => $u["login"], "master" => $real["login"]] : null,
             "colecoes" => colecoes_visiveis($u), "colecao" => colecao_atual(), "papel" => papel_na_colecao(),
             "arvores" => arvores_do_dono($uid),
-            "pedidos" => array_map(function ($p) { return ["id" => (int)$p["id"], "alvo" => alvo_texto($p["colecao_id"], $p["dono_id"]), "criado" => $p["criado"], "expira" => $p["expira"]]; },
+            "pedidos" => array_map(function ($p) { return ["id" => (int)$p["id"], "colecao_id" => $p["colecao_id"] !== null ? (int)$p["colecao_id"] : null,
+                "dono_id" => $p["dono_id"] !== null ? (int)$p["dono_id"] : null, "alvo" => alvo_codigo($p["colecao_id"], $p["dono_id"]), "criado" => $p["criado"], "expira" => $p["expira"]]; },
                 linhas("SELECT * FROM pedido WHERE usuario_id = ? ORDER BY criado", [$uid])),
             "convites" => array_map(function ($v) { return ["id" => (int)$v["id"], "alvo" => alvo_texto($v["colecao_id"], $v["dono_id"]), "expira" => $v["expira"]]; },
                 (string)$u["email"] !== "" ? linhas("SELECT * FROM convite WHERE email = ? AND estado = 'aprovado' ORDER BY criado", [$u["email"]]) : []),
@@ -414,20 +430,14 @@ function aprovacoes_consulta()
     });
 }
 
-// O cadastro aberto (recurso=cadastro, sem login): se está aberto, os dias da demo, as coleções e os donos (para pedir
-// acesso), os idiomas; com convite=<token>, o convite (o alvo e o e-mail)
+// O cadastro aberto (recurso=cadastro, sem login): se está aberto, os dias da demo e os idiomas; com convite=<token>, o
+// convite (o alvo e o e-mail). Nenhuma lista de contas nem de coleções: quem pede acesso digita o código que o dono passou
 function cadastro_consulta($convite)
 {
     return sem_escopo(function () use ($convite) {
         $res = ["aberto" => cadastro_aberto(), "demo_dias" => demo_dias(), "email_configurado" => email_metodo() !== null,
             "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS)),
-            "colecoes" => [], "donos" => [], "convite" => null];
-        if (cadastro_aberto()) {
-            $res["colecoes"] = array_map(function ($c) { return ["id" => (int)$c["id"], "nome" => $c["nome"], "dono" => $c["dono"]]; },
-                linhas("SELECT c.id, c.nome, u.login AS dono FROM colecao c JOIN usuario u ON u.id = c.dono_id ORDER BY u.login, c.nome"));
-            $res["donos"] = array_map(function ($d) { return ["id" => (int)$d["id"], "login" => $d["login"], "colecoes" => (int)$d["n"]]; },
-                linhas("SELECT u.id, u.login, COUNT(c.id) AS n FROM usuario u JOIN colecao c ON c.dono_id = u.id GROUP BY u.id, u.login ORDER BY u.login"));
-        }
+            "convite" => null];
         if ($convite !== null && $convite !== "") {
             $v = linha("SELECT * FROM convite WHERE token_hash = ? AND estado = 'aprovado' AND expira > ?", [token_hash($convite), date("Y-m-d H:i:s")]);
             $res["convite"] = $v ? ["email" => $v["email"], "alvo" => alvo_texto($v["colecao_id"], $v["dono_id"]), "expira" => $v["expira"],
@@ -493,7 +503,7 @@ function op_cadastro($acao, $d)
         if (!in_array($opcao, ["modelo", "vazia", "pedir", "nenhuma"], true)) {
             $erros[] = t("opcao: modelo (uma coleção com o conjunto inicial), vazia (uma coleção sem nada) ou pedir (pedir acesso a uma coleção ou a tudo de um dono).");
         } elseif ($opcao === "pedir" && $v === null) {
-            $alvo = alvo_do_pedido($d);
+            $alvo = alvo_do_pedido($d, true);
             if ($alvo[2] !== "") {
                 $erros[] = $alvo[2];
             }
@@ -518,7 +528,7 @@ function op_cadastro($acao, $d)
                 $msg .= " " . t("Você já vê {1}.", [1 => alvo_texto($v["colecao_id"], $v["dono_id"])]);
             } elseif ($opcao === "pedir") {
                 pedido_criar($uid, $alvo[0], $alvo[1], (string)($d["mensagem"] ?? ""));
-                $msg .= " " . t("Pedido de acesso enviado ({1}): quando for aprovado, a coleção aparece para você.", [1 => alvo_texto($alvo[0], $alvo[1])]);
+                $msg .= " " . t("Pedido de acesso enviado ({1}): quando for aprovado, a coleção aparece para você.", [1 => alvo_codigo($alvo[0], $alvo[1])]);
             }
             if ($expira !== null) {
                 $msg .= " " . t("É uma conta de demonstração de {1} dias: para continuar depois disso, peça ao administrador para torná-la oficial.", [1 => $dias]);
@@ -941,7 +951,7 @@ function op_pedidos($acao, $d)
     $extra = [];
     $p = isset($d["id"]) ? sem_escopo(function () use ($d) { return linha("SELECT * FROM pedido WHERE id = ?", [(int)$d["id"]]); }) : null;
     if ($acao === "pedir") {
-        [$col, $dono, $erro] = alvo_do_pedido($d);
+        [$col, $dono, $erro] = alvo_do_pedido($d, true);
         if ($erro !== "") {
             $erros[] = $erro;
         } elseif (ja_ve_alvo($uid, $col, $dono)) {
@@ -950,7 +960,7 @@ function op_pedidos($acao, $d)
             $erros[] = t("Você já pediu este acesso: espere a resposta.");
         } else {
             $extra = ["id" => pedido_criar($uid, $col, $dono, (string)($d["mensagem"] ?? ""))];
-            $msg = t("Pedido de acesso enviado ({1}): quando for aprovado, a coleção aparece para você.", [1 => alvo_texto($col, $dono)]);
+            $msg = t("Pedido de acesso enviado ({1}): quando for aprovado, a coleção aparece para você.", [1 => alvo_codigo($col, $dono)]);
         }
     } elseif (in_array($acao, ["aprovar", "recusar", "cancelar"], true)) {
         if ($p === null) {

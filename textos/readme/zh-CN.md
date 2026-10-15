@@ -1,4 +1,4 @@
-<!-- origem: 255c473400fc71a243c73f847080bcd82a18dc3a -->
+<!-- origem: 809e9cba1b4d07551c5c984e00bd11bc15fb1b3d -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -131,7 +131,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `documento` | 一个文档的文件（`id=<id>`）：用于显示（图片、视频、音频、PDF、文本）或下载（其他，或使用 `baixar=1`）；`mini=1` 是照片的缩略图。支持分段（Range），方便视频快进 |
 | `usuarios`、`migracoes` | master：账户面板，每个账户含其拥有的内容和密码哈希（用于以相同密码迁移：参见[用户与密码](#os-usuários-e-as-senhas)）；其他人只有自己的账户；尚待应用的迁移 |
 | `conta`、`colecoes`、`aprovacoes` | 我的账户（收藏、树、申请、令牌、Web Push 设备；`parte=menu`：只返回菜单用的部分）；收藏和树；审批页面 |
-| `cadastro` | 公开注册，无需登录：是否开放、收藏和所有者（用于申请访问）以及邀请（`convite=<token>`） |
+| `cadastro` | 公开注册，无需登录：是否开放以及邀请（`convite=<token>`）；没有任何账户或收藏的列表（申请访问凭所有者给出的编号） |
 | `instalacao` | 安装状态：数据库、是否为空、是否已安装并为最新、用户数量以及下一步。数据库为空时也会响应（使用令牌） |
 | `backup` | 数据库备份：是否开启、文件夹是否可用、保留多少份、最近一份以及文件夹中的备份；`arquivo=` 下载其中一份 |
 | `importacao` | 导入旧系统所用的信息：旧数据库服务器（不含密码）、PHP 是否有 MySQL，以及本数据库是否已有手表 |

@@ -162,8 +162,9 @@ coleção. A bia e o caio, cada um pelo seu token, pedem todos os recursos da AP
 php testes/isolamento.php http://127.0.0.1:8101/api.php
 ```
 
-Ainda não roda no `paridade.sh`: hoje ele acusa o `recurso=cadastro` (a página Criar conta, sem login), que lista os logins e
-os nomes das coleções para o pedido de acesso, e isso espera uma decisão.
+Ele confere também o pedido de acesso, que é pelo código (o id) que o dono passa: a bia e o caio pedem acesso à coleção e a
+tudo da ana pelo código, e nem a resposta nem a lista dos pedidos deles mostram o nome da coleção ou o login dela; e a página
+Criar conta, sem login, não lista contas nem coleções. O `paridade.sh` o roda em cada banco, no fim (leva uns 10 segundos).
 
 # No GitHub, a cada push
 

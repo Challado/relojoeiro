@@ -636,16 +636,16 @@ function reconstrucao_telas()
             ],
             "partes" => [
                 ["titulo" => t('Coleções'), "itens" => [
-                    t('Tabela Coleção, Dono, Você é (sua, membro, master) e as ações: "Abrir" (grava o cookie colecao) ou "aberta"; nas suas, "Renomear" (abre o nome e "Salvar") e "Excluir" (mostra o que sai junto); nas dos outros, "Sair". Sem nenhuma: o aviso âmbar "Você ainda não vê nenhuma coleção: crie uma aqui embaixo, ou peça acesso à de alguém (e espere a aprovação)." Embaixo, "Nova coleção": Nome, Começa (com o conjunto inicial; vazia; com uma árvore minha que já existe, que abre a escolha da Árvore) e "Criar coleção" (a nova passa a ser a do menu).'),
+                    t('Tabela Coleção, Código (o id, que o dono passa a quem quer pedir acesso), Dono, Você é (sua, membro, master) e as ações: "Abrir" (grava o cookie colecao) ou "aberta"; nas suas, "Renomear" (abre o nome e "Salvar") e "Excluir" (mostra o que sai junto); nas dos outros, "Sair". Sem nenhuma: o aviso âmbar "Você ainda não vê nenhuma coleção: crie uma aqui embaixo, ou peça acesso à de alguém (e espere a aprovação)." Embaixo da tabela, a nota "Para alguém pedir acesso a uma coleção sua, passe o código dela...". Depois, "Nova coleção": Nome, Começa (com o conjunto inicial; vazia; com uma árvore minha que já existe, que abre a escolha da Árvore) e "Criar coleção" (a nova passa a ser a do menu).'),
                 ]],
                 ["titulo" => t('Árvores de grupos'), "itens" => [
                     t('Só quando há: a explicação ("A árvore guarda os grupos e o cadastro deles... Uma árvore pode servir a várias coleções suas: o que muda nela vale para todas.") e a tabela Árvore, Grupos, Usada por, com "Renomear ou copiar" (o nome e "Renomear"; "Cópia de <nome>" e "Copiar") e "Excluir" (mostra as coleções que saem junto).'),
                 ]],
                 ["titulo" => t('Pedir acesso'), "itens" => [
-                    t('Os pedidos esperando (O quê, Pedido em, Vence em, "Cancelar"), quantos convites há para o seu e-mail ("aceite pelo link que chegou nele"), e o formulário: Acesso a (cada coleção dos outros, "<nome> (de <dono>)", e "Tudo de <dono> (N coleções, e as que vierem)"), Recado para o dono e "Pedir acesso". A nota "O dono (ou o administrador) aprova...".'),
+                    t('Os pedidos esperando (O quê, Pedido em, Vence em, "Cancelar"), quantos convites há para o seu e-mail ("aceite pelo link que chegou nele"), e o formulário: Acesso a ("uma coleção (o código da coleção)" ou "todas as coleções de um dono (o código do dono)"), Código (número), a nota "Peça o código ao dono...", Recado para o dono e "Pedir acesso". Nenhuma lista de contas nem de coleções; os pedidos esperando mostram só o código ("a coleção de código 7") até a aprovação. A nota "O dono (ou o administrador) aprova...".'),
                 ]],
                 ["titulo" => t('Seus dados'), "itens" => [
-                    t('Login, os selos master e demonstração, desde quando; na demonstração, o aviso âmbar "Conta de demonstração: vence em N dias (data)..."; o formulário E-mail, Idioma (O da coleção e os seis), Senha atual (só para trocar a senha), Senha nova, a nota e "Salvar".'),
+                    t('Login, os selos master e demonstração, desde quando e "seu código: N" (o id, para pedirem acesso a todas as suas coleções); na demonstração, o aviso âmbar "Conta de demonstração: vence em N dias (data)..."; o formulário E-mail, Idioma (O da coleção e os seis), Senha atual (só para trocar a senha), Senha nova, a nota e "Salvar".'),
                 ]],
                 ["titulo" => t('Tokens de API'), "itens" => [
                     t('A explicação (cabeçalho X-Api-Token; vale como o seu login; só aparece ao criar); o token recém-criado numa caixa tracejada em fonte fixa (para copiar); a tabela Nome, Criado em, Último uso e "Revogar"; o formulário com o nome ("onde vai usar") e "Criar token".'),
@@ -694,7 +694,7 @@ function reconstrucao_telas()
             ],
             "partes" => [
                 ["titulo" => t('Tudo'), "itens" => [
-                    t('A página pública: sem menu (só o idioma), sem login. Normal: h1 "Criar conta", o formulário Login (sem dois-pontos), Senha, E-mail (largo), Idioma, "Para começar" (Uma coleção minha, com o conjunto inicial; Uma coleção minha, vazia; Pedir acesso à coleção de alguém, que abre Acesso a e Recado), a nota da demonstração ("A conta nova é de demonstração por N dias...") e "Criar conta"; "Já tem conta? Entrar"; e "Esqueci a senha" (o e-mail ou o login e "Mandar o link"; sem e-mail no servidor, a nota). Cadastro fechado: o aviso âmbar. Com convite: "Você foi convidado para ver <alvo>.", "Já tem conta? Entre e aceite o convite" (conta.php?convite=...) e, se o e-mail não tem conta, o formulário com o e-mail já preenchido e a caixa "Criar também uma coleção minha". Com o link da senha: "Senha nova" e "Trocar a senha". Depois de criar ou trocar: "Pronto", a mensagem e o botão "Entrar".'),
+                    t('A página pública: sem menu (só o idioma), sem login. Normal: h1 "Criar conta", o formulário Login (sem dois-pontos), Senha, E-mail (largo), Idioma, "Para começar" (Uma coleção minha, com o conjunto inicial; Uma coleção minha, vazia; Pedir acesso à coleção de alguém, que abre Acesso a, Código e Recado, como em Minha conta: pelo código que o dono passou, sem nenhuma lista de contas), a nota da demonstração ("A conta nova é de demonstração por N dias...") e "Criar conta"; "Já tem conta? Entrar"; e "Esqueci a senha" (o e-mail ou o login e "Mandar o link"; sem e-mail no servidor, a nota). Cadastro fechado: o aviso âmbar. Com convite: "Você foi convidado para ver <alvo>.", "Já tem conta? Entre e aceite o convite" (conta.php?convite=...) e, se o e-mail não tem conta, o formulário com o e-mail já preenchido e a caixa "Criar também uma coleção minha". Com o link da senha: "Senha nova" e "Trocar a senha". Depois de criar ou trocar: "Pronto", a mensagem e o botão "Entrar".'),
                 ]],
             ],
         ],
@@ -868,6 +868,7 @@ function reconstrucao_codigo()
     "testes/config.teste.php" => ["testes", t('o config dos testes (o acesso aos bancos pelo ambiente), apontado por RELOGIOS_CONFIG: o config.php de verdade fica intocado')],
     "testes/dicionario.php" => ["testes", t('gera o dicionário dos campos do cabeçalho do api.php a partir do da ajuda (a fonte única), e confere que batem')],
     "testes/campos.php" => ["testes", t('confere que todo campo das respostas da API está explicado no dicionário da ajuda')],
+    "testes/isolamento.php" => ["testes", t('confere que uma conta não vê nem muda o que é de outra pelo token pessoal (todos os recursos, com os ids da outra) e que o pedido de acesso pelo código não mostra login nem nome de coleção')],
     "testes/layout.cjs" => ["testes", t('a conferência do layout: todas as telas num navegador, em 15 tamanhos, com dados de estresse, procurando o que quebra')],
     "testes/README.md" => ["testes", t('como rodar o teste de paridade e a conferência do layout')],
     "README.md" => ["documentacao", t('o manual inteiro: para quem usa, a instalação, a API e como é por dentro')],

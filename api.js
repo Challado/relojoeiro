@@ -495,6 +495,24 @@ function parCampo(rotulo, controle, tipo) {
   return el("label", {"class": "par-campo" + (tipo ? " " + tipo : "")}, el("span", {"class": "rotulo"}, h(rotulo)) + el("span", {"class": "controle"}, controle));
 }
 
+// O pedido de acesso pelo código (a Criar conta e a Minha conta): o código que o dono passou, de uma coleção ou do dono (todas
+// as coleções dele). Nenhuma lista de contas nem de coleções: quem pede não vê quem tem conta. O acessoPorCodigo, no envio do
+// formulário, passa o código para o colecao_id ou o dono_id
+function camposCodigoAcesso(obrigatorio) {
+  return el("input", {"type": "hidden", "name": "colecao_id", "value": ""}) + el("input", {"type": "hidden", "name": "dono_id", "value": ""})
+    + parCampo(t("Acesso a"), el("select", {"name": "tipo_codigo"}, el("option", {"value": "c"}, t("uma coleção (o código da coleção)"))
+      + el("option", {"value": "d"}, t("todas as coleções de um dono (o código do dono)"))), "largo")
+    + parCampo(t("Código"), el("input", {"type": "number", "name": "codigo", "min": "1", "step": "1", "inputmode": "numeric", "required": !!obrigatorio}))
+    + el("p", {"class": "nota"}, t("Peça o código ao dono: ele aparece em Minha conta, na coleção (o código dela) e em Seus dados (o código dele, para todas as coleções)."));
+}
+
+function acessoPorCodigo(form) {
+  if (form.codigo) {
+    form.colecao_id.value = form.tipo_codigo.value === "c" ? form.codigo.value : "";
+    form.dono_id.value = form.tipo_codigo.value === "d" ? form.codigo.value : "";
+  }
+}
+
 // O menu de quem entrou (recurso=conta, parte=menu; não na página pública do cadastro): o seletor da coleção (com mais de
 // uma: grava o cookie colecao e abre a página de novo), o aviso da conta de demonstração (os dias que faltam), as aprovações
 // que esperam (o link para a página Aprovações), o Usuários (só o master) e a faixa "Vendo como" (o master vendo o sistema

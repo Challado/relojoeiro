@@ -402,7 +402,10 @@ primer usuario de la instalación es el **master**: cuida de todo el sistema.
   tiene entra y acepta. La invitación de un **miembro** espera que el dueño la apruebe. Sin correo en el servidor, el enlace
   aparece en la pantalla, para enviarlo como quiera.
 - **Solicitud:** en **Mi cuenta** (o ya en el registro), la persona pide acceso a una colección, o a todo lo de un dueño, con un
-  mensaje. El dueño recibe un correo y aprueba o rechaza en **Aprobaciones**; la persona recibe la respuesta por correo.
+  mensaje, por el **código** que pasó el dueño: el de la colección (en la tabla **Colecciones** de **Mi cuenta**) o el del dueño
+  (en **Tus datos**, para todas sus colecciones). Ninguna pantalla muestra la lista de cuentas ni de colecciones, y la solicitud
+  solo muestra el código hasta la aprobación: quien prueba códigos al azar no descubre el usuario de nadie. El dueño recibe un
+  correo y aprueba o rechaza en **Aprobaciones**; la persona recibe la respuesta por correo.
 - **Por el master:** en **Usuarios**, **Dar acceso**.
 
 En **Aprobaciones**, el dueño ve también **quién ve sus colecciones** y le quita el acceso a alguien; en **Mi cuenta**, cada uno
@@ -411,7 +414,7 @@ puede **salir** de una colección que no es suya. Invitaciones y solicitudes sin
 
 **El registro abierto** (la página `cadastro.php`, sin login, con el enlace **Crear cuenta**): la persona elige el usuario, la
 contraseña, el correo, el idioma y cómo empieza (una colección con el conjunto inicial, una vacía, o pedir acceso a la de
-alguien). La cuenta creada así es **de demostración** por `DEMO_DIAS` días (30 sin la línea): el menú muestra **Demo: N días**,
+alguien, por el código que pasó el dueño). La cuenta creada así es **de demostración** por `DEMO_DIAS` días (30 sin la línea): el menú muestra **Demo: N días**,
 un correo avisa 7 días y 1 día antes y, vencida, el cron borra la cuenta con todo lo que es suyo. El master **hace oficial la
 cuenta** (o la prorroga) en **Usuarios**. Con `CADASTRO_ABERTO = false` en el `config.php`, el registro se cierra: solo entra
 quien el master crea o quien tiene una invitación. La página tiene también **Olvidé la contraseña**: el enlace para elegir una
@@ -986,7 +989,7 @@ que usted registre entra aquí con su nombre.
 | **Grupos** (`grupos.php`) | El árbol: crear, renombrar, mover, ordenar, eliminar (lo que era del grupo pasa al de arriba) y elegir el grupo de cada reloj. |
 | **Definiciones** (`cadastros.php`) | Campos, tipos de registro, fórmulas (con **Probar**), avisos, modos de rotación y las categorías de documentos: todo lo que el sistema usa que no es código. |
 | **Ejecuciones del cron** (`execucoes.php`) | Qué hizo el cron en cada vuelta, cuánto tardó y los errores, con filtros. |
-| **Mi cuenta** (`conta.php`, el menú **Cuenta**) | Las colecciones que ve (abrir, crear, renombrar, eliminar, salir), sus árboles de grupos (copiar, renombrar, eliminar), pedir acceso a la colección de alguien, sus datos (el correo, el idioma, la contraseña), los **tokens de API** (para sus scripts), las **notificaciones en este aparato** (el Web Push) y eliminar la cuenta. Vea [Varias personas](#varias-personas-cuentas-colecciones-y-acceso). |
+| **Mi cuenta** (`conta.php`, el menú **Cuenta**) | Las colecciones que ve (abrir, crear, renombrar, eliminar, salir), sus árboles de grupos (copiar, renombrar, eliminar), pedir acceso a la colección de alguien (por el código que pasó el dueño), sus datos (su código, el correo, el idioma, la contraseña), los **tokens de API** (para sus scripts), las **notificaciones en este aparato** (el Web Push) y eliminar la cuenta. Vea [Varias personas](#varias-personas-cuentas-colecciones-y-acceso). |
 | **Aprobaciones** (`aprovacoes.php`) | Las solicitudes de acceso a sus colecciones (aprobar, rechazar), las invitaciones que hicieron los miembros y le esperan, **Invitar** (por correo), las invitaciones que hizo y quién ve sus colecciones (quitar el acceso). El menú muestra **Aprobaciones (N)** cuando hay algo esperando. |
 | **Usuarios** (`usuarios.php`, solo el master) | El panel de las cuentas: cada una con lo que tiene y las acciones (ver como, hacer oficial, prorrogar, bloquear, cambiar, cambiar la contraseña, transferir una colección, dar acceso, eliminar) y crear una cuenta. |
 | **Crear cuenta** (`cadastro.php`, sin login) | El registro abierto: la cuenta nueva (con una colección, o pidiendo acceso), la invitación que llegó por correo y **Olvidé la contraseña**. |
@@ -1127,7 +1130,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `documento` | el archivo de un documento (`id=<id>`): para mostrar (imagen, video, audio, PDF, texto) o para descargar (el resto, o con `baixar=1`); `mini=1` es la miniatura de la foto. Atiende trozos (Range), para que el video avance |
 | `usuarios`, `migracoes` | el master: el panel de las cuentas, cada una con lo que tiene y el hash de la contraseña (para migrar con la misma contraseña: vea [Los usuarios y las contraseñas](#los-usuarios-y-las-contraseñas)); los demás, solo su propia cuenta; las migraciones que faltan aplicar |
 | `conta`, `colecoes`, `aprovacoes` | Mi cuenta (las colecciones, los árboles, las solicitudes, los tokens, los aparatos del Web Push; `parte=menu`: solo lo del menú); las colecciones y los árboles; la página Aprobaciones |
-| `cadastro` | el registro abierto, sin login: si está abierto, las colecciones y los dueños (para pedir acceso) y la invitación (`convite=<token>`) |
+| `cadastro` | el registro abierto, sin login: si está abierto y la invitación (`convite=<token>`); ninguna lista de cuentas ni de colecciones (la solicitud de acceso es por el código que pasó el dueño) |
 | `instalacao` | la situación de la instalación: la base, si está vacía, instalada y al día, cuántos usuarios y el próximo paso. Responde también con la base vacía, con el token |
 | `backup` | la copia de seguridad de la base: si está activada, si la carpeta sirve, cuántas se guardan, la última y las copias de la carpeta; `arquivo=` descarga una |
 | `importacao` | lo que usa la importación del sistema anterior: el servidor de la base antigua (sin la contraseña), si PHP tiene MySQL y si esta base ya tiene relojes |
@@ -1490,8 +1493,9 @@ página web se convierte en PDF con el navegador (**Imprimir → Guardar como PD
 
 **¿Mi esposa (o un amigo) puede ver mi colección?**
 Puede. En **Aprobaciones**, **Invitar**: su correo y lo que va a ver (una colección, o todo lo suyo). Recibe un enlace: sin
-cuenta, crea una con él; con cuenta, entra y acepta. O ella misma pide acceso (en **Mi cuenta**, o ya en el registro), y usted
-aprueba. Para quitar el acceso después: **Aprobaciones › Quién ve tus colecciones**.
+cuenta, crea una con él; con cuenta, entra y acepta. O ella misma pide acceso (en **Mi cuenta**, o ya en el registro) con el
+código que usted le pasa: el suyo (en **Mi cuenta › Tus datos**, para todas sus colecciones) o el de una colección (en la tabla
+**Colecciones**); y usted aprueba. Para quitar el acceso después: **Aprobaciones › Quién ve tus colecciones**.
 
 **¿Se puede tener más de una colección?**
 Sí: **Mi cuenta › Nueva colección**. Puede usar un árbol de grupos que usted ya tiene (las definiciones son comunes: un campo

@@ -272,8 +272,9 @@
  *   recurso=aprovacoes       {"pedidos", "convites_a_aprovar", "convites_feitos", "acessos": {"colecoes": [{"id", "nome", "membros"}],
  *                            "tudo"}, "minhas_colecoes", "pode_convidar", "email_configurado", "convite_dias"}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=aprovacoes"
- *   recurso=cadastro         (sem login) o cadastro aberto: {"aberto", "demo_dias", "email_configurado", "linguas", "colecoes", "donos",
- *                            "convite"} (convite=<token>: o convite do link)
+ *   recurso=cadastro         (sem login) o cadastro aberto: {"aberto", "demo_dias", "email_configurado", "linguas", "convite"}
+ *                            (convite=<token>: o convite do link). Nenhuma lista de contas nem de coleções: o pedido de acesso é
+ *                            pelo código que o dono passou
  *                            Ex.: curl "http://servidor/relojoeiro/api.php?recurso=cadastro"
  *   recurso=migracoes        {"pendentes": [{"versao", "arquivo", "traz"}]} (lista vazia: o banco está em dia)
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=migracoes"
@@ -600,8 +601,9 @@
  *   recurso=convites          convidar (email; colecao_id ou dono_id), aprovar (id), recusar (id), reenviar (id), cancelar (id), aceitar
  *                             (token: quem já tem conta)
  *                            Ex. convidar: curl -u lucas:senha -d recurso=convites -d acao=convidar -d email=amigo@exemplo.com -d colecao_id=1 http://servidor/relojoeiro/api.php
- *   recurso=pedidos           pedir (colecao_id ou dono_id, mensagem), aprovar (id), recusar (id), cancelar (id)
- *                            Ex. pedir: curl -u maria:senha -d recurso=pedidos -d acao=pedir -d dono=lucas http://servidor/relojoeiro/api.php
+ *   recurso=pedidos           pedir (colecao_id ou dono_id: o código que o dono passou, nunca o login; mensagem), aprovar (id),
+ *                             recusar (id), cancelar (id)
+ *                            Ex. pedir: curl -u maria:senha -d recurso=pedidos -d acao=pedir -d dono_id=1 http://servidor/relojoeiro/api.php
  *   recurso=cadastro          (sem login) criar_conta (login, senha, email, idioma, opcao: modelo, vazia ou pedir (colecao_id ou dono_id,
  *                             mensagem); convite: o token do link), esqueci_senha (email ou login), nova_senha (token, senha)
  *                            Ex. criar_conta: curl -d recurso=cadastro -d acao=criar_conta -d login=maria -d senha=segredo123 -d email=maria@exemplo.com -d opcao=modelo http://servidor/relojoeiro/api.php
@@ -2749,7 +2751,7 @@
  *     pasta                          a pasta do sistema no servidor, para o caminho da chave do Google (só o master; null para os outros)
  *   recurso=conta
  *     usuario                        quem pede (null: o token do servidor sem nenhum usuário)
- *     usuario.id                     o id
+ *     usuario.id                     o id: o seu código, que você passa a quem quiser pedir acesso a todas as suas coleções
  *     usuario.login                  o login
  *     usuario.email                  o e-mail; null: nenhum
  *     usuario.papel                  master ou comum
@@ -2781,7 +2783,10 @@
  *     arvores[].colecoes[].nome      o nome
  *     pedidos[]                      os seus pedidos de acesso esperando resposta
  *     pedidos[].id                   o id
- *     pedidos[].alvo                 o que foi pedido, por extenso
+ *     pedidos[].colecao_id           o código da coleção pedida; null: o pedido é de tudo de um dono
+ *     pedidos[].dono_id              o código do dono (todas as coleções dele); null: o pedido é de uma coleção
+ *     pedidos[].alvo                 o que foi pedido, só pelo código ("a coleção de código 7"): o nome e o dono só aparecem depois da
+ *                                    aprovação
  *     pedidos[].criado               quando
  *     pedidos[].expira               até quando espera
  *     convites[]                     os convites para o seu e-mail (aceite pelo link do e-mail)
@@ -2890,14 +2895,6 @@
  *     linguas[]                      os idiomas
  *     linguas[].codigo               o código
  *     linguas[].nome                 o nome
- *     colecoes[]                     as coleções (para pedir acesso; vazio com o cadastro fechado)
- *     colecoes[].id                  o id
- *     colecoes[].nome                o nome
- *     colecoes[].dono                o login do dono
- *     donos[]                        os donos com alguma coleção (para pedir acesso a tudo de um)
- *     donos[].id                     o id
- *     donos[].login                  o login
- *     donos[].colecoes               quantas coleções
  *     convite                        com convite=<token>: o convite; false: não vale mais; null: sem convite
  *     convite.email                  para quem
  *     convite.alvo                   o que ele dá

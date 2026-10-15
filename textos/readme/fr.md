@@ -1,4 +1,4 @@
-<!-- origem: 255c473400fc71a243c73f847080bcd82a18dc3a -->
+<!-- origem: 809e9cba1b4d07551c5c984e00bd11bc15fb1b3d -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -165,7 +165,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `documento` | le fichier d'un document (`id=<id>`) : pour afficher (image, vidéo, audio, PDF, texte) ou pour télécharger (le reste, ou avec `baixar=1`) ; `mini=1` est la vignette de la photo. Il sert des morceaux (Range), pour que la vidéo avance |
 | `usuarios`, `migracoes` | le master : le panneau des comptes, chacun avec ce qu'il a et le hash du mot de passe (pour migrer avec le même mot de passe : voir [Les utilisateurs et les mots de passe](#os-usuários-e-as-senhas)) ; les autres, seulement leur propre compte ; les migrations qui restent à appliquer |
 | `conta`, `colecoes`, `aprovacoes` | Mon compte (les collections, les arbres, les demandes, les jetons, les appareils du Web Push ; `parte=menu` : seulement ce qu'utilise le menu) ; les collections et les arbres ; la page Approbations |
-| `cadastro` | l'inscription ouverte, sans identifiant : si elle est ouverte, les collections et les propriétaires (pour demander l'accès) et l'invitation (`convite=<token>`) |
+| `cadastro` | l'inscription ouverte, sans identifiant : si elle est ouverte et l'invitation (`convite=<token>`) ; aucune liste de comptes ni de collections (la demande d'accès se fait par le code donné par le propriétaire) |
 | `instalacao` | la situation de l'installation : la base, si elle est vide, installée et à jour, combien d'utilisateurs et la prochaine étape. Répond aussi avec la base vide, avec le jeton |
 | `backup` | la sauvegarde de la base : si elle est activée, si le dossier convient, combien sont gardées, la dernière et les copies du dossier ; `arquivo=` en télécharge une |
 | `importacao` | ce qu'utilise l'importation de l'ancien système : le serveur de l'ancienne base (sans le mot de passe), si PHP a MySQL et si cette base a déjà des montres |

@@ -1,4 +1,4 @@
-// Minha conta: lê recurso=conta (e recurso=cadastro, a lista das coleções e dos donos para pedir acesso) e monta os quadros.
+// Minha conta: lê recurso=conta e monta os quadros. O pedido de acesso é pelo código que o dono passou (nenhuma lista de contas).
 // Com conta.php?convite=<token> (o link do convite, para quem já tem conta), aceita o convite ao abrir.
 var recadoConta = "";
 var tokenNovo = null;
@@ -37,13 +37,13 @@ function quadroColecoes(d) {
       acoes += formAcao("acessos", "sair", {colecao_id: c.id}, t("Sair"), "leve perigo");
     }
     var papel = {dono: t("sua"), membro: t("membro"), master: t("master")}[c.papel] || c.papel;
-    return el("tr", {}, el("td", {}, h(c.nome)) + el("td", {}, h(c.dono)) + el("td", {}, papel) + el("td", {"class": "acoes-linha"}, acoes));
+    return el("tr", {}, el("td", {}, h(c.nome)) + el("td", {"class": "num"}, c.id) + el("td", {}, h(c.dono)) + el("td", {}, papel) + el("td", {"class": "acoes-linha"}, acoes));
   }).join("");
   var arvores = d.arvores.map(function (a) { return el("option", {"value": a.id}, h(a.nome)); }).join("");
   return el("section", {"class": "cartao-config", "id": "colecoes"}, el("h2", {}, t("Coleções"))
     + (d.colecoes.length === 0 ? el("p", {"class": "alerta-cron"}, t("Você ainda não vê nenhuma coleção: crie uma aqui embaixo, ou peça acesso à de alguém (e espere a aprovação)."))
-      : el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Coleção")) + el("th", {}, t("Dono")) + el("th", {}, t("Você é")) + el("th", {}, "")))
-        + el("tbody", {}, linhas))))
+      : el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Coleção")) + el("th", {}, t("Código")) + el("th", {}, t("Dono")) + el("th", {}, t("Você é")) + el("th", {}, "")))
+        + el("tbody", {}, linhas))) + el("p", {"class": "nota"}, t("Para alguém pedir acesso a uma coleção sua, passe o código dela; para todas as suas, o seu código (em Seus dados). O pedido não mostra a ninguém o seu login nem os nomes das coleções: você aprova ou recusa em Aprovações.")))
     + el("h3", {}, t("Nova coleção")) + el("form", {"data-recurso": "colecoes", "class": "campos"}, el("input", {"type": "hidden", "name": "acao", "value": "criar"})
       + parCampo(t("Nome"), el("input", {"name": "nome", "required": true, "maxlength": "120"}))
       + parCampo(t("Começa"), el("select", {"name": "opcao", "onchange": "this.form.querySelector('[data-sub]').hidden = this.value !== 'arvore'"},
@@ -71,23 +71,18 @@ function quadroArvores(d) {
       }).join("")))));
 }
 
-function quadroPedir(d, cad) {
+function quadroPedir(d) {
   var pedidos = d.pedidos.map(function (p) {
     return el("tr", {}, el("td", {}, h(p.alvo)) + el("td", {}, dataBr(p.criado)) + el("td", {}, dataBr(p.expira)) + el("td", {"class": "acoes-linha"}, formAcao("pedidos", "cancelar", {id: p.id}, t("Cancelar"), "leve perigo")));
   }).join("");
-  var alvos = (cad.colecoes || []).filter(function (c) {
-    return !d.colecoes.some(function (v) { return v.id === c.id; });
-  }).map(function (c) { return el("option", {"value": "c:" + c.id}, h(t("{1} (de {2})", {1: c.nome, 2: c.dono}))); }).join("")
-    + (cad.donos || []).filter(function (o) { return o.login !== d.usuario.login; }).map(function (o) { return el("option", {"value": "d:" + o.id}, h(t("Tudo de {1} ({2} coleções, e as que vierem)", {1: o.login, 2: o.colecoes}))); }).join("");
   return el("section", {"class": "cartao-config", "id": "pedir"}, el("h2", {}, t("Pedir acesso"))
     + (pedidos !== "" ? el("h3", {}, t("Esperando resposta")) + el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("O quê")) + el("th", {}, t("Pedido em")) + el("th", {}, t("Vence em")) + el("th", {}, "")))
       + el("tbody", {}, pedidos))) : "")
     + (d.convites.length > 0 ? el("p", {"class": "nota"}, t("Há {1} convite(s) para o seu e-mail: aceite pelo link que chegou nele.", {1: d.convites.length})) : "")
-    + (alvos === "" ? el("p", {"class": "nota"}, t("Não há outra coleção para pedir.")) : el("form", {"data-recurso": "pedidos", "class": "campos", "onsubmit": "var v = this.alvo.value.split(':'); this.colecao_id.value = v[0] === 'c' ? v[1] : ''; this.dono_id.value = v[0] === 'd' ? v[1] : ''"},
-      el("input", {"type": "hidden", "name": "acao", "value": "pedir"}) + el("input", {"type": "hidden", "name": "colecao_id", "value": ""}) + el("input", {"type": "hidden", "name": "dono_id", "value": ""})
-      + parCampo(t("Acesso a"), el("select", {"name": "alvo", "required": true}, alvos), "largo")
+    + el("form", {"data-recurso": "pedidos", "class": "campos", "onsubmit": "acessoPorCodigo(this)"},
+      el("input", {"type": "hidden", "name": "acao", "value": "pedir"}) + camposCodigoAcesso(true)
       + parCampo(t("Recado para o dono (opcional)"), el("input", {"name": "mensagem", "maxlength": "500"}), "largo")
-      + el("div", {"class": "botoes"}, el("button", {}, t("Pedir acesso")))))
+      + el("div", {"class": "botoes"}, el("button", {}, t("Pedir acesso"))))
     + el("p", {"class": "nota"}, t("O dono (ou o administrador) aprova. Pedidos sem resposta saem sozinhos depois de alguns dias.")));
 }
 
@@ -95,7 +90,8 @@ function quadroDados(d) {
   var u = d.usuario;
   return el("section", {"class": "cartao-config", "id": "dados"}, el("h2", {}, t("Seus dados"))
     + el("p", {}, t("Login: {1}", {1: el("strong", {}, h(u.login))}) + (u.papel === "master" ? el("span", {"class": "selo master"}, t("master")) : "")
-      + (u.demo ? el("span", {"class": "selo demo"}, t("demonstração")) : "") + " · " + t("desde {1}", {1: dataBr(u.criado)}))
+      + (u.demo ? el("span", {"class": "selo demo"}, t("demonstração")) : "") + " · " + t("desde {1}", {1: dataBr(u.criado)})
+      + " · " + t("seu código: {1}", {1: el("strong", {}, u.id)}))
     + (u.demo ? el("p", {"class": "alerta-cron"}, t("Conta de demonstração: vence em {1} dias ({2}). Depois disso, ela e as suas coleções são apagadas. Para continuar, peça ao administrador para torná-la oficial.", {1: u.dias_restantes, 2: dataBr(u.expira_em)})) : "")
     + el("form", {"data-recurso": "conta", "class": "campos"}, el("input", {"type": "hidden", "name": "acao", "value": "alterar"})
       + parCampo(t("E-mail"), el("input", {"type": "email", "name": "email", "value": u.email || "", "maxlength": "200", "autocomplete": "email"}), "largo")
@@ -198,15 +194,14 @@ function quadroExcluir(d) {
 
 var CONTA = null;
 function carregarConta() {
-  return Promise.all([api({recurso: "conta"}), api({recurso: "cadastro"}).catch(function () { return {}; })]).then(function (r) {
-    var d = r[0];
+  return api({recurso: "conta"}).then(function (d) {
     CONTA = d;
     var res = el("h1", {}, t("Minha conta")) + (recadoConta !== "" ? el("p", {"class": "acao"}, h(recadoConta)) : "");
     recadoConta = "";
     if (d.aprovacoes > 0) {
       res += el("p", {"class": "alerta-cron"}, t("{1} pedido(s) ou convite(s) esperam a sua resposta em {2}.", {1: d.aprovacoes, 2: el("a", {"href": "aprovacoes.php"}, t("Aprovações"))}));
     }
-    res += quadroColecoes(d) + quadroArvores(d) + quadroPedir(d, r[1])
+    res += quadroColecoes(d) + quadroArvores(d) + quadroPedir(d)
       + el("p", {"class": "nota"}, t("Para convidar alguém para as suas coleções, ou ver quem as vê: {1}.", {1: el("a", {"href": "aprovacoes.php"}, t("Aprovações e convites"))}))
       + quadroDados(d) + quadroTokens(d) + quadroPush(d) + quadroServidor(d) + quadroExcluir(d);
     document.getElementById("conta").innerHTML = res;

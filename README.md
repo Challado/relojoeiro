@@ -395,15 +395,19 @@ instalação é o **master**: cuida do sistema inteiro.
 - **Convite:** em **Aprovações**, o dono escreve o e-mail e escolhe o que ele vai ver (uma coleção, ou tudo dele). Sai um
   e-mail com um link (vale `CONVITE_DIAS` dias, 7 sem a linha): quem não tem conta cria pelo link, e quem tem entra e aceita.
   O convite de um **membro** espera o dono aprovar. Sem e-mail no servidor, o link aparece na tela, para mandar como quiser.
-- **Pedido:** em **Minha conta** (ou já no cadastro), a pessoa pede acesso a uma coleção, ou a tudo de um dono, com um recado.
-  O dono recebe um e-mail e aprova ou recusa em **Aprovações**; a pessoa recebe a resposta por e-mail.
+- **Pedido:** em **Minha conta** (ou já no cadastro), a pessoa pede acesso a uma coleção, ou a tudo de um dono, com um recado,
+  pelo **código** que o dono passou: o da coleção (na tabela **Coleções** de **Minha conta**) ou o do dono (em **Seus dados**,
+  para todas as coleções dele). Nenhuma tela mostra a lista de contas ou de coleções, e o pedido só mostra o código até a
+  aprovação: quem tenta códigos ao acaso não descobre o login de ninguém. O dono recebe um e-mail e aprova ou recusa em
+  **Aprovações**; a pessoa recebe a resposta por e-mail.
 - **Pelo master:** em **Usuários**, **Dar acesso**.
 
 Em **Aprovações**, o dono vê também **quem vê as coleções dele** e tira o acesso de alguém; em **Minha conta**, cada um pode
 **sair** de uma coleção que não é dele. Convites e pedidos sem resposta saem sozinhos depois de `CONVITE_DIAS` dias.
 
 **O cadastro aberto** (a página `cadastro.php`, sem login, com o link **Criar conta**): a pessoa escolhe o login, a senha, o
-e-mail, o idioma e como começa (uma coleção com o conjunto inicial, uma vazia, ou pedir acesso à de alguém). A conta criada assim
+e-mail, o idioma e como começa (uma coleção com o conjunto inicial, uma vazia, ou pedir acesso à de alguém, pelo código que o
+dono passou). A conta criada assim
 é **de demonstração** por `DEMO_DIAS` dias (30 sem a linha): o menu mostra **Demo: N dias**, um e-mail avisa 7 dias e 1 dia antes,
 e, vencida, o cron apaga a conta com tudo o que é dela. O master **torna a conta oficial** (ou prorroga) em **Usuários**. Com
 `CADASTRO_ABERTO = false` no `config.php`, o cadastro fecha: só entra quem o master cria ou quem tem um convite. A página tem
@@ -964,7 +968,7 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | **Grupos** (`grupos.php`) | A árvore: criar, renomear, mover, ordenar, excluir (o que era do grupo passa para o de cima) e escolher o grupo de cada relógio. |
 | **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), avisos, modos de rodízio e as categorias de documentos: tudo o que o sistema usa e que não é código. |
 | **Execuções do cron** (`execucoes.php`) | O que o cron fez a cada rodada, quanto tempo levou e os erros, com filtros. |
-| **Minha conta** (`conta.php`, o menu **Conta**) | As coleções que você vê (abrir, criar, renomear, excluir, sair), as suas árvores de grupos (copiar, renomear, excluir), pedir acesso à coleção de alguém, os seus dados (o e-mail, o idioma, a senha), os **tokens de API** (para os seus scripts), as **notificações neste aparelho** (o Web Push) e excluir a conta. Veja [Várias pessoas](#várias-pessoas-contas-coleções-e-acesso). |
+| **Minha conta** (`conta.php`, o menu **Conta**) | As coleções que você vê (abrir, criar, renomear, excluir, sair), as suas árvores de grupos (copiar, renomear, excluir), pedir acesso à coleção de alguém (pelo código que o dono passou), os seus dados (o seu código, o e-mail, o idioma, a senha), os **tokens de API** (para os seus scripts), as **notificações neste aparelho** (o Web Push) e excluir a conta. Veja [Várias pessoas](#várias-pessoas-contas-coleções-e-acesso). |
 | **Aprovações** (`aprovacoes.php`) | Os pedidos de acesso às suas coleções (aprovar, recusar), os convites que membros fizeram e esperam você, **Convidar** (por e-mail), os convites que você fez e quem vê as suas coleções (tirar o acesso). O menu mostra **Aprovações (N)** quando há algo esperando. |
 | **Usuários** (`usuarios.php`, só o master) | O painel das contas: cada uma com o que tem e as ações (ver como, tornar oficial, prorrogar, bloquear, alterar, trocar a senha, transferir uma coleção, dar acesso, excluir) e criar uma conta. |
 | **Criar conta** (`cadastro.php`, sem login) | O cadastro aberto: a conta nova (com uma coleção, ou pedindo acesso), o convite que chegou por e-mail e o **Esqueci a senha**. |
@@ -1102,7 +1106,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `documento` | o arquivo de um documento (`id=<id>`): para mostrar (imagem, vídeo, áudio, PDF, texto) ou para baixar (o resto, ou com `baixar=1`); `mini=1` é a miniatura da foto. Atende pedaços (Range), para o vídeo avançar |
 | `usuarios`, `migracoes` | o master: o painel das contas, cada uma com o que tem e o hash da senha (para migrar com a mesma senha: veja [Os usuários e as senhas](#os-usuários-e-as-senhas)); os outros, só a própria conta; as migrações que faltam aplicar |
 | `conta`, `colecoes`, `aprovacoes` | Minha conta (as coleções, as árvores, os pedidos, os tokens, os aparelhos do Web Push; `parte=menu`: só o do menu); as coleções e as árvores; a página Aprovações |
-| `cadastro` | o cadastro aberto, sem login: se está aberto, as coleções e os donos (para pedir acesso) e o convite (`convite=<token>`) |
+| `cadastro` | o cadastro aberto, sem login: se está aberto e o convite (`convite=<token>`); nenhuma lista de contas nem de coleções (o pedido de acesso é pelo código que o dono passou) |
 | `instalacao` | a situação da instalação: o banco, se está vazio, instalado e em dia, quantos usuários e o próximo passo. Responde também com o banco vazio, pelo token |
 | `backup` | a cópia de segurança do banco: se está ligada, se a pasta serve, quantas ficam, a última e as cópias da pasta; `arquivo=` baixa uma |
 | `importacao` | o que a importação do sistema anterior usa: o servidor do banco antigo (sem a senha), se o PHP tem o MySQL e se este banco já tem relógios |
@@ -1452,8 +1456,9 @@ pelo navegador (**Imprimir → Salvar como PDF**).
 
 **Minha esposa (ou um amigo) pode ver a minha coleção?**
 Pode. Em **Aprovações**, **Convidar**: o e-mail dela e o que ela vai ver (uma coleção, ou tudo seu). Ela recebe um link: sem
-conta, cria uma por ele; com conta, entra e aceita. Ou ela mesma pede acesso (em **Minha conta**, ou já no cadastro), e você
-aprova. Para tirar o acesso depois: **Aprovações › Quem vê as suas coleções**.
+conta, cria uma por ele; com conta, entra e aceita. Ou ela mesma pede acesso (em **Minha conta**, ou já no cadastro) com o
+código que você passa: o seu (em **Minha conta › Seus dados**, para todas as suas coleções) ou o de uma coleção (na tabela
+**Coleções**); e você aprova. Para tirar o acesso depois: **Aprovações › Quem vê as suas coleções**.
 
 **Dá para ter mais de uma coleção?**
 Dá: **Minha conta › Nova coleção**. Ela pode usar uma árvore de grupos que você já tem (o cadastro fica em comum: um campo novo

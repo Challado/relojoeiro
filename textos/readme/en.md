@@ -1,4 +1,4 @@
-<!-- origem: 255c473400fc71a243c73f847080bcd82a18dc3a -->
+<!-- origem: 809e9cba1b4d07551c5c984e00bd11bc15fb1b3d -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -159,7 +159,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `documento` | a document's file (`id=<id>`): to show (image, video, audio, PDF, text) or to download (the rest, or with `baixar=1`); `mini=1` is the photo's thumbnail. It serves pieces (Range), so the video can skip ahead |
 | `usuarios`, `migracoes` | the master: the accounts panel, each with what it has and the password hash (to migrate with the same password: see [The users and the passwords](#os-usuários-e-as-senhas)); the others, only their own account; the migrations still to apply |
 | `conta`, `colecoes`, `aprovacoes` | My account (the collections, the trees, the requests, the tokens, the Web Push devices; `parte=menu`: only the menu's part); the collections and the trees; the Approvals page |
-| `cadastro` | the open sign-up, without login: whether it is open, the collections and the owners (to ask for access) and the invitation (`convite=<token>`) |
+| `cadastro` | the open sign-up, without login: whether it is open and the invitation (`convite=<token>`); no list of accounts or collections (the access request is by the code the owner gave) |
 | `instalacao` | the installation status: the database, whether it is empty, installed and up to date, how many users and the next step. It also answers with the database empty, with the token |
 | `backup` | the database backup: whether it is on, whether the folder works, how many are kept, the last one and the folder's copies; `arquivo=` downloads one |
 | `importacao` | what the import of the previous system uses: the old database server (without the password), whether PHP has MySQL and whether this database already has watches |

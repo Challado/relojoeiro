@@ -418,8 +418,11 @@ tout le système.
   compte le crée par le lien, et qui en a un se connecte et accepte. L'invitation d'un **membre** attend l'approbation du
   propriétaire. Sans e-mail sur le serveur, le lien apparaît à l'écran, pour l'envoyer comme on veut.
 - **Demande :** dans **Mon compte** (ou dès l'inscription), la personne demande l'accès à une collection, ou à tout ce qui est à
-  un propriétaire, avec un mot. Le propriétaire reçoit un e-mail et approuve ou refuse dans **Approbations** ; la personne
-  reçoit la réponse par e-mail.
+  un propriétaire, avec un mot, par le **code** donné par le propriétaire : celui de la collection (dans le tableau
+  **Collections** de **Mon compte**) ou celui du propriétaire (dans **Vos données**, pour toutes ses collections). Aucun écran ne
+  montre la liste des comptes ni des collections, et la demande ne montre que le code jusqu'à l'approbation : qui essaie des
+  codes au hasard ne découvre l'identifiant de personne. Le propriétaire reçoit un e-mail et approuve ou refuse dans
+  **Approbations** ; la personne reçoit la réponse par e-mail.
 - **Par le master :** dans **Utilisateurs**, **Donner l'accès**.
 
 Dans **Approbations**, le propriétaire voit aussi **qui voit ses collections** et retire l'accès à quelqu'un ; dans **Mon
@@ -428,7 +431,7 @@ toutes seules après `CONVITE_DIAS` jours.
 
 **L'inscription ouverte** (la page `cadastro.php`, sans identifiant, avec le lien **Créer un compte**) : la personne choisit
 l'identifiant, le mot de passe, l'e-mail, la langue et comment elle commence (une collection avec l'ensemble initial, une vide,
-ou demander l'accès à celle de quelqu'un). Le compte ainsi créé est **en démonstration** pendant `DEMO_DIAS` jours (30 sans la
+ou demander l'accès à celle de quelqu'un, par le code donné par le propriétaire). Le compte ainsi créé est **en démonstration** pendant `DEMO_DIAS` jours (30 sans la
 ligne) : le menu affiche **Démo : N jours**, un e-mail prévient 7 jours et 1 jour avant et, une fois expiré, le cron efface le
 compte avec tout ce qui est à lui. Le master **rend le compte officiel** (ou le prolonge) dans **Utilisateurs**. Avec
 `CADASTRO_ABERTO = false` dans le `config.php`, l'inscription ferme : n'entre que qui le master crée ou qui a une invitation.
@@ -1019,7 +1022,7 @@ que vous enregistrez apparaît ici sous son nom.
 | **Groupes** (`grupos.php`) | L'arbre : créer, renommer, déplacer, trier, supprimer (ce qui appartenait au groupe passe à celui du dessus) et choisir le groupe de chaque montre. |
 | **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), alertes, modes de rotation et catégories de documents : tout ce que le système utilise et qui n'est pas du code. |
 | **Exécutions du cron** (`execucoes.php`) | Ce que le cron a fait à chaque passage, combien de temps il a pris et les erreurs, avec des filtres. |
-| **Mon compte** (`conta.php`, le menu **Compte**) | Les collections que vous voyez (ouvrir, créer, renommer, supprimer, quitter), vos arbres de groupes (copier, renommer, supprimer), demander l'accès à la collection de quelqu'un, vos données (l'e-mail, la langue, le mot de passe), les **jetons d'API** (pour vos scripts), les **notifications sur cet appareil** (le Web Push) et supprimer le compte. Voir [Plusieurs personnes](#plusieurs-personnes--comptes-collections-et-accès). |
+| **Mon compte** (`conta.php`, le menu **Compte**) | Les collections que vous voyez (ouvrir, créer, renommer, supprimer, quitter), vos arbres de groupes (copier, renommer, supprimer), demander l'accès à la collection de quelqu'un (par le code donné par le propriétaire), vos données (votre code, l'e-mail, la langue, le mot de passe), les **jetons d'API** (pour vos scripts), les **notifications sur cet appareil** (le Web Push) et supprimer le compte. Voir [Plusieurs personnes](#plusieurs-personnes--comptes-collections-et-accès). |
 | **Approbations** (`aprovacoes.php`) | Les demandes d'accès à vos collections (approuver, refuser), les invitations que des membres ont faites et qui vous attendent, **Inviter** (par e-mail), les invitations que vous avez faites et qui voit vos collections (retirer l'accès). Le menu affiche **Approbations (N)** quand quelque chose attend. |
 | **Utilisateurs** (`usuarios.php`, seulement le master) | Le panneau des comptes : chacun avec ce qu'il a et les actions (voir en tant que, rendre officiel, prolonger, bloquer, modifier, changer le mot de passe, transférer une collection, donner l'accès, supprimer) et créer un compte. |
 | **Créer un compte** (`cadastro.php`, sans identifiant) | L'inscription ouverte : le nouveau compte (avec une collection, ou en demandant l'accès), l'invitation arrivée par e-mail et le **Mot de passe oublié**. |
@@ -1164,7 +1167,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `documento` | le fichier d'un document (`id=<id>`) : pour afficher (image, vidéo, audio, PDF, texte) ou pour télécharger (le reste, ou avec `baixar=1`) ; `mini=1` est la vignette de la photo. Il sert des morceaux (Range), pour que la vidéo avance |
 | `usuarios`, `migracoes` | le master : le panneau des comptes, chacun avec ce qu'il a et le hash du mot de passe (pour migrer avec le même mot de passe : voir [Les utilisateurs et les mots de passe](#les-utilisateurs-et-les-mots-de-passe)) ; les autres, seulement leur propre compte ; les migrations qui restent à appliquer |
 | `conta`, `colecoes`, `aprovacoes` | Mon compte (les collections, les arbres, les demandes, les jetons, les appareils du Web Push ; `parte=menu` : seulement ce qu'utilise le menu) ; les collections et les arbres ; la page Approbations |
-| `cadastro` | l'inscription ouverte, sans identifiant : si elle est ouverte, les collections et les propriétaires (pour demander l'accès) et l'invitation (`convite=<token>`) |
+| `cadastro` | l'inscription ouverte, sans identifiant : si elle est ouverte et l'invitation (`convite=<token>`) ; aucune liste de comptes ni de collections (la demande d'accès se fait par le code donné par le propriétaire) |
 | `instalacao` | la situation de l'installation : la base, si elle est vide, installée et à jour, combien d'utilisateurs et la prochaine étape. Répond aussi avec la base vide, avec le jeton |
 | `backup` | la sauvegarde de la base : si elle est activée, si le dossier convient, combien sont gardées, la dernière et les copies du dossier ; `arquivo=` en télécharge une |
 | `importacao` | ce qu'utilise l'importation de l'ancien système : le serveur de l'ancienne base (sans le mot de passe), si PHP a MySQL et si cette base a déjà des montres |
@@ -1535,7 +1538,8 @@ forme de page web devient un PDF par le navigateur (**Imprimer → Enregistrer a
 **Ma femme (ou un ami) peut-elle voir ma collection ?**
 Oui. Dans **Approbations**, **Inviter** : son e-mail et ce qu'elle verra (une collection, ou tout ce qui est à vous). Elle
 reçoit un lien : sans compte, elle en crée un par ce lien ; avec un compte, elle se connecte et accepte. Ou elle demande
-elle-même l'accès (dans **Mon compte**, ou dès l'inscription), et vous approuvez. Pour retirer l'accès plus tard :
+elle-même l'accès (dans **Mon compte**, ou dès l'inscription) avec le code que vous lui donnez : le vôtre (dans **Mon compte ›
+Vos données**, pour toutes vos collections) ou celui d'une collection (dans le tableau **Collections**) ; et vous approuvez. Pour retirer l'accès plus tard :
 **Approbations › Qui voit vos collections**.
 
 **Peut-on avoir plus d'une collection ?**

@@ -23,7 +23,7 @@ function pedir($quem, $metodo, $params)
     $op = [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 120];
     if ($quem[0] === "token") {
         $op[CURLOPT_HTTPHEADER] = ["X-Api-Token: " . $quem[1]];
-    } else {
+    } elseif ($quem[1] !== "") {
         $op[CURLOPT_USERPWD] = $quem[1];
     }
     if ($metodo === "POST") {
@@ -146,6 +146,9 @@ $tentativas = [
     ["recurso" => "conta", "acao" => "alterar", "email" => "segredoana@exemplo.com"],
     ["recurso" => "backup", "acao" => "fazer"],
     ["recurso" => "importacao", "acao" => "importar"],
+    ["recurso" => "pedidos", "acao" => "pedir", "colecao_id" => $col_a, "mensagem" => "oi"],
+    ["recurso" => "pedidos", "acao" => "pedir", "dono_id" => $uid_a],
+    ["recurso" => "pedidos", "acao" => "pedir", "dono" => "ana"],
     ["recurso" => "config", "acao" => "salvar", "colecao" => $col_a, "uso_inicio" => "05:00"],
     ["recurso" => "relogio", "acao" => "salvar", "colecao" => $col_a, "id" => 0, "nome" => "INVADIDO"],
 ];
@@ -156,6 +159,20 @@ foreach (["bia", "caio"] as $quem) {
             $falhas[] = "VAZOU " . $quem . " POST " . http_build_query($p) . " → " . $r["codigo"] . ": " . substr($r["corpo"], 0, 300);
         }
     }
+}
+// depois dos pedidos de acesso (ainda não aprovados): a conta de quem pediu mostra só o código, nunca o nome nem o login
+foreach (["bia", "caio"] as $quem) {
+    foreach (["conta", "pedidos", "aprovacoes", "colecoes", "cadastro", ""] as $rec) {
+        $r = pedir($tk[$quem], "GET", ["recurso" => $rec]);
+        if (stripos($r["corpo"], $MARCA) !== false || preg_match('/"(login|dono)":\s*"ana"/', $r["corpo"]) === 1) {
+            $falhas[] = "VAZOU " . $quem . " GET recurso=" . $rec . " depois do pedido: " . substr(preg_replace('/\s+/', " ", $r["corpo"]), 0, 300);
+        }
+    }
+}
+// e sem login nenhum, a página Criar conta não lista contas nem coleções
+$r = pedir(["basic", ""], "GET", ["recurso" => "cadastro"]);
+if (stripos($r["corpo"], $MARCA) !== false || stripos($r["corpo"], '"ana"') !== false || stripos($r["corpo"], '"bia"') !== false) {
+    $falhas[] = "VAZOU o cadastro sem login: " . substr($r["corpo"], 0, 300);
 }
 // a ana confere que tudo dela continua igual (a ficha do relógio) e que ninguém entrou como ela
 $depois = pedir($ana, "GET", ["recurso" => "ficha", "relogio" => $rel_a])["corpo"];

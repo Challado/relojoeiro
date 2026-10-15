@@ -1,4 +1,4 @@
-<!-- origem: 815593cb524a1a15c9275900b6dda918aa3d289d -->
+<!-- origem: ce49d33f930a6d2953f8abce7b07b07bbf3e6914 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -360,7 +360,10 @@ the installation is the **master**: they take care of the whole system.
   account creates one through the link, and whoever has one signs in and accepts. A **member's** invitation waits for the owner
   to approve. Without e-mail on the server, the link shows on the screen, to send however you like.
 - **Request:** in **My account** (or right at sign-up), the person asks for access to a collection, or to everything of an
-  owner, with a note. The owner gets an e-mail and approves or declines in **Approvals**; the person gets the answer by e-mail.
+  owner, with a note, by the **code** the owner gave: the collection's (in the **Collections** table of **My account**) or the
+  owner's (in **Your details**, for all their collections). No screen shows the list of accounts or collections, and the request
+  shows only the code until the approval: whoever tries codes at random finds out no one's login. The owner gets an e-mail and
+  approves or declines in **Approvals**; the person gets the answer by e-mail.
 - **By the master:** in **Users**, **Give access**.
 
 In **Approvals**, the owner also sees **who sees their collections** and removes someone's access; in **My account**, anyone
@@ -369,7 +372,7 @@ days.
 
 **The open sign-up** (the `cadastro.php` page, without login, with the **Create account** link): the person chooses the login,
 the password, the e-mail, the language and how to start (a collection with the starter set, an empty one, or asking for access
-to someone's). An account created this way is a **demo** for `DEMO_DIAS` days (30 without the line): the menu shows **Demo: N
+to someone's, by the code the owner gave). An account created this way is a **demo** for `DEMO_DIAS` days (30 without the line): the menu shows **Demo: N
 days**, an e-mail warns 7 days and 1 day before, and, once expired, the cron deletes the account with everything that is
 theirs. The master **makes the account official** (or extends it) in **Users**. With `CADASTRO_ABERTO = false` in
 `config.php`, sign-up closes: only those the master creates or who have an invitation get in. The page also has **Forgot my
@@ -914,7 +917,7 @@ comes in here by its name.
 | **Groups** (`grupos.php`) | The tree: create, rename, move, sort, delete (what belonged to the group goes to the one above) and choose each watch's group. |
 | **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), alerts, rotation modes and the document categories: everything the system uses that isn't code. |
 | **Cron runs** (`execucoes.php`) | What the cron did in each round, how long it took and the errors, with filters. |
-| **My account** (`conta.php`, the **Account** menu) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection, your data (the e-mail, the language, the password), the **API tokens** (for your scripts), the **notifications on this device** (Web Push) and deleting the account. See [Several people](#várias-pessoas-contas-coleções-e-acesso). |
+| **My account** (`conta.php`, the **Account** menu) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection (by the code the owner gave), your data (your code, the e-mail, the language, the password), the **API tokens** (for your scripts), the **notifications on this device** (Web Push) and deleting the account. See [Several people](#várias-pessoas-contas-coleções-e-acesso). |
 | **Approvals** (`aprovacoes.php`) | The access requests to your collections (approve, decline), the invitations members made that wait for you, **Invite** (by e-mail), the invitations you made and who sees your collections (remove access). The menu shows **Approvals (N)** when something is waiting. |
 | **Users** (`usuarios.php`, master only) | The accounts panel: each one with what it has and the actions (view as, make official, extend, block, edit, change the password, transfer a collection, give access, delete) and creating an account. |
 | **Create account** (`cadastro.php`, without login) | The open sign-up: the new account (with a collection, or asking for access), the invitation that arrived by e-mail and **Forgot my password**. |
@@ -997,7 +1000,8 @@ PDF through the browser (**Print → Save as PDF**).
 **Can my wife (or a friend) see my collection?**
 Yes. In **Approvals**, **Invite**: her e-mail and what she will see (one collection, or everything of yours). She gets a link:
 without an account, she creates one through it; with an account, she signs in and accepts. Or she asks for access herself (in
-**My account**, or right at sign-up), and you approve. To remove the access later: **Approvals › Who sees your collections**.
+**My account**, or right at sign-up) with the code you give her: yours (in **My account › Your details**, for all your
+collections) or a collection's (in the **Collections** table); and you approve. To remove the access later: **Approvals › Who sees your collections**.
 
 **Can I have more than one collection?**
 Yes: **My account › New collection**. It can use a group tree you already have (the definitions are shared: a new field applies
