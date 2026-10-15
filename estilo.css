@@ -1023,6 +1023,11 @@ body.com-visor { overflow: hidden; }
 .ficha-identidade h1 { margin: .2rem 0 .6rem; overflow-wrap: anywhere; }
 .ficha-identidade .observacao { margin: 0 0 .6rem; }
 .marcas { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0; }
+/* o atalho do pulso, embaixo das marcas: o título pequeno (o nome da sessão), o botão Pôr ou Tirar e, no pulso, desde quando */
+.atalho-pulso { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .6rem; margin: .7rem 0 0; }
+.atalho-pulso .atalho-titulo { font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--cinza); }
+.atalho-pulso button { min-width: 4.5rem; }
+.atalho-pulso small { color: var(--cinza); font-size: .8rem; }
 /* o campo de arquivo atrás de um botão do sistema (o do navegador é diferente em cada um e não alinha com nada) */
 .botao-arquivo {
   position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center;

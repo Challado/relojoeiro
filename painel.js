@@ -395,6 +395,18 @@ function abrirNoPainel(id) {
           el("p", {"class": "nota"}, t("Comprou? Em \"Editar cadastro\", mude a situação para \"Na coleção\" e preencha a compra.")), "quadro-desejo") + quadroDocs;
         lancar = "";
       }
+      // o atalho do pulso, na cabeça: um botão só, "Pôr" quando ele não está no pulso e "Tirar" quando está (agora; a hora
+      // certa e o resto ficam no quadro Marcar)
+      var pulso = r.posse === "desejado" ? null : r.tipos.filter(function (item) { return item.identificador === "pulso" && item.formato === "sessao"; })[0] || null;
+      var atalho = "";
+      if (pulso) {
+        var noPulso = pulso.aberta !== null;
+        atalho = el("form", {"data-recurso": "lancamento", "class": "atalho-pulso"}, el("input", {"type": "hidden", "name": "acao", "value": noPulso ? "encerrar" : "iniciar"})
+          + el("input", {"type": "hidden", "name": "relogio_id", "value": id}) + el("input", {"type": "hidden", "name": "tipo", "value": "pulso"})
+          + el("span", {"class": "atalho-titulo"}, t("Pulso"))
+          + el("button", {"class": noPulso ? "leve" : "", "title": acaoSessao(pulso.nome, noPulso)}, noPulso ? t("Tirar") : t("Pôr"))
+          + (noPulso ? el("small", {}, h(pulso.aberta.texto)) : ""));
+      }
       // a cabeça: a foto e quem ele é (o grupo, o nome e as marcas de agora); embaixo, os quadros, todos alinhados numa grade
       res += el("div", {"class": "ficha-cabeca"}, el("div", {"class": "ficha-foto"}, foto)
         + el("div", {"class": "ficha-identidade"}, el("p", {"class": "data"}, h(r.tipo) + " · " + h(r.caminho))
@@ -402,7 +414,7 @@ function abrirNoPainel(id) {
           + el("p", {"class": "marcas"}, (r.posse === "desejado" ? "" : el("span", {"class": "estado estado-" + (r.estado)}, h(minusculo(r.estado_texto))))
             + (r.posse !== "colecao" ? " " + el("span", {"class": "estado estado-posse"}, h(minusculo(r.posse_texto)))
               : (r.disponivel ? "" : " " + el("span", {"class": "estado estado-indisponivel"}, t("indisponível"))))
-            + (r.proxima === hoje ? " " + el("span", {"class": "estado estado-atividade"}, t("relógio de hoje")) : ""))))
+            + (r.proxima === hoje ? " " + el("span", {"class": "estado estado-atividade"}, t("relógio de hoje")) : "")) + atalho))
         + el("div", {"class": "quadros"}, blocos + lancar);
     }
     // o cadastro: nome, grupo, os campos (cada um no grupo em que vale), a compra agrupada, a observação, a foto (novo) e o disponível
