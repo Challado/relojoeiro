@@ -150,6 +150,21 @@ php testes/campos.php http://127.0.0.1:8101/api.php --sobras   # e os explicados
 
 O `paridade.sh` roda os dois depois da comparação (o `campos.php` no servidor do primeiro banco).
 
+# Isolamento entre contas
+
+O [`isolamento.php`](isolamento.php) confere que uma conta não vê nem muda o que é de outra pelo token pessoal. Num banco
+recém-instalado (com o usuário `teste` e o token do `config.teste.php`), ele cria três contas: a `ana`, que cadastra um relógio,
+foto, documento, acessório, evento, destino e agenda com a marca SEGREDOANA; a `bia`, com a sua coleção; e o `caio`, sem
+coleção. A bia e o caio, cada um pelo seu token, pedem todos os recursos da API com os ids e a coleção da ana nos parâmetros
+(e `como=ana`), e tentam alterar e apagar o que é dela. Termina com 0 se nada da ana apareceu e nada dela mudou:
+
+```sh
+php testes/isolamento.php http://127.0.0.1:8101/api.php
+```
+
+Ainda não roda no `paridade.sh`: hoje ele acusa o `recurso=cadastro` (a página Criar conta, sem login), que lista os logins e
+os nomes das coleções para o pedido de acesso, e isso espera uma decisão.
+
 # No GitHub, a cada push
 
 O [`.github/workflows/testes.yml`](../.github/workflows/testes.yml) roda os testes no GitHub Actions a cada push no `main` (e
