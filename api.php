@@ -2808,6 +2808,35 @@
  *     push.aparelhos[].criada        desde quando
  *     push.aparelhos[].endpoint_hash a marca do endereço do aparelho (para o navegador saber se já está inscrito)
  *     email_configurado              verdadeiro ou falso: o servidor manda e-mail
+ *     email                          (só o master; null para os outros) a configuração do e-mail que o sistema leu do config.php, para o
+ *                                    quadro Servidor de e-mail
+ *     email.metodo                   smtp, mail ou null (o envio está desligado)
+ *     email.email_metodo             o EMAIL_METODO como está no config.php; null: não está lá
+ *     email.remetente                o remetente (EMAIL_REMETENTE, senão o SMTP_USUARIO); vazio: falta
+ *     email.smtp                     o SMTP: host, porta, seguranca (ssl, tls ou nada), usuario e senha (verdadeiro ou falso: se está
+ *                                    definida; a senha mesma nunca sai)
+ *     email.smtp.host                o servidor (SMTP_HOST)
+ *     email.smtp.porta               a porta (SMTP_PORTA; sem ela, 465 no ssl e 587 no resto)
+ *     email.smtp.seguranca           ssl, tls ou nada (SMTP_SEGURANCA)
+ *     email.smtp.usuario             o usuário (SMTP_USUARIO)
+ *     email.smtp.senha               verdadeiro ou falso: a SMTP_SENHA está definida
+ *     email.imap                     o IMAP da cópia em Enviados (host, porta, seguranca, usuario, senha e pasta); null: não configurado
+ *     email.imap.host                o servidor (IMAP_HOST)
+ *     email.imap.porta               a porta (IMAP_PORTA; sem ela, 993 no ssl e 143 no resto)
+ *     email.imap.seguranca           ssl, tls ou nada (IMAP_SEGURANCA)
+ *     email.imap.usuario             o usuário (IMAP_USUARIO, senão o SMTP_USUARIO)
+ *     email.imap.senha               verdadeiro ou falso: a senha do IMAP está definida
+ *     email.imap.pasta               a pasta Enviados (IMAP_PASTA_ENVIADOS, padrão Sent)
+ *     email.pop                      o POP, só para testar a conta (host, porta, seguranca, usuario e senha); null: não configurado
+ *     email.pop.host                 o servidor (POP_HOST)
+ *     email.pop.porta                a porta (POP_PORTA; sem ela, 995 no ssl e 110 no resto)
+ *     email.pop.seguranca            ssl, tls ou nada (POP_SEGURANCA)
+ *     email.pop.usuario              o usuário (POP_USUARIO)
+ *     email.pop.senha                verdadeiro ou falso: a POP_SENHA está definida
+ *     email.openssl                  verdadeiro ou falso: o PHP do servidor tem a extensão openssl (o ssl e o tls precisam dela)
+ *     email.mail                     verdadeiro ou falso: o mail() do PHP está ligado neste servidor
+ *     email.problemas[]              o que está errado ou faltando na configuração, achado sem conectar em nada (cada um, uma frase dizendo
+ *                                    o que corrigir no config.php)
  *     demo_dias                      os dias da conta de demonstração
  *     master                         (parte=menu) verdadeiro ou falso: quem pede é o master (ou o master vendo como outro)
  *     linguas[]                      os idiomas

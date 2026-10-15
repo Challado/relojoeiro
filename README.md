@@ -1335,7 +1335,12 @@ Cada coleção cria os destinos e as agendas dela nas páginas **Destinos** e **
   pôs, e considera enviado se a resposta for 2xx. Mensagens longas são divididas em partes.
 - **E-mail:** o servidor SMTP no `config.php` (`SMTP_HOST`, a porta, a segurança, o usuário e a senha; no Gmail e no Outlook,
   uma senha de app) e o `EMAIL_REMETENTE`; ou `EMAIL_METODO = "mail"`, com um sendmail no servidor. Com o `IMAP_*`, cada e-mail
-  enviado ganha uma cópia em Enviados. O master testa em **Minha conta › Servidor de e-mail**.
+  enviado ganha uma cópia em Enviados. O master testa em **Minha conta › Servidor de e-mail**: o quadro mostra o que o sistema
+  leu do `config.php` (o método, o remetente, o SMTP, o IMAP e o POP; as senhas só como *definida* ou não) e aponta o que está
+  errado ou faltando (sem o `EMAIL_METODO`, a porta que não combina com a segurança, a senha vazia, o PHP sem `openssl`...).
+  **Testar as conexões** entra no SMTP, no IMAP (e confere a pasta Enviados) e no POP sem mandar nada; **Mandar um e-mail de
+  teste** manda de verdade para o endereço que você puser. Depois, aparecem o resultado de cada parte e a **conversa com os
+  servidores**, linha a linha (sem a senha), para achar onde parou.
 - **Web Push:** o site tem de abrir por **https**. O master gera as chaves em **Minha conta › Chaves do Web Push** e copia as
   duas linhas para o `config.php`. Depois, cada pessoa liga as notificações no aparelho dela, em **Minha conta**
   (no iPhone, primeiro adicione o site à tela de início), e um destino Web Push manda para os aparelhos de quem ele aponta.

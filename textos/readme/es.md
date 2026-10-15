@@ -1,4 +1,4 @@
-<!-- origem: 809e9cba1b4d07551c5c984e00bd11bc15fb1b3d -->
+<!-- origem: 01cde1b4bbb3c20da12a000e12a091b4da1b1be1 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -393,7 +393,12 @@ configuración en el servidor:
 - **Correo:** el servidor SMTP en el `config.php` (`SMTP_HOST`, el puerto, la seguridad, el usuario y la contraseña; en Gmail
   y en Outlook, una contraseña de aplicación) y el `EMAIL_REMETENTE`; o `EMAIL_METODO = "mail"`, con un sendmail en el
   servidor. Con el `IMAP_*`, cada correo enviado recibe una copia en Enviados. El master lo prueba en **Mi cuenta › Servidor
-  de correo**.
+  de correo**: el cuadro muestra lo que el sistema leyó del `config.php` (el método, el remitente, el SMTP, el IMAP y el POP; las
+  contraseñas solo como *definida* o no) y señala lo que está mal o falta (sin el `EMAIL_METODO`, el puerto que no combina con la
+  seguridad, la contraseña vacía, el PHP sin `openssl`...). **Probar las conexiones** entra en el SMTP, en el IMAP (y revisa la
+  carpeta Enviados) y en el POP sin enviar nada; **Enviar un correo de prueba** envía de verdad a la dirección que ponga. Después
+  aparecen el resultado de cada parte y la **conversación con los servidores**, línea por línea (sin la contraseña), para
+  encontrar dónde se detuvo.
 - **Web Push:** el sitio tiene que abrirse por **https**. El master genera las claves en **Mi cuenta › Claves del Web Push** y
   copia las dos líneas al `config.php`. Después, cada persona activa las notificaciones en su aparato, en **Mi cuenta** (en el
   iPhone, primero añada el sitio a la pantalla de inicio), y un destino Web Push envía a los aparatos de quien él apunta.

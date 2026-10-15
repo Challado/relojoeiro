@@ -1,4 +1,4 @@
-<!-- origem: 809e9cba1b4d07551c5c984e00bd11bc15fb1b3d -->
+<!-- origem: 01cde1b4bbb3c20da12a000e12a091b4da1b1be1 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -320,7 +320,7 @@ php criar_usuario.php 你的登录名
 每个收藏在**推送目标**和**日历**页面中创建自己的推送目标和日历。需要在服务器上配置的内容：
 
 - **Telegram（一个 webhook）：**用 @BotFather 创建一个机器人（它会给出令牌），并找到你的 `chat_id`（给机器人发一条消息，然后打开 `https://api.telegram.org/bot<token>/getUpdates`）。在**推送目标**中新建一个 webhook：方法 `GET` 或 `POST`，地址 `https://api.telegram.org/bot<token>/sendMessage`，字段 `chat_id` = 该数字，`text` = `{mensagem}`。任何其他桥接服务（n8n、Home Assistant、你自己的地址）都一样：系统把 `{titulo}` 和 `{mensagem}` 放到你指定的位置，响应为 2xx 即视为发送成功。长消息会分段发送。
-- **电子邮件：**在 `config.php` 中配置 SMTP 服务器（`SMTP_HOST`、端口、安全方式、用户名和密码；Gmail 和 Outlook 需要应用专用密码）和 `EMAIL_REMETENTE`；或使用 `EMAIL_METODO = "mail"`，服务器上需有 sendmail。配置 `IMAP_*` 后，每封已发送的邮件都会在“已发送”中保存一份副本。master 可在**我的账户 › 邮件服务器**中测试。
+- **电子邮件：**在 `config.php` 中配置 SMTP 服务器（`SMTP_HOST`、端口、安全方式、用户名和密码；Gmail 和 Outlook 需要应用专用密码）和 `EMAIL_REMETENTE`；或使用 `EMAIL_METODO = "mail"`，服务器上需有 sendmail。配置 `IMAP_*` 后，每封已发送的邮件都会在“已发送”中保存一份副本。master 可在**我的账户 › 邮件服务器**中测试：该框显示系统从 `config.php` 读到的内容（发送方式、发件人、SMTP、IMAP 和 POP；密码只显示是否*已设置*），并指出错误或缺少的地方（没有 `EMAIL_METODO`、端口与安全方式不匹配、密码为空、PHP 没有 `openssl`……）。**测试连接**会登录 SMTP、IMAP（并检查“已发送”文件夹）和 POP，但不发送任何内容；**发送一封测试邮件**会真正发到你填写的地址。之后会显示每个部分的结果以及**与服务器的对话**（逐行显示，不含密码），方便找到在哪一步停下。
 - **Web Push：**网站必须通过 **https** 打开。master 在**我的账户 › Web Push 密钥**中生成密钥，并把两行复制到 `config.php`。之后，每个人在**我的账户**中为自己的设备打开通知（在 iPhone 上，先把网站添加到主屏幕），Web Push 推送目标会发往它所指向的人的设备。
 - **Google 日历：**在 Google Cloud 中创建一个**服务账号**并下载 JSON 密钥；把你的日历共享给服务账号的电子邮件，并授予修改事件的权限；在**日历**中粘贴密钥的 JSON（它会加密保存在数据库中）和日历 ID。只有 master 可以不粘贴 JSON，而是填写服务器上某个文件的路径。
 - **CalDAV（Nextcloud、iCloud、Fastmail）：**日历地址、用户名和密码。在 **iCloud** 上使用**应用专用密码**（appleid.apple.com › App 专用密码），日历地址位于 `caldav.icloud.com`。

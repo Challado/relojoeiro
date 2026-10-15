@@ -1370,7 +1370,7 @@ on the server:
   them, and considers it sent if the response is 2xx. Long messages are split into parts.
 - **E-mail:** the SMTP server in `config.php` (`SMTP_HOST`, the port, the security, the user and the password; on Gmail and
   Outlook, an app password) and the `EMAIL_REMETENTE`; or `EMAIL_METODO = "mail"`, with a sendmail on the server. With
-  `IMAP_*`, each e-mail sent gets a copy in Sent. The master tests it in **My account › E-mail server**.
+  `IMAP_*`, each e-mail sent gets a copy in Sent. The master tests it in **My account › E-mail server**: the box shows what the system read from `config.php` (the method, the sender, SMTP, IMAP and POP; the passwords only as *set* or not) and points out what is wrong or missing (no `EMAIL_METODO`, a port that does not match the security, an empty password, PHP without `openssl`...). **Test the connections** signs in to SMTP, to IMAP (and checks the Sent folder) and to POP without sending anything; **Send a test e-mail** really sends one to the address you type. Then come the result of each part and the **conversation with the servers**, line by line (without the password), to find where it stopped.
 - **Web Push:** the site has to open over **https**. The master generates the keys in **My account › Web Push keys** and copies
   the two lines into `config.php`. Then each person turns on the notifications on their device, in **My account** (on the
   iPhone, first add the site to the home screen), and a Web Push destination sends to the devices of whoever it points to.

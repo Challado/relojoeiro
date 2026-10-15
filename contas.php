@@ -361,7 +361,10 @@ function conta_consulta()
             "push" => ["configurado" => vapid_configurado(), "chave_publica" => vapid_configurado() ? cfg_php("VAPID_PUBLICA", "") : null,
                 "aparelhos" => array_map(function ($p) { return ["id" => (int)$p["id"], "aparelho" => $p["aparelho"], "criada" => $p["criada"], "endpoint_hash" => $p["endpoint_hash"]]; },
                     linhas("SELECT id, aparelho, criada, endpoint_hash FROM push_inscricao WHERE usuario_id = ? ORDER BY criada", [$uid]))],
-            "email_configurado" => email_metodo() !== null, "demo_dias" => demo_dias(), "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS))];
+            "email_configurado" => email_metodo() !== null,
+            // a configuração do e-mail lida do config.php, para o master testar (as senhas só como definida ou não)
+            "email" => usuario_master() ? email_config_resumo() : null,
+            "demo_dias" => demo_dias(), "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS))];
     });
 }
 
@@ -716,12 +719,14 @@ function op_conta($acao, $d)
         }
     } elseif ($acao === "email_testar") {
         // o servidor de e-mail do config.php (só o master): a conexão do SMTP, do IMAP e do POP, e um e-mail de teste (para:
-        // o endereço; sem ele, o meu)
-        $para = trim((string)($d["para"] ?? ($u["email"] ?? "")));
+        // o endereço; vazio, só as conexões). A resposta traz o teste inteiro: o resultado de cada parte, a conversa com os
+        // servidores (sem as senhas) e a configuração lida
+        $para = trim((string)($d["para"] ?? ""));
         if (!usuario_master()) {
             $erros[] = t("Só o master testa o servidor de e-mail.");
         } elseif (email_metodo() === null) {
             $erros[] = t("o envio de e-mail não está configurado no servidor (EMAIL_METODO ou SMTP_HOST no config.php)");
+            $extra = ["teste" => ["metodo" => null, "remetente" => email_remetente(), "smtp" => null, "imap" => null, "pop" => null, "envio" => null, "registro" => [], "config" => email_config_resumo()]];
         } elseif ($para !== "" && filter_var($para, FILTER_VALIDATE_EMAIL) === false) {
             $erros[] = t("E-mail inválido.");
         } else {

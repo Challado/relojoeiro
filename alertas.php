@@ -382,15 +382,35 @@ function email_enviar($para, $assunto, $texto)
     return $res;
 }
 
+// O registro da conversa com os servidores de e-mail, só durante o teste (email_testar liga): cada linha que vai ("> ") e
+// que volta ("< "), sem a senha nem o usuário em base64 (no lugar deles, a descrição)
+function email_registro($linha)
+{
+    if (is_array($GLOBALS["EMAIL_REGISTRO"] ?? null)) {
+        foreach (preg_split("/\r?\n/", rtrim((string)$linha)) as $l) {
+            $GLOBALS["EMAIL_REGISTRO"][] = $l;
+        }
+    }
+}
+
 // Uma conversa de linha em linha com um servidor (SMTP, IMAP, POP): abre a conexão (ssl: TLS desde o começo)
 function socket_abrir($host, $porta, $seguranca)
 {
     $erro = "";
     $n = 0;
+    email_registro(t("Conectando em {1}:{2} ({3})...", [1 => $host, 2 => (int)$porta, 3 => $seguranca === "ssl" ? t("SSL desde o começo") : ($seguranca === "tls" ? t("STARTTLS depois de conectar") : t("sem criptografia"))]));
+    if (trim((string)$host) === "") {
+        throw new RuntimeException(t("falta o endereço do servidor (o *_HOST do config.php)"));
+    }
+    if ($seguranca !== "" && $seguranca !== "nada" && !extension_loaded("openssl")) {
+        throw new RuntimeException(t("o PHP do servidor não tem a extensão openssl, que o SSL e o TLS precisam"));
+    }
     $s = @stream_socket_client(($seguranca === "ssl" ? "ssl://" : "tcp://") . $host . ":" . (int)$porta, $n, $erro, 15);
     if (!$s) {
+        email_registro(t("Não conectou: {1}", [1 => $erro !== "" ? $erro : t("sem resposta")]));
         throw new RuntimeException(t("não conectou em {1}:{2} ({3})", [1 => $host, 2 => $porta, 3 => $erro]));
     }
+    email_registro(t("Conectou."));
     stream_set_timeout($s, 20);
     return $s;
 }
@@ -408,12 +428,15 @@ function smtp_ler($s)
     return [(int)substr($texto, 0, 3), trim($texto)];
 }
 
-function smtp_comando($s, $cmd, $espera)
+// $mostrar: o que vai para o registro no lugar do comando (o usuário e a senha em base64 não aparecem)
+function smtp_comando($s, $cmd, $espera, $mostrar = null)
 {
     if ($cmd !== null) {
+        email_registro("> " . ($mostrar ?? $cmd));
         fwrite($s, $cmd . "\r\n");
     }
     [$c, $t] = smtp_ler($s);
+    email_registro($t !== "" ? preg_replace("/^/m", "< ", $t) : "< " . t("(sem resposta)"));
     if (!in_array($c, (array)$espera, true)) {
         throw new RuntimeException(t("o servidor de e-mail recusou ({1})", [1 => $t !== "" ? $t : t("sem resposta")]));
     }
@@ -435,13 +458,14 @@ function smtp_enviar($para, $mensagem)
             if (!@stream_socket_enable_crypto($s, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
                 throw new RuntimeException(t("o TLS do servidor de e-mail falhou"));
             }
+            email_registro(t("TLS ligado."));
             smtp_comando($s, "EHLO " . $eu, 250);
         }
         $u = (string)cfg_php("SMTP_USUARIO", "");
         if ($u !== "") {
             smtp_comando($s, "AUTH LOGIN", 334);
-            smtp_comando($s, base64_encode($u), 334);
-            smtp_comando($s, base64_encode((string)cfg_php("SMTP_SENHA", "")), 235);
+            smtp_comando($s, base64_encode($u), 334, t("(o usuário {1}, em base64)", [1 => $u]));
+            smtp_comando($s, base64_encode((string)cfg_php("SMTP_SENHA", "")), 235, t("(a senha, em base64)"));
         }
         smtp_comando($s, "MAIL FROM:<" . email_remetente() . ">", 250);
         foreach ($para as $p) {
@@ -449,6 +473,7 @@ function smtp_enviar($para, $mensagem)
         }
         smtp_comando($s, "DATA", 354);
         // as linhas que começam com ponto ganham outro (o fim do DATA é uma linha só com o ponto)
+        email_registro("> " . t("(a mensagem, {1} bytes)", [1 => strlen($mensagem)]));
         fwrite($s, preg_replace("/^\\./m", "..", $mensagem) . "\r\n.\r\n");
         smtp_comando($s, null, 250);
         fwrite($s, "QUIT\r\n");
@@ -473,20 +498,34 @@ function imap_guardar($mensagem, $so_testar = false)
                     break;
                 }
             }
+            email_registro($tudo !== "" ? preg_replace("/^/m", "< ", rtrim($tudo)) : "< " . t("(sem resposta)"));
             return $tudo;
         };
         $ler(null);
         if ($seg === "tls") {
+            email_registro("> a0 STARTTLS");
             fwrite($s, "a0 STARTTLS\r\n");
             $ler("a0");
-            stream_socket_enable_crypto($s, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+            if (!@stream_socket_enable_crypto($s, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                throw new RuntimeException(t("o TLS do IMAP falhou"));
+            }
+            email_registro(t("TLS ligado."));
         }
         $q = function ($x) { return "\"" . addcslashes((string)$x, "\"\\") . "\""; };
+        email_registro("> a1 LOGIN " . $q(cfg_php("IMAP_USUARIO", cfg_php("SMTP_USUARIO", ""))) . " " . t("(a senha)"));
         fwrite($s, "a1 LOGIN " . $q(cfg_php("IMAP_USUARIO", cfg_php("SMTP_USUARIO", ""))) . " " . $q(cfg_php("IMAP_SENHA", cfg_php("SMTP_SENHA", ""))) . "\r\n");
         if (strpos($ler("a1"), "a1 OK") === false) {
             throw new RuntimeException(t("o IMAP recusou o login"));
         }
-        if (!$so_testar) {
+        if ($so_testar) {
+            // o teste confere também que a pasta Enviados existe (sem guardar nada)
+            email_registro("> a2 STATUS " . $q(cfg_php("IMAP_PASTA_ENVIADOS", "Sent")) . " (MESSAGES)");
+            fwrite($s, "a2 STATUS " . $q(cfg_php("IMAP_PASTA_ENVIADOS", "Sent")) . " (MESSAGES)\r\n");
+            if (strpos($ler("a2"), "a2 OK") === false) {
+                throw new RuntimeException(t("o IMAP não achou a pasta {1} (IMAP_PASTA_ENVIADOS)", [1 => cfg_php("IMAP_PASTA_ENVIADOS", "Sent")]));
+            }
+        } else {
+            email_registro("> a2 APPEND " . $q(cfg_php("IMAP_PASTA_ENVIADOS", "Sent")) . " " . t("(a mensagem, {1} bytes)", [1 => strlen($mensagem)]));
             fwrite($s, "a2 APPEND " . $q(cfg_php("IMAP_PASTA_ENVIADOS", "Sent")) . " (\\Seen) {" . strlen($mensagem) . "}\r\n");
             if (strpos($ler("+"), "+") !== 0) {
                 throw new RuntimeException(t("o IMAP não aceitou a cópia em Enviados"));
@@ -496,6 +535,7 @@ function imap_guardar($mensagem, $so_testar = false)
                 throw new RuntimeException(t("o IMAP não guardou a cópia em Enviados"));
             }
         }
+        email_registro("> a3 LOGOUT");
         fwrite($s, "a3 LOGOUT\r\n");
         fclose($s);
         return [true, ""];
@@ -512,15 +552,19 @@ function pop_testar()
         $s = socket_abrir((string)cfg_php("POP_HOST", ""), (int)cfg_php("POP_PORTA", $seg === "ssl" ? 995 : 110), $seg);
         $ok = function () use ($s) {
             $l = (string)fgets($s, 2048);
+            email_registro("< " . ($l !== "" ? rtrim($l) : t("(sem resposta)")));
             if (strpos($l, "+OK") !== 0) {
                 throw new RuntimeException(t("o POP recusou ({1})", [1 => trim($l)]));
             }
         };
         $ok();
+        email_registro("> USER " . cfg_php("POP_USUARIO", ""));
         fwrite($s, "USER " . cfg_php("POP_USUARIO", "") . "\r\n");
         $ok();
+        email_registro("> PASS " . t("(a senha)"));
         fwrite($s, "PASS " . cfg_php("POP_SENHA", "") . "\r\n");
         $ok();
+        email_registro("> QUIT");
         fwrite($s, "QUIT\r\n");
         fclose($s);
         return [true, ""];
@@ -529,27 +573,98 @@ function pop_testar()
     }
 }
 
-// O teste da configuração do e-mail (o master, na Configuração): {metodo, smtp, imap, pop, envio}; $para manda um de teste
+// A configuração do e-mail como o sistema a lê do config.php (o master, em Minha conta › Servidor de e-mail): o método, o
+// remetente, o SMTP, o IMAP e o POP (as senhas só como "definida" ou não) e os problemas achados sem conectar em nada
+function email_config_resumo()
+{
+    $seg = function ($c, $padrao) {
+        $v = strtolower(trim((string)cfg_php($c, $padrao)));
+        return $v === "" ? "nada" : $v;
+    };
+    $metodo_cfg = trim((string)cfg_php("EMAIL_METODO", ""));
+    $smtp_seg = $seg("SMTP_SEGURANCA", "tls");
+    $r = ["metodo" => email_metodo(), "email_metodo" => defined("EMAIL_METODO") ? $metodo_cfg : null, "remetente" => email_remetente(),
+        "smtp" => ["host" => trim((string)cfg_php("SMTP_HOST", "")), "porta" => (int)cfg_php("SMTP_PORTA", $smtp_seg === "ssl" ? 465 : 587), "seguranca" => $smtp_seg,
+            "usuario" => (string)cfg_php("SMTP_USUARIO", ""), "senha" => (string)cfg_php("SMTP_SENHA", "") !== ""],
+        "imap" => null, "pop" => null, "openssl" => extension_loaded("openssl"), "mail" => function_exists("mail"), "problemas" => []];
+    if (trim((string)cfg_php("IMAP_HOST", "")) !== "") {
+        $s = $seg("IMAP_SEGURANCA", "ssl");
+        $r["imap"] = ["host" => trim((string)cfg_php("IMAP_HOST", "")), "porta" => (int)cfg_php("IMAP_PORTA", $s === "ssl" ? 993 : 143), "seguranca" => $s,
+            "usuario" => (string)cfg_php("IMAP_USUARIO", cfg_php("SMTP_USUARIO", "")), "senha" => (string)cfg_php("IMAP_SENHA", cfg_php("SMTP_SENHA", "")) !== "",
+            "pasta" => (string)cfg_php("IMAP_PASTA_ENVIADOS", "Sent")];
+    }
+    if (trim((string)cfg_php("POP_HOST", "")) !== "") {
+        $s = $seg("POP_SEGURANCA", "ssl");
+        $r["pop"] = ["host" => trim((string)cfg_php("POP_HOST", "")), "porta" => (int)cfg_php("POP_PORTA", $s === "ssl" ? 995 : 110), "seguranca" => $s,
+            "usuario" => (string)cfg_php("POP_USUARIO", ""), "senha" => (string)cfg_php("POP_SENHA", "") !== ""];
+    }
+    $p = [];
+    if ($metodo_cfg !== "" && !in_array(strtolower($metodo_cfg), ["smtp", "mail"], true)) {
+        $p[] = t("EMAIL_METODO = \"{1}\" não vale: use \"smtp\" ou \"mail\".", [1 => $metodo_cfg]);
+    } elseif ($r["metodo"] === null) {
+        $p[] = t("O envio de e-mail está desligado: falta o EMAIL_METODO (\"smtp\" ou \"mail\") no config.php.");
+    }
+    if ($r["metodo"] !== null) {
+        if ($r["remetente"] === "") {
+            $p[] = t("Falta o remetente: o EMAIL_REMETENTE (ou o SMTP_USUARIO, se for um e-mail).");
+        } elseif (filter_var($r["remetente"], FILTER_VALIDATE_EMAIL) === false) {
+            $p[] = t("O remetente \"{1}\" não é um e-mail: ponha um EMAIL_REMETENTE.", [1 => $r["remetente"]]);
+        }
+    }
+    if ($r["metodo"] === "smtp") {
+        if ($r["smtp"]["host"] === "") {
+            $p[] = t("Falta o SMTP_HOST (o servidor de envio, como smtp.gmail.com).");
+        }
+        if (!in_array($smtp_seg, ["ssl", "tls", "nada"], true)) {
+            $p[] = t("SMTP_SEGURANCA = \"{1}\" não vale: use \"ssl\" (porta 465), \"tls\" (porta 587) ou \"\" (sem criptografia).", [1 => $smtp_seg]);
+        } elseif ($smtp_seg === "ssl" && $r["smtp"]["porta"] === 587) {
+            $p[] = t("A porta 587 costuma ser a do \"tls\" (STARTTLS); com \"ssl\", a porta costuma ser a 465.");
+        } elseif ($smtp_seg === "tls" && $r["smtp"]["porta"] === 465) {
+            $p[] = t("A porta 465 costuma ser a do \"ssl\"; com \"tls\" (STARTTLS), a porta costuma ser a 587.");
+        }
+        if ($r["smtp"]["usuario"] !== "" && !$r["smtp"]["senha"]) {
+            $p[] = t("O SMTP_USUARIO está definido, mas a SMTP_SENHA está vazia.");
+        }
+        if ($smtp_seg !== "nada" && !$r["openssl"]) {
+            $p[] = t("O PHP do servidor não tem a extensão openssl, que o SSL e o TLS precisam.");
+        }
+    }
+    if ($r["metodo"] === "mail" && !$r["mail"]) {
+        $p[] = t("O mail() do PHP está desligado neste servidor (disable_functions): use o EMAIL_METODO \"smtp\".");
+    }
+    $r["problemas"] = $p;
+    return $r;
+}
+
+// O teste da configuração do e-mail (o master, em Minha conta › Servidor de e-mail): conecta e entra no SMTP (sem mandar
+// nada), no IMAP (e confere a pasta Enviados) e no POP, e, com $para, manda um e-mail de teste. {metodo, remetente, smtp,
+// imap, pop, envio (cada um null ou {ok, erro}), registro (a conversa com os servidores, sem as senhas), config}
 function email_testar($para = "")
 {
+    $GLOBALS["EMAIL_REGISTRO"] = [];
     $res = ["metodo" => email_metodo(), "remetente" => email_remetente(), "smtp" => null, "imap" => null, "pop" => null, "envio" => null];
     if ($res["metodo"] === "smtp") {
         // só a conexão e o login, sem mandar nada
+        email_registro("— SMTP —");
         try {
-            $seg = strtolower((string)cfg_php("SMTP_SEGURANCA", "tls"));
+            $seg = strtolower(trim((string)cfg_php("SMTP_SEGURANCA", "tls")));
             $s = socket_abrir((string)cfg_php("SMTP_HOST", ""), (int)cfg_php("SMTP_PORTA", $seg === "ssl" ? 465 : 587), $seg);
             smtp_comando($s, null, 220);
             smtp_comando($s, "EHLO relojoeiro", 250);
             if ($seg === "tls") {
                 smtp_comando($s, "STARTTLS", 220);
-                stream_socket_enable_crypto($s, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+                if (!@stream_socket_enable_crypto($s, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                    throw new RuntimeException(t("o TLS do servidor de e-mail falhou (o certificado do servidor, ou a porta errada)"));
+                }
+                email_registro(t("TLS ligado."));
                 smtp_comando($s, "EHLO relojoeiro", 250);
             }
             if ((string)cfg_php("SMTP_USUARIO", "") !== "") {
                 smtp_comando($s, "AUTH LOGIN", 334);
-                smtp_comando($s, base64_encode((string)cfg_php("SMTP_USUARIO", "")), 334);
-                smtp_comando($s, base64_encode((string)cfg_php("SMTP_SENHA", "")), 235);
+                smtp_comando($s, base64_encode((string)cfg_php("SMTP_USUARIO", "")), 334, t("(o usuário {1}, em base64)", [1 => cfg_php("SMTP_USUARIO", "")]));
+                smtp_comando($s, base64_encode((string)cfg_php("SMTP_SENHA", "")), 235, t("(a senha, em base64)"));
             }
+            email_registro("> QUIT");
             fwrite($s, "QUIT\r\n");
             fclose($s);
             $res["smtp"] = ["ok" => true, "erro" => null];
@@ -558,17 +673,28 @@ function email_testar($para = "")
         }
     }
     if (trim((string)cfg_php("IMAP_HOST", "")) !== "") {
+        email_registro("— IMAP —");
         [$ok, $erro] = imap_guardar("", true);
         $res["imap"] = ["ok" => $ok, "erro" => $erro !== "" ? $erro : null];
     }
     if (trim((string)cfg_php("POP_HOST", "")) !== "") {
+        email_registro("— POP —");
         [$ok, $erro] = pop_testar();
         $res["pop"] = ["ok" => $ok, "erro" => $erro !== "" ? $erro : null];
     }
     if ($para !== "") {
-        [$ok, $erro] = email_enviar($para, t("Relojoeiro: teste do e-mail"), t("Este é um e-mail de teste do Relojoeiro. Se chegou, o envio está funcionando."));
+        email_registro("— " . t("envio para {1}", [1 => $para]) . " —");
+        if ($res["metodo"] === "mail") {
+            email_registro(t("Pelo mail() do PHP (o sendmail do servidor): o PHP só diz se aceitou a mensagem, não se ela chegou."));
+        }
+        [$ok, $erro] = email_enviar($para, t("Relojoeiro: teste do e-mail"), t("Este é um e-mail de teste do Relojoeiro, enviado em {1} pelo método {2}, de {3}. Se chegou, o envio está funcionando.",
+            [1 => date("d/m/Y H:i:s"), 2 => $res["metodo"], 3 => email_remetente()]));
         $res["envio"] = ["ok" => $ok, "erro" => $erro !== "" ? $erro : null];
+        email_registro($ok ? t("O servidor aceitou a mensagem. Confira a caixa de entrada (e a de spam) de {1}.", [1 => $para]) : t("Não foi: {1}", [1 => $erro]));
     }
+    $res["registro"] = $GLOBALS["EMAIL_REGISTRO"];
+    $GLOBALS["EMAIL_REGISTRO"] = null;
+    $res["config"] = email_config_resumo();
     return $res;
 }
 

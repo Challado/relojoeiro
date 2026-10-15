@@ -15,7 +15,13 @@ aoGravar = function (form, res, dados) {
     document.cookie = "colecao=" + res.id + "; path=/; max-age=31536000; SameSite=Lax";
   }
   carregarConta().then(function () {
-    window.scrollTo(0, 0);
+    // o teste do e-mail: a página para no resultado dele; o resto, no alto (o recado)
+    var alvo = dados.get("acao") === "email_testar" ? document.getElementById("servidor") : null;
+    if (alvo) {
+      alvo.scrollIntoView();
+    } else {
+      window.scrollTo(0, 0);
+    }
   });
 };
 
@@ -175,16 +181,55 @@ function ligarPush() {
 }
 
 // o servidor (só o master): o teste do e-mail do config.php
+// O servidor de e-mail (só o master): a configuração que o sistema leu do config.php (as senhas só como definida ou não), os
+// problemas achados nela, o teste das conexões (SMTP, IMAP e POP, sem mandar nada) e o e-mail de teste; depois do teste, o
+// resultado de cada parte e a conversa com os servidores (TESTE_EMAIL, guardado entre uma montagem e outra da página)
+var TESTE_EMAIL = null;
 function quadroServidor(d) {
-  if (d.usuario.papel !== "master") {
+  if (d.usuario.papel !== "master" || !d.email) {
     return "";
   }
-  return el("section", {"class": "cartao-config", "id": "servidor"}, el("h2", {}, t("Servidor de e-mail (master)"))
-    + el("p", {"class": "nota"}, d.email_configurado ? t("Confere a conexão do SMTP (e do IMAP e do POP, se configurados) e manda um e-mail de teste.")
-      : t("O envio de e-mail não está configurado no servidor: veja EMAIL_METODO e SMTP_* no config.php."))
-    + (d.email_configurado ? el("form", {"data-recurso": "conta", "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": "email_testar"})
-      + el("input", {"type": "email", "name": "para", "value": d.usuario.email || "", "placeholder": t("para (vazio: só a conexão)"), "aria-label": t("Para")})
-      + el("button", {"class": "leve"}, t("Testar o e-mail"))) : ""));
+  var e = d.email;
+  var seg = function (s) { return {ssl: t("SSL (desde o começo)"), tls: t("TLS (STARTTLS)"), nada: t("sem criptografia")}[s] || s; };
+  var conta = function (c) {
+    return h(c.host + ":" + c.porta) + " · " + seg(c.seguranca) + " · " + (c.usuario !== "" ? t("usuário {1}", {1: h(c.usuario)}) : t("sem usuário"))
+      + " · " + (c.senha ? t("senha definida") : el("strong", {}, t("sem senha")));
+  };
+  var linhas = [[t("Método"), e.metodo === "smtp" ? t("SMTP (o servidor de e-mail do config.php)") : (e.metodo === "mail" ? t("mail() do PHP (o sendmail do servidor)") : el("strong", {}, t("desligado")))],
+    [t("Remetente"), e.remetente !== "" ? h(e.remetente) : el("strong", {}, t("falta"))]];
+  if (e.metodo === "smtp") {
+    linhas.push([t("SMTP (envio)"), conta(e.smtp)]);
+  }
+  linhas.push([t("IMAP (cópia em Enviados)"), e.imap ? conta(e.imap) + " · " + t("pasta {1}", {1: h(e.imap.pasta)}) : el("span", {"class": "nota"}, t("não configurado (opcional)"))]);
+  linhas.push([t("POP (só o teste da conta)"), e.pop ? conta(e.pop) : el("span", {"class": "nota"}, t("não configurado (opcional)"))]);
+  var res = el("h2", {}, t("Servidor de e-mail (master)"))
+    + el("p", {"class": "nota"}, t("O sistema manda e-mail pelo que está no config.php (EMAIL_METODO, EMAIL_REMETENTE, SMTP_*, IMAP_*, POP_*): os convites, o Esqueci a senha, os avisos da conta e os destinos do tipo e-mail. Aqui está o que ele leu de lá, e o teste."))
+    + el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados config-email"}, el("thead", {}, el("tr", {}, el("th", {}, t("Parte")) + el("th", {}, t("O que o sistema leu do config.php"))))
+      + el("tbody", {}, linhas.map(function (l) {
+        return el("tr", {}, el("td", {}, l[0]) + el("td", {}, l[1]));
+      }).join(""))));
+  if (e.problemas.length > 0) {
+    res += el("div", {"class": "alerta-cron"}, el("strong", {}, t("Para corrigir no config.php:")) + el("ul", {}, e.problemas.map(function (p) { return el("li", {}, h(p)); }).join("")));
+  }
+  if (e.metodo !== null) {
+    res += el("div", {"class": "botoes"}, formAcao("conta", "email_testar", {para: ""}, t("Testar as conexões (sem mandar nada)")))
+      + el("form", {"data-recurso": "conta", "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": "email_testar"})
+        + el("input", {"type": "email", "name": "para", "required": true, "value": d.usuario.email || "", "placeholder": t("para quem"), "aria-label": t("Para")})
+        + el("button", {}, t("Mandar um e-mail de teste")))
+      + el("p", {"class": "nota"}, t("O teste conecta e entra no SMTP (sem mandar nada), no IMAP (e confere a pasta Enviados) e no POP; o e-mail de teste passa por tudo isso e sai de verdade. A conversa com os servidores aparece embaixo, sem as senhas."));
+  }
+  if (TESTE_EMAIL) {
+    var r = TESTE_EMAIL;
+    var partes = [["smtp", t("SMTP")], ["imap", t("IMAP")], ["pop", t("POP")], ["envio", t("E-mail de teste")]].filter(function (p) { return r[p[0]]; });
+    res += el("h3", {}, t("Resultado do teste"))
+      + (partes.length > 0 ? el("ul", {"class": "teste-email"}, partes.map(function (p) {
+        var x = r[p[0]];
+        return el("li", {}, el("span", {"class": "estado " + (x.ok ? "estado-uso" : "estado-repouso")}, x.ok ? t("ok") : t("falhou")) + " " + el("strong", {}, p[1]) + (x.erro ? ": " + h(x.erro) : ""));
+      }).join("")) : el("p", {"class": "nota"}, t("Nada para testar: o envio está desligado.")))
+      + (r.registro && r.registro.length > 0 ? el("details", {"class": "registro-cron", "open": true}, el("summary", {}, t("Conversa com os servidores"))
+        + el("pre", {}, h(r.registro.join("\n")))) : "");
+  }
+  return el("section", {"class": "cartao-config", "id": "servidor"}, res);
 }
 
 function quadroExcluir(d) {
@@ -213,6 +258,10 @@ function carregarConta() {
 var gravarConta = aoGravar;
 aoGravar = function (form, res, dados) {
   CHAVES_VAPID = res.config || null;
+  // o teste do e-mail fica na página até o próximo
+  if (dados.get("recurso") === "conta" && dados.get("acao") === "email_testar") {
+    TESTE_EMAIL = res.teste || null;
+  }
   gravarConta(form, res, dados);
 };
 

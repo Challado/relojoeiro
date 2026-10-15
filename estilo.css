@@ -661,6 +661,11 @@ details.faixas summary, details.conta-nota summary, details.como-pedir summary {
 details.como-pedir summary { font-weight: 600; color: var(--safira); }
 details.como-pedir ol { margin: .5rem 0 .2rem; padding-left: 1.3rem; }
 details.como-pedir li { margin: .3rem 0; line-height: 1.45; }
+ul.teste-email { list-style: none; padding: 0; margin: .4rem 0; }
+ul.teste-email li { margin: .3rem 0; }
+#servidor .alerta-cron ul { margin: .3rem 0 0; padding-left: 1.2rem; }
+table.compacta.config-email td, table.compacta.config-email td:last-child { text-align: left; vertical-align: top; }
+table.config-email td:first-child { white-space: nowrap; font-weight: 600; }
 .tabela-faixas { margin-top: .5rem; }
 .conta-nota summary { display: flex; align-items: baseline; gap: .6rem; }
 .conta-nota .nota-final { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
