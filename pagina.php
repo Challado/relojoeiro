@@ -37,16 +37,48 @@ function topo($titulo, $ativo, $publica = false)
             exit;
         }
     }
-    $menu = $publica ? [] : ["index.php" => t("Hoje"), "plano.php" => t("Plano"), "desejos.php" => t("Desejos"), "estatisticas.php" => t("Estatísticas"), "hora.php" => t("Hora certa"),
-        "acessorios.php" => t("Acessórios"), "galeria.php" => t("Galeria"), "avisos.php" => t("Avisos"), "configuracao.php" => t("Configuração"), "criterios.php" => t("Critérios"), "grupos.php" => t("Grupos"),
-        "execucoes.php" => t("Execuções do cron"), "conta.php" => t("Conta"), "usuarios.php" => t("Usuários"), "cadastros.php" => t("Cadastros"), "ajuda.php" => t("Ajuda")];
+    // o menu em grupos: o que é do mesmo assunto fica junto (um item solto é uma página; um grupo abre a lista dele)
+    $menu = $publica ? [] : [
+        "index.php" => t("Hoje"),
+        "avisos.php" => t("Avisos"),
+        "hora.php" => t("Hora certa"),
+        t("Rodízio") => ["plano.php" => t("Plano"), "modos.php" => t("Modos de rodízio"), "criterios.php" => t("Critérios de escolha")],
+        t("Coleção") => ["galeria.php" => t("Galeria"), "acessorios.php" => t("Acessórios"), "desejos.php" => t("Desejos"), "estatisticas.php" => t("Estatísticas"),
+            "grupos.php" => t("Grupos")],
+        t("Sistema") => ["configuracao.php" => t("Configuração"), "cadastros.php" => t("Cadastros"), "execucoes.php" => t("Execuções do cron"), "usuarios.php" => t("Usuários")],
+        t("Conta") => ["conta.php" => t("Minha conta"), "aprovacoes.php" => t("Aprovações")],
+        "ajuda.php" => t("Ajuda"),
+    ];
+    // o nome da página atual (a barra do celular mostra ele)
+    $atual = null;
+    foreach ($menu as $chave => $item) {
+        if (is_array($item) && isset($item[$ativo])) {
+            $atual = $item[$ativo];
+        } elseif (!is_array($item) && $chave === $ativo) {
+            $atual = $item;
+        }
+    }
     echo "<!doctype html>\n<html lang=\"" . lingua_atual() . "\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta name=\"theme-color\" content=\"#1c2530\">\n<title>" . htmlspecialchars(t($titulo), ENT_QUOTES, "UTF-8") . "</title>\n"
         . "<link rel=\"stylesheet\" href=\"estilo.css?v=" . (int)@filemtime(__DIR__ . "/estilo.css") . "\">\n</head>\n<body>\n<nav class=\"topo\">\n";
     // no celular o menu fica recolhido: uma barra com a página atual e o botão que abre a lista (na tela grande o botão some)
-    echo "  <button type=\"button\" class=\"menu-botao\" aria-expanded=\"false\" aria-controls=\"menu-itens\"><span class=\"menu-pagina\">" . ($menu[$ativo] ?? htmlspecialchars(t($titulo), ENT_QUOTES, "UTF-8")) . "</span><span class=\"menu-abre\">" . t("Menu") . "</span></button>\n"
+    echo "  <button type=\"button\" class=\"menu-botao\" aria-expanded=\"false\" aria-controls=\"menu-itens\"><span class=\"menu-pagina\">" . htmlspecialchars($atual ?? t($titulo), ENT_QUOTES, "UTF-8") . "</span><span class=\"menu-abre\">" . t("Menu") . "</span></button>\n"
         . "  <div class=\"menu-itens\" id=\"menu-itens\">\n";
-    foreach ($menu as $url => $nome) {
-        echo "    <a href=\"" . $url . "\"" . ($url === $ativo ? " class=\"ativo\"" : "") . ($url === "usuarios.php" ? " data-so-master hidden" : "") . ">" . htmlspecialchars($nome, ENT_QUOTES, "UTF-8") . "</a>\n";
+    $link = function ($url, $nome) use ($ativo) {
+        return "<a href=\"" . $url . "\"" . ($url === $ativo ? " class=\"ativo\" aria-current=\"page\"" : "") . ($url === "usuarios.php" ? " data-so-master hidden" : "") . ">" . htmlspecialchars($nome, ENT_QUOTES, "UTF-8") . "</a>";
+    };
+    foreach ($menu as $chave => $item) {
+        if (is_array($item)) {
+            // um grupo: o botão abre a lista (na tela grande, por cima da página; no celular, a lista fica sempre aberta)
+            $dentro = isset($item[$ativo]);
+            echo "    <div class=\"menu-grupo" . ($dentro ? " ativo" : "") . "\"><button type=\"button\" class=\"menu-grupo-botao\" aria-expanded=\"false\">" . htmlspecialchars($chave, ENT_QUOTES, "UTF-8")
+                . "</button><div class=\"menu-sub\">";
+            foreach ($item as $url => $nome) {
+                echo $link($url, $nome);
+            }
+            echo "</div></div>\n";
+        } else {
+            echo "    " . $link($chave, $item) . "\n";
+        }
     }
     if (!$publica) {
         echo "    <span class=\"menu-conta\" data-menu-conta></span>\n";
@@ -58,7 +90,13 @@ function topo($titulo, $ativo, $publica = false)
     }
     echo "</select></label>\n";
     echo "  </div>\n</nav>\n"
-        . "<script>document.querySelector(\".menu-botao\").addEventListener(\"click\", function () { this.setAttribute(\"aria-expanded\", this.parentNode.classList.toggle(\"aberto\") ? \"true\" : \"false\"); });</script>\n";
+        . "<script>document.querySelector(\".menu-botao\").addEventListener(\"click\", function () { this.setAttribute(\"aria-expanded\", this.parentNode.classList.toggle(\"aberto\") ? \"true\" : \"false\"); });\n"
+        // os grupos: um clique abre (e fecha os outros); clicar fora ou o Esc fecha
+        . "document.querySelectorAll(\".menu-grupo-botao\").forEach(function (b) { b.addEventListener(\"click\", function () { var g = b.parentNode, abre = !g.classList.contains(\"aberto\"); "
+        . "document.querySelectorAll(\".menu-grupo.aberto\").forEach(function (x) { x.classList.remove(\"aberto\"); x.firstChild.setAttribute(\"aria-expanded\", \"false\"); }); "
+        . "if (abre) { g.classList.add(\"aberto\"); b.setAttribute(\"aria-expanded\", \"true\"); } }); });\n"
+        . "document.addEventListener(\"click\", function (e) { if (!e.target.closest(\".menu-grupo\")) { document.querySelectorAll(\".menu-grupo.aberto\").forEach(function (x) { x.classList.remove(\"aberto\"); x.firstChild.setAttribute(\"aria-expanded\", \"false\"); }); } });\n"
+        . "document.addEventListener(\"keydown\", function (e) { if (e.key === \"Escape\") { document.querySelectorAll(\".menu-grupo.aberto\").forEach(function (x) { x.classList.remove(\"aberto\"); x.firstChild.setAttribute(\"aria-expanded\", \"false\"); }); } });</script>\n";
 }
 
 // Os scripts da página e o fim dela. Cada script leva a data do arquivo no endereço, para o navegador não usar uma versão

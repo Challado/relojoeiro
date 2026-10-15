@@ -3104,6 +3104,7 @@
  *     telas.menu.itens[]             os itens do menu, na ordem da barra
  *     telas.menu.itens[].pagina      o arquivo da página (index.php, plano.php...)
  *     telas.menu.itens[].rotulo      o texto do item no menu
+ *     telas.menu.itens[].grupo       o grupo do menu em que o item fica (Rodízio, Coleção, Sistema, Conta); vazio: solto na barra
  *     telas.paginas[]                cada página do sistema, na ordem do menu e depois as que abrem do relógio
  *     telas.paginas[].id             o nome curto da página (hoje, ficha, plano, configuracao, criterios, grupos, execucoes, historico,
  *                                    documentos, cadastros, usuarios, ajuda)

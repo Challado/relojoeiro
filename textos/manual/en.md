@@ -1,4 +1,4 @@
-<!-- origem: 07691b2bbdb236bb764c78e6f917069100338171 -->
+<!-- origem: 6a421624b9794b47d329908291e1f90359ef1d40 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -191,7 +191,7 @@ the limit of 21 days without use"*, *"Draw by score, among 5 candidates: score 7
 
 ### The rotation modes {#os-modos-de-rodízio}
 
-A mode is made of **blocks of weekdays**. Each block says where to draw from (a group, the whole collection or a fixed watch)
+The modes are on the **Rotation modes** page (menu **Rotation**). A mode is made of **blocks of weekdays**. Each block says where to draw from (a group, the whole collection or a fixed watch)
 and whether it is **one watch per day** or **one for the whole block**. These come ready:
 
 - **One per week**: a traditional for the whole week.
@@ -346,7 +346,7 @@ the installation is the **master**: they take care of the whole system.
 
 | Concept | What it is |
 |---|---|
-| **Account** | the login, the password, the e-mail (to recover the password, receive invitations and notices) and the language. Each person takes care of their own in **My account** (menu **Account**). |
+| **Account** | the login, the password, the e-mail (to recover the password, receive invitations and notices) and the language. Each person takes care of their own in **My account** (menu **Account › My account**). |
 | **Collection** | a named set of watches belonging to an **owner**. A person can have several ("My collection", "My father's"). It is born **with the starter set** (the groups, fields, formulas, alerts, criteria and modes ready, in the creator's language), **empty** (only the root of the tree) or **with a tree of yours that already exists**. |
 | **Group tree** | the groups and their definitions (fields, entry types, formulas, alerts, document categories, group criteria). It belongs to the owner and can serve **several of their collections**: what changes in it applies to all. In **My account** you can copy, rename and delete the trees. |
 | **Member** | someone who sees another person's collection (and uses it: marks, logs, changes the day). |
@@ -890,7 +890,12 @@ five on the tablet), the headings become the **Sort by** buttons and all the fil
 measured with the real data (a long name or a large value count), not by the width of the screen. The **Next days** also show
 all the days of the schedule on any screen.
 
-**The menu** has, on the right, what belongs to whoever is signed in: the **collection selector** (with more than one; other
+**The menu** gathers the pages by subject: **Today**, **Alerts** and **Exact time** on their own (the everyday ones); **Rotation**
+(Plan, Rotation modes, Selection criteria), **Collection** (Gallery, Accessories, Wishlist, Statistics, Groups), **System**
+(Settings, Definitions, Cron runs and, only for the master, Users) and **Account** (My account, Approvals), each group with the
+little arrow that opens its list in one click (another click, a click outside or Esc closes it); and **Help**. The group of the
+open page is underlined. On the phone, the collapsed menu opens with the groups already open, each with its name on top. The menu has,
+on the right, what belongs to whoever is signed in: the **collection selector** (with more than one; other
 people's with the owner's name), **Approvals (N)** when there are requests or invitations waiting, **Demo: N days** on the demo
 account and the language. The master viewing the system as another person sees a bar at the top, **Viewing as...**, with the
 button to go back.
@@ -918,11 +923,12 @@ comes in here by its name.
 | **Settings** (`configuracao.php`) | The collection's options (the times, the limits, the screens, the language), the cron status, the summary of the alerts, the reminders and the messages (with the way to the **Alerts** page), the **Backup** (master only: the folder's backups, with **Download** and **Restore**, and **Make a backup now**) and the button that applies the database migrations. See [Settings, option by option](#a-configuração-opção-por-opção). |
 | **Destinations** (`destinos.php`, opened from the Alerts page) | Where the collection's messages go: each webhook, e-mail or Web Push, with the message, the language, what it receives, the tests and how it goes out today. See [Messages and calendars](#mensagens-e-agendas). |
 | **Calendars** (`agendas.php`, opened from the Alerts page) | The collection's calendars (Google, CalDAV, Outlook, ICS link), with the event template, what it receives, the sync, the test event and what has to be in it now. |
+| **Rotation modes** (`modos.php`, menu **Rotation**) | The rotation modes: the table (the active mode marked, the way of choosing, the blocks with the days) with **Edit**, **Activate** and **Delete**, and a mode's form (the name, the planning, the way of choosing, the cycle and the weekday blocks, each with where to draw from, one per day or one for the block and the fixed watch). See [The rotation modes](#os-modos-de-rodízio). |
 | **Criteria** (`criterios.php`) | The criteria sets per place (all watches, a group or a watch), with parameters, subparameters, ranges and each watch's score with the calculation open. It has **Restore the initial criteria**. |
 | **Groups** (`grupos.php`) | The tree: create, rename, move, sort, delete (what belonged to the group goes to the one above) and choose each watch's group. |
-| **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), rotation modes and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page). |
+| **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**) and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page, and the rotation modes on **Rotation modes**). |
 | **Cron runs** (`execucoes.php`) | What the cron did in each round, how long it took and the errors, with filters. |
-| **My account** (`conta.php`, the **Account** menu) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection (by the code the owner gave), your data (your code, the e-mail, the language, the password), the **API tokens** (for your scripts), the **notifications on this device** (Web Push) and deleting the account. See [Several people](#várias-pessoas-contas-coleções-e-acesso). |
+| **My account** (`conta.php`, menu **Account › My account**) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection (by the code the owner gave), your data (your code, the e-mail, the language, the password), the **API tokens** (for your scripts), the **notifications on this device** (Web Push) and deleting the account. See [Several people](#várias-pessoas-contas-coleções-e-acesso). |
 | **Approvals** (`aprovacoes.php`) | The access requests to your collections (approve, decline), the invitations members made that wait for you, **Invite** (by e-mail), the invitations you made and who sees your collections (remove access). The menu shows **Approvals (N)** when something is waiting. |
 | **Users** (`usuarios.php`, master only) | The accounts panel: each one with what it has and the actions (view as, make official, extend, block, edit, change the password, transfer a collection, give access, delete) and creating an account. |
 | **Create account** (`cadastro.php`, without login) | The open sign-up: the new account (with a collection, or asking for access), the invitation that arrived by e-mail and **Forgot my password**. |

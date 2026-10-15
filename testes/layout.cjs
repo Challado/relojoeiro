@@ -66,6 +66,8 @@ const PAGINAS = [
   { nome: 'criterios', url: 'criterios.php' },
   { nome: 'grupos', url: 'grupos.php' },
   { nome: 'cadastros', url: 'cadastros.php' },
+  { nome: 'modos', url: 'modos.php' },
+  { nome: 'modos-editar', url: 'modos.php?editar=2' },
   { nome: 'configuracao', url: 'configuracao.php' },
   { nome: 'avisos', url: 'avisos.php' },
   { nome: 'avisos-editar', url: 'avisos.php?editar=1&evento=1' },

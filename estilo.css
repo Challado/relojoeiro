@@ -20,7 +20,8 @@ body {
 .topo {
   display: flex;
   flex-wrap: wrap;            /* no celular, o menu quebra a linha em vez de passar da largura da tela */
-  gap: .5rem clamp(.75rem, 1.15vw, 1.5rem);   /* com os 15 itens numa linha só até uns 1100 px */
+  gap: .5rem clamp(.75rem, 1.15vw, 1.5rem);   /* os 8 itens (com os grupos) numa linha só */
+  align-items: center;
   padding: .9rem 1.25rem;
   background: var(--tinta);
 }
@@ -28,6 +29,20 @@ body {
 .topo a { color: #b9c3ce; text-decoration: none; }
 .topo a.ativo { color: #fff; border-bottom: 2px solid #fff; }
 .topo a:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+/* os grupos do menu: o botão com a seta abre a lista por cima da página (um clique; outro clique, fora ou o Esc fecha) */
+.menu-grupo { position: relative; }
+.menu-grupo-botao { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: #b9c3ce; cursor: pointer; }
+.menu-grupo-botao::after { content: "\00a0\25BE"; font-size: .8em; }
+.menu-grupo-botao:hover, .menu-grupo.aberto > .menu-grupo-botao { color: #fff; }
+.menu-grupo.ativo > .menu-grupo-botao { color: #fff; border-bottom: 2px solid #fff; }
+.menu-grupo-botao:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.menu-sub { display: none; position: absolute; top: calc(100% + .55rem); left: -.8rem; z-index: 30; min-width: 13rem; padding: .35rem 0;
+  background: var(--tinta); border: 1px solid #3b4757; border-radius: 8px; box-shadow: 0 10px 28px rgba(0, 0, 0, .3); }
+.menu-grupo.aberto .menu-sub { display: block; }
+.menu-sub a { display: block; padding: .5rem .95rem; white-space: nowrap; }
+.menu-sub a:hover { background: #27323f; color: #fff; }
+.topo .menu-sub a.ativo { border-bottom: 0; color: #fff; background: #27323f; box-shadow: inset 3px 0 0 #fff; }
+.menu-sub a[hidden] { display: none; }
 
 main { max-width: 56rem; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
 
@@ -850,6 +865,16 @@ table.resumo-plano { max-width: 44rem; }
   .topo.aberto .menu-itens { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; padding: .5rem 0 .4rem; }
   .topo .menu-itens a { padding: .7rem .8rem; border-radius: 8px; background: #27323f; color: #dfe5eb; }
   .topo .menu-itens a.ativo { background: var(--safira); color: #fff; border-bottom: 0; }
+  /* no celular os grupos ficam sempre abertos: o nome do grupo como um título pequeno e as páginas dele embaixo */
+  .menu-grupo { grid-column: 1 / -1; }
+  .menu-grupo-botao { display: block; padding: .45rem .2rem .1rem; color: #8b97a5; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; pointer-events: none; }
+  .menu-grupo-botao::after { content: none; }
+  .menu-grupo.ativo > .menu-grupo-botao { border-bottom: 0; color: #c9d3dd; }
+  .menu-sub, .menu-grupo.aberto .menu-sub { display: grid; position: static; grid-template-columns: 1fr 1fr; gap: .4rem; min-width: 0; padding: .3rem 0 0;
+    background: none; border: 0; box-shadow: none; }
+  .menu-sub a { white-space: normal; }
+  .menu-grupo ~ a { grid-column: 1 / -1; margin-top: .6rem; }
+  .topo .menu-sub a.ativo { background: var(--safira); box-shadow: none; }
 
   /* menos margem em volta, mais tela para o conteúdo */
   main { padding: 1rem .75rem 3rem; }

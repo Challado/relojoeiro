@@ -215,7 +215,7 @@ function recarregarHoje() {
       el("input", {"type": "hidden", "name": "acao", "value": "modo"})
       + el("div", {"class": "modo-grade", "data-selecoes": JSON.stringify(selModos), "data-escalas": JSON.stringify(escalas)}, el("div", {"class": "modo-lado"}, ladoModo) + el("div", {"class": "modo-lado", "data-nao-manual": true}, ladoSelecao))
       + el("button", {"data-nao-manual": true}, t("Aplicar modo"))
-      + el("p", {"class": "nota", "data-nao-manual": true}, t("Trocar o modo apaga o plano atual e gera outro{1}. O histórico de uso, corda, sol e carga continua. Os modos e os blocos de dias se cadastram em {2}.", {1: d.comecou ? t(" a partir de amanhã: hoje continua o {1}, que já está no pulso (para trocar hoje, use \"Usando hoje\")", {1: h(nomeHoje)}) : t(" a partir de hoje"), 2: el("a", {"href": "cadastros.php?aba=modos"}, t("Cadastros"))})));
+      + el("p", {"class": "nota", "data-nao-manual": true}, t("Trocar o modo apaga o plano atual e gera outro{1}. O histórico de uso, corda, sol e carga continua. Os modos e os blocos de dias se cadastram em {2}.", {1: d.comecou ? t(" a partir de amanhã: hoje continua o {1}, que já está no pulso (para trocar hoje, use \"Usando hoje\")", {1: h(nomeHoje)}) : t(" a partir de hoje"), 2: el("a", {"href": "modos.php"}, t("Modos de rodízio"))})));
     // sortear de novo: as ações possíveis agora, com a explicação e a confirmação de cada uma
     var ateQuando = escala ? t("o fim da escala") : (d.proxima_semana && d.proxima_semana.ja_montada ? t("o fim da próxima semana") : t("domingo"));
     var sorteios = [];

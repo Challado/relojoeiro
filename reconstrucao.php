@@ -165,23 +165,26 @@ function reconstrucao_telas()
         ]],
     ],
     "menu" => [
-        "como" => t('Na barra escura do topo, nessa ordem, em todas as páginas; o da página atual em branco e sublinhado. A Ficha, o Histórico e os Documentos não estão no menu: abrem do painel do relógio (o histórico e os documentos numa aba nova). No celular (até 900px): a barra, presa no alto ao rolar, mostra o nome da página atual à esquerda e o botão "☰ Menu" à direita; aberto, ele vira "✕ Menu" e os itens aparecem em duas colunas, cada um num botão escuro (#27323f), o atual em safira. Depois do último item, o seletor do idioma: uma caixa pequena com o código curto de cada idioma (PT, EN, 中文, हिं, ES, FR; o nome inteiro na dica); escolher grava o cookie lingua (um ano, o caminho todo) e abre a página de novo nele. Os rótulos abaixo são os do português: em outro idioma, as traduções do dicionário das telas. À direita, antes do idioma, o que é de quem entrou (recurso=conta, parte=menu): com mais de uma coleção, o seletor da coleção (grava o cookie colecao e abre a página de novo; o nome, e "· <dono>" nas dos outros); "Aprovações (N)" em âmbar quando há pedidos ou convites esperando; "Demo: N dias" em âmbar na conta de demonstração. O Usuários só aparece para o master. O master vendo como outro usuário: uma faixa âmbar acima de tudo, "Vendo como <login>: o que aparece e o que se grava é da conta dele." e o botão "Voltar a ser <master>". A conta sem coleção nenhuma (409 sem_colecao) vai para Minha conta. A página pública (cadastro.php) não tem menu, só o idioma.'),
+        "como" => t('Na barra escura do topo, em todas as páginas, nessa ordem: Hoje, Avisos e Hora certa soltos; os grupos Rodízio, Coleção, Sistema e Conta; e a Ajuda. No computador, cada grupo é um botão com "▾" que abre embaixo dele uma caixa escura com as páginas do grupo, uma por linha (abre uma de cada vez; fecha num clique fora ou no Esc); o grupo da página atual e a página atual em branco e sublinhados. A Ficha, o Histórico, os Documentos, os Destinos e as Agendas não estão no menu: os três primeiros abrem do painel do relógio (o histórico e os documentos numa aba nova), os Destinos e as Agendas da página Avisos. No celular (até 900px): a barra, presa no alto ao rolar, mostra o nome da página atual à esquerda e o botão "☰ Menu" à direita; aberto, ele vira "✕ Menu" e os itens aparecem em duas colunas, cada um num botão escuro (#27323f), o atual em safira; os grupos ficam abertos, com o nome do grupo em letras pequenas maiúsculas em cima das páginas dele, e os itens soltos depois de um grupo ocupam a linha inteira. Depois do último item, o seletor do idioma: uma caixa pequena com o código curto de cada idioma (PT, EN, 中文, हिं, ES, FR; o nome inteiro na dica); escolher grava o cookie lingua (um ano, o caminho todo) e abre a página de novo nele. Os rótulos abaixo são os do português: em outro idioma, as traduções do dicionário das telas. À direita, antes do idioma, o que é de quem entrou (recurso=conta, parte=menu): com mais de uma coleção, o seletor da coleção (grava o cookie colecao e abre a página de novo; o nome, e "· <dono>" nas dos outros); "Aprovações (N)" em âmbar quando há pedidos ou convites esperando; "Demo: N dias" em âmbar na conta de demonstração. O Usuários só aparece para o master. O master vendo como outro usuário: uma faixa âmbar acima de tudo, "Vendo como <login>: o que aparece e o que se grava é da conta dele." e o botão "Voltar a ser <master>". A conta sem coleção nenhuma (409 sem_colecao) vai para Minha conta. A página pública (cadastro.php) não tem menu, só o idioma.'),
         "itens" => [
-            ["pagina" => "index.php", "rotulo" => "Hoje"],
-            ["pagina" => "plano.php", "rotulo" => "Plano"],
-            ["pagina" => "desejos.php", "rotulo" => "Desejos"],
-            ["pagina" => "estatisticas.php", "rotulo" => t('Estatísticas')],
-            ["pagina" => "hora.php", "rotulo" => t('Hora certa')],
-            ["pagina" => "acessorios.php", "rotulo" => t('Acessórios')],
-            ["pagina" => "galeria.php", "rotulo" => "Galeria"],
-            ["pagina" => "configuracao.php", "rotulo" => t('Configuração')],
-            ["pagina" => "criterios.php", "rotulo" => t('Critérios')],
-            ["pagina" => "grupos.php", "rotulo" => "Grupos"],
-            ["pagina" => "execucoes.php", "rotulo" => t('Execuções do cron')],
-            ["pagina" => "conta.php", "rotulo" => t('Conta')],
-            ["pagina" => "usuarios.php", "rotulo" => t('Usuários')],
-            ["pagina" => "cadastros.php", "rotulo" => "Cadastros"],
-            ["pagina" => "ajuda.php", "rotulo" => "Ajuda"],
+            ["pagina" => "index.php", "rotulo" => "Hoje", "grupo" => null],
+            ["pagina" => "avisos.php", "rotulo" => t('Avisos'), "grupo" => null],
+            ["pagina" => "hora.php", "rotulo" => t('Hora certa'), "grupo" => null],
+            ["pagina" => "plano.php", "rotulo" => "Plano", "grupo" => t('Rodízio')],
+            ["pagina" => "modos.php", "rotulo" => t('Modos de rodízio'), "grupo" => t('Rodízio')],
+            ["pagina" => "criterios.php", "rotulo" => t('Critérios de escolha'), "grupo" => t('Rodízio')],
+            ["pagina" => "galeria.php", "rotulo" => "Galeria", "grupo" => t('Coleção')],
+            ["pagina" => "acessorios.php", "rotulo" => t('Acessórios'), "grupo" => t('Coleção')],
+            ["pagina" => "desejos.php", "rotulo" => "Desejos", "grupo" => t('Coleção')],
+            ["pagina" => "estatisticas.php", "rotulo" => t('Estatísticas'), "grupo" => t('Coleção')],
+            ["pagina" => "grupos.php", "rotulo" => "Grupos", "grupo" => t('Coleção')],
+            ["pagina" => "configuracao.php", "rotulo" => t('Configuração'), "grupo" => t('Sistema')],
+            ["pagina" => "cadastros.php", "rotulo" => "Cadastros", "grupo" => t('Sistema')],
+            ["pagina" => "execucoes.php", "rotulo" => t('Execuções do cron'), "grupo" => t('Sistema')],
+            ["pagina" => "usuarios.php", "rotulo" => t('Usuários'), "grupo" => t('Sistema')],
+            ["pagina" => "conta.php", "rotulo" => t('Minha conta'), "grupo" => t('Conta')],
+            ["pagina" => "aprovacoes.php", "rotulo" => t('Aprovações'), "grupo" => t('Conta')],
+            ["pagina" => "ajuda.php", "rotulo" => "Ajuda", "grupo" => null],
         ],
     ],
     "paginas" => [
@@ -589,20 +592,38 @@ function reconstrucao_telas()
             ],
         ],
         [
+            "id" => "modos",
+            "pagina" => "modos.php",
+            "titulo" => t('Modos de rodízio'),
+            "endereco" => t('modos.php; ?editar=<id>#form abre um modo para alterar'),
+            "le" => [
+                t('recurso=cadastros (os modos, os grupos e os relógios)'),
+            ],
+            "grava" => [
+                t('modos: novo, alterar, ativar, excluir'),
+            ],
+            "partes" => [
+                ["titulo" => t('Os modos'), "itens" => [
+                    t('h1 "Modos de rodízio" e um cartão: a explicação, a tabela e o formulário ("Novo modo" ou "Alterar ...", botão "Criar" / "Salvar" e "cancelar"). Gravou: o recado no alto e a edição acaba; recusado: o que foi digitado fica e os erros aparecem no topo.'),
+                    t('Tabela Modo ("(ativo)"), Forma de escolha ("· com ciclo"), Blocos (nome e dias), ações (Editar; nos outros: Ativar e Excluir). Formulário: Nome, Planejamento (sorteio pelos blocos; escala inteligente de 7 dias, 30 dias, 60 dias, 6 meses, 1 ano, 2 anos), Forma de escolha, a caixa "ciclo", e a tabela dos blocos (os que existem e duas linhas vazias): Bloco (nome), Dias (caixas seg a dom), Sortear de, Um por (um por dia; um por bloco (na semana)), Relógio fixo ("— sorteia —" e os relógios). Bloco sem dia marcado sai.'),
+                ]],
+            ],
+        ],
+        [
             "id" => "cadastros",
             "pagina" => "cadastros.php",
             "titulo" => "Cadastros",
-            "endereco" => t('cadastros.php?aba=<campos|lancamentos|formulas|modos|documentos>&editar=<id>#form (o ?aba=avisos antigo leva para a página Avisos)'),
+            "endereco" => t('cadastros.php?aba=<campos|lancamentos|formulas|documentos>&editar=<id>#form (o ?aba=avisos antigo leva para a página Avisos; o ?aba=modos, para a página Modos de rodízio)'),
             "le" => [
                 "recurso=cadastros",
                 t('recurso=calcular (o testar)'),
             ],
             "grava" => [
-                t('campos, lancamento_tipos, formulas, modos, documento_categorias'),
+                t('campos, lancamento_tipos, formulas, documento_categorias'),
             ],
             "partes" => [
                 ["titulo" => t('Em todas as abas'), "itens" => [
-                    t('h1 "Cadastros" e as abas Campos, Tipos de lançamento, Fórmulas, Modos de rodízio, Categorias de documentos. Cada aba é um cartão: o título, a explicação, a tabela com "Editar" (link que abre o formulário embaixo com os dados, no #form) e Excluir em cada linha, e o formulário ("Novo ..." ou "Alterar ...", botão "Criar" / "Salvar" e "cancelar"). Gravou: o recado no alto e a edição acaba; recusado: o que foi digitado fica e os erros aparecem no topo.'),
+                    t('h1 "Cadastros" e as abas Campos, Tipos de lançamento, Fórmulas, Categorias de documentos. Cada aba é um cartão: o título, a explicação, a tabela com "Editar" (link que abre o formulário embaixo com os dados, no #form) e Excluir em cada linha, e o formulário ("Novo ..." ou "Alterar ...", botão "Criar" / "Salvar" e "cancelar"). Gravou: o recado no alto e a edição acaba; recusado: o que foi digitado fica e os erros aparecem no topo.'),
                 ]],
                 ["titulo" => "Campos", "itens" => [
                     t('Tabela Campo ("(unidade)"), Identificador (fonte fixa), Tipo, Vale para, Padrão, ações (Editar, ↑, ↓, Excluir com confirmação "Excluir o campo <nome> e os valores dele?"). Formulário: Nome (até 120), Identificador (a-z, 0-9 e _; começa com letra; até 40), Tipo (Número inteiro, Número decimal, Sim ou não, Data, Lista de opções, Texto), Unidade (até 20), Valor padrão, Vale para ("todos os relógios" e os grupos), Opções (lista: uma por linha).'),
@@ -612,9 +633,6 @@ function reconstrucao_telas()
                 ]],
                 ["titulo" => t('Fórmulas'), "itens" => [
                     t('Tabela Fórmula (o nome e o identificador com a unidade), Versão para, Cálculo (fonte fixa), ações. Formulário: Identificador (só na nova), Nome, Unidade, Versão para, Cálculo (textarea, fonte fixa). "Testar uma fórmula (sem gravar)": o texto da fórmula e "Testar em todos os relógios" (recurso=calcular): a tabela Relógio, Resultado, As partes da conta, ou os erros. "As funções do motor" (abre e fecha): cada função em negrito e a explicação.'),
-                ]],
-                ["titulo" => t('Modos de rodízio'), "itens" => [
-                    t('Tabela Modo ("(ativo)"), Forma de escolha ("· com ciclo"), Blocos (nome e dias), ações (Editar; nos outros: Ativar e Excluir). Formulário: Nome, Planejamento (sorteio pelos blocos; escala inteligente de 7 dias, 30 dias, 60 dias, 6 meses, 1 ano, 2 anos), Forma de escolha, a caixa "ciclo", e a tabela dos blocos (os que existem e duas linhas vazias): Bloco (nome), Dias (caixas seg a dom), Sortear de, Um por (um por dia; um por bloco (na semana)), Relógio fixo ("— sorteia —" e os relógios). Bloco sem dia marcado sai.'),
                 ]],
                 ["titulo" => t('Categorias de documentos'), "itens" => [
                     t('Tabela Categoria, Identificador, Aceita ("qualquer arquivo" ou as famílias), Ordem, Documentos, ações (Excluir só sem documentos). Formulário: Nome, Identificador (na nova), Ordem ("vazio: no fim"), Aceita (caixas imagens, vídeos, áudios, PDF, XML).'),
@@ -828,7 +846,9 @@ function reconstrucao_codigo()
     "documentos.php" => ["tela", t('o esqueleto da página Documentos')],
     "documentos.js" => ["tela", t('a página Documentos: o envio, as abas, a galeria com o visor, os vídeos, os PDFs, as NF-e e a edição')],
     "cadastros.php" => ["tela", t('o esqueleto da página Cadastros')],
-    "cadastros.js" => ["tela", t('a página Cadastros: as abas Campos, Tipos de lançamento, Fórmulas, Modos de rodízio e Categorias de documentos (os avisos ficam na página Avisos)')],
+    "cadastros.js" => ["tela", t('a página Cadastros: as abas Campos, Tipos de lançamento, Fórmulas e Categorias de documentos (os avisos ficam na página Avisos; os modos, na página Modos de rodízio)')],
+    "modos.php" => ["tela", t('o esqueleto da página Modos de rodízio')],
+    "modos.js" => ["tela", t('a página Modos de rodízio: os modos da coleção, com os blocos de cada um, o ativo e o formulário')],
     "usuarios.php" => ["tela", t('o esqueleto da página Usuários')],
     "usuarios.js" => ["tela", t('a página Usuários: o painel do master (cada conta com o que tem e as ações: ver como, oficializar, prorrogar, voltar a demo, bloquear, alterar, trocar a senha, transferir, dar acesso, excluir) e criar conta')],
     "conta.php" => ["tela", t('o esqueleto da página Minha conta')],
@@ -1077,7 +1097,7 @@ function reconstrucao()
                 t('Um núcleo (lib.php): o motor das fórmulas, as variáveis de cada relógio, os avisos, as notas, o plano, a escala, a previsão, o gasto medido, o pulso sozinho, a linha do tempo e os documentos; o colecoes.php (o escopo da coleção, o modelo.json, os segredos cifrados, a configuração do sistema, a migração v25, o impacto das exclusões); o alertas.php (os destinos das mensagens: webhook, e-mail por SMTP com cópia por IMAP, Web Push com VAPID; as agendas: Google, CalDAV, Outlook, ICS); o contas.php (o cadastro aberto, a conta, as coleções e as árvores, os convites, os pedidos, os tokens e o painel do master).'),
                 t('As gravações (operacoes.php e, as das contas, contas.php): uma função por recurso (op_relogio, op_lancamento, op_campos, op_conta, op_colecoes...), que valida tudo, grava e devolve {ok, mensagem, erros[], ...}. A tela e a API chamam as mesmas.'),
                 t('O banco (banco.php): a conexão com as extensões do PHP (mysqli, pgsql, sqlite3, pdo_firebird), parâmetros sempre por ? (nunca texto colado no SQL), e a tradução do dialeto do MySQL para os outros: AUTO_INCREMENT, ENUM (vira CHECK ... IN), TINYINT, DATETIME, os INDEX dentro do CREATE TABLE, AFTER, MODIFY COLUMN (o SQLite refaz a tabela), INSERT IGNORE, REPLACE INTO, NOW(), <=>, LIKE sem diferenciar maiúsculas; no Firebird, também LIMIT/OFFSET (OFFSET ... ROWS FETCH NEXT ... ROWS ONLY), DATE(x) (CAST AS DATE), CONCAT (||), LENGTH/LEAST/GREATEST (OCTET_LENGTH/MINVALUE/MAXVALUE), o SELECT sem FROM (FROM RDB$DATABASE), o INSERT de várias linhas (um por linha), a tabela no (palavra reservada: "NO"), nomes de índice e de regra com até 31 letras, o TEXT como VARCHAR(8191) e a chave única de várias colunas com coluna vazia como índice único de uma expressão; e três comandos próprios das migrações: ALTER FOREIGN KEY, DROP COLUMN e ADD CONSTRAINT ... CHECK (trocando a regra sem perder a anterior se os dados não cumprem a nova).'),
-                t('As páginas (index.php, plano.php, desejos.php, estatisticas.php, hora.php, acessorios.php, galeria.php, passaporte.php, ficha.php, documentos.php, historico.php, configuracao.php, criterios.php, grupos.php, cadastros.php, execucoes.php, conta.php, aprovacoes.php, usuarios.php, destinos.php, agendas.php, ajuda.php, e a pública cadastro.php) só entregam o esqueleto, sem conferir nem o login; o JavaScript de cada uma (hoje.js, painel.js, configuracao.js, ajuda.js...) chama a API e monta a tela, sem fazer conta: resumos, porcentagens e situações (o resumo do plano, a porcentagem de cada estado no histórico, o peso efetivo dos critérios, a situação do cron, o manual em HTML) vêm prontos da API. Formulários com data-recurso gravam pela API e a página se remonta com a resposta.'),
+                t('As páginas (index.php, plano.php, desejos.php, estatisticas.php, hora.php, acessorios.php, galeria.php, passaporte.php, ficha.php, documentos.php, historico.php, avisos.php, configuracao.php, modos.php, criterios.php, grupos.php, cadastros.php, execucoes.php, conta.php, aprovacoes.php, usuarios.php, destinos.php, agendas.php, ajuda.php, e a pública cadastro.php) só entregam o esqueleto, sem conferir nem o login; o JavaScript de cada uma (hoje.js, painel.js, configuracao.js, ajuda.js...) chama a API e monta a tela, sem fazer conta: resumos, porcentagens e situações (o resumo do plano, a porcentagem de cada estado no histórico, o peso efetivo dos critérios, a situação do cron, o manual em HTML) vêm prontos da API. Formulários com data-recurso gravam pela API e a página se remonta com a resposta.'),
                 t('A API faz tudo, inclusive o que vem antes das telas: a instalação do banco vazio (recurso=instalacao, pelo token), o primeiro usuário (recurso=usuarios pelo token), a importação do sistema anterior (recurso=importacao) e o login das páginas (recurso=entrar: a página sem login recebe 401 da API, o api.js manda para api.php?recurso=entrar&volta=<a página>, o navegador pede o usuário e a senha e a API devolve para a página). Os scripts de linha de comando (instalar.php, criar_usuario.php, importar.php) só chamam as mesmas operações.'),
                 t('Fora da API, só o cron (cron.php), a cada minuto pela linha de comando, com as mesmas funções que a API usa; o que ele fez sai em recurso=cron.'),
                 t('Sem framework e sem dependências: PHP 8.1+ e JavaScript puro. A reescrita pode usar outra pilha, desde que mantenha o contrato da API, o modelo de dados e as regras.'),
@@ -1195,7 +1215,7 @@ function reconstrucao()
                 t('A especificação completa, tela por tela, está em telas (abaixo): o visual com os valores exatos (cores, letras, controles, componentes, larguras), o menu, e cada página com o endereço, o que ela lê e grava na API, e as partes em ordem com cada tabela, campo, botão e mensagem. Aqui, o resumo.'),
                 t('Hoje: no alto, o destaque: o relógio do dia ou, com destaque_hoje = pulso, o que está no pulso agora (a API escolhe: destaque.relogio_id) (com o Pôs e o Tirou), "Hoje é dia de" (os avisos com o botão que resolve), os próximos dias com o motivo e o trocar por…, o modo de rodízio (troca ali mesmo), e a tabela da coleção com filtros e ordenação; clicar num relógio abre o painel dele, ao lado da lista ou numa janela flutuante (painel_modo).'),
                 t('O painel (e a ficha, a mesma coisa numa página): a cabeça (foto, grupo, nome, marcas), quadros alinhados numa grade (Agora, Previsão, Gasto da bateria, Autonomia, Rodízio, Compra, Documentos, Próximas manutenções), cada um com rótulo e valor em duas colunas; o quadro Marcar (um menu só, "O que você quer marcar?", e embaixo só os campos daquilo); Editar cadastro; o gráfico da carga com as medições; os dados do relógio (o cadastro com a origem de cada valor e o resultado de cada fórmula com a versão); o histórico recente.'),
-                t('Plano, Histórico, Documentos (com o menu ⋮ em cada arquivo), Configuração (quadros com uma opção por linha e a barra de salvar presa no pé), Destinos, Agendas, Critérios, Grupos, Cadastros, Execuções do cron, Minha conta, Aprovações, Usuários (o painel do master), Ajuda (as seções do README) e o cadastro aberto.'),
+                t('Plano, Histórico, Documentos (com o menu ⋮ em cada arquivo), Avisos, Configuração (quadros com uma opção por linha e a barra de salvar presa no pé), Destinos, Agendas, Modos de rodízio, Critérios, Grupos, Cadastros, Execuções do cron, Minha conta, Aprovações, Usuários (o painel do master), Ajuda (as seções do README) e o cadastro aberto.'),
                 t('Três tamanhos com o mesmo sistema visual: até 900 px (celular e tablet de pé) o menu fica recolhido, as tabelas viram cartões e o relógio abre em tela cheia (o voltar do aparelho fecha); de 901 a 1199 px o painel ao lado desliza por cima, pela direita. A mesma informação em todos os tamanhos: nenhuma coluna, filtro ou dia é escondido por falta de espaço. A tabela dos relógios tem sempre as 12 colunas; quando a tabela inteira não cabe na largura que tem (medida com os dados, com ou sem o painel aberto), cada relógio vira um cartão com os mesmos 12 campos na mesma ordem, cada um com o nome da coluna em cima (2 colunas no celular, 5 no tablet), os títulos viram botões de ordenar e os 11 filtros ficam todos. Campos com letra de 16 px no celular (o iPhone não aproxima a tela).'),
             ]),
             $secao("seguranca", t('Segurança'), [
