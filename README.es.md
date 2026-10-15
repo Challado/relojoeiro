@@ -1069,8 +1069,8 @@ atajos en el móvil, integración con Home Assistant, un widget.
 La API hace también lo que viene antes y alrededor de las pantallas: **instala la base de datos** (`recurso=instalacao`),
 **crea el primer usuario** (`recurso=usuarios`, con el token), **importa el sistema anterior** (`recurso=importacao`), el
 **registro abierto** (`recurso=cadastro`, sin login), las **cuentas** (`conta`, `colecoes`, `acessos`, `convites`, `pedidos`,
-`aprovacoes`) y hace el **login de las páginas** (`recurso=entrar`: las páginas no comprueban nada, solo entregan el
-esqueleto; quien llega sin login es enviado a la API, que pide el usuario y la contraseña y lo devuelve a la página). Los
+`aprovacoes`) y hace el **login de las páginas** (`recurso=entrar`: cuando el login se cae con la página ya abierta, la API pide el usuario y la
+contraseña y lo devuelve a la página; al abrir, la propia página ya los pide, antes de enviar nada). Los
 scripts de línea de comandos (`instalar.php`, `criar_usuario.php`, `importar.php`) son atajos: llaman a las mismas
 operaciones de la API.
 
@@ -1684,8 +1684,12 @@ datos en la API), la carpeta de documentos y las contraseñas de los usuarios (s
 - **Motor de fórmulas propio**, con análisis sintáctico, funciones de historial, versiones por grupo y dependencias entre
   fórmulas.
 - **Simulación:** la escala y las previsiones simulan registros futuros y recalculan las fórmulas día a día, sin guardar nada.
-- **Front-end en HTML y JavaScript puros.** Cada página PHP solo entrega el esqueleto (ni siquiera comprueba el login: quien
-  llega sin login es enviado al login de la API); su `.js` llama a la API y arma la pantalla. Los scripts llevan la fecha del
+- **Front-end en HTML y JavaScript puros.** Cada página PHP solo entrega el esqueleto; su `.js` llama a la API y arma la
+  pantalla. **Nada sale antes del login:** la página comprueba el usuario y la contraseña en el servidor antes de la primera
+  línea (`pagina_login()`, en `lib.php`, llamada por `topo()`) y, sin ellos, responde 401 con el pedido de contraseña del
+  navegador, sin menú ni esqueleto (si la persona cancela, solo aparece "Entrar", con los enlaces **Intentar de nuevo** y
+  **Crear cuenta**). El login vale para la página y para la API al mismo tiempo (el mismo realm). Solo pasan sin login **Crear
+  cuenta** y, antes de que exista algún usuario, las páginas de la instalación. Los scripts llevan la fecha del
   archivo en la URL, para que la caché del navegador no sirva una versión antigua.
 - **Cron mudo y rastreable:** se ejecuta cada minuto, no escribe en la salida y registra cada ejecución en la base (sin
   actividad, 7 días; con actividad o error, 1 año). Un error fatal va a la base o, si ni la base responde, a un archivo
@@ -1789,7 +1793,7 @@ ciclos mayores, que ningún `CHECK` alcanza) y las de los vínculos opcionales.
 | `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | las páginas (solo el esqueleto; `cadastro.php` es la pública) |
 | `push.js` | el service worker del Web Push |
 | `ajuda.php` | la página de ayuda: solo el esqueleto; el `ajuda.js` pide el texto a la API (`recurso=manual`: las secciones del README para quien usa, ya en HTML, convertidas en el `lib.php`) |
-| [`pagina.php`](pagina.php) | la parte de arriba con el menú y el final de las páginas (el login es de la API: `recurso=entrar`) |
+| [`pagina.php`](pagina.php) | la parte de arriba con el menú y el final de las páginas ; `topo()` comprueba el login antes de enviar nada (`pagina_login()`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | las pantallas, armadas en el navegador a partir de la API |
 | [`estilo.css`](estilo.css) | el aspecto |
 | [`textos/`](textos/) | los idiomas: `funcoes.php` (la función `t()`, la lista de los idiomas, el idioma de la petición, las fechas y los números de cada idioma) y un archivo por idioma (`en.php`, `zh-CN.php`, `hi.php`, `es.php`, `fr.php`: el texto en portugués => la traducción, por parte); abiertos directamente no hacen nada |

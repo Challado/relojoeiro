@@ -1,4 +1,4 @@
-<!-- origem: 01cde1b4bbb3c20da12a000e12a091b4da1b1be1 -->
+<!-- origem: 6aeb9df90cca44b7b7b586df94daa20dd66fe3d1 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -78,7 +78,7 @@ php -S localhost:8000            # 然后打开 http://localhost:8000
 
 `api.php` 是**唯一的后端**。页面只是界面：每个页面的 JavaScript 调用 API 并生成 HTML，不做任何计算（摘要、百分比、合计和状态，例如计划摘要和 cron 的状态，都由 API 直接给出；界面只做属于自己的事：筛选、排序以及把表格筛选后显示的内容相加）。因此，**界面能做的一切，脚本也能做**：自动化、手机快捷方式、与 Home Assistant 集成、小组件。
 
-API 也负责界面之前和周边的事情：**安装数据库**（`recurso=instalacao`）、**创建第一个用户**（`recurso=usuarios`，使用令牌）、**导入旧系统**（`recurso=importacao`）、**公开注册**（`recurso=cadastro`，无需登录）、**账户**（`conta`、`colecoes`、`acessos`、`convites`、`pedidos`、`aprovacoes`），以及**页面登录**（`recurso=entrar`：页面什么都不检查，只提供骨架；未登录的访问者会被送到 API，由它询问用户名和密码，再送回页面）。命令行脚本（`instalar.php`、`criar_usuario.php`、`importar.php`）只是快捷方式：它们调用同样的 API 操作。
+API 也负责界面之前和周边的事情：**安装数据库**（`recurso=instalacao`）、**创建第一个用户**（`recurso=usuarios`，使用令牌）、**导入旧系统**（`recurso=importacao`）、**公开注册**（`recurso=cadastro`，无需登录）、**账户**（`conta`、`colecoes`、`acessos`、`convites`、`pedidos`、`aprovacoes`），以及**页面登录**（`recurso=entrar`：页面已打开而登录失效时，由 API 询问用户名和密码，再送回页面；打开页面时，页面本身在输出任何内容之前就已经要求登录）。命令行脚本（`instalar.php`、`criar_usuario.php`、`importar.php`）只是快捷方式：它们调用同样的 API 操作。
 
 API 之外只有 **cron**（`cron.php`，系统的时钟：生成计划、开始和结束当天的时段、发送消息、同步日历、触发事件并维护文档的副本），它使用与 API 相同的函数；可以随时请求的事情在 API 中都有对应的动作（推送目标的 `testar`、日历的 `sincronizar`、`resortear`……），它做过的事显示在 `recurso=cron` 中。
 
@@ -385,7 +385,7 @@ php criar_usuario.php 你的登录名
 - **纯 PHP 8.1+，配合 SQLite、MySQL/MariaDB、PostgreSQL 或 Firebird。** 没有框架、没有 Composer、没有依赖，可以在任何支持 PHP 的主机上运行。每种数据库通过对应的 PHP 扩展（`sqlite3`、`mysqli`、`pgsql`、`pdo_firebird`）；系统的 SQL 只写一次，由 [`banco.php`](banco.php) 转换各数据库之间的差异。
 - **自研公式引擎**，带语法分析、历史函数、按分组的版本以及公式之间的依赖。
 - **模拟：** 排程和预测会模拟未来的记录，并逐日重新计算公式，不保存任何东西。
-- **纯 HTML 和 JavaScript 前端。** 每个 PHP 页面只提供骨架（连登录都不检查：未登录的人会被送到 API 的登录）；页面的 `.js` 调用 API 并生成界面。脚本的 URL 中带有文件日期，避免浏览器缓存提供旧版本。
+- **纯 HTML 和 JavaScript 前端。** 每个 PHP 页面只提供骨架；页面的 `.js` 调用 API 并生成界面。**登录之前什么都不输出：**页面在输出第一行之前就在服务器上检查用户和密码（`lib.php` 中的 `pagina_login()`，由 `topo()` 调用），未通过则以 401 回应并弹出浏览器的密码框，不显示菜单也不显示骨架（如果取消，只显示“登录”，带**重试**和**创建账户**链接）。页面和 API 同时使用这次登录（同一个 realm）。只有**创建账户**，以及在还没有任何用户时的安装页面无需登录。脚本的 URL 中带有文件日期，避免浏览器缓存提供旧版本。
 - **静默且可追踪的 cron：** 每分钟运行一次，不向输出写任何东西，并把每次运行记录在数据库中（没有活动的保留 7 天；有活动或错误的保留 1 年）。致命错误会写入数据库，如果连数据库都无法响应，则写入一个临时文件。
 - **不会丢失的文档：** 每个文件都保存在文件夹中，如有要求（由系统、手表或文件本身决定），还会完整地保存在数据库中；cron 会重建丢失的文件、复制缺少的副本并清理多余的内容（参见[手表的文档](#os-documentos-do-relógio)）。
 - **能自我保护的数据库：** 关系型且规范化，四种数据库上都有外键和校验规则（`CHECK`、`NOT NULL`、`UNIQUE`）：错误的写入会被数据库本身拒绝（参见[数据库模型](#o-modelo-do-banco)）。
@@ -456,7 +456,7 @@ php criar_usuario.php 你的登录名
 | `index.php`、`plano.php`、`desejos.php`、`estatisticas.php`、`hora.php`、`acessorios.php`、`galeria.php`、`passaporte.php`、`ficha.php`、`documentos.php`、`historico.php`、`configuracao.php`、`destinos.php`、`agendas.php`、`criterios.php`、`grupos.php`、`cadastros.php`、`execucoes.php`、`conta.php`、`aprovacoes.php`、`usuarios.php`、`cadastro.php` | 页面（只有骨架；`cadastro.php` 是公开页面） |
 | `push.js` | Web Push 的 service worker |
 | `ajuda.php` | 帮助页面：只有骨架；`ajuda.js` 向 API 请求文本（`recurso=manual`：README 中面向用户的章节，已在 `lib.php` 中转换为 HTML） |
-| [`pagina.php`](pagina.php) | 页面顶部的菜单和页面结尾（登录属于 API：`recurso=entrar`） |
+| [`pagina.php`](pagina.php) | 页面顶部的菜单和页面结尾；`topo()` 在输出任何内容之前检查登录（`pagina_login()`） |
 | `api.js`、`hoje.js`、`painel.js`、`tabela.js`、`foto.js`…… | 各个界面，在浏览器中根据 API 生成 |
 | [`estilo.css`](estilo.css) | 外观 |
 | [`textos/`](textos/) | 语言：`funcoes.php`（`t()` 函数、语言列表、请求的语言、每种语言的日期和数字格式）以及每种语言一个文件（`en.php`、`zh-CN.php`、`hi.php`、`es.php`、`fr.php`：葡萄牙语文本 => 译文，按部分划分）；直接打开则什么都不做 |

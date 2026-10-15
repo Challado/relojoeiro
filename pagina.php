@@ -1,10 +1,16 @@
 <?php
 require_once __DIR__ . "/textos/funcoes.php";
-// A base das páginas: o topo com o menu e o fim com os scripts. As páginas não leem nem gravam nada, nem conferem o
-// login: o JavaScript delas lê e grava pelo api.php (o back-end único) e monta a tela, e quem chega sem login recebe o
-// 401 da API, que o api.js manda para o login da própria API (api.php?recurso=entrar&volta=<a página>): o navegador pede
-// o usuário e a senha e volta para a página. Banco desatualizado: a API responde 503 e o JavaScript leva para a
-// Configuração, que aplica as migrações.
+// o núcleo, só para o topo() conferir o login (aqui fora: o lib.php define variáveis globais). Sem o config.php não há
+// sistema nem dado: a página sai e a API explica
+if (is_file(getenv("RELOGIOS_CONFIG") ?: __DIR__ . "/config.php")) {
+    require_once __DIR__ . "/lib.php";
+}
+// A base das páginas: o topo com o menu e o fim com os scripts. As páginas não leem nem gravam nada: o JavaScript delas
+// lê e grava pelo api.php (o back-end único) e monta a tela. Mas nenhuma sai antes do login: o topo() confere o usuário e a
+// senha (pagina_login(), no lib.php) antes de mandar a primeira linha, e sem eles responde 401 com o pedido de senha do
+// navegador (o mesmo realm da API, que guarda o login para as duas). Se o login cair depois (a senha trocada noutro
+// lugar), o 401 da API leva para o login dela (api.php?recurso=entrar&volta=<a página>). Banco desatualizado: a API
+// responde 503 e o JavaScript leva para a Configuração, que aplica as migrações.
 
 // O começo de uma página, como no sistema antigo: o cabeçalho e o menu (Cadastros e Ajuda no fim, as páginas que o antigo
 // não tinha) e o seletor do idioma. Cada página abre o seu <main> e mostra as suas mensagens. O idioma da página: o cookie
@@ -15,6 +21,22 @@ require_once __DIR__ . "/textos/funcoes.php";
 function topo($titulo, $ativo, $publica = false)
 {
     lingua_definir(lingua_do_pedido());
+    // antes de qualquer saída: o login (a página pública, o cadastro, não pede)
+    if (!$publica && function_exists("pagina_login")) {
+        if (!pagina_login()) {
+            http_response_code(401);
+            header("WWW-Authenticate: Basic realm=\"Relogios\", charset=\"UTF-8\"");
+            header("Cache-Control: no-store");
+            header("Content-Type: text/html; charset=utf-8");
+            // só o que o navegador mostra se a pessoa cancelar o pedido de senha
+            echo "<!doctype html>\n<html lang=\"" . lingua_atual() . "\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>"
+                . htmlspecialchars(t("Entrar"), ENT_QUOTES, "UTF-8") . "</title>\n</head>\n<body style=\"font-family: system-ui, sans-serif; max-width: 34rem; margin: 3rem auto; padding: 0 1rem\">\n<h1>"
+                . htmlspecialchars(t("Entrar"), ENT_QUOTES, "UTF-8") . "</h1>\n<p>" . htmlspecialchars(t("Para abrir o sistema, entre com o seu login e a sua senha."), ENT_QUOTES, "UTF-8")
+                . "</p>\n<p><a href=\"\">" . htmlspecialchars(t("Tentar de novo"), ENT_QUOTES, "UTF-8") . "</a> · <a href=\"cadastro.php\">" . htmlspecialchars(t("Criar conta"), ENT_QUOTES, "UTF-8")
+                . "</a></p>\n</body>\n</html>\n";
+            exit;
+        }
+    }
     $menu = $publica ? [] : ["index.php" => t("Hoje"), "plano.php" => t("Plano"), "desejos.php" => t("Desejos"), "estatisticas.php" => t("Estatísticas"), "hora.php" => t("Hora certa"),
         "acessorios.php" => t("Acessórios"), "galeria.php" => t("Galeria"), "configuracao.php" => t("Configuração"), "criterios.php" => t("Critérios"), "grupos.php" => t("Grupos"),
         "execucoes.php" => t("Execuções do cron"), "conta.php" => t("Conta"), "usuarios.php" => t("Usuários"), "cadastros.php" => t("Cadastros"), "ajuda.php" => t("Ajuda")];

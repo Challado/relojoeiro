@@ -1572,6 +1572,22 @@ function usuario_autenticado()
     return $res;
 }
 
+// A porta das páginas (o topo() do pagina.php chama antes de mandar qualquer coisa): o login do site (HTTP Basic) tem de
+// estar certo, senão a página responde 401 com o pedido de senha do navegador e nada dela sai. Deixa passar sem login só
+// quando ainda não há ninguém para entrar (o banco vazio ou sem usuários: a página mostra como instalar e criar o primeiro)
+// e quando o banco não responde (a página mostra o erro que a API dá); nesses casos a página não tem dado nenhum.
+function pagina_login()
+{
+    try {
+        if (!banco_tem_tabela("usuario") || (int)sem_escopo(function () { return valor("SELECT COUNT(*) FROM usuario"); }) === 0) {
+            return true;
+        }
+        return usuario_autenticado() !== "";
+    } catch (Throwable $e) {
+        return true;
+    }
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Critérios de escolha: um conjunto por lugar da árvore ("" todos, "g:<no>" um ponto, "r:<relógio>" um relógio). O
 // relógio usa o conjunto mais perto dele, inteiro. Cada subparâmetro mede uma variável (campo ou fórmula); as faixas

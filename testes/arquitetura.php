@@ -4,7 +4,8 @@
 // GitHub a cada push.
 //   1. Sintaxe: todo .php passa no php -l e todo .js no node --check (sem o node, só o PHP).
 //   2. As páginas só montam o esqueleto: incluem só o pagina.php e só chamam topo(), rodape() e t()/te(); nada de
-//      $_GET/$_POST/$_REQUEST/$_COOKIE/$_SESSION nem SQL. O pagina.php só usa os idiomas (textos/funcoes.php).
+//      $_GET/$_POST/$_REQUEST/$_COOKIE/$_SESSION nem SQL. O pagina.php só usa os idiomas (textos/funcoes.php) e, do núcleo,
+//      só a porta do login (pagina_login(), do lib.php), que o topo() chama antes de qualquer saída.
 //   3. A rede das telas é só a API: fetch e XMLHttpRequest só no api.js e no documentos.js (o envio com o andamento),
 //      sempre para o api.php; nenhum .js cita um .php que não seja o api.php ou uma página; sem eval nem new Function.
 //   4. O banco só é tocado pelo núcleo, pela API e pelo cron: as funções do banco.php só são chamadas no banco.php,
@@ -138,13 +139,16 @@ $nucleo = [];
 foreach (array_merge(["lib.php", "banco.php", "operacoes.php", "colecoes.php", "alertas.php", "contas.php", "cron.php", "reconstrucao.php"], glob("api/*.php")) as $f) {
     $nucleo = array_merge($nucleo, definidas($f));
 }
-$fora = array_intersect(chamadas("pagina.php"), $nucleo);
+$fora = array_diff(array_intersect(chamadas("pagina.php"), $nucleo), ["pagina_login"]);
 if ($fora) {
-    falha("2", "pagina.php chama " . implode(", ", $fora) . " (o topo e o rodapé só usam os idiomas: textos/funcoes.php)");
+    falha("2", "pagina.php chama " . implode(", ", $fora) . " (o topo e o rodapé só usam os idiomas, textos/funcoes.php, e a porta do login, pagina_login())");
 }
-$inc = array_diff(inclui("pagina.php"), ["textos/funcoes.php"]);
+$inc = array_diff(inclui("pagina.php"), ["textos/funcoes.php", "lib.php"]);
 if ($inc) {
-    falha("2", "pagina.php inclui " . implode(", ", $inc) . " (só o textos/funcoes.php)");
+    falha("2", "pagina.php inclui " . implode(", ", $inc) . " (só o textos/funcoes.php e o lib.php, para o login)");
+}
+if (strpos((string)file_get_contents("pagina.php"), "pagina_login()") === false) {
+    falha("2", "pagina.php não confere o login antes de mostrar a página (pagina_login() no topo())");
 }
 if (preg_match($sql, (string)file_get_contents("pagina.php")) === 1) {
     falha("2", "pagina.php escreve SQL");

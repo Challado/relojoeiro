@@ -1105,9 +1105,8 @@ automatisations, raccourcis sur le téléphone, intégration avec Home Assistant
 L'API fait aussi ce qui vient avant et autour des écrans : elle **installe la base** (`recurso=instalacao`), **crée le premier
 utilisateur** (`recurso=usuarios`, avec le jeton), **importe le système précédent** (`recurso=importacao`), l'**inscription
 ouverte** (`recurso=cadastro`, sans identifiant), les **comptes** (`conta`, `colecoes`, `acessos`, `convites`, `pedidos`,
-`aprovacoes`) et fait l'**identification des pages** (`recurso=entrar` : les pages ne vérifient rien, elles ne livrent que le
-squelette ; qui arrive sans identifiant est envoyé à l'API, qui demande l'utilisateur et le mot de passe et le renvoie à la
-page). Les scripts en ligne de commande (`instalar.php`, `criar_usuario.php`, `importar.php`) sont des raccourcis : ils
+`aprovacoes`) et fait l'**identification des pages** (`recurso=entrar` : quand la connexion tombe avec la page déjà ouverte, l'API demande l'utilisateur et le mot de passe et
+renvoie à la page ; à l'ouverture, la page elle-même les demande déjà, avant d'envoyer quoi que ce soit). Les scripts en ligne de commande (`instalar.php`, `criar_usuario.php`, `importar.php`) sont des raccourcis : ils
 appellent les mêmes opérations de l'API.
 
 Hors de l'API, il n'y a que le **cron** (`cron.php`, l'horloge du système : il monte le plan, ouvre et ferme la session du
@@ -1740,8 +1739,12 @@ existe).
   formules.
 - **Simulation :** le planning et les prévisions simulent des saisies futures et recalculent les formules jour par jour, sans
   rien enregistrer.
-- **Front-end en HTML et JavaScript purs.** Chaque page PHP livre seulement le squelette (elle ne vérifie même pas la
-  connexion : qui arrive sans connexion est envoyé à la connexion de l'API) ; son `.js` appelle l'API et construit l'écran.
+- **Front-end en HTML et JavaScript purs.** Chaque page PHP livre seulement le squelette ; son `.js` appelle l'API et
+  construit l'écran. **Rien ne sort avant la connexion :** la page vérifie l'utilisateur et le mot de passe sur le serveur avant
+  la première ligne (`pagina_login()`, dans `lib.php`, appelée par `topo()`) et, sans eux, répond 401 avec la demande de mot de
+  passe du navigateur, sans menu ni squelette (si la personne annule, seul « Se connecter » apparaît, avec les liens
+  **Réessayer** et **Créer un compte**). La connexion vaut pour la page et pour l'API en même temps (le même realm). Seuls
+  **Créer un compte** et, avant qu'il existe un utilisateur, les pages de l'installation passent sans connexion.
   Les scripts portent la date du fichier dans l'URL, pour que le cache du navigateur ne serve pas une ancienne version.
 - **Cron muet et traçable :** il tourne chaque minute, n'écrit rien en sortie et note chaque exécution dans la base (sans
   activité, 7 jours ; avec activité ou erreur, 1 an). Une erreur fatale va dans la base ou, si même la base ne répond pas,
@@ -1848,7 +1851,7 @@ vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des
 | `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | les pages (seulement le squelette ; `cadastro.php` est la page publique) |
 | `push.js` | le service worker du Web Push |
 | `ajuda.php` | la page d'aide : seulement le squelette ; le `ajuda.js` demande le texte à l'API (`recurso=manual` : les sections du README pour les utilisateurs, déjà en HTML, converties dans le `lib.php`) |
-| [`pagina.php`](pagina.php) | le haut avec le menu et la fin des pages (la connexion appartient à l'API : `recurso=entrar`) |
+| [`pagina.php`](pagina.php) | le haut avec le menu et la fin des pages ; `topo()` vérifie la connexion avant d'envoyer quoi que ce soit (`pagina_login()`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | les écrans, construits dans le navigateur à partir de l'API |
 | [`estilo.css`](estilo.css) | l'apparence |
 | [`textos/`](textos/) | les langues : `funcoes.php` (la fonction `t()`, la liste des langues, la langue de la requête, les dates et les nombres de chaque langue) et un fichier par langue (`en.php`, `zh-CN.php`, `hi.php`, `es.php`, `fr.php` : le texte en portugais => la traduction, par partie) ; ouverts directement, ils ne font rien |

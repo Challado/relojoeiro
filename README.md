@@ -1045,8 +1045,8 @@ na tela fica só o que é dela: filtrar, ordenar e somar o que os filtros da tab
 A API faz também o que vem antes e em volta das telas: **instala o banco** (`recurso=instalacao`), **cria o primeiro usuário**
 (`recurso=usuarios`, pelo token), **importa o sistema anterior** (`recurso=importacao`), o **cadastro aberto** (`recurso=cadastro`,
 sem login), as **contas** (`conta`, `colecoes`, `acessos`, `convites`, `pedidos`, `aprovacoes`) e faz o **login das páginas**
-(`recurso=entrar`: as páginas não conferem nada, só entregam o esqueleto; quem chega sem login é mandado para a API, que pede o
-usuário e a senha e devolve para a página). Os scripts de linha de comando (`instalar.php`, `criar_usuario.php`,
+(`recurso=entrar`: quando o login cai com a página já aberta, a API pede o usuário e a senha e devolve para a página; ao
+abrir, a própria página já pede, antes de mandar qualquer coisa). Os scripts de linha de comando (`instalar.php`, `criar_usuario.php`,
 `importar.php`) são atalhos: chamam as mesmas operações da API.
 
 Fora da API fica só o **cron** (`cron.php`, o relógio do sistema: monta o plano, abre e fecha a sessão do dia, manda as
@@ -1640,9 +1640,12 @@ o hash existe).
   escrito uma vez só e o [`banco.php`](banco.php) traduz o que muda de um banco para outro.
 - **Motor de fórmulas próprio**, com análise sintática, funções de histórico, versões por grupo e dependências entre fórmulas.
 - **Simulação:** a escala e as previsões simulam lançamentos futuros e recalculam as fórmulas dia a dia, sem gravar nada.
-- **Front-end em HTML e JavaScript puro.** Cada página PHP só entrega o esqueleto (nem o login ela confere: quem chega sem login
-  é mandado para o login da API); o `.js` dela chama a API e
-  monta a tela. Os scripts levam a data do arquivo na URL, para o cache do navegador não servir uma versão antiga.
+- **Front-end em HTML e JavaScript puro.** Cada página PHP só entrega o esqueleto; o `.js` dela chama a API e monta a tela.
+  **Nada sai antes do login:** a página confere o usuário e a senha no servidor antes da primeira linha (`pagina_login()`, no
+  `lib.php`, chamada pelo `topo()`) e, sem eles, responde 401 com o pedido de senha do navegador, sem menu nem esqueleto (se a
+  pessoa cancelar, só aparece "Entrar", com os links **Tentar de novo** e **Criar conta**). O login vale para a página e para a
+  API ao mesmo tempo (o mesmo realm). Só passam sem login a **Criar conta** e, antes de existir algum usuário, as páginas da
+  instalação. Os scripts levam a data do arquivo na URL, para o cache do navegador não servir uma versão antiga.
 - **Cron mudo e rastreável:** roda a cada minuto, não escreve na saída e registra cada execução no banco (sem atividade, 7 dias;
   com atividade ou erro, 1 ano). Um erro fatal vai para o banco ou, se nem o banco responder, para um arquivo temporário.
 - **Documentos à prova de perda:** cada arquivo fica na pasta e, se pedido (pelo sistema, pelo relógio ou pelo arquivo),
@@ -1740,7 +1743,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | as páginas (só o esqueleto; a `cadastro.php` é a pública) |
 | `push.js` | o service worker do Web Push |
 | `ajuda.php` | a página de ajuda: só o esqueleto; o `ajuda.js` pede o texto à API (`recurso=manual`: as seções do README para quem usa, já em HTML, convertidas no `lib.php`) |
-| [`pagina.php`](pagina.php) | o topo com o menu e o fim das páginas (o login é da API: `recurso=entrar`) |
+| [`pagina.php`](pagina.php) | o topo com o menu e o fim das páginas; o `topo()` confere o login antes de mandar qualquer coisa (`pagina_login()`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |
 | [`estilo.css`](estilo.css) | o visual |
 | [`textos/`](textos/) | os idiomas: `funcoes.php` (a função `t()`, a lista dos idiomas, o idioma do pedido, as datas e os números de cada idioma) e um arquivo por idioma (`en.php`, `zh-CN.php`, `hi.php`, `es.php`, `fr.php`: o texto em português => a tradução, por parte); abertos direto não fazem nada |

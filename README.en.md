@@ -1076,8 +1076,8 @@ integration, a widget.
 The API also does what comes before and around the screens: it **installs the database** (`recurso=instalacao`), **creates
 the first user** (`recurso=usuarios`, with the token), **imports the previous system** (`recurso=importacao`), the **open
 sign-up** (`recurso=cadastro`, without login), the **accounts** (`conta`, `colecoes`, `acessos`, `convites`, `pedidos`,
-`aprovacoes`) and does the **pages' login** (`recurso=entrar`: the pages check nothing, they only deliver the skeleton;
-whoever arrives without a login is sent to the API, which asks for the user and password and sends them back to the page).
+`aprovacoes`) and does the **pages' login** (`recurso=entrar`: when the login drops with the page already open, the API asks for the user and password and sends them
+back to the page; on opening, the page itself already asks, before sending anything).
 The command-line scripts (`instalar.php`, `criar_usuario.php`, `importar.php`) are shortcuts: they call the same API
 operations.
 
@@ -1677,8 +1677,12 @@ documents folder and the users' passwords (only the hash exists).
 - **Its own formula engine**, with parsing, history functions, versions per group and dependencies between formulas.
 - **Simulation:** the schedule and the forecasts simulate future entries and recalculate the formulas day by day, without
   saving anything.
-- **Front end in plain HTML and JavaScript.** Each PHP page only delivers the skeleton (it doesn't even check the login:
-  whoever arrives without a login is sent to the API's login); its `.js` calls the API and builds the screen. The scripts
+- **Front end in plain HTML and JavaScript.** Each PHP page only delivers the skeleton; its `.js` calls the API and builds
+  the screen. **Nothing goes out before the login:** the page checks the user and the password on the server before the first
+  line (`pagina_login()`, in `lib.php`, called by `topo()`) and, without them, answers 401 with the browser's password prompt,
+  with no menu or skeleton (if the person cancels, only "Sign in" shows, with the links **Try again** and **Create account**).
+  The login works for the page and the API at the same time (the same realm). Only **Create account** and, before any user
+  exists, the installation pages pass without a login. The scripts
   carry the file's date in the URL, so the browser cache doesn't serve an old version.
 - **Silent and traceable cron:** it runs every minute, writes nothing to the output and logs each run in the database
   (without activity, 7 days; with activity or an error, 1 year). A fatal error goes to the database or, if not even the
@@ -1782,7 +1786,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | the pages (only the skeleton; `cadastro.php` is the public one) |
 | `push.js` | the Web Push service worker |
 | `ajuda.php` | the help page: only the skeleton; `ajuda.js` asks the API for the text (`recurso=manual`: the README's sections for users, already in HTML, converted in `lib.php`) |
-| [`pagina.php`](pagina.php) | the top with the menu and the end of the pages (the login belongs to the API: `recurso=entrar`) |
+| [`pagina.php`](pagina.php) | the top with the menu and the end of the pages ; `topo()` checks the login before sending anything (`pagina_login()`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | the screens, built in the browser from the API |
 | [`estilo.css`](estilo.css) | the look |
 | [`textos/`](textos/) | the languages: `funcoes.php` (the `t()` function, the list of languages, the request's language, each language's dates and numbers) and one file per language (`en.php`, `zh-CN.php`, `hi.php`, `es.php`, `fr.php`: the Portuguese text => the translation, by part); opened directly they do nothing |
