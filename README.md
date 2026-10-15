@@ -399,7 +399,8 @@ instalação é o **master**: cuida do sistema inteiro.
   pelo **código** que o dono passou: o da coleção (na tabela **Coleções** de **Minha conta**) ou o do dono (em **Seus dados**,
   para todas as coleções dele). Nenhuma tela mostra a lista de contas ou de coleções, e o pedido só mostra o código até a
   aprovação: quem tenta códigos ao acaso não descobre o login de ninguém. O dono recebe um e-mail e aprova ou recusa em
-  **Aprovações**; a pessoa recebe a resposta por e-mail.
+  **Aprovações**; a pessoa recebe a resposta por e-mail. As duas telas de pedido (a Criar conta e a Minha conta) trazem esse
+  passo a passo no quadro **Como pedir acesso (e por que pelo código)**, e **Seus dados** explica ao dono como passar o código.
 - **Pelo master:** em **Usuários**, **Dar acesso**.
 
 Em **Aprovações**, o dono vê também **quem vê as coleções dele** e tira o acesso de alguém; em **Minha conta**, cada um pode

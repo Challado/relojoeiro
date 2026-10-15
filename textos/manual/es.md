@@ -1,4 +1,4 @@
-<!-- origem: ce49d33f930a6d2953f8abce7b07b07bbf3e6914 -->
+<!-- origem: 144226c9d10dff07fb1ae9c9a8d6da742628bd99 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -356,7 +356,9 @@ primer usuario de la instalación es el **master**: cuida de todo el sistema.
   mensaje, por el **código** que pasó el dueño: el de la colección (en la tabla **Colecciones** de **Mi cuenta**) o el del dueño
   (en **Tus datos**, para todas sus colecciones). Ninguna pantalla muestra la lista de cuentas ni de colecciones, y la solicitud
   solo muestra el código hasta la aprobación: quien prueba códigos al azar no descubre el usuario de nadie. El dueño recibe un
-  correo y aprueba o rechaza en **Aprobaciones**; la persona recibe la respuesta por correo.
+  correo y aprueba o rechaza en **Aprobaciones**; la persona recibe la respuesta por correo. Las dos pantallas de solicitud
+  (Crear cuenta y Mi cuenta) traen este paso a paso en el cuadro **Cómo pedir acceso (y por qué por el código)**, y **Tus
+  datos** explica al dueño cómo pasar el código.
 - **Por el master:** en **Usuarios**, **Dar acceso**.
 
 En **Aprobaciones**, el dueño ve también **quién ve sus colecciones** y le quita el acceso a alguien; en **Mi cuenta**, cada uno

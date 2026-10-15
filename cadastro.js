@@ -45,7 +45,7 @@ function formConta(d) {
       + el("label", {}, el("input", {"type": "radio", "name": "opcao", "value": "modelo", "checked": true}) + " " + t("Uma coleção minha, com o conjunto inicial (grupos, campos, fórmulas, avisos e critérios prontos)"))
       + el("label", {}, el("input", {"type": "radio", "name": "opcao", "value": "vazia"}) + " " + t("Uma coleção minha, vazia (eu monto tudo)"))
       + el("label", {}, el("input", {"type": "radio", "name": "opcao", "value": "pedir"}) + " " + t("Pedir acesso à coleção de alguém")))
-      + el("div", {"data-pedir": true, "hidden": true}, camposCodigoAcesso(false) + parCampo(t("Recado para o dono (opcional)"), el("input", {"name": "mensagem", "maxlength": "500"}), "largo"));
+      + el("div", {"data-pedir": true, "hidden": true}, camposCodigoAcesso(false, true) + parCampo(t("Recado para o dono (opcional)"), el("input", {"name": "mensagem", "maxlength": "500"}), "largo"));
   }
   return el("section", {"class": "cartao-config"}, el("form", {"data-recurso": "cadastro", "class": "campos", "id": "form-conta",
       "onsubmit": "acessoPorCodigo(this)"},

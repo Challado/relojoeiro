@@ -422,7 +422,9 @@ tout le système.
   **Collections** de **Mon compte**) ou celui du propriétaire (dans **Vos données**, pour toutes ses collections). Aucun écran ne
   montre la liste des comptes ni des collections, et la demande ne montre que le code jusqu'à l'approbation : qui essaie des
   codes au hasard ne découvre l'identifiant de personne. Le propriétaire reçoit un e-mail et approuve ou refuse dans
-  **Approbations** ; la personne reçoit la réponse par e-mail.
+  **Approbations** ; la personne reçoit la réponse par e-mail. Les deux écrans de demande (Créer un compte et Mon compte)
+  donnent cette marche à suivre dans le cadre **Comment demander l'accès (et pourquoi par le code)**, et **Vos données**
+  explique au propriétaire comment donner le code.
 - **Par le master :** dans **Utilisateurs**, **Donner l'accès**.
 
 Dans **Approbations**, le propriétaire voit aussi **qui voit ses collections** et retire l'accès à quelqu'un ; dans **Mon

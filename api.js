@@ -497,13 +497,22 @@ function parCampo(rotulo, controle, tipo) {
 
 // O pedido de acesso pelo código (a Criar conta e a Minha conta): o código que o dono passou, de uma coleção ou do dono (todas
 // as coleções dele). Nenhuma lista de contas nem de coleções: quem pede não vê quem tem conta. O acessoPorCodigo, no envio do
-// formulário, passa o código para o colecao_id ou o dono_id
-function camposCodigoAcesso(obrigatorio) {
+// formulário, passa o código para o colecao_id ou o dono_id. Junto, o passo a passo: por que é pelo código, como pedir o código
+// ao dono, onde o dono o encontra e o que acontece depois (aberto na Criar conta; fechado em Minha conta)
+function explicacaoPedido(aberto) {
+  return el("details", {"class": "como-pedir", "open": !!aberto}, el("summary", {}, t("Como pedir acesso (e por que pelo código)"))
+    + el("ol", {}, el("li", {}, t("Por que o código: para proteger quem usa o sistema, nenhuma página mostra a lista de contas nem de coleções. O login é metade do que alguém precisa para tentar entrar numa conta alheia, e o nome de uma coleção costuma levar o login do dono. Por isso o pedido é feito pelo código que o próprio dono passa: quem não recebeu o código não tem como saber de quem ele é."))
+      + el("li", {}, t("Peça o código ao dono (por mensagem, e-mail ou pessoalmente). Ele o encontra em Minha conta: o código dele, em Seus dados, dá acesso a todas as coleções dele, também às que ele criar depois; o código de uma coleção só fica na coluna Código da tabela Coleções."))
+      + el("li", {}, t("Aqui, escolha se o código é de uma coleção ou do dono, digite o número e deixe um recado dizendo quem você é: o dono vê só o seu login."))
+      + el("li", {}, t("O dono recebe um e-mail e aprova ou recusa em Aprovações. Até lá, o seu pedido mostra só o código. Aprovado, você recebe um e-mail e a coleção aparece no seletor do menu."))));
+}
+
+function camposCodigoAcesso(obrigatorio, aberto) {
   return el("input", {"type": "hidden", "name": "colecao_id", "value": ""}) + el("input", {"type": "hidden", "name": "dono_id", "value": ""})
     + parCampo(t("Acesso a"), el("select", {"name": "tipo_codigo"}, el("option", {"value": "c"}, t("uma coleção (o código da coleção)"))
       + el("option", {"value": "d"}, t("todas as coleções de um dono (o código do dono)"))), "largo")
     + parCampo(t("Código"), el("input", {"type": "number", "name": "codigo", "min": "1", "step": "1", "inputmode": "numeric", "required": !!obrigatorio}))
-    + el("p", {"class": "nota"}, t("Peça o código ao dono: ele aparece em Minha conta, na coleção (o código dela) e em Seus dados (o código dele, para todas as coleções)."));
+    + explicacaoPedido(aberto);
 }
 
 function acessoPorCodigo(form) {

@@ -411,7 +411,9 @@ the installation is the **master**: they take care of the whole system.
   owner, with a note, by the **code** the owner gave: the collection's (in the **Collections** table of **My account**) or the
   owner's (in **Your details**, for all their collections). No screen shows the list of accounts or collections, and the request
   shows only the code until the approval: whoever tries codes at random finds out no one's login. The owner gets an e-mail and
-  approves or declines in **Approvals**; the person gets the answer by e-mail.
+  approves or declines in **Approvals**; the person gets the answer by e-mail. Both request screens (Create account and My
+  account) carry this step by step in the box **How to ask for access (and why by code)**, and **Your details** tells the
+  owner how to give the code.
 - **By the master:** in **Users**, **Give access**.
 
 In **Approvals**, the owner also sees **who sees their collections** and removes someone's access; in **My account**, anyone

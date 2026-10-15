@@ -80,7 +80,7 @@ function quadroPedir(d) {
       + el("tbody", {}, pedidos))) : "")
     + (d.convites.length > 0 ? el("p", {"class": "nota"}, t("Há {1} convite(s) para o seu e-mail: aceite pelo link que chegou nele.", {1: d.convites.length})) : "")
     + el("form", {"data-recurso": "pedidos", "class": "campos", "onsubmit": "acessoPorCodigo(this)"},
-      el("input", {"type": "hidden", "name": "acao", "value": "pedir"}) + camposCodigoAcesso(true)
+      el("input", {"type": "hidden", "name": "acao", "value": "pedir"}) + camposCodigoAcesso(true, false)
       + parCampo(t("Recado para o dono (opcional)"), el("input", {"name": "mensagem", "maxlength": "500"}), "largo")
       + el("div", {"class": "botoes"}, el("button", {}, t("Pedir acesso"))))
     + el("p", {"class": "nota"}, t("O dono (ou o administrador) aprova. Pedidos sem resposta saem sozinhos depois de alguns dias.")));
@@ -92,6 +92,7 @@ function quadroDados(d) {
     + el("p", {}, t("Login: {1}", {1: el("strong", {}, h(u.login))}) + (u.papel === "master" ? el("span", {"class": "selo master"}, t("master")) : "")
       + (u.demo ? el("span", {"class": "selo demo"}, t("demonstração")) : "") + " · " + t("desde {1}", {1: dataBr(u.criado)})
       + " · " + t("seu código: {1}", {1: el("strong", {}, u.id)}))
+    + el("p", {"class": "nota"}, t("Alguém quer ver as suas coleções? Passe o seu código ({1}) para todas elas, também as que você criar depois, ou o código de uma coleção só (na coluna Código da tabela Coleções). A pessoa pede acesso com ele, na Criar conta ou em Minha conta; você recebe um e-mail e aprova ou recusa em Aprovações. Ninguém vê o seu login antes de você aprovar.", {1: u.id}))
     + (u.demo ? el("p", {"class": "alerta-cron"}, t("Conta de demonstração: vence em {1} dias ({2}). Depois disso, ela e as suas coleções são apagadas. Para continuar, peça ao administrador para torná-la oficial.", {1: u.dias_restantes, 2: dataBr(u.expira_em)})) : "")
     + el("form", {"data-recurso": "conta", "class": "campos"}, el("input", {"type": "hidden", "name": "acao", "value": "alterar"})
       + parCampo(t("E-mail"), el("input", {"type": "email", "name": "email", "value": u.email || "", "maxlength": "200", "autocomplete": "email"}), "largo")
