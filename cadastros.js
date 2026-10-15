@@ -1,13 +1,17 @@
 // Cadastros: os dados da API (recurso=cadastros), uma aba por vez (cadastros.php?aba=campos&editar=3), com as gravações
-// pela API (recurso=campos, lancamento_tipos, formulas, avisos, modos e documento_categorias) e o testar das fórmulas
-// (recurso=calcular).
-var ABAS = {campos: t("Campos"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), avisos: t("Avisos"), modos: t("Modos de rodízio"), documentos: t("Categorias de documentos")};
-var RECURSO = {campos: "campos", lancamentos: "lancamento_tipos", formulas: "formulas", avisos: "avisos", modos: "modos", documentos: "documento_categorias"};
+// pela API (recurso=campos, lancamento_tipos, formulas, modos e documento_categorias) e o testar das fórmulas
+// (recurso=calcular). Os avisos ficam na página Avisos (avisos.js).
+var ABAS = {campos: t("Campos"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), modos: t("Modos de rodízio"), documentos: t("Categorias de documentos")};
+var RECURSO = {campos: "campos", lancamentos: "lancamento_tipos", formulas: "formulas", modos: "modos", documentos: "documento_categorias"};
 var FAMILIAS = {imagem: "imagens", video: t("vídeos"), audio: t("áudios"), pdf: t("PDF"), xml: t("XML")};
 var SEL = {inteligente: t("Inteligente: a maior nota"), ponderado: t("Inteligente com sorteio: a nota é a chance"), aleatorio: t("Totalmente aleatório"), fifo: t("Fila: o que está há mais tempo sem uso")};
 var DIAS = ["", t("seg"), t("ter"), t("qua"), t("qui"), t("sex"), t("sáb"), t("dom")];
 var ESCALAS = [[7, t("7 dias")], [30, t("30 dias")], [60, t("60 dias")], [180, t("6 meses")], [365, t("1 ano")], [730, t("2 anos")]];
 var q = new URLSearchParams(window.location.search);
+// os avisos dos relógios saíram daqui: moram na página Avisos, junto com os lembretes (o endereço antigo leva para lá)
+if (q.get("aba") === "avisos") {
+  window.location.replace("avisos.php" + (q.get("editar") ? "?editar=" + encodeURIComponent(q.get("editar")) + "#form" : "#avisos-relogios"));
+}
 var aba = ABAS[q.get("aba")] ? q.get("aba") : "campos";
 var editar = parseInt(q.get("editar") || "0", 10);
 var recado = "";
@@ -134,44 +138,6 @@ function recarregarCadastros() {
       }
       sec += el("details", {}, el("summary", {}, t("As funções do motor")) + el("ul", {"class": "nota"}, Object.keys(d.funcoes).map(function (k) { return el("li", {}, el("strong", {}, h(k)) + ": " + h(d.funcoes[k])); }).join("")));
       res += el("section", {"class": "cartao-config"}, sec);
-    } else if (aba === "avisos") {
-      var ESCALA_A = {nao: t("não"), uso: t("no relógio do dia"), sempre: t("sempre")};
-      var AGENDA_A = {janela: t("só dentro da antecedência da agenda"), sempre: t("qualquer data")};
-      var e = null;
-      d.avisos.forEach(function (x) { if (x.id === editar) { e = x; } });
-      var f = e || {};
-      res += el("section", {"class": "cartao-config"}, el("h2", {}, t("Avisos"))
-        + el("p", {"class": "nota"}, t("Cada aviso tem uma fórmula da data prevista; entra \"em breve\" dentro da antecedência e \"atrasado\" quando a data passa. O \"vale quando\" (uma fórmula) diz para quais relógios o aviso vale (ex.: corda_manual = 0, só para o automático sem corda); vazio, vale para todos do grupo. O texto é o motivo nas mensagens ({motivo}): \"Dar corda: San Martin (a reserva acaba em 3h, 28/09/2026 10:53)\"; nele: {relogio}, {data}, {quando} e {limite} (o limite de carga do relógio). O tipo que resolve vira o botão na tela Hoje. Como as fórmulas, pode ter uma versão por ponto da árvore. Na escala inteligente: \"no relógio do dia\" é conferido no escolhido, do começo ao fim do bloco dele; \"sempre\", também nos guardados, todo dia. O que vence vira o lembrete do dia, e o lançamento que resolve é simulado com o valor (leitura) ou as horas (sessão) do aviso. Se o aviso vai pelo Telegram e pela agenda é a Configuração, em \"O que vai para onde\"; aqui fica a data que ele usa na agenda. \"Na hora\": além do alerta da manhã, o Telegram recebe o aviso no minuto em que ele vence (uma vez, até ele ser resolvido), como o \"Tirar do carregador\" quando a bateria enche."))
-        + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, [t("Aviso"), t("Versão para"), t("Data prevista"), t("Vale quando"), t("Antecedência"), t("Resolve"), t("Na escala"), t("Na agenda"), t("Na hora"), t("Ativo"), ""].map(function (item, i) {
-            return el("th", {"class": i === 4 ? "num" : null}, item);
-          }).join(""))) + el("tbody", {}, d.avisos.map(function (a) {
-            return el("tr", {}, el("td", {}, h(a.nome) + " " + el("span", {"class": "nota formula"}, h(a.identificador))) + el("td", {"class": "nota"}, h(caminho(d, a.no_id))) + el("td", {"class": "formula"}, h(a.expressao))
-              + el("td", {"class": "formula"}, h(vazio(a.condicao))) + el("td", {"class": "num"}, num(a.antecedencia_dias, 2) + t(" d")) + el("td", {}, h(vazio(a.resolve)))
-              + el("td", {}, h(ESCALA_A[a.escala]) + (a.simula_valor !== null ? " " + el("span", {"class": "nota"}, "(" + num(a.simula_valor, 2) + ")") : "")
-                + (a.simula_horas !== null ? " " + el("span", {"class": "nota"}, "(" + num(a.simula_horas, 2) + t(" h)")) : ""))
-              + el("td", {}, h(AGENDA_A[a.agenda])) + el("td", {}, a.na_hora === 1 ? t("sim") : t("não")) + el("td", {}, a.ativo === 1 ? t("sim") : t("não"))
-              + el("td", {"class": "acoes-linha"}, linkEditar(a.id) + " " + botaoLinha("excluir", a.id, t("Excluir"), t("Excluir esta versão do aviso?"))));
-          }).join(""))))
-        + el("h3", {"id": "form"}, e ? t("Alterar {1}", {1: h(e.nome)}) : t("Novo aviso (ou nova versão)"))
-        + el("form", {"data-recurso": "avisos", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": e ? "alterar" : "novo"}) + (e ? el("input", {"type": "hidden", "name": "id", "value": e.id}) : "")
-          + (e ? "" : el("label", {}, t("Identificador {1}", {1: el("input", {"name": "identificador", "required": true, "pattern": "[a-z][a-z0-9_]{0,39}"})})))
-          + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": vazio(f.nome), "required": true})}))
-          + el("label", {}, t("Antecedência (dias) {1}", {1: el("input", {"name": "antecedencia_dias", "value": num(f.antecedencia_dias || 0, 2), "inputmode": "decimal"})}))
-          + el("label", {}, t("Resolve {1}", {1: el("select", {"name": "resolve"}, el("option", {"value": ""}, "—") + d.lancamento_tipos.map(function (item) {
-            return el("option", {"value": item.identificador, "selected": f.resolve === item.identificador}, h(item.nome));
-          }).join(""))}))
-          + el("label", {}, t("Versão para {1}", {1: el("select", {"name": "no_id"}, opcoesNo(d, f.no_id))}))
-          + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "ativo", "value": "0"}) + el("input", {"type": "checkbox", "name": "ativo", "value": "1", "checked": e ? e.ativo === 1 : true}) + t(" ativo"))
-          + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "na_hora", "value": "0"}) + el("input", {"type": "checkbox", "name": "na_hora", "value": "1", "checked": e ? e.na_hora === 1 : false}) + t(" na hora (Telegram no minuto em que vence)"))
-          + el("label", {}, t("Na escala inteligente {1}", {1: el("select", {"name": "escala"}, Object.keys(ESCALA_A).map(function (k) { return el("option", {"value": k, "selected": (f.escala || "nao") === k}, h(ESCALA_A[k])); }).join(""))}))
-          + el("label", {}, t("Escala: valor do lançamento simulado (leitura) {1}", {1: el("input", {"name": "simula_valor", "inputmode": "decimal", "value": f.simula_valor ? num(f.simula_valor, 2) : "", "placeholder": t("ex.: 100")})}))
-          + el("label", {}, t("Escala: horas da sessão simulada {1}", {1: el("input", {"name": "simula_horas", "inputmode": "decimal", "value": f.simula_horas ? num(f.simula_horas, 2) : "", "placeholder": t("ex.: 6")})}))
-          + el("label", {}, t("Data na agenda {1}", {1: el("select", {"name": "agenda"}, Object.keys(AGENDA_A).map(function (k) { return el("option", {"value": k, "selected": (f.agenda || "janela") === k}, h(AGENDA_A[k])); }).join(""))}))
-          + el("label", {"style": "grid-column: 1 / -1"}, t("Data prevista (fórmula) {1}", {1: el("textarea", {"name": "expressao", "class": "formula", "rows": "2", "required": true}, h(vazio(f.expressao)))}))
-          + el("label", {"style": "grid-column: 1 / -1"}, t("Vale quando (fórmula: 1 vale, 0 não; vazio: vale sempre) {1}", {1: el("input", {"name": "condicao", "class": "formula", "value": vazio(f.condicao),
-            "placeholder": t("ex.: corda_manual = 0")})}))
-          + el("label", {"style": "grid-column: 1 / -1"}, t("Texto (o motivo) {1}", {1: el("input", {"name": "texto", "value": vazio(f.texto), "maxlength": "300", "required": true})}))
-          + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")))));
     } else if (aba === "modos") {
       var e = null;
       d.modos.forEach(function (x) { if (x.id === editar) { e = x; } });

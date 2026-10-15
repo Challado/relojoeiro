@@ -1168,7 +1168,7 @@ function op_lancamento($acao, $d)
 // {quando}, {limite}), resolve (o tipo de lançamento que resolve; vazio: nenhum), ativo (1 ou 0), no_id: um aviso novo, ou mais
 // uma versão de um que existe, em outro ponto da árvore; escala: nao, uso ou sempre; simula_valor e simula_horas (o
 // lançamento que a escala simula; vazio: nenhum); agenda: janela (na agenda, só dentro da antecedência) ou sempre (qualquer
-// data; se vai ou não para a agenda é a Configuração, em "O que vai para onde"); na_hora (1 ou 0: o cron manda pelo Telegram
+// data; se vai ou não para cada destino e cada agenda se escolhe neles, na página Avisos, em Para onde vão); na_hora (1 ou 0: o cron manda pelo Telegram
 // no minuto em que ele vence, uma vez, além do alerta da manhã)), alterar (id: o mesmo, menos o identificador), excluir (id).
 // ---------------------------------------------------------------------------------------------------------------------
 function op_avisos($acao, $d)

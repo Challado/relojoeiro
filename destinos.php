@@ -4,7 +4,7 @@
 // traz o esqueleto: os dados vêm do api.php (recurso=destinos), montados pelo destinos.js, e as gravações vão para ele
 // (recurso=destinos, acao=salvar, excluir ou testar)
 require_once __DIR__ . "/pagina.php";
-topo("Destinos", "configuracao.php");
+topo("Destinos", "avisos.php");
 ?>
 
 <main class="config pagina-destinos" id="destinos"></main>

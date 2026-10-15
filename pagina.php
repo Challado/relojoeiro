@@ -38,7 +38,7 @@ function topo($titulo, $ativo, $publica = false)
         }
     }
     $menu = $publica ? [] : ["index.php" => t("Hoje"), "plano.php" => t("Plano"), "desejos.php" => t("Desejos"), "estatisticas.php" => t("Estatísticas"), "hora.php" => t("Hora certa"),
-        "acessorios.php" => t("Acessórios"), "galeria.php" => t("Galeria"), "configuracao.php" => t("Configuração"), "criterios.php" => t("Critérios"), "grupos.php" => t("Grupos"),
+        "acessorios.php" => t("Acessórios"), "galeria.php" => t("Galeria"), "avisos.php" => t("Avisos"), "configuracao.php" => t("Configuração"), "criterios.php" => t("Critérios"), "grupos.php" => t("Grupos"),
         "execucoes.php" => t("Execuções do cron"), "conta.php" => t("Conta"), "usuarios.php" => t("Usuários"), "cadastros.php" => t("Cadastros"), "ajuda.php" => t("Ajuda")];
     echo "<!doctype html>\n<html lang=\"" . lingua_atual() . "\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta name=\"theme-color\" content=\"#1c2530\">\n<title>" . htmlspecialchars(t($titulo), ENT_QUOTES, "UTF-8") . "</title>\n"
         . "<link rel=\"stylesheet\" href=\"estilo.css?v=" . (int)@filemtime(__DIR__ . "/estilo.css") . "\">\n</head>\n<body>\n<nav class=\"topo\">\n";

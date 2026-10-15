@@ -1,4 +1,4 @@
-<!-- origem: 144226c9d10dff07fb1ae9c9a8d6da742628bd99 -->
+<!-- origem: 07691b2bbdb236bb764c78e6f917069100338171 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -683,7 +683,7 @@ consommation de l'état actuel : au poignet, par la consommation en usage ; rang
 planning intelligent, qui simule les jours de port, note dans le plan quoi faire avant (*« charger avant de porter »*,
 *« remonter »*) quand la montre choisie va atteindre le seuil le jour prévu.
 
-Toutes ces alertes sont des données (la page **Définitions → Alertes**) : la formule de la date, l'avance, le texte et la
+Toutes ces alertes sont des données (la page **Alertes**, la partie *Alertes des montres*) : la formule de la date, l'avance, le texte et la
 saisie qui la résout. Il y a aussi *« Noter la charge »* (demande un relevé après 3 jours sans aucun ; activée par défaut, et
 le **3** de la formule est le nombre de jours) et *« Charge faible »* (la smartwatch rangée qui atteint le seuil ; désactivée
 par défaut, car *« Charger »* couvre déjà ce cas).
@@ -704,7 +704,7 @@ Les alertes de l'ensemble initial, avec l'identifiant (leur nom dans les formule
 | Garantie qui expire | `garantia` | toutes | (rien : elle alerte seulement) |
 | Délaissée | `encostado` | toutes (celles de la collection, disponibles) | Au poignet. Elle arrive à échéance quand la montre dépasse la limite de jours sans aller au poignet (Configuration, **Alerte Délaissée : jours sans aller au poignet**, 30 par défaut), comptés depuis la dernière fois au poignet (jamais portée, depuis la date d'achat ; sans les deux, pas d'alerte). Elle n'entre pas dans le prochain entretien ni dans **Quoi faire** : le tableau a la colonne **Délaissée**, avec combien il reste ou depuis combien c'est dépassé. |
 
-Les alertes partent dans l'alerte du matin. Une alerte marquée **immédiate** (dans **Définitions › Alertes**, la case
+Les alertes partent dans l'alerte du matin. Une alerte marquée **immédiate** (dans la page **Alertes**, la case
 *immédiate*) part aussi par Telegram **dans la minute où elle arrive à échéance**, une seule fois, jusqu'à ce qu'elle soit
 résolue : c'est ainsi qu'arrive le **Retirer du chargeur** quand la batterie est pleine. Dans **Aujourd'hui, c'est le jour
 de**, le bouton est celui du type qui la résout : *Mettre au soleil* avec la session fermée, *Retirée du chargeur* avec la
@@ -790,12 +790,14 @@ collection vient à la fin de chaque ligne.
 | **Mise en avant en haut de la page Aujourd'hui** (`destaque_hoje`) | **La montre du jour** (`dia`) : le grand cadre en haut de la page Aujourd'hui montre la montre du jour (celle du plan), avec jusqu'à quand elle reste et pourquoi elle est sortie. **La montre au poignet maintenant** (`pulso`) : il montre la montre qui est au poignet, même si ce n'est pas celle du jour (avec *au poignet maintenant* et, en dessous, *Montre du jour : …*, qui ouvre celle du jour) ; avec plus d'une au poignet, la dernière mise ; sans aucune au poignet, celle du jour reste, avec l'avis *Aucune montre au poignet maintenant*. Les données en dessous (état, charge, le bouton Mise au poignet/Retirée du poignet, la photo) sont celles de la montre mise en avant. Par défaut : la montre du jour. |
 
 Sur la page, chaque option tient sur une ligne, avec le nom à gauche et le champ à droite, dans des cadres (Routine du jour,
-Limites et calculs, Écrans, Cron, Tirages, Messages et agendas) ; le bouton **Enregistrer la configuration** est sur une barre
+Limites et calculs, Écrans, Cron, Tirages et le résumé **Alertes, rappels et messages**, avec le chemin vers la page **Alertes**) ; le bouton **Enregistrer la configuration** est sur une barre
 fixée en bas de l'écran.
 
 ### Messages et agendas {#mensagens-e-agendas}
 
-Les messages et les agendas ont leurs propres pages, ouvertes depuis le cadre **Messages et agendas** de la Configuration :
+Tout ce que le système rappelle est réuni dans la page **Alertes** (dans le menu), en trois parties : les **alertes des montres** (celles
+qu'il calcule tout seul avec les données de chacune : remonter, charger, changer la pile...), les **rappels** (les événements
+personnalisés, plus bas) et **Où elles vont**, le résumé des destinations et des agendas, qui ont leurs propres pages :
 
 - **Destinations** (`destinos.php`) : où vont les messages de la collection. Chaque destination est un **webhook** (une requête
   HTTP : Telegram, n8n, Home Assistant, n'importe quelle passerelle), un **e-mail** (par le serveur d'e-mail du `config.php`)
@@ -817,7 +819,7 @@ Les mots de passe, les clés et les jetons des agendas et les en-têtes des webh
 reviennent jamais à l'écran. Comment configurer chaque service sur le serveur : voir [Destinations et agendas sur le
 serveur](#destinos-e-agendas-no-servidor).
 
-**Événements personnalisés** (dans la Configuration) : vos rappels (nettoyer les bracelets, réviser la collection), avec un
+**Rappels** (les événements personnalisés, dans la page **Alertes**) : vos rappels (nettoyer les bracelets, réviser la collection), avec un
 nom, quand ils se déclenchent (une fois, tous les jours, certains jours de la semaine, un jour du mois ou tous les N jours),
 l'heure et, si vous voulez, une montre. Le tableau montre chacun avec **Va vers** (les destinations et les agendas qui le
 reçoivent) ; un nouvel événement va déjà vers toutes les destinations.
@@ -931,12 +933,13 @@ que vous enregistrez apparaît ici sous son nom.
 | **Heure exacte** (`hora.php`) | L'heure du serveur pour régler les montres : un cadran à aiguilles et l'heure numérique qui avance seconde par seconde (réglée par l'API, en déduisant le temps de la requête ; en dessous, de combien l'horloge de l'appareil avance ou retarde), la date en toutes lettres et l'heure UTC ; les cadres **Fuseau et UTC** (le fuseau, le décalage, l'heure Zulu, la lettre militaire du fuseau, comme *P (Papa)*, et le groupe date-heure, *131433P OCT 26*), **Calendrier** (jour de l'année, semaine ISO, trimestre, jour julien, Unix) et **Lune** (la phase, l'âge, la partie éclairée et les prochaines pleine et nouvelle lunes, par le cycle moyen : cela peut varier d'un jour) ; et **Comment régler**. Elle relit l'API chaque minute. Par l'API : `recurso=hora_certa`. |
 | **Documents** (`documentos.php`) | Les documents d'une montre (ou de toutes), ouverts depuis la fiche : envoi de plusieurs fichiers, un onglet par catégorie, la galerie de photos en plein écran avec diaporama, les vidéos à la suite dans l'ordre choisi, le lecteur PDF, le résumé de la NF-e à partir du XML, et le téléchargement pour le reste. Voir [Les documents de la montre](#os-documentos-do-relógio). |
 | **Historique** (`historico.php`) | La chronologie d'une montre : en usage par la rotation, au poignet hors rotation, sur le remontoir, au soleil, au repos, et chaque remontage, charge et changement de pile. Il montre combien de temps et quel pourcentage elle a passé dans chaque état, avec un filtre de période et d'état. |
-| **Configuration** (`configuracao.php`) | Les options de la collection (les horaires, les limites, les écrans, la langue), l'état du cron, le cadre **Messages et agendas** (les destinations et les agendas, avec les liens vers leurs pages), les événements personnalisés, la **Sauvegarde** (seulement le master : les sauvegardes du dossier, avec **Télécharger** et **Restaurer**, et **Faire une sauvegarde maintenant**) et le bouton qui applique les migrations de la base. Voir [La Configuration, option par option](#a-configuração-opção-por-opção). |
-| **Destinations** (`destinos.php`) | Où vont les messages de la collection : chaque webhook, e-mail ou Web Push, avec le message, la langue, ce qu'il reçoit, les tests et ce qui part aujourd'hui. Voir [Messages et agendas](#mensagens-e-agendas). |
-| **Agendas** (`agendas.php`) | Les agendas de la collection (Google, CalDAV, Outlook, lien ICS), avec le modèle de l'événement, ce qu'elle reçoit, la synchronisation, l'événement de test et ce qui doit y être maintenant. |
+| **Alertes** (`avisos.php`) | Tout ce que le système rappelle, en un seul endroit : les **alertes des montres** (la définition : la formule de la date, l'avance, le texte, la saisie qui la résout, *immédiate*...), les **rappels** (les événements personnalisés, avec une heure et une répétition) et **Où elles vont** (les destinations des messages et les agendas, avec les liens vers leurs pages). Voir [Messages et agendas](#mensagens-e-agendas). |
+| **Configuration** (`configuracao.php`) | Les options de la collection (les horaires, les limites, les écrans, la langue), l'état du cron, le résumé des alertes, des rappels et des messages (avec le chemin vers la page **Alertes**), la **Sauvegarde** (seulement le master : les sauvegardes du dossier, avec **Télécharger** et **Restaurer**, et **Faire une sauvegarde maintenant**) et le bouton qui applique les migrations de la base. Voir [La Configuration, option par option](#a-configuração-opção-por-opção). |
+| **Destinations** (`destinos.php`, ouverte depuis la page Alertes) | Où vont les messages de la collection : chaque webhook, e-mail ou Web Push, avec le message, la langue, ce qu'il reçoit, les tests et ce qui part aujourd'hui. Voir [Messages et agendas](#mensagens-e-agendas). |
+| **Agendas** (`agendas.php`, ouverte depuis la page Alertes) | Les agendas de la collection (Google, CalDAV, Outlook, lien ICS), avec le modèle de l'événement, ce qu'elle reçoit, la synchronisation, l'événement de test et ce qui doit y être maintenant. |
 | **Critères** (`criterios.php`) | Les ensembles de critères par endroit (toutes les montres, un groupe ou une montre), avec paramètres, sous-paramètres, tranches et la note de chaque montre avec le calcul détaillé. Il y a **Restaurer les critères initiaux**. |
 | **Groupes** (`grupos.php`) | L'arbre : créer, renommer, déplacer, trier, supprimer (ce qui appartenait au groupe passe à celui du dessus) et choisir le groupe de chaque montre. |
-| **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), alertes, modes de rotation et catégories de documents : tout ce que le système utilise et qui n'est pas du code. |
+| **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), modes de rotation et catégories de documents : tout ce que le système utilise et qui n'est pas du code (les alertes sont dans la page **Alertes**). |
 | **Exécutions du cron** (`execucoes.php`) | Ce que le cron a fait à chaque passage, combien de temps il a pris et les erreurs, avec des filtres. |
 | **Mon compte** (`conta.php`, le menu **Compte**) | Les collections que vous voyez (ouvrir, créer, renommer, supprimer, quitter), vos arbres de groupes (copier, renommer, supprimer), demander l'accès à la collection de quelqu'un (par le code donné par le propriétaire), vos données (votre code, l'e-mail, la langue, le mot de passe), les **jetons d'API** (pour vos scripts), les **notifications sur cet appareil** (le Web Push) et supprimer le compte. Voir [Plusieurs personnes](#várias-pessoas-contas-coleções-e-acesso). |
 | **Approbations** (`aprovacoes.php`) | Les demandes d'accès à vos collections (approuver, refuser), les invitations que des membres ont faites et qui vous attendent, **Inviter** (par e-mail), les invitations que vous avez faites et qui voit vos collections (retirer l'accès). Le menu affiche **Approbations (N)** quand quelque chose attend. |

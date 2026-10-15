@@ -1,4 +1,4 @@
-<!-- origem: 6aeb9df90cca44b7b7b586df94daa20dd66fe3d1 -->
+<!-- origem: 78c7fe5fe65c9cf12fdb90ef4ab18fcf84548f18 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -599,7 +599,7 @@ v2 से v8 इससे पहले के हैं और सिर्फ�
 | [`banco.php`](banco.php) | डेटाबेस: MySQL, Postgres, SQLite या Firebird से कनेक्शन, और एक से दूसरे में SQL का अनुवाद |
 | [`operacoes.php`](operacoes.php) | हर लेखन के नियम: जाँच और संदेश |
 | [`cron.php`](cron.php) | योजना, दिन का सत्र, सुबह और शाम के दौर, इवेंट, कैलेंडर और दस्तावेज़ों की देखभाल |
-| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | पृष्ठ (केवल ढाँचा; `cadastro.php` सार्वजनिक है) |
+| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | पृष्ठ (केवल ढाँचा; `cadastro.php` सार्वजनिक है) |
 | `push.js` | Web Push का service worker |
 | `ajuda.php` | सहायता पेज: सिर्फ़ ढाँचा; `ajuda.js` API से टेक्स्ट माँगता है (`recurso=manual`: README के उपयोगकर्ताओं वाले हिस्से, `lib.php` में पहले से HTML में बदले हुए) |
 | [`pagina.php`](pagina.php) | मेनू वाला ऊपरी हिस्सा और पेजों का अंत ; `topo()` कुछ भी भेजने से पहले लॉगिन जाँचता है (`pagina_login()`) |

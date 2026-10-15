@@ -717,7 +717,7 @@ current state: on the wrist, by the in-use consumption; stored, by the stored co
 simulates the days of use, notes in the plan what to do beforehand (*"charge before wearing"*, *"wind"*) when the chosen watch
 will reach the limit on its day.
 
-All these alerts are data (the **Definitions → Alerts** page): the date formula, the lead time, the text and the entry that
+All these alerts are data (the **Alerts** page, the *Watch alerts* part): the date formula, the lead time, the text and the entry that
 resolves it. Also there are *"Enter the charge"* (asks for a reading after 3 days without any; it comes on, and the **3** in the
 formula is the number of days) and *"Low charge"* (the stored smartwatch reaching the limit; it comes off, because *"Charge"*
 already covers that case).
@@ -738,7 +738,7 @@ The alerts of the initial set, with the identifier (their name in the formulas, 
 | Warranty expiring | `garantia` | all | (nothing: it only alerts) |
 | Idle | `encostado` | all (those in the collection, available) | Put on the wrist. It comes due when the watch passes the limit of days without going on the wrist (Settings, **Idle alert: days without going on the wrist**, default 30), counted from the last time on the wrist (never worn, from the purchase date; without both, no alert). It does not take the next service or **What to do**: the table has its own **Idle** column, with how long is left or how long it is overdue. |
 
-The alerts go in the morning alert. An alert marked **right away** (in **Definitions › Alerts**, the *right away* box) also goes
+The alerts go in the morning alert. An alert marked **right away** (on the **Alerts** page, the *right away* box) also goes
 via Telegram **in the minute it comes due**, only once, until it is resolved: that's how **Take off the charger** arrives when
 the battery fills. In **Today is the day for**, the button is the one of the type that resolves it: *Put in the sun* with the
 session closed, *Took off the charger* with it open, *Enter charge reading* with the value field.
@@ -822,12 +822,14 @@ each line.
 | **Highlight at the top of the Today page** (`destaque_hoje`) | **The watch of the day** (`dia`): the big box at the top of the Today page shows the watch of the day (the plan's), with until when it stays and why it came up. **The watch on the wrist now** (`pulso`): it shows the watch that is on the wrist, even if it isn't the day's (with *on the wrist now* and, below, *Watch of the day: …*, which opens the day's); with more than one on the wrist, the last one put on; with none on the wrist, the day's stays, with the notice *No watch on the wrist now*. The data below (state, charge, the Put on/Took off the wrist button, the photo) are those of the highlighted watch. Default: the watch of the day. |
 
 On the page, each option is on one line, with the name on the left and the field on the right, in boxes (Daily routine,
-Limits and calculations, Screens, Cron, Draws, Messages and calendars); the **Save settings** button is on a bar fixed at the
+Limits and calculations, Screens, Cron, Draws and the summary **Alerts, reminders and messages**, with the way to the **Alerts** page); the **Save settings** button is on a bar fixed at the
 bottom of the screen.
 
 ### Messages and calendars
 
-The messages and the calendars have pages of their own, opened from the **Messages and calendars** box in Settings:
+Everything the system reminds you of is together on the **Alerts** page (in the menu), in three parts: the **watch alerts** (the ones it
+works out by itself from each watch's data: wind, charge, change the battery...), the **reminders** (the custom events, below)
+and **Where they go**, the summary of the destinations and the calendars, which have pages of their own:
 
 - **Destinations** (`destinos.php`): where the collection's messages go. Each destination is a **webhook** (an HTTP request:
   Telegram, n8n, Home Assistant, any bridge), an **e-mail** (through the e-mail server in `config.php`) or **Web Push** (the
@@ -848,7 +850,7 @@ The passwords, keys and tokens of the calendars and the webhook headers are **en
 the screen. How to set up each service on the server: see [Destinations and calendars on the
 server](#destinations-and-calendars-on-the-server).
 
-**Custom events** (in Settings): your own reminders (clean the straps, review the collection), with a name, when they fire
+**Reminders** (the custom events, on the **Alerts** page): your own reminders (clean the straps, review the collection), with a name, when they fire
 (once, every day, on weekdays, on a day of the month or every N days), the time and, if you want, a watch. The table shows
 each one with **Goes to** (the destinations and calendars that receive it); a new event already goes to all destinations.
 
@@ -992,12 +994,13 @@ comes in here by its name.
 | **Exact time** (`hora.php`) | The server's time to set the watches: a dial with hands and the digital time moving second by second (set by the API, discounting the request time; below, how far the device's clock is fast or slow), the date in words and the UTC time; the **Time zone and UTC** boxes (the time zone, the offset, Zulu time, the military letter of the time zone, like *P (Papa)*, and the date-time group, *131433P OCT 26*), **Calendar** (day of the year, ISO week, quarter, Julian day, Unix) and **Moon** (the phase, the age, the illuminated part and the next full and new moons, by the mean cycle: it can be off by a day); and **How to set it**. It reads the API again every minute. Through the API: `recurso=hora_certa`. |
 | **Documents** (`documentos.php`) | The documents of a watch (or of all), opened from the watch page: uploading several files, one tab per category, the full-screen photo gallery with a slideshow, the videos in sequence in the chosen order, the PDF viewer, the summary of the NF-e from the XML, and download for the rest. See [The watch's documents](#the-watchs-documents). |
 | **History** (`historico.php`) | A watch's timeline: in use by the rotation, on the wrist outside the rotation, on the winder, in the sun, at rest, and each winding, charge and battery change. It shows how much time and what percentage it spent in each state, with a period and state filter. |
-| **Settings** (`configuracao.php`) | The collection's options (the times, the limits, the screens, the language), the cron status, the **Messages and calendars** box (the destinations and calendars, with the links to their pages), the custom events, the **Backup** (master only: the folder's backups, with **Download** and **Restore**, and **Make a backup now**) and the button that applies the database migrations. See [Settings, option by option](#settings-option-by-option). |
-| **Destinations** (`destinos.php`) | Where the collection's messages go: each webhook, e-mail or Web Push, with the message, the language, what it receives, the tests and how it goes out today. See [Messages and calendars](#messages-and-calendars). |
-| **Calendars** (`agendas.php`) | The collection's calendars (Google, CalDAV, Outlook, ICS link), with the event template, what it receives, the sync, the test event and what has to be in it now. |
+| **Alerts** (`avisos.php`) | Everything the system reminds you of, in one place: the **watch alerts** (the definition: the date formula, the lead time, the text, the entry that resolves it, *right away*...), the **reminders** (the custom events, with a time and a repetition) and **Where they go** (the message destinations and the calendars, with the links to their pages). See [Messages and calendars](#messages-and-calendars). |
+| **Settings** (`configuracao.php`) | The collection's options (the times, the limits, the screens, the language), the cron status, the summary of the alerts, the reminders and the messages (with the way to the **Alerts** page), the **Backup** (master only: the folder's backups, with **Download** and **Restore**, and **Make a backup now**) and the button that applies the database migrations. See [Settings, option by option](#settings-option-by-option). |
+| **Destinations** (`destinos.php`, opened from the Alerts page) | Where the collection's messages go: each webhook, e-mail or Web Push, with the message, the language, what it receives, the tests and how it goes out today. See [Messages and calendars](#messages-and-calendars). |
+| **Calendars** (`agendas.php`, opened from the Alerts page) | The collection's calendars (Google, CalDAV, Outlook, ICS link), with the event template, what it receives, the sync, the test event and what has to be in it now. |
 | **Criteria** (`criterios.php`) | The criteria sets per place (all watches, a group or a watch), with parameters, subparameters, ranges and each watch's score with the calculation open. It has **Restore the initial criteria**. |
 | **Groups** (`grupos.php`) | The tree: create, rename, move, sort, delete (what belonged to the group goes to the one above) and choose each watch's group. |
-| **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), alerts, rotation modes and the document categories: everything the system uses that isn't code. |
+| **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), rotation modes and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page). |
 | **Cron runs** (`execucoes.php`) | What the cron did in each round, how long it took and the errors, with filters. |
 | **My account** (`conta.php`, the **Account** menu) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection (by the code the owner gave), your data (your code, the e-mail, the language, the password), the **API tokens** (for your scripts), the **notifications on this device** (Web Push) and deleting the account. See [Several people](#several-people-accounts-collections-and-access). |
 | **Approvals** (`aprovacoes.php`) | The access requests to your collections (approve, decline), the invitations members made that wait for you, **Invite** (by e-mail), the invitations you made and who sees your collections (remove access). The menu shows **Approvals (N)** when something is waiting. |
@@ -1783,7 +1786,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | [`banco.php`](banco.php) | the database: the connection to MySQL, Postgres, SQLite or Firebird, and the translation of SQL from one to another |
 | [`operacoes.php`](operacoes.php) | the rules of each write: validations and messages |
 | [`cron.php`](cron.php) | the plan, the day's session, the morning and evening rounds, the events, the calendar and the documents' upkeep |
-| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | the pages (only the skeleton; `cadastro.php` is the public one) |
+| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | the pages (only the skeleton; `cadastro.php` is the public one) |
 | `push.js` | the Web Push service worker |
 | `ajuda.php` | the help page: only the skeleton; `ajuda.js` asks the API for the text (`recurso=manual`: the README's sections for users, already in HTML, converted in `lib.php`) |
 | [`pagina.php`](pagina.php) | the top with the menu and the end of the pages ; `topo()` checks the login before sending anything (`pagina_login()`) |

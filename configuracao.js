@@ -9,16 +9,6 @@ function cartao(titulo, corpo, pe) {
 }
 
 
-// Evento personalizado: mostra só os campos da repetição escolhida
-function mostrarRepeticao() {
-  var repeticao = document.getElementById("ev-repeticao");
-  if (repeticao) {
-    document.querySelectorAll(".form-evento [data-rep]").forEach(function (e) {
-      e.hidden = e.dataset.rep.split(" ").indexOf(repeticao.value) < 0;
-    });
-  }
-}
-
 // lê e monta a página: primeiro confere as migrações (com alguma pendente, só o aviso)
 function recarregarConfig(aplicadas) {
   return api({recurso: "migracoes"}).then(function (m) {
@@ -86,7 +76,7 @@ function recarregarConfig(aplicadas) {
           + parCampo(t("Gasto medido: média dos últimos (dias)"), numero("medicao_janela_dias", cfg("medicao_janela_dias") !== "" ? cfg("medicao_janela_dias") : "90", "1", "3650"))
           + parCampo(t("Aviso Encostado: dias sem ir ao pulso"), numero("encostado_dias", cfg("encostado_dias") !== "" ? cfg("encostado_dias") : "30", "1", "3650"))),
           el("p", {"class": "nota"}, t("O limite de carga de um relógio (no cadastro dele) vale no lugar do geral. Medições do gasto mais velhas que a janela saem da média. ")
-            + t("Um relógio da coleção que passa do limite de dias sem ir ao pulso ganha o aviso <strong>Encostado</strong> (desliga em Cadastros › Avisos).")));
+            + t("Um relógio da coleção que passa do limite de dias sem ir ao pulso ganha o aviso <strong>Encostado</strong> (desliga na página Avisos).")));
         var tela = cartao(t("Telas"), el("div", {"class": "campos"},
           parCampo(t("Idioma padrão (quem não escolheu outro no menu)"), el("select", {"name": "idioma"}, d.linguas.map(function (l) {
             return el("option", {"value": l.codigo, "selected": (cfg("idioma") || "pt-BR") === l.codigo}, h(l.nome));
@@ -113,68 +103,14 @@ function recarregarConfig(aplicadas) {
           + parCampo(t("Último lote"), el("span", {}, al.ultimo_lote ? h(al.ultimo_lote.replace(/ em (\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2}).*/, " em $3/$2/$1 $4")) : t("nenhum ainda")))
           + (al.fora_desde ? parCampo(t("Serviços fora"), el("span", {"class": "acao"}, t("os dois sem responder desde {1} {2}; o sistema tenta de novo depois de 10 minutos", {1: dataBr(al.fora_desde), 2: horaBr(al.fora_desde)}))) : "")),
           el("p", {"class": "nota"}, t("Todo sorteio do sistema (o rodízio totalmente aleatório, o sorteio pela nota e o desempate de notas iguais na escala) usa estes números. Eles chegam num lote, e cada sorteio usa só o que precisa, sem viés.")));
-        // os destinos das mensagens e as agendas têm as páginas deles: aqui, o resumo e o caminho
-        var listaAlvos = function (lista, campo, vazio) {
-          return lista.length > 0 ? el("ul", {"class": "lista-simples"}, lista.map(function (x) {
-            return el("li", {}, h(x.nome) + " " + el("span", {"class": "nota"}, "(" + h(x.tipo) + (x[campo] ? "" : ", " + t("desligado")) + ")"));
-          }).join("")) : el("p", {"class": "nota"}, vazio);
-        };
-        var alertas = cartao(t("Mensagens e agendas"), el("div", {"class": "campos"},
-          el("h3", {}, el("a", {"href": "destinos.php"}, t("Destinos das mensagens"))) + listaAlvos(d.destinos, "ativo", t("Nenhum ainda: as mensagens da manhã, da noite e os avisos não saem para lugar nenhum."))
-          + el("h3", {}, el("a", {"href": "agendas.php"}, t("Agendas"))) + listaAlvos(d.agendas, "ativa", t("Nenhuma ainda."))),
-          el("p", {"class": "nota"}, t("Um destino é um webhook (Telegram, n8n...), um e-mail ou o Web Push do navegador; uma agenda é o Google, um CalDAV (Nextcloud, iCloud, Fastmail), o Outlook ou um link ICS para assinar em qualquer app. Cada um escolhe o que recebe e tem a sua mensagem.")));
-        // os eventos personalizados: editar e excluir
-        var eventosLista = d.eventos.length === 0 ? el("p", {"class": "nota"}, t("Nenhum evento ainda."))
-          : el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados"}, el("thead", {}, el("tr", {}, [t("Evento"), t("Quando"), t("Relógio"), t("Vai para"), ""].map(function (x) { return el("th", {}, x); }).join("")))
-            + el("tbody", {}, d.eventos.map(function (ev) {
-              return el("tr", {"class": ev.ativo ? null : "inativo"}, el("td", {}, h(ev.nome) + (ev.ativo ? "" : " " + el("span", {"class": "nota"}, t("(desligado)"))))
-                + el("td", {}, h(ev.descricao)) + el("td", {}, ev.relogio ? h(ev.relogio) : "—")
-                + el("td", {}, h(ev.destinos.concat(ev.agendas).join(", ")) || "—")
-                + el("td", {"class": "acoes-linha"}, el("a", {"href": "configuracao.php?evento=" + ev.id + "#personalizados"}, t("Editar")) + " "
-                  + el("button", {"type": "submit", "form": "f-evento-excluir", "name": "evento_id", "value": ev.id, "class": "discreto"}, t("Excluir"))));
-            }).join(""))));
+        // os avisos, os lembretes e para onde vão (os destinos e as agendas) moram na página Avisos: aqui, o resumo e o caminho
+        var alertas = cartao(t("Avisos, lembretes e mensagens"), el("div", {"class": "campos"},
+          el("p", {}, t("{1} lembretes · {2} destinos · {3} agendas", {1: d.eventos.length, 2: d.destinos.length, 3: d.agendas.length}))),
+          el("p", {"class": "nota"}, t("Os avisos dos relógios, os lembretes (os eventos personalizados) e para onde eles vão ficam juntos na página {1}.", {1: el("a", {"href": "avisos.php"}, t("Avisos"))})));
         res += el("form", {"data-recurso": "config", "id": "form-config"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
           + el("div", {"class": "config-grade"}, rotina + limites + tela + quadroCron + sorteios + alertas)
           // salvar: uma barra presa no pé da tela enquanto a página rola, com o botão sempre no mesmo lugar
           + el("div", {"class": "barra-salvar"}, el("span", {"class": "nota"}, t("As mudanças desta página valem depois de salvar.")) + el("button", {}, t("Salvar configuração"))));
-        res += el("form", {"data-recurso": "config", "id": "f-evento-excluir"}, el("input", {"type": "hidden", "name": "acao", "value": "evento_excluir"}));
-        // ---------- o cadastro de um evento ----------
-        var q = new URLSearchParams(window.location.search);
-        var edit = null;
-        d.eventos.forEach(function (ev) {
-          if (String(ev.id) === q.get("evento")) {
-            edit = ev;
-          }
-        });
-        var fe = edit || {id: 0, nome: "", ativo: true, repeticao: "semanal", data_inicio: "", hora: "20:00", dias_semana: "7", dia_mes: 1, intervalo_dias: 30, relogio_id: null};
-        var diasFe = String(fe.dias_semana || "").split(",");
-        var formEvento = el("input", {"type": "hidden", "name": "acao", "value": "evento_salvar"}) + el("input", {"type": "hidden", "name": "evento_id", "value": fe.id})
-          + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": fe.nome, "required": true, "placeholder": t("Conferir a carga dos smartwatches")})}))
-          + el("label", {}, t("Relógio (opcional: com relógio, as âncoras dele funcionam) {1}", {1: el("select", {"name": "relogio_id"}, el("option", {"value": "0"}, t("Nenhum, é um evento geral"))
-            + d.relogios.filter(function (r) { return r.disponivel || fe.relogio_id === r.id; }).map(function (r) {
-              return el("option", {"value": r.id, "selected": fe.relogio_id === r.id}, h(r.nome) + (r.disponivel ? "" : t(" (indisponível)")));
-            }).join(""))}))
-          + el("label", {}, t("Quando dispara {1}", {1: el("select", {"name": "repeticao", "id": "ev-repeticao"}, Object.keys(d.repeticoes).map(function (k) {
-            return el("option", {"value": k, "selected": fe.repeticao === k}, h(d.repeticoes[k]));
-          }).join(""))}))
-          + el("div", {"class": "linha-campos"}, el("label", {"data-rep": "uma intervalo"}, el("span", {"data-rep": "uma"}, t("Data")) + el("span", {"data-rep": "intervalo"}, t("A partir de")) + " "
-              + el("input", {"type": "date", "name": "data_inicio", "value": fe.data_inicio || ""}))
-            + el("label", {}, t("Hora {1}", {1: el("input", {"type": "time", "name": "hora", "value": fe.hora, "required": true})}))
-            + el("label", {"data-rep": "mensal"}, t("Dia do mês {1}", {1: el("input", {"type": "number", "min": "1", "max": "31", "name": "dia_mes", "value": fe.dia_mes || 1})}))
-            + el("label", {"data-rep": "intervalo"}, t("A cada quantos dias {1}", {1: el("input", {"type": "number", "min": "1", "name": "intervalo_dias", "value": fe.intervalo_dias || 30})})))
-          + el("fieldset", {"data-rep": "semanal", "class": "dias-semana"}, el("legend", {}, t("Dias da semana")) + ["", t("seg"), t("ter"), t("qua"), t("qui"), t("sex"), t("sáb"), t("dom")].map(function (dn, n) {
-            return n === 0 ? "" : el("label", {"class": "check"}, el("input", {"type": "checkbox", "name": "dias_semana[]", "value": n, "checked": diasFe.indexOf(String(n)) >= 0}) + " " + dn);
-          }).join(""))
-          + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "ativo", "value": "0"}) + el("input", {"type": "checkbox", "name": "ativo", "value": "1", "checked": fe.ativo}) + t(" Ativo"))
-          + (edit ? el("p", {"class": "nota"}, t("Próximas vezes: {1}.", {1: edit.proximas_60.length > 0 ? h(edit.proximas_60.map(function (item) { return dataBr(item, true) + " " + horaBr(item); }).join(", "))
-            : t("nenhuma nos próximos 60 dias")})) : "")
-          + el("p", {"class": "nota"}, t("Evento novo já vai por todos os destinos da coleção. Em cada destino e cada agenda (páginas Destinos e Agendas), escolha se ele vai e com que texto."))
-          + el("div", {"class": "botoes"}, el("button", {}, edit ? t("Salvar alterações") : t("Criar evento")) + (edit ? " " + el("a", {"href": "configuracao.php#personalizados"}, "cancelar") : ""));
-        res += el("section", {"id": "personalizados"}, el("h2", {}, t("Eventos personalizados"))
-          + el("p", {"class": "nota"}, t("Um aviso seu, com horário e repetição próprios: todo dia, em dias da semana, todo mês, a cada N dias ou uma vez só."))
-          + eventosLista
-          + el("details", {"class": "cartao-config novo-evento", "open": edit !== null || q.has("novo_evento")},
-          el("summary", {}, edit ? t("Editar o evento {1}", {1: h(edit.nome)}) : t("Novo evento")) + el("form", {"data-recurso": "config", "class": "form-evento"}, formEvento)));
         // ---------- Cópia de segurança (desligada no config.php, BACKUP_ATIVO = false: o quadro nem aparece) ----------
         res += bk === null || bk.ativo === false ? "" : el("section", {"id": "copia"}, el("h2", {}, t("Cópia de segurança"))
           + (bk.pasta_ok
@@ -189,7 +125,6 @@ function recarregarConfig(aplicadas) {
             }).join("")))) : "")
           + (bk.pasta_ok ? el("form", {"data-recurso": "backup"}, el("input", {"type": "hidden", "name": "acao", "value": "fazer"}) + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, t("Fazer uma cópia agora")))) : ""));
         document.getElementById("configuracao").innerHTML = res;
-        mostrarRepeticao();
         if (window.location.hash) {
           var alvo = document.querySelector(window.location.hash);
           if (alvo) {
@@ -201,25 +136,23 @@ function recarregarConfig(aplicadas) {
   });
 }
 
-document.addEventListener("change", function (ev) {
-  if (ev.target.matches("#ev-repeticao")) {
-    mostrarRepeticao();
-  }
-});
-
-// depois de gravar: o recado no topo e a página remontada (o evento salvo sai da edição)
+// depois de gravar: o recado no topo e a página remontada
 aoGravar = function (form, res, dados) {
   recadoConfig = textoResposta(res);
-  var acao = dados.get("acao");
-  if ((acao === "evento_salvar" || acao === "evento_excluir") && res.ok) {
-    history.replaceState(null, "", "configuracao.php#personalizados");
-  } else if (acao === "salvar" && res.ok) {
+  if (dados.get("acao") === "salvar" && res.ok) {
     history.replaceState(null, "", "configuracao.php");
   }
   recarregarConfig(dados.get("recurso") === "migracoes" ? (res.aplicadas || [textoResposta(res)]) : []).then(function () {
-    window.scrollTo(0, acao === "evento_salvar" || acao === "evento_excluir" ? document.getElementById("personalizados").offsetTop : 0);
+    window.scrollTo(0, 0);
   });
 };
+// os lembretes saíram daqui: moram na página Avisos (o endereço antigo de um lembrete leva para lá)
+(function () {
+  var q = new URLSearchParams(window.location.search);
+  if (q.get("evento") || window.location.hash === "#personalizados") {
+    window.location.replace("avisos.php" + (q.get("evento") ? "?evento=" + encodeURIComponent(q.get("evento")) : "") + "#lembretes");
+  }
+})();
 
 recarregarConfig([]).catch(function (e) {
   document.getElementById("configuracao").innerHTML = el("p", {"class": "acao"}, t("Não consegui ler a configuração: {1}", {1: h(e.message)}));

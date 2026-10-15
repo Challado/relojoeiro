@@ -413,17 +413,45 @@ function reconstrucao_telas()
             ],
         ],
         [
+            "id" => "avisos",
+            "pagina" => "avisos.php",
+            "titulo" => t('Avisos'),
+            "endereco" => t('avisos.php; ?editar=<id>#form abre um aviso para alterar; ?evento=<id>#lembretes, um lembrete; #avisos-relogios, #lembretes e #para-onde vão direto a cada parte'),
+            "le" => [
+                t('recurso=cadastros (os avisos, os grupos e os tipos de lançamento)'),
+                t('recurso=config (os lembretes, os relógios, as repetições, os destinos e as agendas)'),
+            ],
+            "grava" => [
+                t('avisos: novo, alterar, excluir'),
+                t('config: evento_salvar, evento_excluir'),
+            ],
+            "partes" => [
+                ["titulo" => t('No alto'), "itens" => [
+                    t('h1 "Avisos", as abas-âncora Avisos dos relógios, Lembretes e Para onde vão (levam a cada parte da mesma página) e a nota "Tudo o que o sistema lembra: os avisos dos relógios, que ele calcula sozinho... os lembretes, que você marca com hora e repetição; e para onde vão os dois...". Depois de gravar, o recado e a página volta na parte gravada; recusado, os erros em cima, e o que foi digitado fica.'),
+                ]],
+                ["titulo" => t('Avisos dos relógios'), "itens" => [
+                    t('Tabela Aviso, Versão para, Data prevista, Vale quando, Antecedência ("N d"), Resolve, Na escala (com o valor ou as horas simuladas), Na agenda, Na hora (sim/não), Ativo, ações. Formulário: Identificador (na novo), Nome, Antecedência (dias), Resolve (os tipos), Versão para, ativo, "na hora (Telegram no minuto em que vence)" (caixa), Na escala inteligente (não; no relógio do dia; sempre), Escala: valor do lançamento simulado, Escala: horas da sessão simulada, Data na agenda (só dentro da antecedência; qualquer data), Data prevista (fórmula), Vale quando (fórmula), Texto (até 300).'),
+                ]],
+                ["titulo" => t('Lembretes (eventos personalizados)'), "itens" => [
+                    t('A tabela dos eventos: Evento (o nome), Quando (a repetição por extenso), Relógio, Vai para (os destinos e as agendas que recebem) e as ações Editar e Excluir (Excluir mostra o que sai junto e pede a confirmação). Embaixo, o quadro que abre e fecha ("Novo evento" ou "Editar o evento <nome>"): Nome (obrigatório), Relógio (opcional), Quando dispara (uma vez, todo dia, toda semana, todo mês, a cada N dias), e só os campos da repetição escolhida. O evento novo já vai para todos os destinos.'),
+                ]],
+                ["titulo" => t('Para onde vão: destinos e agendas'), "itens" => [
+                    t('Um quadro com dois lados: "Destinos das mensagens" (cada destino com o nome, o tipo e "(desligado)" quando está; o link para a página Destinos; vazio: "Nenhum ainda: as mensagens da manhã, da noite e os avisos não saem para lugar nenhum.") e "Agendas" (cada agenda; o link para a página Agendas; vazio: "Nenhuma ainda."), e a explicação "Um destino é um webhook (Telegram, n8n...), um e-mail ou o Web Push do navegador; uma agenda é o Google, um CalDAV (Nextcloud, iCloud, Fastmail), o Outlook ou um link ICS...".'),
+                ]],
+            ],
+        ],
+        [
             "id" => "configuracao",
             "pagina" => "configuracao.php",
             "titulo" => t('Configuração'),
-            "endereco" => t('configuracao.php; ?evento=<id> abre um evento para editar; #personalizados'),
+            "endereco" => t('configuracao.php (o ?evento=<id> e o #personalizados antigos levam para a página Avisos)'),
             "le" => [
                 t('recurso=migracoes (antes de tudo)'),
                 "recurso=config",
                 "recurso=backup",
             ],
             "grava" => [
-                t('config: salvar, evento_salvar, evento_excluir'),
+                t('config: salvar'),
                 t('migracoes: aplicar (só o master)'),
                 t('backup: fazer, restaurar (só o master)'),
             ],
@@ -439,12 +467,9 @@ function reconstrucao_telas()
                     t('Cron: "Cron rodando: última execução às HH:MM." (nota) ou, em âmbar, "O cron ainda não rodou" / "O cron não roda desde ..." com a linha do crontab em código; o erro guardado numa caixa; o link "Ver todas as execuções do cron" e o registro da última rodada (o master vê o do sistema; os outros, o da coleção).'),
                     t('Sorteios (só leitura): de onde vêm os números (RANDOM.ORG, ANU QRNG, o gerador seguro do PHP) e o último lote.'),
                 ]],
-                ["titulo" => t('Mensagens e agendas'), "itens" => [
-                    t('Um quadro com dois lados: "Destinos das mensagens" (cada destino com o nome, o tipo e "(desligado)" quando está; o link para a página Destinos; vazio: "Nenhum ainda: as mensagens da manhã, da noite e os avisos não saem para lugar nenhum.") e "Agendas" (cada agenda; o link para a página Agendas; vazio: "Nenhuma ainda."), e a explicação "Um destino é um webhook (Telegram, n8n...), um e-mail ou o Web Push do navegador; uma agenda é o Google, um CalDAV (Nextcloud, iCloud, Fastmail), o Outlook ou um link ICS...".'),
+                ["titulo" => t('Avisos, lembretes e mensagens'), "itens" => [
+                    t('Um quadro pequeno na grade: "N lembretes · N destinos · N agendas" e a nota "Os avisos dos relógios, os lembretes (os eventos personalizados) e para onde eles vão ficam juntos na página Avisos." (o link). O endereço antigo de um lembrete (?evento=<id> ou #personalizados) leva para a página Avisos.'),
                     t('A barra de salvar no pé: "As mudanças desta página valem depois de salvar." e o botão "Salvar configuração" (config salvar).'),
-                ]],
-                ["titulo" => t('Eventos personalizados'), "itens" => [
-                    t('A tabela dos eventos: Evento (o nome), Quando (a repetição por extenso), Relógio, Vai para (os destinos e as agendas que recebem) e as ações Editar e Excluir (Excluir mostra o que sai junto e pede a confirmação). Embaixo, o quadro que abre e fecha ("Novo evento" ou "Editar o evento <nome>"): Nome (obrigatório), Relógio (opcional), Quando dispara (uma vez, todo dia, toda semana, todo mês, a cada N dias), e só os campos da repetição escolhida. O evento novo já vai para todos os destinos.'),
                 ]],
                 ["titulo" => t('Cópia de segurança (no fim da página; só o master)'), "itens" => [
                     t('Título "Cópia de segurança". Com a pasta: a nota "Uma cópia do banco inteiro por dia, na rodada da noite, guardando as N mais novas, sem (ou com) o conteúdo dos documentos... Última: DD/MM/AAAA HH:MM."; sem a pasta, em âmbar, o aviso de que falta a BACKUP_PASTA.'),
@@ -567,17 +592,17 @@ function reconstrucao_telas()
             "id" => "cadastros",
             "pagina" => "cadastros.php",
             "titulo" => "Cadastros",
-            "endereco" => "cadastros.php?aba=<campos|lancamentos|formulas|avisos|modos|documentos>&editar=<id>#form",
+            "endereco" => t('cadastros.php?aba=<campos|lancamentos|formulas|modos|documentos>&editar=<id>#form (o ?aba=avisos antigo leva para a página Avisos)'),
             "le" => [
                 "recurso=cadastros",
                 t('recurso=calcular (o testar)'),
             ],
             "grava" => [
-                t('campos, lancamento_tipos, formulas, avisos, modos, documento_categorias'),
+                t('campos, lancamento_tipos, formulas, modos, documento_categorias'),
             ],
             "partes" => [
                 ["titulo" => t('Em todas as abas'), "itens" => [
-                    t('h1 "Cadastros" e as abas Campos, Tipos de lançamento, Fórmulas, Avisos, Modos de rodízio, Categorias de documentos. Cada aba é um cartão: o título, a explicação, a tabela com "Editar" (link que abre o formulário embaixo com os dados, no #form) e Excluir em cada linha, e o formulário ("Novo ..." ou "Alterar ...", botão "Criar" / "Salvar" e "cancelar"). Gravou: o recado no alto e a edição acaba; recusado: o que foi digitado fica e os erros aparecem no topo.'),
+                    t('h1 "Cadastros" e as abas Campos, Tipos de lançamento, Fórmulas, Modos de rodízio, Categorias de documentos. Cada aba é um cartão: o título, a explicação, a tabela com "Editar" (link que abre o formulário embaixo com os dados, no #form) e Excluir em cada linha, e o formulário ("Novo ..." ou "Alterar ...", botão "Criar" / "Salvar" e "cancelar"). Gravou: o recado no alto e a edição acaba; recusado: o que foi digitado fica e os erros aparecem no topo.'),
                 ]],
                 ["titulo" => "Campos", "itens" => [
                     t('Tabela Campo ("(unidade)"), Identificador (fonte fixa), Tipo, Vale para, Padrão, ações (Editar, ↑, ↓, Excluir com confirmação "Excluir o campo <nome> e os valores dele?"). Formulário: Nome (até 120), Identificador (a-z, 0-9 e _; começa com letra; até 40), Tipo (Número inteiro, Número decimal, Sim ou não, Data, Lista de opções, Texto), Unidade (até 20), Valor padrão, Vale para ("todos os relógios" e os grupos), Opções (lista: uma por linha).'),
@@ -587,9 +612,6 @@ function reconstrucao_telas()
                 ]],
                 ["titulo" => t('Fórmulas'), "itens" => [
                     t('Tabela Fórmula (o nome e o identificador com a unidade), Versão para, Cálculo (fonte fixa), ações. Formulário: Identificador (só na nova), Nome, Unidade, Versão para, Cálculo (textarea, fonte fixa). "Testar uma fórmula (sem gravar)": o texto da fórmula e "Testar em todos os relógios" (recurso=calcular): a tabela Relógio, Resultado, As partes da conta, ou os erros. "As funções do motor" (abre e fecha): cada função em negrito e a explicação.'),
-                ]],
-                ["titulo" => "Avisos", "itens" => [
-                    t('Tabela Aviso, Versão para, Data prevista, Vale quando, Antecedência ("N d"), Resolve, Na escala (com o valor ou as horas simuladas), Na agenda, Na hora (sim/não), Ativo, ações. Formulário: Identificador (na novo), Nome, Antecedência (dias), Resolve (os tipos), Versão para, ativo, "na hora (Telegram no minuto em que vence)" (caixa), Na escala inteligente (não; no relógio do dia; sempre), Escala: valor do lançamento simulado, Escala: horas da sessão simulada, Data na agenda (só dentro da antecedência; qualquer data), Data prevista (fórmula), Vale quando (fórmula), Texto (até 300).'),
                 ]],
                 ["titulo" => t('Modos de rodízio'), "itens" => [
                     t('Tabela Modo ("(ativo)"), Forma de escolha ("· com ciclo"), Blocos (nome e dias), ações (Editar; nos outros: Ativar e Excluir). Formulário: Nome, Planejamento (sorteio pelos blocos; escala inteligente de 7 dias, 30 dias, 60 dias, 6 meses, 1 ano, 2 anos), Forma de escolha, a caixa "ciclo", e a tabela dos blocos (os que existem e duas linhas vazias): Bloco (nome), Dias (caixas seg a dom), Sortear de, Um por (um por dia; um por bloco (na semana)), Relógio fixo ("— sorteia —" e os relógios). Bloco sem dia marcado sai.'),
@@ -780,7 +802,9 @@ function reconstrucao_codigo()
     "plano.php" => ["tela", t('o esqueleto da página Plano')],
     "plano.js" => ["tela", t('a página Plano: o resumo do período e o dia a dia, mês a mês')],
     "configuracao.php" => ["tela", t('o esqueleto da página Configuração')],
-    "configuracao.js" => ["tela", t('a página Configuração: o banco desatualizado, os quadros das opções, as mensagens, o que vai para onde, os eventos e como sai hoje')],
+    "configuracao.js" => ["tela", t('a página Configuração: o banco desatualizado, os quadros das opções, o resumo dos avisos e das mensagens (o caminho para a página Avisos) e a cópia de segurança')],
+    "avisos.php" => ["tela", t('o esqueleto da página Avisos')],
+    "avisos.js" => ["tela", t('a página Avisos: os avisos dos relógios (o cadastro), os lembretes (os eventos personalizados) e para onde vão (os destinos e as agendas)')],
     "criterios.php" => ["tela", t('o esqueleto da página Critérios')],
     "criterios.js" => ["tela", t('a página Critérios: as explicações, os lugares, os parâmetros, os subparâmetros, as faixas e a nota de cada relógio')],
     "grupos.php" => ["tela", t('o esqueleto da página Grupos')],
@@ -804,7 +828,7 @@ function reconstrucao_codigo()
     "documentos.php" => ["tela", t('o esqueleto da página Documentos')],
     "documentos.js" => ["tela", t('a página Documentos: o envio, as abas, a galeria com o visor, os vídeos, os PDFs, as NF-e e a edição')],
     "cadastros.php" => ["tela", t('o esqueleto da página Cadastros')],
-    "cadastros.js" => ["tela", t('a página Cadastros: as abas Campos, Tipos de lançamento, Fórmulas, Avisos, Modos de rodízio e Categorias de documentos')],
+    "cadastros.js" => ["tela", t('a página Cadastros: as abas Campos, Tipos de lançamento, Fórmulas, Modos de rodízio e Categorias de documentos (os avisos ficam na página Avisos)')],
     "usuarios.php" => ["tela", t('o esqueleto da página Usuários')],
     "usuarios.js" => ["tela", t('a página Usuários: o painel do master (cada conta com o que tem e as ações: ver como, oficializar, prorrogar, voltar a demo, bloquear, alterar, trocar a senha, transferir, dar acesso, excluir) e criar conta')],
     "conta.php" => ["tela", t('o esqueleto da página Minha conta')],

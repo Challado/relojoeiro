@@ -1,4 +1,4 @@
-<!-- origem: 144226c9d10dff07fb1ae9c9a8d6da742628bd99 -->
+<!-- origem: 07691b2bbdb236bb764c78e6f917069100338171 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -658,7 +658,7 @@ estado actual: en la muñeca, por el consumo en uso; guardado, por el consumo gu
 días de uso, anota en el plan qué hacer antes (*"cargar antes de usar"*, *"dar cuerda"*) cuando el reloj elegido vaya a llegar
 al límite en su día.
 
-Todos estos avisos son datos (la página **Definiciones → Avisos**): la fórmula de la fecha, la antelación, el texto y el
+Todos estos avisos son datos (la página **Avisos**, la parte *Avisos de los relojes*): la fórmula de la fecha, la antelación, el texto y el
 registro que lo resuelve. También están *"Anotar la carga"* (pide una lectura tras 3 días sin ninguna; viene activado, y el
 **3** de la fórmula es el número de días) y *"Carga baja"* (el smartwatch guardado llegando al límite; viene desactivado,
 porque *"Cargar"* ya cubre ese caso).
@@ -679,7 +679,7 @@ Los avisos del conjunto inicial, con el identificador (su nombre en las fórmula
 | Garantía venciendo | `garantia` | todos | (nada: solo avisa) |
 | Arrinconado | `encostado` | todos (los de la colección, disponibles) | En la muñeca. Vence cuando el reloj pasa el límite de días sin ir a la muñeca (Configuración, **Aviso Arrinconado: días sin ir a la muñeca**, predeterminado 30), contados desde la última vez en la muñeca (nunca usado, desde la fecha de compra; sin ambas, sin aviso). No entra en el próximo mantenimiento ni en **Qué hacer**: la tabla tiene la columna **Arrinconado**, con cuánto falta o cuánto pasó. |
 
-Los avisos van en el aviso de la mañana. Un aviso marcado **en el acto** (en **Definiciones › Avisos**, la casilla *en el
+Los avisos van en el aviso de la mañana. Un aviso marcado **en el acto** (en la página **Avisos**, la casilla *en el
 acto*) también sale por Telegram **en el minuto en que vence**, una sola vez, hasta que se resuelve: así llega el **Quitar del
 cargador** cuando la batería se llena. En **Hoy toca**, el botón es el del tipo que lo resuelve: *Poner al sol* con la sesión
 cerrada, *Lo quité del cargador* con ella abierta, *Anotar lectura de carga* con el campo del valor.
@@ -763,12 +763,14 @@ colección nueva va al final de cada línea.
 | **Destacado arriba de la página Hoy** (`destaque_hoje`) | **El reloj del día** (`dia`): el cuadro grande de arriba de la página Hoy muestra el reloj del día (el del plan), con hasta cuándo se queda y por qué salió. **El reloj en la muñeca ahora** (`pulso`): muestra el reloj que está en la muñeca, aunque no sea el del día (con *en la muñeca ahora* y, debajo, *Reloj del día: …*, que abre el del día); con más de uno en la muñeca, el último puesto; sin ninguno en la muñeca, se queda el del día, con el aviso *Ningún reloj en la muñeca ahora*. Los datos de debajo (estado, carga, el botón Me lo puse/Me lo quité, la foto) son los del reloj destacado. Predeterminado: el reloj del día. |
 
 En la página, cada opción está en una línea, con el nombre a la izquierda y el campo a la derecha, en recuadros (Rutina del
-día, Límites y cálculos, Pantallas, Cron, Sorteos, Mensajes y calendarios); el botón **Guardar configuración** está en una barra
+día, Límites y cálculos, Pantallas, Cron, Sorteos y el resumen **Avisos, recordatorios y mensajes**, con el camino a la página **Avisos**); el botón **Guardar configuración** está en una barra
 fija al pie de la pantalla.
 
 ### Mensajes y calendarios {#mensagens-e-agendas}
 
-Los mensajes y los calendarios tienen páginas propias, abiertas desde el recuadro **Mensajes y calendarios** de la Configuración:
+Todo lo que el sistema recuerda está junto en la página **Avisos** (en el menú), en tres partes: los **avisos de los relojes** (los que
+calcula solo con los datos de cada uno: dar cuerda, cargar, cambiar la pila...), los **recordatorios** (los eventos
+personalizados, abajo) y **Adónde van**, el resumen de los destinos y los calendarios, que tienen páginas propias:
 
 - **Destinos** (`destinos.php`): adónde van los mensajes de la colección. Cada destino es un **webhook** (una petición HTTP:
   Telegram, n8n, Home Assistant, cualquier puente), un **correo** (por el servidor de correo del `config.php`) o el **Web Push**
@@ -790,7 +792,7 @@ Las contraseñas, las claves y los tokens de los calendarios y las cabeceras de 
 datos** y nunca vuelven a la pantalla. Cómo configurar cada servicio en el servidor: vea [Destinos y calendarios en el
 servidor](#destinos-e-agendas-no-servidor).
 
-**Eventos personalizados** (en la Configuración): recordatorios suyos (limpiar las correas, revisar la colección), con nombre,
+**Recordatorios** (los eventos personalizados, en la página **Avisos**): recordatorios suyos (limpiar las correas, revisar la colección), con nombre,
 cuándo se disparan (una vez, todos los días, en días de la semana, en un día del mes o cada N días), la hora y, si quiere, un
 reloj. La tabla muestra cada uno con **Va a** (los destinos y los calendarios que lo reciben); un evento nuevo ya va a todos
 los destinos.
@@ -902,12 +904,13 @@ que usted registre entra aquí con su nombre.
 | **Hora exacta** (`hora.php`) | La hora del servidor para poner en hora los relojes: una esfera con agujas y la hora digital andando segundo a segundo (ajustada por la API, descontando el tiempo de la petición; debajo, cuánto adelanta o atrasa el reloj del aparato), la fecha en palabras y la hora UTC; los cuadros **Zona horaria y UTC** (la zona, el desfase, la hora Zulu, la letra militar de la zona, como *P (Papa)*, y el grupo fecha-hora, *131433P OCT 26*), **Calendario** (día del año, semana ISO, trimestre, día juliano, Unix) y **Luna** (la fase, la edad, la parte iluminada y las próximas lunas llena y nueva, por el ciclo medio: puede variar un día); y **Cómo ponerlo en hora**. Vuelve a leer la API cada minuto. Por la API: `recurso=hora_certa`. |
 | **Documentos** (`documentos.php`) | Los documentos de un reloj (o de todos), abiertos desde la ficha: envío de varios archivos, una pestaña por categoría, la galería de fotos a pantalla completa con presentación, los videos en secuencia en el orden elegido, el visor de PDF, el resumen de la NF-e a partir del XML, y descarga para el resto. Vea [Los documentos del reloj](#os-documentos-do-relógio). |
 | **Historial** (`historico.php`) | La línea de tiempo de un reloj: en uso por la rotación, en la muñeca fuera de la rotación, en el winder, al sol, en reposo, y cada cuerda, carga y cambio de pila. Muestra cuánto tiempo y qué porcentaje pasó en cada estado, con filtro de período y de estado. |
-| **Configuración** (`configuracao.php`) | Las opciones de la colección (los horarios, los límites, las pantallas, el idioma), la situación del cron, el recuadro **Mensajes y calendarios** (los destinos y los calendarios, con los enlaces a sus páginas), los eventos personalizados, la **Copia de seguridad** (solo el master: las copias de la carpeta, con **Descargar** y **Restaurar**, y **Hacer una copia ahora**) y el botón que aplica las migraciones de la base de datos. Vea [La Configuración, opción por opción](#a-configuração-opção-por-opção). |
-| **Destinos** (`destinos.php`) | Adónde van los mensajes de la colección: cada webhook, correo o Web Push, con el mensaje, el idioma, lo que recibe, las pruebas y cómo sale hoy. Vea [Mensajes y calendarios](#mensagens-e-agendas). |
-| **Calendarios** (`agendas.php`) | Los calendarios de la colección (Google, CalDAV, Outlook, enlace ICS), con la plantilla del evento, lo que recibe, la sincronización, el evento de prueba y lo que tiene que estar en él ahora. |
+| **Avisos** (`avisos.php`) | Todo lo que el sistema recuerda, en un solo lugar: los **avisos de los relojes** (la definición: la fórmula de la fecha, la antelación, el texto, el registro que lo resuelve, *en el acto*...), los **recordatorios** (los eventos personalizados, con hora y repetición) y **Adónde van** (los destinos de los mensajes y los calendarios, con los enlaces a sus páginas). Vea [Mensajes y calendarios](#mensagens-e-agendas). |
+| **Configuración** (`configuracao.php`) | Las opciones de la colección (los horarios, los límites, las pantallas, el idioma), la situación del cron, el resumen de los avisos, los recordatorios y los mensajes (con el camino a la página **Avisos**), la **Copia de seguridad** (solo el master: las copias de la carpeta, con **Descargar** y **Restaurar**, y **Hacer una copia ahora**) y el botón que aplica las migraciones de la base de datos. Vea [La Configuración, opción por opción](#a-configuração-opção-por-opção). |
+| **Destinos** (`destinos.php`, abierta desde la página Avisos) | Adónde van los mensajes de la colección: cada webhook, correo o Web Push, con el mensaje, el idioma, lo que recibe, las pruebas y cómo sale hoy. Vea [Mensajes y calendarios](#mensagens-e-agendas). |
+| **Calendarios** (`agendas.php`, abierta desde la página Avisos) | Los calendarios de la colección (Google, CalDAV, Outlook, enlace ICS), con la plantilla del evento, lo que recibe, la sincronización, el evento de prueba y lo que tiene que estar en él ahora. |
 | **Criterios** (`criterios.php`) | Los conjuntos de criterios por lugar (todos los relojes, un grupo o un reloj), con parámetros, subparámetros, rangos y la nota de cada reloj con la cuenta abierta. Tiene **Restaurar los criterios iniciales**. |
 | **Grupos** (`grupos.php`) | El árbol: crear, renombrar, mover, ordenar, eliminar (lo que era del grupo pasa al de arriba) y elegir el grupo de cada reloj. |
-| **Definiciones** (`cadastros.php`) | Campos, tipos de registro, fórmulas (con **Probar**), avisos, modos de rotación y las categorías de documentos: todo lo que el sistema usa que no es código. |
+| **Definiciones** (`cadastros.php`) | Campos, tipos de registro, fórmulas (con **Probar**), modos de rotación y las categorías de documentos: todo lo que el sistema usa que no es código (los avisos están en la página **Avisos**). |
 | **Ejecuciones del cron** (`execucoes.php`) | Qué hizo el cron en cada vuelta, cuánto tardó y los errores, con filtros. |
 | **Mi cuenta** (`conta.php`, el menú **Cuenta**) | Las colecciones que ve (abrir, crear, renombrar, eliminar, salir), sus árboles de grupos (copiar, renombrar, eliminar), pedir acceso a la colección de alguien (por el código que pasó el dueño), sus datos (su código, el correo, el idioma, la contraseña), los **tokens de API** (para sus scripts), las **notificaciones en este aparato** (el Web Push) y eliminar la cuenta. Vea [Varias personas](#várias-pessoas-contas-coleções-e-acesso). |
 | **Aprobaciones** (`aprovacoes.php`) | Las solicitudes de acceso a sus colecciones (aprobar, rechazar), las invitaciones que hicieron los miembros y le esperan, **Invitar** (por correo), las invitaciones que hizo y quién ve sus colecciones (quitar el acceso). El menú muestra **Aprobaciones (N)** cuando hay algo esperando. |

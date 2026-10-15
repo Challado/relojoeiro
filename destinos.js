@@ -78,7 +78,7 @@ function quadroDestino(x, d) {
 
 function carregarDestinos() {
   return api({recurso: "destinos"}).then(function (d) {
-    var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Destinos das mensagens")) + el("span", {"class": "nota"}, el("a", {"href": "configuracao.php"}, t("← Configuração")) + " · " + el("a", {"href": "agendas.php"}, t("Agendas"))));
+    var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Destinos das mensagens")) + el("span", {"class": "nota"}, el("a", {"href": "avisos.php#para-onde"}, t("← Avisos")) + " · " + el("a", {"href": "agendas.php"}, t("Agendas"))));
     if (recadoDestinos !== "") {
       res += el("p", {"class": "acao"}, h(recadoDestinos));
       recadoDestinos = "";

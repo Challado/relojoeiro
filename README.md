@@ -694,7 +694,7 @@ A data de cada aviso aparece no painel como **Próxima manutenção**. No smartw
 agora: no pulso, pelo gasto em uso; guardado, pelo gasto guardado. E a escala inteligente, que simula os dias de uso, anota no
 plano o que fazer antes (*"carregar antes de usar"*, *"dar corda"*) quando o relógio escolhido vai chegar ao limite no dia dele.
 
-Todos esses avisos são cadastro (página **Cadastros → Avisos**): a fórmula da data, a antecedência, o texto e o lançamento que
+Todos esses avisos são cadastro (página **Avisos**, a parte *Avisos dos relógios*): a fórmula da data, a antecedência, o texto e o lançamento que
 resolve. Também estão lá o *"Informar a carga"* (pede uma leitura depois de 3 dias sem nenhuma; vem ligado, e o **3** da
 fórmula é o número de dias) e o *"Carga baixa"* (o smartwatch guardado chegando ao limite; vem desligado, porque o *"Carregar"*
 já cobre esse caso).
@@ -715,7 +715,7 @@ Os avisos do cadastro inicial, com o identificador (o nome deles nas fórmulas, 
 | Garantia vencendo | `garantia` | todos | (nada: só avisa) |
 | Encostado | `encostado` | todos (os da coleção, disponíveis) | o Pôs no pulso. Vence quando o relógio passa do limite de dias sem ir ao pulso (a Configuração, **Aviso Encostado: dias sem ir ao pulso**, padrão 30), contados da última vez no pulso (sem nunca ter ido, da data da compra; sem as duas, não avisa). Não entra na próxima manutenção nem no **O que fazer**: a tabela tem a coluna **Encostado**, com quanto falta ou quanto passou. |
 
-Os avisos vão no alerta da manhã. Um aviso marcado **na hora** (em **Cadastros › Avisos**, a caixa *na hora*) vai também pelo
+Os avisos vão no alerta da manhã. Um aviso marcado **na hora** (na página **Avisos**, a caixa *na hora*) vai também pelo
 Telegram **no minuto em que vence**, uma vez só, até ser resolvido: é assim que o **Tirar do carregador** chega quando a bateria
 enche. Em **Hoje é dia de**, o botão é o do tipo que resolve: *Pôs no sol* com a sessão fechada, *Tirou do carregador* com ela
 aberta, *Informar leitura de carga* com o campo do valor.
@@ -798,11 +798,14 @@ A página **Configuração** guarda as opções **da coleção** (cada coleção
 | **Destaque no alto da página Hoje** (`destaque_hoje`) | **O relógio do dia** (`dia`): o quadro grande no alto da página Hoje mostra o relógio do dia (o do plano), com até quando ele fica e por que saiu. **O relógio no pulso agora** (`pulso`): mostra o relógio que está no pulso, mesmo que não seja o do dia (com *no pulso agora* e, embaixo, *Relógio do dia: …*, que abre o do dia); com mais de um no pulso, o que foi por último; sem nenhum no pulso, fica o do dia, com o aviso *Nenhum relógio no pulso agora*. Os dados embaixo (estado, carga, o botão Pôs/Tirou do pulso, a foto) são os do relógio do destaque. Padrão: o relógio do dia. |
 
 Na página, cada opção fica numa linha, com o nome à esquerda e o campo à direita, em quadros (Rotina do dia, Limites e contas,
-Telas, Cron, Sorteios, Mensagens e agendas); o botão **Salvar configuração** fica numa barra presa no pé da tela.
+Telas, Cron, Sorteios e o resumo **Avisos, lembretes e mensagens**, com o caminho para a página **Avisos**); o botão **Salvar
+configuração** fica numa barra presa no pé da tela.
 
 ### Mensagens e agendas
 
-As mensagens e as agendas têm páginas próprias, abertas pelo quadro **Mensagens e agendas** da Configuração:
+Tudo o que o sistema lembra fica junto na página **Avisos** (no menu), em três partes: os **avisos dos relógios** (os que ele
+calcula sozinho pelos dados de cada um: dar corda, carregar, trocar a pilha...), os **lembretes** (os eventos personalizados,
+abaixo) e **Para onde vão**, o resumo dos destinos e das agendas, que têm páginas próprias:
 
 - **Destinos** (`destinos.php`): para onde vão as mensagens da coleção. Cada destino é um **webhook** (um pedido HTTP:
   o Telegram, o n8n, o Home Assistant, qualquer ponte), um **e-mail** (pelo servidor de e-mail do `config.php`) ou o **Web
@@ -821,7 +824,7 @@ As mensagens e as agendas têm páginas próprias, abertas pelo quadro **Mensage
 As senhas, as chaves e os tokens das agendas e os cabeçalhos dos webhooks ficam **cifrados no banco** e nunca voltam para a
 tela. Como configurar cada serviço no servidor: veja [Destinos e agendas no servidor](#destinos-e-agendas-no-servidor).
 
-**Eventos personalizados** (na Configuração): lembretes seus (limpar as pulseiras, revisar a coleção), com nome, quando
+**Lembretes** (os eventos personalizados, na página **Avisos**): lembretes seus (limpar as pulseiras, revisar a coleção), com nome, quando
 disparam (uma vez, todo dia, em dias da semana, num dia do mês ou a cada N dias), a hora e, se quiser, um relógio. A tabela
 mostra cada um com **Vai para** (os destinos e as agendas que o recebem); um evento novo já vai para todos os destinos.
 
@@ -962,12 +965,13 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | **Hora certa** (`hora.php`) | A hora do servidor para acertar os relógios: um mostrador de ponteiros e a hora digital andando segundo a segundo (acertados pela API, descontando o tempo do pedido; embaixo, quanto o relógio do aparelho está adiantado ou atrasado), a data por extenso e a hora UTC; os quadros **Fuso e UTC** (o fuso, o deslocamento, a hora Zulu, a letra militar do fuso, como *P (Papa)*, e o grupo data-hora, *131433P OCT 26*), **Calendário** (dia do ano, semana ISO, trimestre, dia juliano, Unix) e **Lua** (a fase, a idade, a parte iluminada e as próximas cheia e nova, pelo ciclo médio: pode errar por um dia); e **Como acertar**. Lê a API de novo a cada minuto. Pela API: `recurso=hora_certa`. |
 | **Documentos** (`documentos.php`) | Os documentos de um relógio (ou de todos), aberta pela ficha: o envio de vários arquivos, uma aba por categoria, a galeria das fotos em tela cheia com apresentação, os vídeos em sequência na ordem escolhida, o visualizador de PDF, o resumo da NF-e do XML, e o download do resto. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 | **Histórico** (`historico.php`) | A linha do tempo de um relógio: em uso pelo rodízio, no pulso fora do rodízio, no winder, no sol, em repouso, e cada corda, carga e troca de pilha. Mostra quanto tempo e que porcentagem ficou em cada estado, com filtro de período e de estado. |
-| **Configuração** (`configuracao.php`) | As opções da coleção (os horários, os limites, as telas, o idioma), a situação do cron, o quadro **Mensagens e agendas** (os destinos e as agendas, com os links das páginas deles), os eventos personalizados, a **Cópia de segurança** (só o master: as cópias da pasta, com **Baixar** e **Restaurar**, e o **Fazer uma cópia agora**) e o botão que aplica as migrações do banco. Veja [A Configuração, opção por opção](#a-configuração-opção-por-opção). |
-| **Destinos** (`destinos.php`) | Para onde vão as mensagens da coleção: cada webhook, e-mail ou Web Push, com a mensagem, o idioma, o que recebe, os testes e como sai hoje. Veja [Mensagens e agendas](#mensagens-e-agendas). |
-| **Agendas** (`agendas.php`) | As agendas da coleção (Google, CalDAV, Outlook, link ICS), com o modelo do evento, o que recebe, a sincronização, o evento de teste e o que tem de estar nela agora. |
+| **Avisos** (`avisos.php`) | Tudo o que o sistema lembra, num lugar só: os **avisos dos relógios** (o cadastro: a fórmula da data, a antecedência, o texto, o lançamento que resolve, *na hora*...), os **lembretes** (os eventos personalizados, com hora e repetição) e **Para onde vão** (os destinos das mensagens e as agendas, com os links das páginas deles). Veja [Mensagens e agendas](#mensagens-e-agendas). |
+| **Configuração** (`configuracao.php`) | As opções da coleção (os horários, os limites, as telas, o idioma), a situação do cron, o resumo dos avisos, dos lembretes e das mensagens (com o caminho para a página **Avisos**), a **Cópia de segurança** (só o master: as cópias da pasta, com **Baixar** e **Restaurar**, e o **Fazer uma cópia agora**) e o botão que aplica as migrações do banco. Veja [A Configuração, opção por opção](#a-configuração-opção-por-opção). |
+| **Destinos** (`destinos.php`, aberta pela página Avisos) | Para onde vão as mensagens da coleção: cada webhook, e-mail ou Web Push, com a mensagem, o idioma, o que recebe, os testes e como sai hoje. Veja [Mensagens e agendas](#mensagens-e-agendas). |
+| **Agendas** (`agendas.php`, aberta pela página Avisos) | As agendas da coleção (Google, CalDAV, Outlook, link ICS), com o modelo do evento, o que recebe, a sincronização, o evento de teste e o que tem de estar nela agora. |
 | **Critérios** (`criterios.php`) | Os conjuntos de critérios por lugar (todos os relógios, um grupo ou um relógio), com parâmetros, subparâmetros, faixas e a nota de cada relógio com a conta aberta. Tem **Restaurar os critérios iniciais**. |
 | **Grupos** (`grupos.php`) | A árvore: criar, renomear, mover, ordenar, excluir (o que era do grupo passa para o de cima) e escolher o grupo de cada relógio. |
-| **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), avisos, modos de rodízio e as categorias de documentos: tudo o que o sistema usa e que não é código. |
+| **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), modos de rodízio e as categorias de documentos: tudo o que o sistema usa e que não é código (os avisos ficam na página **Avisos**). |
 | **Execuções do cron** (`execucoes.php`) | O que o cron fez a cada rodada, quanto tempo levou e os erros, com filtros. |
 | **Minha conta** (`conta.php`, o menu **Conta**) | As coleções que você vê (abrir, criar, renomear, excluir, sair), as suas árvores de grupos (copiar, renomear, excluir), pedir acesso à coleção de alguém (pelo código que o dono passou), os seus dados (o seu código, o e-mail, o idioma, a senha), os **tokens de API** (para os seus scripts), as **notificações neste aparelho** (o Web Push) e excluir a conta. Veja [Várias pessoas](#várias-pessoas-contas-coleções-e-acesso). |
 | **Aprovações** (`aprovacoes.php`) | Os pedidos de acesso às suas coleções (aprovar, recusar), os convites que membros fizeram e esperam você, **Convidar** (por e-mail), os convites que você fez e quem vê as suas coleções (tirar o acesso). O menu mostra **Aprovações (N)** quando há algo esperando. |
@@ -1740,7 +1744,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | [`banco.php`](banco.php) | o banco: a conexão com o MySQL, o Postgres, o SQLite ou o Firebird, e a tradução do SQL de um para outro |
 | [`operacoes.php`](operacoes.php) | as regras de cada gravação: validações e mensagens |
 | [`cron.php`](cron.php) | o plano, a sessão do dia, as rodadas da manhã e da noite, os eventos, a agenda e a manutenção dos documentos |
-| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | as páginas (só o esqueleto; a `cadastro.php` é a pública) |
+| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | as páginas (só o esqueleto; a `cadastro.php` é a pública) |
 | `push.js` | o service worker do Web Push |
 | `ajuda.php` | a página de ajuda: só o esqueleto; o `ajuda.js` pede o texto à API (`recurso=manual`: as seções do README para quem usa, já em HTML, convertidas no `lib.php`) |
 | [`pagina.php`](pagina.php) | o topo com o menu e o fim das páginas; o `topo()` confere o login antes de mandar qualquer coisa (`pagina_login()`) |

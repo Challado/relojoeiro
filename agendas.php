@@ -4,7 +4,7 @@
 // traz o esqueleto: os dados vêm do api.php (recurso=agendas), montados pelo agendas.js, e as gravações vão para ele
 // (recurso=agendas, acao=salvar, excluir, sincronizar, teste_criar, teste_remover, novo_link ou outlook_conectar)
 require_once __DIR__ . "/pagina.php";
-topo("Agendas", "configuracao.php");
+topo("Agendas", "avisos.php");
 ?>
 
 <main class="config pagina-agendas" id="agendas"></main>

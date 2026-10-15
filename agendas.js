@@ -74,7 +74,7 @@ function quadroAgenda(x, d) {
 
 function carregarAgendas() {
   return api({recurso: "agendas"}).then(function (d) {
-    var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Agendas")) + el("span", {"class": "nota"}, el("a", {"href": "configuracao.php"}, t("← Configuração")) + " · " + el("a", {"href": "destinos.php"}, t("Destinos"))));
+    var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Agendas")) + el("span", {"class": "nota"}, el("a", {"href": "avisos.php#para-onde"}, t("← Avisos")) + " · " + el("a", {"href": "destinos.php"}, t("Destinos"))));
     if (recadoAgendas !== "") {
       res += el("p", {"class": "acao"}, h(recadoAgendas));
       recadoAgendas = "";
