@@ -362,17 +362,30 @@ en las previsiones, y el historial muestra la batería perdiendo fuelle con el t
 un nuevo punto de partida, sin medir. Y un intervalo con otra sesión en medio (el reloj fue al cargador) tampoco mide: la
 medición solo sabe separar muñeca y guardado.
 
-No importa si registra la lectura justo después de *Me lo quité* o justo después de *Me lo puse*: la lectura no es "en uso"
-ni "en reposo". Lo que cuenta es el intervalo hasta la anterior, dividido por las marcas minuto a minuto. Una lectura a las
-22:05, después de un día entero en la muñeca, mide casi solo el consumo en uso; la de las 7:05 del día siguiente mide la
-noche apagado.
+Al indicar la carga, usted dice cómo estaba el reloj a la hora de la lectura: en el cuadro **Marcar**, **Indicar lectura de
+carga en uso** (en la muñeca) o **Indicar lectura de carga en reposo** (guardado); en el aviso *Indicar la carga* de la página
+Hoy, los botones **En uso** y **En reposo**. Para el consumo, lo que cuenta sigue siendo el intervalo hasta la lectura
+anterior, dividido por las marcas minuto a minuto: una lectura a las 22:05, después de un día entero en la muñeca, mide casi
+solo el consumo en uso; la de las 7:05 del día siguiente mide la noche apagado. Lo que usted dice sirve de comprobación. Si el
+sistema tenía el reloj de otra forma en ese instante (el horario de uso lo puso en la muñeca solo, pero se quedó guardado; o
+faltó un *Me lo puse*), las marcas del intervalo estaban mal: la medición se queda **solo en el historial**, sin estropear el
+consumo, y el mensaje dice lo que no coincidió. Con la casilla **Quitar de la muñeca a la hora de la lectura** (o **Poner en la
+muñeca a la hora de la lectura**), que aparece marcada cuando no coincide, la muñeca pasa a coincidir desde entonces. Si la
+lectura es de antes de la última marca de la muñeca, la muñeca queda como está: corríjala en **Corregir o eliminar una marca**.
 
 Los dos consumos están en el cuadro **Consumo de la batería**, en la página del reloj:
 
 - **En la muñeca** y **Fuera de la muñeca (apagado)**: el consumo que vale en la cuenta, en negrita, y de dónde viene (medido,
   con el de la ficha al lado para comparar, o solo de la ficha, cuando todavía no hay medición).
+- Debajo de cada uno, **en la ficha**: los campos de donde sale el consumo de la ficha (el *Decaimiento en uso*, la
+  *Autonomía en uso real*, el *Decaimiento guardado*), con el valor y si fue indicado o es el predeterminado.
 - **En los 90 días anteriores a esos**: los dos consumos medidos en la ventana anterior. Es la comparación que muestra la
   batería envejeciendo: si el consumo en la muñeca pasó del 4,9% al 5,7%, ya no aguanta la carga como antes.
+
+Lo mismo aparece de nuevo, junto a lo parecido, en el cuadro **Datos del reloj**: en la tabla **Ficha**, debajo del
+decaimiento (y de la autonomía) indicado, lo **calculado por las lecturas** y lo que vale **en la cuenta**; en la tabla
+**Calculado ahora**, debajo de las fórmulas del consumo (*taxa_uso*, *taxa_repouso*), el medido y el de la ficha. Y cada
+medición, una por una, está en **Carga a lo largo del tiempo › Mediciones del consumo**.
 
 Las mediciones más antiguas que la ventana salen solas de la cuenta. Por eso el ajuste al envejecimiento es automático: no hace
 falta tocar la ficha. El "Consumo en uso" y el "Consumo guardado" de la ficha solo valen mientras no hay medición.
@@ -731,7 +744,8 @@ Los avisos del conjunto inicial, con el identificador (su nombre en las fórmula
 Los avisos van en el aviso de la mañana. Un aviso marcado **en el acto** (en la página **Avisos**, la casilla *en el
 acto*) también sale por Telegram **en el minuto en que vence**, una sola vez, hasta que se resuelve: así llega el **Quitar del
 cargador** cuando la batería se llena. En **Hoy toca**, el botón es el del tipo que lo resuelve: *Poner al sol* con la sesión
-cerrada, *Lo quité del cargador* con ella abierta, *Anotar lectura de carga* con el campo del valor.
+cerrada, *Lo quité del cargador* con ella abierta, *Anotar lectura de carga* con el campo del valor (y, en el reloj que va a la muñeca, los botones **En uso**
+y **En reposo**: cómo estaba a la hora de la lectura).
 
 Además de ellos, el mensaje tiene dos tipos que no son datos: el **día** (`dia`, el reloj de hoy, por la mañana) y la
 **víspera** (`vespera`, el de mañana, por la noche). Cada evento personalizado entra como `ev<id>`.
@@ -1106,8 +1120,8 @@ curl -H "X-Api-Token: $TOKEN" "http://servidor/relojoeiro/api.php?recurso=hoje"
 # los relojes que se acaban en las próximas 24 horas, solo el nombre y cuándo
 curl -u usuario:contraseña -g "http://servidor/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz"
 
-# registrar una lectura de carga (y medir el consumo)
-curl -u usuario:contraseña -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://servidor/relojoeiro/api.php
+# registrar una lectura de carga (y medir el consumo); estado=uso o repouso: cómo estaba a la hora de la lectura (opcional)
+curl -u usuario:contraseña -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 -d estado=repouso http://servidor/relojoeiro/api.php
 
 # poner al sol ahora... y quitarlo después
 curl -u usuario:contraseña -d recurso=lancamento -d acao=iniciar  -d relogio_id=4 -d tipo=sol http://servidor/relojoeiro/api.php

@@ -375,18 +375,32 @@ avec le temps. Une hausse du relevé est une recharge : un nouveau point de dép
 autre session au milieu (la montre est allée sur le chargeur) ne mesure pas non plus : la mesure ne sait séparer que poignet
 et rangée.
 
-Peu importe que vous saisissiez le relevé juste après *Retirée du poignet* ou juste après *Mise au poignet* : le relevé n'est
-ni « en usage » ni « au repos ». Ce qui compte, c'est l'intervalle jusqu'au précédent, découpé par les marquages minute par
-minute. Un relevé à 22 h 05, après une journée entière au poignet, mesure presque uniquement la consommation en usage ; celui
-de 7 h 05 le lendemain mesure la nuit éteinte.
+En indiquant la charge, vous dites comment était la montre à l'heure de la lecture : dans le cadre **Marquer**, **Indiquer
+le relevé de charge en usage** (au poignet) ou **Indiquer le relevé de charge au repos** (rangée) ; dans l'alerte *Indiquer la
+charge* de la page Aujourd'hui, les boutons **En usage** et **Au repos**. Pour la consommation, ce qui compte reste
+l'intervalle jusqu'au relevé précédent, découpé par les marquages minute par minute : un relevé à 22 h 05, après une journée
+entière au poignet, mesure presque uniquement la consommation en usage ; celui de 7 h 05 le lendemain mesure la nuit éteinte.
+Ce que vous dites sert de vérification. Si le système avait la montre autrement à cet instant (l'horaire d'usage l'a mise au
+poignet tout seul, mais elle est restée rangée ; ou il manquait un *Mise*), les marquages de l'intervalle étaient faux : la
+mesure reste **seulement dans l'historique**, sans fausser la consommation, et le message dit ce qui ne correspondait pas.
+Avec la case **Retirer du poignet à l'heure de la lecture** (ou **Mettre au poignet à l'heure de la lecture**), qui apparaît
+cochée quand ça ne correspond pas, le poignet correspond à partir de là. Si le relevé est d'avant le dernier marquage du
+poignet, le poignet reste tel quel : corrigez dans **Corriger ou supprimer un marquage**.
 
 Les deux consommations sont dans le cadre **Consommation de la batterie**, sur la page de la montre :
 
 - **Au poignet** et **Hors du poignet (éteinte)** : la consommation qui compte dans le calcul, en gras, et d'où elle vient
   (mesurée, avec celle de la fiche à côté pour comparer, ou seulement celle de la fiche, quand il n'y a pas encore de mesure).
+- Sous chacune, **dans la fiche** : les champs d'où vient la consommation de la fiche (la *Décroissance en usage*,
+  l'*Autonomie réelle en usage*, la *Décroissance rangée*), avec la valeur et si elle a été indiquée ou si c'est le défaut.
 - **Dans les 90 jours précédents** : les deux consommations mesurées dans la fenêtre précédente. C'est la comparaison qui
   montre la batterie qui vieillit : si la consommation au poignet est passée de 4,9 % à 5,7 %, elle ne tient plus la charge
   comme avant.
+
+La même chose apparaît à nouveau, à côté de ce qui est semblable, dans le cadre **Données de la montre** : dans le tableau
+**Fiche**, sous la décroissance (et l'autonomie) indiquée, le **calculé par les lectures** et ce qui vaut **dans le calcul** ;
+dans le tableau **Calculé maintenant**, sous les formules de la consommation (*taxa_uso*, *taxa_repouso*), la mesurée et celle
+de la fiche. Et chaque mesure, une par une, est dans **Charge au fil du temps › Mesures de la consommation**.
 
 Les mesures plus anciennes que la fenêtre sortent d'elles-mêmes du calcul. C'est pourquoi l'ajustement au vieillissement est
 automatique : inutile de toucher à la fiche. La « Consommation en usage » et la « Consommation au repos » de la fiche ne
@@ -760,7 +774,8 @@ Les alertes partent dans l'alerte du matin. Une alerte marquée **immédiate** (
 *immédiate*) part aussi par Telegram **dans la minute où elle arrive à échéance**, une seule fois, jusqu'à ce qu'elle soit
 résolue : c'est ainsi qu'arrive le **Retirer du chargeur** quand la batterie est pleine. Dans **Aujourd'hui, c'est le jour
 de**, le bouton est celui du type qui la résout : *Mettre au soleil* avec la session fermée, *Retirée du chargeur* avec la
-session ouverte, *Noter le relevé de charge* avec le champ de la valeur.
+session ouverte, *Noter le relevé de charge* avec le champ de la valeur (et, sur la montre qui va au poignet, les boutons
+**En usage** et **Au repos** : comment elle était à l'heure de la lecture).
 
 En plus d'elles, le message a deux types qui ne sont pas des données : le **jour** (`dia`, la montre d'aujourd'hui, le matin)
 et la **veille** (`vespera`, celle de demain, le soir). Chaque événement personnalisé entre comme `ev<id>`.
@@ -1142,8 +1157,8 @@ curl -H "X-Api-Token: $TOKEN" "http://serveur/relojoeiro/api.php?recurso=hoje"
 # les montres qui s'arrêtent dans les prochaines 24 heures, seulement le nom et quand
 curl -u utilisateur:motdepasse -g "http://serveur/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz"
 
-# saisir un relevé de charge (et mesurer la consommation)
-curl -u utilisateur:motdepasse -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://serveur/relojoeiro/api.php
+# saisir un relevé de charge (et mesurer la consommation) ; estado=uso ou repouso : comment elle était à l'heure de la lecture (facultatif)
+curl -u utilisateur:motdepasse -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 -d estado=repouso http://serveur/relojoeiro/api.php
 
 # mettre au soleil maintenant... et retirer plus tard
 curl -u utilisateur:motdepasse -d recurso=lancamento -d acao=iniciar  -d relogio_id=4 -d tipo=sol http://serveur/relojoeiro/api.php

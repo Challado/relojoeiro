@@ -1,4 +1,4 @@
-<!-- origem: 000dd3c32011fe21353e8d398c2a7af76ab0141c -->
+<!-- origem: b50df19a55870230ddfb31d32797879fcffc5774 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -119,8 +119,8 @@ curl -H "X-Api-Token: $TOKEN" "http://server/relojoeiro/api.php?recurso=hoje"
 # अगले 24 घंटों में बंद होने वाली घड़ियाँ, सिर्फ़ नाम और कब
 curl -u upyogkarta:password -g "http://server/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz"
 
-# चार्ज की एक रीडिंग दर्ज करें (और खपत मापें)
-curl -u upyogkarta:password -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://server/relojoeiro/api.php
+# चार्ज की एक रीडिंग दर्ज करें (और खपत मापें); estado=uso या repouso: पढ़ने के समय वह कैसी थी (वैकल्पिक)
+curl -u upyogkarta:password -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 -d estado=repouso http://server/relojoeiro/api.php
 
 # अभी धूप में रखें... और बाद में उतारें
 curl -u upyogkarta:password -d recurso=lancamento -d acao=iniciar  -d relogio_id=4 -d tipo=sol http://server/relojoeiro/api.php

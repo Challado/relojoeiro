@@ -1,4 +1,4 @@
-<!-- origem: 000dd3c32011fe21353e8d398c2a7af76ab0141c -->
+<!-- origem: b50df19a55870230ddfb31d32797879fcffc5774 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -95,8 +95,8 @@ curl -H "X-Api-Token: $TOKEN" "http://服务器/relojoeiro/api.php?recurso=hoje"
 # 未来 24 小时内会停走的手表，只要名称和时间
 curl -u 用户:密码 -g "http://服务器/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz"
 
-# 记录一次电量读数（并测量消耗）
-curl -u 用户:密码 -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://服务器/relojoeiro/api.php
+# 记录一次电量读数（并测量消耗）；estado=uso 或 repouso：读数时它的状态（可选）
+curl -u 用户:密码 -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 -d estado=repouso http://服务器/relojoeiro/api.php
 
 # 现在放去晒太阳……之后再取下
 curl -u 用户:密码 -d recurso=lancamento -d acao=iniciar  -d relogio_id=4 -d tipo=sol http://服务器/relojoeiro/api.php

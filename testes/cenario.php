@@ -197,6 +197,11 @@ $lanc("lancar", "smart", "carga", ["valor" => 83, "quando" => dia(4, "12:00")]);
 $lanc("periodo", "smart", "pulso", ["inicio" => dia(3, "08:00"), "fim" => dia(3, "22:00")]);
 $lanc("lancar", "smart", "carga", ["valor" => "71.5", "quando" => dia(2, "12:00"), "medir" => 0]);
 $lanc("lancar", "smart", "carga", ["valor" => 64, "quando" => dia(1, "18:00")]);
+// o estado da leitura: "em uso" quando o sistema tem ele fora do pulso não bate (a medição fica só no histórico; com ajustar=0
+// o pulso fica como está); "em repouso" fora do pulso bate (medir=0: as duas não mexem no gasto medido); estado errado recusa
+$lanc("lancar", "smart", "carga", ["valor" => 63, "quando" => dia(1, "20:00"), "estado" => "uso", "ajustar" => 0]);
+$lanc("lancar", "smart", "carga", ["valor" => 62, "quando" => dia(1, "21:30"), "estado" => "repouso", "medir" => 0]);
+escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["smart"], "tipo" => "carga", "valor" => 62, "estado" => "pulso"], false);
 $lanc("periodo", "auto", "pulso", ["inicio" => dia(2, "08:00"), "fim" => dia(2, "22:00")]);
 // a corda ontem às 15:06: a reserva (41 h) acaba amanhã às 08:06, e hoje fica entre 8 h e 32 h a qualquer hora (perto de zero,
 // os segundos entre um banco e outro passariam da folga)

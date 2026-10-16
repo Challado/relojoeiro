@@ -238,8 +238,13 @@ function abrirNoPainel(id) {
       var gs = r.previsao.gasto;
       if (gs) {
         var pct = function (v) { return num(v, 2) + "%"; };
+        // o que vale na conta e, embaixo, de onde vem: o medido pelas leituras e o cadastro (com os campos informados dele)
         var gasto = function (por, x) {
+          var campos = (x.campos || []).map(function (c) {
+            return t("{1}: {2} ({3})", {1: h(c.nome), 2: c.valor !== null ? num(c.valor, 2) + (c.unidade !== "" ? " " + h(c.unidade) : "") : "—", 3: h(c.origem)});
+          }).join(" · ");
           return x.vale !== null ? el("strong", {}, pct(x.vale)) + " " + por + el("small", {}, x.medido !== null ? t("medido; o cadastro diz {1}", {1: x.cadastro !== null ? pct(x.cadastro) : t("nada")}) : t("do cadastro, sem medição"))
+            + (campos !== "" ? el("small", {}, t("no cadastro: {1}", {1: campos})) : "")
             : nada();
         };
         var linhasGasto = [[t("No pulso"), gasto(t("por dia de uso"), gs.uso)], [t("Fora do pulso"), gasto(t("por dia"), gs.repouso)]];
@@ -312,6 +317,7 @@ function abrirNoPainel(id) {
           return el("input", {"type": "datetime-local", "name": nome, "value": valor, "max": momentoNavegador(new Date()), "data-max-agora": true,
             "data-agora": anda === true, "required": obrigatorio});
         };
+        var pulsoTipo = r.tipos.filter(function (item) { return item.identificador === "pulso" && item.formato === "sessao"; })[0] || null;
         r.tipos.forEach(function (item) {
           var chave = "t-" + item.identificador;
           var base = el("input", {"type": "hidden", "name": "tipo", "value": item.identificador});
@@ -323,14 +329,33 @@ function abrirNoPainel(id) {
               + (tirar ? el("p", {"class": "marcar-estado"}, h(item.aberta.texto)) : "")
               + quando(tirar ? t("Tirou às") : t("Pôs às")) + el("button", {}, h(verbo)));
           } else if (item.formato === "valor") {
-            opcoes.agora += el("option", {"value": chave}, h(item.nome));
-            partes += parte("marcar", chave, base + el("input", {"type": "hidden", "name": "acao", "value": "lancar"})
-              + el("p", {"class": "marcar-estado"}, t("Agora {1}{2}", {1: el("span", {"class": "estado estado-" + (r.estado)}, h(minusculo(r.estado_texto))), 2: r.carga !== null && item.unidade === "%" ? " " + el("small", {}, t("estimada ~{1}%", {1: r.carga})) : ""}))
-              + el("label", {}, t("Leitura {1}", {1: el("span", {"class": "com-unidade"}, el("input", {"type": "text", "inputmode": "decimal", "name": "valor", "required": true}) + " " + h(item.unidade))}))
-              + quando(t("Lida às"))
-              + (item.mede_gasto ? el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "medir", "value": "0"})
-                + el("input", {"type": "checkbox", "name": "medir", "value": "1", "checked": true}) + t(" Atualizar o gasto com esta medição")) : "")
-              + el("button", {}, t("Informar {1}", {1: h(minusculo(item.nome))})));
+            // a leitura que mede o gasto, num relógio que vai ao pulso: duas opções, em uso e em repouso (como ele estava na
+            // hora da leitura); se não bate com o que o sistema tem agora, a caixa de acertar o pulso aparece marcada
+            var leitura = function (chaveL, estadoL, rotulo, botao) {
+              var diverge = estadoL !== null && (estadoL === "uso") !== r.em_uso;
+              var sessaoPulso = pulsoTipo && pulsoTipo.aberta ? h(pulsoTipo.aberta.texto) : "";
+              opcoes.agora += el("option", {"value": chaveL}, h(rotulo));
+              partes += parte("marcar", chaveL, base + el("input", {"type": "hidden", "name": "acao", "value": "lancar"})
+                + (estadoL !== null ? el("input", {"type": "hidden", "name": "estado", "value": estadoL}) : "")
+                + el("p", {"class": "marcar-estado"}, t("Agora {1}{2}", {1: el("span", {"class": "estado estado-" + (r.estado)}, h(minusculo(r.estado_texto))), 2: r.carga !== null && item.unidade === "%" ? " " + el("small", {}, t("estimada ~{1}%", {1: r.carga})) : ""}))
+                + (diverge ? el("p", {"class": "nota aviso-estado"}, estadoL === "repouso"
+                  ? t("O sistema tem ele no pulso agora{1}. Lendo em repouso, a medição deste intervalo fica só no histórico (ele estava registrado errado).", {1: sessaoPulso !== "" ? " (" + sessaoPulso + ")" : ""})
+                  : t("O sistema tem ele fora do pulso agora. Lendo em uso, a medição deste intervalo fica só no histórico (ele estava registrado errado)."))
+                  + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "ajustar", "value": "0"})
+                    + el("input", {"type": "checkbox", "name": "ajustar", "value": "1", "checked": true}) + (estadoL === "repouso" ? t(" Tirar do pulso na hora da leitura") : t(" Pôr no pulso na hora da leitura"))) : "")
+                + el("label", {}, t("Leitura {1}", {1: el("span", {"class": "com-unidade"}, el("input", {"type": "text", "inputmode": "decimal", "name": "valor", "required": true}) + " " + h(item.unidade))}))
+                + quando(t("Lida às"))
+                + (item.mede_gasto ? el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "medir", "value": "0"})
+                  + el("input", {"type": "checkbox", "name": "medir", "value": "1", "checked": true}) + t(" Atualizar o gasto com esta medição")) : "")
+                + el("button", {}, h(botao)));
+            };
+            if (item.mede_gasto && pulsoTipo) {
+              // o botão curto (no celular, o nome inteiro não cabe numa linha); o nome inteiro fica na lista
+              leitura(chave + "-uso", "uso", t("Informar {1} em uso", {1: minusculo(item.nome)}), t("Informar em uso"));
+              leitura(chave + "-repouso", "repouso", t("Informar {1} em repouso", {1: minusculo(item.nome)}), t("Informar em repouso"));
+            } else {
+              leitura(chave, null, t("Informar {1}", {1: minusculo(item.nome)}), t("Informar {1}", {1: minusculo(item.nome)}));
+            }
           } else {
             opcoes.agora += el("option", {"value": chave}, h(item.nome));
             partes += parte("marcar", chave, base + el("input", {"type": "hidden", "name": "acao", "value": "lancar"})
@@ -526,18 +551,43 @@ function abrirNoPainel(id) {
         }
         return res2;
       };
+      // o calculado ao lado do informado: num campo de onde sai um gasto (o decaimento, a autonomia), o gasto medido pelas
+      // leituras e o que vale na conta; na fórmula do gasto, o medido e o do cadastro
+      var gsD = r.previsao.gasto;
+      var gastoTexto = function (medida, v) {
+        return v === null ? "—" : num(v, 2) + "% " + (medida === "uso" ? t("por dia de uso") : t("por dia fora do pulso"));
+      };
+      var calculadoDoCampo = function (ident) {
+        if (!gsD) {
+          return "";
+        }
+        return ["uso", "repouso"].filter(function (m) {
+          return (gsD[m].campos || []).some(function (c) { return c.campo === ident; });
+        }).map(function (m) {
+          return el("small", {}, (gsD[m].medido !== null ? t("calculado pelas leituras: {1}", {1: gastoTexto(m, gsD[m].medido)}) : t("calculado pelas leituras: ainda sem medição ({1})", {1: m === "uso" ? t("em uso") : t("fora do pulso")}))
+            + " · " + t("na conta: {1}", {1: gastoTexto(m, gsD[m].vale)}));
+        }).join("");
+      };
+      var calculadoDaFormula = function (ident) {
+        if (!gsD) {
+          return "";
+        }
+        return ["uso", "repouso"].filter(function (m) { return gsD[m].formula === ident; }).map(function (m) {
+          return el("small", {}, t("medido: {1} · do cadastro: {2}", {1: gsD[m].medido !== null ? gastoTexto(m, gsD[m].medido) : t("sem medição"), 2: gastoTexto(m, gsD[m].cadastro)}));
+        }).join("");
+      };
       // duas tabelas lado a lado: o cadastro (o valor e de onde ele vem) e o resultado de cada fórmula agora (com a versão)
       res += quadro(t("Dados do relógio"), el("div", {"class": "dados-grade"},
         el("div", {}, el("h3", {}, t("Cadastro")) + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Campo"))
             + el("th", {}, t("Valor")) + el("th", {}, t("Origem")))) + el("tbody", {}, r.dados.map(function (c) {
               // o texto livre (a observação, uma lista) quebra a linha; número, data e sim/não ficam numa linha só
               var texto = c.valor !== null && c.valor !== "" && ["sim_nao", "data", "inteiro", "decimal"].indexOf(c.tipo) < 0;
-              return el("tr", {"class": c.origem === "vazio" ? "vazio" : ""}, el("td", {}, h(c.nome)) + el("td", {"class": "valor" + (texto ? " texto" : "")}, valorCampo(c))
+              return el("tr", {"class": c.origem === "vazio" ? "vazio" : ""}, el("td", {}, h(c.nome)) + el("td", {"class": "valor" + (texto ? " texto" : "")}, valorCampo(c) + calculadoDoCampo(c.identificador))
                 + el("td", {}, el("span", {"class": "origem origem-" + (c.origem === "padrão" ? "padrao" : c.origem)}, h(c.origem))));
             }).join(""))))
           + el("div", {}, el("h3", {}, t("Calculado agora")) + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Fórmula"))
             + el("th", {}, t("Valor")) + el("th", {}, t("Versão")))) + el("tbody", {}, r.calculos.map(function (x) {
-              return el("tr", {}, el("td", {}, h(x.nome) + el("code", {"class": "ident"}, h(x.identificador))) + el("td", {"class": "valor" + (typeof x.valor === "string" ? " texto" : "")}, valorCalculo(x))
+              return el("tr", {}, el("td", {}, h(x.nome) + el("code", {"class": "ident"}, h(x.identificador))) + el("td", {"class": "valor" + (typeof x.valor === "string" ? " texto" : "")}, valorCalculo(x) + calculadoDaFormula(x.identificador))
                 + el("td", {"class": "versao"}, h(x.versao)));
             }).join(""))))), "", "largo");
       // o histórico: no painel só o resumo; a linha do tempo inteira fica em historico.php, que abre numa aba nova

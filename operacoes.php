@@ -905,7 +905,11 @@ function op_acessorios($acao, $d)
 //           sem medir); menos de 12 horas, pouco tempo para medir; senão o intervalo é separado em horas no pulso e guardado
 //           e mede o gasto em uso (com meio dia de uso ou mais) ou guardado. Com medir=1, a medição entra na média (a
 //           caixa "Atualizar o gasto com esta medição"); com 0, fica só no histórico. Leitura com data anterior à última
-//           não mede.
+//           não mede. estado (uso ou repouso; vazio: não diz): como o relógio estava na hora da leitura. Se o que o sistema
+//           tem nesse instante (o pulso) não bate, a medição fica só no histórico (o intervalo estava registrado errado) e,
+//           com ajustar=1 (o padrão), o pulso passa a bater a partir da leitura: em repouso, a sessão no pulso aberta fecha
+//           na hora da leitura; em uso, o relógio vai para o pulso nessa hora (só se a leitura é depois da última marcação
+//           do pulso; antes disso, o pulso fica como está e a correção é no Corrigir).
 //   iniciar (relogio_id, tipo, quando): abre uma sessão; se ela é exclusiva, fecha no mesmo instante a exclusiva aberta
 //                                       em outro lugar (o relógio fica num lugar só)
 //   encerrar (relogio_id, tipo, quando): fecha a sessão aberta daquele tipo
@@ -969,13 +973,24 @@ function op_lancamento($acao, $d)
     } elseif ($acao === "lancar") {
         $q = $momento($d["quando"] ?? "");
         $v = numero_br($d["valor"] ?? "");
+        $estado = strtolower(trim((string)($d["estado"] ?? "")));
+        $pulso_t = lancamento_tipos_do_relogio($r)["pulso"] ?? null;
         if ($t["formato"] === "sessao") {
             $erros[] = t("{1} é uma sessão: use iniciar e encerrar, ou periodo.", [1 => $t["nome"]]);
         } elseif ($q === false) {
             $erros[] = t("Quando: AAAA-MM-DD HH:MM, até agora (vazio: agora).");
         } elseif ($t["formato"] === "valor" && $v === null) {
             $erros[] = t("{1} precisa de um valor (número{2}).", [1 => $t["nome"], 2 => $t["unidade"] !== "" ? ", em " . $t["unidade"] : ""]);
+        } elseif ($estado !== "" && !in_array($estado, ["uso", "repouso"], true)) {
+            $erros[] = t("Estado: uso ou repouso (vazio: não diz).");
+        } elseif ($estado !== "" && ($t["formato"] !== "valor" || $pulso_t === null)) {
+            $erros[] = t("Estado (uso ou repouso) vale só para uma leitura, num relógio que vai ao pulso.");
         } else {
+            // o estado dito na leitura contra o que o sistema tem nesse instante: a sessão no pulso que cobre o momento
+            $sessao_q = $estado !== "" ? linha("SELECT id, inicio, fim FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim > ?)
+                ORDER BY inicio DESC, id DESC LIMIT 1", [$rid, (int)$pulso_t["id"], date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $q)]) : null;
+            $diverge = $estado !== "" && (($estado === "uso") !== ($sessao_q !== null));
+            $avisou = false;
             // o gasto medido: a leitura de antes (do mesmo tipo), a estimativa e os gastos que valiam, tudo antes de gravar esta
             $mede = $t["formato"] === "valor" && (int)($t["mede_gasto"] ?? 0) === 1
                 && valor("SELECT id FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio > ?", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q)]) === null;
@@ -1032,12 +1047,16 @@ function op_lancamento($acao, $d)
                     $taxa = $medida === "uso" ? ($queda - $dias_guardado * (float)$conta["taxa_repouso"]) / $dias_uso
                         : ($queda - $dias_uso * (float)$conta["taxa_uso"]) / max(0.01, $dias_guardado);
                     $taxa = round(max(0, min(100, $taxa)), 3);
-                    $usada = !array_key_exists("medir", $d) || (string)$d["medir"] === "1";
+                    $usada = (!array_key_exists("medir", $d) || (string)$d["medir"] === "1") && !$diverge;
                     sql("INSERT INTO medicao (lancamento_id, medida, taxa, de_valor, ate_valor, inicio, fim, horas_pulso, horas_guardado, peso_horas, usada, criado)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())", [$id, $medida, $taxa, $anterior, $v, date("Y-m-d H:i:s", $t1), date("Y-m-d H:i:s", $q),
                         round($h_pulso, 2), round($h_guardado, 2), round($medida === "uso" ? $h_pulso : $h_guardado, 2), $usada ? 1 : 0]);
                     $msg .= " " . $de . ": " . $tempo . "." . $pela_estimativa;
-                    if ($usada) {
+                    if ($diverge) {
+                        $avisou = true;
+                        $msg .= t(" O estado não batia: você disse {1}, e o sistema tinha ele {2} nesse momento. Para não errar o gasto, esta medição ficou só no histórico.",
+                            [1 => $estado === "uso" ? t("em uso") : t("em repouso"), 2 => $sessao_q !== null ? t("no pulso") : t("fora do pulso")]);
+                    } elseif ($usada) {
                         // os dois gastos que passam a valer, com esta medição junto (a mesma conta da função MEDIDO)
                         $g = gasto_medido(linhas("SELECT m.medida, m.taxa, m.peso_horas, m.fim, m.horas_pulso, m.horas_guardado, m.de_valor, m.ate_valor FROM medicao m
                             JOIN lancamento l ON l.id = m.lancamento_id WHERE l.relogio_id = ? AND m.usada = 1 ORDER BY m.fim, m.id", [$rid]), $q);
@@ -1053,6 +1072,24 @@ function op_lancamento($acao, $d)
                     } else {
                         $msg .= t(" Entrou só no histórico.");
                     }
+                }
+            }
+            if ($diverge && !$avisou) {
+                $msg .= t(" O estado não batia: você disse {1}, e o sistema tinha ele {2} nesse momento.",
+                    [1 => $estado === "uso" ? t("em uso") : t("em repouso"), 2 => $sessao_q !== null ? t("no pulso") : t("fora do pulso")]);
+            }
+            // o pulso passa a bater com o estado dito, a partir da leitura (ajustar=0: fica como está)
+            if ($diverge && (string)($d["ajustar"] ?? "1") !== "0") {
+                $depois = valor("SELECT id FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio > ? LIMIT 1", [$rid, (int)$pulso_t["id"], date("Y-m-d H:i:s", $q)]);
+                if ($estado === "repouso" && $depois === null && ($sessao_q["fim"] === null || strtotime($sessao_q["fim"]) > $agora) && $q > strtotime($sessao_q["inicio"])) {
+                    sql("UPDATE lancamento SET fim = ? WHERE id = ?", [date("Y-m-d H:i:s", $q), (int)$sessao_q["id"]]);
+                    $msg .= t(" Tirado do pulso às {1}, a hora da leitura.", [1 => date("H:i", $q)]);
+                } elseif ($estado === "uso" && $depois === null) {
+                    $res_p = op_lancamento("iniciar", ["relogio_id" => $rid, "tipo" => "pulso", "quando" => date("Y-m-d H:i", $q)]);
+                    $msg .= $res_p["ok"] ? t(" Posto no pulso às {1}, a hora da leitura.", [1 => date("H:i", $q)])
+                        : t(" Não deu para pôr no pulso: {1}", [1 => implode(" ", $res_p["erros"])]);
+                } else {
+                    $msg .= t(" O pulso ficou como estava (a leitura é de antes da última marcação dele): se precisar, acerte em Corrigir.");
                 }
             }
         }

@@ -3577,8 +3577,17 @@ function previsao_energia($r, $agora)
                 $ctx = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => $valores, "sem_medido" => true];
                 $cadastro = variavel_valor($ident, $ctx);
                 $tem = $tem || is_numeric($vale);
+                // os campos do cadastro de onde sai o gasto do cadastro (o decaimento, a autonomia...): o painel mostra o medido
+                // ao lado deles
+                $de_campos = [];
+                foreach (array_keys($ctx["rastro"]) as $nome) {
+                    if (isset($campos[$nome])) {
+                        $de_campos[] = ["campo" => $nome, "nome" => $campos[$nome]["nome"], "valor" => is_numeric($ctx["rastro"][$nome]) ? (float)$ctx["rastro"][$nome] : null,
+                            "unidade" => $campos[$nome]["unidade"], "origem" => ($valores[$nome] ?? "") !== "" ? "informado" : ($ctx["rastro"][$nome] === null ? "vazio" : t("padrão"))];
+                    }
+                }
                 $gasto[$medida] = ["cadastro" => is_numeric($cadastro) ? round((float)$cadastro, 3) : null, "medido" => $g[$medida],
-                    "antes" => $antes_j[$medida], "vale" => is_numeric($vale) ? round((float)$vale, 3) : null];
+                    "antes" => $antes_j[$medida], "vale" => is_numeric($vale) ? round((float)$vale, 3) : null, "formula" => $ident, "campos" => $de_campos];
             }
             $res["gasto"] = $tem ? $gasto : null;
             $ctx = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => $valores];

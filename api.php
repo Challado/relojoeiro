@@ -1085,6 +1085,21 @@
  *                                    o gasto em uso, em % por dia de uso, medido pelas leituras, como o MEDIDO (número; null sem medição)
  *     relogios[].previsao.gasto.uso.vale
  *                                    o gasto em uso, em % por dia de uso que vale na conta: o medido, senão o cadastro (número)
+ *     relogios[].previsao.gasto.uso.campos[]
+ *                                    os campos do cadastro de onde sai o gasto em uso do cadastro (o decaimento, a autonomia...): o painel
+ *                                    mostra o medido ao lado deles
+ *     relogios[].previsao.gasto.uso.campos[].campo
+ *                                    o identificador do campo
+ *     relogios[].previsao.gasto.uso.campos[].nome
+ *                                    o nome do campo
+ *     relogios[].previsao.gasto.uso.campos[].origem
+ *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo) ou vazio (sem valor)
+ *     relogios[].previsao.gasto.uso.campos[].unidade
+ *                                    a unidade do campo (texto)
+ *     relogios[].previsao.gasto.uso.campos[].valor
+ *                                    o valor usado na conta (número; null se vazio)
+ *     relogios[].previsao.gasto.uso.formula
+ *                                    o identificador da fórmula do gasto em uso (taxa_uso)
  *     relogios[].previsao.gasto.repouso.antes
  *                                    o gasto fora do pulso, em % por dia, medido na janela anterior (número; null sem medição)
  *     relogios[].previsao.gasto.repouso.cadastro
@@ -1093,6 +1108,21 @@
  *                                    o gasto fora do pulso, em % por dia, medido pelas leituras, como o MEDIDO (número; null sem medição)
  *     relogios[].previsao.gasto.repouso.vale
  *                                    o gasto fora do pulso, em % por dia que vale na conta: o medido, senão o cadastro (número)
+ *     relogios[].previsao.gasto.repouso.campos[]
+ *                                    os campos do cadastro de onde sai o gasto fora do pulso do cadastro (o decaimento, a autonomia...): o
+ *                                    painel mostra o medido ao lado deles
+ *     relogios[].previsao.gasto.repouso.campos[].campo
+ *                                    o identificador do campo
+ *     relogios[].previsao.gasto.repouso.campos[].nome
+ *                                    o nome do campo
+ *     relogios[].previsao.gasto.repouso.campos[].origem
+ *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo) ou vazio (sem valor)
+ *     relogios[].previsao.gasto.repouso.campos[].unidade
+ *                                    a unidade do campo (texto)
+ *     relogios[].previsao.gasto.repouso.campos[].valor
+ *                                    o valor usado na conta (número; null se vazio)
+ *     relogios[].previsao.gasto.repouso.formula
+ *                                    o identificador da fórmula do gasto fora do pulso (taxa_repouso)
  *     relogios[].previsao.leitura    a última leitura, no valor informado (número)
  *     relogios[].previsao.leitura_em quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].previsao.limite     o limite de carga da Configuração (previsao_limite), em % (número)
@@ -1331,6 +1361,8 @@
  *     avisos[].resolve.unidade       a unidade do valor
  *     avisos[].resolve.acao          o que o botão manda (recurso=lancamento): iniciar (a sessão está fechada), encerrar (a sessão está
  *                                    aberta: o Tirar do carregador) ou lancar (instantâneo ou leitura)
+ *     avisos[].resolve.estados       true numa leitura que mede o gasto, num relógio que vai ao pulso: a tela mostra dois botões, Em uso e
+ *                                    Em repouso (o estado da leitura, no campo estado do lancar)
  *     avisos[].resolve.botao         o texto do botão ("Pôs no sol", "Tirou do carregador", "Informar leitura de carga", "Corda")
  *     avisos[].texto                 o motivo por extenso
  *     avisos_nomes[]                 os nomes dos avisos da manutenção (o filtro "O que fazer" da tabela; sem o Encostado, que tem a coluna
@@ -1745,6 +1777,21 @@
  *                                    o gasto em uso, em % por dia de uso, medido pelas leituras, como o MEDIDO (número; null sem medição)
  *     relogio.previsao.gasto.uso.vale
  *                                    o gasto em uso, em % por dia de uso que vale na conta: o medido, senão o cadastro (número)
+ *     relogio.previsao.gasto.uso.campos[]
+ *                                    os campos do cadastro de onde sai o gasto em uso do cadastro (o decaimento, a autonomia...): o painel
+ *                                    mostra o medido ao lado deles
+ *     relogio.previsao.gasto.uso.campos[].campo
+ *                                    o identificador do campo
+ *     relogio.previsao.gasto.uso.campos[].nome
+ *                                    o nome do campo
+ *     relogio.previsao.gasto.uso.campos[].origem
+ *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo) ou vazio (sem valor)
+ *     relogio.previsao.gasto.uso.campos[].unidade
+ *                                    a unidade do campo (texto)
+ *     relogio.previsao.gasto.uso.campos[].valor
+ *                                    o valor usado na conta (número; null se vazio)
+ *     relogio.previsao.gasto.uso.formula
+ *                                    o identificador da fórmula do gasto em uso (taxa_uso)
  *     relogio.previsao.gasto.repouso.antes
  *                                    o gasto fora do pulso, em % por dia, medido na janela anterior (número; null sem medição)
  *     relogio.previsao.gasto.repouso.cadastro
@@ -1753,6 +1800,21 @@
  *                                    o gasto fora do pulso, em % por dia, medido pelas leituras, como o MEDIDO (número; null sem medição)
  *     relogio.previsao.gasto.repouso.vale
  *                                    o gasto fora do pulso, em % por dia que vale na conta: o medido, senão o cadastro (número)
+ *     relogio.previsao.gasto.repouso.campos[]
+ *                                    os campos do cadastro de onde sai o gasto fora do pulso do cadastro (o decaimento, a autonomia...): o
+ *                                    painel mostra o medido ao lado deles
+ *     relogio.previsao.gasto.repouso.campos[].campo
+ *                                    o identificador do campo
+ *     relogio.previsao.gasto.repouso.campos[].nome
+ *                                    o nome do campo
+ *     relogio.previsao.gasto.repouso.campos[].origem
+ *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo) ou vazio (sem valor)
+ *     relogio.previsao.gasto.repouso.campos[].unidade
+ *                                    a unidade do campo (texto)
+ *     relogio.previsao.gasto.repouso.campos[].valor
+ *                                    o valor usado na conta (número; null se vazio)
+ *     relogio.previsao.gasto.repouso.formula
+ *                                    o identificador da fórmula do gasto fora do pulso (taxa_repouso)
  *     relogio.previsao.leitura       a última leitura, no valor informado (número)
  *     relogio.previsao.leitura_em    quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.previsao.limite        o limite de carga da Configuração (previsao_limite), em % (número)
@@ -2201,6 +2263,19 @@
  *     previsoes[].gasto.uso.cadastro o gasto em uso, em % por dia de uso, pelo cadastro, sem as medições (número)
  *     previsoes[].gasto.uso.medido   o gasto em uso, em % por dia de uso, medido pelas leituras, como o MEDIDO (número; null sem medição)
  *     previsoes[].gasto.uso.vale     o gasto em uso, em % por dia de uso que vale na conta: o medido, senão o cadastro (número)
+ *     previsoes[].gasto.uso.campos[] os campos do cadastro de onde sai o gasto em uso do cadastro (o decaimento, a autonomia...): o painel
+ *                                    mostra o medido ao lado deles
+ *     previsoes[].gasto.uso.campos[].campo
+ *                                    o identificador do campo
+ *     previsoes[].gasto.uso.campos[].nome
+ *                                    o nome do campo
+ *     previsoes[].gasto.uso.campos[].origem
+ *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo) ou vazio (sem valor)
+ *     previsoes[].gasto.uso.campos[].unidade
+ *                                    a unidade do campo (texto)
+ *     previsoes[].gasto.uso.campos[].valor
+ *                                    o valor usado na conta (número; null se vazio)
+ *     previsoes[].gasto.uso.formula  o identificador da fórmula do gasto em uso (taxa_uso)
  *     previsoes[].gasto.repouso.antes
  *                                    o gasto fora do pulso, em % por dia, medido na janela anterior (número; null sem medição)
  *     previsoes[].gasto.repouso.cadastro
@@ -2208,6 +2283,21 @@
  *     previsoes[].gasto.repouso.medido
  *                                    o gasto fora do pulso, em % por dia, medido pelas leituras, como o MEDIDO (número; null sem medição)
  *     previsoes[].gasto.repouso.vale o gasto fora do pulso, em % por dia que vale na conta: o medido, senão o cadastro (número)
+ *     previsoes[].gasto.repouso.campos[]
+ *                                    os campos do cadastro de onde sai o gasto fora do pulso do cadastro (o decaimento, a autonomia...): o
+ *                                    painel mostra o medido ao lado deles
+ *     previsoes[].gasto.repouso.campos[].campo
+ *                                    o identificador do campo
+ *     previsoes[].gasto.repouso.campos[].nome
+ *                                    o nome do campo
+ *     previsoes[].gasto.repouso.campos[].origem
+ *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo) ou vazio (sem valor)
+ *     previsoes[].gasto.repouso.campos[].unidade
+ *                                    a unidade do campo (texto)
+ *     previsoes[].gasto.repouso.campos[].valor
+ *                                    o valor usado na conta (número; null se vazio)
+ *     previsoes[].gasto.repouso.formula
+ *                                    o identificador da fórmula do gasto fora do pulso (taxa_repouso)
  *     previsoes[].leitura            a última leitura, no valor informado (número)
  *     previsoes[].leitura_em         quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     previsoes[].limite             o limite de carga da Configuração (previsao_limite), em % (número)

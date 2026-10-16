@@ -142,7 +142,9 @@ function recarregarHoje() {
           botao = el("form", {"data-recurso": "lancamento"}, el("input", {"type": "hidden", "name": "acao", "value": a.resolve.acao}) + el("input", {"type": "hidden", "name": "tipo", "value": a.resolve.identificador})
             + el("input", {"type": "hidden", "name": "relogio_id", "value": a.relogio_id}) + el("input", {"type": "hidden", "name": "r", "value": a.relogio_id})
             + (a.resolve.formato === "valor" ? el("input", {"type": "text", "inputmode": "decimal", "name": "valor", "placeholder": a.resolve.unidade, "required": true, "aria-label": a.resolve.nome}) : "")
-            + el("button", {"class": "leve"}, h(a.resolve.botao)));
+            // a leitura que mede o gasto, num relógio que vai ao pulso: dois botões, como ele estava na hora da leitura
+            + (a.resolve.estados ? el("button", {"class": "leve", "name": "estado", "value": "uso"}, t("Em uso")) + " " + el("button", {"class": "leve", "name": "estado", "value": "repouso"}, t("Em repouso"))
+              : el("button", {"class": "leve"}, h(a.resolve.botao))));
         }
         return el("tr", {"class": "aviso-" + a.identificador + (a.estado === "atrasado" ? " aviso-atrasado" : "")}, el("td", {}, el("span", {}, h(a.nome)))
           + el("td", {}, el("a", {"href": "index.php?r=" + a.relogio_id, "data-abrir": a.relogio_id}, h(a.relogio))) + el("td", {}, el("span", {}, h(a.texto)))

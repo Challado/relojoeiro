@@ -1,4 +1,4 @@
-<!-- origem: 000dd3c32011fe21353e8d398c2a7af76ab0141c -->
+<!-- origem: b50df19a55870230ddfb31d32797879fcffc5774 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -128,8 +128,8 @@ curl -H "X-Api-Token: $TOKEN" "http://serveur/relojoeiro/api.php?recurso=hoje"
 # les montres qui s'arrêtent dans les prochaines 24 heures, seulement le nom et quand
 curl -u utilisateur:motdepasse -g "http://serveur/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz"
 
-# saisir un relevé de charge (et mesurer la consommation)
-curl -u utilisateur:motdepasse -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://serveur/relojoeiro/api.php
+# saisir un relevé de charge (et mesurer la consommation) ; estado=uso ou repouso : comment elle était à l'heure de la lecture (facultatif)
+curl -u utilisateur:motdepasse -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 -d estado=repouso http://serveur/relojoeiro/api.php
 
 # mettre au soleil maintenant... et retirer plus tard
 curl -u utilisateur:motdepasse -d recurso=lancamento -d acao=iniciar  -d relogio_id=4 -d tipo=sol http://serveur/relojoeiro/api.php

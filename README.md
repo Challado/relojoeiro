@@ -358,16 +358,30 @@ cada gasto; sem nenhuma nos últimos dias, as de antes. Os gastos medidos valem 
 mostra a bateria perdendo fôlego com o tempo. Uma subida na leitura é recarga: novo ponto de partida, sem medir. E um intervalo
 com outra sessão no meio (o relógio foi para o carregador) também não mede: a medição só sabe separar pulso e guardado.
 
-Não importa se você lança a leitura logo depois do *Tirou* ou logo depois do *Pôs*: a leitura não é "de uso" nem "de repouso".
-O que conta é o intervalo até a anterior, dividido pelas marcações minuto a minuto. Uma leitura às 22h05, depois de um dia
-inteiro no pulso, mede quase só o gasto em uso; a de 7h05 do dia seguinte mede a noite desligado.
+Ao informar a carga, você diz como o relógio estava na hora da leitura: no quadro **Marcar**, **Informar leitura de carga em
+uso** (no pulso) ou **Informar leitura de carga em repouso** (guardado); no aviso *Informar a carga* da página Hoje, os botões
+**Em uso** e **Em repouso**. Para o gasto, o que conta continua sendo o intervalo até a leitura anterior, dividido pelas
+marcações minuto a minuto: uma leitura às 22h05, depois de um dia inteiro no pulso, mede quase só o gasto em uso; a de 7h05 do
+dia seguinte mede a noite desligado. O que você diz serve de conferência. Se o sistema tinha o relógio de outro jeito nesse
+instante (o horário de uso pôs ele no pulso sozinho, mas ele ficou guardado; ou faltou um *Pôs*), as marcações do intervalo
+estavam erradas: a medição fica **só no histórico**, sem bagunçar o gasto, e a mensagem diz o que não bateu. Com a caixa
+**Tirar do pulso na hora da leitura** (ou **Pôr no pulso na hora da leitura**), que aparece marcada quando não bate, o pulso
+passa a bater dali em diante. Se a leitura é de antes da última marcação do pulso, o pulso fica como está: acerte em
+**Corrigir ou excluir uma marcação**.
 
 Os dois gastos ficam no quadro **Gasto da bateria**, na ficha do relógio:
 
 - **No pulso** e **Fora do pulso (desligado)**: o gasto que vale na conta, em negrito, e de onde ele vem (medido, com o do
   cadastro ao lado para comparar, ou só do cadastro, quando ainda não há medição).
+- Embaixo de cada um, **no cadastro**: os campos de onde sai o gasto do cadastro (o *Decaimento em uso*, a *Autonomia em uso
+  real*, o *Decaimento guardado*), com o valor e se foi informado ou é o padrão.
 - **Nos 90 dias antes desses**: os dois gastos medidos na janela anterior. É a comparação que mostra a bateria envelhecendo:
   se o gasto no pulso passou de 4,9% para 5,7%, ela já não segura a carga como antes.
+
+O mesmo aparece de novo, junto do que é parecido, no quadro **Dados do relógio**: na tabela **Cadastro**, embaixo do decaimento
+(e da autonomia) informado, o **calculado pelas leituras** e o que vale **na conta**; na tabela **Calculado agora**, embaixo das
+fórmulas do gasto (*taxa_uso*, *taxa_repouso*), o medido e o do cadastro. E cada medição, uma por uma, fica em **Carga ao
+longo do tempo › Medições do gasto**.
 
 As medições mais velhas que a janela saem da conta sozinhas. Por isso o ajuste ao envelhecimento é automático: não é preciso
 mexer no cadastro. O "Decaimento em uso" e o "Decaimento guardado" do cadastro só valem enquanto não há medição.
@@ -718,7 +732,8 @@ Os avisos do cadastro inicial, com o identificador (o nome deles nas fórmulas, 
 Os avisos vão no alerta da manhã. Um aviso marcado **na hora** (na página **Avisos**, a caixa *na hora*) vai também pelo
 Telegram **no minuto em que vence**, uma vez só, até ser resolvido: é assim que o **Tirar do carregador** chega quando a bateria
 enche. Em **Hoje é dia de**, o botão é o do tipo que resolve: *Pôs no sol* com a sessão fechada, *Tirou do carregador* com ela
-aberta, *Informar leitura de carga* com o campo do valor.
+aberta, *Informar leitura de carga* com o campo do valor (e, no relógio que vai ao pulso, os botões **Em uso** e **Em
+repouso**: como ele estava na hora da leitura).
 
 Além deles, a mensagem tem dois tipos que não são cadastro: o **dia** (`dia`, o relógio de hoje, de manhã) e a **véspera**
 (`vespera`, o de amanhã, à noite). Cada evento personalizado entra como `ev<id>`.
@@ -1082,8 +1097,8 @@ curl -H "X-Api-Token: $TOKEN" "http://servidor/relojoeiro/api.php?recurso=hoje"
 # os relógios que acabam nas próximas 24 horas, só o nome e quando
 curl -u usuario:senha -g "http://servidor/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz"
 
-# lançar uma leitura de carga (e medir o gasto)
-curl -u usuario:senha -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://servidor/relojoeiro/api.php
+# lançar uma leitura de carga (e medir o gasto); estado=uso ou repouso: como ele estava na hora da leitura (opcional)
+curl -u usuario:senha -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 -d estado=repouso http://servidor/relojoeiro/api.php
 
 # pôr no sol agora... e tirar depois
 curl -u usuario:senha -d recurso=lancamento -d acao=iniciar  -d relogio_id=4 -d tipo=sol http://servidor/relojoeiro/api.php

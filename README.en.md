@@ -367,18 +367,31 @@ in the forecasts, and the history shows the battery losing breath over time. A r
 starting point, without measuring. And an interval with another session in between (the watch went to the charger) doesn't
 measure either: the measurement can only separate wrist and stored.
 
-It doesn't matter whether you log the reading right after *Took off* or right after *Put on*: the reading is neither "in use"
-nor "at rest". What counts is the interval to the previous one, split by the marks minute by minute. A reading at 10:05 pm,
-after a whole day on the wrist, measures almost only the in-use consumption; the one at 7:05 am the next day measures the night
-turned off.
+When entering the charge, you say how the watch was at the reading time: in the **Mark** box, **Enter charge reading in
+use** (on the wrist) or **Enter charge reading at rest** (stored); in the *Enter the charge* alert on the Today page, the
+**In use** and **At rest** buttons. For the consumption, what counts is still the interval to the previous reading, split by
+the marks minute by minute: a reading at 10:05 pm, after a whole day on the wrist, measures almost only the in-use
+consumption; the one at 7:05 am the next day measures the night turned off. What you say works as a check. If the system had
+the watch some other way at that instant (the wearing hours put it on the wrist by itself, but it stayed stored; or a *Put on*
+was missing), the interval's marks were wrong: the measurement stays **only in the history**, without messing up the
+consumption, and the message says what didn't match. With the **Take off the wrist at the reading time** (or **Put on the wrist
+at the reading time**) box, which appears ticked when it doesn't match, the wrist matches from then on. If the reading is from
+before the wrist's last marking, the wrist stays as it is: fix it in **Correct or delete a marking**.
 
 Both consumptions are in the **Battery consumption** box, on the watch's page:
 
 - **On the wrist** and **Off the wrist (turned off)**: the consumption that applies in the calculation, in bold, and where it
   comes from (measured, with the record's next to it for comparison, or only from the record, when there's no measurement
   yet).
+- Under each one, **in the record**: the record fields the record's consumption comes from (the *Decay in use*, the
+  *Real battery life in use*, the *Decay when stored*), with the value and whether it was entered or is the default.
 - **In the 90 days before those**: the two consumptions measured in the previous window. It is the comparison that shows the
   battery aging: if the consumption on the wrist went from 4.9% to 5.7%, it no longer holds the charge as it used to.
+
+The same appears again, next to what is similar, in the **Watch data** box: in the **Record** table, under the entered decay
+(and battery life), the **calculated from the readings** and what counts **in the calculation**; in the **Calculated now**
+table, under the consumption formulas (*taxa_uso*, *taxa_repouso*), the measured and the record's. And each measurement, one by
+one, is in **Charge over time › Consumption measurements**.
 
 Measurements older than the window leave the calculation by themselves. That's why the adjustment to aging is automatic: there
 is no need to touch the record. The record's "Drain in use" and "Drain when stored" only apply while there is no measurement.
@@ -741,7 +754,8 @@ The alerts of the initial set, with the identifier (their name in the formulas, 
 The alerts go in the morning alert. An alert marked **right away** (on the **Alerts** page, the *right away* box) also goes
 via Telegram **in the minute it comes due**, only once, until it is resolved: that's how **Take off the charger** arrives when
 the battery fills. In **Today is the day for**, the button is the one of the type that resolves it: *Put in the sun* with the
-session closed, *Took off the charger* with it open, *Enter charge reading* with the value field.
+session closed, *Took off the charger* with it open, *Enter charge reading* with the value field (and, on a watch that goes on the wrist, the **In use** and **At
+rest** buttons: how it was at the reading time).
 
 Besides them, the message has two types that aren't data: the **day** (`dia`, today's watch, in the morning) and the **eve**
 (`vespera`, tomorrow's, in the evening). Each custom event goes in as `ev<id>`.
@@ -1113,8 +1127,8 @@ curl -H "X-Api-Token: $TOKEN" "http://server/relojoeiro/api.php?recurso=hoje"
 # the watches that run out in the next 24 hours, only the name and when
 curl -u user:password -g "http://server/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz"
 
-# log a charge reading (and measure the consumption)
-curl -u user:password -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://server/relojoeiro/api.php
+# log a charge reading (and measure the consumption); estado=uso or repouso: how it was at the reading time (optional)
+curl -u user:password -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 -d estado=repouso http://server/relojoeiro/api.php
 
 # put it in the sun now... and take it out later
 curl -u user:password -d recurso=lancamento -d acao=iniciar  -d relogio_id=4 -d tipo=sol http://server/relojoeiro/api.php
