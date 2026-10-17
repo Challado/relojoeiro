@@ -845,6 +845,10 @@ table.resumo-plano { max-width: 44rem; }
 /* o menu: na tela grande o botão não existe e os itens ficam na barra, como sempre */
 .menu-botao { display: none; }
 .menu-itens { display: contents; }
+/* o reloginho da barra (relojinho.js): 30 px, à esquerda de tudo */
+.relojinho { display: inline-flex; flex: none; width: 30px; height: 30px; border-radius: 50%; }
+.relojinho canvas { width: 30px; height: 30px; display: block; }
+.relojinho:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
 /* celular e tablet de pé (até 900 px): o mesmo layout — menu recolhido, listas em cartões, campos com letra de 16 px */
 @media (max-width: 900px) {
@@ -852,9 +856,9 @@ table.resumo-plano { max-width: 44rem; }
   select, textarea, input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):not([type=range]) { font-size: 16px !important; }
 
   /* o menu recolhido: a barra (que acompanha a rolagem) mostra a página atual, e o botão abre a lista em duas colunas */
-  .topo { display: block; position: sticky; top: 0; z-index: 20; padding: .4rem .75rem; }
+  .topo { display: flex; flex-wrap: wrap; align-items: center; gap: 0 .6rem; position: sticky; top: 0; z-index: 20; padding: .4rem .75rem; }
   .topo .menu-botao {
-    display: flex; justify-content: space-between; width: 100%; min-height: 2.6rem; padding: 0 .1rem;
+    display: flex; justify-content: space-between; align-items: center; flex: 1 1 0; min-width: 0; min-height: 2.6rem; padding: 0 .1rem;
     background: transparent; border: 0; color: #fff; font-size: 1.05rem; font-weight: 600;
   }
   .topo .menu-botao:focus-visible { outline-color: #fff; }
@@ -862,7 +866,7 @@ table.resumo-plano { max-width: 44rem; }
   .menu-abre::before { content: "\2630\00a0"; }
   .topo.aberto .menu-abre::before { content: "\2715\00a0"; }
   .menu-itens { display: none; }
-  .topo.aberto .menu-itens { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; padding: .5rem 0 .4rem; }
+  .topo.aberto .menu-itens { display: grid; width: 100%; grid-template-columns: 1fr 1fr; gap: .4rem; padding: .5rem 0 .4rem; }
   .topo .menu-itens a { padding: .7rem .8rem; border-radius: 8px; background: #27323f; color: #dfe5eb; }
   .topo .menu-itens a.ativo { background: var(--safira); color: #fff; border-bottom: 0; }
   /* no celular os grupos ficam sempre abertos: o nome do grupo como um título pequeno e as páginas dele embaixo */

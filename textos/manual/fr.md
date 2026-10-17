@@ -1,4 +1,4 @@
-<!-- origem: 7c8dbcfa996ed51338638df7a99243ba0f799e3f -->
+<!-- origem: 48e65c6e53ced3456f07c8de24813121c32aa847 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -950,6 +950,13 @@ jours.
 
 ---
 ## Les écrans {#as-telas}
+
+**La petite montre.** Dans le coin gauche de la barre du menu, sur chaque écran, il y a une petite montre à l'heure juste,
+les secondes qui tournent : un clic dessus ouvre l'**Heure juste**, et en posant la souris apparaissent le modèle et l'heure.
+La même montre est l'icône de l'onglet du navigateur (le *favicon*), refaite chaque minute : l'onglet montre l'heure, même la
+page cachée. Douze modèles dessinés à la volée (Classique, Plongeuse, Aviateur, Militaire, Smartwatch, Tank, Sport bleu,
+Chronographe, Squelette, Solaire, Vintage et GMT), et l'heure pleine choisit lequel : à 7 h et à 19 h l'Aviateur, à 10 h et à
+22 h la Solaire...
 
 ![La collection : chaque montre avec le type, l'état, la charge, la dernière fois au poignet, le prochain entretien, quoi faire et si elle est délaissée](docs/telas/colecao.png)
 

@@ -968,6 +968,12 @@ php -S localhost:8000         # और http://localhost:8000 खोलें
 
 ## स्क्रीनें
 
+**छोटी घड़ी।** हर स्क्रीन पर मेनू बार के बाएँ कोने में सही समय वाली एक छोटी घड़ी है, सेकंड चलते हुए: उस पर क्लिक **सही समय**
+खोलता है, और माउस रोकने पर मॉडल और समय दिखता है। वही घड़ी ब्राउज़र के टैब का आइकन (*favicon*) है, हर मिनट फिर से बनी: पेज
+छिपा हो तब भी टैब समय दिखाता है। बारह मॉडल तुरंत बनाए जाते हैं (क्लासिक, डाइवर, पायलट, मिलिट्री, Smartwatch, टैंक, नीली
+स्पोर्ट्स, क्रोनोग्राफ़, स्केलेटन, सोलर, Vintage और GMT), और पूरा घंटा चुनता है कौन सा: 7 और 19 बजे पायलट, 10 और 22 बजे
+सोलर...
+
 ![संग्रह: हर घड़ी का प्रकार, स्थिति, चार्ज, कलाई पर आख़िरी बार, अगली सर्विस, क्या करना है और क्या पड़ी हुई है](docs/telas/colecao.png)
 
 <sub>आज पेज पर संग्रह की तालिका: प्रकार, स्थिति, अभी का चार्ज या रिज़र्व, कलाई पर आख़िरी बार, अगली सर्विस, क्या करना
@@ -1823,6 +1829,7 @@ api.php?recurso=codigo&conteudo=1&f[arquivos][camada]=tela   स्क्री�
 | [`operacoes.php`](operacoes.php) | हर लेखन के नियम: जाँच और संदेश |
 | [`cron.php`](cron.php) | योजना, दिन का सत्र, सुबह और शाम के दौर, इवेंट, कैलेंडर और दस्तावेज़ों की देखभाल |
 | `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | पृष्ठ (केवल ढाँचा; `cadastro.php` सार्वजनिक है) |
+| `relojinho.js` | बार और फ़ेविकॉन की छोटी घड़ी: canvas में बनी सही समय वाली बारह घड़ियाँ |
 | `sw.js`, `offline.html`, `icone-*.png` | फ़ोन पर ऐप: *service worker* (`recurso=sw` से, संस्करण आगे लगाकर: स्क्रीनों का कैश, बिना-कनेक्शन पेज और Web Push), **कनेक्शन नहीं है** पेज और आइकन (192, 512 और 180 px) |
 | `ajuda.php` | सहायता पेज: सिर्फ़ ढाँचा; `ajuda.js` API से टेक्स्ट माँगता है (`recurso=manual`: README के उपयोगकर्ताओं वाले हिस्से, `lib.php` में पहले से HTML में बदले हुए) |
 | [`pagina.php`](pagina.php) | मेनू वाला ऊपरी हिस्सा और पेजों का अंत ; `topo()` कुछ भी भेजने से पहले लॉगिन जाँचता है (`pagina_login()`) |

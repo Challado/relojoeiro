@@ -1,4 +1,4 @@
-<!-- origem: 7c8dbcfa996ed51338638df7a99243ba0f799e3f -->
+<!-- origem: 48e65c6e53ced3456f07c8de24813121c32aa847 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -920,6 +920,13 @@ previsión: el plan, la escala y cuánto va a durar la carga en los próximos d�
 
 ---
 ## Las pantallas {#as-telas}
+
+**El relojito.** En la esquina izquierda de la barra del menú, en toda pantalla, hay un reloj pequeño con la hora exacta, los
+segundos andando: un clic en él abre la **Hora exacta**, y al detener el ratón aparece el modelo y la hora. El mismo reloj es
+el ícono de la pestaña del navegador (el *favicon*), rehecho cada minuto: la pestaña muestra la hora, aun con la página
+escondida. Son doce modelos dibujados al momento (Clásico, Buceador, Aviador, Militar, Smartwatch, Tanque, Deportivo azul,
+Cronógrafo, Esqueleto, Solar, Vintage y GMT), y la hora en punto elige cuál: a las 7 y a las 19 el Aviador, a las 10 y a las
+22 el Solar...
 
 ![La colección: cada reloj con el tipo, el estado, la carga, la última vez en la muñeca, el próximo mantenimiento, qué hacer y si está arrinconado](docs/telas/colecao.png)
 

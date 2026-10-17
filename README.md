@@ -986,6 +986,12 @@ Cadastre alguns relógios em **Hoje → Novo relógio**. Para montar a escala se
 
 ## As telas
 
+**O reloginho.** No canto esquerdo da barra do menu, em toda tela, há um relógio pequeno com a hora certa, os segundos
+andando: um clique nele abre a **Hora certa**, e parando o mouse aparece o modelo e a hora. O mesmo relógio é o ícone da aba
+do navegador (o *favicon*), refeito a cada minuto: a aba mostra a hora, mesmo com a página escondida. São doze modelos
+desenhados na hora (Clássico, Mergulhador, Aviador, Militar, Smartwatch, Tanque, Esportivo azul, Cronógrafo, Esqueleto,
+Solar, Vintage e GMT), e a hora cheia escolhe qual: às 7 e às 19 o Aviador, às 10 e às 22 o Solar...
+
 ![A coleção: cada relógio com o tipo, o estado, a carga, a última vez no pulso, a próxima manutenção, o que fazer e se está encostado](docs/telas/colecao.png)
 
 <sub>A tabela da coleção, na página Hoje: tipo, estado, carga ou reserva agora, última vez no pulso, próxima manutenção, o
@@ -1855,6 +1861,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | [`operacoes.php`](operacoes.php) | as regras de cada gravação: validações e mensagens |
 | [`cron.php`](cron.php) | o plano, a sessão do dia, as rodadas da manhã e da noite, os eventos, a agenda e a manutenção dos documentos |
 | `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | as páginas (só o esqueleto; a `cadastro.php` é a pública) |
+| `relojinho.js` | o reloginho da barra e do favicon: doze relógios desenhados em canvas, com a hora certa |
 | `sw.js`, `offline.html`, `icone-*.png` | o aplicativo no celular: o *service worker* (entregue por `recurso=sw`, com a versão na frente: o cache das telas, a página sem conexão e o Web Push), a página **Sem conexão** e os ícones (192, 512 e 180 px) |
 | `ajuda.php` | a página de ajuda: só o esqueleto; o `ajuda.js` pede o texto à API (`recurso=manual`: as seções do README para quem usa, já em HTML, convertidas no `lib.php`) |
 | [`pagina.php`](pagina.php) | o topo com o menu e o fim das páginas; o `topo()` confere o login antes de mandar qualquer coisa (`pagina_login()`) |

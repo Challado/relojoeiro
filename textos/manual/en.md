@@ -1,4 +1,4 @@
-<!-- origem: 7c8dbcfa996ed51338638df7a99243ba0f799e3f -->
+<!-- origem: 48e65c6e53ced3456f07c8de24813121c32aa847 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -931,6 +931,12 @@ plan, the schedule and how long the charge will last in the next days.
 ---
 
 ## The screens {#as-telas}
+
+**The little watch.** At the left corner of the menu bar, on every screen, there is a small watch with the right time, seconds
+ticking: a click on it opens the **Right time**, and resting the mouse shows the model and the time. The same watch is the
+browser tab's icon (the *favicon*), redone every minute: the tab shows the time, even with the page hidden. There are twelve
+models drawn on the fly (Classic, Diver, Pilot, Field, Smartwatch, Tank, Blue sports, Chronograph, Skeleton, Solar, Vintage
+and GMT), and the full hour picks which: at 7 and at 19 the Pilot, at 10 and at 22 the Solar...
 
 ![The collection: each watch with the type, the state, the charge, the last time on the wrist, the next service, what to do and whether it is idle](docs/telas/colecao.png)
 

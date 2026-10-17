@@ -65,6 +65,8 @@ function topo($titulo, $ativo, $publica = false)
         . "<link rel=\"manifest\" href=\"api.php?recurso=manifest\" crossorigin=\"use-credentials\">\n<link rel=\"icon\" href=\"icone-192.png\" type=\"image/png\">\n"
         . "<link rel=\"apple-touch-icon\" href=\"icone-180.png\">\n<meta name=\"mobile-web-app-capable\" content=\"yes\">\n<meta name=\"apple-mobile-web-app-capable\" content=\"yes\">\n"
         . "<meta name=\"apple-mobile-web-app-status-bar-style\" content=\"default\">\n<meta name=\"apple-mobile-web-app-title\" content=\"Relojoeiro\">\n</head>\n<body>\n<nav class=\"topo\">\n";
+    // o reloginho no canto da barra (o relojinho.js desenha nele a hora certa, com um modelo por hora): um clique abre a Hora certa
+    echo "  <a class=\"relojinho\" href=\"hora.php\" aria-label=\"" . htmlspecialchars(t("Hora certa"), ENT_QUOTES, "UTF-8") . "\"><canvas width=\"60\" height=\"60\" aria-hidden=\"true\"></canvas></a>\n";
     // no celular o menu fica recolhido: uma barra com a página atual e o botão que abre a lista (na tela grande o botão some)
     echo "  <button type=\"button\" class=\"menu-botao\" aria-expanded=\"false\" aria-controls=\"menu-itens\"><span class=\"menu-pagina\">" . htmlspecialchars($atual ?? t($titulo), ENT_QUOTES, "UTF-8") . "</span><span class=\"menu-abre\">" . t("Menu") . "</span></button>\n"
         . "  <div class=\"menu-itens\" id=\"menu-itens\">\n";
@@ -114,5 +116,7 @@ function rodape($scripts)
     foreach ($scripts as $js) {
         echo "<script src=\"" . $js . "?v=" . (int)@filemtime(__DIR__ . "/" . $js) . "\"></script>\n";
     }
+    // o reloginho da barra e do favicon, em toda página (depois do api.js, pelo t() dos nomes dos modelos)
+    echo "<script src=\"relojinho.js?v=" . (int)@filemtime(__DIR__ . "/relojinho.js") . "\"></script>\n";
     echo "</body>\n</html>\n";
 }

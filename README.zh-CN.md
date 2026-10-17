@@ -736,6 +736,8 @@ php -S localhost:8000            # 然后打开 http://localhost:8000
 
 ## 界面
 
+**小手表。** 在每个页面菜单栏的左角都有一块显示准确时间的小手表，秒针走动：点击它打开**准确时间**，鼠标停在上面会显示款式和时间。同一块手表也是浏览器标签页的图标（*favicon*），每分钟重绘：即使页面被遮住，标签页也显示时间。共有十二种即时绘制的款式（经典、潜水表、飞行员表、军表、Smartwatch、坦克表、蓝色运动表、计时码表、镂空表、太阳能表、Vintage 和 GMT），由整点决定显示哪一种：7 点和 19 点是飞行员表，10 点和 22 点是太阳能表……
+
 ![收藏：每块手表的类型、状态、电量、上次佩戴、下次保养、要做的事以及是否闲置](docs/telas/colecao.png)
 
 <sub>今天页面中的收藏表格：类型、状态、当前电量或储存、上次佩戴、下次保养、要做的事和闲置列，每列都有筛选，并显示收藏的总花费。</sub>
@@ -1318,6 +1320,7 @@ api.php?recurso=codigo&conteudo=1&f[arquivos][camada]=tela   所有界面相关�
 | [`operacoes.php`](operacoes.php) | 每次写入的规则：校验和消息 |
 | [`cron.php`](cron.php) | 计划、当天的时段、早上和晚上两轮、事件、日历以及文档的维护 |
 | `index.php`、`plano.php`、`desejos.php`、`estatisticas.php`、`hora.php`、`acessorios.php`、`galeria.php`、`passaporte.php`、`ficha.php`、`documentos.php`、`historico.php`、`avisos.php`、`modos.php`、`configuracao.php`、`destinos.php`、`agendas.php`、`criterios.php`、`grupos.php`、`cadastros.php`、`execucoes.php`、`conta.php`、`aprovacoes.php`、`usuarios.php`、`cadastro.php` | 页面（只有骨架；`cadastro.php` 是公开页面） |
+| `relojinho.js` | 菜单栏和网站图标上的小手表：十二块用 canvas 绘制、显示准确时间的手表 |
 | `sw.js`、`offline.html`、`icone-*.png` | 手机上的应用：*service worker*（由 `recurso=sw` 提供，前面带版本号：界面缓存、无连接页面和 Web Push）、**没有网络连接**页面和图标（192、512 和 180 px） |
 | `ajuda.php` | 帮助页面：只有骨架；`ajuda.js` 向 API 请求文本（`recurso=manual`：README 中面向用户的章节，已在 `lib.php` 中转换为 HTML） |
 | [`pagina.php`](pagina.php) | 页面顶部的菜单和页面结尾；`topo()` 在输出任何内容之前检查登录（`pagina_login()`） |

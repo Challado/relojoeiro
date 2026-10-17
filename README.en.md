@@ -1012,6 +1012,12 @@ Register some watches in **Today → New watch**. To build the schedule without 
 
 ## The screens
 
+**The little watch.** At the left corner of the menu bar, on every screen, there is a small watch with the right time, seconds
+ticking: a click on it opens the **Right time**, and resting the mouse shows the model and the time. The same watch is the
+browser tab's icon (the *favicon*), redone every minute: the tab shows the time, even with the page hidden. There are twelve
+models drawn on the fly (Classic, Diver, Pilot, Field, Smartwatch, Tank, Blue sports, Chronograph, Skeleton, Solar, Vintage
+and GMT), and the full hour picks which: at 7 and at 19 the Pilot, at 10 and at 22 the Solar...
+
 ![The collection: each watch with the type, the state, the charge, the last time on the wrist, the next service, what to do and whether it is idle](docs/telas/colecao.png)
 
 <sub>The collection table, on the Today page: type, state, charge or reserve now, last time on the wrist, next service, what
@@ -1897,6 +1903,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | [`operacoes.php`](operacoes.php) | the rules of each write: validations and messages |
 | [`cron.php`](cron.php) | the plan, the day's session, the morning and evening rounds, the events, the calendar and the documents' upkeep |
 | `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | the pages (only the skeleton; `cadastro.php` is the public one) |
+| `relojinho.js` | the little watch of the bar and the favicon: twelve watches drawn in canvas, with the right time |
 | `sw.js`, `offline.html`, `icone-*.png` | the app on the phone: the *service worker* (served by `recurso=sw`, with the version in front: the screens' cache, the no-connection page and the Web Push), the **No connection** page and the icons (192, 512 and 180 px) |
 | `ajuda.php` | the help page: only the skeleton; `ajuda.js` asks the API for the text (`recurso=manual`: the README's sections for users, already in HTML, converted in `lib.php`) |
 | [`pagina.php`](pagina.php) | the top with the menu and the end of the pages ; `topo()` checks the login before sending anything (`pagina_login()`) |
