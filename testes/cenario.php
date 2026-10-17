@@ -197,11 +197,57 @@ $lanc("lancar", "smart", "carga", ["valor" => 83, "quando" => dia(4, "12:00")]);
 $lanc("periodo", "smart", "pulso", ["inicio" => dia(3, "08:00"), "fim" => dia(3, "22:00")]);
 $lanc("lancar", "smart", "carga", ["valor" => "71.5", "quando" => dia(2, "12:00"), "medir" => 0]);
 $lanc("lancar", "smart", "carga", ["valor" => 64, "quando" => dia(1, "18:00")]);
-// o estado da leitura: "em uso" quando o sistema tem ele fora do pulso não bate (a medição fica só no histórico; com ajustar=0
-// o pulso fica como está); "em repouso" fora do pulso bate (medir=0: as duas não mexem no gasto medido); estado errado recusa
-$lanc("lancar", "smart", "carga", ["valor" => 63, "quando" => dia(1, "20:00"), "estado" => "uso", "ajustar" => 0]);
+// a marcação da leitura: "em uso" quando o sistema tem ele fora do pulso não bate: a API pergunta (confirmar: true, sem
+// gravar) e só grava com confirmar=1, como a pessoa marcou; "em repouso" fora do pulso bate (medir=0: fica só no histórico);
+// estado errado recusa. A marcação fica gravada na leitura (estado) e o alterar muda a marcação
+escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["smart"], "tipo" => "carga", "valor" => 63, "quando" => dia(1, "20:00"), "estado" => "uso"], false);
+$leitura_uso = $lanc("lancar", "smart", "carga", ["valor" => 63, "quando" => dia(1, "20:00"), "estado" => "uso", "confirmar" => 1]);
 $lanc("lancar", "smart", "carga", ["valor" => 62, "quando" => dia(1, "21:30"), "estado" => "repouso", "medir" => 0]);
 escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["smart"], "tipo" => "carga", "valor" => 62, "estado" => "pulso"], false);
+escrever(["recurso" => "lancamento", "acao" => "alterar", "id" => $leitura_uso, "estado" => "repouso"]);
+escrever(["recurso" => "lancamento", "acao" => "alterar", "id" => $leitura_uso, "estado" => "uso"]);
+escrever(["recurso" => "lancamento", "acao" => "alterar", "id" => $leitura_uso, "estado" => "dormindo"], false);
+// uma medição sai da conta e volta (o botão da tabela Medições do gasto), sem apagar nada; id e usada errados recusam
+$med = chamar("GET", ["recurso" => "ficha", "relogio" => $rel["smart"]])["json"]["relogio"]["medicoes"] ?? [];
+$med_id = (int)($med[count($med) - 1]["id"] ?? 0);
+escrever(["recurso" => "lancamento", "acao" => "medicao", "id" => $med_id, "usada" => 0]);
+ler("medições com uma fora da conta", ["recurso" => "ficha", "relogio" => $rel["smart"]]);
+escrever(["recurso" => "lancamento", "acao" => "medicao", "id" => $med_id, "usada" => 1]);
+escrever(["recurso" => "lancamento", "acao" => "medicao", "id" => $med_id, "usada" => 2], false);
+escrever(["recurso" => "lancamento", "acao" => "medicao", "id" => 999999, "usada" => 1], false);
+// os cinco motores do gasto, pela Configuração da coleção (vale por todos), e os outros níveis: o campo do relógio e o padrão
+// do campo (o grupo); vazio em tudo, o original (horas). Valores errados recusam; o mecânico, sem leitura, não muda nada
+foreach (["horas", "robusto", "marcacao", "cadastro", "formulas"] as $motor) {
+    escrever(["recurso" => "config", "acao" => "salvar", "gasto_motor" => $motor]);
+    ler("gasto pelo motor " . $motor, ["recurso" => "ficha", "relogio" => $rel["smart"]]);
+}
+escrever(["recurso" => "config", "acao" => "salvar", "gasto_motor" => "chute"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "gasto_motor" => ""]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["smart"], "valores" => ["gasto_motor" => "cadastro"]]);
+ler("gasto pelo motor do relógio", ["recurso" => "ficha", "relogio" => $rel["smart"]]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["smart"], "valores" => ["gasto_motor" => "chute"]]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["smart"], "valores" => ["gasto_motor" => ""]]);
+$campo_motor = 0;
+foreach (chamar("GET", ["recurso" => "cadastros"])["json"]["campos"] ?? [] as $c) {
+    if ($c["identificador"] === "gasto_motor") {
+        $campo_motor = (int)$c["id"];
+    }
+}
+escrever(["recurso" => "campos", "acao" => "alterar", "id" => $campo_motor, "padrao" => "marcacao"]);
+ler("gasto pelo motor do grupo", ["recurso" => "ficha", "relogio" => $rel["smart"]]);
+ler("gasto do mecanico com motor", ["recurso" => "ficha", "relogio" => $rel["manual"]]);
+escrever(["recurso" => "campos", "acao" => "alterar", "id" => $campo_motor, "padrao" => ""]);
+ler("gasto pelo motor padrao", ["recurso" => "ficha", "relogio" => $rel["smart"]]);
+// contar por leituras (as últimas N de cada tipo) e por dias; limites errados recusam
+escrever(["recurso" => "config", "acao" => "salvar", "medicao_base" => "leituras", "medicao_janela_leituras" => 2]);
+ler("gasto pelas ultimas leituras", ["recurso" => "ficha", "relogio" => $rel["smart"]]);
+escrever(["recurso" => "config", "acao" => "salvar", "medicao_base" => "semanas"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "medicao_janela_leituras" => 1], false);
+escrever(["recurso" => "config", "acao" => "salvar", "medicao_base" => "dias", "medicao_janela_leituras" => 20]);
+// as funções das medições pela marcação, no motor das fórmulas
+ler("calcular pecas da marcacao", ["recurso" => "calcular", "relogio" => $rel["smart"], "expressao" => "LEITURAS(\"uso\") * 1000 + LEITURAS(\"repouso\"; 30) * 100 + ARREDONDA(QUEDA(\"uso\"); 1)"]);
+ler("calcular taxas da marcacao", ["recurso" => "calcular", "relogio" => $rel["smart"], "expressao" => "ARREDONDA(PADRAO(MEDIA_TAXA(\"uso\"); 0) + PADRAO(MEDIANA_TAXA(\"uso\"; 0); 0) * 100 + PADRAO(ULTIMA_TAXA(\"repouso\"); 0) * 10000 + PADRAO(DIAS_MEDIDOS(\"repouso\"); 0); 2)"]);
+ler("calcular funcao errada", ["recurso" => "calcular", "expressao" => "ULTIMA_TAXA(\"uso\"; 3)"]);
 $lanc("periodo", "auto", "pulso", ["inicio" => dia(2, "08:00"), "fim" => dia(2, "22:00")]);
 // a corda ontem às 15:06: a reserva (41 h) acaba amanhã às 08:06, e hoje fica entre 8 h e 32 h a qualquer hora (perto de zero,
 // os segundos entre um banco e outro passariam da folga)
@@ -479,6 +525,14 @@ ler("ficha com acessorios", ["recurso" => "ficha", "relogio" => $rel["crono"]]);
 escrever(["recurso" => "acessorios", "acao" => "excluir", "id" => $aces, "confirmar" => 1]);
 // o aviso Encostado: com 5 dias, os relógios parados há mais tempo são avisados; 0 é recusado
 escrever(["recurso" => "config", "acao" => "salvar", "encostado_dias" => 5]);
+// a cópia dos documentos no banco pela Configuração da coleção (todos, nenhum, vazio); valor errado recusa
+escrever(["recurso" => "config", "acao" => "salvar", "documentos_copia" => "todos"]);
+ler("config copia todos", ["recurso" => "config"]);
+ler("ficha copia todos", ["recurso" => "ficha", "relogio" => $rel["smart"]]);
+escrever(["recurso" => "config", "acao" => "salvar", "documentos_copia" => "nenhum"]);
+ler("documentos copia nenhum", ["recurso" => "documentos", "relogio" => $rel["smart"]]);
+escrever(["recurso" => "config", "acao" => "salvar", "documentos_copia" => "alguns"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "documentos_copia" => ""]);
 escrever(["recurso" => "config", "acao" => "salvar", "encostado_dias" => 0], false);
 ler("avisos com encostado", ["recurso" => "avisos"]);
 // hoje sem relógio: o dia fica livre (o cron não põe ninguém no pulso nem sorteia de novo) e depois volta, escolhendo um

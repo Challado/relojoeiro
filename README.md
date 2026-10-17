@@ -338,41 +338,93 @@ leitura diferente da prevista, o plano se corrige sozinho.
 
 O cadastro do smartwatch diz "dura 5 dias". A realidade discorda, e muda conforme a bateria envelhece. Por isso, **cada leitura
 de carga que você lança é comparada com a anterior**, e o intervalo entre as duas vira uma medição: quanto caiu, quantas horas
-ele passou no pulso e quantas fora do pulso (guardado, desligado). O horário de uso da Configuração conta como pulso sozinho, e
-as suas marcações (*Pôs*, *Tirou*) mandam.
+ele passou no pulso e quantas fora do pulso (guardado, desligado), e como você marcou cada leitura (em uso ou em repouso). O
+horário de uso da Configuração conta como pulso sozinho, e as suas marcações (*Pôs*, *Tirou*) mandam. Uma subida na leitura é
+recarga: começa um trecho novo. E um intervalo com outra sessão no meio (o relógio foi para o carregador) também não mede: a
+medição só sabe separar pulso e guardado.
 
-Cada medição é uma conta com dois gastos desconhecidos:
+**Como transformar as medições nos dois gastos (no pulso e fora do pulso) é escolha sua: há cinco motores.** Todos ficam no
+sistema; nenhum apaga nada, e trocar de motor só muda a conta (as medições são as mesmas). A escolha se faz em três lugares, e
+o de cima vale sobre os de baixo:
+
+| Nível | Onde se escolhe | O que faz |
+|---|---|---|
+| 1. **A coleção** | **Gasto da bateria: como calcular**, na Configuração (`gasto_motor`) | vale para todos os relógios da coleção. Vazio (*Conforme o relógio e o grupo*): decidem os dois níveis de baixo. |
+| 2. **O relógio** | o campo **Como calcular o gasto da bateria** (`gasto_motor`), no cadastro do relógio | vale só para ele. Vazio: o do grupo. |
+| 3. **O grupo** | o **padrão** desse mesmo campo (em **Cadastros › Campos**: o campo fica na raiz, e vale para os relógios de onde ele está para baixo) | vale para os relógios que não escolheram. Vazio: o motor 1. |
+
+Num relógio sem leitura de carga (um mecânico, um solar), a escolha não faz nada. O quadro **Gasto da bateria** diz qual motor
+fez a conta e de onde veio a escolha (*Calculado por: Pela marcação: duas taxas separadas — a escolha da coleção, na
+Configuração*).
+
+| Motor | O que faz |
+|---|---|
+| 1. **Pelas horas registradas (o motor original)** (`horas`) | o padrão. Cada medição é dividida pelas marcações de pulso minuto a minuto (tantas horas no pulso, tantas fora), e os dois gastos saem juntos de todas as medições da janela, cada uma pesando o tempo que cobre. É a conta que o sistema sempre fez. |
+| 2. **Pelas horas registradas, com leituras e cadastro (robusto)** (`robusto`) | as mesmas horas, mas a conta é feita nas leituras, todas com o mesmo peso, a que não bate com as outras pesa menos e o cadastro é o ponto de partida (os três cuidados abaixo). Dá a incerteza (±). |
+| 3. **Pela marcação: duas taxas separadas** (`marcacao`) | o que você marca manda. Uma leitura marcada **em uso** mede o gasto no pulso: a queda desde a leitura anterior, dividida pelo tempo inteiro do intervalo (em dias de uso). Uma leitura marcada **em repouso** mede o gasto fora do pulso, do mesmo jeito. As duas contas **nunca se cruzam**: o gasto em uso sai só das leituras em uso, e o em repouso, só das em repouso; o pulso registrado não entra. Com a conta robusta em cada lado (a leitura que não bate pesa menos; o cadastro é o ponto de partida), também com a incerteza. |
+| 4. **Só o cadastro** (`cadastro`) | o *Decaimento em uso* (ou a *Autonomia em uso real*) e o *Decaimento guardado* do cadastro valem sempre. As medições continuam sendo feitas e ficam no histórico (a tabela **Medições do gasto**), mas não entram em conta nenhuma: `MEDIDO` dá vazio. |
+| 5. **Pelas fórmulas do cadastro** (`formulas`) | vale o que as fórmulas `taxa_uso` e `taxa_repouso` derem, para você montar a sua própria conta em **Cadastros › Fórmulas**. Nelas, `MEDIDO("uso")` e `MEDIDO("repouso")` são a conta do motor 3, e as funções **LEITURAS**, **QUEDA**, **DIAS_MEDIDOS**, **MEDIA_TAXA**, **MEDIANA_TAXA** e **ULTIMA_TAXA** dão as peças das medições pela marcação (quantas, a soma das quedas, a soma dos dias, a média, a mediana e a última taxa, de cada tipo, nos últimos N dias ou na janela da Configuração): `MEDIANA_TAXA("uso")`, ou `PADRAO(QUEDA("uso"; 30) / DIAS_MEDIDOS("uso"; 30); decaimento_uso)`. Nos outros motores as fórmulas também valem (é delas que sai o gasto); a diferença é que este diz: a conta é a sua. |
+
+**Quais medições entram** é outra escolha da Configuração, **Gasto medido: contar por**: **dias** (as medições dos últimos
+tantos dias, 90 por padrão) ou **leituras** (as últimas tantas medições de cada tipo, em uso e em repouso, 20 por padrão).
+Sem nenhuma na janela, entram as de antes. Vale para os motores 1, 2, 3 e 5 (e para as funções das fórmulas sem o N de dias).
+
+Entre duas recargas, a carga cai em linha reta com o tempo no pulso e o tempo guardado:
 
 ```text
-queda = dias de uso × gasto em uso + dias fora do pulso × gasto fora do pulso
+leitura = carga do começo − gasto em uso × dias de uso − gasto guardado × dias guardado (+ o erro da leitura)
 ```
 
-Com as medições dos últimos dias (90, na Configuração), o sistema acha **os dois gastos juntos**: os que melhor explicam todas
-as quedas (mínimos quadrados, e cada medição pesa as horas que cobriu). Uma noite entre duas leituras (só fora do pulso) acerta o
-gasto fora do pulso; os dias no pulso, já sabendo esse, acertam o gasto em uso. Entra toda medição de 1 hora ou mais, até a sem
-queda nenhuma (ela diz que o gasto é pequeno): a curta, em que o arredondamento da leitura (o relógio mostra a carga em números
-inteiros) pesa mais, entra com peso pequeno. Quanto mais leituras, mais preciso.
+Leituras seguidas, sem recarga no meio, formam um **trecho**. Cada trecho tem a carga do começo dele (que a conta descobre), e
+os dois gastos valem para todos os trechos. No motor 2, com as leituras da janela, o sistema acha **os dois gastos juntos**: os
+que melhor explicam todas as leituras. Uma noite entre duas leituras (só fora do pulso) acerta o gasto guardado; os dias no
+pulso, já sabendo esse, acertam o gasto em uso. Entra toda medição de 1 hora ou mais, até a sem queda nenhuma (ela diz que o
+gasto é pequeno). Quanto mais leituras, mais preciso. No motor 3 a mesma conta é feita duas vezes, uma só com as leituras em
+uso e outra só com as em repouso.
 
-Quando as medições ainda não separam os dois (só leituras com o relógio guardado, por exemplo), vale a média das medições de
-cada gasto; sem nenhuma nos últimos dias, as de antes. Os gastos medidos valem no lugar do cadastro nas previsões, e o histórico
-mostra a bateria perdendo fôlego com o tempo. Uma subida na leitura é recarga: novo ponto de partida, sem medir. E um intervalo
-com outra sessão no meio (o relógio foi para o carregador) também não mede: a medição só sabe separar pulso e guardado.
+A conta robusta (os motores 2 e 3) tem três cuidados, cada um com um motivo:
+
+1. **A conta é feita nas leituras, e todas pesam igual.** O erro vem da leitura: o relógio mostra a carga em números inteiros,
+   e o medidor dele também erra um pouco. Esse erro é o mesmo numa leitura feita 2 horas ou 2 semanas depois da anterior,
+   então nenhuma leitura vale mais que outra por cobrir mais tempo. E, como a conta olha as leituras (e não as quedas), uma
+   leitura errada é um ponto só, em vez de estragar as duas quedas em volta dela.
+2. **A leitura que não bate com as outras pesa menos (regressão robusta).** Depois da conta, o sistema vê o quanto ela erra
+   cada leitura. O erro normal sai das próprias leituras (nunca menos de meio ponto); a leitura que fica bem mais longe que o
+   normal passa a pesar menos, e tanto menos quanto mais longe ela está, e a conta se refaz. Ela não é jogada fora: só pesa
+   menos. Um caso comum: o **100% logo depois de carregar**, que muitos relógios seguram um tempo enquanto a carga de verdade
+   já está caindo.
+3. **O cadastro é o ponto de partida.** O decaimento (ou a autonomia) do cadastro entra na conta como o valor esperado, com uma
+   folga de metade dele. Com poucas leituras, o gasto fica perto do cadastro; com muitas, as leituras mandam. E, quando as
+   leituras não separam o uso do guardado (só leituras com o relógio guardado, por exemplo), o gasto que elas não medem fica
+   o do cadastro.
+
+O resultado desses dois motores vem com a **incerteza** (± um desvio padrão): *22,09% ± 1,48 por dia de uso* quer dizer que o
+gasto em uso está, com boa chance, entre 20,6% e 23,6%. Ela diminui conforme entram leituras.
+
+Na tabela **Medições do gasto** (em **Carga ao longo do tempo**), cada medição mostra a marcação das duas leituras (*em uso →
+em uso*) e diz se entra na conta: *sim*; *em parte: pesa 31%*, com a leitura que não bate bem com as outras (*a leitura de
+100% não bate bem com as outras: a conta erra 4,5 pontos nela*); ou *não* (fora da janela, tirada da conta, as duas leituras
+marcadas de jeitos diferentes no motor 3, ou o motor 4). A mensagem da leitura também avisa quando a leitura nova não bate com
+as outras. Cada linha tem o botão **Tirar da conta** (ou **Pôr na conta**), para quando você sabe de algo que o sistema não
+sabe: a medição sai ou volta sem apagar nada (vale nos motores 1, 2, 3 e 5).
 
 Ao informar a carga, você diz como o relógio estava na hora da leitura: no quadro **Marcar**, **Informar leitura de carga em
 uso** (no pulso) ou **Informar leitura de carga em repouso** (guardado); no aviso *Informar a carga* da página Hoje, os botões
-**Em uso** e **Em repouso**. Para o gasto, o que conta continua sendo o intervalo até a leitura anterior, dividido pelas
-marcações minuto a minuto: uma leitura às 22h05, depois de um dia inteiro no pulso, mede quase só o gasto em uso; a de 7h05 do
-dia seguinte mede a noite desligado. O que você diz serve de conferência. Se o sistema tinha o relógio de outro jeito nesse
-instante (o horário de uso pôs ele no pulso sozinho, mas ele ficou guardado; ou faltou um *Pôs*), as marcações do intervalo
-estavam erradas: a medição fica **só no histórico**, sem bagunçar o gasto, e a mensagem diz o que não bateu. Com a caixa
-**Tirar do pulso na hora da leitura** (ou **Pôr no pulso na hora da leitura**), que aparece marcada quando não bate, o pulso
-passa a bater dali em diante. Se a leitura é de antes da última marcação do pulso, o pulso fica como está: acerte em
-**Corrigir ou excluir uma marcação**.
+**Em uso** e **Em repouso**. **A marcação fica gravada na leitura** (a coluna `estado`; nas leituras de antes, e nas que um
+script lança sem dizer, vale o que o pulso registrado dizia naquele instante). Ela é o que o motor 3 usa, e serve de
+conferência para os outros. Se o sistema tinha o relógio de outro jeito nesse instante (o horário de uso pôs ele no pulso
+sozinho, mas ele ficou guardado; ou faltou um *Pôs*), a tela pergunta antes de gravar: *O sistema tem ele no pulso agora.
+Gravar a leitura como em repouso mesmo assim?* **Continuar** grava como você marcou (pela API, a resposta vem com
+`confirmar: true` e a pergunta, e o lançamento só grava de novo com `confirmar=1`); nada é impedido, e o pulso registrado não
+muda: se ele estava errado, acerte em **Corrigir ou excluir uma marcação**. O quadro **Corrigir** também muda a marcação de
+uma leitura que já está gravada.
 
 Os dois gastos ficam no quadro **Gasto da bateria**, na ficha do relógio:
 
-- **No pulso** e **Fora do pulso (desligado)**: o gasto que vale na conta, em negrito, e de onde ele vem (medido, com o do
-  cadastro ao lado para comparar, ou só do cadastro, quando ainda não há medição).
+- **Calculado por**: o motor que fez a conta e de onde veio a escolha (a coleção, o relógio, o grupo, ou o padrão).
+- **No pulso** e **Fora do pulso (desligado)**: o gasto que vale na conta, em negrito, com a incerteza (± ..., nos motores 2 e
+  3), e de onde ele vem (medido, com o do cadastro ao lado para comparar, ou só do cadastro, quando ainda não há medição ou
+  o motor é o 4).
 - Embaixo de cada um, **no cadastro**: os campos de onde sai o gasto do cadastro (o *Decaimento em uso*, a *Autonomia em uso
   real*, o *Decaimento guardado*), com o valor e se foi informado ou é o padrão.
 - **Nos 90 dias antes desses**: os dois gastos medidos na janela anterior. É a comparação que mostra a bateria envelhecendo:
@@ -384,7 +436,8 @@ fórmulas do gasto (*taxa_uso*, *taxa_repouso*), o medido e o do cadastro. E cad
 longo do tempo › Medições do gasto**.
 
 As medições mais velhas que a janela saem da conta sozinhas. Por isso o ajuste ao envelhecimento é automático: não é preciso
-mexer no cadastro. O "Decaimento em uso" e o "Decaimento guardado" do cadastro só valem enquanto não há medição.
+mexer no cadastro. O "Decaimento em uso" e o "Decaimento guardado" do cadastro só valem enquanto não há medição (ou sempre, no
+motor 4).
 
 ---
 
@@ -471,7 +524,7 @@ cadastro, não código: dá para mudar tudo na página **Cadastros**, e criar os
 | **Grupo** | o lugar dele na árvore. Decide os campos, as fórmulas (a "carga" de um smartwatch é a bateria; a de um mecânico, a reserva de marcha) e os avisos que ele recebe. |
 | **Situação na coleção** | **Na coleção** (o de sempre), **Desejado** (a lista de desejos: ainda não é seu), **Emprestado** (é seu, mas está com outra pessoa), **Vendido** ou **Arquivado**. Só o que está na coleção entra no rodízio: nas outras situações o relógio fica indisponível (o banco garante: a regra `ck_relogio_posse_disponivel`), sai do sorteio, da escala e dos avisos, e, ao sair da coleção, as sessões abertas dele (no pulso, no sol, no carregador) fecham na hora e os dias dele no plano de amanhã em diante saem e são sorteados de novo (hoje fica, mas ele não vai mais ao pulso sozinho: troque no **trocar por…**). A ficha, os documentos e o histórico ficam. O emprestado continua na tabela da página Hoje (com o estado **Emprestado**) e no valor da coleção; o desejado, o vendido e o arquivado saem da tabela e aparecem na página **Desejos** (e no seletor da ficha, em **Fora da coleção**). Voltando para **Na coleção**, ele volta disponível. Veja [A lista de desejos](#a-lista-de-desejos). |
 | **Disponível** | desmarcado, ele sai do rodízio e dos avisos (no conserto, numa pausa), mas o histórico fica. Fora da coleção, fica sempre desmarcado (e o campo some do cadastro). |
-| **Guardar no banco a cópia de todos os documentos dele** | marcada, todo arquivo do relógio (o manual, a nota, as fotos, os vídeos) vai também para o banco, como cópia de segurança. Só aparece quando o `config.php` não decide por todos (sem o `DOCUMENTOS_COPIA_BANCO`). Veja [Os documentos do relógio](#os-documentos-do-relógio): é o segundo dos três níveis da cópia. |
+| **Guardar no banco a cópia de todos os documentos dele** | marcada, todo arquivo do relógio (o manual, a nota, as fotos, os vídeos) vai também para o banco, como cópia de segurança. Só aparece quando a Configuração da coleção não decide por todos (**Cópia dos documentos no banco** vazia). Veja [Os documentos do relógio](#os-documentos-do-relógio): é o segundo dos três níveis da cópia. |
 | **Foto** | só para a tela. No detalhe do relógio (o painel, ou a ficha), parando o mouse em cima da foto aparece um resumo dele (o nome, o grupo e o código; o estado e a carga; a nota e o próximo dia no rodízio; a compra) e a lembrança do duplo clique. **Duplo clique** nela, ou o botão **Abrir foto** embaixo, abre a foto numa janela flutuante, no tamanho dela (só no detalhe: nas outras fotos, como a do *Hoje é dia de* e as miniaturas da lista, o clique abre o relógio); a que é maior que a tela aparece em escala, sem deformar, no maior tamanho que cabe no monitor (e na janela do navegador), com o tamanho real e a escala embaixo. Fecha com o ×, com um clique fora ou com Esc. |
 | **Acessórios** | as pulseiras, a caixa, o estojo, as ferramentas, o carregador, as peças: o quadro **Acessórios** do painel mostra os dele (o tipo, o nome e a observação), e a página **Acessórios** cadastra e muda (um acessório pode ser de um relógio ou solto, servindo a vários). |
 | **Documentos** | o manual, a nota fiscal (em PDF e em XML), as fotos de recordação, os vídeos e o que mais for. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
@@ -523,13 +576,15 @@ cron registra quantos são.
 
 | Nível | Onde se escolhe | O que faz |
 |---|---|---|
-| 1. **O sistema** | o `DOCUMENTOS_COPIA_BANCO` do `config.php` | `true`: **todo** arquivo, de todo relógio, vai também para o banco. `false`: **nenhum** vai (nem o que o relógio ou o arquivo pedem). Sem a linha: quem decide são os dois níveis de baixo. |
+| 1. **A coleção** | **Cópia dos documentos no banco**, na Configuração (`documentos_copia`) | **Todos os arquivos**: **todo** arquivo, de todo relógio da coleção, vai também para o banco. **Nenhum arquivo**: **nenhum** vai (nem o que o relógio ou o arquivo pedem). *Conforme o relógio e o arquivo* (vazio): quem decide são os dois níveis de baixo. |
 | 2. **O relógio** | a caixa **Guardar no banco a cópia de todos os documentos dele**, no cadastro do relógio (ou o botão **Guardar todos os dele no banco**, na página Documentos dele) | marcada, todo arquivo daquele relógio vai para o banco, os que já estavam e os que vierem. |
 | 3. **O arquivo** | a caixa **Guardar a cópia destes arquivos também no banco**, no envio, ou **Guardar a cópia deste arquivo no banco**, em editar | só aquele arquivo vai para o banco. |
 
-**A tela só mostra a escolha de quem decide:** com o `DOCUMENTOS_COPIA_BANCO` no `config.php` (`true` ou `false`), não aparece
-nem a caixa do relógio nem a dos arquivos (a página Documentos só diz o que o `config.php` manda); com o relógio guardando
-todos, não aparece a caixa dos arquivos dele (nem no envio, nem em editar), só o botão **Só os marcados**, para voltar.
+**A tela só mostra a escolha de quem decide:** com a Configuração decidindo (todos ou nenhum), não aparece nem a caixa do
+relógio nem a dos arquivos (a página Documentos só diz o que a Configuração manda); com o relógio guardando todos, não aparece
+a caixa dos arquivos dele (nem no envio, nem em editar), só o botão **Só os marcados**, para voltar. Cada dono escolhe para a
+coleção dele: o `DOCUMENTOS_COPIA_BANCO` do `config.php`, que valia para o servidor inteiro, não vale mais (se ainda está lá, a
+Configuração avisa).
 
 Marcou num nível e o arquivo ainda não tem a cópia: no envio e em editar ela vai na hora; ao marcar o relógio, o cron copia os
 arquivos dele aos poucos. Desmarcou e ninguém mais pede: em editar a cópia sai na hora, e pelo relógio o cron a tira aos poucos;
@@ -537,7 +592,7 @@ arquivos dele aos poucos. Desmarcou e ninguém mais pede: em editar a cópia sai
 documentos que já tinham a cópia antes da migração v17 ficaram marcados no próprio arquivo: nada saiu do banco.
 
 O banco cresce o tamanho dos arquivos copiados: um vídeo de 500 MB são 500 MB a mais no banco e no backup dele. Na página, cada
-arquivo diz onde está (só na pasta, na pasta e no banco, fora da pasta) e quem pediu a cópia (o `config.php`, o relógio ou o
+arquivo diz onde está (só na pasta, na pasta e no banco, fora da pasta) e quem pediu a cópia (a Configuração, o relógio ou o
 próprio arquivo).
 
 **A limpeza, pelo cron (a cada minuto):** o arquivo que sumiu da pasta volta do banco; o documento que tem a cópia pedida e
@@ -601,6 +656,7 @@ no carregador (a sessão **No carregador**). Sem nenhuma leitura, a carga fica d
 | **Autonomia em uso real** (dias) `autonomia_dias` | 5 | Quantos **dias de uso** a bateria cheia aguenta no seu uso de verdade (não o do fabricante). Dá o gasto em uso: 100 ÷ autonomia. Com 1,5 dia, o gasto é 66,7% por dia de uso. Também decide quantos dias seguidos ele fica na escala inteligente (o que a bateria aguenta, de 1 a 7). |
 | **Decaimento em uso** (% por dia) `decaimento_uso` | 100 ÷ autonomia | O gasto em uso, direto. Preenchido, vale no lugar da conta pela autonomia. |
 | **Decaimento guardado** (% por dia) `decaimento_repouso` | 0,1 | Quanto ele perde desligado na gaveta. |
+| **Como calcular o gasto da bateria** `gasto_motor` | o do grupo | Qual dos cinco motores do [gasto medido](#gasto-medido-pelas-leituras) faz a conta deste relógio (`horas`, `robusto`, `marcacao`, `cadastro` ou `formulas`). Vazio: o padrão do campo (o grupo), senão `horas`. A escolha da Configuração, quando feita, vale por cima. |
 | **No carregador: horas para encher, de vazio** (h) `carga_carregador_horas` | 2 | Quantas horas no carregador levam de 0 a 100%. Cada hora na sessão *No carregador* soma 100 ÷ 2 = 50%, até 100%. Quando enche, vence o aviso **Tirar do carregador**. Ao tirar, uma leitura de carga acerta a conta (ela manda). |
 
 Dois detalhes que mudam a conta:
@@ -805,7 +861,11 @@ A página **Configuração** guarda as opções **da coleção** (cada coleção
 | **Limite da previsão** (`previsao_limite`) | a carga (%) que a previsão do smartwatch usa para "chega ao limite em...". De 0 a 100. Padrão: 20. |
 | **Garantia de rodízio** (`max_sem_uso`) | nenhum relógio passa mais que esses dias sem uso: o que passa entra na frente de todos. 0 desliga. Padrão: 21. |
 | **Aviso Encostado: dias sem ir ao pulso** (`encostado_dias`) | depois de quantos dias sem ir ao pulso um relógio da coleção ganha o aviso **Encostado** (em **Hoje é dia de**: *Encostado*, *"o limite de dias sem ir ao pulso vence há 2d, 11/10/2026 18:00"*). De 1 a 3650. Padrão: 30. O aviso se desliga em **Cadastros › Avisos**. |
-| **Gasto medido: os últimos dias** (`medicao_janela_dias`) | a janela do [gasto medido pelas leituras](#gasto-medido-pelas-leituras): as medições mais velhas saem da conta. De 1 a 3650. Padrão: 90. |
+| **Gasto da bateria: como calcular** (`gasto_motor`) | qual dos cinco motores do [gasto medido pelas leituras](#gasto-medido-pelas-leituras) faz a conta, para todos os relógios da coleção: **1. Pelas horas registradas (o motor original)**, **2. ... (robusto)**, **3. Pela marcação: duas taxas separadas**, **4. Só o cadastro** ou **5. Pelas fórmulas do cadastro**. Padrão: vazio (*Conforme o relógio e o grupo*: o campo **Como calcular o gasto da bateria** de cada relógio, senão o padrão dele, senão o motor 1). |
+| **Gasto medido: contar por** (`medicao_base`) | o que entra na conta do gasto medido: **Dias** (`dias`, as medições dos últimos tantos dias) ou **Leituras** (`leituras`, as últimas tantas medições de cada tipo, em uso e em repouso). Padrão: dias. |
+| **Gasto medido: média dos últimos (dias)** (`medicao_janela_dias`) | a janela do gasto medido, contando por dias: as medições mais velhas saem da conta. De 1 a 3650. Padrão: 90. |
+| **Gasto medido: últimas leituras (de cada tipo)** (`medicao_janela_leituras`) | a janela contando por leituras: quantas medições de cada tipo entram. De 2 a 1000. Padrão: 20. |
+| **Cópia dos documentos no banco** (`documentos_copia`) | para a coleção inteira: **Todos os arquivos** (`todos`), **Nenhum arquivo** (`nenhum`) ou vazio (*Conforme o relógio e o arquivo*). É o primeiro dos três níveis da cópia (veja [Os documentos do relógio](#os-documentos-do-relógio)). Padrão: vazio. |
 | **Endereço do sistema** (`url_sistema`) | o endereço que a âncora `{link}` põe nas mensagens e na agenda, e o dos links dos e-mails, do ICS e do retorno do Outlook. É do sistema inteiro: só o master muda. Padrão: vazio (o endereço por onde a página foi aberta). |
 | **Próximos dias: mostrar até** (`proximos_por_pagina`) e **Plano: mostrar até** (`plano_por_pagina`) | quantos dias os **Próximos dias** da página Hoje e o **Dia a dia** da página Plano mostram de cada vez (de 1 a 366). Passando disso, embaixo aparece o navegador das páginas: **<** (anterior), os números (a primeira, a última e até duas de cada lado da atual, com … nos saltos) e **>** (próxima); parando o mouse em cima, a dica diz *Anterior*, *Próximo* ou *Página N*. Padrão: 7 e 31. |
 | **Idioma padrão** (`idioma`) | o idioma da coleção: o das telas para quem não escolheu o seu (no seletor do menu ou em **Minha conta**; veja [Os idiomas](#os-idiomas)) e o das mensagens e das agendas sem idioma próprio: português, inglês, chinês, hindi, espanhol ou francês. Padrão: o de quem criou a coleção. |
@@ -1150,7 +1210,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `relogio` | `salvar` (criar ou alterar), `excluir` (com os documentos), `foto`, `remover_foto` |
 | `documentos` | `enviar` (um ou vários arquivos, com a categoria, o título, a data, a descrição e, numa foto, a miniatura), `alterar`, `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (só sem documentos) |
-| `lancamento` | `lancar` (corda, carga, pilha...), `iniciar` e `encerrar` (pôr e tirar do pulso, do winder, do sol, do carregador), `alternar` (fecha a sessão se está aberta, abre se está fechada: um botão só no celular), `periodo` (um período que já passou), `alterar`, `excluir`. Em todas, `relogio_id=hoje` é o relógio do dia |
+| `lancamento` | `lancar` (corda, carga, pilha...), `iniciar` e `encerrar` (pôr e tirar do pulso, do winder, do sol, do carregador), `alternar` (fecha a sessão se está aberta, abre se está fechada: um botão só no celular), `periodo` (um período que já passou), `alterar`, `excluir`, `medicao` (uma medição do gasto entra ou sai da conta: `id`, `usada` 1 ou 0). Em todas, `relogio_id=hoje` é o relógio do dia |
 | `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `periodo` (os relógios de um período, na ordem: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (apaga os dias do período e o modo monta de novo; só `de`: até o fim do plano; só `ate`: de amanhã até ele), `periodo_livre` (apaga e deixa os dias livres, sem sorteio; as mesmas datas), `manual` (o Rodízio manual: `de`, `ate`, `dias[AAAA-MM-DD]` = o id do relógio, `auto` ou `livre`), `apagar_tudo` (toda a programação de amanhã em diante sai; `hoje=1`: de hoje em diante; o modo monta o plano de novo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (grupos) e `relogios` (o grupo de cada relógio) |
@@ -1337,7 +1397,6 @@ pessoas entram pelo **Criar conta** (`cadastro.php`), por um convite seu, ou o m
 | `VAPID_PUBLICA`, `VAPID_PRIVADA`, `VAPID_ASSUNTO` | o Web Push: o par de chaves (o master gera em **Minha conta**) e o assunto (`mailto:...`) |
 | `OUTLOOK_CLIENTE_ID`, `OUTLOOK_CLIENTE_SEGREDO` | o aplicativo registrado na Microsoft, para as agendas do Outlook (veja abaixo) |
 | `DOCUMENTOS_PASTA` | a pasta dos arquivos dos documentos (o manual, a nota, fotos, vídeos), **fora da pasta publicada**, com permissão de escrita para o usuário do PHP. Sem ela, a página Documentos avisa que falta e não aceita envios. Ex.: `define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
-| `DOCUMENTOS_COPIA_BANCO` | opcional: a cópia de segurança dos documentos dentro do banco, para o sistema inteiro. `true`: todo arquivo vai também para o banco; `false`: nenhum vai; sem ela: cada relógio e cada arquivo decidem. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 | `BACKUP_PASTA`, `BACKUP_MANTER`, `BACKUP_DOCUMENTOS` | opcionais: a cópia de segurança do banco (veja [Cópia de segurança](#cópia-de-segurança)). A pasta, **fora da pasta publicada** (sem ela, não há cópia automática); quantas ficam (padrão 7); e se leva o conteúdo dos documentos guardado no banco (padrão: não). |
 | `BACKUP_ATIVO` | opcional: `false` desliga a cópia de segurança: sem cópia automática, sem **Fazer uma cópia agora** e sem o quadro **Cópia de segurança** na Configuração (nem o aviso de que falta a pasta). Sem ela: ligada |
 | `DOCUMENTOS_LIMITE` | opcional: o maior documento aceito, em bytes. Sem ela, 100 MB (`104857600`); `0` ou `-1`, sem limite do sistema. O `MANUAL_LIMITE`, o nome antigo, ainda vale quando ela não existe. O limite do PHP e o do nginx continuam valendo (veja [O tamanho dos envios](#o-tamanho-dos-envios-os-documentos)). Ex.: `define("DOCUMENTOS_LIMITE", 524288000);` para 500 MB |

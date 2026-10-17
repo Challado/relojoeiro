@@ -73,9 +73,26 @@ function recarregarConfig(aplicadas) {
         var limites = cartao(t("Limites e contas"), el("div", {"class": "campos"},
           parCampo(t("Carregar quando a carga chegar a (%)"), numero("carga_limiar", cfg("carga_limiar") !== "" ? cfg("carga_limiar") : "20", "1", "99"))
           + parCampo(t("Solar: pôr no sol quando chegar a (%)"), numero("sol_limiar", cfg("sol_limiar") !== "" ? cfg("sol_limiar") : "70", "1", "99"))
+          // como calcular o gasto da bateria: a escolha da coleção vale por todos os relógios; vazia, valem o relógio e o grupo
+          // (o campo do cadastro "Como calcular o gasto da bateria")
+          + parCampo(t("Gasto da bateria: como calcular"), el("select", {"name": "gasto_motor"}, el("option", {"value": "", "selected": ["horas", "robusto", "marcacao", "cadastro", "formulas"].indexOf(cfg("gasto_motor")) < 0}, t("Conforme o relógio e o grupo (o cadastro)"))
+            + el("option", {"value": "horas", "selected": cfg("gasto_motor") === "horas"}, t("1. Pelas horas registradas (o motor original)"))
+            + el("option", {"value": "robusto", "selected": cfg("gasto_motor") === "robusto"}, t("2. Pelas horas registradas, com leituras e cadastro (robusto)"))
+            + el("option", {"value": "marcacao", "selected": cfg("gasto_motor") === "marcacao"}, t("3. Pela marcação: duas taxas separadas"))
+            + el("option", {"value": "cadastro", "selected": cfg("gasto_motor") === "cadastro"}, t("4. Só o cadastro"))
+            + el("option", {"value": "formulas", "selected": cfg("gasto_motor") === "formulas"}, t("5. Pelas fórmulas do cadastro"))))
+          // o gasto medido conta as medições dos últimos dias ou as últimas leituras de cada tipo (em uso e em repouso)
+          + parCampo(t("Gasto medido: contar por"), el("select", {"name": "medicao_base"}, el("option", {"value": "dias", "selected": cfg("medicao_base") !== "leituras"}, t("Dias (os últimos dias)"))
+            + el("option", {"value": "leituras", "selected": cfg("medicao_base") === "leituras"}, t("Leituras (as últimas de cada tipo)"))))
           + parCampo(t("Gasto medido: média dos últimos (dias)"), numero("medicao_janela_dias", cfg("medicao_janela_dias") !== "" ? cfg("medicao_janela_dias") : "90", "1", "3650"))
-          + parCampo(t("Aviso Encostado: dias sem ir ao pulso"), numero("encostado_dias", cfg("encostado_dias") !== "" ? cfg("encostado_dias") : "30", "1", "3650"))),
-          el("p", {"class": "nota"}, t("O limite de carga de um relógio (no cadastro dele) vale no lugar do geral. Medições do gasto mais velhas que a janela saem da média. ")
+          + parCampo(t("Gasto medido: últimas leituras (de cada tipo)"), numero("medicao_janela_leituras", cfg("medicao_janela_leituras") !== "" ? cfg("medicao_janela_leituras") : "20", "2", "1000"))
+          + parCampo(t("Aviso Encostado: dias sem ir ao pulso"), numero("encostado_dias", cfg("encostado_dias") !== "" ? cfg("encostado_dias") : "30", "1", "3650"))
+          // a cópia dos documentos no banco: a escolha da coleção vale sobre o relógio e o arquivo (antes era o config.php)
+          + parCampo(t("Cópia dos documentos no banco"), el("select", {"name": "documentos_copia"}, el("option", {"value": "", "selected": cfg("documentos_copia") !== "todos" && cfg("documentos_copia") !== "nenhum"}, t("Conforme o relógio e o arquivo"))
+            + el("option", {"value": "todos", "selected": cfg("documentos_copia") === "todos"}, t("Todos os arquivos"))
+            + el("option", {"value": "nenhum", "selected": cfg("documentos_copia") === "nenhum"}, t("Nenhum arquivo"))))),
+          el("p", {"class": "nota"}, t("O limite de carga de um relógio (no cadastro dele) vale no lugar do geral. O gasto da bateria tem cinco motores (veja a Ajuda); a escolha aqui vale para todos os relógios da coleção, e vazia valem a do relógio e a do grupo (o campo \"Como calcular o gasto da bateria\" do cadastro). O gasto medido conta as medições dos últimos dias ou as últimas leituras de cada tipo (em uso e em repouso), conforme o \"contar por\"; as de fora saem da conta. A cópia dos documentos no banco escolhida aqui vale sobre o relógio e o arquivo. ")
+            + (d.config_php_copia !== null ? el("strong", {"class": "em atrasado"}, t("O config.php ainda define DOCUMENTOS_COPIA_BANCO, que não vale mais: a cópia dos documentos é escolhida aqui, por coleção. ")) : "")
             + t("Um relógio da coleção que passa do limite de dias sem ir ao pulso ganha o aviso <strong>Encostado</strong> (desliga na página Avisos).")));
         var tela = cartao(t("Telas"), el("div", {"class": "campos"},
           parCampo(t("Idioma padrão (quem não escolheu outro no menu)"), el("select", {"name": "idioma"}, d.linguas.map(function (l) {

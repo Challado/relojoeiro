@@ -50,14 +50,23 @@ function linha_legivel($l)
 }
 
 // As medições do gasto de um relógio para a resposta (todas, da mais recente para a mais antiga), dizendo se cada uma entra
-// na média agora (usada e dentro da janela da Configuração)
+// na conta agora (usada e dentro da janela da Configuração) e, da leitura dela que menos bate com as outras, o valor, o
+// peso na conta (0 a 1) e o quanto a conta erra nela (em pontos); fora: essa leitura pesa menos da metade
 function medicoes_legivel($id)
 {
-    $limite = time() - max(1, (int)cfg("medicao_janela_dias")) * 86400;
-    return array_map(function ($m) use ($limite) {
-        return ["id" => (int)$m["id"], "lancamento_id" => (int)$m["lancamento_id"], "medida" => $m["medida"], "taxa" => (float)$m["taxa"], "de_valor" => (float)$m["de_valor"],
+    [$usadas, $marc] = medicoes_da_conta((int)$id);
+    $r = linha("SELECT * FROM relogio WHERE id = ?", [(int)$id]);
+    $motor = $r ? gasto_motor_de($r)[0] : "horas";
+    $g = gasto_medido($usadas, time(), $r ? gasto_prior($r, time()) : null, $motor === "formulas" ? "marcacao" : $motor);
+    return array_map(function ($m) use ($g, $marc, $motor) {
+        $mid = (int)$m["id"];
+        return ["id" => $mid, "lancamento_id" => (int)$m["lancamento_id"], "medida" => $m["medida"], "taxa" => (float)$m["taxa"], "de_valor" => (float)$m["de_valor"],
             "ate_valor" => (float)$m["ate_valor"], "inicio" => $m["inicio"], "fim" => $m["fim"], "horas_pulso" => (float)$m["horas_pulso"], "horas_guardado" => (float)$m["horas_guardado"],
-            "peso_horas" => (float)$m["peso_horas"], "usada" => (int)$m["usada"] === 1, "na_media" => (int)$m["usada"] === 1 && strtotime($m["fim"]) > $limite, "criado" => $m["criado"]];
+            "peso_horas" => (float)$m["peso_horas"], "usada" => (int)$m["usada"] === 1, "na_media" => $motor !== "cadastro" && in_array($mid, $g["usadas"], true),
+            "peso" => $g["peso"][$mid] ?? null, "leitura_fraca" => $g["leitura"][$mid] ?? null, "fora" => in_array($mid, $g["fora"], true),
+            "erro" => $g["erro"][$mid] ?? null, "criado" => $m["criado"],
+            // as marcações das duas leituras (uso ou repouso) e se elas deixam a medição entrar (iguais)
+            "marcacao_de" => $marc[$mid]["de"] ?? null, "marcacao_ate" => $marc[$mid]["ate"] ?? null, "marcacoes_iguais" => $marc[$mid]["entra"] ?? null];
     }, linhas("SELECT m.* FROM medicao m JOIN lancamento l ON l.id = m.lancamento_id WHERE l.relogio_id = ? ORDER BY m.fim DESC, m.id DESC", [(int)$id]));
 }
 

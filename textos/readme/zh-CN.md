@@ -1,4 +1,4 @@
-<!-- origem: b50df19a55870230ddfb31d32797879fcffc5774 -->
+<!-- origem: 95ee8aa87fbd195eea8811d907c87af0ddc9ddfc -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -148,7 +148,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `relogio` | `salvar`（创建或修改）、`excluir`（连同文档）、`foto`、`remover_foto` |
 | `documentos` | `enviar`（一个或多个文件，带类别、标题、日期、描述，照片还带缩略图）、`alterar`、`excluir` |
 | `documento_categorias` | `nova`、`alterar`、`excluir`（仅在没有文档时） |
-| `lancamento` | `lancar`（上链、电量、电池……）、`iniciar` 和 `encerrar`（戴上和取下手腕、上链盒、晒太阳、充电器）、`alternar`（时段打开时关闭，关闭时打开：手机上一个按钮就够）、`periodo`（已经过去的一段时间）、`alterar`、`excluir`。所有操作中，`relogio_id=hoje` 都表示当天的手表 |
+| `lancamento` | `lancar`（上链、电量、电池……）、`iniciar` 和 `encerrar`（戴上和取下手腕、上链盒、晒太阳、充电器）、`alternar`（时段打开时关闭，关闭时打开：手机上一个按钮就够）、`periodo`（已经过去的一段时间）、`alterar`、`excluir`、`medicao`（把一次消耗测量放入或移出计算：`id`，`usada` 为 1 或 0）。所有操作中，`relogio_id=hoje` 都表示当天的手表 |
 | `rodizio` | `usando`（我今天戴的是这块）、`trocar_dia`（某一天的手表）、`periodo`（一个时段的手表，按顺序：`de`、`ate`、`relogio_ids[]`、`dias_cada`）、`periodo_sortear`（删除时段内的日子，由模式重新安排；只填 `de`：到计划结束；只填 `ate`：从明天到它）、`periodo_livre`（清除并让这些天保持空闲，不抽选；日期规则相同）、`manual`（手动轮换：`de`、`ate`、`dias[YYYY-MM-DD]` = 手表 id、`auto` 或 `livre`）、`apagar_tudo`（清除从明天起的全部安排；`hoje=1`：从今天起；模式会重新生成计划）、`resortear`、`resortear_hoje`、`proxima_semana`、`modo`（更换模式） |
 | `modos` | `salvar`、`ativar`、`excluir` |
 | `arvore` | `novo`、`renomear`、`mover`、`ordem`、`excluir`（分组）以及 `relogios`（每块手表的分组） |
@@ -304,7 +304,6 @@ php criar_usuario.php 你的登录名
 | `VAPID_PUBLICA`、`VAPID_PRIVADA`、`VAPID_ASSUNTO` | Web Push：密钥对（master 在**我的账户**中生成）和主题（`mailto:...`） |
 | `OUTLOOK_CLIENTE_ID`、`OUTLOOK_CLIENTE_SEGREDO` | 在 Microsoft 注册的应用，用于 Outlook 日历（见下文） |
 | `DOCUMENTOS_PASTA` | 文档文件（说明书、发票、照片、视频）的文件夹，**位于发布文件夹之外**，PHP 用户可写。没有它，文档页面会提示缺少并且不接受上传。例如：`define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
-| `DOCUMENTOS_COPIA_BANCO` | 可选：在数据库中为文档保留备份，对整个系统生效。`true`：每个文件也都存入数据库；`false`：都不存；没有它：由每块手表和每个文件自己决定。参见[手表的文档](#os-documentos-do-relógio)。 |
 | `BACKUP_PASTA`、`BACKUP_MANTER`、`BACKUP_DOCUMENTOS` | 可选：数据库备份（参见[备份](#cópia-de-segurança)）。文件夹，**位于发布文件夹之外**（没有它就没有自动备份）；保留多少份（默认 7）；以及是否包含存放在数据库中的文档内容（默认：不包含）。 |
 | `BACKUP_ATIVO` | 可选：`false` 关闭备份：没有自动备份，没有**立即备份**，设置中也没有**备份**框（连缺少文件夹的警告也没有）。没有它：开启 |
 | `DOCUMENTOS_LIMITE` | 可选：接受的最大文档大小，以字节为单位。没有它为 100 MB（`104857600`）；`0` 或 `-1` 表示系统不设限制。旧名称 `MANUAL_LIMITE` 在它不存在时仍然有效。PHP 和 nginx 的限制仍然生效（参见[上传大小](#o-tamanho-dos-envios-os-documentos)）。例如：`define("DOCUMENTOS_LIMITE", 524288000);` 表示 500 MB |

@@ -87,11 +87,10 @@ define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");
 // também o limite do PHP (upload_max_filesize e post_max_size do php.ini) e o do nginx (client_max_body_size). O
 // MANUAL_LIMITE, o nome antigo, ainda vale quando esta linha não existe. Ex.: 524288000 = 500 MB
 // define("DOCUMENTOS_LIMITE", 524288000);
-// a cópia de segurança dos documentos dentro do banco, para o sistema inteiro: o arquivo vai para a pasta e também para o
-// banco (em pedaços de 4 MB); se um dia ele sumir da pasta (um backup do banco restaurado noutro servidor), volta sozinho
-// do banco. true: todo arquivo vai, de todo relógio. false: nenhum vai (o banco fica menor). Sem esta linha: cada relógio
-// (no cadastro dele) e cada arquivo (no envio e em editar) decidem
-// define("DOCUMENTOS_COPIA_BANCO", true);
+// a cópia de segurança dos documentos dentro do banco (o arquivo vai para a pasta e também para o banco, em pedaços de 4 MB;
+// se um dia ele sumir da pasta, volta sozinho do banco) é escolhida por cada dono na Configuração da coleção dele (Cópia dos
+// documentos no banco: todos, nenhum, ou cada relógio e cada arquivo decidem). O DOCUMENTOS_COPIA_BANCO, que ficava aqui e
+// valia para o servidor inteiro, não vale mais: se ainda estiver definido, a Configuração avisa
 
 // a cópia de segurança do banco: uma por dia, na rodada da noite do cron, nesta pasta do servidor (fora da pasta
 // publicada, com escrita para o PHP); sem esta linha, não há cópia automática. Ficam as BACKUP_MANTER mais novas (sem a

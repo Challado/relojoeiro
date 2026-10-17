@@ -349,48 +349,102 @@ un relevé différent de celui prévu, le plan se corrige.
 
 ### Consommation mesurée par les relevés
 
-La fiche de la smartwatch dit « tient 5 jours ». La réalité n'est pas d'accord, et elle change à mesure que la batterie
-vieillit. C'est pourquoi **chaque relevé de charge que vous saisissez est comparé au précédent**, et l'intervalle entre les
-deux devient une mesure : de combien elle a baissé, combien d'heures elle a passé au poignet et combien hors du poignet
-(rangée, éteinte). L'horaire de port de la Configuration compte comme poignet à lui seul, et vos marquages (*Mise au
-poignet*, *Retirée du poignet*) priment.
+La fiche de la smartwatch dit « tient 5 jours ». La réalité n'est pas d'accord, et change à mesure que la batterie vieillit.
+C'est pourquoi **chaque relevé de charge que vous saisissez est comparé au précédent**, et l'intervalle entre les deux devient
+une mesure : de combien elle a baissé, combien d'heures elle a passées au poignet et combien hors du poignet (rangée, éteinte),
+et comment vous avez marqué chaque relevé (en usage ou au repos). Les heures d'usage de la Configuration comptent comme
+poignet d'elles-mêmes, et vos marquages (*Mis*, *Retiré*) font foi. Une hausse du relevé est une recharge : un nouveau
+tronçon commence. Et un intervalle avec une autre session au milieu (la montre est allée au chargeur) ne mesure pas non
+plus : la mesure ne sait séparer que poignet et rangé.
 
-Chaque mesure est une équation à deux consommations inconnues :
+**Comment transformer les mesures en les deux consommations (au poignet et hors du poignet) est votre choix : il y a cinq
+moteurs.** Tous restent dans le système ; aucun n'efface rien, et changer de moteur ne change que le calcul (les mesures sont
+les mêmes). Le choix se fait à trois endroits, et celui du haut prime sur ceux du bas :
+
+| Niveau | Où on le choisit | Ce qu'il fait |
+|---|---|---|
+| 1. **La collection** | **Consommation de la batterie : comment calculer**, dans la Configuration (`gasto_motor`) | vaut pour toutes les montres de la collection. Vide (*Selon la montre et le groupe*) : les deux niveaux du dessous décident. |
+| 2. **La montre** | le champ **Comment calculer la consommation de la batterie** (`gasto_motor`), sur la fiche de la montre | ne vaut que pour elle. Vide : celui du groupe. |
+| 3. **Le groupe** | la **valeur par défaut** de ce même champ (dans **Fiches › Champs** : le champ est à la racine, et vaut pour les montres de là où il est vers le bas) | vaut pour les montres qui n'ont pas choisi. Vide : le moteur 1. |
+
+Sur une montre sans relevé de charge (une mécanique, une solaire), le choix ne fait rien. Le cadre **Consommation de la
+batterie** dit quel moteur a fait le calcul et d'où vient le choix (*Calculé par : Par le marquage : deux taux séparés — le
+choix de la collection, dans la Configuration*).
+
+| Moteur | Ce qu'il fait |
+|---|---|
+| 1. **Par les heures enregistrées (le moteur d'origine)** (`horas`) | le défaut. Chaque mesure est découpée par les marquages de poignet minute par minute (tant d'heures au poignet, tant hors), et les deux consommations sortent ensemble de toutes les mesures de la fenêtre, chacune pesant le temps qu'elle couvre. C'est le calcul que le système a toujours fait. |
+| 2. **Par les heures enregistrées, avec relevés et fiche (robuste)** (`robusto`) | les mêmes heures, mais le calcul se fait sur les relevés, tous avec le même poids, celui qui ne colle pas avec les autres pèse moins et la fiche est le point de départ (les trois précautions ci-dessous). Donne l'incertitude (±). |
+| 3. **Par le marquage : deux taux séparés** (`marcacao`) | ce que vous marquez fait foi. Un relevé marqué **en usage** mesure la consommation au poignet : la baisse depuis le relevé précédent, divisée par le temps entier de l'intervalle (en jours d'usage). Un relevé marqué **au repos** mesure la consommation hors du poignet, de la même façon. Les deux calculs **ne se croisent jamais** : la consommation en usage ne sort que des relevés en usage, et celle au repos que de ceux au repos ; le poignet enregistré n'entre pas. Avec le calcul robuste de chaque côté (le relevé qui ne colle pas pèse moins ; la fiche est le point de départ), aussi avec l'incertitude. |
+| 4. **La fiche seulement** (`cadastro`) | la *Décroissance en usage* (ou l'*Autonomie réelle en usage*) et la *Décroissance rangée* de la fiche valent toujours. Les mesures continuent d'être faites et restent dans l'historique (le tableau **Mesures de la consommation**), mais n'entrent dans aucun calcul : `MEDIDO` donne vide. |
+| 5. **Par les formules de la fiche** (`formulas`) | ce que donnent les formules `taxa_uso` et `taxa_repouso` vaut, pour que vous montiez votre propre calcul dans **Fiches › Formules**. Dans celles-ci, `MEDIDO("uso")` et `MEDIDO("repouso")` sont le calcul du moteur 3, et les fonctions **LEITURAS**, **QUEDA**, **DIAS_MEDIDOS**, **MEDIA_TAXA**, **MEDIANA_TAXA** et **ULTIMA_TAXA** donnent les pièces des mesures par le marquage (combien, la somme des baisses, la somme des jours, la moyenne, la médiane et le dernier taux, de chaque type, dans les N derniers jours ou dans la fenêtre de la Configuration) : `MEDIANA_TAXA("uso")`, ou `PADRAO(QUEDA("uso"; 30) / DIAS_MEDIDOS("uso"; 30); decaimento_uso)`. Dans les autres moteurs les formules valent aussi (c'est d'elles que sort la consommation) ; la différence est que celui-ci dit : le calcul est le vôtre. |
+
+**Quelles mesures entrent** est un autre choix de la Configuration, **Consommation mesurée : compter par** : **jours** (les
+mesures des tant derniers jours, 90 par défaut) ou **relevés** (les tant dernières mesures de chaque type, en usage et au
+repos, 20 par défaut). Sans aucune dans la fenêtre, celles d'avant entrent. Vaut pour les moteurs 1, 2, 3 et 5 (et pour les
+fonctions des formules sans le N de jours).
+
+Entre deux recharges, la charge baisse en ligne droite avec le temps au poignet et le temps rangée :
 
 ```text
-baisse = jours d'usage × consommation en usage + jours hors du poignet × consommation hors du poignet
+relevé = charge du début − consommation en usage × jours d'usage − consommation rangée × jours rangée (+ l'erreur du relevé)
 ```
 
-Avec les mesures des derniers jours (90, dans la Configuration), le système trouve **les deux consommations ensemble** :
-celles qui expliquent le mieux toutes les baisses (moindres carrés, et chaque mesure pèse les heures qu'elle a couvertes).
-Une nuit entre deux relevés (seulement hors du poignet) fixe la consommation hors du poignet ; les jours au poignet, celle-ci
-étant connue, fixent la consommation en usage. Toute mesure d'une heure ou plus entre, même celle qui n'a pas baissé du tout
-(elle dit que la consommation est faible) : la courte, où l'arrondi du relevé (la montre affiche la charge en nombres entiers)
-pèse davantage, entre avec un faible poids. Plus il y a de relevés, plus c'est précis.
+Des relevés consécutifs, sans recharge entre eux, forment un **tronçon**. Chaque tronçon a sa charge de début (que le calcul
+découvre), et les deux consommations valent pour tous les tronçons. Dans le moteur 2, avec les relevés de la fenêtre, le
+système trouve **les deux consommations ensemble** : celles qui expliquent le mieux tous les relevés. Une nuit entre deux
+relevés (seulement hors du poignet) cale la consommation rangée ; les jours au poignet, celle-ci étant connue, calent la
+consommation en usage. Toute mesure de 1 heure ou plus entre, même celle sans aucune baisse (elle dit que la consommation est
+petite). Plus il y a de relevés, plus c'est précis. Dans le moteur 3 le même calcul est fait deux fois, une seule avec les
+relevés en usage et une seule avec ceux au repos.
 
-Quand les mesures ne séparent pas encore les deux (seulement des relevés avec la montre rangée, par exemple), c'est la moyenne
-des mesures de chaque consommation qui s'applique ; s'il n'y en a aucune dans les derniers jours, les précédentes. Les
-consommations mesurées remplacent celles de la fiche dans les prévisions, et l'historique montre la batterie qui s'essouffle
-avec le temps. Une hausse du relevé est une recharge : un nouveau point de départ, sans mesure. Et un intervalle avec une
-autre session au milieu (la montre est allée sur le chargeur) ne mesure pas non plus : la mesure ne sait séparer que poignet
-et rangée.
+Le calcul robuste (les moteurs 2 et 3) prend trois précautions, chacune avec une raison :
 
-En indiquant la charge, vous dites comment était la montre à l'heure de la lecture : dans le cadre **Marquer**, **Indiquer
-le relevé de charge en usage** (au poignet) ou **Indiquer le relevé de charge au repos** (rangée) ; dans l'alerte *Indiquer la
-charge* de la page Aujourd'hui, les boutons **En usage** et **Au repos**. Pour la consommation, ce qui compte reste
-l'intervalle jusqu'au relevé précédent, découpé par les marquages minute par minute : un relevé à 22 h 05, après une journée
-entière au poignet, mesure presque uniquement la consommation en usage ; celui de 7 h 05 le lendemain mesure la nuit éteinte.
-Ce que vous dites sert de vérification. Si le système avait la montre autrement à cet instant (l'horaire d'usage l'a mise au
-poignet tout seul, mais elle est restée rangée ; ou il manquait un *Mise*), les marquages de l'intervalle étaient faux : la
-mesure reste **seulement dans l'historique**, sans fausser la consommation, et le message dit ce qui ne correspondait pas.
-Avec la case **Retirer du poignet à l'heure de la lecture** (ou **Mettre au poignet à l'heure de la lecture**), qui apparaît
-cochée quand ça ne correspond pas, le poignet correspond à partir de là. Si le relevé est d'avant le dernier marquage du
-poignet, le poignet reste tel quel : corrigez dans **Corriger ou supprimer un marquage**.
+1. **Le calcul se fait sur les relevés, et tous pèsent pareil.** L'erreur vient du relevé : la montre affiche la charge en
+   nombres entiers, et son capteur se trompe aussi un peu. Cette erreur est la même dans un relevé fait 2 heures ou 2 semaines
+   après le précédent, donc aucun relevé ne vaut plus qu'un autre pour couvrir plus de temps. Et, comme le calcul regarde les
+   relevés (et non les baisses), un relevé faux est un seul point, au lieu de gâcher les deux baisses autour de lui.
+2. **Le relevé qui ne colle pas avec les autres pèse moins (régression robuste).** Après le calcul, le système voit de combien
+   il se trompe sur chaque relevé. L'erreur normale sort des relevés eux-mêmes (jamais moins d'un demi-point) ; le relevé qui
+   est bien plus loin que la normale se met à peser moins, et d'autant moins qu'il est loin, et le calcul se refait. Il n'est
+   pas jeté : il pèse seulement moins. Un cas courant : les **100 % juste après la charge**, que beaucoup de montres gardent un
+   moment alors que la vraie charge baisse déjà.
+3. **La fiche est le point de départ.** La décroissance (ou l'autonomie) de la fiche entre dans le calcul comme valeur
+   attendue, avec une marge de la moitié. Avec peu de relevés, la consommation reste près de la fiche ; avec beaucoup, les
+   relevés font foi. Et, quand les relevés ne séparent pas l'usage du rangé (seulement des relevés avec la montre rangée, par
+   exemple), la consommation qu'ils ne mesurent pas reste celle de la fiche.
+
+Le résultat de ces deux moteurs vient avec l'**incertitude** (± un écart-type) : *22,09 % ± 1,48 par jour d'usage* veut dire
+que la consommation en usage est, avec de bonnes chances, entre 20,6 % et 23,6 %. Elle diminue à mesure que des relevés
+entrent.
+
+Dans le tableau **Mesures de la consommation** (dans **Charge au fil du temps**), chaque mesure montre le marquage des deux
+relevés (*en usage → en usage*) et dit si elle entre dans le calcul : *oui* ; *en partie : pèse 31 %*, avec le relevé qui ne
+colle pas bien avec les autres (*le relevé de 100 % ne colle pas bien avec les autres : le calcul se trompe de 4,5 points sur
+lui*) ; ou *non* (hors de la fenêtre, retirée du calcul, les deux relevés marqués différemment dans le moteur 3, ou le
+moteur 4). Le message du relevé avertit aussi quand le nouveau relevé ne colle pas avec les autres. Chaque ligne a le bouton
+**Retirer du calcul** (ou **Remettre dans le calcul**), pour quand vous savez quelque chose que le système ignore : la mesure
+sort ou revient sans rien effacer (vaut dans les moteurs 1, 2, 3 et 5).
+
+En saisissant la charge, vous dites comment était la montre au moment du relevé : dans le cadre **Marquer**, **Saisir un
+relevé de charge en usage** (au poignet) ou **Saisir un relevé de charge au repos** (rangée) ; dans l'alerte *Saisir la
+charge* de la page Aujourd'hui, les boutons **En usage** et **Au repos**. **Le marquage est enregistré dans le relevé** (la
+colonne `estado` ; dans les relevés d'avant, et dans ceux qu'un script saisit sans le dire, c'est ce que le poignet enregistré
+disait à cet instant qui vaut). C'est ce que le moteur 3 utilise, et cela sert de vérification pour les autres. Si le système
+avait la montre autrement à cet instant (les heures d'usage l'ont mise au poignet d'elles-mêmes, mais elle est restée rangée ;
+ou un *Mis* manquait), l'écran demande avant d'enregistrer : *Pour moi elle est au poignet maintenant. Enregistrer le relevé
+comme au repos quand même ?* **Continuer** enregistre comme vous avez marqué (par l'API, la réponse vient avec `confirmar:
+true` et la question, et la saisie n'est enregistrée qu'en la renvoyant avec `confirmar=1`) ; rien n'est bloqué, et le
+poignet enregistré ne change pas : s'il était faux, corrigez-le dans **Corriger ou supprimer un marquage**. Le cadre
+**Corriger** change aussi le marquage d'un relevé déjà enregistré.
 
 Les deux consommations sont dans le cadre **Consommation de la batterie**, sur la page de la montre :
 
-- **Au poignet** et **Hors du poignet (éteinte)** : la consommation qui compte dans le calcul, en gras, et d'où elle vient
-  (mesurée, avec celle de la fiche à côté pour comparer, ou seulement celle de la fiche, quand il n'y a pas encore de mesure).
+- **Calculé par** : le moteur qui a fait le calcul et d'où vient le choix (la collection, la montre, le groupe, ou le
+  défaut).
+- **Au poignet** et **Hors du poignet (éteinte)** : la consommation qui compte dans le calcul, en gras, avec l'incertitude
+  (± ..., dans les moteurs 2 et 3), et d'où elle vient (mesurée, avec celle de la fiche à côté pour comparer, ou seulement
+  celle de la fiche, quand il n'y a pas encore de mesure ou que le moteur est le 4).
 - Sous chacune, **dans la fiche** : les champs d'où vient la consommation de la fiche (la *Décroissance en usage*,
   l'*Autonomie réelle en usage*, la *Décroissance rangée*), avec la valeur et si elle a été indiquée ou si c'est le défaut.
 - **Dans les 90 jours précédents** : les deux consommations mesurées dans la fenêtre précédente. C'est la comparaison qui
@@ -404,7 +458,7 @@ de la fiche. Et chaque mesure, une par une, est dans **Charge au fil du temps �
 
 Les mesures plus anciennes que la fenêtre sortent d'elles-mêmes du calcul. C'est pourquoi l'ajustement au vieillissement est
 automatique : inutile de toucher à la fiche. La « Consommation en usage » et la « Consommation au repos » de la fiche ne
-s'appliquent que tant qu'il n'y a pas de mesure.
+s'appliquent que tant qu'il n'y a pas de mesure (ou toujours, dans le moteur 4).
 
 ---
 
@@ -498,7 +552,7 @@ vôtres.
 | **Groupe** | sa place dans l'arbre. Il décide des champs, des formules (la « charge » d'une smartwatch est la batterie ; celle d'une mécanique, la réserve de marche) et des alertes qu'elle reçoit. |
 | **Situation dans la collection** | **Dans la collection** (le cas habituel), **Désirée** (la liste d'envies : pas encore à vous), **Prêtée** (elle est à vous, mais quelqu'un d'autre l'a), **Vendue** ou **Archivée**. Seul ce qui est dans la collection entre dans la rotation : dans les autres situations la montre est indisponible (la base de données le garantit : la règle `ck_relogio_posse_disponivel`), elle sort du tirage, du planning et des alertes, et, quand elle quitte la collection, ses sessions ouvertes (au poignet, au soleil, sur le chargeur) se ferment aussitôt et ses jours dans le plan à partir de demain sont retirés et tirés de nouveau (aujourd'hui reste, mais elle ne va plus au poignet toute seule : changez-la dans **remplacer par…**). Sa fiche, ses documents et son historique restent. La prêtée reste dans le tableau de la page Aujourd'hui (avec l'état **Prêtée**) et dans la valeur de la collection ; la désirée, la vendue et l'archivée quittent le tableau et apparaissent sur la page **Envies** (et dans le sélecteur de la fiche, sous **Hors de la collection**). En revenant à **Dans la collection**, elle redevient disponible. Voir [La liste d'envies](#la-liste-denvies). |
 | **Disponible** | décochée, elle sort de la rotation et des alertes (chez l'horloger, en pause), mais l'historique reste. Hors de la collection, elle est toujours décochée (et le champ disparaît de la fiche). |
-| **Garder une copie de tous ses documents dans la base** | cochée, chaque fichier de la montre (le manuel, la facture, les photos, les vidéos) va aussi dans la base de données, comme sauvegarde. N'apparaît que quand le `config.php` ne décide pas pour toutes (sans `DOCUMENTOS_COPIA_BANCO`). Voir [Les documents de la montre](#les-documents-de-la-montre) : c'est le deuxième des trois niveaux de la copie. |
+| **Garder une copie de tous ses documents dans la base** | cochée, chaque fichier de la montre (le manuel, la facture, les photos, les vidéos) va aussi dans la base de données, comme sauvegarde. N'apparaît que quand la Configuration de la collection ne décide pas pour toutes (**Copie des documents dans la base** vide). Voir [Les documents de la montre](#les-documents-de-la-montre) : c'est le deuxième des trois niveaux de la copie. |
 | **Photo** | seulement pour l'écran. Dans le détail de la montre (le panneau, ou la fiche), en posant la souris sur la photo, un résumé apparaît (le nom, le groupe et le code ; l'état et la charge ; la note et le prochain jour dans la rotation ; l'achat) ainsi que le rappel du double-clic. Un **double-clic** dessus, ou le bouton **Ouvrir la photo** en dessous, ouvre la photo dans une fenêtre flottante, à sa taille (seulement dans le détail : sur les autres photos, comme celle de *Aujourd'hui, c'est le jour de* et les vignettes de la liste, le clic ouvre la montre) ; une photo plus grande que l'écran apparaît à l'échelle, sans déformation, à la plus grande taille qui tient dans le moniteur (et dans la fenêtre du navigateur), avec la taille réelle et l'échelle en dessous. Elle se ferme avec le ×, d'un clic à l'extérieur ou avec Échap. |
 | **Accessoires** | les bracelets, la boîte, l'étui, les outils, le chargeur, les pièces : le cadre **Accessoires** du panneau montre les siens (le type, le nom et l'observation), et la page **Accessoires** les ajoute et les modifie (un accessoire peut appartenir à une montre ou être indépendant, servant à plusieurs). |
 | **Documents** | le manuel, la facture (en PDF et XML), les photos souvenirs, les vidéos et tout le reste. Voir [Les documents de la montre](#les-documents-de-la-montre). |
@@ -554,14 +608,15 @@ combien il y en a.
 
 | Niveau | Où on le choisit | Ce qu'il fait |
 |---|---|---|
-| 1. **Le système** | `DOCUMENTOS_COPIA_BANCO` dans le `config.php` | `true` : **tout** fichier, de toute montre, va aussi dans la base. `false` : **aucun** n'y va (pas même ce que demandent la montre ou le fichier). Sans la ligne : les deux niveaux du dessous décident. |
+| 1. **La collection** | **Copie des documents dans la base**, dans la Configuration (`documentos_copia`) | **Tous les fichiers** : **tout** fichier, de toute montre de la collection, va aussi dans la base. **Aucun fichier** : **aucun** n'y va (pas même ce que demandent la montre ou le fichier). *Selon la montre et le fichier* (vide) : les deux niveaux du dessous décident. |
 | 2. **La montre** | la case **Garder une copie de tous ses documents dans la base**, sur la fiche de la montre (ou le bouton **Tout garder dans la base**, sur sa page Documents) | cochée, chaque fichier de cette montre va dans la base, ceux qui existent et ceux à venir. |
 | 3. **Le fichier** | la case **Garder aussi une copie de ces fichiers dans la base**, à l'envoi, ou **Garder une copie de ce fichier dans la base**, en modification | seul ce fichier va dans la base. |
 
-**L'écran ne montre que le choix de celui qui décide :** avec `DOCUMENTOS_COPIA_BANCO` dans le `config.php` (`true` ou
-`false`), ni la case de la montre ni celle des fichiers n'apparaissent (la page Documents dit seulement ce qu'ordonne le
-`config.php`) ; avec la montre qui garde tout, la case de ses fichiers n'apparaît pas (ni à l'envoi ni en modification),
-seulement le bouton **Seulement ceux cochés**, pour revenir en arrière.
+**L'écran ne montre que le choix de celui qui décide :** avec la Configuration qui décide (tous ou aucun), ni la case de la
+montre ni celle des fichiers n'apparaissent (la page Documents dit seulement ce qu'ordonne la Configuration) ; avec la montre
+qui garde tout, la case de ses fichiers n'apparaît pas (ni à l'envoi ni en modification), seulement le bouton **Seulement
+ceux cochés**, pour revenir en arrière. Chaque propriétaire choisit pour sa collection : le `DOCUMENTOS_COPIA_BANCO` du
+`config.php`, qui valait pour tout le serveur, ne vaut plus (s'il y est encore, la Configuration avertit).
 
 Cochée à un niveau et le fichier n'a pas encore la copie : à l'envoi et en modification elle part tout de suite ; en cochant
 la montre, le cron copie ses fichiers petit à petit. Décochée et personne d'autre ne la demande : en modification la copie est
@@ -571,7 +626,7 @@ déjà la copie avant la migration v17 ont été marqués sur le fichier lui-mê
 
 La base grossit de la taille des fichiers copiés : une vidéo de 500 Mo, c'est 500 Mo de plus dans la base et dans sa
 sauvegarde. Sur la page, chaque fichier dit où il est (seulement dans le dossier, dans le dossier et dans la base, hors du
-dossier) et qui a demandé la copie (le `config.php`, la montre ou le fichier lui-même).
+dossier) et qui a demandé la copie (la Configuration, la montre ou le fichier lui-même).
 
 **Le nettoyage, par le cron (chaque minute) :** le fichier disparu du dossier revient de la base ; le document dont la copie
 est demandée et qui ne l'a pas encore dans la base (la montre vient d'être cochée, ou une copie qui a échoué) la reçoit, et
@@ -639,6 +694,7 @@ en ajoutant ce qu'elle a chargé sur le chargeur (la session **Sur le chargeur**
 | **Autonomie en usage réel** (jours) `autonomia_dias` | 5 | Combien de **jours d'usage** dure une batterie pleine dans votre usage réel (pas celle du fabricant). Elle donne la consommation en usage : 100 ÷ autonomie. Avec 1,5 jour, la consommation est de 66,7 % par jour d'usage. Elle décide aussi combien de jours d'affilée elle reste dans le planning intelligent (ce que tient la batterie, de 1 à 7). |
 | **Consommation en usage** (% par jour) `decaimento_uso` | 100 ÷ autonomie | La consommation en usage, directement. Remplie, elle remplace le calcul par l'autonomie. |
 | **Consommation au repos** (% par jour) `decaimento_repouso` | 0,1 | Combien elle perd éteinte dans le tiroir. |
+| **Comment calculer la consommation de la batterie** `gasto_motor` | celui du groupe | Lequel des cinq moteurs de la [consommation mesurée](#consommation-mesurée-par-les-relevés) fait le calcul de cette montre (`horas`, `robusto`, `marcacao`, `cadastro` ou `formulas`). Vide : la valeur par défaut du champ (le groupe), sinon `horas`. Le choix de la Configuration, quand il est fait, prime. |
 | **Sur le chargeur : heures pour remplir, à vide** (h) `carga_carregador_horas` | 2 | Combien d'heures sur le chargeur la font passer de 0 à 100 %. Chaque heure dans la session *Sur le chargeur* ajoute 100 ÷ 2 = 50 %, jusqu'à 100 %. Quand elle est pleine, l'alerte **Retirer du chargeur** arrive à échéance. En la retirant, un relevé de charge remet le calcul d'aplomb (il l'emporte). |
 
 Deux détails qui changent le calcul :
@@ -849,7 +905,11 @@ collection vient à la fin de chaque ligne.
 | **Seuil de la prévision** (`previsao_limite`) | la charge (%) qu'utilise la prévision de la smartwatch pour « atteint le seuil dans... ». De 0 à 100. Par défaut : 20. |
 | **Garantie de rotation** (`max_sem_uso`) | aucune montre ne reste plus de ces jours sans usage : celle qui les dépasse passe devant toutes. 0 la désactive. Par défaut : 21. |
 | **Alerte Délaissée : jours sans aller au poignet** (`encostado_dias`) | après combien de jours sans aller au poignet une montre de la collection reçoit l'alerte **Délaissée** (dans **Aujourd'hui, c'est le jour de** : *Délaissée*, *« la limite de jours sans aller au poignet a expiré il y a 2j, 10/11/2026 18:00 »*). De 1 à 3650. Par défaut : 30. L'alerte se désactive dans **Définitions › Alertes**. |
-| **Consommation mesurée : les derniers jours** (`medicao_janela_dias`) | la fenêtre de la [consommation mesurée par les relevés](#consommation-mesurée-par-les-relevés) : les mesures plus anciennes sortent du calcul. De 1 à 3650. Par défaut : 90. |
+| **Consommation de la batterie : comment calculer** (`gasto_motor`) | lequel des cinq moteurs de la [consommation mesurée par les relevés](#consommation-mesurée-par-les-relevés) fait le calcul, pour toutes les montres de la collection : **1. Par les heures enregistrées (le moteur d'origine)**, **2. ... (robuste)**, **3. Par le marquage : deux taux séparés**, **4. La fiche seulement** ou **5. Par les formules de la fiche**. Par défaut : vide (*Selon la montre et le groupe* : le champ **Comment calculer la consommation de la batterie** de chaque montre, sinon sa valeur par défaut, sinon le moteur 1). |
+| **Consommation mesurée : compter par** (`medicao_base`) | ce qui entre dans le calcul de la consommation mesurée : **Jours** (`dias`, les mesures des tant derniers jours) ou **Relevés** (`leituras`, les tant dernières mesures de chaque type, en usage et au repos). Par défaut : jours. |
+| **Consommation mesurée : moyenne des derniers (jours)** (`medicao_janela_dias`) | la fenêtre de la consommation mesurée, en comptant par jours : les mesures plus anciennes sortent du calcul. De 1 à 3650. Par défaut : 90. |
+| **Consommation mesurée : derniers relevés (de chaque type)** (`medicao_janela_leituras`) | la fenêtre en comptant par relevés : combien de mesures de chaque type entrent. De 2 à 1000. Par défaut : 20. |
+| **Copie des documents dans la base** (`documentos_copia`) | pour toute la collection : **Tous les fichiers** (`todos`), **Aucun fichier** (`nenhum`) ou vide (*Selon la montre et le fichier*). C'est le premier des trois niveaux de la copie (voir [Les documents de la montre](#les-documents-de-la-montre)). Par défaut : vide. |
 | **Adresse du système** (`url_sistema`) | l'adresse que le repère `{link}` met dans les messages et dans l'agenda, et celle des liens des e-mails, de l'ICS et du retour d'Outlook. Elle est à tout le système : seul le master la change. Par défaut : vide (l'adresse par laquelle la page a été ouverte). |
 | **Prochains jours : afficher jusqu'à** (`proximos_por_pagina`) et **Plan : afficher jusqu'à** (`plano_por_pagina`) | combien de jours affichent à la fois les **Prochains jours** de la page Aujourd'hui et le **Jour par jour** de la page Plan (de 1 à 366). Au-delà, le paginateur apparaît en dessous : **<** (précédent), les numéros (le premier, le dernier et jusqu'à deux de chaque côté de l'actuel, avec … dans les trous) et **>** (suivant) ; en posant la souris dessus, l'info-bulle dit *Précédent*, *Suivant* ou *Page N*. Par défaut : 7 et 31. |
 | **Langue par défaut** (`idioma`) | la langue de la collection : celle des écrans pour qui n'a pas choisi la sienne (dans le sélecteur du menu ou dans **Mon compte** ; voir [Les langues](#les-langues)) et celle des messages et des agendas sans langue propre : portugais, anglais, chinois, hindi, espagnol ou français. Par défaut : celle de qui a créé la collection. |
@@ -1210,7 +1270,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `relogio` | `salvar` (créer ou modifier), `excluir` (avec les documents), `foto`, `remover_foto` |
 | `documentos` | `enviar` (un ou plusieurs fichiers, avec la catégorie, le titre, la date, la description et, pour une photo, la vignette), `alterar`, `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (seulement sans documents) |
-| `lancamento` | `lancar` (remontage, charge, pile...), `iniciar` et `encerrar` (mettre et retirer du poignet, du remontoir, du soleil, du chargeur), `alternar` (ferme la session si elle est ouverte, l'ouvre si elle est fermée : un seul bouton sur le téléphone), `periodo` (une période déjà passée), `alterar`, `excluir`. Dans toutes, `relogio_id=hoje` est la montre du jour |
+| `lancamento` | `lancar` (remontage, charge, pile...), `iniciar` et `encerrar` (mettre et retirer du poignet, du remontoir, du soleil, du chargeur), `alternar` (ferme la session si elle est ouverte, l'ouvre si elle est fermée : un seul bouton sur le téléphone), `periodo` (une période déjà passée), `alterar`, `excluir`, `medicao` (une mesure de la consommation entre dans le calcul ou en sort : `id`, `usada` 1 ou 0). Dans toutes, `relogio_id=hoje` est la montre du jour |
 | `rodizio` | `usando` (je porte celle-ci aujourd'hui), `trocar_dia` (la montre d'un jour), `periodo` (les montres d'une période, dans l'ordre : `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (efface les jours de la période et le mode les refait ; seulement `de` : jusqu'à la fin du plan ; seulement `ate` : de demain jusqu'à lui), `periodo_livre` (efface et laisse les jours libres, sans tirage ; les mêmes dates), `manual` (la Rotation manuelle : `de`, `ate`, `dias[AAAA-MM-JJ]` = l'id de la montre, `auto` ou `livre`), `apagar_tudo` (toute la programmation à partir de demain disparaît ; `hoje=1` : à partir d'aujourd'hui ; le mode reconstruit le plan), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (changer le mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (groupes) et `relogios` (le groupe de chaque montre) |
@@ -1402,7 +1462,6 @@ votre part, ou le master crée le compte dans **Utilisateurs**.
 | `VAPID_PUBLICA`, `VAPID_PRIVADA`, `VAPID_ASSUNTO` | le Web Push : la paire de clés (le master la génère dans **Mon compte**) et le sujet (`mailto:...`) |
 | `OUTLOOK_CLIENTE_ID`, `OUTLOOK_CLIENTE_SEGREDO` | l'application enregistrée chez Microsoft, pour les agendas Outlook (voir plus bas) |
 | `DOCUMENTOS_PASTA` | le dossier des fichiers des documents (le manuel, la facture, les photos, les vidéos), **hors du dossier publié**, accessible en écriture à l'utilisateur de PHP. Sans lui, la page Documents signale qu'il manque et n'accepte pas d'envois. Ex. : `define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
-| `DOCUMENTOS_COPIA_BANCO` | facultatif : la sauvegarde des documents dans la base, pour tout le système. `true` : tout fichier va aussi dans la base ; `false` : aucun n'y va ; sans elle : chaque montre et chaque fichier décident. Voir [Les documents de la montre](#les-documents-de-la-montre). |
 | `BACKUP_PASTA`, `BACKUP_MANTER`, `BACKUP_DOCUMENTOS` | facultatifs : la sauvegarde de la base (voir [Sauvegarde](#sauvegarde)). Le dossier, **hors du dossier publié** (sans lui, pas de copie automatique) ; combien sont gardées (par défaut 7) ; et si elle emporte le contenu des documents gardé dans la base (par défaut : non). |
 | `BACKUP_ATIVO` | facultatif : `false` désactive la sauvegarde : pas de copie automatique, pas de **Faire une copie maintenant** et pas de cadre **Sauvegarde** dans la Configuration (ni l'avertissement que le dossier manque). Sans elle : activée |
 | `DOCUMENTOS_LIMITE` | facultatif : le plus grand document accepté, en octets. Sans elle, 100 Mo (`104857600`) ; `0` ou `-1`, pas de limite du système. `MANUAL_LIMITE`, l'ancien nom, vaut encore quand elle n'existe pas. Les limites de PHP et de nginx s'appliquent toujours (voir [La taille des envois](#la-taille-des-envois-les-documents)). Ex. : `define("DOCUMENTOS_LIMITE", 524288000);` pour 500 Mo |

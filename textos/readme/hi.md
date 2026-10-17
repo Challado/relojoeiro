@@ -1,4 +1,4 @@
-<!-- origem: b50df19a55870230ddfb31d32797879fcffc5774 -->
+<!-- origem: 95ee8aa87fbd195eea8811d907c87af0ddc9ddfc -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -172,7 +172,7 @@ curl -u upyogkarta:password -G "http://server/relojoeiro/api.php" -d recurso=cal
 | `relogio` | `salvar` (बनाना या बदलना), `excluir` (दस्तावेज़ों के साथ), `foto`, `remover_foto` |
 | `documentos` | `enviar` (एक या कई फ़ाइलें, श्रेणी, शीर्षक, तारीख़, विवरण और, फ़ोटो में, थंबनेल के साथ), `alterar`, `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (सिर्फ़ बिना दस्तावेज़ों के) |
-| `lancamento` | `lancar` (चाबी, चार्ज, बैटरी...), `iniciar` और `encerrar` (कलाई, वाइंडर, धूप, चार्जर पर रखना और उतारना), `alternar` (सत्र खुला हो तो बंद करता है, बंद हो तो खोलता है: फ़ोन पर एक ही बटन), `periodo` (बीत चुकी अवधि), `alterar`, `excluir`। सबमें `relogio_id=hoje` दिन की घड़ी है |
+| `lancamento` | `lancar` (चाबी, चार्ज, बैटरी...), `iniciar` और `encerrar` (कलाई, वाइंडर, धूप, चार्जर पर रखना और उतारना), `alternar` (सत्र खुला हो तो बंद करता है, बंद हो तो खोलता है: फ़ोन पर एक ही बटन), `periodo` (बीत चुकी अवधि), `alterar`, `excluir`, `medicao` (खपत का कोई माप गणना में आता है या उससे निकलता है: `id`, `usada` 1 या 0)। सबमें `relogio_id=hoje` दिन की घड़ी है |
 | `rodizio` | `usando` (आज मैं यह पहन रहा हूँ), `trocar_dia` (किसी दिन की घड़ी), `periodo` (किसी अवधि की घड़ियाँ, क्रम से: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (अवधि के दिन हटाता है और मोड उन्हें फिर से बनाता है; केवल `de`: योजना के अंत तक; केवल `ate`: कल से उस तक), `periodo_livre` (मिटाकर दिनों को बिना ड्रॉ ख़ाली छोड़ता है; वही तारीख़ें), `manual` (मैनुअल रोटेशन: `de`, `ate`, `dias[YYYY-MM-DD]` = घड़ी का id, `auto` या `livre`), `apagar_tudo` (कल से आगे का पूरा कार्यक्रम हटता है; `hoje=1`: आज से आगे; मोड योजना दोबारा बनाता है), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (मोड बदलना) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (समूह) और `relogios` (हर घड़ी का समूह) |
@@ -359,7 +359,6 @@ Debian और Ubuntu में `php8.4-interbase` पैकेज (उसका 
 | `VAPID_PUBLICA`, `VAPID_PRIVADA`, `VAPID_ASSUNTO` | Web Push: कुंजियों की जोड़ी (master **मेरा खाता** में बनाता है) और विषय (`mailto:...`) |
 | `OUTLOOK_CLIENTE_ID`, `OUTLOOK_CLIENTE_SEGREDO` | Microsoft में पंजीकृत ऐप, Outlook कैलेंडरों के लिए (नीचे देखें) |
 | `DOCUMENTOS_PASTA` | दस्तावेज़ों की फ़ाइलों (मैनुअल, बिल, फ़ोटो, वीडियो) का फ़ोल्डर, **प्रकाशित फ़ोल्डर के बाहर**, PHP उपयोगकर्ता के लिखने लायक़। इसके बिना दस्तावेज़ पेज बताता है कि यह नहीं है और भेजना स्वीकार नहीं करता। उदा.: `define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
-| `DOCUMENTOS_COPIA_BANCO` | वैकल्पिक: पूरे सिस्टम के लिए डेटाबेस के भीतर दस्तावेज़ों का बैकअप। `true`: हर फ़ाइल डेटाबेस में भी जाती है; `false`: कोई नहीं जाती; इसके बिना: हर घड़ी और हर फ़ाइल तय करती है। देखें [घड़ी के दस्तावेज़](#os-documentos-do-relógio)। |
 | `BACKUP_PASTA`, `BACKUP_MANTER`, `BACKUP_DOCUMENTOS` | वैकल्पिक: डेटाबेस का बैकअप (देखें [बैकअप](#cópia-de-segurança))। फ़ोल्डर, **प्रकाशित फ़ोल्डर के बाहर** (इसके बिना अपने-आप कॉपी नहीं होती); कितनी रखी जाती हैं (डिफ़ॉल्ट 7); और क्या डेटाबेस में रखी दस्तावेज़ों की सामग्री साथ जाती है (डिफ़ॉल्ट: नहीं)। |
 | `BACKUP_ATIVO` | वैकल्पिक: `false` बैकअप बंद करता है: न अपने-आप कॉपी, न **अभी कॉपी बनाएँ**, न सेटिंग्स में **बैकअप** बॉक्स (फ़ोल्डर न होने की चेतावनी भी नहीं)। इसके बिना: चालू |
 | `DOCUMENTOS_LIMITE` | वैकल्पिक: स्वीकार होने वाला सबसे बड़ा दस्तावेज़, बाइट में। इसके बिना 100 MB (`104857600`); `0` या `-1`, सिस्टम की कोई सीमा नहीं। पुराना नाम `MANUAL_LIMITE` तब भी चलता है जब यह न हो। PHP और nginx की सीमाएँ लागू रहती हैं (देखें [भेजने का आकार](#o-tamanho-dos-envios-os-documentos))। उदा.: 500 MB के लिए `define("DOCUMENTOS_LIMITE", 524288000);` |

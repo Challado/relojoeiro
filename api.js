@@ -345,6 +345,20 @@ document.addEventListener("submit", function (ev) {
     });
     enviar(dados)
       .then(function (res) {
+        // a gravação que a API quer confirmada (a marcação da leitura que não bate com o pulso registrado): a pergunta dela;
+        // com o sim, vai de novo com confirmar=1
+        if (res.confirmar && res.pergunta) {
+          if (!confirm(res.pergunta)) {
+            botoes.forEach(function (b) {
+              b.disabled = false;
+            });
+            return null;
+          }
+          dados.set("confirmar", "1");
+          return enviar(dados).then(function (res2) {
+            aoGravar(form, res2, dados);
+          });
+        }
         // a exclusão em dois passos: a API diz o que sai junto; só com a confirmação ela apaga
         if (res.confirmar && res.impacto) {
           if (!confirm(res.impacto.texto + "\n\n" + t("Excluir mesmo assim?"))) {

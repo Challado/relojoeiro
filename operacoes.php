@@ -555,7 +555,7 @@ function op_relogio($acao, $d)
             $aviso_copia = "";
             if ($atual && $copia !== (int)$atual["copia_banco"] && (int)valor("SELECT COUNT(*) FROM documento WHERE relogio_id = ?", [$id]) > 0) {
                 $sistema = documentos_copia_sistema();
-                $aviso_copia = $sistema !== null ? t(" (A cópia no banco dos documentos não muda: o config.php decide por todos, DOCUMENTOS_COPIA_BANCO = {1}.)", [1 => $sistema ? "true" : "false"])
+                $aviso_copia = $sistema !== null ? t(" (A cópia no banco dos documentos não muda: a Configuração da coleção decide por todos os relógios, {1}.)", [1 => $sistema ? t("todos os arquivos") : t("nenhum arquivo")])
                     : ($copia === 1 ? t(" Os documentos dele vão para o banco aos poucos, pelo cron.") : t(" As cópias no banco dos documentos dele que não pedem a própria cópia saem aos poucos, pelo cron (os arquivos continuam na pasta)."));
             }
             $msg = ($atual ? t("Relógio {1} salvo.", [1 => $nome]) : t("Relógio {1} criado {2}{3}.", [1 => $nome, 2 => $no === null ? t("na raiz da árvore") : "em " . no_caminho($no), 3 => $posse !== "colecao" ? " (" . mb_strtolower(POSSES[$posse], "UTF-8") . ")" : ""])) . $nota_posse . $aviso_copia
@@ -776,7 +776,7 @@ function op_documentos($acao, $d)
                     $erro_copia = documento_tirar_do_banco($doc);
                     $msg .= $erro_copia === "" ? t(" A cópia saiu do banco (o arquivo continua na pasta).") : t(" A cópia continua no banco: {1}.", [1 => $erro_copia]);
                 } elseif ($copia === 1 && $por === null) {
-                    $msg .= t(" A cópia não vai para o banco: o config.php (DOCUMENTOS_COPIA_BANCO = false) não deixa.");
+                    $msg .= t(" A cópia não vai para o banco: a Configuração da coleção (Cópia dos documentos no banco: nenhum) não deixa.");
                 }
             }
         }
@@ -905,16 +905,16 @@ function op_acessorios($acao, $d)
 //           sem medir); menos de 12 horas, pouco tempo para medir; senão o intervalo é separado em horas no pulso e guardado
 //           e mede o gasto em uso (com meio dia de uso ou mais) ou guardado. Com medir=1, a medição entra na média (a
 //           caixa "Atualizar o gasto com esta medição"); com 0, fica só no histórico. Leitura com data anterior à última
-//           não mede. estado (uso ou repouso; vazio: não diz): como o relógio estava na hora da leitura. Se o que o sistema
-//           tem nesse instante (o pulso) não bate, a medição fica só no histórico (o intervalo estava registrado errado) e,
-//           com ajustar=1 (o padrão), o pulso passa a bater a partir da leitura: em repouso, a sessão no pulso aberta fecha
-//           na hora da leitura; em uso, o relógio vai para o pulso nessa hora (só se a leitura é depois da última marcação
-//           do pulso; antes disso, o pulso fica como está e a correção é no Corrigir).
+//           não mede. estado (uso ou repouso; vazio: não diz): a marcação da leitura, que fica gravada nela e manda: o gasto
+//           em uso sai só das leituras marcadas em uso, e o gasto em repouso só das marcadas em repouso. Se o pulso
+//           registrado desde a leitura anterior não bate com ela, a API pergunta antes (confirmar: true, com a pergunta);
+//           com confirmar=1, grava como a pessoa marcou.
 //   iniciar (relogio_id, tipo, quando): abre uma sessão; se ela é exclusiva, fecha no mesmo instante a exclusiva aberta
 //                                       em outro lugar (o relógio fica num lugar só)
 //   encerrar (relogio_id, tipo, quando): fecha a sessão aberta daquele tipo
 //   periodo (relogio_id, tipo, inicio, fim): uma sessão que já passou
-//   alterar (id; quando, inicio, fim, valor: só o que vier), excluir (id)
+//   alterar (id; quando, inicio, fim, valor, estado: só o que vier), excluir (id)
+//   medicao (id da medição, usada 1 ou 0): a medição do gasto entra na conta ou fica só no histórico
 // Nada no futuro. O tipo tem de valer para o relógio (o ponto dele na árvore). Sessões exclusivas não se sobrepõem.
 // ---------------------------------------------------------------------------------------------------------------------
 function op_lancamento($acao, $d)
@@ -938,6 +938,19 @@ function op_lancamento($acao, $d)
         }
         return $res;
     };
+    // uma medição do gasto entra ou sai da conta (usada 1 ou 0), sem apagar nada: ela fica no histórico
+    if ($acao === "medicao") {
+        $m = linha("SELECT m.id, m.usada, l.relogio_id FROM medicao m JOIN lancamento l ON l.id = m.lancamento_id WHERE m.id = ?", [$id]);
+        $usar = (string)($d["usada"] ?? "");
+        if (!$m) {
+            return resultado([t("Medição não encontrada (id).")], "");
+        }
+        if ($usar !== "0" && $usar !== "1") {
+            return resultado([t("Usada: 1 (entra na conta) ou 0 (só no histórico).")], "");
+        }
+        sql("UPDATE medicao SET usada = ? WHERE id = ?", [(int)$usar, $id]);
+        return resultado([], $usar === "1" ? t("A medição voltou para a conta do gasto.") : t("A medição saiu da conta do gasto (fica no histórico)."), ["id" => $id]);
+    }
     $existente = $id > 0 ? linha("SELECT l.*, t.identificador AS tipo, t.formato, t.exclusiva, t.nome AS tipo_nome FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.id = ?", [$id]) : null;
     // relogio_id=hoje: o relógio do dia, pelo plano (para um atalho no celular que não sabe o id)
     $hoje_pedido = !$existente && strtolower(trim((string)($d["relogio_id"] ?? ""))) === "hoje";
@@ -985,12 +998,10 @@ function op_lancamento($acao, $d)
             $erros[] = t("Estado: uso ou repouso (vazio: não diz).");
         } elseif ($estado !== "" && ($t["formato"] !== "valor" || $pulso_t === null)) {
             $erros[] = t("Estado (uso ou repouso) vale só para uma leitura, num relógio que vai ao pulso.");
+        } elseif ($estado !== "" && (string)($d["confirmar"] ?? "") !== "1" && ($pergunta = estado_leitura_confere($rid, (int)$t["id"], $q, $estado)) !== null) {
+            // a marcação não bate com o pulso registrado: a pessoa confirma (confirmar=1) e vale o que ela marcou
+            return resultado([$pergunta], "", ["confirmar" => true, "pergunta" => $pergunta]);
         } else {
-            // o estado dito na leitura contra o que o sistema tem nesse instante: a sessão no pulso que cobre o momento
-            $sessao_q = $estado !== "" ? linha("SELECT id, inicio, fim FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim > ?)
-                ORDER BY inicio DESC, id DESC LIMIT 1", [$rid, (int)$pulso_t["id"], date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $q)]) : null;
-            $diverge = $estado !== "" && (($estado === "uso") !== ($sessao_q !== null));
-            $avisou = false;
             // o gasto medido: a leitura de antes (do mesmo tipo), a estimativa e os gastos que valiam, tudo antes de gravar esta
             $mede = $t["formato"] === "valor" && (int)($t["mede_gasto"] ?? 0) === 1
                 && valor("SELECT id FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio > ?", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q)]) === null;
@@ -1004,8 +1015,8 @@ function op_lancamento($acao, $d)
                     $conta[$f] = isset(formulas_todas()[$f]) ? variavel_valor($f, $c) : null;
                 }
             }
-            sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, NULL, ?, 'manual', NOW())",
-                [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), $t["formato"] === "valor" ? $v : null]);
+            sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, estado, origem, criado) VALUES (?, ?, ?, NULL, ?, ?, 'manual', NOW())",
+                [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), $t["formato"] === "valor" ? $v : null, $estado !== "" ? $estado : null]);
             $id = ultimo_id();
             $msg = t("Lançado no {1}: {2}{3}{4}.", [1 => $r["nome"], 2 => $t["nome"], 3 => $t["formato"] === "valor" ? " " . decimal_txt($v, 6) . ($t["unidade"] !== "" ? " " . $t["unidade"] : "") : "", 4 => $q < $agora - 60 ? " em " . data_txt($q, true) : ""]);
             if ($mede && !$antes) {
@@ -1047,49 +1058,33 @@ function op_lancamento($acao, $d)
                     $taxa = $medida === "uso" ? ($queda - $dias_guardado * (float)$conta["taxa_repouso"]) / $dias_uso
                         : ($queda - $dias_uso * (float)$conta["taxa_uso"]) / max(0.01, $dias_guardado);
                     $taxa = round(max(0, min(100, $taxa)), 3);
-                    $usada = (!array_key_exists("medir", $d) || (string)$d["medir"] === "1") && !$diverge;
+                    $usada = !array_key_exists("medir", $d) || (string)$d["medir"] === "1";
                     sql("INSERT INTO medicao (lancamento_id, medida, taxa, de_valor, ate_valor, inicio, fim, horas_pulso, horas_guardado, peso_horas, usada, criado)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())", [$id, $medida, $taxa, $anterior, $v, date("Y-m-d H:i:s", $t1), date("Y-m-d H:i:s", $q),
                         round($h_pulso, 2), round($h_guardado, 2), round($medida === "uso" ? $h_pulso : $h_guardado, 2), $usada ? 1 : 0]);
+                    $id_med = ultimo_id();
                     $msg .= " " . $de . ": " . $tempo . "." . $pela_estimativa;
-                    if ($diverge) {
-                        $avisou = true;
-                        $msg .= t(" O estado não batia: você disse {1}, e o sistema tinha ele {2} nesse momento. Para não errar o gasto, esta medição ficou só no histórico.",
-                            [1 => $estado === "uso" ? t("em uso") : t("em repouso"), 2 => $sessao_q !== null ? t("no pulso") : t("fora do pulso")]);
-                    } elseif ($usada) {
+                    if ($usada) {
                         // os dois gastos que passam a valer, com esta medição junto (a mesma conta da função MEDIDO)
-                        $g = gasto_medido(linhas("SELECT m.medida, m.taxa, m.peso_horas, m.fim, m.horas_pulso, m.horas_guardado, m.de_valor, m.ate_valor FROM medicao m
-                            JOIN lancamento l ON l.id = m.lancamento_id WHERE l.relogio_id = ? AND m.usada = 1 ORDER BY m.fim, m.id", [$rid]), $q);
+                        $motor_l = gasto_motor_de($r)[0];
+                        $g = gasto_medido(medicoes_da_conta($rid)[0], $q, gasto_prior($r, $q), $motor_l === "formulas" ? "marcacao" : $motor_l);
                         $num = function ($x) { return decimal_txt(round((float)$x, 2), 6); };
                         $partes = [];
                         if ($g["uso"] !== null) {
-                            $partes[] = t("em uso {1}% por dia de uso", [1 => $num($g["uso"])]);
+                            $partes[] = t("em uso {1}% (± {2}) por dia de uso", [1 => $num($g["uso"]), 2 => $num($g["uso_dp"])]);
                         }
                         if ($g["repouso"] !== null) {
-                            $partes[] = t("fora do pulso {1}% por dia", [1 => $num($g["repouso"])]);
+                            $partes[] = t("fora do pulso {1}% (± {2}) por dia", [1 => $num($g["repouso"]), 2 => $num($g["repouso_dp"])]);
                         }
-                        $msg .= t(" Gasto medido agora{1} ({2}{3}{4} dos últimos {5} dias).", [1 => count($partes) > 0 ? ": " . implode(", ", $partes) : t(": ainda sem como separar"), 2 => $g["conjunta"] ? t("os dois juntos, de ") : "", 3 => $g["n"], 4 => $g["n"] === 1 ? t(" medição") : t(" medições"), 5 => max(1, (int)cfg("medicao_janela_dias"))]);
+                        $msg .= t(" Gasto medido agora{1} ({2}{3}{4} {5}).", [1 => count($partes) > 0 ? ": " . implode(", ", $partes) : t(": ainda sem como separar"), 2 => $g["conjunta"] ? t("os dois juntos, de ") : "", 3 => $g["n"], 4 => $g["n"] === 1 ? t(" medição") : t(" medições"), 5 => medicoes_janela_texto()]);
+                        // uma leitura desta medição não bate com as outras: ela pesa pouco na conta (a tabela Medições do gasto diz)
+                        if (in_array($id_med, $g["fora"], true)) {
+                            $msg .= t(" A leitura de {1}% não bate com as outras (a conta erra {2} pontos nela): pesa só {3}% na conta. Confira as marcações do intervalo (o pulso, o carregador) e a leitura.",
+                                [1 => decimal_txt((float)$g["leitura"][$id_med], 6), 2 => decimal_txt(abs((float)$g["erro"][$id_med]), 6), 3 => (int)round(100 * (float)$g["peso"][$id_med])]);
+                        }
                     } else {
                         $msg .= t(" Entrou só no histórico.");
                     }
-                }
-            }
-            if ($diverge && !$avisou) {
-                $msg .= t(" O estado não batia: você disse {1}, e o sistema tinha ele {2} nesse momento.",
-                    [1 => $estado === "uso" ? t("em uso") : t("em repouso"), 2 => $sessao_q !== null ? t("no pulso") : t("fora do pulso")]);
-            }
-            // o pulso passa a bater com o estado dito, a partir da leitura (ajustar=0: fica como está)
-            if ($diverge && (string)($d["ajustar"] ?? "1") !== "0") {
-                $depois = valor("SELECT id FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio > ? LIMIT 1", [$rid, (int)$pulso_t["id"], date("Y-m-d H:i:s", $q)]);
-                if ($estado === "repouso" && $depois === null && ($sessao_q["fim"] === null || strtotime($sessao_q["fim"]) > $agora) && $q > strtotime($sessao_q["inicio"])) {
-                    sql("UPDATE lancamento SET fim = ? WHERE id = ?", [date("Y-m-d H:i:s", $q), (int)$sessao_q["id"]]);
-                    $msg .= t(" Tirado do pulso às {1}, a hora da leitura.", [1 => date("H:i", $q)]);
-                } elseif ($estado === "uso" && $depois === null) {
-                    $res_p = op_lancamento("iniciar", ["relogio_id" => $rid, "tipo" => "pulso", "quando" => date("Y-m-d H:i", $q)]);
-                    $msg .= $res_p["ok"] ? t(" Posto no pulso às {1}, a hora da leitura.", [1 => date("H:i", $q)])
-                        : t(" Não deu para pôr no pulso: {1}", [1 => implode(" ", $res_p["erros"])]);
-                } else {
-                    $msg .= t(" O pulso ficou como estava (a leitura é de antes da última marcação dele): se precisar, acerte em Corrigir.");
                 }
             }
         }
@@ -1170,13 +1165,17 @@ function op_lancamento($acao, $d)
         } elseif ((int)$t["exclusiva"] === 1 && count($sobrepostas($ini, $fim ?? $agora, $id)) > 0) {
             $s = $sobrepostas($ini, $fim ?? $agora, $id)[0];
             $erros[] = t("{1} já estava em {2} de {3} a {4}: o relógio fica num lugar só.", [1 => $r["nome"], 2 => $s["nome"], 3 => data_txt(strtotime($s["inicio"]), true, true), 4 => $s["fim"] === null ? "agora" : data_txt(strtotime($s["fim"]), true, true)]);
+        } elseif ($acao === "alterar" && array_key_exists("estado", $d) && !in_array((string)$d["estado"], ["", "uso", "repouso"], true)) {
+            $erros[] = t("Estado: uso ou repouso (vazio: não diz).");
         } elseif ($acao === "periodo") {
             sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, ?, NULL, 'manual', NOW())",
                 [$rid, (int)$t["id"], date("Y-m-d H:i:s", $ini), date("Y-m-d H:i:s", $fim)]);
             $id = ultimo_id();
             $msg = t("Lançado no {1}: {2} de {3} a {4}.", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true), 4 => data_txt($fim, true, true)]);
         } else {
-            sql("UPDATE lancamento SET inicio = ?, fim = ?, valor = ? WHERE id = ?", [date("Y-m-d H:i:s", $ini), $fim === null ? null : date("Y-m-d H:i:s", $fim), $v, $id]);
+            // a marcação da leitura (uso ou repouso; vazio: nenhuma) muda só se vier
+            $est = $formato === "valor" && array_key_exists("estado", $d) ? ((string)$d["estado"] === "" ? null : (string)$d["estado"]) : ($existente["estado"] ?? null);
+            sql("UPDATE lancamento SET inicio = ?, fim = ?, valor = ?, estado = ? WHERE id = ?", [date("Y-m-d H:i:s", $ini), $fim === null ? null : date("Y-m-d H:i:s", $fim), $v, $est, $id]);
             $msg = t("Corrigido no {1}: {2}.", [1 => $r["nome"], 2 => $t["nome"]]);
         }
     } elseif ($acao === "excluir") {
@@ -2303,7 +2302,7 @@ function op_modos($acao, $d)
 //           sol_limiar (1 a 99: o solar vai para o sol quando a carga estimada chega a essa %); url_sistema (para a âncora
 //           {link}); pulso_auto_inicio (1 ou 0: o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo
 //           Pôs); pulso_auto_fim (1 ou 0: sai sozinho no fim do horário de uso, o "fecha às" do tipo No pulso; 0: só pelo
-//           Tirou); max_sem_uso (0 a 365); previsao_limite (0 a 100); medicao_janela_dias (1 a 3650: a média do gasto medido
+//           Tirou); max_sem_uso (0 a 365); previsao_limite (0 a 100); medicao_base (dias ou leituras: o gasto medido conta as medições dos últimos dias ou as últimas leituras de cada tipo); gasto_motor (vazio: conforme o relógio e o grupo; horas, robusto, marcacao, cadastro ou formulas: como calcular o gasto da bateria, para toda a coleção); documentos_copia (vazio: conforme o relógio e o arquivo; todos ou nenhum: a cópia dos documentos no banco, para toda a coleção); medicao_janela_leituras (2 a 1000); medicao_janela_dias (1 a 3650: a média do gasto medido
 //           usa as medições destes últimos dias); url_sistema só o master (é do sistema inteiro). Só o que vier no pedido muda.
 //           As mensagens e as agendas saem pelos destinos e pelas agendas (op_destinos, op_agendas).
 //   evento_salvar (evento_id (ou id): 0 cria; nome, ativo, repeticao (uma, diaria, semanal, mensal, intervalo), hora (HH:MM),
@@ -2341,6 +2340,18 @@ function op_config($acao, $d)
         if (array_key_exists("medicao_janela_dias", $d) && (!ctype_digit(trim((string)$d["medicao_janela_dias"])) || (int)$d["medicao_janela_dias"] < 1 || (int)$d["medicao_janela_dias"] > 3650)) {
             $erros[] = t("Gasto medido: a média usa de 1 a 3650 dias de medições.");
         }
+        if (array_key_exists("medicao_base", $d) && !in_array((string)$d["medicao_base"], ["dias", "leituras"], true)) {
+            $erros[] = t("Gasto medido: contar por dias ou por leituras.");
+        }
+        if (array_key_exists("gasto_motor", $d) && (string)$d["gasto_motor"] !== "" && !in_array((string)$d["gasto_motor"], GASTO_MOTORES, true)) {
+            $erros[] = t("Gasto da bateria: como calcular: vazio (conforme o relógio e o grupo), horas, robusto, marcacao, cadastro ou formulas.");
+        }
+        if (array_key_exists("documentos_copia", $d) && !in_array((string)$d["documentos_copia"], ["", "todos", "nenhum"], true)) {
+            $erros[] = t("Cópia dos documentos no banco: vazio (conforme o relógio e o arquivo), todos ou nenhum.");
+        }
+        if (array_key_exists("medicao_janela_leituras", $d) && (!ctype_digit(trim((string)$d["medicao_janela_leituras"])) || (int)$d["medicao_janela_leituras"] < 2 || (int)$d["medicao_janela_leituras"] > 1000)) {
+            $erros[] = t("Gasto medido: de 2 a 1000 leituras de cada tipo.");
+        }
         if (array_key_exists("encostado_dias", $d) && (!ctype_digit(trim((string)$d["encostado_dias"])) || (int)$d["encostado_dias"] < 1 || (int)$d["encostado_dias"] > 3650)) {
             $erros[] = t("Aviso Encostado: de 1 a 3650 dias sem ir ao pulso.");
         }
@@ -2370,7 +2381,7 @@ function op_config($acao, $d)
             if (array_key_exists("url_sistema", $d) && usuario_master()) {
                 sis_set("url_sistema", trim((string)$d["url_sistema"]));
             }
-            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "carga_limiar", "sol_limiar", "medicao_janela_dias", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina"] as $k) {
+            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina"] as $k) {
                 if (array_key_exists($k, $d)) {
                     cfg_set($k, trim((string)$d[$k]));
                 }

@@ -338,45 +338,98 @@ distinta de la prevista, el plan se corrige.
 
 ### Consumo medido por las lecturas
 
-La ficha del smartwatch dice "dura 5 días". La realidad no está de acuerdo, y cambia a medida que la batería envejece. Por eso
-**cada lectura de carga que registra se compara con la anterior**, y el intervalo entre las dos se vuelve una medición: cuánto
-bajó, cuántas horas pasó en la muñeca y cuántas fuera (guardado, apagado). El horario de uso de la Configuración cuenta como
-muñeca por sí solo, y sus marcas (*Me lo puse*, *Me lo quité*) tienen prioridad.
+La ficha del smartwatch dice "dura 5 días". La realidad discrepa, y cambia conforme la batería envejece. Por eso, **cada
+lectura de carga que usted lanza se compara con la anterior**, y el intervalo entre las dos se vuelve una medición: cuánto
+cayó, cuántas horas pasó en la muñeca y cuántas fuera de la muñeca (guardado, apagado), y cómo usted marcó cada lectura (en
+uso o en reposo). El horario de uso de la Configuración cuenta como muñeca por sí solo, y sus marcaciones (*Puso*, *Quitó*)
+mandan. Una subida en la lectura es recarga: empieza un tramo nuevo. Y un intervalo con otra sesión en medio (el reloj fue al
+cargador) tampoco mide: la medición solo sabe separar muñeca y guardado.
 
-Cada medición es una ecuación con dos consumos desconocidos:
+**Cómo transformar las mediciones en los dos consumos (en la muñeca y fuera de la muñeca) es elección suya: hay cinco
+motores.** Todos quedan en el sistema; ninguno borra nada, y cambiar de motor solo cambia la cuenta (las mediciones son las
+mismas). La elección se hace en tres lugares, y el de arriba vale sobre los de abajo:
+
+| Nivel | Dónde se elige | Qué hace |
+|---|---|---|
+| 1. **La colección** | **Gasto de batería: cómo calcular**, en la Configuración (`gasto_motor`) | vale para todos los relojes de la colección. Vacío (*Según el reloj y el grupo*): deciden los dos niveles de abajo. |
+| 2. **El reloj** | el campo **Cómo calcular el gasto de batería** (`gasto_motor`), en la ficha del reloj | vale solo para él. Vacío: el del grupo. |
+| 3. **El grupo** | el **predeterminado** de ese mismo campo (en **Registros › Campos**: el campo está en la raíz, y vale para los relojes de donde está hacia abajo) | vale para los relojes que no eligieron. Vacío: el motor 1. |
+
+En un reloj sin lectura de carga (un mecánico, un solar), la elección no hace nada. El cuadro **Consumo de la batería** dice
+qué motor hizo la cuenta y de dónde vino la elección (*Calculado por: Por la marcación: dos tasas separadas — la elección de
+la colección, en la Configuración*).
+
+| Motor | Qué hace |
+|---|---|
+| 1. **Por las horas registradas (el motor original)** (`horas`) | el predeterminado. Cada medición se divide por las marcaciones de muñeca minuto a minuto (tantas horas en la muñeca, tantas fuera), y los dos consumos salen juntos de todas las mediciones de la ventana, cada una pesando el tiempo que cubre. Es la cuenta que el sistema siempre hizo. |
+| 2. **Por las horas registradas, con lecturas y registro (robusto)** (`robusto`) | las mismas horas, pero la cuenta se hace en las lecturas, todas con el mismo peso, la que no encaja con las otras pesa menos y la ficha es el punto de partida (los tres cuidados de abajo). Da la incertidumbre (±). |
+| 3. **Por la marcación: dos tasas separadas** (`marcacao`) | lo que usted marca manda. Una lectura marcada **en uso** mide el consumo en la muñeca: la caída desde la lectura anterior, dividida por el tiempo entero del intervalo (en días de uso). Una lectura marcada **en reposo** mide el consumo fuera de la muñeca, del mismo modo. Las dos cuentas **nunca se cruzan**: el consumo en uso sale solo de las lecturas en uso, y el en reposo, solo de las en reposo; la muñeca registrada no entra. Con la cuenta robusta en cada lado (la lectura que no encaja pesa menos; la ficha es el punto de partida), también con la incertidumbre. |
+| 4. **Solo el registro** (`cadastro`) | el *Decaimiento en uso* (o la *Autonomía en uso real*) y el *Decaimiento guardado* de la ficha valen siempre. Las mediciones siguen haciéndose y quedan en el historial (la tabla **Mediciones del consumo**), pero no entran en ninguna cuenta: `MEDIDO` da vacío. |
+| 5. **Por las fórmulas del registro** (`formulas`) | vale lo que den las fórmulas `taxa_uso` y `taxa_repouso`, para que usted monte su propia cuenta en **Registros › Fórmulas**. En ellas, `MEDIDO("uso")` y `MEDIDO("repouso")` son la cuenta del motor 3, y las funciones **LEITURAS**, **QUEDA**, **DIAS_MEDIDOS**, **MEDIA_TAXA**, **MEDIANA_TAXA** y **ULTIMA_TAXA** dan las piezas de las mediciones por la marcación (cuántas, la suma de las caídas, la suma de los días, la media, la mediana y la última tasa, de cada tipo, en los últimos N días o en la ventana de la Configuración): `MEDIANA_TAXA("uso")`, o `PADRAO(QUEDA("uso"; 30) / DIAS_MEDIDOS("uso"; 30); decaimento_uso)`. En los otros motores las fórmulas también valen (de ellas sale el consumo); la diferencia es que este dice: la cuenta es suya. |
+
+**Qué mediciones entran** es otra elección de la Configuración, **Gasto medido: contar por**: **días** (las mediciones de los
+últimos tantos días, 90 por defecto) o **lecturas** (las últimas tantas mediciones de cada tipo, en uso y en reposo, 20 por
+defecto). Sin ninguna en la ventana, entran las de antes. Vale para los motores 1, 2, 3 y 5 (y para las funciones de las
+fórmulas sin el N de días).
+
+Entre dos recargas, la carga cae en línea recta con el tiempo en la muñeca y el tiempo guardado:
 
 ```text
-caída = días de uso × consumo en uso + días fuera de la muñeca × consumo fuera de la muñeca
+lectura = carga del comienzo − consumo en uso × días de uso − consumo guardado × días guardado (+ el error de la lectura)
 ```
 
-Con las mediciones de los últimos días (90, en la Configuración), el sistema encuentra **los dos consumos a la vez**: los que
-mejor explican todas las caídas (mínimos cuadrados, y cada medición pesa las horas que cubrió). Una noche entre dos lecturas
-(solo fuera de la muñeca) fija el consumo fuera de la muñeca; los días en la muñeca, conociendo ya ese, fijan el consumo en uso.
-Toda medición de 1 hora o más entra, incluso la que no bajó nada (dice que el consumo es pequeño): la corta, en la que el
-redondeo de la lectura (el reloj muestra la carga en números enteros) pesa más, entra con poco peso. Cuantas más lecturas, más
-preciso.
+Lecturas seguidas, sin recarga en medio, forman un **tramo**. Cada tramo tiene la carga de su comienzo (que la cuenta
+descubre), y los dos consumos valen para todos los tramos. En el motor 2, con las lecturas de la ventana, el sistema halla
+**los dos consumos juntos**: los que mejor explican todas las lecturas. Una noche entre dos lecturas (solo fuera de la muñeca)
+ajusta el consumo guardado; los días en la muñeca, sabiendo ya ese, ajustan el consumo en uso. Entra toda medición de 1 hora o
+más, hasta la sin caída ninguna (dice que el consumo es pequeño). Cuantas más lecturas, más preciso. En el motor 3 la misma
+cuenta se hace dos veces, una solo con las lecturas en uso y otra solo con las en reposo.
 
-Cuando las mediciones todavía no separan los dos (solo lecturas con el reloj guardado, por ejemplo), vale el promedio de las
-mediciones de cada consumo; sin ninguna en los últimos días, las anteriores. Los consumos medidos sustituyen a los de la ficha
-en las previsiones, y el historial muestra la batería perdiendo fuelle con el tiempo. Una subida en la lectura es una recarga:
-un nuevo punto de partida, sin medir. Y un intervalo con otra sesión en medio (el reloj fue al cargador) tampoco mide: la
-medición solo sabe separar muñeca y guardado.
+La cuenta robusta (los motores 2 y 3) tiene tres cuidados, cada uno con un motivo:
 
-Al indicar la carga, usted dice cómo estaba el reloj a la hora de la lectura: en el cuadro **Marcar**, **Indicar lectura de
-carga en uso** (en la muñeca) o **Indicar lectura de carga en reposo** (guardado); en el aviso *Indicar la carga* de la página
-Hoy, los botones **En uso** y **En reposo**. Para el consumo, lo que cuenta sigue siendo el intervalo hasta la lectura
-anterior, dividido por las marcas minuto a minuto: una lectura a las 22:05, después de un día entero en la muñeca, mide casi
-solo el consumo en uso; la de las 7:05 del día siguiente mide la noche apagado. Lo que usted dice sirve de comprobación. Si el
-sistema tenía el reloj de otra forma en ese instante (el horario de uso lo puso en la muñeca solo, pero se quedó guardado; o
-faltó un *Me lo puse*), las marcas del intervalo estaban mal: la medición se queda **solo en el historial**, sin estropear el
-consumo, y el mensaje dice lo que no coincidió. Con la casilla **Quitar de la muñeca a la hora de la lectura** (o **Poner en la
-muñeca a la hora de la lectura**), que aparece marcada cuando no coincide, la muñeca pasa a coincidir desde entonces. Si la
-lectura es de antes de la última marca de la muñeca, la muñeca queda como está: corríjala en **Corregir o eliminar una marca**.
+1. **La cuenta se hace en las lecturas, y todas pesan igual.** El error viene de la lectura: el reloj muestra la carga en
+   números enteros, y su medidor también se equivoca un poco. Ese error es el mismo en una lectura hecha 2 horas o 2 semanas
+   después de la anterior, así que ninguna lectura vale más que otra por cubrir más tiempo. Y, como la cuenta mira las
+   lecturas (y no las caídas), una lectura errada es un punto solo, en vez de estropear las dos caídas a su alrededor.
+2. **La lectura que no encaja con las otras pesa menos (regresión robusta).** Después de la cuenta, el sistema ve cuánto se
+   equivoca en cada lectura. El error normal sale de las propias lecturas (nunca menos de medio punto); la lectura que queda
+   bastante más lejos que lo normal pasa a pesar menos, y tanto menos cuanto más lejos está, y la cuenta se rehace. No se
+   tira: solo pesa menos. Un caso común: el **100% justo después de cargar**, que muchos relojes mantienen un tiempo mientras
+   la carga de verdad ya está cayendo.
+3. **La ficha es el punto de partida.** El decaimiento (o la autonomía) de la ficha entra en la cuenta como el valor
+   esperado, con un margen de la mitad de él. Con pocas lecturas, el consumo queda cerca de la ficha; con muchas, las lecturas
+   mandan. Y, cuando las lecturas no separan el uso del guardado (solo lecturas con el reloj guardado, por ejemplo), el consumo
+   que ellas no miden queda el de la ficha.
+
+El resultado de esos dos motores viene con la **incertidumbre** (± una desviación estándar): *22,09% ± 1,48 por día de uso*
+quiere decir que el consumo en uso está, con buena probabilidad, entre 20,6% y 23,6%. Disminuye conforme entran lecturas.
+
+En la tabla **Mediciones del consumo** (en **Carga a lo largo del tiempo**), cada medición muestra la marcación de las dos
+lecturas (*en uso → en uso*) y dice si entra en la cuenta: *sí*; *en parte: pesa 31%*, con la lectura que no encaja bien con
+las otras (*la lectura de 100% no encaja bien con las otras: la cuenta se equivoca 4,5 puntos en ella*); o *no* (fuera de la
+ventana, quitada de la cuenta, las dos lecturas marcadas de maneras distintas en el motor 3, o el motor 4). El mensaje de la
+lectura también avisa cuando la lectura nueva no encaja con las otras. Cada línea tiene el botón **Quitar de la cuenta** (o
+**Poner en la cuenta**), para cuando usted sabe algo que el sistema no sabe: la medición sale o vuelve sin borrar nada (vale
+en los motores 1, 2, 3 y 5).
+
+Al informar la carga, usted dice cómo estaba el reloj a la hora de la lectura: en el cuadro **Marcar**, **Informar lectura de
+carga en uso** (en la muñeca) o **Informar lectura de carga en reposo** (guardado); en el aviso *Informar la carga* de la
+página Hoy, los botones **En uso** y **En reposo**. **La marcación queda grabada en la lectura** (la columna `estado`; en las
+lecturas de antes, y en las que un script lanza sin decir, vale lo que la muñeca registrada decía en ese instante). Es lo que
+el motor 3 usa, y sirve de comprobación para los otros. Si el sistema tenía el reloj de otra manera en ese instante (el
+horario de uso lo puso en la muñeca por sí solo, pero quedó guardado; o faltó un *Puso*), la pantalla pregunta antes de
+grabar: *Para mí está en la muñeca ahora. ¿Grabar la lectura como en reposo de todos modos?* **Continuar** graba como usted
+marcó (por la API, la respuesta viene con `confirmar: true` y la pregunta, y el lanzamiento solo se graba enviándolo de nuevo
+con `confirmar=1`); nada se impide, y la muñeca registrada no cambia: si estaba errada, corríjala en **Corregir o borrar una
+marcación**. El cuadro **Corregir** también cambia la marcación de una lectura ya grabada.
 
 Los dos consumos están en el cuadro **Consumo de la batería**, en la página del reloj:
 
-- **En la muñeca** y **Fuera de la muñeca (apagado)**: el consumo que vale en la cuenta, en negrita, y de dónde viene (medido,
-  con el de la ficha al lado para comparar, o solo de la ficha, cuando todavía no hay medición).
+- **Calculado por**: el motor que hizo la cuenta y de dónde vino la elección (la colección, el reloj, el grupo, o el
+  predeterminado).
+- **En la muñeca** y **Fuera de la muñeca (apagado)**: el consumo que vale en la cuenta, en negrita, con la incertidumbre
+  (± ..., en los motores 2 y 3), y de dónde viene (medido, con el de la ficha al lado para comparar, o solo de la ficha,
+  cuando todavía no hay medición o el motor es el 4).
 - Debajo de cada uno, **en la ficha**: los campos de donde sale el consumo de la ficha (el *Decaimiento en uso*, la
   *Autonomía en uso real*, el *Decaimiento guardado*), con el valor y si fue indicado o es el predeterminado.
 - **En los 90 días anteriores a esos**: los dos consumos medidos en la ventana anterior. Es la comparación que muestra la
@@ -388,7 +441,8 @@ decaimiento (y de la autonomía) indicado, lo **calculado por las lecturas** y l
 medición, una por una, está en **Carga a lo largo del tiempo › Mediciones del consumo**.
 
 Las mediciones más antiguas que la ventana salen solas de la cuenta. Por eso el ajuste al envejecimiento es automático: no hace
-falta tocar la ficha. El "Consumo en uso" y el "Consumo guardado" de la ficha solo valen mientras no hay medición.
+falta tocar la ficha. El "Consumo en uso" y el "Consumo guardado" de la ficha solo valen mientras no hay medición (o siempre,
+en el motor 4).
 
 ---
 
@@ -478,7 +532,7 @@ los predeterminados son datos, no código: puede cambiarlo todo en la página **
 | **Grupo** | su lugar en el árbol. Decide los campos, las fórmulas (la "carga" de un smartwatch es la batería; la de un mecánico, la reserva de marcha) y los avisos que recibe. |
 | **Situación en la colección** | **En la colección** (lo de siempre), **Deseado** (la lista de deseos: todavía no es suyo), **Prestado** (es suyo, pero lo tiene otra persona), **Vendido** o **Archivado**. Solo lo que está en la colección entra en la rotación: en las otras situaciones el reloj queda no disponible (la base de datos lo garantiza: la regla `ck_relogio_posse_disponivel`), sale del sorteo, de la escala y de los avisos, y, al salir de la colección, sus sesiones abiertas (en la muñeca, al sol, en el cargador) se cierran en el acto y sus días en el plan de mañana en adelante se quitan y se sortean de nuevo (hoy se queda, pero ya no va a la muñeca solo: cámbielo en **cambiar por…**). La ficha, los documentos y el historial se quedan. El prestado sigue en la tabla de la página Hoy (con el estado **Prestado**) y en el valor de la colección; el deseado, el vendido y el archivado salen de la tabla y aparecen en la página **Deseos** (y en el selector de la ficha, en **Fuera de la colección**). Al volver a **En la colección**, vuelve a estar disponible. Vea [La lista de deseos](#la-lista-de-deseos). |
 | **Disponible** | desmarcado, sale de la rotación y de los avisos (en el relojero, en una pausa), pero el historial se queda. Fuera de la colección, está siempre desmarcado (y el campo desaparece de la ficha). |
-| **Guardar una copia de todos sus documentos en la base** | marcado, todo archivo del reloj (el manual, la factura, las fotos, los videos) va también a la base de datos, como copia de seguridad. Solo aparece cuando el `config.php` no decide por todos (sin `DOCUMENTOS_COPIA_BANCO`). Vea [Los documentos del reloj](#los-documentos-del-reloj): es el segundo de los tres niveles de la copia. |
+| **Guardar una copia de todos sus documentos en la base** | marcado, todo archivo del reloj (el manual, la factura, las fotos, los videos) va también a la base de datos, como copia de seguridad. Solo aparece cuando la Configuración de la colección no decide por todos (**Copia de los documentos en la base** vacía). Vea [Los documentos del reloj](#los-documentos-del-reloj): es el segundo de los tres niveles de la copia. |
 | **Foto** | solo para la pantalla. En el detalle del reloj (el panel, o la ficha), al detener el ratón sobre la foto aparece un resumen suyo (el nombre, el grupo y el código; el estado y la carga; la nota y el próximo día en la rotación; la compra) y el recordatorio del doble clic. Con **doble clic** en ella, o con el botón **Abrir foto** de debajo, la foto se abre en una ventana flotante, a su tamaño (solo en el detalle: en las otras fotos, como la de *Hoy toca* y las miniaturas de la lista, el clic abre el reloj); una mayor que la pantalla aparece a escala, sin deformar, en el mayor tamaño que cabe en el monitor (y en la ventana del navegador), con el tamaño real y la escala debajo. Se cierra con la ×, con un clic fuera o con Esc. |
 | **Accesorios** | las correas, la caja, el estuche, las herramientas, el cargador, las piezas: el cuadro **Accesorios** del panel muestra los suyos (el tipo, el nombre y la observación), y la página **Accesorios** los añade y los cambia (un accesorio puede ser de un reloj o suelto, sirviendo a varios). |
 | **Documentos** | el manual, la factura (en PDF y XML), las fotos de recuerdo, los videos y lo que sea. Vea [Los documentos del reloj](#los-documentos-del-reloj). |
@@ -532,14 +586,15 @@ registra cuántos hay.
 
 | Nivel | Dónde se elige | Qué hace |
 |---|---|---|
-| 1. **El sistema** | `DOCUMENTOS_COPIA_BANCO` en el `config.php` | `true`: **todo** archivo, de todo reloj, va también a la base. `false`: **ninguno** va (ni lo que pidan el reloj o el archivo). Sin la línea: deciden los dos niveles de abajo. |
+| 1. **La colección** | **Copia de los documentos en la base**, en la Configuración (`documentos_copia`) | **Todos los archivos**: **todo** archivo, de todo reloj de la colección, va también a la base. **Ningún archivo**: **ninguno** va (ni lo que pidan el reloj o el archivo). *Según el reloj y el archivo* (vacío): deciden los dos niveles de abajo. |
 | 2. **El reloj** | la casilla **Guardar una copia de todos sus documentos en la base**, en la ficha del reloj (o el botón **Guardar todos en la base**, en su página Documentos) | marcada, todo archivo de ese reloj va a la base, los que ya existen y los que vengan. |
 | 3. **El archivo** | la casilla **Guardar una copia de estos archivos también en la base**, al enviar, o **Guardar una copia de este archivo en la base**, al editar | solo ese archivo va a la base. |
 
-**La pantalla solo muestra la elección de quien decide:** con `DOCUMENTOS_COPIA_BANCO` en el `config.php` (`true` o
-`false`), no aparece ni la casilla del reloj ni la de los archivos (la página Documentos solo dice lo que ordena el
-`config.php`); con el reloj guardando todos, la casilla de sus archivos no aparece (ni al enviar ni al editar), solo el botón
-**Solo los marcados**, para volver atrás.
+**La pantalla solo muestra la elección de quien decide:** con la Configuración decidiendo (todos o ninguno), no aparece ni la
+casilla del reloj ni la de los archivos (la página Documentos solo dice lo que ordena la Configuración); con el reloj
+guardando todos, la casilla de sus archivos no aparece (ni al enviar ni al editar), solo el botón **Solo los marcados**, para
+volver atrás. Cada dueño elige para su colección: el `DOCUMENTOS_COPIA_BANCO` del `config.php`, que valía para el servidor
+entero, ya no vale (si todavía está ahí, la Configuración avisa).
 
 Marcado en un nivel y el archivo todavía no tiene la copia: al enviar y al editar va enseguida; al marcar el reloj, el cron
 copia sus archivos poco a poco. Desmarcado y nadie más lo pide: al editar la copia se quita enseguida, y por el reloj el cron
@@ -549,7 +604,7 @@ en el propio archivo: nada salió de la base.
 
 La base crece con el tamaño de los archivos copiados: un video de 500 MB son 500 MB más en la base y en su copia de seguridad.
 En la página, cada archivo dice dónde está (solo en la carpeta, en la carpeta y en la base, fuera de la carpeta) y quién pidió
-la copia (el `config.php`, el reloj o el propio archivo).
+la copia (la Configuración, el reloj o el propio archivo).
 
 **La limpieza, por el cron (cada minuto):** el archivo que desapareció de la carpeta vuelve de la base; el documento que tiene
 la copia pedida y todavía no la tiene en la base (el reloj recién marcado, o una copia que falló) la recibe, y el que tiene la
@@ -613,6 +668,7 @@ en el cargador (la sesión **En el cargador**). Sin ninguna lectura, la carga es
 | **Autonomía en uso real** (días) `autonomia_dias` | 5 | Cuántos **días de uso** dura una batería llena en su uso real (no la del fabricante). Da el consumo en uso: 100 ÷ autonomía. Con 1,5 días, el consumo es del 66,7% por día de uso. También decide cuántos días seguidos se queda en la escala inteligente (lo que aguanta la batería, de 1 a 7). |
 | **Consumo en uso** (% por día) `decaimento_uso` | 100 ÷ autonomía | El consumo en uso, directo. Rellenado, sustituye al cálculo por la autonomía. |
 | **Consumo guardado** (% por día) `decaimento_repouso` | 0,1 | Cuánto pierde apagado en el cajón. |
+| **Cómo calcular el gasto de batería** `gasto_motor` | el del grupo | Cuál de los cinco motores del [consumo medido](#consumo-medido-por-las-lecturas) hace la cuenta de este reloj (`horas`, `robusto`, `marcacao`, `cadastro` o `formulas`). Vacío: el predeterminado del campo (el grupo), si no `horas`. La elección de la Configuración, cuando se hace, vale por encima. |
 | **En el cargador: horas para llenar, desde vacío** (h) `carga_carregador_horas` | 2 | Cuántas horas en el cargador lo llevan del 0 al 100%. Cada hora en la sesión *En el cargador* suma 100 ÷ 2 = 50%, hasta el 100%. Cuando se llena, vence el aviso **Quitar del cargador**. Al quitarlo, una lectura de carga pone la cuenta en su sitio (prevalece). |
 
 Dos detalles que cambian la cuenta:
@@ -818,7 +874,11 @@ colección nueva va al final de cada línea.
 | **Límite de la previsión** (`previsao_limite`) | la carga (%) que usa la previsión del smartwatch para "llega al límite en...". De 0 a 100. Predeterminado: 20. |
 | **Garantía de rotación** (`max_sem_uso`) | ningún reloj pasa más de estos días sin uso: el que pasa va delante de todos. 0 la desactiva. Predeterminado: 21. |
 | **Aviso Arrinconado: días sin ir a la muñeca** (`encostado_dias`) | tras cuántos días sin ir a la muñeca un reloj de la colección recibe el aviso **Arrinconado** (en **Hoy toca**: *Arrinconado*, *"el límite de días sin ir a la muñeca venció hace 2d, 10/11/2026 18:00"*). De 1 a 3650. Predeterminado: 30. El aviso se desactiva en **Definiciones › Avisos**. |
-| **Consumo medido: los últimos días** (`medicao_janela_dias`) | la ventana del [consumo medido por las lecturas](#consumo-medido-por-las-lecturas): las mediciones más antiguas salen de la cuenta. De 1 a 3650. Predeterminado: 90. |
+| **Gasto de batería: cómo calcular** (`gasto_motor`) | cuál de los cinco motores del [consumo medido por las lecturas](#consumo-medido-por-las-lecturas) hace la cuenta, para todos los relojes de la colección: **1. Por las horas registradas (el motor original)**, **2. ... (robusto)**, **3. Por la marcación: dos tasas separadas**, **4. Solo el registro** o **5. Por las fórmulas del registro**. Predeterminado: vacío (*Según el reloj y el grupo*: el campo **Cómo calcular el gasto de batería** de cada reloj, si no su predeterminado, si no el motor 1). |
+| **Gasto medido: contar por** (`medicao_base`) | lo que entra en la cuenta del consumo medido: **Días** (`dias`, las mediciones de los últimos tantos días) o **Lecturas** (`leituras`, las últimas tantas mediciones de cada tipo, en uso y en reposo). Predeterminado: días. |
+| **Gasto medido: media de los últimos (días)** (`medicao_janela_dias`) | la ventana del consumo medido, contando por días: las mediciones más antiguas salen de la cuenta. De 1 a 3650. Predeterminado: 90. |
+| **Gasto medido: últimas lecturas (de cada tipo)** (`medicao_janela_leituras`) | la ventana contando por lecturas: cuántas mediciones de cada tipo entran. De 2 a 1000. Predeterminado: 20. |
+| **Copia de los documentos en la base** (`documentos_copia`) | para toda la colección: **Todos los archivos** (`todos`), **Ningún archivo** (`nenhum`) o vacío (*Según el reloj y el archivo*). Es el primero de los tres niveles de la copia (vea [Los documentos del reloj](#los-documentos-del-reloj)). Predeterminado: vacío. |
 | **Dirección del sistema** (`url_sistema`) | la dirección que el marcador `{link}` pone en los mensajes y en el calendario, y la de los enlaces de los correos, del ICS y del retorno de Outlook. Es de todo el sistema: solo el master la cambia. Por defecto: vacía (la dirección por la que se abrió la página). |
 | **Próximos días: mostrar hasta** (`proximos_por_pagina`) y **Plan: mostrar hasta** (`plano_por_pagina`) | cuántos días muestran a la vez los **Próximos días** de la página Hoy y el **Día a día** de la página Plan (de 1 a 366). Pasado eso, aparece el paginador debajo: **<** (anterior), los números (el primero, el último y hasta dos a cada lado del actual, con … en los huecos) y **>** (siguiente); al detener el ratón encima, la ayuda dice *Anterior*, *Siguiente* o *Página N*. Predeterminado: 7 y 31. |
 | **Idioma predeterminado** (`idioma`) | el idioma de la colección: el de las pantallas para quien no eligió el suyo (en el selector del menú o en **Mi cuenta**; vea [Los idiomas](#los-idiomas)) y el de los mensajes y los calendarios sin idioma propio: portugués, inglés, chino, hindi, español o francés. Por defecto: el de quien creó la colección. |
@@ -1173,7 +1233,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `relogio` | `salvar` (crear o cambiar), `excluir` (con los documentos), `foto`, `remover_foto` |
 | `documentos` | `enviar` (uno o varios archivos, con la categoría, el título, la fecha, la descripción y, en una foto, la miniatura), `alterar`, `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (solo sin documentos) |
-| `lancamento` | `lancar` (cuerda, carga, pila...), `iniciar` y `encerrar` (poner y quitar de la muñeca, del winder, del sol, del cargador), `alternar` (cierra la sesión si está abierta, la abre si está cerrada: un solo botón en el móvil), `periodo` (un período que ya pasó), `alterar`, `excluir`. En todas, `relogio_id=hoje` es el reloj del día |
+| `lancamento` | `lancar` (cuerda, carga, pila...), `iniciar` y `encerrar` (poner y quitar de la muñeca, del winder, del sol, del cargador), `alternar` (cierra la sesión si está abierta, la abre si está cerrada: un solo botón en el móvil), `periodo` (un período que ya pasó), `alterar`, `excluir`, `medicao` (una medición del consumo entra o sale de la cuenta: `id`, `usada` 1 o 0). En todas, `relogio_id=hoje` es el reloj del día |
 | `rodizio` | `usando` (estoy usando este hoy), `trocar_dia` (el reloj de un día), `periodo` (los relojes de un período, en orden: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (borra los días del período y el modo los vuelve a montar; solo `de`: hasta el final del plan; solo `ate`: desde mañana hasta él), `periodo_livre` (borra y deja los días libres, sin sorteo; las mismas fechas), `manual` (la Rotación manual: `de`, `ate`, `dias[AAAA-MM-DD]` = el id del reloj, `auto` o `livre`), `apagar_tudo` (toda la programación de mañana en adelante se va; `hoje=1`: de hoy en adelante; el modo arma el plan de nuevo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (cambiar el modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (grupos) y `relogios` (el grupo de cada reloj) |
@@ -1363,7 +1423,6 @@ entran por **Crear cuenta** (`cadastro.php`), por una invitación suya, o el mas
 | `VAPID_PUBLICA`, `VAPID_PRIVADA`, `VAPID_ASSUNTO` | el Web Push: el par de claves (el master lo genera en **Mi cuenta**) y el asunto (`mailto:...`) |
 | `OUTLOOK_CLIENTE_ID`, `OUTLOOK_CLIENTE_SEGREDO` | la aplicación registrada en Microsoft, para los calendarios de Outlook (vea abajo) |
 | `DOCUMENTOS_PASTA` | la carpeta de los archivos de los documentos (el manual, la factura, fotos, videos), **fuera de la carpeta publicada**, con permiso de escritura para el usuario de PHP. Sin ella, la página Documentos avisa que falta y no acepta envíos. Ej.: `define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
-| `DOCUMENTOS_COPIA_BANCO` | opcional: la copia de seguridad de los documentos dentro de la base, para el sistema entero. `true`: todo archivo va también a la base; `false`: ninguno va; sin ella: deciden cada reloj y cada archivo. Vea [Los documentos del reloj](#los-documentos-del-reloj). |
 | `BACKUP_PASTA`, `BACKUP_MANTER`, `BACKUP_DOCUMENTOS` | opcionales: la copia de seguridad de la base (vea [Copia de seguridad](#copia-de-seguridad)). La carpeta, **fuera de la carpeta publicada** (sin ella, no hay copia automática); cuántas se guardan (predeterminado 7); y si lleva el contenido de los documentos guardado en la base (predeterminado: no). |
 | `BACKUP_ATIVO` | opcional: `false` desactiva la copia de seguridad: sin copia automática, sin **Hacer una copia ahora** y sin el cuadro **Copia de seguridad** en la Configuración (ni el aviso de que falta la carpeta). Sin ella: activada |
 | `DOCUMENTOS_LIMITE` | opcional: el mayor documento aceptado, en bytes. Sin ella, 100 MB (`104857600`); `0` o `-1`, sin límite del sistema. `MANUAL_LIMITE`, el nombre antiguo, todavía vale cuando ella no existe. El límite de PHP y el de nginx siguen valiendo (vea [El tamaño de los envíos](#el-tamaño-de-los-envíos-los-documentos)). Ej.: `define("DOCUMENTOS_LIMITE", 524288000);` para 500 MB |

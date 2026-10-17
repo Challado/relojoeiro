@@ -170,12 +170,12 @@ function montar() {
   if (recado !== "") {
     res += el("p", {"class": "acao"}, h(recado));
   }
-  // a cópia no banco: o config.php vale por todos (e então não há escolha nenhuma na página); sem ele, o relógio (aqui) e,
-  // quando o relógio não guarda todos, cada arquivo (no envio e em editar)
+  // a cópia no banco: a Configuração da coleção vale por todos (e então não há escolha nenhuma na página); sem ela, o
+  // relógio (aqui) e, quando o relógio não guarda todos, cada arquivo (no envio e em editar)
   if (d.pasta_ok && d.copia_sistema === true) {
-    res += el("p", {"class": "nota"}, t("Cópia no banco: o config.php (DOCUMENTOS_COPIA_BANCO) manda guardar todo arquivo também no banco."));
+    res += el("p", {"class": "nota"}, t("Cópia no banco: a Configuração da coleção (Cópia dos documentos no banco: todos) manda guardar todo arquivo também no banco."));
   } else if (d.pasta_ok && d.copia_sistema === false) {
-    res += el("p", {"class": "nota"}, t("Cópia no banco: o config.php (DOCUMENTOS_COPIA_BANCO = false) não deixa; os arquivos ficam só na pasta."));
+    res += el("p", {"class": "nota"}, t("Cópia no banco: a Configuração da coleção (Cópia dos documentos no banco: nenhum) não deixa; os arquivos ficam só na pasta."));
   } else if (d.pasta_ok && d.relogio) {
     res += el("form", {"data-recurso": "relogio", "class": "linha"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
       + el("input", {"type": "hidden", "name": "id", "value": d.relogio.id}) + el("input", {"type": "hidden", "name": "copia_banco", "value": d.relogio.copia_banco ? "0" : "1"})

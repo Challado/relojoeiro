@@ -23,6 +23,8 @@ $saida = ["config" => (object)$valores_c,
         "fora_desde" => sis("aleatorio_fora") !== "" ? date("Y-m-d H:i:s", (int)sis("aleatorio_fora")) : null], "sol_fim" => isset(lancamento_tipos()["sol"]) && lancamento_tipos()["sol"]["fecha_as"] !== null ? substr(lancamento_tipos()["sol"]["fecha_as"], 0, 5) : "",
     // o que é do sistema inteiro (só o master muda): o endereço do sistema
     "sistema" => ["url_sistema" => sis("url_sistema"), "pode_mudar" => usuario_master()],
+    // o DOCUMENTOS_COPIA_BANCO do config.php não vale mais (a cópia é escolhida aqui, por coleção): definido, a página avisa
+    "config_php_copia" => defined("DOCUMENTOS_COPIA_BANCO") ? (bool)DOCUMENTOS_COPIA_BANCO : null,
     "repeticoes" => $REPETICOES,
     "eventos" => array_map(function ($ev) {
         return array_merge(evento_legivel($ev), ["proximas_60" => array_map(function ($t) { return date("Y-m-d H:i:s", $t); },

@@ -238,22 +238,30 @@ function abrirNoPainel(id) {
       var gs = r.previsao.gasto;
       if (gs) {
         var pct = function (v) { return num(v, 2) + "%"; };
-        // o que vale na conta e, embaixo, de onde vem: o medido pelas leituras e o cadastro (com os campos informados dele)
+        // o que vale na conta e, embaixo, de onde vem: o medido pelas leituras e o cadastro (com os campos informados dele);
+        // no motor "só o cadastro", vale o cadastro e o medido aparece só para comparar
+        var gsD = gs;
+        var motorDe = {colecao: t("a escolha da coleção, na Configuração"), relogio: t("a escolha deste relógio, no cadastro"), grupo: t("a escolha do grupo, no cadastro"), padrao: t("o padrão: nada escolhido")};
         var gasto = function (por, x) {
           var campos = (x.campos || []).map(function (c) {
             return t("{1}: {2} ({3})", {1: h(c.nome), 2: c.valor !== null ? num(c.valor, 2) + (c.unidade !== "" ? " " + h(c.unidade) : "") : "—", 3: h(c.origem)});
           }).join(" · ");
-          return x.vale !== null ? el("strong", {}, pct(x.vale)) + " " + por + el("small", {}, x.medido !== null ? t("medido; o cadastro diz {1}", {1: x.cadastro !== null ? pct(x.cadastro) : t("nada")}) : t("do cadastro, sem medição"))
+          return x.vale !== null ? el("strong", {}, pct(x.vale)) + (x.medido !== null && x.medido_dp !== null ? " " + el("span", {"class": "nota"}, t("± {1}", {1: num(x.medido_dp, 2)})) : "") + " " + por
+            + el("small", {}, gsD.motor === "cadastro" ? (x.medido !== null ? t("do cadastro (o motor escolhido); o medido daria {1}", {1: pct(x.medido)}) : t("do cadastro (o motor escolhido)"))
+              : (x.medido !== null ? t("medido; o cadastro diz {1}", {1: x.cadastro !== null ? pct(x.cadastro) : t("nada")}) : t("do cadastro, sem medição")))
             + (campos !== "" ? el("small", {}, t("no cadastro: {1}", {1: campos})) : "")
             : nada();
         };
-        var linhasGasto = [[t("No pulso"), gasto(t("por dia de uso"), gs.uso)], [t("Fora do pulso"), gasto(t("por dia"), gs.repouso)]];
+        // qual motor calcula, e de onde veio a escolha (coleção › relógio › grupo › padrão)
+        var linhasGasto = [[t("Calculado por"), h(gs.motor_nome) + el("small", {}, motorDe[gs.motor_de] || h(gs.motor_de))],
+          [t("No pulso"), gasto(t("por dia de uso"), gs.uso)], [t("Fora do pulso"), gasto(t("por dia"), gs.repouso)]];
         if (gs.uso.antes !== null || gs.repouso.antes !== null) {
           linhasGasto.push([t("Janela anterior"), (gs.uso.antes !== null ? t("{1} no pulso", {1: pct(gs.uso.antes)}) : "") + (gs.uso.antes !== null && gs.repouso.antes !== null ? " · " : "")
-            + (gs.repouso.antes !== null ? t("{1} fora", {1: pct(gs.repouso.antes)}) : "") + el("small", {}, t("{1}{2}, nos {3} dias antes", {1: gs.medicoes_antes, 2: gs.medicoes_antes === 1 ? t(" medição") : t(" medições"), 3: gs.janela_dias}))]);
+            + (gs.repouso.antes !== null ? t("{1} fora", {1: pct(gs.repouso.antes)}) : "") + el("small", {}, gs.base === "leituras" ? t("{1}{2}, nas {3} leituras de cada tipo antes dessas", {1: gs.medicoes_antes, 2: gs.medicoes_antes === 1 ? t(" medição") : t(" medições"), 3: gs.janela_leituras}) : t("{1}{2}, nos {3} dias antes", {1: gs.medicoes_antes, 2: gs.medicoes_antes === 1 ? t(" medição") : t(" medições"), 3: gs.janela_dias}))]);
         }
-        linhasGasto.push([t("Medições"), gs.medicoes > 0 ? t("{1} nos últimos {2} dias{3}", {1: gs.medicoes, 2: gs.janela_dias, 3: el("small", {}, gs.conjunta ? t("os dois gastos saem juntos da conta") : t("ainda não separam bem os dois: vale a média de cada um"))})
-          : t("nenhuma nos últimos {1} dias{2}", {1: gs.janela_dias, 2: gs.uso.medido !== null || gs.repouso.medido !== null ? el("small", {}, t("vale a conta com as de antes")) : ""})]);
+        linhasGasto.push([t("Medições"), gs.medicoes > 0 ? t("{1} na conta, {2}{3}", {1: gs.medicoes, 2: h(gs.janela_texto), 3: el("small", {}, gs.conjunta ? t("os dois gastos saem juntos da conta") : t("ainda não separam bem os dois: vale a média de cada um"))
+            + (gs.fora > 0 ? el("small", {"class": "em atrasado"}, t("{1} com uma leitura que não bate com as outras e pesa pouco na conta (veja Medições do gasto)", {1: gs.fora})) : "")})
+          : t("nenhuma na janela ({1}){2}", {1: h(gs.janela_texto), 2: gs.uso.medido !== null || gs.repouso.medido !== null ? el("small", {}, t("vale a conta com as de antes")) : ""})]);
         blocos += quadro(t("Gasto da bateria"), pares(linhasGasto), el("p", {"class": "nota"}, t("Medições mais velhas que a janela saem da conta: se a bateria envelhecer e gastar mais, o medido sobe sozinho.")));
       }
       // a autonomia: cheio pelo cadastro e pela conta (com o gasto medido), quanto ainda dura e quando acaba
@@ -318,6 +326,8 @@ function abrirNoPainel(id) {
             "data-agora": anda === true, "required": obrigatorio});
         };
         var pulsoTipo = r.tipos.filter(function (item) { return item.identificador === "pulso" && item.formato === "sessao"; })[0] || null;
+        var tipoMede = {};
+        r.tipos.forEach(function (item) { tipoMede[item.identificador] = item.mede_gasto; });
         r.tipos.forEach(function (item) {
           var chave = "t-" + item.identificador;
           var base = el("input", {"type": "hidden", "name": "tipo", "value": item.identificador});
@@ -329,20 +339,14 @@ function abrirNoPainel(id) {
               + (tirar ? el("p", {"class": "marcar-estado"}, h(item.aberta.texto)) : "")
               + quando(tirar ? t("Tirou às") : t("Pôs às")) + el("button", {}, h(verbo)));
           } else if (item.formato === "valor") {
-            // a leitura que mede o gasto, num relógio que vai ao pulso: duas opções, em uso e em repouso (como ele estava na
-            // hora da leitura); se não bate com o que o sistema tem agora, a caixa de acertar o pulso aparece marcada
+            // a leitura que mede o gasto, num relógio que vai ao pulso: duas opções, em uso e em repouso. A marcação manda: o
+            // gasto em uso sai só das leituras em uso, e o em repouso só das em repouso; se ela não bate com o pulso
+            // registrado, a API pergunta antes de gravar
             var leitura = function (chaveL, estadoL, rotulo, botao) {
-              var diverge = estadoL !== null && (estadoL === "uso") !== r.em_uso;
-              var sessaoPulso = pulsoTipo && pulsoTipo.aberta ? h(pulsoTipo.aberta.texto) : "";
               opcoes.agora += el("option", {"value": chaveL}, h(rotulo));
               partes += parte("marcar", chaveL, base + el("input", {"type": "hidden", "name": "acao", "value": "lancar"})
                 + (estadoL !== null ? el("input", {"type": "hidden", "name": "estado", "value": estadoL}) : "")
                 + el("p", {"class": "marcar-estado"}, t("Agora {1}{2}", {1: el("span", {"class": "estado estado-" + (r.estado)}, h(minusculo(r.estado_texto))), 2: r.carga !== null && item.unidade === "%" ? " " + el("small", {}, t("estimada ~{1}%", {1: r.carga})) : ""}))
-                + (diverge ? el("p", {"class": "nota aviso-estado"}, estadoL === "repouso"
-                  ? t("O sistema tem ele no pulso agora{1}. Lendo em repouso, a medição deste intervalo fica só no histórico (ele estava registrado errado).", {1: sessaoPulso !== "" ? " (" + sessaoPulso + ")" : ""})
-                  : t("O sistema tem ele fora do pulso agora. Lendo em uso, a medição deste intervalo fica só no histórico (ele estava registrado errado)."))
-                  + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "ajustar", "value": "0"})
-                    + el("input", {"type": "checkbox", "name": "ajustar", "value": "1", "checked": true}) + (estadoL === "repouso" ? t(" Tirar do pulso na hora da leitura") : t(" Pôr no pulso na hora da leitura"))) : "")
                 + el("label", {}, t("Leitura {1}", {1: el("span", {"class": "com-unidade"}, el("input", {"type": "text", "inputmode": "decimal", "name": "valor", "required": true}) + " " + h(item.unidade))}))
                 + quando(t("Lida às"))
                 + (item.mede_gasto ? el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "medir", "value": "0"})
@@ -392,7 +396,11 @@ function abrirNoPainel(id) {
                   : el("label", {}, t("Até {1}{2}", {1: momento("fim", l.fim === null ? "" : l.fim.substring(0, 16).replace(" ", "T"), false), 2: el("small", {}, t("Vazio: a sessão continua aberta."))})));
             } else {
               desta = el("label", {}, t("Quando {1}", {1: momento("inicio", l.inicio.substring(0, 16).replace(" ", "T"), true)}))
-                + (l.formato === "valor" ? el("label", {}, t("Valor {1}", {1: el("span", {"class": "com-unidade"}, el("input", {"type": "text", "inputmode": "decimal", "name": "valor", "value": num(l.valor, 1), "required": true}) + " " + h(l.unidade))})) : "");
+                + (l.formato === "valor" ? el("label", {}, t("Valor {1}", {1: el("span", {"class": "com-unidade"}, el("input", {"type": "text", "inputmode": "decimal", "name": "valor", "value": num(l.valor, 1), "required": true}) + " " + h(l.unidade))})) : "")
+                // a marcação da leitura (em uso ou em repouso), que diz para qual dos dois gastos ela conta
+                + (l.formato === "valor" && pulsoTipo && tipoMede[l.tipo] ? el("label", {}, t("Marcação {1}", {1: el("select", {"name": "estado"},
+                  el("option", {"value": "", "selected": l.estado === null}, t("sem marcação (vale o pulso registrado)")) + el("option", {"value": "uso", "selected": l.estado === "uso"}, t("em uso"))
+                  + el("option", {"value": "repouso", "selected": l.estado === "repouso"}, t("em repouso")))})) : "");
             }
             campos += parte("corrigir", String(l.id), el("input", {"type": "hidden", "name": "id", "value": l.id}) + desta
               + el("span", {"class": "marcar-botoes"}, el("button", {"name": "acao", "value": "alterar"}, t("Salvar"))
@@ -474,7 +482,7 @@ function abrirNoPainel(id) {
     }
     cad += el("label", {"class": "check", "data-so-colecao": true}, el("input", {"type": "hidden", "name": "disponivel", "value": "0"}) + el("input", {"type": "checkbox", "name": "disponivel", "value": "1",
       "checked": novo || r.disponivel}) + t(" Disponível para o rodízio"))
-      // a escolha do relógio só aparece quando o config.php não decide por todos (DOCUMENTOS_COPIA_BANCO ausente)
+      // a escolha do relógio só aparece quando a Configuração da coleção não decide por todos (Cópia dos documentos vazia)
       + (d.copia_sistema === null ? el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "copia_banco", "value": "0"})
         + el("input", {"type": "checkbox", "name": "copia_banco", "value": "1", "checked": !novo && r.copia_banco}) + t(" Guardar no banco a cópia de todos os documentos dele")) : "")
       + el("div", {"class": "botoes"}, el("button", {}, novo ? t("Cadastrar relógio") : t("Salvar alterações")));
@@ -513,14 +521,28 @@ function abrirNoPainel(id) {
         // as medições do gasto pelas leituras (as 10 mais recentes) e se cada uma entra na média
         var med = "";
         if (r.medicoes.length > 0) {
-          med = el("h3", {}, t("Medições do gasto")) + el("p", {"class": "nota"}, t("Cada leitura comparada com a anterior. Os dois gastos (em uso e fora do pulso) saem juntos das medições dos últimos {1} dias, pesadas pelas horas de cada uma (a janela fica na Configuração); o gasto de cada linha é só o dela.", {1: r.medicao_janela_dias}))
+          var motorG = r.previsao && r.previsao.gasto ? r.previsao.gasto.motor : "horas";
+          // a nota diz como o motor escolhido usa as medições
+          var notaMed = motorG === "horas" ? t("Cada leitura comparada com a anterior. Os dois gastos (em uso e fora do pulso) saem juntos de todas as medições {1}, cada uma dividida pelas marcações de pulso minuto a minuto e pesando as horas que cobre (o motor original). O botão de cada linha tira ou põe a medição na conta.", {1: h(r.medicao_janela_texto)})
+            : (motorG === "robusto" ? t("Cada leitura comparada com a anterior. Os dois gastos (em uso e fora do pulso) saem juntos das leituras {1}, todas com o mesmo peso e partindo do cadastro; o gasto de cada linha é só o dela. A leitura que não bate bem com as outras pesa menos na conta, e o botão de cada linha tira ou põe a medição na conta.", {1: h(r.medicao_janela_texto)})
+            : (motorG === "cadastro" ? t("Cada leitura comparada com a anterior. Neste relógio vale só o cadastro (o motor escolhido): as medições ficam aqui, no histórico, e não entram em conta nenhuma.")
+            : t("Cada leitura comparada com a anterior. O gasto em uso sai só das medições com as duas leituras marcadas em uso, e o gasto em repouso só das marcadas em repouso, {1} (o \"contar por\" da Configuração), todas com o mesmo peso e partindo do cadastro; o gasto de cada linha é só o dela. A leitura que não bate bem com as outras pesa menos na conta, e o botão de cada linha tira ou põe a medição na conta.", {1: h(r.medicao_janela_texto)})));
+          med = el("h3", {}, t("Medições do gasto")) + el("p", {"class": "nota"}, notaMed)
             + el("table", {"class": "tabela-dados medicoes"}, el("thead", {}, el("tr", {}, el("th", {}, t("Quando")) + el("th", {}, t("Leituras")) + el("th", {}, t("Horas"))
-              + el("th", {}, t("Gasto medido")) + el("th", {}, t("Na conta"))))
+              + el("th", {}, t("Gasto medido")) + el("th", {}, t("Na conta")) + el("th", {}, "")))
               + el("tbody", {}, r.medicoes.slice(0, 10).map(function (m) {
-                return el("tr", {}, el("td", {}, dataBr(m.fim, true) + " " + horaBr(m.fim)) + el("td", {}, num(m.de_valor, 1) + " → " + num(m.ate_valor, 1))
+                var nomeEstado = function (e) { return e === "uso" ? t("em uso") : (e === "repouso" ? t("em repouso") : "—"); };
+                return el("tr", {}, el("td", {}, dataBr(m.fim, true) + " " + horaBr(m.fim)) + el("td", {}, num(m.de_valor, 1) + " → " + num(m.ate_valor, 1)
+                    + (m.marcacao_de !== null || m.marcacao_ate !== null ? el("small", {}, nomeEstado(m.marcacao_de) + " → " + nomeEstado(m.marcacao_ate)) : ""))
                   + el("td", {}, t("{1} h no pulso, {2} h fora", {1: num(m.horas_pulso, 1), 2: num(m.horas_guardado, 1)}))
                   + el("td", {}, t("{1}% por dia {2}", {1: num(m.taxa, 2), 2: m.medida === "uso" ? t("de uso") : t("fora do pulso")}))
-                  + el("td", {}, m.na_media ? t("sim") : (m.usada ? t("não (fora da janela)") : t("não (só histórico)"))));
+                  // na conta: sim; em parte (a leitura que não bate com as outras pesa menos, Huber); não (fora da janela, só histórico)
+                  + el("td", {}, (!m.usada ? t("não (só histórico)") : (m.marcacoes_iguais === false ? t("não (leituras com marcações diferentes)") : motorG === "cadastro" ? t("não (só o cadastro)") : !m.na_media ? t("não (fora da janela)")
+                      : (m.peso !== null && m.peso < 1 ? el("span", {"class": m.fora ? "em atrasado" : ""}, t("em parte: pesa {1}%", {1: Math.round(100 * m.peso)})) : t("sim"))))
+                    + (m.na_media && m.peso !== null && m.peso < 1 ? el("small", {}, t("a leitura de {1}% não bate bem com as outras (a conta erra {2} pontos nela)", {1: num(m.leitura_fraca, 0), 2: num(Math.abs(m.erro), 1)})) : ""))
+                  // pôr ou tirar da conta, sem apagar a medição
+                  + el("td", {}, el("form", {"data-recurso": "lancamento"}, el("input", {"type": "hidden", "name": "acao", "value": "medicao"}) + el("input", {"type": "hidden", "name": "id", "value": m.id})
+                    + el("input", {"type": "hidden", "name": "usada", "value": m.usada ? "0" : "1"}) + el("button", {"class": "leve"}, m.usada ? t("Tirar da conta") : t("Pôr na conta")))));
               }).join("")));
         }
         res += quadro(t("Carga ao longo do tempo"), grafico + med, "", "largo");
@@ -553,7 +575,7 @@ function abrirNoPainel(id) {
       };
       // o calculado ao lado do informado: num campo de onde sai um gasto (o decaimento, a autonomia), o gasto medido pelas
       // leituras e o que vale na conta; na fórmula do gasto, o medido e o do cadastro
-      var gsD = r.previsao.gasto;
+      var gsD = r.previsao.gasto;  // o mesmo objeto (pode ser null sem leitura)
       var gastoTexto = function (medida, v) {
         return v === null ? "—" : num(v, 2) + "% " + (medida === "uso" ? t("por dia de uso") : t("por dia fora do pulso"));
       };

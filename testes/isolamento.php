@@ -67,6 +67,16 @@ $rel_a = (int)preparar($ana, ["recurso" => "relogio", "acao" => "salvar", "id" =
 preparar($ana, ["recurso" => "relogio", "acao" => "foto", "id" => $rel_a,
     "foto_base64" => base64_encode(base64_decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="))]);
 $lan_a = (int)(preparar($ana, ["recurso" => "lancamento", "acao" => "alternar", "relogio_id" => $rel_a, "tipo" => "pulso"])["id"] ?? 0);
+// um smartwatch da ana com duas leituras: a medição do gasto entre elas (a bia e o caio não podem tirá-la da conta)
+$no_s = 0;
+foreach ($arv["grupos"] ?? [] as $g) {
+    $no_s = ($g["nome"] ?? "") === "Smartwatch" ? (int)$g["id"] : $no_s;
+}
+$rel_s = (int)preparar($ana, ["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Smart SEGREDOANA", "no_id" => $no_s, "disponivel" => 1])["id"];
+// a primeira bem no passado (o fuso daqui pode não ser o do servidor), a segunda agora (vazio: o agora do servidor)
+preparar($ana, ["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel_s, "tipo" => "carga", "valor" => 90, "quando" => date("Y-m-d H:i", time() - 30 * 3600)]);
+preparar($ana, ["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel_s, "tipo" => "carga", "valor" => 88]);
+$med_a = (int)(pedir($ana, "GET", ["recurso" => "ficha", "relogio" => $rel_s])["json"]["relogio"]["medicoes"][0]["id"] ?? 0);
 $ace_a = (int)(preparar($ana, ["recurso" => "acessorios", "acao" => "salvar", "nome" => "Acessorio SEGREDOANA", "tipo" => "pulseira", "relogio_id" => $rel_a])["id"] ?? 0);
 $evt_a = (int)(preparar($ana, ["recurso" => "config", "acao" => "evento_salvar", "id" => 0, "nome" => "Evento SEGREDOANA", "repeticao" => "semanal", "hora" => "10:00", "dias_semana" => "6"])["id"] ?? 0);
 $des_a = (int)(preparar($ana, ["recurso" => "destinos", "acao" => "salvar", "id" => 0, "tipo" => "webhook", "nome" => "Destino SEGREDOANA", "ativo" => 0, "metodo" => "POST",
@@ -76,7 +86,7 @@ $cat_a = (int)(pedir($ana, "GET", ["recurso" => "documentos"])["json"]["categori
 $doc_a = (int)(preparar($ana, ["recurso" => "documentos", "acao" => "enviar", "relogio_id" => $rel_a, "categoria_id" => $cat_a, "titulo" => "Doc SEGREDOANA",
     "arquivo_nome" => "segredoana.txt", "arquivo_base64" => base64_encode("conteudo SEGREDOANA")])["id"] ?? 0);
 $ids = ["colecao" => $col_a, "relogio" => $rel_a, "lancamento" => $lan_a, "acessorio" => $ace_a, "evento" => $evt_a, "destino" => $des_a, "agenda" => $agd_a,
-    "documento" => $doc_a, "no" => $no_a, "usuario" => $uid_a];
+    "documento" => $doc_a, "no" => $no_a, "usuario" => $uid_a, "smartwatch" => $rel_s, "medicao" => $med_a];
 echo "A ana: " . json_encode($ids) . "\n";
 $antes = pedir($ana, "GET", ["recurso" => "ficha", "relogio" => $rel_a])["corpo"];
 
@@ -119,6 +129,7 @@ $tentativas = [
     ["recurso" => "lancamento", "acao" => "alternar", "relogio_id" => $rel_a, "tipo" => "pulso"],
     ["recurso" => "lancamento", "acao" => "excluir", "id" => $lan_a, "confirmar" => 1],
     ["recurso" => "lancamento", "acao" => "salvar", "id" => $lan_a, "observacao" => "INVADIDO"],
+    ["recurso" => "lancamento", "acao" => "medicao", "id" => $med_a, "usada" => 0],
     ["recurso" => "acessorios", "acao" => "salvar", "id" => $ace_a, "nome" => "INVADIDO", "tipo" => "pulseira"],
     ["recurso" => "acessorios", "acao" => "excluir", "id" => $ace_a, "confirmar" => 1],
     ["recurso" => "acessorios", "acao" => "salvar", "nome" => "INVADIDO", "tipo" => "pulseira", "relogio_id" => $rel_a],
@@ -194,6 +205,11 @@ foreach (["Relogio SEGREDOANA" => ["ficha", ["relogio" => $rel_a]], "Acessorio S
     if (stripos($ver($x[0], $x[1] ?? []), $o) === false) {
         $falhas[] = "SUMIU " . $o . " da ana";
     }
+}
+// a medição do smartwatch da ana continua na conta
+$meds = pedir($ana, "GET", ["recurso" => "ficha", "relogio" => $rel_s])["json"]["relogio"]["medicoes"] ?? [];
+if ($med_a === 0 || ($meds[0]["usada"] ?? false) !== true) {
+    $falhas[] = "MUDOU a medição do gasto da ana (ou ela não foi criada)";
 }
 if (pedir(["basic", "ana:senha-da-ana-1"], "GET", ["recurso" => "conta"])["codigo"] !== 200) {
     $falhas[] = "A SENHA da ana mudou";

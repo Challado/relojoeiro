@@ -681,8 +681,22 @@
  *     config.horario_manha           a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)
  *     config.horario_noite           a hora da rodada da noite: preparar o relógio de amanhã (HH:MM)
  *     config.max_sem_uso             a garantia de rodízio: nenhum relógio passa desses dias sem uso (0 desliga)
- *     config.medicao_janela_dias     a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a
- *                                    última)
+ *     config.medicao_base            o que o gasto medido conta ("contar por"): dias (as medições dos últimos medicao_janela_dias) ou
+ *                                    leituras (as últimas medicao_janela_leituras de cada tipo, em uso e em repouso)
+ *     config.gasto_motor             como calcular o gasto da bateria, para todos os relógios da coleção: horas (pelas horas registradas, o
+ *                                    motor original), robusto (pelas horas registradas, com leituras e cadastro), marcacao (pela marcação
+ *                                    das leituras: duas taxas separadas), cadastro (só o cadastro) ou formulas (pelas fórmulas taxa_uso e
+ *                                    taxa_repouso); vazio: vale o do relógio (o campo gasto_motor do cadastro), senão o padrão desse campo
+ *                                    (o grupo), senão horas
+ *     config.documentos_copia        a cópia dos documentos no banco, para a coleção inteira: todos (todo arquivo vai também para o banco),
+ *                                    nenhum (nenhum vai, nem o que o relógio ou o arquivo pedem) ou vazio (cada relógio e cada arquivo
+ *                                    decidem)
+ *     config_php_copia               o DOCUMENTOS_COPIA_BANCO que o config.php ainda define (verdadeiro ou falso), que não vale mais (a
+ *                                    Configuração mostra o aviso); null: não está lá
+ *     config.medicao_janela_dias     o gasto medido pelas leituras usa as medições destes últimos dias, com "contar por" dias (sem nenhuma
+ *                                    na janela, as de antes)
+ *     config.medicao_janela_leituras o gasto medido usa as últimas tantas medições de cada tipo (em uso e em repouso), com "contar por"
+ *                                    leituras (2 a 1000)
  *     config.encostado_dias          o aviso Encostado: depois de quantos dias sem ir ao pulso um relógio da coleção é avisado (1 a 3650;
  *                                    padrão 30)
  *     config.idioma                  o idioma padrão da instalação (pt-BR, en, zh-CN, hi, es, fr; vazio: o do navegador, senão português)
@@ -954,7 +968,7 @@
  *     relogios[].criado              quando foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].disponivel          verdadeiro ou falso: entra no rodízio
  *     relogios[].copia_banco         verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da
- *                                    cópia; o DOCUMENTOS_COPIA_BANCO do config.php, se definido, vale por cima)
+ *                                    cópia; a Configuração da coleção, documentos_copia, se escolhe, vale por cima)
  *     relogios[].posse               a situação na coleção: colecao (na coleção), desejado (a lista de desejos), emprestado, vendido ou
  *                                    arquivado; fora da coleção, disponivel é sempre falso
  *     relogios[].em_uso              verdadeiro ou falso: o relógio está com uma sessão no pulso aberta agora
@@ -1025,10 +1039,28 @@
  *     relogios[].medicoes[].medida   o gasto do intervalo sozinho, no histórico: uso (o gasto por dia de uso, quando o intervalo teve meio
  *                                    dia de uso ou mais, ou mais dias de uso que fora) ou repouso (o gasto por dia fora do pulso); o gasto
  *                                    que vale sai de todas as medições juntas
- *     relogios[].medicoes[].na_media verdadeiro ou falso: entra na média agora (usada e dentro da janela da Configuração,
+ *     relogios[].medicoes[].erro     o quanto a conta de agora erra a leitura desta medição que menos bate com as outras (a do começo ou a
+ *                                    do fim), em pontos de carga (número; null fora da janela ou só no histórico)
+ *     relogios[].medicoes[].leitura_fraca
+ *                                    o valor da leitura desta medição que menos bate com as outras (a do começo ou a do fim) (número; null
+ *                                    fora da conta)
+ *     relogios[].medicoes[].fora     verdadeiro ou falso: uma leitura desta medição não bate com as outras e pesa menos da metade na conta
+ *                                    (regressão robusta)
+ *     relogios[].medicoes[].marcacao_de
+ *                                    a marcação da leitura do começo da medição: uso ou repouso (null fora da conta)
+ *     relogios[].medicoes[].marcacao_ate
+ *                                    a marcação da leitura do fim da medição: uso ou repouso (null fora da conta)
+ *     relogios[].medicoes[].marcacoes_iguais
+ *                                    verdadeiro ou falso, no motor pela marcação (e no das fórmulas): as duas leituras têm a mesma
+ *                                    marcação, e a medição entra na conta daquele gasto; com marcações diferentes, não entra em nenhum dos
+ *                                    dois. null nos outros motores (eles não escolhem pela marcação)
+ *     relogios[].medicoes[].na_media verdadeiro ou falso: entra na conta agora (usada e dentro da janela da Configuração,
  *                                    medicao_janela_dias)
+ *     relogios[].medicoes[].peso     o peso, de 0 a 1, que a leitura desta medição que menos bate com as outras tem na conta (1: bate;
+ *                                    menos: a regressão robusta a pesa menos) (número; null fora da conta)
  *     relogios[].medicoes[].peso_horas
- *                                    o peso da medição na média: as horas que ela cobriu, no pulso (uso) ou guardado (repouso) (número)
+ *                                    as horas que a medição cobriu, no pulso (uso) ou guardado (repouso) (número; a conta não pesa mais por
+ *                                    horas: todas as medições pesam igual)
  *     relogios[].medicoes[].taxa     o gasto medido, em % por dia de uso (uso) ou por dia guardado (repouso) (número)
  *     relogios[].medicoes[].usada    verdadeiro ou falso: a caixa "Atualizar o gasto com esta medição" estava marcada (entra na média);
  *                                    falso: só histórico
@@ -1071,16 +1103,32 @@
  *                                    tem)
  *     relogios[].previsao.gasto.conjunta
  *                                    true: os dois gastos saem juntos da conta das medições; false: a média das medições de cada um
+ *     relogios[].previsao.gasto.motor
+ *                                    o motor que calculou o gasto: horas, robusto, marcacao, cadastro ou formulas (veja config.gasto_motor)
+ *     relogios[].previsao.gasto.motor_nome
+ *                                    o nome do motor por extenso ("Pela marcação: duas taxas separadas")
+ *     relogios[].previsao.gasto.motor_de
+ *                                    de onde veio a escolha: colecao (a Configuração), relogio (o campo gasto_motor do relógio), grupo (o
+ *                                    padrão do campo) ou padrao (nada escolhido: horas)
+ *     relogios[].previsao.gasto.base o que a conta do gasto medido conta (o "contar por" da Configuração): dias ou leituras
+ *     relogios[].previsao.gasto.janela_leituras
+ *                                    as últimas tantas medições de cada tipo que entram, com base leituras (número)
+ *     relogios[].previsao.gasto.janela_texto
+ *                                    a janela por extenso: "dos últimos 90 dias" ou "das últimas 20 leituras de cada tipo"
  *     relogios[].previsao.gasto.janela_dias
  *                                    a janela do gasto medido (medicao_janela_dias da Configuração), em dias (número)
+ *     relogios[].previsao.gasto.fora quantas medições da janela têm uma leitura que não bate com as outras e pesa menos da metade na conta
+ *                                    (número)
  *     relogios[].previsao.gasto.medicoes
- *                                    quantas medições há na janela (número)
+ *                                    quantas medições da janela entram na conta (número)
  *     relogios[].previsao.gasto.medicoes_antes
  *                                    quantas medições há na janela anterior, a dos antes (número)
  *     relogios[].previsao.gasto.uso.antes
  *                                    o gasto em uso, em % por dia de uso, medido na janela anterior (número; null sem medição)
  *     relogios[].previsao.gasto.uso.cadastro
  *                                    o gasto em uso, em % por dia de uso, pelo cadastro, sem as medições (número)
+ *     relogios[].previsao.gasto.uso.medido_dp
+ *                                    a incerteza do gasto em uso medido: um desvio padrão, na mesma unidade (número; null sem medição)
  *     relogios[].previsao.gasto.uso.medido
  *                                    o gasto em uso, em % por dia de uso, medido pelas leituras, como o MEDIDO (número; null sem medição)
  *     relogios[].previsao.gasto.uso.vale
@@ -1104,6 +1152,9 @@
  *                                    o gasto fora do pulso, em % por dia, medido na janela anterior (número; null sem medição)
  *     relogios[].previsao.gasto.repouso.cadastro
  *                                    o gasto fora do pulso, em % por dia, pelo cadastro, sem as medições (número)
+ *     relogios[].previsao.gasto.repouso.medido_dp
+ *                                    a incerteza do gasto fora do pulso medido: um desvio padrão, na mesma unidade (número; null sem
+ *                                    medição)
  *     relogios[].previsao.gasto.repouso.medido
  *                                    o gasto fora do pulso, em % por dia, medido pelas leituras, como o MEDIDO (número; null sem medição)
  *     relogios[].previsao.gasto.repouso.vale
@@ -1184,12 +1235,11 @@
  *     relogios[].documentos[].no_banco
  *                                    verdadeiro: a cópia de segurança do arquivo está completa no banco (se ele sumir da pasta, volta dali)
  *     relogios[].documentos[].copia_banco
- *                                    verdadeiro: o próprio arquivo pede a cópia no banco (o terceiro nível; o relógio e o config.php, se
- *                                    pedem, valem por cima)
+ *                                    verdadeiro: o próprio arquivo pede a cópia no banco (o terceiro nível; o relógio e a Configuração da
+ *                                    coleção, se pedem, valem por cima)
  *     relogios[].documentos[].copia_por
- *                                    quem pede a cópia no banco: sistema (o DOCUMENTOS_COPIA_BANCO = true do config.php), relogio (a marca
- *                                    do relógio) ou arquivo (a marca do próprio arquivo); null: ninguém pede, ou o config.php (false) não
- *                                    deixa, e o arquivo fica só na pasta (a cópia que houver, o cron tira)
+ *                                    quem pede a cópia no banco: sistema (a Configuração da coleção, documentos_copia = todos), relogio (a
+ *                                    marca do relógio) ou arquivo (a marca do próprio arquivo); null: ninguém
  *     relogios[].documentos[].relogio_id
  *                                    o relógio dele
  *     relogios[].documentos[].tamanho
@@ -1540,9 +1590,9 @@
  *     grupos[].caminho               o caminho
  *     grupos[].id                    o número
  *     hoje                           hoje (texto AAAA-MM-DD)
- *     copia_sistema                  a cópia no banco pelo config.php (DOCUMENTOS_COPIA_BANCO), que vale sobre o relógio e o arquivo:
- *                                    verdadeiro, todo arquivo vai; falso, nenhum vai; null (sem a constante), cada relógio decide (a caixa
- *                                    do cadastro só aparece então)
+ *     copia_sistema                  a cópia no banco pela Configuração da coleção (documentos_copia), que vale sobre o relógio e o
+ *                                    arquivo: verdadeiro (todos), todo arquivo vai; falso (nenhum), nenhum vai; null (vazio), cada relógio
+ *                                    decide (a caixa do cadastro só aparece então)
  *     painel_modo                    como o relógio abre na página Hoje (a Configuração): lado (no painel à direita da lista, o padrão) ou
  *                                    flutuante (numa janela grande por cima da página); no celular, os dois cobrem a tela
  *     relogio                        o relógio; null: o cadastro de um relógio novo
@@ -1616,7 +1666,7 @@
  *     relogio.desde                  desde quando (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.disponivel             verdadeiro ou falso: entra no rodízio
  *     relogio.copia_banco            verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da
- *                                    cópia; o DOCUMENTOS_COPIA_BANCO do config.php, se definido, vale por cima)
+ *                                    cópia; a Configuração da coleção, documentos_copia, se escolhe, vale por cima)
  *     relogio.posse                  a situação na coleção: colecao, desejado, emprestado, vendido ou arquivado (fora da coleção,
  *                                    disponivel é sempre falso)
  *     relogio.posse_texto            a mesma por extenso ("Na coleção", "Desejado"...)
@@ -1653,7 +1703,11 @@
  *                                    valor); e a frase: Duplo clique (ou "Abrir foto", embaixo): a foto em tamanho grande.
  *     relogio.id                     o número (código)
  *     relogio.leituras[]             as 40 últimas leituras com valor (o gráfico)
- *     relogio.leituras[].em_uso      verdadeiro ou falso: a leitura foi feita com o relógio no pulso
+ *     relogio.leituras[].em_uso      verdadeiro ou falso: a leitura é de uso (a marcação dela, ou, sem marcação, o pulso registrado naquele
+ *                                    instante)
+ *     relogio.leituras[].estado      a marcação da leitura: uso ou repouso (a gravada, ou, sem marcação, a do pulso registrado naquele
+ *                                    instante)
+ *     relogio.leituras[].marcada     verdadeiro ou falso: a marcação foi gravada na leitura (falso: veio do pulso registrado)
  *     relogio.leituras[].inicio      quando
  *     relogio.lancamentos_recentes[] os lançamentos dos últimos 14 dias e a sessão ainda aberta, do mais recente ao mais antigo (até 40): o
  *                                    que o quadro "Corrigir marcações" do painel mostra
@@ -1669,6 +1723,8 @@
  *                                    o nome do tipo de lançamento
  *     relogio.lancamentos_recentes[].origem
  *                                    manual, rodizio (a sessão do dia) ou importado
+ *     relogio.lancamentos_recentes[].estado
+ *                                    numa leitura, a marcação gravada: uso, repouso ou null (sem marcação)
  *     relogio.lancamentos_recentes[].tipo
  *                                    o identificador do tipo de lançamento (pulso, carga, corda...)
  *     relogio.lancamentos_recentes[].unidade
@@ -1703,6 +1759,7 @@
  *     relogio.manutencoes[]          as 5 próximas manutenções (avisos, sem o Encostado)
  *     relogio.manutencoes[].data     a data (texto AAAA-MM-DD)
  *     relogio.manutencoes[].nome     o aviso
+ *     relogio.medicao_janela_texto   a janela da conta do gasto medido por extenso (o "contar por" da Configuração: dias ou leituras)
  *     relogio.medicao_janela_dias    a janela da média do gasto medido, em dias (a da Configuração)
  *     relogio.medicoes[]             as medições do gasto pelas leituras (cada leitura de um tipo que mede o gasto, comparada com a
  *                                    anterior), da mais recente para a mais antiga
@@ -1720,9 +1777,26 @@
  *     relogio.medicoes[].medida      o gasto do intervalo sozinho, no histórico: uso (o gasto por dia de uso, quando o intervalo teve meio
  *                                    dia de uso ou mais, ou mais dias de uso que fora) ou repouso (o gasto por dia fora do pulso); o gasto
  *                                    que vale sai de todas as medições juntas
- *     relogio.medicoes[].na_media    verdadeiro ou falso: entra na média agora (usada e dentro da janela da Configuração,
+ *     relogio.medicoes[].erro        o quanto a conta de agora erra a leitura desta medição que menos bate com as outras (a do começo ou a
+ *                                    do fim), em pontos de carga (número; null fora da janela ou só no histórico)
+ *     relogio.medicoes[].leitura_fraca
+ *                                    o valor da leitura desta medição que menos bate com as outras (a do começo ou a do fim) (número; null
+ *                                    fora da conta)
+ *     relogio.medicoes[].fora        verdadeiro ou falso: uma leitura desta medição não bate com as outras e pesa menos da metade na conta
+ *                                    (regressão robusta)
+ *     relogio.medicoes[].marcacao_de a marcação da leitura do começo da medição: uso ou repouso (null fora da conta)
+ *     relogio.medicoes[].marcacao_ate
+ *                                    a marcação da leitura do fim da medição: uso ou repouso (null fora da conta)
+ *     relogio.medicoes[].marcacoes_iguais
+ *                                    verdadeiro ou falso, no motor pela marcação (e no das fórmulas): as duas leituras têm a mesma
+ *                                    marcação, e a medição entra na conta daquele gasto; com marcações diferentes, não entra em nenhum dos
+ *                                    dois. null nos outros motores (eles não escolhem pela marcação)
+ *     relogio.medicoes[].na_media    verdadeiro ou falso: entra na conta agora (usada e dentro da janela da Configuração,
  *                                    medicao_janela_dias)
- *     relogio.medicoes[].peso_horas  o peso da medição na média: as horas que ela cobriu, no pulso (uso) ou guardado (repouso) (número)
+ *     relogio.medicoes[].peso        o peso, de 0 a 1, que a leitura desta medição que menos bate com as outras tem na conta (1: bate;
+ *                                    menos: a regressão robusta a pesa menos) (número; null fora da conta)
+ *     relogio.medicoes[].peso_horas  as horas que a medição cobriu, no pulso (uso) ou guardado (repouso) (número; a conta não pesa mais por
+ *                                    horas: todas as medições pesam igual)
  *     relogio.medicoes[].taxa        o gasto medido, em % por dia de uso (uso) ou por dia guardado (repouso) (número)
  *     relogio.medicoes[].usada       verdadeiro ou falso: a caixa "Atualizar o gasto com esta medição" estava marcada (entra na média);
  *                                    falso: só histórico
@@ -1763,16 +1837,31 @@
  *                                    tem)
  *     relogio.previsao.gasto.conjunta
  *                                    true: os dois gastos saem juntos da conta das medições; false: a média das medições de cada um
+ *     relogio.previsao.gasto.motor   o motor que calculou o gasto: horas, robusto, marcacao, cadastro ou formulas (veja config.gasto_motor)
+ *     relogio.previsao.gasto.motor_nome
+ *                                    o nome do motor por extenso ("Pela marcação: duas taxas separadas")
+ *     relogio.previsao.gasto.motor_de
+ *                                    de onde veio a escolha: colecao (a Configuração), relogio (o campo gasto_motor do relógio), grupo (o
+ *                                    padrão do campo) ou padrao (nada escolhido: horas)
+ *     relogio.previsao.gasto.base    o que a conta do gasto medido conta (o "contar por" da Configuração): dias ou leituras
+ *     relogio.previsao.gasto.janela_leituras
+ *                                    as últimas tantas medições de cada tipo que entram, com base leituras (número)
+ *     relogio.previsao.gasto.janela_texto
+ *                                    a janela por extenso: "dos últimos 90 dias" ou "das últimas 20 leituras de cada tipo"
  *     relogio.previsao.gasto.janela_dias
  *                                    a janela do gasto medido (medicao_janela_dias da Configuração), em dias (número)
+ *     relogio.previsao.gasto.fora    quantas medições da janela têm uma leitura que não bate com as outras e pesa menos da metade na conta
+ *                                    (número)
  *     relogio.previsao.gasto.medicoes
- *                                    quantas medições há na janela (número)
+ *                                    quantas medições da janela entram na conta (número)
  *     relogio.previsao.gasto.medicoes_antes
  *                                    quantas medições há na janela anterior, a dos antes (número)
  *     relogio.previsao.gasto.uso.antes
  *                                    o gasto em uso, em % por dia de uso, medido na janela anterior (número; null sem medição)
  *     relogio.previsao.gasto.uso.cadastro
  *                                    o gasto em uso, em % por dia de uso, pelo cadastro, sem as medições (número)
+ *     relogio.previsao.gasto.uso.medido_dp
+ *                                    a incerteza do gasto em uso medido: um desvio padrão, na mesma unidade (número; null sem medição)
  *     relogio.previsao.gasto.uso.medido
  *                                    o gasto em uso, em % por dia de uso, medido pelas leituras, como o MEDIDO (número; null sem medição)
  *     relogio.previsao.gasto.uso.vale
@@ -1796,6 +1885,9 @@
  *                                    o gasto fora do pulso, em % por dia, medido na janela anterior (número; null sem medição)
  *     relogio.previsao.gasto.repouso.cadastro
  *                                    o gasto fora do pulso, em % por dia, pelo cadastro, sem as medições (número)
+ *     relogio.previsao.gasto.repouso.medido_dp
+ *                                    a incerteza do gasto fora do pulso medido: um desvio padrão, na mesma unidade (número; null sem
+ *                                    medição)
  *     relogio.previsao.gasto.repouso.medido
  *                                    o gasto fora do pulso, em % por dia, medido pelas leituras, como o MEDIDO (número; null sem medição)
  *     relogio.previsao.gasto.repouso.vale
@@ -1848,9 +1940,9 @@
  *                                    o nome da categoria
  *     relogio.documentos.pasta_ok    verdadeiro: a pasta dos documentos (DOCUMENTOS_PASTA do config.php) está pronta para receber arquivos
  *     relogio.documentos.copia_sistema
- *                                    a cópia no banco pelo config.php (DOCUMENTOS_COPIA_BANCO), que vale sobre o relógio e o arquivo:
- *                                    verdadeiro, todo arquivo vai; falso, nenhum vai; null (sem a constante), cada relógio e cada arquivo
- *                                    decidem
+ *                                    a cópia no banco pela Configuração da coleção (documentos_copia), que vale sobre o relógio e o
+ *                                    arquivo: verdadeiro (todos), todo arquivo vai; falso (nenhum), nenhum vai; null (vazio), cada relógio
+ *                                    e cada arquivo decidem
  *     relogio.documentos.total       quantos documentos ele tem
  *   recurso=config
  *     mostrar_ate                    quantos dias as listas mostram por página (o "Mostrar até" da Configuração, já com o padrão)
@@ -1879,8 +1971,22 @@
  *     config.horario_manha           a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)
  *     config.horario_noite           a hora da rodada da noite: preparar o relógio de amanhã (HH:MM)
  *     config.max_sem_uso             a garantia de rodízio: nenhum relógio passa desses dias sem uso (0 desliga)
- *     config.medicao_janela_dias     a média do gasto medido pelas leituras usa as medições destes últimos dias (sem nenhuma na janela, a
- *                                    última)
+ *     config.medicao_base            o que o gasto medido conta ("contar por"): dias (as medições dos últimos medicao_janela_dias) ou
+ *                                    leituras (as últimas medicao_janela_leituras de cada tipo, em uso e em repouso)
+ *     config.gasto_motor             como calcular o gasto da bateria, para todos os relógios da coleção: horas (pelas horas registradas, o
+ *                                    motor original), robusto (pelas horas registradas, com leituras e cadastro), marcacao (pela marcação
+ *                                    das leituras: duas taxas separadas), cadastro (só o cadastro) ou formulas (pelas fórmulas taxa_uso e
+ *                                    taxa_repouso); vazio: vale o do relógio (o campo gasto_motor do cadastro), senão o padrão desse campo
+ *                                    (o grupo), senão horas
+ *     config.documentos_copia        a cópia dos documentos no banco, para a coleção inteira: todos (todo arquivo vai também para o banco),
+ *                                    nenhum (nenhum vai, nem o que o relógio ou o arquivo pedem) ou vazio (cada relógio e cada arquivo
+ *                                    decidem)
+ *     config_php_copia               o DOCUMENTOS_COPIA_BANCO que o config.php ainda define (verdadeiro ou falso), que não vale mais (a
+ *                                    Configuração mostra o aviso); null: não está lá
+ *     config.medicao_janela_dias     o gasto medido pelas leituras usa as medições destes últimos dias, com "contar por" dias (sem nenhuma
+ *                                    na janela, as de antes)
+ *     config.medicao_janela_leituras o gasto medido usa as últimas tantas medições de cada tipo (em uso e em repouso), com "contar por"
+ *                                    leituras (2 a 1000)
  *     config.encostado_dias          o aviso Encostado: depois de quantos dias sem ir ao pulso um relógio da coleção é avisado (1 a 3650;
  *                                    padrão 30)
  *     config.idioma                  o idioma padrão da instalação (pt-BR, en, zh-CN, hi, es, fr): o de quem não escolheu outro no menu, o
@@ -2255,12 +2361,24 @@
  *     previsoes[].gasto              os dois gastos da bateria lado a lado (as fórmulas taxa_uso e taxa_repouso; null se o relógio não as
  *                                    tem)
  *     previsoes[].gasto.conjunta     true: os dois gastos saem juntos da conta das medições; false: a média das medições de cada um
+ *     previsoes[].gasto.motor        o motor que calculou o gasto: horas, robusto, marcacao, cadastro ou formulas (veja config.gasto_motor)
+ *     previsoes[].gasto.motor_nome   o nome do motor por extenso ("Pela marcação: duas taxas separadas")
+ *     previsoes[].gasto.motor_de     de onde veio a escolha: colecao (a Configuração), relogio (o campo gasto_motor do relógio), grupo (o
+ *                                    padrão do campo) ou padrao (nada escolhido: horas)
+ *     previsoes[].gasto.base         o que a conta do gasto medido conta (o "contar por" da Configuração): dias ou leituras
+ *     previsoes[].gasto.janela_leituras
+ *                                    as últimas tantas medições de cada tipo que entram, com base leituras (número)
+ *     previsoes[].gasto.janela_texto a janela por extenso: "dos últimos 90 dias" ou "das últimas 20 leituras de cada tipo"
  *     previsoes[].gasto.janela_dias  a janela do gasto medido (medicao_janela_dias da Configuração), em dias (número)
- *     previsoes[].gasto.medicoes     quantas medições há na janela (número)
+ *     previsoes[].gasto.fora         quantas medições da janela têm uma leitura que não bate com as outras e pesa menos da metade na conta
+ *                                    (número)
+ *     previsoes[].gasto.medicoes     quantas medições da janela entram na conta (número)
  *     previsoes[].gasto.medicoes_antes
  *                                    quantas medições há na janela anterior, a dos antes (número)
  *     previsoes[].gasto.uso.antes    o gasto em uso, em % por dia de uso, medido na janela anterior (número; null sem medição)
  *     previsoes[].gasto.uso.cadastro o gasto em uso, em % por dia de uso, pelo cadastro, sem as medições (número)
+ *     previsoes[].gasto.uso.medido_dp
+ *                                    a incerteza do gasto em uso medido: um desvio padrão, na mesma unidade (número; null sem medição)
  *     previsoes[].gasto.uso.medido   o gasto em uso, em % por dia de uso, medido pelas leituras, como o MEDIDO (número; null sem medição)
  *     previsoes[].gasto.uso.vale     o gasto em uso, em % por dia de uso que vale na conta: o medido, senão o cadastro (número)
  *     previsoes[].gasto.uso.campos[] os campos do cadastro de onde sai o gasto em uso do cadastro (o decaimento, a autonomia...): o painel
@@ -2280,6 +2398,9 @@
  *                                    o gasto fora do pulso, em % por dia, medido na janela anterior (número; null sem medição)
  *     previsoes[].gasto.repouso.cadastro
  *                                    o gasto fora do pulso, em % por dia, pelo cadastro, sem as medições (número)
+ *     previsoes[].gasto.repouso.medido_dp
+ *                                    a incerteza do gasto fora do pulso medido: um desvio padrão, na mesma unidade (número; null sem
+ *                                    medição)
  *     previsoes[].gasto.repouso.medido
  *                                    o gasto fora do pulso, em % por dia, medido pelas leituras, como o MEDIDO (número; null sem medição)
  *     previsoes[].gasto.repouso.vale o gasto fora do pulso, em % por dia que vale na conta: o medido, senão o cadastro (número)
@@ -3093,11 +3214,11 @@
  *     relogio.id                     o número do relógio
  *     relogio.nome                   o nome do relógio
  *     relogio.copia_banco            verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da
- *                                    cópia; o DOCUMENTOS_COPIA_BANCO do config.php, se definido, vale por cima)
+ *                                    cópia; a Configuração da coleção, documentos_copia, se escolhe, vale por cima)
  *     pasta_ok                       verdadeiro: a pasta dos documentos (DOCUMENTOS_PASTA do config.php) existe e aceita gravar
- *     copia_sistema                  a cópia no banco pelo config.php (DOCUMENTOS_COPIA_BANCO), que vale sobre o relógio e o arquivo:
- *                                    verdadeiro, todo arquivo vai; falso, nenhum vai; null (sem a constante), cada relógio e cada arquivo
- *                                    decidem
+ *     copia_sistema                  a cópia no banco pela Configuração da coleção (documentos_copia), que vale sobre o relógio e o
+ *                                    arquivo: verdadeiro (todos), todo arquivo vai; falso (nenhum), nenhum vai; null (vazio), cada relógio
+ *                                    decide (a caixa do cadastro só aparece então)
  *     pasta_erro                     o motivo de a pasta não servir (texto); null: ela serve
  *     limite                         o maior arquivo aceito, em bytes (número inteiro): o DOCUMENTOS_LIMITE do config.php (sem ele, 100
  *                                    MB), ou menos pelo upload_max_filesize e o post_max_size do PHP; null: sem limite
@@ -3126,11 +3247,10 @@
  *     documentos[].no_disco          verdadeiro: o arquivo está na pasta dos documentos (falso: ele volta do banco quando for pedido ou na
  *                                    próxima rodada do cron; sem a cópia no banco, está perdido)
  *     documentos[].no_banco          verdadeiro: a cópia de segurança do arquivo está completa no banco (se ele sumir da pasta, volta dali)
- *     documentos[].copia_banco       verdadeiro: o próprio arquivo pede a cópia no banco (o terceiro nível; o relógio e o config.php, se
- *                                    pedem, valem por cima)
- *     documentos[].copia_por         quem pede a cópia no banco: sistema (o DOCUMENTOS_COPIA_BANCO = true do config.php), relogio (a marca
- *                                    do relógio) ou arquivo (a marca do próprio arquivo); null: ninguém pede, ou o config.php (false) não
- *                                    deixa, e o arquivo fica só na pasta (a cópia que houver, o cron tira)
+ *     documentos[].copia_banco       verdadeiro: o próprio arquivo pede a cópia no banco (o terceiro nível; o relógio e a Configuração da
+ *                                    coleção, se pedem, valem por cima)
+ *     documentos[].copia_por         quem pede a cópia no banco: sistema (a Configuração da coleção, documentos_copia = todos), relogio (a
+ *                                    marca do relógio) ou arquivo (a marca do próprio arquivo); null: ninguém
  *     documentos[].relogio_id        o relógio dele
  *     documentos[].tamanho           o tamanho do arquivo, em bytes (número inteiro)
  *     documentos[].tipo              o tipo do arquivo (MIME): image/jpeg, video/mp4, application/pdf, application/xml...
@@ -3637,8 +3757,9 @@ if ($recurso === "textos") {
             $todos[] = array_merge(["relogio_id" => (int)$r["id"], "relogio" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1], $a);
         }
     }
+    // o desempate (dois vencendo no mesmo instante) é fixo, para a lista sair igual em qualquer banco
     usort($todos, function ($x, $y) {
-        return $x["falta_dias"] <=> $y["falta_dias"];
+        return [$x["falta_dias"], $x["relogio_id"], $x["identificador"]] <=> [$y["falta_dias"], $y["relogio_id"], $y["identificador"]];
     });
     $saida = ["avisos" => $todos];
 } elseif ($recurso === "autonomia") {

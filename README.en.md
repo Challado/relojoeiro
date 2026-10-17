@@ -343,46 +343,99 @@ reading than expected, the plan corrects itself.
 
 ### Consumption measured by the readings
 
-The smartwatch record says "lasts 5 days". Reality disagrees, and changes as the battery ages. That's why **each charge reading
-you log is compared with the previous one**, and the interval between the two becomes a measurement: how much it dropped, how
-many hours it spent on the wrist and how many off the wrist (stored, turned off). The wearing hours in Settings count as wrist
-on their own, and your marks (*Put on*, *Took off*) take precedence.
+The smartwatch's record says "lasts 5 days". Reality disagrees, and changes as the battery ages. That's why **each charge
+reading you log is compared with the previous one**, and the interval between the two becomes a measurement: how much it
+dropped, how many hours it spent on the wrist and how many off the wrist (stored, switched off), and how you marked each
+reading (in use or at rest). The Settings' use hours count as wrist on their own, and your markings (*Put on*, *Took off*)
+rule. A rise in the reading is a recharge: a new stretch begins. And an interval with another session in the middle (the
+watch went to the charger) doesn't measure either: the measurement only knows how to separate wrist and stored.
 
-Each measurement is an equation with two unknown consumptions:
+**How to turn the measurements into the two consumptions (on the wrist and off the wrist) is your choice: there are five
+engines.** All of them stay in the system; none deletes anything, and switching engines only changes the calculation (the
+measurements are the same). The choice is made in three places, and the upper one overrides the lower ones:
+
+| Level | Where it is chosen | What it does |
+|---|---|---|
+| 1. **The collection** | **Battery drain: how to calculate**, in Settings (`gasto_motor`) | applies to every watch in the collection. Empty (*As the watch and the group say*): the two levels below decide. |
+| 2. **The watch** | the **How to calculate the battery drain** field (`gasto_motor`), in the watch's record | applies only to it. Empty: the group's. |
+| 3. **The group** | the **default** of that same field (in **Records › Fields**: the field sits at the root, and applies to the watches from where it is downwards) | applies to the watches that didn't choose. Empty: engine 1. |
+
+On a watch without charge readings (a mechanical, a solar), the choice does nothing. The **Battery consumption** box says which
+engine did the calculation and where the choice came from (*Calculated by: By the marking: two separate rates — the
+collection's choice, in Settings*).
+
+| Engine | What it does |
+|---|---|
+| 1. **By the recorded hours (the original engine)** (`horas`) | the default. Each measurement is split by the wrist markings minute by minute (so many hours on the wrist, so many off), and the two consumptions come out together from all the measurements in the window, each one weighing the time it covers. It is the calculation the system has always done. |
+| 2. **By the recorded hours, with readings and registration (robust)** (`robusto`) | the same hours, but the calculation is done on the readings, all with the same weight, the one that doesn't fit with the others weighs less and the record is the starting point (the three precautions below). Gives the uncertainty (±). |
+| 3. **By the marking: two separate rates** (`marcacao`) | what you mark rules. A reading marked **in use** measures the consumption on the wrist: the drop since the previous reading, divided by the whole time of the interval (in days of use). A reading marked **at rest** measures the consumption off the wrist, the same way. The two calculations **never cross**: the consumption in use comes only from the readings in use, and the one at rest only from the ones at rest; the recorded wrist doesn't enter. With the robust calculation on each side (the reading that doesn't fit weighs less; the record is the starting point), also with the uncertainty. |
+| 4. **Registration only** (`cadastro`) | the record's *Decay in use* (or *Real battery life in use*) and *Decay stored* always apply. The measurements keep being made and stay in the history (the **Consumption measurements** table), but enter no calculation at all: `MEDIDO` gives empty. |
+| 5. **By the registration formulas** (`formulas`) | whatever the `taxa_uso` and `taxa_repouso` formulas give applies, for you to build your own calculation in **Records › Formulas**. In them, `MEDIDO("uso")` and `MEDIDO("repouso")` are engine 3's calculation, and the **LEITURAS**, **QUEDA**, **DIAS_MEDIDOS**, **MEDIA_TAXA**, **MEDIANA_TAXA** and **ULTIMA_TAXA** functions give the pieces of the measurements by the marking (how many, the sum of the drops, the sum of the days, the average, the median and the last rate, of each kind, in the last N days or in the Settings' window): `MEDIANA_TAXA("uso")`, or `PADRAO(QUEDA("uso"; 30) / DIAS_MEDIDOS("uso"; 30); decaimento_uso)`. In the other engines the formulas also apply (the consumption comes from them); the difference is that this one says: the calculation is yours. |
+
+**Which measurements enter** is another Settings choice, **Measured drain: count by**: **days** (the measurements of the last
+so many days, 90 by default) or **readings** (the last so many measurements of each kind, in use and at rest, 20 by default).
+With none in the window, the earlier ones enter. It applies to engines 1, 2, 3 and 5 (and to the formula functions without
+the N of days).
+
+Between two recharges, the charge drops in a straight line with the time on the wrist and the time stored:
 
 ```text
-drop = days of use × consumption in use + days off the wrist × consumption off the wrist
+reading = charge at the start − consumption in use × days of use − consumption stored × days stored (+ the reading's error)
 ```
 
-With the measurements of the last days (90, in Settings), the system finds **both consumptions together**: the ones that best
-explain all the drops (least squares, and each measurement weighs the hours it covered). A night between two readings (only
-off the wrist) pins down the off-the-wrist consumption; the days on the wrist, already knowing that one, pin down the in-use
-consumption. Every measurement of 1 hour or more goes in, even the one with no drop at all (it says the consumption is small):
-the short one, where the rounding of the reading (the watch shows the charge in whole numbers) weighs more, goes in with a
-small weight. The more readings, the more accurate.
+Consecutive readings, with no recharge in between, form a **stretch**. Each stretch has its own starting charge (which the
+calculation finds out), and the two consumptions apply to all the stretches. In engine 2, with the readings in the window,
+the system finds **the two consumptions together**: the ones that best explain all the readings. A night between two readings
+(only off the wrist) pins down the consumption stored; the days on the wrist, already knowing that one, pin down the
+consumption in use. Every measurement of 1 hour or more enters, even the one with no drop at all (it says the consumption is
+small). The more readings, the more precise. In engine 3 the same calculation is done twice, once with only the readings in
+use and once with only the ones at rest.
 
-When the measurements don't yet separate the two (only readings with the watch stored, for example), the average of each
-consumption's measurements applies; with none in the last days, the earlier ones. The measured consumptions replace the record
-in the forecasts, and the history shows the battery losing breath over time. A rise in the reading is a recharge: a new
-starting point, without measuring. And an interval with another session in between (the watch went to the charger) doesn't
-measure either: the measurement can only separate wrist and stored.
+The robust calculation (engines 2 and 3) takes three precautions, each with a reason:
 
-When entering the charge, you say how the watch was at the reading time: in the **Mark** box, **Enter charge reading in
-use** (on the wrist) or **Enter charge reading at rest** (stored); in the *Enter the charge* alert on the Today page, the
-**In use** and **At rest** buttons. For the consumption, what counts is still the interval to the previous reading, split by
-the marks minute by minute: a reading at 10:05 pm, after a whole day on the wrist, measures almost only the in-use
-consumption; the one at 7:05 am the next day measures the night turned off. What you say works as a check. If the system had
-the watch some other way at that instant (the wearing hours put it on the wrist by itself, but it stayed stored; or a *Put on*
-was missing), the interval's marks were wrong: the measurement stays **only in the history**, without messing up the
-consumption, and the message says what didn't match. With the **Take off the wrist at the reading time** (or **Put on the wrist
-at the reading time**) box, which appears ticked when it doesn't match, the wrist matches from then on. If the reading is from
-before the wrist's last marking, the wrist stays as it is: fix it in **Correct or delete a marking**.
+1. **The calculation is done on the readings, and they all weigh the same.** The error comes from the reading: the watch
+   shows the charge in whole numbers, and its meter also errs a little. That error is the same in a reading taken 2 hours or
+   2 weeks after the previous one, so no reading is worth more than another for covering more time. And, as the calculation
+   looks at the readings (not at the drops), a wrong reading is a single point, instead of spoiling the two drops around it.
+2. **The reading that doesn't fit with the others weighs less (robust regression).** After the calculation, the system sees
+   how much it misses each reading by. The normal error comes from the readings themselves (never less than half a point);
+   the reading that is much farther than normal comes to weigh less, and the farther it is the less it weighs, and the
+   calculation is redone. It is not thrown away: it just weighs less. A common case: the **100% right after charging**, which
+   many watches hold for a while when the real charge is already dropping.
+3. **The record is the starting point.** The record's decay (or battery life) enters the calculation as the expected value,
+   with a leeway of half of it. With few readings, the consumption stays near the record; with many, the readings rule. And,
+   when the readings don't separate use from stored (only readings with the watch stored, for example), the consumption they
+   don't measure stays the record's.
+
+The result of these two engines comes with the **uncertainty** (± one standard deviation): *22.09% ± 1.48 per day of use*
+means the consumption in use is, with good odds, between 20.6% and 23.6%. It shrinks as readings come in.
+
+In the **Consumption measurements** table (in **Charge over time**), each measurement shows the marking of the two readings
+(*in use → in use*) and says whether it enters the calculation: *yes*; *partly: weighs 31%*, with the reading that doesn't
+fit well with the others (*the 100% reading doesn't fit well with the others: the calculation is off by 4.5 points on it*);
+or *no* (outside the window, taken out of the calculation, the two readings marked differently in engine 3, or engine 4).
+The reading's message also warns when the new reading doesn't fit with the others. Each row has the **Take out of the
+calculation** button (or **Put in the calculation**), for when you know something the system doesn't: the measurement leaves
+or comes back without deleting anything (applies in engines 1, 2, 3 and 5).
+
+When logging the charge, you say how the watch was at the time of the reading: in the **Mark** box, **Log charge reading in
+use** (on the wrist) or **Log charge reading at rest** (stored); in the *Log the charge* warning on the Today page, the **In
+use** and **At rest** buttons. **The marking is stored in the reading** (the `estado` column; in earlier readings, and in
+the ones a script logs without saying, what the recorded wrist said at that moment applies). It is what engine 3 uses, and
+serves as a check for the others. If the system had the watch the other way at that moment (the use hours put it on the
+wrist on their own, but it stayed stored; or a *Put on* was missing), the screen asks before saving: *I have it on the wrist
+now. Save the reading as at rest anyway?* **Continue** saves as you marked it (through the API, the response comes with
+`confirmar: true` and the question, and the entry is only saved by sending it again with `confirmar=1`); nothing is blocked,
+and the recorded wrist doesn't change: if it was wrong, fix it in **Correct or delete a marking**. The **Correct** box also
+changes the marking of a reading already saved.
 
 Both consumptions are in the **Battery consumption** box, on the watch's page:
 
-- **On the wrist** and **Off the wrist (turned off)**: the consumption that applies in the calculation, in bold, and where it
-  comes from (measured, with the record's next to it for comparison, or only from the record, when there's no measurement
-  yet).
+- **Calculated by**: the engine that did the calculation and where the choice came from (the collection, the watch, the
+  group, or the default).
+- **On the wrist** and **Off the wrist (switched off)**: the consumption that counts in the calculation, in bold, with the
+  uncertainty (± ..., in engines 2 and 3), and where it comes from (measured, with the record's next to it to compare, or only
+  from the record, when there is no measurement yet or the engine is 4).
 - Under each one, **in the record**: the record fields the record's consumption comes from (the *Decay in use*, the
   *Real battery life in use*, the *Decay when stored*), with the value and whether it was entered or is the default.
 - **In the 90 days before those**: the two consumptions measured in the previous window. It is the comparison that shows the
@@ -393,8 +446,9 @@ The same appears again, next to what is similar, in the **Watch data** box: in t
 table, under the consumption formulas (*taxa_uso*, *taxa_repouso*), the measured and the record's. And each measurement, one by
 one, is in **Charge over time › Consumption measurements**.
 
-Measurements older than the window leave the calculation by themselves. That's why the adjustment to aging is automatic: there
-is no need to touch the record. The record's "Drain in use" and "Drain when stored" only apply while there is no measurement.
+Measurements older than the window leave the calculation on their own. That's why the adjustment to ageing is automatic:
+there's no need to touch the record. The record's "Decay in use" and "Decay stored" only apply while there is no measurement
+(or always, in engine 4).
 
 ---
 
@@ -485,7 +539,7 @@ defaults are data, not code: you can change everything on the **Definitions** pa
 | **Group** | its place in the tree. It decides the fields, the formulas (a smartwatch's "charge" is the battery; a mechanical's, the power reserve) and the alerts it gets. |
 | **Status in the collection** | **In the collection** (the usual), **Wished** (the wishlist: not yours yet), **Lent** (it's yours, but someone else has it), **Sold** or **Archived**. Only what is in the collection goes into the rotation: in the other statuses the watch is unavailable (the database guarantees it: the `ck_relogio_posse_disponivel` rule), it leaves the draw, the schedule and the alerts, and, when it leaves the collection, its open sessions (on the wrist, in the sun, on the charger) close at once and its days in the plan from tomorrow on are removed and drawn again (today stays, but it no longer goes on the wrist by itself: change it in **change to…**). Its page, documents and history remain. The lent one stays in the table on the Today page (with the **Lent** state) and in the collection's value; the wished, sold and archived ones leave the table and appear on the **Wishlist** page (and in the watch page's selector, under **Outside the collection**). Going back to **In the collection**, it becomes available again. See [The wishlist](#the-wishlist). |
 | **Available** | unticked, it leaves the rotation and the alerts (at the repairer, on a break), but the history stays. Out of the collection, it is always unticked (and the field disappears from the record). |
-| **Keep a copy of all its documents in the database** | ticked, every file of the watch (the manual, the invoice, the photos, the videos) also goes to the database, as a backup. It only appears when `config.php` doesn't decide for all (without `DOCUMENTOS_COPIA_BANCO`). See [The watch's documents](#the-watchs-documents): it is the second of the three levels of the copy. |
+| **Keep a copy of all its documents in the database** | ticked, every file of the watch (the manual, the invoice, the photos, the videos) also goes to the database, as a backup. It only appears when the collection's Settings don't decide for all (**Copy of the documents in the database** empty). See [The watch's documents](#the-watchs-documents): it is the second of the three levels of the copy. |
 | **Photo** | just for the screen. In the watch's detail (the panel, or the watch page), resting the mouse on the photo shows a summary of it (the name, the group and the code; the state and the charge; the score and the next day in the rotation; the purchase) and the reminder about the double-click. **Double-clicking** it, or the **Open photo** button below, opens the photo in a floating window, at its size (only in the detail: on the other photos, like the one in *Today is the day for* and the list thumbnails, the click opens the watch); one bigger than the screen appears scaled, without distortion, at the largest size that fits the monitor (and the browser window), with the real size and the scale below. It closes with the ×, with a click outside or with Esc. |
 | **Accessories** | the straps, the box, the case, the tools, the charger, the parts: the **Accessories** box in the panel shows its own (the type, the name and the note), and the **Accessories** page adds and changes them (an accessory can belong to a watch or be loose, serving several). |
 | **Documents** | the manual, the invoice (in PDF and XML), the souvenir photos, the videos and anything else. See [The watch's documents](#the-watchs-documents). |
@@ -539,14 +593,15 @@ the page warns, and the cron's evening round logs how many there are.
 
 | Level | Where it is chosen | What it does |
 |---|---|---|
-| 1. **The system** | `DOCUMENTOS_COPIA_BANCO` in `config.php` | `true`: **every** file, of every watch, also goes to the database. `false`: **none** goes (not even what the watch or the file asks for). Without the line: the two levels below decide. |
+| 1. **The collection** | **Copy of the documents in the database**, in Settings (`documentos_copia`) | **All files**: **every** file, of every watch in the collection, also goes to the database. **No file**: **none** goes (not even what the watch or the file asks for). *As the watch and the file say* (empty): the two levels below decide. |
 | 2. **The watch** | the **Keep a copy of all its documents in the database** box, in the watch's record (or the **Keep all of its in the database** button, on its Documents page) | ticked, every file of that watch goes to the database, the existing ones and the ones to come. |
 | 3. **The file** | the **Keep a copy of these files in the database too** box, on upload, or **Keep a copy of this file in the database**, in edit | only that file goes to the database. |
 
-**The screen only shows the choice of whoever decides:** with `DOCUMENTOS_COPIA_BANCO` in `config.php` (`true` or `false`),
-neither the watch's box nor the files' box appears (the Documents page only says what `config.php` orders); with the watch
-keeping all, its files' box doesn't appear (neither on upload nor in edit), only the **Only the ticked ones** button, to go
-back.
+**The screen only shows the choice of whoever decides:** with the Settings deciding (all or none), neither the watch's box nor
+the files' box appears (the Documents page only says what the Settings order); with the watch keeping all, its files' box
+doesn't appear (neither on upload nor in edit), only the **Only the ticked ones** button, to go back. Each owner chooses for
+their own collection: the `DOCUMENTOS_COPIA_BANCO` of `config.php`, which applied to the whole server, no longer applies (if
+it is still there, the Settings warn).
 
 Ticked at a level and the file doesn't have the copy yet: on upload and in edit it goes right away; when ticking the watch, the
 cron copies its files little by little. Unticked and nobody else asks: in edit the copy is removed right away, and through the
@@ -556,7 +611,7 @@ marked on the file itself: nothing left the database.
 
 The database grows by the size of the copied files: a 500 MB video is 500 MB more in the database and in its backup. On the
 page, each file says where it is (only in the folder, in the folder and in the database, outside the folder) and who asked for
-the copy (`config.php`, the watch or the file itself).
+the copy (the Settings, the watch or the file itself).
 
 **The cleanup, by the cron (every minute):** a file that disappeared from the folder comes back from the database; a document
 that has the copy requested and doesn't yet have it in the database (the watch was just ticked, or a copy that failed) gets it,
@@ -621,6 +676,7 @@ charger (the **On the charger** session). Without any reading, the charge is unk
 | **Real-use autonomy** (days) `autonomia_dias` | 5 | How many **days of use** a full battery lasts in your real use (not the manufacturer's). It gives the in-use drain: 100 ÷ autonomy. With 1.5 days, the drain is 66.7% per day of use. It also decides how many days in a row it stays in the smart schedule (what the battery lasts, from 1 to 7). |
 | **Drain in use** (% per day) `decaimento_uso` | 100 ÷ autonomy | The in-use drain, directly. Filled in, it replaces the calculation from the autonomy. |
 | **Drain when stored** (% per day) `decaimento_repouso` | 0.1 | How much it loses turned off in the drawer. |
+| **How to calculate the battery drain** `gasto_motor` | the group's | Which of the five engines of the [measured consumption](#consumption-measured-by-the-readings) does this watch's calculation (`horas`, `robusto`, `marcacao`, `cadastro` or `formulas`). Empty: the field's default (the group), else `horas`. The Settings' choice, when made, overrides it. |
 | **On the charger: hours to fill, from empty** (h) `carga_carregador_horas` | 2 | How many hours on the charger take it from 0 to 100%. Each hour in the *On the charger* session adds 100 ÷ 2 = 50%, up to 100%. When it fills, the **Take off the charger** alert comes due. When taking it off, a charge reading sets the calculation right (it prevails). |
 
 Two details that change the calculation:
@@ -828,7 +884,11 @@ each line.
 | **Forecast limit** (`previsao_limite`) | the charge (%) that the smartwatch forecast uses for "reaches the limit in...". From 0 to 100. Default: 20. |
 | **Rotation guarantee** (`max_sem_uso`) | no watch goes more than these days without use: the one that does goes ahead of all. 0 turns it off. Default: 21. |
 | **Idle alert: days without going on the wrist** (`encostado_dias`) | after how many days without going on the wrist a watch in the collection gets the **Idle** alert (in **Today is the day for**: *Idle*, *"the limit of days without going on the wrist was due 2d ago, 10/11/2026 18:00"*). From 1 to 3650. Default: 30. The alert is turned off in **Definitions › Alerts**. |
-| **Measured consumption: the last days** (`medicao_janela_dias`) | the window of the [consumption measured by the readings](#consumption-measured-by-the-readings): older measurements leave the calculation. From 1 to 3650. Default: 90. |
+| **Battery drain: how to calculate** (`gasto_motor`) | which of the five engines of the [consumption measured by the readings](#consumption-measured-by-the-readings) does the calculation, for every watch in the collection: **1. By the recorded hours (the original engine)**, **2. ... (robust)**, **3. By the marking: two separate rates**, **4. Registration only** or **5. By the registration formulas**. Default: empty (*As the watch and the group say*: each watch's **How to calculate the battery drain** field, else its default, else engine 1). |
+| **Measured drain: count by** (`medicao_base`) | what enters the measured consumption's calculation: **Days** (`dias`, the measurements of the last so many days) or **Readings** (`leituras`, the last so many measurements of each kind, in use and at rest). Default: days. |
+| **Measured drain: average of the last (days)** (`medicao_janela_dias`) | the measured consumption's window, counting by days: older measurements leave the calculation. From 1 to 3650. Default: 90. |
+| **Measured drain: last readings (of each kind)** (`medicao_janela_leituras`) | the window counting by readings: how many measurements of each kind enter. From 2 to 1000. Default: 20. |
+| **Copy of the documents in the database** (`documentos_copia`) | for the whole collection: **All files** (`todos`), **No file** (`nenhum`) or empty (*As the watch and the file say*). It is the first of the three levels of the copy (see [The watch's documents](#the-watchs-documents)). Default: empty. |
 | **System address** (`url_sistema`) | the address that the `{link}` placeholder puts in the messages and in the calendar, and the one of the links in the e-mails, the ICS and the Outlook return. It belongs to the whole system: only the master changes it. Default: empty (the address the page was opened from). |
 | **Next days: show up to** (`proximos_por_pagina`) and **Plan: show up to** (`plano_por_pagina`) | how many days the **Next days** on the Today page and the **Day by day** on the Plan page show at a time (from 1 to 366). Beyond that, the page navigator appears below: **<** (previous), the numbers (the first, the last and up to two on each side of the current one, with … in the gaps) and **>** (next); resting the mouse on it, the tip says *Previous*, *Next* or *Page N*. Default: 7 and 31. |
 | **Default language** (`idioma`) | the collection's language: the one of the screens for whoever hasn't chosen their own (in the menu selector or in **My account**; see [The languages](#the-languages)) and the one of the messages and calendars without a language of their own: Portuguese, English, Chinese, Hindi, Spanish or French. Default: the one of whoever created the collection. |
@@ -1180,7 +1240,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `relogio` | `salvar` (create or change), `excluir` (with the documents), `foto`, `remover_foto` |
 | `documentos` | `enviar` (one or several files, with the category, the title, the date, the description and, for a photo, the thumbnail), `alterar`, `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (only without documents) |
-| `lancamento` | `lancar` (winding, charge, battery...), `iniciar` and `encerrar` (put on and take off the wrist, the winder, the sun, the charger), `alternar` (closes the session if it is open, opens it if it is closed: a single button on the phone), `periodo` (a period that has passed), `alterar`, `excluir`. In all of them, `relogio_id=hoje` is the watch of the day |
+| `lancamento` | `lancar` (winding, charge, battery...), `iniciar` and `encerrar` (put on and take off the wrist, the winder, the sun, the charger), `alternar` (closes the session if it is open, opens it if it is closed: a single button on the phone), `periodo` (a period that has passed), `alterar`, `excluir`, `medicao` (a consumption measurement goes into or out of the calculation: `id`, `usada` 1 or 0). In all of them, `relogio_id=hoje` is the watch of the day |
 | `rodizio` | `usando` (I'm wearing this one today), `trocar_dia` (a day's watch), `periodo` (the watches of a period, in order: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (erases the period's days and the mode builds them again; only `de`: to the end of the plan; only `ate`: from tomorrow to it), `periodo_livre` (erases and leaves the days free, without a draw; the same dates), `manual` (the Manual rotation: `de`, `ate`, `dias[YYYY-MM-DD]` = the watch id, `auto` or `livre`), `apagar_tudo` (the whole schedule from tomorrow on goes away; `hoje=1`: from today on; the mode builds the plan again), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (change the mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (groups) and `relogios` (each watch's group) |
@@ -1369,7 +1429,6 @@ get in through **Create account** (`cadastro.php`), through an invitation of you
 | `VAPID_PUBLICA`, `VAPID_PRIVADA`, `VAPID_ASSUNTO` | Web Push: the key pair (the master generates it in **My account**) and the subject (`mailto:...`) |
 | `OUTLOOK_CLIENTE_ID`, `OUTLOOK_CLIENTE_SEGREDO` | the application registered with Microsoft, for the Outlook calendars (see below) |
 | `DOCUMENTOS_PASTA` | the folder of the documents' files (the manual, the invoice, photos, videos), **outside the published folder**, writable by the PHP user. Without it, the Documents page says it is missing and doesn't accept uploads. E.g.: `define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
-| `DOCUMENTOS_COPIA_BANCO` | optional: the documents' backup inside the database, for the whole system. `true`: every file also goes to the database; `false`: none goes; without it: each watch and each file decide. See [The watch's documents](#the-watchs-documents). |
 | `BACKUP_PASTA`, `BACKUP_MANTER`, `BACKUP_DOCUMENTOS` | optional: the database backup (see [Backup](#backup)). The folder, **outside the published folder** (without it, there is no automatic backup); how many are kept (default 7); and whether it takes the content of the documents stored in the database (default: no). |
 | `BACKUP_ATIVO` | optional: `false` turns the backup off: no automatic copy, no **Make a backup now** and no **Backup** box in Settings (not even the warning that the folder is missing). Without it: on |
 | `DOCUMENTOS_LIMITE` | optional: the largest document accepted, in bytes. Without it, 100 MB (`104857600`); `0` or `-1`, no system limit. `MANUAL_LIMITE`, the old name, still works when it doesn't exist. PHP's and nginx's limits still apply (see [The size of uploads](#the-size-of-uploads-the-documents)). E.g.: `define("DOCUMENTOS_LIMITE", 524288000);` for 500 MB |
