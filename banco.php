@@ -563,8 +563,57 @@ function banco_executar($comando, $params = [])
     return $r;
 }
 
-// O comando no banco, sem o escopo
+// O fuso do pedido, quando é outro que não o do sistema (lib.php, fuso_definir): as datas com hora que vão para o banco
+// (os parâmetros "AAAA-MM-DD HH:MM[:SS]") saem do fuso do pedido para o do sistema, e as que voltam (qualquer valor
+// nesse formato) fazem o caminho inverso. Só as datas com hora: a data sozinha (o dia do plano, a da compra) é um dia do
+// calendário, igual em todo fuso. No fuso do sistema (o comum), nada é tocado. null desliga
+function banco_fuso($fuso = false)
+{
+    static $atual = null;
+    if ($fuso !== false) {
+        $atual = $fuso === null ? null : [new DateTimeZone($fuso), new DateTimeZone($GLOBALS["FUSO_SISTEMA"] ?? date_default_timezone_get())];
+    }
+    return $atual;
+}
+
+function banco_fuso_converter($valor, $de, $para)
+{
+    if (!is_string($valor) || strlen($valor) < 16 || strlen($valor) > 26 || preg_match("/^(\\d{4}-\\d{2}-\\d{2})[ T](\\d{2}:\\d{2})(:\\d{2})?(\\.\\d+)?\$/", $valor, $m) !== 1) {
+        return $valor;
+    }
+    // os tetos e os pisos ("9999-12-31 23:59:59", o "desde sempre") ficam como estão: convertidos, saem do calendário
+    $ano = (int)substr($m[1], 0, 4);
+    if ($ano < 1900 || $ano > 9998) {
+        return $valor;
+    }
+    $d = DateTimeImmutable::createFromFormat("Y-m-d H:i:s", $m[1] . " " . $m[2] . (isset($m[3]) && $m[3] !== "" ? $m[3] : ":00"), $de);
+    return $d === false ? $valor : $d->setTimezone($para)->format("Y-m-d H:i:s") . ($m[4] ?? "");
+}
+
+// O comando no banco, sem o escopo (as datas com hora convertidas de e para o fuso do pedido, quando há)
 function banco_executar_cru($comando, $params = [])
+{
+    $fuso = banco_fuso();
+    if ($fuso === null) {
+        return banco_executar_banco($comando, $params);
+    }
+    foreach ($params as $k => $p) {
+        $params[$k] = banco_fuso_converter($p, $fuso[0], $fuso[1]);
+    }
+    $r = banco_executar_banco($comando, $params);
+    if ($r !== null) {
+        foreach ($r[1] as $i => $l) {
+            foreach ($l as $j => $v) {
+                if (is_string($v) && strlen($v) >= 16 && ($v[4] ?? "") === "-") {
+                    $r[1][$i][$j] = banco_fuso_converter($v, $fuso[1], $fuso[0]);
+                }
+            }
+        }
+    }
+    return $r;
+}
+
+function banco_executar_banco($comando, $params = [])
 {
     $params = array_values($params);
     $traduzido = sql_traduzir($comando);
@@ -875,7 +924,11 @@ function banco_fb_ultimo_id($novo = null)
 // (a tradução fica guardada e a hora muda)
 function banco_fb_agora($comando)
 {
-    return strpos($comando, "'@@AGORA@@'") === false ? $comando : str_replace("'@@AGORA@@'", "'" . date("Y-m-d H:i:s") . "'", $comando);
+    if (strpos($comando, "'@@AGORA@@'") === false) {
+        return $comando;
+    }
+    $agora = (new DateTimeImmutable("now"))->setTimezone(new DateTimeZone($GLOBALS["FUSO_SISTEMA"] ?? date_default_timezone_get()))->format("Y-m-d H:i:s");
+    return str_replace("'@@AGORA@@'", "'" . $agora . "'", $comando);
 }
 
 // As tabelas do Firebird com a coluna id automática (IDENTITY), em minúsculas. Muda com o DDL (limpar)

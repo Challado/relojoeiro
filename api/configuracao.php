@@ -15,9 +15,13 @@ $valores_c = [];
 foreach (linhas("SELECT chave, valor FROM config ORDER BY chave") as $c) {
     $valores_c[$c["chave"]] = $c["valor"];
 }
+// o aviso Encostado ligado ou não (a caixa da Configuração liga e desliga o aviso do cadastro, o mesmo que a página Avisos)
+$valores_c["encostado_ativo"] = encostado_ativo() ? "1" : "0";
 $saida = ["config" => (object)$valores_c,
     // os idiomas (o menu Idioma padrão)
     "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS)),
+    // os fusos (o campo Fuso horário: vazio é o do sistema) e o do sistema
+    "fuso_sistema" => fuso_sistema(), "fusos" => fusos_lista(),
     "mostrar_ate" => ["proximos" => proximos_por_pagina(), "plano" => plano_por_pagina()],
     "aleatorio" => ["fontes" => ["RANDOM.ORG", "ANU QRNG", t("gerador seguro do PHP (random_int)")], "ultimo_lote" => sis("aleatorio_ultima") !== "" ? sis("aleatorio_ultima") : null,
         "fora_desde" => sis("aleatorio_fora") !== "" ? date("Y-m-d H:i:s", (int)sis("aleatorio_fora")) : null], "sol_fim" => isset(lancamento_tipos()["sol"]) && lancamento_tipos()["sol"]["fecha_as"] !== null ? substr(lancamento_tipos()["sol"]["fecha_as"], 0, 5) : "",

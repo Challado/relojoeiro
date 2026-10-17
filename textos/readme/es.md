@@ -1,4 +1,4 @@
-<!-- origem: 2f35c02d11e915942dc07d8659b27ef5bb6b7b58 -->
+<!-- origem: 3148a388d990acd48b819e300295e1db5a0e6dec -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -357,7 +357,7 @@ entran por **Crear cuenta** (`cadastro.php`), por una invitación suya, o el mas
 | `DB_HOST`, `DB_PORTA`, `DB_NOME`, `DB_USUARIO`, `DB_SENHA` | el servidor de la base (MySQL, Postgres y Firebird); `DB_PORTA` 0 es el puerto predeterminado. En Firebird, `DB_NOME` es la ruta del archivo `.fdb` en el servidor (ej.: `/var/lib/firebird/3.0/data/relogios2.fdb`) o un alias del `databases.conf`, y `DB_HOST` vacío abre el archivo directo, sin servidor (el Firebird embebido) |
 | `DB_ARQUIVO` | el archivo de la base (SQLite), fuera de la carpeta publicada |
 | `API_TOKEN` | **obligatorio**, con 10 caracteres o más. Sin él el sistema entero se detiene y dice por qué. |
-| `FUSO` | la zona horaria, como `America/Sao_Paulo`. Vacío o ausente: la de PHP (`date.timezone` en el php.ini). Vale para todo, incluso para las fechas que guarda la base |
+| `FUSO` | la zona horaria del sistema, como `America/Sao_Paulo`. Vacío o ausente: la de PHP (`date.timezone` en el php.ini). Es el huso de las fechas que guarda la base y el de quien no eligió otro; cada colección (Configuración) y cada persona (Mi cuenta) puede elegir el suyo (vea [El huso horario](#o-fuso-horário)) |
 | `SEGREDO_CHAVE` | opcional: la clave que cifra en la base las contraseñas del CalDAV, las claves de Google, los tokens de Outlook y las cabeceras de los webhooks. Sin ella, el `API_TOKEN` (cambiar la clave pierde los secretos guardados: basta con escribirlos de nuevo) |
 | `MSG_TITULO` | el título de los mensajes (el `{titulo}` de los webhooks, el asunto del correo, el título del Web Push). Por defecto: Relógios |
 | `MSG_ENDPOINT`, `MSG_DESTINATARIO` | solo para la migración v25: la API de mensajes antigua (Telegram) se convierte en el primer destino webhook de la colección |

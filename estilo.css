@@ -156,7 +156,9 @@ fieldset { border: 0; padding: 0; margin: 0 0 1rem; display: flex; flex-wrap: wr
 fieldset select, fieldset input, fieldset label { max-width: 100%; min-width: 0; }
 fieldset label, .cadastro label { display: flex; flex-direction: column; gap: .25rem; font-size: .95rem; }
 .cadastro { display: grid; gap: .9rem; max-width: 28rem; }
-.cadastro label.check { flex-direction: row; align-items: center; gap: .5rem; }
+/* a caixa de marcar com o texto ao lado, em qualquer formulário (o rótulo em coluna é para os campos de digitar) */
+label.check, .cadastro label.check { flex-direction: row; align-items: center; gap: .5rem; }
+label.check input[type=checkbox] { width: auto; flex: none; margin: 0; }
 .nota { color: var(--cinza); font-size: .92rem; }
 
 [hidden] { display: none !important; }
@@ -580,6 +582,8 @@ nav.paginas span.atual { background: var(--safira); color: #fff; border-color: v
 
 /* coluna "Em": quanto falta para a próxima manutenção */
 #tabela-relogios .col-em, #tabela-relogios .col-encostado { font-variant-numeric: tabular-nums; }
+/* o aviso Encostado desligado na Configuração: a coluna e o filtro somem (hoje.js põe a classe) */
+#tabela-relogios.sem-encostado .col-encostado, #tabela-relogios.sem-encostado.em-cartoes thead th.col-encostado, #tabela-relogios.sem-encostado.em-cartoes tr.filtros td.col-encostado, #tabela-relogios.sem-encostado.em-cartoes tbody td.col-encostado { display: none; }
 #tabela-relogios td.col-em.atrasado, #tabela-relogios td.col-encostado.atrasado { color: #9b2c22; font-weight: 600; }
 
 /* ---------- quadro "Hoje": texto, informações do relógio do dia e a foto no canto direito ---------- */
@@ -685,6 +689,12 @@ table.config-email td:first-child { white-space: nowrap; font-weight: 600; }
 .conta-nota summary { display: flex; align-items: baseline; gap: .6rem; }
 .conta-nota .nota-final { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
 .tabela-conta td, .tabela-criterios td { vertical-align: middle; }
+/* a seta de cada critério na conta da nota: puxa para cima (verde), para baixo (vermelho) ou é neutro (marrom) */
+.tabela-conta .puxa { text-align: center; line-height: 1; white-space: nowrap; }
+.tabela-conta .puxa svg { vertical-align: middle; }
+.tabela-conta .puxa-sobe { color: #2e7d32; }
+.tabela-conta .puxa-desce { color: #9b2c22; }
+.tabela-conta .puxa-neutro { color: #7a4b2a; }
 @media (max-width: 560px) {
   .pagina-criterios input.curto { width: 4.2rem; }
   .tabela-criterios input[name^="nome"] { min-width: 9rem; }
@@ -833,7 +843,7 @@ small.a-mao { color: var(--ambar); font-weight: 600; }
 p.motivo { font-size: .88rem; margin: .5rem 0 0; }
 p.motivo strong { color: var(--tinta); font-weight: 600; }
 h2 a.ver-plano { font-size: .85rem; font-weight: 400; margin-left: .6rem; color: var(--safira); }
-main.plano { max-width: 64rem; }
+main.plano { max-width: 76rem; }
 main.plano h3 { margin: 1.4rem 0 .4rem; font-size: 1rem; }
 .filtros-plano { display: flex; flex-wrap: wrap; gap: .6rem 1.4rem; margin: .8rem 0 1.2rem; }
 .filtros-plano label { display: flex; flex-direction: column; gap: .2rem; font-size: .9rem; }
@@ -970,6 +980,7 @@ table.resumo-plano { max-width: 44rem; }
 
 /* os documentos de um relógio: a galeria das fotos, o visor em tela cheia, o player dos vídeos, o PDF e os cartões */
 .documentos .doc-secao { margin: 1.2rem 0; }
+main.documentos { max-width: 76rem; }
 .documentos .envio-docs { background: var(--papel); border: 1px solid var(--aco); border-radius: 10px; padding: .6rem .9rem; margin: .8rem 0; }
 .documentos .envio-docs summary { cursor: pointer; font-weight: 600; }
 .galeria { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .6rem; }
@@ -1176,9 +1187,10 @@ a.botao { display: inline-flex; align-items: center; justify-content: center; mi
 a.botao.leve { background: transparent; color: var(--safira); }
 a.botao:hover { filter: brightness(1.08); }
 
-/* ---------- Configuração: quadros da mesma altura numa grade; em cada um, uma opção por linha, o rótulo à esquerda e o
-   campo à direita, na mesma coluna em todos; salvar numa barra presa no pé da tela ---------- */
-.config-grade { grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr)); align-items: stretch; }
+/* ---------- Configuração: quadros numa grade, cada um com a altura do que tem; em cada um, uma opção por linha, o rótulo
+   à esquerda e o campo à direita (os de opção comprida, largos: o campo embaixo do rótulo); salvar numa barra presa no pé
+   da tela ---------- */
+.config-grade { grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr)); align-items: start; }
 /* só nas grades (os quadros da mesma linha com a mesma altura, o pé no fundo): os outros quadros ficam como sempre */
 .config-grade > .cartao-config, .modelos > .cartao-config { display: flex; flex-direction: column; gap: .6rem; }
 .cartao-config > h2 { margin-bottom: .75rem; }
@@ -1191,8 +1203,8 @@ a.botao:hover { filter: brightness(1.08); }
 .cartao-corpo > p:first-child { margin-top: 0; }
 .cartao-pe { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding-top: .6rem; border-top: 1px solid var(--aco); }
 .cartao-pe > .nota { flex: 1 1 100%; margin: 0; }
-.campos { display: grid; }
-.par-campo { display: grid; grid-template-columns: minmax(0, 1fr) 10.5rem; align-items: center; gap: .9rem; padding: .45rem 0; border-bottom: 1px solid var(--aco); font-size: .93rem; }
+.campos { display: grid; max-width: 46rem; }
+.par-campo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(11rem, 55%); align-items: center; gap: .9rem; padding: .45rem 0; border-bottom: 1px solid var(--aco); font-size: .93rem; }
 .par-campo:last-child { border-bottom: 0; }
 .par-campo .controle { display: flex; min-width: 0; }
 .par-campo .controle input:not([type=checkbox]), .par-campo .controle select { width: 100%; }
@@ -1226,7 +1238,7 @@ table.canais { max-width: none; }
 details.novo-evento { max-width: none; }
 @media (max-width: 700px) {
   .config-grade { grid-template-columns: minmax(0, 1fr); }
-  .par-campo { grid-template-columns: minmax(0, 1fr) 8.5rem; gap: .6rem; }
+  .par-campo { grid-template-columns: minmax(0, 1fr) minmax(8.5rem, 55%); gap: .6rem; }
   .par-campo.largo { grid-template-columns: minmax(0, 1fr); }
   .barra-salvar { justify-content: stretch; }
   .barra-salvar .nota { display: none; }
@@ -1237,6 +1249,12 @@ details.novo-evento { max-width: none; }
 .acoes-linha { white-space: nowrap; text-align: right; }
 td.acoes-linha { width: 1%; }
 .acoes-linha form { display: inline-flex !important; margin: 0; vertical-align: middle; }
+.acoes-linha > details.acoes-usuario:not([open]) { display: inline-block; vertical-align: middle; }
+.acoes-linha > details.acoes-usuario > summary { display: inline-flex; align-items: center; height: 1.9rem; padding: 0 .6rem; margin: 0 0 0 .25rem; font-size: .82rem; font-weight: 500;
+  border: 1px solid var(--aco-escuro); border-radius: 6px; background: #fff; color: var(--safira); cursor: pointer; list-style: none; }
+.acoes-linha > details.acoes-usuario > summary::-webkit-details-marker { display: none; }
+.acoes-linha > details.acoes-usuario > summary:hover { background: #eef3fa; }
+.acoes-linha > details.acoes-usuario[open] { text-align: left; white-space: normal; }
 .acoes-linha a, .acoes-linha button, .acoes-ev a, .acoes-ev button {
   display: inline-flex; align-items: center; justify-content: center; height: 1.9rem; min-height: 1.9rem; padding: 0 .6rem; margin: 0 0 0 .25rem;
   font-size: .82rem; font-weight: 500; border: 1px solid var(--aco-escuro); border-radius: 6px; background: #fff; color: var(--safira);
@@ -1490,18 +1508,43 @@ table.tabela-distribuicao td { padding: .3rem .4rem; overflow-wrap: break-word; 
   .resumo-estatisticas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-/* ---------- Hora certa: o mostrador, a hora digital e os quadros ---------- */
-.relogio-certo { display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
-svg.mostrador { width: min(15rem, 100%); height: auto; flex: none; }
-svg.mostrador .caixa { fill: #fff; stroke: var(--tinta); stroke-width: 3; }
-svg.mostrador .marca-h { stroke: var(--tinta); stroke-width: 3; }
-svg.mostrador .marca-m { stroke: var(--aco-escuro); stroke-width: 1; }
-svg.mostrador .p-hora { stroke: var(--tinta); stroke-width: 6; stroke-linecap: round; }
-svg.mostrador .p-min { stroke: var(--tinta); stroke-width: 4; stroke-linecap: round; }
-svg.mostrador .p-seg { stroke: #b3261e; stroke-width: 1.5; stroke-linecap: round; }
-svg.mostrador .eixo { fill: #b3261e; }
-.digital-bloco { min-width: 0; flex: 1 1 14rem; }
-.digital { font-size: clamp(2.6rem, 9vw, 4.5rem); font-weight: 700; margin: 0; font-variant-numeric: tabular-nums; letter-spacing: .02em; line-height: 1.1; }
+/* ---------- Hora certa: o mostrador analógico, o relógio digital (LCD), o anadigi e os quadros ---------- */
+/* os relógios centralizados (um ou dois, lado a lado) e o texto centralizado embaixo deles */
+.relogio-certo { display: flex; align-items: center; justify-content: center; gap: 2rem 3rem; flex-wrap: wrap; margin-bottom: 1.2rem; padding-top: 1.6rem; }
+/* o mostrador: a caixa de aço, o aro, o mostrador claro, os índices, os numerais, a janela da data e os ponteiros */
+svg.mostrador { width: min(17rem, 100%); height: auto; flex: none; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .25)); }
+svg.mostrador .caixa { fill: url(#g-caixa); stroke: #6b7684; stroke-width: 1; }
+svg.mostrador .aro { fill: #27323f; }
+svg.mostrador .dial { fill: url(#g-dial); stroke: #c3cad2; stroke-width: .6; }
+svg.mostrador .marca-h { fill: var(--tinta); }
+svg.mostrador .marca-m { stroke: #6b7684; stroke-width: 1; }
+svg.mostrador .numeral { font: 700 19px/1 Georgia, "Times New Roman", serif; fill: var(--tinta); }
+svg.mostrador .marca-nome { font: 600 7.5px/1 Arial, Helvetica, sans-serif; letter-spacing: 2.2px; fill: var(--safira); }
+svg.mostrador .marca-sub { font: italic 6.5px/1 Georgia, serif; letter-spacing: 1.4px; fill: #6b7684; }
+svg.mostrador .janela { fill: #fff; stroke: var(--tinta); stroke-width: 1; }
+svg.mostrador .janela-dia { font: 700 12px/1 Arial, Helvetica, sans-serif; fill: var(--tinta); }
+svg.mostrador .p-hora, svg.mostrador .p-min { fill: var(--tinta); }
+svg.mostrador .lume { fill: #e9f0d6; }
+svg.mostrador .p-seg { stroke: #b3261e; stroke-width: 1.6; stroke-linecap: round; }
+svg.mostrador .contrapeso { fill: #b3261e; }
+svg.mostrador .eixo { fill: var(--tinta); }
+svg.mostrador .eixo-centro { fill: #b3261e; }
+/* o anadigi: o visor de cristal líquido dentro do mostrador */
+svg.mostrador .visor { fill: #c3cdb0; stroke: #2b3326; stroke-width: 2; }
+svg.mostrador .visor-data { font: 700 9px/1 ui-monospace, Menlo, Consolas, monospace; fill: #1a2118; letter-spacing: 1px; }
+svg.mostrador .visor-hora { font: 700 16px/1 ui-monospace, Menlo, Consolas, monospace; fill: #1a2118; letter-spacing: .5px; }
+/* o relógio digital: a caixa escura e o visor LCD com os "88:88:88" apagados atrás dos dígitos */
+.lcd-caixa { flex: none; width: min(22rem, 100%); box-sizing: border-box; padding: .9rem 1.1rem 1.1rem; border-radius: 1.2rem; color: #9aa4b0;
+  background: linear-gradient(#3a434e, #1c2530); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .15), 0 6px 14px rgba(0, 0, 0, .3); }
+.lcd-marca { display: flex; justify-content: space-between; font-size: .68rem; letter-spacing: .22em; text-transform: uppercase; margin-bottom: .55rem; }
+.lcd { background: linear-gradient(170deg, #cfd8bd, #b8c3a4); border: 3px solid #0f141a; border-radius: .45rem; padding: .45rem .7rem .4rem; color: #1a2118;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; box-shadow: inset 0 2px 6px rgba(0, 0, 0, .35); }
+.lcd-linha { display: flex; justify-content: space-between; font-size: .85rem; font-weight: 700; letter-spacing: .06em; }
+.lcd-digitos { position: relative; text-align: center; font-size: clamp(2.3rem, 8vw, 3.4rem); font-weight: 700; letter-spacing: .04em; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.lcd-digitos .fantasma { position: absolute; inset: 0; opacity: .09; }
+.digital-bloco { min-width: 0; flex-basis: 100%; text-align: center; }
+.digital-bloco .nota { max-width: 44rem; margin-left: auto; margin-right: auto; }
+.hora-texto { font-size: clamp(2rem, 7vw, 3rem); font-weight: 700; margin: 0; font-variant-numeric: tabular-nums; letter-spacing: .02em; line-height: 1.1; }
 .data-longa { font-size: 1.1rem; margin: .3rem 0 .6rem; }
 .grade-hora .cartao-config { min-width: 0; }
 .lua-simbolo { font-size: 1.3rem; vertical-align: -.1rem; }

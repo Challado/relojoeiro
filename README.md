@@ -154,7 +154,9 @@ Os critérios que vêm prontos, para todos os relógios:
 
 Cada grupo, e até cada relógio, pode ter o seu próprio conjunto. O smartwatch, por exemplo, também pesa a **energia** (a carga
 agora e quantos dias ela aguenta), para não sortear um relógio que vai morrer ao meio-dia. A página **Critérios** mostra a
-conta inteira de cada nota: cada faixa, cada peso e cada ponto.
+conta inteira de cada nota: cada faixa, cada peso e cada ponto, e ao lado da nota de cada critério uma seta diz para onde ele
+puxa a nota final: **↑** verde (nota acima de 50, o neutro: puxa para cima), **↓** vermelha (abaixo de 50: puxa para baixo) ou
+**↔** marrom (50 em ponto, ou sem peso: neutro, não puxa para nenhum lado).
 
 Os conjuntos que vêm prontos, completos. A nota de um parâmetro é a média das notas dos subparâmetros, pelo peso de cada um; a
 nota do relógio é a média dos parâmetros, pelo peso. Cada subparâmetro lê uma variável (um campo ou uma fórmula) e dá a nota
@@ -349,7 +351,7 @@ o de cima vale sobre os de baixo:
 
 | Nível | Onde se escolhe | O que faz |
 |---|---|---|
-| 1. **A coleção** | **Gasto da bateria: como calcular**, na Configuração (`gasto_motor`) | vale para todos os relógios da coleção. Vazio (*Conforme o relógio e o grupo*): decidem os dois níveis de baixo. |
+| 1. **A coleção** | **Gasto da bateria: como calcular (válido para todos os relógios)**, na Configuração (`gasto_motor`) | vale para todos os relógios da coleção. Vazio (*Individual (no relógio ou no grupo)*): decidem os dois níveis de baixo. |
 | 2. **O relógio** | o campo **Como calcular o gasto da bateria** (`gasto_motor`), no cadastro do relógio | vale só para ele. Vazio: o do grupo. |
 | 3. **O grupo** | o **padrão** desse mesmo campo (em **Cadastros › Campos**: o campo fica na raiz, e vale para os relógios de onde ele está para baixo) | vale para os relógios que não escolheram. Vazio: o motor 1. |
 
@@ -450,7 +452,7 @@ instalação é o **master**: cuida do sistema inteiro.
 
 | Conceito | O que é |
 |---|---|
-| **Conta** | o login, a senha, o e-mail (para recuperar a senha, receber os convites e os avisos) e o idioma. Cada um cuida da sua em **Minha conta** (menu **Conta › Minha conta**). |
+| **Conta** | o login, a senha, o e-mail (para recuperar a senha, receber os convites e os avisos), o idioma e o fuso horário. Cada um cuida da sua em **Minha conta** (menu **Conta › Minha conta**). |
 | **Coleção** | um conjunto de relógios de um **dono**, com nome. Uma pessoa pode ter várias ("Minha coleção", "Os do meu pai"). Nasce **com o conjunto inicial** (os grupos, campos, fórmulas, avisos, critérios e modos prontos, no idioma de quem cria), **vazia** (só a raiz da árvore) ou **com uma árvore sua que já existe**. |
 | **Árvore de grupos** | os grupos e o cadastro deles (campos, tipos de lançamento, fórmulas, avisos, categorias de documentos, critérios dos grupos). É do dono e pode servir a **várias coleções dele**: o que muda nela vale para todas. Em **Minha conta** dá para copiar, renomear e excluir as árvores. |
 | **Membro** | quem vê uma coleção de outra pessoa (e usa: marca, lança, troca o dia). |
@@ -524,7 +526,7 @@ cadastro, não código: dá para mudar tudo na página **Cadastros**, e criar os
 | **Grupo** | o lugar dele na árvore. Decide os campos, as fórmulas (a "carga" de um smartwatch é a bateria; a de um mecânico, a reserva de marcha) e os avisos que ele recebe. |
 | **Situação na coleção** | **Na coleção** (o de sempre), **Desejado** (a lista de desejos: ainda não é seu), **Emprestado** (é seu, mas está com outra pessoa), **Vendido** ou **Arquivado**. Só o que está na coleção entra no rodízio: nas outras situações o relógio fica indisponível (o banco garante: a regra `ck_relogio_posse_disponivel`), sai do sorteio, da escala e dos avisos, e, ao sair da coleção, as sessões abertas dele (no pulso, no sol, no carregador) fecham na hora e os dias dele no plano de amanhã em diante saem e são sorteados de novo (hoje fica, mas ele não vai mais ao pulso sozinho: troque no **trocar por…**). A ficha, os documentos e o histórico ficam. O emprestado continua na tabela da página Hoje (com o estado **Emprestado**) e no valor da coleção; o desejado, o vendido e o arquivado saem da tabela e aparecem na página **Desejos** (e no seletor da ficha, em **Fora da coleção**). Voltando para **Na coleção**, ele volta disponível. Veja [A lista de desejos](#a-lista-de-desejos). |
 | **Disponível** | desmarcado, ele sai do rodízio e dos avisos (no conserto, numa pausa), mas o histórico fica. Fora da coleção, fica sempre desmarcado (e o campo some do cadastro). |
-| **Guardar no banco a cópia de todos os documentos dele** | marcada, todo arquivo do relógio (o manual, a nota, as fotos, os vídeos) vai também para o banco, como cópia de segurança. Só aparece quando a Configuração da coleção não decide por todos (**Cópia dos documentos no banco** vazia). Veja [Os documentos do relógio](#os-documentos-do-relógio): é o segundo dos três níveis da cópia. |
+| **Guardar no banco a cópia de todos os documentos dele** | marcada, todo arquivo do relógio (o manual, a nota, as fotos, os vídeos) vai também para o banco, como cópia de segurança. Só aparece quando a Configuração da coleção não decide por todos (**Cópia dos documentos no banco (válido para todos os relógios)** vazia). Veja [Os documentos do relógio](#os-documentos-do-relógio): é o segundo dos três níveis da cópia. |
 | **Foto** | só para a tela. No detalhe do relógio (o painel, ou a ficha), parando o mouse em cima da foto aparece um resumo dele (o nome, o grupo e o código; o estado e a carga; a nota e o próximo dia no rodízio; a compra) e a lembrança do duplo clique. **Duplo clique** nela, ou o botão **Abrir foto** embaixo, abre a foto numa janela flutuante, no tamanho dela (só no detalhe: nas outras fotos, como a do *Hoje é dia de* e as miniaturas da lista, o clique abre o relógio); a que é maior que a tela aparece em escala, sem deformar, no maior tamanho que cabe no monitor (e na janela do navegador), com o tamanho real e a escala embaixo. Fecha com o ×, com um clique fora ou com Esc. |
 | **Acessórios** | as pulseiras, a caixa, o estojo, as ferramentas, o carregador, as peças: o quadro **Acessórios** do painel mostra os dele (o tipo, o nome e a observação), e a página **Acessórios** cadastra e muda (um acessório pode ser de um relógio ou solto, servindo a vários). |
 | **Documentos** | o manual, a nota fiscal (em PDF e em XML), as fotos de recordação, os vídeos e o que mais for. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
@@ -576,7 +578,7 @@ cron registra quantos são.
 
 | Nível | Onde se escolhe | O que faz |
 |---|---|---|
-| 1. **A coleção** | **Cópia dos documentos no banco**, na Configuração (`documentos_copia`) | **Todos os arquivos**: **todo** arquivo, de todo relógio da coleção, vai também para o banco. **Nenhum arquivo**: **nenhum** vai (nem o que o relógio ou o arquivo pedem). *Conforme o relógio e o arquivo* (vazio): quem decide são os dois níveis de baixo. |
+| 1. **A coleção** | **Cópia dos documentos no banco (válido para todos os relógios)**, na Configuração (`documentos_copia`) | **Todos os arquivos**: **todo** arquivo, de todo relógio da coleção, vai também para o banco. **Nenhum arquivo**: **nenhum** vai (nem o que o relógio ou o arquivo pedem). *Individual (no relógio ou no arquivo)* (vazio): quem decide são os dois níveis de baixo. |
 | 2. **O relógio** | a caixa **Guardar no banco a cópia de todos os documentos dele**, no cadastro do relógio (ou o botão **Guardar todos os dele no banco**, na página Documentos dele) | marcada, todo arquivo daquele relógio vai para o banco, os que já estavam e os que vierem. |
 | 3. **O arquivo** | a caixa **Guardar a cópia destes arquivos também no banco**, no envio, ou **Guardar a cópia deste arquivo no banco**, em editar | só aquele arquivo vai para o banco. |
 
@@ -860,14 +862,17 @@ A página **Configuração** guarda as opções **da coleção** (cada coleção
 | **Limite do solar** (`sol_limiar`) | a carga (%) em que o solar deve ir para o sol. De 1 a 99. Padrão: 70. |
 | **Limite da previsão** (`previsao_limite`) | a carga (%) que a previsão do smartwatch usa para "chega ao limite em...". De 0 a 100. Padrão: 20. |
 | **Garantia de rodízio** (`max_sem_uso`) | nenhum relógio passa mais que esses dias sem uso: o que passa entra na frente de todos. 0 desliga. Padrão: 21. |
-| **Aviso Encostado: dias sem ir ao pulso** (`encostado_dias`) | depois de quantos dias sem ir ao pulso um relógio da coleção ganha o aviso **Encostado** (em **Hoje é dia de**: *Encostado*, *"o limite de dias sem ir ao pulso vence há 2d, 11/10/2026 18:00"*). De 1 a 3650. Padrão: 30. O aviso se desliga em **Cadastros › Avisos**. |
-| **Gasto da bateria: como calcular** (`gasto_motor`) | qual dos cinco motores do [gasto medido pelas leituras](#gasto-medido-pelas-leituras) faz a conta, para todos os relógios da coleção: **1. Pelas horas registradas (o motor original)**, **2. ... (robusto)**, **3. Pela marcação: duas taxas separadas**, **4. Só o cadastro** ou **5. Pelas fórmulas do cadastro**. Padrão: vazio (*Conforme o relógio e o grupo*: o campo **Como calcular o gasto da bateria** de cada relógio, senão o padrão dele, senão o motor 1). |
+| **Avisar quando um relógio fica encostado** (`encostado_ativo`) | marcada, o aviso **Encostado** funciona; desmarcada, ele some inteiro (o aviso, a coluna da página Hoje e o filtro). É o mesmo que ligar ou desligar o aviso `encostado` na página **Avisos**. Padrão: marcada. |
+| **Aviso Encostado: dias sem ir ao pulso** (`encostado_dias`) | depois de quantos dias sem ir ao pulso um relógio da coleção ganha o aviso **Encostado** (em **Hoje é dia de**: *Encostado*, *"o limite de dias sem ir ao pulso vence há 2d, 11/10/2026 18:00"*). De 1 a 3650. Padrão: 30. A caixa acima liga e desliga o aviso. |
+| **Gasto da bateria: como calcular (válido para todos os relógios)** (`gasto_motor`) | qual dos cinco motores do [gasto medido pelas leituras](#gasto-medido-pelas-leituras) faz a conta, para todos os relógios da coleção: **1. Pelas horas registradas (o motor original)**, **2. ... (robusto)**, **3. Pela marcação: duas taxas separadas**, **4. Só o cadastro** ou **5. Pelas fórmulas do cadastro**. Padrão: vazio (*Individual (no relógio ou no grupo)*: o campo **Como calcular o gasto da bateria** de cada relógio, senão o padrão dele, senão o motor 1). |
 | **Gasto medido: contar por** (`medicao_base`) | o que entra na conta do gasto medido: **Dias** (`dias`, as medições dos últimos tantos dias) ou **Leituras** (`leituras`, as últimas tantas medições de cada tipo, em uso e em repouso). Padrão: dias. |
 | **Gasto medido: média dos últimos (dias)** (`medicao_janela_dias`) | a janela do gasto medido, contando por dias: as medições mais velhas saem da conta. De 1 a 3650. Padrão: 90. |
 | **Gasto medido: últimas leituras (de cada tipo)** (`medicao_janela_leituras`) | a janela contando por leituras: quantas medições de cada tipo entram. De 2 a 1000. Padrão: 20. |
-| **Cópia dos documentos no banco** (`documentos_copia`) | para a coleção inteira: **Todos os arquivos** (`todos`), **Nenhum arquivo** (`nenhum`) ou vazio (*Conforme o relógio e o arquivo*). É o primeiro dos três níveis da cópia (veja [Os documentos do relógio](#os-documentos-do-relógio)). Padrão: vazio. |
+| **Cópia dos documentos no banco (válido para todos os relógios)** (`documentos_copia`) | para a coleção inteira: **Todos os arquivos** (`todos`), **Nenhum arquivo** (`nenhum`) ou vazio (*Individual (no relógio ou no arquivo)*). É o primeiro dos três níveis da cópia (veja [Os documentos do relógio](#os-documentos-do-relógio)). Padrão: vazio. |
 | **Endereço do sistema** (`url_sistema`) | o endereço que a âncora `{link}` põe nas mensagens e na agenda, e o dos links dos e-mails, do ICS e do retorno do Outlook. É do sistema inteiro: só o master muda. Padrão: vazio (o endereço por onde a página foi aberta). |
 | **Próximos dias: mostrar até** (`proximos_por_pagina`) e **Plano: mostrar até** (`plano_por_pagina`) | quantos dias os **Próximos dias** da página Hoje e o **Dia a dia** da página Plano mostram de cada vez (de 1 a 366). Passando disso, embaixo aparece o navegador das páginas: **<** (anterior), os números (a primeira, a última e até duas de cada lado da atual, com … nos saltos) e **>** (próxima); parando o mouse em cima, a dica diz *Anterior*, *Próximo* ou *Página N*. Padrão: 7 e 31. |
+| **Fuso horário (quem não escolheu outro em Minha conta)** (`fuso`) | o fuso horário da coleção: o de quem não escolheu o seu em **Minha conta**, e o do cron, das mensagens e das agendas dela (veja [O fuso horário](#o-fuso-horário)). Vazio: o do sistema (o `FUSO` do `config.php`). |
+| **Relógio da Hora certa** (`hora_relogio`) | o mostrador da página **Hora certa**: *Analógico e digital (um ao lado do outro)* (o padrão), *Analógico*, *Digital* ou *Anadigi (o visor digital dentro do analógico)*. |
 | **Idioma padrão** (`idioma`) | o idioma da coleção: o das telas para quem não escolheu o seu (no seletor do menu ou em **Minha conta**; veja [Os idiomas](#os-idiomas)) e o das mensagens e das agendas sem idioma próprio: português, inglês, chinês, hindi, espanhol ou francês. Padrão: o de quem criou a coleção. |
 | **Abrir o relógio na página Hoje** (`painel_modo`) | **Ao lado da lista** (`lado`): o relógio clicado abre num painel à direita, e a lista continua à vista. **Numa janela flutuante, grande** (`flutuante`): abre no meio da tela, por cima da página, com o fundo escurecido e os quadros lado a lado; fecha no ×, no Esc ou num clique fora. No celular, os dois cobrem a tela inteira. Padrão: ao lado. |
 | **Destaque no alto da página Hoje** (`destaque_hoje`) | **O relógio do dia** (`dia`): o quadro grande no alto da página Hoje mostra o relógio do dia (o do plano), com até quando ele fica e por que saiu. **O relógio no pulso agora** (`pulso`): mostra o relógio que está no pulso, mesmo que não seja o do dia (com *no pulso agora* e, embaixo, *Relógio do dia: …*, que abre o do dia); com mais de um no pulso, o que foi por último; sem nenhum no pulso, fica o do dia, com o aviso *Nenhum relógio no pulso agora*. Os dados embaixo (estado, carga, o botão Pôs/Tirou do pulso, a foto) são os do relógio do destaque. Padrão: o relógio do dia. |
@@ -1018,7 +1023,8 @@ o painel.</sub>
 
 **A mesma informação em todos.** A tabela dos relógios tem sempre as 12 colunas (código, relógio, tipo, estado, carga, última
 vez usado, próxima manutenção, em, o que fazer, encostado, comprado em e valor), os 11 filtros e a ordem por qualquer coluna, no
-computador, no tablet e no celular; nada é escondido por falta de espaço. Quando a tabela inteira cabe na largura que ela tem de
+computador, no tablet e no celular; nada é escondido por falta de espaço (a única exceção é de propósito: com a caixa **Avisar
+quando um relógio fica encostado** desmarcada na Configuração, a coluna Encostado e o filtro dela somem em todos os tamanhos). Quando a tabela inteira cabe na largura que ela tem de
 verdade (com ou sem o painel aberto ao lado), ela aparece como tabela, e o texto de uma célula quebra linha só se precisar.
 Quando não cabe, cada relógio vira um cartão com os mesmos 12 campos, na mesma ordem, cada um com o nome da coluna em cima
 (em duas colunas no celular, em cinco no tablet), os títulos viram os botões de **Ordenar por** e os filtros ficam todos, com o
@@ -1049,7 +1055,7 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | **Acessórios** (`acessorios.php`) | As pulseiras, caixas, estojos, ferramentas, carregadores, peças e o que mais for: a lista (o nome, o tipo, o relógio de que ele é, ou *solto*, e a observação), com o filtro **Relógio** (todos, os soltos ou os de um relógio; o quadro **Acessórios** do painel abre já filtrada), **Editar** e **Excluir** em cada um, e embaixo o cadastro (**Novo acessório**: nome, tipo, relógio ou *solto (serve a vários)* e observação). Excluir um relógio deixa os acessórios dele soltos. Pela API: `recurso=acessorios` (a lista) e a escrita `acessorios` (`salvar`, `excluir`). |
 | **Galeria** (`galeria.php`) | A coleção em fotos, por grupo: cada relógio com a foto (o link da ficha), o nome, a marca e a referência, o ano e o valor da compra e os dias de uso; no alto, quantos, o valor somado e quantos têm foto. **Também os de fora da coleção** mostra os desejados, vendidos e arquivados (com a marca da situação). **Imprimir**: no papel, quatro por linha, sem o menu. Pela API: `recurso=galeria`. |
 | **Passaporte** (`passaporte.php`) | A ficha de um relógio para imprimir ou guardar em PDF (o botão **Passaporte** no quadro Documentos do painel): a foto, o nome, a marca e a referência, o grupo e a situação; a **Compra**; o **Uso** (a primeira e a última vez no pulso, as horas no pulso, os dias de uso e o custo por uso); o **Cadastro** preenchido; as **Manutenções** (cada tipo de marcação, quantas vezes e a última; as revisões e trocas de pilha); os **Acessórios**; os **Documentos**; e os **Próximos avisos**. **Imprimir**: no papel saem só os dados. Pela API: `recurso=passaporte`. |
-| **Hora certa** (`hora.php`) | A hora do servidor para acertar os relógios: um mostrador de ponteiros e a hora digital andando segundo a segundo (acertados pela API, descontando o tempo do pedido; embaixo, quanto o relógio do aparelho está adiantado ou atrasado), a data por extenso e a hora UTC; os quadros **Fuso e UTC** (o fuso, o deslocamento, a hora Zulu, a letra militar do fuso, como *P (Papa)*, e o grupo data-hora, *131433P OCT 26*), **Calendário** (dia do ano, semana ISO, trimestre, dia juliano, Unix) e **Lua** (a fase, a idade, a parte iluminada e as próximas cheia e nova, pelo ciclo médio: pode errar por um dia); e **Como acertar**. Lê a API de novo a cada minuto. Pela API: `recurso=hora_certa`. |
+| **Hora certa** (`hora.php`) | A hora do servidor para acertar os relógios, no seu fuso horário: o relógio escolhido na Configuração (**Relógio da Hora certa**): o analógico (caixa de aço, mostrador claro com os índices, os numerais 12, 6 e 9, a janela da data no 3, ponteiros em lança com faixa luminosa e o dos segundos vermelho com contrapeso), o digital (uma caixa escura com visor de cristal líquido: o dia da semana e a data, a hora grande com os "88:88:88" apagados atrás, o UTC e a fase da lua), o anadigi (o visor digital dentro do mostrador analógico) ou os dois, um ao lado do outro; andam segundo a segundo, acertados pela API (descontando o tempo do pedido; embaixo, quanto o relógio do aparelho está adiantado ou atrasado), com a data por extenso, a hora UTC e o fuso (e de onde ele veio); os quadros **Fuso e UTC** (o fuso, o deslocamento, a hora Zulu, a letra militar do fuso, como *P (Papa)*, e o grupo data-hora, *131433P OCT 26*), **Calendário** (dia do ano, semana ISO, trimestre, dia juliano, Unix) e **Lua** (a fase, a idade, a parte iluminada e as próximas cheia e nova, pelo ciclo médio: pode errar por um dia); e **Como acertar**. Lê a API de novo a cada minuto. Pela API: `recurso=hora_certa`. |
 | **Documentos** (`documentos.php`) | Os documentos de um relógio (ou de todos), aberta pela ficha: o envio de vários arquivos, uma aba por categoria, a galeria das fotos em tela cheia com apresentação, os vídeos em sequência na ordem escolhida, o visualizador de PDF, o resumo da NF-e do XML, e o download do resto. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 | **Histórico** (`historico.php`) | A linha do tempo de um relógio: em uso pelo rodízio, no pulso fora do rodízio, no winder, no sol, em repouso, e cada corda, carga e troca de pilha. Mostra quanto tempo e que porcentagem ficou em cada estado, com filtro de período e de estado. |
 | **Avisos** (`avisos.php`) | Tudo o que o sistema lembra, num lugar só: os **avisos dos relógios** (o cadastro: a fórmula da data, a antecedência, o texto, o lançamento que resolve, *na hora*...), os **lembretes** (os eventos personalizados, com hora e repetição) e **Para onde vão** (os destinos das mensagens e as agendas, com os links das páginas deles). Veja [Mensagens e agendas](#mensagens-e-agendas). |
@@ -1126,6 +1132,21 @@ os links de uma seção para outra valem em todo idioma. A documentação para q
 Os nomes que você cadastra (grupos, campos, tipos de lançamento, avisos, modos, os relógios) ficam como você escreveu.
 
 ---
+
+### O fuso horário
+
+Cada pessoa vê e digita as horas no **seu fuso horário**, escolhido em **Minha conta › Seus dados** (a lista de todos os
+fusos que o PHP conhece, com o deslocamento de agora: *America/Sao Paulo (UTC−03:00)*). Quem não escolheu usa o **fuso da
+coleção** (Configuração › Telas, **Fuso horário**), e sem esse, o **fuso do sistema** (o `FUSO` do `config.php`, senão o do
+PHP). A página **Hora certa** diz qual está valendo e de onde veio.
+
+Vale para tudo o que tem hora: a Hora certa, os lançamentos (o "quando" que você digita e o que o histórico mostra), os
+avisos, as medições, as estatísticas, as mensagens e as agendas (o cron roda cada coleção no fuso dela). No banco, tudo fica
+no fuso do sistema: a camada do banco converte as datas com hora ao ler e ao gravar, para quem está em outro fuso. Assim duas
+pessoas em países diferentes dividem a mesma coleção e cada uma vê cada hora na sua: o pulso posto às 10:00 em Nova York
+aparece às 11:00 para quem está em São Paulo. A data sozinha (o dia do plano, a data da compra) é um dia do calendário, igual
+em todo fuso. Pela API: `recurso=conta` (`acao=alterar`, `fuso=`), `recurso=config` (`fuso=`) e, em cada resposta da conta,
+o fuso em vigor e a lista (`fuso`, `fusos[]`).
 
 ## A API: uma porta só para tudo
 
@@ -1393,7 +1414,7 @@ pessoas entram pelo **Criar conta** (`cadastro.php`), por um convite seu, ou o m
 | `DB_HOST`, `DB_PORTA`, `DB_NOME`, `DB_USUARIO`, `DB_SENHA` | o servidor do banco (MySQL, Postgres e Firebird); `DB_PORTA` 0 é a porta padrão. No Firebird, `DB_NOME` é o caminho do arquivo `.fdb` no servidor (ex.: `/var/lib/firebird/3.0/data/relogios2.fdb`) ou um apelido do `databases.conf`, e `DB_HOST` vazio abre o arquivo direto, sem servidor (o Firebird embutido) |
 | `DB_ARQUIVO` | o arquivo do banco (SQLite), fora da pasta publicada |
 | `API_TOKEN` | **obrigatório**, com 10 caracteres ou mais. Sem ele o sistema inteiro para e diz por quê. |
-| `FUSO` | o fuso horário, como `America/Sao_Paulo`. Vazio ou ausente: o do PHP (`date.timezone` no php.ini). Vale para tudo, inclusive para as datas que o banco grava |
+| `FUSO` | o fuso horário do sistema, como `America/Sao_Paulo`. Vazio ou ausente: o do PHP (`date.timezone` no php.ini). É o fuso das datas que o banco grava e o de quem não escolheu outro; cada coleção (Configuração) e cada pessoa (Minha conta) pode escolher o seu (veja [O fuso horário](#o-fuso-horário)) |
 | `SEGREDO_CHAVE` | opcional: a chave que cifra no banco as senhas do CalDAV, as chaves do Google, os tokens do Outlook e os cabeçalhos dos webhooks. Sem ela, o `API_TOKEN` (trocar a chave perde os segredos guardados: é só digitar de novo) |
 | `MSG_TITULO` | o título das mensagens (o `{titulo}` dos webhooks, o assunto do e-mail, o título do Web Push). Padrão: Relógios |
 | `MSG_ENDPOINT`, `MSG_DESTINATARIO` | só para a migração v25: a API de mensagem antiga (Telegram) vira o primeiro destino webhook da coleção |

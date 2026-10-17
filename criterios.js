@@ -239,13 +239,20 @@ function recarregarCriterios() {
         var somaEf = n.conta.reduce(function (s, l) { return s + l.peso_efetivo; }, 0);
         return el("details", {"class": "conta-nota", "open": abrir === String(n.relogio_id), "id": "r" + n.relogio_id}, el("summary", {}, el("strong", {}, h(n.relogio)) + " "
             + el("span", {"class": "nota"}, t("{1} · critérios de {2}", {1: h(n.grupo), 2: h(n.conjunto_texto)})) + " " + el("span", {"class": "nota-final"}, num(n.nota, 1)))
-          + el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-conta"}, el("thead", {}, el("tr", {}, [t("Parâmetro"), t("Subparâmetro"), t("Valor medido"), t("Faixa"), t("Nota"), t("Peso efetivo"), t("Pontos")].map(function (t) {
+          + el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-conta"}, el("thead", {}, el("tr", {}, [t("Parâmetro"), t("Subparâmetro"), t("Valor medido"), t("Faixa"), t("Nota"), t("Puxa"), t("Peso efetivo"), t("Pontos")].map(function (t) {
             return el("th", {}, t);
           }).join(""))) + el("tbody", {}, n.conta.map(function (l) {
+            // a seta: a nota acima de 50 (o neutro) puxa a nota final para cima, abaixo puxa para baixo; 50 em ponto, ou sem peso, é neutro
+            // (a seta é um SVG cheio, igual em todo aparelho: para cima, para baixo ou para os dois lados)
+            var setaSvg = function (d) { return '<svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="' + d + '" fill="currentColor"/></svg>'; };
+            var puxa = l.peso_efetivo > 0 && l.nota > 50 ? ["puxa-sobe", setaSvg("M8 1 L15 8.5 H11 V15 H5 V8.5 H1 Z"), t("puxa a nota para cima")]
+              : (l.peso_efetivo > 0 && l.nota < 50 ? ["puxa-desce", setaSvg("M8 15 L1 7.5 H5 V1 H11 V7.5 H15 Z"), t("puxa a nota para baixo")]
+                : ["puxa-neutro", setaSvg("M1 8 L5.5 3.5 V6 H10.5 V3.5 L15 8 L10.5 12.5 V10 H5.5 V12.5 Z"), t("neutro: não puxa para nenhum lado")]);
             return el("tr", {}, el("td", {}, h(l.parametro)) + el("td", {}, h(l.subparametro)) + el("td", {}, h(typeof l.valor === "number" ? num(l.valor, 1) : l.valor))
-              + el("td", {}, h(l.faixa)) + el("td", {}, num(l.nota, 2)) + el("td", {}, pct(l.peso_efetivo)) + el("td", {}, Number(l.pontos).toFixed(2).replace(".", ",")));
-          }).join("") + (n.conta.length === 0 ? el("tr", {}, el("td", {"colspan": "7"}, t("Nenhum critério com medida para este relógio: nota neutra, 50."))) : ""))
-            + el("tfoot", {}, el("tr", {}, el("td", {"colspan": "5"}, t("Nota final (pesos efetivos somam {1})", {1: pct(somaEf)})) + el("td", {}, "") + el("td", {}, el("strong", {}, Number(n.nota).toFixed(2).replace(".", ",")))))))
+              + el("td", {}, h(l.faixa)) + el("td", {}, num(l.nota, 2)) + el("td", {"class": "puxa " + puxa[0], "title": puxa[2], "aria-label": puxa[2]}, puxa[1])
+              + el("td", {}, pct(l.peso_efetivo)) + el("td", {}, Number(l.pontos).toFixed(2).replace(".", ",")));
+          }).join("") + (n.conta.length === 0 ? el("tr", {}, el("td", {"colspan": "8"}, t("Nenhum critério com medida para este relógio: nota neutra, 50."))) : ""))
+            + el("tfoot", {}, el("tr", {}, el("td", {"colspan": "6"}, t("Nota final (pesos efetivos somam {1})", {1: pct(somaEf)})) + el("td", {}, "") + el("td", {}, el("strong", {}, Number(n.nota).toFixed(2).replace(".", ",")))))))
           + el("p", {"class": "nota"}, el("a", {"href": "criterios.php?escopo=" + encodeURIComponent(n.conjunto || "") + "#conjunto"}, t("editar os critérios de {1}", {1: h(n.conjunto_texto)}))
             + " · " + el("a", {"href": "criterios.php?escopo=r:" + n.relogio_id + "#conjunto"}, t("critérios só deste relógio"))));
       }).join(""));

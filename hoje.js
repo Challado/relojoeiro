@@ -73,7 +73,7 @@ function recarregarHoje() {
           : t("Hoje não tem relógio do dia."));
     } else if (d.dia) {
       texto += el("h1", {}, el("a", {"href": "index.php?r=" + d.dia.relogio_id, "data-abrir": d.dia.relogio_id}, h(d.dia.relogio)))
-        + el("p", {"class": "periodo"}, el("span", {"class": "janela"}, h(d.dia.ate)) + " " + h(item ? item.tipo : ""))
+        + el("p", {"class": "periodo"}, el("span", {"class": "janela"}, h(d.dia.ate)) + " " + h(item && item.tipo !== "—" ? item.tipo : ""))
         + (d.dia.acao ? el("p", {"class": "acao"}, h(d.dia.acao)) : "")
         + (d.dia.motivo ? el("p", {"class": "motivo"}, el("strong", {}, t("Por que ele: ")) + h(d.dia.motivo)) : "")
         + (dz.mostra === "pulso" && !dz.no_pulso ? el("p", {"class": "nota"}, h(dz.texto)) : "")
@@ -270,6 +270,8 @@ function recarregarHoje() {
     tipos.sort();
     document.querySelector("[data-filtro=tipo]").innerHTML = el("option", {"value": ""}, t("Todos")) + tipos.map(function (item) { return el("option", {}, h(item)); }).join("");
     document.querySelector("[data-filtro=estado]").innerHTML = el("option", {"value": ""}, t("Todos")) + d.estados.map(function (item) { return el("option", {}, h(item)); }).join("");
+    // o Encostado desligado na Configuração: a coluna e o filtro somem (estilo.css, .sem-encostado; tabela.js ignora o filtro)
+    document.getElementById("tabela-relogios").classList.toggle("sem-encostado", !d.encostado_ativo);
     document.querySelector("[data-filtro=fazer]").innerHTML = el("option", {"value": ""}, t("Todos")) + d.avisos_nomes.map(function (item) { return el("option", {}, h(item)); }).join("");
     var ano = String(new Date().getFullYear());
     var linhas = lista.map(function (x) {

@@ -533,7 +533,26 @@ escrever(["recurso" => "conta", "acao" => "aparelho_esquecer"], false);
 escrever(["recurso" => "conta", "acao" => "aparelho_esquecer", "id" => $apa]);
 ler("manifest", ["recurso" => "manifest"]);
 ler("service worker", ["recurso" => "sw"]);
+// o fuso horário: o da pessoa (Minha conta) vale no pedido dela: as horas do histórico saem convertidas (Nova York, uma hora
+// a menos que São Paulo, o fuso do sistema); o da coleção vale para quem não escolheu; nome desconhecido é recusado; e o
+// relógio da Hora certa escolhido na Configuração
+escrever(["recurso" => "conta", "acao" => "alterar", "fuso" => "Marte/Olympus"], false);
+escrever(["recurso" => "conta", "acao" => "alterar", "fuso" => "america/new_york"]);
+ler("historico no fuso de Nova York", ["recurso" => "historico", "relogio" => $rel["smart"], "limite" => 3]);
+ler("conta com o fuso", ["recurso" => "conta"]);
+escrever(["recurso" => "conta", "acao" => "alterar", "fuso" => ""]);
+escrever(["recurso" => "config", "acao" => "salvar", "fuso" => "Marte/Olympus"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "hora_relogio" => "cuco"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "fuso" => "Europe/Lisbon", "hora_relogio" => "anadigi"]);
+ler("historico no fuso da coleção (Lisboa)", ["recurso" => "historico", "relogio" => $rel["smart"], "limite" => 3]);
+ler("config com o fuso e o relógio", ["recurso" => "config"]);
+escrever(["recurso" => "config", "acao" => "salvar", "fuso" => "", "hora_relogio" => ""]);
 escrever(["recurso" => "config", "acao" => "salvar", "encostado_dias" => 5]);
+// a caixa Avisar quando um relógio fica encostado: desligada, o aviso some da Hoje (e da Configuração: encostado_ativo = 0)
+escrever(["recurso" => "config", "acao" => "salvar", "encostado_ativo" => 0]);
+ler("hoje sem o encostado", ["recurso" => "hoje"]);
+ler("config sem o encostado", ["recurso" => "config"]);
+escrever(["recurso" => "config", "acao" => "salvar", "encostado_ativo" => 1]);
 // a cópia dos documentos no banco pela Configuração da coleção (todos, nenhum, vazio); valor errado recusa
 escrever(["recurso" => "config", "acao" => "salvar", "documentos_copia" => "todos"]);
 ler("config copia todos", ["recurso" => "config"]);

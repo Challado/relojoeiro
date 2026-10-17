@@ -95,6 +95,8 @@ $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => c
     "dia" => $dia ? ["data" => $dia["data"], "relogio_id" => (int)$dia["relogio_id"], "relogio" => $dia["nome"], "ate" => texto_ate($dia["data"], "hoje"), "acao" => $dia["acao"], "motivo" => $dia["motivo"]] : null,
     "destaque" => $destaque_h,
     "avisos" => $avisos_h,
+    // a caixa da Configuração: desligada, a página esconde a coluna Encostado e o filtro (e nenhum relógio vem com encostado)
+    "encostado_ativo" => encostado_ativo(),
     // os estados da tabela, na ordem (o filtro Estado): em uso, cada sessão que não é o pulso, em repouso e indisponível
     "estados" => array_merge([t("Em uso")], array_column(linhas("SELECT nome FROM lancamento_tipo WHERE formato = 'sessao' AND identificador <> 'pulso' ORDER BY ordem, id"), "nome"),
         [t("Em repouso"), t("Indisponível"), t("Emprestado")]),

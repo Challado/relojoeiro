@@ -29,6 +29,7 @@ CREATE TABLE usuario (
     senha_hash     VARCHAR(255) NOT NULL,
     papel          ENUM('master','comum') NOT NULL DEFAULT 'comum',
     idioma         VARCHAR(10) NULL,                    -- vazio: o da coleção
+    fuso           VARCHAR(60) NULL,                    -- o fuso horário da pessoa ("America/Sao_Paulo"); vazio: o da coleção, senão o do sistema
     expira_em      DATETIME NULL,
     bloqueado      TINYINT NOT NULL DEFAULT 0,
     criado         DATETIME NOT NULL,

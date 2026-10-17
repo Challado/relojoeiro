@@ -66,13 +66,15 @@
       if (f.fazer && tr.dataset.fazer !== f.fazer) {
         ok = false;
       }
-      if (f.encostado === "sim" && tr.dataset.encostadoEstado !== "sim") {
+      // o filtro Encostado só vale com a coluna à mostra (o aviso ligado na Configuração)
+      var comEncostado = !tabela.classList.contains("sem-encostado");
+      if (comEncostado && f.encostado === "sim" && tr.dataset.encostadoEstado !== "sim") {
         ok = false;
       }
-      if (f.encostado === "prazo" && tr.dataset.encostadoEstado !== "prazo") {
+      if (comEncostado && f.encostado === "prazo" && tr.dataset.encostadoEstado !== "prazo") {
         ok = false;
       }
-      if (f.encostado === "sem" && tr.dataset.encostadoEstado !== "") {
+      if (comEncostado && f.encostado === "sem" && tr.dataset.encostadoEstado !== "") {
         ok = false;
       }
       var compra = tr.dataset.compra ? new Date(tr.dataset.compra + "T00:00:00").getTime() : 0;

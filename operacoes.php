@@ -2302,7 +2302,7 @@ function op_modos($acao, $d)
 //           sol_limiar (1 a 99: o solar vai para o sol quando a carga estimada chega a essa %); url_sistema (para a âncora
 //           {link}); pulso_auto_inicio (1 ou 0: o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo
 //           Pôs); pulso_auto_fim (1 ou 0: sai sozinho no fim do horário de uso, o "fecha às" do tipo No pulso; 0: só pelo
-//           Tirou); max_sem_uso (0 a 365); previsao_limite (0 a 100); medicao_base (dias ou leituras: o gasto medido conta as medições dos últimos dias ou as últimas leituras de cada tipo); gasto_motor (vazio: conforme o relógio e o grupo; horas, robusto, marcacao, cadastro ou formulas: como calcular o gasto da bateria, para toda a coleção); documentos_copia (vazio: conforme o relógio e o arquivo; todos ou nenhum: a cópia dos documentos no banco, para toda a coleção); medicao_janela_leituras (2 a 1000); medicao_janela_dias (1 a 3650: a média do gasto medido
+//           Tirou); encostado_ativo (1 ou 0: liga ou desliga o aviso Encostado do cadastro); max_sem_uso (0 a 365); previsao_limite (0 a 100); medicao_base (dias ou leituras: o gasto medido conta as medições dos últimos dias ou as últimas leituras de cada tipo); gasto_motor (vazio: conforme o relógio e o grupo; horas, robusto, marcacao, cadastro ou formulas: como calcular o gasto da bateria, para toda a coleção); documentos_copia (vazio: conforme o relógio e o arquivo; todos ou nenhum: a cópia dos documentos no banco, para toda a coleção); medicao_janela_leituras (2 a 1000); medicao_janela_dias (1 a 3650: a média do gasto medido
 //           usa as medições destes últimos dias); url_sistema só o master (é do sistema inteiro). Só o que vier no pedido muda.
 //           As mensagens e as agendas saem pelos destinos e pelas agendas (op_destinos, op_agendas).
 //   evento_salvar (evento_id (ou id): 0 cria; nome, ativo, repeticao (uma, diaria, semanal, mensal, intervalo), hora (HH:MM),
@@ -2377,20 +2377,35 @@ function op_config($acao, $d)
         if (array_key_exists("destaque_hoje", $d) && !in_array((string)$d["destaque_hoje"], ["dia", "pulso"], true)) {
             $erros[] = t("Destaque da página Hoje: dia (o relógio do dia) ou pulso (o relógio no pulso agora).");
         }
+        if (array_key_exists("fuso", $d) && trim((string)$d["fuso"]) !== "" && fuso_valido($d["fuso"]) === null) {
+            $erros[] = t("Fuso horário desconhecido: use um nome como America/Sao_Paulo ou Europe/Lisbon (a lista da Configuração), ou vazio para o do sistema.");
+        }
+        if (array_key_exists("hora_relogio", $d) && !in_array((string)$d["hora_relogio"], ["", "analogico", "digital", "anadigi", "ambos"], true)) {
+            $erros[] = t("Relógio da Hora certa: analogico, digital, anadigi (os dois no mesmo relógio) ou ambos (um ao lado do outro).");
+        }
         if (count($erros) === 0) {
             if (array_key_exists("url_sistema", $d) && usuario_master()) {
                 sis_set("url_sistema", trim((string)$d["url_sistema"]));
             }
-            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina"] as $k) {
+            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina", "hora_relogio"] as $k) {
                 if (array_key_exists($k, $d)) {
                     cfg_set($k, trim((string)$d[$k]));
                 }
+            }
+            // o fuso da coleção, com o nome na caixa certa (vazio: o do sistema)
+            if (array_key_exists("fuso", $d)) {
+                cfg_set("fuso", (string)(fuso_valido($d["fuso"]) ?? ""));
             }
             if (array_key_exists("sol_fim", $d) && isset(lancamento_tipos()["sol"])) {
                 sql("UPDATE lancamento_tipo SET fecha_as = ? WHERE identificador = 'sol'", [$d["sol_fim"] . ":00"]);
             }
             if (array_key_exists("previsao_limite", $d)) {
                 cfg_set("previsao_limite", (string)numero_br($d["previsao_limite"]));
+            }
+            // a caixa "Avisar quando um relógio fica encostado": liga ou desliga o aviso Encostado do cadastro (todas as versões
+            // dele na árvore), o mesmo que a página Avisos faz; desligado, some o aviso, a coluna da Hoje e o filtro
+            if (array_key_exists("encostado_ativo", $d)) {
+                sql("UPDATE aviso SET ativo = ? WHERE identificador = 'encostado'", [(string)$d["encostado_ativo"] === "1" ? 1 : 0]);
             }
             foreach (["pulso_auto_inicio" => "pulso_auto_inicio", "pulso_auto_fim" => "pulso_auto_fim"] as $k => $chave) {
                 if (array_key_exists($k, $d)) {

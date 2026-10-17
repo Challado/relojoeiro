@@ -133,7 +133,7 @@ function login_erro($login)
 function usuario_publico($u)
 {
     $exp = $u["expira_em"] ?? null;
-    return ["id" => (int)$u["id"], "login" => $u["login"], "email" => $u["email"] ?? null, "papel" => $u["papel"], "idioma" => $u["idioma"] ?? null,
+    return ["id" => (int)$u["id"], "login" => $u["login"], "email" => $u["email"] ?? null, "papel" => $u["papel"], "idioma" => $u["idioma"] ?? null, "fuso" => $u["fuso"] ?? null,
         "criado" => $u["criado"], "ultimo_acesso" => $u["ultimo_acesso"] ?? null, "expira_em" => $exp, "demo" => $exp !== null,
         "dias_restantes" => $exp !== null ? max(0, (int)ceil((strtotime((string)$exp) - time()) / 86400)) : null, "bloqueado" => (int)($u["bloqueado"] ?? 0) === 1];
 }
@@ -440,7 +440,10 @@ function conta_consulta()
             "email_configurado" => email_metodo() !== null,
             // a configuração do e-mail lida do config.php, para o master testar (as senhas só como definida ou não)
             "email" => usuario_master() ? email_config_resumo() : null,
-            "demo_dias" => demo_dias(), "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS))];
+            "demo_dias" => demo_dias(), "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS)),
+            // o fuso em vigor neste pedido (e de onde veio), o do sistema e a lista para escolher
+            "fuso" => ["nome" => fuso_atual(), "origem" => fuso_origem(), "sistema" => fuso_sistema(), "colecao" => colecao_atual() !== null ? (fuso_valido(cfg("fuso")) ?? null) : null],
+            "fusos" => fusos_lista()];
     });
 }
 
@@ -715,6 +718,14 @@ function op_conta($acao, $d)
         if (array_key_exists("idioma", $d)) {
             $campos["idioma"] = lingua_valida($d["idioma"]);
         }
+        // o fuso horário da pessoa (vazio: o da coleção, senão o do sistema)
+        if (array_key_exists("fuso", $d)) {
+            if (trim((string)$d["fuso"]) !== "" && fuso_valido($d["fuso"]) === null) {
+                $erros[] = t("Fuso horário desconhecido: use um nome como America/Sao_Paulo ou Europe/Lisbon (a lista de Minha conta).");
+            } else {
+                $campos["fuso"] = fuso_valido($d["fuso"]);
+            }
+        }
         if ((string)($d["senha"] ?? "") !== "") {
             if (!password_verify((string)($d["senha_atual"] ?? ""), (string)$u["senha_hash"]) && !isset($GLOBALS["USUARIO_REAL"])) {
                 $erros[] = t("A senha atual não confere.");
@@ -737,7 +748,7 @@ function op_conta($acao, $d)
             }
             $msg = isset($campos["senha_hash"]) ? t("Conta atualizada. Os aparelhos lembrados foram esquecidos: entre de novo com a senha nova.") : t("Conta atualizada.");
         } elseif (count($erros) === 0) {
-            $erros[] = t("Nada para mudar: mande email, idioma ou senha (com senha_atual).");
+            $erros[] = t("Nada para mudar: mande email, idioma, fuso ou senha (com senha_atual).");
         }
     } elseif ($acao === "excluir") {
         if ($u["papel"] === "master" && (int)sem_escopo(function () { return valor("SELECT COUNT(*) FROM usuario WHERE papel = 'master'"); }) <= 1) {
@@ -1198,6 +1209,13 @@ function op_usuarios($acao, $d, $atual)
         if (array_key_exists("idioma", $d)) {
             $campos["idioma"] = lingua_valida($d["idioma"]);
         }
+        if (array_key_exists("fuso", $d)) {
+            if (trim((string)$d["fuso"]) !== "" && fuso_valido($d["fuso"]) === null) {
+                $erros[] = t("Fuso horário desconhecido: use um nome como America/Sao_Paulo ou Europe/Lisbon (a lista de Minha conta).");
+            } else {
+                $campos["fuso"] = fuso_valido($d["fuso"]);
+            }
+        }
         if (isset($d["papel"]) && $d["papel"] !== $u["papel"]) {
             if (!in_array($d["papel"], ["master", "comum"], true)) {
                 $erros[] = t("papel: master ou comum.");
@@ -1214,7 +1232,7 @@ function op_usuarios($acao, $d, $atual)
             $muda(implode(", ", array_map(function ($k) { return $k . " = ?"; }, array_keys($campos))), array_values($campos));
             $msg = t("Usuário {1} atualizado.", [1 => $campos["login"] ?? $u["login"]]);
         } elseif (count($erros) === 0) {
-            $erros[] = t("Nada para mudar: mande novo_login, email, idioma ou papel.");
+            $erros[] = t("Nada para mudar: mande novo_login, email, idioma, fuso ou papel.");
         }
     } elseif ($acao === "oficializar") {
         $muda("expira_em = ?", [null]);

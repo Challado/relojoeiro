@@ -1,4 +1,4 @@
-<!-- origem: 2f35c02d11e915942dc07d8659b27ef5bb6b7b58 -->
+<!-- origem: 3148a388d990acd48b819e300295e1db5a0e6dec -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -349,7 +349,7 @@ Debian और Ubuntu में `php8.4-interbase` पैकेज (उसका 
 | `DB_HOST`, `DB_PORTA`, `DB_NOME`, `DB_USUARIO`, `DB_SENHA` | डेटाबेस सर्वर (MySQL, Postgres और Firebird); `DB_PORTA` 0 डिफ़ॉल्ट पोर्ट है। Firebird में `DB_NOME` सर्वर पर `.fdb` फ़ाइल का पाथ है (उदा.: `/var/lib/firebird/3.0/data/relogios2.fdb`) या `databases.conf` का उपनाम, और ख़ाली `DB_HOST` फ़ाइल को सीधे, बिना सर्वर के खोलता है (एम्बेडेड Firebird) |
 | `DB_ARQUIVO` | डेटाबेस की फ़ाइल (SQLite), प्रकाशित फ़ोल्डर के बाहर |
 | `API_TOKEN` | **ज़रूरी**, 10 या ज़्यादा अक्षरों का। इसके बिना पूरा सिस्टम रुक जाता है और कारण बताता है। |
-| `FUSO` | समय क्षेत्र, जैसे `America/Sao_Paulo`। ख़ाली या न हो तो: PHP वाला (php.ini में `date.timezone`)। यह हर चीज़ पर लागू होता है, डेटाबेस में सहेजी जाने वाली तारीख़ों पर भी |
+| `FUSO` | सिस्टम का समय क्षेत्र, जैसे `America/Sao_Paulo`। ख़ाली या न हो तो: PHP वाला (php.ini में `date.timezone`)। यह डेटाबेस में सहेजी तारीख़ों का और जिसने दूसरा नहीं चुना उसका समय-क्षेत्र है; हर संग्रह (सेटिंग्स) और हर व्यक्ति (मेरा खाता) अपना चुन सकता है (देखें [समय-क्षेत्र](#o-fuso-horário)) |
 | `SEGREDO_CHAVE` | वैकल्पिक: वह कुंजी जो डेटाबेस में CalDAV के पासवर्ड, Google की कुंजियाँ, Outlook के टोकन और webhooks के हेडर एन्क्रिप्ट करती है। इसके बिना, `API_TOKEN` (कुंजी बदलने से सहेजे रहस्य खो जाते हैं: बस फिर से लिखें) |
 | `MSG_TITULO` | संदेशों का शीर्षक (webhooks का `{titulo}`, ई-मेल का विषय, Web Push का शीर्षक)। डिफ़ॉल्ट: Relógios |
 | `MSG_ENDPOINT`, `MSG_DESTINATARIO` | केवल माइग्रेशन v25 के लिए: पुरानी संदेश API (Telegram) संग्रह का पहला webhook गंतव्य बनती है |

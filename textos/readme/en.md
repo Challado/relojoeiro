@@ -1,4 +1,4 @@
-<!-- origem: 2f35c02d11e915942dc07d8659b27ef5bb6b7b58 -->
+<!-- origem: 3148a388d990acd48b819e300295e1db5a0e6dec -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -355,7 +355,7 @@ get in through **Create account** (`cadastro.php`), through an invitation of you
 | `DB_HOST`, `DB_PORTA`, `DB_NOME`, `DB_USUARIO`, `DB_SENHA` | the database server (MySQL, Postgres and Firebird); `DB_PORTA` 0 is the default port. On Firebird, `DB_NOME` is the path of the `.fdb` file on the server (e.g. `/var/lib/firebird/3.0/data/relogios2.fdb`) or an alias from `databases.conf`, and an empty `DB_HOST` opens the file directly, without a server (embedded Firebird) |
 | `DB_ARQUIVO` | the database file (SQLite), outside the published folder |
 | `API_TOKEN` | **required**, with 10 characters or more. Without it the whole system stops and says why. |
-| `FUSO` | the time zone, like `America/Sao_Paulo`. Empty or missing: PHP's (`date.timezone` in php.ini). It applies to everything, including the dates the database saves |
+| `FUSO` | the system's time zone, like `America/Sao_Paulo`. Empty or missing: PHP's (`date.timezone` in php.ini). It is the time zone of the dates the database saves and of whoever has not chosen another; each collection (Settings) and each person (My account) can choose their own (see [The time zone](#o-fuso-horário)) |
 | `SEGREDO_CHAVE` | optional: the key that encrypts in the database the CalDAV passwords, the Google keys, the Outlook tokens and the webhook headers. Without it, the `API_TOKEN` (changing the key loses the stored secrets: just type them again) |
 | `MSG_TITULO` | the title of the messages (the webhooks' `{titulo}`, the e-mail subject, the Web Push title). Default: Relógios |
 | `MSG_ENDPOINT`, `MSG_DESTINATARIO` | only for migration v25: the old message API (Telegram) becomes the collection's first webhook destination |

@@ -1,4 +1,4 @@
-<!-- origem: 2f35c02d11e915942dc07d8659b27ef5bb6b7b58 -->
+<!-- origem: 3148a388d990acd48b819e300295e1db5a0e6dec -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -294,7 +294,7 @@ php criar_usuario.php 你的登录名
 | `DB_HOST`、`DB_PORTA`、`DB_NOME`、`DB_USUARIO`、`DB_SENHA` | 数据库服务器（MySQL、Postgres 和 Firebird）；`DB_PORTA` 为 0 表示默认端口。在 Firebird 上，`DB_NOME` 是服务器上 `.fdb` 文件的路径（例如 `/var/lib/firebird/3.0/data/relogios2.fdb`）或 `databases.conf` 中的别名，`DB_HOST` 为空则直接打开文件，不经过服务器（嵌入式 Firebird） |
 | `DB_ARQUIVO` | 数据库文件（SQLite），位于发布文件夹之外 |
 | `API_TOKEN` | **必填**，至少 10 个字符。没有它，整个系统会停止并说明原因。 |
-| `FUSO` | 时区，如 `America/Sao_Paulo`。为空或缺失：使用 PHP 的时区（php.ini 中的 `date.timezone`）。它适用于一切，包括数据库保存的日期 |
+| `FUSO` | 系统时区，如 `America/Sao_Paulo`。为空或缺失：使用 PHP 的时区（php.ini 中的 `date.timezone`）。它是数据库保存日期所用的时区，也是未另选的人所用的时区；每个收藏（设置）和每个人（我的账户）都可以选择自己的（参见[时区](#o-fuso-horário)） |
 | `SEGREDO_CHAVE` | 可选：在数据库中加密 CalDAV 密码、Google 密钥、Outlook 令牌和 webhook 请求头的密钥。没有它则使用 `API_TOKEN`（更换密钥会丢失已保存的机密：重新填写即可） |
 | `MSG_TITULO` | 消息的标题（webhook 的 `{titulo}`、邮件主题、Web Push 标题）。默认：Relógios |
 | `MSG_ENDPOINT`、`MSG_DESTINATARIO` | 仅用于 v25 迁移：旧的消息 API（Telegram）成为收藏的第一个 webhook 推送目标 |

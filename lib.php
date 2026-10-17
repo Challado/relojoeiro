@@ -21,6 +21,83 @@ if ($fuso_cfg !== "") {
             . "America/Sao_Paulo, ou deixe vazio para usar o do PHP (date.timezone no php.ini, agora " . date_default_timezone_get() . ").";
     }
 }
+// o fuso do sistema: o das datas gravadas no banco (o FUSO do config.php, ou o do PHP). Cada coleção pode ter o seu (a
+// Configuração, "Fuso horário") e cada usuário o dele (Minha conta): o pedido roda nesse fuso (fuso_definir), e a camada do
+// banco converte as datas com hora ao ler e ao gravar (banco.php, banco_fuso_*): no banco, tudo fica no fuso do sistema
+$GLOBALS["FUSO_SISTEMA"] = date_default_timezone_get();
+$GLOBALS["FUSO_PEDIDO"] = $GLOBALS["FUSO_SISTEMA"];
+$GLOBALS["FUSO_ORIGEM"] = "sistema";
+
+function fuso_sistema()
+{
+    return $GLOBALS["FUSO_SISTEMA"];
+}
+
+// um nome de fuso que o PHP conhece ("America/Sao_Paulo", "Europe/Lisbon", "UTC"), com a caixa certa; null se não é
+function fuso_valido($f)
+{
+    static $todos = null;
+    $f = trim((string)$f);
+    if ($f === "") {
+        return null;
+    }
+    if ($todos === null) {
+        $todos = [];
+        foreach (DateTimeZone::listIdentifiers() as $id) {
+            $todos[strtolower($id)] = $id;
+        }
+        $todos["utc"] = "UTC";
+    }
+    return $todos[strtolower($f)] ?? null;
+}
+
+// os fusos que o PHP conhece, com o deslocamento de agora (as listas de Minha conta, da Configuração e de Usuários)
+function fusos_lista()
+{
+    static $lista = null;
+    if ($lista === null) {
+        $lista = [];
+        $agora = new DateTimeImmutable("now", new DateTimeZone("UTC"));
+        foreach (DateTimeZone::listIdentifiers() as $id) {
+            $lista[] = ["nome" => $id, "deslocamento" => $agora->setTimezone(new DateTimeZone($id))->format("P")];
+        }
+    }
+    return $lista;
+}
+
+// O fuso do pedido: o do usuário (Minha conta), senão o da coleção (a Configuração), senão o do sistema. Vale para o
+// date() e o strtotime() de tudo, e liga a conversão do banco quando é outro que não o do sistema
+function fuso_definir($f, $origem = "sistema")
+{
+    $f = fuso_valido($f) ?? fuso_sistema();
+    date_default_timezone_set($f);
+    $GLOBALS["FUSO_PEDIDO"] = $f;
+    $GLOBALS["FUSO_ORIGEM"] = $f === fuso_sistema() ? "sistema" : $origem;
+    banco_fuso($f === fuso_sistema() ? null : $f);
+}
+
+// o fuso em que o pedido roda e de onde ele veio (usuario, colecao ou sistema)
+function fuso_atual()
+{
+    return $GLOBALS["FUSO_PEDIDO"];
+}
+
+function fuso_origem()
+{
+    return $GLOBALS["FUSO_ORIGEM"];
+}
+
+// o fuso de um pedido com usuário e coleção (e o da coleção sozinha, no cron): [fuso, origem]
+function fuso_do_pedido($usuario = null)
+{
+    if ($usuario !== null && fuso_valido($usuario["fuso"] ?? null) !== null) {
+        return [fuso_valido($usuario["fuso"]), "usuario"];
+    }
+    if (colecao_atual() !== null && fuso_valido(cfg("fuso")) !== null) {
+        return [fuso_valido(cfg("fuso")), "colecao"];
+    }
+    return [fuso_sistema(), "sistema"];
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 // O token da API é obrigatório: API_TOKEN no config.php, texto com pelo menos 10 caracteres sem contar os espaços das
@@ -499,6 +576,7 @@ $MIGRACOES = [
     "v25" => ["migracao_v25.sql", tk("várias pessoas, cada uma com as suas coleções: usuários (master e comum, conta demo e oficial), coleções com membros, convites e pedidos de acesso, árvores de grupos que servem a várias coleções do mesmo dono, destinos de alerta (webhook, e-mail, Web Push) e agendas (Google, CalDAV, Outlook, link ICS); o banco inteiro em cascata, na 3ª forma normal. O banco antigo é copiado para um arquivo antes, e o usuário mais antigo vira o master e o dono da coleção"), "sistema.chave=migracao_v25", "migracao_v25"],
     "v26" => ["migracao_v26.sql", tk("o gasto da bateria em cinco motores, escolhidos na Configuração da coleção, no relógio ou no grupo (o campo \"Como calcular o gasto da bateria\"): pelas horas registradas (o original), robusto, pela marcação das leituras (em uso e em repouso, gravada em cada leitura), só o cadastro, ou pelas fórmulas do cadastro; e a cópia dos documentos no banco escolhida na Configuração da coleção, no lugar do config.php"), "lancamento.estado", "migracao_v26_dados"],
     "v27" => ["migracao_v27.sql", tk("o aplicativo no celular (PWA): os aparelhos lembrados de cada usuário (Minha conta: o aplicativo instalado entra sem a senha pela chave gravada no aparelho), o manifesto e o service worker pela API"), "usuario_aparelho"],
+    "v28" => ["migracao_v28.sql", tk("o fuso horário de cada usuário (Minha conta) e de cada coleção (a Configuração): o pedido roda no fuso da pessoa, e no banco as datas continuam no fuso do sistema; e o relógio da página Hora certa escolhido na Configuração (analógico, digital, anadigi ou os dois)"), "usuario.fuso"],
 ];
 
 // O passo em PHP da v16, depois do SQL dela: as opções de cada campo do tipo lista (o texto, uma por linha) viram linhas da
@@ -1778,6 +1856,13 @@ function duracao_texto($dias)
 }
 
 // Todos os avisos: [identificador => [versões]]
+// O aviso Encostado está ligado? A caixa "Avisar quando um relógio fica encostado" da Configuração liga e desliga o aviso
+// encostado do cadastro (aviso.ativo); desligado, some tudo dele: o aviso, a coluna Encostado da Hoje, o filtro e as linhas
+function encostado_ativo()
+{
+    return (int)valor("SELECT COUNT(*) FROM aviso WHERE identificador = 'encostado' AND ativo = 1") > 0;
+}
+
 function avisos_todos($recarregar = false)
 {
     // guardado por coleção (o cron passa por todas)

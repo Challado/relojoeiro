@@ -75,7 +75,7 @@ function recarregarConfig(aplicadas) {
           + parCampo(t("Solar: pôr no sol quando chegar a (%)"), numero("sol_limiar", cfg("sol_limiar") !== "" ? cfg("sol_limiar") : "70", "1", "99"))
           // como calcular o gasto da bateria: a escolha da coleção vale por todos os relógios; vazia, valem o relógio e o grupo
           // (o campo do cadastro "Como calcular o gasto da bateria")
-          + parCampo(t("Gasto da bateria: como calcular"), el("select", {"name": "gasto_motor"}, el("option", {"value": "", "selected": ["horas", "robusto", "marcacao", "cadastro", "formulas"].indexOf(cfg("gasto_motor")) < 0}, t("Conforme o relógio e o grupo (o cadastro)"))
+          + parCampo(t("Gasto da bateria: como calcular (válido para todos os relógios)"), el("select", {"name": "gasto_motor"}, el("option", {"value": "", "selected": ["horas", "robusto", "marcacao", "cadastro", "formulas"].indexOf(cfg("gasto_motor")) < 0}, t("Individual (no relógio ou no grupo)"))
             + el("option", {"value": "horas", "selected": cfg("gasto_motor") === "horas"}, t("1. Pelas horas registradas (o motor original)"))
             + el("option", {"value": "robusto", "selected": cfg("gasto_motor") === "robusto"}, t("2. Pelas horas registradas, com leituras e cadastro (robusto)"))
             + el("option", {"value": "marcacao", "selected": cfg("gasto_motor") === "marcacao"}, t("3. Pela marcação: duas taxas separadas"))
@@ -86,18 +86,26 @@ function recarregarConfig(aplicadas) {
             + el("option", {"value": "leituras", "selected": cfg("medicao_base") === "leituras"}, t("Leituras (as últimas de cada tipo)"))))
           + parCampo(t("Gasto medido: média dos últimos (dias)"), numero("medicao_janela_dias", cfg("medicao_janela_dias") !== "" ? cfg("medicao_janela_dias") : "90", "1", "3650"))
           + parCampo(t("Gasto medido: últimas leituras (de cada tipo)"), numero("medicao_janela_leituras", cfg("medicao_janela_leituras") !== "" ? cfg("medicao_janela_leituras") : "20", "2", "1000"))
+          // o Encostado: a caixa liga ou desliga o aviso inteiro (o aviso do cadastro, a coluna da Hoje, o filtro); os dias, o limite
+          + parCampo(t("Avisar quando um relógio fica encostado"), marca("encostado_ativo", cfg("encostado_ativo") !== "0"), "check")
           + parCampo(t("Aviso Encostado: dias sem ir ao pulso"), numero("encostado_dias", cfg("encostado_dias") !== "" ? cfg("encostado_dias") : "30", "1", "3650"))
           // a cópia dos documentos no banco: a escolha da coleção vale sobre o relógio e o arquivo (antes era o config.php)
-          + parCampo(t("Cópia dos documentos no banco"), el("select", {"name": "documentos_copia"}, el("option", {"value": "", "selected": cfg("documentos_copia") !== "todos" && cfg("documentos_copia") !== "nenhum"}, t("Conforme o relógio e o arquivo"))
+          + parCampo(t("Cópia dos documentos no banco (válido para todos os relógios)"), el("select", {"name": "documentos_copia"}, el("option", {"value": "", "selected": cfg("documentos_copia") !== "todos" && cfg("documentos_copia") !== "nenhum"}, t("Individual (no relógio ou no arquivo)"))
             + el("option", {"value": "todos", "selected": cfg("documentos_copia") === "todos"}, t("Todos os arquivos"))
             + el("option", {"value": "nenhum", "selected": cfg("documentos_copia") === "nenhum"}, t("Nenhum arquivo"))))),
           el("p", {"class": "nota"}, t("O limite de carga de um relógio (no cadastro dele) vale no lugar do geral. O gasto da bateria tem cinco motores (veja a Ajuda); a escolha aqui vale para todos os relógios da coleção, e vazia valem a do relógio e a do grupo (o campo \"Como calcular o gasto da bateria\" do cadastro). O gasto medido conta as medições dos últimos dias ou as últimas leituras de cada tipo (em uso e em repouso), conforme o \"contar por\"; as de fora saem da conta. A cópia dos documentos no banco escolhida aqui vale sobre o relógio e o arquivo. ")
             + (d.config_php_copia !== null ? el("strong", {"class": "em atrasado"}, t("O config.php ainda define DOCUMENTOS_COPIA_BANCO, que não vale mais: a cópia dos documentos é escolhida aqui, por coleção. ")) : "")
-            + t("Um relógio da coleção que passa do limite de dias sem ir ao pulso ganha o aviso <strong>Encostado</strong> (desliga na página Avisos).")));
+            + t("Um relógio da coleção que passa do limite de dias sem ir ao pulso ganha o aviso <strong>Encostado</strong>; a caixa desliga tudo (o aviso, a coluna da Hoje e o filtro: é o mesmo aviso Encostado da página Avisos).")));
         var tela = cartao(t("Telas"), el("div", {"class": "campos"},
           parCampo(t("Idioma padrão (quem não escolheu outro no menu)"), el("select", {"name": "idioma"}, d.linguas.map(function (l) {
             return el("option", {"value": l.codigo, "selected": (cfg("idioma") || "pt-BR") === l.codigo}, h(l.nome));
-          }).join("")))
+          }).join("")), "largo")
+          // o fuso da coleção (quem não escolheu o seu em Minha conta; o cron, as mensagens e as agendas); vazio: o do sistema
+          + parCampo(t("Fuso horário (quem não escolheu outro em Minha conta)"), el("select", {"name": "fuso"}, opcoesFuso(d.fusos, cfg("fuso"), t("O do sistema ({1})", {1: d.fuso_sistema.replace(/_/g, " ")}))))
+          // o relógio da página Hora certa
+          + parCampo(t("Relógio da Hora certa"), el("select", {"name": "hora_relogio"}, [["ambos", t("Analógico e digital (um ao lado do outro)")], ["analogico", t("Analógico")], ["digital", t("Digital")], ["anadigi", t("Anadigi (o visor digital dentro do analógico)")]].map(function (o) {
+            return el("option", {"value": o[0], "selected": (cfg("hora_relogio") || "ambos") === o[0]}, o[1]);
+          }).join("")), "largo")
           + parCampo(t("Abrir o relógio na página Hoje"), el("select", {"name": "painel_modo"}, el("option", {"value": "lado", "selected": cfg("painel_modo") !== "flutuante"}, t("Ao lado da lista"))
             + el("option", {"value": "flutuante", "selected": cfg("painel_modo") === "flutuante"}, t("Numa janela flutuante, grande"))))
           + parCampo(t("Destaque no alto da página Hoje"), el("select", {"name": "destaque_hoje"}, el("option", {"value": "dia", "selected": cfg("destaque_hoje") !== "pulso"}, t("O relógio do dia"))
@@ -111,7 +119,9 @@ function recarregarConfig(aplicadas) {
           + el("p", {"class": "nota"}, t("<strong>Destaque:</strong> o quadro grande no alto da página Hoje mostra o relógio do dia (o do plano) ou o que está no pulso agora, ")
             + t("mesmo que seja outro (o do dia aparece embaixo do nome). Sem nenhum relógio no pulso, fica o do dia."))
           + el("p", {"class": "nota"}, t("<strong>Mostrar até:</strong> quantos dias os Próximos dias (página Hoje, padrão 7) e o dia a dia da página Plano (padrão 31) mostram de cada vez. ")
-            + t("Passando disso, embaixo aparecem as páginas: &lt; (anterior), os números e &gt; (próxima).")));
+            + t("Passando disso, embaixo aparecem as páginas: &lt; (anterior), os números e &gt; (próxima)."))
+          + el("p", {"class": "nota"}, t("<strong>Fuso horário:</strong> o da coleção vale para quem não escolheu o seu em Minha conta, e para o cron, as mensagens e as agendas dela; vazio, o do sistema (o config.php). ")
+            + t("Cada pessoa vê e digita as horas no fuso dela; no banco fica tudo no fuso do sistema. <strong>Relógio da Hora certa:</strong> o mostrador da página Hora certa: analógico, digital, anadigi (o visor digital dentro do mostrador) ou os dois, um ao lado do outro.")));
         var quadroCron = cartao(t("Cron"), cron);
         // de onde vêm os números dos sorteios (a API diz o último lote e se os dois serviços estão fora)
         var al = d.aleatorio;
@@ -129,17 +139,17 @@ function recarregarConfig(aplicadas) {
           // salvar: uma barra presa no pé da tela enquanto a página rola, com o botão sempre no mesmo lugar
           + el("div", {"class": "barra-salvar"}, el("span", {"class": "nota"}, t("As mudanças desta página valem depois de salvar.")) + el("button", {}, t("Salvar configuração"))));
         // ---------- Cópia de segurança (desligada no config.php, BACKUP_ATIVO = false: o quadro nem aparece) ----------
-        res += bk === null || bk.ativo === false ? "" : el("section", {"id": "copia"}, el("h2", {}, t("Cópia de segurança"))
+        res += bk === null || bk.ativo === false ? "" : el("section", {"id": "copia", "class": "cartao-config"}, el("h2", {}, t("Cópia de segurança"))
           + (bk.pasta_ok
             ? el("p", {"class": "nota"}, t("Uma cópia do banco inteiro por dia, na rodada da noite, guardando as {1} mais novas, {2} o conteúdo dos documentos (os arquivos já ficam na pasta deles). A cópia volta em qualquer um dos três bancos, na mesma versão do sistema. {3}", {1: bk.manter, 2: bk.documentos ? "com" : "sem", 3: bk.ultima ? t("Última: {1} {2}.", {1: dataBr(bk.ultima), 2: horaBr(bk.ultima)}) : t("Nenhuma feita ainda.")}))
             : el("p", {"class": "alerta-cron"}, t("A cópia automática está desligada: {1}. Ponha no config.php a BACKUP_PASTA, uma pasta do servidor fora da pasta publicada.", {1: h(bk.pasta_erro)})))
-          + (bk.copias.length > 0 ? el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, [t("Cópia"), t("Feita em"), t("Tamanho"), t("Documentos"), ""].map(function (item) { return el("th", {}, item); }).join("")))
+          + (bk.copias.length > 0 ? el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, [t("Cópia"), t("Feita em"), t("Tamanho"), t("Documentos"), ""].map(function (item) { return el("th", {}, item); }).join("")), "largo")
             + el("tbody", {}, bk.copias.map(function (x) {
               return el("tr", {}, el("td", {}, el("code", {}, h(x.arquivo))) + el("td", {}, x.criada ? dataBr(x.criada) + " " + horaBr(x.criada) : "—") + el("td", {}, h(x.tamanho))
                 + el("td", {}, x.documentos ? "com" : "sem") + el("td", {"class": "acoes-linha"}, el("a", {"href": "api.php?recurso=backup&arquivo=" + encodeURIComponent(x.arquivo), "class": "botao leve"}, t("Baixar")) + " "
                 + el("form", {"data-recurso": "backup", "onsubmit": "return confirm(" + JSON.stringify(t("Voltar o banco para a cópia de {1}? Tudo o que foi feito depois some. Antes, o sistema guarda uma cópia do que está agora.", {1: x.criada ? dataBr(x.criada) + " " + horaBr(x.criada) : x.arquivo})) + ")"}, el("input", {"type": "hidden", "name": "acao", "value": "restaurar"})
                   + el("input", {"type": "hidden", "name": "arquivo", "value": x.arquivo}) + el("button", {"class": "discreto"}, t("Restaurar")))));
-            }).join("")))) : "")
+            }).join("")), "largo")) : "")
           + (bk.pasta_ok ? el("form", {"data-recurso": "backup"}, el("input", {"type": "hidden", "name": "acao", "value": "fazer"}) + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, t("Fazer uma cópia agora")))) : ""));
         document.getElementById("configuracao").innerHTML = res;
         if (window.location.hash) {

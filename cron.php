@@ -130,13 +130,15 @@ try {
             $clog = [];
             try {
                 banco_escopo($c);
-                // as mensagens, a agenda e o registro saem no idioma da coleção (os destinos podem ter o seu)
+                // as mensagens, a agenda e o registro saem no idioma da coleção (os destinos podem ter o seu) e no fuso dela
                 lingua_definir(cfg("idioma"));
+                fuso_definir(...fuso_do_pedido());
                 $clog = cron_colecao($hoje, $agora, $forcar);
             } catch (Throwable $t) {
                 $clog[] = registro_erro(t("erro: {1} ({2}:{3})", [1 => $t->getMessage(), 2 => basename($t->getFile()), 3 => $t->getLine()]));
             }
             banco_escopo(null);
+            fuso_definir(null);
             $GLOBALS["CRON_COLECOES"][$c] = ["log" => $clog, "erros" => $GLOBALS["REGISTRO_ERROS"] - $erros_antes];
             foreach ($clog as $l) {
                 $log[] = "[" . $c . "] " . $l;

@@ -702,6 +702,13 @@
  *                                    leituras (2 a 1000)
  *     config.encostado_dias          o aviso Encostado: depois de quantos dias sem ir ao pulso um relógio da coleção é avisado (1 a 3650;
  *                                    padrão 30)
+ *     config.encostado_ativo         1 ou 0: o aviso Encostado está ligado (a caixa Avisar quando um relógio fica encostado, da
+ *                                    Configuração: liga e desliga o aviso encostado do cadastro, o mesmo que a página Avisos; desligado,
+ *                                    somem o aviso, a coluna Encostado da Hoje e o filtro)
+ *     config.fuso                    o fuso horário da coleção ("Europe/Lisbon"): o de quem não escolheu o seu em Minha conta, e o do cron,
+ *                                    das mensagens e das agendas dela; vazio: o do sistema (fuso_sistema)
+ *     config.hora_relogio            o relógio da página Hora certa: analogico, digital, anadigi (o visor digital dentro do mostrador
+ *                                    analógico) ou ambos (um ao lado do outro); vazio: ambos
  *     config.idioma                  o idioma padrão da instalação (pt-BR, en, zh-CN, hi, es, fr; vazio: o do navegador, senão português)
  *     config.painel_modo             como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela
  *                                    grande por cima da página); vazio: lado
@@ -1420,6 +1427,9 @@
  *     avisos[].texto                 o motivo por extenso
  *     avisos_nomes[]                 os nomes dos avisos da manutenção (o filtro "O que fazer" da tabela; sem o Encostado, que tem a coluna
  *                                    dele)
+ *     encostado_ativo                true ou false: o aviso Encostado está ligado (a caixa Avisar quando um relógio fica encostado, da
+ *                                    Configuração); false, a página esconde a coluna Encostado e o filtro, e nenhum relógio vem com
+ *                                    encostado
  *     fora_da_colecao                os relógios fora da coleção (desejados, vendidos, arquivados), fora da tabela: a página Desejos e o
  *                                    seletor da ficha
  *     fora_da_colecao[]              um relógio fora da coleção
@@ -1992,8 +2002,21 @@
  *                                    leituras (2 a 1000)
  *     config.encostado_dias          o aviso Encostado: depois de quantos dias sem ir ao pulso um relógio da coleção é avisado (1 a 3650;
  *                                    padrão 30)
+ *     config.encostado_ativo         1 ou 0: o aviso Encostado está ligado (a caixa Avisar quando um relógio fica encostado, da
+ *                                    Configuração: liga e desliga o aviso encostado do cadastro, o mesmo que a página Avisos; desligado,
+ *                                    somem o aviso, a coluna Encostado da Hoje e o filtro)
  *     config.idioma                  o idioma padrão da instalação (pt-BR, en, zh-CN, hi, es, fr): o de quem não escolheu outro no menu, o
  *                                    das mensagens do cron e o da API sem lingua= (vazio: o do navegador, senão português)
+ *     config.fuso                    o fuso horário da coleção ("Europe/Lisbon"): o de quem não escolheu o seu em Minha conta, e o do cron,
+ *                                    das mensagens e das agendas dela; vazio: o do sistema (fuso_sistema)
+ *     config.hora_relogio            o relógio da página Hora certa: analogico, digital, anadigi (o visor digital dentro do mostrador
+ *                                    analógico) ou ambos (um ao lado do outro); vazio: ambos
+ *     fuso_sistema                   o fuso do sistema (o FUSO do config.php, ou o do PHP): o das datas gravadas no banco e o de quem não
+ *                                    escolheu outro
+ *     fusos[]                        os fusos horários que o PHP conhece, em ordem alfabética (as listas Fuso horário da Configuração e de
+ *                                    Minha conta)
+ *     fusos[].nome                   o nome ("America/Sao_Paulo")
+ *     fusos[].deslocamento           a diferença para o UTC agora ("-03:00")
  *     linguas[]                      os idiomas do sistema, na ordem (o menu Idioma padrão)
  *     linguas[].codigo               o código (pt-BR, en, zh-CN, hi, es, fr)
  *     linguas[].nome                 o nome no próprio idioma
@@ -2617,14 +2640,15 @@
  *     agora                          o instante da resposta (número inteiro: instante Unix (segundos desde 01/01/1970 UTC))
  *     agora_ms                       o mesmo em milissegundos: a página acerta o relógio dela por ele, descontando metade do tempo do
  *                                    pedido
- *     local                          a hora local (o fuso do sistema)
+ *     local                          a hora local, no fuso do pedido (o do usuário, o da coleção ou o do sistema)
  *     local.data                     a data (texto AAAA-MM-DD)
  *     local.hora                     a hora (texto HH:MM:SS)
  *     local.iso8601                  a data e a hora com o deslocamento ("2026-10-13T14:33:50-03:00")
  *     local.dia_semana               o dia da semana ("terça-feira")
  *     local.texto                    a data por extenso ("terça-feira, 13 de outubro de 2026")
- *     fuso                           o fuso do sistema
- *     fuso.nome                      o nome ("America/Sao_Paulo": o FUSO do config.php)
+ *     fuso                           o fuso do pedido
+ *     fuso.nome                      o nome ("America/Sao_Paulo")
+ *     fuso.origem                    de onde veio: usuario (Minha conta), colecao (a Configuração) ou sistema (o FUSO do config.php)
  *     fuso.deslocamento              a diferença para o UTC ("-03:00")
  *     fuso.segundos                  a mesma em segundos (-10800)
  *     fuso.abreviacao                a abreviação ("-03", "CET")
@@ -2639,6 +2663,7 @@
  *     militar.grupo_data_hora_local  o grupo data-hora (DTG) local: DDHHMM, a letra, o mês em inglês e o ano ("131433P OCT 26"); null sem
  *                                    letra
  *     militar.grupo_data_hora_zulu   o mesmo em UTC ("131733Z OCT 26")
+ *     relogio                        o relógio da página (a Configuração, Relógio da Hora certa): analogico, digital, anadigi ou ambos
  *     calendario                     o calendário de hoje
  *     calendario.dia_do_ano          o dia do ano (1 a 366)
  *     calendario.dias_no_ano         quantos dias o ano tem (365 ou 366)
@@ -2988,6 +3013,7 @@
  *     usuario.email                  o e-mail; null: nenhum
  *     usuario.papel                  master ou comum
  *     usuario.idioma                 o idioma; null: o da coleção
+ *     usuario.fuso                   o fuso horário da pessoa ("America/Sao_Paulo"); null: o da coleção, senão o do sistema
  *     usuario.criado                 quando a conta foi criada
  *     usuario.ultimo_acesso          o último acesso
  *     usuario.expira_em              quando a conta de demonstração vence; null: oficial
@@ -3078,6 +3104,15 @@
  *     demo_dias                      os dias da conta de demonstração
  *     master                         (parte=menu) verdadeiro ou falso: quem pede é o master (ou o master vendo como outro)
  *     linguas[]                      os idiomas
+ *     fuso                           o fuso horário em que este pedido roda (as datas e horas que a API mostra e recebe)
+ *     fuso.nome                      o nome ("America/Sao_Paulo")
+ *     fuso.origem                    de onde veio: usuario (o seu, de Minha conta), colecao (o da Configuração) ou sistema (o FUSO do
+ *                                    config.php)
+ *     fuso.sistema                   o fuso do sistema (o das datas gravadas no banco)
+ *     fuso.colecao                   o fuso da coleção do pedido; null: não tem (vale o do sistema)
+ *     fusos[]                        os fusos horários que o PHP conhece, em ordem alfabética (a lista Fuso horário de Minha conta)
+ *     fusos[].nome                   o nome ("America/Sao_Paulo")
+ *     fusos[].deslocamento           a diferença para o UTC agora ("-03:00")
  *     linguas[].codigo               o código
  *     linguas[].nome                 o nome
  *   recurso=colecoes
@@ -3183,6 +3218,10 @@
  *     usuarios[].email               o e-mail (para recuperar a senha, os convites e os avisos)
  *     usuarios[].papel               master (cuida do sistema inteiro) ou comum
  *     usuarios[].idioma              o idioma dele; null: o da coleção
+ *     usuarios[].fuso                o fuso horário dele ("America/Sao_Paulo"); null: o da coleção, senão o do sistema
+ *     fusos[]                        (só o master) os fusos horários que o PHP conhece (a lista Fuso horário do quadro Alterar)
+ *     fusos[].nome                   o nome ("America/Sao_Paulo")
+ *     fusos[].deslocamento           a diferença para o UTC agora ("-03:00")
  *     usuarios[].ultimo_acesso       o último acesso (texto AAAA-MM-DD HH:MM:SS); null: nunca entrou
  *     usuarios[].expira_em           quando a conta de demonstração vence (texto AAAA-MM-DD HH:MM:SS); null: a conta é oficial
  *     usuarios[].demo                verdadeiro ou falso: é de demonstração
@@ -3650,6 +3689,14 @@ if ($em_dia) {
     }
 }
 lingua_definir(lingua_do_pedido($lingua_padrao));
+// o fuso do pedido: o do usuário (Minha conta), o da coleção (a Configuração) ou o do sistema (o FUSO do config.php)
+if ($em_dia) {
+    try {
+        fuso_definir(...fuso_do_pedido(usuario_atual()));
+    } catch (Throwable $e) {
+        fuso_definir(null);
+    }
+}
 // o que responde sem o banco (com ele vazio ou desatualizado): o manual, o código e os textos das telas, que só leem arquivos
 $parte_ajuda = (string)($_REQUEST["parte"] ?? "");
 $sem_banco = in_array($recurso, ["manual", "codigo", "textos"], true) || ($recurso === "ajuda" && in_array($parte_ajuda, ["manual", "codigo"], true));
@@ -3894,7 +3941,7 @@ if ($recurso === "textos") {
     $saida = ["ok" => $ok_o, "mensagem" => $msg_o];
 } elseif ($recurso === "usuarios") {
     // o master: o painel (todos, com o que cada um tem, e as coleções, para transferir e dar acesso); os outros, só a si mesmos
-    $saida = usuario_master() ? ["usuarios" => usuarios_painel(), "voce" => $quem, "demo_dias" => demo_dias(), "colecoes" => colecoes_visiveis(usuario_atual())]
+    $saida = usuario_master() ? ["usuarios" => usuarios_painel(), "voce" => $quem, "demo_dias" => demo_dias(), "colecoes" => colecoes_visiveis(usuario_atual()), "fusos" => fusos_lista()]
         : ["usuarios" => usuarios_catalogo(), "voce" => $quem];
 } elseif ($recurso === "conta") {
     $saida = ($_REQUEST["parte"] ?? "") === "menu" ? conta_menu() : conta_consulta();

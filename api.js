@@ -505,6 +505,14 @@ function tabelaRecebe(prefixo, recebe, ancoras, proprio) {
 
 // Uma opção numa linha: o rótulo à esquerda e o campo à direita, na mesma coluna em todos os quadros (a Configuração, os Destinos, as Agendas, a Conta). "check": a caixa no
 // lugar do campo; "largo": o rótulo em cima e o campo na largura toda (textos longos, como um endereço)
+// as opções de um seletor de fuso horário: a primeira é o "vazio" (o da coleção, o do sistema) e depois todos os fusos que o
+// PHP conhece (recurso=conta, configuracao ou usuarios: fusos[]), cada um com o deslocamento de agora ("UTC−03:00")
+function opcoesFuso(fusos, atual, vazioTexto) {
+  return el("option", {"value": "", "selected": !atual}, vazioTexto) + (fusos || []).map(function (f) {
+    return el("option", {"value": f.nome, "selected": atual === f.nome}, h(f.nome.replace(/_/g, " ")) + " (UTC" + h(f.deslocamento.replace("-", "\u2212")) + ")");
+  }).join("");
+}
+
 function parCampo(rotulo, controle, tipo) {
   return el("label", {"class": "par-campo" + (tipo ? " " + tipo : "")}, el("span", {"class": "rotulo"}, h(rotulo)) + el("span", {"class": "controle"}, controle));
 }

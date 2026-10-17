@@ -2456,7 +2456,9 @@
         "carga_limiar": "20",
         "encostado_dias": "30",
         "gasto_motor": "",
-        "documentos_copia": ""
+        "documentos_copia": "",
+        "fuso": "",
+        "hora_relogio": ""
     },
     "mensagens": {
         "modelo": "{acao}: {relogio}\n{motivo}",
