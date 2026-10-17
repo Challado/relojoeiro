@@ -35,7 +35,7 @@ function acoesDoUsuario(u, d) {
       + parCampo(t("Login"), el("input", {"name": "novo_login", "value": u.login, "maxlength": "60"}))
       + parCampo(t("E-mail"), el("input", {"type": "email", "name": "email", "value": u.email || "", "maxlength": "200"}))
       + parCampo(t("Idioma"), el("select", {"name": "idioma"}, idiomas))
-      + parCampo(t("Fuso horário"), el("select", {"name": "fuso"}, opcoesFuso(d.fusos, u.fuso, t("O da coleção"))))
+      + parCampo(t("Fuso horário"), el("select", {"name": "fuso"}, opcoesFuso(d.fusos, u.fuso, t("O da coleção"), t("O do navegador dele"))))
       + parCampo(t("Papel"), el("select", {"name": "papel"}, el("option", {"value": "comum", "selected": u.papel === "comum"}, t("comum")) + el("option", {"value": "master", "selected": u.papel === "master"}, t("master"))))
       + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, t("Salvar"))));
   res += el("form", {"data-recurso": "usuarios", "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "login", "value": u.login})

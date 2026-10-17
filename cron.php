@@ -133,7 +133,8 @@ try {
                 // as mensagens, a agenda e o registro saem no idioma da coleção (os destinos podem ter o seu) e no fuso dela
                 lingua_definir(cfg("idioma"));
                 fuso_definir(...fuso_do_pedido());
-                $clog = cron_colecao($hoje, $agora, $forcar);
+                // o dia e a hora de parede desta coleção (o relógio dela: as rodadas e o plano seguem o fuso dela)
+                $clog = cron_colecao(hoje_da_colecao(), hora_da_colecao(), $forcar);
             } catch (Throwable $t) {
                 $clog[] = registro_erro(t("erro: {1} ({2}:{3})", [1 => $t->getMessage(), 2 => basename($t->getFile()), 3 => $t->getLine()]));
             }

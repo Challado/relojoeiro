@@ -11,9 +11,9 @@ if (!defined("RELOJOEIRO_API")) {
 }
 
 $agora_e = time();
-$hoje_e = new DateTimeImmutable("today");
+$hoje_e = hoje_da_colecao();
 $data_ok = function ($t) {
-    $x = DateTimeImmutable::createFromFormat("!Y-m-d", (string)$t);
+    $x = DateTimeImmutable::createFromFormat("!Y-m-d", (string)$t, fuso_colecao_tz());
     return $x && $x->format("Y-m-d") === (string)$t ? $x : null;
 };
 $de_e = ($_REQUEST["de"] ?? "") !== "" ? $data_ok($_REQUEST["de"]) : $hoje_e->modify("-89 days");
@@ -21,7 +21,7 @@ $ate_e = ($_REQUEST["ate"] ?? "") !== "" ? $data_ok($_REQUEST["ate"]) : $hoje_e;
 if (($_REQUEST["de"] ?? "") === "tudo") {
     // desde o primeiro lançamento no pulso
     $primeiro = valor("SELECT MIN(l.inicio) FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE t.identificador IN ('pulso', 'pulso_antigo')");
-    $de_e = $primeiro !== null ? new DateTimeImmutable(substr((string)$primeiro, 0, 10)) : $hoje_e;
+    $de_e = $primeiro !== null ? new DateTimeImmutable(substr((string)$primeiro, 0, 10), fuso_colecao_tz()) : $hoje_e;
 }
 if ($de_e === null || $ate_e === null) {
     $codigo = 400;
@@ -54,16 +54,16 @@ foreach (linhas("SELECT l.relogio_id, l.inicio, l.fim, t.identificador FROM lanc
     $a = strtotime($l["inicio"]);
     if ($l["identificador"] === "pulso_antigo") {
         if ($a >= $ini_e && $a < $fim_e) {
-            $dias_uso[$rid][date("Y-m-d", $a)] = true;
+            $dias_uso[$rid][dia_da_colecao($a)] = true;
         }
         continue;
     }
     $a = max($a, $ini_e);
     $b = min($l["fim"] === null ? $agora_e : strtotime($l["fim"]), $fim_e);
     while ($b > $a) {
-        $meia_noite = strtotime(date("Y-m-d", $a) . " +1 day");
+        $meia_noite = meia_noite_seguinte($a);
         $ate_aqui = min($b, $meia_noite);
-        $dia = date("Y-m-d", $a);
+        $dia = dia_da_colecao($a);
         $seg[$rid][$dia] = ($seg[$rid][$dia] ?? 0) + ($ate_aqui - $a);
         $dias_uso[$rid][$dia] = true;
         $a = $ate_aqui;

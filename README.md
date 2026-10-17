@@ -887,7 +887,7 @@ Tudo o que o sistema lembra fica junto na página **Avisos** (no menu), em três
 calcula sozinho pelos dados de cada um: dar corda, carregar, trocar a pilha...), os **lembretes** (os eventos personalizados,
 abaixo) e **Para onde vão**, o resumo dos destinos e das agendas, que têm páginas próprias:
 
-- **Destinos** (`destinos.php`): para onde vão as mensagens da coleção. Cada destino é um **webhook** (um pedido HTTP:
+- **Destinos** (`destinos.php`): para onde vão as mensagens da coleção, cada um com o seu idioma e o seu fuso horário (das horas no texto). Cada destino é um **webhook** (um pedido HTTP:
   o Telegram, o n8n, o Home Assistant, qualquer ponte), um **e-mail** (pelo servidor de e-mail do `config.php`) ou o **Web
   Push** (as notificações no celular e no navegador de alguém que vê a coleção). Cada um tem o nome, **Ligado**, o **idioma**,
   a **mensagem padrão** (com as âncoras `{acao}`, `{relogio}`, `{motivo}`, `{carga}`, `{ate}`, `{link}`...; o botão **Inserir
@@ -1135,19 +1135,31 @@ Os nomes que você cadastra (grupos, campos, tipos de lançamento, avisos, modos
 
 ### O fuso horário
 
-Cada pessoa vê e digita as horas no **seu fuso horário**, escolhido em **Minha conta › Seus dados** (a lista de todos os
-fusos que o PHP conhece, com o deslocamento de agora: *America/Sao Paulo (UTC−03:00)*). Quem não escolheu usa o **fuso da
-coleção** (Configuração › Telas, **Fuso horário**), e sem esse, o **fuso do sistema** (o `FUSO` do `config.php`, senão o do
-PHP). A página **Hora certa** diz qual está valendo e de onde veio.
+Há dois relógios no sistema, e é bom saber qual manda em quê:
 
-Vale para tudo o que tem hora: a Hora certa, os lançamentos (o "quando" que você digita e o que o histórico mostra), os
-avisos, as medições, as estatísticas, as mensagens e as agendas (o cron roda cada coleção no fuso dela). No banco, tudo fica
-no fuso do sistema: a camada do banco converte as datas com hora ao ler e ao gravar, para quem está em outro fuso. Assim duas
-pessoas em países diferentes dividem a mesma coleção e cada uma vê cada hora na sua: o pulso posto às 10:00 em Nova York
-aparece às 11:00 para quem está em São Paulo. A data sozinha (o dia do plano, a data da compra) é um dia do calendário, igual
-em todo fuso. Pela API: `recurso=conta` (`acao=alterar`, `fuso=`), `recurso=config` (`fuso=`) e, em cada resposta da conta,
-o fuso em vigor e a lista (`fuso`, `fusos[]`).
+- **O relógio da coleção** manda no rodízio: o dia do plano, o relógio do dia, o "só hoje", o horário de uso (o pulso que
+  entra e sai sozinho), as rodadas da manhã e da noite do cron, a escala, a garantia de rodízio e as estatísticas por dia.
+  É o fuso da coleção (Configuração › Telas, **Fuso horário**); vazio, o do sistema (o `FUSO` do `config.php`, senão o do
+  PHP). Não depende de quem está olhando: o plano é um só, por data, para todos os membros.
+- **O seu fuso** manda no que você vê e digita: a Hora certa, os lançamentos (o "quando" que você digita e o que o
+  histórico mostra), os avisos, as medições. Escolhe-se em **Minha conta › Seus dados**, **Fuso horário**: **O da coleção**
+  (o padrão, para quem não escolheu nada), **O do navegador** (o fuso do aparelho em que você entra, que as páginas mandam
+  à API; serve para quem viaja) ou um fuso fixo da lista (todos os que o PHP conhece, com o deslocamento de agora:
+  *America/Sao Paulo (UTC−03:00)*). A página **Hora certa** diz qual está valendo e de onde veio. O master escolhe o de
+  qualquer um em **Usuários**.
 
+No banco, tudo fica no fuso do sistema: a camada do banco converte as datas com hora ao ler e ao gravar, para quem está em
+outro fuso. Assim duas pessoas em países diferentes dividem a mesma coleção e cada uma vê cada hora na sua: o pulso posto às
+10:00 em Nova York aparece às 11:00 para quem está em São Paulo, e para os dois o relógio do dia é o mesmo. A data sozinha (o
+dia do plano, a data da compra) é um dia do calendário, igual em todo fuso.
+
+As mensagens e as agendas têm o fuso de quem recebe: cada destino (Telegram, e-mail, Web Push) e cada agenda tem o seu
+**Fuso horário (das horas no texto)**, como já têm o idioma; vazio, o da coleção. Muda só o texto ("chega a 0% às 00:36"); o
+instante do evento no calendário já era certo em qualquer fuso (o Google e o Outlook recebem o fuso, o ICS vai em UTC).
+
+Pela API: `recurso=conta` (`acao=alterar`, `fuso=` um nome, `navegador` ou vazio), `recurso=config` (`fuso=`),
+`recurso=destinos` e `recurso=agendas` (`fuso=`); em cada resposta da conta, o fuso em vigor, de onde veio e a lista (`fuso`,
+`fusos[]`). Um script de quem escolheu "O do navegador" manda `fuso_pedido=` (sem ele, vale o da coleção).
 ## A API: uma porta só para tudo
 
 O `api.php` é o **único back-end**. As páginas são só a tela: o JavaScript de cada uma chama a API e monta o HTML, sem fazer

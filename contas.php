@@ -720,10 +720,10 @@ function op_conta($acao, $d)
         }
         // o fuso horário da pessoa (vazio: o da coleção, senão o do sistema)
         if (array_key_exists("fuso", $d)) {
-            if (trim((string)$d["fuso"]) !== "" && fuso_valido($d["fuso"]) === null) {
-                $erros[] = t("Fuso horário desconhecido: use um nome como America/Sao_Paulo ou Europe/Lisbon (a lista de Minha conta).");
+            if (trim((string)$d["fuso"]) !== "" && trim((string)$d["fuso"]) !== "navegador" && fuso_valido($d["fuso"]) === null) {
+                $erros[] = t("Fuso horário desconhecido: use um nome como America/Sao_Paulo ou Europe/Lisbon (a lista de Minha conta), navegador (o do aparelho) ou vazio (o da coleção).");
             } else {
-                $campos["fuso"] = fuso_valido($d["fuso"]);
+                $campos["fuso"] = trim((string)$d["fuso"]) === "navegador" ? "navegador" : fuso_valido($d["fuso"]);
             }
         }
         if ((string)($d["senha"] ?? "") !== "") {
@@ -1210,10 +1210,10 @@ function op_usuarios($acao, $d, $atual)
             $campos["idioma"] = lingua_valida($d["idioma"]);
         }
         if (array_key_exists("fuso", $d)) {
-            if (trim((string)$d["fuso"]) !== "" && fuso_valido($d["fuso"]) === null) {
-                $erros[] = t("Fuso horário desconhecido: use um nome como America/Sao_Paulo ou Europe/Lisbon (a lista de Minha conta).");
+            if (trim((string)$d["fuso"]) !== "" && trim((string)$d["fuso"]) !== "navegador" && fuso_valido($d["fuso"]) === null) {
+                $erros[] = t("Fuso horário desconhecido: use um nome como America/Sao_Paulo ou Europe/Lisbon (a lista de Minha conta), navegador (o do aparelho) ou vazio (o da coleção).");
             } else {
-                $campos["fuso"] = fuso_valido($d["fuso"]);
+                $campos["fuso"] = trim((string)$d["fuso"]) === "navegador" ? "navegador" : fuso_valido($d["fuso"]);
             }
         }
         if (isset($d["papel"]) && $d["papel"] !== $u["papel"]) {

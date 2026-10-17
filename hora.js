@@ -93,7 +93,7 @@ function ler() {
     var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Hora certa")) + el("span", {"class": "nota"}, t("{1} · UTC{2}", {1: h(d.fuso.nome), 2: h(d.fuso.deslocamento)})));
     // o relógio escolhido na Configuração: analógico, digital, anadigi (o visor dentro do mostrador) ou os dois lado a lado
     var modo = d.relogio || "ambos";
-    var origem = {"usuario": t("o seu, de Minha conta"), "colecao": t("o da coleção, da Configuração"), "sistema": t("o do sistema, do config.php")}[d.fuso.origem] || "";
+    var origem = {"usuario": t("o seu, de Minha conta"), "navegador": t("o do seu navegador, por Minha conta"), "colecao": t("o da coleção, da Configuração"), "sistema": t("o do sistema, do config.php")}[d.fuso.origem] || "";
     res += el("section", {"class": "cartao-config relogio-certo modo-" + modo}, (modo === "analogico" || modo === "ambos" ? mostrador(false) : "") + (modo === "anadigi" ? mostrador(true) : "")
       + (modo === "digital" || modo === "ambos" ? digitalLcd(d) : "")
       + el("div", {"class": "digital-bloco"}, (modo === "analogico" || modo === "anadigi" ? el("p", {"class": "hora-texto", "id": "digital", "aria-live": "off"}, h(d.local.hora)) : "")

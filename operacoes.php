@@ -522,14 +522,14 @@ function op_relogio($acao, $d)
                         [date("Y-m-d H:i:s"), $id]);
                     $nota_posse .= t(" Fechei agora: {1}.", [1 => implode(", ", array_map(function ($x) { return mb_strtolower($x["nome"], "UTF-8"); }, $abertas))]);
                 }
-                $amanha = (new DateTimeImmutable("today"))->modify("+1 day");
+                $amanha = (hoje_da_colecao())->modify("+1 day");
                 $tirados = (int)valor("SELECT COUNT(*) FROM plano WHERE relogio_id = ? AND data >= ?", [$id, $amanha->format("Y-m-d")]);
                 if ($tirados > 0) {
                     sql("DELETE FROM plano WHERE relogio_id = ? AND data >= ?", [$id, $amanha->format("Y-m-d")]);
                     if (valor("SELECT escala_dias FROM modo WHERE id = ?", [modo_ativo()]) !== null) {
                         gerar_escala($amanha);
                     } else {
-                        garantir_plano(new DateTimeImmutable("today"));
+                        garantir_plano(hoje_da_colecao());
                     }
                     $nota_posse .= t(" Saiu do plano de amanhã em diante ({1}{2} de novo).", [1 => $tirados, 2 => $tirados === 1 ? t(" dia sorteado") : t(" dias sorteados")]);
                 }
@@ -1804,9 +1804,9 @@ function op_rodizio($acao, $d)
     $erros = [];
     $msg = "";
     $agora = time();
-    $hoje = new DateTimeImmutable("today");
-    $ini_uso = strtotime($hoje->format("Y-m-d") . " " . cfg("uso_inicio"));
-    $fim_uso = strtotime($hoje->format("Y-m-d") . " " . cfg("uso_fim"));
+    $hoje = hoje_da_colecao();
+    $ini_uso = instante($hoje->format("Y-m-d"), cfg("uso_inicio"));
+    $fim_uso = instante($hoje->format("Y-m-d"), cfg("uso_fim"));
     $comecou = dia_comecou($agora);
     // troca o relógio de hoje a partir de agora: a sessão de rodízio do anterior termina agora (ou sai, se nem começou)
     // e a do novo começa agora (se ainda está no horário de uso)
@@ -2271,18 +2271,18 @@ function op_modos($acao, $d)
                 }
             }
             if (modo_ativo() === $id) {
-                sql("DELETE FROM plano WHERE data > ?", [date("Y-m-d")]);
+                sql("DELETE FROM plano WHERE data > ?", [hoje_da_colecao()->format("Y-m-d")]);
                 cfg_set("escala_fim", "");
-                garantir_plano(new DateTimeImmutable("today"));
+                garantir_plano(hoje_da_colecao());
             }
             $msg = t("Modo {1} salvo{2}.", [1 => $nome, 2 => count($dias_usados) > 0 && count($dias_usados) < 7 ? t(" (os dias sem bloco ficam sem relógio sorteado)") : ""]);
         }
     } elseif ($acao === "ativar" && $atual) {
         modo_ativar($id);
-        sql("DELETE FROM plano WHERE data > ?", [date("Y-m-d")]);
+        sql("DELETE FROM plano WHERE data > ?", [hoje_da_colecao()->format("Y-m-d")]);
         // a escala de antes (se havia) acaba aqui: a do modo novo começa um período novo
         cfg_set("escala_fim", "");
-        garantir_plano(new DateTimeImmutable("today"));
+        garantir_plano(hoje_da_colecao());
         $msg = t("Modo ativo: {1}. O plano de amanhã em diante foi refeito{2}.", [1 => $atual["nome"], 2 => $atual["escala_dias"] !== null ? t(" (escala até {1})", [1 => data_txt(strtotime(cfg("escala_fim")))]) : ""]);
     } elseif ($acao === "excluir" && $atual) {
         if (modo_ativo() === $id) {
@@ -2316,7 +2316,7 @@ function op_config($acao, $d)
     $erros = [];
     $msg = "";
     $extra = [];
-    $hoje = new DateTimeImmutable("today");
+    $hoje = hoje_da_colecao();
     $hora_ok = "/^([01][0-9]|2[0-3]):[0-5][0-9]\$/";
     if ($acao === "salvar") {
         foreach (["horario_manha", "horario_noite", "sol_fim"] as $k) {
@@ -2651,11 +2651,16 @@ function op_destinos($acao, $d)
             $nome = trim((string)($d["nome"] ?? $atual["nome"]));
             $ativo = array_key_exists("ativo", $d) ? ((string)$d["ativo"] === "1" ? 1 : 0) : ($atual ? ($atual["ativo"] ? 1 : 0) : 1);
             $idioma = array_key_exists("idioma", $d) ? ((string)$d["idioma"] !== "" ? (string)$d["idioma"] : null) : ($atual["idioma"] ?? null);
+            // o fuso das horas no texto (vazio: o da coleção)
+            if (array_key_exists("fuso", $d) && trim((string)$d["fuso"]) !== "" && fuso_valido($d["fuso"]) === null) {
+                $erros[] = t("Fuso horário desconhecido: use um nome como America/Sao_Paulo ou Europe/Lisbon, ou vazio para o da coleção.");
+            }
+            $fuso_alvo = array_key_exists("fuso", $d) ? fuso_valido($d["fuso"]) : ($atual["fuso"] ?? null);
             $modelo = array_key_exists("modelo", $d) ? str_replace("\r\n", "\n", (string)$d["modelo"]) : ($atual ? $atual["modelo"] : modelo_tradutor(lingua_valida(cfg("idioma")) ?? "pt-BR")(modelo_ler()["mensagens"]["modelo"]));
             if ($atual) {
-                sql("UPDATE destino SET nome = ?, ativo = ?, idioma = ?, modelo = ? WHERE id = ?", [$nome, $ativo, $idioma, $modelo, $id]);
+                sql("UPDATE destino SET nome = ?, ativo = ?, idioma = ?, fuso = ?, modelo = ? WHERE id = ?", [$nome, $ativo, $idioma, $fuso_alvo, $modelo, $id]);
             } else {
-                sql("INSERT INTO destino (colecao_id, nome, tipo, ativo, modelo, idioma, criado) VALUES (?, ?, ?, ?, ?, ?, NOW())", [colecao_atual(), $nome, $tipo, $ativo, $modelo, $idioma]);
+                sql("INSERT INTO destino (colecao_id, nome, tipo, ativo, modelo, idioma, fuso, criado) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())", [colecao_atual(), $nome, $tipo, $ativo, $modelo, $idioma, $fuso_alvo]);
                 $id = ultimo_id();
                 recebe_inicial("destino", $id);
             }
@@ -2714,7 +2719,7 @@ function op_destinos($acao, $d)
         destinos(true);
         $msg = t("Destino {1} excluído.", [1 => $atual["nome"]]);
     } elseif ($acao === "testar" && $atual) {
-        $hoje = new DateTimeImmutable("today");
+        $hoje = hoje_da_colecao();
         garantir_plano($hoje);
         $qual = (string)($d["qual"] ?? "texto");
         if ($qual === "manha" || $qual === "noite") {
@@ -2756,7 +2761,7 @@ function op_agendas($acao, $d)
     $id = (int)($d["id"] ?? 0);
     $todas = agendas(true);
     $atual = $todas[$id] ?? null;
-    $hoje = new DateTimeImmutable("today");
+    $hoje = hoje_da_colecao();
     if ($id > 0 && $atual === null) {
         $erros[] = t("Agenda não encontrada.");
     } elseif ($acao === "salvar") {
@@ -2798,11 +2803,16 @@ function op_agendas($acao, $d)
             $ativa = array_key_exists("ativa", $d) ? ((string)$d["ativa"] === "1" ? 1 : 0) : ($atual ? ($atual["ativa"] ? 1 : 0) : 1);
             $ant = array_key_exists("janela_dias", $d) ? (int)$d["janela_dias"] : ($atual ? $atual["janela_dias"] : (int)modelo_ler()["agenda"]["janela_dias"]);
             $idioma = array_key_exists("idioma", $d) ? ((string)$d["idioma"] !== "" ? (string)$d["idioma"] : null) : ($atual["idioma"] ?? null);
+            // o fuso das horas no texto (vazio: o da coleção)
+            if (array_key_exists("fuso", $d) && trim((string)$d["fuso"]) !== "" && fuso_valido($d["fuso"]) === null) {
+                $erros[] = t("Fuso horário desconhecido: use um nome como America/Sao_Paulo ou Europe/Lisbon, ou vazio para o da coleção.");
+            }
+            $fuso_alvo = array_key_exists("fuso", $d) ? fuso_valido($d["fuso"]) : ($atual["fuso"] ?? null);
             $modelo = array_key_exists("modelo", $d) ? str_replace("\r\n", "\n", (string)$d["modelo"]) : ($atual ? $atual["modelo"] : modelo_tradutor(lingua_valida(cfg("idioma")) ?? "pt-BR")(modelo_ler()["agenda"]["modelo"]));
             if ($atual) {
-                sql("UPDATE agenda SET nome = ?, ativa = ?, janela_dias = ?, idioma = ?, modelo = ? WHERE id = ?", [$nome, $ativa, $ant, $idioma, $modelo, $id]);
+                sql("UPDATE agenda SET nome = ?, ativa = ?, janela_dias = ?, idioma = ?, fuso = ?, modelo = ? WHERE id = ?", [$nome, $ativa, $ant, $idioma, $fuso_alvo, $modelo, $id]);
             } else {
-                sql("INSERT INTO agenda (colecao_id, nome, tipo, ativa, janela_dias, modelo, idioma, criado) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())", [colecao_atual(), $nome, $tipo, $ativa, $ant, $modelo, $idioma]);
+                sql("INSERT INTO agenda (colecao_id, nome, tipo, ativa, janela_dias, modelo, idioma, fuso, criado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())", [colecao_atual(), $nome, $tipo, $ativa, $ant, $modelo, $idioma, $fuso_alvo]);
                 $id = ultimo_id();
                 recebe_inicial("agenda", $id);
             }

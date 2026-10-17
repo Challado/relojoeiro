@@ -159,7 +159,7 @@ function recebe_legivel($alvo)
 function destino_legivel($d)
 {
     $x = ["id" => $d["id"], "nome" => $d["nome"], "tipo" => $d["tipo"], "tipo_nome" => t(DESTINO_TIPOS[$d["tipo"]]), "ativo" => $d["ativo"], "modelo" => $d["modelo"],
-        "idioma" => $d["idioma"], "recebe" => recebe_legivel($d), "webhook" => null, "email" => null, "webpush" => null];
+        "idioma" => $d["idioma"], "fuso" => $d["fuso"] ?? null, "recebe" => recebe_legivel($d), "webhook" => null, "email" => null, "webpush" => null];
     if ($d["tipo"] === "webhook") {
         $x["webhook"] = ["metodo" => $d["webhook"]["metodo"], "url" => $d["webhook"]["url"], "formato" => $d["webhook"]["formato"], "corpo_json" => $d["webhook"]["corpo_json"],
             "campos" => $d["webhook"]["campos"], "cabecalhos" => array_map(function ($c) { return ["nome" => $c["nome"], "preenchido" => (string)segredo_abrir($c["valor_cifrado"]) !== ""]; },
@@ -178,7 +178,7 @@ function destino_legivel($d)
 function agenda_legivel($ag)
 {
     $x = ["id" => $ag["id"], "nome" => $ag["nome"], "tipo" => $ag["tipo"], "tipo_nome" => t(AGENDA_TIPOS[$ag["tipo"]]), "ativa" => $ag["ativa"],
-        "janela_dias" => $ag["janela_dias"], "modelo" => $ag["modelo"], "idioma" => $ag["idioma"], "recebe" => recebe_legivel($ag),
+        "janela_dias" => $ag["janela_dias"], "modelo" => $ag["modelo"], "idioma" => $ag["idioma"], "fuso" => $ag["fuso"] ?? null, "recebe" => recebe_legivel($ag),
         "sincronizados" => $ag["sincronizados"], "teste_id" => $ag["teste_id"], "google" => null, "caldav" => null, "outlook" => null, "ics" => null];
     if ($ag["tipo"] === "google") {
         $chave = (string)segredo_abrir($ag["google"]["chave_json_cifrada"] ?? "");
@@ -206,7 +206,7 @@ function agendas_desejadas()
         lingua_definir(alvo_idioma($ag));
         $res[] = ["agenda_id" => $ag["id"], "agenda" => $ag["nome"], "eventos" => array_map(function ($m) use ($ag) {
             return array_merge($m, evento_formatado($m, $ag));
-        }, agenda_desejada(new DateTimeImmutable("today"), $ag))];
+        }, agenda_desejada(hoje_da_colecao(), $ag))];
         lingua_definir($antes);
     }
     return $res;

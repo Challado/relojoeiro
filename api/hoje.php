@@ -8,7 +8,7 @@ if (!defined("RELOJOEIRO_API")) {
 }
 
 // tudo o que a página Hoje mostra: o dia, os avisos de hoje, os próximos dias, o modo de rodízio e a tabela dos relógios
-$hoje = new DateTimeImmutable("today");
+$hoje = hoje_da_colecao();
 garantir_plano($hoje);
 sessao_do_dia(time());
 $agora = time();

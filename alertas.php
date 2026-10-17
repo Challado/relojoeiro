@@ -128,7 +128,7 @@ function destinos($recarregar = false)
         $res = [];
         foreach (linhas("SELECT * FROM destino ORDER BY nome, id") as $d) {
             $id = (int)$d["id"];
-            $x = ["id" => $id, "nome" => $d["nome"], "tipo" => $d["tipo"], "ativo" => (int)$d["ativo"] === 1, "modelo" => $d["modelo"], "idioma" => $d["idioma"],
+            $x = ["id" => $id, "nome" => $d["nome"], "tipo" => $d["tipo"], "ativo" => (int)$d["ativo"] === 1, "modelo" => $d["modelo"], "fuso" => $d["fuso"] ?? null, "idioma" => $d["idioma"],
                 "avisos" => [], "eventos" => []];
             foreach (linhas("SELECT tipo_aviso, envia, modelo_proprio FROM destino_aviso WHERE destino_id = ?", [$id]) as $a) {
                 $x["avisos"][$a["tipo_aviso"]] = ["envia" => (int)$a["envia"] === 1, "modelo" => $a["modelo_proprio"]];
@@ -175,6 +175,27 @@ function alvo_idioma($alvo)
     return lingua_valida($alvo["idioma"] ?? null) ?? (lingua_valida(cfg("idioma")) ?? "pt-BR");
 }
 
+// o fuso de um destino ou de uma agenda (as horas no texto): o dele, senão o da coleção
+function alvo_fuso($alvo)
+{
+    return fuso_valido($alvo["fuso"] ?? null) ?? fuso_da_colecao();
+}
+
+// Roda $f no idioma e no fuso de um destino ou de uma agenda (o texto das mensagens e dos eventos), e volta ao de antes
+function no_idioma_e_fuso_de($alvo, $f)
+{
+    $antes = lingua_atual();
+    $antes_f = [fuso_atual(), fuso_origem()];
+    lingua_definir(alvo_idioma($alvo));
+    fuso_definir(alvo_fuso($alvo), "destino");
+    try {
+        return $f();
+    } finally {
+        lingua_definir($antes);
+        fuso_definir($antes_f[0], $antes_f[1]);
+    }
+}
+
 // Os itens de uma mensagem viram o texto: cada um pelo modelo do tipo, separados por linha em branco (sem itens, vazio)
 function mensagem_itens($alvo, $itens, $hoje)
 {
@@ -219,13 +240,9 @@ function itens_noite($hoje)
 // A mensagem de um destino para os itens que $construir monta (chamado no idioma do destino). Devolve o texto
 function mensagem_do_destino($dest, $construir, $hoje)
 {
-    $antes = lingua_atual();
-    lingua_definir(alvo_idioma($dest));
-    try {
+    return no_idioma_e_fuso_de($dest, function () use ($dest, $construir, $hoje) {
         return mensagem_itens($dest, $construir(), $hoje);
-    } finally {
-        lingua_definir($antes);
-    }
+    });
 }
 
 // Manda os itens para todos os destinos ativos da coleção (cada um com os itens que escolheu, no idioma dele). $titulo: o
@@ -828,7 +845,7 @@ function agendas($recarregar = false)
         foreach (linhas("SELECT * FROM agenda ORDER BY nome, id") as $a) {
             $id = (int)$a["id"];
             $x = ["id" => $id, "nome" => $a["nome"], "tipo" => $a["tipo"], "ativa" => (int)$a["ativa"] === 1, "janela_dias" => (int)$a["janela_dias"],
-                "modelo" => $a["modelo"], "idioma" => $a["idioma"], "teste_id" => $a["teste_id"], "avisos" => []];
+                "modelo" => $a["modelo"], "idioma" => $a["idioma"], "fuso" => $a["fuso"] ?? null, "teste_id" => $a["teste_id"], "avisos" => []];
             foreach (linhas("SELECT tipo_aviso, envia, modelo_proprio FROM agenda_aviso WHERE agenda_id = ?", [$id]) as $t) {
                 $x["avisos"][$t["tipo_aviso"]] = ["envia" => (int)$t["envia"] === 1, "modelo" => $t["modelo_proprio"]];
             }
@@ -917,7 +934,7 @@ function evento_formatado($m, $ag)
     $dias = ["", t("segunda"), t("terça"), t("quarta"), t("quinta"), t("sexta"), t("sábado"), t("domingo")];
     $ctx = contexto_mensagem((int)$m["relogio_id"], ["acao" => $m["fazer"], "motivo" => $m["motivo"], "ate" => $m["tipo"] === "dia" ? $m["motivo"] : "",
         "tipo_aviso" => $m["tipo"], "data" => data_txt(strtotime($m["data"])), "hora" => $m["hora"], "dia_semana" => $dias[(int)date("N", strtotime($m["data"]))]],
-        new DateTimeImmutable("today"));
+        hoje_da_colecao());
     $partes = explode("\n", aplicar_modelo(alvo_modelo($ag, $m["tipo"]), $ctx), 2);
     return ["titulo" => trim($partes[0]) !== "" ? trim($partes[0]) : $m["fazer"], "descricao" => isset($partes[1]) ? trim($partes[1]) : ""];
 }
@@ -927,7 +944,7 @@ function evento_formatado($m, $ag)
 function agenda_provedor($ag)
 {
     $evento_de = function ($m) {
-        $ini = new DateTimeImmutable($m["data"] . " " . $m["hora"]);
+        $ini = new DateTimeImmutable($m["data"] . " " . $m["hora"], fuso_colecao_tz());
         return [$ini, $ini->modify("+15 minutes")];
     };
     if ($ag["tipo"] === "google") {
@@ -1025,9 +1042,7 @@ function agenda_provedor($ag)
 function agenda_sincronizar($ag, $hoje)
 {
     $res = ["criados" => 0, "atualizados" => 0, "removidos" => 0, "erros" => 0, "mensagem" => ""];
-    $antes = lingua_atual();
-    lingua_definir(alvo_idioma($ag));
-    try {
+    return no_idioma_e_fuso_de($ag, function () use ($ag, $hoje, &$res) {
         $p = agenda_provedor($ag);
         if ($p[0] !== null) {
             $res["mensagem"] = $p[0];
@@ -1074,9 +1089,7 @@ function agenda_sincronizar($ag, $hoje)
             }
         }
         return $res;
-    } finally {
-        lingua_definir($antes);
-    }
+    });
 }
 
 // Todas as agendas ativas da coleção que se sincronizam (o link ICS não): as linhas do registro do cron
@@ -1283,15 +1296,13 @@ function ics_feed($token)
     if ($ag === null || !$ag["ativa"]) {
         return ics_calendario([], $ag["nome"] ?? null);
     }
-    $antes = lingua_atual();
-    lingua_definir(alvo_idioma($ag));
+    return no_idioma_e_fuso_de($ag, function () use ($ag) {
     $evs = [];
-    foreach (agenda_desejada(new DateTimeImmutable("today"), $ag) as $m) {
+    foreach (agenda_desejada(hoje_da_colecao(), $ag) as $m) {
         $f = evento_formatado($m, $ag);
-        $ini = new DateTimeImmutable($m["data"] . " " . $m["hora"]);
+        $ini = new DateTimeImmutable($m["data"] . " " . $m["hora"], fuso_colecao_tz());
         $evs[] = ics_evento("relojoeiro-" . md5($m["chave"] . "|" . $a["colecao_id"]) . "@relojoeiro", $ini, $ini->modify("+15 minutes"), $f["titulo"], $f["descricao"]);
     }
-    $txt = ics_calendario($evs, $ag["nome"]);
-    lingua_definir($antes);
-    return $txt;
+    return ics_calendario($evs, $ag["nome"]);
+    });
 }

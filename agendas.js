@@ -54,6 +54,7 @@ function quadroAgenda(x, d) {
       + parCampo(t("Idioma"), el("select", {"name": "idioma"}, el("option", {"value": "", "selected": !x.idioma}, t("O da coleção")) + d.linguas.map(function (l) {
         return el("option", {"value": l.codigo, "selected": x.idioma === l.codigo}, h(l.nome));
       }).join("")))
+      + parCampo(t("Fuso horário (das horas no texto)"), el("select", {"name": "fuso"}, opcoesFuso(d.fusos, x.fuso, t("O da coleção"))))
       + campos)
     + el("div", {"class": "campo-modelo"}, el("div", {"class": "rotulo-modelo"}, el("label", {"for": idm}, el("h3", {}, t("Modelo do evento"))) + listaAncoras(d.ancoras, idm, t("Inserir âncora no modelo do evento")))
       + el("textarea", {"id": idm, "name": "modelo", "rows": "5", "required": true}, h(x.modelo))

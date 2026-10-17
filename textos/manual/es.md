@@ -1,4 +1,4 @@
-<!-- origem: 16e3d58537d3010d85b72d69d4956b72f80835b0 -->
+<!-- origem: 7691ac4f47f37aa016e0f6812c2c46e9302d041c -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -850,7 +850,7 @@ Todo lo que el sistema recuerda está junto en la página **Avisos** (en el men�
 calcula solo con los datos de cada uno: dar cuerda, cargar, cambiar la pila...), los **recordatorios** (los eventos
 personalizados, abajo) y **Adónde van**, el resumen de los destinos y los calendarios, que tienen páginas propias:
 
-- **Destinos** (`destinos.php`): adónde van los mensajes de la colección. Cada destino es un **webhook** (una petición HTTP:
+- **Destinos** (`destinos.php`): adónde van los mensajes de la colección, cada uno con su idioma y su huso horario (de las horas en el texto). Cada destino es un **webhook** (una petición HTTP:
   Telegram, n8n, Home Assistant, cualquier puente), un **correo** (por el servidor de correo del `config.php`) o el **Web Push**
   (las notificaciones en el móvil y en el navegador de alguien que ve la colección). Cada uno tiene el nombre, **Activo**, el
   **idioma**, el **mensaje por defecto** (con los marcadores `{acao}`, `{relogio}`, `{motivo}`, `{carga}`, `{ate}`,
@@ -1075,19 +1075,34 @@ Los nombres que usted registra (grupos, campos, tipos de registro, avisos, modos
 ---
 ### El huso horario {#o-fuso-horário}
 
-Cada persona ve y escribe las horas en **su huso horario**, elegido en **Mi cuenta › Tus datos** (la lista de todos los husos
-que PHP conoce, con el desplazamiento de ahora: *America/Sao Paulo (UTC−03:00)*). Quien no eligió usa el **huso de la
-colección** (Configuración › Pantallas, **Huso horario**), y sin ese, el **huso del sistema** (el `FUSO` del `config.php`, si no
-el de PHP). La página **Hora exacta** dice cuál está valiendo y de dónde vino.
+Hay dos relojes en el sistema, y conviene saber cuál manda en qué:
 
-Vale para todo lo que tiene hora: la Hora exacta, los registros (el "cuándo" que escribes y lo que muestra el historial), los
-avisos, las mediciones, las estadísticas, los mensajes y las agendas (el cron corre cada colección en el huso de ella). En la
-base de datos, todo queda en el huso del sistema: la capa de la base convierte las fechas con hora al leer y al guardar, para
-quien está en otro huso. Así dos personas en países distintos comparten la misma colección y cada una ve cada hora en el
-suyo: el reloj puesto en la muñeca a las 10:00 en Nueva York aparece a las 11:00 para quien está en São Paulo. La fecha sola (el
-día del plan, la fecha de la compra) es un día del calendario, igual en todo huso. Por la API: `recurso=conta` (`acao=alterar`,
-`fuso=`), `recurso=config` (`fuso=`) y, en cada respuesta de la cuenta, el huso en vigor y la lista (`fuso`, `fusos[]`).
+- **El reloj de la colección** manda en el rodaje: el día del plan, el reloj del día, el "solo hoy", el horario de uso (el
+  reloj que entra y sale de la muñeca solo), las rondas de la mañana y de la noche del cron, la escala, la garantía de
+  rotación y las estadísticas por día. Es el huso de la colección (Configuración › Pantallas, **Huso horario**); vacío, el del
+  sistema (el `FUSO` del `config.php`, si no el de PHP). No depende de quién está mirando: el plan es uno solo, por fecha,
+  para todos los miembros.
+- **Tu huso** manda en lo que ves y escribes: la Hora exacta, los registros (el "cuándo" que escribes y lo que muestra el
+  historial), los avisos, las mediciones. Se elige en **Mi cuenta › Tus datos**, **Huso horario**: **El de la colección** (el
+  predeterminado, para quien no eligió nada), **El del navegador** (el huso del aparato desde el que entras, que las páginas
+  mandan a la API; sirve para quien viaja) o un huso fijo de la lista (todos los que PHP conoce, con el desplazamiento de
+  ahora: *America/Sao Paulo (UTC−03:00)*). La página **Hora exacta** dice cuál está valiendo y de dónde vino. El master elige
+  el de cualquiera en **Usuarios**.
 
+En la base de datos, todo queda en el huso del sistema: la capa de la base convierte las fechas con hora al leer y al
+guardar, para quien está en otro huso. Así dos personas en países distintos comparten la misma colección y cada una ve cada
+hora en el suyo: el reloj puesto en la muñeca a las 10:00 en Nueva York aparece a las 11:00 para quien está en São Paulo, y
+para los dos el reloj del día es el mismo. La fecha sola (el día del plan, la fecha de la compra) es un día del calendario,
+igual en todo huso.
+
+Los mensajes y las agendas tienen el huso de quien recibe: cada destino (Telegram, correo, Web Push) y cada agenda tiene su
+**Huso horario (de las horas en el texto)**, como ya tienen el idioma; vacío, el de la colección. Cambia solo el texto ("llega
+a 0% a las 00:36"); el instante del evento en el calendario ya era correcto en cualquier huso (Google y Outlook reciben el
+huso, el ICS va en UTC).
+
+Por la API: `recurso=conta` (`acao=alterar`, `fuso=` un nombre, `navegador` o vacío), `recurso=config` (`fuso=`),
+`recurso=destinos` y `recurso=agendas` (`fuso=`); en cada respuesta de la cuenta, el huso en vigor, de dónde vino y la lista
+(`fuso`, `fusos[]`). Un script de quien eligió "El del navegador" manda `fuso_pedido=` (sin él, vale el de la colección).
 ## Preguntas frecuentes {#perguntas-frequentes}
 
 **¿Tengo que registrarlo todo a mano?**

@@ -1,4 +1,4 @@
-<!-- origem: 16e3d58537d3010d85b72d69d4956b72f80835b0 -->
+<!-- origem: 7691ac4f47f37aa016e0f6812c2c46e9302d041c -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -861,7 +861,7 @@ Everything the system reminds you of is together on the **Alerts** page (in the 
 works out by itself from each watch's data: wind, charge, change the battery...), the **reminders** (the custom events, below)
 and **Where they go**, the summary of the destinations and the calendars, which have pages of their own:
 
-- **Destinations** (`destinos.php`): where the collection's messages go. Each destination is a **webhook** (an HTTP request:
+- **Destinations** (`destinos.php`): where the collection's messages go, each with its own language and its own time zone (of the times in the text). Each destination is a **webhook** (an HTTP request:
   Telegram, n8n, Home Assistant, any bridge), an **e-mail** (through the e-mail server in `config.php`) or **Web Push** (the
   notifications on the phone and in the browser of someone who sees the collection). Each has the name, **On**, the
   **language**, the **default message** (with the placeholders `{acao}`, `{relogio}`, `{motivo}`, `{carga}`, `{ate}`,
@@ -1083,19 +1083,33 @@ The names you register (groups, fields, entry types, alerts, modes, the watches)
 
 ### The time zone {#o-fuso-horário}
 
-Each person sees and types the times in **their own time zone**, chosen in **My account › Your data** (the list of every time
-zone PHP knows, with the current offset: *America/Sao Paulo (UTC−03:00)*). Whoever has not chosen uses the **collection's
-time zone** (Settings › Screens, **Time zone**), and without that one, the **system's time zone** (the `FUSO` of `config.php`,
-else PHP's). The **Exact time** page says which one is in effect and where it came from.
+There are two clocks in the system, and it helps to know which one rules what:
 
-It applies to everything that has a time: the Exact time, the entries (the "when" you type and what the history shows), the
-alerts, the measurements, the statistics, the messages and the calendars (the cron runs each collection in its own zone). In
-the database, everything stays in the system's zone: the database layer converts the dates with time when reading and writing,
-for whoever is in another zone. So two people in different countries share the same collection and each sees every time in
-their own: the wrist put on at 10:00 in New York shows as 11:00 for whoever is in São Paulo. A date alone (the plan's day, the
-purchase date) is a calendar day, the same in every zone. Through the API: `recurso=conta` (`acao=alterar`, `fuso=`),
-`recurso=config` (`fuso=`) and, in every account response, the zone in effect and the list (`fuso`, `fusos[]`).
+- **The collection's clock** rules the rotation: the plan's day, the watch of the day, the "today only", the wearing hours
+  (the wrist that goes on and off by itself), the cron's morning and night rounds, the schedule, the rotation guarantee and
+  the statistics by day. It is the collection's time zone (Settings › Screens, **Time zone**); empty, the system's (the
+  `FUSO` of `config.php`, else PHP's). It does not depend on who is looking: the plan is one, by date, for every member.
+- **Your time zone** rules what you see and type: the Exact time, the entries (the "when" you type and what the history
+  shows), the alerts, the measurements. It is chosen in **My account › Your data**, **Time zone**: **The collection's** (the
+  default, for whoever has not chosen anything), **The browser's** (the time zone of the device you enter from, which the
+  pages send to the API; for whoever travels) or a fixed time zone from the list (every one PHP knows, with the current
+  offset: *America/Sao Paulo (UTC−03:00)*). The **Exact time** page says which one is in effect and where it came from. The
+  master chooses anyone's in **Users**.
 
+In the database, everything stays in the system's time zone: the database layer converts the dates with time when reading
+and writing, for whoever is in another zone. So two people in different countries share the same collection and each sees
+every time in their own: the wrist put on at 10:00 in New York shows as 11:00 for whoever is in São Paulo, and for both the
+watch of the day is the same. A date alone (the plan's day, the purchase date) is a calendar day, the same in every zone.
+
+Messages and calendars have the time zone of whoever receives them: each destination (Telegram, e-mail, Web Push) and each
+calendar has its own **Time zone (of the times in the text)**, as they already have a language; empty, the collection's.
+Only the text changes ("reaches 0% at 00:36"); the event's instant in the calendar was already right in every zone (Google
+and Outlook receive the zone, the ICS goes in UTC).
+
+Through the API: `recurso=conta` (`acao=alterar`, `fuso=` a name, `navegador` or empty), `recurso=config` (`fuso=`),
+`recurso=destinos` and `recurso=agendas` (`fuso=`); in every account response, the zone in effect, where it came from and
+the list (`fuso`, `fusos[]`). A script of whoever chose "The browser's" sends `fuso_pedido=` (without it, the collection's
+applies).
 ## Frequently asked questions {#perguntas-frequentes}
 
 **Do I need to log everything by hand?**

@@ -631,6 +631,7 @@ CREATE TABLE destino (
     ativo       TINYINT NOT NULL DEFAULT 1,
     modelo      TEXT NOT NULL,
     idioma      VARCHAR(10) NULL,
+    fuso        VARCHAR(60) NULL,                    -- o fuso das horas no texto das mensagens; vazio: o da coleção
     criado      DATETIME NOT NULL,
     UNIQUE (colecao_id, nome),
     FOREIGN KEY (colecao_id) REFERENCES colecao(id) ON DELETE CASCADE,
@@ -721,6 +722,7 @@ CREATE TABLE agenda (
     janela_dias        INT NOT NULL DEFAULT 30,           -- quantos dias à frente os eventos entram
     modelo             TEXT NOT NULL,
     idioma             VARCHAR(10) NULL,
+    fuso               VARCHAR(60) NULL,                    -- o fuso das horas no texto dos eventos; vazio: o da coleção
     teste_id           VARCHAR(255) NULL,          -- o evento de teste que ficou na agenda (o próximo teste o apaga)
     criado             DATETIME NOT NULL,
     UNIQUE (colecao_id, nome),

@@ -87,16 +87,74 @@ function fuso_origem()
     return $GLOBALS["FUSO_ORIGEM"];
 }
 
-// o fuso de um pedido com usuário e coleção (e o da coleção sozinha, no cron): [fuso, origem]
+// o fuso de um pedido com usuário e coleção (e o da coleção sozinha, no cron): [fuso, origem]. O usuário escolhe em Minha
+// conta: vazio (o da coleção), "navegador" (o fuso do aparelho, que o api.js manda no cookie fuso_navegador; um script
+// manda fuso_pedido=; sem nenhum dos dois, o da coleção) ou um fuso fixo
 function fuso_do_pedido($usuario = null)
 {
-    if ($usuario !== null && fuso_valido($usuario["fuso"] ?? null) !== null) {
-        return [fuso_valido($usuario["fuso"]), "usuario"];
+    $f = trim((string)($usuario["fuso"] ?? ""));
+    if ($f === "navegador") {
+        $nav = fuso_valido($_REQUEST["fuso_pedido"] ?? ($_COOKIE["fuso_navegador"] ?? null));
+        if ($nav !== null) {
+            return [$nav, "navegador"];
+        }
+    } elseif (fuso_valido($f) !== null) {
+        return [fuso_valido($f), "usuario"];
     }
     if (colecao_atual() !== null && fuso_valido(cfg("fuso")) !== null) {
         return [fuso_valido(cfg("fuso")), "colecao"];
     }
     return [fuso_sistema(), "sistema"];
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// O relógio da coleção: o dia do rodízio (o plano, o relógio do dia, as rodadas do cron, o horário de uso, a escala, as
+// estatísticas por dia) é sempre o da coleção, no fuso dela (a Configuração; sem ele, o do sistema), para qualquer usuário:
+// o plano é um só, por data, de todos os membros. O fuso do usuário vale para os instantes que ele vê e digita. Daqui
+// saem o "hoje" e o "agora" da coleção e os instantes das horas de parede dela (uso_inicio, uso_fim, fecha_as...)
+// ---------------------------------------------------------------------------------------------------------------------
+function fuso_da_colecao()
+{
+    return (colecao_atual() !== null ? fuso_valido(cfg("fuso")) : null) ?? fuso_sistema();
+}
+
+function fuso_colecao_tz()
+{
+    static $tz = [];
+    $f = fuso_da_colecao();
+    return $tz[$f] ?? ($tz[$f] = new DateTimeZone($f));
+}
+
+// a meia-noite de hoje na coleção (um DateTimeImmutable no fuso dela: format("Y-m-d") é o dia, getTimestamp() o instante)
+function hoje_da_colecao()
+{
+    return new DateTimeImmutable("today", fuso_colecao_tz());
+}
+
+// a hora de parede de agora na coleção ("HH:MM")
+function hora_da_colecao()
+{
+    return (new DateTimeImmutable("now", fuso_colecao_tz()))->format("H:i");
+}
+
+// o dia da coleção em que cai um instante (AAAA-MM-DD)
+function dia_da_colecao($instante)
+{
+    return (new DateTimeImmutable("@" . (int)$instante))->setTimezone(fuso_colecao_tz())->format("Y-m-d");
+}
+
+// o instante de uma hora de parede da coleção num dia ("2026-10-17", "07:30" ou "07:30:00")
+function instante($data, $hora)
+{
+    $hora = (string)$hora;
+    $d = DateTimeImmutable::createFromFormat("Y-m-d H:i:s", $data . " " . (strlen($hora) === 5 ? $hora . ":00" : $hora), fuso_colecao_tz());
+    return $d === false ? (int)strtotime($data . " " . $hora) : $d->getTimestamp();
+}
+
+// a próxima meia-noite da coleção depois de um instante
+function meia_noite_seguinte($instante)
+{
+    return (new DateTimeImmutable(dia_da_colecao($instante), fuso_colecao_tz()))->modify("+1 day")->getTimestamp();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -577,6 +635,7 @@ $MIGRACOES = [
     "v26" => ["migracao_v26.sql", tk("o gasto da bateria em cinco motores, escolhidos na Configuração da coleção, no relógio ou no grupo (o campo \"Como calcular o gasto da bateria\"): pelas horas registradas (o original), robusto, pela marcação das leituras (em uso e em repouso, gravada em cada leitura), só o cadastro, ou pelas fórmulas do cadastro; e a cópia dos documentos no banco escolhida na Configuração da coleção, no lugar do config.php"), "lancamento.estado", "migracao_v26_dados"],
     "v27" => ["migracao_v27.sql", tk("o aplicativo no celular (PWA): os aparelhos lembrados de cada usuário (Minha conta: o aplicativo instalado entra sem a senha pela chave gravada no aparelho), o manifesto e o service worker pela API"), "usuario_aparelho"],
     "v28" => ["migracao_v28.sql", tk("o fuso horário de cada usuário (Minha conta) e de cada coleção (a Configuração): o pedido roda no fuso da pessoa, e no banco as datas continuam no fuso do sistema; e o relógio da página Hora certa escolhido na Configuração (analógico, digital, anadigi ou os dois)"), "usuario.fuso"],
+    "v29" => ["migracao_v29.sql", tk("o fuso horário de cada destino e de cada agenda (Destinos e Agendas, \"Fuso horário\"; vazio: o da coleção): as horas no texto das mensagens e dos eventos saem nele, como já saem no idioma deles"), "destino.fuso"],
 ];
 
 // O passo em PHP da v16, depois do SQL dela: as opções de cada campo do tipo lista (o texto, uma por linha) viram linhas da
@@ -1476,7 +1535,7 @@ function formula_calcular($no, &$ctx)
                     $ini = strtotime($l["inicio"]);
                     $limite = null;
                     if ($l["fim"] === null && $l["fecha_as"] !== null) {
-                        $limite = max($ini, (int)strtotime(substr($l["inicio"], 0, 10) . " " . $l["fecha_as"]));
+                        $limite = max($ini, instante(dia_da_colecao(strtotime($l["inicio"])), $l["fecha_as"]));
                     }
                     $cache_l[$id][$l["tipo"]][] = ["ini" => $ini, "fim" => $l["fim"] === null ? $limite : strtotime($l["fim"]),
                         "valor" => $l["valor"] === null ? null : (float)$l["valor"], "formato" => $l["formato"]];
@@ -2282,7 +2341,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
         }
         if ($modo["escala_dias"] !== null) {
             if (cfg("escala_fim") === "" || cfg("escala_fim") < $hoje->format("Y-m-d") || ((plano_do_dia($hoje->format("Y-m-d")) === null
-                || plano_do_dia($hoje->modify("+1 day")->format("Y-m-d")) === null) && cfg("escala_gerada") !== date("Y-m-d"))) {
+                || plano_do_dia($hoje->modify("+1 day")->format("Y-m-d")) === null) && cfg("escala_gerada") !== hoje_da_colecao()->format("Y-m-d"))) {
                 gerar_escala($hoje);
             }
             // a escala já montou o período dela: o laço abaixo não sorteia nada
@@ -2297,8 +2356,8 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
         $GLOBALS["SIMULACAO"] = [];
         $GLOBALS["SIMULACAO_VERSAO"] = ($GLOBALS["SIMULACAO_VERSAO"] ?? 0) + 1;
         for ($dia = $hoje; $dia <= $ate; $dia = $dia->modify("+1 day")) {
-            $ini_u = strtotime($dia->format("Y-m-d") . " " . cfg("uso_inicio"));
-            $fim_u = strtotime($dia->format("Y-m-d") . " " . cfg("uso_fim"));
+            $ini_u = instante($dia->format("Y-m-d"), cfg("uso_inicio"));
+            $fim_u = instante($dia->format("Y-m-d"), cfg("uso_fim"));
             $m_ini = max($agora, $ini_u);
             if (plano_do_dia($dia->format("Y-m-d")) === null && !dia_livre($dia->format("Y-m-d"))) {
                 $bloco = null;
@@ -2441,7 +2500,7 @@ function rodizio_manual_criterio()
 // O período do rodízio manual: de e ate (AAAA-MM-DD), de hoje em diante, até 2 anos. Devolve [de, ate, erro]
 function rodizio_manual_periodo($de, $ate)
 {
-    $hoje = new DateTimeImmutable("today");
+    $hoje = hoje_da_colecao();
     $de_p = DateTimeImmutable::createFromFormat("!Y-m-d", (string)$de);
     $ate_p = DateTimeImmutable::createFromFormat("!Y-m-d", (string)$ate);
     $erro = null;
@@ -2474,7 +2533,7 @@ function rodizio_manual_pagina($de, $ate, $pagina)
     $total = $de->diff($ate)->days + 1;
     $paginas = (int)ceil($total / RODIZIO_MANUAL_POR_PAGINA);
     $pagina = max(1, min($paginas, (int)$pagina));
-    $hoje = date("Y-m-d");
+    $hoje = hoje_da_colecao()->format("Y-m-d");
     $nomes = [1 => t("segunda"), 2 => t("terça"), 3 => t("quarta"), 4 => t("quinta"), 5 => t("sexta"), 6 => t("sábado"), 7 => t("domingo")];
     $dias = [];
     $ini = $de->modify("+" . (($pagina - 1) * RODIZIO_MANUAL_POR_PAGINA) . " days");
@@ -2498,7 +2557,7 @@ function rodizio_manual_pagina($de, $ate, $pagina)
 // período. Devolve [AAAA-MM-DD => [relogio_id, motivo]] dos dias decididos
 function rodizio_manual_decidir($de, $ate, $escolhas)
 {
-    $hoje = new DateTimeImmutable("today");
+    $hoje = hoje_da_colecao();
     $agora = time();
     $pulso = lancamento_tipos()["pulso"] ?? null;
     $rels = [];
@@ -2513,8 +2572,8 @@ function rodizio_manual_decidir($de, $ate, $escolhas)
     $GLOBALS["SIMULACAO_VERSAO"] = ($GLOBALS["SIMULACAO_VERSAO"] ?? 0) + 1;
     for ($dia = $hoje; $dia <= $ate; $dia = $dia->modify("+1 day")) {
         $data = $dia->format("Y-m-d");
-        $ini_u = strtotime($data . " " . cfg("uso_inicio"));
-        $fim_u = strtotime($data . " " . cfg("uso_fim"));
+        $ini_u = instante($data, cfg("uso_inicio"));
+        $fim_u = instante($data, cfg("uso_fim"));
         $m_ini = max($agora, $ini_u);
         $e = $dia < $de ? null : ($escolhas[$data] ?? "auto");
         $escolhido = null;
@@ -2911,7 +2970,7 @@ function plano_por_pagina()
 function plano_pagina($de, $ate, $relogio_id, $pagina, $por)
 {
     $curto = [1 => t("seg"), 2 => t("ter"), 3 => t("qua"), 4 => t("qui"), 5 => t("sex"), 6 => t("sáb"), 7 => t("dom")];
-    $hoje = date("Y-m-d");
+    $hoje = hoje_da_colecao()->format("Y-m-d");
     $faixa = [$de !== "" ? $de : "0001-01-01", $ate !== "" ? $ate : "9999-12-31"];
     $dias = [];
     foreach (linhas("SELECT p.data, p.relogio_id, r.nome, p.origem, p.acao, p.motivo FROM plano p JOIN relogio r ON r.id = p.relogio_id
@@ -3508,7 +3567,7 @@ function fechar_esquecidas($agora, $relogio = null)
     foreach (linhas("SELECT l.id, l.inicio, t.fecha_as FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
         WHERE l.fim IS NULL AND t.formato = 'sessao' AND t.fecha_as IS NOT NULL" . ($relogio !== null ? " AND l.relogio_id = ?" : ""),
         $relogio !== null ? [(int)$relogio] : []) as $l) {
-        $fecha = max(strtotime($l["inicio"]), (int)strtotime(substr($l["inicio"], 0, 10) . " " . $l["fecha_as"]));
+        $fecha = max(strtotime($l["inicio"]), instante(dia_da_colecao(strtotime($l["inicio"])), $l["fecha_as"]));
         if ($fecha <= $agora) {
             sql("UPDATE lancamento SET fim = ? WHERE id = ?", [date("Y-m-d H:i:s", $fecha), (int)$l["id"]]);
         }
@@ -3521,7 +3580,7 @@ function dia_comecou($agora)
 {
     $hoje = date("Y-m-d", $agora);
     if (pulso_poe_sozinho()) {
-        return $agora >= strtotime($hoje . " " . cfg("uso_inicio"));
+        return $agora >= instante($hoje, cfg("uso_inicio"));
     }
     return valor("SELECT l.id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE t.identificador = 'pulso' AND l.origem = 'rodizio'
         AND l.inicio >= ? AND l.inicio <= ? LIMIT 1", [$hoje . " 00:00:00", date("Y-m-d H:i:s", $agora)]) !== null;
@@ -3537,8 +3596,8 @@ function sessao_do_dia($agora)
         return;
     }
     $hoje = date("Y-m-d", $agora);
-    $ini = strtotime($hoje . " " . cfg("uso_inicio"));
-    $fim = strtotime($hoje . " " . cfg("uso_fim"));
+    $ini = instante($hoje, cfg("uso_inicio"));
+    $fim = instante($hoje, cfg("uso_fim"));
     $p = plano_do_dia($hoje);
     // o relógio do dia que saiu da coleção hoje (vendido, emprestado...) não vai mais ao pulso sozinho
     if ($p && posse_de(linha("SELECT posse FROM relogio WHERE id = ?", [(int)$p["relogio_id"]]) ?: []) !== "colecao") {
@@ -3656,7 +3715,7 @@ function visao_relogio($r, $agora)
     $ult_pulso = 0;
     foreach (linhas("SELECT l.inicio, l.fim, l.origem, t.identificador, t.nome, t.fecha_as FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
         WHERE l.relogio_id = ? AND t.formato = 'sessao' AND l.inicio <= ? ORDER BY l.inicio, l.id", [$id, date("Y-m-d H:i:s", $agora)]) as $l) {
-        $fim = $l["fim"] !== null ? strtotime($l["fim"]) : ($l["fecha_as"] !== null ? max(strtotime($l["inicio"]), (int)strtotime(substr($l["inicio"], 0, 10) . " " . $l["fecha_as"])) : PHP_INT_MAX);
+        $fim = $l["fim"] !== null ? strtotime($l["fim"]) : ($l["fecha_as"] !== null ? max(strtotime($l["inicio"]), instante(dia_da_colecao(strtotime($l["inicio"])), $l["fecha_as"])) : PHP_INT_MAX);
         if ($fim > $agora) {
             $abertas[] = ["tipo" => $l["identificador"], "nome" => $l["nome"], "inicio" => strtotime($l["inicio"]), "origem" => $l["origem"]];
         }
@@ -3871,7 +3930,7 @@ function variaveis_disponiveis()
 function preparo_do_dia($r, $data)
 {
     $res = [];
-    foreach (avisos_do_relogio($r, (int)strtotime($data . " " . cfg("uso_inicio"))) as $x) {
+    foreach (avisos_do_relogio($r, instante($data, cfg("uso_inicio"))) as $x) {
         if ($x["estado"] !== "ok") {
             $res[] = $x["nome"] . ": " . $x["texto"];
         }
@@ -3917,12 +3976,12 @@ function gerar_escala($ini)
 {
     $gravados = 0;
     $modo = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]);
-    $hoje = new DateTimeImmutable("today");
+    $hoje = hoje_da_colecao();
     $agora = time();
     if ($ini < $hoje) {
         $ini = $hoje;
     }
-    if ($ini == $hoje && $agora >= strtotime($hoje->format("Y-m-d") . " " . cfg("uso_inicio")) && plano_do_dia($hoje->format("Y-m-d")) !== null) {
+    if ($ini == $hoje && $agora >= instante($hoje->format("Y-m-d"), cfg("uso_inicio")) && plano_do_dia($hoje->format("Y-m-d")) !== null) {
         $ini = $hoje->modify("+1 day");
     }
     if ($modo && $modo["escala_dias"] !== null) {
@@ -3966,10 +4025,10 @@ function gerar_escala($ini)
         $pulso = lancamento_tipos()["pulso"] ?? null;
         for ($d = $hoje; $d < $ini; $d = $d->modify("+1 day")) {
             $p = plano_do_dia($d->format("Y-m-d"));
-            $fim_u = strtotime($d->format("Y-m-d") . " " . cfg("uso_fim"));
+            $fim_u = instante($d->format("Y-m-d"), cfg("uso_fim"));
             if ($p && $pulso && $fim_u > $agora && valor("SELECT id FROM lancamento WHERE tipo_id = ? AND origem = 'rodizio' AND DATE(inicio) = ?",
                 [(int)$pulso["id"], $d->format("Y-m-d")]) === null) {
-                simular_lancamento((int)$p["relogio_id"], "pulso", max($agora, strtotime($d->format("Y-m-d") . " " . cfg("uso_inicio"))), $fim_u, null);
+                simular_lancamento((int)$p["relogio_id"], "pulso", max($agora, instante($d->format("Y-m-d"), cfg("uso_inicio"))), $fim_u, null);
             }
         }
         // o último escolhido: o de ontem no plano, senão o último no pulso pelo rodízio
@@ -3987,7 +4046,7 @@ function gerar_escala($ini)
             [$ini->modify("monday this week")->format("Y-m-d"), $ini->modify("-1 day")->format("Y-m-d")]));
         for ($d = $ini; $d <= $fim; $d = $d->modify("+1 day")) {
             $data = $d->format("Y-m-d");
-            $m_ini = strtotime($data . " " . cfg("uso_inicio"));
+            $m_ini = instante($data, cfg("uso_inicio"));
             $bloco = $bloco_de($d);
             $novo = 0;
             $ate = $d;
@@ -4087,8 +4146,8 @@ function gerar_escala($ini)
                 $sequencia[] = $novo;
                 $pontos = [$m_ini];
                 for ($k = $d; $k <= $ate; $k = $k->modify("+1 day")) {
-                    simular_lancamento($novo, "pulso", strtotime($k->format("Y-m-d") . " " . cfg("uso_inicio")), strtotime($k->format("Y-m-d") . " " . cfg("uso_fim")), null);
-                    $pontos[] = strtotime($k->format("Y-m-d") . " " . cfg("uso_fim"));
+                    simular_lancamento($novo, "pulso", instante($k->format("Y-m-d"), cfg("uso_inicio")), instante($k->format("Y-m-d"), cfg("uso_fim")), null);
+                    $pontos[] = instante($k->format("Y-m-d"), cfg("uso_fim"));
                 }
                 $vencidos = [];
                 foreach ($pontos as $ponto) {
@@ -4138,7 +4197,7 @@ function gerar_escala($ini)
         }
         $GLOBALS["SIMULACAO"] = [];
         $GLOBALS["SIMULACAO_VERSAO"]++;
-        cfg_set("escala_gerada", date("Y-m-d"));
+        cfg_set("escala_gerada", hoje_da_colecao()->format("Y-m-d"));
     }
     return $gravados;
 }
@@ -4271,7 +4330,7 @@ function previsao_energia($r, $agora)
             // a próxima entrada no rodízio (o primeiro dia dele no plano a partir de hoje, se não for hoje) e os dias seguidos dele
             $proxima = valor("SELECT data FROM plano WHERE relogio_id = ? AND data >= ? ORDER BY data LIMIT 1", [(int)$r["id"], $hoje->format("Y-m-d")]);
             if ($proxima !== null && $proxima !== $hoje->format("Y-m-d")) {
-                $entrada = strtotime($proxima . " " . cfg("uso_inicio"));
+                $entrada = instante($proxima, cfg("uso_inicio"));
                 $ctx = ["r" => $r, "momento" => $entrada, "rastro" => [], "pilha" => [], "valores" => $valores];
                 $na_entrada = variavel_valor("energia", $ctx);
                 // quanto os dias seguidos gastam: simulados com a carga cheia na entrada; esgotou antes do fim: 100%
@@ -4284,9 +4343,9 @@ function previsao_energia($r, $agora)
                 $GLOBALS["SIMULACAO"] = [];
                 simular_lancamento((int)$r["id"], $leitura["identificador"], $entrada, null, 100);
                 for ($k = $proxima; $k <= $ultimo_dia; $k = date("Y-m-d", strtotime($k . " +1 day"))) {
-                    simular_lancamento((int)$r["id"], "pulso", strtotime($k . " " . cfg("uso_inicio")), strtotime($k . " " . cfg("uso_fim")), null);
+                    simular_lancamento((int)$r["id"], "pulso", instante($k, cfg("uso_inicio")), instante($k, cfg("uso_fim")), null);
                 }
-                $ctx = ["r" => $r, "momento" => strtotime($ultimo_dia . " " . cfg("uso_fim")), "rastro" => [], "pilha" => [], "valores" => $valores];
+                $ctx = ["r" => $r, "momento" => instante($ultimo_dia, cfg("uso_fim")), "rastro" => [], "pilha" => [], "valores" => $valores];
                 $no_fim = variavel_valor("energia", $ctx);
                 $GLOBALS["SIMULACAO"] = [];
                 $GLOBALS["SIMULACAO_VERSAO"]++;
@@ -4393,8 +4452,8 @@ function autonomia_do_relogio($r, $agora)
         WHERE l.relogio_id = ? AND t.identificador = 'pulso' AND l.fim > ?", [$id, date("Y-m-d H:i:s", $agora)])));
     $plano = [];
     foreach (linhas("SELECT data FROM plano WHERE relogio_id = ? AND data >= ? ORDER BY data", [$id, date("Y-m-d", $agora)]) as $p) {
-        $ini = max($fim_pulso, (int)strtotime($p["data"] . " " . cfg("uso_inicio")));
-        $fim = (int)strtotime($p["data"] . " " . cfg("uso_fim"));
+        $ini = max($fim_pulso, instante($p["data"], cfg("uso_inicio")));
+        $fim = instante($p["data"], cfg("uso_fim"));
         if ($fim > $ini) {
             $plano[] = ["pulso", $ini, $fim];
         }
@@ -4471,7 +4530,7 @@ function linha_do_tempo($id, $de, $ate, $estados)
         $ini = strtotime($l["inicio"]);
         $t0 = $t0 === 0 ? $ini : min($t0, $ini);
         if ($l["formato"] === "sessao") {
-            $fim = $l["fim"] !== null ? strtotime($l["fim"]) : ($l["fecha_as"] !== null ? max($ini, (int)strtotime(substr($l["inicio"], 0, 10) . " " . $l["fecha_as"])) : $agora);
+            $fim = $l["fim"] !== null ? strtotime($l["fim"]) : ($l["fecha_as"] !== null ? max($ini, instante(dia_da_colecao(strtotime($l["inicio"])), $l["fecha_as"])) : $agora);
             $fim = min($fim, $agora);
             if ($fim > $ini) {
                 $estado = $l["identificador"] === "pulso" ? ($l["origem"] === "rodizio" ? "rodizio" : "pulso") : $l["identificador"];
@@ -4604,7 +4663,7 @@ function ocorrencias($ev, $de, $ate)
                 // mês mais curto que o dia pedido: vale o último dia do mês
                 $vale = (int)$d->format("j") === min((int)$ev["dia_mes"], (int)$d->format("t"));
             } elseif ($ev["repeticao"] === "intervalo" && $ev["data_inicio"]) {
-                $vale = (int)(new DateTimeImmutable($ev["data_inicio"]))->diff($d)->days % max(1, (int)$ev["intervalo_dias"]) === 0;
+                $vale = (int)(new DateTimeImmutable($ev["data_inicio"], fuso_colecao_tz()))->diff($d)->days % max(1, (int)$ev["intervalo_dias"]) === 0;
             }
         }
         if ($vale) {

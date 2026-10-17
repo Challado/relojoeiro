@@ -8,7 +8,7 @@ if (!defined("RELOJOEIRO_API")) {
     exit;
 }
 
-$hoje = new DateTimeImmutable("today");
+$hoje = hoje_da_colecao();
 garantir_plano($hoje);
 $desejadas = [];
 foreach (agendas_desejadas() as $x) {
@@ -19,7 +19,7 @@ $saida = ["agendas" => array_values(array_map(function ($ag) use ($desejadas) {
 }, agendas())),
     "tipos" => array_map(function ($k) { return ["tipo" => $k, "nome" => t(AGENDA_TIPOS[$k])]; }, array_keys(AGENDA_TIPOS)),
     "avisos" => array_map(function ($k, $t) { return ["tipo" => $k, "nome" => $t[0], "quando" => $t[1]]; }, array_keys(tipos_de_aviso()), array_values(tipos_de_aviso())),
-    "ancoras" => $ANCORAS, "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS)),
+    "ancoras" => $ANCORAS, "fusos" => fusos_lista(), "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS)),
     "padrao" => ["modelo" => modelo_tradutor(lingua_valida(cfg("idioma")) ?? "pt-BR")(modelo_ler()["agenda"]["modelo"]), "janela_dias" => (int)modelo_ler()["agenda"]["janela_dias"]],
     "outlook" => ["configurado" => trim((string)cfg_php("OUTLOOK_CLIENTE_ID", "")) !== "", "retorno" => outlook_retorno_url()],
     // a pasta do sistema (a dica do caminho da chave do Google): só para o master

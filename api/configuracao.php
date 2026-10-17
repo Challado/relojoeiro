@@ -9,7 +9,7 @@ if (!defined("RELOJOEIRO_API")) {
 
 // tudo o que a página Configuração mostra: os valores da coleção, os eventos personalizados, a situação do cron, o sorteio e
 // os resumos dos destinos e das agendas (que têm as páginas deles)
-$hoje = new DateTimeImmutable("today");
+$hoje = hoje_da_colecao();
 garantir_plano($hoje);
 $valores_c = [];
 foreach (linhas("SELECT chave, valor FROM config ORDER BY chave") as $c) {

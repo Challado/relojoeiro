@@ -1267,6 +1267,10 @@
  *     destinos[].modelo              a mensagem padrão dele, com as âncoras ({acao}, {relogio}, {motivo}...): cada item vira uma linha por
  *                                    ela
  *     destinos[].idioma              o idioma das mensagens dele (pt-BR, en, zh-CN, hi, es ou fr); null: o da coleção
+ *     destinos[].fuso                o fuso das horas no texto das mensagens dele ("Europe/Lisbon"); null: o da coleção
+ *     fusos[]                        os fusos horários que o PHP conhece (a lista Fuso horário de cada agenda)
+ *     fusos[].nome                   o nome ("America/Sao_Paulo")
+ *     fusos[].deslocamento           a diferença para o UTC agora ("-03:00")
  *     destinos[].recebe[]            o que ele recebe: cada tipo de aviso (o relógio do dia, a véspera, cada aviso do cadastro, cada evento
  *                                    personalizado)
  *     destinos[].recebe[].tipo       o tipo: dia, vespera, o identificador do aviso, ou ev<id> (evento personalizado)
@@ -1305,6 +1309,8 @@
  *     agendas[].janela_dias          quantos dias à frente ficam na agenda
  *     agendas[].modelo               o modelo do evento: a primeira linha é o título, o resto a descrição, com as âncoras
  *     agendas[].idioma               o idioma dos eventos dela; null: o da coleção
+ *     agendas[].fuso                 o fuso das horas no texto dos eventos dela ("Europe/Lisbon"); null: o da coleção (o instante do evento
+ *                                    no calendário não depende disto)
  *     agendas[].recebe[]             o que ele recebe: cada tipo de aviso (o relógio do dia, a véspera, cada aviso do cadastro, cada evento
  *                                    personalizado)
  *     agendas[].recebe[].tipo        o tipo: dia, vespera, o identificador do aviso, ou ev<id> (evento personalizado)
@@ -2648,7 +2654,8 @@
  *     local.texto                    a data por extenso ("terça-feira, 13 de outubro de 2026")
  *     fuso                           o fuso do pedido
  *     fuso.nome                      o nome ("America/Sao_Paulo")
- *     fuso.origem                    de onde veio: usuario (Minha conta), colecao (a Configuração) ou sistema (o FUSO do config.php)
+ *     fuso.origem                    de onde veio: usuario (Minha conta), navegador (o do aparelho, por Minha conta), colecao (a
+ *                                    Configuração) ou sistema (o FUSO do config.php)
  *     fuso.deslocamento              a diferença para o UTC ("-03:00")
  *     fuso.segundos                  a mesma em segundos (-10800)
  *     fuso.abreviacao                a abreviação ("-03", "CET")
@@ -2885,6 +2892,10 @@
  *     destinos[].modelo              a mensagem padrão dele, com as âncoras ({acao}, {relogio}, {motivo}...): cada item vira uma linha por
  *                                    ela
  *     destinos[].idioma              o idioma das mensagens dele (pt-BR, en, zh-CN, hi, es ou fr); null: o da coleção
+ *     destinos[].fuso                o fuso das horas no texto das mensagens dele ("Europe/Lisbon"); null: o da coleção
+ *     fusos[]                        os fusos horários que o PHP conhece (a lista Fuso horário de cada destino)
+ *     fusos[].nome                   o nome ("America/Sao_Paulo")
+ *     fusos[].deslocamento           a diferença para o UTC agora ("-03:00")
  *     destinos[].recebe[]            o que ele recebe: cada tipo de aviso (o relógio do dia, a véspera, cada aviso do cadastro, cada evento
  *                                    personalizado)
  *     destinos[].recebe[].tipo       o tipo: dia, vespera, o identificador do aviso, ou ev<id> (evento personalizado)
@@ -2946,6 +2957,11 @@
  *     agendas[].janela_dias          quantos dias à frente ficam na agenda
  *     agendas[].modelo               o modelo do evento: a primeira linha é o título, o resto a descrição, com as âncoras
  *     agendas[].idioma               o idioma dos eventos dela; null: o da coleção
+ *     agendas[].fuso                 o fuso das horas no texto dos eventos dela ("Europe/Lisbon"); null: o da coleção (o instante do evento
+ *                                    no calendário não depende disto)
+ *     fusos[]                        os fusos horários que o PHP conhece (a lista Fuso horário de cada agenda)
+ *     fusos[].nome                   o nome ("America/Sao_Paulo")
+ *     fusos[].deslocamento           a diferença para o UTC agora ("-03:00")
  *     agendas[].recebe[]             o que ele recebe: cada tipo de aviso (o relógio do dia, a véspera, cada aviso do cadastro, cada evento
  *                                    personalizado)
  *     agendas[].recebe[].tipo        o tipo: dia, vespera, o identificador do aviso, ou ev<id> (evento personalizado)
@@ -3013,7 +3029,8 @@
  *     usuario.email                  o e-mail; null: nenhum
  *     usuario.papel                  master ou comum
  *     usuario.idioma                 o idioma; null: o da coleção
- *     usuario.fuso                   o fuso horário da pessoa ("America/Sao_Paulo"); null: o da coleção, senão o do sistema
+ *     usuario.fuso                   o fuso horário da pessoa ("America/Sao_Paulo"; "navegador": o do aparelho); null: o da coleção, senão
+ *                                    o do sistema
  *     usuario.criado                 quando a conta foi criada
  *     usuario.ultimo_acesso          o último acesso
  *     usuario.expira_em              quando a conta de demonstração vence; null: oficial
@@ -3104,10 +3121,11 @@
  *     demo_dias                      os dias da conta de demonstração
  *     master                         (parte=menu) verdadeiro ou falso: quem pede é o master (ou o master vendo como outro)
  *     linguas[]                      os idiomas
- *     fuso                           o fuso horário em que este pedido roda (as datas e horas que a API mostra e recebe)
+ *     fuso                           o fuso horário em que este pedido roda (as datas e horas que a API mostra e recebe). O dia do rodízio
+ *                                    (o plano, o relógio do dia, as rodadas do cron) é sempre o da coleção, no fuso dela
  *     fuso.nome                      o nome ("America/Sao_Paulo")
- *     fuso.origem                    de onde veio: usuario (o seu, de Minha conta), colecao (o da Configuração) ou sistema (o FUSO do
- *                                    config.php)
+ *     fuso.origem                    de onde veio: usuario (o seu, de Minha conta), navegador (o do aparelho: o cookie fuso_navegador das
+ *                                    páginas, ou fuso_pedido= no pedido), colecao (o da Configuração) ou sistema (o FUSO do config.php)
  *     fuso.sistema                   o fuso do sistema (o das datas gravadas no banco)
  *     fuso.colecao                   o fuso da coleção do pedido; null: não tem (vale o do sistema)
  *     fusos[]                        os fusos horários que o PHP conhece, em ordem alfabética (a lista Fuso horário de Minha conta)
@@ -3218,7 +3236,8 @@
  *     usuarios[].email               o e-mail (para recuperar a senha, os convites e os avisos)
  *     usuarios[].papel               master (cuida do sistema inteiro) ou comum
  *     usuarios[].idioma              o idioma dele; null: o da coleção
- *     usuarios[].fuso                o fuso horário dele ("America/Sao_Paulo"); null: o da coleção, senão o do sistema
+ *     usuarios[].fuso                o fuso horário dele ("America/Sao_Paulo"; "navegador": o do aparelho); null: o da coleção, senão o do
+ *                                    sistema
  *     fusos[]                        (só o master) os fusos horários que o PHP conhece (a lista Fuso horário do quadro Alterar)
  *     fusos[].nome                   o nome ("America/Sao_Paulo")
  *     fusos[].deslocamento           a diferença para o UTC agora ("-03:00")

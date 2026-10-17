@@ -19,6 +19,15 @@ function usarTextos(d) {
     ESTRITO = d.estrito === true;
     LINGUA = d.lingua;
     // sem idioma escolhido no menu (o cookie), vale o padrão da instalação: a página abre de novo nele, uma vez
+    // o fuso do aparelho vai num cookie: vale para quem escolheu "O do navegador" em Minha conta (fuso_do_pedido, lib.php)
+    try {
+      var fusoNav = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (fusoNav) {
+        document.cookie = "fuso_navegador=" + fusoNav + "; path=/; max-age=31536000; SameSite=Lax";
+      }
+    } catch (e) {
+      // sem Intl: o fuso fica o da coleção
+    }
     if (d.padrao && d.padrao !== LINGUA && !/(^|;\s*)lingua=/.test(document.cookie)) {
       document.cookie = "lingua=" + d.padrao + "; path=/; max-age=31536000; SameSite=Lax";
       window.location.reload();
@@ -507,8 +516,17 @@ function tabelaRecebe(prefixo, recebe, ancoras, proprio) {
 // lugar do campo; "largo": o rótulo em cima e o campo na largura toda (textos longos, como um endereço)
 // as opções de um seletor de fuso horário: a primeira é o "vazio" (o da coleção, o do sistema) e depois todos os fusos que o
 // PHP conhece (recurso=conta, configuracao ou usuarios: fusos[]), cada um com o deslocamento de agora ("UTC−03:00")
-function opcoesFuso(fusos, atual, vazioTexto) {
-  return el("option", {"value": "", "selected": !atual}, vazioTexto) + (fusos || []).map(function (f) {
+// (com navegadorTexto, a opção "navegador": o fuso do aparelho de quem entra; fusoNavegador() diz qual é o deste aparelho)
+function fusoNavegador() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+  } catch (e) {
+    return "";
+  }
+}
+
+function opcoesFuso(fusos, atual, vazioTexto, navegadorTexto) {
+  return el("option", {"value": "", "selected": !atual}, vazioTexto) + (navegadorTexto ? el("option", {"value": "navegador", "selected": atual === "navegador"}, navegadorTexto) : "") + (fusos || []).map(function (f) {
     return el("option", {"value": f.nome, "selected": atual === f.nome}, h(f.nome.replace(/_/g, " ")) + " (UTC" + h(f.deslocamento.replace("-", "\u2212")) + ")");
   }).join("");
 }

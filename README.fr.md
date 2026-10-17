@@ -930,7 +930,7 @@ Tout ce que le système rappelle est réuni dans la page **Alertes** (dans le me
 qu'il calcule tout seul avec les données de chacune : remonter, charger, changer la pile...), les **rappels** (les événements
 personnalisés, plus bas) et **Où elles vont**, le résumé des destinations et des agendas, qui ont leurs propres pages :
 
-- **Destinations** (`destinos.php`) : où vont les messages de la collection. Chaque destination est un **webhook** (une requête
+- **Destinations** (`destinos.php`) : où vont les messages de la collection, chacune avec sa langue et son fuseau horaire (des heures dans le texte). Chaque destination est un **webhook** (une requête
   HTTP : Telegram, n8n, Home Assistant, n'importe quelle passerelle), un **e-mail** (par le serveur d'e-mail du `config.php`)
   ou le **Web Push** (les notifications sur le téléphone et dans le navigateur de quelqu'un qui voit la collection). Chacune a
   le nom, **Active**, la **langue**, le **message par défaut** (avec les repères `{acao}`, `{relogio}`, `{motivo}`, `{carga}`,
@@ -1194,19 +1194,35 @@ Les noms que vous enregistrez (groupes, champs, types de saisie, alertes, modes,
 ---
 ### Le fuseau horaire
 
-Chacun voit et saisit les heures dans **son fuseau horaire**, choisi dans **Mon compte › Vos données** (la liste de tous les
-fuseaux que PHP connaît, avec le décalage actuel : *America/Sao Paulo (UTC−03:00)*). Qui n'a pas choisi utilise le **fuseau de
-la collection** (Configuration › Écrans, **Fuseau horaire**), et sans celui-là, le **fuseau du système** (le `FUSO` du
-`config.php`, sinon celui de PHP). La page **Heure exacte** dit lequel est en vigueur et d'où il vient.
+Il y a deux horloges dans le système, et il est bon de savoir laquelle commande quoi :
 
-Il vaut pour tout ce qui a une heure : l'Heure exacte, les saisies (le « quand » que vous tapez et ce que l'historique montre),
-les alertes, les mesures, les statistiques, les messages et les agendas (le cron exécute chaque collection dans son fuseau).
-Dans la base, tout reste dans le fuseau du système : la couche base de données convertit les dates avec heure à la lecture et
-à l'écriture, pour qui est dans un autre fuseau. Ainsi deux personnes dans des pays différents partagent la même collection et
-chacune voit chaque heure dans le sien : la montre mise au poignet à 10:00 à New York apparaît à 11:00 pour qui est à São
-Paulo. La date seule (le jour du plan, la date d'achat) est un jour du calendrier, le même dans tout fuseau. Par l'API :
-`recurso=conta` (`acao=alterar`, `fuso=`), `recurso=config` (`fuso=`) et, dans chaque réponse du compte, le fuseau en vigueur
-et la liste (`fuso`, `fusos[]`).
+- **L'horloge de la collection** commande la rotation : le jour du plan, la montre du jour, le « seulement aujourd'hui »,
+  l'horaire de port (le poignet qui commence et finit tout seul), les tournées du matin et du soir du cron, le planning, la
+  garantie de rotation et les statistiques par jour. C'est le fuseau de la collection (Configuration › Écrans, **Fuseau
+  horaire**) ; vide, celui du système (le `FUSO` du `config.php`, sinon celui de PHP). Il ne dépend pas de qui regarde : le
+  plan est unique, par date, pour tous les membres.
+- **Votre fuseau** commande ce que vous voyez et saisissez : l'Heure exacte, les saisies (le « quand » que vous tapez et ce
+  que l'historique montre), les alertes, les mesures. Il se choisit dans **Mon compte › Vos données**, **Fuseau horaire** :
+  **Celui de la collection** (par défaut, pour qui n'a rien choisi), **Celui du navigateur** (le fuseau de l'appareil depuis
+  lequel vous entrez, que les pages envoient à l'API ; pour qui voyage) ou un fuseau fixe de la liste (tous ceux que PHP
+  connaît, avec le décalage actuel : *America/Sao Paulo (UTC−03:00)*). La page **Heure exacte** dit lequel est en vigueur et
+  d'où il vient. Le master choisit celui de n'importe qui dans **Utilisateurs**.
+
+Dans la base, tout reste dans le fuseau du système : la couche base de données convertit les dates avec heure à la lecture
+et à l'écriture, pour qui est dans un autre fuseau. Ainsi deux personnes dans des pays différents partagent la même
+collection et chacune voit chaque heure dans le sien : la montre mise au poignet à 10:00 à New York apparaît à 11:00 pour qui
+est à São Paulo, et pour les deux la montre du jour est la même. La date seule (le jour du plan, la date d'achat) est un jour
+du calendrier, le même dans tout fuseau.
+
+Les messages et les agendas ont le fuseau de qui reçoit : chaque destination (Telegram, e-mail, Web Push) et chaque agenda a
+son **Fuseau horaire (des heures dans le texte)**, comme elles ont déjà une langue ; vide, celui de la collection. Seul le
+texte change (« arrive à 0 % à 00:36 ») ; l'instant de l'événement dans l'agenda était déjà juste dans tout fuseau (Google et
+Outlook reçoivent le fuseau, l'ICS part en UTC).
+
+Par l'API : `recurso=conta` (`acao=alterar`, `fuso=` un nom, `navegador` ou vide), `recurso=config` (`fuso=`),
+`recurso=destinos` et `recurso=agendas` (`fuso=`) ; dans chaque réponse du compte, le fuseau en vigueur, d'où il vient et la
+liste (`fuso`, `fusos[]`). Un script de qui a choisi « Celui du navigateur » envoie `fuso_pedido=` (sans lui, celui de la
+collection vaut).
 ## L'API : une seule porte pour tout
 
 Le `api.php` est le **seul back-end**. Les pages ne sont que l'écran : le JavaScript de chacune appelle l'API et construit le

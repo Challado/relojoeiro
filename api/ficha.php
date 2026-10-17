@@ -8,7 +8,7 @@ if (!defined("RELOJOEIRO_API")) {
 }
 
 // tudo o que o painel de um relógio mostra (relogio=<id>); sem relogio, só o que o cadastro de um relógio novo precisa
-$hoje = new DateTimeImmutable("today");
+$hoje = hoje_da_colecao();
 $agora = time();
 $n = nos_todos();
 $r = linha("SELECT * FROM relogio WHERE id = ?", [(int)($_REQUEST["relogio"] ?? 0)]);

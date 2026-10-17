@@ -298,7 +298,7 @@ escrever(["recurso" => "usuarios", "acao" => "salvar", "login" => "MARIA", "senh
 escrever(["recurso" => "destinos", "acao" => "salvar", "id" => 0, "tipo" => "webhook", "nome" => "Telegram de teste", "ativo" => 0, "metodo" => "POST", "url" => "https://exemplo.invalid/enviar",
     "formato" => "json", "campo_nome" => ["chat_id", "text"], "campo_valor" => ["123", "{mensagem}"], "cabecalho_nome" => ["Authorization"], "cabecalho_valor" => ["Bearer segredo"],
     "envia" => ["dia", "vespera", "corda"], "modelo_corda" => "Corda no {relogio}!"]);
-escrever(["recurso" => "destinos", "acao" => "salvar", "id" => 0, "tipo" => "email", "nome" => "E-mail de teste", "ativo" => 0, "para" => "teste@exemplo.com"]);
+$dest_email = escrever(["recurso" => "destinos", "acao" => "salvar", "id" => 0, "tipo" => "email", "nome" => "E-mail de teste", "ativo" => 0, "para" => "teste@exemplo.com"]);
 escrever(["recurso" => "destinos", "acao" => "salvar", "id" => 0, "tipo" => "webpush", "nome" => "Celular", "ativo" => 0, "usuario_id" => 1]);
 escrever(["recurso" => "destinos", "acao" => "salvar", "id" => 0, "tipo" => "webhook", "nome" => "Sem endereço", "url" => "ftp://x"], false);
 escrever(["recurso" => "agendas", "acao" => "salvar", "id" => 0, "tipo" => "caldav", "nome" => "CalDAV de teste", "ativa" => 0, "url" => "https://exemplo.invalid/cal/", "usuario" => "eu", "senha" => "segredo"]);
@@ -547,6 +547,17 @@ escrever(["recurso" => "config", "acao" => "salvar", "fuso" => "Europe/Lisbon", 
 ler("historico no fuso da coleção (Lisboa)", ["recurso" => "historico", "relogio" => $rel["smart"], "limite" => 3]);
 ler("config com o fuso e o relógio", ["recurso" => "config"]);
 escrever(["recurso" => "config", "acao" => "salvar", "fuso" => "", "hora_relogio" => ""]);
+// "O do navegador": sem o cookie (e sem fuso_pedido=), vale o da coleção; com fuso_pedido=, o do pedido. O dia do rodízio
+// é o da coleção em qualquer fuso. E o fuso de um destino: as horas no texto das mensagens dele
+escrever(["recurso" => "conta", "acao" => "alterar", "fuso" => "navegador"]);
+ler("conta no fuso do navegador, sem o cookie", ["recurso" => "conta"]);
+ler("hora certa com fuso_pedido", ["recurso" => "hora_certa", "fuso_pedido" => "Asia/Tokyo"]);
+ler("hoje com fuso_pedido (o dia é o da coleção)", ["recurso" => "hoje", "fuso_pedido" => "Asia/Tokyo"]);
+escrever(["recurso" => "conta", "acao" => "alterar", "fuso" => ""]);
+escrever(["recurso" => "destinos", "acao" => "salvar", "id" => $dest_email, "tipo" => "email", "fuso" => "Marte/Olympus"], false);
+escrever(["recurso" => "destinos", "acao" => "salvar", "id" => $dest_email, "tipo" => "email", "fuso" => "Europe/Lisbon"]);
+ler("destinos com o e-mail em Lisboa", ["recurso" => "destinos"]);
+escrever(["recurso" => "destinos", "acao" => "salvar", "id" => $dest_email, "tipo" => "email", "fuso" => ""]);
 escrever(["recurso" => "config", "acao" => "salvar", "encostado_dias" => 5]);
 // a caixa Avisar quando um relógio fica encostado: desligada, o aviso some da Hoje (e da Configuração: encostado_ativo = 0)
 escrever(["recurso" => "config", "acao" => "salvar", "encostado_ativo" => 0]);
