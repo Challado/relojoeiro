@@ -146,6 +146,17 @@ CREATE TABLE usuario_token (
     CONSTRAINT ck_usuario_token_prazo CHECK (expira > criado)
 ) ENGINE=InnoDB;
 
+-- os aparelhos lembrados de um usuário (o aplicativo no celular): a chave gravada no aparelho (um cookie) entra sem a senha
+CREATE TABLE usuario_aparelho (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id  INT NOT NULL,
+    nome        VARCHAR(200) NULL,
+    chave_hash  CHAR(64) NOT NULL UNIQUE,
+    criado      DATETIME NOT NULL,
+    ultimo_uso  DATETIME NULL,
+    FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- os aparelhos (navegadores) de um usuário inscritos no Web Push
 CREATE TABLE push_inscricao (
     id             INT AUTO_INCREMENT PRIMARY KEY,

@@ -124,13 +124,66 @@ function quadroTokens(d) {
       + el("input", {"name": "nome", "required": true, "maxlength": "80", "placeholder": t("onde vai usar (ex.: atalho do celular)"), "aria-label": t("Nome do token")}) + el("button", {}, t("Criar token"))));
 }
 
+// O aplicativo no celular (PWA): lembrar este aparelho (a chave no cookie: entra sem a senha), instalar (o pedido do
+// navegador, guardado pelo api.js; no iPhone, o caminho do Safari) e ligar as notificações (o quadro de baixo)
+function nomeAparelho() {
+  var ua = navigator.userAgent;
+  var sistema = /iPhone/.test(ua) ? "iPhone" : (/iPad/.test(ua) ? "iPad" : (/Android/.test(ua) ? "Android" : (/Windows/.test(ua) ? "Windows" : (/Mac OS/.test(ua) ? "Mac" : (/Linux/.test(ua) ? "Linux" : "")))));
+  var nav = /Edg\//.test(ua) ? "Edge" : (/OPR\//.test(ua) ? "Opera" : (/Firefox\//.test(ua) ? "Firefox" : (/Chrome\//.test(ua) ? "Chrome" : (/Safari\//.test(ua) ? "Safari" : ""))));
+  return (sistema + " " + nav).trim() || ua.substr(0, 60);
+}
+var noApp = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+function quadroApp(d) {
+  var este = d.aparelhos.filter(function (a) { return a.este; })[0] || null;
+  var iphone = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  var passo1 = este ? t("Este aparelho está lembrado desde {1}: o aplicativo (e este navegador) entra sem pedir a senha.", {1: dataBr(este.criado)})
+      + " " + formAcao("conta", "aparelho_esquecer", {id: este.id}, t("Esquecer este aparelho"), "leve")
+    : t("O sistema passa a entrar sem pedir a senha neste aparelho (só nele; a chave fica guardada no navegador, e você pode esquecer quando quiser).")
+      + " " + formAcao("conta", "aparelho_lembrar", {nome: nomeAparelho()}, t("Lembrar este aparelho"));
+  var passo2 = noApp ? t("Você já está no aplicativo.")
+    : (INSTALAR_APP ? el("button", {"type": "button", "onclick": "instalarApp()"}, t("Instalar o aplicativo"))
+    : (iphone ? t("No iPhone e no iPad: abra o sistema no Safari, toque em Compartilhar e em Adicionar à Tela de Início.")
+    : t("No menu do navegador: Instalar aplicativo (ou Adicionar à tela inicial). Se o botão de instalar aparecer aqui, é só tocar nele.")));
+  var passo3 = t("As notificações (o relógio do dia, a véspera e os avisos) chegam ao aparelho pelo quadro de baixo, {1}; no iPhone, só de dentro do aplicativo instalado. O que chega se escolhe na página Avisos, em Destinos.", {1: el("a", {"href": "#push"}, t("Notificações neste aparelho"))});
+  var lista = "";
+  if (d.aparelhos.length > 0) {
+    lista = el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Aparelho lembrado")) + el("th", {}, t("Desde")) + el("th", {}, t("Último uso")) + el("th", {}, "")))
+      + el("tbody", {}, d.aparelhos.map(function (a) {
+        return el("tr", {}, el("td", {}, h(a.nome || t("(sem nome)")) + (a.este ? " " + el("small", {}, t("(este)")) : "")) + el("td", {}, dataBr(a.criado))
+          + el("td", {}, a.ultimo_uso ? dataBr(a.ultimo_uso) + " " + horaBr(a.ultimo_uso) : "—")
+          + el("td", {"class": "acoes-linha"}, formAcao("conta", "aparelho_esquecer", {id: a.id}, t("Esquecer"), "leve perigo")));
+      }).join(""))));
+  }
+  return el("section", {"class": "cartao-config", "id": "app"}, el("h2", {}, t("Aplicativo no celular"))
+    + el("p", {"class": "nota"}, t("O sistema vira um aplicativo no seu celular ou tablet: um ícone na tela inicial, abrindo em tela cheia, entrando sem pedir a senha e recebendo as notificações. Três passos, feitos no aparelho em que você quer o aplicativo:"))
+    + el("ol", {"class": "passos"}, el("li", {}, el("strong", {}, t("Lembrar este aparelho.")) + " " + passo1) + el("li", {}, el("strong", {}, t("Instalar.")) + " " + passo2) + el("li", {}, el("strong", {}, t("Ligar as notificações.")) + " " + passo3))
+    + (lista !== "" ? el("p", {"class": "nota"}, t("Os aparelhos lembrados (trocar a senha esquece todos):")) + lista : ""));
+}
+function instalarApp() {
+  if (!INSTALAR_APP) {
+    return;
+  }
+  var pedido = INSTALAR_APP;
+  INSTALAR_APP = null;
+  pedido.prompt();
+  pedido.userChoice.then(function (r) {
+    recadoConta = r && r.outcome === "accepted" ? t("Aplicativo instalado: abra pelo ícone na tela inicial.") : t("A instalação foi cancelada.");
+    carregarConta();
+  });
+}
+document.addEventListener("app-instalavel", function () {
+  if (CONTA) {
+    carregarConta();
+  }
+});
+
 function quadroPush(d) {
   var p = d.push;
   var res = el("h2", {}, t("Notificações neste aparelho (Web Push)"));
   if (!p.configurado) {
     res += el("p", {"class": "alerta-cron"}, t("O Web Push não está configurado no servidor (VAPID_PUBLICA e VAPID_PRIVADA no config.php)."));
   } else if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-    res += el("p", {"class": "nota"}, t("Este navegador não recebe notificações (no iPhone, primeiro adicione o site à tela de início)."));
+    res += el("p", {"class": "nota"}, t("Este navegador não recebe notificações (no iPhone, primeiro instale o aplicativo: o quadro Aplicativo no celular, acima)."));
   } else {
     res += el("p", {"class": "nota"}, t("Ligue para receber neste aparelho as mensagens dos destinos do tipo Web Push que apontam para você."))
       + el("div", {"class": "botoes"}, el("button", {"type": "button", "onclick": "ligarPush()"}, t("Receber notificações neste aparelho")));
@@ -150,8 +203,8 @@ function quadroPush(d) {
 }
 var CHAVES_VAPID = null;
 
-// Liga o Web Push neste navegador: registra o push.js (o service worker), inscreve com a chave pública do servidor e manda
-// a inscrição para a API
+// Liga o Web Push neste navegador: registra o service worker (o sw.js, pela API), inscreve com a chave pública do servidor e
+// manda a inscrição para a API
 function ligarPush() {
   var chave = CONTA.push.chave_publica;
   var bruta = atob(chave.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((chave.length + 3) % 4));
@@ -163,7 +216,7 @@ function ligarPush() {
     if (perm !== "granted") {
       throw new Error(t("as notificações foram bloqueadas no navegador"));
     }
-    return navigator.serviceWorker.register("push.js");
+    return navigator.serviceWorker.register("api.php?recurso=sw");
   }).then(function () {
     return navigator.serviceWorker.ready;
   }).then(function (reg) {
@@ -249,7 +302,7 @@ function carregarConta() {
     }
     res += quadroColecoes(d) + quadroArvores(d) + quadroPedir(d)
       + el("p", {"class": "nota"}, t("Para convidar alguém para as suas coleções, ou ver quem as vê: {1}.", {1: el("a", {"href": "aprovacoes.php"}, t("Aprovações e convites"))}))
-      + quadroDados(d) + quadroTokens(d) + quadroPush(d) + quadroServidor(d) + quadroExcluir(d);
+      + quadroDados(d) + quadroApp(d) + quadroTokens(d) + quadroPush(d) + quadroServidor(d) + quadroExcluir(d);
     document.getElementById("conta").innerHTML = res;
   });
 }

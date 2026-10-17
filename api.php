@@ -292,6 +292,8 @@
  *                            "versao"}] (da mais nova para a mais velha)}. Com arquivo=<nome>: baixa aquela cópia (relojoeiro-AAAA-MM-DD-
  *                            HHMMSS.jsonl.gz: JSON Lines comprimido, o mesmo nos quatro bancos). Fazer e restaurar: na escrita
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=backup"
+ *   recurso=manifest         o manifesto do aplicativo no celular (PWA), sem login; com o cookie do aparelho lembrado, o start_url já entra
+ *   recurso=sw               o service worker do aplicativo (o sw.js com a versão e os arquivos das telas), sem login
  *   recurso=entrar           o login das páginas: sem login, 401 (o navegador pede o usuário e a senha); com login, volta para a página
  *                            de volta=<uma página do sistema> (302) ou diz quem entrou: {"usuario" (null pelo token), "por" (login ou
  *                            token), "volta"}. É para onde o api.js manda quem abre uma página sem login
@@ -589,7 +591,8 @@
  *                            Ex. oficializar: curl -u lucas:senha -d recurso=usuarios -d acao=oficializar -d login=visitante http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=usuarios -d acao=excluir -d login=visitante -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=conta             alterar (email, idioma, senha_atual e senha), token_criar (nome: devolve o token, só agora), token_revogar
- *                             (id), push_inscrever (endpoint, p256dh, auth, aparelho), push_cancelar (id), push_testar, excluir
+ *                             (id), aparelho_lembrar (nome: o aplicativo no celular entra sem a senha por este aparelho, pelo cookie que
+ *                             grava), aparelho_esquecer (id; vazio: este), push_inscrever (endpoint, p256dh, auth, aparelho), push_cancelar (id), push_testar, excluir
  *                             (confirmar=1: a conta com tudo); só o master: email_testar (para), vapid_gerar
  *                            Ex. token_criar: curl -u lucas:senha -d recurso=conta -d acao=token_criar -d "nome=Atalho" http://servidor/relojoeiro/api.php
  *   recurso=colecoes          criar (nome, opcao: modelo, vazia ou arvore com arvore_id), renomear (id, nome), excluir (id, confirmar=1),
@@ -2762,6 +2765,24 @@
  *                                    o valor pago, em R$ (null)
  *     grupos[].relogios[].dias_de_uso
  *                                    os dias de uso (a fórmula dias_de_uso; null)
+ *   recurso=manifest
+ *     id                             a identidade do aplicativo para o navegador (./: a pasta do sistema)
+ *     name                           o nome do aplicativo (Relojoeiro)
+ *     short_name                     o nome curto, embaixo do ícone
+ *     description                    a descrição que a loja do navegador mostra ao instalar
+ *     lang                           o idioma do pedido
+ *     start_url                      a página que o aplicativo abre: index.php; com o cookie do aparelho lembrado,
+ *                                    index.php?aparelho=<chave> (a chave vira o cookie do aplicativo e a página abre limpa)
+ *     scope                          o que conta como o aplicativo (./: a pasta do sistema)
+ *     display                        standalone: tela cheia, sem a barra do navegador
+ *     orientation                    any: a orientação do aparelho
+ *     background_color               a cor de fundo enquanto abre (a do corpo das páginas)
+ *     theme_color                    a cor da barra do sistema (a do topo das páginas)
+ *     icons[]                        os ícones
+ *     icons[].src                    o arquivo (icone-192.png, icone-512.png)
+ *     icons[].sizes                  o tamanho (192x192, 512x512)
+ *     icons[].type                   image/png
+ *     icons[].purpose                maskable: o ícone que o Android recorta na forma dele (o desenho fica no meio); sem ele, o ícone comum
  *   recurso=textos
  *     lingua                         o idioma da resposta (pt-BR, en, zh-CN, hi, es, fr)
  *     locale                         o locale dos números nas telas (BCP 47: pt-BR, en-US, zh-CN, hi-IN, es-ES, fr-FR)
@@ -3010,6 +3031,12 @@
  *     tokens[].nome                  o nome (onde ele é usado)
  *     tokens[].criado                quando foi criado
  *     tokens[].ultimo_uso            o último uso; null: nunca
+ *     aparelhos[]                    os seus aparelhos lembrados (o aplicativo no celular: entram sem a senha, pela chave no cookie)
+ *     aparelhos[].id                 o id
+ *     aparelhos[].nome               o nome do aparelho (o que o Lembrar mandou: "Android Chrome", "iPhone Safari"); null: sem nome
+ *     aparelhos[].criado             desde quando
+ *     aparelhos[].ultimo_uso         o último pedido que entrou por ele; null: nunca
+ *     aparelhos[].este               verdadeiro: é o aparelho por que este pedido entrou (o cookie)
  *     push                           o Web Push
  *     push.configurado               verdadeiro ou falso: o servidor tem as chaves VAPID
  *     push.chave_publica             a chave pública VAPID (o navegador inscreve com ela); null: não configurado
@@ -3642,6 +3669,19 @@ if ($recurso === "textos") {
         echo "window.TEXTOS_API = " . json_encode($saida, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . ";\n";
         exit;
     }
+} elseif ($recurso === "manifest") {
+    // o manifesto do aplicativo (PWA): sem login (o navegador pede ao instalar); com o cookie do aparelho lembrado, o
+    // start_url entra sozinho
+    header("Content-Type: application/manifest+json; charset=utf-8");
+    header("Cache-Control: private, no-cache");
+    echo json_encode(app_manifesto(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) . "\n";
+    exit;
+} elseif ($recurso === "sw") {
+    // o service worker do aplicativo (o sw.js com a versão e a lista dos arquivos das telas na frente): sem login
+    header("Content-Type: application/javascript; charset=utf-8");
+    header("Cache-Control: private, no-cache");
+    echo app_service_worker();
+    exit;
 } elseif ($recurso === "ics" && $em_dia) {
     // o link ICS de uma agenda: sem login, pela chave secreta do link (quem tem o link vê os eventos)
     $ics = ics_feed((string)($_REQUEST["chave"] ?? ""));

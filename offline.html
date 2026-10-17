@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1c2530">
+<title>Relojoeiro</title>
+<style>
+  body { margin: 0; background: #e4e8ec; color: #1c2530; font: 16px/1.5 "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+  main { max-width: 34rem; margin: 4rem auto; padding: 0 1rem; text-align: center; }
+  h1 { font-size: 1.4rem; }
+  button { font: inherit; padding: 0.5rem 1.2rem; border: 1px solid #1f4f8f; border-radius: 0.4rem; background: #1f4f8f; color: #fff; cursor: pointer; }
+  p { color: #6b7684; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="titulo">Sem conexão</h1>
+  <p id="texto">O Relojoeiro precisa da rede para mostrar os seus relógios. Quando a conexão voltar, tente de novo.</p>
+  <p><button type="button" onclick="window.location.reload()" id="botao">Tentar de novo</button></p>
+</main>
+<script>
+// a página "sem conexão" do aplicativo: estática (o service worker a entrega quando a rede cai), por isso os seis idiomas
+// ficam aqui mesmo, e o do navegador (ou o do seletor do menu, no cookie lingua) escolhe
+(function () {
+  var textos = {
+    "pt-BR": ["Sem conexão", "O Relojoeiro precisa da rede para mostrar os seus relógios. Quando a conexão voltar, tente de novo.", "Tentar de novo"],
+    "en": ["No connection", "Relojoeiro needs the network to show your watches. When the connection is back, try again.", "Try again"],
+    "zh-CN": ["没有网络连接", "Relojoeiro 需要网络才能显示你的手表。网络恢复后请重试。", "重试"],
+    "hi": ["कनेक्शन नहीं है", "Relojoeiro को आपकी घड़ियाँ दिखाने के लिए नेटवर्क चाहिए। कनेक्शन लौटने पर फिर से कोशिश करें।", "फिर से कोशिश करें"],
+    "es": ["Sin conexión", "Relojoeiro necesita la red para mostrar sus relojes. Cuando vuelva la conexión, inténtelo de nuevo.", "Intentar de nuevo"],
+    "fr": ["Pas de connexion", "Relojoeiro a besoin du réseau pour afficher vos montres. Quand la connexion revient, réessayez.", "Réessayer"]
+  };
+  var m = /(^|;\s*)lingua=([^;]+)/.exec(document.cookie);
+  var l = m ? decodeURIComponent(m[2]) : (navigator.language || "pt-BR");
+  if (!textos[l]) {
+    l = l.indexOf("zh") === 0 ? "zh-CN" : (l.indexOf("pt") === 0 ? "pt-BR" : l.split("-")[0]);
+  }
+  var t = textos[l] || textos["pt-BR"];
+  document.documentElement.lang = l;
+  document.getElementById("titulo").textContent = t[0];
+  document.getElementById("texto").textContent = t[1];
+  document.getElementById("botao").textContent = t[2];
+})();
+</script>
+</body>
+</html>

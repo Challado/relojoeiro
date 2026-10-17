@@ -6,8 +6,9 @@
 //   2. As páginas só montam o esqueleto: incluem só o pagina.php e só chamam topo(), rodape() e t()/te(); nada de
 //      $_GET/$_POST/$_REQUEST/$_COOKIE/$_SESSION nem SQL. O pagina.php só usa os idiomas (textos/funcoes.php) e, do núcleo,
 //      só a porta do login (pagina_login(), do lib.php), que o topo() chama antes de qualquer saída.
-//   3. A rede das telas é só a API: fetch e XMLHttpRequest só no api.js e no documentos.js (o envio com o andamento),
-//      sempre para o api.php; nenhum .js cita um .php que não seja o api.php ou uma página; sem eval nem new Function.
+//   3. A rede das telas é só a API: fetch e XMLHttpRequest só no api.js, no documentos.js (o envio com o andamento) e no
+//      sw.js (o service worker do aplicativo: o cache dos arquivos das telas, nunca da API), sempre para o api.php; nenhum
+//      .js cita um .php que não seja o api.php ou uma página; sem eval nem new Function.
 //   4. O banco só é tocado pelo núcleo, pela API e pelo cron: as funções do banco.php só são chamadas no banco.php,
 //      lib.php, operacoes.php, colecoes.php, alertas.php, contas.php, api.php, api/, cron.php e reconstrucao.php. Os scripts de linha de comando (instalar,
 //      criar_usuario, importar) não tocam no banco: só chamam operações que a API também chama.
@@ -155,7 +156,7 @@ if (preg_match($sql, (string)file_get_contents("pagina.php")) === 1) {
 }
 
 // ---------- 3. a rede das telas é só a API ----------
-$rede_permitida = ["api.js" => "fetch", "documentos.js" => "XMLHttpRequest"];
+$rede_permitida = ["api.js" => "fetch", "documentos.js" => "XMLHttpRequest", "sw.js" => "fetch"];
 foreach ($js as $f) {
     $txt = (string)file_get_contents($f);
     foreach (["fetch" => '/\bfetch\s*\(/', "XMLHttpRequest" => '/\bXMLHttpRequest\b/', "sendBeacon" => '/\bsendBeacon\s*\(/',

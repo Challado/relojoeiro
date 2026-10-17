@@ -1083,7 +1083,7 @@ comes in here by its name.
 | **Groups** (`grupos.php`) | The tree: create, rename, move, sort, delete (what belonged to the group goes to the one above) and choose each watch's group. |
 | **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**) and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page, and the rotation modes on **Rotation modes**). |
 | **Cron runs** (`execucoes.php`) | What the cron did in each round, how long it took and the errors, with filters. |
-| **My account** (`conta.php`, menu **Account › My account**) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection (by the code the owner gave), your data (your code, the e-mail, the language, the password), the **API tokens** (for your scripts), the **notifications on this device** (Web Push) and deleting the account. See [Several people](#several-people-accounts-collections-and-access). |
+| **My account** (`conta.php`, menu **Account › My account**) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection (by the code the owner gave), your data (your code, the e-mail, the language, the password), the **app on the phone** (remember this device, install, the remembered devices), the **API tokens** (for your scripts), the **notifications on this device** (Web Push) and deleting the account. See [Several people](#several-people-accounts-collections-and-access) and [The app on the phone](#the-app-on-the-phone). |
 | **Approvals** (`aprovacoes.php`) | The access requests to your collections (approve, decline), the invitations members made that wait for you, **Invite** (by e-mail), the invitations you made and who sees your collections (remove access). The menu shows **Approvals (N)** when something is waiting. |
 | **Users** (`usuarios.php`, master only) | The accounts panel: each one with what it has and the actions (view as, make official, extend, block, edit, change the password, transfer a collection, give access, delete) and creating an account. |
 | **Create account** (`cadastro.php`, without login) | The open sign-up: the new account (with a collection, or asking for access), the invitation that arrived by e-mail and **Forgot my password**. |
@@ -1170,7 +1170,7 @@ session, sends the messages, syncs the calendars, fires the events and looks aft
 same functions the API uses; what can be asked for on demand has an action in the API (the destinations' `testar`, the
 calendars' `sincronizar`, `resortear`...), and what it did shows in `recurso=cron`.
 
-**Authentication:** the site login (HTTP Basic), a **personal token** (created in **My account**, it works as your login) or
+**Authentication:** the site login (HTTP Basic), a **personal token** (created in **My account**, it works as your login), the key of a **remembered device** (the cookie of the app on the phone) or
 the server token (the `API_TOKEN`, it works as the master), in the `X-Api-Token` header or in `?token=...`. **The
 collection:** `colecao=<id>` (without it, the one in the menu selector, otherwise your first one); one you don't see answers
 404. **Deleting** asks for `confirmar=1`: without it, the response (409) says what would go along and nothing is deleted.
@@ -1222,7 +1222,8 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `documentos` | a watch's documents (`relogio=<id>`; without it, all of them), with the categories, the NF-e summary of each XML, the folder and the limit |
 | `documento` | a document's file (`id=<id>`): to show (image, video, audio, PDF, text) or to download (the rest, or with `baixar=1`); `mini=1` is the photo's thumbnail. It serves pieces (Range), so the video can skip ahead |
 | `usuarios`, `migracoes` | the master: the accounts panel, each with what it has and the password hash (to migrate with the same password: see [The users and the passwords](#the-users-and-the-passwords)); the others, only their own account; the migrations still to apply |
-| `conta`, `colecoes`, `aprovacoes` | My account (the collections, the trees, the requests, the tokens, the Web Push devices; `parte=menu`: only the menu's part); the collections and the trees; the Approvals page |
+| `conta`, `colecoes`, `aprovacoes` | My account (the collections, the trees, the requests, the tokens, the remembered devices, the Web Push devices; `parte=menu`: only the menu's part); the collections and the trees; the Approvals page |
+| `manifest`, `sw` | the app on the phone, no login: the manifest (JSON; with the remembered device's cookie, the `start_url` already gets in) and the *service worker* (JavaScript). See [The app on the phone](#the-app-on-the-phone) |
 | `cadastro` | the open sign-up, without login: whether it is open and the invitation (`convite=<token>`); no list of accounts or collections (the access request is by the code the owner gave) |
 | `instalacao` | the installation status: the database, whether it is empty, installed and up to date, how many users and the next step. It also answers with the database empty, with the token |
 | `backup` | the database backup: whether it is on, whether the folder works, how many are kept, the last one and the folder's copies; `arquivo=` downloads one |
@@ -1251,7 +1252,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `destinos` | `salvar` (webhook, e-mail or Web Push, with what it receives), `testar` (`qual=`: text, morning or night), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook or ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (with the `senha`, or with another system's `senha_hash`; the first user, with the token, is the master) and, master only: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
-| `conta` | `alterar` (e-mail, language, password), `token_criar`, `token_revogar`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir`; master only: `email_testar`, `vapid_gerar` |
+| `conta` | `alterar` (e-mail, language, password), `token_criar`, `token_revogar`, `aparelho_lembrar` (the app on the phone: this device's key in a cookie, which gets in without the password), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir`; master only: `email_testar`, `vapid_gerar` |
 | `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
 | `acessos`, `convites`, `pedidos` | `remover`, `sair`; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar`; `pedir`, `aprovar`, `recusar`, `cancelar` |
 | `cadastro` | without login: `criar_conta`, `esqueci_senha`, `nova_senha` |
@@ -1568,6 +1569,10 @@ No. The use of the watch of the day is logged by itself, in the wearing hours. Y
 knowing: winding, the smartwatch's charge reading, the sun, the winder, the battery change and the day you wore another watch.
 And each alert already comes with the button that resolves it.
 
+**Is there an app for the phone?**
+There is, with no store: the site itself installs as an app (an icon, full screen, no password asked, with the notifications).
+See [The app on the phone](#the-app-on-the-phone): three steps in **My account**.
+
 **Where do I keep the watch's manual, invoice and photos?**
 On its **Documents** page (from the watch page: **Open the documents**). Choose the category (Manual, Invoice, Invoice (XML),
 Photos, Videos, Miscellaneous), the files, and upload. The photos become a gallery with a slideshow, the videos play in
@@ -1659,6 +1664,31 @@ simulates a night on the winder to resolve it.
 Yes. The screens use exactly the same API.
 
 ---
+
+## The app on the phone
+
+The system installs as an **app** on the phone and the tablet, with no store at all (it is a PWA: the site itself, with a
+manifest and a *service worker*): an icon on the home screen, opening full screen, getting in without asking for the password
+and receiving the notifications. Everything is done in **My account › App on the phone**, on the device where you want the
+app, in three steps:
+
+1. **Remember this device.** The button stores in the browser a key for that device only (a cookie, valid for one year), and
+   the system starts getting in through it, without asking for the password. Only on that device: each one has its own key,
+   and the table **The remembered devices** shows them all (the name, since when, the last use), with **Forget** on each.
+   Changing the password forgets them all.
+2. **Install.** On Android (Chrome), the **Install the app** button appears right there; otherwise, in the browser menu,
+   **Install app** (or **Add to home screen**). On the iPhone and the iPad, in Safari: **Share › Add to Home Screen**. The
+   installed app opens already logged in: the manifest carries the remembered device's key, and it becomes the app's cookie
+   (on the iPhone the app does not share Safari's cookies; that is why step 1 comes first).
+3. **Turn on the notifications.** In the **Notifications on this device** box, right below: the watch of the day, the day
+   before and the alerts arrive as device notifications (Web Push; on the iPhone, only from inside the installed app). What
+   arrives is chosen on the **Alerts** page, in **Destinations** (see [Messages and calendars](#messages-and-calendars)).
+
+The app is the site: the same screens, updated by themselves at each opening (nothing to download from a store). The *service
+worker* keeps the stylesheet, the scripts, the icons and the language texts, to open fast; the pages and the data always come
+from the network, and without network the **No connection** page appears, with **Try again**. Through the API:
+`recurso=manifest` and `recurso=sw` (no login), and `recurso=conta` with `acao=aparelho_lembrar` (the cookie) and
+`acao=aparelho_esquecer`. Whoever prefers a one-tap shortcut, without opening anything, has the next section.
 
 ## Mark from the phone, with one tap
 
@@ -1867,7 +1897,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | [`operacoes.php`](operacoes.php) | the rules of each write: validations and messages |
 | [`cron.php`](cron.php) | the plan, the day's session, the morning and evening rounds, the events, the calendar and the documents' upkeep |
 | `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | the pages (only the skeleton; `cadastro.php` is the public one) |
-| `push.js` | the Web Push service worker |
+| `sw.js`, `offline.html`, `icone-*.png` | the app on the phone: the *service worker* (served by `recurso=sw`, with the version in front: the screens' cache, the no-connection page and the Web Push), the **No connection** page and the icons (192, 512 and 180 px) |
 | `ajuda.php` | the help page: only the skeleton; `ajuda.js` asks the API for the text (`recurso=manual`: the README's sections for users, already in HTML, converted in `lib.php`) |
 | [`pagina.php`](pagina.php) | the top with the menu and the end of the pages ; `topo()` checks the login before sending anything (`pagina_login()`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | the screens, built in the browser from the API |

@@ -1055,7 +1055,7 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | **Grupos** (`grupos.php`) | A árvore: criar, renomear, mover, ordenar, excluir (o que era do grupo passa para o de cima) e escolher o grupo de cada relógio. |
 | **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**) e as categorias de documentos: tudo o que o sistema usa e que não é código (os avisos ficam na página **Avisos**, e os modos de rodízio, na **Modos de rodízio**). |
 | **Execuções do cron** (`execucoes.php`) | O que o cron fez a cada rodada, quanto tempo levou e os erros, com filtros. |
-| **Minha conta** (`conta.php`, menu **Conta › Minha conta**) | As coleções que você vê (abrir, criar, renomear, excluir, sair), as suas árvores de grupos (copiar, renomear, excluir), pedir acesso à coleção de alguém (pelo código que o dono passou), os seus dados (o seu código, o e-mail, o idioma, a senha), os **tokens de API** (para os seus scripts), as **notificações neste aparelho** (o Web Push) e excluir a conta. Veja [Várias pessoas](#várias-pessoas-contas-coleções-e-acesso). |
+| **Minha conta** (`conta.php`, menu **Conta › Minha conta**) | As coleções que você vê (abrir, criar, renomear, excluir, sair), as suas árvores de grupos (copiar, renomear, excluir), pedir acesso à coleção de alguém (pelo código que o dono passou), os seus dados (o seu código, o e-mail, o idioma, a senha), o **aplicativo no celular** (lembrar este aparelho, instalar, os aparelhos lembrados), os **tokens de API** (para os seus scripts), as **notificações neste aparelho** (o Web Push) e excluir a conta. Veja [Várias pessoas](#várias-pessoas-contas-coleções-e-acesso) e [O aplicativo no celular](#o-aplicativo-no-celular). |
 | **Aprovações** (`aprovacoes.php`) | Os pedidos de acesso às suas coleções (aprovar, recusar), os convites que membros fizeram e esperam você, **Convidar** (por e-mail), os convites que você fez e quem vê as suas coleções (tirar o acesso). O menu mostra **Aprovações (N)** quando há algo esperando. |
 | **Usuários** (`usuarios.php`, só o master) | O painel das contas: cada uma com o que tem e as ações (ver como, tornar oficial, prorrogar, bloquear, alterar, trocar a senha, transferir uma coleção, dar acesso, excluir) e criar uma conta. |
 | **Criar conta** (`cadastro.php`, sem login) | O cadastro aberto: a conta nova (com uma coleção, ou pedindo acesso), o convite que chegou por e-mail e o **Esqueci a senha**. |
@@ -1140,7 +1140,7 @@ mensagens, sincroniza a agenda, dispara os eventos e cuida das cópias dos docum
 o que dá para pedir na hora tem ação na API (o `testar` dos destinos, o `sincronizar` das agendas, o `resortear`...), e o que ele fez
 aparece em `recurso=cron`.
 
-**Autenticação:** o login do site (HTTP Basic), um **token pessoal** (criado em **Minha conta**, vale como o seu login) ou o token
+**Autenticação:** o login do site (HTTP Basic), um **token pessoal** (criado em **Minha conta**, vale como o seu login), a chave de um **aparelho lembrado** (o cookie do aplicativo no celular) ou o token
 do servidor (o `API_TOKEN`, vale como o master), no cabeçalho `X-Api-Token` ou em `?token=...`. **A coleção:** `colecao=<id>`
 (sem ele, a do seletor do menu, senão a primeira sua); uma que você não vê responde 404. **Excluir** pede `confirmar=1`: sem
 ele, a resposta (409) diz o que sairia junto e nada é apagado.
@@ -1192,7 +1192,8 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `documentos` | os documentos de um relógio (`relogio=<id>`; sem ele, de todos), com as categorias, o resumo da NF-e de cada XML, a pasta e o limite |
 | `documento` | o arquivo de um documento (`id=<id>`): para mostrar (imagem, vídeo, áudio, PDF, texto) ou para baixar (o resto, ou com `baixar=1`); `mini=1` é a miniatura da foto. Atende pedaços (Range), para o vídeo avançar |
 | `usuarios`, `migracoes` | o master: o painel das contas, cada uma com o que tem e o hash da senha (para migrar com a mesma senha: veja [Os usuários e as senhas](#os-usuários-e-as-senhas)); os outros, só a própria conta; as migrações que faltam aplicar |
-| `conta`, `colecoes`, `aprovacoes` | Minha conta (as coleções, as árvores, os pedidos, os tokens, os aparelhos do Web Push; `parte=menu`: só o do menu); as coleções e as árvores; a página Aprovações |
+| `conta`, `colecoes`, `aprovacoes` | Minha conta (as coleções, as árvores, os pedidos, os tokens, os aparelhos lembrados, os aparelhos do Web Push; `parte=menu`: só o do menu); as coleções e as árvores; a página Aprovações |
+| `manifest`, `sw` | o aplicativo no celular, sem login: o manifesto (JSON; com o cookie do aparelho lembrado, o `start_url` já entra) e o *service worker* (JavaScript). Veja [O aplicativo no celular](#o-aplicativo-no-celular) |
 | `cadastro` | o cadastro aberto, sem login: se está aberto e o convite (`convite=<token>`); nenhuma lista de contas nem de coleções (o pedido de acesso é pelo código que o dono passou) |
 | `instalacao` | a situação da instalação: o banco, se está vazio, instalado e em dia, quantos usuários e o próximo passo. Responde também com o banco vazio, pelo token |
 | `backup` | a cópia de segurança do banco: se está ligada, se a pasta serve, quantas ficam, a última e as cópias da pasta; `arquivo=` baixa uma |
@@ -1221,7 +1222,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `destinos` | `salvar` (webhook, e-mail ou Web Push, com o que recebe), `testar` (`qual=`: texto, manhã ou noite), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook ou ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (com a `senha`, ou com o `senha_hash` de outro sistema; o primeiro usuário, pelo token, é o master) e, só o master: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
-| `conta` | `alterar` (e-mail, idioma, senha), `token_criar`, `token_revogar`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir`; só o master: `email_testar`, `vapid_gerar` |
+| `conta` | `alterar` (e-mail, idioma, senha), `token_criar`, `token_revogar`, `aparelho_lembrar` (o aplicativo no celular: a chave deste aparelho num cookie, que entra sem a senha), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir`; só o master: `email_testar`, `vapid_gerar` |
 | `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
 | `acessos`, `convites`, `pedidos` | `remover`, `sair`; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar`; `pedir`, `aprovar`, `recusar`, `cancelar` |
 | `cadastro` | sem login: `criar_conta`, `esqueci_senha`, `nova_senha` |
@@ -1539,6 +1540,10 @@ Não. O uso do relógio do dia é registrado sozinho, no horário de uso. Você 
 a leitura de carga do smartwatch, o sol, o winder, a troca de pilha e o dia em que usou outro relógio. E cada aviso já traz o
 botão que o resolve.
 
+**Tem aplicativo para o celular?**
+Tem, sem loja: o próprio site se instala como aplicativo (um ícone, tela cheia, sem pedir a senha, com as notificações). Veja
+[O aplicativo no celular](#o-aplicativo-no-celular): três passos em **Minha conta**.
+
 **Onde guardo o manual, a nota fiscal, as fotos do relógio?**
 Na página **Documentos** dele (pela ficha: **Abrir os documentos**). Escolha a categoria (Manual, Nota fiscal, Nota fiscal
 (XML), Fotos, Vídeos, Diversos), os arquivos, e envie. As fotos viram uma galeria com apresentação, os vídeos tocam em
@@ -1628,6 +1633,30 @@ noite no winder para resolver.
 Pode. As telas usam exatamente a mesma API.
 
 ---
+
+## O aplicativo no celular
+
+O sistema se instala como **aplicativo** no celular e no tablet, sem loja nenhuma (é uma PWA: o próprio site, com um
+manifesto e um *service worker*): um ícone na tela inicial, abrindo em tela cheia, entrando sem pedir a senha e recebendo
+as notificações. Tudo se faz em **Minha conta › Aplicativo no celular**, no aparelho em que você quer o aplicativo, em três
+passos:
+
+1. **Lembrar este aparelho.** O botão grava no navegador uma chave só desse aparelho (um cookie, válido por um ano), e o
+   sistema passa a entrar por ela, sem pedir a senha. Só nesse aparelho: cada um tem a sua chave, e a tabela **Os aparelhos
+   lembrados** mostra todas (o nome, desde quando, o último uso), com **Esquecer** em cada uma. Trocar a senha esquece todos.
+2. **Instalar.** No Android (Chrome), o botão **Instalar o aplicativo** aparece ali mesmo; senão, no menu do navegador,
+   **Instalar aplicativo** (ou **Adicionar à tela inicial**). No iPhone e no iPad, no Safari: **Compartilhar › Adicionar à
+   Tela de Início**. O aplicativo instalado abre já entrando: o manifesto leva a chave do aparelho lembrado, e ela vira o
+   cookie do aplicativo (no iPhone o aplicativo não compartilha os cookies do Safari; é por isso que o passo 1 vem antes).
+3. **Ligar as notificações.** No quadro **Notificações neste aparelho**, logo abaixo: o relógio do dia, a véspera e os
+   avisos chegam como notificação do aparelho (o Web Push; no iPhone, só de dentro do aplicativo instalado). O que chega se
+   escolhe na página **Avisos**, em **Destinos** (veja [Mensagens e agendas](#mensagens-e-agendas)).
+
+O aplicativo é o site: as mesmas telas, atualizadas sozinhas a cada abertura (nada para baixar da loja). O *service worker*
+guarda o estilo, os scripts, os ícones e os textos do idioma, para abrir rápido; as páginas e os dados vêm sempre da rede, e
+sem rede aparece a página **Sem conexão**, com **Tentar de novo**. Pela API: `recurso=manifest` e `recurso=sw` (sem login),
+e `recurso=conta` com `acao=aparelho_lembrar` (o cookie) e `acao=aparelho_esquecer`. Quem prefere um atalho de um toque só,
+sem abrir nada, tem a seção seguinte.
 
 ## Marcar pelo celular, com um toque
 
@@ -1826,7 +1855,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | [`operacoes.php`](operacoes.php) | as regras de cada gravação: validações e mensagens |
 | [`cron.php`](cron.php) | o plano, a sessão do dia, as rodadas da manhã e da noite, os eventos, a agenda e a manutenção dos documentos |
 | `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | as páginas (só o esqueleto; a `cadastro.php` é a pública) |
-| `push.js` | o service worker do Web Push |
+| `sw.js`, `offline.html`, `icone-*.png` | o aplicativo no celular: o *service worker* (entregue por `recurso=sw`, com a versão na frente: o cache das telas, a página sem conexão e o Web Push), a página **Sem conexão** e os ícones (192, 512 e 180 px) |
 | `ajuda.php` | a página de ajuda: só o esqueleto; o `ajuda.js` pede o texto à API (`recurso=manual`: as seções do README para quem usa, já em HTML, convertidas no `lib.php`) |
 | [`pagina.php`](pagina.php) | o topo com o menu e o fim das páginas; o `topo()` confere o login antes de mandar qualquer coisa (`pagina_login()`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |

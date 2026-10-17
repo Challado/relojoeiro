@@ -59,7 +59,12 @@ function topo($titulo, $ativo, $publica = false)
         }
     }
     echo "<!doctype html>\n<html lang=\"" . lingua_atual() . "\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta name=\"theme-color\" content=\"#1c2530\">\n<title>" . htmlspecialchars(t($titulo), ENT_QUOTES, "UTF-8") . "</title>\n"
-        . "<link rel=\"stylesheet\" href=\"estilo.css?v=" . (int)@filemtime(__DIR__ . "/estilo.css") . "\">\n</head>\n<body>\n<nav class=\"topo\">\n";
+        . "<link rel=\"stylesheet\" href=\"estilo.css?v=" . (int)@filemtime(__DIR__ . "/estilo.css") . "\">\n"
+        // o aplicativo no celular (PWA): o manifesto pela API (com as credenciais: o start_url entra pelo aparelho lembrado), o
+        // ícone, e o que o iPhone ainda lê fora do manifesto (tela cheia e o nome na tela de início)
+        . "<link rel=\"manifest\" href=\"api.php?recurso=manifest\" crossorigin=\"use-credentials\">\n<link rel=\"icon\" href=\"icone-192.png\" type=\"image/png\">\n"
+        . "<link rel=\"apple-touch-icon\" href=\"icone-180.png\">\n<meta name=\"mobile-web-app-capable\" content=\"yes\">\n<meta name=\"apple-mobile-web-app-capable\" content=\"yes\">\n"
+        . "<meta name=\"apple-mobile-web-app-status-bar-style\" content=\"default\">\n<meta name=\"apple-mobile-web-app-title\" content=\"Relojoeiro\">\n</head>\n<body>\n<nav class=\"topo\">\n";
     // no celular o menu fica recolhido: uma barra com a página atual e o botão que abre a lista (na tela grande o botão some)
     echo "  <button type=\"button\" class=\"menu-botao\" aria-expanded=\"false\" aria-controls=\"menu-itens\"><span class=\"menu-pagina\">" . htmlspecialchars($atual ?? t($titulo), ENT_QUOTES, "UTF-8") . "</span><span class=\"menu-abre\">" . t("Menu") . "</span></button>\n"
         . "  <div class=\"menu-itens\" id=\"menu-itens\">\n";

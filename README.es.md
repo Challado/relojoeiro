@@ -1075,7 +1075,7 @@ que usted registre entra aquí con su nombre.
 | **Grupos** (`grupos.php`) | El árbol: crear, renombrar, mover, ordenar, eliminar (lo que era del grupo pasa al de arriba) y elegir el grupo de cada reloj. |
 | **Definiciones** (`cadastros.php`) | Campos, tipos de registro, fórmulas (con **Probar**) y las categorías de documentos: todo lo que el sistema usa que no es código (los avisos están en la página **Avisos**, y los modos de rotación, en **Modos de rotación**). |
 | **Ejecuciones del cron** (`execucoes.php`) | Qué hizo el cron en cada vuelta, cuánto tardó y los errores, con filtros. |
-| **Mi cuenta** (`conta.php`, menú **Cuenta › Mi cuenta**) | Las colecciones que ve (abrir, crear, renombrar, eliminar, salir), sus árboles de grupos (copiar, renombrar, eliminar), pedir acceso a la colección de alguien (por el código que pasó el dueño), sus datos (su código, el correo, el idioma, la contraseña), los **tokens de API** (para sus scripts), las **notificaciones en este aparato** (el Web Push) y eliminar la cuenta. Vea [Varias personas](#varias-personas-cuentas-colecciones-y-acceso). |
+| **Mi cuenta** (`conta.php`, menú **Cuenta › Mi cuenta**) | Las colecciones que ve (abrir, crear, renombrar, eliminar, salir), sus árboles de grupos (copiar, renombrar, eliminar), pedir acceso a la colección de alguien (por el código que pasó el dueño), sus datos (su código, el correo, el idioma, la contraseña), la **aplicación en el celular** (recordar este aparato, instalar, los aparatos recordados), los **tokens de API** (para sus scripts), las **notificaciones en este aparato** (el Web Push) y eliminar la cuenta. Vea [Varias personas](#varias-personas-cuentas-colecciones-y-acceso) y [La aplicación en el celular](#la-aplicación-en-el-celular). |
 | **Aprobaciones** (`aprovacoes.php`) | Las solicitudes de acceso a sus colecciones (aprobar, rechazar), las invitaciones que hicieron los miembros y le esperan, **Invitar** (por correo), las invitaciones que hizo y quién ve sus colecciones (quitar el acceso). El menú muestra **Aprobaciones (N)** cuando hay algo esperando. |
 | **Usuarios** (`usuarios.php`, solo el master) | El panel de las cuentas: cada una con lo que tiene y las acciones (ver como, hacer oficial, prorrogar, bloquear, cambiar, cambiar la contraseña, transferir una colección, dar acceso, eliminar) y crear una cuenta. |
 | **Crear cuenta** (`cadastro.php`, sin login) | El registro abierto: la cuenta nueva (con una colección, o pidiendo acceso), la invitación que llegó por correo y **Olvidé la contraseña**. |
@@ -1163,7 +1163,7 @@ envía los mensajes, sincroniza los calendarios, dispara los eventos y cuida de 
 mismas funciones que usa la API; lo que se puede pedir en el momento tiene acción en la API (el `testar` de los destinos, el
 `sincronizar` de los calendarios, el `resortear`...), y lo que hizo aparece en `recurso=cron`.
 
-**Autenticación:** el login del sitio (HTTP Basic), un **token personal** (creado en **Mi cuenta**, vale como su login) o el
+**Autenticación:** el login del sitio (HTTP Basic), un **token personal** (creado en **Mi cuenta**, vale como su login), la clave de un **aparato recordado** (la cookie de la aplicación en el celular) o el
 token del servidor (el `API_TOKEN`, vale como el master), en la cabecera `X-Api-Token` o en `?token=...`. **La colección:**
 `colecao=<id>` (sin él, la del selector del menú, si no la primera suya); una que usted no ve responde 404. **Eliminar** pide
 `confirmar=1`: sin él, la respuesta (409) dice lo que saldría junto y no se borra nada.
@@ -1215,7 +1215,8 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `documentos` | los documentos de un reloj (`relogio=<id>`; sin él, de todos), con las categorías, el resumen de la NF-e de cada XML, la carpeta y el límite |
 | `documento` | el archivo de un documento (`id=<id>`): para mostrar (imagen, video, audio, PDF, texto) o para descargar (el resto, o con `baixar=1`); `mini=1` es la miniatura de la foto. Atiende trozos (Range), para que el video avance |
 | `usuarios`, `migracoes` | el master: el panel de las cuentas, cada una con lo que tiene y el hash de la contraseña (para migrar con la misma contraseña: vea [Los usuarios y las contraseñas](#los-usuarios-y-las-contraseñas)); los demás, solo su propia cuenta; las migraciones que faltan aplicar |
-| `conta`, `colecoes`, `aprovacoes` | Mi cuenta (las colecciones, los árboles, las solicitudes, los tokens, los aparatos del Web Push; `parte=menu`: solo lo del menú); las colecciones y los árboles; la página Aprobaciones |
+| `conta`, `colecoes`, `aprovacoes` | Mi cuenta (las colecciones, los árboles, las solicitudes, los tokens, los aparatos recordados, los aparatos del Web Push; `parte=menu`: solo lo del menú); las colecciones y los árboles; la página Aprobaciones |
+| `manifest`, `sw` | la aplicación en el celular, sin login: el manifiesto (JSON; con la cookie del aparato recordado, el `start_url` ya entra) y el *service worker* (JavaScript). Vea [La aplicación en el celular](#la-aplicación-en-el-celular) |
 | `cadastro` | el registro abierto, sin login: si está abierto y la invitación (`convite=<token>`); ninguna lista de cuentas ni de colecciones (la solicitud de acceso es por el código que pasó el dueño) |
 | `instalacao` | la situación de la instalación: la base, si está vacía, instalada y al día, cuántos usuarios y el próximo paso. Responde también con la base vacía, con el token |
 | `backup` | la copia de seguridad de la base: si está activada, si la carpeta sirve, cuántas se guardan, la última y las copias de la carpeta; `arquivo=` descarga una |
@@ -1244,7 +1245,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `destinos` | `salvar` (webhook, correo o Web Push, con lo que recibe), `testar` (`qual=`: texto, mañana o noche), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook o ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (con la `senha`, o con el `senha_hash` de otro sistema; el primer usuario, con el token, es el master) y, solo el master: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
-| `conta` | `alterar` (correo, idioma, contraseña), `token_criar`, `token_revogar`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir`; solo el master: `email_testar`, `vapid_gerar` |
+| `conta` | `alterar` (correo, idioma, contraseña), `token_criar`, `token_revogar`, `aparelho_lembrar` (la aplicación en el celular: la clave de este aparato en una cookie, que entra sin la contraseña), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir`; solo el master: `email_testar`, `vapid_gerar` |
 | `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
 | `acessos`, `convites`, `pedidos` | `remover`, `sair`; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar`; `pedir`, `aprovar`, `recusar`, `cancelar` |
 | `cadastro` | sin login: `criar_conta`, `esqueci_senha`, `nova_senha` |
@@ -1575,6 +1576,10 @@ No. El uso del reloj del día se registra solo, en el horario de uso. Usted solo
 saber: la cuerda, la lectura de carga del smartwatch, el sol, el winder, el cambio de pila y el día en que usó otro reloj. Y
 cada aviso ya viene con el botón que lo resuelve.
 
+**¿Hay aplicación para el celular?**
+Sí, sin tienda: el propio sitio se instala como aplicación (un ícono, pantalla completa, sin pedir la contraseña, con las
+notificaciones). Vea [La aplicación en el celular](#la-aplicación-en-el-celular): tres pasos en **Mi cuenta**.
+
 **¿Dónde guardo el manual, la factura y las fotos del reloj?**
 En su página **Documentos** (desde la ficha: **Abrir los documentos**). Elija la categoría (Manual, Factura, Factura (XML),
 Fotos, Vídeos, Varios), los archivos, y envíe. Las fotos se convierten en una galería con presentación, los videos se
@@ -1666,6 +1671,32 @@ escala simula una noche en el winder para resolverlo.
 Sí. Las pantallas usan exactamente la misma API.
 
 ---
+
+## La aplicación en el celular
+
+El sistema se instala como **aplicación** en el celular y la tablet, sin tienda ninguna (es una PWA: el propio sitio, con un
+manifiesto y un *service worker*): un ícono en la pantalla de inicio, abriendo a pantalla completa, entrando sin pedir la
+contraseña y recibiendo las notificaciones. Todo se hace en **Mi cuenta › Aplicación en el celular**, en el aparato donde
+quiere la aplicación, en tres pasos:
+
+1. **Recordar este aparato.** El botón graba en el navegador una clave solo de ese aparato (una cookie, válida por un año), y
+   el sistema pasa a entrar por ella, sin pedir la contraseña. Solo en ese aparato: cada uno tiene su clave, y la tabla **Los
+   aparatos recordados** las muestra todas (el nombre, desde cuándo, el último uso), con **Olvidar** en cada una. Cambiar la
+   contraseña los olvida todos.
+2. **Instalar.** En Android (Chrome), el botón **Instalar la aplicación** aparece ahí mismo; si no, en el menú del navegador,
+   **Instalar aplicación** (o **Añadir a la pantalla de inicio**). En el iPhone y el iPad, en Safari: **Compartir › Añadir a
+   pantalla de inicio**. La aplicación instalada abre ya entrando: el manifiesto lleva la clave del aparato recordado, y ella
+   se vuelve la cookie de la aplicación (en el iPhone la aplicación no comparte las cookies de Safari; por eso el paso 1 viene
+   antes).
+3. **Activar las notificaciones.** En el cuadro **Notificaciones en este aparato**, justo abajo: el reloj del día, la víspera
+   y los avisos llegan como notificación del aparato (el Web Push; en el iPhone, solo desde dentro de la aplicación
+   instalada). Lo que llega se elige en la página **Avisos**, en **Destinos** (vea [Mensajes y agendas](#mensajes-y-calendarios)).
+
+La aplicación es el sitio: las mismas pantallas, actualizadas solas a cada apertura (nada que descargar de una tienda). El
+*service worker* guarda el estilo, los scripts, los íconos y los textos del idioma, para abrir rápido; las páginas y los datos
+vienen siempre de la red, y sin red aparece la página **Sin conexión**, con **Intentar de nuevo**. Por la API:
+`recurso=manifest` y `recurso=sw` (sin login), y `recurso=conta` con `acao=aparelho_lembrar` (la cookie) y
+`acao=aparelho_esquecer`. Quien prefiere un atajo de un solo toque, sin abrir nada, tiene la sección siguiente.
 
 ## Marcar desde el móvil, con un toque
 
@@ -1874,7 +1905,7 @@ ciclos mayores, que ningún `CHECK` alcanza) y las de los vínculos opcionales.
 | [`operacoes.php`](operacoes.php) | las reglas de cada escritura: validaciones y mensajes |
 | [`cron.php`](cron.php) | el plan, la sesión del día, las vueltas de la mañana y de la noche, los eventos, el calendario y el mantenimiento de los documentos |
 | `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | las páginas (solo el esqueleto; `cadastro.php` es la pública) |
-| `push.js` | el service worker del Web Push |
+| `sw.js`, `offline.html`, `icone-*.png` | la aplicación en el celular: el *service worker* (entregado por `recurso=sw`, con la versión delante: el caché de las pantallas, la página sin conexión y el Web Push), la página **Sin conexión** y los íconos (192, 512 y 180 px) |
 | `ajuda.php` | la página de ayuda: solo el esqueleto; el `ajuda.js` pide el texto a la API (`recurso=manual`: las secciones del README para quien usa, ya en HTML, convertidas en el `lib.php`) |
 | [`pagina.php`](pagina.php) | la parte de arriba con el menú y el final de las páginas ; `topo()` comprueba el login antes de enviar nada (`pagina_login()`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | las pantallas, armadas en el navegador a partir de la API |

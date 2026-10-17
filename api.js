@@ -582,3 +582,16 @@ var contaPronta = document.querySelector("[data-menu-conta]") ? api({recurso: "c
   }
   return m;
 }).catch(function () { return null; }) : Promise.resolve(null);
+
+// O aplicativo no celular (PWA): toda página registra o service worker (pela API: o cache das telas e as notificações do
+// Web Push) e guarda o pedido de instalação do navegador (o Chrome avisa que dá para instalar: o botão "Instalar o
+// aplicativo" de Minha conta usa) — nada disso muda a página
+var INSTALAR_APP = null;
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("api.php?recurso=sw").catch(function () {});
+}
+window.addEventListener("beforeinstallprompt", function (e) {
+  e.preventDefault();
+  INSTALAR_APP = e;
+  document.dispatchEvent(new CustomEvent("app-instalavel"));
+});

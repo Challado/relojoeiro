@@ -1,4 +1,4 @@
-<!-- origem: dec94a4c694d12cc76a886fbc1505106bb066bcd -->
+<!-- origem: 7c8dbcfa996ed51338638df7a99243ba0f799e3f -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1003,7 +1003,7 @@ comes in here by its name.
 | **Groups** (`grupos.php`) | The tree: create, rename, move, sort, delete (what belonged to the group goes to the one above) and choose each watch's group. |
 | **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**) and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page, and the rotation modes on **Rotation modes**). |
 | **Cron runs** (`execucoes.php`) | What the cron did in each round, how long it took and the errors, with filters. |
-| **My account** (`conta.php`, menu **Account › My account**) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection (by the code the owner gave), your data (your code, the e-mail, the language, the password), the **API tokens** (for your scripts), the **notifications on this device** (Web Push) and deleting the account. See [Several people](#várias-pessoas-contas-coleções-e-acesso). |
+| **My account** (`conta.php`, menu **Account › My account**) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection (by the code the owner gave), your data (your code, the e-mail, the language, the password), the **app on the phone** (remember this device, install, the remembered devices), the **API tokens** (for your scripts), the **notifications on this device** (Web Push) and deleting the account. See [Several people](#várias-pessoas-contas-coleções-e-acesso) and [The app on the phone](#o-aplicativo-no-celular). |
 | **Approvals** (`aprovacoes.php`) | The access requests to your collections (approve, decline), the invitations members made that wait for you, **Invite** (by e-mail), the invitations you made and who sees your collections (remove access). The menu shows **Approvals (N)** when something is waiting. |
 | **Users** (`usuarios.php`, master only) | The accounts panel: each one with what it has and the actions (view as, make official, extend, block, edit, change the password, transfer a collection, give access, delete) and creating an account. |
 | **Create account** (`cadastro.php`, without login) | The open sign-up: the new account (with a collection, or asking for access), the invitation that arrived by e-mail and **Forgot my password**. |
@@ -1076,6 +1076,10 @@ The names you register (groups, fields, entry types, alerts, modes, the watches)
 No. The use of the watch of the day is logged by itself, in the wearing hours. You only log what the system has no way of
 knowing: winding, the smartwatch's charge reading, the sun, the winder, the battery change and the day you wore another watch.
 And each alert already comes with the button that resolves it.
+
+**Is there an app for the phone?**
+There is, with no store: the site itself installs as an app (an icon, full screen, no password asked, with the notifications).
+See [The app on the phone](#o-aplicativo-no-celular): three steps in **My account**.
 
 **Where do I keep the watch's manual, invoice and photos?**
 On its **Documents** page (from the watch page: **Open the documents**). Choose the category (Manual, Invoice, Invoice (XML),
@@ -1168,6 +1172,31 @@ simulates a night on the winder to resolve it.
 Yes. The screens use exactly the same API.
 
 ---
+
+## The app on the phone {#o-aplicativo-no-celular}
+
+The system installs as an **app** on the phone and the tablet, with no store at all (it is a PWA: the site itself, with a
+manifest and a *service worker*): an icon on the home screen, opening full screen, getting in without asking for the password
+and receiving the notifications. Everything is done in **My account › App on the phone**, on the device where you want the
+app, in three steps:
+
+1. **Remember this device.** The button stores in the browser a key for that device only (a cookie, valid for one year), and
+   the system starts getting in through it, without asking for the password. Only on that device: each one has its own key,
+   and the table **The remembered devices** shows them all (the name, since when, the last use), with **Forget** on each.
+   Changing the password forgets them all.
+2. **Install.** On Android (Chrome), the **Install the app** button appears right there; otherwise, in the browser menu,
+   **Install app** (or **Add to home screen**). On the iPhone and the iPad, in Safari: **Share › Add to Home Screen**. The
+   installed app opens already logged in: the manifest carries the remembered device's key, and it becomes the app's cookie
+   (on the iPhone the app does not share Safari's cookies; that is why step 1 comes first).
+3. **Turn on the notifications.** In the **Notifications on this device** box, right below: the watch of the day, the day
+   before and the alerts arrive as device notifications (Web Push; on the iPhone, only from inside the installed app). What
+   arrives is chosen on the **Alerts** page, in **Destinations** (see [Messages and calendars](#mensagens-e-agendas)).
+
+The app is the site: the same screens, updated by themselves at each opening (nothing to download from a store). The *service
+worker* keeps the stylesheet, the scripts, the icons and the language texts, to open fast; the pages and the data always come
+from the network, and without network the **No connection** page appears, with **Try again**. Through the API:
+`recurso=manifest` and `recurso=sw` (no login), and `recurso=conta` with `acao=aparelho_lembrar` (the cookie) and
+`acao=aparelho_esquecer`. Whoever prefers a one-tap shortcut, without opening anything, has the next section.
 
 ## Mark from the phone, with one tap {#marcar-pelo-celular-com-um-toque}
 

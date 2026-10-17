@@ -1,4 +1,4 @@
-<!-- origem: 95ee8aa87fbd195eea8811d907c87af0ddc9ddfc -->
+<!-- origem: a7855fb7ac887a23f47a82ba45bb7b6ae51d6941 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -111,7 +111,7 @@ les mêmes fonctions que l'API ; ce qu'on peut demander sur le moment a une acti
 `sincronizar` des agendas, le `resortear`...), et ce qu'il a fait apparaît dans `recurso=cron`.
 
 **Authentification :** l'identifiant du site (HTTP Basic), un **jeton personnel** (créé dans **Mon compte**, il vaut comme
-votre identifiant) ou le jeton du serveur (l'`API_TOKEN`, il vaut comme le master), dans l'en-tête `X-Api-Token` ou dans
+votre identifiant), la clé d'un **appareil mémorisé** (le cookie de l'application sur le téléphone) ou le jeton du serveur (l'`API_TOKEN`, il vaut comme le master), dans l'en-tête `X-Api-Token` ou dans
 `?token=...`. **La collection :** `colecao=<id>` (sans lui, celle du sélecteur du menu, sinon votre première) ; une que vous
 ne voyez pas répond 404. **Supprimer** demande `confirmar=1` : sans lui, la réponse (409) dit ce qui partirait avec et rien
 n'est effacé.
@@ -163,7 +163,8 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `documentos` | les documents d'une montre (`relogio=<id>` ; sans lui, de toutes), avec les catégories, le résumé de la NF-e de chaque XML, le dossier et la limite |
 | `documento` | le fichier d'un document (`id=<id>`) : pour afficher (image, vidéo, audio, PDF, texte) ou pour télécharger (le reste, ou avec `baixar=1`) ; `mini=1` est la vignette de la photo. Il sert des morceaux (Range), pour que la vidéo avance |
 | `usuarios`, `migracoes` | le master : le panneau des comptes, chacun avec ce qu'il a et le hash du mot de passe (pour migrer avec le même mot de passe : voir [Les utilisateurs et les mots de passe](#os-usuários-e-as-senhas)) ; les autres, seulement leur propre compte ; les migrations qui restent à appliquer |
-| `conta`, `colecoes`, `aprovacoes` | Mon compte (les collections, les arbres, les demandes, les jetons, les appareils du Web Push ; `parte=menu` : seulement ce qu'utilise le menu) ; les collections et les arbres ; la page Approbations |
+| `conta`, `colecoes`, `aprovacoes` | Mon compte (les collections, les arbres, les demandes, les jetons, les appareils mémorisés, les appareils du Web Push ; `parte=menu` : seulement ce qu'utilise le menu) ; les collections et les arbres ; la page Approbations |
+| `manifest`, `sw` | l'application sur le téléphone, sans login : le manifeste (JSON ; avec le cookie de l'appareil mémorisé, le `start_url` entre déjà) et le *service worker* (JavaScript). Voir [L'application sur le téléphone](#o-aplicativo-no-celular) |
 | `cadastro` | l'inscription ouverte, sans identifiant : si elle est ouverte et l'invitation (`convite=<token>`) ; aucune liste de comptes ni de collections (la demande d'accès se fait par le code donné par le propriétaire) |
 | `instalacao` | la situation de l'installation : la base, si elle est vide, installée et à jour, combien d'utilisateurs et la prochaine étape. Répond aussi avec la base vide, avec le jeton |
 | `backup` | la sauvegarde de la base : si elle est activée, si le dossier convient, combien sont gardées, la dernière et les copies du dossier ; `arquivo=` en télécharge une |
@@ -192,7 +193,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `destinos` | `salvar` (webhook, e-mail ou Web Push, avec ce qu'elle reçoit), `testar` (`qual=` : texte, matin ou soir), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook ou ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (avec le `senha`, ou avec le `senha_hash` d'un autre système ; le premier utilisateur, avec le jeton, est le master) et, seulement le master : `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
-| `conta` | `alterar` (e-mail, langue, mot de passe), `token_criar`, `token_revogar`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir` ; seulement le master : `email_testar`, `vapid_gerar` |
+| `conta` | `alterar` (e-mail, langue, mot de passe), `token_criar`, `token_revogar`, `aparelho_lembrar` (l'application sur le téléphone : la clé de cet appareil dans un cookie, qui entre sans le mot de passe), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir` ; seulement le master : `email_testar`, `vapid_gerar` |
 | `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
 | `acessos`, `convites`, `pedidos` | `remover`, `sair` ; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar` ; `pedir`, `aprovar`, `recusar`, `cancelar` |
 | `cadastro` | sans identifiant : `criar_conta`, `esqueci_senha`, `nova_senha` |
@@ -644,7 +645,7 @@ vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des
 | [`operacoes.php`](operacoes.php) | les règles de chaque écriture : validations et messages |
 | [`cron.php`](cron.php) | le plan, la session du jour, les passages du matin et du soir, les événements, l'agenda et l'entretien des documents |
 | `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | les pages (seulement le squelette ; `cadastro.php` est la page publique) |
-| `push.js` | le service worker du Web Push |
+| `sw.js`, `offline.html`, `icone-*.png` | l'application sur le téléphone : le *service worker* (servi par `recurso=sw`, avec la version devant : le cache des écrans, la page sans connexion et le Web Push), la page **Pas de connexion** et les icônes (192, 512 et 180 px) |
 | `ajuda.php` | la page d'aide : seulement le squelette ; le `ajuda.js` demande le texte à l'API (`recurso=manual` : les sections du README pour les utilisateurs, déjà en HTML, converties dans le `lib.php`) |
 | [`pagina.php`](pagina.php) | le haut avec le menu et la fin des pages ; `topo()` vérifie la connexion avant d'envoyer quoi que ce soit (`pagina_login()`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | les écrans, construits dans le navigateur à partir de l'API |

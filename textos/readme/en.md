@@ -1,4 +1,4 @@
-<!-- origem: 95ee8aa87fbd195eea8811d907c87af0ddc9ddfc -->
+<!-- origem: a7855fb7ac887a23f47a82ba45bb7b6ae51d6941 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -106,7 +106,7 @@ session, sends the messages, syncs the calendars, fires the events and looks aft
 same functions the API uses; what can be asked for on demand has an action in the API (the destinations' `testar`, the
 calendars' `sincronizar`, `resortear`...), and what it did shows in `recurso=cron`.
 
-**Authentication:** the site login (HTTP Basic), a **personal token** (created in **My account**, it works as your login) or
+**Authentication:** the site login (HTTP Basic), a **personal token** (created in **My account**, it works as your login), the key of a **remembered device** (the cookie of the app on the phone) or
 the server token (the `API_TOKEN`, it works as the master), in the `X-Api-Token` header or in `?token=...`. **The
 collection:** `colecao=<id>` (without it, the one in the menu selector, otherwise your first one); one you don't see answers
 404. **Deleting** asks for `confirmar=1`: without it, the response (409) says what would go along and nothing is deleted.
@@ -158,7 +158,8 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `documentos` | a watch's documents (`relogio=<id>`; without it, all of them), with the categories, the NF-e summary of each XML, the folder and the limit |
 | `documento` | a document's file (`id=<id>`): to show (image, video, audio, PDF, text) or to download (the rest, or with `baixar=1`); `mini=1` is the photo's thumbnail. It serves pieces (Range), so the video can skip ahead |
 | `usuarios`, `migracoes` | the master: the accounts panel, each with what it has and the password hash (to migrate with the same password: see [The users and the passwords](#os-usuários-e-as-senhas)); the others, only their own account; the migrations still to apply |
-| `conta`, `colecoes`, `aprovacoes` | My account (the collections, the trees, the requests, the tokens, the Web Push devices; `parte=menu`: only the menu's part); the collections and the trees; the Approvals page |
+| `conta`, `colecoes`, `aprovacoes` | My account (the collections, the trees, the requests, the tokens, the remembered devices, the Web Push devices; `parte=menu`: only the menu's part); the collections and the trees; the Approvals page |
+| `manifest`, `sw` | the app on the phone, no login: the manifest (JSON; with the remembered device's cookie, the `start_url` already gets in) and the *service worker* (JavaScript). See [The app on the phone](#o-aplicativo-no-celular) |
 | `cadastro` | the open sign-up, without login: whether it is open and the invitation (`convite=<token>`); no list of accounts or collections (the access request is by the code the owner gave) |
 | `instalacao` | the installation status: the database, whether it is empty, installed and up to date, how many users and the next step. It also answers with the database empty, with the token |
 | `backup` | the database backup: whether it is on, whether the folder works, how many are kept, the last one and the folder's copies; `arquivo=` downloads one |
@@ -187,7 +188,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `destinos` | `salvar` (webhook, e-mail or Web Push, with what it receives), `testar` (`qual=`: text, morning or night), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook or ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (with the `senha`, or with another system's `senha_hash`; the first user, with the token, is the master) and, master only: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
-| `conta` | `alterar` (e-mail, language, password), `token_criar`, `token_revogar`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir`; master only: `email_testar`, `vapid_gerar` |
+| `conta` | `alterar` (e-mail, language, password), `token_criar`, `token_revogar`, `aparelho_lembrar` (the app on the phone: this device's key in a cookie, which gets in without the password), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir`; master only: `email_testar`, `vapid_gerar` |
 | `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
 | `acessos`, `convites`, `pedidos` | `remover`, `sair`; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar`; `pedir`, `aprovar`, `recusar`, `cancelar` |
 | `cadastro` | without login: `criar_conta`, `esqueci_senha`, `nova_senha` |
@@ -613,7 +614,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | [`operacoes.php`](operacoes.php) | the rules of each write: validations and messages |
 | [`cron.php`](cron.php) | the plan, the day's session, the morning and evening rounds, the events, the calendar and the documents' upkeep |
 | `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | the pages (only the skeleton; `cadastro.php` is the public one) |
-| `push.js` | the Web Push service worker |
+| `sw.js`, `offline.html`, `icone-*.png` | the app on the phone: the *service worker* (served by `recurso=sw`, with the version in front: the screens' cache, the no-connection page and the Web Push), the **No connection** page and the icons (192, 512 and 180 px) |
 | `ajuda.php` | the help page: only the skeleton; `ajuda.js` asks the API for the text (`recurso=manual`: the README's sections for users, already in HTML, converted in `lib.php`) |
 | [`pagina.php`](pagina.php) | the top with the menu and the end of the pages ; `topo()` checks the login before sending anything (`pagina_login()`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | the screens, built in the browser from the API |

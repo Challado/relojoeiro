@@ -1,4 +1,4 @@
-<!-- origem: 95ee8aa87fbd195eea8811d907c87af0ddc9ddfc -->
+<!-- origem: a7855fb7ac887a23f47a82ba45bb7b6ae51d6941 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -102,7 +102,7 @@ API के बाहर केवल **cron** है (`cron.php`, सिस्�
 करती है; जो तुरंत माँगा जा सकता है उसकी API में कार्रवाई है (गंतव्यों का `testar`, कैलेंडरों का `sincronizar`, `resortear`...),
 और उसने जो किया वह `recurso=cron` में दिखता है।
 
-**प्रमाणीकरण:** साइट का लॉगिन (HTTP Basic), एक **व्यक्तिगत टोकन** (**मेरा खाता** में बनाया गया, आपके लॉगिन जैसा मान्य) या
+**प्रमाणीकरण:** साइट का लॉगिन (HTTP Basic), एक **व्यक्तिगत टोकन** (**मेरा खाता** में बनाया गया, आपके लॉगिन जैसा मान्य), कुकी में **याद रखे डिवाइस** की कुंजी (फ़ोन पर ऐप की कुकी) या
 सर्वर का टोकन (`API_TOKEN`, master जैसा मान्य), `X-Api-Token` हेडर में या `?token=...` में। **संग्रह:** `colecao=<id>` (इसके
 बिना, मेनू के चयनकर्ता वाला, नहीं तो आपका पहला); जिसे आप नहीं देखते वह 404 देता है। **हटाने** के लिए `confirmar=1` चाहिए:
 इसके बिना, उत्तर (409) बताता है कि साथ में क्या जाएगा और कुछ नहीं हटता।
@@ -154,7 +154,8 @@ curl -u upyogkarta:password -G "http://server/relojoeiro/api.php" -d recurso=cal
 | `documentos` | एक घड़ी के दस्तावेज़ (`relogio=<id>`; इसके बिना, सबके), श्रेणियों, हर XML के NF-e सारांश, फ़ोल्डर और सीमा के साथ |
 | `documento` | एक दस्तावेज़ की फ़ाइल (`id=<id>`): दिखाने के लिए (छवि, वीडियो, ऑडियो, PDF, टेक्स्ट) या डाउनलोड के लिए (बाक़ी, या `baixar=1` के साथ); `mini=1` फ़ोटो का थंबनेल है। टुकड़ों (Range) में देता है, ताकि वीडियो आगे बढ़ सके |
 | `usuarios`, `migracoes` | master: खातों का पैनल, हर खाता उसके पास जो है और पासवर्ड के हैश के साथ (उसी पासवर्ड के साथ माइग्रेट करने के लिए: देखें [उपयोगकर्ता और पासवर्ड](#os-usuários-e-as-senhas)); बाकी, केवल अपना खाता; लागू करने को बचे माइग्रेशन |
-| `conta`, `colecoes`, `aprovacoes` | मेरा खाता (संग्रह, वृक्ष, अनुरोध, टोकन, Web Push के उपकरण; `parte=menu`: केवल मेनू वाला हिस्सा); संग्रह और वृक्ष; स्वीकृतियाँ पृष्ठ |
+| `conta`, `colecoes`, `aprovacoes` | मेरा खाता (संग्रह, वृक्ष, अनुरोध, टोकन, याद रखे डिवाइस, Web Push के उपकरण; `parte=menu`: केवल मेनू वाला हिस्सा); संग्रह और वृक्ष; स्वीकृतियाँ पृष्ठ |
+| `manifest`, `sw` | फ़ोन पर ऐप, बिना लॉगिन: मैनिफ़ेस्ट (JSON; याद रखे डिवाइस की कुकी के साथ, `start_url` पहले से प्रवेश करता है) और *service worker* (JavaScript)। देखें [फ़ोन पर ऐप](#o-aplicativo-no-celular) |
 | `cadastro` | खुला पंजीकरण, बिना लॉगिन: खुला है या नहीं और निमंत्रण (`convite=<token>`); खातों या संग्रहों की कोई सूची नहीं (पहुँच का अनुरोध स्वामी के दिए कोड से होता है) |
 | `instalacao` | इंस्टॉलेशन की स्थिति: डेटाबेस, क्या वह ख़ाली है, इंस्टॉल और अद्यतन है, कितने उपयोगकर्ता और अगला क़दम। ख़ाली डेटाबेस पर भी, टोकन से, जवाब देता है |
 | `backup` | डेटाबेस का बैकअप: क्या वह चालू है, क्या फ़ोल्डर ठीक है, कितनी रखी जाती हैं, आख़िरी और फ़ोल्डर की कॉपियाँ; `arquivo=` एक डाउनलोड करता है |
@@ -183,7 +184,7 @@ curl -u upyogkarta:password -G "http://server/relojoeiro/api.php" -d recurso=cal
 | `destinos` | `salvar` (webhook, ई-मेल या Web Push, वह जो पाता है उसके साथ), `testar` (`qual=`: पाठ, सुबह या रात), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook या ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (`senha` के साथ, या किसी दूसरे सिस्टम के `senha_hash` के साथ; पहला उपयोगकर्ता, टोकन से, master है) और, केवल master: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
-| `conta` | `alterar` (ई-मेल, भाषा, पासवर्ड), `token_criar`, `token_revogar`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir`; केवल master: `email_testar`, `vapid_gerar` |
+| `conta` | `alterar` (ई-मेल, भाषा, पासवर्ड), `token_criar`, `token_revogar`, `aparelho_lembrar` (फ़ोन पर ऐप: इस डिवाइस की कुंजी एक कुकी में, जो बिना पासवर्ड प्रवेश करती है), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir`; केवल master: `email_testar`, `vapid_gerar` |
 | `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
 | `acessos`, `convites`, `pedidos` | `remover`, `sair`; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar`; `pedir`, `aprovar`, `recusar`, `cancelar` |
 | `cadastro` | बिना लॉगिन: `criar_conta`, `esqueci_senha`, `nova_senha` |
@@ -599,7 +600,7 @@ v2 से v8 इससे पहले के हैं और सिर्फ�
 | [`operacoes.php`](operacoes.php) | हर लेखन के नियम: जाँच और संदेश |
 | [`cron.php`](cron.php) | योजना, दिन का सत्र, सुबह और शाम के दौर, इवेंट, कैलेंडर और दस्तावेज़ों की देखभाल |
 | `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | पृष्ठ (केवल ढाँचा; `cadastro.php` सार्वजनिक है) |
-| `push.js` | Web Push का service worker |
+| `sw.js`, `offline.html`, `icone-*.png` | फ़ोन पर ऐप: *service worker* (`recurso=sw` से, संस्करण आगे लगाकर: स्क्रीनों का कैश, बिना-कनेक्शन पेज और Web Push), **कनेक्शन नहीं है** पेज और आइकन (192, 512 और 180 px) |
 | `ajuda.php` | सहायता पेज: सिर्फ़ ढाँचा; `ajuda.js` API से टेक्स्ट माँगता है (`recurso=manual`: README के उपयोगकर्ताओं वाले हिस्से, `lib.php` में पहले से HTML में बदले हुए) |
 | [`pagina.php`](pagina.php) | मेनू वाला ऊपरी हिस्सा और पेजों का अंत ; `topo()` कुछ भी भेजने से पहले लॉगिन जाँचता है (`pagina_login()`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | स्क्रीनें, ब्राउज़र में API से बनाई गईं |

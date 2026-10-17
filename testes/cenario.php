@@ -524,6 +524,15 @@ ler("acessorios soltos", ["recurso" => "acessorios", "relogio" => 0]);
 ler("ficha com acessorios", ["recurso" => "ficha", "relogio" => $rel["crono"]]);
 escrever(["recurso" => "acessorios", "acao" => "excluir", "id" => $aces, "confirmar" => 1]);
 // o aviso Encostado: com 5 dias, os relógios parados há mais tempo são avisados; 0 é recusado
+// o aplicativo no celular: lembrar este aparelho (a chave vai num cookie, que o roteiro não guarda), a lista na conta,
+// esquecer (id errado recusa; sem id e sem o cookie, não há "este"), e o manifesto e o service worker, sem login
+$apa = escrever(["recurso" => "conta", "acao" => "aparelho_lembrar", "nome" => "Celular de teste"]);
+ler("conta com aparelho lembrado", ["recurso" => "conta"]);
+escrever(["recurso" => "conta", "acao" => "aparelho_esquecer", "id" => 999999], false);
+escrever(["recurso" => "conta", "acao" => "aparelho_esquecer"], false);
+escrever(["recurso" => "conta", "acao" => "aparelho_esquecer", "id" => $apa]);
+ler("manifest", ["recurso" => "manifest"]);
+ler("service worker", ["recurso" => "sw"]);
 escrever(["recurso" => "config", "acao" => "salvar", "encostado_dias" => 5]);
 // a cópia dos documentos no banco pela Configuração da coleção (todos, nenhum, vazio); valor errado recusa
 escrever(["recurso" => "config", "acao" => "salvar", "documentos_copia" => "todos"]);

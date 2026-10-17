@@ -85,7 +85,8 @@ $agd_a = (int)(preparar($ana, ["recurso" => "agendas", "acao" => "salvar", "id" 
 $cat_a = (int)(pedir($ana, "GET", ["recurso" => "documentos"])["json"]["categorias"][0]["id"] ?? 0);
 $doc_a = (int)(preparar($ana, ["recurso" => "documentos", "acao" => "enviar", "relogio_id" => $rel_a, "categoria_id" => $cat_a, "titulo" => "Doc SEGREDOANA",
     "arquivo_nome" => "segredoana.txt", "arquivo_base64" => base64_encode("conteudo SEGREDOANA")])["id"] ?? 0);
-$ids = ["colecao" => $col_a, "relogio" => $rel_a, "lancamento" => $lan_a, "acessorio" => $ace_a, "evento" => $evt_a, "destino" => $des_a, "agenda" => $agd_a,
+$apa_a = (int)(preparar($ana, ["recurso" => "conta", "acao" => "aparelho_lembrar", "nome" => "Aparelho SEGREDOANA"])["id"] ?? 0);
+$ids = ["colecao" => $col_a, "relogio" => $rel_a, "aparelho" => $apa_a, "lancamento" => $lan_a, "acessorio" => $ace_a, "evento" => $evt_a, "destino" => $des_a, "agenda" => $agd_a,
     "documento" => $doc_a, "no" => $no_a, "usuario" => $uid_a, "smartwatch" => $rel_s, "medicao" => $med_a];
 echo "A ana: " . json_encode($ids) . "\n";
 $antes = pedir($ana, "GET", ["recurso" => "ficha", "relogio" => $rel_a])["corpo"];
@@ -155,6 +156,7 @@ $tentativas = [
     ["recurso" => "usuarios", "acao" => "salvar", "login" => "ana", "senha" => "INVADIDO-123"],
     ["recurso" => "usuarios", "acao" => "excluir", "login" => "ana", "confirmar" => 1],
     ["recurso" => "conta", "acao" => "alterar", "email" => "segredoana@exemplo.com"],
+    ["recurso" => "conta", "acao" => "aparelho_esquecer", "id" => $apa_a],
     ["recurso" => "backup", "acao" => "fazer"],
     ["recurso" => "importacao", "acao" => "importar"],
     ["recurso" => "pedidos", "acao" => "pedir", "colecao_id" => $col_a, "mensagem" => "oi"],

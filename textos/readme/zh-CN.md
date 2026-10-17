@@ -1,4 +1,4 @@
-<!-- origem: 95ee8aa87fbd195eea8811d907c87af0ddc9ddfc -->
+<!-- origem: a7855fb7ac887a23f47a82ba45bb7b6ae51d6941 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -82,7 +82,7 @@ API 也负责界面之前和周边的事情：**安装数据库**（`recurso=ins
 
 API 之外只有 **cron**（`cron.php`，系统的时钟：生成计划、开始和结束当天的时段、发送消息、同步日历、触发事件并维护文档的副本），它使用与 API 相同的函数；可以随时请求的事情在 API 中都有对应的动作（推送目标的 `testar`、日历的 `sincronizar`、`resortear`……），它做过的事显示在 `recurso=cron` 中。
 
-**认证：** 网站登录（HTTP Basic）、**个人令牌**（在**我的账户**中创建，等同于你的登录）或服务器令牌（`API_TOKEN`，等同于 master），放在 `X-Api-Token` 请求头或 `?token=...` 中。**收藏：** `colecao=<id>`（不传时使用菜单选择器中的收藏，否则是你的第一个）；你看不到的收藏返回 404。**删除**需要 `confirmar=1`：不带它时，响应（409）会说明会一并删除什么，什么都不会删除。
+**认证：** 网站登录（HTTP Basic）、**个人令牌**（在**我的账户**中创建，等同于你的登录）、cookie 中**已记住设备**的密钥（手机上应用的 cookie）或服务器令牌（`API_TOKEN`，等同于 master），放在 `X-Api-Token` 请求头或 `?token=...` 中。**收藏：** `colecao=<id>`（不传时使用菜单选择器中的收藏，否则是你的第一个）；你看不到的收藏返回 404。**删除**需要 `confirmar=1`：不带它时，响应（409）会说明会一并删除什么，什么都不会删除。
 **格式：** 默认 JSON，或使用 `formato=xml` 得到 XML。**语言：** `lingua=zh-CN`（或 `Accept-Language` 请求头）：消息、帮助和重建说明都以该语言输出。
 
 ```sh
@@ -130,7 +130,8 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `documentos` | 一块手表的文档（`relogio=<id>`；没有时为全部），含类别、每个 XML 的 NF-e 摘要、文件夹和大小限制 |
 | `documento` | 一个文档的文件（`id=<id>`）：用于显示（图片、视频、音频、PDF、文本）或下载（其他，或使用 `baixar=1`）；`mini=1` 是照片的缩略图。支持分段（Range），方便视频快进 |
 | `usuarios`、`migracoes` | master：账户面板，每个账户含其拥有的内容和密码哈希（用于以相同密码迁移：参见[用户与密码](#os-usuários-e-as-senhas)）；其他人只有自己的账户；尚待应用的迁移 |
-| `conta`、`colecoes`、`aprovacoes` | 我的账户（收藏、树、申请、令牌、Web Push 设备；`parte=menu`：只返回菜单用的部分）；收藏和树；审批页面 |
+| `conta`、`colecoes`、`aprovacoes` | 我的账户（收藏、树、申请、令牌、已记住的设备、Web Push 设备；`parte=menu`：只返回菜单用的部分）；收藏和树；审批页面 |
+| `manifest`、`sw` | 手机上的应用，无需登录：清单（JSON；带已记住设备的 cookie 时，`start_url` 打开即登录）和 *service worker*（JavaScript）。见[手机上的应用](#o-aplicativo-no-celular) |
 | `cadastro` | 公开注册，无需登录：是否开放以及邀请（`convite=<token>`）；没有任何账户或收藏的列表（申请访问凭所有者给出的编号） |
 | `instalacao` | 安装状态：数据库、是否为空、是否已安装并为最新、用户数量以及下一步。数据库为空时也会响应（使用令牌） |
 | `backup` | 数据库备份：是否开启、文件夹是否可用、保留多少份、最近一份以及文件夹中的备份；`arquivo=` 下载其中一份 |
@@ -159,7 +160,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `destinos` | `salvar`（webhook、电子邮件或 Web Push，含接收内容）、`testar`（`qual=`：文本、早上或晚上）、`excluir` |
 | `agendas` | `salvar`（Google、CalDAV、Outlook 或 ICS）、`sincronizar`、`teste_criar`、`teste_remover`、`novo_link`（ICS）、`outlook_conectar`、`excluir` |
 | `usuarios` | `salvar`（带 `senha`，或带其他系统的 `senha_hash`；第一个用户使用令牌创建，是 master），以及仅限 master：`alterar`、`oficializar`、`prorrogar`、`voltar_demo`、`bloquear`、`transferir`、`dar_acesso`、`excluir` |
-| `conta` | `alterar`（电子邮件、语言、密码）、`token_criar`、`token_revogar`、`push_inscrever`、`push_cancelar`、`push_testar`、`excluir`；仅限 master：`email_testar`、`vapid_gerar` |
+| `conta` | `alterar`（电子邮件、语言、密码）、`token_criar`、`token_revogar`、`aparelho_lembrar`（手机上的应用：此设备的密钥存入 cookie，无需密码进入）、`aparelho_esquecer`、`push_inscrever`、`push_cancelar`、`push_testar`、`excluir`；仅限 master：`email_testar`、`vapid_gerar` |
 | `colecoes` | `criar`、`renomear`、`excluir`、`arvore_copiar`、`arvore_renomear`、`arvore_excluir` |
 | `acessos`、`convites`、`pedidos` | `remover`、`sair`；`convidar`、`aprovar`、`recusar`、`reenviar`、`cancelar`、`aceitar`；`pedir`、`aprovar`、`recusar`、`cancelar` |
 | `cadastro` | 无需登录：`criar_conta`、`esqueci_senha`、`nova_senha` |
@@ -453,7 +454,7 @@ php criar_usuario.php 你的登录名
 | [`operacoes.php`](operacoes.php) | 每次写入的规则：校验和消息 |
 | [`cron.php`](cron.php) | 计划、当天的时段、早上和晚上两轮、事件、日历以及文档的维护 |
 | `index.php`、`plano.php`、`desejos.php`、`estatisticas.php`、`hora.php`、`acessorios.php`、`galeria.php`、`passaporte.php`、`ficha.php`、`documentos.php`、`historico.php`、`avisos.php`、`modos.php`、`configuracao.php`、`destinos.php`、`agendas.php`、`criterios.php`、`grupos.php`、`cadastros.php`、`execucoes.php`、`conta.php`、`aprovacoes.php`、`usuarios.php`、`cadastro.php` | 页面（只有骨架；`cadastro.php` 是公开页面） |
-| `push.js` | Web Push 的 service worker |
+| `sw.js`、`offline.html`、`icone-*.png` | 手机上的应用：*service worker*（由 `recurso=sw` 提供，前面带版本号：界面缓存、无连接页面和 Web Push）、**没有网络连接**页面和图标（192、512 和 180 px） |
 | `ajuda.php` | 帮助页面：只有骨架；`ajuda.js` 向 API 请求文本（`recurso=manual`：README 中面向用户的章节，已在 `lib.php` 中转换为 HTML） |
 | [`pagina.php`](pagina.php) | 页面顶部的菜单和页面结尾；`topo()` 在输出任何内容之前检查登录（`pagina_login()`） |
 | `api.js`、`hoje.js`、`painel.js`、`tabela.js`、`foto.js`…… | 各个界面，在浏览器中根据 API 生成 |

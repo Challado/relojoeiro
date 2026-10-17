@@ -1,4 +1,4 @@
-<!-- origem: 95ee8aa87fbd195eea8811d907c87af0ddc9ddfc -->
+<!-- origem: a7855fb7ac887a23f47a82ba45bb7b6ae51d6941 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -107,7 +107,7 @@ envía los mensajes, sincroniza los calendarios, dispara los eventos y cuida de 
 mismas funciones que usa la API; lo que se puede pedir en el momento tiene acción en la API (el `testar` de los destinos, el
 `sincronizar` de los calendarios, el `resortear`...), y lo que hizo aparece en `recurso=cron`.
 
-**Autenticación:** el login del sitio (HTTP Basic), un **token personal** (creado en **Mi cuenta**, vale como su login) o el
+**Autenticación:** el login del sitio (HTTP Basic), un **token personal** (creado en **Mi cuenta**, vale como su login), la clave de un **aparato recordado** (la cookie de la aplicación en el celular) o el
 token del servidor (el `API_TOKEN`, vale como el master), en la cabecera `X-Api-Token` o en `?token=...`. **La colección:**
 `colecao=<id>` (sin él, la del selector del menú, si no la primera suya); una que usted no ve responde 404. **Eliminar** pide
 `confirmar=1`: sin él, la respuesta (409) dice lo que saldría junto y no se borra nada.
@@ -159,7 +159,8 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `documentos` | los documentos de un reloj (`relogio=<id>`; sin él, de todos), con las categorías, el resumen de la NF-e de cada XML, la carpeta y el límite |
 | `documento` | el archivo de un documento (`id=<id>`): para mostrar (imagen, video, audio, PDF, texto) o para descargar (el resto, o con `baixar=1`); `mini=1` es la miniatura de la foto. Atiende trozos (Range), para que el video avance |
 | `usuarios`, `migracoes` | el master: el panel de las cuentas, cada una con lo que tiene y el hash de la contraseña (para migrar con la misma contraseña: vea [Los usuarios y las contraseñas](#os-usuários-e-as-senhas)); los demás, solo su propia cuenta; las migraciones que faltan aplicar |
-| `conta`, `colecoes`, `aprovacoes` | Mi cuenta (las colecciones, los árboles, las solicitudes, los tokens, los aparatos del Web Push; `parte=menu`: solo lo del menú); las colecciones y los árboles; la página Aprobaciones |
+| `conta`, `colecoes`, `aprovacoes` | Mi cuenta (las colecciones, los árboles, las solicitudes, los tokens, los aparatos recordados, los aparatos del Web Push; `parte=menu`: solo lo del menú); las colecciones y los árboles; la página Aprobaciones |
+| `manifest`, `sw` | la aplicación en el celular, sin login: el manifiesto (JSON; con la cookie del aparato recordado, el `start_url` ya entra) y el *service worker* (JavaScript). Vea [La aplicación en el celular](#o-aplicativo-no-celular) |
 | `cadastro` | el registro abierto, sin login: si está abierto y la invitación (`convite=<token>`); ninguna lista de cuentas ni de colecciones (la solicitud de acceso es por el código que pasó el dueño) |
 | `instalacao` | la situación de la instalación: la base, si está vacía, instalada y al día, cuántos usuarios y el próximo paso. Responde también con la base vacía, con el token |
 | `backup` | la copia de seguridad de la base: si está activada, si la carpeta sirve, cuántas se guardan, la última y las copias de la carpeta; `arquivo=` descarga una |
@@ -188,7 +189,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `destinos` | `salvar` (webhook, correo o Web Push, con lo que recibe), `testar` (`qual=`: texto, mañana o noche), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook o ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (con la `senha`, o con el `senha_hash` de otro sistema; el primer usuario, con el token, es el master) y, solo el master: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
-| `conta` | `alterar` (correo, idioma, contraseña), `token_criar`, `token_revogar`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir`; solo el master: `email_testar`, `vapid_gerar` |
+| `conta` | `alterar` (correo, idioma, contraseña), `token_criar`, `token_revogar`, `aparelho_lembrar` (la aplicación en el celular: la clave de este aparato en una cookie, que entra sin la contraseña), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir`; solo el master: `email_testar`, `vapid_gerar` |
 | `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
 | `acessos`, `convites`, `pedidos` | `remover`, `sair`; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar`; `pedir`, `aprovar`, `recusar`, `cancelar` |
 | `cadastro` | sin login: `criar_conta`, `esqueci_senha`, `nova_senha` |
@@ -628,7 +629,7 @@ ciclos mayores, que ningún `CHECK` alcanza) y las de los vínculos opcionales.
 | [`operacoes.php`](operacoes.php) | las reglas de cada escritura: validaciones y mensajes |
 | [`cron.php`](cron.php) | el plan, la sesión del día, las vueltas de la mañana y de la noche, los eventos, el calendario y el mantenimiento de los documentos |
 | `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | las páginas (solo el esqueleto; `cadastro.php` es la pública) |
-| `push.js` | el service worker del Web Push |
+| `sw.js`, `offline.html`, `icone-*.png` | la aplicación en el celular: el *service worker* (entregado por `recurso=sw`, con la versión delante: el caché de las pantallas, la página sin conexión y el Web Push), la página **Sin conexión** y los íconos (192, 512 y 180 px) |
 | `ajuda.php` | la página de ayuda: solo el esqueleto; el `ajuda.js` pide el texto a la API (`recurso=manual`: las secciones del README para quien usa, ya en HTML, convertidas en el `lib.php`) |
 | [`pagina.php`](pagina.php) | la parte de arriba con el menú y el final de las páginas ; `topo()` comprueba el login antes de enviar nada (`pagina_login()`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | las pantallas, armadas en el navegador a partir de la API |

@@ -43,6 +43,79 @@ function token_hash($token)
     return hash("sha256", "relojoeiro|" . (string)$token);
 }
 
+// Os aparelhos lembrados (o aplicativo no celular): "Lembrar este aparelho" (Minha conta) cria uma chave, grava o hash dela
+// na tabela usuario_aparelho e a chave num cookie do navegador (só HTTP, um ano); daí em diante o pedido que chega sem o
+// login do site mas com o cookie entra como o dono da chave (usuario_autenticado, no lib.php). "Esquecer" apaga; trocar a
+// senha apaga todos. O cookie vale na pasta do sistema
+function aparelho_cookie($chave, $apagar = false)
+{
+    $pasta = rtrim(str_replace("\\", "/", dirname((string)($_SERVER["SCRIPT_NAME"] ?? "/"))), "/") . "/";
+    $https = (!empty($_SERVER["HTTPS"]) && strtolower((string)$_SERVER["HTTPS"]) !== "off") || (($_SERVER["HTTP_X_FORWARDED_PROTO"] ?? "") === "https");
+    setcookie("aparelho", $apagar ? "" : (string)$chave, ["expires" => $apagar ? time() - 86400 : time() + 365 * 86400, "path" => $pasta,
+        "secure" => $https, "httponly" => true, "samesite" => "Lax"]);
+}
+
+// O usuário dono da chave de um aparelho lembrado (o cookie), ou "" (chave desconhecida, conta bloqueada ou vencida)
+function usuario_por_aparelho($chave)
+{
+    if (trim((string)$chave) === "" || !banco_tem_tabela("usuario_aparelho")) {
+        return "";
+    }
+    return sem_escopo(function () use ($chave) {
+        $u = linha("SELECT u.*, a.id AS aparelho_id, a.ultimo_uso FROM usuario_aparelho a JOIN usuario u ON u.id = a.usuario_id WHERE a.chave_hash = ?", [token_hash(trim((string)$chave))]);
+        if ($u === null || (int)$u["bloqueado"] === 1 || ($u["expira_em"] !== null && strtotime((string)$u["expira_em"]) <= time())) {
+            return "";
+        }
+        if ($u["ultimo_uso"] === null || strtotime((string)$u["ultimo_uso"]) < time() - 60) {
+            sql("UPDATE usuario_aparelho SET ultimo_uso = NOW() WHERE id = ?", [(int)$u["aparelho_id"]]);
+        }
+        $id_a = (int)$u["aparelho_id"];
+        unset($u["aparelho_id"], $u["ultimo_uso"]);
+        $u["ultimo_acesso"] = $u["ultimo_acesso"] ?? null;
+        usuario_definir($u);
+        $GLOBALS["APARELHO_ATUAL"] = $id_a;
+        return (string)$u["login"];
+    });
+}
+
+// O pedido entrou pelo login do site, mas trouxe o cookie de um aparelho lembrado do mesmo usuário: marca qual é (a tabela
+// de Minha conta diz "este"; o Esquecer sem id apaga ele), e conta o uso
+function aparelho_deste_pedido($uid)
+{
+    if (!isset($_COOKIE["aparelho"]) || trim((string)$_COOKIE["aparelho"]) === "" || !banco_tem_tabela("usuario_aparelho")) {
+        return;
+    }
+    sem_escopo(function () use ($uid) {
+        $a = linha("SELECT id, ultimo_uso FROM usuario_aparelho WHERE chave_hash = ? AND usuario_id = ?", [token_hash(trim((string)$_COOKIE["aparelho"])), (int)$uid]);
+        if ($a !== null) {
+            if ($a["ultimo_uso"] === null || strtotime((string)$a["ultimo_uso"]) < time() - 60) {
+                sql("UPDATE usuario_aparelho SET ultimo_uso = NOW() WHERE id = ?", [(int)$a["id"]]);
+            }
+            $GLOBALS["APARELHO_ATUAL"] = (int)$a["id"];
+        }
+    });
+}
+
+// A chave que chegou na URL (o start_url do aplicativo instalado, index.php?aparelho=...): válida, vira o cookie; de um
+// jeito ou de outro a página abre de novo sem ela (a chave não fica na barra de endereço nem no histórico)
+function aparelho_pela_url($chave)
+{
+    if (usuario_por_aparelho($chave) !== "") {
+        aparelho_cookie($chave);
+    }
+    $uri = (string)($_SERVER["REQUEST_URI"] ?? "index.php");
+    $limpa = preg_replace("/([?&])aparelho=[^&#]*&?/", "$1", $uri);
+    $limpa = rtrim((string)$limpa, "?&");
+    header("Location: " . ($limpa !== "" ? $limpa : "index.php"));
+    exit;
+}
+
+// O id do aparelho lembrado por que este pedido entrou (o cookie), ou null
+function aparelho_atual()
+{
+    return $GLOBALS["APARELHO_ATUAL"] ?? null;
+}
+
 // O login de uma conta nova: até 60 caracteres, sem dois-pontos (o HTTP Basic separa o login da senha no primeiro) nem
 // espaços nas pontas. Devolve o erro, ou ""
 function login_erro($login)
@@ -358,6 +431,9 @@ function conta_consulta()
             "aprovacoes" => count(aprovacoes_pedidos()) + count(aprovacoes_convites()),
             "tokens" => array_map(function ($t) { return ["id" => (int)$t["id"], "nome" => $t["nome"], "criado" => $t["criado"], "ultimo_uso" => $t["ultimo_uso"]]; },
                 linhas("SELECT id, nome, criado, ultimo_uso FROM api_token WHERE usuario_id = ? ORDER BY criado", [$uid])),
+            // os aparelhos lembrados (o aplicativo no celular), com qual é o deste pedido
+            "aparelhos" => array_map(function ($a) { return ["id" => (int)$a["id"], "nome" => $a["nome"], "criado" => $a["criado"], "ultimo_uso" => $a["ultimo_uso"], "este" => (int)$a["id"] === aparelho_atual()]; },
+                linhas("SELECT id, nome, criado, ultimo_uso FROM usuario_aparelho WHERE usuario_id = ? ORDER BY criado, id", [$uid])),
             "push" => ["configurado" => vapid_configurado(), "chave_publica" => vapid_configurado() ? cfg_php("VAPID_PUBLICA", "") : null,
                 "aparelhos" => array_map(function ($p) { return ["id" => (int)$p["id"], "aparelho" => $p["aparelho"], "criada" => $p["criada"], "endpoint_hash" => $p["endpoint_hash"]]; },
                     linhas("SELECT id, aparelho, criada, endpoint_hash FROM push_inscricao WHERE usuario_id = ? ORDER BY criada", [$uid]))],
@@ -611,7 +687,8 @@ function convite_mandar($convite_id)
 }
 
 // recurso=conta: alterar (email, idioma, senha_atual + senha), excluir (a própria conta, com confirmar=1), token_criar
-// (nome), token_revogar (id), push_inscrever (endpoint, p256dh, auth, aparelho), push_cancelar (id ou endpoint),
+// (nome), token_revogar (id), aparelho_lembrar (nome: o aplicativo no celular entra sem a senha por este aparelho; grava o
+// cookie), aparelho_esquecer (id; vazio: este aparelho), push_inscrever (endpoint, p256dh, auth, aparelho), push_cancelar (id ou endpoint),
 // push_testar, e, só o master: email_testar (para), vapid_gerar
 function op_conta($acao, $d)
 {
@@ -650,8 +727,15 @@ function op_conta($acao, $d)
         if (count($erros) === 0 && count($campos) > 0) {
             sem_escopo(function () use ($campos, $uid) {
                 sql("UPDATE usuario SET " . implode(", ", array_map(function ($k) { return $k . " = ?"; }, array_keys($campos))) . " WHERE id = ?", array_merge(array_values($campos), [$uid]));
+                // a senha nova desfaz os aparelhos lembrados: cada um entra de novo com ela (e lembra, se quiser)
+                if (isset($campos["senha_hash"])) {
+                    sql("DELETE FROM usuario_aparelho WHERE usuario_id = ?", [$uid]);
+                }
             });
-            $msg = t("Conta atualizada.");
+            if (isset($campos["senha_hash"]) && aparelho_atual() !== null) {
+                aparelho_cookie("", true);
+            }
+            $msg = isset($campos["senha_hash"]) ? t("Conta atualizada. Os aparelhos lembrados foram esquecidos: entre de novo com a senha nova.") : t("Conta atualizada.");
         } elseif (count($erros) === 0) {
             $erros[] = t("Nada para mudar: mande email, idioma ou senha (com senha_atual).");
         }
@@ -679,6 +763,28 @@ function op_conta($acao, $d)
         } else {
             sem_escopo(function () use ($id) { sql("DELETE FROM api_token WHERE id = ?", [$id]); });
             $msg = t("Token revogado: quem o usava perdeu o acesso.");
+        }
+    } elseif ($acao === "aparelho_lembrar") {
+        // o aplicativo no celular: a chave deste aparelho (o cookie) e o hash dela no banco
+        $nome = corta_texto(trim((string)($d["nome"] ?? ($_SERVER["HTTP_USER_AGENT"] ?? ""))), 200);
+        $ch_ = token_novo();
+        sem_escopo(function () use ($uid, $nome, $ch_) { sql("INSERT INTO usuario_aparelho (usuario_id, nome, chave_hash, criado) VALUES (?, ?, ?, NOW())", [$uid, $nome !== "" ? $nome : null, token_hash($ch_)]); });
+        aparelho_cookie($ch_);
+        $msg = t("Este aparelho fica lembrado: o aplicativo (e este navegador) entra sem pedir a senha. Para desfazer, Esquecer.");
+        $extra = ["id" => ultimo_id()];
+    } elseif ($acao === "aparelho_esquecer") {
+        $id = (int)($d["id"] ?? 0);
+        if ($id === 0) {
+            $id = (int)(aparelho_atual() ?? 0);
+        }
+        if ($id === 0 || sem_escopo(function () use ($id, $uid) { return valor("SELECT id FROM usuario_aparelho WHERE id = ? AND usuario_id = ?", [$id, $uid]); }) === null) {
+            $erros[] = t("Aparelho não encontrado.");
+        } else {
+            sem_escopo(function () use ($id) { sql("DELETE FROM usuario_aparelho WHERE id = ?", [$id]); });
+            if ($id === (int)(aparelho_atual() ?? 0)) {
+                aparelho_cookie("", true);
+            }
+            $msg = t("Aparelho esquecido: ele volta a pedir a senha.");
         }
     } elseif ($acao === "push_inscrever") {
         $endpoint = trim((string)($d["endpoint"] ?? ""));

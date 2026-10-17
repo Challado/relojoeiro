@@ -784,7 +784,7 @@ php -S localhost:8000            # 然后打开 http://localhost:8000
 | **分组**（`grupos.php`） | 树：创建、重命名、移动、排序、删除（属于该分组的内容移到上一级）以及选择每块手表的分组。 |
 | **定义**（`cadastros.php`） | 字段、记录类型、公式（带**测试**）和文档类别：系统使用的所有非代码内容（提醒在**提醒**页面，轮换模式在**轮换模式**页面）。 |
 | **cron 运行记录**（`execucoes.php`） | cron 每一轮做了什么、用了多长时间以及错误，可筛选。 |
-| **我的账户**（`conta.php`，菜单**账户 › 我的账户**） | 你能看到的收藏（打开、创建、重命名、删除、退出）、你的分组树（复制、重命名、删除）、申请访问别人的收藏（凭所有者给出的编号）、你的资料（你的编号、电子邮件、语言、密码）、**API 令牌**（供你的脚本使用）、**此设备上的通知**（Web Push）以及删除账户。参见[多人使用](#多人使用账户收藏与访问)。 |
+| **我的账户**（`conta.php`，菜单**账户 › 我的账户**） | 你能看到的收藏（打开、创建、重命名、删除、退出）、你的分组树（复制、重命名、删除）、申请访问别人的收藏（凭所有者给出的编号）、你的资料（你的编号、电子邮件、语言、密码）、**手机上的应用**（记住此设备、安装、已记住的设备）、**API 令牌**（供你的脚本使用）、**此设备上的通知**（Web Push）以及删除账户。参见[多人使用](#多人使用账户收藏与访问)和[手机上的应用](#手机上的应用)。 |
 | **审批**（`aprovacoes.php`） | 对你的收藏的访问申请（批准、拒绝）、成员发出并等待你处理的邀请、**邀请**（通过电子邮件）、你发出的邀请以及谁能看到你的收藏（取消访问权限）。有待处理事项时，菜单显示**审批（N）**。 |
 | **用户**（`usuarios.php`，仅限 master） | 账户面板：每个账户及其拥有的内容和操作（以其身份查看、转为正式、延长、封禁、修改、修改密码、转移收藏、授予访问权限、删除）以及创建账户。 |
 | **创建账户**（`cadastro.php`，无需登录） | 公开注册：新账户（带一个收藏，或申请访问）、通过邮件收到的邀请以及**忘记密码**。 |
@@ -824,7 +824,7 @@ API 也负责界面之前和周边的事情：**安装数据库**（`recurso=ins
 
 API 之外只有 **cron**（`cron.php`，系统的时钟：生成计划、开始和结束当天的时段、发送消息、同步日历、触发事件并维护文档的副本），它使用与 API 相同的函数；可以随时请求的事情在 API 中都有对应的动作（推送目标的 `testar`、日历的 `sincronizar`、`resortear`……），它做过的事显示在 `recurso=cron` 中。
 
-**认证：** 网站登录（HTTP Basic）、**个人令牌**（在**我的账户**中创建，等同于你的登录）或服务器令牌（`API_TOKEN`，等同于 master），放在 `X-Api-Token` 请求头或 `?token=...` 中。**收藏：** `colecao=<id>`（不传时使用菜单选择器中的收藏，否则是你的第一个）；你看不到的收藏返回 404。**删除**需要 `confirmar=1`：不带它时，响应（409）会说明会一并删除什么，什么都不会删除。
+**认证：** 网站登录（HTTP Basic）、**个人令牌**（在**我的账户**中创建，等同于你的登录）、cookie 中**已记住设备**的密钥（手机上应用的 cookie）或服务器令牌（`API_TOKEN`，等同于 master），放在 `X-Api-Token` 请求头或 `?token=...` 中。**收藏：** `colecao=<id>`（不传时使用菜单选择器中的收藏，否则是你的第一个）；你看不到的收藏返回 404。**删除**需要 `confirmar=1`：不带它时，响应（409）会说明会一并删除什么，什么都不会删除。
 **格式：** 默认 JSON，或使用 `formato=xml` 得到 XML。**语言：** `lingua=zh-CN`（或 `Accept-Language` 请求头）：消息、帮助和重建说明都以该语言输出。
 
 ```sh
@@ -872,7 +872,8 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `documentos` | 一块手表的文档（`relogio=<id>`；没有时为全部），含类别、每个 XML 的 NF-e 摘要、文件夹和大小限制 |
 | `documento` | 一个文档的文件（`id=<id>`）：用于显示（图片、视频、音频、PDF、文本）或下载（其他，或使用 `baixar=1`）；`mini=1` 是照片的缩略图。支持分段（Range），方便视频快进 |
 | `usuarios`、`migracoes` | master：账户面板，每个账户含其拥有的内容和密码哈希（用于以相同密码迁移：参见[用户与密码](#用户与密码)）；其他人只有自己的账户；尚待应用的迁移 |
-| `conta`、`colecoes`、`aprovacoes` | 我的账户（收藏、树、申请、令牌、Web Push 设备；`parte=menu`：只返回菜单用的部分）；收藏和树；审批页面 |
+| `conta`、`colecoes`、`aprovacoes` | 我的账户（收藏、树、申请、令牌、已记住的设备、Web Push 设备；`parte=menu`：只返回菜单用的部分）；收藏和树；审批页面 |
+| `manifest`、`sw` | 手机上的应用，无需登录：清单（JSON；带已记住设备的 cookie 时，`start_url` 打开即登录）和 *service worker*（JavaScript）。见[手机上的应用](#手机上的应用) |
 | `cadastro` | 公开注册，无需登录：是否开放以及邀请（`convite=<token>`）；没有任何账户或收藏的列表（申请访问凭所有者给出的编号） |
 | `instalacao` | 安装状态：数据库、是否为空、是否已安装并为最新、用户数量以及下一步。数据库为空时也会响应（使用令牌） |
 | `backup` | 数据库备份：是否开启、文件夹是否可用、保留多少份、最近一份以及文件夹中的备份；`arquivo=` 下载其中一份 |
@@ -901,7 +902,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `destinos` | `salvar`（webhook、电子邮件或 Web Push，含接收内容）、`testar`（`qual=`：文本、早上或晚上）、`excluir` |
 | `agendas` | `salvar`（Google、CalDAV、Outlook 或 ICS）、`sincronizar`、`teste_criar`、`teste_remover`、`novo_link`（ICS）、`outlook_conectar`、`excluir` |
 | `usuarios` | `salvar`（带 `senha`，或带其他系统的 `senha_hash`；第一个用户使用令牌创建，是 master），以及仅限 master：`alterar`、`oficializar`、`prorrogar`、`voltar_demo`、`bloquear`、`transferir`、`dar_acesso`、`excluir` |
-| `conta` | `alterar`（电子邮件、语言、密码）、`token_criar`、`token_revogar`、`push_inscrever`、`push_cancelar`、`push_testar`、`excluir`；仅限 master：`email_testar`、`vapid_gerar` |
+| `conta` | `alterar`（电子邮件、语言、密码）、`token_criar`、`token_revogar`、`aparelho_lembrar`（手机上的应用：此设备的密钥存入 cookie，无需密码进入）、`aparelho_esquecer`、`push_inscrever`、`push_cancelar`、`push_testar`、`excluir`；仅限 master：`email_testar`、`vapid_gerar` |
 | `colecoes` | `criar`、`renomear`、`excluir`、`arvore_copiar`、`arvore_renomear`、`arvore_excluir` |
 | `acessos`、`convites`、`pedidos` | `remover`、`sair`；`convidar`、`aprovar`、`recusar`、`reenviar`、`cancelar`、`aceitar`；`pedir`、`aprovar`、`recusar`、`cancelar` |
 | `cadastro` | 无需登录：`criar_conta`、`esqueci_senha`、`nova_senha` |
@@ -1125,6 +1126,9 @@ php criar_usuario.php 你的登录名
 **我需要手动记录所有东西吗？**
 不需要。当天手表的佩戴会在佩戴时间内自动记录。你只需记录系统无从得知的事情：上链、智能手表的电量读数、晒太阳、上链盒、更换电池，以及戴了另一块表的日子。而且每个提醒都已经附带了消除它的按钮。
 
+**有手机应用吗？**
+有，无需商店：网站本身可以安装为应用（图标、全屏、不要求密码、带通知）。见[手机上的应用](#手机上的应用)：在**我的账户**中三步完成。
+
 **手表的说明书、发票和照片放在哪里？**
 放在它的**文档**页面（从档案中：**打开文件**）。选择类别（说明书、发票、发票（XML）、照片、视频、其他）和文件，然后上传。照片会变成带幻灯片的图库，视频会连续播放，PDF 在阅读器中打开，发票 XML 会显示摘要。只以网页形式存在的说明书，可以通过浏览器转成 PDF（**打印 → 另存为 PDF**）。
 
@@ -1171,6 +1175,16 @@ php criar_usuario.php 你的登录名
 可以。界面使用的就是完全相同的 API。
 
 ---
+
+## 手机上的应用
+
+系统可以作为**应用**安装到手机和平板上，无需任何应用商店（它是一个 PWA：网站本身，加上清单和 *service worker*）：主屏幕上的图标、全屏打开、无需密码进入并接收通知。一切都在**我的账户 › 手机上的应用**中完成，在你想安装应用的设备上，分三步：
+
+1. **记住此设备。** 这个按钮在浏览器中保存一个只属于该设备的密钥（一个 cookie，有效期一年），系统从此凭它进入，不再要求密码。仅限该设备：每台设备有自己的密钥，**已记住的设备**表格列出全部（名称、自何时起、最近使用），每行都有**忘记**。更改密码会忘记全部。
+2. **安装。** 在 Android（Chrome）上，**安装应用**按钮就在那里出现；否则在浏览器菜单中选**安装应用**（或**添加到主屏幕**）。在 iPhone 和 iPad 上，在 Safari 中：**共享 › 添加到主屏幕**。已安装的应用打开即登录：清单携带已记住设备的密钥，它会成为应用的 cookie（在 iPhone 上应用不共享 Safari 的 cookie；所以第 1 步要先做）。
+3. **开启通知。** 在下方的**此设备上的通知**框中：当日手表、前一天和提醒以设备通知的形式送达（Web Push；在 iPhone 上只能从已安装的应用内接收）。接收的内容在**提醒**页的**推送目标**中选择（见[消息与日历](#消息与日历)）。
+
+应用就是网站：同样的界面，每次打开自动更新（无需从商店下载）。*service worker* 缓存样式、脚本、图标和语言文本，以便快速打开；页面和数据始终来自网络，无网络时显示**没有网络连接**页面和**重试**按钮。通过 API：`recurso=manifest` 和 `recurso=sw`（无需登录），以及 `recurso=conta` 的 `acao=aparelho_lembrar`（cookie）和 `acao=aparelho_esquecer`。想要一键快捷方式、什么都不用打开的人，见下一节。
 
 ## 用手机一键标记
 
@@ -1304,7 +1318,7 @@ api.php?recurso=codigo&conteudo=1&f[arquivos][camada]=tela   所有界面相关�
 | [`operacoes.php`](operacoes.php) | 每次写入的规则：校验和消息 |
 | [`cron.php`](cron.php) | 计划、当天的时段、早上和晚上两轮、事件、日历以及文档的维护 |
 | `index.php`、`plano.php`、`desejos.php`、`estatisticas.php`、`hora.php`、`acessorios.php`、`galeria.php`、`passaporte.php`、`ficha.php`、`documentos.php`、`historico.php`、`avisos.php`、`modos.php`、`configuracao.php`、`destinos.php`、`agendas.php`、`criterios.php`、`grupos.php`、`cadastros.php`、`execucoes.php`、`conta.php`、`aprovacoes.php`、`usuarios.php`、`cadastro.php` | 页面（只有骨架；`cadastro.php` 是公开页面） |
-| `push.js` | Web Push 的 service worker |
+| `sw.js`、`offline.html`、`icone-*.png` | 手机上的应用：*service worker*（由 `recurso=sw` 提供，前面带版本号：界面缓存、无连接页面和 Web Push）、**没有网络连接**页面和图标（192、512 和 180 px） |
 | `ajuda.php` | 帮助页面：只有骨架；`ajuda.js` 向 API 请求文本（`recurso=manual`：README 中面向用户的章节，已在 `lib.php` 中转换为 HTML） |
 | [`pagina.php`](pagina.php) | 页面顶部的菜单和页面结尾；`topo()` 在输出任何内容之前检查登录（`pagina_login()`） |
 | `api.js`、`hoje.js`、`painel.js`、`tabela.js`、`foto.js`…… | 各个界面，在浏览器中根据 API 生成 |

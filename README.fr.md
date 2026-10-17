@@ -1109,7 +1109,7 @@ que vous enregistrez apparaît ici sous son nom.
 | **Groupes** (`grupos.php`) | L'arbre : créer, renommer, déplacer, trier, supprimer (ce qui appartenait au groupe passe à celui du dessus) et choisir le groupe de chaque montre. |
 | **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**) et catégories de documents : tout ce que le système utilise et qui n'est pas du code (les alertes sont dans la page **Alertes**, et les modes de rotation dans **Modes de rotation**). |
 | **Exécutions du cron** (`execucoes.php`) | Ce que le cron a fait à chaque passage, combien de temps il a pris et les erreurs, avec des filtres. |
-| **Mon compte** (`conta.php`, menu **Compte › Mon compte**) | Les collections que vous voyez (ouvrir, créer, renommer, supprimer, quitter), vos arbres de groupes (copier, renommer, supprimer), demander l'accès à la collection de quelqu'un (par le code donné par le propriétaire), vos données (votre code, l'e-mail, la langue, le mot de passe), les **jetons d'API** (pour vos scripts), les **notifications sur cet appareil** (le Web Push) et supprimer le compte. Voir [Plusieurs personnes](#plusieurs-personnes--comptes-collections-et-accès). |
+| **Mon compte** (`conta.php`, menu **Compte › Mon compte**) | Les collections que vous voyez (ouvrir, créer, renommer, supprimer, quitter), vos arbres de groupes (copier, renommer, supprimer), demander l'accès à la collection de quelqu'un (par le code donné par le propriétaire), vos données (votre code, l'e-mail, la langue, le mot de passe), l'**application sur le téléphone** (mémoriser cet appareil, installer, les appareils mémorisés), les **jetons d'API** (pour vos scripts), les **notifications sur cet appareil** (le Web Push) et supprimer le compte. Voir [Plusieurs personnes](#plusieurs-personnes--comptes-collections-et-accès) et [L'application sur le téléphone](#lapplication-sur-le-téléphone). |
 | **Approbations** (`aprovacoes.php`) | Les demandes d'accès à vos collections (approuver, refuser), les invitations que des membres ont faites et qui vous attendent, **Inviter** (par e-mail), les invitations que vous avez faites et qui voit vos collections (retirer l'accès). Le menu affiche **Approbations (N)** quand quelque chose attend. |
 | **Utilisateurs** (`usuarios.php`, seulement le master) | Le panneau des comptes : chacun avec ce qu'il a et les actions (voir en tant que, rendre officiel, prolonger, bloquer, modifier, changer le mot de passe, transférer une collection, donner l'accès, supprimer) et créer un compte. |
 | **Créer un compte** (`cadastro.php`, sans identifiant) | L'inscription ouverte : le nouveau compte (avec une collection, ou en demandant l'accès), l'invitation arrivée par e-mail et le **Mot de passe oublié**. |
@@ -1200,7 +1200,7 @@ les mêmes fonctions que l'API ; ce qu'on peut demander sur le moment a une acti
 `sincronizar` des agendas, le `resortear`...), et ce qu'il a fait apparaît dans `recurso=cron`.
 
 **Authentification :** l'identifiant du site (HTTP Basic), un **jeton personnel** (créé dans **Mon compte**, il vaut comme
-votre identifiant) ou le jeton du serveur (l'`API_TOKEN`, il vaut comme le master), dans l'en-tête `X-Api-Token` ou dans
+votre identifiant), la clé d'un **appareil mémorisé** (le cookie de l'application sur le téléphone) ou le jeton du serveur (l'`API_TOKEN`, il vaut comme le master), dans l'en-tête `X-Api-Token` ou dans
 `?token=...`. **La collection :** `colecao=<id>` (sans lui, celle du sélecteur du menu, sinon votre première) ; une que vous
 ne voyez pas répond 404. **Supprimer** demande `confirmar=1` : sans lui, la réponse (409) dit ce qui partirait avec et rien
 n'est effacé.
@@ -1252,7 +1252,8 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `documentos` | les documents d'une montre (`relogio=<id>` ; sans lui, de toutes), avec les catégories, le résumé de la NF-e de chaque XML, le dossier et la limite |
 | `documento` | le fichier d'un document (`id=<id>`) : pour afficher (image, vidéo, audio, PDF, texte) ou pour télécharger (le reste, ou avec `baixar=1`) ; `mini=1` est la vignette de la photo. Il sert des morceaux (Range), pour que la vidéo avance |
 | `usuarios`, `migracoes` | le master : le panneau des comptes, chacun avec ce qu'il a et le hash du mot de passe (pour migrer avec le même mot de passe : voir [Les utilisateurs et les mots de passe](#les-utilisateurs-et-les-mots-de-passe)) ; les autres, seulement leur propre compte ; les migrations qui restent à appliquer |
-| `conta`, `colecoes`, `aprovacoes` | Mon compte (les collections, les arbres, les demandes, les jetons, les appareils du Web Push ; `parte=menu` : seulement ce qu'utilise le menu) ; les collections et les arbres ; la page Approbations |
+| `conta`, `colecoes`, `aprovacoes` | Mon compte (les collections, les arbres, les demandes, les jetons, les appareils mémorisés, les appareils du Web Push ; `parte=menu` : seulement ce qu'utilise le menu) ; les collections et les arbres ; la page Approbations |
+| `manifest`, `sw` | l'application sur le téléphone, sans login : le manifeste (JSON ; avec le cookie de l'appareil mémorisé, le `start_url` entre déjà) et le *service worker* (JavaScript). Voir [L'application sur le téléphone](#lapplication-sur-le-téléphone) |
 | `cadastro` | l'inscription ouverte, sans identifiant : si elle est ouverte et l'invitation (`convite=<token>`) ; aucune liste de comptes ni de collections (la demande d'accès se fait par le code donné par le propriétaire) |
 | `instalacao` | la situation de l'installation : la base, si elle est vide, installée et à jour, combien d'utilisateurs et la prochaine étape. Répond aussi avec la base vide, avec le jeton |
 | `backup` | la sauvegarde de la base : si elle est activée, si le dossier convient, combien sont gardées, la dernière et les copies du dossier ; `arquivo=` en télécharge une |
@@ -1281,7 +1282,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `destinos` | `salvar` (webhook, e-mail ou Web Push, avec ce qu'elle reçoit), `testar` (`qual=` : texte, matin ou soir), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook ou ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (avec le `senha`, ou avec le `senha_hash` d'un autre système ; le premier utilisateur, avec le jeton, est le master) et, seulement le master : `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
-| `conta` | `alterar` (e-mail, langue, mot de passe), `token_criar`, `token_revogar`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir` ; seulement le master : `email_testar`, `vapid_gerar` |
+| `conta` | `alterar` (e-mail, langue, mot de passe), `token_criar`, `token_revogar`, `aparelho_lembrar` (l'application sur le téléphone : la clé de cet appareil dans un cookie, qui entre sans le mot de passe), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir` ; seulement le master : `email_testar`, `vapid_gerar` |
 | `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
 | `acessos`, `convites`, `pedidos` | `remover`, `sair` ; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar` ; `pedir`, `aprovar`, `recusar`, `cancelar` |
 | `cadastro` | sans identifiant : `criar_conta`, `esqueci_senha`, `nova_senha` |
@@ -1619,6 +1620,10 @@ Non. Le port de la montre du jour se saisit tout seul, pendant l'horaire de port
 aucun moyen de savoir : le remontage, le relevé de charge de la smartwatch, le soleil, le remontoir, le changement de pile et
 le jour où vous avez porté une autre montre. Et chaque alerte arrive déjà avec le bouton qui la résout.
 
+**Y a-t-il une application pour le téléphone ?**
+Oui, sans magasin : le site lui-même s'installe comme application (une icône, plein écran, sans mot de passe demandé, avec les
+notifications). Voir [L'application sur le téléphone](#lapplication-sur-le-téléphone) : trois étapes dans **Mon compte**.
+
 **Où ranger le manuel, la facture et les photos de la montre ?**
 Sur sa page **Documents** (depuis la fiche : **Ouvrir les documents**). Choisissez la catégorie (Manuel, Facture, Facture
 (XML), Photos, Vidéos, Divers), les fichiers, et envoyez. Les photos deviennent une galerie avec diaporama, les vidéos se
@@ -1715,6 +1720,33 @@ planning simule une nuit sur le remontoir pour la résoudre.
 Oui. Les écrans utilisent exactement la même API.
 
 ---
+
+## L'application sur le téléphone
+
+Le système s'installe comme **application** sur le téléphone et la tablette, sans aucun magasin (c'est une PWA : le site
+lui-même, avec un manifeste et un *service worker*) : une icône sur l'écran d'accueil, ouvrant en plein écran, entrant sans
+demander le mot de passe et recevant les notifications. Tout se fait dans **Mon compte › Application sur le téléphone**, sur
+l'appareil où vous voulez l'application, en trois étapes :
+
+1. **Mémoriser cet appareil.** Le bouton enregistre dans le navigateur une clé propre à cet appareil (un cookie, valable un
+   an), et le système se met à entrer par elle, sans demander le mot de passe. Sur cet appareil seulement : chacun a sa clé,
+   et le tableau **Les appareils mémorisés** les montre toutes (le nom, depuis quand, le dernier usage), avec **Oublier** sur
+   chacune. Changer le mot de passe les oublie toutes.
+2. **Installer.** Sur Android (Chrome), le bouton **Installer l'application** apparaît là même ; sinon, dans le menu du
+   navigateur, **Installer l'application** (ou **Ajouter à l'écran d'accueil**). Sur l'iPhone et l'iPad, dans Safari :
+   **Partager › Sur l'écran d'accueil**. L'application installée s'ouvre déjà connectée : le manifeste porte la clé de
+   l'appareil mémorisé, et elle devient le cookie de l'application (sur l'iPhone l'application ne partage pas les cookies de
+   Safari ; c'est pourquoi l'étape 1 vient avant).
+3. **Activer les notifications.** Dans le cadre **Notifications sur cet appareil**, juste en dessous : la montre du jour, la
+   veille et les alertes arrivent comme notifications de l'appareil (le Web Push ; sur l'iPhone, seulement depuis
+   l'application installée). Ce qui arrive se choisit sur la page **Alertes**, dans **Destinations** (voir [Messages et
+   agendas](#messages-et-agendas)).
+
+L'application, c'est le site : les mêmes écrans, mis à jour d'eux-mêmes à chaque ouverture (rien à télécharger d'un magasin).
+Le *service worker* garde le style, les scripts, les icônes et les textes de la langue, pour ouvrir vite ; les pages et les
+données viennent toujours du réseau, et sans réseau apparaît la page **Pas de connexion**, avec **Réessayer**. Par l'API :
+`recurso=manifest` et `recurso=sw` (sans login), et `recurso=conta` avec `acao=aparelho_lembrar` (le cookie) et
+`acao=aparelho_esquecer`. Qui préfère un raccourci d'une seule touche, sans rien ouvrir, a la section suivante.
 
 ## Marquer depuis le téléphone, d'une touche
 
@@ -1933,7 +1965,7 @@ vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des
 | [`operacoes.php`](operacoes.php) | les règles de chaque écriture : validations et messages |
 | [`cron.php`](cron.php) | le plan, la session du jour, les passages du matin et du soir, les événements, l'agenda et l'entretien des documents |
 | `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | les pages (seulement le squelette ; `cadastro.php` est la page publique) |
-| `push.js` | le service worker du Web Push |
+| `sw.js`, `offline.html`, `icone-*.png` | l'application sur le téléphone : le *service worker* (servi par `recurso=sw`, avec la version devant : le cache des écrans, la page sans connexion et le Web Push), la page **Pas de connexion** et les icônes (192, 512 et 180 px) |
 | `ajuda.php` | la page d'aide : seulement le squelette ; le `ajuda.js` demande le texte à l'API (`recurso=manual` : les sections du README pour les utilisateurs, déjà en HTML, converties dans le `lib.php`) |
 | [`pagina.php`](pagina.php) | le haut avec le menu et la fin des pages ; `topo()` vérifie la connexion avant d'envoyer quoi que ce soit (`pagina_login()`) |
 | `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | les écrans, construits dans le navigateur à partir de l'API |

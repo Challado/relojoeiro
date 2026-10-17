@@ -498,6 +498,7 @@ $MIGRACOES = [
     "v24" => ["migracao_v24.sql", tk("os acessórios: pulseiras, caixas, estojos, ferramentas, carregadores, peças e o que mais for, de um relógio ou soltos (a página Acessórios e o quadro Acessórios do relógio)"), "acessorio"],
     "v25" => ["migracao_v25.sql", tk("várias pessoas, cada uma com as suas coleções: usuários (master e comum, conta demo e oficial), coleções com membros, convites e pedidos de acesso, árvores de grupos que servem a várias coleções do mesmo dono, destinos de alerta (webhook, e-mail, Web Push) e agendas (Google, CalDAV, Outlook, link ICS); o banco inteiro em cascata, na 3ª forma normal. O banco antigo é copiado para um arquivo antes, e o usuário mais antigo vira o master e o dono da coleção"), "sistema.chave=migracao_v25", "migracao_v25"],
     "v26" => ["migracao_v26.sql", tk("o gasto da bateria em cinco motores, escolhidos na Configuração da coleção, no relógio ou no grupo (o campo \"Como calcular o gasto da bateria\"): pelas horas registradas (o original), robusto, pela marcação das leituras (em uso e em repouso, gravada em cada leitura), só o cadastro, ou pelas fórmulas do cadastro; e a cópia dos documentos no banco escolhida na Configuração da coleção, no lugar do config.php"), "lancamento.estado", "migracao_v26_dados"],
+    "v27" => ["migracao_v27.sql", tk("o aplicativo no celular (PWA): os aparelhos lembrados de cada usuário (Minha conta: o aplicativo instalado entra sem a senha pela chave gravada no aparelho), o manifesto e o service worker pela API"), "usuario_aparelho"],
 ];
 
 // O passo em PHP da v16, depois do SQL dela: as opções de cada campo do tipo lista (o texto, uma por linha) viram linhas da
@@ -1918,6 +1919,10 @@ function usuario_autenticado()
         }
     }
     $res = "";
+    // o aplicativo no celular: sem o login, a chave do aparelho lembrado (o cookie que o "Lembrar este aparelho" gravou)
+    if ($login === "" && isset($_COOKIE["aparelho"]) && function_exists("usuario_por_aparelho")) {
+        return usuario_por_aparelho((string)$_COOKIE["aparelho"]);
+    }
     // banco vazio (antes da instalação): ninguém entra pelo login, só pelo token. A conta bloqueada pelo master, ou a demo
     // que venceu (o cron a apaga logo), não entra
     if ($login !== "" && banco_tem_tabela("usuario")) {
@@ -1927,6 +1932,10 @@ function usuario_autenticado()
             $res = (string)$u["login"];
             if (array_key_exists("papel", $u)) {
                 usuario_definir($u);
+                // o cookie de um aparelho lembrado veio junto com o login: a conta sabe qual é "este aparelho"
+                if (function_exists("aparelho_deste_pedido")) {
+                    aparelho_deste_pedido((int)$u["id"]);
+                }
                 // o último acesso (no máximo uma gravação por minuto)
                 if ($u["ultimo_acesso"] === null || strtotime((string)$u["ultimo_acesso"]) < time() - 60) {
                     sem_escopo(function () use ($u) { sql("UPDATE usuario SET ultimo_acesso = NOW() WHERE id = ?", [(int)$u["id"]]); });
@@ -1947,10 +1956,60 @@ function pagina_login()
         if (!banco_tem_tabela("usuario") || (int)sem_escopo(function () { return valor("SELECT COUNT(*) FROM usuario"); }) === 0) {
             return true;
         }
+        // o aplicativo instalado abre pelo start_url do manifesto, que traz a chave do aparelho (?aparelho=): ela vira o
+        // cookie deste navegador (o do aplicativo, separado do navegador comum no iPhone) e a página abre limpa
+        if (isset($_GET["aparelho"]) && function_exists("aparelho_pela_url")) {
+            aparelho_pela_url((string)$_GET["aparelho"]);
+        }
         return usuario_autenticado() !== "";
     } catch (Throwable $e) {
         return true;
     }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// O aplicativo no celular (PWA): o manifesto (recurso=manifest) e o service worker (recurso=sw), os dois pela API. As
+// páginas apontam o manifesto no <head> (pagina.php) e registram o service worker (api.js); o navegador instala o sistema
+// como um aplicativo (um ícone, tela cheia, as notificações do Web Push) e o service worker guarda os arquivos das telas
+// (o estilo, os scripts, os ícones e os textos do idioma) para abrir rápido, com a página "sem conexão" quando a rede cai.
+// ---------------------------------------------------------------------------------------------------------------------
+
+// O manifesto do aplicativo. O start_url leva a chave do aparelho lembrado quando o pedido vem com o cookie dela (o <link>
+// do manifesto pede com as credenciais): o aplicativo instalado abre já entrando, mesmo onde o navegador do aplicativo
+// não compartilha os cookies com o navegador comum (o iPhone)
+function app_manifesto()
+{
+    $inicio = "index.php";
+    if (isset($_COOKIE["aparelho"]) && function_exists("usuario_por_aparelho") && usuario_por_aparelho((string)$_COOKIE["aparelho"]) !== "") {
+        $inicio .= "?aparelho=" . rawurlencode((string)$_COOKIE["aparelho"]);
+    }
+    return ["id" => "./", "name" => t("Relojoeiro"), "short_name" => t("Relojoeiro"),
+        "description" => t("O rodízio dos seus relógios: o relógio do dia, a carga, a corda, os avisos e a coleção inteira."),
+        "lang" => lingua_atual(), "start_url" => $inicio, "scope" => "./", "display" => "standalone", "orientation" => "any",
+        "background_color" => "#e4e8ec", "theme_color" => "#1c2530",
+        "icons" => [["src" => "icone-192.png", "sizes" => "192x192", "type" => "image/png"], ["src" => "icone-512.png", "sizes" => "512x512", "type" => "image/png"],
+            ["src" => "icone-512.png", "sizes" => "512x512", "type" => "image/png", "purpose" => "maskable"]]];
+}
+
+// O service worker: o sw.js com, na frente, a versão (muda quando qualquer arquivo das telas muda: o navegador instala o
+// service worker novo e o cache antigo sai) e a lista dos arquivos guardados na instalação (com o ?v= que as páginas usam)
+function app_service_worker()
+{
+    $arquivos = ["estilo.css", "offline.html", "icone-192.png", "icone-512.png"];
+    foreach (glob(__DIR__ . "/*.js") ?: [] as $js) {
+        if (basename($js) !== "sw.js") {
+            $arquivos[] = basename($js);
+        }
+    }
+    sort($arquivos);
+    $marca = "";
+    $lista = [];
+    foreach ($arquivos as $a) {
+        $m = (int)@filemtime(__DIR__ . "/" . $a);
+        $marca .= $a . ":" . $m . ":" . (int)@filesize(__DIR__ . "/" . $a) . ";";
+        $lista[] = preg_match("/\\.(css|js)$/", $a) === 1 ? $a . "?v=" . $m : $a;
+    }
+    return "var VERSAO = " . json_encode(substr(sha1($marca), 0, 12)) . ";\nvar ARQUIVOS = " . json_encode($lista, JSON_UNESCAPED_SLASHES) . ";\n" . (string)file_get_contents(__DIR__ . "/sw.js");
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

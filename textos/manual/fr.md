@@ -1,4 +1,4 @@
-<!-- origem: dec94a4c694d12cc76a886fbc1505106bb066bcd -->
+<!-- origem: 7c8dbcfa996ed51338638df7a99243ba0f799e3f -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1023,7 +1023,7 @@ que vous enregistrez apparaît ici sous son nom.
 | **Groupes** (`grupos.php`) | L'arbre : créer, renommer, déplacer, trier, supprimer (ce qui appartenait au groupe passe à celui du dessus) et choisir le groupe de chaque montre. |
 | **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**) et catégories de documents : tout ce que le système utilise et qui n'est pas du code (les alertes sont dans la page **Alertes**, et les modes de rotation dans **Modes de rotation**). |
 | **Exécutions du cron** (`execucoes.php`) | Ce que le cron a fait à chaque passage, combien de temps il a pris et les erreurs, avec des filtres. |
-| **Mon compte** (`conta.php`, menu **Compte › Mon compte**) | Les collections que vous voyez (ouvrir, créer, renommer, supprimer, quitter), vos arbres de groupes (copier, renommer, supprimer), demander l'accès à la collection de quelqu'un (par le code donné par le propriétaire), vos données (votre code, l'e-mail, la langue, le mot de passe), les **jetons d'API** (pour vos scripts), les **notifications sur cet appareil** (le Web Push) et supprimer le compte. Voir [Plusieurs personnes](#várias-pessoas-contas-coleções-e-acesso). |
+| **Mon compte** (`conta.php`, menu **Compte › Mon compte**) | Les collections que vous voyez (ouvrir, créer, renommer, supprimer, quitter), vos arbres de groupes (copier, renommer, supprimer), demander l'accès à la collection de quelqu'un (par le code donné par le propriétaire), vos données (votre code, l'e-mail, la langue, le mot de passe), l'**application sur le téléphone** (mémoriser cet appareil, installer, les appareils mémorisés), les **jetons d'API** (pour vos scripts), les **notifications sur cet appareil** (le Web Push) et supprimer le compte. Voir [Plusieurs personnes](#várias-pessoas-contas-coleções-e-acesso) et [L'application sur le téléphone](#o-aplicativo-no-celular). |
 | **Approbations** (`aprovacoes.php`) | Les demandes d'accès à vos collections (approuver, refuser), les invitations que des membres ont faites et qui vous attendent, **Inviter** (par e-mail), les invitations que vous avez faites et qui voit vos collections (retirer l'accès). Le menu affiche **Approbations (N)** quand quelque chose attend. |
 | **Utilisateurs** (`usuarios.php`, seulement le master) | Le panneau des comptes : chacun avec ce qu'il a et les actions (voir en tant que, rendre officiel, prolonger, bloquer, modifier, changer le mot de passe, transférer une collection, donner l'accès, supprimer) et créer un compte. |
 | **Créer un compte** (`cadastro.php`, sans identifiant) | L'inscription ouverte : le nouveau compte (avec une collection, ou en demandant l'accès), l'invitation arrivée par e-mail et le **Mot de passe oublié**. |
@@ -1099,6 +1099,10 @@ Les noms que vous enregistrez (groupes, champs, types de saisie, alertes, modes,
 Non. Le port de la montre du jour se saisit tout seul, pendant l'horaire de port. Vous ne saisissez que ce que le système n'a
 aucun moyen de savoir : le remontage, le relevé de charge de la smartwatch, le soleil, le remontoir, le changement de pile et
 le jour où vous avez porté une autre montre. Et chaque alerte arrive déjà avec le bouton qui la résout.
+
+**Y a-t-il une application pour le téléphone ?**
+Oui, sans magasin : le site lui-même s'installe comme application (une icône, plein écran, sans mot de passe demandé, avec les
+notifications). Voir [L'application sur le téléphone](#o-aplicativo-no-celular) : trois étapes dans **Mon compte**.
 
 **Où ranger le manuel, la facture et les photos de la montre ?**
 Sur sa page **Documents** (depuis la fiche : **Ouvrir les documents**). Choisissez la catégorie (Manuel, Facture, Facture
@@ -1196,6 +1200,33 @@ planning simule une nuit sur le remontoir pour la résoudre.
 Oui. Les écrans utilisent exactement la même API.
 
 ---
+
+## L'application sur le téléphone {#o-aplicativo-no-celular}
+
+Le système s'installe comme **application** sur le téléphone et la tablette, sans aucun magasin (c'est une PWA : le site
+lui-même, avec un manifeste et un *service worker*) : une icône sur l'écran d'accueil, ouvrant en plein écran, entrant sans
+demander le mot de passe et recevant les notifications. Tout se fait dans **Mon compte › Application sur le téléphone**, sur
+l'appareil où vous voulez l'application, en trois étapes :
+
+1. **Mémoriser cet appareil.** Le bouton enregistre dans le navigateur une clé propre à cet appareil (un cookie, valable un
+   an), et le système se met à entrer par elle, sans demander le mot de passe. Sur cet appareil seulement : chacun a sa clé,
+   et le tableau **Les appareils mémorisés** les montre toutes (le nom, depuis quand, le dernier usage), avec **Oublier** sur
+   chacune. Changer le mot de passe les oublie toutes.
+2. **Installer.** Sur Android (Chrome), le bouton **Installer l'application** apparaît là même ; sinon, dans le menu du
+   navigateur, **Installer l'application** (ou **Ajouter à l'écran d'accueil**). Sur l'iPhone et l'iPad, dans Safari :
+   **Partager › Sur l'écran d'accueil**. L'application installée s'ouvre déjà connectée : le manifeste porte la clé de
+   l'appareil mémorisé, et elle devient le cookie de l'application (sur l'iPhone l'application ne partage pas les cookies de
+   Safari ; c'est pourquoi l'étape 1 vient avant).
+3. **Activer les notifications.** Dans le cadre **Notifications sur cet appareil**, juste en dessous : la montre du jour, la
+   veille et les alertes arrivent comme notifications de l'appareil (le Web Push ; sur l'iPhone, seulement depuis
+   l'application installée). Ce qui arrive se choisit sur la page **Alertes**, dans **Destinations** (voir [Messages et
+   agendas](#mensagens-e-agendas)).
+
+L'application, c'est le site : les mêmes écrans, mis à jour d'eux-mêmes à chaque ouverture (rien à télécharger d'un magasin).
+Le *service worker* garde le style, les scripts, les icônes et les textes de la langue, pour ouvrir vite ; les pages et les
+données viennent toujours du réseau, et sans réseau apparaît la page **Pas de connexion**, avec **Réessayer**. Par l'API :
+`recurso=manifest` et `recurso=sw` (sans login), et `recurso=conta` avec `acao=aparelho_lembrar` (le cookie) et
+`acao=aparelho_esquecer`. Qui préfère un raccourci d'une seule touche, sans rien ouvrir, a la section suivante.
 
 ## Marquer depuis le téléphone, d'une touche {#marcar-pelo-celular-com-um-toque}
 

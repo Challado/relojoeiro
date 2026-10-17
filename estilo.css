@@ -1602,3 +1602,8 @@ button.leve.perigo { color: #9b2c22; }
 .doc-dialogo::backdrop { background: rgba(20, 28, 38, .55); }
 .doc-dialogo h2 { margin-top: 0; }
 @media print { .doc-menu { display: none; } }
+
+/* o quadro Aplicativo no celular (Minha conta): os três passos */
+ol.passos { padding-left: 1.3rem; margin: 0.4rem 0; }
+ol.passos li { margin: 0.4rem 0; }
+ol.passos form { display: inline; }
