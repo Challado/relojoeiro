@@ -925,6 +925,7 @@ function reconstrucao_codigo()
     "testes/dicionario.php" => ["testes", t('gera o dicionário dos campos do cabeçalho do api.php a partir do da ajuda (a fonte única), e confere que batem')],
     "testes/campos.php" => ["testes", t('confere que todo campo das respostas da API está explicado no dicionário da ajuda')],
     "testes/isolamento.php" => ["testes", t('confere que uma conta não vê nem muda o que é de outra pelo token pessoal (todos os recursos, com os ids da outra) e que o pedido de acesso pelo código não mostra login nem nome de coleção')],
+    "testes/configuracao-interface.cjs" => ["testes", "Teste da interface da Configuração em Chromium: salvar, troca de idioma e manutenção da rolagem em celular, tablet e PC"],
     "testes/layout.cjs" => ["testes", t('a conferência do layout: todas as telas num navegador, em 15 tamanhos, com dados de estresse, procurando o que quebra')],
     "testes/README.md" => ["testes", t('como rodar o teste de paridade e a conferência do layout')],
     "README.md" => ["documentacao", t('o manual inteiro: para quem usa, a instalação, a API e como é por dentro')],
