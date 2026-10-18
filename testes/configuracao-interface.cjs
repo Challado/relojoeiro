@@ -94,6 +94,10 @@ async function recarga(page){
         await page.evaluate(()=>{const e=document.querySelector('[name=idioma]').closest('.par-campo');window.scrollTo(0,window.scrollY+e.getBoundingClientRect().top-130);});
         const p=await page.evaluate(()=>appTeste.posicao());
         await salvar(page);await recarga(page);
+        // O navegador pode restaurar o scroll nativo DEPOIS de montar o formulário:
+        // imita um salto tardio para o início, que ocorria de verdade em celular/tablet/PC.
+        await page.evaluate(()=>window.scrollTo(0,0));
+        await page.waitForTimeout(380);
         const f=await estado(page);
         assert.equal(f.dados.config.idioma,lingua);assert.equal(f.posts.at(-1).lingua,lingua);
         assert.equal(await page.getAttribute('html','lang'),lingua);

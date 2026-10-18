@@ -14,6 +14,11 @@ retornoConfig = retornoConfig || (history.state && history.state.retornoConfig);
 if (!retornoConfig || retornoConfig.pagina !== window.location.pathname || Date.now() - retornoConfig.quando > 300000) {
   retornoConfig = null;
 }
+// No recarregamento por troca de idioma, o navegador não deve restaurar outra posição
+// depois de a Configuração colocar o campo antigo no mesmo lugar.
+if (retornoConfig && "scrollRestoration" in history) {
+  history.scrollRestoration = "manual";
+}
 
 // A âncora é um campo ou um quadro, não só um número de pixels: a tradução pode mudar a altura dos textos.
 function posicaoConfig() {
@@ -87,6 +92,16 @@ function avisoConfig(mensagem, erro) {
   agendar();
 }
 
+// Posição anterior ao foco do botão Salvar: importante quando a barra está presa ao
+// rodapé, especialmente no celular com o teclado virtual aberto.
+var posicaoAntesDoIdioma = null;
+document.addEventListener("pointerdown", function (ev) {
+  var botao = ev.target.closest && ev.target.closest("#form-config button[type=submit], #form-config button:not([type])");
+  if (botao) {
+    posicaoAntesDoIdioma = posicaoConfig();
+  }
+}, true);
+
 // O envio já leva o idioma escolhido: o servidor devolve inclusive a confirmação traduzida. Só após o sucesso se muda
 // o cookie, como no seletor do menu. Uma recusa não troca o idioma nem perde os campos digitados.
 document.addEventListener("change", function (ev) {
@@ -95,6 +110,7 @@ document.addEventListener("change", function (ev) {
 document.addEventListener("submit", function (ev) {
   var form = ev.target;
   if (ev.defaultPrevented || form.id !== "form-config") { return; }
+  if (!posicaoAntesDoIdioma) { posicaoAntesDoIdioma = posicaoConfig(); }
   var c = form.querySelector("select[name=idioma]");
   var idioma = form.querySelector("input[data-idioma-config]");
   if (idioma) { idioma.remove(); }
@@ -108,8 +124,8 @@ document.addEventListener("submit", function (ev) {
   }
 }, true);
 
-function recarregarIdiomaConfig(lingua, mensagem) {
-  var estado = {pagina: window.location.pathname, quando: Date.now(), posicao: posicaoConfig(), mensagem: mensagem};
+function recarregarIdiomaConfig(lingua, mensagem, posicaoAnterior) {
+  var estado = {pagina: window.location.pathname, quando: Date.now(), posicao: posicaoAnterior || posicaoConfig(), mensagem: mensagem};
   try { sessionStorage.setItem(chaveRetornoConfig, JSON.stringify(estado)); } catch (e) { /* usa o histórico */ }
   // Um lingua= antigo na URL tem prioridade sobre o cookie. Retira só esse parâmetro, preservando o resto e a âncora.
   var url = new URL(window.location.href);
@@ -117,6 +133,8 @@ function recarregarIdiomaConfig(lingua, mensagem) {
   history.replaceState(Object.assign({}, history.state, {retornoConfig: estado}), "", url.href);
   document.cookie = "lingua=" + encodeURIComponent(lingua) + "; path=/; max-age=31536000; SameSite=Lax";
   document.cookie = "lingua_auto=; path=/; max-age=0; SameSite=Lax";
+  // Preservar o lugar até a nova página terminar de carregar e montar os quadros.
+  if ("scrollRestoration" in history) { history.scrollRestoration = "manual"; }
   window.location.reload();
 }
 
@@ -282,6 +300,8 @@ function recarregarConfig(aplicadas, manterPosicao) {
 // Ao trocar o idioma, a página inteira (inclusive o menu PHP) é traduzida, voltando à mesma âncora depois de pronta.
 aoGravar = function (form, res, dados) {
   var posicaoSalvar = typeof posicaoDaGravacao === "function" ? posicaoDaGravacao(form) : null;
+  var posicaoIdioma = posicaoAntesDoIdioma || posicaoConfig();
+  posicaoAntesDoIdioma = null;
   form.querySelectorAll("button").forEach(function (b) { b.disabled = false; });
   if (!res.ok) {
     avisoConfig(textoResposta(res), true);
@@ -297,10 +317,10 @@ aoGravar = function (form, res, dados) {
     if (dados.get("lingua") && dados.get("lingua") !== LINGUA) {
       if (posicaoSalvar) {
         return restaurarPosicaoDaGravacao(posicaoSalvar).then(function () {
-          recarregarIdiomaConfig(dados.get("lingua"), textoResposta(res));
+          recarregarIdiomaConfig(dados.get("lingua"), textoResposta(res), posicaoIdioma);
         });
       }
-      recarregarIdiomaConfig(dados.get("lingua"), textoResposta(res));
+      recarregarIdiomaConfig(dados.get("lingua"), textoResposta(res), posicaoIdioma);
       return;
     }
     avisoConfig(textoResposta(res), false);
@@ -331,7 +351,26 @@ recarregarConfig([]).then(function () {
   var estado = Object.assign({}, history.state);
   delete estado.retornoConfig;
   history.replaceState(estado, "");
-  return restaurarPosicaoConfig(retorno.posicao).then(function () { avisoConfig(retorno.mensagem, false); });
+  return restaurarPosicaoConfig(retorno.posicao).then(function () {
+    avisoConfig(retorno.mensagem, false);
+    // A tradução pode alterar a altura dos quadros; fontes e rolagem nativa do
+    // navegador podem terminar DEPOIS do primeiro requestAnimationFrame.
+    // Reafirma a posição por um curto intervalo, salvo se a pessoa começar a rolar.
+    var ativo = true;
+    var prazos = [];
+    var eventos = ["pointerdown", "wheel", "touchstart", "keydown"];
+    var parar = function () {
+      ativo = false;
+      prazos.forEach(clearTimeout);
+      eventos.forEach(function (nome) { removeEventListener(nome, parar); });
+      if ("scrollRestoration" in history) { history.scrollRestoration = "auto"; }
+    };
+    eventos.forEach(function (nome) { addEventListener(nome, parar, {passive: true}); });
+    var reaplicar = function () { if (ativo) { restaurarPosicaoConfig(retorno.posicao); } };
+    [90, 280, 650].forEach(function (ms) { prazos.push(setTimeout(reaplicar, ms)); });
+    if (document.fonts && document.fonts.ready) { document.fonts.ready.then(reaplicar); }
+    prazos.push(setTimeout(parar, 950));
+  });
 }).catch(function (e) {
   document.getElementById("configuracao").innerHTML = el("p", {"class": "acao"}, t("Não consegui ler a configuração: {1}", {1: h(e.message)}));
 });
