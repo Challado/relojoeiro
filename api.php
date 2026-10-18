@@ -264,7 +264,7 @@
  *   recurso=conta            Minha conta: {"usuario", "vendo_como", "colecoes", "colecao", "papel", "arvores", "pedidos", "convites",
  *                            "aprovacoes", "tokens", "push": {"configurado", "chave_publica", "aparelhos"}, "email_configurado",
  *                            "demo_dias", "linguas"}; parte=menu: só o que o menu das páginas usa (o seletor da coleção, a demonstração,
- *                            as aprovações, a faixa Vendo como)
+ *                            as aprovações, a faixa Vendo como e o idioma padrão)
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=conta"
  *   recurso=colecoes         {"colecoes": [{"id", "nome", "dono_id", "dono", "papel", "no_id"}], "colecao", "arvores": [{"id", "nome",
  *                            "grupos", "colecoes"}]}
@@ -3120,6 +3120,9 @@
  *                                    o que corrigir no config.php)
  *     demo_dias                      os dias da conta de demonstração
  *     master                         (parte=menu) verdadeiro ou falso: quem pede é o master (ou o master vendo como outro)
+ *     idioma_padrao                  (parte=menu) o idioma de quem não escolheu no menu: o da conta (Minha conta), senão o da coleção (a
+ *                                    Configuração), senão o da instalação; null: nenhum (vale o do navegador). As páginas seguem este, que
+ *                                    vem a cada abertura: o padrao do script do dicionário (recurso=textos&formato=js) fica em cache
  *     linguas[]                      os idiomas
  *     fuso                           o fuso horário em que este pedido roda (as datas e horas que a API mostra e recebe). O dia do rodízio
  *                                    (o plano, o relógio do dia, as rodadas do cron) é sempre o da coleção, no fuso dela

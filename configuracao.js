@@ -1,6 +1,6 @@
 // Página Configuração: os dados da API (recurso=config), no HTML da Configuração do sistema antigo. Com o banco
 // desatualizado (recurso=migracoes com pendentes), só o aviso e o botão de aplicar.
-var recadoConfig = "";
+var idiomaConfig = "";
 
 // Um quadro da Configuração: o título, o conteúdo e, se houver, o pé (a explicação e os botões, sempre embaixo: os quadros
 // da mesma linha têm a mesma altura)
@@ -38,10 +38,7 @@ function recarregarConfig(aplicadas) {
         var c = d.config;
         var cfg = function (k) { return c[k] === undefined ? "" : c[k]; };
         var res = "";
-        if (recadoConfig !== "") {
-          res += el("p", {"class": "acao"}, h(recadoConfig));
-          recadoConfig = "";
-        }
+        idiomaConfig = cfg("idioma") || "pt-BR";
         // ---------- Geral ----------
         // a situação do cron vem da API (cron_estado): nunca rodou, parado (mais de 10 minutos) ou rodando
         var ce = d.cron_estado;
@@ -163,14 +160,22 @@ function recarregarConfig(aplicadas) {
   });
 }
 
-// depois de gravar: o recado no topo e a página remontada
+// depois de gravar: o recado na janelinha flutuante e a página remontada sem sair do lugar (a rolagem fica onde estava;
+// numa página comprida, no celular, voltar ao alto obrigaria a descer tudo de novo). Outro idioma padrão: a página abre
+// de novo nele (reabrirNoIdioma)
 aoGravar = function (form, res, dados) {
-  recadoConfig = textoResposta(res);
+  var recado = textoResposta(res);
+  var rolagem = window.scrollY;
   if (dados.get("acao") === "salvar" && res.ok) {
     history.replaceState(null, "", "configuracao.php");
+    if (dados.get("idioma") && dados.get("idioma") !== idiomaConfig) {
+      reabrirNoIdioma(recado, dados.get("idioma"));
+      return;
+    }
   }
-  recarregarConfig(dados.get("recurso") === "migracoes" ? (res.aplicadas || [textoResposta(res)]) : []).then(function () {
-    window.scrollTo(0, 0);
+  avisoFlutuante(recado, !res.ok);
+  recarregarConfig(dados.get("recurso") === "migracoes" ? (res.aplicadas || [recado]) : []).then(function () {
+    window.scrollTo(0, rolagem);
   });
 };
 // os lembretes saíram daqui: moram na página Avisos (o endereço antigo de um lembrete leva para lá)

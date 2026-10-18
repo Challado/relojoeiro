@@ -1,10 +1,12 @@
 // Minha conta: lê recurso=conta e monta os quadros. O pedido de acesso é pelo código que o dono passou (nenhuma lista de contas).
 // Com conta.php?convite=<token> (o link do convite, para quem já tem conta), aceita o convite ao abrir.
-var recadoConta = "";
 var tokenNovo = null;
 
+// depois de gravar: o recado na janelinha flutuante e a página remontada sem sair do lugar (a rolagem fica onde estava).
+// Outro idioma na conta: a página abre de novo nele (reabrirNoIdioma)
 aoGravar = function (form, res, dados) {
-  recadoConta = textoResposta(res);
+  var recado = textoResposta(res);
+  var rolagem = window.scrollY;
   tokenNovo = res.token ? {nome: dados.get("nome"), token: res.token} : null;
   if (res.ok && dados.get("recurso") === "conta" && dados.get("acao") === "excluir") {
     window.location = "cadastro.php";
@@ -14,13 +16,19 @@ aoGravar = function (form, res, dados) {
   if (res.ok && dados.get("recurso") === "colecoes" && dados.get("acao") === "criar" && res.id) {
     document.cookie = "colecao=" + res.id + "; path=/; max-age=31536000; SameSite=Lax";
   }
+  if (res.ok && dados.get("recurso") === "conta" && dados.get("acao") === "alterar" && dados.has("idioma")
+    && (dados.get("idioma") || "") !== ((CONTA && CONTA.usuario.idioma) || "")) {
+    reabrirNoIdioma(recado, dados.get("idioma") || "");
+    return;
+  }
+  avisoFlutuante(recado, !res.ok);
   carregarConta().then(function () {
-    // o teste do e-mail: a página para no resultado dele; o resto, no alto (o recado)
+    // o teste do e-mail: a página para no resultado dele; o resto fica onde estava
     var alvo = dados.get("acao") === "email_testar" ? document.getElementById("servidor") : null;
     if (alvo) {
       alvo.scrollIntoView();
     } else {
-      window.scrollTo(0, 0);
+      window.scrollTo(0, rolagem);
     }
   });
 };
@@ -171,7 +179,7 @@ function instalarApp() {
   INSTALAR_APP = null;
   pedido.prompt();
   pedido.userChoice.then(function (r) {
-    recadoConta = r && r.outcome === "accepted" ? t("Aplicativo instalado: abra pelo ícone na tela inicial.") : t("A instalação foi cancelada.");
+    avisoFlutuante(r && r.outcome === "accepted" ? t("Aplicativo instalado: abra pelo ícone na tela inicial.") : t("A instalação foi cancelada."));
     carregarConta();
   });
 }
@@ -229,10 +237,10 @@ function ligarPush() {
     var j = insc.toJSON();
     return enviar({recurso: "conta", acao: "push_inscrever", endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, aparelho: navigator.userAgent.substr(0, 200)});
   }).then(function (res) {
-    recadoConta = textoResposta(res);
+    avisoFlutuante(textoResposta(res), !res.ok);
     return carregarConta();
   }).catch(function (e) {
-    recadoConta = t("Não consegui ligar as notificações: {1}", {1: e.message});
+    avisoFlutuante(t("Não consegui ligar as notificações: {1}", {1: e.message}), true);
     carregarConta();
   });
 }
@@ -299,8 +307,7 @@ var CONTA = null;
 function carregarConta() {
   return api({recurso: "conta"}).then(function (d) {
     CONTA = d;
-    var res = el("h1", {}, t("Minha conta")) + (recadoConta !== "" ? el("p", {"class": "acao"}, h(recadoConta)) : "");
-    recadoConta = "";
+    var res = el("h1", {}, t("Minha conta"));
     if (d.aprovacoes > 0) {
       res += el("p", {"class": "alerta-cron"}, t("{1} pedido(s) ou convite(s) esperam a sua resposta em {2}.", {1: d.aprovacoes, 2: el("a", {"href": "aprovacoes.php"}, t("Aprovações"))}));
     }
@@ -325,7 +332,7 @@ aoGravar = function (form, res, dados) {
 // o link do convite para quem já tem conta: aceita ao abrir
 var conviteUrl = new URLSearchParams(window.location.search).get("convite");
 (conviteUrl ? enviar({recurso: "convites", acao: "aceitar", token: conviteUrl}).then(function (res) {
-  recadoConta = textoResposta(res);
+  avisoFlutuante(textoResposta(res), !res.ok);
   if (res.ok && res.colecao_id) {
     document.cookie = "colecao=" + res.colecao_id + "; path=/; max-age=31536000; SameSite=Lax";
   }

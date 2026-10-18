@@ -28,16 +28,8 @@ function usarTextos(d) {
     } catch (e) {
       // sem Intl: o fuso fica o da coleção
     }
-    // sem idioma escolhido no menu, vale o padrão (o de Minha conta, senão o da coleção, senão o da instalação): o cookie
-    // lingua é gravado aqui sozinho, marcado como automático (lingua_auto), e acompanha o padrão quando ele muda; só a
-    // escolha no seletor do menu apaga a marca e prende o idioma
-    var cookieLingua = (document.cookie.match(/(?:^|;\s*)lingua=([^;]*)/) || [])[1] || "";
-    var cookieAuto = (document.cookie.match(/(?:^|;\s*)lingua_auto=([^;]*)/) || [])[1] || "";
-    if (d.padrao && d.padrao !== LINGUA && (cookieLingua === "" || cookieLingua === cookieAuto)) {
-      document.cookie = "lingua=" + d.padrao + "; path=/; max-age=31536000; SameSite=Lax";
-      document.cookie = "lingua_auto=" + d.padrao + "; path=/; max-age=31536000; SameSite=Lax";
-      window.location.reload();
-    }
+    // o idioma padrão (d.padrao) não se usa daqui: este script fica em cache (um dia, e no service worker); o que decide o
+    // idioma de quem não escolheu é o idioma_padrao do menu (seguirIdiomaPadrao, abaixo), que vem a cada página
   }
 }
 var textosProntos = window.TEXTOS_API ? Promise.resolve(usarTextos(window.TEXTOS_API))
@@ -283,6 +275,85 @@ function enviar(dados) {
 // O texto de uma resposta de gravação: a mensagem, ou os erros
 function textoResposta(res) {
   return (res.mensagem || "") + (res.erros && res.erros.length > 0 ? " " + res.erros.join(" ") : "");
+}
+
+// A janelinha flutuante dos recados ("Configuração salva."): aparece embaixo da tela, no meio, por cima de tudo, sem
+// mexer na rolagem, e some sozinha em alguns segundos (mais tempo para textos longos; um toque nela fecha na hora).
+// erro = true: em âmbar (os erros de uma gravação recusada). Só uma por vez: a nova tira a anterior.
+function avisoFlutuante(texto, erro) {
+  if (!texto) {
+    return;
+  }
+  var antigo = document.getElementById("aviso-flutuante");
+  if (antigo) {
+    antigo.remove();
+  }
+  var caixa = document.createElement("div");
+  caixa.id = "aviso-flutuante";
+  caixa.className = "aviso-flutuante" + (erro ? " erro" : "");
+  caixa.setAttribute("role", erro ? "alert" : "status");
+  caixa.textContent = texto;
+  caixa.addEventListener("click", function () { caixa.remove(); });
+  document.body.appendChild(caixa);
+  var tempo = Math.min(15000, 4000 + texto.length * 40);
+  setTimeout(function () { caixa.classList.add("sumindo"); }, tempo);
+  setTimeout(function () { if (caixa.parentNode) { caixa.remove(); } }, tempo + 600);
+}
+
+// O recado que atravessa um reload: fica no sessionStorage e a página seguinte o mostra na janelinha ao abrir
+function avisoAoAbrir(texto, erro) {
+  try {
+    sessionStorage.setItem("aviso_flutuante", JSON.stringify({texto: texto, erro: erro === true}));
+  } catch (e) {
+    // sem sessionStorage (navegação privada antiga): o recado se perde, a gravação não
+  }
+}
+(function () {
+  var guardado = null;
+  try {
+    guardado = sessionStorage.getItem("aviso_flutuante");
+    if (guardado) {
+      sessionStorage.removeItem("aviso_flutuante");
+    }
+  } catch (e) {
+    guardado = null;
+  }
+  if (guardado) {
+    var a = JSON.parse(guardado);
+    var mostrar = function () { avisoFlutuante(a.texto, a.erro); };
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", mostrar);
+    } else {
+      mostrar();
+    }
+  }
+}());
+
+// Sem idioma escolhido no menu, vale o padrão (o de Minha conta, senão o da coleção, senão o da instalação; o idioma_padrao
+// de recurso=conta&parte=menu, que vem a cada página): o cookie lingua é gravado aqui sozinho, marcado como automático
+// (lingua_auto), e acompanha o padrão quando ele muda; só a escolha no seletor do menu apaga a marca e prende o idioma
+function seguirIdiomaPadrao(padrao) {
+  var cookieLingua = (document.cookie.match(/(?:^|;\s*)lingua=([^;]*)/) || [])[1] || "";
+  var cookieAuto = (document.cookie.match(/(?:^|;\s*)lingua_auto=([^;]*)/) || [])[1] || "";
+  if (padrao && padrao !== LINGUA && (cookieLingua === "" || cookieLingua === cookieAuto)) {
+    document.cookie = "lingua=" + padrao + "; path=/; max-age=31536000; SameSite=Lax";
+    document.cookie = "lingua_auto=" + padrao + "; path=/; max-age=31536000; SameSite=Lax";
+    window.location.reload();
+    return true;
+  }
+  return false;
+}
+
+// Gravou outro idioma (o padrão da coleção, na Configuração, ou o da conta, em Minha conta): a escolha do menu deixa de
+// valer e a página abre de novo no idioma gravado (os cookies lingua e lingua_auto com ele: automático, segue o padrão
+// dali em diante) ou, sem idioma ("O da coleção"), sem cookie nenhum (o menu da página seguinte põe o que vale agora),
+// com o recado na janelinha
+function reabrirNoIdioma(recado, idioma) {
+  avisoAoAbrir(recado, false);
+  var valor = idioma ? idioma + "; path=/; max-age=31536000; SameSite=Lax" : "; path=/; max-age=0; SameSite=Lax";
+  document.cookie = "lingua=" + valor;
+  document.cookie = "lingua_auto=" + valor;
+  window.location.reload();
 }
 
 // Um instante no formato do campo de data e hora (AAAA-MM-DDTHH:MM), no fuso do navegador
@@ -584,6 +655,9 @@ function verComo(login) {
 }
 var contaPronta = document.querySelector("[data-menu-conta]") ? api({recurso: "conta", parte: "menu"}).then(function (m) {
   CONTA_MENU = m;
+  if (seguirIdiomaPadrao(m.idioma_padrao)) {
+    return m;
+  }
   var lugar = document.querySelector("[data-menu-conta]");
   var res = "";
   if (m.colecoes.length > 1) {
@@ -613,7 +687,9 @@ var contaPronta = document.querySelector("[data-menu-conta]") ? api({recurso: "c
     document.body.insertBefore(faixa, document.body.firstChild);
   }
   return m;
-}).catch(function () { return null; }) : Promise.resolve(null);
+}).catch(function () { return null; })
+  // a página pública (o cadastro), sem menu: o padrão da instalação vem do recurso=textos em JSON (não fica em cache)
+  : api({recurso: "textos"}).then(function (d) { seguirIdiomaPadrao(d.padrao); return null; }).catch(function () { return null; });
 
 // O aplicativo no celular (PWA): toda página registra o service worker (pela API: o cache das telas e as notificações do
 // Web Push) e guarda o pedido de instalação do navegador (o Chrome avisa que dá para instalar: o botão "Instalar o

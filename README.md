@@ -1078,7 +1078,7 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 As telas falam seis línguas: **português** (o original), **inglês**, **chinês** (simplificado), **hindi**, **espanhol** e
 **francês**. Cada pessoa escolhe a sua no seletor do fim do menu (PT, EN, 中文, हिं, ES, FR); a escolha fica no navegador
 dela (o cookie `lingua`, por um ano) e não muda a das outras. Quem nunca escolheu segue o padrão, e acompanha o padrão
-quando ele muda (o cookie gravado sozinho é marcado como automático); só a escolha no seletor prende o idioma. Quem ainda não escolheu vê o **idioma padrão** da instalação
+quando ele muda (o cookie gravado sozinho é marcado como automático); só a escolha no seletor prende o idioma. Gravar outro idioma na **Configuração** (o padrão) ou em **Minha conta** (o da conta) solta a escolha do seletor: a página abre de novo no idioma que vale agora. Quem ainda não escolheu vê o **idioma padrão** da instalação
 (Configuração › Geral); sem padrão, o do navegador (se for um dos seis), senão português. As datas e os números seguem o
 idioma: 13/10/2026 e 1.234,56 em português, 10/13/2026 e 1,234.56 em inglês, 2026-10-13 em chinês.
 

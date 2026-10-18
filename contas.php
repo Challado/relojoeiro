@@ -1334,8 +1334,8 @@ function vendo_como($login)
     return (string)$alvo["login"];
 }
 
-// O pedaço de Minha conta que o menu das páginas usa: o seletor de coleção, a faixa "Vendo como", o aviso da demo e quantas
-// aprovações esperam
+// O pedaço de Minha conta que o menu das páginas usa: o seletor de coleção, a faixa "Vendo como", o aviso da demo, quantas
+// aprovações esperam e o idioma padrão
 function conta_menu()
 {
     $u = usuario_atual();
@@ -1347,6 +1347,8 @@ function conta_menu()
             "dias_restantes" => $u["expira_em"] !== null ? max(0, (int)ceil((strtotime((string)$u["expira_em"]) - time()) / 86400)) : null],
         "vendo_como" => $real !== null ? ["login" => $u["login"], "master" => $real["login"]] : null,
         "master" => usuario_master() || ($real !== null && $real["papel"] === "master"),
+        // o idioma de quem não escolheu no menu (o api.js segue este, que vem a cada página; o script do dicionário fica em cache)
+        "idioma_padrao" => lingua_valida($u["idioma"] ?? null) ?? (lingua_valida(cfg("idioma")) ?? lingua_valida(sis("idioma"))),
         "colecoes" => array_map(function ($c) { return ["id" => $c["id"], "nome" => $c["nome"], "dono" => $c["dono"], "papel" => $c["papel"]]; }, colecoes_visiveis($u)),
         "colecao" => colecao_atual(), "aprovacoes" => count(aprovacoes_pedidos()) + count(aprovacoes_convites())];
 }

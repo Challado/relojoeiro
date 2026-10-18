@@ -1,4 +1,4 @@
-<!-- origem: c3adf3cc35a169ddcca78693a93f9118970a9bf2 -->
+<!-- origem: 5444c2d722268c1a14b99125f2e914f98283dbc2 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1046,7 +1046,7 @@ que vous enregistrez apparaît ici sous son nom.
 
 Les écrans parlent six langues : **portugais** (l'original), **anglais**, **chinois** (simplifié), **hindi**, **espagnol** et
 **français**. Chacun choisit la sienne dans le sélecteur à la fin du menu (PT, EN, 中文, हिं, ES, FR) ; le choix reste dans son
-navigateur (le cookie `lingua`, pendant un an) et ne change pas celui des autres. Qui n'a jamais choisi suit la langue par défaut, et la suit quand elle change (le cookie écrit automatiquement est marqué comme automatique) ; seul un choix dans le sélecteur fige la langue. Qui n'a pas encore choisi voit la **langue
+navigateur (le cookie `lingua`, pendant un an) et ne change pas celui des autres. Qui n'a jamais choisi suit la langue par défaut, et la suit quand elle change (le cookie écrit automatiquement est marqué comme automatique) ; seul un choix dans le sélecteur fige la langue. Enregistrer une autre langue dans **Configuration** (la langue par défaut) ou dans **Mon compte** (celle du compte) libère le choix du sélecteur : la page se rouvre dans la langue qui vaut désormais. Qui n'a pas encore choisi voit la **langue
 par défaut** de l'installation (Configuration › Général) ; sans langue par défaut, celle du navigateur (si c'est l'une des
 six), sinon le portugais. Les dates et les nombres suivent la langue : 13/10/2026 et 1.234,56 en portugais, 10/13/2026 et
 1,234.56 en anglais, 2026-10-13 en chinois.

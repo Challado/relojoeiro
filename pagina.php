@@ -14,10 +14,10 @@ if (is_file(getenv("RELOGIOS_CONFIG") ?: __DIR__ . "/config.php")) {
 
 // O começo de uma página, como no sistema antigo: o cabeçalho e o menu (Cadastros e Ajuda no fim, as páginas que o antigo
 // não tinha) e o seletor do idioma. Cada página abre o seu <main> e mostra as suas mensagens. O idioma da página: o cookie
-// lingua (o seletor), senão o do navegador; a página não lê o banco, então o padrão da instalação chega pelo api.js (ele
-// grava o cookie e abre a página de novo, uma vez). O api.js completa o menu com o que é de quem entrou (recurso=conta,
-// parte=menu): o seletor da coleção, o aviso da conta de demonstração, as aprovações que esperam, a faixa "Vendo como" e o
-// Usuários (só o master). A página pública ($publica: o cadastro) não tem menu, só o idioma
+// lingua (o seletor), senão o do navegador; a página não lê o banco, então o idioma padrão (o da conta, da coleção ou da
+// instalação) chega pelo api.js, no idioma_padrao do menu (ele grava o cookie e abre a página de novo, uma vez). O api.js
+// completa o menu com o que é de quem entrou (recurso=conta, parte=menu): o seletor da coleção, o aviso da conta de
+// demonstração, as aprovações que esperam, a faixa "Vendo como", o Usuários (só o master) e o idioma padrão. A página pública ($publica: o cadastro) não tem menu, só o idioma
 function topo($titulo, $ativo, $publica = false)
 {
     lingua_definir(lingua_do_pedido());
