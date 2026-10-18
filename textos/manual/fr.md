@@ -1,4 +1,4 @@
-<!-- origem: 39a4bc38b30496a3595d568a80de6ef3fe346e52 -->
+<!-- origem: 6b28fffd3e9c55e1ab356e1550478768ac8134f0 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -206,11 +206,13 @@ depuis 38 jours, au-delà de la limite de 21 jours sans usage »*, *« Tirage se
 Les modes sont dans la page **Modes de rotation** (menu **Rotation**). Chaque mode a un **type**, et l'écran du type ne
 demande que ce qui a du sens pour lui :
 
-- **Une par semaine** : une montre pour toute la semaine, du lundi au dimanche. Vous dites d'où elle vient (la collection, un
-  groupe ou une montre fixe) et le critère de choix.
+- **Une par semaine** : une montre pour toute la semaine, du premier au dernier jour (du lundi au dimanche, ou du dimanche au
+  samedi : la semaine commence le jour choisi dans la Configuration, **La semaine commence**). Vous dites d'où elle vient
+  (la collection, un groupe ou une montre fixe) et le critère de choix.
 - **Semaine et week-end** : deux tranches, du lundi au vendredi et le samedi et dimanche, chacune avec son groupe et avec
   **une montre pour la tranche** ou **une par jour**. Celui qui est fourni : la smartwatch en semaine, une traditionnelle par
-  jour à la fin de celle-ci.
+  jour à la fin de celle-ci. Avec la semaine commençant le dimanche, le samedi et le dimanche restent une seule tranche
+  (la montre du samedi reste le dimanche).
 - **Par jour de la semaine** : une montre par jour, et chaque jour de la semaine dit d'où elle vient (un groupe, une montre
   fixe ou aucune : jour libre).
 - **Aléatoire chaque jour** : une par jour, toutes avec la même chance, sans critère ni garantie de rotation.
@@ -224,8 +226,11 @@ la page Aujourd'hui choisit le mode, le critère et la garantie de rotation ; **
 du plan ne change tant que vous ne cliquez pas sur **Refaire le tirage**.
 
 **Les semaines.** Hors planning, chaque mode dit **combien de semaines en avant** le plan arrive monté (1 à 8 ; la liste montre
-les semaines avec les dates). Le plan va jusqu'au dimanche de la dernière d'entre elles (avec une seule semaine, le dimanche le
-plan apporte aussi le lundi, pour le rappel de la veille), et la semaine suivante entre quand son tour arrive. Avec plus d'une
+les semaines avec les dates). Le plan va jusqu'au dernier jour de la dernière d'entre elles : le dimanche, ou le samedi avec la
+semaine commençant le dimanche (avec une seule semaine, le dernier jour de la semaine le plan apporte aussi le premier de la
+suivante, pour le rappel de la veille), et la semaine suivante entre quand son tour arrive. La semaine commence le jour
+choisi dans la Configuration (**La semaine commence** : le lundi, par défaut, ou le dimanche), et le cycle, la semaine
+prochaine et la montre pour toute la semaine se comptent à partir d'elle. Avec plus d'une
 semaine, **Refaire le tirage** a aussi **la semaine prochaine** : elle sort selon le mode actuel, avec les jours qui restent
 cette semaine comptés comme utilisation, comme si vous aviez déjà porté les montres du plan (l'utilisation compte dans les
 jours sans utilisation et dans la note ; la charge non, parce qu'on ne sait pas si la montre sera chargée). Chaque jour est
@@ -301,7 +306,7 @@ par jour) et dans le cadre **Mode de rotation** de la page Aujourd'hui (chacun s
   confirmation.
 - **Tout effacer** : vide toute la programmation, à partir de demain : les jours choisis à la main, les tirés et les libres.
   En cochant **Y compris aujourd'hui**, il efface à partir d'aujourd'hui (si une autre montre sort pour aujourd'hui, elle
-  devient celle au poignet dès maintenant). Ensuite le mode de rotation reconstruit le plan, de zéro : jusqu'au dimanche de la
+  devient celle au poignet dès maintenant). Ensuite le mode de rotation reconstruit le plan, de zéro : jusqu'au dernier jour de la
   dernière des semaines du mode (les suivantes, quand elles arrivent) ; dans le planning intelligent, tout le planning.
   La programmation ne reste pas vide car le système construit toujours les jours manquants avec le mode actif ; pour des
   jours sans montre, cochez *libre* dans la Rotation manuelle.
@@ -912,6 +917,7 @@ collection vient à la fin de chaque ligne.
 | **Passage du matin** (`horario_manha`) | l'heure où le cron envoie le message du jour (la montre d'aujourd'hui et les alertes) et refait le plan avec ce qui s'est passé. Par défaut : 06:30. |
 | **Passage du soir** (`horario_noite`) | l'heure du message de la veille : la montre de demain et quoi préparer. Par défaut : 20:00. |
 | **La session de soleil oubliée se ferme à** (`sol_fim`, qui enregistre le « se ferme à » du type Au soleil) | si vous l'avez mise au soleil et oublié le **Retirée**, la session se ferme à cette heure. Par défaut : 18:00. |
+| **La semaine commence** (`semana_inicio`) | le premier jour de la semaine de la rotation : **Le lundi** (`segunda`) ou **Le dimanche** (`domingo`). Le plan des [modes de rotation](#os-modos-de-rodízio) arrive monté jusqu'au dernier jour de la semaine (le dimanche ou le samedi), et le cycle, la semaine prochaine et la montre pour toute la semaine se comptent à partir d'elle ; cela vaut pour les prochains tirages (ce qui est déjà dans le plan reste ; **Refaire le tirage** le refait). La fonction `SEMANA_DO_ANO()` des formules reste la semaine ISO. Par défaut : lundi. |
 | **Seuil de charge** (`carga_limiar`) | la charge (%) à laquelle les alertes disent de charger ou de remonter ; le champ **Seuil de charge** d'une montre prend sa place. De 1 à 99. Par défaut : 20. |
 | **Seuil de la solaire** (`sol_limiar`) | la charge (%) à laquelle la solaire doit aller au soleil. De 1 à 99. Par défaut : 70. |
 | **Seuil de la prévision** (`previsao_limite`) | la charge (%) qu'utilise la prévision de la smartwatch pour « atteint le seuil dans... ». De 0 à 100. Par défaut : 20. |

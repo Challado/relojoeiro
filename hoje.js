@@ -171,8 +171,11 @@ function recarregarHoje() {
       selModos[m.id] = m.selecao;
       tiposModo[m.id] = m.tipo;
     });
+    // a semana do rodízio começa no dia da Configuração (semana_inicio): a segunda ou o domingo
+    var semIni = d.semana_inicio === "domingo" ? t("domingo") : t("segunda");
+    var semFim = d.semana_inicio === "domingo" ? t("sábado") : t("domingo");
     var EXPLICA_TIPO = {
-      semana: t("Um relógio para a semana inteira, de segunda a domingo, escolhido pelo critério."),
+      semana: t("Um relógio para a semana inteira, de {1} a {2}, escolhido pelo critério.", {1: semIni, 2: semFim}),
       semana_fds: t("Dois trechos na semana: segunda a sexta e o fim de semana, cada um com o seu grupo, um relógio para o trecho ou um por dia."),
       dia_semana: t("Um relógio por dia, e cada dia da semana diz de onde ele sai."),
       aleatorio: t("Um relógio por dia, todos com a mesma chance, sem critério nem garantia de rodízio."),
@@ -206,7 +209,7 @@ function recarregarHoje() {
       + el("button", {"data-nao-manual": true}, t("Aplicar modo"))
       + el("p", {"class": "nota", "data-nao-manual": true}, t("Aplicar só marca o modo (e grava o critério e a garantia): o plano gravado continua como está, e o modo vale para os próximos sorteios. Para refazer o plano com ele, use \"Sortear de novo\", embaixo. Os modos, as semanas e o roteiro se cadastram em {1}.", {1: el("a", {"href": "modos.php"}, t("Modos de rodízio"))})));
     // sortear de novo: as ações possíveis agora, com a explicação e a confirmação de cada uma
-    var ateQuando = escala ? t("o fim da escala") : (d.proxima_semana && d.proxima_semana.ja_montada ? t("o fim da próxima semana") : t("domingo"));
+    var ateQuando = escala ? t("o fim da escala") : (d.proxima_semana && d.proxima_semana.ja_montada ? t("o fim da próxima semana") : semFim);
     var sorteios = [];
     if (d.comecou) {
       sorteios.push(["resortear", t("a partir de amanhã"), t("Refaz o plano de amanhã até {1} pelo modo atual; hoje continua o {2}.", {1: ateQuando, 2: nomeHoje}),
@@ -218,9 +221,9 @@ function recarregarHoje() {
     }
     if (!escala && modo !== null && modo.semanas > 1) {
       var ps = d.proxima_semana;
-      sorteios.push(["proxima_semana", t("a próxima semana ({1} a {2})", {1: dataBr(ps.segunda, true), 2: dataBr(ps.domingo, true)}),
-        t("{1} a semana seguinte inteira, de segunda a domingo, pelo modo atual, com os dias que ainda faltam desta semana já contados como uso. Os dias escolhidos à mão ficam.", {1: ps.ja_montada ? t("Refaz") : t("Monta")}),
-        t("{1} a semana de {2} a {3}?{4}", {1: ps.ja_montada ? t("Sortear de novo") : t("Montar"), 2: dataBr(ps.segunda, true), 3: dataBr(ps.domingo, true), 4: ps.ja_montada ? t(" O que já estava montado para ela é refeito.") : ""}), true]);
+      sorteios.push(["proxima_semana", t("a próxima semana ({1} a {2})", {1: dataBr(ps.inicio, true), 2: dataBr(ps.fim, true)}),
+        t("{1} a semana seguinte inteira, de {2} a {3}, pelo modo atual, com os dias que ainda faltam desta semana já contados como uso. Os dias escolhidos à mão ficam.", {1: ps.ja_montada ? t("Refaz") : t("Monta"), 2: semIni, 3: semFim}),
+        t("{1} a semana de {2} a {3}?{4}", {1: ps.ja_montada ? t("Sortear de novo") : t("Montar"), 2: dataBr(ps.inicio, true), 3: dataBr(ps.fim, true), 4: ps.ja_montada ? t(" O que já estava montado para ela é refeito.") : ""}), true]);
     }
     var formSorteio = el("form", {"data-recurso": "rodizio", "class": "sortear-de-novo", "data-nao-manual": true, "onsubmit": "var o = this.acao.options[this.acao.selectedIndex]; return confirm(o.getAttribute('data-confirma'))"},
       el("label", {"class": "campo-principal", "for": "acao-sorteio"}, t("Sortear de novo"))

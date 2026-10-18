@@ -351,6 +351,24 @@ foreach ([$semana2, $por_dia, $personalizado] as $m_t) {
 escrever(["recurso" => "rodizio", "acao" => "modo", "modo" => $semana2, "selecao" => "ponderado", "max_sem_uso" => 15]);
 escrever(["recurso" => "rodizio", "acao" => "proxima_semana"]);
 ler("cadastros com os modos", ["recurso" => "cadastros"]);
+// a semana começando no domingo (a Configuração, semana_inicio): o horizonte, a próxima semana e o fim de semana como um
+// trecho só (sábado e domingo, um relógio para o bloco); um valor que não existe é recusado; depois, de volta à segunda
+escrever(["recurso" => "config", "acao" => "salvar", "semana_inicio" => "sabado"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "semana_inicio" => "domingo"]);
+$fds_d = escrever(["recurso" => "modos", "acao" => "salvar", "id" => 0, "nome" => "Fim de semana inteiro", "tipo" => "semana_fds", "selecao" => "inteligente", "semanas" => 2,
+    "blocos" => [["nome" => "Segunda a sexta", "dias" => [1, 2, 3, 4, 5], "no_id" => G(1), "um_por" => "bloco", "relogio_id" => 0],
+        ["nome" => "Sábado e domingo", "dias" => [6, 7], "no_id" => G(2), "um_por" => "bloco", "relogio_id" => 0]]]);
+foreach ([$semana2, $fds_d] as $m_t) {
+    escrever(["recurso" => "modos", "acao" => "ativar", "id" => $m_t]);
+    escrever(["recurso" => "rodizio", "acao" => "resortear"]);
+    ler("plano do modo " . $m_t . " com a semana no domingo", ["recurso" => "plano", "dias" => 21]);
+}
+escrever(["recurso" => "rodizio", "acao" => "proxima_semana"]);
+ler("hoje com a semana no domingo", ["recurso" => "hoje", "incluir" => "semana_inicio,proxima_semana,proximos"]);
+ler("cadastros com a semana no domingo", ["recurso" => "cadastros", "incluir" => "semana_inicio,modos"]);
+escrever(["recurso" => "config", "acao" => "salvar", "semana_inicio" => "segunda"]);
+escrever(["recurso" => "modos", "acao" => "ativar", "id" => $semana2]);
+escrever(["recurso" => "rodizio", "acao" => "resortear"]);
 escrever(["recurso" => "modos", "acao" => "salvar", "id" => $inteligente, "nome" => "Escala inteligente", "selecao" => "inteligente", "escala_dias" => 45,
     "blocos" => [["nome" => "Todo dia", "dias" => [1, 2, 3, 4, 5, 6, 7], "no_id" => 0, "um_por" => "dia", "relogio_id" => 0]]]);
 escrever(["recurso" => "modos", "acao" => "ativar", "id" => $inteligente]);

@@ -1,4 +1,4 @@
-<!-- origem: 39a4bc38b30496a3595d568a80de6ef3fe346e52 -->
+<!-- origem: 6b28fffd3e9c55e1ab356e1550478768ac8134f0 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -209,11 +209,13 @@ the limit of 21 days without use"*, *"Draw by score, among 5 candidates: score 7
 The modes are on the **Rotation modes** page (menu **Rotation**). Each mode has a **type**, and the type's screen asks only
 for what makes sense in it:
 
-- **One per week**: a watch for the whole week, Monday to Sunday. You say where it comes from (the collection, a group or a
-  fixed watch) and the choice criterion.
+- **One per week**: a watch for the whole week, from its first to its last day (Monday to Sunday, or Sunday to Saturday: the week starts on
+  the day chosen in the Settings, **The week starts**). You say where it comes from (the collection, a group or a fixed
+  watch) and the choice criterion.
 - **Week and weekend**: two stretches, Monday to Friday and Saturday and Sunday, each with its own group and with **one
   watch for the stretch** or **one per day**. The ready-made one: the smartwatch during the week, one traditional per day at
-  the end of it.
+  the end of it. With the week starting on Sunday, Saturday and Sunday are still a single stretch (Saturday's watch stays
+  on Sunday).
 - **By day of the week**: one watch per day, and each weekday says where it comes from (a group, a fixed watch or none: free
   day).
 - **Random every day**: one per day, all with the same chance, with no criterion or rotation guarantee.
@@ -226,8 +228,11 @@ after all the candidates have had their turn in the week. The **Rotation mode** 
 criterion and the rotation guarantee; **Apply mode** only marks: nothing in the plan changes until you click **Draw again**.
 
 **The weeks.** Outside the schedule, each mode says **how many weeks ahead** the plan comes built (1 to 8; the list shows the
-weeks with their dates). The plan goes up to the Sunday of the last of them (with a single week, on Sunday the plan also
-brings Monday, for the day-before reminder), and the following week comes in when its turn comes. With more than one week,
+weeks with their dates). The plan goes up to the last day of the last of them: Sunday, or Saturday with the week starting on
+Sunday (with a single week, on the last day of the week the plan also brings the first of the next one, for the day-before
+reminder), and the following week comes in when its turn comes. The week starts on the day chosen in the Settings (**The
+week starts**: on Monday, the default, or on Sunday), and the cycle, the next week and the watch for the whole week count
+from it. With more than one week,
 **Draw again** also has **next week**: it comes out of the current mode, with the days still left this week counted as use,
 as if you had already worn the watches in the plan (the use counts in the days without use and in the score; the charge does
 not, because no one knows whether the watch will be charged). Each day is chosen this way, with the earlier days of the plan
@@ -300,7 +305,7 @@ day) and in the **Rotation mode** box on the Today page (each below a line, like
   drawn ones and the free ones), and the rotation mode builds these days again. The **Erase** button asks for confirmation.
 - **Erase all**: clears the whole schedule, from tomorrow on: the days chosen by hand, the drawn ones and the free ones.
   Ticking **Including today**, it erases from today on (if another watch comes up for today, it becomes the one on the wrist
-  from now on). Then the rotation mode builds the plan again, from scratch: up to the Sunday of the last of the mode's weeks (the
+  from now on). Then the rotation mode builds the plan again, from scratch: up to the last day of the last of the mode's weeks (the
   following ones, when they come); in the smart schedule, the whole schedule. The schedule doesn't stay empty because the system always
   builds the missing days by the active mode; for days without a watch, mark *free* in the Manual rotation.
 
@@ -892,6 +897,7 @@ each line.
 | **Morning round** (`horario_manha`) | the time when the cron sends the day's message (today's watch and the alerts) and rebuilds the plan from what happened. Default: 06:30. |
 | **Evening round** (`horario_noite`) | the time of the eve's message: tomorrow's watch and what to prepare. Default: 20:00. |
 | **A forgotten sun session closes at** (`sol_fim`, which saves the "closes at" of the In the sun type) | whoever put it in the sun and forgot the **Took off** has the session closed at this time. Default: 18:00. |
+| **The week starts** (`semana_inicio`) | the first day of the rotation week: **On Monday** (`segunda`) or **On Sunday** (`domingo`). The plan of the [rotation modes](#os-modos-de-rodízio) comes built up to the last day of the week (Sunday or Saturday), and the cycle, the next week and the watch for the whole week count from it; it applies to the next draws (what is already in the plan stays; **Draw again** rebuilds it). The `SEMANA_DO_ANO()` function of the formulas is still the ISO week. Default: Monday. |
 | **Charge limit** (`carga_limiar`) | the charge (%) at which the alerts say to charge or wind; a watch's **Charge limit** field takes its place. From 1 to 99. Default: 20. |
 | **Solar limit** (`sol_limiar`) | the charge (%) at which the solar should go into the sun. From 1 to 99. Default: 70. |
 | **Forecast limit** (`previsao_limite`) | the charge (%) that the smartwatch forecast uses for "reaches the limit in...". From 0 to 100. Default: 20. |

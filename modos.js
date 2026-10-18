@@ -8,7 +8,7 @@ var DIAS = ["", t("seg"), t("ter"), t("qua"), t("qui"), t("sex"), t("sáb"), t("
 var DIAS_LONGOS = ["", t("Segunda"), t("Terça"), t("Quarta"), t("Quinta"), t("Sexta"), t("Sábado"), t("Domingo")];
 var ESCALAS = [[7, t("Uma semana")], [30, t("Um mês")], [60, t("Dois meses")], [180, t("Meio ano")], [365, t("Um ano")], [730, t("Dois anos")]];
 var EXPLICA_TIPO = {
-  semana: t("Um relógio para a semana inteira, de segunda a domingo. Escolha de onde ele sai e o critério; o Sortear de novo sorteia um para cada semana."),
+  semana: t("Um relógio para a semana inteira, do primeiro ao último dia dela (a semana começa no dia da Configuração). Escolha de onde ele sai e o critério; o Sortear de novo sorteia um para cada semana."),
   semana_fds: t("Dois trechos na semana: de segunda a sexta e no fim de semana, cada um com o seu grupo e com um relógio para o trecho inteiro ou um por dia."),
   dia_semana: t("Um relógio por dia, e cada dia da semana diz de onde ele sai: um grupo, um relógio fixo ou nenhum (dia livre)."),
   aleatorio: t("Um relógio por dia, todos com a mesma chance, sem olhar os critérios nem a garantia de rodízio. O de ontem fica de fora, se houver outro."),
@@ -54,18 +54,25 @@ function deOnde(m) {
   });
   return m.tipo === "personalizado" ? t("pelo roteiro") : partes.join("; ");
 }
-// as semanas à frente: a lista das semanas (número, de segunda a domingo), a partir de hoje
+// os dias da semana na ordem da semana do rodízio: começando na segunda ou no domingo (a Configuração, semana_inicio)
+function diasEmOrdem() {
+  return dados.semana_inicio === "domingo" ? [7, 1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5, 6, 7];
+}
+// as semanas à frente: a lista das semanas (número; do primeiro ao último dia, pela semana_inicio), a partir de hoje
 function listaSemanas(n) {
   var hoje = new Date(instante(dados.hoje));
   var seg = new Date(hoje.getTime());
-  seg.setDate(seg.getDate() - ((hoje.getDay() || 7) - 1));
+  seg.setDate(seg.getDate() - ((hoje.getDay() || 7) - diasEmOrdem()[0] + 7) % 7);
   var linhas = [];
   for (var i = 0; i < n; i++) {
     var ini = new Date(seg.getTime());
     ini.setDate(ini.getDate() + i * 7);
     var fim = new Date(ini.getTime());
     fim.setDate(fim.getDate() + 6);
-    linhas.push(el("li", {}, t("Semana {1}: {2} a {3}", {1: numeroDaSemana(ini), 2: dataBr(isoData(ini), true), 3: dataBr(isoData(fim), true)}) + (i === 0 ? " " + el("small", {}, t("(esta)")) : "")));
+    // o número é o da semana ISO da segunda-feira dela (na semana que começa no domingo, a segunda é o dia seguinte)
+    var segunda = new Date(ini.getTime());
+    segunda.setDate(segunda.getDate() + (ini.getDay() === 0 ? 1 : 0));
+    linhas.push(el("li", {}, t("Semana {1}: {2} a {3}", {1: numeroDaSemana(segunda), 2: dataBr(isoData(ini), true), 3: dataBr(isoData(fim), true)}) + (i === 0 ? " " + el("small", {}, t("(esta)")) : "")));
   }
   return el("ul", {"class": "semanas-lista"}, linhas.join(""));
 }
@@ -105,7 +112,7 @@ function formModo(e, f) {
     }).join(""));
   } else if (tipo === "dia_semana") {
     corpo += el("div", {"class": "rolagem"}, el("table", {"class": "compacta dias-da-semana"}, el("thead", {}, el("tr", {}, el("th", {}, t("Dia")) + el("th", {}, t("Escolher de"))))
-      + el("tbody", {}, [1, 2, 3, 4, 5, 6, 7].map(function (dia) {
+      + el("tbody", {}, diasEmOrdem().map(function (dia) {
         var b = e ? blocoDoDia(f, dia) : null;
         return el("tr", {"class": dia >= 6 ? "fds" : ""}, el("td", {}, DIAS_LONGOS[dia]) + el("td", {}, el("select", {"name": "de[" + dia + "]", "aria-label": DIAS_LONGOS[dia]}, opcoesDe(e ? (b === null ? "livre" : valorDe(b)) : "0", true))));
       }).join(""))));
@@ -129,7 +136,7 @@ function formModo(e, f) {
     var semanas = f.semanas || 1;
     corpo += el("div", {"class": "semanas"}, el("label", {}, t("Planejar {1} semanas à frente", {1: el("input", {"type": "number", "name": "semanas", "min": "1", "max": "8", "value": semanas, "class": "curto", "data-semanas": true})}))
       + el("div", {"data-semanas-lista": true}, listaSemanas(semanas))
-      + el("p", {"class": "nota"}, t("O plano vem montado até o domingo da última semana; a seguinte entra quando a sua vez chega, ou antes, em \"Sortear de novo: a próxima semana\" (só com mais de uma semana).")));
+      + el("p", {"class": "nota"}, t("O plano vem montado até o último dia da última semana ({1}); a seguinte entra quando a sua vez chega, ou antes, em \"Sortear de novo: a próxima semana\" (só com mais de uma semana). A semana começa no dia escolhido em {2}.", {1: dados.semana_inicio === "domingo" ? t("o sábado") : t("o domingo"), 2: el("a", {"href": "configuracao.php"}, t("Configuração"))})));
   }
   if (tipo === "semana" || tipo === "semana_fds" || tipo === "dia_semana") {
     corpo += el("label", {}, t("Critério de escolha (o sorteio) {1}", {1: el("select", {"name": "selecao"}, Object.keys(SEL).map(function (k) { return el("option", {"value": k, "selected": (f.selecao || "ponderado") === k}, h(SEL[k])); }).join(""))}))
@@ -164,7 +171,7 @@ function montarBlocos(form) {
     blocos.push(Object.assign({nome: t("Segunda a sexta"), dias: [1, 2, 3, 4, 5], um_por: umPor(0)}, alvo(de(0))));
     blocos.push(Object.assign({nome: t("Sábado e domingo"), dias: [6, 7], um_por: umPor(1)}, alvo(de(1))));
   } else if (tipo === "dia_semana") {
-    [1, 2, 3, 4, 5, 6, 7].forEach(function (dia) {
+    diasEmOrdem().forEach(function (dia) {
       var v = de(dia);
       if (v !== "livre") {
         blocos.push(Object.assign({nome: DIAS_LONGOS[dia], dias: [dia], um_por: "dia"}, alvo(v)));

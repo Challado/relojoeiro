@@ -254,10 +254,12 @@ seguidos"*, *"Segue no pulso: dia 2 de 5 seguidos"*, *"Escolhido à mão"*.
 Os modos ficam na página **Modos de rodízio** (menu **Rodízio**). Cada modo tem um **tipo**, e a tela do tipo pede só o que
 faz sentido nele:
 
-- **Um por semana**: um relógio para a semana inteira, de segunda a domingo. Você diz de onde ele sai (a coleção, um grupo
-  ou um relógio fixo) e o critério de escolha.
+- **Um por semana**: um relógio para a semana inteira, do primeiro ao último dia dela (de segunda a domingo, ou de domingo a
+  sábado: a semana começa no dia escolhido na Configuração, **A semana começa**). Você diz de onde ele sai (a coleção, um
+  grupo ou um relógio fixo) e o critério de escolha.
 - **Semana e fim de semana**: dois trechos, de segunda a sexta e no sábado e domingo, cada um com o seu grupo e com **um
   relógio para o trecho** ou **um por dia**. O que vem pronto: o smartwatch na semana, um tradicional por dia no fim dela.
+  Com a semana começando no domingo, o sábado e o domingo continuam um trecho só (o relógio do sábado fica no domingo).
 - **Por dia da semana**: um relógio por dia, e cada dia da semana diz de onde ele sai (um grupo, um relógio fixo ou nenhum:
   dia livre).
 - **Aleatório todo dia**: um por dia, todos com a mesma chance, sem critério nem garantia de rodízio.
@@ -270,10 +272,12 @@ depois que todos os candidatos passaram na semana. O quadro **Modo de rodízio**
 garantia de rodízio; **Aplicar modo** só marca: nada do plano muda até você clicar em **Sortear de novo**.
 
 **As semanas.** Fora da escala, cada modo diz **quantas semanas à frente** o plano vem montado (1 a 8; a lista mostra as
-semanas com as datas). O plano vai até o domingo da última delas (com uma semana só, no domingo o plano traz também a
-segunda, para o aviso da véspera), e a semana seguinte entra quando a sua vez chega. Com mais de uma semana, o **Sortear de
-novo** tem também **a próxima semana**: ela sai pelo modo atual, com os dias que ainda faltam desta semana contados como uso,
-como se você já tivesse usado os relógios do plano (o uso conta nos dias sem uso e na nota; a carga não, porque não se sabe
+semanas com as datas). O plano vai até o último dia da última delas: o domingo, ou o sábado com a semana começando no
+domingo (com uma semana só, no último dia da semana o plano traz também o primeiro da seguinte, para o aviso da véspera), e a
+semana seguinte entra quando a sua vez chega. A semana começa no dia escolhido na Configuração (**A semana começa**: na
+segunda-feira, o padrão, ou no domingo), e o ciclo, a próxima semana e o relógio para a semana inteira contam dela. Com
+mais de uma semana, o **Sortear de novo** tem também **a próxima semana**: ela sai pelo modo atual, com os dias que ainda
+faltam desta semana contados como uso, como se você já tivesse usado os relógios do plano (o uso conta nos dias sem uso e na nota; a carga não, porque não se sabe
 se o relógio vai ser carregado). Cada dia é escolhido assim, com os anteriores do plano já no pulso, e por isso o relógio de
 segunda não volta na terça só por parecer parado. Os dias escolhidos à mão ficam. Na escala inteligente não há próxima
 semana: ela já planeja o próprio período.
@@ -343,7 +347,7 @@ no quadro **Modo de rodízio** da página Hoje (cada um abaixo de uma linha, com
   livres), e o modo de rodízio monta esses dias de novo. O botão **Apagar** pede confirmação.
 - **Apagar tudo**: limpa toda a programação, de amanhã em diante: os dias escolhidos à mão, os sorteados e os livres.
   Marcando **Excluindo hoje**, apaga de hoje em diante (se sair outro relógio para hoje, ele passa a ser o do pulso a partir
-  de agora). Depois, o modo de rodízio monta o plano de novo, do zero: até o domingo da última das semanas do modo (as
+  de agora). Depois, o modo de rodízio monta o plano de novo, do zero: até o último dia da última das semanas do modo (as
   seguintes, quando chegarem); na escala inteligente, a escala inteira. A programação não fica vazia porque o sistema sempre
   monta os dias que faltam pelo modo ativo; para dias sem relógio, marque *livre* no Rodízio manual.
 
@@ -915,6 +919,7 @@ A página **Configuração** guarda as opções **da coleção** (cada coleção
 | **Rodada da manhã** (`horario_manha`) | a hora em que o cron manda a mensagem do dia (o relógio de hoje e os avisos) e refaz o plano a partir do que aconteceu. Padrão: 06:30. |
 | **Rodada da noite** (`horario_noite`) | a hora da mensagem da véspera: o relógio de amanhã e o que preparar. Padrão: 20:00. |
 | **A sessão no sol esquecida fecha às** (`sol_fim`, que grava o "fecha às" do tipo No sol) | quem pôs no sol e esqueceu do **Tirou** tem a sessão fechada nessa hora. Padrão: 18:00. |
+| **A semana começa** (`semana_inicio`) | o primeiro dia da semana do rodízio: **Na segunda-feira** (`segunda`) ou **No domingo** (`domingo`). O plano dos [modos de rodízio](#os-modos-de-rodízio) vem montado até o último dia da semana (o domingo ou o sábado), e o ciclo, a próxima semana e o relógio para a semana inteira contam dela; vale para os próximos sorteios (o que já está no plano fica; **Sortear de novo** refaz). A função `SEMANA_DO_ANO()` das fórmulas continua a semana ISO. Padrão: segunda-feira. |
 | **Limite de carga** (`carga_limiar`) | a carga (%) em que os avisos mandam carregar ou dar corda; o campo **Limite de carga** de um relógio vale no lugar dele. De 1 a 99. Padrão: 20. |
 | **Limite do solar** (`sol_limiar`) | a carga (%) em que o solar deve ir para o sol. De 1 a 99. Padrão: 70. |
 | **Limite da previsão** (`previsao_limite`) | a carga (%) que a previsão do smartwatch usa para "chega ao limite em...". De 0 a 100. Padrão: 20. |

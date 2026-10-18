@@ -35,7 +35,7 @@ $saida = ["campos" => $com_id(campos_com_opcoes(linhas("SELECT * FROM campo ORDE
     }, linhas("SELECT * FROM modo ORDER BY ordem, id")),
     "tipos_de_modo" => array_map(function ($k) { return ["chave" => $k, "nome" => t(MODO_TIPOS[$k])]; }, array_keys(MODO_TIPOS)),
     "roteiro_padrao" => ROTEIRO_SAIDAS,
-    "modo_ativo" => modo_ativo(), "max_sem_uso" => (int)cfg("max_sem_uso"), "hoje" => hoje_da_colecao()->format("Y-m-d"),
+    "modo_ativo" => modo_ativo(), "max_sem_uso" => (int)cfg("max_sem_uso"), "hoje" => hoje_da_colecao()->format("Y-m-d"), "semana_inicio" => semana_comeca() === 7 ? "domingo" : "segunda",
     "grupos" => array_map(function ($o) { return ["id" => $o[0], "caminho" => no_caminho($o[0])]; }, nos_em_ordem()),
     "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"]]; }, linhas("SELECT id, nome FROM relogio ORDER BY nome")),
     "documento_categorias" => documento_categorias_lista(),

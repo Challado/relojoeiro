@@ -200,9 +200,13 @@ function recarregarConfig(aplicadas, manterPosicao) {
           + parCampo(t("Pôr no pulso sozinho"), marca("pulso_auto_inicio", cfg("pulso_auto_inicio") !== "0"), "check")
           + parCampo(t("No pulso até"), hora("uso_fim", cfg("uso_fim")))
           + parCampo(t("Tirar do pulso sozinho"), marca("pulso_auto_fim", cfg("pulso_auto_fim") !== "0"), "check")
-          + parCampo(t("Sessão no sol esquecida fecha às"), hora("sol_fim", d.sol_fim))),
+          + parCampo(t("Sessão no sol esquecida fecha às"), hora("sol_fim", d.sol_fim))
+          // a semana do rodízio: o horizonte do plano, o ciclo, a próxima semana e os blocos contam dela
+          + parCampo(t("A semana começa"), el("select", {"name": "semana_inicio"}, el("option", {"value": "segunda", "selected": cfg("semana_inicio") !== "domingo"}, t("Na segunda-feira"))
+            + el("option", {"value": "domingo", "selected": cfg("semana_inicio") === "domingo"}, t("No domingo"))))),
           el("p", {"class": "nota"}, t("Sem <strong>pôr sozinho</strong>, o relógio do dia só entra no pulso pelo <strong>Pôs no pulso</strong>; sem <strong>tirar sozinho</strong>, só sai pelo ")
-            + t("<strong>Tirou do pulso</strong> (esquecido, continua contando como no pulso). O horário de uso vale sempre para o plano e as previsões. Fora do pulso, o relógio conta como guardado.")));
+            + t("<strong>Tirou do pulso</strong> (esquecido, continua contando como no pulso). O horário de uso vale sempre para o plano e as previsões. Fora do pulso, o relógio conta como guardado.")
+            + " " + t("A semana do rodízio começa no dia escolhido: o plano vem montado até o último dia da semana, e o ciclo, a próxima semana e o relógio para a semana inteira contam dela.")));
         var limites = cartao(t("Limites e contas"), el("div", {"class": "campos"},
           parCampo(t("Carregar quando a carga chegar a (%)"), numero("carga_limiar", cfg("carga_limiar") !== "" ? cfg("carga_limiar") : "20", "1", "99"))
           + parCampo(t("Solar: pôr no sol quando chegar a (%)"), numero("sol_limiar", cfg("sol_limiar") !== "" ? cfg("sol_limiar") : "70", "1", "99"))

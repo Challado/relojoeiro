@@ -251,10 +251,13 @@ límite de 21 días sin uso"*, *"Sorteo por la nota, entre 5 candidatos: nota 70
 Los modos están en la página **Modos de rotación** (menú **Rotación**). Cada modo tiene un **tipo**, y la pantalla del tipo
 pide solo lo que tiene sentido en él:
 
-- **Uno por semana**: un reloj para toda la semana, de lunes a domingo. Usted dice de dónde sale (la colección, un grupo o
-  un reloj fijo) y el criterio de elección.
+- **Uno por semana**: un reloj para toda la semana, del primer al último día de ella (de lunes a domingo, o de domingo a sábado: la
+  semana empieza el día elegido en la Configuración, **La semana empieza**). Usted dice de dónde sale (la colección, un
+  grupo o un reloj fijo) y el criterio de elección.
 - **Semana y fin de semana**: dos tramos, de lunes a viernes y el sábado y domingo, cada uno con su grupo y con **un reloj
   para el tramo** o **uno por día**. El que viene listo: el smartwatch en la semana, un tradicional por día al final de ella.
+  Con la semana empezando el domingo, el sábado y el domingo siguen siendo un solo tramo (el reloj del sábado se queda el
+  domingo).
 - **Por día de la semana**: un reloj por día, y cada día de la semana dice de dónde sale (un grupo, un reloj fijo o ninguno:
   día libre).
 - **Aleatorio todos los días**: uno por día, todos con la misma probabilidad, sin criterio ni garantía de rotación.
@@ -268,8 +271,11 @@ elige el modo, el criterio y la garantía de rotación; **Aplicar modo** solo ma
 **Sortear de nuevo**.
 
 **Las semanas.** Fuera de la escala, cada modo dice **cuántas semanas adelante** viene armado el plan (1 a 8; la lista muestra
-las semanas con las fechas). El plan llega hasta el domingo de la última de ellas (con una sola semana, el domingo el plan trae
-también el lunes, para el aviso de la víspera), y la semana siguiente entra cuando le llega el turno. Con más de una semana,
+las semanas con las fechas). El plan llega hasta el último día de la última de ellas: el domingo, o el sábado con la semana
+empezando el domingo (con una sola semana, el último día de la semana el plan trae también el primero de la siguiente, para
+el aviso de la víspera), y la semana siguiente entra cuando le llega el turno. La semana empieza el día elegido en la
+Configuración (**La semana empieza**: el lunes, el predeterminado, o el domingo), y el ciclo, la próxima semana y el reloj
+para toda la semana cuentan desde ella. Con más de una semana,
 **Sortear de nuevo** tiene también **la próxima semana**: sale con el modo actual, con los días que aún faltan de esta semana
 contados como uso, como si ya hubiera usado los relojes del plan (el uso cuenta en los días sin uso y en la nota; la carga no,
 porque no se sabe si el reloj se va a cargar). Cada día se elige así, con los anteriores del plan ya en la muñeca, y por eso el
@@ -343,7 +349,7 @@ a día) y en el cuadro **Modo de rotación** de la página Hoy (cada uno debajo 
   confirmación.
 - **Borrar todo**: limpia toda la programación, de mañana en adelante: los días elegidos a mano, los sorteados y los libres.
   Marcando **Incluyendo hoy**, borra de hoy en adelante (si sale otro reloj para hoy, pasa a ser el de la muñeca desde ese
-  momento). Después el modo de rotación vuelve a armar el plan, desde cero: hasta el domingo de la última de las semanas del modo (las
+  momento). Después el modo de rotación vuelve a armar el plan, desde cero: hasta el último día de la última de las semanas del modo (las
   siguientes, cuando lleguen); en la escala inteligente, toda la escala. La programación no queda vacía porque el
   sistema siempre arma los días que faltan con el modo activo; para días sin reloj, marque *libre* en la Rotación manual.
 
@@ -930,6 +936,7 @@ colección nueva va al final de cada línea.
 | **Vuelta de la mañana** (`horario_manha`) | la hora en que el cron envía el mensaje del día (el reloj de hoy y los avisos) y rehace el plan con lo que pasó. Predeterminado: 06:30. |
 | **Vuelta de la noche** (`horario_noite`) | la hora del mensaje de la víspera: el reloj de mañana y qué preparar. Predeterminado: 20:00. |
 | **La sesión de sol olvidada se cierra a las** (`sol_fim`, que guarda el "se cierra a las" del tipo Al sol) | a quien lo puso al sol y olvidó el **Lo quité**, la sesión se le cierra a esta hora. Predeterminado: 18:00. |
+| **La semana empieza** (`semana_inicio`) | el primer día de la semana de la rotación: **El lunes** (`segunda`) o **El domingo** (`domingo`). El plan de los [modos de rotación](#los-modos-de-rotación) viene armado hasta el último día de la semana (el domingo o el sábado), y el ciclo, la próxima semana y el reloj para toda la semana cuentan desde ella; vale para los próximos sorteos (lo que ya está en el plan se queda; **Sortear de nuevo** lo rehace). La función `SEMANA_DO_ANO()` de las fórmulas sigue siendo la semana ISO. Predeterminado: lunes. |
 | **Límite de carga** (`carga_limiar`) | la carga (%) en la que los avisos dicen cargar o dar cuerda; el campo **Límite de carga** de un reloj ocupa su lugar. De 1 a 99. Predeterminado: 20. |
 | **Límite del solar** (`sol_limiar`) | la carga (%) en la que el solar debe ir al sol. De 1 a 99. Predeterminado: 70. |
 | **Límite de la previsión** (`previsao_limite`) | la carga (%) que usa la previsión del smartwatch para "llega al límite en...". De 0 a 100. Predeterminado: 20. |

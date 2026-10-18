@@ -2562,6 +2562,26 @@ function roteiro_da_forma($forma)
     return $linhas[$forma] ?? $linhas["ponderado"];
 }
 
+// Num bloco de um relógio para o bloco inteiro, quantos dias ele fica a partir de um dia da semana ($dia, 1 segunda ... 7
+// domingo): até o último dia do bloco, contado na ordem da semana (que começa no semana_inicio). O bloco que atravessa a
+// virada da semana sem ter os sete dias (sábado e domingo, com a semana começando no domingo) conta do primeiro dia dele
+// depois de um dia de fora: o fim de semana continua um trecho só
+function bloco_seguidos($dias, $dia)
+{
+    $ini = semana_comeca();
+    $antes = $ini === 1 ? 7 : $ini - 1;
+    if (count(array_unique($dias)) < 7 && in_array($ini, $dias, true) && in_array($antes, $dias, true)) {
+        for ($x = 1; $x <= 7; $x++) {
+            if (!in_array($x, $dias, true) && in_array($x % 7 + 1, $dias, true)) {
+                $ini = $x % 7 + 1;
+                break;
+            }
+        }
+    }
+    $pos = function ($x) use ($ini) { return ($x - $ini + 7) % 7 + 1; };
+    return max(array_map($pos, $dias)) - $pos($dia) + 1;
+}
+
 // O texto do roteiro de um modo que não é personalizado, gerado dos blocos e da forma de escolha: quem é candidato em
 // cada dia da semana (o grupo ou o relógio fixo do bloco do dia), quantos dias fica (um por bloco: até o fim do bloco;
 // na escala, a fórmula dias_seguidos), a nota, o peso e a garantia pela forma. Gerado a cada uso (os nomes dos grupos e
@@ -2584,11 +2604,10 @@ function modo_roteiro_texto($modo, $blocos = null)
     // por dia da semana: o alvo e os dias seguidos de cada dia
     $por_dia = array_fill(1, 7, ["0", 1]);
     foreach ($blocos as $b) {
-        $dias = array_map("intval", array_filter(explode(",", (string)$b["dias"]), "strlen"));
-        $ultimo = count($dias) > 0 ? max($dias) : 0;
+        $dias = array_values(array_filter(array_map("intval", array_filter(explode(",", (string)$b["dias"]), "strlen")), function ($d) { return $d >= 1 && $d <= 7; }));
         foreach ($dias as $d) {
-            if ($d >= 1 && $d <= 7 && $por_dia[$d][0] === "0") {
-                $por_dia[$d] = [$alvo($b), ($b["um_por"] ?? "dia") === "bloco" ? $ultimo - $d + 1 : 1];
+            if ($por_dia[$d][0] === "0") {
+                $por_dia[$d] = [$alvo($b), ($b["um_por"] ?? "dia") === "bloco" ? bloco_seguidos($dias, $d) : 1];
             }
         }
     }
@@ -2677,10 +2696,11 @@ function escolha_do_dia($modo, $dia, $m_ini, $cands, $roteiro, $fora = [], $bloc
             unset($cands[(int)$ontem]);
         }
     }
-    // o ciclo (se o modo usa): os que já passaram no ciclo atual ficam de fora, pelo plano desde a segunda-feira da semana
+    // o ciclo (se o modo usa): os que já passaram no ciclo atual ficam de fora, pelo plano desde o primeiro dia da semana
+    // (semana_inicio: a segunda ou o domingo, pela Configuração)
     if ($modo && (int)($modo["ciclo"] ?? 0) === 1 && count($cands) > 1) {
         $seq = array_map(function ($x) { return (int)$x["relogio_id"]; }, linhas("SELECT relogio_id FROM plano WHERE data BETWEEN ? AND ? ORDER BY data",
-            [$dia->modify("monday this week")->format("Y-m-d"), $dia->modify("-1 day")->format("Y-m-d")]));
+            [semana_inicio($dia)->format("Y-m-d"), $dia->modify("-1 day")->format("Y-m-d")]));
         $restam = array_diff_key($cands, array_flip(ciclo_atual($seq, array_keys($cands))));
         if (count($restam) > 0) {
             if (count($restam) < count($cands)) {
@@ -2758,16 +2778,35 @@ function escolha_do_dia($modo, $dia, $m_ini, $cands, $roteiro, $fora = [], $bloc
     return [$escolhido, $motivo, $escolhido !== null ? $info[$escolhido]["dias"] : 1];
 }
 
-// Até que dia o plano de um modo sem escala vem montado: o domingo da última das semanas do modo (semanas: 1, esta
-// semana; 2, também a que vem...). Com uma semana só, no domingo o plano traz também a segunda (para o aviso da véspera)
+// O dia em que a semana começa (a Configuração, semana_inicio: segunda, o padrão, ou domingo), no número do DIA_SEMANA
+// (1 segunda ... 7 domingo). Vale para o rodízio inteiro: o horizonte do plano, o ciclo, a próxima semana e os blocos
+function semana_comeca()
+{
+    return cfg("semana_inicio") === "domingo" ? 7 : 1;
+}
+
+// O primeiro e o último dia da semana de um dia, pela semana_comeca
+function semana_inicio($dia)
+{
+    return $dia->modify("-" . (((int)$dia->format("N") - semana_comeca() + 7) % 7) . " days");
+}
+
+function semana_fim($dia)
+{
+    return semana_inicio($dia)->modify("+6 days");
+}
+
+// Até que dia o plano de um modo sem escala vem montado: o último dia da última das semanas do modo (semanas: 1, esta
+// semana; 2, também a que vem...; a semana começa no dia da Configuração, semana_inicio). Com uma semana só, no último dia
+// da semana o plano traz também o primeiro da seguinte (para o aviso da véspera)
 function horizonte_do_modo($modo, $hoje)
 {
     $semanas = max(1, min(8, (int)($modo["semanas"] ?? 1)));
-    $domingo = (int)$hoje->format("N") === 7 ? $hoje : $hoje->modify("sunday this week");
+    $fim = semana_fim($hoje);
     if ($semanas === 1) {
-        return (int)$hoje->format("N") === 7 ? $hoje->modify("+1 day") : $domingo;
+        return $fim->format("Y-m-d") === $hoje->format("Y-m-d") ? $hoje->modify("+1 day") : $fim;
     }
-    return $domingo->modify("+" . (($semanas - 1) * 7) . " days");
+    return $fim->modify("+" . (($semanas - 1) * 7) . " days");
 }
 
 // O bloco do modo que cobre um dia da semana (o primeiro), ou null
@@ -2902,9 +2941,9 @@ function plano_montar($modo, $hoje, $de, $ate, $escala)
     return $gravados;
 }
 
-// Monta o plano que falta, de hoje até $ate (padrão: o horizonte do modo: o domingo da última semana dele; no domingo com
-// uma semana só, também a segunda, para o aviso da véspera), pelo roteiro do modo ativo (plano_montar). Na escala
-// inteligente (modo com escala_dias), a escala gera o próprio período de uma vez (gerar_escala): quando ainda não há
+// Monta o plano que falta, de hoje até $ate (padrão: o horizonte do modo: o último dia da última semana dele; no último
+// dia da semana com uma semana só, também o primeiro da seguinte, para o aviso da véspera), pelo roteiro do modo ativo
+// (plano_montar). Na escala inteligente (modo com escala_dias), a escala gera o próprio período de uma vez (gerar_escala): quando ainda não há
 // escala, quando ela venceu, ou quando falta hoje ou amanhã e ela ainda não foi refeita hoje.
 // $manter_pulso: hoje sem plano e com um relógio já no pulso pelo rodízio, o plano de hoje é ele; false só no sortear de
 // novo inclusive hoje, que quer outro sorteio para hoje.

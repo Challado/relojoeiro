@@ -723,6 +723,8 @@
  *                                    das mensagens e das agendas dela; vazio: o do sistema (fuso_sistema)
  *     config.hora_relogio            o relógio da página Hora certa: analogico, digital, anadigi (o visor digital dentro do mostrador
  *                                    analógico) ou ambos (um ao lado do outro); vazio: ambos
+ *     config.semana_inicio           o primeiro dia da semana do rodízio: segunda ou domingo (o plano vem montado até o último dia da
+ *                                    semana; o ciclo, a próxima semana e o relógio para a semana inteira contam dela); vazio: segunda
  *     config.idioma                  o idioma padrão da instalação (pt-BR, en, zh-CN, hi, es, fr; vazio: o do navegador, senão português)
  *     config.painel_modo             como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela
  *                                    grande por cima da página); vazio: lado
@@ -1554,9 +1556,11 @@
  *     proximos.dias[].origem         sorteio, manual (escolhido à mão) ou livre (dia livre: sem relógio e sem sorteio, para escolher à mão)
  *     proximos.dias[].acao           o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nenhum
  *     proximos.dias[].motivo         por que o relógio está no dia; null: nenhum
- *     proxima_semana.domingo         o domingo dela
+ *     proxima_semana.fim             o último dia dela (texto AAAA-MM-DD: o domingo, ou o sábado com a semana começando no domingo)
+ *     proxima_semana.inicio          o primeiro dia da próxima semana (texto AAAA-MM-DD: a segunda-feira, ou o domingo com a semana
+ *                                    começando no domingo)
  *     proxima_semana.ja_montada      verdadeiro ou falso: a próxima semana já está no plano
- *     proxima_semana.segunda         a segunda-feira da próxima semana (texto AAAA-MM-DD)
+ *     semana_inicio                  o dia em que a semana do rodízio começa (a Configuração, semana_inicio): segunda ou domingo
  *     relogios[]                     a tabela dos relógios
  *     relogios[].agora               o estado por extenso, desde quando ("Em uso desde 07:00", "No sol desde 09:12", "Em repouso desde
  *                                    21:40")
@@ -2042,6 +2046,8 @@
  *                                    das mensagens e das agendas dela; vazio: o do sistema (fuso_sistema)
  *     config.hora_relogio            o relógio da página Hora certa: analogico, digital, anadigi (o visor digital dentro do mostrador
  *                                    analógico) ou ambos (um ao lado do outro); vazio: ambos
+ *     config.semana_inicio           o primeiro dia da semana do rodízio: segunda ou domingo (o plano vem montado até o último dia da
+ *                                    semana; o ciclo, a próxima semana e o relógio para a semana inteira contam dela); vazio: segunda
  *     fuso_sistema                   o fuso do sistema (o FUSO do config.php, ou o do PHP): o das datas gravadas no banco e o de quem não
  *                                    escolheu outro
  *     fusos[]                        os fusos horários que o PHP conhece, em ordem alfabética (as listas Fuso horário da Configuração e de
@@ -2240,6 +2246,8 @@
  *     roteiro_padrao.dias            quantos dias seguidos o escolhido fica: 1
  *     roteiro_padrao.garantia        quem passa na frente: quem está além da garantia de rodízio (max_sem_uso) em dias sem uso
  *     hoje                           o dia de hoje da coleção (AAAA-MM-DD), para a lista das semanas
+ *     semana_inicio                  o dia em que a semana do rodízio começa (a Configuração, semana_inicio): segunda ou domingo; a lista
+ *                                    das semanas e a ordem dos dias seguem ele
  *     relogios[]                     os relógios
  *     relogios[].id                  o número
  *     relogios[].nome                o nome

@@ -80,7 +80,8 @@ foreach (linhas("SELECT * FROM modo ORDER BY ordem, id") as $m) {
                 "relogio_id" => $b["relogio_id"] === null ? null : (int)$b["relogio_id"]];
         }, modo_blocos((int)$m["id"]))];
 }
-$seg = $hoje->modify("next monday");
+// a próxima semana: a que começa depois do último dia desta (a semana começa no dia da Configuração, semana_inicio)
+$ini_s = semana_fim($hoje)->modify("+1 day");
 $avisos_nomes = [];
 foreach (avisos_todos() as $ident => $versoes) {
     // o Encostado tem a coluna dele; não entra no filtro "O que fazer" (a manutenção)
@@ -110,8 +111,9 @@ $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => c
     // os Próximos dias da página, uma página por vez (o "Mostrar até" da Configuração), com os dias livres no meio
     "proximos" => plano_pagina($hoje->format("Y-m-d"), "", null, (int)($_REQUEST["proximos_pagina"] ?? 1),
         ctype_digit((string)($_REQUEST["por_pagina"] ?? "")) ? (int)$_REQUEST["por_pagina"] : proximos_por_pagina()),
-    "proxima_semana" => ["segunda" => $seg->format("Y-m-d"), "domingo" => $seg->modify("+6 days")->format("Y-m-d"),
-        "ja_montada" => (int)valor("SELECT COUNT(*) FROM plano WHERE data BETWEEN ? AND ?", [$seg->format("Y-m-d"), $seg->modify("+6 days")->format("Y-m-d")]) > 1],
+    "semana_inicio" => semana_comeca() === 7 ? "domingo" : "segunda",
+    "proxima_semana" => ["inicio" => $ini_s->format("Y-m-d"), "fim" => $ini_s->modify("+6 days")->format("Y-m-d"),
+        "ja_montada" => (int)valor("SELECT COUNT(*) FROM plano WHERE data BETWEEN ? AND ?", [$ini_s->format("Y-m-d"), $ini_s->modify("+6 days")->format("Y-m-d")]) > 1],
     "modos" => $modos_h,
     "grupos" => array_map(function ($o) use ($n) { return ["id" => $o[0], "nome" => $n[$o[0]]["nome"], "profundidade" => $o[1], "caminho" => no_caminho($o[0])]; }, nos_em_ordem()),
     "avisos_nomes" => array_values(array_unique($avisos_nomes)),
