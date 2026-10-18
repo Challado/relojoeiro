@@ -497,17 +497,21 @@ CREATE TABLE modo (
     id           INT AUTO_INCREMENT PRIMARY KEY,
     colecao_id   INT NOT NULL,
     nome         VARCHAR(80) NOT NULL,
+    tipo         ENUM('semana','semana_fds','dia_semana','aleatorio','escala','personalizado') NOT NULL DEFAULT 'personalizado',
     selecao      ENUM('inteligente','ponderado','aleatorio','fifo') NOT NULL DEFAULT 'ponderado',
     ordem        INT NOT NULL DEFAULT 0,
     escala_dias  INT NULL,
+    semanas      INT NOT NULL DEFAULT 1,
     ciclo        TINYINT NOT NULL DEFAULT 0,
     ativo        TINYINT NULL DEFAULT NULL,
+    roteiro      TEXT NULL,
     UNIQUE (colecao_id, ativo),
     FOREIGN KEY (colecao_id) REFERENCES colecao(id) ON DELETE CASCADE,
     CONSTRAINT ck_modo_ativo CHECK (ativo = 1),
     CONSTRAINT ck_modo_nome CHECK (TRIM(nome) <> ''),
     CONSTRAINT ck_modo_ciclo CHECK (ciclo IN (0, 1)),
-    CONSTRAINT ck_modo_escala_dias CHECK (escala_dias IS NULL OR escala_dias BETWEEN 7 AND 730)
+    CONSTRAINT ck_modo_escala_dias CHECK (escala_dias IS NULL OR escala_dias BETWEEN 7 AND 730),
+    CONSTRAINT ck_modo_semanas CHECK (semanas BETWEEN 1 AND 8)
 ) ENGINE=InnoDB;
 
 CREATE TABLE modo_bloco (

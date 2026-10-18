@@ -27,10 +27,15 @@ $saida = ["campos" => $com_id(campos_com_opcoes(linhas("SELECT * FROM campo ORDE
     "avisos" => $com_id(linhas(AVISO_SELECT . " ORDER BY a.identificador, a.id")),
     "modos" => array_map(function ($m) use ($com_id) {
         $m = $com_id([$m])[0];
+        $m["semanas"] = (int)$m["semanas"];
+        $m["tipo_texto"] = t(MODO_TIPOS[$m["tipo"]] ?? "Personalizado");
+        $m["roteiro_efetivo"] = modo_roteiro_texto($m);
         $m["blocos"] = $com_id(modo_blocos($m["id"]));
         return $m;
     }, linhas("SELECT * FROM modo ORDER BY ordem, id")),
-    "modo_ativo" => modo_ativo(), "max_sem_uso" => (int)cfg("max_sem_uso"),
+    "tipos_de_modo" => array_map(function ($k) { return ["chave" => $k, "nome" => t(MODO_TIPOS[$k])]; }, array_keys(MODO_TIPOS)),
+    "roteiro_padrao" => ROTEIRO_SAIDAS,
+    "modo_ativo" => modo_ativo(), "max_sem_uso" => (int)cfg("max_sem_uso"), "hoje" => hoje_da_colecao()->format("Y-m-d"),
     "grupos" => array_map(function ($o) { return ["id" => $o[0], "caminho" => no_caminho($o[0])]; }, nos_em_ordem()),
     "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"]]; }, linhas("SELECT id, nome FROM relogio ORDER BY nome")),
     "documento_categorias" => documento_categorias_lista(),

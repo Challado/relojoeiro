@@ -87,15 +87,25 @@ function mostrarSelecao() {
   var sel = document.querySelector("select[name=selecao]");
   var grade = document.querySelector(".modo-grade");
   if (modo && sel && grade) {
-    var escala = JSON.parse(grade.getAttribute("data-escalas")).indexOf(parseInt(modo.value, 10)) >= 0;
-    document.querySelectorAll("[data-com-selecao]").forEach(function (e) { e.hidden = escala; });
-    document.querySelectorAll("[data-sem-selecao]").forEach(function (e) { e.hidden = !escala; });
+    // o tipo do modo escolhido: o critério se escolhe nos tipos por semana, semana e fim de semana e por dia da semana; na
+    // escala, no aleatório e no personalizado ele é fixo (a maior nota, a mesma chance, o roteiro)
+    var tipo = (JSON.parse(grade.getAttribute("data-tipos") || "{}"))[modo.value] || "";
+    var fixo = tipo === "escala" || tipo === "aleatorio" || tipo === "personalizado";
+    var textos = {escala: t("pela maior nota"), aleatorio: t("todos com a mesma chance"), personalizado: t("pelo roteiro do modo")};
+    document.querySelectorAll("[data-com-selecao]").forEach(function (e) { e.hidden = fixo; });
+    document.querySelectorAll("[data-sem-selecao]").forEach(function (e) {
+      e.hidden = !fixo || (e.hasAttribute("data-explica-tipo") && e.getAttribute("data-explica-tipo") !== tipo);
+    });
+    var texto = document.querySelector("[data-sem-selecao-texto]");
+    if (texto && fixo) {
+      texto.textContent = textos[tipo];
+    }
     document.querySelectorAll("[data-explica-selecao]").forEach(function (e) {
-      e.hidden = escala || e.getAttribute("data-explica-selecao") !== sel.value;
+      e.hidden = fixo || e.getAttribute("data-explica-selecao") !== sel.value;
     });
     var garantia = document.querySelector("[data-garantia]");
     if (garantia) {
-      garantia.hidden = !(escala || sel.value === "inteligente" || sel.value === "ponderado");
+      garantia.hidden = tipo === "aleatorio" || (!fixo && sel.value === "aleatorio");
     }
   }
 }

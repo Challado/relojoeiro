@@ -1842,23 +1842,12 @@ function op_rodizio($acao, $d)
         if (!$m) {
             $erros[] = t("Modo não encontrado.");
         } else {
-            // os blocos do modo, com o que veio do quadro (grupo ou relógio fixo, e um por dia)
-            $blocos = [];
-            foreach (modo_blocos($id_modo) as $b) {
-                $veio = isset($d["bloco_alvo"][$b["id"]]);
-                $alvo = (string)($d["bloco_alvo"][$b["id"]] ?? ($b["relogio_id"] !== null ? "r:" . $b["relogio_id"] : (string)(int)$b["no_id"]));
-                $blocos[] = ["nome" => $b["nome"], "dias" => explode(",", $b["dias"]), "no_id" => strpos($alvo, "r:") === 0 ? ($b["no_id"] ?? "0") : $alvo,
-                    "relogio_id" => strpos($alvo, "r:") === 0 ? (int)substr($alvo, 2) : 0,
-                    "um_por" => $m["escala_dias"] === null && $veio ? (isset($d["bloco_cada_dia"][$b["id"]]) ? "dia" : "bloco") : $b["um_por"]];
+            // o quadro grava só o critério de escolha (a forma do sorteio; não na escala nem no aleatório) e a garantia, e
+            // marca o modo; os blocos, as semanas e o roteiro se editam nos Modos de rodízio
+            $res = ["ok" => true, "erros" => [], "mensagem" => ""];
+            if (isset($d["selecao"]) && $m["escala_dias"] === null && !in_array($m["tipo"] ?? "", ["aleatorio", "personalizado"], true)) {
+                $res = op_modos("salvar", ["id" => $id_modo, "selecao" => $d["selecao"]]);
             }
-            $dm = ["id" => $id_modo, "blocos" => $blocos];
-            if (isset($d["selecao"]) && $m["escala_dias"] === null) {
-                $dm["selecao"] = $d["selecao"];
-            }
-            if ($m["escala_dias"] !== null && isset($d["escala_dias"])) {
-                $dm["escala_dias"] = is_array($d["escala_dias"]) ? ($d["escala_dias"][$id_modo] ?? $m["escala_dias"]) : $d["escala_dias"];
-            }
-            $res = op_modos("salvar", $dm);
             if ($res["ok"] && isset($d["max_sem_uso"])) {
                 $res = op_config("salvar", ["max_sem_uso" => $d["max_sem_uso"]]);
             }
@@ -1874,7 +1863,8 @@ function op_rodizio($acao, $d)
         $desde = ($acao === "resortear_hoje" || !$comecou) ? $hoje : $hoje->modify("+1 day");
         // até onde o sorteio já ia (a próxima semana, se já foi montada): é refeito até lá, e não só até domingo
         $fim_s = $escala ? null : valor("SELECT MAX(data) FROM plano WHERE data >= ? AND origem = 'sorteio'", [$desde->format("Y-m-d")]);
-        $ate_s = $hoje->modify((int)$hoje->format("N") === 7 ? "+1 day" : "sunday this week");
+        $modo_r = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]);
+        $ate_s = $modo_r ? horizonte_do_modo($modo_r, $hoje) : $hoje;
         if ($fim_s !== null && (string)$fim_s > $ate_s->format("Y-m-d")) {
             $ate_s = new DateTimeImmutable(substr((string)$fim_s, 0, 10));
         }
@@ -2058,7 +2048,7 @@ function op_rodizio($acao, $d)
                 $msg = $acao === "periodo_livre"
                     ? t("De {1}: {2}{3}, sem relógio e sem sorteio{4}. Escolha o relógio de cada um em \"escolher…\", ou no Rodízio manual.", [1 => $faixa_txt, 2 => $livres, 3 => $livres === 1 ? t(" dia livre") : t(" dias livres"), 4 => $n_p > 0 ? t(" (o que estava gravado saiu)") : ""])
                     : t("De {1}: {2}o período foi sorteado de novo{3}.", [1 => $faixa_txt, 2 => $n_p > 0 ? ($n_p === 1 ? t("1 dia saiu do plano e ") : t("{1} dias saíram do plano e ", [1 => $n_p])) : "", 3 => $escala ? t(" (a escala foi refeita a partir de {1})", [1 => $desde_p->format($fmt_p)])
-                            : ($ate_p > $hoje->modify((int)$hoje->format("N") === 7 ? "+1 day" : "sunday this week") ? t("; os dias depois desta semana são sorteados quando a semana deles chegar") : "")]);
+                            : ($ate_p > horizonte_do_modo(linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]) ?: [], $hoje) ? t("; os dias depois do horizonte do modo são sorteados quando a semana deles chegar") : "")]);
             }
         } elseif (count($ids_p) === 0) {
             $erros[] = t("Escolha pelo menos um relógio para o período.");
@@ -2204,12 +2194,16 @@ function op_rodizio($acao, $d)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Modos de rodízio. Ações: salvar (id: 0 cria; nome, selecao: inteligente, ponderado, aleatorio ou fifo; escala_dias:
-// vazio ou 0 = sorteio pelos blocos, de 7 a 730 = escala inteligente com esse horizonte; blocos: lista de {nome, dias:
-// [1..7], no_id (0: todos), um_por: bloco ou dia, relogio_id (fixo; 0: sorteia)}: substitui os blocos; ciclo: 1 ou 0
-// (padrão): com o ciclo, um relógio só volta depois que todos os disponíveis do bloco passaram), ativar (id: passa
-// a valer; o plano de amanhã em diante é refeito), excluir (id: não o ativo). Na escala, a forma de escolha e o "um por"
-// não contam: ela escolhe sempre pela maior nota, e o relógio fica os dias da fórmula dias_seguidos.
+// Modos de rodízio. Ações: salvar (id: 0 cria; nome; tipo: semana, semana_fds, dia_semana, aleatorio, escala ou
+// personalizado (sem o tipo, inferido dos blocos: modo_tipo_inferir); selecao: inteligente, ponderado, aleatorio ou fifo;
+// escala_dias: de 7 a 730, só na escala; semanas: 1 a 8, quantas semanas à frente o plano vem montado (não na escala);
+// blocos: lista de {nome, dias: [1..7], no_id (0: todos), um_por: bloco ou dia, relogio_id (fixo; 0: sorteia)}: substitui
+// os blocos (a forma deles é conferida pelo tipo: um por semana, um bloco com os sete dias; semana e fim de semana, segunda
+// a sexta e sábado e domingo; aleatório, um bloco com os sete dias); roteiro: as linhas "nome = expressão" do
+// personalizado (conferidas: roteiro_ler); ciclo: 1 ou 0 (padrão): com o ciclo, um relógio só volta depois que todos os
+// candidatos passaram na semana), ativar (id: só marca o modo), excluir (id: não o ativo). O roteiro dos modos que não
+// são personalizados é gerado dos blocos (modo_roteiro_texto); na escala, a forma de escolha não conta (a maior nota) e o
+// relógio fica os dias da fórmula dias_seguidos.
 // ---------------------------------------------------------------------------------------------------------------------
 function op_modos($acao, $d)
 {
@@ -2238,6 +2232,38 @@ function op_modos($acao, $d)
         if (!in_array($sel, ["inteligente", "ponderado", "aleatorio", "fifo"], true)) {
             $erros[] = t("Forma de escolha: inteligente, ponderado, aleatorio ou fifo.");
         }
+        // o tipo: o que veio, senão o de antes (com blocos novos, inferido deles), senão inferido dos blocos
+        $tipo = trim((string)($d["tipo"] ?? ""));
+        $blocos_t = is_array($blocos) ? array_map(function ($b) { return [array_map("intval", (array)($b["dias"] ?? [])), ($b["um_por"] ?? "dia") === "bloco" ? "bloco" : "dia"]; }, $blocos) : [];
+        if ($tipo === "") {
+            $tipo = $atual && $blocos === null ? (string)$atual["tipo"] : modo_tipo_inferir($escala_dias, $sel, $blocos_t);
+        }
+        if (!isset(MODO_TIPOS[$tipo])) {
+            $erros[] = t("Tipo do modo: {1}.", [1 => implode(", ", array_keys(MODO_TIPOS))]);
+        } elseif ($tipo === "escala" && $escala_dias === null) {
+            $erros[] = t("A escala inteligente precisa do período (escala_dias: de 7 a 730 dias).");
+        } elseif ($tipo !== "escala") {
+            $escala_dias = null;
+        }
+        if ($tipo === "aleatorio") {
+            $sel = "aleatorio";
+        }
+        $semanas = array_key_exists("semanas", $d) ? trim((string)$d["semanas"]) : (string)($atual["semanas"] ?? 1);
+        if (!ctype_digit($semanas) || (int)$semanas < 1 || (int)$semanas > 8) {
+            $erros[] = t("Semanas à frente: de 1 a 8.");
+        }
+        $roteiro = array_key_exists("roteiro", $d) ? trim(str_replace("\r", "", (string)$d["roteiro"])) : ($atual["roteiro"] ?? "");
+        if ($tipo === "personalizado") {
+            if ($roteiro === "" && $blocos === null && !($atual && count(modo_blocos($id)) > 0)) {
+                $erros[] = t("O modo personalizado precisa do roteiro (ou de blocos de dias, que geram um).");
+            } elseif ($roteiro !== "") {
+                foreach (roteiro_ler($roteiro)["erros"] as $e) {
+                    $erros[] = t("Roteiro: {1}", [1 => $e]);
+                }
+            }
+        } else {
+            $roteiro = "";
+        }
         $limpos = [];
         $dias_usados = [];
         if ($blocos !== null) {
@@ -2264,18 +2290,25 @@ function op_modos($acao, $d)
                     if ($fixo > 0 && valor("SELECT id FROM relogio WHERE id = ?", [$fixo]) === null) {
                         $erros[] = t("Bloco {1}: o relógio fixo não existe.", [1 => $k + 1]);
                     }
-                    $limpos[] = [trim((string)($b["nome"] ?? "")) !== "" ? trim((string)$b["nome"]) : t("Bloco {1}", [1 => $k + 1]), implode(",", $dias), $no, ($b["um_por"] ?? "dia") === "bloco" ? "bloco" : "dia", $fixo > 0 ? $fixo : null];
+                    $limpos[] = [trim((string)($b["nome"] ?? "")) !== "" ? trim((string)$b["nome"]) : t("Bloco {1}", [1 => $k + 1]), implode(",", $dias), $no, ($b["um_por"] ?? "dia") === "bloco" || ($tipo === "semana") ? "bloco" : "dia", $fixo > 0 ? $fixo : null];
+                }
+                // a forma dos blocos pelo tipo
+                $forma_b = array_map(function ($b) { return $b[1]; }, $limpos);
+                if (in_array($tipo, ["semana", "aleatorio"], true) && $forma_b !== ["1,2,3,4,5,6,7"]) {
+                    $erros[] = t("{1}: um bloco só, com os sete dias.", [1 => t(MODO_TIPOS[$tipo])]);
+                } elseif ($tipo === "semana_fds" && $forma_b !== ["1,2,3,4,5", "6,7"]) {
+                    $erros[] = t("Semana e fim de semana: dois blocos, segunda a sexta e sábado e domingo.");
                 }
             }
-        } elseif (!$atual) {
+        } elseif (!$atual && $tipo !== "personalizado") {
             $erros[] = t("Um modo novo precisa dos blocos de dias.");
         }
         if (count($erros) === 0) {
             $escala_dias = $escala_dias === null ? null : (int)$escala_dias;
             if ($atual) {
-                sql("UPDATE modo SET nome = ?, selecao = ?, escala_dias = ?, ciclo = ? WHERE id = ?", [$nome, $sel, $escala_dias, $ciclo, $id]);
+                sql("UPDATE modo SET nome = ?, tipo = ?, selecao = ?, escala_dias = ?, semanas = ?, ciclo = ?, roteiro = ? WHERE id = ?", [$nome, $tipo, $sel, $escala_dias, (int)$semanas, $ciclo, $roteiro !== "" ? $roteiro : null, $id]);
             } else {
-                sql("INSERT INTO modo (colecao_id, nome, selecao, escala_dias, ciclo, ordem) VALUES (?, ?, ?, ?, ?, ?)", [colecao_atual(), $nome, $sel, $escala_dias, $ciclo,
+                sql("INSERT INTO modo (colecao_id, nome, tipo, selecao, escala_dias, semanas, ciclo, roteiro, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [colecao_atual(), $nome, $tipo, $sel, $escala_dias, (int)$semanas, $ciclo, $roteiro !== "" ? $roteiro : null,
                     (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM modo")]);
                 $id = ultimo_id();
             }

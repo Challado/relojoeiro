@@ -111,7 +111,7 @@ flowchart LR
 | **Alertes** | Une date prévue par formule, une avance, un texte et la saisie qui résout l'alerte. | *« Remonter l'Orient : la réserve s'épuise à 15 h »*, et le bouton **Remontage** la résout |
 | **Seuil de charge** | La charge à laquelle la montre demande de l'attention : charger la smartwatch, mettre la solaire au soleil, remonter la mécanique. L'alerte ne part que lorsque la charge l'atteint. Chaque montre peut avoir le sien (champ *« Alerter quand la charge atteint »*) ; vide, c'est celui de la Configuration qui s'applique. | smartwatch à 20 % (le général), la Samsung à 30 % (le sien) |
 | **Critères** | Comment chaque montre reçoit une note de 0 à 100 pour le tirage : des paramètres pondérés, des sous-paramètres qui mesurent un champ ou une formule, et des tranches qui transforment la valeur en note. | *Temps sans usage* (40 %) : de 0 à 1 jour donne 0, 30 jours ou plus donne 100 |
-| **Modes de rotation** | Les règles du plan : des blocs de jours de la semaine, dans quel groupe tirer, une montre par jour ou une pour tout le bloc, une montre fixe et la méthode de choix. | *« Smartwatch du lundi au vendredi, une traditionnelle par jour le week-end »* |
+| **Modes de rotation** | Les règles du plan : le type du mode (une par semaine, semaine et week-end, par jour de la semaine, aléatoire, planning intelligent ou personnalisé), dans quel groupe choisir chaque jour, combien de semaines en avant, le critère de choix et, en dessous, le scénario que le moteur calcule. | *« Smartwatch du lundi au vendredi, une traditionnelle par jour le week-end »* |
 | **Plan** | La montre de chaque jour, avec quoi faire (*charger avant*, *remonter*, *mettre sur le remontoir*). | `lun 10/06 · Xiaomi Band · charger avant de porter` |
 
 ### Le moteur de formules
@@ -144,6 +144,19 @@ Et celles qui lisent l'historique de chaque montre :
 | `MEDIDO("uso")` / `MEDIDO("repouso")` | la consommation réelle de la batterie, mesurée par vos relevés de charge |
 | `EM_SESSAO("winder")` | 1 si la session est ouverte en ce moment (la montre est sur le remontoir) |
 | `MEDIA_COLECAO("uso_30d")` | la moyenne d'une variable sur toute la collection |
+
+Et celles de la rotation (le scénario des modes ; en dehors, le jour est celui de l'instant du calcul) :
+
+| Fonction | Ce qu'elle renvoie |
+|---|---|
+| `DIA_SEMANA()`, `SEMANA_DO_ANO()` | le jour de la semaine (1 lundi à 7 dimanche) et la semaine de l'année (ISO) du jour en cours de montage |
+| `NO_GRUPO("Tradicional › Quartzo")` | 1 si la montre est à ce point de l'arbre ou en dessous (le nom, le chemin ou `#id` ; `"todos"` : 1 pour toutes) |
+| `RELOGIO("Seiko SKX")` | 1 si c'est cette montre (par le nom ou par l'id) |
+| `ESCOLHIDO_HA(1)`, `VEZES_NO_PLANO(7)` | 1 si la montre était celle du plan il y a n jours (1 : hier ; -1 : demain, quand elle est déjà dans le plan) ; combien de jours elle a eus dans le plan dans les n derniers jours |
+| `ESCOLHA(n; a; b; c)` | le n-ième des valeurs (lui seul est calculé) : `ESCOLHA(DIA_SEMANA(); …)` donne une valeur par jour de la semaine |
+| `SORTEIO()` | un nombre de 0 à 1, du même lot RANDOM.ORG que les tirages |
+
+Et la variable `nota_criterios` : la note de la montre selon les critères, à l'instant du calcul.
 
 Sur la page **Définitions**, chaque formule a le bouton **Tester sur toutes les montres**, qui montre le résultat sur chaque
 montre avant d'enregistrer.
@@ -238,34 +251,80 @@ celle achetée plus tôt attend depuis plus longtemps.
 Pour que vous ne restiez jamais dans le doute, **chaque jour du plan garde la raison du choix**, en une phrase, qui apparaît
 sous la montre sur la page Aujourd'hui et sur la page Plan : *« Garantie de rotation : jamais portée, dans la collection
 depuis 38 jours, au-delà de la limite de 21 jours sans usage »*, *« Tirage selon la note, parmi 5 candidates : note 70,2,
-16,4 % de chances »*, *« La meilleure note (91,2) »*, *« La même montre de la semaine dans le bloc Lundi à vendredi »*,
+16,4 % de chances »*, *« La meilleure note (91,2). Reste 5 jours de suite »*, *« Reste au poignet : jour 2 de 5 de suite »*,
 *« Choisie à la main »*.
 ### Les modes de rotation
 
-Les modes sont dans la page **Modes de rotation** (menu **Rotation**). Un mode est fait de **blocs de jours de la semaine**. Chaque bloc dit où tirer (un groupe, toute la collection ou une montre
-fixe) et s'il s'agit d'**une montre par jour** ou d'**une pour tout le bloc**. Ceux-ci sont fournis :
+Les modes sont dans la page **Modes de rotation** (menu **Rotation**). Chaque mode a un **type**, et l'écran du type ne
+demande que ce qui a du sens pour lui :
 
-- **Une par semaine** : une traditionnelle toute la semaine.
-- **Semaine et week-end** : la smartwatch du lundi au vendredi et une traditionnelle par jour le samedi et le dimanche.
-- **Par jour de la semaine** : une montre différente chaque jour.
-- **Aléatoire chaque jour**.
-- **Planning intelligent** : voir plus bas.
+- **Une par semaine** : une montre pour toute la semaine, du lundi au dimanche. Vous dites d'où elle vient (la collection, un
+  groupe ou une montre fixe) et le critère de choix.
+- **Semaine et week-end** : deux tranches, du lundi au vendredi et le samedi et dimanche, chacune avec son groupe et avec
+  **une montre pour la tranche** ou **une par jour**. Celui qui est fourni : la smartwatch en semaine, une traditionnelle par
+  jour à la fin de celle-ci.
+- **Par jour de la semaine** : une montre par jour, et chaque jour de la semaine dit d'où elle vient (un groupe, une montre
+  fixe ou aucune : jour libre).
+- **Aléatoire chaque jour** : une par jour, toutes avec la même chance, sans critère ni garantie de rotation.
+- **Planning intelligent** : planifie toute la période d'un coup, en simulant la charge (voir [plus bas](#le-planning-intelligent)).
+- **Personnalisé** : vous écrivez le scénario (voir [Le scénario du mode](#le-scénario-du-mode)).
 
-Le choix dans le bloc peut se faire par la **meilleure note**, par **tirage selon la note** (la note devient la chance),
-**au hasard** ou par **file d'attente** (celle qui attend depuis le plus longtemps). Avec le **cycle** activé, une montre ne
-revient qu'après que toutes les disponibles du bloc ont eu leur tour.
+Dans les trois premiers, le **critère de choix** est le tirage : par la **meilleure note**, par **tirage selon la note** (la
+note devient la chance), **au hasard** ou par **file d'attente** (celle qui attend depuis le plus longtemps). Avec le **cycle**
+activé, une montre ne revient qu'après le passage de toutes les candidates dans la semaine. Le cadre **Mode de rotation** de
+la page Aujourd'hui choisit le mode, le critère et la garantie de rotation ; **Appliquer le mode** ne fait que marquer : rien
+du plan ne change tant que vous ne cliquez pas sur **Refaire le tirage**.
 
-**Jusqu'à quand le plan est construit.** Dans le tirage par blocs, le plan va jusqu'à dimanche (le dimanche, aussi le lundi,
-pour le rappel de la veille), et la semaine suivante est tirée quand elle commence. Pour la voir avant, **Refaire le tirage** a
-**la semaine prochaine**, n'importe quel jour : elle sort selon le mode actuel, avec les jours qui restent cette semaine comptés
-comme utilisation, comme si vous aviez déjà porté les montres du plan (l'utilisation compte dans les jours sans utilisation et
-dans la note ; la charge non, parce qu'on ne sait pas si la montre sera chargée). Chaque jour est tiré ainsi, avec les jours
-précédents du plan déjà au poignet, et c'est pourquoi la montre du lundi ne revient pas le mardi juste parce qu'elle semble
-arrêtée. Une fois montée, **Refaire le tirage** refait le plan jusqu'à sa fin, et les jours choisis à la main restent. Dans le
-planning intelligent il n'y a pas de semaine prochaine : il planifie déjà sa propre période.
+**Les semaines.** Hors planning, chaque mode dit **combien de semaines en avant** le plan arrive monté (1 à 8 ; la liste montre
+les semaines avec les dates). Le plan va jusqu'au dimanche de la dernière d'entre elles (avec une seule semaine, le dimanche le
+plan apporte aussi le lundi, pour le rappel de la veille), et la semaine suivante entre quand son tour arrive. Avec plus d'une
+semaine, **Refaire le tirage** a aussi **la semaine prochaine** : elle sort selon le mode actuel, avec les jours qui restent
+cette semaine comptés comme utilisation, comme si vous aviez déjà porté les montres du plan (l'utilisation compte dans les
+jours sans utilisation et dans la note ; la charge non, parce qu'on ne sait pas si la montre sera chargée). Chaque jour est
+choisi ainsi, avec les jours précédents du plan déjà au poignet, et c'est pourquoi la montre du lundi ne revient pas le mardi
+juste parce qu'elle semble arrêtée. Les jours choisis à la main restent. Dans le planning intelligent il n'y a pas de semaine
+prochaine : il planifie déjà sa propre période.
 
-**D'où vient le tirage.** Tout tirage du système (le mode entièrement aléatoire, le tirage selon la note et le départage des
-notes égales dans le planning intelligent) utilise des nombres vraiment aléatoires, venus de l'extérieur, dans cet ordre :
+### Le scénario du mode
+
+En dessous, tout mode est un **scénario** : cinq lignes que le moteur de formules calcule pour chaque montre disponible, au
+début de chaque jour du plan, avec les jours précédents déjà comptés comme utilisation. Les modes prêts génèrent le scénario de
+leurs écrans (la page montre le scénario généré, en lecture seule) ; dans **Personnalisé** vous écrivez le vôtre, une ligne
+par nom (`nom = expression`, dans la même langue que les formules des définitions ; les lignes qui commencent par `#` sont des
+commentaires ; les autres noms sont vos propres variables) :
+
+| Ligne | Ce qu'elle dit | Si elle manque |
+|---|---|---|
+| `candidato` | 1 : la montre entre dans le choix de ce jour ; 0 : non | `1` (toutes) |
+| `nota` | la note de la montre ce jour-là | `nota_criterios` (la note selon les critères) |
+| `peso` | la chance au tirage. Toutes à 0 : la meilleure note gagne. Toutes égales : toutes avec la même chance. Sinon, chaque poids est la chance | `0` |
+| `dias` | combien de jours de suite la montre choisie reste (tant que les jours suivants sont vacants et qu'elle reste candidate) | `1` |
+| `garantia` | 1 : passe devant toutes (parmi plusieurs, la plus longtemps inutilisée ; égalité : celle enregistrée en premier) | celle qui a dépassé la garantie de rotation (`max_sem_uso`) en jours sans utilisation |
+
+**Comment le moteur décide chaque jour**, dans cet ordre : la montre d'hier reste dehors, s'il y en a une autre ; le cycle, si
+le mode l'utilise ; le scénario dit qui est candidate ; celle qui a `garantia` gagne directement ; sinon le `peso`. La montre
+choisie reste les `dias` que le scénario a donnés, et le motif du choix est enregistré dans le plan. Le même moteur décide le
+**Tirer ce jour au sort par** du sélecteur de chaque jour et le **Décider pour moi** de la rotation manuelle.
+
+Un exemple : des mécaniques en semaine, ce que la batterie permet le week-end, et celle qui est arrêtée depuis plus de 3 jours
+avec 100 fois la chance des autres :
+
+```
+util      = DIA_SEMANA() <= 5
+candidato = SE(util; NO_GRUPO("Mecânico"); 1)
+peso      = SE(dias_sem_uso > 3; 100; 1)
+dias      = SE(NO_GRUPO("Smartwatch"); dias_seguidos; 1)
+```
+
+Le bouton **Tester sur toutes les montres** calcule le scénario sur un jour (aujourd'hui, ou l'un des 13 suivants) et montre
+chaque ligne sur chaque montre et qui sortirait. En plus des fonctions des formules, le scénario a `DIA_SEMANA()` (1 lundi à
+7 dimanche), `SEMANA_DO_ANO()`, `NO_GRUPO("groupe")`, `RELOGIO("nom")`, `ESCOLHIDO_HA(n)`, `VEZES_NO_PLANO(n)`,
+`ESCOLHA(n; a; b; …)` et `SORTEIO()` (le tableau dans [Le moteur de formules](#le-moteur-de-formules)) et la variable
+`nota_criterios`. Par l'API : `recurso=roteiro` teste ; `recurso=modos`, `acao=salvar` avec `tipo=personalizado` et `roteiro`
+enregistre.
+
+**D'où vient le tirage.** Tout tirage du système (le mode entièrement aléatoire, le tirage selon la note ou selon le poids et
+la fonction `SORTEIO()` du scénario) utilise des nombres vraiment aléatoires, venus de l'extérieur, dans cet ordre :
 
 1. **[RANDOM.ORG](https://www.random.org/)** : du hasard tiré du bruit atmosphérique (il mesure la variation des micro-ondes
    dans l'air et la transforme en bits) ;
@@ -294,8 +353,8 @@ par jour) et dans le cadre **Mode de rotation** de la page Aujourd'hui (chacun s
   confirmation.
 - **Tout effacer** : vide toute la programmation, à partir de demain : les jours choisis à la main, les tirés et les libres.
   En cochant **Y compris aujourd'hui**, il efface à partir d'aujourd'hui (si une autre montre sort pour aujourd'hui, elle
-  devient celle au poignet dès maintenant). Ensuite le mode de rotation reconstruit le plan, de zéro : dans le tirage par
-  blocs, jusqu'au dimanche (les semaines suivantes, quand elles arrivent) ; dans le planning intelligent, tout le planning.
+  devient celle au poignet dès maintenant). Ensuite le mode de rotation reconstruit le plan, de zéro : jusqu'au dimanche de la
+  dernière des semaines du mode (les suivantes, quand elles arrivent) ; dans le planning intelligent, tout le planning.
   La programmation ne reste pas vide car le système construit toujours les jours manquants avec le mode actif ; pour des
   jours sans montre, cochez *libre* dans la Rotation manuelle.
 
@@ -342,7 +401,8 @@ C'est le mode le plus complet. Au lieu de tirer semaine après semaine, il **pla
 simulant jour par jour :
 
 1. il calcule la note de chaque montre avec l'état simulé de ce jour-là ;
-2. il choisit la montre ; la smartwatch reste au poignet le nombre de jours que tient la batterie (jusqu'à 7) ;
+2. il choisit la montre par la meilleure note (le scénario du planning : `peso = 0`) ; la smartwatch reste au poignet le
+   nombre de jours que tient la batterie (jusqu'à 7 : la formule `dias_seguidos`) ;
 3. il simule le port (la session au poignet pendant l'horaire de port) et son effet sur la charge et la réserve de toutes ;
 4. il vérifie les alertes : si la montre choisie va avoir besoin d'une charge ou d'un remontage, il note l'action sur le jour
    (*« charger avant de porter »*) et simule la saisie qui la résout ;
@@ -1119,7 +1179,7 @@ que vous enregistrez apparaît ici sous son nom.
 | **Configuration** (`configuracao.php`) | Les options de la collection (les horaires, les limites, les écrans, la langue), l'état du cron, le résumé des alertes, des rappels et des messages (avec le chemin vers la page **Alertes**), la **Sauvegarde** (seulement le master : les sauvegardes du dossier, avec **Télécharger** et **Restaurer**, et **Faire une sauvegarde maintenant**) et le bouton qui applique les migrations de la base. Voir [La Configuration, option par option](#la-configuration-option-par-option). |
 | **Destinations** (`destinos.php`, ouverte depuis la page Alertes) | Où vont les messages de la collection : chaque webhook, e-mail ou Web Push, avec le message, la langue, ce qu'il reçoit, les tests et ce qui part aujourd'hui. Voir [Messages et agendas](#messages-et-agendas). |
 | **Agendas** (`agendas.php`, ouverte depuis la page Alertes) | Les agendas de la collection (Google, CalDAV, Outlook, lien ICS), avec le modèle de l'événement, ce qu'elle reçoit, la synchronisation, l'événement de test et ce qui doit y être maintenant. |
-| **Modes de rotation** (`modos.php`, menu **Rotation**) | Les modes de rotation : le tableau (le mode actif marqué, la façon de choisir, les blocs avec les jours) avec **Modifier**, **Activer** et **Supprimer**, et le formulaire d'un mode (le nom, la planification, la façon de choisir, le cycle et les blocs de jours de la semaine, chacun avec où tirer, un par jour ou un pour le bloc et la montre fixe). Voir [Les modes de rotation](#les-modes-de-rotation). |
+| **Modes de rotation** (`modos.php`, menu **Rotation**) | Les modes de rotation : le tableau (le mode actif marqué, le type, le critère, les semaines et d'où il choisit) avec **Modifier**, **Activer** et **Supprimer**, et le formulaire d'un mode, avec l'écran de son type : le nom et le type ; d'où choisir (par tranche ou par jour de la semaine), la période du planning ou le scénario écrit à la main avec **Tester sur toutes les montres** ; les semaines en avant (avec la liste des semaines) ; le critère de choix et le cycle ; et, dans les types prêts, le scénario généré (lecture seule, avec **copier ce scénario** vers un Personnalisé). Voir [Les modes de rotation](#les-modes-de-rotation). |
 | **Critères** (`criterios.php`) | Les ensembles de critères par endroit (toutes les montres, un groupe ou une montre), avec paramètres, sous-paramètres, tranches et la note de chaque montre avec le calcul détaillé. Il y a **Restaurer les critères initiaux**. |
 | **Groupes** (`grupos.php`) | L'arbre : créer, renommer, déplacer, trier, supprimer (ce qui appartenait au groupe passe à celui du dessus) et choisir le groupe de chaque montre. |
 | **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**) et catégories de documents : tout ce que le système utilise et qui n'est pas du code (les alertes sont dans la page **Alertes**, et les modes de rotation dans **Modes de rotation**). |

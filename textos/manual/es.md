@@ -1,4 +1,4 @@
-<!-- origem: d7dded06515ca5232e5782eb02d1ae1b1ff9e4c1 -->
+<!-- origem: 39a4bc38b30496a3595d568a80de6ef3fe346e52 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -57,7 +57,7 @@ flowchart LR
 | **Avisos** | Una fecha prevista por fórmula, una antelación, un texto y el registro que resuelve el aviso. | *"Dar cuerda al Orient: la reserva se acaba a las 15 h"*, y el botón **Cuerda** lo resuelve |
 | **Límite de carga** | La carga en la que el reloj necesita atención: cargar el smartwatch, poner el solar al sol, dar cuerda al mecánico. El aviso solo sale cuando la carga llega a él. Cada reloj puede tener el suyo (campo *"Avisar cuando la carga llegue a"*); vacío, vale el general de la Configuración. | smartwatch al 20% (el general), el Samsung al 30% (el suyo) |
 | **Criterios** | Cómo cada reloj recibe una nota de 0 a 100 para el sorteo: parámetros con peso, subparámetros que miden un campo o una fórmula, y rangos que convierten el valor en nota. | *Tiempo sin uso* (40%): de 0 a 1 día da 0, 30 días o más da 100 |
-| **Modos de rotación** | Las reglas del plan: bloques de días de la semana, de qué grupo sortear, un reloj por día o uno para todo el bloque, un reloj fijo y el método de elección. | *"Smartwatch de lunes a viernes, un tradicional por día el fin de semana"* |
+| **Modos de rotación** | Las reglas del plan: el tipo del modo (uno por semana, semana y fin de semana, por día de la semana, aleatorio, escala inteligente o personalizado), de qué grupo elegir cada día, cuántas semanas adelante, el criterio de elección y, por debajo, el guion que el motor calcula. | *"Smartwatch de lunes a viernes, un tradicional por día el fin de semana"* |
 | **Plan** | El reloj de cada día, con qué hacer (*cargar antes*, *dar cuerda*, *poner en el winder*). | `lun 10/06 · Xiaomi Band · cargar antes de usar` |
 
 ### El motor de fórmulas {#o-motor-de-fórmulas}
@@ -90,6 +90,19 @@ Y las que leen el historial de cada reloj:
 | `MEDIDO("uso")` / `MEDIDO("repouso")` | el consumo real de la batería, medido por sus lecturas de carga |
 | `EM_SESSAO("winder")` | 1 si la sesión está abierta ahora (el reloj está en el winder) |
 | `MEDIA_COLECAO("uso_30d")` | el promedio de una variable en toda la colección |
+
+Y las de la rotación (el guion de los modos; fuera de él, el día es el del instante del cálculo):
+
+| Función | Qué devuelve |
+|---|---|
+| `DIA_SEMANA()`, `SEMANA_DO_ANO()` | el día de la semana (1 lunes a 7 domingo) y la semana del año (ISO) del día que se está armando |
+| `NO_GRUPO("Tradicional › Quartzo")` | 1 si el reloj está en ese punto del árbol o debajo (el nombre, la ruta o `#id`; `"todos"`: 1 para todos) |
+| `RELOGIO("Seiko SKX")` | 1 si es ese reloj (por el nombre o por el id) |
+| `ESCOLHIDO_HA(1)`, `VEZES_NO_PLANO(7)` | 1 si el reloj fue el del plan hace n días (1: ayer; -1: mañana, cuando ya está en el plan); cuántos días tuvo en el plan en los últimos n días |
+| `ESCOLHA(n; a; b; c)` | el n-ésimo de los valores (solo ese se calcula): `ESCOLHA(DIA_SEMANA(); …)` da un valor por día de la semana |
+| `SORTEIO()` | un número de 0 a 1, del mismo lote de RANDOM.ORG de los sorteos |
+
+Y la variable `nota_criterios`: la nota del reloj por los criterios, en el instante del cálculo.
 
 En la página **Definiciones** cada fórmula tiene el botón **Probar en todos los relojes**, que muestra el resultado en cada
 reloj antes de guardar.
@@ -183,32 +196,76 @@ reloj comprado ayer no se cuela en la fila, y dos nunca usados no empatan: lleva
 Para que nunca quede con la duda, **cada día del plan guarda el motivo de la elección**, en una frase, y aparece debajo del
 reloj en la página Hoy y en la página Plan: *"Garantía de rotación: nunca usado, en la colección hace 38 días, más allá del
 límite de 21 días sin uso"*, *"Sorteo por la nota, entre 5 candidatos: nota 70,2, 16,4% de probabilidad"*, *"La mayor nota
-(91,2)"*, *"El mismo reloj de la semana en el bloque Lunes a viernes"*, *"Elegido a mano"*.
+(91,2). Se queda 5 días seguidos"*, *"Sigue en la muñeca: día 2 de 5 seguidos"*, *"Elegido a mano"*.
 ### Los modos de rotación {#os-modos-de-rodízio}
 
-Los modos están en la página **Modos de rotación** (menú **Rotación**). Un modo está hecho de **bloques de días de la semana**. Cada bloque dice de dónde sortear (un grupo, toda la colección o un
-reloj fijo) y si es **un reloj por día** o **uno para todo el bloque**. Vienen listos:
+Los modos están en la página **Modos de rotación** (menú **Rotación**). Cada modo tiene un **tipo**, y la pantalla del tipo
+pide solo lo que tiene sentido en él:
 
-- **Uno por semana**: un tradicional toda la semana.
-- **Semana y fin de semana**: el smartwatch de lunes a viernes y un tradicional por día el sábado y el domingo.
-- **Por día de la semana**: un reloj distinto cada día.
-- **Aleatorio todos los días**.
-- **Escala inteligente**: vea más abajo.
+- **Uno por semana**: un reloj para toda la semana, de lunes a domingo. Usted dice de dónde sale (la colección, un grupo o
+  un reloj fijo) y el criterio de elección.
+- **Semana y fin de semana**: dos tramos, de lunes a viernes y el sábado y domingo, cada uno con su grupo y con **un reloj
+  para el tramo** o **uno por día**. El que viene listo: el smartwatch en la semana, un tradicional por día al final de ella.
+- **Por día de la semana**: un reloj por día, y cada día de la semana dice de dónde sale (un grupo, un reloj fijo o ninguno:
+  día libre).
+- **Aleatorio todos los días**: uno por día, todos con la misma probabilidad, sin criterio ni garantía de rotación.
+- **Escala inteligente**: planifica todo el período de una vez, simulando la carga (vea [más abajo](#a-escala-inteligente)).
+- **Personalizado**: usted escribe el guion (vea [El guion del modo](#o-roteiro-do-modo)).
 
-La elección dentro del bloque puede ser por la **mayor nota**, por **sorteo por la nota** (la nota se vuelve probabilidad),
-**aleatoria** o por **fila** (el que lleva más tiempo esperando). Con el **ciclo** activado, un reloj solo vuelve después de
-que todos los disponibles del bloque hayan tenido su turno.
+En los tres primeros, el **criterio de elección** es el sorteo: por la **mayor nota**, por **sorteo por la nota** (la nota se
+vuelve probabilidad), **aleatorio** o por **fila** (el que lleva más tiempo esperando). Con el **ciclo** activado, un reloj
+solo vuelve después de que todos los candidatos hayan pasado en la semana. El cuadro **Modo de rotación** de la página Hoy
+elige el modo, el criterio y la garantía de rotación; **Aplicar modo** solo marca: nada del plan cambia hasta que haga clic en
+**Sortear de nuevo**.
 
-**Hasta cuándo se arma el plan.** En el sorteo por bloques, el plan llega hasta el domingo (el domingo, también el lunes,
-para el aviso de la víspera), y la semana siguiente se sortea cuando empieza. Para verla antes, **Sortear de nuevo** tiene **la
-próxima semana**, cualquier día: sale con el modo actual, con los días que aún faltan de esta semana contados como uso, como si
-ya hubiera usado los relojes del plan (el uso cuenta en los días sin uso y en la nota; la carga no, porque no se sabe si el reloj
-se va a cargar). Cada día se sortea así, con los anteriores del plan ya en la muñeca, y por eso el reloj del lunes no vuelve el
-martes solo por parecer parado. Una vez armada, **Sortear de nuevo** rehace el plan hasta su fin, y los días elegidos a mano se
-quedan. En la escala inteligente no hay próxima semana: ya planifica su propio período.
+**Las semanas.** Fuera de la escala, cada modo dice **cuántas semanas adelante** viene armado el plan (1 a 8; la lista muestra
+las semanas con las fechas). El plan llega hasta el domingo de la última de ellas (con una sola semana, el domingo el plan trae
+también el lunes, para el aviso de la víspera), y la semana siguiente entra cuando le llega el turno. Con más de una semana,
+**Sortear de nuevo** tiene también **la próxima semana**: sale con el modo actual, con los días que aún faltan de esta semana
+contados como uso, como si ya hubiera usado los relojes del plan (el uso cuenta en los días sin uso y en la nota; la carga no,
+porque no se sabe si el reloj se va a cargar). Cada día se elige así, con los anteriores del plan ya en la muñeca, y por eso el
+reloj del lunes no vuelve el martes solo por parecer parado. Los días elegidos a mano se quedan. En la escala inteligente no hay
+próxima semana: ya planifica su propio período.
 
-**De dónde sale el sorteo.** Todo sorteo del sistema (el modo totalmente aleatorio, el sorteo por la nota y el desempate de
-notas iguales en la escala inteligente) usa números realmente aleatorios, de fuera, en este orden:
+### El guion del modo {#o-roteiro-do-modo}
+
+Por debajo, todo modo es un **guion**: cinco líneas que el motor de fórmulas calcula para cada reloj disponible, al comienzo de
+cada día del plan, con los días anteriores ya contados como uso. Los modos listos generan el guion de sus pantallas (la página
+muestra el guion generado, solo lectura); en **Personalizado** usted escribe el suyo, una línea por nombre (`nombre = expresión`,
+en el mismo lenguaje de las fórmulas de las definiciones; las líneas que empiezan con `#` son comentarios; los otros nombres son
+variables suyas):
+
+| Línea | Qué dice | Si falta |
+|---|---|---|
+| `candidato` | 1: el reloj entra en la elección de ese día; 0: no | `1` (todos) |
+| `nota` | la nota del reloj ese día | `nota_criterios` (la nota por los criterios) |
+| `peso` | la probabilidad en el sorteo. Todos 0: gana la mayor nota. Todos iguales: todos con la misma probabilidad. Si no, cada peso es la probabilidad | `0` |
+| `dias` | cuántos días seguidos se queda el elegido (mientras los días siguientes estén vacíos y siga siendo candidato) | `1` |
+| `garantia` | 1: pasa delante de todos (entre varios, el que lleva más tiempo parado; empate: el registrado primero) | quien pasó de la garantía de rotación (`max_sem_uso`) en días sin uso |
+
+**Cómo decide el motor cada día**, en este orden: el reloj de ayer queda fuera, si hay otro; el ciclo, si el modo lo usa; el
+guion dice quién es candidato; quien tiene `garantia` gana directamente; si no, el `peso`. El elegido se queda los `dias` que
+el guion dio, y el motivo de la elección queda grabado en el plan. El mismo motor decide el **Sortear este día por** del
+selector de cada día y el **Decide por mí** de la rotación manual.
+
+Un ejemplo: mecánicos en la semana, lo que dé la batería el fin de semana, y quien lleva más de 3 días parado con 100 veces la
+probabilidad de los demás:
+
+```
+util      = DIA_SEMANA() <= 5
+candidato = SE(util; NO_GRUPO("Mecânico"); 1)
+peso      = SE(dias_sem_uso > 3; 100; 1)
+dias      = SE(NO_GRUPO("Smartwatch"); dias_seguidos; 1)
+```
+
+El botón **Probar en todos los relojes** calcula el guion en un día (hoy, o uno de los próximos 13) y muestra cada línea en cada
+reloj y quién saldría. Además de las funciones de las fórmulas, el guion tiene `DIA_SEMANA()` (1 lunes a 7 domingo),
+`SEMANA_DO_ANO()`, `NO_GRUPO("grupo")`, `RELOGIO("nombre")`, `ESCOLHIDO_HA(n)`, `VEZES_NO_PLANO(n)`, `ESCOLHA(n; a; b; …)` y
+`SORTEIO()` (la tabla en [El motor de fórmulas](#o-motor-de-fórmulas)) y la variable `nota_criterios`. Por la API:
+`recurso=roteiro` prueba; `recurso=modos`, `acao=salvar` con `tipo=personalizado` y `roteiro` graba.
+
+**De dónde sale el sorteo.** Todo sorteo del sistema (el modo totalmente aleatorio, el sorteo por la nota o por el peso y la
+función `SORTEIO()` del guion) usa números realmente aleatorios, de fuera, en este orden:
 
 1. **[RANDOM.ORG](https://www.random.org/)**: azar del ruido atmosférico (mide la variación de las microondas en el aire y la
    convierte en bits);
@@ -237,8 +294,8 @@ a día) y en el cuadro **Modo de rotación** de la página Hoy (cada uno debajo 
   confirmación.
 - **Borrar todo**: limpia toda la programación, de mañana en adelante: los días elegidos a mano, los sorteados y los libres.
   Marcando **Incluyendo hoy**, borra de hoy en adelante (si sale otro reloj para hoy, pasa a ser el de la muñeca desde ese
-  momento). Después el modo de rotación vuelve a armar el plan, desde cero: en el sorteo por bloques, hasta el domingo (las
-  semanas siguientes, cuando lleguen); en la escala inteligente, toda la escala. La programación no queda vacía porque el
+  momento). Después el modo de rotación vuelve a armar el plan, desde cero: hasta el domingo de la última de las semanas del modo (las
+  siguientes, cuando lleguen); en la escala inteligente, toda la escala. La programación no queda vacía porque el
   sistema siempre arma los días que faltan con el modo activo; para días sin reloj, marque *libre* en la Rotación manual.
 
 ### La rotación manual {#o-rodízio-manual}
@@ -281,7 +338,8 @@ Es el modo más completo. En lugar de sortear semana a semana, **planifica de 7 
 día:
 
 1. calcula la nota de cada reloj con el estado simulado de ese día;
-2. elige el reloj; el smartwatch se queda en la muñeca los días que aguanta la batería (hasta 7);
+2. elige el reloj por la mayor nota (el guion de la escala: `peso = 0`); el smartwatch se queda en la muñeca los días que
+   aguanta la batería (hasta 7: la fórmula `dias_seguidos`);
 3. simula el uso (la sesión en la muñeca en el horario de uso) y su efecto en la carga y la reserva de todos;
 4. comprueba los avisos: si el elegido va a necesitar carga o cuerda, anota la acción en el día (*"cargar antes de usar"*) y
    simula el registro que la resuelve;
@@ -1002,7 +1060,7 @@ que usted registre entra aquí con su nombre.
 | **Configuración** (`configuracao.php`) | Las opciones de la colección (los horarios, los límites, las pantallas, el idioma), la situación del cron, el resumen de los avisos, los recordatorios y los mensajes (con el camino a la página **Avisos**), la **Copia de seguridad** (solo el master: las copias de la carpeta, con **Descargar** y **Restaurar**, y **Hacer una copia ahora**) y el botón que aplica las migraciones de la base de datos. Vea [La Configuración, opción por opción](#a-configuração-opção-por-opção). |
 | **Destinos** (`destinos.php`, abierta desde la página Avisos) | Adónde van los mensajes de la colección: cada webhook, correo o Web Push, con el mensaje, el idioma, lo que recibe, las pruebas y cómo sale hoy. Vea [Mensajes y calendarios](#mensagens-e-agendas). |
 | **Calendarios** (`agendas.php`, abierta desde la página Avisos) | Los calendarios de la colección (Google, CalDAV, Outlook, enlace ICS), con la plantilla del evento, lo que recibe, la sincronización, el evento de prueba y lo que tiene que estar en él ahora. |
-| **Modos de rotación** (`modos.php`, menú **Rotación**) | Los modos de rotación: la tabla (el modo activo marcado, la forma de elegir, los bloques con los días) con **Editar**, **Activar** y **Eliminar**, y el formulario de un modo (el nombre, la planificación, la forma de elegir, el ciclo y los bloques de días de la semana, cada uno con de dónde sortear, uno por día o uno para el bloque y el reloj fijo). Vea [Los modos de rotación](#os-modos-de-rodízio). |
+| **Modos de rotación** (`modos.php`, menú **Rotación**) | Los modos de rotación: la tabla (el modo activo marcado, el tipo, el criterio, las semanas y de dónde elige) con **Editar**, **Activar** y **Eliminar**, y el formulario de un modo, con la pantalla de su tipo: el nombre y el tipo; de dónde elegir (por tramo o por día de la semana), el período de la escala o el guion escrito a mano con **Probar en todos los relojes**; las semanas adelante (con la lista de las semanas); el criterio de elección y el ciclo; y, en los tipos listos, el guion generado (solo lectura, con **copiar este guion** a un Personalizado). Vea [Los modos de rotación](#os-modos-de-rodízio). |
 | **Criterios** (`criterios.php`) | Los conjuntos de criterios por lugar (todos los relojes, un grupo o un reloj), con parámetros, subparámetros, rangos y la nota de cada reloj con la cuenta abierta. Tiene **Restaurar los criterios iniciales**. |
 | **Grupos** (`grupos.php`) | El árbol: crear, renombrar, mover, ordenar, eliminar (lo que era del grupo pasa al de arriba) y elegir el grupo de cada reloj. |
 | **Definiciones** (`cadastros.php`) | Campos, tipos de registro, fórmulas (con **Probar**) y las categorías de documentos: todo lo que el sistema usa que no es código (los avisos están en la página **Avisos**, y los modos de rotación, en **Modos de rotación**). |

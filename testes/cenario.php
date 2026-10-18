@@ -313,6 +313,32 @@ foreach ($modos["modos"] ?? [] as $m) {
         $inteligente = (int)$m["id"];
     }
 }
+$em = function ($dias) { return date("Y-m-d", strtotime("+" . (int)$dias . " days")); };
+// os tipos de modo: um por semana com duas semanas à frente, por dia da semana (um bloco por dia, um dia livre), um
+// personalizado pelo roteiro (e um roteiro com erro, recusado), e o teste do roteiro (recurso=roteiro)
+$semana2 = escrever(["recurso" => "modos", "acao" => "salvar", "id" => 0, "nome" => "Semana dupla", "tipo" => "semana", "selecao" => "inteligente", "semanas" => 2,
+    "blocos" => [["nome" => "A semana", "dias" => [1, 2, 3, 4, 5, 6, 7], "no_id" => G(2), "um_por" => "bloco", "relogio_id" => 0]]]);
+escrever(["recurso" => "modos", "acao" => "salvar", "id" => 0, "nome" => "Semana torta", "tipo" => "semana", "semanas" => 1,
+    "blocos" => [["nome" => "Dias úteis", "dias" => [1, 2, 3, 4, 5], "no_id" => 0, "um_por" => "bloco", "relogio_id" => 0]]], false);
+$por_dia = escrever(["recurso" => "modos", "acao" => "salvar", "id" => 0, "nome" => "Cada dia o seu", "tipo" => "dia_semana", "selecao" => "fifo", "semanas" => 1,
+    "blocos" => [["nome" => "Segunda", "dias" => [1], "no_id" => G(1), "um_por" => "dia", "relogio_id" => 0], ["nome" => "Terça", "dias" => [2], "no_id" => G(2), "um_por" => "dia", "relogio_id" => 0],
+        ["nome" => "Quarta", "dias" => [3], "no_id" => 0, "um_por" => "dia", "relogio_id" => $rel["pilha"]], ["nome" => "Quinta", "dias" => [4], "no_id" => 0, "um_por" => "dia", "relogio_id" => 0],
+        ["nome" => "Sexta", "dias" => [5], "no_id" => G(1), "um_por" => "dia", "relogio_id" => 0], ["nome" => "Domingo", "dias" => [7], "no_id" => 0, "um_por" => "dia", "relogio_id" => 0]]]);
+$roteiro = "util = DIA_SEMANA() <= 5\ncandidato = SE(util; NO_GRUPO(\"Tradicional\"); 1)\npeso = SE(dias_sem_uso > 3; 100; 1)\ndias = SE(NO_GRUPO(\"Smartwatch\"); 2; 1)";
+$personalizado = escrever(["recurso" => "modos", "acao" => "salvar", "id" => 0, "nome" => "Meu roteiro", "tipo" => "personalizado", "semanas" => 1, "roteiro" => $roteiro]);
+escrever(["recurso" => "modos", "acao" => "salvar", "id" => 0, "nome" => "Roteiro errado", "tipo" => "personalizado", "roteiro" => "candidato = NO_GRUPO(\"Tradicional\"\npeso = peso + 1\nnota = inexistente"], false);
+ler("roteiro", ["recurso" => "roteiro", "roteiro" => $roteiro, "dia" => $em(1)]);
+ler("roteiro do modo", ["recurso" => "roteiro", "modo" => $por_dia, "dia" => $em(2)]);
+ler("roteiro errado", ["recurso" => "roteiro", "roteiro" => "candidato = (\npeso = peso + 1\nnota = inexistente", "dia" => $em(3)]);
+ler("roteiro em dia inválido", ["recurso" => "roteiro", "roteiro" => "candidato = 1", "dia" => "2000-01-01"]);
+foreach ([$semana2, $por_dia, $personalizado] as $m_t) {
+    escrever(["recurso" => "modos", "acao" => "ativar", "id" => $m_t]);
+    escrever(["recurso" => "rodizio", "acao" => "resortear"]);
+    ler("plano do modo " . $m_t, ["recurso" => "plano"]);
+}
+escrever(["recurso" => "rodizio", "acao" => "modo", "modo" => $semana2, "selecao" => "ponderado", "max_sem_uso" => 15]);
+escrever(["recurso" => "rodizio", "acao" => "proxima_semana"]);
+ler("cadastros com os modos", ["recurso" => "cadastros"]);
 escrever(["recurso" => "modos", "acao" => "salvar", "id" => $inteligente, "nome" => "Escala inteligente", "selecao" => "inteligente", "escala_dias" => 45,
     "blocos" => [["nome" => "Todo dia", "dias" => [1, 2, 3, 4, 5, 6, 7], "no_id" => 0, "um_por" => "dia", "relogio_id" => 0]]]);
 escrever(["recurso" => "modos", "acao" => "ativar", "id" => $inteligente]);
@@ -453,7 +479,6 @@ escrever(["recurso" => "rodizio", "acao" => "resortear"]);
 ler("plano com a próxima semana", ["recurso" => "plano"]);
 // os relógios de um período, escolhidos à mão: dois, na ordem, dois dias seguidos cada; o sortear de novo não mexe neles, e
 // depois uma parte do período é sorteada de novo e outra fica livre. Um período no passado é recusado
-$em = function ($dias) { return date("Y-m-d", strtotime("+" . (int)$dias . " days")); };
 escrever(["recurso" => "rodizio", "acao" => "periodo", "de" => $em(10), "ate" => $em(15), "relogio_ids" => [$rel["manual"], $rel["crono"]], "dias_cada" => 2]);
 escrever(["recurso" => "rodizio", "acao" => "resortear"]);
 ler("plano com periodo", ["recurso" => "plano", "dias" => 30]);

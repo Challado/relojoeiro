@@ -2302,9 +2302,11 @@
     "modos": [
         {
             "nome": "Um por semana",
+            "tipo": "semana",
             "selecao": "ponderado",
             "ordem": 1,
             "escala_dias": null,
+            "semanas": 1,
             "ciclo": 0,
             "ativo": false,
             "blocos": [
@@ -2327,9 +2329,11 @@
         },
         {
             "nome": "Semana e fim de semana",
+            "tipo": "semana_fds",
             "selecao": "ponderado",
             "ordem": 2,
             "escala_dias": null,
+            "semanas": 1,
             "ciclo": 0,
             "ativo": true,
             "blocos": [
@@ -2360,9 +2364,11 @@
         },
         {
             "nome": "Por dia da semana",
+            "tipo": "dia_semana",
             "selecao": "ponderado",
             "ordem": 3,
             "escala_dias": null,
+            "semanas": 1,
             "ciclo": 0,
             "ativo": false,
             "blocos": [
@@ -2393,9 +2399,11 @@
         },
         {
             "nome": "Aleatório todo dia",
+            "tipo": "aleatorio",
             "selecao": "aleatorio",
             "ordem": 4,
             "escala_dias": null,
+            "semanas": 1,
             "ciclo": 0,
             "ativo": false,
             "blocos": [
@@ -2418,9 +2426,11 @@
         },
         {
             "nome": "Escala inteligente",
+            "tipo": "escala",
             "selecao": "inteligente",
             "ordem": 5,
             "escala_dias": 30,
+            "semanas": 1,
             "ciclo": 0,
             "ativo": false,
             "blocos": [

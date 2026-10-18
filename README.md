@@ -104,7 +104,7 @@ flowchart LR
 | **Avisos** | Uma data prevista por fórmula, uma antecedência, um texto e o lançamento que resolve o aviso. | *"Dar corda no Orient: a reserva acaba às 15h"*, e o botão **Corda** resolve |
 | **Limite de carga** | A carga em que o relógio precisa de atenção: carregar o smartwatch, pôr o solar no sol, dar corda no mecânico. O aviso só sai quando a carga chega a ele. Cada relógio pode ter o seu (campo *"Avisar quando a carga chegar a"*); vazio, vale o geral da Configuração. | smartwatch em 20% (o geral), o Samsung em 30% (o dele) |
 | **Critérios** | Como cada relógio ganha uma nota de 0 a 100 para o sorteio: parâmetros com peso, subparâmetros que medem um campo ou fórmula, e faixas que transformam o valor em nota. | *Tempo sem uso* (40%): de 0 a 1 dia vale nota 0, 30 dias ou mais vale 100 |
-| **Modos de rodízio** | As regras do plano: blocos de dias da semana, de que grupo sortear, um relógio por dia ou um para o bloco inteiro, relógio fixo e a forma de escolha. | *"Smartwatch de segunda a sexta, um tradicional por dia no fim de semana"* |
+| **Modos de rodízio** | As regras do plano: o tipo do modo (um por semana, semana e fim de semana, por dia da semana, aleatório, escala inteligente ou personalizado), de que grupo escolher em cada dia, quantas semanas à frente, o critério de escolha e, por baixo, o roteiro que o motor calcula. | *"Smartwatch de segunda a sexta, um tradicional por dia no fim de semana"* |
 | **Plano** | O relógio de cada dia, com o que fazer (*carregar antes*, *dar corda*, *pôr no winder*). | `seg 06/10 · Xiaomi Band · carregar antes de usar` |
 
 ### O motor de fórmulas
@@ -137,6 +137,19 @@ E as que leem o histórico de cada relógio:
 | `MEDIDO("uso")` / `MEDIDO("repouso")` | o gasto real de bateria, medido pelas suas leituras de carga |
 | `EM_SESSAO("winder")` | 1 se a sessão está aberta agora (o relógio está no winder) |
 | `MEDIA_COLECAO("uso_30d")` | a média de uma variável na coleção inteira |
+
+E as do rodízio (o roteiro dos modos; fora dele, o dia é o do instante da conta):
+
+| Função | O que devolve |
+|---|---|
+| `DIA_SEMANA()`, `SEMANA_DO_ANO()` | o dia da semana (1 segunda a 7 domingo) e a semana do ano (ISO) do dia que está sendo montado |
+| `NO_GRUPO("Tradicional › Quartzo")` | 1 se o relógio está nesse ponto da árvore ou abaixo (o nome, o caminho ou `#id`; `"todos"`: 1 para todos) |
+| `RELOGIO("Seiko SKX")` | 1 se é esse relógio (pelo nome ou pelo id) |
+| `ESCOLHIDO_HA(1)`, `VEZES_NO_PLANO(7)` | 1 se o relógio foi o do plano há n dias (1: ontem; -1: amanhã, quando já está no plano); quantos dias ele teve no plano nos últimos n dias |
+| `ESCOLHA(n; a; b; c)` | o n-ésimo dos valores (só ele é calculado): `ESCOLHA(DIA_SEMANA(); …)` dá um valor por dia da semana |
+| `SORTEIO()` | um número de 0 a 1, do mesmo lote do RANDOM.ORG dos sorteios |
+
+E a variável `nota_criterios`: a nota do relógio pelos critérios, no instante da conta.
 
 Na página **Cadastros** toda fórmula tem o botão **Testar em todos os relógios**, que mostra o resultado em cada relógio antes
 de gravar.
@@ -233,34 +246,76 @@ relógio comprado ontem não fura a fila, e dois nunca usados não empatam: espe
 
 Para você nunca ficar na dúvida, **cada dia do plano guarda o motivo da escolha**, numa frase, e ela aparece embaixo do
 relógio na página Hoje e na página Plano: *"Garantia de rodízio: nunca usado, na coleção há 38 dias, além do limite de 21
-dias sem uso"*, *"Sorteio pela nota, entre 5 candidatos: nota 70,2, 16,4% de chance"*, *"A maior nota (91,2)"*, *"O mesmo
-relógio da semana no bloco Segunda a sexta"*, *"Escolhido à mão"*.
+dias sem uso"*, *"Sorteio pela nota, entre 5 candidatos: nota 70,2, 16,4% de chance"*, *"A maior nota (91,2). Fica 5 dias
+seguidos"*, *"Segue no pulso: dia 2 de 5 seguidos"*, *"Escolhido à mão"*.
 
 ### Os modos de rodízio
 
-Os modos ficam na página **Modos de rodízio** (menu **Rodízio**). Um modo é feito de **blocos de dias da semana**. Cada bloco diz de onde sortear (um grupo, a coleção toda ou um relógio fixo)
-e se é **um relógio por dia** ou **um para o bloco inteiro**. Vêm prontos:
+Os modos ficam na página **Modos de rodízio** (menu **Rodízio**). Cada modo tem um **tipo**, e a tela do tipo pede só o que
+faz sentido nele:
 
-- **Um por semana**: um tradicional a semana toda.
-- **Semana e fim de semana**: o smartwatch de segunda a sexta e um tradicional por dia no sábado e no domingo.
-- **Por dia da semana**: um relógio diferente a cada dia.
-- **Aleatório todo dia**.
-- **Escala inteligente**: veja abaixo.
+- **Um por semana**: um relógio para a semana inteira, de segunda a domingo. Você diz de onde ele sai (a coleção, um grupo
+  ou um relógio fixo) e o critério de escolha.
+- **Semana e fim de semana**: dois trechos, de segunda a sexta e no sábado e domingo, cada um com o seu grupo e com **um
+  relógio para o trecho** ou **um por dia**. O que vem pronto: o smartwatch na semana, um tradicional por dia no fim dela.
+- **Por dia da semana**: um relógio por dia, e cada dia da semana diz de onde ele sai (um grupo, um relógio fixo ou nenhum:
+  dia livre).
+- **Aleatório todo dia**: um por dia, todos com a mesma chance, sem critério nem garantia de rodízio.
+- **Escala inteligente**: planeja o período inteiro de uma vez, simulando a carga (veja [abaixo](#a-escala-inteligente)).
+- **Personalizado**: você escreve o roteiro (veja [O roteiro do modo](#o-roteiro-do-modo)).
 
-A escolha dentro do bloco pode ser pela **maior nota**, por **sorteio pela nota** (a nota vira a chance), **aleatória** ou por
-**fila** (quem está esperando há mais tempo). Com o **ciclo** ligado, um relógio só volta depois que todos os disponíveis do
-bloco passaram.
+Nos três primeiros, o **critério de escolha** é o sorteio: pela **maior nota**, por **sorteio pela nota** (a nota vira a
+chance), **aleatório** ou por **fila** (quem está esperando há mais tempo). Com o **ciclo** ligado, um relógio só volta
+depois que todos os candidatos passaram na semana. O quadro **Modo de rodízio** da página Hoje escolhe o modo, o critério e a
+garantia de rodízio; **Aplicar modo** só marca: nada do plano muda até você clicar em **Sortear de novo**.
 
-**Até quando o plano vem montado.** No sorteio pelos blocos, o plano vai até domingo (no domingo, também a segunda, para o
-aviso da véspera), e a semana seguinte é sorteada quando ela começa. Para ver antes, o **Sortear de novo** tem **a próxima
-semana**, em qualquer dia: ela sai pelo modo atual, com os dias que ainda faltam desta semana contados como uso, como se você
-já tivesse usado os relógios do plano (o uso conta nos dias sem uso e na nota; a carga não, porque não se sabe se o relógio vai
-ser carregado). Cada dia é sorteado assim, com os anteriores do plano já no pulso, e por isso o relógio de segunda não volta
-na terça só por parecer parado. Depois de montada, o **Sortear de novo** refaz o plano até o fim dela, e os dias escolhidos à
-mão ficam. Na escala inteligente não há próxima semana: ela já planeja o próprio período.
+**As semanas.** Fora da escala, cada modo diz **quantas semanas à frente** o plano vem montado (1 a 8; a lista mostra as
+semanas com as datas). O plano vai até o domingo da última delas (com uma semana só, no domingo o plano traz também a
+segunda, para o aviso da véspera), e a semana seguinte entra quando a sua vez chega. Com mais de uma semana, o **Sortear de
+novo** tem também **a próxima semana**: ela sai pelo modo atual, com os dias que ainda faltam desta semana contados como uso,
+como se você já tivesse usado os relógios do plano (o uso conta nos dias sem uso e na nota; a carga não, porque não se sabe
+se o relógio vai ser carregado). Cada dia é escolhido assim, com os anteriores do plano já no pulso, e por isso o relógio de
+segunda não volta na terça só por parecer parado. Os dias escolhidos à mão ficam. Na escala inteligente não há próxima
+semana: ela já planeja o próprio período.
 
-**De onde vem o sorteio.** Todo sorteio do sistema (o modo totalmente aleatório, o sorteio pela nota e o desempate de notas
-iguais na escala inteligente) usa números aleatórios de verdade, de fora, nesta ordem:
+### O roteiro do modo
+
+Por baixo, todo modo é um **roteiro**: cinco linhas que o motor de fórmulas calcula para cada relógio disponível, no começo
+de cada dia do plano, com os dias anteriores já contados como uso. Os modos prontos geram o roteiro das telas deles (a
+página mostra o roteiro gerado, só leitura); no **Personalizado** você escreve o seu, uma linha por nome (`nome = expressão`,
+na mesma língua das fórmulas do cadastro; linhas que começam com `#` são comentários; os outros nomes são variáveis suas):
+
+| Linha | O que diz | Se faltar |
+|---|---|---|
+| `candidato` | 1: o relógio entra na escolha desse dia; 0: não | `1` (todos) |
+| `nota` | a nota do relógio nesse dia | `nota_criterios` (a nota pelos critérios) |
+| `peso` | a chance no sorteio. Todos 0: a maior nota ganha. Todos iguais: todos com a mesma chance. Senão, cada peso é a chance | `0` |
+| `dias` | quantos dias seguidos o escolhido fica (enquanto os dias seguintes estiverem vagos e ele continuar candidato) | `1` |
+| `garantia` | 1: passa na frente de todos (entre vários, o mais tempo parado; empate: o cadastrado primeiro) | quem passou da garantia de rodízio (`max_sem_uso`) em dias sem uso |
+
+**Como o motor decide cada dia**, nesta ordem: o relógio de ontem fica de fora, se houver outro; o ciclo, se o modo usa; o
+roteiro diz quem é candidato; quem tem `garantia` ganha direto; senão o `peso`. O escolhido fica os `dias` que o roteiro deu,
+e o motivo da escolha fica gravado no plano. O mesmo motor decide o **Sortear este dia por** do seletor de cada dia e o
+**Decida por mim** do rodízio manual.
+
+Um exemplo: mecânicos na semana, o que a bateria der no fim de semana, e quem está parado há mais de 3 dias com 100 vezes a
+chance dos outros:
+
+```
+util      = DIA_SEMANA() <= 5
+candidato = SE(util; NO_GRUPO("Mecânico"); 1)
+peso      = SE(dias_sem_uso > 3; 100; 1)
+dias      = SE(NO_GRUPO("Smartwatch"); dias_seguidos; 1)
+```
+
+O botão **Testar em todos os relógios** calcula o roteiro num dia (hoje, ou um dos próximos 13) e mostra cada linha em cada
+relógio e quem sairia. Além das funções das fórmulas, o roteiro tem `DIA_SEMANA()` (1 segunda a 7 domingo), `SEMANA_DO_ANO()`,
+`NO_GRUPO("grupo")`, `RELOGIO("nome")`, `ESCOLHIDO_HA(n)`, `VEZES_NO_PLANO(n)`, `ESCOLHA(n; a; b; …)` e `SORTEIO()` (a tabela em
+[O motor de fórmulas](#o-motor-de-fórmulas)) e a variável `nota_criterios`. Pela API: `recurso=roteiro` testa; `recurso=modos`,
+`acao=salvar` com `tipo=personalizado` e `roteiro` grava.
+
+**De onde vem o sorteio.** Todo sorteio do sistema (o modo totalmente aleatório, o sorteio pela nota ou pelo peso e a
+função `SORTEIO()` do roteiro) usa números aleatórios de verdade, de fora, nesta ordem:
 
 1. **[RANDOM.ORG](https://www.random.org/)**: aleatoriedade por ruído atmosférico (mede a variação das micro-ondas do ar e
    converte em bits);
@@ -288,7 +343,7 @@ no quadro **Modo de rodízio** da página Hoje (cada um abaixo de uma linha, com
   livres), e o modo de rodízio monta esses dias de novo. O botão **Apagar** pede confirmação.
 - **Apagar tudo**: limpa toda a programação, de amanhã em diante: os dias escolhidos à mão, os sorteados e os livres.
   Marcando **Excluindo hoje**, apaga de hoje em diante (se sair outro relógio para hoje, ele passa a ser o do pulso a partir
-  de agora). Depois, o modo de rodízio monta o plano de novo, do zero: no sorteio por blocos, até domingo (as semanas
+  de agora). Depois, o modo de rodízio monta o plano de novo, do zero: até o domingo da última das semanas do modo (as
   seguintes, quando chegarem); na escala inteligente, a escala inteira. A programação não fica vazia porque o sistema sempre
   monta os dias que faltam pelo modo ativo; para dias sem relógio, marque *livre* no Rodízio manual.
 
@@ -328,7 +383,8 @@ Hoje, com *Decida por mim*, continua o relógio que já está no plano.
 É o modo mais completo. Em vez de sortear semana a semana, ele **planeja de 7 dias a 2 anos de uma vez**, simulando dia a dia:
 
 1. calcula a nota de cada relógio com o estado simulado daquele dia;
-2. escolhe o relógio; o smartwatch fica no pulso os dias que a bateria aguenta (até 7);
+2. escolhe o relógio pela maior nota (o roteiro da escala: `peso = 0`); o smartwatch fica no pulso os dias que a bateria
+   aguenta (até 7: a fórmula `dias_seguidos`);
 3. simula o uso (a sessão no pulso no horário de uso) e o efeito dele na carga e na reserva de todos;
 4. confere os avisos: se o escolhido vai precisar de carga ou de corda, anota a ação no dia (*"carregar antes de usar"*) e
    simula o lançamento que a resolve;
@@ -1063,7 +1119,7 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | **Configuração** (`configuracao.php`) | As opções da coleção (os horários, os limites, as telas, o idioma), a situação do cron, o resumo dos avisos, dos lembretes e das mensagens (com o caminho para a página **Avisos**), a **Cópia de segurança** (só o master: as cópias da pasta, com **Baixar** e **Restaurar**, e o **Fazer uma cópia agora**) e o botão que aplica as migrações do banco. Veja [A Configuração, opção por opção](#a-configuração-opção-por-opção). |
 | **Destinos** (`destinos.php`, aberta pela página Avisos) | Para onde vão as mensagens da coleção: cada webhook, e-mail ou Web Push, com a mensagem, o idioma, o que recebe, os testes e como sai hoje. Veja [Mensagens e agendas](#mensagens-e-agendas). |
 | **Agendas** (`agendas.php`, aberta pela página Avisos) | As agendas da coleção (Google, CalDAV, Outlook, link ICS), com o modelo do evento, o que recebe, a sincronização, o evento de teste e o que tem de estar nela agora. |
-| **Modos de rodízio** (`modos.php`, menu **Rodízio**) | Os modos de rodízio: a tabela (o modo ativo marcado, a forma de escolha, os blocos com os dias) com **Editar**, **Ativar** e **Excluir**, e o formulário de um modo (o nome, o planejamento, a forma de escolha, o ciclo e os blocos de dias da semana, cada um com de onde sortear, um por dia ou um para o bloco e o relógio fixo). Veja [Os modos de rodízio](#os-modos-de-rodízio). |
+| **Modos de rodízio** (`modos.php`, menu **Rodízio**) | Os modos de rodízio: a tabela (o modo ativo marcado, o tipo, o critério, as semanas e de onde escolhe) com **Editar**, **Ativar** e **Excluir**, e o formulário de um modo, com a tela do tipo dele: o nome e o tipo; de onde escolher (por trecho ou por dia da semana), o período da escala ou o roteiro escrito à mão com **Testar em todos os relógios**; as semanas à frente (com a lista das semanas); o critério de escolha e o ciclo; e, nos tipos prontos, o roteiro gerado (só leitura, com **copiar este roteiro** para um Personalizado). Veja [Os modos de rodízio](#os-modos-de-rodízio). |
 | **Critérios** (`criterios.php`) | Os conjuntos de critérios por lugar (todos os relógios, um grupo ou um relógio), com parâmetros, subparâmetros, faixas e a nota de cada relógio com a conta aberta. Tem **Restaurar os critérios iniciais**. |
 | **Grupos** (`grupos.php`) | A árvore: criar, renomear, mover, ordenar, excluir (o que era do grupo passa para o de cima) e escolher o grupo de cada relógio. |
 | **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**) e as categorias de documentos: tudo o que o sistema usa e que não é código (os avisos ficam na página **Avisos**, e os modos de rodízio, na **Modos de rodízio**). |

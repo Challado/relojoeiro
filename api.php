@@ -159,6 +159,12 @@
  *                            dias livres no meio; sem por_pagina, o "Mostrar até" da Configuração: proximos_por_pagina, padrão 7):
  *                            {"por_pagina", "pagina", "paginas", "total", "relogio" (null), "dias": [como em plano.dia_a_dia]}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=proximos&pagina=2"
+ *   recurso=roteiro          roteiro (o texto: as linhas "nome = expressão") ou modo (o id: o roteiro efetivo dele), [dia: AAAA-MM-DD, de
+ *                            hoje até um ano à frente; padrão hoje]: testa o roteiro de um modo de rodízio nesse dia, sem gravar (o
+ *                            "Testar em todos os relógios" dos Modos de rodízio): {"dia", "dia_semana", "linhas": [{"nome", "expressao"}],
+ *                            "erros": [...], "relogios": [{"id", "nome", "candidato", "nota", "peso", "dias", "garantia", "dias_sem_uso",
+ *                            "valores": {<linha>: valor}}], "escolhido": {"relogio_id", "relogio", "motivo", "dias"} ou null}
+ *                            Ex.: curl -u lucas:senha -G --data-urlencode "roteiro=candidato = NO_GRUPO(\"Tradicional\")" -d dia=2026-10-20 "http://servidor/relojoeiro/api.php?recurso=roteiro"
  *   recurso=rodizio_manual   de, ate (AAAA-MM-DD, de hoje em diante, até 2 anos), [pagina: 1, 2...]: o Rodízio manual (o quadro Modo de
  *                            rodízio da página Hoje): os dias do período de 7 em 7, cada um com o que o plano tem agora e a escolha de
  *                            partida do seletor (o relógio escolhido à mão, livre ou auto: Decida por mim): {"de", "ate", "total_dias",
@@ -512,9 +518,9 @@
  *                            Ex. ordem: curl -u lucas:senha -d recurso=criterios -d acao=ordem -d tipo=parametro -d id=5 -d direcao=desce http://servidor/relojoeiro/api.php
  *                            Ex. faixas: curl -u lucas:senha -d recurso=criterios -d acao=faixas -d sub_id=6 -d "de[0]=0" -d "ate[0]=50" -d "nota[0]=30" -d "de[1]=50" -d "ate[1]=100" -d "nota[1]=100" http://servidor/relojoeiro/api.php
  *                            Ex. restaurar: curl -u lucas:senha -d recurso=criterios -d acao=restaurar http://servidor/relojoeiro/api.php
- *   recurso=rodizio           modo (o quadro Modo de rodízio: modo (id), bloco_alvo[<bloco>] (0 ou o grupo; r:<id>, um relógio fixo),
- *                             bloco_cada_dia[<bloco>] (presente: um por dia), selecao, escala_dias, max_sem_uso: grava e ativa o modo;
- *                             se o dia ainda não começou no pulso, o plano novo vale já de hoje),
+ *   recurso=rodizio           modo (o quadro Modo de rodízio: modo (id), selecao (o critério de escolha, só nos tipos semana,
+ *                             semana_fds e dia_semana), max_sem_uso (a garantia de rodízio): grava os dois e marca o modo; o plano
+ *                             gravado continua; os blocos, as semanas e o roteiro se editam em recurso=modos),
  *                             resortear (de amanhã até domingo, ou até o fim da próxima semana, se ela já foi montada; se o dia
  *                             ainda não começou no pulso, também hoje), resortear_hoje
  *                             (inclusive hoje: o sorteado passa a ser o do pulso a partir de agora), usando (relogio_id: o
@@ -540,7 +546,7 @@
  *                             amanhã em diante, ficam quando se sorteia de novo ou se monta a próxima semana.
  *                             Na escala inteligente: sortear de novo refaz a escala; usando segura o escolhido nos dias que
  *                             faltavam do bloco de hoje e refaz a escala depois deles; proxima_semana é recusada
- *                            Ex. modo: curl -u lucas:senha -d recurso=rodizio -d acao=modo -d modo=2 -d "bloco_alvo[8]=1" -d "bloco_cada_dia[8]=1" -d selecao=ponderado -d max_sem_uso=21 http://servidor/relojoeiro/api.php
+ *                            Ex. modo: curl -u lucas:senha -d recurso=rodizio -d acao=modo -d modo=2 -d selecao=ponderado -d max_sem_uso=21 http://servidor/relojoeiro/api.php
  *                            Ex. resortear: curl -u lucas:senha -d recurso=rodizio -d acao=resortear http://servidor/relojoeiro/api.php
  *                            Ex. resortear_hoje: curl -u lucas:senha -d recurso=rodizio -d acao=resortear_hoje http://servidor/relojoeiro/api.php
  *                            Ex. usando: curl -u lucas:senha -d recurso=rodizio -d acao=usando -d relogio_id=12 http://servidor/relojoeiro/api.php
@@ -551,11 +557,14 @@
  *                            Ex. periodo_livre: curl -u lucas:senha -d recurso=rodizio -d acao=periodo_livre -d de=2026-12-20 -d ate=2027-01-05 http://servidor/relojoeiro/api.php
  *                            Ex. apagar_tudo: curl -u lucas:senha -d recurso=rodizio -d acao=apagar_tudo -d hoje=1 http://servidor/relojoeiro/api.php
  *                            Ex. manual: curl -u lucas:senha -d recurso=rodizio -d acao=manual -d de=2026-12-20 -d ate=2027-01-05 -d "dias[2026-12-20]=12" -d "dias[2026-12-21]=auto" -d "dias[2026-12-25]=livre" http://servidor/relojoeiro/api.php
- *   recurso=modos             salvar (id: 0 cria; nome, selecao: inteligente, ponderado, aleatorio ou fifo; escala_dias: vazio ou 0
- *                             = sorteio pelos blocos, 7 a 730 = escala inteligente com esse horizonte; blocos: [{nome, dias:
- *                             [1..7], no_id (0: todos), um_por: bloco ou dia, relogio_id: fixo (0: sorteia)}], substitui os
- *                             blocos; ciclo: 1 ou 0 (padrão): com o ciclo, um relógio só volta depois que todos os disponíveis do bloco
- *                             passaram na semana — na escala, pelo período dela), ativar (id: o plano de amanhã em diante é refeito),
+ *   recurso=modos             salvar (id: 0 cria; nome; tipo: semana, semana_fds, dia_semana, aleatorio, escala ou personalizado
+ *                             (sem ele, inferido dos blocos); selecao: inteligente, ponderado, aleatorio ou fifo (o aleatório força
+ *                             aleatorio; a escala e o personalizado não a usam); escala_dias: 7 a 730, só na escala; semanas: 1 a 8,
+ *                             quantas semanas à frente o plano vem montado (não na escala); blocos: [{nome, dias: [1..7], no_id (0:
+ *                             todos), um_por: bloco ou dia, relogio_id: fixo (0: sorteia)}], substitui os blocos (a forma deles é
+ *                             conferida pelo tipo); roteiro: as linhas "nome = expressão" do personalizado (conferidas como no
+ *                             recurso=roteiro; os outros tipos geram o roteiro dos blocos); ciclo: 1 ou 0 (padrão): com o ciclo, um
+ *                             relógio só volta depois que todos os candidatos passaram na semana), ativar (id: só marca o modo),
  *                             excluir (id: não o ativo)
  *                            Ex. salvar: curl -u lucas:senha -d recurso=modos -d acao=salvar -d id=0 -d "nome=Só smartwatch" -d selecao=inteligente -d "blocos[0][nome]=Todo dia" -d "blocos[0][dias][]=1" -d "blocos[0][dias][]=7" -d "blocos[0][no_id]=1" -d "blocos[0][um_por]=dia" http://servidor/relojoeiro/api.php
  *                            Ex. ativar: curl -u lucas:senha -d recurso=modos -d acao=ativar -d id=5 http://servidor/relojoeiro/api.php
@@ -788,6 +797,7 @@
  *     criterios.modos[].ativo        verdadeiro ou falso: é o modo em uso
  *     criterios.modos[].escala       verdadeiro ou falso: o modo é escala inteligente (escolhe sempre pela maior nota)
  *     criterios.modos[].nome         o nome do modo
+ *     criterios.modos[].tipo         o tipo do modo: semana, semana_fds, dia_semana, aleatorio, escala ou personalizado
  *     criterios.modos[].selecao      a forma de escolha: inteligente (a maior nota), ponderado (sorteio pela nota), aleatorio ou fifo (o
  *                                    mais tempo sem uso)
  *     criterios.notas[]              a nota de cada relógio agora, com a conta
@@ -902,6 +912,10 @@
  *     modos[].nome                   o nome do modo
  *     modos[].ordem                  a posição do modo
  *     modos[].selecao                a forma de escolha: inteligente, ponderado, aleatorio ou fifo
+ *     modos[].roteiro                o roteiro escrito à mão (o personalizado); null nos outros tipos
+ *     modos[].roteiro_efetivo        o roteiro que vale: o escrito, ou o gerado dos blocos e da forma de escolha
+ *     modos[].semanas                quantas semanas à frente o plano vem montado (1 a 8; a escala usa o período dela)
+ *     modos[].tipo                   o tipo do modo: semana, semana_fds, dia_semana, aleatorio, escala ou personalizado
  *     motor.formatos_de_lancamento.<formato>
  *                                    cada formato de lançamento e o nome dele
  *     motor.funcoes.<funcao>         cada função do motor de fórmulas e como usar (texto)
@@ -1489,6 +1503,9 @@
  *     modo.id                        o número do modo
  *     modo.nome                      o nome
  *     modo.selecao                   a forma de escolha (inteligente, ponderado, aleatorio, fifo)
+ *     modo.semanas                   quantas semanas à frente o plano vem montado (1 a 8; a escala usa o período dela)
+ *     modo.tipo                      o tipo do modo: semana, semana_fds, dia_semana, aleatorio, escala ou personalizado
+ *     modo.tipo_texto                o tipo por extenso, no idioma do pedido
  *     modos[]                        os modos de rodízio (o quadro Modo de rodízio)
  *     modos[].blocos[]               os blocos
  *     modos[].blocos[].dias          os dias da semana, de 1 a 7, separados por vírgula
@@ -1503,6 +1520,9 @@
  *     modos[].id                     o número
  *     modos[].nome                   o nome
  *     modos[].selecao                a forma de escolha
+ *     modos[].semanas                quantas semanas à frente o plano vem montado (1 a 8)
+ *     modos[].tipo                   o tipo do modo: semana, semana_fds, dia_semana, aleatorio, escala ou personalizado
+ *     modos[].tipo_texto             o tipo por extenso, no idioma do pedido
  *     plano[]                        os próximos 62 dias do plano
  *     plano[].acao                   o lembrete do dia; null
  *     plano[].motivo                 por que este relógio saiu neste dia, numa frase (a garantia de rodízio, a nota, o sorteio, a escolha à
@@ -2204,7 +2224,22 @@
  *     modos[].id                     o número
  *     modos[].nome                   o nome
  *     modos[].ordem                  a posição
+ *     modos[].roteiro                o roteiro escrito à mão (o personalizado); null nos outros tipos
+ *     modos[].roteiro_efetivo        o roteiro que vale: o escrito, ou o gerado dos blocos e da forma de escolha
  *     modos[].selecao                a forma de escolha
+ *     modos[].semanas                quantas semanas à frente o plano vem montado (1 a 8)
+ *     modos[].tipo                   o tipo: semana, semana_fds, dia_semana, aleatorio, escala ou personalizado
+ *     modos[].tipo_texto             o tipo por extenso, no idioma do pedido
+ *     tipos_de_modo[]                os tipos de modo, na ordem da lista da tela
+ *     tipos_de_modo[].chave          a chave do tipo (o que se grava em modos salvar)
+ *     tipos_de_modo[].nome           o nome do tipo, no idioma do pedido
+ *     roteiro_padrao                 a expressão padrão de cada saída do roteiro, usada quando o roteiro não a define
+ *     roteiro_padrao.candidato       quem entra na escolha do dia: 1 (todos)
+ *     roteiro_padrao.nota            a nota: nota_criterios (a nota pelos critérios)
+ *     roteiro_padrao.peso            a chance no sorteio: 0 (a maior nota ganha)
+ *     roteiro_padrao.dias            quantos dias seguidos o escolhido fica: 1
+ *     roteiro_padrao.garantia        quem passa na frente: quem está além da garantia de rodízio (max_sem_uso) em dias sem uso
+ *     hoje                           o dia de hoje da coleção (AAAA-MM-DD), para a lista das semanas
  *     relogios[]                     os relógios
  *     relogios[].id                  o número
  *     relogios[].nome                o nome
@@ -2839,6 +2874,30 @@
  *     textos                         o dicionário das telas (a parte telas do textos/<idioma>.php): o texto em português => a tradução
  *                                    (vazio em português)
  *     textos.<texto em português>    a tradução
+ *   recurso=roteiro
+ *     dia                            o dia testado (AAAA-MM-DD)
+ *     dia_semana                     o dia da semana dele: 1 segunda ... 7 domingo
+ *     linhas[]                       as linhas do roteiro, na ordem em que foram escritas
+ *     linhas[].nome                  o nome da linha
+ *     linhas[].expressao             a expressão, como foi escrita
+ *     erros[]                        os erros do roteiro (escrita, nome repetido, variável ou tipo de lançamento desconhecido, uma linha
+ *                                    que depende dela mesma); vazio: nenhum
+ *     relogios[]                     os relógios disponíveis, na ordem do cadastro, cada um com o roteiro calculado para o dia
+ *     relogios[].id                  o número do relógio
+ *     relogios[].nome                o nome
+ *     relogios[].candidato           verdadeiro: entra na escolha do dia
+ *     relogios[].nota                a nota nesse dia (null: vazia)
+ *     relogios[].peso                o peso (a chance) nesse dia (null: vazio)
+ *     relogios[].dias                quantos dias seguidos ficaria (1 a 366)
+ *     relogios[].garantia            verdadeiro: passa na frente de todos
+ *     relogios[].dias_sem_uso        os dias sem uso dele no começo do dia (o desempate da garantia)
+ *     relogios[].valores             o valor de cada linha do roteiro e das cinco saídas nesse relógio
+ *     relogios[].valores.<nome>      o valor da linha (número, texto ou null)
+ *     escolhido                      quem sairia nesse dia pela escolha do rodízio; null: ninguém é candidato
+ *     escolhido.relogio_id           o número do relógio
+ *     escolhido.relogio              o nome
+ *     escolhido.motivo               o motivo, como ficaria no plano
+ *     escolhido.dias                 quantos dias seguidos ficaria
  *   recurso=rodizio_manual
  *     de                             o primeiro dia do período (AAAA-MM-DD)
  *     ate                            o último dia do período (AAAA-MM-DD)
@@ -3951,6 +4010,21 @@ if ($recurso === "textos") {
         $saida = ["erro" => $erro_m];
     } else {
         $saida = rodizio_manual_pagina($de_m, $ate_m, (int)($_REQUEST["pagina"] ?? 1));
+    }
+} elseif ($recurso === "roteiro") {
+    // o teste de um roteiro (ou do roteiro de um modo) num dia: cada relógio com as linhas calculadas, e quem sairia
+    $texto = (string)($_REQUEST["roteiro"] ?? "");
+    if (ctype_digit((string)($_REQUEST["modo"] ?? "")) && $texto === "") {
+        $m_r = linha("SELECT * FROM modo WHERE id = ?", [(int)$_REQUEST["modo"]]);
+        $texto = $m_r ? modo_roteiro_texto($m_r) : "";
+    }
+    $dia_r = DateTimeImmutable::createFromFormat("!Y-m-d", (string)($_REQUEST["dia"] ?? ""));
+    $dia_r = $dia_r && $dia_r->format("Y-m-d") === ($_REQUEST["dia"] ?? "") ? $dia_r : hoje_da_colecao();
+    if ($dia_r < hoje_da_colecao() || $dia_r > hoje_da_colecao()->modify("+366 days")) {
+        $codigo = 400;
+        $saida = ["erro" => t("dia: de hoje até um ano à frente (AAAA-MM-DD)")];
+    } else {
+        $saida = roteiro_testar($texto, $dia_r);
     }
 } elseif ($recurso === "eventos") {
     $saida = ["eventos" => array_map("evento_legivel", eventos_com_dias(linhas("SELECT * FROM evento_personalizado ORDER BY nome")))];

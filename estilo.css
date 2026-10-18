@@ -1654,3 +1654,18 @@ button.leve.perigo { color: #9b2c22; }
 ol.passos { padding-left: 1.3rem; margin: 0.4rem 0; }
 ol.passos li { margin: 0.4rem 0; }
 ol.passos form { display: inline; }
+
+/* Modos de rodízio: a tela de cada tipo (os trechos da semana e fim de semana, os dias da semana, o roteiro e o teste) */
+.pagina-modos .trechos { align-items: start; }
+.pagina-modos fieldset.trecho { border: 1px solid var(--aco-escuro); border-radius: 10px; padding: .6rem .8rem; margin: 0; display: flex; flex-direction: column; gap: .5rem; min-width: 0; }
+.pagina-modos fieldset.trecho legend { font-weight: 600; padding: 0 .3rem; }
+.pagina-modos label.check { flex-direction: row; align-items: center; gap: .3rem; color: var(--tinta); }
+.pagina-modos table.dias-da-semana select { width: 100%; }
+.pagina-modos .roteiro-campo textarea { font-family: ui-monospace, Consolas, monospace; font-size: .9rem; line-height: 1.5; width: 100%; }
+.pagina-modos .semanas { margin: .8rem 0; }
+.pagina-modos .semanas-lista { margin: .3rem 0 0; padding-left: 1.2rem; color: var(--cinza); font-size: .9rem; }
+.pagina-modos .testar-roteiro { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; }
+.pagina-modos #roteiro-teste tr.fora td { color: var(--cinza); }
+.pagina-modos .roteiro-gerado { margin: .8rem 0; }
+.pagina-modos .roteiro-gerado pre { margin: .4rem 0; }
+.pagina-modos .form-grade + .nota, .pagina-modos .nota + .form-grade { margin-top: .6rem; }

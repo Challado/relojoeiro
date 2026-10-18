@@ -315,8 +315,8 @@ function colecao_criar($dono_id, $nome, $raiz, $ids, $lingua)
         sql("INSERT INTO config (colecao_id, chave, valor) VALUES (?, 'idioma', ?)", [$c, $lingua]);
         if (count($ids) > 1) {
             foreach ($m["modos"] as $mo) {
-                sql("INSERT INTO modo (colecao_id, nome, selecao, ordem, escala_dias, ciclo, ativo) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    [$c, $tr($mo["nome"]), $mo["selecao"], (int)$mo["ordem"], $mo["escala_dias"], (int)$mo["ciclo"], $mo["ativo"] ? 1 : null]);
+                sql("INSERT INTO modo (colecao_id, nome, tipo, selecao, ordem, escala_dias, semanas, ciclo, ativo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    [$c, $tr($mo["nome"]), $mo["tipo"] ?? "personalizado", $mo["selecao"], (int)$mo["ordem"], $mo["escala_dias"], (int)($mo["semanas"] ?? 1), (int)$mo["ciclo"], $mo["ativo"] ? 1 : null]);
                 $mid = ultimo_id();
                 foreach ($mo["blocos"] as $b) {
                     sql("INSERT INTO modo_bloco (modo_id, nome, no_id, um_por, ordem) VALUES (?, ?, ?, ?, ?)", [$mid, $tr($b["nome"]), $ids[$b["grupo"]] ?? $raiz, $b["um_por"], (int)$b["ordem"]]);
@@ -328,7 +328,7 @@ function colecao_criar($dono_id, $nome, $raiz, $ids, $lingua)
             }
         } else {
             // sem o modelo: um modo só, para o rodízio ter o que fazer (um relógio por dia, de todos)
-            sql("INSERT INTO modo (colecao_id, nome, selecao, ordem, escala_dias, ciclo, ativo) VALUES (?, ?, 'ponderado', 1, NULL, 0, 1)", [$c, t("Um por dia")]);
+            sql("INSERT INTO modo (colecao_id, nome, tipo, selecao, ordem, escala_dias, semanas, ciclo, ativo) VALUES (?, ?, 'dia_semana', 'ponderado', 1, NULL, 1, 0, 1)", [$c, t("Um por dia")]);
             $mid = ultimo_id();
             sql("INSERT INTO modo_bloco (modo_id, nome, no_id, um_por, ordem) VALUES (?, ?, ?, 'dia', 1)", [$mid, t("Todo dia"), (int)$raiz]);
             $bid = ultimo_id();

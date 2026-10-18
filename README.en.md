@@ -105,7 +105,7 @@ flowchart LR
 | **Alerts** | An expected date by formula, a lead time, a text and the entry that resolves the alert. | *"Wind the Orient: the reserve runs out at 3 pm"*, and the **Winding** button resolves it |
 | **Charge limit** | The charge at which the watch needs attention: charge the smartwatch, put the solar in the sun, wind the mechanical. The alert only goes out when the charge reaches it. Each watch can have its own (field *"Alert when the charge reaches"*); empty, the general one in Settings applies. | smartwatch at 20% (the general one), the Samsung at 30% (its own) |
 | **Criteria** | How each watch gets a score from 0 to 100 for the draw: weighted parameters, subparameters that measure a field or formula, and ranges that turn the value into a score. | *Time without use* (40%): 0 to 1 day scores 0, 30 days or more scores 100 |
-| **Rotation modes** | The rules of the plan: blocks of weekdays, which group to draw from, one watch per day or one for the whole block, a fixed watch and the selection method. | *"Smartwatch Monday to Friday, one traditional per day on the weekend"* |
+| **Rotation modes** | The rules of the plan: the mode's type (one per week, week and weekend, by day of the week, random, smart schedule or custom), which group to choose from on each day, how many weeks ahead, the choice criterion and, underneath, the script the engine computes. | *"Smartwatch Monday to Friday, one traditional per day on the weekend"* |
 | **Plan** | Each day's watch, with what to do (*charge first*, *wind*, *put on the winder*). | `Mon 10/06 · Xiaomi Band · charge before wearing` |
 
 ### The formula engine
@@ -138,6 +138,19 @@ And the ones that read each watch's history:
 | `MEDIDO("uso")` / `MEDIDO("repouso")` | the real battery drain, measured by your charge readings |
 | `EM_SESSAO("winder")` | 1 if the session is open now (the watch is on the winder) |
 | `MEDIA_COLECAO("uso_30d")` | the average of a variable over the whole collection |
+
+And the rotation ones (the modes' script; outside it, the day is the one of the moment of the calculation):
+
+| Function | What it returns |
+|---|---|
+| `DIA_SEMANA()`, `SEMANA_DO_ANO()` | the weekday (1 Monday to 7 Sunday) and the week of the year (ISO) of the day being built |
+| `NO_GRUPO("Tradicional › Quartzo")` | 1 if the watch is at that point of the tree or below (the name, the path or `#id`; `"todos"`: 1 for all) |
+| `RELOGIO("Seiko SKX")` | 1 if it is that watch (by name or by id) |
+| `ESCOLHIDO_HA(1)`, `VEZES_NO_PLANO(7)` | 1 if the watch was the plan's one n days ago (1: yesterday; -1: tomorrow, when it is already in the plan); how many days it had in the plan in the last n days |
+| `ESCOLHA(n; a; b; c)` | the n-th of the values (only it is calculated): `ESCOLHA(DIA_SEMANA(); …)` gives one value per weekday |
+| `SORTEIO()` | a number from 0 to 1, from the same RANDOM.ORG batch as the draws |
+
+And the variable `nota_criterios`: the watch's score by the criteria, at the moment of the calculation.
 
 On the **Definitions** page every formula has the **Test on all watches** button, which shows the result on each watch before
 saving.
@@ -237,33 +250,77 @@ waiting longer.
 So you are never left wondering, **each day of the plan keeps the reason for the choice**, in one sentence, and it appears
 below the watch on the Today page and the Plan page: *"Rotation guarantee: never worn, in the collection for 38 days, beyond
 the limit of 21 days without use"*, *"Draw by score, among 5 candidates: score 70.2, 16.4% chance"*, *"The highest score
-(91.2)"*, *"The same watch for the week in block Monday to Friday"*, *"Chosen by hand"*.
+(91.2). Stays 5 days in a row"*, *"Stays on the wrist: day 2 of 5 in a row"*, *"Chosen by hand"*.
 
 ### The rotation modes
 
-The modes are on the **Rotation modes** page (menu **Rotation**). A mode is made of **blocks of weekdays**. Each block says where to draw from (a group, the whole collection or a fixed watch)
-and whether it is **one watch per day** or **one for the whole block**. These come ready:
+The modes are on the **Rotation modes** page (menu **Rotation**). Each mode has a **type**, and the type's screen asks only
+for what makes sense in it:
 
-- **One per week**: a traditional for the whole week.
-- **Week and weekend**: the smartwatch Monday to Friday and one traditional per day on Saturday and Sunday.
-- **By day of the week**: a different watch each day.
-- **Random every day**.
-- **Smart schedule**: see below.
+- **One per week**: a watch for the whole week, Monday to Sunday. You say where it comes from (the collection, a group or a
+  fixed watch) and the choice criterion.
+- **Week and weekend**: two stretches, Monday to Friday and Saturday and Sunday, each with its own group and with **one
+  watch for the stretch** or **one per day**. The ready-made one: the smartwatch during the week, one traditional per day at
+  the end of it.
+- **By day of the week**: one watch per day, and each weekday says where it comes from (a group, a fixed watch or none: free
+  day).
+- **Random every day**: one per day, all with the same chance, with no criterion or rotation guarantee.
+- **Smart schedule**: plans the whole period at once, simulating the charge (see [below](#the-smart-schedule)).
+- **Custom**: you write the script (see [The mode's script](#the-modes-script)).
 
-The choice within the block can be by the **highest score**, by **draw by score** (the score becomes the chance), **random** or
-by **queue** (whoever has been waiting the longest). With the **cycle** on, a watch only comes back after all the available
-ones in the block have had their turn.
+In the first three, the **choice criterion** is the draw: by the **highest score**, by **draw by score** (the score becomes
+the chance), **random** or by **queue** (whoever has been waiting the longest). With the **cycle** on, a watch only comes back
+after all the candidates have had their turn in the week. The **Rotation mode** panel on the Today page chooses the mode, the
+criterion and the rotation guarantee; **Apply mode** only marks: nothing in the plan changes until you click **Draw again**.
 
-**How far ahead the plan is built.** In the draw by blocks, the plan goes up to Sunday (on Sunday, also Monday, for the
-day-before reminder), and the following week is drawn when it starts. To see it earlier, **Draw again** has **next week**, on
-any day: it comes out of the current mode, with the days still left this week counted as use, as if you had already worn the
-watches in the plan (the use counts in the days without use and in the score; the charge does not, because no one knows whether
-the watch will be charged). Each day is drawn this way, with the earlier days of the plan already on the wrist, which is why
-Monday's watch does not come back on Tuesday just because it looks idle. Once it is built, **Draw again** rebuilds the plan up
-to its end, and the days chosen by hand stay. On the smart schedule there is no next week: it already plans its own period.
+**The weeks.** Outside the schedule, each mode says **how many weeks ahead** the plan comes built (1 to 8; the list shows the
+weeks with their dates). The plan goes up to the Sunday of the last of them (with a single week, on Sunday the plan also
+brings Monday, for the day-before reminder), and the following week comes in when its turn comes. With more than one week,
+**Draw again** also has **next week**: it comes out of the current mode, with the days still left this week counted as use,
+as if you had already worn the watches in the plan (the use counts in the days without use and in the score; the charge does
+not, because no one knows whether the watch will be charged). Each day is chosen this way, with the earlier days of the plan
+already on the wrist, which is why Monday's watch does not come back on Tuesday just because it looks idle. The days chosen
+by hand stay. On the smart schedule there is no next week: it already plans its own period.
 
-**Where the draw comes from.** Every draw in the system (the fully random mode, the draw by score and the tie-break of equal
-scores in the smart schedule) uses truly random numbers, from outside, in this order:
+### The mode's script
+
+Underneath, every mode is a **script**: five lines the formula engine computes for each available watch, at the start of each
+day of the plan, with the previous days already counted as use. The ready-made modes generate the script from their screens
+(the page shows the generated script, read-only); in **Custom** you write your own, one line per name (`name = expression`,
+in the same language as the formulas of the definitions; lines starting with `#` are comments; the other names are your own
+variables):
+
+| Line | What it says | If missing |
+|---|---|---|
+| `candidato` | 1: the watch enters that day's choice; 0: it does not | `1` (all) |
+| `nota` | the watch's score on that day | `nota_criterios` (the score by the criteria) |
+| `peso` | the chance in the draw. All 0: the highest score wins. All equal: all with the same chance. Otherwise, each weight is the chance | `0` |
+| `dias` | how many days in a row the chosen one stays (as long as the following days are vacant and it is still a candidate) | `1` |
+| `garantia` | 1: goes ahead of everyone (among several, the one idle the longest; tie: the one registered first) | whoever passed the rotation guarantee (`max_sem_uso`) in days without use |
+
+**How the engine decides each day**, in this order: yesterday's watch stays out, if there is another; the cycle, if the mode
+uses it; the script says who is a candidate; whoever has `garantia` wins outright; otherwise the `peso`. The chosen one stays
+the `dias` the script gave, and the reason for the choice is saved in the plan. The same engine decides the **Draw this day
+by** of each day's selector and the **Decide for me** of the manual rotation.
+
+An example: mechanicals during the week, whatever the battery allows on the weekend, and whoever has been idle for more than
+3 days with 100 times the chance of the others:
+
+```
+util      = DIA_SEMANA() <= 5
+candidato = SE(util; NO_GRUPO("Mecânico"); 1)
+peso      = SE(dias_sem_uso > 3; 100; 1)
+dias      = SE(NO_GRUPO("Smartwatch"); dias_seguidos; 1)
+```
+
+The **Test on all watches** button computes the script on a day (today, or one of the next 13) and shows each line on each
+watch and who would go. Besides the formula functions, the script has `DIA_SEMANA()` (1 Monday to 7 Sunday), `SEMANA_DO_ANO()`,
+`NO_GRUPO("group")`, `RELOGIO("name")`, `ESCOLHIDO_HA(n)`, `VEZES_NO_PLANO(n)`, `ESCOLHA(n; a; b; …)` and `SORTEIO()` (the table in
+[The formula engine](#the-formula-engine)) and the variable `nota_criterios`. Through the API: `recurso=roteiro` tests;
+`recurso=modos`, `acao=salvar` with `tipo=personalizado` and `roteiro` saves.
+
+**Where the draw comes from.** Every draw in the system (the fully random mode, the draw by score or by weight and the
+script's `SORTEIO()` function) uses truly random numbers, from outside, in this order:
 
 1. **[RANDOM.ORG](https://www.random.org/)**: randomness from atmospheric noise (it measures the variation of microwaves in the
    air and turns it into bits);
@@ -291,8 +348,8 @@ day) and in the **Rotation mode** box on the Today page (each below a line, like
   drawn ones and the free ones), and the rotation mode builds these days again. The **Erase** button asks for confirmation.
 - **Erase all**: clears the whole schedule, from tomorrow on: the days chosen by hand, the drawn ones and the free ones.
   Ticking **Including today**, it erases from today on (if another watch comes up for today, it becomes the one on the wrist
-  from now on). Then the rotation mode builds the plan again, from scratch: in the draw by blocks, up to Sunday (the following
-  weeks, when they come); in the smart schedule, the whole schedule. The schedule doesn't stay empty because the system always
+  from now on). Then the rotation mode builds the plan again, from scratch: up to the Sunday of the last of the mode's weeks (the
+  following ones, when they come); in the smart schedule, the whole schedule. The schedule doesn't stay empty because the system always
   builds the missing days by the active mode; for days without a watch, mark *free* in the Manual rotation.
 
 ### The manual rotation
@@ -335,7 +392,8 @@ It is the most complete mode. Instead of drawing week by week, it **plans from 7
 day:
 
 1. it calculates each watch's score with that day's simulated state;
-2. it chooses the watch; the smartwatch stays on the wrist for the days the battery lasts (up to 7);
+2. it chooses the watch by the highest score (the schedule's script: `peso = 0`); the smartwatch stays on the wrist for the
+   days the battery lasts (up to 7: the `dias_seguidos` formula);
 3. it simulates the use (the wrist session in the wearing hours) and its effect on everyone's charge and reserve;
 4. it checks the alerts: if the chosen one will need charging or winding, it notes the action on the day (*"charge before
    wearing"*) and simulates the entry that resolves it;
@@ -1090,7 +1148,7 @@ comes in here by its name.
 | **Settings** (`configuracao.php`) | The collection's options (the times, the limits, the screens, the language), the cron status, the summary of the alerts, the reminders and the messages (with the way to the **Alerts** page), the **Backup** (master only: the folder's backups, with **Download** and **Restore**, and **Make a backup now**) and the button that applies the database migrations. See [Settings, option by option](#settings-option-by-option). |
 | **Destinations** (`destinos.php`, opened from the Alerts page) | Where the collection's messages go: each webhook, e-mail or Web Push, with the message, the language, what it receives, the tests and how it goes out today. See [Messages and calendars](#messages-and-calendars). |
 | **Calendars** (`agendas.php`, opened from the Alerts page) | The collection's calendars (Google, CalDAV, Outlook, ICS link), with the event template, what it receives, the sync, the test event and what has to be in it now. |
-| **Rotation modes** (`modos.php`, menu **Rotation**) | The rotation modes: the table (the active mode marked, the way of choosing, the blocks with the days) with **Edit**, **Activate** and **Delete**, and a mode's form (the name, the planning, the way of choosing, the cycle and the weekday blocks, each with where to draw from, one per day or one for the block and the fixed watch). See [The rotation modes](#the-rotation-modes). |
+| **Rotation modes** (`modos.php`, menu **Rotation**) | The rotation modes: the table (the active mode marked, the type, the criterion, the weeks and where it chooses from) with **Edit**, **Activate** and **Delete**, and a mode's form, with its type's screen: the name and the type; where to choose from (per stretch or per weekday), the schedule's period or the hand-written script with **Test on all watches**; the weeks ahead (with the list of weeks); the choice criterion and the cycle; and, in the ready-made types, the generated script (read-only, with **copy this script** to a Custom one). See [The rotation modes](#the-rotation-modes). |
 | **Criteria** (`criterios.php`) | The criteria sets per place (all watches, a group or a watch), with parameters, subparameters, ranges and each watch's score with the calculation open. It has **Restore the initial criteria**. |
 | **Groups** (`grupos.php`) | The tree: create, rename, move, sort, delete (what belonged to the group goes to the one above) and choose each watch's group. |
 | **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**) and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page, and the rotation modes on **Rotation modes**). |

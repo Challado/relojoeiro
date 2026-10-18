@@ -636,7 +636,49 @@ $MIGRACOES = [
     "v27" => ["migracao_v27.sql", tk("o aplicativo no celular (PWA): os aparelhos lembrados de cada usuário (Minha conta: o aplicativo instalado entra sem a senha pela chave gravada no aparelho), o manifesto e o service worker pela API"), "usuario_aparelho"],
     "v28" => ["migracao_v28.sql", tk("o fuso horário de cada usuário (Minha conta) e de cada coleção (a Configuração): o pedido roda no fuso da pessoa, e no banco as datas continuam no fuso do sistema; e o relógio da página Hora certa escolhido na Configuração (analógico, digital, anadigi ou os dois)"), "usuario.fuso"],
     "v29" => ["migracao_v29.sql", tk("o fuso horário de cada destino e de cada agenda (Destinos e Agendas, \"Fuso horário\"; vazio: o da coleção): as horas no texto das mensagens e dos eventos saem nele, como já saem no idioma deles"), "destino.fuso"],
+    "v30" => ["migracao_v30.sql", tk("os modos de rodízio com tipo (a tela de cada um: um por semana, semana e fim de semana, por dia da semana, aleatório todo dia, escala inteligente ou personalizado), semanas à frente e o roteiro (as cinco linhas que o motor calcula: candidato, nota, peso, dias, garantia; escrito à mão no personalizado, gerado dos blocos nos outros); um montador do plano só para todos os modos"), "modo.roteiro", "migracao_v30_dados"],
 ];
+
+// O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
+// o roteiro dos modos que não são personalizados é gerado a cada uso, dos blocos
+function migracao_v30_dados($nova = false)
+{
+    if ($nova) {
+        return;
+    }
+    sem_escopo(function () {
+        foreach (linhas("SELECT * FROM modo ORDER BY id") as $m) {
+            $blocos = [];
+            foreach (linhas("SELECT * FROM modo_bloco WHERE modo_id = ? ORDER BY ordem, id", [(int)$m["id"]]) as $b) {
+                $blocos[] = [array_map("intval", array_column(linhas("SELECT dia FROM modo_bloco_dia WHERE bloco_id = ? ORDER BY dia", [(int)$b["id"]]), "dia")), $b["um_por"]];
+            }
+            sql("UPDATE modo SET tipo = ? WHERE id = ?", [modo_tipo_inferir($m["escala_dias"], $m["selecao"], $blocos), (int)$m["id"]]);
+        }
+    });
+}
+
+// O tipo de um modo pela forma dos blocos ($blocos: [[dias (1 a 7), um_por], ...]): escala (com escala_dias); um bloco com
+// os sete dias: um por semana (um por bloco), aleatório (um por dia e a forma aleatória) ou por dia da semana; dois blocos,
+// segunda a sexta e sábado e domingo, o primeiro um por bloco: semana e fim de semana; todos um por dia: por dia da
+// semana; o resto: personalizado (o roteiro gerado dos blocos)
+function modo_tipo_inferir($escala_dias, $selecao, $blocos)
+{
+    if ($escala_dias !== null && $escala_dias !== "") {
+        return "escala";
+    }
+    $dias = array_map(function ($b) { $d = $b[0]; sort($d); return array_values(array_unique($d)); }, $blocos);
+    $um_por = array_column($blocos, 1);
+    if (count($blocos) === 1 && $dias[0] === [1, 2, 3, 4, 5, 6, 7]) {
+        return $um_por[0] === "bloco" ? "semana" : ($selecao === "aleatorio" ? "aleatorio" : "dia_semana");
+    }
+    if (count($blocos) === 2 && $dias[0] === [1, 2, 3, 4, 5] && $dias[1] === [6, 7] && $um_por[0] === "bloco") {
+        return "semana_fds";
+    }
+    if (count($blocos) > 0 && count(array_filter($um_por, function ($x) { return $x !== "dia"; })) === 0) {
+        return "dia_semana";
+    }
+    return "personalizado";
+}
 
 // O passo em PHP da v16, depois do SQL dela: as opções de cada campo do tipo lista (o texto, uma por linha) viram linhas da
 // tabela campo_opcao, e a coluna opcoes sai; por último, a marca de que a v16 foi aplicada. Pode rodar de novo (na
@@ -872,6 +914,20 @@ $FUNCOES = [
     "MEDIA_TAXA" => [1, 2, tk("MEDIA_TAXA(\"uso\" ou \"repouso\"; dias): a média simples das taxas de cada uma (% por dia); vazio sem nenhuma"), false],
     "MEDIANA_TAXA" => [1, 2, tk("MEDIANA_TAXA(\"uso\" ou \"repouso\"; dias): a mediana das taxas (resiste a uma medição errada); vazio sem nenhuma"), false],
     "ULTIMA_TAXA" => [1, 1, tk("ULTIMA_TAXA(\"uso\" ou \"repouso\"): a taxa da medição mais recente assim (% por dia); vazio sem nenhuma"), false],
+    // o roteiro dos modos de rodízio: o dia que está sendo montado e o plano
+    "DIA_SEMANA" => [0, 0, tk("o dia da semana do dia que está sendo montado (fora do rodízio: o do instante da conta): 1 segunda ... 7 domingo"), false],
+    "SEMANA_DO_ANO" => [0, 0, tk("o número da semana do ano (ISO) do dia que está sendo montado"), false],
+    "NO_GRUPO" => [1, 1, tk("NO_GRUPO(\"grupo\"): 1 se o relógio está nesse ponto da árvore ou abaixo (o nome, o caminho \"Tradicional › Quartzo\" ou #id; \"todos\": 1 para todos)"), false],
+    "RELOGIO" => [1, 1, tk("RELOGIO(\"nome\" ou id): 1 se é esse relógio"), false],
+    "ESCOLHIDO_HA" => [1, 1, tk("ESCOLHIDO_HA(n): 1 se o relógio é o do plano há n dias (1: ontem; -1: amanhã, quando já está no plano)"), false],
+    "VEZES_NO_PLANO" => [1, 1, tk("VEZES_NO_PLANO(n): quantos dias o relógio teve no plano nos últimos n dias (antes do dia que está sendo montado)"), false],
+    "ESCOLHA" => [2, null, tk("ESCOLHA(n; a; b; c...): o n-ésimo dos valores (só ele é calculado); fora da lista, vazio. Ex.: ESCOLHA(DIA_SEMANA(); ...) dá um valor por dia da semana"), false],
+    "SORTEIO" => [0, 0, tk("um número aleatório de 0 a 1 (do lote do RANDOM.ORG, como os sorteios)"), false],
+];
+
+// As variáveis do motor, que não são campos nem fórmulas do cadastro: o nome => o que devolve
+$VARIAVEIS_MOTOR = [
+    "nota_criterios" => tk("a nota do relógio pelos critérios (a página Critérios), no instante da conta"),
 ];
 
 class ErroFormula extends Exception
@@ -1483,6 +1539,11 @@ function formula_calcular($no, &$ctx)
         if ($nome === "SE") {
             $c = formula_calcular($args[0], $ctx);
             $res = $c === null ? null : formula_calcular(((float)$c != 0) ? $args[1] : $args[2], $ctx);
+        } elseif ($nome === "ESCOLHA") {
+            // o n-ésimo dos valores, e só ele é calculado (o resto pode nem fazer sentido naquele dia)
+            $n = formula_calcular($args[0], $ctx);
+            $k = is_numeric($n) ? (int)floor((float)$n) : 0;
+            $res = $k >= 1 && isset($args[$k]) ? formula_calcular($args[$k], $ctx) : null;
         } elseif (in_array($nome, ["LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA", "MEDIANA_TAXA", "ULTIMA_TAXA"], true)) {
             // as peças do gasto medido pela marcação: as medições do relógio (lidas uma vez por requisição) em que as duas
             // leituras foram marcadas como pedido, até o instante da conta e dentro de N dias (0: a janela da Configuração)
@@ -1771,6 +1832,24 @@ function formula_calcular($no, &$ctx)
             } elseif ($nome === "HORAS_USO") {
                 $res = (strtotime("2000-01-01 " . cfg("uso_fim")) - strtotime("2000-01-01 " . cfg("uso_inicio"))) / 3600;
                 $res = $res > 0 ? $res : null;
+            } elseif ($nome === "DIA_SEMANA") {
+                $res = (int)dia_da_conta($ctx)->format("N");
+            } elseif ($nome === "SEMANA_DO_ANO") {
+                $res = (int)dia_da_conta($ctx)->format("W");
+            } elseif ($nome === "NO_GRUPO") {
+                $no = no_por_nome($v[0]);
+                $res = $no === 0 ? 1 : ($no === null ? 0 : (in_array($no, no_cadeia($ctx["r"]["no_id"] ?? 0), true) ? 1 : 0));
+            } elseif ($nome === "RELOGIO") {
+                $res = $v[0] === null ? 0 : ((is_numeric($v[0]) ? (int)$v[0] === (int)$ctx["r"]["id"] : mb_strtolower(trim((string)$v[0]), "UTF-8") === mb_strtolower((string)$ctx["r"]["nome"], "UTF-8")) ? 1 : 0);
+            } elseif ($nome === "ESCOLHIDO_HA") {
+                $d = is_numeric($v[0]) ? dia_da_conta($ctx)->modify((-(int)$v[0]) . " days") : null;
+                $res = $d === null ? null : ((int)(valor("SELECT relogio_id FROM plano WHERE data = ?", [$d->format("Y-m-d")]) ?? 0) === (int)$ctx["r"]["id"] ? 1 : 0);
+            } elseif ($nome === "VEZES_NO_PLANO") {
+                $d = dia_da_conta($ctx);
+                $res = is_numeric($v[0]) && (int)$v[0] > 0 ? (int)valor("SELECT COUNT(*) FROM plano WHERE relogio_id = ? AND data BETWEEN ? AND ?",
+                    [(int)$ctx["r"]["id"], $d->modify("-" . (int)$v[0] . " days")->format("Y-m-d"), $d->modify("-1 day")->format("Y-m-d")]) : null;
+            } elseif ($nome === "SORTEIO") {
+                $res = sorteio(0, 1000000) / 1000000;
             } elseif ($nome === "DIAS_DESDE") {
                 $res = is_numeric($v[0]) ? $agora_d - (float)$v[0] : null;
             } elseif ($nome === "DIAS_ATE") {
@@ -1798,7 +1877,20 @@ function variavel_valor($ident, &$ctx)
     static $arvores = [];
     $res = null;
     $campos = campos_do_relogio($ctx["r"]);
-    if (isset($campos[$ident])) {
+    if (isset($ctx["locais"][$ident])) {
+        // uma linha do roteiro do modo (nome = expressão): vale por cima de campo ou fórmula de mesmo nome; o círculo dá vazio
+        if (!isset($ctx["pilha"]["local:" . $ident])) {
+            $ctx["pilha"]["local:" . $ident] = true;
+            $res = formula_calcular($ctx["locais"][$ident], $ctx);
+            unset($ctx["pilha"]["local:" . $ident]);
+        }
+    } elseif ($ident === "nota_criterios") {
+        if (!isset($ctx["pilha"]["nota_criterios"])) {
+            $ctx["pilha"]["nota_criterios"] = true;
+            $res = nota_do_relogio($ctx["r"], $ctx["momento"])["nota"];
+            unset($ctx["pilha"]["nota_criterios"]);
+        }
+    } elseif (isset($campos[$ident])) {
         $bruto = $ctx["valores"][$ident] ?? null;
         if ($bruto === null || $bruto === "") {
             $bruto = $campos[$ident]["padrao"];
@@ -2312,20 +2404,268 @@ function motivo_nota($nota)
     return decimal_txt((float)$nota, 1);
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// O rodízio: os tipos de modo, o roteiro de cada modo (as cinco linhas que o motor calcula relógio a relógio, dia a dia) e o
+// montador do plano, um só para todos os modos (sorteio pelos blocos, escala inteligente e personalizado).
+// ---------------------------------------------------------------------------------------------------------------------
+
+// Os tipos de modo: o que a tela de cada um pede. Todos geram o mesmo roteiro; o personalizado é o roteiro escrito à mão
+const MODO_TIPOS = ["semana" => "Um por semana", "semana_fds" => "Semana e fim de semana", "dia_semana" => "Por dia da semana",
+    "aleatorio" => "Aleatório todo dia", "escala" => "Escala inteligente", "personalizado" => "Personalizado"];
+tk("Um por semana"); tk("Semana e fim de semana"); tk("Por dia da semana"); tk("Aleatório todo dia"); tk("Escala inteligente"); tk("Personalizado");
+
+// As saídas do roteiro (os nomes que o motor lê) e a expressão de cada uma quando o roteiro não a define
+const ROTEIRO_SAIDAS = ["candidato" => "1", "nota" => "nota_criterios", "peso" => "0", "dias" => "1",
+    "garantia" => "E(CONFIG(\"max_sem_uso\") > 0; dias_sem_uso > CONFIG(\"max_sem_uso\"))"];
+
+// O dia da conta de uma fórmula: o dia que está sendo montado no rodízio (ctx dia), senão o dia do instante da conta
+function dia_da_conta(&$ctx)
+{
+    return isset($ctx["dia"]) ? $ctx["dia"] : dia_da_colecao((int)$ctx["momento"]);
+}
+
+// Um ponto da árvore pelo que a fórmula escreveu: o nome ("Quartzo"), o caminho ("Tradicional › Quartzo"), "#id" ou o id;
+// "", "todos" ou a raiz: 0 (todos os relógios); desconhecido: null. Sem maiúsculas nem acentos na comparação
+function no_por_nome($txt)
+{
+    static $cache = [];
+    $k = (int)colecao_atual() . "|" . (string)$txt;
+    if (!array_key_exists($k, $cache)) {
+        $t = trim((string)$txt);
+        $res = null;
+        if ($t === "" || mb_strtolower($t, "UTF-8") === "todos" || (ctype_digit($t) && (int)$t === no_raiz()) || $t === "#" . no_raiz()) {
+            $res = 0;
+        } elseif (ctype_digit($t) || preg_match("/^#(\\d+)$/", $t, $m) === 1) {
+            $id = (int)($m[1] ?? $t);
+            $res = isset(nos_todos()[$id]) ? $id : null;
+        } else {
+            $alvo = sem_acentos(mb_strtolower($t, "UTF-8"));
+            foreach (nos_todos() as $id => $no) {
+                if ($res === null && (sem_acentos(mb_strtolower((string)$no["nome"], "UTF-8")) === $alvo || sem_acentos(mb_strtolower(no_caminho($id), "UTF-8")) === $alvo)) {
+                    $res = (int)$id === no_raiz() ? 0 : (int)$id;
+                }
+            }
+        }
+        $cache[$k] = $res;
+    }
+    return $cache[$k];
+}
+
+// Texto sem acentos (para comparar nomes), em minúsculas já
+function sem_acentos($t)
+{
+    $de = ["á", "à", "â", "ã", "ä", "é", "è", "ê", "ë", "í", "ì", "î", "ï", "ó", "ò", "ô", "õ", "ö", "ú", "ù", "û", "ü", "ç", "ñ"];
+    $para = ["a", "a", "a", "a", "a", "e", "e", "e", "e", "i", "i", "i", "i", "o", "o", "o", "o", "o", "u", "u", "u", "u", "c", "n"];
+    return str_replace($de, $para, $t);
+}
+
+// Lê um roteiro (o texto de um modo): uma linha por nome, "nome = expressão" (a expressão na língua das fórmulas do
+// cadastro); linhas vazias e as que começam com # são ignoradas. Devolve ["linhas" => [[nome, expressão], ...],
+// "arvores" => [nome => árvore], "erros" => [...]]. Os erros: a escrita de cada expressão, nome repetido ou inválido,
+// variável desconhecida (não é campo, fórmula, linha do roteiro nem variável do motor), tipo de lançamento desconhecido,
+// uma linha que depende dela mesma. Com erros, as árvores das linhas boas vêm mesmo assim
+function roteiro_ler($texto)
+{
+    global $VARIAVEIS_MOTOR;
+    $linhas = [];
+    $arvores = [];
+    $erros = [];
+    $n = 0;
+    foreach (preg_split("/\\r\\n|\\r|\\n/", (string)$texto) as $l) {
+        $n++;
+        $l = trim($l);
+        if ($l === "" || $l[0] === "#") {
+            continue;
+        }
+        if (preg_match("/^([A-Za-z_][A-Za-z0-9_]*)\\s*=(?!=)\\s*(.*)$/u", $l, $m) !== 1) {
+            $erros[] = t("linha {1}: escreva \"nome = expressão\"", [1 => $n]);
+            continue;
+        }
+        $nome = strtolower($m[1]);
+        $expr = trim($m[2]);
+        if (isset($arvores[$nome]) || in_array($nome, array_column($linhas, 0), true)) {
+            $erros[] = t("linha {1}: o nome {2} já foi definido", [1 => $n, 2 => $nome]);
+            continue;
+        }
+        if ($expr === "") {
+            $erros[] = t("linha {1}: a expressão de {2} está vazia", [1 => $n, 2 => $nome]);
+            continue;
+        }
+        $linhas[] = [$nome, $expr];
+        try {
+            $arvores[$nome] = formula_ler($expr);
+        } catch (ErroFormula $e) {
+            $erros[] = t("linha {1} ({2}): erro de escrita: {3}", [1 => $n, 2 => $nome, 3 => $e->getMessage()]);
+        }
+    }
+    // as variáveis: campos, fórmulas, as linhas do roteiro e as do motor; os tipos de lançamento; o círculo entre as linhas
+    $conhecidas = array_merge(array_keys(campos_todos()), array_keys(formulas_todas()), array_keys($arvores), array_keys($VARIAVEIS_MOTOR));
+    $usa = [];
+    foreach ($arvores as $nome => $arv) {
+        $refs = formula_referencias($arv);
+        $usa[$nome] = $refs["variaveis"];
+        foreach ($refs["variaveis"] as $v) {
+            if (!in_array($v, $conhecidas, true)) {
+                $erros[] = t("{1}: variável desconhecida: {2} (não é campo, fórmula nem linha do roteiro)", [1 => $nome, 2 => $v]);
+            }
+        }
+        foreach ($refs["lancamentos"] as $tl) {
+            if (!isset(lancamento_tipos()[$tl])) {
+                $erros[] = t("{1}: tipo de lançamento desconhecido: \"{2}\"", [1 => $nome, 2 => $tl]);
+            }
+        }
+    }
+    foreach (array_keys($arvores) as $nome) {
+        $visitar = array_map(function ($v) use ($nome) { return [$v, [$nome, $v]]; }, $usa[$nome]);
+        $vistas = [];
+        while (count($visitar) > 0) {
+            $item = array_pop($visitar);
+            if ($item[0] === $nome) {
+                $erros[] = t("a linha {1} depende dela mesma: {2}", [1 => $nome, 2 => implode(" → ", $item[1])]);
+                $visitar = [];
+            } elseif (!isset($vistas[$item[0]]) && isset($usa[$item[0]])) {
+                $vistas[$item[0]] = true;
+                foreach ($usa[$item[0]] as $prox) {
+                    $visitar[] = [$prox, array_merge($item[1], [$prox])];
+                }
+            }
+        }
+    }
+    return ["linhas" => $linhas, "arvores" => $arvores, "erros" => array_values(array_unique($erros))];
+}
+
+// As árvores de um roteiro completas: as saídas que ele não define ganham a expressão padrão
+function roteiro_completo($arvores)
+{
+    static $padrao = null;
+    if ($padrao === null) {
+        $padrao = [];
+        foreach (ROTEIRO_SAIDAS as $nome => $expr) {
+            $padrao[$nome] = formula_ler($expr);
+        }
+    }
+    foreach ($padrao as $nome => $arv) {
+        if (!isset($arvores[$nome])) {
+            $arvores[$nome] = $arv;
+        }
+    }
+    return $arvores;
+}
+
+// O roteiro de uma forma de escolha sozinha (o "Sortear este dia por", o critério do quadro Modo de rodízio): todos são
+// candidatos; a nota e o peso conforme a forma; a garantia de rodízio, menos no aleatório
+function roteiro_da_forma($forma)
+{
+    $linhas = ["inteligente" => "nota = nota_criterios\npeso = 0", "ponderado" => "nota = nota_criterios\npeso = MAX(1; nota_criterios)",
+        "aleatorio" => "peso = 1\ngarantia = 0", "fifo" => "nota = dias_sem_uso\npeso = 0"];
+    return $linhas[$forma] ?? $linhas["ponderado"];
+}
+
+// O texto do roteiro de um modo que não é personalizado, gerado dos blocos e da forma de escolha: quem é candidato em
+// cada dia da semana (o grupo ou o relógio fixo do bloco do dia), quantos dias fica (um por bloco: até o fim do bloco;
+// na escala, a fórmula dias_seguidos), a nota, o peso e a garantia pela forma. Gerado a cada uso (os nomes dos grupos e
+// dos relógios são os de agora)
+function modo_roteiro_texto($modo, $blocos = null)
+{
+    if (($modo["tipo"] ?? "personalizado") === "personalizado" && trim((string)($modo["roteiro"] ?? "")) !== "") {
+        return (string)$modo["roteiro"];
+    }
+    $blocos = $blocos === null ? modo_blocos((int)$modo["id"]) : $blocos;
+    $escala = ($modo["escala_dias"] ?? null) !== null;
+    $alvo = function ($b) {
+        if (($b["relogio_id"] ?? null) !== null) {
+            $nome = valor("SELECT nome FROM relogio WHERE id = ?", [(int)$b["relogio_id"]]);
+            return $nome === null ? "0" : "RELOGIO(\"" . str_replace("\"", "'", $nome) . "\")";
+        }
+        $no = (int)($b["no_id"] ?? 0);
+        return $no === 0 || $no === no_raiz() ? "1" : "NO_GRUPO(\"" . str_replace("\"", "'", no_caminho($no)) . "\")";
+    };
+    // por dia da semana: o alvo e os dias seguidos de cada dia
+    $por_dia = array_fill(1, 7, ["0", 1]);
+    foreach ($blocos as $b) {
+        $dias = array_map("intval", array_filter(explode(",", (string)$b["dias"]), "strlen"));
+        $ultimo = count($dias) > 0 ? max($dias) : 0;
+        foreach ($dias as $d) {
+            if ($d >= 1 && $d <= 7 && $por_dia[$d][0] === "0") {
+                $por_dia[$d] = [$alvo($b), ($b["um_por"] ?? "dia") === "bloco" ? $ultimo - $d + 1 : 1];
+            }
+        }
+    }
+    $alvos = array_column($por_dia, 0);
+    $seguidos = array_column($por_dia, 1);
+    if (count(array_unique($alvos)) === 1) {
+        $candidato = $alvos[0];
+    } elseif ($alvos[0] === $alvos[1] && $alvos[1] === $alvos[2] && $alvos[2] === $alvos[3] && $alvos[3] === $alvos[4] && $alvos[5] === $alvos[6]) {
+        $candidato = "SE(DIA_SEMANA() <= 5; " . $alvos[0] . "; " . $alvos[5] . ")";
+    } else {
+        $candidato = "ESCOLHA(DIA_SEMANA(); " . implode("; ", $alvos) . ")";
+    }
+    if ($escala) {
+        $dias = "PADRAO(dias_seguidos; 1)";
+    } elseif (count(array_unique($seguidos)) === 1) {
+        $dias = (string)$seguidos[0];
+    } elseif ($seguidos === [5, 4, 3, 2, 1, 1, 1]) {
+        $dias = "SE(DIA_SEMANA() <= 5; 6 - DIA_SEMANA(); 1)";
+    } elseif ($seguidos === [7, 6, 5, 4, 3, 2, 1]) {
+        $dias = "8 - DIA_SEMANA()";
+    } else {
+        $dias = "ESCOLHA(DIA_SEMANA(); " . implode("; ", $seguidos) . ")";
+    }
+    $forma = $escala ? "inteligente" : (string)($modo["selecao"] ?? "ponderado");
+    return "candidato = " . $candidato . "\n" . roteiro_da_forma($forma) . "\ndias = " . $dias . ($forma === "aleatorio" ? "" : "\ngarantia = " . ROTEIRO_SAIDAS["garantia"]);
+}
+
+// As árvores do roteiro que vale para um modo (o personalizado: o texto dele; os outros: o gerado), completas; guardadas
+// por requisição. Um roteiro personalizado com erro: as linhas boas valem e as outras ficam no padrão
+function modo_roteiro($modo)
+{
+    static $cache = [];
+    $k = (int)colecao_atual() . "|" . (int)$modo["id"] . "|" . md5(modo_roteiro_texto($modo));
+    if (!isset($cache[$k])) {
+        $cache[$k] = roteiro_completo(roteiro_ler(modo_roteiro_texto($modo))["arvores"]);
+    }
+    return $cache[$k];
+}
+
 // As formas de escolha do sorteio (a selecao do modo), com o nome que as telas e os motivos usam
 function formas_de_escolha()
 {
     return ["inteligente" => t("a maior nota"), "ponderado" => t("sorteio pela nota"), "aleatorio" => t("aleatório, todos com a mesma chance"), "fifo" => t("fila: o mais tempo sem uso")];
 }
 
-// A escolha de um dia pelo sorteio, entre os candidatos ($cands: id => relógio, já só os do bloco ou do grupo, e sem o que
-// ficou de fora à mão, com as frases disso em $fora). Nesta ordem: o de ontem fica de fora (pelo plano, se houver outro;
-// $ontem_fora); o ciclo do modo, se o modo usa (quem já passou na semana); a garantia de rodízio (quem está além de
-// max_sem_uso dias sem uso, o mais parado primeiro; não vale no aleatório); e a forma de escolha ($selecao: inteligente,
-// ponderado, aleatorio ou fifo). A nota e os dias sem uso são os do começo do dia ($m_ini), com os dias anteriores do plano
-// já simulados por quem chama. $modo pode ser null (sem modo: sem ciclo). Devolve [o id ou null, o motivo]
-function escolha_do_dia($modo, $dia, $m_ini, $cands, $selecao, $fora = [], $bloco_nome = "", $ontem_fora = true)
+// O roteiro calculado para um relógio num dia: as cinco saídas e as linhas do roteiro, como números (null: vazio)
+function roteiro_calcular($arvores, $r, $dia, $m_ini)
 {
+    $ctx = ["r" => $r, "momento" => $m_ini, "dia" => $dia, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio((int)$r["id"]), "locais" => $arvores];
+    $res = [];
+    foreach (array_keys($arvores) as $nome) {
+        $v = variavel_valor($nome, $ctx);
+        $res[$nome] = is_numeric($v) ? (float)$v : ($v === null ? null : $v);
+    }
+    $dsu = variavel_valor("dias_sem_uso", $ctx);
+    $res["dias_sem_uso"] = is_numeric($dsu) ? (float)$dsu : 9999.0;
+    $res["nunca"] = nunca_no_pulso($ctx);
+    return $res;
+}
+
+// A escolha de um dia pelo roteiro, entre os candidatos ($cands: id => relógio, já sem o que ficou de fora à mão, com as
+// frases disso em $fora). Nesta ordem: o de ontem fica de fora (pelo plano, se houver outro; $ontem_fora); o ciclo do
+// modo, se o modo usa (quem já passou na semana); o roteiro diz quem é candidato no dia (candidato = 0 sai); quem tem
+// garantia = 1 passa na frente (o mais tempo parado primeiro; empate: o cadastrado primeiro); senão o peso: todos 0, a
+// maior nota (empate: o cadastrado primeiro); todos iguais, sorteio simples; senão, sorteio com o peso de cada um como
+// chance. $roteiro: as árvores completas, ou a chave de uma forma de escolha (inteligente, ponderado, aleatorio, fifo), que
+// vira o roteiro dela. $estilo: a forma, para a frase do motivo (null: pelo modo; "roteiro": as frases gerais). A nota e
+// os dias sem uso são os do começo do dia ($m_ini), com os dias anteriores do plano já simulados por quem chama. $modo
+// pode ser null (sem ciclo). Devolve [o id ou null, o motivo, quantos dias seguidos o escolhido fica]
+function escolha_do_dia($modo, $dia, $m_ini, $cands, $roteiro, $fora = [], $bloco_nome = "", $ontem_fora = true, $estilo = null)
+{
+    if (is_string($roteiro)) {
+        $estilo = $estilo ?? $roteiro;
+        $roteiro = roteiro_completo(roteiro_ler(roteiro_da_forma($roteiro))["arvores"]);
+    } elseif ($estilo === null) {
+        $estilo = $modo && ($modo["tipo"] ?? "personalizado") !== "personalizado" ? (($modo["escala_dias"] ?? null) !== null ? "inteligente" : (string)$modo["selecao"]) : "roteiro";
+    }
     $escolhido = null;
     $motivo = "";
     if ($ontem_fora) {
@@ -2349,19 +2689,22 @@ function escolha_do_dia($modo, $dia, $m_ini, $cands, $selecao, $fora = [], $bloc
             $cands = $restam;
         }
     }
-    if (count($cands) === 0) {
-        return [null, ""];
-    }
+    // o roteiro em cada candidato; quem não é candidato no dia sai
     $info = [];
     foreach ($cands as $cid => $r) {
-        $ctx = ["r" => $r, "momento" => $m_ini, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio($cid)];
-        $dsu = variavel_valor("dias_sem_uso", $ctx);
-        $info[$cid] = ["dsu" => is_numeric($dsu) ? (float)$dsu : 9999.0, "nota" => nota_do_relogio($r, $m_ini)["nota"], "nunca" => nunca_no_pulso($ctx)];
+        $c = roteiro_calcular($roteiro, $r, $dia, $m_ini);
+        if (($c["candidato"] ?? null) !== null && (float)$c["candidato"] != 0) {
+            $info[$cid] = ["nota" => (float)($c["nota"] ?? 0), "peso" => max(0.0, (float)($c["peso"] ?? 0)), "garantia" => ($c["garantia"] ?? null) !== null && (float)$c["garantia"] != 0,
+                "dias" => is_numeric($c["dias"] ?? null) ? max(1, min(366, (int)floor((float)$c["dias"]))) : 1, "dsu" => $c["dias_sem_uso"], "nunca" => $c["nunca"]];
+        }
     }
-    $entre = count($cands) === 1 ? ($bloco_nome !== "" ? t("único candidato do bloco {1}", [1 => $bloco_nome]) : t("único candidato")) : t("entre {1} candidatos", [1 => count($cands)]);
+    if (count($info) === 0) {
+        return [null, "", 1];
+    }
+    $entre = count($info) === 1 ? ($bloco_nome !== "" ? t("único candidato do bloco {1}", [1 => $bloco_nome]) : t("único candidato")) : t("entre {1} candidatos", [1 => count($info)]);
     $max = (int)cfg("max_sem_uso");
-    $parados = array_filter($info, function ($x) use ($max) { return $x["dsu"] > $max; });
-    if ($max > 0 && count($parados) > 0 && $selecao !== "aleatorio") {
+    $parados = array_filter($info, function ($x) { return $x["garantia"]; });
+    if (count($parados) > 0) {
         uasort($parados, function ($x, $y) { return $y["dsu"] <=> $x["dsu"]; });
         $escolhido = (int)array_key_first($parados);
         // os empatados com ele no tempo parado (os nunca usados empatam entre si): sai o cadastrado primeiro
@@ -2371,40 +2714,266 @@ function escolha_do_dia($modo, $dia, $m_ini, $cands, $selecao, $fora = [], $bloc
                 $empatados[] = $cands[$cid]["nome"];
             }
         }
-        $motivo = t("Garantia de rodízio: {1}, além do limite de {2} dias sem uso{3}.{4}", [1 => motivo_parado($parados[$escolhido]["dsu"], $parados[$escolhido]["nunca"]), 2 => $max, 3 => count($parados) > 1 ? t(" ({1} além do limite; sai o mais tempo parado)", [1 => count($parados)]) : "", 4 => count($empatados) > 0 ? t(" Empatado com {1}: saiu o cadastrado primeiro.", [1 => implode(", ", $empatados)]) : ""]);
-    } elseif ($selecao === "aleatorio") {
-        $ids = array_keys($cands);
-        $escolhido = $ids[sorteio(0, count($ids) - 1)];
-        $motivo = t("Sorteio simples, {1}, todos com a mesma chance ({2}).", [1 => $entre, 2 => aleatorio_fonte()]);
-    } elseif ($selecao === "fifo") {
-        uasort($info, function ($x, $y) { return $y["dsu"] <=> $x["dsu"]; });
-        $escolhido = (int)array_key_first($info);
-        $motivo = t("Fila: o mais tempo sem uso ({1}), {2}.", [1 => motivo_parado($info[$escolhido]["dsu"], $info[$escolhido]["nunca"]), 2 => $entre]);
-    } elseif ($selecao === "inteligente") {
-        uasort($info, function ($x, $y) { return $y["nota"] <=> $x["nota"]; });
-        $escolhido = (int)array_key_first($info);
-        $motivo = t("A maior nota ({1}), {2}.", [1 => motivo_nota($info[$escolhido]["nota"]), 2 => $entre]);
+        $empate = count($empatados) > 0 ? t(" Empatado com {1}: saiu o cadastrado primeiro.", [1 => implode(", ", $empatados)]) : "";
+        $motivo = $estilo === "roteiro"
+            ? t("Garantia do roteiro: {1}{2}.{3}", [1 => motivo_parado($parados[$escolhido]["dsu"], $parados[$escolhido]["nunca"]), 2 => count($parados) > 1 ? t(" ({1} com a garantia; sai o mais tempo parado)", [1 => count($parados)]) : "", 3 => $empate])
+            : t("Garantia de rodízio: {1}, além do limite de {2} dias sem uso{3}.{4}", [1 => motivo_parado($parados[$escolhido]["dsu"], $parados[$escolhido]["nunca"]), 2 => $max, 3 => count($parados) > 1 ? t(" ({1} além do limite; sai o mais tempo parado)", [1 => count($parados)]) : "", 4 => $empate]);
     } else {
-        // com sorteio: a nota de cada um é a chance dele (no mínimo 1)
-        $total = 0;
-        foreach ($info as $x) {
-            $total += (int)round(max(1, $x["nota"]) * 100);
-        }
-        $alvo = sorteio(1, max(1, $total));
-        foreach ($info as $cid => $x) {
-            $alvo -= (int)round(max(1, $x["nota"]) * 100);
-            if ($escolhido === null && $alvo <= 0) {
-                $escolhido = $cid;
+        $pesos = array_column($info, "peso");
+        if (max($pesos) <= 0) {
+            // sem peso: a maior nota (a ordem dos candidatos é a do cadastro: o empate fica com o cadastrado primeiro)
+            uasort($info, function ($x, $y) { return $y["nota"] <=> $x["nota"]; });
+            $escolhido = (int)array_key_first($info);
+            $motivo = $estilo === "fifo"
+                ? t("Fila: o mais tempo sem uso ({1}), {2}.", [1 => motivo_parado($info[$escolhido]["dsu"], $info[$escolhido]["nunca"]), 2 => $entre])
+                : t("A maior nota ({1}), {2}.", [1 => motivo_nota($info[$escolhido]["nota"]), 2 => $entre]);
+        } elseif (count(array_unique(array_map(function ($p) { return (int)round($p * 100); }, $pesos))) === 1) {
+            $ids = array_keys($info);
+            $escolhido = $ids[sorteio(0, count($ids) - 1)];
+            $motivo = t("Sorteio simples, {1}, todos com a mesma chance ({2}).", [1 => $entre, 2 => aleatorio_fonte()]);
+        } else {
+            // com sorteio: o peso de cada um é a chance dele (peso 0: nenhuma)
+            $total = 0;
+            foreach ($info as $x) {
+                $total += (int)round($x["peso"] * 100);
             }
-        }
-        if ($escolhido !== null) {
-            $motivo = t("Sorteio pela nota, {1}: nota {2}, {3}% de chance ({4}).", [1 => $entre, 2 => motivo_nota($info[$escolhido]["nota"]), 3 => motivo_nota(round(max(1, $info[$escolhido]["nota"]) * 100) * 100 / max(1, $total)), 4 => aleatorio_fonte()]);
+            $alvo = sorteio(1, max(1, $total));
+            foreach ($info as $cid => $x) {
+                $alvo -= (int)round($x["peso"] * 100);
+                if ($escolhido === null && $alvo <= 0 && $x["peso"] > 0) {
+                    $escolhido = $cid;
+                }
+            }
+            if ($escolhido !== null) {
+                $chance = motivo_nota(round($info[$escolhido]["peso"] * 100) * 100 / max(1, $total));
+                $motivo = $estilo === "ponderado"
+                    ? t("Sorteio pela nota, {1}: nota {2}, {3}% de chance ({4}).", [1 => $entre, 2 => motivo_nota($info[$escolhido]["nota"]), 3 => $chance, 4 => aleatorio_fonte()])
+                    : t("Sorteio pelo peso, {1}: peso {2}, {3}% de chance ({4}).", [1 => $entre, 2 => motivo_nota($info[$escolhido]["peso"]), 3 => $chance, 4 => aleatorio_fonte()]);
+            }
         }
     }
     if (count($fora) > 0 && $motivo !== "") {
         $motivo .= " " . ucfirst(implode("; ", $fora)) . ".";
     }
-    return [$escolhido, $motivo];
+    return [$escolhido, $motivo, $escolhido !== null ? $info[$escolhido]["dias"] : 1];
+}
+
+// Até que dia o plano de um modo sem escala vem montado: o domingo da última das semanas do modo (semanas: 1, esta
+// semana; 2, também a que vem...). Com uma semana só, no domingo o plano traz também a segunda (para o aviso da véspera)
+function horizonte_do_modo($modo, $hoje)
+{
+    $semanas = max(1, min(8, (int)($modo["semanas"] ?? 1)));
+    $domingo = (int)$hoje->format("N") === 7 ? $hoje : $hoje->modify("sunday this week");
+    if ($semanas === 1) {
+        return (int)$hoje->format("N") === 7 ? $hoje->modify("+1 day") : $domingo;
+    }
+    return $domingo->modify("+" . (($semanas - 1) * 7) . " days");
+}
+
+// O bloco do modo que cobre um dia da semana (o primeiro), ou null
+function bloco_do_dia($blocos, $dia)
+{
+    foreach ($blocos as $b) {
+        if (in_array($dia->format("N"), explode(",", (string)$b["dias"]), true)) {
+            return $b;
+        }
+    }
+    return null;
+}
+
+// Monta o plano de um modo, de $de até $ate, pelo roteiro dele, dia a dia (o laço começa em $hoje para os dias que já
+// estão no plano virarem uso simulado antes dos que faltam). Cada dia sem plano (e não livre) é escolhido entre os
+// relógios disponíveis (escolha_do_dia: o de ontem fora, o ciclo, o candidato, a garantia, o peso); o escolhido fica os
+// dias seguidos que o roteiro deu, enquanto os dias seguintes estiverem vagos, não livres e ele continuar candidato neles.
+// Cada dia do plano vira uma sessão simulada no pulso no horário de uso: fora da escala, só o uso (a carga não é gasta,
+// porque não se sabe se o relógio vai ser carregado); na escala ($escala), a sessão inteira, e os avisos do relógio
+// escolhido (os de "uso" e "sempre") são conferidos no começo do bloco de dias dele e no fim de cada dia, os de "sempre"
+// também nos outros relógios no começo de cada dia; o que vence vira o "o que fazer" do dia (plano.acao), e o lançamento
+// que resolve o aviso é simulado terminando no começo do dia. Devolve quantos dias gravou
+function plano_montar($modo, $hoje, $de, $ate, $escala)
+{
+    $roteiro = modo_roteiro($modo);
+    $blocos = modo_blocos((int)$modo["id"]);
+    $rels = [];
+    foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY id") as $r) {
+        $rels[(int)$r["id"]] = $r;
+    }
+    $agora = time();
+    $pulso = lancamento_tipos()["pulso"] ?? null;
+    $gravados = 0;
+    $simulados = [];
+    $acoes = [];
+    $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+    $GLOBALS["SIMULACAO"] = [];
+    $GLOBALS["SIMULACAO_VERSAO"] = ($GLOBALS["SIMULACAO_VERSAO"] ?? 0) + 1;
+    $sessao = function ($rid, $d) use ($pulso, $agora, $escala, &$simulados) {
+        $data = $d->format("Y-m-d");
+        $fim_u = instante($data, cfg("uso_fim"));
+        if ($pulso && !isset($simulados[$data]) && $fim_u > $agora && valor("SELECT id FROM lancamento WHERE tipo_id = ? AND origem = 'rodizio' AND DATE(inicio) = ?", [(int)$pulso["id"], $data]) === null) {
+            simular_lancamento($rid, "pulso", max($agora, instante($data, cfg("uso_inicio"))), $fim_u, null, !$escala);
+            $simulados[$data] = true;
+        }
+    };
+    for ($d = $hoje; $d <= $ate; $d = $d->modify("+1 day")) {
+        $data = $d->format("Y-m-d");
+        $m_ini = max($agora, instante($data, cfg("uso_inicio")));
+        $p = plano_do_dia($data);
+        if ($p === null && $d >= $de && !dia_livre($data) && count($rels) > 0) {
+            $bloco = bloco_do_dia($blocos, $d);
+            [$id, $motivo, $dias] = escolha_do_dia($modo, $d, $m_ini, $rels, $roteiro, [], $bloco ? $bloco["nome"] : "");
+            if ($id !== null) {
+                // os dias seguidos: enquanto o dia seguinte estiver vago, não livre e ele continuar candidato (fora da escala, mesmo
+                // depois do horizonte: um relógio para a semana inteira fica a semana inteira, montado o plano em qualquer dia)
+                $fim_b = $d;
+                for ($n = 1; $n < $dias; $n++) {
+                    $prox = $fim_b->modify("+1 day");
+                    if (($escala && $prox > $ate) || plano_do_dia($prox->format("Y-m-d")) !== null || dia_livre($prox->format("Y-m-d"))) {
+                        break;
+                    }
+                    $c = roteiro_calcular(["candidato" => $roteiro["candidato"]], $rels[$id], $prox, max($agora, instante($prox->format("Y-m-d"), cfg("uso_inicio"))));
+                    if (($c["candidato"] ?? null) === null || (float)$c["candidato"] == 0) {
+                        break;
+                    }
+                    $fim_b = $prox;
+                }
+                $total = (int)$d->diff($fim_b)->days + 1;
+                for ($k = $d, $i = 1; $k <= $fim_b; $k = $k->modify("+1 day"), $i++) {
+                    $bk = bloco_do_dia($blocos, $k);
+                    $m = $i === 1 ? $motivo . ($total > 1 ? t(" Fica {1} dias seguidos.", [1 => $total]) : "") : t("Segue no pulso: dia {1} de {2} seguidos.", [1 => $i, 2 => $total]);
+                    plano_gravar($k->format("Y-m-d"), $id, $bk ? (int)$bk["id"] : null, "sorteio", $m !== "" ? corta_texto($m, 300) : null);
+                    $gravados++;
+                    if ($escala) {
+                        $sessao($id, $k);
+                    }
+                }
+                if ($escala) {
+                    // os avisos do escolhido, conferidos no começo do bloco e no fim de cada dia dele: o que vence vira ação do dia
+                    $pontos = [$m_ini];
+                    for ($k = $d; $k <= $fim_b; $k = $k->modify("+1 day")) {
+                        $pontos[] = instante($k->format("Y-m-d"), cfg("uso_fim"));
+                    }
+                    $vencidos = [];
+                    foreach ($pontos as $ponto) {
+                        foreach (avisos_do_relogio($rels[$id], $ponto) as $a) {
+                            if ($a["escala"] !== "nao" && $a["falta_dias"] <= 0 && !isset($vencidos[$a["identificador"]])) {
+                                $vencidos[$a["identificador"]] = $a;
+                            }
+                        }
+                    }
+                    foreach ($vencidos as $a) {
+                        $acoes[$data][] = [$id, $a];
+                    }
+                }
+            }
+            $p = plano_do_dia($data);
+        }
+        if ($p) {
+            $sessao((int)$p["relogio_id"], $d);
+        }
+        if ($escala) {
+            // os avisos de "sempre" nos outros relógios, no começo do dia; o que resolve cada aviso vencido é simulado
+            // terminando no começo do dia, e o texto vai para o dia
+            foreach ($rels as $cid => $r) {
+                if (!$p || $cid !== (int)$p["relogio_id"]) {
+                    foreach (avisos_do_relogio($r, $m_ini) as $a) {
+                        if ($a["escala"] === "sempre" && $a["falta_dias"] <= 0) {
+                            $acoes[$data][] = [$cid, $a];
+                        }
+                    }
+                }
+            }
+            $textos = [];
+            foreach ($acoes[$data] ?? [] as $x) {
+                $a = $x[1];
+                $t = $a["resolve"] !== null ? (lancamento_tipos()[$a["resolve"]] ?? null) : null;
+                $horas = $t && $t["formato"] === "sessao" ? (float)($a["simula_horas"] ?? 0) : 0;
+                if ($t && ($t["formato"] === "instantaneo" || $horas > 0 || ($t["formato"] === "valor" && $a["simula_valor"] !== null))) {
+                    simular_lancamento($x[0], $a["resolve"], max($agora, (int)round($m_ini - $horas * 3600)), $m_ini, $a["simula_valor"]);
+                }
+                $textos[] = $a["nome"] . ": " . $rels[$x[0]]["nome"] . ($horas > 0 ? " (" . decimal_txt($horas, 6) . " h)" : "");
+            }
+            if ($p && $p["origem"] !== "manual" && $d >= $de) {
+                sql("UPDATE plano SET acao = ? WHERE data = ?", [count($textos) > 0 ? corta_texto(implode("; ", $textos), 500) : null, $data]);
+            }
+        }
+    }
+    $GLOBALS["SIMULACAO"] = [];
+    $GLOBALS["SIMULACAO_VERSAO"]++;
+    return $gravados;
+}
+
+// Monta o plano que falta, de hoje até $ate (padrão: o horizonte do modo: o domingo da última semana dele; no domingo com
+// uma semana só, também a segunda, para o aviso da véspera), pelo roteiro do modo ativo (plano_montar). Na escala
+// inteligente (modo com escala_dias), a escala gera o próprio período de uma vez (gerar_escala): quando ainda não há
+// escala, quando ela venceu, ou quando falta hoje ou amanhã e ela ainda não foi refeita hoje.
+// $manter_pulso: hoje sem plano e com um relógio já no pulso pelo rodízio, o plano de hoje é ele; false só no sortear de
+// novo inclusive hoje, que quer outro sorteio para hoje.
+function garantir_plano($hoje, $ate = null, $manter_pulso = true)
+{
+    $modo = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]);
+    if ($modo) {
+        // hoje sem plano, mas com um relógio já no pulso pelo rodízio: o plano de hoje é ele (não se sorteia outro)
+        $no_pulso = $manter_pulso ? valor("SELECT l.relogio_id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
+            WHERE t.identificador = 'pulso' AND l.origem = 'rodizio' AND DATE(l.inicio) = ? ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [$hoje->format("Y-m-d")]) : null;
+        if (plano_do_dia($hoje->format("Y-m-d")) === null && $no_pulso !== null && !dia_livre($hoje->format("Y-m-d"))) {
+            plano_gravar($hoje->format("Y-m-d"), (int)$no_pulso, null, "manual", t("Já estava no pulso pelo rodízio quando o plano de hoje foi montado."));
+        }
+        if ($modo["escala_dias"] !== null) {
+            if (cfg("escala_fim") === "" || cfg("escala_fim") < $hoje->format("Y-m-d") || ((plano_do_dia($hoje->format("Y-m-d")) === null
+                || plano_do_dia($hoje->modify("+1 day")->format("Y-m-d")) === null) && cfg("escala_gerada") !== hoje_da_colecao()->format("Y-m-d"))) {
+                gerar_escala($hoje);
+            }
+            return;
+        }
+        plano_montar($modo, $hoje, $hoje, $ate === null ? horizonte_do_modo($modo, $hoje) : $ate, false);
+    }
+}
+
+// Testa um roteiro num dia (a página Modos de rodízio, "Testar em todos os relógios"; recurso=roteiro): cada relógio
+// disponível com as linhas do roteiro calculadas e as cinco saídas, e quem sairia nesse dia pela mesma escolha do
+// rodízio (o de ontem fora; sem o ciclo), com os dias anteriores do plano simulados no pulso como no rodízio. $texto:
+// o roteiro; $dia: o dia (DateTimeImmutable, de hoje em diante)
+function roteiro_testar($texto, $dia)
+{
+    $lido = roteiro_ler($texto);
+    $arv = roteiro_completo($lido["arvores"]);
+    $hoje = hoje_da_colecao();
+    $agora = time();
+    $rels = [];
+    foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY id") as $r) {
+        $rels[(int)$r["id"]] = $r;
+    }
+    $pulso = lancamento_tipos()["pulso"] ?? null;
+    $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+    $GLOBALS["SIMULACAO"] = [];
+    $GLOBALS["SIMULACAO_VERSAO"] = ($GLOBALS["SIMULACAO_VERSAO"] ?? 0) + 1;
+    for ($d = $hoje; $d < $dia; $d = $d->modify("+1 day")) {
+        $p = plano_do_dia($d->format("Y-m-d"));
+        $fim_u = instante($d->format("Y-m-d"), cfg("uso_fim"));
+        if ($p && $pulso && $fim_u > $agora && valor("SELECT id FROM lancamento WHERE tipo_id = ? AND origem = 'rodizio' AND DATE(inicio) = ?",
+            [(int)$pulso["id"], $d->format("Y-m-d")]) === null) {
+            simular_lancamento((int)$p["relogio_id"], "pulso", max($agora, instante($d->format("Y-m-d"), cfg("uso_inicio"))), $fim_u, null, true);
+        }
+    }
+    $m_ini = max($agora, instante($dia->format("Y-m-d"), cfg("uso_inicio")));
+    $relogios = [];
+    foreach ($rels as $cid => $r) {
+        $c = roteiro_calcular($arv, $r, $dia, $m_ini);
+        $valores = [];
+        foreach (array_keys($arv) as $nome) {
+            $valores[$nome] = isset($c[$nome]) && is_numeric($c[$nome]) ? round((float)$c[$nome], 4) : ($c[$nome] ?? null);
+        }
+        $relogios[] = ["id" => $cid, "nome" => $r["nome"], "candidato" => ($c["candidato"] ?? null) !== null && (float)$c["candidato"] != 0,
+            "nota" => is_numeric($c["nota"] ?? null) ? round((float)$c["nota"], 2) : null, "peso" => is_numeric($c["peso"] ?? null) ? round((float)$c["peso"], 2) : null,
+            "dias" => is_numeric($c["dias"] ?? null) ? max(1, min(366, (int)floor((float)$c["dias"]))) : 1, "garantia" => ($c["garantia"] ?? null) !== null && (float)$c["garantia"] != 0,
+            "dias_sem_uso" => round($c["dias_sem_uso"], 1), "valores" => $valores];
+    }
+    [$id, $motivo, $dias] = escolha_do_dia(null, $dia, $m_ini, $rels, $arv, [], "", true, "roteiro");
+    $GLOBALS["SIMULACAO"] = [];
+    $GLOBALS["SIMULACAO_VERSAO"]++;
+    return ["dia" => $dia->format("Y-m-d"), "dia_semana" => (int)$dia->format("N"), "linhas" => array_map(function ($l) { return ["nome" => $l[0], "expressao" => $l[1]]; }, $lido["linhas"]),
+        "erros" => $lido["erros"], "relogios" => $relogios,
+        "escolhido" => $id === null ? null : ["relogio_id" => $id, "relogio" => $rels[$id]["nome"], "motivo" => $motivo, "dias" => $dias]];
 }
 
 // Sorteia um dia só, agora, por uma forma de escolha ($selecao: a chave de formas_de_escolha), entre os relógios disponíveis
@@ -2454,102 +3023,6 @@ function sortear_dia($dia, $selecao)
     return [$id, $motivo];
 }
 
-// Monta o plano que falta, de hoje até $ate (padrão: o domingo desta semana; no domingo, também a segunda, para o aviso
-// da véspera). Cada dia sai do bloco do modo ativo que cobre aquele dia da semana: o relógio fixo do bloco; ou, num bloco
-// de um por bloco, o mesmo relógio já sorteado para o bloco nesta semana; ou um sorteio entre os disponíveis do ponto do
-// bloco (escolha_do_dia: nunca o de ontem, se houver outro; o ciclo; a garantia de rodízio; a forma de escolha do modo). A nota
-// e os dias sem uso são os do começo do dia sorteado, com os dias anteriores do plano simulados no pulso (como na escala):
-// o relógio sorteado num dia chega aos seguintes como usado (o uso conta; a carga não é gasta, porque não se sabe se ele vai
-// ser carregado). Com o ciclo do modo (opção, desligada por padrão), quem já passou na semana não volta enquanto houver
-// candidato do bloco que ainda não passou (ciclo_atual).
-// Na escala inteligente (modo com escala_dias), a escala gera o próprio período de uma vez (gerar_escala): quando ainda
-// não há escala, quando ela venceu, ou quando falta hoje ou amanhã e ela ainda não foi refeita hoje.
-// $manter_pulso: hoje sem plano e com um relógio já no pulso pelo rodízio, o plano de hoje é ele; false só no sortear de
-// novo inclusive hoje, que quer outro sorteio para hoje.
-function garantir_plano($hoje, $ate = null, $manter_pulso = true)
-{
-    $modo = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]);
-    if ($modo) {
-        // hoje sem plano, mas com um relógio já no pulso pelo rodízio: o plano de hoje é ele (não se sorteia outro)
-        $no_pulso = $manter_pulso ? valor("SELECT l.relogio_id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
-            WHERE t.identificador = 'pulso' AND l.origem = 'rodizio' AND DATE(l.inicio) = ? ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [$hoje->format("Y-m-d")]) : null;
-        if (plano_do_dia($hoje->format("Y-m-d")) === null && $no_pulso !== null && !dia_livre($hoje->format("Y-m-d"))) {
-            plano_gravar($hoje->format("Y-m-d"), (int)$no_pulso, null, "manual", t("Já estava no pulso pelo rodízio quando o plano de hoje foi montado."));
-        }
-        $blocos = modo_blocos((int)$modo["id"]);
-        if ($ate === null) {
-            $ate = $hoje->modify((int)$hoje->format("N") === 7 ? "+1 day" : "sunday this week");
-        }
-        if ($modo["escala_dias"] !== null) {
-            if (cfg("escala_fim") === "" || cfg("escala_fim") < $hoje->format("Y-m-d") || ((plano_do_dia($hoje->format("Y-m-d")) === null
-                || plano_do_dia($hoje->modify("+1 day")->format("Y-m-d")) === null) && cfg("escala_gerada") !== hoje_da_colecao()->format("Y-m-d"))) {
-                gerar_escala($hoje);
-            }
-            // a escala já montou o período dela: o laço abaixo não sorteia nada
-            $ate = $hoje->modify("-1 day");
-        }
-        // cada dia do plano (o que já estava e o que acabou de ser sorteado) vira uma sessão simulada no pulso, só de uso, e
-        // cada dia é sorteado pelos critérios recalculados no começo daquele dia; assim o relógio sorteado num dia chega aos
-        // seguintes como usado (o último uso, as horas de uso), sem mexer na carga (não se sabe se ele vai ser carregado)
-        $agora = time();
-        $pulso = lancamento_tipos()["pulso"] ?? null;
-        $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
-        $GLOBALS["SIMULACAO"] = [];
-        $GLOBALS["SIMULACAO_VERSAO"] = ($GLOBALS["SIMULACAO_VERSAO"] ?? 0) + 1;
-        for ($dia = $hoje; $dia <= $ate; $dia = $dia->modify("+1 day")) {
-            $ini_u = instante($dia->format("Y-m-d"), cfg("uso_inicio"));
-            $fim_u = instante($dia->format("Y-m-d"), cfg("uso_fim"));
-            $m_ini = max($agora, $ini_u);
-            if (plano_do_dia($dia->format("Y-m-d")) === null && !dia_livre($dia->format("Y-m-d"))) {
-                $bloco = null;
-                foreach ($blocos as $b) {
-                    if ($bloco === null && in_array($dia->format("N"), explode(",", $b["dias"]), true)) {
-                        $bloco = $b;
-                    }
-                }
-                if ($bloco !== null) {
-                    $escolhido = null;
-                    // o motivo: a frase que fica no plano dizendo por que este relógio saiu (a escolha em si não muda por ela)
-                    $motivo = "";
-                    if ($bloco["relogio_id"] !== null && (int)valor("SELECT disponivel FROM relogio WHERE id = ?", [(int)$bloco["relogio_id"]]) === 1) {
-                        $escolhido = (int)$bloco["relogio_id"];
-                        $motivo = t("Relógio fixo do bloco {1}.", [1 => $bloco["nome"]]);
-                    } elseif ($bloco["um_por"] === "bloco") {
-                        $seg = $dia->modify("monday this week");
-                        $v = valor("SELECT relogio_id FROM plano WHERE bloco_id = ? AND data BETWEEN ? AND ? ORDER BY data LIMIT 1",
-                            [(int)$bloco["id"], $seg->format("Y-m-d"), $seg->modify("+6 days")->format("Y-m-d")]);
-                        $escolhido = $v !== null ? (int)$v : null;
-                        $motivo = t("O mesmo relógio da semana no bloco {1} (um relógio para o bloco inteiro).", [1 => $bloco["nome"]]);
-                    }
-                    if ($escolhido === null) {
-                        $cands = [];
-                        foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY id") as $r) {
-                            if ($bloco["no_id"] === null || in_array((int)$bloco["no_id"], no_cadeia($r["no_id"] ?? 0), true)) {
-                                $cands[(int)$r["id"]] = $r;
-                            }
-                        }
-                        [$escolhido, $motivo] = escolha_do_dia($modo, $dia, $m_ini, $cands, $modo["selecao"], [], $bloco["nome"]);
-                        if ($bloco["um_por"] === "bloco" && $escolhido !== null) {
-                            $motivo .= t(" Fica o bloco {1} inteiro.", [1 => $bloco["nome"]]);
-                        }
-                    }
-                    if ($escolhido !== null) {
-                        plano_gravar($dia->format("Y-m-d"), $escolhido, (int)$bloco["id"], "sorteio", $motivo !== "" ? corta_texto($motivo, 300) : null);
-                    }
-                }
-            }
-            // o dia no plano vira uma sessão simulada no pulso (se ainda não tem a do rodízio), para os dias seguintes verem esse
-            // uso; só o uso: a carga não é gasta na simulação, porque não se sabe se o relógio vai ser carregado
-            $p = plano_do_dia($dia->format("Y-m-d"));
-            if ($p && $pulso && $fim_u > $agora && valor("SELECT id FROM lancamento WHERE tipo_id = ? AND origem = 'rodizio' AND DATE(inicio) = ?",
-                [(int)$pulso["id"], $dia->format("Y-m-d")]) === null) {
-                simular_lancamento((int)$p["relogio_id"], "pulso", $m_ini, $fim_u, null, true);
-            }
-        }
-        $GLOBALS["SIMULACAO"] = [];
-        $GLOBALS["SIMULACAO_VERSAO"]++;
-    }
-}
 
 // ---------------------------------------------------------------------------------------------------------------------
 // O rodízio manual (o "Rodízio manual" do quadro Modo de rodízio): você escolhe o relógio de cada dia de um período. Cada
@@ -4040,26 +4513,19 @@ function simular_lancamento($rid, $tipo, $ini, $fim, $valor, $so_uso = false)
 }
 
 // A escala inteligente (o modo ativo com escala_dias): monta o plano de $ini até o fim da escala (escala_fim; vencido ou
-// vazio, um horizonte novo de escala_dias), simulando dia a dia a partir do estado real. Cada dia sai do bloco do modo que
-// cobre aquele dia da semana: o relógio fixo do bloco, ou o de maior nota nos critérios entre os disponíveis do ponto da
-// árvore do bloco, calculada no começo do uso daquele dia simulado (o último escolhido fica de fora, se houver outro; a
-// garantia de rodízio vem na frente; sem bloco, o dia fica sem relógio). O escolhido fica os dias da fórmula dias_seguidos
-// (vazio: 1), enquanto os dias seguintes aceitarem ele. Os dias escolhidos à mão (origem manual) ficam como estão.
-// A simulação: cada dia do plano vira uma sessão no pulso no horário de uso. Os avisos da escala: os de "uso" e "sempre"
-// do relógio escolhido, conferidos no começo do bloco e no fim de cada dia dele; os de "sempre", também nos guardados, no
-// começo de cada dia. O que vence (a data prevista chega) vira o "o que fazer" do dia, e o lançamento que resolve o aviso
-// é simulado terminando no começo do dia (com o valor ou as horas do aviso). O dia de hoje que já começou no pulso não
-// muda. Devolve quantos dias gravou.
+// vazio, um horizonte novo de escala_dias) pelo roteiro do modo, simulando dia a dia a partir do estado real (plano_montar,
+// com a simulação inteira da carga e os avisos: o que vence vira o "o que fazer" do dia). Os dias sorteados de $ini em
+// diante saem antes; os escolhidos à mão e os livres ficam. O dia de hoje que já começou no pulso não muda. Devolve
+// quantos dias gravou.
 function gerar_escala($ini)
 {
     $gravados = 0;
     $modo = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]);
     $hoje = hoje_da_colecao();
-    $agora = time();
     if ($ini < $hoje) {
         $ini = $hoje;
     }
-    if ($ini == $hoje && $agora >= instante($hoje->format("Y-m-d"), cfg("uso_inicio")) && plano_do_dia($hoje->format("Y-m-d")) !== null) {
+    if ($ini == $hoje && time() >= instante($hoje->format("Y-m-d"), cfg("uso_inicio")) && plano_do_dia($hoje->format("Y-m-d")) !== null) {
         $ini = $hoje->modify("+1 day");
     }
     if ($modo && $modo["escala_dias"] !== null) {
@@ -4068,213 +4534,8 @@ function gerar_escala($ini)
             $fim = $ini->modify("+" . (max(1, (int)$modo["escala_dias"]) - 1) . " days");
             cfg_set("escala_fim", $fim->format("Y-m-d"));
         }
-        $blocos = modo_blocos((int)$modo["id"]);
         sql("DELETE FROM plano WHERE data >= ? AND origem <> 'manual'", [$ini->format("Y-m-d")]);
-        $manuais = [];
-        foreach (linhas("SELECT data, relogio_id FROM plano WHERE data >= ?", [$ini->format("Y-m-d")]) as $m) {
-            $manuais[$m["data"]] = (int)$m["relogio_id"];
-        }
-        // os dias livres: como um dia à mão sem relógio (a escala não escolhe nada para eles, nem estica um bloco sobre eles)
-        foreach (linhas("SELECT data FROM plano_livre WHERE data >= ?", [$ini->format("Y-m-d")]) as $m) {
-            $manuais[substr((string)$m["data"], 0, 10)] = -1;
-        }
-        $rels = [];
-        foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY id") as $r) {
-            $rels[(int)$r["id"]] = $r;
-        }
-        // o bloco do modo que cobre um dia, e se ele aceita um relógio (o relógio no ponto da árvore do bloco, ou abaixo)
-        $bloco_de = function ($d) use ($blocos) {
-            $res = null;
-            foreach ($blocos as $b) {
-                if ($res === null && in_array($d->format("N"), explode(",", $b["dias"]), true)) {
-                    $res = $b;
-                }
-            }
-            return $res;
-        };
-        $aceita = function ($b, $r) {
-            return $b !== null && ($b["no_id"] === null || in_array((int)$b["no_id"], no_cadeia($r["no_id"] ?? 0), true));
-        };
-        // começa do zero: o que foi gravado nesta requisição entra no cálculo, e nenhuma simulação de antes
-        $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
-        $GLOBALS["SIMULACAO"] = [];
-        $GLOBALS["SIMULACAO_VERSAO"] = ($GLOBALS["SIMULACAO_VERSAO"] ?? 0) + 1;
-        // os dias de hoje até antes de $ini que já estão no plano e ainda não têm a sessão do rodízio: a sessão é simulada
-        $pulso = lancamento_tipos()["pulso"] ?? null;
-        for ($d = $hoje; $d < $ini; $d = $d->modify("+1 day")) {
-            $p = plano_do_dia($d->format("Y-m-d"));
-            $fim_u = instante($d->format("Y-m-d"), cfg("uso_fim"));
-            if ($p && $pulso && $fim_u > $agora && valor("SELECT id FROM lancamento WHERE tipo_id = ? AND origem = 'rodizio' AND DATE(inicio) = ?",
-                [(int)$pulso["id"], $d->format("Y-m-d")]) === null) {
-                simular_lancamento((int)$p["relogio_id"], "pulso", max($agora, instante($d->format("Y-m-d"), cfg("uso_inicio"))), $fim_u, null);
-            }
-        }
-        // o último escolhido: o de ontem no plano, senão o último no pulso pelo rodízio
-        $ultimo = valor("SELECT relogio_id FROM plano WHERE data = ?", [$ini->modify("-1 day")->format("Y-m-d")]);
-        $ultimo = $ultimo !== null ? (int)$ultimo : (int)valor("SELECT l.relogio_id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
-            WHERE t.identificador = 'pulso' AND l.origem = 'rodizio' ORDER BY l.inicio DESC, l.id DESC LIMIT 1");
-        $no_bloco = 0;
-        $bloco_fim = $ini->modify("-1 day");
-        $bloco_ini = $ini;
-        $motivo_bloco = "";
-        $acoes = [];
-        // o ciclo: a sequência dos relógios que entraram (o plano desde a segunda-feira da semana em que a escala começa, e o
-        // que a escala for escolhendo; o ciclo fecha quando todos passaram, e começa outro, pelo período inteiro da escala)
-        $sequencia = array_map(function ($x) { return (int)$x["relogio_id"]; }, linhas("SELECT relogio_id FROM plano WHERE data BETWEEN ? AND ? ORDER BY data",
-            [$ini->modify("monday this week")->format("Y-m-d"), $ini->modify("-1 day")->format("Y-m-d")]));
-        for ($d = $ini; $d <= $fim; $d = $d->modify("+1 day")) {
-            $data = $d->format("Y-m-d");
-            $m_ini = instante($data, cfg("uso_inicio"));
-            $bloco = $bloco_de($d);
-            $novo = 0;
-            $ate = $d;
-            if (isset($manuais[$data]) && isset($rels[$manuais[$data]]) && ($no_bloco !== $manuais[$data] || $d > $bloco_fim)) {
-                // escolhido à mão: o bloco são os dias seguidos escolhidos à mão para ele
-                $novo = $manuais[$data];
-                while (($manuais[$ate->modify("+1 day")->format("Y-m-d")] ?? 0) === $novo && $ate < $fim) {
-                    $ate = $ate->modify("+1 day");
-                }
-                $motivo_bloco = t("Escolhido à mão.");
-            } elseif (!isset($manuais[$data]) && ($no_bloco === 0 || $d > $bloco_fim) && $bloco !== null) {
-                // o motivo: a frase que fica no plano dizendo por que este relógio saiu (a escolha em si não muda por ela)
-                $motivo_bloco = "";
-                if ($bloco["relogio_id"] !== null && isset($rels[(int)$bloco["relogio_id"]])) {
-                    $novo = (int)$bloco["relogio_id"];
-                    $motivo_bloco = t("Relógio fixo do bloco {1}.", [1 => $bloco["nome"]]);
-                } else {
-                    $fora = [];
-                    $cands = [];
-                    $nunca = [];
-                    foreach ($rels as $cid => $r) {
-                        if ($aceita($bloco, $r)) {
-                            $ctx = ["r" => $r, "momento" => $m_ini, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio($cid)];
-                            $dsu = variavel_valor("dias_sem_uso", $ctx);
-                            $cands[$cid] = is_numeric($dsu) ? (float)$dsu : 9999.0;
-                            $nunca[$cid] = nunca_no_pulso($ctx);
-                        }
-                    }
-                    if (count($cands) > 1 && isset($cands[$ultimo])) {
-                        $fora[] = t("o de antes ({1}) ficou de fora", [1 => $rels[$ultimo]["nome"]]);
-                        unset($cands[$ultimo]);
-                    }
-                    // o ciclo (se o modo usa): os que já passaram no ciclo atual ficam de fora
-                    if ((int)($modo["ciclo"] ?? 0) === 1 && count($cands) > 1) {
-                        $restam = array_diff_key($cands, array_flip(ciclo_atual($sequencia, array_keys($cands))));
-                        if (count($restam) > 0) {
-                            if (count($restam) < count($cands)) {
-                                $fora[] = t("pelo ciclo, {1} que já passaram ficaram de fora", [1 => count($cands) - count($restam)]);
-                            }
-                            $cands = $restam;
-                        }
-                    }
-                    $todos = count($cands);
-                    // garantia de rodízio: quem chegou ao limite de dias sem uso passa na frente, o mais tempo parado primeiro
-                    $max = (int)cfg("max_sem_uso");
-                    $garantia = "";
-                    if ($max > 0 && count($cands) > 0 && max($cands) >= $max) {
-                        $mais = max($cands);
-                        $cands = array_filter($cands, function ($x) use ($mais) { return $x == $mais; });
-                        $garantia = t("no limite de {1} dias sem uso", [1 => $max]);
-                    }
-                    // a maior nota no dia simulado; notas iguais (as empatadas na maior) se desempatam por sorteio
-                    $notas = [];
-                    foreach (array_keys($cands) as $cid) {
-                        $notas[$cid] = nota_do_relogio($rels[$cid], $m_ini)["nota"];
-                    }
-                    $nota_dele = count($notas) > 0 ? max($notas) : 0.0;
-                    $empatados = array_keys(array_filter($notas, function ($x) use ($nota_dele) { return $x == $nota_dele; }));
-                    $desempate = "";
-                    if (count($empatados) === 1) {
-                        $novo = $empatados[0];
-                    } elseif (count($empatados) > 1) {
-                        $novo = $empatados[sorteio(0, count($empatados) - 1)];
-                        $desempate = t(" Empatado na nota com {1}{2}: saiu no sorteio ({3}).", [1 => count($empatados) - 1, 2 => count($empatados) === 2 ? " outro" : " outros", 3 => aleatorio_fonte()]);
-                    }
-                    if ($novo > 0) {
-                        $motivo_bloco = ($garantia !== ""
-                            ? t("Garantia de rodízio: {1}, {2}{3}.", [1 => motivo_parado($cands[$novo], $nunca[$novo]), 2 => $garantia, 3 => count($cands) > 1 ? t("; entre os {1} empatados no tempo parado, a maior nota ({2})", [1 => count($cands), 2 => motivo_nota($nota_dele)]) : ""])
-                            : t("A maior nota do dia ({1}), {2}.", [1 => motivo_nota($nota_dele), 2 => $todos === 1 ? t("único candidato") : "entre " . $todos . " candidatos"]))
-                            . $desempate . (count($fora) > 0 ? " " . ucfirst(implode("; ", $fora)) . "." : "");
-                    }
-                }
-                if ($novo > 0) {
-                    // os dias seguidos: dias_seguidos (vazio: 1), enquanto o dia seguinte for do mesmo jeito (sem escolha à mão, com
-                    // bloco que aceita o relógio e sem relógio fixo de outro)
-                    $ctx = ["r" => $rels[$novo], "momento" => $m_ini, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio($novo)];
-                    $tam = variavel_valor("dias_seguidos", $ctx);
-                    $tam = is_numeric($tam) ? max(1, min(366, (int)floor((float)$tam))) : 1;
-                    $segue = true;
-                    for ($n = 1; $segue && $n < $tam; $n++) {
-                        $prox = $ate->modify("+1 day");
-                        $b = $bloco_de($prox);
-                        $segue = $prox <= $fim && !isset($manuais[$prox->format("Y-m-d")]) && $aceita($b, $rels[$novo])
-                            && ($b["relogio_id"] === null || (int)$b["relogio_id"] === $novo);
-                        if ($segue) {
-                            $ate = $prox;
-                        }
-                    }
-                }
-            }
-            if ($novo > 0) {
-                // um bloco novo: as sessões no pulso de todos os dias dele, e os avisos conferidos no começo e no fim de cada dia
-                $no_bloco = $novo;
-                $bloco_fim = $ate;
-                $bloco_ini = $d;
-                $ultimo = $novo;
-                $sequencia[] = $novo;
-                $pontos = [$m_ini];
-                for ($k = $d; $k <= $ate; $k = $k->modify("+1 day")) {
-                    simular_lancamento($novo, "pulso", instante($k->format("Y-m-d"), cfg("uso_inicio")), instante($k->format("Y-m-d"), cfg("uso_fim")), null);
-                    $pontos[] = instante($k->format("Y-m-d"), cfg("uso_fim"));
-                }
-                $vencidos = [];
-                foreach ($pontos as $ponto) {
-                    foreach (avisos_do_relogio($rels[$novo], $ponto) as $a) {
-                        if ($a["escala"] !== "nao" && $a["falta_dias"] <= 0 && !isset($vencidos[$a["identificador"]])) {
-                            $vencidos[$a["identificador"]] = $a;
-                        }
-                    }
-                }
-                foreach ($vencidos as $a) {
-                    $acoes[$data][] = [$novo, $a];
-                }
-            }
-            // os avisos de "sempre" nos outros relógios (o do bloco já foi conferido no bloco inteiro)
-            foreach ($rels as $cid => $r) {
-                if ($cid !== $no_bloco || $d > $bloco_fim) {
-                    foreach (avisos_do_relogio($r, $m_ini) as $a) {
-                        if ($a["escala"] === "sempre" && $a["falta_dias"] <= 0) {
-                            $acoes[$data][] = [$cid, $a];
-                        }
-                    }
-                }
-            }
-            // o que resolve cada aviso vencido é simulado terminando no começo do dia; o texto vai para o dia
-            $textos = [];
-            foreach ($acoes[$data] ?? [] as $x) {
-                $a = $x[1];
-                // sem as horas (sessão) ou sem o valor (leitura) no aviso, a ação é anotada mas não simulada
-                $t = $a["resolve"] !== null ? (lancamento_tipos()[$a["resolve"]] ?? null) : null;
-                $horas = $t && $t["formato"] === "sessao" ? (float)($a["simula_horas"] ?? 0) : 0;
-                if ($t && ($t["formato"] === "instantaneo" || $horas > 0 || ($t["formato"] === "valor" && $a["simula_valor"] !== null))) {
-                    simular_lancamento($x[0], $a["resolve"], max($agora, (int)round($m_ini - $horas * 3600)), $m_ini, $a["simula_valor"]);
-                }
-                $textos[] = $a["nome"] . ": " . $rels[$x[0]]["nome"] . ($horas > 0 ? " (" . decimal_txt($horas, 6) . " h)" : "");
-            }
-            if ($no_bloco > 0 && $d <= $bloco_fim) {
-                // o motivo do dia: no primeiro dia do bloco, o da escolha (e quantos dias ele fica); nos seguintes, que ele segue
-                $dias_bloco = (int)$bloco_ini->diff($bloco_fim)->days + 1;
-                $dia_bloco = (int)$bloco_ini->diff($d)->days + 1;
-                $motivo = isset($manuais[$data]) ? t("Escolhido à mão.") : ($dia_bloco === 1
-                    ? $motivo_bloco . ($dias_bloco > 1 ? t(" Fica {1} dias seguidos.", [1 => $dias_bloco]) : "")
-                    : t("Segue no pulso: dia {1} de {2} seguidos.", [1 => $dia_bloco, 2 => $dias_bloco]));
-                plano_gravar($data, $no_bloco, isset($manuais[$data]) || $bloco === null ? null : (int)$bloco["id"], isset($manuais[$data]) ? "manual" : "sorteio",
-                    $motivo !== "" ? corta_texto($motivo, 300) : null, count($textos) > 0 ? corta_texto(implode("; ", $textos), 500) : null, true);
-                $gravados++;
-            }
-        }
-        $GLOBALS["SIMULACAO"] = [];
-        $GLOBALS["SIMULACAO_VERSAO"]++;
+        $gravados = plano_montar($modo, $hoje, $ini, $fim, true);
         cfg_set("escala_gerada", hoje_da_colecao()->format("Y-m-d"));
     }
     return $gravados;

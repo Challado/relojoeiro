@@ -73,7 +73,8 @@ foreach ($rels as $i => $r) {
 }
 $modos_h = [];
 foreach (linhas("SELECT * FROM modo ORDER BY ordem, id") as $m) {
-    $modos_h[] = ["id" => (int)$m["id"], "nome" => $m["nome"], "selecao" => $m["selecao"], "escala_dias" => $m["escala_dias"] === null ? null : (int)$m["escala_dias"], "ciclo" => (int)$m["ciclo"] === 1,
+    $modos_h[] = ["id" => (int)$m["id"], "nome" => $m["nome"], "tipo" => $m["tipo"], "tipo_texto" => t(MODO_TIPOS[$m["tipo"]] ?? "Personalizado"), "semanas" => (int)$m["semanas"],
+        "selecao" => $m["selecao"], "escala_dias" => $m["escala_dias"] === null ? null : (int)$m["escala_dias"], "ciclo" => (int)$m["ciclo"] === 1,
         "blocos" => array_map(function ($b) {
             return ["id" => (int)$b["id"], "nome" => $b["nome"], "dias" => $b["dias"], "no_id" => $b["no_id"] === null ? 0 : (int)$b["no_id"], "um_por" => $b["um_por"],
                 "relogio_id" => $b["relogio_id"] === null ? null : (int)$b["relogio_id"]];
@@ -90,7 +91,7 @@ foreach (avisos_todos() as $ident => $versoes) {
 }
 $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => cfg("uso_inicio"), "comecou" => $dia !== null && dia_comecou($agora),
     "pulso_poe_sozinho" => pulso_poe_sozinho(), "pulso_tira_sozinho" => pulso_tira_sozinho(),
-    "modo" => $modo ? ["id" => (int)$modo["id"], "nome" => $modo["nome"], "selecao" => $modo["selecao"], "escala_dias" => $modo["escala_dias"] === null ? null : (int)$modo["escala_dias"]] : null,
+    "modo" => $modo ? ["id" => (int)$modo["id"], "nome" => $modo["nome"], "tipo" => $modo["tipo"], "tipo_texto" => t(MODO_TIPOS[$modo["tipo"]] ?? "Personalizado"), "semanas" => (int)$modo["semanas"], "selecao" => $modo["selecao"], "escala_dias" => $modo["escala_dias"] === null ? null : (int)$modo["escala_dias"]] : null,
     "escala_fim" => cfg("escala_fim") !== "" ? cfg("escala_fim") : null, "max_sem_uso" => (int)cfg("max_sem_uso"),
     "dia" => $dia ? ["data" => $dia["data"], "relogio_id" => (int)$dia["relogio_id"], "relogio" => $dia["nome"], "ate" => texto_ate($dia["data"], "hoje"), "acao" => $dia["acao"], "motivo" => $dia["motivo"]] : null,
     "destaque" => $destaque_h,
