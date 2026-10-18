@@ -1796,7 +1796,10 @@ function op_criterios($acao, $d)
 // o dia que não vem fica com a escolha de partida; tudo grava como escolhido à mão), apagar_tudo (toda a programação de
 // amanhã em diante, à mão, sorteada e livre, sai; hoje=1: de hoje em diante; o modo ativo monta o plano de novo; hoje, se
 // mudar, o novo vai para o pulso a partir de agora). Os dias escolhidos à mão e os
-// livres, de amanhã em diante, ficam quando se sorteia de novo ou se monta a próxima semana.
+// livres, de amanhã em diante, ficam quando se sorteia de novo ou se monta a próxima semana, e a mensagem diz quantos
+// ficaram; com sobrescrever=1 (a caixa "Sobrescrever tudo" do Sortear de novo), sai tudo o que o plano tem do começo do
+// sorteio em diante (resortear e resortear_hoje: de amanhã, ou de hoje; proxima_semana: do primeiro dia dela), à mão,
+// livre ou sorteado, e o modo monta de novo.
 // Na escala inteligente: sortear de novo refaz a escala (do mesmo jeito: de amanhã, ou inclusive hoje); usando segura o
 // escolhido nos dias que faltavam do bloco de hoje e refaz a escala depois deles; a próxima semana não existe (a escala
 // segue o próprio período).
@@ -1810,6 +1813,7 @@ function op_rodizio($acao, $d)
     $ini_uso = instante($hoje->format("Y-m-d"), cfg("uso_inicio"));
     $fim_uso = instante($hoje->format("Y-m-d"), cfg("uso_fim"));
     $comecou = dia_comecou($agora);
+    $sobrescrever = (string)($d["sobrescrever"] ?? "") === "1";
     // troca o relógio de hoje a partir de agora: a sessão de rodízio do anterior termina agora (ou sai, se nem começou)
     // e a do novo começa agora (se ainda está no horário de uso)
     $troca_hoje = function ($novo_id, $motivo) use ($hoje, $agora, $ini_uso, $fim_uso) {
@@ -1868,7 +1872,13 @@ function op_rodizio($acao, $d)
         if ($fim_s !== null && (string)$fim_s > $ate_s->format("Y-m-d")) {
             $ate_s = new DateTimeImmutable(substr((string)$fim_s, 0, 10));
         }
-        // os dias escolhidos à mão de amanhã em diante ficam (um período que você montou não some no sorteio); hoje, sorteia
+        // os dias escolhidos à mão e os livres de amanhã em diante ficam (um período que você montou não some no sorteio),
+        // menos com sobrescrever=1: sai tudo do começo do sorteio em diante; hoje, sorteia sempre
+        $guardados = dias_guardados($desde);
+        if ($sobrescrever) {
+            sql("DELETE FROM plano WHERE data >= ?", [$desde->format("Y-m-d")]);
+            sql("DELETE FROM plano_livre WHERE data >= ?", [$desde->format("Y-m-d")]);
+        }
         sql("DELETE FROM plano WHERE data >= ? AND (origem <> 'manual' OR data = ?)", [$desde->format("Y-m-d"), $hoje->format("Y-m-d")]);
         sql("DELETE FROM plano_livre WHERE data = ? AND data >= ?", [$hoje->format("Y-m-d"), $desde->format("Y-m-d")]);
         if ($escala) {
@@ -1880,7 +1890,8 @@ function op_rodizio($acao, $d)
             // o de hoje trocado pelo sorteio: o motivo é o do sorteio
             $troca_hoje((int)$depois["relogio_id"], $depois["motivo"] ?? null);
         }
-        $msg = t("Sorteado de novo{1}.{2}", [1 => $desde > $hoje ? t(" a partir de amanhã; hoje continua o {1}", [1 => $antes["nome"] ?? "mesmo"]) : "", 2 => $depois ? " Hoje: " . $depois["nome"] . "." : ""]);
+        $msg = t("Sorteado de novo{1}.{2}", [1 => $desde > $hoje ? t(" a partir de amanhã; hoje continua o {1}", [1 => $antes["nome"] ?? "mesmo"]) : "", 2 => $depois ? " Hoje: " . $depois["nome"] . "." : ""])
+            . dias_guardados_texto($guardados, $sobrescrever);
     } elseif ($acao === "sem_relogio") {
         // hoje sem relógio: o dia fica livre (sem relógio e sem sorteio, como os dias livres do plano) e a sessão do rodízio de
         // hoje termina agora (o tempo que ele já ficou no pulso conta; a que ainda nem começou sai). Os outros dias não mudam.
@@ -2186,9 +2197,16 @@ function op_rodizio($acao, $d)
             // qualquer dia: o plano roda desde hoje, para que os dias que ainda faltam desta semana cheguem a ela como usados (a
             // simulação no pulso), e só os dias dela são sorteados de novo
             $ini = semana_fim($hoje)->modify("+1 day");
+            // com sobrescrever=1, sai tudo do primeiro dia dela em diante (à mão, livre ou sorteado); sem, só os sorteados dela
+            $guardados = dias_guardados($ini, $ini->modify("+6 days"));
+            if ($sobrescrever) {
+                $guardados = dias_guardados($ini);
+                sql("DELETE FROM plano WHERE data >= ?", [$ini->format("Y-m-d")]);
+                sql("DELETE FROM plano_livre WHERE data >= ?", [$ini->format("Y-m-d")]);
+            }
             sql("DELETE FROM plano WHERE data BETWEEN ? AND ? AND origem <> 'manual'", [$ini->format("Y-m-d"), $ini->modify("+6 days")->format("Y-m-d")]);
             garantir_plano($hoje, $ini->modify("+6 days"));
-            $msg = t("Semana de {1} a {2} montada.", [1 => $ini->format("d/m"), 2 => $ini->modify("+6 days")->format("d/m")]);
+            $msg = t("Semana de {1} a {2} montada.", [1 => $ini->format("d/m"), 2 => $ini->modify("+6 days")->format("d/m")]) . dias_guardados_texto($guardados, $sobrescrever);
         }
     }
     return resultado($erros, $msg);

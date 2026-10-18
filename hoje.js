@@ -225,12 +225,17 @@ function recarregarHoje() {
         t("{1} a semana seguinte inteira, de {2} a {3}, pelo modo atual, com os dias que ainda faltam desta semana já contados como uso. Os dias escolhidos à mão ficam.", {1: ps.ja_montada ? t("Refaz") : t("Monta"), 2: semIni, 3: semFim}),
         t("{1} a semana de {2} a {3}?{4}", {1: ps.ja_montada ? t("Sortear de novo") : t("Montar"), 2: dataBr(ps.inicio, true), 3: dataBr(ps.fim, true), 4: ps.ja_montada ? t(" O que já estava montado para ela é refeito.") : ""}), true]);
     }
-    var formSorteio = el("form", {"data-recurso": "rodizio", "class": "sortear-de-novo", "data-nao-manual": true, "onsubmit": "var o = this.acao.options[this.acao.selectedIndex]; return confirm(o.getAttribute('data-confirma'))"},
+    // "Sobrescrever tudo": sai tudo o que o plano tem do começo do sorteio em diante (à mão, livre ou sorteado); a confirmação avisa
+    var avisoSobrescrever = t(" Com Sobrescrever tudo marcado, sai tudo o que o plano tem desse dia em diante, inclusive os dias escolhidos à mão e os dias livres, e o modo sorteia de novo.");
+    var formSorteio = el("form", {"data-recurso": "rodizio", "class": "sortear-de-novo", "data-nao-manual": true, "data-aviso-sobrescrever": avisoSobrescrever,
+      "onsubmit": "var o = this.acao.options[this.acao.selectedIndex]; return confirm(o.getAttribute('data-confirma') + (this.sobrescrever.checked ? this.getAttribute('data-aviso-sobrescrever') : ''))"},
       el("label", {"class": "campo-principal", "for": "acao-sorteio"}, t("Sortear de novo"))
       + el("div", {"class": "linha-sorteio"}, el("select", {"name": "acao", "id": "acao-sorteio"}, sorteios.map(function (s) {
         return el("option", {"value": s[0], "disabled": !s[4], "data-explica": s[2], "data-confirma": s[3]}, h(s[1]));
       }).join("")) + el("button", {"class": "leve"}, t("Sortear")))
-      + el("p", {"class": "nota", "data-explica-sorteio": true}, h(sorteios[0][2])));
+      + el("p", {"class": "nota", "data-explica-sorteio": true}, h(sorteios[0][2]))
+      + el("label", {"class": "check"}, el("input", {"type": "checkbox", "name": "sobrescrever", "value": "1"}) + " " + t("Sobrescrever tudo"))
+      + el("p", {"class": "nota"}, t("Marcada, sai tudo o que o plano tem do começo do sorteio em diante: os dias escolhidos à mão, os dias livres e os sorteados; depois o modo monta tudo de novo. Desmarcada, os dias à mão e os livres ficam como estão.")));
     // remontado, o quadro volta fechado, como no sistema antigo depois de aplicar
     // o rodízio manual: o período e, depois do OK, os dias dele de 7 em 7 (manualCarregar)
     var formManual = el("form", {"class": "rodizio-manual", "id": "form-manual", "data-so-manual": true, "hidden": true},

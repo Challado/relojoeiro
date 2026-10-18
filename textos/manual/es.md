@@ -1,4 +1,4 @@
-<!-- origem: 6b28fffd3e9c55e1ab356e1550478768ac8134f0 -->
+<!-- origem: 57a2b79c74ae6aad51b1df13eaf42ef2a1753c4d -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -220,6 +220,12 @@ vuelve probabilidad), **aleatorio** o por **fila** (el que lleva más tiempo esp
 solo vuelve después de que todos los candidatos hayan pasado en la semana. El cuadro **Modo de rotación** de la página Hoy
 elige el modo, el criterio y la garantía de rotación; **Aplicar modo** solo marca: nada del plan cambia hasta que haga clic en
 **Sortear de nuevo**.
+
+**Sortear de nuevo** rehace lo que el modo sorteó y deja como están los días elegidos a mano y los días libres (los de la
+Rotación manual, por ejemplo); el mensaje dice cuántos quedaron (*"Quedaron como estaban: 7 días libres..."*). Con la
+casilla **Sobrescribir todo** marcada, sale todo lo que el plan tiene desde el comienzo del sorteo en adelante (desde mañana,
+desde hoy o desde el primer día de la próxima semana), a mano, libre o sorteado, y el modo arma todo de nuevo; la
+confirmación avisa antes, y el mensaje dice cuántos días a mano y libres fueron sobrescritos.
 
 **Las semanas.** Fuera de la escala, cada modo dice **cuántas semanas adelante** viene armado el plan (1 a 8; la lista muestra
 las semanas con las fechas). El plan llega hasta el último día de la última de ellas: el domingo, o el sábado con la semana
@@ -1212,7 +1218,8 @@ En **Próximos días** (en la página Hoy) o en la página **Plan**, cada día t
 en **Cambiar**. Hoy, pasa a ser el de la muñeca desde ese momento; en un día próximo, solo cambia ese día, y queda marcado
 *a mano*. En la escala inteligente, el plan se rehace a partir del día cambiado (los recordatorios de carga y cuerda de los días
 siguientes se ajustan). En un día elegido a mano, la misma lista tiene **volver a sortear**. También puede **Sortear de nuevo**
-desde hoy o desde mañana, o armar **la próxima semana** cualquier día.
+desde hoy o desde mañana, o armar **la próxima semana** cualquier día; con **Sobrescribir todo** marcado, los días elegidos a
+mano y los libres también salen y se sortean de nuevo.
 
 La misma lista tiene el grupo **Sortear este día por**: *la mayor nota*, *sorteo por la nota*, *aleatorio, todos con la misma
 probabilidad* o *fila: el más tiempo sin uso*. Solo ese día se sortea en el momento, por esa forma, entre los relojes del bloque

@@ -369,6 +369,16 @@ ler("cadastros com a semana no domingo", ["recurso" => "cadastros", "incluir" =>
 escrever(["recurso" => "config", "acao" => "salvar", "semana_inicio" => "segunda"]);
 escrever(["recurso" => "modos", "acao" => "ativar", "id" => $semana2]);
 escrever(["recurso" => "rodizio", "acao" => "resortear"]);
+// o Sortear de novo com dias à mão e livres no caminho: sem sobrescrever, eles ficam (e a mensagem conta); com
+// sobrescrever=1, sai tudo do começo do sorteio em diante e o modo monta de novo (também na próxima semana)
+escrever(["recurso" => "rodizio", "acao" => "manual", "de" => $em(2), "ate" => $em(4), "dias" => [$em(2) => "livre", $em(3) => "livre", $em(4) => (string)$rel["pilha"]]]);
+escrever(["recurso" => "rodizio", "acao" => "resortear"]);
+ler("plano com os dias guardados", ["recurso" => "plano", "dias" => 10]);
+escrever(["recurso" => "rodizio", "acao" => "resortear", "sobrescrever" => "1"]);
+ler("plano sobrescrito", ["recurso" => "plano", "dias" => 10]);
+escrever(["recurso" => "rodizio", "acao" => "manual", "de" => $em(8), "ate" => $em(9), "dias" => [$em(8) => "livre", $em(9) => (string)$rel["pilha"]]]);
+escrever(["recurso" => "rodizio", "acao" => "proxima_semana", "sobrescrever" => "1"]);
+ler("próxima semana sobrescrita", ["recurso" => "plano", "dias" => 16]);
 escrever(["recurso" => "modos", "acao" => "salvar", "id" => $inteligente, "nome" => "Escala inteligente", "selecao" => "inteligente", "escala_dias" => 45,
     "blocos" => [["nome" => "Todo dia", "dias" => [1, 2, 3, 4, 5, 6, 7], "no_id" => 0, "um_por" => "dia", "relogio_id" => 0]]]);
 escrever(["recurso" => "modos", "acao" => "ativar", "id" => $inteligente]);

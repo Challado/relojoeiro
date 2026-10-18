@@ -2809,6 +2809,34 @@ function horizonte_do_modo($modo, $hoje)
     return $fim->modify("+" . (($semanas - 1) * 7) . " days");
 }
 
+// Os dias que o sorteio não mexe, de $de em diante (até $ate, se vier): os escolhidos à mão e os livres; ["mao" => N,
+// "livres" => N] (o Sortear de novo diz quantos ficaram, ou quantos saíram com sobrescrever)
+function dias_guardados($de, $ate = null)
+{
+    $faixa = $ate === null ? " >= ?" : " BETWEEN ? AND ?";
+    $p = $ate === null ? [$de->format("Y-m-d")] : [$de->format("Y-m-d"), $ate->format("Y-m-d")];
+    return ["mao" => (int)valor("SELECT COUNT(*) FROM plano WHERE origem = 'manual' AND data" . $faixa, $p),
+        "livres" => (int)valor("SELECT COUNT(*) FROM plano_livre WHERE data" . $faixa, $p)];
+}
+
+// O fim da mensagem do Sortear de novo: os dias à mão e os livres que ficaram como estavam (e como sortear também esses)
+// ou, com sobrescrever, os que saíram
+function dias_guardados_texto($g, $sobrescrever)
+{
+    $partes = [];
+    if ($g["mao"] > 0) {
+        $partes[] = $g["mao"] === 1 ? t("1 dia escolhido à mão") : t("{1} dias escolhidos à mão", [1 => $g["mao"]]);
+    }
+    if ($g["livres"] > 0) {
+        $partes[] = $g["livres"] === 1 ? t("1 dia livre") : t("{1} dias livres", [1 => $g["livres"]]);
+    }
+    if (count($partes) === 0) {
+        return "";
+    }
+    return $sobrescrever ? " " . t("Sobrescritos: {1}.", [1 => implode(t(" e "), $partes)])
+        : " " . t("Ficaram como estavam: {1} (para sortear também esses, marque Sobrescrever tudo).", [1 => implode(t(" e "), $partes)]);
+}
+
 // O bloco do modo que cobre um dia da semana (o primeiro), ou null
 function bloco_do_dia($blocos, $dia)
 {

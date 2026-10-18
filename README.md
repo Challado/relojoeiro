@@ -271,6 +271,12 @@ chance), **aleatório** ou por **fila** (quem está esperando há mais tempo). C
 depois que todos os candidatos passaram na semana. O quadro **Modo de rodízio** da página Hoje escolhe o modo, o critério e a
 garantia de rodízio; **Aplicar modo** só marca: nada do plano muda até você clicar em **Sortear de novo**.
 
+O **Sortear de novo** refaz o que o modo sorteou e deixa como estão os dias escolhidos à mão e os dias livres (os do
+Rodízio manual, por exemplo); a mensagem diz quantos ficaram (*"Ficaram como estavam: 7 dias livres..."*). Com a caixa
+**Sobrescrever tudo** marcada, sai tudo o que o plano tem do começo do sorteio em diante (de amanhã, de hoje ou do primeiro
+dia da próxima semana), à mão, livre ou sorteado, e o modo monta tudo de novo; a confirmação avisa antes, e a mensagem diz
+quantos dias à mão e livres foram sobrescritos.
+
 **As semanas.** Fora da escala, cada modo diz **quantas semanas à frente** o plano vem montado (1 a 8; a lista mostra as
 semanas com as datas). O plano vai até o último dia da última delas: o domingo, ou o sábado com a semana começando no
 domingo (com uma semana só, no último dia da semana o plano traz também o primeiro da seguinte, para o aviso da véspera), e a
@@ -1678,7 +1684,8 @@ Em **Próximos dias** (na página Hoje) ou na página **Plano**, cada dia tem o 
 **Trocar**. Hoje, ele passa a ser o do pulso a partir de agora; num dia que vem, só aquele dia muda, e fica marcado *à mão*. Na
 escala inteligente, o plano é refeito a partir do dia trocado (os lembretes de carregar e de dar corda dos dias seguintes se
 ajustam). Num dia escolhido à mão, a mesma lista tem **voltar a sortear**. Também dá para **Sortear de novo** a partir de hoje
-ou de amanhã, ou montar **a próxima semana** em qualquer dia.
+ou de amanhã, ou montar **a próxima semana** em qualquer dia; com **Sobrescrever tudo** marcado, os dias escolhidos à mão e
+os livres também saem e são sorteados de novo.
 
 A mesma lista tem o grupo **Sortear este dia por**: *a maior nota*, *sorteio pela nota*, *aleatório, todos com a mesma chance*
 ou *fila: o mais tempo sem uso*. Só aquele dia é sorteado na hora, por essa forma, entre os relógios do bloco do modo ativo

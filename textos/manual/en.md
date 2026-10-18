@@ -1,4 +1,4 @@
-<!-- origem: 6b28fffd3e9c55e1ab356e1550478768ac8134f0 -->
+<!-- origem: 57a2b79c74ae6aad51b1df13eaf42ef2a1753c4d -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -226,6 +226,12 @@ In the first three, the **choice criterion** is the draw: by the **highest score
 the chance), **random** or by **queue** (whoever has been waiting the longest). With the **cycle** on, a watch only comes back
 after all the candidates have had their turn in the week. The **Rotation mode** panel on the Today page chooses the mode, the
 criterion and the rotation guarantee; **Apply mode** only marks: nothing in the plan changes until you click **Draw again**.
+
+**Draw again** rebuilds what the mode drew and leaves the days chosen by hand and the free days as they are (the ones from
+the Manual rotation, for example); the message says how many stayed (*"Left as they were: 7 free days..."*). With the
+**Overwrite everything** box checked, everything the plan has from the start of the draw on goes away (from tomorrow, from
+today or from the first day of the next week), by hand, free or drawn, and the mode builds everything again; the
+confirmation warns you first, and the message says how many days by hand and free days were overwritten.
 
 **The weeks.** Outside the schedule, each mode says **how many weeks ahead** the plan comes built (1 to 8; the list shows the
 weeks with their dates). The plan goes up to the last day of the last of them: Sunday, or Saturday with the week starting on
@@ -1218,7 +1224,8 @@ In **Next days** (on the Today page) or on the **Plan** page, each day has **cha
 **Change**. Today, it becomes the one on the wrist from now on; on an upcoming day, only that day changes, and it is marked
 *by hand*. In the smart schedule, the plan is rebuilt from the changed day (the charging and winding reminders of the following
 days adjust). On a day chosen by hand, the same list has **draw again**. You can also **Draw again** from today or from
-tomorrow, or build **next week** on any day.
+tomorrow, or build **next week** on any day; with **Overwrite everything** checked, the days chosen by hand and the free
+ones also go away and are drawn again.
 
 The same list has the group **Draw this day by**: *the highest score*, *draw by score*, *random, all with the same chance*
 or *queue: the longest without use*. Only that day is drawn on the spot, by that way, among the watches of the active mode's

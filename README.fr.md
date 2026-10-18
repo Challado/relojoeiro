@@ -277,6 +277,12 @@ activé, une montre ne revient qu'après le passage de toutes les candidates dan
 la page Aujourd'hui choisit le mode, le critère et la garantie de rotation ; **Appliquer le mode** ne fait que marquer : rien
 du plan ne change tant que vous ne cliquez pas sur **Refaire le tirage**.
 
+**Refaire le tirage** refait ce que le mode a tiré et laisse tels quels les jours choisis à la main et les jours libres (ceux
+de la Rotation manuelle, par exemple) ; le message dit combien sont restés (*« Restés tels quels : 7 jours libres... »*). Avec
+la case **Tout écraser** cochée, tout ce que le plan contient à partir du début du tirage disparaît (à partir de demain,
+d'aujourd'hui ou du premier jour de la semaine prochaine), à la main, libre ou tiré, et le mode remonte tout ; la
+confirmation prévient avant, et le message dit combien de jours à la main et de jours libres ont été écrasés.
+
 **Les semaines.** Hors planning, chaque mode dit **combien de semaines en avant** le plan arrive monté (1 à 8 ; la liste montre
 les semaines avec les dates). Le plan va jusqu'au dernier jour de la dernière d'entre elles : le dimanche, ou le samedi avec la
 semaine commençant le dimanche (avec une seule semaine, le dernier jour de la semaine le plan apporte aussi le premier de la
@@ -1771,7 +1777,8 @@ la montre et cliquez sur **Changer**. Aujourd'hui, elle devient celle au poignet
 jour change, et il est marqué *à la main*. Dans le planning intelligent, le plan est refait à partir du jour changé (les
 rappels de charge et de remontage des jours suivants s'ajustent). Sur un jour choisi à la main, la même liste a **retirer au
 sort**. Vous pouvez aussi **Refaire le tirage** à partir d'aujourd'hui ou de demain, ou monter **la semaine prochaine**
-n'importe quel jour.
+n'importe quel jour ; avec **Tout écraser** coché, les jours choisis à la main et les jours libres disparaissent aussi et
+sont tirés de nouveau.
 
 La même liste a le groupe **Tirer ce jour au sort par** : *la meilleure note*, *tirage selon la note*, *aléatoire, toutes
 avec la même chance* ou *file : la plus longtemps sans usage*. Seul ce jour est tiré au sort sur-le-champ, selon ce mode,
