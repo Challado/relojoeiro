@@ -213,11 +213,11 @@ function recarregarHoje() {
       + el("div", {"data-garantia": true}, el("label", {"class": "campo-principal"}, t("Garantia de rodízio: dias sem uso, no máximo {1}", {1: el("input", {"type": "number", "name": "max_sem_uso", "min": "0", "max": "365", "value": d.max_sem_uso, "class": "curto"})}))
         + el("p", {"class": "nota"}, t("Quem passa do limite tem prioridade, o mais tempo parado primeiro. 0 desliga. O mesmo valor vale para todos os modos que usam a nota."))
         + el("p", {"class": "nota"}, t("A nota vem dos {1}, que você cadastra.", {1: el("a", {"href": "criterios.php"}, t("critérios"))})));
-    var formModo = el("form", {"data-recurso": "rodizio", "onsubmit": "return confirm(" + JSON.stringify(d.comecou ? t("Trocar o modo refaz o plano a partir de amanhã; hoje continua o {1}. Continuar?", {1: nomeHoje}) : t("Trocar o modo apaga o plano atual. Continuar?")) + ")"},
+    var formModo = el("form", {"data-recurso": "rodizio"},
       el("input", {"type": "hidden", "name": "acao", "value": "modo"})
       + el("div", {"class": "modo-grade", "data-selecoes": JSON.stringify(selModos), "data-escalas": JSON.stringify(escalas)}, el("div", {"class": "modo-lado"}, ladoModo) + el("div", {"class": "modo-lado", "data-nao-manual": true}, ladoSelecao))
       + el("button", {"data-nao-manual": true}, t("Aplicar modo"))
-      + el("p", {"class": "nota", "data-nao-manual": true}, t("Trocar o modo apaga o plano atual e gera outro{1}. O histórico de uso, corda, sol e carga continua. Os modos e os blocos de dias se cadastram em {2}.", {1: d.comecou ? t(" a partir de amanhã: hoje continua o {1}, que já está no pulso (para trocar hoje, use \"Usando hoje\")", {1: h(nomeHoje)}) : t(" a partir de hoje"), 2: el("a", {"href": "modos.php"}, t("Modos de rodízio"))})));
+      + el("p", {"class": "nota", "data-nao-manual": true}, t("Aplicar só marca o modo: o plano gravado continua como está, e o modo novo vale para os próximos sorteios. Para refazer o plano com ele, use \"Sortear de novo\", embaixo. Os modos e os blocos de dias se cadastram em {1}.", {1: el("a", {"href": "modos.php"}, t("Modos de rodízio"))})));
     // sortear de novo: as ações possíveis agora, com a explicação e a confirmação de cada uma
     var ateQuando = escala ? t("o fim da escala") : (d.proxima_semana && d.proxima_semana.ja_montada ? t("o fim da próxima semana") : t("domingo"));
     var sorteios = [];

@@ -1861,11 +1861,8 @@ function op_rodizio($acao, $d)
                 $res = op_config("salvar", ["max_sem_uso" => $d["max_sem_uso"]]);
             }
             if ($res["ok"]) {
+                // só grava e marca o modo: quem quiser o plano refeito usa Sortear de novo
                 $res = op_modos("ativar", ["id" => $id_modo]);
-                // o dia ainda não começou no pulso: o plano novo vale já de hoje
-                if ($res["ok"] && !$comecou) {
-                    $res = op_rodizio("resortear", []);
-                }
             }
             $erros = $res["erros"];
             $msg = $res["ok"] ? t("Modo aplicado: {1}. {2}", [1 => $m["nome"], 2 => $res["mensagem"]]) : "";
@@ -2270,20 +2267,14 @@ function op_modos($acao, $d)
                     }
                 }
             }
-            if (modo_ativo() === $id) {
-                sql("DELETE FROM plano WHERE data > ?", [hoje_da_colecao()->format("Y-m-d")]);
-                cfg_set("escala_fim", "");
-                garantir_plano(hoje_da_colecao());
-            }
+            // o modo salvo (mesmo o ativo) vale para os próximos sorteios: o plano gravado continua (Sortear de novo o refaz)
             $msg = t("Modo {1} salvo{2}.", [1 => $nome, 2 => count($dias_usados) > 0 && count($dias_usados) < 7 ? t(" (os dias sem bloco ficam sem relógio sorteado)") : ""]);
         }
     } elseif ($acao === "ativar" && $atual) {
+        // só marca o modo: o plano gravado continua como está, e o modo novo vale para os próximos sorteios (os dias que o
+        // plano ainda não tem, ou Sortear de novo)
         modo_ativar($id);
-        sql("DELETE FROM plano WHERE data > ?", [hoje_da_colecao()->format("Y-m-d")]);
-        // a escala de antes (se havia) acaba aqui: a do modo novo começa um período novo
-        cfg_set("escala_fim", "");
-        garantir_plano(hoje_da_colecao());
-        $msg = t("Modo ativo: {1}. O plano de amanhã em diante foi refeito{2}.", [1 => $atual["nome"], 2 => $atual["escala_dias"] !== null ? t(" (escala até {1})", [1 => data_txt(strtotime(cfg("escala_fim")))]) : ""]);
+        $msg = t("Modo ativo: {1}. O plano gravado continua como está; para refazê-lo com este modo, use Sortear de novo.", [1 => $atual["nome"]]);
     } elseif ($acao === "excluir" && $atual) {
         if (modo_ativo() === $id) {
             $erros[] = t("Não dá para excluir o modo ativo: ative outro antes.");
