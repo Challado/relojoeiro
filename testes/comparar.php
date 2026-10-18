@@ -135,8 +135,10 @@ function comparar($x, $y, $caminho, $chave)
         $leves[] = [$caminho, "números no texto", $x, $y];
         return;
     }
-    // um prazo relativo no texto ("vence em 5d" e "vence em 4d 23h"): calculado com segundos de diferença, cruza o arredondamento
-    $prazo = function ($t) { return preg_replace("/\\d+(a|m|d|h|min)( \\d+(a|m|d|h|min))*\\b/u", "<prazo>", $t); };
+    // um prazo relativo no texto ("vence em 5d" e "vence em 4d 23h", "em 12h 58min" e "em 13h"): calculado com segundos de
+    // diferença, cruza o arredondamento; e, no mesmo texto, a data pode ter virado o minuto ("13:16" e "13:17"), por isso os
+    // outros números também contam como iguais
+    $prazo = function ($t) { return preg_replace("/\\d+/", "#", preg_replace("/\\d+(a|m|d|h|min)( \\d+(a|m|d|h|min))*\\b/u", "<prazo>", $t)); };
     if (is_string($x) && is_string($y) && $prazo($x) === $prazo($y)) {
         $leves[] = [$caminho, "prazo no texto", $x, $y];
         return;
