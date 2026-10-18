@@ -91,7 +91,7 @@ function topo($titulo, $ativo, $publica = false)
         echo "    <span class=\"menu-conta\" data-menu-conta></span>\n";
     }
     // o idioma: grava o cookie lingua (um ano) e abre a página de novo
-    echo "    <label class=\"menu-lingua\"><span class=\"visualmente-oculto\">" . t("Idioma") . "</span><select aria-label=\"" . htmlspecialchars(t("Idioma"), ENT_QUOTES, "UTF-8") . "\" onchange=\"document.cookie = 'lingua=' + this.value + '; path=/; max-age=31536000; SameSite=Lax'; window.location.reload()\">";
+    echo "    <label class=\"menu-lingua\"><span class=\"visualmente-oculto\">" . t("Idioma") . "</span><select aria-label=\"" . htmlspecialchars(t("Idioma"), ENT_QUOTES, "UTF-8") . "\" onchange=\"document.cookie = 'lingua=' + this.value + '; path=/; max-age=31536000; SameSite=Lax'; document.cookie = 'lingua_auto=; path=/; max-age=0; SameSite=Lax'; window.location.reload()\">";
     foreach (LINGUAS as $codigo => $l) {
         echo "<option value=\"" . $codigo . "\" title=\"" . htmlspecialchars($l["nome"], ENT_QUOTES, "UTF-8") . "\"" . ($codigo === lingua_atual() ? " selected" : "") . ">" . htmlspecialchars($l["curto"], ENT_QUOTES, "UTF-8") . "</option>";
     }

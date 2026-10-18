@@ -28,8 +28,14 @@ function usarTextos(d) {
     } catch (e) {
       // sem Intl: o fuso fica o da coleção
     }
-    if (d.padrao && d.padrao !== LINGUA && !/(^|;\s*)lingua=/.test(document.cookie)) {
+    // sem idioma escolhido no menu, vale o padrão (o de Minha conta, senão o da coleção, senão o da instalação): o cookie
+    // lingua é gravado aqui sozinho, marcado como automático (lingua_auto), e acompanha o padrão quando ele muda; só a
+    // escolha no seletor do menu apaga a marca e prende o idioma
+    var cookieLingua = (document.cookie.match(/(?:^|;\s*)lingua=([^;]*)/) || [])[1] || "";
+    var cookieAuto = (document.cookie.match(/(?:^|;\s*)lingua_auto=([^;]*)/) || [])[1] || "";
+    if (d.padrao && d.padrao !== LINGUA && (cookieLingua === "" || cookieLingua === cookieAuto)) {
       document.cookie = "lingua=" + d.padrao + "; path=/; max-age=31536000; SameSite=Lax";
+      document.cookie = "lingua_auto=" + d.padrao + "; path=/; max-age=31536000; SameSite=Lax";
       window.location.reload();
     }
   }

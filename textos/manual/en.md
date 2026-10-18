@@ -1,4 +1,4 @@
-<!-- origem: 7691ac4f47f37aa016e0f6812c2c46e9302d041c -->
+<!-- origem: c3adf3cc35a169ddcca78693a93f9118970a9bf2 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1024,7 +1024,7 @@ comes in here by its name.
 
 The screens speak six languages: **Portuguese** (the original), **English**, **Chinese** (simplified), **Hindi**, **Spanish**
 and **French**. Each person chooses theirs in the selector at the end of the menu (PT, EN, 中文, हिं, ES, FR); the choice stays
-in their browser (the `lingua` cookie, for a year) and doesn't change anyone else's. Whoever hasn't chosen yet sees the
+in their browser (the `lingua` cookie, for a year) and doesn't change anyone else's. Whoever has never chosen follows the default, and follows it when it changes (the cookie written automatically is marked as automatic); only a choice in the selector pins the language. Whoever hasn't chosen yet sees the
 installation's **default language** (Settings › General); without a default, the browser's (if it is one of the six),
 otherwise Portuguese. Dates and numbers follow the language: 13/10/2026 and 1.234,56 in Portuguese, 10/13/2026 and 1,234.56
 in English, 2026-10-13 in Chinese.

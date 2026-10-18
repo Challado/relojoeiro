@@ -1,4 +1,4 @@
-<!-- origem: 7691ac4f47f37aa016e0f6812c2c46e9302d041c -->
+<!-- origem: c3adf3cc35a169ddcca78693a93f9118970a9bf2 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1016,7 +1016,7 @@ que usted registre entra aquí con su nombre.
 
 Las pantallas hablan seis idiomas: **portugués** (el original), **inglés**, **chino** (simplificado), **hindi**, **español** y
 **francés**. Cada persona elige el suyo en el selector al final del menú (PT, EN, 中文, हिं, ES, FR); la elección queda en su
-navegador (la cookie `lingua`, durante un año) y no cambia la de nadie más. Quien todavía no eligió ve el **idioma
+navegador (la cookie `lingua`, durante un año) y no cambia la de nadie más. Quien nunca eligió sigue el predeterminado, y lo acompaña cuando cambia (la cookie grabada sola se marca como automática); solo la elección en el selector fija el idioma. Quien todavía no eligió ve el **idioma
 predeterminado** de la instalación (Configuración › General); sin predeterminado, el del navegador (si es uno de los seis), si
 no portugués. Fechas y números siguen el idioma: 13/10/2026 y 1.234,56 en portugués, 10/13/2026 y 1,234.56 en inglés,
 2026-10-13 en chino.
