@@ -431,24 +431,24 @@ document.addEventListener("submit", function (ev) {
   Object.keys(manual.escolhas).forEach(function (dt) {
     dados.append("dias[" + dt + "]", manual.escolhas[dt]);
   });
+  var posicao = posicaoAtualDaPagina();
   var botoes = ev.target.querySelectorAll("button");
   botoes.forEach(function (b) { b.disabled = true; });
   enviar(dados).then(function (res) {
     botoes.forEach(function (b) { b.disabled = false; });
     if (!res.ok) {
-      // recusado: o quadro fica como está, com o que você escolheu, e o motivo em cima
       manualRecado(textoResposta(res), true);
-      return;
+      avisoFlutuanteGravacao(textoResposta(res), true);
+      return restaurarPosicaoDaGravacao(posicao);
     }
     manual = {de: "", ate: "", escolhas: {}};
-    if (window.mostrarRecado) {
-      window.mostrarRecado(textoResposta(res));
-    }
-    if (window.recarregarHoje) {
-      window.recarregarHoje();
-    }
+    return Promise.resolve(window.recarregarHoje ? window.recarregarHoje() : null)
+      .then(function () { return restaurarPosicaoDaGravacao(posicao); })
+      .then(function () { avisoFlutuanteGravacao(textoResposta(res), false); });
   }).catch(function (e) {
     botoes.forEach(function (b) { b.disabled = false; });
-    manualRecado(t("Não consegui gravar: {1}. Confira a conexão e tente de novo.", {1: e.message}), true);
+    var erro = t("Não consegui gravar: {1}. Confira a conexão e tente de novo.", {1: e.message});
+    manualRecado(erro, true);
+    avisoFlutuanteGravacao(erro, true);
   });
 });

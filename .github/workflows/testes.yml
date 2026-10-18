@@ -106,6 +106,8 @@ jobs:
         run: |
           npm install -g playwright@1
           playwright install --with-deps chromium
+      - name: Interface da Configuração (celular, tablet e PC)
+        run: node testes/configuracao-interface.cjs
       - name: Conferência do layout
         run: testes/paridade.sh --layout sqlite
       - name: Capturas das telas (para olhar quando falha)

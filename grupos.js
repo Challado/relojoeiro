@@ -57,11 +57,10 @@ function recarregarGrupos() {
 
 // como no antigo: gravou, a página volta com o recado; recusado, os erros no topo
 aoGravar = function (form, res) {
-  recadoGrupos = res.ok ? res.mensagem : "";
-  errosGrupos = res.ok ? [] : res.erros;
-  recarregarGrupos().then(function () {
-    window.scrollTo(0, 0);
-  });
+  if (!res.ok) { return salvarSemMover(form, res, function () {}); }
+  recadoGrupos = "";
+  errosGrupos = [];
+  return salvarSemMover(form, res, recarregarGrupos);
 };
 
 recarregarGrupos().catch(function (e) {

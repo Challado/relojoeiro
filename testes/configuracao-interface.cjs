@@ -4,7 +4,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const {chromium} = require('playwright');
+const {chromium} = require(process.env.PLAYWRIGHT || require('child_process').execSync('npm root -g').toString().trim() + '/playwright');
 const fonte = fs.readFileSync(process.env.CONFIG_SCRIPT || path.join(__dirname, '..', 'configuracao.js'), 'utf8');
 const salvas = {'pt-BR':'Configuração salva.',en:'Configuration saved.','zh-CN':'配置已保存。',hi:'सेटिंग सहेजी गई。',es:'Configuración guardada.',fr:'Configuration enregistrée.'};
 function dadosConfig() {

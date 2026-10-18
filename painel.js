@@ -719,6 +719,7 @@ document.addEventListener("keydown", function (ev) {
 // com os dados novos, sem recarregar. Excluir um relógio recarrega a página inteira. O relógio novo com foto: a foto vai
 // depois do cadastro, e o painel abre o relógio criado.
 aoGravar = function (form, res, dados) {
+  var posicao = posicaoDaGravacao(form);
   var painel = document.getElementById("detalhe");
   var atual = painel ? painel.querySelector(".detalhe") : null;
   var aberto = atual !== null ? parseInt(atual.getAttribute("data-id"), 10) : 0;
@@ -726,38 +727,36 @@ aoGravar = function (form, res, dados) {
   var recurso = dados.get("recurso");
   var acao = dados.get("acao");
   var seguir = Promise.resolve(res);
+  // A foto do novo relógio é gravada depois do cadastro, como antes.
   if (recurso === "relogio" && acao === "salvar" && res.ok && !dados.get("id") && dados.get("foto_base64")) {
     seguir = enviar({recurso: "relogio", acao: "foto", id: res.id, foto_base64: dados.get("foto_base64")}).then(function (res2) {
       return {ok: res.ok && res2.ok, mensagem: res.mensagem + (res2.ok ? " " + res2.mensagem : ""), erros: res2.erros, id: res.id};
     });
   }
-  seguir.then(function (resp) {
+  return seguir.then(function (resp) {
     var texto = textoResposta(resp);
-    if (recurso === "relogio" && acao === "excluir" && resp.ok) {
-      window.location = document.querySelector(".painel") ? "index.php" : "ficha.php";
-    } else {
-      if (recurso === "relogio" && resp.id) {
-        rid = resp.id;
-      }
-      // o relógio a mostrar no painel depois: o criado, o do aviso apertado, ou o que já estava aberto
-      var abrir = aberto;
-      if (recurso === "relogio" && acao === "salvar" && resp.ok) {
-        abrir = resp.id;
-      } else if (dados.get("r")) {
-        abrir = parseInt(dados.get("r"), 10);
-      }
-      if (rid > 0 && rid === abrir) {
-        recados[rid] = texto;
-      } else if (texto.trim() !== "" && window.mostrarRecado) {
-        window.mostrarRecado(texto);
-      }
-      if (window.recarregarHoje) {
-        window.recarregarHoje();
-      }
-      // o cadastro de um relógio novo recusado fica aberto como está, com o recado no topo
-      if (painel && abrir > 0) {
-        abrirNoPainel(abrir);
-      }
+    if (!resp.ok) {
+      form.querySelectorAll("button").forEach(function (b) { b.disabled = false; });
+      return restaurarPosicaoDaGravacao(posicao).then(function () { avisoFlutuanteGravacao(texto, true); });
     }
+    if (recurso === "relogio" && acao === "excluir") {
+      window.location = document.querySelector(".painel") ? "index.php" : "ficha.php";
+      return;
+    }
+    if (recurso === "relogio" && resp.id) { rid = resp.id; }
+    var abrir = aberto;
+    if (recurso === "relogio" && acao === "salvar") {
+      abrir = resp.id;
+    } else if (dados.get("r")) {
+      abrir = parseInt(dados.get("r"), 10);
+    }
+    // Atualiza a página e, depois dela, o painel. Não substitui o aviso por uma mensagem no topo.
+    if (rid > 0 && rid === abrir) { recados[rid] = texto; }
+    var atualizar = window.recarregarHoje ? window.recarregarHoje() : Promise.resolve();
+    return Promise.resolve(atualizar).then(function () {
+      return painel && abrir > 0 ? abrirNoPainel(abrir) : null;
+    }).then(function () {
+      return restaurarPosicaoDaGravacao(posicao);
+    }).then(function () { avisoFlutuanteGravacao(texto, false); });
   });
 };

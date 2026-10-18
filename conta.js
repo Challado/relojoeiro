@@ -4,25 +4,17 @@ var recadoConta = "";
 var tokenNovo = null;
 
 aoGravar = function (form, res, dados) {
-  recadoConta = textoResposta(res);
+  if (!res.ok) { return salvarSemMover(form, res, function () {}); }
+  recadoConta = "";
   tokenNovo = res.token ? {nome: dados.get("nome"), token: res.token} : null;
-  if (res.ok && dados.get("recurso") === "conta" && dados.get("acao") === "excluir") {
+  if (dados.get("recurso") === "conta" && dados.get("acao") === "excluir") {
     window.location = "cadastro.php";
     return;
   }
-  // a coleção nova (ou a que acabou de entrar): ela passa a ser a do menu
-  if (res.ok && dados.get("recurso") === "colecoes" && dados.get("acao") === "criar" && res.id) {
+  if (dados.get("recurso") === "colecoes" && dados.get("acao") === "criar" && res.id) {
     document.cookie = "colecao=" + res.id + "; path=/; max-age=31536000; SameSite=Lax";
   }
-  carregarConta().then(function () {
-    // o teste do e-mail: a página para no resultado dele; o resto, no alto (o recado)
-    var alvo = dados.get("acao") === "email_testar" ? document.getElementById("servidor") : null;
-    if (alvo) {
-      alvo.scrollIntoView();
-    } else {
-      window.scrollTo(0, 0);
-    }
-  });
+  return salvarSemMover(form, res, carregarConta);
 };
 
 function formAcao(recurso, acao, campos, botao, classe) {

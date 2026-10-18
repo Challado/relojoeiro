@@ -3,10 +3,9 @@
 var recadoUsuarios = "";
 
 aoGravar = function (form, res) {
-  recadoUsuarios = textoResposta(res);
-  recarregarUsuarios().then(function () {
-    window.scrollTo(0, 0);
-  });
+  if (!res.ok) { return salvarSemMover(form, res, function () {}); }
+  recadoUsuarios = "";
+  return salvarSemMover(form, res, recarregarUsuarios);
 };
 
 function acaoUsuario(u, acao, campos, botao, classe) {

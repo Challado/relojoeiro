@@ -281,10 +281,11 @@ function recarregarConfig(aplicadas, manterPosicao) {
 // Salvar a configuração não remonta o formulário: mantém rolagem, foco, quadros abertos e edições ainda em andamento.
 // Ao trocar o idioma, a página inteira (inclusive o menu PHP) é traduzida, voltando à mesma âncora depois de pronta.
 aoGravar = function (form, res, dados) {
+  var posicaoSalvar = typeof posicaoDaGravacao === "function" ? posicaoDaGravacao(form) : null;
   form.querySelectorAll("button").forEach(function (b) { b.disabled = false; });
   if (!res.ok) {
     avisoConfig(textoResposta(res), true);
-    return;
+    return posicaoSalvar ? restaurarPosicaoDaGravacao(posicaoSalvar) : null;
   }
   if (dados.get("recurso") === "config" && dados.get("acao") === "salvar") {
     idiomaConfig = dados.get("idioma") || idiomaConfig;
@@ -294,16 +295,21 @@ aoGravar = function (form, res, dados) {
       document.cookie = "lingua_auto=; path=/; max-age=0; SameSite=Lax";
     }
     if (dados.get("lingua") && dados.get("lingua") !== LINGUA) {
+      if (posicaoSalvar) {
+        return restaurarPosicaoDaGravacao(posicaoSalvar).then(function () {
+          recarregarIdiomaConfig(dados.get("lingua"), textoResposta(res));
+        });
+      }
       recarregarIdiomaConfig(dados.get("lingua"), textoResposta(res));
       return;
     }
     avisoConfig(textoResposta(res), false);
-    return;
+    return posicaoSalvar ? restaurarPosicaoDaGravacao(posicaoSalvar) : null;
   }
   // Cópias e migrações precisam atualizar suas listas, mas não mandar a pessoa para o começo da página.
   var posicao = posicaoConfig();
   return recarregarConfig(dados.get("recurso") === "migracoes" ? (res.aplicadas || [textoResposta(res)]) : [], true)
-    .then(function () { return restaurarPosicaoConfig(posicao); })
+    .then(function () { return posicaoSalvar ? restaurarPosicaoDaGravacao(posicaoSalvar) : restaurarPosicaoConfig(posicao); })
     .then(function () { avisoConfig(textoResposta(res), false); })
     .catch(function (e) {
       avisoConfig(textoResposta(res) + " " + t("Não consegui ler a configuração: {1}", {1: e.message}), true);

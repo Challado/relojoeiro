@@ -3,14 +3,9 @@
 var recadoDestinos = "";
 
 aoGravar = function (form, res, dados) {
-  recadoDestinos = textoResposta(res);
-  var id = res.id || dados.get("id");
-  carregarDestinos().then(function () {
-    var alvo = document.getElementById(dados.get("acao") === "excluir" ? "destinos" : "destino-" + id);
-    if (alvo) {
-      alvo.scrollIntoView();
-    }
-  });
+  if (!res.ok) { return salvarSemMover(form, res, function () {}); }
+  recadoDestinos = "";
+  return salvarSemMover(form, res, carregarDestinos);
 };
 
 function camposWebhook(w, id) {
