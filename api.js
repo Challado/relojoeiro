@@ -277,30 +277,8 @@ function textoResposta(res) {
   return (res.mensagem || "") + (res.erros && res.erros.length > 0 ? " " + res.erros.join(" ") : "");
 }
 
-// A janelinha flutuante dos recados ("Configuração salva."): aparece embaixo da tela, no meio, por cima de tudo, sem
-// mexer na rolagem, e some sozinha em alguns segundos (mais tempo para textos longos; um toque nela fecha na hora).
-// erro = true: em âmbar (os erros de uma gravação recusada). Só uma por vez: a nova tira a anterior.
-function avisoFlutuante(texto, erro) {
-  if (!texto) {
-    return;
-  }
-  var antigo = document.getElementById("aviso-flutuante");
-  if (antigo) {
-    antigo.remove();
-  }
-  var caixa = document.createElement("div");
-  caixa.id = "aviso-flutuante";
-  caixa.className = "aviso-flutuante" + (erro ? " erro" : "");
-  caixa.setAttribute("role", erro ? "alert" : "status");
-  caixa.textContent = texto;
-  caixa.addEventListener("click", function () { caixa.remove(); });
-  document.body.appendChild(caixa);
-  var tempo = Math.min(15000, 4000 + texto.length * 40);
-  setTimeout(function () { caixa.classList.add("sumindo"); }, tempo);
-  setTimeout(function () { if (caixa.parentNode) { caixa.remove(); } }, tempo + 600);
-}
-
-// O recado que atravessa um reload: fica no sessionStorage e a página seguinte o mostra na janelinha ao abrir
+// O recado que atravessa um reload: fica no sessionStorage e a página seguinte o mostra na janelinha flutuante
+// (avisoFlutuanteGravacao, abaixo) ao abrir
 function avisoAoAbrir(texto, erro) {
   try {
     sessionStorage.setItem("aviso_flutuante", JSON.stringify({texto: texto, erro: erro === true}));
@@ -320,7 +298,7 @@ function avisoAoAbrir(texto, erro) {
   }
   if (guardado) {
     var a = JSON.parse(guardado);
-    var mostrar = function () { avisoFlutuante(a.texto, a.erro); };
+    var mostrar = function () { avisoFlutuanteGravacao(a.texto, a.erro); };
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", mostrar);
     } else {
@@ -344,15 +322,14 @@ function seguirIdiomaPadrao(padrao) {
   return false;
 }
 
-// Gravou outro idioma (o padrão da coleção, na Configuração, ou o da conta, em Minha conta): a escolha do menu deixa de
-// valer e a página abre de novo no idioma gravado (os cookies lingua e lingua_auto com ele: automático, segue o padrão
-// dali em diante) ou, sem idioma ("O da coleção"), sem cookie nenhum (o menu da página seguinte põe o que vale agora),
-// com o recado na janelinha
+// Gravou outro idioma na conta (Minha conta): vale como escolher no seletor do menu (o cookie lingua com ele, sem a marca
+// lingua_auto) e a página abre de novo nele; sem idioma ("O da coleção"), sem cookie nenhum (o menu da página seguinte
+// põe o que vale agora, seguirIdiomaPadrao). O recado vai na janelinha da página seguinte. A Configuração faz o mesmo por
+// conta própria (configuracao.js, recarregarIdiomaConfig), voltando ao mesmo campo
 function reabrirNoIdioma(recado, idioma) {
   avisoAoAbrir(recado, false);
-  var valor = idioma ? idioma + "; path=/; max-age=31536000; SameSite=Lax" : "; path=/; max-age=0; SameSite=Lax";
-  document.cookie = "lingua=" + valor;
-  document.cookie = "lingua_auto=" + valor;
+  document.cookie = "lingua=" + (idioma ? idioma + "; path=/; max-age=31536000; SameSite=Lax" : "; path=/; max-age=0; SameSite=Lax");
+  document.cookie = "lingua_auto=; path=/; max-age=0; SameSite=Lax";
   window.location.reload();
 }
 
@@ -398,11 +375,92 @@ document.addEventListener("input", function (ev) {
 // Formulários que gravam pela API (data-recurso): o envio vai para o api.php, e depois a página chama o que ela
 // registrou (aoGravar), com a resposta. O confirm() de alguns formulários já cancela o envio.
 // Campos dentro de um bloco escondido ([data-sub] escondido) não vão.
+
+// Guarda a posição antes do foco no botão (teclado, mouse, toque em celular/tablet).
+var posicoesAntesDaGravacao = new WeakMap();
+function posicaoAtualDaPagina() {
+  var y = Math.min(window.innerHeight - 25, Math.max(90, Math.round(window.innerHeight * .32)));
+  var el = document.elementFromPoint(Math.round(window.innerWidth / 2), y);
+  var main = document.querySelector("main"), ancora = null;
+  while (el && el !== main && el !== document.body) {
+    if (el.id && main && main.contains(el)) {
+      ancora = {id: el.id, topo: el.getBoundingClientRect().top};
+      break;
+    }
+    el = el.parentElement;
+  }
+  return {x: window.scrollX, y: window.scrollY, ancora: ancora};
+}
+document.addEventListener("pointerdown", function (ev) {
+  var b = ev.target.closest && ev.target.closest("button, input[type=submit]");
+  if (b && b.form && b.form.hasAttribute("data-recurso")) {
+    posicoesAntesDaGravacao.set(b.form, {quando: Date.now(), posicao: posicaoAtualDaPagina()});
+  }
+}, true);
+function posicaoDaGravacao(form) {
+  return (form && form.__posicaoGravacao) || posicaoAtualDaPagina();
+}
+function restaurarPosicaoDaGravacao(p) {
+  if (!p) { return Promise.resolve(); }
+  return new Promise(function (resolve) {
+    requestAnimationFrame(function () {
+      var e = p.ancora && document.getElementById(p.ancora.id);
+      var y = e ? window.scrollY + e.getBoundingClientRect().top - p.ancora.topo : p.y;
+      window.scrollTo({left: p.x || 0, top: Math.max(0, y), behavior: "instant"});
+      requestAnimationFrame(resolve);
+    });
+  });
+}
+function avisoFlutuanteGravacao(mensagem, erro) {
+  var antigo = document.getElementById("gravacao-flutuante");
+  if (antigo) { antigo.remove(); }
+  if (!mensagem) { return; }
+  var caixa = document.createElement("div");
+  caixa.id = "gravacao-flutuante";
+  caixa.setAttribute("role", erro ? "alert" : "status");
+  caixa.setAttribute("aria-live", erro ? "assertive" : "polite");
+  caixa.style.cssText = "position:fixed;z-index:3000;left:1rem;right:1rem;bottom:calc(4.75rem + env(safe-area-inset-bottom, 0px));"
+    + "margin:0 auto;max-width:32rem;max-height:40vh;overflow:auto;overflow-wrap:anywhere;"
+    + "padding:.85rem 1rem;display:flex;align-items:center;gap:1rem;border-radius:12px;"
+    + "background:var(--papel,white);color:var(--tinta,#202b36);box-shadow:0 8px 28px #0003;"
+    + "border:2px solid " + (erro ? "#9b2c22" : "var(--safira,#254a6d)") + ";";
+  var msg = document.createElement("span");
+  msg.style.flex = "1";
+  msg.textContent = mensagem;
+  var fechar = document.createElement("button");
+  fechar.type = "button";
+  fechar.className = "leve";
+  fechar.textContent = "×";
+  fechar.setAttribute("aria-label", t("Fechar"));
+  fechar.style.cssText = "min-width:44px;min-height:44px;flex-shrink:0";
+  var timer = null;
+  var remover = function () { clearTimeout(timer); caixa.remove(); };
+  fechar.addEventListener("click", remover);
+  caixa.append(msg, fechar);
+  document.body.appendChild(caixa);
+  if (!erro) { timer = setTimeout(remover, 6000); }
+  caixa.addEventListener("pointerenter", function () { clearTimeout(timer); });
+  caixa.addEventListener("pointerleave", function () {
+    if (!erro) { clearTimeout(timer); timer = setTimeout(remover, 6000); }
+  });
+}
+function salvarSemMover(form, res, atualizar) {
+  var posicao = posicaoDaGravacao(form);
+  return Promise.resolve().then(atualizar).then(function () {
+    if (form && form.isConnected && !res.ok) {
+      form.querySelectorAll("button").forEach(function (b) { b.disabled = false; });
+    }
+    return restaurarPosicaoDaGravacao(posicao);
+  }).then(function () { avisoFlutuanteGravacao(textoResposta(res), !res.ok); });
+}
+
 var aoGravar = function (form, res) { window.location.reload(); };
 document.addEventListener("submit", function (ev) {
   var form = ev.target;
   if (!ev.defaultPrevented && form.hasAttribute("data-recurso")) {
     ev.preventDefault();
+    var ponto = posicoesAntesDaGravacao.get(form);
+    form.__posicaoGravacao = ponto && Date.now() - ponto.quando < 10000 ? ponto.posicao : posicaoAtualDaPagina();
     var escondidos = [];
     form.querySelectorAll("[data-sub][hidden] input, [data-sub][hidden] select, [data-sub][hidden] textarea").forEach(function (c) {
       if (!c.disabled) {
@@ -442,7 +500,7 @@ document.addEventListener("submit", function (ev) {
           }
           dados.set("confirmar", "1");
           return enviar(dados).then(function (res2) {
-            aoGravar(form, res2, dados);
+            return aoGravar(form, res2, dados);
           });
         }
         // a exclusão em dois passos: a API diz o que sai junto; só com a confirmação ela apaga
@@ -455,10 +513,10 @@ document.addEventListener("submit", function (ev) {
           }
           dados.set("confirmar", "1");
           return enviar(dados).then(function (res2) {
-            aoGravar(form, res2, dados);
+            return aoGravar(form, res2, dados);
           });
         }
-        aoGravar(form, res, dados);
+        return aoGravar(form, res, dados);
       })
       .catch(function (e) {
         botoes.forEach(function (b) {

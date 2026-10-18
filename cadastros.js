@@ -187,27 +187,11 @@ document.addEventListener("submit", function (ev) {
 
 // gravou: a tabela volta com o recado, e a edição acaba; recusado: o que foi digitado fica, e os erros aparecem no topo
 aoGravar = function (form, res) {
-  if (res.ok) {
-    recado = el("p", {"class": "acao"}, h(res.mensagem));
-    editar = 0;
-    history.replaceState(null, "", "cadastros.php?aba=" + aba);
-    recarregarCadastros().then(function () {
-      window.scrollTo(0, 0);
-    });
-  } else {
-    form.querySelectorAll("button").forEach(function (b) {
-      b.disabled = false;
-    });
-    form.querySelectorAll("[disabled]").forEach(function (c) {
-      c.disabled = false;
-    });
-    var velho = document.querySelector("#cadastros .erros-form.da-gravacao");
-    if (velho) {
-      velho.remove();
-    }
-    document.querySelector("#cadastros nav.abas").insertAdjacentHTML("afterend", el("div", {"class": "erros-form da-gravacao"}, res.erros.map(function (e) { return el("p", {}, h(e)); }).join("")));
-    window.scrollTo(0, 0);
-  }
+  if (!res.ok) { return salvarSemMover(form, res, function () {}); }
+  recado = "";
+  editar = 0;
+  history.replaceState(null, "", "cadastros.php?aba=" + aba);
+  return salvarSemMover(form, res, recarregarCadastros);
 };
 
 recarregarCadastros().then(function () {

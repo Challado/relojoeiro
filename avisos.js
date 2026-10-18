@@ -170,30 +170,11 @@ document.addEventListener("change", function (ev) {
 
 // gravou: a parte volta com o recado, e a edição acaba; recusado: o que foi digitado fica, e os erros aparecem no topo
 aoGravar = function (form, res, dados) {
+  if (!res.ok) { return salvarSemMover(form, res, function () {}); }
+  recado = "";
   var parte = dados.get("recurso") === "avisos" ? "avisos-relogios" : "lembretes";
-  if (res.ok) {
-    recado = el("p", {"class": "acao"}, h(res.mensagem));
-    history.replaceState(null, "", "avisos.php#" + parte);
-    recarregarAvisos().then(function () {
-      var alvo = document.getElementById(parte);
-      if (alvo) {
-        alvo.scrollIntoView();
-      }
-    });
-  } else {
-    form.querySelectorAll("button").forEach(function (b) {
-      b.disabled = false;
-    });
-    form.querySelectorAll("[disabled]").forEach(function (c) {
-      c.disabled = false;
-    });
-    var velho = document.querySelector("#avisos .erros-form.da-gravacao");
-    if (velho) {
-      velho.remove();
-    }
-    document.querySelector("#avisos nav.abas").insertAdjacentHTML("afterend", el("div", {"class": "erros-form da-gravacao"}, (res.erros || []).map(function (e) { return el("p", {}, h(e)); }).join("")));
-    window.scrollTo(0, 0);
-  }
+  history.replaceState(null, "", "avisos.php#" + parte);
+  return salvarSemMover(form, res, recarregarAvisos);
 };
 
 recarregarAvisos().then(function () {

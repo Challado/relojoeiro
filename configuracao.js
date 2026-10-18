@@ -1,6 +1,142 @@
 // Página Configuração: os dados da API (recurso=config), no HTML da Configuração do sistema antigo. Com o banco
 // desatualizado (recurso=migracoes com pendentes), só o aviso e o botão de aplicar.
+// O idioma que veio do banco (não o idioma da interface): só uma escolha deliberada aqui muda este navegador.
 var idiomaConfig = "";
+var escolheuIdiomaConfig = false;
+var chaveRetornoConfig = "relojoeiro:config:" + window.location.pathname;
+var retornoConfig = null;
+try {
+  retornoConfig = JSON.parse(sessionStorage.getItem(chaveRetornoConfig) || "null");
+} catch (e) {
+  // armazenamento bloqueado: a mesma entrada do histórico também guarda o retorno
+}
+retornoConfig = retornoConfig || (history.state && history.state.retornoConfig);
+if (!retornoConfig || retornoConfig.pagina !== window.location.pathname || Date.now() - retornoConfig.quando > 300000) {
+  retornoConfig = null;
+}
+// No recarregamento por troca de idioma, o navegador não deve restaurar outra posição
+// depois de a Configuração colocar o campo antigo no mesmo lugar.
+if (retornoConfig && "scrollRestoration" in history) {
+  history.scrollRestoration = "manual";
+}
+
+// A âncora é um campo ou um quadro, não só um número de pixels: a tradução pode mudar a altura dos textos.
+function posicaoConfig() {
+  var raiz = document.getElementById("configuracao");
+  var p = {x: window.scrollX, y: window.scrollY, abertos: []};
+  var distancia = Infinity;
+  raiz.querySelectorAll(".par-campo, section.cartao-config").forEach(function (e) {
+    var r = e.getBoundingClientRect();
+    if (r.height > 0 && r.bottom > 0 && r.top < window.innerHeight && Math.abs(r.top) < distancia) {
+      var campo = e.classList.contains("par-campo") ? e.querySelector("[name]") : null;
+      p.campo = campo ? campo.name : null;
+      p.quadro = campo ? null : Array.from(raiz.querySelectorAll("section.cartao-config")).indexOf(e);
+      p.topo = r.top;
+      distancia = Math.abs(r.top);
+    }
+  });
+  raiz.querySelectorAll("details").forEach(function (e, i) { if (e.open) { p.abertos.push(i); } });
+  return p;
+}
+
+function restaurarPosicaoConfig(p) {
+  if (!p) { return Promise.resolve(); }
+  var raiz = document.getElementById("configuracao");
+  raiz.querySelectorAll("details").forEach(function (e, i) { e.open = (p.abertos || []).indexOf(i) >= 0; });
+  return new Promise(function (resolve) {
+    requestAnimationFrame(function () {
+      var alvo = p.campo ? Array.from(raiz.querySelectorAll(".par-campo")).find(function (e) {
+        var c = e.querySelector("[name]");
+        return c && c.name === p.campo;
+      }) : raiz.querySelectorAll("section.cartao-config")[p.quadro];
+      var y = alvo && Number.isFinite(p.topo) ? window.scrollY + alvo.getBoundingClientRect().top - p.topo : p.y;
+      window.scrollTo({left: p.x || 0, top: Math.max(0, y || 0), behavior: "instant"});
+      resolve();
+    });
+  });
+}
+
+// Aviso sobre a página: não entra no fluxo, não toma o foco e não exige fechar para continuar usando o formulário.
+function avisoConfig(mensagem, erro) {
+  var antigo = document.getElementById("aviso-config");
+  if (antigo) { antigo.remover(); }
+  var caixa = document.createElement("div");
+  caixa.id = "aviso-config";
+  caixa.className = "cartao-config";
+  caixa.style.cssText = "position:fixed;z-index:2000;left:1rem;right:1rem;bottom:calc(5rem + env(safe-area-inset-bottom, 0px));"
+    + "max-width:32rem;max-height:40vh;overflow:auto;overflow-wrap:anywhere;margin:0 auto;padding:1rem;"
+    + "display:flex;align-items:center;gap:1rem;background:var(--papel, white);color:var(--tinta, #202b36);"
+    + "border:2px solid " + (erro ? "#9b2c22" : "var(--safira, #254a6d)") + ";box-shadow:0 4px 24px #0003;";
+  var texto = document.createElement("span");
+  texto.style.flex = "1";
+  texto.setAttribute("role", erro ? "alert" : "status");
+  texto.setAttribute("aria-live", erro ? "assertive" : "polite");
+  texto.setAttribute("aria-atomic", "true");
+  var fechar = document.createElement("button");
+  fechar.type = "button";
+  fechar.style.cssText = "min-width:44px;min-height:44px;flex-shrink:0";
+  fechar.className = "leve";
+  fechar.textContent = "×";
+  fechar.setAttribute("aria-label", t("Fechar"));
+  var timer;
+  caixa.remover = function () { clearTimeout(timer); caixa.remove(); };
+  fechar.addEventListener("click", caixa.remover);
+  caixa.append(texto, fechar);
+  document.body.appendChild(caixa);
+  texto.textContent = mensagem;
+  var agendar = function () { clearTimeout(timer); if (!erro) { timer = setTimeout(caixa.remover, 6000); } };
+  caixa.addEventListener("mouseenter", function () { clearTimeout(timer); });
+  caixa.addEventListener("mouseleave", agendar);
+  caixa.addEventListener("focusin", function () { clearTimeout(timer); });
+  caixa.addEventListener("focusout", agendar);
+  agendar();
+}
+
+// Posição anterior ao foco do botão Salvar: importante quando a barra está presa ao
+// rodapé, especialmente no celular com o teclado virtual aberto.
+var posicaoAntesDoIdioma = null;
+document.addEventListener("pointerdown", function (ev) {
+  var botao = ev.target.closest && ev.target.closest("#form-config button[type=submit], #form-config button:not([type])");
+  if (botao) {
+    posicaoAntesDoIdioma = posicaoConfig();
+  }
+}, true);
+
+// O envio já leva o idioma escolhido: o servidor devolve inclusive a confirmação traduzida. Só após o sucesso se muda
+// o cookie, como no seletor do menu. Uma recusa não troca o idioma nem perde os campos digitados.
+document.addEventListener("change", function (ev) {
+  if (ev.target.matches("#form-config select[name=idioma]")) { escolheuIdiomaConfig = true; }
+});
+document.addEventListener("submit", function (ev) {
+  var form = ev.target;
+  if (ev.defaultPrevented || form.id !== "form-config") { return; }
+  if (!posicaoAntesDoIdioma) { posicaoAntesDoIdioma = posicaoConfig(); }
+  var c = form.querySelector("select[name=idioma]");
+  var idioma = form.querySelector("input[data-idioma-config]");
+  if (idioma) { idioma.remove(); }
+  if (c && (escolheuIdiomaConfig || c.value !== idiomaConfig)) {
+    idioma = document.createElement("input");
+    idioma.type = "hidden";
+    idioma.name = "lingua";
+    idioma.value = c.value;
+    idioma.setAttribute("data-idioma-config", "");
+    form.appendChild(idioma);
+  }
+}, true);
+
+function recarregarIdiomaConfig(lingua, mensagem, posicaoAnterior) {
+  var estado = {pagina: window.location.pathname, quando: Date.now(), posicao: posicaoAnterior || posicaoConfig(), mensagem: mensagem};
+  try { sessionStorage.setItem(chaveRetornoConfig, JSON.stringify(estado)); } catch (e) { /* usa o histórico */ }
+  // Um lingua= antigo na URL tem prioridade sobre o cookie. Retira só esse parâmetro, preservando o resto e a âncora.
+  var url = new URL(window.location.href);
+  url.searchParams.delete("lingua");
+  history.replaceState(Object.assign({}, history.state, {retornoConfig: estado}), "", url.href);
+  document.cookie = "lingua=" + encodeURIComponent(lingua) + "; path=/; max-age=31536000; SameSite=Lax";
+  document.cookie = "lingua_auto=; path=/; max-age=0; SameSite=Lax";
+  // Preservar o lugar até a nova página terminar de carregar e montar os quadros.
+  if ("scrollRestoration" in history) { history.scrollRestoration = "manual"; }
+  window.location.reload();
+}
 
 // Um quadro da Configuração: o título, o conteúdo e, se houver, o pé (a explicação e os botões, sempre embaixo: os quadros
 // da mesma linha têm a mesma altura)
@@ -10,7 +146,7 @@ function cartao(titulo, corpo, pe) {
 
 
 // lê e monta a página: primeiro confere as migrações (com alguma pendente, só o aviso)
-function recarregarConfig(aplicadas) {
+function recarregarConfig(aplicadas, manterPosicao) {
   return api({recurso: "migracoes"}).then(function (m) {
     if (m.pendentes.length > 0 || aplicadas.length > 0) {
       // o aviso do banco desatualizado, com o botão de aplicar (e o resultado, depois de aplicar)
@@ -36,9 +172,9 @@ function recarregarConfig(aplicadas) {
         var d = rs[0];
         var bk = rs[1];
         var c = d.config;
+        idiomaConfig = c.idioma || "pt-BR";
         var cfg = function (k) { return c[k] === undefined ? "" : c[k]; };
         var res = "";
-        idiomaConfig = cfg("idioma") || "pt-BR";
         // ---------- Geral ----------
         // a situação do cron vem da API (cron_estado): nunca rodou, parado (mais de 10 minutos) ou rodando
         var ce = d.cron_estado;
@@ -127,7 +263,7 @@ function recarregarConfig(aplicadas) {
           + parCampo(t("Último lote"), el("span", {}, al.ultimo_lote ? h(al.ultimo_lote.replace(/ em (\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2}).*/, " em $3/$2/$1 $4")) : t("nenhum ainda")))
           + (al.fora_desde ? parCampo(t("Serviços fora"), el("span", {"class": "acao"}, t("os dois sem responder desde {1} {2}; o sistema tenta de novo depois de 10 minutos", {1: dataBr(al.fora_desde), 2: horaBr(al.fora_desde)}))) : "")),
           el("p", {"class": "nota"}, t("Todo sorteio do sistema (o rodízio totalmente aleatório, o sorteio pela nota e o desempate de notas iguais na escala) usa estes números. Eles chegam num lote, e cada sorteio usa só o que precisa, sem viés.")));
-        // os avisos, os lembretes e para onde vão (os destinos e as agendas) moram na página Avisos: aqui, o resumo e o caminho
+        // os avisos, os lembretes e para onde vão (os destinos e das agendas) moram na página Avisos: aqui, o resumo e o caminho
         var alertas = cartao(t("Avisos, lembretes e mensagens"), el("div", {"class": "campos"},
           el("p", {}, t("{1} lembretes · {2} destinos · {3} agendas", {1: d.eventos.length, 2: d.destinos.length, 3: d.agendas.length}))),
           el("p", {"class": "nota"}, t("Os avisos dos relógios, os lembretes (os eventos personalizados) e para onde eles vão ficam juntos na página {1}.", {1: el("a", {"href": "avisos.php"}, t("Avisos"))})));
@@ -149,8 +285,8 @@ function recarregarConfig(aplicadas) {
             }).join("")), "largo")) : "")
           + (bk.pasta_ok ? el("form", {"data-recurso": "backup"}, el("input", {"type": "hidden", "name": "acao", "value": "fazer"}) + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, t("Fazer uma cópia agora")))) : ""));
         document.getElementById("configuracao").innerHTML = res;
-        if (window.location.hash) {
-          var alvo = document.querySelector(window.location.hash);
+        if (!manterPosicao && !retornoConfig && window.location.hash) {
+          var alvo = document.getElementById(window.location.hash.slice(1));
           if (alvo) {
             alvo.scrollIntoView();
           }
@@ -160,23 +296,44 @@ function recarregarConfig(aplicadas) {
   });
 }
 
-// depois de gravar: o recado na janelinha flutuante e a página remontada sem sair do lugar (a rolagem fica onde estava;
-// numa página comprida, no celular, voltar ao alto obrigaria a descer tudo de novo). Outro idioma padrão: a página abre
-// de novo nele (reabrirNoIdioma)
+// Salvar a configuração não remonta o formulário: mantém rolagem, foco, quadros abertos e edições ainda em andamento.
+// Ao trocar o idioma, a página inteira (inclusive o menu PHP) é traduzida, voltando à mesma âncora depois de pronta.
 aoGravar = function (form, res, dados) {
-  var recado = textoResposta(res);
-  var rolagem = window.scrollY;
-  if (dados.get("acao") === "salvar" && res.ok) {
-    history.replaceState(null, "", "configuracao.php");
-    if (dados.get("idioma") && dados.get("idioma") !== idiomaConfig) {
-      reabrirNoIdioma(recado, dados.get("idioma"));
+  var posicaoSalvar = typeof posicaoDaGravacao === "function" ? posicaoDaGravacao(form) : null;
+  var posicaoIdioma = posicaoAntesDoIdioma || posicaoConfig();
+  posicaoAntesDoIdioma = null;
+  form.querySelectorAll("button").forEach(function (b) { b.disabled = false; });
+  if (!res.ok) {
+    avisoConfig(textoResposta(res), true);
+    return posicaoSalvar ? restaurarPosicaoDaGravacao(posicaoSalvar) : null;
+  }
+  if (dados.get("recurso") === "config" && dados.get("acao") === "salvar") {
+    idiomaConfig = dados.get("idioma") || idiomaConfig;
+    escolheuIdiomaConfig = false;
+    if (dados.get("lingua")) {
+      document.cookie = "lingua=" + encodeURIComponent(dados.get("lingua")) + "; path=/; max-age=31536000; SameSite=Lax";
+      document.cookie = "lingua_auto=; path=/; max-age=0; SameSite=Lax";
+    }
+    if (dados.get("lingua") && dados.get("lingua") !== LINGUA) {
+      if (posicaoSalvar) {
+        return restaurarPosicaoDaGravacao(posicaoSalvar).then(function () {
+          recarregarIdiomaConfig(dados.get("lingua"), textoResposta(res), posicaoIdioma);
+        });
+      }
+      recarregarIdiomaConfig(dados.get("lingua"), textoResposta(res), posicaoIdioma);
       return;
     }
+    avisoConfig(textoResposta(res), false);
+    return posicaoSalvar ? restaurarPosicaoDaGravacao(posicaoSalvar) : null;
   }
-  avisoFlutuante(recado, !res.ok);
-  recarregarConfig(dados.get("recurso") === "migracoes" ? (res.aplicadas || [recado]) : []).then(function () {
-    window.scrollTo(0, rolagem);
-  });
+  // Cópias e migrações precisam atualizar suas listas, mas não mandar a pessoa para o começo da página.
+  var posicao = posicaoConfig();
+  return recarregarConfig(dados.get("recurso") === "migracoes" ? (res.aplicadas || [textoResposta(res)]) : [], true)
+    .then(function () { return posicaoSalvar ? restaurarPosicaoDaGravacao(posicaoSalvar) : restaurarPosicaoConfig(posicao); })
+    .then(function () { avisoConfig(textoResposta(res), false); })
+    .catch(function (e) {
+      avisoConfig(textoResposta(res) + " " + t("Não consegui ler a configuração: {1}", {1: e.message}), true);
+    });
 };
 // os lembretes saíram daqui: moram na página Avisos (o endereço antigo de um lembrete leva para lá)
 (function () {
@@ -186,6 +343,34 @@ aoGravar = function (form, res, dados) {
   }
 })();
 
-recarregarConfig([]).catch(function (e) {
+recarregarConfig([]).then(function () {
+  if (!retornoConfig || !document.getElementById("form-config")) { return; }
+  var retorno = retornoConfig;
+  retornoConfig = null;
+  try { sessionStorage.removeItem(chaveRetornoConfig); } catch (e) { /* armazenamento bloqueado */ }
+  var estado = Object.assign({}, history.state);
+  delete estado.retornoConfig;
+  history.replaceState(estado, "");
+  return restaurarPosicaoConfig(retorno.posicao).then(function () {
+    avisoConfig(retorno.mensagem, false);
+    // A tradução pode alterar a altura dos quadros; fontes e rolagem nativa do
+    // navegador podem terminar DEPOIS do primeiro requestAnimationFrame.
+    // Reafirma a posição por um curto intervalo, salvo se a pessoa começar a rolar.
+    var ativo = true;
+    var prazos = [];
+    var eventos = ["pointerdown", "wheel", "touchstart", "keydown"];
+    var parar = function () {
+      ativo = false;
+      prazos.forEach(clearTimeout);
+      eventos.forEach(function (nome) { removeEventListener(nome, parar); });
+      if ("scrollRestoration" in history) { history.scrollRestoration = "auto"; }
+    };
+    eventos.forEach(function (nome) { addEventListener(nome, parar, {passive: true}); });
+    var reaplicar = function () { if (ativo) { restaurarPosicaoConfig(retorno.posicao); } };
+    [90, 280, 650].forEach(function (ms) { prazos.push(setTimeout(reaplicar, ms)); });
+    if (document.fonts && document.fonts.ready) { document.fonts.ready.then(reaplicar); }
+    prazos.push(setTimeout(parar, 950));
+  });
+}).catch(function (e) {
   document.getElementById("configuracao").innerHTML = el("p", {"class": "acao"}, t("Não consegui ler a configuração: {1}", {1: h(e.message)}));
 });

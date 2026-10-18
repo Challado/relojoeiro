@@ -1,36 +1,26 @@
 // Minha conta: lê recurso=conta e monta os quadros. O pedido de acesso é pelo código que o dono passou (nenhuma lista de contas).
 // Com conta.php?convite=<token> (o link do convite, para quem já tem conta), aceita o convite ao abrir.
+var recadoConta = "";
 var tokenNovo = null;
 
-// depois de gravar: o recado na janelinha flutuante e a página remontada sem sair do lugar (a rolagem fica onde estava).
-// Outro idioma na conta: a página abre de novo nele (reabrirNoIdioma)
 aoGravar = function (form, res, dados) {
-  var recado = textoResposta(res);
-  var rolagem = window.scrollY;
+  if (!res.ok) { return salvarSemMover(form, res, function () {}); }
+  recadoConta = "";
   tokenNovo = res.token ? {nome: dados.get("nome"), token: res.token} : null;
-  if (res.ok && dados.get("recurso") === "conta" && dados.get("acao") === "excluir") {
+  if (dados.get("recurso") === "conta" && dados.get("acao") === "excluir") {
     window.location = "cadastro.php";
     return;
   }
-  // a coleção nova (ou a que acabou de entrar): ela passa a ser a do menu
-  if (res.ok && dados.get("recurso") === "colecoes" && dados.get("acao") === "criar" && res.id) {
+  if (dados.get("recurso") === "colecoes" && dados.get("acao") === "criar" && res.id) {
     document.cookie = "colecao=" + res.id + "; path=/; max-age=31536000; SameSite=Lax";
   }
-  if (res.ok && dados.get("recurso") === "conta" && dados.get("acao") === "alterar" && dados.has("idioma")
+  // outro idioma na conta: a página abre de novo nele (reabrirNoIdioma, api.js), com o recado
+  if (dados.get("recurso") === "conta" && dados.get("acao") === "alterar" && dados.has("idioma")
     && (dados.get("idioma") || "") !== ((CONTA && CONTA.usuario.idioma) || "")) {
-    reabrirNoIdioma(recado, dados.get("idioma") || "");
+    reabrirNoIdioma(textoResposta(res), dados.get("idioma") || "");
     return;
   }
-  avisoFlutuante(recado, !res.ok);
-  carregarConta().then(function () {
-    // o teste do e-mail: a página para no resultado dele; o resto fica onde estava
-    var alvo = dados.get("acao") === "email_testar" ? document.getElementById("servidor") : null;
-    if (alvo) {
-      alvo.scrollIntoView();
-    } else {
-      window.scrollTo(0, rolagem);
-    }
-  });
+  return salvarSemMover(form, res, carregarConta);
 };
 
 function formAcao(recurso, acao, campos, botao, classe) {
@@ -179,7 +169,7 @@ function instalarApp() {
   INSTALAR_APP = null;
   pedido.prompt();
   pedido.userChoice.then(function (r) {
-    avisoFlutuante(r && r.outcome === "accepted" ? t("Aplicativo instalado: abra pelo ícone na tela inicial.") : t("A instalação foi cancelada."));
+    recadoConta = r && r.outcome === "accepted" ? t("Aplicativo instalado: abra pelo ícone na tela inicial.") : t("A instalação foi cancelada.");
     carregarConta();
   });
 }
@@ -237,10 +227,10 @@ function ligarPush() {
     var j = insc.toJSON();
     return enviar({recurso: "conta", acao: "push_inscrever", endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, aparelho: navigator.userAgent.substr(0, 200)});
   }).then(function (res) {
-    avisoFlutuante(textoResposta(res), !res.ok);
+    recadoConta = textoResposta(res);
     return carregarConta();
   }).catch(function (e) {
-    avisoFlutuante(t("Não consegui ligar as notificações: {1}", {1: e.message}), true);
+    recadoConta = t("Não consegui ligar as notificações: {1}", {1: e.message});
     carregarConta();
   });
 }
@@ -307,7 +297,8 @@ var CONTA = null;
 function carregarConta() {
   return api({recurso: "conta"}).then(function (d) {
     CONTA = d;
-    var res = el("h1", {}, t("Minha conta"));
+    var res = el("h1", {}, t("Minha conta")) + (recadoConta !== "" ? el("p", {"class": "acao"}, h(recadoConta)) : "");
+    recadoConta = "";
     if (d.aprovacoes > 0) {
       res += el("p", {"class": "alerta-cron"}, t("{1} pedido(s) ou convite(s) esperam a sua resposta em {2}.", {1: d.aprovacoes, 2: el("a", {"href": "aprovacoes.php"}, t("Aprovações"))}));
     }
@@ -332,7 +323,7 @@ aoGravar = function (form, res, dados) {
 // o link do convite para quem já tem conta: aceita ao abrir
 var conviteUrl = new URLSearchParams(window.location.search).get("convite");
 (conviteUrl ? enviar({recurso: "convites", acao: "aceitar", token: conviteUrl}).then(function (res) {
-  avisoFlutuante(textoResposta(res), !res.ok);
+  recadoConta = textoResposta(res);
   if (res.ok && res.colecao_id) {
     document.cookie = "colecao=" + res.colecao_id + "; path=/; max-age=31536000; SameSite=Lax";
   }

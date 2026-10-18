@@ -79,16 +79,6 @@ h2 { font-size: 1.1rem; margin: 0 0 .75rem; }
 }
 
 .acao { color: var(--ambar); font-weight: 600; }
-/* a janelinha flutuante dos recados (avisoFlutuante, api.js): embaixo, no meio, por cima de tudo; some sozinha */
-.aviso-flutuante {
-  position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%); z-index: 100;
-  max-width: min(36rem, calc(100vw - 2rem)); padding: .7rem 1.2rem; border-radius: .6rem;
-  background: var(--tinta); color: #fff; font-weight: 600; line-height: 1.4; box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, .3);
-  cursor: pointer; animation: aviso-sobe .25s ease-out; transition: opacity .5s;
-}
-.aviso-flutuante.erro { background: var(--ambar); }
-.aviso-flutuante.sumindo { opacity: 0; }
-@keyframes aviso-sobe { from { opacity: 0; transform: translate(-50%, .6rem); } to { opacity: 1; transform: translateX(-50%); } }
 
 .botoes, .linha { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
 form { margin: 0; }

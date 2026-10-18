@@ -290,34 +290,13 @@ function recarregarCriterios() {
 // gravou: a página volta no lugar e na seção da resposta, com o recado; recusado: os valores digitados ficam, e os erros
 // aparecem no topo
 aoGravar = function (form, res, dados) {
-  if (res.ok) {
-    errosCrit = [];
-    recado = res.mensagem;
-    escopo = res.escopo !== undefined ? res.escopo : escopo;
-    abrirFaixa = dados.get("acao") === "faixas" ? String(dados.get("sub_id")) : "";
-    history.replaceState(null, "", "criterios.php?escopo=" + encodeURIComponent(escopo) + (res.ancora ? "#" + res.ancora : ""));
-    recarregarCriterios().then(function () {
-      var alvo = res.ancora ? document.getElementById(res.ancora) : null;
-      if (alvo) {
-        alvo.scrollIntoView();
-      } else {
-        window.scrollTo(0, 0);
-      }
-    });
-  } else {
-    errosCrit = res.erros;
-    form.querySelectorAll("button").forEach(function (b) {
-      b.disabled = false;
-    });
-    var topo = document.querySelector("#criterios .erros-form");
-    var html = el("strong", {}, t("Não foi salvo:")) + res.erros.map(function (e) { return el("p", {}, h(e)); }).join("");
-    if (topo) {
-      topo.innerHTML = html;
-    } else {
-      document.querySelector("#criterios h1").insertAdjacentHTML("afterend", el("div", {"class": "erros-form"}, html));
-    }
-    window.scrollTo(0, 0);
-  }
+  if (!res.ok) { return salvarSemMover(form, res, function () {}); }
+  errosCrit = [];
+  recado = "";
+  escopo = res.escopo !== undefined ? res.escopo : escopo;
+  abrirFaixa = dados.get("acao") === "faixas" ? String(dados.get("sub_id")) : "";
+  history.replaceState(null, "", "criterios.php?escopo=" + encodeURIComponent(escopo) + (res.ancora ? "#" + res.ancora : ""));
+  return salvarSemMover(form, res, recarregarCriterios);
 };
 
 recarregarCriterios().then(function () {

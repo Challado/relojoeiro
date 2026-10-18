@@ -8,14 +8,9 @@ aoGravar = function (form, res, dados) {
     window.location.href = res.url;
     return;
   }
-  recadoAgendas = textoResposta(res);
-  var id = res.id || dados.get("id");
-  carregarAgendas().then(function () {
-    var alvo = document.getElementById(dados.get("acao") === "excluir" ? "agendas" : "agenda-" + id);
-    if (alvo) {
-      alvo.scrollIntoView();
-    }
-  });
+  if (!res.ok) { return salvarSemMover(form, res, function () {}); }
+  recadoAgendas = "";
+  return salvarSemMover(form, res, carregarAgendas);
 };
 
 function botaoAgenda(id, acao, rotulo, confirma, extra) {
