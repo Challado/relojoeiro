@@ -609,6 +609,11 @@ ler("hoje sem relogio", ["recurso" => "hoje"]);
 escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => substr(dia(0, "00:00"), 0, 10), "relogio_id" => $rel["pilha"]]);
 // hoje sorteado à mão pela nota: o sorteado vai para o pulso a partir de agora
 escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => substr(dia(0, "00:00"), 0, 10), "relogio_id" => "sortear:ponderado"]);
+// a versão do aviso Encostado para o grupo dos cronógrafos (um dia a mais): o vencimento dos dois relógios que acabaram de
+// passar pelo pulso (o Casio e o Ômega, segundos um do outro) deixa de empatar no arredondamento de falta_dias, e a lista
+// dos avisos sai na mesma ordem em qualquer banco (a rodada do Firebird no CI é mais lenta e virava a ordem)
+escrever(["recurso" => "avisos", "acao" => "novo", "identificador" => "encostado", "nome" => "Encostado (cronógrafos)", "expressao" => "PADRAO(ULTIMA_DATA(\"pulso\"); data_compra) + CONFIG(\"encostado_dias\") + 1",
+    "antecedencia_dias" => 0, "texto" => "o limite de dias sem ir ao pulso vence {quando}, {data}", "no_id" => $cron_g, "resolve" => "pulso"]);
 ler("hoje depois do dia livre", ["recurso" => "hoje"]);
 // apagar tudo: de amanhã em diante (o modo monta de novo), e depois de hoje em diante
 escrever(["recurso" => "rodizio", "acao" => "apagar_tudo"]);
