@@ -461,13 +461,16 @@ escrever(["recurso" => "rodizio", "acao" => "periodo_sortear", "de" => $em(14), 
 // parte do período livre (sem relógio e sem sorteio), e um dia livre escolhido à mão
 escrever(["recurso" => "rodizio", "acao" => "periodo_livre", "de" => $em(11), "ate" => $em(13)]);
 escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(12), "relogio_id" => $rel["crono"]]);
+// um dia (livre) sorteado à mão por uma forma de escolha; a forma inválida é recusada
+escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(13), "relogio_id" => "sortear:aleatorio"]);
+escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(13), "relogio_id" => "sortear:x"], false);
 escrever(["recurso" => "rodizio", "acao" => "resortear"]);
 ler("plano com livres", ["recurso" => "plano", "dias" => 30]);
 // o rodízio manual: os dias de um período de 7 em 7; gravar com um relógio escolhido, um dia livre e o resto no Decida por
 // mim (decidido ao gravar, pela nota, sem repetir o de ontem e o de amanhã). Um período no passado e um relógio que não
 // existe são recusados
 ler("rodizio manual", ["recurso" => "rodizio_manual", "de" => $em(16), "ate" => $em(25), "pagina" => 2]);
-escrever(["recurso" => "rodizio", "acao" => "manual", "de" => $em(16), "ate" => $em(25), "dias" => [$em(16) => $rel["manual"], $em(18) => "livre", $em(19) => "auto"]]);
+escrever(["recurso" => "rodizio", "acao" => "manual", "de" => $em(16), "ate" => $em(25), "dias" => [$em(16) => $rel["manual"], $em(18) => "livre", $em(19) => "auto", $em(20) => "sortear:fifo", $em(21) => "sortear:inteligente"]]);
 ler("rodizio manual gravado", ["recurso" => "rodizio_manual", "de" => $em(16), "ate" => $em(25)]);
 ler("rodizio manual recusado", ["recurso" => "rodizio_manual", "de" => substr(dia(3, "00:00"), 0, 10), "ate" => $em(2)]);
 escrever(["recurso" => "rodizio", "acao" => "manual", "de" => $em(16), "ate" => $em(17), "dias" => [$em(17) => 99999]], false);
@@ -579,6 +582,8 @@ escrever(["recurso" => "rodizio", "acao" => "sem_relogio"]);
 cron();
 ler("hoje sem relogio", ["recurso" => "hoje"]);
 escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => substr(dia(0, "00:00"), 0, 10), "relogio_id" => $rel["pilha"]]);
+// hoje sorteado à mão pela nota: o sorteado vai para o pulso a partir de agora
+escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => substr(dia(0, "00:00"), 0, 10), "relogio_id" => "sortear:ponderado"]);
 ler("hoje depois do dia livre", ["recurso" => "hoje"]);
 // apagar tudo: de amanhã em diante (o modo monta de novo), e depois de hoje em diante
 escrever(["recurso" => "rodizio", "acao" => "apagar_tudo"]);

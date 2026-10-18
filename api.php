@@ -164,7 +164,8 @@
  *                            partida do seletor (o relógio escolhido à mão, livre ou auto: Decida por mim): {"de", "ate", "total_dias",
  *                            "por_pagina", "pagina", "paginas", "dias": [{"data", "dia_semana", "dia_semana_nome", "hoje", "relogio_id",
  *                            "relogio", "origem", "motivo", "livre", "escolha"}], "relogios": [os disponíveis: {"id", "nome"}],
- *                            "decida_por_mim" (o critério)}. Período inválido: 400 com "erro". Gravar: recurso=rodizio, acao=manual
+ *                            "decida_por_mim" (o critério), "formas": [as formas do "Sortear este dia por": {"chave", "nome"}]}.
+ *                            Período inválido: 400 com "erro". Gravar: recurso=rodizio, acao=manual
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=rodizio_manual&de=2026-12-20&ate=2027-01-05&pagina=2"
  *   recurso=eventos          os eventos personalizados da coleção: {"eventos": [{"id", "nome", "ativo", "repeticao" (uma, diaria,
  *                            semanal, mensal, intervalo), "descricao" ("seg, qua 20:00"), "hora", "data_inicio", "dias_semana",
@@ -517,8 +518,11 @@
  *                             resortear (de amanhã até domingo, ou até o fim da próxima semana, se ela já foi montada; se o dia
  *                             ainda não começou no pulso, também hoje), resortear_hoje
  *                             (inclusive hoje: o sorteado passa a ser o do pulso a partir de agora), usando (relogio_id: o
- *                             relógio de hoje a partir de agora), trocar_dia (data, relogio_id: o relógio daquele dia, à mão;
- *                             hoje, como o usando; 0: o dia volta a ser sorteado), proxima_semana (em qualquer dia: a semana
+ *                             relógio de hoje a partir de agora; motivo, opcional: a frase que fica no plano), trocar_dia (data,
+ *                             relogio_id: o relógio daquele dia, à mão; hoje, como o usando; 0: o dia volta a ser sorteado;
+ *                             sortear:<forma>, inteligente, ponderado, aleatorio ou fifo: o dia é sorteado agora por essa forma,
+ *                             entre os disponíveis do bloco do modo ativo que cobre o dia, sem o que o dia tinha, e fica à mão
+ *                             com o motivo "Sorteado à mão (<forma>): ..."), proxima_semana (em qualquer dia: a semana
  *                             seguinte inteira, com os dias que faltam desta já contados como uso), periodo (de, ate: AAAA-MM-DD, de hoje até 2 anos; relogio_ids[]: um ou vários, na
  *                             ordem; dias_cada (padrão 1): os dias do período ficam escolhidos à mão, cada relógio dias_cada dias
  *                             seguidos, e depois do último volta ao primeiro), periodo_sortear (de, ate, um dos dois pode faltar: sem
@@ -526,7 +530,8 @@
  *                             sorteados ou livres, saem do plano e o modo monta esses dias de novo), periodo_livre (de, ate, idem:
  *                             tudo sai e os dias ficam livres: sem relógio e sem sorteio, para escolher à mão; trocar_dia ou periodo
  *                             num dia livre o tira de lá), manual (o Rodízio manual: de, ate; dias[AAAA-MM-DD]: o id do relógio,
- *                             auto (Decida por mim: o sistema decide ao gravar, pelo critério do recurso=rodizio_manual) ou livre
+ *                             auto (Decida por mim: o sistema decide ao gravar, pelo critério do recurso=rodizio_manual),
+ *                             sortear:<forma> (o dia sorteado ao gravar por essa forma: inteligente, ponderado, aleatorio ou fifo) ou livre
  *                             (hoje não); o dia que não vem fica com a escolha de partida (dias[].escolha); tudo fica gravado à mão,
  *                             com o motivo; hoje, com outro relógio, ele passa a ser o do pulso a partir de agora; hoje em auto
  *                             continua o que está; fora do período, vale o modo ativo), apagar_tudo (toda a programação de
@@ -2853,13 +2858,21 @@
  *     dias[].motivo                  por que ele está no dia (o motivo do sorteio, da escolha à mão ou do Decida por mim); null: nenhum
  *     dias[].livre                   verdadeiro se o dia está livre (sem relógio e sem sorteio)
  *     dias[].escolha                 o que o seletor do dia mostra de partida, e o que vale se o dia não vier no acao=manual: o id do
- *                                    relógio escolhido à mão, livre, ou auto (Decida por mim: o dia sorteado ou ainda sem relógio)
+ *                                    relógio escolhido à mão, livre, ou auto (Decida por mim: o dia sorteado ou ainda sem relógio; um dia
+ *                                    sorteado à mão por uma forma também volta como auto)
  *     relogios[]                     os relógios disponíveis, para o seletor de cada dia (por nome)
  *     relogios[].id                  o número do relógio
  *     relogios[].nome                o nome
  *     decida_por_mim                 o critério do Decida por mim, em texto: a nota dos critérios recalculada dia a dia com os dias
  *                                    anteriores do período contados como uso, a garantia de rodízio na frente, sem o relógio de ontem nem o
- *                                    de amanhã (se houver outro), empate pelo cadastrado primeiro; decidido ao gravar
+ *                                    de amanhã (se houver outro), empate pelo cadastrado primeiro; decidido ao gravar; e o Sortear este dia
+ *                                    por
+ *     formas[]                       as formas de escolha do "Sortear este dia por" do seletor de cada dia
+ *                                    (dias[AAAA-MM-DD]=sortear:<chave> no acao=manual; o mesmo relogio_id=sortear:<chave> no
+ *                                    acao=trocar_dia)
+ *     formas[].chave                 a chave: inteligente (a maior nota), ponderado (sorteio pela nota), aleatorio (todos com a mesma
+ *                                    chance) ou fifo (o mais tempo sem uso)
+ *     formas[].nome                  o nome, no idioma do pedido
  *   recurso=eventos
  *     eventos[]                      os eventos personalizados (avisos seus, com horário e repetição próprios)
  *     eventos[].ativo                verdadeiro ou falso: o evento dispara

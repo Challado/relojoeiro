@@ -299,12 +299,13 @@ haga clic en **OK**:
 - los días aparecen **de 7 en 7**, con la fecha, el día de la semana, lo que el plan tiene ese día ahora y un selector;
 - con más de 7 días, las páginas están debajo: **‹ Anterior**, **1 2 3 …**, **Siguiente ›**. Lo que elige en una página se
   conserva mientras recorre las demás; nada cambia antes de guardar;
-- el selector de cada día tiene los relojes disponibles, **Decide por mí** y **Sin reloj (día libre)**. Al principio, muestra
-  el reloj que el día ya tiene elegido a mano; un día libre aparece como libre; y el resto (sorteado o todavía sin reloj),
+- el selector de cada día tiene los relojes disponibles, **Decide por mí**, el grupo **Sortear este día por** (*la mayor
+  nota*, *sorteo por la nota*, *aleatorio* o *fila*: el día se sortea al guardar por esa forma, sin el de ayer ni el de mañana,
+  como el Decide por mí) y **Sin reloj (día libre)**. Al principio, muestra el reloj que el día ya tiene elegido a mano; un día libre aparece como libre; y el resto (sorteado o todavía sin reloj),
   como *Decide por mí*;
-- **Guardar la rotación manual** guarda todo el período: los días con reloj quedan elegidos a mano, los de *Decide por mí* los
-  decide el sistema en ese momento y también se guardan (el motivo de cada uno aparece en el plan), y los libres quedan sin
-  reloj. Si hoy está en el período y usted eligió otro reloj, pasa a ser el de la muñeca desde ese momento;
+- **Guardar la rotación manual** guarda todo el período: los días con reloj quedan elegidos a mano, los de *Decide por mí* y los de
+  *Sortear este día por* los decide el sistema en ese momento y también se guardan (el motivo de cada uno aparece en el
+  plan), y los libres quedan sin reloj. Si hoy está en el período y usted eligió otro reloj, pasa a ser el de la muñeca desde ese momento;
 - para borrar los días de un período (el modo de rotación vuelve a montar esos días) o borrarlo todo, vea
   [Borrar la programación](#borrar-la-programación).
 
@@ -1657,6 +1658,14 @@ en **Cambiar**. Hoy, pasa a ser el de la muñeca desde ese momento; en un día p
 siguientes se ajustan). En un día elegido a mano, la misma lista tiene **volver a sortear**. También puede **Sortear de nuevo**
 desde hoy o desde mañana, o armar **la próxima semana** cualquier día.
 
+La misma lista tiene el grupo **Sortear este día por**: *la mayor nota*, *sorteo por la nota*, *aleatorio, todos con la misma
+probabilidad* o *fila: el más tiempo sin uso*. Solo ese día se sortea en el momento, por esa forma, entre los relojes del bloque
+del modo activo que cubre el día (sin bloque, entre todos los disponibles), sin el reloj que tenía el día; la garantía de
+rotación va por delante (menos en el aleatorio), y los días anteriores del plan cuentan como uso. El día queda *a mano*, con el
+motivo *"Sorteado a mano (la mayor nota): …"*, y por eso el Sortear de nuevo y el cron lo respetan; **volver a sortear**
+devuelve el día al modo. Hoy, el sorteado pasa a la muñeca desde ese momento. Por la API: `recurso=rodizio`, `acao=trocar_dia`,
+`relogio_id=sortear:<forma>` (`inteligente`, `ponderado`, `aleatorio` o `fifo`).
+
 **¿Y si hoy no quiero usar ningún reloj?**
 En el cuadro del reloj del día, arriba de la página Hoy, **Sin reloj hoy** (pide confirmación): el día queda **libre**, sin
 reloj y sin sorteo, como los días libres del plan. Si el reloj del día ya estaba en la muñeca por la rotación, sale en ese
@@ -1667,8 +1676,8 @@ a la muñeca desde ese momento; o **Sortear de nuevo** *incluyendo hoy*, en el m
 
 **¿Y si quiero elegir yo los relojes de un período?**
 En el cuadro **Modo de rotación** de la página Hoy, elija **Rotación manual**, ponga el inicio y el fin y haga clic en **OK**:
-los días aparecen de 7 en 7 (con las páginas debajo), y en cada uno elige el reloj, **Decide por mí** o **Sin reloj (día
-libre)**. **Guardar la rotación manual** lo guarda todo. Vea [La rotación manual](#la-rotación-manual). Esos días se mantienen
+los días aparecen de 7 en 7 (con las páginas debajo), y en cada uno elige el reloj, **Decide por mí**, una forma de **Sortear
+este día por** o **Sin reloj (día libre)**. **Guardar la rotación manual** lo guarda todo. Vea [La rotación manual](#la-rotación-manual). Esos días se mantienen
 aunque sortee de nuevo o arme la semana siguiente. (Por la API existe también la acción `periodo`, que rota una lista de
 relojes en orden, N días seguidos cada uno.)
 

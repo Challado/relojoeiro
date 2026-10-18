@@ -300,12 +300,13 @@ cada dia de um período (as férias, uma viagem, um mês inteiro). Ponha o come�
 - os dias aparecem **de 7 em 7**, com a data, o dia da semana, o que o plano tem agora nesse dia e um seletor;
 - com mais de 7 dias, embaixo ficam as páginas: **‹ Anterior**, **1 2 3 …**, **Próxima ›**. O que você escolhe numa página
   fica guardado enquanto você anda pelas outras; nada muda antes de gravar;
-- o seletor de cada dia tem os relógios disponíveis, **Decida por mim** e **Sem relógio (dia livre)**. De partida, ele mostra
-  o relógio que o dia já tem escolhido à mão; um dia livre aparece como livre; e o resto (sorteado ou ainda sem relógio), como
-  *Decida por mim*;
-- **Gravar o rodízio manual** grava o período inteiro: os dias com relógio ficam escolhidos à mão, os de *Decida por mim* são
-  decididos na hora pelo sistema e também ficam gravados (o motivo de cada um aparece no plano), e os livres ficam sem
-  relógio. Se hoje está no período e você escolheu outro relógio, ele passa a ser o do pulso a partir de agora;
+- o seletor de cada dia tem os relógios disponíveis, **Decida por mim**, o grupo **Sortear este dia por** (*a maior nota*,
+  *sorteio pela nota*, *aleatório* ou *fila*: o dia é sorteado ao gravar por essa forma, sem o de ontem e o de amanhã, como o
+  Decida por mim) e **Sem relógio (dia livre)**. De partida, ele mostra o relógio que o dia já tem escolhido à mão; um dia
+  livre aparece como livre; e o resto (sorteado ou ainda sem relógio), como *Decida por mim*;
+- **Gravar o rodízio manual** grava o período inteiro: os dias com relógio ficam escolhidos à mão, os de *Decida por mim* e os
+  de *Sortear este dia por* são decididos na hora pelo sistema e também ficam gravados (o motivo de cada um aparece no
+  plano), e os livres ficam sem relógio. Se hoje está no período e você escolheu outro relógio, ele passa a ser o do pulso a partir de agora;
 - para apagar os dias de um período (o modo de rodízio monta esses dias de novo) ou apagar tudo, veja
   [Apagar a programação](#apagar-a-programação).
 
@@ -1618,6 +1619,14 @@ escala inteligente, o plano é refeito a partir do dia trocado (os lembretes de 
 ajustam). Num dia escolhido à mão, a mesma lista tem **voltar a sortear**. Também dá para **Sortear de novo** a partir de hoje
 ou de amanhã, ou montar **a próxima semana** em qualquer dia.
 
+A mesma lista tem o grupo **Sortear este dia por**: *a maior nota*, *sorteio pela nota*, *aleatório, todos com a mesma chance*
+ou *fila: o mais tempo sem uso*. Só aquele dia é sorteado na hora, por essa forma, entre os relógios do bloco do modo ativo
+que cobre o dia (sem bloco, entre todos os disponíveis), sem o relógio que o dia tinha; a garantia de rodízio vem na frente
+(menos no aleatório), e os dias anteriores do plano contam como uso. O dia fica *à mão*, com o motivo *"Sorteado à mão (a
+maior nota): …"*, e por isso o Sortear de novo e o cron o respeitam; **voltar a sortear** devolve o dia ao modo. Hoje, o
+sorteado vai para o pulso a partir de agora. Pela API: `recurso=rodizio`, `acao=trocar_dia`, `relogio_id=sortear:<forma>`
+(`inteligente`, `ponderado`, `aleatorio` ou `fifo`).
+
 **E se hoje eu não quiser usar relógio nenhum?**
 No quadro do relógio do dia, no alto da página Hoje, **Sem relógio hoje** (pede confirmação): o dia fica **livre**, sem
 relógio e sem sorteio, como os dias livres do plano. Se o relógio do dia já estava no pulso pelo rodízio, ele sai agora (o
@@ -1628,8 +1637,8 @@ o pulso a partir de agora; ou **Sortear de novo** *inclusive hoje*, no modo de r
 
 **E se eu quiser escolher eu mesmo os relógios de um período?**
 No quadro **Modo de rodízio** da página Hoje, escolha **Rodízio manual**, ponha o começo e o fim e clique em **OK**: os dias
-aparecem de 7 em 7 (com as páginas embaixo), e em cada um você escolhe o relógio, **Decida por mim** ou **Sem relógio (dia
-livre)**. **Gravar o rodízio manual** grava tudo. Veja [O rodízio manual](#o-rodízio-manual). Esses dias ficam mesmo quando
+aparecem de 7 em 7 (com as páginas embaixo), e em cada um você escolhe o relógio, **Decida por mim**, uma forma de **Sortear
+este dia por** ou **Sem relógio (dia livre)**. **Gravar o rodízio manual** grava tudo. Veja [O rodízio manual](#o-rodízio-manual). Esses dias ficam mesmo quando
 você sorteia de novo ou monta a próxima semana. (Pela API, há também a ação `periodo`, que reveza uma lista de relógios na
 ordem, N dias seguidos cada.)
 

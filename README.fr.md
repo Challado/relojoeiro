@@ -308,12 +308,14 @@ choisissez vous-même la montre de chaque jour d'une période (les vacances, un 
 - les jours apparaissent **7 par 7**, avec la date, le jour de la semaine, ce que le plan prévoit ce jour-là et un sélecteur ;
 - au-delà de 7 jours, les pages sont en dessous : **‹ Précédent**, **1 2 3 …**, **Suivant ›**. Ce que vous choisissez sur
   une page est conservé pendant que vous parcourez les autres ; rien ne change avant d'enregistrer ;
-- le sélecteur de chaque jour contient les montres disponibles, **Décider pour moi** et **Sans montre (jour libre)**. Au
-  départ, il montre la montre que le jour a déjà choisie à la main ; un jour libre apparaît comme libre ; et le reste (tiré
+- le sélecteur de chaque jour contient les montres disponibles, **Décider pour moi**, le groupe **Tirer ce jour au sort
+  par** (*la meilleure note*, *tirage selon la note*, *aléatoire* ou *file* : le jour est tiré au sort à l'enregistrement
+  selon ce mode, sans celle d'hier ni celle de demain, comme Décider pour moi) et **Sans montre (jour libre)**. Au départ,
+  il montre la montre que le jour a déjà choisie à la main ; un jour libre apparaît comme libre ; et le reste (tiré
   ou encore sans montre), comme *Décider pour moi* ;
 - **Enregistrer la rotation manuelle** enregistre toute la période : les jours avec une montre sont choisis à la main, ceux
-  en *Décider pour moi* sont décidés sur-le-champ par le système et enregistrés aussi (la raison de chacun apparaît dans le
-  plan), et les libres restent sans montre. Si aujourd'hui fait partie de la période et que vous avez choisi une autre
+  en *Décider pour moi* et ceux en *Tirer ce jour au sort par* sont décidés sur-le-champ par le système et enregistrés
+  aussi (la raison de chacun apparaît dans le plan), et les libres restent sans montre. Si aujourd'hui fait partie de la période et que vous avez choisi une autre
   montre, elle devient celle au poignet dès maintenant ;
 - pour effacer les jours d'une période (le mode de rotation refait ces jours) ou tout effacer, voir
   [Effacer la programmation](#effacer-la-programmation).
@@ -1705,6 +1707,15 @@ rappels de charge et de remontage des jours suivants s'ajustent). Sur un jour ch
 sort**. Vous pouvez aussi **Refaire le tirage** à partir d'aujourd'hui ou de demain, ou monter **la semaine prochaine**
 n'importe quel jour.
 
+La même liste a le groupe **Tirer ce jour au sort par** : *la meilleure note*, *tirage selon la note*, *aléatoire, toutes
+avec la même chance* ou *file : la plus longtemps sans usage*. Seul ce jour est tiré au sort sur-le-champ, selon ce mode,
+parmi les montres du bloc du mode actif qui couvre le jour (sans bloc, parmi toutes les disponibles), sans la montre que le
+jour avait ; la garantie de rotation passe en premier (sauf en aléatoire), et les jours précédents du plan comptent comme
+usage. Le jour reste *à la main*, avec le motif *« Tiré au sort à la main (la meilleure note) : … »*, et c'est pourquoi
+Refaire le tirage et le cron le respectent ; **retirer au sort** rend le jour au mode. Aujourd'hui, la montre tirée va au
+poignet dès maintenant. Par l'API : `recurso=rodizio`, `acao=trocar_dia`, `relogio_id=sortear:<mode>` (`inteligente`,
+`ponderado`, `aleatorio` ou `fifo`).
+
 **Et si aujourd'hui je ne veux porter aucune montre ?**
 Dans le cadre de la montre du jour, en haut de la page Aujourd'hui, **Jour sans montre** (demande confirmation) : le jour reste
 **libre**, sans montre et sans tirage, comme les jours libres du plan. Si la montre du jour était déjà au poignet par la
@@ -1716,7 +1727,8 @@ le tirage** *y compris aujourd'hui*, dans le mode de rotation. Par l'API : `recu
 **Et si je veux choisir moi-même les montres d'une période ?**
 Dans le cadre **Mode de rotation** de la page Aujourd'hui, choisissez **Rotation manuelle**, indiquez le début et la fin et
 cliquez sur **OK** : les jours apparaissent 7 par 7 (avec les pages en dessous), et pour chacun vous choisissez la montre,
-**Décider pour moi** ou **Sans montre (jour libre)**. **Enregistrer la rotation manuelle** enregistre tout. Voir
+**Décider pour moi**, un mode de **Tirer ce jour au sort par** ou **Sans montre (jour libre)**. **Enregistrer la rotation
+manuelle** enregistre tout. Voir
 [La rotation manuelle](#la-rotation-manuelle). Ces jours restent même quand vous refaites le tirage ou construisez la semaine
 suivante. (Par l'API, il existe aussi l'action `periodo`, qui fait tourner une liste de montres dans l'ordre, N jours
 d'affilée chacune.)

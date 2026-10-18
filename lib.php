@@ -2312,11 +2312,152 @@ function motivo_nota($nota)
     return decimal_txt((float)$nota, 1);
 }
 
+// As formas de escolha do sorteio (a selecao do modo), com o nome que as telas e os motivos usam
+function formas_de_escolha()
+{
+    return ["inteligente" => t("a maior nota"), "ponderado" => t("sorteio pela nota"), "aleatorio" => t("aleatório, todos com a mesma chance"), "fifo" => t("fila: o mais tempo sem uso")];
+}
+
+// A escolha de um dia pelo sorteio, entre os candidatos ($cands: id => relógio, já só os do bloco ou do grupo, e sem o que
+// ficou de fora à mão, com as frases disso em $fora). Nesta ordem: o de ontem fica de fora (pelo plano, se houver outro;
+// $ontem_fora); o ciclo do modo, se o modo usa (quem já passou na semana); a garantia de rodízio (quem está além de
+// max_sem_uso dias sem uso, o mais parado primeiro; não vale no aleatório); e a forma de escolha ($selecao: inteligente,
+// ponderado, aleatorio ou fifo). A nota e os dias sem uso são os do começo do dia ($m_ini), com os dias anteriores do plano
+// já simulados por quem chama. $modo pode ser null (sem modo: sem ciclo). Devolve [o id ou null, o motivo]
+function escolha_do_dia($modo, $dia, $m_ini, $cands, $selecao, $fora = [], $bloco_nome = "", $ontem_fora = true)
+{
+    $escolhido = null;
+    $motivo = "";
+    if ($ontem_fora) {
+        $ontem = valor("SELECT relogio_id FROM plano WHERE data = ?", [$dia->modify("-1 day")->format("Y-m-d")]);
+        if ($ontem !== null && count($cands) > 1) {
+            if (isset($cands[(int)$ontem])) {
+                $fora[] = t("o de ontem ({1}) ficou de fora", [1 => $cands[(int)$ontem]["nome"]]);
+            }
+            unset($cands[(int)$ontem]);
+        }
+    }
+    // o ciclo (se o modo usa): os que já passaram no ciclo atual ficam de fora, pelo plano desde a segunda-feira da semana
+    if ($modo && (int)($modo["ciclo"] ?? 0) === 1 && count($cands) > 1) {
+        $seq = array_map(function ($x) { return (int)$x["relogio_id"]; }, linhas("SELECT relogio_id FROM plano WHERE data BETWEEN ? AND ? ORDER BY data",
+            [$dia->modify("monday this week")->format("Y-m-d"), $dia->modify("-1 day")->format("Y-m-d")]));
+        $restam = array_diff_key($cands, array_flip(ciclo_atual($seq, array_keys($cands))));
+        if (count($restam) > 0) {
+            if (count($restam) < count($cands)) {
+                $fora[] = t("pelo ciclo, {1} que já passaram na semana ficaram de fora", [1 => count($cands) - count($restam)]);
+            }
+            $cands = $restam;
+        }
+    }
+    if (count($cands) === 0) {
+        return [null, ""];
+    }
+    $info = [];
+    foreach ($cands as $cid => $r) {
+        $ctx = ["r" => $r, "momento" => $m_ini, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio($cid)];
+        $dsu = variavel_valor("dias_sem_uso", $ctx);
+        $info[$cid] = ["dsu" => is_numeric($dsu) ? (float)$dsu : 9999.0, "nota" => nota_do_relogio($r, $m_ini)["nota"], "nunca" => nunca_no_pulso($ctx)];
+    }
+    $entre = count($cands) === 1 ? ($bloco_nome !== "" ? t("único candidato do bloco {1}", [1 => $bloco_nome]) : t("único candidato")) : t("entre {1} candidatos", [1 => count($cands)]);
+    $max = (int)cfg("max_sem_uso");
+    $parados = array_filter($info, function ($x) use ($max) { return $x["dsu"] > $max; });
+    if ($max > 0 && count($parados) > 0 && $selecao !== "aleatorio") {
+        uasort($parados, function ($x, $y) { return $y["dsu"] <=> $x["dsu"]; });
+        $escolhido = (int)array_key_first($parados);
+        // os empatados com ele no tempo parado (os nunca usados empatam entre si): sai o cadastrado primeiro
+        $empatados = [];
+        foreach ($parados as $cid => $x) {
+            if ($cid !== $escolhido && $x["dsu"] == $parados[$escolhido]["dsu"]) {
+                $empatados[] = $cands[$cid]["nome"];
+            }
+        }
+        $motivo = t("Garantia de rodízio: {1}, além do limite de {2} dias sem uso{3}.{4}", [1 => motivo_parado($parados[$escolhido]["dsu"], $parados[$escolhido]["nunca"]), 2 => $max, 3 => count($parados) > 1 ? t(" ({1} além do limite; sai o mais tempo parado)", [1 => count($parados)]) : "", 4 => count($empatados) > 0 ? t(" Empatado com {1}: saiu o cadastrado primeiro.", [1 => implode(", ", $empatados)]) : ""]);
+    } elseif ($selecao === "aleatorio") {
+        $ids = array_keys($cands);
+        $escolhido = $ids[sorteio(0, count($ids) - 1)];
+        $motivo = t("Sorteio simples, {1}, todos com a mesma chance ({2}).", [1 => $entre, 2 => aleatorio_fonte()]);
+    } elseif ($selecao === "fifo") {
+        uasort($info, function ($x, $y) { return $y["dsu"] <=> $x["dsu"]; });
+        $escolhido = (int)array_key_first($info);
+        $motivo = t("Fila: o mais tempo sem uso ({1}), {2}.", [1 => motivo_parado($info[$escolhido]["dsu"], $info[$escolhido]["nunca"]), 2 => $entre]);
+    } elseif ($selecao === "inteligente") {
+        uasort($info, function ($x, $y) { return $y["nota"] <=> $x["nota"]; });
+        $escolhido = (int)array_key_first($info);
+        $motivo = t("A maior nota ({1}), {2}.", [1 => motivo_nota($info[$escolhido]["nota"]), 2 => $entre]);
+    } else {
+        // com sorteio: a nota de cada um é a chance dele (no mínimo 1)
+        $total = 0;
+        foreach ($info as $x) {
+            $total += (int)round(max(1, $x["nota"]) * 100);
+        }
+        $alvo = sorteio(1, max(1, $total));
+        foreach ($info as $cid => $x) {
+            $alvo -= (int)round(max(1, $x["nota"]) * 100);
+            if ($escolhido === null && $alvo <= 0) {
+                $escolhido = $cid;
+            }
+        }
+        if ($escolhido !== null) {
+            $motivo = t("Sorteio pela nota, {1}: nota {2}, {3}% de chance ({4}).", [1 => $entre, 2 => motivo_nota($info[$escolhido]["nota"]), 3 => motivo_nota(round(max(1, $info[$escolhido]["nota"]) * 100) * 100 / max(1, $total)), 4 => aleatorio_fonte()]);
+        }
+    }
+    if (count($fora) > 0 && $motivo !== "") {
+        $motivo .= " " . ucfirst(implode("; ", $fora)) . ".";
+    }
+    return [$escolhido, $motivo];
+}
+
+// Sorteia um dia só, agora, por uma forma de escolha ($selecao: a chave de formas_de_escolha), entre os relógios disponíveis
+// do bloco do modo ativo que cobre o dia (do grupo dele; o relógio fixo não vale: é um sorteio) ou, sem modo ou sem bloco no
+// dia, entre todos. O relógio que o dia já tem fica de fora, se houver outro (quem sorteia o dia quer trocar). Os dias
+// anteriores do plano, de hoje até a véspera, são simulados no pulso como no garantir_plano, para a nota e os dias sem uso
+// contarem com eles. Devolve [o id ou null, o motivo]; quem chama grava o dia
+function sortear_dia($dia, $selecao)
+{
+    $hoje = hoje_da_colecao();
+    $agora = time();
+    $modo = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]) ?: null;
+    $bloco = null;
+    foreach ($modo ? modo_blocos((int)$modo["id"]) : [] as $b) {
+        if ($bloco === null && in_array($dia->format("N"), explode(",", $b["dias"]), true)) {
+            $bloco = $b;
+        }
+    }
+    $cands = [];
+    foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY id") as $r) {
+        if ($bloco === null || $bloco["no_id"] === null || in_array((int)$bloco["no_id"], no_cadeia($r["no_id"] ?? 0), true)) {
+            $cands[(int)$r["id"]] = $r;
+        }
+    }
+    $fora = [];
+    $atual = plano_do_dia($dia->format("Y-m-d"));
+    if ($atual && isset($cands[(int)$atual["relogio_id"]]) && count($cands) > 1) {
+        $fora[] = t("o que o dia tinha ({1}) ficou de fora", [1 => $cands[(int)$atual["relogio_id"]]["nome"]]);
+        unset($cands[(int)$atual["relogio_id"]]);
+    }
+    $pulso = lancamento_tipos()["pulso"] ?? null;
+    $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+    $GLOBALS["SIMULACAO"] = [];
+    $GLOBALS["SIMULACAO_VERSAO"] = ($GLOBALS["SIMULACAO_VERSAO"] ?? 0) + 1;
+    for ($d = $hoje; $d < $dia; $d = $d->modify("+1 day")) {
+        $p = plano_do_dia($d->format("Y-m-d"));
+        $fim_u = instante($d->format("Y-m-d"), cfg("uso_fim"));
+        if ($p && $pulso && $fim_u > $agora && valor("SELECT id FROM lancamento WHERE tipo_id = ? AND origem = 'rodizio' AND DATE(inicio) = ?",
+            [(int)$pulso["id"], $d->format("Y-m-d")]) === null) {
+            simular_lancamento((int)$p["relogio_id"], "pulso", max($agora, instante($d->format("Y-m-d"), cfg("uso_inicio"))), $fim_u, null, true);
+        }
+    }
+    $m_ini = max($agora, instante($dia->format("Y-m-d"), cfg("uso_inicio")));
+    [$id, $motivo] = escolha_do_dia($modo, $dia, $m_ini, $cands, $selecao, $fora, $bloco ? $bloco["nome"] : "");
+    $GLOBALS["SIMULACAO"] = [];
+    $GLOBALS["SIMULACAO_VERSAO"]++;
+    return [$id, $motivo];
+}
+
 // Monta o plano que falta, de hoje até $ate (padrão: o domingo desta semana; no domingo, também a segunda, para o aviso
 // da véspera). Cada dia sai do bloco do modo ativo que cobre aquele dia da semana: o relógio fixo do bloco; ou, num bloco
 // de um por bloco, o mesmo relógio já sorteado para o bloco nesta semana; ou um sorteio entre os disponíveis do ponto do
-// bloco (nunca o de ontem, se houver outro). O sorteio: primeiro a garantia de rodízio (quem está há mais de max_sem_uso
-// dias sem uso, o mais tempo parado primeiro; não vale no aleatório); depois a forma de escolha do modo, pela nota. A nota
+// bloco (escolha_do_dia: nunca o de ontem, se houver outro; o ciclo; a garantia de rodízio; a forma de escolha do modo). A nota
 // e os dias sem uso são os do começo do dia sorteado, com os dias anteriores do plano simulados no pulso (como na escala):
 // o relógio sorteado num dia chega aos seguintes como usado (o uso conta; a carga não é gasta, porque não se sabe se ele vai
 // ser carregado). Com o ciclo do modo (opção, desligada por padrão), quem já passou na semana não volta enquanto houver
@@ -2381,88 +2522,15 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
                         $motivo = t("O mesmo relógio da semana no bloco {1} (um relógio para o bloco inteiro).", [1 => $bloco["nome"]]);
                     }
                     if ($escolhido === null) {
-                        $fora = [];
                         $cands = [];
                         foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY id") as $r) {
                             if ($bloco["no_id"] === null || in_array((int)$bloco["no_id"], no_cadeia($r["no_id"] ?? 0), true)) {
                                 $cands[(int)$r["id"]] = $r;
                             }
                         }
-                        $ontem = valor("SELECT relogio_id FROM plano WHERE data = ?", [$dia->modify("-1 day")->format("Y-m-d")]);
-                        if ($ontem !== null && count($cands) > 1) {
-                            if (isset($cands[(int)$ontem])) {
-                                $fora[] = t("o de ontem ({1}) ficou de fora", [1 => $cands[(int)$ontem]["nome"]]);
-                            }
-                            unset($cands[(int)$ontem]);
-                        }
-                        // o ciclo (se o modo usa): os que já passaram no ciclo atual ficam de fora, pelo plano desde a segunda-feira da semana
-                        if ((int)($modo["ciclo"] ?? 0) === 1 && count($cands) > 1) {
-                            $seq = array_map(function ($x) { return (int)$x["relogio_id"]; }, linhas("SELECT relogio_id FROM plano WHERE data BETWEEN ? AND ? ORDER BY data",
-                                [$dia->modify("monday this week")->format("Y-m-d"), $dia->modify("-1 day")->format("Y-m-d")]));
-                            $restam = array_diff_key($cands, array_flip(ciclo_atual($seq, array_keys($cands))));
-                            if (count($restam) > 0) {
-                                if (count($restam) < count($cands)) {
-                                    $fora[] = t("pelo ciclo, {1} que já passaram na semana ficaram de fora", [1 => count($cands) - count($restam)]);
-                                }
-                                $cands = $restam;
-                            }
-                        }
-                        if (count($cands) > 0) {
-                            $info = [];
-                            foreach ($cands as $cid => $r) {
-                                $ctx = ["r" => $r, "momento" => $m_ini, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio($cid)];
-                                $dsu = variavel_valor("dias_sem_uso", $ctx);
-                                $info[$cid] = ["dsu" => is_numeric($dsu) ? (float)$dsu : 9999.0, "nota" => nota_do_relogio($r, $m_ini)["nota"], "nunca" => nunca_no_pulso($ctx)];
-                            }
-                            $entre = count($cands) === 1 ? t("único candidato do bloco {1}", [1 => $bloco["nome"]]) : t("entre {1} candidatos", [1 => count($cands)]);
-                            $max = (int)cfg("max_sem_uso");
-                            $parados = array_filter($info, function ($x) use ($max) { return $x["dsu"] > $max; });
-                            if ($max > 0 && count($parados) > 0 && $modo["selecao"] !== "aleatorio") {
-                                uasort($parados, function ($x, $y) { return $y["dsu"] <=> $x["dsu"]; });
-                                $escolhido = (int)array_key_first($parados);
-                                // os empatados com ele no tempo parado (os nunca usados empatam entre si): sai o cadastrado primeiro
-                                $empatados = [];
-                                foreach ($parados as $cid => $x) {
-                                    if ($cid !== $escolhido && $x["dsu"] == $parados[$escolhido]["dsu"]) {
-                                        $empatados[] = $cands[$cid]["nome"];
-                                    }
-                                }
-                                $motivo = t("Garantia de rodízio: {1}, além do limite de {2} dias sem uso{3}.{4}", [1 => motivo_parado($parados[$escolhido]["dsu"], $parados[$escolhido]["nunca"]), 2 => $max, 3 => count($parados) > 1 ? t(" ({1} além do limite; sai o mais tempo parado)", [1 => count($parados)]) : "", 4 => count($empatados) > 0 ? t(" Empatado com {1}: saiu o cadastrado primeiro.", [1 => implode(", ", $empatados)]) : ""]);
-                            } elseif ($modo["selecao"] === "aleatorio") {
-                                $ids = array_keys($cands);
-                                $escolhido = $ids[sorteio(0, count($ids) - 1)];
-                                $motivo = t("Sorteio simples, {1}, todos com a mesma chance ({2}).", [1 => $entre, 2 => aleatorio_fonte()]);
-                            } elseif ($modo["selecao"] === "fifo") {
-                                uasort($info, function ($x, $y) { return $y["dsu"] <=> $x["dsu"]; });
-                                $escolhido = (int)array_key_first($info);
-                                $motivo = t("Fila: o mais tempo sem uso ({1}), {2}.", [1 => motivo_parado($info[$escolhido]["dsu"], $info[$escolhido]["nunca"]), 2 => $entre]);
-                            } elseif ($modo["selecao"] === "inteligente") {
-                                uasort($info, function ($x, $y) { return $y["nota"] <=> $x["nota"]; });
-                                $escolhido = (int)array_key_first($info);
-                                $motivo = t("A maior nota ({1}), {2}.", [1 => motivo_nota($info[$escolhido]["nota"]), 2 => $entre]);
-                            } else {
-                                // com sorteio: a nota de cada um é a chance dele (no mínimo 1)
-                                $total = 0;
-                                foreach ($info as $x) {
-                                    $total += (int)round(max(1, $x["nota"]) * 100);
-                                }
-                                $alvo = sorteio(1, max(1, $total));
-                                foreach ($info as $cid => $x) {
-                                    $alvo -= (int)round(max(1, $x["nota"]) * 100);
-                                    if ($escolhido === null && $alvo <= 0) {
-                                        $escolhido = $cid;
-                                    }
-                                }
-                                if ($escolhido !== null) {
-                                    $motivo = t("Sorteio pela nota, {1}: nota {2}, {3}% de chance ({4}).", [1 => $entre, 2 => motivo_nota($info[$escolhido]["nota"]), 3 => motivo_nota(round(max(1, $info[$escolhido]["nota"]) * 100) * 100 / max(1, $total)), 4 => aleatorio_fonte()]);
-                                }
-                            }
-                            if (count($fora) > 0 && $motivo !== "") {
-                                $motivo .= " " . ucfirst(implode("; ", $fora)) . ".";
-                            }
-                            if ($bloco["um_por"] === "bloco" && $escolhido !== null) {
-                                $motivo .= t(" Fica o bloco {1} inteiro.", [1 => $bloco["nome"]]);
-                            }
+                        [$escolhido, $motivo] = escolha_do_dia($modo, $dia, $m_ini, $cands, $modo["selecao"], [], $bloco["nome"]);
+                        if ($bloco["um_por"] === "bloco" && $escolhido !== null) {
+                            $motivo .= t(" Fica o bloco {1} inteiro.", [1 => $bloco["nome"]]);
                         }
                     }
                     if ($escolhido !== null) {
@@ -2494,7 +2562,7 @@ const RODIZIO_MANUAL_POR_PAGINA = 7;
 // o critério do "Decida por mim" do rodízio manual, como a API o explica
 function rodizio_manual_criterio()
 {
-    return t("Decida por mim: o sistema escolhe pela nota dos critérios (os que você cadastra em Critérios: dias sem uso, equilíbrio, preferência, carga...), recalculada no começo de cada dia, com os dias anteriores do período (os que você escolheu e os que ele decidiu) já contados como uso; a garantia de rodízio vem na frente (quem passou do limite de dias sem uso, o mais tempo parado primeiro); e o relógio de ontem e o de amanhã ficam de fora, se houver outro. Empate: o cadastrado primeiro. A decisão é feita ao gravar e fica gravada no plano, com o motivo; hoje, com \"Decida por mim\", continua o relógio que já está no plano.");
+    return t("Decida por mim: o sistema escolhe pela nota dos critérios (os que você cadastra em Critérios: dias sem uso, equilíbrio, preferência, carga...), recalculada no começo de cada dia, com os dias anteriores do período (os que você escolheu e os que ele decidiu) já contados como uso; a garantia de rodízio vem na frente (quem passou do limite de dias sem uso, o mais tempo parado primeiro); e o relógio de ontem e o de amanhã ficam de fora, se houver outro. Empate: o cadastrado primeiro. A decisão é feita ao gravar e fica gravada no plano, com o motivo; hoje, com \"Decida por mim\", continua o relógio que já está no plano. Sortear este dia por: o dia é sorteado ao gravar pela forma escolhida (a maior nota, sorteio pela nota, aleatório ou fila), com a garantia de rodízio na frente (menos no aleatório) e sem o de ontem e o de amanhã.");
 }
 
 // O período do rodízio manual: de e ate (AAAA-MM-DD), de hoje em diante, até 2 anos. Devolve [de, ate, erro]
@@ -2548,7 +2616,8 @@ function rodizio_manual_pagina($de, $ate, $pagina)
     return ["de" => $de->format("Y-m-d"), "ate" => $ate->format("Y-m-d"), "total_dias" => $total, "por_pagina" => RODIZIO_MANUAL_POR_PAGINA,
         "pagina" => $pagina, "paginas" => $paginas, "dias" => $dias,
         "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"]]; }, linhas("SELECT id, nome FROM relogio WHERE disponivel = 1 ORDER BY nome")),
-        "decida_por_mim" => rodizio_manual_criterio()];
+        "decida_por_mim" => rodizio_manual_criterio(),
+        "formas" => array_map(function ($k, $n) { return ["chave" => $k, "nome" => $n]; }, array_keys(formas_de_escolha()), formas_de_escolha())];
 }
 
 // O "Decida por mim": o relógio de cada dia "auto" do período, em ordem, pelo critério de rodizio_manual_criterio(). De hoje
@@ -2583,7 +2652,7 @@ function rodizio_manual_decidir($de, $ate, $escolhas)
             $escolhido = $p ? (int)$p["relogio_id"] : null;
         } elseif (is_int($e)) {
             $escolhido = $e;
-        } elseif ($e === "auto" && count($rels) > 0) {
+        } elseif (($e === "auto" || (is_string($e) && strpos($e, "sortear:") === 0)) && count($rels) > 0) {
             $cands = $rels;
             $fora = [];
             $amanha = $escolhas[$dia->modify("+1 day")->format("Y-m-d")] ?? null;
@@ -2593,27 +2662,36 @@ function rodizio_manual_decidir($de, $ate, $escolhas)
                     unset($cands[$x]);
                 }
             }
-            $info = [];
-            foreach ($cands as $cid => $r) {
-                $ctx = ["r" => $r, "momento" => $m_ini, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio($cid)];
-                $dsu = variavel_valor("dias_sem_uso", $ctx);
-                $info[$cid] = ["dsu" => is_numeric($dsu) ? (float)$dsu : 9999.0, "nota" => nota_do_relogio($r, $m_ini)["nota"], "nunca" => nunca_no_pulso($ctx)];
-            }
-            $entre = count($cands) === 1 ? t("o único candidato") : t("entre {1} candidatos", [1 => count($cands)]);
-            $parados = array_filter($info, function ($x) use ($max) { return $x["dsu"] > $max; });
-            if ($max > 0 && count($parados) > 0) {
-                uasort($parados, function ($x, $y) { return $y["dsu"] <=> $x["dsu"]; });
-                $escolhido = (int)array_key_first($parados);
-                $motivo = t("Decida por mim, pela garantia de rodízio: {1}, além do limite de {2} dias sem uso, {3}.", [1 => motivo_parado($parados[$escolhido]["dsu"], $parados[$escolhido]["nunca"]), 2 => $max, 3 => $entre]);
+            if ($e !== "auto") {
+                // sortear:<forma>: o dia sorteado por essa forma de escolha (sem o de ontem e o de amanhã, como o Decida por mim)
+                $forma = substr($e, 8);
+                [$escolhido, $motivo] = escolha_do_dia(null, $dia, $m_ini, $cands, $forma, array_map(function ($x) { return t("{1} ficou de fora", [1 => $x]); }, $fora), "", false);
+                if ($escolhido !== null) {
+                    $res[$data] = [$escolhido, corta_texto(t("Sorteado à mão ({1}): {2}", [1 => formas_de_escolha()[$forma], 2 => $motivo]), 300)];
+                }
             } else {
-                uasort($info, function ($x, $y) { return $y["nota"] <=> $x["nota"]; });
-                $escolhido = (int)array_key_first($info);
-                $motivo = t("Decida por mim: a maior nota ({1}), {2}.", [1 => motivo_nota($info[$escolhido]["nota"]), 2 => $entre]);
+                $info = [];
+                foreach ($cands as $cid => $r) {
+                    $ctx = ["r" => $r, "momento" => $m_ini, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio($cid)];
+                    $dsu = variavel_valor("dias_sem_uso", $ctx);
+                    $info[$cid] = ["dsu" => is_numeric($dsu) ? (float)$dsu : 9999.0, "nota" => nota_do_relogio($r, $m_ini)["nota"], "nunca" => nunca_no_pulso($ctx)];
+                }
+                $entre = count($cands) === 1 ? t("o único candidato") : t("entre {1} candidatos", [1 => count($cands)]);
+                $parados = array_filter($info, function ($x) use ($max) { return $x["dsu"] > $max; });
+                if ($max > 0 && count($parados) > 0) {
+                    uasort($parados, function ($x, $y) { return $y["dsu"] <=> $x["dsu"]; });
+                    $escolhido = (int)array_key_first($parados);
+                    $motivo = t("Decida por mim, pela garantia de rodízio: {1}, além do limite de {2} dias sem uso, {3}.", [1 => motivo_parado($parados[$escolhido]["dsu"], $parados[$escolhido]["nunca"]), 2 => $max, 3 => $entre]);
+                } else {
+                    uasort($info, function ($x, $y) { return $y["nota"] <=> $x["nota"]; });
+                    $escolhido = (int)array_key_first($info);
+                    $motivo = t("Decida por mim: a maior nota ({1}), {2}.", [1 => motivo_nota($info[$escolhido]["nota"]), 2 => $entre]);
+                }
+                if (count($fora) > 0) {
+                    $motivo .= t(" {1}{2} de fora.", [1 => ucfirst(implode(" e ", $fora)), 2 => count($fora) > 1 ? " ficaram" : " ficou"]);
+                }
+                $res[$data] = [$escolhido, corta_texto($motivo, 300)];
             }
-            if (count($fora) > 0) {
-                $motivo .= t(" {1}{2} de fora.", [1 => ucfirst(implode(" e ", $fora)), 2 => count($fora) > 1 ? " ficaram" : " ficou"]);
-            }
-            $res[$data] = [$escolhido, corta_texto($motivo, 300)];
         }
         // o dia vira uma sessão simulada no pulso (se ainda não tem a do rodízio): só o uso, como no sorteio
         if ($escolhido !== null && $pulso && $fim_u > $agora && valor("SELECT id FROM lancamento WHERE tipo_id = ? AND origem = 'rodizio' AND DATE(inicio) = ?",

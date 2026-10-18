@@ -1,4 +1,4 @@
-<!-- origem: 5444c2d722268c1a14b99125f2e914f98283dbc2 -->
+<!-- origem: d7dded06515ca5232e5782eb02d1ae1b1ff9e4c1 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -256,12 +256,13 @@ each day of a period yourself (the holidays, a trip, a whole month). Set the sta
 - the days appear **7 at a time**, with the date, the weekday, what the plan has on that day now and a selector;
 - with more than 7 days, the pages are below: **‹ Previous**, **1 2 3 …**, **Next ›**. What you choose on one page is kept
   while you move through the others; nothing changes before saving;
-- each day's selector has the available watches, **Decide for me** and **No watch (free day)**. At the start, it shows the
-  watch the day already has chosen by hand; a free day appears as free; and the rest (drawn or still without a watch), as
+- each day's selector has the available watches, **Decide for me**, the group **Draw this day by** (*the highest score*,
+  *draw by score*, *random* or *queue*: the day is drawn when saving by that way, without yesterday's and tomorrow's, like
+  Decide for me) and **No watch (free day)**. At the start, it shows the watch the day already has chosen by hand; a free day appears as free; and the rest (drawn or still without a watch), as
   *Decide for me*;
-- **Save the manual rotation** saves the whole period: the days with a watch are chosen by hand, the *Decide for me* ones are
-  decided right then by the system and are also saved (the reason for each one appears in the plan), and the free ones are
-  left without a watch. If today is in the period and you chose another watch, it becomes the one on the wrist from now on;
+- **Save the manual rotation** saves the whole period: the days with a watch are chosen by hand, the *Decide for me* and the
+  *Draw this day by* ones are decided right then by the system and are also saved (the reason for each one appears in the
+  plan), and the free ones are left without a watch. If today is in the period and you chose another watch, it becomes the one on the wrist from now on;
 - to erase a period's days (the rotation mode builds these days again) or erase everything, see
   [Erase the schedule](#apagar-a-programação).
 
@@ -1155,6 +1156,14 @@ In **Next days** (on the Today page) or on the **Plan** page, each day has **cha
 days adjust). On a day chosen by hand, the same list has **draw again**. You can also **Draw again** from today or from
 tomorrow, or build **next week** on any day.
 
+The same list has the group **Draw this day by**: *the highest score*, *draw by score*, *random, all with the same chance*
+or *queue: the longest without use*. Only that day is drawn on the spot, by that way, among the watches of the active mode's
+block that covers the day (no block: among all the available ones), without the watch the day had; the rotation guarantee
+comes first (except on random), and the previous days of the plan count as use. The day stays *by hand*, with the reason
+*"Drawn by hand (the highest score): …"*, which is why Draw again and the cron respect it; **draw again** gives the day back
+to the mode. Today, the drawn watch goes to the wrist from now on. Through the API: `recurso=rodizio`, `acao=trocar_dia`,
+`relogio_id=sortear:<way>` (`inteligente`, `ponderado`, `aleatorio` or `fifo`).
+
 **What if today I don't want to wear any watch?**
 In the watch of the day box, at the top of the Today page, **No watch today** (it asks for confirmation): the day is left
 **free**, with no watch and no draw, like the plan's free days. If the watch of the day was already on the wrist through the
@@ -1165,8 +1174,8 @@ the API: `recurso=rodizio`, `acao=sem_relogio`.
 
 **What if I want to choose the watches for a period myself?**
 In the **Rotation mode** box on the Today page, choose **Manual rotation**, set the start and the end and click **OK**: the
-days appear 7 at a time (with the pages below), and on each one you choose the watch, **Decide for me** or **No watch (free
-day)**. **Save the manual rotation** saves everything. See [The manual rotation](#o-rodízio-manual). These days stay even when
+days appear 7 at a time (with the pages below), and on each one you choose the watch, **Decide for me**, a way of **Draw this
+day by** or **No watch (free day)**. **Save the manual rotation** saves everything. See [The manual rotation](#o-rodízio-manual). These days stay even when
 you draw again or build the next week. (Through the API, there is also the `periodo` action, which rotates a list of watches
 in order, N days in a row each.)
 

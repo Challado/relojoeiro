@@ -106,11 +106,23 @@ function instante(t) {
 
 // Trocar o relógio de um dia do plano (Hoje e Plano): a lista dos relógios disponíveis e o botão; no dia escolhido à mão
 // ou livre (de amanhã em diante), também "voltar a sortear". p: o dia do plano (data, relogio_id, origem); hoje: AAAA-MM-DD
+// As formas de escolha do "Sortear este dia por" (as mesmas chaves da API: rodizio trocar_dia e manual, sortear:<chave>)
+var FORMAS_DE_ESCOLHA = [["inteligente", t("a maior nota")], ["ponderado", t("sorteio pela nota")], ["aleatorio", t("aleatório, todos com a mesma chance")], ["fifo", t("fila: o mais tempo sem uso")]];
+
+// O grupo "Sortear este dia por" de um seletor de dia (o trocar por…, o escolher… e o Rodízio manual): o dia é sorteado na
+// hora por essa forma, entre os relógios do bloco do modo, e fica escolhido à mão com o motivo do sorteio
+function opcoesSortearDia(atual) {
+  return el("optgroup", {"label": t("Sortear este dia por")}, FORMAS_DE_ESCOLHA.map(function (f) {
+    return el("option", {"value": "sortear:" + f[0], "selected": atual === "sortear:" + f[0]}, h(f[1]));
+  }).join(""));
+}
+
 function formTrocarDia(p, relogios, hoje) {
   var opcoes = el("option", {"value": "", "selected": true, "disabled": true}, p.origem === "livre" ? t("escolher…") : t("trocar por…"))
-    + relogios.filter(function (r) { return r.disponivel && r.id !== p.relogio_id; }).map(function (r) {
+    + el("optgroup", {"label": t("Um relógio")}, relogios.filter(function (r) { return r.disponivel && r.id !== p.relogio_id; }).map(function (r) {
       return el("option", {"value": r.id}, h(r.nome));
-    }).join("")
+    }).join(""))
+    + opcoesSortearDia("")
     + ((p.origem === "manual" || p.origem === "livre") && p.data > hoje ? el("option", {"value": "0"}, t("↺ voltar a sortear")) : "");
   return el("form", {"data-recurso": "rodizio", "class": "trocar-dia"}, el("input", {"type": "hidden", "name": "acao", "value": "trocar_dia"})
     + el("input", {"type": "hidden", "name": "data", "value": p.data})

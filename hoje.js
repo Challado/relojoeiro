@@ -185,7 +185,7 @@ function recarregarHoje() {
     var ladoModo = el("label", {"class": "campo-principal"}, t("Modo de rodízio {1}", {1: el("select", {"name": "modo"}, d.modos.map(function (m) {
       return el("option", {"value": m.id, "selected": modo !== null && m.id === modo.id}, h(m.nome));
     }).join("") + el("option", {"value": "manual"}, t("Rodízio manual")))}));
-    ladoModo += el("p", {"class": "nota explicacao", "data-explica-modo": "manual"}, t("Você escolhe o relógio de cada dia de um período. Ponha o começo e o fim e clique em OK: os dias aparecem de 7 em 7, cada um com a lista dos relógios, \"Decida por mim\" (o sistema escolhe) e \"Sem relógio (dia livre)\". Fora do período, continua valendo o modo de rodízio de sempre ({1}).", {1: h(modo ? modo.nome : t("nenhum"))}));
+    ladoModo += el("p", {"class": "nota explicacao", "data-explica-modo": "manual"}, t("Você escolhe o relógio de cada dia de um período. Ponha o começo e o fim e clique em OK: os dias aparecem de 7 em 7, cada um com a lista dos relógios, \"Decida por mim\" (o sistema escolhe), \"Sortear este dia por\" (uma forma de escolha) e \"Sem relógio (dia livre)\". Fora do período, continua valendo o modo de rodízio de sempre ({1}).", {1: h(modo ? modo.nome : t("nenhum"))}));
     d.modos.forEach(function (m) {
       ladoModo += el("p", {"class": "nota explicacao", "data-explica-modo": m.id}, h(m.escala_dias !== null
         ? t("Monta o plano do período inteiro de uma vez, simulando a carga de cada relógio dia a dia, com os lembretes de carregar, dar corda e pôr no sol. É refeita toda manhã a partir do estado real.")
@@ -370,6 +370,7 @@ function manualHtml(r) {
       + el("optgroup", {"label": t("Relógios")}, r.relogios.map(function (x) {
         return el("option", {"value": String(x.id), "selected": atual === String(x.id)}, h(x.nome));
       }).join(""))
+      + opcoesSortearDia(atual)
       + (dia.hoje ? "" : el("option", {"value": "livre", "selected": atual === "livre"}, t("Sem relógio (dia livre)")));
     var agora = dia.livre ? el("span", {"class": "nota"}, t("dia livre")) : (dia.relogio !== null ? h(dia.relogio) + " " + el("small", {"class": "a-mao"}, dia.origem === "manual" ? t("à mão") : "sorteado") : el("span", {"class": "nota"}, "—"));
     return el("tr", {"class": dia.dia_semana >= 6 ? "fds" : ""}, el("td", {"data-rotulo": t("Dia")}, dataBr(dia.data, true) + " " + el("small", {}, dia.dia_semana_nome + (dia.hoje ? t(" · hoje") : "")))

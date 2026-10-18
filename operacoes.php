@@ -1785,12 +1785,14 @@ function op_criterios($acao, $d)
 // um para o bloco; só nos blocos que vierem e fora da escala), selecao, escala_dias, max_sem_uso: grava o modo e ativa;
 // se o dia ainda não começou no pulso, o plano novo vale já de hoje), resortear (refaz o plano de amanhã até domingo, ou até o fim da próxima semana, se ela já foi montada; se o dia ainda não começou no pulso, também hoje),
 // resortear_hoje (inclusive hoje: o sorteado passa a ser o do pulso a partir de agora), usando (relogio_id: este passa a
-// ser o relógio de hoje, a partir de agora), trocar_dia (data, relogio_id: o relógio daquele dia, à mão; hoje, como o
-// usando; 0: o dia volta a ser sorteado), proxima_semana (em qualquer dia: monta ou refaz a semana seguinte inteira, com os dias que faltam desta já contados como uso),
+// ser o relógio de hoje, a partir de agora; motivo, opcional: a frase que fica no plano), trocar_dia (data, relogio_id: o relógio daquele dia, à mão; hoje, como o
+// usando; 0: o dia volta a ser sorteado; sortear:<forma>: o dia é sorteado agora por essa forma de escolha, entre os do
+// bloco do modo, e fica à mão com o motivo do sorteio), proxima_semana (em qualquer dia: monta ou refaz a semana seguinte inteira, com os dias que faltam desta já contados como uso),
 // periodo (de, ate, relogio_ids em ordem, dias_cada: os dias do período escolhidos à mão, em rodízio entre eles),
 // periodo_sortear (de, ate: tudo o que o período tem, de amanhã em diante, sai e ele é sorteado de novo), periodo_livre (de,
 // ate: tudo sai e os dias ficam livres: sem relógio e sem sorteio, para escolher à mão), manual (o rodízio manual: de, ate,
-// dias[AAAA-MM-DD] = o id do relógio, auto (Decida por mim: o sistema decide ao gravar, rodizio_manual_decidir) ou livre;
+// dias[AAAA-MM-DD] = o id do relógio, auto (Decida por mim: o sistema decide ao gravar, rodizio_manual_decidir),
+// sortear:<forma> (o dia sorteado ao gravar por essa forma de escolha: inteligente, ponderado, aleatorio ou fifo) ou livre;
 // o dia que não vem fica com a escolha de partida; tudo grava como escolhido à mão), apagar_tudo (toda a programação de
 // amanhã em diante, à mão, sorteada e livre, sai; hoje=1: de hoje em diante; o modo ativo monta o plano de novo; hoje, se
 // mudar, o novo vai para o pulso a partir de agora). Os dias escolhidos à mão e os
@@ -1917,7 +1919,7 @@ function op_rodizio($acao, $d)
             $erros[] = t("Relógio não encontrado.");
         } else {
             $antes = plano_do_dia($hoje->format("Y-m-d"));
-            $troca_hoje((int)$r["id"], t("Escolhido à mão: você marcou que está usando este hoje."));
+            $troca_hoje((int)$r["id"], trim((string)($d["motivo"] ?? "")) !== "" ? corta_texto(trim((string)$d["motivo"]), 300) : t("Escolhido à mão: você marcou que está usando este hoje."));
             $msg = t("Hoje: {1}, a partir de agora.", [1 => $r["nome"]]);
             if ($escala) {
                 // os dias seguidos que o relógio de antes ainda teria ficam com o escolhido; a escala é refeita depois deles
@@ -1938,12 +1940,33 @@ function op_rodizio($acao, $d)
         // dele, com o dia fixo); relogio_id 0 desfaz a escolha à mão e o dia volta a ser sorteado
         $data = (string)($d["data"] ?? "");
         $dt = DateTimeImmutable::createFromFormat("!Y-m-d", $data);
-        $novo = (int)($d["relogio_id"] ?? 0);
+        // relogio_id: o id; 0 (volta a sortear); ou sortear:<forma> (o dia é sorteado agora por essa forma de escolha)
+        $forma = preg_match("/^sortear:([a-z]+)$/", trim((string)($d["relogio_id"] ?? "")), $m_f) === 1 ? $m_f[1] : null;
+        $novo = $forma === null ? (int)($d["relogio_id"] ?? 0) : 0;
         $r = $novo > 0 ? linha("SELECT * FROM relogio WHERE id = ?", [$novo]) : null;
         if (!$dt || $dt->format("Y-m-d") !== $data) {
             $erros[] = t("Data: AAAA-MM-DD.");
         } elseif ($dt < $hoje) {
             $erros[] = t("O dia {1} já passou: o que foi usado nele se corrige nas marcações (o quadro \"Corrigir marcações\" no painel do relógio).", [1 => $dt->format("d/m")]);
+        } elseif ($forma !== null && !isset(formas_de_escolha()[$forma])) {
+            $erros[] = t("Forma de escolha: {1}.", [1 => implode(", ", array_keys(formas_de_escolha()))]);
+        } elseif ($forma !== null) {
+            // o dia sorteado agora por essa forma: fica escolhido à mão, com o motivo do sorteio; hoje, como o usando
+            [$novo, $motivo_s] = sortear_dia($dt, $forma);
+            if ($novo === null) {
+                $erros[] = t("Nenhum relógio disponível para sortear em {1}.", [1 => $dt->format("d/m")]);
+            } else {
+                $motivo_s = t("Sorteado à mão ({1}): {2}", [1 => formas_de_escolha()[$forma], 2 => $motivo_s]);
+                if ($dt == $hoje) {
+                    return op_rodizio("usando", ["relogio_id" => $novo, "motivo" => $motivo_s]);
+                }
+                sql("DELETE FROM plano_livre WHERE data = ?", [$data]);
+                plano_gravar($data, $novo, null, "manual", corta_texto($motivo_s, 300), null, true);
+                if ($escala) {
+                    gerar_escala($dt);
+                }
+                $msg = t("{1}: {2}, sorteado por {3}.{4}", [1 => $dt->format("d/m"), 2 => valor("SELECT nome FROM relogio WHERE id = ?", [$novo]), 3 => formas_de_escolha()[$forma], 4 => $escala ? t(" A escala foi refeita a partir desse dia.") : ""]);
+            }
         } elseif ($novo > 0 && !$r) {
             $erros[] = t("Relógio não encontrado.");
         } elseif ($r && (int)$r["disponivel"] !== 1) {
@@ -2110,12 +2133,12 @@ function op_rodizio($acao, $d)
                 $v = array_key_exists($data, $vindos) ? trim((string)$vindos[$data]) : null;
                 if ($v === null) {
                     $escolhas[$data] = rodizio_manual_escolha(plano_do_dia($data), dia_livre($data));
-                } elseif ($v === "auto" || $v === "livre") {
+                } elseif ($v === "auto" || $v === "livre" || (strpos($v, "sortear:") === 0 && isset(formas_de_escolha()[substr($v, 8)]))) {
                     $escolhas[$data] = $v;
                 } elseif (ctype_digit($v) && isset($disp[(int)$v])) {
                     $escolhas[$data] = (int)$v;
                 } else {
-                    $erros[] = t("{1}: escolha um relógio disponível, \"auto\" (Decida por mim) ou \"livre\".", [1 => $dia->format("d/m")]);
+                    $erros[] = t("{1}: escolha um relógio disponível, \"auto\" (Decida por mim), \"livre\" ou \"sortear:<forma>\" ({2}).", [1 => $dia->format("d/m"), 2 => implode(", ", array_keys(formas_de_escolha()))]);
                 }
                 if (($escolhas[$data] ?? null) === "livre" && $dia == $hoje) {
                     $erros[] = t("Hoje não pode ficar livre: hoje já tem o relógio do pulso (troque por outro, ou Decida por mim).");
