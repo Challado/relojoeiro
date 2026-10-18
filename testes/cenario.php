@@ -347,6 +347,9 @@ escrever(["recurso" => "rodizio", "acao" => "usando", "relogio_id" => $rel["cron
 cron();
 
 // ---------- a fotografia ----------
+// um segundo depois do usando: a sessão que ele fechou tem de acabar num segundo anterior ao da fotografia, senão a linha
+// do tempo sai sem o trecho "em repouso" do fim (no CI, o SQLite leu no mesmo segundo e o Firebird 7 s depois)
+sleep(1);
 ler("tudo", ["foto" => "nao"]);
 foreach (["hoje", "avisos", "criterios", "historico", "previsao", "autonomia", "plano", "eventos", "destinos", "agendas", "config", "arvore", "cadastros", "usuarios", "migracoes"] as $r) {
     ler($r, ["recurso" => $r]);
@@ -627,6 +630,7 @@ cron();
 // a fotografia de novo, depois de tudo. Antes, 2 segundos: o trecho que começou agora (a troca do relógio de hoje) já tem
 // duração em qualquer banco, rápido ou lento (lido no mesmo segundo, ele tem 0 s e não aparece na linha do tempo)
 sleep(2);
+sleep(1);
 ler("2 tudo", ["foto" => "nao"]);
 foreach (["hoje", "avisos", "criterios", "historico", "plano", "eventos", "arvore", "cadastros", "config"] as $r) {
     ler("2 " . $r, ["recurso" => $r]);
