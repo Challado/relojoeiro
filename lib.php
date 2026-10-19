@@ -5436,11 +5436,11 @@ function autonomia_do_relogio($r, $agora)
     return $res;
 }
 
-// Os estados da linha do tempo: em uso pelo rodízio, no pulso fora do rodízio, cada tipo de sessão (winder, sol...), em
+// Os estados da linha do tempo: em uso pelo rodízio, em uso fora do plano (no pulso sem ser o relógio do dia), cada tipo de sessão (winder, sol...), em
 // repouso (o resto) e as marcações instantâneas. [estado => texto]
 function estados_da_linha()
 {
-    $res = ["rodizio" => t("em uso"), "pulso" => t("fora do rodízio")];
+    $res = ["rodizio" => t("em uso"), "pulso" => t("em uso (fora do plano)")];
     foreach (lancamento_tipos() as $ident => $t) {
         if ($t["formato"] === "sessao" && $ident !== "pulso") {
             // minúsculas sem depender do mbstring ("No winder" → "no winder")
@@ -5451,7 +5451,7 @@ function estados_da_linha()
 }
 
 // A linha do tempo de um relógio, do primeiro lançamento até agora: trechos contínuos, cada um com o seu estado (em uso
-// pelo rodízio, no pulso fora do rodízio, em cada tipo de sessão, ou em repouso), e no meio as marcações instantâneas
+// pelo rodízio, em uso fora do plano, em cada tipo de sessão, ou em repouso), e no meio as marcações instantâneas
 // (corda, leitura de carga, troca de pilha, marcações antigas...). Onde duas sessões se sobrepõem, vale a de tipo que vem
 // antes na ordem dos tipos de lançamento (o pulso antes do winder, antes do sol); sessão esquecida aberta vale até o
 // "fecha às" do tipo. Filtrada: $de e $ate em segundos (0 e PHP_INT_MAX: sem limite), entra a linha que cruza o período;
@@ -5480,7 +5480,7 @@ function linha_do_tempo($id, $de, $ate, $estados)
             $fim = min($fim, $agora);
             if ($fim > $ini) {
                 $estado = $l["identificador"] === "pulso" ? ($l["origem"] === "rodizio" ? "rodizio" : "pulso") : $l["identificador"];
-                // a prioridade: a ordem do tipo; no pulso, o rodízio antes do fora do rodízio
+                // a prioridade: a ordem do tipo; no pulso, o rodízio antes do fora do plano
                 $sessoes[] = [$ini, $fim, $estado, (int)$l["ordem"] * 2 + ($estado === "pulso" ? 1 : 0)];
             }
         } else {

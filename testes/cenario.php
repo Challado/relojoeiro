@@ -273,6 +273,17 @@ $lanc("lancar", "manual", "corda", ["quando" => dia(29, "09:00")]);
 $lanc("lancar", "pilha", "pilha", ["quando" => dia(400, "10:00")]);
 $lanc("periodo", "solar", "sol", ["inicio" => dia(8, "10:00"), "fim" => dia(8, "16:00")]);
 $lanc("iniciar", "solar", "sol", ["quando" => ha_minutos(20)]);
+// períodos do mesmo tipo que se encostam ou se cobrem viram um só (de 08:00 a 20:00), num tipo de sessão que não entra
+// em conta nenhuma (o pulso ou o winder mudariam a energia e a nota, e com elas o relógio que o rodízio escolhe hoje)
+escrever(["recurso" => "lancamento_tipos", "acao" => "novo", "identificador" => "estojo", "nome" => "No estojo", "formato" => "sessao", "no_id" => 0]);
+$lanc("periodo", "crono", "estojo", ["inicio" => dia(15, "08:00"), "fim" => dia(15, "12:00")]);
+$lanc("periodo", "crono", "estojo", ["inicio" => dia(15, "12:00"), "fim" => dia(15, "18:00")]);
+$lanc("periodo", "crono", "estojo", ["inicio" => dia(15, "10:00"), "fim" => dia(15, "20:00")]);
+// um período que encosta no que está aberto (esqueceu de marcar antes): os dois viram um só, aberto desde o começo do período
+$lanc("iniciar", "crono", "estojo", ["quando" => ha_minutos(20)]);
+$lanc("periodo", "crono", "estojo", ["inicio" => ha_minutos(50), "fim" => ha_minutos(20)]);
+// e sai do estojo (aberto, o estado dele mudaria, e com ele o relógio que o rodízio escolhe hoje)
+$lanc("encerrar", "crono", "estojo", ["quando" => ha_minutos(10)]);
 $lanc("iniciar", "auto2", "winder", ["quando" => ha_minutos(30)]);
 $lanc("encerrar", "auto2", "winder", ["quando" => ha_minutos(25)]);
 // o carregador: um período que já passou e um aberto agora (o estado vira "No carregador" e o aviso Carregar some)

@@ -1040,8 +1040,9 @@
  *     relogios[].linha_do_tempo[].em_andamento
  *                                    verdadeiro ou falso: o trecho ainda não terminou (o fim é o momento da consulta)
  *     relogios[].linha_do_tempo[].estado
- *                                    o estado do trecho: rodizio (no pulso pelo rodízio), pulso (no pulso fora do rodízio), o identificador
- *                                    de um tipo de sessão (winder, sol...), repouso (parado) ou marca (uma marcação)
+ *                                    o estado do trecho: rodizio (no pulso pelo rodízio), pulso (em uso fora do plano: no pulso sem ser o
+ *                                    relógio do dia), o identificador de um tipo de sessão (winder, sol...), repouso (parado) ou marca (uma
+ *                                    marcação)
  *     relogios[].linha_do_tempo[].fim
  *                                    quando o trecho terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null numa marcação
  *     relogios[].linha_do_tempo[].inicio
@@ -1790,8 +1791,9 @@
  *     relogio.linha_do_tempo[].em_andamento
  *                                    verdadeiro ou falso: o trecho ainda não terminou (o fim é o momento da consulta)
  *     relogio.linha_do_tempo[].estado
- *                                    o estado do trecho: rodizio (no pulso pelo rodízio), pulso (no pulso fora do rodízio), o identificador
- *                                    de um tipo de sessão (winder, sol...), repouso (parado) ou marca (uma marcação)
+ *                                    o estado do trecho: rodizio (no pulso pelo rodízio), pulso (em uso fora do plano: no pulso sem ser o
+ *                                    relógio do dia), o identificador de um tipo de sessão (winder, sol...), repouso (parado) ou marca (uma
+ *                                    marcação)
  *     relogio.linha_do_tempo[].fim   quando o trecho terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null numa marcação
  *     relogio.linha_do_tempo[].inicio
  *                                    quando o trecho começou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
@@ -2391,8 +2393,9 @@
  *     linhas[].duracao               a mesma duração por extenso ("2d 3h", "40min"); null numa marcação
  *     linhas[].duracao_seg           quanto o trecho durou, número inteiro, em segundos; null numa marcação
  *     linhas[].em_andamento          verdadeiro ou falso: o trecho ainda não terminou (o fim é o momento da consulta)
- *     linhas[].estado                o estado do trecho: rodizio (no pulso pelo rodízio), pulso (no pulso fora do rodízio), o identificador
- *                                    de um tipo de sessão (winder, sol...), repouso (parado) ou marca (uma marcação)
+ *     linhas[].estado                o estado do trecho: rodizio (no pulso pelo rodízio), pulso (em uso fora do plano: no pulso sem ser o
+ *                                    relógio do dia), o identificador de um tipo de sessão (winder, sol...), repouso (parado) ou marca (uma
+ *                                    marcação)
  *     linhas[].fim                   quando o trecho terminou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null numa marcação
  *     linhas[].inicio                quando o trecho começou (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     linhas[].relogio               o nome

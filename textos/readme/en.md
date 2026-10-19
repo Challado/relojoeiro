@@ -1,4 +1,4 @@
-<!-- origem: 3148a388d990acd48b819e300295e1db5a0e6dec -->
+<!-- origem: a34eb9a70975fe8e6339869f1f2eb338ca9e3233 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -177,7 +177,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `relogio` | `salvar` (create or change), `excluir` (with the documents), `foto`, `remover_foto` |
 | `documentos` | `enviar` (one or several files, with the category, the title, the date, the description and, for a photo, the thumbnail), `alterar`, `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (only without documents) |
-| `lancamento` | `lancar` (winding, charge, battery...), `iniciar` and `encerrar` (put on and take off the wrist, the winder, the sun, the charger), `alternar` (closes the session if it is open, opens it if it is closed: a single button on the phone), `periodo` (a period that has passed), `alterar`, `excluir`, `medicao` (a consumption measurement goes into or out of the calculation: `id`, `usada` 1 or 0). In all of them, `relogio_id=hoje` is the watch of the day |
+| `lancamento` | `lancar` (winding, charge, battery...), `iniciar` and `encerrar` (put on and take off the wrist, the winder, the sun, the charger), `alternar` (closes the session if it is open, opens it if it is closed: a single button on the phone), `periodo` (a period that has passed; on the wrist of the watch of the day it is rotation use, and the stretches of the same type it touches, like a Put on left open, become one), `alterar`, `excluir`, `medicao` (a consumption measurement goes into or out of the calculation: `id`, `usada` 1 or 0). In all of them, `relogio_id=hoje` is the watch of the day |
 | `rodizio` | `usando` (I'm wearing this one today), `trocar_dia` (a day's watch), `periodo` (the watches of a period, in order: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (erases the period's days and the mode builds them again; only `de`: to the end of the plan; only `ate`: from tomorrow to it), `periodo_livre` (erases and leaves the days free, without a draw; the same dates), `manual` (the Manual rotation: `de`, `ate`, `dias[YYYY-MM-DD]` = the watch id, `auto` or `livre`), `apagar_tudo` (the whole schedule from tomorrow on goes away; `hoje=1`: from today on; the mode builds the plan again), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (change the mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (groups) and `relogios` (each watch's group) |

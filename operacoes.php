@@ -1054,7 +1054,7 @@ function op_lancamento($acao, $d)
     }
     // sessões exclusivas do relógio que se sobrepõem a [a, b) (fora a $ignorar)
     $sobrepostas = function ($a, $b, $ignorar) use ($rid) {
-        return linhas("SELECT l.id, t.nome, l.inicio, l.fim FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
+        return linhas("SELECT l.id, l.tipo_id, t.nome, l.inicio, l.fim FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
             WHERE l.relogio_id = ? AND t.exclusiva = 1 AND l.id <> ? AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?)",
             [$rid, $ignorar, date("Y-m-d H:i:s", $b), date("Y-m-d H:i:s", $a)]);
     };
@@ -1201,7 +1201,7 @@ function op_lancamento($acao, $d)
                 }
             }
             if (count($erros) === 0) {
-                // o Pôs no relógio do dia é o uso do rodízio (não "fora do rodízio"): sem pôr sozinho, é ele que abre o dia; pondo
+                // o Pôs no relógio do dia é o uso do rodízio (não "fora do plano"): sem pôr sozinho, é ele que abre o dia; pondo
                 // sozinho, um Pôs antes do início do horário já conta como a sessão do dia (o cron não abre outra). Aberta até o
                 // Tirou, ou até o "fecha às" do tipo (o fim do horário de uso, tirando sozinho)
                 $p_dia = plano_do_dia(date("Y-m-d", $q));
@@ -1247,16 +1247,44 @@ function op_lancamento($acao, $d)
             $erros[] = t("O fim tem de ser depois do início.");
         } elseif ($formato === "valor" && $v === null) {
             $erros[] = t("{1} precisa de um valor.", [1 => $t["nome"]]);
-        } elseif ((int)$t["exclusiva"] === 1 && count($sobrepostas($ini, $fim ?? $agora, $id)) > 0) {
-            $s = $sobrepostas($ini, $fim ?? $agora, $id)[0];
+        } elseif ((int)$t["exclusiva"] === 1 && count($outras = array_values(array_filter($sobrepostas($ini, $fim ?? $agora, $id), function ($x) use ($acao, $t) {
+            // no período, as do mesmo tipo não atrapalham: elas se juntam a ele (logo abaixo)
+            return $acao !== "periodo" || (int)$x["tipo_id"] !== (int)$t["id"];
+        }))) > 0) {
+            $s = $outras[0];
             $erros[] = t("{1} já estava em {2} de {3} a {4}: o relógio fica num lugar só.", [1 => $r["nome"], 2 => $s["nome"], 3 => data_txt(strtotime($s["inicio"]), true, true), 4 => $s["fim"] === null ? "agora" : data_txt(strtotime($s["fim"]), true, true)]);
         } elseif ($acao === "alterar" && array_key_exists("estado", $d) && !in_array((string)$d["estado"], ["", "uso", "repouso"], true)) {
             $erros[] = t("Estado: uso ou repouso (vazio: não diz).");
         } elseif ($acao === "periodo") {
-            sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, ?, NULL, 'manual', NOW())",
-                [$rid, (int)$t["id"], date("Y-m-d H:i:s", $ini), date("Y-m-d H:i:s", $fim)]);
-            $id = ultimo_id();
-            $msg = t("Lançado no {1}: {2} de {3} a {4}.", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true), 4 => data_txt($fim, true, true)]);
+            // no pulso, o relógio do dia está em uso pelo rodízio (como no Pôs), não "fora do plano"
+            $p_dia = plano_do_dia(date("Y-m-d", $ini));
+            $origem = $t["identificador"] === "pulso" && $p_dia && (int)$p_dia["relogio_id"] === $rid ? "rodizio" : "manual";
+            // os trechos do mesmo tipo que o período cobre ou em que ele encosta (o Pôs aberto que começou depois, o período
+            // que acaba quando ele começa) viram um só: do primeiro início ao último fim (aberto, se um deles está aberto)
+            $juntar = linhas("SELECT id, inicio, fim, origem FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim >= ?) ORDER BY inicio, id",
+                [$rid, (int)$t["id"], date("Y-m-d H:i:s", $fim), date("Y-m-d H:i:s", $ini)]);
+            if (count($juntar) === 0) {
+                sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, ?, NULL, ?, NOW())",
+                    [$rid, (int)$t["id"], date("Y-m-d H:i:s", $ini), date("Y-m-d H:i:s", $fim), $origem]);
+                $id = ultimo_id();
+                $msg = t("Lançado no {1}: {2} de {3} a {4}.", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true), 4 => data_txt($fim, true, true)]);
+            } else {
+                $aberto = false;
+                foreach ($juntar as $x) {
+                    $ini = min($ini, strtotime($x["inicio"]));
+                    $aberto = $aberto || $x["fim"] === null;
+                    $fim = $x["fim"] === null ? $fim : max($fim, strtotime($x["fim"]));
+                    $origem = $x["origem"] === "rodizio" ? "rodizio" : $origem;
+                }
+                $id = (int)$juntar[0]["id"];
+                sql("UPDATE lancamento SET inicio = ?, fim = ?, origem = ? WHERE id = ?", [date("Y-m-d H:i:s", $ini), $aberto ? null : date("Y-m-d H:i:s", $fim), $origem, $id]);
+                foreach (array_slice($juntar, 1) as $x) {
+                    sql("DELETE FROM lancamento WHERE id = ?", [(int)$x["id"]]);
+                }
+                $msg = $aberto
+                    ? t("Juntado no {1}: {2} desde {3} (com o que já estava marcado).", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true)])
+                    : t("Juntado no {1}: {2} de {3} a {4} (com o que já estava marcado).", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true), 4 => data_txt($fim, true, true)]);
+            }
         } else {
             // a marcação da leitura (uso ou repouso; vazio: nenhuma) muda só se vier
             $est = $formato === "valor" && array_key_exists("estado", $d) ? ((string)$d["estado"] === "" ? null : (string)$d["estado"]) : ($existente["estado"] ?? null);

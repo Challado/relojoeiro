@@ -40,7 +40,7 @@ api(pedido).then(function (d) {
   if (!r) {
     main.innerHTML = el("p", {}, t("Relógio não encontrado."));
   } else {
-    // os estados que existem (os tipos de sessão cadastrados entram entre o fora do rodízio e o repouso)
+    // os estados que existem (os tipos de sessão cadastrados entram entre o fora do plano e o repouso)
     Object.keys(d.estados).forEach(function (k) {
       if (ESTADOS[k] === undefined) {
         ESTADOS[k] = d.estados[k].charAt(0).toUpperCase() + d.estados[k].slice(1);
@@ -70,7 +70,7 @@ api(pedido).then(function (d) {
         return r.tempo[k].segundos > 0 ? el("div", {}, el("strong", {}, h(r.tempo[k].texto)) + el("span", {}, h(d.estados[k]) + " · " + Math.round(r.tempo[k].porcentagem) + "%")) : "";
       }).join("") + marcas.map(function (n) { return el("div", {}, el("strong", {}, String(r.marcacoes[n])) + el("span", {}, h(n))); }).join(""));
     }
-    res += el("p", {"class": "nota"}, t("{1} {2} com esses filtros{3}. Os trechos são contínuos: em uso (rodízio), fora do rodízio, em cada tipo de sessão (no winder, no sol...) e em repouso; as marcações (corda, carga, pilha, revisão) não têm fim nem duração.", {1: d.total, 2: d.total === 1 ? "registro" : "registros", 3: d.paginas > 1 ? t(", página {1} de {2}", {1: d.pagina, 2: d.paginas}) : ""}));
+    res += el("p", {"class": "nota"}, t("{1} {2} com esses filtros{3}. Os trechos são contínuos: em uso (pelo rodízio, ou fora do plano: no pulso sem ser o relógio do dia), em cada tipo de sessão (no winder, no sol...) e em repouso; as marcações (corda, carga, pilha, revisão) não têm fim nem duração.", {1: d.total, 2: d.total === 1 ? "registro" : "registros", 3: d.paginas > 1 ? t(", página {1} de {2}", {1: d.pagina, 2: d.paginas}) : ""}));
     res += el("div", {"class": "rolagem"}, el("table", {"class": "relogios lista-historico"}, el("thead", {}, el("tr", {}, el("th", {}, t("Início")) + el("th", {}, t("Fim")) + el("th", {}, t("Duração")) + el("th", {}, t("Estado"))))
       + el("tbody", {}, d.linhas.map(function (l) {
         var classe = l.estado === "rodizio" || l.estado === "pulso" ? "uso" : (l.estado === "repouso" ? "repouso" : "carga");

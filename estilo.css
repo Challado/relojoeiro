@@ -394,9 +394,10 @@ p.conta-carga {
   max-width: 100%;
   overflow-wrap: normal;
 }
-/* nos pares rótulo/valor (o quadro Agora do painel estreito, o relógio do dia no alto da Hoje), a etiqueta comprida ("Em repouso desde 25/09 20:40") quebra a linha
+/* nos pares rótulo/valor (o quadro Agora do painel estreito, o relógio do dia no alto da Hoje) e na tabelinha do histórico do
+   painel ("em uso (fora do plano)"), a etiqueta comprida ("Em repouso desde 25/09 20:40") quebra a linha
    nos espaços e continua dentro do quadro */
-dd .estado, .marcas .estado { white-space: normal; border-radius: .8rem; }
+dd .estado, .marcas .estado, table.historico-curto .estado { white-space: normal; border-radius: .8rem; }
 .estado-uso { background: #e3f3e6; color: #1e6b2e; border-color: #a9d8b3; }
 .estado-repouso { background: #fbe8e6; color: #9b2c22; border-color: #efb5ae; }
 /* numa sessão que não é o pulso (no sol, no winder, no carregador): a cor das outras sessões no histórico */
