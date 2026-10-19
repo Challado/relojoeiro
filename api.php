@@ -1115,7 +1115,13 @@
  *                                    de um ano
  *     relogios[].previsao.confianca  a confiança da conta: alta (leitura de até 2 dias e nenhum dado vazio, ou gasto em uso medido), media
  *                                    ou baixa (leitura com mais de 7 dias)
- *     relogios[].previsao.conta[]    de onde vem cada número da conta: os campos do cadastro usados e o gasto medido pelas leituras
+ *     relogios[].previsao.conta[]    de onde vem cada número da conta: primeiro o gasto que vale no pulso e fora dele, depois o gasto
+ *                                    medido pelas leituras e os campos do cadastro (os de um gasto em que vale o medido, com usado falso)
+ *     relogios[].previsao.conta[].usado
+ *                                    verdadeiro: o número entra na conta; falso: um campo do cadastro que ficou fora, porque vale o gasto
+ *                                    medido
+ *     relogios[].previsao.conta[].vale
+ *                                    verdadeiro nas duas primeiras linhas: o gasto que vale no pulso (taxa_uso) e fora dele (taxa_repouso)
  *     relogios[].previsao.conta[].campo
  *                                    o identificador do campo, ou MEDIDO("uso") / MEDIDO("repouso") para o gasto medido
  *     relogios[].previsao.conta[].detalhe
@@ -1124,8 +1130,8 @@
  *     relogios[].previsao.conta[].nome
  *                                    o nome do campo, ou do gasto medido (Gasto em uso medido, Gasto fora do pulso medido)
  *     relogios[].previsao.conta[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo), vazio (sem valor) ou medido
- *                                    (pelas leituras)
+ *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo), vazio (sem valor), medido
+ *                                    (pelas leituras) ou cadastro (o gasto que vale saiu do cadastro)
  *     relogios[].previsao.conta[].unidade
  *                                    a unidade do valor (texto)
  *     relogios[].previsao.conta[].valor
@@ -1870,15 +1876,19 @@
  *                                    de um ano
  *     relogio.previsao.confianca     a confiança da conta: alta (leitura de até 2 dias e nenhum dado vazio, ou gasto em uso medido), media
  *                                    ou baixa (leitura com mais de 7 dias)
- *     relogio.previsao.conta[]       de onde vem cada número da conta: os campos do cadastro usados e o gasto medido pelas leituras
+ *     relogio.previsao.conta[]       de onde vem cada número da conta: primeiro o gasto que vale no pulso e fora dele, depois o gasto
+ *                                    medido pelas leituras e os campos do cadastro (os de um gasto em que vale o medido, com usado falso)
+ *     relogio.previsao.conta[].usado verdadeiro: o número entra na conta; falso: um campo do cadastro que ficou fora, porque vale o gasto
+ *                                    medido
+ *     relogio.previsao.conta[].vale  verdadeiro nas duas primeiras linhas: o gasto que vale no pulso (taxa_uso) e fora dele (taxa_repouso)
  *     relogio.previsao.conta[].campo o identificador do campo, ou MEDIDO("uso") / MEDIDO("repouso") para o gasto medido
  *     relogio.previsao.conta[].detalhe
  *                                    no gasto medido, como ele foi medido ("conta dos dois gastos juntos, com 3 medições dos últimos 90
  *                                    dias"); null nos campos
  *     relogio.previsao.conta[].nome  o nome do campo, ou do gasto medido (Gasto em uso medido, Gasto fora do pulso medido)
  *     relogio.previsao.conta[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo), vazio (sem valor) ou medido
- *                                    (pelas leituras)
+ *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo), vazio (sem valor), medido
+ *                                    (pelas leituras) ou cadastro (o gasto que vale saiu do cadastro)
  *     relogio.previsao.conta[].unidade
  *                                    a unidade do valor (texto)
  *     relogio.previsao.conta[].valor o valor usado na conta (número; null se vazio)
@@ -2435,13 +2445,17 @@
  *                                    de um ano
  *     previsoes[].confianca          a confiança da conta: alta (leitura de até 2 dias e nenhum dado vazio, ou gasto em uso medido), media
  *                                    ou baixa (leitura com mais de 7 dias)
- *     previsoes[].conta[]            de onde vem cada número da conta: os campos do cadastro usados e o gasto medido pelas leituras
+ *     previsoes[].conta[]            de onde vem cada número da conta: primeiro o gasto que vale no pulso e fora dele, depois o gasto
+ *                                    medido pelas leituras e os campos do cadastro (os de um gasto em que vale o medido, com usado falso)
+ *     previsoes[].conta[].usado      verdadeiro: o número entra na conta; falso: um campo do cadastro que ficou fora, porque vale o gasto
+ *                                    medido
+ *     previsoes[].conta[].vale       verdadeiro nas duas primeiras linhas: o gasto que vale no pulso (taxa_uso) e fora dele (taxa_repouso)
  *     previsoes[].conta[].campo      o identificador do campo, ou MEDIDO("uso") / MEDIDO("repouso") para o gasto medido
  *     previsoes[].conta[].detalhe    no gasto medido, como ele foi medido ("conta dos dois gastos juntos, com 3 medições dos últimos 90
  *                                    dias"); null nos campos
  *     previsoes[].conta[].nome       o nome do campo, ou do gasto medido (Gasto em uso medido, Gasto fora do pulso medido)
- *     previsoes[].conta[].origem     de onde veio: informado (no cadastro do relógio), padrão (o do campo), vazio (sem valor) ou medido
- *                                    (pelas leituras)
+ *     previsoes[].conta[].origem     de onde veio: informado (no cadastro do relógio), padrão (o do campo), vazio (sem valor), medido
+ *                                    (pelas leituras) ou cadastro (o gasto que vale saiu do cadastro)
  *     previsoes[].conta[].unidade    a unidade do valor (texto)
  *     previsoes[].conta[].valor      o valor usado na conta (número; null se vazio)
  *     previsoes[].dura_ate           até que dia a carga aguenta se usar a partir de hoje (texto AAAA-MM-DD)

@@ -1147,6 +1147,13 @@ table.tabela-dados code.ident { display: block; font-size: .74rem; color: var(--
 table.conta-previsao td { font-size: .84rem; }
 table.conta-previsao td.valor { white-space: normal; text-align: right; min-width: 4.5rem; }
 table.conta-previsao td.origem-celula { width: 1%; text-align: right; }
+/* o gasto que vale, em negrito; os campos que ficaram fora da conta (vale o medido), apagados e com o valor riscado */
+table.conta-previsao tr.vale td { font-weight: 600; }
+table.conta-previsao tr.vale td small { font-weight: 400; }
+table.conta-previsao tr.fora-da-conta td { color: var(--cinza); }
+table.conta-previsao tr.fora-da-conta td.valor { text-decoration: line-through; }
+table.conta-previsao tr.fora-da-conta .origem { opacity: .6; }
+.origem-cadastro { background: #fbf1e3; color: #8a5a00; border-color: #ecd2a8; }
 .dados-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr)); gap: 1rem 1.75rem; }
 .dados-grade h3 { font-size: .9rem; margin: 0 0 .3rem; }
 

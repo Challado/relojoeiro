@@ -227,7 +227,8 @@ function abrirNoPainel(id) {
         // as frases da previsão e, embaixo, de onde vem cada número da conta: o que é (e como foi medido), o valor e a origem
         var contaPrev = r.previsao.conta.length === 0 ? "" : el("h3", {"class": "conta-titulo"}, t("De onde vem a conta"))
           + el("table", {"class": "tabela-dados conta-previsao"}, el("tbody", {}, r.previsao.conta.map(function (cc) {
-            return el("tr", {"class": cc.valor === null ? "vazio" : ""}, el("td", {}, h(cc.nome) + (cc.detalhe ? el("small", {}, h(cc.detalhe)) : ""))
+            // o gasto que vale (em cima, em negrito) e os campos que ficaram fora da conta (o medido vale no lugar deles), apagados
+            return el("tr", {"class": (cc.valor === null ? "vazio " : "") + (cc.vale ? "vale " : "") + (cc.usado === false ? "fora-da-conta" : "")}, el("td", {}, h(cc.nome) + (cc.detalhe ? el("small", {}, h(cc.detalhe)) : ""))
               + el("td", {"class": "valor"}, cc.valor === null ? "—" : num(cc.valor, 2) + (cc.unidade !== "" ? el("small", {}, h(cc.unidade)) : ""))
               + el("td", {"class": "origem-celula"}, el("span", {"class": "origem origem-" + (cc.origem === "padrão" ? "padrao" : cc.origem)}, h(cc.origem))));
           }).join("")));

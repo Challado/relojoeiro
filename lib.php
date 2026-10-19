@@ -5248,6 +5248,38 @@ function previsao_energia($r, $agora)
                     "antes" => $antes_j[$medida], "vale" => is_numeric($vale) ? round((float)$vale, 3) : null, "formula" => $ident, "campos" => $de_campos];
             }
             $res["gasto"] = $tem ? $gasto : null;
+            // na conta, primeiro o gasto que vale no pulso e fora dele (o medido ou o do cadastro); os campos do cadastro de
+            // um gasto em que vale o medido ficam na lista, marcados como fora da conta (usado: false)
+            $vale_medido = [];
+            $fora_da_conta = [];
+            $na_conta = [];
+            foreach (["uso", "repouso"] as $medida) {
+                $x = $gasto[$medida];
+                $vale_medido[$medida] = $motor_g !== "cadastro" && $x["medido"] !== null && $x["vale"] !== null && abs($x["vale"] - round($x["medido"], 3)) < 0.002;
+                foreach ($x["campos"] as $c) {
+                    if ($vale_medido[$medida]) {
+                        $fora_da_conta[$c["campo"]] = true;
+                    } else {
+                        $na_conta[$c["campo"]] = true;
+                    }
+                }
+            }
+            $primeiras = [];
+            foreach (["uso" => [t("No pulso, o gasto que vale"), t("% por dia de uso"), "taxa_uso"], "repouso" => [t("Fora do pulso, o gasto que vale"), t("% por dia fora do pulso"), "taxa_repouso"]] as $medida => $d) {
+                if ($gasto[$medida]["vale"] !== null) {
+                    $primeiras[] = ["campo" => $d[2], "nome" => $d[0], "detalhe" => $vale_medido[$medida] ? t("o medido pelas leituras") : t("o do cadastro (sem medição que valha)"),
+                        "valor" => $gasto[$medida]["vale"], "unidade" => $d[1], "origem" => $vale_medido[$medida] ? "medido" : "cadastro", "usado" => true, "vale" => true];
+                }
+            }
+            foreach ($res["conta"] as $i => $c) {
+                $fora = isset($fora_da_conta[$c["campo"]]) && !isset($na_conta[$c["campo"]]);
+                $res["conta"][$i]["usado"] = !$fora;
+                $res["conta"][$i]["vale"] = false;
+                if ($fora) {
+                    $res["conta"][$i]["detalhe"] = t("fora da conta: vale o gasto medido");
+                }
+            }
+            $res["conta"] = array_merge($primeiras, $res["conta"]);
             $ctx = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => $valores];
             $dura = variavel_valor("dias_de_carga", $ctx);
             if (is_numeric($dura)) {
@@ -5255,7 +5287,11 @@ function previsao_energia($r, $agora)
                 $res["dura_ate"] = $hoje->modify("+" . max(0, (int)floor((float)$dura)) . " days")->format("Y-m-d");
                 $res["linhas"][] = t("Se usar a partir de hoje: dura ~{1}{2}, até {3}.", [1 => decimal_txt($res["dura_dias"], 6), 2 => $res["dura_dias"] == 1 ? " dia" : " dias", 3 => data_txt(strtotime($res["dura_ate"]), false, true)]);
             }
-            // parado: o primeiro dia em que a energia fica no limite ou abaixo (a energia guardada só cai; procura por metades)
+            // parado: o primeiro dia em que a energia fica no limite ou abaixo (a energia guardada só cai; procura por metades);
+            // numa sessão agora (no pulso, no carregador, no sol...), a conta segue com a sessão aberta, e a frase diz isso
+            $sessao_agora = valor("SELECT t.nome FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'sessao'
+                AND l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?) ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [(int)$r["id"], date("Y-m-d H:i:s", $agora), date("Y-m-d H:i:s", $agora)]);
+            $continuando = $sessao_agora === null ? null : (function_exists("mb_strtolower") ? mb_strtolower((string)$sessao_agora, "UTF-8") : strtolower((string)$sessao_agora));
             if ($energia <= $res["limite"]) {
                 $res["linhas"][] = t("Já está abaixo de {1}%. Guardado assim, a bateria se desgasta.", [1 => decimal_txt($res["limite"], 6)]);
             } else {
@@ -5276,9 +5312,11 @@ function previsao_energia($r, $agora)
                     }
                     $chega = $hoje->modify("+" . $alto . " days");
                     $res["chega_limite_em"] = $chega->format("Y-m-d");
-                    $res["linhas"][] = t("Parado, chega a {1}% em {2}.", [1 => decimal_txt($res["limite"], 6), 2 => $chega->format($chega->format("Y") === $hoje->format("Y") ? "d/m" : "d/m/Y")]);
+                    $quando = [1 => decimal_txt($res["limite"], 6), 2 => $chega->format($chega->format("Y") === $hoje->format("Y") ? "d/m" : "d/m/Y")];
+                    $res["linhas"][] = $continuando !== null ? t("Continuando {3}, chega a {1}% em {2}.", $quando + [3 => $continuando]) : t("Parado, chega a {1}% em {2}.", $quando);
                 } else {
-                    $res["linhas"][] = t("Parado, fica acima de {1}% por mais de um ano.", [1 => decimal_txt($res["limite"], 6)]);
+                    $res["linhas"][] = $continuando !== null ? t("Continuando {2}, fica acima de {1}% por mais de um ano.", [1 => decimal_txt($res["limite"], 6), 2 => $continuando])
+                        : t("Parado, fica acima de {1}% por mais de um ano.", [1 => decimal_txt($res["limite"], 6)]);
                 }
             }
             // a próxima entrada no rodízio (o primeiro dia dele no plano a partir de hoje, se não for hoje) e os dias seguidos dele
