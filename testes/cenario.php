@@ -523,7 +523,9 @@ escrever(["recurso" => "avisos", "acao" => "excluir", "id" => $id_de("avisos", "
 ler("totais", ["recurso" => "totais"]);
 ler("totais do rodape de dois relogios", ["recurso" => "totais", "parte" => "rodape", "relogios" => $rel["smart"] . "," . $rel["crono"]]);
 ler("totais da pagina", ["recurso" => "totais", "parte" => "pagina"]);
-ler("totais teste bom", ["recurso" => "totais", "parte" => "teste", "expressao" => "AGRUPADO(tipo; MEDIA(carga))", "formato" => "decimal"]);
+// (a média de "disponivel", e não a da carga: a reserva dos automáticos cai com os segundos, e a leitura de um banco e a
+// do outro, segundos depois, viravam um número inteiro diferente: 54,5 num e 54 no outro)
+ler("totais teste bom", ["recurso" => "totais", "parte" => "teste", "expressao" => "AGRUPADO(tipo; MEDIA(disponivel))", "formato" => "decimal"]);
 ler("totais teste faixas", ["recurso" => "totais", "parte" => "teste", "expressao" => "FAIXAS(DIAS_DESDE(data_compra); 30; 365)"]);
 ler("totais teste errado", ["recurso" => "totais", "parte" => "teste", "expressao" => "SOMA(carga"]);
 ler("totais teste sem funcao de total", ["recurso" => "totais", "parte" => "teste", "expressao" => "carga + 1"]);

@@ -1,4 +1,4 @@
-<!-- origem: df967a17f9a9b3910f27473e93de625537db13b6 -->
+<!-- origem: d2dbc1c1ef2a678e8f9f8672fb8095956ddae835 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1064,8 +1064,9 @@ kinds of watch, all different, drawn on the fly, one for each hour of the day: C
 Tank, Blue sports, Chronograph, Skeleton, Solar, Vintage, GMT, Octagonal (luxury sports), Moon phase (today's moon),
 Calendar (with the date and a milanese strap), Bauhaus, Digital (the liquid crystal display), Pocket (with bow and chain,
 Roman numerals), Regulator (the hours in a subdial), Single hand, Tourbillon (the turning cage on show), Jewel (diamond
-bezel), Wood and, the 24th, the **Futuristic**: no strap, an ionic loop of light with the ions running, and on the dial
-an AI's little face that blinks, with the date, the time and the "voice" bars. Which one shows at each hour is the
+bezel), Wood and, the 24th, the **Futuristic**: no strap, stuck to the skin (the skin-colored
+edge with circuits), the silver pebble-shaped case and, on the round dial with rings of light, an AI's little face that
+blinks, with the date, the time, the heart, the signal and the "voice" bars; on the sides, two floating holograms. Which one shows at each hour is the
 **Little watch in the bar** setting: normal (each hour has its own: at 0 the Classic, at 16 the Digital, at 23 the
 Futuristic), random (one drawn every hour, may repeat) or random without repetition (the 24 shuffled, each once a day).
 

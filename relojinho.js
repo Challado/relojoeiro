@@ -1,4 +1,5 @@
-// O reloginho (um easter egg): 24 tipos de relógio, todos diferentes (23 de hoje e um futurista), desenhados na hora, cada um mostrando a hora certa de agora. Um
+// O reloginho (um easter egg): 24 tipos de relógio, todos diferentes (23 de hoje e um futurista, desenhado à parte no
+// relojinhoFuturista), cada um mostrando a hora certa de agora. Um
 // fica na barra do menu, no canto esquerdo (os segundos andando; um clique abre a Hora certa; parando o mouse, o modelo e
 // a hora), e o outro é o favicon, na aba do navegador (desenhado a cada minuto). Cada hora do dia tem um modelo: no modo
 // normal da Configuração, o da hora (à 0 o Clássico, às 16 o Digital, às 23 o Futurista); nos modos aleatório e aleatório sem repetição, o
@@ -28,17 +29,21 @@ var RELOJINHO_MODELOS = [
   {nome: t("Turbilhão"), caixa: "redonda", metal: "#e5e4e2", mostrador: "#1b2a4a", indices: "barras", cor_indices: "#e5e4e2", ponteiros: "#e5e4e2", estilo: "dauphine", turbilhao: true, pulseira: "couro", cor_pulseira: "#101a2e"},
   {nome: t("Joia"), caixa: "redonda", metal: "#e8c4b8", mostrador: "#f6f0f4", indices: "pontos", cor_indices: "#c9a0b4", ponteiros: "#8a6a7a", estilo: "dauphine", brilho: true, diamantes: true, pulseira: "aco", cor_pulseira: "#e8c4b8"},
   {nome: t("Madeira"), caixa: "redonda", metal: "#7a4a24", mostrador: "#d2a46c", indices: "barras", cor_indices: "#4a2a12", ponteiros: "#2a1608", estilo: "baston", madeira: true, pulseira: "madeira", cor_pulseira: "#8b5a2b"},
-  {nome: t("Futurista"), caixa: "hexagonal", metal: "#1a1f2b", mostrador: "#05070d", ia: true, neon: "#29f0ff", cor_segundos: "#ff3df2", cor_indices: "#29f0ff", ponteiros: "#29f0ff", pulseira: "ionica"},
+  {nome: t("Futurista"), futurista: true},
 ];
 
 // Desenha um modelo num contexto 2D, num quadrado de lado tam, na hora dada (com ou sem o ponteiro dos segundos)
 function relojinhoDesenhar(ctx, tam, m, data, segundos) {
+  if (m.futurista) {
+    relojinhoFuturista(ctx, tam, data, segundos);
+    return;
+  }
   var c = tam / 2;
   var r = tam * 0.34;
   ctx.clearRect(0, 0, tam, tam);
   // a pulseira: duas tiras atrás da caixa
   var lp = tam * 0.3;
-  if (!m.bolso && m.pulseira !== "ionica") {
+  if (!m.bolso) {
     ctx.fillStyle = m.cor_pulseira;
     ctx.fillRect(c - lp / 2, 0, lp, tam);
   }
@@ -56,36 +61,6 @@ function relojinhoDesenhar(ctx, tam, m, data, segundos) {
     ctx.quadraticCurveTo(tam * 0.12, tam * 0.1, tam * 0.04, tam * 0.5);
     ctx.stroke();
     ctx.setLineDash([]);
-  } else if (m.pulseira === "ionica") {
-    // o laço iônico: nenhuma tira, um anel de energia passando atrás da caixa, com os íons correndo por ele
-    var giro = (data.getSeconds() + data.getMilliseconds() / 1000) * Math.PI / 30;
-    ctx.save();
-    ctx.shadowColor = m.neon;
-    ctx.shadowBlur = tam * 0.06;
-    // dois laços cruzados, um pouco inclinados, e os íons correndo neles (os de um laço numa direção, os do outro na outra)
-    [[-0.22, 1], [0.22, -1]].forEach(function (e) {
-      ctx.save();
-      ctx.translate(c, c);
-      ctx.rotate(e[0]);
-      ctx.strokeStyle = "rgba(41, 240, 255, .85)";
-      ctx.lineWidth = Math.max(0.8, tam * 0.022);
-      ctx.beginPath();
-      ctx.ellipse(0, 0, tam * 0.17, tam * 0.52, 0, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.strokeStyle = "rgba(220, 255, 255, .9)";
-      ctx.lineWidth = Math.max(0.4, tam * 0.006);
-      ctx.stroke();
-      ctx.fillStyle = "#ff3df2";
-      ctx.shadowColor = "#ff3df2";
-      for (var io = 0; io < 5; io++) {
-        var ai = e[1] * giro + io * Math.PI * 2 / 5;
-        ctx.beginPath();
-        ctx.arc(Math.cos(ai) * tam * 0.17, Math.sin(ai) * tam * 0.52, Math.max(0.8, tam * 0.02), 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-    });
-    ctx.restore();
   } else if (m.pulseira === "madeira") {
     ctx.strokeStyle = "rgba(0, 0, 0, .35)";
     ctx.lineWidth = Math.max(1, tam * 0.015);
@@ -124,16 +99,6 @@ function relojinhoDesenhar(ctx, tam, m, data, segundos) {
       ctx.stroke();
     }
     ctx.restore();
-  } else if (m.pulseira === "led") {
-    // a pulseira de luz: uma fila de pontos acesos no meio
-    ctx.fillStyle = m.neon;
-    for (var y2 = tam * 0.04; y2 < tam; y2 += tam * 0.1) {
-      if (Math.abs(y2 - c) > r + tam * 0.08) {
-        ctx.beginPath();
-        ctx.arc(c, y2, Math.max(0.6, tam * 0.012), 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
   } else if (m.pulseira === "couro") {
     ctx.strokeStyle = "rgba(255, 255, 255, .25)";
     ctx.lineWidth = Math.max(1, tam * 0.012);
@@ -148,7 +113,7 @@ function relojinhoDesenhar(ctx, tam, m, data, segundos) {
   ctx.fillStyle = m.metal;
   if (m.bolso) {
     ctx.fillRect(c - tam * 0.035, tam * 0.1, tam * 0.07, tam * 0.06);
-  } else if (!m.ia) {
+  } else {
     ctx.fillRect(c + r + tam * 0.05, c - tam * 0.035, tam * 0.06, tam * 0.07);
   }
   // a caixa e o mostrador
@@ -162,11 +127,6 @@ function relojinhoDesenhar(ctx, tam, m, data, segundos) {
       relojinhoRetangulo(ctx, c - raio * 0.8, c - raio * 1.05, raio * 1.6, raio * 2.1, raio * 0.12);
     } else if (m.caixa === "digital") {
       relojinhoRetangulo(ctx, c - raio * 1.08, c - raio * 0.88, raio * 2.16, raio * 1.76, raio * 0.2);
-    } else if (m.caixa === "hexagonal") {
-      for (var x6 = 0; x6 < 6; x6++) {
-        var a6 = x6 * Math.PI / 3;
-        ctx[x6 === 0 ? "moveTo" : "lineTo"](c + Math.cos(a6) * raio * 1.1, c + Math.sin(a6) * raio * 1.1);
-      }
     } else if (m.caixa === "octogonal") {
       for (var o = 0; o < 8; o++) {
         var ao = Math.PI / 8 + o * Math.PI / 4;
@@ -251,69 +211,6 @@ function relojinhoDesenhar(ctx, tam, m, data, segundos) {
   }
   if (m.madeira) {
     veios(r, "rgba(80, 45, 15, .22)");
-  }
-  if (m.neon) {
-    // a borda acesa do mostrador e, dentro, o anel dos segundos que se enche
-    ctx.save();
-    ctx.shadowColor = m.neon;
-    ctx.shadowBlur = tam * 0.06;
-    forma(r - tam * 0.015);
-    ctx.strokeStyle = m.neon;
-    ctx.lineWidth = Math.max(1, tam * 0.012);
-    ctx.stroke();
-    ctx.restore();
-    var sg = data.getSeconds() + data.getMilliseconds() / 1000;
-    ctx.save();
-    ctx.shadowColor = m.cor_segundos;
-    ctx.shadowBlur = tam * 0.04;
-    ctx.strokeStyle = m.cor_segundos;
-    ctx.lineWidth = Math.max(1, tam * 0.018);
-    ctx.beginPath();
-    ctx.arc(c, c, r * (m.ia ? 0.9 : 0.78), -Math.PI / 2, -Math.PI / 2 + sg * Math.PI / 30);
-    ctx.stroke();
-    ctx.restore();
-  }
-  if (m.ia) {
-    // a carinha da IA: dois olhos que piscam de vez em quando e o sorriso; embaixo a hora; em cima a data; ao lado a "voz"
-    var d3 = function (n) { return (n < 10 ? "0" : "") + n; };
-    var pisca = data.getSeconds() % 8 === 0 && data.getMilliseconds() < 350;
-    ctx.save();
-    ctx.shadowColor = m.neon;
-    ctx.shadowBlur = r * 0.25;
-    ctx.fillStyle = m.neon;
-    [-1, 1].forEach(function (lado) {
-      var ox = c + lado * r * 0.26;
-      var oy = c - r * 0.12;
-      ctx.beginPath();
-      if (pisca) {
-        ctx.rect(ox - r * 0.11, oy - r * 0.015, r * 0.22, r * 0.05);
-      } else {
-        ctx.ellipse(ox, oy, r * 0.09, r * 0.15, 0, 0, Math.PI * 2);
-      }
-      ctx.fill();
-    });
-    ctx.strokeStyle = m.neon;
-    ctx.lineWidth = Math.max(1, r * 0.06);
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.arc(c, c + r * 0.02, r * 0.22, Math.PI * 0.2, Math.PI * 0.8);
-    ctx.stroke();
-    ctx.restore();
-    ctx.fillStyle = m.neon;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = "bold " + Math.round(r * 0.3) + "px 'Courier New', monospace";
-    ctx.fillText(d3(data.getHours()) + ":" + d3(data.getMinutes()), c, c + r * 0.5);
-    ctx.fillStyle = m.cor_segundos;
-    ctx.font = Math.round(r * 0.2) + "px 'Courier New', monospace";
-    ctx.fillText(d3(data.getDate()) + "." + d3(data.getMonth() + 1), c, c - r * 0.5);
-    // a "voz": barrinhas que sobem e descem com os segundos
-    for (var vb = 0; vb < 4; vb++) {
-      var hb = r * (0.08 + 0.14 * Math.abs(Math.sin((data.getSeconds() + vb * 1.7) * 1.3)));
-      ctx.fillRect(c + r * 0.52 + vb * r * 0.07, c - hb / 2, r * 0.04, hb);
-      ctx.fillRect(c - r * 0.73 + vb * r * 0.07, c - hb / 2, r * 0.04, hb);
-    }
-    return;
   }
   if (m.brilho) {
     var g = ctx.createLinearGradient(c - r, c - r, c + r, c + r);
@@ -478,17 +375,6 @@ function relojinhoDesenhar(ctx, tam, m, data, segundos) {
         ctx.lineTo(c + Math.sin(aq) * ri * 0.92, c - Math.cos(aq) * ri * 0.92);
         ctx.stroke();
       }
-    } else if (m.indices === "neon") {
-      ctx.save();
-      ctx.shadowColor = m.cor_indices;
-      ctx.shadowBlur = r * 0.15;
-      ctx.lineWidth = Math.max(1, r * (grande ? 0.07 : 0.035));
-      ctx.lineCap = "round";
-      ctx.beginPath();
-      ctx.moveTo(c + Math.sin(a) * ri * (grande ? 0.86 : 0.9), c - Math.cos(a) * ri * (grande ? 0.86 : 0.9));
-      ctx.lineTo(c + Math.sin(a) * ri * 0.96, c - Math.cos(a) * ri * 0.96);
-      ctx.stroke();
-      ctx.restore();
     } else if (m.indices === "romanos" && grande) {
       ctx.font = Math.round(r * (h === 0 ? 0.3 : 0.34)) + "px Georgia, 'Times New Roman', serif";
       ctx.textAlign = "center";
@@ -515,15 +401,8 @@ function relojinhoDesenhar(ctx, tam, m, data, segundos) {
     ctx.translate(c, c);
     ctx.rotate(ang);
     ctx.fillStyle = cor;
-    if (m.estilo === "luz") {
-      // os ponteiros de luz: finos, acesos
-      ctx.shadowColor = cor;
-      ctx.shadowBlur = r * 0.25;
-    }
     ctx.beginPath();
-    if (m.estilo === "luz") {
-      relojinhoRetangulo(ctx, -larg * 0.35, -comp, larg * 0.7, comp + r * 0.06, larg * 0.35);
-    } else if (m.estilo === "dauphine") {
+    if (m.estilo === "dauphine") {
       ctx.moveTo(0, r * 0.1);
       ctx.lineTo(-larg, 0);
       ctx.lineTo(0, -comp);
@@ -548,13 +427,13 @@ function relojinhoDesenhar(ctx, tam, m, data, segundos) {
     if (!m.regulador) {
       ponteiro(hh * Math.PI / 6, r * 0.55, Math.max(1.5, r * 0.09), m.ponteiros);
     }
-    ponteiro(mm * Math.PI / 30, r * 0.82, Math.max(1.2, r * 0.065), m.cor_minutos || m.ponteiros);
+    ponteiro(mm * Math.PI / 30, r * 0.82, Math.max(1.2, r * 0.065), m.ponteiros);
   }
   if (m.gmt) {
     ponteiro((data.getHours() + data.getMinutes() / 60) * Math.PI / 12, r * 0.72, Math.max(1, r * 0.04), m.gmt);
   }
-  // o ponteiro dos segundos (no de luz, os segundos são o anel que se enche)
-  if (segundos && !m.neon && !m.subsegundos && !m.regulador && !m.um_ponteiro && !m.turbilhao) {
+  // o ponteiro dos segundos (nos de submostrador e no ponteiro único, não tem)
+  if (segundos && !m.subsegundos && !m.regulador && !m.um_ponteiro && !m.turbilhao) {
     ctx.save();
     ctx.translate(c, c);
     ctx.rotate(data.getSeconds() * Math.PI / 30);
@@ -570,6 +449,232 @@ function relojinhoDesenhar(ctx, tam, m, data, segundos) {
   ctx.beginPath();
   ctx.arc(c, c, Math.max(1.5, r * 0.08), 0, Math.PI * 2);
   ctx.fill();
+}
+
+// O Futurista (o 24º): sem pulseira, colado na pele (a borda cor de pele com os circuitos), a caixa prateada em forma de
+// seixo com o miolo de carbono, o mostrador redondo com os anéis de luz ciano e magenta, a carinha de uma IA (que pisca a
+// cada 8 segundos), a data, a hora, o coração, o sinal, as barras da voz, as luzes em cima e embaixo, o hexágono no alto e
+// os dois hologramas flutuando dos lados
+function relojinhoFuturista(ctx, tam, data, segundos) {
+  var c = tam / 2;
+  var u = tam / 100;
+  var ciano = "#33e8ff";
+  var magenta = "#ff4fd8";
+  var d2 = function (n) { return (n < 10 ? "0" : "") + n; };
+  ctx.clearRect(0, 0, tam, tam);
+  // a forma de seixo: um oval no meio e uma faixa de pontas arredondadas em cima e embaixo, juntos (um caminho só)
+  var seixo = function (l, a) {
+    ctx.beginPath();
+    ctx.ellipse(c, c, l, a * 0.6, 0, 0, Math.PI * 2);
+    relojinhoRetangulo(ctx, c - l * 0.62, c - a, l * 1.24, a * 2, l * 0.45);
+  };
+  seixo(41 * u, 49 * u);
+  ctx.fillStyle = "#b9826c";
+  ctx.fill();
+  seixo(38.5 * u, 46.5 * u);
+  ctx.fillStyle = "#262a31";
+  ctx.fill();
+  // os circuitos na faixa escura: trilhas com uma dobra e um ponto, presas na faixa (a caixa cobre o resto)
+  ctx.save();
+  ctx.clip();
+  ctx.strokeStyle = "rgba(200, 225, 240, .75)";
+  ctx.fillStyle = "rgba(200, 225, 240, .75)";
+  ctx.lineWidth = Math.max(0.4, 0.5 * u);
+  for (var k = 0; k < 36; k++) {
+    var ak = k * Math.PI * 2 / 36;
+    var dobra = (k % 2 ? 1 : -1) * 0.08;
+    var p1 = [c + Math.cos(ak) * 30 * u, c + Math.sin(ak) * 30 * u];
+    var p2 = [c + Math.cos(ak) * 40 * u, c + Math.sin(ak) * 40 * u];
+    var p3 = [c + Math.cos(ak + dobra) * 47 * u, c + Math.sin(ak + dobra) * 47 * u];
+    ctx.beginPath();
+    ctx.moveTo(p1[0], p1[1]);
+    ctx.lineTo(p2[0], p2[1]);
+    ctx.lineTo(p3[0], p3[1]);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(p2[0], p2[1], Math.max(0.4, 0.7 * u), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+  // a caixa prateada e o miolo de carbono
+  var prata = ctx.createLinearGradient(c - 38 * u, c - 40 * u, c + 38 * u, c + 40 * u);
+  prata.addColorStop(0, "#eef1f4");
+  prata.addColorStop(0.5, "#9aa1aa");
+  prata.addColorStop(1, "#d6dadf");
+  seixo(32 * u, 41 * u);
+  ctx.fillStyle = prata;
+  ctx.fill();
+  ctx.fillStyle = "#16191e";
+  ctx.beginPath();
+  relojinhoRetangulo(ctx, c - 21 * u, c - 37 * u, 42 * u, 74 * u, 18 * u);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255, 255, 255, .05)";
+  ctx.lineWidth = Math.max(0.4, 0.6 * u);
+  for (var q = -36; q < 37; q += 3) {
+    ctx.beginPath();
+    ctx.moveTo(c - 20 * u, c + q * u);
+    ctx.lineTo(c + 20 * u, c + q * u);
+    ctx.stroke();
+  }
+  // as luzes em cima e embaixo, e o hexágono no alto
+  ctx.save();
+  ctx.shadowColor = "#ffffff";
+  ctx.shadowBlur = 2 * u;
+  ctx.fillStyle = "#f4f8ff";
+  [-29, 31].forEach(function (y) {
+    ctx.beginPath();
+    relojinhoRetangulo(ctx, c - 7 * u, c + y * u, 14 * u, 1.4 * u, 0.7 * u);
+    ctx.fill();
+  });
+  ctx.restore();
+  ctx.strokeStyle = "#7a8cff";
+  ctx.lineWidth = Math.max(0.4, 0.5 * u);
+  ctx.beginPath();
+  for (var h6 = 0; h6 < 6; h6++) {
+    var a6 = Math.PI / 6 + h6 * Math.PI / 3;
+    ctx[h6 === 0 ? "moveTo" : "lineTo"](c + Math.cos(a6) * 2.6 * u, c - 33 * u + Math.sin(a6) * 2.6 * u);
+  }
+  ctx.closePath();
+  ctx.stroke();
+  // o mostrador e os anéis de luz (o magenta um pouco torto), e o anel dos segundos que se enche
+  var md = c - 1 * u;
+  ctx.fillStyle = "#0a1330";
+  ctx.beginPath();
+  ctx.arc(c, md, 25 * u, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.save();
+  ctx.shadowBlur = 3 * u;
+  ctx.lineWidth = Math.max(0.8, 1.2 * u);
+  ctx.shadowColor = ciano;
+  ctx.strokeStyle = ciano;
+  ctx.beginPath();
+  ctx.arc(c, md, 26.5 * u, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.shadowColor = magenta;
+  ctx.strokeStyle = magenta;
+  ctx.lineWidth = Math.max(0.6, 0.8 * u);
+  ctx.beginPath();
+  ctx.ellipse(c + 0.8 * u, md + 0.6 * u, 28.5 * u, 27 * u, 0.2, 0, Math.PI * 2);
+  ctx.stroke();
+  var sg = data.getSeconds() + data.getMilliseconds() / 1000;
+  ctx.lineWidth = Math.max(0.8, 1.4 * u);
+  ctx.beginPath();
+  ctx.arc(c, md, 23.5 * u, -Math.PI / 2, -Math.PI / 2 + sg * Math.PI / 30);
+  ctx.stroke();
+  ctx.restore();
+  // os hologramas flutuando dos lados
+  ctx.save();
+  ctx.shadowBlur = 2 * u;
+  [[-39, magenta, ciano], [39, ciano, magenta]].forEach(function (hg) {
+    var hx = c + hg[0] * u;
+    var hy = c - 18 * u;
+    ctx.shadowColor = hg[1];
+    ctx.strokeStyle = hg[1];
+    ctx.lineWidth = Math.max(0.5, 0.7 * u);
+    ctx.beginPath();
+    ctx.arc(hx, hy, 6 * u, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = hg[2];
+    ctx.beginPath();
+    ctx.arc(hx, hy, 8.5 * u, Math.PI * 0.2, Math.PI * 1.1);
+    ctx.stroke();
+    ctx.fillStyle = hg[2];
+    ctx.beginPath();
+    ctx.arc(hx, hy, 1.6 * u, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+  // a data em cima
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = magenta;
+  ctx.font = "bold " + Math.round(6 * u) + "px 'Courier New', monospace";
+  ctx.fillText(d2(data.getDate()) + "." + d2(data.getMonth() + 1), c, md - 17 * u);
+  // a carinha da IA, num círculo: os olhos (que piscam) e o sorriso
+  var fy = md - 3 * u;
+  var pisca = data.getSeconds() % 8 === 0 && data.getMilliseconds() < 350;
+  ctx.save();
+  ctx.shadowColor = ciano;
+  ctx.shadowBlur = 2.5 * u;
+  ctx.strokeStyle = ciano;
+  ctx.fillStyle = ciano;
+  ctx.lineWidth = Math.max(0.6, 0.8 * u);
+  ctx.beginPath();
+  ctx.arc(c, fy, 9.5 * u, 0, Math.PI * 2);
+  ctx.stroke();
+  [-1, 1].forEach(function (lado) {
+    ctx.beginPath();
+    if (pisca) {
+      ctx.rect(c + lado * 3.4 * u - 1.6 * u, fy - 2.4 * u, 3.2 * u, 0.8 * u);
+    } else {
+      ctx.ellipse(c + lado * 3.4 * u, fy - 2.4 * u, 1.3 * u, 2 * u, 0, 0, Math.PI * 2);
+    }
+    ctx.fill();
+  });
+  ctx.lineWidth = Math.max(0.8, 1.3 * u);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.arc(c, fy, 5 * u, Math.PI * 0.2, Math.PI * 0.8);
+  ctx.stroke();
+  ctx.restore();
+  // o coração com o pulso, à esquerda em cima; o sinal, à direita
+  ctx.save();
+  ctx.translate(c - 13 * u, md - 10 * u);
+  ctx.strokeStyle = ciano;
+  ctx.lineWidth = Math.max(0.4, 0.5 * u);
+  ctx.beginPath();
+  ctx.moveTo(0, 2 * u);
+  ctx.bezierCurveTo(-3.2 * u, -0.5 * u, -1.6 * u, -3 * u, 0, -1.2 * u);
+  ctx.bezierCurveTo(1.6 * u, -3 * u, 3.2 * u, -0.5 * u, 0, 2 * u);
+  ctx.stroke();
+  ctx.strokeStyle = magenta;
+  ctx.beginPath();
+  ctx.moveTo(-2.2 * u, 0);
+  ctx.lineTo(-0.8 * u, 0);
+  ctx.lineTo(-0.2 * u, -1.2 * u);
+  ctx.lineTo(0.5 * u, 0.9 * u);
+  ctx.lineTo(1 * u, 0);
+  ctx.lineTo(2.2 * u, 0);
+  ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = ciano;
+  for (var sb = 0; sb < 4; sb++) {
+    ctx.fillRect(c + (11 + sb * 1.4) * u, md - 9 * u - sb * 0.9 * u, 0.9 * u, (1.2 + sb * 0.9) * u);
+  }
+  // as barras da voz, dos dois lados da carinha, subindo e descendo com os segundos
+  ctx.fillStyle = magenta;
+  [-1, 1].forEach(function (lado) {
+    for (var vb = 0; vb < 3; vb++) {
+      var nb = 2 + Math.round(3 * Math.abs(Math.sin((data.getSeconds() + vb * 2 + (lado > 0 ? 5 : 0)) * 1.1)));
+      for (var bl = 0; bl < nb; bl++) {
+        ctx.fillRect(c + lado * (14.5 + vb * 1.8) * u - 0.7 * u, fy + 3 * u - bl * 1.6 * u, 1.3 * u, 1.1 * u);
+      }
+    }
+  });
+  // as marcas dos lados e a linha de cima da hora
+  ctx.fillStyle = ciano;
+  [[-21, 1], [21, -1]].forEach(function (mk) {
+    ctx.beginPath();
+    ctx.moveTo(c + mk[0] * u, md + 3 * u);
+    ctx.lineTo(c + (mk[0] + mk[1] * 2.2) * u, md + 1.8 * u);
+    ctx.lineTo(c + (mk[0] + mk[1] * 2.2) * u, md + 4.2 * u);
+    ctx.closePath();
+    ctx.fill();
+  });
+  ctx.strokeStyle = "rgba(51, 232, 255, .6)";
+  ctx.lineWidth = Math.max(0.4, 0.4 * u);
+  ctx.beginPath();
+  ctx.moveTo(c - 14 * u, md + 7.5 * u);
+  ctx.lineTo(c + 14 * u, md + 7.5 * u);
+  ctx.stroke();
+  // a hora, grande
+  ctx.save();
+  ctx.shadowColor = ciano;
+  ctx.shadowBlur = 2 * u;
+  ctx.fillStyle = ciano;
+  ctx.font = "bold " + Math.round(11 * u) + "px 'Courier New', monospace";
+  ctx.fillText(d2(data.getHours()) + ":" + d2(data.getMinutes()), c, md + 14 * u);
+  ctx.restore();
 }
 
 function relojinhoRetangulo(ctx, x, y, l, a, raio) {

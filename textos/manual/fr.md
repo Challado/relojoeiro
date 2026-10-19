@@ -1,4 +1,4 @@
-<!-- origem: df967a17f9a9b3910f27473e93de625537db13b6 -->
+<!-- origem: d2dbc1c1ef2a678e8f9f8672fb8095956ddae835 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1086,9 +1086,10 @@ page cachée. 24 types de montre, tous différents, dessinés à la volée, un p
 Aviateur, Militaire, Smartwatch, Tank, Sport bleu, Chronographe, Squelette, Solaire, Vintage, GMT, Octogonale (sport de
 luxe), Phases de lune (la lune du jour), Calendrier (avec la date et un bracelet milanais), Bauhaus, Numérique (l'écran à
 cristaux liquides), De poche (avec bélière et chaîne, chiffres romains), Régulateur (les heures dans un compteur), Aiguille
-unique, Tourbillon (la cage qui tourne, visible), Bijou (lunette de brillants), Bois et, la 24e, la **Futuriste** : sans
-bracelet, une boucle ionique de lumière où courent les ions, et sur le cadran le petit visage d'une IA qui cligne des
-yeux, avec la date, l'heure et les barres de la « voix ». Laquelle apparaît à chaque heure, c'est la Configuration
+unique, Tourbillon (la cage qui tourne, visible), Bijou (lunette de brillants), Bois et, la 24e, la **Futuriste** : sans bracelet, collée à la peau (le bord couleur
+peau avec des circuits), le boîtier argenté en forme de galet et, sur le cadran rond aux anneaux de lumière, le petit
+visage d'une IA qui cligne des yeux, avec la date, l'heure, le cœur, le signal et les barres de la « voix » ; sur les
+côtés, deux hologrammes flottants. Laquelle apparaît à chaque heure, c'est la Configuration
 **Petite montre de la barre** : normal (chaque heure a la sienne : à 0 h la Classique, à 16 h la Numérique, à 23 h la
 Futuriste), aléatoire (une tirée chaque heure, peut se répéter) ou aléatoire sans répétition (les 24 mélangées, chacune
 une fois par jour).

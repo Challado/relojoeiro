@@ -1114,8 +1114,9 @@ relógio, todos diferentes, desenhados na hora, um para cada hora do dia: Cláss
 Smartwatch, Tanque, Esportivo azul, Cronógrafo, Esqueleto, Solar, Vintage, GMT, Octogonal (esportivo de luxo), Fases da lua (a
 lua de hoje), Calendário (com a data e pulseira milanesa), Bauhaus, Digital (o visor de cristal líquido), De bolso (com a
 argola e a corrente, numerais romanos), Regulador (as horas num submostrador), Ponteiro único, Turbilhão (a gaiola girando
-à mostra), Joia (bisel de brilhantes), Madeira e, o 24º, o **Futurista**: sem pulseira, um laço iônico de luz com os íons
-correndo, e no mostrador a carinha de uma IA que pisca, com a data, a hora e as barrinhas da "voz". Qual aparece em cada
+à mostra), Joia (bisel de brilhantes), Madeira e, o 24º, o **Futurista**: sem pulseira, colado na pele (a borda cor de pele
+com circuitos), a caixa prateada em forma de seixo e, no mostrador redondo com anéis de luz, a carinha de uma IA que pisca,
+com a data, a hora, o coração, o sinal e as barrinhas da "voz"; dos lados, dois hologramas flutuando. Qual aparece em cada
 hora é a Configuração **Reloginho da barra**: normal (cada hora tem o seu: à 0 o Clássico, às 16 o Digital, às 23 o
 Futurista), aleatório (um sorteado a cada hora, podendo repetir) ou aleatório sem repetição (os 24 embaralhados, cada um
 uma vez por dia).

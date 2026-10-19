@@ -1,4 +1,4 @@
-<!-- origem: df967a17f9a9b3910f27473e93de625537db13b6 -->
+<!-- origem: d2dbc1c1ef2a678e8f9f8672fb8095956ddae835 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1054,9 +1054,9 @@ escondida. Son 24 tipos de reloj, todos distintos, dibujados al momento, uno par
 Aviador, Militar, Smartwatch, Tanque, Deportivo azul, Cronógrafo, Esqueleto, Solar, Vintage, GMT, Octogonal (deportivo de
 lujo), Fases lunares (la luna de hoy), Calendario (con la fecha y pulsera milanesa), Bauhaus, Digital (la pantalla de
 cristal líquido), De bolsillo (con argolla y cadena, numerales romanos), Regulador (las horas en una subesfera), Aguja
-única, Tourbillon (la jaula girando a la vista), Joya (bisel de brillantes), Madera y, el 24º, el **Futurista**: sin
-pulsera, un lazo iónico de luz con los iones corriendo, y en la esfera la carita de una IA que parpadea, con la fecha, la
-hora y las barritas de la "voz". Cuál aparece en cada hora es la Configuración **Relojito de la barra**: normal (cada
+única, Tourbillon (la jaula girando a la vista), Joya (bisel de brillantes), Madera y, el 24º, el **Futurista**: sin pulsera, pegado a la piel (el borde color piel
+con circuitos), la caja plateada en forma de guijarro y, en la esfera redonda con anillos de luz, la carita de una IA que
+parpadea, con la fecha, la hora, el corazón, la señal y las barritas de la "voz"; a los lados, dos hologramas flotando. Cuál aparece en cada hora es la Configuración **Relojito de la barra**: normal (cada
 hora tiene el suyo: a las 0 el Clásico, a las 16 el Digital, a las 23 el Futurista), aleatorio (uno sorteado cada hora,
 puede repetir) o aleatorio sin repetición (los 24 barajados, cada uno una vez al día).
 
