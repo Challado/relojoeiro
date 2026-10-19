@@ -122,7 +122,7 @@
 
     // os totais do rodapé: a API calcula nos relógios à mostra (recurso=totais, parte=rodape, relogios=os ids) e a tela só
     // desenha, embaixo de cada coluna, os totais dela, cada um numa tabelinha com o nome em cima e o total no pé; as
-    // tabelinhas ganham linhas vazias até a maior delas, para os totais ficarem todos na mesma altura
+    // tabelinhas ganham linhas vazias em cima, sem borda, até a maior delas, para os totais ficarem todos na mesma altura
     var pedidoTotais = 0;
     var esperaTotais = null;
     var linhaTotais = document.getElementById("totais-rodape");
@@ -131,8 +131,8 @@
       var corpoT = [];
       var pe = "";
       if (r.tipo === "tabela") {
-        corpoT = r.linhas.map(function (l) {
-          return el("tr", {"class": l.sem ? "sem" : ""}, el("td", {"title": l.rotulo}, h(l.rotulo)) + el("td", {"class": "num"}, h(l.texto)));
+        corpoT = r.linhas.map(function (l, i) {
+          return el("tr", {"class": (l.sem ? "sem " : "") + (i === 0 ? "primeira" : "")}, el("td", {"title": l.rotulo}, h(l.rotulo)) + el("td", {"class": "num"}, h(l.texto)));
         });
         pe = el("tr", {}, el("td", {}, t("Total")) + el("td", {"class": "num"}, h(r.total_texto)));
       } else if (r.tipo === "relogio") {
@@ -142,9 +142,12 @@
       } else {
         pe = el("tr", {}, el("td", {"colspan": "2", "class": "num"}, h(r.texto)));
       }
-      while (corpoT.length < linhas) {
-        corpoT.push(el("tr", {"class": "vazia", "aria-hidden": "true"}, el("td", {"colspan": "2"}, "\u00a0")));
+      // a última das vazias fecha a caixa por cima (a linha dela é a borda de cima da primeira linha com dado ou do total)
+      var vazias = [];
+      while (vazias.length + corpoT.length < linhas) {
+        vazias.push(el("tr", {"class": "vazia" + (vazias.length === 0 ? " fim" : ""), "aria-hidden": "true"}, el("td", {"colspan": "2"}, "\u00a0")));
       }
+      corpoT = vazias.reverse().concat(corpoT);
       return el("table", {"class": "mini-total"}, el("caption", {"title": x.nome}, h(x.nome)) + el("tbody", {}, corpoT.join("")) + el("tfoot", {}, pe));
     };
     var pedirTotais = function () {

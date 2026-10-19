@@ -2547,7 +2547,7 @@
             "coluna": "manut",
             "nome": "A próxima",
             "expressao": "MENOR(manutencao_data)",
-            "rodape": 1,
+            "rodape": 0,
             "pagina": 1,
             "largura": "estreito",
             "formato": "data"

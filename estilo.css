@@ -456,7 +456,7 @@ fieldset.compra legend { font-size: .9rem; font-weight: 600; color: var(--cinza)
 #tabela-relogios > tfoot > tr.totais-rodape > td { border-top: 2px solid var(--tinta); }
 #tabela-relogios > tfoot > tr.totais-mais > td { background: #fff; padding: .5rem .6rem; }
 #tabela-relogios tfoot tr.totais-mais .nota { margin-left: .6rem; }
-.mini-total, #tabela-relogios .mini-total { width: 100%; table-layout: auto; border-collapse: collapse; border-radius: 0; font-size: .78rem; font-variant-numeric: tabular-nums; background: #fff; border: 1px solid var(--aco-escuro); margin: 0 0 .4rem; }
+.mini-total, #tabela-relogios .mini-total { width: 100%; table-layout: auto; border-collapse: collapse; border-radius: 0; font-size: .78rem; font-variant-numeric: tabular-nums; background: transparent; border: 0; margin: 0 0 .4rem; }
 .mini-total:last-child { margin-bottom: 0; }
 .mini-total caption { caption-side: top; text-align: left; font-size: .7rem; font-weight: 700; color: var(--cinza); text-transform: uppercase; letter-spacing: .03em; padding: 0 0 .15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* o rótulo fica com o que sobra e termina em "…"; o número nunca é cortado (a coluna alarga para ele, se precisar) */
@@ -467,6 +467,14 @@ fieldset.compra legend { font-size: .9rem; font-weight: 600; color: var(--cinza)
 #tabela-relogios .mini-total tfoot td, .mini-total tfoot td { font-weight: 700; border-top: 2px solid var(--tinta); border-bottom: 0; background: #eef1f4; height: 1.55rem; }
 #tabela-relogios .mini-total td.erro, .mini-total td.erro { color: var(--ambar); font-weight: 500; white-space: normal; line-height: 1.25; height: auto; padding: .2rem .3rem; max-width: none; min-width: 0; }
 #tabela-relogios .mini-total td[colspan], .mini-total td[colspan] { max-width: none; min-width: 0; }
+/* a caixa é só das linhas com dado e do total: as vazias de cima (as que alinham os totais) ficam em branco, sem borda */
+#tabela-relogios .mini-total tr > td:first-child { border-left: 1px solid var(--aco-escuro); }
+#tabela-relogios .mini-total tr > td:last-child { border-right: 1px solid var(--aco-escuro); }
+#tabela-relogios .mini-total tbody tr.primeira > td { border-top: 1px solid var(--aco-escuro); }
+#tabela-relogios .mini-total tfoot tr > td { border-bottom: 1px solid var(--aco-escuro); }
+/* as vazias têm borda transparente da mesma largura (as alturas batem com as das linhas com dado) */
+#tabela-relogios .mini-total tbody tr.vazia > td { background: transparent; border: 1px solid transparent; }
+#tabela-relogios .mini-total tbody tr.vazia.fim > td { border-bottom-color: var(--aco-escuro); }
 /* as 12 colunas sempre (no computador, no tablet e no celular a mesma informação): a tabela ocupa a largura que tem, e o
    texto das células quebra linha só quando falta espaço; o que é um valor só (código, carga, estado, valor) não quebra */
 #tabela-relogios { width: 100%; min-width: 0; }
@@ -1397,7 +1405,8 @@ a.hoje-foto, a.hoje-foto * { text-decoration: none; }
 #tabela-relogios.em-cartoes .mini-total tfoot { display: table-footer-group; }
 #tabela-relogios.em-cartoes .mini-total tr { display: table-row; padding: 0; border: 0; box-shadow: none; }
 #tabela-relogios.em-cartoes .mini-total td { display: table-cell; padding: 0 .3rem; border-bottom: 1px solid #eef1f4; }
-#tabela-relogios.em-cartoes .mini-total tfoot td { border-top: 2px solid var(--tinta); border-bottom: 0; }
+#tabela-relogios.em-cartoes .mini-total tbody td { background: #fff; }
+#tabela-relogios.em-cartoes .mini-total tfoot td { border-top: 2px solid var(--tinta); border-bottom: 1px solid var(--aco-escuro); }
 #tabela-relogios.em-cartoes tbody td.col-nome::before { content: none; }
 /* no celular, duas colunas: cada par de campos lado a lado */
 @container (max-width: 559px) {
