@@ -483,7 +483,7 @@ collection's choice, in Settings*).
 |---|---|
 | 1. **By the recorded hours (the original engine)** (`horas`) | the default. Each measurement is split by the wrist markings minute by minute (so many hours on the wrist, so many off), and the two consumptions come out together from all the measurements in the window, each one weighing the time it covers. It is the calculation the system has always done. |
 | 2. **By the recorded hours, with readings and registration (robust)** (`robusto`) | the same hours, but the calculation is done on the readings, all with the same weight, the one that doesn't fit with the others weighs less and the record is the starting point (the three precautions below). Gives the uncertainty (±). |
-| 3. **By the marking: two separate rates** (`marcacao`) | what you mark rules. A reading marked **in use** measures the consumption on the wrist: the drop since the previous reading, divided by the whole time of the interval (in days of use). A reading marked **at rest** measures the consumption off the wrist, the same way. The two calculations **never cross**: the consumption in use comes only from the readings in use, and the one at rest only from the ones at rest; the recorded wrist doesn't enter. With the robust calculation on each side (the reading that doesn't fit weighs less; the record is the starting point), also with the uncertainty. |
+| 3. **By the marking: two separate rates** (`marcacao`) | what you mark rules. The stretch between two readings marked **in use** measures the consumption on the wrist: the drop, divided by the whole time of the stretch (in days of use). The stretch between two marked **at rest** measures the consumption off the wrist, the same way. A stretch with one reading of each kind is left out of the calculation (there is no way to know how much of it was on the wrist). The two calculations **never cross**: the consumption in use comes only from the readings in use, and the one at rest only from the ones at rest; the recorded wrist doesn't enter. With the robust calculation on each side (the reading that doesn't fit weighs less; the record is the starting point), also with the uncertainty. |
 | 4. **Registration only** (`cadastro`) | the record's *Decay in use* (or *Real battery life in use*) and *Decay stored* always apply. The measurements keep being made and stay in the history (the **Consumption measurements** table), but enter no calculation at all: `MEDIDO` gives empty. |
 | 5. **By the registration formulas** (`formulas`) | whatever the `taxa_uso` and `taxa_repouso` formulas give applies, for you to build your own calculation in **Records › Formulas**. In them, `MEDIDO("uso")` and `MEDIDO("repouso")` are engine 3's calculation, and the **LEITURAS**, **QUEDA**, **DIAS_MEDIDOS**, **MEDIA_TAXA**, **MEDIANA_TAXA** and **ULTIMA_TAXA** functions give the pieces of the measurements by the marking (how many, the sum of the drops, the sum of the days, the average, the median and the last rate, of each kind, in the last N days or in the Settings' window): `MEDIANA_TAXA("uso")`, or `PADRAO(QUEDA("uso"; 30) / DIAS_MEDIDOS("uso"; 30); decaimento_uso)`. In the other engines the formulas also apply (the consumption comes from them); the difference is that this one says: the calculation is yours. |
 
@@ -520,7 +520,10 @@ The robust calculation (engines 2 and 3) takes three precautions, each with a re
 3. **The record is the starting point.** The record's decay (or battery life) enters the calculation as the expected value,
    with a leeway of half of it. With few readings, the consumption stays near the record; with many, the readings rule. And,
    when the readings don't separate use from stored (only readings with the watch stored, for example), the consumption they
-   don't measure stays the record's.
+   don't measure stays the record's. To let you see how much the record still pulls, the **Battery consumption** box and
+   **Where the calculation comes from** say what the readings alone would give (*readings alone would give 15.57% (1
+   measurement): with few measurements, the record still pulls the calculation*); in engine 3, the box counts the measurements
+   on each side (*by marking: 1 in use and 1 at rest*).
 
 The result of these two engines comes with the **uncertainty** (± one standard deviation): *22.09% ± 1.48 per day of use*
 means the consumption in use is, with good odds, between 20.6% and 23.6%. It shrinks as readings come in.
@@ -538,8 +541,10 @@ use** (on the wrist) or **Log charge reading at rest** (stored); in the *Log the
 use** and **At rest** buttons. **The marking is stored in the reading** (the `estado` column; in earlier readings, and in
 the ones a script logs without saying, what the recorded wrist said at that moment applies). It is what engine 3 uses, and
 serves as a check for the others. If the system had the watch the other way at that moment (the use hours put it on the
-wrist on their own, but it stayed stored; or a *Put on* was missing), the screen asks before saving: *I have it on the wrist
-now. Save the reading as at rest anyway?* **Continue** saves as you marked it (through the API, the response comes with
+wrist on their own, but it stayed stored; or a *Put on* was missing), the screen asks before saving: *For me, at that moment (19/10 10:13) the watch was on the wrist. This reading at rest looks incorrect. Do you want to
+continue anyway?* Only the moment of the reading counts: what the watch did between the previous reading and this one does
+not enter the question (the reading is a snapshot of that moment; the stretch between the two is the measurement's
+calculation). **Continue** saves as you marked it (through the API, the response comes with
 `confirmar: true` and the question, and the entry is only saved by sending it again with `confirmar=1`); nothing is blocked,
 and the recorded wrist doesn't change: if it was wrong, fix it in **Correct or delete a marking**. The **Correct** box also
 changes the marking of a reading already saved.

@@ -1488,10 +1488,13 @@ function gasto_medido_desde($medicoes, $momento, $desde, $prior = null)
         }
     }
     $res["conjunta"] = $separa;
-    $res["uso"] = $beta[0] === null ? null : round($beta[0], 3);
-    $res["repouso"] = $beta[1] === null ? null : round($beta[1], 3);
-    $res["uso_dp"] = $beta[0] === null ? null : round(sqrt(max(0, $cov[0][0])), 3);
-    $res["repouso_dp"] = $beta[1] === null ? null : round(sqrt(max(0, $cov[1][1])), 3);
+    // o gasto que as leituras não medem (nenhum tempo no pulso, ou nenhum guardado, nas medições: no motor da marcação, nenhuma
+    // medição desse tipo) fica vazio, e não o cadastro repetido como se fosse medido: vale o cadastro, dito como cadastro
+    $mede = [$a[0][0] > 1e-9, $a[1][1] > 1e-9];
+    $res["uso"] = $beta[0] === null || !$mede[0] ? null : round($beta[0], 3);
+    $res["repouso"] = $beta[1] === null || !$mede[1] ? null : round($beta[1], 3);
+    $res["uso_dp"] = $res["uso"] === null ? null : round(sqrt(max(0, $cov[0][0])), 3);
+    $res["repouso_dp"] = $res["repouso"] === null ? null : round(sqrt(max(0, $cov[1][1])), 3);
     return $res;
 }
 
@@ -4603,48 +4606,17 @@ function periodos_no_pulso($rid, $de, $ate)
     return $res;
 }
 
-// A marcação de uma leitura (uso ou repouso) contra o pulso registrado desde a leitura anterior do mesmo tipo (sem
-// anterior: no instante da leitura). Bate: null. Não bate: a pergunta para a pessoa confirmar, com os trechos que
-// contradizem (até 3; 1 minuto ou menos não conta). A marcação manda: confirmada, ela vale como foi marcada.
-function estado_leitura_confere($rid, $tipo_id, $q, $estado)
+// A marcação de uma leitura (uso ou repouso) contra o pulso registrado no instante dela (e não no intervalo desde a
+// leitura anterior: a leitura é uma foto daquele instante, e o que veio antes dela é a conta da medição, não a marcação).
+// Bate: null. Não bate: a pergunta para a pessoa confirmar. A marcação manda: confirmada, ela vale como foi marcada.
+function estado_leitura_confere($rid, $q, $estado)
 {
-    $ant = valor("SELECT inicio FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio < ? ORDER BY inicio DESC, id DESC LIMIT 1",
-        [(int)$rid, (int)$tipo_id, date("Y-m-d H:i:s", $q)]);
-    $de = $ant !== null ? strtotime($ant) : $q;
-    $no_pulso = periodos_no_pulso($rid, $de, max($q, $de + 1));
-    // os trechos que contradizem: em repouso, os no pulso; em uso, os fora dele (o que sobra entre os do pulso)
-    $contra = [];
-    if ($estado === "repouso") {
-        $contra = $no_pulso;
-    } else {
-        $t = $de;
-        foreach ($no_pulso as $p) {
-            if ($p[0] > $t) {
-                $contra[] = [$t, $p[0]];
-            }
-            $t = max($t, $p[1]);
-        }
-        if ($t < $q) {
-            $contra[] = [$t, $q];
-        }
-    }
-    $contra = array_values(array_filter($contra, function ($p) use ($ant) { return $ant === null || $p[1] - $p[0] > 60; }));
-    if ($ant === null) {
-        // sem leitura anterior: só o instante da leitura
-        $agora_no_pulso = count($no_pulso) > 0;
-        if (($estado === "uso") === $agora_no_pulso) {
-            return null;
-        }
-        return t("Para mim, nesse instante ({1}) o relógio estava {2}. Esta leitura {3} parece incorreta. Deseja continuar mesmo assim?",
-            [1 => data_txt($q, true, true), 2 => $agora_no_pulso ? t("no pulso") : t("fora do pulso"), 3 => $estado === "uso" ? t("em uso") : t("em repouso")]);
-    }
-    if (count($contra) === 0) {
+    $agora_no_pulso = count(periodos_no_pulso($rid, $q, $q + 1)) > 0;
+    if (($estado === "uso") === $agora_no_pulso) {
         return null;
     }
-    $trechos = array_map(function ($p) { return t("de {1} a {2}", [1 => data_txt($p[0], true, true), 2 => data_txt($p[1], true, true)]); }, array_slice($contra, 0, 3));
-    return t("Para mim, desde a leitura anterior ({1}), o relógio esteve {2} {3}{4}. Esta leitura {5} parece incorreta. Deseja continuar mesmo assim?",
-        [1 => data_txt($de, true, true), 2 => $estado === "uso" ? t("fora do pulso") : t("no pulso"), 3 => implode(", ", $trechos),
-            4 => count($contra) > 3 ? t(" e em mais {1} trechos", [1 => count($contra) - 3]) : "", 5 => $estado === "uso" ? t("em uso") : t("em repouso")]);
+    return t("Para mim, nesse instante ({1}) o relógio estava {2}. Esta leitura {3} parece incorreta. Deseja continuar mesmo assim?",
+        [1 => data_txt($q, true, true), 2 => $agora_no_pulso ? t("no pulso") : t("fora do pulso"), 3 => $estado === "uso" ? t("em uso") : t("em repouso")]);
 }
 
 // A marcação das leituras de carga de um relógio (id do lançamento => uso ou repouso): a gravada, ou, na leitura sem
@@ -5205,8 +5177,19 @@ function previsao_energia($r, $agora)
             $prior_g = gasto_prior($r, $agora);
             $motor_c = $motor_g === "formulas" ? "marcacao" : $motor_g;
             $g = gasto_medido($medicoes, $agora, $prior_g, $motor_c);
+            // as medições da conta (as da janela; nenhuma nela: todas as de antes, como no gasto_medido), quantas de cada tipo,
+            // e o que só as leituras dão (a mesma conta sem o cadastro como ponto de partida: com poucas medições, o cadastro
+            // puxa o medido para perto dele)
+            $janela_g = medicoes_janela($medicoes, $agora, 0);
+            $ms_g = array_values(array_filter(count($janela_g) > 0 ? $janela_g : $medicoes, function ($m) use ($agora) { return strtotime($m["fim"]) <= $agora; }));
+            $n_med = ["uso" => 0, "repouso" => 0];
+            foreach ($ms_g as $m) {
+                $n_med[$m["medida"] === "uso" ? "uso" : "repouso"]++;
+            }
+            $so = $motor_c === "cadastro" ? null : ($motor_c === "horas" ? $g : gasto_medido_desde($ms_g, $agora, null, null));
             $como = $g["n"] === 0 ? t("sem medição na janela ({1})", [1 => medicoes_janela_texto()])
-                : t("{1}{2}{3} {4}", [1 => $g["conjunta"] ? t("conta dos dois gastos juntos, com ") : t("conta de "), 2 => $g["n"], 3 => $g["n"] === 1 ? t(" medição") : t(" medições"), 4 => medicoes_janela_texto()])
+                : ($motor_c === "marcacao" ? t("pela marcação, {1}: {2} em uso e {3} em repouso", [1 => medicoes_janela_texto(), 2 => $n_med["uso"], 3 => $n_med["repouso"]])
+                : t("{1}{2}{3} {4}", [1 => $g["conjunta"] ? t("conta dos dois gastos juntos, com ") : t("conta de "), 2 => $g["n"], 3 => $g["n"] === 1 ? t(" medição") : t(" medições"), 4 => medicoes_janela_texto()]))
                 . (count($g["fora"]) > 0 ? t("; {1} com uma leitura que não bate com as outras, pesando pouco", [1 => count($g["fora"])]) : "");
             // no motor "só o cadastro", o medido não entra na conta: não aparece em "de onde vem a conta"
             foreach (["uso" => t("Gasto em uso medido"), "repouso" => t("Gasto fora do pulso medido")] as $medida => $nome_m) {
@@ -5244,8 +5227,10 @@ function previsao_energia($r, $agora)
                             "unidade" => $campos[$nome]["unidade"], "origem" => ($valores[$nome] ?? "") !== "" ? "informado" : ($ctx["rastro"][$nome] === null ? "vazio" : t("padrão"))];
                     }
                 }
+                $so_v = $so !== null && $so[$medida] !== null ? round((float)$so[$medida], 3) : null;
                 $gasto[$medida] = ["cadastro" => is_numeric($cadastro) ? round((float)$cadastro, 3) : null, "medido" => $g[$medida], "medido_dp" => $g[$medida . "_dp"],
-                    "antes" => $antes_j[$medida], "vale" => is_numeric($vale) ? round((float)$vale, 3) : null, "formula" => $ident, "campos" => $de_campos];
+                    "antes" => $antes_j[$medida], "vale" => is_numeric($vale) ? round((float)$vale, 3) : null, "formula" => $ident, "campos" => $de_campos,
+                    "medicoes" => $n_med[$medida], "so_leituras" => $so_v, "puxado" => $so_v !== null && $g[$medida] !== null && abs($so_v - (float)$g[$medida]) >= 0.01];
             }
             $res["gasto"] = $tem ? $gasto : null;
             // na conta, primeiro o gasto que vale no pulso e fora dele (o medido ou o do cadastro); os campos do cadastro de
@@ -5267,7 +5252,11 @@ function previsao_energia($r, $agora)
             $primeiras = [];
             foreach (["uso" => [t("No pulso, o gasto que vale"), t("% por dia de uso"), "taxa_uso"], "repouso" => [t("Fora do pulso, o gasto que vale"), t("% por dia fora do pulso"), "taxa_repouso"]] as $medida => $d) {
                 if ($gasto[$medida]["vale"] !== null) {
-                    $primeiras[] = ["campo" => $d[2], "nome" => $d[0], "detalhe" => $vale_medido[$medida] ? t("o medido pelas leituras") : t("o do cadastro (sem medição que valha)"),
+                    $x = $gasto[$medida];
+                    $detalhe = !$vale_medido[$medida] ? t("o do cadastro (sem medição que valha)")
+                        : ($x["puxado"] ? t("o medido pelas leituras; só elas dariam {1}% ({2}{3}: o cadastro ainda puxa a conta)",
+                            [1 => decimal_txt($x["so_leituras"], 2), 2 => $x["medicoes"], 3 => $x["medicoes"] === 1 ? t(" medição") : t(" medições")]) : t("o medido pelas leituras"));
+                    $primeiras[] = ["campo" => $d[2], "nome" => $d[0], "detalhe" => $detalhe,
                         "valor" => $gasto[$medida]["vale"], "unidade" => $d[1], "origem" => $vale_medido[$medida] ? "medido" : "cadastro", "usado" => true, "vale" => true];
                 }
             }

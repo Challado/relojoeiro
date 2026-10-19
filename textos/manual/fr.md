@@ -1,4 +1,4 @@
-<!-- origem: 7cf2879948e58207c7800a3f3f7ec582adc7b5a9 -->
+<!-- origem: 8c392f1af4a8ee2d5c9b2f816b9e12713b3a73e7 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -442,7 +442,7 @@ choix de la collection, dans la Configuration*).
 |---|---|
 | 1. **Par les heures enregistrées (le moteur d'origine)** (`horas`) | le défaut. Chaque mesure est découpée par les marquages de poignet minute par minute (tant d'heures au poignet, tant hors), et les deux consommations sortent ensemble de toutes les mesures de la fenêtre, chacune pesant le temps qu'elle couvre. C'est le calcul que le système a toujours fait. |
 | 2. **Par les heures enregistrées, avec relevés et fiche (robuste)** (`robusto`) | les mêmes heures, mais le calcul se fait sur les relevés, tous avec le même poids, celui qui ne colle pas avec les autres pèse moins et la fiche est le point de départ (les trois précautions ci-dessous). Donne l'incertitude (±). |
-| 3. **Par le marquage : deux taux séparés** (`marcacao`) | ce que vous marquez fait foi. Un relevé marqué **en usage** mesure la consommation au poignet : la baisse depuis le relevé précédent, divisée par le temps entier de l'intervalle (en jours d'usage). Un relevé marqué **au repos** mesure la consommation hors du poignet, de la même façon. Les deux calculs **ne se croisent jamais** : la consommation en usage ne sort que des relevés en usage, et celle au repos que de ceux au repos ; le poignet enregistré n'entre pas. Avec le calcul robuste de chaque côté (le relevé qui ne colle pas pèse moins ; la fiche est le point de départ), aussi avec l'incertitude. |
+| 3. **Par le marquage : deux taux séparés** (`marcacao`) | ce que vous marquez fait foi. Le tronçon entre deux relevés marqués **en usage** mesure la consommation au poignet : la baisse, divisée par le temps entier du tronçon (en jours d'usage). Le tronçon entre deux relevés marqués **au repos** mesure la consommation hors du poignet, de la même façon. Un tronçon avec un relevé de chaque sorte reste hors du calcul (impossible de savoir quelle part a été au poignet). Les deux calculs **ne se croisent jamais** : la consommation en usage ne sort que des relevés en usage, et celle au repos que de ceux au repos ; le poignet enregistré n'entre pas. Avec le calcul robuste de chaque côté (le relevé qui ne colle pas pèse moins ; la fiche est le point de départ), aussi avec l'incertitude. |
 | 4. **La fiche seulement** (`cadastro`) | la *Décroissance en usage* (ou l'*Autonomie réelle en usage*) et la *Décroissance rangée* de la fiche valent toujours. Les mesures continuent d'être faites et restent dans l'historique (le tableau **Mesures de la consommation**), mais n'entrent dans aucun calcul : `MEDIDO` donne vide. |
 | 5. **Par les formules de la fiche** (`formulas`) | ce que donnent les formules `taxa_uso` et `taxa_repouso` vaut, pour que vous montiez votre propre calcul dans **Fiches › Formules**. Dans celles-ci, `MEDIDO("uso")` et `MEDIDO("repouso")` sont le calcul du moteur 3, et les fonctions **LEITURAS**, **QUEDA**, **DIAS_MEDIDOS**, **MEDIA_TAXA**, **MEDIANA_TAXA** et **ULTIMA_TAXA** donnent les pièces des mesures par le marquage (combien, la somme des baisses, la somme des jours, la moyenne, la médiane et le dernier taux, de chaque type, dans les N derniers jours ou dans la fenêtre de la Configuration) : `MEDIANA_TAXA("uso")`, ou `PADRAO(QUEDA("uso"; 30) / DIAS_MEDIDOS("uso"; 30); decaimento_uso)`. Dans les autres moteurs les formules valent aussi (c'est d'elles que sort la consommation) ; la différence est que celui-ci dit : le calcul est le vôtre. |
 
@@ -479,7 +479,10 @@ Le calcul robuste (les moteurs 2 et 3) prend trois précautions, chacune avec un
 3. **La fiche est le point de départ.** La décroissance (ou l'autonomie) de la fiche entre dans le calcul comme valeur
    attendue, avec une marge de la moitié. Avec peu de relevés, la consommation reste près de la fiche ; avec beaucoup, les
    relevés font foi. Et, quand les relevés ne séparent pas l'usage du rangé (seulement des relevés avec la montre rangée, par
-   exemple), la consommation qu'ils ne mesurent pas reste celle de la fiche.
+   exemple), la consommation qu'ils ne mesurent pas reste celle de la fiche. Pour que vous voyiez combien la fiche tire encore, le
+   cadre **Consommation de la batterie** et **D'où vient le calcul** disent ce que donneraient les relevés seuls (*les relevés
+   seuls donneraient 15,57 % (1 mesure) : avec peu de mesures, la fiche tire encore le calcul*) ; dans le moteur 3, le cadre
+   compte les mesures de chaque côté (*par le marquage : 1 en usage et 1 au repos*).
 
 Le résultat de ces deux moteurs vient avec l'**incertitude** (± un écart-type) : *22,09 % ± 1,48 par jour d'usage* veut dire
 que la consommation en usage est, avec de bonnes chances, entre 20,6 % et 23,6 %. Elle diminue à mesure que des relevés
@@ -499,8 +502,9 @@ charge* de la page Aujourd'hui, les boutons **En usage** et **Au repos**. **Le m
 colonne `estado` ; dans les relevés d'avant, et dans ceux qu'un script saisit sans le dire, c'est ce que le poignet enregistré
 disait à cet instant qui vaut). C'est ce que le moteur 3 utilise, et cela sert de vérification pour les autres. Si le système
 avait la montre autrement à cet instant (les heures d'usage l'ont mise au poignet d'elles-mêmes, mais elle est restée rangée ;
-ou un *Mis* manquait), l'écran demande avant d'enregistrer : *Pour moi elle est au poignet maintenant. Enregistrer le relevé
-comme au repos quand même ?* **Continuer** enregistre comme vous avez marqué (par l'API, la réponse vient avec `confirmar:
+ou un *Mis* manquait), l'écran demande avant d'enregistrer : *Pour moi, à cet instant (19/10 10:13) la montre était au poignet. Ce relevé au repos semble incorrect. Voulez-vous
+continuer quand même ?* Seul l'instant du relevé compte : ce que la montre a fait entre le relevé précédent et celui-ci
+n'entre pas dans la question (le relevé est une photo de cet instant ; le tronçon entre les deux est le calcul de la mesure). **Continuer** enregistre comme vous avez marqué (par l'API, la réponse vient avec `confirmar:
 true` et la question, et la saisie n'est enregistrée qu'en la renvoyant avec `confirmar=1`) ; rien n'est bloqué, et le
 poignet enregistré ne change pas : s'il était faux, corrigez-le dans **Corriger ou supprimer un marquage**. Le cadre
 **Corriger** change aussi le marquage d'un relevé déjà enregistré.

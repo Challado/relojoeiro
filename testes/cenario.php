@@ -215,6 +215,10 @@ $lanc("lancar", "smart", "carga", ["valor" => 64, "quando" => dia(1, "18:00")]);
 escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["smart"], "tipo" => "carga", "valor" => 63, "quando" => dia(1, "20:00"), "estado" => "uso"], false);
 $leitura_uso = $lanc("lancar", "smart", "carga", ["valor" => 63, "quando" => dia(1, "20:00"), "estado" => "uso", "confirmar" => 1]);
 $lanc("lancar", "smart", "carga", ["valor" => 62, "quando" => dia(1, "21:30"), "estado" => "repouso", "medir" => 0]);
+// só o instante da leitura conta: no pulso das 21:40 às 21:50 (depois da leitura anterior) e fora dele às 21:55, "em repouso"
+// bate e grava sem perguntar (antes, o pulso desde a leitura anterior fazia a API perguntar)
+$lanc("periodo", "smart", "pulso", ["inicio" => dia(1, "21:40"), "fim" => dia(1, "21:50")]);
+$lanc("lancar", "smart", "carga", ["valor" => 62, "quando" => dia(1, "21:55"), "estado" => "repouso", "medir" => 0]);
 escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["smart"], "tipo" => "carga", "valor" => 62, "estado" => "pulso"], false);
 escrever(["recurso" => "lancamento", "acao" => "alterar", "id" => $leitura_uso, "estado" => "repouso"]);
 escrever(["recurso" => "lancamento", "acao" => "alterar", "id" => $leitura_uso, "estado" => "uso"]);

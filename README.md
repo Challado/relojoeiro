@@ -472,7 +472,7 @@ Configuração*).
 |---|---|
 | 1. **Pelas horas registradas (o motor original)** (`horas`) | o padrão. Cada medição é dividida pelas marcações de pulso minuto a minuto (tantas horas no pulso, tantas fora), e os dois gastos saem juntos de todas as medições da janela, cada uma pesando o tempo que cobre. É a conta que o sistema sempre fez. |
 | 2. **Pelas horas registradas, com leituras e cadastro (robusto)** (`robusto`) | as mesmas horas, mas a conta é feita nas leituras, todas com o mesmo peso, a que não bate com as outras pesa menos e o cadastro é o ponto de partida (os três cuidados abaixo). Dá a incerteza (±). |
-| 3. **Pela marcação: duas taxas separadas** (`marcacao`) | o que você marca manda. Uma leitura marcada **em uso** mede o gasto no pulso: a queda desde a leitura anterior, dividida pelo tempo inteiro do intervalo (em dias de uso). Uma leitura marcada **em repouso** mede o gasto fora do pulso, do mesmo jeito. As duas contas **nunca se cruzam**: o gasto em uso sai só das leituras em uso, e o em repouso, só das em repouso; o pulso registrado não entra. Com a conta robusta em cada lado (a leitura que não bate pesa menos; o cadastro é o ponto de partida), também com a incerteza. |
+| 3. **Pela marcação: duas taxas separadas** (`marcacao`) | o que você marca manda. O trecho entre duas leituras marcadas **em uso** mede o gasto no pulso: a queda, dividida pelo tempo inteiro do trecho (em dias de uso). O trecho entre duas marcadas **em repouso** mede o gasto fora do pulso, do mesmo jeito. Um trecho com uma leitura de cada jeito fica fora da conta (não dá para saber quanto dele foi no pulso). As duas contas **nunca se cruzam**: o gasto em uso sai só das leituras em uso, e o em repouso, só das em repouso; o pulso registrado não entra. Com a conta robusta em cada lado (a leitura que não bate pesa menos; o cadastro é o ponto de partida), também com a incerteza. |
 | 4. **Só o cadastro** (`cadastro`) | o *Decaimento em uso* (ou a *Autonomia em uso real*) e o *Decaimento guardado* do cadastro valem sempre. As medições continuam sendo feitas e ficam no histórico (a tabela **Medições do gasto**), mas não entram em conta nenhuma: `MEDIDO` dá vazio. |
 | 5. **Pelas fórmulas do cadastro** (`formulas`) | vale o que as fórmulas `taxa_uso` e `taxa_repouso` derem, para você montar a sua própria conta em **Cadastros › Fórmulas**. Nelas, `MEDIDO("uso")` e `MEDIDO("repouso")` são a conta do motor 3, e as funções **LEITURAS**, **QUEDA**, **DIAS_MEDIDOS**, **MEDIA_TAXA**, **MEDIANA_TAXA** e **ULTIMA_TAXA** dão as peças das medições pela marcação (quantas, a soma das quedas, a soma dos dias, a média, a mediana e a última taxa, de cada tipo, nos últimos N dias ou na janela da Configuração): `MEDIANA_TAXA("uso")`, ou `PADRAO(QUEDA("uso"; 30) / DIAS_MEDIDOS("uso"; 30); decaimento_uso)`. Nos outros motores as fórmulas também valem (é delas que sai o gasto); a diferença é que este diz: a conta é a sua. |
 
@@ -507,7 +507,9 @@ A conta robusta (os motores 2 e 3) tem três cuidados, cada um com um motivo:
 3. **O cadastro é o ponto de partida.** O decaimento (ou a autonomia) do cadastro entra na conta como o valor esperado, com uma
    folga de metade dele. Com poucas leituras, o gasto fica perto do cadastro; com muitas, as leituras mandam. E, quando as
    leituras não separam o uso do guardado (só leituras com o relógio guardado, por exemplo), o gasto que elas não medem fica
-   o do cadastro.
+   o do cadastro. Para você ver o quanto o cadastro ainda puxa, o quadro **Gasto da bateria** e o **De onde vem a conta** dizem
+   o que só as leituras dariam (*só as leituras dariam 15,57% (1 medição): com poucas medições, o cadastro ainda puxa a
+   conta*); no motor 3, o quadro conta as medições de cada lado (*pela marcação: 1 em uso e 1 em repouso*).
 
 O resultado desses dois motores vem com a **incerteza** (± um desvio padrão): *22,09% ± 1,48 por dia de uso* quer dizer que o
 gasto em uso está, com boa chance, entre 20,6% e 23,6%. Ela diminui conforme entram leituras.
@@ -524,8 +526,10 @@ uso** (no pulso) ou **Informar leitura de carga em repouso** (guardado); no avis
 **Em uso** e **Em repouso**. **A marcação fica gravada na leitura** (a coluna `estado`; nas leituras de antes, e nas que um
 script lança sem dizer, vale o que o pulso registrado dizia naquele instante). Ela é o que o motor 3 usa, e serve de
 conferência para os outros. Se o sistema tinha o relógio de outro jeito nesse instante (o horário de uso pôs ele no pulso
-sozinho, mas ele ficou guardado; ou faltou um *Pôs*), a tela pergunta antes de gravar: *O sistema tem ele no pulso agora.
-Gravar a leitura como em repouso mesmo assim?* **Continuar** grava como você marcou (pela API, a resposta vem com
+sozinho, mas ele ficou guardado; ou faltou um *Pôs*), a tela pergunta antes de gravar: *Para mim, nesse instante (19/10 10:13)
+o relógio estava no pulso. Esta leitura em repouso parece incorreta. Deseja continuar mesmo assim?* Só o instante da leitura
+conta: o que o relógio fez entre a leitura anterior e esta não entra na pergunta (a leitura é uma foto daquele instante; o
+trecho entre as duas é a conta da medição). **Continuar** grava como você marcou (pela API, a resposta vem com
 `confirmar: true` e a pergunta, e o lançamento só grava de novo com `confirmar=1`); nada é impedido, e o pulso registrado não
 muda: se ele estava errado, acerte em **Corrigir ou excluir uma marcação**. O quadro **Corrigir** também muda a marcação de
 uma leitura que já está gravada.

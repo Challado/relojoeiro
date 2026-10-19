@@ -250,6 +250,8 @@ function abrirNoPainel(id) {
           return x.vale !== null ? el("strong", {}, pct(x.vale)) + (x.medido !== null && x.medido_dp !== null ? " " + el("span", {"class": "nota"}, t("± {1}", {1: num(x.medido_dp, 2)})) : "") + " " + por
             + el("small", {}, gsD.motor === "cadastro" ? (x.medido !== null ? t("do cadastro (o motor escolhido); o medido daria {1}", {1: pct(x.medido)}) : t("do cadastro (o motor escolhido)"))
               : (x.medido !== null ? t("medido; o cadastro diz {1}", {1: x.cadastro !== null ? pct(x.cadastro) : t("nada")}) : t("do cadastro, sem medição")))
+            + (gsD.motor !== "cadastro" && x.puxado ? el("small", {}, t("só as leituras dariam {1} ({2}{3}): com poucas medições, o cadastro ainda puxa a conta",
+              {1: pct(x.so_leituras), 2: x.medicoes, 3: x.medicoes === 1 ? t(" medição") : t(" medições")})) : "")
             + (campos !== "" ? el("small", {}, t("no cadastro: {1}", {1: campos})) : "")
             : nada();
         };
@@ -260,7 +262,8 @@ function abrirNoPainel(id) {
           linhasGasto.push([t("Janela anterior"), (gs.uso.antes !== null ? t("{1} no pulso", {1: pct(gs.uso.antes)}) : "") + (gs.uso.antes !== null && gs.repouso.antes !== null ? " · " : "")
             + (gs.repouso.antes !== null ? t("{1} fora", {1: pct(gs.repouso.antes)}) : "") + el("small", {}, gs.base === "leituras" ? t("{1}{2}, nas {3} leituras de cada tipo antes dessas", {1: gs.medicoes_antes, 2: gs.medicoes_antes === 1 ? t(" medição") : t(" medições"), 3: gs.janela_leituras}) : t("{1}{2}, nos {3} dias antes", {1: gs.medicoes_antes, 2: gs.medicoes_antes === 1 ? t(" medição") : t(" medições"), 3: gs.janela_dias}))]);
         }
-        linhasGasto.push([t("Medições"), gs.medicoes > 0 ? t("{1} na conta, {2}{3}", {1: gs.medicoes, 2: h(gs.janela_texto), 3: el("small", {}, gs.conjunta ? t("os dois gastos saem juntos da conta") : t("ainda não separam bem os dois: vale a média de cada um"))
+        linhasGasto.push([t("Medições"), gs.medicoes > 0 ? t("{1} na conta, {2}{3}", {1: gs.medicoes, 2: h(gs.janela_texto), 3: el("small", {}, gs.motor === "marcacao" || gs.motor === "formulas" ? t("pela marcação: {1} em uso e {2} em repouso", {1: gs.uso.medicoes, 2: gs.repouso.medicoes})
+            : (gs.conjunta ? t("os dois gastos saem juntos da conta") : t("ainda não separam bem os dois: vale a média de cada um")))
             + (gs.fora > 0 ? el("small", {"class": "em atrasado"}, t("{1} com uma leitura que não bate com as outras e pesa pouco na conta (veja Medições do gasto)", {1: gs.fora})) : "")})
           : t("nenhuma na janela ({1}){2}", {1: h(gs.janela_texto), 2: gs.uso.medido !== null || gs.repouso.medido !== null ? el("small", {}, t("vale a conta com as de antes")) : ""})]);
         blocos += quadro(t("Gasto da bateria"), pares(linhasGasto), el("p", {"class": "nota"}, t("Medições mais velhas que a janela saem da conta: se a bateria envelhecer e gastar mais, o medido sobe sozinho.")));

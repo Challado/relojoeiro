@@ -1083,7 +1083,7 @@ function op_lancamento($acao, $d)
             $erros[] = t("Estado: uso ou repouso (vazio: não diz).");
         } elseif ($estado !== "" && ($t["formato"] !== "valor" || $pulso_t === null)) {
             $erros[] = t("Estado (uso ou repouso) vale só para uma leitura, num relógio que vai ao pulso.");
-        } elseif ($estado !== "" && (string)($d["confirmar"] ?? "") !== "1" && ($pergunta = estado_leitura_confere($rid, (int)$t["id"], $q, $estado)) !== null) {
+        } elseif ($estado !== "" && (string)($d["confirmar"] ?? "") !== "1" && ($pergunta = estado_leitura_confere($rid, $q, $estado)) !== null) {
             // a marcação não bate com o pulso registrado: a pessoa confirma (confirmar=1) e vale o que ela marcou
             return resultado([$pergunta], "", ["confirmar" => true, "pergunta" => $pergunta]);
         } else {

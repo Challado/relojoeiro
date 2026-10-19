@@ -479,7 +479,7 @@ la colección, en la Configuración*).
 |---|---|
 | 1. **Por las horas registradas (el motor original)** (`horas`) | el predeterminado. Cada medición se divide por las marcaciones de muñeca minuto a minuto (tantas horas en la muñeca, tantas fuera), y los dos consumos salen juntos de todas las mediciones de la ventana, cada una pesando el tiempo que cubre. Es la cuenta que el sistema siempre hizo. |
 | 2. **Por las horas registradas, con lecturas y registro (robusto)** (`robusto`) | las mismas horas, pero la cuenta se hace en las lecturas, todas con el mismo peso, la que no encaja con las otras pesa menos y la ficha es el punto de partida (los tres cuidados de abajo). Da la incertidumbre (±). |
-| 3. **Por la marcación: dos tasas separadas** (`marcacao`) | lo que usted marca manda. Una lectura marcada **en uso** mide el consumo en la muñeca: la caída desde la lectura anterior, dividida por el tiempo entero del intervalo (en días de uso). Una lectura marcada **en reposo** mide el consumo fuera de la muñeca, del mismo modo. Las dos cuentas **nunca se cruzan**: el consumo en uso sale solo de las lecturas en uso, y el en reposo, solo de las en reposo; la muñeca registrada no entra. Con la cuenta robusta en cada lado (la lectura que no encaja pesa menos; la ficha es el punto de partida), también con la incertidumbre. |
+| 3. **Por la marcación: dos tasas separadas** (`marcacao`) | lo que usted marca manda. El tramo entre dos lecturas marcadas **en uso** mide el consumo en la muñeca: la caída, dividida por el tiempo entero del tramo (en días de uso). El tramo entre dos marcadas **en reposo** mide el consumo fuera de la muñeca, del mismo modo. Un tramo con una lectura de cada tipo queda fuera de la cuenta (no hay cómo saber cuánto de él fue en la muñeca). Las dos cuentas **nunca se cruzan**: el consumo en uso sale solo de las lecturas en uso, y el en reposo, solo de las en reposo; la muñeca registrada no entra. Con la cuenta robusta en cada lado (la lectura que no encaja pesa menos; la ficha es el punto de partida), también con la incertidumbre. |
 | 4. **Solo el registro** (`cadastro`) | el *Decaimiento en uso* (o la *Autonomía en uso real*) y el *Decaimiento guardado* de la ficha valen siempre. Las mediciones siguen haciéndose y quedan en el historial (la tabla **Mediciones del consumo**), pero no entran en ninguna cuenta: `MEDIDO` da vacío. |
 | 5. **Por las fórmulas del registro** (`formulas`) | vale lo que den las fórmulas `taxa_uso` y `taxa_repouso`, para que usted monte su propia cuenta en **Registros › Fórmulas**. En ellas, `MEDIDO("uso")` y `MEDIDO("repouso")` son la cuenta del motor 3, y las funciones **LEITURAS**, **QUEDA**, **DIAS_MEDIDOS**, **MEDIA_TAXA**, **MEDIANA_TAXA** y **ULTIMA_TAXA** dan las piezas de las mediciones por la marcación (cuántas, la suma de las caídas, la suma de los días, la media, la mediana y la última tasa, de cada tipo, en los últimos N días o en la ventana de la Configuración): `MEDIANA_TAXA("uso")`, o `PADRAO(QUEDA("uso"; 30) / DIAS_MEDIDOS("uso"; 30); decaimento_uso)`. En los otros motores las fórmulas también valen (de ellas sale el consumo); la diferencia es que este dice: la cuenta es suya. |
 
@@ -515,7 +515,10 @@ La cuenta robusta (los motores 2 y 3) tiene tres cuidados, cada uno con un motiv
 3. **La ficha es el punto de partida.** El decaimiento (o la autonomía) de la ficha entra en la cuenta como el valor
    esperado, con un margen de la mitad de él. Con pocas lecturas, el consumo queda cerca de la ficha; con muchas, las lecturas
    mandan. Y, cuando las lecturas no separan el uso del guardado (solo lecturas con el reloj guardado, por ejemplo), el consumo
-   que ellas no miden queda el de la ficha.
+   que ellas no miden queda el de la ficha. Para que usted vea cuánto tira todavía la ficha, el cuadro **Consumo de la
+   batería** y **De dónde sale la cuenta** dicen lo que darían solo las lecturas (*solo las lecturas darían 15,57% (1
+   medición): con pocas mediciones, la ficha todavía tira de la cuenta*); en el motor 3, el cuadro cuenta las mediciones de
+   cada lado (*por la marca: 1 en uso y 1 en reposo*).
 
 El resultado de esos dos motores viene con la **incertidumbre** (± una desviación estándar): *22,09% ± 1,48 por día de uso*
 quiere decir que el consumo en uso está, con buena probabilidad, entre 20,6% y 23,6%. Disminuye conforme entran lecturas.
@@ -534,7 +537,9 @@ página Hoy, los botones **En uso** y **En reposo**. **La marcación queda graba
 lecturas de antes, y en las que un script lanza sin decir, vale lo que la muñeca registrada decía en ese instante). Es lo que
 el motor 3 usa, y sirve de comprobación para los otros. Si el sistema tenía el reloj de otra manera en ese instante (el
 horario de uso lo puso en la muñeca por sí solo, pero quedó guardado; o faltó un *Puso*), la pantalla pregunta antes de
-grabar: *Para mí está en la muñeca ahora. ¿Grabar la lectura como en reposo de todos modos?* **Continuar** graba como usted
+grabar: *Para mí, en ese instante (19/10 10:13) el reloj estaba en la muñeca. Esta lectura en reposo parece incorrecta. ¿Desea
+continuar de todos modos?* Solo cuenta el instante de la lectura: lo que el reloj hizo entre la lectura anterior y esta no
+entra en la pregunta (la lectura es una foto de ese instante; el tramo entre las dos es la cuenta de la medición). **Continuar** graba como usted
 marcó (por la API, la respuesta viene con `confirmar: true` y la pregunta, y el lanzamiento solo se graba enviándolo de nuevo
 con `confirmar=1`); nada se impide, y la muñeca registrada no cambia: si estaba errada, corríjala en **Corregir o borrar una
 marcación**. El cuadro **Corregir** también cambia la marcación de una lectura ya grabada.

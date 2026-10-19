@@ -1169,8 +1169,18 @@
  *                                    o gasto em uso, em % por dia de uso, pelo cadastro, sem as medições (número)
  *     relogios[].previsao.gasto.uso.medido_dp
  *                                    a incerteza do gasto em uso medido: um desvio padrão, na mesma unidade (número; null sem medição)
+ *     relogios[].previsao.gasto.uso.medicoes
+ *                                    quantas medições em uso entram na conta (número; no motor da marcação, as de leituras marcadas em uso
+ *                                    nas duas pontas)
+ *     relogios[].previsao.gasto.uso.so_leituras
+ *                                    o gasto em uso, em % por dia de uso, só pelas leituras: a mesma conta sem o cadastro como ponto de
+ *                                    partida (número; null sem medição ou no motor só o cadastro)
+ *     relogios[].previsao.gasto.uso.puxado
+ *                                    verdadeiro: o medido ficou diferente do que só as leituras dão, porque com poucas medições o cadastro
+ *                                    ainda puxa a conta
  *     relogios[].previsao.gasto.uso.medido
- *                                    o gasto em uso, em % por dia de uso, medido pelas leituras, como o MEDIDO (número; null sem medição)
+ *                                    o gasto em uso, em % por dia de uso, medido pelas leituras, como o MEDIDO (número; null se as leituras
+ *                                    não medem esse gasto: sem medição ou, no motor da marcação, nenhuma desse tipo)
  *     relogios[].previsao.gasto.uso.vale
  *                                    o gasto em uso, em % por dia de uso que vale na conta: o medido, senão o cadastro (número)
  *     relogios[].previsao.gasto.uso.campos[]
@@ -1195,8 +1205,18 @@
  *     relogios[].previsao.gasto.repouso.medido_dp
  *                                    a incerteza do gasto fora do pulso medido: um desvio padrão, na mesma unidade (número; null sem
  *                                    medição)
+ *     relogios[].previsao.gasto.repouso.medicoes
+ *                                    quantas medições em repouso entram na conta (número; no motor da marcação, as de leituras marcadas em
+ *                                    repouso nas duas pontas)
+ *     relogios[].previsao.gasto.repouso.so_leituras
+ *                                    o gasto fora do pulso, em % por dia, só pelas leituras: a mesma conta sem o cadastro como ponto de
+ *                                    partida (número; null sem medição ou no motor só o cadastro)
+ *     relogios[].previsao.gasto.repouso.puxado
+ *                                    verdadeiro: o medido ficou diferente do que só as leituras dão, porque com poucas medições o cadastro
+ *                                    ainda puxa a conta
  *     relogios[].previsao.gasto.repouso.medido
- *                                    o gasto fora do pulso, em % por dia, medido pelas leituras, como o MEDIDO (número; null sem medição)
+ *                                    o gasto fora do pulso, em % por dia, medido pelas leituras, como o MEDIDO (número; null se as leituras
+ *                                    não medem esse gasto: sem medição ou, no motor da marcação, nenhuma desse tipo)
  *     relogios[].previsao.gasto.repouso.vale
  *                                    o gasto fora do pulso, em % por dia que vale na conta: o medido, senão o cadastro (número)
  *     relogios[].previsao.gasto.repouso.campos[]
@@ -1924,8 +1944,18 @@
  *                                    o gasto em uso, em % por dia de uso, pelo cadastro, sem as medições (número)
  *     relogio.previsao.gasto.uso.medido_dp
  *                                    a incerteza do gasto em uso medido: um desvio padrão, na mesma unidade (número; null sem medição)
+ *     relogio.previsao.gasto.uso.medicoes
+ *                                    quantas medições em uso entram na conta (número; no motor da marcação, as de leituras marcadas em uso
+ *                                    nas duas pontas)
+ *     relogio.previsao.gasto.uso.so_leituras
+ *                                    o gasto em uso, em % por dia de uso, só pelas leituras: a mesma conta sem o cadastro como ponto de
+ *                                    partida (número; null sem medição ou no motor só o cadastro)
+ *     relogio.previsao.gasto.uso.puxado
+ *                                    verdadeiro: o medido ficou diferente do que só as leituras dão, porque com poucas medições o cadastro
+ *                                    ainda puxa a conta
  *     relogio.previsao.gasto.uso.medido
- *                                    o gasto em uso, em % por dia de uso, medido pelas leituras, como o MEDIDO (número; null sem medição)
+ *                                    o gasto em uso, em % por dia de uso, medido pelas leituras, como o MEDIDO (número; null se as leituras
+ *                                    não medem esse gasto: sem medição ou, no motor da marcação, nenhuma desse tipo)
  *     relogio.previsao.gasto.uso.vale
  *                                    o gasto em uso, em % por dia de uso que vale na conta: o medido, senão o cadastro (número)
  *     relogio.previsao.gasto.uso.campos[]
@@ -1950,8 +1980,18 @@
  *     relogio.previsao.gasto.repouso.medido_dp
  *                                    a incerteza do gasto fora do pulso medido: um desvio padrão, na mesma unidade (número; null sem
  *                                    medição)
+ *     relogio.previsao.gasto.repouso.medicoes
+ *                                    quantas medições em repouso entram na conta (número; no motor da marcação, as de leituras marcadas em
+ *                                    repouso nas duas pontas)
+ *     relogio.previsao.gasto.repouso.so_leituras
+ *                                    o gasto fora do pulso, em % por dia, só pelas leituras: a mesma conta sem o cadastro como ponto de
+ *                                    partida (número; null sem medição ou no motor só o cadastro)
+ *     relogio.previsao.gasto.repouso.puxado
+ *                                    verdadeiro: o medido ficou diferente do que só as leituras dão, porque com poucas medições o cadastro
+ *                                    ainda puxa a conta
  *     relogio.previsao.gasto.repouso.medido
- *                                    o gasto fora do pulso, em % por dia, medido pelas leituras, como o MEDIDO (número; null sem medição)
+ *                                    o gasto fora do pulso, em % por dia, medido pelas leituras, como o MEDIDO (número; null se as leituras
+ *                                    não medem esse gasto: sem medição ou, no motor da marcação, nenhuma desse tipo)
  *     relogio.previsao.gasto.repouso.vale
  *                                    o gasto fora do pulso, em % por dia que vale na conta: o medido, senão o cadastro (número)
  *     relogio.previsao.gasto.repouso.campos[]
@@ -2482,7 +2522,15 @@
  *     previsoes[].gasto.uso.cadastro o gasto em uso, em % por dia de uso, pelo cadastro, sem as medições (número)
  *     previsoes[].gasto.uso.medido_dp
  *                                    a incerteza do gasto em uso medido: um desvio padrão, na mesma unidade (número; null sem medição)
- *     previsoes[].gasto.uso.medido   o gasto em uso, em % por dia de uso, medido pelas leituras, como o MEDIDO (número; null sem medição)
+ *     previsoes[].gasto.uso.medicoes quantas medições em uso entram na conta (número; no motor da marcação, as de leituras marcadas em uso
+ *                                    nas duas pontas)
+ *     previsoes[].gasto.uso.so_leituras
+ *                                    o gasto em uso, em % por dia de uso, só pelas leituras: a mesma conta sem o cadastro como ponto de
+ *                                    partida (número; null sem medição ou no motor só o cadastro)
+ *     previsoes[].gasto.uso.puxado   verdadeiro: o medido ficou diferente do que só as leituras dão, porque com poucas medições o cadastro
+ *                                    ainda puxa a conta
+ *     previsoes[].gasto.uso.medido   o gasto em uso, em % por dia de uso, medido pelas leituras, como o MEDIDO (número; null se as leituras
+ *                                    não medem esse gasto: sem medição ou, no motor da marcação, nenhuma desse tipo)
  *     previsoes[].gasto.uso.vale     o gasto em uso, em % por dia de uso que vale na conta: o medido, senão o cadastro (número)
  *     previsoes[].gasto.uso.campos[] os campos do cadastro de onde sai o gasto em uso do cadastro (o decaimento, a autonomia...): o painel
  *                                    mostra o medido ao lado deles
@@ -2504,8 +2552,18 @@
  *     previsoes[].gasto.repouso.medido_dp
  *                                    a incerteza do gasto fora do pulso medido: um desvio padrão, na mesma unidade (número; null sem
  *                                    medição)
+ *     previsoes[].gasto.repouso.medicoes
+ *                                    quantas medições em repouso entram na conta (número; no motor da marcação, as de leituras marcadas em
+ *                                    repouso nas duas pontas)
+ *     previsoes[].gasto.repouso.so_leituras
+ *                                    o gasto fora do pulso, em % por dia, só pelas leituras: a mesma conta sem o cadastro como ponto de
+ *                                    partida (número; null sem medição ou no motor só o cadastro)
+ *     previsoes[].gasto.repouso.puxado
+ *                                    verdadeiro: o medido ficou diferente do que só as leituras dão, porque com poucas medições o cadastro
+ *                                    ainda puxa a conta
  *     previsoes[].gasto.repouso.medido
- *                                    o gasto fora do pulso, em % por dia, medido pelas leituras, como o MEDIDO (número; null sem medição)
+ *                                    o gasto fora do pulso, em % por dia, medido pelas leituras, como o MEDIDO (número; null se as leituras
+ *                                    não medem esse gasto: sem medição ou, no motor da marcação, nenhuma desse tipo)
  *     previsoes[].gasto.repouso.vale o gasto fora do pulso, em % por dia que vale na conta: o medido, senão o cadastro (número)
  *     previsoes[].gasto.repouso.campos[]
  *                                    os campos do cadastro de onde sai o gasto fora do pulso do cadastro (o decaimento, a autonomia...): o
