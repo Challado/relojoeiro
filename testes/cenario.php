@@ -481,6 +481,26 @@ escrever(["recurso" => "formulas", "acao" => "excluir", "id" => $id_de("formulas
 escrever(["recurso" => "avisos", "acao" => "alterar", "id" => $id_de("avisos", "pulseira"), "antecedencia_dias" => 30, "escala" => "sempre", "agenda" => "sempre"]);
 escrever(["recurso" => "avisos", "acao" => "excluir", "id" => $id_de("avisos", "pulseira"), "confirmar" => 1]);
 
+// os totais: os que vêm prontos (todos, os do rodapé de alguns relógios, os da página), o Testar (uma expressão boa, uma
+// errada, uma que precisa de função de total, uma vazia), um total novo só da página, um no rodapé sem coluna (não pode), a
+// ordem, e a exclusão (sem confirmar, o impacto; com, sai)
+ler("totais", ["recurso" => "totais"]);
+ler("totais do rodape de dois relogios", ["recurso" => "totais", "parte" => "rodape", "relogios" => $rel["smart"] . "," . $rel["crono"]]);
+ler("totais da pagina", ["recurso" => "totais", "parte" => "pagina"]);
+ler("totais teste bom", ["recurso" => "totais", "parte" => "teste", "expressao" => "AGRUPADO(tipo; MEDIA(carga))", "formato" => "decimal"]);
+ler("totais teste faixas", ["recurso" => "totais", "parte" => "teste", "expressao" => "FAIXAS(DIAS_DESDE(data_compra); 30; 365)"]);
+ler("totais teste errado", ["recurso" => "totais", "parte" => "teste", "expressao" => "SOMA(carga"]);
+ler("totais teste sem funcao de total", ["recurso" => "totais", "parte" => "teste", "expressao" => "carga + 1"]);
+ler("totais teste vazio", ["recurso" => "totais", "parte" => "teste", "expressao" => ""]);
+$total_novo = escrever(["recurso" => "totais", "acao" => "salvar", "nome" => "Carga somada", "expressao" => "SOMA(carga)", "coluna" => "", "rodape" => "0", "pagina" => "1", "largura" => "largo", "formato" => "porcentagem"]);
+escrever(["recurso" => "totais", "acao" => "salvar", "nome" => "Sem coluna", "expressao" => "CONTA()", "coluna" => "", "rodape" => "1"], false);
+escrever(["recurso" => "totais", "acao" => "salvar", "nome" => "Errado", "expressao" => "MEDIA(", "coluna" => "zzz", "largura" => "enorme", "formato" => "x"], false);
+escrever(["recurso" => "totais", "acao" => "salvar", "id" => $total_novo, "expressao" => "MAIOR(carga)"]);
+escrever(["recurso" => "totais", "acao" => "subir", "id" => $total_novo]);
+ler("totais com o novo", ["recurso" => "totais", "parte" => "pagina"]);
+escrever(["recurso" => "totais", "acao" => "excluir", "id" => $total_novo], false);
+escrever(["recurso" => "totais", "acao" => "excluir", "id" => $total_novo, "confirmar" => 1]);
+
 // a árvore: mover, excluir um grupo com relógio dentro (o relógio sobe), e excluir relógios (vão junto o histórico, a foto,
 // os valores dos campos e o plano)
 $sub_g = escrever(["recurso" => "arvore", "acao" => "novo", "nome" => "Vintage", "pai_id" => $cron_g]);

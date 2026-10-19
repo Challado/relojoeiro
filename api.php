@@ -2607,6 +2607,61 @@
  *     prioridades[]                  as prioridades, da mais alta para a mais baixa (as opções do campo prioridade_desejo)
  *     sem_preco_alvo                 quantos desejados estão sem preço-alvo
  *     total_preco_alvo               a soma dos preços-alvo dos desejados, em R$ (os sem preço contam 0)
+ *   recurso=totais
+ *     relogios                       em quantos relógios os totais foram calculados
+ *     relogio_ids[]                  os ids desses relógios
+ *     todos                          quantos relógios a tabela tem ao todo (sem o filtro)
+ *     totais[]                       os totais, na ordem do cadastro
+ *     totais[].id                    o número do total
+ *     totais[].coluna                a chave da coluna da tabela dos relógios onde ele vai no rodapé (codigo, nome, tipo, estado, carga,
+ *                                    ultimo, manut, em, fazer, encostado, compra, valor); null: nenhuma
+ *     totais[].coluna_nome           o nome da coluna, no idioma do pedido; null: nenhuma
+ *     totais[].nome                  o nome do total (o título da tabelinha e do quadro)
+ *     totais[].expressao             a expressão de total
+ *     totais[].rodape                verdadeiro: aparece no rodapé da tabela, embaixo da coluna
+ *     totais[].pagina                verdadeiro: aparece na página de totais
+ *     totais[].largura               o quadro na página de totais: estreito ou largo (a linha inteira)
+ *     totais[].formato               como os números saem: numero, inteiro, decimal, moeda, porcentagem, data ou dias
+ *     totais[].ordem                 a posição na ordem (de 10 em 10)
+ *     totais[].resultado             o total calculado nos relógios
+ *     totais[].resultado.tipo        valor (um número ou texto), tabela (AGRUPADO e FAIXAS: as linhas e o total), relogio (QUEM_MAIOR e
+ *                                    QUEM_MENOR) ou erro
+ *     totais[].resultado.valor       o número (ou o texto); no relogio, o valor dele; null: vazio
+ *     totais[].resultado.texto       o valor no formato do total, pronto para a tela ("R$ 17.997,74", "84%", "27/10/2026"; vazio: "—"); no
+ *                                    relogio, o nome e o valor
+ *     totais[].resultado.valor_texto no relogio: só o valor, no formato
+ *     totais[].resultado.relogio_id  no relogio: o id do relógio do maior (ou do menor) valor; null: nenhum tem valor
+ *     totais[].resultado.relogio     no relogio: o nome dele
+ *     totais[].resultado.linhas[]    na tabela: as linhas (no AGRUPADO, do que mais tem para o que menos tem, ou na ordem dos números e dos
+ *                                    meses; "outros" junta o resto, quando há limite; "sem valor", os sem a chave; nas FAIXAS, na ordem das
+ *                                    faixas)
+ *     totais[].resultado.linhas[].rotulo
+ *                                    o rótulo da linha (o valor da chave, a faixa, "outros" ou "sem valor"; os meses como "ago/2026")
+ *     totais[].resultado.linhas[].valor
+ *                                    a conta da linha (sem conta, quantos relógios)
+ *     totais[].resultado.linhas[].texto
+ *                                    a conta no formato (nas faixas e no AGRUPADO sem conta, inteiro)
+ *     totais[].resultado.linhas[].relogios
+ *                                    quantos relógios estão na linha
+ *     totais[].resultado.linhas[].sem
+ *                                    verdadeiro na linha "sem valor"
+ *     totais[].resultado.total       na tabela: a conta com todos os relógios (no AGRUPADO, a mesma conta das linhas; nas FAIXAS, quantos
+ *                                    são)
+ *     totais[].resultado.total_texto o total no formato
+ *     totais[].resultado.erro        no erro: por que não deu (a expressão com erro, os limites das FAIXAS fora de ordem)
+ *     teste                          o resultado da expressao testada (como totais[].resultado); só com expressao
+ *     colunas[]                      as colunas da tabela dos relógios onde um total pode ir (sem parte=rodape)
+ *     colunas[].chave                a chave (o que se grava em coluna)
+ *     colunas[].nome                 o nome, no idioma do pedido
+ *     formatos[]                     os formatos dos números
+ *     formatos[].chave               a chave (o que se grava em formato)
+ *     formatos[].nome                o nome, no idioma do pedido
+ *     funcoes[]                      as funções de total (só valem nas expressões de total)
+ *     funcoes[].nome                 o nome da função
+ *     funcoes[].descricao            o que ela faz
+ *     variaveis[]                    as variáveis da tabela, que os totais têm em cada relógio além dos campos e das fórmulas
+ *     variaveis[].nome               o nome da variável
+ *     variaveis[].descricao          o que ela vale
  *   recurso=estatisticas
  *     de                             o começo do período (texto AAAA-MM-DD)
  *     ate                            o fim do período (texto AAAA-MM-DD; no máximo hoje)
@@ -4019,6 +4074,8 @@ if ($recurso === "textos") {
     } else {
         $saida = rodizio_manual_pagina($de_m, $ate_m, (int)($_REQUEST["pagina"] ?? 1));
     }
+} elseif ($recurso === "totais") {
+    require __DIR__ . "/api/totais.php";
 } elseif ($recurso === "roteiro") {
     // o teste de um roteiro (ou do roteiro de um modo) num dia: cada relógio com as linhas calculadas, e quem sairia
     $texto = (string)($_REQUEST["roteiro"] ?? "");
@@ -4101,7 +4158,7 @@ if ($recurso === "textos") {
 } else {
     $codigo = 404;
     $saida = ["erro" => t("recurso desconhecido"), "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "hora_certa", "acessorios", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "hora_certa", "acessorios", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

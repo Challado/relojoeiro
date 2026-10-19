@@ -448,9 +448,25 @@ fieldset.compra legend { font-size: .9rem; font-weight: 600; color: var(--cinza)
 .carga-cel.baixa strong { color: #8a4f0e; }
 #tabela-relogios td.fazer { font-weight: 600; color: #8a4f0e; }
 .estado-indisponivel { background: #eef1f4; color: var(--cinza); border-color: var(--aco-escuro); }
-#tabela-relogios tfoot td { background: #eef1f4; border-top: 1px solid var(--aco-escuro); font-weight: 600; padding: .5rem .6rem; text-align: right; }
-#tabela-relogios tfoot .rotulo-total { margin-right: 1rem; color: var(--cinza); font-weight: 500; }
-#tabela-relogios tfoot #total-valor { white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* o rodapé: embaixo de cada coluna, os totais dela (recurso=totais, parte=rodape), cada um numa tabelinha com o nome em
+   cima, as linhas de altura fixa e o total em negrito no pé; todas com o mesmo número de linhas (o tabela.js completa com
+   linhas vazias), para os totais ficarem na mesma altura. As tabelinhas não alargam a coluna: o texto que não cabe termina
+   em "…" (o nome inteiro fica na dica) */
+#tabela-relogios > tfoot > tr > td { background: #eef1f4; border-top: 1px solid var(--aco-escuro); padding: .5rem .3rem; vertical-align: top; }
+#tabela-relogios > tfoot > tr.totais-rodape > td { border-top: 2px solid var(--tinta); }
+#tabela-relogios > tfoot > tr.totais-mais > td { background: #fff; padding: .5rem .6rem; }
+#tabela-relogios tfoot tr.totais-mais .nota { margin-left: .6rem; }
+.mini-total, #tabela-relogios .mini-total { width: 100%; table-layout: auto; border-collapse: collapse; border-radius: 0; font-size: .78rem; font-variant-numeric: tabular-nums; background: #fff; border: 1px solid var(--aco-escuro); margin: 0 0 .4rem; }
+.mini-total:last-child { margin-bottom: 0; }
+.mini-total caption { caption-side: top; text-align: left; font-size: .7rem; font-weight: 700; color: var(--cinza); text-transform: uppercase; letter-spacing: .03em; padding: 0 0 .15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* o rótulo fica com o que sobra e termina em "…"; o número nunca é cortado (a coluna alarga para ele, se precisar) */
+#tabela-relogios .mini-total td, .mini-total td { height: 1.45rem; box-sizing: border-box; padding: 0 .3rem; line-height: 1.45rem; border: 0; border-bottom: 1px solid #eef1f4;
+  background: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0; min-width: 3.2rem; width: 100%; vertical-align: middle; font-weight: 400; color: var(--tinta); }
+#tabela-relogios .mini-total td.num, .mini-total td.num { text-align: right; max-width: none; min-width: 0; width: 1%; padding-left: .4rem; }
+#tabela-relogios .mini-total tr.sem td, .mini-total tr.sem td { color: var(--cinza); }
+#tabela-relogios .mini-total tfoot td, .mini-total tfoot td { font-weight: 700; border-top: 2px solid var(--tinta); border-bottom: 0; background: #eef1f4; height: 1.55rem; }
+#tabela-relogios .mini-total td.erro, .mini-total td.erro { color: var(--ambar); font-weight: 500; white-space: normal; line-height: 1.25; height: auto; padding: .2rem .3rem; max-width: none; min-width: 0; }
+#tabela-relogios .mini-total td[colspan], .mini-total td[colspan] { max-width: none; min-width: 0; }
 /* as 12 colunas sempre (no computador, no tablet e no celular a mesma informação): a tabela ocupa a largura que tem, e o
    texto das células quebra linha só quando falta espaço; o que é um valor só (código, carga, estado, valor) não quebra */
 #tabela-relogios { width: 100%; min-width: 0; }
@@ -1366,8 +1382,22 @@ a.hoje-foto, a.hoje-foto * { text-decoration: none; }
 #tabela-relogios.em-cartoes tbody tr.de-hoje { box-shadow: inset 3px 0 0 var(--safira); }
 #tabela-relogios.em-cartoes tbody tr.pendente:not(.de-hoje) { box-shadow: inset 3px 0 0 var(--ambar); }
 #tabela-relogios.em-cartoes .nome-rel img, #tabela-relogios.em-cartoes .nome-rel .sem-mini { width: 36px; height: 36px; border-radius: 7px; }
-#tabela-relogios.em-cartoes tfoot tr { display: block; }
-#tabela-relogios.em-cartoes tfoot td { display: flex; justify-content: space-between; gap: .6rem; padding: .55rem .8rem; }
+#tabela-relogios.em-cartoes > tfoot > tr { display: block; }
+#tabela-relogios.em-cartoes > tfoot > tr > td { display: flex; justify-content: space-between; gap: .6rem; padding: .55rem .8rem; }
+/* os totais em cartões: as colunas com total lado a lado, na grade dos cartões, com o nome da coluna em cima */
+#tabela-relogios.em-cartoes > tfoot > tr.totais-rodape:not([hidden]) { display: grid; grid-template-columns: repeat(var(--colunas), minmax(0, 1fr)); gap: .6rem .8rem; padding: .7rem .8rem; background: #eef1f4; border-top: 2px solid var(--tinta); }
+#tabela-relogios.em-cartoes > tfoot > tr.totais-rodape > td { display: block; padding: 0; border: 0; min-width: 0; text-align: left; }
+#tabela-relogios.em-cartoes > tfoot > tr.totais-rodape > td:empty { display: none; }
+#tabela-relogios.em-cartoes > tfoot > tr.totais-rodape > td[data-rotulo]::before { content: attr(data-rotulo); display: block; margin-bottom: .1rem; font-size: .72rem; color: var(--cinza); }
+#tabela-relogios.em-cartoes tfoot tr.totais-rodape .mini-total tr.vazia { display: none; }
+#tabela-relogios.em-cartoes > tfoot > tr.totais-mais > td { display: block; }
+/* as tabelinhas dos totais continuam tabelas dentro dos cartões (as regras dos cartões são para as linhas dos relógios) */
+#tabela-relogios.em-cartoes .mini-total { display: table; }
+#tabela-relogios.em-cartoes .mini-total tbody { display: table-row-group; }
+#tabela-relogios.em-cartoes .mini-total tfoot { display: table-footer-group; }
+#tabela-relogios.em-cartoes .mini-total tr { display: table-row; padding: 0; border: 0; box-shadow: none; }
+#tabela-relogios.em-cartoes .mini-total td { display: table-cell; padding: 0 .3rem; border-bottom: 1px solid #eef1f4; }
+#tabela-relogios.em-cartoes .mini-total tfoot td { border-top: 2px solid var(--tinta); border-bottom: 0; }
 #tabela-relogios.em-cartoes tbody td.col-nome::before { content: none; }
 /* no celular, duas colunas: cada par de campos lado a lado */
 @container (max-width: 559px) {
@@ -1669,3 +1699,17 @@ ol.passos form { display: inline; }
 .pagina-modos .roteiro-gerado { margin: .8rem 0; }
 .pagina-modos .roteiro-gerado pre { margin: .4rem 0; }
 .pagina-modos .form-grade + .nota, .pagina-modos .nota + .form-grade { margin-top: .6rem; }
+
+/* ---------- a página de totais: os quadros (estreitos: três por linha no computador; largos: a linha inteira) ---------- */
+.grade-totais { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 1rem; align-items: start; }
+.quadro-total, main.config .quadro-total { background: #fff; border: 1px solid var(--aco-escuro); border-radius: 10px; padding: .9rem 1rem; min-width: 0; margin: 0; }
+.quadro-total.largo { grid-column: 1 / -1; }
+.quadro-total h2 { margin: 0; font-size: 1rem; }
+.quadro-total > .nota { margin: .1rem 0 .5rem; font-size: .8rem; }
+.quadro-tabela { width: 100%; border-collapse: collapse; font-size: .9rem; font-variant-numeric: tabular-nums; margin-top: .4rem; }
+.quadro-tabela td { padding: .3rem .4rem; border-bottom: 1px solid #eef1f4; }
+.quadro-tabela td.num { text-align: right; white-space: nowrap; }
+.quadro-tabela tr.sem td { color: var(--cinza); }
+.quadro-tabela tfoot td { font-weight: 700; border-top: 2px solid var(--tinta); border-bottom: 0; background: #eef1f4; }
+.quadro-numero { margin: .5rem 0 0; font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.quadro-relogio { margin: .1rem 0 0; }

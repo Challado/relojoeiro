@@ -1,8 +1,8 @@
-// Cadastros: os dados da API (recurso=cadastros), uma aba por vez (cadastros.php?aba=campos&editar=3), com as gravações
-// pela API (recurso=campos, lancamento_tipos, formulas e documento_categorias) e o testar das fórmulas
-// (recurso=calcular). Os avisos ficam na página Avisos (avisos.js) e os modos de rodízio, na Modos de rodízio (modos.js).
-var ABAS = {campos: t("Campos"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), documentos: t("Categorias de documentos")};
-var RECURSO = {campos: "campos", lancamentos: "lancamento_tipos", formulas: "formulas", documentos: "documento_categorias"};
+// Cadastros: os dados da API (recurso=cadastros; a aba Totais, recurso=totais), uma aba por vez
+// (cadastros.php?aba=campos&editar=3), com as gravações pela API (recurso=campos, lancamento_tipos, formulas, totais e
+// documento_categorias), o testar das fórmulas (recurso=calcular) e o dos totais (recurso=totais, expressao=). Os avisos ficam na página Avisos (avisos.js) e os modos de rodízio, na Modos de rodízio (modos.js).
+var ABAS = {campos: t("Campos"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), totais: t("Totais"), documentos: t("Categorias de documentos")};
+var RECURSO = {campos: "campos", lancamentos: "lancamento_tipos", formulas: "formulas", totais: "totais", documentos: "documento_categorias"};
 var FAMILIAS = {imagem: "imagens", video: t("vídeos"), audio: t("áudios"), pdf: t("PDF"), xml: t("XML")};
 var q = new URLSearchParams(window.location.search);
 // os avisos dos relógios saíram daqui: moram na página Avisos, junto com os lembretes (o endereço antigo leva para lá)
@@ -46,6 +46,9 @@ function vazio(v) {
 
 // lê e monta a aba escolhida
 function recarregarCadastros() {
+  if (aba === "totais") {
+    return recarregarTotais();
+  }
   return api({recurso: "cadastros"}).then(function (d) {
     var res = el("h1", {}, t("Cadastros")) + el("nav", {"class": "abas"}, Object.keys(ABAS).map(function (k) { return el("a", {"href": "cadastros.php?aba=" + k, "class": k === aba ? "ativa" : ""}, h(ABAS[k])); }).join(""));
     if (recado !== "") {
@@ -167,6 +170,82 @@ function recarregarCadastros() {
     document.getElementById("cadastros").innerHTML = res;
   });
 }
+
+// um resultado de total, como na página de totais: a tabelinha com o total, o relógio com o valor, ou o número
+function resultadoTotal(r) {
+  if (r.tipo === "tabela") {
+    return el("table", {"class": "quadro-tabela"}, el("tbody", {}, r.linhas.map(function (l) {
+      return el("tr", {"class": l.sem ? "sem" : ""}, el("td", {}, h(l.rotulo)) + el("td", {"class": "num"}, h(l.texto)));
+    }).join("")) + el("tfoot", {}, el("tr", {}, el("td", {}, t("Total")) + el("td", {"class": "num"}, h(r.total_texto)))));
+  }
+  if (r.tipo === "erro") {
+    return el("span", {"class": "acao"}, h(r.erro));
+  }
+  return h(r.texto);
+}
+
+// a aba Totais: a lista (na ordem, com o que cada um dá agora em todos os relógios), o formulário de um total (a coluna, o
+// nome, a expressão, onde aparece, a largura e o formato) com o Testar, e as funções de total e as variáveis da tabela
+function recarregarTotais() {
+  return api({recurso: "totais"}).then(function (d) {
+    var e = null;
+    d.totais.forEach(function (x) { if (x.id === editar) { e = x; } });
+    var f = e || {coluna: null, rodape: false, pagina: true, largura: "estreito", formato: "numero"};
+    var res = el("h1", {}, t("Cadastros")) + el("nav", {"class": "abas"}, Object.keys(ABAS).map(function (k) { return el("a", {"href": "cadastros.php?aba=" + k, "class": k === aba ? "ativa" : ""}, h(ABAS[k])); }).join(""));
+    if (recado !== "") {
+      res += recado;
+      recado = "";
+    }
+    var marca = function (nome, ligado, desligada) {
+      return el("input", {"type": "hidden", "name": nome, "value": "0"}) + el("input", {"type": "checkbox", "name": nome, "value": "1", "checked": ligado, "disabled": desligada});
+    };
+    var sec = el("h2", {}, t("Totais"))
+      + el("p", {"class": "nota"}, t("Cada total é uma expressão do motor que olha para todos os relógios mostrados de uma vez (os que o filtro da tabela da página Hoje deixa). Ele aparece no rodapé da tabela, embaixo da coluna dele, e/ou como um quadro na {1}. Vários totais na mesma coluna ficam um embaixo do outro, na ordem desta lista.", {1: el("a", {"href": "totais.php"}, t("página de totais"))}))
+      + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Coluna")) + el("th", {}, t("Nome")) + el("th", {}, t("Expressão"))
+        + el("th", {}, t("Rodapé")) + el("th", {}, t("Página")) + el("th", {}, t("Dá agora")) + el("th", {}, "")))
+        + el("tbody", {}, d.totais.map(function (x, i) {
+          return el("tr", {}, el("td", {}, x.coluna_nome ? h(x.coluna_nome) : el("span", {"class": "nota"}, t("nenhuma"))) + el("td", {}, h(x.nome))
+            + el("td", {"class": "formula"}, h(x.expressao)) + el("td", {}, x.rodape ? "✓" : "") + el("td", {}, x.pagina ? "✓" + (x.largura === "largo" ? " " + el("small", {}, t("largo")) : "") : "")
+            + el("td", {"class": "nota"}, resultadoTotal(x.resultado))
+            + el("td", {"class": "acoes-linha"}, (i > 0 ? botaoLinha("subir", x.id, "", null, el("button", {"class": "leve discreto", "title": t("Subir")}, "↑")) : "")
+              + (i < d.totais.length - 1 ? botaoLinha("descer", x.id, "", null, el("button", {"class": "leve discreto", "title": t("Descer")}, "↓")) : "")
+              + " " + linkEditar(x.id) + " " + botaoLinha("excluir", x.id, t("Excluir"))));
+        }).join(""))))
+      + el("h3", {"id": "form"}, e ? t("Alterar o total {1}", {1: h(e.nome)}) : t("Novo total"))
+      + el("form", {"data-recurso": "totais", "class": "form-grade", "id": "form-total"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": e ? e.id : 0})
+        + el("label", {}, t("Coluna {1}", {1: el("select", {"name": "coluna", "onchange": "this.form.querySelector('input[type=checkbox][name=rodape]').disabled = this.value === ''"},
+          el("option", {"value": ""}, t("Nenhuma (só na página de totais)")) + d.colunas.map(function (c) { return el("option", {"value": c.chave, "selected": f.coluna === c.chave}, h(c.nome)); }).join(""))}))
+        + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": vazio(f.nome), "required": true, "maxlength": "120"})}))
+        + el("label", {"style": "grid-column: 1 / -1"}, t("Expressão {1}", {1: el("textarea", {"name": "expressao", "class": "formula", "rows": "3", "required": true}, h(vazio(f.expressao)))}))
+        + el("label", {"class": "check"}, marca("rodape", f.rodape, f.coluna === null) + " " + t("Exibir no rodapé do totalizador (embaixo da coluna)"))
+        + el("label", {"class": "check"}, marca("pagina", f.pagina, false) + " " + t("Exibir na página de totais"))
+        + el("label", {}, t("Largura na página {1}", {1: el("select", {"name": "largura"}, [["estreito", t("Estreito (três por linha no computador)")], ["largo", t("Largo (a linha inteira)")]].map(function (o) {
+          return el("option", {"value": o[0], "selected": f.largura === o[0]}, o[1]); }).join(""))}))
+        + el("label", {}, t("Formato dos números {1}", {1: el("select", {"name": "formato"}, d.formatos.map(function (o) { return el("option", {"value": o.chave, "selected": f.formato === o.chave}, h(o.nome)); }).join(""))}))
+        + el("p", {"class": "nota", "style": "grid-column: 1 / -1"}, t("Só os totais de uma coluna vão para o rodapé; os outros, quantos você quiser, ficam só na página de totais."))
+        + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + " " + el("button", {"type": "button", "class": "leve", "id": "testar-total"}, t("Testar em todos os relógios"))
+          + (e ? " " + el("a", {"href": "cadastros.php?aba=totais"}, t("cancelar")) : "")))
+      + el("div", {"id": "teste-total", "aria-live": "polite"}, "")
+      + el("details", {}, el("summary", {}, t("As funções de total")) + el("ul", {"class": "nota"}, d.funcoes.map(function (x) { return el("li", {}, el("strong", {}, h(x.nome)) + ": " + h(x.descricao)); }).join(""))
+        + el("p", {"class": "nota"}, t("Dentro delas vale tudo o que vale numa fórmula (os campos, as fórmulas, SE, DIAS_DESDE, MES_ANO...), calculado em cada relógio; fora delas, só números, textos e as funções que não precisam de um relógio.")))
+      + el("details", {}, el("summary", {}, t("As variáveis da tabela")) + el("ul", {"class": "nota"}, d.variaveis.map(function (x) { return el("li", {}, el("strong", {}, h(x.nome)) + ": " + h(x.descricao)); }).join("")));
+    res += el("section", {"class": "cartao-config"}, sec);
+    document.getElementById("cadastros").innerHTML = res;
+  });
+}
+
+// o Testar dos totais: a expressão do formulário calculada em todos os relógios pela API, sem gravar
+document.addEventListener("click", function (ev) {
+  if (ev.target.id === "testar-total") {
+    var form = ev.target.form;
+    var caixa = document.getElementById("teste-total");
+    api({recurso: "totais", parte: "teste", expressao: form.expressao.value, formato: form.formato.value}).then(function (r) {
+      caixa.innerHTML = el("div", {"class": "quadro-total"}, el("h2", {}, t("Dá agora, em {1} relógios", {1: r.relogios})) + resultadoTotal(r.teste));
+    }).catch(function (e) {
+      caixa.innerHTML = el("p", {"class": "acao"}, h(e.message));
+    });
+  }
+});
 
 // o testar das fórmulas: calcula em cada relógio pela API, sem gravar
 document.addEventListener("submit", function (ev) {

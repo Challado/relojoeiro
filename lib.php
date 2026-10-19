@@ -637,6 +637,7 @@ $MIGRACOES = [
     "v28" => ["migracao_v28.sql", tk("o fuso horário de cada usuário (Minha conta) e de cada coleção (a Configuração): o pedido roda no fuso da pessoa, e no banco as datas continuam no fuso do sistema; e o relógio da página Hora certa escolhido na Configuração (analógico, digital, anadigi ou os dois)"), "usuario.fuso"],
     "v29" => ["migracao_v29.sql", tk("o fuso horário de cada destino e de cada agenda (Destinos e Agendas, \"Fuso horário\"; vazio: o da coleção): as horas no texto das mensagens e dos eventos saem nele, como já saem no idioma deles"), "destino.fuso"],
     "v30" => ["migracao_v30.sql", tk("os modos de rodízio com tipo (a tela de cada um: um por semana, semana e fim de semana, por dia da semana, aleatório todo dia, escala inteligente ou personalizado), semanas à frente e o roteiro (as cinco linhas que o motor calcula: candidato, nota, peso, dias, garantia; escrito à mão no personalizado, gerado dos blocos nos outros); um montador do plano só para todos os modos"), "modo.roteiro", "migracao_v30_dados"],
+    "v31" => ["migracao_v31.sql", tk("os totais: os da tabela dos relógios (o rodapé, embaixo de cada coluna) e os da página de totais deixam de ser fixos e viram expressões do motor de fórmulas sobre os relógios mostrados (CONTA, SOMA, MEDIA, AGRUPADO, FAIXAS...), cadastradas na aba Totais dos Cadastros; os prontos entram em cada árvore"), "total", "migracao_v31_dados"],
 ];
 
 // O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
@@ -653,6 +654,23 @@ function migracao_v30_dados($nova = false)
                 $blocos[] = [array_map("intval", array_column(linhas("SELECT dia FROM modo_bloco_dia WHERE bloco_id = ? ORDER BY dia", [(int)$b["id"]]), "dia")), $b["um_por"]];
             }
             sql("UPDATE modo SET tipo = ? WHERE id = ?", [modo_tipo_inferir($m["escala_dias"], $m["selecao"], $blocos), (int)$m["id"]]);
+        }
+    });
+}
+
+// O passo em PHP da v31: os totais prontos (modelo.json) em cada árvore que ainda não tem nenhum, no idioma da instalação
+// (numa instalação nova, a árvore já nasce com eles: arvore_criar)
+function migracao_v31_dados($nova = false)
+{
+    if ($nova) {
+        return;
+    }
+    sem_escopo(function () {
+        $tr = modelo_tradutor(sis("idioma") !== "" ? sis("idioma") : "pt-BR");
+        foreach (linhas("SELECT id FROM no WHERE pai_id IS NULL ORDER BY id") as $raiz) {
+            if ((int)valor("SELECT COUNT(*) FROM total WHERE no_id = ?", [(int)$raiz["id"]]) === 0) {
+                totais_do_modelo((int)$raiz["id"], $tr);
+            }
         }
     });
 }
@@ -923,6 +941,10 @@ $FUNCOES = [
     "VEZES_NO_PLANO" => [1, 1, tk("VEZES_NO_PLANO(n): quantos dias o relógio teve no plano nos últimos n dias (antes do dia que está sendo montado)"), false],
     "ESCOLHA" => [2, null, tk("ESCOLHA(n; a; b; c...): o n-ésimo dos valores (só ele é calculado); fora da lista, vazio. Ex.: ESCOLHA(DIA_SEMANA(); ...) dá um valor por dia da semana"), false],
     "SORTEIO" => [0, 0, tk("um número aleatório de 0 a 1 (do lote do RANDOM.ORG, como os sorteios)"), false],
+    // as partes de uma data (para agrupar por mês ou por ano nos totais, e para qualquer fórmula)
+    "MES" => [1, 1, tk("MES(data): o mês da data, de 1 a 12"), false],
+    "ANO" => [1, 1, tk("ANO(data): o ano da data"), false],
+    "MES_ANO" => [1, 1, tk("MES_ANO(data): o mês e o ano da data, como texto AAAA-MM (os totais mostram \"ago/2026\")"), false],
 ];
 
 // As variáveis do motor, que não são campos nem fórmulas do cadastro: o nome => o que devolve
@@ -1037,7 +1059,8 @@ function formula_ler_nivel(&$st, $nivel)
             $st["i"]++;
         } elseif ($t[0] === "id" && ($st["p"][$st["i"]][0] ?? "") === "(") {
             $nome = strtoupper($t[1]);
-            if (!isset($FUNCOES[$nome])) {
+            $de_total = !empty($GLOBALS["LENDO_TOTAL"]) && isset($GLOBALS["FUNCOES_TOTAIS"][$nome]);
+            if (!isset($FUNCOES[$nome]) && !$de_total) {
                 throw new ErroFormula(t("função desconhecida {1} {2}", [1 => $t[1], 2 => $onde]));
             }
             $st["i"]++;
@@ -1053,7 +1076,7 @@ function formula_ler_nivel(&$st, $nivel)
                 throw new ErroFormula(t("falta fechar os argumentos de {1} {2} (os argumentos se separam com ponto e vírgula)", [1 => $nome, 2 => isset($st["p"][$st["i"]]) ? t("na posição {1}", [1 => $st["p"][$st["i"]][2] + 1]) : t("no fim")]));
             }
             $st["i"]++;
-            $d = $FUNCOES[$nome];
+            $d = $de_total ? $GLOBALS["FUNCOES_TOTAIS"][$nome] : $FUNCOES[$nome];
             if (count($args) < $d[0] || ($d[1] !== null && count($args) > $d[1])) {
                 throw new ErroFormula(t("{1} recebe {2} argumento(s), e recebeu {3} {4}", [1 => $nome, 2 => $d[1] === null ? t("pelo menos {1}", [1 => $d[0]]) : ($d[0] === $d[1] ? $d[0] : t("de {1} a {2}", [1 => $d[0], 2 => $d[1]])), 3 => count($args), 4 => $onde]));
             }
@@ -1083,7 +1106,7 @@ function formula_referencias($arvore)
                 // no MEDIA_COLECAO, o argumento é uma variável
                 if ($a[0] === "t" && $no[1] === "MEDIA_COLECAO") {
                     $res["variaveis"][$a[1]] = true;
-                } elseif ($a[0] === "t" && $FUNCOES[$no[1]][3]) {
+                } elseif ($a[0] === "t" && ($FUNCOES[$no[1]][3] ?? false)) {
                     $res["lancamentos"][$a[1]] = true;
                 }
                 $pilha[] = $a;
@@ -1850,6 +1873,10 @@ function formula_calcular($no, &$ctx)
                     [(int)$ctx["r"]["id"], $d->modify("-" . (int)$v[0] . " days")->format("Y-m-d"), $d->modify("-1 day")->format("Y-m-d")]) : null;
             } elseif ($nome === "SORTEIO") {
                 $res = sorteio(0, 1000000) / 1000000;
+            } elseif ($nome === "MES" || $nome === "ANO" || $nome === "MES_ANO") {
+                // a data em dias (a meia-noite local é um inteiro): o dia do calendário dela
+                $res = is_numeric($v[0]) ? gmdate($nome === "MES" ? "n" : ($nome === "ANO" ? "Y" : "Y-m"), (int)(floor((float)$v[0]) * 86400)) : null;
+                $res = $res !== null && $nome !== "MES_ANO" ? (int)$res : $res;
             } elseif ($nome === "DIAS_DESDE") {
                 $res = is_numeric($v[0]) ? $agora_d - (float)$v[0] : null;
             } elseif ($nome === "DIAS_ATE") {
@@ -1884,6 +1911,9 @@ function variavel_valor($ident, &$ctx)
             $res = formula_calcular($ctx["locais"][$ident], $ctx);
             unset($ctx["pilha"]["local:" . $ident]);
         }
+    } elseif (isset($ctx["tabela"]) && array_key_exists($ident, $ctx["tabela"])) {
+        // nos totais: o que a coluna da tabela dos relógios mostra (codigo, nome, tipo, estado, carga...)
+        $res = $ctx["tabela"][$ident];
     } elseif ($ident === "nota_criterios") {
         if (!isset($ctx["pilha"]["nota_criterios"])) {
             $ctx["pilha"]["nota_criterios"] = true;
@@ -1980,6 +2010,516 @@ function formula_validar($ident, $expressao)
         $erros[] = t("erro de escrita: {1}", [1 => $e->getMessage()]);
     }
     return $erros;
+}
+
+// Uma linha da tabela dos relógios da página Hoje (recurso=hoje, relogios[]): o estado, a carga, a última vez usado, a próxima
+// manutenção, o Encostado e a compra de um relógio da coleção. $extra: nos (nos_todos()), hoje (o dia da coleção), dia (o
+// plano de hoje), pendentes (os ids com aviso de hoje) e fotos (id => atualizada); o que faltar sai do banco (os totais
+// usam só a linha)
+function tabela_linha($r, $agora, $extra = [])
+{
+    $nos = $extra["nos"] ?? nos_todos();
+    $hoje = $extra["hoje"] ?? hoje_da_colecao();
+    $dia = array_key_exists("dia", $extra) ? $extra["dia"] : plano_do_dia($hoje->format("Y-m-d"));
+    $pendentes = $extra["pendentes"] ?? [];
+    $fotos = $extra["fotos"] ?? [];
+    $v = visao_relogio($r, $agora);
+    // o estado na tabela: o indisponível parado aparece como indisponível (o emprestado, como emprestado); no pulso ou numa
+    // sessão, o que ele está fazendo
+    $estado_h = $v["estado"] === "repouso" && (int)$r["disponivel"] !== 1 ? "indisponivel" : $v["estado"];
+    $val = valores_do_relogio((int)$r["id"]);
+    $leitura = linha("SELECT l.inicio, l.valor, t.unidade FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'valor'
+            ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [(int)$r["id"]]);
+    return ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1, "tipo" => isset($nos[(int)$r["no_id"]]) ? $nos[(int)$r["no_id"]]["nome"] : "—",
+        "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]),
+        "em_uso" => $v["em_uso"], "estado" => $estado_h, "estado_texto" => $estado_h === "indisponivel" ? (posse_de($r) === "emprestado" ? t("Emprestado") : t("Indisponível")) : $v["estado_texto"],
+        "estado_ordem" => ["uso" => 0, "sessao" => 1, "repouso" => 2, "indisponivel" => 3][$estado_h],
+        "agora" => $v["texto"], "carga" => (int)$r["disponivel"] === 1 ? $v["energia"] : null, "carga_de" => $v["de"], "ultimo" => $v["ultimo"],
+        "ultimo_txt" => $v["em_uso"] ? "agora · " . date("H:i", $agora) : ($v["ultimo"] > 0 ? date(date("Y", $v["ultimo"]) === date("Y", $agora) ? "d/m H:i" : "d/m/Y H:i", $v["ultimo"]) : "nunca"),
+        "situacao" => $v["situacao"], "manutencao" => $v["prox"] ? ["nome" => $v["prox"]["nome"], "data" => max($hoje->format("Y-m-d"), substr($v["prox"]["data"], 0, 10)),
+            "momento" => $v["prox_momento"], "falta" => $v["prox_falta"]] : null,
+        "encostado" => $v["encostado"] ? ["data" => max($hoje->format("Y-m-d"), substr($v["encostado"]["data"], 0, 10)),
+            "momento" => $v["encostado_momento"], "falta" => $v["encostado_falta"], "estado" => $v["encostado"]["estado"]] : null,
+        "compra" => ["data" => $val["data_compra"] ?? null, "valor" => isset($val["valor_compra"]) ? (float)$val["valor_compra"] : null, "loja" => $val["loja"] ?? null,
+            "garantia_ate" => $val["garantia_ate"] ?? null],
+        "leitura" => $leitura ? ["inicio" => $leitura["inicio"], "valor" => (float)$leitura["valor"], "unidade" => $leitura["unidade"]] : null,
+        "de_hoje" => $dia !== null && (int)$dia["relogio_id"] === (int)$r["id"], "com_aviso" => isset($pendentes[(int)$r["id"]]), "foto" => $fotos[(int)$r["id"]] ?? null];
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Os totais (a tabela total, da árvore, como as fórmulas): cada um é uma expressão do motor que olha para um conjunto de
+// relógios de uma vez (os que a tabela da página Hoje mostra, pelo filtro dela). As funções de total só valem aí: dentro
+// delas, a conta de cada relógio é a de uma fórmula (os campos, as fórmulas, SE, DIAS_DESDE...) mais as variáveis da
+// tabela (o que cada coluna mostra). Fora delas, só números, textos e as funções que não precisam de relógio (SE, MIN,
+// ARREDONDA...). AGRUPADO, FAIXAS e QUEM_MAIOR/QUEM_MENOR dão uma tabelinha ou um relógio: só como a expressão inteira.
+// Cada total vai para o rodapé da tabela, embaixo da coluna dele (rodape = 1, só com coluna), e/ou para a página de
+// totais (pagina = 1), como um quadro estreito ou largo; formato diz como os números saem.
+// ---------------------------------------------------------------------------------------------------------------------
+
+// As funções de total: nome => [mínimo de argumentos, máximo (null: sem limite), descrição]
+$FUNCOES_TOTAIS = [
+    "CONTA" => [0, 1, tk("CONTA(): quantos relógios; CONTA(x): quantos têm x preenchido")],
+    "CONTA_SE" => [1, 1, tk("CONTA_SE(condição): quantos passam na condição, como CONTA_SE(carga <= 20)")],
+    "DISTINTOS" => [1, 1, tk("DISTINTOS(x): quantos valores diferentes de x (os vazios não contam)")],
+    "SOMA" => [1, 1, tk("SOMA(x): a soma de x nos relógios que têm x")],
+    "MEDIA" => [1, 1, tk("MEDIA(x): a média de x nos relógios que têm x (de uma data, a data média)")],
+    "MEDIANA" => [1, 1, tk("MEDIANA(x): a mediana de x (o do meio, resiste a um valor fora da curva)")],
+    "MENOR" => [1, 1, tk("MENOR(x): o menor valor de x")],
+    "MAIOR" => [1, 1, tk("MAIOR(x): o maior valor de x")],
+    "QUEM_MENOR" => [1, 1, tk("QUEM_MENOR(x): o relógio com o menor x, com o valor ao lado (só como a expressão inteira)")],
+    "QUEM_MAIOR" => [1, 1, tk("QUEM_MAIOR(x): o relógio com o maior x, com o valor ao lado (só como a expressão inteira)")],
+    "AGRUPADO" => [1, 3, tk("AGRUPADO(chave; conta; limite): uma tabelinha, uma linha por valor da chave e a linha de total; conta (sem ela, CONTA()) é a conta de cada linha, feita só com os relógios dela, e a do total, com todos; limite mostra as que mais têm e junta o resto em \"outros\" (só como a expressão inteira)")],
+    "FAIXAS" => [2, null, tk("FAIXAS(x; limite1; limite2; ...): uma tabelinha por faixas de x (até o limite1, do limite1 ao limite2, ..., mais que o último quando houver), os sem x numa linha \"sem valor\" e o total (só como a expressão inteira)")],
+];
+// as que dão uma tabelinha ou um relógio: só como a expressão inteira
+const TOTAIS_DO_TOPO = ["AGRUPADO", "FAIXAS", "QUEM_MENOR", "QUEM_MAIOR"];
+// as funções do motor que precisam de um relógio: nos totais, só dentro de uma função de total
+const FUNCOES_DO_RELOGIO = ["NO_GRUPO", "RELOGIO", "ESCOLHIDO_HA", "VEZES_NO_PLANO", "MEDIDO", "MEDIA_COLECAO", "LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA",
+    "MEDIANA_TAXA", "ULTIMA_TAXA", "DIA_SEMANA", "SEMANA_DO_ANO", "SORTEIO"];
+
+// As variáveis da tabela, que os totais têm em cada relógio além dos campos e das fórmulas: nome => [o que é, unidade]
+$VARIAVEIS_TABELA = [
+    "codigo" => [tk("o código do relógio (a coluna Código)"), ""],
+    "nome" => [tk("o nome do relógio"), ""],
+    "tipo" => [tk("o tipo (o grupo da árvore onde ele está: a coluna Tipo)"), ""],
+    "estado" => [tk("o estado agora, por extenso (Em uso, Em repouso, No winder, Indisponível...)"), ""],
+    "disponivel" => [tk("1 se o relógio está disponível para o rodízio, 0 se não"), ""],
+    "em_uso" => [tk("1 se está no pulso agora"), ""],
+    "carga" => [tk("a carga agora, em % (vazio: sem leitura ou indisponível)"), "%"],
+    "ultimo_uso" => [tk("a data da última vez no pulso (agora, se está no pulso; vazio: nunca)"), ""],
+    "manutencao_data" => [tk("a data da próxima manutenção (vazio: nenhuma prevista)"), ""],
+    "manutencao_nome" => [tk("o que é a próxima manutenção (a coluna O que fazer: Carregar, Pôr no sol...)"), ""],
+    "encostado_data" => [tk("a data em que ele passa (ou passou) do limite de dias sem ir ao pulso (vazio: sem data ou o aviso desligado)"), ""],
+    "avisos" => [tk("quantos avisos o relógio tem agora (todos, não só o próximo)"), ""],
+    "posse" => [tk("a posse: Na coleção ou Emprestado"), ""],
+];
+
+// As colunas da tabela dos relógios onde um total pode ir (a chave é a do cabeçalho da página Hoje), na ordem dela
+const TOTAL_COLUNAS = ["codigo" => "Código", "nome" => "Relógio", "tipo" => "Tipo", "estado" => "Estado", "carga" => "Carga", "ultimo" => "Última vez usado",
+    "manut" => "Próxima manutenção", "em" => "Em", "fazer" => "O que fazer", "encostado" => "Encostado", "compra" => "Comprado em", "valor" => "Valor"];
+// Como os números de um total saem: número (inteiro quando é, senão até 2 casas), inteiro, decimal (2 casas), moeda (R$),
+// porcentagem, data e dias
+const TOTAL_FORMATOS = ["numero" => "Número", "inteiro" => "Inteiro", "decimal" => "Com 2 casas", "moeda" => "Dinheiro (R$)", "porcentagem" => "Porcentagem (%)",
+    "data" => "Data", "dias" => "Dias"];
+
+// Os nomes das colunas e dos formatos, no idioma do pedido
+function total_colunas_nomes()
+{
+    return ["codigo" => t("Código"), "nome" => t("Relógio"), "tipo" => t("Tipo"), "estado" => t("Estado"), "carga" => t("Carga"), "ultimo" => t("Última vez usado"),
+        "manut" => t("Próxima manutenção"), "em" => t("Em"), "fazer" => t("O que fazer"), "encostado" => t("Encostado"), "compra" => t("Comprado em"), "valor" => t("Valor")];
+}
+
+function total_formatos_nomes()
+{
+    return ["numero" => t("Número"), "inteiro" => t("Inteiro"), "decimal" => t("Com 2 casas"), "moeda" => t("Dinheiro (R$)"), "porcentagem" => t("Porcentagem (%)"),
+        "data" => t("Data"), "dias" => t("Dias")];
+}
+
+// Lê a expressão de um total (o leitor das fórmulas, aceitando as funções de total)
+function total_ler($expressao)
+{
+    $GLOBALS["LENDO_TOTAL"] = true;
+    try {
+        return formula_ler($expressao);
+    } finally {
+        $GLOBALS["LENDO_TOTAL"] = false;
+    }
+}
+
+// Confere a expressão de um total antes de gravar (ou de testar): a escrita, as variáveis (campos, fórmulas, as da tabela),
+// os tipos de lançamento, as variáveis só dentro de uma função de total, as funções de total uma dentro da outra só no
+// AGRUPADO (a conta de cada linha) e as de tabelinha só como a expressão inteira. Devolve a lista de erros
+function total_validar($expressao)
+{
+    global $FUNCOES_TOTAIS, $VARIAVEIS_TABELA, $VARIAVEIS_MOTOR;
+    $erros = [];
+    try {
+        $arvore = total_ler($expressao);
+    } catch (ErroFormula $e) {
+        return [t("erro de escrita: {1}", [1 => $e->getMessage()])];
+    }
+    $conhecidas = array_merge(array_keys(campos_todos()), array_keys(formulas_todas()), array_keys($VARIAVEIS_TABELA), array_keys($VARIAVEIS_MOTOR));
+    // $no: o nó; $nivel: "conjunto" (fora de uma função de total) ou "relogio" (dentro); $topo: é a expressão inteira
+    $andar = function ($no, $nivel, $topo) use (&$andar, &$erros, $conhecidas, $FUNCOES_TOTAIS) {
+        if ($no[0] === "v") {
+            if ($nivel === "conjunto") {
+                $erros[] = t("a variável {1} só vale dentro de uma função de total (CONTA, SOMA, MEDIA, AGRUPADO...)", [1 => $no[1]]);
+            } elseif (!in_array($no[1], $conhecidas, true)) {
+                $erros[] = t("variável desconhecida: {1} (não é campo, fórmula nem coluna da tabela)", [1 => $no[1]]);
+            }
+        } elseif ($no[0] === "op") {
+            $andar($no[2], $nivel, false);
+            $andar($no[3], $nivel, false);
+        } elseif ($no[0] === "neg") {
+            $andar($no[1], $nivel, false);
+        } elseif ($no[0] === "f") {
+            $nome = $no[1];
+            if (isset($FUNCOES_TOTAIS[$nome])) {
+                if ($nivel === "relogio") {
+                    $erros[] = t("{1} não vale dentro de outra função de total (a não ser como a conta do AGRUPADO)", [1 => $nome]);
+                } elseif (in_array($nome, TOTAIS_DO_TOPO, true) && !$topo) {
+                    $erros[] = t("{1} dá uma tabelinha ou um relógio: só vale como a expressão inteira", [1 => $nome]);
+                }
+                foreach ($no[2] as $k => $a) {
+                    if ($nome === "AGRUPADO" && $k >= 1) {
+                        // a conta de cada linha (uma função de total) e o limite: no nível do conjunto
+                        $andar($a, "conjunto", false);
+                    } elseif ($nome === "FAIXAS" && $k >= 1) {
+                        $andar($a, "conjunto", false);
+                    } else {
+                        $andar($a, "relogio", false);
+                    }
+                }
+            } else {
+                if ($nivel === "conjunto" && in_array($nome, FUNCOES_DO_RELOGIO, true)) {
+                    $erros[] = t("{1} precisa de um relógio: só vale dentro de uma função de total", [1 => $nome]);
+                }
+                if ($nivel === "conjunto" && ($GLOBALS["FUNCOES"][$nome][3] ?? false)) {
+                    $erros[] = t("{1} lê o histórico de um relógio: só vale dentro de uma função de total", [1 => $nome]);
+                }
+                foreach ($no[2] as $a) {
+                    $andar($a, $nivel, false);
+                }
+            }
+        }
+    };
+    $andar($arvore, "conjunto", true);
+    foreach (formula_referencias($arvore)["lancamentos"] as $tl) {
+        if (!isset(lancamento_tipos()[$tl])) {
+            $erros[] = t("tipo de lançamento desconhecido: \"{1}\"", [1 => $tl]);
+        }
+    }
+    return array_values(array_unique($erros));
+}
+
+// As variáveis da tabela de um relógio, a partir da linha da tabela (tabela_linha); as datas em dias, como nas fórmulas
+function tabela_variaveis($linha, $r, $agora)
+{
+    $em_dias = function ($data) { return $data === null || $data === "" ? null : dias_de(strtotime(substr((string)$data, 0, 10) . " 00:00:00")); };
+    return ["codigo" => (int)$linha["id"], "nome" => $linha["nome"], "tipo" => $linha["tipo"], "estado" => $linha["estado_texto"], "disponivel" => $linha["disponivel"] ? 1 : 0,
+        "em_uso" => $linha["em_uso"] ? 1 : 0, "carga" => $linha["carga"] === null ? null : (float)$linha["carga"],
+        "ultimo_uso" => $linha["em_uso"] ? dias_de($agora) : ((int)$linha["ultimo"] > 0 ? dias_de((int)$linha["ultimo"]) : null),
+        "manutencao_data" => $linha["manutencao"] ? $em_dias($linha["manutencao"]["data"]) : null, "manutencao_nome" => $linha["manutencao"]["nome"] ?? null,
+        "encostado_data" => $linha["encostado"] ? $em_dias($linha["encostado"]["data"]) : null, "avisos" => count(avisos_do_relogio($r, $agora)),
+        "posse" => $linha["posse_texto"]];
+}
+
+// Os relógios de um total: os da tabela da página Hoje (os da coleção: na coleção e emprestados), ou só os de $ids; cada um
+// com o contexto da conta de uma fórmula e as variáveis da tabela. Guardados por requisição
+function totais_relogios($ids = null)
+{
+    static $cache = [];
+    $agora = time();
+    $chave = (int)colecao_atual() . "|" . ($ids === null ? "*" : implode(",", $ids)) . "|" . ($GLOBALS["FORMULAS_VERSAO"] ?? 0);
+    if (!isset($cache[$chave])) {
+        $extra = ["nos" => nos_todos(), "hoje" => hoje_da_colecao(), "dia" => null];
+        $res = [];
+        foreach (linhas("SELECT * FROM relogio ORDER BY nome, id") as $r) {
+            if (!da_colecao($r) || ($ids !== null && !in_array((int)$r["id"], $ids, true))) {
+                continue;
+            }
+            $linha = tabela_linha($r, $agora, $extra);
+            $res[] = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio((int)$r["id"]),
+                "tabela" => tabela_variaveis($linha, $r, $agora)];
+        }
+        $cache[$chave] = $res;
+    }
+    return $cache[$chave];
+}
+
+// Um valor como um nó da árvore (para as funções comuns calcularem por cima dos resultados das de total)
+function total_no($v)
+{
+    return $v === null ? ["f", "NADA", []] : (is_numeric($v) ? ["n", (float)$v] : ["t", (string)$v]);
+}
+
+// O valor de x em cada relógio do conjunto (a conta de uma fórmula): [índice => valor]
+function total_por_relogio($no, &$conj)
+{
+    $res = [];
+    foreach ($conj as $k => &$c) {
+        $res[$k] = formula_calcular($no, $c);
+    }
+    unset($c);
+    return $res;
+}
+
+// Uma expressão de total sobre um conjunto de relógios, no nível do conjunto: as funções de total contam, as outras calculam
+// por cima dos resultados (como numa fórmula). Devolve um número, um texto ou null
+function total_valor($no, &$conj)
+{
+    global $FUNCOES_TOTAIS;
+    if ($no[0] === "n" || $no[0] === "t") {
+        return $no[1];
+    }
+    if ($no[0] === "v") {
+        return null;
+    }
+    $vazio = ["r" => ["id" => 0, "nome" => "", "no_id" => 0], "momento" => time(), "rastro" => [], "pilha" => [], "valores" => []];
+    if ($no[0] === "neg") {
+        return formula_calcular(["neg", total_no(total_valor($no[1], $conj))], $vazio);
+    }
+    if ($no[0] === "op") {
+        return formula_calcular(["op", $no[1], total_no(total_valor($no[2], $conj)), total_no(total_valor($no[3], $conj))], $vazio);
+    }
+    $nome = $no[1];
+    $args = $no[2];
+    if (!isset($FUNCOES_TOTAIS[$nome])) {
+        // SE e ESCOLHA calculam só o lado escolhido; as outras, todos os argumentos
+        if ($nome === "SE") {
+            $c = total_valor($args[0], $conj);
+            return $c === null ? null : total_valor(((float)$c != 0) ? $args[1] : $args[2], $conj);
+        }
+        return formula_calcular(["f", $nome, array_map(function ($a) use (&$conj) { return total_no(total_valor($a, $conj)); }, $args)], $vazio);
+    }
+    if ($nome === "CONTA" && count($args) === 0) {
+        return count($conj);
+    }
+    $v = total_por_relogio($args[0], $conj);
+    $cheios = array_values(array_filter($v, function ($x) { return $x !== null && $x !== ""; }));
+    $numeros = array_values(array_map("floatval", array_filter($cheios, "is_numeric")));
+    if ($nome === "CONTA") {
+        return count($cheios);
+    }
+    if ($nome === "CONTA_SE") {
+        return count(array_filter($cheios, function ($x) { return is_numeric($x) && (float)$x != 0; }));
+    }
+    if ($nome === "DISTINTOS") {
+        return count(array_unique(array_map(function ($x) { return is_numeric($x) ? (string)(float)$x : "t:" . $x; }, $cheios)));
+    }
+    if (count($numeros) === 0) {
+        return null;
+    }
+    if ($nome === "SOMA") {
+        return array_sum($numeros);
+    }
+    if ($nome === "MEDIA") {
+        return array_sum($numeros) / count($numeros);
+    }
+    if ($nome === "MEDIANA") {
+        sort($numeros);
+        $m = intdiv(count($numeros), 2);
+        return count($numeros) % 2 === 1 ? $numeros[$m] : ($numeros[$m - 1] + $numeros[$m]) / 2;
+    }
+    if ($nome === "MENOR") {
+        return min($numeros);
+    }
+    if ($nome === "MAIOR") {
+        return max($numeros);
+    }
+    return null;
+}
+
+// Um total sobre um conjunto de relógios (totais_relogios): ["tipo" => "valor", "valor"], ["tipo" => "relogio", "relogio_id",
+// "relogio", "valor"] (QUEM_MAIOR, QUEM_MENOR) ou ["tipo" => "tabela", "linhas" => [["rotulo", "valor", "relogios"], ...],
+// "total"] (AGRUPADO, FAIXAS). Os rótulos dos meses (MES_ANO) saem como "ago/2026"; a unidade de x (a da coluna, do campo
+// ou da fórmula) vai nos rótulos das faixas
+function total_resultado($arvore, $conj)
+{
+    if ($arvore[0] === "f" && ($arvore[1] === "QUEM_MAIOR" || $arvore[1] === "QUEM_MENOR")) {
+        $v = total_por_relogio($arvore[2][0], $conj);
+        $achado = null;
+        foreach ($v as $k => $x) {
+            if (is_numeric($x) && ($achado === null || ($arvore[1] === "QUEM_MAIOR" ? (float)$x > (float)$v[$achado] : (float)$x < (float)$v[$achado]))) {
+                $achado = $k;
+            }
+        }
+        return $achado === null ? ["tipo" => "relogio", "relogio_id" => null, "relogio" => null, "valor" => null]
+            : ["tipo" => "relogio", "relogio_id" => (int)$conj[$achado]["r"]["id"], "relogio" => $conj[$achado]["r"]["nome"], "valor" => (float)$v[$achado]];
+    }
+    if ($arvore[0] === "f" && $arvore[1] === "AGRUPADO") {
+        $args = $arvore[2];
+        $conta = $args[1] ?? ["f", "CONTA", []];
+        $limite = isset($args[2]) ? total_valor($args[2], $conj) : null;
+        $chaves = total_por_relogio($args[0], $conj);
+        $grupos = [];
+        $sem = [];
+        foreach ($chaves as $k => $x) {
+            if ($x === null || $x === "") {
+                $sem[] = $conj[$k];
+            } else {
+                $grupos[is_numeric($x) ? (string)(float)$x : (string)$x][] = $conj[$k];
+            }
+        }
+        $linhas = [];
+        foreach ($grupos as $chave => $g) {
+            $linhas[] = ["chave" => (string)$chave, "rotulo" => total_rotulo((string)$chave), "valor" => total_valor($conta, $g), "relogios" => count($g), "grupo" => $g];
+        }
+        // números e meses (AAAA-MM) na ordem deles; textos do que mais tem para o que menos tem (empate: pelo nome)
+        $ordem_natural = count($linhas) > 0 && count(array_filter($linhas, function ($l) { return !is_numeric($l["chave"]) && preg_match("/^\\d{4}-\\d{2}$/", $l["chave"]) !== 1; })) === 0;
+        usort($linhas, function ($a, $b) use ($ordem_natural) {
+            if ($ordem_natural) {
+                return is_numeric($a["chave"]) && is_numeric($b["chave"]) ? ((float)$a["chave"] <=> (float)$b["chave"]) : strcmp($a["chave"], $b["chave"]);
+            }
+            $va = is_numeric($a["valor"]) ? (float)$a["valor"] : -INF;
+            $vb = is_numeric($b["valor"]) ? (float)$b["valor"] : -INF;
+            return $vb <=> $va ?: strcmp(mb_strtolower($a["rotulo"], "UTF-8"), mb_strtolower($b["rotulo"], "UTF-8"));
+        });
+        if (is_numeric($limite) && (int)$limite >= 1 && count($linhas) > (int)$limite) {
+            // as que mais têm ficam (na ordem da tabelinha); o resto vira "outros", com a conta feita com todos eles
+            $por_valor = $linhas;
+            usort($por_valor, function ($a, $b) {
+                return (is_numeric($b["valor"]) ? (float)$b["valor"] : -INF) <=> (is_numeric($a["valor"]) ? (float)$a["valor"] : -INF) ?: strcmp($a["rotulo"], $b["rotulo"]);
+            });
+            $ficam = array_column(array_slice($por_valor, 0, (int)$limite), "chave");
+            $resto = [];
+            $mantidas = [];
+            foreach ($linhas as $l) {
+                if (in_array($l["chave"], $ficam, true)) {
+                    $mantidas[] = $l;
+                } else {
+                    $resto = array_merge($resto, $l["grupo"]);
+                }
+            }
+            $mantidas[] = ["chave" => "", "rotulo" => t("outros"), "valor" => total_valor($conta, $resto), "relogios" => count($resto)];
+            $linhas = $mantidas;
+        }
+        if (count($sem) > 0) {
+            $linhas[] = ["chave" => "", "rotulo" => t("sem valor"), "valor" => total_valor($conta, $sem), "relogios" => count($sem), "sem" => true];
+        }
+        return ["tipo" => "tabela", "linhas" => array_map(function ($l) {
+            return ["rotulo" => $l["rotulo"], "valor" => $l["valor"], "relogios" => $l["relogios"], "sem" => !empty($l["sem"])];
+        }, $linhas), "total" => total_valor($conta, $conj)];
+    }
+    if ($arvore[0] === "f" && $arvore[1] === "FAIXAS") {
+        $args = $arvore[2];
+        $limites = [];
+        foreach (array_slice($args, 1) as $a) {
+            $l = total_valor($a, $conj);
+            if (!is_numeric($l) || (count($limites) > 0 && (float)$l <= end($limites))) {
+                return ["tipo" => "erro", "erro" => t("FAIXAS: os limites são números, do menor para o maior")];
+            }
+            $limites[] = (float)$l;
+        }
+        $unidade = total_unidade($args[0]);
+        $v = total_por_relogio($args[0], $conj);
+        $contas = array_fill(0, count($limites) + 1, 0);
+        $sem = 0;
+        foreach ($v as $x) {
+            if (!is_numeric($x)) {
+                $sem++;
+                continue;
+            }
+            $i = 0;
+            while ($i < count($limites) && (float)$x > $limites[$i] + 1e-9) {
+                $i++;
+            }
+            $contas[$i]++;
+        }
+        $inteiros = count(array_filter($limites, function ($l) { return floor($l) != $l; })) === 0;
+        $num = function ($n) use ($unidade) { return decimal_txt($n, 2) . ($unidade === "" ? "" : ($unidade === "%" ? "%" : " " . $unidade)); };
+        $linhas = [];
+        foreach ($limites as $i => $l) {
+            $rot = $i === 0 ? t("até {1}", [1 => $num($l)])
+                : ($inteiros ? t("{1} a {2}", [1 => decimal_txt($limites[$i - 1] + 1, 2), 2 => $num($l)]) : t("mais de {1} até {2}", [1 => decimal_txt($limites[$i - 1], 2), 2 => $num($l)]));
+            $linhas[] = ["rotulo" => $rot, "valor" => $contas[$i], "relogios" => $contas[$i], "sem" => false];
+        }
+        if ($contas[count($limites)] > 0) {
+            $linhas[] = ["rotulo" => t("mais de {1}", [1 => $num(end($limites))]), "valor" => $contas[count($limites)], "relogios" => $contas[count($limites)], "sem" => false];
+        }
+        if ($sem > 0) {
+            $linhas[] = ["rotulo" => t("sem valor"), "valor" => $sem, "relogios" => $sem, "sem" => true];
+        }
+        return ["tipo" => "tabela", "linhas" => $linhas, "total" => count($conj)];
+    }
+    return ["tipo" => "valor", "valor" => total_valor($arvore, $conj)];
+}
+
+// A unidade de x numa expressão de total, quando x é só uma variável (a da coluna da tabela, a do campo ou a da fórmula)
+function total_unidade($no)
+{
+    global $VARIAVEIS_TABELA;
+    if ($no[0] !== "v") {
+        return $no[0] === "f" && in_array($no[1], ["DIAS_DESDE", "DIAS_ATE"], true) ? t("dias") : "";
+    }
+    if (isset($VARIAVEIS_TABELA[$no[1]])) {
+        return $VARIAVEIS_TABELA[$no[1]][1];
+    }
+    if (isset(campos_todos()[$no[1]])) {
+        return (string)(campos_todos()[$no[1]]["unidade"] ?? "");
+    }
+    $f = formulas_todas()[$no[1]] ?? [];
+    return count($f) > 0 ? (string)(reset($f)["unidade"] ?? "") : "";
+}
+
+// O rótulo de uma linha do AGRUPADO: o mês (AAAA-MM) por extenso curto ("ago/2026"), o número no formato do idioma, o texto
+function total_rotulo($chave)
+{
+    if (preg_match("/^(\\d{4})-(\\d{2})$/", $chave, $m) === 1) {
+        $meses = [t("jan"), t("fev"), t("mar"), t("abr"), t("mai"), t("jun"), t("jul"), t("ago"), t("set"), t("out"), t("nov"), t("dez")];
+        return ($meses[(int)$m[2] - 1] ?? $m[2]) . "/" . $m[1];
+    }
+    return is_numeric($chave) ? decimal_txt((float)$chave, 2) : $chave;
+}
+
+// Um número de um total no formato dele: número (inteiro quando é, senão até 2 casas), inteiro, decimal (2 casas), moeda,
+// porcentagem, data (os dias das fórmulas) e dias; o vazio sai "—"; um texto sai como está
+function total_texto($v, $formato)
+{
+    if ($v === null || $v === "") {
+        return "—";
+    }
+    if (!is_numeric($v)) {
+        return (string)$v;
+    }
+    $v = (float)$v;
+    if ($formato === "inteiro") {
+        return numero_txt(round($v), 0);
+    }
+    if ($formato === "decimal") {
+        return numero_txt($v, 2);
+    }
+    if ($formato === "moeda") {
+        return dinheiro_txt($v);
+    }
+    if ($formato === "porcentagem") {
+        return numero_txt(round($v), 0) . "%";
+    }
+    if ($formato === "data") {
+        return data_txt(gmdate("Y-m-d", (int)(floor($v) * 86400)));
+    }
+    if ($formato === "dias") {
+        $n = (int)round($v);
+        return $n === 1 ? t("1 dia") : t("{1} dias", [1 => numero_txt($n, 0)]);
+    }
+    return abs($v - round($v)) < 1e-9 ? numero_txt(round($v), 0) : numero_txt($v, 2, 0);
+}
+
+// Um total calculado e pronto para a tela: o resultado com os textos no formato dele (texto, linhas[].texto, total_texto,
+// e no QUEM_MAIOR/QUEM_MENOR o relógio e o valor); com erro na expressão, tipo "erro" e o erro
+function total_calcular($expressao, $formato, $conj)
+{
+    $erros = total_validar($expressao);
+    if (count($erros) > 0) {
+        return ["tipo" => "erro", "erro" => implode("; ", $erros)];
+    }
+    $arvore = total_ler($expressao);
+    $res = total_resultado($arvore, $conj);
+    if ($res["tipo"] === "valor") {
+        $res["texto"] = total_texto($res["valor"], $formato);
+    } elseif ($res["tipo"] === "relogio") {
+        $res["texto"] = $res["relogio"] === null ? "—" : $res["relogio"] . " · " . total_texto($res["valor"], $formato);
+        $res["valor_texto"] = total_texto($res["valor"], $formato);
+    } elseif ($res["tipo"] === "tabela") {
+        // nas faixas e no AGRUPADO sem conta, cada linha é uma contagem: inteiro; com a conta, o formato do total
+        $conta = !($arvore[1] === "FAIXAS" || ($arvore[1] === "AGRUPADO" && count($arvore[2]) < 2));
+        $f_linha = $conta ? $formato : "inteiro";
+        foreach ($res["linhas"] as $i => $l) {
+            $res["linhas"][$i]["texto"] = total_texto($l["valor"], $f_linha);
+        }
+        $res["total_texto"] = total_texto($res["total"], $f_linha);
+    }
+    return $res;
+}
+
+// Os totais da árvore da coleção, na ordem (com a coluna por extenso)
+function totais_todos()
+{
+    return array_map(function ($x) {
+        return ["id" => (int)$x["id"], "coluna" => $x["coluna"], "coluna_nome" => total_colunas_nomes()[$x["coluna"] ?? ""] ?? null,
+            "nome" => $x["nome"], "expressao" => $x["expressao"], "rodape" => (int)$x["rodape"] === 1, "pagina" => (int)$x["pagina"] === 1,
+            "largura" => $x["largura"], "formato" => $x["formato"], "ordem" => (int)$x["ordem"]];
+    }, linhas("SELECT * FROM total ORDER BY ordem, id"));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

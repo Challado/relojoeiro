@@ -43,7 +43,7 @@ function topo($titulo, $ativo, $publica = false)
         "avisos.php" => t("Avisos"),
         "hora.php" => t("Hora certa"),
         t("Rodízio") => ["plano.php" => t("Plano"), "modos.php" => t("Modos de rodízio"), "criterios.php" => t("Critérios de escolha")],
-        t("Coleção") => ["galeria.php" => t("Galeria"), "acessorios.php" => t("Acessórios"), "desejos.php" => t("Desejos"), "estatisticas.php" => t("Estatísticas"),
+        t("Coleção") => ["galeria.php" => t("Galeria"), "acessorios.php" => t("Acessórios"), "desejos.php" => t("Desejos"), "estatisticas.php" => t("Estatísticas"), "totais.php" => t("Totais"),
             "grupos.php" => t("Grupos")],
         t("Sistema") => ["configuracao.php" => t("Configuração"), "cadastros.php" => t("Cadastros"), "execucoes.php" => t("Execuções do cron"), "usuarios.php" => t("Usuários")],
         t("Conta") => ["conta.php" => t("Minha conta"), "aprovacoes.php" => t("Aprovações")],

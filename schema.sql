@@ -247,6 +247,27 @@ CREATE TABLE formula (
     CONSTRAINT ck_formula_textos CHECK (TRIM(identificador) <> '' AND TRIM(nome) <> '' AND TRIM(expressao) <> '')
 ) ENGINE=InnoDB;
 
+-- os totais (da árvore, presos à raiz dela, como o cadastro): cada um é uma expressão do motor que olha para os relógios
+-- mostrados de uma vez (CONTA, SOMA, MEDIA, AGRUPADO, FAIXAS...); vai para o rodapé da tabela da página Hoje, embaixo da
+-- coluna dele (rodape: só com coluna), e/ou para a página de totais (pagina), num quadro estreito ou largo
+CREATE TABLE total (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    no_id      INT NOT NULL,
+    coluna     VARCHAR(20) NULL,
+    nome       VARCHAR(120) NOT NULL,
+    expressao  TEXT NOT NULL,
+    rodape     TINYINT NOT NULL DEFAULT 0,
+    pagina     TINYINT NOT NULL DEFAULT 1,
+    largura    ENUM('estreito','largo') NOT NULL DEFAULT 'estreito',
+    formato    ENUM('numero','inteiro','decimal','moeda','porcentagem','data','dias') NOT NULL DEFAULT 'numero',
+    ordem      INT NOT NULL DEFAULT 0,
+    INDEX (no_id),
+    FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
+    CONSTRAINT ck_total_textos CHECK (TRIM(nome) <> '' AND TRIM(expressao) <> ''),
+    CONSTRAINT ck_total_lugares CHECK (rodape IN (0, 1) AND pagina IN (0, 1) AND (rodape = 0 OR coluna IS NOT NULL)),
+    CONSTRAINT ck_total_coluna CHECK (coluna IS NULL OR coluna IN ('codigo','nome','tipo','estado','carga','ultimo','manut','em','fazer','encostado','compra','valor'))
+) ENGINE=InnoDB;
+
 -- os avisos: uma versão por grupo, como as fórmulas; o tipo de lançamento que resolve o aviso é opcional (saindo o tipo,
 -- o aviso fica, sem ele)
 CREATE TABLE aviso (

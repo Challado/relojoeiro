@@ -149,6 +149,17 @@ function modelo_ler()
     return $m;
 }
 
+// Os totais prontos do modelo (modelo.json, totais) numa árvore ($raiz: a raiz dela), na ordem, com o nome e os textos
+// entre aspas da expressão no idioma ($tr, o tradutor do modelo). Sem escopo (quem chama já está fora dele)
+function totais_do_modelo($raiz, $tr)
+{
+    foreach (array_values(modelo_ler()["totais"]) as $i => $x) {
+        $expr = preg_replace_callback('/"([^"]*)"/', function ($m) use ($tr) { return "\"" . str_replace("\"", "'", $tr($m[1])) . "\""; }, $x["expressao"]);
+        sql("INSERT INTO total (no_id, coluna, nome, expressao, rodape, pagina, largura, formato, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [(int)$raiz, $x["coluna"], $tr($x["nome"]), $expr, (int)$x["rodape"], (int)$x["pagina"], $x["largura"], $x["formato"], ($i + 1) * 10]);
+    }
+}
+
 // O tradutor dos textos do modelo para um idioma
 function modelo_tradutor($lingua)
 {
@@ -159,9 +170,9 @@ function modelo_tradutor($lingua)
 }
 
 // Os textos do modelo que entram no idioma de quem cria a coleção (os nomes dos grupos, dos campos e das opções, dos tipos,
-// das fórmulas, dos avisos e os textos deles, dos critérios e das faixas, das categorias, dos modos e dos blocos, e as
-// mensagens padrão dos destinos e das agendas): a parte "cadastro" dos arquivos dos idiomas traduz cada um (o
-// testes/textos.php confere)
+// das fórmulas, dos avisos e os textos deles, dos critérios e das faixas, das categorias, dos modos e dos blocos, dos totais
+// e os textos entre aspas das expressões deles, e as mensagens padrão dos destinos e das agendas): a parte "cadastro" dos
+// arquivos dos idiomas traduz cada um (o testes/textos.php confere)
 function modelo_textos()
 {
     $m = modelo_ler();
@@ -178,6 +189,13 @@ function modelo_textos()
         $junta($c["nome"]);
         foreach ($c["opcoes"] ?? [] as $o) {
             $junta($o);
+        }
+    }
+    foreach ($m["totais"] as $x) {
+        $junta($x["nome"]);
+        preg_match_all('/"([^"]*)"/', $x["expressao"], $aspas);
+        foreach ($aspas[1] as $a) {
+            $junta($a);
         }
     }
     foreach (["tipos", "formulas", "categorias"] as $k) {
@@ -266,6 +284,7 @@ function arvore_criar($dono_id, $nome, $lingua, $com_modelo)
         foreach ($m["formulas"] as $f) {
             sql("INSERT INTO formula (identificador, nome, expressao, unidade, no_id) VALUES (?, ?, ?, ?, ?)", [$f["identificador"], $tr($f["nome"]), $f["expressao"], $f["unidade"], $grupo($f["grupo"])]);
         }
+        totais_do_modelo($raiz, $tr);
         foreach ($m["avisos"] as $a) {
             sql("INSERT INTO aviso (identificador, nome, expressao, antecedencia_dias, texto, ativo, no_id, escala, simula_valor, simula_horas, agenda, condicao, resolve_tipo_id, na_hora)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [$a["identificador"], $tr($a["nome"]), $a["expressao"], $a["antecedencia_dias"], $tr($a["texto"]), (int)$a["ativo"],

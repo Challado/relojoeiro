@@ -44,27 +44,7 @@ foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
             "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "—", "foto" => $fotos[(int)$r["id"]] ?? null];
         continue;
     }
-    $v = visao_relogio($r, $agora);
-    // o estado na tabela: o indisponível parado aparece como indisponível (o emprestado, como emprestado); no pulso ou numa
-    // sessão, o que ele está fazendo
-    $estado_h = $v["estado"] === "repouso" && (int)$r["disponivel"] !== 1 ? "indisponivel" : $v["estado"];
-    $val = valores_do_relogio((int)$r["id"]);
-    $leitura = linha("SELECT l.inicio, l.valor, t.unidade FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'valor'
-            ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [(int)$r["id"]]);
-    $rels[] = ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1, "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "—",
-        "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]),
-        "em_uso" => $v["em_uso"], "estado" => $estado_h, "estado_texto" => $estado_h === "indisponivel" ? (posse_de($r) === "emprestado" ? t("Emprestado") : t("Indisponível")) : $v["estado_texto"],
-        "estado_ordem" => ["uso" => 0, "sessao" => 1, "repouso" => 2, "indisponivel" => 3][$estado_h],
-        "agora" => $v["texto"], "carga" => (int)$r["disponivel"] === 1 ? $v["energia"] : null, "carga_de" => $v["de"], "ultimo" => $v["ultimo"],
-        "ultimo_txt" => $v["em_uso"] ? "agora · " . date("H:i", $agora) : ($v["ultimo"] > 0 ? date(date("Y", $v["ultimo"]) === date("Y", $agora) ? "d/m H:i" : "d/m/Y H:i", $v["ultimo"]) : "nunca"),
-        "situacao" => $v["situacao"], "manutencao" => $v["prox"] ? ["nome" => $v["prox"]["nome"], "data" => max($hoje->format("Y-m-d"), substr($v["prox"]["data"], 0, 10)),
-            "momento" => $v["prox_momento"], "falta" => $v["prox_falta"]] : null,
-        "encostado" => $v["encostado"] ? ["data" => max($hoje->format("Y-m-d"), substr($v["encostado"]["data"], 0, 10)),
-            "momento" => $v["encostado_momento"], "falta" => $v["encostado_falta"], "estado" => $v["encostado"]["estado"]] : null,
-        "compra" => ["data" => $val["data_compra"] ?? null, "valor" => isset($val["valor_compra"]) ? (float)$val["valor_compra"] : null, "loja" => $val["loja"] ?? null,
-            "garantia_ate" => $val["garantia_ate"] ?? null],
-        "leitura" => $leitura ? ["inicio" => $leitura["inicio"], "valor" => (float)$leitura["valor"], "unidade" => $leitura["unidade"]] : null,
-        "de_hoje" => $dia !== null && (int)$dia["relogio_id"] === (int)$r["id"], "com_aviso" => isset($pendentes_h[(int)$r["id"]]), "foto" => $fotos[(int)$r["id"]] ?? null];
+    $rels[] = tabela_linha($r, $agora, ["nos" => $n, "hoje" => $hoje, "dia" => $dia, "pendentes" => $pendentes_h, "fotos" => $fotos]);
 }
 // o destaque no alto da página (a Configuração): o relógio do dia ou o que está no pulso agora; cada relógio diz se é ele
 $destaque_h = destaque_da_pagina_hoje($rels, $dia);

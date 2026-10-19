@@ -120,6 +120,71 @@
       return v;
     };
 
+    // os totais do rodapé: a API calcula nos relógios à mostra (recurso=totais, parte=rodape, relogios=os ids) e a tela só
+    // desenha, embaixo de cada coluna, os totais dela, cada um numa tabelinha com o nome em cima e o total no pé; as
+    // tabelinhas ganham linhas vazias até a maior delas, para os totais ficarem todos na mesma altura
+    var pedidoTotais = 0;
+    var esperaTotais = null;
+    var linhaTotais = document.getElementById("totais-rodape");
+    var miniTotal = function (x, linhas) {
+      var r = x.resultado;
+      var corpoT = [];
+      var pe = "";
+      if (r.tipo === "tabela") {
+        corpoT = r.linhas.map(function (l) {
+          return el("tr", {"class": l.sem ? "sem" : ""}, el("td", {"title": l.rotulo}, h(l.rotulo)) + el("td", {"class": "num"}, h(l.texto)));
+        });
+        pe = el("tr", {}, el("td", {}, t("Total")) + el("td", {"class": "num"}, h(r.total_texto)));
+      } else if (r.tipo === "relogio") {
+        pe = el("tr", {}, el("td", {"title": r.relogio || ""}, h(r.relogio || "—")) + el("td", {"class": "num"}, h(r.valor_texto)));
+      } else if (r.tipo === "erro") {
+        pe = el("tr", {}, el("td", {"colspan": "2", "class": "erro", "title": r.erro}, h(r.erro)));
+      } else {
+        pe = el("tr", {}, el("td", {"colspan": "2", "class": "num"}, h(r.texto)));
+      }
+      while (corpoT.length < linhas) {
+        corpoT.push(el("tr", {"class": "vazia", "aria-hidden": "true"}, el("td", {"colspan": "2"}, "\u00a0")));
+      }
+      return el("table", {"class": "mini-total"}, el("caption", {"title": x.nome}, h(x.nome)) + el("tbody", {}, corpoT.join("")) + el("tfoot", {}, pe));
+    };
+    var pedirTotais = function () {
+      if (!linhaTotais || typeof api !== "function") {
+        return;
+      }
+      clearTimeout(esperaTotais);
+      esperaTotais = setTimeout(function () {
+        var ids = Array.prototype.filter.call(corpo.querySelectorAll("tr[data-id]"), function (tr) { return !tr.hidden; }).map(function (tr) { return tr.dataset.id; });
+        var meu = ++pedidoTotais;
+        var todos = corpo.querySelectorAll("tr[data-id]").length;
+        var ver = document.getElementById("ver-totais");
+        if (ver) {
+          ver.href = "totais.php" + (ids.length < todos ? "?relogios=" + (ids.length > 0 ? ids.join(",") : "0") : "");
+        }
+        api({recurso: "totais", parte: "rodape", relogios: ids.length > 0 ? ids.join(",") : "0"}).then(function (d) {
+          if (meu !== pedidoTotais) {
+            return;
+          }
+          var maior = 0;
+          d.totais.forEach(function (x) {
+            if (x.resultado.tipo === "tabela") {
+              maior = Math.max(maior, x.resultado.linhas.length);
+            }
+          });
+          linhaTotais.querySelectorAll("td[data-coluna]").forEach(function (td) {
+            // só a primeira tabelinha de cada coluna se completa até a maior: os totais delas ficam na mesma linha
+            td.innerHTML = d.totais.filter(function (x) { return x.coluna === td.getAttribute("data-coluna"); }).map(function (x, i) { return miniTotal(x, i === 0 ? maior : 0); }).join("");
+          });
+          linhaTotais.hidden = d.totais.length === 0;
+          var recado = document.getElementById("totais-recado");
+          if (recado) {
+            recado.textContent = d.totais.length === 0 ? t("Nenhum total no rodapé: monte os seus na aba Totais dos Cadastros.") : "";
+          }
+        }).catch(function () {
+          linhaTotais.hidden = true;
+        });
+      }, 250);
+    };
+
     var aplicar = function () {
       var lista = original.slice();
       if (st.col) {
@@ -142,15 +207,11 @@
       }
       var visiveis = 0;
       var emUso = 0;
-      var total = 0;
       lista.forEach(function (tr) {
         corpo.appendChild(tr);
         tr.hidden = !passa(tr);
         if (!tr.hidden) {
           visiveis++;
-          if (tr.dataset.valor !== "") {
-            total += Number(tr.dataset.valor);
-          }
         }
         if (tr.dataset.estado === "0") {
           emUso++;
@@ -160,10 +221,7 @@
       if (conta) {
         conta.textContent = t("{1} de {2} relógios · {3} em uso", {1: visiveis, 2: lista.length, 3: emUso});
       }
-      var campoTotal = document.getElementById("total-valor");
-      if (campoTotal) {
-        campoTotal.textContent = t("R$ ") + total.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      }
+      pedirTotais();
       var vazia = document.getElementById("tabela-vazia");
       if (vazia) {
         vazia.hidden = visiveis > 0;

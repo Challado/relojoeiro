@@ -396,6 +396,91 @@ function op_lancamento_tipos($acao, $d)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Os totais (a aba Totais dos Cadastros; da árvore, presos à raiz dela). Ações: salvar (id: 0 cria; coluna: a chave da
+// coluna da tabela dos relógios, ou vazio: nenhuma; nome; expressao: a expressão de total, conferida por total_validar;
+// rodape e pagina: 1 ou 0, onde ele aparece (o rodapé só com coluna; pelo menos um dos dois); largura: estreito ou largo,
+// o quadro na página de totais; formato: numero, inteiro, decimal, moeda, porcentagem, data ou dias), excluir (id), subir
+// e descer (id: troca com o vizinho na ordem, que é a ordem embaixo de cada coluna e dos quadros da página)
+// ---------------------------------------------------------------------------------------------------------------------
+function op_totais($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $id = (int)($d["id"] ?? 0);
+    $atual = $id > 0 ? linha("SELECT * FROM total WHERE id = ?", [$id]) : null;
+    if ($id > 0 && !$atual) {
+        $erros[] = t("Total não encontrado.");
+    } elseif (in_array($acao, ["excluir", "subir", "descer"], true) && !$atual) {
+        $erros[] = t("Total não encontrado.");
+    } elseif ($acao === "salvar") {
+        $coluna = array_key_exists("coluna", $d) ? trim((string)$d["coluna"]) : (string)($atual["coluna"] ?? "");
+        $coluna = $coluna === "" ? null : $coluna;
+        $nome = trim((string)($d["nome"] ?? ($atual["nome"] ?? "")));
+        $expr = trim((string)($d["expressao"] ?? ($atual["expressao"] ?? "")));
+        $rodape = array_key_exists("rodape", $d) ? ((string)$d["rodape"] === "1" ? 1 : 0) : (int)($atual["rodape"] ?? 0);
+        $pagina = array_key_exists("pagina", $d) ? ((string)$d["pagina"] === "1" ? 1 : 0) : (int)($atual["pagina"] ?? 1);
+        $largura = (string)($d["largura"] ?? ($atual["largura"] ?? "estreito"));
+        $formato = (string)($d["formato"] ?? ($atual["formato"] ?? "numero"));
+        if ($coluna !== null && !isset(TOTAL_COLUNAS[$coluna])) {
+            $erros[] = t("Coluna: {1}, ou vazio (nenhuma: só na página de totais).", [1 => implode(", ", array_keys(TOTAL_COLUNAS))]);
+        }
+        if ($nome === "" || mb_strlen($nome, "UTF-8") > 120) {
+            $erros[] = t("Dê um nome ao total (até 120 caracteres).");
+        }
+        if ($expr === "") {
+            $erros[] = t("Escreva a expressão do total.");
+        } else {
+            foreach (total_validar($expr) as $e) {
+                $erros[] = t("Expressão: {1}.", [1 => $e]);
+            }
+        }
+        if ($rodape === 1 && $coluna === null) {
+            $erros[] = t("Só os totais de uma coluna vão para o rodapé: escolha a coluna, ou deixe só na página de totais.");
+        }
+        if ($rodape === 0 && $pagina === 0) {
+            $erros[] = t("Marque onde o total aparece: no rodapé da tabela, na página de totais ou nos dois.");
+        }
+        if (!in_array($largura, ["estreito", "largo"], true)) {
+            $erros[] = t("Largura: estreito ou largo.");
+        }
+        if (!isset(TOTAL_FORMATOS[$formato])) {
+            $erros[] = t("Formato: {1}.", [1 => implode(", ", array_keys(TOTAL_FORMATOS))]);
+        }
+        if (count($erros) === 0) {
+            if ($atual) {
+                sql("UPDATE total SET coluna = ?, nome = ?, expressao = ?, rodape = ?, pagina = ?, largura = ?, formato = ? WHERE id = ?",
+                    [$coluna, $nome, $expr, $rodape, $pagina, $largura, $formato, $id]);
+                $msg = t("Total {1} salvo.", [1 => $nome]);
+            } else {
+                $ordem = (int)(valor("SELECT MAX(ordem) FROM total") ?? 0) + 10;
+                sql("INSERT INTO total (no_id, coluna, nome, expressao, rodape, pagina, largura, formato, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    [no_raiz(), $coluna, $nome, $expr, $rodape, $pagina, $largura, $formato, $ordem]);
+                $id = ultimo_id();
+                $msg = t("Total {1} criado.", [1 => $nome]);
+            }
+        }
+    } elseif ($acao === "excluir") {
+        sql("DELETE FROM total WHERE id = ?", [$id]);
+        $msg = t("Total {1} excluído.", [1 => $atual["nome"]]);
+    } elseif ($acao === "subir" || $acao === "descer") {
+        // a ordem refeita de 10 em 10, e o total troca de lugar com o vizinho
+        $ids = array_map("intval", array_column(linhas("SELECT id FROM total ORDER BY ordem, id"), "id"));
+        $pos = array_search($id, $ids, true);
+        $outro = $acao === "subir" ? $pos - 1 : $pos + 1;
+        if ($outro >= 0 && $outro < count($ids)) {
+            [$ids[$pos], $ids[$outro]] = [$ids[$outro], $ids[$pos]];
+        }
+        foreach ($ids as $i => $x) {
+            sql("UPDATE total SET ordem = ? WHERE id = ?", [($i + 1) * 10, $x]);
+        }
+        $msg = t("Ordem dos totais salva.");
+    } else {
+        $erros[] = t("Ação desconhecida: {1}.", [1 => $acao]);
+    }
+    return resultado($erros, $msg, ["id" => $id]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Fórmulas. Ações: nova (identificador, nome, expressao, unidade, no_id: uma fórmula nova, ou mais uma versão de uma que
 // já existe, em outro ponto da árvore), alterar (id; nome, expressao, unidade, no_id), excluir (id: não se exclui a
 // última versão de uma fórmula que outra usa). A expressão é conferida antes de gravar (formula_validar).

@@ -1,4 +1,4 @@
-<!-- origem: 57a2b79c74ae6aad51b1df13eaf42ef2a1753c4d -->
+<!-- origem: 573667135e98375c9da6ffaeaf9ed6cb1e7e7c44 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -106,6 +106,49 @@ Y la variable `nota_criterios`: la nota del reloj por los criterios, en el insta
 
 En la página **Definiciones** cada fórmula tiene el botón **Probar en todos los relojes**, que muestra el resultado en cada
 reloj antes de guardar.
+
+### Los totales {#os-totais}
+
+Los totales también son del motor de fórmulas, pero miran **todos los relojes mostrados a la vez** (los que deja el filtro
+de la tabla de la página Hoy). Están en la pestaña **Totales** de la página **Definiciones**: cada total tiene la **columna**
+de la tabla donde va (o ninguna), el **nombre**, la **expresión**, las casillas **Mostrar en el pie de totales** y **Mostrar
+en la página de totales**, el **ancho** del cuadro en la página (estrecho o ancho) y el **formato** de los números (número,
+entero, con 2 decimales, dinero, porcentaje, fecha o días). Solo los totales de una columna van al pie, debajo de ella; los
+otros, cuantos quieras, quedan solo en la **página de totales** (menú **Colección**, o **Ver todos los totales** debajo de la
+tabla, que lleva el mismo filtro). Varios totales en la misma columna van uno debajo del otro, en el orden de la lista
+(↑ ↓), y **Probar en todos los relojes** muestra el resultado antes de guardar.
+
+| Función de total | Qué da |
+|---|---|
+| `CONTA()`, `CONTA(x)` | cuántos relojes; cuántos tienen `x` rellenado |
+| `CONTA_SE(condição)` | cuántos cumplen la condición: `CONTA_SE(carga <= 20)` |
+| `DISTINTOS(x)` | cuántos valores distintos: `DISTINTOS(tipo)` |
+| `SOMA(x)`, `MEDIA(x)`, `MEDIANA(x)`, `MENOR(x)`, `MAIOR(x)` | la cuenta de siempre, con los que tienen `x` (de una fecha, la media es una fecha) |
+| `QUEM_MAIOR(x)`, `QUEM_MENOR(x)` | el reloj del mayor y del menor valor, con el valor al lado |
+| `AGRUPADO(chave; conta; limite)` | una tablita: una fila por valor de la clave y la fila de total; la `conta` (sin ella, `CONTA()`) va en cada fila, hecha solo con los relojes de ella, y en el total, con todos; `limite` muestra las que más tienen y junta el resto en "otros" |
+| `FAIXAS(x; 25; 50; 75; 100)` | una tablita por rangos ("hasta 25", "26 a 50"...), los sin `x` en "sin valor", y el total |
+
+Dentro de ellas vale todo lo que vale en una fórmula (los campos, las fórmulas, `SE`, `DIAS_DESDE`...), calculado en cada
+reloj, y también lo que muestra cada columna de la tabla: `codigo`, `nome`, `tipo`, `estado`, `disponivel`, `em_uso`,
+`carga`, `ultimo_uso`, `manutencao_data`, `manutencao_nome`, `encostado_data`, `avisos` (cuántos avisos tiene) y `posse`.
+Fuera de ellas, solo números, textos y las funciones que no necesitan un reloj (`SE`, `MIN`, `ARREDONDA`, las cuentas). Las
+funciones nuevas `MES(data)`, `ANO(data)` y `MES_ANO(data)` sirven para agrupar por mes y por año, y valen también en las
+fórmulas. Ejemplos:
+
+| Total | Expresión |
+|---|---|
+| Disponibles y no disponibles | `AGRUPADO(SE(disponivel; "disponíveis"; "indisponíveis"))` |
+| Por tipo | `AGRUPADO(tipo)` |
+| Rangos de carga | `FAIXAS(carga; 25; 50; 75; 100)` |
+| Parado hace | `FAIXAS(DIAS_DESDE(ultimo_uso); 7; 30)` |
+| Qué hacer (los 3 que más aparecen y "otros") | `AGRUPADO(manutencao_nome; CONTA(); 3)` |
+| Compras por mes | `AGRUPADO(MES_ANO(data_compra))` |
+| Valor por tipo | `AGRUPADO(tipo; SOMA(valor_compra))` |
+| El más caro | `QUEM_MAIOR(valor_compra)` |
+| Quién tiene más cosas por hacer | `QUEM_MAIOR(avisos)` |
+
+Una instalación nueva (y la migración v31) ya viene con una tablita en cada columna del pie y con los cuadros de la página de
+totales; tú cambias, borras o creas los tuyos.
 
 ### La nota de cada reloj (criterios) {#a-nota-de-cada-relógio-critérios}
 
@@ -1058,11 +1101,12 @@ que usted registre entra aquí con su nombre.
 
 | Página | Para qué sirve |
 |---|---|
-| **Hoy** (`index.php`) | La pantalla principal. Muestra arriba el reloj del día (o, según la Configuración, el que está en la muñeca ahora; con el botón discreto **Sin reloj hoy**, y, en un día libre, **Hoy sin reloj** con el **elegir…**), los avisos de hoy (atrasados y próximos) con el botón que resuelve cada uno, los próximos días del plan (de "Mostrar hasta" en "Mostrar hasta" días, con las páginas debajo) y el modo de rotación, que se cambia ahí mismo (con **Borrar un período** y **Borrar todo**) (y, en él, la **Rotación manual**: los relojes de un período, día a día; vea [La rotación manual](#o-rodízio-manual)). Debajo está la tabla de la colección, con filtros y ordenación por tipo, estado, carga, último uso, próximo mantenimiento, fecha y valor de compra. Hacer clic en un reloj abre su **panel**: al lado de la lista o en una ventana flotante grande, según la Configuración (**Abrir el reloj en la página Hoy**). |
+| **Hoy** (`index.php`) | La pantalla principal. Muestra arriba el reloj del día (o, según la Configuración, el que está en la muñeca ahora; con el botón discreto **Sin reloj hoy**, y, en un día libre, **Hoy sin reloj** con el **elegir…**), los avisos de hoy (atrasados y próximos) con el botón que resuelve cada uno, los próximos días del plan (de "Mostrar hasta" en "Mostrar hasta" días, con las páginas debajo) y el modo de rotación, que se cambia ahí mismo (con **Borrar un período** y **Borrar todo**) (y, en él, la **Rotación manual**: los relojes de un período, día a día; vea [La rotación manual](#o-rodízio-manual)). Debajo está la tabla de la colección, con filtros y ordenación por tipo, estado, carga, último uso, próximo mantenimiento, fecha y valor de compra, y en el pie los totales de cada columna, en tablitas alineadas, contando solo los relojes que deja el filtro (vea [Los totales](#os-totais)), con **Ver todos los totales**. Hacer clic en un reloj abre su **panel**: al lado de la lista o en una ventana flotante grande, según la Configuración (**Abrir el reloj en la página Hoy**). |
 | **Plan** (`plano.php`) | El plan entero, de hoy hasta el final (en la escala inteligente, uno o dos años), mes a mes: el reloj de cada día, el recordatorio y el **cambiar por…**. Filtra por período (30 días, 90, un año, dos, todo) y por reloj; el día a día viene de "Mostrar hasta" en "Mostrar hasta" días (la Configuración), con las páginas debajo (**<**, los números, **>**); y muestra cuántos días tiene cada reloj en el período, el porcentaje y su próximo día. Para elegir los relojes de un período, día a día, lleva a la **Rotación manual** (en la página Hoy). Al pie, **Borrar la programación**: **Borrar un período** (los días salen y el modo los vuelve a montar) y **Borrar todo** (vea [Borrar la programación](#apagar-a-programação)). |
 | **Panel / Ficha** (`ficha.php`) | Todo sobre un reloj: arriba, debajo del nombre, el atajo **Muñeca** (el botón **Poner** o **Quitar**); después, cuadros alineados en una cuadrícula (cada cuadro con la etiqueta de cada dato a la izquierda y el valor a la derecha): foto, estado ahora (*"En reposo desde 21:40"*, *"Al sol desde 09:12"*), carga, nota con la cuenta, próxima entrada en el plan, previsión de la batería, el consumo de la batería en la muñeca y fuera (el medido y el de la ficha), las últimas lecturas, la línea de tiempo reciente, el cuadro **Compra** (el valor pagado, la tienda, la garantía y el **costo por uso**: el valor pagado dividido por los días de uso), el cuadro **Documentos** (cuántos en cada categoría, y el enlace a la página Documentos), el cuadro **Marcar** y la ficha completa, editable (con la **Situación en la colección**). En un reloj **Deseado**, en lugar de los cuadros del día a día, el cuadro **Deseo** (la marca, la referencia, el precio objetivo, la prioridad y el enlace) y los documentos; en uno prestado, vendido o archivado, la marca de la situación al lado del estado. En la página de la ficha, el selector trae los relojes de la colección y, aparte, los de **Fuera de la colección**. El **Marcar** es un solo menú, *¿Qué quiere marcar?*: poner o quitar de la muñeca, del winder, del sol o del cargador, cuerda, cambio de pila, lectura de carga, un período que ya pasó o corregir una marca; debajo aparecen solo los campos de eso. |
 | **Deseos** (`desejos.php`) | La **lista de deseos**: los relojes deseados, de la prioridad más alta a la más baja, cada uno con la foto, la marca y la referencia, la prioridad, el precio objetivo, el grupo, el enlace a su página y el botón **Lo compré** (lo pone en la colección y abre la ficha, para completar la compra), con la suma de los precios objetivo; el botón **Nuevo deseo**; y, debajo, **Fuera de la colección**: los prestados, vendidos y archivados, con **Volver a la colección**. En la página Hoy, el botón **Deseos (N)** al lado de **Nuevo reloj** lleva a ella (solo cuando hay alguno). Vea [La lista de deseos](#a-lista-de-desejos). |
 | **Estadísticas** (`estatisticas.php`) | El uso de la colección en un período (**Desde**, **Hasta**; los atajos 30 días, 90 días, 1 año y desde el principio; predeterminado: los últimos 90 días): el resumen (días con reloj en la muñeca, horas en la muñeca y por día, relojes usados y sin uso, el costo por uso medio y el valor de la colección, el más y el menos usado); **Cada reloj**, del más usado al menos: días de uso, horas, la parte de cada uno (con la barra), el costo por uso, cuántos días hace que fue a la muñeca y la tendencia (↑ usando más, ↓ usando menos, → estable: la segunda mitad del período comparada con la primera); los gráficos **Por día de la semana** y **Por mes** (las horas en la muñeca); y **La colección**: los relojes divididos por grupo, marca, año de compra, situación y cada campo de lista (como Estilo), con cuántos, la parte y las horas de cada parte. Por la API: `recurso=estatisticas`. |
+| **Totales** (`totais.php`, menú **Colección**) | La página de totales: los totales marcados para ella (la pestaña **Totales** de las Definiciones), cada uno en un cuadro, estrecho o ancho, en el orden de las definiciones: la tablita con la fila de total, el número, o el reloj con el valor. Se abre desde **Ver todos los totales** debajo de la tabla de la página Hoy, con el mismo filtro (*Contando 12 de 17 relojes*, con **Contar todos**), o desde el menú, con todos. Por la API: `recurso=totais&parte=pagina`. Ver [Los totales](#os-totais). |
 | **Accesorios** (`acessorios.php`) | Las correas, cajas, estuches, herramientas, cargadores, piezas y lo que sea: la lista (el nombre, el tipo, el reloj al que pertenece, o *suelto*, y la observación), con el filtro **Reloj** (todos, los sueltos o los de un reloj; el cuadro **Accesorios** del panel la abre ya filtrada), **Editar** y **Eliminar** en cada uno, y debajo el formulario (**Nuevo accesorio**: nombre, tipo, reloj o *suelto (sirve a varios)* y observación). Eliminar un reloj deja sus accesorios sueltos. Por la API: `recurso=acessorios` (la lista) y la escritura `acessorios` (`salvar`, `excluir`). |
 | **Galería** (`galeria.php`) | La colección en fotos, por grupo: cada reloj con la foto (el enlace a la ficha), el nombre, la marca y la referencia, el año y el valor de compra y los días de uso; arriba, cuántos, el valor total y cuántos tienen foto. **También los de fuera de la colección** muestra los deseados, vendidos y archivados (con la marca de la situación). **Imprimir**: en papel, cuatro por fila, sin el menú. Por la API: `recurso=galeria`. |
 | **Pasaporte** (`passaporte.php`) | La hoja de un reloj para imprimir o guardar en PDF (el botón **Pasaporte** del cuadro Documentos del panel): la foto, el nombre, la marca y la referencia, el grupo y la situación; la **Compra**; el **Uso** (la primera y la última vez en la muñeca, las horas en la muñeca, los días de uso y el costo por uso); la **Ficha** rellenada; los **Mantenimientos** (cada tipo de marca, cuántas veces y la última; las revisiones y los cambios de pila); los **Accesorios**; los **Documentos**; y los **Próximos avisos**. **Imprimir**: en el papel salen solo los datos. Por la API: `recurso=passaporte`. |
@@ -1076,7 +1120,7 @@ que usted registre entra aquí con su nombre.
 | **Modos de rotación** (`modos.php`, menú **Rotación**) | Los modos de rotación: la tabla (el modo activo marcado, el tipo, el criterio, las semanas y de dónde elige) con **Editar**, **Activar** y **Eliminar**, y el formulario de un modo, con la pantalla de su tipo: el nombre y el tipo; de dónde elegir (por tramo o por día de la semana), el período de la escala o el guion escrito a mano con **Probar en todos los relojes**; las semanas adelante (con la lista de las semanas); el criterio de elección y el ciclo; y, en los tipos listos, el guion generado (solo lectura, con **copiar este guion** a un Personalizado). Vea [Los modos de rotación](#os-modos-de-rodízio). |
 | **Criterios** (`criterios.php`) | Los conjuntos de criterios por lugar (todos los relojes, un grupo o un reloj), con parámetros, subparámetros, rangos y la nota de cada reloj con la cuenta abierta. Tiene **Restaurar los criterios iniciales**. |
 | **Grupos** (`grupos.php`) | El árbol: crear, renombrar, mover, ordenar, eliminar (lo que era del grupo pasa al de arriba) y elegir el grupo de cada reloj. |
-| **Definiciones** (`cadastros.php`) | Campos, tipos de registro, fórmulas (con **Probar**) y las categorías de documentos: todo lo que el sistema usa que no es código (los avisos están en la página **Avisos**, y los modos de rotación, en **Modos de rotación**). |
+| **Definiciones** (`cadastros.php`) | Campos, tipos de registro, fórmulas (con **Probar**), los totales (la pestaña **Totales**: vea [Los totales](#os-totais)) y las categorías de documentos: todo lo que el sistema usa que no es código (los avisos están en la página **Avisos**, y los modos de rotación, en **Modos de rotación**). |
 | **Ejecuciones del cron** (`execucoes.php`) | Qué hizo el cron en cada vuelta, cuánto tardó y los errores, con filtros. |
 | **Mi cuenta** (`conta.php`, menú **Cuenta › Mi cuenta**) | Las colecciones que ve (abrir, crear, renombrar, eliminar, salir), sus árboles de grupos (copiar, renombrar, eliminar), pedir acceso a la colección de alguien (por el código que pasó el dueño), sus datos (su código, el correo, el idioma, la contraseña), la **aplicación en el celular** (recordar este aparato, instalar, los aparatos recordados), los **tokens de API** (para sus scripts), las **notificaciones en este aparato** (el Web Push) y eliminar la cuenta. Vea [Varias personas](#várias-pessoas-contas-coleções-e-acesso) y [La aplicación en el celular](#o-aplicativo-no-celular). |
 | **Aprobaciones** (`aprovacoes.php`) | Las solicitudes de acceso a sus colecciones (aprobar, rechazar), las invitaciones que hicieron los miembros y le esperan, **Invitar** (por correo), las invitaciones que hizo y quién ve sus colecciones (quitar el acceso). El menú muestra **Aprobaciones (N)** cuando hay algo esperando. |

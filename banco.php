@@ -221,6 +221,7 @@ const ESCOPO_CONDICOES = [
     "campo" => "no_id IN ({NR})",
     "lancamento_tipo" => "no_id IN ({NR})",
     "formula" => "no_id IN ({NR})",
+    "total" => "no_id IN ({NR})",
     "aviso" => "no_id IN ({NR})",
     "documento_categoria" => "no_id IN ({NR})",
     "campo_opcao" => "campo_id IN (SELECT id FROM campo WHERE no_id IN ({NR}))",

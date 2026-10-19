@@ -64,7 +64,23 @@ topo("Relógio de hoje", "index.php");
         </thead>
         <tbody></tbody>
         <tfoot>
-          <tr><td colspan="12"><span class="rotulo-total"><?= t("Total dos relógios mostrados") ?></span> <span id="total-valor"></span></td></tr>
+          <!-- os totais do rodapé (recurso=totais, parte=rodape): embaixo de cada coluna, os totais dela, calculados nos relógios
+               que o filtro deixa à mostra (o tabela.js pede de novo a cada filtro) -->
+          <tr class="totais-rodape" id="totais-rodape" hidden>
+            <td class="col-codigo" data-coluna="codigo" data-rotulo="<?= te("Código") ?>"></td>
+            <td data-coluna="nome" data-rotulo="<?= te("Relógio") ?>"></td>
+            <td data-coluna="tipo" data-rotulo="<?= te("Tipo") ?>"></td>
+            <td data-coluna="estado" data-rotulo="<?= te("Estado") ?>"></td>
+            <td data-coluna="carga" data-rotulo="<?= te("Carga") ?>"></td>
+            <td data-coluna="ultimo" data-rotulo="<?= te("Última vez usado") ?>"></td>
+            <td data-coluna="manut" data-rotulo="<?= te("Próxima manutenção") ?>"></td>
+            <td class="col-em" data-coluna="em" data-rotulo="<?= te("Em") ?>"></td>
+            <td data-coluna="fazer" data-rotulo="<?= te("O que fazer") ?>"></td>
+            <td class="col-encostado" data-coluna="encostado" data-rotulo="<?= te("Encostado") ?>"></td>
+            <td data-coluna="compra" data-rotulo="<?= te("Comprado em") ?>"></td>
+            <td class="col-valor" data-coluna="valor" data-rotulo="<?= te("Valor") ?>"></td>
+          </tr>
+          <tr class="totais-mais"><td colspan="12"><a href="totais.php" class="botao leve" id="ver-totais"><?= t("Ver todos os totais") ?></a> <a href="cadastros.php?aba=totais" class="nota"><?= t("montar os totais") ?></a> <span class="nota" id="totais-recado"></span></td></tr>
         </tfoot>
       </table>
       </div>

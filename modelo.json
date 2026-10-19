@@ -2452,6 +2452,197 @@
             ]
         }
     ],
+    "totais": [
+        {
+            "coluna": "codigo",
+            "nome": "Relógios",
+            "expressao": "CONTA()",
+            "rodape": 1,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "inteiro"
+        },
+        {
+            "coluna": "nome",
+            "nome": "Disponíveis",
+            "expressao": "AGRUPADO(SE(disponivel; \"disponíveis\"; \"indisponíveis\"))",
+            "rodape": 1,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "inteiro"
+        },
+        {
+            "coluna": "tipo",
+            "nome": "Por tipo",
+            "expressao": "AGRUPADO(tipo)",
+            "rodape": 1,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "inteiro"
+        },
+        {
+            "coluna": "estado",
+            "nome": "Estado",
+            "expressao": "AGRUPADO(estado)",
+            "rodape": 1,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "inteiro"
+        },
+        {
+            "coluna": "carga",
+            "nome": "Faixas de carga",
+            "expressao": "FAIXAS(carga; 25; 50; 75; 100)",
+            "rodape": 1,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "inteiro"
+        },
+        {
+            "coluna": "carga",
+            "nome": "Carga média",
+            "expressao": "MEDIA(carga)",
+            "rodape": 0,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "porcentagem"
+        },
+        {
+            "coluna": "carga",
+            "nome": "A menor carga",
+            "expressao": "QUEM_MENOR(carga)",
+            "rodape": 0,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "porcentagem"
+        },
+        {
+            "coluna": "ultimo",
+            "nome": "Parado há",
+            "expressao": "FAIXAS(DIAS_DESDE(ultimo_uso); 7; 30)",
+            "rodape": 1,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "inteiro"
+        },
+        {
+            "coluna": "ultimo",
+            "nome": "O mais parado",
+            "expressao": "QUEM_MAIOR(DIAS_DESDE(ultimo_uso))",
+            "rodape": 0,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "dias"
+        },
+        {
+            "coluna": "manut",
+            "nome": "Vence em",
+            "expressao": "FAIXAS(DIAS_ATE(manutencao_data); 7; 30)",
+            "rodape": 1,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "inteiro"
+        },
+        {
+            "coluna": "manut",
+            "nome": "A próxima",
+            "expressao": "MENOR(manutencao_data)",
+            "rodape": 1,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "data"
+        },
+        {
+            "coluna": "fazer",
+            "nome": "O que fazer",
+            "expressao": "AGRUPADO(manutencao_nome; CONTA(); 3)",
+            "rodape": 1,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "inteiro"
+        },
+        {
+            "coluna": "encostado",
+            "nome": "Encostados",
+            "expressao": "CONTA_SE(DIAS_ATE(encostado_data) <= 0)",
+            "rodape": 1,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "inteiro"
+        },
+        {
+            "coluna": "compra",
+            "nome": "Por mês",
+            "expressao": "AGRUPADO(MES_ANO(data_compra))",
+            "rodape": 1,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "inteiro"
+        },
+        {
+            "coluna": "compra",
+            "nome": "Data média da compra",
+            "expressao": "MEDIA(data_compra)",
+            "rodape": 0,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "data"
+        },
+        {
+            "coluna": "valor",
+            "nome": "Valor por tipo",
+            "expressao": "AGRUPADO(tipo; SOMA(valor_compra))",
+            "rodape": 1,
+            "pagina": 1,
+            "largura": "largo",
+            "formato": "moeda"
+        },
+        {
+            "coluna": "valor",
+            "nome": "Valor médio",
+            "expressao": "MEDIA(valor_compra)",
+            "rodape": 0,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "moeda"
+        },
+        {
+            "coluna": "valor",
+            "nome": "O mais caro",
+            "expressao": "QUEM_MAIOR(valor_compra)",
+            "rodape": 0,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "moeda"
+        },
+        {
+            "coluna": null,
+            "nome": "Quem mais tem coisa para fazer",
+            "expressao": "QUEM_MAIOR(avisos)",
+            "rodape": 0,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "inteiro"
+        },
+        {
+            "coluna": null,
+            "nome": "Avisos",
+            "expressao": "SOMA(avisos)",
+            "rodape": 0,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "inteiro"
+        },
+        {
+            "coluna": null,
+            "nome": "Valor por estado",
+            "expressao": "AGRUPADO(estado; SOMA(valor_compra))",
+            "rodape": 0,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "moeda"
+        }
+    ],
     "config": {
         "uso_inicio": "07:00",
         "uso_fim": "22:00",
