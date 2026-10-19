@@ -100,6 +100,6 @@ $saida = ["gerado_em" => date("Y-m-d H:i:s", $agora_p),
         return ["nome" => $a["nome"], "data" => substr((string)$a["data"], 0, 10), "texto" => $a["texto"]];
     }, array_slice((function () use ($r, $agora_p) {
         $a = avisos_do_relogio($r, $agora_p);
-        usort($a, function ($x, $y) { return [$x["data"], $x["identificador"]] <=> [$y["data"], $y["identificador"]]; });
+        usort($a, function ($x, $y) { return [$x["falta_dias"], $x["identificador"]] <=> [$y["falta_dias"], $y["identificador"]]; });
         return $a;
     })(), 0, 8))];

@@ -4012,10 +4012,10 @@ if ($recurso === "textos") {
             $todos[] = array_merge(["relogio_id" => (int)$r["id"], "relogio" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1], $a);
         }
     }
-    // pelo instante do vencimento (a data inteira, com os segundos: o falta_dias arredondado empatava dois que vencem a
-    // segundos um do outro, e a ordem mudava de banco para banco); o desempate (no mesmo instante) é fixo
+    // o desempate (dois vencendo no mesmo instante) é fixo, para a lista sair igual em qualquer banco; o falta_dias
+    // arredondado (não a data com os segundos) junta o que vence "agora" em relógios calculados a um segundo um do outro
     usort($todos, function ($x, $y) {
-        return [$x["data"], $x["relogio_id"], $x["identificador"]] <=> [$y["data"], $y["relogio_id"], $y["identificador"]];
+        return [$x["falta_dias"], $x["relogio_id"], $x["identificador"]] <=> [$y["falta_dias"], $y["relogio_id"], $y["identificador"]];
     });
     $saida = ["avisos" => $todos];
 } elseif ($recurso === "autonomia") {

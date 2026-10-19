@@ -697,6 +697,10 @@ escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => substr(dia(0
 // dos avisos sai na mesma ordem em qualquer banco (a rodada do Firebird no CI é mais lenta e virava a ordem)
 escrever(["recurso" => "avisos", "acao" => "novo", "identificador" => "encostado", "nome" => "Encostado (cronógrafos)", "expressao" => "PADRAO(ULTIMA_DATA(\"pulso\"); data_compra) + CONFIG(\"encostado_dias\") + 1",
     "antecedencia_dias" => 0, "texto" => "o limite de dias sem ir ao pulso vence {quando}, {data}", "no_id" => $cron_g, "resolve" => "pulso"]);
+// e outra para o grupo dos automáticos (dois dias a mais): o Orient e o Xiaomi saem do pulso a segundos um do outro (o
+// "sem relógio hoje" e a troca logo depois), e os dois Encostados empatavam no arredondamento de falta_dias
+escrever(["recurso" => "avisos", "acao" => "novo", "identificador" => "encostado", "nome" => "Encostado (automáticos)", "expressao" => "PADRAO(ULTIMA_DATA(\"pulso\"); data_compra) + CONFIG(\"encostado_dias\") + 2",
+    "antecedencia_dias" => 0, "texto" => "o limite de dias sem ir ao pulso vence {quando}, {data}", "no_id" => G(4), "resolve" => "pulso"]);
 ler("hoje depois do dia livre", ["recurso" => "hoje"]);
 // apagar tudo: de amanhã em diante (o modo monta de novo), e depois de hoje em diante
 escrever(["recurso" => "rodizio", "acao" => "apagar_tudo"]);

@@ -2617,10 +2617,9 @@ function avisos_do_relogio($r, $momento, $so = null)
             }
         }
     }
-    // pelo instante do vencimento (com os segundos: o falta_dias arredondado empata); o desempate (no mesmo instante) é
-    // fixo, para a lista sair igual em qualquer banco
+    // o desempate (dois avisos vencendo no mesmo instante) é fixo, para a lista sair igual em qualquer banco
     usort($res, function ($x, $y) {
-        return [$x["data"], $x["identificador"]] <=> [$y["data"], $y["identificador"]];
+        return [$x["falta_dias"], $x["identificador"]] <=> [$y["falta_dias"], $y["identificador"]];
     });
     return $res;
 }
@@ -4961,9 +4960,8 @@ function avisos_de_hoje()
             }
         }
     }
-    // pelo instante do vencimento (com os segundos: o falta_dias arredondado empata); o desempate (no mesmo instante) é fixo,
-    // para a lista sair igual em qualquer banco
-    usort($lista, function ($x, $y) { return [$x[1]["data"], (int)$x[0]["id"], $x[1]["identificador"]] <=> [$y[1]["data"], (int)$y[0]["id"], $y[1]["identificador"]]; });
+    // o desempate (dois relógios vencendo no mesmo instante) é fixo, para a lista sair igual em qualquer banco
+    usort($lista, function ($x, $y) { return [$x[1]["falta_dias"], (int)$x[0]["id"], $x[1]["identificador"]] <=> [$y[1]["falta_dias"], (int)$y[0]["id"], $y[1]["identificador"]]; });
     return $lista;
 }
 
