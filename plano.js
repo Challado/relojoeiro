@@ -107,3 +107,5 @@ document.addEventListener("click", function (ev) {
 });
 
 recarregarPlano();
+// a cada minuto, sozinha (api.js)
+atualizarSozinho(recarregarPlano);

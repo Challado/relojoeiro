@@ -981,6 +981,7 @@ A página **Configuração** guarda as opções **da coleção** (cada coleção
 | **Cópia dos documentos no banco (válido para todos os relógios)** (`documentos_copia`) | para a coleção inteira: **Todos os arquivos** (`todos`), **Nenhum arquivo** (`nenhum`) ou vazio (*Individual (no relógio ou no arquivo)*). É o primeiro dos três níveis da cópia (veja [Os documentos do relógio](#os-documentos-do-relógio)). Padrão: vazio. |
 | **Endereço do sistema** (`url_sistema`) | o endereço que a âncora `{link}` põe nas mensagens e na agenda, e o dos links dos e-mails, do ICS e do retorno do Outlook. É do sistema inteiro: só o master muda. Padrão: vazio (o endereço por onde a página foi aberta). |
 | **Próximos dias: mostrar até** (`proximos_por_pagina`) e **Plano: mostrar até** (`plano_por_pagina`) | quantos dias os **Próximos dias** da página Hoje e o **Dia a dia** da página Plano mostram de cada vez (de 1 a 366). Passando disso, embaixo aparece o navegador das páginas: **<** (anterior), os números (a primeira, a última e até duas de cada lado da atual, com … nos saltos) e **>** (próxima); parando o mouse em cima, a dica diz *Anterior*, *Próximo* ou *Página N*. Padrão: 7 e 31. |
+| **Intervalo de atualização das páginas** (`atualizar_segundos`) | de quantos em quantos segundos a **Hoje** (com o relógio aberto no painel), a **Ficha**, o **Plano**, os **Totais** e o **Histórico** leem tudo de novo sozinhos, sem recarregar: de 1 a 86400; **0** desliga; vazio, 60. Negativo ou acima disso, a Configuração recusa. Veja [As páginas se atualizam sozinhas](#as-páginas-se-atualizam-sozinhas). |
 | **Fuso horário (quem não escolheu outro em Minha conta)** (`fuso`) | o fuso horário da coleção: o de quem não escolheu o seu em **Minha conta**, e o do cron, das mensagens e das agendas dela (veja [O fuso horário](#o-fuso-horário)). Vazio: o do sistema (o `FUSO` do `config.php`). |
 | **Relógio da Hora certa** (`hora_relogio`) | o mostrador da página **Hora certa**: *Analógico e digital (um ao lado do outro)* (o padrão), *Analógico*, *Digital* ou *Anadigi (o visor digital dentro do analógico)*. |
 | **Idioma padrão** (`idioma`) | o idioma da coleção: o das telas para quem não escolheu o seu (no seletor do menu ou em **Minha conta**; veja [Os idiomas](#os-idiomas)) e o das mensagens e das agendas sem idioma próprio: português, inglês, chinês, hindi, espanhol ou francês. Padrão: o de quem criou a coleção. |
@@ -1183,6 +1184,16 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | **Usuários** (`usuarios.php`, só o master) | O painel das contas: cada uma com o que tem e as ações (ver como, tornar oficial, prorrogar, bloquear, alterar, trocar a senha, transferir uma coleção, dar acesso, excluir) e criar uma conta. |
 | **Criar conta** (`cadastro.php`, sem login) | O cadastro aberto: a conta nova (com uma coleção, ou pedindo acesso), o convite que chegou por e-mail e o **Esqueci a senha**. |
 | **Ajuda** (`ajuda.php`) | Este guia dentro do sistema: a ideia central, como funciona, o cadastro de cada relógio campo por campo, os avisos de carga, as telas e as perguntas frequentes (as mesmas seções deste README, lidas dele; a API devolve o mesmo texto em `recurso=manual`). |
+
+### As páginas se atualizam sozinhas
+
+A **Hoje** (com o relógio aberto no painel), a **Ficha**, o **Plano**, os **Totais** e o **Histórico** leem tudo de novo
+sozinhos, sem recarregar, no **Intervalo de atualização das páginas** da Configuração (em segundos: de 1 a 86400; 0
+desliga; padrão 60): a carga que vai caindo, a autonomia, a última leitura, os avisos, os contadores ("há 2h 10min",
+"em 3d"), o relógio do dia, os totais. Todos os valores da página vêm juntos da API, e a página inteira se remonta: nada
+fica meio atualizado. Só com a aba à mostra (voltando a ela, atualiza na hora), sem sair do lugar na página e nunca por
+cima de quem está mexendo: com um campo de texto em foco, algo mudado e não gravado num formulário, uma gravação em
+andamento ou, na Hoje, o quadro do modo de rodízio aberto, fica para a próxima volta.
 
 ### Os idiomas
 

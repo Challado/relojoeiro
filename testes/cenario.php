@@ -284,6 +284,10 @@ $lanc("iniciar", "crono", "estojo", ["quando" => ha_minutos(20)]);
 $lanc("periodo", "crono", "estojo", ["inicio" => ha_minutos(50), "fim" => ha_minutos(20)]);
 // e sai do estojo (aberto, o estado dele mudaria, e com ele o relógio que o rodízio escolhe hoje)
 $lanc("encerrar", "crono", "estojo", ["quando" => ha_minutos(10)]);
+// o Orient no winder de manhã (de 400 a 31 minutos atrás): chega com reserva de sobra ao fim do cenário, quando o sorteio
+// o põe no pulso por alguns segundos (quanto, depende da velocidade do banco). Com a reserva perto de zero, esses segundos
+// mudavam a carga em 25% de um banco para outro; longe do zero, a diferença é de milésimos
+$lanc("periodo", "auto2", "winder", ["inicio" => ha_minutos(400), "fim" => ha_minutos(31)]);
 $lanc("iniciar", "auto2", "winder", ["quando" => ha_minutos(30)]);
 $lanc("encerrar", "auto2", "winder", ["quando" => ha_minutos(25)]);
 // o carregador: um período que já passou e um aberto agora (o estado vira "No carregador" e o aviso Carregar some)
@@ -378,6 +382,14 @@ escrever(["recurso" => "rodizio", "acao" => "proxima_semana"]);
 ler("hoje com a semana no domingo", ["recurso" => "hoje", "incluir" => "semana_inicio,proxima_semana,proximos"]);
 ler("cadastros com a semana no domingo", ["recurso" => "cadastros", "incluir" => "semana_inicio,modos"]);
 escrever(["recurso" => "config", "acao" => "salvar", "semana_inicio" => "segunda"]);
+// o intervalo de atualização das páginas: negativo, fração e acima de um dia não; 0 desliga; o menu de cada página leva ele
+escrever(["recurso" => "config", "acao" => "salvar", "atualizar_segundos" => "-5"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "atualizar_segundos" => "1.5"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "atualizar_segundos" => "86401"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "atualizar_segundos" => "0"]);
+ler("menu sem atualizar sozinho", ["recurso" => "conta", "parte" => "menu"]);
+escrever(["recurso" => "config", "acao" => "salvar", "atualizar_segundos" => "30"]);
+ler("menu atualizando de 30 em 30 s", ["recurso" => "conta", "parte" => "menu"]);
 escrever(["recurso" => "modos", "acao" => "ativar", "id" => $semana2]);
 escrever(["recurso" => "rodizio", "acao" => "resortear"]);
 // o Sortear de novo com dias à mão e livres no caminho: sem sobrescrever, eles ficam (e a mensagem conta); com

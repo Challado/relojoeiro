@@ -732,6 +732,8 @@
  *                                    agora; sem nenhum no pulso, o do dia); vazio: dia
  *     config.proximos_por_pagina     o "Mostrar até" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)
  *     config.plano_por_pagina        o "Mostrar até" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)
+ *     config.atualizar_segundos      de quantos em quantos segundos as páginas (Hoje com o painel, Ficha, Plano, Totais e Histórico) leem
+ *                                    tudo de novo sozinhas: 1 a 86400; 0, não leem; vazio: 60
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso);
  *                                    0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
@@ -1996,6 +1998,8 @@
  *     relogio.documentos.total       quantos documentos ele tem
  *   recurso=config
  *     mostrar_ate                    quantos dias as listas mostram por página (o "Mostrar até" da Configuração, já com o padrão)
+ *     atualizar_segundos             o intervalo de atualização das páginas, já com o padrão (a Configuração, atualizar_segundos: 1 a
+ *                                    86400; 0, não se atualizam sozinhas; padrão 60)
  *     mostrar_ate.proximos           os Próximos dias da página Hoje (proximos_por_pagina; padrão 7)
  *     mostrar_ate.plano              o dia a dia da página Plano (plano_por_pagina; padrão 31)
  *     aleatorio                      de onde vêm os números dos sorteios: RANDOM.ORG (ruído atmosférico); fora do ar, ANU QRNG (quântico);
@@ -2065,6 +2069,8 @@
  *                                    agora; sem nenhum no pulso, o do dia); vazio: dia
  *     config.proximos_por_pagina     o "Mostrar até" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)
  *     config.plano_por_pagina        o "Mostrar até" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)
+ *     config.atualizar_segundos      de quantos em quantos segundos as páginas (Hoje com o painel, Ficha, Plano, Totais e Histórico) leem
+ *                                    tudo de novo sozinhas: 1 a 86400; 0, não leem; vazio: 60
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso);
  *                                    0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
@@ -3258,6 +3264,8 @@
  *                                    o que corrigir no config.php)
  *     demo_dias                      os dias da conta de demonstração
  *     master                         (parte=menu) verdadeiro ou falso: quem pede é o master (ou o master vendo como outro)
+ *     atualizar_segundos             (parte=menu) de quantos em quantos segundos a página lê tudo de novo sozinha (a Configuração da
+ *                                    coleção; 0: não lê; sem coleção, 0)
  *     idioma_padrao                  (parte=menu) o idioma de quem não escolheu no menu: o da conta (Minha conta), senão o da coleção (a
  *                                    Configuração), senão o da instalação; null: nenhum (vale o do navegador). As páginas seguem este, que
  *                                    vem a cada abertura: o padrao do script do dicionário (recurso=textos&formato=js) fica em cache
@@ -4004,9 +4012,10 @@ if ($recurso === "textos") {
             $todos[] = array_merge(["relogio_id" => (int)$r["id"], "relogio" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1], $a);
         }
     }
-    // o desempate (dois vencendo no mesmo instante) é fixo, para a lista sair igual em qualquer banco
+    // pelo instante do vencimento (a data inteira, com os segundos: o falta_dias arredondado empatava dois que vencem a
+    // segundos um do outro, e a ordem mudava de banco para banco); o desempate (no mesmo instante) é fixo
     usort($todos, function ($x, $y) {
-        return [$x["falta_dias"], $x["relogio_id"], $x["identificador"]] <=> [$y["falta_dias"], $y["relogio_id"], $y["identificador"]];
+        return [$x["data"], $x["relogio_id"], $x["identificador"]] <=> [$y["data"], $y["relogio_id"], $y["identificador"]];
     });
     $saida = ["avisos" => $todos];
 } elseif ($recurso === "autonomia") {

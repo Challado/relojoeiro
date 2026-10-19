@@ -998,6 +998,7 @@ colección nueva va al final de cada línea.
 | **Copia de los documentos en la base (válido para todos los relojes)** (`documentos_copia`) | para toda la colección: **Todos los archivos** (`todos`), **Ningún archivo** (`nenhum`) o vacío (*Individual (en el reloj o en el archivo)*). Es el primero de los tres niveles de la copia (vea [Los documentos del reloj](#los-documentos-del-reloj)). Predeterminado: vacío. |
 | **Dirección del sistema** (`url_sistema`) | la dirección que el marcador `{link}` pone en los mensajes y en el calendario, y la de los enlaces de los correos, del ICS y del retorno de Outlook. Es de todo el sistema: solo el master la cambia. Por defecto: vacía (la dirección por la que se abrió la página). |
 | **Próximos días: mostrar hasta** (`proximos_por_pagina`) y **Plan: mostrar hasta** (`plano_por_pagina`) | cuántos días muestran a la vez los **Próximos días** de la página Hoy y el **Día a día** de la página Plan (de 1 a 366). Pasado eso, aparece el paginador debajo: **<** (anterior), los números (el primero, el último y hasta dos a cada lado del actual, con … en los huecos) y **>** (siguiente); al detener el ratón encima, la ayuda dice *Anterior*, *Siguiente* o *Página N*. Predeterminado: 7 y 31. |
+| **Intervalo de actualización de las páginas** (`atualizar_segundos`) | cada cuántos segundos **Hoy** (con el reloj abierto en el panel), la **Ficha**, el **Plan**, los **Totales** y el **Historial** leen todo de nuevo solos, sin recargar: de 1 a 86400; **0** lo apaga; vacío, 60. Negativo o por encima de eso, la Configuración lo rechaza. Vea [Las páginas se actualizan solas](#las-páginas-se-actualizan-solas). |
 | **Huso horario (quien no eligió otro en Mi cuenta)** (`fuso`) | el huso horario de la colección: el de quien no eligió el suyo en **Mi cuenta**, y el del cron, los mensajes y las agendas de ella (vea [El huso horario](#el-huso-horario)). Vacío: el del sistema (el `FUSO` del `config.php`). |
 | **Reloj de la Hora exacta** (`hora_relogio`) | la esfera de la página **Hora exacta**: *Analógico y digital (uno al lado del otro)* (el predeterminado), *Analógico*, *Digital* o *Anadigi (el visor digital dentro del analógico)*. |
 | **Idioma predeterminado** (`idioma`) | el idioma de la colección: el de las pantallas para quien no eligió el suyo (en el selector del menú o en **Mi cuenta**; vea [Los idiomas](#los-idiomas)) y el de los mensajes y los calendarios sin idioma propio: portugués, inglés, chino, hindi, español o francés. Por defecto: el de quien creó la colección. |
@@ -1209,6 +1210,17 @@ que usted registre entra aquí con su nombre.
 | **Usuarios** (`usuarios.php`, solo el master) | El panel de las cuentas: cada una con lo que tiene y las acciones (ver como, hacer oficial, prorrogar, bloquear, cambiar, cambiar la contraseña, transferir una colección, dar acceso, eliminar) y crear una cuenta. |
 | **Crear cuenta** (`cadastro.php`, sin login) | El registro abierto: la cuenta nueva (con una colección, o pidiendo acceso), la invitación que llegó por correo y **Olvidé la contraseña**. |
 | **Ayuda** (`ajuda.php`) | Esta guía dentro del sistema: la idea central, cómo funciona, la ficha de cada reloj campo por campo, los avisos de carga, las pantallas y las preguntas frecuentes (las mismas secciones del README, leídas de él; la API devuelve el mismo texto en `recurso=manual`). |
+
+### Las páginas se actualizan solas
+
+**Hoy** (con el reloj abierto en el panel), la **Ficha**, el **Plan**, los **Totales** y el **Historial** leen todo de
+nuevo solos, sin recargar, en el **Intervalo de actualización de las páginas** de la Configuración (en segundos: de 1 a
+86400; 0 lo apaga; por defecto 60): la carga que va bajando, la autonomía, la última lectura, los avisos, los contadores
+("hace 2h 10min", "en 3d"), el reloj del día, los totales. Todos los valores de la página vienen juntos de la API, y la
+página entera se vuelve a montar: nada queda a medio actualizar. Solo con la pestaña visible (al volver a ella, se
+actualiza enseguida), sin moverle de su lugar en la página y nunca encima de quien está trabajando: con un campo de texto
+con el foco, algo cambiado y sin guardar en un formulario, una grabación en curso o, en Hoy, el cuadro del modo de
+rotación abierto, queda para la próxima vuelta.
 
 ### Los idiomas
 

@@ -1032,6 +1032,7 @@ collection vient à la fin de chaque ligne.
 | **Copie des documents dans la base (valable pour toutes les montres)** (`documentos_copia`) | pour toute la collection : **Tous les fichiers** (`todos`), **Aucun fichier** (`nenhum`) ou vide (*Individuelle (sur la montre ou le fichier)*). C'est le premier des trois niveaux de la copie (voir [Les documents de la montre](#les-documents-de-la-montre)). Par défaut : vide. |
 | **Adresse du système** (`url_sistema`) | l'adresse que le repère `{link}` met dans les messages et dans l'agenda, et celle des liens des e-mails, de l'ICS et du retour d'Outlook. Elle est à tout le système : seul le master la change. Par défaut : vide (l'adresse par laquelle la page a été ouverte). |
 | **Prochains jours : afficher jusqu'à** (`proximos_por_pagina`) et **Plan : afficher jusqu'à** (`plano_por_pagina`) | combien de jours affichent à la fois les **Prochains jours** de la page Aujourd'hui et le **Jour par jour** de la page Plan (de 1 à 366). Au-delà, le paginateur apparaît en dessous : **<** (précédent), les numéros (le premier, le dernier et jusqu'à deux de chaque côté de l'actuel, avec … dans les trous) et **>** (suivant) ; en posant la souris dessus, l'info-bulle dit *Précédent*, *Suivant* ou *Page N*. Par défaut : 7 et 31. |
+| **Intervalle de mise à jour des pages** (`atualizar_segundos`) | toutes les combien de secondes **Aujourd'hui** (avec la montre ouverte dans le panneau), la **Fiche**, le **Plan**, les **Totaux** et l'**Historique** relisent tout seuls, sans recharger : de 1 à 86400 ; **0** désactive ; vide, 60. Négatif ou au-delà, la Configuration refuse. Voir [Les pages se mettent à jour seules](#les-pages-se-mettent-à-jour-seules). |
 | **Fuseau horaire (qui n'en a pas choisi un autre dans Mon compte)** (`fuso`) | le fuseau horaire de la collection : celui de qui n'a pas choisi le sien dans **Mon compte**, et celui de son cron, de ses messages et de ses agendas (voir [Le fuseau horaire](#le-fuseau-horaire)). Vide : celui du système (le `FUSO` du `config.php`). |
 | **Horloge de l'Heure exacte** (`hora_relogio`) | le cadran de la page **Heure exacte** : *Analogique et numérique (côte à côte)* (par défaut), *Analogique*, *Numérique* ou *Ana-digi (l'affichage numérique dans l'analogique)*. |
 | **Langue par défaut** (`idioma`) | la langue de la collection : celle des écrans pour qui n'a pas choisi la sienne (dans le sélecteur du menu ou dans **Mon compte** ; voir [Les langues](#les-langues)) et celle des messages et des agendas sans langue propre : portugais, anglais, chinois, hindi, espagnol ou français. Par défaut : celle de qui a créé la collection. |
@@ -1246,6 +1247,17 @@ que vous enregistrez apparaît ici sous son nom.
 | **Utilisateurs** (`usuarios.php`, seulement le master) | Le panneau des comptes : chacun avec ce qu'il a et les actions (voir en tant que, rendre officiel, prolonger, bloquer, modifier, changer le mot de passe, transférer une collection, donner l'accès, supprimer) et créer un compte. |
 | **Créer un compte** (`cadastro.php`, sans identifiant) | L'inscription ouverte : le nouveau compte (avec une collection, ou en demandant l'accès), l'invitation arrivée par e-mail et le **Mot de passe oublié**. |
 | **Aide** (`ajuda.php`) | Ce guide dans le système : l'idée centrale, comment ça marche, la fiche de chaque montre champ par champ, les alertes de charge, les écrans et les questions fréquentes (les mêmes sections du README, lues depuis lui ; l'API renvoie le même texte dans `recurso=manual`). |
+
+### Les pages se mettent à jour seules
+
+**Aujourd'hui** (avec la montre ouverte dans le panneau), la **Fiche**, le **Plan**, les **Totaux** et l'**Historique**
+relisent tout seuls, sans recharger, selon l'**Intervalle de mise à jour des pages** de la Configuration (en secondes : de 1
+à 86400 ; 0 désactive ; par défaut 60) : la charge qui baisse, l'autonomie, la dernière lecture, les alertes, les compteurs
+(« il y a 2h 10min », « dans 3j »), la montre du jour, les totaux. Toutes les valeurs de la page arrivent ensemble de l'API,
+et la page entière est reconstruite : rien ne reste à moitié à jour. Seulement avec l'onglet visible (en y revenant, la mise
+à jour se fait tout de suite), sans vous déplacer dans la page, et jamais par-dessus quelqu'un qui travaille : avec un champ
+de texte actif, quelque chose de modifié et non enregistré dans un formulaire, un enregistrement en cours ou, sur
+Aujourd'hui, le cadre du mode de rotation ouvert, cela attend le tour suivant.
 
 ### Les langues
 

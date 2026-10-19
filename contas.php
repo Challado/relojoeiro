@@ -1349,6 +1349,8 @@ function conta_menu()
         "master" => usuario_master() || ($real !== null && $real["papel"] === "master"),
         // o idioma de quem não escolheu no menu (o api.js segue este, que vem a cada página; o script do dicionário fica em cache)
         "idioma_padrao" => lingua_valida($u["idioma"] ?? null) ?? (lingua_valida(cfg("idioma")) ?? lingua_valida(sis("idioma"))),
+        // de quantos em quantos segundos a página lê tudo de novo sozinha (a Configuração; 0: não lê)
+        "atualizar_segundos" => colecao_atual() !== null ? atualizar_segundos() : 0,
         "colecoes" => array_map(function ($c) { return ["id" => $c["id"], "nome" => $c["nome"], "dono" => $c["dono"], "papel" => $c["papel"]]; }, colecoes_visiveis($u)),
         "colecao" => colecao_atual(), "aprovacoes" => count(aprovacoes_pedidos()) + count(aprovacoes_convites())];
 }

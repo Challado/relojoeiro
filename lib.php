@@ -2617,9 +2617,10 @@ function avisos_do_relogio($r, $momento, $so = null)
             }
         }
     }
-    // o desempate (dois avisos vencendo no mesmo instante) é fixo, para a lista sair igual em qualquer banco
+    // pelo instante do vencimento (com os segundos: o falta_dias arredondado empata); o desempate (no mesmo instante) é
+    // fixo, para a lista sair igual em qualquer banco
     usort($res, function ($x, $y) {
-        return [$x["falta_dias"], $x["identificador"]] <=> [$y["falta_dias"], $y["identificador"]];
+        return [$x["data"], $x["identificador"]] <=> [$y["data"], $y["identificador"]];
     });
     return $res;
 }
@@ -4109,6 +4110,14 @@ function documento_apagar_arquivos($d)
 // numa janela grande por cima da página. No celular, os dois cobrem a tela inteira
 // Quantos dias cada página mostra (a Configuração, "Mostrar até"): os Próximos dias da página Hoje (padrão 7) e o dia a dia
 // da página Plano (padrão 31). De 1 a 366
+// De quantos em quantos segundos as páginas leem tudo de novo sozinhas (a Configuração, atualizar_segundos): 1 a 86400;
+// 0, não atualizam sozinhas; vazio, 60
+function atualizar_segundos()
+{
+    $v = trim((string)cfg("atualizar_segundos"));
+    return $v === "" || !ctype_digit($v) || (int)$v > 86400 ? 60 : (int)$v;
+}
+
 function proximos_por_pagina()
 {
     $n = (int)cfg("proximos_por_pagina");
@@ -4952,8 +4961,9 @@ function avisos_de_hoje()
             }
         }
     }
-    // o desempate (dois relógios vencendo no mesmo instante) é fixo, para a lista sair igual em qualquer banco
-    usort($lista, function ($x, $y) { return [$x[1]["falta_dias"], (int)$x[0]["id"], $x[1]["identificador"]] <=> [$y[1]["falta_dias"], (int)$y[0]["id"], $y[1]["identificador"]]; });
+    // pelo instante do vencimento (com os segundos: o falta_dias arredondado empata); o desempate (no mesmo instante) é fixo,
+    // para a lista sair igual em qualquer banco
+    usort($lista, function ($x, $y) { return [$x[1]["data"], (int)$x[0]["id"], $x[1]["identificador"]] <=> [$y[1]["data"], (int)$y[0]["id"], $y[1]["identificador"]]; });
     return $lista;
 }
 

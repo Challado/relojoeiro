@@ -50,6 +50,17 @@ document.addEventListener("click", function (ev) {
   }
 });
 
+// as opções de um filtro da tabela ("Todos" e as que existem), com o que estava escolhido continuando escolhido (a página se
+// remonta depois de cada gravação e sozinha, a cada minuto)
+function opcoesDoFiltro(nome, itens) {
+  var sel = document.querySelector("[data-filtro=" + nome + "]");
+  var antes = sel.value;
+  sel.innerHTML = el("option", {"value": ""}, t("Todos")) + itens.map(function (item) { return el("option", {}, h(item)); }).join("");
+  if (antes !== "" && itens.indexOf(antes) >= 0) {
+    sel.value = antes;
+  }
+}
+
 // lê a página inteira da API e monta os blocos
 function recarregarHoje() {
   return api({recurso: "hoje", proximos_pagina: paginaProximos}).then(function (d) {
@@ -263,11 +274,11 @@ function recarregarHoje() {
       }
     });
     tipos.sort();
-    document.querySelector("[data-filtro=tipo]").innerHTML = el("option", {"value": ""}, t("Todos")) + tipos.map(function (item) { return el("option", {}, h(item)); }).join("");
-    document.querySelector("[data-filtro=estado]").innerHTML = el("option", {"value": ""}, t("Todos")) + d.estados.map(function (item) { return el("option", {}, h(item)); }).join("");
+    opcoesDoFiltro("tipo", tipos);
+    opcoesDoFiltro("estado", d.estados);
     // o Encostado desligado na Configuração: a coluna e o filtro somem (estilo.css, .sem-encostado; tabela.js ignora o filtro)
     document.getElementById("tabela-relogios").classList.toggle("sem-encostado", !d.encostado_ativo);
-    document.querySelector("[data-filtro=fazer]").innerHTML = el("option", {"value": ""}, t("Todos")) + d.avisos_nomes.map(function (item) { return el("option", {}, h(item)); }).join("");
+    opcoesDoFiltro("fazer", d.avisos_nomes);
     var ano = String(new Date().getFullYear());
     var linhas = lista.map(function (x) {
       var m = x.manutencao;
@@ -306,6 +317,18 @@ function recarregarHoje() {
     window.trocarLinhasDaTabela(linhas + (lista.length === 0 ? el("tr", {}, el("td", {"colspan": "12"}, t("Nenhum relógio cadastrado. Use o botão Novo relógio."))) : ""));
   });
 }
+
+// a cada minuto, sozinha (api.js): a página e o relógio aberto no painel; não com o quadro do modo de rodízio aberto (os
+// formulários dele se remontariam fechados)
+atualizarSozinho(function () {
+  return recarregarHoje().then(function () {
+    var aberto = document.querySelector("#detalhe:not([hidden]) .detalhe[data-id]");
+    var id = aberto ? parseInt(aberto.getAttribute("data-id"), 10) : 0;
+    return id > 0 ? abrirNoPainel(id) : null;
+  });
+}, function () {
+  return document.querySelector("#bloco-modo details[open]") !== null;
+});
 
 // ao abrir: a página, e o relógio pedido (index.php?r=3) ou o cadastro de um novo (index.php?novo=1) no painel
 recarregarHoje().then(function () {

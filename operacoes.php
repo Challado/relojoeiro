@@ -2559,6 +2559,10 @@ function op_config($acao, $d)
         if (array_key_exists("fuso", $d) && trim((string)$d["fuso"]) !== "" && fuso_valido($d["fuso"]) === null) {
             $erros[] = t("Fuso horário desconhecido: use um nome como America/Sao_Paulo ou Europe/Lisbon (a lista da Configuração), ou vazio para o do sistema.");
         }
+        if (array_key_exists("atualizar_segundos", $d) && trim((string)$d["atualizar_segundos"]) !== ""
+            && (!ctype_digit(trim((string)$d["atualizar_segundos"])) || (int)$d["atualizar_segundos"] > 86400)) {
+            $erros[] = t("Intervalo de atualização: de 1 a 86400 segundos, ou 0 (as páginas não se atualizam sozinhas); vazio: 60.");
+        }
         if (array_key_exists("semana_inicio", $d) && !in_array((string)$d["semana_inicio"], ["", "segunda", "domingo"], true)) {
             $erros[] = t("A semana começa na segunda ou no domingo (vazio: segunda).");
         }
@@ -2569,7 +2573,7 @@ function op_config($acao, $d)
             if (array_key_exists("url_sistema", $d) && usuario_master()) {
                 sis_set("url_sistema", trim((string)$d["url_sistema"]));
             }
-            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina", "hora_relogio", "semana_inicio"] as $k) {
+            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina", "hora_relogio", "semana_inicio", "atualizar_segundos"] as $k) {
                 if (array_key_exists($k, $d)) {
                     cfg_set($k, trim((string)$d[$k]));
                 }

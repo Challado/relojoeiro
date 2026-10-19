@@ -273,6 +273,7 @@ function api(parametros) {
 }
 
 // Grava pela API: dados é um FormData ou um objeto; devolve {ok, mensagem, erros, ...}
+var GRAVANDO = 0;
 function enviar(dados) {
   var corpo = dados;
   if (!(dados instanceof FormData)) {
@@ -281,7 +282,16 @@ function enviar(dados) {
       corpo.append(k, dados[k]);
     });
   }
-  return fetch("api.php", { method: "POST", body: corpo, credentials: "same-origin" }).then(tratarResposta);
+  // as gravações em andamento (o atualizarSozinho espera elas acabarem)
+  GRAVANDO++;
+  var fim = function (x) {
+    GRAVANDO--;
+    return x;
+  };
+  return fetch("api.php", { method: "POST", body: corpo, credentials: "same-origin" }).then(tratarResposta).then(fim, function (e) {
+    fim();
+    throw e;
+  });
 }
 
 // O texto de uma resposta de gravação: a mensagem, ou os erros
@@ -725,6 +735,10 @@ function verComo(login) {
 }
 var contaPronta = document.querySelector("[data-menu-conta]") ? api({recurso: "conta", parte: "menu"}).then(function (m) {
   CONTA_MENU = m;
+  // o intervalo do atualizar sozinho (a Configuração da coleção)
+  if (typeof m.atualizar_segundos === "number") {
+    ATUALIZAR_SEGUNDOS = m.atualizar_segundos;
+  }
   if (seguirIdiomaPadrao(m.idioma_padrao)) {
     return m;
   }
@@ -773,3 +787,57 @@ window.addEventListener("beforeinstallprompt", function (e) {
   INSTALAR_APP = e;
   document.dispatchEvent(new CustomEvent("app-instalavel"));
 });
+
+// Atualizar sozinho: a página passa a função que lê tudo de novo da API (a carga, a autonomia, os avisos, os contadores e
+// o relógio do dia são calculados na hora do pedido) e ela roda de ATUALIZAR_SEGUNDOS em ATUALIZAR_SEGUNDOS (a Configuração,
+// que vem com o menu: de 1 a 86400; 0, não roda) com a aba à mostra, e na hora em que a aba volta a aparecer. Nunca por
+// cima de quem está mexendo: com um campo de texto em foco, um formulário de gravação com algo mudado e não gravado, uma
+// gravação em andamento, ou o que a página disser (ocupada); a vez fica para a próxima volta. A rolagem fica onde estava
+// (menos se a pessoa rolou enquanto a página lia).
+var ATUALIZAR_SEGUNDOS = 60;
+var MEXEU_NA_ROLAGEM = 0;
+document.addEventListener("input", marcarMexido, true);
+document.addEventListener("change", marcarMexido, true);
+["wheel", "touchmove", "keydown", "mousedown"].forEach(function (ev) {
+  document.addEventListener(ev, function () { MEXEU_NA_ROLAGEM = Date.now(); }, {capture: true, passive: true});
+});
+function marcarMexido(ev) {
+  var f = ev.target && ev.target.closest ? ev.target.closest("form[data-recurso]") : null;
+  if (f) {
+    f.setAttribute("data-mexido", "");
+  }
+}
+function paginaOcupada() {
+  var a = document.activeElement;
+  var texto = a && a.matches && (a.matches("textarea, [contenteditable], input:not([type]), input[type=text], input[type=search], input[type=number], input[type=date], input[type=datetime-local], input[type=time], input[type=email], input[type=password], input[type=url]")
+    || (a.matches("select") && a.closest("form[data-recurso]")));
+  return Boolean(texto) || GRAVANDO > 0 || document.querySelector("form[data-mexido], dialog[open]") !== null;
+}
+function atualizarSozinho(ler, ocupada) {
+  var ultima = Date.now();
+  var lendo = false;
+  var tentar = function () {
+    var s = ATUALIZAR_SEGUNDOS;
+    if (!(s > 0) || document.hidden || lendo || Date.now() - ultima < s * 1000 - 200 || paginaOcupada() || (ocupada && ocupada())) {
+      return;
+    }
+    lendo = true;
+    var comeco = Date.now();
+    var posicao = posicaoAtualDaPagina();
+    Promise.resolve().then(ler).then(function () {
+      return MEXEU_NA_ROLAGEM > comeco ? null : restaurarPosicaoDaGravacao(posicao);
+    }).catch(function () {}).then(function () {
+      ultima = Date.now();
+      lendo = false;
+    });
+  };
+  // a volta: no ritmo do intervalo (até 5 s entre uma olhada e outra, para pegar a mudança do intervalo e a aba que volta)
+  var laco = function () {
+    tentar();
+    var s = ATUALIZAR_SEGUNDOS;
+    setTimeout(laco, s > 0 ? Math.min(s * 1000, 5000) : 5000);
+  };
+  setTimeout(laco, 1000);
+  document.addEventListener("visibilitychange", tentar);
+  window.addEventListener("focus", tentar);
+}

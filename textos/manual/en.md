@@ -1,4 +1,4 @@
-<!-- origem: 10f15890ea6861dee0ce83582e3603f50e2d00e5 -->
+<!-- origem: 4c907a65d62e84d19c7cad74815a0c378cb0a1ea -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -959,6 +959,7 @@ each line.
 | **Copy of the documents in the database (applies to every watch)** (`documentos_copia`) | for the whole collection: **All files** (`todos`), **No file** (`nenhum`) or empty (*Individual (on the watch or the file)*). It is the first of the three levels of the copy (see [The watch's documents](#os-documentos-do-relógio)). Default: empty. |
 | **System address** (`url_sistema`) | the address that the `{link}` placeholder puts in the messages and in the calendar, and the one of the links in the e-mails, the ICS and the Outlook return. It belongs to the whole system: only the master changes it. Default: empty (the address the page was opened from). |
 | **Next days: show up to** (`proximos_por_pagina`) and **Plan: show up to** (`plano_por_pagina`) | how many days the **Next days** on the Today page and the **Day by day** on the Plan page show at a time (from 1 to 366). Beyond that, the page navigator appears below: **<** (previous), the numbers (the first, the last and up to two on each side of the current one, with … in the gaps) and **>** (next); resting the mouse on it, the tip says *Previous*, *Next* or *Page N*. Default: 7 and 31. |
+| **Page refresh interval** (`atualizar_segundos`) | how often, in seconds, **Today** (with the watch open in the panel), the **Watch page**, the **Plan**, the **Totals** and the **History** read everything again by themselves, without reloading: from 1 to 86400; **0** turns it off; empty, 60. Negative or above that, Settings refuses it. See [The pages refresh by themselves](#as-páginas-se-atualizam-sozinhas). |
 | **Time zone (whoever has not chosen another in My account)** (`fuso`) | the collection's time zone: that of whoever has not chosen their own in **My account**, and that of its cron, messages and calendars (see [The time zone](#o-fuso-horário)). Empty: the system's (the `FUSO` of `config.php`). |
 | **Exact time clock** (`hora_relogio`) | the dial of the **Exact time** page: *Analog and digital (side by side)* (the default), *Analog*, *Digital* or *Ana-digi (the digital display inside the analog one)*. |
 | **Default language** (`idioma`) | the collection's language: the one of the screens for whoever hasn't chosen their own (in the menu selector or in **My account**; see [The languages](#os-idiomas)) and the one of the messages and calendars without a language of their own: Portuguese, English, Chinese, Hindi, Spanish or French. Default: the one of whoever created the collection. |
@@ -1134,6 +1135,17 @@ comes in here by its name.
 | **Users** (`usuarios.php`, master only) | The accounts panel: each one with what it has and the actions (view as, make official, extend, block, edit, change the password, transfer a collection, give access, delete) and creating an account. |
 | **Create account** (`cadastro.php`, without login) | The open sign-up: the new account (with a collection, or asking for access), the invitation that arrived by e-mail and **Forgot my password**. |
 | **Help** (`ajuda.php`) | This guide inside the system: the central idea, how it works, each watch's record field by field, the charge alerts, the screens and the frequently asked questions (the same sections of the README, read from it; the API returns the same text in `recurso=manual`). |
+
+### The pages refresh by themselves {#as-páginas-se-atualizam-sozinhas}
+
+**Today** (with the watch open in the panel), the **Watch page**, the **Plan**, the **Totals** and the **History** read
+everything again by themselves, without reloading, at the **Page refresh interval** of Settings (in seconds: from 1 to
+86400; 0 turns it off; default 60): the charge that keeps dropping, the autonomy, the last reading, the alerts, the
+counters ("2h 10min ago", "in 3d"), the watch of the day, the totals. All the values of the page come together from the
+API, and the whole page is rebuilt: nothing is left half updated. Only with the tab visible (coming back to it, it refreshes
+right away), without moving you on the page, and never on top of someone who is working: with a text field in focus,
+something changed and not saved in a form, a write in progress or, on Today, the rotation mode box open, it waits for the
+next round.
 
 ### The languages {#os-idiomas}
 

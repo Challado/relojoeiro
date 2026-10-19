@@ -33,6 +33,12 @@ document.addEventListener("DOMContentLoaded", function () { api({recurso: "hoje"
   if (id > 0) {
     abrirNoPainel(id);
   }
+  // a cada minuto, sozinha (api.js): o painel lido de novo (a carga, a autonomia, os avisos...)
+  atualizarSozinho(function () {
+    var aberto = document.querySelector("#detalhe .detalhe[data-id]");
+    var rid = aberto ? parseInt(aberto.getAttribute("data-id"), 10) : 0;
+    return rid > 0 ? abrirNoPainel(rid) : null;
+  });
 }); });
 </script>
 <?php rodape(["api.js", "foto.js", "painel.js"]); ?>
