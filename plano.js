@@ -74,9 +74,10 @@ function montarPlano() {
   res += el("footer", {"class": "cartao-config apagar-plano", "id": "apagar"}, el("h2", {}, t("Apagar a programação")) + formApagarPeriodo(d.hoje) + formApagarTudo());
 
   var main = document.getElementById("plano");
-  main.innerHTML = res;
-  document.getElementById("f-dias").addEventListener("change", function () { filtro.dias = this.value; filtro.pagina = 1; recarregarPlano(); });
-  document.getElementById("f-relogio").addEventListener("change", function () { filtro.relogio = this.value; filtro.pagina = 1; recarregarPlano(); });
+  porHtml(main, res);
+  // onchange (não addEventListener): a página se remonta sem trocar os elementos (porHtml), e o ouvinte não se repete
+  document.getElementById("f-dias").onchange = function () { filtro.dias = this.value; filtro.pagina = 1; recarregarPlano(); };
+  document.getElementById("f-relogio").onchange = function () { filtro.relogio = this.value; filtro.pagina = 1; recarregarPlano(); };
 }
 
 function recarregarPlano() {

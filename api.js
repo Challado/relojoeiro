@@ -788,6 +788,97 @@ window.addEventListener("beforeinstallprompt", function (e) {
   document.dispatchEvent(new CustomEvent("app-instalavel"));
 });
 
+// Pôr o HTML novo num bloco sem piscar: em vez de trocar o conteúdo inteiro (innerHTML), compara o novo com o que está na
+// tela e mexe só no que mudou: um texto, um atributo, uma linha que entrou ou saiu. O que não mudou fica como está (a foto
+// não é baixada nem desenhada de novo, a linha não pisca). As linhas e os blocos com data-id (ou id) são achados pela
+// chave, mesmo que a ordem tenha mudado. Os campos de formulário ficam com o valor do HTML novo (as páginas só se
+// atualizam sozinhas sem nada mexido, paginaOcupada). Bloco vazio: o innerHTML de sempre.
+function porHtml(alvo, html) {
+  if (!alvo.firstChild) {
+    alvo.innerHTML = html;
+    return;
+  }
+  var molde = document.createElement("template");
+  molde.innerHTML = html;
+  morfarFilhos(alvo, molde.content);
+}
+function chaveDoNo(n) {
+  if (n.nodeType !== 1) {
+    return null;
+  }
+  var k = n.getAttribute("data-id");
+  return k !== null ? n.tagName + "#" + k : (n.id ? n.tagName + "@" + n.id : null);
+}
+function morfarFilhos(velho, novo) {
+  var porChave = {};
+  Array.prototype.forEach.call(velho.childNodes, function (c) {
+    var k = chaveDoNo(c);
+    if (k !== null) {
+      porChave[k] = c;
+    }
+  });
+  var cursor = velho.firstChild;
+  Array.prototype.slice.call(novo.childNodes).forEach(function (n) {
+    var k = chaveDoNo(n);
+    var achado = null;
+    if (k !== null && porChave[k]) {
+      achado = porChave[k];
+      delete porChave[k];
+    } else if (k === null && cursor && chaveDoNo(cursor) === null && cursor.nodeType === n.nodeType && (n.nodeType !== 1 || cursor.tagName === n.tagName)) {
+      achado = cursor;
+    }
+    if (achado === null) {
+      velho.insertBefore(n, cursor);
+      return;
+    }
+    if (achado === cursor) {
+      cursor = cursor.nextSibling;
+    } else {
+      velho.insertBefore(achado, cursor);
+    }
+    morfarNo(achado, n);
+  });
+  while (cursor) {
+    var depois = cursor.nextSibling;
+    velho.removeChild(cursor);
+    cursor = depois;
+  }
+}
+function morfarNo(a, b) {
+  if (a.nodeType !== 1) {
+    if (a.nodeValue !== b.nodeValue) {
+      a.nodeValue = b.nodeValue;
+    }
+    return;
+  }
+  Array.prototype.slice.call(a.attributes).forEach(function (at) {
+    if (!b.hasAttribute(at.name)) {
+      a.removeAttribute(at.name);
+    }
+  });
+  Array.prototype.forEach.call(b.attributes, function (at) {
+    if (a.getAttribute(at.name) !== at.value) {
+      a.setAttribute(at.name, at.value);
+    }
+  });
+  // o valor de agora dos campos (a propriedade, não só o atributo)
+  if (a.tagName === "INPUT" && a.type !== "file") {
+    if (a.type === "checkbox" || a.type === "radio") {
+      a.checked = b.hasAttribute("checked");
+    } else if (a.value !== (b.getAttribute("value") || "")) {
+      a.value = b.getAttribute("value") || "";
+    }
+  } else if (a.tagName === "OPTION") {
+    a.selected = b.hasAttribute("selected");
+  } else if (a.tagName === "TEXTAREA") {
+    if (a.value !== b.textContent) {
+      a.value = b.textContent;
+    }
+    return;
+  }
+  morfarFilhos(a, b);
+}
+
 // Atualizar sozinho: a página passa a função que lê tudo de novo da API (a carga, a autonomia, os avisos, os contadores e
 // o relógio do dia são calculados na hora do pedido) e ela roda de ATUALIZAR_SEGUNDOS em ATUALIZAR_SEGUNDOS (a Configuração,
 // que vem com o menu: de 1 a 86400; 0, não roda) com a aba à mostra, e na hora em que a aba volta a aparecer. Nunca por

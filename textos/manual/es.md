@@ -1,4 +1,4 @@
-<!-- origem: 4c907a65d62e84d19c7cad74815a0c378cb0a1ea -->
+<!-- origem: 7cf2879948e58207c7800a3f3f7ec582adc7b5a9 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1134,8 +1134,9 @@ que usted registre entra aquí con su nombre.
 **Hoy** (con el reloj abierto en el panel), la **Ficha**, el **Plan**, los **Totales** y el **Historial** leen todo de
 nuevo solos, sin recargar, en el **Intervalo de actualización de las páginas** de la Configuración (en segundos: de 1 a
 86400; 0 lo apaga; por defecto 60): la carga que va bajando, la autonomía, la última lectura, los avisos, los contadores
-("hace 2h 10min", "en 3d"), el reloj del día, los totales. Todos los valores de la página vienen juntos de la API, y la
-página entera se vuelve a montar: nada queda a medio actualizar. Solo con la pestaña visible (al volver a ella, se
+("hace 2h 10min", "en 3d"), el reloj del día, los totales. Todos los valores de la página vienen juntos de la API, y
+nada queda a medio actualizar; pero la pantalla no parpadea: solo cambia lo que cambió (un número, un texto, una fila
+que entró o salió), y las fotos no se descargan ni se dibujan de nuevo (la foto solo cambia cuando alguien la cambia). Solo con la pestaña visible (al volver a ella, se
 actualiza enseguida), sin moverle de su lugar en la página y nunca encima de quien está trabajando: con un campo de texto
 con el foco, algo cambiado y sin guardar en un formulario, una grabación en curso o, en Hoy, el cuadro del modo de
 rotación abierto, queda para la próxima vuelta.

@@ -175,7 +175,7 @@
           });
           linhaTotais.querySelectorAll("td[data-coluna]").forEach(function (td) {
             // só a primeira tabelinha de cada coluna se completa até a maior: os totais delas ficam na mesma linha
-            td.innerHTML = d.totais.filter(function (x) { return x.coluna === td.getAttribute("data-coluna"); }).map(function (x, i) { return miniTotal(x, i === 0 ? maior : 0); }).join("");
+            porHtml(td, d.totais.filter(function (x) { return x.coluna === td.getAttribute("data-coluna"); }).map(function (x, i) { return miniTotal(x, i === 0 ? maior : 0); }).join(""));
           });
           linhaTotais.hidden = d.totais.length === 0;
           var recado = document.getElementById("totais-recado");
@@ -332,7 +332,7 @@
     }
 
     window.trocarLinhasDaTabela = function (html) {
-      corpo.innerHTML = html;
+      porHtml(corpo, html);
       original = Array.prototype.slice.call(corpo.querySelectorAll("tr[data-id]"));
       tabela.querySelectorAll("[data-filtro]").forEach(function (campo) {
         campo.value = st.f[campo.dataset.filtro] || "";

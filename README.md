@@ -1190,8 +1190,9 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 A **Hoje** (com o relógio aberto no painel), a **Ficha**, o **Plano**, os **Totais** e o **Histórico** leem tudo de novo
 sozinhos, sem recarregar, no **Intervalo de atualização das páginas** da Configuração (em segundos: de 1 a 86400; 0
 desliga; padrão 60): a carga que vai caindo, a autonomia, a última leitura, os avisos, os contadores ("há 2h 10min",
-"em 3d"), o relógio do dia, os totais. Todos os valores da página vêm juntos da API, e a página inteira se remonta: nada
-fica meio atualizado. Só com a aba à mostra (voltando a ela, atualiza na hora), sem sair do lugar na página e nunca por
+"em 3d"), o relógio do dia, os totais. Todos os valores da página vêm juntos da API, e nada fica meio atualizado; mas a
+tela não pisca: só muda o que mudou (um número, um texto, uma linha que entrou ou saiu), e as fotos não são baixadas nem
+desenhadas de novo (a foto só muda quando alguém troca a foto). Só com a aba à mostra (voltando a ela, atualiza na hora), sem sair do lugar na página e nunca por
 cima de quem está mexendo: com um campo de texto em foco, algo mudado e não gravado num formulário, uma gravação em
 andamento ou, na Hoje, o quadro do modo de rodízio aberto, fica para a próxima volta.
 

@@ -1,4 +1,4 @@
-<!-- origem: 4c907a65d62e84d19c7cad74815a0c378cb0a1ea -->
+<!-- origem: 7cf2879948e58207c7800a3f3f7ec582adc7b5a9 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1168,7 +1168,9 @@ que vous enregistrez apparaît ici sous son nom.
 relisent tout seuls, sans recharger, selon l'**Intervalle de mise à jour des pages** de la Configuration (en secondes : de 1
 à 86400 ; 0 désactive ; par défaut 60) : la charge qui baisse, l'autonomie, la dernière lecture, les alertes, les compteurs
 (« il y a 2h 10min », « dans 3j »), la montre du jour, les totaux. Toutes les valeurs de la page arrivent ensemble de l'API,
-et la page entière est reconstruite : rien ne reste à moitié à jour. Seulement avec l'onglet visible (en y revenant, la mise
+et rien ne reste à moitié à jour ; mais l'écran ne clignote pas : seul ce qui a changé change (un nombre, un texte,
+une ligne arrivée ou partie), et les photos ne sont ni retéléchargées ni redessinées (la photo ne change que lorsque
+quelqu'un la change). Seulement avec l'onglet visible (en y revenant, la mise
 à jour se fait tout de suite), sans vous déplacer dans la page, et jamais par-dessus quelqu'un qui travaille : avec un champ
 de texte actif, quelque chose de modifié et non enregistré dans un formulaire, un enregistrement en cours ou, sur
 Aujourd'hui, le cadre du mode de rotation ouvert, cela attend le tour suivant.

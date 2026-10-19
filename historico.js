@@ -94,7 +94,7 @@ function carregarHistorico() {
         nav += el("a", {"href": link({por: "todos", pagina: 1})}, t("ver tudo"));
         res += el("nav", {"class": "paginas", "aria-label": t("Páginas")}, nav);
       }
-      main.innerHTML = res;
+      porHtml(main, res);
       document.title = t("Histórico — {1}", {1: r.relogio});
     }
   }).catch(function (e) {

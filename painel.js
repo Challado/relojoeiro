@@ -634,7 +634,7 @@ function abrirNoPainel(id) {
       res += quadro(t("Histórico"), hist, r.linha_do_tempo.length > 0 ? el("a", {"class": "botao leve", "href": "historico.php?id=" + id, "target": "_blank", "rel": "noopener"}, t("Abrir o histórico completo")) : "",
         "largo historico");
     }
-    painel.innerHTML = el("div", {"class": "detalhe", "data-id": id}, res);
+    porHtml(painel, el("div", {"class": "detalhe", "data-id": id}, res));
 
     document.querySelectorAll("form.cadastro").forEach(mostrarCamposDoTipo);
     document.querySelectorAll("form.marcar").forEach(aplicarEscolhas);

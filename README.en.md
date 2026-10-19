@@ -1222,7 +1222,9 @@ comes in here by its name.
 everything again by themselves, without reloading, at the **Page refresh interval** of Settings (in seconds: from 1 to
 86400; 0 turns it off; default 60): the charge that keeps dropping, the autonomy, the last reading, the alerts, the
 counters ("2h 10min ago", "in 3d"), the watch of the day, the totals. All the values of the page come together from the
-API, and the whole page is rebuilt: nothing is left half updated. Only with the tab visible (coming back to it, it refreshes
+API, and nothing is left half updated; but the
+screen does not flicker: only what changed changes (a number, a text, a row that came in or went out), and the photos are
+not downloaded or drawn again (the photo only changes when someone changes the photo). Only with the tab visible (coming back to it, it refreshes
 right away), without moving you on the page, and never on top of someone who is working: with a text field in focus,
 something changed and not saved in a form, a write in progress or, on Today, the rotation mode box open, it waits for the
 next round.

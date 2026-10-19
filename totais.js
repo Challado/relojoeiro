@@ -32,10 +32,10 @@ function carregarTotais() {
   return api(pedido).then(function (d) {
     var conta = d.relogios === d.todos ? t("Contando os {1} relógios da coleção.", {1: d.todos})
       : t("Contando {1} de {2} relógios (o filtro da página Hoje). {3}", {1: d.relogios, 2: d.todos, 3: el("a", {"href": "totais.php"}, t("Contar todos"))});
-    document.getElementById("totais").innerHTML = el("h1", {}, t("Totais"))
+    porHtml(document.getElementById("totais"), el("h1", {}, t("Totais"))
       + el("p", {"class": "nota"}, conta + " " + el("a", {"href": "cadastros.php?aba=totais"}, t("Montar os totais")))
       + (d.totais.length === 0 ? el("p", {}, t("Nenhum total na página: crie os seus na aba Totais dos Cadastros, com \"Exibir na página de totais\" marcado."))
-        : el("div", {"class": "grade-totais"}, d.totais.map(quadroTotal).join("")));
+        : el("div", {"class": "grade-totais"}, d.totais.map(quadroTotal).join(""))));
   }).catch(function (e) {
     document.getElementById("totais").innerHTML = el("p", {"class": "acao"}, t("Não consegui ler os totais: {1}", {1: h(e.message)}));
   });

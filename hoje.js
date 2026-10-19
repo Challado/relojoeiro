@@ -43,7 +43,7 @@ document.addEventListener("click", function (ev) {
     paginaProximos = parseInt(b.getAttribute("data-proximos-pagina"), 10);
     api({recurso: "proximos", pagina: paginaProximos}).then(function (px) {
       paginaProximos = px.pagina;
-      document.getElementById("proximos-lista").innerHTML = proximosHtml(px);
+      porHtml(document.getElementById("proximos-lista"), proximosHtml(px));
     }).catch(function (e) {
       mostrarRecado(t("Não consegui ler os próximos dias: {1}", {1: e.message}));
     });
@@ -140,7 +140,7 @@ function recarregarHoje() {
     }
     var quadro = document.getElementById("bloco-hoje");
     quadro.classList.toggle("com-relogio", item !== null);
-    quadro.innerHTML = res;
+    porHtml(quadro, res);
 
     // "Hoje é dia de": uma tabela, como a dos próximos dias; cada aviso com o relógio (abre o painel), o motivo e o botão do
     // lançamento que o resolve, como a API diz (leitura: com o valor; sessão: "Pôs ...", ou "Tirou ..." se ela já está aberta)
@@ -162,13 +162,13 @@ function recarregarHoje() {
           + el("td", {"class": "botao-aviso"}, botao));
       }).join(""))));
     }
-    document.getElementById("bloco-avisos").innerHTML = res;
+    porHtml(document.getElementById("bloco-avisos"), res);
 
     // "Próximos dias": o plano, com o lembrete de cada dia e, embaixo do relógio, o motivo da escolha
     // cada dia com o "trocar por…" (o relógio escolhido à mão fica marcado), e o link para o plano inteiro
     // de "Mostrar até" em "Mostrar até" dias (a Configuração), com as páginas embaixo
-    document.getElementById("bloco-proximos").innerHTML = el("h2", {}, t("Próximos dias {1}", {1: el("a", {"class": "ver-plano", "href": "plano.php"}, t("ver o plano inteiro →"))}))
-      + el("div", {"id": "proximos-lista"}, proximosHtml(d.proximos));
+    porHtml(document.getElementById("bloco-proximos"), el("h2", {}, t("Próximos dias {1}", {1: el("a", {"class": "ver-plano", "href": "plano.php"}, t("ver o plano inteiro →"))}))
+      + el("div", {"id": "proximos-lista"}, proximosHtml(d.proximos)));
 
     // O quadro "Modo de rodízio": fechado mostra o modo atual; aberto, escolhe o modo (Aplicar só marca), o critério de
     // escolha e a garantia de rodízio, e sorteia de novo (a partir de amanhã, inclusive hoje ou, com mais de uma semana no
@@ -255,8 +255,8 @@ function recarregarHoje() {
         + el("button", {"type": "button", "id": "manual-ok"}, t("OK")))
       + el("p", {"class": "acao", "id": "manual-recado", "hidden": true}, "")
       + el("div", {"id": "manual-dias"}, ""));
-    document.getElementById("bloco-modo").innerHTML = el("details", {}, el("summary", {}, el("span", {"class": "rotulo"}, t("Modo de rodízio")) + " " + el("strong", {}, h(modo ? modo.nome : t("nenhum"))) + " "
-      + el("span", {"class": "nota"}, "· " + (modo ? h(modo.tipo_texto) + " · " : "") + (escala ? t("pela maior nota") : (modo && modo.tipo === "personalizado" ? t("pelo roteiro") : h(modo ? SELECOES[modo.selecao][0] : "")))) + " " + el("span", {"class": "editar"}, "editar")) + formModo + formManual + formSorteio + formApagarPeriodo(d.data) + formApagarTudo());
+    porHtml(document.getElementById("bloco-modo"), el("details", {}, el("summary", {}, el("span", {"class": "rotulo"}, t("Modo de rodízio")) + " " + el("strong", {}, h(modo ? modo.nome : t("nenhum"))) + " "
+      + el("span", {"class": "nota"}, "· " + (modo ? h(modo.tipo_texto) + " · " : "") + (escala ? t("pela maior nota") : (modo && modo.tipo === "personalizado" ? t("pelo roteiro") : h(modo ? SELECOES[modo.selecao][0] : "")))) + " " + el("span", {"class": "editar"}, "editar")) + formModo + formManual + formSorteio + formApagarPeriodo(d.data) + formApagarTudo()));
     mostrarModo();
 
     // A tabela dos relógios: disponíveis primeiro (o de hoje, depois os com aviso), indisponíveis no fim; na tela, a ordem e os
