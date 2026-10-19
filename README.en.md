@@ -1017,7 +1017,8 @@ each line.
 | **Exact time clock** (`hora_relogio`) | the dial of the **Exact time** page: *Analog and digital (side by side)* (the default), *Analog*, *Digital* or *Ana-digi (the digital display inside the analog one)*. |
 | **Default language** (`idioma`) | the collection's language: the one of the screens for whoever hasn't chosen their own (in the menu selector or in **My account**; see [The languages](#the-languages)) and the one of the messages and calendars without a language of their own: Portuguese, English, Chinese, Hindi, Spanish or French. Default: the one of whoever created the collection. |
 | **Open the watch on the Today page** (`painel_modo`) | **Next to the list** (`lado`): the clicked watch opens in a panel on the right, and the list stays in view. **In a large floating window** (`flutuante`): it opens in the middle of the screen, over the page, with the background darkened and the boxes side by side; it closes with the ×, Esc or a click outside. On the phone, both cover the whole screen. Default: next to the list. |
-| **Highlight at the top of the Today page** (`destaque_hoje`) | **The watch of the day** (`dia`): the big box at the top of the Today page shows the watch of the day (the plan's), with until when it stays and why it came up. **The watch on the wrist now** (`pulso`): it shows the watch that is on the wrist, even if it isn't the day's (with *on the wrist now* and, below, *Watch of the day: …*, which opens the day's); with more than one on the wrist, the last one put on; with none on the wrist, the day's stays, with the notice *No watch on the wrist now*. The data below (state, charge, the Put on/Took off the wrist button, the photo) are those of the highlighted watch. Default: the watch of the day. |
+| **Highlight at the top of the Today page** (`destaque_hoje`) | **The watch of the day** (`dia`): the big box at the top of the Today page shows the watch of the day (the plan's), with until when it stays and why it came up. **The watch on the wrist now** (`pulso`): it shows the watch that is on the wrist, even if it isn't the day's (with *on the wrist now* and, below, *Watch of the day: …*, which opens the day's); with more than one on the wrist, the last one put on; with none on the wrist, the day's stays, with the notice *No watch on the wrist now*. The data below (state, charge, the Put on/Took off the wrist button, the photo) are those of the highlighted watch. Right under the date, a small reminder says what is there: the tag *Highlight: the watch of the day* (or *…on the wrist*), which leads to Settings, and the sentence of why (*The watch of the day, on the wrist now.*, *On the wrist now; the watch of the day is another.*...). Default: the watch of the day. |
+| **Little watch in the bar** (`relojinho_modo`) | the little watch in the corner of the bar and in the tab has 24 models, one for each hour of the day. **Normal** (`hora`): each hour has its own (at 0 the Classic, at 16 the Digital, at 23 the Futuristic). **Random** (`aleatorio`): each hour draws one of the 24, and it may repeat. **Random without repetition** (`sem_repeticao`): the 24 shuffled, each appears once in the day. The draw is the day's: the same on every page and device, and another the next day. Default: normal. |
 
 On the page, each option is on one line, with the name on the left and the field on the right, in boxes (Daily routine,
 Limits and calculations, Screens, Cron, Draws and the summary **Alerts, reminders and messages**, with the way to the **Alerts** page); the **Save settings** button is on a bar fixed at the
@@ -1138,9 +1139,15 @@ Register some watches in **Today → New watch**. To build the schedule without 
 
 **The little watch.** At the left corner of the menu bar, on every screen, there is a small watch with the right time, seconds
 ticking: a click on it opens the **Right time**, and resting the mouse shows the model and the time. The same watch is the
-browser tab's icon (the *favicon*), redone every minute: the tab shows the time, even with the page hidden. There are twelve
-models drawn on the fly (Classic, Diver, Pilot, Field, Smartwatch, Tank, Blue sports, Chronograph, Skeleton, Solar, Vintage
-and GMT), and the full hour picks which: at 7 and at 19 the Pilot, at 10 and at 22 the Solar...
+browser tab's icon (the *favicon*), redone every minute: the tab shows the time, even with the page hidden. There are 24
+kinds of watch, all different, drawn on the fly, one for each hour of the day: Classic, Diver, Pilot, Field, Smartwatch,
+Tank, Blue sports, Chronograph, Skeleton, Solar, Vintage, GMT, Octagonal (luxury sports), Moon phase (today's moon),
+Calendar (with the date and a milanese strap), Bauhaus, Digital (the liquid crystal display), Pocket (with bow and chain,
+Roman numerals), Regulator (the hours in a subdial), Single hand, Tourbillon (the turning cage on show), Jewel (diamond
+bezel), Wood and, the 24th, the **Futuristic**: no strap, an ionic loop of light with the ions running, and on the dial
+an AI's little face that blinks, with the date, the time and the "voice" bars. Which one shows at each hour is the
+**Little watch in the bar** setting: normal (each hour has its own: at 0 the Classic, at 16 the Digital, at 23 the
+Futuristic), random (one drawn every hour, may repeat) or random without repetition (the 24 shuffled, each once a day).
 
 ![The collection: each watch with the type, the state, the charge, the last time on the wrist, the next service, what to do and whether it is idle](docs/telas/colecao.png)
 
@@ -2081,7 +2088,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | [`operacoes.php`](operacoes.php) | the rules of each write: validations and messages |
 | [`cron.php`](cron.php) | the plan, the day's session, the morning and evening rounds, the events, the calendar and the documents' upkeep |
 | `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | the pages (only the skeleton; `cadastro.php` is the public one) |
-| `relojinho.js` | the little watch of the bar and the favicon: twelve watches drawn in canvas, with the right time |
+| `relojinho.js` | the little watch of the bar and the favicon: 24 kinds of watch drawn in canvas, with the right time, one per hour (in order, drawn or without repeating) |
 | `sw.js`, `offline.html`, `icone-*.png` | the app on the phone: the *service worker* (served by `recurso=sw`, with the version in front: the screens' cache, the no-connection page and the Web Push), the **No connection** page and the icons (192, 512 and 180 px) |
 | `ajuda.php` | the help page: only the skeleton; `ajuda.js` asks the API for the text (`recurso=manual`: the README's sections for users, already in HTML, converted in `lib.php`) |
 | [`pagina.php`](pagina.php) | the top with the menu and the end of the pages ; `topo()` checks the login before sending anything (`pagina_login()`) |

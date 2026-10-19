@@ -4120,6 +4120,41 @@ function atualizar_segundos()
     return $v === "" || !ctype_digit($v) || (int)$v > 86400 ? 60 : (int)$v;
 }
 
+// O reloginho da barra e do favicon (relojinho.js, 24 modelos): o modo da Configuração (relojinho_modo): hora (o padrão:
+// cada hora do dia tem o seu modelo, da 0 à 23), aleatorio (cada hora sorteia um dos 24, podendo repetir) ou sem_repeticao
+// (os 24 embaralhados: cada um aparece uma vez por dia)
+const RELOJINHO_MODELOS = 24;
+function relojinho_modo()
+{
+    $m = (string)cfg("relojinho_modo");
+    return in_array($m, ["aleatorio", "sem_repeticao"], true) ? $m : "hora";
+}
+
+// O modelo do reloginho em cada hora de um dia (24 números, de 0 a RELOJINHO_MODELOS - 1, a hora 0 primeiro). O sorteio sai
+// de um resumo (sha1) da coleção, do dia e da hora: o mesmo o dia inteiro, em toda página e aparelho, e outro no dia seguinte
+function relojinho_ordem($dia, $modo = null)
+{
+    $modo = $modo ?? relojinho_modo();
+    $ordem = range(0, 23);
+    $sorteio = function ($x) use ($dia) {
+        return sha1("relojinho|" . (int)colecao_atual() . "|" . $dia . "|" . $x);
+    };
+    if ($modo === "aleatorio") {
+        foreach ($ordem as $h => $_) {
+            $ordem[$h] = (int)(hexdec(substr($sorteio("h" . $h), 0, 7)) % RELOJINHO_MODELOS);
+        }
+    } elseif ($modo === "sem_repeticao") {
+        $chave = [];
+        foreach ($ordem as $i) {
+            $chave[$i] = $sorteio("m" . $i);
+        }
+        usort($ordem, function ($a, $b) use ($chave) { return strcmp($chave[$a], $chave[$b]); });
+    } else {
+        $ordem = array_map(function ($h) { return $h % RELOJINHO_MODELOS; }, $ordem);
+    }
+    return $ordem;
+}
+
 function proximos_por_pagina()
 {
     $n = (int)cfg("proximos_por_pagina");

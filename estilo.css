@@ -64,6 +64,9 @@ h2 { font-size: 1.1rem; margin: 0 0 .75rem; }
   border: 1px solid var(--aco-escuro);
 }
 .hoje .data { color: var(--cinza); margin: 0; }
+.hoje .destaque-lembrete { color: var(--cinza); font-size: .85rem; margin: .2rem 0 .1rem; }
+.hoje .destaque-lembrete .etiqueta { display: inline-block; max-width: 100%; text-decoration: none; margin-right: .3rem; }
+.hoje .destaque-lembrete .etiqueta:hover { color: var(--safira); border-color: var(--safira); }
 .periodo { display: flex; align-items: center; gap: .75rem; color: var(--cinza); margin: 0 0 1rem; }
 
 /* janela de data, como a de um mostrador */

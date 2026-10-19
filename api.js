@@ -739,6 +739,10 @@ var contaPronta = document.querySelector("[data-menu-conta]") ? api({recurso: "c
   if (typeof m.atualizar_segundos === "number") {
     ATUALIZAR_SEGUNDOS = m.atualizar_segundos;
   }
+  // o reloginho da barra: o modelo de cada hora do dia, no modo da Configuração (o relojinho.js desenha)
+  if (m.relojinho && m.relojinho.ordem) {
+    window.RELOJINHO_ORDEM = m.relojinho.ordem;
+  }
   if (seguirIdiomaPadrao(m.idioma_padrao)) {
     return m;
   }

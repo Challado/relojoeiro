@@ -24,6 +24,8 @@ $saida = ["config" => (object)$valores_c,
     "fuso_sistema" => fuso_sistema(), "fusos" => fusos_lista(),
     "mostrar_ate" => ["proximos" => proximos_por_pagina(), "plano" => plano_por_pagina()],
     "atualizar_segundos" => atualizar_segundos(),
+    // o reloginho da barra: o modo (hora, aleatorio ou sem_repeticao) e quantos modelos ele tem
+    "relojinho" => ["modo" => relojinho_modo(), "modelos" => RELOJINHO_MODELOS],
     "aleatorio" => ["fontes" => ["RANDOM.ORG", "ANU QRNG", t("gerador seguro do PHP (random_int)")], "ultimo_lote" => sis("aleatorio_ultima") !== "" ? sis("aleatorio_ultima") : null,
         "fora_desde" => sis("aleatorio_fora") !== "" ? date("Y-m-d H:i:s", (int)sis("aleatorio_fora")) : null], "sol_fim" => isset(lancamento_tipos()["sol"]) && lancamento_tipos()["sol"]["fecha_as"] !== null ? substr(lancamento_tipos()["sol"]["fecha_as"], 0, 5) : "",
     // o que é do sistema inteiro (só o master muda): o endereço do sistema

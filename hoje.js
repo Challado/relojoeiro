@@ -75,7 +75,10 @@ function recarregarHoje() {
       }
     });
     var dz = d.destaque;
-    var texto = el("p", {"class": "data"}, DIAS_SEMANA[diaDaSemana(d.data)] + ", " + dataBr(d.data) + " · " + h(d.modo ? d.modo.nome : t("sem modo")));
+    var texto = el("p", {"class": "data"}, DIAS_SEMANA[diaDaSemana(d.data)] + ", " + dataBr(d.data) + " · " + h(d.modo ? d.modo.nome : t("sem modo")))
+      // o lembrete do que está no destaque (a Configuração: o relógio do dia ou o que está no pulso), com a frase da API
+      + el("p", {"class": "destaque-lembrete"}, el("a", {"class": "etiqueta", "href": "configuracao.php", "title": t("Muda na Configuração: Destaque no alto da página Hoje")},
+        dz.mostra === "pulso" ? t("Destaque: o relógio no pulso") : t("Destaque: o relógio do dia")) + " " + h(dz.texto));
     if (item && dz.e === "pulso") {
       // no pulso agora, e não é o do dia: o nome dele, "no pulso agora", e embaixo o relógio do dia
       texto += el("h1", {}, el("a", {"href": "index.php?r=" + item.id, "data-abrir": item.id}, h(item.nome)))
@@ -87,7 +90,6 @@ function recarregarHoje() {
         + el("p", {"class": "periodo"}, el("span", {"class": "janela"}, h(d.dia.ate)) + " " + h(item && item.tipo !== "—" ? item.tipo : ""))
         + (d.dia.acao ? el("p", {"class": "acao"}, h(d.dia.acao)) : "")
         + (d.dia.motivo ? el("p", {"class": "motivo"}, el("strong", {}, t("Por que ele: ")) + h(d.dia.motivo)) : "")
-        + (dz.mostra === "pulso" && !dz.no_pulso ? el("p", {"class": "nota"}, h(dz.texto)) : "")
         // sem relógio hoje: o dia fica livre e a sessão do rodízio termina agora
         + el("form", {"data-recurso": "rodizio", "class": "sem-relogio", "onsubmit": "return confirm(" + JSON.stringify(t("Hoje sem relógio? O dia fica livre: o {1} sai do rodízio de hoje (se já está no pulso pelo rodízio, sai agora; o tempo que ficou conta). Os outros dias não mudam.", {1: d.dia.relogio})) + ")"},
           el("input", {"type": "hidden", "name": "acao", "value": "sem_relogio"}) + el("button", {"class": "leve discreto"}, t("Sem relógio hoje")));

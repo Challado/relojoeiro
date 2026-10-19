@@ -247,6 +247,12 @@ function recarregarConfig(aplicadas, manterPosicao) {
             + el("option", {"value": "flutuante", "selected": cfg("painel_modo") === "flutuante"}, t("Numa janela flutuante, grande"))))
           + parCampo(t("Destaque no alto da página Hoje"), el("select", {"name": "destaque_hoje"}, el("option", {"value": "dia", "selected": cfg("destaque_hoje") !== "pulso"}, t("O relógio do dia"))
             + el("option", {"value": "pulso", "selected": cfg("destaque_hoje") === "pulso"}, t("O relógio no pulso agora"))))
+          // o reloginho da barra (e da aba): um modelo por hora do dia, na ordem, sorteado ou sorteado sem repetir
+          + parCampo(t("Reloginho da barra (um dos {1} modelos por hora)", {1: d.relojinho.modelos}), el("select", {"name": "relojinho_modo"},
+            [["hora", t("Normal: cada hora tem o seu")], ["aleatorio", t("Aleatório: sorteia um a cada hora (pode repetir)")],
+              ["sem_repeticao", t("Aleatório sem repetição: os 24 embaralhados, cada um uma vez por dia")]].map(function (o) {
+              return el("option", {"value": o[0], "selected": d.relojinho.modo === o[0]}, o[1]);
+            }).join("")), "largo")
           + parCampo(t("Próximos dias (página Hoje): mostrar até (dias por página)"), numero("proximos_por_pagina", String(d.mostrar_ate.proximos), "1", "366"))
           + parCampo(t("Plano: mostrar até (dias por página)"), numero("plano_por_pagina", String(d.mostrar_ate.plano), "1", "366"))
           + parCampo(t("Intervalo de atualização das páginas (segundos; 0 desliga)"), numero("atualizar_segundos", String(d.atualizar_segundos), "0", "86400"))

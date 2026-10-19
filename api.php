@@ -730,6 +730,8 @@
  *                                    grande por cima da página); vazio: lado
  *     config.destaque_hoje           o destaque no alto da página Hoje: dia (o relógio do dia, o do plano) ou pulso (o relógio no pulso
  *                                    agora; sem nenhum no pulso, o do dia); vazio: dia
+ *     config.relojinho_modo          o reloginho da barra e da aba: hora (cada hora do dia tem o seu modelo), aleatorio (um sorteado a cada
+ *                                    hora, podendo repetir) ou sem_repeticao (os 24 embaralhados, cada um uma vez por dia); vazio: hora
  *     config.proximos_por_pagina     o "Mostrar até" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)
  *     config.plano_por_pagina        o "Mostrar até" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)
  *     config.atualizar_segundos      de quantos em quantos segundos as páginas (Hoje com o painel, Ficha, Plano, Totais e Histórico) leem
@@ -2050,6 +2052,9 @@
  *     mostrar_ate                    quantos dias as listas mostram por página (o "Mostrar até" da Configuração, já com o padrão)
  *     atualizar_segundos             o intervalo de atualização das páginas, já com o padrão (a Configuração, atualizar_segundos: 1 a
  *                                    86400; 0, não se atualizam sozinhas; padrão 60)
+ *     relojinho                      o reloginho da barra e da aba (relojinho.js)
+ *     relojinho.modo                 o modo, já com o padrão: hora, aleatorio ou sem_repeticao (a Configuração relojinho_modo)
+ *     relojinho.modelos              quantos modelos o reloginho tem (24, um para cada hora do dia)
  *     mostrar_ate.proximos           os Próximos dias da página Hoje (proximos_por_pagina; padrão 7)
  *     mostrar_ate.plano              o dia a dia da página Plano (plano_por_pagina; padrão 31)
  *     aleatorio                      de onde vêm os números dos sorteios: RANDOM.ORG (ruído atmosférico); fora do ar, ANU QRNG (quântico);
@@ -2117,6 +2122,8 @@
  *                                    grande por cima da página); vazio: lado
  *     config.destaque_hoje           o destaque no alto da página Hoje: dia (o relógio do dia, o do plano) ou pulso (o relógio no pulso
  *                                    agora; sem nenhum no pulso, o do dia); vazio: dia
+ *     config.relojinho_modo          o reloginho da barra e da aba: hora (cada hora do dia tem o seu modelo), aleatorio (um sorteado a cada
+ *                                    hora, podendo repetir) ou sem_repeticao (os 24 embaralhados, cada um uma vez por dia); vazio: hora
  *     config.proximos_por_pagina     o "Mostrar até" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)
  *     config.plano_por_pagina        o "Mostrar até" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)
  *     config.atualizar_segundos      de quantos em quantos segundos as páginas (Hoje com o painel, Ficha, Plano, Totais e Histórico) leem
@@ -3338,6 +3345,13 @@
  *     master                         (parte=menu) verdadeiro ou falso: quem pede é o master (ou o master vendo como outro)
  *     atualizar_segundos             (parte=menu) de quantos em quantos segundos a página lê tudo de novo sozinha (a Configuração da
  *                                    coleção; 0: não lê; sem coleção, 0)
+ *     relojinho                      (parte=menu) o reloginho da barra e da aba, no modo da Configuração da coleção (sem coleção, null: o
+ *                                    modelo da hora)
+ *     relojinho.modo                 hora, aleatorio ou sem_repeticao (a Configuração relojinho_modo)
+ *     relojinho.dia                  o dia da ordem (AAAA-MM-DD, no fuso da coleção): o sorteio muda a cada dia
+ *     relojinho.ordem[]              o modelo de cada hora do dia, a hora 0 primeiro (24 números de 0 a 23; no modo hora, a própria hora;
+ *                                    no aleatório, um sorteio por hora, podendo repetir; sem repetição, os 24 embaralhados). O sorteio sai
+ *                                    de um resumo da coleção, do dia e da hora: o mesmo o dia inteiro, em toda página e aparelho
  *     idioma_padrao                  (parte=menu) o idioma de quem não escolheu no menu: o da conta (Minha conta), senão o da coleção (a
  *                                    Configuração), senão o da instalação; null: nenhum (vale o do navegador). As páginas seguem este, que
  *                                    vem a cada abertura: o padrao do script do dicionário (recurso=textos&formato=js) fica em cache

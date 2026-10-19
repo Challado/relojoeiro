@@ -1,4 +1,4 @@
-<!-- origem: a34eb9a70975fe8e6339869f1f2eb338ca9e3233 -->
+<!-- origem: 1f5374a416e99c5c9bef4c3abab40ca4aadeccf7 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -600,7 +600,7 @@ v2 से v8 इससे पहले के हैं और सिर्फ�
 | [`operacoes.php`](operacoes.php) | हर लेखन के नियम: जाँच और संदेश |
 | [`cron.php`](cron.php) | योजना, दिन का सत्र, सुबह और शाम के दौर, इवेंट, कैलेंडर और दस्तावेज़ों की देखभाल |
 | `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | पृष्ठ (केवल ढाँचा; `cadastro.php` सार्वजनिक है) |
-| `relojinho.js` | बार और फ़ेविकॉन की छोटी घड़ी: canvas में बनी सही समय वाली बारह घड़ियाँ |
+| `relojinho.js` | बार और फ़ेविकॉन की छोटी घड़ी: canvas में बनी सही समय वाली 24 तरह की घड़ियाँ, हर घंटे एक (क्रम से, चुनी हुई या बिना दोहराव) |
 | `sw.js`, `offline.html`, `icone-*.png` | फ़ोन पर ऐप: *service worker* (`recurso=sw` से, संस्करण आगे लगाकर: स्क्रीनों का कैश, बिना-कनेक्शन पेज और Web Push), **कनेक्शन नहीं है** पेज और आइकन (192, 512 और 180 px) |
 | `ajuda.php` | सहायता पेज: सिर्फ़ ढाँचा; `ajuda.js` API से टेक्स्ट माँगता है (`recurso=manual`: README के उपयोगकर्ताओं वाले हिस्से, `lib.php` में पहले से HTML में बदले हुए) |
 | [`pagina.php`](pagina.php) | मेनू वाला ऊपरी हिस्सा और पेजों का अंत ; `topo()` कुछ भी भेजने से पहले लॉगिन जाँचता है (`pagina_login()`) |

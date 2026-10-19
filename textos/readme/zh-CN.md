@@ -1,4 +1,4 @@
-<!-- origem: a34eb9a70975fe8e6339869f1f2eb338ca9e3233 -->
+<!-- origem: 1f5374a416e99c5c9bef4c3abab40ca4aadeccf7 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -454,7 +454,7 @@ php criar_usuario.php 你的登录名
 | [`operacoes.php`](operacoes.php) | 每次写入的规则：校验和消息 |
 | [`cron.php`](cron.php) | 计划、当天的时段、早上和晚上两轮、事件、日历以及文档的维护 |
 | `index.php`、`plano.php`、`desejos.php`、`estatisticas.php`、`hora.php`、`acessorios.php`、`galeria.php`、`passaporte.php`、`ficha.php`、`documentos.php`、`historico.php`、`avisos.php`、`modos.php`、`configuracao.php`、`destinos.php`、`agendas.php`、`criterios.php`、`grupos.php`、`cadastros.php`、`execucoes.php`、`conta.php`、`aprovacoes.php`、`usuarios.php`、`cadastro.php` | 页面（只有骨架；`cadastro.php` 是公开页面） |
-| `relojinho.js` | 菜单栏和网站图标上的小手表：十二块用 canvas 绘制、显示准确时间的手表 |
+| `relojinho.js` | 菜单栏和网站图标上的小手表：24 种用 canvas 绘制、显示准确时间的手表，每小时一块（按顺序、抽取或不重复） |
 | `sw.js`、`offline.html`、`icone-*.png` | 手机上的应用：*service worker*（由 `recurso=sw` 提供，前面带版本号：界面缓存、无连接页面和 Web Push）、**没有网络连接**页面和图标（192、512 和 180 px） |
 | `ajuda.php` | 帮助页面：只有骨架；`ajuda.js` 向 API 请求文本（`recurso=manual`：README 中面向用户的章节，已在 `lib.php` 中转换为 HTML） |
 | [`pagina.php`](pagina.php) | 页面顶部的菜单和页面结尾；`topo()` 在输出任何内容之前检查登录（`pagina_login()`） |

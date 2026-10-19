@@ -394,6 +394,15 @@ escrever(["recurso" => "config", "acao" => "salvar", "atualizar_segundos" => "0"
 ler("menu sem atualizar sozinho", ["recurso" => "conta", "parte" => "menu"]);
 escrever(["recurso" => "config", "acao" => "salvar", "atualizar_segundos" => "30"]);
 ler("menu atualizando de 30 em 30 s", ["recurso" => "conta", "parte" => "menu"]);
+// o reloginho da barra: um modo desconhecido não; aleatório (um sorteio por hora, pode repetir) e sem repetição (os 24
+// embaralhados); a ordem do dia vai no menu, a mesma em todo banco (sai da coleção e do dia), e volta ao normal
+escrever(["recurso" => "config", "acao" => "salvar", "relojinho_modo" => "girando"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "relojinho_modo" => "aleatorio"]);
+ler("menu com o reloginho aleatório", ["recurso" => "conta", "parte" => "menu"]);
+escrever(["recurso" => "config", "acao" => "salvar", "relojinho_modo" => "sem_repeticao"]);
+ler("menu com o reloginho sem repetição", ["recurso" => "conta", "parte" => "menu"]);
+ler("config com o reloginho sem repetição", ["recurso" => "config"]);
+escrever(["recurso" => "config", "acao" => "salvar", "relojinho_modo" => ""]);
 escrever(["recurso" => "modos", "acao" => "ativar", "id" => $semana2]);
 escrever(["recurso" => "rodizio", "acao" => "resortear"]);
 // o Sortear de novo com dias à mão e livres no caminho: sem sobrescrever, eles ficam (e a mensagem conta); com

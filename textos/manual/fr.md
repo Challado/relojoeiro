@@ -1,4 +1,4 @@
-<!-- origem: 8c392f1af4a8ee2d5c9b2f816b9e12713b3a73e7 -->
+<!-- origem: df967a17f9a9b3910f27473e93de625537db13b6 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -989,7 +989,8 @@ collection vient à la fin de chaque ligne.
 | **Horloge de l'Heure exacte** (`hora_relogio`) | le cadran de la page **Heure exacte** : *Analogique et numérique (côte à côte)* (par défaut), *Analogique*, *Numérique* ou *Ana-digi (l'affichage numérique dans l'analogique)*. |
 | **Langue par défaut** (`idioma`) | la langue de la collection : celle des écrans pour qui n'a pas choisi la sienne (dans le sélecteur du menu ou dans **Mon compte** ; voir [Les langues](#os-idiomas)) et celle des messages et des agendas sans langue propre : portugais, anglais, chinois, hindi, espagnol ou français. Par défaut : celle de qui a créé la collection. |
 | **Ouvrir la montre sur la page Aujourd'hui** (`painel_modo`) | **À côté de la liste** (`lado`) : la montre cliquée s'ouvre dans un panneau à droite, et la liste reste visible. **Dans une grande fenêtre flottante** (`flutuante`) : elle s'ouvre au milieu de l'écran, par-dessus la page, avec le fond assombri et les cadres côte à côte ; elle se ferme avec le ×, Échap ou un clic à l'extérieur. Sur le téléphone, les deux occupent tout l'écran. Par défaut : à côté de la liste. |
-| **Mise en avant en haut de la page Aujourd'hui** (`destaque_hoje`) | **La montre du jour** (`dia`) : le grand cadre en haut de la page Aujourd'hui montre la montre du jour (celle du plan), avec jusqu'à quand elle reste et pourquoi elle est sortie. **La montre au poignet maintenant** (`pulso`) : il montre la montre qui est au poignet, même si ce n'est pas celle du jour (avec *au poignet maintenant* et, en dessous, *Montre du jour : …*, qui ouvre celle du jour) ; avec plus d'une au poignet, la dernière mise ; sans aucune au poignet, celle du jour reste, avec l'avis *Aucune montre au poignet maintenant*. Les données en dessous (état, charge, le bouton Mise au poignet/Retirée du poignet, la photo) sont celles de la montre mise en avant. Par défaut : la montre du jour. |
+| **Mise en avant en haut de la page Aujourd'hui** (`destaque_hoje`) | **La montre du jour** (`dia`) : le grand cadre en haut de la page Aujourd'hui montre la montre du jour (celle du plan), avec jusqu'à quand elle reste et pourquoi elle est sortie. **La montre au poignet maintenant** (`pulso`) : il montre la montre qui est au poignet, même si ce n'est pas celle du jour (avec *au poignet maintenant* et, en dessous, *Montre du jour : …*, qui ouvre celle du jour) ; avec plus d'une au poignet, la dernière mise ; sans aucune au poignet, celle du jour reste, avec l'avis *Aucune montre au poignet maintenant*. Les données en dessous (état, charge, le bouton Mise au poignet/Retirée du poignet, la photo) sont celles de la montre mise en avant. Juste sous la date, un petit rappel dit ce qu'il y a là : l'étiquette *Mise en avant : la montre du jour* (ou *…au poignet*), qui mène à la Configuration, et la phrase du pourquoi (*La montre du jour, au poignet maintenant.*, *Au poignet maintenant ; la montre du jour est une autre.*...). Par défaut : la montre du jour. |
+| **Petite montre de la barre** (`relojinho_modo`) | la petite montre du coin de la barre et de l'onglet a 24 modèles, un pour chaque heure du jour. **Normal** (`hora`) : chaque heure a le sien (à 0 h la Classique, à 16 h la Numérique, à 23 h la Futuriste). **Aléatoire** (`aleatorio`) : chaque heure en tire un des 24, et il peut se répéter. **Aléatoire sans répétition** (`sem_repeticao`) : les 24 mélangés, chacun apparaît une fois dans la journée. Le tirage est celui du jour : le même sur chaque page et appareil, et un autre le lendemain. Par défaut : normal. |
 
 Sur la page, chaque option tient sur une ligne, avec le nom à gauche et le champ à droite, dans des cadres (Routine du jour,
 Limites et calculs, Écrans, Cron, Tirages et le résumé **Alertes, rappels et messages**, avec le chemin vers la page **Alertes**) ; le bouton **Enregistrer la configuration** est sur une barre
@@ -1081,9 +1082,16 @@ jours.
 **La petite montre.** Dans le coin gauche de la barre du menu, sur chaque écran, il y a une petite montre à l'heure juste,
 les secondes qui tournent : un clic dessus ouvre l'**Heure juste**, et en posant la souris apparaissent le modèle et l'heure.
 La même montre est l'icône de l'onglet du navigateur (le *favicon*), refaite chaque minute : l'onglet montre l'heure, même la
-page cachée. Douze modèles dessinés à la volée (Classique, Plongeuse, Aviateur, Militaire, Smartwatch, Tank, Sport bleu,
-Chronographe, Squelette, Solaire, Vintage et GMT), et l'heure pleine choisit lequel : à 7 h et à 19 h l'Aviateur, à 10 h et à
-22 h la Solaire...
+page cachée. 24 types de montre, tous différents, dessinés à la volée, un pour chaque heure du jour : Classique, Plongeuse,
+Aviateur, Militaire, Smartwatch, Tank, Sport bleu, Chronographe, Squelette, Solaire, Vintage, GMT, Octogonale (sport de
+luxe), Phases de lune (la lune du jour), Calendrier (avec la date et un bracelet milanais), Bauhaus, Numérique (l'écran à
+cristaux liquides), De poche (avec bélière et chaîne, chiffres romains), Régulateur (les heures dans un compteur), Aiguille
+unique, Tourbillon (la cage qui tourne, visible), Bijou (lunette de brillants), Bois et, la 24e, la **Futuriste** : sans
+bracelet, une boucle ionique de lumière où courent les ions, et sur le cadran le petit visage d'une IA qui cligne des
+yeux, avec la date, l'heure et les barres de la « voix ». Laquelle apparaît à chaque heure, c'est la Configuration
+**Petite montre de la barre** : normal (chaque heure a la sienne : à 0 h la Classique, à 16 h la Numérique, à 23 h la
+Futuriste), aléatoire (une tirée chaque heure, peut se répéter) ou aléatoire sans répétition (les 24 mélangées, chacune
+une fois par jour).
 
 ![La collection : chaque montre avec le type, l'état, la charge, la dernière fois au poignet, le prochain entretien, quoi faire et si elle est délaissée](docs/telas/colecao.png)
 

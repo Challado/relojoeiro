@@ -1008,7 +1008,8 @@ colección nueva va al final de cada línea.
 | **Reloj de la Hora exacta** (`hora_relogio`) | la esfera de la página **Hora exacta**: *Analógico y digital (uno al lado del otro)* (el predeterminado), *Analógico*, *Digital* o *Anadigi (el visor digital dentro del analógico)*. |
 | **Idioma predeterminado** (`idioma`) | el idioma de la colección: el de las pantallas para quien no eligió el suyo (en el selector del menú o en **Mi cuenta**; vea [Los idiomas](#los-idiomas)) y el de los mensajes y los calendarios sin idioma propio: portugués, inglés, chino, hindi, español o francés. Por defecto: el de quien creó la colección. |
 | **Abrir el reloj en la página Hoy** (`painel_modo`) | **Al lado de la lista** (`lado`): el reloj pulsado se abre en un panel a la derecha, y la lista sigue a la vista. **En una ventana flotante, grande** (`flutuante`): se abre en el centro de la pantalla, sobre la página, con el fondo oscurecido y los cuadros lado a lado; se cierra con la ×, Esc o un clic fuera. En el móvil, los dos ocupan toda la pantalla. Predeterminado: al lado de la lista. |
-| **Destacado arriba de la página Hoy** (`destaque_hoje`) | **El reloj del día** (`dia`): el cuadro grande de arriba de la página Hoy muestra el reloj del día (el del plan), con hasta cuándo se queda y por qué salió. **El reloj en la muñeca ahora** (`pulso`): muestra el reloj que está en la muñeca, aunque no sea el del día (con *en la muñeca ahora* y, debajo, *Reloj del día: …*, que abre el del día); con más de uno en la muñeca, el último puesto; sin ninguno en la muñeca, se queda el del día, con el aviso *Ningún reloj en la muñeca ahora*. Los datos de debajo (estado, carga, el botón Me lo puse/Me lo quité, la foto) son los del reloj destacado. Predeterminado: el reloj del día. |
+| **Destacado arriba de la página Hoy** (`destaque_hoje`) | **El reloj del día** (`dia`): el cuadro grande de arriba de la página Hoy muestra el reloj del día (el del plan), con hasta cuándo se queda y por qué salió. **El reloj en la muñeca ahora** (`pulso`): muestra el reloj que está en la muñeca, aunque no sea el del día (con *en la muñeca ahora* y, debajo, *Reloj del día: …*, que abre el del día); con más de uno en la muñeca, el último puesto; sin ninguno en la muñeca, se queda el del día, con el aviso *Ningún reloj en la muñeca ahora*. Los datos de debajo (estado, carga, el botón Me lo puse/Me lo quité, la foto) son los del reloj destacado. Justo debajo de la fecha, un recordatorio pequeño dice qué hay ahí: la etiqueta *Destacado: el reloj del día* (o *…en la muñeca*), que lleva a la Configuración, y la frase del porqué (*El reloj del día, en la muñeca ahora.*, *En la muñeca ahora; el reloj del día es otro.*...). Predeterminado: el reloj del día. |
+| **Relojito de la barra** (`relojinho_modo`) | el relojito de la esquina de la barra y de la pestaña tiene 24 modelos, uno para cada hora del día. **Normal** (`hora`): cada hora tiene el suyo (a las 0 el Clásico, a las 16 el Digital, a las 23 el Futurista). **Aleatorio** (`aleatorio`): cada hora sortea uno de los 24, y puede repetir. **Aleatorio sin repetición** (`sem_repeticao`): los 24 barajados, cada uno aparece una vez en el día. El sorteo es del día: el mismo en toda página y aparato, y otro al día siguiente. Predeterminado: normal. |
 
 En la página, cada opción está en una línea, con el nombre a la izquierda y el campo a la derecha, en recuadros (Rutina del
 día, Límites y cálculos, Pantallas, Cron, Sorteos y el resumen **Avisos, recordatorios y mensajes**, con el camino a la página **Avisos**); el botón **Guardar configuración** está en una barra
@@ -1131,9 +1132,15 @@ Registre algunos relojes en **Hoy → Nuevo reloj**. Para armar la escala sin es
 **El relojito.** En la esquina izquierda de la barra del menú, en toda pantalla, hay un reloj pequeño con la hora exacta, los
 segundos andando: un clic en él abre la **Hora exacta**, y al detener el ratón aparece el modelo y la hora. El mismo reloj es
 el ícono de la pestaña del navegador (el *favicon*), rehecho cada minuto: la pestaña muestra la hora, aun con la página
-escondida. Son doce modelos dibujados al momento (Clásico, Buceador, Aviador, Militar, Smartwatch, Tanque, Deportivo azul,
-Cronógrafo, Esqueleto, Solar, Vintage y GMT), y la hora en punto elige cuál: a las 7 y a las 19 el Aviador, a las 10 y a las
-22 el Solar...
+escondida. Son 24 tipos de reloj, todos distintos, dibujados al momento, uno para cada hora del día: Clásico, Buceador,
+Aviador, Militar, Smartwatch, Tanque, Deportivo azul, Cronógrafo, Esqueleto, Solar, Vintage, GMT, Octogonal (deportivo de
+lujo), Fases lunares (la luna de hoy), Calendario (con la fecha y pulsera milanesa), Bauhaus, Digital (la pantalla de
+cristal líquido), De bolsillo (con argolla y cadena, numerales romanos), Regulador (las horas en una subesfera), Aguja
+única, Tourbillon (la jaula girando a la vista), Joya (bisel de brillantes), Madera y, el 24º, el **Futurista**: sin
+pulsera, un lazo iónico de luz con los iones corriendo, y en la esfera la carita de una IA que parpadea, con la fecha, la
+hora y las barritas de la "voz". Cuál aparece en cada hora es la Configuración **Relojito de la barra**: normal (cada
+hora tiene el suyo: a las 0 el Clásico, a las 16 el Digital, a las 23 el Futurista), aleatorio (uno sorteado cada hora,
+puede repetir) o aleatorio sin repetición (los 24 barajados, cada uno una vez al día).
 
 ![La colección: cada reloj con el tipo, el estado, la carga, la última vez en la muñeca, el próximo mantenimiento, qué hacer y si está arrinconado](docs/telas/colecao.png)
 
@@ -2091,7 +2098,7 @@ ciclos mayores, que ningún `CHECK` alcanza) y las de los vínculos opcionales.
 | [`operacoes.php`](operacoes.php) | las reglas de cada escritura: validaciones y mensajes |
 | [`cron.php`](cron.php) | el plan, la sesión del día, las vueltas de la mañana y de la noche, los eventos, el calendario y el mantenimiento de los documentos |
 | `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | las páginas (solo el esqueleto; `cadastro.php` es la pública) |
-| `relojinho.js` | el relojito de la barra y del favicon: doce relojes dibujados en canvas, con la hora exacta |
+| `relojinho.js` | el relojito de la barra y del favicon: 24 tipos de reloj dibujados en canvas, con la hora exacta, uno por hora (en orden, sorteado o sin repetir) |
 | `sw.js`, `offline.html`, `icone-*.png` | la aplicación en el celular: el *service worker* (entregado por `recurso=sw`, con la versión delante: el caché de las pantallas, la página sin conexión y el Web Push), la página **Sin conexión** y los íconos (192, 512 y 180 px) |
 | `ajuda.php` | la página de ayuda: solo el esqueleto; el `ajuda.js` pide el texto a la API (`recurso=manual`: las secciones del README para quien usa, ya en HTML, convertidas en el `lib.php`) |
 | [`pagina.php`](pagina.php) | la parte de arriba con el menú y el final de las páginas ; `topo()` comprueba el login antes de enviar nada (`pagina_login()`) |
