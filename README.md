@@ -710,7 +710,7 @@ O banco cresce o tamanho dos arquivos copiados: um vídeo de 500 MB são 500 MB 
 arquivo diz onde está (só na pasta, na pasta e no banco, fora da pasta) e quem pediu a cópia (a Configuração, o relógio ou o
 próprio arquivo).
 
-**A limpeza, pelo cron (a cada minuto):** o arquivo que sumiu da pasta volta do banco; o documento que tem a cópia pedida e
+**A limpeza, pelo cron (a cada minuto):** o arquivo que sumiu da pasta, ou ficou cortado (com um tamanho diferente do que foi enviado: uma cópia ou uma sincronização que parou no meio), volta do banco; o documento que tem a cópia pedida e
 ainda não a tem no banco (o relógio acabou de ser marcado, ou uma cópia que falhou) ganha, e o que tem a cópia e ninguém mais
 pede perde (se o arquivo da pasta confere), até 256 MB por minuto; a pasta de um relógio que não
 existe mais (`r<número>`) é apagada inteira; e o arquivo da pasta que não é de nenhum documento é apagado (só depois de 10

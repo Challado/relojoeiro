@@ -12,8 +12,8 @@ $doc = linha("SELECT * FROM documento WHERE id = ?", [(int)($_REQUEST["id"] ?? 0
 $pasta = documentos_pasta();
 $mini = ($_REQUEST["mini"] ?? "") === "1" && $doc && $doc["miniatura"] !== null && $doc["miniatura"] !== "";
 $caminho = $doc && $pasta !== null ? $pasta . "/" . ($mini ? $doc["miniatura"] : $doc["arquivo"]) : null;
-// o arquivo sumiu da pasta: volta da cópia no banco antes de sair
-if ($caminho !== null && strpos($caminho, "..") === false && !is_file($caminho)) {
+// o arquivo sumiu da pasta, ou está cortado (documento_inteiro; a miniatura só se sumiu): volta da cópia no banco antes de sair
+if ($caminho !== null && strpos($caminho, "..") === false && ($mini ? !is_file($caminho) : !documento_inteiro($doc, $caminho))) {
     documento_restaurar($doc);
 }
 if ($caminho !== null && strpos($caminho, "..") === false && is_file($caminho)) {

@@ -1,4 +1,4 @@
-<!-- origem: f3b7fe2d28ca829b18879025e1b3293f0289ef04 -->
+<!-- origem: 0aeea17b9291fa5d98b975163cfc8fe5fbba2e2d -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -685,7 +685,7 @@ The database grows by the size of the copied files: a 500 MB video is 500 MB mor
 page, each file says where it is (only in the folder, in the folder and in the database, outside the folder) and who asked for
 the copy (the Settings, the watch or the file itself).
 
-**The cleanup, by the cron (every minute):** a file that disappeared from the folder comes back from the database; a document
+**The cleanup, by the cron (every minute):** a file that disappeared from the folder, or was cut short (with a size different from the one uploaded: a copy or a sync that stopped halfway), comes back from the database; a document
 that has the copy requested and doesn't yet have it in the database (the watch was just ticked, or a copy that failed) gets it,
 and one that has the copy and nobody asks for it anymore loses it (if the file in the folder matches), up to 256 MB per
 minute; the folder of a watch that no longer exists (`r<number>`) is deleted whole; and a file in the folder that belongs to no

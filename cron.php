@@ -107,7 +107,7 @@ try {
         foreach (contas_limpeza() as $l) {
             $log[] = $l;
         }
-        // os documentos: o arquivo que sumiu da pasta volta da cópia no banco; o que ainda não tem cópia ganha (até 256 MB por
+        // os documentos: o arquivo que sumiu da pasta, ou ficou cortado, volta da cópia no banco; o que ainda não tem cópia ganha (até 256 MB por
         // minuto); a pasta de um relógio que não existe mais e o arquivo que não é de nenhum documento saem. Os perdidos (sem
         // o arquivo e sem a cópia) entram no registro uma vez por dia, depois das 20h. O banco inteiro (todas as coleções)
         foreach (sem_escopo(function () use ($forcar) { return documentos_manutencao(256 * 1024 * 1024, $forcar || (date("H:i") >= "20:00" && substr(sis("documentos_diario"), 0, 10) !== date("Y-m-d"))); }) as $l) {

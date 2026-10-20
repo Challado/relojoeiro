@@ -1,4 +1,4 @@
-<!-- origem: f3b7fe2d28ca829b18879025e1b3293f0289ef04 -->
+<!-- origem: 0aeea17b9291fa5d98b975163cfc8fe5fbba2e2d -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -699,7 +699,7 @@ La base grossit de la taille des fichiers copiés : une vidéo de 500 Mo, c'est 
 sauvegarde. Sur la page, chaque fichier dit où il est (seulement dans le dossier, dans le dossier et dans la base, hors du
 dossier) et qui a demandé la copie (la Configuration, la montre ou le fichier lui-même).
 
-**Le nettoyage, par le cron (chaque minute) :** le fichier disparu du dossier revient de la base ; le document dont la copie
+**Le nettoyage, par le cron (chaque minute) :** le fichier disparu du dossier, ou tronqué (avec une taille différente de celle envoyée : une copie ou une synchronisation arrêtée en cours de route), revient de la base ; le document dont la copie
 est demandée et qui ne l'a pas encore dans la base (la montre vient d'être cochée, ou une copie qui a échoué) la reçoit, et
 celui qui a la copie que plus personne ne demande la perd (si le fichier du dossier correspond), jusqu'à 256 Mo par minute ;
 le dossier d'une montre qui n'existe plus (`r<numéro>`) est supprimé en entier ; et un fichier du dossier qui n'appartient à

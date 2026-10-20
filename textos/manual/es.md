@@ -1,4 +1,4 @@
-<!-- origem: f3b7fe2d28ca829b18879025e1b3293f0289ef04 -->
+<!-- origem: 0aeea17b9291fa5d98b975163cfc8fe5fbba2e2d -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -678,7 +678,7 @@ La base crece con el tamaño de los archivos copiados: un video de 500 MB son 50
 En la página, cada archivo dice dónde está (solo en la carpeta, en la carpeta y en la base, fuera de la carpeta) y quién pidió
 la copia (la Configuración, el reloj o el propio archivo).
 
-**La limpieza, por el cron (cada minuto):** el archivo que desapareció de la carpeta vuelve de la base; el documento que tiene
+**La limpieza, por el cron (cada minuto):** el archivo que desapareció de la carpeta, o quedó cortado (con un tamaño distinto del enviado: una copia o una sincronización que se detuvo a medias), vuelve de la base; el documento que tiene
 la copia pedida y todavía no la tiene en la base (el reloj recién marcado, o una copia que falló) la recibe, y el que tiene la
 copia y ya nadie la pide la pierde (si el archivo de la carpeta coincide), hasta 256 MB por minuto; la carpeta de un reloj que
 ya no existe (`r<número>`) se borra entera; y un archivo de la carpeta que no pertenece a ningún documento se borra (solo

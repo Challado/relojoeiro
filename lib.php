@@ -3975,6 +3975,14 @@ function documento_novo_arquivo($pasta, $rid, $nome)
     return $sub . "/" . bin2hex(random_bytes(12)) . ($ext !== "" ? "." . substr($ext, 0, 10) : "");
 }
 
+// O arquivo de um documento está inteiro na pasta: existe e tem o tamanho gravado no envio. O cortado (uma cópia ou uma
+// sincronização da pasta que parou no meio) não conta: volta da cópia no banco como o que sumiu
+function documento_inteiro($d, $caminho)
+{
+    clearstatcache(true, $caminho);
+    return is_file($caminho) && filesize($caminho) === (int)$d["tamanho"];
+}
+
 // Os dados de um documento para a API: a linha da tabela, com a família, os endereços e, no XML de uma NF-e, o resumo dela
 function documento_info($d, $com_nfe = true)
 {
@@ -3982,7 +3990,7 @@ function documento_info($d, $com_nfe = true)
     $res = ["id" => (int)$d["id"], "relogio_id" => (int)$d["relogio_id"], "categoria_id" => (int)$d["categoria_id"], "titulo" => $d["titulo"],
         "data" => $d["data"] === null ? null : substr((string)$d["data"], 0, 10), "descricao" => $d["descricao"], "nome" => $d["nome"], "tipo" => $d["tipo"],
         "familia" => $familia, "tamanho" => (int)$d["tamanho"], "miniatura" => $d["miniatura"] !== null && $d["miniatura"] !== "", "criado" => $d["criado"],
-        "url" => "api.php?recurso=documento&id=" . (int)$d["id"], "no_disco" => documentos_pasta() !== null && is_file(documentos_pasta() . "/" . $d["arquivo"]),
+        "url" => "api.php?recurso=documento&id=" . (int)$d["id"], "no_disco" => documentos_pasta() !== null && documento_inteiro($d, documentos_pasta() . "/" . $d["arquivo"]),
         "no_banco" => (int)($d["no_banco"] ?? 0) === 1, "copia_banco" => (int)($d["copia_banco"] ?? 0) === 1, "copia_por" => documento_copia_por($d), "nfe" => null];
     if ($com_nfe && $familia === "xml" && documentos_pasta() !== null) {
         $res["nfe"] = nfe_resumo(documentos_pasta() . "/" . $d["arquivo"]);
@@ -4437,7 +4445,7 @@ function documento_restaurar($d)
             @file_put_contents($mini, $m);
         }
     }
-    if (is_file($caminho)) {
+    if (documento_inteiro($d, $caminho)) {
         return true;
     }
     if ((int)$d["no_banco"] !== 1) {
@@ -4461,6 +4469,10 @@ function documento_restaurar($d)
     if ($d["hash"] !== null && hash_final($h) !== $d["hash"]) {
         @unlink($tmp);
         return false;
+    }
+    // a cópia confere: ela fica no lugar do cortado
+    if (is_file($caminho)) {
+        @unlink($caminho);
     }
     return @rename($tmp, $caminho);
 }
@@ -4492,13 +4504,13 @@ function registro_erro($texto)
 }
 
 // A manutenção dos documentos, que o cron roda a cada minuto. Devolve as linhas do registro (vazio: nada a fazer):
-// 1. o documento cujo arquivo sumiu da pasta volta do banco (a cópia de segurança);
+// 1. o documento cujo arquivo sumiu da pasta, ou ficou cortado (documento_inteiro), volta do banco (a cópia de segurança);
 // 2. o documento que tem a cópia pedida (documento_copia_por: o sistema, o relógio ou o próprio arquivo) e ainda não a tem
 //    no banco ganha (até $orcamento bytes por rodada, para não pesar); o que tem a cópia e ninguém mais pede perde (só se o
 //    arquivo da pasta confere com ela: documento_tirar_do_banco);
 // 3. a pasta de um relógio que não existe mais sai inteira (r<id>), e o arquivo que não é de nenhum documento sai (só os
 //    de mais de 10 minutos: um envio pode estar no meio); o documento de um relógio que não existe mais sai do banco.
-// Com $diario, conta também os documentos perdidos (sem o arquivo na pasta e sem a cópia no banco).
+// Com $diario, conta também os documentos perdidos (sem o arquivo inteiro na pasta e sem a cópia no banco).
 function documentos_manutencao($orcamento, $diario = false)
 {
     $log = [];
@@ -4522,7 +4534,7 @@ function documentos_manutencao($orcamento, $diario = false)
         if ($d["miniatura"] !== null && $d["miniatura"] !== "") {
             $usados[$d["miniatura"]] = true;
         }
-        $tem = is_file($pasta . "/" . $d["arquivo"]);
+        $tem = documento_inteiro($d, $pasta . "/" . $d["arquivo"]);
         $mini_falta = $d["miniatura"] !== null && $d["miniatura"] !== "" && !is_file($pasta . "/" . $d["miniatura"]);
         if (!$tem || $mini_falta) {
             if (documento_restaurar($d) && !$tem) {
@@ -4547,7 +4559,7 @@ function documentos_manutencao($orcamento, $diario = false)
         }
     }
     if (count($restaurados) > 0) {
-        $log[] = t("documentos: {1}{2} a partir do banco: {3}", [1 => count($restaurados), 2 => count($restaurados) === 1 ? t(" arquivo sumido da pasta, recriado") : t(" arquivos sumidos da pasta, recriados"), 3 => implode(", ", array_slice($restaurados, 0, 10))]);
+        $log[] = t("documentos: {1}{2} a partir do banco: {3}", [1 => count($restaurados), 2 => count($restaurados) === 1 ? t(" arquivo sumido ou cortado na pasta, recriado") : t(" arquivos sumidos ou cortados na pasta, recriados"), 3 => implode(", ", array_slice($restaurados, 0, 10))]);
     }
     if ($copiados > 0) {
         $log[] = t("documentos: {1}{2} para o banco", [1 => $copiados, 2 => $copiados === 1 ? t(" documento copiado") : t(" documentos copiados")]);
@@ -4559,7 +4571,7 @@ function documentos_manutencao($orcamento, $diario = false)
         $log[] = registro_erro(t("erro: a cópia no banco falhou: {1}", [1 => implode("; ", array_slice($falhas, 0, 5))]));
     }
     if ($diario && $perdidos > 0) {
-        $log[] = t("aviso: {1}{2} na pasta e sem a cópia no banco (perdidos: exclua-os na página Documentos)", [1 => $perdidos, 2 => $perdidos === 1 ? t(" documento sem o arquivo") : t(" documentos sem o arquivo")]);
+        $log[] = t("aviso: {1}{2} na pasta e sem a cópia no banco (perdidos: exclua-os na página Documentos)", [1 => $perdidos, 2 => $perdidos === 1 ? t(" documento sem o arquivo inteiro") : t(" documentos sem o arquivo inteiro")]);
     }
     // a pasta: as dos relógios que não existem mais, e os arquivos de nenhum documento
     $relogios = [];

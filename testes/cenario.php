@@ -715,6 +715,45 @@ escrever(["recurso" => "config", "acao" => "salvar", "documentos_copia" => "nenh
 ler("documentos copia nenhum", ["recurso" => "documentos", "relogio" => $rel["smart"]]);
 escrever(["recurso" => "config", "acao" => "salvar", "documentos_copia" => "alguns"], false);
 escrever(["recurso" => "config", "acao" => "salvar", "documentos_copia" => ""]);
+// um documento cortado na pasta (uma cópia ou uma sincronização da pasta que parou no meio) volta inteiro da cópia no banco:
+// ao ser pedido e na rodada do cron (documento_inteiro: o arquivo tem de ter o tamanho gravado no envio)
+$cat_livre = 0;
+foreach ((chamar("GET", ["recurso" => "documentos", "relogio" => $rel["smart"]])["json"]["categorias"] ?? []) as $c) {
+    if ($c["aceita"] === [] && $cat_livre === 0) {
+        $cat_livre = (int)$c["id"];
+    }
+}
+$inteiro = str_repeat("Relojoeiro: o documento inteiro, conferido pelo tamanho. ", 400);
+$doc_c = escrever(["recurso" => "documentos", "acao" => "enviar", "relogio_id" => $rel["smart"], "categoria_id" => $cat_livre, "titulo" => "Documento cortado",
+    "arquivo_nome" => "cortado.txt", "arquivo_base64" => base64_encode($inteiro), "copia_banco" => 1]);
+// corta o arquivo na pasta do relógio (a pasta dos documentos deste banco, a do config de teste) pela metade
+$cortar = function () use ($rel, $inteiro) {
+    $dir = getenv("RELOGIOS_TESTE_PASTA") . "/documentos_" . getenv("RELOGIOS_DB") . "/r" . $rel["smart"];
+    foreach (glob($dir . "/*.txt") ?: [] as $f) {
+        if ((string)file_get_contents($f) === $inteiro) {
+            file_put_contents($f, substr($inteiro, 0, intdiv(strlen($inteiro), 2)));
+            return $f;
+        }
+    }
+    return null;
+};
+$cortado = $cortar();
+if ($cortado === null) {
+    $falhas[] = "documento cortado: o arquivo não está na pasta do relógio";
+}
+ler("documentos com um cortado", ["recurso" => "documentos", "relogio" => $rel["smart"]]);
+$r_c = chamar("GET", ["recurso" => "documento", "id" => $doc_c]);
+$foto["leituras"]["documento cortado pedido"] = ["codigo" => $r_c["codigo"], "resposta" => $r_c["cru"]];
+if ($cortado !== null && ((string)@file_get_contents($cortado) !== $inteiro || ($r_c["cru"]["texto"] ?? "") !== $inteiro)) {
+    $falhas[] = "documento cortado: pedido, não voltou inteiro do banco";
+}
+ler("documentos depois do pedido", ["recurso" => "documentos", "relogio" => $rel["smart"]]);
+$cortado = $cortar();
+cron();
+if ($cortado !== null && (string)@file_get_contents($cortado) !== $inteiro) {
+    $falhas[] = "documento cortado: o cron não o recriou do banco";
+}
+escrever(["recurso" => "documentos", "acao" => "excluir", "id" => $doc_c, "confirmar" => 1]);
 escrever(["recurso" => "config", "acao" => "salvar", "encostado_dias" => 0], false);
 ler("avisos com encostado", ["recurso" => "avisos"]);
 // hoje sem relógio: o dia fica livre (o cron não põe ninguém no pulso nem sorteia de novo) e depois volta, escolhendo um

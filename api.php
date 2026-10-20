@@ -1298,8 +1298,9 @@
  *                                    verdadeiro: a foto tem miniatura (recurso=documento com mini=1)
  *     relogios[].documentos[].nome   o nome do arquivo enviado
  *     relogios[].documentos[].no_disco
- *                                    verdadeiro: o arquivo está na pasta dos documentos (falso: ele volta do banco quando for pedido ou na
- *                                    próxima rodada do cron; sem a cópia no banco, está perdido)
+ *                                    verdadeiro: o arquivo está inteiro na pasta dos documentos, com o tamanho do envio (falso: sumiu ou
+ *                                    está cortado, e volta do banco quando for pedido ou na próxima rodada do cron; sem a cópia no banco,
+ *                                    está perdido)
  *     relogios[].documentos[].no_banco
  *                                    verdadeiro: a cópia de segurança do arquivo está completa no banco (se ele sumir da pasta, volta dali)
  *     relogios[].documentos[].copia_banco
@@ -3589,8 +3590,9 @@
  *     documentos[].id                o número do documento (para recurso=documento e para alterar ou excluir)
  *     documentos[].miniatura         verdadeiro: a foto tem miniatura (recurso=documento com mini=1)
  *     documentos[].nome              o nome do arquivo enviado
- *     documentos[].no_disco          verdadeiro: o arquivo está na pasta dos documentos (falso: ele volta do banco quando for pedido ou na
- *                                    próxima rodada do cron; sem a cópia no banco, está perdido)
+ *     documentos[].no_disco          verdadeiro: o arquivo está inteiro na pasta dos documentos, com o tamanho do envio (falso: sumiu ou
+ *                                    está cortado, e volta do banco quando for pedido ou na próxima rodada do cron; sem a cópia no banco,
+ *                                    está perdido)
  *     documentos[].no_banco          verdadeiro: a cópia de segurança do arquivo está completa no banco (se ele sumir da pasta, volta dali)
  *     documentos[].copia_banco       verdadeiro: o próprio arquivo pede a cópia no banco (o terceiro nível; o relógio e a Configuração da
  *                                    coleção, se pedem, valem por cima)
