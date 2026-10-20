@@ -220,7 +220,10 @@ function abrirNoPainel(id) {
         ? el("span", {"class": "carga-linha" + (r.carga <= 20 ? " baixa" : "")}, el("span", {"class": "barra"}, el("span", {"style": "width:" + Math.max(0, Math.min(100, r.carga)) + "%"}, ""))
           + el("strong", {}, "~" + r.carga + "%")) + el("small", {}, h(r.carga_de))
         : nada(r.carga_de);
-      var blocos = quadro(t("Agora"), pares([[t("Estado"), el("span", {"class": "estado estado-" + (r.estado)}, h(r.agora))], [t("Carga"), carga]]
+      // os quadros, cada um na seção do assunto dele (montadas no fim, depois dos quadros largos): o uso de agora e o rodízio,
+      // a carga e a autonomia, a precisão, o cadastro com a compra e os documentos, e a linha do tempo
+      var secoes = {uso: "", carga: "", precisao: "", cadastro: "", historico: ""};
+      secoes.uso += quadro(t("Agora"), pares([[t("Estado"), el("span", {"class": "estado estado-" + (r.estado)}, h(r.agora))], [t("Carga"), carga]]
         .concat(r.encostado ? [[t("Encostado"), el("span", {"class": r.encostado.estado !== "ok" ? "em atrasado" : ""}, h(r.encostado.falta))]] : [])
         .concat(r.situacao.map(function (l, i) { return [i === 0 ? t("Situação") : "", h(l)]; }))
         .concat(ultima ? [[t("Última leitura"), num(ultima.valor, 1) + h(ultima.unidade) + " " + el("small", {}, dataBr(ultima.inicio, true) + " " + horaBr(ultima.inicio))]] : [])));
@@ -233,7 +236,7 @@ function abrirNoPainel(id) {
               + el("td", {"class": "valor"}, cc.valor === null ? "—" : num(cc.valor, 2) + (cc.unidade !== "" ? el("small", {}, h(cc.unidade)) : ""))
               + el("td", {"class": "origem-celula"}, el("span", {"class": "origem origem-" + cc.origem}, h(cc.origem_texto))));
           }).join("")));
-        blocos += quadro(t("Previsão"), r.previsao.linhas.length === 0 ? el("p", {"class": "nota"}, t("Informe a carga atual para o sistema começar a prever."))
+        secoes.carga += quadro(t("Previsão"), r.previsao.linhas.length === 0 ? el("p", {"class": "nota"}, t("Informe a carga atual para o sistema começar a prever."))
           : el("ul", {"class": "linhas"}, r.previsao.linhas.map(function (l) { return el("li", {}, h(l)); }).join("")) + contaPrev);
       }
       // os dois gastos: o que vale na conta, e de onde ele vem (o medido pelas leituras, o do cadastro)
@@ -267,19 +270,19 @@ function abrirNoPainel(id) {
             : (gs.conjunta ? t("os dois gastos saem juntos da conta") : t("ainda não separam bem os dois: vale a média de cada um")))
             + (gs.fora > 0 ? el("small", {"class": "em atrasado"}, t("{1} com uma leitura que não bate com as outras e pesa pouco na conta (veja Medições do gasto)", {1: gs.fora})) : "")})
           : t("nenhuma na janela ({1}){2}", {1: h(gs.janela_texto), 2: gs.uso.medido !== null || gs.repouso.medido !== null ? el("small", {}, t("vale a conta com as de antes")) : ""})]);
-        blocos += quadro(t("Gasto da bateria"), pares(linhasGasto), el("p", {"class": "nota"}, t("Medições mais velhas que a janela saem da conta: se a bateria envelhecer e gastar mais, o medido sobe sozinho.")));
+        secoes.carga += quadro(t("Gasto da bateria"), pares(linhasGasto), el("p", {"class": "nota"}, t("Medições mais velhas que a janela saem da conta: se a bateria envelhecer e gastar mais, o medido sobe sozinho.")));
       }
       // a autonomia: cheio pelo cadastro e pela conta (com o gasto medido), quanto ainda dura e quando acaba
       var au = r.autonomia;
       var dura = function (seg, motivo) { return seg !== null ? el("strong", {}, duracao(seg)) : nada(motivo); };
-      blocos += quadro(t("Autonomia"), pares([
+      secoes.carga += quadro(t("Autonomia"), pares([
         [t("Cheio, pelo cadastro"), dura(au.autonomia_prevista, au.motivos.autonomia_prevista)],
         [t("Cheio, pela conta"), dura(au.autonomia_atual, au.motivos.autonomia_atual)],
         [t("Acaba, seguindo o plano"), au.acaba_em_unixtimestamp !== null ? el("strong", {}, dataBr(au.acaba_em_datacomtz.substr(0, 10), au.acaba_em_datacomtz.substr(0, 4) === hoje.substr(0, 4))
           + " " + au.acaba_em_datacomtz.substr(11, 5)) + el("small", {}, t("em {1}", {1: duracao(au.acaba_em_segundos)})) : nada(au.motivos.autonomia_estimada)],
         [t("No pulso sem tirar"), dura(au.restante_em_uso, au.restante_em_uso === null && au.energia !== null ? t("não acaba (no pulso ele se recarrega)") : au.motivos.restante_em_uso)],
         [t("Guardado"), dura(au.restante_guardado, au.motivos.restante_guardado)]]));
-      blocos += quadro(t("Rodízio"), pares([
+      secoes.uso += quadro(t("Rodízio"), pares([
         [t("Nota"), r.nota !== null ? el("strong", {}, num(r.nota.nota, 1)) + " " + el("a", {"href": "criterios.php?relogio=" + id + "#r" + id, "target": "_blank", "rel": "noopener"}, t("ver a conta")) : nada(t("fora do rodízio"))],
         [t("Critérios de"), r.nota !== null ? h(r.nota.conjunto_texto) : "—"],
         [t("Próxima vez"), h(proxima)]]),
@@ -289,7 +292,7 @@ function abrirNoPainel(id) {
       // esperada; a última fora da esperada em âmbar
       var pr = r.precisao;
       if (pr) {
-        blocos += quadro(t("Precisão"), el("p", {"class": "nota"}, h(pr.resumo)) + (pr.medicoes > 0 ? pares([
+        secoes.precisao += quadro(t("Precisão"), el("p", {"class": "nota"}, h(pr.resumo)) + (pr.medicoes > 0 ? pares([
           [t("Marcha"), el("strong", {}, h(pr.marcha_texto)) + (pr.marcha_dp_texto ? el("small", {}, t("variam {1}", {1: h(pr.marcha_dp_texto)})) : "")],
           [t("Última medição"), el("span", {"class": pr.dentro === false ? "em atrasado" : ""}, h(pr.ultima_texto)) + (pr.dentro === false ? el("small", {}, t("fora da marcha esperada")) : "")],
           [t("Desvio estimado agora"), h(pr.desvio_agora_texto)],
@@ -297,7 +300,7 @@ function abrirNoPainel(id) {
           : (pr.pontos.length > 0 ? pares([[t("Desvio estimado agora"), h(pr.desvio_agora_texto)]]) : "")));
       }
       var c = r.compra;
-      blocos += quadro(t("Compra"), c.data === null && c.valor === null && c.loja === null && c.garantia_ate === null
+      secoes.cadastro += quadro(t("Compra"), c.data === null && c.valor === null && c.loja === null && c.garantia_ate === null
         ? el("p", {"class": "nota"}, t("Sem dados da compra. Preencha em \"Editar cadastro\"."))
         : pares([[t("Valor pago"), c.valor !== null ? el("strong", {}, t("R$ ") + reais(c.valor)) : "—"], [t("Loja"), c.loja !== null ? h(c.loja) : "—"],
           [t("Comprado em"), c.data !== null ? dataBr(c.data) + el("small", {}, t("há {1}{2}", {1: c.ha_dias, 2: c.ha_dias === 1 ? t(" dia") : t(" dias")})) : "—"],
@@ -314,17 +317,16 @@ function abrirNoPainel(id) {
         el("a", {"href": "documentos.php?relogio=" + id, "target": "_blank", "rel": "noopener", "class": "botao leve"}, dc.total === 0 ? t("Enviar documentos") : t("Abrir os documentos"))
         // o passaporte: a ficha dele para imprimir (ou guardar em PDF)
         + " " + el("a", {"href": "passaporte.php?id=" + id, "target": "_blank", "rel": "noopener", "class": "botao leve"}, t("Passaporte")), "documentos-ficha");
-      blocos += quadroDocs;
+      secoes.cadastro += quadroDocs;
       // os acessórios dele (a pulseira, a caixa, a ferramenta...): o tipo e o nome; cadastrar e mudar, na página Acessórios
-      blocos += quadro(t("Acessórios"), r.acessorios.length === 0 ? el("p", {"class": "nota"}, t("Nenhum: a pulseira extra, a caixa, o estojo, a ferramenta..."))
+      secoes.cadastro += quadro(t("Acessórios"), r.acessorios.length === 0 ? el("p", {"class": "nota"}, t("Nenhum: a pulseira extra, a caixa, o estojo, a ferramenta..."))
         : pares(r.acessorios.map(function (a) { return [h(a.tipo_texto), h(a.nome) + (a.observacao !== null ? el("small", {}, h(a.observacao)) : "")]; })),
         el("a", {"href": "acessorios.php?relogio=" + id, "target": "_blank", "rel": "noopener", "class": "botao leve"}, r.acessorios.length === 0 ? t("Cadastrar acessórios") : t("Ver os acessórios")), "acessorios-ficha");
-      blocos += quadro(t("Próximas manutenções"), r.manutencoes.length === 0 ? el("p", {"class": "nota"}, t("Nada previsto."))
+      secoes.uso += quadro(t("Próximas manutenções"), r.manutencoes.length === 0 ? el("p", {"class": "nota"}, t("Nada previsto."))
         : pares(r.manutencoes.map(function (m) { return [dataBr(m.data), h(m.nome)]; }), "datas"));
       // marcar: um quadro só. O menu diz o que aconteceu, e embaixo aparecem só os campos daquilo: pôr ou tirar (cada sessão,
       // só o que cabe agora), uma marcação de um momento (corda, pilha...), a leitura (carga), um período que já passou, ou
       // corrigir uma marcação dos últimos 14 dias (um segundo menu escolhe qual)
-      var lancar = "";
       if (r.tipos.length > 0) {
         var sessoes = r.tipos.filter(function (item) { return item.formato === "sessao"; });
         var opcoes = {agora: "", passou: "", corrigir: ""};
@@ -451,19 +453,20 @@ function abrirNoPainel(id) {
           + (opcoes.agora !== "" ? el("optgroup", {"label": t("Agora, ou numa hora que você disser")}, opcoes.agora) : "")
           + (opcoes.passou !== "" ? el("optgroup", {"label": t("Algo que já passou")}, opcoes.passou) : "")
           + (opcoes.corrigir !== "" ? el("optgroup", {"label": t("Corrigir")}, opcoes.corrigir) : "");
-        lancar = quadro(t("Marcar"), el("form", {"data-recurso": "lancamento", "class": "marcar"}, el("input", {"type": "hidden", "name": "relogio_id", "value": id})
+        secoes.uso += quadro(t("Marcar"), el("form", {"data-recurso": "lancamento", "class": "marcar"}, el("input", {"type": "hidden", "name": "relogio_id", "value": id})
           + el("label", {"class": "marcar-o-que"}, t("O que você quer marcar? {1}", {1: el("select", {"data-mostra": "marcar"}, menu)})) + partes), "", "quadro-marcar");
       }
-      // o desejado (a lista de desejos): ainda não é seu, então nada de agora, previsão, rodízio ou marcar; o quadro Desejo (a
-      // marca, a referência, o preço-alvo, a prioridade e o link) e os documentos (fotos, anúncios guardados)
+      // o desejado (a lista de desejos): ainda não é seu, então nada de agora, previsão, rodízio ou marcar; na seção do
+      // cadastro, o quadro Desejo (a marca, a referência, o preço-alvo, a prioridade e o link) e os documentos (fotos, anúncios
+      // guardados)
       if (r.posse === "desejado" && r.desejo) {
         var dj = r.desejo;
-        blocos = quadro(t("Desejo"), pares([[t("Marca"), dj.marca !== null ? h(dj.marca) : nada("—")], [t("Referência"), dj.referencia !== null ? h(dj.referencia) : nada("—")],
+        secoes = {uso: "", carga: "", precisao: "", historico: ""};
+        secoes.cadastro = quadro(t("Desejo"), pares([[t("Marca"), dj.marca !== null ? h(dj.marca) : nada("—")], [t("Referência"), dj.referencia !== null ? h(dj.referencia) : nada("—")],
           [t("Preço-alvo"), dj.preco_alvo !== null ? el("strong", {}, t("R$ ") + reais(dj.preco_alvo)) : nada(t("sem preço-alvo"))],
           [t("Prioridade"), dj.prioridade !== null ? h(dj.prioridade) : nada(t("sem prioridade"))],
           [t("Link"), dj.link !== null ? el("a", {"href": dj.link, "target": "_blank", "rel": "noopener noreferrer"}, t("abrir a página")) : nada("—")]]),
           el("p", {"class": "nota"}, t("Comprou? Em \"Editar cadastro\", mude a situação para \"Na coleção\" e preencha a compra.")), "quadro-desejo") + quadroDocs;
-        lancar = "";
       }
       // o atalho do pulso, na cabeça: um botão só, "Pôr" quando ele não está no pulso e "Tirar" quando está (agora; a hora
       // certa e o resto ficam no quadro Marcar)
@@ -477,8 +480,8 @@ function abrirNoPainel(id) {
           + el("button", {"class": noPulso ? "leve" : "", "title": acaoSessao(pulso.nome, noPulso)}, noPulso ? t("Tirar") : t("Pôr"))
           + (noPulso ? el("small", {}, h(pulso.aberta.texto)) : ""));
       }
-      // a cabeça: a foto e quem ele é (o grupo, o nome e as marcas de agora); logo embaixo, o Editar cadastro (entra no lugar
-      // da marca, depois de montado), e então os quadros, todos alinhados numa grade
+      // a cabeça: a foto e quem ele é (o grupo, o nome e as marcas de agora); logo embaixo, o Editar cadastro, e então as
+      // seções (os dois entram no lugar das marcas, depois de montados)
       res += el("div", {"class": "ficha-cabeca"}, el("div", {"class": "ficha-foto"}, foto)
         + el("div", {"class": "ficha-identidade"}, el("p", {"class": "data"}, h(r.tipo) + " · " + h(r.caminho))
           + el("h1", {}, h(r.nome)) + (r.observacao ? el("p", {"class": "observacao"}, h(r.observacao)) : "")
@@ -488,7 +491,7 @@ function abrirNoPainel(id) {
             + (r.proxima === hoje ? " " + el("span", {"class": "estado estado-atividade"}, t("relógio de hoje")) : "")) + atalho
           // no painel da página Hoje, o caminho para a ficha (o mesmo relógio numa página só dele, numa aba nova)
           + (document.querySelector(".painel") ? el("p", {"class": "ficha-link"}, el("a", {"href": "ficha.php?id=" + id, "target": "_blank", "rel": "noopener", "class": "botao leve"}, t("Abrir a ficha ↗"))) : "")))
-        + "<!--editar-cadastro-->" + el("div", {"class": "quadros"}, blocos + lancar);
+        + "<!--editar-cadastro-->" + "<!--secoes-->";
     }
     // o cadastro: nome, grupo, os campos (cada um no grupo em que vale), a compra agrupada, a observação, a foto (novo) e o disponível
     var compraIds = ["data_compra", "valor_compra", "loja", "garantia_ate"];
@@ -601,7 +604,7 @@ function abrirNoPainel(id) {
                     + el("input", {"type": "hidden", "name": "usada", "value": m.usada ? "0" : "1"}) + el("button", {"class": "leve"}, m.usada ? t("Tirar da conta") : t("Pôr na conta")))));
               }).join("")));
         }
-        res += quadro(t("Carga ao longo do tempo"), grafico + med, "", "largo");
+        secoes.carga += quadro(t("Carga ao longo do tempo"), grafico + med, "", "largo");
       }
       // o desvio ao longo do tempo (as leituras e os acertos: cada acerto recomeça a linha em 0 s) e as medições da marcha (os
       // intervalos, os 10 mais recentes), com a marcha em cada posição quando há mais de uma
@@ -655,7 +658,7 @@ function abrirNoPainel(id) {
               }).join("")));
           }
         }
-        res += quadro(t("Desvio ao longo do tempo"), graficoP + medP, "", "largo");
+        secoes.precisao += quadro(t("Desvio ao longo do tempo"), graficoP + medP, "", "largo");
       }
       // os dados do relógio: o cadastro que vale para ele (o informado, senão o padrão do campo) e o resultado de cada fórmula agora
       var valorCampo = function (c) {
@@ -717,7 +720,7 @@ function abrirNoPainel(id) {
         + el("span", {"class": "calibre-docs"}, r.calibre.documentos.map(function (x) {
           return el("a", {"href": x.url, "target": "_blank", "rel": "noopener"}, h(x.titulo)) + " " + el("span", {"class": "nota"}, "(" + h(x.categoria) + ")");
         }).join(" · ") + (r.calibre.documentos.length > 0 ? " · " : "") + el("a", {"href": "documentos.php?calibre=" + r.calibre.id}, t("documentos do calibre")))) : "";
-      res += quadro(t("Dados do relógio"), calLinha + el("div", {"class": "dados-grade"},
+      secoes.cadastro += quadro(t("Dados do relógio"), calLinha + el("div", {"class": "dados-grade"},
         el("div", {}, el("h3", {}, t("Cadastro")) + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Campo"))
             + el("th", {}, t("Valor")) + el("th", {}, t("Origem")))) + el("tbody", {}, r.dados.map(function (c) {
               // o texto livre (a observação, uma lista) quebra a linha; número, data e sim/não ficam numa linha só
@@ -749,8 +752,18 @@ function abrirNoPainel(id) {
                 + el("td", {}, l.estado === "marca" ? h(l.texto) : el("span", {"class": "estado estado-" + (classe)}, h(l.texto)) + (l.em_andamento ? el("small", {}, t("em andamento")) : "")));
             }).join("")));
       }
-      res += quadro(t("Histórico"), hist, r.linha_do_tempo.length > 0 ? el("a", {"class": "botao leve", "href": "historico.php?id=" + id, "target": "_blank", "rel": "noopener"}, t("Abrir o histórico completo")) : "",
+      secoes.historico += quadro(t("Histórico"), hist, r.linha_do_tempo.length > 0 ? el("a", {"class": "botao leve", "href": "historico.php?id=" + id, "target": "_blank", "rel": "noopener"}, t("Abrir o histórico completo")) : "",
         "largo historico");
+      // as seções (só as que têm quadros): o título e os quadros dela numa grade; em cima de todas, um botão para cada uma, que
+      // rola até ela
+      var nomes = [["uso", t("Uso e rodízio")], ["carga", t("Carga e autonomia")], ["precisao", t("Precisão e marcha")],
+        ["cadastro", t("Cadastro e documentos")], ["historico", t("Linha do tempo")]].filter(function (x) { return secoes[x[0]] !== ""; });
+      var corpo = (nomes.length > 1 ? el("nav", {"class": "secoes-atalhos", "aria-label": t("Seções do relógio")}, nomes.map(function (x) {
+        return el("button", {"type": "button", "class": "leve", "data-ir-secao": x[0]}, x[1]);
+      }).join("")) : "") + nomes.map(function (x) {
+        return el("section", {"class": "secao-painel", "data-secao": x[0]}, el("h2", {"class": "secao-titulo"}, x[1]) + el("div", {"class": "quadros"}, secoes[x[0]]));
+      }).join("");
+      res = res.replace("<!--secoes-->", function () { return corpo; });
     }
     porHtml(painel, el("div", {"class": "detalhe", "data-id": id}, res));
 
@@ -802,6 +815,15 @@ document.addEventListener("change", function (ev) {
 });
 
 document.addEventListener("click", function (ev) {
+  // os atalhos das seções do relógio: rola até a seção (no painel, na janela flutuante e na ficha)
+  var irSecao = ev.target.closest("[data-ir-secao]");
+  if (irSecao) {
+    var secao = irSecao.closest(".detalhe").querySelector("[data-secao=\"" + irSecao.getAttribute("data-ir-secao") + "\"]");
+    if (secao) {
+      secao.scrollIntoView({behavior: "smooth", block: "start"});
+    }
+    return;
+  }
   var novo = ev.target.closest("[data-novo]");
   var linha = ev.target.closest("tr[data-id]");
   var abrir = ev.target.closest("[data-abrir]");

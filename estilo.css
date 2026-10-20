@@ -1122,6 +1122,13 @@ body.com-visor { overflow: hidden; }
 .quadro-rodape form { margin: 0; }
 .quadro-rodape > .nota { margin: 0; flex: 1 1 100%; text-align: left; }
 .quadro.largo, .quadro-marcar { grid-column: 1 / -1; }
+/* as seções do relógio (o painel e a ficha): os quadros do mesmo assunto juntos, com o título e uma linha fina até a borda;
+   em cima, um botão para cada seção (rola até ela; a margem deixa o título à vista embaixo do × que acompanha a rolagem) */
+.secoes-atalhos { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 1rem; }
+.secoes-atalhos button { min-height: 2rem; padding: .2rem .75rem; border-radius: 999px; font-size: .85rem; }
+.secao-painel { scroll-margin-top: 4.5rem; }
+.secao-painel > .secao-titulo { display: flex; align-items: center; gap: .7rem; margin: .3rem 0 .7rem; font-size: 1.05rem; font-weight: 700; color: var(--tinta); }
+.secao-painel > .secao-titulo::after { content: ""; flex: 1; border-top: 1px solid var(--aco-escuro); }
 .detalhe > .quadro { margin-bottom: 1rem; }
 .quadro ul.linhas { margin: 0; padding-left: 1.1rem; }
 .quadro ul.linhas li { margin: .2rem 0; }
