@@ -535,10 +535,11 @@ escrever(["recurso" => "avisos", "acao" => "alterar", "id" => $id_de("avisos", "
 escrever(["recurso" => "avisos", "acao" => "excluir", "id" => $id_de("avisos", "pulseira"), "confirmar" => 1]);
 
 // a precisão do automático: três leituras do desvio da hora (0 s há 10 dias; +50 s há 5, no pulso; +60 s há 3, mostrador para
-// cima), um acerto da hora há 2 dias e a leitura pela hora que o relógio mostra (+8 s, em instante_ms: um minuto cheio de agora
-// há pouco, para os bancos darem a mesma conta). As marchas: +10, +5 e +4 s/dia; a do relógio, pesada pelo tempo, 68/9 s/dia.
+// cima), um acerto da hora há 2 dias e a leitura pela hora que o relógio mostra (+8 s, em instante_ms: um minuto cheio de 2 a
+// 3 minutos atrás, para os bancos darem a mesma conta e a mensagem dizer sempre "em <quando>": com o instante a 60 s de
+// agora, um banco dizia e o outro não). As marchas: +10, +5 e +4 s/dia; a do relógio, pesada pelo tempo, 68/9 s/dia.
 // E as recusas: a posição numa leitura que não é do desvio, a hora inválida e o desvio de mais de 6 horas
-$base_p = intdiv(time() - 60, 60) * 60;
+$base_p = intdiv(time(), 60) * 60 - 120;
 foreach ([[10, "0", ""], [5, "50", "pulso"], [3, "60", "mostrador_cima"]] as [$dias_p, $valor_p, $pos_p]) {
     escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["auto"], "tipo" => "desvio", "valor" => $valor_p, "posicao" => $pos_p,
         "quando" => date("Y-m-d H:i", $base_p - $dias_p * 86400)]);
