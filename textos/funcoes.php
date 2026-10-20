@@ -213,7 +213,9 @@ function numero_txt($n, $casas = 2, $minimo = null)
 // um número sem o separador de milhar, com até $casas decimais (sem os zeros que sobram), no separador decimal do idioma
 function decimal_txt($n, $casas = 2)
 {
-    $s = rtrim(rtrim(number_format(round((float)$n, (int)$casas), (int)$casas, ".", ""), "0"), ".");
+    // sem casas não há zeros de sobra a tirar (o 10 continua 10)
+    $s = number_format(round((float)$n, (int)$casas), (int)$casas, ".", "");
+    $s = (int)$casas > 0 ? rtrim(rtrim($s, "0"), ".") : $s;
     return str_replace(".", LINGUAS[$GLOBALS["LINGUA"]]["decimal"], $s === "-0" ? "0" : $s);
 }
 

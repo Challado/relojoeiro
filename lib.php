@@ -638,6 +638,7 @@ $MIGRACOES = [
     "v29" => ["migracao_v29.sql", tk("o fuso horário de cada destino e de cada agenda (Destinos e Agendas, \"Fuso horário\"; vazio: o da coleção): as horas no texto das mensagens e dos eventos saem nele, como já saem no idioma deles"), "destino.fuso"],
     "v30" => ["migracao_v30.sql", tk("os modos de rodízio com tipo (a tela de cada um: um por semana, semana e fim de semana, por dia da semana, aleatório todo dia, escala inteligente ou personalizado), semanas à frente e o roteiro (as cinco linhas que o motor calcula: candidato, nota, peso, dias, garantia; escrito à mão no personalizado, gerado dos blocos nos outros); um montador do plano só para todos os modos"), "modo.roteiro", "migracao_v30_dados"],
     "v31" => ["migracao_v31.sql", tk("os totais: os da tabela dos relógios (o rodapé, embaixo de cada coluna) e os da página de totais deixam de ser fixos e viram expressões do motor de fórmulas sobre os relógios mostrados (CONTA, SOMA, MEDIA, AGRUPADO, FAIXAS...), cadastradas na aba Totais dos Cadastros; os prontos entram em cada árvore"), "total", "migracao_v31_dados"],
+    "v32" => ["migracao_v32.sql", tk("a precisão: o desvio da hora (quanto o relógio está adiantado ou atrasado, lido contra a hora certa, com a posição em que ele ficou) e o acerto da hora; a marcha em segundos por dia, o gráfico, as funções MARCHA, MARCHA_DP, MARCHA_N, MARCHA_ULTIMA e DESVIO_AGORA, e os avisos Acertar a hora e Marcha fora do esperado; os tipos, campos, fórmulas e avisos entram em cada árvore"), "lancamento.posicao", "migracao_v32_dados"],
 ];
 
 // O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
@@ -670,6 +671,63 @@ function migracao_v31_dados($nova = false)
         foreach (linhas("SELECT id FROM no WHERE pai_id IS NULL ORDER BY id") as $raiz) {
             if ((int)valor("SELECT COUNT(*) FROM total WHERE no_id = ?", [(int)$raiz["id"]]) === 0) {
                 totais_do_modelo((int)$raiz["id"], $tr);
+            }
+        }
+    });
+}
+
+// O passo em PHP da v32: em cada árvore, os tipos Desvio da hora e Acerto da hora, os campos da marcha esperada e do limite
+// do desvio, as fórmulas marcha e desvio_agora e os avisos Acertar a hora e Marcha fora do esperado (modelo.json), no grupo
+// do tipo Revisão (o Tradicional; sem ele, a raiz), no idioma da coleção; cada um só onde o identificador ainda não existe
+function migracao_v32_dados($nova = false)
+{
+    if ($nova) {
+        return;
+    }
+    sem_escopo(function () {
+        $m = modelo_ler();
+        $do_modelo = function ($lista, $idents) use ($m) {
+            return array_values(array_filter($m[$lista], function ($x) use ($idents) { return in_array($x["identificador"], $idents, true); }));
+        };
+        foreach (linhas("SELECT id FROM no WHERE pai_id IS NULL ORDER BY id") as $raiz) {
+            $arvore = [(int)$raiz["id"]];
+            $nivel = $arvore;
+            while (count($nivel) > 0) {
+                $nivel = array_map("intval", array_column(linhas("SELECT id FROM no WHERE pai_id IN (" . implode(", ", $nivel) . ")"), "id"));
+                $arvore = array_merge($arvore, $nivel);
+            }
+            $em = " AND no_id IN (" . implode(", ", $arvore) . ")";
+            $grupo = valor("SELECT no_id FROM lancamento_tipo WHERE identificador = 'revisao'" . $em);
+            $grupo = $grupo === null ? (int)$raiz["id"] : (int)$grupo;
+            $lingua = lingua_valida((string)valor("SELECT valor FROM config WHERE chave = 'idioma' AND colecao_id IN (SELECT id FROM colecao WHERE no_id = ?) ORDER BY colecao_id", [(int)$raiz["id"]])) ?? "pt-BR";
+            $tr = modelo_tradutor($lingua);
+            $existe = function ($tabela, $ident) use ($em) {
+                return (int)valor("SELECT COUNT(*) FROM " . $tabela . " WHERE identificador = ?" . $em, [$ident]) > 0;
+            };
+            foreach ($do_modelo("tipos", ["desvio", "acerto"]) as $x) {
+                if (!$existe("lancamento_tipo", $x["identificador"])) {
+                    sql("INSERT INTO lancamento_tipo (identificador, nome, formato, unidade, fecha_as, no_id, ordem, exclusiva, mede_gasto, marcha, condicao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        [$x["identificador"], $tr($x["nome"]), $x["formato"], $x["unidade"], $x["fecha_as"], $grupo, (int)$x["ordem"], (int)$x["exclusiva"], (int)$x["mede_gasto"], $x["marcha"], $x["condicao"]]);
+                }
+            }
+            foreach ($do_modelo("campos", ["marcha_min", "marcha_max", "desvio_limite"]) as $c) {
+                if (!$existe("campo", $c["identificador"])) {
+                    sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, ordem, so_desejado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                        [$c["identificador"], $tr($c["nome"]), $c["tipo"], $c["unidade"], $c["padrao"], $grupo, (int)$c["ordem"], (int)$c["so_desejado"]]);
+                }
+            }
+            foreach ($do_modelo("formulas", ["marcha", "desvio_agora"]) as $f) {
+                if (!$existe("formula", $f["identificador"])) {
+                    sql("INSERT INTO formula (identificador, nome, expressao, unidade, no_id) VALUES (?, ?, ?, ?, ?)", [$f["identificador"], $tr($f["nome"]), $f["expressao"], $f["unidade"], $grupo]);
+                }
+            }
+            foreach ($do_modelo("avisos", ["acertar_hora", "marcha_fora"]) as $a) {
+                if (!$existe("aviso", $a["identificador"])) {
+                    $resolve = $a["resolve"] !== null ? valor("SELECT id FROM lancamento_tipo WHERE identificador = ?" . $em, [$a["resolve"]]) : null;
+                    sql("INSERT INTO aviso (identificador, nome, expressao, antecedencia_dias, texto, ativo, no_id, escala, simula_valor, simula_horas, agenda, condicao, resolve_tipo_id, na_hora)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [$a["identificador"], $tr($a["nome"]), $a["expressao"], $a["antecedencia_dias"], $tr($a["texto"]), (int)$a["ativo"],
+                        $grupo, $a["escala"], $a["simula_valor"], $a["simula_horas"], $a["agenda"], $a["condicao"], $resolve === null ? null : (int)$resolve, (int)$a["na_hora"]]);
+                }
             }
         }
     });
@@ -932,6 +990,12 @@ $FUNCOES = [
     "MEDIA_TAXA" => [1, 2, tk("MEDIA_TAXA(\"uso\" ou \"repouso\"; dias): a média simples das taxas de cada uma (% por dia); vazio sem nenhuma"), false],
     "MEDIANA_TAXA" => [1, 2, tk("MEDIANA_TAXA(\"uso\" ou \"repouso\"; dias): a mediana das taxas (resiste a uma medição errada); vazio sem nenhuma"), false],
     "ULTIMA_TAXA" => [1, 1, tk("ULTIMA_TAXA(\"uso\" ou \"repouso\"): a taxa da medição mais recente assim (% por dia); vazio sem nenhuma"), false],
+    // a precisão: as leituras do desvio da hora (o tipo de lançamento que mede a marcha) e os acertos, até o instante da conta
+    "MARCHA" => [0, 2, tk("MARCHA(dias; \"posição\"): a marcha medida, em segundos por dia (+ adianta, − atrasa): os intervalos entre as leituras do desvio da hora nos últimos N dias (0 ou sem: todos), pesados pelo tempo de cada um; com a posição (pulso, misto, mostrador_cima, mostrador_baixo, coroa_cima, coroa_baixo, coroa_esquerda, coroa_direita, winder), só os medidos nela; vazio sem nenhum"), false],
+    "MARCHA_DP" => [0, 2, tk("MARCHA_DP(dias; \"posição\"): quanto as marchas desses intervalos variam entre si (o desvio padrão, pesado pelo tempo, em s/dia); vazio com menos de dois"), false],
+    "MARCHA_N" => [0, 2, tk("MARCHA_N(dias; \"posição\"): quantos intervalos medidos assim"), false],
+    "MARCHA_ULTIMA" => [0, 0, tk("MARCHA_ULTIMA(): a marcha do intervalo mais recente, em s/dia; vazio sem nenhum"), false],
+    "DESVIO_AGORA" => [0, 0, tk("DESVIO_AGORA(): o desvio estimado no instante da conta, em segundos (+ adiantado): a última leitura (0 depois de um acerto da hora) mais a marcha de todos os intervalos vezes o tempo desde ela; vazio sem leitura nenhuma"), false],
     // o roteiro dos modos de rodízio: o dia que está sendo montado e o plano
     "DIA_SEMANA" => [0, 0, tk("o dia da semana do dia que está sendo montado (fora do rodízio: o do instante da conta): 1 segunda ... 7 domingo"), false],
     "SEMANA_DO_ANO" => [0, 0, tk("o número da semana do ano (ISO) do dia que está sendo montado"), false],
@@ -1511,6 +1575,7 @@ function formula_calcular($no, &$ctx)
     static $cache_m = [];
     static $cache_med = [];
     static $cache_pecas = [];
+    static $cache_precisao = [];
     static $versao = 0;
     if ($versao !== ($GLOBALS["FORMULAS_VERSAO"] ?? 0)) {
         $cache_l = [];
@@ -1570,6 +1635,25 @@ function formula_calcular($no, &$ctx)
             $n = formula_calcular($args[0], $ctx);
             $k = is_numeric($n) ? (int)floor((float)$n) : 0;
             $res = $k >= 1 && isset($args[$k]) ? formula_calcular($args[$k], $ctx) : null;
+        } elseif (in_array($nome, ["MARCHA", "MARCHA_DP", "MARCHA_N", "MARCHA_ULTIMA", "DESVIO_AGORA"], true)) {
+            // a precisão: os pontos do relógio (lidos uma vez por requisição, de novo depois de uma gravação) até o instante da conta
+            $v = array_map(function ($a) use (&$ctx) { return formula_calcular($a, $ctx); }, $args);
+            $id = (int)$ctx["r"]["id"];
+            $chave_p = $id . "/" . ($GLOBALS["FORMULAS_VERSAO"] ?? 0);
+            if (!isset($cache_precisao[$chave_p])) {
+                $cache_precisao[$chave_p] = precisao_pontos($id);
+            }
+            $momento_p = $ctx["momento"];
+            $pontos = array_values(array_filter($cache_precisao[$chave_p], function ($p) use ($momento_p) { return $p["instante"] <= $momento_p; }));
+            $ints = precisao_intervalos($pontos);
+            if ($nome === "DESVIO_AGORA") {
+                $res = precisao_desvio_em($pontos, $ints, $momento_p);
+            } elseif ($nome === "MARCHA_ULTIMA") {
+                $res = count($ints) > 0 ? $ints[count($ints) - 1]["marcha"] : null;
+            } else {
+                $mm = precisao_marcha($ints, isset($v[0]) && is_numeric($v[0]) ? (float)$v[0] : 0.0, isset($v[1]) ? (string)$v[1] : "", $momento_p);
+                $res = $nome === "MARCHA_N" ? (float)$mm["n"] : ($nome === "MARCHA" ? $mm["marcha"] : $mm["dp"]);
+            }
         } elseif (in_array($nome, ["LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA", "MEDIANA_TAXA", "ULTIMA_TAXA"], true)) {
             // as peças do gasto medido pela marcação: as medições do relógio (lidas uma vez por requisição) em que as duas
             // leituras foram marcadas como pedido, até o instante da conta e dentro de N dias (0: a janela da Configuração)
@@ -2032,7 +2116,7 @@ function tabela_linha($r, $agora, $extra = [])
     $estado_h = $v["estado"] === "repouso" && (int)$r["disponivel"] !== 1 ? "indisponivel" : $v["estado"];
     $val = valores_do_relogio((int)$r["id"]);
     $leitura = linha("SELECT l.inicio, l.valor, t.unidade FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'valor'
-            ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [(int)$r["id"]]);
+            AND t.marcha IS NULL ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [(int)$r["id"]]);
     return ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1, "tipo" => isset($nos[(int)$r["no_id"]]) ? $nos[(int)$r["no_id"]]["nome"] : "—",
         "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]),
         "em_uso" => $v["em_uso"], "estado" => $estado_h, "estado_texto" => $estado_h === "indisponivel" ? (posse_de($r) === "emprestado" ? t("Emprestado") : t("Indisponível")) : $v["estado_texto"],
@@ -2078,7 +2162,7 @@ $FUNCOES_TOTAIS = [
 const TOTAIS_DO_TOPO = ["AGRUPADO", "FAIXAS", "QUEM_MENOR", "QUEM_MAIOR"];
 // as funções do motor que precisam de um relógio: nos totais, só dentro de uma função de total
 const FUNCOES_DO_RELOGIO = ["NO_GRUPO", "RELOGIO", "ESCOLHIDO_HA", "VEZES_NO_PLANO", "MEDIDO", "MEDIA_COLECAO", "LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA",
-    "MEDIANA_TAXA", "ULTIMA_TAXA", "DIA_SEMANA", "SEMANA_DO_ANO", "SORTEIO"];
+    "MEDIANA_TAXA", "ULTIMA_TAXA", "MARCHA", "MARCHA_DP", "MARCHA_N", "MARCHA_ULTIMA", "DESVIO_AGORA", "DIA_SEMANA", "SEMANA_DO_ANO", "SORTEIO"];
 
 // As variáveis da tabela, que os totais têm em cada relógio além dos campos e das fórmulas: nome => [o que é, unidade]
 $VARIAVEIS_TABELA = [
@@ -3390,6 +3474,191 @@ function dias_guardados_texto($g, $sobrescrever)
     }
     return $sobrescrever ? " " . t("Sobrescritos: {1}.", [1 => implode(t(" e "), $partes)])
         : " " . t("Ficaram como estavam: {1} (para sortear também esses, marque Sobrescrever tudo).", [1 => implode(t(" e "), $partes)]);
+}
+
+// As posições de uma leitura do desvio da hora (onde o relógio ficou desde a leitura anterior: a condição da medição),
+// código => texto, na ordem das listas
+function posicoes_marcha()
+{
+    return ["misto" => t("pulso e guardado (como o rodízio fez)"), "pulso" => t("no pulso"), "mostrador_cima" => t("guardado, mostrador para cima"),
+        "mostrador_baixo" => t("guardado, mostrador para baixo"), "coroa_cima" => t("guardado, coroa para cima"), "coroa_baixo" => t("guardado, coroa para baixo"),
+        "coroa_esquerda" => t("guardado, coroa para a esquerda"), "coroa_direita" => t("guardado, coroa para a direita"), "winder" => t("no winder")];
+}
+
+// Os pontos da precisão de um relógio, na ordem: as leituras do desvio da hora (desvio em segundos, + adiantado) e os acertos
+// da hora (o relógio volta a 0 s), dos tipos de lançamento que medem a marcha (lancamento_tipo.marcha)
+function precisao_pontos($rid)
+{
+    return array_map(function ($l) {
+        return ["id" => (int)$l["id"], "instante" => strtotime($l["inicio"]), "inicio" => $l["inicio"], "tipo" => $l["marcha"],
+            "desvio" => $l["marcha"] === "acerto" ? 0.0 : (float)$l["valor"], "posicao" => $l["posicao"]];
+    }, linhas("SELECT l.id, l.inicio, l.valor, l.posicao, t.marcha FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
+        WHERE l.relogio_id = ? AND t.marcha IS NOT NULL ORDER BY l.inicio, l.id", [(int)$rid]));
+}
+
+// Os intervalos medidos: de cada ponto até a próxima leitura do desvio (um acerto da hora fecha a conta de antes e recomeça
+// de 0 s nele). A marcha do intervalo é a diferença dos desvios sobre o tempo, em segundos por dia; a posição é a da leitura
+// do fim (onde ele ficou no intervalo)
+function precisao_intervalos($pontos)
+{
+    $res = [];
+    $ant = null;
+    foreach ($pontos as $p) {
+        if ($ant !== null && $p["tipo"] === "desvio" && $p["instante"] > $ant["instante"]) {
+            $dias = ($p["instante"] - $ant["instante"]) / 86400;
+            $res[] = ["id" => $p["id"], "de" => $ant["instante"], "ate" => $p["instante"], "dias" => $dias, "desvio_de" => $ant["desvio"], "desvio_ate" => $p["desvio"],
+                "marcha" => ($p["desvio"] - $ant["desvio"]) / $dias, "posicao" => $p["posicao"], "depois_do_acerto" => $ant["tipo"] === "acerto"];
+        }
+        $ant = $p;
+    }
+    return $res;
+}
+
+// A marcha dos intervalos que terminam nos últimos $dias dias antes de $momento (0: todos), na $posicao ("": todas): a média
+// pesada pelo tempo (a soma das diferenças sobre a soma dos dias: um intervalo de 10 dias pesa dez vezes o de 1 dia, e a
+// leitura errada por 1 s quase não pesa), o desvio padrão das marchas (pesado igual; null com menos de dois) e quantos
+function precisao_marcha($ints, $dias, $posicao, $momento)
+{
+    $sel = array_values(array_filter($ints, function ($x) use ($dias, $posicao, $momento) {
+        return ($dias <= 0 || $x["ate"] > $momento - $dias * 86400) && ($posicao === "" || $x["posicao"] === $posicao);
+    }));
+    $soma_dias = array_sum(array_column($sel, "dias"));
+    if (count($sel) === 0 || $soma_dias <= 0) {
+        return ["n" => 0, "marcha" => null, "dp" => null, "dias" => 0.0];
+    }
+    $media = array_sum(array_map(function ($x) { return $x["desvio_ate"] - $x["desvio_de"]; }, $sel)) / $soma_dias;
+    $dp = count($sel) < 2 ? null : sqrt(array_sum(array_map(function ($x) use ($media) { return $x["dias"] * ($x["marcha"] - $media) ** 2; }, $sel)) / $soma_dias);
+    return ["n" => count($sel), "marcha" => $media, "dp" => $dp, "dias" => $soma_dias];
+}
+
+// O desvio estimado num instante: o último ponto até ele (a leitura, ou 0 do acerto) mais a marcha de todos os intervalos
+// vezes o tempo desde o ponto; sem intervalo medido, o do último ponto; null sem ponto nenhum
+function precisao_desvio_em($pontos, $ints, $momento)
+{
+    if (count($pontos) === 0) {
+        return null;
+    }
+    $u = $pontos[count($pontos) - 1];
+    $m = precisao_marcha($ints, 0, "", $momento)["marcha"];
+    return $u["desvio"] + ($m === null ? 0.0 : $m * ($momento - $u["instante"]) / 86400);
+}
+
+// O desvio pela hora que o relógio mostrava ($marca: HH:MM, HH:MM:SS ou HH:MM:SS.d) no instante da leitura ($instante_ms: o
+// da hora certa na tela, em milissegundos, de até 10 minutos atrás; vazio ou fora disso: agora), na hora local do pedido.
+// O mostrador dá a volta em 12 horas: o desvio fica entre −6 h e +6 h. Devolve [desvio em segundos, o instante (segundos
+// inteiros)], ou [null, null] com a marca inválida
+function desvio_da_marca($marca, $instante_ms, $agora)
+{
+    if (preg_match("/^\\s*(\\d{1,2}):(\\d{2})(?::(\\d{2})(?:[.,](\\d+))?)?\\s*$/", $marca, $m) !== 1 || (int)$m[1] > 23 || (int)$m[2] > 59 || (int)($m[3] ?? 0) > 59) {
+        return [null, null];
+    }
+    $marca_s = (int)$m[1] * 3600 + (int)$m[2] * 60 + (int)($m[3] ?? 0) + (isset($m[4]) && $m[4] !== "" ? (float)("0." . $m[4]) : 0.0);
+    $inst = is_numeric($instante_ms) && (float)$instante_ms / 1000 >= $agora - 600 && (float)$instante_ms / 1000 <= $agora + 60 ? (float)$instante_ms / 1000 : (float)$agora;
+    $base = (int)floor($inst);
+    $ref_s = (int)date("H", $base) * 3600 + (int)date("i", $base) * 60 + (int)date("s", $base) + ($inst - $base);
+    $dif = fmod($marca_s - $ref_s, 43200);
+    $dif = $dif > 21600 ? $dif - 43200 : ($dif <= -21600 ? $dif + 43200 : $dif);
+    return [round($dif, 1), $base];
+}
+
+// O fim da mensagem de uma leitura do desvio ou de um acerto da hora: a marcha medida desde a leitura anterior, ou o que falta
+function precisao_recado($rid, $id, $marcha)
+{
+    if ($marcha === "acerto") {
+        return t(" A conta da marcha recomeça daqui, de 0 s.");
+    }
+    $ints = precisao_intervalos(precisao_pontos($rid));
+    foreach ($ints as $x) {
+        if ($x["id"] === (int)$id) {
+            return t(" Marcha desde {1}: {2} em {3} dias.", [1 => data_txt($x["de"], true, true), 2 => marcha_txt($x["marcha"]), 3 => decimal_txt($x["dias"], 2)])
+                . ($x["dias"] < 1 ? t(" Com menos de um dia, a leitura errada por 1 s pesa muito: a média pesa cada intervalo pelo tempo.") : "");
+        }
+    }
+    return t(" Primeira leitura: leia de novo daqui a pelo menos um dia para medir a marcha.");
+}
+
+// Textos da precisão: a marcha com sinal ("+12,3 s/dia"), o desvio por extenso ("34 s adiantado", "na hora")
+function marcha_txt($m)
+{
+    return $m === null ? null : t("{1} s/dia", [1 => ($m > 0.05 ? "+" : "") . decimal_txt($m, 1)]);
+}
+
+function desvio_txt($d)
+{
+    if ($d === null) {
+        return null;
+    }
+    return abs($d) < 0.5 ? t("na hora") : ($d > 0 ? t("{1} s adiantado", [1 => decimal_txt(abs($d), 0)]) : t("{1} s atrasado", [1 => decimal_txt(abs($d), 0)]));
+}
+
+// A precisão de um relógio (o quadro Precisão do painel e recurso=precisao) até $agora; null se nenhum tipo de lançamento dele
+// mede a marcha. Os pontos (as leituras do desvio e os acertos da hora), os intervalos (do mais novo ao mais velho), a marcha
+// de todos (pesada pelo tempo), quanto as marchas variam, a última, o desvio estimado agora, a marcha em cada posição, a marcha
+// esperada (os campos marcha_min e marcha_max, de onde vierem: o relógio, o grupo) e as posições para a lista da tela
+function precisao_do_relogio($r, $agora)
+{
+    $desvio = null;
+    $acerto = null;
+    foreach (lancamento_tipos_do_relogio($r) as $ident => $t) {
+        if (($t["marcha"] ?? null) === "desvio" && $desvio === null) {
+            $desvio = $ident;
+        } elseif (($t["marcha"] ?? null) === "acerto" && $acerto === null) {
+            $acerto = $ident;
+        }
+    }
+    if ($desvio === null) {
+        return null;
+    }
+    $pos = posicoes_marcha();
+    $pontos = array_values(array_filter(precisao_pontos((int)$r["id"]), function ($p) use ($agora) { return $p["instante"] <= $agora; }));
+    $ints = precisao_intervalos($pontos);
+    $todos = precisao_marcha($ints, 0, "", $agora);
+    $ultima = count($ints) > 0 ? $ints[count($ints) - 1]["marcha"] : null;
+    $agora_d = precisao_desvio_em($pontos, $ints, $agora);
+    $ctx = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio((int)$r["id"])];
+    $esperada = [];
+    foreach (["de" => "marcha_min", "ate" => "marcha_max"] as $k => $campo) {
+        $x = isset(campos_todos()[$campo]) ? variavel_valor($campo, $ctx) : null;
+        $esperada[$k] = is_numeric($x) ? (float)$x : null;
+    }
+    $esperada["texto"] = $esperada["de"] === null && $esperada["ate"] === null ? null
+        : ($esperada["ate"] === null ? t("a partir de {1}", [1 => marcha_txt($esperada["de"])]) : ($esperada["de"] === null ? t("até {1}", [1 => marcha_txt($esperada["ate"])])
+        : t("de {1} a {2}", [1 => marcha_txt($esperada["de"]), 2 => marcha_txt($esperada["ate"])])));
+    $dentro = $ultima === null || $esperada["texto"] === null ? null
+        : (($esperada["de"] === null || $ultima >= $esperada["de"]) && ($esperada["ate"] === null || $ultima <= $esperada["ate"]));
+    $por_posicao = [];
+    foreach ($pos as $k => $txt) {
+        $m = precisao_marcha($ints, 0, $k, $agora);
+        if ($m["n"] > 0) {
+            $por_posicao[] = ["posicao" => $k, "posicao_texto" => $txt, "medicoes" => $m["n"], "dias" => round($m["dias"], 2), "marcha" => round($m["marcha"], 2), "marcha_texto" => marcha_txt($m["marcha"])];
+        }
+    }
+    if ($todos["n"] === 0) {
+        $resumo = count($pontos) === 0 ? t("Nenhuma leitura ainda: leia o desvio, espere pelo menos um dia e leia de novo.")
+            : t("Uma leitura só: leia de novo daqui a pelo menos um dia para medir a marcha.");
+    } else {
+        $m = $todos["marcha"];
+        $resumo = (abs($m) < 0.05 ? t("Na hora: não adianta nem atrasa") : ($m > 0 ? t("Adianta {1} s por dia", [1 => decimal_txt($m, 1)]) : t("Atrasa {1} s por dia", [1 => decimal_txt(abs($m), 1)])))
+            . ($todos["n"] === 1 ? t(" (uma medição, de {1} dias).", [1 => decimal_txt($todos["dias"], 1)])
+            : t(" (média de {1} medições em {2} dias; elas variam ±{3} s/dia).", [1 => $todos["n"], 2 => decimal_txt($todos["dias"], 1), 3 => decimal_txt($todos["dp"], 1)]));
+    }
+    return ["tipo_desvio" => $desvio, "tipo_acerto" => $acerto, "resumo" => $resumo,
+        "medicoes" => $todos["n"], "dias" => round($todos["dias"], 2),
+        "marcha" => $todos["marcha"] === null ? null : round($todos["marcha"], 2), "marcha_texto" => marcha_txt($todos["marcha"]),
+        "marcha_dp" => $todos["dp"] === null ? null : round($todos["dp"], 2), "marcha_dp_texto" => $todos["dp"] === null ? null : t("±{1} s/dia", [1 => decimal_txt($todos["dp"], 1)]),
+        "ultima" => $ultima === null ? null : round($ultima, 2), "ultima_texto" => marcha_txt($ultima),
+        "desvio_agora" => $agora_d === null ? null : round($agora_d, 1), "desvio_agora_texto" => desvio_txt($agora_d),
+        "esperada" => $esperada, "dentro" => $dentro, "por_posicao" => $por_posicao,
+        "pontos" => array_map(function ($p) use ($pos) {
+            return ["id" => $p["id"], "inicio" => date("Y-m-d H:i:s", $p["instante"]), "tipo" => $p["tipo"], "desvio" => round($p["desvio"], 2),
+                "posicao" => $p["posicao"], "posicao_texto" => $p["posicao"] === null ? null : ($pos[$p["posicao"]] ?? $p["posicao"])];
+        }, $pontos),
+        "intervalos" => array_reverse(array_map(function ($x) use ($pos) {
+            return ["id" => $x["id"], "de" => date("Y-m-d H:i:s", $x["de"]), "ate" => date("Y-m-d H:i:s", $x["ate"]), "dias" => round($x["dias"], 3),
+                "desvio_de" => round($x["desvio_de"], 2), "desvio_ate" => round($x["desvio_ate"], 2), "marcha" => round($x["marcha"], 2), "marcha_texto" => marcha_txt($x["marcha"]),
+                "posicao" => $x["posicao"], "posicao_texto" => $x["posicao"] === null ? t("não informada") : ($pos[$x["posicao"]] ?? $x["posicao"]), "depois_do_acerto" => $x["depois_do_acerto"]];
+        }, $ints)),
+        "posicoes" => array_map(function ($k) use ($pos) { return ["valor" => $k, "texto" => $pos[$k]]; }, array_keys($pos))];
 }
 
 // O plano de $desde em diante, para comparar antes e depois de uma gravação do rodízio: [AAAA-MM-DD => [id, nome, motivo]],
@@ -4731,7 +5000,7 @@ function leituras_marcadas($rid)
 {
     $pulsos = linhas("SELECT l.inicio, l.fim FROM lancamento l JOIN lancamento_tipo tp ON tp.id = l.tipo_id WHERE l.relogio_id = ? AND tp.identificador = 'pulso'", [(int)$rid]);
     $res = [];
-    foreach (linhas("SELECT l.id, l.inicio, l.estado FROM lancamento l JOIN lancamento_tipo tp ON tp.id = l.tipo_id WHERE l.relogio_id = ? AND tp.formato = 'valor'", [(int)$rid]) as $l) {
+    foreach (linhas("SELECT l.id, l.inicio, l.estado FROM lancamento l JOIN lancamento_tipo tp ON tp.id = l.tipo_id WHERE l.relogio_id = ? AND tp.formato = 'valor' AND tp.marcha IS NULL", [(int)$rid]) as $l) {
         $e = $l["estado"];
         if ($e === null || $e === "") {
             $t = strtotime($l["inicio"]);
@@ -5261,7 +5530,7 @@ function previsao_energia($r, $agora)
         "leitura" => null, "leitura_em" => null, "confianca" => null, "conta" => [], "gasto" => null];
     $tipos_valor = [];
     foreach (lancamento_tipos_do_relogio($r) as $ident => $t) {
-        if ($t["formato"] === "valor") {
+        if ($t["formato"] === "valor" && ($t["marcha"] ?? null) === null) {
             $tipos_valor[] = $ident;
         }
     }
@@ -5269,7 +5538,7 @@ function previsao_energia($r, $agora)
     if (count($tipos_valor) > 0 && $energia_f !== null) {
         $res["aplica"] = true;
         $leitura = linha("SELECT l.inicio, l.valor, t.identificador, t.unidade FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
-            WHERE l.relogio_id = ? AND t.formato = 'valor' AND l.inicio <= ? ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [(int)$r["id"], date("Y-m-d H:i:s", $agora)]);
+            WHERE l.relogio_id = ? AND t.formato = 'valor' AND t.marcha IS NULL AND l.inicio <= ? ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [(int)$r["id"], date("Y-m-d H:i:s", $agora)]);
         $valores = valores_do_relogio((int)$r["id"]);
         $ctx = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => $valores];
         $energia = variavel_valor("energia", $ctx);

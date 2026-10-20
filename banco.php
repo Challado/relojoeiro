@@ -274,7 +274,7 @@ const ESCOPO_VISOES = [
     "no" => ["id", "pai_id*", "dono_id", "nome", "ordem"],
     "relogio" => ["id", "colecao_id", "nome", "apelido", "no_id*", "disponivel", "criado", "copia_banco", "posse"],
     "campo" => ["id", "identificador", "nome", "tipo", "unidade", "padrao", "no_id*", "ordem", "so_desejado"],
-    "lancamento_tipo" => ["id", "identificador", "nome", "formato", "unidade", "fecha_as", "no_id*", "ordem", "exclusiva", "mede_gasto", "condicao"],
+    "lancamento_tipo" => ["id", "identificador", "nome", "formato", "unidade", "fecha_as", "no_id*", "ordem", "exclusiva", "mede_gasto", "marcha", "condicao"],
     "formula" => ["id", "identificador", "nome", "expressao", "unidade", "no_id*"],
     "aviso" => ["id", "identificador", "nome", "expressao", "antecedencia_dias", "texto", "ativo", "no_id*", "escala", "simula_valor", "simula_horas", "agenda",
         "condicao", "resolve_tipo_id", "na_hora"],

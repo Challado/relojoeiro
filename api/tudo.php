@@ -22,7 +22,7 @@ foreach (campos_todos() as $c) {
 $tipos_l = [];
 foreach (lancamento_tipos() as $t) {
     $tipos_l[] = ["id" => (int)$t["id"], "identificador" => $t["identificador"], "nome" => $t["nome"], "formato" => $t["formato"], "unidade" => $t["unidade"],
-        "fecha_as" => $t["fecha_as"] === null ? null : substr($t["fecha_as"], 0, 5), "exclusiva" => (int)$t["exclusiva"] === 1, "mede_gasto" => (int)$t["mede_gasto"] === 1, "condicao" => $t["condicao"],
+        "fecha_as" => $t["fecha_as"] === null ? null : substr($t["fecha_as"], 0, 5), "exclusiva" => (int)$t["exclusiva"] === 1, "mede_gasto" => (int)$t["mede_gasto"] === 1, "marcha" => $t["marcha"] ?? null, "condicao" => $t["condicao"],
         "no_id" => $t["no_id"] === null ? null : (int)$t["no_id"], "lugar" => no_caminho($t["no_id"]), "ordem" => (int)$t["ordem"]];
 }
 $formulas = [];

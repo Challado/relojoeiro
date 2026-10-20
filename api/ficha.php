@@ -37,7 +37,7 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     $tipos = [];
     foreach (lancamento_tipos_do_relogio($r) as $ident => $t) {
         if (substr($ident, -7) !== "_antigo") {
-            $tipos[] = ["identificador" => $ident, "nome" => $t["nome"], "formato" => $t["formato"], "unidade" => $t["unidade"], "mede_gasto" => (int)$t["mede_gasto"] === 1,
+            $tipos[] = ["identificador" => $ident, "nome" => $t["nome"], "formato" => $t["formato"], "unidade" => $t["unidade"], "mede_gasto" => (int)$t["mede_gasto"] === 1, "marcha" => $t["marcha"] ?? null,
                 "aberta" => isset($abertas[$ident]) ? ["inicio" => date("Y-m-d H:i:s", $abertas[$ident]["inicio"]), "rodizio" => $abertas[$ident]["origem"] === "rodizio",
                     "texto" => t("{1}desde {2} ({3} h {4} min)", [1 => $abertas[$ident]["origem"] === "rodizio" ? t("no rodízio ") : "", 2 => date("H:i", $abertas[$ident]["inicio"]), 3 => intdiv((int)floor(($agora - $abertas[$ident]["inicio"]) / 60), 60), 4 => (int)floor(($agora - $abertas[$ident]["inicio"]) / 60) % 60])] : null];
         }
@@ -46,7 +46,7 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     $leituras = [];
     $marcadas = leituras_marcadas($id);
     foreach (array_reverse(linhas("SELECT l.id, l.inicio, l.valor, t.unidade FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
-            WHERE l.relogio_id = ? AND t.formato = 'valor' ORDER BY l.inicio DESC, l.id DESC LIMIT 40", [$id])) as $l) {
+            WHERE l.relogio_id = ? AND t.formato = 'valor' AND t.marcha IS NULL ORDER BY l.inicio DESC, l.id DESC LIMIT 40", [$id])) as $l) {
         $mk = $marcadas[(int)$l["id"]] ?? ["estado" => "repouso", "marcada" => false];
         $leituras[] = ["inicio" => $l["inicio"], "valor" => (float)$l["valor"], "unidade" => $l["unidade"], "em_uso" => $mk["estado"] === "uso",
             "estado" => $mk["estado"], "marcada" => $mk["marcada"]];
@@ -85,13 +85,14 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
         "encostado" => $v["encostado"] ? ["data" => max($hoje->format("Y-m-d"), substr($v["encostado"]["data"], 0, 10)),
             "momento" => $v["encostado_momento"], "falta" => $v["encostado_falta"], "estado" => $v["encostado"]["estado"]] : null,
         "manutencoes" => array_map(function ($a) use ($hoje) { return ["data" => max($hoje->format("Y-m-d"), substr($a["data"], 0, 10)), "nome" => $a["nome"]]; }, array_slice($v["avisos"], 0, 5)),
-        "previsao" => previsao_energia($r, $agora), "tipos" => $tipos, "leituras" => $leituras,
+        "previsao" => previsao_energia($r, $agora), "tipos" => $tipos, "leituras" => $leituras, "precisao" => precisao_do_relogio($r, $agora),
         "medicoes" => medicoes_legivel($id), "medicao_janela_dias" => max(1, (int)cfg("medicao_janela_dias")), "medicao_janela_texto" => medicoes_janela_texto(),
         // os lançamentos dos últimos 14 dias (e a sessão ainda aberta), para corrigir: o quadro "Corrigir marcações"
         "lancamentos_recentes" => array_map(function ($l) {
             return ["id" => (int)$l["id"], "tipo" => $l["identificador"], "nome" => $l["nome"], "formato" => $l["formato"], "unidade" => $l["unidade"],
-                "inicio" => $l["inicio"], "fim" => $l["fim"], "valor" => $l["valor"] === null ? null : (float)$l["valor"], "estado" => $l["estado"], "origem" => $l["origem"]];
-        }, linhas("SELECT l.id, t.identificador, t.nome, t.formato, t.unidade, l.inicio, l.fim, l.valor, l.estado, l.origem FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
+                "inicio" => $l["inicio"], "fim" => $l["fim"], "valor" => $l["valor"] === null ? null : (float)$l["valor"], "estado" => $l["estado"], "origem" => $l["origem"],
+                "marcha" => $l["marcha"], "posicao" => $l["posicao"]];
+        }, linhas("SELECT l.id, t.identificador, t.nome, t.formato, t.unidade, t.marcha, l.inicio, l.fim, l.valor, l.estado, l.posicao, l.origem FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
                 WHERE l.relogio_id = ? AND l.inicio <= ? AND (l.inicio >= ? OR l.fim IS NULL OR l.fim >= ?) ORDER BY l.inicio DESC, l.id DESC LIMIT 40",
             [$id, date("Y-m-d H:i:s", $agora), date("Y-m-d H:i:s", $agora - 14 * 86400), date("Y-m-d H:i:s", $agora - 14 * 86400)])),
         "linha_do_tempo" => array_map("linha_legivel", array_slice($lt["linhas"], 0, 5)), "registros" => count($lt["linhas"]),

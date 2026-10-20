@@ -1,4 +1,4 @@
-<!-- origem: 799921f14551d75abb3ec1468f74fcd910b3826c -->
+<!-- origem: a065211fbb3435bcd16b2a7cd933bceeed2555af -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -540,6 +540,36 @@ s'appliquent que tant qu'il n'y a pas de mesure (ou toujours, dans le moteur 4).
 
 ---
 
+### La précision (la marche de la montre) {#a-precisão-a-marcha-do-relógio}
+
+Toute montre avance ou retarde un peu par jour : c'est la **marche**, en secondes par jour (+ avance, − retarde). Le
+Relojoeiro mesure la marche de chaque montre par les **lectures de l'écart de l'heure** : de combien elle avance ou retarde
+par rapport à l'heure exacte (celle du serveur, la même que la page **Heure exacte**). Deux lectures avec du temps entre elles
+donnent la marche de cet intervalle ; la marche de la montre est la moyenne des intervalles **pondérée par le temps** (un
+intervalle de 10 jours pèse dix fois celui d'un jour, et une lecture fausse d'une seconde ne pèse presque rien). La **Remise
+à l'heure** remet l'écart à zéro : le calcul recommence d'elle, à 0 s.
+
+**Tester la précision**, dans le cadre **Marquer** de la montre : l'heure exacte apparaît en marche, avec les secondes.
+Mettez dans le champ l'heure que la montre va afficher dans un instant (avec les secondes) et appuyez sur **Marquer
+maintenant** quand l'aiguille des secondes l'atteint ; le système la compare à l'heure exacte de cet instant. Dites aussi
+**où elle est restée** depuis la lecture précédente : au poignet, poignet et rangée (comme la rotation l'a fait), rangée
+cadran vers le haut ou vers le bas, couronne vers le haut, vers le bas, à gauche ou à droite, ou dans le remontoir : la
+marche d'une mécanique change avec la position, et le système sépare la marche de chacune. On peut aussi taper l'écart
+directement, en secondes. Le message donne la marche depuis la lecture précédente.
+
+La marche varie avec la position, le remontage, la température et l'usage : la moyenne de plusieurs jours en dit plus
+qu'une seule mesure. Sur une mécanique, un jour entre les lectures mesure déjà bien ; sur un quartz, qui varie de quelques
+secondes par mois, attendez des semaines.
+
+Le cadre **Précision** montre la marche (et de combien les mesures varient entre elles), la dernière, l'écart estimé
+maintenant et la marche attendue (les champs *Marche attendue : de* et *à*) ; le cadre large **Écart au fil du temps** apporte
+le graphique (chaque remise à l'heure recommence la ligne), les mesures et la marche dans chaque position. Les
+avertissements **Remettre à l'heure** (l'écart estimé va dépasser la limite) et **Marche hors de l'attendu** (la dernière
+mesure est sortie de la plage, ou de l'historique de la montre elle-même) sont des formules, comme les autres. Dans les
+formules : `MARCHA(dias; "posição")`, `MARCHA_DP(dias; "posição")`, `MARCHA_N(dias; "posição")`, `MARCHA_ULTIMA()` et
+`DESVIO_AGORA()`. Par l'API : `recurso=precisao` (d'une montre ou le résumé de la collection) et `recurso=lancamento`,
+`acao=lancar`, `tipo=desvio`, avec `valor` ou `marca` (et `instante_ms`) et `posicao`.
+
 ## Plusieurs personnes : comptes, collections et accès {#várias-pessoas-contas-coleções-e-acesso}
 
 Le système appartient à **plusieurs personnes**, chacune avec son **compte**, et chaque compte avec **ses collections**. Une
@@ -793,6 +823,8 @@ charge actuelle est 89 − 0,19 = **88,8 %**. Si vous la mettez au poignet maint
 |---|---|---|
 | **Dernière révision** `data_revisao` | | Date de la dernière révision chez l'horloger. Une saisie *Révision* plus récente prend sa place. |
 | **Révision tous les** (mois) `intervalo_revisao_meses` | | L'intervalle entre révisions (une mécanique, c'est souvent tous les 4 ou 5 ans : 48 ou 60). L'alerte *« Révision »* part 30 jours avant et va dans l'agenda. Vide : pas d'alerte. |
+| **Marche attendue : de** et **à** (s/jour) `marcha_min`, `marcha_max` | | La plage de marche que le fabricant promet (un NH35 : de −20 à +40 s/jour ; un quartz courant : ±0,5 s/jour, ±15 s/mois). Avec elle, la dernière marche mesurée hors de la plage apparaît en ambre dans le cadre **Précision** et déclenche l'avertissement *« Marche hors de l'attendu »*. Vide : seulement la comparaison avec l'historique de la montre elle-même. Voir [La précision](#a-precisão-a-marcha-do-relógio). |
+| **Remettre à l'heure à partir de** (s) `desvio_limite` | 60 | De combien la montre peut avancer ou retarder avant l'avertissement *« Remettre à l'heure »*. |
 
 ### Mécanique (automatique et remontage manuel) {#mecânico-automático-e-corda-manual}
 
@@ -901,6 +933,8 @@ Les alertes de l'ensemble initial, avec l'identifiant (leur nom dans les formule
 | Mettre au soleil | `sol` | Solaire | Au soleil |
 | Changer la pile | `pilha` | Pile | Changement de pile |
 | Révision | `revisao` | Traditionnelle | Révision |
+| Remettre à l'heure | `acertar_hora` | Traditionnelle | la Remise à l'heure. Échoit quand l'écart estimé dépasse *Remettre à l'heure à partir de* (par défaut 60 s), selon la marche mesurée ; avertit 2 jours avant. |
+| Marche hors de l'attendu | `marcha_fora` | Traditionnelle | une nouvelle lecture de l'écart. Échoit à la lecture dont la marche est sortie de la *Marche attendue* ou, avec 4 mesures ou plus, s'est éloignée de l'historique de la montre elle-même (plus de 3 fois la variation, et au moins 5 s/jour). |
 | Garantie qui expire | `garantia` | toutes | (rien : elle alerte seulement) |
 | Délaissée | `encostado` | toutes (celles de la collection, disponibles) | Au poignet. Elle arrive à échéance quand la montre dépasse la limite de jours sans aller au poignet (Configuration, **Alerte Délaissée : jours sans aller au poignet**, 30 par défaut), comptés depuis la dernière fois au poignet (jamais portée, depuis la date d'achat ; sans les deux, pas d'alerte). Elle n'entre pas dans le prochain entretien ni dans **Quoi faire** : le tableau a la colonne **Délaissée**, avec combien il reste ou depuis combien c'est dépassé. |
 
@@ -930,6 +964,8 @@ Une saisie, c'est tout ce que vous marquez sur une montre. Chaque type vaut pour
 | **Sur le chargeur** (`carregador`) | session | Smartwatch | le temps sur le chargeur : l'état de la montre affiche *Sur le chargeur*, la batterie monte selon le champ *Sur le chargeur : heures pour remplir*, l'alerte **Charger** disparaît et, quand elle est pleine, arrive le **Retirer du chargeur**. En la retirant, un relevé de charge remet le calcul d'aplomb. |
 | **Changement de pile** (`pilha`) | instantané | Pile | pile neuve : la durée de vie de la pile recommence. |
 | **Révision** (`revisao`) | instantané | Traditionnelle | la révision faite : le compte jusqu'à la suivante recommence. |
+| **Écart de l'heure** (`desvio`) | valeur (s) | Traditionnelle | de combien la montre avance (+) ou retarde (−) par rapport à l'heure exacte, avec la position où elle est restée depuis la lecture précédente. Mesure la marche (voir [La précision](#a-precisão-a-marcha-do-relógio)). |
+| **Remise à l'heure** (`acerto`) | instantané | Traditionnelle | la montre a été remise à l'heure : l'écart revient à 0 s et le calcul de la marche recommence d'elle. |
 | **Au poignet**, **Remontoir** et **Soleil** *(ancien marquage, sans durée)* (`pulso_antigo`, `winder_antigo`, `sol_antigo`) | instantané | les mêmes | les marquages venus de l'ancien système, qui ne gardait que le moment et pas la durée. Ils comptent comme « portée », « remplie sur le remontoir » et « remplie au soleil » à ce moment-là. On ne les saisit plus depuis l'écran. |
 
 Un format **session** a un début et une fin (mettre et retirer) ; **instantané** est un moment ; **valeur** est un moment avec
@@ -959,6 +995,8 @@ celle du groupe le plus proche de la montre qui s'applique. Toutes se modifient 
 | `dias_de_uso` (jours) | combien de jours la montre est allée au poignet (les anciens marquages aussi). |
 | `custo_por_uso` (R$) | le prix payé divisé par les jours d'usage : combien chaque port a coûté jusqu'ici (cela apparaît dans le cadre **Achat** de la fiche). Sans le prix payé, ou sans aucun jour d'usage, vide. |
 | `dias_ate_revisao` (jours) | **Traditionnelle :** jours jusqu'à la prochaine révision (0 : en retard), selon la dernière révision et l'intervalle de la fiche. |
+| `marcha` (s/jour) | **Traditionnelle :** la marche mesurée, `MARCHA(0; "")` : de combien la montre avance (+) ou retarde (−) par jour, dans la moyenne des mesures pondérée par le temps. |
+| `desvio_agora` (s) | **Traditionnelle :** l'écart estimé maintenant, `DESVIO_AGORA()` : la dernière lecture (0 après une remise à l'heure) plus la marche fois le temps depuis celle-ci. |
 
 Les autonomies sortent en secondes dans l'API (`recurso=autonomia`) et en mots sur la fiche (le cadre **Autonomie**).
 

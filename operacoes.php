@@ -311,7 +311,8 @@ function op_campos($acao, $d)
 // ---------------------------------------------------------------------------------------------------------------------
 // Tipos de lançamento. Ações: novo e alterar (id; identificador, nome, formato, unidade, fecha_as (HH:MM; só sessão:
 // a sessão esquecida aberta fecha sozinha a essa hora do dia em que começou; vazio: não fecha), exclusiva (1 ou 0; só sessão),
-// mede_gasto (1 ou 0; só com valor: cada leitura mede o gasto, comparando com a anterior), condicao (vale quando: uma fórmula,
+// mede_gasto (1 ou 0; só com valor: cada leitura mede o gasto, comparando com a anterior), marcha (vazio, desvio (só com valor:
+// a leitura do desvio da hora, em segundos) ou acerto (só instantâneo: o acerto da hora)), condicao (vale quando: uma fórmula,
 // 1 vale e 0 não; vazia, vale sempre; ex.: corda_manual), no_id), excluir (id). Não se
 // exclui um tipo com lançamentos ou usado numa fórmula; não se muda o formato de um tipo que já tem lançamentos.
 // ---------------------------------------------------------------------------------------------------------------------
@@ -333,6 +334,10 @@ function op_lancamento_tipos($acao, $d)
         $fecha = trim((string)($d["fecha_as"] ?? ($atual ? substr((string)$atual["fecha_as"], 0, 5) : "")));
         $exclusiva = array_key_exists("exclusiva", $d) ? ((string)$d["exclusiva"] === "1" ? 1 : 0) : ($atual ? (int)$atual["exclusiva"] : 0);
         $mede_gasto = array_key_exists("mede_gasto", $d) ? ((string)$d["mede_gasto"] === "1" ? 1 : 0) : ($atual ? (int)$atual["mede_gasto"] : 0);
+        $marcha = trim((string)(array_key_exists("marcha", $d) ? $d["marcha"] : ($atual["marcha"] ?? "")));
+        if ($marcha !== "" && !(($marcha === "desvio" && $formato === "valor") || ($marcha === "acerto" && $formato === "instantaneo"))) {
+            $erros[] = t("Mede a marcha: desvio (só com valor, em segundos), acerto (só instantâneo) ou vazio.");
+        }
         $condicao = trim((string)($d["condicao"] ?? ($atual["condicao"] ?? "")));
         if ($condicao !== "") {
             foreach (formula_validar("", $condicao) as $e) {
@@ -366,15 +371,15 @@ function op_lancamento_tipos($acao, $d)
         }
         if (count($erros) === 0) {
             if ($acao === "novo") {
-                sql("INSERT INTO lancamento_tipo (identificador, nome, formato, unidade, fecha_as, exclusiva, mede_gasto, condicao, no_id, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    [$ident, $nome, $formato, $unidade, $fecha !== "" ? $fecha : null, $formato === "sessao" ? $exclusiva : 0, $formato === "valor" ? $mede_gasto : 0,
+                sql("INSERT INTO lancamento_tipo (identificador, nome, formato, unidade, fecha_as, exclusiva, mede_gasto, marcha, condicao, no_id, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    [$ident, $nome, $formato, $unidade, $fecha !== "" ? $fecha : null, $formato === "sessao" ? $exclusiva : 0, $formato === "valor" ? $mede_gasto : 0, $marcha !== "" ? $marcha : null,
                     $condicao !== "" ? $condicao : null, no_gravar($no),
                     (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM lancamento_tipo")]);
                 $id = ultimo_id();
                 $msg = t("Tipo de lançamento {1} criado, para {2}.", [1 => $nome, 2 => no_caminho($no)]);
             } else {
-                sql("UPDATE lancamento_tipo SET identificador = ?, nome = ?, formato = ?, unidade = ?, fecha_as = ?, exclusiva = ?, mede_gasto = ?, condicao = ?, no_id = ? WHERE id = ?",
-                    [$ident, $nome, $formato, $unidade, $fecha !== "" ? $fecha : null, $formato === "sessao" ? $exclusiva : 0, $formato === "valor" ? $mede_gasto : 0,
+                sql("UPDATE lancamento_tipo SET identificador = ?, nome = ?, formato = ?, unidade = ?, fecha_as = ?, exclusiva = ?, mede_gasto = ?, marcha = ?, condicao = ?, no_id = ? WHERE id = ?",
+                    [$ident, $nome, $formato, $unidade, $fecha !== "" ? $fecha : null, $formato === "sessao" ? $exclusiva : 0, $formato === "valor" ? $mede_gasto : 0, $marcha !== "" ? $marcha : null,
                     $condicao !== "" ? $condicao : null, no_gravar($no), $id]);
                 $msg = t("Tipo de lançamento {1} salvo.", [1 => $nome]);
             }
@@ -1073,12 +1078,31 @@ function op_lancamento($acao, $d)
         $v = numero_br($d["valor"] ?? "");
         $estado = strtolower(trim((string)($d["estado"] ?? "")));
         $pulso_t = lancamento_tipos_do_relogio($r)["pulso"] ?? null;
+        // a leitura do desvio da hora: o desvio direto (valor, em segundos) ou a hora que o relógio mostrava (marca) no instante
+        // da leitura (instante_ms, o da hora certa na tela; sem ele, agora); a posição em que ele ficou desde a anterior
+        $marcha_t = $t["marcha"] ?? null;
+        $posicao = strtolower(trim((string)($d["posicao"] ?? "")));
+        $marca_ok = true;
+        if ($marcha_t === "desvio" && trim((string)($d["marca"] ?? "")) !== "") {
+            [$v_m, $q_m] = desvio_da_marca((string)$d["marca"], (string)($d["instante_ms"] ?? ""), $agora);
+            $marca_ok = $v_m !== null;
+            if ($marca_ok) {
+                $v = $v_m;
+                $q = $q_m;
+            }
+        }
         if ($t["formato"] === "sessao") {
             $erros[] = t("{1} é uma sessão: use iniciar e encerrar, ou periodo.", [1 => $t["nome"]]);
         } elseif ($q === false) {
             $erros[] = t("Quando: AAAA-MM-DD HH:MM, até agora (vazio: agora).");
+        } elseif (!$marca_ok) {
+            $erros[] = t("Marca: a hora que o relógio mostra, HH:MM:SS (o instante da leitura vai em instante_ms, em milissegundos, de até 10 minutos atrás; sem ele, agora).");
         } elseif ($t["formato"] === "valor" && $v === null) {
             $erros[] = t("{1} precisa de um valor (número{2}).", [1 => $t["nome"], 2 => $t["unidade"] !== "" ? ", em " . $t["unidade"] : ""]);
+        } elseif ($marcha_t === "desvio" && abs($v) > 21600) {
+            $erros[] = t("O desvio vai até 6 horas para mais ou para menos (em segundos; + adiantado, − atrasado).");
+        } elseif ($posicao !== "" && ($marcha_t !== "desvio" || !isset(posicoes_marcha()[$posicao]))) {
+            $erros[] = t("Posição ({1}) vale só para a leitura do desvio da hora.", [1 => implode(", ", array_keys(posicoes_marcha()))]);
         } elseif ($estado !== "" && !in_array($estado, ["uso", "repouso"], true)) {
             $erros[] = t("Estado: uso ou repouso (vazio: não diz).");
         } elseif ($estado !== "" && ($t["formato"] !== "valor" || $pulso_t === null)) {
@@ -1100,10 +1124,14 @@ function op_lancamento($acao, $d)
                     $conta[$f] = isset(formulas_todas()[$f]) ? variavel_valor($f, $c) : null;
                 }
             }
-            sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, estado, origem, criado) VALUES (?, ?, ?, NULL, ?, ?, 'manual', NOW())",
-                [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), $t["formato"] === "valor" ? $v : null, $estado !== "" ? $estado : null]);
+            sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, estado, posicao, origem, criado) VALUES (?, ?, ?, NULL, ?, ?, ?, 'manual', NOW())",
+                [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), $t["formato"] === "valor" ? $v : null, $estado !== "" ? $estado : null, $posicao !== "" ? $posicao : null]);
             $id = ultimo_id();
+            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
             $msg = t("Lançado no {1}: {2}{3}{4}.", [1 => $r["nome"], 2 => $t["nome"], 3 => $t["formato"] === "valor" ? " " . decimal_txt($v, 6) . ($t["unidade"] !== "" ? " " . $t["unidade"] : "") : "", 4 => $q < $agora - 60 ? " em " . data_txt($q, true) : ""]);
+            if ($marcha_t !== null) {
+                $msg .= precisao_recado($rid, $id, $marcha_t);
+            }
             if ($mede && !$antes) {
                 $msg .= t(" Primeira leitura: é o ponto de partida.");
             } elseif ($antes) {
@@ -1255,6 +1283,8 @@ function op_lancamento($acao, $d)
             $erros[] = t("{1} já estava em {2} de {3} a {4}: o relógio fica num lugar só.", [1 => $r["nome"], 2 => $s["nome"], 3 => data_txt(strtotime($s["inicio"]), true, true), 4 => $s["fim"] === null ? "agora" : data_txt(strtotime($s["fim"]), true, true)]);
         } elseif ($acao === "alterar" && array_key_exists("estado", $d) && !in_array((string)$d["estado"], ["", "uso", "repouso"], true)) {
             $erros[] = t("Estado: uso ou repouso (vazio: não diz).");
+        } elseif ($acao === "alterar" && array_key_exists("posicao", $d) && (string)$d["posicao"] !== "" && (($t["marcha"] ?? null) !== "desvio" || !isset(posicoes_marcha()[(string)$d["posicao"]]))) {
+            $erros[] = t("Posição ({1}) vale só para a leitura do desvio da hora.", [1 => implode(", ", array_keys(posicoes_marcha()))]);
         } elseif ($acao === "periodo") {
             // no pulso, o relógio do dia está em uso pelo rodízio (como no Pôs), não "fora do plano"
             $p_dia = plano_do_dia(date("Y-m-d", $ini));
@@ -1288,7 +1318,9 @@ function op_lancamento($acao, $d)
         } else {
             // a marcação da leitura (uso ou repouso; vazio: nenhuma) muda só se vier
             $est = $formato === "valor" && array_key_exists("estado", $d) ? ((string)$d["estado"] === "" ? null : (string)$d["estado"]) : ($existente["estado"] ?? null);
-            sql("UPDATE lancamento SET inicio = ?, fim = ?, valor = ?, estado = ? WHERE id = ?", [date("Y-m-d H:i:s", $ini), $fim === null ? null : date("Y-m-d H:i:s", $fim), $v, $est, $id]);
+            // a posição da leitura do desvio (vazio: não informada) também muda só se vier
+            $pos_l = ($t["marcha"] ?? null) === "desvio" && array_key_exists("posicao", $d) ? ((string)$d["posicao"] === "" ? null : (string)$d["posicao"]) : ($existente["posicao"] ?? null);
+            sql("UPDATE lancamento SET inicio = ?, fim = ?, valor = ?, estado = ?, posicao = ? WHERE id = ?", [date("Y-m-d H:i:s", $ini), $fim === null ? null : date("Y-m-d H:i:s", $fim), $v, $est, $pos_l, $id]);
             $msg = t("Corrigido no {1}: {2}.", [1 => $r["nome"], 2 => $t["nome"]]);
         }
     } elseif ($acao === "excluir") {

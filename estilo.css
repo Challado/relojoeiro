@@ -322,6 +322,15 @@ button.discreto { border-color: transparent; font-size: .85rem; padding: 0 .45re
 .grafico { width: 100%; height: auto; background: var(--papel); border: 1px solid var(--aco-escuro); border-radius: 10px; }
 .grafico .guia { stroke: var(--aco); stroke-width: 1; }
 .grafico .linha-carga { fill: none; stroke: var(--safira); stroke-width: 2; }
+/* o desvio da hora (a precisão): a linha zero é a hora certa; cada acerto recomeça a linha */
+.grafico .guia.zero { stroke-dasharray: 4 3; }
+.grafico .linha-desvio { fill: none; stroke: var(--safira); stroke-width: 2; }
+.grafico .ponto-desvio { fill: var(--safira); }
+.grafico .ponto-acerto { fill: #2e8b45; }
+.bolinha.ponto-desvio { background: var(--safira); }
+.bolinha.ponto-acerto { background: #2e8b45; }
+/* a hora certa andando no Testar a precisão */
+.hora-certa-viva { font-variant-numeric: tabular-nums; font-size: 1.2rem; font-weight: 600; margin: .3rem 0; }
 .grafico .ponto { fill: var(--safira); }
 
 

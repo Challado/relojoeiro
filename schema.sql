@@ -224,13 +224,15 @@ CREATE TABLE lancamento_tipo (
     ordem          INT NOT NULL DEFAULT 0,
     exclusiva      TINYINT NOT NULL DEFAULT 0,
     mede_gasto     TINYINT NOT NULL DEFAULT 0,
+    marcha         VARCHAR(10) NULL,
     condicao       VARCHAR(500) NULL,
     INDEX (no_id),
     FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
     CONSTRAINT ck_lancamento_tipo_textos CHECK (TRIM(identificador) <> '' AND TRIM(nome) <> ''),
     CONSTRAINT ck_lancamento_tipo_exclusiva CHECK (exclusiva IN (0, 1) AND (exclusiva = 0 OR formato = 'sessao')),
     CONSTRAINT ck_lancamento_tipo_mede_gasto CHECK (mede_gasto IN (0, 1) AND (mede_gasto = 0 OR formato = 'valor')),
-    CONSTRAINT ck_lancamento_tipo_fecha_as CHECK (fecha_as IS NULL OR formato = 'sessao')
+    CONSTRAINT ck_lancamento_tipo_fecha_as CHECK (fecha_as IS NULL OR formato = 'sessao'),
+    CONSTRAINT ck_lancamento_tipo_marcha CHECK (marcha IS NULL OR (marcha = 'desvio' AND formato = 'valor') OR (marcha = 'acerto' AND formato = 'instantaneo'))
 ) ENGINE=InnoDB;
 
 -- as fórmulas: uma versão por grupo (vale a do grupo mais perto do relógio)
@@ -368,13 +370,15 @@ CREATE TABLE lancamento (
     fim         DATETIME NULL,
     valor       DECIMAL(12,2) NULL,
     estado      VARCHAR(10) NULL,
+    posicao     VARCHAR(20) NULL,
     origem      ENUM('manual','rodizio','importado') NOT NULL DEFAULT 'manual',
     criado      DATETIME NOT NULL,
     INDEX (relogio_id, tipo_id, inicio),
     FOREIGN KEY (relogio_id) REFERENCES relogio(id) ON DELETE CASCADE,
     FOREIGN KEY (tipo_id) REFERENCES lancamento_tipo(id) ON DELETE CASCADE,
     CONSTRAINT ck_lancamento_periodo CHECK (fim IS NULL OR fim >= inicio),
-    CONSTRAINT ck_lancamento_estado CHECK (estado IS NULL OR estado IN ('uso', 'repouso'))
+    CONSTRAINT ck_lancamento_estado CHECK (estado IS NULL OR estado IN ('uso', 'repouso')),
+    CONSTRAINT ck_lancamento_posicao CHECK (posicao IS NULL OR posicao IN ('pulso', 'misto', 'mostrador_cima', 'mostrador_baixo', 'coroa_cima', 'coroa_baixo', 'coroa_esquerda', 'coroa_direita', 'winder'))
 ) ENGINE=InnoDB;
 
 -- o gasto medido entre duas leituras (chega ao relógio pelo lançamento)

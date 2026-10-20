@@ -562,6 +562,32 @@ motor 4).
 
 ---
 
+### A precisão (a marcha do relógio)
+
+Todo relógio adianta ou atrasa um pouco por dia: é a **marcha**, em segundos por dia (+ adianta, − atrasa). O Relojoeiro mede
+a marcha de cada relógio pelas **leituras do desvio da hora**: quanto ele está adiantado ou atrasado em relação à hora certa
+(a do servidor, a mesma da página **Hora certa**). Duas leituras com tempo entre elas dão a marcha daquele intervalo; a
+marcha do relógio é a média dos intervalos **pesada pelo tempo** (um intervalo de 10 dias pesa dez vezes o de um dia, e uma
+leitura errada por 1 segundo quase não pesa). O **Acerto da hora** zera o desvio: a conta recomeça dele, de 0 s.
+
+**Testar a precisão**, no quadro **Marcar** do relógio: a hora certa aparece andando, com os segundos. Ponha no campo a hora
+que o relógio vai mostrar daqui a pouco (com os segundos) e aperte **Marcar agora** quando o ponteiro dos segundos chegar
+nela; o sistema compara com a hora certa daquele instante. Diga também **onde ele ficou** desde a leitura anterior: no pulso,
+pulso e guardado (como o rodízio fez), guardado de mostrador para cima ou para baixo, de coroa para cima, para baixo, para a
+esquerda ou para a direita, ou no winder: a marcha de um mecânico muda com a posição, e o sistema separa a marcha de cada
+uma. Também dá para digitar o desvio direto, em segundos. A mensagem diz a marcha desde a leitura anterior.
+
+A marcha varia com a posição, a corda, a temperatura e o uso: a média de vários dias diz mais que uma medição só. Num
+mecânico, um dia entre as leituras já mede bem; num quartzo, que varia poucos segundos por mês, espere semanas.
+
+O quadro **Precisão** mostra a marcha (e quanto as medições variam entre si), a última, o desvio estimado agora e a marcha
+esperada (os campos *Marcha esperada: de* e *até*); o quadro largo **Desvio ao longo do tempo** traz o gráfico (cada acerto
+recomeça a linha), as medições e a marcha em cada posição. Os avisos **Acertar a hora** (o desvio estimado vai passar do
+limite) e **Marcha fora do esperado** (a última medição saiu da faixa, ou do histórico do próprio relógio) são fórmulas, como
+os outros. Nas fórmulas: `MARCHA(dias; "posição")`, `MARCHA_DP(dias; "posição")`, `MARCHA_N(dias; "posição")`,
+`MARCHA_ULTIMA()` e `DESVIO_AGORA()`. Pela API: `recurso=precisao` (de um relógio ou o resumo da coleção) e
+`recurso=lancamento`, `acao=lancar`, `tipo=desvio`, com `valor` ou `marca` (e `instante_ms`) e `posicao`.
+
 ## Várias pessoas: contas, coleções e acesso
 
 O sistema é de **várias pessoas**, cada uma com a **conta** dela, e cada conta com **as suas coleções**. Uma coleção tem os
@@ -798,6 +824,8 @@ agora é 89 − 0,19 = **88,8%**. Se você puser no pulso agora, com 66,7% por d
 |---|---|---|
 | **Última revisão** `data_revisao` | | Data da última revisão no relojoeiro. Um lançamento de *Revisão* mais recente vale no lugar. |
 | **Revisão a cada** (meses) `intervalo_revisao_meses` | | O intervalo entre revisões (um mecânico costuma ser a cada 4 ou 5 anos: 48 ou 60). O aviso *"Revisão"* sai 30 dias antes e vai para a agenda. Vazio: nenhum aviso. |
+| **Marcha esperada: de** e **até** (s/dia) `marcha_min`, `marcha_max` | | A faixa de marcha que o fabricante promete (um NH35: de −20 a +40 s/dia; um quartzo comum: ±0,5 s/dia, ±15 s/mês). Com ela, a última marcha medida fora da faixa sai em âmbar no quadro **Precisão** e dispara o aviso *"Marcha fora do esperado"*. Vazio: só a comparação com o histórico do próprio relógio. Veja [A precisão](#a-precisão-a-marcha-do-relógio). |
+| **Acertar a hora a partir de** (s) `desvio_limite` | 60 | Quanto o relógio pode estar adiantado ou atrasado antes do aviso *"Acertar a hora"*. |
 
 ### Mecânico (automático e corda manual)
 
@@ -903,6 +931,8 @@ Os avisos do cadastro inicial, com o identificador (o nome deles nas fórmulas, 
 | Pôr no sol | `sol` | Solar | o No sol |
 | Trocar a pilha | `pilha` | Pilha | a Troca de pilha |
 | Revisão | `revisao` | Tradicional | a Revisão |
+| Acertar a hora | `acertar_hora` | Tradicional | o Acerto da hora. Vence quando o desvio estimado passa de *Acertar a hora a partir de* (padrão 60 s), pela marcha medida; avisa 2 dias antes. |
+| Marcha fora do esperado | `marcha_fora` | Tradicional | uma nova leitura do desvio. Vence na leitura cuja marcha saiu da *Marcha esperada* ou, com 4 medições ou mais, ficou longe do histórico do próprio relógio (mais que 3 vezes a variação, e no mínimo 5 s/dia). |
 | Garantia vencendo | `garantia` | todos | (nada: só avisa) |
 | Encostado | `encostado` | todos (os da coleção, disponíveis) | o Pôs no pulso. Vence quando o relógio passa do limite de dias sem ir ao pulso (a Configuração, **Aviso Encostado: dias sem ir ao pulso**, padrão 30), contados da última vez no pulso (sem nunca ter ido, da data da compra; sem as duas, não avisa). Não entra na próxima manutenção nem no **O que fazer**: a tabela tem a coluna **Encostado**, com quanto falta ou quanto passou. |
 
@@ -931,6 +961,8 @@ Um lançamento é tudo o que se marca num relógio. Cada tipo vale para um grupo
 | **No carregador** (`carregador`) | sessão | Smartwatch | o tempo no carregador: o estado do relógio mostra *No carregador*, a bateria sobe pelo campo *No carregador: horas para encher*, o aviso **Carregar** some e, quando enche, vem o **Tirar do carregador**. Ao tirar, uma leitura de carga acerta a conta. |
 | **Troca de pilha** (`pilha`) | instantâneo | Pilha | pilha nova: a vida da pilha recomeça. |
 | **Revisão** (`revisao`) | instantâneo | Tradicional | a revisão feita: a contagem até a próxima recomeça. |
+| **Desvio da hora** (`desvio`) | valor (s) | Tradicional | quanto o relógio está adiantado (+) ou atrasado (−) em relação à hora certa, com a posição em que ele ficou desde a leitura anterior. Mede a marcha (veja [A precisão](#a-precisão-a-marcha-do-relógio)). |
+| **Acerto da hora** (`acerto`) | instantâneo | Tradicional | o relógio foi acertado: o desvio volta a 0 s e a conta da marcha recomeça dele. |
 | **No pulso**, **Winder** e **Sol** *(marcação antiga, sem duração)* (`pulso_antigo`, `winder_antigo`, `sol_antigo`) | instantâneo | os mesmos | as marcações que vieram do sistema anterior, que guardava só o momento e não a duração. Contam como "usou", "encheu no winder" e "encheu no sol" naquele momento. Não se lançam mais pela tela. |
 
 Um formato **sessão** tem começo e fim (pôr e tirar); **instantâneo** é um momento; **valor** é um momento com um número. Um
@@ -959,6 +991,8 @@ mais perto do relógio. Todas se editam e se testam em **Cadastros**.
 | `dias_de_uso` (dias) | em quantos dias o relógio foi ao pulso (também as marcações antigas). |
 | `custo_por_uso` (R$) | o valor pago dividido pelos dias de uso: quanto cada uso já custou (sai no quadro **Compra** da ficha). Sem o valor pago, ou sem nenhum dia de uso, vazio. |
 | `dias_ate_revisao` (dias) | **Tradicional:** dias até a próxima revisão (0: vencida), pela última revisão e pelo intervalo do cadastro. |
+| `marcha` (s/dia) | **Tradicional:** a marcha medida, `MARCHA(0; "")`: quanto o relógio adianta (+) ou atrasa (−) por dia, na média das medições pesada pelo tempo. |
+| `desvio_agora` (s) | **Tradicional:** o desvio estimado agora, `DESVIO_AGORA()`: a última leitura (0 depois de um acerto) mais a marcha vezes o tempo desde ela. |
 
 As autonomias saem em segundos para a API (`recurso=autonomia`) e por extenso na ficha (o quadro **Autonomia**).
 

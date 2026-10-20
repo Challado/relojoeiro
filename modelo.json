@@ -162,6 +162,36 @@
             "so_desejado": 0
         },
         {
+            "identificador": "marcha_min",
+            "nome": "Marcha esperada: de",
+            "tipo": "decimal",
+            "unidade": "s/dia",
+            "padrao": null,
+            "grupo": "tradicional",
+            "ordem": 22,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "marcha_max",
+            "nome": "Marcha esperada: até",
+            "tipo": "decimal",
+            "unidade": "s/dia",
+            "padrao": null,
+            "grupo": "tradicional",
+            "ordem": 23,
+            "so_desejado": 0
+        },
+        {
+            "identificador": "desvio_limite",
+            "nome": "Acertar a hora a partir de",
+            "tipo": "decimal",
+            "unidade": "s",
+            "padrao": "60",
+            "grupo": "tradicional",
+            "ordem": 24,
+            "so_desejado": 0
+        },
+        {
             "identificador": "reserva_horas",
             "nome": "Reserva de marcha",
             "tipo": "inteiro",
@@ -375,7 +405,8 @@
             "ordem": 1,
             "exclusiva": 1,
             "mede_gasto": 0,
-            "condicao": null
+            "condicao": null,
+            "marcha": null
         },
         {
             "identificador": "carga",
@@ -387,7 +418,8 @@
             "ordem": 2,
             "exclusiva": 0,
             "mede_gasto": 1,
-            "condicao": null
+            "condicao": null,
+            "marcha": null
         },
         {
             "identificador": "corda",
@@ -399,7 +431,8 @@
             "ordem": 3,
             "exclusiva": 0,
             "mede_gasto": 0,
-            "condicao": "corda_manual"
+            "condicao": "corda_manual",
+            "marcha": null
         },
         {
             "identificador": "winder",
@@ -411,7 +444,8 @@
             "ordem": 4,
             "exclusiva": 1,
             "mede_gasto": 0,
-            "condicao": null
+            "condicao": null,
+            "marcha": null
         },
         {
             "identificador": "sol",
@@ -423,7 +457,8 @@
             "ordem": 5,
             "exclusiva": 1,
             "mede_gasto": 0,
-            "condicao": null
+            "condicao": null,
+            "marcha": null
         },
         {
             "identificador": "pilha",
@@ -435,7 +470,8 @@
             "ordem": 6,
             "exclusiva": 0,
             "mede_gasto": 0,
-            "condicao": null
+            "condicao": null,
+            "marcha": null
         },
         {
             "identificador": "revisao",
@@ -447,6 +483,33 @@
             "ordem": 7,
             "exclusiva": 0,
             "mede_gasto": 0,
+            "condicao": null,
+            "marcha": null
+        },
+        {
+            "identificador": "desvio",
+            "nome": "Desvio da hora",
+            "formato": "valor",
+            "unidade": "s",
+            "fecha_as": null,
+            "grupo": "tradicional",
+            "ordem": 8,
+            "exclusiva": 0,
+            "mede_gasto": 0,
+            "marcha": "desvio",
+            "condicao": null
+        },
+        {
+            "identificador": "acerto",
+            "nome": "Acerto da hora",
+            "formato": "instantaneo",
+            "unidade": "",
+            "fecha_as": null,
+            "grupo": "tradicional",
+            "ordem": 9,
+            "exclusiva": 0,
+            "mede_gasto": 0,
+            "marcha": "acerto",
             "condicao": null
         },
         {
@@ -459,7 +522,8 @@
             "ordem": 20,
             "exclusiva": 0,
             "mede_gasto": 0,
-            "condicao": null
+            "condicao": null,
+            "marcha": null
         },
         {
             "identificador": "winder_antigo",
@@ -471,7 +535,8 @@
             "ordem": 21,
             "exclusiva": 0,
             "mede_gasto": 0,
-            "condicao": null
+            "condicao": null,
+            "marcha": null
         },
         {
             "identificador": "sol_antigo",
@@ -483,7 +548,8 @@
             "ordem": 22,
             "exclusiva": 0,
             "mede_gasto": 0,
-            "condicao": null
+            "condicao": null,
+            "marcha": null
         },
         {
             "identificador": "carregador",
@@ -495,7 +561,8 @@
             "ordem": 2,
             "exclusiva": 1,
             "mede_gasto": 0,
-            "condicao": null
+            "condicao": null,
+            "marcha": null
         }
     ],
     "formulas": [
@@ -574,6 +641,20 @@
             "nome": "Dias até a revisão (0: vencida)",
             "expressao": "MAX(0; DIAS_ATE(SOMA_MESES(MAX(ULTIMA_DATA(\"revisao\"); data_revisao); intervalo_revisao_meses)))",
             "unidade": "dias",
+            "grupo": "tradicional"
+        },
+        {
+            "identificador": "marcha",
+            "nome": "Marcha",
+            "expressao": "MARCHA(0; \"\")",
+            "unidade": "s/dia",
+            "grupo": "tradicional"
+        },
+        {
+            "identificador": "desvio_agora",
+            "nome": "Desvio estimado agora",
+            "expressao": "DESVIO_AGORA()",
+            "unidade": "s",
             "grupo": "tradicional"
         },
         {
@@ -812,6 +893,38 @@
             "agenda": "sempre",
             "condicao": null,
             "resolve": "revisao",
+            "na_hora": 0
+        },
+        {
+            "identificador": "acertar_hora",
+            "nome": "Acertar a hora",
+            "expressao": "SE(OU(VAZIO(desvio_agora); VAZIO(desvio_limite)); NADA(); SE(ABS(desvio_agora) >= desvio_limite; AGORA(); SE(OU(VAZIO(marcha); marcha = 0); NADA(); AGORA() + SE(marcha > 0; desvio_limite - desvio_agora; desvio_limite + desvio_agora) / ABS(marcha))))",
+            "antecedencia_dias": 2,
+            "texto": "o desvio passa do limite {quando}, {data}",
+            "ativo": 1,
+            "grupo": "tradicional",
+            "escala": "nao",
+            "simula_valor": null,
+            "simula_horas": null,
+            "agenda": "janela",
+            "condicao": null,
+            "resolve": "acerto",
+            "na_hora": 0
+        },
+        {
+            "identificador": "marcha_fora",
+            "nome": "Marcha fora do esperado",
+            "expressao": "SE(MARCHA_N(0; \"\") < 1; NADA(); SE(OU(E(NAO(VAZIO(marcha_min)); MARCHA_ULTIMA() < marcha_min); E(NAO(VAZIO(marcha_max)); MARCHA_ULTIMA() > marcha_max); E(MARCHA_N(0; \"\") >= 4; ABS(MARCHA_ULTIMA() - marcha) > MAX(5; 3 * MARCHA_DP(0; \"\")))); ULTIMA_DATA(\"desvio\"); NADA()))",
+            "antecedencia_dias": 0,
+            "texto": "a última marcha medida saiu do esperado",
+            "ativo": 1,
+            "grupo": "tradicional",
+            "escala": "nao",
+            "simula_valor": null,
+            "simula_horas": null,
+            "agenda": "janela",
+            "condicao": null,
+            "resolve": "desvio",
             "na_hora": 0
         },
         {

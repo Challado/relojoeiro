@@ -85,12 +85,12 @@ function recarregarCadastros() {
       d.lancamento_tipos.forEach(function (item) { if (item.id === editar) { e = item; } });
       var f = e || {};
       res += el("section", {"class": "cartao-config"}, el("h2", {}, t("Tipos de lançamento"))
-        + el("p", {"class": "nota"}, t("O que se registra num relógio: instantâneo (corda), com valor (leitura de carga) ou sessão com início e fim (pulso, winder, sol). O identificador é o nome nas funções das fórmulas: HORAS(\"pulso\"; 30). Sessão exclusiva: o relógio fica num lugar só. Mede o gasto: cada leitura desse tipo mede quanto caiu por dia de uso ou guardado (a função MEDIDO das fórmulas). Vale quando: uma fórmula que diz para quais relógios o tipo vale (ex.: corda_manual, só para quem aceita corda); vazia, vale para todos do grupo."))
+        + el("p", {"class": "nota"}, t("O que se registra num relógio: instantâneo (corda), com valor (leitura de carga) ou sessão com início e fim (pulso, winder, sol). O identificador é o nome nas funções das fórmulas: HORAS(\"pulso\"; 30). Sessão exclusiva: o relógio fica num lugar só. Mede o gasto: cada leitura desse tipo mede quanto caiu por dia de uso ou guardado (a função MEDIDO das fórmulas). Vale quando: uma fórmula que diz para quais relógios o tipo vale (ex.: corda_manual, só para quem aceita corda); vazia, vale para todos do grupo. Mede a marcha: a leitura do desvio da hora (quanto o relógio está adiantado ou atrasado, em segundos) e o acerto da hora, de onde sai a marcha em segundos por dia (o quadro Precisão e as funções MARCHA e DESVIO_AGORA)."))
         + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Tipo")) + el("th", {}, t("Identificador")) + el("th", {}, t("Formato")) + el("th", {}, t("Fecha sozinho às"))
-            + el("th", {}, t("Exclusiva")) + el("th", {}, t("Mede o gasto")) + el("th", {}, t("Vale quando")) + el("th", {}, t("Vale para")) + el("th", {"class": "num"}, t("Lançamentos")) + el("th", {}, "")))
+            + el("th", {}, t("Exclusiva")) + el("th", {}, t("Mede o gasto")) + el("th", {}, t("Mede a marcha")) + el("th", {}, t("Vale quando")) + el("th", {}, t("Vale para")) + el("th", {"class": "num"}, t("Lançamentos")) + el("th", {}, "")))
           + el("tbody", {}, d.lancamento_tipos.map(function (item) {
             return el("tr", {}, el("td", {}, h(item.nome)) + el("td", {"class": "formula ident"}, h(item.identificador)) + el("td", {}, h(d.formatos_de_lancamento[item.formato]) + (item.unidade !== "" ? " (" + h(item.unidade) + ")" : ""))
-              + el("td", {}, h(String(vazio(item.fecha_as)).substr(0, 5))) + el("td", {}, item.exclusiva === 1 ? t("sim") : "") + el("td", {}, item.mede_gasto === 1 ? t("sim") : "") + el("td", {"class": "formula"}, h(vazio(item.condicao))) + el("td", {"class": "nota"}, h(caminho(d, item.no_id))) + el("td", {"class": "num"}, String(item.lancamentos))
+              + el("td", {}, h(String(vazio(item.fecha_as)).substr(0, 5))) + el("td", {}, item.exclusiva === 1 ? t("sim") : "") + el("td", {}, item.mede_gasto === 1 ? t("sim") : "") + el("td", {}, item.marcha ? h(d.marchas_de_lancamento[item.marcha]) : "") + el("td", {"class": "formula"}, h(vazio(item.condicao))) + el("td", {"class": "nota"}, h(caminho(d, item.no_id))) + el("td", {"class": "num"}, String(item.lancamentos))
               + el("td", {"class": "acoes-linha"}, linkEditar(item.id) + " " + botaoLinha("excluir", item.id, t("Excluir"), t("Excluir o tipo {1}?", {1: item.nome}))));
           }).join(""))))
         + el("h3", {"id": "form"}, e ? t("Alterar {1}", {1: h(e.nome)}) : t("Novo tipo de lançamento"))
@@ -106,6 +106,9 @@ function recarregarCadastros() {
             + t(" sessão exclusiva (o relógio num lugar só)"))
           + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "mede_gasto", "value": "0"}) + el("input", {"type": "checkbox", "name": "mede_gasto", "value": "1", "checked": f.mede_gasto === 1})
             + t(" mede o gasto (com valor: cada leitura mede o gasto em uso ou guardado, comparando com a anterior)"))
+          + el("label", {}, t("Mede a marcha {1}", {1: el("select", {"name": "marcha"}, el("option", {"value": ""}, t("não")) + Object.keys(d.marchas_de_lancamento).map(function (k) {
+            return el("option", {"value": k, "selected": f.marcha === k}, h(d.marchas_de_lancamento[k]));
+          }).join(""))}))
           + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")))));
     } else if (aba === "formulas") {
       var e = null;

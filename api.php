@@ -161,6 +161,13 @@
  *                            dias livres no meio; sem por_pagina, o "Mostrar até" da Configuração: proximos_por_pagina, padrão 7):
  *                            {"por_pagina", "pagina", "paginas", "total", "relogio" (null), "dias": [como em plano.dia_a_dia]}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=proximos&pagina=2"
+ *   recurso=precisao         [relogio=id] a precisão (a marcha) pelas leituras do desvio da hora e pelos acertos: de um relógio,
+ *                            {"relogio_id", "relogio", "precisao": {"resumo", "medicoes", "dias", "marcha" (s/dia, + adianta: a média dos
+ *                            intervalos pesada pelo tempo), "marcha_dp", "ultima", "desvio_agora" (s, + adiantado), "esperada": {"de",
+ *                            "ate", "texto"}, "dentro", "por_posicao": [...], "pontos": [...], "intervalos": [...], "posicoes": [...]}}
+ *                            (null sem o tipo que mede a marcha); sem relogio, {"relogios": [um resumo de cada relógio da coleção que
+ *                            tem o tipo do desvio]}. Relógio que não existe: 404.
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=precisao&relogio=4"
  *   recurso=roteiro          roteiro (o texto: as linhas "nome = expressão") ou modo (o id: o roteiro efetivo dele), [dia: AAAA-MM-DD, de
  *                            hoje até um ano à frente; padrão hoje]: testa o roteiro de um modo de rodízio nesse dia, sem gravar (o
  *                            "Testar em todos os relógios" dos Modos de rodízio): {"dia", "dia_semana", "linhas": [{"nome", "expressao"}],
@@ -437,7 +444,8 @@
  *                            Ex. ordem: curl -u lucas:senha -d recurso=campos -d acao=ordem -d id=21 -d direcao=sobe http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=campos -d acao=excluir -d id=21 -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=lancamento_tipos  novo, alterar (id): identificador, nome, formato (instantaneo, valor, sessao), unidade, fecha_as,
- *                             exclusiva (1 ou 0, só sessão), mede_gasto (1 ou 0, só com valor: cada leitura mede o gasto), condicao
+ *                             exclusiva (1 ou 0, só sessão), mede_gasto (1 ou 0, só com valor: cada leitura mede o gasto), marcha
+ *                             (desvio: só com valor, a leitura do desvio da hora; acerto: só instantâneo, o acerto da hora), condicao
  *                             (vale quando: uma fórmula, 1 vale e 0 não; vazia, vale sempre; ex.: corda_manual), no_id;
  *                             excluir (id)
  *                            Ex. novo: curl -u lucas:senha -d recurso=lancamento_tipos -d acao=novo -d identificador=banho_ultrassom -d "nome=Banho ultrassônico" -d formato=instantaneo -d no_id=0 http://servidor/relojoeiro/api.php
@@ -480,7 +488,11 @@
  *                             (sessão), quando: fecha a sessão se ela está aberta, abre se está fechada: um botão só num atalho de
  *                             celular). Em todas, relogio_id=hoje é o relógio do dia, pelo plano. Nada no futuro; o tipo tem de
  *                             valer para o relógio; exclusivas não se sobrepõem. Um intervalo entre duas leituras com outra sessão
- *                             no meio (o carregador) não mede o gasto
+ *                             no meio (o carregador) não mede o gasto. No tipo do desvio da hora: valor (s, + adiantado, até 6 h) ou
+ *                             marca (a hora que o relógio mostra, HH:MM:SS, contra a hora certa no instante instante_ms, em ms, de até
+ *                             10 min atrás; sem ele, agora), posicao (onde ele ficou desde a leitura anterior: misto, pulso,
+ *                             mostrador_cima, mostrador_baixo, coroa_cima, coroa_baixo, coroa_esquerda, coroa_direita, winder); a
+ *                             mensagem diz a marcha desde a anterior. O acerto da hora zera o desvio e recomeça a conta
  *                            Ex. alternar: curl -H "X-Api-Token: ..." -d recurso=lancamento -d acao=alternar -d relogio_id=hoje -d tipo=pulso http://servidor/relojoeiro/api.php
  *                            Ex. lancar: curl -u lucas:senha -d recurso=lancamento -d acao=lancar -d relogio_id=10 -d tipo=carga -d valor=68 http://servidor/relojoeiro/api.php
  *                            Ex. iniciar: curl -u lucas:senha -d recurso=lancamento -d acao=iniciar -d relogio_id=4 -d tipo=sol http://servidor/relojoeiro/api.php
@@ -895,6 +907,8 @@
  *                                    o nome do tipo nas fórmulas (HORAS("pulso"; 30))
  *     lancamento_tipos[].lugar       esse grupo por extenso
  *     lancamento_tipos[].mede_gasto  cada leitura desse tipo mede o gasto, comparando com a anterior (a função MEDIDO)
+ *     lancamento_tipos[].marcha      o que o tipo mede da marcha: desvio (a leitura do desvio da hora, em segundos), acerto (o acerto da
+ *                                    hora) ou null
  *     lancamento_tipos[].no_id       o grupo em que o tipo vale; null: todos
  *     lancamento_tipos[].nome        o nome do tipo
  *     lancamento_tipos[].ordem       a posição do tipo
@@ -1814,6 +1828,10 @@
  *                                    manual, rodizio (a sessão do dia) ou importado
  *     relogio.lancamentos_recentes[].estado
  *                                    numa leitura, a marcação gravada: uso, repouso ou null (sem marcação)
+ *     relogio.lancamentos_recentes[].marcha
+ *                                    o que o tipo mede da marcha: desvio, acerto ou null
+ *     relogio.lancamentos_recentes[].posicao
+ *                                    na leitura do desvio da hora, onde ele ficou desde a anterior (o código); null: não informada
  *     relogio.lancamentos_recentes[].tipo
  *                                    o identificador do tipo de lançamento (pulso, carga, corda...)
  *     relogio.lancamentos_recentes[].unidade
@@ -2051,6 +2069,92 @@
  *     relogio.tipos[].mede_gasto     verdadeiro ou falso: a leitura mede o gasto (a caixa aparece)
  *     relogio.tipos[].nome           o nome
  *     relogio.tipos[].unidade        a unidade do valor
+ *     relogio.tipos[].marcha         o que o tipo mede da marcha: desvio (a leitura do desvio da hora: o Marcar mostra o Testar a
+ *                                    precisão), acerto (o acerto da hora) ou null
+ *     relogio.precisao               a precisão do relógio (o quadro Precisão do painel): as leituras do desvio da hora e os acertos, a
+ *                                    marcha (em segundos por dia: + adianta, − atrasa) e o desvio estimado agora; null se nenhum tipo de
+ *                                    lançamento dele mede a marcha
+ *     relogio.precisao.tipo_desvio   o identificador do tipo de lançamento da leitura do desvio (o lancar com marca, instante_ms e posicao)
+ *     relogio.precisao.tipo_acerto   o identificador do tipo do acerto da hora; null se o relógio não tem
+ *     relogio.precisao.resumo        a frase pronta ("Adianta 7,6 s por dia (média de 3 medições em 9 dias; elas variam ±2,8 s/dia).", ou o
+ *                                    que falta para medir)
+ *     relogio.precisao.medicoes      quantos intervalos medidos (de uma leitura, ou de um acerto, até a leitura seguinte)
+ *     relogio.precisao.dias          o tempo somado dos intervalos, em dias
+ *     relogio.precisao.marcha        a marcha do relógio, em s/dia: a soma das diferenças sobre a soma dos dias (um intervalo de 10 dias
+ *                                    pesa dez vezes o de 1 dia); null sem medição
+ *     relogio.precisao.marcha_texto  a marcha com o sinal e a unidade ("+7,6 s/dia")
+ *     relogio.precisao.marcha_dp     quanto as marchas dos intervalos variam entre si (o desvio padrão, pesado pelo tempo, em s/dia); null
+ *                                    com menos de dois
+ *     relogio.precisao.marcha_dp_texto
+ *                                    a variação por extenso ("±2,8 s/dia")
+ *     relogio.precisao.ultima        a marcha do intervalo mais recente, em s/dia; null sem medição
+ *     relogio.precisao.ultima_texto  a última com o sinal e a unidade
+ *     relogio.precisao.desvio_agora  o desvio estimado agora, em segundos (+ adiantado): o último ponto (0 depois de um acerto) mais a
+ *                                    marcha vezes o tempo desde ele; null sem leitura
+ *     relogio.precisao.desvio_agora_texto
+ *                                    por extenso ("8 s adiantado", "na hora")
+ *     relogio.precisao.esperada      a marcha esperada (os campos marcha_min e marcha_max, do relógio ou do grupo)
+ *     relogio.precisao.esperada.de   o mínimo, em s/dia; null sem
+ *     relogio.precisao.esperada.ate  o máximo, em s/dia; null sem
+ *     relogio.precisao.esperada.texto
+ *                                    por extenso ("de −10 s/dia a +30 s/dia"); null sem nenhum dos dois
+ *     relogio.precisao.dentro        verdadeiro se a última marcha está dentro da esperada; null sem a esperada ou sem medição
+ *     relogio.precisao.por_posicao   a marcha em cada posição em que houve medição, na ordem das posições
+ *     relogio.precisao.por_posicao[] uma posição
+ *     relogio.precisao.por_posicao[].posicao
+ *                                    a posição (o código)
+ *     relogio.precisao.por_posicao[].posicao_texto
+ *                                    a posição por extenso
+ *     relogio.precisao.por_posicao[].medicoes
+ *                                    quantos intervalos nela
+ *     relogio.precisao.por_posicao[].dias
+ *                                    o tempo deles, em dias
+ *     relogio.precisao.por_posicao[].marcha
+ *                                    a marcha nela, em s/dia
+ *     relogio.precisao.por_posicao[].marcha_texto
+ *                                    com o sinal e a unidade
+ *     relogio.precisao.pontos        as leituras do desvio e os acertos da hora, do mais velho ao mais novo (o gráfico)
+ *     relogio.precisao.pontos[]      um ponto
+ *     relogio.precisao.pontos[].id   o id do lançamento
+ *     relogio.precisao.pontos[].inicio
+ *                                    quando (AAAA-MM-DD HH:MM:SS)
+ *     relogio.precisao.pontos[].tipo desvio (a leitura) ou acerto (o acerto da hora)
+ *     relogio.precisao.pontos[].desvio
+ *                                    o desvio em segundos (+ adiantado); 0 no acerto
+ *     relogio.precisao.pontos[].posicao
+ *                                    onde ele ficou desde o ponto anterior (o código); null: não informada
+ *     relogio.precisao.pontos[].posicao_texto
+ *                                    a posição por extenso; null: não informada
+ *     relogio.precisao.intervalos    os intervalos medidos, do mais novo ao mais velho
+ *     relogio.precisao.intervalos[]  um intervalo: de um ponto até a leitura seguinte
+ *     relogio.precisao.intervalos[].id
+ *                                    o id do lançamento da leitura do fim
+ *     relogio.precisao.intervalos[].de
+ *                                    o começo (AAAA-MM-DD HH:MM:SS)
+ *     relogio.precisao.intervalos[].ate
+ *                                    o fim
+ *     relogio.precisao.intervalos[].dias
+ *                                    quanto tempo, em dias
+ *     relogio.precisao.intervalos[].desvio_de
+ *                                    o desvio no começo, em segundos (0 depois de um acerto)
+ *     relogio.precisao.intervalos[].desvio_ate
+ *                                    o desvio no fim
+ *     relogio.precisao.intervalos[].marcha
+ *                                    a marcha no intervalo, em s/dia
+ *     relogio.precisao.intervalos[].marcha_texto
+ *                                    com o sinal e a unidade
+ *     relogio.precisao.intervalos[].posicao
+ *                                    onde ele ficou (a posição da leitura do fim); null: não informada
+ *     relogio.precisao.intervalos[].posicao_texto
+ *                                    a posição por extenso ("não informada" sem ela)
+ *     relogio.precisao.intervalos[].depois_do_acerto
+ *                                    verdadeiro se o intervalo começa num acerto da hora
+ *     relogio.precisao.posicoes      as posições, na ordem, para a lista da tela
+ *     relogio.precisao.posicoes[]    uma posição
+ *     relogio.precisao.posicoes[].valor
+ *                                    o código (o posicao do lancar)
+ *     relogio.precisao.posicoes[].texto
+ *                                    por extenso
  *     relogio.documentos             os documentos do relógio, resumidos (a lista: recurso=documentos&relogio=id)
  *     relogio.documentos.categorias[]
  *                                    as categorias em que ele tem documentos, na ordem
@@ -2293,6 +2397,8 @@
  *                                    o nome do tipo nas fórmulas (HORAS("pulso"; 30))
  *     lancamento_tipos[].lancamentos quantos lançamentos desse tipo existem (número)
  *     lancamento_tipos[].mede_gasto  cada leitura desse tipo mede o gasto, comparando com a anterior (a função MEDIDO)
+ *     lancamento_tipos[].marcha      o que o tipo mede da marcha: desvio (a leitura do desvio da hora, em segundos), acerto (o acerto da
+ *                                    hora) ou null
  *     lancamento_tipos[].no_id       o grupo em que o tipo vale; null: todos
  *     lancamento_tipos[].nome        o nome do tipo
  *     lancamento_tipos[].ordem       a posição do tipo
@@ -2337,6 +2443,9 @@
  *     relogios[].id                  o número
  *     relogios[].nome                o nome
  *     tipos_de_campo.<tipo_de_campo> cada tipo de campo e o nome
+ *     marchas_de_lancamento          o que um tipo de lançamento pode medir da marcha (a lista Mede a marcha do cadastro)
+ *     marchas_de_lancamento.desvio   a leitura do desvio da hora (só com valor, em segundos)
+ *     marchas_de_lancamento.acerto   o acerto da hora (só instantâneo)
  *     documento_categorias[]         as categorias dos documentos, na ordem
  *     documento_categorias[].aceita[]
  *                                    os tipos de arquivo que ela aceita (imagem, video, audio, pdf, xml); lista vazia: qualquer arquivo
@@ -4203,6 +4312,8 @@ if ($recurso === "textos") {
     }
 } elseif ($recurso === "totais") {
     require __DIR__ . "/api/totais.php";
+} elseif ($recurso === "precisao") {
+    require __DIR__ . "/api/precisao.php";
 } elseif ($recurso === "roteiro") {
     // o teste de um roteiro (ou do roteiro de um modo) num dia: cada relógio com as linhas calculadas, e quem sairia
     $texto = (string)($_REQUEST["roteiro"] ?? "");
@@ -4285,7 +4396,7 @@ if ($recurso === "textos") {
 } else {
     $codigo = 404;
     $saida = ["erro" => t("recurso desconhecido"), "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "hora_certa", "acessorios", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "hora_certa", "acessorios", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

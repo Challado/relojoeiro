@@ -574,6 +574,34 @@ en el motor 4).
 
 ---
 
+### La precisión (la marcha del reloj)
+
+Todo reloj adelanta o atrasa un poco por día: es la **marcha**, en segundos por día (+ adelanta, − atrasa). El Relojoeiro
+mide la marcha de cada reloj por las **lecturas del desvío de la hora**: cuánto está adelantado o atrasado respecto a la hora
+exacta (la del servidor, la misma de la página **Hora exacta**). Dos lecturas con tiempo entre ellas dan la marcha de ese
+intervalo; la marcha del reloj es la media de los intervalos **ponderada por el tiempo** (un intervalo de 10 días pesa diez
+veces el de un día, y una lectura errada por 1 segundo casi no pesa). El **Ajuste de la hora** pone el desvío en cero: la
+cuenta recomienza desde él, de 0 s.
+
+**Probar la precisión**, en el cuadro **Marcar** del reloj: la hora exacta aparece andando, con los segundos. Ponga en el
+campo la hora que el reloj va a mostrar dentro de poco (con los segundos) y pulse **Marcar ahora** cuando la aguja de los
+segundos llegue a ella; el sistema la compara con la hora exacta de ese instante. Diga también **dónde estuvo** desde la
+lectura anterior: en el pulso, pulso y guardado (como hizo la rotación), guardado con la esfera hacia arriba o hacia abajo,
+con la corona hacia arriba, hacia abajo, a la izquierda o a la derecha, o en el winder: la marcha de un mecánico cambia con la
+posición, y el sistema separa la marcha de cada una. También se puede escribir el desvío directamente, en segundos. El
+mensaje dice la marcha desde la lectura anterior.
+
+La marcha varía con la posición, la cuerda, la temperatura y el uso: la media de varios días dice más que una sola medición.
+En un mecánico, un día entre las lecturas ya mide bien; en un cuarzo, que varía pocos segundos al mes, espere semanas.
+
+El cuadro **Precisión** muestra la marcha (y cuánto varían las mediciones entre sí), la última, el desvío estimado ahora y la
+marcha esperada (los campos *Marcha esperada: de* y *hasta*); el cuadro ancho **Desvío a lo largo del tiempo** trae el
+gráfico (cada ajuste recomienza la línea), las mediciones y la marcha en cada posición. Los avisos **Ajustar la hora** (el
+desvío estimado va a pasar del límite) y **Marcha fuera de lo esperado** (la última medición salió del rango, o del historial
+del propio reloj) son fórmulas, como los demás. En las fórmulas: `MARCHA(dias; "posição")`, `MARCHA_DP(dias; "posição")`,
+`MARCHA_N(dias; "posição")`, `MARCHA_ULTIMA()` y `DESVIO_AGORA()`. Por la API: `recurso=precisao` (de un reloj o el resumen de
+la colección) y `recurso=lancamento`, `acao=lancar`, `tipo=desvio`, con `valor` o `marca` (y `instante_ms`) y `posicao`.
+
 ## Varias personas: cuentas, colecciones y acceso
 
 El sistema es de **varias personas**, cada una con su **cuenta**, y cada cuenta con **sus colecciones**. Una colección tiene sus
@@ -817,6 +845,8 @@ uso; guardado, en (88,8 − 20) ÷ 0,1 = 688 días.
 |---|---|---|
 | **Última revisión** `data_revisao` | | Fecha de la última revisión en el relojero. Un registro *Revisión* más reciente ocupa su lugar. |
 | **Revisión cada** (meses) `intervalo_revisao_meses` | | El intervalo entre revisiones (un mecánico suele ser cada 4 o 5 años: 48 o 60). El aviso *"Revisión"* sale 30 días antes y va al calendario. Vacío: sin aviso. |
+| **Marcha esperada: de** y **hasta** (s/día) `marcha_min`, `marcha_max` | | El rango de marcha que promete el fabricante (un NH35: de −20 a +40 s/día; un cuarzo común: ±0,5 s/día, ±15 s/mes). Con él, la última marcha medida fuera del rango sale en ámbar en el cuadro **Precisión** y dispara el aviso *"Marcha fuera de lo esperado"*. Vacío: solo la comparación con el historial del propio reloj. Vea [La precisión](#la-precisión-la-marcha-del-reloj). |
+| **Ajustar la hora a partir de** (s) `desvio_limite` | 60 | Cuánto puede estar adelantado o atrasado el reloj antes del aviso *"Ajustar la hora"*. |
 
 ### Mecánico (automático y cuerda manual)
 
@@ -922,6 +952,8 @@ Los avisos del conjunto inicial, con el identificador (su nombre en las fórmula
 | Poner al sol | `sol` | Solar | Al sol |
 | Cambiar la pila | `pilha` | Pila | Cambio de pila |
 | Revisión | `revisao` | Tradicional | Revisión |
+| Ajustar la hora | `acertar_hora` | Tradicional | el Ajuste de la hora. Vence cuando el desvío estimado pasa de *Ajustar la hora a partir de* (por defecto 60 s), por la marcha medida; avisa 2 días antes. |
+| Marcha fuera de lo esperado | `marcha_fora` | Tradicional | una nueva lectura del desvío. Vence en la lectura cuya marcha salió de la *Marcha esperada* o, con 4 mediciones o más, quedó lejos del historial del propio reloj (más de 3 veces la variación, y como mínimo 5 s/día). |
 | Garantía venciendo | `garantia` | todos | (nada: solo avisa) |
 | Arrinconado | `encostado` | todos (los de la colección, disponibles) | En la muñeca. Vence cuando el reloj pasa el límite de días sin ir a la muñeca (Configuración, **Aviso Arrinconado: días sin ir a la muñeca**, predeterminado 30), contados desde la última vez en la muñeca (nunca usado, desde la fecha de compra; sin ambas, sin aviso). No entra en el próximo mantenimiento ni en **Qué hacer**: la tabla tiene la columna **Arrinconado**, con cuánto falta o cuánto pasó. |
 
@@ -950,6 +982,8 @@ Un registro es todo lo que usted marca en un reloj. Cada tipo vale para un grupo
 | **En el cargador** (`carregador`) | sesión | Smartwatch | el tiempo en el cargador: el estado del reloj muestra *En el cargador*, la batería sube según el campo *En el cargador: horas para llenar*, el aviso **Cargar** desaparece y, cuando se llena, llega el **Quitar del cargador**. Al quitarlo, una lectura de carga pone la cuenta en su sitio. |
 | **Cambio de pila** (`pilha`) | instantáneo | Pila | pila nueva: la vida de la pila vuelve a empezar. |
 | **Revisión** (`revisao`) | instantáneo | Tradicional | la revisión hecha: la cuenta hasta la siguiente vuelve a empezar. |
+| **Desvío de la hora** (`desvio`) | valor (s) | Tradicional | cuánto está el reloj adelantado (+) o atrasado (−) respecto a la hora exacta, con la posición en que estuvo desde la lectura anterior. Mide la marcha (vea [La precisión](#la-precisión-la-marcha-del-reloj)). |
+| **Ajuste de la hora** (`acerto`) | instantáneo | Tradicional | se ajustó el reloj: el desvío vuelve a 0 s y la cuenta de la marcha recomienza desde él. |
 | **En la muñeca**, **Winder** y **Sol** *(marca antigua, sin duración)* (`pulso_antigo`, `winder_antigo`, `sol_antigo`) | instantáneo | los mismos | las marcas que vinieron del sistema anterior, que guardaba solo el momento y no la duración. Cuentan como "usado", "llenó en el winder" y "llenó al sol" en ese momento. Ya no se registran desde la pantalla. |
 
 Un formato **sesión** tiene inicio y fin (ponerse y quitarse); **instantáneo** es un momento; **valor** es un momento con un
@@ -978,6 +1012,8 @@ grupo más cercano al reloj. Todas se editan y se prueban en **Definiciones**.
 | `dias_de_uso` (días) | en cuántos días el reloj fue a la muñeca (las marcas antiguas también). |
 | `custo_por_uso` (R$) | el valor pagado dividido por los días de uso: cuánto ha costado cada uso hasta ahora (aparece en el cuadro **Compra** de la ficha). Sin el valor pagado, o sin ningún día de uso, vacío. |
 | `dias_ate_revisao` (días) | **Tradicional:** días hasta la próxima revisión (0: atrasada), por la última revisión y el intervalo de la ficha. |
+| `marcha` (s/día) | **Tradicional:** la marcha medida, `MARCHA(0; "")`: cuánto adelanta (+) o atrasa (−) el reloj por día, en la media de las mediciones ponderada por el tiempo. |
+| `desvio_agora` (s) | **Tradicional:** el desvío estimado ahora, `DESVIO_AGORA()`: la última lectura (0 después de un ajuste) más la marcha por el tiempo desde ella. |
 
 Las autonomías salen en segundos en la API (`recurso=autonomia`) y en palabras en la ficha (el cuadro **Autonomía**).
 

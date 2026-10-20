@@ -579,6 +579,34 @@ there's no need to touch the record. The record's "Decay in use" and "Decay stor
 
 ---
 
+### Accuracy (the watch's rate)
+
+Every watch gains or loses a little per day: that is the **rate**, in seconds per day (+ fast, − slow). The Relojoeiro
+measures each watch's rate from the **time deviation readings**: how fast or slow it is compared with the correct time (the
+server's, the same as the **Correct time** page). Two readings with time between them give the rate of that interval; the
+watch's rate is the average of the intervals **weighted by time** (a 10-day interval weighs ten times a one-day one, and a
+reading off by 1 second barely counts). The **Time setting** zeroes the deviation: the count starts again from it, at 0 s.
+
+**Test the accuracy**, in the watch's **Mark** box: the correct time appears running, with the seconds. Put in the field the
+time the watch will show in a moment (with the seconds) and press **Mark now** when the seconds hand reaches it; the system
+compares it with the correct time of that instant. Also say **where it stayed** since the previous reading: on the wrist,
+wrist and stored (as the rotation did), stored dial up or down, crown up, down, left or right, or in the winder: the rate of a
+mechanical changes with the position, and the system separates the rate of each one. You can also type the deviation
+directly, in seconds. The message tells the rate since the previous reading.
+
+The rate varies with the position, the winding, the temperature and the use: the average of several days says more than a
+single measurement. On a mechanical, one day between readings already measures well; on a quartz, which varies a few seconds
+a month, wait weeks.
+
+The **Accuracy** box shows the rate (and how much the measurements vary among themselves), the last one, the estimated
+deviation now and the expected rate (the fields *Expected rate: from* and *to*); the wide box **Deviation over time** brings
+the chart (each time setting restarts the line), the measurements and the rate in each position. The warnings **Set the time**
+(the estimated deviation is going to pass the limit) and **Rate outside the expected** (the last measurement left the range,
+or the watch's own history) are formulas, like the others. In formulas: `MARCHA(dias; "posição")`, `MARCHA_DP(dias; "posição")`,
+`MARCHA_N(dias; "posição")`, `MARCHA_ULTIMA()` and `DESVIO_AGORA()`. Through the API: `recurso=precisao` (of one watch or the
+collection summary) and `recurso=lancamento`, `acao=lancar`, `tipo=desvio`, with `valor` or `marca` (and `instante_ms`) and
+`posicao`.
+
 ## Several people: accounts, collections and access
 
 The system belongs to **several people**, each with their own **account**, and each account with **its own collections**. A
@@ -824,6 +852,8 @@ now is 89 − 0.19 = **88.8%**. If you put it on the wrist now, at 66.7% per day
 |---|---|---|
 | **Last service** `data_revisao` | | Date of the last service at the watchmaker. A more recent *Service* entry takes its place. |
 | **Service every** (months) `intervalo_revisao_meses` | | The interval between services (a mechanical is usually every 4 or 5 years: 48 or 60). The *"Service"* alert goes out 30 days before and goes to the calendar. Empty: no alert. |
+| **Expected rate: from** and **to** (s/day) `marcha_min`, `marcha_max` | | The rate range the manufacturer promises (an NH35: from −20 to +40 s/day; a common quartz: ±0.5 s/day, ±15 s/month). With it, the last measured rate outside the range shows in amber in the **Accuracy** box and triggers the *"Rate outside the expected"* warning. Empty: only the comparison with the watch's own history. See [Accuracy](#accuracy-the-watchs-rate). |
+| **Set the time from** (s) `desvio_limite` | 60 | How fast or slow the watch may be before the *"Set the time"* warning. |
 
 ### Mechanical (automatic and hand-wound)
 
@@ -931,6 +961,8 @@ The alerts of the initial set, with the identifier (their name in the formulas, 
 | Put in the sun | `sol` | Solar | In the sun |
 | Change the battery | `pilha` | Battery | Battery change |
 | Service | `revisao` | Traditional | Service |
+| Set the time | `acertar_hora` | Traditional | the Time setting. Falls due when the estimated deviation passes *Set the time from* (default 60 s), by the measured rate; warns 2 days before. |
+| Rate outside the expected | `marcha_fora` | Traditional | a new deviation reading. Falls due at the reading whose rate left the *Expected rate* or, with 4 measurements or more, was far from the watch's own history (more than 3 times the variation, and at least 5 s/day). |
 | Warranty expiring | `garantia` | all | (nothing: it only alerts) |
 | Idle | `encostado` | all (those in the collection, available) | Put on the wrist. It comes due when the watch passes the limit of days without going on the wrist (Settings, **Idle alert: days without going on the wrist**, default 30), counted from the last time on the wrist (never worn, from the purchase date; without both, no alert). It does not take the next service or **What to do**: the table has its own **Idle** column, with how long is left or how long it is overdue. |
 
@@ -959,6 +991,8 @@ An entry is anything you mark on a watch. Each type applies to a group and to th
 | **On the charger** (`carregador`) | session | Smartwatch | the time on the charger: the watch's state shows *On the charger*, the battery goes up by the *On the charger: hours to fill* field, the **Charge** alert goes away and, when it fills, **Take off the charger** comes. When taking it off, a charge reading sets the calculation right. |
 | **Battery change** (`pilha`) | instant | Battery | new battery: the battery life starts over. |
 | **Service** (`revisao`) | instant | Traditional | the service done: the count to the next one starts over. |
+| **Time deviation** (`desvio`) | value (s) | Traditional | how fast (+) or slow (−) the watch is compared with the correct time, with the position it stayed in since the previous reading. Measures the rate (see [Accuracy](#accuracy-the-watchs-rate)). |
+| **Time setting** (`acerto`) | instant | Traditional | the watch was set: the deviation goes back to 0 s and the rate count starts again from it. |
 | **On the wrist**, **Winder** and **Sun** *(old mark, no duration)* (`pulso_antigo`, `winder_antigo`, `sol_antigo`) | instant | the same | the marks that came from the previous system, which kept only the moment and not the duration. They count as "worn", "filled on the winder" and "filled in the sun" at that moment. They are no longer logged from the screen. |
 
 A **session** format has a start and an end (put on and take off); **instant** is a moment; **value** is a moment with a
@@ -987,6 +1021,8 @@ group closest to the watch applies. All of them are edited and tested in **Defin
 | `dias_de_uso` (days) | on how many days the watch went on the wrist (the old marks too). |
 | `custo_por_uso` (R$) | the price paid divided by the days of use: how much each use has cost so far (it appears in the **Purchase** box on the watch page). Without the price paid, or without any day of use, empty. |
 | `dias_ate_revisao` (days) | **Traditional:** days until the next service (0: overdue), by the last service and the record's interval. |
+| `marcha` (s/day) | **Traditional:** the measured rate, `MARCHA(0; "")`: how much the watch gains (+) or loses (−) per day, in the average of the measurements weighted by time. |
+| `desvio_agora` (s) | **Traditional:** the estimated deviation now, `DESVIO_AGORA()`: the last reading (0 after a setting) plus the rate times the time since it. |
 
 The autonomies come out in seconds in the API (`recurso=autonomia`) and in words on the watch page (the **Autonomy** box).
 

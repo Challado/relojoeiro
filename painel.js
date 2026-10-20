@@ -284,6 +284,17 @@ function abrirNoPainel(id) {
         [t("Próxima vez"), h(proxima)]]),
         r.disponivel && r.proxima !== hoje ? el("form", {"data-recurso": "rodizio", "onsubmit": "return confirm(" + JSON.stringify(t("Usar o {1} hoje? Ele passa a ser o relógio do rodízio no período atual e o plano é refeito.", {1: r.nome})) + ")"}, el("input", {"type": "hidden", "name": "acao", "value": "usando"})
           + el("input", {"type": "hidden", "name": "relogio_id", "value": id}) + el("button", {"class": "leve"}, t("Usando hoje"))) : "");
+      // a precisão (com o tipo de lançamento que mede a marcha): o resumo da API, a marcha, a última, o desvio estimado agora e a
+      // esperada; a última fora da esperada em âmbar
+      var pr = r.precisao;
+      if (pr) {
+        blocos += quadro(t("Precisão"), el("p", {"class": "nota"}, h(pr.resumo)) + (pr.medicoes > 0 ? pares([
+          [t("Marcha"), el("strong", {}, h(pr.marcha_texto)) + (pr.marcha_dp_texto ? el("small", {}, t("variam {1}", {1: h(pr.marcha_dp_texto)})) : "")],
+          [t("Última medição"), el("span", {"class": pr.dentro === false ? "em atrasado" : ""}, h(pr.ultima_texto)) + (pr.dentro === false ? el("small", {}, t("fora da marcha esperada")) : "")],
+          [t("Desvio estimado agora"), h(pr.desvio_agora_texto)],
+          [t("Marcha esperada"), pr.esperada.texto ? h(pr.esperada.texto) : nada(t("não cadastrada"))]])
+          : (pr.pontos.length > 0 ? pares([[t("Desvio estimado agora"), h(pr.desvio_agora_texto)]]) : "")));
+      }
       var c = r.compra;
       blocos += quadro(t("Compra"), c.data === null && c.valor === null && c.loja === null && c.garantia_ate === null
         ? el("p", {"class": "nota"}, t("Sem dados da compra. Preencha em \"Editar cadastro\"."))
@@ -342,6 +353,22 @@ function abrirNoPainel(id) {
             partes += parte("marcar", chave, base + el("input", {"type": "hidden", "name": "acao", "value": tirar ? "encerrar" : "iniciar"})
               + (tirar ? el("p", {"class": "marcar-estado"}, h(item.aberta.texto)) : "")
               + quando(tirar ? t("Tirou às") : t("Pôs às")) + el("button", {}, h(verbo)));
+          } else if (item.marcha === "desvio" && r.precisao) {
+            // a leitura do desvio da hora (o Testar a precisão): a hora certa andando na tela; a pessoa põe a hora que o relógio vai
+            // mostrar e aperta o botão quando o ponteiro chegar nela (o instante vai pela hora certa: instante_ms); ou digita o desvio
+            opcoes.agora += el("option", {"value": chave}, t("Testar a precisão (o desvio da hora)"));
+            partes += parte("marcar", chave, base + el("input", {"type": "hidden", "name": "acao", "value": "lancar"})
+              + el("input", {"type": "hidden", "name": "instante_ms", "value": "", "data-instante-certo": true})
+              + el("p", {"class": "hora-certa-viva", "data-hora-certa": true}, "")
+              + el("p", {"class": "nota"}, t("Ponha no campo a hora que o relógio vai mostrar daqui a pouco, com os segundos, e aperte o botão quando o ponteiro dos segundos chegar nela."))
+              + el("label", {}, t("O relógio marca {1}", {1: el("input", {"type": "time", "step": "1", "name": "marca"})}))
+              + el("label", {}, t("Onde ele ficou desde a leitura anterior {1}", {1: el("select", {"name": "posicao"}, r.precisao.posicoes.map(function (p) {
+                return el("option", {"value": p.valor}, h(p.texto));
+              }).join(""))}))
+              + el("details", {"class": "ou-digite"}, el("summary", {}, t("ou digite o desvio"))
+                + el("label", {}, t("Desvio {1}", {1: el("span", {"class": "com-unidade"}, el("input", {"type": "text", "inputmode": "decimal", "name": "valor"}) + " " + h(item.unidade))}))
+                + el("p", {"class": "nota"}, t("Em segundos: + adiantado, − atrasado. Vale quando o campo da hora fica vazio.")) + quando(t("Lido às")))
+              + el("button", {}, t("Marcar agora")));
           } else if (item.formato === "valor") {
             // a leitura que mede o gasto, num relógio que vai ao pulso: duas opções, em uso e em repouso. A marcação manda: o
             // gasto em uso sai só das leituras em uso, e o em repouso só das em repouso; se ela não bate com o pulso
@@ -404,7 +431,12 @@ function abrirNoPainel(id) {
                 // a marcação da leitura (em uso ou em repouso), que diz para qual dos dois gastos ela conta
                 + (l.formato === "valor" && pulsoTipo && tipoMede[l.tipo] ? el("label", {}, t("Marcação {1}", {1: el("select", {"name": "estado"},
                   el("option", {"value": "", "selected": l.estado === null}, t("sem marcação (vale o pulso registrado)")) + el("option", {"value": "uso", "selected": l.estado === "uso"}, t("em uso"))
-                  + el("option", {"value": "repouso", "selected": l.estado === "repouso"}, t("em repouso")))})) : "");
+                  + el("option", {"value": "repouso", "selected": l.estado === "repouso"}, t("em repouso")))})) : "")
+                // a posição da leitura do desvio da hora (onde ele ficou desde a anterior)
+                + (l.marcha === "desvio" && r.precisao ? el("label", {}, t("Onde ele ficou {1}", {1: el("select", {"name": "posicao"},
+                  el("option", {"value": "", "selected": l.posicao === null}, t("não informada")) + r.precisao.posicoes.map(function (p) {
+                    return el("option", {"value": p.valor, "selected": l.posicao === p.valor}, h(p.texto));
+                  }).join(""))})) : "");
             }
             campos += parte("corrigir", String(l.id), el("input", {"type": "hidden", "name": "id", "value": l.id}) + desta
               + el("span", {"class": "marcar-botoes"}, el("button", {"name": "acao", "value": "alterar"}, t("Salvar"))
@@ -559,6 +591,60 @@ function abrirNoPainel(id) {
               }).join("")));
         }
         res += quadro(t("Carga ao longo do tempo"), grafico + med, "", "largo");
+      }
+      // o desvio ao longo do tempo (as leituras e os acertos: cada acerto recomeça a linha em 0 s) e as medições da marcha (os
+      // intervalos, os 10 mais recentes), com a marcha em cada posição quando há mais de uma
+      if (r.precisao && r.precisao.pontos.length > 0) {
+        var pr2 = r.precisao;
+        var graficoP = el("p", {"class": "nota"}, t("O gráfico aparece a partir de duas leituras do desvio."));
+        if (pr2.pontos.length >= 2) {
+          var p0 = instante(pr2.pontos[0].inicio);
+          var p1 = Math.max(p0 + 1000, instante(pr2.pontos[pr2.pontos.length - 1].inicio));
+          var maior = Math.max(1, Math.max.apply(null, pr2.pontos.map(function (p) { return Math.abs(p.desvio); })));
+          var xy = function (p) {
+            return [Math.round((instante(p.inicio) - p0) / (p1 - p0) * 6000) / 10, Math.round((60 - p.desvio / maior * 50) * 10) / 10];
+          };
+          var trechos = [];
+          var atual = [];
+          pr2.pontos.forEach(function (p) {
+            if (p.tipo === "acerto" && atual.length > 0) {
+              trechos.push(atual);
+              atual = [];
+            }
+            atual.push(xy(p).join(","));
+          });
+          trechos.push(atual);
+          var deP = dataBr(pr2.pontos[0].inicio, true);
+          var ateP = dataBr(pr2.pontos[pr2.pontos.length - 1].inicio, true);
+          graficoP = "<svg class=\"grafico\" viewBox=\"-10 0 620 120\" role=\"img\" aria-label=\"" + h(t("Desvio da hora de {1} a {2}", {1: deP, 2: ateP})) + "\">"
+            + "<line x1=\"0\" y1=\"10\" x2=\"600\" y2=\"10\" class=\"guia\"/><line x1=\"0\" y1=\"60\" x2=\"600\" y2=\"60\" class=\"guia zero\"/><line x1=\"0\" y1=\"110\" x2=\"600\" y2=\"110\" class=\"guia\"/>"
+            + trechos.map(function (tr) { return "<polyline points=\"" + tr.join(" ") + "\" class=\"linha-desvio\"/>"; }).join("")
+            + pr2.pontos.map(function (p) {
+              var c2 = xy(p);
+              return "<circle cx=\"" + c2[0] + "\" cy=\"" + c2[1] + "\" r=\"4\" class=\"" + (p.tipo === "acerto" ? "ponto-acerto" : "ponto-desvio") + "\"/>";
+            }).join("")
+            + "</svg>" + pares([
+              [t("Pontos"), el("span", {"class": "legenda-ponto"}, t("{1} leitura do desvio", {1: el("span", {"class": "bolinha ponto-desvio"}, "")}))
+                + " " + el("span", {"class": "legenda-ponto"}, t("{1} acerto da hora", {1: el("span", {"class": "bolinha ponto-acerto"}, "")}))],
+              [t("Período"), t("{1} a {2}", {1: deP, 2: ateP})],
+              [t("Escala"), t("de −{1} s (atrasado) a +{1} s (adiantado); o meio é a hora certa", {1: num(maior, 0)})]], "legenda-grafico");
+        }
+        var medP = "";
+        if (pr2.intervalos.length > 0) {
+          medP = el("h3", {}, t("Medições da marcha")) + el("p", {"class": "nota"}, t("Cada leitura comparada com a anterior (ou com o acerto da hora). A marcha do relógio é a média delas pesada pelo tempo: um intervalo de 10 dias pesa dez vezes o de um dia."))
+            + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Quando")) + el("th", {}, t("Dias")) + el("th", {}, t("Onde ficou")) + el("th", {}, t("Desvio")) + el("th", {}, t("Marcha"))))
+              + el("tbody", {}, pr2.intervalos.slice(0, 10).map(function (x) {
+                return el("tr", {}, el("td", {}, dataBr(x.ate, true) + " " + horaBr(x.ate)) + el("td", {}, num(x.dias, 2)) + el("td", {}, h(x.posicao_texto))
+                  + el("td", {}, t("{1} → {2} s", {1: num(x.desvio_de, 1), 2: num(x.desvio_ate, 1)})) + el("td", {}, h(x.marcha_texto)));
+              }).join("")));
+          if (pr2.por_posicao.length > 1) {
+            medP += el("h3", {}, t("Marcha em cada posição")) + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Onde ficou")) + el("th", {}, t("Medições")) + el("th", {}, t("Dias")) + el("th", {}, t("Marcha"))))
+              + el("tbody", {}, pr2.por_posicao.map(function (x) {
+                return el("tr", {}, el("td", {}, h(x.posicao_texto)) + el("td", {}, String(x.medicoes)) + el("td", {}, num(x.dias, 1)) + el("td", {}, h(x.marcha_texto)));
+              }).join("")));
+          }
+        }
+        res += quadro(t("Desvio ao longo do tempo"), graficoP + medP, "", "largo");
       }
       // os dados do relógio: o cadastro que vale para ele (o informado, senão o padrão do campo) e o resultado de cada fórmula agora
       var valorCampo = function (c) {

@@ -277,8 +277,8 @@ function arvore_criar($dono_id, $nome, $lingua, $com_modelo)
         }
         $tipos = [];
         foreach ($m["tipos"] as $x) {
-            sql("INSERT INTO lancamento_tipo (identificador, nome, formato, unidade, fecha_as, no_id, ordem, exclusiva, mede_gasto, condicao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [$x["identificador"], $tr($x["nome"]), $x["formato"], $x["unidade"], $x["fecha_as"], $grupo($x["grupo"]), (int)$x["ordem"], (int)$x["exclusiva"], (int)$x["mede_gasto"], $x["condicao"]]);
+            sql("INSERT INTO lancamento_tipo (identificador, nome, formato, unidade, fecha_as, no_id, ordem, exclusiva, mede_gasto, marcha, condicao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [$x["identificador"], $tr($x["nome"]), $x["formato"], $x["unidade"], $x["fecha_as"], $grupo($x["grupo"]), (int)$x["ordem"], (int)$x["exclusiva"], (int)$x["mede_gasto"], $x["marcha"] ?? null, $x["condicao"]]);
             $tipos[$x["identificador"]] = ultimo_id();
         }
         foreach ($m["formulas"] as $f) {

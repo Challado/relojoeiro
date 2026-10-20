@@ -439,6 +439,43 @@ function restaurarPosicaoDaGravacao(p) {
     });
   });
 }
+// A hora certa (a do servidor, recurso=hora_certa) para quem mede a precisão: a diferença para o relógio deste aparelho, em
+// ms (descontando metade do tempo do pedido), e o deslocamento do fuso do pedido (as horas que a API usa), medidos uma vez,
+// quando a tela mostra algum [data-hora-certa]; esses elementos mostram a hora certa andando, com os segundos
+var horaCerta = {diferenca: null, fuso: 0, pedindo: false};
+function horaCertaMedir() {
+  var antes = Date.now();
+  horaCerta.pedindo = true;
+  return api({recurso: "hora_certa"}).then(function (d) {
+    horaCerta.diferenca = d.agora_ms - Math.round((antes + Date.now()) / 2);
+    horaCerta.fuso = d.fuso.segundos;
+  }).catch(function () {
+    return null;
+  }).then(function () {
+    horaCerta.pedindo = false;
+  });
+}
+setInterval(function () {
+  var mostra = document.querySelectorAll("[data-hora-certa]");
+  if (mostra.length === 0) {
+    return;
+  }
+  if (horaCerta.diferenca === null) {
+    if (!horaCerta.pedindo) {
+      horaCertaMedir();
+    }
+    return;
+  }
+  var a = new Date(Date.now() + horaCerta.diferenca + horaCerta.fuso * 1000);
+  var dois = function (n) { return (n < 10 ? "0" : "") + n; };
+  var texto = t("Hora certa agora: {1}", {1: dois(a.getUTCHours()) + ":" + dois(a.getUTCMinutes()) + ":" + dois(a.getUTCSeconds())});
+  mostra.forEach(function (e) {
+    if (e.textContent !== texto) {
+      e.textContent = texto;
+    }
+  });
+}, 200);
+
 // O que uma gravação do rodízio mudou no plano (a resposta traz mudancas): o resumo e, quando algum dia mudou, a
 // tabelinha dia a dia (antes → depois, com o motivo do novo), como a API mandou
 function tabelaMudancas(m) {
@@ -527,6 +564,12 @@ document.addEventListener("submit", function (ev) {
     form.querySelectorAll("input[data-agora]").forEach(function (c) {
       if (c.name && !c.disabled) {
         dados.set(c.name, c.getAttribute("data-agora") === "vazio" ? "" : momentoNavegador(new Date()));
+      }
+    });
+    // o instante exato do envio pela hora certa (data-instante-certo: o Testar a precisão), em milissegundos
+    form.querySelectorAll("input[data-instante-certo]").forEach(function (c) {
+      if (c.name && !c.disabled) {
+        dados.set(c.name, String(Date.now() + (horaCerta.diferenca || 0)));
       }
     });
     dados.append("recurso", form.getAttribute("data-recurso"));

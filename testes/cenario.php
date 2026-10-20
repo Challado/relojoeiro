@@ -534,6 +534,37 @@ escrever(["recurso" => "formulas", "acao" => "excluir", "id" => $id_de("formulas
 escrever(["recurso" => "avisos", "acao" => "alterar", "id" => $id_de("avisos", "pulseira"), "antecedencia_dias" => 30, "escala" => "sempre", "agenda" => "sempre"]);
 escrever(["recurso" => "avisos", "acao" => "excluir", "id" => $id_de("avisos", "pulseira"), "confirmar" => 1]);
 
+// a precisão do automático: três leituras do desvio da hora (0 s há 10 dias; +50 s há 5, no pulso; +60 s há 3, mostrador para
+// cima), um acerto da hora há 2 dias e a leitura pela hora que o relógio mostra (+8 s, em instante_ms: um minuto cheio de agora
+// há pouco, para os bancos darem a mesma conta). As marchas: +10, +5 e +4 s/dia; a do relógio, pesada pelo tempo, 68/9 s/dia.
+// E as recusas: a posição numa leitura que não é do desvio, a hora inválida e o desvio de mais de 6 horas
+$base_p = intdiv(time() - 60, 60) * 60;
+foreach ([[10, "0", ""], [5, "50", "pulso"], [3, "60", "mostrador_cima"]] as [$dias_p, $valor_p, $pos_p]) {
+    escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["auto"], "tipo" => "desvio", "valor" => $valor_p, "posicao" => $pos_p,
+        "quando" => date("Y-m-d H:i", $base_p - $dias_p * 86400)]);
+}
+escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["auto"], "tipo" => "acerto", "quando" => date("Y-m-d H:i", $base_p - 2 * 86400)]);
+escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["auto"], "tipo" => "desvio", "marca" => date("H:i:s", $base_p + 8),
+    "instante_ms" => (string)($base_p * 1000), "posicao" => "misto"]);
+escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["smart"], "tipo" => "carga", "valor" => "50", "posicao" => "pulso"], false);
+escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["auto"], "tipo" => "desvio", "marca" => "25:00:00"], false);
+escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["auto"], "tipo" => "desvio", "valor" => "30000"], false);
+$p_auto = ler("precisao do automatico", ["recurso" => "precisao", "relogio" => $rel["auto"]])["precisao"] ?? null;
+$p_esperado = ["medicoes" => 3, "marcha" => round(68 / 9, 2), "ultima" => 4.0];
+foreach ($p_esperado as $k_p => $v_p) {
+    if (!is_array($p_auto) || abs((float)($p_auto[$k_p] ?? -999) - $v_p) > 0.001) {
+        $falhas[] = "precisão: " . $k_p . " deu " . json_encode($p_auto[$k_p] ?? null) . ", esperado " . $v_p;
+    }
+}
+$p_pos = is_array($p_auto) ? array_column($p_auto["por_posicao"], "marcha", "posicao") : [];
+if (($p_pos["pulso"] ?? null) != 10 || ($p_pos["mostrador_cima"] ?? null) != 5 || ($p_pos["misto"] ?? null) != 4) {
+    $falhas[] = "precisão: a marcha por posição deu " . json_encode($p_pos);
+}
+ler("precisao da colecao", ["recurso" => "precisao"]);
+ler("calcular marcha", ["recurso" => "calcular", "relogio" => $rel["auto"], "expressao" => "ARREDONDA(MARCHA(0; \"pulso\") * 100 + MARCHA_N() + PADRAO(MARCHA_DP(30); 0) / 1000; 3)"]);
+ler("calcular desvio agora", ["recurso" => "calcular", "relogio" => $rel["auto"], "expressao" => "ARREDONDA(DESVIO_AGORA(); 0) + ARREDONDA(MARCHA_ULTIMA(); 1) * 1000"]);
+ler("ficha com a precisao", ["recurso" => "ficha", "relogio" => $rel["auto"]]);
+
 // os totais: os que vêm prontos (todos, os do rodapé de alguns relógios, os da página), o Testar (uma expressão boa, uma
 // errada, uma que precisa de função de total, uma vazia), um total novo só da página, um no rodapé sem coluna (não pode), a
 // ordem, e a exclusão (sem confirmar, o impacto; com, sai)
