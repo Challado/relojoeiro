@@ -346,6 +346,8 @@ details.cadastro-painel {
 }
 details.cadastro-painel summary { cursor: pointer; font-weight: 600; color: var(--safira); }
 details.cadastro-painel[open] summary { margin-bottom: .8rem; }
+.ficha-identidade .ficha-link { margin: .5rem 0 0; }
+.ficha-identidade .ficha-link a { font-size: .85rem; }
 .detalhe .cadastro { max-width: none; }
 .detalhe .cadastro input:not([type=checkbox]):not([type=file]), .detalhe .cadastro select { width: 100%; }
 form.excluir { margin-top: .9rem; padding-top: .6rem; border-top: 1px solid var(--aco); }

@@ -477,15 +477,18 @@ function abrirNoPainel(id) {
           + el("button", {"class": noPulso ? "leve" : "", "title": acaoSessao(pulso.nome, noPulso)}, noPulso ? t("Tirar") : t("Pôr"))
           + (noPulso ? el("small", {}, h(pulso.aberta.texto)) : ""));
       }
-      // a cabeça: a foto e quem ele é (o grupo, o nome e as marcas de agora); embaixo, os quadros, todos alinhados numa grade
+      // a cabeça: a foto e quem ele é (o grupo, o nome e as marcas de agora); logo embaixo, o Editar cadastro (entra no lugar
+      // da marca, depois de montado), e então os quadros, todos alinhados numa grade
       res += el("div", {"class": "ficha-cabeca"}, el("div", {"class": "ficha-foto"}, foto)
         + el("div", {"class": "ficha-identidade"}, el("p", {"class": "data"}, h(r.tipo) + " · " + h(r.caminho))
           + el("h1", {}, h(r.nome)) + (r.observacao ? el("p", {"class": "observacao"}, h(r.observacao)) : "")
           + el("p", {"class": "marcas"}, (r.posse === "desejado" ? "" : el("span", {"class": "estado estado-" + (r.estado)}, h(minusculo(r.estado_texto))))
             + (r.posse !== "colecao" ? " " + el("span", {"class": "estado estado-posse"}, h(minusculo(r.posse_texto)))
               : (r.disponivel ? "" : " " + el("span", {"class": "estado estado-indisponivel"}, t("indisponível"))))
-            + (r.proxima === hoje ? " " + el("span", {"class": "estado estado-atividade"}, t("relógio de hoje")) : "")) + atalho))
-        + el("div", {"class": "quadros"}, blocos + lancar);
+            + (r.proxima === hoje ? " " + el("span", {"class": "estado estado-atividade"}, t("relógio de hoje")) : "")) + atalho
+          // no painel da página Hoje, o caminho para a ficha (o mesmo relógio numa página só dele, numa aba nova)
+          + (document.querySelector(".painel") ? el("p", {"class": "ficha-link"}, el("a", {"href": "ficha.php?id=" + id, "target": "_blank", "rel": "noopener", "class": "botao leve"}, t("Abrir a ficha ↗"))) : "")))
+        + "<!--editar-cadastro-->" + el("div", {"class": "quadros"}, blocos + lancar);
     }
     // o cadastro: nome, grupo, os campos (cada um no grupo em que vale), a compra agrupada, a observação, a foto (novo) e o disponível
     var compraIds = ["data_compra", "valor_compra", "loja", "garantia_ate"];
@@ -532,9 +535,11 @@ function abrirNoPainel(id) {
     if (novo) {
       res += cadastro;
     } else {
-      res += el("details", {"class": "cadastro-painel"}, el("summary", {}, t("Editar cadastro")) + cadastro
+      // (com função no replace: um "$" nos dados, como em "R$", não vira padrão de troca)
+      var editarCadastro = el("details", {"class": "cadastro-painel"}, el("summary", {}, t("Editar cadastro")) + cadastro
         + el("form", {"data-recurso": "relogio", "class": "excluir"},
           el("input", {"type": "hidden", "name": "acao", "value": "excluir"}) + el("input", {"type": "hidden", "name": "id", "value": id}) + el("button", {"class": "leve discreto"}, t("Excluir este relógio"))));
+      res = res.replace("<!--editar-cadastro-->", function () { return editarCadastro; });
       // o gráfico das leituras de carga
       if (r.leituras.length > 0 || r.previsao.aplica) {
         var grafico = el("p", {"class": "nota"}, t("O gráfico aparece a partir de duas leituras de carga."));
