@@ -547,6 +547,11 @@ ler("totais teste faixas", ["recurso" => "totais", "parte" => "teste", "expressa
 ler("totais teste errado", ["recurso" => "totais", "parte" => "teste", "expressao" => "SOMA(carga"]);
 ler("totais teste sem funcao de total", ["recurso" => "totais", "parte" => "teste", "expressao" => "carga + 1"]);
 ler("totais teste vazio", ["recurso" => "totais", "parte" => "teste", "expressao" => ""]);
+// ESCOLHA nos totais calcula só o valor escolhido (como o SE): o primeiro, o segundo e um fora da lista (vazio)
+foreach (["ESCOLHA(1; SOMA(carga); CONTA())" => "primeiro", "ESCOLHA(CONTA() / CONTA() + 1; SOMA(carga); CONTA())" => "segundo",
+    "ESCOLHA(3; SOMA(carga); CONTA())" => "fora"] as $x => $qual) {
+    ler("totais teste escolha " . $qual, ["recurso" => "totais", "parte" => "teste", "expressao" => $x]);
+}
 $total_novo = escrever(["recurso" => "totais", "acao" => "salvar", "nome" => "Carga somada", "expressao" => "SOMA(carga)", "coluna" => "", "rodape" => "0", "pagina" => "1", "largura" => "largo", "formato" => "porcentagem"]);
 escrever(["recurso" => "totais", "acao" => "salvar", "nome" => "Sem coluna", "expressao" => "CONTA()", "coluna" => "", "rodape" => "1"], false);
 escrever(["recurso" => "totais", "acao" => "salvar", "nome" => "Errado", "expressao" => "MEDIA(", "coluna" => "zzz", "largura" => "enorme", "formato" => "x"], false);
@@ -586,6 +591,29 @@ $fila = escrever(["recurso" => "modos", "acao" => "salvar", "id" => 0, "nome" =>
 escrever(["recurso" => "modos", "acao" => "ativar", "id" => $fila]);
 escrever(["recurso" => "rodizio", "acao" => "resortear_hoje"]);
 ler("plano fila", ["recurso" => "plano"]);
+// um roteiro com um só candidato e o ciclo ligado: o roteiro decide primeiro quem pode sair, e só entre os candidatos entram o
+// "não repetir o de ontem" e o ciclo. Ele sai todo dia (o único candidato repete, com a nota no motivo), nunca um dia vazio
+$so_um = escrever(["recurso" => "modos", "acao" => "salvar", "id" => 0, "nome" => "Só um, com ciclo", "tipo" => "personalizado", "semanas" => 1,
+    "ciclo" => 1, "roteiro" => "candidato = RELOGIO(\"Xiaomi Band 8\")"]);
+escrever(["recurso" => "modos", "acao" => "ativar", "id" => $so_um]);
+escrever(["recurso" => "rodizio", "acao" => "resortear"]);
+$p_so_um = ler("plano com um só candidato", ["recurso" => "plano"]);
+$dias_so_um = 0;
+foreach ($p_so_um["plano"] ?? [] as $d) {
+    if ($d["data"] > ($p_so_um["hoje"] ?? "") && ($d["origem"] ?? "sorteio") === "sorteio") {
+        $dias_so_um++;
+        if ((int)$d["relogio_id"] !== $rel["smart"]) {
+            $falhas[] = "roteiro com um só candidato: " . $d["data"] . " saiu " . json_encode($d["relogio_id"]);
+        }
+    }
+}
+if ($dias_so_um === 0) {
+    $falhas[] = "roteiro com um só candidato: nenhum dia sorteado depois de hoje";
+}
+$t_so_um = ler("roteiro com um só candidato", ["recurso" => "roteiro", "modo" => $so_um, "dia" => $em(2)]);
+if ((int)($t_so_um["escolhido"]["relogio_id"] ?? 0) !== $rel["smart"]) {
+    $falhas[] = "roteiro com um só candidato: o teste não escolheu o único candidato";
+}
 escrever(["recurso" => "modos", "acao" => "ativar", "id" => $por_nome["Aleatório todo dia"] ?? 0]);
 escrever(["recurso" => "rodizio", "acao" => "resortear"]);
 // a próxima semana, em qualquer dia (com os dias que faltam desta já contados como uso); o sortear de novo depois vai até o fim dela

@@ -1,4 +1,4 @@
-<!-- origem: 0aeea17b9291fa5d98b975163cfc8fe5fbba2e2d -->
+<!-- origem: db9b1e4ecbdec01e691733ee9027e8dd43353326 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -298,8 +298,9 @@ variables suyas):
 | `dias` | cuántos días seguidos se queda el elegido (mientras los días siguientes estén vacíos y siga siendo candidato) | `1` |
 | `garantia` | 1: pasa delante de todos (entre varios, el que lleva más tiempo parado; empate: el registrado primero) | quien pasó de la garantía de rotación (`max_sem_uso`) en días sin uso |
 
-**Cómo decide el motor cada día**, en este orden: el reloj de ayer queda fuera, si hay otro; el ciclo, si el modo lo usa; el
-guion dice quién es candidato; quien tiene `garantia` gana directamente; si no, el `peso`. El elegido se queda los `dias` que
+**Cómo decide el motor cada día**, en este orden: el guion dice quién es candidato; entre los candidatos, el reloj de ayer
+queda fuera, si hay otro candidato (el único candidato repite, y el motivo dice por qué); el ciclo, si el modo lo usa, también
+solo entre los candidatos; quien tiene `garantia` gana directamente; si no, el `peso`. El elegido se queda los `dias` que
 el guion dio, y el motivo de la elección queda grabado en el plan. El mismo motor decide el **Sortear este día por** del
 selector de cada día y el **Decide por mí** de la rotación manual.
 

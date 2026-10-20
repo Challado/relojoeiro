@@ -1,4 +1,4 @@
-<!-- origem: 0aeea17b9291fa5d98b975163cfc8fe5fbba2e2d -->
+<!-- origem: db9b1e4ecbdec01e691733ee9027e8dd43353326 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -304,8 +304,9 @@ variables):
 | `dias` | how many days in a row the chosen one stays (as long as the following days are vacant and it is still a candidate) | `1` |
 | `garantia` | 1: goes ahead of everyone (among several, the one idle the longest; tie: the one registered first) | whoever passed the rotation guarantee (`max_sem_uso`) in days without use |
 
-**How the engine decides each day**, in this order: yesterday's watch stays out, if there is another; the cycle, if the mode
-uses it; the script says who is a candidate; whoever has `garantia` wins outright; otherwise the `peso`. The chosen one stays
+**How the engine decides each day**, in this order: the script says who is a candidate; among the candidates, yesterday's watch
+stays out, if there is another candidate (the only candidate repeats, and the reason says why); the cycle, if the mode uses
+it, also only among the candidates; whoever has `garantia` wins outright; otherwise the `peso`. The chosen one stays
 the `dias` the script gave, and the reason for the choice is saved in the plan. The same engine decides the **Draw this day
 by** of each day's selector and the **Decide for me** of the manual rotation.
 

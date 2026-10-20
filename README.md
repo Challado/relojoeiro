@@ -345,8 +345,9 @@ na mesma língua das fórmulas do cadastro; linhas que começam com `#` são com
 | `dias` | quantos dias seguidos o escolhido fica (enquanto os dias seguintes estiverem vagos e ele continuar candidato) | `1` |
 | `garantia` | 1: passa na frente de todos (entre vários, o mais tempo parado; empate: o cadastrado primeiro) | quem passou da garantia de rodízio (`max_sem_uso`) em dias sem uso |
 
-**Como o motor decide cada dia**, nesta ordem: o relógio de ontem fica de fora, se houver outro; o ciclo, se o modo usa; o
-roteiro diz quem é candidato; quem tem `garantia` ganha direto; senão o `peso`. O escolhido fica os `dias` que o roteiro deu,
+**Como o motor decide cada dia**, nesta ordem: o roteiro diz quem é candidato; entre os candidatos, o relógio de ontem fica de
+fora, se houver outro candidato (o único candidato repete, e o motivo diz por quê); o ciclo, se o modo usa, também só entre
+os candidatos; quem tem `garantia` ganha direto; senão o `peso`. O escolhido fica os `dias` que o roteiro deu,
 e o motivo da escolha fica gravado no plano. O mesmo motor decide o **Sortear este dia por** do seletor de cada dia e o
 **Decida por mim** do rodízio manual.
 

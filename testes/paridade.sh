@@ -186,7 +186,7 @@ fi
 
 if [ $LAYOUT -eq 1 ]; then
   echo "Conferência do layout no $REF:"
-  if BASE="http://127.0.0.1:$PORTA0/" SAIDA="$PASTA/layout" node testes/layout.cjs; then :; else FALHOU=1; echo "    veja $PASTA/layout/agrupado.txt"; fi
+  if BASE="http://127.0.0.1:$PORTA0/" SAIDA="$PASTA/layout" node testes/layout.cjs; then :; else FALHOU=1; echo "    veja $PASTA/layout/agrupado.txt:"; sed 's/^/    /' "$PASTA/layout/agrupado.txt" 2>/dev/null | head -60; fi
 fi
 
 # o isolamento entre contas (testes/isolamento.php), em cada banco: a escrita das contas de teste vem depois da fotografia, da

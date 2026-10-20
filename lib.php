@@ -2273,6 +2273,11 @@ function total_valor($no, &$conj)
             $c = total_valor($args[0], $conj);
             return $c === null ? null : total_valor(((float)$c != 0) ? $args[1] : $args[2], $conj);
         }
+        if ($nome === "ESCOLHA") {
+            $n = total_valor($args[0], $conj);
+            $k = is_numeric($n) ? (int)floor((float)$n) : 0;
+            return $k >= 1 && isset($args[$k]) ? total_valor($args[$k], $conj) : null;
+        }
         return formula_calcular(["f", $nome, array_map(function ($a) use (&$conj) { return total_no(total_valor($a, $conj)); }, $args)], $vazio);
     }
     if ($nome === "CONTA" && count($args) === 0) {
@@ -3212,8 +3217,9 @@ function roteiro_calcular($arvores, $r, $dia, $m_ini)
 }
 
 // A escolha de um dia pelo roteiro, entre os candidatos ($cands: id => relógio, já sem o que ficou de fora à mão, com as
-// frases disso em $fora). Nesta ordem: o de ontem fica de fora (pelo plano, se houver outro; $ontem_fora); o ciclo do
-// modo, se o modo usa (quem já passou na semana); o roteiro diz quem é candidato no dia (candidato = 0 sai); quem tem
+// frases disso em $fora). Nesta ordem: o roteiro diz quem é candidato no dia (candidato = 0 sai); entre os candidatos, o de
+// ontem fica de fora (pelo plano, se houver outro candidato; $ontem_fora) e o ciclo do modo, se o modo usa, tira quem já
+// passou na semana (se sobrar algum); quem tem
 // garantia = 1 passa na frente (o mais tempo parado primeiro; empate: o cadastrado primeiro); senão o peso: todos 0, a
 // maior nota (empate: o cadastrado primeiro); todos iguais, sorteio simples; senão, sorteio com o peso de cada um como
 // chance. $roteiro: as árvores completas, ou a chave de uma forma de escolha (inteligente, ponderado, aleatorio, fifo), que
@@ -3230,29 +3236,8 @@ function escolha_do_dia($modo, $dia, $m_ini, $cands, $roteiro, $fora = [], $bloc
     }
     $escolhido = null;
     $motivo = "";
-    if ($ontem_fora) {
-        $ontem = valor("SELECT relogio_id FROM plano WHERE data = ?", [$dia->modify("-1 day")->format("Y-m-d")]);
-        if ($ontem !== null && count($cands) > 1) {
-            if (isset($cands[(int)$ontem])) {
-                $fora[] = t("o de ontem ({1}) ficou de fora", [1 => $cands[(int)$ontem]["nome"]]);
-            }
-            unset($cands[(int)$ontem]);
-        }
-    }
-    // o ciclo (se o modo usa): os que já passaram no ciclo atual ficam de fora, pelo plano desde o primeiro dia da semana
-    // (semana_inicio: a segunda ou o domingo, pela Configuração)
-    if ($modo && (int)($modo["ciclo"] ?? 0) === 1 && count($cands) > 1) {
-        $seq = array_map(function ($x) { return (int)$x["relogio_id"]; }, linhas("SELECT relogio_id FROM plano WHERE data BETWEEN ? AND ? ORDER BY data",
-            [semana_inicio($dia)->format("Y-m-d"), $dia->modify("-1 day")->format("Y-m-d")]));
-        $restam = array_diff_key($cands, array_flip(ciclo_atual($seq, array_keys($cands))));
-        if (count($restam) > 0) {
-            if (count($restam) < count($cands)) {
-                $fora[] = t("pelo ciclo, {1} que já passaram na semana ficaram de fora", [1 => count($cands) - count($restam)]);
-            }
-            $cands = $restam;
-        }
-    }
-    // o roteiro em cada candidato; quem não é candidato no dia sai
+    // o roteiro em cada relógio: quem não é candidato no dia sai. Só depois, e só entre os candidatos, as regras de não
+    // repetir (o de ontem, o ciclo): cada uma só tira se sobrar outro candidato; senão ele repete, e o motivo diz por quê
     $info = [];
     foreach ($cands as $cid => $r) {
         $c = roteiro_calcular($roteiro, $r, $dia, $m_ini);
@@ -3263,6 +3248,33 @@ function escolha_do_dia($modo, $dia, $m_ini, $cands, $roteiro, $fora = [], $bloc
     }
     if (count($info) === 0) {
         return [null, "", 1];
+    }
+    // o de ontem fica de fora (pelo plano), se houver outro candidato; o único candidato repete. $base: os relógios do ciclo
+    // (os disponíveis, menos o de ontem quando ele saiu)
+    $base = $cands;
+    if ($ontem_fora) {
+        $ontem = valor("SELECT relogio_id FROM plano WHERE data = ?", [$dia->modify("-1 day")->format("Y-m-d")]);
+        if ($ontem !== null && isset($info[(int)$ontem])) {
+            if (count($info) > 1) {
+                $fora[] = t("o de ontem ({1}) ficou de fora", [1 => $cands[(int)$ontem]["nome"]]);
+                unset($info[(int)$ontem], $base[(int)$ontem]);
+            } else {
+                $fora[] = t("o de ontem ({1}) repetiu: é o único candidato do dia", [1 => $cands[(int)$ontem]["nome"]]);
+            }
+        }
+    }
+    // o ciclo (se o modo usa): os candidatos que já passaram no ciclo atual ficam de fora, pelo plano desde o primeiro dia da
+    // semana (semana_inicio: a segunda ou o domingo, pela Configuração); se todos os candidatos já passaram, nenhum sai
+    if ($modo && (int)($modo["ciclo"] ?? 0) === 1 && count($info) > 1) {
+        $seq = array_map(function ($x) { return (int)$x["relogio_id"]; }, linhas("SELECT relogio_id FROM plano WHERE data BETWEEN ? AND ? ORDER BY data",
+            [semana_inicio($dia)->format("Y-m-d"), $dia->modify("-1 day")->format("Y-m-d")]));
+        $restam = array_diff_key($info, array_flip(ciclo_atual($seq, array_keys($base))));
+        if (count($restam) > 0 && count($restam) < count($info)) {
+            $fora[] = t("pelo ciclo, {1} que já passaram na semana ficaram de fora", [1 => count($info) - count($restam)]);
+            $info = $restam;
+        } elseif (count($restam) === 0) {
+            $fora[] = t("todos os candidatos do dia já passaram na semana: o ciclo não tirou nenhum");
+        }
     }
     $entre = count($info) === 1 ? ($bloco_nome !== "" ? t("único candidato do bloco {1}", [1 => $bloco_nome]) : t("único candidato")) : t("entre {1} candidatos", [1 => count($info)]);
     $max = (int)cfg("max_sem_uso");
@@ -3393,7 +3405,7 @@ function bloco_do_dia($blocos, $dia)
 
 // Monta o plano de um modo, de $de até $ate, pelo roteiro dele, dia a dia (o laço começa em $hoje para os dias que já
 // estão no plano virarem uso simulado antes dos que faltam). Cada dia sem plano (e não livre) é escolhido entre os
-// relógios disponíveis (escolha_do_dia: o de ontem fora, o ciclo, o candidato, a garantia, o peso); o escolhido fica os
+// relógios disponíveis (escolha_do_dia: o candidato, o de ontem fora, o ciclo, a garantia, o peso); o escolhido fica os
 // dias seguidos que o roteiro deu, enquanto os dias seguintes estiverem vagos, não livres e ele continuar candidato neles.
 // Cada dia do plano vira uma sessão simulada no pulso no horário de uso: fora da escala, só o uso (a carga não é gasta,
 // porque não se sabe se o relógio vai ser carregado); na escala ($escala), a sessão inteira, e os avisos do relógio

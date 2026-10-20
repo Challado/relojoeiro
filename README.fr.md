@@ -356,8 +356,9 @@ commentaires ; les autres noms sont vos propres variables) :
 | `dias` | combien de jours de suite la montre choisie reste (tant que les jours suivants sont vacants et qu'elle reste candidate) | `1` |
 | `garantia` | 1 : passe devant toutes (parmi plusieurs, la plus longtemps inutilisée ; égalité : celle enregistrée en premier) | celle qui a dépassé la garantie de rotation (`max_sem_uso`) en jours sans utilisation |
 
-**Comment le moteur décide chaque jour**, dans cet ordre : la montre d'hier reste dehors, s'il y en a une autre ; le cycle, si
-le mode l'utilise ; le scénario dit qui est candidate ; celle qui a `garantia` gagne directement ; sinon le `peso`. La montre
+**Comment le moteur décide chaque jour**, dans cet ordre : le scénario dit qui est candidate ; parmi les candidates, la montre
+d'hier reste dehors, s'il y a une autre candidate (la seule candidate se répète, et le motif dit pourquoi) ; le cycle, si le
+mode l'utilise, lui aussi seulement parmi les candidates ; celle qui a `garantia` gagne directement ; sinon le `peso`. La montre
 choisie reste les `dias` que le scénario a donnés, et le motif du choix est enregistré dans le plan. Le même moteur décide le
 **Tirer ce jour au sort par** du sélecteur de chaque jour et le **Décider pour moi** de la rotation manuelle.
 
