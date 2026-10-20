@@ -86,14 +86,16 @@ $cat_a = (int)(pedir($ana, "GET", ["recurso" => "documentos"])["json"]["categori
 $doc_a = (int)(preparar($ana, ["recurso" => "documentos", "acao" => "enviar", "relogio_id" => $rel_a, "categoria_id" => $cat_a, "titulo" => "Doc SEGREDOANA",
     "arquivo_nome" => "segredoana.txt", "arquivo_base64" => base64_encode("conteudo SEGREDOANA")])["id"] ?? 0);
 $apa_a = (int)(preparar($ana, ["recurso" => "conta", "acao" => "aparelho_lembrar", "nome" => "Aparelho SEGREDOANA"])["id"] ?? 0);
+$cal_a = (int)(preparar($ana, ["recurso" => "calibres", "acao" => "salvar", "id" => 0, "nome" => "Calibre SEGREDOANA", "observacao" => "SEGREDOANA"])["id"] ?? 0);
+preparar($ana, ["recurso" => "relogio", "acao" => "salvar", "id" => $rel_a, "calibre_id" => $cal_a]);
 $ids = ["colecao" => $col_a, "relogio" => $rel_a, "aparelho" => $apa_a, "lancamento" => $lan_a, "acessorio" => $ace_a, "evento" => $evt_a, "destino" => $des_a, "agenda" => $agd_a,
-    "documento" => $doc_a, "no" => $no_a, "usuario" => $uid_a, "smartwatch" => $rel_s, "medicao" => $med_a];
+    "documento" => $doc_a, "no" => $no_a, "usuario" => $uid_a, "smartwatch" => $rel_s, "medicao" => $med_a, "calibre" => $cal_a];
 echo "A ana: " . json_encode($ids) . "\n";
 $antes = pedir($ana, "GET", ["recurso" => "ficha", "relogio" => $rel_a])["corpo"];
 
 // os recursos de leitura e as variações de parâmetro com as coisas da ana
 $recursos = ["", "importacao", "backup", "foto", "documento", "documentos", "criterios", "avisos", "autonomia", "hoje", "ficha", "config", "historico", "previsao",
-    "plano", "desejos", "estatisticas", "precisao", "hora_certa", "passaporte", "galeria", "acessorios", "proximos", "rodizio_manual", "eventos", "destinos", "agendas",
+    "plano", "desejos", "estatisticas", "precisao", "calibres", "hora_certa", "passaporte", "galeria", "acessorios", "proximos", "rodizio_manual", "eventos", "destinos", "agendas",
     "usuarios", "conta", "colecoes", "acessos", "pedidos", "convites", "aprovacoes", "cron", "arvore", "cadastros", "calcular", "migracoes", "instalacao",
     "cadastro", "entrar"];
 $variacoes = [[], ["colecao" => $col_a], ["relogio" => $rel_a], ["id" => $rel_a], ["relogio_id" => $rel_a], ["como" => "ana"], ["usuario" => "ana"],
@@ -132,6 +134,8 @@ $tentativas = [
     ["recurso" => "lancamento", "acao" => "salvar", "id" => $lan_a, "observacao" => "INVADIDO"],
     ["recurso" => "lancamento", "acao" => "medicao", "id" => $med_a, "usada" => 0],
     ["recurso" => "acessorios", "acao" => "salvar", "id" => $ace_a, "nome" => "INVADIDO", "tipo" => "pulseira"],
+    ["recurso" => "calibres", "acao" => "salvar", "id" => $cal_a, "nome" => "INVADIDO"],
+    ["recurso" => "calibres", "acao" => "excluir", "id" => $cal_a, "confirmar" => 1],
     ["recurso" => "acessorios", "acao" => "excluir", "id" => $ace_a, "confirmar" => 1],
     ["recurso" => "acessorios", "acao" => "salvar", "nome" => "INVADIDO", "tipo" => "pulseira", "relogio_id" => $rel_a],
     ["recurso" => "config", "acao" => "evento_salvar", "id" => $evt_a, "nome" => "INVADIDO", "repeticao" => "semanal", "hora" => "10:00", "dias_semana" => "6"],
@@ -164,6 +168,7 @@ $tentativas = [
     ["recurso" => "pedidos", "acao" => "pedir", "dono" => "ana"],
     ["recurso" => "config", "acao" => "salvar", "colecao" => $col_a, "uso_inicio" => "05:00"],
     ["recurso" => "relogio", "acao" => "salvar", "colecao" => $col_a, "id" => 0, "nome" => "INVADIDO"],
+    ["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "INVADIDO", "calibre_id" => $cal_a],
 ];
 foreach (["bia", "caio"] as $quem) {
     foreach ($tentativas as $p) {

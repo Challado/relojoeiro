@@ -40,9 +40,11 @@ foreach (formulas_todas() as $versoes) {
 $relogios = [];
 foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
     $valores = valores_do_relogio((int)$r["id"]);
+    $proprios_t = valores_proprios((int)$r["id"]);
+    $cal_t = calibre_do_relogio((int)$r["id"]);
     $cs = [];
     foreach (campos_do_relogio($r) as $ident => $c) {
-        $cs[] = ["identificador" => $ident, "nome" => $c["nome"], "tipo" => $c["tipo"], "unidade" => $c["unidade"], "valor" => $valores[$ident] ?? null,
+        $cs[] = ["identificador" => $ident, "nome" => $c["nome"], "tipo" => $c["tipo"], "unidade" => $c["unidade"], "valor" => $proprios_t[$ident] ?? null,
             "valor_usado" => ($valores[$ident] ?? "") !== "" ? $valores[$ident] : $c["padrao"]];
     }
     $fs = [];
@@ -56,6 +58,7 @@ foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
     $foto = linha("SELECT tipo, atualizado" . ($com_foto ? ", dados" : "") . " FROM foto WHERE relogio_id = ?", [(int)$r["id"]]);
     $relogios[] = ["id" => (int)$r["id"], "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? null : (int)$r["no_id"], "lugar" => no_caminho($r["no_id"]),
         "disponivel" => (int)$r["disponivel"] === 1, "copia_banco" => (int)$r["copia_banco"] === 1, "posse" => posse_de($r), "criado" => $r["criado"],
+        "calibre_id" => $cal_t ? (int)$cal_t["id"] : null, "calibre" => $cal_t ? $cal_t["nome"] : null,
         "foto" => $foto ? ["tipo" => $foto["tipo"], "atualizada_em" => $foto["atualizado"], "base64" => $com_foto ? base64_encode($foto["dados"]) : null] : null,
         "documentos" => array_map(function ($x) { return documento_info($x, false); }, documentos_do_relogio((int)$r["id"])),
         "campos" => $cs, "formulas" => $fs, "avisos" => avisos_do_relogio($r, time()),
@@ -95,7 +98,7 @@ foreach (avisos_todos() as $versoes) {
             "agenda" => $a["agenda"]];
     }
 }
-$saida = ["arvore" => $arvore, "campos" => $campos, "lancamento_tipos" => $tipos_l, "formulas" => $formulas, "avisos" => $avisos, "relogios" => $relogios,
+$saida = ["arvore" => $arvore, "campos" => $campos, "lancamento_tipos" => $tipos_l, "formulas" => $formulas, "avisos" => $avisos, "calibres" => calibres_todos(), "relogios" => $relogios,
     "documento_categorias" => documento_categorias_lista(), "modos" => $modos, "plano" => plano_legivel("", ""), "plano_livre" => dias_livres("", ""), "acessorios" => acessorios_lista(), "config" => (object)$config,
     "eventos" => array_map("evento_legivel", eventos_com_dias(linhas("SELECT * FROM evento_personalizado ORDER BY nome"))),
     "destinos" => array_values(array_map("destino_legivel", destinos())),

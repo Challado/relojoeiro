@@ -99,6 +99,7 @@ flowchart LR
 |---|---|---|
 | **Grupos** (a árvore) | A classificação da coleção, em quantos níveis você quiser. Tudo o que é cadastrado num grupo vale para ele e para tudo abaixo dele. | `Tradicional › Mecânico › Automático` |
 | **Campos** | Os dados de cada relógio, definidos por você: texto, número, data, sim/não ou lista, com unidade e valor padrão. | `reserva_horas = 40 h`, `data_pilha`, `loja` |
+| **Calibres** | O movimento do relógio, com o que é dele: o fabricante, o manual técnico, as recomendações e os valores dos campos. O relógio com um calibre usa o valor dele mesmo, senão o do calibre, senão o padrão do campo. | `NH35`: reserva de 41 h, marcha de −20 a +40 s/dia |
 | **Tipos de lançamento** | O que acontece com um relógio. Pode ser **instantâneo** (corda, troca de pilha), **com valor** (leitura de carga: 68%) ou uma **sessão** com início e fim (no pulso, no winder, no sol). | `sol`: sessão que fecha sozinha às 18h se você esquecer |
 | **Fórmulas** | Contas sobre os campos e os lançamentos. A mesma fórmula pode ter **uma versão por grupo**, e vale a do grupo mais perto do relógio. | `energia` é a bateria no smartwatch, a reserva no mecânico, a luz no solar e a vida da pilha no quartzo |
 | **Avisos** | Uma data prevista por fórmula, uma antecedência, um texto e o lançamento que resolve o aviso. | *"Dar corda no Orient: a reserva acaba às 15h"*, e o botão **Corda** resolve |
@@ -145,6 +146,7 @@ E as do rodízio (o roteiro dos modos; fora dele, o dia é o do instante da cont
 | `DIA_SEMANA()`, `SEMANA_DO_ANO()` | o dia da semana (1 segunda a 7 domingo) e a semana do ano (ISO) do dia que está sendo montado |
 | `NO_GRUPO("Tradicional › Quartzo")` | 1 se o relógio está nesse ponto da árvore ou abaixo (o nome, o caminho ou `#id`; `"todos"`: 1 para todos) |
 | `RELOGIO("Seiko SKX")` | 1 se é esse relógio (pelo nome ou pelo id) |
+| `CALIBRE("NH35")` | 1 se o relógio tem esse calibre (pelo nome ou pelo id) |
 | `ESCOLHIDO_HA(1)`, `VEZES_NO_PLANO(7)` | 1 se o relógio foi o do plano há n dias (1: ontem; -1: amanhã, quando já está no plano); quantos dias ele teve no plano nos últimos n dias |
 | `ESCOLHA(n; a; b; c)` | o n-ésimo dos valores (só ele é calculado): `ESCOLHA(DIA_SEMANA(); …)` dá um valor por dia da semana |
 | `SORTEIO()` | um número de 0 a 1, do mesmo lote do RANDOM.ORG dos sorteios |
@@ -587,6 +589,21 @@ limite) e **Marcha fora do esperado** (a última medição saiu da faixa, ou do 
 os outros. Nas fórmulas: `MARCHA(dias; "posição")`, `MARCHA_DP(dias; "posição")`, `MARCHA_N(dias; "posição")`,
 `MARCHA_ULTIMA()` e `DESVIO_AGORA()`. Pela API: `recurso=precisao` (de um relógio ou o resumo da coleção) e
 `recurso=lancamento`, `acao=lancar`, `tipo=desvio`, com `valor` ou `marca` (e `instante_ms`) e `posicao`.
+
+### Os calibres
+
+O **calibre** é o movimento do relógio: o NH35 de um Seiko, o ST2130 de um Sea-Gull, o módulo 3159 de um Casio. Muita coisa é
+do movimento, e não do relógio: a reserva de marcha, a marcha que o fabricante promete, se aceita corda pela coroa. Na aba
+**Calibres** da página **Cadastros**, cada calibre tem o nome, o fabricante, o link do manual técnico, as recomendações
+(*"dar corda pela coroa: até 40 voltas"*) e os **valores dos campos** que ele define. No cadastro do relógio, escolha o
+**Calibre**: o relógio passa a usar os valores dele nos campos que ele mesmo deixou vazios.
+
+A ordem é: **o valor do relógio, senão o do calibre, senão o padrão do campo** (o do grupo). Cinco relógios com NH35 ganham a
+reserva e a marcha esperada de uma vez; um deles, com a reserva diferente no cadastro, fica com a dele. Nos **Dados do
+relógio**, a origem de cada valor diz de onde ele veio (*informado*, *calibre*, *padrão*), e em cima das tabelas aparecem o
+calibre, o link do manual e as recomendações. Excluir um calibre deixa os relógios dele sem calibre (a exclusão diz quantos).
+Nas fórmulas, `CALIBRE("NH35")` dá 1 se o relógio tem esse calibre. Pela API: `recurso=calibres` (a lista, com os valores e os
+relógios de cada um), `recurso=calibres` com `acao=salvar` ou `excluir`, e `recurso=relogio`, `acao=salvar`, com `calibre_id`.
 
 ## Várias pessoas: contas, coleções e acesso
 
@@ -1230,7 +1247,7 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | **Modos de rodízio** (`modos.php`, menu **Rodízio**) | Os modos de rodízio: a tabela (o modo ativo marcado, o tipo, o critério, as semanas e de onde escolhe) com **Editar**, **Ativar** e **Excluir**, e o formulário de um modo, com a tela do tipo dele: o nome e o tipo; de onde escolher (por trecho ou por dia da semana), o período da escala ou o roteiro escrito à mão com **Testar em todos os relógios**; as semanas à frente (com a lista das semanas); o critério de escolha e o ciclo; e, nos tipos prontos, o roteiro gerado (só leitura, com **copiar este roteiro** para um Personalizado). Veja [Os modos de rodízio](#os-modos-de-rodízio). |
 | **Critérios** (`criterios.php`) | Os conjuntos de critérios por lugar (todos os relógios, um grupo ou um relógio), com parâmetros, subparâmetros, faixas e a nota de cada relógio com a conta aberta. Tem **Restaurar os critérios iniciais**. |
 | **Grupos** (`grupos.php`) | A árvore: criar, renomear, mover, ordenar, excluir (o que era do grupo passa para o de cima) e escolher o grupo de cada relógio. |
-| **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), os totais (a aba **Totais**: veja [Os totais](#os-totais)) e as categorias de documentos: tudo o que o sistema usa e que não é código (os avisos ficam na página **Avisos**, e os modos de rodízio, na **Modos de rodízio**). |
+| **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), os totais (a aba **Totais**: veja [Os totais](#os-totais)), os calibres (a aba **Calibres**: veja [Os calibres](#os-calibres)) e as categorias de documentos: tudo o que o sistema usa e que não é código (os avisos ficam na página **Avisos**, e os modos de rodízio, na **Modos de rodízio**). |
 | **Execuções do cron** (`execucoes.php`) | O que o cron fez a cada rodada, quanto tempo levou e os erros, com filtros. |
 | **Minha conta** (`conta.php`, menu **Conta › Minha conta**) | As coleções que você vê (abrir, criar, renomear, excluir, sair), as suas árvores de grupos (copiar, renomear, excluir), pedir acesso à coleção de alguém (pelo código que o dono passou), os seus dados (o seu código, o e-mail, o idioma, a senha), o **aplicativo no celular** (lembrar este aparelho, instalar, os aparelhos lembrados), os **tokens de API** (para os seus scripts), as **notificações neste aparelho** (o Web Push) e excluir a conta. Veja [Várias pessoas](#várias-pessoas-contas-coleções-e-acesso) e [O aplicativo no celular](#o-aplicativo-no-celular). |
 | **Aprovações** (`aprovacoes.php`) | Os pedidos de acesso às suas coleções (aprovar, recusar), os convites que membros fizeram e esperam você, **Convidar** (por e-mail), os convites que você fez e quem vê as suas coleções (tirar o acesso). O menu mostra **Aprovações (N)** quando há algo esperando. |

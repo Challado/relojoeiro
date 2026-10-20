@@ -565,6 +565,34 @@ ler("calcular marcha", ["recurso" => "calcular", "relogio" => $rel["auto"], "exp
 ler("calcular desvio agora", ["recurso" => "calcular", "relogio" => $rel["auto"], "expressao" => "ARREDONDA(DESVIO_AGORA(); 0) + ARREDONDA(MARCHA_ULTIMA(); 1) * 1000"]);
 ler("ficha com a precisao", ["recurso" => "ficha", "relogio" => $rel["auto"]]);
 
+// os calibres: o NH35 com o que o movimento define (a reserva, a marcha esperada, a corda pela coroa), as recusas (sem nome,
+// o link que não é http, o campo que não existe, o valor que não é número, o nome repetido), o Seiko com ele (a reserva é a
+// dele mesmo: 41; a marcha esperada vem do calibre), o Orient com ele e depois sem, o calibre que não existe, a função
+// CALIBRE e a exclusão em dois passos (de um calibre de teste com um relógio: ele fica sem calibre)
+$cal = escrever(["recurso" => "calibres", "acao" => "salvar", "id" => 0, "nome" => "NH35", "fabricante" => "Seiko Instruments", "link" => "https://exemplo.com/nh35.pdf",
+    "observacao" => "Dar corda pela coroa: até 40 voltas.", "valores" => ["reserva_horas" => 50, "marcha_min" => "-20", "marcha_max" => "40", "corda_manual" => "1"]]);
+escrever(["recurso" => "calibres", "acao" => "salvar", "id" => 0, "nome" => " ", "link" => "ftp://x"], false);
+escrever(["recurso" => "calibres", "acao" => "salvar", "id" => 0, "nome" => "Errado", "valores" => ["nao_existe" => "1", "reserva_horas" => "muito"]], false);
+escrever(["recurso" => "calibres", "acao" => "salvar", "id" => 0, "nome" => "nh35"], false);
+escrever(["recurso" => "calibres", "acao" => "salvar", "id" => $cal, "valores" => ["corda_manual" => ""]]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto"], "calibre_id" => $cal]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "calibre_id" => $cal]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "calibre_id" => "0"]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "calibre_id" => 999999], false);
+$cal_lista = ler("calibres", ["recurso" => "calibres"]);
+$f_cal = ler("ficha com o calibre", ["recurso" => "ficha", "relogio" => $rel["auto"]]);
+$d_cal = array_column($f_cal["relogio"]["dados"] ?? [], null, "identificador");
+if (($d_cal["reserva_horas"]["origem"] ?? "") !== "informado" || ($d_cal["marcha_max"]["origem"] ?? "") !== "calibre" || (string)($d_cal["marcha_max"]["valor_usado"] ?? "") !== "40"
+    || ($f_cal["relogio"]["calibre"]["nome"] ?? "") !== "NH35" || count($cal_lista["calibres"][0]["relogios"] ?? []) !== 1) {
+    $falhas[] = "calibres: a ficha deu " . json_encode([$d_cal["reserva_horas"] ?? null, $d_cal["marcha_max"] ?? null, $f_cal["relogio"]["calibre"] ?? null], JSON_UNESCAPED_UNICODE);
+}
+ler("calcular calibre", ["recurso" => "calcular", "expressao" => "CALIBRE(\"nh35\") * 10 + CALIBRE(" . $cal . ") + CALIBRE(\"outro\") * 100"]);
+$cal_t = escrever(["recurso" => "calibres", "acao" => "salvar", "id" => 0, "nome" => "Calibre de teste"]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "calibre_id" => $cal_t]);
+escrever(["recurso" => "calibres", "acao" => "excluir", "id" => $cal_t], false);
+escrever(["recurso" => "calibres", "acao" => "excluir", "id" => $cal_t, "confirmar" => 1]);
+ler("ficha sem o calibre excluido", ["recurso" => "ficha", "relogio" => $rel["auto2"]]);
+
 // os totais: os que vêm prontos (todos, os do rodapé de alguns relógios, os da página), o Testar (uma expressão boa, uma
 // errada, uma que precisa de função de total, uma vazia), um total novo só da página, um no rodapé sem coluna (não pode), a
 // ordem, e a exclusão (sem confirmar, o impacto; com, sai)

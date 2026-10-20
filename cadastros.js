@@ -1,8 +1,8 @@
-// Cadastros: os dados da API (recurso=cadastros; a aba Totais, recurso=totais), uma aba por vez
-// (cadastros.php?aba=campos&editar=3), com as gravações pela API (recurso=campos, lancamento_tipos, formulas, totais e
+// Cadastros: os dados da API (recurso=cadastros; a aba Totais, recurso=totais; a aba Calibres, recurso=calibres), uma aba por vez
+// (cadastros.php?aba=campos&editar=3), com as gravações pela API (recurso=campos, lancamento_tipos, formulas, totais, calibres e
 // documento_categorias), o testar das fórmulas (recurso=calcular) e o dos totais (recurso=totais, expressao=). Os avisos ficam na página Avisos (avisos.js) e os modos de rodízio, na Modos de rodízio (modos.js).
-var ABAS = {campos: t("Campos"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), totais: t("Totais"), documentos: t("Categorias de documentos")};
-var RECURSO = {campos: "campos", lancamentos: "lancamento_tipos", formulas: "formulas", totais: "totais", documentos: "documento_categorias"};
+var ABAS = {campos: t("Campos"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), totais: t("Totais"), calibres: t("Calibres"), documentos: t("Categorias de documentos")};
+var RECURSO = {campos: "campos", lancamentos: "lancamento_tipos", formulas: "formulas", totais: "totais", calibres: "calibres", documentos: "documento_categorias"};
 var FAMILIAS = {imagem: t("imagens"), video: t("vídeos"), audio: t("áudios"), pdf: t("PDF"), xml: t("XML")};
 var q = new URLSearchParams(window.location.search);
 // os avisos dos relógios saíram daqui: moram na página Avisos, junto com os lembretes (o endereço antigo leva para lá)
@@ -48,6 +48,9 @@ function vazio(v) {
 function recarregarCadastros() {
   if (aba === "totais") {
     return recarregarTotais();
+  }
+  if (aba === "calibres") {
+    return recarregarCalibres();
   }
   return api({recurso: "cadastros"}).then(function (d) {
     var res = el("h1", {}, t("Cadastros")) + el("nav", {"class": "abas"}, Object.keys(ABAS).map(function (k) { return el("a", {"href": "cadastros.php?aba=" + k, "class": k === aba ? "ativa" : ""}, h(ABAS[k])); }).join(""));
@@ -232,6 +235,74 @@ function recarregarTotais() {
       + el("details", {}, el("summary", {}, t("As funções de total")) + el("ul", {"class": "nota"}, d.funcoes.map(function (x) { return el("li", {}, el("strong", {}, h(x.nome)) + ": " + h(x.descricao)); }).join(""))
         + el("p", {"class": "nota"}, t("Dentro delas vale tudo o que vale numa fórmula (os campos, as fórmulas, SE, DIAS_DESDE, MES_ANO...), calculado em cada relógio; fora delas, só números, textos e as funções que não precisam de um relógio.")))
       + el("details", {}, el("summary", {}, t("As variáveis da tabela")) + el("ul", {"class": "nota"}, d.variaveis.map(function (x) { return el("li", {}, el("strong", {}, h(x.nome)) + ": " + h(x.descricao)); }).join("")));
+    res += el("section", {"class": "cartao-config"}, sec);
+    document.getElementById("cadastros").innerHTML = res;
+  });
+}
+
+// um valor de campo como texto (a lista e o formulário dos calibres): sim/não, data, número com vírgula
+function valorDoCampo(c, v) {
+  if (c.tipo === "sim_nao") {
+    return String(v) === "1" ? t("sim") : t("não");
+  }
+  if (c.tipo === "data") {
+    return dataBr(v);
+  }
+  return c.tipo === "inteiro" || c.tipo === "decimal" ? String(v).replace(".", ",") + (c.unidade !== "" ? " " + c.unidade : "") : String(v);
+}
+
+// a entrada de um campo no formulário do calibre: vazio é "o calibre não define" (o sim/não também, por isso é uma lista)
+function entradaDoCalibre(c, v) {
+  var nome = "valores[" + c.identificador + "]";
+  var rotulo = h(c.nome) + (c.unidade !== "" ? " (" + h(c.unidade) + ")" : "");
+  var entrada;
+  if (c.tipo === "sim_nao" || c.tipo === "lista") {
+    var ops = c.tipo === "sim_nao" ? [["1", t("sim")], ["0", t("não")]] : String(c.opcoes || "").split("\n").filter(function (o) { return o.trim() !== ""; }).map(function (o) { return [o, o]; });
+    entrada = el("select", {"name": nome}, el("option", {"value": ""}, t("— não define")) + ops.map(function (o) { return el("option", {"value": o[0], "selected": v !== null && String(v) === o[0]}, h(o[1])); }).join(""));
+  } else if (c.tipo === "data") {
+    entrada = el("input", {"type": "date", "name": nome, "value": vazio(v)});
+  } else {
+    entrada = el("input", {"name": nome, "value": v === null || v === undefined ? "" : (c.tipo === "texto" ? v : String(v).replace(".", ",")), "inputmode": c.tipo === "texto" ? null : "decimal",
+      "placeholder": t("não define")});
+  }
+  return el("label", {}, rotulo + " " + entrada + (c.grupo ? el("small", {}, t("vale em {1}", {1: h(c.grupo)})) : ""));
+}
+
+// a aba Calibres: a lista (o calibre, o fabricante, o que ele define e os relógios dele) e o formulário (o nome, o
+// fabricante, o link do manual técnico, as recomendações e os valores dos campos que ele define)
+function recarregarCalibres() {
+  return api({recurso: "calibres"}).then(function (d) {
+    var e = null;
+    d.calibres.forEach(function (x) { if (x.id === editar) { e = x; } });
+    var f = e || {valores: {}};
+    var porIdent = {};
+    d.campos.forEach(function (c) { porIdent[c.identificador] = c; });
+    var res = el("h1", {}, t("Cadastros")) + el("nav", {"class": "abas"}, Object.keys(ABAS).map(function (k) { return el("a", {"href": "cadastros.php?aba=" + k, "class": k === aba ? "ativa" : ""}, h(ABAS[k])); }).join(""));
+    if (recado !== "") {
+      res += recado;
+      recado = "";
+    }
+    var sec = el("h2", {}, t("Calibres"))
+      + el("p", {"class": "nota"}, t("O calibre é o movimento do relógio (NH35, ST2130, B620...). Ele guarda o que é do movimento, não do relógio: o fabricante, o manual técnico, as recomendações e os valores dos campos (a reserva de marcha, a marcha esperada, aceita corda pela coroa...). O relógio com esse calibre usa esses valores nos campos que ele mesmo deixou vazios: vale o valor do relógio, senão o do calibre, senão o padrão do campo. Escolha o calibre no cadastro do relógio."))
+      + (d.calibres.length === 0 ? el("p", {"class": "nota"}, t("Nenhum calibre cadastrado."))
+        : el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Calibre")) + el("th", {}, t("Fabricante")) + el("th", {}, t("Define"))
+          + el("th", {}, t("Relógios")) + el("th", {}, "")))
+          + el("tbody", {}, d.calibres.map(function (x) {
+            var def = Object.keys(x.valores).map(function (k) { return porIdent[k] ? h(porIdent[k].nome) + ": " + h(valorDoCampo(porIdent[k], x.valores[k])) : h(k); });
+            return el("tr", {}, el("td", {}, h(x.nome) + (x.link ? " " + el("a", {"href": x.link, "target": "_blank", "rel": "noopener", "title": t("manual técnico")}, "↗") : ""))
+              + el("td", {}, h(vazio(x.fabricante))) + el("td", {"class": "nota"}, def.length === 0 ? t("nada") : def.join("; "))
+              + el("td", {"class": "nota"}, x.relogios.length === 0 ? t("nenhum") : x.relogios.map(function (r) { return el("a", {"href": "index.php?r=" + r.id}, h(r.nome)); }).join(", "))
+              + el("td", {"class": "acoes-linha"}, linkEditar(x.id) + " " + botaoLinha("excluir", x.id, t("Excluir"))));
+          }).join("")))))
+      + el("h3", {"id": "form"}, e ? t("Alterar o calibre {1}", {1: h(e.nome)}) : t("Novo calibre"))
+      + el("form", {"data-recurso": "calibres", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": e ? e.id : 0})
+        + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": vazio(f.nome), "required": true, "maxlength": "80", "placeholder": t("ex.: NH35")})}))
+        + el("label", {}, t("Fabricante {1}", {1: el("input", {"name": "fabricante", "value": vazio(f.fabricante), "maxlength": "80", "placeholder": t("ex.: Seiko")})}))
+        + el("label", {"style": "grid-column: 1 / -1"}, t("Link do manual técnico {1}", {1: el("input", {"type": "url", "name": "link", "value": vazio(f.link), "maxlength": "500", "placeholder": fixo("https://")})}))
+        + el("label", {"style": "grid-column: 1 / -1"}, t("Observação (as recomendações do fabricante) {1}", {1: el("textarea", {"name": "observacao", "rows": "3", "maxlength": "4000"}, h(vazio(f.observacao)))}))
+        + el("fieldset", {"class": "campos-calibre", "style": "grid-column: 1 / -1"}, el("legend", {}, t("Os valores que o calibre define (vazio: não define)"))
+          + d.campos.map(function (c) { return entradaDoCalibre(c, f.valores[c.identificador] === undefined ? null : f.valores[c.identificador]); }).join(""))
+        + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + (e ? " " + el("a", {"href": "cadastros.php?aba=calibres"}, t("cancelar")) : "")));
     res += el("section", {"class": "cartao-config"}, sec);
     document.getElementById("cadastros").innerHTML = res;
   });

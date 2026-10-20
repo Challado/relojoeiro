@@ -168,6 +168,12 @@
  *                            (null sem o tipo que mede a marcha); sem relogio, {"relogios": [um resumo de cada relógio da coleção que
  *                            tem o tipo do desvio]}. Relógio que não existe: 404.
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=precisao&relogio=4"
+ *   recurso=calibres         os calibres (o movimento: NH35, ST2130, B620...), da árvore: {"calibres": [{"id", "nome", "fabricante",
+ *                            "link" (o manual técnico), "observacao" (as recomendações), "valores": {<identificador do campo>: valor},
+ *                            "relogios": [{"id", "nome"}]}], "campos": [os campos que um calibre pode definir: {"id", "identificador",
+ *                            "nome", "tipo", "unidade", "padrao", "opcoes", "grupo"}]}. O relógio com um calibre usa o valor dele
+ *                            mesmo, senão o do calibre, senão o padrão do campo (a origem "calibre" nos dados da ficha e na previsão).
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=calibres"
  *   recurso=roteiro          roteiro (o texto: as linhas "nome = expressão") ou modo (o id: o roteiro efetivo dele), [dia: AAAA-MM-DD, de
  *                            hoje até um ano à frente; padrão hoje]: testa o roteiro de um modo de rodízio nesse dia, sem gravar (o
  *                            "Testar em todos os relógios" dos Modos de rodízio): {"dia", "dia_semana", "linhas": [{"nome", "expressao"}],
@@ -456,9 +462,15 @@
  *                            Ex. nova: curl -u lucas:senha -d recurso=formulas -d acao=nova -d identificador=idade_dias -d "nome=Idade (dias)" --data-urlencode "expressao=AGORA() - data_compra" -d unidade=dias -d no_id=0 http://servidor/relojoeiro/api.php
  *                            Ex. alterar: curl -u lucas:senha -d recurso=formulas -d acao=alterar -d id=17 --data-urlencode "expressao=ARREDONDA(AGORA() - data_compra)" http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=formulas -d acao=excluir -d id=17 -d confirmar=1 http://servidor/relojoeiro/api.php
+ *   recurso=calibres          salvar (id: 0 cria; nome (até 80, sem repetir na árvore), fabricante, link (o manual técnico,
+ *                             http:// ou https://), observacao (as recomendações), valores[identificador]: os valores que o
+ *                             calibre define, vazio tira), excluir (id: os relógios dele ficam sem calibre)
+ *                            Ex. salvar: curl -u lucas:senha -d recurso=calibres -d acao=salvar -d id=0 -d nome=NH35 -d fabricante=Seiko -d "valores[reserva_horas]=41" http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=calibres -d acao=excluir -d id=3 -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=relogio           salvar (id: 0 ou ausente cria; nome, no_id, disponivel, copia_banco (1: a cópia no banco de todos os
- *                             documentos dele; o cron copia ou tira aos poucos), valores[identificador]: só muda o que vier;
- *                             valor vazio apaga; inválido fica o que estava e a mensagem diz), excluir (id),
+ *                             documentos dele; o cron copia ou tira aos poucos), calibre_id (o calibre dele; 0 ou vazio tira),
+ *                             valores[identificador]: só muda o que vier; valor vazio apaga; inválido fica o que estava e a
+ *                             mensagem diz), excluir (id),
  *                             foto (id, foto_base64), remover_foto (id)
  *                            Ex. salvar: curl -u lucas:senha -d recurso=relogio -d acao=salvar -d id=10 -d "valores[preferencia]=80" -d disponivel=1 http://servidor/relojoeiro/api.php
  *                            Ex. foto: curl -u lucas:senha -d recurso=relogio -d acao=foto -d id=10 --data-urlencode foto_base64@foto.b64 http://servidor/relojoeiro/api.php
@@ -692,6 +704,20 @@
  *     avisos[].simula_horas          as horas da sessão que a escala simula para resolver (número; null)
  *     avisos[].simula_valor          o valor do lançamento que a escala simula para resolver (número; null)
  *     avisos[].texto                 o motivo, com {relogio}, {data}, {quando} e {limite} — a âncora {motivo}
+ *     calibres                       os calibres da árvore, pelo nome (o recurso=calibres)
+ *     calibres[]                     um calibre (o movimento)
+ *     calibres[].id                  o número do calibre
+ *     calibres[].nome                o nome (NH35, ST2130...)
+ *     calibres[].fabricante          o fabricante; null: não informado
+ *     calibres[].link                o link do manual técnico; null: sem
+ *     calibres[].observacao          as recomendações (texto); null: sem
+ *     calibres[].valores             os valores dos campos que ele define, pelo identificador do campo
+ *     calibres[].valores.<identificador>
+ *                                    o valor do campo no calibre (texto normalizado: número com ponto, data AAAA-MM-DD, sim/não 1 ou 0)
+ *     calibres[].relogios            os relógios da coleção que apontam para ele, por nome
+ *     calibres[].relogios[]          um relógio
+ *     calibres[].relogios[].id       o número do relógio
+ *     calibres[].relogios[].nome     o nome do relógio
  *     campos[]                       os campos do cadastro dos relógios (cada um vale para o grupo dele e tudo abaixo)
  *     campos[].id                    o número do campo
  *     campos[].identificador         o nome do campo nas fórmulas e nos critérios
@@ -1020,6 +1046,8 @@
  *     relogios[].disponivel          verdadeiro ou falso: entra no rodízio
  *     relogios[].copia_banco         verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da
  *                                    cópia; a Configuração da coleção, documentos_copia, se escolhe, vale por cima)
+ *     relogios[].calibre_id          o id do calibre dele (o movimento); null: sem calibre
+ *     relogios[].calibre             o nome do calibre dele; null: sem calibre
  *     relogios[].posse               a situação na coleção: colecao (na coleção), desejado (a lista de desejos), emprestado, vendido ou
  *                                    arquivado; fora da coleção, disponivel é sempre falso
  *     relogios[].em_uso              verdadeiro ou falso: o relógio está com uma sessão no pulso aberta agora
@@ -1148,8 +1176,8 @@
  *     relogios[].previsao.conta[].nome
  *                                    o nome do campo, ou do gasto medido (Gasto em uso medido, Gasto fora do pulso medido)
  *     relogios[].previsao.conta[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrao (o padrão do campo), vazio (sem valor),
- *                                    medido (pelas leituras) ou cadastro (o gasto que vale saiu do cadastro)
+ *                                    de onde veio: informado (no cadastro do relógio), calibre (o valor do calibre dele), padrao (o padrão
+ *                                    do campo), vazio (sem valor), medido (pelas leituras) ou cadastro (o gasto que vale saiu do cadastro)
  *     relogios[].previsao.conta[].origem_texto
  *                                    de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     relogios[].previsao.conta[].unidade
@@ -1211,7 +1239,8 @@
  *     relogios[].previsao.gasto.uso.campos[].nome
  *                                    o nome do campo
  *     relogios[].previsao.gasto.uso.campos[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrao (o padrão do campo) ou vazio (sem valor)
+ *                                    de onde veio: informado (no cadastro do relógio), calibre (o valor do calibre dele), padrao (o padrão
+ *                                    do campo) ou vazio (sem valor)
  *     relogios[].previsao.gasto.uso.campos[].origem_texto
  *                                    de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     relogios[].previsao.gasto.uso.campos[].unidade
@@ -1249,7 +1278,8 @@
  *     relogios[].previsao.gasto.repouso.campos[].nome
  *                                    o nome do campo
  *     relogios[].previsao.gasto.repouso.campos[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrao (o padrão do campo) ou vazio (sem valor)
+ *                                    de onde veio: informado (no cadastro do relógio), calibre (o valor do calibre dele), padrao (o padrão
+ *                                    do campo) ou vazio (sem valor)
  *     relogios[].previsao.gasto.repouso.campos[].origem_texto
  *                                    de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     relogios[].previsao.gasto.repouso.campos[].unidade
@@ -1684,6 +1714,13 @@
  *     campos[].tipo                  o tipo
  *     campos[].unidade               a unidade
  *     campos[].valor                 o valor do relógio (null)
+ *     campos[].do_calibre            o valor que o calibre do relógio define para o campo (o que vale quando o relógio não tem o dele);
+ *                                    null: sem
+ *     calibres                       os calibres da árvore, pelo nome (o menu Calibre do cadastro)
+ *     calibres[]                     um calibre
+ *     calibres[].id                  o número do calibre (o calibre_id da gravação)
+ *     calibres[].nome                o nome
+ *     calibres[].fabricante          o fabricante; null: não informado
  *     grupos[]                       os grupos (o seletor do cadastro)
  *     posses[]                       as situações na coleção, na ordem (o menu "Situação na coleção" do cadastro)
  *     posses[].nome                  o nome ("Na coleção", "Desejado", "Emprestado", "Vendido", "Arquivado")
@@ -1760,7 +1797,8 @@
  *                                    contas usam
  *     relogio.dados[].identificador  o campo
  *     relogio.dados[].nome           o nome do campo
- *     relogio.dados[].origem         de onde vem o valor usado: informado, padrao (o padrão do campo) ou vazio
+ *     relogio.dados[].origem         de onde vem o valor usado: informado (o do relógio), calibre (o do calibre dele, quando o relógio não
+ *                                    tem), padrao (o padrão do campo) ou vazio
  *     relogio.dados[].origem_texto   de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     relogio.dados[].tipo           inteiro, decimal, sim_nao, data, lista ou texto
  *     relogio.dados[].unidade        a unidade (texto)
@@ -1770,6 +1808,12 @@
  *     relogio.disponivel             verdadeiro ou falso: entra no rodízio
  *     relogio.copia_banco            verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da
  *                                    cópia; a Configuração da coleção, documentos_copia, se escolhe, vale por cima)
+ *     relogio.calibre                o calibre (o movimento) do relógio; null: sem calibre
+ *     relogio.calibre.id             o número do calibre
+ *     relogio.calibre.nome           o nome do calibre
+ *     relogio.calibre.fabricante     o fabricante; null: não informado
+ *     relogio.calibre.link           o link do manual técnico; null: sem
+ *     relogio.calibre.observacao     as recomendações; null: sem
  *     relogio.posse                  a situação na coleção: colecao, desejado, emprestado, vendido ou arquivado (fora da coleção,
  *                                    disponivel é sempre falso)
  *     relogio.posse_texto            a mesma por extenso ("Na coleção", "Desejado"...)
@@ -1937,8 +1981,8 @@
  *                                    dias"); null nos campos
  *     relogio.previsao.conta[].nome  o nome do campo, ou do gasto medido (Gasto em uso medido, Gasto fora do pulso medido)
  *     relogio.previsao.conta[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrao (o padrão do campo), vazio (sem valor),
- *                                    medido (pelas leituras) ou cadastro (o gasto que vale saiu do cadastro)
+ *                                    de onde veio: informado (no cadastro do relógio), calibre (o valor do calibre dele), padrao (o padrão
+ *                                    do campo), vazio (sem valor), medido (pelas leituras) ou cadastro (o gasto que vale saiu do cadastro)
  *     relogio.previsao.conta[].origem_texto
  *                                    de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     relogio.previsao.conta[].unidade
@@ -1998,7 +2042,8 @@
  *     relogio.previsao.gasto.uso.campos[].nome
  *                                    o nome do campo
  *     relogio.previsao.gasto.uso.campos[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrao (o padrão do campo) ou vazio (sem valor)
+ *                                    de onde veio: informado (no cadastro do relógio), calibre (o valor do calibre dele), padrao (o padrão
+ *                                    do campo) ou vazio (sem valor)
  *     relogio.previsao.gasto.uso.campos[].origem_texto
  *                                    de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     relogio.previsao.gasto.uso.campos[].unidade
@@ -2036,7 +2081,8 @@
  *     relogio.previsao.gasto.repouso.campos[].nome
  *                                    o nome do campo
  *     relogio.previsao.gasto.repouso.campos[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrao (o padrão do campo) ou vazio (sem valor)
+ *                                    de onde veio: informado (no cadastro do relógio), calibre (o valor do calibre dele), padrao (o padrão
+ *                                    do campo) ou vazio (sem valor)
  *     relogio.previsao.gasto.repouso.campos[].origem_texto
  *                                    de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     relogio.previsao.gasto.repouso.campos[].unidade
@@ -2630,8 +2676,8 @@
  *     previsoes[].conta[].detalhe    no gasto medido, como ele foi medido ("conta dos dois gastos juntos, com 3 medições dos últimos 90
  *                                    dias"); null nos campos
  *     previsoes[].conta[].nome       o nome do campo, ou do gasto medido (Gasto em uso medido, Gasto fora do pulso medido)
- *     previsoes[].conta[].origem     de onde veio: informado (no cadastro do relógio), padrao (o padrão do campo), vazio (sem valor),
- *                                    medido (pelas leituras) ou cadastro (o gasto que vale saiu do cadastro)
+ *     previsoes[].conta[].origem     de onde veio: informado (no cadastro do relógio), calibre (o valor do calibre dele), padrao (o padrão
+ *                                    do campo), vazio (sem valor), medido (pelas leituras) ou cadastro (o gasto que vale saiu do cadastro)
  *     previsoes[].conta[].origem_texto
  *                                    de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     previsoes[].conta[].unidade    a unidade do valor (texto)
@@ -2677,7 +2723,8 @@
  *     previsoes[].gasto.uso.campos[].nome
  *                                    o nome do campo
  *     previsoes[].gasto.uso.campos[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrao (o padrão do campo) ou vazio (sem valor)
+ *                                    de onde veio: informado (no cadastro do relógio), calibre (o valor do calibre dele), padrao (o padrão
+ *                                    do campo) ou vazio (sem valor)
  *     previsoes[].gasto.uso.campos[].origem_texto
  *                                    de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     previsoes[].gasto.uso.campos[].unidade
@@ -2713,7 +2760,8 @@
  *     previsoes[].gasto.repouso.campos[].nome
  *                                    o nome do campo
  *     previsoes[].gasto.repouso.campos[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrao (o padrão do campo) ou vazio (sem valor)
+ *                                    de onde veio: informado (no cadastro do relógio), calibre (o valor do calibre dele), padrao (o padrão
+ *                                    do campo) ou vazio (sem valor)
  *     previsoes[].gasto.repouso.campos[].origem_texto
  *                                    de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     previsoes[].gasto.repouso.campos[].unidade
@@ -2887,6 +2935,116 @@
  *     variaveis[]                    as variáveis da tabela, que os totais têm em cada relógio além dos campos e das fórmulas
  *     variaveis[].nome               o nome da variável
  *     variaveis[].descricao          o que ela vale
+ *   recurso=precisao
+ *     relogio_id                     com relogio: o id dele
+ *     relogio                        com relogio: o nome dele
+ *     precisao                       a precisão do relógio (o quadro Precisão do painel): as leituras do desvio da hora e os acertos, a
+ *                                    marcha (em segundos por dia: + adianta, − atrasa) e o desvio estimado agora; null se nenhum tipo de
+ *                                    lançamento dele mede a marcha
+ *     precisao.tipo_desvio           o identificador do tipo de lançamento da leitura do desvio (o lancar com marca, instante_ms e posicao)
+ *     precisao.tipo_acerto           o identificador do tipo do acerto da hora; null se o relógio não tem
+ *     precisao.resumo                a frase pronta ("Adianta 7,6 s por dia (média de 3 medições em 9 dias; elas variam ±2,8 s/dia).", ou o
+ *                                    que falta para medir)
+ *     precisao.medicoes              quantos intervalos medidos (de uma leitura, ou de um acerto, até a leitura seguinte)
+ *     precisao.dias                  o tempo somado dos intervalos, em dias
+ *     precisao.marcha                a marcha do relógio, em s/dia: a soma das diferenças sobre a soma dos dias (um intervalo de 10 dias
+ *                                    pesa dez vezes o de 1 dia); null sem medição
+ *     precisao.marcha_texto          a marcha com o sinal e a unidade ("+7,6 s/dia")
+ *     precisao.marcha_dp             quanto as marchas dos intervalos variam entre si (o desvio padrão, pesado pelo tempo, em s/dia); null
+ *                                    com menos de dois
+ *     precisao.marcha_dp_texto       a variação por extenso ("±2,8 s/dia")
+ *     precisao.ultima                a marcha do intervalo mais recente, em s/dia; null sem medição
+ *     precisao.ultima_texto          a última com o sinal e a unidade
+ *     precisao.desvio_agora          o desvio estimado agora, em segundos (+ adiantado): o último ponto (0 depois de um acerto) mais a
+ *                                    marcha vezes o tempo desde ele; null sem leitura
+ *     precisao.desvio_agora_texto    por extenso ("8 s adiantado", "na hora")
+ *     precisao.esperada              a marcha esperada (os campos marcha_min e marcha_max, do relógio ou do grupo)
+ *     precisao.esperada.de           o mínimo, em s/dia; null sem
+ *     precisao.esperada.ate          o máximo, em s/dia; null sem
+ *     precisao.esperada.texto        por extenso ("de −10 s/dia a +30 s/dia"); null sem nenhum dos dois
+ *     precisao.dentro                verdadeiro se a última marcha está dentro da esperada; null sem a esperada ou sem medição
+ *     precisao.por_posicao           a marcha em cada posição em que houve medição, na ordem das posições
+ *     precisao.por_posicao[]         uma posição
+ *     precisao.por_posicao[].posicao a posição (o código)
+ *     precisao.por_posicao[].posicao_texto
+ *                                    a posição por extenso
+ *     precisao.por_posicao[].medicoes
+ *                                    quantos intervalos nela
+ *     precisao.por_posicao[].dias    o tempo deles, em dias
+ *     precisao.por_posicao[].marcha  a marcha nela, em s/dia
+ *     precisao.por_posicao[].marcha_texto
+ *                                    com o sinal e a unidade
+ *     precisao.pontos                as leituras do desvio e os acertos da hora, do mais velho ao mais novo (o gráfico)
+ *     precisao.pontos[]              um ponto
+ *     precisao.pontos[].id           o id do lançamento
+ *     precisao.pontos[].inicio       quando (AAAA-MM-DD HH:MM:SS)
+ *     precisao.pontos[].tipo         desvio (a leitura) ou acerto (o acerto da hora)
+ *     precisao.pontos[].desvio       o desvio em segundos (+ adiantado); 0 no acerto
+ *     precisao.pontos[].posicao      onde ele ficou desde o ponto anterior (o código); null: não informada
+ *     precisao.pontos[].posicao_texto
+ *                                    a posição por extenso; null: não informada
+ *     precisao.intervalos            os intervalos medidos, do mais novo ao mais velho
+ *     precisao.intervalos[]          um intervalo: de um ponto até a leitura seguinte
+ *     precisao.intervalos[].id       o id do lançamento da leitura do fim
+ *     precisao.intervalos[].de       o começo (AAAA-MM-DD HH:MM:SS)
+ *     precisao.intervalos[].ate      o fim
+ *     precisao.intervalos[].dias     quanto tempo, em dias
+ *     precisao.intervalos[].desvio_de
+ *                                    o desvio no começo, em segundos (0 depois de um acerto)
+ *     precisao.intervalos[].desvio_ate
+ *                                    o desvio no fim
+ *     precisao.intervalos[].marcha   a marcha no intervalo, em s/dia
+ *     precisao.intervalos[].marcha_texto
+ *                                    com o sinal e a unidade
+ *     precisao.intervalos[].posicao  onde ele ficou (a posição da leitura do fim); null: não informada
+ *     precisao.intervalos[].posicao_texto
+ *                                    a posição por extenso ("não informada" sem ela)
+ *     precisao.intervalos[].depois_do_acerto
+ *                                    verdadeiro se o intervalo começa num acerto da hora
+ *     precisao.posicoes              as posições, na ordem, para a lista da tela
+ *     precisao.posicoes[]            uma posição
+ *     precisao.posicoes[].valor      o código (o posicao do lancar)
+ *     precisao.posicoes[].texto      por extenso
+ *     relogios                       sem relogio: cada relógio da coleção que tem o tipo do desvio da hora, por nome
+ *     relogios[]                     um relógio, resumido
+ *     relogios[].relogio_id          o id
+ *     relogios[].relogio             o nome
+ *     relogios[].medicoes            quantos intervalos medidos
+ *     relogios[].marcha              a marcha, em s/dia (+ adianta); null sem medição
+ *     relogios[].marcha_texto        com o sinal e a unidade
+ *     relogios[].ultima              a marcha do intervalo mais recente, em s/dia
+ *     relogios[].ultima_texto        com o sinal e a unidade
+ *     relogios[].desvio_agora        o desvio estimado agora, em segundos (+ adiantado)
+ *     relogios[].desvio_agora_texto  por extenso
+ *     relogios[].esperada            a marcha esperada por extenso; null sem
+ *     relogios[].dentro              verdadeiro se a última está dentro da esperada; null sem a esperada ou sem medição
+ *     relogios[].resumo              a frase pronta
+ *   recurso=calibres
+ *     calibres                       os calibres da árvore, pelo nome
+ *     calibres[]                     um calibre (o movimento)
+ *     calibres[].id                  o número do calibre
+ *     calibres[].nome                o nome (NH35, ST2130...)
+ *     calibres[].fabricante          o fabricante; null: não informado
+ *     calibres[].link                o link do manual técnico; null: sem
+ *     calibres[].observacao          as recomendações (texto); null: sem
+ *     calibres[].valores             os valores dos campos que ele define, pelo identificador do campo
+ *     calibres[].valores.<identificador>
+ *                                    o valor do campo no calibre (texto normalizado: número com ponto, data AAAA-MM-DD, sim/não 1 ou 0)
+ *     calibres[].relogios            os relógios da coleção que apontam para ele, por nome
+ *     calibres[].relogios[]          um relógio
+ *     calibres[].relogios[].id       o número do relógio
+ *     calibres[].relogios[].nome     o nome do relógio
+ *     campos                         os campos do cadastro que um calibre pode definir (os da lista de desejos ficam de fora), na ordem do
+ *                                    cadastro
+ *     campos[]                       um campo
+ *     campos[].id                    o número do campo
+ *     campos[].identificador         o identificador (a chave em valores)
+ *     campos[].nome                  o nome
+ *     campos[].tipo                  inteiro, decimal, sim_nao, data, lista ou texto
+ *     campos[].unidade               a unidade (vazio: sem)
+ *     campos[].padrao                o padrão do campo; null: sem
+ *     campos[].opcoes                as opções de um campo de lista, uma por linha; null nos outros
+ *     campos[].grupo                 o grupo em que o campo vale, por extenso; null: todos os relógios
  *   recurso=estatisticas
  *     de                             o começo do período (texto AAAA-MM-DD)
  *     ate                            o fim do período (texto AAAA-MM-DD; no máximo hoje)
@@ -4314,6 +4472,8 @@ if ($recurso === "textos") {
     require __DIR__ . "/api/totais.php";
 } elseif ($recurso === "precisao") {
     require __DIR__ . "/api/precisao.php";
+} elseif ($recurso === "calibres") {
+    require __DIR__ . "/api/calibres.php";
 } elseif ($recurso === "roteiro") {
     // o teste de um roteiro (ou do roteiro de um modo) num dia: cada relógio com as linhas calculadas, e quem sairia
     $texto = (string)($_REQUEST["roteiro"] ?? "");
@@ -4396,7 +4556,7 @@ if ($recurso === "textos") {
 } else {
     $codigo = 404;
     $saida = ["erro" => t("recurso desconhecido"), "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "hora_certa", "acessorios", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "hora_certa", "acessorios", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

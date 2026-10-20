@@ -294,7 +294,7 @@ function arvore_copiar($raiz, $dono_id, $nome)
             }
         }
         $nos = implode(", ", array_keys($m["no"]));
-        foreach (["campo", "lancamento_tipo", "formula", "documento_categoria"] as $t) {
+        foreach (["campo", "lancamento_tipo", "formula", "documento_categoria", "total", "calibre"] as $t) {
             $m[$t] = [];
             foreach (linhas("SELECT * FROM " . $t . " WHERE no_id IN (" . $nos . ") ORDER BY id") as $x) {
                 $m[$t][(int)$x["id"]] = linha_copiar($t, $x, ["no_id" => $m["no"][(int)$x["no_id"]]]);
@@ -308,6 +308,14 @@ function arvore_copiar($raiz, $dono_id, $nome)
         foreach ($m["campo"] as $de => $para) {
             foreach (linhas("SELECT * FROM campo_opcao WHERE campo_id = ?", [$de]) as $x) {
                 linha_copiar("campo_opcao", $x, ["campo_id" => $para]);
+            }
+        }
+        // os valores dos calibres, com os campos da cópia
+        foreach ($m["calibre"] as $de => $para) {
+            foreach (linhas("SELECT * FROM calibre_valor WHERE calibre_id = ?", [$de]) as $x) {
+                if (isset($m["campo"][(int)$x["campo_id"]])) {
+                    linha_copiar("calibre_valor", $x, ["calibre_id" => $para, "campo_id" => $m["campo"][(int)$x["campo_id"]]]);
+                }
             }
         }
         foreach ($m["documento_categoria"] as $de => $para) {
@@ -387,7 +395,7 @@ function colecao_transferir($cid, $novo_dono)
             [$raiz, $m] = arvore_copiar((int)$c["no_id"], (int)$u["id"], (string)valor("SELECT nome FROM no WHERE id = ?", [(int)$c["no_id"]]));
             $rel = "SELECT id FROM relogio WHERE colecao_id = " . $cid;
             $trocas = [["relogio", "no_id", "no", "colecao_id = " . $cid], ["campo_valor", "campo_id", "campo", "relogio_id IN (" . $rel . ")"],
-                ["lancamento", "tipo_id", "lancamento_tipo", "relogio_id IN (" . $rel . ")"], ["documento", "categoria_id", "documento_categoria", "relogio_id IN (" . $rel . ")"],
+                ["lancamento", "tipo_id", "lancamento_tipo", "relogio_id IN (" . $rel . ")"], ["documento", "categoria_id", "documento_categoria", "relogio_id IN (" . $rel . ")"], ["relogio_calibre", "calibre_id", "calibre", "relogio_id IN (" . $rel . ")"],
                 ["modo_bloco", "no_id", "no", "modo_id IN (SELECT id FROM modo WHERE colecao_id = " . $cid . ")"]];
             foreach ($trocas as [$t, $col, $mapa, $onde]) {
                 // de um em um, pelos ids antigos que a coleção usa (os novos são maiores que todos os antigos: não se cruzam)

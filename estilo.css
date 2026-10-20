@@ -425,6 +425,12 @@ p.alerta-duplo { font-size: .88rem; color: var(--ambar); margin: .3rem 0; }
 button.corrige { font-size: .85rem; padding: .3rem .7rem; margin-top: .2rem; border-color: #c0392b; color: #9b2c22; }
 fieldset.compra { border: 1px solid var(--aco); border-radius: 8px; padding: .6rem .7rem .7rem; margin: 0; display: grid; gap: .6rem; }
 fieldset.compra legend { font-size: .9rem; font-weight: 600; color: var(--cinza); padding: 0 .3rem; }
+/* os valores que um calibre define (a aba Calibres dos Cadastros): os campos numa grade, o grupo em que valem embaixo */
+fieldset.campos-calibre { border: 1px solid var(--aco); border-radius: 8px; padding: .6rem .7rem .7rem; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr)); gap: .6rem 1rem; }
+fieldset.campos-calibre legend { font-size: .9rem; font-weight: 600; color: var(--cinza); padding: 0 .3rem; }
+fieldset.campos-calibre label { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; color: var(--cinza); min-width: 0; }
+fieldset.campos-calibre label input, fieldset.campos-calibre label select { width: 100%; }
+fieldset.campos-calibre small { font-size: .74rem; }
 
 /* ---------- tabela de relógios: ordenação, filtros, carga e compra ---------- */
 .rolagem { overflow-x: auto; border-radius: 10px; }
@@ -1161,6 +1167,10 @@ table.tabela-dados code.ident { display: block; font-size: .74rem; color: var(--
 .origem-informado { background: #e6eef8; color: #1f4f8f; border-color: #b8cbe6; }
 .origem-padrao { background: #fbf1e3; color: #8a5a00; border-color: #ecd2a8; }
 .origem-medido { background: #e3f3e6; color: #1e6b2e; border-color: #a9d8b3; }
+.origem-calibre { background: #f1e9f8; color: #5b2f86; border-color: #d4bfe8; }
+/* o calibre no quadro Dados do relógio: uma linha em cima das tabelas; as recomendações embaixo, menores */
+.calibre-linha { margin: 0 0 .6rem; font-size: .88rem; overflow-wrap: anywhere; }
+.calibre-linha small { display: block; color: var(--cinza); font-size: .8rem; white-space: pre-line; }
 /* a conta da previsão: o que é (e, menor, como foi medido), o valor (e a unidade embaixo) e a origem */
 .quadro h3.conta-titulo { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cinza); margin: .9rem 0 .2rem; }
 table.conta-previsao td { font-size: .84rem; }

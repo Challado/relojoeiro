@@ -925,7 +925,7 @@ const IMPACTO_NOMES = ["usuario" => "usuários", "colecao" => "coleções", "col
     "convite" => "convites", "pedido" => "pedidos de acesso", "api_token" => "tokens de API", "usuario_token" => "links de senha", "push_inscricao" => "aparelhos do Web Push",
     "no" => "grupos", "campo" => "campos", "campo_opcao" => "opções de lista", "lancamento_tipo" => "tipos de lançamento", "formula" => "fórmulas", "aviso" => "avisos",
     "documento_categoria" => "categorias de documento", "documento_categoria_aceita" => "tipos aceitos de categorias", "relogio" => "relógios", "foto" => "fotos",
-    "campo_valor" => "valores de campo", "lancamento" => "lançamentos", "medicao" => "medições do gasto", "documento" => "documentos", "documento_parte" => "pedaços de documentos no banco",
+    "campo_valor" => "valores de campo", "calibre" => "calibres", "calibre_valor" => "valores de calibre", "relogio_calibre" => "relógios com calibre", "lancamento" => "lançamentos", "medicao" => "medições do gasto", "documento" => "documentos", "documento_parte" => "pedaços de documentos no banco",
     "acessorio" => "acessórios", "acessorio_relogio" => "vínculos de acessório", "criterio_parametro" => "parâmetros de critérios", "criterio_sub" => "subparâmetros de critérios",
     "criterio_faixa" => "faixas de critérios", "config" => "valores da configuração", "modo" => "modos de rodízio", "modo_bloco" => "blocos de modos", "modo_bloco_relogio" => "relógios fixos de blocos",
     "modo_bloco_dia" => "dias de blocos", "plano" => "dias do plano", "plano_bloco" => "blocos de dias do plano", "plano_livre" => "dias livres", "evento_personalizado" => "eventos",

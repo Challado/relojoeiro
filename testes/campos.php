@@ -104,6 +104,8 @@ $consultas = [
     "proximos" => ["recurso=proximos", "recurso=proximos&pagina=2&por_pagina=3"],
     "desejos" => ["recurso=desejos"],
     "estatisticas" => ["recurso=estatisticas", "recurso=estatisticas&de=tudo"],
+    "precisao" => array_merge(["recurso=precisao"], $para_cada("recurso=precisao&relogio=%d")),
+    "calibres" => ["recurso=calibres"],
     "hora_certa" => ["recurso=hora_certa"],
     "textos" => ["recurso=textos", "recurso=textos&lingua=en"],
     "acessorios" => ["recurso=acessorios", "recurso=acessorios&relogio=0"],

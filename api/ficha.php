@@ -13,16 +13,21 @@ $agora = time();
 $n = nos_todos();
 $r = linha("SELECT * FROM relogio WHERE id = ?", [(int)($_REQUEST["relogio"] ?? 0)]);
 $valores = $r ? valores_do_relogio((int)$r["id"]) : [];
+// os valores do próprio relógio (o cadastro que se edita), sem os que vêm do calibre
+$proprios = $r ? valores_proprios((int)$r["id"]) : [];
+$do_calibre = $r ? valores_do_calibre_do_relogio((int)$r["id"]) : [];
 $campos = [];
 foreach (campos_todos() as $ident => $c) {
     $campos[] = ["identificador" => $ident, "nome" => $c["nome"], "tipo" => $c["tipo"], "unidade" => $c["unidade"], "opcoes" => array_values(array_filter(array_map("trim", explode("\n", (string)$c["opcoes"])))),
         "padrao" => $c["padrao"], "no_id" => $c["no_id"] === null ? 0 : (int)$c["no_id"], "so_desejado" => (int)($c["so_desejado"] ?? 0) === 1,
-        "valor" => $valores[$ident] ?? null];
+        "valor" => $proprios[$ident] ?? null, "do_calibre" => $do_calibre[$ident] ?? null];
 }
 $saida = ["hoje" => $hoje->format("Y-m-d"), "relogio" => null, "copia_sistema" => documentos_copia_sistema(), "painel_modo" => painel_modo(), "campos" => $campos,
     // as situações na coleção, na ordem, para o menu do cadastro
     "posses" => array_map(function ($k) { return ["valor" => $k, "nome" => t(POSSES[$k])]; }, array_keys(POSSES)),
-    "grupos" => array_map(function ($o) use ($n) { return ["id" => $o[0], "caminho" => no_caminho($o[0]), "cadeia" => no_cadeia($o[0])]; }, nos_em_ordem())];
+    "grupos" => array_map(function ($o) use ($n) { return ["id" => $o[0], "caminho" => no_caminho($o[0]), "cadeia" => no_cadeia($o[0])]; }, nos_em_ordem()),
+    // os calibres da árvore, para o menu do cadastro
+    "calibres" => array_map(function ($c) { return ["id" => (int)$c["id"], "nome" => $c["nome"], "fabricante" => $c["fabricante"]]; }, linhas("SELECT id, nome, fabricante FROM calibre ORDER BY nome, id"))];
 if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     $codigo = 404;
     $saida = ["erro" => t("relógio não encontrado")];
@@ -58,6 +63,9 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
         "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]), "da_colecao" => da_colecao($r),
         "acessorios" => acessorios_lista($id),
         "copia_banco" => (int)$r["copia_banco"] === 1,
+        // o calibre (o movimento): o cadastro dele, com o link do manual técnico e as recomendações; null sem
+        "calibre" => ($cal_f = calibre_do_relogio($id)) ? ["id" => (int)$cal_f["id"], "nome" => $cal_f["nome"], "fabricante" => $cal_f["fabricante"], "link" => $cal_f["link"],
+            "observacao" => $cal_f["observacao"]] : null,
         "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : t("sem grupo"), "caminho" => no_caminho($r["no_id"]), "observacao" => $valores["observacao"] ?? null,
         "foto" => $foto !== null ? strtotime($foto) : null, "documentos" => (function () use ($id) {
             $cats = array_values(array_filter(documento_categorias_lista($id), function ($c) { return $c["documentos"] > 0; }));
@@ -120,9 +128,9 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     // os dados do relógio: os campos do cadastro que valem para ele (o informado, senão o padrão) e o resultado de cada fórmula
     $dados = [];
     foreach (campos_do_relogio($r) as $ident => $c) {
-        $dados[] = ["identificador" => $ident, "nome" => $c["nome"], "tipo" => $c["tipo"], "unidade" => $c["unidade"], "valor" => $valores[$ident] ?? null,
+        $dados[] = ["identificador" => $ident, "nome" => $c["nome"], "tipo" => $c["tipo"], "unidade" => $c["unidade"], "valor" => $proprios[$ident] ?? null,
             "valor_usado" => ($valores[$ident] ?? "") !== "" ? $valores[$ident] : $c["padrao"],
-            "origem" => $o_d = (($valores[$ident] ?? "") !== "" ? "informado" : ($c["padrao"] !== null && $c["padrao"] !== "" ? "padrao" : "vazio")), "origem_texto" => origem_texto($o_d)];
+            "origem" => $o_d = origem_valor($id, $ident, $c["padrao"]), "origem_texto" => origem_texto($o_d)];
     }
     $calculos = [];
     foreach (formulas_todas() as $ident => $versoes) {

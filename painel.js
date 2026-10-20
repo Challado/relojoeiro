@@ -74,7 +74,7 @@ function campoCadastro(c) {
   var desejo = c.so_desejado ? " data-desejo" : "";
   if (c.tipo === "sim_nao") {
     res = el("label", {"data-sub": sub, "class": "check"}, el("input", {"type": "hidden", "name": nome, "value": "0"}) + el("input", {"type": "checkbox", "name": nome, "value": "1",
-      "checked": (v !== "" ? v : String(c.padrao || "")) === "1"}) + " " + rotulo);
+      "checked": (v !== "" ? v : String(c.do_calibre !== null && c.do_calibre !== undefined ? c.do_calibre : (c.padrao || ""))) === "1"}) + " " + rotulo);
   } else if (c.tipo === "lista") {
     res = el("label", {"data-sub": sub}, rotulo + " " + el("select", {"name": nome}, el("option", {"value": ""}, "—") + c.opcoes.map(function (o) {
       return el("option", {"selected": o === v}, h(o));
@@ -86,7 +86,8 @@ function campoCadastro(c) {
   } else {
     var mostra = v === "" ? "" : (c.unidade === "R$" ? reais(v) : v.replace(".", ","));
     res = el("label", {"data-sub": sub}, rotulo + " " + el("input", {"type": "text", "inputmode": "decimal", "name": nome, "value": mostra,
-      "placeholder": c.padrao !== null && c.padrao !== "" ? t("vazio: {1}", {1: String(c.padrao).replace(".", ",")}) : null}));
+      "placeholder": c.do_calibre !== null && c.do_calibre !== undefined ? t("vazio: {1} (do calibre)", {1: String(c.do_calibre).replace(".", ",")})
+        : (c.padrao !== null && c.padrao !== "" ? t("vazio: {1}", {1: String(c.padrao).replace(".", ",")}) : null)}));
   }
   return desejo !== "" ? res.replace("<label ", "<label" + desejo + " ") : res;
 }
@@ -498,6 +499,11 @@ function abrirNoPainel(id) {
     cad += el("label", {}, t("Situação na coleção {1} {2}", {1: el("select", {"name": "posse", "class": "campo-posse"}, d.posses.map(function (p) {
       return el("option", {"value": p.valor, "selected": p.valor === posseForm}, h(p.nome));
     }).join("")), 2: el("small", {}, t("fora da coleção, ele sai do rodízio e dos avisos; a ficha e o histórico ficam"))}));
+    // o calibre (o movimento): o relógio herda dele os valores que não tem (a aba Calibres dos Cadastros)
+    var calForm = novo || !r.calibre ? 0 : r.calibre.id;
+    cad += el("label", {}, t("Calibre {1} {2}", {1: el("select", {"name": "calibre_id"}, el("option", {"value": "0"}, t("— sem calibre")) + d.calibres.map(function (c) {
+      return el("option", {"value": c.id, "selected": c.id === calForm}, h(c.nome) + (c.fabricante ? " · " + h(c.fabricante) : ""));
+    }).join("")), 2: el("small", {}, t("o movimento: o relógio usa os valores dele nos campos vazios ({1})", {1: el("a", {"href": "cadastros.php?aba=calibres"}, t("cadastrar calibres"))}))}));
     d.campos.forEach(function (c) {
       if (compraIds.indexOf(c.identificador) < 0 && c.identificador !== "observacao") {
         cad += campoCadastro(c);
@@ -698,7 +704,11 @@ function abrirNoPainel(id) {
         }).join("");
       };
       // duas tabelas lado a lado: o cadastro (o valor e de onde ele vem) e o resultado de cada fórmula agora (com a versão)
-      res += quadro(t("Dados do relógio"), el("div", {"class": "dados-grade"},
+      // o calibre (o movimento), em cima: o nome, o fabricante, o link do manual técnico e as recomendações
+      var calLinha = r.calibre ? el("p", {"class": "calibre-linha"}, t("Calibre: {1}", {1: el("strong", {}, h(r.calibre.nome))}) + (r.calibre.fabricante ? " · " + h(r.calibre.fabricante) : "")
+        + (r.calibre.link ? " · " + el("a", {"href": r.calibre.link, "target": "_blank", "rel": "noopener"}, t("manual técnico ↗")) : "")
+        + (r.calibre.observacao ? el("small", {}, h(r.calibre.observacao)) : "")) : "";
+      res += quadro(t("Dados do relógio"), calLinha + el("div", {"class": "dados-grade"},
         el("div", {}, el("h3", {}, t("Cadastro")) + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Campo"))
             + el("th", {}, t("Valor")) + el("th", {}, t("Origem")))) + el("tbody", {}, r.dados.map(function (c) {
               // o texto livre (a observação, uma lista) quebra a linha; número, data e sim/não ficam numa linha só

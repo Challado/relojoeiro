@@ -512,13 +512,91 @@ function campos_do_relogio($r)
 }
 
 // Os valores gravados de um relógio: [identificador => texto]
-function valores_do_relogio($id)
+function valores_proprios($id)
 {
     $res = [];
     foreach (linhas("SELECT c.identificador, v.valor FROM campo_valor v JOIN campo c ON c.id = v.campo_id WHERE v.relogio_id = ?", [$id]) as $x) {
         $res[$x["identificador"]] = $x["valor"];
     }
     return $res;
+}
+
+// Os valores do relógio para as contas: os do calibre dele e, por cima, os dele mesmo (o relógio manda); o que nenhum dos
+// dois tem fica com o padrão do campo (o do grupo), como sempre
+function valores_do_relogio($id)
+{
+    return array_merge(valores_do_calibre_do_relogio($id), valores_proprios($id));
+}
+
+// Os calibres dos relógios da coleção, lidos uma vez por requisição (e de novo depois de uma gravação: FORMULAS_VERSAO):
+// [relogio_id => ["calibre" => a linha do calibre, "valores" => [identificador => valor]]]. As contas pedem os valores de
+// cada relógio muitas vezes; uma consulta por pedido pesava (no Firebird, minutos a mais no cenário)
+function calibres_dos_relogios()
+{
+    static $cache = [];
+    $k = (int)colecao_atual() . "/" . ($GLOBALS["FORMULAS_VERSAO"] ?? 0);
+    if (!isset($cache[$k])) {
+        $res = [];
+        foreach (linhas("SELECT rc.relogio_id, c.* FROM relogio_calibre rc JOIN calibre c ON c.id = rc.calibre_id") as $x) {
+            $rid = (int)$x["relogio_id"];
+            unset($x["relogio_id"]);
+            $res[$rid] = ["calibre" => $x, "valores" => []];
+        }
+        foreach (linhas("SELECT rc.relogio_id, c.identificador, v.valor FROM relogio_calibre rc JOIN calibre_valor v ON v.calibre_id = rc.calibre_id
+            JOIN campo c ON c.id = v.campo_id") as $x) {
+            $res[(int)$x["relogio_id"]]["valores"][$x["identificador"]] = $x["valor"];
+        }
+        $cache = [$k => $res];
+    }
+    return $cache[$k];
+}
+
+// O calibre de um relógio (a linha do calibre), ou null
+function calibre_do_relogio($rid)
+{
+    return calibres_dos_relogios()[(int)$rid]["calibre"] ?? null;
+}
+
+// Os valores que um calibre define: [identificador => valor]
+function valores_do_calibre($cid)
+{
+    $res = [];
+    foreach (linhas("SELECT c.identificador, v.valor FROM calibre_valor v JOIN campo c ON c.id = v.campo_id WHERE v.calibre_id = ?", [(int)$cid]) as $x) {
+        $res[$x["identificador"]] = $x["valor"];
+    }
+    return $res;
+}
+
+// Os valores que o calibre de um relógio define: [identificador => valor] (vazio sem calibre)
+function valores_do_calibre_do_relogio($rid)
+{
+    return calibres_dos_relogios()[(int)$rid]["valores"] ?? [];
+}
+
+// De onde vem o valor de um campo num relógio: informado (o do relógio), calibre (o do calibre dele), padrao (o padrão do
+// campo, $usado não vazio) ou vazio
+function origem_valor($rid, $nome, $usado)
+{
+    static $cache = [];
+    $k = (int)$rid . "/" . ($GLOBALS["FORMULAS_VERSAO"] ?? 0);
+    if (!isset($cache[$k])) {
+        $cache[$k] = [valores_proprios((int)$rid), valores_do_calibre_do_relogio((int)$rid)];
+    }
+    [$p, $c] = $cache[$k];
+    return ($p[$nome] ?? "") !== "" ? "informado" : (($c[$nome] ?? "") !== "" ? "calibre" : ($usado === null || $usado === "" ? "vazio" : "padrao"));
+}
+
+// Os calibres da árvore, por nome, cada um com os valores que define e os relógios da coleção que apontam para ele
+function calibres_todos()
+{
+    $rels = [];
+    foreach (linhas("SELECT rc.calibre_id, r.id, r.nome FROM relogio_calibre rc JOIN relogio r ON r.id = rc.relogio_id ORDER BY r.nome, r.id") as $x) {
+        $rels[(int)$x["calibre_id"]][] = ["id" => (int)$x["id"], "nome" => $x["nome"]];
+    }
+    return array_map(function ($c) use ($rels) {
+        return ["id" => (int)$c["id"], "nome" => $c["nome"], "fabricante" => $c["fabricante"], "link" => $c["link"], "observacao" => $c["observacao"],
+            "valores" => (object)valores_do_calibre((int)$c["id"]), "relogios" => $rels[(int)$c["id"]] ?? []];
+    }, linhas("SELECT * FROM calibre ORDER BY nome, id"));
 }
 
 // Confere e normaliza um valor digitado para o tipo do campo. Devolve [valor normalizado (texto) ou null se vazio, erro]
@@ -639,6 +717,7 @@ $MIGRACOES = [
     "v30" => ["migracao_v30.sql", tk("os modos de rodízio com tipo (a tela de cada um: um por semana, semana e fim de semana, por dia da semana, aleatório todo dia, escala inteligente ou personalizado), semanas à frente e o roteiro (as cinco linhas que o motor calcula: candidato, nota, peso, dias, garantia; escrito à mão no personalizado, gerado dos blocos nos outros); um montador do plano só para todos os modos"), "modo.roteiro", "migracao_v30_dados"],
     "v31" => ["migracao_v31.sql", tk("os totais: os da tabela dos relógios (o rodapé, embaixo de cada coluna) e os da página de totais deixam de ser fixos e viram expressões do motor de fórmulas sobre os relógios mostrados (CONTA, SOMA, MEDIA, AGRUPADO, FAIXAS...), cadastradas na aba Totais dos Cadastros; os prontos entram em cada árvore"), "total", "migracao_v31_dados"],
     "v32" => ["migracao_v32.sql", tk("a precisão: o desvio da hora (quanto o relógio está adiantado ou atrasado, lido contra a hora certa, com a posição em que ele ficou) e o acerto da hora; a marcha em segundos por dia, o gráfico, as funções MARCHA, MARCHA_DP, MARCHA_N, MARCHA_ULTIMA e DESVIO_AGORA, e os avisos Acertar a hora e Marcha fora do esperado; os tipos, campos, fórmulas e avisos entram em cada árvore"), "lancamento.posicao", "migracao_v32_dados"],
+    "v33" => ["migracao_v33.sql", tk("os calibres: o movimento (NH35, ST2130, B620...) como um cadastro da árvore, com fabricante, o link do manual técnico, as recomendações e os valores dos campos que ele define; cada relógio aponta para um e herda dele o que não tem (o valor do relógio, senão o do calibre, senão o padrão do campo); a aba Calibres dos Cadastros, a função CALIBRE e recurso=calibres"), "calibre"],
 ];
 
 // O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
@@ -1001,6 +1080,7 @@ $FUNCOES = [
     "SEMANA_DO_ANO" => [0, 0, tk("o número da semana do ano (ISO) do dia que está sendo montado"), false],
     "NO_GRUPO" => [1, 1, tk("NO_GRUPO(\"grupo\"): 1 se o relógio está nesse ponto da árvore ou abaixo (o nome, o caminho \"Tradicional › Quartzo\" ou #id; \"todos\": 1 para todos)"), false],
     "RELOGIO" => [1, 1, tk("RELOGIO(\"nome\" ou id): 1 se é esse relógio"), false],
+    "CALIBRE" => [1, 1, tk("CALIBRE(\"nome\" ou id): 1 se o relógio tem esse calibre (o movimento)"), false],
     "ESCOLHIDO_HA" => [1, 1, tk("ESCOLHIDO_HA(n): 1 se o relógio é o do plano há n dias (1: ontem; -1: amanhã, quando já está no plano)"), false],
     "VEZES_NO_PLANO" => [1, 1, tk("VEZES_NO_PLANO(n): quantos dias o relógio teve no plano nos últimos n dias (antes do dia que está sendo montado)"), false],
     "ESCOLHA" => [2, null, tk("ESCOLHA(n; a; b; c...): o n-ésimo dos valores (só ele é calculado); fora da lista, vazio. Ex.: ESCOLHA(DIA_SEMANA(); ...) dá um valor por dia da semana"), false],
@@ -1951,6 +2031,9 @@ function formula_calcular($no, &$ctx)
                 $res = $no === 0 ? 1 : ($no === null ? 0 : (in_array($no, no_cadeia($ctx["r"]["no_id"] ?? 0), true) ? 1 : 0));
             } elseif ($nome === "RELOGIO") {
                 $res = $v[0] === null ? 0 : ((is_numeric($v[0]) ? (int)$v[0] === (int)$ctx["r"]["id"] : mb_strtolower(trim((string)$v[0]), "UTF-8") === mb_strtolower((string)$ctx["r"]["nome"], "UTF-8")) ? 1 : 0);
+            } elseif ($nome === "CALIBRE") {
+                $cal = calibre_do_relogio((int)($ctx["r"]["id"] ?? 0));
+                $res = $v[0] === null || $cal === null ? 0 : ((is_numeric($v[0]) ? (int)$v[0] === (int)$cal["id"] : mb_strtolower(trim((string)$v[0]), "UTF-8") === mb_strtolower((string)$cal["nome"], "UTF-8")) ? 1 : 0);
             } elseif ($nome === "ESCOLHIDO_HA") {
                 $d = is_numeric($v[0]) ? dia_da_conta($ctx)->modify((-(int)$v[0]) . " days") : null;
                 $res = $d === null ? null : ((int)(valor("SELECT relogio_id FROM plano WHERE data = ?", [$d->format("Y-m-d")]) ?? 0) === (int)$ctx["r"]["id"] ? 1 : 0);
@@ -2161,7 +2244,7 @@ $FUNCOES_TOTAIS = [
 // as que dão uma tabelinha ou um relógio: só como a expressão inteira
 const TOTAIS_DO_TOPO = ["AGRUPADO", "FAIXAS", "QUEM_MENOR", "QUEM_MAIOR"];
 // as funções do motor que precisam de um relógio: nos totais, só dentro de uma função de total
-const FUNCOES_DO_RELOGIO = ["NO_GRUPO", "RELOGIO", "ESCOLHIDO_HA", "VEZES_NO_PLANO", "MEDIDO", "MEDIA_COLECAO", "LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA",
+const FUNCOES_DO_RELOGIO = ["NO_GRUPO", "RELOGIO", "CALIBRE", "ESCOLHIDO_HA", "VEZES_NO_PLANO", "MEDIDO", "MEDIA_COLECAO", "LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA",
     "MEDIANA_TAXA", "ULTIMA_TAXA", "MARCHA", "MARCHA_DP", "MARCHA_N", "MARCHA_ULTIMA", "DESVIO_AGORA", "DIA_SEMANA", "SEMANA_DO_ANO", "SORTEIO"];
 
 // As variáveis da tabela, que os totais têm em cada relógio além dos campos e das fórmulas: nome => [o que é, unidade]
@@ -5151,7 +5234,7 @@ function dias_livres($de, $ate)
 // de onde veio um número da conta (o "origem" das respostas, um código), no idioma: o "origem_texto" que as telas mostram
 function origem_texto($origem)
 {
-    $textos = ["informado" => t("informado"), "padrao" => t("padrão"), "vazio" => t("vazio"), "medido" => t("medido"), "cadastro" => t("cadastro")];
+    $textos = ["informado" => t("informado"), "calibre" => t("calibre"), "padrao" => t("padrão"), "vazio" => t("vazio"), "medido" => t("medido"), "cadastro" => t("cadastro")];
     return $textos[$origem] ?? $origem;
 }
 
@@ -5552,7 +5635,7 @@ function previsao_energia($r, $agora)
             $vazio = false;
             foreach ($ctx["rastro"] as $nome => $v) {
                 if (isset($campos[$nome])) {
-                    $origem = ($valores[$nome] ?? "") !== "" ? "informado" : ($v === null ? "vazio" : "padrao");
+                    $origem = origem_valor((int)$r["id"], $nome, $v);
                     $vazio = $vazio || $origem === "vazio";
                     $res["conta"][] = ["campo" => $nome, "nome" => $campos[$nome]["nome"], "detalhe" => null, "valor" => $v, "unidade" => $campos[$nome]["unidade"],
                         "origem" => $origem, "origem_texto" => origem_texto($origem)];
@@ -5613,7 +5696,7 @@ function previsao_energia($r, $agora)
                 foreach (array_keys($ctx["rastro"]) as $nome) {
                     if (isset($campos[$nome])) {
                         $de_campos[] = ["campo" => $nome, "nome" => $campos[$nome]["nome"], "valor" => is_numeric($ctx["rastro"][$nome]) ? (float)$ctx["rastro"][$nome] : null,
-                            "unidade" => $campos[$nome]["unidade"], "origem" => $o_c = (($valores[$nome] ?? "") !== "" ? "informado" : ($ctx["rastro"][$nome] === null ? "vazio" : "padrao")), "origem_texto" => origem_texto($o_c)];
+                            "unidade" => $campos[$nome]["unidade"], "origem" => $o_c = origem_valor((int)$r["id"], $nome, $ctx["rastro"][$nome]), "origem_texto" => origem_texto($o_c)];
                     }
                 }
                 $so_v = $so !== null && $so[$medida] !== null ? round((float)$so[$medida], 3) : null;

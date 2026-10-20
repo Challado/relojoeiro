@@ -1,4 +1,4 @@
-<!-- origem: a065211fbb3435bcd16b2a7cd933bceeed2555af -->
+<!-- origem: ccfbd22c46a4be02f37655295f5bbeb75478f3a8 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -52,6 +52,7 @@ flowchart LR
 |---|---|---|
 | **Groups** (the tree) | The classification of the collection, in as many levels as you want. Everything registered in a group applies to it and to everything below it. | `Traditional › Mechanical › Automatic` |
 | **Fields** | The data of each watch, defined by you: text, number, date, yes/no or list, with unit and default value. | `reserva_horas = 40 h`, `data_pilha`, `loja` |
+| **Calibers** | The watch's movement, with what belongs to it: the manufacturer, the technical manual, the recommendations and the field values. A watch with a caliber uses its own value, otherwise the caliber's, otherwise the field's default. | `NH35`: 41 h power reserve, rate from −20 to +40 s/day |
 | **Entry types** | What happens to a watch. It can be **instant** (winding, battery change), **with a value** (charge reading: 68%) or a **session** with start and end (on the wrist, on the winder, in the sun). | `sol`: a session that closes by itself at 6 pm if you forget |
 | **Formulas** | Calculations over the fields and the entries. The same formula can have **one version per group**, and the one of the group closest to the watch applies. | `energia` is the battery on the smartwatch, the reserve on the mechanical, the light on the solar and the battery life on the quartz |
 | **Alerts** | An expected date by formula, a lead time, a text and the entry that resolves the alert. | *"Wind the Orient: the reserve runs out at 3 pm"*, and the **Winding** button resolves it |
@@ -98,6 +99,7 @@ And the rotation ones (the modes' script; outside it, the day is the one of the 
 | `DIA_SEMANA()`, `SEMANA_DO_ANO()` | the weekday (1 Monday to 7 Sunday) and the week of the year (ISO) of the day being built |
 | `NO_GRUPO("Tradicional › Quartzo")` | 1 if the watch is at that point of the tree or below (the name, the path or `#id`; `"todos"`: 1 for all) |
 | `RELOGIO("Seiko SKX")` | 1 if it is that watch (by name or by id) |
+| `CALIBRE("NH35")` | 1 if the watch has that caliber (by name or by id) |
 | `ESCOLHIDO_HA(1)`, `VEZES_NO_PLANO(7)` | 1 if the watch was the plan's one n days ago (1: yesterday; -1: tomorrow, when it is already in the plan); how many days it had in the plan in the last n days |
 | `ESCOLHA(n; a; b; c)` | the n-th of the values (only it is calculated): `ESCOLHA(DIA_SEMANA(); …)` gives one value per weekday |
 | `SORTEIO()` | a number from 0 to 1, from the same RANDOM.ORG batch as the draws |
@@ -558,6 +560,22 @@ or the watch's own history) are formulas, like the others. In formulas: `MARCHA(
 `MARCHA_N(dias; "posição")`, `MARCHA_ULTIMA()` and `DESVIO_AGORA()`. Through the API: `recurso=precisao` (of one watch or the
 collection summary) and `recurso=lancamento`, `acao=lancar`, `tipo=desvio`, with `valor` or `marca` (and `instante_ms`) and
 `posicao`.
+
+### Calibers {#os-calibres}
+
+The **caliber** is the watch's movement: the NH35 of a Seiko, the ST2130 of a Sea-Gull, the 3159 module of a Casio. Many
+things belong to the movement, not to the watch: the power reserve, the rate the manufacturer promises, whether it can be wound
+by the crown. In the **Calibers** tab of the **Definitions** page, each caliber has the name, the manufacturer, the link to the
+technical manual, the recommendations (*"wind by the crown: up to 40 turns"*) and the **field values** it defines. In the
+watch's record, choose the **Caliber**: the watch then uses its values in the fields it left empty itself.
+
+The order is: **the watch's value, otherwise the caliber's, otherwise the field's default** (the group's). Five watches with an
+NH35 get the reserve and the expected rate at once; one of them, with a different reserve in its record, keeps its own. In
+**Watch data**, the origin of each value says where it came from (*informado*, *calibre*, *padrão*), and above the tables come
+the caliber, the manual link and the recommendations. Deleting a caliber leaves its watches without a caliber (the deletion
+says how many). In formulas, `CALIBRE("NH35")` gives 1 if the watch has that caliber. Through the API: `recurso=calibres` (the
+list, with the values and the watches of each one), `recurso=calibres` with `acao=salvar` or `excluir`, and `recurso=relogio`,
+`acao=salvar`, with `calibre_id`.
 
 ## Several people: accounts, collections and access {#várias-pessoas-contas-coleções-e-acesso}
 
@@ -1184,7 +1202,7 @@ comes in here by its name.
 | **Rotation modes** (`modos.php`, menu **Rotation**) | The rotation modes: the table (the active mode marked, the type, the criterion, the weeks and where it chooses from) with **Edit**, **Activate** and **Delete**, and a mode's form, with its type's screen: the name and the type; where to choose from (per stretch or per weekday), the schedule's period or the hand-written script with **Test on all watches**; the weeks ahead (with the list of weeks); the choice criterion and the cycle; and, in the ready-made types, the generated script (read-only, with **copy this script** to a Custom one). See [The rotation modes](#os-modos-de-rodízio). |
 | **Criteria** (`criterios.php`) | The criteria sets per place (all watches, a group or a watch), with parameters, subparameters, ranges and each watch's score with the calculation open. It has **Restore the initial criteria**. |
 | **Groups** (`grupos.php`) | The tree: create, rename, move, sort, delete (what belonged to the group goes to the one above) and choose each watch's group. |
-| **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), the totals (the **Totals** tab: see [Totals](#os-totais)) and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page, and the rotation modes on **Rotation modes**). |
+| **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), the totals (the **Totals** tab: see [Totals](#os-totais)), the calibers (the **Calibers** tab: see [Calibers](#os-calibres)) and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page, and the rotation modes on **Rotation modes**). |
 | **Cron runs** (`execucoes.php`) | What the cron did in each round, how long it took and the errors, with filters. |
 | **My account** (`conta.php`, menu **Account › My account**) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection (by the code the owner gave), your data (your code, the e-mail, the language, the password), the **app on the phone** (remember this device, install, the remembered devices), the **API tokens** (for your scripts), the **notifications on this device** (Web Push) and deleting the account. See [Several people](#várias-pessoas-contas-coleções-e-acesso) and [The app on the phone](#o-aplicativo-no-celular). |
 | **Approvals** (`aprovacoes.php`) | The access requests to your collections (approve, decline), the invitations members made that wait for you, **Invite** (by e-mail), the invitations you made and who sees your collections (remove access). The menu shows **Approvals (N)** when something is waiting. |

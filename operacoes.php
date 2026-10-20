@@ -486,6 +486,90 @@ function op_totais($acao, $d)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Os calibres (a aba Calibres dos Cadastros; da árvore, presos à raiz dela). Ações: salvar (id: 0 cria; nome, fabricante,
+// link: o endereço do manual técnico, http:// ou https://; observacao: as recomendações; valores: {identificador: valor}
+// dos campos do cadastro que o calibre define, vazio tira; só muda o que vier), excluir (id: os relógios que apontam para
+// ele ficam sem calibre)
+// ---------------------------------------------------------------------------------------------------------------------
+function op_calibres($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $id = (int)($d["id"] ?? 0);
+    $atual = $id > 0 ? linha("SELECT * FROM calibre WHERE id = ?", [$id]) : null;
+    if ($id > 0 && !$atual) {
+        $erros[] = t("Calibre não encontrado.");
+    } elseif ($acao === "excluir" && !$atual) {
+        $erros[] = t("Calibre não encontrado.");
+    } elseif ($acao === "salvar") {
+        $texto = function ($k, $max) use ($d, $atual) {
+            $v = array_key_exists($k, $d) ? trim((string)$d[$k]) : (string)($atual[$k] ?? "");
+            return [$v === "" ? null : $v, mb_strlen($v, "UTF-8") <= $max];
+        };
+        [$nome, $nome_ok] = $texto("nome", 80);
+        [$fabricante, $fab_ok] = $texto("fabricante", 80);
+        [$link, $link_ok] = $texto("link", 500);
+        [$obs, $obs_ok] = $texto("observacao", 4000);
+        if ($nome === null || !$nome_ok) {
+            $erros[] = t("Dê um nome ao calibre (até 80 caracteres).");
+        } elseif (valor("SELECT id FROM calibre WHERE nome = ? AND id <> ?", [$nome, $id]) !== null) {
+            $erros[] = t("Já existe o calibre {1}.", [1 => $nome]);
+        }
+        if (!$fab_ok) {
+            $erros[] = t("Fabricante: até 80 caracteres.");
+        }
+        if (!$link_ok || ($link !== null && preg_match("~^https?://\\S+$~i", $link) !== 1)) {
+            $erros[] = t("Link do manual técnico: um endereço http:// ou https:// (até 500 caracteres), ou vazio.");
+        }
+        if (!$obs_ok) {
+            $erros[] = t("Observação: até 4000 caracteres.");
+        }
+        // os valores: só dos campos do cadastro (os da lista de desejos não são do movimento)
+        $campos = array_filter(campos_todos(), function ($c) { return (int)($c["so_desejado"] ?? 0) !== 1; });
+        $gravar = [];
+        foreach ((array)($d["valores"] ?? []) as $ident => $v) {
+            if (!isset($campos[$ident])) {
+                $erros[] = t("Campo desconhecido: {1}.", [1 => $ident]);
+                continue;
+            }
+            $conf = valor_para_campo($campos[$ident], $v);
+            if ($conf[1] !== "") {
+                $erros[] = $campos[$ident]["nome"] . ": " . $conf[1];
+            } else {
+                $gravar[(int)$campos[$ident]["id"]] = $conf[0];
+            }
+        }
+        if (count($erros) === 0) {
+            if ($atual) {
+                sql("UPDATE calibre SET nome = ?, fabricante = ?, link = ?, observacao = ? WHERE id = ?", [$nome, $fabricante, $link, $obs, $id]);
+                $msg = t("Calibre {1} salvo.", [1 => $nome]);
+            } else {
+                sql("INSERT INTO calibre (no_id, nome, fabricante, link, observacao) VALUES (?, ?, ?, ?, ?)", [no_raiz(), $nome, $fabricante, $link, $obs]);
+                $id = ultimo_id();
+                $msg = t("Calibre {1} criado.", [1 => $nome]);
+            }
+            foreach ($gravar as $cid => $v) {
+                if ($v === null) {
+                    sql("DELETE FROM calibre_valor WHERE calibre_id = ? AND campo_id = ?", [$id, $cid]);
+                } else {
+                    sql("REPLACE INTO calibre_valor (calibre_id, campo_id, valor) VALUES (?, ?, ?)", [$id, $cid, $v]);
+                }
+            }
+            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+        }
+    } elseif ($acao === "excluir") {
+        $n = (int)valor("SELECT COUNT(*) FROM relogio_calibre WHERE calibre_id = ?", [$id]);
+        sql("DELETE FROM calibre WHERE id = ?", [$id]);
+        $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+        $msg = t("Calibre {1} excluído.", [1 => $atual["nome"]]) . ($n > 0 ? " " . ($n === 1 ? t("O relógio que tinha esse calibre ficou sem.") : t("Os {1} relógios que tinham esse calibre ficaram sem.", [1 => $n])) : "");
+        $id = 0;
+    } else {
+        $erros[] = t("Ação desconhecida: use salvar ou excluir.");
+    }
+    return resultado($erros, $msg, ["id" => $id]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Fórmulas. Ações: nova (identificador, nome, expressao, unidade, no_id: uma fórmula nova, ou mais uma versão de uma que
 // já existe, em outro ponto da árvore), alterar (id; nome, expressao, unidade, no_id), excluir (id: não se exclui a
 // última versão de uma fórmula que outra usa). A expressão é conferida antes de gravar (formula_validar).
@@ -553,8 +637,8 @@ function op_formulas($acao, $d)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Relógios. Ações: salvar (id: 0 ou ausente cria; nome, no_id, disponivel (1 ou 0), copia_banco (1 ou 0: a cópia no banco
-// de todos os documentos dele), valores[identificador]: só muda o que vier no pedido; valor vazio apaga; valor inválido
-// fica o que estava, e a mensagem diz quais), excluir (id), foto
+// de todos os documentos dele), calibre_id (o calibre dele; 0 ou vazio tira), valores[identificador]: só muda o que vier no
+// pedido; valor vazio apaga; valor inválido fica o que estava, e a mensagem diz quais), excluir (id), foto
 // (id, foto_base64: JPEG, PNG ou WebP, até 4 MB), remover_foto (id). Os documentos do relógio: op_documentos.
 // ---------------------------------------------------------------------------------------------------------------------
 function op_relogio($acao, $d)
@@ -593,6 +677,11 @@ function op_relogio($acao, $d)
         }
         if ($no === false) {
             $erros[] = t("O ponto da árvore não existe.");
+        }
+        // o calibre (o movimento): calibre_id, um da árvore; 0 ou vazio tira
+        $calibre = array_key_exists("calibre_id", $d) ? (int)$d["calibre_id"] : null;
+        if ($calibre !== null && $calibre > 0 && valor("SELECT id FROM calibre WHERE id = ?", [$calibre]) === null) {
+            $erros[] = t("O calibre não existe.");
         }
         if (count($erros) === 0) {
             if ($atual) {
@@ -641,6 +730,13 @@ function op_relogio($acao, $d)
                     }
                 }
             }
+            if ($calibre !== null) {
+                sql("DELETE FROM relogio_calibre WHERE relogio_id = ?", [$id]);
+                if ($calibre > 0) {
+                    sql("INSERT INTO relogio_calibre (relogio_id, calibre_id) VALUES (?, ?)", [$id, $calibre]);
+                }
+            }
+            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
             // a marca da cópia no banco mudou: o cron copia (ou tira) os documentos dele aos poucos
             $aviso_copia = "";
             if ($atual && $copia !== (int)$atual["copia_banco"] && (int)valor("SELECT COUNT(*) FROM documento WHERE relogio_id = ?", [$id]) > 0) {

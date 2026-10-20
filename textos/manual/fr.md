@@ -1,4 +1,4 @@
-<!-- origem: a065211fbb3435bcd16b2a7cd933bceeed2555af -->
+<!-- origem: ccfbd22c46a4be02f37655295f5bbeb75478f3a8 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -54,6 +54,7 @@ flowchart LR
 |---|---|---|
 | **Groupes** (l'arbre) | Le classement de la collection, sur autant de niveaux que vous voulez. Tout ce qui est enregistré dans un groupe vaut pour lui et pour tout ce qui est en dessous. | `Traditionnelle › Mécanique › Automatique` |
 | **Champs** | Les données de chaque montre, définies par vous : texte, nombre, date, oui/non ou liste, avec unité et valeur par défaut. | `reserva_horas = 40 h`, `data_pilha`, `loja` |
+| **Calibres** | Le mouvement de la montre, avec ce qui lui appartient : le fabricant, le manuel technique, les recommandations et les valeurs des champs. La montre avec un calibre utilise sa propre valeur, sinon celle du calibre, sinon la valeur par défaut du champ. | `NH35` : réserve de 41 h, marche de −20 à +40 s/jour |
 | **Types de saisie** | Ce qui arrive à une montre. Cela peut être **instantané** (remontage, changement de pile), **avec une valeur** (relevé de charge : 68 %) ou une **session** avec début et fin (au poignet, sur le remontoir, au soleil). | `sol` : une session qui se ferme seule à 18 h si vous oubliez |
 | **Formules** | Des calculs sur les champs et les saisies. Une même formule peut avoir **une version par groupe**, et c'est celle du groupe le plus proche de la montre qui s'applique. | `energia` est la batterie sur la smartwatch, la réserve sur la mécanique, la lumière sur la solaire et la durée de vie de la pile sur la quartz |
 | **Alertes** | Une date prévue par formule, une avance, un texte et la saisie qui résout l'alerte. | *« Remonter l'Orient : la réserve s'épuise à 15 h »*, et le bouton **Remontage** la résout |
@@ -100,6 +101,7 @@ Et celles de la rotation (le scénario des modes ; en dehors, le jour est celui 
 | `DIA_SEMANA()`, `SEMANA_DO_ANO()` | le jour de la semaine (1 lundi à 7 dimanche) et la semaine de l'année (ISO) du jour en cours de montage |
 | `NO_GRUPO("Tradicional › Quartzo")` | 1 si la montre est à ce point de l'arbre ou en dessous (le nom, le chemin ou `#id` ; `"todos"` : 1 pour toutes) |
 | `RELOGIO("Seiko SKX")` | 1 si c'est cette montre (par le nom ou par l'id) |
+| `CALIBRE("NH35")` | 1 si la montre a ce calibre (par le nom ou par l'id) |
 | `ESCOLHIDO_HA(1)`, `VEZES_NO_PLANO(7)` | 1 si la montre était celle du plan il y a n jours (1 : hier ; -1 : demain, quand elle est déjà dans le plan) ; combien de jours elle a eus dans le plan dans les n derniers jours |
 | `ESCOLHA(n; a; b; c)` | le n-ième des valeurs (lui seul est calculé) : `ESCOLHA(DIA_SEMANA(); …)` donne une valeur par jour de la semaine |
 | `SORTEIO()` | un nombre de 0 à 1, du même lot RANDOM.ORG que les tirages |
@@ -569,6 +571,23 @@ mesure est sortie de la plage, ou de l'historique de la montre elle-même) sont 
 formules : `MARCHA(dias; "posição")`, `MARCHA_DP(dias; "posição")`, `MARCHA_N(dias; "posição")`, `MARCHA_ULTIMA()` et
 `DESVIO_AGORA()`. Par l'API : `recurso=precisao` (d'une montre ou le résumé de la collection) et `recurso=lancamento`,
 `acao=lancar`, `tipo=desvio`, avec `valor` ou `marca` (et `instante_ms`) et `posicao`.
+
+### Les calibres {#os-calibres}
+
+Le **calibre** est le mouvement de la montre : le NH35 d'une Seiko, le ST2130 d'une Sea-Gull, le module 3159 d'une Casio.
+Beaucoup de choses appartiennent au mouvement, pas à la montre : la réserve de marche, la marche promise par le fabricant, le
+remontage par la couronne. Dans l'onglet **Calibres** de la page **Définitions**, chaque calibre a le nom, le fabricant, le
+lien du manuel technique, les recommandations (*« remonter par la couronne : jusqu'à 40 tours »*) et les **valeurs des
+champs** qu'il définit. Dans la fiche de la montre, choisissez le **Calibre** : la montre utilise alors ses valeurs dans les
+champs qu'elle a elle-même laissés vides.
+
+L'ordre est : **la valeur de la montre, sinon celle du calibre, sinon la valeur par défaut du champ** (celle du groupe). Cinq
+montres avec un NH35 reçoivent la réserve et la marche attendue d'un coup ; l'une d'elles, avec une autre réserve dans sa
+fiche, garde la sienne. Dans les **Données de la montre**, l'origine de chaque valeur dit d'où elle vient (*informado*,
+*calibre*, *padrão*), et au-dessus des tableaux apparaissent le calibre, le lien du manuel et les recommandations. Supprimer un
+calibre laisse ses montres sans calibre (la suppression dit combien). Dans les formules, `CALIBRE("NH35")` donne 1 si la
+montre a ce calibre. Par l'API : `recurso=calibres` (la liste, avec les valeurs et les montres de chacun), `recurso=calibres`
+avec `acao=salvar` ou `excluir`, et `recurso=relogio`, `acao=salvar`, avec `calibre_id`.
 
 ## Plusieurs personnes : comptes, collections et accès {#várias-pessoas-contas-coleções-e-acesso}
 
@@ -1212,7 +1231,7 @@ que vous enregistrez apparaît ici sous son nom.
 | **Modes de rotation** (`modos.php`, menu **Rotation**) | Les modes de rotation : le tableau (le mode actif marqué, le type, le critère, les semaines et d'où il choisit) avec **Modifier**, **Activer** et **Supprimer**, et le formulaire d'un mode, avec l'écran de son type : le nom et le type ; d'où choisir (par tranche ou par jour de la semaine), la période du planning ou le scénario écrit à la main avec **Tester sur toutes les montres** ; les semaines en avant (avec la liste des semaines) ; le critère de choix et le cycle ; et, dans les types prêts, le scénario généré (lecture seule, avec **copier ce scénario** vers un Personnalisé). Voir [Les modes de rotation](#os-modos-de-rodízio). |
 | **Critères** (`criterios.php`) | Les ensembles de critères par endroit (toutes les montres, un groupe ou une montre), avec paramètres, sous-paramètres, tranches et la note de chaque montre avec le calcul détaillé. Il y a **Restaurer les critères initiaux**. |
 | **Groupes** (`grupos.php`) | L'arbre : créer, renommer, déplacer, trier, supprimer (ce qui appartenait au groupe passe à celui du dessus) et choisir le groupe de chaque montre. |
-| **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), les totaux (l'onglet **Totaux** : voir [Les totaux](#os-totais)) et catégories de documents : tout ce que le système utilise et qui n'est pas du code (les alertes sont dans la page **Alertes**, et les modes de rotation dans **Modes de rotation**). |
+| **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), les totaux (l'onglet **Totaux** : voir [Les totaux](#os-totais)), les calibres (l'onglet **Calibres** : voir [Les calibres](#os-calibres)) et catégories de documents : tout ce que le système utilise et qui n'est pas du code (les alertes sont dans la page **Alertes**, et les modes de rotation dans **Modes de rotation**). |
 | **Exécutions du cron** (`execucoes.php`) | Ce que le cron a fait à chaque passage, combien de temps il a pris et les erreurs, avec des filtres. |
 | **Mon compte** (`conta.php`, menu **Compte › Mon compte**) | Les collections que vous voyez (ouvrir, créer, renommer, supprimer, quitter), vos arbres de groupes (copier, renommer, supprimer), demander l'accès à la collection de quelqu'un (par le code donné par le propriétaire), vos données (votre code, l'e-mail, la langue, le mot de passe), l'**application sur le téléphone** (mémoriser cet appareil, installer, les appareils mémorisés), les **jetons d'API** (pour vos scripts), les **notifications sur cet appareil** (le Web Push) et supprimer le compte. Voir [Plusieurs personnes](#várias-pessoas-contas-coleções-e-acesso) et [L'application sur le téléphone](#o-aplicativo-no-celular). |
 | **Approbations** (`aprovacoes.php`) | Les demandes d'accès à vos collections (approuver, refuser), les invitations que des membres ont faites et qui vous attendent, **Inviter** (par e-mail), les invitations que vous avez faites et qui voit vos collections (retirer l'accès). Le menu affiche **Approbations (N)** quand quelque chose attend. |
