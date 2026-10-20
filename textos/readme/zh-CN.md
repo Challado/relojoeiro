@@ -1,4 +1,4 @@
-<!-- origem: 5f23ae9310b948dab7cdc901e0a7b1b0a2602888 -->
+<!-- origem: 612d2bb943855be9901e0a239e806a15f3cebe76 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -471,7 +471,7 @@ php criar_usuario.php 你的登录名
 | [`reconstrucao.php`](reconstrucao.php) | 从零重写系统的指南（API 的 `recurso=reconstrucao`） |
 | [`.htaccess`](.htaccess) | Apache 上对内部文件的保护（以及 PHP 以 FastCGI 运行时的网站登录） |
 | [`nginx-relogios.conf`](nginx-relogios.conf) | 保护内部文件的 nginx 配置块 |
-| [`testes/`](testes/) | 一致性测试：在每种数据库上通过 API 运行同一个脚本，以及响应的比较器；所有界面从手机到电脑的布局检查（`layout.cjs`；`LINGUA=en` 在某种语言下检查）；各语言词典的检查（`textos.php`）；每种语言 README 的生成（`readme.php`）；以及架构检查（`arquitetura.php`：代码必须遵守的规则） |
+| [`testes/`](testes/) | 一致性测试：在每种数据库上通过 API 运行同一个脚本，以及响应的比较器；所有界面从手机到电脑的布局检查，以及档案页面与“今天”面板之间的镜像检查（分区和方框的顺序相同）（`layout.cjs`；`LINGUA=en` 在某种语言下检查）；各语言词典的检查（`textos.php`）；每种语言 README 的生成（`readme.php`）；以及架构检查（`arquitetura.php`：代码必须遵守的规则） |
 | [`docs/telas/`](docs/telas/) | 本 README 的截图 |
 | `README.md`、`README.en.md`、`README.zh-CN.md`、`README.hi.md`、`README.es.md`、`README.fr.md` | 本 README：葡萄牙语原文和其他语言版本。不要手动编辑：[`testes/readme.php`](testes/readme.php) 会把翻译后的手册（`textos/manual/<语言>.md`，帮助页面显示的章节）和翻译后的其余部分（`textos/readme/<语言>.md`：开头、试用、API、安装、内部结构、如何贡献和许可证）拼接成每种语言的版本 |
 | [`PORTE.md`](PORTE.md) | 从上一版本移植的记录 |

@@ -247,6 +247,34 @@ async function auditarTela(b, tela, fp, relatorio, total) {
   await c.close();
 }
 
+// O espelho: a ficha (ficha.php) e o painel da página Hoje mostram o mesmo relógio na mesma ordem. O tamanho e a posição
+// mudam com a largura, mas a cabeça, o Editar cadastro, os botões das seções, as seções e os quadros de cada uma vêm na mesma
+// sequência; só o "Abrir a ficha ↗" é do painel. Cada relógio do cenário, num computador de 1440px: o que falta num lado ou
+// a ordem diferente vira um problema "espelho".
+async function conferirEspelho(b, relatorio, total) {
+  const c = await b.newContext({ viewport: { width: 1440, height: 900 }, httpCredentials: { username: USUARIO, password: SENHA }, locale: LINGUA || 'pt-BR', timezoneId: 'America/Sao_Paulo' });
+  if (LINGUA) await c.addCookies([{ name: 'lingua', value: LINGUA, url: BASE }]);
+  const p = await c.newPage();
+  const estrutura = (raiz) => {
+    const d = document.querySelector(raiz + ' .detalhe');
+    return d ? [...d.querySelectorAll('.ficha-cabeca, .atalho-pulso, details.cadastro-painel > summary, .secoes-atalhos button, .secao-titulo, .quadro > h2')]
+      .map((e) => e.className + ': ' + e.textContent.trim().slice(0, 40)) : [];
+  };
+  for (const id of [1, 3, 4, 5, 7, 8, 10]) {
+    await p.goto(BASE + 'ficha.php?id=' + id, { waitUntil: 'networkidle', timeout: 90000 });
+    const ficha = await p.evaluate(estrutura, '#detalhe');
+    await p.goto(BASE + 'index.php?r=' + id, { waitUntil: 'networkidle', timeout: 90000 });
+    const hoje = await p.evaluate(estrutura, '.col-detalhe');
+    const det = ficha.length === 0 || hoje.length === 0 ? 'não abriu (ficha ' + ficha.length + ', Hoje ' + hoje.length + ')'
+      : (JSON.stringify(ficha) !== JSON.stringify(hoje) ? 'ficha: ' + ficha.join(' › ') + '  ≠  Hoje: ' + hoje.join(' › ') : '');
+    if (det !== '') {
+      relatorio.push(['pc-1440', 'espelho-' + id, 'espelho', det, ''].join('\t'));
+      total.espelho = (total.espelho || 0) + 1;
+    }
+  }
+  await c.close();
+}
+
 // Os dados de estresse: o cenário tem nomes e números curtos, e o que quebra no uso de verdade é o comprido. Antes de conferir,
 // pela própria API, o banco do cenário fica "feio" de propósito: nomes longos de relógio e de grupo, uma observação comprida e
 // fotos (a cabeça do painel muda com elas). Só no banco do cenário (ele é apagado e recriado a cada rodada); ESTRESSE=0 deixa
@@ -290,6 +318,9 @@ async function estressar() {
   const total = {};
   const relatorio = [];
   await Promise.all(TELAS.filter((t) => !ft || ft.test(t.nome)).map((t) => auditarTela(b, t, fp, relatorio, total)));
+  if (!fp || fp.test('ficha')) {
+    await conferirEspelho(b, relatorio, total);
+  }
   await b.close();
   relatorio.sort();
   fs.writeFileSync(SAIDA + '/relatorio.tsv', relatorio.join('\n') + '\n');

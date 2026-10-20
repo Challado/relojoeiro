@@ -1,4 +1,4 @@
-<!-- origem: 5f23ae9310b948dab7cdc901e0a7b1b0a2602888 -->
+<!-- origem: 612d2bb943855be9901e0a239e806a15f3cebe76 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -631,7 +631,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | [`reconstrucao.php`](reconstrucao.php) | the script to rewrite the system from scratch (the API's `recurso=reconstrucao`) |
 | [`.htaccess`](.htaccess) | the protection of the internal files on Apache (and the site login with PHP through FastCGI) |
 | [`nginx-relogios.conf`](nginx-relogios.conf) | the nginx block that protects the internal files |
-| [`testes/`](testes/) | the parity test: the same script through the API on each database, and the comparer of the responses; the layout check of all the screens, from phone to computer (`layout.cjs`; `LINGUA=en` checks in a language); the check of the languages' dictionaries (`textos.php`); the assembly of each language's README (`readme.php`); and the architecture check (`arquitetura.php`: the rules the code has to follow) |
+| [`testes/`](testes/) | the parity test: the same script through the API on each database, and the comparer of the responses; the layout check of all the screens, from phone to computer, and of the mirror between the watch page and the Today panel (the same order of sections and boxes) (`layout.cjs`; `LINGUA=en` checks in a language); the check of the languages' dictionaries (`textos.php`); the assembly of each language's README (`readme.php`); and the architecture check (`arquitetura.php`: the rules the code has to follow) |
 | [`docs/telas/`](docs/telas/) | the screenshots of this README |
 | `README.md`, `README.en.md`, `README.zh-CN.md`, `README.hi.md`, `README.es.md`, `README.fr.md` | this README: the original, in Portuguese, and the other languages. These aren't edited by hand: [`testes/readme.php`](testes/readme.php) assembles each one by joining the translated manual (`textos/manual/<language>.md`, the sections the Help shows) and the translated rest (`textos/readme/<language>.md`: the beginning, Try it, the API, the Installation, How it is inside, How to contribute and the License) |
 | [`PORTE.md`](PORTE.md) | the record of the port of the previous version |
