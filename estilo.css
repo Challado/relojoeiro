@@ -64,9 +64,6 @@ h2 { font-size: 1.1rem; margin: 0 0 .75rem; }
   border: 1px solid var(--aco-escuro);
 }
 .hoje .data { color: var(--cinza); margin: 0; }
-.hoje .destaque-lembrete { color: var(--cinza); font-size: .85rem; margin: .2rem 0 .1rem; }
-.hoje .destaque-lembrete .etiqueta { display: inline-block; max-width: 100%; text-decoration: none; margin-right: .3rem; }
-.hoje .destaque-lembrete .etiqueta:hover { color: var(--safira); border-color: var(--safira); }
 .periodo { display: flex; align-items: center; gap: .75rem; color: var(--cinza); margin: 0 0 1rem; }
 
 /* janela de data, como a de um mostrador */
@@ -632,6 +629,12 @@ nav.paginas span.atual { background: var(--safira); color: #fff; border-color: v
 .hoje-foto { display: block; }
 .hoje-foto img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; border: 1px solid var(--aco-escuro); background: #fff; }
 .hoje-foto .sem-foto { aspect-ratio: 1; }
+.hoje-foto table.destaque-tab { width: 100%; margin: .35rem 0 0; table-layout: fixed; border-collapse: separate; border-spacing: 0; border: 1px solid var(--aco-escuro); border-radius: 8px; overflow: hidden; font-size: .85rem; font-weight: 600; }
+.hoje-foto table.destaque-tab td { padding: .35rem .25rem; text-align: center; color: #a3abb5; background: #f1f3f5; border: 0; overflow-wrap: anywhere; }
+.hoje-foto table.destaque-tab td + td { border-left: 1px solid var(--aco-escuro); }
+.hoje-foto table.destaque-tab td.sim.dia { background: #e6eef9; color: var(--safira); }
+.hoje-foto table.destaque-tab td.sim.pulso { background: #e3f4ea; color: #1e7a4a; }
+.hoje-foto table.destaque-tab .marca { margin-right: .25rem; }
 /* a largura que conta é a da coluna da página (com o painel do relógio aberto ao lado ela encolhe), e não a da tela: a
    coluna é um container (coluna-hoje), e o quadro passa para duas colunas e depois para a foto pequena conforme ela */
 .col-hoje { container: coluna-hoje / inline-size; }
@@ -641,10 +644,14 @@ nav.paginas span.atual { background: var(--safira); color: #fff; border-color: v
 @container coluna-hoje (max-width: 62rem) {
   .hoje.com-relogio { grid-template-columns: minmax(0, 1fr) 9rem; }
   .hoje.com-relogio .hoje-info { grid-column: 1 / -1; grid-row: 2; }
+  .hoje-foto table.destaque-tab { font-size: .78rem; }
 }
 @container coluna-hoje (max-width: 34rem) {
   .hoje.com-relogio { grid-template-columns: minmax(0, 1fr) 6.5rem; gap: 1rem; }
   .hoje h1 { font-size: 1.75rem; }
+  /* a foto pequena do celular: as duas casas do destaque uma em cima da outra, cada uma na largura toda */
+  .hoje-foto table.destaque-tab td { display: block; }
+  .hoje-foto table.destaque-tab td + td { border-left: 0; border-top: 1px solid var(--aco-escuro); }
 }
 
 /* ---------- painel da direita: só com um relógio escolhido ---------- */
@@ -1487,17 +1494,20 @@ footer.apagar-plano h2 { margin-top: 0; }
 form.excluir-conjunto button.discreto { white-space: normal; text-align: left; }
 
 /* ---------- as tabelas do quadro estreito (o painel ao lado da lista, o celular, o tablet de pé) ---------- */
-/* as medições do gasto: cada linha vira um cartão: a data em negrito e, embaixo, cada valor com o nome da coluna na frente (o
-   data-rotulo, que o api.js põe em toda célula a partir do título da coluna) */
+/* as medições do gasto: cada linha vira uma tabelinha com bordas: a data no cabeçalho e, embaixo, uma linha por coluna, o nome
+   dela numa casa (o data-rotulo, que o api.js põe em toda célula a partir do título da coluna) e o valor (o div.v) na outra; a
+   célula sem título (o botão) ocupa a linha inteira */
 @container quadro (max-width: 40rem) {
   table.tabela-dados.medicoes thead { display: none; }
   table.tabela-dados.medicoes, table.tabela-dados.medicoes tbody { display: block; }
-  table.tabela-dados.medicoes tr { display: block; padding: .5rem 0; border-bottom: 1px solid var(--aco); }
-  table.tabela-dados.medicoes tbody tr:last-child { border-bottom: 0; }
-  table.tabela-dados.medicoes td { display: block; padding: .05rem 0; border: 0; white-space: normal; }
-  table.tabela-dados.medicoes td:first-child { font-weight: 600; padding-bottom: .15rem; }
-  table.tabela-dados.medicoes td:not(:first-child)[data-rotulo]::before { content: attr(data-rotulo); color: var(--cinza); font-size: .7rem;
-    text-transform: uppercase; letter-spacing: .04em; margin-right: .4rem; }
+  table.tabela-dados.medicoes tr { display: block; margin: 0 0 .6rem; border: 1px solid var(--aco-escuro); border-radius: 8px; overflow: hidden; }
+  table.tabela-dados.medicoes td { display: grid; grid-template-columns: minmax(5.5rem, 36%) minmax(0, 1fr); padding: 0; border: 0; border-top: 1px solid var(--aco); white-space: normal; font-size: inherit; }
+  table.tabela-dados.medicoes td > .v { padding: .35rem .5rem; min-width: 0; }
+  table.tabela-dados.medicoes td[data-rotulo]::before { content: attr(data-rotulo); padding: .35rem .5rem; background: #f6f8fa; border-right: 1px solid var(--aco);
+    color: var(--cinza); font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; overflow-wrap: anywhere; }
+  table.tabela-dados.medicoes td:first-child { display: block; border-top: 0; background: var(--aco); font-weight: 600; }
+  table.tabela-dados.medicoes td:first-child::before { content: none; }
+  table.tabela-dados.medicoes td:not([data-rotulo]) { display: block; }
 }
 /* os dados do relógio (campo, valor, origem; fórmula, valor, versão): menos folga entre as colunas, e o valor quebra a linha */
 @container quadro (max-width: 26rem) {

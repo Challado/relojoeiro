@@ -4291,7 +4291,8 @@ function destaque_da_pagina_hoje($rels, $dia)
     } else {
         $id = $dia_id;
         $e = "dia";
-        $texto = $mostra === "pulso" ? t("Nenhum relógio no pulso agora: aqui, o relógio do dia.") : t("O relógio do dia.");
+        $texto = $mostra === "pulso" ? t("Nenhum relógio no pulso agora: aqui, o relógio do dia.")
+            : ($dia_id !== null && $dia_id === $pulso_id ? t("O relógio do dia, no pulso agora.") : t("O relógio do dia."));
     }
     return ["mostra" => $mostra, "relogio_id" => $id, "e" => $e, "do_dia" => $id !== null && $id === $dia_id, "no_pulso" => $id !== null && $id === $pulso_id,
         "texto" => $id === null ? t("Nenhum relógio para hoje e nenhum no pulso.") : $texto];

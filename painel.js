@@ -536,16 +536,19 @@ function abrirNoPainel(id) {
               + el("th", {}, t("Gasto medido")) + el("th", {}, t("Na conta")) + el("th", {}, "")))
               + el("tbody", {}, r.medicoes.slice(0, 10).map(function (m) {
                 var nomeEstado = function (e) { return e === "uso" ? t("em uso") : (e === "repouso" ? t("em repouso") : "—"); };
-                return el("tr", {}, el("td", {}, dataBr(m.fim, true) + " " + horaBr(m.fim)) + el("td", {}, num(m.de_valor, 1) + " → " + num(m.ate_valor, 1)
+                // o conteúdo de cada célula num div.v: no quadro estreito a linha vira uma tabelinha (o nome da coluna numa casa, o
+                // valor na outra), e o valor precisa ser um bloco só
+                var td = function (c) { return el("td", {}, el("div", {"class": "v"}, c)); };
+                return el("tr", {}, td(dataBr(m.fim, true) + " " + horaBr(m.fim)) + td(num(m.de_valor, 1) + " → " + num(m.ate_valor, 1)
                     + (m.marcacao_de !== null || m.marcacao_ate !== null ? el("small", {}, nomeEstado(m.marcacao_de) + " → " + nomeEstado(m.marcacao_ate)) : ""))
-                  + el("td", {}, t("{1} h no pulso, {2} h fora", {1: num(m.horas_pulso, 1), 2: num(m.horas_guardado, 1)}))
-                  + el("td", {}, t("{1}% por dia {2}", {1: num(m.taxa, 2), 2: m.medida === "uso" ? t("de uso") : t("fora do pulso")}))
+                  + td(t("{1} h no pulso, {2} h fora", {1: num(m.horas_pulso, 1), 2: num(m.horas_guardado, 1)}))
+                  + td(t("{1}% por dia {2}", {1: num(m.taxa, 2), 2: m.medida === "uso" ? t("de uso") : t("fora do pulso")}))
                   // na conta: sim; em parte (a leitura que não bate com as outras pesa menos, Huber); não (fora da janela, só histórico)
-                  + el("td", {}, (!m.usada ? t("não (só histórico)") : (m.marcacoes_iguais === false ? t("não (leituras com marcações diferentes)") : motorG === "cadastro" ? t("não (só o cadastro)") : !m.na_media ? t("não (fora da janela)")
+                  + td((!m.usada ? t("não (só histórico)") : (m.marcacoes_iguais === false ? t("não (leituras com marcações diferentes)") : motorG === "cadastro" ? t("não (só o cadastro)") : !m.na_media ? t("não (fora da janela)")
                       : (m.peso !== null && m.peso < 1 ? el("span", {"class": m.fora ? "em atrasado" : ""}, t("em parte: pesa {1}%", {1: Math.round(100 * m.peso)})) : t("sim"))))
                     + (m.na_media && m.peso !== null && m.peso < 1 ? el("small", {}, t("a leitura de {1}% não bate bem com as outras (a conta erra {2} pontos nela)", {1: num(m.leitura_fraca, 0), 2: num(Math.abs(m.erro), 1)})) : ""))
                   // pôr ou tirar da conta, sem apagar a medição
-                  + el("td", {}, el("form", {"data-recurso": "lancamento"}, el("input", {"type": "hidden", "name": "acao", "value": "medicao"}) + el("input", {"type": "hidden", "name": "id", "value": m.id})
+                  + td(el("form", {"data-recurso": "lancamento"}, el("input", {"type": "hidden", "name": "acao", "value": "medicao"}) + el("input", {"type": "hidden", "name": "id", "value": m.id})
                     + el("input", {"type": "hidden", "name": "usada", "value": m.usada ? "0" : "1"}) + el("button", {"class": "leve"}, m.usada ? t("Tirar da conta") : t("Pôr na conta")))));
               }).join("")));
         }

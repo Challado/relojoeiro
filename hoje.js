@@ -75,10 +75,7 @@ function recarregarHoje() {
       }
     });
     var dz = d.destaque;
-    var texto = el("p", {"class": "data"}, DIAS_SEMANA[diaDaSemana(d.data)] + ", " + dataBr(d.data) + " · " + h(d.modo ? d.modo.nome : t("sem modo")))
-      // o lembrete do que está no destaque (a Configuração: o relógio do dia ou o que está no pulso), com a frase da API
-      + el("p", {"class": "destaque-lembrete"}, el("a", {"class": "etiqueta", "href": "configuracao.php", "title": t("Muda na Configuração: Destaque no alto da página Hoje")},
-        dz.mostra === "pulso" ? t("Destaque: o relógio no pulso") : t("Destaque: o relógio do dia")) + " " + h(dz.texto));
+    var texto = el("p", {"class": "data"}, DIAS_SEMANA[diaDaSemana(d.data)] + ", " + dataBr(d.data) + " · " + h(d.modo ? d.modo.nome : t("sem modo")));
     if (item && dz.e === "pulso") {
       // no pulso agora, e não é o do dia: o nome dele, "no pulso agora", e embaixo o relógio do dia
       texto += el("h1", {}, el("a", {"href": "index.php?r=" + item.id, "data-abrir": item.id}, h(item.nome)))
@@ -138,7 +135,12 @@ function recarregarHoje() {
       info += el("dt", {}, t("Código")) + el("dd", {}, String(item.id));
       res += el("dl", {"class": "hoje-info"}, info)
         + el("a", {"class": "hoje-foto", "href": "index.php?r=" + item.id, "data-abrir": item.id, "title": t("Abrir o {1} no painel", {1: item.nome})},
-          item.foto !== null ? el("img", {"src": "api.php?recurso=foto&relogio=" + item.id + "&v=" + item.foto, "alt": t("Foto do {1}", {1: item.nome})}) : el("span", {"class": "sem-foto"}, t("Sem foto")));
+          (item.foto !== null ? el("img", {"src": "api.php?recurso=foto&relogio=" + item.id + "&v=" + item.foto, "alt": t("Foto do {1}", {1: item.nome})}) : el("span", {"class": "sem-foto"}, t("Sem foto")))
+          // embaixo da foto, a tabelinha do destaque: Do dia | No pulso, acesa a casa que vale (as duas, se for o relógio do
+          // dia no pulso), e parando o mouse a frase do porquê
+          + el("table", {"class": "destaque-tab", "title": dz.texto}, el("tbody", {}, el("tr", {},
+            el("td", {"class": dz.do_dia ? "sim dia" : ""}, (dz.do_dia ? el("span", {"class": "marca", "aria-hidden": "true"}, "✓") : "") + h(t("Do dia")))
+            + el("td", {"class": dz.no_pulso ? "sim pulso" : ""}, (dz.no_pulso ? el("span", {"class": "marca", "aria-hidden": "true"}, "✓") : "") + h(t("No pulso")))))));
     }
     var quadro = document.getElementById("bloco-hoje");
     quadro.classList.toggle("com-relogio", item !== null);
