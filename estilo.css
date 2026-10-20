@@ -348,6 +348,10 @@ details.cadastro-painel summary { cursor: pointer; font-weight: 600; color: var(
 details.cadastro-painel[open] summary { margin-bottom: .8rem; }
 .ficha-identidade .ficha-link { margin: .5rem 0 0; }
 .ficha-identidade .ficha-link a { font-size: .85rem; }
+/* o "Abrir a ficha" só faz sentido no painel ao lado, que é estreito: a janela flutuante e o celular (até 900px, o painel
+   na tela inteira) já mostram o relógio grande */
+.painel.modo-flutuante .ficha-identidade .ficha-link { display: none; }
+@media (max-width: 900px) { .painel .ficha-identidade .ficha-link { display: none; } }
 .detalhe .cadastro { max-width: none; }
 .detalhe .cadastro input:not([type=checkbox]):not([type=file]), .detalhe .cadastro select { width: 100%; }
 form.excluir { margin-top: .9rem; padding-top: .6rem; border-top: 1px solid var(--aco); }

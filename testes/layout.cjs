@@ -250,8 +250,20 @@ async function auditarTela(b, tela, fp, relatorio, total) {
 // O espelho: a ficha (ficha.php) e o painel da página Hoje mostram o mesmo relógio na mesma ordem. O tamanho e a posição
 // mudam com a largura, mas a cabeça, o Editar cadastro, os botões das seções, as seções e os quadros de cada uma vêm na mesma
 // sequência; só o "Abrir a ficha ↗" é do painel. Cada relógio do cenário, num computador de 1440px: o que falta num lado ou
-// a ordem diferente vira um problema "espelho".
-async function conferirEspelho(b, relatorio, total) {
+// a ordem diferente vira um problema "espelho". Roda antes das 15 telas, num navegador só dele: no fim delas o navegador do CI
+// pode já ter caído (a captura enorme da Ajuda no celular), e o espelho não pode depender disso.
+async function conferirEspelho(relatorio, total) {
+  const b = await chromium.launch();
+  try {
+    await espelho(b, relatorio, total);
+  } catch (e) {
+    relatorio.push(['pc-1440', 'espelho', 'erro', 'a conferência parou: ' + e.message.split('\n')[0], ''].join('\t'));
+    total.erro = (total.erro || 0) + 1;
+  }
+  await b.close();
+}
+
+async function espelho(b, relatorio, total) {
   const c = await b.newContext({ viewport: { width: 1440, height: 900 }, httpCredentials: { username: USUARIO, password: SENHA }, locale: LINGUA || 'pt-BR', timezoneId: 'America/Sao_Paulo' });
   if (LINGUA) await c.addCookies([{ name: 'lingua', value: LINGUA, url: BASE }]);
   const p = await c.newPage();
@@ -314,13 +326,13 @@ async function estressar() {
   if (process.env.ESTRESSE !== '0') {
     console.log('dados de estresse: ' + (await estressar()) + ' gravações aceitas');
   }
-  const b = await chromium.launch();
   const total = {};
   const relatorio = [];
-  await Promise.all(TELAS.filter((t) => !ft || ft.test(t.nome)).map((t) => auditarTela(b, t, fp, relatorio, total)));
   if (!fp || fp.test('ficha')) {
-    await conferirEspelho(b, relatorio, total);
+    await conferirEspelho(relatorio, total);
   }
+  const b = await chromium.launch();
+  await Promise.all(TELAS.filter((t) => !ft || ft.test(t.nome)).map((t) => auditarTela(b, t, fp, relatorio, total)));
   await b.close();
   relatorio.sort();
   fs.writeFileSync(SAIDA + '/relatorio.tsv', relatorio.join('\n') + '\n');
