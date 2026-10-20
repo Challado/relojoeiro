@@ -16,7 +16,7 @@ var ordemVideos = [];
 var marcados = {};
 var fila = [];
 var tocando = 0;
-var NOME_FAMILIA = {imagem: "imagens", video: t("vídeos"), audio: t("áudios"), pdf: t("PDF"), xml: t("XML")};
+var NOME_FAMILIA = {imagem: t("imagens"), video: t("vídeos"), audio: t("áudios"), pdf: t("PDF"), xml: t("XML")};
 var ACEITA = {imagem: "image/*", video: "video/*", audio: "audio/*", pdf: "application/pdf,.pdf", xml: ".xml,application/xml,text/xml"};
 
 // "850 KB", "3,2 MB"

@@ -2038,7 +2038,7 @@ function tabela_linha($r, $agora, $extra = [])
         "em_uso" => $v["em_uso"], "estado" => $estado_h, "estado_texto" => $estado_h === "indisponivel" ? (posse_de($r) === "emprestado" ? t("Emprestado") : t("Indisponível")) : $v["estado_texto"],
         "estado_ordem" => ["uso" => 0, "sessao" => 1, "repouso" => 2, "indisponivel" => 3][$estado_h],
         "agora" => $v["texto"], "carga" => (int)$r["disponivel"] === 1 ? $v["energia"] : null, "carga_de" => $v["de"], "ultimo" => $v["ultimo"],
-        "ultimo_txt" => $v["em_uso"] ? "agora · " . date("H:i", $agora) : ($v["ultimo"] > 0 ? date(date("Y", $v["ultimo"]) === date("Y", $agora) ? "d/m H:i" : "d/m/Y H:i", $v["ultimo"]) : "nunca"),
+        "ultimo_txt" => $v["em_uso"] ? t("agora · {1}", [1 => date("H:i", $agora)]) : ($v["ultimo"] > 0 ? data_txt($v["ultimo"], true, date("Y", $v["ultimo"]) === date("Y", $agora)) : t("nunca")),
         "situacao" => $v["situacao"], "manutencao" => $v["prox"] ? ["nome" => $v["prox"]["nome"], "data" => max($hoje->format("Y-m-d"), substr($v["prox"]["data"], 0, 10)),
             "momento" => $v["prox_momento"], "falta" => $v["prox_falta"]] : null,
         "encostado" => $v["encostado"] ? ["data" => max($hoje->format("Y-m-d"), substr($v["encostado"]["data"], 0, 10)),
@@ -2861,7 +2861,7 @@ function nota_do_relogio($r, $momento)
                         }
                     } elseif (is_numeric($v) && (float)$v >= (float)$f["de"] && ($f["ate"] === null || (float)$v < (float)$f["ate"] || ($i === count($sb["faixas"]) - 1 && (float)$v <= (float)$f["ate"]))) {
                         $nota = (float)$f["nota"];
-                        $faixa = (0 + (float)$f["de"]) . " a " . ($f["ate"] === null ? "mais" : (0 + (float)$f["ate"]));
+                        $faixa = $f["ate"] === null ? t("{1} ou mais", [1 => decimal_txt((float)$f["de"], 6)]) : t("{1} a {2}", [1 => decimal_txt((float)$f["de"], 6), 2 => decimal_txt((float)$f["ate"], 6)]);
                     }
                 }
             }
@@ -4809,9 +4809,16 @@ function dias_livres($de, $ate)
 }
 
 // "só hoje" / "só amanhã" (conforme $quando), ou "até sexta, 02/10": até o último dia seguido do mesmo relógio no plano
-function texto_ate($data, $quando)
+// de onde veio um número da conta (o "origem" das respostas, um código), no idioma: o "origem_texto" que as telas mostram
+function origem_texto($origem)
 {
-    $dias = ["", t("segunda"), t("terça"), t("quarta"), t("quinta"), t("sexta"), t("sábado"), t("domingo")];
+    $textos = ["informado" => t("informado"), "padrao" => t("padrão"), "vazio" => t("vazio"), "medido" => t("medido"), "cadastro" => t("cadastro")];
+    return $textos[$origem] ?? $origem;
+}
+
+// o último dia seguido do plano com o mesmo relógio de $data (o próprio $data quando o dia seguinte é de outro)
+function plano_ultimo_dia_seguido($data)
+{
     $p = plano_do_dia($data);
     $fim = $data;
     $prox = date("Y-m-d", strtotime($data . " +1 day"));
@@ -4822,6 +4829,13 @@ function texto_ate($data, $quando)
         $prox = date("Y-m-d", strtotime($prox . " +1 day"));
         $q = plano_do_dia($prox);
     }
+    return $fim;
+}
+
+function texto_ate($data, $quando)
+{
+    $dias = ["", t("segunda"), t("terça"), t("quarta"), t("quinta"), t("sexta"), t("sábado"), t("domingo")];
+    $fim = plano_ultimo_dia_seguido($data);
     return $fim === $data ? t("só {1}", [1 => $quando]) : t("até {1}, {2}", [1 => $dias[(int)date("N", strtotime($fim))], 2 => data_txt(strtotime($fim), false, true)]);
 }
 
@@ -4848,7 +4862,7 @@ $ANCORAS = [
 ];
 
 // Repetições dos eventos personalizados
-$REPETICOES = ["uma" => tk("Uma vez"), "diaria" => tk("Todo dia"), "semanal" => tk("Em dias da semana"), "mensal" => tk("Todo mês"), "intervalo" => "A cada N dias"];
+$REPETICOES = ["uma" => tk("Uma vez"), "diaria" => tk("Todo dia"), "semanal" => tk("Em dias da semana"), "mensal" => tk("Todo mês"), "intervalo" => tk("A cada N dias")];
 $DIAS_SEMANA = [1 => tk("Segunda"), 2 => tk("Terça"), 3 => tk("Quarta"), 4 => tk("Quinta"), 5 => tk("Sexta"), 6 => tk("Sábado"), 7 => tk("Domingo")];
 $CURTO = [1 => tk("seg"), 2 => tk("ter"), 3 => tk("qua"), 4 => tk("qui"), 5 => tk("sex"), 6 => tk("sáb"), 7 => tk("dom")];
 // as listas acima saem no idioma de cada pedido (o lingua_definir() as refaz; textos/funcoes.php)
@@ -4930,7 +4944,7 @@ function visao_relogio($r, $agora)
     $ctx = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => $ctx["valores"]];
     $autonomia = isset(formulas_todas()["autonomia_restante"]) ? variavel_valor("autonomia_restante", $ctx) : null;
     if (is_numeric($autonomia)) {
-        $situacao[] = t("Autonomia restante {1}", [1 => duracao_texto((float)$autonomia / 86400) !== "" ? duracao_texto((float)$autonomia / 86400) : "esgotada"]);
+        $situacao[] = t("Autonomia restante {1}", [1 => duracao_texto((float)$autonomia / 86400) !== "" ? duracao_texto((float)$autonomia / 86400) : t("esgotada")]);
     }
     $avisos = avisos_do_relogio($r, $agora);
     // o Encostado não é manutenção: não entra na próxima manutenção nem no "o que fazer"; a tabela tem a coluna dele
@@ -4996,7 +5010,7 @@ function contexto_mensagem($id, $extra, $hoje)
         $ctx["tipo"] = isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "";
         $ctx["estado"] = function_exists("mb_strtolower") ? mb_strtolower($v["estado_texto"], "UTF-8") : strtolower($v["estado_texto"]);
         $ctx["carga"] = $v["energia"] !== null ? $v["energia"] . "%" : $v["de"];
-        $ctx["ultimo_uso"] = $v["ultimo"] > 0 ? data_txt($v["ultimo"], true, true) : "nunca";
+        $ctx["ultimo_uso"] = $v["ultimo"] > 0 ? data_txt($v["ultimo"], true, true) : t("nunca");
         if ($url !== "") {
             $ctx["link"] = $url . "/index.php?r=" . $id;
         }
@@ -5199,10 +5213,10 @@ function previsao_energia($r, $agora)
             $vazio = false;
             foreach ($ctx["rastro"] as $nome => $v) {
                 if (isset($campos[$nome])) {
-                    $origem = ($valores[$nome] ?? "") !== "" ? "informado" : ($v === null ? "vazio" : t("padrão"));
+                    $origem = ($valores[$nome] ?? "") !== "" ? "informado" : ($v === null ? "vazio" : "padrao");
                     $vazio = $vazio || $origem === "vazio";
                     $res["conta"][] = ["campo" => $nome, "nome" => $campos[$nome]["nome"], "detalhe" => null, "valor" => $v, "unidade" => $campos[$nome]["unidade"],
-                        "origem" => $origem];
+                        "origem" => $origem, "origem_texto" => origem_texto($origem)];
                 }
             }
             // o gasto medido pelas leituras (gasto_medido, na janela da Configuração): com o de uso medido, o campo vazio do
@@ -5231,7 +5245,7 @@ function previsao_energia($r, $agora)
             foreach (["uso" => t("Gasto em uso medido"), "repouso" => t("Gasto fora do pulso medido")] as $medida => $nome_m) {
                 if ($g[$medida] !== null && $motor_g !== "cadastro") {
                     $res["conta"][] = ["campo" => "MEDIDO(\"" . $medida . "\")", "nome" => $nome_m, "detalhe" => $como, "valor" => round($g[$medida], 3),
-                        "unidade" => $medida === "uso" ? t("% por dia de uso") : t("% por dia fora do pulso"), "origem" => "medido"];
+                        "unidade" => $medida === "uso" ? t("% por dia de uso") : t("% por dia fora do pulso"), "origem" => "medido", "origem_texto" => origem_texto("medido")];
                     if ($medida === "uso") {
                         $vazio = false;
                     }
@@ -5260,7 +5274,7 @@ function previsao_energia($r, $agora)
                 foreach (array_keys($ctx["rastro"]) as $nome) {
                     if (isset($campos[$nome])) {
                         $de_campos[] = ["campo" => $nome, "nome" => $campos[$nome]["nome"], "valor" => is_numeric($ctx["rastro"][$nome]) ? (float)$ctx["rastro"][$nome] : null,
-                            "unidade" => $campos[$nome]["unidade"], "origem" => ($valores[$nome] ?? "") !== "" ? "informado" : ($ctx["rastro"][$nome] === null ? "vazio" : t("padrão"))];
+                            "unidade" => $campos[$nome]["unidade"], "origem" => $o_c = (($valores[$nome] ?? "") !== "" ? "informado" : ($ctx["rastro"][$nome] === null ? "vazio" : "padrao")), "origem_texto" => origem_texto($o_c)];
                     }
                 }
                 $so_v = $so !== null && $so[$medida] !== null ? round((float)$so[$medida], 3) : null;
@@ -5293,7 +5307,7 @@ function previsao_energia($r, $agora)
                         : ($x["puxado"] ? t("o medido pelas leituras; só elas dariam {1}% ({2}{3}: o cadastro ainda puxa a conta)",
                             [1 => decimal_txt($x["so_leituras"], 2), 2 => $x["medicoes"], 3 => $x["medicoes"] === 1 ? t(" medição") : t(" medições")]) : t("o medido pelas leituras"));
                     $primeiras[] = ["campo" => $d[2], "nome" => $d[0], "detalhe" => $detalhe,
-                        "valor" => $gasto[$medida]["vale"], "unidade" => $d[1], "origem" => $vale_medido[$medida] ? "medido" : "cadastro", "usado" => true, "vale" => true];
+                        "valor" => $gasto[$medida]["vale"], "unidade" => $d[1], "origem" => $vale_medido[$medida] ? "medido" : "cadastro", "origem_texto" => origem_texto($vale_medido[$medida] ? "medido" : "cadastro"), "usado" => true, "vale" => true];
                 }
             }
             foreach ($res["conta"] as $i => $c) {
@@ -5337,7 +5351,7 @@ function previsao_energia($r, $agora)
                     }
                     $chega = $hoje->modify("+" . $alto . " days");
                     $res["chega_limite_em"] = $chega->format("Y-m-d");
-                    $quando = [1 => decimal_txt($res["limite"], 6), 2 => $chega->format($chega->format("Y") === $hoje->format("Y") ? "d/m" : "d/m/Y")];
+                    $quando = [1 => decimal_txt($res["limite"], 6), 2 => data_txt($chega->getTimestamp(), false, $chega->format("Y") === $hoje->format("Y"))];
                     $res["linhas"][] = $continuando !== null ? t("Continuando {3}, chega a {1}% em {2}.", $quando + [3 => $continuando]) : t("Parado, chega a {1}% em {2}.", $quando);
                 } else {
                     $res["linhas"][] = $continuando !== null ? t("Continuando {2}, fica acima de {1}% por mais de um ano.", [1 => decimal_txt($res["limite"], 6), 2 => $continuando])
@@ -5376,12 +5390,12 @@ function previsao_energia($r, $agora)
             }
             // a confiança: a leitura envelhece; alta só com leitura de até 2 dias e nenhum campo da conta vazio
             $idade = ($agora - strtotime($leitura["inicio"])) / 86400;
-            $res["confianca"] = $idade <= 2 && !$vazio ? "alta" : ($idade <= 7 ? t("média") : "baixa");
+            $res["confianca"] = $idade <= 2 && !$vazio ? "alta" : ($idade <= 7 ? "media" : "baixa");
             // hoje, ontem, ou há quantos dias de calendário
             $dias_leitura = (int)(new DateTimeImmutable(substr($leitura["inicio"], 0, 10)))->diff($hoje)->days;
-            $quando = $dias_leitura === 0 ? "hoje" : ($dias_leitura === 1 ? "ontem" : t("há {1} dias", [1 => $dias_leitura]));
+            $quando = $dias_leitura === 0 ? t("hoje") : ($dias_leitura === 1 ? t("ontem") : t("há {1} dias", [1 => $dias_leitura]));
             // (de onde vem cada número da conta vai à parte, em "conta": a tela mostra numa tabela)
-            $res["linhas"][] = t("Confiança {1}: leitura de {2}{3} feita {4}.", [1 => $res["confianca"], 2 => decimal_txt($res["leitura"], 6), 3 => $leitura["unidade"], 4 => $quando]);
+            $res["linhas"][] = t("Confiança {1}: leitura de {2}{3} feita {4}.", [1 => ["alta" => t("alta"), "media" => t("média"), "baixa" => t("baixa")][$res["confianca"]], 2 => decimal_txt($res["leitura"], 6), 3 => $leitura["unidade"], 4 => $quando]);
         }
     }
     return $res;
@@ -5491,7 +5505,7 @@ function autonomia_do_relogio($r, $agora)
                 ? t("falta no cadastro do relógio um dado que a fórmula {1} usa", [1 => $k]) : t("não há fórmula {1} para o grupo deste relógio", [1 => $k]);
         }
     }
-    foreach (["restante_em_uso" => t("no pulso direto"), "restante_guardado" => "guardado", "autonomia_estimada" => t("seguindo o plano")] as $k => $como) {
+    foreach (["restante_em_uso" => t("no pulso direto"), "restante_guardado" => t("guardado"), "autonomia_estimada" => t("seguindo o plano")] as $k => $como) {
         if ($res[$k] === null) {
             $res["motivos"][$k] = $energia === null ? t("sem dados para calcular a energia agora (ex.: smartwatch sem nenhuma leitura, solar sem nenhum sol registrado)")
                 : t("a energia não chega a zero em até 10 anos {1}{2}", [1 => $como, 2 => $k === "restante_em_uso" ? t(" (no pulso, o relógio pode se recarregar)") : ""]);
@@ -5651,7 +5665,7 @@ function descricao_repeticao($ev)
     } elseif ($ev["repeticao"] === "mensal") {
         $txt = t("dia {1} do mês, {2}", [1 => (int)$ev["dia_mes"], 2 => $hora]);
     } elseif ($ev["repeticao"] === "intervalo") {
-        $txt = t("a cada {1} dias, {2}{3}", [1 => (int)$ev["intervalo_dias"], 2 => $hora, 3 => $ev["data_inicio"] ? ", desde " . data_txt(strtotime($ev["data_inicio"])) : ""]);
+        $txt = t("a cada {1} dias, {2}{3}", [1 => (int)$ev["intervalo_dias"], 2 => $hora, 3 => $ev["data_inicio"] ? t(", desde {1}", [1 => data_txt(strtotime($ev["data_inicio"]))]) : ""]);
     }
     if ((int)$ev["ativo"] !== 1) {
         $txt .= " · pausado";

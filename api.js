@@ -57,6 +57,12 @@ function tk(s) {
   return s;
 }
 
+// um texto que não se traduz de propósito (a marca, "24H", um exemplo de endereço ou de código): sai como está. Fora do t(),
+// todo texto na tela tem de estar aqui (a regra 11 de testes/arquitetura.php confere)
+function fixo(s) {
+  return s;
+}
+
 // Texto seguro para pôr no HTML
 function h(t) {
   return String(t === null || t === undefined ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -193,7 +199,7 @@ function comLivres(plano, livres) {
 
 // A célula do relógio de um dia do plano: o nome (com "à mão"), ou "livre", e o motivo embaixo
 function celulaDoDia(p) {
-  return p.origem === "livre" ? el("span", {"class": "nota"}, t("livre: escolha à mão")) + " " + el("small", {"class": "a-mao"}, "livre")
+  return p.origem === "livre" ? el("span", {"class": "nota"}, t("livre: escolha à mão")) + " " + el("small", {"class": "a-mao"}, t("livre"))
     : h(p.relogio) + (p.origem === "manual" ? " " + el("small", {"class": "a-mao"}, t("à mão")) : "") + (p.motivo ? el("small", {"class": "motivo"}, h(p.motivo)) : "");
 }
 

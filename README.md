@@ -2089,7 +2089,7 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
    qualquer aviso (Warning, Notice, Deprecated) durante a rodada. Mexeu nas telas? Rode também a conferência do layout
    (`testes/paridade.sh --layout sqlite`): `0 problemas`.
 7. **Todo texto novo passa pelo `t()`** (o `api.js` e o `textos/funcoes.php` têm a função), com o português como chave e os
-   parâmetros entre chaves: `t("Excluir {1}?", {1: nome})`, nunca `"Excluir " + nome + "?"`. Depois, traduza nos cinco
+   parâmetros entre chaves: `t("Excluir {1}?", {1: nome})`, nunca `"Excluir " + nome + "?"`. Nenhum texto escrito direto nas telas nem na API: o GitHub confere de dois jeitos. A regra 11 do `testes/arquitetura.php` recusa o texto entre aspas que vai para a tela fora do `t()` (o que não se traduz de propósito, como a marca, vai no `fixo("...")`), e `LINGUA=zh-CN testes/paridade.sh --textos sqlite` abre todas as telas com o sistema inteiro em chinês e acusa qualquer palavra em letra latina que não seja dado de quem usa nem venha do dicionário. Depois, traduza nos cinco
    arquivos de `textos/` e rode `php testes/textos.php` (o teste de paridade também roda): tem de terminar sem falta.
    Mudou este README? As traduções dele têm a marca da versão que traduzem (a primeira linha de `textos/manual/<idioma>.md`
    e de `textos/readme/<idioma>.md`), e o `php testes/textos.php` acusa a que ficou para trás: traduza o trecho mudado, ponha

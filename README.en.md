@@ -2138,7 +2138,7 @@ Improvements are welcome, and the way is always this repository:
    any warning (Warning, Notice, Deprecated) during the round. Touched the screens? Also run the layout check (`testes/paridade.sh --layout sqlite`):
    `0 problemas`.
 7. **Every new text goes through `t()`** (`api.js` and `textos/funcoes.php` have the function), with the Portuguese as the key
-   and the parameters in braces: `t("Excluir {1}?", {1: nome})`, never `"Excluir " + nome + "?"`. Then translate it in the
+   and the parameters in braces: `t("Excluir {1}?", {1: nome})`, never `"Excluir " + nome + "?"`. No text written straight into the screens or the API: GitHub checks it in two ways. Rule 11 of `testes/arquitetura.php` rejects a quoted text that goes to the screen outside `t()` (what is deliberately not translated, such as the brand, goes in `fixo("...")`), and `LINGUA=zh-CN testes/paridade.sh --textos sqlite` opens every screen with the whole system in Chinese and flags any word in Latin letters that is neither the user's data nor from the dictionary. Then translate it in the
    five files in `textos/` and run `php testes/textos.php` (the parity test runs it too): it has to end with nothing missing.
    Changed the README? Its translations carry the mark of the version they translate (the first line of
    `textos/manual/<language>.md` and of `textos/readme/<language>.md`), and `php testes/textos.php` flags the one that fell

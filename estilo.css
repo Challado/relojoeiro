@@ -1129,6 +1129,13 @@ table.tabela-dados td.valor small { display: block; white-space: normal; color: 
 /* as medições do gasto: o quanto a conta erra embaixo do "Na conta" e o botão de pôr ou tirar da conta */
 table.tabela-dados.medicoes td small { display: block; color: var(--cinza); font-size: .8rem; }
 table.tabela-dados.medicoes form { margin: 0; }
+/* os pares de uma medição (as duas leituras, as horas no pulso e fora, o gasto medido): uma tabelinha com o título em cima e o valor
+   embaixo; os títulos de dentro não viram rótulo (o data-rotulo só aparece nas células da tabela das medições) */
+table.tabela-dados table.par { width: 100%; border-collapse: collapse; background: none; font-size: inherit; }
+table.tabela-dados table.par th, table.tabela-dados table.par td { padding: .2rem .4rem; border: 1px solid var(--aco); text-align: center; white-space: normal; }
+table.tabela-dados table.par th { background: #f6f8fa; color: var(--cinza); font-size: .68rem; font-weight: 600; text-transform: none; letter-spacing: 0; }
+table.tabela-dados table.par td { font-variant-numeric: tabular-nums; }
+table.tabela-dados table.par td::before { content: none; }
 table.tabela-dados.medicoes button { white-space: nowrap; }
 /* um valor de texto (a observação, uma fórmula que dá texto) quebra a linha dentro da coluna, sem invadir a tabela do lado */
 table.tabela-dados td.valor.texto { white-space: normal; overflow-wrap: anywhere; min-width: 8rem; }
@@ -1489,16 +1496,16 @@ form.excluir-conjunto button.discreto { white-space: normal; text-align: left; }
    dela numa casa (o data-rotulo, que o api.js põe em toda célula a partir do título da coluna) e o valor (o div.v) na outra; a
    célula sem título (o botão) ocupa a linha inteira */
 @container quadro (max-width: 40rem) {
-  table.tabela-dados.medicoes thead { display: none; }
-  table.tabela-dados.medicoes, table.tabela-dados.medicoes tbody { display: block; }
-  table.tabela-dados.medicoes tr { display: block; margin: 0 0 .6rem; border: 1px solid var(--aco-escuro); border-radius: 8px; overflow: hidden; }
-  table.tabela-dados.medicoes td { display: grid; grid-template-columns: minmax(5.5rem, 36%) minmax(0, 1fr); padding: 0; border: 0; border-top: 1px solid var(--aco); white-space: normal; font-size: inherit; }
-  table.tabela-dados.medicoes td > .v { padding: .35rem .5rem; min-width: 0; }
-  table.tabela-dados.medicoes td[data-rotulo]::before { content: attr(data-rotulo); padding: .35rem .5rem; background: #f6f8fa; border-right: 1px solid var(--aco);
+  table.tabela-dados.medicoes > thead { display: none; }
+  table.tabela-dados.medicoes, table.tabela-dados.medicoes > tbody { display: block; }
+  table.tabela-dados.medicoes > tbody > tr { display: block; margin: 0 0 .6rem; border: 1px solid var(--aco-escuro); border-radius: 8px; overflow: hidden; }
+  table.tabela-dados.medicoes > tbody > tr > td { display: grid; grid-template-columns: minmax(5.5rem, 36%) minmax(0, 1fr); padding: 0; border: 0; border-top: 1px solid var(--aco); white-space: normal; font-size: inherit; }
+  table.tabela-dados.medicoes > tbody > tr > td > .v { padding: .35rem .5rem; min-width: 0; }
+  table.tabela-dados.medicoes > tbody > tr > td[data-rotulo]::before { content: attr(data-rotulo); padding: .35rem .5rem; background: #f6f8fa; border-right: 1px solid var(--aco);
     color: var(--cinza); font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; overflow-wrap: anywhere; }
-  table.tabela-dados.medicoes td:first-child { display: block; border-top: 0; background: var(--aco); font-weight: 600; }
-  table.tabela-dados.medicoes td:first-child::before { content: none; }
-  table.tabela-dados.medicoes td:not([data-rotulo]) { display: block; }
+  table.tabela-dados.medicoes > tbody > tr > td:first-child { display: block; border-top: 0; background: var(--aco); font-weight: 600; }
+  table.tabela-dados.medicoes > tbody > tr > td:first-child::before { content: none; }
+  table.tabela-dados.medicoes > tbody > tr > td:not([data-rotulo]) { display: block; }
 }
 /* os dados do relógio (campo, valor, origem; fórmula, valor, versão): menos folga entre as colunas, e o valor quebra a linha */
 @container quadro (max-width: 26rem) {

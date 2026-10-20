@@ -17,13 +17,14 @@ $utc_h = (new DateTimeImmutable("@" . $agora_h))->setTimezone(new DateTimeZone("
 $desl_h = $local_h->getOffset();
 $semana_h = ["", t("segunda-feira"), t("terça-feira"), t("quarta-feira"), t("quinta-feira"), t("sexta-feira"), t("sábado"), t("domingo")];
 $meses_h = [t("janeiro"), t("fevereiro"), t("março"), t("abril"), t("maio"), t("junho"), t("julho"), t("agosto"), t("setembro"), t("outubro"), t("novembro"), t("dezembro")];
-$meses_mil = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+$meses_mil = array_map("fixo", ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]);
 
-// a letra militar do fuso (o alfabeto da OTAN): A a M (sem J) a leste, N a Y a oeste, Z no UTC; fuso fora da hora cheia: sem letra
-$letras_h = [0 => ["Z", "Zulu"], 1 => ["A", "Alfa"], 2 => ["B", "Bravo"], 3 => ["C", "Charlie"], 4 => ["D", "Delta"], 5 => ["E", "Echo"], 6 => ["F", "Foxtrot"],
-    7 => ["G", "Golf"], 8 => ["H", "Hotel"], 9 => ["I", "India"], 10 => ["K", "Kilo"], 11 => ["L", "Lima"], 12 => ["M", "Mike"], -1 => ["N", "November"],
-    -2 => ["O", "Oscar"], -3 => ["P", "Papa"], -4 => ["Q", "Quebec"], -5 => ["R", "Romeo"], -6 => ["S", "Sierra"], -7 => ["T", "Tango"], -8 => ["U", "Uniform"],
-    -9 => ["V", "Victor"], -10 => ["W", "Whiskey"], -11 => ["X", "X-ray"], -12 => ["Y", "Yankee"]];
+// a letra militar do fuso (o alfabeto da OTAN, igual em todo idioma: fixo): A a M (sem J) a leste, N a Y a oeste, Z no UTC; fuso fora
+// da hora cheia: sem letra
+$letras_h = [0 => ["Z", fixo("Zulu")], 1 => ["A", fixo("Alfa")], 2 => ["B", fixo("Bravo")], 3 => ["C", fixo("Charlie")], 4 => ["D", fixo("Delta")], 5 => ["E", fixo("Echo")], 6 => ["F", fixo("Foxtrot")],
+    7 => ["G", fixo("Golf")], 8 => ["H", fixo("Hotel")], 9 => ["I", fixo("India")], 10 => ["K", fixo("Kilo")], 11 => ["L", fixo("Lima")], 12 => ["M", fixo("Mike")], -1 => ["N", fixo("November")],
+    -2 => ["O", fixo("Oscar")], -3 => ["P", fixo("Papa")], -4 => ["Q", fixo("Quebec")], -5 => ["R", fixo("Romeo")], -6 => ["S", fixo("Sierra")], -7 => ["T", fixo("Tango")], -8 => ["U", fixo("Uniform")],
+    -9 => ["V", fixo("Victor")], -10 => ["W", fixo("Whiskey")], -11 => ["X", fixo("X-ray")], -12 => ["Y", fixo("Yankee")]];
 $letra_h = $desl_h % 3600 === 0 && isset($letras_h[intdiv($desl_h, 3600)]) ? $letras_h[intdiv($desl_h, 3600)] : null;
 // o grupo data-hora (DTG): DDHHMM, a letra do fuso, o mês em inglês e o ano com dois dígitos ("131714P OCT 26")
 $dtg = function ($t, $letra) use ($meses_mil) {

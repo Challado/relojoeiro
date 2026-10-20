@@ -2218,7 +2218,7 @@ Les améliorations sont les bienvenues, et le chemin passe toujours par ce dép�
    donne le moindre avertissement (Warning, Notice, Deprecated) pendant le passage. Vous avez touché aux
    écrans ? Lancez aussi la vérification de la mise en page (`testes/paridade.sh --layout sqlite`) : `0 problemas`.
 7. **Tout nouveau texte passe par `t()`** (le `api.js` et le `textos/funcoes.php` ont la fonction), avec le portugais comme clé
-   et les paramètres entre accolades : `t("Excluir {1}?", {1: nome})`, jamais `"Excluir " + nome + "?"`. Ensuite, traduisez-le
+   et les paramètres entre accolades : `t("Excluir {1}?", {1: nome})`, jamais `"Excluir " + nome + "?"`. Aucun texte écrit en dur dans les écrans ni dans l'API : GitHub le vérifie de deux façons. La règle 11 de `testes/arquitetura.php` refuse le texte entre guillemets qui va à l'écran hors du `t()` (ce qui ne se traduit pas exprès, comme la marque, va dans `fixo("...")`), et `LINGUA=zh-CN testes/paridade.sh --textos sqlite` ouvre tous les écrans avec tout le système en chinois et signale tout mot en lettres latines qui n'est ni une donnée de l'utilisateur ni issu du dictionnaire. Ensuite, traduisez-le
    dans les cinq fichiers de `textos/` et lancez `php testes/textos.php` (le test de parité le lance aussi) : il doit finir sans
    rien de manquant. Vous avez changé le README ? Ses traductions portent la marque de la version qu'elles traduisent (la
    première ligne de `textos/manual/<langue>.md` et de `textos/readme/<langue>.md`), et `php testes/textos.php` signale celle qui

@@ -112,6 +112,13 @@ function textos_estrito()
     return defined("TEXTOS_ESTRITO") && TEXTOS_ESTRITO === true;
 }
 
+// um texto que não se traduz de propósito (o alfabeto da OTAN, os meses do grupo data-hora militar): sai como está. A
+// conferência dos textos fixos (testes/texto-fixo.cjs) aceita o que passa por aqui
+function fixo($s)
+{
+    return $s;
+}
+
 // o texto no idioma do pedido, com os parâmetros trocados ({nome} => o valor)
 function t($s, $p = [])
 {

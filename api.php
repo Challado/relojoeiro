@@ -1132,8 +1132,10 @@
  *     relogios[].previsao.conta[].nome
  *                                    o nome do campo, ou do gasto medido (Gasto em uso medido, Gasto fora do pulso medido)
  *     relogios[].previsao.conta[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo), vazio (sem valor), medido
- *                                    (pelas leituras) ou cadastro (o gasto que vale saiu do cadastro)
+ *                                    de onde veio: informado (no cadastro do relógio), padrao (o padrão do campo), vazio (sem valor),
+ *                                    medido (pelas leituras) ou cadastro (o gasto que vale saiu do cadastro)
+ *     relogios[].previsao.conta[].origem_texto
+ *                                    de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     relogios[].previsao.conta[].unidade
  *                                    a unidade do valor (texto)
  *     relogios[].previsao.conta[].valor
@@ -1193,7 +1195,9 @@
  *     relogios[].previsao.gasto.uso.campos[].nome
  *                                    o nome do campo
  *     relogios[].previsao.gasto.uso.campos[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo) ou vazio (sem valor)
+ *                                    de onde veio: informado (no cadastro do relógio), padrao (o padrão do campo) ou vazio (sem valor)
+ *     relogios[].previsao.gasto.uso.campos[].origem_texto
+ *                                    de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     relogios[].previsao.gasto.uso.campos[].unidade
  *                                    a unidade do campo (texto)
  *     relogios[].previsao.gasto.uso.campos[].valor
@@ -1229,7 +1233,9 @@
  *     relogios[].previsao.gasto.repouso.campos[].nome
  *                                    o nome do campo
  *     relogios[].previsao.gasto.repouso.campos[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo) ou vazio (sem valor)
+ *                                    de onde veio: informado (no cadastro do relógio), padrao (o padrão do campo) ou vazio (sem valor)
+ *     relogios[].previsao.gasto.repouso.campos[].origem_texto
+ *                                    de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     relogios[].previsao.gasto.repouso.campos[].unidade
  *                                    a unidade do campo (texto)
  *     relogios[].previsao.gasto.repouso.campos[].valor
@@ -1737,7 +1743,8 @@
  *                                    contas usam
  *     relogio.dados[].identificador  o campo
  *     relogio.dados[].nome           o nome do campo
- *     relogio.dados[].origem         de onde vem o valor usado: informado, padrão (o do campo) ou vazio
+ *     relogio.dados[].origem         de onde vem o valor usado: informado, padrao (o padrão do campo) ou vazio
+ *     relogio.dados[].origem_texto   de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     relogio.dados[].tipo           inteiro, decimal, sim_nao, data, lista ou texto
  *     relogio.dados[].unidade        a unidade (texto)
  *     relogio.dados[].valor          o valor informado no relógio (texto; null: não preenchido)
@@ -1909,8 +1916,10 @@
  *                                    dias"); null nos campos
  *     relogio.previsao.conta[].nome  o nome do campo, ou do gasto medido (Gasto em uso medido, Gasto fora do pulso medido)
  *     relogio.previsao.conta[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo), vazio (sem valor), medido
- *                                    (pelas leituras) ou cadastro (o gasto que vale saiu do cadastro)
+ *                                    de onde veio: informado (no cadastro do relógio), padrao (o padrão do campo), vazio (sem valor),
+ *                                    medido (pelas leituras) ou cadastro (o gasto que vale saiu do cadastro)
+ *     relogio.previsao.conta[].origem_texto
+ *                                    de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     relogio.previsao.conta[].unidade
  *                                    a unidade do valor (texto)
  *     relogio.previsao.conta[].valor o valor usado na conta (número; null se vazio)
@@ -1968,7 +1977,9 @@
  *     relogio.previsao.gasto.uso.campos[].nome
  *                                    o nome do campo
  *     relogio.previsao.gasto.uso.campos[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo) ou vazio (sem valor)
+ *                                    de onde veio: informado (no cadastro do relógio), padrao (o padrão do campo) ou vazio (sem valor)
+ *     relogio.previsao.gasto.uso.campos[].origem_texto
+ *                                    de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     relogio.previsao.gasto.uso.campos[].unidade
  *                                    a unidade do campo (texto)
  *     relogio.previsao.gasto.uso.campos[].valor
@@ -2004,7 +2015,9 @@
  *     relogio.previsao.gasto.repouso.campos[].nome
  *                                    o nome do campo
  *     relogio.previsao.gasto.repouso.campos[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo) ou vazio (sem valor)
+ *                                    de onde veio: informado (no cadastro do relógio), padrao (o padrão do campo) ou vazio (sem valor)
+ *     relogio.previsao.gasto.repouso.campos[].origem_texto
+ *                                    de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     relogio.previsao.gasto.repouso.campos[].unidade
  *                                    a unidade do campo (texto)
  *     relogio.previsao.gasto.repouso.campos[].valor
@@ -2020,6 +2033,8 @@
  *                                    o próximo dia em que o relógio entra no rodízio (texto AAAA-MM-DD); null se não está no plano
  *     relogio.proxima                o próximo dia no plano (texto AAAA-MM-DD); null: não está no plano
  *     relogio.proxima_ate            até quando ele fica nesse dia
+ *     relogio.proxima_um_dia         verdadeiro ou falso: ele fica só aquele dia (o dia seguinte do plano é de outro relógio); null sem
+ *                                    próxima
  *     relogio.registros              quantos registros tem a linha do tempo inteira
  *     relogio.situacao[]             as frases de situação: as sessões abertas que o estado não mostra e a autonomia restante
  *     relogio.tipo                   o nome do grupo
@@ -2170,11 +2185,13 @@
  *     destinos[].id                  o id
  *     destinos[].nome                o nome
  *     destinos[].tipo                webhook, email ou webpush
+ *     destinos[].tipo_nome           o nome do tipo, por extenso
  *     destinos[].ativo               verdadeiro ou falso: manda
  *     agendas[]                      o resumo das agendas da coleção (a página Agendas tem o resto)
  *     agendas[].id                   o id
  *     agendas[].nome                 o nome
  *     agendas[].tipo                 google, caldav, outlook ou ics
+ *     agendas[].tipo_nome            o nome do tipo, por extenso
  *     agendas[].ativa                verdadeiro ou falso: o sistema mantém os eventos nela
  *     cron_estado.registro           o registro da última rodada com atividade (o master vê o do sistema inteiro; os outros, o da coleção);
  *                                    null: nenhum
@@ -2501,8 +2518,10 @@
  *     previsoes[].conta[].detalhe    no gasto medido, como ele foi medido ("conta dos dois gastos juntos, com 3 medições dos últimos 90
  *                                    dias"); null nos campos
  *     previsoes[].conta[].nome       o nome do campo, ou do gasto medido (Gasto em uso medido, Gasto fora do pulso medido)
- *     previsoes[].conta[].origem     de onde veio: informado (no cadastro do relógio), padrão (o do campo), vazio (sem valor), medido
- *                                    (pelas leituras) ou cadastro (o gasto que vale saiu do cadastro)
+ *     previsoes[].conta[].origem     de onde veio: informado (no cadastro do relógio), padrao (o padrão do campo), vazio (sem valor),
+ *                                    medido (pelas leituras) ou cadastro (o gasto que vale saiu do cadastro)
+ *     previsoes[].conta[].origem_texto
+ *                                    de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     previsoes[].conta[].unidade    a unidade do valor (texto)
  *     previsoes[].conta[].valor      o valor usado na conta (número; null se vazio)
  *     previsoes[].dura_ate           até que dia a carga aguenta se usar a partir de hoje (texto AAAA-MM-DD)
@@ -2546,7 +2565,9 @@
  *     previsoes[].gasto.uso.campos[].nome
  *                                    o nome do campo
  *     previsoes[].gasto.uso.campos[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo) ou vazio (sem valor)
+ *                                    de onde veio: informado (no cadastro do relógio), padrao (o padrão do campo) ou vazio (sem valor)
+ *     previsoes[].gasto.uso.campos[].origem_texto
+ *                                    de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     previsoes[].gasto.uso.campos[].unidade
  *                                    a unidade do campo (texto)
  *     previsoes[].gasto.uso.campos[].valor
@@ -2580,7 +2601,9 @@
  *     previsoes[].gasto.repouso.campos[].nome
  *                                    o nome do campo
  *     previsoes[].gasto.repouso.campos[].origem
- *                                    de onde veio: informado (no cadastro do relógio), padrão (o do campo) ou vazio (sem valor)
+ *                                    de onde veio: informado (no cadastro do relógio), padrao (o padrão do campo) ou vazio (sem valor)
+ *     previsoes[].gasto.repouso.campos[].origem_texto
+ *                                    de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     previsoes[].gasto.repouso.campos[].unidade
  *                                    a unidade do campo (texto)
  *     previsoes[].gasto.repouso.campos[].valor
@@ -2669,6 +2692,7 @@
  *   recurso=desejos
  *     desejados[]                    os relógios desejados (a lista de desejos), a prioridade mais alta primeiro, depois pelo nome
  *     desejados[].caminho            o caminho do grupo ("Automáticos › Mergulho"; "todos os relógios" na raiz)
+ *     desejados[].no_id              o grupo do relógio (o id do ponto da árvore); null na raiz
  *     desejados[].criado             quando entrou no sistema (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     desejados[].foto               a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
  *     desejados[].id                 o número (código)
@@ -2682,6 +2706,7 @@
  *     desejados[].tipo               o grupo do relógio (o nome; "sem grupo" na raiz)
  *     fora[]                         os relógios fora da coleção que não são desejados: emprestados, vendidos e arquivados, pelo nome
  *     fora[].caminho                 o caminho do grupo
+ *     fora[].no_id                   o grupo do relógio (o id do ponto da árvore); null na raiz
  *     fora[].criado                  quando entrou no sistema (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     fora[].foto                    a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
  *     fora[].id                      o número (código)

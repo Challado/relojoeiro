@@ -95,8 +95,8 @@ function recarregarCriterios() {
       res += el("div", {"class": "erros-form"}, el("strong", {}, t("Não foi salvo:")) + errosCrit.filter(function (e, i) { return errosCrit.indexOf(e) === i; }).map(function (e) { return el("p", {}, h(e)); }).join(""));
     }
     res += el("section", {"class": "cartao-config"}, el("h2", {}, t("Como a nota funciona"))
-      + el("p", {}, t("Cada {1} — todos os relógios, um grupo em qualquer nível da árvore, ou um relógio — pode ter o seu {2}. O relógio usa o conjunto {3}, inteiro: o dele; senão o do grupo dele; senão o do grupo de cima; e assim até o de todos os relógios. Um lugar sem conjunto próprio herda o de cima.", {1: el("strong", {}, "lugar"), 2: el("strong", {}, t("conjunto de critérios")), 3: el("strong", {}, t("mais perto dele"))}))
-      + el("p", {}, t("Num conjunto, cada {1} tem um peso, e a soma fecha 100%. Cada parâmetro tem {2}, com peso dentro dele, que também fecha 100%. Cada subparâmetro mede uma coisa do relógio e usa {3} para transformar o valor medido numa nota de 0 a 100. {4} = peso do subparâmetro × peso do parâmetro; {5} = soma de nota × peso efetivo. Subparâmetro sem medida para o relógio (autonomia num relógio que não é smartwatch, por exemplo) sai da conta, e os pesos dos que ficam são reescalados.", {1: el("strong", {}, t("parâmetro")), 2: el("strong", {}, t("subparâmetros")), 3: el("strong", {}, "faixas"), 4: el("strong", {}, t("Peso efetivo")), 5: el("strong", {}, t("nota final"))})));
+      + el("p", {}, t("Cada {1} — todos os relógios, um grupo em qualquer nível da árvore, ou um relógio — pode ter o seu {2}. O relógio usa o conjunto {3}, inteiro: o dele; senão o do grupo dele; senão o do grupo de cima; e assim até o de todos os relógios. Um lugar sem conjunto próprio herda o de cima.", {1: el("strong", {}, t("lugar")), 2: el("strong", {}, t("conjunto de critérios")), 3: el("strong", {}, t("mais perto dele"))}))
+      + el("p", {}, t("Num conjunto, cada {1} tem um peso, e a soma fecha 100%. Cada parâmetro tem {2}, com peso dentro dele, que também fecha 100%. Cada subparâmetro mede uma coisa do relógio e usa {3} para transformar o valor medido numa nota de 0 a 100. {4} = peso do subparâmetro × peso do parâmetro; {5} = soma de nota × peso efetivo. Subparâmetro sem medida para o relógio (autonomia num relógio que não é smartwatch, por exemplo) sai da conta, e os pesos dos que ficam são reescalados.", {1: el("strong", {}, t("parâmetro")), 2: el("strong", {}, t("subparâmetros")), 3: el("strong", {}, t("faixas")), 4: el("strong", {}, t("Peso efetivo")), 5: el("strong", {}, t("nota final"))})));
     res += el("section", {"class": "cartao-config", "id": "selecao"}, el("h2", {}, t("Como a nota vira escolha"))
       + el("p", {}, t("Cada modo de rodízio tem a sua forma de escolher o relógio, escolhida no quadro {1}, na página Hoje:", {1: el("a", {"href": "index.php#bloco-modo"}, t("Modo de rodízio"))}))
       + Object.keys(SELECOES).map(function (k) { return el("p", {"class": "opcao-selecao"}, el("strong", {}, h(SELECOES[k][0])) + " " + el("span", {"class": "nota"}, h(SELECOES[k][1]))); }).join("")
@@ -105,7 +105,7 @@ function recarregarCriterios() {
           return el("tr", {}, el("td", {}, h(m.nome) + (m.ativo ? " " + el("span", {"class": "nota"}, t("(o modo atual)")) : ""))
             + el("td", {}, m.escala ? t("sempre pela maior nota, com as medidas de cada dia simulado") : h(SELECOES[m.selecao][0])));
         }).join(""))))
-      + el("p", {"class": "nota"}, t("Garantia de rodízio: {1} (no mesmo quadro). Fora da nota também valem o grupo de cada bloco de dias, os relógios fixos e não repetir o de ontem.", {1: d.max_sem_uso > 0 ? t("nenhum relógio fica mais de {1} dias sem uso", {1: d.max_sem_uso}) : "desligada"})));
+      + el("p", {"class": "nota"}, t("Garantia de rodízio: {1} (no mesmo quadro). Fora da nota também valem o grupo de cada bloco de dias, os relógios fixos e não repetir o de ontem.", {1: d.max_sem_uso > 0 ? t("nenhum relógio fica mais de {1} dias sem uso", {1: d.max_sem_uso}) : t("desligada")})));
     // onde há critérios
     var semConjunto = d.notas.filter(function (n) { return n.disponivel && n.conjunto === null; }).map(function (n) { return n.relogio; });
     res += el("section", {"class": "cartao-config", "id": "lugares"}, el("h2", {}, t("Onde há critérios")) + el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-criterios"},
@@ -114,7 +114,7 @@ function recarregarCriterios() {
         var u = usam(c.escopo);
         return el("tr", {}, el("td", {}, h(c.lugar)) + el("td", {}, String(c.parametros.length))
           + el("td", {}, el("span", {"title": u.join(", ")}, u.length + " " + (u.length === 1 ? t("relógio") : t("relógios"))) + (u.length > 0 ? " " + el("small", {"class": "nota"}, h(u.join(", "))) : ""))
-          + el("td", {}, el("a", {"href": "criterios.php?escopo=" + encodeURIComponent(c.escopo) + "#conjunto"}, "editar")));
+          + el("td", {}, el("a", {"href": "criterios.php?escopo=" + encodeURIComponent(c.escopo) + "#conjunto"}, t("editar"))));
       }).join("") + (d.conjuntos.length === 0 ? el("tr", {}, el("td", {"colspan": "4"}, t("Nenhum lugar tem critérios: todos os relógios ficam com nota neutra, 50."))) : ""))))
       + (semConjunto.length > 0 ? el("p", {"class": "atrasado"}, t("Há relógios sem conjunto nenhum (nota neutra, 50): {1}.", {1: h(semConjunto.join(", "))})) : ""));
     // o conjunto do lugar em edição

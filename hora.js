@@ -42,8 +42,8 @@ function mostrador(anadigi) {
 // O relógio digital: a caixa escura com o visor de cristal líquido (a data e o dia da semana em cima, a hora grande no meio,
 // com os "88:88:88" apagados atrás, como num visor de verdade, e o UTC embaixo)
 function digitalLcd(d) {
-  return el("div", {"class": "lcd-caixa", "role": "img", "aria-label": h(t("Relógio digital com a hora certa"))}, el("div", {"class": "lcd-marca"}, el("span", {}, "RELOJOEIRO") + el("span", {}, h(d.fuso.abreviacao)))
-    + el("div", {"class": "lcd"}, el("div", {"class": "lcd-linha"}, el("span", {"id": "lcd-data"}, "") + el("span", {}, "24H"))
+  return el("div", {"class": "lcd-caixa", "role": "img", "aria-label": h(t("Relógio digital com a hora certa"))}, el("div", {"class": "lcd-marca"}, el("span", {}, fixo("RELOJOEIRO")) + el("span", {}, h(d.fuso.abreviacao)))
+    + el("div", {"class": "lcd"}, el("div", {"class": "lcd-linha"}, el("span", {"id": "lcd-data"}, "") + el("span", {}, fixo("24H")))
       + el("div", {"class": "lcd-digitos"}, el("span", {"class": "fantasma", "aria-hidden": "true"}, "88:88:88") + el("span", {"id": "digital", "aria-live": "off"}, h(d.local.hora)))
       + el("div", {"class": "lcd-linha"}, el("span", {"id": "lcd-utc"}, "") + el("span", {}, h(d.lua.simbolo)))));
 }

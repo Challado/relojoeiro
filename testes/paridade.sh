@@ -8,6 +8,8 @@
 #   testes/paridade.sh sqlite mysql              só esses (o primeiro é a referência)
 #   testes/paridade.sh --layout sqlite           e, no fim, a conferência do layout (testes/layout.cjs) no primeiro
 #   testes/paridade.sh --manter sqlite           deixa os servidores no ar no fim (para olhar as telas); Ctrl+C derruba
+#   LINGUA=zh-CN testes/paridade.sh --textos sqlite   e a conferência dos textos fixos (testes/texto-fixo.cjs) no primeiro:
+#                                                nenhum texto nas telas fora do dicionário (o roteiro no mesmo idioma)
 #
 # Os bancos (MySQL/MariaDB, PostgreSQL, Firebird) têm de estar no ar; o acesso vem do ambiente (veja testes/config.teste.php).
 # O banco de teste é APAGADO e recriado a cada rodada: o nome (TESTE_BANCO, padrão relogios_teste) tem de ter "teste".
@@ -26,13 +28,15 @@ RAIZ=$(pwd)
 
 LAYOUT=0
 MANTER=0
+TEXTOS=0
 BANCOS=()
 for a in "$@"; do
   case "$a" in
     --layout) LAYOUT=1 ;;
     --manter) MANTER=1 ;;
+    --textos) TEXTOS=1 ;;
     sqlite|pgsql|mysql|firebird) BANCOS+=("$a") ;;
-    *) echo "Não conheço \"$a\". Uso: testes/paridade.sh [--layout] [--manter] [sqlite] [pgsql] [mysql] [firebird]" >&2; exit 2 ;;
+    *) echo "Não conheço \"$a\". Uso: testes/paridade.sh [--layout] [--textos] [--manter] [sqlite] [pgsql] [mysql] [firebird]" >&2; exit 2 ;;
   esac
 done
 [ ${#BANCOS[@]} -eq 0 ] && BANCOS=(sqlite pgsql mysql firebird)
@@ -167,6 +171,16 @@ if [ -f "$PASTA/$REF.json" ]; then
     echo "campos: $(tail -1 "$PASTA/campos.txt")"
   else
     FALHOU=1; echo "campos:"; sed 's/^/    /' "$PASTA/campos.txt" | head -40
+  fi
+fi
+
+# os textos fixos antes do layout: o layout grava dados de estresse que o roteiro não gravou (e a conferência não conhece)
+if [ $TEXTOS -eq 1 ]; then
+  echo "Conferência dos textos fixos no $REF (${LINGUA:-zh-CN}):"
+  if BASE="http://127.0.0.1:$PORTA0/" DADOS="$PASTA/$REF.dados.json" LINGUA="${LINGUA:-zh-CN}" node testes/texto-fixo.cjs > "$PASTA/texto-fixo.txt" 2>&1; then
+    echo "    $(tail -1 "$PASTA/texto-fixo.txt")"
+  else
+    FALHOU=1; sed 's/^/    /' "$PASTA/texto-fixo.txt" | head -60
   fi
 fi
 

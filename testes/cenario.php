@@ -70,6 +70,21 @@ function chamar($metodo, $params = [])
     return ["codigo" => $codigo, "json" => $json, "cru" => $json === null ? (preg_match("//u", $corpo) === 1 ? ["tipo" => $tipo, "texto" => $corpo] : ["tipo" => $tipo, "tamanho" => strlen($corpo), "md5" => md5($corpo)]) : null];
 }
 
+// os textos que o roteiro grava (os nomes, as observações, os textos das mensagens...): são dados de quem usa, e saem nas telas
+// como foram escritos, em qualquer idioma. A conferência dos textos fixos (testes/texto-fixo.cjs) os separa do texto do sistema.
+// Os códigos (só letras minúsculas sem acento, números, _ : -) ficam de fora: "livre" ou "uso" na tela é texto fixo, não dado;
+// menos os logins (login, usuario), que são dados mesmo em minúsculas
+function guardar_dados($params)
+{
+    global $dados_escritos;
+    array_walk_recursive($params, function ($v, $k) use (&$dados_escritos) {
+        if (is_string($v) && !in_array($k, ["recurso", "acao", "token", "senha"], true) && preg_match('/\pL/u', $v) === 1
+            && (preg_match('/^[a-z0-9_:.\-]*$/', $v) !== 1 || in_array($k, ["login", "usuario"], true))) {
+            $dados_escritos[$v] = true;
+        }
+    });
+}
+
 // uma escrita: guarda a resposta (o ok, a mensagem, os erros) para comparar, e devolve o id
 function escrever($params, $espera_ok = true)
 {
@@ -84,6 +99,7 @@ function escrever($params, $espera_ok = true)
         usleep(20000);
     }
     $r = chamar("POST", $params);
+    guardar_dados($params);
     if ($troca) {
         $ultima_troca = time();
     }
@@ -138,6 +154,7 @@ function ha_minutos($minutos)
 }
 
 $foto = ["escritas" => [], "leituras" => [], "cron" => []];
+$dados_escritos = [];
 
 // os grupos do conjunto inicial (o modelo.json), pelo nome: os códigos dependem do banco (as coleções de cada pessoa
 // dividem a mesma numeração). G(1) a G(8): Smartwatch, Tradicional, Mecânico, Automático, Corda manual, Quartzo, Pilha, Solar
@@ -748,6 +765,8 @@ if ($texto === false) {
     exit(1);
 }
 file_put_contents($SAIDA, $texto);
+// ao lado da fotografia (sqlite.json: sqlite.dados.json), os textos gravados (guardar_dados)
+file_put_contents(preg_replace('/\.json$/', '', $SAIDA) . ".dados.json", json_encode(array_keys($dados_escritos), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 echo count($foto["escritas"]) . " escritas, " . count($foto["leituras"]) . " leituras, " . count($foto["cron"]) . " rodadas do cron\n";
 if ($falhas) {
     echo "Escritas recusadas:\n  " . implode("\n  ", $falhas) . "\n";

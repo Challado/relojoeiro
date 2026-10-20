@@ -39,6 +39,6 @@ $saida = ["config" => (object)$valores_c,
     }, eventos_com_dias(linhas("SELECT * FROM evento_personalizado ORDER BY nome"))),
     "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1]; },
         linhas("SELECT id, nome, disponivel FROM relogio ORDER BY nome")),
-    "destinos" => array_values(array_map(function ($x) { return ["id" => $x["id"], "nome" => $x["nome"], "tipo" => $x["tipo"], "ativo" => $x["ativo"]]; }, destinos())),
-    "agendas" => array_values(array_map(function ($x) { return ["id" => $x["id"], "nome" => $x["nome"], "tipo" => $x["tipo"], "ativa" => $x["ativa"]]; }, agendas())),
+    "destinos" => array_values(array_map(function ($x) { return ["id" => $x["id"], "nome" => $x["nome"], "tipo" => $x["tipo"], "tipo_nome" => t(DESTINO_TIPOS[$x["tipo"]] ?? $x["tipo"]), "ativo" => $x["ativo"]]; }, destinos())),
+    "agendas" => array_values(array_map(function ($x) { return ["id" => $x["id"], "nome" => $x["nome"], "tipo" => $x["tipo"], "tipo_nome" => t(AGENDA_TIPOS[$x["tipo"]] ?? $x["tipo"]), "ativa" => $x["ativa"]]; }, agendas())),
     "cron_estado" => cron_estado()];

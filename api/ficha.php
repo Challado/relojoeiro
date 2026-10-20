@@ -66,6 +66,7 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
         })(), "em_uso" => $v["em_uso"], "estado" => $v["estado"], "estado_texto" => $v["estado_texto"], "agora" => $v["texto"], "carga" => $v["energia"], "carga_de" => $v["de"], "situacao" => $v["situacao"],
         "nota" => $nota ? ["nota" => $nota["nota"], "conjunto_texto" => $nota["conjunto_texto"]] : null,
         "proxima" => $proxima, "proxima_ate" => $proxima !== null ? texto_ate($proxima, t("neste dia")) : null,
+        "proxima_um_dia" => $proxima !== null && plano_ultimo_dia_seguido($proxima) === $proxima,
         "escala_fim" => valor("SELECT escala_dias FROM modo WHERE id = ?", [modo_ativo()]) !== null ? cfg("escala_fim") : null,
         "compra" => ["data" => $valores["data_compra"] ?? null, "valor" => isset($valores["valor_compra"]) ? (float)$valores["valor_compra"] : null, "loja" => $valores["loja"] ?? null,
             "garantia_ate" => $valores["garantia_ate"] ?? null,
@@ -120,7 +121,7 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     foreach (campos_do_relogio($r) as $ident => $c) {
         $dados[] = ["identificador" => $ident, "nome" => $c["nome"], "tipo" => $c["tipo"], "unidade" => $c["unidade"], "valor" => $valores[$ident] ?? null,
             "valor_usado" => ($valores[$ident] ?? "") !== "" ? $valores[$ident] : $c["padrao"],
-            "origem" => ($valores[$ident] ?? "") !== "" ? "informado" : ($c["padrao"] !== null && $c["padrao"] !== "" ? t("padrão") : "vazio")];
+            "origem" => $o_d = (($valores[$ident] ?? "") !== "" ? "informado" : ($c["padrao"] !== null && $c["padrao"] !== "" ? "padrao" : "vazio")), "origem_texto" => origem_texto($o_d)];
     }
     $calculos = [];
     foreach (formulas_todas() as $ident => $versoes) {

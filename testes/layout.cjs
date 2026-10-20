@@ -36,46 +36,8 @@ const TELAS = [
   { nome: 'cel-412', ...devices['Pixel 7'] },
   { nome: 'cel-320', ...devices['iPhone SE'], viewport: { width: 320, height: 568 } },
 ];
-const PAGINAS = [
-  { nome: 'hoje', url: 'index.php' },
-  { nome: 'hoje-manual', url: 'index.php#manual' },
-  ...[1, 3, 4, 5, 7, 8].map((id) => ({ nome: 'hoje-painel-' + id, url: 'index.php?r=' + id })),
-  ...[1, 3, 4, 5, 7, 8].map((id) => ({ nome: 'hoje-flutuante-' + id, url: 'index.php?r=' + id, flutuante: true })),
-  { nome: 'ficha-1', url: 'ficha.php?id=1' },
-  { nome: 'ficha-3', url: 'ficha.php?id=3' },
-  { nome: 'ficha-4', url: 'ficha.php?id=4' },
-  { nome: 'ficha-5', url: 'ficha.php?id=5' },
-  { nome: 'ficha-7', url: 'ficha.php?id=7' },
-  { nome: 'ficha-8', url: 'ficha.php?id=8' },
-  { nome: 'ficha-novo', url: 'index.php?novo=1' },
-  // o desejado do cenário (10) e o vendido (4), a lista de desejos e o cadastro de um desejo novo
-  { nome: 'ficha-10', url: 'ficha.php?id=10' },
-  { nome: 'hoje-painel-10', url: 'index.php?r=10' },
-  { nome: 'desejos', url: 'desejos.php' },
-  { nome: 'estatisticas', url: 'estatisticas.php?de=tudo' },
-  { nome: 'hora', url: 'hora.php' },
-  { nome: 'acessorios', url: 'acessorios.php' },
-  { nome: 'passaporte-3', url: 'passaporte.php?id=3' },
-  { nome: 'passaporte-1', url: 'passaporte.php?id=1' },
-  { nome: 'galeria', url: 'galeria.php?posse=todos' },
-  { nome: 'acessorios-editar', url: 'acessorios.php?relogio=3&editar=2' },
-  { nome: 'desejo-novo', url: 'index.php?novo=1&posse=desejado' },
-  { nome: 'historico', url: 'historico.php?id=1' },
-  { nome: 'historico-4', url: 'historico.php?id=4' },
-  { nome: 'plano', url: 'plano.php' },
-  { nome: 'criterios', url: 'criterios.php' },
-  { nome: 'grupos', url: 'grupos.php' },
-  { nome: 'cadastros', url: 'cadastros.php' },
-  { nome: 'modos', url: 'modos.php' },
-  { nome: 'modos-editar', url: 'modos.php?editar=2' },
-  { nome: 'configuracao', url: 'configuracao.php' },
-  { nome: 'avisos', url: 'avisos.php' },
-  { nome: 'avisos-editar', url: 'avisos.php?editar=1&evento=1' },
-  { nome: 'documentos', url: 'documentos.php?relogio=1' },
-  { nome: 'execucoes', url: 'execucoes.php' },
-  { nome: 'usuarios', url: 'usuarios.php' },
-  { nome: 'ajuda', url: 'ajuda.php' },
-];
+// as páginas conferidas (testes/paginas.cjs: as mesmas da conferência dos textos fixos)
+const PAGINAS = require('./paginas.cjs');
 
 // roda dentro da página: devolve a lista de problemas
 function examinar(seletorRaiz) {

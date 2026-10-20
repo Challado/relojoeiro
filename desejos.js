@@ -38,7 +38,7 @@ api({recurso: "desejos"}).then(function (d) {
         return el("tr", {}, el("td", {}, nomeComFoto(x, h(modelo)))
           + el("td", {}, x.prioridade !== null ? h(x.prioridade) : "—")
           + el("td", {"class": "valor"}, x.preco_alvo !== null ? t("R$ ") + reais(x.preco_alvo) : "—")
-          + el("td", {}, x.tipo === "sem grupo" ? "—" : h(x.caminho))
+          + el("td", {}, x.no_id === null ? "—" : h(x.caminho))
           + el("td", {}, x.link !== null && /^https?:\/\//i.test(x.link) ? el("a", {"href": x.link, "target": "_blank", "rel": "noopener noreferrer", "class": "quebra"}, t("abrir a página")) : (x.link !== null ? h(x.link) : "—"))
           + el("td", {"class": "acoes-desejo"}, botaoColecao(x, t("Comprei"), t("Comprou o {1}? Ele entra na coleção, disponível para o rodízio, e a ficha dele abre para você preencher a compra.", {1: x.nome}))));
       }).join(""))));
@@ -52,7 +52,7 @@ api({recurso: "desejos"}).then(function (d) {
       + el("tbody", {}, d.fora.map(function (x) {
         return el("tr", {}, el("td", {}, nomeComFoto(x, ""))
           + el("td", {}, el("span", {"class": "estado estado-posse"}, h(x.posse_texto.toLowerCase())))
-          + el("td", {}, x.tipo === "sem grupo" ? "—" : h(x.caminho))
+          + el("td", {}, x.no_id === null ? "—" : h(x.caminho))
           + el("td", {"class": "acoes-desejo"}, botaoColecao(x, t("Voltar para a coleção"), t("Voltar o {1} para a coleção? Ele fica disponível para o rodízio de novo.", {1: x.nome}))));
       }).join(""))));
   }

@@ -761,7 +761,7 @@ function op_documentos($acao, $d)
         }
         $limite = documentos_limite();
         $aceita = $cat ? documento_familias_aceitas($cat["aceita"]) : [];
-        $nomes_fam = ["imagem" => "imagens", "video" => t("vídeos"), "audio" => t("áudios"), "pdf" => "PDF", "xml" => "XML"];
+        $nomes_fam = ["imagem" => t("imagens"), "video" => t("vídeos"), "audio" => t("áudios"), "pdf" => "PDF", "xml" => "XML"];
         $avisos = [];
         $copiados_banco = 0;
         if (count($erros) === 0) {

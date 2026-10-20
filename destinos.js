@@ -11,22 +11,22 @@ aoGravar = function (form, res, dados) {
 function camposWebhook(w, id) {
   var linhaCampo = function (n, v) {
     return el("tr", {}, el("td", {}, el("input", {"name": "campo_nome[]", "value": n, "placeholder": t("nome"), "aria-label": t("Nome do campo")}))
-      + el("td", {}, el("input", {"name": "campo_valor[]", "value": v, "placeholder": "{mensagem}", "aria-label": t("Valor do campo")})));
+      + el("td", {}, el("input", {"name": "campo_valor[]", "value": v, "placeholder": fixo("{mensagem}"), "aria-label": t("Valor do campo")})));
   };
   var linhaCab = function (c) {
-    return el("tr", {}, el("td", {}, el("input", {"name": "cabecalho_nome[]", "value": c ? c.nome : "", "placeholder": "Authorization", "aria-label": t("Nome do cabeçalho")}))
+    return el("tr", {}, el("td", {}, el("input", {"name": "cabecalho_nome[]", "value": c ? c.nome : "", "placeholder": fixo("Authorization"), "aria-label": t("Nome do cabeçalho")}))
       + el("td", {}, el("input", {"type": "password", "name": "cabecalho_valor[]", "value": "", "autocomplete": "off", "aria-label": t("Valor do cabeçalho"),
-        "placeholder": c && c.preenchido ? t("(guardado; vazio mantém)") : "Bearer ..."})));
+        "placeholder": c && c.preenchido ? t("(guardado; vazio mantém)") : fixo("Bearer ...")})));
   };
   return parCampo(t("Método"), el("select", {"name": "metodo"}, ["GET", "POST", "PUT"].map(function (m) { return el("option", {"value": m, "selected": w.metodo === m}, m); }).join("")))
-    + parCampo(t("Endereço"), el("input", {"type": "url", "name": "url", "value": w.url, "required": true, "placeholder": "https://api.telegram.org/bot.../sendMessage"}), "largo")
+    + parCampo(t("Endereço"), el("input", {"type": "url", "name": "url", "value": w.url, "required": true, "placeholder": fixo("https://api.telegram.org/bot.../sendMessage")}), "largo")
     + parCampo(t("A mensagem vai"), el("select", {"name": "formato"}, [["query", t("na URL (query)")], ["form", t("como formulário")], ["json", t("como JSON")]].map(function (f) {
       return el("option", {"value": f[0], "selected": w.formato === f[0]}, f[1]);
     }).join("")))
     + el("div", {"class": "sub-bloco"}, el("h4", {}, t("Campos")) + el("p", {"class": "nota"}, t("Cada valor pode usar {titulo} e {mensagem} (a mensagem já montada pelo modelo).")) + el("table", {"class": "compacta"}, el("tbody", {},
       w.campos.map(function (c) { return linhaCampo(c.nome, c.valor); }).join("") + linhaCampo("", "") + linhaCampo("", ""))))
     + el("div", {"class": "sub-bloco"}, el("label", {"for": "cj-" + id}, el("h4", {}, t("Corpo JSON (opcional, só no formato JSON)")))
-      + el("textarea", {"id": "cj-" + id, "name": "corpo_json", "rows": "3", "placeholder": "{\"chat_id\": \"123\", \"text\": \"{mensagem}\"}"}, h(w.corpo_json || ""))
+      + el("textarea", {"id": "cj-" + id, "name": "corpo_json", "rows": "3", "placeholder": fixo("{\"chat_id\": \"123\", \"text\": \"{mensagem}\"}")}, h(w.corpo_json || ""))
       + el("p", {"class": "nota"}, t("Vazio: os campos acima viram o objeto JSON. Os marcadores {titulo} e {mensagem} vão dentro das aspas.")))
     + el("div", {"class": "sub-bloco"}, el("h4", {}, t("Cabeçalhos")) + el("p", {"class": "nota"}, t("Guardados cifrados (podem ter um token); nunca voltam para a tela.")) + el("table", {"class": "compacta"}, el("tbody", {},
       w.cabecalhos.map(linhaCab).join("") + linhaCab(null))));
@@ -88,9 +88,9 @@ function carregarDestinos() {
     res += el("section", {"class": "cartao-config", "id": "novo"}, el("h2", {}, t("Novo destino"))
       + el("form", {"data-recurso": "destinos", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": "0"})
         + el("label", {}, t("Tipo {1}", {1: el("select", {"name": "tipo", "id": "novo-tipo"}, d.tipos.map(function (x) { return el("option", {"value": x.tipo}, h(x.nome)); }).join(""))}))
-        + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "required": true, "maxlength": "80", "placeholder": "Telegram"})}))
-        + el("label", {"data-sub": "webhook"}, t("Endereço do webhook {1}", {1: el("input", {"type": "url", "name": "url", "placeholder": "https://..."})}))
-        + el("label", {"data-sub": "email", "hidden": true}, t("Para {1}", {1: el("input", {"name": "para", "placeholder": "voce@exemplo.com"})}))
+        + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "required": true, "maxlength": "80", "placeholder": fixo("Telegram")})}))
+        + el("label", {"data-sub": "webhook"}, t("Endereço do webhook {1}", {1: el("input", {"type": "url", "name": "url", "placeholder": fixo("https://...")})}))
+        + el("label", {"data-sub": "email", "hidden": true}, t("Para {1}", {1: el("input", {"name": "para", "placeholder": t("voce@exemplo.com")})}))
         + el("div", {"class": "botoes"}, el("button", {}, t("Criar")))));
     document.getElementById("destinos").innerHTML = res;
   });

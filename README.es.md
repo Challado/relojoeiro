@@ -2148,7 +2148,7 @@ Las mejoras son bienvenidas, y el camino es siempre este repositorio:
    cualquier aviso (Warning, Notice, Deprecated) durante la vuelta. ¿Tocó las
    pantallas? Ejecute también la comprobación del diseño (`testes/paridade.sh --layout sqlite`): `0 problemas`.
 7. **Todo texto nuevo pasa por `t()`** (el `api.js` y el `textos/funcoes.php` tienen la función), con el portugués como clave
-   y los parámetros entre llaves: `t("Excluir {1}?", {1: nome})`, nunca `"Excluir " + nome + "?"`. Después, tradúzcalo en los
+   y los parámetros entre llaves: `t("Excluir {1}?", {1: nome})`, nunca `"Excluir " + nome + "?"`. Ningún texto escrito directamente en las pantallas ni en la API: GitHub lo comprueba de dos formas. La regla 11 de `testes/arquitetura.php` rechaza el texto entre comillas que va a la pantalla fuera de `t()` (lo que no se traduce a propósito, como la marca, va en `fixo("...")`), y `LINGUA=zh-CN testes/paridade.sh --textos sqlite` abre todas las pantallas con el sistema entero en chino y señala cualquier palabra en letra latina que no sea un dato de quien lo usa ni venga del diccionario. Después, tradúzcalo en los
    cinco archivos de `textos/` y ejecute `php testes/textos.php` (la prueba de paridad también lo ejecuta): tiene que terminar
    sin nada que falte. ¿Cambió el README? Sus traducciones llevan la marca de la versión que traducen (la primera línea de
    `textos/manual/<idioma>.md` y de `textos/readme/<idioma>.md`), y `php testes/textos.php` señala la que se quedó atrás:

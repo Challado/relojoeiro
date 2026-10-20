@@ -206,7 +206,7 @@ function abrirNoPainel(id) {
       if (!r.disponivel) {
         proxima = t("Indisponível para o rodízio. Marque como disponível no cadastro.");
       } else if (r.proxima !== null) {
-        var fica = r.proxima_ate === "só neste dia" ? "" : r.proxima_ate;
+        var fica = r.proxima_um_dia ? "" : r.proxima_ate;
         proxima = r.proxima === hoje ? t("É o relógio de hoje{1}.", {1: fica !== "" ? ", " + fica : ""})
           : t("Entra em {1} ({2}){3}.", {1: dataBr(r.proxima, true), 2: CURTO[new Date(instante(r.proxima)).getDay() || 7], 3: fica !== "" ? t(" e fica {1}", {1: fica}) : ""});
       } else if (r.escala_fim) {
@@ -230,7 +230,7 @@ function abrirNoPainel(id) {
             // o gasto que vale (em cima, em negrito) e os campos que ficaram fora da conta (o medido vale no lugar deles), apagados
             return el("tr", {"class": (cc.valor === null ? "vazio " : "") + (cc.vale ? "vale " : "") + (cc.usado === false ? "fora-da-conta" : "")}, el("td", {}, h(cc.nome) + (cc.detalhe ? el("small", {}, h(cc.detalhe)) : ""))
               + el("td", {"class": "valor"}, cc.valor === null ? "—" : num(cc.valor, 2) + (cc.unidade !== "" ? el("small", {}, h(cc.unidade)) : ""))
-              + el("td", {"class": "origem-celula"}, el("span", {"class": "origem origem-" + (cc.origem === "padrão" ? "padrao" : cc.origem)}, h(cc.origem))));
+              + el("td", {"class": "origem-celula"}, el("span", {"class": "origem origem-" + cc.origem}, h(cc.origem_texto))));
           }).join("")));
         blocos += quadro(t("Previsão"), r.previsao.linhas.length === 0 ? el("p", {"class": "nota"}, t("Informe a carga atual para o sistema começar a prever."))
           : el("ul", {"class": "linhas"}, r.previsao.linhas.map(function (l) { return el("li", {}, h(l)); }).join("")) + contaPrev);
@@ -245,7 +245,7 @@ function abrirNoPainel(id) {
         var motorDe = {colecao: t("a escolha da coleção, na Configuração"), relogio: t("a escolha deste relógio, no cadastro"), grupo: t("a escolha do grupo, no cadastro"), padrao: t("o padrão: nada escolhido")};
         var gasto = function (por, x) {
           var campos = (x.campos || []).map(function (c) {
-            return t("{1}: {2} ({3})", {1: h(c.nome), 2: c.valor !== null ? num(c.valor, 2) + (c.unidade !== "" ? " " + h(c.unidade) : "") : "—", 3: h(c.origem)});
+            return t("{1}: {2} ({3})", {1: h(c.nome), 2: c.valor !== null ? num(c.valor, 2) + (c.unidade !== "" ? " " + h(c.unidade) : "") : "—", 3: h(c.origem_texto)});
           }).join(" · ");
           return x.vale !== null ? el("strong", {}, pct(x.vale)) + (x.medido !== null && x.medido_dp !== null ? " " + el("span", {"class": "nota"}, t("± {1}", {1: num(x.medido_dp, 2)})) : "") + " " + por
             + el("small", {}, gsD.motor === "cadastro" ? (x.medido !== null ? t("do cadastro (o motor escolhido); o medido daria {1}", {1: pct(x.medido)}) : t("do cadastro (o motor escolhido)"))
@@ -535,14 +535,20 @@ function abrirNoPainel(id) {
             + el("table", {"class": "tabela-dados medicoes"}, el("thead", {}, el("tr", {}, el("th", {}, t("Quando")) + el("th", {}, t("Leituras")) + el("th", {}, t("Horas"))
               + el("th", {}, t("Gasto medido")) + el("th", {}, t("Na conta")) + el("th", {}, "")))
               + el("tbody", {}, r.medicoes.slice(0, 10).map(function (m) {
-                var nomeEstado = function (e) { return e === "uso" ? t("em uso") : (e === "repouso" ? t("em repouso") : "—"); };
                 // o conteúdo de cada célula num div.v: no quadro estreito a linha vira uma tabelinha (o nome da coluna numa casa, o
                 // valor na outra), e o valor precisa ser um bloco só
                 var td = function (c) { return el("td", {}, el("div", {"class": "v"}, c)); };
-                return el("tr", {}, td(dataBr(m.fim, true) + " " + horaBr(m.fim)) + td(num(m.de_valor, 1) + " → " + num(m.ate_valor, 1)
-                    + (m.marcacao_de !== null || m.marcacao_ate !== null ? el("small", {}, nomeEstado(m.marcacao_de) + " → " + nomeEstado(m.marcacao_ate)) : ""))
-                  + td(t("{1} h no pulso, {2} h fora", {1: num(m.horas_pulso, 1), 2: num(m.horas_guardado, 1)}))
-                  + td(t("{1}% por dia {2}", {1: num(m.taxa, 2), 2: m.medida === "uso" ? t("de uso") : t("fora do pulso")}))
+                // um par de valores numa tabelinha: o título de cada um em cima, o valor embaixo
+                var par = function (titulos, valores) {
+                  return el("table", {"class": "par"}, el("thead", {}, el("tr", {}, titulos.map(function (x) { return el("th", {}, x); }).join("")))
+                    + el("tbody", {}, el("tr", {}, valores.map(function (x) { return el("td", {}, x); }).join(""))));
+                };
+                var estado = function (e, falta) { return e === "uso" ? t("Em uso") : (e === "repouso" ? t("Em repouso") : falta); };
+                return el("tr", {}, td(dataBr(m.fim, true) + " " + horaBr(m.fim))
+                  // as leituras com a marcação de cada uma no título: em repouso → em uso
+                  + td(par([estado(m.marcacao_de, t("Antes")), estado(m.marcacao_ate, t("Depois"))], [num(m.de_valor, 1), num(m.ate_valor, 1)]))
+                  + td(par([t("No pulso"), t("Fora do pulso")], [t("{1} h", {1: num(m.horas_pulso, 1)}), t("{1} h", {1: num(m.horas_guardado, 1)})]))
+                  + td(par([m.medida === "uso" ? t("Em uso") : t("Fora do pulso")], [t("{1}% por dia", {1: num(m.taxa, 2)})]))
                   // na conta: sim; em parte (a leitura que não bate com as outras pesa menos, Huber); não (fora da janela, só histórico)
                   + td((!m.usada ? t("não (só histórico)") : (m.marcacoes_iguais === false ? t("não (leituras com marcações diferentes)") : motorG === "cadastro" ? t("não (só o cadastro)") : !m.na_media ? t("não (fora da janela)")
                       : (m.peso !== null && m.peso < 1 ? el("span", {"class": m.fora ? "em atrasado" : ""}, t("em parte: pesa {1}%", {1: Math.round(100 * m.peso)})) : t("sim"))))
@@ -560,7 +566,7 @@ function abrirNoPainel(id) {
         var res2 = "—";
         if (v !== null && v !== "") {
           if (c.tipo === "sim_nao") {
-            res2 = String(v) === "1" ? "sim" : t("não");
+            res2 = String(v) === "1" ? t("sim") : t("não");
           } else if (c.tipo === "data") {
             res2 = dataBr(v);
           } else if (c.tipo === "inteiro" || c.tipo === "decimal") {
@@ -612,7 +618,7 @@ function abrirNoPainel(id) {
               // o texto livre (a observação, uma lista) quebra a linha; número, data e sim/não ficam numa linha só
               var texto = c.valor !== null && c.valor !== "" && ["sim_nao", "data", "inteiro", "decimal"].indexOf(c.tipo) < 0;
               return el("tr", {"class": c.origem === "vazio" ? "vazio" : ""}, el("td", {}, h(c.nome)) + el("td", {"class": "valor" + (texto ? " texto" : "")}, valorCampo(c) + calculadoDoCampo(c.identificador))
-                + el("td", {}, el("span", {"class": "origem origem-" + (c.origem === "padrão" ? "padrao" : c.origem)}, h(c.origem))));
+                + el("td", {}, el("span", {"class": "origem origem-" + c.origem}, h(c.origem_texto))));
             }).join(""))))
           + el("div", {}, el("h3", {}, t("Calculado agora")) + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Fórmula"))
             + el("th", {}, t("Valor")) + el("th", {}, t("Versão")))) + el("tbody", {}, r.calculos.map(function (x) {

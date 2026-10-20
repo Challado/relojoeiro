@@ -60,7 +60,7 @@ function montarPlano() {
       linhas = "";
     }
     linhas += el("tr", {"class": (p.dia_semana >= 6 ? "fds" : "") + (p.hoje ? " de-hoje" : "")},
-      el("td", {"class": "dia"}, dataBr(p.data, true) + " " + el("small", {}, p.dia_semana_curto) + (p.hoje ? " " + el("small", {}, "hoje") : ""))
+      el("td", {"class": "dia"}, dataBr(p.data, true) + " " + el("small", {}, p.dia_semana_curto) + (p.hoje ? " " + el("small", {}, t("hoje")) : ""))
       + el("td", {}, celulaDoDia(p)) + el("td", {}, h(p.acao || ""))
       + el("td", {"class": "trocar"}, formTrocarDia(p, d.relogios, d.hoje)));
   });

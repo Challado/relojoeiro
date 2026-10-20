@@ -148,7 +148,7 @@ unset($x);
 
 // por dia da semana e por mês (as horas de todos), com a altura da barra comparada com a maior
 $nomes_dia = [1 => t("segunda"), 2 => t("terça"), 3 => t("quarta"), 4 => t("quinta"), 5 => t("sexta"), 6 => t("sábado"), 7 => t("domingo")];
-$meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+$meses = [t("jan"), t("fev"), t("mar"), t("abr"), t("mai"), t("jun"), t("jul"), t("ago"), t("set"), t("out"), t("nov"), t("dez")];
 $sem = [];
 foreach ($nomes_dia as $k => $nome) {
     $sem[$k] = ["dia" => $k, "nome" => $nome, "dias" => 0, "segundos" => 0, "dias_com_uso" => 0];
@@ -200,7 +200,7 @@ $distribuir = function ($titulo, $ident, $de_quem) use ($colecao, $seg) {
     $partes = [];
     foreach ($colecao as $r) {
         $k = $de_quem($r);
-        $k = $k === null || $k === "" ? "(sem)" : (string)$k;
+        $k = $k === null || $k === "" ? t("(sem)") : (string)$k;
         if (!isset($partes[$k])) {
             $partes[$k] = ["nome" => $k, "relogios" => 0, "segundos" => 0];
         }

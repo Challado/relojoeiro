@@ -46,7 +46,7 @@ api(filtro !== "" ? {recurso: "acessorios", relogio: filtro} : {recurso: "acesso
       + el("label", {}, t("Relógio {1}", {1: el("select", {"name": "relogio_id"}, el("option", {"value": "0", "selected": relForm === "0"}, t("— solto (serve a vários) —"))
         + d.relogios.map(function (r) { return el("option", {"value": r.id, "selected": String(r.id) === relForm}, h(r.nome)); }).join(""))}))
       + el("label", {}, t("Observação {1}", {1: el("textarea", {"name": "observacao", "maxlength": "1000"}, e && e.observacao !== null ? h(e.observacao) : "")}))
-      + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Cadastrar")) + (e ? " " + el("a", {"href": "acessorios.php" + (filtro !== "" ? "?relogio=" + encodeURIComponent(filtro) : "")}, "cancelar") : ""))));
+      + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Cadastrar")) + (e ? " " + el("a", {"href": "acessorios.php" + (filtro !== "" ? "?relogio=" + encodeURIComponent(filtro) : "")}, t("cancelar")) : ""))));
   document.getElementById("acessorios").innerHTML = res;
   if (e) {
     document.getElementById("form").scrollIntoView();

@@ -27,7 +27,7 @@ function segundos(ms) {
 }
 
 api({recurso: "cron", de: de, ate: ate, situacao: situacao, busca: busca, limite: por, pagina: pagina}).then(function (d) {
-  var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Execuções do cron")) + el("span", {"class": "nota"}, t("Última execução: {1}", {1: d.ultima !== "" ? dataBr(d.ultima) + " " + d.ultima.substr(11, 8) : "nunca"})));
+  var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Execuções do cron")) + el("span", {"class": "nota"}, t("Última execução: {1}", {1: d.ultima !== "" ? dataBr(d.ultima) + " " + d.ultima.substr(11, 8) : t("nunca")})));
   res += el("form", {"method": "get", "action": "execucoes.php", "class": "filtros-execucoes cartao-config"},
     el("label", {}, t("De {1}", {1: el("input", {"type": "date", "name": "de", "value": de})}))
     + el("label", {}, t("Até {1}", {1: el("input", {"type": "date", "name": "ate", "value": ate})}))
@@ -35,7 +35,7 @@ api({recurso: "cron", de: de, ate: ate, situacao: situacao, busca: busca, limite
     + el("label", {}, t("Texto no registro {1}", {1: el("input", {"name": "busca", "value": busca, "placeholder": t("agenda, FALHA, evento...")})}))
     + el("label", {}, t("Por página {1}", {1: el("select", {"name": "por"}, [25, 50, 100, 200].map(function (n) { return el("option", {"selected": por === n}, String(n)); }).join(""))}))
     + el("div", {"class": "botoes"}, el("button", {}, t("Filtrar")))
-    + el("div", {"class": "atalhos"}, el("a", {"href": link({de: diaAntes(0), ate: diaAntes(0), pagina: 1})}, "hoje") + " "
+    + el("div", {"class": "atalhos"}, el("a", {"href": link({de: diaAntes(0), ate: diaAntes(0), pagina: 1})}, t("hoje")) + " "
       + el("a", {"href": link({de: diaAntes(6), ate: diaAntes(0), pagina: 1})}, t("7 dias")) + " "
       + el("a", {"href": link({de: diaAntes(29), ate: diaAntes(0), pagina: 1})}, t("30 dias")) + " "
       + el("a", {"href": link({situacao: "erro", de: diaAntes(364), ate: diaAntes(0), pagina: 1})}, t("erros do último ano"))));
@@ -48,7 +48,7 @@ api({recurso: "cron", de: de, ate: ate, situacao: situacao, busca: busca, limite
     + el("tbody", {}, d.execucoes.map(function (x) {
       return el("tr", {"class": x.teve_erro ? "linha-erro" : ""}, el("td", {"class": "quando"}, dataBr(x.inicio) + "<br>" + el("strong", {}, x.inicio.substr(11, 8)))
         + el("td", {"class": "duracao"}, x.duracao_ms < 1000 ? t("{1} ms", {1: x.duracao_ms}) : segundos(x.duracao_ms))
-        + el("td", {}, x.teve_erro ? el("span", {"class": "estado estado-repouso"}, "erro") : (x.teve_atividade ? el("span", {"class": "estado estado-atividade"}, "atividade")
+        + el("td", {}, x.teve_erro ? el("span", {"class": "estado estado-repouso"}, t("erro")) : (x.teve_atividade ? el("span", {"class": "estado estado-atividade"}, t("atividade"))
           : el("span", {"class": "estado estado-indisponivel"}, t("sem atividade"))))
         + el("td", {}, x.registro !== "" ? el("pre", {}, h(x.registro)) : el("span", {"class": "nota"}, t("nada a fazer neste minuto"))));
     }).join("") + (d.execucoes.length === 0 ? el("tr", {}, el("td", {"colspan": "4"}, t("Nenhuma execução com esses filtros."))) : ""))));

@@ -149,7 +149,7 @@ function recarregarAvisos() {
     // os destinos das mensagens e as agendas têm as páginas deles: aqui, o resumo e o caminho
     var listaAlvos = function (lista, campo, vazio) {
       return lista.length > 0 ? el("ul", {"class": "lista-simples"}, lista.map(function (x) {
-        return el("li", {}, h(x.nome) + " " + el("span", {"class": "nota"}, "(" + h(x.tipo) + (x[campo] ? "" : ", " + t("desligado")) + ")"));
+        return el("li", {}, h(x.nome) + " " + el("span", {"class": "nota"}, t("({1})", {1: h(x.tipo_nome) + (x[campo] ? "" : t(", desligado"))})));
       }).join("")) : el("p", {"class": "nota"}, vazio);
     };
     var alertas = cartao(t("Para onde vão: destinos e agendas"), el("div", {"class": "campos"},

@@ -26,9 +26,11 @@ foreach (avisos_de_hoje() as $x) {
     $avisos_h[] = ["relogio_id" => (int)$x[0]["id"], "relogio" => $x[0]["nome"], "identificador" => $x[1]["identificador"], "nome" => $x[1]["nome"], "texto" => $x[1]["texto"],
         "estado" => $x[1]["estado"], "resolve" => $t ? ["identificador" => $t["identificador"], "nome" => $t["nome"], "formato" => $t["formato"], "unidade" => $t["unidade"],
             "acao" => $t["formato"] === "sessao" ? ($aberta_h ? "encerrar" : "iniciar") : "lancar",
+            // o botão: "Pôs no carregador"; aberta, "Tirou do carregador" (o "no" do nome vira "do": só em português, a língua do nome
+            // no cadastro de quem instalou em português; nos outros idiomas, "Terminou: <nome>")
             // a leitura que mede o gasto num relógio que vai ao pulso: a tela pergunta como ele estava (em uso ou em repouso)
             "estados" => $t["formato"] === "valor" && (int)$t["mede_gasto"] === 1 && isset(lancamento_tipos_do_relogio($x[0])["pulso"]),
-            "botao" => $t["formato"] === "sessao" ? ($aberta_h ? (preg_match("/^n(o|a|os|as)\\s/u", $minus) === 1 ? "Tirou d" . substr($minus, 1) : t("Terminou: {1}", [1 => $minus])) : t("Pôs {1}", [1 => $minus]))
+            "botao" => $t["formato"] === "sessao" ? ($aberta_h ? (lingua_atual() === "pt-BR" && preg_match("/^n(o|a|os|as)\\s/u", $minus) === 1 ? "Tirou d" . substr($minus, 1) : t("Terminou: {1}", [1 => $minus])) : t("Pôs {1}", [1 => $minus]))
                 : ($t["formato"] === "valor" ? t("Informar {1}", [1 => $minus]) : $t["nome"])] : null];
 }
 $fotos = [];

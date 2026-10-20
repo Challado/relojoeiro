@@ -260,7 +260,7 @@ function recarregarHoje() {
       + el("p", {"class": "acao", "id": "manual-recado", "hidden": true}, "")
       + el("div", {"id": "manual-dias"}, ""));
     porHtml(document.getElementById("bloco-modo"), el("details", {}, el("summary", {}, el("span", {"class": "rotulo"}, t("Modo de rodízio")) + " " + el("strong", {}, h(modo ? modo.nome : t("nenhum"))) + " "
-      + el("span", {"class": "nota"}, "· " + (modo ? h(modo.tipo_texto) + " · " : "") + (escala ? t("pela maior nota") : (modo && modo.tipo === "personalizado" ? t("pelo roteiro") : h(modo ? SELECOES[modo.selecao][0] : "")))) + " " + el("span", {"class": "editar"}, "editar")) + formModo + formManual + formSorteio + formApagarPeriodo(d.data) + formApagarTudo()));
+      + el("span", {"class": "nota"}, "· " + (modo ? h(modo.tipo_texto) + " · " : "") + (escala ? t("pela maior nota") : (modo && modo.tipo === "personalizado" ? t("pelo roteiro") : h(modo ? SELECOES[modo.selecao][0] : "")))) + " " + el("span", {"class": "editar"}, t("editar"))) + formModo + formManual + formSorteio + formApagarPeriodo(d.data) + formApagarTudo()));
     mostrarModo();
 
     // A tabela dos relógios: disponíveis primeiro (o de hoje, depois os com aviso), indisponíveis no fim; na tela, a ordem e os
@@ -394,7 +394,7 @@ function manualHtml(r) {
       }).join(""))
       + opcoesSortearDia(atual)
       + (dia.hoje ? "" : el("option", {"value": "livre", "selected": atual === "livre"}, t("Sem relógio (dia livre)")));
-    var agora = dia.livre ? el("span", {"class": "nota"}, t("dia livre")) : (dia.relogio !== null ? h(dia.relogio) + " " + el("small", {"class": "a-mao"}, dia.origem === "manual" ? t("à mão") : "sorteado") : el("span", {"class": "nota"}, "—"));
+    var agora = dia.livre ? el("span", {"class": "nota"}, t("dia livre")) : (dia.relogio !== null ? h(dia.relogio) + " " + el("small", {"class": "a-mao"}, dia.origem === "manual" ? t("à mão") : t("sorteado")) : el("span", {"class": "nota"}, "—"));
     return el("tr", {"class": dia.dia_semana >= 6 ? "fds" : ""}, el("td", {"data-rotulo": t("Dia")}, dataBr(dia.data, true) + " " + el("small", {}, dia.dia_semana_nome + (dia.hoje ? t(" · hoje") : "")))
       + el("td", {"data-rotulo": t("No plano agora")}, agora)
       + el("td", {"data-rotulo": t("Relógio do dia")}, el("select", {"data-dia": dia.data, "aria-label": t("Relógio de {1}", {1: dataBr(dia.data)})}, opcoes)));

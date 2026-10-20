@@ -1,5 +1,6 @@
 # Os testes a cada push no main (e quando pedido na aba Actions): o teste de paridade (testes/paridade.sh) nos bancos, que
-# confere também a documentação da API (o dicionário do cabeçalho e os campos explicados), e a conferência do layout das telas.
+# confere também a documentação da API (o dicionário do cabeçalho e os campos explicados), a conferência do layout das telas e
+# a dos textos fixos (nenhum texto na tela fora do dicionário: o sistema inteiro em chinês).
 # O resultado aparece na aba Actions do GitHub e no ✓ / ✗ ao lado de cada commit.
 name: Testes
 
@@ -118,3 +119,25 @@ jobs:
           path: /tmp/relojoeiro-paridade.*/layout/
           if-no-files-found: ignore
           retention-days: 7
+  textos-fixos:
+    name: Nenhum texto fixo (o sistema inteiro em chinês)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: sqlite3, curl, mbstring, fileinfo, dom, zlib, gd, zip
+          coverage: none
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - name: Playwright e o Chromium
+        run: |
+          npm install -g playwright@1
+          playwright install --with-deps chromium
+      # o roteiro inteiro em chinês e, depois, todas as telas: palavra em letra latina que não é dado nem vem do dicionário é
+      # texto escrito direto no código (testes/texto-fixo.cjs); a regra 11 da arquitetura confere o mesmo no código das telas
+      - name: Conferência dos textos fixos
+        run: LINGUA=zh-CN testes/paridade.sh --textos sqlite

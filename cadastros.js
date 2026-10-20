@@ -3,7 +3,7 @@
 // documento_categorias), o testar das fórmulas (recurso=calcular) e o dos totais (recurso=totais, expressao=). Os avisos ficam na página Avisos (avisos.js) e os modos de rodízio, na Modos de rodízio (modos.js).
 var ABAS = {campos: t("Campos"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), totais: t("Totais"), documentos: t("Categorias de documentos")};
 var RECURSO = {campos: "campos", lancamentos: "lancamento_tipos", formulas: "formulas", totais: "totais", documentos: "documento_categorias"};
-var FAMILIAS = {imagem: "imagens", video: t("vídeos"), audio: t("áudios"), pdf: t("PDF"), xml: t("XML")};
+var FAMILIAS = {imagem: t("imagens"), video: t("vídeos"), audio: t("áudios"), pdf: t("PDF"), xml: t("XML")};
 var q = new URLSearchParams(window.location.search);
 // os avisos dos relógios saíram daqui: moram na página Avisos, junto com os lembretes (o endereço antigo leva para lá)
 if (q.get("aba") === "avisos") {
@@ -79,7 +79,7 @@ function recarregarCadastros() {
           + el("label", {}, t("Opções (lista: uma por linha) {1}", {1: el("textarea", {"name": "opcoes"}, h(vazio(f.opcoes)))}))
           + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "so_desejado", "value": "0"}) + el("input", {"type": "checkbox", "name": "so_desejado", "value": "1", "checked": f.so_desejado === 1})
             + t(" só nos desejados (a lista de desejos: o preço-alvo, a prioridade)"))
-          + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + (e ? " " + el("a", {"href": "cadastros.php?aba=campos"}, "cancelar") : ""))));
+          + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + (e ? " " + el("a", {"href": "cadastros.php?aba=campos"}, t("cancelar")) : ""))));
     } else if (aba === "lancamentos") {
       var e = null;
       d.lancamento_tipos.forEach(function (item) { if (item.id === editar) { e = item; } });
@@ -133,7 +133,7 @@ function recarregarCadastros() {
         sec += teste.erros && teste.erros.length > 0 ? el("div", {"class": "erros-form"}, teste.erros.map(function (x) { return el("p", {}, h(x)); }).join(""))
           : el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Relógio")) + el("th", {"class": "num"}, t("Resultado")) + el("th", {}, t("As partes da conta"))))
             + el("tbody", {}, teste.resultados.map(function (item) {
-              return el("tr", {}, el("td", {}, h(item.relogio)) + el("td", {"class": "num"}, item.valor === null ? "vazio" : h(typeof item.valor === "number" ? num(item.valor, 4) : item.valor))
+              return el("tr", {}, el("td", {}, h(item.relogio)) + el("td", {"class": "num"}, item.valor === null ? t("vazio") : h(typeof item.valor === "number" ? num(item.valor, 4) : item.valor))
                 + el("td", {"class": "nota formula"}, h(Object.keys(item.partes || {}).map(function (k) {
                   var v = item.partes[k];
                   return k + " = " + (v === null ? "vazio" : (typeof v === "number" ? num(v, 3) : v));
@@ -165,7 +165,7 @@ function recarregarCadastros() {
             + Object.keys(FAMILIAS).map(function (k) {
               return el("label", {"class": "check"}, el("input", {"type": "checkbox", "name": "aceita[]", "value": k, "checked": f.aceita.indexOf(k) >= 0}) + " " + h(FAMILIAS[k]));
             }).join(" "))
-          + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + (e ? " " + el("a", {"href": "cadastros.php?aba=documentos"}, "cancelar") : ""))));
+          + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + (e ? " " + el("a", {"href": "cadastros.php?aba=documentos"}, t("cancelar")) : ""))));
     }
     document.getElementById("cadastros").innerHTML = res;
   });

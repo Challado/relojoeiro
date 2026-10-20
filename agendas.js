@@ -28,7 +28,7 @@ function quadroAgenda(x, d) {
       + (x.google.conta_servico ? el("p", {"class": "nota"}, t("Compartilhe a agenda com {1}, com permissão para fazer alterações nos eventos.", {1: el("strong", {"class": "quebra"}, h(x.google.conta_servico))}))
         : x.google.caminho ? el("p", {"class": "nota"}, t("A chave é lida de {1} (o usuário do PHP precisa ler o arquivo).", {1: el("code", {}, h(x.google.caminho))})) : "");
   } else if (x.tipo === "caldav") {
-    campos = parCampo(t("Endereço do calendário"), el("input", {"type": "url", "name": "url", "value": x.caldav.url, "required": true, "placeholder": "https://nuvem.exemplo.com/remote.php/dav/calendars/voce/relogios/"}), "largo")
+    campos = parCampo(t("Endereço do calendário"), el("input", {"type": "url", "name": "url", "value": x.caldav.url, "required": true, "placeholder": t("https://nuvem.exemplo.com/remote.php/dav/calendars/voce/relogios/")}), "largo")
       + parCampo(t("Usuário"), el("input", {"name": "usuario", "value": x.caldav.usuario, "required": true, "autocomplete": "off"}))
       + parCampo(t("Senha"), el("input", {"type": "password", "name": "senha", "autocomplete": "new-password", "placeholder": x.caldav.senha_preenchida ? t("(guardada; vazio mantém)") : ""}))
       + el("p", {"class": "nota"}, t("Nextcloud: Calendário › ⋯ › Copiar o link CalDAV. iCloud: o endereço do calendário em caldav.icloud.com e uma senha de app (appleid.apple.com › Senhas de app). Fastmail: caldav.fastmail.com, com uma senha de app."));

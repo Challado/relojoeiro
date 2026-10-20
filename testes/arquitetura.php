@@ -21,6 +21,13 @@
 //   9. As migrações: todo migracao_v*.sql está registrado no $MIGRACOES do lib.php, e todo registrado existe.
 //  10. O repositório: nada pessoal entra no git (config.php, bancos, chaves, .env), e todo arquivo do repositório sai
 //      pelo recurso=codigo (está na lista da reconstrução, ou nos que ficam de fora de propósito).
+//  11. Nenhum texto fixo nas telas: todo texto que um .js põe na tela passa pelo t() (o dicionário vem da API, no idioma de
+//      quem usa). Um texto entre aspas, fora do t()/tk(), é recusado onde ele vira texto na tela: o conteúdo do el()
+//      (el("a", {...}, "cancelar")), um lado de um "?:" cujo outro lado é texto (t(), el(), h()), os atributos title,
+//      placeholder, aria-label e alt, o textContent/innerHTML e o alert/confirm/prompt. E nenhum .js compara com um texto
+//      (=== "sem grupo"): o texto muda com o idioma; compara-se o código que a API manda. O que não se traduz de propósito
+//      (a marca, "24H") vai no fixo("..."). A conferência nas telas (testes/texto-fixo.cjs) pega o resto, com o sistema
+//      inteiro em outro idioma.
 //
 //   php testes/arquitetura.php        confere tudo (sai com 1 se alguma regra falhar)
 
@@ -385,10 +392,115 @@ foreach ($repo as $f) {
     }
 }
 
+// ---------- 11. nenhum texto fixo nas telas ----------
+// os textos entre aspas de um .js, fora dos comentários e das expressões regulares: [início, fim, o texto]
+function literais_js($codigo)
+{
+    $res = [];
+    $n = strlen($codigo);
+    $antes = "";
+    for ($i = 0; $i < $n; $i++) {
+        $c = $codigo[$i];
+        if ($c === "/" && ($codigo[$i + 1] ?? "") === "/") {
+            $f = strpos($codigo, "\n", $i);
+            $i = $f === false ? $n : $f;
+            continue;
+        }
+        if ($c === "/" && ($codigo[$i + 1] ?? "") === "*") {
+            $f = strpos($codigo, "*/", $i + 2);
+            $i = $f === false ? $n : $f + 1;
+            continue;
+        }
+        if ($c === "/" && preg_match('/(^|[(,=:\[!&|?{};+]|return)\s*$/', $antes) === 1) {
+            // uma expressão regular: até a barra que a fecha, fora de um [...]
+            $classe = false;
+            for ($i++; $i < $n && ($codigo[$i] !== "/" || $classe); $i++) {
+                if ($codigo[$i] === "\\") {
+                    $i++;
+                } elseif ($codigo[$i] === "[") {
+                    $classe = true;
+                } elseif ($codigo[$i] === "]") {
+                    $classe = false;
+                }
+            }
+            $antes = "x";
+            continue;
+        }
+        if ($c === '"' || $c === "'" || $c === "`") {
+            $j = $i + 1;
+            while ($j < $n && $codigo[$j] !== $c) {
+                $j += $codigo[$j] === "\\" ? 2 : 1;
+            }
+            $res[] = [$i, $j + 1, substr($codigo, $i + 1, $j - $i - 1)];
+            $i = $j;
+            $antes = "x";
+            continue;
+        }
+        if (!ctype_space($c)) {
+            $antes = substr($antes . $c, -12);
+        }
+    }
+    return $res;
+}
+foreach ($js as $f) {
+    $codigo = (string)file_get_contents($f);
+    foreach (literais_js($codigo) as [$ini, $fim, $txt]) {
+        // com os escapes resolvidos (" " é um espaço, não letras)
+        $txt = preg_replace_callback('/\\\\u([0-9a-fA-F]{4})/', function ($m) { return mb_chr(hexdec($m[1]), "UTF-8"); }, $txt);
+        if (preg_match('/\p{L}/u', $txt) !== 1) {
+            continue;
+        }
+        $antes = substr($codigo, max(0, $ini - 300), $ini - max(0, $ini - 300));
+        $depois = substr($codigo, $fim, 200);
+        $linha = substr_count($codigo, "\n", 0, $ini) + 1;
+        // o primeiro argumento do t(), do tk() e do fixo(): é o próprio dicionário (ou o que não se traduz)
+        if (preg_match('/(?<![\w$.])(t|tk|fixo)\(\s*$/', $antes) === 1) {
+            continue;
+        }
+        // o conteúdo de um <code>: é código (um nome de variável, um comando), igual em todo idioma
+        if (preg_match('/el\("code",\s*\{[^{}]*\},\s*$/', $antes) === 1) {
+            continue;
+        }
+        $motivo = null;
+        if (preg_match('/\}\s*,\s*$/', $antes) === 1 && preg_match('/^\s*[)+]/', $depois) === 1) {
+            $motivo = "vira o conteúdo de um el()";
+        } elseif ((preg_match('/\}\s*,\s*[\w$.!()\[\]\s=<>&|]*\?\s*$/', $antes) === 1 && preg_match('/^\s*:/', $depois) === 1)
+            || (preg_match('/\}\s*,\s*[\w$.!()\[\]\s=<>&|]*\?\s*"(?:[^"\\\\]|\\\\.)*"\s*:\s*$/', $antes) === 1 && preg_match('/^\s*[)+]/', $depois) === 1)) {
+            // el("td", {}, x ? "com" : "sem")
+            $motivo = "vira o conteúdo de um el() (num ?:)";
+        } elseif (preg_match('/(?<![\w$.])h\(\s*$/', $antes) === 1) {
+            $motivo = "vira texto na tela (h())";
+        } elseif (preg_match('/"(title|placeholder|aria-label|alt)"\s*:\s*$/', $antes) === 1) {
+            $motivo = "vira um atributo que se lê (title, placeholder, aria-label, alt)";
+        } elseif (preg_match('/(textContent|innerText|innerHTML|\.title|\.placeholder)\s*\+?=\s*$|(?<![\w$.])(alert|confirm|prompt)\(\s*$/', $antes) === 1) {
+            $motivo = "vira texto na tela";
+        } elseif (preg_match('/\?\s*(?:t\("(?:[^"\\\\]|\\\\.)*"(?:\s*,\s*\{[^{}]*\})?\)|h\([\w$.]*\))\s*:\s*$/', $antes) === 1) {
+            // ? t("...") : "texto"   ou   ? h(x) : "texto"
+            $motivo = "é o outro lado de um ?: que mostra texto";
+        } elseif (preg_match('/\?\s*$/', $antes) === 1 && preg_match('/^\s*:\s*(t|h)\(/', $depois) === 1) {
+            $motivo = "é o outro lado de um ?: que mostra texto";
+        } elseif (preg_match('/[{,]\s*\d+\s*:\s*(?:[^,{}"]*\?\s*(?:"(?:[^"\\\\]|\\\\.)*"\s*:\s*)?)?$/', $antes) === 1) {
+            // {1: "texto"} ou {2: n === 1 ? "registro" : "registros"}: os parâmetros do t() vão para a tela
+            $motivo = "vira um parâmetro do t()";
+        } elseif (preg_match('/[{,]\s*[A-Za-z_$][\w$]*\s*:\s*$/', $antes) === 1 && preg_match('/^\s*[,}]/', $depois) === 1
+            && preg_match('/^\s*(?:var|const|let)\s+[\w$]+\s*=\s*\{\s*(?:[A-Za-z_$][\w$]*\s*:\s*(?:t\("(?:[^"\\\\]|\\\\.)*"\)|"(?:[^"\\\\]|\\\\.)*")\s*,?\s*)+\};?\s*$/', $linha_txt = explode("\n", $codigo)[$linha - 1], $m_obj) === 1
+            && strpos($m_obj[0], ": t(") !== false) {
+            // {imagem: "imagens", video: t("vídeos")}: uma lista de nomes em que os outros são do dicionário
+            $motivo = "é um nome numa lista em que os outros passam pelo t()";
+        } elseif ((preg_match('/[!=]==?\s*$/', $antes) === 1 || preg_match('/^\s*[!=]==?/', $depois) === 1)
+            && preg_match('/[^\x00-\x7F]|\p{L} \p{L}/u', $txt) === 1) {
+            $motivo = "compara com um texto, que muda com o idioma (compare com o código que a API manda)";
+        }
+        if ($motivo !== null) {
+            falha("11", $f . ":" . $linha . ": \"" . mb_substr($txt, 0, 60) . "\" fora do t(): " . $motivo);
+        }
+    }
+}
+
 if ($problemas !== []) {
     echo implode("\n", $problemas), "\n";
     echo "A arquitetura não bate (" . count($problemas) . " problemas).\n";
     exit(1);
 }
-echo "A arquitetura confere (" . count($php) . " .php, " . count($js) . " .js, " . count($paginas) . " páginas, 10 regras).\n";
+echo "A arquitetura confere (" . count($php) . " .php, " . count($js) . " .js, " . count($paginas) . " páginas, 11 regras).\n";
 exit(0);
