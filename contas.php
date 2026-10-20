@@ -310,12 +310,30 @@ function arvore_copiar($raiz, $dono_id, $nome)
                 linha_copiar("campo_opcao", $x, ["campo_id" => $para]);
             }
         }
-        // os valores dos calibres, com os campos da cópia
+        // os valores dos calibres, com os campos da cópia; e os documentos deles, com o arquivo copiado para a pasta do calibre
+        // novo (a cópia no banco, se pedida, o cron faz)
+        $pasta = documentos_pasta();
         foreach ($m["calibre"] as $de => $para) {
             foreach (linhas("SELECT * FROM calibre_valor WHERE calibre_id = ?", [$de]) as $x) {
                 if (isset($m["campo"][(int)$x["campo_id"]])) {
                     linha_copiar("calibre_valor", $x, ["calibre_id" => $para, "campo_id" => $m["campo"][(int)$x["campo_id"]]]);
                 }
+            }
+            foreach (linhas("SELECT * FROM documento WHERE calibre_id = ?", [$de]) as $x) {
+                if ($pasta === null || !isset($m["documento_categoria"][(int)$x["categoria_id"]]) || !is_file($pasta . "/" . $x["arquivo"])) {
+                    continue;
+                }
+                $arquivo = documento_novo_arquivo($pasta, "c" . $para, $x["nome"]);
+                $mini = null;
+                if (!@copy($pasta . "/" . $x["arquivo"], $pasta . "/" . $arquivo)) {
+                    continue;
+                }
+                if ($x["miniatura"] !== null && $x["miniatura"] !== "" && @copy($pasta . "/" . $x["miniatura"], $pasta . "/" . $arquivo . ".mini.jpg")) {
+                    $mini = $arquivo . ".mini.jpg";
+                }
+                unset($x["no_banco"]);
+                linha_copiar("documento", $x, ["calibre_id" => $para, "categoria_id" => $m["documento_categoria"][(int)$x["categoria_id"]], "arquivo" => $arquivo, "miniatura" => $mini,
+                    "criado" => date("Y-m-d H:i:s")]);
             }
         }
         foreach ($m["documento_categoria"] as $de => $para) {
@@ -955,8 +973,9 @@ function op_colecoes($acao, $d)
             $msg = t("Árvore renomeada para {1}.", [1 => $nome]);
         } else {
             $rel = relogios_das_colecoes(array_map("intval", array_column(sem_escopo(function () use ($ar) { return linhas("SELECT id FROM colecao WHERE no_id = ?", [(int)$ar["id"]]); }), "id")));
+            $cal = calibres_das_arvores([(int)$ar["id"]]);
             sem_escopo(function () use ($ar) { sql("DELETE FROM no WHERE id = ?", [(int)$ar["id"]]); });
-            $n = relogios_apagar_arquivos($rel);
+            $n = relogios_apagar_arquivos($rel) + calibres_apagar_arquivos($cal);
             $msg = t("Árvore {1} excluída, com as coleções que a usavam{2}.", [1 => $ar["nome"], 2 => $n > 0 ? t(" ({1} arquivos)", [1 => $n]) : ""]);
         }
     }

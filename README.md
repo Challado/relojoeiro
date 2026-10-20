@@ -605,6 +605,19 @@ calibre, o link do manual e as recomendações. Excluir um calibre deixa os rel�
 Nas fórmulas, `CALIBRE("NH35")` dá 1 se o relógio tem esse calibre. Pela API: `recurso=calibres` (a lista, com os valores e os
 relógios de cada um), `recurso=calibres` com `acao=salvar` ou `excluir`, e `recurso=relogio`, `acao=salvar`, com `calibre_id`.
 
+Os **documentos do calibre** (o manual técnico em PDF, a ficha de serviço, as fotos do movimento) ficam no próprio calibre:
+na aba Calibres, **Documentos (N)** abre a página **Documentos** do calibre (ele também aparece na lista **Relógio** da
+página, no grupo **Calibres**), com a categoria **Manual técnico** além das outras. Eles valem para todos os relógios com
+o calibre: aparecem na linha do calibre dos **Dados do relógio** e na página Documentos de cada um (*"Do calibre NH35: …"*).
+Excluir o calibre apaga os documentos dele, com os arquivos.
+
+Quais campos o formulário do calibre mostra é uma escolha: **só os do movimento** (o padrão) ou **todos os campos do
+cadastro**, na lista **Campos no formulário**, em cima do formulário, ou na **Configuração** (*Formulário do calibre*). Os
+do movimento são os marcados na aba **Campos** (a caixa *do movimento*): já vêm marcados a reserva, as cargas, a marcha
+esperada, o limite do desvio, a corda pela coroa, a autonomia, os decaimentos, a revisão e a vida da pilha. Um campo que o
+calibre já define aparece sempre, para poder tirar. Pela API: `recurso=documentos` com `calibre=` (e `calibre_id` no
+`enviar`), `recurso=config` com `calibre_campos` e `recurso=campos` com `calibre`.
+
 ## Várias pessoas: contas, coleções e acesso
 
 O sistema é de **várias pessoas**, cada uma com a **conta** dela, e cada conta com **as suas coleções**. Uma coleção tem os

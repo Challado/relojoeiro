@@ -586,6 +586,27 @@ function origem_valor($rid, $nome, $usado)
     return ($p[$nome] ?? "") !== "" ? "informado" : (($c[$nome] ?? "") !== "" ? "calibre" : ($usado === null || $usado === "" ? "vazio" : "padrao"));
 }
 
+// Os campos do formulário do calibre (a Configuração calibre_campos): "movimento" (o padrão: só os campos marcados como do
+// movimento, campo.calibre) ou "todos" (todos os do cadastro, menos os da lista de desejos)
+function calibre_campos()
+{
+    return cfg("calibre_campos") === "todos" ? "todos" : "movimento";
+}
+
+// Os identificadores dos campos que o formulário de um calibre mostra, na ordem do cadastro: os da Configuração e, com só
+// os do movimento, também os que o calibre já define (para poder tirar)
+function calibre_campos_no_formulario($valores = [])
+{
+    $todos = calibre_campos() === "todos";
+    $res = [];
+    foreach (campos_todos() as $ident => $c) {
+        if ((int)($c["so_desejado"] ?? 0) !== 1 && ($todos || (int)($c["calibre"] ?? 0) === 1 || ($valores[$ident] ?? "") !== "")) {
+            $res[] = $ident;
+        }
+    }
+    return $res;
+}
+
 // Os calibres da árvore, por nome, cada um com os valores que define e os relógios da coleção que apontam para ele
 function calibres_todos()
 {
@@ -593,9 +614,14 @@ function calibres_todos()
     foreach (linhas("SELECT rc.calibre_id, r.id, r.nome FROM relogio_calibre rc JOIN relogio r ON r.id = rc.relogio_id ORDER BY r.nome, r.id") as $x) {
         $rels[(int)$x["calibre_id"]][] = ["id" => (int)$x["id"], "nome" => $x["nome"]];
     }
-    return array_map(function ($c) use ($rels) {
+    $docs = [];
+    foreach (linhas("SELECT calibre_id, COUNT(*) AS n FROM documento WHERE calibre_id IS NOT NULL GROUP BY calibre_id") as $x) {
+        $docs[(int)$x["calibre_id"]] = (int)$x["n"];
+    }
+    return array_map(function ($c) use ($rels, $docs) {
+        $v = valores_do_calibre((int)$c["id"]);
         return ["id" => (int)$c["id"], "nome" => $c["nome"], "fabricante" => $c["fabricante"], "link" => $c["link"], "observacao" => $c["observacao"],
-            "valores" => (object)valores_do_calibre((int)$c["id"]), "relogios" => $rels[(int)$c["id"]] ?? []];
+            "valores" => (object)$v, "relogios" => $rels[(int)$c["id"]] ?? [], "documentos" => $docs[(int)$c["id"]] ?? 0, "campos_no_formulario" => calibre_campos_no_formulario($v)];
     }, linhas("SELECT * FROM calibre ORDER BY nome, id"));
 }
 
@@ -718,6 +744,7 @@ $MIGRACOES = [
     "v31" => ["migracao_v31.sql", tk("os totais: os da tabela dos relógios (o rodapé, embaixo de cada coluna) e os da página de totais deixam de ser fixos e viram expressões do motor de fórmulas sobre os relógios mostrados (CONTA, SOMA, MEDIA, AGRUPADO, FAIXAS...), cadastradas na aba Totais dos Cadastros; os prontos entram em cada árvore"), "total", "migracao_v31_dados"],
     "v32" => ["migracao_v32.sql", tk("a precisão: o desvio da hora (quanto o relógio está adiantado ou atrasado, lido contra a hora certa, com a posição em que ele ficou) e o acerto da hora; a marcha em segundos por dia, o gráfico, as funções MARCHA, MARCHA_DP, MARCHA_N, MARCHA_ULTIMA e DESVIO_AGORA, e os avisos Acertar a hora e Marcha fora do esperado; os tipos, campos, fórmulas e avisos entram em cada árvore"), "lancamento.posicao", "migracao_v32_dados"],
     "v33" => ["migracao_v33.sql", tk("os calibres: o movimento (NH35, ST2130, B620...) como um cadastro da árvore, com fabricante, o link do manual técnico, as recomendações e os valores dos campos que ele define; cada relógio aponta para um e herda dele o que não tem (o valor do relógio, senão o do calibre, senão o padrão do campo); a aba Calibres dos Cadastros, a função CALIBRE e recurso=calibres"), "calibre"],
+    "v34" => ["migracao_v34.sql", tk("os documentos dos calibres (o manual técnico, a ficha de serviço, as fotos do movimento: na página Documentos do calibre, e em todos os relógios com ele), a categoria Manual técnico, e os campos do movimento (campo.calibre: os que o formulário do calibre mostra, com a Configuração calibre_campos em só os do movimento, o padrão)"), "campo.calibre", "migracao_v34_dados"],
 ];
 
 // O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
@@ -806,6 +833,44 @@ function migracao_v32_dados($nova = false)
                     sql("INSERT INTO aviso (identificador, nome, expressao, antecedencia_dias, texto, ativo, no_id, escala, simula_valor, simula_horas, agenda, condicao, resolve_tipo_id, na_hora)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [$a["identificador"], $tr($a["nome"]), $a["expressao"], $a["antecedencia_dias"], $tr($a["texto"]), (int)$a["ativo"],
                         $grupo, $a["escala"], $a["simula_valor"], $a["simula_horas"], $a["agenda"], $a["condicao"], $resolve === null ? null : (int)$resolve, (int)$a["na_hora"]]);
+                }
+            }
+        }
+    });
+}
+
+// O passo em PHP da v34: em cada árvore, os campos do modelo.json marcados com calibre (os do movimento) ganham a marca, e
+// a categoria de documento Manual técnico entra onde ainda não existe (no idioma da coleção)
+function migracao_v34_dados($nova = false)
+{
+    if ($nova) {
+        return;
+    }
+    sem_escopo(function () {
+        $m = modelo_ler();
+        $do_movimento = array_values(array_map(function ($c) { return $c["identificador"]; }, array_filter($m["campos"], function ($c) { return (int)($c["calibre"] ?? 0) === 1; })));
+        $categorias = array_values(array_filter($m["categorias"], function ($c) { return $c["identificador"] === "manual_tecnico"; }));
+        foreach (linhas("SELECT id FROM no WHERE pai_id IS NULL ORDER BY id") as $raiz) {
+            $arvore = [(int)$raiz["id"]];
+            $nivel = $arvore;
+            while (count($nivel) > 0) {
+                $nivel = array_map("intval", array_column(linhas("SELECT id FROM no WHERE pai_id IN (" . implode(", ", $nivel) . ")"), "id"));
+                $arvore = array_merge($arvore, $nivel);
+            }
+            $em = " AND no_id IN (" . implode(", ", $arvore) . ")";
+            if (count($do_movimento) > 0) {
+                sql("UPDATE campo SET calibre = 1 WHERE identificador IN (" . implode(", ", array_fill(0, count($do_movimento), "?")) . ")" . $em, $do_movimento);
+            }
+            $lingua = lingua_valida((string)valor("SELECT valor FROM config WHERE chave = 'idioma' AND colecao_id IN (SELECT id FROM colecao WHERE no_id = ?) ORDER BY colecao_id", [(int)$raiz["id"]])) ?? "pt-BR";
+            $tr = modelo_tradutor($lingua);
+            foreach ($categorias as $c) {
+                if ((int)valor("SELECT COUNT(*) FROM documento_categoria WHERE identificador = ?" . $em, [$c["identificador"]]) === 0) {
+                    $ordem = (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM documento_categoria WHERE no_id IN (" . implode(", ", $arvore) . ")");
+                    sql("INSERT INTO documento_categoria (identificador, nome, ordem, no_id) VALUES (?, ?, ?, ?)", [$c["identificador"], $tr($c["nome"]), $ordem, (int)$raiz["id"]]);
+                    $cid = ultimo_id();
+                    foreach ($c["aceita"] as $f) {
+                        sql("INSERT INTO documento_categoria_aceita (categoria_id, familia) VALUES (?, ?)", [$cid, $f]);
+                    }
                 }
             }
         }
@@ -4375,9 +4440,9 @@ function documento_categoria_gravar_aceita($id, $familias)
 }
 
 // Um nome novo de arquivo dentro da pasta (r<relógio>/<aleatório>), com a subpasta criada
-function documento_novo_arquivo($pasta, $rid, $nome)
+function documento_novo_arquivo($pasta, $sub, $nome)
 {
-    $sub = "r" . (int)$rid;
+    $sub = preg_match("/^[rc]\\d+$/", (string)$sub) === 1 ? (string)$sub : "r" . (int)$sub;
     if (!is_dir($pasta . "/" . $sub)) {
         @mkdir($pasta . "/" . $sub, 0750, true);
     }
@@ -4397,7 +4462,8 @@ function documento_inteiro($d, $caminho)
 function documento_info($d, $com_nfe = true)
 {
     $familia = documento_familia($d["tipo"], $d["nome"]);
-    $res = ["id" => (int)$d["id"], "relogio_id" => (int)$d["relogio_id"], "categoria_id" => (int)$d["categoria_id"], "titulo" => $d["titulo"],
+    $res = ["id" => (int)$d["id"], "relogio_id" => $d["relogio_id"] === null ? null : (int)$d["relogio_id"], "calibre_id" => ($d["calibre_id"] ?? null) === null ? null : (int)$d["calibre_id"],
+        "categoria_id" => (int)$d["categoria_id"], "titulo" => $d["titulo"],
         "data" => $d["data"] === null ? null : substr((string)$d["data"], 0, 10), "descricao" => $d["descricao"], "nome" => $d["nome"], "tipo" => $d["tipo"],
         "familia" => $familia, "tamanho" => (int)$d["tamanho"], "miniatura" => $d["miniatura"] !== null && $d["miniatura"] !== "", "criado" => $d["criado"],
         "url" => "api.php?recurso=documento&id=" . (int)$d["id"], "no_disco" => documentos_pasta() !== null && documento_inteiro($d, documentos_pasta() . "/" . $d["arquivo"]),
@@ -4411,8 +4477,15 @@ function documento_info($d, $com_nfe = true)
 // Os documentos de um relógio (null: de todos), da categoria e da data
 function documentos_do_relogio($rid = null)
 {
-    return linhas("SELECT d.* FROM documento d JOIN documento_categoria c ON c.id = d.categoria_id" . ($rid !== null ? " WHERE d.relogio_id = ?" : "")
+    return linhas("SELECT d.* FROM documento d JOIN documento_categoria c ON c.id = d.categoria_id" . ($rid !== null ? " WHERE d.relogio_id = ?" : " WHERE d.relogio_id IS NOT NULL")
         . " ORDER BY d.relogio_id, c.ordem, c.id, COALESCE(d.data, '9999-12-31'), d.criado, d.id", $rid !== null ? [(int)$rid] : []);
+}
+
+// Os documentos de um calibre (o manual técnico, a ficha de serviço...), na ordem das categorias e da data
+function documentos_do_calibre($cid)
+{
+    return linhas("SELECT d.* FROM documento d JOIN documento_categoria c ON c.id = d.categoria_id WHERE d.calibre_id = ?
+        ORDER BY c.ordem, c.id, COALESCE(d.data, '9999-12-31'), d.criado, d.id", [(int)$cid]);
 }
 
 // O resumo de uma NF-e (o XML da nota fiscal eletrônica): o emitente, o número, a série, a data, o valor, a chave e os
@@ -4500,7 +4573,7 @@ function documento_enviar($d, $caminho, $baixar, $miniatura = false)
 }
 
 // As categorias dos documentos, na ordem, com quantos documentos cada uma tem (de um relógio; null: de todos)
-function documento_categorias_lista($rid = null)
+function documento_categorias_lista($rid = null, $cid = null)
 {
     $aceita = [];
     foreach (linhas("SELECT categoria_id, familia FROM documento_categoria_aceita ORDER BY categoria_id, familia") as $x) {
@@ -4509,8 +4582,8 @@ function documento_categorias_lista($rid = null)
     return array_map(function ($c) use ($aceita) {
         return ["id" => (int)$c["id"], "identificador" => $c["identificador"], "nome" => $c["nome"], "aceita" => $aceita[(int)$c["id"]] ?? [],
             "ordem" => (int)$c["ordem"], "documentos" => (int)$c["documentos"]];
-    }, linhas("SELECT c.*, (SELECT COUNT(*) FROM documento d WHERE d.categoria_id = c.id" . ($rid !== null ? " AND d.relogio_id = ?" : "") . ") AS documentos
-        FROM documento_categoria c ORDER BY c.ordem, c.id", $rid !== null ? [(int)$rid] : []));
+    }, linhas("SELECT c.*, (SELECT COUNT(*) FROM documento d WHERE d.categoria_id = c.id" . ($cid !== null ? " AND d.calibre_id = ?" : ($rid !== null ? " AND d.relogio_id = ?" : " AND d.relogio_id IS NOT NULL"))
+        . ") AS documentos FROM documento_categoria c ORDER BY c.ordem, c.id", $cid !== null ? [(int)$cid] : ($rid !== null ? [(int)$rid] : [])));
 }
 
 // Apaga os arquivos de um documento (o arquivo e a miniatura) da pasta
@@ -4754,7 +4827,7 @@ function documento_copia_por($d)
     if ($sistema !== null) {
         return $sistema ? "sistema" : null;
     }
-    if (relogio_copia_banco((int)$d["relogio_id"])) {
+    if (($d["relogio_id"] ?? null) !== null && relogio_copia_banco((int)$d["relogio_id"])) {
         return "relogio";
     }
     return (int)($d["copia_banco"] ?? 0) === 1 ? "arquivo" : null;
@@ -4928,9 +5001,9 @@ function documentos_manutencao($orcamento, $diario = false)
     if ($pasta === null) {
         return $log;
     }
-    $orfaos = (int)valor("SELECT COUNT(*) FROM documento WHERE relogio_id NOT IN (SELECT id FROM relogio)");
+    $orfaos = (int)valor("SELECT COUNT(*) FROM documento WHERE relogio_id IS NOT NULL AND relogio_id NOT IN (SELECT id FROM relogio)");
     if ($orfaos > 0) {
-        sql("DELETE FROM documento WHERE relogio_id NOT IN (SELECT id FROM relogio)");
+        sql("DELETE FROM documento WHERE relogio_id IS NOT NULL AND relogio_id NOT IN (SELECT id FROM relogio)");
         $log[] = t("documentos: {1}{2}", [1 => $orfaos, 2 => $orfaos === 1 ? t(" documento de relógio que não existe mais apagado") : t(" documentos de relógios que não existem mais apagados")]);
     }
     $restaurados = [];
@@ -4983,18 +5056,21 @@ function documentos_manutencao($orcamento, $diario = false)
     if ($diario && $perdidos > 0) {
         $log[] = t("aviso: {1}{2} na pasta e sem a cópia no banco (perdidos: exclua-os na página Documentos)", [1 => $perdidos, 2 => $perdidos === 1 ? t(" documento sem o arquivo inteiro") : t(" documentos sem o arquivo inteiro")]);
     }
-    // a pasta: as dos relógios que não existem mais, e os arquivos de nenhum documento
+    // a pasta: as dos relógios (r<id>) e dos calibres (c<id>) que não existem mais, e os arquivos de nenhum documento
     $relogios = [];
     foreach (linhas("SELECT id FROM relogio") as $r) {
-        $relogios[(int)$r["id"]] = true;
+        $relogios["r" . (int)$r["id"]] = true;
+    }
+    foreach (linhas("SELECT id FROM calibre") as $r) {
+        $relogios["c" . (int)$r["id"]] = true;
     }
     $pastas_apagadas = [];
     $soltos = 0;
     foreach (scandir($pasta) ?: [] as $x) {
-        if (preg_match("/^r(\\d+)$/", $x, $m) !== 1 || !is_dir($pasta . "/" . $x)) {
+        if (preg_match("/^[rc]\\d+$/", $x) !== 1 || !is_dir($pasta . "/" . $x)) {
             continue;
         }
-        if (!isset($relogios[(int)$m[1]])) {
+        if (!isset($relogios[$x])) {
             $n = apagar_pasta($pasta . "/" . $x);
             $pastas_apagadas[] = $x . " (" . $n . ($n === 1 ? " arquivo)" : " arquivos)");
             continue;

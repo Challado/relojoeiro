@@ -625,6 +625,19 @@ says how many). In formulas, `CALIBRE("NH35")` gives 1 if the watch has that cal
 list, with the values and the watches of each one), `recurso=calibres` with `acao=salvar` or `excluir`, and `recurso=relogio`,
 `acao=salvar`, with `calibre_id`.
 
+The **caliber's documents** (the technical manual in PDF, the service sheet, photos of the movement) live in the caliber
+itself: in the Calibers tab, **Documents (N)** opens the caliber's **Documents** page (it also shows in the page's **Watch**
+list, in the **Calibers** group), with the **Technical manual** category besides the others. They apply to every watch with
+the caliber: they show in the caliber line of **Watch data** and in each watch's Documents page (*"From caliber NH35: …"*).
+Deleting the caliber deletes its documents, with the files.
+
+Which fields the caliber form shows is a choice: **only the movement ones** (the default) or **all the definition fields**,
+in the **Fields in the form** list above the form, or in **Settings** (*Caliber form*). The movement ones are those checked
+in the **Fields** tab (the *movement* box): the reserve, the charges, the expected rate, the deviation limit, crown winding,
+autonomy, the decay rates, the service and the battery life come checked. A field the caliber already defines always shows,
+so it can be removed. Through the API: `recurso=documentos` with `calibre=` (and `calibre_id` in `enviar`),
+`recurso=config` with `calibre_campos` and `recurso=campos` with `calibre`.
+
 ## Several people: accounts, collections and access
 
 The system belongs to **several people**, each with their own **account**, and each account with **its own collections**. A

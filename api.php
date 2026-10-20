@@ -99,13 +99,15 @@
  *                            Ex.: curl -u lucas:senha -G "http://servidor/relojoeiro/api.php" --data-urlencode recurso=calcular --data-urlencode "expressao=energia * 2" -d relogio=10,12
  *   recurso=foto relogio=3   a imagem (não é JSON)
  *                            Ex.: curl -u lucas:senha -o foto.jpg "http://servidor/relojoeiro/api.php?recurso=foto&relogio=10"
- *   recurso=documentos       [relogio=<id>; sem ele, de todos] os documentos (o manual, a nota fiscal, fotos, vídeos...):
- *                            {"relogio": {"id", "nome", "copia_banco"} ou null, "pasta_ok", "copia_sistema", "pasta_erro", "limite" (bytes;
- *                            null: sem limite),
+ *   recurso=documentos       [relogio=<id>; sem ele, de todos; ou calibre=<id>: os do calibre, que valem para todos os relógios
+ *                            com ele] os documentos (o manual, a nota fiscal, fotos, vídeos, o manual técnico do calibre...):
+ *                            {"relogio": {"id", "nome", "copia_banco"} ou null, "calibre": {"id", "nome", "fabricante", "relogios"}
+ *                            ou null, "pasta_ok", "copia_sistema", "pasta_erro", "limite" (bytes; null: sem limite),
  *                            "categorias": [{"id", "identificador", "nome", "aceita", "ordem", "documentos"}], "relogios": [{"id",
- *                            "nome", "documentos"}], "documentos": [{"id", "relogio_id", "categoria_id", "titulo", "data",
- *                            "descricao", "nome", "tipo", "familia", "tamanho", "miniatura", "criado", "url", "no_disco", "no_banco",
- *                            "copia_banco", "copia_por", "nfe"}]}
+ *                            "nome", "documentos"}], "calibres": [{"id", "nome", "documentos"}], "documentos": [{"id", "relogio_id",
+ *                            "calibre_id", "categoria_id", "titulo", "data", "descricao", "nome", "tipo", "familia", "tamanho",
+ *                            "miniatura", "criado", "url", "no_disco", "no_banco", "copia_banco", "copia_por", "nfe"}], "do_calibre"
+ *                            (com relogio: o calibre dele com os documentos dele, {"id", "nome", "documentos"}; null sem)}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=documentos&relogio=10"
  *   recurso=documento id=7   o arquivo de um documento (não é JSON). Imagens, vídeos, áudios, PDF e texto vêm para mostrar;
  *                            o resto (inclusive XML, HTML e SVG), para baixar. baixar=1: sempre para baixar. mini=1: a
@@ -444,7 +446,8 @@
  *                            Ex. excluir: curl -u lucas:senha -d recurso=arvore -d acao=excluir -d id=5 http://servidor/relojoeiro/api.php
  *                            Ex. relogios: curl -u lucas:senha -d recurso=arvore -d acao=relogios -d "grupo[13]=1" -d "grupo[4]=8" http://servidor/relojoeiro/api.php
  *   recurso=campos            novo, alterar (id): identificador, nome, tipo (inteiro, decimal, sim_nao, data, lista, texto),
- *                             unidade, opcoes (lista: uma por linha), padrao, no_id (0 = todos); excluir (id); ordem (id, direcao)
+ *                             unidade, opcoes (lista: uma por linha), padrao, no_id (0 = todos), so_desejado, calibre (1: do
+ *                             movimento, aparece no formulário do calibre); excluir (id); ordem (id, direcao)
  *                            Ex. novo: curl -u lucas:senha -d recurso=campos -d acao=novo -d identificador=resistencia_agua -d "nome=Resistência à água" -d tipo=inteiro -d unidade=m -d no_id=0 http://servidor/relojoeiro/api.php
  *                            Ex. alterar: curl -u lucas:senha -d recurso=campos -d acao=alterar -d id=21 -d "nome=Resistência (m)" http://servidor/relojoeiro/api.php
  *                            Ex. ordem: curl -u lucas:senha -d recurso=campos -d acao=ordem -d id=21 -d direcao=sobe http://servidor/relojoeiro/api.php
@@ -476,7 +479,8 @@
  *                            Ex. foto: curl -u lucas:senha -d recurso=relogio -d acao=foto -d id=10 --data-urlencode foto_base64@foto.b64 http://servidor/relojoeiro/api.php
  *                            Ex. remover_foto: curl -u lucas:senha -d recurso=relogio -d acao=remover_foto -d id=10 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=relogio -d acao=excluir -d id=15 -d confirmar=1 http://servidor/relojoeiro/api.php
- *   recurso=documentos        enviar (relogio_id, categoria_id, titulo, data AAAA-MM-DD, descricao, copia_banco (1: pede a cópia
+ *   recurso=documentos        enviar (relogio_id, ou calibre_id: o documento do calibre, que vale para todos os relógios com
+ *                             ele; categoria_id, titulo, data AAAA-MM-DD, descricao, copia_banco (1: pede a cópia
  *                             destes arquivos no banco) e o arquivo: arquivos[] como upload, vários de uma vez, ou
  *                             arquivo_base64 com arquivo_nome; a miniatura de uma foto, opcional: miniatura (upload) ou
  *                             miniatura_base64; título vazio: o nome do arquivo), alterar (id: categoria_id, titulo, data,
@@ -604,7 +608,8 @@
  *                             366: o "Mostrar até", quantos dias os Próximos dias da página Hoje e o dia a dia da página Plano
  *                             mostram por página; padrão 7 e 31); idioma (o da coleção); max_sem_uso (0 a 365); previsao_limite (0 a
  *                             100); medicao_janela_dias (1 a 3650: a média do gasto medido usa as medições destes últimos dias);
- *                             encostado_dias; url_sistema (do sistema inteiro: só o master); só o que vier), evento_salvar (evento_id
+ *                             encostado_dias; calibre_campos (movimento ou todos: os campos do formulário do calibre); url_sistema
+ *                             (do sistema inteiro: só o master); só o que vier), evento_salvar (evento_id
  *                             ou id: 0 cria; nome, ativo, repeticao, hora, data_inicio, dias_semana, dia_mes, intervalo_dias,
  *                             relogio_id; o evento novo já vai para todos os destinos), evento_excluir (evento_id ou id, confirmar=1)
  *                            Ex. salvar: curl -u lucas:senha -d recurso=config -d acao=salvar -d horario_manha=06:30 -d carga_limiar=25 http://servidor/relojoeiro/api.php
@@ -718,6 +723,12 @@
  *     calibres[].relogios[]          um relógio
  *     calibres[].relogios[].id       o número do relógio
  *     calibres[].relogios[].nome     o nome do relógio
+ *     calibres[].documentos          quantos documentos o calibre tem (a página Documentos do calibre)
+ *     calibres[].campos_no_formulario
+ *                                    os campos que o formulário deste calibre mostra, pelo identificador, na ordem do cadastro: os da
+ *                                    Configuração (calibre_campos) e, com só os do movimento, também os que ele já define
+ *     calibres[].campos_no_formulario[]
+ *                                    o identificador de um campo
  *     campos[]                       os campos do cadastro dos relógios (cada um vale para o grupo dele e tudo abaixo)
  *     campos[].id                    o número do campo
  *     campos[].identificador         o nome do campo nas fórmulas e nos critérios
@@ -770,6 +781,8 @@
  *                                    grande por cima da página); vazio: lado
  *     config.destaque_hoje           o destaque no alto da página Hoje: dia (o relógio do dia, o do plano) ou pulso (o relógio no pulso
  *                                    agora; sem nenhum no pulso, o do dia); vazio: dia
+ *     config.calibre_campos          os campos do formulário do calibre (Cadastros › Calibres): movimento (só os campos marcados como do
+ *                                    movimento, e os que o calibre já define) ou todos; vazio: movimento
  *     config.relojinho_modo          o reloginho da barra e da aba: hora (cada hora do dia tem o seu modelo), aleatorio (um sorteado a cada
  *                                    hora, podendo repetir) ou sem_repeticao (os 24 embaralhados, cada um uma vez por dia); vazio: hora
  *     config.proximos_por_pagina     o "Mostrar até" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)
@@ -1357,6 +1370,8 @@
  *                                    marca do relógio) ou arquivo (a marca do próprio arquivo); null: ninguém
  *     relogios[].documentos[].relogio_id
  *                                    o relógio dele
+ *     relogios[].documentos[].calibre_id
+ *                                    null (os documentos dos calibres saem em recurso=documentos, calibre=)
  *     relogios[].documentos[].tamanho
  *                                    o tamanho do arquivo, em bytes (número inteiro)
  *     relogios[].documentos[].tipo   o tipo do arquivo (MIME): image/jpeg, video/mp4, application/pdf, application/xml...
@@ -1814,6 +1829,18 @@
  *     relogio.calibre.fabricante     o fabricante; null: não informado
  *     relogio.calibre.link           o link do manual técnico; null: sem
  *     relogio.calibre.observacao     as recomendações; null: sem
+ *     relogio.calibre.documentos     os documentos do calibre (o manual técnico...), na ordem das categorias
+ *     relogio.calibre.documentos[]   um documento: {id, titulo, categoria, familia, url}
+ *     relogio.calibre.documentos[].id
+ *                                    o número do documento
+ *     relogio.calibre.documentos[].titulo
+ *                                    o título
+ *     relogio.calibre.documentos[].categoria
+ *                                    o nome da categoria
+ *     relogio.calibre.documentos[].familia
+ *                                    imagem, video, audio, pdf, xml ou outro
+ *     relogio.calibre.documentos[].url
+ *                                    o endereço do arquivo (recurso=documento)
  *     relogio.posse                  a situação na coleção: colecao, desejado, emprestado, vendido ou arquivado (fora da coleção,
  *                                    disponivel é sempre falso)
  *     relogio.posse_texto            a mesma por extenso ("Na coleção", "Desejado"...)
@@ -2290,6 +2317,8 @@
  *                                    grande por cima da página); vazio: lado
  *     config.destaque_hoje           o destaque no alto da página Hoje: dia (o relógio do dia, o do plano) ou pulso (o relógio no pulso
  *                                    agora; sem nenhum no pulso, o do dia); vazio: dia
+ *     config.calibre_campos          os campos do formulário do calibre (Cadastros › Calibres): movimento (só os campos marcados como do
+ *                                    movimento, e os que o calibre já define) ou todos; vazio: movimento
  *     config.relojinho_modo          o reloginho da barra e da aba: hora (cada hora do dia tem o seu modelo), aleatorio (um sorteado a cada
  *                                    hora, podendo repetir) ou sem_repeticao (os 24 embaralhados, cada um uma vez por dia); vazio: hora
  *     config.proximos_por_pagina     o "Mostrar até" dos Próximos dias da página Hoje: quantos dias por página (1 a 366; vazio: 7)
@@ -2417,6 +2446,8 @@
  *     campos[].ordem                 a posição do campo no cadastro
  *     campos[].padrao                o valor usado quando o relógio não tem o campo preenchido (texto; null: nenhum)
  *     campos[].so_desejado           1: o campo vale só nos relógios desejados (a lista de desejos); 0: em todos (do grupo)
+ *     campos[].calibre               1: o campo é do movimento (aparece no formulário do calibre, com a Configuração em só os do
+ *                                    movimento); 0: não
  *     campos[].tipo                  inteiro, decimal, sim_nao, data, lista ou texto
  *     campos[].unidade               a unidade (texto; vazio: nenhuma)
  *     formatos_de_lancamento.<formato>
@@ -3034,6 +3065,12 @@
  *     calibres[].relogios[]          um relógio
  *     calibres[].relogios[].id       o número do relógio
  *     calibres[].relogios[].nome     o nome do relógio
+ *     calibres[].documentos          quantos documentos o calibre tem (a página Documentos do calibre)
+ *     calibres[].campos_no_formulario
+ *                                    os campos que o formulário deste calibre mostra, pelo identificador, na ordem do cadastro: os da
+ *                                    Configuração (calibre_campos) e, com só os do movimento, também os que ele já define
+ *     calibres[].campos_no_formulario[]
+ *                                    o identificador de um campo
  *     campos                         os campos do cadastro que um calibre pode definir (os da lista de desejos ficam de fora), na ordem do
  *                                    cadastro
  *     campos[]                       um campo
@@ -3045,6 +3082,10 @@
  *     campos[].padrao                o padrão do campo; null: sem
  *     campos[].opcoes                as opções de um campo de lista, uma por linha; null nos outros
  *     campos[].grupo                 o grupo em que o campo vale, por extenso; null: todos os relógios
+ *     campos[].movimento             verdadeiro: o campo é do movimento (a marca da aba Campos, campo.calibre)
+ *     campos_mostrar                 o que a Configuração pede no formulário: movimento (só os campos do movimento) ou todos
+ *     campos_no_formulario           os campos do formulário de um calibre novo, pelo identificador, na ordem do cadastro
+ *     campos_no_formulario[]         o identificador de um campo
  *   recurso=estatisticas
  *     de                             o começo do período (texto AAAA-MM-DD)
  *     ate                            o fim do período (texto AAAA-MM-DD; no máximo hoje)
@@ -3826,6 +3867,25 @@
  *     volta                          a página para onde ele foi mandado (302), ou null
  *   recurso=documentos
  *     relogio                        o relógio pedido: {id, nome, copia_banco}; null: os documentos de todos
+ *     calibre                        o calibre pedido (calibre=): {id, nome, fabricante, relogios}; null: sem
+ *     calibre.id                     o número do calibre
+ *     calibre.nome                   o nome do calibre
+ *     calibre.fabricante             o fabricante; null: não informado
+ *     calibre.relogios               os relógios da coleção com este calibre, por nome
+ *     calibre.relogios[]             um relógio: {id, nome}
+ *     calibre.relogios[].id          o número do relógio
+ *     calibre.relogios[].nome        o nome do relógio
+ *     calibres                       os calibres da árvore, pelo nome (para escolher os documentos de um)
+ *     calibres[]                     um calibre: {id, nome, documentos}
+ *     calibres[].id                  o número do calibre
+ *     calibres[].nome                o nome do calibre
+ *     calibres[].documentos          quantos documentos ele tem
+ *     do_calibre                     com relogio: o calibre dele e os documentos do calibre, que valem para ele: {id, nome, documentos
+ *                                    (como em documentos)}; null: o relógio não tem calibre
+ *     do_calibre.id                  o número do calibre
+ *     do_calibre.nome                o nome do calibre
+ *     do_calibre.documentos          os documentos do calibre, na ordem das categorias
+ *     do_calibre.documentos[]        um documento, com os mesmos campos de documentos[]
  *     relogio.id                     o número do relógio
  *     relogio.nome                   o nome do relógio
  *     relogio.copia_banco            verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da
@@ -3868,6 +3928,7 @@
  *     documentos[].copia_por         quem pede a cópia no banco: sistema (a Configuração da coleção, documentos_copia = todos), relogio (a
  *                                    marca do relógio) ou arquivo (a marca do próprio arquivo); null: ninguém
  *     documentos[].relogio_id        o relógio dele
+ *     documentos[].calibre_id        o calibre dele (os documentos do calibre); null nos de relógio
  *     documentos[].tamanho           o tamanho do arquivo, em bytes (número inteiro)
  *     documentos[].tipo              o tipo do arquivo (MIME): image/jpeg, video/mp4, application/pdf, application/xml...
  *     documentos[].titulo            o título

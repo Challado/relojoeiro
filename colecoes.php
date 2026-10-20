@@ -268,8 +268,8 @@ function arvore_criar($dono_id, $nome, $lingua, $com_modelo)
             return $ids[$a ?? "raiz"];
         };
         foreach ($m["campos"] as $c) {
-            sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, ordem, so_desejado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                [$c["identificador"], $tr($c["nome"]), $c["tipo"], $c["unidade"], $c["padrao"], $grupo($c["grupo"]), (int)$c["ordem"], (int)$c["so_desejado"]]);
+            sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, ordem, so_desejado, calibre) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [$c["identificador"], $tr($c["nome"]), $c["tipo"], $c["unidade"], $c["padrao"], $grupo($c["grupo"]), (int)$c["ordem"], (int)$c["so_desejado"], (int)($c["calibre"] ?? 0)]);
             $cid = ultimo_id();
             foreach (array_values($c["opcoes"] ?? []) as $i => $o) {
                 sql("INSERT INTO campo_opcao (campo_id, ordem, valor) VALUES (?, ?, ?)", [$cid, $i + 1, $tr($o)]);
@@ -774,6 +774,33 @@ function relogios_apagar_arquivos($ids)
     return $n;
 }
 
+// As pastas dos documentos de calibres que saíram (c<id>)
+function calibres_apagar_arquivos($ids)
+{
+    $pasta = documentos_pasta();
+    $n = 0;
+    if ($pasta === null) {
+        return 0;
+    }
+    foreach ($ids as $id) {
+        if (is_dir($pasta . "/c" . (int)$id)) {
+            $n += apagar_pasta($pasta . "/c" . (int)$id);
+        }
+    }
+    return $n;
+}
+
+// Os calibres das árvores (pelas raízes) de um dono, ou de uma árvore (sem escopo)
+function calibres_das_arvores($raizes)
+{
+    if (count($raizes) === 0) {
+        return [];
+    }
+    return array_map("intval", array_column(sem_escopo(function () use ($raizes) {
+        return linhas("SELECT id FROM calibre WHERE no_id IN (" . implode(", ", array_map("intval", $raizes)) . ")");
+    }), "id"));
+}
+
 // Os relógios de um conjunto de coleções (sem escopo)
 function relogios_das_colecoes($colecoes)
 {
@@ -790,8 +817,9 @@ function usuario_excluir($uid)
 {
     $cols = array_map("intval", array_column(sem_escopo(function () use ($uid) { return linhas("SELECT id FROM colecao WHERE dono_id = ?", [(int)$uid]); }), "id"));
     $rel = relogios_das_colecoes($cols);
+    $cal = calibres_das_arvores(array_column(sem_escopo(function () use ($uid) { return linhas("SELECT id FROM no WHERE pai_id IS NULL AND dono_id = ?", [(int)$uid]); }), "id"));
     sem_escopo(function () use ($uid) { sql("DELETE FROM usuario WHERE id = ?", [(int)$uid]); });
-    return relogios_apagar_arquivos($rel);
+    return relogios_apagar_arquivos($rel) + calibres_apagar_arquivos($cal);
 }
 
 // Exclui uma coleção com tudo o que é dela (a árvore fica: é do dono, e pode servir a outras coleções)
@@ -967,6 +995,7 @@ function impacto_exclusao($tabela, $ids)
         $vistos = [];
         $fila = [[$tabela, array_map("intval", (array)$ids)]];
         $rel = $tabela === "relogio" ? array_map("intval", (array)$ids) : [];
+        $cal = $tabela === "calibre" ? array_map("intval", (array)$ids) : [];
         $cols = $tabela === "colecao" ? array_map("intval", (array)$ids) : [];
         while (count($fila) > 0) {
             [$t, $lista] = array_shift($fila);
@@ -995,6 +1024,8 @@ function impacto_exclusao($tabela, $ids)
                         $fila[] = [$filha, $novos];
                         if ($filha === "relogio") {
                             $rel = array_merge($rel, $novos);
+                        } elseif ($filha === "calibre") {
+                            $cal = array_merge($cal, $novos);
                         } elseif ($filha === "colecao") {
                             $cols = array_merge($cols, $novos);
                         }
@@ -1012,8 +1043,9 @@ function impacto_exclusao($tabela, $ids)
             $cols = array_merge($cols, array_map("intval", array_column(linhas("SELECT DISTINCT colecao_id FROM relogio WHERE id IN (" . implode(", ", $rel) . ")"), "colecao_id")));
         }
         $nomes_c = count($cols) > 0 ? array_column(linhas("SELECT nome FROM colecao WHERE id IN (" . implode(", ", array_unique($cols)) . ") ORDER BY nome"), "nome") : [];
-        // os arquivos que saem do disco: os dos relógios que saem, ou os documentos mesmos
-        $docs_ = $tabela === "documento" ? "id IN (" . implode(", ", array_map("intval", (array)$ids)) . ")" : (count($rel) > 0 ? "relogio_id IN (" . implode(", ", $rel) . ")" : null);
+        // os arquivos que saem do disco: os dos relógios e dos calibres que saem, ou os documentos mesmos
+        $donos_ = array_merge(count($rel) > 0 ? ["relogio_id IN (" . implode(", ", $rel) . ")"] : [], count($cal) > 0 ? ["calibre_id IN (" . implode(", ", $cal) . ")"] : []);
+        $docs_ = $tabela === "documento" ? "id IN (" . implode(", ", array_map("intval", (array)$ids)) . ")" : (count($donos_) > 0 ? implode(" OR ", $donos_) : null);
         $arq = $docs_ !== null ? linha("SELECT COUNT(*) AS n, COALESCE(SUM(tamanho), 0) AS b FROM documento WHERE " . $docs_) : ["n" => 0, "b" => 0];
         $itens = [];
         foreach ($conta as $t => $n) {

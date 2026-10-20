@@ -204,7 +204,8 @@ function op_arvore($acao, $d)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Campos. Ações: novo e alterar (id; identificador, nome, tipo, unidade, opcoes (lista: uma por linha), padrao,
-// no_id), excluir (id), ordem (id, direcao). Não se exclui nem se renomeia um campo que uma fórmula usa; não se muda o
+// no_id, so_desejado, calibre: 1 se o campo é do movimento, o formulário do calibre o mostra), excluir (id), ordem (id,
+// direcao). Não se exclui nem se renomeia um campo que uma fórmula usa; não se muda o
 // tipo se algum valor já gravado não servir no tipo novo.
 // ---------------------------------------------------------------------------------------------------------------------
 function op_campos($acao, $d)
@@ -228,6 +229,8 @@ function op_campos($acao, $d)
         $no = array_key_exists("no_id", $d) ? no_do_pedido($d["no_id"]) : ($atual ? ($atual["no_id"] === null ? null : (int)$atual["no_id"]) : null);
         // só na lista de desejos: o campo aparece só nos relógios desejados (o preço-alvo, a prioridade)
         $so_desejado = array_key_exists("so_desejado", $d) ? ((string)$d["so_desejado"] === "1" ? 1 : 0) : (int)($atual["so_desejado"] ?? 0);
+        // do movimento: o campo aparece no formulário do calibre (com a Configuração calibre_campos em só os do movimento)
+        $do_calibre = array_key_exists("calibre", $d) ? ((string)$d["calibre"] === "1" ? 1 : 0) : (int)($atual["calibre"] ?? 0);
         if (!identificador_valido($c["identificador"])) {
             $erros[] = t("Identificador: minúsculas, números e _, começando por letra, até 40 (é o nome nas fórmulas).");
         } elseif ((int)valor("SELECT COUNT(*) FROM campo WHERE identificador = ? AND id <> ?", [$c["identificador"], $id]) > 0 || isset(formulas_todas()[$c["identificador"]])) {
@@ -258,7 +261,8 @@ function op_campos($acao, $d)
         // tipo novo: os valores já gravados têm de servir nele
         if (count($erros) === 0 && $atual && ($c["tipo"] !== $atual["tipo"] || $c["opcoes"] !== (string)$atual["opcoes"])) {
             $nao_servem = [];
-            foreach (linhas("SELECT r.nome, v.valor FROM campo_valor v JOIN relogio r ON r.id = v.relogio_id WHERE v.campo_id = ?", [$id]) as $v) {
+            foreach (array_merge(linhas("SELECT r.nome, v.valor FROM campo_valor v JOIN relogio r ON r.id = v.relogio_id WHERE v.campo_id = ?", [$id]),
+                linhas("SELECT c.nome, v.valor FROM calibre_valor v JOIN calibre c ON c.id = v.calibre_id WHERE v.campo_id = ?", [$id])) as $v) {
                 if (valor_para_campo($c, $v["valor"])[1] !== "") {
                     $nao_servem[] = $v["nome"] . " (" . $v["valor"] . ")";
                 }
@@ -268,14 +272,14 @@ function op_campos($acao, $d)
             }
         }
         if (count($erros) === 0) {
-            $dados = [$c["identificador"], $c["nome"], $c["tipo"], $c["unidade"], $c["padrao"] !== "" ? $c["padrao"] : null, no_gravar($no), $so_desejado];
+            $dados = [$c["identificador"], $c["nome"], $c["tipo"], $c["unidade"], $c["padrao"] !== "" ? $c["padrao"] : null, no_gravar($no), $so_desejado, $do_calibre];
             if ($acao === "novo") {
-                sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, so_desejado, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, so_desejado, calibre, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     array_merge($dados, [(int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM campo")]));
                 $id = ultimo_id();
                 $msg = t("Campo {1} criado, para {2}. Nas fórmulas: {3}.", [1 => $c["nome"], 2 => no_caminho($no), 3 => $c["identificador"]]);
             } else {
-                sql("UPDATE campo SET identificador = ?, nome = ?, tipo = ?, unidade = ?, padrao = ?, no_id = ?, so_desejado = ? WHERE id = ?", array_merge($dados, [$id]));
+                sql("UPDATE campo SET identificador = ?, nome = ?, tipo = ?, unidade = ?, padrao = ?, no_id = ?, so_desejado = ?, calibre = ? WHERE id = ?", array_merge($dados, [$id]));
                 $msg = t("Campo {1} salvo.", [1 => $c["nome"]]);
             }
             // as opções da lista (só no tipo lista; nos outros, nenhuma)
@@ -489,7 +493,7 @@ function op_totais($acao, $d)
 // Os calibres (a aba Calibres dos Cadastros; da árvore, presos à raiz dela). Ações: salvar (id: 0 cria; nome, fabricante,
 // link: o endereço do manual técnico, http:// ou https://; observacao: as recomendações; valores: {identificador: valor}
 // dos campos do cadastro que o calibre define, vazio tira; só muda o que vier), excluir (id: os relógios que apontam para
-// ele ficam sem calibre)
+// ele ficam sem calibre; os documentos dele saem, com os arquivos)
 // ---------------------------------------------------------------------------------------------------------------------
 function op_calibres($acao, $d)
 {
@@ -560,6 +564,7 @@ function op_calibres($acao, $d)
     } elseif ($acao === "excluir") {
         $n = (int)valor("SELECT COUNT(*) FROM relogio_calibre WHERE calibre_id = ?", [$id]);
         sql("DELETE FROM calibre WHERE id = ?", [$id]);
+        calibres_apagar_arquivos([$id]);
         $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
         $msg = t("Calibre {1} excluído.", [1 => $atual["nome"]]) . ($n > 0 ? " " . ($n === 1 ? t("O relógio que tinha esse calibre ficou sem.") : t("Os {1} relógios que tinham esse calibre ficaram sem.", [1 => $n])) : "");
         $id = 0;
@@ -780,7 +785,8 @@ function op_relogio($acao, $d)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Documentos de um relógio. Ações: enviar (relogio_id, categoria_id, titulo, data AAAA-MM-DD, descricao e os arquivos: no
+// Documentos de um relógio ou de um calibre. Ações: enviar (relogio_id, ou calibre_id: o manual técnico, a ficha de serviço,
+// as fotos do movimento, que aparecem em todos os relógios com ele; categoria_id, titulo, data AAAA-MM-DD, descricao e os arquivos: no
 // campo arquivos[] (vários, como upload), ou arquivo (um), ou arquivo_base64 com o nome em arquivo_nome; a miniatura de
 // uma foto, opcional, em miniatura (uma por envio: a do primeiro arquivo) ou miniatura_base64; copia_banco: 1 pede a cópia
 // no banco destes arquivos), alterar (id: categoria_id, titulo, data, descricao, copia_banco; só muda o que vier), excluir
@@ -815,9 +821,21 @@ function op_documentos($acao, $d)
     }
     $ids = [];
     if ($acao === "enviar") {
-        $r = linha("SELECT id, nome FROM relogio WHERE id = ?", [(int)($d["relogio_id"] ?? 0)]);
-        if (!$r) {
-            $erros[] = t("Relógio não encontrado.");
+        // o dono: o relógio ou o calibre (um ou outro); a pasta dele: r<id> ou c<id>
+        if ((int)($d["calibre_id"] ?? 0) > 0) {
+            $r = linha("SELECT id, nome FROM calibre WHERE id = ?", [(int)$d["calibre_id"]]);
+            $sub = $r ? "c" . (int)$r["id"] : "";
+            if (!$r) {
+                $erros[] = t("Calibre não encontrado.");
+            } elseif ((int)($d["relogio_id"] ?? 0) > 0) {
+                $erros[] = t("O documento é de um relógio ou de um calibre: mande só um dos dois.");
+            }
+        } else {
+            $r = linha("SELECT id, nome FROM relogio WHERE id = ?", [(int)($d["relogio_id"] ?? 0)]);
+            $sub = $r ? "r" . (int)$r["id"] : "";
+            if (!$r) {
+                $erros[] = t("Relógio não encontrado.");
+            }
         }
         if (!$cat) {
             $erros[] = "Escolha a categoria.";
@@ -887,7 +905,7 @@ function op_documentos($acao, $d)
                     $erros[] = t("{1}: tem {2}; o servidor aceita até {3}.", [1 => $nome, 2 => tamanho_texto($tamanho), 3 => tamanho_texto($limite)]);
                     continue;
                 }
-                $arquivo = documento_novo_arquivo($pasta, (int)$r["id"], $nome);
+                $arquivo = documento_novo_arquivo($pasta, $sub, $nome);
                 $ok = $tmp !== null ? @move_uploaded_file($tmp, $pasta . "/" . $arquivo) : @file_put_contents($pasta . "/" . $arquivo, $bin) === $tamanho;
                 if (!$ok) {
                     $erros[] = t("{1}: não consegui gravar na pasta dos documentos.", [1 => $nome]);
@@ -909,8 +927,8 @@ function op_documentos($acao, $d)
                 }
                 $t = $titulo !== "" ? $titulo : mb_substr(pathinfo($nome, PATHINFO_FILENAME), 0, 200);
                 try {
-                    sql("INSERT INTO documento (relogio_id, categoria_id, titulo, data, descricao, nome, tipo, tamanho, arquivo, miniatura, copia_banco, criado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
-                        [(int)$r["id"], (int)$cat["id"], $t !== "" ? $t : $nome, $data, $descricao !== "" ? $descricao : null, $nome, $tipo, $tamanho, $arquivo, $arq_mini, $copia]);
+                    sql("INSERT INTO documento (relogio_id, calibre_id, categoria_id, titulo, data, descricao, nome, tipo, tamanho, arquivo, miniatura, copia_banco, criado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                        [$sub[0] === "r" ? (int)$r["id"] : null, $sub[0] === "c" ? (int)$r["id"] : null, (int)$cat["id"], $t !== "" ? $t : $nome, $data, $descricao !== "" ? $descricao : null, $nome, $tipo, $tamanho, $arquivo, $arq_mini, $copia]);
                     $ids[] = ultimo_id();
                     // a cópia de segurança no banco, em pedaços, se alguém a pede; se falhar, o documento fica (o cron tenta de novo)
                     $novo_doc = linha("SELECT * FROM documento WHERE id = ?", [end($ids)]);
@@ -2689,6 +2707,9 @@ function op_config($acao, $d)
         if (array_key_exists("fuso", $d) && trim((string)$d["fuso"]) !== "" && fuso_valido($d["fuso"]) === null) {
             $erros[] = t("Fuso horário desconhecido: use um nome como America/Sao_Paulo ou Europe/Lisbon (a lista da Configuração), ou vazio para o do sistema.");
         }
+        if (array_key_exists("calibre_campos", $d) && !in_array((string)$d["calibre_campos"], ["", "movimento", "todos"], true)) {
+            $erros[] = t("Campos no formulário do calibre: movimento (só os do movimento) ou todos.");
+        }
         if (array_key_exists("relojinho_modo", $d) && !in_array((string)$d["relojinho_modo"], ["", "hora", "aleatorio", "sem_repeticao"], true)) {
             $erros[] = t("O reloginho da barra é hora, aleatorio ou sem_repeticao.");
         }
@@ -2706,7 +2727,7 @@ function op_config($acao, $d)
             if (array_key_exists("url_sistema", $d) && usuario_master()) {
                 sis_set("url_sistema", trim((string)$d["url_sistema"]));
             }
-            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina", "hora_relogio", "semana_inicio", "atualizar_segundos", "relojinho_modo"] as $k) {
+            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina", "hora_relogio", "semana_inicio", "atualizar_segundos", "relojinho_modo", "calibre_campos"] as $k) {
                 if (array_key_exists($k, $d)) {
                     cfg_set($k, trim((string)$d[$k]));
                 }

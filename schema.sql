@@ -194,10 +194,12 @@ CREATE TABLE campo (
     no_id          INT NOT NULL,
     ordem          INT NOT NULL DEFAULT 0,
     so_desejado    TINYINT NOT NULL DEFAULT 0,
+    calibre        TINYINT NOT NULL DEFAULT 0,
     INDEX (no_id),
     FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
     CONSTRAINT ck_campo_textos CHECK (TRIM(identificador) <> '' AND TRIM(nome) <> ''),
-    CONSTRAINT ck_campo_so_desejado CHECK (so_desejado IN (0, 1))
+    CONSTRAINT ck_campo_so_desejado CHECK (so_desejado IN (0, 1)),
+    CONSTRAINT ck_campo_calibre CHECK (calibre IN (0, 1))
 ) ENGINE=InnoDB;
 
 -- as opções de um campo do tipo lista
@@ -435,10 +437,11 @@ CREATE TABLE medicao (
     CONSTRAINT ck_medicao_usada CHECK (usada IN (0, 1))
 ) ENGINE=InnoDB;
 
--- os documentos de cada relógio (o arquivo na pasta dos documentos e, se pedido, em pedaços no banco)
+-- os documentos de cada relógio, ou de um calibre (um ou outro), (o arquivo na pasta dos documentos e, se pedido, em pedaços no banco)
 CREATE TABLE documento (
     id            INT AUTO_INCREMENT PRIMARY KEY,
-    relogio_id    INT NOT NULL,
+    relogio_id    INT NULL,
+    calibre_id    INT NULL,
     categoria_id  INT NOT NULL,
     titulo        VARCHAR(200) NOT NULL,
     data          DATE NULL,
@@ -454,7 +457,9 @@ CREATE TABLE documento (
     copia_banco   TINYINT NOT NULL DEFAULT 0,
     INDEX (relogio_id, categoria_id),
     UNIQUE INDEX (arquivo),
+    INDEX documento_calibre (calibre_id),
     FOREIGN KEY (relogio_id) REFERENCES relogio(id) ON DELETE CASCADE,
+    FOREIGN KEY (calibre_id) REFERENCES calibre(id) ON DELETE CASCADE,
     FOREIGN KEY (categoria_id) REFERENCES documento_categoria(id) ON DELETE CASCADE,
     CONSTRAINT ck_documento_titulo CHECK (TRIM(titulo) <> '' AND TRIM(nome) <> ''),
     CONSTRAINT ck_documento_tamanho CHECK (tamanho > 0),

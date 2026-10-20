@@ -431,6 +431,10 @@ fieldset.campos-calibre legend { font-size: .9rem; font-weight: 600; color: var(
 fieldset.campos-calibre label { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; color: var(--cinza); min-width: 0; }
 fieldset.campos-calibre label input, fieldset.campos-calibre label select { width: 100%; }
 fieldset.campos-calibre small { font-size: .74rem; }
+/* a escolha dos campos do formulário do calibre (a Configuração), em cima do formulário */
+form.calibre-campos { display: flex; flex-wrap: wrap; align-items: end; gap: .3rem 1rem; margin: .2rem 0 .8rem; }
+form.calibre-campos label { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; color: var(--cinza); max-width: 100%; }
+form.calibre-campos select { max-width: 100%; }
 
 /* ---------- tabela de relógios: ordenação, filtros, carga e compra ---------- */
 .rolagem { overflow-x: auto; border-radius: 10px; }
@@ -1171,6 +1175,7 @@ table.tabela-dados code.ident { display: block; font-size: .74rem; color: var(--
 /* o calibre no quadro Dados do relógio: uma linha em cima das tabelas; as recomendações embaixo, menores */
 .calibre-linha { margin: 0 0 .6rem; font-size: .88rem; overflow-wrap: anywhere; }
 .calibre-linha small { display: block; color: var(--cinza); font-size: .8rem; white-space: pre-line; }
+.calibre-linha .calibre-docs { display: block; font-size: .82rem; margin-top: .15rem; }
 /* a conta da previsão: o que é (e, menor, como foi medido), o valor (e a unidade embaixo) e a origem */
 .quadro h3.conta-titulo { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cinza); margin: .9rem 0 .2rem; }
 table.conta-previsao td { font-size: .84rem; }

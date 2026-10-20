@@ -707,7 +707,11 @@ function abrirNoPainel(id) {
       // o calibre (o movimento), em cima: o nome, o fabricante, o link do manual técnico e as recomendações
       var calLinha = r.calibre ? el("p", {"class": "calibre-linha"}, t("Calibre: {1}", {1: el("strong", {}, h(r.calibre.nome))}) + (r.calibre.fabricante ? " · " + h(r.calibre.fabricante) : "")
         + (r.calibre.link ? " · " + el("a", {"href": r.calibre.link, "target": "_blank", "rel": "noopener"}, t("manual técnico ↗")) : "")
-        + (r.calibre.observacao ? el("small", {}, h(r.calibre.observacao)) : "")) : "";
+        + (r.calibre.observacao ? el("small", {}, h(r.calibre.observacao)) : "")
+        // os documentos do calibre (o manual técnico em PDF...): cada um abre numa aba nova; e a página deles
+        + el("span", {"class": "calibre-docs"}, r.calibre.documentos.map(function (x) {
+          return el("a", {"href": x.url, "target": "_blank", "rel": "noopener"}, h(x.titulo)) + " " + el("span", {"class": "nota"}, "(" + h(x.categoria) + ")");
+        }).join(" · ") + (r.calibre.documentos.length > 0 ? " · " : "") + el("a", {"href": "documentos.php?calibre=" + r.calibre.id}, t("documentos do calibre")))) : "";
       res += quadro(t("Dados do relógio"), calLinha + el("div", {"class": "dados-grade"},
         el("div", {}, el("h3", {}, t("Cadastro")) + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Campo"))
             + el("th", {}, t("Valor")) + el("th", {}, t("Origem")))) + el("tbody", {}, r.dados.map(function (c) {

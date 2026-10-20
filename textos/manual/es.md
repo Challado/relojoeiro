@@ -1,4 +1,4 @@
-<!-- origem: ccfbd22c46a4be02f37655295f5bbeb75478f3a8 -->
+<!-- origem: 7699f6d481d76616e870a326fe7c53d24accd082 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -570,6 +570,20 @@ aparecen el calibre, el enlace del manual y las recomendaciones. Eliminar un cal
 eliminación dice cuántos). En las fórmulas, `CALIBRE("NH35")` da 1 si el reloj tiene ese calibre. Por la API:
 `recurso=calibres` (la lista, con los valores y los relojes de cada uno), `recurso=calibres` con `acao=salvar` o `excluir`, y
 `recurso=relogio`, `acao=salvar`, con `calibre_id`.
+
+Los **documentos del calibre** (el manual técnico en PDF, la ficha de servicio, las fotos del movimiento) quedan en el propio
+calibre: en la pestaña Calibres, **Documentos (N)** abre la página **Documentos** del calibre (también aparece en la lista
+**Reloj** de la página, en el grupo **Calibres**), con la categoría **Manual técnico** además de las otras. Valen para todos
+los relojes con el calibre: aparecen en la línea del calibre de los **Datos del reloj** y en la página Documentos de cada uno
+(*"Del calibre NH35: …"*). Eliminar el calibre borra sus documentos, con los archivos.
+
+Qué campos muestra el formulario del calibre es una elección: **solo los del movimiento** (el predeterminado) o **todos los
+campos de la ficha**, en la lista **Campos en el formulario**, encima del formulario, o en la **Configuración** (*Formulario
+del calibre*). Los del movimiento son los marcados en la pestaña **Campos** (la casilla *del movimiento*): ya vienen marcados
+la reserva, las cargas, la marcha esperada, el límite del desvío, la cuerda por la corona, la autonomía, los decaimientos, la
+revisión y la vida de la pila. Un campo que el calibre ya define aparece siempre, para poder quitarlo. Por la API:
+`recurso=documentos` con `calibre=` (y `calibre_id` en `enviar`), `recurso=config` con `calibre_campos` y `recurso=campos`
+con `calibre`.
 
 ## Varias personas: cuentas, colecciones y acceso {#várias-pessoas-contas-coleções-e-acesso}
 

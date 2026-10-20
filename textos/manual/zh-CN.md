@@ -1,4 +1,4 @@
-<!-- origem: ccfbd22c46a4be02f37655295f5bbeb75478f3a8 -->
+<!-- origem: 7699f6d481d76616e870a326fe7c53d24accd082 -->
 
 ## 核心理念：系统对手表一无所知 {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -375,6 +375,15 @@ dias      = SE(NO_GRUPO("Smartwatch"); dias_seguidos; 1)
 *padrão*），表格上方显示机芯、手册链接和建议。删除机芯后，它的手表就没有机芯了（删除时会说明有几块）。在公式中，
 `CALIBRE("NH35")` 在手表是该机芯时得 1。通过 API：`recurso=calibres`（列表，含每个机芯的值和手表）、`recurso=calibres`
 配合 `acao=salvar` 或 `excluir`，以及 `recurso=relogio`、`acao=salvar` 配合 `calibre_id`。
+
+**机芯的文档**（PDF 技术手册、保养单、机芯照片）放在机芯本身：在机芯标签中，**文档 (N)** 打开该机芯的**文档**页面（它也出现在
+该页面**手表**列表的**机芯**分组中），除其他类别外还有**技术手册**类别。这些文档适用于所有使用该机芯的手表：它们显示在**手表数据**
+的机芯一行，以及每块手表的文档页面（*“来自机芯 NH35：……”*）。删除机芯会连同文件一起删除它的文档。
+
+机芯表单显示哪些字段可以选择：**只显示机芯字段**（默认）或**档案的全部字段**，在表单上方的**表单中的字段**列表中选择，或在**设置**中
+（*机芯表单*）。机芯字段就是在**字段**标签中勾选了（*属于机芯*复选框）的字段：动力储备、充电、预期走时、偏差上限、表冠上链、续航、
+衰减、保养和电池寿命默认已勾选。机芯已经定义的字段总会显示，以便移除。通过 API：`recurso=documentos` 配合 `calibre=`（以及
+`enviar` 中的 `calibre_id`）、`recurso=config` 配合 `calibre_campos`、`recurso=campos` 配合 `calibre`。
 
 ## 多人使用：账户、收藏与访问 {#várias-pessoas-contas-coleções-e-acesso}
 

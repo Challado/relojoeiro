@@ -65,7 +65,12 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
         "copia_banco" => (int)$r["copia_banco"] === 1,
         // o calibre (o movimento): o cadastro dele, com o link do manual técnico e as recomendações; null sem
         "calibre" => ($cal_f = calibre_do_relogio($id)) ? ["id" => (int)$cal_f["id"], "nome" => $cal_f["nome"], "fabricante" => $cal_f["fabricante"], "link" => $cal_f["link"],
-            "observacao" => $cal_f["observacao"]] : null,
+            "observacao" => $cal_f["observacao"],
+            // os documentos do calibre (o manual técnico...), para abrir dali: o título, a categoria, a família e o endereço
+            "documentos" => array_map(function ($x) { return ["id" => (int)$x["id"], "titulo" => $x["titulo"], "categoria" => $x["categoria"],
+                "familia" => documento_familia($x["tipo"], $x["nome"]), "url" => "api.php?recurso=documento&id=" . (int)$x["id"]]; },
+                linhas("SELECT d.id, d.titulo, d.tipo, d.nome, c.nome AS categoria FROM documento d JOIN documento_categoria c ON c.id = d.categoria_id WHERE d.calibre_id = ?
+                    ORDER BY c.ordem, c.id, d.id", [(int)$cal_f["id"]]))] : null,
         "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : t("sem grupo"), "caminho" => no_caminho($r["no_id"]), "observacao" => $valores["observacao"] ?? null,
         "foto" => $foto !== null ? strtotime($foto) : null, "documentos" => (function () use ($id) {
             $cats = array_values(array_filter(documento_categorias_lista($id), function ($c) { return $c["documentos"] > 0; }));

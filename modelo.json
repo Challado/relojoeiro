@@ -59,7 +59,8 @@
             "padrao": null,
             "grupo": "raiz",
             "ordem": 1,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 0
         },
         {
             "identificador": "preferencia",
@@ -69,7 +70,8 @@
             "padrao": "50",
             "grupo": "raiz",
             "ordem": 2,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 0
         },
         {
             "identificador": "data_compra",
@@ -79,7 +81,8 @@
             "padrao": null,
             "grupo": "raiz",
             "ordem": 3,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 0
         },
         {
             "identificador": "valor_compra",
@@ -89,7 +92,8 @@
             "padrao": null,
             "grupo": "raiz",
             "ordem": 4,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 0
         },
         {
             "identificador": "loja",
@@ -99,7 +103,8 @@
             "padrao": null,
             "grupo": "raiz",
             "ordem": 5,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 0
         },
         {
             "identificador": "garantia_ate",
@@ -109,7 +114,8 @@
             "padrao": null,
             "grupo": "raiz",
             "ordem": 6,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 0
         },
         {
             "identificador": "autonomia_dias",
@@ -119,7 +125,8 @@
             "padrao": "5",
             "grupo": "smartwatch",
             "ordem": 10,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 1
         },
         {
             "identificador": "decaimento_uso",
@@ -129,7 +136,8 @@
             "padrao": null,
             "grupo": "smartwatch",
             "ordem": 11,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 1
         },
         {
             "identificador": "decaimento_repouso",
@@ -139,7 +147,8 @@
             "padrao": "0.1",
             "grupo": "smartwatch",
             "ordem": 12,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 1
         },
         {
             "identificador": "data_revisao",
@@ -149,7 +158,8 @@
             "padrao": null,
             "grupo": "tradicional",
             "ordem": 20,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 0
         },
         {
             "identificador": "intervalo_revisao_meses",
@@ -159,7 +169,8 @@
             "padrao": null,
             "grupo": "tradicional",
             "ordem": 21,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 1
         },
         {
             "identificador": "marcha_min",
@@ -169,7 +180,8 @@
             "padrao": null,
             "grupo": "tradicional",
             "ordem": 22,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 1
         },
         {
             "identificador": "marcha_max",
@@ -179,7 +191,8 @@
             "padrao": null,
             "grupo": "tradicional",
             "ordem": 23,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 1
         },
         {
             "identificador": "desvio_limite",
@@ -189,7 +202,8 @@
             "padrao": "60",
             "grupo": "tradicional",
             "ordem": 24,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 1
         },
         {
             "identificador": "reserva_horas",
@@ -199,7 +213,8 @@
             "padrao": "40",
             "grupo": "mecanico",
             "ordem": 30,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 1
         },
         {
             "identificador": "corda_manual",
@@ -209,7 +224,8 @@
             "padrao": "1",
             "grupo": "mecanico",
             "ordem": 31,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 1
         },
         {
             "identificador": "carga_pulso_horas",
@@ -219,7 +235,8 @@
             "padrao": "8",
             "grupo": "automatico",
             "ordem": 32,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 1
         },
         {
             "identificador": "carga_pulso_reserva",
@@ -229,7 +246,8 @@
             "padrao": "36",
             "grupo": "automatico",
             "ordem": 33,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 1
         },
         {
             "identificador": "carga_winder_horas",
@@ -239,7 +257,8 @@
             "padrao": null,
             "grupo": "automatico",
             "ordem": 34,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 1
         },
         {
             "identificador": "carga_winder_reserva",
@@ -249,7 +268,8 @@
             "padrao": null,
             "grupo": "automatico",
             "ordem": 35,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 1
         },
         {
             "identificador": "reserva_dias",
@@ -259,7 +279,8 @@
             "padrao": "180",
             "grupo": "solar",
             "ordem": 40,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 1
         },
         {
             "identificador": "carga_sol_horas",
@@ -269,7 +290,8 @@
             "padrao": "10",
             "grupo": "solar",
             "ordem": 41,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 1
         },
         {
             "identificador": "data_pilha",
@@ -279,7 +301,8 @@
             "padrao": null,
             "grupo": "pilha",
             "ordem": 50,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 0
         },
         {
             "identificador": "vida_pilha_meses",
@@ -289,7 +312,8 @@
             "padrao": "24",
             "grupo": "pilha",
             "ordem": 51,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 1
         },
         {
             "identificador": "carga_minima",
@@ -299,7 +323,8 @@
             "padrao": null,
             "grupo": "raiz",
             "ordem": 7,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 0
         },
         {
             "identificador": "luz_pulso",
@@ -309,7 +334,8 @@
             "padrao": "25",
             "grupo": "solar",
             "ordem": 42,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 1
         },
         {
             "identificador": "carga_carregador_horas",
@@ -319,7 +345,8 @@
             "padrao": "2",
             "grupo": "smartwatch",
             "ordem": 15,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 1
         },
         {
             "identificador": "marca",
@@ -329,7 +356,8 @@
             "padrao": null,
             "grupo": "raiz",
             "ordem": 7,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 0
         },
         {
             "identificador": "referencia",
@@ -339,7 +367,8 @@
             "padrao": null,
             "grupo": "raiz",
             "ordem": 8,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 0
         },
         {
             "identificador": "link",
@@ -349,7 +378,8 @@
             "padrao": null,
             "grupo": "raiz",
             "ordem": 9,
-            "so_desejado": 0
+            "so_desejado": 0,
+            "calibre": 0
         },
         {
             "identificador": "preco_alvo",
@@ -359,7 +389,8 @@
             "padrao": null,
             "grupo": "raiz",
             "ordem": 10,
-            "so_desejado": 1
+            "so_desejado": 1,
+            "calibre": 0
         },
         {
             "identificador": "prioridade_desejo",
@@ -374,7 +405,8 @@
                 "Alta",
                 "Média",
                 "Baixa"
-            ]
+            ],
+            "calibre": 0
         },
         {
             "identificador": "gasto_motor",
@@ -391,7 +423,8 @@
                 "marcacao",
                 "cadastro",
                 "formulas"
-            ]
+            ],
+            "calibre": 0
         }
     ],
     "tipos": [
@@ -2408,6 +2441,13 @@
             "identificador": "diversos",
             "nome": "Diversos",
             "ordem": 6,
+            "grupo": "raiz",
+            "aceita": []
+        },
+        {
+            "identificador": "manual_tecnico",
+            "nome": "Manual técnico",
+            "ordem": 7,
             "grupo": "raiz",
             "aceita": []
         }

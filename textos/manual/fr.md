@@ -1,4 +1,4 @@
-<!-- origem: ccfbd22c46a4be02f37655295f5bbeb75478f3a8 -->
+<!-- origem: 7699f6d481d76616e870a326fe7c53d24accd082 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -588,6 +588,20 @@ fiche, garde la sienne. Dans les **Données de la montre**, l'origine de chaque 
 calibre laisse ses montres sans calibre (la suppression dit combien). Dans les formules, `CALIBRE("NH35")` donne 1 si la
 montre a ce calibre. Par l'API : `recurso=calibres` (la liste, avec les valeurs et les montres de chacun), `recurso=calibres`
 avec `acao=salvar` ou `excluir`, et `recurso=relogio`, `acao=salvar`, avec `calibre_id`.
+
+Les **documents du calibre** (le manuel technique en PDF, la fiche de service, les photos du mouvement) restent dans le
+calibre lui-même : dans l'onglet Calibres, **Documents (N)** ouvre la page **Documents** du calibre (il apparaît aussi dans la
+liste **Montre** de la page, dans le groupe **Calibres**), avec la catégorie **Manuel technique** en plus des autres. Ils
+valent pour toutes les montres avec ce calibre : ils apparaissent dans la ligne du calibre des **Données de la montre** et
+dans la page Documents de chacune (*« Du calibre NH35 : … »*). Supprimer le calibre supprime ses documents, avec les fichiers.
+
+Les champs que le formulaire du calibre montre sont un choix : **seulement ceux du mouvement** (par défaut) ou **tous les
+champs de la fiche**, dans la liste **Champs dans le formulaire**, au-dessus du formulaire, ou dans la **Configuration**
+(*Formulaire du calibre*). Ceux du mouvement sont ceux cochés dans l'onglet **Champs** (la case *du mouvement*) : la réserve,
+les charges, la marche attendue, la limite de l'écart, le remontage par la couronne, l'autonomie, les décroissances, la
+révision et la durée de la pile arrivent cochés. Un champ que le calibre définit déjà apparaît toujours, pour pouvoir
+l'enlever. Par l'API : `recurso=documentos` avec `calibre=` (et `calibre_id` dans `enviar`), `recurso=config` avec
+`calibre_campos` et `recurso=campos` avec `calibre`.
 
 ## Plusieurs personnes : comptes, collections et accès {#várias-pessoas-contas-coleções-e-acesso}
 

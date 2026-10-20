@@ -588,10 +588,52 @@ if (($d_cal["reserva_horas"]["origem"] ?? "") !== "informado" || ($d_cal["marcha
     $falhas[] = "calibres: a ficha deu " . json_encode([$d_cal["reserva_horas"] ?? null, $d_cal["marcha_max"] ?? null, $f_cal["relogio"]["calibre"] ?? null], JSON_UNESCAPED_UNICODE);
 }
 ler("calcular calibre", ["recurso" => "calcular", "expressao" => "CALIBRE(\"nh35\") * 10 + CALIBRE(" . $cal . ") + CALIBRE(\"outro\") * 100"]);
+// os documentos do calibre: o manual técnico (a categoria Manual técnico) no NH35, que aparece na ficha e nos documentos do
+// Seiko; o documento com relógio e calibre ao mesmo tempo (não pode); o calibre de teste com um documento: a exclusão diz o
+// arquivo que sai e apaga a pasta dele (c<id>)
+$cat_tec = 0;
+foreach ((chamar("GET", ["recurso" => "documentos", "calibre" => $cal])["json"]["categorias"] ?? []) as $c) {
+    $cat_tec = $c["identificador"] === "manual_tecnico" ? (int)$c["id"] : $cat_tec;
+}
+if ($cat_tec === 0) {
+    $falhas[] = "calibres: a categoria Manual técnico não existe";
+}
+escrever(["recurso" => "documentos", "acao" => "enviar", "calibre_id" => $cal, "categoria_id" => $cat_tec, "titulo" => "Manual técnico do NH35",
+    "arquivo_nome" => "nh35.pdf", "arquivo_base64" => base64_encode("%PDF-1.4 manual técnico do NH35")]);
+escrever(["recurso" => "documentos", "acao" => "enviar", "calibre_id" => $cal, "relogio_id" => $rel["auto"], "categoria_id" => $cat_tec,
+    "arquivo_nome" => "x.pdf", "arquivo_base64" => base64_encode("%PDF-1.4 x")], false);
+escrever(["recurso" => "documentos", "acao" => "enviar", "calibre_id" => 999999, "categoria_id" => $cat_tec, "arquivo_nome" => "x.pdf", "arquivo_base64" => base64_encode("x")], false);
+ler("documentos do calibre", ["recurso" => "documentos", "calibre" => $cal]);
+ler("documentos do relogio com calibre", ["recurso" => "documentos", "relogio" => $rel["auto"]]);
+ler("documentos de todos com calibre", ["recurso" => "documentos"]);
+ler("documentos de calibre que nao existe", ["recurso" => "documentos", "calibre" => 999999]);
+$f_doc = ler("ficha com o documento do calibre", ["recurso" => "ficha", "relogio" => $rel["auto"]]);
+if (count($f_doc["relogio"]["calibre"]["documentos"] ?? []) !== 1) {
+    $falhas[] = "calibres: a ficha não traz o documento do calibre";
+}
+// os campos do formulário do calibre: só os do movimento (o padrão), todos, de volta, e um valor que não vale; a marca de
+// movimento num campo novo (estilo, uma lista)
+escrever(["recurso" => "campos", "acao" => "alterar", "id" => $id_de("campos", "estilo"), "calibre" => 1]);
+ler("calibres so do movimento", ["recurso" => "calibres"]);
+escrever(["recurso" => "config", "acao" => "salvar", "calibre_campos" => "todos"]);
+ler("calibres com todos os campos", ["recurso" => "calibres"]);
+ler("config com os campos do calibre", ["recurso" => "config"]);
+escrever(["recurso" => "config", "acao" => "salvar", "calibre_campos" => "alguns"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "calibre_campos" => "movimento"]);
 $cal_t = escrever(["recurso" => "calibres", "acao" => "salvar", "id" => 0, "nome" => "Calibre de teste"]);
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "calibre_id" => $cal_t]);
+escrever(["recurso" => "documentos", "acao" => "enviar", "calibre_id" => $cal_t, "categoria_id" => $cat_tec, "titulo" => "Ficha de serviço",
+    "arquivo_nome" => "ficha.txt", "arquivo_base64" => base64_encode("ficha de serviço do calibre de teste")]);
+$pasta_cal = getenv("RELOGIOS_TESTE_PASTA") . "/documentos_" . getenv("RELOGIOS_DB") . "/c" . $cal_t;
+if (!is_dir($pasta_cal)) {
+    $falhas[] = "calibres: o documento do calibre não foi para a pasta c<id>";
+}
 escrever(["recurso" => "calibres", "acao" => "excluir", "id" => $cal_t], false);
 escrever(["recurso" => "calibres", "acao" => "excluir", "id" => $cal_t, "confirmar" => 1]);
+clearstatcache();
+if (is_dir($pasta_cal)) {
+    $falhas[] = "calibres: a pasta do calibre excluído ficou";
+}
 ler("ficha sem o calibre excluido", ["recurso" => "ficha", "relogio" => $rel["auto2"]]);
 
 // os totais: os que vêm prontos (todos, os do rodapé de alguns relógios, os da página), o Testar (uma expressão boa, uma

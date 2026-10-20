@@ -1,4 +1,5 @@
-// Documentos de um relógio (documentos.php?relogio=3&cat=4): os dados vêm do api.php (recurso=documentos). Uma aba por
+// Documentos de um relógio (documentos.php?relogio=3&cat=4) ou de um calibre (documentos.php?calibre=2: o manual técnico,
+// que vale para todos os relógios com ele): os dados vêm do api.php (recurso=documentos). Uma aba por
 // categoria; dentro dela, cada arquivo abre pelo tipo: as fotos numa galeria (o visor em tela cheia, com setas, teclado,
 // deslize e apresentação), os vídeos em sequência (marcados, na ordem escolhida), o PDF no visualizador do navegador, o
 // XML da nota com o resumo dela, o áudio no player, e o resto para baixar. O envio é um arquivo por vez (com a miniatura de
@@ -6,6 +7,7 @@
 // visor), e gravam pelos formulários comuns (recurso=documentos).
 var q = new URLSearchParams(window.location.search);
 var rid = parseInt(q.get("relogio") || "0", 10);
+var cid = parseInt(q.get("calibre") || "0", 10);
 var aba = q.get("cat") || "";
 var dados = null;
 var recado = "";
@@ -32,13 +34,13 @@ function docsDaAba() {
   return dados.documentos.filter(function (x) { return aba === "" || String(x.categoria_id) === aba; });
 }
 function endereco(cat) {
-  return "documentos.php?" + (rid > 0 ? "relogio=" + rid + "&" : "") + (cat !== "" ? "cat=" + cat : "");
+  return "documentos.php?" + (cid > 0 ? "calibre=" + cid + "&" : (rid > 0 ? "relogio=" + rid + "&" : "")) + (cat !== "" ? "cat=" + cat : "");
 }
 // título, data e descrição de um documento
 function sobre(x, comCategoria) {
   return el("strong", {}, h(x.titulo)) + (x.data ? " " + el("span", {"class": "nota"}, dataBr(x.data)) : "")
     + (comCategoria && aba === "" && categoria(x.categoria_id) ? " " + el("span", {"class": "etiqueta"}, h(categoria(x.categoria_id).nome)) : "")
-    + (rid === 0 ? " " + el("span", {"class": "nota"}, "· " + h(nomeRelogio(x.relogio_id))) : "")
+    + (rid === 0 && cid === 0 ? " " + el("span", {"class": "nota"}, "· " + h(nomeRelogio(x.relogio_id))) : "")
     + (x.descricao ? el("p", {"class": "doc-descricao"}, h(x.descricao)) : "");
 }
 function nomeRelogio(id) {
@@ -161,12 +163,29 @@ function linkBaixar(x, rotulo) {
 
 function montar() {
   var d = dados;
-  var res = el("h1", {}, d.relogio ? t("Documentos do {1}", {1: h(d.relogio.nome)}) : t("Documentos de todos os relógios"))
+  var res = el("h1", {}, d.calibre ? t("Documentos do calibre {1}", {1: h(d.calibre.nome)}) : (d.relogio ? t("Documentos do {1}", {1: h(d.relogio.nome)}) : t("Documentos de todos os relógios")))
     + el("form", {"class": "filtros-plano", "onsubmit": "return false"}, el("label", {}, t("Relógio {1}", {1: el("select", {"id": "f-relogio"},
       el("option", {"value": "0"}, t("Todos")) + d.relogios.map(function (r) {
-        return el("option", {"value": r.id, "selected": r.id === rid}, h(r.nome) + (r.documentos > 0 ? " (" + r.documentos + ")" : ""));
-      }).join(""))}))
-      + (d.relogio ? " " + el("a", {"href": "ficha.php?id=" + rid, "class": "botao leve"}, t("Abrir a ficha do relógio")) : ""));
+        return el("option", {"value": r.id, "selected": cid === 0 && r.id === rid}, h(r.nome) + (r.documentos > 0 ? " (" + r.documentos + ")" : ""));
+      }).join("")
+      // os calibres: os documentos do movimento, que valem para todos os relógios com ele
+      + (d.calibres.length > 0 ? el("optgroup", {"label": t("Calibres")}, d.calibres.map(function (c) {
+        return el("option", {"value": "c" + c.id, "selected": c.id === cid}, h(c.nome) + (c.documentos > 0 ? " (" + c.documentos + ")" : ""));
+      }).join("")) : ""))}))
+      + (d.relogio ? " " + el("a", {"href": "ficha.php?id=" + rid, "class": "botao leve"}, t("Abrir a ficha do relógio")) : "")
+      + (d.calibre ? " " + el("a", {"href": "cadastros.php?aba=calibres&editar=" + cid + "#form", "class": "botao leve"}, t("Abrir o calibre")) : ""));
+  if (d.calibre) {
+    res += el("p", {"class": "nota"}, d.calibre.relogios.length > 0 ? t("Valem para os relógios com este calibre: {1}.", {1: d.calibre.relogios.map(function (r) {
+      return el("a", {"href": "documentos.php?relogio=" + r.id}, h(r.nome));
+    }).join(", ")}) : t("Nenhum relógio tem este calibre ainda."));
+  }
+  // no relógio, os documentos do calibre dele (o manual técnico do movimento...), com o link para a página deles
+  if (d.do_calibre) {
+    res += el("p", {"class": "nota doc-do-calibre"}, t("Do calibre {1}: {2}", {1: el("a", {"href": "documentos.php?calibre=" + d.do_calibre.id}, h(d.do_calibre.nome)),
+      2: d.do_calibre.documentos.length === 0 ? t("nenhum documento.") : d.do_calibre.documentos.map(function (x) {
+        return el("a", {"href": x.url, "target": "_blank", "rel": "noopener"}, h(x.titulo));
+      }).join(" · ")}));
+  }
   if (recado !== "") {
     res += el("p", {"class": "acao"}, h(recado));
   }
@@ -186,8 +205,8 @@ function montar() {
   if (!d.pasta_ok) {
     res += el("p", {"class": "acao"}, t("Os documentos ainda não podem ser guardados: {1}.", {1: h(d.pasta_erro)}));
   }
-  // o envio: só com um relógio escolhido
-  if (d.relogio && d.pasta_ok) {
+  // o envio: só com um relógio ou um calibre escolhido
+  if ((d.relogio || d.calibre) && d.pasta_ok) {
     var catPadrao = aba !== "" ? parseInt(aba, 10) : (d.categorias.length > 0 ? d.categorias[0].id : 0);
     res += el("details", {"class": "envio-docs", "open": d.documentos.length === 0}, el("summary", {}, t("Enviar arquivos"))
       + el("form", {"id": "form-envio", "class": "form-grade"},
@@ -198,7 +217,7 @@ function montar() {
         + el("label", {}, t("Data {1}", {1: el("input", {"type": "date", "name": "data"})}))
         + el("label", {"style": "grid-column: 1 / -1"}, t("Descrição {1}", {1: el("textarea", {"name": "descricao", "rows": "2", "placeholder": t("a ocasião, o que é, onde foi...")})}))
         + el("label", {"style": "grid-column: 1 / -1"}, t("Arquivos (pode escolher vários) {1}", {1: el("input", {"type": "file", "name": "arquivos", "id": "envio-arquivos", "multiple": true, "required": true})}))
-        + (d.copia_sistema === null && !d.relogio.copia_banco ? el("label", {"class": "check", "style": "grid-column: 1 / -1"},
+        + (d.copia_sistema === null && !(d.relogio && d.relogio.copia_banco) ? el("label", {"class": "check", "style": "grid-column: 1 / -1"},
           t("{1} Guardar a cópia destes arquivos também no banco", {1: el("input", {"type": "checkbox", "name": "copia_banco", "value": "1"})})) : "")
         + el("p", {"class": "nota", "style": "grid-column: 1 / -1"}, t("Qualquer arquivo{1}. O título, a data e a descrição valem para todos os escolhidos; depois cada um se edita sozinho.", {1: d.limite !== null ? t(", até {1} cada", {1: tamanho(d.limite)}) : t(", de qualquer tamanho")}))
         + el("div", {"class": "botoes"}, el("button", {}, t("Enviar")) + " " + el("span", {"id": "envio-andamento", "class": "nota"}, ""))));
@@ -248,7 +267,7 @@ function montar() {
   desenharVideos();
   var sel = document.getElementById("f-relogio");
   sel.addEventListener("change", function () {
-    window.location = "documentos.php" + (this.value !== "0" ? "?relogio=" + this.value : "");
+    window.location = "documentos.php" + (this.value === "0" ? "" : (this.value.charAt(0) === "c" ? "?calibre=" + this.value.substr(1) : "?relogio=" + this.value));
   });
   var cat = document.getElementById("envio-categoria");
   if (cat) {
@@ -511,7 +530,7 @@ function enviarUm(form, arquivo, mini, rotulo) {
     var fd = new FormData();
     fd.append("recurso", "documentos");
     fd.append("acao", "enviar");
-    fd.append("relogio_id", rid);
+    fd.append(cid > 0 ? "calibre_id" : "relogio_id", cid > 0 ? cid : rid);
     ["categoria_id", "titulo", "data", "descricao"].forEach(function (k) { fd.append(k, form.elements[k].value); });
     fd.append("copia_banco", form.elements.copia_banco && form.elements.copia_banco.checked ? "1" : "0");
     fd.append("arquivos[]", arquivo, arquivo.name);
@@ -574,7 +593,7 @@ document.addEventListener("submit", function (ev) {
 });
 
 function recarregar() {
-  return api(rid > 0 ? {recurso: "documentos", relogio: rid} : {recurso: "documentos"}).then(function (d) {
+  return api(cid > 0 ? {recurso: "documentos", calibre: cid} : (rid > 0 ? {recurso: "documentos", relogio: rid} : {recurso: "documentos"})).then(function (d) {
     dados = d;
     montar();
   }).catch(function (e) {

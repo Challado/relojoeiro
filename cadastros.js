@@ -67,7 +67,7 @@ function recarregarCadastros() {
         + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, [t("Campo"), t("Identificador"), t("Tipo"), t("Vale para"), t("Padrão"), ""].map(function (item) { return el("th", {}, item); }).join("")))
           + el("tbody", {}, d.campos.map(function (c) {
             return el("tr", {}, el("td", {}, h(c.nome) + (c.unidade !== "" ? " (" + h(c.unidade) + ")" : "")) + el("td", {"class": "formula ident"}, h(c.identificador)) + el("td", {}, h(d.tipos_de_campo[c.tipo]))
-              + el("td", {"class": "nota"}, h(caminho(d, c.no_id)) + (c.so_desejado === 1 ? t(" · só nos desejados") : "")) + el("td", {}, h(vazio(c.padrao)))
+              + el("td", {"class": "nota"}, h(caminho(d, c.no_id)) + (c.so_desejado === 1 ? t(" · só nos desejados") : "") + (c.calibre === 1 ? t(" · do movimento") : "")) + el("td", {}, h(vazio(c.padrao)))
               + el("td", {"class": "acoes-linha"}, linkEditar(c.id) + " " + botaoLinha("ordem", c.id, "", null, el("button", {"class": "leve discreto", "name": "direcao", "value": "sobe"}, "↑")
                 + el("button", {"class": "leve discreto", "name": "direcao", "value": "desce"}, "↓")) + botaoLinha("excluir", c.id, t("Excluir"), t("Excluir o campo {1} e os valores dele?", {1: c.nome}))));
           }).join(""))))
@@ -82,6 +82,8 @@ function recarregarCadastros() {
           + el("label", {}, t("Opções (lista: uma por linha) {1}", {1: el("textarea", {"name": "opcoes"}, h(vazio(f.opcoes)))}))
           + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "so_desejado", "value": "0"}) + el("input", {"type": "checkbox", "name": "so_desejado", "value": "1", "checked": f.so_desejado === 1})
             + t(" só nos desejados (a lista de desejos: o preço-alvo, a prioridade)"))
+          + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "calibre", "value": "0"}) + el("input", {"type": "checkbox", "name": "calibre", "value": "1", "checked": f.calibre === 1})
+            + t(" do movimento (aparece no formulário do calibre: a reserva, a marcha esperada...)"))
           + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + (e ? " " + el("a", {"href": "cadastros.php?aba=campos"}, t("cancelar")) : ""))));
     } else if (aba === "lancamentos") {
       var e = null;
@@ -275,6 +277,7 @@ function recarregarCalibres() {
     var e = null;
     d.calibres.forEach(function (x) { if (x.id === editar) { e = x; } });
     var f = e || {valores: {}};
+    var noForm = e ? e.campos_no_formulario : d.campos_no_formulario;
     var porIdent = {};
     d.campos.forEach(function (c) { porIdent[c.identificador] = c; });
     var res = el("h1", {}, t("Cadastros")) + el("nav", {"class": "abas"}, Object.keys(ABAS).map(function (k) { return el("a", {"href": "cadastros.php?aba=" + k, "class": k === aba ? "ativa" : ""}, h(ABAS[k])); }).join(""));
@@ -282,6 +285,12 @@ function recarregarCalibres() {
       res += recado;
       recado = "";
     }
+    // quais campos o formulário mostra: a Configuração da coleção (calibre_campos), trocada aqui mesmo
+    var escolha = el("form", {"data-recurso": "config", "class": "linha calibre-campos"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
+      + el("label", {}, t("Campos no formulário {1}", {1: el("select", {"name": "calibre_campos", "onchange": "this.form.requestSubmit()"},
+        el("option", {"value": "movimento", "selected": d.campos_mostrar !== "todos"}, t("Só os do movimento (marcados na aba Campos)"))
+        + el("option", {"value": "todos", "selected": d.campos_mostrar === "todos"}, t("Todos os campos do cadastro")))}))
+      + el("span", {"class": "nota"}, t("Com só os do movimento, os que o calibre já define aparecem também, para poder tirar.")));
     var sec = el("h2", {}, t("Calibres"))
       + el("p", {"class": "nota"}, t("O calibre é o movimento do relógio (NH35, ST2130, B620...). Ele guarda o que é do movimento, não do relógio: o fabricante, o manual técnico, as recomendações e os valores dos campos (a reserva de marcha, a marcha esperada, aceita corda pela coroa...). O relógio com esse calibre usa esses valores nos campos que ele mesmo deixou vazios: vale o valor do relógio, senão o do calibre, senão o padrão do campo. Escolha o calibre no cadastro do relógio."))
       + (d.calibres.length === 0 ? el("p", {"class": "nota"}, t("Nenhum calibre cadastrado."))
@@ -292,16 +301,19 @@ function recarregarCalibres() {
             return el("tr", {}, el("td", {}, h(x.nome) + (x.link ? " " + el("a", {"href": x.link, "target": "_blank", "rel": "noopener", "title": t("manual técnico")}, "↗") : ""))
               + el("td", {}, h(vazio(x.fabricante))) + el("td", {"class": "nota"}, def.length === 0 ? t("nada") : def.join("; "))
               + el("td", {"class": "nota"}, x.relogios.length === 0 ? t("nenhum") : x.relogios.map(function (r) { return el("a", {"href": "index.php?r=" + r.id}, h(r.nome)); }).join(", "))
-              + el("td", {"class": "acoes-linha"}, linkEditar(x.id) + " " + botaoLinha("excluir", x.id, t("Excluir"))));
+              + el("td", {"class": "acoes-linha"}, el("a", {"href": "documentos.php?calibre=" + x.id}, t("Documentos ({1})", {1: x.documentos})) + " " + linkEditar(x.id) + " " + botaoLinha("excluir", x.id, t("Excluir"))));
           }).join("")))))
       + el("h3", {"id": "form"}, e ? t("Alterar o calibre {1}", {1: h(e.nome)}) : t("Novo calibre"))
+      + escolha
       + el("form", {"data-recurso": "calibres", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": e ? e.id : 0})
         + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": vazio(f.nome), "required": true, "maxlength": "80", "placeholder": t("ex.: NH35")})}))
         + el("label", {}, t("Fabricante {1}", {1: el("input", {"name": "fabricante", "value": vazio(f.fabricante), "maxlength": "80", "placeholder": t("ex.: Seiko")})}))
         + el("label", {"style": "grid-column: 1 / -1"}, t("Link do manual técnico {1}", {1: el("input", {"type": "url", "name": "link", "value": vazio(f.link), "maxlength": "500", "placeholder": fixo("https://")})}))
         + el("label", {"style": "grid-column: 1 / -1"}, t("Observação (as recomendações do fabricante) {1}", {1: el("textarea", {"name": "observacao", "rows": "3", "maxlength": "4000"}, h(vazio(f.observacao)))}))
         + el("fieldset", {"class": "campos-calibre", "style": "grid-column: 1 / -1"}, el("legend", {}, t("Os valores que o calibre define (vazio: não define)"))
-          + d.campos.map(function (c) { return entradaDoCalibre(c, f.valores[c.identificador] === undefined ? null : f.valores[c.identificador]); }).join(""))
+          + d.campos.filter(function (c) { return noForm.indexOf(c.identificador) >= 0; }).map(function (c) {
+            return entradaDoCalibre(c, f.valores[c.identificador] === undefined ? null : f.valores[c.identificador]);
+          }).join(""))
         + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + (e ? " " + el("a", {"href": "cadastros.php?aba=calibres"}, t("cancelar")) : "")));
     res += el("section", {"class": "cartao-config"}, sec);
     document.getElementById("cadastros").innerHTML = res;
@@ -342,8 +354,11 @@ document.addEventListener("submit", function (ev) {
 aoGravar = function (form, res) {
   if (!res.ok) { return salvarSemMover(form, res, function () {}); }
   recado = "";
-  editar = 0;
-  history.replaceState(null, "", "cadastros.php?aba=" + aba);
+  // a troca dos campos do formulário do calibre (a Configuração) não acaba a edição: o formulário volta com os outros campos
+  if (form.getAttribute("data-recurso") !== "config") {
+    editar = 0;
+    history.replaceState(null, "", "cadastros.php?aba=" + aba);
+  }
   return salvarSemMover(form, res, recarregarCadastros);
 };
 

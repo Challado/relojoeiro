@@ -247,6 +247,9 @@ function recarregarConfig(aplicadas, manterPosicao) {
             + el("option", {"value": "flutuante", "selected": cfg("painel_modo") === "flutuante"}, t("Numa janela flutuante, grande"))))
           + parCampo(t("Destaque no alto da página Hoje"), el("select", {"name": "destaque_hoje"}, el("option", {"value": "dia", "selected": cfg("destaque_hoje") !== "pulso"}, t("O relógio do dia"))
             + el("option", {"value": "pulso", "selected": cfg("destaque_hoje") === "pulso"}, t("O relógio no pulso agora"))))
+          // o formulário do calibre (Cadastros › Calibres): só os campos do movimento (a marca do campo) ou todos
+          + parCampo(t("Formulário do calibre (Cadastros › Calibres)"), el("select", {"name": "calibre_campos"}, el("option", {"value": "movimento", "selected": cfg("calibre_campos") !== "todos"}, t("Só os campos do movimento"))
+            + el("option", {"value": "todos", "selected": cfg("calibre_campos") === "todos"}, t("Todos os campos do cadastro"))), "largo")
           // o reloginho da barra (e da aba): um modelo por hora do dia, na ordem, sorteado ou sorteado sem repetir
           + parCampo(t("Reloginho da barra (um dos {1} modelos por hora)", {1: d.relojinho.modelos}), el("select", {"name": "relojinho_modo"},
             [["hora", t("Normal: cada hora tem o seu")], ["aleatorio", t("Aleatório: sorteia um a cada hora (pode repetir)")],
