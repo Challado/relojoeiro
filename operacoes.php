@@ -1953,6 +1953,8 @@ function op_rodizio($acao, $d)
         }
     };
     $escala = valor("SELECT escala_dias FROM modo WHERE id = ?", [modo_ativo()]) !== null;
+    // o plano antes da gravação: a resposta diz o que mudou (mudancas), dia a dia; marcar o modo não mexe no plano
+    $retrato = $acao === "modo" ? null : plano_retrato($hoje);
     if ($acao === "modo") {
         $id_modo = (int)($d["modo"] ?? 0);
         $m = linha("SELECT * FROM modo WHERE id = ?", [$id_modo]);
@@ -2003,7 +2005,7 @@ function op_rodizio($acao, $d)
             // o de hoje trocado pelo sorteio: o motivo é o do sorteio
             $troca_hoje((int)$depois["relogio_id"], $depois["motivo"] ?? null);
         }
-        $msg = t("Sorteado de novo{1}.{2}", [1 => $desde > $hoje ? t(" a partir de amanhã; hoje continua o {1}", [1 => $antes["nome"] ?? "mesmo"]) : "", 2 => $depois ? " Hoje: " . $depois["nome"] . "." : ""])
+        $msg = t("Sorteado de novo{1}.{2}", [1 => $desde > $hoje ? ($antes ? t(" a partir de amanhã; hoje continua o {1}", [1 => $antes["nome"]]) : t(" a partir de amanhã")) : "", 2 => $depois ? " " . t("Hoje: {1}.", [1 => $depois["nome"]]) : ""])
             . dias_guardados_texto($guardados, $sobrescrever);
     } elseif ($acao === "sem_relogio") {
         // hoje sem relógio: o dia fica livre (sem relógio e sem sorteio, como os dias livres do plano) e a sessão do rodízio de
@@ -2322,7 +2324,7 @@ function op_rodizio($acao, $d)
             $msg = t("Semana de {1} a {2} montada.", [1 => $ini->format("d/m"), 2 => $ini->modify("+6 days")->format("d/m")]) . dias_guardados_texto($guardados, $sobrescrever);
         }
     }
-    return resultado($erros, $msg);
+    return resultado($erros, $msg, $retrato !== null && count($erros) === 0 && $msg !== "" ? ["mudancas" => plano_mudancas($retrato, plano_retrato($hoje))] : []);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

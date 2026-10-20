@@ -7,6 +7,7 @@ var SEMANA = [t("dom"), t("seg"), t("ter"), t("qua"), t("qui"), t("sex"), t("sá
 var filtro = {dias: "90", relogio: "", pagina: 1};
 var dados = null;
 var recado = "";
+var mudancas = null;
 
 function montarPlano() {
   var d = dados;
@@ -17,7 +18,7 @@ function montarPlano() {
 
   var res = el("h1", {}, t("Plano")) + el("p", {"class": "nota"}, t("Modo: {1}{2}{3}. Troque o relógio de qualquer dia em \"trocar por…\": o dia fica escolhido à mão{4}.", {1: h(d.modo || t("nenhum")), 2: d.escala_fim ? t(" · a escala vai até {1}", {1: dataBr(d.escala_fim)}) : "", 3: ultimo ? t(" · o plano gravado vai até {1}", {1: dataBr(ultimo)}) : "", 4: d.escala_fim ? t(" e a escala é refeita a partir dele") : ""}));
   if (recado !== "") {
-    res += el("p", {"class": "acao"}, h(recado));
+    res += el("p", {"class": "acao"}, h(recado)) + tabelaMudancas(mudancas);
   }
   // os filtros
   var periodos = [["30", t("Próximos 30 dias")], ["90", t("Próximos 90 dias")], ["365", t("Próximo ano")], ["730", t("Próximos 2 anos")], ["", t("Tudo")]];
@@ -90,6 +91,7 @@ function recarregarPlano() {
 
 aoGravar = function (form, res) {
   recado = textoResposta(res);
+  mudancas = res.ok ? res.mudancas || null : null;
   recarregarPlano();
 };
 

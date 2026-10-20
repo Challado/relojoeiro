@@ -27,6 +27,8 @@
  *   O master vê todas; com como=<login> (ou o cookie como, da faixa "Vendo como" das páginas) ele vê e grava como o outro.
  *   Toda exclusão é em dois passos: sem confirmar=1, nada sai, e a resposta (409) traz "confirmar": true e "impacto" (o que sai
  *   junto, em cascata, no banco inteiro); com confirmar=1, apaga, e os arquivos dos documentos saem do disco na hora.
+ *   Toda gravação do recurso=rodizio que mexe no plano (menos acao=modo, que só marca o modo) responde também "mudancas": o
+ *   que mudou do plano de hoje em diante em relação ao de antes (mudaram, iguais, texto e os dias, com antes, depois e o motivo).
  *
  * ---------------------------------------------------------------------------------------------
  * FORMATO

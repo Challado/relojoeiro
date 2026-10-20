@@ -467,7 +467,7 @@ document.addEventListener("submit", function (ev) {
     manual = {de: "", ate: "", escolhas: {}};
     return Promise.resolve(window.recarregarHoje ? window.recarregarHoje() : null)
       .then(function () { return restaurarPosicaoDaGravacao(posicao); })
-      .then(function () { avisoFlutuanteGravacao(textoResposta(res), false); });
+      .then(function () { avisoFlutuanteGravacao(textoResposta(res), false, res.mudancas); });
   }).catch(function (e) {
     botoes.forEach(function (b) { b.disabled = false; });
     var erro = t("Não consegui gravar: {1}. Confira a conexão e tente de novo.", {1: e.message});

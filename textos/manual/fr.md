@@ -1,4 +1,4 @@
-<!-- origem: db9b1e4ecbdec01e691733ee9027e8dd43353326 -->
+<!-- origem: 799921f14551d75abb3ec1468f74fcd910b3826c -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -274,6 +274,12 @@ de la Rotation manuelle, par exemple) ; le message dit combien sont restés (*«
 la case **Tout écraser** cochée, tout ce que le plan contient à partir du début du tirage disparaît (à partir de demain,
 d'aujourd'hui ou du premier jour de la semaine prochaine), à la main, libre ou tiré, et le mode remonte tout ; la
 confirmation prévient avant, et le message dit combien de jours à la main et de jours libres ont été écrasés.
+
+**Ce qui a changé.** Toute écriture qui touche au plan (le Tirer à nouveau, la semaine suivante, le remplacer par…, la
+rotation manuelle, les périodes, le Pas de montre aujourd'hui et l'effacement) montre, avec le message, ce qui a changé par
+rapport au plan d'avant : *« 3 jours ont changé ; 11 ont gardé la même montre. »* et un petit tableau avec chaque jour qui a
+changé (**Jour**, **Avant**, **Après** et le **Motif** de la nouvelle). Avec le tableau, la boîte reste jusqu'à ce que vous
+la fermiez. Par l'API, la réponse apporte `mudancas`.
 
 **Les semaines.** Hors planning, chaque mode dit **combien de semaines en avant** le plan arrive monté (1 à 8 ; la liste montre
 les semaines avec les dates). Le plan va jusqu'au dernier jour de la dernière d'entre elles : le dimanche, ou le samedi avec la

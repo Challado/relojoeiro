@@ -1,4 +1,4 @@
-<!-- origem: db9b1e4ecbdec01e691733ee9027e8dd43353326 -->
+<!-- origem: 799921f14551d75abb3ec1468f74fcd910b3826c -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -269,6 +269,12 @@ Rotación manual, por ejemplo); el mensaje dice cuántos quedaron (*"Quedaron co
 casilla **Sobrescribir todo** marcada, sale todo lo que el plan tiene desde el comienzo del sorteo en adelante (desde mañana,
 desde hoy o desde el primer día de la próxima semana), a mano, libre o sorteado, y el modo arma todo de nuevo; la
 confirmación avisa antes, y el mensaje dice cuántos días a mano y libres fueron sobrescritos.
+
+**Lo que cambió.** Toda escritura que toca el plan (el Sortear de nuevo, la próxima semana, el cambiar por…, la rotación
+manual, los periodos, el Sin reloj hoy y el borrar) muestra, junto con el mensaje, lo que cambió respecto al plan de antes:
+*"3 días cambiaron; 11 se quedaron con el mismo reloj."* y una tablita con cada día que cambió (**Día**, **Antes**,
+**Después** y el **Motivo** del nuevo). Con la tablita, la caja se queda hasta que la cierres. Por la API, la respuesta trae
+`mudancas`.
 
 **Las semanas.** Fuera de la escala, cada modo dice **cuántas semanas adelante** viene armado el plan (1 a 8; la lista muestra
 las semanas con las fechas). El plan llega hasta el último día de la última de ellas: el domingo, o el sábado con la semana

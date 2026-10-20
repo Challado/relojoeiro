@@ -439,7 +439,19 @@ function restaurarPosicaoDaGravacao(p) {
     });
   });
 }
-function avisoFlutuanteGravacao(mensagem, erro) {
+// O que uma gravação do rodízio mudou no plano (a resposta traz mudancas): o resumo e, quando algum dia mudou, a
+// tabelinha dia a dia (antes → depois, com o motivo do novo), como a API mandou
+function tabelaMudancas(m) {
+  if (!m) { return ""; }
+  var linhas = m.dias.map(function (x) {
+    return el("tr", {}, el("td", {}, h(x.dia_semana_curto + " " + dataBr(x.data, true))) + el("td", {}, h(x.antes_texto)) + el("td", {}, h(x.depois_texto))
+      + el("td", {}, h(x.motivo || "")));
+  }).join("");
+  return el("div", {"class": "mudancas-plano"}, el("p", {"class": "nota"}, h(m.texto))
+    + (m.mudaram > 0 ? el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Dia")) + el("th", {}, t("Antes")) + el("th", {}, t("Depois")) + el("th", {}, t("Motivo"))))
+      + el("tbody", {}, linhas)) : ""));
+}
+function avisoFlutuanteGravacao(mensagem, erro, mudancas) {
   var antigo = document.getElementById("gravacao-flutuante");
   if (antigo) { antigo.remove(); }
   if (!mensagem) { return; }
@@ -452,9 +464,19 @@ function avisoFlutuanteGravacao(mensagem, erro) {
     + "padding:.85rem 1rem;display:flex;align-items:center;gap:1rem;border-radius:12px;"
     + "background:var(--papel,white);color:var(--tinta,#202b36);box-shadow:0 8px 28px #0003;"
     + "border:2px solid " + (erro ? "#9b2c22" : "var(--safira,#254a6d)") + ";";
-  var msg = document.createElement("span");
+  var msg = document.createElement("div");
   msg.style.flex = "1";
-  msg.textContent = mensagem;
+  msg.style.minWidth = "0";
+  var frase = document.createElement("span");
+  frase.textContent = mensagem;
+  msg.appendChild(frase);
+  // com o que mudou no plano, a caixa fica até ser fechada (dá tempo de ler a tabelinha)
+  var comTabela = !erro && mudancas && mudancas.mudaram > 0;
+  if (!erro && mudancas) {
+    var bloco = document.createElement("div");
+    bloco.innerHTML = tabelaMudancas(mudancas);
+    msg.appendChild(bloco);
+  }
   var fechar = document.createElement("button");
   fechar.type = "button";
   fechar.className = "leve";
@@ -466,10 +488,10 @@ function avisoFlutuanteGravacao(mensagem, erro) {
   fechar.addEventListener("click", remover);
   caixa.append(msg, fechar);
   document.body.appendChild(caixa);
-  if (!erro) { timer = setTimeout(remover, 6000); }
+  if (!erro && !comTabela) { timer = setTimeout(remover, 6000); }
   caixa.addEventListener("pointerenter", function () { clearTimeout(timer); });
   caixa.addEventListener("pointerleave", function () {
-    if (!erro) { clearTimeout(timer); timer = setTimeout(remover, 6000); }
+    if (!erro && !comTabela) { clearTimeout(timer); timer = setTimeout(remover, 6000); }
   });
 }
 function salvarSemMover(form, res, atualizar) {
@@ -479,7 +501,7 @@ function salvarSemMover(form, res, atualizar) {
       form.querySelectorAll("button").forEach(function (b) { b.disabled = false; });
     }
     return restaurarPosicaoDaGravacao(posicao);
-  }).then(function () { avisoFlutuanteGravacao(textoResposta(res), !res.ok); });
+  }).then(function () { avisoFlutuanteGravacao(textoResposta(res), !res.ok, res.mudancas); });
 }
 
 var aoGravar = function (form, res) { window.location.reload(); };

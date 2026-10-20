@@ -79,6 +79,9 @@ h2 { font-size: 1.1rem; margin: 0 0 .75rem; }
 }
 
 .acao { color: var(--ambar); font-weight: 600; }
+/* o que uma gravação do rodízio mudou no plano (a caixa depois de gravar e o recado do Plano) */
+.mudancas-plano .nota { margin: .3rem 0; }
+.mudancas-plano table { font-size: .9rem; }
 
 .botoes, .linha { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
 form { margin: 0; }

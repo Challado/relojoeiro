@@ -770,6 +770,6 @@ aoGravar = function (form, res, dados) {
       return painel && abrir > 0 ? abrirNoPainel(abrir) : null;
     }).then(function () {
       return restaurarPosicaoDaGravacao(posicao);
-    }).then(function () { avisoFlutuanteGravacao(texto, false); });
+    }).then(function () { avisoFlutuanteGravacao(texto, false, resp.mudancas); });
   });
 };

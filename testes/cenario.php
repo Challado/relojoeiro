@@ -597,6 +597,17 @@ $so_um = escrever(["recurso" => "modos", "acao" => "salvar", "id" => 0, "nome" =
     "ciclo" => 1, "roteiro" => "candidato = RELOGIO(\"Xiaomi Band 8\")"]);
 escrever(["recurso" => "modos", "acao" => "ativar", "id" => $so_um]);
 escrever(["recurso" => "rodizio", "acao" => "resortear"]);
+// a resposta diz o que mudou no plano: cada dia que mudou vai para o único candidato, e a conta fecha com o resumo
+$m_so_um = end($foto["escritas"])["resposta"]["mudancas"] ?? null;
+if (!is_array($m_so_um) || !isset($m_so_um["mudaram"], $m_so_um["iguais"], $m_so_um["texto"], $m_so_um["dias"]) || $m_so_um["mudaram"] !== count($m_so_um["dias"])) {
+    $falhas[] = "o que mudou no plano: a resposta do Sortear de novo sem mudancas completo";
+} else {
+    foreach ($m_so_um["dias"] as $x) {
+        if ($x["depois"] === "relogio" && (int)$x["depois_relogio_id"] !== $rel["smart"]) {
+            $falhas[] = "o que mudou no plano: " . $x["data"] . " foi para " . json_encode($x["depois_relogio_id"]);
+        }
+    }
+}
 $p_so_um = ler("plano com um só candidato", ["recurso" => "plano"]);
 $dias_so_um = 0;
 foreach ($p_so_um["plano"] ?? [] as $d) {

@@ -319,6 +319,11 @@ Rodízio manual, por exemplo); a mensagem diz quantos ficaram (*"Ficaram como es
 dia da próxima semana), à mão, livre ou sorteado, e o modo monta tudo de novo; a confirmação avisa antes, e a mensagem diz
 quantos dias à mão e livres foram sobrescritos.
 
+**O que mudou.** Toda gravação que mexe no plano (o Sortear de novo, a próxima semana, o trocar por…, o Rodízio manual, os
+períodos, o Sem relógio hoje e o apagar) mostra, junto com a mensagem, o que mudou em relação ao plano de antes: *"3 dias
+mudaram; 11 ficaram com o mesmo relógio."* e uma tabelinha com cada dia que mudou (**Dia**, **Antes**, **Depois** e o
+**Motivo** do novo). Com a tabelinha, a caixa fica até você fechar. Pela API, a resposta traz `mudancas`.
+
 **As semanas.** Fora da escala, cada modo diz **quantas semanas à frente** o plano vem montado (1 a 8; a lista mostra as
 semanas com as datas). O plano vai até o último dia da última delas: o domingo, ou o sábado com a semana começando no
 domingo (com uma semana só, no último dia da semana o plano traz também o primeiro da seguinte, para o aviso da véspera), e a

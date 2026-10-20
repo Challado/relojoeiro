@@ -3392,6 +3392,52 @@ function dias_guardados_texto($g, $sobrescrever)
         : " " . t("Ficaram como estavam: {1} (para sortear também esses, marque Sobrescrever tudo).", [1 => implode(t(" e "), $partes)]);
 }
 
+// O plano de $desde em diante, para comparar antes e depois de uma gravação do rodízio: [AAAA-MM-DD => [id, nome, motivo]],
+// com id null num dia livre. Um dia sem relógio e sem ser livre não entra
+function plano_retrato($desde)
+{
+    $r = [];
+    foreach (linhas("SELECT p.data, p.relogio_id, p.motivo, r.nome FROM plano p JOIN relogio r ON r.id = p.relogio_id WHERE p.data >= ?", [$desde->format("Y-m-d")]) as $l) {
+        $r[substr((string)$l["data"], 0, 10)] = [(int)$l["relogio_id"], (string)$l["nome"], $l["motivo"]];
+    }
+    foreach (dias_livres($desde->format("Y-m-d"), "") as $l) {
+        $r[$l] = $r[$l] ?? [null, "", null];
+    }
+    ksort($r);
+    return $r;
+}
+
+// O que uma gravação do rodízio mudou no plano (dois retratos do plano_retrato): cada dia que trocou de relógio, virou livre,
+// deixou de ser livre, ganhou ou perdeu o relógio, com o de antes, o de depois e o motivo do novo; e quantos dias ficaram com o
+// mesmo relógio (o motivo pode ter mudado: o sorteio foi refeito, e saiu o mesmo)
+function plano_mudancas($antes, $depois)
+{
+    $curto = [1 => t("seg"), 2 => t("ter"), 3 => t("qua"), 4 => t("qui"), 5 => t("sex"), 6 => t("sáb"), 7 => t("dom")];
+    $estado = function ($x) { return $x === null ? "vazio" : ($x[0] === null ? "livre" : "relogio"); };
+    $nome = function ($x) { return $x === null ? t("sem plano") : ($x[0] === null ? t("livre") : $x[1]); };
+    $datas = array_unique(array_merge(array_keys($antes), array_keys($depois)));
+    sort($datas);
+    $dias = [];
+    $iguais = 0;
+    foreach ($datas as $data) {
+        $a = $antes[$data] ?? null;
+        $d = $depois[$data] ?? null;
+        if ($a !== null && $d !== null && $a[0] === $d[0]) {
+            $iguais++;
+            continue;
+        }
+        $n = (int)date("N", strtotime($data));
+        $dias[] = ["data" => $data, "dia_semana_curto" => $curto[$n],
+            "antes" => $estado($a), "antes_relogio_id" => $a === null ? null : $a[0], "antes_relogio" => $a === null || $a[0] === null ? null : $a[1],
+            "depois" => $estado($d), "depois_relogio_id" => $d === null ? null : $d[0], "depois_relogio" => $d === null || $d[0] === null ? null : $d[1],
+            "antes_texto" => $nome($a), "depois_texto" => $nome($d), "motivo" => $d === null || $d[0] === null ? null : $d[2],
+            "texto" => t("{1} {2}: {3} → {4}", [1 => $curto[$n], 2 => date("d/m", strtotime($data)), 3 => $nome($a), 4 => $nome($d)])];
+    }
+    $texto = count($dias) === 0 ? t("Nenhum dia mudou.") : (count($dias) === 1 ? t("1 dia mudou") : t("{1} dias mudaram", [1 => count($dias)]))
+        . (count($dias) === 0 ? "" : ($iguais === 0 ? "." : ($iguais === 1 ? t("; 1 ficou com o mesmo relógio.") : t("; {1} ficaram com o mesmo relógio.", [1 => $iguais]))));
+    return ["mudaram" => count($dias), "iguais" => $iguais, "texto" => $texto, "dias" => $dias];
+}
+
 // O bloco do modo que cobre um dia da semana (o primeiro), ou null
 function bloco_do_dia($blocos, $dia)
 {

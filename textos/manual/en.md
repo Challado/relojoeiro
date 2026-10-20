@@ -1,4 +1,4 @@
-<!-- origem: db9b1e4ecbdec01e691733ee9027e8dd43353326 -->
+<!-- origem: 799921f14551d75abb3ec1468f74fcd910b3826c -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -275,6 +275,12 @@ the Manual rotation, for example); the message says how many stayed (*"Left as t
 **Overwrite everything** box checked, everything the plan has from the start of the draw on goes away (from tomorrow, from
 today or from the first day of the next week), by hand, free or drawn, and the mode builds everything again; the
 confirmation warns you first, and the message says how many days by hand and free days were overwritten.
+
+**What changed.** Every write that touches the plan (Draw again, the next week, replace with…, the manual rotation,
+the periods, No watch today and erasing) shows, together with the message, what changed compared with the plan before: *"3
+days changed; 11 kept the same watch."* and a little table with each day that changed (**Day**, **Before**, **After** and
+the **Reason** for the new one). With the table, the box stays until you close it. Through the API, the response brings
+`mudancas`.
 
 **The weeks.** Outside the schedule, each mode says **how many weeks ahead** the plan comes built (1 to 8; the list shows the
 weeks with their dates). The plan goes up to the last day of the last of them: Sunday, or Saturday with the week starting on
