@@ -1,4 +1,4 @@
-<!-- origem: 5fab8a23882be4cce7b59773763a11d410282cc3 -->
+<!-- origem: f3b7fe2d28ca829b18879025e1b3293f0289ef04 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1106,7 +1106,7 @@ temps et le pourcentage dans chaque état.</sub>
 
 ![Sur le téléphone : la page Aujourd'hui, la liste des montres en cartes et le panneau d'une montre en plein écran](docs/telas/celular.png)
 
-<sub>Sur le téléphone : le menu se replie dans une barre, les tableaux deviennent des cartes (rien ne dépasse la largeur de
+<sub>Sur le téléphone : le menu se replie dans une barre, les tableaux deviennent des cartes et des fiches, chaque donnée dans une case avec son nom, rien en vrac (rien ne dépasse la largeur de
 l'écran, et aucun champ ne disparaît : chaque carte de montre reprend les 12 colonnes du tableau) et le panneau de la montre
 s'ouvre en plein écran ; le « retour » de l'appareil ferme le panneau.</sub>
 

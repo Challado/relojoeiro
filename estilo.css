@@ -984,31 +984,21 @@ table.resumo-plano { max-width: 44rem; }
   table.lista-execucoes tr.linha-erro { background: #fdf2f1; }
   table.lista-execucoes td:nth-child(4) { flex-basis: 100%; }
 
-  /* Configuração, "O que vai para onde": cada aviso num cartão, com os canais lado a lado e o nome de cada um na frente */
-  table.canais, table.canais tbody { display: block; }
-  table.canais thead { display: none; }
-  table.canais tbody tr { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem 1.1rem; padding: .65rem .7rem; border-bottom: 1px solid var(--aco); }
-  table.canais tbody tr.linha-corpo { display: block; padding: 0 .7rem; }
-  table.canais tbody tr td:nth-child(n) { display: block; padding: 0; border: 0; width: auto; text-align: left; white-space: normal; }
-  table.canais tbody tr:not(.linha-corpo) td:first-child { flex-basis: 100%; font-weight: 600; }
-  table.canais tbody td[data-rotulo]:not(:first-child)::before { content: attr(data-rotulo) "\00a0"; color: var(--cinza); font-size: .82rem; }
-  table.canais td.proprios label { margin: 0 0 0 .6rem; }
-
   /* as tabelas dos cadastros (Cadastros, Critérios, Grupos, Configuração) viram fichas: a primeira coluna é o título, e
      cada uma das outras leva o nome da coluna ao lado (o data-rotulo, posto pelo api.js) */
   .rolagem > table.compacta:not(.tabela-faixas), .rolagem > table.compacta:not(.tabela-faixas) > tbody { display: block; }
   .rolagem > table.compacta:not(.tabela-faixas) > thead { display: none; }
-  .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr { display: block; padding: .65rem 0; border-bottom: 1px solid var(--aco-escuro); }
-  .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr:last-child { border-bottom: 0; }
+  .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr { display: block; margin: 0 0 .6rem; border: 1px solid var(--aco-escuro); border-radius: 8px; overflow: hidden; }
   .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr > td {
-    display: block; position: relative; min-height: 1.5rem; padding: .15rem 0; border: 0; text-align: left; white-space: normal; font-size: .92rem;
+    display: block; position: relative; min-height: 1.5rem; padding: .35rem .5rem; border: 0; border-top: 1px solid var(--aco); text-align: left; white-space: normal; font-size: .92rem;
   }
-  .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr > td[data-rotulo] { padding-left: 37%; }
+  .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr > td[data-rotulo] { padding-left: calc(36% + .5rem); }
   .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr > td[data-rotulo]::before {
-    content: attr(data-rotulo); position: absolute; left: 0; top: .25rem; width: 34%; color: var(--cinza);
+    content: attr(data-rotulo); position: absolute; left: 0; top: 0; bottom: 0; width: 36%; box-sizing: border-box; padding: .35rem .5rem; background: #f6f8fa;
+    border-right: 1px solid var(--aco); color: var(--cinza); overflow-wrap: anywhere;
     font: 400 .78rem/1.25 "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   }
-  .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr > td:first-child { padding-left: 0; font-weight: 600; font-size: 1rem; }
+  .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr > td:first-child { padding-left: .5rem; border-top: 0; background: var(--aco); font-weight: 600; font-size: 1rem; }
   .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr > td:first-child::before { content: none; }
   .rolagem > table.compacta:not(.tabela-faixas) > tbody > tr > td:empty { display: none; }
 }
@@ -1396,13 +1386,14 @@ a.hoje-foto, a.hoje-foto * { text-decoration: none; }
 #tabela-relogios.em-cartoes tr.filtros input.curto { width: 100%; }
 /* cada relógio: a foto e o nome na linha de cima; embaixo os campos em colunas iguais, alinhados de um cartão para o outro */
 #tabela-relogios.em-cartoes tbody tr {
-  display: grid; grid-template-columns: repeat(var(--colunas), minmax(0, 1fr)); gap: .5rem .8rem; align-items: start;
-  padding: .7rem .8rem; border-bottom: 1px solid var(--aco);
+  display: grid; grid-template-columns: repeat(var(--colunas), minmax(0, 1fr)); gap: .35rem; align-items: stretch;
+  padding: .6rem .7rem; border-bottom: 1px solid var(--aco);
 }
-#tabela-relogios.em-cartoes tbody td { display: block; padding: 0; border: 0; background: none; white-space: normal; min-width: 0; width: auto; box-shadow: none !important; }
-#tabela-relogios.em-cartoes tbody td.col-nome { grid-column: 1 / -1; grid-row: 1; font-size: 1rem; }
+#tabela-relogios.em-cartoes tbody td { display: block; padding: 0 .4rem .3rem; border: 1px solid var(--aco); border-radius: 6px; background: none; white-space: normal; min-width: 0; width: auto; box-shadow: none !important; overflow: hidden; }
+#tabela-relogios.em-cartoes tbody td.col-nome { grid-column: 1 / -1; grid-row: 1; font-size: 1rem; border: 0; padding: 0; background: none; }
 #tabela-relogios.em-cartoes tbody td[colspan] { grid-column: 1 / -1; }
-#tabela-relogios.em-cartoes tbody td[data-rotulo]::before { content: attr(data-rotulo); display: block; margin-bottom: .05rem; font-size: .72rem; font-weight: 400; color: var(--cinza); }
+#tabela-relogios.em-cartoes tbody td[data-rotulo]::before { content: attr(data-rotulo); display: block; margin: 0 -.4rem .25rem; padding: .15rem .4rem; background: #f6f8fa; border-bottom: 1px solid var(--aco); font-size: .72rem; font-weight: 400; color: var(--cinza); }
+#tabela-relogios.em-cartoes tbody td.col-nome::before { content: none; }
 #tabela-relogios.em-cartoes tbody td.col-valor { text-align: left; }
 #tabela-relogios.em-cartoes tbody tr.selecionado { background: #e3eaf5; }
 #tabela-relogios.em-cartoes tbody tr.de-hoje { box-shadow: inset 3px 0 0 var(--safira); }

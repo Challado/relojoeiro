@@ -1,4 +1,4 @@
-<!-- origem: 5fab8a23882be4cce7b59773763a11d410282cc3 -->
+<!-- origem: f3b7fe2d28ca829b18879025e1b3293f0289ef04 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1082,7 +1082,7 @@ percentage in each state.</sub>
 
 ![On the phone: the Today page, the list of watches as cards and a watch's panel full screen](docs/telas/celular.png)
 
-<sub>On the phone: the menu is folded into a bar, the tables become cards (nothing goes beyond the width of the screen, and no
+<sub>On the phone: the menu is folded into a bar, the tables become cards and sheets, each value in a small box with its name, nothing loose (nothing goes beyond the width of the screen, and no
 field disappears: each watch card brings the table's 12 columns) and the watch's panel opens full screen; the device's "back"
 closes the panel.</sub>
 

@@ -1154,7 +1154,7 @@ porcentaje en cada estado.</sub>
 
 ![En el móvil: la página Hoy, la lista de relojes en tarjetas y el panel de un reloj a pantalla completa](docs/telas/celular.png)
 
-<sub>En el móvil: el menú se pliega en una barra, las tablas se vuelven tarjetas (nada pasa del ancho de la pantalla, y
+<sub>En el móvil: el menú se pliega en una barra, las tablas se vuelven tarjetas y fichas, cada dato en una casilla con su nombre, sin nada suelto (nada pasa del ancho de la pantalla, y
 ningún campo desaparece: cada tarjeta de reloj trae las 12 columnas de la tabla) y el panel del reloj se abre a pantalla
 completa; el "atrás" del aparato cierra el panel.</sub>
 

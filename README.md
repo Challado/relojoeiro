@@ -1133,7 +1133,7 @@ porcentagem em cada estado.</sub>
 
 ![No celular: a página Hoje, a lista dos relógios em cartões e o painel de um relógio em tela cheia](docs/telas/celular.png)
 
-<sub>No celular: o menu fica recolhido numa barra, as tabelas viram cartões (nada passa da largura da tela, e nenhum campo
+<sub>No celular: o menu fica recolhido numa barra, as tabelas viram cartões e fichas, cada dado numa casinha com o nome dele, sem nada solto (nada passa da largura da tela, e nenhum campo
 some: cada cartão de relógio traz as 12 colunas da tabela) e o painel do relógio abre em tela cheia; o "voltar" do aparelho fecha
 o painel.</sub>
 
