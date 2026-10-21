@@ -93,6 +93,8 @@ $saida = ["gerado_em" => date("Y-m-d H:i:s", $agora_p),
         "horas_no_pulso" => round($horas_p, 1), "dias_de_uso" => $du !== null ? (int)round($du) : null, "custo_por_uso" => $cpu !== null ? round($cpu, 2) : null],
     "marcacoes" => $marcacoes, "servicos" => $servicos,
     "acessorios" => acessorios_lista($id),
+    // os serviços e diagnósticos (recurso=servicos): quem fez, o custo, a estanqueidade, a marcha antes e depois
+    "servicos_diagnosticos" => servicos_lista($id),
     "documentos" => array_map(function ($x) use ($cat_p) {
         return ["id" => (int)$x["id"], "categoria" => $cat_p[(int)$x["categoria_id"]] ?? "", "titulo" => $x["titulo"], "data" => $x["data"] === null ? null : substr((string)$x["data"], 0, 10), "nome" => $x["nome"]];
     }, documentos_do_relogio($id)),

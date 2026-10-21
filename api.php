@@ -1005,6 +1005,57 @@
  *     acessorios[].relogio           o nome desse relógio; null: solto
  *     acessorios[].observacao        a observação (null)
  *     acessorios[].criado            quando foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     servicos                       os serviços e diagnósticos de todos os relógios (como em recurso=servicos)
+ *     servicos[]                     um serviço
+ *     servicos[].id                  o número do serviço (o id da gravação)
+ *     servicos[].relogio_id          o relógio do serviço
+ *     servicos[].relogio             o nome do relógio
+ *     servicos[].data                a data do serviço (AAAA-MM-DD)
+ *     servicos[].ha_dias             há quantos dias foi (no dia da coleção)
+ *     servicos[].tipo                revisao, pilha, estanqueidade, regulagem, polimento, reparo, diagnostico ou outro
+ *     servicos[].tipo_texto          o tipo por extenso
+ *     servicos[].responsavel         quem fez (a relojoaria, o relojoeiro); null: não informado
+ *     servicos[].descricao           o que foi feito; null: não informado
+ *     servicos[].mao_de_obra         a mão de obra, em R$; null: não informada
+ *     servicos[].pecas               as peças trocadas, na ordem
+ *     servicos[].pecas[]             uma peça
+ *     servicos[].pecas[].nome        o nome da peça
+ *     servicos[].pecas[].custo       o custo da peça, em R$; null: não informado
+ *     servicos[].custo_pecas         a soma do custo das peças, em R$ (0 sem nenhuma com custo)
+ *     servicos[].custo               o custo do serviço: a mão de obra mais as peças, em R$; null: nada com custo
+ *     servicos[].estanqueidade       o teste de estanqueidade: aprovado ou reprovado; null: não testada
+ *     servicos[].estanqueidade_texto aprovada ou reprovada, por extenso; null: não testada
+ *     servicos[].estanqueidade_bar   a pressão do teste, em bar; null: não informada
+ *     servicos[].marcha_antes        a marcha antes do serviço, informada pelo profissional, em s/dia (+ adianta); null: não informada
+ *     servicos[].marcha_depois       a marcha depois do serviço, informada pelo profissional, em s/dia; null: não informada
+ *     servicos[].marcha_antes_texto  a marcha antes, pronta ("+25,0 s/dia"); null
+ *     servicos[].marcha_depois_texto a marcha depois, pronta; null
+ *     servicos[].medida_antes        a marcha medida pelo sistema antes do serviço: os intervalos do desvio da hora que terminam nos 60
+ *                                    dias antes da data; null: nenhum
+ *     servicos[].medida_antes.marcha a marcha, em s/dia, pesada pelo tempo de cada intervalo
+ *     servicos[].medida_antes.marcha_texto
+ *                                    a marcha pronta
+ *     servicos[].medida_antes.intervalos
+ *                                    quantos intervalos entraram
+ *     servicos[].medida_depois       a marcha medida pelo sistema depois do serviço: os intervalos que começam nos 60 dias depois do dia do
+ *                                    serviço; null: nenhum
+ *     servicos[].medida_depois.marcha
+ *                                    a marcha, em s/dia
+ *     servicos[].medida_depois.marcha_texto
+ *                                    a marcha pronta
+ *     servicos[].medida_depois.intervalos
+ *                                    quantos intervalos entraram
+ *     servicos[].garantia_ate        a garantia do serviço até (AAAA-MM-DD); null: sem
+ *     servicos[].garantia_vale       true se a garantia ainda vale hoje
+ *     servicos[].observacao          a observação do profissional; null: sem
+ *     servicos[].documentos          os documentos do relógio que são do serviço (a nota, o orçamento, as fotos), pelo título
+ *     servicos[].documentos[]        um documento
+ *     servicos[].documentos[].id     o número do documento
+ *     servicos[].documentos[].titulo o título
+ *     servicos[].documentos[].url    o endereço do arquivo (recurso=documento)
+ *     servicos[].marcacao            true se o serviço virou também a marcação do tipo de lançamento de mesmo nome (a revisão e a troca de
+ *                                    pilha)
+ *     servicos[].criado              quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[]                     os relógios, com tudo o que se sabe de cada um
  *     relogios[].acaba_em_datacomtz  quando acaba, em ISO 8601 com o fuso (texto, ex.: 2026-10-02T18:40:00-03:00); null com o motivo
  *     relogios[].acaba_em_segundos   quantos segundos faltam para acabar, a partir de calculado_em_unixtimestamp (número inteiro, em
@@ -1857,6 +1908,117 @@
  *     relogio.acessorios[].observacao
  *                                    a observação (null)
  *     relogio.acessorios[].criado    quando foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     relogio.servicos               os serviços e diagnósticos dele (o quadro Serviços e diagnósticos), do mais novo para o mais velho
+ *     relogio.servicos[]             um serviço
+ *     relogio.servicos[].id          o número do serviço (o id da gravação)
+ *     relogio.servicos[].relogio_id  o relógio do serviço
+ *     relogio.servicos[].relogio     o nome do relógio
+ *     relogio.servicos[].data        a data do serviço (AAAA-MM-DD)
+ *     relogio.servicos[].ha_dias     há quantos dias foi (no dia da coleção)
+ *     relogio.servicos[].tipo        revisao, pilha, estanqueidade, regulagem, polimento, reparo, diagnostico ou outro
+ *     relogio.servicos[].tipo_texto  o tipo por extenso
+ *     relogio.servicos[].responsavel quem fez (a relojoaria, o relojoeiro); null: não informado
+ *     relogio.servicos[].descricao   o que foi feito; null: não informado
+ *     relogio.servicos[].mao_de_obra a mão de obra, em R$; null: não informada
+ *     relogio.servicos[].pecas       as peças trocadas, na ordem
+ *     relogio.servicos[].pecas[]     uma peça
+ *     relogio.servicos[].pecas[].nome
+ *                                    o nome da peça
+ *     relogio.servicos[].pecas[].custo
+ *                                    o custo da peça, em R$; null: não informado
+ *     relogio.servicos[].custo_pecas a soma do custo das peças, em R$ (0 sem nenhuma com custo)
+ *     relogio.servicos[].custo       o custo do serviço: a mão de obra mais as peças, em R$; null: nada com custo
+ *     relogio.servicos[].estanqueidade
+ *                                    o teste de estanqueidade: aprovado ou reprovado; null: não testada
+ *     relogio.servicos[].estanqueidade_texto
+ *                                    aprovada ou reprovada, por extenso; null: não testada
+ *     relogio.servicos[].estanqueidade_bar
+ *                                    a pressão do teste, em bar; null: não informada
+ *     relogio.servicos[].marcha_antes
+ *                                    a marcha antes do serviço, informada pelo profissional, em s/dia (+ adianta); null: não informada
+ *     relogio.servicos[].marcha_depois
+ *                                    a marcha depois do serviço, informada pelo profissional, em s/dia; null: não informada
+ *     relogio.servicos[].marcha_antes_texto
+ *                                    a marcha antes, pronta ("+25,0 s/dia"); null
+ *     relogio.servicos[].marcha_depois_texto
+ *                                    a marcha depois, pronta; null
+ *     relogio.servicos[].medida_antes
+ *                                    a marcha medida pelo sistema antes do serviço: os intervalos do desvio da hora que terminam nos 60
+ *                                    dias antes da data; null: nenhum
+ *     relogio.servicos[].medida_antes.marcha
+ *                                    a marcha, em s/dia, pesada pelo tempo de cada intervalo
+ *     relogio.servicos[].medida_antes.marcha_texto
+ *                                    a marcha pronta
+ *     relogio.servicos[].medida_antes.intervalos
+ *                                    quantos intervalos entraram
+ *     relogio.servicos[].medida_depois
+ *                                    a marcha medida pelo sistema depois do serviço: os intervalos que começam nos 60 dias depois do dia do
+ *                                    serviço; null: nenhum
+ *     relogio.servicos[].medida_depois.marcha
+ *                                    a marcha, em s/dia
+ *     relogio.servicos[].medida_depois.marcha_texto
+ *                                    a marcha pronta
+ *     relogio.servicos[].medida_depois.intervalos
+ *                                    quantos intervalos entraram
+ *     relogio.servicos[].garantia_ate
+ *                                    a garantia do serviço até (AAAA-MM-DD); null: sem
+ *     relogio.servicos[].garantia_vale
+ *                                    true se a garantia ainda vale hoje
+ *     relogio.servicos[].observacao  a observação do profissional; null: sem
+ *     relogio.servicos[].documentos  os documentos do relógio que são do serviço (a nota, o orçamento, as fotos), pelo título
+ *     relogio.servicos[].documentos[]
+ *                                    um documento
+ *     relogio.servicos[].documentos[].id
+ *                                    o número do documento
+ *     relogio.servicos[].documentos[].titulo
+ *                                    o título
+ *     relogio.servicos[].documentos[].url
+ *                                    o endereço do arquivo (recurso=documento)
+ *     relogio.servicos[].marcacao    true se o serviço virou também a marcação do tipo de lançamento de mesmo nome (a revisão e a troca de
+ *                                    pilha)
+ *     relogio.servicos[].criado      quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     relogio.servicos_resumo        o resumo dos serviços (a resistência declarada, a estanqueidade comprovada, quantos, o custo somado, o
+ *                                    último)
+ *     relogio.servicos_resumo.quantos
+ *                                    quantos serviços o relógio tem
+ *     relogio.servicos_resumo.custo  o custo somado dos serviços, em R$; null: nenhum com custo
+ *     relogio.servicos_resumo.ultimo o último serviço; null: nenhum
+ *     relogio.servicos_resumo.ultimo.data
+ *                                    a data dele (AAAA-MM-DD)
+ *     relogio.servicos_resumo.ultimo.tipo
+ *                                    o tipo
+ *     relogio.servicos_resumo.ultimo.tipo_texto
+ *                                    o tipo por extenso
+ *     relogio.servicos_resumo.ultimo.ha_dias
+ *                                    há quantos dias
+ *     relogio.servicos_resumo.resistencia_declarada
+ *                                    a resistência à água declarada pelo fabricante, em metros (o campo resistencia_agua_declarada do
+ *                                    cadastro); null: não informada
+ *     relogio.servicos_resumo.estanqueidade
+ *                                    a estanqueidade comprovada: o último serviço com o teste; null: nunca testada aqui
+ *     relogio.servicos_resumo.estanqueidade.data
+ *                                    a data do teste
+ *     relogio.servicos_resumo.estanqueidade.ha_dias
+ *                                    há quantos dias
+ *     relogio.servicos_resumo.estanqueidade.resultado
+ *                                    aprovado ou reprovado
+ *     relogio.servicos_resumo.estanqueidade.resultado_texto
+ *                                    aprovada ou reprovada, por extenso
+ *     relogio.servicos_resumo.estanqueidade.bar
+ *                                    a pressão do teste, em bar; null
+ *     relogio.servicos_resumo.estanqueidade.servico_id
+ *                                    o serviço do teste
+ *     relogio.servico_tipos          os tipos de serviço, na ordem
+ *     relogio.servico_tipos[]        um tipo
+ *     relogio.servico_tipos[].valor  o tipo (o tipo da gravação)
+ *     relogio.servico_tipos[].nome   o nome por extenso
+ *     relogio.servico_tipos[].marca  true se o serviço desse tipo vira também a marcação de mesmo nome (revisao, pilha)
+ *     relogio.servico_documentos     os documentos do relógio que um serviço pode citar (o formulário)
+ *     relogio.servico_documentos[]   um documento
+ *     relogio.servico_documentos[].id
+ *                                    o número do documento
+ *     relogio.servico_documentos[].titulo
+ *                                    o título
  *     relogio.desejo                 o que a lista de desejos mostra (o quadro Desejo do painel): só no desejado; null nos outros
  *     relogio.desejo.link            o link da página do relógio (o campo link; null)
  *     relogio.desejo.marca           a marca (o campo marca; null)
@@ -3241,6 +3403,89 @@
  *     relogios[].id                  o número (código)
  *     relogios[].nome                o nome
  *     relogios[].posse               a situação na coleção
+ *   recurso=servicos
+ *     servicos                       os serviços (de um relógio, ou de todos), do mais novo para o mais velho
+ *     servicos[]                     um serviço
+ *     servicos[].id                  o número do serviço (o id da gravação)
+ *     servicos[].relogio_id          o relógio do serviço
+ *     servicos[].relogio             o nome do relógio
+ *     servicos[].data                a data do serviço (AAAA-MM-DD)
+ *     servicos[].ha_dias             há quantos dias foi (no dia da coleção)
+ *     servicos[].tipo                revisao, pilha, estanqueidade, regulagem, polimento, reparo, diagnostico ou outro
+ *     servicos[].tipo_texto          o tipo por extenso
+ *     servicos[].responsavel         quem fez (a relojoaria, o relojoeiro); null: não informado
+ *     servicos[].descricao           o que foi feito; null: não informado
+ *     servicos[].mao_de_obra         a mão de obra, em R$; null: não informada
+ *     servicos[].pecas               as peças trocadas, na ordem
+ *     servicos[].pecas[]             uma peça
+ *     servicos[].pecas[].nome        o nome da peça
+ *     servicos[].pecas[].custo       o custo da peça, em R$; null: não informado
+ *     servicos[].custo_pecas         a soma do custo das peças, em R$ (0 sem nenhuma com custo)
+ *     servicos[].custo               o custo do serviço: a mão de obra mais as peças, em R$; null: nada com custo
+ *     servicos[].estanqueidade       o teste de estanqueidade: aprovado ou reprovado; null: não testada
+ *     servicos[].estanqueidade_texto aprovada ou reprovada, por extenso; null: não testada
+ *     servicos[].estanqueidade_bar   a pressão do teste, em bar; null: não informada
+ *     servicos[].marcha_antes        a marcha antes do serviço, informada pelo profissional, em s/dia (+ adianta); null: não informada
+ *     servicos[].marcha_depois       a marcha depois do serviço, informada pelo profissional, em s/dia; null: não informada
+ *     servicos[].marcha_antes_texto  a marcha antes, pronta ("+25,0 s/dia"); null
+ *     servicos[].marcha_depois_texto a marcha depois, pronta; null
+ *     servicos[].medida_antes        a marcha medida pelo sistema antes do serviço: os intervalos do desvio da hora que terminam nos 60
+ *                                    dias antes da data; null: nenhum
+ *     servicos[].medida_antes.marcha a marcha, em s/dia, pesada pelo tempo de cada intervalo
+ *     servicos[].medida_antes.marcha_texto
+ *                                    a marcha pronta
+ *     servicos[].medida_antes.intervalos
+ *                                    quantos intervalos entraram
+ *     servicos[].medida_depois       a marcha medida pelo sistema depois do serviço: os intervalos que começam nos 60 dias depois do dia do
+ *                                    serviço; null: nenhum
+ *     servicos[].medida_depois.marcha
+ *                                    a marcha, em s/dia
+ *     servicos[].medida_depois.marcha_texto
+ *                                    a marcha pronta
+ *     servicos[].medida_depois.intervalos
+ *                                    quantos intervalos entraram
+ *     servicos[].garantia_ate        a garantia do serviço até (AAAA-MM-DD); null: sem
+ *     servicos[].garantia_vale       true se a garantia ainda vale hoje
+ *     servicos[].observacao          a observação do profissional; null: sem
+ *     servicos[].documentos          os documentos do relógio que são do serviço (a nota, o orçamento, as fotos), pelo título
+ *     servicos[].documentos[]        um documento
+ *     servicos[].documentos[].id     o número do documento
+ *     servicos[].documentos[].titulo o título
+ *     servicos[].documentos[].url    o endereço do arquivo (recurso=documento)
+ *     servicos[].marcacao            true se o serviço virou também a marcação do tipo de lançamento de mesmo nome (a revisão e a troca de
+ *                                    pilha)
+ *     servicos[].criado              quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     relogio                        o relógio pedido; null: todos
+ *     relogio.id                     o número
+ *     relogio.nome                   o nome
+ *     tipos                          os tipos de serviço, na ordem
+ *     tipos[]                        um tipo
+ *     tipos[].valor                  o tipo (o tipo da gravação)
+ *     tipos[].nome                   o nome por extenso
+ *     tipos[].marca                  true se o serviço desse tipo vira também a marcação de mesmo nome (revisao, pilha)
+ *     resumo                         com o relógio: o resumo dos serviços dele; null: todos
+ *     resumo.quantos                 quantos serviços o relógio tem
+ *     resumo.custo                   o custo somado dos serviços, em R$; null: nenhum com custo
+ *     resumo.ultimo                  o último serviço; null: nenhum
+ *     resumo.ultimo.data             a data dele (AAAA-MM-DD)
+ *     resumo.ultimo.tipo             o tipo
+ *     resumo.ultimo.tipo_texto       o tipo por extenso
+ *     resumo.ultimo.ha_dias          há quantos dias
+ *     resumo.resistencia_declarada   a resistência à água declarada pelo fabricante, em metros (o campo resistencia_agua_declarada do
+ *                                    cadastro); null: não informada
+ *     resumo.estanqueidade           a estanqueidade comprovada: o último serviço com o teste; null: nunca testada aqui
+ *     resumo.estanqueidade.data      a data do teste
+ *     resumo.estanqueidade.ha_dias   há quantos dias
+ *     resumo.estanqueidade.resultado aprovado ou reprovado
+ *     resumo.estanqueidade.resultado_texto
+ *                                    aprovada ou reprovada, por extenso
+ *     resumo.estanqueidade.bar       a pressão do teste, em bar; null
+ *     resumo.estanqueidade.servico_id
+ *                                    o serviço do teste
+ *     documentos                     com o relógio: os documentos dele que um serviço pode citar (o formulário); null: todos
+ *     documentos[]                   um documento
+ *     documentos[].id                o número do documento
+ *     documentos[].titulo            o título
  *   recurso=passaporte
  *     gerado_em                      quando foi gerado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio                        quem ele é
@@ -3291,6 +3536,87 @@
  *     acessorios[].relogio           o nome dele
  *     acessorios[].observacao        a observação (null)
  *     acessorios[].criado            quando foi cadastrado
+ *     servicos_diagnosticos          os serviços e diagnósticos (como em recurso=servicos), do mais novo para o mais velho
+ *     servicos_diagnosticos[]        um serviço
+ *     servicos_diagnosticos[].id     o número do serviço (o id da gravação)
+ *     servicos_diagnosticos[].relogio_id
+ *                                    o relógio do serviço
+ *     servicos_diagnosticos[].relogio
+ *                                    o nome do relógio
+ *     servicos_diagnosticos[].data   a data do serviço (AAAA-MM-DD)
+ *     servicos_diagnosticos[].ha_dias
+ *                                    há quantos dias foi (no dia da coleção)
+ *     servicos_diagnosticos[].tipo   revisao, pilha, estanqueidade, regulagem, polimento, reparo, diagnostico ou outro
+ *     servicos_diagnosticos[].tipo_texto
+ *                                    o tipo por extenso
+ *     servicos_diagnosticos[].responsavel
+ *                                    quem fez (a relojoaria, o relojoeiro); null: não informado
+ *     servicos_diagnosticos[].descricao
+ *                                    o que foi feito; null: não informado
+ *     servicos_diagnosticos[].mao_de_obra
+ *                                    a mão de obra, em R$; null: não informada
+ *     servicos_diagnosticos[].pecas  as peças trocadas, na ordem
+ *     servicos_diagnosticos[].pecas[]
+ *                                    uma peça
+ *     servicos_diagnosticos[].pecas[].nome
+ *                                    o nome da peça
+ *     servicos_diagnosticos[].pecas[].custo
+ *                                    o custo da peça, em R$; null: não informado
+ *     servicos_diagnosticos[].custo_pecas
+ *                                    a soma do custo das peças, em R$ (0 sem nenhuma com custo)
+ *     servicos_diagnosticos[].custo  o custo do serviço: a mão de obra mais as peças, em R$; null: nada com custo
+ *     servicos_diagnosticos[].estanqueidade
+ *                                    o teste de estanqueidade: aprovado ou reprovado; null: não testada
+ *     servicos_diagnosticos[].estanqueidade_texto
+ *                                    aprovada ou reprovada, por extenso; null: não testada
+ *     servicos_diagnosticos[].estanqueidade_bar
+ *                                    a pressão do teste, em bar; null: não informada
+ *     servicos_diagnosticos[].marcha_antes
+ *                                    a marcha antes do serviço, informada pelo profissional, em s/dia (+ adianta); null: não informada
+ *     servicos_diagnosticos[].marcha_depois
+ *                                    a marcha depois do serviço, informada pelo profissional, em s/dia; null: não informada
+ *     servicos_diagnosticos[].marcha_antes_texto
+ *                                    a marcha antes, pronta ("+25,0 s/dia"); null
+ *     servicos_diagnosticos[].marcha_depois_texto
+ *                                    a marcha depois, pronta; null
+ *     servicos_diagnosticos[].medida_antes
+ *                                    a marcha medida pelo sistema antes do serviço: os intervalos do desvio da hora que terminam nos 60
+ *                                    dias antes da data; null: nenhum
+ *     servicos_diagnosticos[].medida_antes.marcha
+ *                                    a marcha, em s/dia, pesada pelo tempo de cada intervalo
+ *     servicos_diagnosticos[].medida_antes.marcha_texto
+ *                                    a marcha pronta
+ *     servicos_diagnosticos[].medida_antes.intervalos
+ *                                    quantos intervalos entraram
+ *     servicos_diagnosticos[].medida_depois
+ *                                    a marcha medida pelo sistema depois do serviço: os intervalos que começam nos 60 dias depois do dia do
+ *                                    serviço; null: nenhum
+ *     servicos_diagnosticos[].medida_depois.marcha
+ *                                    a marcha, em s/dia
+ *     servicos_diagnosticos[].medida_depois.marcha_texto
+ *                                    a marcha pronta
+ *     servicos_diagnosticos[].medida_depois.intervalos
+ *                                    quantos intervalos entraram
+ *     servicos_diagnosticos[].garantia_ate
+ *                                    a garantia do serviço até (AAAA-MM-DD); null: sem
+ *     servicos_diagnosticos[].garantia_vale
+ *                                    true se a garantia ainda vale hoje
+ *     servicos_diagnosticos[].observacao
+ *                                    a observação do profissional; null: sem
+ *     servicos_diagnosticos[].documentos
+ *                                    os documentos do relógio que são do serviço (a nota, o orçamento, as fotos), pelo título
+ *     servicos_diagnosticos[].documentos[]
+ *                                    um documento
+ *     servicos_diagnosticos[].documentos[].id
+ *                                    o número do documento
+ *     servicos_diagnosticos[].documentos[].titulo
+ *                                    o título
+ *     servicos_diagnosticos[].documentos[].url
+ *                                    o endereço do arquivo (recurso=documento)
+ *     servicos_diagnosticos[].marcacao
+ *                                    true se o serviço virou também a marcação do tipo de lançamento de mesmo nome (a revisão e a troca de
+ *                                    pilha)
+ *     servicos_diagnosticos[].criado quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     documentos[]                   os documentos dele, por categoria e data
  *     documentos[].id                o número do documento
  *     documentos[].categoria         o nome da categoria
@@ -4535,6 +4861,8 @@ if ($recurso === "textos") {
     require __DIR__ . "/api/precisao.php";
 } elseif ($recurso === "calibres") {
     require __DIR__ . "/api/calibres.php";
+} elseif ($recurso === "servicos") {
+    require __DIR__ . "/api/servicos.php";
 } elseif ($recurso === "roteiro") {
     // o teste de um roteiro (ou do roteiro de um modo) num dia: cada relógio com as linhas calculadas, e quem sairia
     $texto = (string)($_REQUEST["roteiro"] ?? "");

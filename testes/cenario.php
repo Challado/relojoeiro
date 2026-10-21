@@ -636,6 +636,60 @@ if (is_dir($pasta_cal)) {
 }
 ler("ficha sem o calibre excluido", ["recurso" => "ficha", "relogio" => $rel["auto2"]]);
 
+// os serviços e diagnósticos: uma revisão no automático com peças, a estanqueidade aprovada, a marcha antes e depois, a
+// garantia e um documento (vira também a marcação Revisão); as recusas (o teste de estanqueidade sem resultado, a data no
+// futuro, a pressão sem resultado, o custo da peça que não é número, o documento de outro relógio, a garantia antes do
+// serviço); a resistência declarada no cadastro; mudar o tipo desfaz a marcação e voltar a refaz; as funções
+// ULTIMO_SERVICO e CUSTO_SERVICOS; o total do modelo; e a exclusão em dois passos (de um diagnóstico à parte)
+$cat_nf = 0;
+foreach (ler("categorias para o servico", ["recurso" => "documentos", "relogio" => $rel["auto"]])["categorias"] ?? [] as $c) {
+    $cat_nf = $c["identificador"] === "nota_fiscal" ? (int)$c["id"] : $cat_nf;
+}
+$doc_srv = escrever(["recurso" => "documentos", "acao" => "enviar", "relogio_id" => $rel["auto"], "categoria_id" => $cat_nf, "titulo" => "Nota da revisão",
+    "arquivo_nome" => "s1.pdf", "arquivo_base64" => base64_encode("%PDF-1.4 nota da revisao")]);
+$doc_outro = escrever(["recurso" => "documentos", "acao" => "enviar", "relogio_id" => $rel["smart"], "categoria_id" => $cat_nf, "titulo" => "Nota de outro relógio",
+    "arquivo_nome" => "s2.pdf", "arquivo_base64" => base64_encode("%PDF-1.4 nota de outro")]);
+$d_srv = date("Y-m-d", strtotime("-5 days"));
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto"], "valores" => ["resistencia_agua_declarada" => 100]]);
+$revisoes = function ($nome) use ($rel) {
+    return (int)(ler($nome, ["recurso" => "calcular", "relogio" => $rel["auto"], "expressao" => "CONTAR(\"revisao\"; 30)"])["resultados"][0]["valor"] ?? -1);
+};
+$revisoes_antes = $revisoes("calcular revisoes antes do servico");
+$srv = escrever(["recurso" => "servicos", "acao" => "salvar", "relogio_id" => $rel["auto"], "data" => $d_srv, "tipo" => "revisao", "responsavel" => "Relojoaria Central",
+    "descricao" => "Limpeza, lubrificação e regulagem.", "mao_de_obra" => "300,00", "pecas" => "Coroa; 120,50\nVedação do fundo\nVidro; 80", "estanqueidade" => "aprovado",
+    "estanqueidade_bar" => "10", "marcha_antes" => "25", "marcha_depois" => "+4,5", "garantia_ate" => date("Y-m-d", strtotime("+360 days")), "documentos" => [$doc_srv],
+    "observacao" => str_repeat("Observação longa do relojoeiro, sem limite de tamanho. ", 220)]);
+escrever(["recurso" => "servicos", "acao" => "salvar", "relogio_id" => $rel["auto"], "data" => $d_srv, "tipo" => "estanqueidade"], false);
+escrever(["recurso" => "servicos", "acao" => "salvar", "relogio_id" => $rel["auto"], "data" => date("Y-m-d", strtotime("+2 days")), "tipo" => "reparo"], false);
+escrever(["recurso" => "servicos", "acao" => "salvar", "relogio_id" => $rel["auto"], "data" => $d_srv, "tipo" => "diagnostico", "estanqueidade_bar" => "5"], false);
+escrever(["recurso" => "servicos", "acao" => "salvar", "relogio_id" => $rel["auto"], "data" => $d_srv, "tipo" => "reparo", "pecas" => "Mola; caro"], false);
+escrever(["recurso" => "servicos", "acao" => "salvar", "relogio_id" => $rel["auto"], "data" => $d_srv, "tipo" => "reparo", "garantia_ate" => date("Y-m-d", strtotime("-30 days"))], false);
+escrever(["recurso" => "servicos", "acao" => "salvar", "id" => $srv, "documentos" => (string)$doc_outro], false);
+escrever(["recurso" => "servicos", "acao" => "salvar", "relogio_id" => 999999, "data" => $d_srv], false);
+$s_lista = ler("servicos do auto", ["recurso" => "servicos", "relogio" => $rel["auto"]]);
+$s1 = $s_lista["servicos"][0] ?? [];
+if (($s1["custo"] ?? null) != 500.5 || count($s1["pecas"] ?? []) !== 3 || ($s1["marcha_depois"] ?? null) != 4.5 || ($s_lista["resumo"]["estanqueidade"]["resultado"] ?? "") !== "aprovado"
+    || ($s_lista["resumo"]["resistencia_declarada"] ?? null) !== 100 || empty($s1["marcacao"]) || mb_strlen((string)($s1["observacao"] ?? "")) < 12000) {
+    $falhas[] = "serviços: a lista deu " . json_encode([$s1["custo"] ?? null, count($s1["pecas"] ?? []), $s1["marcha_depois"] ?? null, $s_lista["resumo"] ?? null, $s1["marcacao"] ?? null], JSON_UNESCAPED_UNICODE);
+}
+if ($revisoes("calcular revisoes com o servico") !== $revisoes_antes + 1) {
+    $falhas[] = "serviços: a revisão não virou a marcação Revisão";
+}
+escrever(["recurso" => "servicos", "acao" => "salvar", "id" => $srv, "tipo" => "regulagem"]);
+if ($revisoes("calcular revisoes depois de mudar o tipo") !== $revisoes_antes) {
+    $falhas[] = "serviços: mudar o tipo não desfez a marcação";
+}
+escrever(["recurso" => "servicos", "acao" => "salvar", "id" => $srv, "tipo" => "revisao", "pecas" => "Coroa; 120,50\nVedação do fundo\nVidro; 80"]);
+ler("calcular servicos", ["recurso" => "calcular", "relogio" => $rel["auto"], "expressao" => "CUSTO_SERVICOS() * 1000 + ARREDONDA(DIAS_DESDE(ULTIMO_SERVICO(\"revisao\")); 0) * 10 + ARREDONDA(DIAS_DESDE(ULTIMO_SERVICO(\"estanqueidade\")); 0) + PADRAO(ULTIMO_SERVICO(\"polimento\"); 7)"]);
+ler("calcular servicos de outro relogio", ["recurso" => "calcular", "relogio" => $rel["smart"], "expressao" => "CUSTO_SERVICOS(30) + PADRAO(ULTIMO_SERVICO(); 9)"]);
+ler("totais teste custo dos servicos", ["recurso" => "totais", "parte" => "teste", "expressao" => "SOMA(custo_servicos) + SOMA(servicos)", "formato" => "moeda"]);
+$diag = escrever(["recurso" => "servicos", "acao" => "salvar", "relogio_id" => $rel["auto"], "data" => date("Y-m-d", strtotime("-1 day")), "tipo" => "diagnostico", "descricao" => "Conferido no timegrapher."]);
+escrever(["recurso" => "servicos", "acao" => "excluir", "id" => $diag], false);
+escrever(["recurso" => "servicos", "acao" => "excluir", "id" => $diag, "confirmar" => 1]);
+ler("servicos de todos", ["recurso" => "servicos"]);
+ler("ficha com os servicos", ["recurso" => "ficha", "relogio" => $rel["auto"]]);
+ler("passaporte com os servicos", ["recurso" => "passaporte", "relogio" => $rel["auto"]]);
+
 // os totais: os que vêm prontos (todos, os do rodapé de alguns relógios, os da página), o Testar (uma expressão boa, uma
 // errada, uma que precisa de função de total, uma vazia), um total novo só da página, um no rodapé sem coluna (não pode), a
 // ordem, e a exclusão (sem confirmar, o impacto; com, sai)

@@ -16,7 +16,8 @@
 //     a collation que faz o mesmo: no Postgres, "ci", uma collation ICU não determinística; no SQLite, "ci", uma função
 //     do PHP; no Firebird, UNICODE_CI_AI (também nas colunas TEXT, como no MySQL). No Postgres e no SQLite, as colunas
 //     TEXT (os textos longos: fórmulas, mensagens, registros) ficam na comparação exata. No Firebird, o TEXT é um
-//     VARCHAR(8191): o texto longo vai até 8191 letras (no MySQL, 65535 bytes).
+//     VARCHAR(8191): o texto longo vai até 8191 letras (no MySQL, 65535 bytes); o LONGTEXT (o texto livre, sem limite,
+//     que nunca ordena nem agrupa) é o BLOB SUB_TYPE TEXT.
 // O schema.sql (a instalação) e as migrações futuras continuam num arquivo só: o DDL no dialeto do MySQL (a tradução
 // cuida do resto) e os dados em SQL comum aos quatro bancos.
 
@@ -238,6 +239,9 @@ const ESCOPO_CONDICOES = [
     "medicao" => "lancamento_id IN (SELECT id FROM lancamento WHERE relogio_id IN ({RC}))",
     "documento" => "(relogio_id IN ({RC}) OR calibre_id IN (SELECT id FROM calibre WHERE no_id IN ({NR})))",
     "documento_parte" => "documento_id IN (SELECT id FROM documento WHERE relogio_id IN ({RC}) OR calibre_id IN (SELECT id FROM calibre WHERE no_id IN ({NR})))",
+    "servico" => "relogio_id IN ({RC})",
+    "servico_peca" => "servico_id IN (SELECT id FROM servico WHERE relogio_id IN ({RC}))",
+    "servico_documento" => "servico_id IN (SELECT id FROM servico WHERE relogio_id IN ({RC}))",
     "acessorio" => "colecao_id = {C}",
     "acessorio_relogio" => "relogio_id IN ({RC})",
     "config" => "colecao_id = {C}",
@@ -2543,11 +2547,16 @@ function sql_coluna_fb($nome, $tipo, $args, $resto, $tabela)
             break;
         case "TEXT":
         case "MEDIUMTEXT":
-        case "LONGTEXT":
             // o maior VARCHAR do Firebird em UTF-8 (32765 bytes). Não o BLOB SUB_TYPE TEXT: o pdo_firebird (até o PHP 8.4)
             // devolve o BLOB vazio como NULL, e o BLOB não entra em ORDER BY, GROUP BY nem DISTINCT
             $novo = "VARCHAR(8191) CHARACTER SET UTF8";
             $texto = true;
+            break;
+        case "LONGTEXT":
+            // o texto livre, sem limite (a observação de um serviço): o BLOB de texto, que não conta no tamanho da linha (até
+            // 64 KB: duas colunas VARCHAR(8191) não cabem juntas). Só para o que nunca ordena, agrupa nem fica vazio
+            // (vazio vai como NULL)
+            $novo = "BLOB SUB_TYPE TEXT CHARACTER SET UTF8";
             break;
         case "DECIMAL":
         case "NUMERIC":

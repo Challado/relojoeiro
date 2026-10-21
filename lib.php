@@ -745,6 +745,7 @@ $MIGRACOES = [
     "v32" => ["migracao_v32.sql", tk("a precisão: o desvio da hora (quanto o relógio está adiantado ou atrasado, lido contra a hora certa, com a posição em que ele ficou) e o acerto da hora; a marcha em segundos por dia, o gráfico, as funções MARCHA, MARCHA_DP, MARCHA_N, MARCHA_ULTIMA e DESVIO_AGORA, e os avisos Acertar a hora e Marcha fora do esperado; os tipos, campos, fórmulas e avisos entram em cada árvore"), "lancamento.posicao", "migracao_v32_dados"],
     "v33" => ["migracao_v33.sql", tk("os calibres: o movimento (NH35, ST2130, B620...) como um cadastro da árvore, com fabricante, o link do manual técnico, as recomendações e os valores dos campos que ele define; cada relógio aponta para um e herda dele o que não tem (o valor do relógio, senão o do calibre, senão o padrão do campo); a aba Calibres dos Cadastros, a função CALIBRE e recurso=calibres"), "calibre"],
     "v34" => ["migracao_v34.sql", tk("os documentos dos calibres (o manual técnico, a ficha de serviço, as fotos do movimento: na página Documentos do calibre, e em todos os relógios com ele), a categoria Manual técnico, e os campos do movimento (campo.calibre: os que o formulário do calibre mostra, com a Configuração calibre_campos em só os do movimento, o padrão)"), "campo.calibre", "migracao_v34_dados"],
+    "v35" => ["migracao_v35.sql", tk("os serviços e diagnósticos: cada intervenção num relógio (revisão, troca de pilha, teste de estanqueidade, regulagem, polimento, reparo, diagnóstico), com quem fez, o que foi feito, a mão de obra, as peças trocadas e o custo de cada uma, o teste de estanqueidade (aprovado ou reprovado e a pressão), a marcha antes e depois, a garantia e os documentos; a resistência à água declarada vira um campo do cadastro, separada da estanqueidade comprovada; as funções ULTIMO_SERVICO e CUSTO_SERVICOS, e o total Custo dos serviços"), "servico", "migracao_v35_dados"],
 ];
 
 // O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
@@ -871,6 +872,44 @@ function migracao_v34_dados($nova = false)
                     foreach ($c["aceita"] as $f) {
                         sql("INSERT INTO documento_categoria_aceita (categoria_id, familia) VALUES (?, ?)", [$cid, $f]);
                     }
+                }
+            }
+        }
+    });
+}
+
+// O passo em PHP da v35: em cada árvore, o campo da resistência à água declarada (na raiz) e o total Custo dos serviços
+// (modelo.json), no idioma da coleção; cada um só onde ainda não existe (o campo pelo identificador, o total pela expressão)
+function migracao_v35_dados($nova = false)
+{
+    if ($nova) {
+        return;
+    }
+    sem_escopo(function () {
+        $m = modelo_ler();
+        $campos = array_values(array_filter($m["campos"], function ($c) { return $c["identificador"] === "resistencia_agua_declarada"; }));
+        $totais = array_values(array_filter($m["totais"], function ($x) { return $x["expressao"] === "SOMA(custo_servicos)"; }));
+        foreach (linhas("SELECT id FROM no WHERE pai_id IS NULL ORDER BY id") as $raiz) {
+            $arvore = [(int)$raiz["id"]];
+            $nivel = $arvore;
+            while (count($nivel) > 0) {
+                $nivel = array_map("intval", array_column(linhas("SELECT id FROM no WHERE pai_id IN (" . implode(", ", $nivel) . ")"), "id"));
+                $arvore = array_merge($arvore, $nivel);
+            }
+            $em = " AND no_id IN (" . implode(", ", $arvore) . ")";
+            $lingua = lingua_valida((string)valor("SELECT valor FROM config WHERE chave = 'idioma' AND colecao_id IN (SELECT id FROM colecao WHERE no_id = ?) ORDER BY colecao_id", [(int)$raiz["id"]])) ?? "pt-BR";
+            $tr = modelo_tradutor($lingua);
+            foreach ($campos as $c) {
+                if ((int)valor("SELECT COUNT(*) FROM campo WHERE identificador = ?" . $em, [$c["identificador"]]) === 0) {
+                    sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, ordem, so_desejado, calibre) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        [$c["identificador"], $tr($c["nome"]), $c["tipo"], $c["unidade"], $c["padrao"], (int)$raiz["id"], (int)$c["ordem"], (int)$c["so_desejado"], (int)$c["calibre"]]);
+                }
+            }
+            foreach ($totais as $x) {
+                if ((int)valor("SELECT COUNT(*) FROM total WHERE expressao = ?" . $em, [$x["expressao"]]) === 0) {
+                    $ordem = (int)valor("SELECT COALESCE(MAX(ordem), 0) + 10 FROM total WHERE no_id IN (" . implode(", ", $arvore) . ")");
+                    sql("INSERT INTO total (no_id, coluna, nome, expressao, rodape, pagina, largura, formato, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        [(int)$raiz["id"], $x["coluna"], $tr($x["nome"]), $x["expressao"], (int)$x["rodape"], (int)$x["pagina"], $x["largura"], $x["formato"], $ordem]);
                 }
             }
         }
@@ -1146,6 +1185,9 @@ $FUNCOES = [
     "NO_GRUPO" => [1, 1, tk("NO_GRUPO(\"grupo\"): 1 se o relógio está nesse ponto da árvore ou abaixo (o nome, o caminho \"Tradicional › Quartzo\" ou #id; \"todos\": 1 para todos)"), false],
     "RELOGIO" => [1, 1, tk("RELOGIO(\"nome\" ou id): 1 se é esse relógio"), false],
     "CALIBRE" => [1, 1, tk("CALIBRE(\"nome\" ou id): 1 se o relógio tem esse calibre (o movimento)"), false],
+    // os serviços e diagnósticos do relógio (até o instante da conta)
+    "ULTIMO_SERVICO" => [0, 1, tk("ULTIMO_SERVICO(\"tipo\"): a data do último serviço desse tipo (revisao, pilha, estanqueidade, regulagem, polimento, reparo, diagnostico, outro; \"estanqueidade\" conta também o teste feito numa revisão; sem tipo: qualquer); vazio sem nenhum"), false],
+    "CUSTO_SERVICOS" => [0, 1, tk("CUSTO_SERVICOS(dias): quanto os serviços custaram (a mão de obra mais as peças) nos últimos N dias (0 ou sem: todos)"), false],
     "ESCOLHIDO_HA" => [1, 1, tk("ESCOLHIDO_HA(n): 1 se o relógio é o do plano há n dias (1: ontem; -1: amanhã, quando já está no plano)"), false],
     "VEZES_NO_PLANO" => [1, 1, tk("VEZES_NO_PLANO(n): quantos dias o relógio teve no plano nos últimos n dias (antes do dia que está sendo montado)"), false],
     "ESCOLHA" => [2, null, tk("ESCOLHA(n; a; b; c...): o n-ésimo dos valores (só ele é calculado); fora da lista, vazio. Ex.: ESCOLHA(DIA_SEMANA(); ...) dá um valor por dia da semana"), false],
@@ -2099,6 +2141,26 @@ function formula_calcular($no, &$ctx)
             } elseif ($nome === "CALIBRE") {
                 $cal = calibre_do_relogio((int)($ctx["r"]["id"] ?? 0));
                 $res = $v[0] === null || $cal === null ? 0 : ((is_numeric($v[0]) ? (int)$v[0] === (int)$cal["id"] : mb_strtolower(trim((string)$v[0]), "UTF-8") === mb_strtolower((string)$cal["nome"], "UTF-8")) ? 1 : 0);
+            } elseif ($nome === "ULTIMO_SERVICO" || $nome === "CUSTO_SERVICOS") {
+                // os serviços do relógio até o instante da conta
+                $do_r = array_values(array_filter(servicos_das_contas()[(int)($ctx["r"]["id"] ?? 0)] ?? [], function ($x) use ($ctx) { return $x["quando"] <= $ctx["momento"]; }));
+                if ($nome === "ULTIMO_SERVICO") {
+                    $tipo_s = isset($v[0]) && $v[0] !== null ? (string)$v[0] : "";
+                    $res = null;
+                    foreach ($do_r as $x) {
+                        if ($tipo_s === "" || $x["tipo"] === $tipo_s || ($tipo_s === "estanqueidade" && $x["estanqueidade"] !== null)) {
+                            $res = dias_de($x["quando"]);
+                        }
+                    }
+                } else {
+                    $dias_s = isset($v[0]) && is_numeric($v[0]) ? (float)$v[0] : 0.0;
+                    $res = 0.0;
+                    foreach ($do_r as $x) {
+                        if ($x["custo"] !== null && ($dias_s <= 0 || $x["quando"] > $ctx["momento"] - $dias_s * 86400)) {
+                            $res += $x["custo"];
+                        }
+                    }
+                }
             } elseif ($nome === "ESCOLHIDO_HA") {
                 $d = is_numeric($v[0]) ? dia_da_conta($ctx)->modify((-(int)$v[0]) . " days") : null;
                 $res = $d === null ? null : ((int)(valor("SELECT relogio_id FROM plano WHERE data = ?", [$d->format("Y-m-d")]) ?? 0) === (int)$ctx["r"]["id"] ? 1 : 0);
@@ -2309,7 +2371,7 @@ $FUNCOES_TOTAIS = [
 // as que dão uma tabelinha ou um relógio: só como a expressão inteira
 const TOTAIS_DO_TOPO = ["AGRUPADO", "FAIXAS", "QUEM_MENOR", "QUEM_MAIOR"];
 // as funções do motor que precisam de um relógio: nos totais, só dentro de uma função de total
-const FUNCOES_DO_RELOGIO = ["NO_GRUPO", "RELOGIO", "CALIBRE", "ESCOLHIDO_HA", "VEZES_NO_PLANO", "MEDIDO", "MEDIA_COLECAO", "LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA",
+const FUNCOES_DO_RELOGIO = ["NO_GRUPO", "RELOGIO", "CALIBRE", "ULTIMO_SERVICO", "CUSTO_SERVICOS", "ESCOLHIDO_HA", "VEZES_NO_PLANO", "MEDIDO", "MEDIA_COLECAO", "LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA",
     "MEDIANA_TAXA", "ULTIMA_TAXA", "MARCHA", "MARCHA_DP", "MARCHA_N", "MARCHA_ULTIMA", "DESVIO_AGORA", "DIA_SEMANA", "SEMANA_DO_ANO", "SORTEIO"];
 
 // As variáveis da tabela, que os totais têm em cada relógio além dos campos e das fórmulas: nome => [o que é, unidade]
@@ -2327,6 +2389,8 @@ $VARIAVEIS_TABELA = [
     "encostado_data" => [tk("a data em que ele passa (ou passou) do limite de dias sem ir ao pulso (vazio: sem data ou o aviso desligado)"), ""],
     "avisos" => [tk("quantos avisos o relógio tem agora (todos, não só o próximo)"), ""],
     "posse" => [tk("a posse: Na coleção ou Emprestado"), ""],
+    "servicos" => [tk("quantos serviços e diagnósticos o relógio tem"), ""],
+    "custo_servicos" => [tk("quanto os serviços do relógio custaram, somados (a mão de obra mais as peças; vazio: nenhum com custo)"), "R$"],
 ];
 
 // As colunas da tabela dos relógios onde um total pode ir (a chave é a do cabeçalho da página Hoje), na ordem dela
@@ -2436,7 +2500,10 @@ function tabela_variaveis($linha, $r, $agora)
         "ultimo_uso" => $linha["em_uso"] ? dias_de($agora) : ((int)$linha["ultimo"] > 0 ? dias_de((int)$linha["ultimo"]) : null),
         "manutencao_data" => $linha["manutencao"] ? $em_dias($linha["manutencao"]["data"]) : null, "manutencao_nome" => $linha["manutencao"]["nome"] ?? null,
         "encostado_data" => $linha["encostado"] ? $em_dias($linha["encostado"]["data"]) : null, "avisos" => count(avisos_do_relogio($r, $agora)),
-        "posse" => $linha["posse_texto"]];
+        "posse" => $linha["posse_texto"], "servicos" => count(servicos_das_contas()[(int)$r["id"]] ?? []), "custo_servicos" => (function ($ss) {
+            $cs = array_values(array_filter(array_column($ss, "custo"), function ($c) { return $c !== null; }));
+            return count($cs) > 0 ? round(array_sum($cs), 2) : null;
+        })(servicos_das_contas()[(int)$r["id"]] ?? [])];
 }
 
 // Os relógios de um total: os da tabela da página Hoje (os da coleção: na coleção e emprestados), ou só os de $ids; cada um
@@ -4746,6 +4813,113 @@ function acessorios_lista($relogio_id = null)
             "observacao" => $a["observacao"] !== null && $a["observacao"] !== "" ? $a["observacao"] : null, "criado" => $a["criado"]];
     }, linhas("SELECT a.*, r.nome AS relogio FROM acessorio a LEFT JOIN relogio r ON r.id = a.relogio_id"
         . ($relogio_id !== null ? " WHERE a.relogio_id = ?" : "") . " ORDER BY a.tipo, a.nome, a.id", $relogio_id !== null ? [(int)$relogio_id] : []));
+}
+
+// Os tipos de serviço (ck_servico_tipo), na ordem, com o nome. A revisão e a troca de pilha viram também a marcação do tipo
+// de lançamento de mesmo identificador (revisao, pilha), quando ele vale para o relógio
+const SERVICO_TIPOS = ["revisao" => "Revisão", "pilha" => "Troca de pilha", "estanqueidade" => "Teste de estanqueidade", "regulagem" => "Regulagem",
+    "polimento" => "Polimento", "reparo" => "Reparo", "diagnostico" => "Diagnóstico", "outro" => "Outro"];
+tk("Revisão"); tk("Troca de pilha"); tk("Teste de estanqueidade"); tk("Regulagem"); tk("Polimento"); tk("Reparo"); tk("Diagnóstico");
+const SERVICO_MARCA = ["revisao", "pilha"];
+// quantos dias antes e depois do serviço a marcha medida pelo sistema (as leituras do desvio da hora) entra no "antes" e no
+// "depois"
+const SERVICO_JANELA_MARCHA = 60;
+
+// Os serviços (de um relógio, ou todos: null), do mais novo para o mais velho, prontos para a API: as peças, os documentos,
+// o custo (a mão de obra mais as peças), a estanqueidade e a marcha antes e depois (a informada pelo profissional e a medida
+// pelo sistema nos SERVICO_JANELA_MARCHA dias de cada lado)
+function servicos_lista($relogio_id = null)
+{
+    $servicos = linhas("SELECT s.*, r.nome AS relogio FROM servico s JOIN relogio r ON r.id = s.relogio_id" . ($relogio_id !== null ? " WHERE s.relogio_id = ?" : "")
+        . " ORDER BY s.data DESC, s.id DESC", $relogio_id !== null ? [(int)$relogio_id] : []);
+    if (count($servicos) === 0) {
+        return [];
+    }
+    $ids = implode(", ", array_map(function ($s) { return (int)$s["id"]; }, $servicos));
+    $pecas = [];
+    foreach (linhas("SELECT * FROM servico_peca WHERE servico_id IN (" . $ids . ") ORDER BY servico_id, ordem, id") as $p) {
+        $pecas[(int)$p["servico_id"]][] = ["nome" => $p["nome"], "custo" => $p["custo"] === null ? null : round((float)$p["custo"], 2)];
+    }
+    $docs = [];
+    foreach (linhas("SELECT sd.servico_id, d.* FROM servico_documento sd JOIN documento d ON d.id = sd.documento_id WHERE sd.servico_id IN (" . $ids . ") ORDER BY d.titulo, d.id") as $d) {
+        $docs[(int)$d["servico_id"]][] = ["id" => (int)$d["id"], "titulo" => $d["titulo"], "url" => "api.php?recurso=documento&id=" . (int)$d["id"]];
+    }
+    $pontos = [];
+    $hoje = hoje_da_colecao();
+    return array_map(function ($s) use ($pecas, $docs, &$pontos, $hoje) {
+        $id = (int)$s["id"];
+        $rid = (int)$s["relogio_id"];
+        $ps = $pecas[$id] ?? [];
+        $mao = $s["mao_de_obra"] === null ? null : round((float)$s["mao_de_obra"], 2);
+        $soma_pecas = array_sum(array_map(function ($p) { return (float)($p["custo"] ?? 0); }, $ps));
+        $tem_custo = $mao !== null || count(array_filter($ps, function ($p) { return $p["custo"] !== null; })) > 0;
+        // a marcha medida pelo sistema: os intervalos do desvio que terminam nos dias antes do serviço, e os que começam depois
+        if (!isset($pontos[$rid])) {
+            $pontos[$rid] = precisao_intervalos(precisao_pontos($rid));
+        }
+        $dia = strtotime(substr((string)$s["data"], 0, 10) . " 00:00:00");
+        $janela = SERVICO_JANELA_MARCHA * 86400;
+        $antes = precisao_marcha(array_values(array_filter($pontos[$rid], function ($x) use ($dia, $janela) { return $x["ate"] <= $dia && $x["ate"] > $dia - $janela; })), 0, "", $dia);
+        $depois = precisao_marcha(array_values(array_filter($pontos[$rid], function ($x) use ($dia, $janela) { return $x["de"] >= $dia + 86400 && $x["de"] < $dia + 86400 + $janela; })), 0, "", time());
+        $data = substr((string)$s["data"], 0, 10);
+        $garantia = $s["garantia_ate"] === null ? null : substr((string)$s["garantia_ate"], 0, 10);
+        return ["id" => $id, "relogio_id" => $rid, "relogio" => $s["relogio"], "data" => $data,
+            "ha_dias" => (int)(new DateTimeImmutable($data, $hoje->getTimezone()))->diff($hoje)->format("%r%a"),
+            "tipo" => $s["tipo"], "tipo_texto" => isset(SERVICO_TIPOS[$s["tipo"]]) ? t(SERVICO_TIPOS[$s["tipo"]]) : $s["tipo"],
+            "responsavel" => $s["responsavel"] !== null && $s["responsavel"] !== "" ? $s["responsavel"] : null,
+            "descricao" => $s["descricao"] !== null && $s["descricao"] !== "" ? $s["descricao"] : null,
+            "mao_de_obra" => $mao, "pecas" => $ps, "custo_pecas" => round($soma_pecas, 2), "custo" => $tem_custo ? round((float)$mao + $soma_pecas, 2) : null,
+            "estanqueidade" => $s["estanqueidade"], "estanqueidade_texto" => $s["estanqueidade"] === "aprovado" ? t("aprovada") : ($s["estanqueidade"] === "reprovado" ? t("reprovada") : null),
+            "estanqueidade_bar" => $s["estanqueidade_bar"] === null ? null : round((float)$s["estanqueidade_bar"], 2),
+            "marcha_antes" => $s["marcha_antes"] === null ? null : round((float)$s["marcha_antes"], 2), "marcha_depois" => $s["marcha_depois"] === null ? null : round((float)$s["marcha_depois"], 2),
+            "marcha_antes_texto" => $s["marcha_antes"] === null ? null : marcha_txt((float)$s["marcha_antes"]), "marcha_depois_texto" => $s["marcha_depois"] === null ? null : marcha_txt((float)$s["marcha_depois"]),
+            "medida_antes" => $antes["marcha"] === null ? null : ["marcha" => round($antes["marcha"], 2), "marcha_texto" => marcha_txt($antes["marcha"]), "intervalos" => $antes["n"]],
+            "medida_depois" => $depois["marcha"] === null ? null : ["marcha" => round($depois["marcha"], 2), "marcha_texto" => marcha_txt($depois["marcha"]), "intervalos" => $depois["n"]],
+            "garantia_ate" => $garantia, "garantia_vale" => $garantia !== null && $garantia >= $hoje->format("Y-m-d"),
+            "observacao" => $s["observacao"] !== null && $s["observacao"] !== "" ? $s["observacao"] : null,
+            "documentos" => $docs[$id] ?? [], "marcacao" => $s["lancamento_id"] !== null, "criado" => $s["criado"]];
+    }, $servicos);
+}
+
+// O resumo dos serviços de um relógio, para o painel e a ficha: quantos, o custo somado, o último, a resistência à água
+// declarada (o campo do cadastro) e a estanqueidade comprovada (o último serviço com o teste, aprovado ou não)
+function servicos_resumo($rid, $lista = null)
+{
+    $lista = $lista ?? servicos_lista($rid);
+    $teste = null;
+    foreach ($lista as $s) {
+        if ($s["estanqueidade"] !== null) {
+            $teste = ["data" => $s["data"], "ha_dias" => $s["ha_dias"], "resultado" => $s["estanqueidade"], "resultado_texto" => $s["estanqueidade_texto"], "bar" => $s["estanqueidade_bar"], "servico_id" => $s["id"]];
+            break;
+        }
+    }
+    $declarada = valores_do_relogio((int)$rid)["resistencia_agua_declarada"] ?? null;
+    $custos = array_values(array_filter(array_column($lista, "custo"), function ($c) { return $c !== null; }));
+    return ["quantos" => count($lista), "custo" => count($custos) > 0 ? round(array_sum($custos), 2) : null,
+        "ultimo" => count($lista) > 0 ? ["data" => $lista[0]["data"], "tipo" => $lista[0]["tipo"], "tipo_texto" => $lista[0]["tipo_texto"], "ha_dias" => $lista[0]["ha_dias"]] : null,
+        "resistencia_declarada" => $declarada !== null && $declarada !== "" && is_numeric($declarada) ? (int)$declarada : null, "estanqueidade" => $teste];
+}
+
+// Os serviços de cada relógio para as fórmulas e os totais (lidos uma vez por requisição, de novo depois de uma gravação):
+// [relógio => [[data em segundos, tipo, custo, estanqueidade]]], do mais velho para o mais novo
+function servicos_das_contas()
+{
+    static $cache = [];
+    $chave = (int)colecao_atual() . "/" . ($GLOBALS["FORMULAS_VERSAO"] ?? 0);
+    if (!isset($cache[$chave])) {
+        $res = [];
+        $pecas = [];
+        foreach (linhas("SELECT servico_id, SUM(custo) AS soma, COUNT(custo) AS n FROM servico_peca GROUP BY servico_id") as $p) {
+            $pecas[(int)$p["servico_id"]] = (int)$p["n"] > 0 ? (float)$p["soma"] : null;
+        }
+        foreach (linhas("SELECT id, relogio_id, data, tipo, mao_de_obra, estanqueidade FROM servico ORDER BY data, id") as $s) {
+            $p = $pecas[(int)$s["id"]] ?? null;
+            $res[(int)$s["relogio_id"]][] = ["quando" => strtotime(substr((string)$s["data"], 0, 10) . " 00:00:00"), "tipo" => $s["tipo"],
+                "custo" => $s["mao_de_obra"] === null && $p === null ? null : (float)$s["mao_de_obra"] + (float)$p, "estanqueidade" => $s["estanqueidade"]];
+        }
+        $cache = [$chave => $res];
+    }
+    return $cache[$chave];
 }
 
 // O destaque no alto da página Hoje (a Configuração): o relógio do dia (dia, o padrão) ou o que está no pulso agora (pulso)

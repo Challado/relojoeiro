@@ -954,6 +954,7 @@ const IMPACTO_NOMES = ["usuario" => "usuários", "colecao" => "coleções", "col
     "no" => "grupos", "campo" => "campos", "campo_opcao" => "opções de lista", "lancamento_tipo" => "tipos de lançamento", "formula" => "fórmulas", "aviso" => "avisos",
     "documento_categoria" => "categorias de documento", "documento_categoria_aceita" => "tipos aceitos de categorias", "relogio" => "relógios", "foto" => "fotos",
     "campo_valor" => "valores de campo", "calibre" => "calibres", "calibre_valor" => "valores de calibre", "relogio_calibre" => "relógios com calibre", "lancamento" => "lançamentos", "medicao" => "medições do gasto", "documento" => "documentos", "documento_parte" => "pedaços de documentos no banco",
+    "servico" => "serviços e diagnósticos", "servico_peca" => "peças de serviços", "servico_documento" => "documentos de serviços",
     "acessorio" => "acessórios", "acessorio_relogio" => "vínculos de acessório", "criterio_parametro" => "parâmetros de critérios", "criterio_sub" => "subparâmetros de critérios",
     "criterio_faixa" => "faixas de critérios", "config" => "valores da configuração", "modo" => "modos de rodízio", "modo_bloco" => "blocos de modos", "modo_bloco_relogio" => "relógios fixos de blocos",
     "modo_bloco_dia" => "dias de blocos", "plano" => "dias do plano", "plano_bloco" => "blocos de dias do plano", "plano_livre" => "dias livres", "evento_personalizado" => "eventos",
@@ -976,7 +977,7 @@ function impacto_grafo()
             foreach ($t["chaves_estrangeiras"] as $f) {
                 if (strpos($f["coluna"], ",") === false) {
                     [$ref, $col_ref] = explode(".", $f["referencia"], 2);
-                    $g[$ref][] = [$t["tabela"], $f["coluna"], $f["ao_apagar"], $col_ref, array_column($t["colunas"], "nome")];
+                    $g[$ref][] = [$t["tabela"], $f["coluna"], $f["ao_apagar"], $col_ref, array_column($t["colunas"], "nome"), array_values($t["chave_primaria"])];
                 }
             }
         }
@@ -993,6 +994,7 @@ function impacto_exclusao($tabela, $ids)
         $conta = [];
         $desfeitos = [];
         $vistos = [];
+        $linhas_vistas = [];
         $fila = [[$tabela, array_map("intval", (array)$ids)]];
         $rel = $tabela === "relogio" ? array_map("intval", (array)$ids) : [];
         $cal = $tabela === "calibre" ? array_map("intval", (array)$ids) : [];
@@ -1004,7 +1006,7 @@ function impacto_exclusao($tabela, $ids)
                 continue;
             }
             $vistos[$t] = array_merge($vistos[$t] ?? [], $lista);
-            foreach ($g[$t] ?? [] as [$filha, $col, $ao, $col_ref, $colunas_f]) {
+            foreach ($g[$t] ?? [] as [$filha, $col, $ao, $col_ref, $colunas_f, $chave_f]) {
                 if ($col_ref !== "id") {
                     continue;
                 }
@@ -1031,9 +1033,20 @@ function impacto_exclusao($tabela, $ids)
                         }
                     }
                 } else {
-                    $n = (int)valor("SELECT COUNT(*) FROM " . banco_tabela_sql($filha) . " WHERE " . $onde);
-                    if ($n > 0) {
-                        $conta[$filha] = ($conta[$filha] ?? 0) + $n;
+                    // sem id (uma ligação, de chave composta): a mesma linha pode chegar por dois caminhos (o vínculo do
+                    // serviço com o documento sai pelo serviço e pelo documento); conta cada linha uma vez, pela chave primária
+                    // dela (só a chave: os pedaços dos documentos no banco são binários grandes)
+                    $novas = 0;
+                    $cols_k = count($chave_f) > 0 ? $chave_f : [$col];
+                    foreach (linhas("SELECT " . implode(", ", $cols_k) . " FROM " . banco_tabela_sql($filha) . " WHERE " . $onde) as $x) {
+                        $k = json_encode(array_map("strval", array_values($x)));
+                        if (!isset($linhas_vistas[$filha][$k])) {
+                            $linhas_vistas[$filha][$k] = true;
+                            $novas++;
+                        }
+                    }
+                    if ($novas > 0) {
+                        $conta[$filha] = ($conta[$filha] ?? 0) + $novas;
                     }
                 }
             }

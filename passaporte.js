@@ -30,6 +30,16 @@ api({recurso: "passaporte", relogio: id}).then(function (d) {
   res += el("section", {}, el("h2", {}, t("Manutenções")) + (d.marcacoes.length === 0 ? el("p", {"class": "nota"}, t("Nenhuma marcação."))
     : linhas(d.marcacoes.map(function (m) { return [h(m.nome), t("{1}{2} · a última em {3}", {1: m.vezes, 2: m.vezes === 1 ? t(" vez") : t(" vezes"), 3: dataBr(m.ultima)})]; })))
     + (d.servicos.length > 0 ? el("p", {"class": "nota"}, t("Revisões e trocas de pilha: {1}.", {1: d.servicos.map(function (s) { return dataBr(s.data) + " (" + h(s.nome.toLowerCase()) + ")"; }).join(", ")})) : ""));
+  // os serviços e diagnósticos: a data e o tipo; quem fez, o custo, a estanqueidade e a marcha antes e depois
+  if (d.servicos_diagnosticos.length > 0) {
+    res += el("section", {}, el("h2", {}, t("Serviços e diagnósticos")) + linhas(d.servicos_diagnosticos.map(function (s) {
+      return [dataBr(s.data) + " · " + h(s.tipo_texto), ([s.responsavel !== null ? h(s.responsavel) : null, s.custo !== null ? t("R$ ") + reais(s.custo) : null,
+        s.estanqueidade !== null ? t("estanqueidade {1}{2}", {1: h(s.estanqueidade_texto), 2: s.estanqueidade_bar !== null ? t(" a {1} bar", {1: num(s.estanqueidade_bar, 1)}) : ""}) : null,
+        s.marcha_antes !== null || s.marcha_depois !== null ? t("marcha {1} → {2}", {1: s.marcha_antes_texto !== null ? h(s.marcha_antes_texto) : "—", 2: s.marcha_depois_texto !== null ? h(s.marcha_depois_texto) : "—"}) : null]
+        .filter(function (x) { return x !== null; }).join(" · ") || "—") + (s.descricao !== null ? el("small", {}, h(s.descricao)) : "")
+        + (s.pecas.length > 0 ? el("small", {}, t("Peças: {1}", {1: s.pecas.map(function (p) { return h(p.nome); }).join(", ")})) : "")];
+    })));
+  }
   res += el("div", {"class": "grade-impressa"},
     el("section", {}, el("h2", {}, t("Acessórios")) + (d.acessorios.length === 0 ? el("p", {"class": "nota"}, t("Nenhum."))
       : linhas(d.acessorios.map(function (a) { return [h(a.tipo_texto), h(a.nome) + (a.observacao !== null ? el("small", {}, h(a.observacao)) : "")]; }))))

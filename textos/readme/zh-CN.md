@@ -1,4 +1,4 @@
-<!-- origem: 612d2bb943855be9901e0a239e806a15f3cebe76 -->
+<!-- origem: 3e6e2bb79de85133f8f9faa830cbcc1ac5246ed0 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -128,6 +128,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `calcular` | 一个公式（`expressao=`）在手表上的结果（`relogio=` 一个或多个 id；没有时为全部），不保存，并给出计算的各部分；公式写错：返回 400 和错误 |
 | `foto` | 一块手表的照片（`relogio=<id>`）：图片本身，不是 JSON |
 | `documentos` | 一块手表的文档（`relogio=<id>`；没有时为全部），含类别、每个 XML 的 NF-e 摘要、文件夹和大小限制 |
+| `servicos` | 保养与检测（`relogio=<id>`，含摘要：标称防水、经证实的防水、次数和费用合计；不带时为全部），含零件、费用、防水以及前后走时 |
 | `documento` | 一个文档的文件（`id=<id>`）：用于显示（图片、视频、音频、PDF、文本）或下载（其他，或使用 `baixar=1`）；`mini=1` 是照片的缩略图。支持分段（Range），方便视频快进 |
 | `usuarios`、`migracoes` | master：账户面板，每个账户含其拥有的内容和密码哈希（用于以相同密码迁移：参见[用户与密码](#os-usuários-e-as-senhas)）；其他人只有自己的账户；尚待应用的迁移 |
 | `conta`、`colecoes`、`aprovacoes` | 我的账户（收藏、树、申请、令牌、已记住的设备、Web Push 设备；`parte=menu`：只返回菜单用的部分）；收藏和树；审批页面 |
@@ -148,6 +149,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 |---|---|
 | `relogio` | `salvar`（创建或修改）、`excluir`（连同文档）、`foto`、`remover_foto` |
 | `documentos` | `enviar`（一个或多个文件，带类别、标题、日期、描述，照片还带缩略图）、`alterar`、`excluir` |
+| `servicos` | `salvar`（日期、类型、由谁完成、工时费、零件、防水、前后走时、保修和文档；保养和更换电池也会生成记录），`excluir` |
 | `documento_categorias` | `nova`、`alterar`、`excluir`（仅在没有文档时） |
 | `lancamento` | `lancar`（上链、电量、电池……）、`iniciar` 和 `encerrar`（戴上和取下手腕、上链盒、晒太阳、充电器）、`alternar`（时段打开时关闭，关闭时打开：手机上一个按钮就够）、`periodo`（已经过去的一段时间；当天的手表戴在手腕上时算作轮换中的使用，与它相接的同类型片段（例如仍打开的“戴上”）合并为一段）、`alterar`、`excluir`、`medicao`（把一次消耗测量放入或移出计算：`id`，`usada` 为 1 或 0）。所有操作中，`relogio_id=hoje` 都表示当天的手表 |
 | `rodizio` | `usando`（我今天戴的是这块）、`trocar_dia`（某一天的手表）、`periodo`（一个时段的手表，按顺序：`de`、`ate`、`relogio_ids[]`、`dias_cada`）、`periodo_sortear`（删除时段内的日子，由模式重新安排；只填 `de`：到计划结束；只填 `ate`：从明天到它）、`periodo_livre`（清除并让这些天保持空闲，不抽选；日期规则相同）、`manual`（手动轮换：`de`、`ate`、`dias[YYYY-MM-DD]` = 手表 id、`auto` 或 `livre`）、`apagar_tudo`（清除从明天起的全部安排；`hoje=1`：从今天起；模式会重新生成计划）、`resortear`、`resortear_hoje`、`proxima_semana`、`modo`（更换模式） |
@@ -366,7 +368,7 @@ php criar_usuario.php 你的登录名
 - **MySQL/MariaDB 上的文本顺序：** 无论数据库默认是什么，每个表都以 `utf8mb4_unicode_ci` 创建。MariaDB 默认使用 `utf8mb4_general_ci`，其排序与其他数据库不同（会把 `dias_desde_compra` 排在 `dias_de_carga` 之前）；用这种方式创建的旧安装会由迁移 v20 转换。
 - **大小写和重音：** 与 MySQL 一样，"Relógio" 和 "RELOGIO" 被视为同一个名称，无论是搜索、排序还是登录。在 Postgres 上，这来自 `instalar.php` 创建的 ICU 排序规则（`ci`）。在 SQLite 上，来自一个 PHP 函数；因此在外部程序中（命令行 `sqlite3`、DB Browser），对这些列排序或比较会出现 "no such collation sequence: ci" 错误。读取和导出正常。在 Firebird 上，来自所有文本列上的 `UNICODE_CI_AI` 排序规则。
 - **在 Firebird 上：**
-  - 长文本（`schema.sql` 中的 `TEXT`：公式、消息、cron 日志）最多 **8191 个字符**（MySQL 上为 65535 字节），因为它们会变成 `VARCHAR(8191)`（文本 `BLOB` 在 PHP 中会以 null 的形式返回空值）；
+  - 长文本（`schema.sql` 中的 `TEXT`：公式、消息、cron 日志）最多 **8191 个字符**（MySQL 上为 65535 字节），因为它们会变成 `VARCHAR(8191)`（文本 `BLOB` 在 PHP 中会以 null 的形式返回空值）；不限长度的自由文本（`LONGTEXT`：保养的备注）会变成文本 `BLOB`；
   - 超过 31 个字符的索引名和规则名只在末尾保留完整名称 md5 的一部分，而 `no` 表是保留字：在外部程序中（`isql-fb`、FlameRobin），要写成带引号的大写 `"NO"`；
   - 多列唯一键中某一列可以为空时，会改为基于表达式的唯一索引，因为在 Firebird 中，值相同且另一列为空的两行被视为重复（在 MySQL 中则不会）；
   - `NOW()` 的时间来自 PHP（Firebird 没有按连接设置的时区），使用 `config.php` 中的 `FUSO`，与其他数据库一样。

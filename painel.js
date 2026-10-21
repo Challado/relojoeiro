@@ -322,7 +322,68 @@ function abrirNoPainel(id) {
       secoes.cadastro += quadro(t("Acessórios"), r.acessorios.length === 0 ? el("p", {"class": "nota"}, t("Nenhum: a pulseira extra, a caixa, o estojo, a ferramenta..."))
         : pares(r.acessorios.map(function (a) { return [h(a.tipo_texto), h(a.nome) + (a.observacao !== null ? el("small", {}, h(a.observacao)) : "")]; })),
         el("a", {"href": "acessorios.php?relogio=" + id, "target": "_blank", "rel": "noopener", "class": "botao leve"}, r.acessorios.length === 0 ? t("Cadastrar acessórios") : t("Ver os acessórios")), "acessorios-ficha");
-      secoes.uso += quadro(t("Próximas manutenções"), r.manutencoes.length === 0 ? el("p", {"class": "nota"}, t("Nada previsto."))
+      // os serviços e diagnósticos: em cima, a resistência à água declarada e a estanqueidade comprovada (uma não vale pela outra),
+      // o custo somado e o último; cada serviço numa caixa que abre (os detalhes e o formulário para mudar ou excluir); embaixo,
+      // "Registrar um serviço" (o mesmo formulário, vazio)
+      var sr = r.servicos_resumo;
+      var formServico = function (s) {
+        var v = function (k) { return s && s[k] !== null && s[k] !== undefined ? String(s[k]) : ""; };
+        var docs = r.servico_documentos.length === 0 ? el("p", {"class": "nota"}, t("Nenhum documento no relógio ainda (a nota, o orçamento, as fotos do serviço vão em Documentos)."))
+          : el("input", {"type": "hidden", "name": "documentos[]", "value": ""}) + r.servico_documentos.map(function (x) {
+            return el("label", {"class": "check"}, el("input", {"type": "checkbox", "name": "documentos[]", "value": x.id, "checked": !!s && s.documentos.some(function (y) { return y.id === x.id; })}) + " " + h(x.titulo));
+          }).join("");
+        return el("form", {"data-recurso": "servicos", "class": "servico-form"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
+          + (s ? el("input", {"type": "hidden", "name": "id", "value": s.id}) : el("input", {"type": "hidden", "name": "relogio_id", "value": id}))
+          + el("label", {}, t("Data {1}", {1: el("input", {"type": "date", "name": "data", "value": s ? s.data : hoje, "max": hoje, "required": true})}))
+          + el("label", {}, t("Tipo {1}", {1: el("select", {"name": "tipo"}, r.servico_tipos.map(function (x) {
+            return el("option", {"value": x.valor, "selected": (s ? s.tipo : "revisao") === x.valor}, h(x.nome));
+          }).join(""))}))
+          + el("label", {}, t("Quem fez {1}", {1: el("input", {"name": "responsavel", "value": v("responsavel"), "maxlength": 120})}))
+          + el("label", {}, t("Mão de obra (R$) {1}", {1: el("input", {"name": "mao_de_obra", "inputmode": "decimal", "value": v("mao_de_obra")})}))
+          + el("label", {}, t("Estanqueidade {1}", {1: el("select", {"name": "estanqueidade"}, el("option", {"value": ""}, t("não testada"))
+            + el("option", {"value": "aprovado", "selected": v("estanqueidade") === "aprovado"}, t("aprovada")) + el("option", {"value": "reprovado", "selected": v("estanqueidade") === "reprovado"}, t("reprovada")))}))
+          + el("label", {}, t("Pressão do teste (bar) {1}", {1: el("input", {"name": "estanqueidade_bar", "inputmode": "decimal", "value": v("estanqueidade_bar")})}))
+          + el("label", {}, t("Marcha antes (s/dia) {1}", {1: el("input", {"name": "marcha_antes", "inputmode": "decimal", "value": v("marcha_antes")})}))
+          + el("label", {}, t("Marcha depois (s/dia) {1}", {1: el("input", {"name": "marcha_depois", "inputmode": "decimal", "value": v("marcha_depois")})}))
+          + el("label", {}, t("Garantia até {1}", {1: el("input", {"type": "date", "name": "garantia_ate", "value": v("garantia_ate")})}))
+          + el("label", {"class": "largo"}, t("O que foi feito {1}", {1: el("textarea", {"name": "descricao", "rows": 2, "maxlength": 4000}, h(v("descricao")))}))
+          + el("label", {"class": "largo"}, t("Peças trocadas {1} {2}", {1: el("textarea", {"name": "pecas", "rows": 2, "placeholder": t("Coroa; 120,00")}, s ? h(s.pecas.map(function (p) {
+            return p.nome + (p.custo !== null ? "; " + String(p.custo) : "");
+          }).join("\n")) : ""), 2: el("small", {}, t("uma por linha; o custo, se houver, depois do ponto e vírgula"))}))
+          + el("label", {"class": "largo"}, t("Observação {1}", {1: el("textarea", {"name": "observacao", "rows": 3}, h(v("observacao")))}))
+          + el("fieldset", {"class": "largo servico-docs"}, el("legend", {}, t("Documentos do serviço")) + docs)
+          + el("div", {"class": "botoes largo"}, el("button", {}, s ? t("Salvar o serviço") : t("Registrar o serviço"))));
+      };
+      var linhaServico = function (s) {
+        var medida = function (m) { return m !== null ? t("{1} ({2} medidas)", {1: h(m.marcha_texto), 2: m.intervalos}) : nada(t("sem leituras do desvio")); };
+        return el("details", {"class": "servico"}, el("summary", {}, el("strong", {}, dataBr(s.data)) + " · " + h(s.tipo_texto)
+            + (s.responsavel !== null ? " · " + h(s.responsavel) : "") + (s.custo !== null ? " · " + t("R$ ") + reais(s.custo) : ""))
+          + pares([[t("O que foi feito"), s.descricao !== null ? h(s.descricao) : nada("—")],
+            [t("Peças"), s.pecas.length === 0 ? nada("—") : s.pecas.map(function (p) { return h(p.nome) + (p.custo !== null ? " " + el("small", {}, t("R$ ") + reais(p.custo)) : ""); }).join("<br>")],
+            [t("Custo"), s.custo !== null ? el("strong", {}, t("R$ ") + reais(s.custo)) + el("small", {}, t("mão de obra {1} · peças {2}", {1: s.mao_de_obra !== null ? t("R$ ") + reais(s.mao_de_obra) : "—", 2: t("R$ ") + reais(s.custo_pecas)})) : nada("—")],
+            [t("Estanqueidade"), s.estanqueidade !== null ? el("span", {"class": s.estanqueidade === "reprovado" ? "em atrasado" : ""}, h(s.estanqueidade_texto))
+              + (s.estanqueidade_bar !== null ? " " + t("a {1} bar", {1: num(s.estanqueidade_bar, 1)}) : "") : nada(t("não testada"))],
+            [t("Marcha antes"), (s.marcha_antes_texto !== null ? h(s.marcha_antes_texto) + el("small", {}, t("informada")) : "") + el("small", {}, t("medida pelo sistema: {1}", {1: medida(s.medida_antes)}))],
+            [t("Marcha depois"), (s.marcha_depois_texto !== null ? h(s.marcha_depois_texto) + el("small", {}, t("informada")) : "") + el("small", {}, t("medida pelo sistema: {1}", {1: medida(s.medida_depois)}))],
+            [t("Garantia"), s.garantia_ate !== null ? (s.garantia_vale ? t("até {1}", {1: dataBr(s.garantia_ate)}) : t("vencida em {1}", {1: dataBr(s.garantia_ate)})) : nada("—")],
+            [t("Documentos"), s.documentos.length === 0 ? nada("—") : s.documentos.map(function (x) { return el("a", {"href": x.url, "target": "_blank", "rel": "noopener"}, h(x.titulo)); }).join(" · ")],
+            [t("Observação"), s.observacao !== null ? h(s.observacao) : nada("—")]]
+            .concat(s.marcacao ? [[t("Marcação"), t("também marcado como {1} na data do serviço", {1: h(s.tipo_texto.toLowerCase())})]] : []))
+          + el("details", {"class": "servico-editar"}, el("summary", {}, t("Mudar este serviço")) + formServico(s)
+            + el("form", {"data-recurso": "servicos", "class": "excluir"}, el("input", {"type": "hidden", "name": "acao", "value": "excluir"}) + el("input", {"type": "hidden", "name": "id", "value": s.id})
+              + el("button", {"class": "leve discreto"}, t("Excluir este serviço")))));
+      };
+      var est = sr.estanqueidade;
+      secoes.cadastro += quadro(t("Serviços e diagnósticos"), pares([
+        [t("Resistência à água"), sr.resistencia_declarada !== null ? t("{1} m declarada", {1: sr.resistencia_declarada}) + el("small", {}, t("do fabricante (o cadastro): não garante a vedação de hoje")) : nada(t("não informada no cadastro"))],
+        [t("Estanqueidade"), est !== null ? el("span", {"class": est.resultado === "reprovado" ? "em atrasado" : ""}, t("{1} em {2}", {1: h(est.resultado_texto), 2: dataBr(est.data)}))
+          + (est.bar !== null ? " " + t("a {1} bar", {1: num(est.bar, 1)}) : "") + el("small", {}, t("há {1}{2}, o último teste", {1: est.ha_dias, 2: est.ha_dias === 1 ? t(" dia") : t(" dias")})) : nada(t("nunca testada aqui"))],
+        [t("Serviços"), sr.quantos === 0 ? nada(t("nenhum registrado")) : sr.quantos + (sr.quantos === 1 ? t(" serviço") : t(" serviços"))
+          + (sr.ultimo !== null ? el("small", {}, t("o último: {1} em {2}", {1: h(sr.ultimo.tipo_texto.toLowerCase()), 2: dataBr(sr.ultimo.data)})) : "")],
+        [t("Custo somado"), sr.custo !== null ? el("strong", {}, t("R$ ") + reais(sr.custo)) : nada("—")]])
+        + r.servicos.map(linhaServico).join("")
+        + el("details", {"class": "servico-novo"}, el("summary", {}, t("Registrar um serviço")) + formServico(null)), "", "largo servicos-ficha");
+      secoes.uso += quadro(t("Próximas manutenções"),r.manutencoes.length === 0 ? el("p", {"class": "nota"}, t("Nada previsto."))
         : pares(r.manutencoes.map(function (m) { return [dataBr(m.data), h(m.nome)]; }), "datas"));
       // marcar: um quadro só. O menu diz o que aconteceu, e embaixo aparecem só os campos daquilo: pôr ou tirar (cada sessão,
       // só o que cabe agora), uma marcação de um momento (corda, pilha...), a leitura (carga), um período que já passou, ou

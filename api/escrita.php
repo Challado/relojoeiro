@@ -10,14 +10,14 @@ if (!defined("RELOJOEIRO_API")) {
 $ops = ["arvore" => "op_arvore", "campos" => "op_campos", "lancamento_tipos" => "op_lancamento_tipos", "formulas" => "op_formulas", "totais" => "op_totais", "calibres" => "op_calibres", "relogio" => "op_relogio",
     "lancamento" => "op_lancamento", "avisos" => "op_avisos", "criterios" => "op_criterios",
     "rodizio" => "op_rodizio", "modos" => "op_modos", "config" => "op_config", "documentos" => "op_documentos", "documento_categorias" => "op_documento_categorias",
-    "acessorios" => "op_acessorios", "destinos" => "op_destinos", "agendas" => "op_agendas", "conta" => "op_conta", "colecoes" => "op_colecoes", "acessos" => "op_acessos",
+    "acessorios" => "op_acessorios", "servicos" => "op_servicos", "destinos" => "op_destinos", "agendas" => "op_agendas", "conta" => "op_conta", "colecoes" => "op_colecoes", "acessos" => "op_acessos",
     "convites" => "op_convites", "pedidos" => "op_pedidos"];
 // toda exclusão em dois passos: sem confirmar=1, a API diz o que sai junto (impacto_exclusao, no banco inteiro: uma árvore
 // serve a várias coleções) e não apaga nada; com confirmar=1, apaga. O item tem de ser da coleção do pedido (lido pela visão
 // dela); o que não é, segue para a operação, que responde "não encontrado"
 $exclusoes = ["relogio" => ["excluir", "relogio"], "campos" => ["excluir", "campo"], "lancamento_tipos" => ["excluir", "lancamento_tipo"], "formulas" => ["excluir", "formula"], "totais" => ["excluir", "total"], "calibres" => ["excluir", "calibre"],
     "avisos" => ["excluir", "aviso"], "modos" => ["excluir", "modo"], "documentos" => ["excluir", "documento"], "documento_categorias" => ["excluir", "documento_categoria"],
-    "acessorios" => ["excluir", "acessorio"], "lancamento" => ["excluir", "lancamento"], "destinos" => ["excluir", "destino"], "agendas" => ["excluir", "agenda"],
+    "acessorios" => ["excluir", "acessorio"], "servicos" => ["excluir", "servico"], "lancamento" => ["excluir", "lancamento"], "destinos" => ["excluir", "destino"], "agendas" => ["excluir", "agenda"],
     "config" => ["evento_excluir", "evento_personalizado"], "colecoes" => ["excluir", "colecao"]];
 $alvo_exc = null;
 if (($recurso === "colecoes" && $acao === "arvore_excluir") || (isset($exclusoes[$recurso]) && $acao === $exclusoes[$recurso][0])) {

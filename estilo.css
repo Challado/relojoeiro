@@ -1126,6 +1126,22 @@ body.com-visor { overflow: hidden; }
 .quadro-rodape form { margin: 0; }
 .quadro-rodape > .nota { margin: 0; flex: 1 1 100%; text-align: left; }
 .quadro.largo, .quadro-marcar { grid-column: 1 / -1; }
+/* os serviços e diagnósticos: cada serviço numa caixa que abre, com os detalhes e, dentro, o formulário para mudar; o
+   formulário numa grade que se ajusta à largura (uma coluna no painel ao lado), os textos longos na largura toda */
+.servicos-ficha details.servico, .servicos-ficha details.servico-novo { border: 1px solid var(--aco); border-radius: 10px; padding: .45rem .7rem; margin-top: .55rem; }
+.servicos-ficha details > summary { cursor: pointer; overflow-wrap: anywhere; }
+.servicos-ficha details.servico-novo > summary, .servicos-ficha details.servico-editar > summary { color: var(--safira); font-weight: 600; }
+.servicos-ficha details.servico[open] > summary { margin-bottom: .45rem; }
+.servicos-ficha details.servico-editar { margin-top: .6rem; }
+.servicos-ficha form.servico-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr)); gap: .6rem 1rem; align-items: end; margin-top: .6rem; }
+.servicos-ficha form.servico-form > label { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; color: var(--cinza); min-width: 0; }
+.servicos-ficha form.servico-form > label small { font-size: .78rem; }
+.servicos-ficha form.servico-form > .largo { grid-column: 1 / -1; }
+.servicos-ficha form.servico-form textarea { width: 100%; }
+.servicos-ficha fieldset.servico-docs { display: flex; flex-wrap: wrap; gap: .3rem 1rem; padding: .5rem .7rem; }
+.servicos-ficha fieldset.servico-docs label.check { overflow-wrap: anywhere; }
+.servicos-ficha form.excluir { margin-top: .5rem; }
+
 /* as seções do relógio (o painel e a ficha): os quadros do mesmo assunto juntos, com o título e uma linha fina até a borda;
    em cima, um botão para cada seção (rola até ela; a margem deixa o título à vista embaixo do × que acompanha a rolagem) */
 .secoes-atalhos { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 1rem; }

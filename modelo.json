@@ -382,6 +382,17 @@
             "calibre": 0
         },
         {
+            "identificador": "resistencia_agua_declarada",
+            "nome": "Resistência à água declarada (do fabricante)",
+            "tipo": "inteiro",
+            "unidade": "m",
+            "padrao": null,
+            "grupo": "raiz",
+            "ordem": 10,
+            "so_desejado": 0,
+            "calibre": 0
+        },
+        {
             "identificador": "preco_alvo",
             "nome": "Preço-alvo (até quanto pagar)",
             "tipo": "decimal",
@@ -2763,6 +2774,15 @@
             "coluna": "valor",
             "nome": "O mais caro",
             "expressao": "QUEM_MAIOR(valor_compra)",
+            "rodape": 0,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "moeda"
+        },
+        {
+            "coluna": null,
+            "nome": "Custo dos serviços",
+            "expressao": "SOMA(custo_servicos)",
             "rodape": 0,
             "pagina": 1,
             "largura": "estreito",

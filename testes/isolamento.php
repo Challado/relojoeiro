@@ -90,14 +90,16 @@ $cal_a = (int)(preparar($ana, ["recurso" => "calibres", "acao" => "salvar", "id"
 preparar($ana, ["recurso" => "relogio", "acao" => "salvar", "id" => $rel_a, "calibre_id" => $cal_a]);
 $doc_cal_a = (int)(preparar($ana, ["recurso" => "documentos", "acao" => "enviar", "calibre_id" => $cal_a, "categoria_id" => $cat_a, "titulo" => "Manual SEGREDOANA",
     "arquivo_nome" => "segredoana-calibre.txt", "arquivo_base64" => base64_encode("manual SEGREDOANA")])["id"] ?? 0);
+$srv_a = (int)(preparar($ana, ["recurso" => "servicos", "acao" => "salvar", "relogio_id" => $rel_a, "data" => date("Y-m-d", time() - 3 * 86400), "tipo" => "reparo",
+    "responsavel" => "Servico SEGREDOANA", "pecas" => "Peca SEGREDOANA; 10", "documentos" => (string)$doc_a])["id"] ?? 0);
 $ids = ["colecao" => $col_a, "relogio" => $rel_a, "aparelho" => $apa_a, "lancamento" => $lan_a, "acessorio" => $ace_a, "evento" => $evt_a, "destino" => $des_a, "agenda" => $agd_a,
-    "documento" => $doc_a, "no" => $no_a, "usuario" => $uid_a, "smartwatch" => $rel_s, "medicao" => $med_a, "calibre" => $cal_a, "doc_calibre" => $doc_cal_a];
+    "documento" => $doc_a, "no" => $no_a, "usuario" => $uid_a, "smartwatch" => $rel_s, "medicao" => $med_a, "calibre" => $cal_a, "doc_calibre" => $doc_cal_a, "servico" => $srv_a];
 echo "A ana: " . json_encode($ids) . "\n";
 $antes = pedir($ana, "GET", ["recurso" => "ficha", "relogio" => $rel_a])["corpo"];
 
 // os recursos de leitura e as variações de parâmetro com as coisas da ana
 $recursos = ["", "importacao", "backup", "foto", "documento", "documentos", "criterios", "avisos", "autonomia", "hoje", "ficha", "config", "historico", "previsao",
-    "plano", "desejos", "estatisticas", "precisao", "calibres", "hora_certa", "passaporte", "galeria", "acessorios", "proximos", "rodizio_manual", "eventos", "destinos", "agendas",
+    "plano", "desejos", "estatisticas", "precisao", "calibres", "servicos", "hora_certa", "passaporte", "galeria", "acessorios", "proximos", "rodizio_manual", "eventos", "destinos", "agendas",
     "usuarios", "conta", "colecoes", "acessos", "pedidos", "convites", "aprovacoes", "cron", "arvore", "cadastros", "calcular", "migracoes", "instalacao",
     "cadastro", "entrar"];
 $variacoes = [[], ["colecao" => $col_a], ["relogio" => $rel_a], ["id" => $rel_a], ["relogio_id" => $rel_a], ["como" => "ana"], ["usuario" => "ana"],
@@ -142,6 +144,9 @@ $tentativas = [
     ["recurso" => "documentos", "acao" => "alterar", "id" => $doc_cal_a, "titulo" => "INVADIDO"],
     ["recurso" => "documentos", "acao" => "enviar", "calibre_id" => $cal_a, "categoria_id" => $cat_a, "titulo" => "INVADIDO", "arquivo_nome" => "x.txt", "arquivo_base64" => base64_encode("x")],
     ["recurso" => "acessorios", "acao" => "excluir", "id" => $ace_a, "confirmar" => 1],
+    ["recurso" => "servicos", "acao" => "salvar", "id" => $srv_a, "responsavel" => "INVADIDO"],
+    ["recurso" => "servicos", "acao" => "salvar", "relogio_id" => $rel_a, "data" => date("Y-m-d"), "responsavel" => "INVADIDO"],
+    ["recurso" => "servicos", "acao" => "excluir", "id" => $srv_a, "confirmar" => 1],
     ["recurso" => "acessorios", "acao" => "salvar", "nome" => "INVADIDO", "tipo" => "pulseira", "relogio_id" => $rel_a],
     ["recurso" => "config", "acao" => "evento_salvar", "id" => $evt_a, "nome" => "INVADIDO", "repeticao" => "semanal", "hora" => "10:00", "dias_semana" => "6"],
     ["recurso" => "config", "acao" => "evento_excluir", "evento_id" => $evt_a, "confirmar" => 1],
@@ -204,14 +209,14 @@ if (preg_replace('/"(calculado_em|agora|gerado_em)[^,]*,/', "", $antes) !== preg
     && stripos($depois, "INVADIDO") !== false) {
     $falhas[] = "MUDOU a ficha do relógio da ana";
 }
-foreach ([["acessorios"], ["eventos"], ["destinos"], ["agendas"], ["documentos", ["relogio" => $rel_a]], ["historico", ["relogio" => $rel_a]], ["conta"], ["colecoes"],
+foreach ([["acessorios"], ["servicos", ["relogio" => $rel_a]], ["eventos"], ["destinos"], ["agendas"], ["documentos", ["relogio" => $rel_a]], ["historico", ["relogio" => $rel_a]], ["conta"], ["colecoes"],
     ["plano"], ["arvore"]] as $x) {
     $c = $ver($x[0], $x[1] ?? []);
     if (stripos($c, "INVADIDO") !== false) {
         $falhas[] = "MUDOU " . $x[0] . " da ana: " . substr($c, max(0, stripos($c, "INVADIDO") - 150), 300);
     }
 }
-foreach (["Relogio SEGREDOANA" => ["ficha", ["relogio" => $rel_a]], "Acessorio SEGREDOANA" => ["acessorios"], "Evento SEGREDOANA" => ["eventos"],
+foreach (["Relogio SEGREDOANA" => ["ficha", ["relogio" => $rel_a]], "Acessorio SEGREDOANA" => ["acessorios"], "Servico SEGREDOANA" => ["servicos", ["relogio" => $rel_a]], "Evento SEGREDOANA" => ["eventos"],
     "Destino SEGREDOANA" => ["destinos"], "Agenda SEGREDOANA" => ["agendas"], "Doc SEGREDOANA" => ["documentos", ["relogio" => $rel_a]],
     "Colecao SEGREDOANA" => ["conta"]] as $o => $x) {
     if (stripos($ver($x[0], $x[1] ?? []), $o) === false) {

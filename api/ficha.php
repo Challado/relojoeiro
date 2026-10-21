@@ -62,6 +62,11 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     $saida["relogio"] = ["id" => $id, "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? 0 : (int)$r["no_id"], "disponivel" => (int)$r["disponivel"] === 1,
         "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]), "da_colecao" => da_colecao($r),
         "acessorios" => acessorios_lista($id),
+        // os serviços e diagnósticos (o quadro Serviços e diagnósticos): a lista, o resumo, os tipos e os documentos dele que um
+        // serviço pode citar (o formulário)
+        "servicos" => ($srv_f = servicos_lista($id)), "servicos_resumo" => servicos_resumo($id, $srv_f),
+        "servico_tipos" => array_map(function ($k) { return ["valor" => $k, "nome" => t(SERVICO_TIPOS[$k]), "marca" => in_array($k, SERVICO_MARCA, true)]; }, array_keys(SERVICO_TIPOS)),
+        "servico_documentos" => array_map(function ($x) { return ["id" => (int)$x["id"], "titulo" => $x["titulo"]]; }, documentos_do_relogio($id)),
         "copia_banco" => (int)$r["copia_banco"] === 1,
         // o calibre (o movimento): o cadastro dele, com o link do manual técnico e as recomendações; null sem
         "calibre" => ($cal_f = calibre_do_relogio($id)) ? ["id" => (int)$cal_f["id"], "nome" => $cal_f["nome"], "fabricante" => $cal_f["fabricante"], "link" => $cal_f["link"],

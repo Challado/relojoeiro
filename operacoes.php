@@ -1102,6 +1102,206 @@ function op_acessorios($acao, $d)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Os serviços e diagnósticos de um relógio. Ações:
+//   salvar (id: 0 ou sem, um novo; relogio_id, só no novo; data AAAA-MM-DD, até hoje; tipo: revisao, pilha, estanqueidade,
+//           regulagem, polimento, reparo, diagnostico ou outro; responsavel; descricao; mao_de_obra (R$); pecas: uma por
+//           linha, "nome; custo" (o custo é opcional); estanqueidade: aprovado, reprovado ou vazio (não testada; o tipo
+//           estanqueidade pede o resultado); estanqueidade_bar (a pressão do teste, só com o resultado); marcha_antes e
+//           marcha_depois (s/dia, a que o profissional mediu; + adianta); garantia_ate (AAAA-MM-DD, a partir da data);
+//           observacao (texto livre, sem limite); documentos: os ids dos documentos do relógio que são do serviço, separados por vírgula). Só o que
+//           vem no pedido muda. A revisão e a troca de pilha viram também a marcação do tipo de lançamento de mesmo nome
+//           (revisao, pilha), na data do serviço, quando o tipo vale para o relógio: os avisos e as fórmulas de sempre contam
+//           o serviço (ULTIMA_DATA("revisao")); mudar a data muda a marcação, e mudar o tipo a desfaz.
+//   excluir (id): sai o serviço, as peças e a ligação com os documentos (os documentos ficam no relógio), e a marcação
+//           que ele criou.
+// ---------------------------------------------------------------------------------------------------------------------
+function op_servicos($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $id = (int)($d["id"] ?? 0);
+    $atual = $id > 0 ? linha("SELECT * FROM servico WHERE id = ?", [$id]) : null;
+    if ($id > 0 && !$atual) {
+        $erros[] = t("Serviço não encontrado.");
+    } elseif ($acao === "salvar") {
+        $tem = function ($k) use ($d) { return array_key_exists($k, $d); };
+        $texto = function ($k) use ($d, $atual) { return array_key_exists($k, $d) ? trim((string)$d[$k]) : trim((string)($atual[$k] ?? "")); };
+        $data_ok = function ($v) { return preg_match("/^\\d{4}-\\d{2}-\\d{2}$/", $v) === 1 && checkdate((int)substr($v, 5, 2), (int)substr($v, 8, 2), (int)substr($v, 0, 4)); };
+        $rid = $atual ? (int)$atual["relogio_id"] : (int)($d["relogio_id"] ?? 0);
+        $r = $rid > 0 ? linha("SELECT * FROM relogio WHERE id = ?", [$rid]) : null;
+        if (!$r) {
+            $erros[] = t("relógio não encontrado");
+        }
+        $data = $texto("data");
+        $data = $data !== "" ? substr($data, 0, 10) : "";
+        if (!$data_ok($data)) {
+            $erros[] = t("Data do serviço: AAAA-MM-DD.");
+        } elseif ($data > hoje_da_colecao()->format("Y-m-d")) {
+            $erros[] = t("A data do serviço não pode ser no futuro.");
+        }
+        $tipo = $texto("tipo") !== "" ? $texto("tipo") : "revisao";
+        if (!isset(SERVICO_TIPOS[$tipo])) {
+            $erros[] = t("Tipo: {1}.", [1 => implode(", ", array_keys(SERVICO_TIPOS))]);
+        }
+        $resp = $texto("responsavel");
+        $desc = $texto("descricao");
+        $obs = $texto("observacao");
+        if (mb_strlen($resp) > 120) {
+            $erros[] = t("Quem fez: até 120 caracteres.");
+        }
+        if (mb_strlen($desc) > 4000) {
+            $erros[] = t("A descrição vai até 4000 caracteres.");
+        }
+        // os números: vazio apaga; com vírgula ou ponto
+        $num = function ($k, $atual_v, $rotulo) use ($d, &$erros) {
+            if (!array_key_exists($k, $d)) {
+                return $atual_v === null ? null : (float)$atual_v;
+            }
+            $v = trim((string)$d[$k]);
+            if ($v === "") {
+                return null;
+            }
+            $n = numero_br($v);
+            if ($n === null) {
+                $erros[] = t("{1}: um número.", [1 => $rotulo]);
+            }
+            return $n;
+        };
+        $mao = $num("mao_de_obra", $atual["mao_de_obra"] ?? null, t("Mão de obra"));
+        if ($mao !== null && $mao < 0) {
+            $erros[] = t("A mão de obra não pode ser negativa.");
+        }
+        $est = $texto("estanqueidade");
+        if ($est !== "" && !in_array($est, ["aprovado", "reprovado"], true)) {
+            $erros[] = t("Estanqueidade: aprovado, reprovado ou vazio (não testada).");
+        }
+        if ($tipo === "estanqueidade" && $est === "") {
+            $erros[] = t("O teste de estanqueidade pede o resultado: aprovado ou reprovado.");
+        }
+        $bar = $num("estanqueidade_bar", $atual["estanqueidade_bar"] ?? null, t("Pressão do teste"));
+        if ($bar !== null && ($bar <= 0 || $bar > 1000)) {
+            $erros[] = t("A pressão do teste vai de 0 a 1000 bar.");
+        } elseif ($bar !== null && $est === "") {
+            $erros[] = t("A pressão do teste só vale com o resultado da estanqueidade.");
+        }
+        $m_antes = $num("marcha_antes", $atual["marcha_antes"] ?? null, t("Marcha antes"));
+        $m_depois = $num("marcha_depois", $atual["marcha_depois"] ?? null, t("Marcha depois"));
+        foreach ([$m_antes, $m_depois] as $mm) {
+            if ($mm !== null && abs($mm) > 3600) {
+                $erros[] = t("A marcha vai de −3600 a +3600 s/dia.");
+                break;
+            }
+        }
+        $garantia = $texto("garantia_ate");
+        $garantia = $garantia !== "" ? substr($garantia, 0, 10) : "";
+        if ($garantia !== "" && !$data_ok($garantia)) {
+            $erros[] = t("Garantia até: AAAA-MM-DD.");
+        } elseif ($garantia !== "" && $data_ok($data) && $garantia < $data) {
+            $erros[] = t("A garantia não pode acabar antes do serviço.");
+        }
+        // as peças: uma por linha, "nome; custo"
+        $pecas = null;
+        if ($tem("pecas")) {
+            $pecas = [];
+            foreach (preg_split("/\\r\\n|\\r|\\n/", (string)$d["pecas"]) as $linha_p) {
+                $linha_p = trim($linha_p);
+                if ($linha_p === "") {
+                    continue;
+                }
+                $partes = array_map("trim", explode(";", $linha_p, 2));
+                $custo = isset($partes[1]) && $partes[1] !== "" ? numero_br(str_replace(["R$", " "], "", $partes[1])) : null;
+                if ($partes[0] === "" || mb_strlen($partes[0]) > 120) {
+                    $erros[] = t("Peça: o nome, até 120 caracteres ({1}).", [1 => $linha_p]);
+                } elseif (isset($partes[1]) && $partes[1] !== "" && ($custo === null || $custo < 0)) {
+                    $erros[] = t("Peça {1}: o custo depois do ponto e vírgula, um número (ex.: Coroa; 120,00).", [1 => $partes[0]]);
+                }
+                $pecas[] = [$partes[0], $custo];
+            }
+            if (count($pecas) > 50) {
+                $erros[] = t("No máximo 50 peças por serviço.");
+            }
+        }
+        // os documentos: os do próprio relógio
+        $docs = null;
+        if ($tem("documentos") && $r) {
+            $docs = [];
+            foreach (is_array($d["documentos"]) ? $d["documentos"] : preg_split("/[,\\s]+/", (string)$d["documentos"]) as $x) {
+                if (trim((string)$x) === "") {
+                    continue;
+                }
+                if ((int)valor("SELECT COUNT(*) FROM documento WHERE id = ? AND relogio_id = ?", [(int)$x, $rid]) === 0) {
+                    $erros[] = t("Documento {1} não é deste relógio.", [1 => (int)$x]);
+                } else {
+                    $docs[(int)$x] = true;
+                }
+            }
+            $docs = array_keys($docs);
+        }
+        if (count($erros) === 0) {
+            $campos = [$data, $tipo, $resp !== "" ? $resp : null, $desc !== "" ? $desc : null, $mao, $est !== "" ? $est : null, $bar, $m_antes, $m_depois,
+                $garantia !== "" ? $garantia : null, $obs !== "" ? $obs : null];
+            if ($atual) {
+                sql("UPDATE servico SET data = ?, tipo = ?, responsavel = ?, descricao = ?, mao_de_obra = ?, estanqueidade = ?, estanqueidade_bar = ?, marcha_antes = ?, marcha_depois = ?,
+                    garantia_ate = ?, observacao = ? WHERE id = ?", array_merge($campos, [$id]));
+            } else {
+                sql("INSERT INTO servico (relogio_id, data, tipo, responsavel, descricao, mao_de_obra, estanqueidade, estanqueidade_bar, marcha_antes, marcha_depois, garantia_ate,
+                    observacao, criado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())", array_merge([$rid], $campos));
+                $id = ultimo_id();
+            }
+            if ($pecas !== null) {
+                sql("DELETE FROM servico_peca WHERE servico_id = ?", [$id]);
+                foreach ($pecas as $i => [$nome_p, $custo_p]) {
+                    sql("INSERT INTO servico_peca (servico_id, nome, custo, ordem) VALUES (?, ?, ?, ?)", [$id, $nome_p, $custo_p, $i + 1]);
+                }
+            }
+            if ($docs !== null) {
+                sql("DELETE FROM servico_documento WHERE servico_id = ?", [$id]);
+                foreach ($docs as $doc) {
+                    sql("INSERT INTO servico_documento (servico_id, documento_id) VALUES (?, ?)", [$id, $doc]);
+                }
+            }
+            // a marcação da revisão e da troca de pilha: na data do serviço (ao meio-dia), do tipo de mesmo nome, se ele vale
+            // para o relógio; noutro tipo (ou sem o tipo de lançamento), a marcação que o serviço tinha sai
+            $lan = $atual && $atual["lancamento_id"] !== null ? linha("SELECT * FROM lancamento WHERE id = ?", [(int)$atual["lancamento_id"]]) : null;
+            $tl = in_array($tipo, SERVICO_MARCA, true) ? (lancamento_tipos_do_relogio($r)[$tipo] ?? null) : null;
+            $quando = $data . " 12:00:00";
+            $marcou = "";
+            if ($tl !== null && $tl["formato"] === "instantaneo") {
+                if ($lan !== null && (int)$lan["tipo_id"] === (int)$tl["id"]) {
+                    sql("UPDATE lancamento SET inicio = ? WHERE id = ?", [$quando, (int)$lan["id"]]);
+                } else {
+                    if ($lan !== null) {
+                        sql("DELETE FROM lancamento WHERE id = ?", [(int)$lan["id"]]);
+                    }
+                    sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, NULL, NULL, 'manual', NOW())", [$rid, (int)$tl["id"], $quando]);
+                    sql("UPDATE servico SET lancamento_id = ? WHERE id = ?", [ultimo_id(), $id]);
+                }
+                $marcou = t(" Marcado também: {1} em {2}.", [1 => $tl["nome"], 2 => data_txt(strtotime($quando))]);
+            } elseif ($lan !== null) {
+                sql("DELETE FROM lancamento WHERE id = ?", [(int)$lan["id"]]);
+                sql("UPDATE servico SET lancamento_id = NULL WHERE id = ?", [$id]);
+            }
+            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+            $msg = t("Serviço {1} de {2}{3}, do {4}.", [1 => mb_strtolower(t(SERVICO_TIPOS[$tipo]), "UTF-8"), 2 => data_txt(strtotime($data . " 00:00:00")),
+                3 => $atual ? t(" salvo") : t(" registrado"), 4 => $r["nome"]]) . $marcou;
+        }
+    } elseif ($acao === "excluir" && $atual) {
+        if ($atual["lancamento_id"] !== null) {
+            sql("DELETE FROM lancamento WHERE id = ?", [(int)$atual["lancamento_id"]]);
+        }
+        sql("DELETE FROM servico WHERE id = ?", [$id]);
+        $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+        $msg = t("Serviço de {1} excluído.", [1 => data_txt(strtotime(substr((string)$atual["data"], 0, 10) . " 00:00:00"))]);
+        $id = 0;
+    } elseif ($acao === "excluir") {
+        $erros[] = t("Informe o serviço (id).");
+    } else {
+        $erros[] = t("Ação desconhecida: use salvar ou excluir.");
+    }
+    return resultado($erros, $msg, ["id" => $id]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Lançamentos. Ações:
 //   lancar (relogio_id, tipo, valor (formato "valor"), quando (AAAA-MM-DD HH:MM; vazio: agora), medir (1 ou 0; padrão 1)):
 //           instantâneo ou com valor. Num tipo que mede o gasto (a leitura de carga), a leitura é comparada com a anterior,
