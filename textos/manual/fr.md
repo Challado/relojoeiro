@@ -1,4 +1,4 @@
-<!-- origem: df6031c3d5325a4609e3e3bdb7ca850b5832a87e -->
+<!-- origem: 3adc0877a3f91fac6bdf6695dd469e7c18f992c9 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1326,11 +1326,27 @@ que vous enregistrez apparaît ici sous son nom.
 | **Groupes** (`grupos.php`) | L'arbre : créer, renommer, déplacer, trier, supprimer (ce qui appartenait au groupe passe à celui du dessus) et choisir le groupe de chaque montre. |
 | **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), les totaux (l'onglet **Totaux** : voir [Les totaux](#os-totais)), les calibres (l'onglet **Calibres** : voir [Les calibres](#os-calibres)) et catégories de documents : tout ce que le système utilise et qui n'est pas du code (les alertes sont dans la page **Alertes**, et les modes de rotation dans **Modes de rotation**). |
 | **Exécutions du cron** (`execucoes.php`) | Ce que le cron a fait à chaque passage, combien de temps il a pris et les erreurs, avec des filtres. |
-| **Mon compte** (`conta.php`, menu **Compte › Mon compte**) | Les collections que vous voyez (ouvrir, créer, renommer, supprimer, quitter), vos arbres de groupes (copier, renommer, supprimer), demander l'accès à la collection de quelqu'un (par le code donné par le propriétaire), vos données (votre code, l'e-mail, la langue, le mot de passe), l'**application sur le téléphone** (mémoriser cet appareil, installer, les appareils mémorisés), les **jetons d'API** (pour vos scripts), les **notifications sur cet appareil** (le Web Push), l'**envoi de vos e-mails** (par le serveur du système ou par le vôtre : Gmail, Outlook) et supprimer le compte. Voir [Plusieurs personnes](#várias-pessoas-contas-coleções-e-acesso) et [L'application sur le téléphone](#o-aplicativo-no-celular). |
+| **Mon compte** (`conta.php`, menu **Compte › Mon compte**) | Les collections que vous voyez (ouvrir, créer, renommer, supprimer, quitter), vos arbres de groupes (copier, renommer, supprimer), demander l'accès à la collection de quelqu'un (par le code donné par le propriétaire), vos données (votre code, l'e-mail, la langue, le mode de l'interface, le mot de passe), l'**application sur le téléphone** (mémoriser cet appareil, installer, les appareils mémorisés), les **jetons d'API** (pour vos scripts), les **notifications sur cet appareil** (le Web Push), l'**envoi de vos e-mails** (par le serveur du système ou par le vôtre : Gmail, Outlook) et supprimer le compte. Voir [Plusieurs personnes](#várias-pessoas-contas-coleções-e-acesso) et [L'application sur le téléphone](#o-aplicativo-no-celular). |
 | **Approbations** (`aprovacoes.php`) | Les demandes d'accès à vos collections (approuver, refuser), les invitations que des membres ont faites et qui vous attendent, **Inviter** (par e-mail), les invitations que vous avez faites et qui voit vos collections (retirer l'accès). Le menu affiche **Approbations (N)** quand quelque chose attend. |
 | **Utilisateurs** (`usuarios.php`, seulement le master) | Le panneau des comptes : chacun avec ce qu'il a et les actions (voir en tant que, rendre officiel, prolonger, bloquer, modifier, changer le mot de passe, transférer une collection, donner l'accès, supprimer) et créer un compte. |
 | **Créer un compte** (`cadastro.php`, sans identifiant) | L'inscription ouverte : le nouveau compte (avec une collection, ou en demandant l'accès), l'invitation arrivée par e-mail et le **Mot de passe oublié**. |
 | **Aide** (`ajuda.php`) | Ce guide dans le système : l'idée centrale, comment ça marche, la fiche de chaque montre champ par champ, les alertes de charge, les écrans et les questions fréquentes (les mêmes sections du README, lues depuis lui ; l'API renvoie le même texte dans `recurso=manual`). |
+
+### Le mode simple et le mode avancé {#o-modo-básico-e-o-avançado}
+
+Chaque personne choisit dans **Mon compte › Vos données › Mode de l'interface** :
+
+- **Simple :** le quotidien. Enregistrer les montres, marquer l'usage, suivre l'entretien et choisir une rotation toute
+  prête (dans Aujourd'hui). Sortent du menu les **Modes de rotation**, les **Critères de choix**, les **Totaux**, les
+  **Groupes**, les **Définitions** et les **Exécutions du cron** ; et sortent des écrans les parties techniques : le *D'où vient
+  le calcul* de la Prévision, les tableaux des mesures de la consommation et de la marche, le *Calculé maintenant* des
+  Données de la montre, le *voir le calcul* de la note et les champs du moteur de la consommation dans la Configuration.
+- **Avancé :** tout cela, plus les formules, les scripts, les critères, les simulations et les totaux.
+
+Le moteur est rigoureusement le même dans les deux : seul ce que montrent les écrans change, et c'est l'API qui décide ce
+qui reste dehors (le menu de `recurso=conta&parte=menu` apporte `nivel` et `ocultos`). Une page de l'avancé ouverte par son
+adresse continue de fonctionner, avec une bande en haut et le bouton **Utiliser le mode avancé**. Qui avait déjà un compte
+reste en avancé ; le compte créé par l'inscription ouverte commence en simple.
 
 ### Les pages se mettent à jour seules {#as-páginas-se-atualizam-sozinhas}
 

@@ -30,13 +30,15 @@ CREATE TABLE usuario (
     papel          ENUM('master','comum') NOT NULL DEFAULT 'comum',
     idioma         VARCHAR(10) NULL,                    -- vazio: o da coleção
     fuso           VARCHAR(60) NULL,                    -- o fuso horário da pessoa ("America/Sao_Paulo"); vazio: o da coleção, senão o do sistema
+    nivel          VARCHAR(10) NOT NULL DEFAULT 'avancado', -- o modo da interface: basico (o dia a dia) ou avancado (também as fórmulas, os roteiros...)
     expira_em      DATETIME NULL,
     bloqueado      TINYINT NOT NULL DEFAULT 0,
     criado         DATETIME NOT NULL,
     ultimo_acesso  DATETIME NULL,
     CONSTRAINT ck_usuario_textos CHECK (TRIM(login) <> '' AND senha_hash <> ''),
     CONSTRAINT ck_usuario_email CHECK (email IS NULL OR email LIKE '%_@_%'),
-    CONSTRAINT ck_usuario_bloqueado CHECK (bloqueado IN (0, 1))
+    CONSTRAINT ck_usuario_bloqueado CHECK (bloqueado IN (0, 1)),
+    CONSTRAINT ck_usuario_nivel CHECK (nivel IN ('basico', 'avancado'))
 ) ENGINE=InnoDB;
 
 -- a árvore de grupos: cada relógio fica num grupo; cada grupo pode ter campos, tipos de lançamento, fórmulas e avisos. A raiz

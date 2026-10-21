@@ -1331,11 +1331,27 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | **Grupos** (`grupos.php`) | A árvore: criar, renomear, mover, ordenar, excluir (o que era do grupo passa para o de cima) e escolher o grupo de cada relógio. |
 | **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), os totais (a aba **Totais**: veja [Os totais](#os-totais)), os calibres (a aba **Calibres**: veja [Os calibres](#os-calibres)) e as categorias de documentos: tudo o que o sistema usa e que não é código (os avisos ficam na página **Avisos**, e os modos de rodízio, na **Modos de rodízio**). |
 | **Execuções do cron** (`execucoes.php`) | O que o cron fez a cada rodada, quanto tempo levou e os erros, com filtros. |
-| **Minha conta** (`conta.php`, menu **Conta › Minha conta**) | As coleções que você vê (abrir, criar, renomear, excluir, sair), as suas árvores de grupos (copiar, renomear, excluir), pedir acesso à coleção de alguém (pelo código que o dono passou), os seus dados (o seu código, o e-mail, o idioma, a senha), o **aplicativo no celular** (lembrar este aparelho, instalar, os aparelhos lembrados), os **tokens de API** (para os seus scripts), as **notificações neste aparelho** (o Web Push), o **envio dos seus e-mails** (pelo servidor do sistema ou pelo seu: o Gmail, o Outlook) e excluir a conta. Veja [Várias pessoas](#várias-pessoas-contas-coleções-e-acesso) e [O aplicativo no celular](#o-aplicativo-no-celular). |
+| **Minha conta** (`conta.php`, menu **Conta › Minha conta**) | As coleções que você vê (abrir, criar, renomear, excluir, sair), as suas árvores de grupos (copiar, renomear, excluir), pedir acesso à coleção de alguém (pelo código que o dono passou), os seus dados (o seu código, o e-mail, o idioma, o modo da interface, a senha), o **aplicativo no celular** (lembrar este aparelho, instalar, os aparelhos lembrados), os **tokens de API** (para os seus scripts), as **notificações neste aparelho** (o Web Push), o **envio dos seus e-mails** (pelo servidor do sistema ou pelo seu: o Gmail, o Outlook) e excluir a conta. Veja [Várias pessoas](#várias-pessoas-contas-coleções-e-acesso) e [O aplicativo no celular](#o-aplicativo-no-celular). |
 | **Aprovações** (`aprovacoes.php`) | Os pedidos de acesso às suas coleções (aprovar, recusar), os convites que membros fizeram e esperam você, **Convidar** (por e-mail), os convites que você fez e quem vê as suas coleções (tirar o acesso). O menu mostra **Aprovações (N)** quando há algo esperando. |
 | **Usuários** (`usuarios.php`, só o master) | O painel das contas: cada uma com o que tem e as ações (ver como, tornar oficial, prorrogar, bloquear, alterar, trocar a senha, transferir uma coleção, dar acesso, excluir) e criar uma conta. |
 | **Criar conta** (`cadastro.php`, sem login) | O cadastro aberto: a conta nova (com uma coleção, ou pedindo acesso), o convite que chegou por e-mail e o **Esqueci a senha**. |
 | **Ajuda** (`ajuda.php`) | Este guia dentro do sistema: a ideia central, como funciona, o cadastro de cada relógio campo por campo, os avisos de carga, as telas e as perguntas frequentes (as mesmas seções deste README, lidas dele; a API devolve o mesmo texto em `recurso=manual`). |
+
+### O modo básico e o avançado
+
+Cada pessoa escolhe em **Minha conta › Seus dados › Modo da interface**:
+
+- **Básico:** o dia a dia. Cadastrar os relógios, marcar o uso, acompanhar a manutenção e escolher um rodízio pronto (na
+  Hoje). Saem do menu os **Modos de rodízio**, os **Critérios de escolha**, os **Totais**, os **Grupos**, os **Cadastros** e as
+  **Execuções do cron**; e saem das telas as partes técnicas: o *De onde vem a conta* da Previsão, as tabelas das medições
+  do gasto e da marcha, o *Calculado agora* dos Dados do relógio, o *ver a conta* da nota e os campos do motor do gasto na
+  Configuração.
+- **Avançado:** tudo isso, também as fórmulas, os roteiros, os critérios, as simulações e os totais.
+
+O motor é rigorosamente o mesmo nos dois: muda só o que as telas mostram, e quem decide o que fica de fora é a API (o
+menu de `recurso=conta&parte=menu` traz `nivel` e `ocultos`). Uma página do avançado aberta pelo endereço continua
+funcionando, com uma faixa no alto e o botão **Usar o modo avançado**. Quem já tinha conta continua no avançado; a conta
+criada pelo cadastro aberto começa no básico.
 
 ### As páginas se atualizam sozinhas
 
@@ -1543,7 +1559,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `destinos` | `salvar` (webhook, e-mail ou Web Push, com o que recebe), `testar` (`qual=`: texto, manhã ou noite), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook ou ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (com a `senha`, ou com o `senha_hash` de outro sistema; o primeiro usuário, pelo token, é o master) e, só o master: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
-| `conta` | `alterar` (e-mail, idioma, senha), `token_criar`, `token_revogar`, `aparelho_lembrar` (o aplicativo no celular: a chave deste aparelho num cookie, que entra sem a senha), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `smtp_salvar` (o servidor de e-mail próprio; `proprio=0` volta ao do sistema), `smtp_testar`, `excluir`; só o master: `email_testar`, `vapid_gerar` |
+| `conta` | `alterar` (e-mail, idioma, `nivel`: o modo da interface, senha), `token_criar`, `token_revogar`, `aparelho_lembrar` (o aplicativo no celular: a chave deste aparelho num cookie, que entra sem a senha), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `smtp_salvar` (o servidor de e-mail próprio; `proprio=0` volta ao do sistema), `smtp_testar`, `excluir`; só o master: `email_testar`, `vapid_gerar` |
 | `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
 | `acessos`, `convites`, `pedidos` | `remover`, `sair`; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar`; `pedir`, `aprovar`, `recusar`, `cancelar` |
 | `cadastro` | sem login: `criar_conta`, `esqueci_senha`, `nova_senha` |

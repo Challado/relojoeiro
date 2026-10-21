@@ -1,4 +1,4 @@
-<!-- origem: df6031c3d5325a4609e3e3bdb7ca850b5832a87e -->
+<!-- origem: 3adc0877a3f91fac6bdf6695dd469e7c18f992c9 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1284,11 +1284,27 @@ que usted registre entra aquí con su nombre.
 | **Grupos** (`grupos.php`) | El árbol: crear, renombrar, mover, ordenar, eliminar (lo que era del grupo pasa al de arriba) y elegir el grupo de cada reloj. |
 | **Definiciones** (`cadastros.php`) | Campos, tipos de registro, fórmulas (con **Probar**), los totales (la pestaña **Totales**: vea [Los totales](#os-totais)), los calibres (la pestaña **Calibres**: vea [Los calibres](#os-calibres)) y las categorías de documentos: todo lo que el sistema usa que no es código (los avisos están en la página **Avisos**, y los modos de rotación, en **Modos de rotación**). |
 | **Ejecuciones del cron** (`execucoes.php`) | Qué hizo el cron en cada vuelta, cuánto tardó y los errores, con filtros. |
-| **Mi cuenta** (`conta.php`, menú **Cuenta › Mi cuenta**) | Las colecciones que ve (abrir, crear, renombrar, eliminar, salir), sus árboles de grupos (copiar, renombrar, eliminar), pedir acceso a la colección de alguien (por el código que pasó el dueño), sus datos (su código, el correo, el idioma, la contraseña), la **aplicación en el celular** (recordar este aparato, instalar, los aparatos recordados), los **tokens de API** (para sus scripts), las **notificaciones en este aparato** (el Web Push), el **envío de sus correos** (por el servidor del sistema o por el suyo: Gmail, Outlook) y eliminar la cuenta. Vea [Varias personas](#várias-pessoas-contas-coleções-e-acesso) y [La aplicación en el celular](#o-aplicativo-no-celular). |
+| **Mi cuenta** (`conta.php`, menú **Cuenta › Mi cuenta**) | Las colecciones que ve (abrir, crear, renombrar, eliminar, salir), sus árboles de grupos (copiar, renombrar, eliminar), pedir acceso a la colección de alguien (por el código que pasó el dueño), sus datos (su código, el correo, el idioma, el modo de la interfaz, la contraseña), la **aplicación en el celular** (recordar este aparato, instalar, los aparatos recordados), los **tokens de API** (para sus scripts), las **notificaciones en este aparato** (el Web Push), el **envío de sus correos** (por el servidor del sistema o por el suyo: Gmail, Outlook) y eliminar la cuenta. Vea [Varias personas](#várias-pessoas-contas-coleções-e-acesso) y [La aplicación en el celular](#o-aplicativo-no-celular). |
 | **Aprobaciones** (`aprovacoes.php`) | Las solicitudes de acceso a sus colecciones (aprobar, rechazar), las invitaciones que hicieron los miembros y le esperan, **Invitar** (por correo), las invitaciones que hizo y quién ve sus colecciones (quitar el acceso). El menú muestra **Aprobaciones (N)** cuando hay algo esperando. |
 | **Usuarios** (`usuarios.php`, solo el master) | El panel de las cuentas: cada una con lo que tiene y las acciones (ver como, hacer oficial, prorrogar, bloquear, cambiar, cambiar la contraseña, transferir una colección, dar acceso, eliminar) y crear una cuenta. |
 | **Crear cuenta** (`cadastro.php`, sin login) | El registro abierto: la cuenta nueva (con una colección, o pidiendo acceso), la invitación que llegó por correo y **Olvidé la contraseña**. |
 | **Ayuda** (`ajuda.php`) | Esta guía dentro del sistema: la idea central, cómo funciona, la ficha de cada reloj campo por campo, los avisos de carga, las pantallas y las preguntas frecuentes (las mismas secciones del README, leídas de él; la API devuelve el mismo texto en `recurso=manual`). |
+
+### El modo básico y el avanzado {#o-modo-básico-e-o-avançado}
+
+Cada persona elige en **Mi cuenta › Sus datos › Modo de la interfaz**:
+
+- **Básico:** el día a día. Registrar los relojes, marcar el uso, seguir el mantenimiento y elegir una rotación lista (en
+  Hoy). Salen del menú los **Modos de rotación**, los **Criterios de elección**, los **Totales**, los **Grupos**, las
+  **Definiciones** y las **Ejecuciones del cron**; y salen de las pantallas las partes técnicas: el *De dónde viene la cuenta*
+  de la Previsión, las tablas de las mediciones del gasto y de la marcha, el *Calculado ahora* de los Datos del reloj, el
+  *ver la cuenta* de la nota y los campos del motor del gasto en la Configuración.
+- **Avanzado:** todo eso, también las fórmulas, los guiones, los criterios, las simulaciones y los totales.
+
+El motor es rigurosamente el mismo en los dos: cambia solo lo que muestran las pantallas, y quien decide lo que queda fuera
+es la API (el menú de `recurso=conta&parte=menu` trae `nivel` y `ocultos`). Una página del avanzado abierta por la dirección
+sigue funcionando, con una franja arriba y el botón **Usar el modo avanzado**. Quien ya tenía cuenta sigue en el avanzado; la
+cuenta creada por el registro abierto empieza en el básico.
 
 ### Las páginas se actualizan solas {#as-páginas-se-atualizam-sozinhas}
 

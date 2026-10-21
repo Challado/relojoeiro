@@ -287,8 +287,8 @@
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=usuarios"
  *   recurso=conta            Minha conta: {"usuario", "vendo_como", "colecoes", "colecao", "papel", "arvores", "pedidos", "convites",
  *                            "aprovacoes", "tokens", "push": {"configurado", "chave_publica", "aparelhos"}, "email_configurado",
- *                            "demo_dias", "linguas"}; parte=menu: só o que o menu das páginas usa (o seletor da coleção, a demonstração,
- *                            as aprovações, a faixa Vendo como e o idioma padrão)
+ *                            "smtp", "demo_dias", "linguas", "niveis"}; parte=menu: só o que o menu das páginas usa (o seletor da coleção,
+ *                            a demonstração, as aprovações, a faixa Vendo como, o idioma padrão e o modo da interface: nivel e ocultos)
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=conta"
  *   recurso=colecoes         {"colecoes": [{"id", "nome", "dono_id", "dono", "papel", "no_id"}], "colecao", "arvores": [{"id", "nome",
  *                            "grupos", "colecoes"}]}
@@ -635,7 +635,7 @@
  *                            Ex. salvar: curl -u lucas:senha -d recurso=usuarios -d acao=salvar -d login=visitante -d senha=segredo123 http://servidor/relojoeiro/api.php
  *                            Ex. oficializar: curl -u lucas:senha -d recurso=usuarios -d acao=oficializar -d login=visitante http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=usuarios -d acao=excluir -d login=visitante -d confirmar=1 http://servidor/relojoeiro/api.php
- *   recurso=conta             alterar (email, idioma, senha_atual e senha), token_criar (nome: devolve o token, só agora), token_revogar
+ *   recurso=conta             alterar (email, idioma, nivel, senha_atual e senha), token_criar (nome: devolve o token, só agora), token_revogar
  *                             (id), aparelho_lembrar (nome: o aplicativo no celular entra sem a senha por este aparelho, pelo cookie que
  *                             grava), aparelho_esquecer (id; vazio: este), push_inscrever (endpoint, p256dh, auth, aparelho), push_cancelar (id), push_testar,
  *                             smtp_salvar (o servidor de e-mail próprio: proprio=0 volta ao do sistema; host, porta, seguranca, usuario, senha,
@@ -4399,6 +4399,18 @@
  *     usuario.idioma                 o idioma; null: o da coleção
  *     usuario.fuso                   o fuso horário da pessoa ("America/Sao_Paulo"; "navegador": o do aparelho); null: o da coleção, senão
  *                                    o do sistema
+ *     usuario.nivel                  o modo da interface: basico (o dia a dia: as telas deixam de fora as páginas e as partes do avançado)
+ *                                    ou avancado (tudo); o motor é o mesmo
+ *     niveis[]                       os modos da interface, para a escolha em Minha conta
+ *     niveis[].codigo                basico ou avancado
+ *     niveis[].nome                  o nome no idioma do pedido
+ *     nivel                          (parte=menu) o modo da interface de quem pede: basico ou avancado (sem conta, como o token do
+ *                                    servidor: avancado)
+ *     ocultos[]                      (parte=menu) o que as telas deixam de fora nesse modo (no avançado, nada): as páginas pelo arquivo
+ *                                    (modos.php, criterios.php, totais.php, grupos.php, cadastros.php, execucoes.php), que somem do menu, e
+ *                                    as partes pelo nome que a tela põe nelas (previsao.conta: o "De onde vem a conta"; gasto.medicoes e
+ *                                    marcha.medicoes: as tabelas das medições; dados.calculado: o "Calculado agora"; rodizio.conta: o "ver
+ *                                    a conta" da nota; config.gasto: os campos do motor do gasto na Configuração)
  *     usuario.criado                 quando a conta foi criada
  *     usuario.ultimo_acesso          o último acesso
  *     usuario.expira_em              quando a conta de demonstração vence; null: oficial
@@ -4657,6 +4669,7 @@
  *     usuarios[].email               o e-mail (para recuperar a senha, os convites e os avisos)
  *     usuarios[].papel               master (cuida do sistema inteiro) ou comum
  *     usuarios[].idioma              o idioma dele; null: o da coleção
+ *     usuarios[].nivel               o modo da interface dele: basico ou avancado
  *     usuarios[].fuso                o fuso horário dele ("America/Sao_Paulo"; "navegador": o do aparelho); null: o da coleção, senão o do
  *                                    sistema
  *     fusos[]                        (só o master) os fusos horários que o PHP conhece (a lista Fuso horário do quadro Alterar)

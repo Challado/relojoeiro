@@ -940,11 +940,20 @@ php -S localhost:8000            # 然后打开 http://localhost:8000
 | **分组**（`grupos.php`） | 树：创建、重命名、移动、排序、删除（属于该分组的内容移到上一级）以及选择每块手表的分组。 |
 | **定义**（`cadastros.php`） | 字段、记录类型、公式（带**测试**）、合计（**合计**标签：参见[合计](#合计)）、机芯（**机芯**标签：见[机芯](#机芯)）和文档类别：系统使用的所有非代码内容（提醒在**提醒**页面，轮换模式在**轮换模式**页面）。 |
 | **cron 运行记录**（`execucoes.php`） | cron 每一轮做了什么、用了多长时间以及错误，可筛选。 |
-| **我的账户**（`conta.php`，菜单**账户 › 我的账户**） | 你能看到的收藏（打开、创建、重命名、删除、退出）、你的分组树（复制、重命名、删除）、申请访问别人的收藏（凭所有者给出的编号）、你的资料（你的编号、电子邮件、语言、密码）、**手机上的应用**（记住此设备、安装、已记住的设备）、**API 令牌**（供你的脚本使用）、**此设备上的通知**（Web Push）、**发送你的邮件**（通过系统的服务器或你自己的：Gmail、Outlook）以及删除账户。参见[多人使用](#多人使用账户收藏与访问)和[手机上的应用](#手机上的应用)。 |
+| **我的账户**（`conta.php`，菜单**账户 › 我的账户**） | 你能看到的收藏（打开、创建、重命名、删除、退出）、你的分组树（复制、重命名、删除）、申请访问别人的收藏（凭所有者给出的编号）、你的资料（你的编号、电子邮件、语言、界面模式、密码）、**手机上的应用**（记住此设备、安装、已记住的设备）、**API 令牌**（供你的脚本使用）、**此设备上的通知**（Web Push）、**发送你的邮件**（通过系统的服务器或你自己的：Gmail、Outlook）以及删除账户。参见[多人使用](#多人使用账户收藏与访问)和[手机上的应用](#手机上的应用)。 |
 | **审批**（`aprovacoes.php`） | 对你的收藏的访问申请（批准、拒绝）、成员发出并等待你处理的邀请、**邀请**（通过电子邮件）、你发出的邀请以及谁能看到你的收藏（取消访问权限）。有待处理事项时，菜单显示**审批（N）**。 |
 | **用户**（`usuarios.php`，仅限 master） | 账户面板：每个账户及其拥有的内容和操作（以其身份查看、转为正式、延长、封禁、修改、修改密码、转移收藏、授予访问权限、删除）以及创建账户。 |
 | **创建账户**（`cadastro.php`，无需登录） | 公开注册：新账户（带一个收藏，或申请访问）、通过邮件收到的邀请以及**忘记密码**。 |
 | **帮助**（`ajuda.php`） | 系统内的这份指南：核心理念、工作原理、每块手表的档案逐个字段、电量提醒、界面和常见问题（与 README 中的相同章节，从中读取；API 在 `recurso=manual` 中返回相同的文本）。 |
+
+### 基础模式与高级模式
+
+每个人在**我的账户 › 你的资料 › 界面模式**中选择：
+
+- **基础：**日常使用。登记手表、记录佩戴、跟进保养，以及选择现成的轮换（在“今天”页面）。菜单中不再显示**轮换模式**、**选择标准**、**合计**、**分组**、**定义**和 **cron 执行记录**；界面中也不再显示技术部分：预测里的“计算从哪里来”、消耗和走时测量的表格、手表数据里的“当前计算结果”、评分的“查看计算”，以及设置中消耗计算引擎的字段。
+- **高级：**以上全部，另外还有公式、规则脚本、标准、模拟和合计。
+
+两种模式的引擎完全相同：只改变界面显示的内容，而由 API 决定哪些不显示（`recurso=conta&parte=menu` 的菜单带有 `nivel` 和 `ocultos`）。通过地址直接打开的高级页面照常可用，顶部会有一条提示和**使用高级模式**按钮。原有账户保持高级模式；通过公开注册创建的账户从基础模式开始。
 
 ### 页面会自动刷新
 
@@ -1078,7 +1087,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `destinos` | `salvar`（webhook、电子邮件或 Web Push，含接收内容）、`testar`（`qual=`：文本、早上或晚上）、`excluir` |
 | `agendas` | `salvar`（Google、CalDAV、Outlook 或 ICS）、`sincronizar`、`teste_criar`、`teste_remover`、`novo_link`（ICS）、`outlook_conectar`、`excluir` |
 | `usuarios` | `salvar`（带 `senha`，或带其他系统的 `senha_hash`；第一个用户使用令牌创建，是 master），以及仅限 master：`alterar`、`oficializar`、`prorrogar`、`voltar_demo`、`bloquear`、`transferir`、`dar_acesso`、`excluir` |
-| `conta` | `alterar`（电子邮件、语言、密码）、`token_criar`、`token_revogar`、`aparelho_lembrar`（手机上的应用：此设备的密钥存入 cookie，无需密码进入）、`aparelho_esquecer`、`push_inscrever`、`push_cancelar`、`push_testar`、`smtp_salvar`（自己的邮件服务器；`proprio=0` 恢复使用系统的）、`smtp_testar`、`excluir`；仅限 master：`email_testar`、`vapid_gerar` |
+| `conta` | `alterar`（电子邮件、语言、`nivel`：界面模式、密码）、`token_criar`、`token_revogar`、`aparelho_lembrar`（手机上的应用：此设备的密钥存入 cookie，无需密码进入）、`aparelho_esquecer`、`push_inscrever`、`push_cancelar`、`push_testar`、`smtp_salvar`（自己的邮件服务器；`proprio=0` 恢复使用系统的）、`smtp_testar`、`excluir`；仅限 master：`email_testar`、`vapid_gerar` |
 | `colecoes` | `criar`、`renomear`、`excluir`、`arvore_copiar`、`arvore_renomear`、`arvore_excluir` |
 | `acessos`、`convites`、`pedidos` | `remover`、`sair`；`convidar`、`aprovar`、`recusar`、`reenviar`、`cancelar`、`aceitar`；`pedir`、`aprovar`、`recusar`、`cancelar` |
 | `cadastro` | 无需登录：`criar_conta`、`esqueci_senha`、`nova_senha` |

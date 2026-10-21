@@ -1,4 +1,4 @@
-<!-- origem: 5aed559b7461acf4e29949761229d12b2df63490 -->
+<!-- origem: 0e6a6e136344456d0f0bce4500dbb915435d7922 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -192,7 +192,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `destinos` | `salvar` (webhook, e-mail or Web Push, with what it receives), `testar` (`qual=`: text, morning or night), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook or ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (with the `senha`, or with another system's `senha_hash`; the first user, with the token, is the master) and, master only: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
-| `conta` | `alterar` (e-mail, language, password), `token_criar`, `token_revogar`, `aparelho_lembrar` (the app on the phone: this device's key in a cookie, which gets in without the password), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `smtp_salvar` (the own e-mail server; `proprio=0` goes back to the system's), `smtp_testar`, `excluir`; master only: `email_testar`, `vapid_gerar` |
+| `conta` | `alterar` (e-mail, language, `nivel`: the interface mode, password), `token_criar`, `token_revogar`, `aparelho_lembrar` (the app on the phone: this device's key in a cookie, which gets in without the password), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `smtp_salvar` (the own e-mail server; `proprio=0` goes back to the system's), `smtp_testar`, `excluir`; master only: `email_testar`, `vapid_gerar` |
 | `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
 | `acessos`, `convites`, `pedidos` | `remover`, `sair`; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar`; `pedir`, `aprovar`, `recusar`, `cancelar` |
 | `cadastro` | without login: `criar_conta`, `esqueci_senha`, `nova_senha` |

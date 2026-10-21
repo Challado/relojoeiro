@@ -374,6 +374,17 @@ if (!is_array($smtp) || $smtp["remetente"] !== "eu@exemplo.com" || $smtp["host"]
 }
 ler("destinos com o servidor de e-mail próprio", ["recurso" => "destinos"]);
 escrever(["recurso" => "conta", "acao" => "smtp_salvar", "proprio" => 0]);
+// o modo da interface: desconhecido é recusado; no básico, o menu traz o que as telas deixam de fora (as páginas e as partes
+// do avançado); de volta ao avançado, nada fica de fora
+escrever(["recurso" => "conta", "acao" => "alterar", "nivel" => "medio"], false);
+escrever(["recurso" => "conta", "acao" => "alterar", "nivel" => "basico"]);
+$menu_b = ler("menu no modo básico", ["recurso" => "conta", "parte" => "menu"]);
+escrever(["recurso" => "conta", "acao" => "alterar", "nivel" => "avancado"]);
+$menu_a = ler("menu no modo avançado", ["recurso" => "conta", "parte" => "menu"]);
+if (($menu_b["nivel"] ?? "") !== "basico" || !in_array("criterios.php", $menu_b["ocultos"] ?? [], true) || !in_array("previsao.conta", $menu_b["ocultos"] ?? [], true)
+    || ($menu_a["nivel"] ?? "") !== "avancado" || ($menu_a["ocultos"] ?? null) !== []) {
+    $falhas[] = "modo da interface: " . json_encode([$menu_b["nivel"] ?? null, $menu_b["ocultos"] ?? null, $menu_a["nivel"] ?? null, $menu_a["ocultos"] ?? null]);
+}
 
 // ---------- os destinos e as agendas (desligados: nada sai do servidor de teste; o link ICS é sorteado, e fica de fora) ----------
 escrever(["recurso" => "destinos", "acao" => "salvar", "id" => 0, "tipo" => "webhook", "nome" => "Telegram de teste", "ativo" => 0, "metodo" => "POST", "url" => "https://exemplo.invalid/enviar",

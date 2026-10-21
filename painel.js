@@ -255,7 +255,7 @@ function abrirNoPainel(id) {
               + el("td", {"class": "origem-celula"}, el("span", {"class": "origem origem-" + cc.origem}, h(cc.origem_texto))));
           }).join("")));
         secoes.carga += quadro(t("Previsão"), r.previsao.linhas.length === 0 ? el("p", {"class": "nota"}, t("Informe a carga atual para o sistema começar a prever."))
-          : el("ul", {"class": "linhas"}, r.previsao.linhas.map(function (l) { return el("li", {}, h(l)); }).join("")) + contaPrev);
+          : el("ul", {"class": "linhas"}, r.previsao.linhas.map(function (l) { return el("li", {}, h(l)); }).join("")) + (contaPrev ? el("div", {"data-avancado": "previsao.conta"}, contaPrev) : ""));
       }
       // os dois gastos: o que vale na conta, e de onde ele vem (o medido pelas leituras, o do cadastro)
       var gs = r.previsao.gasto;
@@ -366,7 +366,7 @@ function abrirNoPainel(id) {
         secoes.carga += quadro(rs.testar ? t("Reserva medida") : t("Reserva de energia"), corpoRs, "", "largo reserva-ficha");
       }
       secoes.uso += quadro(t("Rodízio"), pares([
-        [t("Nota"), r.nota !== null ? el("strong", {}, num(r.nota.nota, 1)) + " " + el("a", {"href": "criterios.php?relogio=" + id + "#r" + id, "target": "_blank", "rel": "noopener"}, t("ver a conta")) : nada(t("fora do rodízio"))],
+        [t("Nota"), r.nota !== null ? el("strong", {}, num(r.nota.nota, 1)) + " " + avancado("rodizio.conta", el("a", {"href": "criterios.php?relogio=" + id + "#r" + id, "target": "_blank", "rel": "noopener"}, t("ver a conta"))) : nada(t("fora do rodízio"))],
         [t("Critérios de"), r.nota !== null ? h(r.nota.conjunto_texto) : "—"],
         [t("Próxima vez"), h(proxima)]]),
         r.disponivel && r.proxima !== hoje ? el("form", {"data-recurso": "rodizio", "onsubmit": "return confirm(" + JSON.stringify(t("Usar o {1} hoje? Ele passa a ser o relógio do rodízio no período atual e o plano é refeito.", {1: r.nome})) + ")"}, el("input", {"type": "hidden", "name": "acao", "value": "usando"})
@@ -740,7 +740,7 @@ function abrirNoPainel(id) {
                     + el("input", {"type": "hidden", "name": "usada", "value": m.usada ? "0" : "1"}) + el("button", {"class": "leve"}, m.usada ? t("Tirar da conta") : t("Pôr na conta")))));
               }).join("")));
         }
-        secoes.carga += quadro(t("Carga ao longo do tempo"), grafico + med, "", "largo");
+        secoes.carga += quadro(t("Carga ao longo do tempo"), grafico + (med ? el("div", {"data-avancado": "gasto.medicoes"}, med) : ""), "", "largo");
       }
       // o desvio ao longo do tempo (as leituras e os acertos: cada acerto recomeça a linha em 0 s) e as medições da marcha (os
       // intervalos, os 10 mais recentes), com a marcha em cada posição quando há mais de uma
@@ -794,7 +794,7 @@ function abrirNoPainel(id) {
               }).join("")));
           }
         }
-        secoes.precisao += quadro(t("Desvio ao longo do tempo"), graficoP + medP, "", "largo");
+        secoes.precisao += quadro(t("Desvio ao longo do tempo"), graficoP + (medP ? el("div", {"data-avancado": "marcha.medicoes"}, medP) : ""), "", "largo");
       }
       // os dados do relógio: o cadastro que vale para ele (o informado, senão o padrão do campo) e o resultado de cada fórmula agora
       var valorCampo = function (c) {
@@ -864,7 +864,7 @@ function abrirNoPainel(id) {
               return el("tr", {"class": c.origem === "vazio" ? "vazio" : ""}, el("td", {}, h(c.nome)) + el("td", {"class": "valor" + (texto ? " texto" : "")}, valorCampo(c) + calculadoDoCampo(c.identificador))
                 + el("td", {}, el("span", {"class": "origem origem-" + c.origem}, h(c.origem_texto))));
             }).join(""))))
-          + el("div", {}, el("h3", {}, t("Calculado agora")) + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Fórmula"))
+          + el("div", {"data-avancado": "dados.calculado"}, el("h3", {}, t("Calculado agora")) + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Fórmula"))
             + el("th", {}, t("Valor")) + el("th", {}, t("Versão")))) + el("tbody", {}, r.calculos.map(function (x) {
               return el("tr", {}, el("td", {}, h(x.nome) + el("code", {"class": "ident"}, h(x.identificador))) + el("td", {"class": "valor" + (typeof x.valor === "string" ? " texto" : "")}, valorCalculo(x) + calculadoDaFormula(x.identificador))
                 + el("td", {"class": "versao"}, h(x.versao)));

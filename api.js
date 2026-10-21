@@ -853,6 +853,39 @@ function verComo(login) {
   document.cookie = "colecao=; path=/; max-age=0; SameSite=Lax";
   window.location = "index.php";
 }
+// O modo da interface (Minha conta): no básico, a API manda o que fica de fora (ocultos), as páginas pelo arquivo e as
+// partes pelo nome que a tela põe nelas (avancado(), abaixo). Some do menu a página (e o grupo que fica vazio), some da
+// tela a parte marcada, e a página do avançado aberta direto ganha o aviso com o botão que passa para o avançado
+function avancado(id, html) {
+  return String(html).replace(/^(\s*<[a-zA-Z0-9]+)/, "$1 data-avancado=\"" + id + "\"");
+}
+function aplicarNivel(ocultos) {
+  if (ocultos.length === 0) {
+    return;
+  }
+  var estilo = document.createElement("style");
+  estilo.textContent = ocultos.map(function (x) { return "[data-avancado=\"" + x + "\"]"; }).join(", ") + " { display: none !important; }";
+  document.head.appendChild(estilo);
+  document.querySelectorAll(".menu-itens a[href]").forEach(function (a) {
+    if (ocultos.indexOf(a.getAttribute("href")) >= 0) {
+      a.hidden = true;
+    }
+  });
+  document.querySelectorAll(".menu-grupo").forEach(function (g) {
+    g.hidden = g.querySelectorAll(".menu-sub a:not([hidden])").length === 0;
+  });
+  var pagina = (window.location.pathname.split("/").pop() || "index.php");
+  if (ocultos.indexOf(pagina) >= 0) {
+    var faixa = document.createElement("div");
+    faixa.className = "faixa-vendo-como faixa-nivel";
+    faixa.innerHTML = t("Esta tela é do modo avançado: no básico, ela fica fora do menu.") + " "
+      + el("button", {"type": "button", "class": "leve", "onclick": "usarAvancado()"}, t("Usar o modo avançado"));
+    document.body.insertBefore(faixa, document.body.firstChild);
+  }
+}
+function usarAvancado() {
+  enviar({recurso: "conta", acao: "alterar", nivel: "avancado"}).then(function () { window.location.reload(); });
+}
 var contaPronta = document.querySelector("[data-menu-conta]") ? api({recurso: "conta", parte: "menu"}).then(function (m) {
   CONTA_MENU = m;
   // o intervalo do atualizar sozinho (a Configuração da coleção)
@@ -882,6 +915,7 @@ var contaPronta = document.querySelector("[data-menu-conta]") ? api({recurso: "c
       t("Demo: {1} dias", {1: m.usuario.dias_restantes}));
   }
   lugar.innerHTML = res;
+  aplicarNivel(m.ocultos || []);
   if (m.master) {
     document.querySelectorAll("[data-so-master]").forEach(function (a) {
       a.hidden = false;

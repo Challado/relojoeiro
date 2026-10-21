@@ -1,4 +1,4 @@
-<!-- origem: 5aed559b7461acf4e29949761229d12b2df63490 -->
+<!-- origem: 0e6a6e136344456d0f0bce4500dbb915435d7922 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -164,7 +164,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `destinos` | `salvar`（webhook、电子邮件或 Web Push，含接收内容）、`testar`（`qual=`：文本、早上或晚上）、`excluir` |
 | `agendas` | `salvar`（Google、CalDAV、Outlook 或 ICS）、`sincronizar`、`teste_criar`、`teste_remover`、`novo_link`（ICS）、`outlook_conectar`、`excluir` |
 | `usuarios` | `salvar`（带 `senha`，或带其他系统的 `senha_hash`；第一个用户使用令牌创建，是 master），以及仅限 master：`alterar`、`oficializar`、`prorrogar`、`voltar_demo`、`bloquear`、`transferir`、`dar_acesso`、`excluir` |
-| `conta` | `alterar`（电子邮件、语言、密码）、`token_criar`、`token_revogar`、`aparelho_lembrar`（手机上的应用：此设备的密钥存入 cookie，无需密码进入）、`aparelho_esquecer`、`push_inscrever`、`push_cancelar`、`push_testar`、`smtp_salvar`（自己的邮件服务器；`proprio=0` 恢复使用系统的）、`smtp_testar`、`excluir`；仅限 master：`email_testar`、`vapid_gerar` |
+| `conta` | `alterar`（电子邮件、语言、`nivel`：界面模式、密码）、`token_criar`、`token_revogar`、`aparelho_lembrar`（手机上的应用：此设备的密钥存入 cookie，无需密码进入）、`aparelho_esquecer`、`push_inscrever`、`push_cancelar`、`push_testar`、`smtp_salvar`（自己的邮件服务器；`proprio=0` 恢复使用系统的）、`smtp_testar`、`excluir`；仅限 master：`email_testar`、`vapid_gerar` |
 | `colecoes` | `criar`、`renomear`、`excluir`、`arvore_copiar`、`arvore_renomear`、`arvore_excluir` |
 | `acessos`、`convites`、`pedidos` | `remover`、`sair`；`convidar`、`aprovar`、`recusar`、`reenviar`、`cancelar`、`aceitar`；`pedir`、`aprovar`、`recusar`、`cancelar` |
 | `cadastro` | 无需登录：`criar_conta`、`esqueci_senha`、`nova_senha` |

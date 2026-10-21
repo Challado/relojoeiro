@@ -235,11 +235,33 @@ function senha_erros($senha, $d)
     return $erros;
 }
 
+// O modo da interface (Minha conta): no básico, as telas deixam de fora as páginas e as partes do avançado (as fórmulas,
+// os roteiros, os critérios, as simulações, os totais); o motor é o mesmo. A API diz o que fica de fora (o menu, ocultos):
+// as páginas pelo arquivo, e as partes pelo nome que a tela põe nelas (data-avancado)
+const NIVEIS = ["basico" => "Básico", "avancado" => "Avançado"];
+tk("Básico"); tk("Avançado");
+const NIVEL_BASICO_OCULTOS = ["modos.php", "criterios.php", "totais.php", "grupos.php", "cadastros.php", "execucoes.php",
+    "previsao.conta", "gasto.medicoes", "marcha.medicoes", "dados.calculado", "rodizio.conta", "config.gasto"];
+
+// O modo de quem pede (sem conta, como o token do servidor: o avançado)
+function nivel_atual()
+{
+    $u = usuario_atual();
+    return $u !== null && ($u["nivel"] ?? "avancado") === "basico" ? "basico" : "avancado";
+}
+
+// O que as telas deixam de fora no modo de quem pede (no avançado, nada)
+function nivel_ocultos()
+{
+    return nivel_atual() === "basico" ? NIVEL_BASICO_OCULTOS : [];
+}
+
 // Um usuário como a API mostra (sem o hash da senha)
 function usuario_publico($u)
 {
     $exp = $u["expira_em"] ?? null;
     return ["id" => (int)$u["id"], "login" => $u["login"], "email" => $u["email"] ?? null, "papel" => $u["papel"], "idioma" => $u["idioma"] ?? null, "fuso" => $u["fuso"] ?? null,
+        "nivel" => ($u["nivel"] ?? "avancado") === "basico" ? "basico" : "avancado",
         "criado" => $u["criado"], "ultimo_acesso" => $u["ultimo_acesso"] ?? null, "expira_em" => $exp, "demo" => $exp !== null,
         "dias_restantes" => $exp !== null ? max(0, (int)ceil((strtotime((string)$exp) - time()) / 86400)) : null, "bloqueado" => (int)($u["bloqueado"] ?? 0) === 1];
 }
@@ -576,6 +598,8 @@ function conta_consulta()
             // a configuração do e-mail lida do config.php, para o master testar (as senhas só como definida ou não)
             "email" => usuario_master() ? email_config_resumo() : null,
             "demo_dias" => demo_dias(), "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS)),
+            // os modos da interface, para a escolha em Minha conta
+            "niveis" => array_map(function ($k) { return ["codigo" => $k, "nome" => t(NIVEIS[$k])]; }, array_keys(NIVEIS)),
             // o fuso em vigor neste pedido (e de onde veio), o do sistema e a lista para escolher
             "fuso" => ["nome" => fuso_atual(), "origem" => fuso_origem(), "sistema" => fuso_sistema(), "colecao" => colecao_atual() !== null ? (fuso_valido(cfg("fuso")) ?? null) : null],
             "fusos" => fusos_lista()];
@@ -736,6 +760,8 @@ function op_cadastro($acao, $d)
             $expira = $dias > 0 ? date("Y-m-d H:i:s", time() + $dias * 86400) : null;
             $r = conta_criar($login, password_hash($senha, PASSWORD_DEFAULT), $email, $expira, $lingua, in_array($opcao, ["modelo", "vazia"], true) ? $opcao : "nenhuma");
             $uid = $r["usuario_id"];
+            // quem chega pelo cadastro aberto começa no modo básico (o primeiro usuário, o master, fica no avançado)
+            sem_escopo(function () use ($uid) { sql("UPDATE usuario SET nivel = 'basico' WHERE id = ? AND papel <> 'master'", [(int)$uid]); });
             $msg = t("Conta {1} criada.", [1 => $login]);
             if ($v !== null) {
                 acesso_dar($uid, $v["colecao_id"], $v["dono_id"]);
@@ -856,6 +882,14 @@ function op_conta($acao, $d)
         if (array_key_exists("idioma", $d)) {
             $campos["idioma"] = lingua_valida($d["idioma"]);
         }
+        // o modo da interface: basico ou avancado
+        if (array_key_exists("nivel", $d)) {
+            if (!isset(NIVEIS[(string)$d["nivel"]])) {
+                $erros[] = t("Modo desconhecido: use basico ou avancado.");
+            } else {
+                $campos["nivel"] = (string)$d["nivel"];
+            }
+        }
         // o fuso horário da pessoa (vazio: o da coleção, senão o do sistema)
         if (array_key_exists("fuso", $d)) {
             if (trim((string)$d["fuso"]) !== "" && trim((string)$d["fuso"]) !== "navegador" && fuso_valido($d["fuso"]) === null) {
@@ -886,7 +920,7 @@ function op_conta($acao, $d)
             }
             $msg = isset($campos["senha_hash"]) ? t("Conta atualizada. Os aparelhos lembrados foram esquecidos: entre de novo com a senha nova.") : t("Conta atualizada.");
         } elseif (count($erros) === 0) {
-            $erros[] = t("Nada para mudar: mande email, idioma, fuso ou senha (com senha_atual).");
+            $erros[] = t("Nada para mudar: mande email, idioma, fuso, nivel ou senha (com senha_atual).");
         }
     } elseif ($acao === "excluir") {
         if ($u["papel"] === "master" && (int)sem_escopo(function () { return valor("SELECT COUNT(*) FROM usuario WHERE papel = 'master'"); }) <= 1) {
@@ -1554,5 +1588,7 @@ function conta_menu()
         // o reloginho da barra: o modo da Configuração e o modelo de cada hora de hoje (o relojinho.js desenha)
         "relojinho" => colecao_atual() !== null ? ["modo" => relojinho_modo(), "dia" => hoje_da_colecao()->format("Y-m-d"), "ordem" => relojinho_ordem(hoje_da_colecao()->format("Y-m-d"))] : null,
         "colecoes" => array_map(function ($c) { return ["id" => $c["id"], "nome" => $c["nome"], "dono" => $c["dono"], "papel" => $c["papel"]]; }, colecoes_visiveis($u)),
-        "colecao" => colecao_atual(), "aprovacoes" => count(aprovacoes_pedidos()) + count(aprovacoes_convites())];
+        "colecao" => colecao_atual(), "aprovacoes" => count(aprovacoes_pedidos()) + count(aprovacoes_convites()),
+        // o modo da interface e o que as telas deixam de fora nele (as páginas e as partes do avançado)
+        "nivel" => nivel_atual(), "ocultos" => nivel_ocultos()];
 }

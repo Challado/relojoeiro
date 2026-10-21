@@ -20,6 +20,12 @@ aoGravar = function (form, res, dados) {
     reabrirNoIdioma(textoResposta(res), dados.get("idioma") || "");
     return;
   }
+  // outro modo da interface: a página abre de novo, com o menu e as telas do modo novo
+  if (dados.get("recurso") === "conta" && dados.get("acao") === "alterar" && dados.has("nivel") && CONTA && dados.get("nivel") !== CONTA.usuario.nivel) {
+    avisoAoAbrir(textoResposta(res), false);
+    window.location.reload();
+    return;
+  }
   return salvarSemMover(form, res, carregarConta);
 };
 
@@ -106,9 +112,14 @@ function quadroDados(d) {
       // o fuso horário da pessoa: as datas e horas que ela vê e digita (no banco fica tudo no fuso do sistema)
       + parCampo(t("Fuso horário"), el("select", {"name": "fuso"}, opcoesFuso(d.fusos, u.fuso, d.fuso.colecao ? t("O da coleção ({1})", {1: d.fuso.colecao.replace(/_/g, " ")}) : t("O do sistema ({1})", {1: d.fuso.sistema.replace(/_/g, " ")}),
         t("O do navegador (neste aparelho: {1})", {1: (fusoNavegador() || "?").replace(/_/g, " ")}))), "largo")
+      // o modo da interface: o básico deixa de fora as páginas e as partes do avançado (a API diz quais); o motor é o mesmo
+      + parCampo(t("Modo da interface"), el("select", {"name": "nivel"}, d.niveis.map(function (n) {
+        return el("option", {"value": n.codigo, "selected": u.nivel === n.codigo}, h(n.nome));
+      }).join("")))
       + parCampo(t("Senha atual (só para trocar a senha)"), el("input", {"type": "password", "name": "senha_atual", "autocomplete": "current-password"}))
       + camposSenha(t("Senha nova"), d.senha_politica, false)
       + el("p", {"class": "nota"}, t("O e-mail serve para recuperar a senha, receber os convites e os avisos da conta. Trocou a senha: o navegador pede o login de novo.") + " "
+        + t("O modo básico mostra o dia a dia: cadastrar os relógios, marcar o uso, acompanhar a manutenção e escolher um rodízio pronto. O avançado mostra também as fórmulas, os roteiros, os critérios, as simulações e os totais. As contas e o motor são os mesmos nos dois.") + " "
         + t("O fuso horário vale para tudo o que você vê e digita (a Hora certa, os lançamentos, os avisos); quem divide a coleção com você vê cada hora no fuso dele. O dia do rodízio (o plano, o relógio do dia, as rodadas) é sempre o da coleção. Agora: {1}.", {1: el("strong", {}, h(d.fuso.nome.replace(/_/g, " ")))}))
       + el("div", {"class": "botoes"}, el("button", {}, t("Salvar")))));
 }

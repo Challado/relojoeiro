@@ -1,4 +1,4 @@
-<!-- origem: 5aed559b7461acf4e29949761229d12b2df63490 -->
+<!-- origem: 0e6a6e136344456d0f0bce4500dbb915435d7922 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -188,7 +188,7 @@ curl -u upyogkarta:password -G "http://server/relojoeiro/api.php" -d recurso=cal
 | `destinos` | `salvar` (webhook, ई-मेल या Web Push, वह जो पाता है उसके साथ), `testar` (`qual=`: पाठ, सुबह या रात), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook या ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (`senha` के साथ, या किसी दूसरे सिस्टम के `senha_hash` के साथ; पहला उपयोगकर्ता, टोकन से, master है) और, केवल master: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
-| `conta` | `alterar` (ई-मेल, भाषा, पासवर्ड), `token_criar`, `token_revogar`, `aparelho_lembrar` (फ़ोन पर ऐप: इस डिवाइस की कुंजी एक कुकी में, जो बिना पासवर्ड प्रवेश करती है), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `smtp_salvar` (अपना ई-मेल सर्वर; `proprio=0` सिस्टम वाले पर लौटाता है), `smtp_testar`, `excluir`; केवल master: `email_testar`, `vapid_gerar` |
+| `conta` | `alterar` (ई-मेल, भाषा, `nivel`: इंटरफ़ेस का मोड, पासवर्ड), `token_criar`, `token_revogar`, `aparelho_lembrar` (फ़ोन पर ऐप: इस डिवाइस की कुंजी एक कुकी में, जो बिना पासवर्ड प्रवेश करती है), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `smtp_salvar` (अपना ई-मेल सर्वर; `proprio=0` सिस्टम वाले पर लौटाता है), `smtp_testar`, `excluir`; केवल master: `email_testar`, `vapid_gerar` |
 | `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
 | `acessos`, `convites`, `pedidos` | `remover`, `sair`; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar`; `pedir`, `aprovar`, `recusar`, `cancelar` |
 | `cadastro` | बिना लॉगिन: `criar_conta`, `esqueci_senha`, `nova_senha` |

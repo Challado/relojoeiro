@@ -1,4 +1,4 @@
-<!-- origem: df6031c3d5325a4609e3e3bdb7ca850b5832a87e -->
+<!-- origem: 3adc0877a3f91fac6bdf6695dd469e7c18f992c9 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1291,11 +1291,27 @@ comes in here by its name.
 | **Groups** (`grupos.php`) | The tree: create, rename, move, sort, delete (what belonged to the group goes to the one above) and choose each watch's group. |
 | **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), the totals (the **Totals** tab: see [Totals](#os-totais)), the calibers (the **Calibers** tab: see [Calibers](#os-calibres)) and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page, and the rotation modes on **Rotation modes**). |
 | **Cron runs** (`execucoes.php`) | What the cron did in each round, how long it took and the errors, with filters. |
-| **My account** (`conta.php`, menu **Account › My account**) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection (by the code the owner gave), your data (your code, the e-mail, the language, the password), the **app on the phone** (remember this device, install, the remembered devices), the **API tokens** (for your scripts), the **notifications on this device** (Web Push), the **sending of your e-mails** (through the system's server or your own: Gmail, Outlook) and deleting the account. See [Several people](#várias-pessoas-contas-coleções-e-acesso) and [The app on the phone](#o-aplicativo-no-celular). |
+| **My account** (`conta.php`, menu **Account › My account**) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection (by the code the owner gave), your data (your code, the e-mail, the language, the interface mode, the password), the **app on the phone** (remember this device, install, the remembered devices), the **API tokens** (for your scripts), the **notifications on this device** (Web Push), the **sending of your e-mails** (through the system's server or your own: Gmail, Outlook) and deleting the account. See [Several people](#várias-pessoas-contas-coleções-e-acesso) and [The app on the phone](#o-aplicativo-no-celular). |
 | **Approvals** (`aprovacoes.php`) | The access requests to your collections (approve, decline), the invitations members made that wait for you, **Invite** (by e-mail), the invitations you made and who sees your collections (remove access). The menu shows **Approvals (N)** when something is waiting. |
 | **Users** (`usuarios.php`, master only) | The accounts panel: each one with what it has and the actions (view as, make official, extend, block, edit, change the password, transfer a collection, give access, delete) and creating an account. |
 | **Create account** (`cadastro.php`, without login) | The open sign-up: the new account (with a collection, or asking for access), the invitation that arrived by e-mail and **Forgot my password**. |
 | **Help** (`ajuda.php`) | This guide inside the system: the central idea, how it works, each watch's record field by field, the charge alerts, the screens and the frequently asked questions (the same sections of the README, read from it; the API returns the same text in `recurso=manual`). |
+
+### Basic and advanced mode {#o-modo-básico-e-o-avançado}
+
+Each person chooses in **My account › Your data › Interface mode**:
+
+- **Basic:** the day to day. Registering the watches, marking the use, following the maintenance and choosing a ready-made
+  rotation (on Today). Out of the menu go the **Rotation modes**, the **Choice criteria**, the **Totals**, the **Groups**, the
+  **Definitions** and the **Cron runs**; and out of the screens go the technical parts: the *Where the calculation comes from*
+  of the Forecast, the tables of the consumption and rate measurements, the *Calculated now* of the Watch data, the *see the
+  calculation* of the score and the fields of the consumption engine in Settings.
+- **Advanced:** all of that, plus the formulas, the scripts, the criteria, the simulations and the totals.
+
+The engine is exactly the same in both: only what the screens show changes, and the API decides what stays out (the menu
+of `recurso=conta&parte=menu` brings `nivel` and `ocultos`). An advanced page opened by its address keeps working, with a
+strip at the top and the **Use the advanced mode** button. Whoever already had an account stays in advanced; the account
+created by the open sign-up starts in basic.
 
 ### The pages refresh by themselves {#as-páginas-se-atualizam-sozinhas}
 
