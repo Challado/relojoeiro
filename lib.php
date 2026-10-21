@@ -17,8 +17,8 @@ if ($fuso_cfg !== "") {
     if (in_array($fuso_cfg, DateTimeZone::listIdentifiers(DateTimeZone::ALL_WITH_BC), true)) {
         date_default_timezone_set($fuso_cfg);
     } else {
-        $ERRO_FUSO = "Sistema parado: FUSO no config.php (\"" . $fuso_cfg . "\") não é um fuso que o PHP conheça. Use um nome como "
-            . "America/Sao_Paulo, ou deixe vazio para usar o do PHP (date.timezone no php.ini, agora " . date_default_timezone_get() . ").";
+        $ERRO_FUSO = t("Sistema parado: FUSO no config.php (\"{1}\") não é um fuso que o PHP conheça. Use um nome como America/Sao_Paulo, ou deixe vazio para usar o do PHP (date.timezone no php.ini, agora {2}).",
+            [1 => $fuso_cfg, 2 => date_default_timezone_get()]);
     }
 }
 // o fuso do sistema: o das datas gravadas no banco (o FUSO do config.php, ou o do PHP). Cada coleção pode ter o seu (a
@@ -166,19 +166,19 @@ $ERRO_TOKEN = "";
 /** @var mixed $token_cfg */
 $token_cfg = defined("API_TOKEN") ? constant("API_TOKEN") : null;
 if (!defined("API_TOKEN")) {
-    $ERRO_TOKEN = tk("o config.php não define API_TOKEN");
+    $ERRO_TOKEN = t("o config.php não define API_TOKEN");
 } elseif ($token_cfg === null) {
-    $ERRO_TOKEN = "API_TOKEN está nulo no config.php";
+    $ERRO_TOKEN = t("API_TOKEN está nulo no config.php");
 } elseif (!is_string($token_cfg)) {
-    $ERRO_TOKEN = tk("API_TOKEN no config.php tem de ser um texto, entre aspas");
+    $ERRO_TOKEN = t("API_TOKEN no config.php tem de ser um texto, entre aspas");
 } elseif (trim($token_cfg) === "") {
-    $ERRO_TOKEN = "API_TOKEN está em branco no config.php";
+    $ERRO_TOKEN = t("API_TOKEN está em branco no config.php");
 } elseif (strlen(trim($token_cfg)) < 10) {
-    $ERRO_TOKEN = "API_TOKEN no config.php tem " . strlen(trim($token_cfg)) . " caracteres; o mínimo é 10";
+    $ERRO_TOKEN = t("API_TOKEN no config.php tem {1} caracteres; o mínimo é 10", [1 => strlen(trim($token_cfg))]);
 }
 if ($ERRO_TOKEN !== "") {
-    $ERRO_TOKEN = "Sistema parado: " . $ERRO_TOKEN . ". Defina no config.php, por exemplo: define('API_TOKEN', 'uma-chave-longa-e-secreta'); "
-        . "com pelo menos 10 caracteres (sem contar espaços nas pontas).";
+    $ERRO_TOKEN = t("Sistema parado: {1}. Defina no config.php, por exemplo: define('API_TOKEN', 'uma-chave-longa-e-secreta'); com pelo menos 10 caracteres (sem contar espaços nas pontas).",
+        [1 => $ERRO_TOKEN]);
 }
 // $ERRO_TOKEN é o motivo de o sistema estar parado (o cron e a API conferem ele): o token ou o fuso
 if ($ERRO_TOKEN === "" && $ERRO_FUSO !== "") {

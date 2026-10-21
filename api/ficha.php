@@ -130,7 +130,8 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
                 $l[] = t("Indisponível: fora do rodízio");
             }
             if (!empty($valores["data_compra"]) || isset($valores["valor_compra"])) {
-                $l[] = t("Comprado{1}{2}", [1 => !empty($valores["data_compra"]) ? " em " . data_txt(strtotime(substr((string)$valores["data_compra"], 0, 10))) : "", 2 => isset($valores["valor_compra"]) && $valores["valor_compra"] !== "" ? " por R\$ " . numero_txt((float)$valores["valor_compra"], 2) : ""]);
+                $l[] = t("Comprado{1}{2}", [1 => !empty($valores["data_compra"]) ? t(" em {1}", [1 => data_txt(strtotime(substr((string)$valores["data_compra"], 0, 10)))]) : "",
+                    2 => isset($valores["valor_compra"]) && $valores["valor_compra"] !== "" ? t(" por R\$ {1}", [1 => numero_txt((float)$valores["valor_compra"], 2)]) : ""]);
             }
             $l[] = "";
             $l[] = t("Duplo clique (ou \"Abrir foto\", embaixo): a foto em tamanho grande.");

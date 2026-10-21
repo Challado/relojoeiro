@@ -248,6 +248,55 @@ foreach (TEXTOS_PARTES as $parte) {
         }
     }
 }
+// as listas traduzidas no uso, t(LISTA[...]): cada nome de uma constante assim tem de estar no código como tk("...") (a
+// conferência acima só lê os literais; sem o tk, o nome sairia sem tradução em todo idioma)
+$todas = [];
+foreach (TEXTOS_PARTES as $parte) {
+    $todas += array_flip($codigo[$parte]);
+}
+$listas = [];
+$fontes = array_merge(glob($RAIZ . "/*.php"), glob($RAIZ . "/api/*.php"));
+foreach ($fontes as $arq) {
+    if (preg_match_all('/(?<![A-Za-z0-9_>:$])t\(\s*([A-Z][A-Z0-9_]+)\[/', (string)file_get_contents($arq), $m)) {
+        foreach ($m[1] as $nome) {
+            $listas[$nome] = true;
+        }
+    }
+}
+foreach ($fontes as $arq) {
+    $tk = token_get_all((string)file_get_contents($arq));
+    for ($i = 0, $n = count($tk); $i < $n; $i++) {
+        if (!is_array($tk[$i]) || $tk[$i][0] !== T_CONST) {
+            continue;
+        }
+        $j = $i + 1;
+        while ($j < $n && is_array($tk[$j]) && $tk[$j][0] === T_WHITESPACE) {
+            $j++;
+        }
+        $nome = is_array($tk[$j]) ? $tk[$j][1] : "";
+        if (!isset($listas[$nome])) {
+            continue;
+        }
+        // os valores (não as chaves: o literal seguido de =>) até o ; do fim da constante
+        for ($k = $j + 1; $k < $n && $tk[$k] !== ";"; $k++) {
+            if (!is_array($tk[$k]) || $tk[$k][0] !== T_CONSTANT_ENCAPSED_STRING) {
+                continue;
+            }
+            $q = $k + 1;
+            while ($q < $n && is_array($tk[$q]) && $tk[$q][0] === T_WHITESPACE) {
+                $q++;
+            }
+            if (is_array($tk[$q]) && $tk[$q][0] === T_DOUBLE_ARROW) {
+                continue;
+            }
+            $v = eval("return " . $tk[$k][1] . ";");
+            // as unidades e os vazios ("h", "") não são texto
+            if (preg_match('/\pL.*\pL/u', $v) === 1 && !isset($todas[$v])) {
+                $problemas[] = substr($arq, strlen($RAIZ) + 1) . " · " . $nome . ": \"" . mb_substr($v, 0, 90) . "\" sai por t(" . $nome . "[...]) e não tem o tk(\"...\") que o põe nos dicionários";
+            }
+        }
+    }
+}
 // o manual (a página Ajuda): um arquivo traduzido por idioma, da versão atual do original
 foreach ($outras as $l) {
     $arq = $RAIZ . "/textos/manual/" . $l . ".md";

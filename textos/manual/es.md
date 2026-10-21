@@ -1,4 +1,4 @@
-<!-- origem: dde359d41cd270e531d7aedbb8cbd98e04e92071 -->
+<!-- origem: df6031c3d5325a4609e3e3bdb7ca850b5832a87e -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1322,7 +1322,9 @@ Lo que falta en un idioma sale en portugués, así que nada se detiene en el uso
 
 - `php testes/textos.php` confronta todos los archivos con el código, de una vez, incluso los mensajes que casi nunca
   aparecen: el archivo, la parte y el texto que falta (`textos/en.php · telas: falta "Excluir este relógio"`), lo que sobra y
-  el parámetro distinto. La prueba de paridad y GitHub hacen lo mismo en cada push.
+  el parámetro distinto. Comprueba también las listas que salen traducidas en el uso, `t(LISTA[...])`: cada nombre de ellas
+  tiene que estar en el código como `tk("...")`, si no saldría en portugués en todo idioma. La prueba de paridad y GitHub
+  hacen lo mismo en cada push.
 - Con `define("TEXTOS_ESTRITO", true);` en el `config.php` (para quien está traduciendo), la traducción que falta **se detiene
   con un error** en la API y en el cron (*Falta a tradução em en (textos/en.php): "..."*), y en las pantallas aparece entre
   ⟦ ⟧, con el error en la consola del navegador.

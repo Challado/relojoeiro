@@ -1368,7 +1368,9 @@ O que falta num idioma sai em português, para nada parar no uso. Para achar o q
 
 - `php testes/textos.php` confere todos os arquivos contra o código, de uma vez, inclusive as mensagens que quase nunca
   aparecem: o arquivo, a parte e o texto que falta (`textos/en.php · telas: falta "Excluir este relógio"`), o que sobrou e
-  o parâmetro diferente. O teste de paridade e o GitHub rodam o mesmo a cada push.
+  o parâmetro diferente. Confere também as listas que saem traduzidas no uso, `t(LISTA[...])`: cada nome delas tem de
+  estar no código como `tk("...")`, senão sairia em português em todo idioma. O teste de paridade e o GitHub rodam o
+  mesmo a cada push.
 - Com `define("TEXTOS_ESTRITO", true);` no `config.php` (para quem está traduzindo), a tradução que falta **para com erro**
   na API e no cron (*Falta a tradução em en (textos/en.php): "..."*), e nas telas aparece entre ⟦ ⟧, com o erro no
   console do navegador.

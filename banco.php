@@ -71,7 +71,7 @@ function banco_tipo()
             $tipo = "firebird";
         }
         if (!in_array($tipo, ["mysql", "pgsql", "sqlite", "firebird"], true)) {
-            throw new BancoErro("DB_TIPO no config.php tem de ser mysql, pgsql, sqlite ou firebird (está \"" . $tipo . "\")");
+            throw new BancoErro(t("DB_TIPO no config.php tem de ser mysql, pgsql, sqlite ou firebird (está \"{1}\")", [1 => $tipo]));
         }
     }
     return $tipo;
@@ -99,7 +99,7 @@ function db()
             break;
         case "pgsql":
             if (!function_exists("pg_connect")) {
-                throw new BancoErro("o PHP não tem a extensão pgsql (no php.ini: extension=pgsql)");
+                throw new BancoErro(t("o PHP não tem a extensão {1} (no php.ini: extension={1})", [1 => "pgsql"]));
             }
             $par = function ($v) {
                 return "'" . str_replace(["\\", "'"], ["\\\\", "\\'"], (string)$v) . "'";
@@ -112,7 +112,7 @@ function db()
             if ($c === false) {
                 $e = error_get_last();
                 $c = null;
-                throw new BancoErro("não consegui abrir o banco no PostgreSQL: " . trim((string)($e["message"] ?? "")));
+                throw new BancoErro(t("não consegui abrir o banco no {1}: {2}", [1 => "PostgreSQL", 2 => trim((string)($e["message"] ?? ""))]));
             }
             // as datas no formato do MySQL, e o NOW() no fuso do sistema
             banco_direto("SET DateStyle TO ISO, YMD", $c);
@@ -120,16 +120,16 @@ function db()
             break;
         case "sqlite":
             if (!class_exists("SQLite3")) {
-                throw new BancoErro("o PHP não tem a extensão sqlite3 (no php.ini: extension=sqlite3)");
+                throw new BancoErro(t("o PHP não tem a extensão {1} (no php.ini: extension={1})", [1 => "sqlite3"]));
             }
             $arquivo = defined("DB_ARQUIVO") ? (string)constant("DB_ARQUIVO") : "";
             if ($arquivo === "") {
-                throw new BancoErro("com DB_TIPO sqlite, o config.php tem de definir DB_ARQUIVO (o caminho do arquivo do banco)");
+                throw new BancoErro(t("com DB_TIPO sqlite, o config.php tem de definir DB_ARQUIVO (o caminho do arquivo do banco)"));
             }
             try {
                 $c = new SQLite3($arquivo);
             } catch (Exception $e) {
-                throw new BancoErro("não consegui abrir o banco SQLite em " . $arquivo . ": " . $e->getMessage());
+                throw new BancoErro(t("não consegui abrir o banco SQLite em {1}: {2}", [1 => $arquivo, 2 => $e->getMessage()]));
             }
             $c->enableExceptions(true);
             // o cron e as páginas ao mesmo tempo: quem chega espera a vez, em vez de "database is locked"
@@ -161,7 +161,7 @@ function db()
             break;
         case "firebird":
             if (!extension_loaded("pdo_firebird")) {
-                throw new BancoErro("o PHP não tem a extensão pdo_firebird (no php.ini: extension=pdo_firebird)");
+                throw new BancoErro(t("o PHP não tem a extensão {1} (no php.ini: extension={1})", [1 => "pdo_firebird"]));
             }
             // o banco: DB_NOME é o caminho do arquivo .fdb no servidor (ou um apelido do databases.conf); DB_HOST vazio
             // abre o arquivo direto, sem servidor (o Firebird embutido)
@@ -171,7 +171,7 @@ function db()
                 $c = new PDO($dsn, DB_USUARIO, DB_SENHA, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_CASE => PDO::CASE_LOWER]);
             } catch (PDOException $e) {
                 $c = null;
-                throw new BancoErro("não consegui abrir o banco no Firebird: " . trim($e->getMessage()));
+                throw new BancoErro(t("não consegui abrir o banco no {1}: {2}", [1 => "Firebird", 2 => trim($e->getMessage())]));
             }
             break;
     }
@@ -627,7 +627,7 @@ function banco_executar_banco($comando, $params = [])
     $params = array_values($params);
     $traduzido = sql_traduzir($comando);
     if (count($traduzido) !== 1 || !is_string($traduzido[0])) {
-        throw new BancoErro("o comando vira mais de um no " . banco_tipo() . ": use banco_script() para ele");
+        throw new BancoErro(t("o comando vira mais de um no {1}: use banco_script() para ele", [1 => banco_tipo()]));
     }
     $comando = $traduzido[0];
     switch (banco_tipo()) {
@@ -669,7 +669,7 @@ function banco_executar_banco($comando, $params = [])
                 return (string)$p;
             }, $params);
             if (!pg_send_query_params($c, $comando, $valores)) {
-                throw new BancoErro("o PostgreSQL não recebeu o comando: " . pg_last_error($c));
+                throw new BancoErro(t("o PostgreSQL não recebeu o comando: {1}", [1 => pg_last_error($c)]));
             }
             $res = pg_get_result($c);
             while (pg_get_result($c) !== false) {
@@ -981,7 +981,7 @@ function banco_direto($comando, $c = null)
                 break;
             case "pgsql":
                 if (!pg_send_query($c, $comando)) {
-                    throw new BancoErro("o PostgreSQL não recebeu o comando: " . pg_last_error($c));
+                    throw new BancoErro(t("o PostgreSQL não recebeu o comando: {1}", [1 => pg_last_error($c)]));
                 }
                 while (($res = pg_get_result($c)) !== false) {
                     $estado = pg_result_status($res);
@@ -1551,7 +1551,7 @@ function sqlite_modificar_coluna($tabela, $definicao)
             }
         }
         if (!$achou) {
-            throw new BancoErro("MODIFY COLUMN: a tabela " . $tabela . " não tem a coluna " . $coluna);
+            throw new BancoErro(t("MODIFY COLUMN: a tabela {1} não tem a coluna {2}", [1 => $tabela, 2 => $coluna]));
         }
         return $partes;
     });
@@ -1569,7 +1569,7 @@ function firebird_modificar_coluna($tabela, $definicao)
         rf.RDB\$NULL_FLAG AS nn, rf.RDB\$DEFAULT_SOURCE AS padrao FROM RDB\$RELATION_FIELDS rf JOIN RDB\$FIELDS f ON f.RDB\$FIELD_NAME = rf.RDB\$FIELD_SOURCE
         WHERE rf.RDB\$RELATION_NAME = ? AND rf.RDB\$FIELD_NAME = ?", [strtoupper($tabela), strtoupper($col)]);
     if ($atual === null) {
-        throw new BancoErro("MODIFY COLUMN: a tabela " . $tabela . " não tem a coluna " . $col);
+        throw new BancoErro(t("MODIFY COLUMN: a tabela {1} não tem a coluna {2}", [1 => $tabela, 2 => $col]));
     }
     $tipo_atual = banco_fb_tipo($atual);
     $tipo_novo = preg_replace("/ CHARACTER SET UTF8\$/", "", $c["tipo"]);
@@ -2391,14 +2391,14 @@ function banco_chave_primaria($tabela)
             JOIN RDB\$INDEX_SEGMENTS s ON s.RDB\$INDEX_NAME = c.RDB\$INDEX_NAME WHERE c.RDB\$RELATION_NAME = ? AND c.RDB\$CONSTRAINT_TYPE = 'PRIMARY KEY'
             ORDER BY s.RDB\$FIELD_POSITION", [strtoupper($tabela)]), "c"));
         if (count($cache[$tabela]) === 0) {
-            throw new BancoErro("REPLACE INTO " . $tabela . ": a tabela não tem chave primária");
+            throw new BancoErro(t("REPLACE INTO {1}: a tabela não tem chave primária", [1 => $tabela]));
         }
     }
     if (!isset($cache[$tabela])) {
         $cache[$tabela] = array_column(linhas("SELECT a.attname AS c FROM pg_index i JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
             WHERE i.indrelid = to_regclass(?) AND i.indisprimary ORDER BY array_position(i.indkey, a.attnum)", [$tabela]), "c");
         if (count($cache[$tabela]) === 0) {
-            throw new BancoErro("REPLACE INTO " . $tabela . ": a tabela não tem chave primária");
+            throw new BancoErro(t("REPLACE INTO {1}: a tabela não tem chave primária", [1 => $tabela]));
         }
     }
     return $cache[$tabela];

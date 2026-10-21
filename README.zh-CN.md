@@ -958,7 +958,7 @@ php -S localhost:8000            # 然后打开 http://localhost:8000
 
 某种语言中缺少的文本会以葡萄牙语显示，因此使用中不会中断。查找缺少的内容：
 
-- `php testes/textos.php` 一次性把所有文件与代码对照，包括几乎不会出现的消息：文件、部分和缺少的文本（`textos/en.php · telas: falta "Excluir este relógio"`）、多余的内容以及不同的参数。一致性测试和 GitHub 在每次 push 时都会运行同样的检查。
+- `php testes/textos.php` 一次性把所有文件与代码对照，包括几乎不会出现的消息：文件、部分和缺少的文本（`textos/en.php · telas: falta "Excluir este relógio"`）、多余的内容以及不同的参数。它还会检查在使用时才翻译的列表 `t(LISTA[...])`：列表中的每个名称都必须以 `tk("...")` 的形式出现在代码中，否则在所有语言中都会显示为葡萄牙语。一致性测试和 GitHub 在每次 push 时都会运行同样的检查。
 - 在 `config.php` 中加上 `define("TEXTOS_ESTRITO", true);`（给正在翻译的人用），缺少翻译时 API 和 cron 会**报错停止**（*Falta a tradução em en (textos/en.php): "..."*），界面上则显示在 ⟦ ⟧ 之间，并在浏览器控制台中报错。
 
 **添加新语言**（例如德语）时，代码无需任何改动：

@@ -964,9 +964,23 @@ const IMPACTO_NOMES = ["usuario" => "usuários", "colecao" => "coleções", "col
     "destino_aviso" => "escolhas de destino", "destino_evento" => "eventos de destino", "agenda" => "agendas", "agenda_google" => "agendas do Google", "agenda_caldav" => "agendas CalDAV",
     "agenda_outlook" => "agendas do Outlook", "agenda_ics" => "links ICS", "agenda_aviso" => "escolhas de agenda", "agenda_evento" => "eventos de agenda",
     "agenda_sincronizado" => "eventos criados em agendas", "cron_execucao_colecao" => "registros do cron"];
-foreach (IMPACTO_NOMES as $x) {
-    tk($x);
-}
+// os nomes, para os dicionários dos idiomas: saem traduzidos no uso, t(IMPACTO_NOMES[...])
+tk("usuários"); tk("coleções"); tk("membros"); tk("acessos a tudo de um dono"); tk("convites");
+tk("pedidos de acesso"); tk("tokens de API"); tk("links de senha"); tk("aparelhos do Web Push");
+tk("servidores de e-mail próprios"); tk("grupos"); tk("campos"); tk("opções de lista"); tk("tipos de lançamento");
+tk("fórmulas"); tk("avisos"); tk("categorias de documento"); tk("tipos aceitos de categorias"); tk("relógios");
+tk("fotos"); tk("valores de campo"); tk("calibres"); tk("valores de calibre"); tk("relógios com calibre");
+tk("lançamentos"); tk("medições do gasto"); tk("documentos"); tk("pedaços de documentos no banco");
+tk("serviços e diagnósticos"); tk("peças de serviços"); tk("documentos de serviços");
+tk("testes da reserva e observações da energia"); tk("acessórios"); tk("vínculos de acessório");
+tk("parâmetros de critérios"); tk("subparâmetros de critérios"); tk("faixas de critérios");
+tk("valores da configuração"); tk("modos de rodízio"); tk("blocos de modos"); tk("relógios fixos de blocos");
+tk("dias de blocos"); tk("dias do plano"); tk("blocos de dias do plano"); tk("dias livres"); tk("eventos");
+tk("vínculos de evento"); tk("dias de eventos"); tk("disparos de eventos"); tk("destinos"); tk("webhooks");
+tk("campos de webhook"); tk("cabeçalhos de webhook"); tk("destinos de e-mail"); tk("destinos de Web Push");
+tk("escolhas de destino"); tk("eventos de destino"); tk("agendas"); tk("agendas do Google"); tk("agendas CalDAV");
+tk("agendas do Outlook"); tk("links ICS"); tk("escolhas de agenda"); tk("eventos de agenda");
+tk("eventos criados em agendas"); tk("registros do cron");
 
 // As chaves estrangeiras do banco ao contrário: [tabela citada => [[tabela que cita, coluna, ao apagar]]] (só as de uma coluna)
 function impacto_grafo()

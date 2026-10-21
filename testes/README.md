@@ -191,8 +191,8 @@ arquivo do Firebird ganha `_mig` no nome), **apagado e recriado**; os servidores
 O [`.github/workflows/testes.yml`](../.github/workflows/testes.yml) roda os testes no GitHub Actions a cada push no `main` (e
 quando pedido na aba **Actions**, em "Run workflow"), em cinco trabalhos ao mesmo tempo:
 
-- **Arquitetura, idiomas e documentação (sem banco):** o `arquitetura.php`, o `textos.php` (os dicionários, os manuais e
-  os READMEs traduzidos) e o `dicionario.php`;
+- **Arquitetura, idiomas e documentação (sem banco):** o `arquitetura.php`, o `textos.php` (os dicionários, com as listas
+  traduzidas no uso, `t(LISTA[...])`, os manuais e os READMEs traduzidos) e o `dicionario.php`;
 - **Paridade (SQLite, PostgreSQL, MariaDB):** os bancos como serviços do GitHub e o `testes/paridade.sh` (com as conferências
   da documentação); depois, o `testes/migracao.sh` nos três, a partir da versão de antes do push (`github.event.before`);
 - **Paridade (SQLite e Firebird):** o mesmo com o Firebird 3, e o `testes/migracao.sh firebird`;

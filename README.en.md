@@ -1410,7 +1410,9 @@ What is missing in a language comes out in Portuguese, so nothing stops in use. 
 
 - `php testes/textos.php` checks all the files against the code, at once, including the messages that almost never appear:
   the file, the part and the missing text (`textos/en.php · telas: falta "Excluir este relógio"`), what is left over and the
-  different parameter. The parity test and GitHub run the same on every push.
+  different parameter. It also checks the lists that are translated when used, `t(LISTA[...])`: each name in them has to
+  be in the code as `tk("...")`, otherwise it would come out in Portuguese in every language. The parity test and GitHub
+  run the same on every push.
 - With `define("TEXTOS_ESTRITO", true);` in `config.php` (for whoever is translating), the missing translation **stops with
   an error** in the API and the cron (*Falta a tradução em en (textos/en.php): "..."*), and on the screens it appears between
   ⟦ ⟧, with the error in the browser console.
