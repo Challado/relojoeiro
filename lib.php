@@ -746,6 +746,7 @@ $MIGRACOES = [
     "v33" => ["migracao_v33.sql", tk("os calibres: o movimento (NH35, ST2130, B620...) como um cadastro da árvore, com fabricante, o link do manual técnico, as recomendações e os valores dos campos que ele define; cada relógio aponta para um e herda dele o que não tem (o valor do relógio, senão o do calibre, senão o padrão do campo); a aba Calibres dos Cadastros, a função CALIBRE e recurso=calibres"), "calibre"],
     "v34" => ["migracao_v34.sql", tk("os documentos dos calibres (o manual técnico, a ficha de serviço, as fotos do movimento: na página Documentos do calibre, e em todos os relógios com ele), a categoria Manual técnico, e os campos do movimento (campo.calibre: os que o formulário do calibre mostra, com a Configuração calibre_campos em só os do movimento, o padrão)"), "campo.calibre", "migracao_v34_dados"],
     "v35" => ["migracao_v35.sql", tk("os serviços e diagnósticos: cada intervenção num relógio (revisão, troca de pilha, teste de estanqueidade, regulagem, polimento, reparo, diagnóstico), com quem fez, o que foi feito, a mão de obra, as peças trocadas e o custo de cada uma, o teste de estanqueidade (aprovado ou reprovado e a pressão), a marcha antes e depois, a garantia e os documentos; a resistência à água declarada vira um campo do cadastro, separada da estanqueidade comprovada; as funções ULTIMO_SERVICO e CUSTO_SERVICOS, e o total Custo dos serviços"), "servico", "migracao_v35_dados"],
+    "v36" => ["migracao_v36.sql", tk("a reserva medida: o teste da reserva de marcha do mecânico (cheio, por qual protocolo, até parar), com a mediana dos testes como a estimativa do relógio e a confiança, sem mexer no valor do calibre; as observações da energia (parou, o indicador de carga baixa), também no solar, que não se calibra; e as funções RESERVA_MEDIDA e RESERVA_TESTES"), "reserva_teste"],
 ];
 
 // O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
@@ -1188,6 +1189,9 @@ $FUNCOES = [
     // os serviços e diagnósticos do relógio (até o instante da conta)
     "ULTIMO_SERVICO" => [0, 1, tk("ULTIMO_SERVICO(\"tipo\"): a data do último serviço desse tipo (revisao, pilha, estanqueidade, regulagem, polimento, reparo, diagnostico, outro; \"estanqueidade\" conta também o teste feito numa revisão; sem tipo: qualquer); vazio sem nenhum"), false],
     "CUSTO_SERVICOS" => [0, 1, tk("CUSTO_SERVICOS(dias): quanto os serviços custaram (a mão de obra mais as peças) nos últimos N dias (0 ou sem: todos)"), false],
+    // a reserva medida do relógio (os testes terminados até o instante da conta)
+    "RESERVA_MEDIDA" => [0, 0, tk("RESERVA_MEDIDA(): a reserva de marcha medida nos testes do relógio, em horas (a mediana dos testes terminados; vazio sem nenhum). PADRAO(RESERVA_MEDIDA(); reserva_horas) usa a medida e, sem ela, o cadastro"), false],
+    "RESERVA_TESTES" => [0, 0, tk("RESERVA_TESTES(): quantos testes da reserva o relógio tem terminados"), false],
     "ESCOLHIDO_HA" => [1, 1, tk("ESCOLHIDO_HA(n): 1 se o relógio é o do plano há n dias (1: ontem; -1: amanhã, quando já está no plano)"), false],
     "VEZES_NO_PLANO" => [1, 1, tk("VEZES_NO_PLANO(n): quantos dias o relógio teve no plano nos últimos n dias (antes do dia que está sendo montado)"), false],
     "ESCOLHA" => [2, null, tk("ESCOLHA(n; a; b; c...): o n-ésimo dos valores (só ele é calculado); fora da lista, vazio. Ex.: ESCOLHA(DIA_SEMANA(); ...) dá um valor por dia da semana"), false],
@@ -2161,6 +2165,9 @@ function formula_calcular($no, &$ctx)
                         }
                     }
                 }
+            } elseif ($nome === "RESERVA_MEDIDA" || $nome === "RESERVA_TESTES") {
+                $m_r = reserva_medida((int)($ctx["r"]["id"] ?? 0), (int)$ctx["momento"]);
+                $res = $nome === "RESERVA_TESTES" ? $m_r["n"] : $m_r["mediana"];
             } elseif ($nome === "ESCOLHIDO_HA") {
                 $d = is_numeric($v[0]) ? dia_da_conta($ctx)->modify((-(int)$v[0]) . " days") : null;
                 $res = $d === null ? null : ((int)(valor("SELECT relogio_id FROM plano WHERE data = ?", [$d->format("Y-m-d")]) ?? 0) === (int)$ctx["r"]["id"] ? 1 : 0);
@@ -2371,7 +2378,7 @@ $FUNCOES_TOTAIS = [
 // as que dão uma tabelinha ou um relógio: só como a expressão inteira
 const TOTAIS_DO_TOPO = ["AGRUPADO", "FAIXAS", "QUEM_MENOR", "QUEM_MAIOR"];
 // as funções do motor que precisam de um relógio: nos totais, só dentro de uma função de total
-const FUNCOES_DO_RELOGIO = ["NO_GRUPO", "RELOGIO", "CALIBRE", "ULTIMO_SERVICO", "CUSTO_SERVICOS", "ESCOLHIDO_HA", "VEZES_NO_PLANO", "MEDIDO", "MEDIA_COLECAO", "LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA",
+const FUNCOES_DO_RELOGIO = ["NO_GRUPO", "RELOGIO", "CALIBRE", "ULTIMO_SERVICO", "CUSTO_SERVICOS", "RESERVA_MEDIDA", "RESERVA_TESTES", "ESCOLHIDO_HA", "VEZES_NO_PLANO", "MEDIDO", "MEDIA_COLECAO", "LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA",
     "MEDIANA_TAXA", "ULTIMA_TAXA", "MARCHA", "MARCHA_DP", "MARCHA_N", "MARCHA_ULTIMA", "DESVIO_AGORA", "DIA_SEMANA", "SEMANA_DO_ANO", "SORTEIO"];
 
 // As variáveis da tabela, que os totais têm em cada relógio além dos campos e das fórmulas: nome => [o que é, unidade]
@@ -4882,11 +4889,13 @@ function servicos_lista($relogio_id = null)
 }
 
 // O resumo dos serviços de um relógio, para o painel e a ficha: quantos, o custo somado, o último, a resistência à água
-// declarada (o campo do cadastro) e a estanqueidade comprovada (o último serviço com o teste, aprovado ou não)
+// declarada (o campo do cadastro), a estanqueidade comprovada (o último serviço com o teste, aprovado ou não) e quantos
+// serviços tiveram o teste
 function servicos_resumo($rid, $lista = null)
 {
     $lista = $lista ?? servicos_lista($rid);
     $teste = null;
+    $testes = count(array_filter($lista, function ($s) { return $s["estanqueidade"] !== null; }));
     foreach ($lista as $s) {
         if ($s["estanqueidade"] !== null) {
             $teste = ["data" => $s["data"], "ha_dias" => $s["ha_dias"], "resultado" => $s["estanqueidade"], "resultado_texto" => $s["estanqueidade_texto"], "bar" => $s["estanqueidade_bar"], "servico_id" => $s["id"]];
@@ -4897,7 +4906,8 @@ function servicos_resumo($rid, $lista = null)
     $custos = array_values(array_filter(array_column($lista, "custo"), function ($c) { return $c !== null; }));
     return ["quantos" => count($lista), "custo" => count($custos) > 0 ? round(array_sum($custos), 2) : null,
         "ultimo" => count($lista) > 0 ? ["data" => $lista[0]["data"], "tipo" => $lista[0]["tipo"], "tipo_texto" => $lista[0]["tipo_texto"], "ha_dias" => $lista[0]["ha_dias"]] : null,
-        "resistencia_declarada" => $declarada !== null && $declarada !== "" && is_numeric($declarada) ? (int)$declarada : null, "estanqueidade" => $teste];
+        "resistencia_declarada" => $declarada !== null && $declarada !== "" && is_numeric($declarada) ? (int)$declarada : null, "estanqueidade" => $teste,
+        "testes_estanqueidade" => $testes];
 }
 
 // Os serviços de cada relógio para as fórmulas e os totais (lidos uma vez por requisição, de novo depois de uma gravação):
@@ -4920,6 +4930,256 @@ function servicos_das_contas()
         $cache = [$chave => $res];
     }
     return $cache[$chave];
+}
+
+// A regra única de confiança das medidas (a marcha, a reserva medida, a estanqueidade), sem porcentagem inventada: quantas
+// medições, a idade da última e quanto elas variam. Alta: pelo menos o mínimo de medições da regra, a última dentro da
+// validade e a variação até a tolerância; média: a última até três vezes a validade e a variação até o dobro da tolerância;
+// baixa: o resto. Cada regra: o mínimo de medições e a validade (dias)
+const CONFIANCA_REGRAS = ["marcha" => ["minimo" => 3, "validade" => 30], "reserva" => ["minimo" => 2, "validade" => 365], "estanqueidade" => ["minimo" => 1, "validade" => 365]];
+
+// A confiança de uma medida: $n medições, a última em $ultima (segundos), a variação $dp (um desvio padrão; null com uma só
+// ou quando não se aplica) e a tolerância $tol, na unidade de $fmt (a função que escreve um valor dela); $testes: as medições
+// são testes ("1 teste", "2 testes"). null sem medição nenhuma
+function confianca_medida($regra, $n, $ultima, $agora, $dp = null, $tol = null, $fmt = null, $testes = false)
+{
+    if ($n <= 0 || $ultima === null) {
+        return null;
+    }
+    $min = CONFIANCA_REGRAS[$regra]["minimo"];
+    $val = CONFIANCA_REGRAS[$regra]["validade"];
+    $fmt = $fmt ?? function ($x) { return decimal_txt($x, 1); };
+    $idade = max(0, (int)floor(($agora - $ultima) / 86400));
+    $motivos = [];
+    if ($n < $min) {
+        $motivos[] = $testes ? t("menos de {1} testes", [1 => $min]) : t("menos de {1} medições", [1 => $min]);
+    }
+    if ($idade > $val) {
+        $motivos[] = $testes ? t("o último tem mais de {1} dias", [1 => $val]) : t("a última tem mais de {1} dias", [1 => $val]);
+    }
+    if ($dp !== null && $tol !== null && $dp > $tol) {
+        $motivos[] = t("variam mais que ±{1}", [1 => $fmt($tol)]);
+    }
+    $nivel = count($motivos) === 0 ? "alta" : ($idade <= 3 * $val && ($dp === null || $tol === null || $dp <= 2 * $tol) ? "media" : "baixa");
+    $nivel_texto = ["alta" => t("alta"), "media" => t("média"), "baixa" => t("baixa")][$nivel];
+    $quantos = $testes ? ($n === 1 ? t("1 teste") : t("{1} testes", [1 => $n])) : ($n === 1 ? t("1 medição") : t("{1} medições", [1 => $n]));
+    $quando = $idade === 0 ? ($testes ? t("o último há menos de 1 dia") : t("a última há menos de 1 dia")) : ($testes ? ($idade === 1 ? t("o último há 1 dia") : t("o último há {1} dias", [1 => $idade]))
+        : ($idade === 1 ? t("a última há 1 dia") : t("a última há {1} dias", [1 => $idade])));
+    $texto = $quantos . ", " . $quando . ($dp !== null ? t(", variação de ±{1}", [1 => $fmt($dp)]) : "");
+    return ["nivel" => $nivel, "nivel_texto" => $nivel_texto, "medicoes" => (int)$n, "idade_dias" => $idade, "variacao" => $dp === null ? null : round($dp, 2),
+        "tolerancia" => $tol === null ? null : round($tol, 2), "texto" => $texto, "motivos" => $motivos,
+        "resumo" => t("Confiança {1}: {2}.", [1 => $nivel_texto, 2 => $texto]) . (count($motivos) > 0 ? t(" Não é alta por: {1}.", [1 => implode("; ", $motivos)]) : "")];
+}
+
+// Os protocolos do teste da reserva (ck_reserva_teste_protocolo): como ele ficou cheio, e o que o número diz; e os tipos das
+// observações da energia (ck_reserva_teste_tipo, menos o teste)
+const RESERVA_PROTOCOLOS = ["corda" => ["Corda pela coroa", "voltas"], "winder" => ["No winder", "h"], "pulso" => ["No pulso", "h"], "outro" => ["Outro jeito", ""]];
+const RESERVA_OBSERVACOES = ["parou" => "Parou", "carga_baixa" => "Indicador de carga baixa", "nota" => "Outra observação"];
+tk("Corda pela coroa"); tk("No winder"); tk("No pulso"); tk("Outro jeito"); tk("voltas"); tk("Parou"); tk("Indicador de carga baixa"); tk("Outra observação");
+
+// Como o relógio ficou cheio no teste, por extenso: "cheio com 40 voltas da coroa", "cheio depois de 8 h no winder"
+function reserva_protocolo_txt($protocolo, $valor)
+{
+    $v = $valor === null ? null : decimal_txt((float)$valor, 2);
+    if ($protocolo === "corda") {
+        return $v !== null ? t("cheio com {1} voltas da coroa", [1 => $v]) : t("cheio pela corda da coroa");
+    } elseif ($protocolo === "winder") {
+        return $v !== null ? t("cheio depois de {1} h no winder", [1 => $v]) : t("cheio no winder");
+    } elseif ($protocolo === "pulso") {
+        return $v !== null ? t("cheio depois de {1} h no pulso", [1 => $v]) : t("cheio no pulso");
+    }
+    return t("cheio de outro jeito");
+}
+
+// Horas por extenso: "41,5 h"
+function reserva_horas_txt($h)
+{
+    return $h === null ? null : t("{1} h", [1 => decimal_txt($h, 1)]);
+}
+
+// Os testes da reserva e as observações da energia (de um relógio, ou de todos: null), do mais novo para o mais velho, prontos
+// para a API: o teste com o protocolo e as horas de cheio até parado (null em andamento, com as horas até agora)
+function reserva_lista($relogio_id = null, $agora = null)
+{
+    $agora = $agora ?? time();
+    return array_map(function ($x) use ($agora) {
+        $ini = strtotime($x["inicio"]);
+        $fim = $x["fim"] === null ? null : strtotime($x["fim"]);
+        $teste = $x["tipo"] === "teste";
+        $horas = $teste && $fim !== null ? ($fim - $ini) / 3600 : null;
+        return ["id" => (int)$x["id"], "relogio_id" => (int)$x["relogio_id"], "relogio" => $x["relogio"], "tipo" => $x["tipo"],
+            "tipo_texto" => $teste ? t("Teste da reserva") : t(RESERVA_OBSERVACOES[$x["tipo"]] ?? $x["tipo"]),
+            "inicio" => date("Y-m-d H:i:s", $ini), "fim" => $fim === null ? null : date("Y-m-d H:i:s", $fim),
+            "em_andamento" => $teste && $fim === null, "horas" => $horas === null ? null : round($horas, 2), "horas_texto" => reserva_horas_txt($horas),
+            "ate_agora" => $teste && $fim === null ? round(max(0, $agora - $ini) / 3600, 2) : null,
+            "protocolo" => $teste ? $x["protocolo"] : null, "protocolo_valor" => $x["protocolo_valor"] === null ? null : round((float)$x["protocolo_valor"], 2),
+            "protocolo_texto" => $teste ? reserva_protocolo_txt($x["protocolo"], $x["protocolo_valor"]) : null,
+            "observacao" => $x["observacao"] !== null && $x["observacao"] !== "" ? $x["observacao"] : null, "criado" => $x["criado"]];
+    }, linhas("SELECT x.*, r.nome AS relogio FROM reserva_teste x JOIN relogio r ON r.id = x.relogio_id" . ($relogio_id !== null ? " WHERE x.relogio_id = ?" : "")
+        . " ORDER BY x.inicio DESC, x.id DESC", $relogio_id !== null ? [(int)$relogio_id] : []));
+}
+
+// Os testes terminados de cada relógio, para as contas (lidos uma vez por requisição, de novo depois de uma gravação):
+// [relógio => [[fim em segundos, horas]]], do mais velho para o mais novo
+function reserva_das_contas()
+{
+    static $cache = [];
+    $chave = (int)colecao_atual() . "/" . ($GLOBALS["FORMULAS_VERSAO"] ?? 0);
+    if (!isset($cache[$chave])) {
+        $res = [];
+        foreach (linhas("SELECT relogio_id, inicio, fim FROM reserva_teste WHERE tipo = 'teste' AND fim IS NOT NULL ORDER BY fim, id") as $x) {
+            $res[(int)$x["relogio_id"]][] = [strtotime($x["fim"]), (strtotime($x["fim"]) - strtotime($x["inicio"])) / 3600];
+        }
+        $cache = [$chave => $res];
+    }
+    return $cache[$chave];
+}
+
+// A reserva medida de um relógio até $momento: quantos testes terminados, a mediana das horas (resiste a um teste errado),
+// a variação (um desvio padrão; null com um só), o último (quando terminou e quantas horas deu)
+function reserva_medida($rid, $momento)
+{
+    $ts = array_values(array_filter(reserva_das_contas()[(int)$rid] ?? [], function ($x) use ($momento) { return $x[0] <= $momento; }));
+    $n = count($ts);
+    if ($n === 0) {
+        return ["n" => 0, "mediana" => null, "dp" => null, "ultima" => null, "ultima_horas" => null];
+    }
+    $h = array_column($ts, 1);
+    sort($h);
+    $med = $n % 2 === 1 ? $h[intdiv($n, 2)] : ($h[$n / 2 - 1] + $h[$n / 2]) / 2;
+    $media = array_sum($h) / $n;
+    $dp = $n < 2 ? null : sqrt(array_sum(array_map(function ($x) use ($media) { return ($x - $media) ** 2; }, $h)) / $n);
+    return ["n" => $n, "mediana" => $med, "dp" => $dp, "ultima" => $ts[$n - 1][0], "ultima_horas" => $ts[$n - 1][1]];
+}
+
+// O valor nominal de um campo num relógio, sem o do próprio relógio: o do calibre dele, senão o padrão do campo (o do grupo);
+// [valor, origem (calibre, padrao ou vazio)]
+function valor_nominal($r, $ident)
+{
+    $cal = valores_do_calibre_do_relogio((int)$r["id"])[$ident] ?? "";
+    if ($cal !== "" && $cal !== null) {
+        return [$cal, "calibre"];
+    }
+    $c = campos_do_relogio($r)[$ident] ?? null;
+    return $c !== null && $c["padrao"] !== null && $c["padrao"] !== "" ? [$c["padrao"], "padrao"] : [null, "vazio"];
+}
+
+// A reserva de um relógio (o quadro Reserva do painel e recurso=reserva) até $agora: se ele faz o teste (o campo
+// reserva_horas vale para ele: o mecânico) e se registra as observações (o mecânico e o solar, com o campo reserva_dias);
+// o teste em andamento, os testes e as observações, a medida, o valor do cadastro do próprio relógio e se a medida pode ir
+// para ele ("Usar a medida"); os protocolos e os tipos de observação para os formulários
+function reserva_do_relogio($r, $agora)
+{
+    $campos = campos_do_relogio($r);
+    $testar = isset($campos["reserva_horas"]);
+    $observar = $testar || isset($campos["reserva_dias"]);
+    if (!$observar) {
+        return null;
+    }
+    $lista = reserva_lista((int)$r["id"], $agora);
+    $testes = array_values(array_filter($lista, function ($x) { return $x["tipo"] === "teste"; }));
+    $aberto = null;
+    foreach ($testes as $x) {
+        if ($x["em_andamento"]) {
+            $aberto = $x;
+            break;
+        }
+    }
+    $m = reserva_medida((int)$r["id"], $agora);
+    $proprio = valores_proprios((int)$r["id"])["reserva_horas"] ?? null;
+    $proprio = $proprio !== null && $proprio !== "" && is_numeric($proprio) ? (float)$proprio : null;
+    $usar = $testar && $m["mediana"] !== null ? (int)round($m["mediana"]) : null;
+    return ["testar" => $testar, "observar" => $observar, "aberto" => $aberto, "testes" => $testes,
+        "observacoes" => array_values(array_filter($lista, function ($x) { return $x["tipo"] !== "teste"; })),
+        "medida" => $m["n"] === 0 ? null : ["testes" => $m["n"], "horas" => round($m["mediana"], 2), "horas_texto" => reserva_horas_txt($m["mediana"]),
+            "variacao" => $m["dp"] === null ? null : round($m["dp"], 2), "ultimo" => date("Y-m-d H:i:s", $m["ultima"]), "ultimo_horas" => round($m["ultima_horas"], 2)],
+        "cadastro_relogio" => $testar ? $proprio : null, "usar_horas" => $usar !== null && ($proprio === null || abs($proprio - $usar) >= 0.5) ? $usar : null,
+        "protocolos" => array_map(function ($k) { return ["valor" => $k, "nome" => t(RESERVA_PROTOCOLOS[$k][0]), "unidade" => RESERVA_PROTOCOLOS[$k][1] === "voltas" ? t("voltas") : RESERVA_PROTOCOLOS[$k][1]]; },
+            array_keys(RESERVA_PROTOCOLOS)),
+        "tipos_observacao" => array_map(function ($k) { return ["valor" => $k, "nome" => t(RESERVA_OBSERVACOES[$k])]; }, array_keys(RESERVA_OBSERVACOES))];
+}
+
+// Declarado, medido e estimado: cada informação técnica do relógio numa tabelinha de três linhas (o que o fabricante ou o
+// cadastro diz, o último teste e a estimativa de agora) com a confiança da regra única. A marcha (com a precisão: $pr), a
+// reserva de marcha (o mecânico) e a de energia (o solar: só observações, sem calibrar) ($rs: reserva_do_relogio) e a
+// estanqueidade ($sr: servicos_resumo). Cada linha: {valor, texto, detalhe, origem, origem_texto, data}; sem valor, o
+// texto é null e o detalhe diz por quê
+function tecnico_do_relogio($r, $agora, $pr, $rs, $sr)
+{
+    $linha = function ($valor = null, $texto = null, $detalhe = null, $origem = null, $data = null) {
+        return ["valor" => $valor, "texto" => $texto, "detalhe" => $detalhe, "origem" => $origem, "origem_texto" => $origem === null ? null : origem_texto($origem), "data" => $data];
+    };
+    $campos = campos_do_relogio($r);
+    $res = [];
+    if ($pr !== null) {
+        $ints = $pr["intervalos"];
+        $ult = count($ints) > 0 ? $ints[0] : null;
+        $faixa = $pr["esperada"]["de"] !== null && $pr["esperada"]["ate"] !== null ? ($pr["esperada"]["ate"] - $pr["esperada"]["de"]) / 2 : null;
+        $tol = $faixa !== null && $faixa > 0 ? $faixa : 5.0;
+        $ultimo_ponto = count($pr["pontos"]) > 0 ? strtotime($pr["pontos"][count($pr["pontos"]) - 1]["inicio"]) : null;
+        // de onde vem a marcha esperada: a de (marcha_min), senão a até (marcha_max)
+        $o = $pr["esperada"]["de"] !== null ? origem_valor((int)$r["id"], "marcha_min", $pr["esperada"]["de"])
+            : ($pr["esperada"]["ate"] !== null ? origem_valor((int)$r["id"], "marcha_max", $pr["esperada"]["ate"]) : null);
+        $fmt = function ($x) { return t("{1} s/dia", [1 => decimal_txt($x, 1)]); };
+        $res[] = ["chave" => "marcha", "nome" => t("Marcha"), "unidade" => "s/dia",
+            "declarado" => $linha(null, $pr["esperada"]["texto"], $pr["esperada"]["texto"] === null ? t("não cadastrada (a marcha esperada, no relógio ou no calibre)") : null, $o),
+            "medido" => $ult === null ? $linha(null, null, count($pr["pontos"]) > 0 ? t("uma leitura só: leia de novo daqui a pelo menos um dia") : t("nenhuma leitura do desvio ainda"))
+                : $linha($ult["marcha"], $ult["marcha_texto"], t("em {1} dias, {2}", [1 => decimal_txt($ult["dias"], 1), 2 => $ult["posicao_texto"]])
+                    . ($pr["dentro"] === false ? t("; fora da marcha esperada") : ""), null, $ult["ate"]),
+            "estimado" => $pr["marcha"] === null ? $linha(null, null, t("sem medição"))
+                : $linha($pr["marcha"], $pr["marcha_texto"] . ($pr["marcha_dp_texto"] !== null ? " " . $pr["marcha_dp_texto"] : ""),
+                    $pr["medicoes"] === 1 ? t("a única medição") : t("a média de {1} medições, pesada pelo tempo", [1 => $pr["medicoes"]])),
+            "confianca" => confianca_medida("marcha", $pr["medicoes"], $ultimo_ponto, $agora, $pr["marcha_dp"], $tol, $fmt), "fora" => $pr["dentro"] === false];
+    }
+    if ($rs !== null && $rs["testar"]) {
+        [$nom, $o] = valor_nominal($r, "reserva_horas");
+        $m = $rs["medida"];
+        $ult = null;
+        foreach ($rs["testes"] as $x) {
+            if ($x["horas"] !== null) {
+                $ult = $x;
+                break;
+            }
+        }
+        $em_uso = valores_do_relogio((int)$r["id"])["reserva_horas"] ?? $nom;
+        $res[] = ["chave" => "reserva", "nome" => t("Reserva de marcha"), "unidade" => "h",
+            "declarado" => $linha(is_numeric($nom) ? (float)$nom : null, is_numeric($nom) ? reserva_horas_txt((float)$nom) : null,
+                $rs["cadastro_relogio"] !== null ? t("no cadastro deste relógio: {1} (é o que vale na conta)", [1 => reserva_horas_txt($rs["cadastro_relogio"])])
+                    : (is_numeric($nom) ? null : t("não cadastrada")), $o),
+            "medido" => $ult === null ? $linha(null, null, $rs["aberto"] !== null ? t("teste em andamento") : t("nenhum teste ainda: carregue até o fim e marque quando parar"))
+                : $linha($ult["horas"], $ult["horas_texto"], $ult["protocolo_texto"], null, $ult["fim"]),
+            "estimado" => $m === null ? $linha(is_numeric($em_uso) ? (float)$em_uso : null, is_numeric($em_uso) ? reserva_horas_txt((float)$em_uso) : null, t("sem teste: vale o cadastro"))
+                : $linha($m["horas"], $m["horas_texto"] . ($m["variacao"] !== null ? " ±" . reserva_horas_txt($m["variacao"]) : ""),
+                    $m["testes"] === 1 ? t("o único teste") : t("a mediana de {1} testes", [1 => $m["testes"]])),
+            "confianca" => $m === null ? null : confianca_medida("reserva", $m["testes"], strtotime($m["ultimo"]), $agora, $m["variacao"], max(1.0, $m["horas"] * 0.1), "reserva_horas_txt", true),
+            "fora" => false];
+    } elseif ($rs !== null && isset($campos["reserva_dias"])) {
+        [$nom, $o] = valor_nominal($r, "reserva_dias");
+        $obs = count($rs["observacoes"]) > 0 ? $rs["observacoes"][0] : null;
+        $res[] = ["chave" => "reserva_energia", "nome" => t("Reserva de energia"), "unidade" => "dias",
+            "declarado" => $linha(is_numeric($nom) ? (float)$nom : null, is_numeric($nom) ? t("{1} dias", [1 => decimal_txt((float)$nom, 1)]) : null, is_numeric($nom) ? null : t("não cadastrada"), $o),
+            "medido" => $obs === null ? $linha(null, null, t("só observações (parou, o indicador de carga baixa): nenhuma ainda"))
+                : $linha(null, $obs["tipo_texto"], $obs["observacao"] ?? t("a última observação"), null, $obs["inicio"]),
+            "estimado" => $linha(null, null, t("não calculada: a recarga depende da luz, que o sistema não mede; um número aqui seria falsa precisão")),
+            "confianca" => null, "fora" => false];
+    }
+    if (isset($campos["resistencia_agua_declarada"]) || ($sr !== null && $sr["estanqueidade"] !== null)) {
+        $nom = valores_do_relogio((int)$r["id"])["resistencia_agua_declarada"] ?? null;
+        $nom = $nom !== null && $nom !== "" && is_numeric($nom) ? $nom : null;
+        $o = $nom !== null ? origem_valor((int)$r["id"], "resistencia_agua_declarada", $nom) : null;
+        $e = $sr !== null ? $sr["estanqueidade"] : null;
+        $n_e = $sr !== null ? $sr["testes_estanqueidade"] : 0;
+        $res[] = ["chave" => "estanqueidade", "nome" => t("Resistência à água"), "unidade" => "m",
+            "declarado" => $linha($nom !== null ? (float)$nom : null, $nom !== null ? t("{1} m", [1 => decimal_txt((float)$nom, 0)]) : null, $nom !== null ? t("do fabricante") : t("não cadastrada"), $o),
+            "medido" => $e === null ? $linha(null, null, t("nenhum teste de estanqueidade nos serviços"))
+                : $linha($e["bar"], $e["bar"] !== null ? t("{1} a {2} bar", [1 => $e["resultado_texto"], 2 => decimal_txt($e["bar"], 1)]) : $e["resultado_texto"], null, null, $e["data"]),
+            "estimado" => $e === null ? $linha(null, null, t("sem teste, a resistência declarada não comprova a vedação de agora"))
+                : $linha(null, $e["resultado"] === "aprovado" ? t("vedação comprovada no último teste") : t("vedação reprovada no último teste"),
+                    t("o teste de {1}", [1 => data_txt(strtotime($e["data"] . " 00:00:00"))])),
+            "confianca" => $e === null ? null : confianca_medida("estanqueidade", $n_e, strtotime($e["data"] . " 12:00:00"), $agora, null, null, null, true),
+            "fora" => $e !== null && $e["resultado"] === "reprovado"];
+    }
+    return $res;
 }
 
 // O destaque no alto da página Hoje (a Configuração): o relógio do dia (dia, o padrão) ou o que está no pulso agora (pulso)

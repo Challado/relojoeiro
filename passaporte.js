@@ -40,6 +40,14 @@ api({recurso: "passaporte", relogio: id}).then(function (d) {
         + (s.pecas.length > 0 ? el("small", {}, t("Peças: {1}", {1: s.pecas.map(function (p) { return h(p.nome); }).join(", ")})) : "")];
     })));
   }
+  // declarado, medido e estimado: cada informação técnica (a marcha, a reserva, a estanqueidade) numa linha, com a confiança
+  if (d.tecnico.length > 0) {
+    var ou = function (x) { return x.texto !== null ? h(x.texto) : "—"; };
+    res += el("section", {}, el("h2", {}, t("Declarado, medido e estimado")) + linhas(d.tecnico.map(function (x) {
+      return [h(x.nome), t("declarado: {1} · último teste: {2} · estimativa: {3}", {1: ou(x.declarado), 2: ou(x.medido), 3: ou(x.estimado)})
+        + (x.confianca ? el("small", {}, h(x.confianca.resumo)) : "")];
+    })));
+  }
   res += el("div", {"class": "grade-impressa"},
     el("section", {}, el("h2", {}, t("Acessórios")) + (d.acessorios.length === 0 ? el("p", {"class": "nota"}, t("Nenhum."))
       : linhas(d.acessorios.map(function (a) { return [h(a.tipo_texto), h(a.nome) + (a.observacao !== null ? el("small", {}, h(a.observacao)) : "")]; }))))

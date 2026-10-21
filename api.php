@@ -1056,6 +1056,25 @@
  *     servicos[].marcacao            true se o serviço virou também a marcação do tipo de lançamento de mesmo nome (a revisão e a troca de
  *                                    pilha)
  *     servicos[].criado              quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     reserva                        os testes da reserva e as observações da energia de todos os relógios (como em recurso=reserva)
+ *     reserva[]                      um registro
+ *     reserva[].id                   o número do teste ou da observação (o id da gravação)
+ *     reserva[].relogio_id           o relógio
+ *     reserva[].relogio              o nome do relógio
+ *     reserva[].tipo                 teste (o teste da reserva), parou, carga_baixa (o indicador de carga baixa) ou nota (outra observação)
+ *     reserva[].tipo_texto           o tipo por extenso
+ *     reserva[].inicio               no teste, quando ele ficou cheio; na observação, quando foi (texto AAAA-MM-DD HH:MM:SS, no fuso do
+ *                                    pedido)
+ *     reserva[].fim                  no teste, quando ele parou; null: em andamento (e nas observações)
+ *     reserva[].em_andamento         true no teste ainda sem o fim
+ *     reserva[].horas                a reserva medida no teste: as horas de cheio até parado; null em andamento e nas observações
+ *     reserva[].horas_texto          as horas prontas ("41,5 h"); null
+ *     reserva[].ate_agora            no teste em andamento, as horas desde que ficou cheio até agora; null nos outros
+ *     reserva[].protocolo            como ele ficou cheio: corda (pela coroa), winder, pulso ou outro; null nas observações
+ *     reserva[].protocolo_valor      as voltas da coroa, ou as horas no winder ou no pulso; null: não informado
+ *     reserva[].protocolo_texto      como ficou cheio, por extenso ("cheio com 40 voltas da coroa"); null nas observações
+ *     reserva[].observacao           a observação; null: sem
+ *     reserva[].criado               quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[]                     os relógios, com tudo o que se sabe de cada um
  *     relogios[].acaba_em_datacomtz  quando acaba, em ISO 8601 com o fuso (texto, ex.: 2026-10-02T18:40:00-03:00); null com o motivo
  *     relogios[].acaba_em_segundos   quantos segundos faltam para acabar, a partir de calculado_em_unixtimestamp (número inteiro, em
@@ -2008,6 +2027,8 @@
  *                                    a pressão do teste, em bar; null
  *     relogio.servicos_resumo.estanqueidade.servico_id
  *                                    o serviço do teste
+ *     relogio.servicos_resumo.testes_estanqueidade
+ *                                    quantos serviços tiveram o teste de estanqueidade
  *     relogio.servico_tipos          os tipos de serviço, na ordem
  *     relogio.servico_tipos[]        um tipo
  *     relogio.servico_tipos[].valor  o tipo (o tipo da gravação)
@@ -2019,6 +2040,207 @@
  *                                    o número do documento
  *     relogio.servico_documentos[].titulo
  *                                    o título
+ *     relogio.reserva                a reserva medida (o quadro Reserva medida, ou Reserva de energia no solar); null: sem reserva no
+ *                                    cadastro (o smartwatch, o de pilha)
+ *     relogio.reserva.testar         true se o relógio faz o teste da reserva de marcha (o campo reserva_horas vale para ele: o mecânico)
+ *     relogio.reserva.observar       true se registra as observações da energia (o mecânico e o solar, com o campo reserva_dias)
+ *     relogio.reserva.aberto         o teste em andamento (como em testes[]); null: nenhum
+ *     relogio.reserva.aberto.id      o número do teste ou da observação (o id da gravação)
+ *     relogio.reserva.aberto.relogio_id
+ *                                    o relógio
+ *     relogio.reserva.aberto.relogio o nome do relógio
+ *     relogio.reserva.aberto.tipo    teste (o teste da reserva), parou, carga_baixa (o indicador de carga baixa) ou nota (outra observação)
+ *     relogio.reserva.aberto.tipo_texto
+ *                                    o tipo por extenso
+ *     relogio.reserva.aberto.inicio  no teste, quando ele ficou cheio; na observação, quando foi (texto AAAA-MM-DD HH:MM:SS, no fuso do
+ *                                    pedido)
+ *     relogio.reserva.aberto.fim     no teste, quando ele parou; null: em andamento (e nas observações)
+ *     relogio.reserva.aberto.em_andamento
+ *                                    true no teste ainda sem o fim
+ *     relogio.reserva.aberto.horas   a reserva medida no teste: as horas de cheio até parado; null em andamento e nas observações
+ *     relogio.reserva.aberto.horas_texto
+ *                                    as horas prontas ("41,5 h"); null
+ *     relogio.reserva.aberto.ate_agora
+ *                                    no teste em andamento, as horas desde que ficou cheio até agora; null nos outros
+ *     relogio.reserva.aberto.protocolo
+ *                                    como ele ficou cheio: corda (pela coroa), winder, pulso ou outro; null nas observações
+ *     relogio.reserva.aberto.protocolo_valor
+ *                                    as voltas da coroa, ou as horas no winder ou no pulso; null: não informado
+ *     relogio.reserva.aberto.protocolo_texto
+ *                                    como ficou cheio, por extenso ("cheio com 40 voltas da coroa"); null nas observações
+ *     relogio.reserva.aberto.observacao
+ *                                    a observação; null: sem
+ *     relogio.reserva.aberto.criado  quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     relogio.reserva.testes         os testes da reserva, do mais novo para o mais velho
+ *     relogio.reserva.testes[]       um registro
+ *     relogio.reserva.testes[].id    o número do teste ou da observação (o id da gravação)
+ *     relogio.reserva.testes[].relogio_id
+ *                                    o relógio
+ *     relogio.reserva.testes[].relogio
+ *                                    o nome do relógio
+ *     relogio.reserva.testes[].tipo  teste (o teste da reserva), parou, carga_baixa (o indicador de carga baixa) ou nota (outra observação)
+ *     relogio.reserva.testes[].tipo_texto
+ *                                    o tipo por extenso
+ *     relogio.reserva.testes[].inicio
+ *                                    no teste, quando ele ficou cheio; na observação, quando foi (texto AAAA-MM-DD HH:MM:SS, no fuso do
+ *                                    pedido)
+ *     relogio.reserva.testes[].fim   no teste, quando ele parou; null: em andamento (e nas observações)
+ *     relogio.reserva.testes[].em_andamento
+ *                                    true no teste ainda sem o fim
+ *     relogio.reserva.testes[].horas a reserva medida no teste: as horas de cheio até parado; null em andamento e nas observações
+ *     relogio.reserva.testes[].horas_texto
+ *                                    as horas prontas ("41,5 h"); null
+ *     relogio.reserva.testes[].ate_agora
+ *                                    no teste em andamento, as horas desde que ficou cheio até agora; null nos outros
+ *     relogio.reserva.testes[].protocolo
+ *                                    como ele ficou cheio: corda (pela coroa), winder, pulso ou outro; null nas observações
+ *     relogio.reserva.testes[].protocolo_valor
+ *                                    as voltas da coroa, ou as horas no winder ou no pulso; null: não informado
+ *     relogio.reserva.testes[].protocolo_texto
+ *                                    como ficou cheio, por extenso ("cheio com 40 voltas da coroa"); null nas observações
+ *     relogio.reserva.testes[].observacao
+ *                                    a observação; null: sem
+ *     relogio.reserva.testes[].criado
+ *                                    quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     relogio.reserva.observacoes    as observações da energia (parou, carga baixa, outra), da mais nova para a mais velha
+ *     relogio.reserva.observacoes[]  um registro
+ *     relogio.reserva.observacoes[].id
+ *                                    o número do teste ou da observação (o id da gravação)
+ *     relogio.reserva.observacoes[].relogio_id
+ *                                    o relógio
+ *     relogio.reserva.observacoes[].relogio
+ *                                    o nome do relógio
+ *     relogio.reserva.observacoes[].tipo
+ *                                    teste (o teste da reserva), parou, carga_baixa (o indicador de carga baixa) ou nota (outra observação)
+ *     relogio.reserva.observacoes[].tipo_texto
+ *                                    o tipo por extenso
+ *     relogio.reserva.observacoes[].inicio
+ *                                    no teste, quando ele ficou cheio; na observação, quando foi (texto AAAA-MM-DD HH:MM:SS, no fuso do
+ *                                    pedido)
+ *     relogio.reserva.observacoes[].fim
+ *                                    no teste, quando ele parou; null: em andamento (e nas observações)
+ *     relogio.reserva.observacoes[].em_andamento
+ *                                    true no teste ainda sem o fim
+ *     relogio.reserva.observacoes[].horas
+ *                                    a reserva medida no teste: as horas de cheio até parado; null em andamento e nas observações
+ *     relogio.reserva.observacoes[].horas_texto
+ *                                    as horas prontas ("41,5 h"); null
+ *     relogio.reserva.observacoes[].ate_agora
+ *                                    no teste em andamento, as horas desde que ficou cheio até agora; null nos outros
+ *     relogio.reserva.observacoes[].protocolo
+ *                                    como ele ficou cheio: corda (pela coroa), winder, pulso ou outro; null nas observações
+ *     relogio.reserva.observacoes[].protocolo_valor
+ *                                    as voltas da coroa, ou as horas no winder ou no pulso; null: não informado
+ *     relogio.reserva.observacoes[].protocolo_texto
+ *                                    como ficou cheio, por extenso ("cheio com 40 voltas da coroa"); null nas observações
+ *     relogio.reserva.observacoes[].observacao
+ *                                    a observação; null: sem
+ *     relogio.reserva.observacoes[].criado
+ *                                    quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     relogio.reserva.medida         a reserva medida: a mediana dos testes terminados; null: nenhum
+ *     relogio.reserva.medida.testes  quantos testes terminados
+ *     relogio.reserva.medida.horas   a mediana das horas de cheio até parado (resiste a um teste errado)
+ *     relogio.reserva.medida.horas_texto
+ *                                    a mediana pronta
+ *     relogio.reserva.medida.variacao
+ *                                    quanto os testes variam: um desvio padrão, em horas; null com um só
+ *     relogio.reserva.medida.ultimo  quando o último teste terminou (texto AAAA-MM-DD HH:MM:SS)
+ *     relogio.reserva.medida.ultimo_horas
+ *                                    as horas do último teste
+ *     relogio.reserva.cadastro_relogio
+ *                                    a reserva de marcha no cadastro do próprio relógio, em horas (a que vale na conta, acima do calibre e
+ *                                    do grupo); null: ele não tem
+ *     relogio.reserva.usar_horas     o que "Usar a medida" (escrita reserva, acao=usar) gravaria no cadastro dele: a mediana em horas
+ *                                    inteiras; null: sem medida, ou o cadastro já tem esse valor
+ *     relogio.reserva.protocolos     os protocolos do teste, na ordem
+ *     relogio.reserva.protocolos[]   um protocolo
+ *     relogio.reserva.protocolos[].valor
+ *                                    corda, winder, pulso ou outro
+ *     relogio.reserva.protocolos[].nome
+ *                                    o nome por extenso
+ *     relogio.reserva.protocolos[].unidade
+ *                                    o que o número diz (voltas, h); vazio: nada
+ *     relogio.reserva.tipos_observacao
+ *                                    os tipos das observações, na ordem
+ *     relogio.reserva.tipos_observacao[]
+ *                                    um tipo
+ *     relogio.reserva.tipos_observacao[].valor
+ *                                    parou, carga_baixa ou nota
+ *     relogio.reserva.tipos_observacao[].nome
+ *                                    o nome por extenso
+ *     relogio.tecnico                declarado, medido e estimado: cada informação técnica numa tabelinha de três linhas, com a confiança
+ *                                    (nos quadros Precisão, Reserva e Serviços e diagnósticos)
+ *     relogio.tecnico[]              uma informação
+ *     relogio.tecnico[].chave        marcha, reserva (de marcha, o mecânico), reserva_energia (o solar: só observações, sem calibrar) ou
+ *                                    estanqueidade
+ *     relogio.tecnico[].nome         o nome por extenso
+ *     relogio.tecnico[].unidade      a unidade (s/dia, h, dias, m)
+ *     relogio.tecnico[].declarado    o declarado: o que o fabricante, o calibre ou o cadastro diz (na reserva, sem o valor do próprio
+ *                                    relógio, que vai no detalhe)
+ *     relogio.tecnico[].declarado.valor
+ *                                    o número, na unidade da informação; null: não há (ou é uma faixa, como a marcha esperada)
+ *     relogio.tecnico[].declarado.texto
+ *                                    o valor pronto; null: não há
+ *     relogio.tecnico[].declarado.detalhe
+ *                                    de onde vem, ou por que não há ("a mediana de 3 testes", "nenhum teste ainda"); null
+ *     relogio.tecnico[].declarado.origem
+ *                                    de onde vem o declarado: informado (o cadastro do relógio), calibre ou padrao (o do grupo); null nas
+ *                                    outras linhas
+ *     relogio.tecnico[].declarado.origem_texto
+ *                                    a origem por extenso; null
+ *     relogio.tecnico[].declarado.data
+ *                                    a data do último teste (texto AAAA-MM-DD ou AAAA-MM-DD HH:MM:SS); null
+ *     relogio.tecnico[].medido       o último teste: a última marcha medida, o último teste da reserva, a última observação da energia, o
+ *                                    último teste de estanqueidade
+ *     relogio.tecnico[].medido.valor o número, na unidade da informação; null: não há (ou é uma faixa, como a marcha esperada)
+ *     relogio.tecnico[].medido.texto o valor pronto; null: não há
+ *     relogio.tecnico[].medido.detalhe
+ *                                    de onde vem, ou por que não há ("a mediana de 3 testes", "nenhum teste ainda"); null
+ *     relogio.tecnico[].medido.origem
+ *                                    de onde vem o declarado: informado (o cadastro do relógio), calibre ou padrao (o do grupo); null nas
+ *                                    outras linhas
+ *     relogio.tecnico[].medido.origem_texto
+ *                                    a origem por extenso; null
+ *     relogio.tecnico[].medido.data  a data do último teste (texto AAAA-MM-DD ou AAAA-MM-DD HH:MM:SS); null
+ *     relogio.tecnico[].estimado     a estimativa de agora: a média pesada das marchas, a mediana dos testes da reserva (sem teste: o
+ *                                    cadastro), a vedação pelo último teste; no solar, não calculada
+ *     relogio.tecnico[].estimado.valor
+ *                                    o número, na unidade da informação; null: não há (ou é uma faixa, como a marcha esperada)
+ *     relogio.tecnico[].estimado.texto
+ *                                    o valor pronto; null: não há
+ *     relogio.tecnico[].estimado.detalhe
+ *                                    de onde vem, ou por que não há ("a mediana de 3 testes", "nenhum teste ainda"); null
+ *     relogio.tecnico[].estimado.origem
+ *                                    de onde vem o declarado: informado (o cadastro do relógio), calibre ou padrao (o do grupo); null nas
+ *                                    outras linhas
+ *     relogio.tecnico[].estimado.origem_texto
+ *                                    a origem por extenso; null
+ *     relogio.tecnico[].estimado.data
+ *                                    a data do último teste (texto AAAA-MM-DD ou AAAA-MM-DD HH:MM:SS); null
+ *     relogio.tecnico[].confianca    a confiança, pela regra única (quantas medições, a idade da última, quanto variam); null: nenhuma
+ *                                    medição
+ *     relogio.tecnico[].confianca.nivel
+ *                                    alta, media ou baixa
+ *     relogio.tecnico[].confianca.nivel_texto
+ *                                    o nível por extenso
+ *     relogio.tecnico[].confianca.medicoes
+ *                                    quantas medições (ou testes)
+ *     relogio.tecnico[].confianca.idade_dias
+ *                                    há quantos dias foi a última
+ *     relogio.tecnico[].confianca.variacao
+ *                                    quanto elas variam: um desvio padrão, na unidade; null com uma só ou quando não se aplica
+ *     relogio.tecnico[].confianca.tolerancia
+ *                                    até quanto a variação ainda dá confiança alta (a marcha: a metade da faixa esperada, senão 5 s/dia; a
+ *                                    reserva: 10% da medida, no mínimo 1 h); null: não se aplica
+ *     relogio.tecnico[].confianca.texto
+ *                                    o resumo das medições ("3 testes, o último há 12 dias, variação de ±1,1 h")
+ *     relogio.tecnico[].confianca.motivos
+ *                                    por que não é alta (menos medições que o mínimo, a última velha, variação grande); vazia na alta
+ *     relogio.tecnico[].confianca.motivos[]
+ *                                    um motivo, por extenso
+ *     relogio.tecnico[].confianca.resumo
+ *                                    a frase inteira, pronta para a tela
+ *     relogio.tecnico[].fora         true se o último teste ficou fora do esperado (a marcha fora da faixa, a estanqueidade reprovada)
  *     relogio.desejo                 o que a lista de desejos mostra (o quadro Desejo do painel): só no desejado; null nos outros
  *     relogio.desejo.link            o link da página do relógio (o campo link; null)
  *     relogio.desejo.marca           a marca (o campo marca; null)
@@ -3482,10 +3704,177 @@
  *     resumo.estanqueidade.bar       a pressão do teste, em bar; null
  *     resumo.estanqueidade.servico_id
  *                                    o serviço do teste
+ *     resumo.testes_estanqueidade    quantos serviços tiveram o teste de estanqueidade
  *     documentos                     com o relógio: os documentos dele que um serviço pode citar (o formulário); null: todos
  *     documentos[]                   um documento
  *     documentos[].id                o número do documento
  *     documentos[].titulo            o título
+ *   recurso=reserva
+ *     relogio                        o relógio pedido; null: todos
+ *     relogio.id                     o número
+ *     relogio.nome                   o nome
+ *     reserva                        com o relógio: a reserva medida dele (como na ficha); null sem o relógio, ou se ele não tem reserva no
+ *                                    cadastro
+ *     reserva.testar                 true se o relógio faz o teste da reserva de marcha (o campo reserva_horas vale para ele: o mecânico)
+ *     reserva.observar               true se registra as observações da energia (o mecânico e o solar, com o campo reserva_dias)
+ *     reserva.aberto                 o teste em andamento (como em testes[]); null: nenhum
+ *     reserva.aberto.id              o número do teste ou da observação (o id da gravação)
+ *     reserva.aberto.relogio_id      o relógio
+ *     reserva.aberto.relogio         o nome do relógio
+ *     reserva.aberto.tipo            teste (o teste da reserva), parou, carga_baixa (o indicador de carga baixa) ou nota (outra observação)
+ *     reserva.aberto.tipo_texto      o tipo por extenso
+ *     reserva.aberto.inicio          no teste, quando ele ficou cheio; na observação, quando foi (texto AAAA-MM-DD HH:MM:SS, no fuso do
+ *                                    pedido)
+ *     reserva.aberto.fim             no teste, quando ele parou; null: em andamento (e nas observações)
+ *     reserva.aberto.em_andamento    true no teste ainda sem o fim
+ *     reserva.aberto.horas           a reserva medida no teste: as horas de cheio até parado; null em andamento e nas observações
+ *     reserva.aberto.horas_texto     as horas prontas ("41,5 h"); null
+ *     reserva.aberto.ate_agora       no teste em andamento, as horas desde que ficou cheio até agora; null nos outros
+ *     reserva.aberto.protocolo       como ele ficou cheio: corda (pela coroa), winder, pulso ou outro; null nas observações
+ *     reserva.aberto.protocolo_valor as voltas da coroa, ou as horas no winder ou no pulso; null: não informado
+ *     reserva.aberto.protocolo_texto como ficou cheio, por extenso ("cheio com 40 voltas da coroa"); null nas observações
+ *     reserva.aberto.observacao      a observação; null: sem
+ *     reserva.aberto.criado          quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     reserva.testes                 os testes da reserva, do mais novo para o mais velho
+ *     reserva.testes[]               um registro
+ *     reserva.testes[].id            o número do teste ou da observação (o id da gravação)
+ *     reserva.testes[].relogio_id    o relógio
+ *     reserva.testes[].relogio       o nome do relógio
+ *     reserva.testes[].tipo          teste (o teste da reserva), parou, carga_baixa (o indicador de carga baixa) ou nota (outra observação)
+ *     reserva.testes[].tipo_texto    o tipo por extenso
+ *     reserva.testes[].inicio        no teste, quando ele ficou cheio; na observação, quando foi (texto AAAA-MM-DD HH:MM:SS, no fuso do
+ *                                    pedido)
+ *     reserva.testes[].fim           no teste, quando ele parou; null: em andamento (e nas observações)
+ *     reserva.testes[].em_andamento  true no teste ainda sem o fim
+ *     reserva.testes[].horas         a reserva medida no teste: as horas de cheio até parado; null em andamento e nas observações
+ *     reserva.testes[].horas_texto   as horas prontas ("41,5 h"); null
+ *     reserva.testes[].ate_agora     no teste em andamento, as horas desde que ficou cheio até agora; null nos outros
+ *     reserva.testes[].protocolo     como ele ficou cheio: corda (pela coroa), winder, pulso ou outro; null nas observações
+ *     reserva.testes[].protocolo_valor
+ *                                    as voltas da coroa, ou as horas no winder ou no pulso; null: não informado
+ *     reserva.testes[].protocolo_texto
+ *                                    como ficou cheio, por extenso ("cheio com 40 voltas da coroa"); null nas observações
+ *     reserva.testes[].observacao    a observação; null: sem
+ *     reserva.testes[].criado        quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     reserva.observacoes            as observações da energia (parou, carga baixa, outra), da mais nova para a mais velha
+ *     reserva.observacoes[]          um registro
+ *     reserva.observacoes[].id       o número do teste ou da observação (o id da gravação)
+ *     reserva.observacoes[].relogio_id
+ *                                    o relógio
+ *     reserva.observacoes[].relogio  o nome do relógio
+ *     reserva.observacoes[].tipo     teste (o teste da reserva), parou, carga_baixa (o indicador de carga baixa) ou nota (outra observação)
+ *     reserva.observacoes[].tipo_texto
+ *                                    o tipo por extenso
+ *     reserva.observacoes[].inicio   no teste, quando ele ficou cheio; na observação, quando foi (texto AAAA-MM-DD HH:MM:SS, no fuso do
+ *                                    pedido)
+ *     reserva.observacoes[].fim      no teste, quando ele parou; null: em andamento (e nas observações)
+ *     reserva.observacoes[].em_andamento
+ *                                    true no teste ainda sem o fim
+ *     reserva.observacoes[].horas    a reserva medida no teste: as horas de cheio até parado; null em andamento e nas observações
+ *     reserva.observacoes[].horas_texto
+ *                                    as horas prontas ("41,5 h"); null
+ *     reserva.observacoes[].ate_agora
+ *                                    no teste em andamento, as horas desde que ficou cheio até agora; null nos outros
+ *     reserva.observacoes[].protocolo
+ *                                    como ele ficou cheio: corda (pela coroa), winder, pulso ou outro; null nas observações
+ *     reserva.observacoes[].protocolo_valor
+ *                                    as voltas da coroa, ou as horas no winder ou no pulso; null: não informado
+ *     reserva.observacoes[].protocolo_texto
+ *                                    como ficou cheio, por extenso ("cheio com 40 voltas da coroa"); null nas observações
+ *     reserva.observacoes[].observacao
+ *                                    a observação; null: sem
+ *     reserva.observacoes[].criado   quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     reserva.medida                 a reserva medida: a mediana dos testes terminados; null: nenhum
+ *     reserva.medida.testes          quantos testes terminados
+ *     reserva.medida.horas           a mediana das horas de cheio até parado (resiste a um teste errado)
+ *     reserva.medida.horas_texto     a mediana pronta
+ *     reserva.medida.variacao        quanto os testes variam: um desvio padrão, em horas; null com um só
+ *     reserva.medida.ultimo          quando o último teste terminou (texto AAAA-MM-DD HH:MM:SS)
+ *     reserva.medida.ultimo_horas    as horas do último teste
+ *     reserva.cadastro_relogio       a reserva de marcha no cadastro do próprio relógio, em horas (a que vale na conta, acima do calibre e
+ *                                    do grupo); null: ele não tem
+ *     reserva.usar_horas             o que "Usar a medida" (escrita reserva, acao=usar) gravaria no cadastro dele: a mediana em horas
+ *                                    inteiras; null: sem medida, ou o cadastro já tem esse valor
+ *     reserva.protocolos             os protocolos do teste, na ordem
+ *     reserva.protocolos[]           um protocolo
+ *     reserva.protocolos[].valor     corda, winder, pulso ou outro
+ *     reserva.protocolos[].nome      o nome por extenso
+ *     reserva.protocolos[].unidade   o que o número diz (voltas, h); vazio: nada
+ *     reserva.tipos_observacao       os tipos das observações, na ordem
+ *     reserva.tipos_observacao[]     um tipo
+ *     reserva.tipos_observacao[].valor
+ *                                    parou, carga_baixa ou nota
+ *     reserva.tipos_observacao[].nome
+ *                                    o nome por extenso
+ *     tecnico                        com o relógio: declarado, medido e estimado (como na ficha); null sem o relógio
+ *     tecnico[]                      uma informação
+ *     tecnico[].chave                marcha, reserva (de marcha, o mecânico), reserva_energia (o solar: só observações, sem calibrar) ou
+ *                                    estanqueidade
+ *     tecnico[].nome                 o nome por extenso
+ *     tecnico[].unidade              a unidade (s/dia, h, dias, m)
+ *     tecnico[].declarado            o declarado: o que o fabricante, o calibre ou o cadastro diz (na reserva, sem o valor do próprio
+ *                                    relógio, que vai no detalhe)
+ *     tecnico[].declarado.valor      o número, na unidade da informação; null: não há (ou é uma faixa, como a marcha esperada)
+ *     tecnico[].declarado.texto      o valor pronto; null: não há
+ *     tecnico[].declarado.detalhe    de onde vem, ou por que não há ("a mediana de 3 testes", "nenhum teste ainda"); null
+ *     tecnico[].declarado.origem     de onde vem o declarado: informado (o cadastro do relógio), calibre ou padrao (o do grupo); null nas
+ *                                    outras linhas
+ *     tecnico[].declarado.origem_texto
+ *                                    a origem por extenso; null
+ *     tecnico[].declarado.data       a data do último teste (texto AAAA-MM-DD ou AAAA-MM-DD HH:MM:SS); null
+ *     tecnico[].medido               o último teste: a última marcha medida, o último teste da reserva, a última observação da energia, o
+ *                                    último teste de estanqueidade
+ *     tecnico[].medido.valor         o número, na unidade da informação; null: não há (ou é uma faixa, como a marcha esperada)
+ *     tecnico[].medido.texto         o valor pronto; null: não há
+ *     tecnico[].medido.detalhe       de onde vem, ou por que não há ("a mediana de 3 testes", "nenhum teste ainda"); null
+ *     tecnico[].medido.origem        de onde vem o declarado: informado (o cadastro do relógio), calibre ou padrao (o do grupo); null nas
+ *                                    outras linhas
+ *     tecnico[].medido.origem_texto  a origem por extenso; null
+ *     tecnico[].medido.data          a data do último teste (texto AAAA-MM-DD ou AAAA-MM-DD HH:MM:SS); null
+ *     tecnico[].estimado             a estimativa de agora: a média pesada das marchas, a mediana dos testes da reserva (sem teste: o
+ *                                    cadastro), a vedação pelo último teste; no solar, não calculada
+ *     tecnico[].estimado.valor       o número, na unidade da informação; null: não há (ou é uma faixa, como a marcha esperada)
+ *     tecnico[].estimado.texto       o valor pronto; null: não há
+ *     tecnico[].estimado.detalhe     de onde vem, ou por que não há ("a mediana de 3 testes", "nenhum teste ainda"); null
+ *     tecnico[].estimado.origem      de onde vem o declarado: informado (o cadastro do relógio), calibre ou padrao (o do grupo); null nas
+ *                                    outras linhas
+ *     tecnico[].estimado.origem_texto
+ *                                    a origem por extenso; null
+ *     tecnico[].estimado.data        a data do último teste (texto AAAA-MM-DD ou AAAA-MM-DD HH:MM:SS); null
+ *     tecnico[].confianca            a confiança, pela regra única (quantas medições, a idade da última, quanto variam); null: nenhuma
+ *                                    medição
+ *     tecnico[].confianca.nivel      alta, media ou baixa
+ *     tecnico[].confianca.nivel_texto
+ *                                    o nível por extenso
+ *     tecnico[].confianca.medicoes   quantas medições (ou testes)
+ *     tecnico[].confianca.idade_dias há quantos dias foi a última
+ *     tecnico[].confianca.variacao   quanto elas variam: um desvio padrão, na unidade; null com uma só ou quando não se aplica
+ *     tecnico[].confianca.tolerancia até quanto a variação ainda dá confiança alta (a marcha: a metade da faixa esperada, senão 5 s/dia; a
+ *                                    reserva: 10% da medida, no mínimo 1 h); null: não se aplica
+ *     tecnico[].confianca.texto      o resumo das medições ("3 testes, o último há 12 dias, variação de ±1,1 h")
+ *     tecnico[].confianca.motivos    por que não é alta (menos medições que o mínimo, a última velha, variação grande); vazia na alta
+ *     tecnico[].confianca.motivos[]  um motivo, por extenso
+ *     tecnico[].confianca.resumo     a frase inteira, pronta para a tela
+ *     tecnico[].fora                 true se o último teste ficou fora do esperado (a marcha fora da faixa, a estanqueidade reprovada)
+ *     registros                      sem o relógio: os testes e as observações de todos os relógios, do mais novo para o mais velho
+ *     registros[]                    um registro
+ *     registros[].id                 o número do teste ou da observação (o id da gravação)
+ *     registros[].relogio_id         o relógio
+ *     registros[].relogio            o nome do relógio
+ *     registros[].tipo               teste (o teste da reserva), parou, carga_baixa (o indicador de carga baixa) ou nota (outra observação)
+ *     registros[].tipo_texto         o tipo por extenso
+ *     registros[].inicio             no teste, quando ele ficou cheio; na observação, quando foi (texto AAAA-MM-DD HH:MM:SS, no fuso do
+ *                                    pedido)
+ *     registros[].fim                no teste, quando ele parou; null: em andamento (e nas observações)
+ *     registros[].em_andamento       true no teste ainda sem o fim
+ *     registros[].horas              a reserva medida no teste: as horas de cheio até parado; null em andamento e nas observações
+ *     registros[].horas_texto        as horas prontas ("41,5 h"); null
+ *     registros[].ate_agora          no teste em andamento, as horas desde que ficou cheio até agora; null nos outros
+ *     registros[].protocolo          como ele ficou cheio: corda (pela coroa), winder, pulso ou outro; null nas observações
+ *     registros[].protocolo_valor    as voltas da coroa, ou as horas no winder ou no pulso; null: não informado
+ *     registros[].protocolo_texto    como ficou cheio, por extenso ("cheio com 40 voltas da coroa"); null nas observações
+ *     registros[].observacao         a observação; null: sem
+ *     registros[].criado             quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *   recurso=passaporte
  *     gerado_em                      quando foi gerado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio                        quem ele é
@@ -3617,6 +4006,77 @@
  *                                    true se o serviço virou também a marcação do tipo de lançamento de mesmo nome (a revisão e a troca de
  *                                    pilha)
  *     servicos_diagnosticos[].criado quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     tecnico                        declarado, medido e estimado (como na ficha)
+ *     tecnico[]                      uma informação
+ *     tecnico[].chave                marcha, reserva (de marcha, o mecânico), reserva_energia (o solar: só observações, sem calibrar) ou
+ *                                    estanqueidade
+ *     tecnico[].nome                 o nome por extenso
+ *     tecnico[].unidade              a unidade (s/dia, h, dias, m)
+ *     tecnico[].declarado            o declarado: o que o fabricante, o calibre ou o cadastro diz (na reserva, sem o valor do próprio
+ *                                    relógio, que vai no detalhe)
+ *     tecnico[].declarado.valor      o número, na unidade da informação; null: não há (ou é uma faixa, como a marcha esperada)
+ *     tecnico[].declarado.texto      o valor pronto; null: não há
+ *     tecnico[].declarado.detalhe    de onde vem, ou por que não há ("a mediana de 3 testes", "nenhum teste ainda"); null
+ *     tecnico[].declarado.origem     de onde vem o declarado: informado (o cadastro do relógio), calibre ou padrao (o do grupo); null nas
+ *                                    outras linhas
+ *     tecnico[].declarado.origem_texto
+ *                                    a origem por extenso; null
+ *     tecnico[].declarado.data       a data do último teste (texto AAAA-MM-DD ou AAAA-MM-DD HH:MM:SS); null
+ *     tecnico[].medido               o último teste: a última marcha medida, o último teste da reserva, a última observação da energia, o
+ *                                    último teste de estanqueidade
+ *     tecnico[].medido.valor         o número, na unidade da informação; null: não há (ou é uma faixa, como a marcha esperada)
+ *     tecnico[].medido.texto         o valor pronto; null: não há
+ *     tecnico[].medido.detalhe       de onde vem, ou por que não há ("a mediana de 3 testes", "nenhum teste ainda"); null
+ *     tecnico[].medido.origem        de onde vem o declarado: informado (o cadastro do relógio), calibre ou padrao (o do grupo); null nas
+ *                                    outras linhas
+ *     tecnico[].medido.origem_texto  a origem por extenso; null
+ *     tecnico[].medido.data          a data do último teste (texto AAAA-MM-DD ou AAAA-MM-DD HH:MM:SS); null
+ *     tecnico[].estimado             a estimativa de agora: a média pesada das marchas, a mediana dos testes da reserva (sem teste: o
+ *                                    cadastro), a vedação pelo último teste; no solar, não calculada
+ *     tecnico[].estimado.valor       o número, na unidade da informação; null: não há (ou é uma faixa, como a marcha esperada)
+ *     tecnico[].estimado.texto       o valor pronto; null: não há
+ *     tecnico[].estimado.detalhe     de onde vem, ou por que não há ("a mediana de 3 testes", "nenhum teste ainda"); null
+ *     tecnico[].estimado.origem      de onde vem o declarado: informado (o cadastro do relógio), calibre ou padrao (o do grupo); null nas
+ *                                    outras linhas
+ *     tecnico[].estimado.origem_texto
+ *                                    a origem por extenso; null
+ *     tecnico[].estimado.data        a data do último teste (texto AAAA-MM-DD ou AAAA-MM-DD HH:MM:SS); null
+ *     tecnico[].confianca            a confiança, pela regra única (quantas medições, a idade da última, quanto variam); null: nenhuma
+ *                                    medição
+ *     tecnico[].confianca.nivel      alta, media ou baixa
+ *     tecnico[].confianca.nivel_texto
+ *                                    o nível por extenso
+ *     tecnico[].confianca.medicoes   quantas medições (ou testes)
+ *     tecnico[].confianca.idade_dias há quantos dias foi a última
+ *     tecnico[].confianca.variacao   quanto elas variam: um desvio padrão, na unidade; null com uma só ou quando não se aplica
+ *     tecnico[].confianca.tolerancia até quanto a variação ainda dá confiança alta (a marcha: a metade da faixa esperada, senão 5 s/dia; a
+ *                                    reserva: 10% da medida, no mínimo 1 h); null: não se aplica
+ *     tecnico[].confianca.texto      o resumo das medições ("3 testes, o último há 12 dias, variação de ±1,1 h")
+ *     tecnico[].confianca.motivos    por que não é alta (menos medições que o mínimo, a última velha, variação grande); vazia na alta
+ *     tecnico[].confianca.motivos[]  um motivo, por extenso
+ *     tecnico[].confianca.resumo     a frase inteira, pronta para a tela
+ *     tecnico[].fora                 true se o último teste ficou fora do esperado (a marcha fora da faixa, a estanqueidade reprovada)
+ *     reserva_testes                 os testes da reserva (como em recurso=reserva)
+ *     reserva_testes[]               um registro
+ *     reserva_testes[].id            o número do teste ou da observação (o id da gravação)
+ *     reserva_testes[].relogio_id    o relógio
+ *     reserva_testes[].relogio       o nome do relógio
+ *     reserva_testes[].tipo          teste (o teste da reserva), parou, carga_baixa (o indicador de carga baixa) ou nota (outra observação)
+ *     reserva_testes[].tipo_texto    o tipo por extenso
+ *     reserva_testes[].inicio        no teste, quando ele ficou cheio; na observação, quando foi (texto AAAA-MM-DD HH:MM:SS, no fuso do
+ *                                    pedido)
+ *     reserva_testes[].fim           no teste, quando ele parou; null: em andamento (e nas observações)
+ *     reserva_testes[].em_andamento  true no teste ainda sem o fim
+ *     reserva_testes[].horas         a reserva medida no teste: as horas de cheio até parado; null em andamento e nas observações
+ *     reserva_testes[].horas_texto   as horas prontas ("41,5 h"); null
+ *     reserva_testes[].ate_agora     no teste em andamento, as horas desde que ficou cheio até agora; null nos outros
+ *     reserva_testes[].protocolo     como ele ficou cheio: corda (pela coroa), winder, pulso ou outro; null nas observações
+ *     reserva_testes[].protocolo_valor
+ *                                    as voltas da coroa, ou as horas no winder ou no pulso; null: não informado
+ *     reserva_testes[].protocolo_texto
+ *                                    como ficou cheio, por extenso ("cheio com 40 voltas da coroa"); null nas observações
+ *     reserva_testes[].observacao    a observação; null: sem
+ *     reserva_testes[].criado        quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     documentos[]                   os documentos dele, por categoria e data
  *     documentos[].id                o número do documento
  *     documentos[].categoria         o nome da categoria
@@ -4863,6 +5323,8 @@ if ($recurso === "textos") {
     require __DIR__ . "/api/calibres.php";
 } elseif ($recurso === "servicos") {
     require __DIR__ . "/api/servicos.php";
+} elseif ($recurso === "reserva") {
+    require __DIR__ . "/api/reserva.php";
 } elseif ($recurso === "roteiro") {
     // o teste de um roteiro (ou do roteiro de um modo) num dia: cada relógio com as linhas calculadas, e quem sairia
     $texto = (string)($_REQUEST["roteiro"] ?? "");

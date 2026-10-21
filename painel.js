@@ -215,6 +215,24 @@ function abrirNoPainel(id) {
       }
       var ultima = r.leituras.length > 0 ? r.leituras[r.leituras.length - 1] : null;
       var nada = function (motivo) { return el("span", {"class": "nota"}, h(motivo || t("sem dados"))); };
+      // declarado, medido e estimado: uma informação técnica (r.tecnico) numa tabelinha de três linhas (o que o fabricante ou o
+      // cadastro diz, o último teste e a estimativa de agora), cada uma com o detalhe, a origem e a data; embaixo, a confiança
+      var tabelaTecnica = function (chave) {
+        var it = (r.tecnico || []).filter(function (x) { return x.chave === chave; })[0];
+        if (!it) {
+          return "";
+        }
+        var linha = function (rotulo, x, classe) {
+          return el("tr", {"class": (x.texto === null ? "vazio " : "") + (classe || "")}, el("th", {"scope": "row"}, rotulo)
+            + el("td", {}, (x.texto !== null ? el("strong", {}, h(x.texto)) : "—")
+              + (x.detalhe !== null || x.data !== null ? el("small", {}, (x.detalhe !== null ? h(x.detalhe) : "") + (x.detalhe !== null && x.data !== null ? " · " : "")
+                + (x.data !== null ? dataBr(x.data.substr(0, 10)) + (x.data.length > 10 ? " " + horaBr(x.data) : "") : "")) : ""))
+            + el("td", {"class": "origem-celula"}, x.origem_texto !== null ? el("span", {"class": "origem origem-" + x.origem}, h(x.origem_texto)) : ""));
+        };
+        return el("table", {"class": "tabela-dados tecnico", "data-tecnico": it.chave}, el("tbody", {}, linha(t("Declarado"), it.declarado)
+            + linha(t("Último teste"), it.medido, it.fora ? "fora" : "") + linha(t("Estimativa agora"), it.estimado)))
+          + (it.confianca ? el("p", {"class": "nota confianca confianca-" + it.confianca.nivel}, h(it.confianca.resumo)) : "");
+      };
       // Agora: o estado, a carga (com a barra) e o que o sistema sabe da situação
       var carga = r.carga !== null
         ? el("span", {"class": "carga-linha" + (r.carga <= 20 ? " baixa" : "")}, el("span", {"class": "barra"}, el("span", {"style": "width:" + Math.max(0, Math.min(100, r.carga)) + "%"}, ""))
@@ -282,6 +300,71 @@ function abrirNoPainel(id) {
           + " " + au.acaba_em_datacomtz.substr(11, 5)) + el("small", {}, t("em {1}", {1: duracao(au.acaba_em_segundos)})) : nada(au.motivos.autonomia_estimada)],
         [t("No pulso sem tirar"), dura(au.restante_em_uso, au.restante_em_uso === null && au.energia !== null ? t("não acaba (no pulso ele se recarrega)") : au.motivos.restante_em_uso)],
         [t("Guardado"), dura(au.restante_guardado, au.motivos.restante_guardado)]]));
+      // a reserva medida: no mecânico, o teste da reserva (cheio, por qual protocolo, até parar) e a mediana dos testes; no
+      // solar, só as observações (parou, o indicador de carga baixa), sem calibrar
+      var rs = r.reserva;
+      if (rs) {
+        var momentoCampo = function (nome, valor, obrigatorio) {
+          return el("input", {"type": "datetime-local", "name": nome, "value": valor ? valor.substr(0, 16).replace(" ", "T") : momentoNavegador(new Date()),
+            "max": momentoNavegador(new Date()), "data-agora": valor ? false : "vazio", "data-max-agora": true, "required": !!obrigatorio});
+        };
+        var formTeste = function (x) {
+          return el("form", {"data-recurso": "reserva", "class": "reserva-form"}, el("input", {"type": "hidden", "name": "acao", "value": x ? "salvar" : "iniciar"})
+            + (x ? el("input", {"type": "hidden", "name": "id", "value": x.id}) : el("input", {"type": "hidden", "name": "relogio_id", "value": id}))
+            + el("label", {}, t("Cheio em {1}", {1: momentoCampo("inicio", x ? x.inicio : null)}))
+            + (x ? el("label", {}, t("Parou em {1}", {1: el("input", {"type": "datetime-local", "name": "fim", "value": x.fim ? x.fim.substr(0, 16).replace(" ", "T") : "",
+              "max": momentoNavegador(new Date()), "data-max-agora": true})})) : "")
+            + el("label", {}, t("Como encheu {1}", {1: el("select", {"name": "protocolo"}, rs.protocolos.map(function (p) {
+              return el("option", {"value": p.valor, "selected": (x ? x.protocolo : "corda") === p.valor}, h(p.nome) + (p.unidade !== "" ? " (" + h(p.unidade) + ")" : ""));
+            }).join(""))}))
+            + el("label", {}, t("Voltas ou horas {1}", {1: el("input", {"name": "protocolo_valor", "inputmode": "decimal", "value": x && x.protocolo_valor !== null ? String(x.protocolo_valor) : ""})}))
+            + el("label", {"class": "largo"}, t("Observação {1}", {1: el("input", {"name": "observacao", "maxlength": 500, "value": x && x.observacao !== null ? x.observacao : ""})}))
+            + el("div", {"class": "botoes largo"}, el("button", {}, x ? t("Salvar o teste") : t("Começar o teste"))));
+        };
+        var formObs = function (x) {
+          return el("form", {"data-recurso": "reserva", "class": "reserva-form"}, el("input", {"type": "hidden", "name": "acao", "value": x ? "salvar" : "observar"})
+            + (x ? el("input", {"type": "hidden", "name": "id", "value": x.id}) : el("input", {"type": "hidden", "name": "relogio_id", "value": id}))
+            + el("label", {}, t("O que foi {1}", {1: el("select", {"name": "tipo"}, rs.tipos_observacao.map(function (o) {
+              return el("option", {"value": o.valor, "selected": (x ? x.tipo : "parou") === o.valor}, h(o.nome));
+            }).join(""))}))
+            + el("label", {}, t("Quando {1}", {1: momentoCampo("quando", x ? x.inicio : null)}))
+            + el("label", {"class": "largo"}, t("Observação {1}", {1: el("input", {"name": "observacao", "maxlength": 500, "value": x && x.observacao !== null ? x.observacao : ""})}))
+            + el("div", {"class": "botoes largo"}, el("button", {}, x ? t("Salvar a observação") : t("Registrar a observação"))));
+        };
+        var excluirReg = function (x, rotulo) {
+          return el("form", {"data-recurso": "reserva", "class": "excluir"}, el("input", {"type": "hidden", "name": "acao", "value": "excluir"}) + el("input", {"type": "hidden", "name": "id", "value": x.id})
+            + el("button", {"class": "leve discreto"}, rotulo));
+        };
+        var quando = function (x) { return dataBr(x.substr(0, 10)) + " " + horaBr(x); };
+        var corpoRs = tabelaTecnica(rs.testar ? "reserva" : "reserva_energia");
+        if (rs.aberto) {
+          corpoRs += el("p", {"class": "reserva-aberto"}, t("Em teste desde {1}, {2}: {3} até agora. Deixe ele parado, sem corda nem pulso.", {1: quando(rs.aberto.inicio), 2: h(rs.aberto.protocolo_texto),
+              3: t("{1} h", {1: num(rs.aberto.ate_agora, 1)})}))
+            + el("form", {"data-recurso": "reserva", "class": "reserva-parou"}, el("input", {"type": "hidden", "name": "acao", "value": "parou"}) + el("input", {"type": "hidden", "name": "id", "value": rs.aberto.id})
+              + el("label", {}, t("Parou em {1}", {1: momentoCampo("fim", null)})) + el("button", {}, t("Parou")));
+        }
+        if (rs.usar_horas !== null) {
+          corpoRs += el("form", {"data-recurso": "reserva", "class": "reserva-usar", "onsubmit": "return confirm(" + JSON.stringify(t("Gravar {1} h como a reserva de marcha do cadastro deste relógio? O calibre e o grupo não mudam.", {1: rs.usar_horas})) + ")"},
+            el("input", {"type": "hidden", "name": "acao", "value": "usar"}) + el("input", {"type": "hidden", "name": "relogio_id", "value": id})
+            + el("button", {"class": "leve"}, t("Usar {1} h no cadastro deste relógio", {1: rs.usar_horas})));
+        }
+        corpoRs += rs.testes.map(function (x) {
+          return el("details", {"class": "reserva-registro"}, el("summary", {}, el("strong", {}, dataBr(x.inicio.substr(0, 10))) + " · "
+              + (x.em_andamento ? t("em andamento") : h(x.horas_texto)) + " · " + h(x.protocolo_texto))
+            + (x.observacao !== null ? el("p", {"class": "nota"}, h(x.observacao)) : "") + formTeste(x) + excluirReg(x, t("Excluir este teste")));
+        }).join("") + rs.observacoes.map(function (x) {
+          return el("details", {"class": "reserva-registro"}, el("summary", {}, el("strong", {}, dataBr(x.inicio.substr(0, 10))) + " · " + h(x.tipo_texto)
+              + (x.observacao !== null ? " · " + h(x.observacao) : ""))
+            + formObs(x) + excluirReg(x, t("Excluir esta observação")));
+        }).join("");
+        if (rs.testar && !rs.aberto) {
+          corpoRs += el("details", {"class": "reserva-novo"}, el("summary", {}, t("Começar um teste da reserva"))
+            + el("p", {"class": "nota"}, t("Encha até o fim (a corda pela coroa até travar, ou um tempo no winder ou no pulso), marque quando ficou cheio e deixe ele parado; quando ele parar, marque aqui. O tempo de cheio até parado é a reserva medida."))
+            + formTeste(null));
+        }
+        corpoRs += el("details", {"class": "reserva-novo"}, el("summary", {}, t("Registrar uma observação")) + formObs(null));
+        secoes.carga += quadro(rs.testar ? t("Reserva medida") : t("Reserva de energia"), corpoRs, "", "largo reserva-ficha");
+      }
       secoes.uso += quadro(t("Rodízio"), pares([
         [t("Nota"), r.nota !== null ? el("strong", {}, num(r.nota.nota, 1)) + " " + el("a", {"href": "criterios.php?relogio=" + id + "#r" + id, "target": "_blank", "rel": "noopener"}, t("ver a conta")) : nada(t("fora do rodízio"))],
         [t("Critérios de"), r.nota !== null ? h(r.nota.conjunto_texto) : "—"],
@@ -292,12 +375,8 @@ function abrirNoPainel(id) {
       // esperada; a última fora da esperada em âmbar
       var pr = r.precisao;
       if (pr) {
-        secoes.precisao += quadro(t("Precisão"), el("p", {"class": "nota"}, h(pr.resumo)) + (pr.medicoes > 0 ? pares([
-          [t("Marcha"), el("strong", {}, h(pr.marcha_texto)) + (pr.marcha_dp_texto ? el("small", {}, t("variam {1}", {1: h(pr.marcha_dp_texto)})) : "")],
-          [t("Última medição"), el("span", {"class": pr.dentro === false ? "em atrasado" : ""}, h(pr.ultima_texto)) + (pr.dentro === false ? el("small", {}, t("fora da marcha esperada")) : "")],
-          [t("Desvio estimado agora"), h(pr.desvio_agora_texto)],
-          [t("Marcha esperada"), pr.esperada.texto ? h(pr.esperada.texto) : nada(t("não cadastrada"))]])
-          : (pr.pontos.length > 0 ? pares([[t("Desvio estimado agora"), h(pr.desvio_agora_texto)]]) : "")));
+        secoes.precisao += quadro(t("Precisão"), el("p", {"class": "nota"}, h(pr.resumo)) + tabelaTecnica("marcha")
+          + (pr.pontos.length > 0 ? pares([[t("Desvio estimado agora"), h(pr.desvio_agora_texto)]]) : ""));
       }
       var c = r.compra;
       secoes.cadastro += quadro(t("Compra"), c.data === null && c.valor === null && c.loja === null && c.garantia_ate === null
@@ -373,11 +452,7 @@ function abrirNoPainel(id) {
             + el("form", {"data-recurso": "servicos", "class": "excluir"}, el("input", {"type": "hidden", "name": "acao", "value": "excluir"}) + el("input", {"type": "hidden", "name": "id", "value": s.id})
               + el("button", {"class": "leve discreto"}, t("Excluir este serviço")))));
       };
-      var est = sr.estanqueidade;
-      secoes.cadastro += quadro(t("Serviços e diagnósticos"), pares([
-        [t("Resistência à água"), sr.resistencia_declarada !== null ? t("{1} m declarada", {1: sr.resistencia_declarada}) + el("small", {}, t("do fabricante (o cadastro): não garante a vedação de hoje")) : nada(t("não informada no cadastro"))],
-        [t("Estanqueidade"), est !== null ? el("span", {"class": est.resultado === "reprovado" ? "em atrasado" : ""}, t("{1} em {2}", {1: h(est.resultado_texto), 2: dataBr(est.data)}))
-          + (est.bar !== null ? " " + t("a {1} bar", {1: num(est.bar, 1)}) : "") + el("small", {}, t("há {1}{2}, o último teste", {1: est.ha_dias, 2: est.ha_dias === 1 ? t(" dia") : t(" dias")})) : nada(t("nunca testada aqui"))],
+      secoes.cadastro += quadro(t("Serviços e diagnósticos"), tabelaTecnica("estanqueidade") + pares([
         [t("Serviços"), sr.quantos === 0 ? nada(t("nenhum registrado")) : sr.quantos + (sr.quantos === 1 ? t(" serviço") : t(" serviços"))
           + (sr.ultimo !== null ? el("small", {}, t("o último: {1} em {2}", {1: h(sr.ultimo.tipo_texto.toLowerCase()), 2: dataBr(sr.ultimo.data)})) : "")],
         [t("Custo somado"), sr.custo !== null ? el("strong", {}, t("R$ ") + reais(sr.custo)) : nada("—")]])

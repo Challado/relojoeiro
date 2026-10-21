@@ -690,6 +690,47 @@ ler("servicos de todos", ["recurso" => "servicos"]);
 ler("ficha com os servicos", ["recurso" => "ficha", "relogio" => $rel["auto"]]);
 ler("passaporte com os servicos", ["recurso" => "passaporte", "relogio" => $rel["auto"]]);
 
+// a reserva medida (v36): três testes da reserva do corda manual (cheio pela coroa e no winder) e as recusas (um segundo teste
+// em andamento, parar antes de encher, encher no futuro, o teste no solar, a observação noutro tipo que não tem reserva, a
+// nota sem texto); a mediana, a confiança e o "usar a medida" no cadastro dele; RESERVA_MEDIDA e RESERVA_TESTES; as
+// observações (do solar e do mecânico); mudar um teste; e a exclusão em dois passos
+$rt1 = escrever(["recurso" => "reserva", "acao" => "iniciar", "relogio_id" => $rel["manual"], "inicio" => dia(12, "08:00"), "protocolo" => "corda", "protocolo_valor" => "40"]);
+escrever(["recurso" => "reserva", "acao" => "iniciar", "relogio_id" => $rel["manual"], "inicio" => dia(11, "08:00")], false);
+escrever(["recurso" => "reserva", "acao" => "parou", "id" => $rt1, "fim" => dia(13, "07:00")], false);
+escrever(["recurso" => "reserva", "acao" => "parou", "relogio_id" => $rel["manual"], "fim" => dia(10, "02:00")]);
+$rt2 = escrever(["recurso" => "reserva", "acao" => "iniciar", "relogio_id" => $rel["manual"], "inicio" => dia(9, "08:00"), "protocolo" => "winder", "protocolo_valor" => "8"]);
+escrever(["recurso" => "reserva", "acao" => "parou", "id" => $rt2, "fim" => dia(7, "04:00")]);
+$rt3 = escrever(["recurso" => "reserva", "acao" => "iniciar", "relogio_id" => $rel["manual"], "inicio" => dia(6, "08:00"), "protocolo" => "corda", "protocolo_valor" => "40",
+    "observacao" => "Coroa até travar."]);
+escrever(["recurso" => "reserva", "acao" => "parou", "id" => $rt3, "fim" => dia(4, "01:00")]);
+escrever(["recurso" => "reserva", "acao" => "iniciar", "relogio_id" => $rel["manual"], "inicio" => date("Y-m-d", strtotime("+3 days")) . " 08:00"], false);
+escrever(["recurso" => "reserva", "acao" => "iniciar", "relogio_id" => $rel["solar"], "inicio" => dia(4, "08:00")], false);
+escrever(["recurso" => "reserva", "acao" => "observar", "relogio_id" => $rel["solar"], "tipo" => "carga_baixa", "quando" => dia(3, "09:00"), "observacao" => "O ponteiro dos segundos pula de 2 em 2."]);
+escrever(["recurso" => "reserva", "acao" => "observar", "relogio_id" => $rel["solar"], "tipo" => "nota", "quando" => dia(3, "09:30")], false);
+escrever(["recurso" => "reserva", "acao" => "observar", "relogio_id" => $rel["smart"], "tipo" => "parou", "quando" => dia(3, "09:00")], false);
+$obs_m = escrever(["recurso" => "reserva", "acao" => "observar", "relogio_id" => $rel["manual"], "tipo" => "parou", "quando" => dia(2, "10:00")]);
+$rs_m = ler("reserva do corda manual", ["recurso" => "reserva", "relogio" => $rel["manual"]]);
+$tec_m = array_values(array_filter($rs_m["tecnico"] ?? [], function ($x) { return $x["chave"] === "reserva"; }))[0] ?? [];
+if (($rs_m["reserva"]["medida"]["horas"] ?? null) != 42 || ($rs_m["reserva"]["medida"]["testes"] ?? null) !== 3 || ($rs_m["reserva"]["usar_horas"] ?? null) !== 42
+    || ($tec_m["confianca"]["medicoes"] ?? null) !== 3 || ($tec_m["medido"]["valor"] ?? null) != 41) {
+    $falhas[] = "reserva: a medida deu " . json_encode([$rs_m["reserva"]["medida"] ?? null, $rs_m["reserva"]["usar_horas"] ?? null, $tec_m], JSON_UNESCAPED_UNICODE);
+}
+escrever(["recurso" => "reserva", "acao" => "usar", "relogio_id" => $rel["manual"]]);
+escrever(["recurso" => "reserva", "acao" => "usar", "relogio_id" => $rel["solar"]], false);
+$calc_r = ler("calcular a reserva medida", ["recurso" => "calcular", "relogio" => $rel["manual"], "expressao" => "RESERVA_MEDIDA() * 10 + RESERVA_TESTES() + reserva_horas * 1000"]);
+if (($calc_r["resultados"][0]["valor"] ?? null) != 42423) {
+    $falhas[] = "reserva: RESERVA_MEDIDA, RESERVA_TESTES e o cadastro deram " . json_encode($calc_r["resultados"][0]["valor"] ?? null);
+}
+ler("calcular a reserva medida sem teste", ["recurso" => "calcular", "relogio" => $rel["auto"], "expressao" => "PADRAO(RESERVA_MEDIDA(); 1) + RESERVA_TESTES()"]);
+escrever(["recurso" => "reserva", "acao" => "salvar", "id" => $rt3, "fim" => dia(4, "03:00"), "observacao" => "Coroa até travar; parou de madrugada."]);
+escrever(["recurso" => "reserva", "acao" => "salvar", "id" => $rt3, "fim" => dia(7, "03:00")], false);
+escrever(["recurso" => "reserva", "acao" => "excluir", "id" => $obs_m], false);
+escrever(["recurso" => "reserva", "acao" => "excluir", "id" => $obs_m, "confirmar" => 1]);
+ler("reserva do solar", ["recurso" => "reserva", "relogio" => $rel["solar"]]);
+ler("reserva de todos", ["recurso" => "reserva"]);
+ler("ficha com a reserva", ["recurso" => "ficha", "relogio" => $rel["manual"]]);
+ler("passaporte com a reserva", ["recurso" => "passaporte", "relogio" => $rel["manual"]]);
+
 // os totais: os que vêm prontos (todos, os do rodapé de alguns relógios, os da página), o Testar (uma expressão boa, uma
 // errada, uma que precisa de função de total, uma vazia), um total novo só da página, um no rodapé sem coluna (não pode), a
 // ordem, e a exclusão (sem confirmar, o impacto; com, sai)

@@ -1,4 +1,4 @@
-<!-- origem: 6d7e9a56cc80c3a24efbbe50accafca1be05bdf0 -->
+<!-- origem: d1ed46486fba1b3bc9bcc5108490700a94a27305 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -607,6 +607,47 @@ una revisión) y `CUSTO_SERVICOS(365)` cuánto costaron los servicios en el últ
 `servicos` y `custo_servicos` (el total listo **Costo de los servicios** suma el de la colección). El **Pasaporte** trae los
 servicios. Por la API: `recurso=servicos` (la lista, con el resumen de un reloj) y `recurso=servicos` con `acao=salvar` o
 `excluir`.
+
+### Declarado, medido y estimado {#declarado-medido-e-estimado}
+
+Cada información técnica del reloj tiene tres valores, y el panel muestra los tres juntos, en una tablita: el **declarado**
+(lo que dice el fabricante, el calibre o el registro), la **última prueba** (la última medición) y la **estimación actual**
+(lo que el sistema concluye de las mediciones). Uno no vale por el otro: las "40 h" del calibre no son la reserva de su
+reloj, y los "200 m" del fabricante no comprueban el sellado de hoy. La tabla aparece:
+
+- en la **marcha**, en el cuadro **Precisión**: la marcha esperada, la última medición y el promedio ponderado por el tiempo;
+- en la **reserva de marcha** (el mecánico), en el cuadro **Reserva medida**: la del calibre o del grupo, la última prueba y
+  la mediana de las pruebas;
+- en la **reserva de energía** (el solar), en el cuadro **Reserva de energía**: la del registro y la última observación, sin
+  estimación;
+- en la **resistencia al agua**, en el cuadro **Servicios y diagnósticos**: la declarada, la última prueba de estanqueidad y
+  el sellado que ella comprueba.
+
+Debajo de cada tabla viene la **confianza**, por una sola regla y sin porcentaje inventado: cuántas mediciones hay, la edad
+de la última y cuánto varían (*"Confianza alta: 3 pruebas, la última hace 12 días, variación de ±1,1 h."*). Es **alta** con
+el mínimo de mediciones (3 en la marcha, 2 en la reserva, 1 en la estanqueidad), la última dentro de la validez (30 días en
+la marcha, un año en la reserva y en la estanqueidad) y la variación hasta la tolerancia (en la marcha, la mitad del rango
+esperado, si no 5 s/día; en la reserva, el 10% de la medida); **media** con la última hasta tres veces la validez y la
+variación hasta el doble de la tolerancia; **baja** en el resto. Cuando no es alta, la frase dice por qué.
+
+**La prueba de la reserva** (el mecánico): llénelo hasta el final (la cuerda por la corona hasta trabar, o un tiempo en el
+winder o en la muñeca), abra **Empezar una prueba de la reserva** en el cuadro Reserva medida, diga cuándo quedó lleno y cómo
+(las vueltas de la corona, las horas en el winder o en la muñeca) y deje el reloj quieto, sin cuerda ni muñeca. Cuando se
+detenga, pulse **Se detuvo** (la hora se puede corregir). El tiempo de lleno hasta detenido es la **reserva medida**; con
+varias pruebas vale la **mediana**, y una prueba errada no tira de la cuenta. El valor del calibre no cambia: el botón **Usar
+N h en el registro de este reloj** guarda la medida en el registro del propio reloj, que es lo que vale en las cuentas de la
+carga y de la autonomía (borrar el valor del reloj vuelve al del calibre). En las fórmulas, `RESERVA_MEDIDA()` da la mediana
+(vacío sin prueba) y `RESERVA_TESTES()` cuántas pruebas terminaron: `PADRAO(RESERVA_MEDIDA(); reserva_horas)` usa la medida
+y, sin ella, el registro.
+
+**En el solar no hay calibración**: un Eco-Drive tarda meses en descargarse, y la recarga depende de la luz, que el sistema
+no mide; un número ahí sería falsa precisión. El cuadro **Reserva de energía** guarda solo las **observaciones**: se detuvo,
+el indicador de carga baja (el segundero saltando de 2 en 2) u otra nota. Las observaciones valen también en el mecánico. El
+smartwatch ya mide la batería por las lecturas de carga (el cuadro **Gasto de la batería**, con el ± de cada gasto).
+
+El **Pasaporte** trae la tabla. Por la API: `recurso=ficha` (el `tecnico` y la `reserva` del reloj), `recurso=reserva` (las
+pruebas, las observaciones, la medida y la tabla) y `recurso=reserva` con `acao=iniciar`, `parou`, `observar`, `salvar`,
+`usar` o `excluir`.
 
 ## Varias personas: cuentas, colecciones y acceso {#várias-pessoas-contas-coleções-e-acesso}
 

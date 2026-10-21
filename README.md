@@ -639,6 +639,45 @@ serviços custaram no último ano; nos totais, as variáveis `servicos` e `custo
 soma o da coleção). O **Passaporte** traz os serviços. Pela API: `recurso=servicos` (a lista, com o resumo de um relógio) e
 `recurso=servicos` com `acao=salvar` ou `excluir`.
 
+### Declarado, medido e estimado
+
+Cada informação técnica do relógio tem três valores, e o painel mostra os três juntos, numa tabelinha: o **declarado** (o que
+o fabricante, o calibre ou o cadastro diz), o **último teste** (a última medição) e a **estimativa agora** (o que o sistema
+conclui das medições). Um não vale pelo outro: as "40 h" do calibre não são a reserva do seu relógio, e os "200 m" do
+fabricante não comprovam a vedação de hoje. A tabela aparece:
+
+- na **marcha**, no quadro **Precisão**: a marcha esperada, a última medição e a média pesada pelo tempo;
+- na **reserva de marcha** (o mecânico), no quadro **Reserva medida**: a do calibre ou do grupo, o último teste e a mediana
+  dos testes;
+- na **reserva de energia** (o solar), no quadro **Reserva de energia**: a do cadastro e a última observação, sem estimativa;
+- na **resistência à água**, no quadro **Serviços e diagnósticos**: a declarada, o último teste de estanqueidade e a vedação
+  que ele comprova.
+
+Embaixo de cada tabela vem a **confiança**, por uma regra só e sem porcentagem inventada: quantas medições existem, a idade
+da última e quanto elas variam (*"Confiança alta: 3 testes, o último há 12 dias, variação de ±1,1 h."*). É **alta** com o
+mínimo de medições (3 na marcha, 2 na reserva, 1 na estanqueidade), a última dentro da validade (30 dias na marcha, um ano na
+reserva e na estanqueidade) e a variação até a tolerância (na marcha, a metade da faixa esperada, senão 5 s/dia; na reserva,
+10% da medida); **média** com a última até três vezes a validade e a variação até o dobro da tolerância; **baixa** no resto.
+Quando não é alta, a frase diz por quê.
+
+**O teste da reserva** (o mecânico): encha até o fim (a corda pela coroa até travar, ou um tempo no winder ou no pulso), abra
+**Começar um teste da reserva** no quadro Reserva medida, diga quando ele ficou cheio e como (as voltas da coroa, as horas no
+winder ou no pulso) e deixe o relógio parado, sem corda nem pulso. Quando ele parar, aperte **Parou** (a hora dá para
+corrigir). O tempo de cheio até parado é a **reserva medida**; com vários testes vale a **mediana**, e um teste errado não
+puxa a conta. O valor do calibre não muda: o botão **Usar N h no cadastro deste relógio** grava a medida no cadastro do
+próprio relógio, que é o que vale nas contas da carga e da autonomia (apagar o valor do relógio volta ao do calibre). Nas
+fórmulas, `RESERVA_MEDIDA()` dá a mediana (vazio sem teste) e `RESERVA_TESTES()` quantos testes terminaram:
+`PADRAO(RESERVA_MEDIDA(); reserva_horas)` usa a medida e, sem ela, o cadastro.
+
+**No solar não há calibração**: um Eco-Drive leva meses para descarregar, e a recarga depende da luz, que o sistema não mede;
+um número ali seria falsa precisão. O quadro **Reserva de energia** guarda só as **observações**: parou, o indicador de carga
+baixa (o ponteiro dos segundos pulando de 2 em 2) ou outra nota. As observações valem também no mecânico. O smartwatch já mede
+a bateria pelas leituras de carga (o quadro **Gasto da bateria**, com o ± de cada gasto).
+
+O **Passaporte** traz a tabela. Pela API: `recurso=ficha` (o `tecnico` e a `reserva` do relógio), `recurso=reserva` (os
+testes, as observações, a medida e a tabela) e `recurso=reserva` com `acao=iniciar`, `parou`, `observar`, `salvar`, `usar` ou
+`excluir`.
+
 ## Várias pessoas: contas, coleções e acesso
 
 O sistema é de **várias pessoas**, cada uma com a **conta** dela, e cada conta com **as suas coleções**. Uma coleção tem os
@@ -1458,6 +1497,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `foto` | a foto de um relógio (`relogio=<id>`): a imagem, não JSON |
 | `documentos` | os documentos de um relógio (`relogio=<id>`; sem ele, de todos), com as categorias, o resumo da NF-e de cada XML, a pasta e o limite |
 | `servicos` | os serviços e diagnósticos (`relogio=<id>`, com o resumo: a resistência declarada, a estanqueidade comprovada, quantos e o custo somado; sem ele, os de todos), com as peças, o custo, a estanqueidade e a marcha antes e depois |
+| `reserva` | a reserva medida (`relogio=<id>`: os testes da reserva do mecânico, as observações da energia, a medida, que é a mediana dos testes, e a tabela declarado, medido e estimado com a confiança; sem ele, os testes e as observações de todos) |
 | `documento` | o arquivo de um documento (`id=<id>`): para mostrar (imagem, vídeo, áudio, PDF, texto) ou para baixar (o resto, ou com `baixar=1`); `mini=1` é a miniatura da foto. Atende pedaços (Range), para o vídeo avançar |
 | `usuarios`, `migracoes` | o master: o painel das contas, cada uma com o que tem e o hash da senha (para migrar com a mesma senha: veja [Os usuários e as senhas](#os-usuários-e-as-senhas)); os outros, só a própria conta; as migrações que faltam aplicar |
 | `conta`, `colecoes`, `aprovacoes` | Minha conta (as coleções, as árvores, os pedidos, os tokens, os aparelhos lembrados, os aparelhos do Web Push; `parte=menu`: só o do menu); as coleções e as árvores; a página Aprovações |
@@ -1479,6 +1519,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `relogio` | `salvar` (criar ou alterar), `excluir` (com os documentos), `foto`, `remover_foto` |
 | `documentos` | `enviar` (um ou vários arquivos, com a categoria, o título, a data, a descrição e, numa foto, a miniatura), `alterar`, `excluir` |
 | `servicos` | `salvar` (a data, o tipo, quem fez, a mão de obra, as peças, a estanqueidade, a marcha antes e depois, a garantia e os documentos; a revisão e a troca de pilha viram também a marcação), `excluir` |
+| `reserva` | `iniciar` (quando ficou cheio e como), `parou`, `observar` (parou, carga baixa, nota; também no solar), `salvar`, `usar` (a mediana vai para o cadastro do relógio), `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (só sem documentos) |
 | `lancamento` | `lancar` (corda, carga, pilha...), `iniciar` e `encerrar` (pôr e tirar do pulso, do winder, do sol, do carregador), `alternar` (fecha a sessão se está aberta, abre se está fechada: um botão só no celular), `periodo` (um período que já passou; no pulso do relógio do dia é uso do rodízio, e os trechos do mesmo tipo em que ele encosta, como o Pôr que ficou aberto, viram um só), `alterar`, `excluir`, `medicao` (uma medição do gasto entra ou sai da conta: `id`, `usada` 1 ou 0). Em todas, `relogio_id=hoje` é o relógio do dia |
 | `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `periodo` (os relógios de um período, na ordem: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (apaga os dias do período e o modo monta de novo; só `de`: até o fim do plano; só `ate`: de amanhã até ele), `periodo_livre` (apaga e deixa os dias livres, sem sorteio; as mesmas datas), `manual` (o Rodízio manual: `de`, `ate`, `dias[AAAA-MM-DD]` = o id do relógio, `auto` ou `livre`), `apagar_tudo` (toda a programação de amanhã em diante sai; `hoje=1`: de hoje em diante; o modo monta o plano de novo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |

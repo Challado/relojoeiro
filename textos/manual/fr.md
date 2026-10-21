@@ -1,4 +1,4 @@
-<!-- origem: 6d7e9a56cc80c3a24efbbe50accafca1be05bdf0 -->
+<!-- origem: d1ed46486fba1b3bc9bcc5108490700a94a27305 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -625,6 +625,51 @@ révision) et `CUSTO_SERVICOS(365)` ce que les services ont coûté la dernière
 et `custo_servicos` (le total prêt **Coût des services** fait la somme de la collection). Le **Passeport** reprend les
 services. Par l'API : `recurso=servicos` (la liste, avec le résumé d'une montre) et `recurso=servicos` avec `acao=salvar` ou
 `excluir`.
+
+### Déclaré, mesuré et estimé {#declarado-medido-e-estimado}
+
+Chaque information technique de la montre a trois valeurs, et le panneau montre les trois ensemble, dans un petit tableau :
+le **déclaré** (ce que disent le fabricant, le calibre ou la fiche), le **dernier test** (la dernière mesure) et
+l'**estimation actuelle** (ce que le système conclut des mesures). L'un ne vaut pas pour l'autre : les « 40 h » du calibre ne
+sont pas la réserve de votre montre, et les « 200 m » du fabricant ne prouvent pas l'étanchéité d'aujourd'hui. Le tableau
+apparaît :
+
+- pour la **marche**, dans le cadre **Précision** : la marche attendue, la dernière mesure et la moyenne pondérée par le
+  temps ;
+- pour la **réserve de marche** (la mécanique), dans le cadre **Réserve mesurée** : celle du calibre ou du groupe, le dernier
+  test et la médiane des tests ;
+- pour la **réserve d'énergie** (la solaire), dans le cadre **Réserve d'énergie** : celle de la fiche et la dernière
+  observation, sans estimation ;
+- pour l'**étanchéité**, dans le cadre **Services et diagnostics** : la déclarée, le dernier test d'étanchéité et
+  l'étanchéité qu'il prouve.
+
+Sous chaque tableau vient la **confiance**, par une seule règle et sans pourcentage inventé : combien de mesures il y a,
+l'âge de la dernière et combien elles varient (*« Confiance haute : 3 tests, le dernier il y a 12 jours, variation de ±1,1
+h. »*). Elle est **haute** avec le minimum de mesures (3 pour la marche, 2 pour la réserve, 1 pour l'étanchéité), la
+dernière dans sa validité (30 jours pour la marche, un an pour la réserve et l'étanchéité) et la variation dans la
+tolérance (pour la marche, la moitié de la plage attendue, sinon 5 s/jour ; pour la réserve, 10 % de la mesure) ;
+**moyenne** avec la dernière jusqu'à trois fois la validité et la variation jusqu'au double de la tolérance ; **basse**
+sinon. Quand elle n'est pas haute, la phrase dit pourquoi.
+
+**Le test de la réserve** (la mécanique) : remontez-la à fond (la couronne jusqu'à la butée, ou un temps sur le remontoir ou
+au poignet), ouvrez **Commencer un test de la réserve** dans le cadre Réserve mesurée, dites quand elle était pleine et
+comment (les tours de couronne, les heures sur le remontoir ou au poignet) et laissez la montre immobile, sans remontage ni
+poignet. Quand elle s'arrête, appuyez sur **Arrêtée** (l'heure peut être corrigée). Le temps de pleine à arrêtée est la
+**réserve mesurée** ; avec plusieurs tests, c'est la **médiane** qui compte, et un test erroné ne tire pas le calcul. La
+valeur du calibre ne change pas : le bouton **Utiliser N h dans la fiche de cette montre** enregistre la mesure dans la fiche
+de la montre elle-même, qui est ce qui compte dans les calculs de la charge et de l'autonomie (effacer la valeur de la montre
+revient à celle du calibre). Dans les formules, `RESERVA_MEDIDA()` donne la médiane (vide sans test) et `RESERVA_TESTES()`
+combien de tests sont terminés : `PADRAO(RESERVA_MEDIDA(); reserva_horas)` utilise la mesure et, sans elle, la fiche.
+
+**La solaire n'a pas de calibrage** : une Eco-Drive met des mois à se décharger, et la recharge dépend de la lumière, que le
+système ne mesure pas ; un nombre là serait une fausse précision. Le cadre **Réserve d'énergie** ne garde que les
+**observations** : arrêtée, l'indicateur de charge faible (l'aiguille des secondes qui saute de 2 en 2) ou une autre note.
+Les observations valent aussi pour la mécanique. La montre connectée mesure déjà la batterie par les lectures de charge (le
+cadre **Consommation de la batterie**, avec le ± de chaque consommation).
+
+Le **Passeport** reprend le tableau. Par l'API : `recurso=ficha` (le `tecnico` et la `reserva` de la montre),
+`recurso=reserva` (les tests, les observations, la mesure et le tableau) et `recurso=reserva` avec `acao=iniciar`, `parou`,
+`observar`, `salvar`, `usar` ou `excluir`.
 
 ## Plusieurs personnes : comptes, collections et accès {#várias-pessoas-contas-coleções-e-acesso}
 

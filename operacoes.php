@@ -1302,6 +1302,171 @@ function op_servicos($acao, $d)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// A reserva medida de um relógio: os testes da reserva de marcha (o mecânico: o campo reserva_horas vale para ele) e as
+// observações da energia (o mecânico e o solar, com o campo reserva_dias). Os instantes: AAAA-MM-DD HH:MM, na hora local;
+// vazio: agora; nunca no futuro. Ações:
+//   iniciar (relogio_id; inicio: quando ele ficou cheio; protocolo: corda, winder, pulso ou outro; protocolo_valor: as
+//           voltas da coroa, as horas no winder ou no pulso; observacao): começa um teste. Um teste em andamento por
+//           relógio.
+//   parou (id, ou relogio_id: o teste em andamento dele; fim: quando ele parou, depois do inicio): termina o teste; as horas
+//           de cheio até parado são a reserva medida.
+//   observar (relogio_id; tipo: parou, carga_baixa ou nota; quando; observacao): uma observação da energia.
+//   salvar (id; inicio, fim (só no teste; vazio: em andamento), protocolo, protocolo_valor, tipo (só na observação),
+//           observacao): muda um teste ou uma observação; só o que vem no pedido muda.
+//   usar (relogio_id): a mediana dos testes vira a reserva de marcha do cadastro do próprio relógio (o campo reserva_horas
+//           dele, em horas inteiras): é a que vale na conta; o valor do calibre e o padrão do grupo não mudam.
+//   excluir (id): sai o teste ou a observação.
+// ---------------------------------------------------------------------------------------------------------------------
+function op_reserva($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $agora = time();
+    $id = (int)($d["id"] ?? 0);
+    $atual = $id > 0 ? linha("SELECT * FROM reserva_teste WHERE id = ?", [$id]) : null;
+    $instante = function ($v, $rotulo) use ($agora, &$erros) {
+        $v = str_replace("T", " ", trim((string)$v));
+        if ($v === "") {
+            return $agora;
+        }
+        $dt = DateTimeImmutable::createFromFormat("!Y-m-d H:i", substr($v, 0, 16));
+        if (!$dt || $dt->format("Y-m-d H:i") !== substr($v, 0, 16)) {
+            $erros[] = t("{1}: AAAA-MM-DD HH:MM.", [1 => $rotulo]);
+            return null;
+        }
+        if ($dt->getTimestamp() > $agora + 60) {
+            $erros[] = t("{1}: não pode ser no futuro.", [1 => $rotulo]);
+            return null;
+        }
+        return $dt->getTimestamp();
+    };
+    $texto = function ($k) use ($d, $atual) { return array_key_exists($k, $d) ? trim((string)$d[$k]) : trim((string)($atual[$k] ?? "")); };
+    $rid = $atual ? (int)$atual["relogio_id"] : (int)($d["relogio_id"] ?? 0);
+    $r = $rid > 0 ? linha("SELECT * FROM relogio WHERE id = ?", [$rid]) : null;
+    $campos = $r ? campos_do_relogio($r) : [];
+    $testar = isset($campos["reserva_horas"]);
+    $observar = $testar || isset($campos["reserva_dias"]);
+    if ($acao === "parou" && !$atual && $r) {
+        $atual = linha("SELECT * FROM reserva_teste WHERE relogio_id = ? AND tipo = 'teste' AND fim IS NULL ORDER BY inicio DESC, id DESC", [$rid]);
+        $id = $atual ? (int)$atual["id"] : 0;
+    }
+    $obs = $texto("observacao");
+    if (mb_strlen($obs) > 500) {
+        $erros[] = t("A observação vai até 500 caracteres.");
+    }
+    if ($id > 0 && !$atual) {
+        $erros[] = t("Teste ou observação não encontrado.");
+    } elseif (!$r && in_array($acao, ["iniciar", "parou", "observar", "usar", "salvar"], true)) {
+        $erros[] = t("relógio não encontrado");
+    } elseif ($acao === "iniciar" || ($acao === "salvar" && $atual && $atual["tipo"] === "teste")) {
+        if (!$testar) {
+            $erros[] = t("O teste da reserva é do relógio com a reserva de marcha no cadastro (o mecânico); no solar, registre as observações.");
+        }
+        $ini = array_key_exists("inicio", $d) || !$atual ? $instante($d["inicio"] ?? "", t("Cheio em")) : strtotime($atual["inicio"]);
+        $fim = $atual ? (array_key_exists("fim", $d) ? (trim((string)$d["fim"]) === "" ? null : $instante($d["fim"], t("Parou em"))) : ($atual["fim"] === null ? null : strtotime($atual["fim"]))) : null;
+        $prot = $texto("protocolo") !== "" ? $texto("protocolo") : "outro";
+        if (!isset(RESERVA_PROTOCOLOS[$prot])) {
+            $erros[] = t("Protocolo: {1}.", [1 => implode(", ", array_keys(RESERVA_PROTOCOLOS))]);
+        }
+        $pv = $texto("protocolo_valor");
+        $pv_n = $pv === "" ? null : numero_br($pv);
+        if ($pv !== "" && ($pv_n === null || $pv_n <= 0 || $pv_n > 999)) {
+            $erros[] = t("As voltas ou as horas para encher: um número de 0 a 999.");
+        }
+        if ($ini !== null && $fim !== null && $fim <= $ini) {
+            $erros[] = t("Ele não pode parar antes de ficar cheio.");
+        }
+        $outro = $r ? linha("SELECT id, inicio FROM reserva_teste WHERE relogio_id = ? AND tipo = 'teste' AND fim IS NULL AND id <> ?", [$rid, $id]) : null;
+        if ($outro && $fim === null) {
+            $erros[] = t("Já há um teste em andamento neste relógio, desde {1}: marque quando ele parou, ou exclua.", [1 => data_txt(strtotime($outro["inicio"]), true)]);
+        }
+        if (count($erros) === 0) {
+            $vals = [date("Y-m-d H:i:s", $ini), $fim === null ? null : date("Y-m-d H:i:s", $fim), $prot, $pv_n, $obs !== "" ? $obs : null];
+            if ($atual) {
+                sql("UPDATE reserva_teste SET inicio = ?, fim = ?, protocolo = ?, protocolo_valor = ?, observacao = ? WHERE id = ?", array_merge($vals, [$id]));
+                $msg = t("Teste da reserva do {1} salvo.", [1 => $r["nome"]]);
+            } else {
+                sql("INSERT INTO reserva_teste (relogio_id, tipo, inicio, fim, protocolo, protocolo_valor, observacao, criado) VALUES (?, 'teste', ?, ?, ?, ?, ?, NOW())", array_merge([$rid], $vals));
+                $id = ultimo_id();
+                $msg = t("Teste da reserva do {1} começado: {2}, em {3}. Deixe ele parado, sem corda nem pulso, e marque quando ele parar.",
+                    [1 => $r["nome"], 2 => reserva_protocolo_txt($prot, $pv_n), 3 => data_txt($ini, true)]);
+            }
+            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+        }
+    } elseif ($acao === "parou") {
+        if (!$atual || $atual["tipo"] !== "teste") {
+            $erros[] = t("Nenhum teste da reserva em andamento neste relógio.");
+        } else {
+            $fim = $instante($d["fim"] ?? "", t("Parou em"));
+            if ($fim !== null && $fim <= strtotime($atual["inicio"])) {
+                $erros[] = t("Ele não pode parar antes de ficar cheio.");
+            }
+            if (count($erros) === 0) {
+                sql("UPDATE reserva_teste SET fim = ?" . (array_key_exists("observacao", $d) ? ", observacao = ?" : "") . " WHERE id = ?",
+                    array_merge([date("Y-m-d H:i:s", $fim)], array_key_exists("observacao", $d) ? [$obs !== "" ? $obs : null] : [], [$id]));
+                $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+                $m = reserva_medida($rid, $agora);
+                $msg = t("O {1} parou: a reserva medida foi de {2} (de cheio, em {3}, até parado).", [1 => $r["nome"], 2 => reserva_horas_txt(($fim - strtotime($atual["inicio"])) / 3600),
+                    3 => data_txt(strtotime($atual["inicio"]), true)])
+                    . ($m["n"] > 1 ? t(" Com {1} testes, a mediana é {2}.", [1 => $m["n"], 2 => reserva_horas_txt($m["mediana"])]) : "");
+            }
+        }
+    } elseif ($acao === "observar" || ($acao === "salvar" && $atual)) {
+        if (!$observar) {
+            $erros[] = t("As observações da energia são do relógio com a reserva no cadastro (o mecânico e o solar).");
+        }
+        $tipo = $texto("tipo") !== "" ? $texto("tipo") : "nota";
+        if (!isset(RESERVA_OBSERVACOES[$tipo])) {
+            $erros[] = t("Tipo da observação: {1}.", [1 => implode(", ", array_keys(RESERVA_OBSERVACOES))]);
+        }
+        $quando = array_key_exists("quando", $d) || !$atual ? $instante($d["quando"] ?? "", t("Quando")) : strtotime($atual["inicio"]);
+        if ($tipo === "nota" && $obs === "") {
+            $erros[] = t("A outra observação pede o texto.");
+        }
+        if (count($erros) === 0) {
+            if ($atual) {
+                sql("UPDATE reserva_teste SET tipo = ?, inicio = ?, observacao = ? WHERE id = ?", [$tipo, date("Y-m-d H:i:s", $quando), $obs !== "" ? $obs : null, $id]);
+            } else {
+                sql("INSERT INTO reserva_teste (relogio_id, tipo, inicio, observacao, criado) VALUES (?, ?, ?, ?, NOW())", [$rid, $tipo, date("Y-m-d H:i:s", $quando), $obs !== "" ? $obs : null]);
+                $id = ultimo_id();
+            }
+            $msg = t("Observação do {1} {2}: {3}, em {4}.", [1 => $r["nome"], 2 => $atual ? t("salva") : t("registrada"), 3 => mb_strtolower(t(RESERVA_OBSERVACOES[$tipo]), "UTF-8"), 4 => data_txt($quando, true)]);
+        }
+    } elseif ($acao === "usar") {
+        $m = reserva_medida($rid, $agora);
+        if (!$testar) {
+            $erros[] = t("O teste da reserva é do relógio com a reserva de marcha no cadastro (o mecânico); no solar, registre as observações.");
+        } elseif ($m["n"] === 0) {
+            $erros[] = t("Nenhum teste da reserva terminado ainda: não há medida para usar.");
+        } else {
+            $h = (int)round($m["mediana"]);
+            $conf = valor_para_campo($campos["reserva_horas"], (string)$h);
+            if ($conf[1] !== "") {
+                $erros[] = $conf[1];
+            } else {
+                sql("REPLACE INTO campo_valor (relogio_id, campo_id, valor) VALUES (?, ?, ?)", [$rid, (int)$campos["reserva_horas"]["id"], $conf[0]]);
+                $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+                [$nom, $o_n] = valor_nominal($r, "reserva_horas");
+                $msg = t("A reserva de marcha do cadastro do {1} passou a {2} (a medida, em {3}).", [1 => $r["nome"], 2 => reserva_horas_txt($h),
+                    3 => $m["n"] === 1 ? t("1 teste") : t("{1} testes", [1 => $m["n"]])])
+                    . ($nom !== null ? t(" O {1} continua com {2}: apagando o valor do relógio no cadastro, volta a valer.", [1 => $o_n === "calibre" ? t("calibre") : t("padrão do grupo"), 2 => reserva_horas_txt((float)$nom)]) : "");
+            }
+        }
+    } elseif ($acao === "excluir" && $atual) {
+        sql("DELETE FROM reserva_teste WHERE id = ?", [$id]);
+        $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+        $msg = $atual["tipo"] === "teste" ? t("Teste da reserva de {1} excluído.", [1 => data_txt(strtotime($atual["inicio"]), true)])
+            : t("Observação de {1} excluída.", [1 => data_txt(strtotime($atual["inicio"]), true)]);
+        $id = 0;
+    } elseif ($acao === "excluir" || $acao === "salvar") {
+        $erros[] = t("Informe o teste ou a observação (id).");
+    } else {
+        $erros[] = t("Ação desconhecida: use iniciar, parou, observar, salvar, usar ou excluir.");
+    }
+    return resultado($erros, $msg, ["id" => $id]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Lançamentos. Ações:
 //   lancar (relogio_id, tipo, valor (formato "valor"), quando (AAAA-MM-DD HH:MM; vazio: agora), medir (1 ou 0; padrão 1)):
 //           instantâneo ou com valor. Num tipo que mede o gasto (a leitura de carga), a leitura é comparada com a anterior,

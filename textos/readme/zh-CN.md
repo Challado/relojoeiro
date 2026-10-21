@@ -1,4 +1,4 @@
-<!-- origem: 859e2b0561a8107ee9c31707d65ba92b5d96a5e1 -->
+<!-- origem: 245fdb91fea59ed41cc5087fbdf8a7b84bf7b20d -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -129,6 +129,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `foto` | 一块手表的照片（`relogio=<id>`）：图片本身，不是 JSON |
 | `documentos` | 一块手表的文档（`relogio=<id>`；没有时为全部），含类别、每个 XML 的 NF-e 摘要、文件夹和大小限制 |
 | `servicos` | 保养与检测（`relogio=<id>`，含摘要：标称防水、经证实的防水、次数和费用合计；不带时为全部），含零件、费用、防水以及前后走时 |
+| `reserva` | 实测储备（`relogio=<id>`：机械表的储备测试、能量观察、实测值即各次测试的中位数，以及带可信度的声明、实测与估计表；不指定时，返回所有表的测试和观察） |
 | `documento` | 一个文档的文件（`id=<id>`）：用于显示（图片、视频、音频、PDF、文本）或下载（其他，或使用 `baixar=1`）；`mini=1` 是照片的缩略图。支持分段（Range），方便视频快进 |
 | `usuarios`、`migracoes` | master：账户面板，每个账户含其拥有的内容和密码哈希（用于以相同密码迁移：参见[用户与密码](#os-usuários-e-as-senhas)）；其他人只有自己的账户；尚待应用的迁移 |
 | `conta`、`colecoes`、`aprovacoes` | 我的账户（收藏、树、申请、令牌、已记住的设备、Web Push 设备；`parte=menu`：只返回菜单用的部分）；收藏和树；审批页面 |
@@ -150,6 +151,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `relogio` | `salvar`（创建或修改）、`excluir`（连同文档）、`foto`、`remover_foto` |
 | `documentos` | `enviar`（一个或多个文件，带类别、标题、日期、描述，照片还带缩略图）、`alterar`、`excluir` |
 | `servicos` | `salvar`（日期、类型、由谁完成、工时费、零件、防水、前后走时、保修和文档；保养和更换电池也会生成记录），`excluir` |
+| `reserva` | `iniciar`（何时充满、如何充满）、`parou`、`observar`（停止、低电量、记录；太阳能表也可以）、`salvar`、`usar`（中位数写入表的档案）、`excluir` |
 | `documento_categorias` | `nova`、`alterar`、`excluir`（仅在没有文档时） |
 | `lancamento` | `lancar`（上链、电量、电池……）、`iniciar` 和 `encerrar`（戴上和取下手腕、上链盒、晒太阳、充电器）、`alternar`（时段打开时关闭，关闭时打开：手机上一个按钮就够）、`periodo`（已经过去的一段时间；当天的手表戴在手腕上时算作轮换中的使用，与它相接的同类型片段（例如仍打开的“戴上”）合并为一段）、`alterar`、`excluir`、`medicao`（把一次消耗测量放入或移出计算：`id`，`usada` 为 1 或 0）。所有操作中，`relogio_id=hoje` 都表示当天的手表 |
 | `rodizio` | `usando`（我今天戴的是这块）、`trocar_dia`（某一天的手表）、`periodo`（一个时段的手表，按顺序：`de`、`ate`、`relogio_ids[]`、`dias_cada`）、`periodo_sortear`（删除时段内的日子，由模式重新安排；只填 `de`：到计划结束；只填 `ate`：从明天到它）、`periodo_livre`（清除并让这些天保持空闲，不抽选；日期规则相同）、`manual`（手动轮换：`de`、`ate`、`dias[YYYY-MM-DD]` = 手表 id、`auto` 或 `livre`）、`apagar_tudo`（清除从明天起的全部安排；`hoje=1`：从今天起；模式会重新生成计划）、`resortear`、`resortear_hoje`、`proxima_semana`、`modo`（更换模式） |

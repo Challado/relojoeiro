@@ -1,4 +1,4 @@
-<!-- origem: 6d7e9a56cc80c3a24efbbe50accafca1be05bdf0 -->
+<!-- origem: d1ed46486fba1b3bc9bcc5108490700a94a27305 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -610,6 +610,49 @@ of the last service of that type (`"estanqueidade"` also counts a test made duri
 the services cost in the last year; in totals, the variables `servicos` and `custo_servicos` (the ready-made total **Cost of
 services** adds up the collection's). The **Passport** lists the services. Through the API: `recurso=servicos` (the list, with
 a watch's summary) and `recurso=servicos` with `acao=salvar` or `excluir`.
+
+### Declared, measured and estimated {#declarado-medido-e-estimado}
+
+Each technical item of the watch has three values, and the panel shows the three together, in a small table: the
+**declared** (what the manufacturer, the caliber or the record says), the **last test** (the last measurement) and the
+**estimate now** (what the system concludes from the measurements). One does not stand for the other: the caliber's "40 h"
+is not your watch's reserve, and the manufacturer's "200 m" does not prove today's seal. The table appears:
+
+- for the **rate**, in the **Accuracy** box: the expected rate, the last measurement and the time-weighted average;
+- for the **power reserve** (the mechanical), in the **Measured reserve** box: the caliber's or the group's, the last test and
+  the median of the tests;
+- for the **energy reserve** (the solar), in the **Energy reserve** box: the record's and the last observation, with no
+  estimate;
+- for the **water resistance**, in the **Services and diagnostics** box: the declared one, the last water-resistance test and
+  the seal it proves.
+
+Below each table comes the **confidence**, by a single rule and with no made-up percentage: how many measurements there are,
+the age of the last one and how much they vary (*"Confidence high: 3 tests, the last one 12 days ago, variation of ±1.1 h."*).
+It is **high** with the minimum number of measurements (3 for the rate, 2 for the reserve, 1 for water resistance), the last
+one within its validity (30 days for the rate, one year for the reserve and water resistance) and the variation within the
+tolerance (for the rate, half the expected range, otherwise 5 s/day; for the reserve, 10% of the measurement); **medium**
+with the last one up to three times the validity and the variation up to twice the tolerance; **low** otherwise. When it is
+not high, the sentence says why.
+
+**The reserve test** (the mechanical): fill it all the way (wind the crown until it stops, or a while on the winder or the
+wrist), open **Start a reserve test** in the Measured reserve box, say when it was full and how (the turns of the crown, the
+hours on the winder or the wrist) and leave the watch still, with no winding and off the wrist. When it stops, press
+**Stopped** (the time can be corrected). The time from full to stopped is the **measured reserve**; with several tests the
+**median** counts, and one wrong test does not pull the result. The caliber's value does not change: the button **Use N h in
+this watch's record** saves the measurement in the watch's own record, which is what counts in the charge and autonomy
+calculations (clearing the watch's value goes back to the caliber's). In formulas, `RESERVA_MEDIDA()` gives the median (empty
+without a test) and `RESERVA_TESTES()` how many tests finished: `PADRAO(RESERVA_MEDIDA(); reserva_horas)` uses the
+measurement and, without it, the record.
+
+**The solar has no calibration**: an Eco-Drive takes months to run down, and recharging depends on light, which the system
+does not measure; a number there would be false precision. The **Energy reserve** box keeps only **observations**: stopped,
+the low charge indicator (the seconds hand jumping 2 by 2) or another note. Observations also work on the mechanical. The
+smartwatch already measures the battery through the charge readings (the **Battery consumption** box, with the ± of each
+consumption).
+
+The **Passport** has the table. Through the API: `recurso=ficha` (the watch's `tecnico` and `reserva`), `recurso=reserva` (the
+tests, the observations, the measurement and the table) and `recurso=reserva` with `acao=iniciar`, `parou`, `observar`,
+`salvar`, `usar` or `excluir`.
 
 ## Several people: accounts, collections and access {#várias-pessoas-contas-coleções-e-acesso}
 

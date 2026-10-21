@@ -67,6 +67,8 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
         "servicos" => ($srv_f = servicos_lista($id)), "servicos_resumo" => servicos_resumo($id, $srv_f),
         "servico_tipos" => array_map(function ($k) { return ["valor" => $k, "nome" => t(SERVICO_TIPOS[$k]), "marca" => in_array($k, SERVICO_MARCA, true)]; }, array_keys(SERVICO_TIPOS)),
         "servico_documentos" => array_map(function ($x) { return ["id" => (int)$x["id"], "titulo" => $x["titulo"]]; }, documentos_do_relogio($id)),
+        // a reserva medida (o quadro Reserva): os testes do mecânico e as observações da energia; null sem reserva no cadastro
+        "reserva" => ($rs_f = reserva_do_relogio($r, $agora)),
         "copia_banco" => (int)$r["copia_banco"] === 1,
         // o calibre (o movimento): o cadastro dele, com o link do manual técnico e as recomendações; null sem
         "calibre" => ($cal_f = calibre_do_relogio($id)) ? ["id" => (int)$cal_f["id"], "nome" => $cal_f["nome"], "fabricante" => $cal_f["fabricante"], "link" => $cal_f["link"],
@@ -103,7 +105,9 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
         "encostado" => $v["encostado"] ? ["data" => max($hoje->format("Y-m-d"), substr($v["encostado"]["data"], 0, 10)),
             "momento" => $v["encostado_momento"], "falta" => $v["encostado_falta"], "estado" => $v["encostado"]["estado"]] : null,
         "manutencoes" => array_map(function ($a) use ($hoje) { return ["data" => max($hoje->format("Y-m-d"), substr($a["data"], 0, 10)), "nome" => $a["nome"]]; }, array_slice($v["avisos"], 0, 5)),
-        "previsao" => previsao_energia($r, $agora), "tipos" => $tipos, "leituras" => $leituras, "precisao" => precisao_do_relogio($r, $agora),
+        "previsao" => previsao_energia($r, $agora), "tipos" => $tipos, "leituras" => $leituras, "precisao" => ($pr_f = precisao_do_relogio($r, $agora)),
+        // declarado, medido e estimado: a marcha, a reserva e a estanqueidade, cada uma com a confiança
+        "tecnico" => tecnico_do_relogio($r, $agora, $pr_f, $rs_f, servicos_resumo($id, $srv_f)),
         "medicoes" => medicoes_legivel($id), "medicao_janela_dias" => max(1, (int)cfg("medicao_janela_dias")), "medicao_janela_texto" => medicoes_janela_texto(),
         // os lançamentos dos últimos 14 dias (e a sessão ainda aberta), para corrigir: o quadro "Corrigir marcações"
         "lancamentos_recentes" => array_map(function ($l) {

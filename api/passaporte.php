@@ -76,6 +76,7 @@ foreach (documento_categorias_lista() as $c) {
     $cat_p[(int)$c["id"]] = $c["nome"];
 }
 $foto_p = valor("SELECT atualizado FROM foto WHERE relogio_id = ?", [$id]);
+$rs_p = reserva_do_relogio($r, $agora_p);
 $saida = ["gerado_em" => date("Y-m-d H:i:s", $agora_p),
     "relogio" => ["id" => $id, "nome" => $r["nome"], "caminho" => no_caminho($r["no_id"]),
         "tipo" => isset($n_p[(int)$r["no_id"]]) ? $n_p[(int)$r["no_id"]]["nome"] : t("sem grupo"), "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]),
@@ -95,6 +96,9 @@ $saida = ["gerado_em" => date("Y-m-d H:i:s", $agora_p),
     "acessorios" => acessorios_lista($id),
     // os serviços e diagnósticos (recurso=servicos): quem fez, o custo, a estanqueidade, a marcha antes e depois
     "servicos_diagnosticos" => servicos_lista($id),
+    // declarado, medido e estimado (a marcha, a reserva, a estanqueidade), com a confiança; e os testes da reserva
+    "tecnico" => tecnico_do_relogio($r, $agora_p, precisao_do_relogio($r, $agora_p), $rs_p, servicos_resumo($id)),
+    "reserva_testes" => $rs_p !== null ? $rs_p["testes"] : [],
     "documentos" => array_map(function ($x) use ($cat_p) {
         return ["id" => (int)$x["id"], "categoria" => $cat_p[(int)$x["categoria_id"]] ?? "", "titulo" => $x["titulo"], "data" => $x["data"] === null ? null : substr((string)$x["data"], 0, 10), "nome" => $x["nome"]];
     }, documentos_do_relogio($id)),

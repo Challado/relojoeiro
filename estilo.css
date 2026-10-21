@@ -1141,6 +1141,27 @@ body.com-visor { overflow: hidden; }
 .servicos-ficha fieldset.servico-docs { display: flex; flex-wrap: wrap; gap: .3rem 1rem; padding: .5rem .7rem; }
 .servicos-ficha fieldset.servico-docs label.check { overflow-wrap: anywhere; }
 .servicos-ficha form.excluir { margin-top: .5rem; }
+/* declarado, medido e estimado: três linhas (o rótulo, o valor com o detalhe embaixo e a origem); a confiança embaixo */
+table.tabela-dados.tecnico { margin: .3rem 0 .2rem; }
+table.tabela-dados.tecnico th { text-align: left; font-weight: 500; color: var(--cinza); font-size: .82rem; white-space: nowrap; padding-right: .6rem; width: 1%; }
+table.tabela-dados.tecnico td { white-space: normal; overflow-wrap: anywhere; }
+table.tabela-dados.tecnico td.origem-celula { width: 1%; text-align: right; }
+table.tabela-dados.tecnico tr.fora td strong { color: var(--ambar, #8a5a00); }
+p.confianca { margin: .2rem 0 .6rem; font-size: .82rem; }
+p.confianca-alta { color: #1e6b2e; }
+p.confianca-baixa { color: #8a5a00; }
+/* a reserva medida: o teste em andamento, os testes e as observações (cada um abre), os formulários na grade */
+.reserva-ficha details.reserva-registro, .reserva-ficha details.reserva-novo { border: 1px solid var(--aco); border-radius: 10px; padding: .45rem .7rem; margin-top: .55rem; }
+.reserva-ficha details > summary { cursor: pointer; overflow-wrap: anywhere; }
+.reserva-ficha details.reserva-novo > summary { color: var(--safira); font-weight: 600; }
+.reserva-ficha p.reserva-aberto { margin: .5rem 0 .3rem; font-weight: 600; overflow-wrap: anywhere; }
+.reserva-ficha form.reserva-parou, .reserva-ficha form.reserva-usar { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: end; margin: .3rem 0 .4rem; }
+.reserva-ficha form.reserva-parou > label { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; color: var(--cinza); min-width: 0; }
+.reserva-ficha form.reserva-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr)); gap: .6rem 1rem; align-items: end; margin-top: .6rem; }
+.reserva-ficha form.reserva-form > label { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; color: var(--cinza); min-width: 0; }
+.reserva-ficha form.reserva-form > .largo { grid-column: 1 / -1; }
+.reserva-ficha form.reserva-form input, .reserva-ficha form.reserva-parou input { min-width: 0; max-width: 100%; }
+.reserva-ficha form.excluir { margin-top: .5rem; }
 
 /* as seções do relógio (o painel e a ficha): os quadros do mesmo assunto juntos, com o título e uma linha fina até a borda;
    em cima, um botão para cada seção (rola até ela; a margem deixa o título à vista embaixo do × que acompanha a rolagem) */

@@ -659,6 +659,49 @@ the services cost in the last year; in totals, the variables `servicos` and `cus
 services** adds up the collection's). The **Passport** lists the services. Through the API: `recurso=servicos` (the list, with
 a watch's summary) and `recurso=servicos` with `acao=salvar` or `excluir`.
 
+### Declared, measured and estimated
+
+Each technical item of the watch has three values, and the panel shows the three together, in a small table: the
+**declared** (what the manufacturer, the caliber or the record says), the **last test** (the last measurement) and the
+**estimate now** (what the system concludes from the measurements). One does not stand for the other: the caliber's "40 h"
+is not your watch's reserve, and the manufacturer's "200 m" does not prove today's seal. The table appears:
+
+- for the **rate**, in the **Accuracy** box: the expected rate, the last measurement and the time-weighted average;
+- for the **power reserve** (the mechanical), in the **Measured reserve** box: the caliber's or the group's, the last test and
+  the median of the tests;
+- for the **energy reserve** (the solar), in the **Energy reserve** box: the record's and the last observation, with no
+  estimate;
+- for the **water resistance**, in the **Services and diagnostics** box: the declared one, the last water-resistance test and
+  the seal it proves.
+
+Below each table comes the **confidence**, by a single rule and with no made-up percentage: how many measurements there are,
+the age of the last one and how much they vary (*"Confidence high: 3 tests, the last one 12 days ago, variation of ±1.1 h."*).
+It is **high** with the minimum number of measurements (3 for the rate, 2 for the reserve, 1 for water resistance), the last
+one within its validity (30 days for the rate, one year for the reserve and water resistance) and the variation within the
+tolerance (for the rate, half the expected range, otherwise 5 s/day; for the reserve, 10% of the measurement); **medium**
+with the last one up to three times the validity and the variation up to twice the tolerance; **low** otherwise. When it is
+not high, the sentence says why.
+
+**The reserve test** (the mechanical): fill it all the way (wind the crown until it stops, or a while on the winder or the
+wrist), open **Start a reserve test** in the Measured reserve box, say when it was full and how (the turns of the crown, the
+hours on the winder or the wrist) and leave the watch still, with no winding and off the wrist. When it stops, press
+**Stopped** (the time can be corrected). The time from full to stopped is the **measured reserve**; with several tests the
+**median** counts, and one wrong test does not pull the result. The caliber's value does not change: the button **Use N h in
+this watch's record** saves the measurement in the watch's own record, which is what counts in the charge and autonomy
+calculations (clearing the watch's value goes back to the caliber's). In formulas, `RESERVA_MEDIDA()` gives the median (empty
+without a test) and `RESERVA_TESTES()` how many tests finished: `PADRAO(RESERVA_MEDIDA(); reserva_horas)` uses the
+measurement and, without it, the record.
+
+**The solar has no calibration**: an Eco-Drive takes months to run down, and recharging depends on light, which the system
+does not measure; a number there would be false precision. The **Energy reserve** box keeps only **observations**: stopped,
+the low charge indicator (the seconds hand jumping 2 by 2) or another note. Observations also work on the mechanical. The
+smartwatch already measures the battery through the charge readings (the **Battery consumption** box, with the ± of each
+consumption).
+
+The **Passport** has the table. Through the API: `recurso=ficha` (the watch's `tecnico` and `reserva`), `recurso=reserva` (the
+tests, the observations, the measurement and the table) and `recurso=reserva` with `acao=iniciar`, `parou`, `observar`,
+`salvar`, `usar` or `excluir`.
+
 ## Several people: accounts, collections and access
 
 The system belongs to **several people**, each with their own **account**, and each account with **its own collections**. A
@@ -1499,6 +1542,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `foto` | a watch's photo (`relogio=<id>`): the image, not JSON |
 | `documentos` | a watch's documents (`relogio=<id>`; without it, all of them), with the categories, the NF-e summary of each XML, the folder and the limit |
 | `servicos` | the services and diagnostics (`relogio=<id>`, with the summary: the declared water resistance, the proven one, how many and the total cost; without it, everyone's), with the parts, the cost, the water resistance and the rate before and after |
+| `reserva` | the measured reserve (`relogio=<id>`: the mechanical watch's reserve tests, the energy observations, the measurement, which is the median of the tests, and the declared, measured and estimated table with the confidence; without it, the tests and observations of all) |
 | `documento` | a document's file (`id=<id>`): to show (image, video, audio, PDF, text) or to download (the rest, or with `baixar=1`); `mini=1` is the photo's thumbnail. It serves pieces (Range), so the video can skip ahead |
 | `usuarios`, `migracoes` | the master: the accounts panel, each with what it has and the password hash (to migrate with the same password: see [The users and the passwords](#the-users-and-the-passwords)); the others, only their own account; the migrations still to apply |
 | `conta`, `colecoes`, `aprovacoes` | My account (the collections, the trees, the requests, the tokens, the remembered devices, the Web Push devices; `parte=menu`: only the menu's part); the collections and the trees; the Approvals page |
@@ -1520,6 +1564,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `relogio` | `salvar` (create or change), `excluir` (with the documents), `foto`, `remover_foto` |
 | `documentos` | `enviar` (one or several files, with the category, the title, the date, the description and, for a photo, the thumbnail), `alterar`, `excluir` |
 | `servicos` | `salvar` (the date, the type, who did it, the labour, the parts, the water resistance, the rate before and after, the warranty and the documents; a service and a battery change also become the entry), `excluir` |
+| `reserva` | `iniciar` (when it was full and how), `parou`, `observar` (stopped, low charge, note; also on the solar), `salvar`, `usar` (the median goes to the watch's record), `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (only without documents) |
 | `lancamento` | `lancar` (winding, charge, battery...), `iniciar` and `encerrar` (put on and take off the wrist, the winder, the sun, the charger), `alternar` (closes the session if it is open, opens it if it is closed: a single button on the phone), `periodo` (a period that has passed; on the wrist of the watch of the day it is rotation use, and the stretches of the same type it touches, like a Put on left open, become one), `alterar`, `excluir`, `medicao` (a consumption measurement goes into or out of the calculation: `id`, `usada` 1 or 0). In all of them, `relogio_id=hoje` is the watch of the day |
 | `rodizio` | `usando` (I'm wearing this one today), `trocar_dia` (a day's watch), `periodo` (the watches of a period, in order: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (erases the period's days and the mode builds them again; only `de`: to the end of the plan; only `ate`: from tomorrow to it), `periodo_livre` (erases and leaves the days free, without a draw; the same dates), `manual` (the Manual rotation: `de`, `ate`, `dias[YYYY-MM-DD]` = the watch id, `auto` or `livre`), `apagar_tudo` (the whole schedule from tomorrow on goes away; `hoje=1`: from today on; the mode builds the plan again), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (change the mode) |

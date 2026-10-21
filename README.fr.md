@@ -678,6 +678,51 @@ et `custo_servicos` (le total prêt **Coût des services** fait la somme de la c
 services. Par l'API : `recurso=servicos` (la liste, avec le résumé d'une montre) et `recurso=servicos` avec `acao=salvar` ou
 `excluir`.
 
+### Déclaré, mesuré et estimé
+
+Chaque information technique de la montre a trois valeurs, et le panneau montre les trois ensemble, dans un petit tableau :
+le **déclaré** (ce que disent le fabricant, le calibre ou la fiche), le **dernier test** (la dernière mesure) et
+l'**estimation actuelle** (ce que le système conclut des mesures). L'un ne vaut pas pour l'autre : les « 40 h » du calibre ne
+sont pas la réserve de votre montre, et les « 200 m » du fabricant ne prouvent pas l'étanchéité d'aujourd'hui. Le tableau
+apparaît :
+
+- pour la **marche**, dans le cadre **Précision** : la marche attendue, la dernière mesure et la moyenne pondérée par le
+  temps ;
+- pour la **réserve de marche** (la mécanique), dans le cadre **Réserve mesurée** : celle du calibre ou du groupe, le dernier
+  test et la médiane des tests ;
+- pour la **réserve d'énergie** (la solaire), dans le cadre **Réserve d'énergie** : celle de la fiche et la dernière
+  observation, sans estimation ;
+- pour l'**étanchéité**, dans le cadre **Services et diagnostics** : la déclarée, le dernier test d'étanchéité et
+  l'étanchéité qu'il prouve.
+
+Sous chaque tableau vient la **confiance**, par une seule règle et sans pourcentage inventé : combien de mesures il y a,
+l'âge de la dernière et combien elles varient (*« Confiance haute : 3 tests, le dernier il y a 12 jours, variation de ±1,1
+h. »*). Elle est **haute** avec le minimum de mesures (3 pour la marche, 2 pour la réserve, 1 pour l'étanchéité), la
+dernière dans sa validité (30 jours pour la marche, un an pour la réserve et l'étanchéité) et la variation dans la
+tolérance (pour la marche, la moitié de la plage attendue, sinon 5 s/jour ; pour la réserve, 10 % de la mesure) ;
+**moyenne** avec la dernière jusqu'à trois fois la validité et la variation jusqu'au double de la tolérance ; **basse**
+sinon. Quand elle n'est pas haute, la phrase dit pourquoi.
+
+**Le test de la réserve** (la mécanique) : remontez-la à fond (la couronne jusqu'à la butée, ou un temps sur le remontoir ou
+au poignet), ouvrez **Commencer un test de la réserve** dans le cadre Réserve mesurée, dites quand elle était pleine et
+comment (les tours de couronne, les heures sur le remontoir ou au poignet) et laissez la montre immobile, sans remontage ni
+poignet. Quand elle s'arrête, appuyez sur **Arrêtée** (l'heure peut être corrigée). Le temps de pleine à arrêtée est la
+**réserve mesurée** ; avec plusieurs tests, c'est la **médiane** qui compte, et un test erroné ne tire pas le calcul. La
+valeur du calibre ne change pas : le bouton **Utiliser N h dans la fiche de cette montre** enregistre la mesure dans la fiche
+de la montre elle-même, qui est ce qui compte dans les calculs de la charge et de l'autonomie (effacer la valeur de la montre
+revient à celle du calibre). Dans les formules, `RESERVA_MEDIDA()` donne la médiane (vide sans test) et `RESERVA_TESTES()`
+combien de tests sont terminés : `PADRAO(RESERVA_MEDIDA(); reserva_horas)` utilise la mesure et, sans elle, la fiche.
+
+**La solaire n'a pas de calibrage** : une Eco-Drive met des mois à se décharger, et la recharge dépend de la lumière, que le
+système ne mesure pas ; un nombre là serait une fausse précision. Le cadre **Réserve d'énergie** ne garde que les
+**observations** : arrêtée, l'indicateur de charge faible (l'aiguille des secondes qui saute de 2 en 2) ou une autre note.
+Les observations valent aussi pour la mécanique. La montre connectée mesure déjà la batterie par les lectures de charge (le
+cadre **Consommation de la batterie**, avec le ± de chaque consommation).
+
+Le **Passeport** reprend le tableau. Par l'API : `recurso=ficha` (le `tecnico` et la `reserva` de la montre),
+`recurso=reserva` (les tests, les observations, la mesure et le tableau) et `recurso=reserva` avec `acao=iniciar`, `parou`,
+`observar`, `salvar`, `usar` ou `excluir`.
+
 ## Plusieurs personnes : comptes, collections et accès
 
 Le système appartient à **plusieurs personnes**, chacune avec son **compte**, et chaque compte avec **ses collections**. Une
@@ -1542,6 +1587,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `foto` | la photo d'une montre (`relogio=<id>`) : l'image, pas du JSON |
 | `documentos` | les documents d'une montre (`relogio=<id>` ; sans lui, de toutes), avec les catégories, le résumé de la NF-e de chaque XML, le dossier et la limite |
 | `servicos` | les services et diagnostics (`relogio=<id>`, avec le résumé : la résistance déclarée, l'étanchéité prouvée, combien et le coût total ; sans lui, ceux de toutes), avec les pièces, le coût, l'étanchéité et la marche avant et après |
+| `reserva` | la réserve mesurée (`relogio=<id>` : les tests de la réserve de la mécanique, les observations de l'énergie, la mesure, qui est la médiane des tests, et le tableau déclaré, mesuré et estimé avec la confiance ; sans lui, les tests et les observations de toutes) |
 | `documento` | le fichier d'un document (`id=<id>`) : pour afficher (image, vidéo, audio, PDF, texte) ou pour télécharger (le reste, ou avec `baixar=1`) ; `mini=1` est la vignette de la photo. Il sert des morceaux (Range), pour que la vidéo avance |
 | `usuarios`, `migracoes` | le master : le panneau des comptes, chacun avec ce qu'il a et le hash du mot de passe (pour migrer avec le même mot de passe : voir [Les utilisateurs et les mots de passe](#les-utilisateurs-et-les-mots-de-passe)) ; les autres, seulement leur propre compte ; les migrations qui restent à appliquer |
 | `conta`, `colecoes`, `aprovacoes` | Mon compte (les collections, les arbres, les demandes, les jetons, les appareils mémorisés, les appareils du Web Push ; `parte=menu` : seulement ce qu'utilise le menu) ; les collections et les arbres ; la page Approbations |
@@ -1563,6 +1609,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `relogio` | `salvar` (créer ou modifier), `excluir` (avec les documents), `foto`, `remover_foto` |
 | `documentos` | `enviar` (un ou plusieurs fichiers, avec la catégorie, le titre, la date, la description et, pour une photo, la vignette), `alterar`, `excluir` |
 | `servicos` | `salvar` (la date, le type, qui l'a fait, la main-d'œuvre, les pièces, l'étanchéité, la marche avant et après, la garantie et les documents ; la révision et le changement de pile deviennent aussi la saisie), `excluir` |
+| `reserva` | `iniciar` (quand elle était pleine et comment), `parou`, `observar` (arrêtée, charge faible, note ; aussi sur la solaire), `salvar`, `usar` (la médiane va dans la fiche de la montre), `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (seulement sans documents) |
 | `lancamento` | `lancar` (remontage, charge, pile...), `iniciar` et `encerrar` (mettre et retirer du poignet, du remontoir, du soleil, du chargeur), `alternar` (ferme la session si elle est ouverte, l'ouvre si elle est fermée : un seul bouton sur le téléphone), `periodo` (une période déjà passée ; au poignet de la montre du jour c'est un usage de la rotation, et les périodes du même type qu'elle touche, comme le Mettre resté ouvert, n'en font plus qu'une), `alterar`, `excluir`, `medicao` (une mesure de la consommation entre dans le calcul ou en sort : `id`, `usada` 1 ou 0). Dans toutes, `relogio_id=hoje` est la montre du jour |
 | `rodizio` | `usando` (je porte celle-ci aujourd'hui), `trocar_dia` (la montre d'un jour), `periodo` (les montres d'une période, dans l'ordre : `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (efface les jours de la période et le mode les refait ; seulement `de` : jusqu'à la fin du plan ; seulement `ate` : de demain jusqu'à lui), `periodo_livre` (efface et laisse les jours libres, sans tirage ; les mêmes dates), `manual` (la Rotation manuelle : `de`, `ate`, `dias[AAAA-MM-JJ]` = l'id de la montre, `auto` ou `livre`), `apagar_tudo` (toute la programmation à partir de demain disparaît ; `hoje=1` : à partir d'aujourd'hui ; le mode reconstruit le plan), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (changer le mode) |
