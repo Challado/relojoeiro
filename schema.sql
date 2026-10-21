@@ -38,7 +38,8 @@ CREATE TABLE usuario (
     CONSTRAINT ck_usuario_textos CHECK (TRIM(login) <> '' AND senha_hash <> ''),
     CONSTRAINT ck_usuario_email CHECK (email IS NULL OR email LIKE '%_@_%'),
     CONSTRAINT ck_usuario_bloqueado CHECK (bloqueado IN (0, 1)),
-    CONSTRAINT ck_usuario_nivel CHECK (nivel IN ('basico', 'avancado'))
+    CONSTRAINT ck_usuario_nivel CHECK (nivel IN ('basico', 'avancado')),
+    CONSTRAINT ck_usuario_aparados CHECK (login = TRIM(login) AND (email IS NULL OR email = TRIM(email)))
 ) ENGINE=InnoDB;
 
 -- a árvore de grupos: cada relógio fica num grupo; cada grupo pode ter campos, tipos de lançamento, fórmulas e avisos. A raiz

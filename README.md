@@ -745,12 +745,26 @@ dono passou). A conta criada assim
 é **de demonstração** por `DEMO_DIAS` dias (30 sem a linha): o menu mostra **Demo: N dias**, um e-mail avisa 7 dias e 1 dia antes,
 e, vencida, o cron apaga a conta com tudo o que é dela. O master **torna a conta oficial** (ou prorroga) em **Usuários**. Com
 `CADASTRO_ABERTO = false` no `config.php`, o cadastro fecha: só entra quem o master cria ou quem tem um convite. A página tem
-também o **Esqueci a senha**: o link para escolher uma senha nova vai por e-mail e vale 2 horas.
+também o **Esqueci a senha**: o link para escolher uma senha nova vai por e-mail e vale 2 horas. A página de acesso (a que
+aparece quando o pedido de senha do navegador é cancelado) traz **Tentar de novo**, **Criar conta** e **Recuperar senha**
+(`cadastro.php?esqueci=1`, o Esqueci a senha primeiro).
+
+**Nunca duas contas com o mesmo login ou e-mail.** Dá para entrar pelo login ou pelo e-mail, então o mesmo texto não pode
+levar a duas contas: o login que já existe (sem diferenciar maiúscula, sem os espaços das pontas) não é criado de novo, o
+e-mail de uma conta não pode ser o de outra, e o login de uma também não pode ser o e-mail de outra. Vale em todo caminho
+(o master criando ou mudando em **Usuários**, o cadastro aberto, **Minha conta**, a importação do sistema anterior), e o
+banco garante também: o `UNIQUE` do login e o do e-mail (a collation não diferencia maiúscula) e a regra
+`ck_usuario_aparados` (sem espaços nas pontas; migração v40). Criar a conta (`recurso=usuarios`, `acao=salvar`) nunca mexe
+numa que já existe: a senha de outra conta, o master troca com `acao=senha`.
+
+Os campos de usuário e senha de um serviço de fora (o servidor de e-mail próprio, o CalDAV) e o login de **Criar conta** em
+**Usuários** ficam somente leitura até o clique: o navegador não os preenche sozinho com o login salvo de quem está usando
+(num par usuário e senha ele ignora o `autocomplete="off"`, e o login dele acabaria gravado na conta de outra pessoa).
 
 **A senha** tem a força que o master escolhe na **Configuração**, no cartão **Senhas**: o tamanho mínimo e quantas letras
 maiúsculas, minúsculas, números e símbolos ela precisa ter, no mínimo (o padrão: 8 caracteres, com 1 de cada). Vale para
 toda senha nova: a conta criada, a troca em **Minha conta**, a senha nova pelo link do **Esqueci a senha**, a do master em
-**Usuários** e a do `criar_usuario.php`; as que já existem continuam valendo. Todo lugar que define uma senha pede também o
+**Usuários**; as que já existem continuam valendo (o `senha.php`, no servidor, troca sem ela). Todo lugar que define uma senha pede também o
 **Confirmar a senha** e, enquanto você digita, mostra o que a API diz dela: cada regra com ✓ ou ✗, a confirmação e a
 **força** (de muito fraca a forte, pelo tamanho e por quantos tipos de caractere ela mistura). Pela API:
 `recurso=cadastro`, `acao=conferir_senha` (sem login e sem gravar nada), e `senha_confirmacao` nas gravações de senha.
@@ -1262,8 +1276,10 @@ define("DB_ARQUIVO", __DIR__ . "/../relogios.sqlite");
 
 ```sh
 php instalar.php              # a estrutura e o conjunto inicial
-php criar_usuario.php voce    # pede a senha
-php -S localhost:8000         # e abra http://localhost:8000
+php -S localhost:8000         # o servidor (deixe rodando) e abra http://localhost:8000
+# noutro terminal, o primeiro usuário (o master), pela API com o API_TOKEN do config.php:
+curl -H "X-Api-Token: o-seu-token" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=voce \
+  --data-urlencode senha=Sua-senha-1 --data-urlencode senha_confirmacao=Sua-senha-1 http://localhost:8000/api.php
 ```
 
 Cadastre alguns relógios em **Hoje → Novo relógio**. Para montar a escala sem esperar o cron, rode `php cron.php --forcar`.
@@ -1494,8 +1510,9 @@ A API faz também o que vem antes e em volta das telas: **instala o banco** (`re
 (`recurso=usuarios`, pelo token), **importa o sistema anterior** (`recurso=importacao`), o **cadastro aberto** (`recurso=cadastro`,
 sem login), as **contas** (`conta`, `colecoes`, `acessos`, `convites`, `pedidos`, `aprovacoes`) e faz o **login das páginas**
 (`recurso=entrar`: quando o login cai com a página já aberta, a API pede o usuário e a senha e devolve para a página; ao
-abrir, a própria página já pede, antes de mandar qualquer coisa). Os scripts de linha de comando (`instalar.php`, `criar_usuario.php`,
-`importar.php`) são atalhos: chamam as mesmas operações da API.
+abrir, a própria página já pede, antes de mandar qualquer coisa). Os scripts de linha de comando (`instalar.php` e
+`importar.php`) são atalhos: chamam as mesmas operações da API. O `senha.php` é a exceção de propósito: troca a senha de uma
+conta pelo servidor, sem a força da Configuração (quem tem o servidor na mão decide), o que a API não faz.
 
 Fora da API fica só o **cron** (`cron.php`, o relógio do sistema: monta o plano, abre e fecha a sessão do dia, manda as
 mensagens, sincroniza a agenda, dispara os eventos e cuida das cópias dos documentos), que usa as mesmas funções que a API usa;
@@ -1705,10 +1722,12 @@ php instalar.php
 #    ou pela API, com o token do config.php (o idioma: lingua=en, como em qualquer pedido):
 #    curl -H "X-Api-Token: $TOKEN" -d recurso=instalacao -d acao=instalar http://servidor/relojoeiro/api.php
 
-# 5. o primeiro usuário, o master, com a coleção dele (a senha é pedida sem aparecer)
-php criar_usuario.php seu_login
-#    ou pela API, com o token:
-#    curl -H "X-Api-Token: $TOKEN" -d recurso=usuarios -d acao=salvar -d login=seu_login -d senha=... http://servidor/relojoeiro/api.php
+# 5. o primeiro usuário, o master, com a coleção dele: pela API, com o token (como qualquer conta: a força da senha,
+#    a confirmação, o login e o e-mail únicos)
+curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=seu_login \
+  --data-urlencode senha=... --data-urlencode senha_confirmacao=... http://servidor/relojoeiro/api.php
+#    esqueceu a senha de alguém (ou a sua) e o servidor não manda e-mail? No servidor, sem a força da Configuração:
+#    php senha.php seu_login senha_nova      (sem os dois: o menu com os usuários, e a senha pedida sem aparecer)
 
 # 6. o cron, a cada minuto (ele é mudo: não escreve nada e não manda e-mail)
 ( crontab -l; echo "* * * * * php /var/www/relojoeiro/cron.php" ) | crontab -
@@ -2253,7 +2272,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | `migracao_v2.sql` … `migracao_v25.sql` | as migrações, aplicadas pela página Configuração |
 | [`config.exemplo.php`](config.exemplo.php) | o modelo do `config.php` |
 | [`instalar.php`](instalar.php) | instala o `schema.sql` no banco do `config.php`, qualquer um dos três (o mesmo que `recurso=instalacao`) |
-| [`criar_usuario.php`](criar_usuario.php) | cria um usuário ou troca a senha, pela linha de comando (o mesmo que `recurso=usuarios`, `acao=salvar`) |
+| [`senha.php`](senha.php) | troca a senha de uma conta pela linha de comando do servidor, sem a força da Configuração: `php senha.php <login> <senha>`; sem os dois, o menu com os usuários e a senha pedida duas vezes, sem aparecer (criar conta é pela API ou pelas telas) |
 | [`importar.php`](importar.php) | importa os dados do sistema anterior (o mesmo que `recurso=importacao`) |
 | [`reconstrucao.php`](reconstrucao.php) | o roteiro para reescrever o sistema do zero (o `recurso=reconstrucao` da API) |
 | [`.htaccess`](.htaccess) | a proteção dos arquivos internos no Apache (e o login do site com o PHP por FastCGI) |

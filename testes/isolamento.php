@@ -193,6 +193,8 @@ $tentativas = [
     ["recurso" => "acessos", "acao" => "remover", "colecao_id" => $col_a, "usuario_id" => $uid_a, "confirmar" => 1],
     ["recurso" => "convites", "acao" => "criar", "colecao_id" => $col_a, "email" => "x@exemplo.com"],
     ["recurso" => "usuarios", "acao" => "salvar", "login" => "ana", "senha" => "INVADIDO-123"],
+    ["recurso" => "usuarios", "acao" => "senha", "login" => "ana", "senha" => "Invadido-123", "senha_confirmacao" => "Invadido-123"],
+    ["recurso" => "usuarios", "acao" => "salvar", "login" => "SEGREDOANA@exemplo.com", "senha" => "Invadido-123", "senha_confirmacao" => "Invadido-123"],
     ["recurso" => "config", "acao" => "salvar", "senha_tamanho" => 4, "senha_simbolos" => 0],
     ["recurso" => "usuarios", "acao" => "excluir", "login" => "ana", "confirmar" => 1],
     ["recurso" => "conta", "acao" => "alterar", "email" => "segredoana@exemplo.com"],

@@ -492,7 +492,13 @@ dias      = SE(NO_GRUPO("Smartwatch"); dias_seguidos; 1)
 
 **公开注册**（`cadastro.php` 页面，无需登录，带**创建账户**链接）：填写登录名、密码、电子邮件、语言以及开始方式（带初始集合的收藏、空收藏，或凭所有者给出的编号申请访问别人的收藏）。这样创建的账户是**演示账户**，有效 `DEMO_DIAS` 天（没有这一行时为 30 天）：菜单显示**演示：N 天**，到期前 7 天和 1 天会收到邮件提醒，到期后 cron 会把账户连同其所有内容一起删除。master 可以在**用户**中**把账户转为正式**（或延长）。在 `config.php` 中设置 `CADASTRO_ABERTO = false` 后注册关闭：只有 master 创建的人或持有邀请的人才能进入。该页面还有**忘记密码**：设置新密码的链接通过邮件发送，有效 2 小时。
 
-**密码**的强度由 master 在**配置**的**密码**卡片中设置：最小长度，以及至少需要多少个大写字母、小写字母、数字和符号（默认：8 个字符，每种至少 1 个）。它适用于所有新密码：新建的账户、在**我的账户**中修改、通过**忘记密码**链接设置的新密码、master 在**用户**中设置的密码，以及 `criar_usuario.php` 设置的密码；已有的密码继续有效。凡是设置密码的地方，还要填写**确认密码**，并在输入时显示 API 的检查结果：每条规则带 ✓ 或 ✗、确认是否一致，以及**强度**（从很弱到强，按长度和混合的字符种类数）。通过 API：`recurso=cadastro`、`acao=conferir_senha`（无需登录，不保存任何内容），以及保存密码时的 `senha_confirmacao`。
+访问页面（取消浏览器的密码框时出现的页面）带有**重试**、**创建账户**和**找回密码**（`cadastro.php?esqueci=1`，先显示忘记密码）。
+
+**永远不会有两个账户使用相同的登录名或电子邮件。**登录名和电子邮件都可用于登录，所以同一段文字不能通向两个账户：已存在的登录名（不区分大小写，去掉两端空格）不会再被创建，一个账户的电子邮件不能是另一个账户的，一个账户的登录名也不能是另一个账户的电子邮件。所有途径都适用（master 在**用户**中创建或修改、公开注册、**我的账户**、导入旧系统），数据库也会保证：登录名和电子邮件的 `UNIQUE`（排序规则不区分大小写）以及规则 `ck_usuario_aparados`（两端无空格；迁移 v40）。创建账户（`recurso=usuarios`、`acao=salvar`）绝不会改动已存在的账户：其他账户的密码由 master 用 `acao=senha` 更改。
+
+外部服务（自己的邮件服务器、CalDAV）的用户名和密码字段，以及**用户**中**创建账户**的登录名，在点击之前都是只读的：浏览器不会自动用正在使用它的人保存的登录信息填写（在用户名和密码字段成对出现时，它会忽略 `autocomplete="off"`，而这个登录信息最终会被保存到别人的账户中）。
+
+**密码**的强度由 master 在**配置**的**密码**卡片中设置：最小长度，以及至少需要多少个大写字母、小写字母、数字和符号（默认：8 个字符，每种至少 1 个）。它适用于所有新密码：新建的账户、在**我的账户**中修改、通过**忘记密码**链接设置的新密码、master 在**用户**中设置的密码；已有的密码继续有效（服务器上的 `senha.php` 不受其限制）。凡是设置密码的地方，还要填写**确认密码**，并在输入时显示 API 的检查结果：每条规则带 ✓ 或 ✗、确认是否一致，以及**强度**（从很弱到强，按长度和混合的字符种类数）。通过 API：`recurso=cadastro`、`acao=conferir_senha`（无需登录，不保存任何内容），以及保存密码时的 `senha_confirmacao`。
 
 **master 面板**（**用户**）显示每个账户的电子邮件、角色、最后访问、到期时间、收藏（含手表数量）以及它还能看到的内容，并提供操作：**以其身份查看**（按那个人看到的样子查看整个系统，顶部有横条和返回按钮）、**转为正式**、**延长**、**改回演示**、**封禁**、**修改**（登录名、电子邮件、语言、角色）、**修改密码**、**转移收藏**（转给另一个所有者：树一起转移；如果原所有者的其他收藏也在用这棵树，新所有者获得一份副本）、**授予访问权限**和**删除**。一无所有的普通账户（没有收藏、没有访问权限、没有等待中的申请或邀请）会自动删除。
 
@@ -890,8 +896,10 @@ define("DB_ARQUIVO", __DIR__ . "/../relogios.sqlite");
 
 ```sh
 php instalar.php --lingua=zh-CN  # 结构和初始设置（中文）
-php criar_usuario.php you        # 会询问密码
-php -S localhost:8000            # 然后打开 http://localhost:8000
+php -S localhost:8000            # 服务器（保持运行），然后打开 http://localhost:8000
+# 在另一个终端中，通过 API 用 config.php 的 API_TOKEN 创建第一个用户（master）：
+curl -H "X-Api-Token: 你的令牌" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=you \
+  --data-urlencode senha=Your-password-1 --data-urlencode senha_confirmacao=Your-password-1 http://localhost:8000/api.php
 ```
 
 在 **今天 → 新手表** 中录入一些手表。想不等 cron 就生成排程，运行 `php cron.php --forcar`。
@@ -1014,7 +1022,7 @@ API 的消息（每次写入的回复、错误、查询中的文本）使用请�
 
 `api.php` 是**唯一的后端**。页面只是界面：每个页面的 JavaScript 调用 API 并生成 HTML，不做任何计算（摘要、百分比、合计和状态，例如计划摘要和 cron 的状态，都由 API 直接给出；界面只做属于自己的事：筛选、排序以及把表格筛选后显示的内容相加）。因此，**界面能做的一切，脚本也能做**：自动化、手机快捷方式、与 Home Assistant 集成、小组件。
 
-API 也负责界面之前和周边的事情：**安装数据库**（`recurso=instalacao`）、**创建第一个用户**（`recurso=usuarios`，使用令牌）、**导入旧系统**（`recurso=importacao`）、**公开注册**（`recurso=cadastro`，无需登录）、**账户**（`conta`、`colecoes`、`acessos`、`convites`、`pedidos`、`aprovacoes`），以及**页面登录**（`recurso=entrar`：页面已打开而登录失效时，由 API 询问用户名和密码，再送回页面；打开页面时，页面本身在输出任何内容之前就已经要求登录）。命令行脚本（`instalar.php`、`criar_usuario.php`、`importar.php`）只是快捷方式：它们调用同样的 API 操作。
+API 也负责界面之前和周边的事情：**安装数据库**（`recurso=instalacao`）、**创建第一个用户**（`recurso=usuarios`，使用令牌）、**导入旧系统**（`recurso=importacao`）、**公开注册**（`recurso=cadastro`，无需登录）、**账户**（`conta`、`colecoes`、`acessos`、`convites`、`pedidos`、`aprovacoes`），以及**页面登录**（`recurso=entrar`：页面已打开而登录失效时，由 API 询问用户名和密码，再送回页面；打开页面时，页面本身在输出任何内容之前就已经要求登录）。命令行脚本（`instalar.php` 和 `importar.php`）只是快捷方式：它们调用同样的 API 操作。`senha.php` 是有意为之的例外：它在服务器上更改账户的密码，不受“配置”强度限制（掌握服务器的人说了算），这是 API 不做的。
 
 API 之外只有 **cron**（`cron.php`，系统的时钟：生成计划、开始和结束当天的时段、发送消息、同步日历、触发事件并维护文档的副本），它使用与 API 相同的函数；可以随时请求的事情在 API 中都有对应的动作（推送目标的 `testar`、日历的 `sincronizar`、`resortear`……），它做过的事显示在 `recurso=cron` 中。
 
@@ -1204,10 +1212,11 @@ php instalar.php --lingua=zh-CN
 #    或通过 API，使用 config.php 中的令牌（语言：lingua=zh-CN，与任何请求一样）：
 #    curl -H "X-Api-Token: $TOKEN" -d recurso=instalacao -d acao=instalar -d lingua=zh-CN http://服务器/relojoeiro/api.php
 
-# 5. 第一个用户，即 master，连同他的收藏（输入密码时不显示）
-php criar_usuario.php 你的登录名
-#    或通过 API，使用令牌：
-#    curl -H "X-Api-Token: $TOKEN" -d recurso=usuarios -d acao=salvar -d login=你的登录名 -d senha=... http://服务器/relojoeiro/api.php
+# 5. 第一个用户，即 master，连同他的收藏：通过 API，使用令牌（与任何账户一样：密码强度、确认、唯一的登录名和电子邮件）
+curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=你的登录名 \
+  --data-urlencode senha=... --data-urlencode senha_confirmacao=... http://服务器/relojoeiro/api.php
+#    忘记了某人（或你自己）的密码，而服务器不发邮件？在服务器上，不受强度限制：
+#    php senha.php 你的登录名 新密码      （两者都没有时：显示用户菜单，并隐藏地询问密码）
 
 # 6. cron，每分钟一次（它是静默的：不输出任何内容，也不发邮件）
 ( crontab -l; echo "* * * * * php /var/www/relojoeiro/cron.php" ) | crontab -
@@ -1533,7 +1542,7 @@ api.php?recurso=codigo&conteudo=1&f[arquivos][camada]=tela   所有界面相关�
 | `migracao_v2.sql` … `migracao_v24.sql` | 迁移，通过设置页面应用 |
 | [`config.exemplo.php`](config.exemplo.php) | `config.php` 的模板 |
 | [`instalar.php`](instalar.php) | 把 `schema.sql` 安装到 `config.php` 指定的数据库中，任何一种都可以（与 `recurso=instalacao` 相同） |
-| [`criar_usuario.php`](criar_usuario.php) | 在命令行中创建用户或修改密码（与 `recurso=usuarios`、`acao=salvar` 相同） |
+| [`senha.php`](senha.php) | 在服务器的命令行中更改账户的密码，不受“配置”强度限制：`php senha.php <login> <密码>`；两者都没有时，显示用户菜单，并隐藏地询问两次密码（创建账户通过 API 或界面） |
 | [`importar.php`](importar.php) | 导入旧系统的数据（与 `recurso=importacao` 相同） |
 | [`reconstrucao.php`](reconstrucao.php) | 从零重写系统的指南（API 的 `recurso=reconstrucao`） |
 | [`.htaccess`](.htaccess) | Apache 上对内部文件的保护（以及 PHP 以 FastCGI 运行时的网站登录） |

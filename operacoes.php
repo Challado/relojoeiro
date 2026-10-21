@@ -3950,10 +3950,10 @@ function importacao_trazer($ler)
     }
     $conta[t("fotos")] = count($ler("SELECT relogio_id FROM foto"));
 
-    // os usuários do sistema antigo: os que ainda não existem entram como membros desta coleção (contas oficiais)
+    // os usuários do sistema antigo: os que ainda não existem entram como membros desta coleção (contas oficiais); o login que
+    // já é o login ou o e-mail de uma conta daqui fica de fora (nunca duas contas com o mesmo)
     foreach ($ler("SELECT * FROM usuario") as $u) {
-        $existe = sem_escopo(function () use ($u) { return valor("SELECT id FROM usuario WHERE login = ?", [$u["login"]]); });
-        if ($existe === null) {
+        if (identificador_em_uso($u["login"]) === null) {
             sem_escopo(function () use ($u) {
                 sql("INSERT INTO usuario (login, senha_hash, papel, criado) VALUES (?, ?, 'comum', ?)", [$u["login"], $u["senha_hash"], $u["criado"]]);
                 sql("INSERT INTO colecao_usuario (colecao_id, usuario_id, desde) VALUES (?, ?, NOW())", [colecao_atual() ?? 0, ultimo_id()]);

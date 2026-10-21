@@ -750,6 +750,7 @@ $MIGRACOES = [
     "v37" => ["migracao_v37.sql", tk("o servidor de e-mail próprio de cada pessoa (Minha conta): quem quiser põe o SMTP dele (o Gmail, o Outlook, o do provedor), e os e-mails dele saem por ele (os destinos de e-mail das coleções dele, os convites e os pedidos que ele manda, os da própria conta); sem ele, vale o servidor do sistema, o do config.php"), "usuario_smtp"],
     "v38" => ["migracao_v38.sql", tk("o modo da interface de cada pessoa (Minha conta): o básico mostra o dia a dia (cadastrar, marcar o uso, a manutenção, escolher um rodízio pronto) e o avançado também as fórmulas, os roteiros, os critérios, as simulações e os totais; o motor é o mesmo"), "usuario.nivel"],
     "v39" => ["migracao_v39.sql", tk("o timegrapher: as medições de um timegrapher de bancada (a marcha, a amplitude, o erro de batida, as batidas por hora e o ângulo de levantamento, em cada posição), digitadas na mão ou importadas do CSV do aparelho, com a média e a diferença entre as posições de cada sessão"), "timegrapher"],
+    "v40" => ["migracao_v40.sql", tk("o login e o e-mail de cada conta sem espaços nas pontas também no banco (a regra ck_usuario_aparados), e nunca duas contas com o mesmo login ou e-mail: o login de uma também não pode ser o e-mail de outra (os dois servem para entrar)"), "sistema.chave=migracao_v40", "migracao_v40"],
 ];
 
 // O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
@@ -1047,6 +1048,15 @@ function senha_hash_info($hash)
     }
     $info = password_get_info($hash);
     return $info["algoName"] !== "unknown" ? [$info["algoName"], isset($info["options"]["cost"]) ? (int)$info["options"]["cost"] : null] : [null, null];
+}
+
+// A v40 numa instalação nova: o schema.sql já traz a regra ck_usuario_aparados; fica só a marca (no banco que já existia,
+// o migracao_v40.sql grava a marca por último)
+function migracao_v40($nova = false)
+{
+    if ($nova) {
+        sis_set("migracao_v40", "1");
+    }
 }
 
 // A instalação: o schema.sql no banco do config.php, cada comando traduzido para ele, e os passos em PHP das migrações

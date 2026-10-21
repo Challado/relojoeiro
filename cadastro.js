@@ -1,9 +1,10 @@
-// O cadastro aberto: lê recurso=cadastro (sem login) e monta o formulário. Três caminhos pela URL: ?convite=<token> (o
-// convite: criar a conta e já ver o que foi convidado, ou entrar e aceitar), ?senha=<token> (a senha nova) e o normal
-// (criar a conta, esqueci a senha).
+// O cadastro aberto: lê recurso=cadastro (sem login) e monta o formulário. Quatro caminhos pela URL: ?convite=<token> (o
+// convite: criar a conta e já ver o que foi convidado, ou entrar e aceitar), ?senha=<token> (a senha nova), ?esqueci=1 (o
+// "Recuperar senha" da página de acesso: o Esqueci a senha primeiro) e o normal (criar a conta, esqueci a senha).
 var parametros = new URLSearchParams(window.location.search);
 var convite = parametros.get("convite") || "";
 var tokenSenha = parametros.get("senha") || "";
+var esqueci = parametros.get("esqueci") === "1";
 var recadoCadastro = null;
 
 aoGravar = function (form, res, dados) {
@@ -76,6 +77,9 @@ function montarCadastro() {
           + el("p", {}, t("Já tem conta? {1}", {1: el("a", {"href": "conta.php?convite=" + encodeURIComponent(convite)}, t("Entre e aceite o convite"))}))
           + (d.convite.tem_conta ? "" : el("h2", {}, t("Ou crie a sua conta")) + formConta(d));
       }
+    } else if (esqueci) {
+      res = el("h1", {}, t("Recuperar senha")) + recado() + formEsqueci(d)
+        + el("p", {}, t("Lembrou? {1}", {1: el("a", {"href": "index.php"}, t("Entrar"))}) + " · " + el("a", {"href": "cadastro.php"}, t("Criar conta")));
     } else {
       res = el("h1", {}, t("Criar conta")) + recado();
       res += d.aberto ? formConta(d) : el("p", {"class": "alerta-cron"}, t("O cadastro está fechado: só entra quem tem um convite. Fale com o administrador."));

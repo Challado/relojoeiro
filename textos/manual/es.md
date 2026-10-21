@@ -1,4 +1,4 @@
-<!-- origem: 51e3a928a67760c7c6162115ae0a084dff87628d -->
+<!-- origem: d8a2903f3e376ff1955f3fcb06bfe3968cd87c12 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -722,11 +722,28 @@ cuenta** (o la prorroga) en **Usuarios**. Con `CADASTRO_ABERTO = false` en el `c
 quien el master crea o quien tiene una invitación. La página tiene también **Olvidé la contraseña**: el enlace para elegir una
 contraseña nueva va por correo y vale 2 horas.
 
+La página de acceso (la que aparece cuando se cancela el pedido de contraseña del navegador) trae **Intentar de nuevo**,
+**Crear cuenta** y **Recuperar contraseña** (`cadastro.php?esqueci=1`, el Olvidé la contraseña primero).
+
+**Nunca dos cuentas con el mismo usuario o correo.** Se puede entrar por el usuario o por el correo, así que el mismo texto
+no puede llevar a dos cuentas: el usuario que ya existe (sin distinguir mayúsculas, sin los espacios de los extremos) no se
+crea de nuevo, el correo de una cuenta no puede ser el de otra, y el usuario de una tampoco puede ser el correo de otra.
+Vale en todo camino (el master creando o cambiando en **Usuarios**, el registro abierto, **Mi cuenta**, la importación del
+sistema anterior), y la base lo garantiza también: el `UNIQUE` del usuario y el del correo (la collation no distingue
+mayúsculas) y la regla `ck_usuario_aparados` (sin espacios en los extremos; migración v40). Crear la cuenta
+(`recurso=usuarios`, `acao=salvar`) nunca toca una que ya existe: la contraseña de otra cuenta la cambia el master con
+`acao=senha`.
+
+Los campos de usuario y contraseña de un servicio de fuera (el servidor de correo propio, el CalDAV) y el usuario de **Crear
+cuenta** en **Usuarios** quedan solo de lectura hasta el clic: el navegador no los rellena solo con el usuario guardado de
+quien lo está usando (en un par usuario y contraseña ignora el `autocomplete="off"`, y su usuario acabaría grabado en la
+cuenta de otra persona).
+
 **La contraseña** tiene la fuerza que el master elige en la **Configuración**, en la tarjeta **Contraseñas**: el tamaño
 mínimo y cuántas letras mayúsculas, minúsculas, números y símbolos necesita tener, como mínimo (el predeterminado: 8
 caracteres, con 1 de cada). Vale para toda contraseña nueva: la cuenta creada, el cambio en **Mi cuenta**, la contraseña
-nueva por el enlace del **Olvidé la contraseña**, la del master en **Usuarios** y la del `criar_usuario.php`; las que ya
-existen siguen valiendo. Todo lugar que define una contraseña pide también el **Confirmar la contraseña** y, mientras
+nueva por el enlace del **Olvidé la contraseña**, la del master en **Usuarios**; las que ya
+existen siguen valiendo (el `senha.php`, en el servidor, la cambia sin ella). Todo lugar que define una contraseña pide también el **Confirmar la contraseña** y, mientras
 usted escribe, muestra lo que dice la API: cada regla con ✓ o ✗, la confirmación y la **fuerza** (de muy débil a fuerte,
 por el tamaño y por cuántos tipos de carácter mezcla). Por la API: `recurso=cadastro`, `acao=conferir_senha` (sin inicio
 de sesión y sin guardar nada), y `senha_confirmacao` en las grabaciones de contraseña.

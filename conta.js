@@ -105,7 +105,7 @@ function quadroDados(d) {
     + el("p", {"class": "nota"}, t("Alguém quer ver as suas coleções? Passe o seu código ({1}) para todas elas, também as que você criar depois, ou o código de uma coleção só (na coluna Código da tabela Coleções). A pessoa pede acesso com ele, na Criar conta ou em Minha conta; você recebe um e-mail e aprova ou recusa em Aprovações. Ninguém vê o seu login antes de você aprovar.", {1: u.id}))
     + (u.demo ? el("p", {"class": "alerta-cron"}, t("Conta de demonstração: vence em {1} dias ({2}). Depois disso, ela e as suas coleções são apagadas. Para continuar, peça ao administrador para torná-la oficial.", {1: u.dias_restantes, 2: dataBr(u.expira_em)})) : "")
     + el("form", {"data-recurso": "conta", "class": "campos"}, el("input", {"type": "hidden", "name": "acao", "value": "alterar"})
-      + parCampo(t("E-mail"), el("input", {"type": "email", "name": "email", "value": u.email || "", "maxlength": "200", "autocomplete": "email"}), "largo")
+      + parCampo(t("E-mail"), el("input", {"type": "email", "name": "email", "value": u.email || "", "maxlength": "200", "autocomplete": "off"}), "largo")
       + parCampo(t("Idioma"), el("select", {"name": "idioma"}, el("option", {"value": "", "selected": !u.idioma}, t("O da coleção")) + d.linguas.map(function (l) {
         return el("option", {"value": l.codigo, "selected": u.idioma === l.codigo}, h(l.nome));
       }).join("")))
@@ -320,9 +320,9 @@ function quadroEnvio(d) {
         + parCampo(t("Segurança"), el("select", {"name": "seguranca"}, ["tls", "ssl", "nada"].map(function (k) {
           return el("option", {"value": k, "selected": (s.seguranca || "tls") === k}, seg[k]);
         }).join("")))
-        + parCampo(t("Usuário"), el("input", {"name": "usuario", "value": s.usuario || "", "maxlength": "200", "autocomplete": "off", "placeholder": t("o e-mail da conta")}))
-        + parCampo(t("Senha"), el("input", {"type": "password", "name": "senha", "autocomplete": "new-password", "placeholder": s.senha_definida ? t("gravada (vazia: mantém)") : ""}))
-        + parCampo(t("Remetente"), el("input", {"type": "email", "name": "remetente", "value": s.remetente || "", "maxlength": "200", "placeholder": t("vazio: o usuário, se for um e-mail")}))
+        + parCampo(t("Usuário"), el("input", semPreencher({"name": "usuario", "value": s.usuario || "", "maxlength": "200", "placeholder": t("o e-mail da conta")})))
+        + parCampo(t("Senha"), el("input", semPreencher({"type": "password", "name": "senha", "placeholder": s.senha_definida ? t("gravada (vazia: mantém)") : ""})))
+        + parCampo(t("Remetente"), el("input", {"type": "email", "name": "remetente", "value": s.remetente || "", "maxlength": "200", "autocomplete": "off", "placeholder": t("vazio: o usuário, se for um e-mail")}))
         + el("p", {"class": "nota largo"}, t("No Gmail: servidor smtp.gmail.com, porta 587, TLS, o seu e-mail como usuário e uma senha de app (Conta do Google › Segurança › Senhas de app; pede a verificação em duas etapas), não a senha normal. No Outlook: smtp-mail.outlook.com, 587, TLS. A senha fica cifrada no banco e não aparece de novo.")))
       + el("div", {"class": "botoes"}, el("button", {}, t("Salvar"))));
   if (s.proprio) {

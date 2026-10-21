@@ -1,4 +1,4 @@
-<!-- origem: b9010f9c04b6576b66ab50035d95cee52e5654fd -->
+<!-- origem: 1e9be80226b08ebedae42b5b560171ddc3703d94 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -63,8 +63,10 @@ define("DB_ARQUIVO", __DIR__ . "/../relogios.sqlite");
 
 ```sh
 php instalar.php --lingua=zh-CN  # 结构和初始设置（中文）
-php criar_usuario.php you        # 会询问密码
-php -S localhost:8000            # 然后打开 http://localhost:8000
+php -S localhost:8000            # 服务器（保持运行），然后打开 http://localhost:8000
+# 在另一个终端中，通过 API 用 config.php 的 API_TOKEN 创建第一个用户（master）：
+curl -H "X-Api-Token: 你的令牌" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=you \
+  --data-urlencode senha=Your-password-1 --data-urlencode senha_confirmacao=Your-password-1 http://localhost:8000/api.php
 ```
 
 在 **今天 → 新手表** 中录入一些手表。想不等 cron 就生成排程，运行 `php cron.php --forcar`。
@@ -78,7 +80,7 @@ php -S localhost:8000            # 然后打开 http://localhost:8000
 
 `api.php` 是**唯一的后端**。页面只是界面：每个页面的 JavaScript 调用 API 并生成 HTML，不做任何计算（摘要、百分比、合计和状态，例如计划摘要和 cron 的状态，都由 API 直接给出；界面只做属于自己的事：筛选、排序以及把表格筛选后显示的内容相加）。因此，**界面能做的一切，脚本也能做**：自动化、手机快捷方式、与 Home Assistant 集成、小组件。
 
-API 也负责界面之前和周边的事情：**安装数据库**（`recurso=instalacao`）、**创建第一个用户**（`recurso=usuarios`，使用令牌）、**导入旧系统**（`recurso=importacao`）、**公开注册**（`recurso=cadastro`，无需登录）、**账户**（`conta`、`colecoes`、`acessos`、`convites`、`pedidos`、`aprovacoes`），以及**页面登录**（`recurso=entrar`：页面已打开而登录失效时，由 API 询问用户名和密码，再送回页面；打开页面时，页面本身在输出任何内容之前就已经要求登录）。命令行脚本（`instalar.php`、`criar_usuario.php`、`importar.php`）只是快捷方式：它们调用同样的 API 操作。
+API 也负责界面之前和周边的事情：**安装数据库**（`recurso=instalacao`）、**创建第一个用户**（`recurso=usuarios`，使用令牌）、**导入旧系统**（`recurso=importacao`）、**公开注册**（`recurso=cadastro`，无需登录）、**账户**（`conta`、`colecoes`、`acessos`、`convites`、`pedidos`、`aprovacoes`），以及**页面登录**（`recurso=entrar`：页面已打开而登录失效时，由 API 询问用户名和密码，再送回页面；打开页面时，页面本身在输出任何内容之前就已经要求登录）。命令行脚本（`instalar.php` 和 `importar.php`）只是快捷方式：它们调用同样的 API 操作。`senha.php` 是有意为之的例外：它在服务器上更改账户的密码，不受“配置”强度限制（掌握服务器的人说了算），这是 API 不做的。
 
 API 之外只有 **cron**（`cron.php`，系统的时钟：生成计划、开始和结束当天的时段、发送消息、同步日历、触发事件并维护文档的副本），它使用与 API 相同的函数；可以随时请求的事情在 API 中都有对应的动作（推送目标的 `testar`、日历的 `sincronizar`、`resortear`……），它做过的事显示在 `recurso=cron` 中。
 
@@ -268,10 +270,11 @@ php instalar.php --lingua=zh-CN
 #    或通过 API，使用 config.php 中的令牌（语言：lingua=zh-CN，与任何请求一样）：
 #    curl -H "X-Api-Token: $TOKEN" -d recurso=instalacao -d acao=instalar -d lingua=zh-CN http://服务器/relojoeiro/api.php
 
-# 5. 第一个用户，即 master，连同他的收藏（输入密码时不显示）
-php criar_usuario.php 你的登录名
-#    或通过 API，使用令牌：
-#    curl -H "X-Api-Token: $TOKEN" -d recurso=usuarios -d acao=salvar -d login=你的登录名 -d senha=... http://服务器/relojoeiro/api.php
+# 5. 第一个用户，即 master，连同他的收藏：通过 API，使用令牌（与任何账户一样：密码强度、确认、唯一的登录名和电子邮件）
+curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=你的登录名 \
+  --data-urlencode senha=... --data-urlencode senha_confirmacao=... http://服务器/relojoeiro/api.php
+#    忘记了某人（或你自己）的密码，而服务器不发邮件？在服务器上，不受强度限制：
+#    php senha.php 你的登录名 新密码      （两者都没有时：显示用户菜单，并隐藏地询问密码）
 
 # 6. cron，每分钟一次（它是静默的：不输出任何内容，也不发邮件）
 ( crontab -l; echo "* * * * * php /var/www/relojoeiro/cron.php" ) | crontab -
@@ -473,7 +476,7 @@ php criar_usuario.php 你的登录名
 | `migracao_v2.sql` … `migracao_v24.sql` | 迁移，通过设置页面应用 |
 | [`config.exemplo.php`](config.exemplo.php) | `config.php` 的模板 |
 | [`instalar.php`](instalar.php) | 把 `schema.sql` 安装到 `config.php` 指定的数据库中，任何一种都可以（与 `recurso=instalacao` 相同） |
-| [`criar_usuario.php`](criar_usuario.php) | 在命令行中创建用户或修改密码（与 `recurso=usuarios`、`acao=salvar` 相同） |
+| [`senha.php`](senha.php) | 在服务器的命令行中更改账户的密码，不受“配置”强度限制：`php senha.php <login> <密码>`；两者都没有时，显示用户菜单，并隐藏地询问两次密码（创建账户通过 API 或界面） |
 | [`importar.php`](importar.php) | 导入旧系统的数据（与 `recurso=importacao` 相同） |
 | [`reconstrucao.php`](reconstrucao.php) | 从零重写系统的指南（API 的 `recurso=reconstrucao`） |
 | [`.htaccess`](.htaccess) | Apache 上对内部文件的保护（以及 PHP 以 FastCGI 运行时的网站登录） |

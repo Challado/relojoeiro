@@ -1,4 +1,4 @@
-<!-- origem: 51e3a928a67760c7c6162115ae0a084dff87628d -->
+<!-- origem: d8a2903f3e376ff1955f3fcb06bfe3968cd87c12 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -747,11 +747,28 @@ compte avec tout ce qui est à lui. Le master **rend le compte officiel** (ou le
 `CADASTRO_ABERTO = false` dans le `config.php`, l'inscription ferme : n'entre que qui le master crée ou qui a une invitation.
 La page a aussi le **Mot de passe oublié** : le lien pour choisir un nouveau mot de passe part par e-mail et vaut 2 heures.
 
+La page d'accès (celle qui apparaît quand la demande de mot de passe du navigateur est annulée) propose **Réessayer**,
+**Créer un compte** et **Récupérer le mot de passe** (`cadastro.php?esqueci=1`, le Mot de passe oublié d'abord).
+
+**Jamais deux comptes avec le même identifiant ou e-mail.** On peut se connecter avec l'identifiant ou avec l'e-mail, donc
+le même texte ne peut pas mener à deux comptes : l'identifiant qui existe déjà (sans distinguer les majuscules, sans les
+espaces aux extrémités) n'est pas recréé, l'e-mail d'un compte ne peut pas être celui d'un autre, et l'identifiant de l'un ne
+peut pas non plus être l'e-mail d'un autre. Cela vaut sur tous les chemins (le master qui crée ou modifie dans
+**Utilisateurs**, l'inscription ouverte, **Mon compte**, l'importation du système précédent), et la base le garantit aussi :
+le `UNIQUE` de l'identifiant et celui de l'e-mail (la collation ne distingue pas les majuscules) et la règle
+`ck_usuario_aparados` (sans espaces aux extrémités ; migration v40). Créer le compte (`recurso=usuarios`, `acao=salvar`) ne
+touche jamais à un compte existant : le mot de passe d'un autre compte, le master le change avec `acao=senha`.
+
+Les champs d'utilisateur et de mot de passe d'un service externe (le serveur d'e-mail propre, le CalDAV) et l'identifiant de
+**Créer un compte** dans **Utilisateurs** sont en lecture seule jusqu'au clic : le navigateur ne les remplit pas tout seul avec
+l'identifiant enregistré de qui l'utilise (dans une paire utilisateur et mot de passe il ignore le `autocomplete="off"`, et
+son identifiant finirait enregistré dans le compte de quelqu'un d'autre).
+
 **Le mot de passe** a la force que le master choisit dans la **Configuration**, dans la carte **Mots de passe** : la longueur
 minimale et combien de lettres majuscules, minuscules, chiffres et symboles il doit avoir, au minimum (par défaut : 8
 caractères, avec 1 de chaque). Cela vaut pour tout nouveau mot de passe : le compte créé, le changement dans **Mon compte**,
-le nouveau mot de passe par le lien du **Mot de passe oublié**, celui du master dans **Utilisateurs** et celui du
-`criar_usuario.php` ; ceux qui existent déjà restent valables. Chaque endroit qui définit un mot de passe demande aussi le
+le nouveau mot de passe par le lien du **Mot de passe oublié**, celui du master dans **Utilisateurs** ; ceux qui
+existent déjà restent valables (le `senha.php`, sur le serveur, le change sans elle). Chaque endroit qui définit un mot de passe demande aussi le
 **Confirmer le mot de passe** et, pendant que vous tapez, montre ce que dit l'API : chaque règle avec ✓ ou ✗, la
 confirmation et la **force** (de très faible à forte, par la longueur et par combien de types de caractère il mélange). Par
 l'API : `recurso=cadastro`, `acao=conferir_senha` (sans identifiant et sans rien enregistrer), et `senha_confirmacao` dans

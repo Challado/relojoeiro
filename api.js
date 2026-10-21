@@ -63,6 +63,18 @@ function fixo(s) {
   return s;
 }
 
+// Os campos de credencial de um serviço de fora (o usuário e a senha do SMTP, do CalDAV): o navegador não os preenche
+// sozinho com o login salvo deste site (num par usuário e senha ele ignora o autocomplete="off" e põe o login de quem usa o
+// navegador, que acabaria gravado na conta de outra pessoa). Somente leitura até o clique, o que o preenchimento respeita
+function semPreencher(attrs) {
+  attrs.autocomplete = attrs.type === "password" ? "new-password" : "off";
+  attrs.readonly = true;
+  attrs.onfocus = "this.removeAttribute('readonly')";
+  attrs["data-lpignore"] = "true";
+  attrs["data-1p-ignore"] = "true";
+  return attrs;
+}
+
 // Texto seguro para pôr no HTML
 function h(t) {
   return String(t === null || t === undefined ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

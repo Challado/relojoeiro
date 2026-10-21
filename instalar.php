@@ -25,4 +25,4 @@ if (!$res["ok"]) {
     fwrite(STDERR, implode("\n", $res["erros"]) . "\n");
     exit(1);
 }
-echo t("{1}\nPela linha de comando: php criar_usuario.php <login>\n", [1 => $res["mensagem"]]);
+echo $res["mensagem"] . "\n";

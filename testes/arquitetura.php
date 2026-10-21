@@ -11,7 +11,8 @@
 //      .js cita um .php que não seja o api.php ou uma página; sem eval nem new Function.
 //   4. O banco só é tocado pelo núcleo, pela API e pelo cron: as funções do banco.php só são chamadas no banco.php,
 //      lib.php, operacoes.php, colecoes.php, alertas.php, contas.php, api.php, api/, cron.php e reconstrucao.php. Os scripts de linha de comando (instalar,
-//      criar_usuario, importar) não tocam no banco: só chamam operações que a API também chama.
+//      senha, importar) não tocam no banco: só chamam operações que a API também chama (o senha.php, a troca de senha pelo
+//      dono do servidor sem a força da Configuração, também as duas funções dele, que a API não tem de propósito).
 //   5. Os pedaços do api.php (api/*.php) não fazem nada abertos direto: começam pela guarda RELOJOEIRO_API.
 //   6. Pela web abrem só as páginas, o api.php e o que elas carregam: todo .php interno está bloqueado no .htaccess e no
 //      nginx-relogios.conf, e as pastas api/, textos/ e testes/ também; nenhuma página está bloqueada.
@@ -60,7 +61,7 @@ $js = array_values(array_filter($repo, function ($f) { return substr($f, -3) ===
 
 // os .php da raiz: os internos (núcleo, banco, scripts) e as páginas (o resto, menos o api.php)
 const INTERNOS = ["lib.php", "banco.php", "config.php", "config.exemplo.php", "operacoes.php", "colecoes.php", "alertas.php", "contas.php", "pagina.php", "cron.php", "importar.php",
-    "instalar.php", "criar_usuario.php", "reconstrucao.php"];
+    "instalar.php", "senha.php", "reconstrucao.php"];
 $raiz_php = array_values(array_filter($php, function ($f) { return strpos($f, "/") === false; }));
 $paginas = array_values(array_filter($raiz_php, function ($f) { return !in_array($f, INTERNOS, true) && $f !== "api.php"; }));
 
@@ -217,9 +218,9 @@ $da_api = [];
 foreach (array_merge(["api.php"], glob("api/*.php")) as $f) {
     $da_api = array_merge($da_api, chamadas($f));
 }
-foreach (["instalar.php", "criar_usuario.php", "importar.php"] as $f) {
+foreach (["instalar.php", "senha.php", "importar.php"] as $f) {
     foreach (array_intersect(chamadas($f), $nucleo) as $fn) {
-        if (!in_array($fn, $da_api, true)) {
+        if (!in_array($fn, $da_api, true) && !($f === "senha.php" && in_array($fn, ["senha_servidor_contas", "senha_servidor_trocar"], true))) {
             falha("4", $f . ": chama " . $fn . "(), que a API não chama (o script de linha de comando é um atalho de uma operação da API)");
         }
     }

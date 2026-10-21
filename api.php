@@ -5555,7 +5555,7 @@ if ($recurso === "textos") {
     if ($banco_vazio || !banco_tem_tabela("usuario") || (int)valor("SELECT COUNT(*) FROM usuario") === 0) {
         $saida["sem_usuarios"] = true;
         $saida["como"] = $banco_vazio ? t("o banco está vazio: instale com o token (POST recurso=instalacao, acao=instalar) e crie o primeiro usuário (POST recurso=usuarios, acao=salvar, login e senha)")
-            : t("nenhum usuário cadastrado: crie o primeiro com o token (POST recurso=usuarios, acao=salvar, login e senha) ou no servidor (php criar_usuario.php <login>)");
+            : t("nenhum usuário cadastrado: crie o primeiro com o token (POST recurso=usuarios, acao=salvar, login e senha)");
     }
 } elseif ($envio_grande) {
     $codigo = 413;

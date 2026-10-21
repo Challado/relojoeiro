@@ -83,12 +83,12 @@ preparar() {
   esac
 }
 
-# uma rodada inteira num banco: instala, cria o usuário, sobe o servidor e roda o roteiro
+# uma rodada inteira num banco: instala, sobe o servidor, cria o primeiro usuário pela API (o token) e roda o roteiro
 rodar() {
   local b=$1 porta=$2 log="$PASTA/$1.log"
   export RELOGIOS_DB=$b
   rm -rf "$PASTA/documentos_$b" "$PASTA/copias_$b"
-  { preparar "$b" && php instalar.php && php criar_usuario.php teste Senha@123; } > "$log" 2>&1 || { echo "FALHOU NA INSTALAÇÃO" >> "$log"; return 1; }
+  { preparar "$b" && php instalar.php; } > "$log" 2>&1 || { echo "FALHOU NA INSTALAÇÃO" >> "$log"; return 1; }
   if curl -s -o /dev/null "http://127.0.0.1:$porta/"; then
     echo "A porta $porta já está ocupada (outro servidor no ar?): use TESTE_PORTA para escolher outra" >> "$log"; return 1
   fi
@@ -100,6 +100,10 @@ rodar() {
     n=$((n + 1)); [ $n -gt 100 ] && { echo "O servidor não subiu" >> "$log"; return 1; }
     sleep 0.1
   done
+  # o primeiro usuário, como numa instalação de verdade: pela API, com o token (é o master)
+  curl -s -H "X-Api-Token: ${RELOGIOS_TOKEN:-token-de-teste-123}" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=teste \
+    --data-urlencode senha=Senha@123 --data-urlencode senha_confirmacao=Senha@123 "http://127.0.0.1:$porta/api.php" >> "$log" 2>&1
+  echo >> "$log"
   php testes/cenario.php "http://127.0.0.1:$porta/api.php" "$PASTA/$b.json" >> "$log" 2>&1
 }
 

@@ -103,11 +103,14 @@ for b in "${BANCOS[@]}"; do
   erros=()
   # a versão anterior: a instalação, o usuário e os dados
   export RELOGIOS_CONFIG="$VELHO/testes/config.teste.php"
-  if ! { preparar "$b" && (cd "$VELHO" && php instalar.php && php criar_usuario.php teste Senha@123); } > "$PASTA/$b.log" 2>&1; then
+  if ! { preparar "$b" && (cd "$VELHO" && php instalar.php); } > "$PASTA/$b.log" 2>&1; then
     echo "$b: a instalação da versão anterior falhou:"; tail -3 "$PASTA/$b.log" | sed 's/^/    /'; FALHOU=1; continue
   fi
   subir "$VELHO" $pv "$LOG" || { echo "$b: o servidor da versão anterior não subiu"; FALHOU=1; continue; }
   A="http://127.0.0.1:$pv/api.php"
+  # o primeiro usuário pela API, com o token (o jeito de qualquer versão)
+  curl -s -H "$TOKEN" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=teste --data-urlencode senha=Senha@123 \
+    --data-urlencode senha_confirmacao=Senha@123 "$A" >> "$PASTA/$b.log" 2>&1
   R=$(curl -s -H "$TOKEN" -d recurso=relogio -d acao=salvar -d id=0 -d "nome=Relógio de antes" -d no_id=0 -d disponivel=1 \
     -d "valores[valor_compra]=1500.50" -d "valores[observacao]=Gravado pela versão anterior" "$A" | json id)
   [ -z "$R" ] && erros+=("não gravou o relógio na versão anterior")

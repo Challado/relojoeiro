@@ -343,6 +343,23 @@ escrever(["recurso" => "config", "acao" => "evento_salvar", "id" => 0, "nome" =>
 escrever(["recurso" => "config", "acao" => "evento_salvar", "id" => 0, "nome" => "Ajustar a hora do Seiko", "repeticao" => "intervalo", "intervalo_dias" => 10, "hora" => "08:15", "relogio_id" => $rel["auto"]]);
 escrever(["recurso" => "usuarios", "acao" => "salvar", "login" => "maria", "senha" => "Segredo@123", "senha_confirmacao" => "Segredo@123"]);
 escrever(["recurso" => "usuarios", "acao" => "salvar", "login" => "MARIA", "senha" => "Outra@12345"], false);
+// o login e o e-mail únicos: a conta que existe não é criada de novo (nem com outra caixa ou com espaços), e o salvar não
+// troca a senha dela (isso é a ação senha); o login de uma conta não pode ser o e-mail de outra; o mesmo e-mail, em
+// qualquer caminho (o master criando, o master mudando, o cadastro aberto), é recusado
+escrever(["recurso" => "conta", "acao" => "alterar", "email" => "dono@exemplo.com"]);
+escrever(["recurso" => "usuarios", "acao" => "salvar", "login" => " Maria ", "senha" => "Outra@12345", "senha_confirmacao" => "Outra@12345"], false);
+escrever(["recurso" => "usuarios", "acao" => "salvar", "login" => "DONO@exemplo.com", "senha" => "Outra@12345", "senha_confirmacao" => "Outra@12345"], false);
+escrever(["recurso" => "usuarios", "acao" => "salvar", "login" => "outra", "senha" => "Outra@12345", "senha_confirmacao" => "Outra@12345", "email" => "Dono@Exemplo.com"], false);
+escrever(["recurso" => "usuarios", "acao" => "alterar", "login" => "maria", "email" => "dono@EXEMPLO.com"], false);
+escrever(["recurso" => "usuarios", "acao" => "alterar", "login" => "maria", "novo_login" => "Dono@Exemplo.com"], false);
+escrever(["recurso" => "usuarios", "acao" => "alterar", "login" => "maria", "novo_login" => "TESTE"], false);
+escrever(["recurso" => "cadastro", "acao" => "criar_conta", "login" => "nova", "senha" => "Outra@12345", "senha_confirmacao" => "Outra@12345", "email" => "DONO@exemplo.com", "opcao" => "modelo"], false);
+escrever(["recurso" => "cadastro", "acao" => "criar_conta", "login" => "Dono@Exemplo.com", "senha" => "Outra@12345", "senha_confirmacao" => "Outra@12345", "email" => "nova@exemplo.com", "opcao" => "modelo"], false);
+escrever(["recurso" => "conta", "acao" => "alterar", "email" => ""]);
+// a troca da senha de outra conta pelo master (a ação senha), com a força da Configuração; a conta que não existe, recusada
+escrever(["recurso" => "usuarios", "acao" => "senha", "login" => "maria", "senha" => "abc", "senha_confirmacao" => "abc"], false);
+escrever(["recurso" => "usuarios", "acao" => "senha", "login" => "maria", "senha" => "Segredo@123", "senha_confirmacao" => "Segredo@123"]);
+escrever(["recurso" => "usuarios", "acao" => "senha", "login" => "ninguem", "senha" => "Segredo@123", "senha_confirmacao" => "Segredo@123"], false);
 // a força da senha: a fraca e a confirmação diferente são recusadas; a conferência (sem gravar) diz cada regra e a força;
 // a política mais exigente na Configuração (só o master) recusa a senha que passava, e volta ao padrão
 escrever(["recurso" => "usuarios", "acao" => "salvar", "login" => "fraco", "senha" => "abc"], false);

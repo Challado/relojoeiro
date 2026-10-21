@@ -1,4 +1,4 @@
-<!-- origem: b9010f9c04b6576b66ab50035d95cee52e5654fd -->
+<!-- origem: 1e9be80226b08ebedae42b5b560171ddc3703d94 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -77,8 +77,10 @@ define("DB_ARQUIVO", __DIR__ . "/../relogios.sqlite");
 
 ```sh
 php instalar.php --lingua=fr  # la structure et l'ensemble initial (en français)
-php criar_usuario.php vous    # demande le mot de passe
-php -S localhost:8000         # et ouvrez http://localhost:8000
+php -S localhost:8000         # le serveur (laissez-le tourner) et ouvrez http://localhost:8000
+# dans un autre terminal, le premier utilisateur (le master), par l'API avec l'API_TOKEN du config.php :
+curl -H "X-Api-Token: votre-jeton" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=vous \
+  --data-urlencode senha=Votre-mdp-1 --data-urlencode senha_confirmacao=Votre-mdp-1 http://localhost:8000/api.php
 ```
 
 Enregistrez quelques montres dans **Aujourd'hui → Nouvelle montre**. Pour construire le planning sans attendre le cron, lancez
@@ -102,8 +104,9 @@ L'API fait aussi ce qui vient avant et autour des écrans : elle **installe la b
 utilisateur** (`recurso=usuarios`, avec le jeton), **importe le système précédent** (`recurso=importacao`), l'**inscription
 ouverte** (`recurso=cadastro`, sans identifiant), les **comptes** (`conta`, `colecoes`, `acessos`, `convites`, `pedidos`,
 `aprovacoes`) et fait l'**identification des pages** (`recurso=entrar` : quand la connexion tombe avec la page déjà ouverte, l'API demande l'utilisateur et le mot de passe et
-renvoie à la page ; à l'ouverture, la page elle-même les demande déjà, avant d'envoyer quoi que ce soit). Les scripts en ligne de commande (`instalar.php`, `criar_usuario.php`, `importar.php`) sont des raccourcis : ils
-appellent les mêmes opérations de l'API.
+renvoie à la page ; à l'ouverture, la page elle-même les demande déjà, avant d'envoyer quoi que ce soit). Les scripts en ligne de commande (`instalar.php` et `importar.php`) sont des raccourcis : ils
+appellent les mêmes opérations de l'API. Le `senha.php` est l'exception voulue : il change le mot de passe d'un compte par le
+serveur, sans la force de la Configuração (qui a le serveur en main décide), ce que l'API ne fait pas.
 
 Hors de l'API, il n'y a que le **cron** (`cron.php`, l'horloge du système : il monte le plan, ouvre et ferme la session du
 jour, envoie les messages, synchronise les agendas, déclenche les événements et s'occupe des copies des documents), qui utilise
@@ -316,10 +319,12 @@ php instalar.php --lingua=fr
 #    ou par l'API, avec le jeton du config.php (la langue : lingua=fr, comme dans toute requête) :
 #    curl -H "X-Api-Token: $TOKEN" -d recurso=instalacao -d acao=instalar -d lingua=fr http://serveur/relojoeiro/api.php
 
-# 5. le premier utilisateur, le master, avec sa collection (le mot de passe est demandé sans s'afficher)
-php criar_usuario.php votre_identifiant
-#    ou par l'API, avec le jeton :
-#    curl -H "X-Api-Token: $TOKEN" -d recurso=usuarios -d acao=salvar -d login=votre_identifiant -d senha=... http://serveur/relojoeiro/api.php
+# 5. le premier utilisateur, le master, avec sa collection : par l'API, avec le jeton (comme tout compte : la force du mot
+#    de passe, la confirmation, l'identifiant et l'e-mail uniques)
+curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=votre_identifiant \
+  --data-urlencode senha=... --data-urlencode senha_confirmacao=... http://serveur/relojoeiro/api.php
+#    mot de passe de quelqu'un (ou le vôtre) oublié et le serveur n'envoie pas d'e-mail ? Sur le serveur, sans la force :
+#    php senha.php votre_identifiant nouveau_mdp      (sans les deux : le menu des utilisateurs, et le mot de passe demandé masqué)
 
 # 6. le cron, chaque minute (il est muet : il n'écrit rien et n'envoie pas de courriel)
 ( crontab -l; echo "* * * * * php /var/www/relojoeiro/cron.php" ) | crontab -
@@ -672,7 +677,7 @@ vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des
 | `migracao_v2.sql` … `migracao_v24.sql` | les migrations, appliquées par la page Configuration |
 | [`config.exemplo.php`](config.exemplo.php) | le modèle du `config.php` |
 | [`instalar.php`](instalar.php) | installe le `schema.sql` sur la base du `config.php`, n'importe laquelle (la même chose que `recurso=instalacao`) |
-| [`criar_usuario.php`](criar_usuario.php) | crée un utilisateur ou change le mot de passe, en ligne de commande (la même chose que `recurso=usuarios`, `acao=salvar`) |
+| [`senha.php`](senha.php) | change le mot de passe d'un compte en ligne de commande sur le serveur, sans la force de la Configuração : `php senha.php <login> <mot de passe>` ; sans les deux, le menu des utilisateurs et le mot de passe demandé deux fois, masqué (créer un compte se fait par l'API ou par les écrans) |
 | [`importar.php`](importar.php) | importe les données de l'ancien système (la même chose que `recurso=importacao`) |
 | [`reconstrucao.php`](reconstrucao.php) | le guide pour réécrire le système à partir de zéro (le `recurso=reconstrucao` de l'API) |
 | [`.htaccess`](.htaccess) | la protection des fichiers internes sur Apache (et la connexion du site avec PHP en FastCGI) |

@@ -33,7 +33,7 @@ function topo($titulo, $ativo, $publica = false)
                 . htmlspecialchars(t("Entrar"), ENT_QUOTES, "UTF-8") . "</title>\n</head>\n<body style=\"font-family: system-ui, sans-serif; max-width: 34rem; margin: 3rem auto; padding: 0 1rem\">\n<h1>"
                 . htmlspecialchars(t("Entrar"), ENT_QUOTES, "UTF-8") . "</h1>\n<p>" . htmlspecialchars(t("Para abrir o sistema, entre com o seu login e a sua senha."), ENT_QUOTES, "UTF-8")
                 . "</p>\n<p><a href=\"\">" . htmlspecialchars(t("Tentar de novo"), ENT_QUOTES, "UTF-8") . "</a> · <a href=\"cadastro.php\">" . htmlspecialchars(t("Criar conta"), ENT_QUOTES, "UTF-8")
-                . "</a></p>\n</body>\n</html>\n";
+                . "</a> / <a href=\"cadastro.php?esqueci=1\">" . htmlspecialchars(t("Recuperar senha"), ENT_QUOTES, "UTF-8") . "</a></p>\n</body>\n</html>\n";
             exit;
         }
     }

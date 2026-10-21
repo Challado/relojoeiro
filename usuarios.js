@@ -32,12 +32,12 @@ function acoesDoUsuario(u, d) {
   res += el("h4", {}, t("Alterar"))
     + el("form", {"data-recurso": "usuarios", "class": "campos"}, el("input", {"type": "hidden", "name": "acao", "value": "alterar"}) + el("input", {"type": "hidden", "name": "usuario_id", "value": u.id})
       + parCampo(t("Login"), el("input", {"name": "novo_login", "value": u.login, "maxlength": "60"}))
-      + parCampo(t("E-mail"), el("input", {"type": "email", "name": "email", "value": u.email || "", "maxlength": "200"}))
+      + parCampo(t("E-mail"), el("input", {"type": "email", "name": "email", "value": u.email || "", "maxlength": "200", "autocomplete": "off"}))
       + parCampo(t("Idioma"), el("select", {"name": "idioma"}, idiomas))
       + parCampo(t("Fuso horário"), el("select", {"name": "fuso"}, opcoesFuso(d.fusos, u.fuso, t("O da coleção"), t("O do navegador dele"))))
       + parCampo(t("Papel"), el("select", {"name": "papel"}, el("option", {"value": "comum", "selected": u.papel === "comum"}, t("comum")) + el("option", {"value": "master", "selected": u.papel === "master"}, t("master"))))
       + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, t("Salvar"))));
-  res += el("form", {"data-recurso": "usuarios", "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "login", "value": u.login})
+  res += el("form", {"data-recurso": "usuarios", "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": "senha"}) + el("input", {"type": "hidden", "name": "usuario_id", "value": u.id})
     + el("input", {"type": "password", "name": "senha", "required": true, "autocomplete": "new-password", "placeholder": t("senha nova"), "aria-label": t("Senha nova"), "data-senha-nova": true})
     + el("input", {"type": "password", "name": "senha_confirmacao", "required": true, "autocomplete": "new-password", "placeholder": t("confirmar a senha"), "aria-label": t("Confirmar a senha"), "data-senha-nova": true})
     + el("button", {"class": "leve"}, t("Trocar a senha")) + caixaSenha(d.senha_politica));
@@ -93,9 +93,9 @@ function recarregarUsuarios() {
         }).join("")))));
     res += el("section", {"class": "cartao-config"}, el("h2", {}, t("Criar conta")) + el("form", {"data-recurso": "usuarios", "class": "campos"},
       el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
-      + parCampo(t("Login"), el("input", {"name": "login", "required": true, "maxlength": "60", "autocomplete": "off"}))
+      + parCampo(t("Login"), el("input", semPreencher({"name": "login", "required": true, "maxlength": "60"})))
       + camposSenha(t("Senha"), d.senha_politica, true)
-      + parCampo(t("E-mail"), el("input", {"type": "email", "name": "email", "maxlength": "200"}))
+      + parCampo(t("E-mail"), el("input", {"type": "email", "name": "email", "maxlength": "200", "autocomplete": "off"}))
       + parCampo(t("Coleção"), el("select", {"name": "colecao_nova"}, el("option", {"value": "modelo"}, t("uma coleção com o conjunto inicial")) + el("option", {"value": "vazia"}, t("uma coleção vazia"))
         + el("option", {"value": "nenhuma"}, t("nenhuma (vai receber acesso a outra)"))))
       + el("p", {"class": "nota"}, t("A conta criada aqui é oficial (não vence). Se o login já existir, só a senha dele é trocada."))

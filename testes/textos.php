@@ -27,7 +27,7 @@ function parte_do_arquivo($rel)
     if ($rel === "reconstrucao.php") {
         return "reconstrucao";
     }
-    if (strpos($rel, "/") === false && !in_array($rel, ["lib.php", "operacoes.php", "colecoes.php", "alertas.php", "contas.php", "banco.php", "api.php", "cron.php", "instalar.php", "importar.php", "criar_usuario.php", "config.exemplo.php"], true)) {
+    if (strpos($rel, "/") === false && !in_array($rel, ["lib.php", "operacoes.php", "colecoes.php", "alertas.php", "contas.php", "banco.php", "api.php", "cron.php", "instalar.php", "importar.php", "senha.php", "config.exemplo.php"], true)) {
         return "telas";
     }
     return "api";

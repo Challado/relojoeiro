@@ -771,11 +771,28 @@ cuenta** (o la prorroga) en **Usuarios**. Con `CADASTRO_ABERTO = false` en el `c
 quien el master crea o quien tiene una invitación. La página tiene también **Olvidé la contraseña**: el enlace para elegir una
 contraseña nueva va por correo y vale 2 horas.
 
+La página de acceso (la que aparece cuando se cancela el pedido de contraseña del navegador) trae **Intentar de nuevo**,
+**Crear cuenta** y **Recuperar contraseña** (`cadastro.php?esqueci=1`, el Olvidé la contraseña primero).
+
+**Nunca dos cuentas con el mismo usuario o correo.** Se puede entrar por el usuario o por el correo, así que el mismo texto
+no puede llevar a dos cuentas: el usuario que ya existe (sin distinguir mayúsculas, sin los espacios de los extremos) no se
+crea de nuevo, el correo de una cuenta no puede ser el de otra, y el usuario de una tampoco puede ser el correo de otra.
+Vale en todo camino (el master creando o cambiando en **Usuarios**, el registro abierto, **Mi cuenta**, la importación del
+sistema anterior), y la base lo garantiza también: el `UNIQUE` del usuario y el del correo (la collation no distingue
+mayúsculas) y la regla `ck_usuario_aparados` (sin espacios en los extremos; migración v40). Crear la cuenta
+(`recurso=usuarios`, `acao=salvar`) nunca toca una que ya existe: la contraseña de otra cuenta la cambia el master con
+`acao=senha`.
+
+Los campos de usuario y contraseña de un servicio de fuera (el servidor de correo propio, el CalDAV) y el usuario de **Crear
+cuenta** en **Usuarios** quedan solo de lectura hasta el clic: el navegador no los rellena solo con el usuario guardado de
+quien lo está usando (en un par usuario y contraseña ignora el `autocomplete="off"`, y su usuario acabaría grabado en la
+cuenta de otra persona).
+
 **La contraseña** tiene la fuerza que el master elige en la **Configuración**, en la tarjeta **Contraseñas**: el tamaño
 mínimo y cuántas letras mayúsculas, minúsculas, números y símbolos necesita tener, como mínimo (el predeterminado: 8
 caracteres, con 1 de cada). Vale para toda contraseña nueva: la cuenta creada, el cambio en **Mi cuenta**, la contraseña
-nueva por el enlace del **Olvidé la contraseña**, la del master en **Usuarios** y la del `criar_usuario.php`; las que ya
-existen siguen valiendo. Todo lugar que define una contraseña pide también el **Confirmar la contraseña** y, mientras
+nueva por el enlace del **Olvidé la contraseña**, la del master en **Usuarios**; las que ya
+existen siguen valiendo (el `senha.php`, en el servidor, la cambia sin ella). Todo lugar que define una contraseña pide también el **Confirmar la contraseña** y, mientras
 usted escribe, muestra lo que dice la API: cada regla con ✓ o ✗, la confirmación y la **fuerza** (de muy débil a fuerte,
 por el tamaño y por cuántos tipos de carácter mezcla). Por la API: `recurso=cadastro`, `acao=conferir_senha` (sin inicio
 de sesión y sin guardar nada), y `senha_confirmacao` en las grabaciones de contraseña.
@@ -1295,8 +1312,10 @@ define("DB_ARQUIVO", __DIR__ . "/../relogios.sqlite");
 
 ```sh
 php instalar.php --lingua=es  # la estructura y el conjunto inicial (en español)
-php criar_usuario.php usted   # pide la contraseña
-php -S localhost:8000         # y abra http://localhost:8000
+php -S localhost:8000         # el servidor (déjelo corriendo) y abra http://localhost:8000
+# en otra terminal, el primer usuario (el master), por la API con el API_TOKEN del config.php:
+curl -H "X-Api-Token: su-token" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=usted \
+  --data-urlencode senha=Su-clave-1 --data-urlencode senha_confirmacao=Su-clave-1 http://localhost:8000/api.php
 ```
 
 Registre algunos relojes en **Hoy → Nuevo reloj**. Para armar la escala sin esperar al cron, ejecute `php cron.php --forcar`.
@@ -1536,8 +1555,9 @@ La API hace también lo que viene antes y alrededor de las pantallas: **instala 
 **registro abierto** (`recurso=cadastro`, sin login), las **cuentas** (`conta`, `colecoes`, `acessos`, `convites`, `pedidos`,
 `aprovacoes`) y hace el **login de las páginas** (`recurso=entrar`: cuando el login se cae con la página ya abierta, la API pide el usuario y la
 contraseña y lo devuelve a la página; al abrir, la propia página ya los pide, antes de enviar nada). Los
-scripts de línea de comandos (`instalar.php`, `criar_usuario.php`, `importar.php`) son atajos: llaman a las mismas
-operaciones de la API.
+scripts de línea de comandos (`instalar.php` e `importar.php`) son atajos: llaman a las mismas operaciones de la API. El
+`senha.php` es la excepción a propósito: cambia la contraseña de una cuenta por el servidor, sin la fuerza de la
+Configuración (quien tiene el servidor en la mano decide), lo que la API no hace.
 
 Fuera de la API solo queda el **cron** (`cron.php`, el reloj del sistema: monta el plan, abre y cierra la sesión del día,
 envía los mensajes, sincroniza los calendarios, dispara los eventos y cuida de las copias de los documentos), que usa las
@@ -1749,10 +1769,12 @@ php instalar.php --lingua=es
 #    o por la API, con el token del config.php (el idioma: lingua=es, como en cualquier petición):
 #    curl -H "X-Api-Token: $TOKEN" -d recurso=instalacao -d acao=instalar -d lingua=es http://servidor/relojoeiro/api.php
 
-# 5. el primer usuario, el master, con su colección (la contraseña se pide sin que aparezca)
-php criar_usuario.php su_login
-#    o por la API, con el token:
-#    curl -H "X-Api-Token: $TOKEN" -d recurso=usuarios -d acao=salvar -d login=su_login -d senha=... http://servidor/relojoeiro/api.php
+# 5. el primer usuario, el master, con su colección: por la API, con el token (como cualquier cuenta: la fuerza de la
+#    contraseña, la confirmación, el usuario y el correo únicos)
+curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=su_login \
+  --data-urlencode senha=... --data-urlencode senha_confirmacao=... http://servidor/relojoeiro/api.php
+#    ¿olvidó la contraseña de alguien (o la suya) y el servidor no manda correo? En el servidor, sin la fuerza:
+#    php senha.php su_login clave_nueva      (sin los dos: el menú con los usuarios, y la contraseña pedida sin aparecer)
 
 # 6. el cron, cada minuto (es mudo: no escribe nada y no envía correo)
 ( crontab -l; echo "* * * * * php /var/www/relojoeiro/cron.php" ) | crontab -
@@ -2322,7 +2344,7 @@ ciclos mayores, que ningún `CHECK` alcanza) y las de los vínculos opcionales.
 | `migracao_v2.sql` … `migracao_v24.sql` | las migraciones, aplicadas por la página Configuración |
 | [`config.exemplo.php`](config.exemplo.php) | el modelo del `config.php` |
 | [`instalar.php`](instalar.php) | instala el `schema.sql` en la base del `config.php`, cualquiera de ellas (lo mismo que `recurso=instalacao`) |
-| [`criar_usuario.php`](criar_usuario.php) | crea un usuario o cambia la contraseña, por la línea de comandos (lo mismo que `recurso=usuarios`, `acao=salvar`) |
+| [`senha.php`](senha.php) | cambia la contraseña de una cuenta por la línea de comandos del servidor, sin la fuerza de la Configuración: `php senha.php <login> <contraseña>`; sin los dos, el menú con los usuarios y la contraseña pedida dos veces, sin aparecer (crear cuenta es por la API o por las pantallas) |
 | [`importar.php`](importar.php) | importa los datos del sistema anterior (lo mismo que `recurso=importacao`) |
 | [`reconstrucao.php`](reconstrucao.php) | el guion para reescribir el sistema desde cero (el `recurso=reconstrucao` de la API) |
 | [`.htaccess`](.htaccess) | la protección de los archivos internos en Apache (y el login del sitio con PHP por FastCGI) |

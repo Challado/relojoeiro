@@ -29,8 +29,8 @@ function quadroAgenda(x, d) {
         : x.google.caminho ? el("p", {"class": "nota"}, t("A chave é lida de {1} (o usuário do PHP precisa ler o arquivo).", {1: el("code", {}, h(x.google.caminho))})) : "");
   } else if (x.tipo === "caldav") {
     campos = parCampo(t("Endereço do calendário"), el("input", {"type": "url", "name": "url", "value": x.caldav.url, "required": true, "placeholder": t("https://nuvem.exemplo.com/remote.php/dav/calendars/voce/relogios/")}), "largo")
-      + parCampo(t("Usuário"), el("input", {"name": "usuario", "value": x.caldav.usuario, "required": true, "autocomplete": "off"}))
-      + parCampo(t("Senha"), el("input", {"type": "password", "name": "senha", "autocomplete": "new-password", "placeholder": x.caldav.senha_preenchida ? t("(guardada; vazio mantém)") : ""}))
+      + parCampo(t("Usuário"), el("input", semPreencher({"name": "usuario", "value": x.caldav.usuario, "required": true})))
+      + parCampo(t("Senha"), el("input", semPreencher({"type": "password", "name": "senha", "placeholder": x.caldav.senha_preenchida ? t("(guardada; vazio mantém)") : ""})))
       + el("p", {"class": "nota"}, t("Nextcloud: Calendário › ⋯ › Copiar o link CalDAV. iCloud: o endereço do calendário em caldav.icloud.com e uma senha de app (appleid.apple.com › Senhas de app). Fastmail: caldav.fastmail.com, com uma senha de app."));
   } else if (x.tipo === "outlook") {
     campos = parCampo(t("Conta Microsoft"), el("span", {}, x.outlook.conectada ? h(x.outlook.conta || t("conectada")) : t("não conectada")))
@@ -84,8 +84,8 @@ function carregarAgendas() {
         + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "required": true, "maxlength": "80", "placeholder": t("Minha agenda")})}))
         + el("label", {"data-sub": "google", "hidden": true}, t("ID da agenda do Google {1}", {1: el("input", {"name": "calendario_id"})}))
         + el("label", {"data-sub": "caldav", "hidden": true}, t("Endereço do calendário CalDAV {1}", {1: el("input", {"type": "url", "name": "url"})}))
-        + el("label", {"data-sub": "caldav", "hidden": true}, t("Usuário {1}", {1: el("input", {"name": "usuario", "autocomplete": "off"})}))
-        + el("label", {"data-sub": "caldav", "hidden": true}, t("Senha {1}", {1: el("input", {"type": "password", "name": "senha", "autocomplete": "new-password"})}))
+        + el("label", {"data-sub": "caldav", "hidden": true}, t("Usuário {1}", {1: el("input", semPreencher({"name": "usuario"}))}))
+        + el("label", {"data-sub": "caldav", "hidden": true}, t("Senha {1}", {1: el("input", semPreencher({"type": "password", "name": "senha"}))}))
         + el("div", {"class": "botoes"}, el("button", {}, t("Criar")))));
     document.getElementById("agendas").innerHTML = res;
     if (window.location.hash) {

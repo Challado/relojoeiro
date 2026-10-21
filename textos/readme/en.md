@@ -1,4 +1,4 @@
-<!-- origem: b9010f9c04b6576b66ab50035d95cee52e5654fd -->
+<!-- origem: 1e9be80226b08ebedae42b5b560171ddc3703d94 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -73,8 +73,10 @@ define("DB_ARQUIVO", __DIR__ . "/../relogios.sqlite");
 
 ```sh
 php instalar.php --lingua=en  # the structure and the initial set (in English)
-php criar_usuario.php you     # asks for the password
-php -S localhost:8000         # and open http://localhost:8000
+php -S localhost:8000         # the server (leave it running) and open http://localhost:8000
+# in another terminal, the first user (the master), through the API with the API_TOKEN from config.php:
+curl -H "X-Api-Token: your-token" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=you \
+  --data-urlencode senha=Your-password-1 --data-urlencode senha_confirmacao=Your-password-1 http://localhost:8000/api.php
 ```
 
 Register some watches in **Today → New watch**. To build the schedule without waiting for the cron, run `php cron.php --forcar`.
@@ -98,8 +100,9 @@ the first user** (`recurso=usuarios`, with the token), **imports the previous sy
 sign-up** (`recurso=cadastro`, without login), the **accounts** (`conta`, `colecoes`, `acessos`, `convites`, `pedidos`,
 `aprovacoes`) and does the **pages' login** (`recurso=entrar`: when the login drops with the page already open, the API asks for the user and password and sends them
 back to the page; on opening, the page itself already asks, before sending anything).
-The command-line scripts (`instalar.php`, `criar_usuario.php`, `importar.php`) are shortcuts: they call the same API
-operations.
+The command-line scripts (`instalar.php` and `importar.php`) are shortcuts: they call the same API operations. `senha.php` is
+the exception on purpose: it changes an account's password through the server, without the Configuração's strength (whoever
+has the server in hand decides), which the API does not do.
 
 Outside the API there is only the **cron** (`cron.php`, the system's clock: it builds the plan, opens and closes the day's
 session, sends the messages, syncs the calendars, fires the events and looks after the documents' copies), which uses the
@@ -310,10 +313,12 @@ php instalar.php --lingua=en
 #    or through the API, with the token from config.php (the language: lingua=en, as in any request):
 #    curl -H "X-Api-Token: $TOKEN" -d recurso=instalacao -d acao=instalar -d lingua=en http://server/relojoeiro/api.php
 
-# 5. the first user, the master, with their collection (the password is asked for without being shown)
-php criar_usuario.php your_login
-#    or through the API, with the token:
-#    curl -H "X-Api-Token: $TOKEN" -d recurso=usuarios -d acao=salvar -d login=your_login -d senha=... http://server/relojoeiro/api.php
+# 5. the first user, the master, with their collection: through the API, with the token (like any account: the password
+#    strength, the confirmation, the unique login and e-mail)
+curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=your_login \
+  --data-urlencode senha=... --data-urlencode senha_confirmacao=... http://server/relojoeiro/api.php
+#    forgot someone's password (or yours) and the server does not send e-mail? On the server, without the strength:
+#    php senha.php your_login new_password      (without the two: the menu with the users, and the password asked hidden)
 
 # 6. the cron, every minute (it is silent: it writes nothing and sends no e-mail)
 ( crontab -l; echo "* * * * * php /var/www/relojoeiro/cron.php" ) | crontab -
@@ -641,7 +646,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | `migracao_v2.sql` … `migracao_v24.sql` | the migrations, applied from the Settings page |
 | [`config.exemplo.php`](config.exemplo.php) | the template for `config.php` |
 | [`instalar.php`](instalar.php) | installs `schema.sql` on the database in `config.php`, any of them (the same as `recurso=instalacao`) |
-| [`criar_usuario.php`](criar_usuario.php) | creates a user or changes the password, from the command line (the same as `recurso=usuarios`, `acao=salvar`) |
+| [`senha.php`](senha.php) | changes an account's password from the server's command line, without the Configuração's strength: `php senha.php <login> <password>`; without the two, the menu with the users and the password asked twice, hidden (creating an account is through the API or the screens) |
 | [`importar.php`](importar.php) | imports the data of the previous system (the same as `recurso=importacao`) |
 | [`reconstrucao.php`](reconstrucao.php) | the script to rewrite the system from scratch (the API's `recurso=reconstrucao`) |
 | [`.htaccess`](.htaccess) | the protection of the internal files on Apache (and the site login with PHP through FastCGI) |

@@ -1,4 +1,4 @@
-<!-- origem: b9010f9c04b6576b66ab50035d95cee52e5654fd -->
+<!-- origem: 1e9be80226b08ebedae42b5b560171ddc3703d94 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -74,8 +74,10 @@ define("DB_ARQUIVO", __DIR__ . "/../relogios.sqlite");
 
 ```sh
 php instalar.php --lingua=es  # la estructura y el conjunto inicial (en español)
-php criar_usuario.php usted   # pide la contraseña
-php -S localhost:8000         # y abra http://localhost:8000
+php -S localhost:8000         # el servidor (déjelo corriendo) y abra http://localhost:8000
+# en otra terminal, el primer usuario (el master), por la API con el API_TOKEN del config.php:
+curl -H "X-Api-Token: su-token" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=usted \
+  --data-urlencode senha=Su-clave-1 --data-urlencode senha_confirmacao=Su-clave-1 http://localhost:8000/api.php
 ```
 
 Registre algunos relojes en **Hoy → Nuevo reloj**. Para armar la escala sin esperar al cron, ejecute `php cron.php --forcar`.
@@ -99,8 +101,9 @@ La API hace también lo que viene antes y alrededor de las pantallas: **instala 
 **registro abierto** (`recurso=cadastro`, sin login), las **cuentas** (`conta`, `colecoes`, `acessos`, `convites`, `pedidos`,
 `aprovacoes`) y hace el **login de las páginas** (`recurso=entrar`: cuando el login se cae con la página ya abierta, la API pide el usuario y la
 contraseña y lo devuelve a la página; al abrir, la propia página ya los pide, antes de enviar nada). Los
-scripts de línea de comandos (`instalar.php`, `criar_usuario.php`, `importar.php`) son atajos: llaman a las mismas
-operaciones de la API.
+scripts de línea de comandos (`instalar.php` e `importar.php`) son atajos: llaman a las mismas operaciones de la API. El
+`senha.php` es la excepción a propósito: cambia la contraseña de una cuenta por el servidor, sin la fuerza de la
+Configuración (quien tiene el servidor en la mano decide), lo que la API no hace.
 
 Fuera de la API solo queda el **cron** (`cron.php`, el reloj del sistema: monta el plan, abre y cierra la sesión del día,
 envía los mensajes, sincroniza los calendarios, dispara los eventos y cuida de las copias de los documentos), que usa las
@@ -312,10 +315,12 @@ php instalar.php --lingua=es
 #    o por la API, con el token del config.php (el idioma: lingua=es, como en cualquier petición):
 #    curl -H "X-Api-Token: $TOKEN" -d recurso=instalacao -d acao=instalar -d lingua=es http://servidor/relojoeiro/api.php
 
-# 5. el primer usuario, el master, con su colección (la contraseña se pide sin que aparezca)
-php criar_usuario.php su_login
-#    o por la API, con el token:
-#    curl -H "X-Api-Token: $TOKEN" -d recurso=usuarios -d acao=salvar -d login=su_login -d senha=... http://servidor/relojoeiro/api.php
+# 5. el primer usuario, el master, con su colección: por la API, con el token (como cualquier cuenta: la fuerza de la
+#    contraseña, la confirmación, el usuario y el correo únicos)
+curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=su_login \
+  --data-urlencode senha=... --data-urlencode senha_confirmacao=... http://servidor/relojoeiro/api.php
+#    ¿olvidó la contraseña de alguien (o la suya) y el servidor no manda correo? En el servidor, sin la fuerza:
+#    php senha.php su_login clave_nueva      (sin los dos: el menú con los usuarios, y la contraseña pedida sin aparecer)
 
 # 6. el cron, cada minuto (es mudo: no escribe nada y no envía correo)
 ( crontab -l; echo "* * * * * php /var/www/relojoeiro/cron.php" ) | crontab -
@@ -656,7 +661,7 @@ ciclos mayores, que ningún `CHECK` alcanza) y las de los vínculos opcionales.
 | `migracao_v2.sql` … `migracao_v24.sql` | las migraciones, aplicadas por la página Configuración |
 | [`config.exemplo.php`](config.exemplo.php) | el modelo del `config.php` |
 | [`instalar.php`](instalar.php) | instala el `schema.sql` en la base del `config.php`, cualquiera de ellas (lo mismo que `recurso=instalacao`) |
-| [`criar_usuario.php`](criar_usuario.php) | crea un usuario o cambia la contraseña, por la línea de comandos (lo mismo que `recurso=usuarios`, `acao=salvar`) |
+| [`senha.php`](senha.php) | cambia la contraseña de una cuenta por la línea de comandos del servidor, sin la fuerza de la Configuración: `php senha.php <login> <contraseña>`; sin los dos, el menú con los usuarios y la contraseña pedida dos veces, sin aparecer (crear cuenta es por la API o por las pantallas) |
 | [`importar.php`](importar.php) | importa los datos del sistema anterior (lo mismo que `recurso=importacao`) |
 | [`reconstrucao.php`](reconstrucao.php) | el guion para reescribir el sistema desde cero (el `recurso=reconstrucao` de la API) |
 | [`.htaccess`](.htaccess) | la protección de los archivos internos en Apache (y el login del sitio con PHP por FastCGI) |

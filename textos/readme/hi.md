@@ -1,4 +1,4 @@
-<!-- origem: b9010f9c04b6576b66ab50035d95cee52e5654fd -->
+<!-- origem: 1e9be80226b08ebedae42b5b560171ddc3703d94 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -71,8 +71,10 @@ define("DB_ARQUIVO", __DIR__ . "/../relogios.sqlite");
 
 ```sh
 php instalar.php --lingua=hi  # संरचना और शुरुआती सेट (हिंदी में)
-php criar_usuario.php aap     # पासवर्ड पूछता है
-php -S localhost:8000         # और http://localhost:8000 खोलें
+php -S localhost:8000         # सर्वर (चलता रहने दें) और http://localhost:8000 खोलें
+# दूसरे टर्मिनल में, पहला उपयोगकर्ता (master), API से, config.php के API_TOKEN के साथ:
+curl -H "X-Api-Token: aapka-token" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=aap \
+  --data-urlencode senha=Aapka-pass-1 --data-urlencode senha_confirmacao=Aapka-pass-1 http://localhost:8000/api.php
 ```
 
 **आज → नई घड़ी** में कुछ घड़ियाँ दर्ज करें। cron का इंतज़ार किए बिना शेड्यूल बनाने के लिए `php cron.php --forcar` चलाएँ।
@@ -94,8 +96,9 @@ API वह भी करती है जो स्क्रीनों से 
 उपयोगकर्ता बनाती है** (`recurso=usuarios`, टोकन से), **पिछला सिस्टम आयात करती है** (`recurso=importacao`), **खुला पंजीकरण**
 (`recurso=cadastro`, बिना लॉगिन), **खाते** (`conta`, `colecoes`, `acessos`, `convites`, `pedidos`, `aprovacoes`) और **पृष्ठों का
 लॉगिन** करती है (`recurso=entrar`: पृष्ठ खुला रहते लॉगिन चला जाए तो API उपयोगकर्ता और पासवर्ड माँगती है और पृष्ठ पर वापस भेजती है;
-खोलते समय पृष्ठ ख़ुद कुछ भी भेजने से पहले ही माँग लेता है)। कमांड लाइन की स्क्रिप्ट (`instalar.php`,
-`criar_usuario.php`, `importar.php`) शॉर्टकट हैं: वे API के वही ऑपरेशन बुलाती हैं।
+खोलते समय पृष्ठ ख़ुद कुछ भी भेजने से पहले ही माँग लेता है)। कमांड लाइन की स्क्रिप्ट (`instalar.php` और
+`importar.php`) शॉर्टकट हैं: वे API के वही ऑपरेशन बुलाती हैं। `senha.php` जानबूझकर अपवाद है: वह सर्वर से किसी खाते का पासवर्ड
+बदलता है, कॉन्फ़िगरेशन की मज़बूती के बिना (जिसके हाथ में सर्वर है वही तय करता है), जो API नहीं करती।
 
 API के बाहर केवल **cron** है (`cron.php`, सिस्टम की घड़ी: योजना बनाता है, दिन का सत्र खोलता और बंद करता है, संदेश भेजता है,
 कैलेंडर सिंक करता है, इवेंट ट्रिगर करता है और दस्तावेज़ों की प्रतियों की देखभाल करता है), जो वही फ़ंक्शन उपयोग करता है जो API
@@ -305,10 +308,12 @@ php instalar.php --lingua=hi
 #    या API से, config.php के टोकन के साथ (भाषा: lingua=hi, किसी भी अनुरोध की तरह):
 #    curl -H "X-Api-Token: $TOKEN" -d recurso=instalacao -d acao=instalar -d lingua=hi http://server/relojoeiro/api.php
 
-# 5. पहला उपयोगकर्ता, master, अपने संग्रह के साथ (पासवर्ड बिना दिखे पूछा जाता है)
-php criar_usuario.php aapka_login
-#    या API से, टोकन के साथ:
-#    curl -H "X-Api-Token: $TOKEN" -d recurso=usuarios -d acao=salvar -d login=aapka_login -d senha=... http://server/relojoeiro/api.php
+# 5. पहला उपयोगकर्ता, master, अपने संग्रह के साथ: API से, टोकन के साथ (किसी भी खाते की तरह: पासवर्ड की मज़बूती,
+#    पुष्टि, अद्वितीय लॉगिन और ई-मेल)
+curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=aapka_login \
+  --data-urlencode senha=... --data-urlencode senha_confirmacao=... http://server/relojoeiro/api.php
+#    किसी का (या अपना) पासवर्ड भूल गए और सर्वर ई-मेल नहीं भेजता? सर्वर पर, मज़बूती के बिना:
+#    php senha.php aapka_login naya_password      (दोनों के बिना: उपयोगकर्ताओं वाला मेनू, और छिपाकर माँगा गया पासवर्ड)
 
 # 6. cron, हर मिनट (यह चुप रहता है: कुछ नहीं लिखता और ईमेल नहीं भेजता)
 ( crontab -l; echo "* * * * * php /var/www/relojoeiro/cron.php" ) | crontab -
@@ -626,7 +631,7 @@ v2 से v8 इससे पहले के हैं और सिर्फ�
 | `migracao_v2.sql` … `migracao_v24.sql` | माइग्रेशन, सेटिंग्स पेज से लागू किए जाते हैं |
 | [`config.exemplo.php`](config.exemplo.php) | `config.php` का नमूना |
 | [`instalar.php`](instalar.php) | `config.php` के डेटाबेस में `schema.sql` इंस्टॉल करता है, कोई भी हो (वही जो `recurso=instalacao`) |
-| [`criar_usuario.php`](criar_usuario.php) | कमांड लाइन से उपयोगकर्ता बनाता है या पासवर्ड बदलता है (वही जो `recurso=usuarios`, `acao=salvar`) |
+| [`senha.php`](senha.php) | सर्वर की कमांड लाइन से किसी खाते का पासवर्ड बदलता है, कॉन्फ़िगरेशन की मज़बूती के बिना: `php senha.php <login> <पासवर्ड>`; दोनों के बिना, उपयोगकर्ताओं वाला मेनू और दो बार छिपाकर माँगा गया पासवर्ड (खाता बनाना API या स्क्रीनों से होता है) |
 | [`importar.php`](importar.php) | पिछले सिस्टम का डेटा आयात करता है (वही जो `recurso=importacao`) |
 | [`reconstrucao.php`](reconstrucao.php) | सिस्टम को शून्य से दोबारा लिखने की गाइड (API का `recurso=reconstrucao`) |
 | [`.htaccess`](.htaccess) | Apache में अंदरूनी फ़ाइलों की सुरक्षा (और FastCGI वाले PHP के साथ साइट का लॉगिन) |

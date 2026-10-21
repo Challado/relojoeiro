@@ -131,7 +131,8 @@ function login_erro($login)
 
 // A força da senha (a Configuração, do sistema: só o master muda): o tamanho mínimo e quantas letras maiúsculas, minúsculas,
 // números e símbolos ela precisa ter, no mínimo (0: não exige). Vale para toda senha nova (criar a conta, trocar em Minha
-// conta, pelo link do Esqueci a senha, pelo master em Usuários e pelo criar_usuario.php); as que já existem continuam valendo
+// conta, pelo link do Esqueci a senha e pelo master em Usuários; o senha.php, do servidor, não passa por ela); as que já
+// existem continuam valendo
 const SENHA_REGRAS = ["tamanho" => 8, "maiusculas" => 1, "minusculas" => 1, "numeros" => 1, "simbolos" => 1];
 
 // A política de agora: [regra => mínimo], a do sistema (sis senha_<regra>), senão o padrão
@@ -272,6 +273,43 @@ function usuario_por_id($id)
 }
 
 // O usuário pelo id, ou pelo login (o painel do master e os scripts citam um ou outro)
+// Um login ou um e-mail que já leva a outra conta: o mesmo texto no login de uma ou no e-mail de outra (os dois servem para
+// entrar, e o mesmo texto não pode levar a duas contas; sem diferenciar maiúscula, pela collation do banco). $menos: a conta
+// que está mudando. Devolve a outra conta (id, login), ou null
+function identificador_em_uso($valor, $menos = 0)
+{
+    $valor = trim((string)$valor);
+    if ($valor === "") {
+        return null;
+    }
+    return sem_escopo(function () use ($valor, $menos) {
+        return linha("SELECT id, login FROM usuario WHERE (login = ? OR email = ?) AND id <> ?", [$valor, $valor, (int)$menos]);
+    });
+}
+
+// O senha.php (a linha de comando do servidor): as contas, para o menu, e a troca da senha de uma pelo dono do servidor, sem
+// a força da Configuração (quem tem o servidor na mão decide; a API não tem esta porta, de propósito: lá vale a política)
+function senha_servidor_contas()
+{
+    return sem_escopo(function () { return linhas("SELECT id, login, papel, bloqueado FROM usuario ORDER BY login"); });
+}
+
+function senha_servidor_trocar($login, $senha)
+{
+    $u = sem_escopo(function () use ($login) { return linha("SELECT id, login FROM usuario WHERE login = ?", [trim((string)$login)]); });
+    if ($u === null) {
+        return resultado([t("Usuário não encontrado.")], "");
+    }
+    if ((string)$senha === "") {
+        return resultado([t("A senha não pode ficar vazia.")], "");
+    }
+    sem_escopo(function () use ($u, $senha) {
+        sql("UPDATE usuario SET senha_hash = ? WHERE id = ?", [password_hash((string)$senha, PASSWORD_DEFAULT), (int)$u["id"]]);
+        sql("DELETE FROM usuario_aparelho WHERE usuario_id = ?", [(int)$u["id"]]);
+    });
+    return resultado([], t("Senha de {1} trocada.", [1 => $u["login"]]));
+}
+
 function usuario_do_pedido($d)
 {
     if (isset($d["usuario_id"]) && (int)$d["usuario_id"] > 0) {
@@ -749,10 +787,10 @@ function op_cadastro($acao, $d)
         } elseif ($opcao === "nenhuma" && $v === null) {
             $erros[] = t("Sem convite, a conta nova precisa de uma coleção (modelo ou vazia) ou de um pedido de acesso (pedir).");
         }
-        if (count($erros) === 0 && sem_escopo(function () use ($login) { return valor("SELECT id FROM usuario WHERE login = ?", [$login]); }) !== null) {
+        if (count($erros) === 0 && identificador_em_uso($login) !== null) {
             $erros[] = t("Este login já existe: escolha outro.");
         }
-        if (count($erros) === 0 && sem_escopo(function () use ($email) { return valor("SELECT id FROM usuario WHERE email = ?", [$email]); }) !== null) {
+        if (count($erros) === 0 && identificador_em_uso($email) !== null) {
             $erros[] = t("Este e-mail já tem conta: entre com ela, ou use o Esqueci a senha.");
         }
         if (count($erros) === 0) {
@@ -873,7 +911,7 @@ function op_conta($acao, $d)
             $email = trim((string)$d["email"]);
             if ($email !== "" && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
                 $erros[] = t("E-mail inválido.");
-            } elseif ($email !== "" && sem_escopo(function () use ($email, $uid) { return valor("SELECT id FROM usuario WHERE email = ? AND id <> ?", [$email, $uid]); }) !== null) {
+            } elseif ($email !== "" && identificador_em_uso($email, $uid) !== null) {
                 $erros[] = t("Este e-mail já é de outra conta.");
             } else {
                 $campos["email"] = $email !== "" ? $email : null;
@@ -1343,8 +1381,10 @@ function op_pedidos($acao, $d)
     return resultado($erros, $msg, $extra);
 }
 
-// recurso=usuarios: salvar (login e senha, ou senha_hash: cria a conta, ou troca a senha; o master, de qualquer um; os
-// outros, só a própria), e, só o master: alterar (usuario_id ou login; novo_login, email, idioma, papel), oficializar,
+// recurso=usuarios: salvar (login e senha, ou senha_hash: cria a conta; só o master, ou o token com o banco sem usuário:
+// o primeiro. Um login ou um e-mail que já leva a outra conta é recusado: nunca cria duas contas com o mesmo), senha
+// (usuario_id ou login; senha, ou senha_hash: troca a senha; o master, de qualquer um; os outros, só a própria), e, só o
+// master: alterar (usuario_id ou login; novo_login, email, idioma, papel), oficializar,
 // prorrogar (dias), voltar_demo (dias), bloquear (bloqueado 1 ou 0), transferir (colecao_id, para: o login do novo dono),
 // dar_acesso (usuario_id ou login; colecao_id ou dono_id), excluir (usuario_id ou login, com confirmar=1)
 function op_usuarios($acao, $d, $atual)
@@ -1358,9 +1398,11 @@ function op_usuarios($acao, $d, $atual)
     // trazer um usuário com a mesma senha sem saber qual é
     $hash_pronto = trim((string)($d["senha_hash"] ?? ""));
     $u = usuario_do_pedido($d);
-    if ($acao === "salvar") {
-        if ($alvo === "" || strlen($alvo) > 60) {
+    if ($acao === "salvar" || $acao === "senha") {
+        if ($acao === "salvar" && ($alvo === "" || strlen($alvo) > 60)) {
             $erros[] = t("Informe o login (até 60 caracteres).");
+        } elseif ($acao === "senha" && $u === null) {
+            $erros[] = t("Usuário não encontrado.");
         } elseif ($hash_pronto !== "" && $nova !== "") {
             $erros[] = t("Mande a senha ou o senha_hash, não os dois.");
         } elseif ($hash_pronto !== "" && (strlen($hash_pronto) > 255 || senha_hash_info($hash_pronto)[0] === null)) {
@@ -1370,14 +1412,25 @@ function op_usuarios($acao, $d, $atual)
         } else {
             // o $2b$ (o bcrypt de Python, Node, Java...) é o mesmo cálculo que o $2y$ do PHP: guarda como $2y$
             $hash = $hash_pronto !== "" ? (strncmp($hash_pronto, '$2b$', 4) === 0 ? '$2y$' . substr($hash_pronto, 4) : $hash_pronto) : password_hash($nova, PASSWORD_DEFAULT);
-            $existe = sem_escopo(function () use ($alvo) { return linha("SELECT id, login FROM usuario WHERE login = ?", [$alvo]); });
             $eu = usuario_atual();
-            if (!usuario_master() && $eu !== null && ($existe === null || (int)$existe["id"] !== (int)$eu["id"])) {
+            $outra = $acao === "salvar" ? identificador_em_uso($alvo) : null;
+            if ($acao === "senha" && !usuario_master() && ($eu === null || (int)$u["id"] !== (int)$eu["id"])) {
                 // quem não é o master só troca a própria senha
-                $erros[] = t("Só o master cria usuários e troca a senha de outro.");
-            } elseif ($existe) {
-                sem_escopo(function () use ($hash, $existe) { sql("UPDATE usuario SET senha_hash = ? WHERE id = ?", [$hash, (int)$existe["id"]]); });
-                $msg = t("Senha de {1} trocada{2}", [1 => $existe["login"], 2 => $hash_pronto !== "" ? t(" (pelo hash informado).") : "."]);
+                $erros[] = t("Só o master troca a senha de outro.");
+            } elseif ($acao === "senha") {
+                // a senha nova desfaz os aparelhos lembrados dele, como em Minha conta
+                sem_escopo(function () use ($hash, $u) {
+                    sql("UPDATE usuario SET senha_hash = ? WHERE id = ?", [$hash, (int)$u["id"]]);
+                    sql("DELETE FROM usuario_aparelho WHERE usuario_id = ?", [(int)$u["id"]]);
+                });
+                $msg = t("Senha de {1} trocada{2}", [1 => $u["login"], 2 => $hash_pronto !== "" ? t(" (pelo hash informado).") : "."]);
+            } elseif (!usuario_master() && $eu !== null) {
+                $erros[] = t("Só o master cria usuários.");
+            } elseif ($outra !== null) {
+                // o login de uma conta que já existe (sem diferenciar maiúscula), ou o e-mail de outra: a conta não é criada,
+                // e a que existe fica como está (para trocar a senha dela: acao=senha)
+                $erros[] = mb_strtolower((string)$outra["login"], "UTF-8") === mb_strtolower($alvo, "UTF-8") ? t("Este login já existe: escolha outro.")
+                    : t("Este login é o e-mail de outra conta: escolha outro.");
             } else {
                 // a conta nova: o primeiro usuário é o master; os outros, contas oficiais (criadas pelo master), cada uma
                 // com a sua coleção, com o conjunto inicial (colecao_nova=nenhuma: sem coleção; vazia: só a árvore vazia)
@@ -1387,7 +1440,7 @@ function op_usuarios($acao, $d, $atual)
                     $erros[] = $e;
                 } elseif ($email !== "" && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
                     $erros[] = t("E-mail inválido.");
-                } elseif ($email !== "" && sem_escopo(function () use ($email) { return valor("SELECT id FROM usuario WHERE email = ?", [$email]); }) !== null) {
+                } elseif ($email !== "" && identificador_em_uso($email) !== null) {
                     $erros[] = t("Este e-mail já é de outra conta.");
                 } else {
                     $r = conta_criar($alvo, $hash, $email, null, lingua_valida($d["idioma"] ?? null) ?? lingua_atual(), $opcao);
@@ -1424,8 +1477,9 @@ function op_usuarios($acao, $d, $atual)
         if ($novo !== "" && $novo !== $u["login"]) {
             if (($e = login_erro($novo)) !== "") {
                 $erros[] = $e;
-            } elseif (sem_escopo(function () use ($novo) { return valor("SELECT id FROM usuario WHERE login = ?", [$novo]); }) !== null) {
-                $erros[] = t("Este login já existe: escolha outro.");
+            } elseif (($outra = identificador_em_uso($novo, $id)) !== null) {
+                $erros[] = mb_strtolower((string)$outra["login"], "UTF-8") === mb_strtolower($novo, "UTF-8") ? t("Este login já existe: escolha outro.")
+                    : t("Este login é o e-mail de outra conta: escolha outro.");
             } else {
                 $campos["login"] = $novo;
             }
@@ -1434,7 +1488,7 @@ function op_usuarios($acao, $d, $atual)
             $email = trim((string)$d["email"]);
             if ($email !== "" && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
                 $erros[] = t("E-mail inválido.");
-            } elseif ($email !== "" && sem_escopo(function () use ($email, $id) { return valor("SELECT id FROM usuario WHERE email = ? AND id <> ?", [$email, $id]); }) !== null) {
+            } elseif ($email !== "" && identificador_em_uso($email, $id) !== null) {
                 $erros[] = t("Este e-mail já é de outra conta.");
             } else {
                 $campos["email"] = $email !== "" ? $email : null;

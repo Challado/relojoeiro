@@ -1,4 +1,4 @@
-<!-- origem: 51e3a928a67760c7c6162115ae0a084dff87628d -->
+<!-- origem: d8a2903f3e376ff1955f3fcb06bfe3968cd87c12 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -727,10 +727,26 @@ theirs. The master **makes the account official** (or extends it) in **Users**. 
 `config.php`, sign-up closes: only those the master creates or who have an invitation get in. The page also has **Forgot my
 password**: the link to choose a new password goes by e-mail and lasts 2 hours.
 
+The access page (the one that appears when the browser's password prompt is cancelled) has **Try again**, **Create account**
+and **Recover password** (`cadastro.php?esqueci=1`, the Forgot my password first).
+
+**Never two accounts with the same login or e-mail.** You can sign in with the login or with the e-mail, so the same text
+cannot lead to two accounts: a login that already exists (case-insensitive, without the spaces at the ends) is not created
+again, one account's e-mail cannot be another's, and one account's login cannot be another's e-mail either. This holds on
+every path (the master creating or changing in **Users**, the open sign-up, **My account**, the import of the previous
+system), and the database guarantees it too: the `UNIQUE` of the login and of the e-mail (the collation is case-insensitive)
+and the `ck_usuario_aparados` rule (no spaces at the ends; migration v40). Creating an account (`recurso=usuarios`,
+`acao=salvar`) never touches one that already exists: the master changes another account's password with `acao=senha`.
+
+The user and password fields of an outside service (your own e-mail server, CalDAV) and the login of **Create account** in
+**Users** are read-only until clicked: the browser does not fill them in on its own with the saved login of whoever is using
+it (in a user and password pair it ignores `autocomplete="off"`, and their login would end up saved in someone else's
+account).
+
 **The password** has the strength the master chooses in the **Settings**, in the **Passwords** card: the minimum length and
 how many uppercase letters, lowercase letters, digits and symbols it needs, at least (the default: 8 characters, with 1 of
 each). It applies to every new password: the account created, the change in **My account**, the new password by the
-**Forgot my password** link, the master's in **Users** and the one from `criar_usuario.php`; existing ones keep working.
+**Forgot my password** link, the master's in **Users**; existing ones keep working (`senha.php`, on the server, changes it without the strength).
 Every place that sets a password also asks for **Confirm the password** and, while you type, shows what the API says about
 it: each rule with ✓ or ✗, the confirmation and the **strength** (from very weak to strong, by the length and by how many
 kinds of character it mixes). Through the API: `recurso=cadastro`, `acao=conferir_senha` (without login and saving nothing),
