@@ -120,6 +120,12 @@ function pares(lista, classe) {
   }).join(""));
 }
 
+// De onde vem um valor, numa etiqueta ao lado dele, só quando não é o do relógio (o padrão, o calibre, o medido, o cadastro):
+// o informado é o normal, e o vazio já é o "—"
+function etiquetaOrigem(origem, texto) {
+  return origem && origem !== "informado" && origem !== "vazio" ? " " + el("span", {"class": "origem origem-" + origem}, h(texto)) : "";
+}
+
 // mostra ou esconde o painel; escondido, o meio da página ocupa a largura toda
 function mostrarPainel(mostrar) {
   var painel = document.getElementById("detalhe");
@@ -229,7 +235,8 @@ function abrirNoPainel(id) {
       var ultima = r.leituras.length > 0 ? r.leituras[r.leituras.length - 1] : null;
       var nada = function (motivo) { return el("span", {"class": "nota"}, h(motivo || t("sem dados"))); };
       // declarado, medido e estimado: uma informação técnica (r.tecnico) numa tabelinha de três linhas (o que o fabricante ou o
-      // cadastro diz, o último teste e a estimativa de agora), cada uma com o detalhe, a origem e a data; embaixo, a confiança
+      // cadastro diz, o último teste e a estimativa de agora), cada uma com o detalhe e a data, e a origem ao lado do valor quando
+      // não é o informado; embaixo, a confiança
       var tabelaTecnica = function (chave) {
         var it = (r.tecnico || []).filter(function (x) { return x.chave === chave; })[0];
         if (!it) {
@@ -237,10 +244,9 @@ function abrirNoPainel(id) {
         }
         var linha = function (rotulo, x, classe) {
           return el("tr", {"class": (x.texto === null ? "vazio " : "") + (classe || "")}, el("th", {"scope": "row"}, rotulo)
-            + el("td", {}, (x.texto !== null ? el("strong", {}, h(x.texto)) : "—")
+            + el("td", {}, (x.texto !== null ? el("strong", {}, h(x.texto)) : "—") + etiquetaOrigem(x.origem, x.origem_texto)
               + (x.detalhe !== null || x.data !== null ? el("small", {}, (x.detalhe !== null ? h(x.detalhe) : "") + (x.detalhe !== null && x.data !== null ? " · " : "")
-                + (x.data !== null ? dataBr(x.data.substr(0, 10)) + (x.data.length > 10 ? " " + horaBr(x.data) : "") : "")) : ""))
-            + el("td", {"class": "origem-celula"}, x.origem_texto !== null ? el("span", {"class": "origem origem-" + x.origem}, h(x.origem_texto)) : ""));
+                + (x.data !== null ? dataBr(x.data.substr(0, 10)) + (x.data.length > 10 ? " " + horaBr(x.data) : "") : "")) : "")));
         };
         return el("table", {"class": "tabela-dados tecnico", "data-tecnico": it.chave}, el("tbody", {}, linha(t("Declarado"), it.declarado)
             + linha(t("Último teste"), it.medido, it.fora ? "fora" : "") + linha(t("Estimativa agora"), it.estimado)))
@@ -259,13 +265,13 @@ function abrirNoPainel(id) {
         .concat(r.situacao.map(function (l, i) { return [i === 0 ? t("Situação") : "", h(l)]; }))
         .concat(ultima ? [[t("Última leitura"), num(ultima.valor, 1) + h(ultima.unidade) + " " + el("small", {}, dataBr(ultima.inicio, true) + " " + horaBr(ultima.inicio))]] : [])));
       if (r.previsao.aplica) {
-        // as frases da previsão e, embaixo, de onde vem cada número da conta: o que é (e como foi medido), o valor e a origem
+        // as frases da previsão e, embaixo, de onde vem cada número da conta: o que é (e como foi medido, e a origem quando não é
+        // o informado) e o valor
         var contaPrev = r.previsao.conta.length === 0 ? "" : el("h3", {"class": "conta-titulo"}, t("De onde vem a conta"))
           + el("table", {"class": "tabela-dados conta-previsao"}, el("tbody", {}, r.previsao.conta.map(function (cc) {
             // o gasto que vale (em cima, em negrito) e os campos que ficaram fora da conta (o medido vale no lugar deles), apagados
-            return el("tr", {"class": (cc.valor === null ? "vazio " : "") + (cc.vale ? "vale " : "") + (cc.usado === false ? "fora-da-conta" : "")}, el("td", {}, h(cc.nome) + (cc.detalhe ? el("small", {}, h(cc.detalhe)) : ""))
-              + el("td", {"class": "valor"}, cc.valor === null ? "—" : num(cc.valor, 2) + (cc.unidade !== "" ? el("small", {}, h(cc.unidade)) : ""))
-              + el("td", {"class": "origem-celula"}, el("span", {"class": "origem origem-" + cc.origem}, h(cc.origem_texto))));
+            return el("tr", {"class": (cc.valor === null ? "vazio " : "") + (cc.vale ? "vale " : "") + (cc.usado === false ? "fora-da-conta" : "")}, el("td", {}, h(cc.nome) + etiquetaOrigem(cc.origem, cc.origem_texto) + (cc.detalhe ? el("small", {}, h(cc.detalhe)) : ""))
+              + el("td", {"class": "valor"}, cc.valor === null ? "—" : num(cc.valor, 2) + (cc.unidade !== "" ? el("small", {}, h(cc.unidade)) : "")));
           }).join("")));
         secoes.carga += quadro(t("Previsão"), r.previsao.linhas.length === 0 ? el("p", {"class": "nota"}, t("Informe a carga atual para o sistema começar a prever."))
           : el("ul", {"class": "linhas"}, r.previsao.linhas.map(function (l) { return el("li", {}, h(l)); }).join("")) + (contaPrev ? el("div", {"data-avancado": "previsao.conta"}, contaPrev) : ""));
@@ -280,7 +286,9 @@ function abrirNoPainel(id) {
         var motorDe = {colecao: t("a escolha da coleção, na Configuração"), relogio: t("a escolha deste relógio, no cadastro"), grupo: t("a escolha do grupo, no cadastro"), padrao: t("o padrão: nada escolhido")};
         var gasto = function (por, x) {
           var campos = (x.campos || []).map(function (c) {
-            return t("{1}: {2} ({3})", {1: h(c.nome), 2: c.valor !== null ? num(c.valor, 2) + (c.unidade !== "" ? " " + h(c.unidade) : "") : "—", 3: h(c.origem_texto)});
+            // a origem entre parênteses só quando não é o informado (o vazio já é o "—")
+            var v = c.valor !== null ? num(c.valor, 2) + (c.unidade !== "" ? " " + h(c.unidade) : "") : "—";
+            return c.origem === "informado" || c.origem === "vazio" ? t("{1}: {2}", {1: h(c.nome), 2: v}) : t("{1}: {2} ({3})", {1: h(c.nome), 2: v, 3: h(c.origem_texto)});
           }).join(" · ");
           return x.vale !== null ? el("strong", {}, pct(x.vale)) + (x.medido !== null && x.medido_dp !== null ? " " + el("span", {"class": "nota"}, t("± {1}", {1: num(x.medido_dp, 2)})) : "") + " " + por
             + el("small", {}, gsD.motor === "cadastro" ? (x.medido !== null ? t("do cadastro (o motor escolhido); o medido daria {1}", {1: pct(x.medido)}) : t("do cadastro (o motor escolhido)"))
@@ -948,10 +956,8 @@ function abrirNoPainel(id) {
               // fim, ficam em "Outros")
               var titulo = (i === 0 ? c.secao !== null : c.secao !== r.dados[i - 1].secao)
                 ? el("tr", {"class": "secao-dados"}, el("th", {"colspan": "2"}, c.secao !== null ? h(c.secao) : t("Outros"))) : "";
-              // de onde vem o valor só quando não é o do relógio: o padrão do campo ou o do calibre, numa etiqueta ao lado do
-              // valor (o informado é o normal, e o vazio já é o "—")
-              var origem = c.origem === "padrao" || c.origem === "calibre" ? " " + el("span", {"class": "origem origem-" + c.origem}, h(c.origem_texto)) : "";
-              return titulo + el("tr", {"class": c.origem === "vazio" ? "vazio" : ""}, el("td", {}, h(c.nome)) + el("td", {"class": "valor" + (texto ? " texto" : "")}, valorCampo(c) + origem + calculadoDoCampo(c.identificador)));
+              // de onde vem o valor só quando não é o do relógio: o padrão do campo ou o do calibre (etiquetaOrigem)
+              return titulo + el("tr", {"class": c.origem === "vazio" ? "vazio" : ""}, el("td", {}, h(c.nome)) + el("td", {"class": "valor" + (texto ? " texto" : "")}, valorCampo(c) + etiquetaOrigem(c.origem, c.origem_texto) + calculadoDoCampo(c.identificador)));
             }).join(""))))
           + el("div", {"data-avancado": "dados.calculado"}, el("h3", {}, t("Calculado agora")) + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Fórmula"))
             + el("th", {}, t("Valor")) + el("th", {}, t("Versão")))) + el("tbody", {}, r.calculos.map(function (x) {

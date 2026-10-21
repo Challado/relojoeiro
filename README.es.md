@@ -565,7 +565,7 @@ Los dos consumos están en el cuadro **Consumo de la batería**, en la página d
   (± ..., en los motores 2 y 3), y de dónde viene (medido, con el de la ficha al lado para comparar, o solo de la ficha,
   cuando todavía no hay medición o el motor es el 4).
 - Debajo de cada uno, **en la ficha**: los campos de donde sale el consumo de la ficha (el *Decaimiento en uso*, la
-  *Autonomía en uso real*, el *Decaimiento guardado*), con el valor y si fue indicado o es el predeterminado.
+  *Autonomía en uso real*, el *Decaimiento guardado*), con el valor y, cuando no es el indicado, la etiqueta *predeterminado*.
 - **En los 90 días anteriores a esos**: los dos consumos medidos en la ventana anterior. Es la comparación que muestra la
   batería envejeciendo: si el consumo en la muñeca pasó del 4,9% al 5,7%, ya no aguanta la carga como antes.
 
@@ -618,7 +618,8 @@ define. En la ficha del reloj, elija el **Calibre**: el reloj pasa a usar sus va
 
 El orden es: **el valor del reloj, si no el del calibre, si no el predeterminado del campo** (el del grupo). Cinco relojes con
 NH35 reciben la reserva y la marcha esperada de una vez; uno de ellos, con otra reserva en su ficha, se queda con la suya. En
-los **Datos del reloj**, el origen de cada valor dice de dónde vino (*informado*, *calibre*, *padrão*), y encima de las tablas
+los **Datos del reloj**, el valor que no es el del reloj lleva al lado una etiqueta de dónde vino (*calibre* o *predeterminado*; el
+indicado, sin etiqueta), y encima de las tablas
 aparecen el calibre, el enlace del manual y las recomendaciones. Eliminar un calibre deja sus relojes sin calibre (la
 eliminación dice cuántos). En las fórmulas, `CALIBRE("NH35")` da 1 si el reloj tiene ese calibre. Por la API:
 `recurso=calibres` (la lista, con los valores y los relojes de cada uno), `recurso=calibres` con `acao=salvar` o `excluir`, y

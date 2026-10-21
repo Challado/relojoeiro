@@ -553,7 +553,7 @@ Os dois gastos ficam no quadro **Gasto da bateria**, na ficha do relógio:
   3), e de onde ele vem (medido, com o do cadastro ao lado para comparar, ou só do cadastro, quando ainda não há medição ou
   o motor é o 4).
 - Embaixo de cada um, **no cadastro**: os campos de onde sai o gasto do cadastro (o *Decaimento em uso*, a *Autonomia em uso
-  real*, o *Decaimento guardado*), com o valor e se foi informado ou é o padrão.
+  real*, o *Decaimento guardado*), com o valor e, quando não é o informado, a etiqueta *padrão*.
 - **Nos 90 dias antes desses**: os dois gastos medidos na janela anterior. É a comparação que mostra a bateria envelhecendo:
   se o gasto no pulso passou de 4,9% para 5,7%, ela já não segura a carga como antes.
 
@@ -604,7 +604,8 @@ do movimento, e não do relógio: a reserva de marcha, a marcha que o fabricante
 
 A ordem é: **o valor do relógio, senão o do calibre, senão o padrão do campo** (o do grupo). Cinco relógios com NH35 ganham a
 reserva e a marcha esperada de uma vez; um deles, com a reserva diferente no cadastro, fica com a dele. Nos **Dados do
-relógio**, a origem de cada valor diz de onde ele veio (*informado*, *calibre*, *padrão*), e em cima das tabelas aparecem o
+relógio**, o valor que não é o do relógio traz ao lado uma etiqueta de onde veio (*calibre* ou *padrão*; o informado, sem
+etiqueta), e em cima das tabelas aparecem o
 calibre, o link do manual e as recomendações. Excluir um calibre deixa os relógios dele sem calibre (a exclusão diz quantos).
 Nas fórmulas, `CALIBRE("NH35")` dá 1 se o relógio tem esse calibre. Pela API: `recurso=calibres` (a lista, com os valores e os
 relógios de cada um), `recurso=calibres` com `acao=salvar` ou `excluir`, e `recurso=relogio`, `acao=salvar`, com `calibre_id`.

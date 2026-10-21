@@ -1,4 +1,4 @@
-<!-- origem: c72bd24e1d74e288ab8b2dd45fbe25e0f43b529b -->
+<!-- origem: 65c8973df78f339348449dd1bac09f8571de4540 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -522,7 +522,7 @@ Both consumptions are in the **Battery consumption** box, on the watch's page:
   uncertainty (± ..., in engines 2 and 3), and where it comes from (measured, with the record's next to it to compare, or only
   from the record, when there is no measurement yet or the engine is 4).
 - Under each one, **in the record**: the record fields the record's consumption comes from (the *Decay in use*, the
-  *Real battery life in use*, the *Decay when stored*), with the value and whether it was entered or is the default.
+  *Real battery life in use*, the *Decay when stored*), with the value and, when it was not entered, the *default* tag.
 - **In the 90 days before those**: the two consumptions measured in the previous window. It is the comparison that shows the
   battery aging: if the consumption on the wrist went from 4.9% to 5.7%, it no longer holds the charge as it used to.
 
@@ -575,7 +575,8 @@ watch's record, choose the **Caliber**: the watch then uses its values in the fi
 
 The order is: **the watch's value, otherwise the caliber's, otherwise the field's default** (the group's). Five watches with an
 NH35 get the reserve and the expected rate at once; one of them, with a different reserve in its record, keeps its own. In
-**Watch data**, the origin of each value says where it came from (*informado*, *calibre*, *padrão*), and above the tables come
+**Watch data**, a value that is not the watch's own carries a tag saying where it came from (*caliber* or *default*; an entered
+value, no tag), and above the tables come
 the caliber, the manual link and the recommendations. Deleting a caliber leaves its watches without a caliber (the deletion
 says how many). In formulas, `CALIBRE("NH35")` gives 1 if the watch has that caliber. Through the API: `recurso=calibres` (the
 list, with the values and the watches of each one), `recurso=calibres` with `acao=salvar` or `excluir`, and `recurso=relogio`,

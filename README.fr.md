@@ -582,7 +582,7 @@ Les deux consommations sont dans le cadre **Consommation de la batterie**, sur l
   (± ..., dans les moteurs 2 et 3), et d'où elle vient (mesurée, avec celle de la fiche à côté pour comparer, ou seulement
   celle de la fiche, quand il n'y a pas encore de mesure ou que le moteur est le 4).
 - Sous chacune, **dans la fiche** : les champs d'où vient la consommation de la fiche (la *Décroissance en usage*,
-  l'*Autonomie réelle en usage*, la *Décroissance rangée*), avec la valeur et si elle a été indiquée ou si c'est le défaut.
+  l'*Autonomie réelle en usage*, la *Décroissance rangée*), avec la valeur et, quand elle n'a pas été indiquée, l'étiquette *par défaut*.
 - **Dans les 90 jours précédents** : les deux consommations mesurées dans la fenêtre précédente. C'est la comparaison qui
   montre la batterie qui vieillit : si la consommation au poignet est passée de 4,9 % à 5,7 %, elle ne tient plus la charge
   comme avant.
@@ -639,8 +639,8 @@ champs qu'elle a elle-même laissés vides.
 
 L'ordre est : **la valeur de la montre, sinon celle du calibre, sinon la valeur par défaut du champ** (celle du groupe). Cinq
 montres avec un NH35 reçoivent la réserve et la marche attendue d'un coup ; l'une d'elles, avec une autre réserve dans sa
-fiche, garde la sienne. Dans les **Données de la montre**, l'origine de chaque valeur dit d'où elle vient (*informado*,
-*calibre*, *padrão*), et au-dessus des tableaux apparaissent le calibre, le lien du manuel et les recommandations. Supprimer un
+fiche, garde la sienne. Dans les **Données de la montre**, la valeur qui n'est pas celle de la montre porte à côté une
+étiquette disant d'où elle vient (*calibre* ou *par défaut* ; la valeur indiquée, sans étiquette), et au-dessus des tableaux apparaissent le calibre, le lien du manuel et les recommandations. Supprimer un
 calibre laisse ses montres sans calibre (la suppression dit combien). Dans les formules, `CALIBRE("NH35")` donne 1 si la
 montre a ce calibre. Par l'API : `recurso=calibres` (la liste, avec les valeurs et les montres de chacun), `recurso=calibres`
 avec `acao=salvar` ou `excluir`, et `recurso=relogio`, `acao=salvar`, avec `calibre_id`.

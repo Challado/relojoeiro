@@ -1150,8 +1150,10 @@ body.com-visor { overflow: hidden; }
 /* declarado, medido e estimado: três linhas (o rótulo, o valor com o detalhe embaixo e a origem); a confiança embaixo */
 table.tabela-dados.tecnico { margin: .3rem 0 .2rem; }
 table.tabela-dados.tecnico th { text-align: left; font-weight: 500; color: var(--cinza); font-size: .82rem; white-space: nowrap; padding-right: .6rem; width: 1%; }
+/* o rótulo no alto da linha, com a mesma folga e a mesma linha embaixo do valor (a última linha, sem linha) */
+table.tabela-dados.tecnico th { vertical-align: top; padding-top: .42rem; padding-bottom: .42rem; border-bottom-color: var(--aco); }
+table.tabela-dados.tecnico tbody tr:last-child th { border-bottom: 0; }
 table.tabela-dados.tecnico td { white-space: normal; overflow-wrap: anywhere; }
-table.tabela-dados.tecnico td.origem-celula { width: 1%; text-align: right; }
 table.tabela-dados.tecnico tr.fora td strong { color: var(--ambar, #8a5a00); }
 p.confianca { margin: .2rem 0 .6rem; font-size: .82rem; }
 p.confianca-alta { color: #1e6b2e; }
@@ -1234,11 +1236,10 @@ table.tabela-dados code.ident { display: block; font-size: .74rem; color: var(--
 .calibre-linha { margin: 0 0 .6rem; font-size: .88rem; overflow-wrap: anywhere; }
 .calibre-linha small { display: block; color: var(--cinza); font-size: .8rem; white-space: pre-line; }
 .calibre-linha .calibre-docs { display: block; font-size: .82rem; margin-top: .15rem; }
-/* a conta da previsão: o que é (e, menor, como foi medido), o valor (e a unidade embaixo) e a origem */
+/* a conta da previsão: o que é (a origem ao lado quando não é o informado e, menor, como foi medido) e o valor (e a unidade embaixo) */
 .quadro h3.conta-titulo { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cinza); margin: .9rem 0 .2rem; }
 table.conta-previsao td { font-size: .84rem; }
 table.conta-previsao td.valor { white-space: normal; text-align: right; min-width: 4.5rem; }
-table.conta-previsao td.origem-celula { width: 1%; text-align: right; }
 /* o gasto que vale, em negrito; os campos que ficaram fora da conta (vale o medido), apagados e com o valor riscado */
 table.conta-previsao tr.vale td { font-weight: 600; }
 table.conta-previsao tr.vale td small { font-weight: 400; }
@@ -1592,8 +1593,13 @@ form.excluir-conjunto button.discreto { white-space: normal; text-align: left; }
   table.tabela-dados.medicoes > tbody > tr > td:first-child::before { content: none; }
   table.tabela-dados.medicoes > tbody > tr > td:not([data-rotulo]) { display: block; }
 }
-/* os dados do relógio (campo, valor, origem; fórmula, valor, versão): menos folga entre as colunas, e o valor quebra a linha */
+/* os dados do relógio (campo e valor; fórmula, valor, versão): menos folga entre as colunas, e o valor quebra a linha. A
+   tabelinha técnica (declarado, último teste, estimativa agora) vira uma lista: o rótulo em cima e o valor embaixo, com a
+   largura toda, em vez de duas colunas espremidas no painel ao lado */
 @container quadro (max-width: 26rem) {
+  table.tabela-dados.tecnico, table.tabela-dados.tecnico > tbody, table.tabela-dados.tecnico > tbody > tr { display: block; }
+  table.tabela-dados.tecnico th, table.tabela-dados.tecnico td { display: block; width: auto; padding-left: 0; padding-right: 0; }
+  table.tabela-dados.tecnico th { border-bottom: 0; padding-bottom: 0; white-space: normal; }
   table.tabela-dados th, table.tabela-dados td { padding-left: .3rem; padding-right: .3rem; }
   table.tabela-dados td { overflow-wrap: anywhere; }
   table.tabela-dados td.valor { white-space: normal; }
