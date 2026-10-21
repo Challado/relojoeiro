@@ -1,4 +1,4 @@
-<!-- origem: 3adc0877a3f91fac6bdf6695dd469e7c18f992c9 -->
+<!-- origem: 87aa9c78e9fe7a84a881a5a6e9ff4e66ac8a061b -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -670,6 +670,37 @@ cadre **Consommation de la batterie**, avec le ± de chaque consommation).
 Le **Passeport** reprend le tableau. Par l'API : `recurso=ficha` (le `tecnico` et la `reserva` de la montre),
 `recurso=reserva` (les tests, les observations, la mesure et le tableau) et `recurso=reserva` avec `acao=iniciar`, `parou`,
 `observar`, `salvar`, `usar` ou `excluir`.
+
+### Le timegrapher {#o-timegrapher}
+
+Qui a un **timegrapher** (l'appareil d'établi qui écoute la montre) garde ses mesures dans le cadre **Timegrapher**, dans la
+section Précision et marche du panneau et de la Fiche. Dans chaque position, l'appareil montre la **marche** (s/jour),
+l'**amplitude** du balancier (degrés), l'**erreur de battement** (ms), les **alternances par heure** et l'**angle de levée** ; ce
+qu'il ne montre pas reste vide. Les positions sont celles de l'appareil : cadran en haut ou en bas, et la couronne en haut, en
+bas, à gauche ou à droite. Les mesures du même jour forment une **séance** : le cadre montre la dernière, une ligne par
+position et la **moyenne**, et l'**écart de marche entre les positions** (la plus grande moins la plus petite), qui dit combien
+la position change la marche.
+
+Deux façons de saisir les mesures :
+
+- **Enregistrer une mesure :** saisir ce que l'appareil montre, position par position.
+- **Importer le CSV de l'appareil :** choisir le fichier que le timegrapher (ou son application) exporte. Le système trouve
+  le séparateur (`;`, `,` ou tabulation) et les colonnes par l'en-tête, en portugais ou en anglais (`date`, `time`,
+  `position`, `rate`, `amplitude`, `beat error`, `bph`, `lift angle`, `notes`...) ; les positions par le nom ou par les sigles
+  des appareils (`DU`, `DD`, `CU`, `CD`, `CL`, `CR`, ou l'heure tournée vers le haut : `3U`, `9U`, `6U`, `12U`). La date en
+  `AAAA-MM-JJ` ou `JJ/MM/AAAA` ; sans date, les lignes restent à l'instant choisi. **Seulement vérifier** montre ce qui
+  entrerait, sans enregistrer. La ligne qui ne se comprend pas reste dehors, avec le motif, et la répétée n'entre pas deux fois.
+
+Le système ne dit pas ce qui est bon ou mauvais (une amplitude de 220° est excellente pour une montre et basse pour une
+autre) : cela reste aux formules et aux alertes des définitions. `TIMEGRAPHER("amplitude")` donne la moyenne de la dernière
+séance (aussi `marcha`, `erro_batida`, `bph`, `angulo`, `delta`, l'écart entre les positions, et `medicoes`), et
+`TIMEGRAPHER_DATA()` son jour : une alerte avec `SE(TIMEGRAPHER("amplitude") < 220; 1; 0)`, par exemple. Les mesures du
+timegrapher restent à part de la marche mesurée par l'écart de l'heure (celle du cadre Précision) : l'une est la montre sur
+l'établi, l'autre est elle au quotidien.
+
+Par l'API : `recurso=timegrapher` (avec `relogio=<id>` : la séance, les mesures et ce que l'importation comprend), et
+l'écriture `recurso=timegrapher` avec `acao=salvar`, `importar` (`csv` et, si vous voulez, `conferir=1`) ou `excluir`. Le
+**Passeport** apporte les mesures.
 
 ## Plusieurs personnes : comptes, collections et accès {#várias-pessoas-contas-coleções-e-acesso}
 

@@ -99,6 +99,8 @@ $saida = ["gerado_em" => date("Y-m-d H:i:s", $agora_p),
     // declarado, medido e estimado (a marcha, a reserva, a estanqueidade), com a confiança; e os testes da reserva
     "tecnico" => tecnico_do_relogio($r, $agora_p, precisao_do_relogio($r, $agora_p), $rs_p, servicos_resumo($id)),
     "reserva_testes" => $rs_p !== null ? $rs_p["testes"] : [],
+    // as medições do timegrapher, da mais nova para a mais velha
+    "timegrapher" => timegrapher_lista($id),
     "documentos" => array_map(function ($x) use ($cat_p) {
         return ["id" => (int)$x["id"], "categoria" => $cat_p[(int)$x["categoria_id"]] ?? "", "titulo" => $x["titulo"], "data" => $x["data"] === null ? null : substr((string)$x["data"], 0, 10), "nome" => $x["nome"]];
     }, documentos_do_relogio($id)),

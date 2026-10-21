@@ -796,6 +796,63 @@ function abrirNoPainel(id) {
         }
         secoes.precisao += quadro(t("Desvio ao longo do tempo"), graficoP + (medP ? el("div", {"data-avancado": "marcha.medicoes"}, medP) : ""), "", "largo");
       }
+      // o timegrapher: a última sessão (uma medição por posição, a média e a diferença entre as posições), cada medição (para
+      // mudar ou excluir), a medição digitada e a importação do CSV do aparelho (o navegador só lê o arquivo; quem entende é a API)
+      var tg = r.timegrapher;
+      if (tg) {
+        var momentoTg = function (valor) {
+          return el("input", {"type": "datetime-local", "name": "quando", "value": valor ? valor.substr(0, 16).replace(" ", "T") : momentoNavegador(new Date()),
+            "max": momentoNavegador(new Date()), "data-agora": valor ? false : "vazio", "data-max-agora": true});
+        };
+        var formTg = function (x) {
+          return el("form", {"data-recurso": "timegrapher", "class": "reserva-form"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
+            + el("input", {"type": "hidden", "name": x ? "id" : "relogio_id", "value": x ? x.id : id})
+            + el("label", {}, t("Quando {1}", {1: momentoTg(x ? x.quando : null)}))
+            + el("label", {}, t("Posição {1}", {1: el("select", {"name": "posicao"}, el("option", {"value": ""}, t("não informada")) + tg.posicoes.map(function (p) {
+              return el("option", {"value": p.valor, "selected": x !== null && x.posicao === p.valor}, h(p.texto));
+            }).join(""))}))
+            + tg.grandezas.map(function (g) {
+              return el("label", {}, h(g.nome) + " (" + h(g.unidade) + ") " + el("input", {"name": g.campo, "inputmode": "decimal", "value": x && x[g.campo] !== null ? String(x[g.campo]) : ""}));
+            }).join("")
+            + el("label", {"class": "largo"}, t("Observação {1}", {1: el("input", {"name": "observacao", "maxlength": 500, "value": x && x.observacao !== null ? x.observacao : ""})}))
+            + el("div", {"class": "botoes largo"}, el("button", {}, x ? t("Salvar a medição") : t("Registrar a medição"))));
+        };
+        var linhaTg = function (x) {
+          return [h(x.posicao_texto), x.marcha_texto ? h(x.marcha_texto) : "—", x.amplitude_texto ? h(x.amplitude_texto) : "—", x.erro_batida_texto ? h(x.erro_batida_texto) : "—",
+            x.bph_texto ? h(x.bph_texto) : "—", x.angulo_texto ? h(x.angulo_texto) : "—"];
+        };
+        var corpoTg = el("p", {"class": "nota"}, h(tg.resumo));
+        if (tg.sessao) {
+          var cabTg = [t("Posição"), t("Marcha"), t("Amplitude"), t("Erro de batida"), t("Batidas por hora"), t("Ângulo de levantamento")];
+          corpoTg += el("h3", {"class": "conta-titulo"}, t("Última sessão ({1})", {1: dataBr(tg.sessao.dia)}))
+            + el("div", {"class": "rolagem"}, el("table", {"class": "tabela-dados compacta timegrapher-sessao"}, el("thead", {}, el("tr", {}, cabTg.map(function (c) { return el("th", {}, c); }).join("")))
+              + el("tbody", {}, tg.sessao.itens.map(function (x) { return el("tr", {}, linhaTg(x).map(function (c) { return el("td", {}, c); }).join("")); }).join("")
+                + el("tr", {"class": "media"}, linhaTg({posicao_texto: t("Média"), marcha_texto: tg.sessao.marcha_texto, amplitude_texto: tg.sessao.amplitude_texto,
+                  erro_batida_texto: tg.sessao.erro_batida_texto, bph_texto: tg.sessao.bph_texto, angulo_texto: tg.sessao.angulo_texto}).map(function (c) { return el("td", {}, el("strong", {}, c)); }).join("")))))
+            + (tg.sessao.delta_texto ? el("p", {"class": "nota"}, t("Diferença de marcha entre as {1} posições: {2}.", {1: tg.sessao.posicoes, 2: el("strong", {}, h(tg.sessao.delta_texto))})) : "");
+        }
+        corpoTg += tg.medicoes.slice(0, 30).map(function (x) {
+          return el("details", {"class": "reserva-registro"}, el("summary", {}, el("strong", {}, dataBr(x.quando.substr(0, 10)) + " " + horaBr(x.quando)) + " · " + h(x.posicao_texto)
+              + [x.marcha_texto, x.amplitude_texto, x.erro_batida_texto].filter(function (v) { return v; }).map(function (v) { return " · " + h(v); }).join("")
+              + " · " + h(x.origem_texto))
+            + (x.observacao !== null ? el("p", {"class": "nota"}, h(x.observacao)) : "") + formTg(x)
+            + el("form", {"data-recurso": "timegrapher", "class": "excluir"}, el("input", {"type": "hidden", "name": "acao", "value": "excluir"}) + el("input", {"type": "hidden", "name": "id", "value": x.id})
+              + el("button", {"class": "leve discreto"}, t("Excluir esta medição"))));
+        }).join("") + (tg.medicoes.length > 30 ? el("p", {"class": "nota"}, t("As 30 mais recentes de {1} medições (todas em recurso=timegrapher).", {1: tg.medicoes.length})) : "");
+        corpoTg += el("details", {"class": "reserva-novo"}, el("summary", {}, t("Registrar uma medição"))
+          + el("p", {"class": "nota"}, t("O que o timegrapher mostra em cada posição: a marcha, a amplitude, o erro de batida, as batidas por hora e o ângulo de levantamento (o que o aparelho não mostra fica vazio). As medições do mesmo dia são uma sessão."))
+          + formTg(null));
+        corpoTg += el("details", {"class": "reserva-novo"}, el("summary", {}, t("Importar o CSV do aparelho"))
+          + el("p", {"class": "nota"}, t("O arquivo que o timegrapher (ou o aplicativo dele) exporta, com o cabeçalho: as colunas são reconhecidas pelo nome, em português ou em inglês (rate, amplitude, beat error, bph, lift angle, position, date, time). As linhas sem data ficam no instante escolhido aqui; a repetida não entra de novo. Conferir mostra o que entraria, sem gravar."))
+          + el("form", {"data-recurso": "timegrapher", "class": "reserva-form"}, el("input", {"type": "hidden", "name": "acao", "value": "importar"}) + el("input", {"type": "hidden", "name": "relogio_id", "value": id})
+            + el("label", {"class": "largo"}, t("Arquivo {1}", {1: el("input", {"type": "file", "accept": ".csv,.txt,text/csv,text/plain",
+              "onchange": "var f = this.files[0], ta = this.form.querySelector('textarea'); if (f) { var rd = new FileReader(); rd.onload = function () { ta.value = rd.result; }; rd.readAsText(f); }"})}))
+            + el("label", {"class": "largo"}, t("O conteúdo {1}", {1: el("textarea", {"name": "csv", "rows": 5, "required": true, "placeholder": fixo("date;position;rate;amplitude;beat error\n2026-10-20 10:00;DU;+4;285;0.3")}, "")}))
+            + el("label", {}, t("Linhas sem data em {1}", {1: momentoTg(null)}))
+            + el("label", {"class": "check"}, el("input", {"type": "checkbox", "name": "conferir", "value": "1"}) + " " + t("Só conferir (sem gravar)"))
+            + el("div", {"class": "botoes largo"}, el("button", {}, t("Importar")))));
+        secoes.precisao += quadro(t("Timegrapher"), corpoTg, "", "largo reserva-ficha timegrapher-ficha");
+      }
       // os dados do relógio: o cadastro que vale para ele (o informado, senão o padrão do campo) e o resultado de cada fórmula agora
       var valorCampo = function (c) {
         var v = c.valor_usado;

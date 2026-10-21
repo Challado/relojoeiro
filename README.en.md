@@ -702,6 +702,36 @@ The **Passport** has the table. Through the API: `recurso=ficha` (the watch's `t
 tests, the observations, the measurement and the table) and `recurso=reserva` with `acao=iniciar`, `parou`, `observar`,
 `salvar`, `usar` or `excluir`.
 
+### The timegrapher
+
+Whoever has a **timegrapher** (the bench device that listens to the watch) keeps its measurements in the **Timegrapher** box,
+in the Precision and rate section of the panel and of the Watch sheet. In each position the device shows the **rate** (s/day),
+the balance **amplitude** (degrees), the **beat error** (ms), the **beats per hour** and the **lift angle**; whatever it does
+not show stays empty. The positions are the device's: dial up or down, and crown up, down, left or right. The measurements of
+the same day are a **session**: the box shows the last one, one row per position and the **average**, and the **rate
+difference between the positions** (the largest minus the smallest), which says how much the position changes the rate.
+
+Two ways to put in the measurements:
+
+- **Record a measurement:** type what the device shows, position by position.
+- **Import the device's CSV:** choose the file the timegrapher (or its app) exports. The system finds the separator (`;`, `,`
+  or tab) and the columns by the header, in Portuguese or English (`date`, `time`, `position`, `rate`, `amplitude`,
+  `beat error`, `bph`, `lift angle`, `notes`...); the positions by name or by the devices' abbreviations (`DU`, `DD`, `CU`,
+  `CD`, `CL`, `CR`, or the hour that faces up: `3U`, `9U`, `6U`, `12U`). The date in `YYYY-MM-DD` or `DD/MM/YYYY`; without a
+  date, the rows stay at the chosen instant. **Only check** shows what would go in, without saving. A row that cannot be
+  understood stays out, with the reason, and a repeated one does not go in twice.
+
+The system does not say what is good or bad (an amplitude of 220° is great in one watch and low in another): that is left to
+the formulas and alerts of the definitions. `TIMEGRAPHER("amplitude")` gives the average of the last session (also `marcha`,
+`erro_batida`, `bph`, `angulo`, `delta`, the difference between the positions, and `medicoes`), and `TIMEGRAPHER_DATA()` its
+day: an alert with `SE(TIMEGRAPHER("amplitude") < 220; 1; 0)`, for example. The timegrapher measurements are kept apart from
+the rate measured by the time deviation (the one in the Precision box): one is the watch on the bench, the other is it day to
+day.
+
+Through the API: `recurso=timegrapher` (with `relogio=<id>`: the session, the measurements and what the import understands),
+and the write `recurso=timegrapher` with `acao=salvar`, `importar` (`csv` and, if you want, `conferir=1`) or `excluir`. The
+**Passport** brings the measurements.
+
 ## Several people: accounts, collections and access
 
 The system belongs to **several people**, each with their own **account**, and each account with **its own collections**. A
@@ -1571,6 +1601,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `documentos` | a watch's documents (`relogio=<id>`; without it, all of them), with the categories, the NF-e summary of each XML, the folder and the limit |
 | `servicos` | the services and diagnostics (`relogio=<id>`, with the summary: the declared water resistance, the proven one, how many and the total cost; without it, everyone's), with the parts, the cost, the water resistance and the rate before and after |
 | `reserva` | the measured reserve (`relogio=<id>`: the mechanical watch's reserve tests, the energy observations, the measurement, which is the median of the tests, and the declared, measured and estimated table with the confidence; without it, the tests and observations of all) |
+| `timegrapher` | the timegrapher measurements (`relogio=<id>`: the last session, with the average of each quantity and the difference between the positions, the measurements and what the CSV import understands; without it, everyone's) |
 | `documento` | a document's file (`id=<id>`): to show (image, video, audio, PDF, text) or to download (the rest, or with `baixar=1`); `mini=1` is the photo's thumbnail. It serves pieces (Range), so the video can skip ahead |
 | `usuarios`, `migracoes` | the master: the accounts panel, each with what it has and the password hash (to migrate with the same password: see [The users and the passwords](#the-users-and-the-passwords)); the others, only their own account; the migrations still to apply |
 | `conta`, `colecoes`, `aprovacoes` | My account (the collections, the trees, the requests, the tokens, the remembered devices, the Web Push devices, the own e-mail server; `parte=menu`: only the menu's part); the collections and the trees; the Approvals page |
@@ -1593,6 +1624,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `documentos` | `enviar` (one or several files, with the category, the title, the date, the description and, for a photo, the thumbnail), `alterar`, `excluir` |
 | `servicos` | `salvar` (the date, the type, who did it, the labour, the parts, the water resistance, the rate before and after, the warranty and the documents; a service and a battery change also become the entry), `excluir` |
 | `reserva` | `iniciar` (when it was full and how), `parou`, `observar` (stopped, low charge, note; also on the solar), `salvar`, `usar` (the median goes to the watch's record), `excluir` |
+| `timegrapher` | `salvar` (a measurement: the position, the rate, the amplitude, the beat error, the beats per hour, the angle), `importar` (the device's CSV; `conferir=1`: without saving), `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (only without documents) |
 | `lancamento` | `lancar` (winding, charge, battery...), `iniciar` and `encerrar` (put on and take off the wrist, the winder, the sun, the charger), `alternar` (closes the session if it is open, opens it if it is closed: a single button on the phone), `periodo` (a period that has passed; on the wrist of the watch of the day it is rotation use, and the stretches of the same type it touches, like a Put on left open, become one), `alterar`, `excluir`, `medicao` (a consumption measurement goes into or out of the calculation: `id`, `usada` 1 or 0). In all of them, `relogio_id=hoje` is the watch of the day |
 | `rodizio` | `usando` (I'm wearing this one today), `trocar_dia` (a day's watch), `periodo` (the watches of a period, in order: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (erases the period's days and the mode builds them again; only `de`: to the end of the plan; only `ate`: from tomorrow to it), `periodo_livre` (erases and leaves the days free, without a draw; the same dates), `manual` (the Manual rotation: `de`, `ate`, `dias[YYYY-MM-DD]` = the watch id, `auto` or `livre`), `apagar_tudo` (the whole schedule from tomorrow on goes away; `hoje=1`: from today on; the mode builds the plan again), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (change the mode) |

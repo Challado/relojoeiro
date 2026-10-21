@@ -106,6 +106,8 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
             "momento" => $v["encostado_momento"], "falta" => $v["encostado_falta"], "estado" => $v["encostado"]["estado"]] : null,
         "manutencoes" => array_map(function ($a) use ($hoje) { return ["data" => max($hoje->format("Y-m-d"), substr($a["data"], 0, 10)), "nome" => $a["nome"]]; }, array_slice($v["avisos"], 0, 5)),
         "previsao" => previsao_energia($r, $agora), "tipos" => $tipos, "leituras" => $leituras, "precisao" => ($pr_f = precisao_do_relogio($r, $agora)),
+        // o timegrapher (o quadro Timegrapher, na seção Precisão e marcha): nos que medem a marcha, ou já têm medição; null nos outros
+        "timegrapher" => $pr_f !== null || (int)valor("SELECT COUNT(*) FROM timegrapher WHERE relogio_id = ?", [$id]) > 0 ? timegrapher_do_relogio($r, $agora) : null,
         // declarado, medido e estimado: a marcha, a reserva e a estanqueidade, cada uma com a confiança
         "tecnico" => tecnico_do_relogio($r, $agora, $pr_f, $rs_f, servicos_resumo($id, $srv_f)),
         "medicoes" => medicoes_legivel($id), "medicao_janela_dias" => max(1, (int)cfg("medicao_janela_dias")), "medicao_janela_texto" => medicoes_janela_texto(),

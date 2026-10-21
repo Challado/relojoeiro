@@ -1,4 +1,4 @@
-<!-- origem: 3adc0877a3f91fac6bdf6695dd469e7c18f992c9 -->
+<!-- origem: 87aa9c78e9fe7a84a881a5a6e9ff4e66ac8a061b -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -648,6 +648,36 @@ smartwatch ya mide la batería por las lecturas de carga (el cuadro **Gasto de l
 El **Pasaporte** trae la tabla. Por la API: `recurso=ficha` (el `tecnico` y la `reserva` del reloj), `recurso=reserva` (las
 pruebas, las observaciones, la medida y la tabla) y `recurso=reserva` con `acao=iniciar`, `parou`, `observar`, `salvar`,
 `usar` o `excluir`.
+
+### El timegrapher {#o-timegrapher}
+
+Quien tiene un **timegrapher** (el aparato de banco que escucha el reloj) guarda sus mediciones en el cuadro **Timegrapher**,
+en la sección Precisión y marcha del panel y de la Ficha. En cada posición el aparato muestra la **marcha** (s/día), la
+**amplitud** del volante (grados), el **error de latido** (ms), los **latidos por hora** y el **ángulo de levantamiento**; lo que
+no muestra queda vacío. Las posiciones son las del aparato: esfera hacia arriba o hacia abajo, y la corona hacia arriba, hacia
+abajo, a la izquierda o a la derecha. Las mediciones del mismo día son una **sesión**: el cuadro muestra la última, una línea
+por posición y el **promedio**, y la **diferencia de marcha entre las posiciones** (la mayor menos la menor), que dice cuánto
+cambia la marcha con la posición.
+
+Dos maneras de poner las mediciones:
+
+- **Registrar una medición:** escribir lo que muestra el aparato, posición por posición.
+- **Importar el CSV del aparato:** elegir el archivo que exporta el timegrapher (o su aplicación). El sistema encuentra el
+  separador (`;`, `,` o tabulación) y las columnas por el encabezado, en portugués o en inglés (`date`, `time`, `position`,
+  `rate`, `amplitude`, `beat error`, `bph`, `lift angle`, `notes`...); las posiciones por el nombre o por las siglas de los
+  aparatos (`DU`, `DD`, `CU`, `CD`, `CL`, `CR`, o la hora que queda arriba: `3U`, `9U`, `6U`, `12U`). La fecha en `AAAA-MM-DD`
+  o `DD/MM/AAAA`; sin fecha, las líneas quedan en el instante elegido. **Solo comprobar** muestra lo que entraría, sin grabar.
+  La línea que no se entiende queda fuera, con el motivo, y la repetida no entra dos veces.
+
+El sistema no dice qué es bueno o malo (una amplitud de 220° es excelente en un reloj y baja en otro): eso queda para las
+fórmulas y los avisos del registro. `TIMEGRAPHER("amplitude")` da el promedio de la última sesión (también `marcha`,
+`erro_batida`, `bph`, `angulo`, `delta`, la diferencia entre las posiciones, y `medicoes`), y `TIMEGRAPHER_DATA()` su día: un
+aviso con `SE(TIMEGRAPHER("amplitude") < 220; 1; 0)`, por ejemplo. Las mediciones del timegrapher quedan aparte de la marcha
+medida por el desvío de la hora (la del cuadro Precisión): una es el reloj en el banco, la otra es él en el día a día.
+
+Por la API: `recurso=timegrapher` (con `relogio=<id>`: la sesión, las mediciones y lo que entiende la importación), y la
+escritura `recurso=timegrapher` con `acao=salvar`, `importar` (`csv` y, si quiere, `conferir=1`) o `excluir`. El
+**Pasaporte** trae las mediciones.
 
 ## Varias personas: cuentas, colecciones y acceso {#várias-pessoas-contas-coleções-e-acesso}
 

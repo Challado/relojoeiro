@@ -749,6 +749,7 @@ $MIGRACOES = [
     "v36" => ["migracao_v36.sql", tk("a reserva medida: o teste da reserva de marcha do mecânico (cheio, por qual protocolo, até parar), com a mediana dos testes como a estimativa do relógio e a confiança, sem mexer no valor do calibre; as observações da energia (parou, o indicador de carga baixa), também no solar, que não se calibra; e as funções RESERVA_MEDIDA e RESERVA_TESTES"), "reserva_teste"],
     "v37" => ["migracao_v37.sql", tk("o servidor de e-mail próprio de cada pessoa (Minha conta): quem quiser põe o SMTP dele (o Gmail, o Outlook, o do provedor), e os e-mails dele saem por ele (os destinos de e-mail das coleções dele, os convites e os pedidos que ele manda, os da própria conta); sem ele, vale o servidor do sistema, o do config.php"), "usuario_smtp"],
     "v38" => ["migracao_v38.sql", tk("o modo da interface de cada pessoa (Minha conta): o básico mostra o dia a dia (cadastrar, marcar o uso, a manutenção, escolher um rodízio pronto) e o avançado também as fórmulas, os roteiros, os critérios, as simulações e os totais; o motor é o mesmo"), "usuario.nivel"],
+    "v39" => ["migracao_v39.sql", tk("o timegrapher: as medições de um timegrapher de bancada (a marcha, a amplitude, o erro de batida, as batidas por hora e o ângulo de levantamento, em cada posição), digitadas na mão ou importadas do CSV do aparelho, com a média e a diferença entre as posições de cada sessão"), "timegrapher"],
 ];
 
 // O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
@@ -1194,6 +1195,9 @@ $FUNCOES = [
     // a reserva medida do relógio (os testes terminados até o instante da conta)
     "RESERVA_MEDIDA" => [0, 0, tk("RESERVA_MEDIDA(): a reserva de marcha medida nos testes do relógio, em horas (a mediana dos testes terminados; vazio sem nenhum). PADRAO(RESERVA_MEDIDA(); reserva_horas) usa a medida e, sem ela, o cadastro"), false],
     "RESERVA_TESTES" => [0, 0, tk("RESERVA_TESTES(): quantos testes da reserva o relógio tem terminados"), false],
+    // o timegrapher (a última sessão até o instante da conta)
+    "TIMEGRAPHER" => [1, 1, tk("TIMEGRAPHER(\"grandeza\"): a média da última sessão do timegrapher (as medições do mesmo dia): marcha (s/dia), amplitude (graus), erro_batida (ms), bph, angulo; delta, a diferença de marcha entre as posições; medicoes, quantas. Vazio sem medição. Ex.: um aviso SE(TIMEGRAPHER(\"amplitude\") < 220; 1; 0)"), false],
+    "TIMEGRAPHER_DATA" => [0, 0, tk("TIMEGRAPHER_DATA(): o dia da última sessão do timegrapher (vazio sem nenhuma). DIAS_DESDE(TIMEGRAPHER_DATA()) dá há quantos dias"), false],
     "ESCOLHIDO_HA" => [1, 1, tk("ESCOLHIDO_HA(n): 1 se o relógio é o do plano há n dias (1: ontem; -1: amanhã, quando já está no plano)"), false],
     "VEZES_NO_PLANO" => [1, 1, tk("VEZES_NO_PLANO(n): quantos dias o relógio teve no plano nos últimos n dias (antes do dia que está sendo montado)"), false],
     "ESCOLHA" => [2, null, tk("ESCOLHA(n; a; b; c...): o n-ésimo dos valores (só ele é calculado); fora da lista, vazio. Ex.: ESCOLHA(DIA_SEMANA(); ...) dá um valor por dia da semana"), false],
@@ -2167,6 +2171,11 @@ function formula_calcular($no, &$ctx)
                         }
                     }
                 }
+            } elseif ($nome === "TIMEGRAPHER" || $nome === "TIMEGRAPHER_DATA") {
+                $ses_t = timegrapher_sessao((int)($ctx["r"]["id"] ?? 0), (int)$ctx["momento"]);
+                $g_t = $nome === "TIMEGRAPHER" ? (string)($v[0] ?? "") : "";
+                $res = $ses_t === null ? null : ($nome === "TIMEGRAPHER_DATA" ? dias_de($ses_t["instante"])
+                    : (in_array($g_t, ["marcha", "amplitude", "erro_batida", "bph", "angulo", "delta", "medicoes"], true) ? $ses_t[$g_t] : null));
             } elseif ($nome === "RESERVA_MEDIDA" || $nome === "RESERVA_TESTES") {
                 $m_r = reserva_medida((int)($ctx["r"]["id"] ?? 0), (int)$ctx["momento"]);
                 $res = $nome === "RESERVA_TESTES" ? $m_r["n"] : $m_r["mediana"];
@@ -2380,7 +2389,7 @@ $FUNCOES_TOTAIS = [
 // as que dão uma tabelinha ou um relógio: só como a expressão inteira
 const TOTAIS_DO_TOPO = ["AGRUPADO", "FAIXAS", "QUEM_MENOR", "QUEM_MAIOR"];
 // as funções do motor que precisam de um relógio: nos totais, só dentro de uma função de total
-const FUNCOES_DO_RELOGIO = ["NO_GRUPO", "RELOGIO", "CALIBRE", "ULTIMO_SERVICO", "CUSTO_SERVICOS", "RESERVA_MEDIDA", "RESERVA_TESTES", "ESCOLHIDO_HA", "VEZES_NO_PLANO", "MEDIDO", "MEDIA_COLECAO", "LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA",
+const FUNCOES_DO_RELOGIO = ["NO_GRUPO", "RELOGIO", "CALIBRE", "ULTIMO_SERVICO", "CUSTO_SERVICOS", "RESERVA_MEDIDA", "RESERVA_TESTES", "TIMEGRAPHER", "TIMEGRAPHER_DATA", "ESCOLHIDO_HA", "VEZES_NO_PLANO", "MEDIDO", "MEDIA_COLECAO", "LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA",
     "MEDIANA_TAXA", "ULTIMA_TAXA", "MARCHA", "MARCHA_DP", "MARCHA_N", "MARCHA_ULTIMA", "DESVIO_AGORA", "DIA_SEMANA", "SEMANA_DO_ANO", "SORTEIO"];
 
 // As variáveis da tabela, que os totais têm em cada relógio além dos campos e das fórmulas: nome => [o que é, unidade]
@@ -5107,6 +5116,279 @@ function reserva_do_relogio($r, $agora)
         "protocolos" => array_map(function ($k) { return ["valor" => $k, "nome" => t(RESERVA_PROTOCOLOS[$k][0]), "unidade" => RESERVA_PROTOCOLOS[$k][1] === "voltas" ? t("voltas") : RESERVA_PROTOCOLOS[$k][1]]; },
             array_keys(RESERVA_PROTOCOLOS)),
         "tipos_observacao" => array_map(function ($k) { return ["valor" => $k, "nome" => t(RESERVA_OBSERVACOES[$k])]; }, array_keys(RESERVA_OBSERVACOES))];
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// O timegrapher: as medições de um timegrapher de bancada, digitadas ou importadas do CSV do aparelho (recurso=timegrapher).
+// Uma medição por posição; a sessão é o dia (as medições do mesmo dia): a média de cada grandeza e a diferença de marcha
+// entre as posições. O sistema só guarda e mostra: o que é bom ou ruim (uma amplitude baixa, um erro de batida alto) fica
+// para as fórmulas e os avisos do cadastro, pela TIMEGRAPHER("grandeza")
+// ---------------------------------------------------------------------------------------------------------------------
+// as posições do aparelho (as mesmas da leitura do desvio, menos o pulso, o misto e o winder)
+const TIMEGRAPHER_POSICOES = ["mostrador_cima", "mostrador_baixo", "coroa_cima", "coroa_baixo", "coroa_esquerda", "coroa_direita"];
+// as grandezas: o nome (traduzido no uso), e a unidade, o mínimo e o máximo (TIMEGRAPHER_LIMITES, que não se traduzem)
+const TIMEGRAPHER_GRANDEZAS = ["marcha" => "Marcha", "amplitude" => "Amplitude", "erro_batida" => "Erro de batida", "bph" => "Batidas por hora", "angulo" => "Ângulo de levantamento"];
+tk("Marcha"); tk("Amplitude"); tk("Erro de batida"); tk("Batidas por hora"); tk("Ângulo de levantamento");
+const TIMEGRAPHER_LIMITES = ["marcha" => ["s/dia", -999, 999, 1], "amplitude" => ["°", 0, 360, 1], "erro_batida" => ["ms", 0, 99, 2], "bph" => ["bph", 3600, 72000, 0], "angulo" => ["°", 10, 90, 1]];
+
+// Uma grandeza por extenso, com a unidade ("+4,2 s/dia", "285°", "0,3 ms", "28.800 bph"); null sem valor
+function timegrapher_txt($campo, $v)
+{
+    if ($v === null) {
+        return null;
+    }
+    if ($campo === "marcha") {
+        return marcha_txt((float)$v);
+    }
+    $u = TIMEGRAPHER_LIMITES[$campo][0];
+    $n = $campo === "bph" ? numero_txt((float)$v, 0) : decimal_txt((float)$v, TIMEGRAPHER_LIMITES[$campo][3]);
+    return $u === "°" ? $n . "°" : $n . " " . $u;
+}
+
+// As medições (de um relógio, ou de todos), da mais nova para a mais velha, com os textos
+function timegrapher_lista($relogio_id = null)
+{
+    $pos = posicoes_marcha();
+    return array_map(function ($x) use ($pos) {
+        $res = ["id" => (int)$x["id"], "relogio_id" => (int)$x["relogio_id"], "relogio" => $x["relogio"], "quando" => $x["quando"], "posicao" => $x["posicao"],
+            "posicao_texto" => $x["posicao"] === null ? t("não informada") : ($pos[$x["posicao"]] ?? $x["posicao"])];
+        foreach (array_keys(TIMEGRAPHER_GRANDEZAS) as $g) {
+            $res[$g] = $x[$g] === null ? null : ($g === "bph" ? (int)$x[$g] : (float)$x[$g]);
+            $res[$g . "_texto"] = timegrapher_txt($g, $res[$g]);
+        }
+        return $res + ["origem" => $x["origem"], "origem_texto" => $x["origem"] === "csv" ? t("importada do CSV") : t("digitada"), "observacao" => $x["observacao"]];
+    }, linhas("SELECT g.*, r.nome AS relogio FROM timegrapher g JOIN relogio r ON r.id = g.relogio_id" . ($relogio_id !== null ? " WHERE g.relogio_id = ?" : "")
+        . " ORDER BY g.quando DESC, g.id DESC", $relogio_id !== null ? [(int)$relogio_id] : []));
+}
+
+// As medições de cada relógio para as contas (uma leitura por requisição; de novo depois de uma gravação)
+function timegrapher_das_contas()
+{
+    static $cache = [];
+    $chave = (int)colecao_atual() . "/" . ($GLOBALS["FORMULAS_VERSAO"] ?? 0);
+    if (!isset($cache[$chave])) {
+        $res = [];
+        foreach (linhas("SELECT * FROM timegrapher ORDER BY quando, id") as $x) {
+            $res[(int)$x["relogio_id"]][] = $x + ["instante" => strtotime((string)$x["quando"])];
+        }
+        $cache = [$chave => $res];
+    }
+    return $cache[$chave];
+}
+
+// A última sessão de um relógio até $momento (as medições do mesmo dia da mais nova): o dia, quantas, a média de cada
+// grandeza, a diferença de marcha entre as posições (a maior menos a menor, com duas ou mais) e cada posição; null sem nenhuma
+function timegrapher_sessao($rid, $momento)
+{
+    $ms = array_values(array_filter(timegrapher_das_contas()[(int)$rid] ?? [], function ($x) use ($momento) { return $x["instante"] <= $momento; }));
+    if (count($ms) === 0) {
+        return null;
+    }
+    $dia = substr((string)$ms[count($ms) - 1]["quando"], 0, 10);
+    $ses = array_values(array_filter($ms, function ($x) use ($dia) { return substr((string)$x["quando"], 0, 10) === $dia; }));
+    $res = ["dia" => $dia, "instante" => $ses[count($ses) - 1]["instante"], "medicoes" => count($ses)];
+    foreach (array_keys(TIMEGRAPHER_GRANDEZAS) as $g) {
+        $vs = array_map("floatval", array_values(array_filter(array_column($ses, $g), function ($v) { return $v !== null; })));
+        $res[$g] = count($vs) === 0 ? null : round(array_sum($vs) / count($vs), TIMEGRAPHER_LIMITES[$g][3]);
+    }
+    $por = [];
+    foreach ($ses as $x) {
+        if ($x["posicao"] !== null && $x["marcha"] !== null) {
+            $por[$x["posicao"]] = (float)$x["marcha"];
+        }
+    }
+    $res["delta"] = count($por) >= 2 ? round(max($por) - min($por), 1) : null;
+    $res["posicoes"] = count($por);
+    return $res;
+}
+
+// O timegrapher de um relógio (o quadro Timegrapher do painel e recurso=timegrapher): as medições, a última sessão (com as
+// posições e o resumo), as grandezas e as posições para o formulário e as colunas que a importação do CSV entende
+function timegrapher_do_relogio($r, $agora)
+{
+    $rid = (int)$r["id"];
+    $pos = posicoes_marcha();
+    $ses = timegrapher_sessao($rid, $agora);
+    $ms = timegrapher_lista($rid);
+    if ($ses === null) {
+        $resumo = t("Nenhuma medição do timegrapher ainda: digite a de cada posição, ou importe o CSV do aparelho.");
+        $sessao = null;
+    } else {
+        $partes = [];
+        foreach (["marcha", "amplitude", "erro_batida"] as $g) {
+            if ($ses[$g] !== null) {
+                $partes[] = mb_strtolower(t(TIMEGRAPHER_GRANDEZAS[$g]), "UTF-8") . " " . timegrapher_txt($g, $ses[$g]);
+            }
+        }
+        $resumo = t("Última sessão em {1}: {2} ({3}).", [1 => data_txt(strtotime($ses["dia"])), 2 => implode(", ", $partes),
+            3 => ($ses["medicoes"] === 1 ? t("1 medição") : t("{1} medições", [1 => $ses["medicoes"]]))
+                . ($ses["delta"] !== null ? t("; diferença entre as {1} posições: {2}", [1 => $ses["posicoes"], 2 => t("{1} s/dia", [1 => decimal_txt($ses["delta"], 1)])]) : "")]);
+        $sessao = ["dia" => $ses["dia"], "medicoes" => $ses["medicoes"], "posicoes" => $ses["posicoes"], "delta" => $ses["delta"],
+            "delta_texto" => $ses["delta"] === null ? null : t("{1} s/dia", [1 => decimal_txt($ses["delta"], 1)]),
+            "itens" => array_values(array_filter($ms, function ($x) use ($ses) { return substr((string)$x["quando"], 0, 10) === $ses["dia"]; }))];
+        foreach (array_keys(TIMEGRAPHER_GRANDEZAS) as $g) {
+            $sessao[$g] = $ses[$g];
+            $sessao[$g . "_texto"] = timegrapher_txt($g, $ses[$g]);
+        }
+    }
+    return ["resumo" => $resumo, "sessao" => $sessao, "medicoes" => $ms, "sessoes" => count(array_unique(array_map(function ($x) { return substr((string)$x["quando"], 0, 10); }, $ms))),
+        "grandezas" => array_map(function ($g) { return ["campo" => $g, "nome" => t(TIMEGRAPHER_GRANDEZAS[$g]), "unidade" => TIMEGRAPHER_LIMITES[$g][0],
+            "minimo" => TIMEGRAPHER_LIMITES[$g][1], "maximo" => TIMEGRAPHER_LIMITES[$g][2]]; }, array_keys(TIMEGRAPHER_GRANDEZAS)),
+        "posicoes" => array_map(function ($k) use ($pos) { return ["valor" => $k, "texto" => $pos[$k]]; }, TIMEGRAPHER_POSICOES)];
+}
+
+// As colunas que a importação entende (o cabeçalho do CSV, sem acento e sem o que está entre parênteses, em minúsculas):
+// campo => apelidos. A data e a hora podem vir juntas (quando) ou separadas (data e hora)
+const TIMEGRAPHER_COLUNAS = [
+    "quando" => ["quando", "data e hora", "datetime", "date time", "timestamp"],
+    "data" => ["data", "date", "dia", "day"],
+    "hora" => ["hora", "time", "horario"],
+    "posicao" => ["posicao", "position", "pos"],
+    "marcha" => ["marcha", "rate", "taxa", "s d", "sd"],
+    "amplitude" => ["amplitude", "amp", "amplitude graus"],
+    "erro_batida" => ["erro de batida", "erro batida", "erro", "beat error", "beaterror", "be"],
+    "bph" => ["bph", "batidas por hora", "beat rate", "beats", "frequencia", "freq"],
+    "angulo" => ["angulo", "angulo de levantamento", "lift angle", "lift", "la"],
+    "observacao" => ["observacao", "obs", "nota", "note", "notes", "comment"],
+];
+// os nomes das posições que a importação entende: o código, o português e as siglas dos aparelhos (DU/DD, CU/CD/CL/CR; a
+// hora que fica para cima: 3U é a coroa para cima, 9U para baixo, 6U para a esquerda, 12U para a direita)
+const TIMEGRAPHER_POSICAO_NOMES = [
+    "mostrador_cima" => ["mostrador_cima", "mostrador para cima", "mostrador cima", "du", "fu", "dial up", "face up", "ch"],
+    "mostrador_baixo" => ["mostrador_baixo", "mostrador para baixo", "mostrador baixo", "dd", "fd", "dial down", "face down", "cb"],
+    "coroa_cima" => ["coroa_cima", "coroa para cima", "coroa cima", "cu", "crown up", "3u", "3h", "3 up"],
+    "coroa_baixo" => ["coroa_baixo", "coroa para baixo", "coroa baixo", "cd", "crown down", "9u", "9h", "9 up"],
+    "coroa_esquerda" => ["coroa_esquerda", "coroa para a esquerda", "coroa esquerda", "cl", "crown left", "6u", "6h", "6 up"],
+    "coroa_direita" => ["coroa_direita", "coroa para a direita", "coroa direita", "cr", "crown right", "12u", "12h", "12 up"],
+];
+
+// Um nome do cabeçalho ou de uma posição comparável: minúsculas, sem acento, sem o que está entre parênteses e com os
+// separadores trocados por espaço
+function timegrapher_normal($s)
+{
+    $s = mb_strtolower(trim((string)$s), "UTF-8");
+    $s = preg_replace('/\([^)]*\)/u', "", $s);
+    $s = strtr($s, ["á" => "a", "à" => "a", "â" => "a", "ã" => "a", "é" => "e", "ê" => "e", "í" => "i", "ó" => "o", "ô" => "o", "õ" => "o", "ú" => "u", "ç" => "c"]);
+    return trim(preg_replace('/[^a-z0-9_]+/', " ", $s));
+}
+
+// O número de uma célula ("+4.2 s/d", "285°", "0,3ms"): o primeiro número dela, com ponto ou vírgula; null sem número
+function timegrapher_numero($s)
+{
+    return preg_match('/[-+]?\d+(?:[.,]\d+)?/', str_replace(" ", "", (string)$s), $m) === 1 ? (float)str_replace(",", ".", $m[0]) : null;
+}
+
+// Um instante da importação: AAAA-MM-DD, AAAA/MM/DD ou DD/MM/AAAA, com a hora (HH:MM ou HH:MM:SS) ou sem (meio-dia); null
+// se não entende
+function timegrapher_instante($data, $hora)
+{
+    $data = trim(str_replace("T", " ", (string)$data));
+    if ($hora === "" && preg_match('/^(\S+)\s+(\d{1,2}:\d{2}(?::\d{2})?)/', $data, $m) === 1) {
+        [$data, $hora] = [$m[1], $m[2]];
+    }
+    if (preg_match('#^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$#', $data, $m) === 1) {
+        [$a, $me, $di] = [(int)$m[1], (int)$m[2], (int)$m[3]];
+    } elseif (preg_match('#^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$#', $data, $m) === 1) {
+        [$a, $me, $di] = [(int)$m[3], (int)$m[2], (int)$m[1]];
+    } else {
+        return null;
+    }
+    $hora = trim((string)$hora);
+    if ($hora === "") {
+        $hora = "12:00";
+    }
+    if (!checkdate($me, $di, $a) || preg_match('/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/', $hora, $h) !== 1 || (int)$h[1] > 23 || (int)$h[2] > 59) {
+        return null;
+    }
+    return mktime((int)$h[1], (int)$h[2], (int)($h[3] ?? 0), $me, $di, $a);
+}
+
+// Lê o CSV de um timegrapher: o separador (; , ou tabulação) pelo cabeçalho, as colunas pelos nomes (TIMEGRAPHER_COLUNAS) e
+// cada linha numa medição. Devolve {colunas (campo => o nome no arquivo), linhas: [{linha, medicao (os campos) ou null,
+// erro}]}; sem cabeçalho que se entenda, {erro}. $quando: o instante das linhas sem data
+function timegrapher_ler_csv($texto, $quando)
+{
+    $texto = preg_replace('/^\xEF\xBB\xBF/', "", str_replace(["\r\n", "\r"], "\n", (string)$texto));
+    $linhas = array_values(array_filter(explode("\n", $texto), function ($l) { return trim($l) !== ""; }));
+    if (count($linhas) < 2) {
+        return ["erro" => t("O CSV precisa do cabeçalho (os nomes das colunas) e de pelo menos uma linha.")];
+    }
+    if (count($linhas) > 2001) {
+        return ["erro" => t("O CSV vai até 2000 linhas de medições.")];
+    }
+    $sep = ";";
+    $melhor = -1;
+    foreach ([";", ",", "\t"] as $s) {
+        if (substr_count($linhas[0], $s) > $melhor) {
+            [$sep, $melhor] = [$s, substr_count($linhas[0], $s)];
+        }
+    }
+    $cab = array_map("timegrapher_normal", str_getcsv($linhas[0], $sep, "\"", ""));
+    $colunas = [];
+    foreach ($cab as $i => $nome) {
+        foreach (TIMEGRAPHER_COLUNAS as $campo => $apelidos) {
+            if (!isset($colunas[$campo]) && in_array($nome, $apelidos, true)) {
+                $colunas[$campo] = $i;
+                break;
+            }
+        }
+    }
+    if (!isset($colunas["marcha"]) && !isset($colunas["amplitude"]) && !isset($colunas["erro_batida"])) {
+        return ["erro" => t("O cabeçalho do CSV não tem nenhuma coluna de medição (a marcha, a amplitude ou o erro de batida: rate, amplitude, beat error...).")];
+    }
+    $nomes_pos = [];
+    foreach (TIMEGRAPHER_POSICAO_NOMES as $k => $ns) {
+        foreach ($ns as $n) {
+            $nomes_pos[$n] = $k;
+        }
+    }
+    $res = [];
+    foreach (array_slice($linhas, 1) as $n => $l) {
+        $c = str_getcsv($l, $sep, "\"", "");
+        $cel = function ($campo) use ($c, $colunas) { return isset($colunas[$campo]) ? trim((string)($c[$colunas[$campo]] ?? "")) : ""; };
+        $erro = "";
+        $m = ["observacao" => $cel("observacao") !== "" ? corta_texto($cel("observacao"), 500) : null];
+        if ($cel("quando") !== "" || $cel("data") !== "") {
+            $m["quando"] = timegrapher_instante($cel("quando") !== "" ? $cel("quando") : $cel("data"), $cel("hora"));
+            if ($m["quando"] === null) {
+                $erro = t("a data não se entende ({1}): use AAAA-MM-DD ou DD/MM/AAAA, com a hora ou sem", [1 => $cel("quando") !== "" ? $cel("quando") : trim($cel("data") . " " . $cel("hora"))]);
+            }
+        } else {
+            $m["quando"] = $quando;
+        }
+        $p = $cel("posicao");
+        $m["posicao"] = $p === "" ? null : ($nomes_pos[timegrapher_normal($p)] ?? false);
+        if ($m["posicao"] === false) {
+            $erro = $erro !== "" ? $erro : t("a posição não se entende ({1})", [1 => $p]);
+        }
+        foreach (array_keys(TIMEGRAPHER_GRANDEZAS) as $g) {
+            $m[$g] = $cel($g) === "" || $cel($g) === "-" ? null : timegrapher_numero($cel($g));
+            if ($cel($g) !== "" && $cel($g) !== "-" && $m[$g] === null) {
+                $erro = $erro !== "" ? $erro : t("{1} não é um número ({2})", [1 => t(TIMEGRAPHER_GRANDEZAS[$g]), 2 => $cel($g)]);
+            }
+        }
+        $erro = $erro !== "" ? $erro : timegrapher_conferir($m);
+        $res[] = ["linha" => $n + 2, "medicao" => $erro === "" ? $m : null, "erro" => $erro !== "" ? $erro : null];
+    }
+    return ["colunas" => array_map(function ($i) use ($linhas, $sep) { return trim((string)(str_getcsv($linhas[0], $sep, "\"", "")[$i] ?? "")); }, $colunas), "linhas" => $res];
+}
+
+// Confere uma medição (a digitada e cada linha do CSV): alguma grandeza, cada uma dentro dos limites, nada no futuro. O
+// erro, ou vazio
+function timegrapher_conferir($m)
+{
+    if (($m["marcha"] ?? null) === null && ($m["amplitude"] ?? null) === null && ($m["erro_batida"] ?? null) === null) {
+        return t("informe a marcha, a amplitude ou o erro de batida");
+    }
+    foreach (TIMEGRAPHER_LIMITES as $g => [$u, $min, $max]) {
+        if (($m[$g] ?? null) !== null && ($m[$g] < $min || $m[$g] > $max)) {
+            return t("{1}: de {2} a {3} {4}", [1 => t(TIMEGRAPHER_GRANDEZAS[$g]), 2 => numero_txt($min, 0), 3 => numero_txt($max, 0), 4 => $u]);
+        }
+    }
+    if (($m["quando"] ?? null) !== null && $m["quando"] > time() + 60) {
+        return t("a medição não pode ser no futuro");
+    }
+    return "";
 }
 
 // Declarado, medido e estimado: cada informação técnica do relógio numa tabelinha de três linhas (o que o fabricante ou o

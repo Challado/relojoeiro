@@ -1061,6 +1061,29 @@
  *     servicos[].marcacao            true se o serviço virou também a marcação do tipo de lançamento de mesmo nome (a revisão e a troca de
  *                                    pilha)
  *     servicos[].criado              quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     timegrapher                    as medições do timegrapher de todos os relógios (como em recurso=timegrapher)
+ *     timegrapher[]                  uma medição
+ *     timegrapher[].id               o número da medição (o id da gravação)
+ *     timegrapher[].relogio_id       o relógio
+ *     timegrapher[].relogio          o nome do relógio
+ *     timegrapher[].quando           quando foi medida (texto AAAA-MM-DD HH:MM:SS, no fuso do pedido)
+ *     timegrapher[].posicao          a posição no aparelho: mostrador_cima, mostrador_baixo, coroa_cima, coroa_baixo, coroa_esquerda ou
+ *                                    coroa_direita; null: não informada
+ *     timegrapher[].posicao_texto    a posição por extenso
+ *     timegrapher[].marcha           a marcha, em segundos por dia (+ adianta, − atrasa); null: não medida
+ *     timegrapher[].marcha_texto     a marcha por extenso ("+4,5 s/dia")
+ *     timegrapher[].amplitude        a amplitude do balanço, em graus; null: não medida
+ *     timegrapher[].amplitude_texto  a amplitude por extenso ("290°")
+ *     timegrapher[].erro_batida      o erro de batida, em milissegundos; null: não medido
+ *     timegrapher[].erro_batida_texto
+ *                                    o erro de batida por extenso ("0,3 ms")
+ *     timegrapher[].bph              as batidas por hora (21600, 28800...); null: não informadas
+ *     timegrapher[].bph_texto        as batidas por hora por extenso
+ *     timegrapher[].angulo           o ângulo de levantamento (lift angle), em graus; null: não informado
+ *     timegrapher[].angulo_texto     o ângulo por extenso
+ *     timegrapher[].origem           manual (digitada) ou csv (importada do arquivo do aparelho)
+ *     timegrapher[].origem_texto     a origem por extenso
+ *     timegrapher[].observacao       a observação; null: nenhuma
  *     reserva                        os testes da reserva e as observações da energia de todos os relógios (como em recurso=reserva)
  *     reserva[]                      um registro
  *     reserva[].id                   o número do teste ou da observação (o id da gravação)
@@ -2045,6 +2068,140 @@
  *                                    o número do documento
  *     relogio.servico_documentos[].titulo
  *                                    o título
+ *     relogio.timegrapher            o timegrapher (o quadro Timegrapher, na seção Precisão e marcha): nos relógios que medem a marcha ou
+ *                                    que já têm medição; null nos outros
+ *     relogio.timegrapher.resumo     a frase da última sessão (a média de cada grandeza e a diferença entre as posições), ou o que falta
+ *     relogio.timegrapher.sessao     a última sessão: as medições do mesmo dia da mais nova; null: nenhuma medição
+ *     relogio.timegrapher.sessao.dia o dia (AAAA-MM-DD)
+ *     relogio.timegrapher.sessao.medicoes
+ *                                    quantas medições no dia
+ *     relogio.timegrapher.sessao.posicoes
+ *                                    quantas posições diferentes com a marcha
+ *     relogio.timegrapher.sessao.delta
+ *                                    a diferença de marcha entre as posições (a maior menos a menor, s/dia); null com menos de duas
+ *     relogio.timegrapher.sessao.delta_texto
+ *                                    a diferença por extenso
+ *     relogio.timegrapher.sessao.marcha
+ *                                    a marcha: a média da sessão; null sem medida
+ *     relogio.timegrapher.sessao.marcha_texto
+ *                                    a marcha por extenso
+ *     relogio.timegrapher.sessao.amplitude
+ *                                    a amplitude: a média da sessão; null sem medida
+ *     relogio.timegrapher.sessao.amplitude_texto
+ *                                    a amplitude por extenso
+ *     relogio.timegrapher.sessao.erro_batida
+ *                                    o erro de batida: a média da sessão; null sem medida
+ *     relogio.timegrapher.sessao.erro_batida_texto
+ *                                    o erro de batida por extenso
+ *     relogio.timegrapher.sessao.bph as batidas por hora: a média da sessão; null sem medida
+ *     relogio.timegrapher.sessao.bph_texto
+ *                                    as batidas por hora por extenso
+ *     relogio.timegrapher.sessao.angulo
+ *                                    o ângulo de levantamento: a média da sessão; null sem medida
+ *     relogio.timegrapher.sessao.angulo_texto
+ *                                    o ângulo de levantamento por extenso
+ *     relogio.timegrapher.sessao.itens[]
+ *                                    cada medição da sessão (como em medicoes[])
+ *     relogio.timegrapher.sessao.itens[].id
+ *                                    o número da medição (o id da gravação)
+ *     relogio.timegrapher.sessao.itens[].relogio_id
+ *                                    o relógio
+ *     relogio.timegrapher.sessao.itens[].relogio
+ *                                    o nome do relógio
+ *     relogio.timegrapher.sessao.itens[].quando
+ *                                    quando foi medida (texto AAAA-MM-DD HH:MM:SS, no fuso do pedido)
+ *     relogio.timegrapher.sessao.itens[].posicao
+ *                                    a posição no aparelho: mostrador_cima, mostrador_baixo, coroa_cima, coroa_baixo, coroa_esquerda ou
+ *                                    coroa_direita; null: não informada
+ *     relogio.timegrapher.sessao.itens[].posicao_texto
+ *                                    a posição por extenso
+ *     relogio.timegrapher.sessao.itens[].marcha
+ *                                    a marcha, em segundos por dia (+ adianta, − atrasa); null: não medida
+ *     relogio.timegrapher.sessao.itens[].marcha_texto
+ *                                    a marcha por extenso ("+4,5 s/dia")
+ *     relogio.timegrapher.sessao.itens[].amplitude
+ *                                    a amplitude do balanço, em graus; null: não medida
+ *     relogio.timegrapher.sessao.itens[].amplitude_texto
+ *                                    a amplitude por extenso ("290°")
+ *     relogio.timegrapher.sessao.itens[].erro_batida
+ *                                    o erro de batida, em milissegundos; null: não medido
+ *     relogio.timegrapher.sessao.itens[].erro_batida_texto
+ *                                    o erro de batida por extenso ("0,3 ms")
+ *     relogio.timegrapher.sessao.itens[].bph
+ *                                    as batidas por hora (21600, 28800...); null: não informadas
+ *     relogio.timegrapher.sessao.itens[].bph_texto
+ *                                    as batidas por hora por extenso
+ *     relogio.timegrapher.sessao.itens[].angulo
+ *                                    o ângulo de levantamento (lift angle), em graus; null: não informado
+ *     relogio.timegrapher.sessao.itens[].angulo_texto
+ *                                    o ângulo por extenso
+ *     relogio.timegrapher.sessao.itens[].origem
+ *                                    manual (digitada) ou csv (importada do arquivo do aparelho)
+ *     relogio.timegrapher.sessao.itens[].origem_texto
+ *                                    a origem por extenso
+ *     relogio.timegrapher.sessao.itens[].observacao
+ *                                    a observação; null: nenhuma
+ *     relogio.timegrapher.medicoes   todas as medições do relógio, da mais nova para a mais velha
+ *     relogio.timegrapher.medicoes[] uma medição
+ *     relogio.timegrapher.medicoes[].id
+ *                                    o número da medição (o id da gravação)
+ *     relogio.timegrapher.medicoes[].relogio_id
+ *                                    o relógio
+ *     relogio.timegrapher.medicoes[].relogio
+ *                                    o nome do relógio
+ *     relogio.timegrapher.medicoes[].quando
+ *                                    quando foi medida (texto AAAA-MM-DD HH:MM:SS, no fuso do pedido)
+ *     relogio.timegrapher.medicoes[].posicao
+ *                                    a posição no aparelho: mostrador_cima, mostrador_baixo, coroa_cima, coroa_baixo, coroa_esquerda ou
+ *                                    coroa_direita; null: não informada
+ *     relogio.timegrapher.medicoes[].posicao_texto
+ *                                    a posição por extenso
+ *     relogio.timegrapher.medicoes[].marcha
+ *                                    a marcha, em segundos por dia (+ adianta, − atrasa); null: não medida
+ *     relogio.timegrapher.medicoes[].marcha_texto
+ *                                    a marcha por extenso ("+4,5 s/dia")
+ *     relogio.timegrapher.medicoes[].amplitude
+ *                                    a amplitude do balanço, em graus; null: não medida
+ *     relogio.timegrapher.medicoes[].amplitude_texto
+ *                                    a amplitude por extenso ("290°")
+ *     relogio.timegrapher.medicoes[].erro_batida
+ *                                    o erro de batida, em milissegundos; null: não medido
+ *     relogio.timegrapher.medicoes[].erro_batida_texto
+ *                                    o erro de batida por extenso ("0,3 ms")
+ *     relogio.timegrapher.medicoes[].bph
+ *                                    as batidas por hora (21600, 28800...); null: não informadas
+ *     relogio.timegrapher.medicoes[].bph_texto
+ *                                    as batidas por hora por extenso
+ *     relogio.timegrapher.medicoes[].angulo
+ *                                    o ângulo de levantamento (lift angle), em graus; null: não informado
+ *     relogio.timegrapher.medicoes[].angulo_texto
+ *                                    o ângulo por extenso
+ *     relogio.timegrapher.medicoes[].origem
+ *                                    manual (digitada) ou csv (importada do arquivo do aparelho)
+ *     relogio.timegrapher.medicoes[].origem_texto
+ *                                    a origem por extenso
+ *     relogio.timegrapher.medicoes[].observacao
+ *                                    a observação; null: nenhuma
+ *     relogio.timegrapher.sessoes    quantas sessões (dias com medição)
+ *     relogio.timegrapher.grandezas  as grandezas, para o formulário
+ *     relogio.timegrapher.grandezas[]
+ *                                    uma grandeza
+ *     relogio.timegrapher.grandezas[].campo
+ *                                    o nome do campo (marcha, amplitude, erro_batida, bph, angulo)
+ *     relogio.timegrapher.grandezas[].nome
+ *                                    o nome por extenso
+ *     relogio.timegrapher.grandezas[].unidade
+ *                                    a unidade (s/dia, °, ms, bph)
+ *     relogio.timegrapher.grandezas[].minimo
+ *                                    o menor valor aceito
+ *     relogio.timegrapher.grandezas[].maximo
+ *                                    o maior valor aceito
+ *     relogio.timegrapher.posicoes   as posições do aparelho, para o formulário
+ *     relogio.timegrapher.posicoes[] uma posição
+ *     relogio.timegrapher.posicoes[].valor
+ *                                    o código
+ *     relogio.timegrapher.posicoes[].texto
+ *                                    o nome por extenso
  *     relogio.reserva                a reserva medida (o quadro Reserva medida, ou Reserva de energia no solar); null: sem reserva no
  *                                    cadastro (o smartwatch, o de pilha)
  *     relogio.reserva.testar         true se o relógio faz o teste da reserva de marcha (o campo reserva_horas vale para ele: o mecânico)
@@ -3729,6 +3886,149 @@
  *     documentos[]                   um documento
  *     documentos[].id                o número do documento
  *     documentos[].titulo            o título
+ *   recurso=timegrapher
+ *     relogio                        o relógio pedido; null: todos
+ *     relogio.id                     o número
+ *     relogio.nome                   o nome
+ *     timegrapher                    com o relógio: o timegrapher dele (como na ficha); null sem o relógio
+ *     timegrapher.resumo             a frase da última sessão (a média de cada grandeza e a diferença entre as posições), ou o que falta
+ *     timegrapher.sessao             a última sessão: as medições do mesmo dia da mais nova; null: nenhuma medição
+ *     timegrapher.sessao.dia         o dia (AAAA-MM-DD)
+ *     timegrapher.sessao.medicoes    quantas medições no dia
+ *     timegrapher.sessao.posicoes    quantas posições diferentes com a marcha
+ *     timegrapher.sessao.delta       a diferença de marcha entre as posições (a maior menos a menor, s/dia); null com menos de duas
+ *     timegrapher.sessao.delta_texto a diferença por extenso
+ *     timegrapher.sessao.marcha      a marcha: a média da sessão; null sem medida
+ *     timegrapher.sessao.marcha_texto
+ *                                    a marcha por extenso
+ *     timegrapher.sessao.amplitude   a amplitude: a média da sessão; null sem medida
+ *     timegrapher.sessao.amplitude_texto
+ *                                    a amplitude por extenso
+ *     timegrapher.sessao.erro_batida o erro de batida: a média da sessão; null sem medida
+ *     timegrapher.sessao.erro_batida_texto
+ *                                    o erro de batida por extenso
+ *     timegrapher.sessao.bph         as batidas por hora: a média da sessão; null sem medida
+ *     timegrapher.sessao.bph_texto   as batidas por hora por extenso
+ *     timegrapher.sessao.angulo      o ângulo de levantamento: a média da sessão; null sem medida
+ *     timegrapher.sessao.angulo_texto
+ *                                    o ângulo de levantamento por extenso
+ *     timegrapher.sessao.itens[]     cada medição da sessão (como em medicoes[])
+ *     timegrapher.sessao.itens[].id  o número da medição (o id da gravação)
+ *     timegrapher.sessao.itens[].relogio_id
+ *                                    o relógio
+ *     timegrapher.sessao.itens[].relogio
+ *                                    o nome do relógio
+ *     timegrapher.sessao.itens[].quando
+ *                                    quando foi medida (texto AAAA-MM-DD HH:MM:SS, no fuso do pedido)
+ *     timegrapher.sessao.itens[].posicao
+ *                                    a posição no aparelho: mostrador_cima, mostrador_baixo, coroa_cima, coroa_baixo, coroa_esquerda ou
+ *                                    coroa_direita; null: não informada
+ *     timegrapher.sessao.itens[].posicao_texto
+ *                                    a posição por extenso
+ *     timegrapher.sessao.itens[].marcha
+ *                                    a marcha, em segundos por dia (+ adianta, − atrasa); null: não medida
+ *     timegrapher.sessao.itens[].marcha_texto
+ *                                    a marcha por extenso ("+4,5 s/dia")
+ *     timegrapher.sessao.itens[].amplitude
+ *                                    a amplitude do balanço, em graus; null: não medida
+ *     timegrapher.sessao.itens[].amplitude_texto
+ *                                    a amplitude por extenso ("290°")
+ *     timegrapher.sessao.itens[].erro_batida
+ *                                    o erro de batida, em milissegundos; null: não medido
+ *     timegrapher.sessao.itens[].erro_batida_texto
+ *                                    o erro de batida por extenso ("0,3 ms")
+ *     timegrapher.sessao.itens[].bph as batidas por hora (21600, 28800...); null: não informadas
+ *     timegrapher.sessao.itens[].bph_texto
+ *                                    as batidas por hora por extenso
+ *     timegrapher.sessao.itens[].angulo
+ *                                    o ângulo de levantamento (lift angle), em graus; null: não informado
+ *     timegrapher.sessao.itens[].angulo_texto
+ *                                    o ângulo por extenso
+ *     timegrapher.sessao.itens[].origem
+ *                                    manual (digitada) ou csv (importada do arquivo do aparelho)
+ *     timegrapher.sessao.itens[].origem_texto
+ *                                    a origem por extenso
+ *     timegrapher.sessao.itens[].observacao
+ *                                    a observação; null: nenhuma
+ *     timegrapher.medicoes           todas as medições do relógio, da mais nova para a mais velha
+ *     timegrapher.medicoes[]         uma medição
+ *     timegrapher.medicoes[].id      o número da medição (o id da gravação)
+ *     timegrapher.medicoes[].relogio_id
+ *                                    o relógio
+ *     timegrapher.medicoes[].relogio o nome do relógio
+ *     timegrapher.medicoes[].quando  quando foi medida (texto AAAA-MM-DD HH:MM:SS, no fuso do pedido)
+ *     timegrapher.medicoes[].posicao a posição no aparelho: mostrador_cima, mostrador_baixo, coroa_cima, coroa_baixo, coroa_esquerda ou
+ *                                    coroa_direita; null: não informada
+ *     timegrapher.medicoes[].posicao_texto
+ *                                    a posição por extenso
+ *     timegrapher.medicoes[].marcha  a marcha, em segundos por dia (+ adianta, − atrasa); null: não medida
+ *     timegrapher.medicoes[].marcha_texto
+ *                                    a marcha por extenso ("+4,5 s/dia")
+ *     timegrapher.medicoes[].amplitude
+ *                                    a amplitude do balanço, em graus; null: não medida
+ *     timegrapher.medicoes[].amplitude_texto
+ *                                    a amplitude por extenso ("290°")
+ *     timegrapher.medicoes[].erro_batida
+ *                                    o erro de batida, em milissegundos; null: não medido
+ *     timegrapher.medicoes[].erro_batida_texto
+ *                                    o erro de batida por extenso ("0,3 ms")
+ *     timegrapher.medicoes[].bph     as batidas por hora (21600, 28800...); null: não informadas
+ *     timegrapher.medicoes[].bph_texto
+ *                                    as batidas por hora por extenso
+ *     timegrapher.medicoes[].angulo  o ângulo de levantamento (lift angle), em graus; null: não informado
+ *     timegrapher.medicoes[].angulo_texto
+ *                                    o ângulo por extenso
+ *     timegrapher.medicoes[].origem  manual (digitada) ou csv (importada do arquivo do aparelho)
+ *     timegrapher.medicoes[].origem_texto
+ *                                    a origem por extenso
+ *     timegrapher.medicoes[].observacao
+ *                                    a observação; null: nenhuma
+ *     timegrapher.sessoes            quantas sessões (dias com medição)
+ *     timegrapher.grandezas          as grandezas, para o formulário
+ *     timegrapher.grandezas[]        uma grandeza
+ *     timegrapher.grandezas[].campo  o nome do campo (marcha, amplitude, erro_batida, bph, angulo)
+ *     timegrapher.grandezas[].nome   o nome por extenso
+ *     timegrapher.grandezas[].unidade
+ *                                    a unidade (s/dia, °, ms, bph)
+ *     timegrapher.grandezas[].minimo o menor valor aceito
+ *     timegrapher.grandezas[].maximo o maior valor aceito
+ *     timegrapher.posicoes           as posições do aparelho, para o formulário
+ *     timegrapher.posicoes[]         uma posição
+ *     timegrapher.posicoes[].valor   o código
+ *     timegrapher.posicoes[].texto   o nome por extenso
+ *     medicoes                       sem o relógio: as medições de todos, da mais nova para a mais velha
+ *     medicoes[]                     uma medição
+ *     medicoes[].id                  o número da medição (o id da gravação)
+ *     medicoes[].relogio_id          o relógio
+ *     medicoes[].relogio             o nome do relógio
+ *     medicoes[].quando              quando foi medida (texto AAAA-MM-DD HH:MM:SS, no fuso do pedido)
+ *     medicoes[].posicao             a posição no aparelho: mostrador_cima, mostrador_baixo, coroa_cima, coroa_baixo, coroa_esquerda ou
+ *                                    coroa_direita; null: não informada
+ *     medicoes[].posicao_texto       a posição por extenso
+ *     medicoes[].marcha              a marcha, em segundos por dia (+ adianta, − atrasa); null: não medida
+ *     medicoes[].marcha_texto        a marcha por extenso ("+4,5 s/dia")
+ *     medicoes[].amplitude           a amplitude do balanço, em graus; null: não medida
+ *     medicoes[].amplitude_texto     a amplitude por extenso ("290°")
+ *     medicoes[].erro_batida         o erro de batida, em milissegundos; null: não medido
+ *     medicoes[].erro_batida_texto   o erro de batida por extenso ("0,3 ms")
+ *     medicoes[].bph                 as batidas por hora (21600, 28800...); null: não informadas
+ *     medicoes[].bph_texto           as batidas por hora por extenso
+ *     medicoes[].angulo              o ângulo de levantamento (lift angle), em graus; null: não informado
+ *     medicoes[].angulo_texto        o ângulo por extenso
+ *     medicoes[].origem              manual (digitada) ou csv (importada do arquivo do aparelho)
+ *     medicoes[].origem_texto        a origem por extenso
+ *     medicoes[].observacao          a observação; null: nenhuma
+ *     csv                            o que a importação do CSV entende
+ *     csv.colunas                    as colunas: o campo e os nomes do cabeçalho que valem para ele
+ *     csv.colunas[]                  uma coluna
+ *     csv.colunas[].campo            o campo (quando, data, hora, posicao, marcha, amplitude, erro_batida, bph, angulo, observacao)
+ *     csv.colunas[].nomes            os nomes que valem (sem acento, em minúsculas)
+ *     csv.colunas[].nomes[]          um nome
+ *     csv.posicoes                   as posições: o código e os nomes que valem
+ *     csv.posicoes[]                 uma posição
+ *     csv.posicoes[].posicao         o código
+ *     csv.posicoes[].nomes           os nomes que valem
+ *     csv.posicoes[].nomes[]         um nome
  *   recurso=reserva
  *     relogio                        o relógio pedido; null: todos
  *     relogio.id                     o número
@@ -4076,6 +4376,29 @@
  *     tecnico[].confianca.motivos[]  um motivo, por extenso
  *     tecnico[].confianca.resumo     a frase inteira, pronta para a tela
  *     tecnico[].fora                 true se o último teste ficou fora do esperado (a marcha fora da faixa, a estanqueidade reprovada)
+ *     timegrapher                    as medições do timegrapher, da mais nova para a mais velha (como em recurso=timegrapher)
+ *     timegrapher[]                  uma medição
+ *     timegrapher[].id               o número da medição (o id da gravação)
+ *     timegrapher[].relogio_id       o relógio
+ *     timegrapher[].relogio          o nome do relógio
+ *     timegrapher[].quando           quando foi medida (texto AAAA-MM-DD HH:MM:SS, no fuso do pedido)
+ *     timegrapher[].posicao          a posição no aparelho: mostrador_cima, mostrador_baixo, coroa_cima, coroa_baixo, coroa_esquerda ou
+ *                                    coroa_direita; null: não informada
+ *     timegrapher[].posicao_texto    a posição por extenso
+ *     timegrapher[].marcha           a marcha, em segundos por dia (+ adianta, − atrasa); null: não medida
+ *     timegrapher[].marcha_texto     a marcha por extenso ("+4,5 s/dia")
+ *     timegrapher[].amplitude        a amplitude do balanço, em graus; null: não medida
+ *     timegrapher[].amplitude_texto  a amplitude por extenso ("290°")
+ *     timegrapher[].erro_batida      o erro de batida, em milissegundos; null: não medido
+ *     timegrapher[].erro_batida_texto
+ *                                    o erro de batida por extenso ("0,3 ms")
+ *     timegrapher[].bph              as batidas por hora (21600, 28800...); null: não informadas
+ *     timegrapher[].bph_texto        as batidas por hora por extenso
+ *     timegrapher[].angulo           o ângulo de levantamento (lift angle), em graus; null: não informado
+ *     timegrapher[].angulo_texto     o ângulo por extenso
+ *     timegrapher[].origem           manual (digitada) ou csv (importada do arquivo do aparelho)
+ *     timegrapher[].origem_texto     a origem por extenso
+ *     timegrapher[].observacao       a observação; null: nenhuma
  *     reserva_testes                 os testes da reserva (como em recurso=reserva)
  *     reserva_testes[]               um registro
  *     reserva_testes[].id            o número do teste ou da observação (o id da gravação)
@@ -5402,6 +5725,8 @@ if ($recurso === "textos") {
     require __DIR__ . "/api/servicos.php";
 } elseif ($recurso === "reserva") {
     require __DIR__ . "/api/reserva.php";
+} elseif ($recurso === "timegrapher") {
+    require __DIR__ . "/api/timegrapher.php";
 } elseif ($recurso === "roteiro") {
     // o teste de um roteiro (ou do roteiro de um modo) num dia: cada relógio com as linhas calculadas, e quem sairia
     $texto = (string)($_REQUEST["roteiro"] ?? "");
@@ -5485,7 +5810,7 @@ if ($recurso === "textos") {
 } else {
     $codigo = 404;
     $saida = ["erro" => t("recurso desconhecido"), "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "hora_certa", "acessorios", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "servicos", "reserva", "timegrapher", "hora_certa", "acessorios", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

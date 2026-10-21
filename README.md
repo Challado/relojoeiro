@@ -678,6 +678,35 @@ O **Passaporte** traz a tabela. Pela API: `recurso=ficha` (o `tecnico` e a `rese
 testes, as observações, a medida e a tabela) e `recurso=reserva` com `acao=iniciar`, `parou`, `observar`, `salvar`, `usar` ou
 `excluir`.
 
+### O timegrapher
+
+Quem tem um **timegrapher** (o aparelho de bancada que escuta o relógio) guarda as medições dele no quadro **Timegrapher**, na
+seção Precisão e marcha do painel e da Ficha. Em cada posição o aparelho mostra a **marcha** (s/dia), a **amplitude** do
+balanço (graus), o **erro de batida** (ms), as **batidas por hora** e o **ângulo de levantamento**; o que ele não mostra fica
+vazio. As posições são as do aparelho: mostrador para cima ou para baixo, e a coroa para cima, para baixo, para a esquerda ou
+para a direita. As medições do mesmo dia são uma **sessão**: o quadro mostra a última, uma linha por posição e a **média**, e a
+**diferença de marcha entre as posições** (a maior menos a menor), que diz o quanto a posição muda a marcha.
+
+Dois jeitos de pôr as medições:
+
+- **Registrar uma medição:** digitar o que o aparelho mostra, posição por posição.
+- **Importar o CSV do aparelho:** escolher o arquivo que o timegrapher (ou o aplicativo dele) exporta. O sistema acha o
+  separador (`;`, `,` ou tabulação) e as colunas pelo cabeçalho, em português ou em inglês (`date`, `time`, `position`,
+  `rate`, `amplitude`, `beat error`, `bph`, `lift angle`, `notes`...); as posições pelo nome ou pelas siglas dos aparelhos
+  (`DU`, `DD`, `CU`, `CD`, `CL`, `CR`, ou a hora que fica para cima: `3U`, `9U`, `6U`, `12U`). A data em `AAAA-MM-DD` ou
+  `DD/MM/AAAA`; sem data, as linhas ficam no instante escolhido. **Só conferir** mostra o que entraria, sem gravar. A linha
+  que não se entende fica de fora, com o motivo, e a repetida não entra duas vezes.
+
+O sistema não diz o que é bom ou ruim (uma amplitude de 220° é ótima num relógio e baixa noutro): isso fica para as fórmulas e
+os avisos do cadastro. `TIMEGRAPHER("amplitude")` dá a média da última sessão (também `marcha`, `erro_batida`, `bph`,
+`angulo`, `delta`, a diferença entre as posições, e `medicoes`), e `TIMEGRAPHER_DATA()` o dia dela: um aviso com
+`SE(TIMEGRAPHER("amplitude") < 220; 1; 0)`, por exemplo. As medições do timegrapher ficam à parte da marcha medida pelo
+desvio da hora (a do quadro Precisão): uma é o relógio na bancada, a outra é ele no dia a dia.
+
+Pela API: `recurso=timegrapher` (com `relogio=<id>`: a sessão, as medições e o que a importação entende), e a escrita
+`recurso=timegrapher` com `acao=salvar`, `importar` (`csv` e, se quiser, `conferir=1`) ou `excluir`. O **Passaporte** traz as
+medições.
+
 ## Várias pessoas: contas, coleções e acesso
 
 O sistema é de **várias pessoas**, cada uma com a **conta** dela, e cada conta com **as suas coleções**. Uma coleção tem os
@@ -1525,6 +1554,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `documentos` | os documentos de um relógio (`relogio=<id>`; sem ele, de todos), com as categorias, o resumo da NF-e de cada XML, a pasta e o limite |
 | `servicos` | os serviços e diagnósticos (`relogio=<id>`, com o resumo: a resistência declarada, a estanqueidade comprovada, quantos e o custo somado; sem ele, os de todos), com as peças, o custo, a estanqueidade e a marcha antes e depois |
 | `reserva` | a reserva medida (`relogio=<id>`: os testes da reserva do mecânico, as observações da energia, a medida, que é a mediana dos testes, e a tabela declarado, medido e estimado com a confiança; sem ele, os testes e as observações de todos) |
+| `timegrapher` | as medições do timegrapher (`relogio=<id>`: a última sessão, com a média de cada grandeza e a diferença entre as posições, as medições e o que a importação do CSV entende; sem ele, as de todos) |
 | `documento` | o arquivo de um documento (`id=<id>`): para mostrar (imagem, vídeo, áudio, PDF, texto) ou para baixar (o resto, ou com `baixar=1`); `mini=1` é a miniatura da foto. Atende pedaços (Range), para o vídeo avançar |
 | `usuarios`, `migracoes` | o master: o painel das contas, cada uma com o que tem e o hash da senha (para migrar com a mesma senha: veja [Os usuários e as senhas](#os-usuários-e-as-senhas)); os outros, só a própria conta; as migrações que faltam aplicar |
 | `conta`, `colecoes`, `aprovacoes` | Minha conta (as coleções, as árvores, os pedidos, os tokens, os aparelhos lembrados, os aparelhos do Web Push, o servidor de e-mail próprio; `parte=menu`: só o do menu); as coleções e as árvores; a página Aprovações |
@@ -1547,6 +1577,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `documentos` | `enviar` (um ou vários arquivos, com a categoria, o título, a data, a descrição e, numa foto, a miniatura), `alterar`, `excluir` |
 | `servicos` | `salvar` (a data, o tipo, quem fez, a mão de obra, as peças, a estanqueidade, a marcha antes e depois, a garantia e os documentos; a revisão e a troca de pilha viram também a marcação), `excluir` |
 | `reserva` | `iniciar` (quando ficou cheio e como), `parou`, `observar` (parou, carga baixa, nota; também no solar), `salvar`, `usar` (a mediana vai para o cadastro do relógio), `excluir` |
+| `timegrapher` | `salvar` (uma medição: a posição, a marcha, a amplitude, o erro de batida, as batidas por hora, o ângulo), `importar` (o CSV do aparelho; `conferir=1`: sem gravar), `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (só sem documentos) |
 | `lancamento` | `lancar` (corda, carga, pilha...), `iniciar` e `encerrar` (pôr e tirar do pulso, do winder, do sol, do carregador), `alternar` (fecha a sessão se está aberta, abre se está fechada: um botão só no celular), `periodo` (um período que já passou; no pulso do relógio do dia é uso do rodízio, e os trechos do mesmo tipo em que ele encosta, como o Pôr que ficou aberto, viram um só), `alterar`, `excluir`, `medicao` (uma medição do gasto entra ou sai da conta: `id`, `usada` 1 ou 0). Em todas, `relogio_id=hoje` é o relógio do dia |
 | `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `periodo` (os relógios de um período, na ordem: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (apaga os dias do período e o modo monta de novo; só `de`: até o fim do plano; só `ate`: de amanhã até ele), `periodo_livre` (apaga e deixa os dias livres, sem sorteio; as mesmas datas), `manual` (o Rodízio manual: `de`, `ate`, `dias[AAAA-MM-DD]` = o id do relógio, `auto` ou `livre`), `apagar_tudo` (toda a programação de amanhã em diante sai; `hoje=1`: de hoje em diante; o modo monta o plano de novo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |

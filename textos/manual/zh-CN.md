@@ -1,4 +1,4 @@
-<!-- origem: 3adc0877a3f91fac6bdf6695dd469e7c18f992c9 -->
+<!-- origem: 87aa9c78e9fe7a84a881a5a6e9ff4e66ac8a061b -->
 
 ## 核心理念：系统对手表一无所知 {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -415,6 +415,19 @@ dias      = SE(NO_GRUPO("Smartwatch"); dias_seguidos; 1)
 **太阳能表不做校准**：一块 Eco-Drive 要几个月才会耗尽，而充电取决于光照，系统并不测量光照；在这里给出数字只会是虚假的精确。**能量储备**框只保存**观察**：停止、低电量指示（秒针每次跳 2 秒）或其他记录。机械表也可以记录观察。智能手表已经通过充电读数来测量电池（**电池消耗**框，每项消耗都带 ±）。
 
 **护照**中也有这张表。通过 API：`recurso=ficha`（表的 `tecnico` 和 `reserva`）、`recurso=reserva`（测试、观察、实测值和这张表），以及带 `acao=iniciar`、`parou`、`observar`、`salvar`、`usar` 或 `excluir` 的 `recurso=reserva`。
+
+### 校表仪 {#o-timegrapher}
+
+有**校表仪**（放在工作台上“听”手表的仪器）的人，可以把它的测量结果保存在面板和档案页“精度与走时”部分的**校表仪**框中。仪器在每个方位显示**走时**（秒/天）、摆轮**振幅**（度）、**偏振**（毫秒）、**每小时振次**和**提升角**；仪器不显示的项目留空。方位与仪器一致：表盘朝上或朝下，以及表冠朝上、朝下、朝左或朝右。同一天的测量构成一次**测量**：框中显示最近一次，每个方位一行，加上**平均值**，以及**各方位之间的走时差**（最大减最小），说明方位对走时影响有多大。
+
+录入测量的两种方式：
+
+- **记录一次测量：**逐个方位输入仪器显示的数值。
+- **导入仪器的 CSV：**选择校表仪（或其应用）导出的文件。系统根据表头找出分隔符（`;`、`,` 或制表符）和各列，支持葡萄牙语或英语列名（`date`、`time`、`position`、`rate`、`amplitude`、`beat error`、`bph`、`lift angle`、`notes`……）；方位可用名称或仪器的缩写（`DU`、`DD`、`CU`、`CD`、`CL`、`CR`，或朝上的钟点：`3U`、`9U`、`6U`、`12U`）。日期格式为 `YYYY-MM-DD` 或 `DD/MM/YYYY`；没有日期的行使用所选时间。**只检查**会显示将导入的内容而不保存。无法识别的行会被排除并注明原因，重复的行不会再次导入。
+
+系统不判断好坏（220° 的振幅对一只表很好，对另一只表却偏低）：这交给定义中的公式和提醒。`TIMEGRAPHER("amplitude")` 给出最近一次测量的平均值（还有 `marcha`、`erro_batida`、`bph`、`angulo`、`delta`（各方位之间的差）和 `medicoes`），`TIMEGRAPHER_DATA()` 给出那一天：例如一个提醒 `SE(TIMEGRAPHER("amplitude") < 220; 1; 0)`。校表仪的测量与通过时间偏差测得的走时（“精度”框中的那个）分开保存：一个是手表在工作台上的状态，另一个是日常佩戴中的状态。
+
+通过 API：`recurso=timegrapher`（带 `relogio=<id>`：测量、测量记录以及导入能识别的内容），写入则用 `recurso=timegrapher` 加 `acao=salvar`、`importar`（`csv`，可加 `conferir=1`）或 `excluir`。**护照**中包含这些测量。
 
 ## 多人使用：账户、收藏与访问 {#várias-pessoas-contas-coleções-e-acesso}
 

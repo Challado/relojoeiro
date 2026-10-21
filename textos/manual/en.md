@@ -1,4 +1,4 @@
-<!-- origem: 3adc0877a3f91fac6bdf6695dd469e7c18f992c9 -->
+<!-- origem: 87aa9c78e9fe7a84a881a5a6e9ff4e66ac8a061b -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -653,6 +653,36 @@ consumption).
 The **Passport** has the table. Through the API: `recurso=ficha` (the watch's `tecnico` and `reserva`), `recurso=reserva` (the
 tests, the observations, the measurement and the table) and `recurso=reserva` with `acao=iniciar`, `parou`, `observar`,
 `salvar`, `usar` or `excluir`.
+
+### The timegrapher {#o-timegrapher}
+
+Whoever has a **timegrapher** (the bench device that listens to the watch) keeps its measurements in the **Timegrapher** box,
+in the Precision and rate section of the panel and of the Watch sheet. In each position the device shows the **rate** (s/day),
+the balance **amplitude** (degrees), the **beat error** (ms), the **beats per hour** and the **lift angle**; whatever it does
+not show stays empty. The positions are the device's: dial up or down, and crown up, down, left or right. The measurements of
+the same day are a **session**: the box shows the last one, one row per position and the **average**, and the **rate
+difference between the positions** (the largest minus the smallest), which says how much the position changes the rate.
+
+Two ways to put in the measurements:
+
+- **Record a measurement:** type what the device shows, position by position.
+- **Import the device's CSV:** choose the file the timegrapher (or its app) exports. The system finds the separator (`;`, `,`
+  or tab) and the columns by the header, in Portuguese or English (`date`, `time`, `position`, `rate`, `amplitude`,
+  `beat error`, `bph`, `lift angle`, `notes`...); the positions by name or by the devices' abbreviations (`DU`, `DD`, `CU`,
+  `CD`, `CL`, `CR`, or the hour that faces up: `3U`, `9U`, `6U`, `12U`). The date in `YYYY-MM-DD` or `DD/MM/YYYY`; without a
+  date, the rows stay at the chosen instant. **Only check** shows what would go in, without saving. A row that cannot be
+  understood stays out, with the reason, and a repeated one does not go in twice.
+
+The system does not say what is good or bad (an amplitude of 220° is great in one watch and low in another): that is left to
+the formulas and alerts of the definitions. `TIMEGRAPHER("amplitude")` gives the average of the last session (also `marcha`,
+`erro_batida`, `bph`, `angulo`, `delta`, the difference between the positions, and `medicoes`), and `TIMEGRAPHER_DATA()` its
+day: an alert with `SE(TIMEGRAPHER("amplitude") < 220; 1; 0)`, for example. The timegrapher measurements are kept apart from
+the rate measured by the time deviation (the one in the Precision box): one is the watch on the bench, the other is it day to
+day.
+
+Through the API: `recurso=timegrapher` (with `relogio=<id>`: the session, the measurements and what the import understands),
+and the write `recurso=timegrapher` with `acao=salvar`, `importar` (`csv` and, if you want, `conferir=1`) or `excluir`. The
+**Passport** brings the measurements.
 
 ## Several people: accounts, collections and access {#várias-pessoas-contas-coleções-e-acesso}
 

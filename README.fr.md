@@ -723,6 +723,37 @@ Le **Passeport** reprend le tableau. Par l'API : `recurso=ficha` (le `tecnico` e
 `recurso=reserva` (les tests, les observations, la mesure et le tableau) et `recurso=reserva` avec `acao=iniciar`, `parou`,
 `observar`, `salvar`, `usar` ou `excluir`.
 
+### Le timegrapher
+
+Qui a un **timegrapher** (l'appareil d'établi qui écoute la montre) garde ses mesures dans le cadre **Timegrapher**, dans la
+section Précision et marche du panneau et de la Fiche. Dans chaque position, l'appareil montre la **marche** (s/jour),
+l'**amplitude** du balancier (degrés), l'**erreur de battement** (ms), les **alternances par heure** et l'**angle de levée** ; ce
+qu'il ne montre pas reste vide. Les positions sont celles de l'appareil : cadran en haut ou en bas, et la couronne en haut, en
+bas, à gauche ou à droite. Les mesures du même jour forment une **séance** : le cadre montre la dernière, une ligne par
+position et la **moyenne**, et l'**écart de marche entre les positions** (la plus grande moins la plus petite), qui dit combien
+la position change la marche.
+
+Deux façons de saisir les mesures :
+
+- **Enregistrer une mesure :** saisir ce que l'appareil montre, position par position.
+- **Importer le CSV de l'appareil :** choisir le fichier que le timegrapher (ou son application) exporte. Le système trouve
+  le séparateur (`;`, `,` ou tabulation) et les colonnes par l'en-tête, en portugais ou en anglais (`date`, `time`,
+  `position`, `rate`, `amplitude`, `beat error`, `bph`, `lift angle`, `notes`...) ; les positions par le nom ou par les sigles
+  des appareils (`DU`, `DD`, `CU`, `CD`, `CL`, `CR`, ou l'heure tournée vers le haut : `3U`, `9U`, `6U`, `12U`). La date en
+  `AAAA-MM-JJ` ou `JJ/MM/AAAA` ; sans date, les lignes restent à l'instant choisi. **Seulement vérifier** montre ce qui
+  entrerait, sans enregistrer. La ligne qui ne se comprend pas reste dehors, avec le motif, et la répétée n'entre pas deux fois.
+
+Le système ne dit pas ce qui est bon ou mauvais (une amplitude de 220° est excellente pour une montre et basse pour une
+autre) : cela reste aux formules et aux alertes des définitions. `TIMEGRAPHER("amplitude")` donne la moyenne de la dernière
+séance (aussi `marcha`, `erro_batida`, `bph`, `angulo`, `delta`, l'écart entre les positions, et `medicoes`), et
+`TIMEGRAPHER_DATA()` son jour : une alerte avec `SE(TIMEGRAPHER("amplitude") < 220; 1; 0)`, par exemple. Les mesures du
+timegrapher restent à part de la marche mesurée par l'écart de l'heure (celle du cadre Précision) : l'une est la montre sur
+l'établi, l'autre est elle au quotidien.
+
+Par l'API : `recurso=timegrapher` (avec `relogio=<id>` : la séance, les mesures et ce que l'importation comprend), et
+l'écriture `recurso=timegrapher` avec `acao=salvar`, `importar` (`csv` et, si vous voulez, `conferir=1`) ou `excluir`. Le
+**Passeport** apporte les mesures.
+
 ## Plusieurs personnes : comptes, collections et accès
 
 Le système appartient à **plusieurs personnes**, chacune avec son **compte**, et chaque compte avec **ses collections**. Une
@@ -1617,6 +1648,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `documentos` | les documents d'une montre (`relogio=<id>` ; sans lui, de toutes), avec les catégories, le résumé de la NF-e de chaque XML, le dossier et la limite |
 | `servicos` | les services et diagnostics (`relogio=<id>`, avec le résumé : la résistance déclarée, l'étanchéité prouvée, combien et le coût total ; sans lui, ceux de toutes), avec les pièces, le coût, l'étanchéité et la marche avant et après |
 | `reserva` | la réserve mesurée (`relogio=<id>` : les tests de la réserve de la mécanique, les observations de l'énergie, la mesure, qui est la médiane des tests, et le tableau déclaré, mesuré et estimé avec la confiance ; sans lui, les tests et les observations de toutes) |
+| `timegrapher` | les mesures du timegrapher (`relogio=<id>` : la dernière séance, avec la moyenne de chaque grandeur et l'écart entre les positions, les mesures et ce que l'importation du CSV comprend ; sans lui, celles de toutes) |
 | `documento` | le fichier d'un document (`id=<id>`) : pour afficher (image, vidéo, audio, PDF, texte) ou pour télécharger (le reste, ou avec `baixar=1`) ; `mini=1` est la vignette de la photo. Il sert des morceaux (Range), pour que la vidéo avance |
 | `usuarios`, `migracoes` | le master : le panneau des comptes, chacun avec ce qu'il a et le hash du mot de passe (pour migrer avec le même mot de passe : voir [Les utilisateurs et les mots de passe](#les-utilisateurs-et-les-mots-de-passe)) ; les autres, seulement leur propre compte ; les migrations qui restent à appliquer |
 | `conta`, `colecoes`, `aprovacoes` | Mon compte (les collections, les arbres, les demandes, les jetons, les appareils mémorisés, les appareils du Web Push, le serveur d'e-mail personnel ; `parte=menu` : seulement ce qu'utilise le menu) ; les collections et les arbres ; la page Approbations |
@@ -1639,6 +1671,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `documentos` | `enviar` (un ou plusieurs fichiers, avec la catégorie, le titre, la date, la description et, pour une photo, la vignette), `alterar`, `excluir` |
 | `servicos` | `salvar` (la date, le type, qui l'a fait, la main-d'œuvre, les pièces, l'étanchéité, la marche avant et après, la garantie et les documents ; la révision et le changement de pile deviennent aussi la saisie), `excluir` |
 | `reserva` | `iniciar` (quand elle était pleine et comment), `parou`, `observar` (arrêtée, charge faible, note ; aussi sur la solaire), `salvar`, `usar` (la médiane va dans la fiche de la montre), `excluir` |
+| `timegrapher` | `salvar` (une mesure : la position, la marche, l'amplitude, l'erreur de battement, les alternances par heure, l'angle), `importar` (le CSV de l'appareil ; `conferir=1` : sans enregistrer), `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (seulement sans documents) |
 | `lancamento` | `lancar` (remontage, charge, pile...), `iniciar` et `encerrar` (mettre et retirer du poignet, du remontoir, du soleil, du chargeur), `alternar` (ferme la session si elle est ouverte, l'ouvre si elle est fermée : un seul bouton sur le téléphone), `periodo` (une période déjà passée ; au poignet de la montre du jour c'est un usage de la rotation, et les périodes du même type qu'elle touche, comme le Mettre resté ouvert, n'en font plus qu'une), `alterar`, `excluir`, `medicao` (une mesure de la consommation entre dans le calcul ou en sort : `id`, `usada` 1 ou 0). Dans toutes, `relogio_id=hoje` est la montre du jour |
 | `rodizio` | `usando` (je porte celle-ci aujourd'hui), `trocar_dia` (la montre d'un jour), `periodo` (les montres d'une période, dans l'ordre : `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (efface les jours de la période et le mode les refait ; seulement `de` : jusqu'à la fin du plan ; seulement `ate` : de demain jusqu'à lui), `periodo_livre` (efface et laisse les jours libres, sans tirage ; les mêmes dates), `manual` (la Rotation manuelle : `de`, `ate`, `dias[AAAA-MM-JJ]` = l'id de la montre, `auto` ou `livre`), `apagar_tudo` (toute la programmation à partir de demain disparaît ; `hoje=1` : à partir d'aujourd'hui ; le mode reconstruit le plan), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (changer le mode) |

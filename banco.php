@@ -243,6 +243,7 @@ const ESCOPO_CONDICOES = [
     "servico_peca" => "servico_id IN (SELECT id FROM servico WHERE relogio_id IN ({RC}))",
     "servico_documento" => "servico_id IN (SELECT id FROM servico WHERE relogio_id IN ({RC}))",
     "reserva_teste" => "relogio_id IN ({RC})",
+    "timegrapher" => "relogio_id IN ({RC})",
     "acessorio" => "colecao_id = {C}",
     "acessorio_relogio" => "relogio_id IN ({RC})",
     "config" => "colecao_id = {C}",

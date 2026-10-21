@@ -775,6 +775,39 @@ ler("reserva de todos", ["recurso" => "reserva"]);
 ler("ficha com a reserva", ["recurso" => "ficha", "relogio" => $rel["manual"]]);
 ler("passaporte com a reserva", ["recurso" => "passaporte", "relogio" => $rel["manual"]]);
 
+// o timegrapher: a medição digitada (e as recusas: sem grandeza, fora dos limites, posição desconhecida, no futuro), o CSV
+// do aparelho (conferir sem gravar, importar, a repetida não entra de novo, a linha que não se entende fica de fora com o
+// motivo), a sessão (a média e a diferença entre as posições), a fórmula, mudar e excluir
+$tg_dia = date("Y-m-d", strtotime("-2 days"));
+escrever(["recurso" => "timegrapher", "acao" => "salvar", "relogio_id" => $rel["manual"], "quando" => $tg_dia . " 10:00", "posicao" => "mostrador_cima"], false);
+escrever(["recurso" => "timegrapher", "acao" => "salvar", "relogio_id" => $rel["manual"], "quando" => $tg_dia . " 10:00", "amplitude" => 400], false);
+escrever(["recurso" => "timegrapher", "acao" => "salvar", "relogio_id" => $rel["manual"], "quando" => $tg_dia . " 10:00", "posicao" => "lado", "marcha" => 3], false);
+escrever(["recurso" => "timegrapher", "acao" => "salvar", "relogio_id" => $rel["manual"], "quando" => date("Y-m-d", strtotime("+2 days")) . " 10:00", "marcha" => 3], false);
+$tg1 = escrever(["recurso" => "timegrapher", "acao" => "salvar", "relogio_id" => $rel["manual"], "quando" => $tg_dia . " 10:00", "posicao" => "mostrador_cima",
+    "marcha" => "+4,5", "amplitude" => "290", "erro_batida" => "0,3", "bph" => 21600, "angulo" => 52, "observacao" => "depois da corda"]);
+$csv_tg = "Date;Time;Position;Rate (s/d);Amplitude (°);Beat error (ms);BPH\n"
+    . $tg_dia . ";10:05;DD;+6;285;0.4;21600\n"
+    . $tg_dia . ";10:10;CU;-3;262;0.5;21600\n"
+    . $tg_dia . ";10:15;9U;-1,5;258;0,4;21600\n"
+    . $tg_dia . ";10:20;de lado;2;250;0.4;21600\n"
+    . "31/02/2026;10:25;CL;2;250;0.4;21600\n";
+$conf_tg = escrever(["recurso" => "timegrapher", "acao" => "importar", "relogio_id" => $rel["manual"], "csv" => $csv_tg, "conferir" => 1], true, "importacao");
+escrever(["recurso" => "timegrapher", "acao" => "importar", "relogio_id" => $rel["manual"], "csv" => $csv_tg]);
+escrever(["recurso" => "timegrapher", "acao" => "importar", "relogio_id" => $rel["manual"], "csv" => $csv_tg], false);
+escrever(["recurso" => "timegrapher", "acao" => "importar", "relogio_id" => $rel["manual"], "csv" => "nome;cor\nx;y\n"], false);
+escrever(["recurso" => "timegrapher", "acao" => "salvar", "id" => $tg1, "observacao" => "depois da corda cheia"]);
+$tg_r = ler("timegrapher do manual", ["recurso" => "timegrapher", "relogio" => $rel["manual"]]);
+if (($conf_tg["entram"] ?? null) !== 3 || ($conf_tg["recusadas"] ?? null) !== 2 || ($tg_r["timegrapher"]["sessao"]["medicoes"] ?? null) !== 4
+    || (float)($tg_r["timegrapher"]["sessao"]["delta"] ?? 0) !== 9.0) {
+    $falhas[] = "timegrapher: " . json_encode([$conf_tg["entram"] ?? null, $conf_tg["recusadas"] ?? null, $tg_r["timegrapher"]["sessao"] ?? null], JSON_UNESCAPED_UNICODE);
+}
+ler("calcular timegrapher", ["recurso" => "calcular", "relogio" => $rel["manual"], "expressao" => "TIMEGRAPHER(\"amplitude\") * 1000 + TIMEGRAPHER(\"delta\") * 10 + TIMEGRAPHER(\"medicoes\") + PADRAO(DIAS_DESDE(TIMEGRAPHER_DATA()); 0) / 100"]);
+ler("calcular timegrapher sem medicao", ["recurso" => "calcular", "relogio" => $rel["auto"], "expressao" => "PADRAO(TIMEGRAPHER(\"marcha\"); -1)"]);
+ler("timegrapher de todos", ["recurso" => "timegrapher"]);
+ler("ficha com o timegrapher", ["recurso" => "ficha", "relogio" => $rel["manual"]]);
+escrever(["recurso" => "timegrapher", "acao" => "excluir", "id" => $tg1], false);
+escrever(["recurso" => "timegrapher", "acao" => "excluir", "id" => $tg1, "confirmar" => 1]);
+
 // o Tirar do sol sozinho (sol_auto_fim): desligado, o "fecha às" do tipo No sol fica vazio (a sessão só fecha pelo Tirar do
 // sol) e a hora continua guardada; ligado de novo, volta a hora
 $fecha_sol = function ($nome) {
@@ -952,6 +985,10 @@ escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $desejo, "posse" =
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "posse" => "colecao"]);
 ler("desejos depois de comprar", ["recurso" => "desejos"]);
 ler("ficha do comprado", ["recurso" => "ficha", "relogio" => $desejo]);
+// e fora do rodízio daqui em diante: comprado hoje e sem corda, ele tem só segundos de linha do tempo e de reserva, e se a
+// rodada do cron do fim o sorteasse para hoje, a energia e as partes do tempo dele dependeriam da velocidade do banco (o
+// Firebird do CI, mais lento, saía diferente)
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $desejo, "disponivel" => 0]);
 // os acessórios: de um relógio, solto, um tipo que não existe, mudar de relógio e excluir; o relógio excluído deixa o dele solto
 $aces = escrever(["recurso" => "acessorios", "acao" => "salvar", "nome" => "Pulseira NATO verde", "tipo" => "pulseira", "relogio_id" => $rel["auto2"]]);
 escrever(["recurso" => "acessorios", "acao" => "salvar", "nome" => "Caixa original", "tipo" => "caixa", "relogio_id" => $rel["auto2"], "observacao" => "Com o manual e o cartão"]);

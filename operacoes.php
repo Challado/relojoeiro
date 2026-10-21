@@ -1467,6 +1467,167 @@ function op_reserva($acao, $d)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// O timegrapher de um relógio: as medições de um timegrapher de bancada, uma por posição. Os instantes: AAAA-MM-DD HH:MM,
+// na hora local; vazio: agora; nunca no futuro. Os números com ponto ou vírgula. Ações:
+//   salvar (id: 0 cria; relogio_id (só na nova); quando; posicao: mostrador_cima, mostrador_baixo, coroa_cima, coroa_baixo,
+//           coroa_esquerda, coroa_direita ou vazio; marcha (s/dia), amplitude (graus), erro_batida (ms), bph, angulo (o
+//           ângulo de levantamento, graus): pelo menos a marcha, a amplitude ou o erro de batida; observacao): uma medição
+//           digitada; na que existe, só o que vem no pedido muda.
+//   importar (relogio_id; csv: o texto do arquivo, ou arquivo_base64; quando: o instante das linhas sem data; conferir=1: só
+//           mostra o que entraria, sem gravar): as medições do CSV do aparelho. O separador (; , ou tabulação) e as colunas
+//           vêm do cabeçalho (os nomes em português ou em inglês: rate, amplitude, beat error, bph, lift angle, position,
+//           date, time...); a linha que não se entende fica de fora, com o motivo; a repetida (o mesmo instante, a mesma
+//           posição e os mesmos números) também.
+//   excluir (id): sai a medição.
+// ---------------------------------------------------------------------------------------------------------------------
+function op_timegrapher($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $extra = [];
+    $agora = time();
+    $id = (int)($d["id"] ?? 0);
+    $atual = $id > 0 ? linha("SELECT * FROM timegrapher WHERE id = ?", [$id]) : null;
+    $rid = $atual ? (int)$atual["relogio_id"] : (int)($d["relogio_id"] ?? 0);
+    $r = $rid > 0 ? linha("SELECT * FROM relogio WHERE id = ?", [$rid]) : null;
+    // a medição gravada: [quando, posicao, marcha, amplitude, erro_batida, bph, angulo, observacao]
+    $gravar = function ($m, $origem) use ($rid) {
+        sql("INSERT INTO timegrapher (relogio_id, quando, posicao, marcha, amplitude, erro_batida, bph, angulo, origem, observacao, criado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+            [$rid, date("Y-m-d H:i:s", $m["quando"]), $m["posicao"], $m["marcha"], $m["amplitude"], $m["erro_batida"], $m["bph"] === null ? null : (int)round($m["bph"]), $m["angulo"], $origem, $m["observacao"]]);
+        return ultimo_id();
+    };
+    if ($id > 0 && !$atual) {
+        $erros[] = t("Medição do timegrapher não encontrada.");
+    } elseif (!$r && in_array($acao, ["salvar", "importar"], true)) {
+        $erros[] = t("relógio não encontrado");
+    } elseif ($acao === "salvar") {
+        $m = [];
+        $q = array_key_exists("quando", $d) || !$atual ? str_replace("T", " ", trim((string)($d["quando"] ?? ""))) : null;
+        if ($q === null) {
+            $m["quando"] = strtotime((string)$atual["quando"]);
+        } elseif ($q === "") {
+            $m["quando"] = $agora;
+        } else {
+            $dt = DateTimeImmutable::createFromFormat("!Y-m-d H:i", substr($q, 0, 16));
+            $m["quando"] = $dt && $dt->format("Y-m-d H:i") === substr($q, 0, 16) ? $dt->getTimestamp() : null;
+            if ($m["quando"] === null) {
+                $erros[] = t("{1}: AAAA-MM-DD HH:MM.", [1 => t("Quando")]);
+            }
+        }
+        $p = array_key_exists("posicao", $d) ? trim((string)$d["posicao"]) : (string)($atual["posicao"] ?? "");
+        if ($p !== "" && !in_array($p, TIMEGRAPHER_POSICOES, true)) {
+            $erros[] = t("Posição: {1}, ou vazio.", [1 => implode(", ", TIMEGRAPHER_POSICOES)]);
+        }
+        $m["posicao"] = $p !== "" ? $p : null;
+        foreach (array_keys(TIMEGRAPHER_GRANDEZAS) as $g) {
+            $v = array_key_exists($g, $d) ? trim((string)$d[$g]) : (($atual[$g] ?? null) === null ? "" : (string)$atual[$g]);
+            $m[$g] = $v === "" ? null : numero_br($v);
+            if ($v !== "" && $m[$g] === null) {
+                $erros[] = t("{1}: um número.", [1 => t(TIMEGRAPHER_GRANDEZAS[$g])]);
+            }
+        }
+        $obs = array_key_exists("observacao", $d) ? trim((string)$d["observacao"]) : (string)($atual["observacao"] ?? "");
+        if (mb_strlen($obs, "UTF-8") > 500) {
+            $erros[] = t("A observação vai até 500 caracteres.");
+        }
+        $m["observacao"] = $obs !== "" ? $obs : null;
+        if (count($erros) === 0 && ($e_m = timegrapher_conferir($m)) !== "") {
+            $erros[] = mb_strtoupper(mb_substr($e_m, 0, 1, "UTF-8"), "UTF-8") . mb_substr($e_m, 1, null, "UTF-8") . ".";
+        }
+        if (count($erros) === 0) {
+            if ($atual) {
+                sql("UPDATE timegrapher SET quando = ?, posicao = ?, marcha = ?, amplitude = ?, erro_batida = ?, bph = ?, angulo = ?, observacao = ? WHERE id = ?",
+                    [date("Y-m-d H:i:s", $m["quando"]), $m["posicao"], $m["marcha"], $m["amplitude"], $m["erro_batida"], $m["bph"] === null ? null : (int)round($m["bph"]), $m["angulo"], $m["observacao"], $id]);
+                $msg = t("Medição do timegrapher do {1} salva.", [1 => $r["nome"]]);
+            } else {
+                $id = $gravar($m, "manual");
+                $msg = t("Medição do timegrapher do {1} registrada ({2}, {3}).", [1 => $r["nome"], 2 => data_txt($m["quando"], true),
+                    3 => $m["posicao"] === null ? t("sem posição") : posicoes_marcha()[$m["posicao"]]]);
+            }
+            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+        }
+    } elseif ($acao === "importar") {
+        $txt = (string)($d["csv"] ?? "");
+        if ($txt === "" && (string)($d["arquivo_base64"] ?? "") !== "") {
+            $txt = (string)base64_decode((string)$d["arquivo_base64"], true);
+        }
+        $q = str_replace("T", " ", trim((string)($d["quando"] ?? "")));
+        $dt = $q === "" ? null : DateTimeImmutable::createFromFormat("!Y-m-d H:i", substr($q, 0, 16));
+        if (trim($txt) === "") {
+            $erros[] = t("Mande o CSV do timegrapher (csv: o texto do arquivo, ou arquivo_base64).");
+        } elseif (strlen($txt) > 2000000) {
+            $erros[] = t("O CSV vai até 2 MB.");
+        } elseif ($q !== "" && (!$dt || $dt->format("Y-m-d H:i") !== substr($q, 0, 16))) {
+            $erros[] = t("{1}: AAAA-MM-DD HH:MM.", [1 => t("Quando")]);
+        } else {
+            $lido = timegrapher_ler_csv($txt, $dt ? $dt->getTimestamp() : $agora);
+            if (isset($lido["erro"])) {
+                $erros[] = $lido["erro"];
+            } else {
+                $conferir = (string)($d["conferir"] ?? "") === "1";
+                $ja = [];
+                foreach (linhas("SELECT quando, posicao, marcha, amplitude, erro_batida FROM timegrapher WHERE relogio_id = ?", [$rid]) as $x) {
+                    $ja[implode("|", [date("Y-m-d H:i", strtotime((string)$x["quando"])), (string)$x["posicao"], $x["marcha"] === null ? "" : (float)$x["marcha"],
+                        $x["amplitude"] === null ? "" : (float)$x["amplitude"], $x["erro_batida"] === null ? "" : (float)$x["erro_batida"]])] = true;
+                }
+                $entram = 0;
+                $repetidas = 0;
+                $linhas_r = [];
+                foreach ($lido["linhas"] as $l) {
+                    $m = $l["medicao"];
+                    $estado = "recusada";
+                    if ($m !== null) {
+                        $chave = implode("|", [date("Y-m-d H:i", $m["quando"]), (string)$m["posicao"], $m["marcha"] === null ? "" : round($m["marcha"], 1),
+                            $m["amplitude"] === null ? "" : round($m["amplitude"], 1), $m["erro_batida"] === null ? "" : round($m["erro_batida"], 2)]);
+                        if (isset($ja[$chave])) {
+                            $estado = "repetida";
+                            $repetidas++;
+                        } else {
+                            $ja[$chave] = true;
+                            $estado = "entra";
+                            $entram++;
+                            if (!$conferir) {
+                                $gravar($m, "csv");
+                            }
+                        }
+                    }
+                    $linhas_r[] = ["linha" => $l["linha"], "estado" => $estado, "quando" => $m !== null ? date("Y-m-d H:i:s", $m["quando"]) : null, "posicao" => $m["posicao"] ?? null,
+                        "marcha" => $m["marcha"] ?? null, "amplitude" => $m["amplitude"] ?? null, "erro_batida" => $m["erro_batida"] ?? null, "bph" => $m["bph"] ?? null,
+                        "angulo" => $m["angulo"] ?? null, "erro" => $l["erro"]];
+                }
+                $recusadas = count($lido["linhas"]) - $entram - $repetidas;
+                $extra = ["importacao" => ["conferir" => $conferir, "colunas" => (object)$lido["colunas"], "lidas" => count($lido["linhas"]), "entram" => $entram,
+                    "repetidas" => $repetidas, "recusadas" => $recusadas, "linhas" => $linhas_r]];
+                $partes = t("{1} de {2} linhas", [1 => $entram, 2 => count($lido["linhas"])]) . ($repetidas > 0 ? t("; {1} repetidas", [1 => $repetidas]) : "")
+                    . ($recusadas > 0 ? t("; {1} recusadas", [1 => $recusadas]) : "");
+                // o motivo das primeiras recusadas, no recado (todas estão em importacao.linhas)
+                $motivos = array_slice(array_values(array_filter($linhas_r, function ($x) { return $x["estado"] === "recusada"; })), 0, 5);
+                $motivos_txt = count($motivos) === 0 ? "" : " " . implode(" ", array_map(function ($x) { return t("Linha {1}: {2}.", [1 => $x["linha"], 2 => $x["erro"]]); }, $motivos))
+                    . ($recusadas > 5 ? " " . t("E mais {1}.", [1 => $recusadas - 5]) : "");
+                if ($conferir) {
+                    $msg = t("Conferência do CSV do {1}: entrariam {2}. Nada foi gravado.", [1 => $r["nome"], 2 => $partes]) . $motivos_txt;
+                } elseif ($entram === 0) {
+                    $erros[] = t("Nenhuma medição do CSV entrou: {1}.", [1 => $partes]) . $motivos_txt;
+                } else {
+                    $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+                    $msg = t("Medições do timegrapher do {1} importadas: {2}.", [1 => $r["nome"], 2 => $partes]) . $motivos_txt;
+                }
+            }
+        }
+    } elseif ($acao === "excluir" && $atual) {
+        sql("DELETE FROM timegrapher WHERE id = ?", [$id]);
+        $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+        $msg = t("Medição do timegrapher de {1} excluída.", [1 => data_txt(strtotime((string)$atual["quando"]), true)]);
+        $id = 0;
+    } elseif ($acao === "excluir") {
+        $erros[] = t("Informe a medição (id).");
+    } else {
+        $erros[] = t("Ação desconhecida: use salvar, importar ou excluir.");
+    }
+    return resultado($erros, $msg, array_merge(["id" => $id], $extra));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Lançamentos. Ações:
 //   lancar (relogio_id, tipo, valor (formato "valor"), quando (AAAA-MM-DD HH:MM; vazio: agora), medir (1 ou 0; padrão 1)):
 //           instantâneo ou com valor. Num tipo que mede o gasto (a leitura de carga), a leitura é comparada com a anterior,
