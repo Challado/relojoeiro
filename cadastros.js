@@ -1,8 +1,8 @@
-// Cadastros: os dados da API (recurso=cadastros; a aba Totais, recurso=totais; a aba Calibres, recurso=calibres), uma aba por vez
-// (cadastros.php?aba=campos&editar=3), com as gravações pela API (recurso=campos, lancamento_tipos, formulas, totais, calibres e
-// documento_categorias), o testar das fórmulas (recurso=calcular) e o dos totais (recurso=totais, expressao=). Os avisos ficam na página Avisos (avisos.js) e os modos de rodízio, na Modos de rodízio (modos.js).
-var ABAS = {campos: t("Campos"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), totais: t("Totais"), calibres: t("Calibres"), documentos: t("Categorias de documentos")};
-var RECURSO = {campos: "campos", lancamentos: "lancamento_tipos", formulas: "formulas", totais: "totais", calibres: "calibres", documentos: "documento_categorias"};
+// Cadastros: os dados da API (recurso=cadastros; a aba Totais, recurso=totais; a aba Calibres, recurso=calibres; a aba
+// Unidades, recurso=unidades), uma aba por vez (cadastros.php?aba=campos&editar=3), com as gravações pela API (recurso=campos,
+// lancamento_tipos, formulas, totais, calibres, unidades e documento_categorias), o testar das fórmulas (recurso=calcular) e o dos totais (recurso=totais, expressao=). Os avisos ficam na página Avisos (avisos.js) e os modos de rodízio, na Modos de rodízio (modos.js).
+var ABAS = {campos: t("Campos"), unidades: t("Unidades"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), totais: t("Totais"), calibres: t("Calibres"), documentos: t("Categorias de documentos")};
+var RECURSO = {campos: "campos", unidades: "unidades", lancamentos: "lancamento_tipos", formulas: "formulas", totais: "totais", calibres: "calibres", documentos: "documento_categorias"};
 var FAMILIAS = {imagem: t("imagens"), video: t("vídeos"), audio: t("áudios"), pdf: t("PDF"), xml: t("XML")};
 var q = new URLSearchParams(window.location.search);
 // os avisos dos relógios saíram daqui: moram na página Avisos, junto com os lembretes (o endereço antigo leva para lá)
@@ -28,6 +28,12 @@ function caminho(d, id) {
   });
   return res;
 }
+// o menu da unidade (as do cadastro da árvore: a aba Unidades), com a que o item já tem
+function campoUnidade(d, rotulo, sel) {
+  return el("label", {}, rotulo + " " + el("select", {"name": "unidade"}, el("option", {"value": ""}, t("— nenhuma")) + d.unidades.map(function (u) {
+    return el("option", {"value": u.simbolo, "selected": u.simbolo === sel}, h(u.simbolo) + " · " + h(u.nome));
+  }).join("")) + el("small", {}, el("a", {"href": "cadastros.php?aba=unidades"}, t("cadastrar unidades"))));
+}
 function opcoesNo(d, sel) {
   return el("option", {"value": "0"}, t("todos os relógios")) + d.grupos.map(function (g) { return el("option", {"value": g.id, "selected": sel === g.id}, h(g.caminho)); }).join("");
 }
@@ -51,6 +57,9 @@ function recarregarCadastros() {
   }
   if (aba === "calibres") {
     return recarregarCalibres();
+  }
+  if (aba === "unidades") {
+    return recarregarUnidades();
   }
   return api({recurso: "cadastros"}).then(function (d) {
     var res = el("h1", {}, t("Cadastros")) + el("nav", {"class": "abas"}, Object.keys(ABAS).map(function (k) { return el("a", {"href": "cadastros.php?aba=" + k, "class": k === aba ? "ativa" : ""}, h(ABAS[k])); }).join(""));
@@ -76,7 +85,7 @@ function recarregarCadastros() {
           + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": vazio(f.nome), "required": true, "maxlength": "120"})}))
           + el("label", {}, t("Identificador {1}", {1: el("input", {"name": "identificador", "value": vazio(f.identificador), "required": true, "pattern": "[a-z][a-z0-9_]{0,39}"})}))
           + el("label", {}, t("Tipo {1}", {1: el("select", {"name": "tipo"}, Object.keys(d.tipos_de_campo).map(function (k) { return el("option", {"value": k, "selected": f.tipo === k}, h(d.tipos_de_campo[k])); }).join(""))}))
-          + el("label", {}, t("Unidade {1}", {1: el("input", {"name": "unidade", "value": vazio(f.unidade), "maxlength": "20"})}))
+          + campoUnidade(d, t("Unidade"), vazio(f.unidade))
           + el("label", {}, t("Valor padrão {1}", {1: el("input", {"name": "padrao", "value": vazio(f.padrao)})}))
           + el("label", {}, t("Vale para {1}", {1: el("select", {"name": "no_id"}, opcoesNo(d, f.no_id))}))
           + el("label", {}, t("Opções (lista: uma por linha) {1}", {1: el("textarea", {"name": "opcoes"}, h(vazio(f.opcoes)))}))
@@ -103,7 +112,7 @@ function recarregarCadastros() {
           + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": vazio(f.nome), "required": true})}))
           + el("label", {}, t("Identificador {1}", {1: el("input", {"name": "identificador", "value": vazio(f.identificador), "required": true, "pattern": "[a-z][a-z0-9_]{0,39}"})}))
           + el("label", {}, t("Formato {1}", {1: el("select", {"name": "formato"}, Object.keys(d.formatos_de_lancamento).map(function (k) { return el("option", {"value": k, "selected": f.formato === k}, h(d.formatos_de_lancamento[k])); }).join(""))}))
-          + el("label", {}, t("Unidade (com valor) {1}", {1: el("input", {"name": "unidade", "value": vazio(f.unidade)})}))
+          + campoUnidade(d, t("Unidade (com valor)"), vazio(f.unidade))
           + el("label", {}, t("Fecha sozinho às (sessão; vazio: não fecha) {1}", {1: el("input", {"type": "time", "name": "fecha_as", "value": String(vazio(f.fecha_as)).substr(0, 5)})}))
           + el("label", {}, t("Vale para {1}", {1: el("select", {"name": "no_id"}, opcoesNo(d, f.no_id))}))
           + el("label", {}, t("Vale quando (fórmula: 1 vale, 0 não; vazio: sempre) {1}", {1: el("input", {"name": "condicao", "class": "formula", "value": vazio(f.condicao), "placeholder": t("ex.: corda_manual")})}))
@@ -130,7 +139,7 @@ function recarregarCadastros() {
         + el("form", {"data-recurso": "formulas", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": e ? "alterar" : "nova"}) + (e ? el("input", {"type": "hidden", "name": "id", "value": e.id}) : "")
           + (e ? "" : el("label", {}, t("Identificador {1}", {1: el("input", {"name": "identificador", "required": true, "pattern": "[a-z][a-z0-9_]{0,39}"})})))
           + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": vazio(f.nome), "required": true})}))
-          + el("label", {}, t("Unidade {1}", {1: el("input", {"name": "unidade", "value": vazio(f.unidade)})}))
+          + campoUnidade(d, t("Unidade"), vazio(f.unidade))
           + el("label", {}, t("Versão para {1}", {1: el("select", {"name": "no_id"}, opcoesNo(d, f.no_id))}))
           + el("label", {"style": "grid-column: 1 / -1"}, t("Cálculo {1}", {1: el("textarea", {"name": "expressao", "class": "formula", "rows": "3", "required": true}, h(vazio(f.expressao)))}))
           + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar"))))
@@ -315,6 +324,52 @@ function recarregarCalibres() {
             return entradaDoCalibre(c, f.valores[c.identificador] === undefined ? null : f.valores[c.identificador]);
           }).join(""))
         + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + (e ? " " + el("a", {"href": "cadastros.php?aba=calibres"}, t("cancelar")) : "")));
+    res += el("section", {"class": "cartao-config"}, sec);
+    document.getElementById("cadastros").innerHTML = res;
+  });
+}
+
+// a aba Unidades (recurso=unidades): a tabela, por grandeza (cada base seguida das que se convertem nela), com a conversão
+// e quem usa cada uma; e o formulário: o símbolo, o nome, a base e o fator (1 desta = fator da base), o zero (só o °F tem)
+// e a unidade em que o valor também aparece
+function recarregarUnidades() {
+  return api({recurso: "unidades"}).then(function (d) {
+    var e = null;
+    d.unidades.forEach(function (x) { if (x.id === editar) { e = x; } });
+    var f = e || {};
+    var res = el("h1", {}, t("Cadastros")) + el("nav", {"class": "abas"}, Object.keys(ABAS).map(function (k) { return el("a", {"href": "cadastros.php?aba=" + k, "class": k === aba ? "ativa" : ""}, h(ABAS[k])); }).join(""));
+    if (recado !== "") {
+      res += recado;
+      recado = "";
+    }
+    var usos = function (u) {
+      var l = [];
+      if (u.usos.campos > 0) { l.push(u.usos.campos === 1 ? t("1 campo") : t("{1} campos", {1: u.usos.campos})); }
+      if (u.usos.tipos > 0) { l.push(u.usos.tipos === 1 ? t("1 tipo de lançamento") : t("{1} tipos de lançamento", {1: u.usos.tipos})); }
+      if (u.usos.formulas > 0) { l.push(u.usos.formulas === 1 ? t("1 fórmula") : t("{1} fórmulas", {1: u.usos.formulas})); }
+      return l.length === 0 ? t("nada") : l.join(", ");
+    };
+    var bases = d.grandezas.map(function (g) { return el("option", {"value": g.base, "selected": f.base === g.base}, h(g.base) + " · " + h(g.nome)); }).join("");
+    var sec = el("h2", {}, t("Unidades"))
+      + el("p", {"class": "nota"}, t("As unidades que os campos, os tipos de lançamento e as fórmulas usam (o símbolo vai depois do número: 47 mm). A conversão: cada unidade se converte na base dela (a polegada em milímetros: 1 pol = 25,4 mm), e as que têm a mesma base convertem entre si (na função CONVERTER das fórmulas). Mostrar também em: o valor aparece também nessa unidade (47 mm (1,85 pol)). Mudar o símbolo muda também nos campos, nos tipos e nas fórmulas que o usam."))
+      + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Símbolo")) + el("th", {}, t("Nome")) + el("th", {}, t("Conversão"))
+          + el("th", {}, t("Mostrar também em")) + el("th", {}, t("Em uso")) + el("th", {}, "")))
+        + el("tbody", {}, d.unidades.map(function (u) {
+          return el("tr", {"class": u.base === null ? "base-unidade" : ""}, el("td", {}, u.base === null ? el("strong", {}, h(u.simbolo)) : h(u.simbolo)) + el("td", {}, h(u.nome))
+            + el("td", {"class": "nota"}, u.conversao === null ? t("base") : h(u.conversao)) + el("td", {}, h(vazio(u.mostrar_em))) + el("td", {"class": "nota"}, usos(u))
+            + el("td", {"class": "acoes-linha"}, linkEditar(u.id) + " " + botaoLinha("excluir", u.id, t("Excluir"))));
+        }).join(""))))
+      + el("h3", {"id": "form"}, e ? t("Alterar a unidade {1}", {1: h(e.simbolo)}) : t("Nova unidade"))
+      + el("form", {"data-recurso": "unidades", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": e ? e.id : 0})
+        + el("label", {}, t("Símbolo {1}", {1: el("input", {"name": "simbolo", "value": vazio(f.simbolo), "required": true, "maxlength": "20", "placeholder": t("ex.: mm")})}))
+        + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": vazio(f.nome), "required": true, "maxlength": "80", "placeholder": t("ex.: milímetro")})}))
+        + el("label", {}, t("Converte em (a base) {1}", {1: el("select", {"name": "base"}, el("option", {"value": ""}, t("— nenhuma: esta é uma base")) + bases)}))
+        + el("label", {}, t("Fator (1 desta = quanto da base) {1}", {1: el("input", {"name": "fator", "value": f.fator === null || f.fator === undefined ? "" : num(f.fator, 9), "inputmode": "decimal", "placeholder": t("ex.: 25,4")})}))
+        + el("label", {}, t("Zero (o valor desta que é o zero da base; quase sempre 0) {1}", {1: el("input", {"name": "zero", "value": f.zero ? num(f.zero, 9) : "", "inputmode": "decimal", "placeholder": fixo("0")})}))
+        + el("label", {}, t("Mostrar também em {1}", {1: el("select", {"name": "mostrar_em"}, el("option", {"value": ""}, t("— nenhuma")) + d.grandezas.map(function (g) {
+          return el("optgroup", {"label": g.base}, g.unidades.map(function (s) { return el("option", {"value": s, "selected": f.mostrar_em === s}, h(s)); }).join(""));
+        }).join(""))}))
+        + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + (e ? " " + el("a", {"href": "cadastros.php?aba=unidades"}, t("cancelar")) : "")));
     res += el("section", {"class": "cartao-config"}, sec);
     document.getElementById("cadastros").innerHTML = res;
   });

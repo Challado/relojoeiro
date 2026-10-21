@@ -37,6 +37,8 @@ module.exports = [
   { nome: 'criterios', url: 'criterios.php' },
   { nome: 'grupos', url: 'grupos.php' },
   { nome: 'cadastros', url: 'cadastros.php' },
+  { nome: 'cadastros-unidades', url: 'cadastros.php?aba=unidades' },
+  { nome: 'cadastros-unidades-editar', url: 'cadastros.php?aba=unidades&editar=21' },
   { nome: 'modos', url: 'modos.php' },
   { nome: 'modos-editar', url: 'modos.php?editar=2' },
   { nome: 'configuracao', url: 'configuracao.php' },

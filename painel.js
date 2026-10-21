@@ -865,6 +865,8 @@ function abrirNoPainel(id) {
             res2 = dataBr(v);
           } else if (c.tipo === "inteiro" || c.tipo === "decimal") {
             res2 = c.unidade === "R$" ? t("R$ ") + reais(v) : num(v, 2) + (c.unidade !== "" ? " " + h(c.unidade) : "");
+            // o valor também na outra unidade (Cadastros › Unidades, "mostrar também em"), já em texto pela API
+            res2 += c.tambem ? " " + el("small", {"class": "tambem"}, "(" + h(c.tambem) + ")") : "";
           } else {
             res2 = h(v);
           }

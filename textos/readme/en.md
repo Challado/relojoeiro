@@ -1,4 +1,4 @@
-<!-- origem: a6995824a0aefafc1dce8174c583499bf649d150 -->
+<!-- origem: 4f21a7fb0eab48998f85fa5115eda0cc6f223bb8 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -156,6 +156,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `ics` | the calendar of an ICS link calendar (without login, by the link's key) |
 | `config`, `cron` | the collection's settings (with the summary of the destinations and calendars and the cron status: never ran, stopped or running); the cron runs, with the period's summary. In `cron`: `de=` and `ate=` (date, or date and time), `situacao=` (`atividade`, the default; `erro`, `nada` or `todas`), `busca=` (text in the log), `limite=` (default 100, maximum 1000) and `pagina=`; each also works with `cron_` in front (`cron_de`...) |
 | `arvore`, `cadastros` | the groups; everything the Definitions page shows |
+| `unidades` | the tree's units (the **Units** tab of Definitions), in the order of the quantities, each one with the conversion as text and how many fields, types and formulas use it |
 | `calcular` | the result of a formula (`expressao=`) on the watches (`relogio=` one id or several; without it, all), without saving, with the parts of the calculation; a badly written formula: 400 with the errors |
 | `foto` | a watch's photo (`relogio=<id>`): the image, not JSON |
 | `documentos` | a watch's documents (`relogio=<id>`; without it, all of them), with the categories, the NF-e summary of each XML, the folder and the limit |
@@ -187,6 +188,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `reserva` | `iniciar` (when it was full and how), `parou`, `observar` (stopped, low charge, note; also on the solar), `salvar`, `usar` (the median goes to the watch's record), `excluir` |
 | `timegrapher` | `salvar` (a measurement: the position, the rate, the amplitude, the beat error, the beats per hour, the angle), `importar` (the device's CSV; `conferir=1`: without saving), `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (only without documents) |
+| `unidades` | `salvar` (the symbol, the name, the base and the factor, the zero and the also-show-in; the new symbol is carried to whatever uses it), `excluir` (only without use; takes along the units that convert into it) |
 | `lancamento` | `lancar` (winding, charge, battery...), `iniciar` and `encerrar` (put on and take off the wrist, the winder, the sun, the charger), `alternar` (closes the session if it is open, opens it if it is closed: a single button on the phone), `periodo` (a period that has passed; on the wrist of the watch of the day it is rotation use, and the stretches of the same type it touches, like a Put on left open, become one), `alterar`, `excluir`, `medicao` (a consumption measurement goes into or out of the calculation: `id`, `usada` 1 or 0). In all of them, `relogio_id=hoje` is the watch of the day |
 | `rodizio` | `usando` (I'm wearing this one today), `trocar_dia` (a day's watch), `periodo` (the watches of a period, in order: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (erases the period's days and the mode builds them again; only `de`: to the end of the plan; only `ate`: from tomorrow to it), `periodo_livre` (erases and leaves the days free, without a draw; the same dates), `manual` (the Manual rotation: `de`, `ate`, `dias[YYYY-MM-DD]` = the watch id, `auto` or `livre`), `apagar_tudo` (the whole schedule from tomorrow on goes away; `hoje=1`: from today on; the mode builds the plan again), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (change the mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |
@@ -579,10 +581,11 @@ destination and each calendar, what they receive (`destino_aviso`, `destino_even
 mode in use is the mode's `ativo` column, and the consumption measurement reaches the watch through the entry that closed it.
 The `config` table keeps only each collection's loose values, and `sistema`, those of the whole system.
 
-Three references stay **by name**, on purpose: the formulas and the criteria cite fields and formulas by identifier (it is
-the text you write, like `HORAS("pulso"; 30)`), and `destino_aviso` and `agenda_aviso` cite the alert by identifier, because
-an alert can have several versions (one per group) and the choice applies to all of them. When an alert's last version is
-deleted, the system deletes its rows along with it.
+Four references stay **by name**, on purpose: the formulas and the criteria cite fields and formulas by identifier (it is
+the text you write, like `HORAS("pulso"; 30)`); `destino_aviso` and `agenda_aviso` cite the alert by identifier, because
+an alert can have several versions (one per group) and the choice applies to all of them (when an alert's last version is
+deleted, the system deletes its rows along with it); and fields, entry types and formulas cite the unit by its symbol, its
+key in the tree (the system checks that it exists and carries the new symbol along when it changes).
 
 **The database validates what it stores** (since migration v17), with standard SQL features, and not only the system: a
 wrong write is refused wherever it comes from (the screen, the API, someone editing the database directly). The API answers
@@ -626,7 +629,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | File | What it is |
 |---|---|
 | [`api.php`](api.php) | the API, the door for every read and write (the authentication, the format, the order of the resources, the filters, the response), with the complete documentation in the header |
-| [`api/`](api/) | the API's big resources, one file each (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `ajuda.php`...), plus its functions (`funcoes.php`, with the reports' `api_ler`) and the writes (`escrita.php`): they run inside `api.php`, and opened directly they do nothing (`.htaccess` and `nginx-relogios.conf` block the folder) |
+| [`api/`](api/) | the API's big resources, one file each (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `unidades.php`, `ajuda.php`...), plus its functions (`funcoes.php`, with the reports' `api_ler`) and the writes (`escrita.php`): they run inside `api.php`, and opened directly they do nothing (`.htaccess` and `nginx-relogios.conf` block the folder) |
 | [`lib.php`](lib.php) | the core: login, tree, formula engine, alerts, criteria, rotation, schedule, documents |
 | [`colecoes.php`](colecoes.php) | the collections in the core: the request's scope, `modelo.json`, the encrypted secrets, the `sistema` table, migration v25 and the impact of deletions |
 | [`alertas.php`](alertas.php) | the destinations (webhook, e-mail, Web Push) and the calendars (Google, CalDAV, Outlook, ICS) |

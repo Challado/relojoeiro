@@ -1,4 +1,4 @@
-<!-- origem: 940979a03a68202f8e2394f1907f242dab5a685d -->
+<!-- origem: ebd8490961026de6e1fd03fdd3c875576f0425a8 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -52,6 +52,7 @@ flowchart LR
 |---|---|---|
 | **Grupos** (el árbol) | La clasificación de la colección, en tantos niveles como quiera. Todo lo registrado en un grupo vale para él y para todo lo que está debajo. | `Tradicional › Mecánico › Automático` |
 | **Campos** | Los datos de cada reloj, definidos por usted: texto, número, fecha, sí/no o lista, con unidad y valor por defecto. | `reserva_horas = 40 h`, `data_pilha`, `loja` |
+| **Unidades** | Lo que va después del número, registrado por usted: el símbolo, el nombre y la conversión (la pulgada en milímetros). Los campos, los tipos de registro y las fórmulas eligen la unidad de la lista, y el valor puede aparecer también en otra unidad. | `47 mm (1,85 pol)` |
 | **Calibres** | El movimiento del reloj, con lo que es suyo: el fabricante, el manual técnico, las recomendaciones y los valores de los campos. El reloj con un calibre usa su propio valor, si no el del calibre, si no el predeterminado del campo. | `NH35`: reserva de 41 h, marcha de −20 a +40 s/día |
 | **Tipos de registro** | Lo que le pasa a un reloj. Puede ser **instantáneo** (cuerda, cambio de pila), **con valor** (lectura de carga: 68%) o una **sesión** con inicio y fin (en la muñeca, en el winder, al sol). | `sol`: una sesión que se cierra sola a las 18 h si usted se olvida |
 | **Fórmulas** | Cálculos sobre los campos y los registros. La misma fórmula puede tener **una versión por grupo**, y vale la del grupo más cercano al reloj. | `energia` es la batería en el smartwatch, la reserva en el mecánico, la luz en el solar y la vida de la pila en el cuarzo |
@@ -72,6 +73,7 @@ la cuenta, y la división por cero da vacío. Lo básico:
 | `SE(condición; si sí; si no)`, `E(...)`, `OU(...)`, `NAO(x)` | la lógica: `E` da 1 si todas son verdaderas, `OU` si alguna lo es, `NAO` invierte |
 | `MIN(...)`, `MAX(...)` | el menor y el mayor de los valores (ignoran los vacíos) |
 | `LIMITA(x; mín; máx)`, `ARREDONDA(x; decimales)`, `ABS(x)` | x sujeto al rango; redondeado; sin signo |
+| `CONVERTER(x; "de"; "para")` | x en otra unidad de la misma magnitud, según el registro de unidades: `CONVERTER(diametro; "mm"; "pol")`; vacío cuando las dos no se convierten |
 | `PADRAO(x; otro)`, `VAZIO(x)`, `NADA()` | x, o el otro si x está vacío; 1 si x está vacío; vacío, a propósito (`SE(condición; NADA(); cuenta)`) |
 | `HOJE()`, `AGORA()` | la fecha de hoy y el instante actual, en días (ahora con la fracción del día) |
 | `DIAS_DESDE(fecha)`, `DIAS_ATE(fecha)`, `SOMA_MESES(fecha; meses)` | días desde y hasta una fecha (negativo: ya pasó); la fecha más meses, por el calendario |
@@ -584,6 +586,23 @@ la reserva, las cargas, la marcha esperada, el límite del desvío, la cuerda po
 revisión y la vida de la pila. Un campo que el calibre ya define aparece siempre, para poder quitarlo. Por la API:
 `recurso=documentos` con `calibre=` (y `calibre_id` en `enviar`), `recurso=config` con `calibre_campos` y `recurso=campos`
 con `calibre`.
+
+### Las unidades {#as-unidades}
+
+Cada árbol tiene su **registro de unidades**, en la pestaña **Unidades** de la página **Definiciones**: el **símbolo** (lo
+que va después del número: `mm`, `h`, `dias`, `R$`), el **nombre** completo y la **conversión**. Ya viene con las de uso
+común: longitud (mm, cm, m, pol, pés), masa (g, kg, oz), tiempo (s, min, h, dias, semanas, meses, anos), temperatura (°C,
+°F), presión (bar, atm, hPa, psi), pulsaciones (bph, Hz) y las sueltas (%, s/dia, ms, °, mAh, V, lux, R$). Los campos, los
+tipos de registro y las fórmulas eligen la unidad **de esa lista** (la API rechaza un símbolo que no está registrado), y
+cambiar el símbolo de una unidad lo cambia también en quien la usa.
+
+La conversión es de un nivel: cada unidad se convierte en la **base** de su magnitud, con el **factor** (1 pol = 25,4 mm;
+1 h = 3600 s) y, solo en la temperatura, el **cero** (°C = (°F − 32) × 5/9). Dos unidades con la misma base se convierten
+entre sí, y la fórmula `CONVERTER(x; "de"; "para")` hace la cuenta. **Mostrar también en**: el valor aparece también en esa
+unidad en los **Datos del reloj** y en el **Pasaporte** (el milímetro ya viene mostrando las pulgadas: *47 mm (1,85 pol)*).
+Una unidad en uso no se elimina (la eliminación dice quién la usa); eliminar una base se lleva las que se convierten en
+ella. Por la API: `recurso=unidades` (la lista, con la conversión y el uso de cada una) y `recurso=unidades` con
+`acao=salvar` o `excluir`.
 
 ### Los servicios y diagnósticos {#os-serviços-e-diagnósticos}
 
@@ -1330,7 +1349,7 @@ que usted registre entra aquí con su nombre.
 | **Modos de rotación** (`modos.php`, menú **Rotación**) | Los modos de rotación: la tabla (el modo activo marcado, el tipo, el criterio, las semanas y de dónde elige) con **Editar**, **Activar** y **Eliminar**, y el formulario de un modo, con la pantalla de su tipo: el nombre y el tipo; de dónde elegir (por tramo o por día de la semana), el período de la escala o el guion escrito a mano con **Probar en todos los relojes**; las semanas adelante (con la lista de las semanas); el criterio de elección y el ciclo; y, en los tipos listos, el guion generado (solo lectura, con **copiar este guion** a un Personalizado). Vea [Los modos de rotación](#os-modos-de-rodízio). |
 | **Criterios** (`criterios.php`) | Los conjuntos de criterios por lugar (todos los relojes, un grupo o un reloj), con parámetros, subparámetros, rangos y la nota de cada reloj con la cuenta abierta. Tiene **Restaurar los criterios iniciales**. |
 | **Grupos** (`grupos.php`) | El árbol: crear, renombrar, mover, ordenar, eliminar (lo que era del grupo pasa al de arriba) y elegir el grupo de cada reloj. |
-| **Definiciones** (`cadastros.php`) | Campos, tipos de registro, fórmulas (con **Probar**), los totales (la pestaña **Totales**: vea [Los totales](#os-totais)), los calibres (la pestaña **Calibres**: vea [Los calibres](#os-calibres)) y las categorías de documentos: todo lo que el sistema usa que no es código (los avisos están en la página **Avisos**, y los modos de rotación, en **Modos de rotación**). |
+| **Definiciones** (`cadastros.php`) | Campos, tipos de registro, fórmulas (con **Probar**), los totales (la pestaña **Totales**: vea [Los totales](#os-totais)), los calibres (la pestaña **Calibres**: vea [Los calibres](#os-calibres)), las unidades (la pestaña **Unidades**: vea [Las unidades](#as-unidades)) y las categorías de documentos: todo lo que el sistema usa que no es código (los avisos están en la página **Avisos**, y los modos de rotación, en **Modos de rotación**). |
 | **Ejecuciones del cron** (`execucoes.php`) | Qué hizo el cron en cada vuelta, cuánto tardó y los errores, con filtros. |
 | **Mi cuenta** (`conta.php`, menú **Cuenta › Mi cuenta**) | Las colecciones que ve (abrir, crear, renombrar, eliminar, salir), sus árboles de grupos (copiar, renombrar, eliminar), pedir acceso a la colección de alguien (por el código que pasó el dueño), sus datos (su código, el correo, el idioma, el modo de la interfaz, la contraseña), la **aplicación en el celular** (recordar este aparato, instalar, los aparatos recordados), los **tokens de API** (para sus scripts), las **notificaciones en este aparato** (el Web Push), el **envío de sus correos** (por el servidor del sistema o por el suyo: Gmail, Outlook) y eliminar la cuenta. Vea [Varias personas](#várias-pessoas-contas-coleções-e-acesso) y [La aplicación en el celular](#o-aplicativo-no-celular). |
 | **Aprobaciones** (`aprovacoes.php`) | Las solicitudes de acceso a sus colecciones (aprobar, rechazar), las invitaciones que hicieron los miembros y le esperan, **Invitar** (por correo), las invitaciones que hizo y quién ve sus colecciones (quitar el acceso). El menú muestra **Aprobaciones (N)** cuando hay algo esperando. |

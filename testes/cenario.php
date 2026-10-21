@@ -697,6 +697,44 @@ if (is_dir($pasta_cal)) {
 }
 ler("ficha sem o calibre excluido", ["recurso" => "ficha", "relogio" => $rel["auto2"]]);
 
+// as unidades: as prontas do modelo (a polegada em milímetros, o °F em °C), uma nova (a milha), as recusas (sem símbolo, a
+// repetida, a base que tem base, o fator zero, o "mostrar também em" de outra grandeza, o campo com uma unidade que não
+// existe, a exclusão da que está em uso), a troca do símbolo (vai junto para o campo que usa), o valor também em polegadas
+// na ficha e a função CONVERTER
+$un = ler("unidades", ["recurso" => "unidades"]);
+$u_id = [];
+foreach ($un["unidades"] ?? [] as $u) {
+    $u_id[$u["simbolo"]] = $u["id"];
+}
+if (!isset($u_id["mm"], $u_id["pol"], $u_id["°F"]) || count($un["grandezas"] ?? []) < 5) {
+    $falhas[] = "unidades: as do modelo não vieram (" . implode(", ", array_keys($u_id)) . ")";
+}
+$u_mi = escrever(["recurso" => "unidades", "acao" => "salvar", "id" => 0, "simbolo" => "mi", "nome" => "milha", "base" => "mm", "fator" => "1609344"]);
+escrever(["recurso" => "unidades", "acao" => "salvar", "id" => 0, "simbolo" => " ", "nome" => "nada"], false);
+escrever(["recurso" => "unidades", "acao" => "salvar", "id" => 0, "simbolo" => "MM", "nome" => "repetida"], false);
+escrever(["recurso" => "unidades", "acao" => "salvar", "id" => 0, "simbolo" => "dm", "nome" => "decímetro", "base" => "cm", "fator" => "10"], false);
+escrever(["recurso" => "unidades", "acao" => "salvar", "id" => 0, "simbolo" => "dm", "nome" => "decímetro", "base" => "mm", "fator" => "0"], false);
+escrever(["recurso" => "unidades", "acao" => "salvar", "id" => $u_id["mm"] ?? 0, "mostrar_em" => "g"], false);
+escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "medida_teste", "nome" => "Medida de teste", "tipo" => "decimal", "unidade" => "mmm"], false);
+$c_med = escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "medida_teste", "nome" => "Medida de teste", "tipo" => "decimal", "unidade" => "mm"]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["manual"], "valores" => ["medida_teste" => "40"]]);
+escrever(["recurso" => "unidades", "acao" => "excluir", "id" => $u_id["mm"] ?? 0, "confirmar" => 1], false);
+escrever(["recurso" => "unidades", "acao" => "salvar", "id" => $u_id["mm"] ?? 0, "simbolo" => "milímetros"]);
+$cad_u = ler("cadastros com o simbolo novo", ["recurso" => "cadastros"]);
+$med_u = array_values(array_filter($cad_u["campos"] ?? [], function ($c) { return $c["identificador"] === "medida_teste"; }))[0]["unidade"] ?? null;
+escrever(["recurso" => "unidades", "acao" => "salvar", "id" => $u_id["mm"] ?? 0, "simbolo" => "mm"]);
+$f_un = ler("ficha com a polegada", ["recurso" => "ficha", "relogio" => $rel["manual"]]);
+$d_un = array_values(array_filter($f_un["relogio"]["dados"] ?? [], function ($c) { return $c["identificador"] === "medida_teste"; }))[0] ?? [];
+$conv = ler("converter", ["recurso" => "calcular", "expressao" => "CONVERTER(medida_teste; \"mm\"; \"pol\") + CONVERTER(212; \"°F\"; \"°C\")"]);
+$v_conv = array_values(array_filter($conv["resultados"] ?? [], function ($x) use ($rel) { return $x["relogio_id"] === $rel["manual"]; }))[0]["valor"] ?? null;
+if ($med_u !== "milímetros" || strpos((string)($d_un["tambem"] ?? ""), "pol") === false || $v_conv === null || abs($v_conv - 101.5748) > 0.001) {
+    $falhas[] = "unidades: " . json_encode([$med_u, $d_un, $v_conv], JSON_UNESCAPED_UNICODE);
+}
+escrever(["recurso" => "unidades", "acao" => "excluir", "id" => $u_mi], false);
+escrever(["recurso" => "unidades", "acao" => "excluir", "id" => $u_mi, "confirmar" => 1]);
+escrever(["recurso" => "campos", "acao" => "excluir", "id" => $c_med, "confirmar" => 1]);
+ler("unidades no fim", ["recurso" => "unidades"]);
+
 // os serviços e diagnósticos: uma revisão no automático com peças, a estanqueidade aprovada, a marcha antes e depois, a
 // garantia e um documento (vira também a marcação Revisão); as recusas (o teste de estanqueidade sem resultado, a data no
 // futuro, a pressão sem resultado, o custo da peça que não é número, o documento de outro relógio, a garantia antes do

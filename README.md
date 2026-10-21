@@ -99,6 +99,7 @@ flowchart LR
 |---|---|---|
 | **Grupos** (a árvore) | A classificação da coleção, em quantos níveis você quiser. Tudo o que é cadastrado num grupo vale para ele e para tudo abaixo dele. | `Tradicional › Mecânico › Automático` |
 | **Campos** | Os dados de cada relógio, definidos por você: texto, número, data, sim/não ou lista, com unidade e valor padrão. | `reserva_horas = 40 h`, `data_pilha`, `loja` |
+| **Unidades** | O que vai depois do número, cadastrado por você: o símbolo, o nome e a conversão (a polegada em milímetros). Os campos, os tipos de lançamento e as fórmulas escolhem a unidade da lista, e o valor pode aparecer também em outra unidade. | `47 mm (1,85 pol)` |
 | **Calibres** | O movimento do relógio, com o que é dele: o fabricante, o manual técnico, as recomendações e os valores dos campos. O relógio com um calibre usa o valor dele mesmo, senão o do calibre, senão o padrão do campo. | `NH35`: reserva de 41 h, marcha de −20 a +40 s/dia |
 | **Tipos de lançamento** | O que acontece com um relógio. Pode ser **instantâneo** (corda, troca de pilha), **com valor** (leitura de carga: 68%) ou uma **sessão** com início e fim (no pulso, no winder, no sol). | `sol`: sessão que fecha sozinha às 18h se você esquecer |
 | **Fórmulas** | Contas sobre os campos e os lançamentos. A mesma fórmula pode ter **uma versão por grupo**, e vale a do grupo mais perto do relógio. | `energia` é a bateria no smartwatch, a reserva no mecânico, a luz no solar e a vida da pilha no quartzo |
@@ -119,6 +120,7 @@ por zero dá vazio. O básico:
 | `SE(condição; se verdadeira; se falsa)`, `E(...)`, `OU(...)`, `NAO(x)` | a lógica: `E` dá 1 se todas são verdadeiras, `OU` se alguma é, `NAO` inverte |
 | `MIN(...)`, `MAX(...)` | o menor e o maior dos valores (ignoram os vazios) |
 | `LIMITA(x; mín; máx)`, `ARREDONDA(x; casas)`, `ABS(x)` | x preso na faixa; arredondado; sem sinal |
+| `CONVERTER(x; "de"; "para")` | x em outra unidade da mesma grandeza, pelo cadastro das unidades: `CONVERTER(diametro; "mm"; "pol")`; vazio quando as duas não se convertem |
 | `PADRAO(x; outro)`, `VAZIO(x)`, `NADA()` | x, ou o outro se x estiver vazio; 1 se x está vazio; o vazio, de propósito (`SE(condição; NADA(); conta)`) |
 | `HOJE()`, `AGORA()` | a data de hoje e o instante de agora, em dias (o agora com a fração do dia) |
 | `DIAS_DESDE(data)`, `DIAS_ATE(data)`, `SOMA_MESES(data; meses)` | dias desde e até uma data (negativo: já passou); a data somada de meses, pelo calendário |
@@ -617,6 +619,22 @@ do movimento são os marcados na aba **Campos** (a caixa *do movimento*): já v�
 esperada, o limite do desvio, a corda pela coroa, a autonomia, os decaimentos, a revisão e a vida da pilha. Um campo que o
 calibre já define aparece sempre, para poder tirar. Pela API: `recurso=documentos` com `calibre=` (e `calibre_id` no
 `enviar`), `recurso=config` com `calibre_campos` e `recurso=campos` com `calibre`.
+
+### As unidades
+
+Cada árvore tem o seu **cadastro de unidades**, na aba **Unidades** da página **Cadastros**: o **símbolo** (o que vai depois
+do número: `mm`, `h`, `dias`, `R$`), o **nome** por extenso e a **conversão**. Ela já vem com as de uso comum: comprimento
+(mm, cm, m, pol, pés), massa (g, kg, oz), tempo (s, min, h, dias, semanas, meses, anos), temperatura (°C, °F), pressão (bar,
+atm, hPa, psi), batidas (bph, Hz) e as soltas (%, s/dia, ms, °, mAh, V, lux, R$). Os campos, os tipos de lançamento e as
+fórmulas escolhem a unidade **dessa lista** (a API recusa um símbolo que não está cadastrado), e mudar o símbolo de uma
+unidade muda junto em quem a usa.
+
+A conversão é de um nível: cada unidade se converte na **base** da grandeza dela, com o **fator** (1 pol = 25,4 mm; 1 h =
+3600 s) e, só na temperatura, o **zero** (°C = (°F − 32) × 5/9). Duas unidades com a mesma base convertem entre si, e a
+fórmula `CONVERTER(x; "de"; "para")` faz a conta. **Mostrar também em**: o valor aparece também nessa unidade nos **Dados
+do relógio** e no **Passaporte** (o milímetro já vem mostrando as polegadas: *47 mm (1,85 pol)*). Uma unidade em uso não
+se exclui (a exclusão diz quem a usa); excluir uma base leva junto as que se convertem nela. Pela API: `recurso=unidades` (a
+lista, com a conversão e o uso de cada uma) e `recurso=unidades` com `acao=salvar` ou `excluir`.
 
 ### Os serviços e diagnósticos
 
@@ -1375,7 +1393,7 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | **Modos de rodízio** (`modos.php`, menu **Rodízio**) | Os modos de rodízio: a tabela (o modo ativo marcado, o tipo, o critério, as semanas e de onde escolhe) com **Editar**, **Ativar** e **Excluir**, e o formulário de um modo, com a tela do tipo dele: o nome e o tipo; de onde escolher (por trecho ou por dia da semana), o período da escala ou o roteiro escrito à mão com **Testar em todos os relógios**; as semanas à frente (com a lista das semanas); o critério de escolha e o ciclo; e, nos tipos prontos, o roteiro gerado (só leitura, com **copiar este roteiro** para um Personalizado). Veja [Os modos de rodízio](#os-modos-de-rodízio). |
 | **Critérios** (`criterios.php`) | Os conjuntos de critérios por lugar (todos os relógios, um grupo ou um relógio), com parâmetros, subparâmetros, faixas e a nota de cada relógio com a conta aberta. Tem **Restaurar os critérios iniciais**. |
 | **Grupos** (`grupos.php`) | A árvore: criar, renomear, mover, ordenar, excluir (o que era do grupo passa para o de cima) e escolher o grupo de cada relógio. |
-| **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), os totais (a aba **Totais**: veja [Os totais](#os-totais)), os calibres (a aba **Calibres**: veja [Os calibres](#os-calibres)) e as categorias de documentos: tudo o que o sistema usa e que não é código (os avisos ficam na página **Avisos**, e os modos de rodízio, na **Modos de rodízio**). |
+| **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), os totais (a aba **Totais**: veja [Os totais](#os-totais)), os calibres (a aba **Calibres**: veja [Os calibres](#os-calibres)), as unidades (a aba **Unidades**: veja [As unidades](#as-unidades)) e as categorias de documentos: tudo o que o sistema usa e que não é código (os avisos ficam na página **Avisos**, e os modos de rodízio, na **Modos de rodízio**). |
 | **Execuções do cron** (`execucoes.php`) | O que o cron fez a cada rodada, quanto tempo levou e os erros, com filtros. |
 | **Minha conta** (`conta.php`, menu **Conta › Minha conta**) | As coleções que você vê (abrir, criar, renomear, excluir, sair), as suas árvores de grupos (copiar, renomear, excluir), pedir acesso à coleção de alguém (pelo código que o dono passou), os seus dados (o seu código, o e-mail, o idioma, o modo da interface, a senha), o **aplicativo no celular** (lembrar este aparelho, instalar, os aparelhos lembrados), os **tokens de API** (para os seus scripts), as **notificações neste aparelho** (o Web Push), o **envio dos seus e-mails** (pelo servidor do sistema ou pelo seu: o Gmail, o Outlook) e excluir a conta. Veja [Várias pessoas](#várias-pessoas-contas-coleções-e-acesso) e [O aplicativo no celular](#o-aplicativo-no-celular). |
 | **Aprovações** (`aprovacoes.php`) | Os pedidos de acesso às suas coleções (aprovar, recusar), os convites que membros fizeram e esperam você, **Convidar** (por e-mail), os convites que você fez e quem vê as suas coleções (tirar o acesso). O menu mostra **Aprovações (N)** quando há algo esperando. |
@@ -1604,6 +1622,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `ics` | o calendário de uma agenda do tipo link ICS (sem login, pela chave do link) |
 | `config`, `cron` | a configuração da coleção (com o resumo dos destinos e das agendas e a situação do cron: nunca rodou, parado ou rodando); as execuções do cron, com o resumo do período. No `cron`: `de=` e `ate=` (data, ou data e hora), `situacao=` (`atividade`, o padrão; `erro`, `nada` ou `todas`), `busca=` (texto no registro), `limite=` (padrão 100, máximo 1000) e `pagina=`; cada um também vale com `cron_` na frente (`cron_de`...) |
 | `arvore`, `cadastros` | os grupos; tudo o que a página Cadastros mostra |
+| `unidades` | as unidades da árvore (a aba **Unidades** dos Cadastros), na ordem das grandezas, cada uma com a conversão em texto e quantos campos, tipos e fórmulas a usam |
 | `calcular` | o resultado de uma fórmula (`expressao=`) nos relógios (`relogio=` um id ou vários; sem ele, todos), sem gravar, com as partes da conta; fórmula mal escrita: 400 com os erros |
 | `foto` | a foto de um relógio (`relogio=<id>`): a imagem, não JSON |
 | `documentos` | os documentos de um relógio (`relogio=<id>`; sem ele, de todos), com as categorias, o resumo da NF-e de cada XML, a pasta e o limite |
@@ -1635,6 +1654,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `reserva` | `iniciar` (quando ficou cheio e como), `parou`, `observar` (parou, carga baixa, nota; também no solar), `salvar`, `usar` (a mediana vai para o cadastro do relógio), `excluir` |
 | `timegrapher` | `salvar` (uma medição: a posição, a marcha, a amplitude, o erro de batida, as batidas por hora, o ângulo), `importar` (o CSV do aparelho; `conferir=1`: sem gravar), `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (só sem documentos) |
+| `unidades` | `salvar` (o símbolo, o nome, a base e o fator, o zero e o mostrar também em; o símbolo novo vai junto para quem o usa), `excluir` (só sem uso; leva junto as que se convertem nela) |
 | `lancamento` | `lancar` (corda, carga, pilha...), `iniciar` e `encerrar` (pôr e tirar do pulso, do winder, do sol, do carregador), `alternar` (fecha a sessão se está aberta, abre se está fechada: um botão só no celular), `periodo` (um período que já passou; no pulso do relógio do dia é uso do rodízio, e os trechos do mesmo tipo em que ele encosta, como o Pôr que ficou aberto, viram um só), `alterar`, `excluir`, `medicao` (uma medição do gasto entra ou sai da conta: `id`, `usada` 1 ou 0). Em todas, `relogio_id=hoje` é o relógio do dia |
 | `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `periodo` (os relógios de um período, na ordem: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (apaga os dias do período e o modo monta de novo; só `de`: até o fim do plano; só `ate`: de amanhã até ele), `periodo_livre` (apaga e deixa os dias livres, sem sorteio; as mesmas datas), `manual` (o Rodízio manual: `de`, `ate`, `dias[AAAA-MM-DD]` = o id do relógio, `auto` ou `livre`), `apagar_tudo` (toda a programação de amanhã em diante sai; `hoje=1`: de hoje em diante; o modo monta o plano de novo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
@@ -2243,10 +2263,11 @@ arquivo que uma categoria de documentos aceita (`documento_categoria_aceita`), a
 `agenda_evento`). O modo em uso é a coluna `ativo` do modo, e a medição do gasto chega ao relógio pelo lançamento que a fechou.
 A tabela `config` guarda só os valores soltos de cada coleção, e a `sistema`, os do sistema inteiro.
 
-Três referências ficam **pelo nome**, de propósito: as fórmulas e os critérios citam campos e fórmulas pelo identificador
-(é o texto que você escreve, como `HORAS("pulso"; 30)`), e o `destino_aviso` e o `agenda_aviso` citam o aviso pelo
-identificador, porque um aviso pode ter várias versões (uma por grupo) e a escolha vale para todas. Quando a última versão de
-um aviso é apagada, o sistema apaga junto as linhas dele.
+Quatro referências ficam **pelo nome**, de propósito: as fórmulas e os critérios citam campos e fórmulas pelo identificador
+(é o texto que você escreve, como `HORAS("pulso"; 30)`); o `destino_aviso` e o `agenda_aviso` citam o aviso pelo
+identificador, porque um aviso pode ter várias versões (uma por grupo) e a escolha vale para todas (quando a última versão de
+um aviso é apagada, o sistema apaga junto as linhas dele); e o campo, o tipo de lançamento e a fórmula citam a unidade pelo
+símbolo, a chave dela na árvore (o sistema confere que ela existe e leva o símbolo novo junto quando ele muda).
 
 **O banco valida o que guarda** (desde a migração v17), com os recursos do SQL padrão, e não só o sistema: uma gravação
 errada é recusada venha de onde vier (a tela, a API, alguém mexendo direto no banco). A API responde `409`, com o nome da
@@ -2290,7 +2311,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | Arquivo | O que é |
 |---|---|
 | [`api.php`](api.php) | a API, a porta de toda leitura e escrita (a autenticação, o formato, a ordem dos recursos, os filtros, a resposta), com a documentação completa no cabeçalho |
-| [`api/`](api/) | os recursos grandes da API, um arquivo cada (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `ajuda.php`...), mais as funções dela (`funcoes.php`, com o `api_ler` dos relatórios) e as escritas (`escrita.php`): rodam dentro do `api.php`, e abertos direto não fazem nada (o `.htaccess` e o `nginx-relogios.conf` bloqueiam a pasta) |
+| [`api/`](api/) | os recursos grandes da API, um arquivo cada (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `unidades.php`, `ajuda.php`...), mais as funções dela (`funcoes.php`, com o `api_ler` dos relatórios) e as escritas (`escrita.php`): rodam dentro do `api.php`, e abertos direto não fazem nada (o `.htaccess` e o `nginx-relogios.conf` bloqueiam a pasta) |
 | [`lib.php`](lib.php) | o núcleo: login, árvore, motor de fórmulas, avisos, critérios, rodízio, escala, documentos |
 | [`colecoes.php`](colecoes.php) | as coleções no núcleo: o escopo do pedido, o `modelo.json`, os segredos cifrados, a tabela `sistema`, a migração v25 e o impacto das exclusões |
 | [`alertas.php`](alertas.php) | os destinos (webhook, e-mail, Web Push) e as agendas (Google, CalDAV, Outlook, ICS) |

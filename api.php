@@ -684,6 +684,16 @@
  *   segundos são inteiros.
  *
  *   api.php (sem recurso)
+ *     unidades                       as unidades da árvore (Cadastros › Unidades), na ordem do cadastro
+ *     unidades[]                     uma unidade
+ *     unidades[].id                  o número da unidade
+ *     unidades[].simbolo             o símbolo (o que vai depois do número: mm, h, R$); o que o campo, o tipo de lançamento e a fórmula
+ *                                    guardam
+ *     unidades[].nome                o nome por extenso, no singular (milímetro)
+ *     unidades[].base                o símbolo da unidade base, a da mesma grandeza em que esta se converte; null: esta é uma base
+ *     unidades[].fator               com base: quanto vale 1 desta na base (a polegada: 25,4); null na base
+ *     unidades[].zero                o valor desta que é o zero da base (os 32 do °F); 0 nas outras: na base = (valor - zero) × fator
+ *     unidades[].mostrar_em          o símbolo da unidade em que o valor também aparece (na ficha e no passaporte); null: nenhuma
  *     arvore[]                       os grupos, em ordem de árvore
  *     arvore[].caminho               o caminho por extenso ("Tradicional › Quartzo › Solar")
  *     arvore[].id                    o número do grupo
@@ -1913,6 +1923,8 @@
  *     relogio.dados[].origem         de onde vem o valor usado: informado (o do relógio), calibre (o do calibre dele, quando o relógio não
  *                                    tem), padrao (o padrão do campo) ou vazio
  *     relogio.dados[].origem_texto   de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
+ *     relogio.dados[].tambem         o valor também na unidade em que a dele aparece (Cadastros › Unidades, mostrar também em), em texto
+ *                                    ("1,85 pol"); null: sem número ou sem essa unidade
  *     relogio.dados[].tipo           inteiro, decimal, sim_nao, data, lista ou texto
  *     relogio.dados[].unidade        a unidade (texto)
  *     relogio.dados[].valor          o valor informado no relógio (texto; null: não preenchido)
@@ -2979,6 +2991,12 @@
  *     relogios[].no_id               o grupo (0: raiz)
  *     relogios[].nome                o nome
  *   recurso=cadastros
+ *     unidades                       as unidades da árvore, para o menu Unidade dos campos, dos tipos de lançamento e das fórmulas (a aba
+ *                                    Unidades usa o recurso=unidades)
+ *     unidades[]                     uma unidade
+ *     unidades[].simbolo             o símbolo (o que vai depois do número: mm, h, R$); o que o campo, o tipo de lançamento e a fórmula
+ *                                    guardam
+ *     unidades[].nome                o nome por extenso, no singular (milímetro)
  *     avisos[]                       os avisos cadastrados (cada identificador pode ter uma versão por grupo)
  *     avisos[].agenda                a data na agenda: janela (só dentro da antecedência da agenda) ou sempre
  *     avisos[].na_hora               1: o aviso vai pelo Telegram no minuto em que vence (uma vez, até ser resolvido); 0: só no alerta da
@@ -3611,6 +3629,30 @@
  *     relogios[].esperada            a marcha esperada por extenso; null sem
  *     relogios[].dentro              verdadeiro se a última está dentro da esperada; null sem a esperada ou sem medição
  *     relogios[].resumo              a frase pronta
+ *   recurso=unidades
+ *     unidades                       as unidades da árvore, na ordem das grandezas: cada base seguida das que se convertem nela, da menor
+ *                                    para a maior
+ *     unidades[]                     uma unidade
+ *     unidades[].id                  o número da unidade
+ *     unidades[].simbolo             o símbolo (o que vai depois do número: mm, h, R$); o que o campo, o tipo de lançamento e a fórmula
+ *                                    guardam
+ *     unidades[].nome                o nome por extenso, no singular (milímetro)
+ *     unidades[].base                o símbolo da unidade base, a da mesma grandeza em que esta se converte; null: esta é uma base
+ *     unidades[].fator               com base: quanto vale 1 desta na base (a polegada: 25,4); null na base
+ *     unidades[].zero                o valor desta que é o zero da base (os 32 do °F); 0 nas outras: na base = (valor - zero) × fator
+ *     unidades[].mostrar_em          o símbolo da unidade em que o valor também aparece (na ficha e no passaporte); null: nenhuma
+ *     unidades[].conversao           a conversão em texto, no idioma ("1 polegada = 25,4 mm"); null na base
+ *     unidades[].usos                quantos usam a unidade
+ *     unidades[].usos.campos         quantos campos
+ *     unidades[].usos.tipos          quantos tipos de lançamento
+ *     unidades[].usos.formulas       quantas fórmulas (cada versão conta)
+ *     grandezas                      as grandezas: cada base com as unidades que se convertem nela (o que o "mostrar também em" de cada uma
+ *                                    pode escolher)
+ *     grandezas[]                    uma grandeza
+ *     grandezas[].base               o símbolo da base
+ *     grandezas[].nome               o nome da base
+ *     grandezas[].unidades           os símbolos das unidades dela, a base primeiro
+ *     grandezas[].unidades[]         um símbolo
  *   recurso=calibres
  *     calibres                       os calibres da árvore, pelo nome
  *     calibres[]                     um calibre (o movimento)
@@ -5770,6 +5812,8 @@ if ($recurso === "textos") {
     require __DIR__ . "/api/precisao.php";
 } elseif ($recurso === "calibres") {
     require __DIR__ . "/api/calibres.php";
+} elseif ($recurso === "unidades") {
+    require __DIR__ . "/api/unidades.php";
 } elseif ($recurso === "servicos") {
     require __DIR__ . "/api/servicos.php";
 } elseif ($recurso === "reserva") {
@@ -5861,7 +5905,7 @@ if ($recurso === "textos") {
 } else {
     $codigo = 404;
     $saida = ["erro" => t("recurso desconhecido"), "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "servicos", "reserva", "timegrapher", "relatorios", "hora_certa", "acessorios", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "unidades", "servicos", "reserva", "timegrapher", "relatorios", "hora_certa", "acessorios", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

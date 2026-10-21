@@ -1,4 +1,4 @@
-<!-- origem: 940979a03a68202f8e2394f1907f242dab5a685d -->
+<!-- origem: ebd8490961026de6e1fd03fdd3c875576f0425a8 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -54,6 +54,7 @@ flowchart LR
 |---|---|---|
 | **Groupes** (l'arbre) | Le classement de la collection, sur autant de niveaux que vous voulez. Tout ce qui est enregistré dans un groupe vaut pour lui et pour tout ce qui est en dessous. | `Traditionnelle › Mécanique › Automatique` |
 | **Champs** | Les données de chaque montre, définies par vous : texte, nombre, date, oui/non ou liste, avec unité et valeur par défaut. | `reserva_horas = 40 h`, `data_pilha`, `loja` |
+| **Unités** | Ce qui vient après le nombre, enregistré par vous : le symbole, le nom et la conversion (le pouce en millimètres). Les champs, les types de saisie et les formules choisissent l'unité dans la liste, et la valeur peut aussi apparaître dans une autre unité. | `47 mm (1,85 pol)` |
 | **Calibres** | Le mouvement de la montre, avec ce qui lui appartient : le fabricant, le manuel technique, les recommandations et les valeurs des champs. La montre avec un calibre utilise sa propre valeur, sinon celle du calibre, sinon la valeur par défaut du champ. | `NH35` : réserve de 41 h, marche de −20 à +40 s/jour |
 | **Types de saisie** | Ce qui arrive à une montre. Cela peut être **instantané** (remontage, changement de pile), **avec une valeur** (relevé de charge : 68 %) ou une **session** avec début et fin (au poignet, sur le remontoir, au soleil). | `sol` : une session qui se ferme seule à 18 h si vous oubliez |
 | **Formules** | Des calculs sur les champs et les saisies. Une même formule peut avoir **une version par groupe**, et c'est celle du groupe le plus proche de la montre qui s'applique. | `energia` est la batterie sur la smartwatch, la réserve sur la mécanique, la lumière sur la solaire et la durée de vie de la pile sur la quartz |
@@ -74,6 +75,7 @@ dans le calcul, et la division par zéro donne vide. L'essentiel :
 | `SE(condition; si vrai; si faux)`, `E(...)`, `OU(...)`, `NAO(x)` | la logique : `E` donne 1 si toutes sont vraies, `OU` si l'une l'est, `NAO` inverse |
 | `MIN(...)`, `MAX(...)` | la plus petite et la plus grande des valeurs (ignorent les vides) |
 | `LIMITA(x; min; max)`, `ARREDONDA(x; décimales)`, `ABS(x)` | x maintenu dans l'intervalle ; arrondi ; sans signe |
+| `CONVERTER(x; "de"; "para")` | x dans une autre unité de la même grandeur, selon le registre des unités : `CONVERTER(diametro; "mm"; "pol")` ; vide quand les deux ne se convertissent pas |
 | `PADRAO(x; autre)`, `VAZIO(x)`, `NADA()` | x, ou l'autre si x est vide ; 1 si x est vide ; vide, exprès (`SE(condition; NADA(); calcul)`) |
 | `HOJE()`, `AGORA()` | la date du jour et l'instant actuel, en jours (maintenant avec la fraction du jour) |
 | `DIAS_DESDE(date)`, `DIAS_ATE(date)`, `SOMA_MESES(date; mois)` | jours depuis et jusqu'à une date (négatif : déjà passée) ; la date plus des mois, selon le calendrier |
@@ -602,6 +604,23 @@ les charges, la marche attendue, la limite de l'écart, le remontage par la cour
 révision et la durée de la pile arrivent cochés. Un champ que le calibre définit déjà apparaît toujours, pour pouvoir
 l'enlever. Par l'API : `recurso=documentos` avec `calibre=` (et `calibre_id` dans `enviar`), `recurso=config` avec
 `calibre_campos` et `recurso=campos` avec `calibre`.
+
+### Les unités {#as-unidades}
+
+Chaque arbre a son **registre d'unités**, dans l'onglet **Unités** de la page **Définitions** : le **symbole** (ce qui vient
+après le nombre : `mm`, `h`, `dias`, `R$`), le **nom** en toutes lettres et la **conversion**. Il vient avec les plus
+courantes : longueur (mm, cm, m, pol, pés), masse (g, kg, oz), temps (s, min, h, dias, semanas, meses, anos), température
+(°C, °F), pression (bar, atm, hPa, psi), alternances (bph, Hz) et les isolées (%, s/dia, ms, °, mAh, V, lux, R$). Les champs,
+les types de saisie et les formules choisissent l'unité **dans cette liste** (l'API refuse un symbole non enregistré), et
+changer le symbole d'une unité le change aussi chez qui l'utilise.
+
+La conversion a un seul niveau : chaque unité se convertit dans la **base** de sa grandeur, avec le **facteur** (1 pol =
+25,4 mm ; 1 h = 3600 s) et, seulement pour la température, le **zéro** (°C = (°F − 32) × 5/9). Deux unités de même base se
+convertissent entre elles, et la formule `CONVERTER(x; "de"; "para")` fait le calcul. **Afficher aussi en** : la valeur
+apparaît aussi dans cette unité dans les **Données de la montre** et dans le **Passeport** (le millimètre montre déjà les
+pouces : *47 mm (1,85 pol)*). Une unité utilisée ne se supprime pas (la suppression dit qui l'utilise) ; supprimer une base
+emporte celles qui se convertissent en elle. Par l'API : `recurso=unidades` (la liste, avec la conversion et l'usage de
+chacune) et `recurso=unidades` avec `acao=salvar` ou `excluir`.
 
 ### Les services et diagnostics {#os-serviços-e-diagnósticos}
 
@@ -1373,7 +1392,7 @@ que vous enregistrez apparaît ici sous son nom.
 | **Modes de rotation** (`modos.php`, menu **Rotation**) | Les modes de rotation : le tableau (le mode actif marqué, le type, le critère, les semaines et d'où il choisit) avec **Modifier**, **Activer** et **Supprimer**, et le formulaire d'un mode, avec l'écran de son type : le nom et le type ; d'où choisir (par tranche ou par jour de la semaine), la période du planning ou le scénario écrit à la main avec **Tester sur toutes les montres** ; les semaines en avant (avec la liste des semaines) ; le critère de choix et le cycle ; et, dans les types prêts, le scénario généré (lecture seule, avec **copier ce scénario** vers un Personnalisé). Voir [Les modes de rotation](#os-modos-de-rodízio). |
 | **Critères** (`criterios.php`) | Les ensembles de critères par endroit (toutes les montres, un groupe ou une montre), avec paramètres, sous-paramètres, tranches et la note de chaque montre avec le calcul détaillé. Il y a **Restaurer les critères initiaux**. |
 | **Groupes** (`grupos.php`) | L'arbre : créer, renommer, déplacer, trier, supprimer (ce qui appartenait au groupe passe à celui du dessus) et choisir le groupe de chaque montre. |
-| **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), les totaux (l'onglet **Totaux** : voir [Les totaux](#os-totais)), les calibres (l'onglet **Calibres** : voir [Les calibres](#os-calibres)) et catégories de documents : tout ce que le système utilise et qui n'est pas du code (les alertes sont dans la page **Alertes**, et les modes de rotation dans **Modes de rotation**). |
+| **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), les totaux (l'onglet **Totaux** : voir [Les totaux](#os-totais)), les calibres (l'onglet **Calibres** : voir [Les calibres](#os-calibres)), les unités (l'onglet **Unités** : voir [Les unités](#as-unidades)) et catégories de documents : tout ce que le système utilise et qui n'est pas du code (les alertes sont dans la page **Alertes**, et les modes de rotation dans **Modes de rotation**). |
 | **Exécutions du cron** (`execucoes.php`) | Ce que le cron a fait à chaque passage, combien de temps il a pris et les erreurs, avec des filtres. |
 | **Mon compte** (`conta.php`, menu **Compte › Mon compte**) | Les collections que vous voyez (ouvrir, créer, renommer, supprimer, quitter), vos arbres de groupes (copier, renommer, supprimer), demander l'accès à la collection de quelqu'un (par le code donné par le propriétaire), vos données (votre code, l'e-mail, la langue, le mode de l'interface, le mot de passe), l'**application sur le téléphone** (mémoriser cet appareil, installer, les appareils mémorisés), les **jetons d'API** (pour vos scripts), les **notifications sur cet appareil** (le Web Push), l'**envoi de vos e-mails** (par le serveur du système ou par le vôtre : Gmail, Outlook) et supprimer le compte. Voir [Plusieurs personnes](#várias-pessoas-contas-coleções-e-acesso) et [L'application sur le téléphone](#o-aplicativo-no-celular). |
 | **Approbations** (`aprovacoes.php`) | Les demandes d'accès à vos collections (approuver, refuser), les invitations que des membres ont faites et qui vous attendent, **Inviter** (par e-mail), les invitations que vous avez faites et qui voit vos collections (retirer l'accès). Le menu affiche **Approbations (N)** quand quelque chose attend. |

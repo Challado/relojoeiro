@@ -1,4 +1,4 @@
-<!-- origem: 940979a03a68202f8e2394f1907f242dab5a685d -->
+<!-- origem: ebd8490961026de6e1fd03fdd3c875576f0425a8 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -52,6 +52,7 @@ flowchart LR
 |---|---|---|
 | **Groups** (the tree) | The classification of the collection, in as many levels as you want. Everything registered in a group applies to it and to everything below it. | `Traditional › Mechanical › Automatic` |
 | **Fields** | The data of each watch, defined by you: text, number, date, yes/no or list, with unit and default value. | `reserva_horas = 40 h`, `data_pilha`, `loja` |
+| **Units** | What goes after the number, registered by you: the symbol, the name and the conversion (the inch in millimetres). Fields, entry types and formulas pick the unit from the list, and the value can also appear in another unit. | `47 mm (1.85 pol)` |
 | **Calibers** | The watch's movement, with what belongs to it: the manufacturer, the technical manual, the recommendations and the field values. A watch with a caliber uses its own value, otherwise the caliber's, otherwise the field's default. | `NH35`: 41 h power reserve, rate from −20 to +40 s/day |
 | **Entry types** | What happens to a watch. It can be **instant** (winding, battery change), **with a value** (charge reading: 68%) or a **session** with start and end (on the wrist, on the winder, in the sun). | `sol`: a session that closes by itself at 6 pm if you forget |
 | **Formulas** | Calculations over the fields and the entries. The same formula can have **one version per group**, and the one of the group closest to the watch applies. | `energia` is the battery on the smartwatch, the reserve on the mechanical, the light on the solar and the battery life on the quartz |
@@ -72,6 +73,7 @@ calculation, and division by zero gives empty. The basics:
 | `SE(condition; if true; if false)`, `E(...)`, `OU(...)`, `NAO(x)` | the logic: `E` gives 1 if all are true, `OU` if any is, `NAO` inverts |
 | `MIN(...)`, `MAX(...)` | the smallest and the largest of the values (ignore the empty ones) |
 | `LIMITA(x; min; max)`, `ARREDONDA(x; places)`, `ABS(x)` | x held in the range; rounded; without sign |
+| `CONVERTER(x; "de"; "para")` | x in another unit of the same quantity, by the unit register: `CONVERTER(diametro; "mm"; "pol")`; empty when the two do not convert |
 | `PADRAO(x; other)`, `VAZIO(x)`, `NADA()` | x, or the other if x is empty; 1 if x is empty; empty, on purpose (`SE(condition; NADA(); calculation)`) |
 | `HOJE()`, `AGORA()` | today's date and the current instant, in days (now with the fraction of the day) |
 | `DIAS_DESDE(date)`, `DIAS_ATE(date)`, `SOMA_MESES(date; months)` | days since and until a date (negative: already passed); the date plus months, by the calendar |
@@ -589,6 +591,23 @@ in the **Fields** tab (the *movement* box): the reserve, the charges, the expect
 autonomy, the decay rates, the service and the battery life come checked. A field the caliber already defines always shows,
 so it can be removed. Through the API: `recurso=documentos` with `calibre=` (and `calibre_id` in `enviar`),
 `recurso=config` with `calibre_campos` and `recurso=campos` with `calibre`.
+
+### Units {#as-unidades}
+
+Each tree has its own **unit register**, in the **Units** tab of the **Definitions** page: the **symbol** (what goes after
+the number: `mm`, `h`, `dias`, `R$`), the **name** in full and the **conversion**. It comes with the common ones: length
+(mm, cm, m, pol, pés), mass (g, kg, oz), time (s, min, h, dias, semanas, meses, anos), temperature (°C, °F), pressure (bar,
+atm, hPa, psi), beats (bph, Hz) and the standalone ones (%, s/dia, ms, °, mAh, V, lux, R$). Fields, entry types and formulas
+pick the unit **from this list** (the API refuses a symbol that is not registered), and changing a unit's symbol changes it
+along in whatever uses it.
+
+The conversion has one level: each unit converts into the **base** of its quantity, with the **factor** (1 pol = 25.4 mm;
+1 h = 3600 s) and, only for temperature, the **zero** (°C = (°F − 32) × 5/9). Two units with the same base convert into each
+other, and the formula `CONVERTER(x; "de"; "para")` does the math. **Also show in**: the value also appears in that unit in
+the **Watch data** and in the **Passport** (the millimetre already shows the inches: *47 mm (1.85 pol)*). A unit in use
+cannot be deleted (the deletion says who uses it); deleting a base takes along the units that convert into it. Through the
+API: `recurso=unidades` (the list, with each one's conversion and use) and `recurso=unidades` with `acao=salvar` or
+`excluir`.
 
 ### Services and diagnostics {#os-serviços-e-diagnósticos}
 
@@ -1336,7 +1355,7 @@ comes in here by its name.
 | **Rotation modes** (`modos.php`, menu **Rotation**) | The rotation modes: the table (the active mode marked, the type, the criterion, the weeks and where it chooses from) with **Edit**, **Activate** and **Delete**, and a mode's form, with its type's screen: the name and the type; where to choose from (per stretch or per weekday), the schedule's period or the hand-written script with **Test on all watches**; the weeks ahead (with the list of weeks); the choice criterion and the cycle; and, in the ready-made types, the generated script (read-only, with **copy this script** to a Custom one). See [The rotation modes](#os-modos-de-rodízio). |
 | **Criteria** (`criterios.php`) | The criteria sets per place (all watches, a group or a watch), with parameters, subparameters, ranges and each watch's score with the calculation open. It has **Restore the initial criteria**. |
 | **Groups** (`grupos.php`) | The tree: create, rename, move, sort, delete (what belonged to the group goes to the one above) and choose each watch's group. |
-| **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), the totals (the **Totals** tab: see [Totals](#os-totais)), the calibers (the **Calibers** tab: see [Calibers](#os-calibres)) and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page, and the rotation modes on **Rotation modes**). |
+| **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), the totals (the **Totals** tab: see [Totals](#os-totais)), the calibers (the **Calibers** tab: see [Calibers](#os-calibres)), the units (the **Units** tab: see [Units](#as-unidades)) and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page, and the rotation modes on **Rotation modes**). |
 | **Cron runs** (`execucoes.php`) | What the cron did in each round, how long it took and the errors, with filters. |
 | **My account** (`conta.php`, menu **Account › My account**) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection (by the code the owner gave), your data (your code, the e-mail, the language, the interface mode, the password), the **app on the phone** (remember this device, install, the remembered devices), the **API tokens** (for your scripts), the **notifications on this device** (Web Push), the **sending of your e-mails** (through the system's server or your own: Gmail, Outlook) and deleting the account. See [Several people](#várias-pessoas-contas-coleções-e-acesso) and [The app on the phone](#o-aplicativo-no-celular). |
 | **Approvals** (`aprovacoes.php`) | The access requests to your collections (approve, decline), the invitations members made that wait for you, **Invite** (by e-mail), the invitations you made and who sees your collections (remove access). The menu shows **Approvals (N)** when something is waiting. |

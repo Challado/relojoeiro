@@ -160,6 +160,31 @@ function totais_do_modelo($raiz, $tr)
     }
 }
 
+// As unidades do modelo (modelo.json, unidades) numa árvore ($raiz: a raiz dela), com o nome no idioma ($tr): as bases
+// primeiro, depois as que se convertem nelas e, por fim, a unidade em que cada uma também aparece. A que a árvore já tem
+// (o mesmo símbolo) fica como está. Sem escopo (quem chama já está fora dele)
+function unidades_do_modelo($raiz, $tr)
+{
+    $u = modelo_ler()["unidades"];
+    $id = function ($simbolo) use ($raiz) {
+        $x = valor("SELECT id FROM unidade WHERE no_id = ? AND simbolo = ?", [(int)$raiz, $simbolo]);
+        return $x === null ? null : (int)$x;
+    };
+    foreach ([false, true] as $com_base) {
+        foreach ($u as $x) {
+            if (($x["base"] !== null) === $com_base && $id($x["simbolo"]) === null) {
+                sql("INSERT INTO unidade (no_id, simbolo, nome, base_id, fator, zero) VALUES (?, ?, ?, ?, ?, ?)",
+                    [(int)$raiz, $x["simbolo"], $tr($x["nome"]), $com_base ? $id($x["base"]) : null, $x["fator"], $x["zero"] ?? 0]);
+            }
+        }
+    }
+    foreach ($u as $x) {
+        if ($x["mostrar_em"] !== null) {
+            sql("UPDATE unidade SET mostrar_em_id = ? WHERE id = ? AND mostrar_em_id IS NULL", [$id($x["mostrar_em"]), $id($x["simbolo"])]);
+        }
+    }
+}
+
 // O tradutor dos textos do modelo para um idioma
 function modelo_tradutor($lingua)
 {
@@ -169,10 +194,10 @@ function modelo_tradutor($lingua)
     };
 }
 
-// Os textos do modelo que entram no idioma de quem cria a coleção (os nomes dos grupos, dos campos e das opções, dos tipos,
-// das fórmulas, dos avisos e os textos deles, dos critérios e das faixas, das categorias, dos modos e dos blocos, dos totais
-// e os textos entre aspas das expressões deles, e as mensagens padrão dos destinos e das agendas): a parte "cadastro" dos
-// arquivos dos idiomas traduz cada um (o testes/textos.php confere)
+// Os textos do modelo que entram no idioma de quem cria a coleção (os nomes dos grupos, das unidades, dos campos e das
+// opções, dos tipos, das fórmulas, dos avisos e os textos deles, dos critérios e das faixas, das categorias, dos modos e
+// dos blocos, dos totais e os textos entre aspas das expressões deles, e as mensagens padrão dos destinos e das agendas):
+// a parte "cadastro" dos arquivos dos idiomas traduz cada um (o testes/textos.php confere)
 function modelo_textos()
 {
     $m = modelo_ler();
@@ -184,6 +209,9 @@ function modelo_textos()
     };
     foreach ($m["grupos"] as $g) {
         $junta($g["nome"]);
+    }
+    foreach ($m["unidades"] as $u) {
+        $junta($u["nome"]);
     }
     foreach ($m["campos"] as $c) {
         $junta($c["nome"]);
@@ -231,8 +259,8 @@ function modelo_textos()
     return array_keys($res);
 }
 
-// Uma árvore nova de um dono: a raiz (com o nome) e, com o modelo, os grupos e o cadastro dele (campos, tipos, fórmulas,
-// avisos, critérios dos grupos, categorias de documento). Devolve [raiz, apelido => id]. Sem escopo
+// Uma árvore nova de um dono: a raiz (com o nome) e, com o modelo, os grupos e o cadastro dele (unidades, campos, tipos,
+// fórmulas, avisos, critérios dos grupos, categorias de documento). Devolve [raiz, apelido => id]. Sem escopo
 function arvore_criar($dono_id, $nome, $lingua, $com_modelo)
 {
     return sem_escopo(function () use ($dono_id, $nome, $lingua, $com_modelo) {
@@ -267,6 +295,7 @@ function arvore_criar($dono_id, $nome, $lingua, $com_modelo)
             }
             return $ids[$a ?? "raiz"];
         };
+        unidades_do_modelo($raiz, $tr);
         foreach ($m["campos"] as $c) {
             sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, ordem, so_desejado, calibre) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [$c["identificador"], $tr($c["nome"]), $c["tipo"], $c["unidade"], $c["padrao"], $grupo($c["grupo"]), (int)$c["ordem"], (int)$c["so_desejado"], (int)($c["calibre"] ?? 0)]);
@@ -951,7 +980,7 @@ function membros_da_colecao()
 // ---------------------------------------------------------------------------------------------------------------------
 const IMPACTO_NOMES = ["usuario" => "usuários", "colecao" => "coleções", "colecao_usuario" => "membros", "acesso_dono" => "acessos a tudo de um dono",
     "convite" => "convites", "pedido" => "pedidos de acesso", "api_token" => "tokens de API", "usuario_token" => "links de senha", "push_inscricao" => "aparelhos do Web Push", "usuario_smtp" => "servidores de e-mail próprios",
-    "no" => "grupos", "campo" => "campos", "campo_opcao" => "opções de lista", "lancamento_tipo" => "tipos de lançamento", "formula" => "fórmulas", "aviso" => "avisos",
+    "no" => "grupos", "campo" => "campos", "campo_opcao" => "opções de lista", "unidade" => "unidades", "lancamento_tipo" => "tipos de lançamento", "formula" => "fórmulas", "aviso" => "avisos",
     "documento_categoria" => "categorias de documento", "documento_categoria_aceita" => "tipos aceitos de categorias", "relogio" => "relógios", "foto" => "fotos",
     "campo_valor" => "valores de campo", "calibre" => "calibres", "calibre_valor" => "valores de calibre", "relogio_calibre" => "relógios com calibre", "lancamento" => "lançamentos", "medicao" => "medições do gasto", "documento" => "documentos", "documento_parte" => "pedaços de documentos no banco",
     "servico" => "serviços e diagnósticos", "servico_peca" => "peças de serviços", "servico_documento" => "documentos de serviços",
@@ -969,7 +998,7 @@ tk("usuários"); tk("coleções"); tk("membros"); tk("acessos a tudo de um dono"
 tk("pedidos de acesso"); tk("tokens de API"); tk("links de senha"); tk("aparelhos do Web Push");
 tk("servidores de e-mail próprios"); tk("grupos"); tk("campos"); tk("opções de lista"); tk("tipos de lançamento");
 tk("fórmulas"); tk("avisos"); tk("categorias de documento"); tk("tipos aceitos de categorias"); tk("relógios");
-tk("fotos"); tk("valores de campo"); tk("calibres"); tk("valores de calibre"); tk("relógios com calibre");
+tk("fotos"); tk("valores de campo"); tk("unidades"); tk("calibres"); tk("valores de calibre"); tk("relógios com calibre");
 tk("lançamentos"); tk("medições do gasto"); tk("documentos"); tk("pedaços de documentos no banco");
 tk("serviços e diagnósticos"); tk("peças de serviços"); tk("documentos de serviços");
 tk("testes da reserva e observações da energia"); tk("medições do timegrapher"); tk("acessórios"); tk("vínculos de acessório");

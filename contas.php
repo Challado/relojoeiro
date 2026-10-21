@@ -477,6 +477,15 @@ function arvore_copiar($raiz, $dono_id, $nome)
                 linha_copiar("campo_opcao", $x, ["campo_id" => $para]);
             }
         }
+        // as unidades: as bases antes das que se convertem nelas; a unidade em que cada uma também aparece, depois de todas
+        $m["unidade"] = [];
+        foreach (linhas("SELECT * FROM unidade WHERE no_id IN (" . $nos . ") ORDER BY CASE WHEN base_id IS NULL THEN 0 ELSE 1 END, id") as $x) {
+            $m["unidade"][(int)$x["id"]] = linha_copiar("unidade", $x, ["no_id" => $m["no"][(int)$x["no_id"]],
+                "base_id" => $x["base_id"] !== null ? $m["unidade"][(int)$x["base_id"]] : null, "mostrar_em_id" => null]);
+        }
+        foreach (linhas("SELECT id, mostrar_em_id FROM unidade WHERE no_id IN (" . $nos . ") AND mostrar_em_id IS NOT NULL") as $x) {
+            sql("UPDATE unidade SET mostrar_em_id = ? WHERE id = ?", [$m["unidade"][(int)$x["mostrar_em_id"]], $m["unidade"][(int)$x["id"]]]);
+        }
         // os valores dos calibres, com os campos da cópia; e os documentos deles, com o arquivo copiado para a pasta do calibre
         // novo (a cópia no banco, se pedida, o cron faz)
         $pasta = documentos_pasta();

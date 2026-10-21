@@ -229,6 +229,7 @@ const ESCOPO_CONDICOES = [
     "aviso" => "no_id IN ({NR})",
     "documento_categoria" => "no_id IN ({NR})",
     "campo_opcao" => "campo_id IN (SELECT id FROM campo WHERE no_id IN ({NR}))",
+    "unidade" => "no_id IN ({NR})",
     "documento_categoria_aceita" => "categoria_id IN (SELECT id FROM documento_categoria WHERE no_id IN ({NR}))",
     "criterio_parametro" => "(escopo_no_id IN ({NR}) OR escopo_relogio_id IN ({RC}))",
     "criterio_sub" => "parametro_id IN (SELECT id FROM criterio_parametro WHERE escopo_no_id IN ({NR}) OR escopo_relogio_id IN ({RC}))",

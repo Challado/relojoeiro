@@ -87,6 +87,7 @@ flowchart LR
 |---|---|---|
 | **分组**（树） | 收藏的分类，可以有任意多层。在某个分组中录入的一切，适用于该分组及其下的所有分组。 | `传统手表 › 机械表 › 自动机械表` |
 | **字段** | 每块手表的数据，由你定义：文本、数字、日期、是/否或列表，可带单位和默认值。 | `reserva_horas = 40 h`、`data_pilha`、`loja` |
+| **单位** | 写在数字后面的部分，由你登记：符号、名称和换算（英寸换成毫米）。字段、记录类型和公式从列表中选择单位，数值还可以同时以另一个单位显示。 | `47 mm (1.85 pol)` |
 | **机芯** | 手表的机芯，以及属于它的信息：厂家、技术手册、建议和各字段的值。有机芯的手表先用自己的值，没有就用机芯的，再没有就用字段默认值。 | `NH35`：动力储备 41 小时，走时 −20 到 +40 秒/天 |
 | **记录类型** | 发生在手表上的事。可以是**瞬时**的（上链、换电池）、**带数值**的（电量读数：68%），或有开始和结束的**时段**（佩戴、在上链盒上、晒太阳）。 | `sol`：如果你忘了，会在 18 点自动结束的时段 |
 | **公式** | 基于字段和记录的计算。同一个公式可以**每个分组一个版本**，采用离手表最近的分组的版本。 | `energia` 在智能手表上是电池，在机械表上是动力储存，在太阳能表上是光能，在石英表上是电池寿命 |
@@ -105,6 +106,7 @@ flowchart LR
 | `SE(条件; 为真时; 为假时)`、`E(...)`、`OU(...)`、`NAO(x)` | 逻辑：`E` 在全部为真时得 1，`OU` 在任一为真时得 1，`NAO` 取反 |
 | `MIN(...)`、`MAX(...)` | 各值中的最小值和最大值（忽略空值） |
 | `LIMITA(x; 最小; 最大)`、`ARREDONDA(x; 小数位)`、`ABS(x)` | 把 x 限制在区间内；四舍五入；去掉符号 |
+| `CONVERTER(x; "de"; "para")` | 按单位登记把 x 换算成同一物理量的另一个单位：`CONVERTER(diametro; "mm"; "pol")`；两者无法换算时为空 |
 | `PADRAO(x; 另一个)`、`VAZIO(x)`、`NADA()` | x，若 x 为空则取另一个；x 为空时为 1；故意返回空值（`SE(条件; NADA(); 计算)`） |
 | `HOJE()`、`AGORA()` | 今天的日期和当前时刻，以天为单位（当前时刻带有一天中的小数部分） |
 | `DIAS_DESDE(日期)`、`DIAS_ATE(日期)`、`SOMA_MESES(日期; 月数)` | 距某日期已过和还剩的天数（负数：已经过去）；按日历加上月数后的日期 |
@@ -424,6 +426,12 @@ dias      = SE(NO_GRUPO("Smartwatch"); dias_seguidos; 1)
 （*机芯表单*）。机芯字段就是在**字段**标签中勾选了（*属于机芯*复选框）的字段：动力储备、充电、预期走时、偏差上限、表冠上链、续航、
 衰减、保养和电池寿命默认已勾选。机芯已经定义的字段总会显示，以便移除。通过 API：`recurso=documentos` 配合 `calibre=`（以及
 `enviar` 中的 `calibre_id`）、`recurso=config` 配合 `calibre_campos`、`recurso=campos` 配合 `calibre`。
+
+### 单位
+
+每棵树都有自己的**单位登记**，在**定义**页面的**单位**标签里：**符号**（写在数字后面的部分：`mm`、`h`、`dias`、`R$`）、完整的**名称**和**换算**。它自带常用单位：长度（mm、cm、m、pol、pés）、质量（g、kg、oz）、时间（s、min、h、dias、semanas、meses、anos）、温度（°C、°F）、压力（bar、atm、hPa、psi）、振频（bph、Hz）以及单独的单位（%、s/dia、ms、°、mAh、V、lux、R$）。字段、记录类型和公式**从这个列表**中选择单位（API 会拒绝未登记的符号），修改单位的符号时，使用它的地方也会一起改。
+
+换算只有一层：每个单位按**系数**换算成其物理量的**基准**（1 pol = 25.4 mm；1 h = 3600 s），只有温度还要用**零点**（°C = (°F − 32) × 5/9）。基准相同的两个单位可以互相换算，公式 `CONVERTER(x; "de"; "para")` 负责计算。**同时显示为**：数值也会以该单位显示在**手表数据**和**护照**里（毫米默认同时显示英寸：*47 mm (1.85 pol)*）。正在使用的单位不能删除（删除时会说明谁在用）；删除基准会连同换算成它的单位一起删除。通过 API：`recurso=unidades`（列表，含每个单位的换算和使用情况），以及 `recurso=unidades` 加 `acao=salvar` 或 `excluir`。
 
 ### 保养与检测
 
@@ -960,7 +968,7 @@ curl -H "X-Api-Token: 你的令牌" --data-urlencode recurso=usuarios --data-url
 | **轮换模式**（`modos.php`，菜单**轮换**） | 轮换模式：表格（标出启用中的模式、类型、标准、周数和选自何处），带**编辑**、**启用**和**删除**，以及模式的表单，按其类型显示界面：名称和类型；从哪里选（按段或按星期几）、排程的时段或手写脚本（带**在所有手表上测试**）；提前周数（带周列表）；选择标准和循环；预设类型还显示生成的脚本（只读，带**复制此脚本**到自定义模式）。见[轮换模式](#轮换模式)。 |
 | **标准**（`criterios.php`） | 按位置（所有手表、某个分组或某块手表）划分的标准组，包含参数、子参数、区间，以及每块手表带完整计算过程的分数。有**恢复初始规则**。 |
 | **分组**（`grupos.php`） | 树：创建、重命名、移动、排序、删除（属于该分组的内容移到上一级）以及选择每块手表的分组。 |
-| **定义**（`cadastros.php`） | 字段、记录类型、公式（带**测试**）、合计（**合计**标签：参见[合计](#合计)）、机芯（**机芯**标签：见[机芯](#机芯)）和文档类别：系统使用的所有非代码内容（提醒在**提醒**页面，轮换模式在**轮换模式**页面）。 |
+| **定义**（`cadastros.php`） | 字段、记录类型、公式（带**测试**）、合计（**合计**标签：参见[合计](#合计)）、机芯（**机芯**标签：见[机芯](#机芯)）、单位（**单位**标签：参见[单位](#单位)）和文档类别：系统使用的所有非代码内容（提醒在**提醒**页面，轮换模式在**轮换模式**页面）。 |
 | **cron 运行记录**（`execucoes.php`） | cron 每一轮做了什么、用了多长时间以及错误，可筛选。 |
 | **我的账户**（`conta.php`，菜单**账户 › 我的账户**） | 你能看到的收藏（打开、创建、重命名、删除、退出）、你的分组树（复制、重命名、删除）、申请访问别人的收藏（凭所有者给出的编号）、你的资料（你的编号、电子邮件、语言、界面模式、密码）、**手机上的应用**（记住此设备、安装、已记住的设备）、**API 令牌**（供你的脚本使用）、**此设备上的通知**（Web Push）、**发送你的邮件**（通过系统的服务器或你自己的：Gmail、Outlook）以及删除账户。参见[多人使用](#多人使用账户收藏与访问)和[手机上的应用](#手机上的应用)。 |
 | **审批**（`aprovacoes.php`） | 对你的收藏的访问申请（批准、拒绝）、成员发出并等待你处理的邀请、**邀请**（通过电子邮件）、你发出的邀请以及谁能看到你的收藏（取消访问权限）。有待处理事项时，菜单显示**审批（N）**。 |
@@ -1097,6 +1105,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `ics` | ICS 链接类型日历的日历内容（无需登录，凭链接的密钥） |
 | `config`、`cron` | 收藏的设置（含推送目标和日历的摘要以及 cron 状态：从未运行、已停止或运行中）；cron 的执行记录，含时段摘要。在 `cron` 中：`de=` 和 `ate=`（日期，或日期和时间）、`situacao=`（`atividade`，默认；`erro`、`nada` 或 `todas`）、`busca=`（日志中的文本）、`limite=`（默认 100，最多 1000）和 `pagina=`；每个参数也可以加 `cron_` 前缀（`cron_de`……） |
 | `arvore`、`cadastros` | 分组；定义页面显示的一切 |
+| `unidades` | 树的单位（定义里的**单位**标签），按物理量排序，每个单位附换算的文字说明，以及有多少字段、类型和公式在用它 |
 | `calcular` | 一个公式（`expressao=`）在手表上的结果（`relogio=` 一个或多个 id；没有时为全部），不保存，并给出计算的各部分；公式写错：返回 400 和错误 |
 | `foto` | 一块手表的照片（`relogio=<id>`）：图片本身，不是 JSON |
 | `documentos` | 一块手表的文档（`relogio=<id>`；没有时为全部），含类别、每个 XML 的 NF-e 摘要、文件夹和大小限制 |
@@ -1128,6 +1137,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `reserva` | `iniciar`（何时充满、如何充满）、`parou`、`observar`（停止、低电量、记录；太阳能表也可以）、`salvar`、`usar`（中位数写入表的档案）、`excluir` |
 | `timegrapher` | `salvar`（一次测量：方位、走时、振幅、偏振、每小时振次、提升角）、`importar`（仪器的 CSV；`conferir=1`：不保存）、`excluir` |
 | `documento_categorias` | `nova`、`alterar`、`excluir`（仅在没有文档时） |
+| `unidades` | `salvar`（符号、名称、基准和系数、零点以及同时显示为；新符号会同步到使用它的地方），`excluir`（仅在未使用时；换算成它的单位一起删除） |
 | `lancamento` | `lancar`（上链、电量、电池……）、`iniciar` 和 `encerrar`（戴上和取下手腕、上链盒、晒太阳、充电器）、`alternar`（时段打开时关闭，关闭时打开：手机上一个按钮就够）、`periodo`（已经过去的一段时间；当天的手表戴在手腕上时算作轮换中的使用，与它相接的同类型片段（例如仍打开的“戴上”）合并为一段）、`alterar`、`excluir`、`medicao`（把一次消耗测量放入或移出计算：`id`，`usada` 为 1 或 0）。所有操作中，`relogio_id=hoje` 都表示当天的手表 |
 | `rodizio` | `usando`（我今天戴的是这块）、`trocar_dia`（某一天的手表）、`periodo`（一个时段的手表，按顺序：`de`、`ate`、`relogio_ids[]`、`dias_cada`）、`periodo_sortear`（删除时段内的日子，由模式重新安排；只填 `de`：到计划结束；只填 `ate`：从明天到它）、`periodo_livre`（清除并让这些天保持空闲，不抽选；日期规则相同）、`manual`（手动轮换：`de`、`ate`、`dias[YYYY-MM-DD]` = 手表 id、`auto` 或 `livre`）、`apagar_tudo`（清除从明天起的全部安排；`hoje=1`：从今天起；模式会重新生成计划）、`resortear`、`resortear_hoje`、`proxima_semana`、`modo`（更换模式） |
 | `modos` | `salvar`、`ativar`、`excluir` |
@@ -1511,7 +1521,7 @@ api.php?recurso=codigo&conteudo=1&f[arquivos][camada]=tela   所有界面相关�
 
 列表变成了表：模式区块的日期（`modo_bloco_dia`）和每周事件的日期（`evento_dia`）、文档分类接受的文件类型（`documento_categoria_aceita`）、列表字段的选项（`campo_opcao`），以及每个推送目标和每个日历接收的内容（`destino_aviso`、`destino_evento`、`agenda_aviso`、`agenda_evento`）。当前使用的模式是模式的 `ativo` 列，消耗测量通过结束它的那条记录关联到手表。`config` 表只保存每个收藏的零散值，`sistema` 表保存整个系统的值。
 
-有三种引用特意**通过名称**进行：公式和标准通过标识符引用字段和公式（就是你写的文本，例如 `HORAS("pulso"; 30)`），`destino_aviso` 和 `agenda_aviso` 通过标识符引用提醒，因为一个提醒可以有多个版本（每个分组一个），而选择对所有版本生效。当一个提醒的最后一个版本被删除时，系统会一并删除它的这些行。
+有四种引用特意**通过名称**进行：公式和标准通过标识符引用字段和公式（就是你写的文本，例如 `HORAS("pulso"; 30)`）；`destino_aviso` 和 `agenda_aviso` 通过标识符引用提醒，因为一个提醒可以有多个版本（每个分组一个），而选择对所有版本都有效（提醒的最后一个版本被删除时，系统会一起删除它的这些行）；字段、记录类型和公式通过符号引用单位，也就是单位在树中的键（系统会检查它存在，并在符号改变时一起改成新符号）。
 
 **数据库会校验它保存的内容**（自迁移 v17 起），使用标准 SQL 的功能，而不仅仅依靠系统：错误的写入无论来自哪里（界面、API、有人直接改数据库）都会被拒绝。API 返回 `409`，详情中带有被违反的规则名。
 
@@ -1550,7 +1560,7 @@ api.php?recurso=codigo&conteudo=1&f[arquivos][camada]=tela   所有界面相关�
 | 文件 | 是什么 |
 |---|---|
 | [`api.php`](api.php) | API，所有读写的入口（认证、格式、资源顺序、筛选、响应），文件头中有完整文档 |
-| [`api/`](api/) | API 中较大的资源，每个一个文件（`hoje.php`、`ficha.php`、`configuracao.php`、`desejos.php`、`estatisticas.php`、`hora_certa.php`、`passaporte.php`、`galeria.php`、`relatorios.php`、`ajuda.php`……），还有它的函数（`funcoes.php`，含报表的 `api_ler`）和写入（`escrita.php`）：它们在 `api.php` 内部运行，直接打开则什么都不做（`.htaccess` 和 `nginx-relogios.conf` 会阻止该文件夹） |
+| [`api/`](api/) | API 中较大的资源，每个一个文件（`hoje.php`、`ficha.php`、`configuracao.php`、`desejos.php`、`estatisticas.php`、`hora_certa.php`、`passaporte.php`、`galeria.php`、`relatorios.php`、`unidades.php`、`ajuda.php`……），还有它的函数（`funcoes.php`，含报表的 `api_ler`）和写入（`escrita.php`）：它们在 `api.php` 内部运行，直接打开则什么都不做（`.htaccess` 和 `nginx-relogios.conf` 会阻止该文件夹） |
 | [`lib.php`](lib.php) | 核心：登录、树、公式引擎、提醒、标准、轮换、排程、文档 |
 | [`colecoes.php`](colecoes.php) | 核心中的收藏部分：请求的作用范围、`modelo.json`、加密的机密、`sistema` 表、v25 迁移和删除的影响 |
 | [`alertas.php`](alertas.php) | 推送目标（webhook、电子邮件、Web Push）和日历（Google、CalDAV、Outlook、ICS） |

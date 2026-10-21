@@ -21,7 +21,8 @@ $agora_p = time();
 $valores = valores_do_relogio($id);
 $n_p = nos_todos();
 
-// um valor do cadastro em texto, pelo tipo do campo: data DD/MM/AAAA, sim/não, número com vírgula e a unidade (R$ na frente)
+// um valor do cadastro em texto, pelo tipo do campo: data DD/MM/AAAA, sim/não, número com vírgula e a unidade (R$ na frente;
+// com a unidade em que ela também aparece, entre parênteses: "47 mm (1,85 pol)")
 $texto_valor = function ($c, $v) {
     if ($v === null || $v === "") {
         return null;
@@ -37,7 +38,8 @@ $texto_valor = function ($c, $v) {
         if ($c["unidade"] === "R$") {
             return dinheiro_txt((float)$v);
         }
-        return $num . ($c["unidade"] !== "" ? " " . $c["unidade"] : "");
+        $tambem = unidade_tambem($v, $c["unidade"]);
+        return $num . ($c["unidade"] !== "" ? " " . $c["unidade"] : "") . ($tambem !== null ? " (" . $tambem["texto"] . ")" : "");
     }
     return (string)$v;
 };

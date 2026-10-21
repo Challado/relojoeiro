@@ -245,6 +245,9 @@ function op_campos($acao, $d)
         if (!isset($TIPOS_CAMPO[$c["tipo"]])) {
             $erros[] = t("Tipo: {1}.", [1 => implode(", ", array_keys($TIPOS_CAMPO))]);
         }
+        if (($erro_u = unidade_conferir($c["unidade"])) !== "") {
+            $erros[] = $erro_u;
+        }
         if ($c["tipo"] === "lista" && count(array_filter(explode("\n", $c["opcoes"]))) === 0) {
             $erros[] = t("Uma lista precisa de pelo menos uma opção (uma por linha).");
         }
@@ -313,6 +316,147 @@ function op_campos($acao, $d)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Unidades (o cadastro da árvore: Cadastros › Unidades). Ações: salvar (id 0 cria; simbolo (até 20, sem repetir na
+// árvore: o que vai depois do número), nome (até 80), base (o símbolo da unidade base, a da mesma grandeza em que esta se
+// converte; vazio: esta é uma base), fator (com base: 1 desta = fator da base), zero (com base: o valor desta que é o zero
+// da base, como os 32 do °F; vazio: 0), mostrar_em (o símbolo de uma unidade da mesma grandeza em que o valor também
+// aparece; vazio: nenhuma); só muda o que vier. O símbolo novo vai junto para os campos, os tipos de lançamento e as
+// fórmulas que usavam o antigo), excluir (id; não se exclui a unidade em uso, nem a base de uma unidade em uso)
+// ---------------------------------------------------------------------------------------------------------------------
+function op_unidades($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $id = (int)($d["id"] ?? 0);
+    $atual = $id > 0 ? linha("SELECT * FROM unidade WHERE id = ?", [$id]) : null;
+    $todas = unidades_todas(true);
+    $por_id = [];
+    foreach ($todas as $u) {
+        $por_id[$u["id"]] = $u;
+    }
+    // quem usa estes símbolos: os campos, os tipos de lançamento e as fórmulas
+    $usos = function ($simbolos) {
+        $res = [];
+        foreach ([["campo", t("campo {1}")], ["lancamento_tipo", t("tipo de lançamento {1}")], ["formula", t("fórmula {1}")]] as [$tabela, $texto]) {
+            foreach ($simbolos as $simbolo) {
+                foreach (linhas("SELECT DISTINCT nome FROM " . $tabela . " WHERE unidade = ? ORDER BY nome", [$simbolo]) as $x) {
+                    $res[] = str_replace("{1}", $x["nome"] . " (" . $simbolo . ")", $texto);
+                }
+            }
+        }
+        return $res;
+    };
+    // um número digitado ("25,4", "1.000,5" ou "25.4"), ou null
+    $numero = function ($t) {
+        $n = strpos($t, ",") !== false ? str_replace(",", ".", str_replace(".", "", $t)) : $t;
+        return is_numeric($n) ? (float)$n : null;
+    };
+    if ((($acao === "salvar" && $id > 0) || $acao === "excluir") && !$atual) {
+        $erros[] = t("Unidade não encontrada.");
+    } elseif ($acao === "salvar") {
+        $antes = $atual ? $por_id[$id] : null;
+        $simbolo = trim((string)($d["simbolo"] ?? ($atual["simbolo"] ?? "")));
+        $nome = trim((string)($d["nome"] ?? ($atual["nome"] ?? "")));
+        $base = trim((string)(array_key_exists("base", $d) ? $d["base"] : ($antes["base"] ?? "")));
+        $fator_t = trim((string)(array_key_exists("fator", $d) ? $d["fator"] : ($antes["fator"] ?? "")));
+        $zero_t = trim((string)(array_key_exists("zero", $d) ? $d["zero"] : ($antes["zero"] ?? "")));
+        $mostrar = trim((string)(array_key_exists("mostrar_em", $d) ? $d["mostrar_em"] : ($antes["mostrar_em"] ?? "")));
+        if ($simbolo === "" || mb_strlen($simbolo) > 20) {
+            $erros[] = t("Símbolo: de 1 a 20 caracteres (o que vai depois do número: mm, h, R$).");
+        } elseif ((int)valor("SELECT COUNT(*) FROM unidade WHERE simbolo = ? AND id <> ?", [$simbolo, $id]) > 0) {
+            $erros[] = t("Já existe a unidade {1}.", [1 => $simbolo]);
+        }
+        if ($nome === "" || mb_strlen($nome) > 80) {
+            $erros[] = t("Dê um nome à unidade (até 80 caracteres).");
+        }
+        $base_id = null;
+        $fator = null;
+        $zero = 0.0;
+        if ($base !== "") {
+            $b = $todas[$base] ?? null;
+            $derivadas = $atual ? array_values(array_filter($todas, function ($u) use ($atual) { return $u["base"] === $atual["simbolo"]; })) : [];
+            if ($b === null) {
+                $erros[] = t("Base: a unidade {1} não existe.", [1 => $base]);
+            } elseif ($b["id"] === $id) {
+                $erros[] = t("A unidade não pode ser a base dela mesma.");
+            } elseif ($b["base"] !== null) {
+                $erros[] = t("{1} já se converte em {2}: a base tem de ser uma unidade sem base.", [1 => $b["simbolo"], 2 => $b["base"]]);
+            } elseif (count($derivadas) > 0) {
+                $erros[] = t("{1} é a base de {2}: uma base não tem base.", [1 => $atual["simbolo"], 2 => implode(", ", array_column($derivadas, "simbolo"))]);
+            } else {
+                $base_id = $b["id"];
+            }
+            $fator = $numero($fator_t);
+            if ($fator === null || $fator == 0 || abs($fator) >= 1e9) {
+                $erros[] = t("Fator: quanto vale 1 {1} na base, um número diferente de zero.", [1 => $simbolo]);
+            }
+            $zero = $zero_t === "" ? 0.0 : $numero($zero_t);
+            if ($zero === null || abs($zero) >= 1e9) {
+                $erros[] = t("Zero: um número (o valor de {1} que é o zero da base; quase sempre 0).", [1 => $simbolo]);
+            }
+        }
+        $mostrar_id = null;
+        if ($mostrar !== "") {
+            $w = $todas[$mostrar] ?? null;
+            // as duas têm de ter a mesma base (a desta é a base escolhida, ou ela mesma)
+            $minha = $base_id ?? $id;
+            $dela = $w === null ? null : ($w["base"] !== null ? $todas[$w["base"]]["id"] : $w["id"]);
+            if ($w === null) {
+                $erros[] = t("Mostrar também em: a unidade {1} não existe.", [1 => $mostrar]);
+            } elseif ($w["id"] === $id) {
+                $erros[] = t("Mostrar também em: escolha outra unidade, não ela mesma.");
+            } elseif ($minha === 0 || $dela !== $minha) {
+                $erros[] = t("{1} não se converte em {2}: escolha uma unidade da mesma grandeza (com a mesma base).", [1 => $simbolo, 2 => $mostrar]);
+            } else {
+                $mostrar_id = $w["id"];
+            }
+        }
+        if (count($erros) === 0) {
+            $dados = [$simbolo, $nome, $base_id, $fator, $base_id === null ? 0 : $zero, $mostrar_id];
+            if ($atual) {
+                sql("UPDATE unidade SET simbolo = ?, nome = ?, base_id = ?, fator = ?, zero = ?, mostrar_em_id = ? WHERE id = ?", array_merge($dados, [$id]));
+                $msg = t("Unidade {1} salva.", [1 => $simbolo]);
+                // o símbolo novo: os campos, os tipos de lançamento e as fórmulas que usavam o antigo passam a usar o novo
+                if ($simbolo !== $atual["simbolo"]) {
+                    $quem = $usos([$atual["simbolo"]]);
+                    foreach (["campo", "lancamento_tipo", "formula"] as $tabela) {
+                        sql("UPDATE " . $tabela . " SET unidade = ? WHERE unidade = ?", [$simbolo, $atual["simbolo"]]);
+                    }
+                    $msg .= count($quem) > 0 ? t(" Passaram de {1} para {2}: {3}.", [1 => $atual["simbolo"], 2 => $simbolo, 3 => implode(", ", $quem)]) : "";
+                }
+            } else {
+                sql("INSERT INTO unidade (no_id, simbolo, nome, base_id, fator, zero, mostrar_em_id) VALUES (?, ?, ?, ?, ?, ?, ?)", array_merge([no_raiz()], $dados));
+                $id = ultimo_id();
+                $msg = t("Unidade {1} criada.", [1 => $simbolo]);
+            }
+            // a unidade em que outra também aparecia e deixou de ser da mesma grandeza (a base mudou) sai dela
+            foreach (unidades_todas(true) as $u) {
+                if ($u["mostrar_em"] !== null && unidade_base($u["mostrar_em"]) !== unidade_base($u["simbolo"])) {
+                    sql("UPDATE unidade SET mostrar_em_id = NULL WHERE id = ?", [$u["id"]]);
+                }
+            }
+            unidades_todas(true);
+            campos_todos(true);
+            lancamento_tipos(true);
+        }
+    } elseif ($acao === "excluir") {
+        // a unidade e as que se convertem nela (saem junto)
+        $derivadas = array_values(array_filter($todas, function ($u) use ($atual) { return $u["base"] === $atual["simbolo"]; }));
+        $em_uso = $usos(array_merge([$atual["simbolo"]], array_column($derivadas, "simbolo")));
+        if (count($em_uso) > 0) {
+            $erros[] = t("Não dá para excluir {1}, que está em uso: {2}.", [1 => $atual["simbolo"], 2 => implode(", ", $em_uso)]);
+        } else {
+            sql("DELETE FROM unidade WHERE id = ?", [$id]);
+            unidades_todas(true);
+            $msg = t("Unidade {1} excluída{2}", [1 => $atual["simbolo"], 2 => count($derivadas) > 0 ? t(", com as que se convertiam nela: {1}.", [1 => implode(", ", array_column($derivadas, "simbolo"))]) : "."]);
+        }
+    } else {
+        $erros[] = t("Ação desconhecida: {1}.", [1 => $acao]);
+    }
+    return resultado($erros, $msg, ["id" => $id]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Tipos de lançamento. Ações: novo e alterar (id; identificador, nome, formato, unidade, fecha_as (HH:MM; só sessão:
 // a sessão esquecida aberta fecha sozinha a essa hora do dia em que começou; vazio: não fecha), exclusiva (1 ou 0; só sessão),
 // mede_gasto (1 ou 0; só com valor: cada leitura mede o gasto, comparando com a anterior), marcha (vazio, desvio (só com valor:
@@ -335,6 +479,9 @@ function op_lancamento_tipos($acao, $d)
         $nome = trim((string)($d["nome"] ?? ($atual["nome"] ?? "")));
         $formato = (string)($d["formato"] ?? ($atual["formato"] ?? ""));
         $unidade = trim((string)($d["unidade"] ?? ($atual["unidade"] ?? "")));
+        if (($erro_u = unidade_conferir($unidade)) !== "") {
+            $erros[] = $erro_u;
+        }
         $fecha = trim((string)($d["fecha_as"] ?? ($atual ? substr((string)$atual["fecha_as"], 0, 5) : "")));
         $exclusiva = array_key_exists("exclusiva", $d) ? ((string)$d["exclusiva"] === "1" ? 1 : 0) : ($atual ? (int)$atual["exclusiva"] : 0);
         $mede_gasto = array_key_exists("mede_gasto", $d) ? ((string)$d["mede_gasto"] === "1" ? 1 : 0) : ($atual ? (int)$atual["mede_gasto"] : 0);
@@ -592,6 +739,9 @@ function op_formulas($acao, $d)
         $nome = trim((string)($d["nome"] ?? ($atual["nome"] ?? "")));
         $expr = trim((string)($d["expressao"] ?? ($atual["expressao"] ?? "")));
         $unidade = trim((string)($d["unidade"] ?? ($atual["unidade"] ?? "")));
+        if (($erro_u = unidade_conferir($unidade)) !== "") {
+            $erros[] = $erro_u;
+        }
         $no = array_key_exists("no_id", $d) ? no_do_pedido($d["no_id"]) : ($atual ? ($atual["no_id"] === null ? null : (int)$atual["no_id"]) : null);
         if (!identificador_valido($ident)) {
             $erros[] = t("Identificador: minúsculas, números e _, começando por letra, até 40 (é o nome da fórmula nas outras fórmulas).");

@@ -106,6 +106,7 @@ flowchart LR
 |---|---|---|
 | **Groupes** (l'arbre) | Le classement de la collection, sur autant de niveaux que vous voulez. Tout ce qui est enregistré dans un groupe vaut pour lui et pour tout ce qui est en dessous. | `Traditionnelle › Mécanique › Automatique` |
 | **Champs** | Les données de chaque montre, définies par vous : texte, nombre, date, oui/non ou liste, avec unité et valeur par défaut. | `reserva_horas = 40 h`, `data_pilha`, `loja` |
+| **Unités** | Ce qui vient après le nombre, enregistré par vous : le symbole, le nom et la conversion (le pouce en millimètres). Les champs, les types de saisie et les formules choisissent l'unité dans la liste, et la valeur peut aussi apparaître dans une autre unité. | `47 mm (1,85 pol)` |
 | **Calibres** | Le mouvement de la montre, avec ce qui lui appartient : le fabricant, le manuel technique, les recommandations et les valeurs des champs. La montre avec un calibre utilise sa propre valeur, sinon celle du calibre, sinon la valeur par défaut du champ. | `NH35` : réserve de 41 h, marche de −20 à +40 s/jour |
 | **Types de saisie** | Ce qui arrive à une montre. Cela peut être **instantané** (remontage, changement de pile), **avec une valeur** (relevé de charge : 68 %) ou une **session** avec début et fin (au poignet, sur le remontoir, au soleil). | `sol` : une session qui se ferme seule à 18 h si vous oubliez |
 | **Formules** | Des calculs sur les champs et les saisies. Une même formule peut avoir **une version par groupe**, et c'est celle du groupe le plus proche de la montre qui s'applique. | `energia` est la batterie sur la smartwatch, la réserve sur la mécanique, la lumière sur la solaire et la durée de vie de la pile sur la quartz |
@@ -126,6 +127,7 @@ dans le calcul, et la division par zéro donne vide. L'essentiel :
 | `SE(condition; si vrai; si faux)`, `E(...)`, `OU(...)`, `NAO(x)` | la logique : `E` donne 1 si toutes sont vraies, `OU` si l'une l'est, `NAO` inverse |
 | `MIN(...)`, `MAX(...)` | la plus petite et la plus grande des valeurs (ignorent les vides) |
 | `LIMITA(x; min; max)`, `ARREDONDA(x; décimales)`, `ABS(x)` | x maintenu dans l'intervalle ; arrondi ; sans signe |
+| `CONVERTER(x; "de"; "para")` | x dans une autre unité de la même grandeur, selon le registre des unités : `CONVERTER(diametro; "mm"; "pol")` ; vide quand les deux ne se convertissent pas |
 | `PADRAO(x; autre)`, `VAZIO(x)`, `NADA()` | x, ou l'autre si x est vide ; 1 si x est vide ; vide, exprès (`SE(condition; NADA(); calcul)`) |
 | `HOJE()`, `AGORA()` | la date du jour et l'instant actuel, en jours (maintenant avec la fraction du jour) |
 | `DIAS_DESDE(date)`, `DIAS_ATE(date)`, `SOMA_MESES(date; mois)` | jours depuis et jusqu'à une date (négatif : déjà passée) ; la date plus des mois, selon le calendrier |
@@ -654,6 +656,23 @@ les charges, la marche attendue, la limite de l'écart, le remontage par la cour
 révision et la durée de la pile arrivent cochés. Un champ que le calibre définit déjà apparaît toujours, pour pouvoir
 l'enlever. Par l'API : `recurso=documentos` avec `calibre=` (et `calibre_id` dans `enviar`), `recurso=config` avec
 `calibre_campos` et `recurso=campos` avec `calibre`.
+
+### Les unités
+
+Chaque arbre a son **registre d'unités**, dans l'onglet **Unités** de la page **Définitions** : le **symbole** (ce qui vient
+après le nombre : `mm`, `h`, `dias`, `R$`), le **nom** en toutes lettres et la **conversion**. Il vient avec les plus
+courantes : longueur (mm, cm, m, pol, pés), masse (g, kg, oz), temps (s, min, h, dias, semanas, meses, anos), température
+(°C, °F), pression (bar, atm, hPa, psi), alternances (bph, Hz) et les isolées (%, s/dia, ms, °, mAh, V, lux, R$). Les champs,
+les types de saisie et les formules choisissent l'unité **dans cette liste** (l'API refuse un symbole non enregistré), et
+changer le symbole d'une unité le change aussi chez qui l'utilise.
+
+La conversion a un seul niveau : chaque unité se convertit dans la **base** de sa grandeur, avec le **facteur** (1 pol =
+25,4 mm ; 1 h = 3600 s) et, seulement pour la température, le **zéro** (°C = (°F − 32) × 5/9). Deux unités de même base se
+convertissent entre elles, et la formule `CONVERTER(x; "de"; "para")` fait le calcul. **Afficher aussi en** : la valeur
+apparaît aussi dans cette unité dans les **Données de la montre** et dans le **Passeport** (le millimètre montre déjà les
+pouces : *47 mm (1,85 pol)*). Une unité utilisée ne se supprime pas (la suppression dit qui l'utilise) ; supprimer une base
+emporte celles qui se convertissent en elle. Par l'API : `recurso=unidades` (la liste, avec la conversion et l'usage de
+chacune) et `recurso=unidades` avec `acao=salvar` ou `excluir`.
 
 ### Les services et diagnostics
 
@@ -1461,7 +1480,7 @@ que vous enregistrez apparaît ici sous son nom.
 | **Modes de rotation** (`modos.php`, menu **Rotation**) | Les modes de rotation : le tableau (le mode actif marqué, le type, le critère, les semaines et d'où il choisit) avec **Modifier**, **Activer** et **Supprimer**, et le formulaire d'un mode, avec l'écran de son type : le nom et le type ; d'où choisir (par tranche ou par jour de la semaine), la période du planning ou le scénario écrit à la main avec **Tester sur toutes les montres** ; les semaines en avant (avec la liste des semaines) ; le critère de choix et le cycle ; et, dans les types prêts, le scénario généré (lecture seule, avec **copier ce scénario** vers un Personnalisé). Voir [Les modes de rotation](#les-modes-de-rotation). |
 | **Critères** (`criterios.php`) | Les ensembles de critères par endroit (toutes les montres, un groupe ou une montre), avec paramètres, sous-paramètres, tranches et la note de chaque montre avec le calcul détaillé. Il y a **Restaurer les critères initiaux**. |
 | **Groupes** (`grupos.php`) | L'arbre : créer, renommer, déplacer, trier, supprimer (ce qui appartenait au groupe passe à celui du dessus) et choisir le groupe de chaque montre. |
-| **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), les totaux (l'onglet **Totaux** : voir [Les totaux](#les-totaux)), les calibres (l'onglet **Calibres** : voir [Les calibres](#les-calibres)) et catégories de documents : tout ce que le système utilise et qui n'est pas du code (les alertes sont dans la page **Alertes**, et les modes de rotation dans **Modes de rotation**). |
+| **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), les totaux (l'onglet **Totaux** : voir [Les totaux](#les-totaux)), les calibres (l'onglet **Calibres** : voir [Les calibres](#les-calibres)), les unités (l'onglet **Unités** : voir [Les unités](#les-unités)) et catégories de documents : tout ce que le système utilise et qui n'est pas du code (les alertes sont dans la page **Alertes**, et les modes de rotation dans **Modes de rotation**). |
 | **Exécutions du cron** (`execucoes.php`) | Ce que le cron a fait à chaque passage, combien de temps il a pris et les erreurs, avec des filtres. |
 | **Mon compte** (`conta.php`, menu **Compte › Mon compte**) | Les collections que vous voyez (ouvrir, créer, renommer, supprimer, quitter), vos arbres de groupes (copier, renommer, supprimer), demander l'accès à la collection de quelqu'un (par le code donné par le propriétaire), vos données (votre code, l'e-mail, la langue, le mode de l'interface, le mot de passe), l'**application sur le téléphone** (mémoriser cet appareil, installer, les appareils mémorisés), les **jetons d'API** (pour vos scripts), les **notifications sur cet appareil** (le Web Push), l'**envoi de vos e-mails** (par le serveur du système ou par le vôtre : Gmail, Outlook) et supprimer le compte. Voir [Plusieurs personnes](#plusieurs-personnes--comptes-collections-et-accès) et [L'application sur le téléphone](#lapplication-sur-le-téléphone). |
 | **Approbations** (`aprovacoes.php`) | Les demandes d'accès à vos collections (approuver, refuser), les invitations que des membres ont faites et qui vous attendent, **Inviter** (par e-mail), les invitations que vous avez faites et qui voit vos collections (retirer l'accès). Le menu affiche **Approbations (N)** quand quelque chose attend. |
@@ -1702,6 +1721,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `ics` | le calendrier d'une agenda de type lien ICS (sans identifiant, par la clé du lien) |
 | `config`, `cron` | la configuration de la collection (avec le résumé des destinations et des agendas et l'état du cron : jamais exécuté, arrêté ou en marche) ; les exécutions du cron, avec le résumé de la période. Dans `cron` : `de=` et `ate=` (date, ou date et heure), `situacao=` (`atividade`, par défaut ; `erro`, `nada` ou `todas`), `busca=` (texte dans le journal), `limite=` (100 par défaut, 1000 au maximum) et `pagina=` ; chacun vaut aussi avec `cron_` devant (`cron_de`...) |
 | `arvore`, `cadastros` | les groupes ; tout ce que montre la page Définitions |
+| `unidades` | les unités de l'arbre (l'onglet **Unités** des Définitions), dans l'ordre des grandeurs, chacune avec la conversion en texte et combien de champs, de types et de formules l'utilisent |
 | `calcular` | le résultat d'une formule (`expressao=`) sur les montres (`relogio=` un id ou plusieurs ; sans lui, toutes), sans enregistrer, avec les parties du calcul ; formule mal écrite : 400 avec les erreurs |
 | `foto` | la photo d'une montre (`relogio=<id>`) : l'image, pas du JSON |
 | `documentos` | les documents d'une montre (`relogio=<id>` ; sans lui, de toutes), avec les catégories, le résumé de la NF-e de chaque XML, le dossier et la limite |
@@ -1733,6 +1753,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `reserva` | `iniciar` (quand elle était pleine et comment), `parou`, `observar` (arrêtée, charge faible, note ; aussi sur la solaire), `salvar`, `usar` (la médiane va dans la fiche de la montre), `excluir` |
 | `timegrapher` | `salvar` (une mesure : la position, la marche, l'amplitude, l'erreur de battement, les alternances par heure, l'angle), `importar` (le CSV de l'appareil ; `conferir=1` : sans enregistrer), `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (seulement sans documents) |
+| `unidades` | `salvar` (le symbole, le nom, la base et le facteur, le zéro et l'afficher aussi en ; le nouveau symbole passe à qui l'utilise), `excluir` (seulement sans usage ; emporte celles qui se convertissent en elle) |
 | `lancamento` | `lancar` (remontage, charge, pile...), `iniciar` et `encerrar` (mettre et retirer du poignet, du remontoir, du soleil, du chargeur), `alternar` (ferme la session si elle est ouverte, l'ouvre si elle est fermée : un seul bouton sur le téléphone), `periodo` (une période déjà passée ; au poignet de la montre du jour c'est un usage de la rotation, et les périodes du même type qu'elle touche, comme le Mettre resté ouvert, n'en font plus qu'une), `alterar`, `excluir`, `medicao` (une mesure de la consommation entre dans le calcul ou en sort : `id`, `usada` 1 ou 0). Dans toutes, `relogio_id=hoje` est la montre du jour |
 | `rodizio` | `usando` (je porte celle-ci aujourd'hui), `trocar_dia` (la montre d'un jour), `periodo` (les montres d'une période, dans l'ordre : `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (efface les jours de la période et le mode les refait ; seulement `de` : jusqu'à la fin du plan ; seulement `ate` : de demain jusqu'à lui), `periodo_livre` (efface et laisse les jours libres, sans tirage ; les mêmes dates), `manual` (la Rotation manuelle : `de`, `ate`, `dias[AAAA-MM-JJ]` = l'id de la montre, `auto` ou `livre`), `apagar_tudo` (toute la programmation à partir de demain disparaît ; `hoje=1` : à partir d'aujourd'hui ; le mode reconstruit le plan), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (changer le mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |
@@ -2392,10 +2413,12 @@ champ liste (`campo_opcao`) et, pour chaque destination et chaque agenda, ce qu'
 dépense arrive à la montre par la saisie qui l'a fermée. La table `config` ne garde que les valeurs isolées de chaque
 collection, et la `sistema`, celles de tout le système.
 
-Trois références passent **par le nom**, exprès : les formules et les critères citent champs et formules par l'identifiant
-(c'est le texte que vous écrivez, comme `HORAS("pulso"; 30)`), et le `destino_aviso` et l'`agenda_aviso` citent l'alerte
-par l'identifiant, car une alerte peut avoir plusieurs versions (une par groupe) et le choix vaut pour toutes. Quand la
-dernière version d'une alerte est effacée, le système efface ses lignes avec elle.
+Quatre références passent **par le nom**, exprès : les formules et les critères citent champs et formules par l'identifiant
+(c'est le texte que vous écrivez, comme `HORAS("pulso"; 30)`) ; le `destino_aviso` et l'`agenda_aviso` citent l'alerte par
+l'identifiant, car une alerte peut avoir plusieurs versions (une par groupe) et le choix vaut pour toutes (quand la dernière
+version d'une alerte est effacée, le système efface ses lignes avec elle) ; et le champ, le type de saisie et la formule
+citent l'unité par son symbole, sa clé dans l'arbre (le système vérifie qu'elle existe et emporte le nouveau symbole quand
+il change).
 
 **La base valide ce qu'elle garde** (depuis la migration v17), avec les outils du SQL standard, et pas seulement le système :
 une écriture erronée est refusée d'où qu'elle vienne (l'écran, l'API, quelqu'un qui touche directement la base). L'API répond
@@ -2440,7 +2463,7 @@ vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des
 | Fichier | Ce que c'est |
 |---|---|
 | [`api.php`](api.php) | l'API, la porte de toute lecture et écriture (l'authentification, le format, l'ordre des ressources, les filtres, la réponse), avec la documentation complète dans l'en-tête |
-| [`api/`](api/) | les grosses ressources de l'API, un fichier chacune (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `ajuda.php`...), plus ses fonctions (`funcoes.php`, avec le `api_ler` des rapports) et les écritures (`escrita.php`) : elles tournent dans le `api.php`, et ouvertes directement elles ne font rien (le `.htaccess` et le `nginx-relogios.conf` bloquent le dossier) |
+| [`api/`](api/) | les grosses ressources de l'API, un fichier chacune (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `unidades.php`, `ajuda.php`...), plus ses fonctions (`funcoes.php`, avec le `api_ler` des rapports) et les écritures (`escrita.php`) : elles tournent dans le `api.php`, et ouvertes directement elles ne font rien (le `.htaccess` et le `nginx-relogios.conf` bloquent le dossier) |
 | [`lib.php`](lib.php) | le noyau : identification, arbre, moteur de formules, alertes, critères, rotation, planning, documents |
 | [`colecoes.php`](colecoes.php) | les collections dans le noyau : la portée de la requête, le `modelo.json`, les secrets chiffrés, la table `sistema`, la migration v25 et l'impact des suppressions |
 | [`alertas.php`](alertas.php) | les destinations (webhook, e-mail, Web Push) et les agendas (Google, CalDAV, Outlook, ICS) |

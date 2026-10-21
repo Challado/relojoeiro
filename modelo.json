@@ -1,5 +1,5 @@
 {
-    "sobre": "O conjunto inicial de cada coleção nova (a instalação, o cadastro aberto, o Restaurar dos critérios). Sem códigos: cada grupo tem um apelido, e os outros itens citam o grupo pelo apelido (\"raiz\" é a árvore inteira); o aviso cita o tipo que o resolve pelo identificador. Os nomes e os textos estão em português e saem no idioma de quem cria a coleção (a parte \"cadastro\" de textos/<idioma>.php).",
+    "sobre": "O conjunto inicial de cada coleção nova (a instalação, o cadastro aberto, o Restaurar dos critérios). Sem códigos: cada grupo tem um apelido, cada unidade é citada pelo símbolo (a base dela e a unidade em que ela também aparece), e os outros itens citam o grupo pelo apelido (\"raiz\" é a árvore inteira); o aviso cita o tipo que o resolve pelo identificador. Os nomes e os textos estão em português e saem no idioma de quem cria a coleção (a parte \"cadastro\" de textos/<idioma>.php).",
     "grupos": [
         {
             "apelido": "smartwatch",
@@ -48,6 +48,264 @@
             "nome": "Solar",
             "pai": "quartzo",
             "ordem": 2
+        }
+    ],
+    "unidades": [
+        {
+            "simbolo": "mm",
+            "nome": "milímetro",
+            "base": null,
+            "fator": null,
+            "zero": 0,
+            "mostrar_em": "pol"
+        },
+        {
+            "simbolo": "cm",
+            "nome": "centímetro",
+            "base": "mm",
+            "fator": 10,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "m",
+            "nome": "metro",
+            "base": "mm",
+            "fator": 1000,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "pol",
+            "nome": "polegada",
+            "base": "mm",
+            "fator": 25.4,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "pés",
+            "nome": "pé",
+            "base": "mm",
+            "fator": 304.8,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "g",
+            "nome": "grama",
+            "base": null,
+            "fator": null,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "kg",
+            "nome": "quilograma",
+            "base": "g",
+            "fator": 1000,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "oz",
+            "nome": "onça",
+            "base": "g",
+            "fator": 28.349523125,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "s",
+            "nome": "segundo",
+            "base": null,
+            "fator": null,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "min",
+            "nome": "minuto",
+            "base": "s",
+            "fator": 60,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "h",
+            "nome": "hora",
+            "base": "s",
+            "fator": 3600,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "dias",
+            "nome": "dia",
+            "base": "s",
+            "fator": 86400,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "semanas",
+            "nome": "semana",
+            "base": "s",
+            "fator": 604800,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "meses",
+            "nome": "mês",
+            "base": "s",
+            "fator": 2629746,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "anos",
+            "nome": "ano",
+            "base": "s",
+            "fator": 31556952,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "ms",
+            "nome": "milissegundo",
+            "base": null,
+            "fator": null,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "s/dia",
+            "nome": "segundo por dia",
+            "base": null,
+            "fator": null,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "%",
+            "nome": "por cento",
+            "base": null,
+            "fator": null,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "% por dia",
+            "nome": "por cento por dia",
+            "base": null,
+            "fator": null,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "°C",
+            "nome": "grau Celsius",
+            "base": null,
+            "fator": null,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "°F",
+            "nome": "grau Fahrenheit",
+            "base": "°C",
+            "fator": 0.555555556,
+            "zero": 32,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "bar",
+            "nome": "bar",
+            "base": null,
+            "fator": null,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "atm",
+            "nome": "atmosfera",
+            "base": "bar",
+            "fator": 1.01325,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "hPa",
+            "nome": "hectopascal",
+            "base": "bar",
+            "fator": 0.001,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "psi",
+            "nome": "libra por polegada quadrada",
+            "base": "bar",
+            "fator": 0.0689475729,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "bph",
+            "nome": "batida por hora",
+            "base": null,
+            "fator": null,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "Hz",
+            "nome": "hertz",
+            "base": "bph",
+            "fator": 7200,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "°",
+            "nome": "grau",
+            "base": null,
+            "fator": null,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "mAh",
+            "nome": "miliampere-hora",
+            "base": null,
+            "fator": null,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "V",
+            "nome": "volt",
+            "base": null,
+            "fator": null,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "lux",
+            "nome": "lux",
+            "base": null,
+            "fator": null,
+            "zero": 0,
+            "mostrar_em": null
+        },
+        {
+            "simbolo": "R$",
+            "nome": "real",
+            "base": null,
+            "fator": null,
+            "zero": 0,
+            "mostrar_em": null
         }
     ],
     "campos": [

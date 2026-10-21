@@ -39,6 +39,8 @@ $saida = ["campos" => $com_id(campos_com_opcoes(linhas("SELECT * FROM campo ORDE
     "grupos" => array_map(function ($o) { return ["id" => $o[0], "caminho" => no_caminho($o[0])]; }, nos_em_ordem()),
     "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"]]; }, linhas("SELECT id, nome FROM relogio ORDER BY nome")),
     "documento_categorias" => documento_categorias_lista(),
+    // as unidades da árvore (o menu Unidade dos campos, dos tipos de lançamento e das fórmulas): o símbolo e o nome
+    "unidades" => array_values(array_map(function ($u) { return ["simbolo" => $u["simbolo"], "nome" => $u["nome"]]; }, unidades_todas())),
     "funcoes" => array_map(function ($f) { return $f[2]; }, $FUNCOES), "tipos_de_campo" => $TIPOS_CAMPO, "formatos_de_lancamento" => $FORMATOS_LANCAMENTO,
     // o que um tipo de lançamento pode medir da marcha (a lista do cadastro): vazio, o desvio da hora (com valor) ou o acerto (instantâneo)
     "marchas_de_lancamento" => ["desvio" => t("o desvio da hora (com valor, em segundos)"), "acerto" => t("o acerto da hora (instantâneo)")]];

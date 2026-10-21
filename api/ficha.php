@@ -148,6 +148,9 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
         $dados[] = ["identificador" => $ident, "nome" => $c["nome"], "tipo" => $c["tipo"], "unidade" => $c["unidade"], "valor" => $proprios[$ident] ?? null,
             "valor_usado" => ($valores[$ident] ?? "") !== "" ? $valores[$ident] : $c["padrao"],
             "origem" => $o_d = origem_valor($id, $ident, $c["padrao"]), "origem_texto" => origem_texto($o_d)];
+        // o valor também na unidade em que a dele aparece (o milímetro também em polegadas): o texto, ou null
+        $usado_d = $dados[count($dados) - 1]["valor_usado"];
+        $dados[count($dados) - 1]["tambem"] = in_array($c["tipo"], ["inteiro", "decimal"], true) && is_numeric($usado_d) ? (unidade_tambem($usado_d, $c["unidade"])["texto"] ?? null) : null;
     }
     $calculos = [];
     foreach (formulas_todas() as $ident => $versoes) {

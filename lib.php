@@ -654,6 +654,100 @@ function valor_para_campo($c, $v)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Unidades: o cadastro de cada árvore (a tabela unidade, presa à raiz). O campo, o tipo de lançamento e a fórmula guardam o
+// símbolo, que tem de ser de uma unidade cadastrada (ou vazio). A conversão é de um nível: cada unidade se converte na base
+// dela (na base = (valor - zero) × fator), e duas unidades com a mesma base (ou uma e a base) convertem entre si
+// ---------------------------------------------------------------------------------------------------------------------
+
+// As unidades da árvore da coleção, por símbolo (uma vez por requisição; de novo depois de uma gravação): cada uma com a
+// base e a unidade em que também aparece pelo símbolo, o fator e o zero como número e quantas se convertem nela
+function unidades_todas($recarregar = false)
+{
+    static $todas_ = [];
+    $k_ = (int)colecao_atual();
+    if (!isset($todas_[$k_]) || $recarregar) {
+        $linhas = linhas("SELECT * FROM unidade ORDER BY id");
+        $por_id = [];
+        foreach ($linhas as $u) {
+            $por_id[(int)$u["id"]] = $u["simbolo"];
+        }
+        $res = [];
+        foreach ($linhas as $u) {
+            $res[$u["simbolo"]] = ["id" => (int)$u["id"], "simbolo" => $u["simbolo"], "nome" => $u["nome"],
+                "base" => $u["base_id"] !== null ? ($por_id[(int)$u["base_id"]] ?? null) : null,
+                "fator" => $u["fator"] !== null ? (float)$u["fator"] : null, "zero" => (float)$u["zero"],
+                "mostrar_em" => $u["mostrar_em_id"] !== null ? ($por_id[(int)$u["mostrar_em_id"]] ?? null) : null];
+        }
+        $todas_[$k_] = $res;
+    }
+    return $todas_[$k_];
+}
+
+// A base de uma unidade (o símbolo): ela mesma, quando não tem base; null quando não existe
+function unidade_base($simbolo)
+{
+    $u = unidades_todas()[(string)$simbolo] ?? null;
+    return $u === null ? null : ($u["base"] ?? $u["simbolo"]);
+}
+
+// As unidades que convertem com uma (a mesma base), ela inclusive, por símbolo
+function unidades_da_familia($simbolo)
+{
+    $b = unidade_base($simbolo);
+    return $b === null ? [] : array_values(array_filter(array_keys(unidades_todas()), function ($s) use ($b) { return unidade_base($s) === $b; }));
+}
+
+// Um valor de uma unidade em outra (os símbolos): null quando uma das duas não existe ou elas não convertem (bases
+// diferentes)
+function unidade_converter($v, $de, $para)
+{
+    $todas = unidades_todas();
+    if (!is_numeric($v) || !isset($todas[(string)$de], $todas[(string)$para]) || unidade_base($de) !== unidade_base($para)) {
+        return null;
+    }
+    $u = $todas[(string)$de];
+    $na_base = $u["base"] === null ? (float)$v : ((float)$v - $u["zero"]) * $u["fator"];
+    $w = $todas[(string)$para];
+    return $w["base"] === null ? $na_base : $na_base / $w["fator"] + $w["zero"];
+}
+
+// Um número com a unidade, em texto ("47 mm"; o "%" vem colado: "35%"); $casas: as casas no máximo
+function unidade_texto($v, $simbolo, $casas = 2)
+{
+    return decimal_txt($v, $casas) . ($simbolo === "" ? "" : ($simbolo === "%" ? "%" : " " . $simbolo));
+}
+
+// O valor também na unidade em que a dele aparece (mostrar_em): ["valor", "unidade", "texto"] ("1,85 pol"), ou null
+// (sem número, sem a unidade, ou ela não aparece em outra)
+function unidade_tambem($v, $simbolo)
+{
+    $outra = unidades_todas()[(string)$simbolo]["mostrar_em"] ?? null;
+    $w = $outra === null ? null : unidade_converter($v, $simbolo, $outra);
+    return $w === null ? null : ["valor" => round($w, 4), "unidade" => $outra, "texto" => unidade_texto($w, $outra)];
+}
+
+// A conversão de uma unidade em texto, para o cadastro: "1 polegada = 25,4 mm" (o nome, no singular, e a base pelo
+// símbolo; com o zero, "°C = (°F − 32) × 0,555555556"); null na base
+function unidade_conversao_texto($u)
+{
+    if ($u["base"] === null) {
+        return null;
+    }
+    return $u["zero"] == 0 ? t("1 {1} = {2} {3}", [1 => $u["nome"], 2 => decimal_txt($u["fator"], 9), 3 => $u["base"]])
+        : t("{1} = ({2} − {3}) × {4}", [1 => $u["base"], 2 => $u["simbolo"], 3 => decimal_txt($u["zero"], 9), 4 => decimal_txt($u["fator"], 9)]);
+}
+
+// Confere a unidade de um campo, de um tipo de lançamento ou de uma fórmula: vazia ou o símbolo de uma cadastrada.
+// Devolve o erro ("" sem erro)
+function unidade_conferir($simbolo)
+{
+    if ($simbolo === "" || isset(unidades_todas()[$simbolo])) {
+        return "";
+    }
+    return t("Unidade {1}: não está cadastrada (Cadastros › Unidades). As que existem: {2}.", [1 => $simbolo, 2 => implode(", ", array_keys(unidades_todas()))]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Tipos de lançamento: o que se registra num relógio. Formato: instantaneo (corda), valor (leitura de carga em %) ou
 // sessao (no pulso, no winder, no sol: com início e fim). Os lançamentos ficam em "lancamento".
 // ---------------------------------------------------------------------------------------------------------------------
@@ -751,6 +845,7 @@ $MIGRACOES = [
     "v38" => ["migracao_v38.sql", tk("o modo da interface de cada pessoa (Minha conta): o básico mostra o dia a dia (cadastrar, marcar o uso, a manutenção, escolher um rodízio pronto) e o avançado também as fórmulas, os roteiros, os critérios, as simulações e os totais; o motor é o mesmo"), "usuario.nivel"],
     "v39" => ["migracao_v39.sql", tk("o timegrapher: as medições de um timegrapher de bancada (a marcha, a amplitude, o erro de batida, as batidas por hora e o ângulo de levantamento, em cada posição), digitadas na mão ou importadas do CSV do aparelho, com a média e a diferença entre as posições de cada sessão"), "timegrapher"],
     "v40" => ["migracao_v40.sql", tk("o login e o e-mail de cada conta sem espaços nas pontas também no banco (a regra ck_usuario_aparados), e nunca duas contas com o mesmo login ou e-mail: o login de uma também não pode ser o e-mail de outra (os dois servem para entrar)"), "sistema.chave=migracao_v40", "migracao_v40"],
+    "v41" => ["migracao_v41.sql", tk("o cadastro das unidades (Cadastros › Unidades): cada árvore ganha as unidades prontas (mm, cm, pol, g, h, dias, bar, °C...), com o nome, a conversão (a unidade base da mesma grandeza e o fator: 1 pol = 25,4 mm) e a unidade em que o valor também aparece (o milímetro também em polegadas); o campo, o tipo de lançamento e a fórmula escolhem a unidade da lista, e a função CONVERTER converte nas fórmulas. As unidades que a árvore já usa entram também"), "unidade", "migracao_v41_dados"],
 ];
 
 // O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
@@ -915,6 +1010,37 @@ function migracao_v35_dados($nova = false)
                     $ordem = (int)valor("SELECT COALESCE(MAX(ordem), 0) + 10 FROM total WHERE no_id IN (" . implode(", ", $arvore) . ")");
                     sql("INSERT INTO total (no_id, coluna, nome, expressao, rodape, pagina, largura, formato, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         [(int)$raiz["id"], $x["coluna"], $tr($x["nome"]), $x["expressao"], (int)$x["rodape"], (int)$x["pagina"], $x["largura"], $x["formato"], $ordem]);
+                }
+            }
+        }
+    });
+}
+
+// O passo em PHP da v41: em cada árvore, as unidades do modelo.json (no idioma da coleção) e as que a árvore já usa nos
+// campos, nos tipos de lançamento e nas fórmulas e o modelo não tem (com o símbolo como nome, sem conversão). Numa
+// instalação nova, a árvore já nasce com elas (arvore_criar)
+function migracao_v41_dados($nova = false)
+{
+    if ($nova) {
+        return;
+    }
+    sem_escopo(function () {
+        foreach (linhas("SELECT id FROM no WHERE pai_id IS NULL ORDER BY id") as $raiz) {
+            $arvore = [(int)$raiz["id"]];
+            $nivel = $arvore;
+            while (count($nivel) > 0) {
+                $nivel = array_map("intval", array_column(linhas("SELECT id FROM no WHERE pai_id IN (" . implode(", ", $nivel) . ")"), "id"));
+                $arvore = array_merge($arvore, $nivel);
+            }
+            $lingua = lingua_valida((string)valor("SELECT valor FROM config WHERE chave = 'idioma' AND colecao_id IN (SELECT id FROM colecao WHERE no_id = ?) ORDER BY colecao_id", [(int)$raiz["id"]])) ?? "pt-BR";
+            unidades_do_modelo((int)$raiz["id"], modelo_tradutor($lingua));
+            $em = " WHERE unidade <> '' AND no_id IN (" . implode(", ", $arvore) . ")";
+            foreach (["campo", "lancamento_tipo", "formula"] as $tabela) {
+                foreach (linhas("SELECT DISTINCT unidade FROM " . $tabela . $em) as $x) {
+                    $simbolo = mb_substr(trim((string)$x["unidade"]), 0, 20);
+                    if ($simbolo !== "" && (int)valor("SELECT COUNT(*) FROM unidade WHERE no_id = ? AND simbolo = ?", [(int)$raiz["id"], $simbolo]) === 0) {
+                        sql("INSERT INTO unidade (no_id, simbolo, nome, base_id, fator, zero) VALUES (?, ?, ?, NULL, NULL, 0)", [(int)$raiz["id"], $simbolo, $simbolo]);
+                    }
                 }
             }
         }
@@ -1159,6 +1285,7 @@ $FUNCOES = [
     "LIMITA" => [3, 3, tk("LIMITA(x; mínimo; máximo)"), false],
     "ARREDONDA" => [1, 2, "ARREDONDA(x; casas)", false],
     "ABS" => [1, 1, tk("o valor sem sinal"), false],
+    "CONVERTER" => [3, 3, tk("CONVERTER(x; \"de\"; \"para\"): o valor numa outra unidade da mesma grandeza, pelo cadastro das unidades (ex.: CONVERTER(diametro; \"mm\"; \"pol\")); vazio quando as duas não se convertem"), false],
     "PADRAO" => [2, 2, tk("PADRAO(x; valor se x estiver vazio)"), false],
     "VAZIO" => [1, 1, tk("1 se o valor está vazio"), false],
     "NADA" => [0, 0, tk("o vazio, de propósito (ex.: SE(condição; NADA(); conta))"), false],
@@ -2103,6 +2230,8 @@ function formula_calcular($no, &$ctx)
                 $res = is_numeric($v[0]) ? round((float)$v[0], isset($v[1]) && is_numeric($v[1]) ? (int)$v[1] : 0) : null;
             } elseif ($nome === "ABS") {
                 $res = is_numeric($v[0]) ? abs((float)$v[0]) : null;
+            } elseif ($nome === "CONVERTER") {
+                $res = unidade_converter($v[0], (string)$v[1], (string)$v[2]);
             } elseif ($nome === "PADRAO") {
                 $res = $v[0] ?? $v[1];
             } elseif ($nome === "VAZIO") {

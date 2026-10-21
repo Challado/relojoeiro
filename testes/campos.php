@@ -106,6 +106,7 @@ $consultas = [
     "estatisticas" => ["recurso=estatisticas", "recurso=estatisticas&de=tudo"],
     "precisao" => array_merge(["recurso=precisao"], $para_cada("recurso=precisao&relogio=%d")),
     "calibres" => ["recurso=calibres"],
+    "unidades" => ["recurso=unidades"],
     "servicos" => array_merge(["recurso=servicos"], $para_cada("recurso=servicos&relogio=%d")),
     "reserva" => array_merge(["recurso=reserva"], $para_cada("recurso=reserva&relogio=%d")),
     "relatorios" => array_merge(["recurso=relatorios", "recurso=relatorios&tipo=nao_existe", "recurso=relatorios&tipo=passaporte"],

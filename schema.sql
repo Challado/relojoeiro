@@ -233,6 +233,28 @@ CREATE TABLE campo_opcao (
     CONSTRAINT ck_campo_opcao_valor CHECK (TRIM(valor) <> '')
 ) ENGINE=InnoDB;
 
+-- as unidades de uma árvore (presas à raiz dela, como os totais): o símbolo (o que vai depois do número: mm, h, dias,
+-- R$; a chave da unidade na árvore, e o que o campo, o tipo de lançamento e a fórmula guardam), o nome por extenso e a
+-- conversão: a unidade base, a da mesma grandeza em que esta se converte (a polegada, em milímetros), com o fator (1 desta
+-- = fator da base, a partir do zero: na base = (valor - zero) × fator; o zero só existe no °F, 32) e a unidade em que o
+-- valor também aparece (mostrar_em: o milímetro também em polegadas). A base não tem base: a conversão é de um nível só
+CREATE TABLE unidade (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    no_id          INT NOT NULL,
+    simbolo        VARCHAR(20) NOT NULL,
+    nome           VARCHAR(80) NOT NULL,
+    base_id        INT NULL,
+    fator          DECIMAL(18,9) NULL,
+    zero           DECIMAL(18,9) NOT NULL DEFAULT 0,
+    mostrar_em_id  INT NULL,
+    UNIQUE (no_id, simbolo),
+    FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
+    FOREIGN KEY (base_id) REFERENCES unidade(id) ON DELETE CASCADE,
+    FOREIGN KEY (mostrar_em_id) REFERENCES unidade(id) ON DELETE SET NULL,
+    CONSTRAINT ck_unidade_textos CHECK (TRIM(simbolo) <> '' AND TRIM(nome) <> ''),
+    CONSTRAINT ck_unidade_base CHECK ((base_id IS NULL AND fator IS NULL AND zero = 0) OR (base_id IS NOT NULL AND fator IS NOT NULL AND fator <> 0))
+) ENGINE=InnoDB;
+
 -- os tipos de lançamento (pulso, carga, corda, winder, sol...), por grupo
 CREATE TABLE lancamento_tipo (
     id             INT AUTO_INCREMENT PRIMARY KEY,

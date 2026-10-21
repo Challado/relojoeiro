@@ -1,4 +1,4 @@
-<!-- origem: a6995824a0aefafc1dce8174c583499bf649d150 -->
+<!-- origem: 4f21a7fb0eab48998f85fa5115eda0cc6f223bb8 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -161,6 +161,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `ics` | le calendrier d'une agenda de type lien ICS (sans identifiant, par la clé du lien) |
 | `config`, `cron` | la configuration de la collection (avec le résumé des destinations et des agendas et l'état du cron : jamais exécuté, arrêté ou en marche) ; les exécutions du cron, avec le résumé de la période. Dans `cron` : `de=` et `ate=` (date, ou date et heure), `situacao=` (`atividade`, par défaut ; `erro`, `nada` ou `todas`), `busca=` (texte dans le journal), `limite=` (100 par défaut, 1000 au maximum) et `pagina=` ; chacun vaut aussi avec `cron_` devant (`cron_de`...) |
 | `arvore`, `cadastros` | les groupes ; tout ce que montre la page Définitions |
+| `unidades` | les unités de l'arbre (l'onglet **Unités** des Définitions), dans l'ordre des grandeurs, chacune avec la conversion en texte et combien de champs, de types et de formules l'utilisent |
 | `calcular` | le résultat d'une formule (`expressao=`) sur les montres (`relogio=` un id ou plusieurs ; sans lui, toutes), sans enregistrer, avec les parties du calcul ; formule mal écrite : 400 avec les erreurs |
 | `foto` | la photo d'une montre (`relogio=<id>`) : l'image, pas du JSON |
 | `documentos` | les documents d'une montre (`relogio=<id>` ; sans lui, de toutes), avec les catégories, le résumé de la NF-e de chaque XML, le dossier et la limite |
@@ -192,6 +193,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `reserva` | `iniciar` (quand elle était pleine et comment), `parou`, `observar` (arrêtée, charge faible, note ; aussi sur la solaire), `salvar`, `usar` (la médiane va dans la fiche de la montre), `excluir` |
 | `timegrapher` | `salvar` (une mesure : la position, la marche, l'amplitude, l'erreur de battement, les alternances par heure, l'angle), `importar` (le CSV de l'appareil ; `conferir=1` : sans enregistrer), `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (seulement sans documents) |
+| `unidades` | `salvar` (le symbole, le nom, la base et le facteur, le zéro et l'afficher aussi en ; le nouveau symbole passe à qui l'utilise), `excluir` (seulement sans usage ; emporte celles qui se convertissent en elle) |
 | `lancamento` | `lancar` (remontage, charge, pile...), `iniciar` et `encerrar` (mettre et retirer du poignet, du remontoir, du soleil, du chargeur), `alternar` (ferme la session si elle est ouverte, l'ouvre si elle est fermée : un seul bouton sur le téléphone), `periodo` (une période déjà passée ; au poignet de la montre du jour c'est un usage de la rotation, et les périodes du même type qu'elle touche, comme le Mettre resté ouvert, n'en font plus qu'une), `alterar`, `excluir`, `medicao` (une mesure de la consommation entre dans le calcul ou en sort : `id`, `usada` 1 ou 0). Dans toutes, `relogio_id=hoje` est la montre du jour |
 | `rodizio` | `usando` (je porte celle-ci aujourd'hui), `trocar_dia` (la montre d'un jour), `periodo` (les montres d'une période, dans l'ordre : `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (efface les jours de la période et le mode les refait ; seulement `de` : jusqu'à la fin du plan ; seulement `ate` : de demain jusqu'à lui), `periodo_livre` (efface et laisse les jours libres, sans tirage ; les mêmes dates), `manual` (la Rotation manuelle : `de`, `ate`, `dias[AAAA-MM-JJ]` = l'id de la montre, `auto` ou `livre`), `apagar_tudo` (toute la programmation à partir de demain disparaît ; `hoje=1` : à partir d'aujourd'hui ; le mode reconstruit le plan), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (changer le mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |
@@ -609,10 +611,12 @@ champ liste (`campo_opcao`) et, pour chaque destination et chaque agenda, ce qu'
 dépense arrive à la montre par la saisie qui l'a fermée. La table `config` ne garde que les valeurs isolées de chaque
 collection, et la `sistema`, celles de tout le système.
 
-Trois références passent **par le nom**, exprès : les formules et les critères citent champs et formules par l'identifiant
-(c'est le texte que vous écrivez, comme `HORAS("pulso"; 30)`), et le `destino_aviso` et l'`agenda_aviso` citent l'alerte
-par l'identifiant, car une alerte peut avoir plusieurs versions (une par groupe) et le choix vaut pour toutes. Quand la
-dernière version d'une alerte est effacée, le système efface ses lignes avec elle.
+Quatre références passent **par le nom**, exprès : les formules et les critères citent champs et formules par l'identifiant
+(c'est le texte que vous écrivez, comme `HORAS("pulso"; 30)`) ; le `destino_aviso` et l'`agenda_aviso` citent l'alerte par
+l'identifiant, car une alerte peut avoir plusieurs versions (une par groupe) et le choix vaut pour toutes (quand la dernière
+version d'une alerte est effacée, le système efface ses lignes avec elle) ; et le champ, le type de saisie et la formule
+citent l'unité par son symbole, sa clé dans l'arbre (le système vérifie qu'elle existe et emporte le nouveau symbole quand
+il change).
 
 **La base valide ce qu'elle garde** (depuis la migration v17), avec les outils du SQL standard, et pas seulement le système :
 une écriture erronée est refusée d'où qu'elle vienne (l'écran, l'API, quelqu'un qui touche directement la base). L'API répond
@@ -657,7 +661,7 @@ vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des
 | Fichier | Ce que c'est |
 |---|---|
 | [`api.php`](api.php) | l'API, la porte de toute lecture et écriture (l'authentification, le format, l'ordre des ressources, les filtres, la réponse), avec la documentation complète dans l'en-tête |
-| [`api/`](api/) | les grosses ressources de l'API, un fichier chacune (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `ajuda.php`...), plus ses fonctions (`funcoes.php`, avec le `api_ler` des rapports) et les écritures (`escrita.php`) : elles tournent dans le `api.php`, et ouvertes directement elles ne font rien (le `.htaccess` et le `nginx-relogios.conf` bloquent le dossier) |
+| [`api/`](api/) | les grosses ressources de l'API, un fichier chacune (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `unidades.php`, `ajuda.php`...), plus ses fonctions (`funcoes.php`, avec le `api_ler` des rapports) et les écritures (`escrita.php`) : elles tournent dans le `api.php`, et ouvertes directement elles ne font rien (le `.htaccess` et le `nginx-relogios.conf` bloquent le dossier) |
 | [`lib.php`](lib.php) | le noyau : identification, arbre, moteur de formules, alertes, critères, rotation, planning, documents |
 | [`colecoes.php`](colecoes.php) | les collections dans le noyau : la portée de la requête, le `modelo.json`, les secrets chiffrés, la table `sistema`, la migration v25 et l'impact des suppressions |
 | [`alertas.php`](alertas.php) | les destinations (webhook, e-mail, Web Push) et les agendas (Google, CalDAV, Outlook, ICS) |
