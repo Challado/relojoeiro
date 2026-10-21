@@ -121,7 +121,7 @@ function ler($nome, $params)
         usleep(20000);
     }
     $r = chamar("GET", $params);
-    $foto["leituras"][$nome] = ["codigo" => $r["codigo"], "resposta" => $r["json"] ?? $r["cru"]];
+    $foto["leituras"][$nome] = ["codigo" => $r["codigo"], "resposta" => $r["json"] ?? $r["cru"], "t" => round(microtime(true) - $GLOBALS["T0"], 1)];
     return $r["json"];
 }
 
@@ -154,6 +154,9 @@ function ha_minutos($minutos)
 }
 
 $foto = ["escritas" => [], "leituras" => [], "cron" => []];
+// o começo da rodada: cada leitura anota há quantos segundos a rodada começou (t), e o comparar.php soma à folga do tempo
+// o atraso de um banco em relação ao outro naquela leitura (a sessão aberta cresce enquanto o cenário roda)
+$T0 = microtime(true);
 $dados_escritos = [];
 
 // os grupos do conjunto inicial (o modelo.json), pelo nome: os códigos dependem do banco (as coleções de cada pessoa

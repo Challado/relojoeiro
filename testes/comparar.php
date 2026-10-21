@@ -35,13 +35,20 @@ function numeros_iguais($x, $y, $chave)
     if ($x == $y) {
         return true;
     }
-    // o que é medido em segundos, ou é um instante: a folga do tempo entre as duas rodadas
-    if (preg_match("/segundos|_seg\$|timestamp|restante|autonomia|duracao|_ms\$|ultimo\$/", (string)$chave) === 1 && abs($x - $y) <= 120) {
+    // o que é medido em segundos, ou é um instante: a folga do tempo entre as duas rodadas (120 s), mais o atraso de um banco
+    // em relação ao outro nesta leitura (FOLGA_ATRASO: a sessão aberta da linha do tempo cresce enquanto o cenário roda, e
+    // no banco mais lento os passos até a leitura levam mais tempo)
+    $folga = 120 + ($GLOBALS["FOLGA_ATRASO"] ?? 0);
+    if (preg_match("/segundos|_seg\$|timestamp|restante|autonomia|duracao|_ms\$|ultimo\$/", (string)$chave) === 1 && abs($x - $y) <= $folga) {
+        return true;
+    }
+    // os minutos desde a última rodada do cron (cron_estado.minutos): a mesma folga, em minutos inteiros
+    if ($chave === "minutos" && abs($x - $y) <= ceil($folga / 60)) {
         return true;
     }
     // o que é medido em horas (HORAS("pulso"; 30), numa conta da fórmula): a sessão aberta cresce enquanto o cenário roda; a
-    // mesma folga de 120 s, em horas
-    if (strpos((string)$chave, "HORAS(") === 0 && abs($x - $y) <= 120 / 3600) {
+    // mesma folga, em horas
+    if (strpos((string)$chave, "HORAS(") === 0 && abs($x - $y) <= $folga / 3600) {
         return true;
     }
     // o resto (energia, reserva, notas...) anda devagar com o tempo (uma sessão aberta cresce enquanto o cenário roda): 0,5% de folga
@@ -150,7 +157,31 @@ function comparar($x, $y, $caminho, $chave)
 foreach (["config", "2 config"] as $l) {
     unset($a["leituras"][$l]["resposta"]["pasta"], $b["leituras"][$l]["resposta"]["pasta"]);
 }
+// o atraso de cada leitura (t: há quantos segundos a rodada começou, anotado pelo cenário): sai da comparação e vira folga
+// do tempo naquela leitura. Fotografias sem o t: sem atraso (só os 120 s)
+$atrasos = [];
+foreach (array_keys($a["leituras"] ?? []) as $l) {
+    if (isset($a["leituras"][$l]["t"], $b["leituras"][$l]["t"])) {
+        $atrasos[$l] = abs((float)$a["leituras"][$l]["t"] - (float)$b["leituras"][$l]["t"]);
+    }
+    unset($a["leituras"][$l]["t"]);
+    if (isset($b["leituras"][$l])) {
+        unset($b["leituras"][$l]["t"]);
+    }
+}
+$leituras_a = $a["leituras"] ?? [];
+$leituras_b = $b["leituras"] ?? [];
+unset($a["leituras"], $b["leituras"]);
 comparar($a, $b, "", "");
+foreach (array_unique(array_merge(array_keys($leituras_a), array_keys($leituras_b))) as $l) {
+    if (!array_key_exists($l, $leituras_a) || !array_key_exists($l, $leituras_b)) {
+        $graves[] = [".leituras." . $l, "só existe num", array_key_exists($l, $leituras_a) ? "presente" : "ausente", array_key_exists($l, $leituras_b) ? "presente" : "ausente"];
+        continue;
+    }
+    $FOLGA_ATRASO = $atrasos[$l] ?? 0;
+    comparar($leituras_a[$l], $leituras_b[$l], ".leituras." . $l, $l);
+}
+$FOLGA_ATRASO = 0;
 $corta = function ($s) {
     $s = (string)$s;
     return strlen($s) > 160 ? substr($s, 0, 157) . "..." : $s;
