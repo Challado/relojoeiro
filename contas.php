@@ -499,9 +499,11 @@ function arvore_copiar($raiz, $dono_id, $nome)
         // novo (a cópia no banco, se pedida, o cron faz)
         $pasta = documentos_pasta();
         foreach ($m["calibre"] as $de => $para) {
-            foreach (linhas("SELECT * FROM calibre_valor WHERE calibre_id = ?", [$de]) as $x) {
-                if (isset($m["campo"][(int)$x["campo_id"]])) {
-                    linha_copiar("calibre_valor", $x, ["calibre_id" => $para, "campo_id" => $m["campo"][(int)$x["campo_id"]]]);
+            foreach (["calibre_valor", "calibre_valor_item"] as $tab_v) {
+                foreach (linhas("SELECT * FROM " . $tab_v . " WHERE calibre_id = ?", [$de]) as $x) {
+                    if (isset($m["campo"][(int)$x["campo_id"]])) {
+                        linha_copiar($tab_v, $x, ["calibre_id" => $para, "campo_id" => $m["campo"][(int)$x["campo_id"]]]);
+                    }
                 }
             }
             foreach (linhas("SELECT * FROM documento WHERE calibre_id = ?", [$de]) as $x) {
@@ -597,7 +599,7 @@ function colecao_transferir($cid, $novo_dono)
         } else {
             [$raiz, $m] = arvore_copiar((int)$c["no_id"], (int)$u["id"], (string)valor("SELECT nome FROM no WHERE id = ?", [(int)$c["no_id"]]));
             $rel = "SELECT id FROM relogio WHERE colecao_id = " . $cid;
-            $trocas = [["relogio", "no_id", "no", "colecao_id = " . $cid], ["campo_valor", "campo_id", "campo", "relogio_id IN (" . $rel . ")"],
+            $trocas = [["relogio", "no_id", "no", "colecao_id = " . $cid], ["campo_valor", "campo_id", "campo", "relogio_id IN (" . $rel . ")"], ["campo_valor_item", "campo_id", "campo", "relogio_id IN (" . $rel . ")"],
                 ["lancamento", "tipo_id", "lancamento_tipo", "relogio_id IN (" . $rel . ")"], ["documento", "categoria_id", "documento_categoria", "relogio_id IN (" . $rel . ")"], ["relogio_calibre", "calibre_id", "calibre", "relogio_id IN (" . $rel . ")"],
                 ["modo_bloco", "no_id", "no", "modo_id IN (SELECT id FROM modo WHERE colecao_id = " . $cid . ")"]];
             foreach ($trocas as [$t, $col, $mapa, $onde]) {

@@ -98,7 +98,7 @@ flowchart LR
 | Conceito | O que é | Exemplo |
 |---|---|---|
 | **Grupos** (a árvore) | A classificação da coleção, em quantos níveis você quiser. Tudo o que é cadastrado num grupo vale para ele e para tudo abaixo dele. | `Tradicional › Mecânico › Automático` |
-| **Campos** | Os dados de cada relógio, definidos por você: texto, número, data, sim/não ou lista, com unidade e valor padrão. | `reserva_horas = 40 h`, `data_pilha`, `loja` |
+| **Campos** | Os dados de cada relógio, definidos por você: texto, número, data, sim/não ou lista, com unidade, valor padrão e as regras do valor (os valores possíveis, o mínimo e o máximo, vários valores de uma vez). | `reserva_horas = 40 h`, `data_pilha`, `funcoes = Data, GMT` |
 | **Divisórias** | As seções da ficha, criadas por você: cada campo fica numa delas, e a ficha, o painel, o passaporte e os relatórios mostram os campos agrupados, na ordem delas. | *Identificação*, *Compra*, *Construção*, *Energia* |
 | **Unidades** | O que vai depois do número, cadastrado por você: o símbolo, o nome e a conversão (a polegada em milímetros). Os campos, os tipos de lançamento e as fórmulas escolhem a unidade da lista, e o valor pode aparecer também em outra unidade. | `47 mm (1,85 pol)` |
 | **Calibres** | O movimento do relógio, com o que é dele: o fabricante, o manual técnico, as recomendações e os valores dos campos. O relógio com um calibre usa o valor dele mesmo, senão o do calibre, senão o padrão do campo. | `NH35`: reserva de 41 h, marcha de −20 a +40 s/dia |
@@ -122,6 +122,7 @@ por zero dá vazio. O básico:
 | `MIN(...)`, `MAX(...)` | o menor e o maior dos valores (ignoram os vazios) |
 | `LIMITA(x; mín; máx)`, `ARREDONDA(x; casas)`, `ABS(x)` | x preso na faixa; arredondado; sem sinal |
 | `CONVERTER(x; "de"; "para")` | x em outra unidade da mesma grandeza, pelo cadastro das unidades: `CONVERTER(diametro; "mm"; "pol")`; vazio quando as duas não se convertem |
+| `TEM(x; "valor")`, `ITENS(x)` | 1 se o campo múltiplo tem o valor (sem diferença de maiúsculas): `TEM(funcoes; "Cronógrafo")`; quantos valores ele tem |
 | `PADRAO(x; outro)`, `VAZIO(x)`, `NADA()` | x, ou o outro se x estiver vazio; 1 se x está vazio; o vazio, de propósito (`SE(condição; NADA(); conta)`) |
 | `HOJE()`, `AGORA()` | a data de hoje e o instante de agora, em dias (o agora com a fração do dia) |
 | `DIAS_DESDE(data)`, `DIAS_ATE(data)`, `SOMA_MESES(data; meses)` | dias desde e até uma data (negativo: já passou); a data somada de meses, pelo calendário |
@@ -636,6 +637,25 @@ fórmula `CONVERTER(x; "de"; "para")` faz a conta. **Mostrar também em**: o val
 do relógio** e no **Passaporte** (o milímetro já vem mostrando as polegadas: *47 mm (1,85 pol)*). Uma unidade em uso não
 se exclui (a exclusão diz quem a usa); excluir uma base leva junto as que se convertem nela. Pela API: `recurso=unidades` (a
 lista, com a conversão e o uso de cada uma) e `recurso=unidades` com `acao=salvar` ou `excluir`.
+
+### As regras do valor
+
+Cada campo diz que valor aceita, na aba **Campos** da página **Cadastros**, e a API recusa o que não segue (a tela, a API, a
+importação, o calibre):
+
+- **Valores possíveis** (um por linha): na **lista**, são as opções, obrigatórias; no **texto** e no **número**, quando o
+  campo tem, o valor tem de ser um deles (a largura da pulseira: 18, 20, 22), e o cadastro mostra um menu. Escrito em
+  minúsculas também vale: fica o escrito do cadastro.
+- **Mínimo** e **máximo**, só no número (vazio: sem limite): o diâmetro de 20 a 60 mm. A faixa aparece embaixo da entrada,
+  e a recusa diz qual é (*tem de ser de 20 a 60 mm*).
+- **Vários valores**: o campo múltiplo, como as **funções** do relógio (data, GMT, cronógrafo). No cadastro, uma caixa para
+  cada valor possível; nos Dados do relógio, cada um numa etiqueta; no passaporte, separados por vírgula. No banco, um por
+  linha (as tabelas `campo_valor_item` e `calibre_valor_item`), e nas fórmulas ele chega com um por linha: `TEM(funcoes;
+  "GMT")` diz se tem, e `ITENS(funcoes)`, quantos.
+
+Mudar o tipo ou as regras de um campo confere os valores já gravados: o que não segue mais é listado e a mudança espera você
+acertar (deixar de ser múltiplo, por exemplo, só quando cada relógio tem um valor só). Pela API: `recurso=campos` com
+`opcoes`, `minimo`, `maximo` e `multiplo`; no relógio, `valores[funcoes][]` uma vez para cada valor.
 
 ### As divisórias da ficha
 
@@ -1676,7 +1696,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `periodo` (os relógios de um período, na ordem: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (apaga os dias do período e o modo monta de novo; só `de`: até o fim do plano; só `ate`: de amanhã até ele), `periodo_livre` (apaga e deixa os dias livres, sem sorteio; as mesmas datas), `manual` (o Rodízio manual: `de`, `ate`, `dias[AAAA-MM-DD]` = o id do relógio, `auto` ou `livre`), `apagar_tudo` (toda a programação de amanhã em diante sai; `hoje=1`: de hoje em diante; o modo monta o plano de novo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (grupos) e `relogios` (o grupo de cada relógio) |
-| `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (e `ordem` nos campos) |
+| `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (e `ordem` nos campos; o campo com as regras do valor: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
 | `config` | `salvar`, `evento_salvar`, `evento_excluir` |

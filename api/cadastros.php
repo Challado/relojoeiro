@@ -12,7 +12,7 @@ if (!defined("RELOJOEIRO_API")) {
 $n = nos_todos();
 $com_id = function ($linhas) {
     return array_map(function ($x) {
-        foreach (["id", "no_id", "ordem", "ativo", "exclusiva", "mede_gasto", "modo_id", "relogio_id", "escala_dias", "ciclo", "resolve_tipo_id", "na_hora", "so_desejado", "calibre", "secao_id"] as $k) {
+        foreach (["id", "no_id", "ordem", "ativo", "exclusiva", "mede_gasto", "modo_id", "relogio_id", "escala_dias", "ciclo", "resolve_tipo_id", "na_hora", "so_desejado", "calibre", "secao_id", "multiplo"] as $k) {
             // a marca do modo em uso é 1 ou vazia (NULL) no banco: aqui, 1 ou 0
             if (array_key_exists($k, $x) && ($x[$k] !== null || ($k === "ativo" && array_key_exists("selecao", $x)))) {
                 $x[$k] = (int)$x[$k];
@@ -21,7 +21,14 @@ $com_id = function ($linhas) {
         return $x;
     }, $linhas);
 };
-$saida = ["campos" => $com_id(campos_com_opcoes(linhas("SELECT * FROM campo ORDER BY ordem, id"))),
+$saida = ["campos" => array_map(function ($c) {
+        // o mínimo e o máximo do número (vazio: sem limite), e a regra em texto
+        foreach (["minimo", "maximo"] as $k) {
+            $c[$k] = numero_do_campo($c[$k] ?? null) === null ? null : (float)$c[$k];
+        }
+        $c["regra"] = campo_regra_texto($c);
+        return $c;
+    }, $com_id(campos_com_opcoes(linhas("SELECT * FROM campo ORDER BY ordem, id")))),
     "lancamento_tipos" => $com_id(linhas("SELECT t.*, (SELECT COUNT(*) FROM lancamento l WHERE l.tipo_id = t.id) AS lancamentos FROM lancamento_tipo t ORDER BY t.ordem, t.id")),
     "formulas" => $com_id(linhas("SELECT * FROM formula ORDER BY identificador, id")),
     "avisos" => $com_id(linhas(AVISO_SELECT . " ORDER BY a.identificador, a.id")),

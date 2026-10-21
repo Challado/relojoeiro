@@ -21,7 +21,7 @@ function mostrarCamposDoTipo(form) {
   });
   // a divisória sem nenhum campo à vista (todos de outro grupo, ou só dos desejados) some inteira
   form.querySelectorAll("fieldset.secao-cadastro").forEach(function (fs) {
-    fs.hidden = fs.querySelector("label:not([hidden])") === null;
+    fs.hidden = fs.querySelector("[data-sub]:not([hidden])") === null;
   });
 }
 
@@ -79,9 +79,16 @@ function campoCadastro(c) {
   if (c.tipo === "sim_nao") {
     res = el("label", {"data-sub": sub, "class": "check"}, el("input", {"type": "hidden", "name": nome, "value": "0"}) + el("input", {"type": "checkbox", "name": nome, "value": "1",
       "checked": (v !== "" ? v : String(c.do_calibre !== null && c.do_calibre !== undefined ? c.do_calibre : (c.padrao || ""))) === "1"}) + " " + rotulo);
-  } else if (c.tipo === "lista") {
+  } else if (c.multiplo) {
+    // vários dos valores possíveis de uma vez (as funções): uma caixa para cada; o vazio escondido deixa desmarcar todos
+    var marcados = v === "" ? [] : v.split("\n");
+    res = el("fieldset", {"data-sub": sub, "class": "multiplo"}, el("legend", {}, rotulo) + el("input", {"type": "hidden", "name": nome + "[]", "value": ""}) + c.opcoes.map(function (o) {
+      return el("label", {"class": "check"}, el("input", {"type": "checkbox", "name": nome + "[]", "value": o, "checked": marcados.indexOf(o) >= 0}) + " " + h(o));
+    }).join(""));
+  } else if (c.tipo === "lista" || c.opcoes.length > 0) {
+    // a lista, e o texto ou o número com valores possíveis: um deles
     res = el("label", {"data-sub": sub}, rotulo + " " + el("select", {"name": nome}, el("option", {"value": ""}, "—") + c.opcoes.map(function (o) {
-      return el("option", {"selected": o === v}, h(o));
+      return el("option", {"value": o, "selected": o === v}, h(c.tipo === "decimal" ? o.replace(".", ",") : o));
     }).join("")));
   } else if (c.tipo === "data") {
     res = el("label", {"data-sub": sub}, rotulo + " " + el("input", {"type": "date", "name": nome, "value": v}));
@@ -91,7 +98,9 @@ function campoCadastro(c) {
     var mostra = v === "" ? "" : (c.unidade === "R$" ? reais(v) : v.replace(".", ","));
     res = el("label", {"data-sub": sub}, rotulo + " " + el("input", {"type": "text", "inputmode": "decimal", "name": nome, "value": mostra,
       "placeholder": c.do_calibre !== null && c.do_calibre !== undefined ? t("vazio: {1} (do calibre)", {1: String(c.do_calibre).replace(".", ",")})
-        : (c.padrao !== null && c.padrao !== "" ? t("vazio: {1}", {1: String(c.padrao).replace(".", ",")}) : null)}));
+        : (c.padrao !== null && c.padrao !== "" ? t("vazio: {1}", {1: String(c.padrao).replace(".", ",")}) : null)})
+      // o mínimo e o máximo (já em texto pela API)
+      + (c.regra ? el("small", {}, h(c.regra)) : ""));
   }
   return desejo !== "" ? res.replace("<label ", "<label" + desejo + " ") : res;
 }
@@ -862,7 +871,10 @@ function abrirNoPainel(id) {
       var valorCampo = function (c) {
         var v = c.valor_usado;
         var res2 = "—";
-        if (v !== null && v !== "") {
+        if (v !== null && v !== "" && c.multiplo) {
+          // o múltiplo: um valor por linha, cada um numa etiqueta
+          res2 = String(v).split("\n").map(function (x) { return el("span", {"class": "item-multiplo"}, h(c.tipo === "decimal" ? x.replace(".", ",") : x) + (c.unidade !== "" ? " " + h(c.unidade) : "")); }).join(" ");
+        } else if (v !== null && v !== "") {
           if (c.tipo === "sim_nao") {
             res2 = String(v) === "1" ? t("sim") : t("não");
           } else if (c.tipo === "data") {

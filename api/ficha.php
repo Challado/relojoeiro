@@ -22,7 +22,7 @@ foreach (campos_na_ordem_da_ficha(campos_todos()) as $c) {
     $ident = $c["identificador"];
     $campos[] = ["identificador" => $ident, "nome" => $c["nome"], "tipo" => $c["tipo"], "unidade" => $c["unidade"], "opcoes" => array_values(array_filter(array_map("trim", explode("\n", (string)$c["opcoes"])))),
         "padrao" => $c["padrao"], "no_id" => $c["no_id"] === null ? 0 : (int)$c["no_id"], "so_desejado" => (int)($c["so_desejado"] ?? 0) === 1,
-        "secao" => $c["secao"], "valor" => $proprios[$ident] ?? null, "do_calibre" => $do_calibre[$ident] ?? null];
+        "secao" => $c["secao"], "multiplo" => (int)($c["multiplo"] ?? 0) === 1, "regra" => campo_regra_texto($c), "valor" => $proprios[$ident] ?? null, "do_calibre" => $do_calibre[$ident] ?? null];
 }
 $saida = ["hoje" => $hoje->format("Y-m-d"), "relogio" => null, "copia_sistema" => documentos_copia_sistema(), "painel_modo" => painel_modo(), "campos" => $campos,
     // as situações na coleção, na ordem, para o menu do cadastro
@@ -148,7 +148,7 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     $dados = [];
     foreach (campos_na_ordem_da_ficha(campos_do_relogio($r)) as $c) {
         $ident = $c["identificador"];
-        $dados[] = ["identificador" => $ident, "nome" => $c["nome"], "secao" => $c["secao"], "tipo" => $c["tipo"], "unidade" => $c["unidade"], "valor" => $proprios[$ident] ?? null,
+        $dados[] = ["identificador" => $ident, "nome" => $c["nome"], "secao" => $c["secao"], "tipo" => $c["tipo"], "unidade" => $c["unidade"], "multiplo" => (int)($c["multiplo"] ?? 0) === 1, "valor" => $proprios[$ident] ?? null,
             "valor_usado" => ($valores[$ident] ?? "") !== "" ? $valores[$ident] : $c["padrao"],
             "origem" => $o_d = origem_valor($id, $ident, $c["padrao"]), "origem_texto" => origem_texto($o_d)];
         // o valor também na unidade em que a dele aparece (o milímetro também em polegadas): o texto, ou null

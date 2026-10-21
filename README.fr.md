@@ -105,7 +105,7 @@ flowchart LR
 | Concept | Ce que c'est | Exemple |
 |---|---|---|
 | **Groupes** (l'arbre) | Le classement de la collection, sur autant de niveaux que vous voulez. Tout ce qui est enregistré dans un groupe vaut pour lui et pour tout ce qui est en dessous. | `Traditionnelle › Mécanique › Automatique` |
-| **Champs** | Les données de chaque montre, définies par vous : texte, nombre, date, oui/non ou liste, avec unité et valeur par défaut. | `reserva_horas = 40 h`, `data_pilha`, `loja` |
+| **Champs** | Les données de chaque montre, définies par vous : texte, nombre, date, oui/non ou liste, avec unité, valeur par défaut et les règles de valeur (les valeurs possibles, le minimum et le maximum, plusieurs valeurs à la fois). | `reserva_horas = 40 h`, `data_pilha`, `funcoes = Data, GMT` |
 | **Sections** | Les sections de la fiche, créées par vous : chaque champ se trouve dans l'une d'elles, et la fiche, le tableau de bord, le passeport et les rapports montrent les champs regroupés, dans leur ordre. | *Identification*, *Achat*, *Construction*, *Énergie* |
 | **Unités** | Ce qui vient après le nombre, enregistré par vous : le symbole, le nom et la conversion (le pouce en millimètres). Les champs, les types de saisie et les formules choisissent l'unité dans la liste, et la valeur peut aussi apparaître dans une autre unité. | `47 mm (1,85 pol)` |
 | **Calibres** | Le mouvement de la montre, avec ce qui lui appartient : le fabricant, le manuel technique, les recommandations et les valeurs des champs. La montre avec un calibre utilise sa propre valeur, sinon celle du calibre, sinon la valeur par défaut du champ. | `NH35` : réserve de 41 h, marche de −20 à +40 s/jour |
@@ -129,6 +129,7 @@ dans le calcul, et la division par zéro donne vide. L'essentiel :
 | `MIN(...)`, `MAX(...)` | la plus petite et la plus grande des valeurs (ignorent les vides) |
 | `LIMITA(x; min; max)`, `ARREDONDA(x; décimales)`, `ABS(x)` | x maintenu dans l'intervalle ; arrondi ; sans signe |
 | `CONVERTER(x; "de"; "para")` | x dans une autre unité de la même grandeur, selon le registre des unités : `CONVERTER(diametro; "mm"; "pol")` ; vide quand les deux ne se convertissent pas |
+| `TEM(x; "valor")`, `ITENS(x)` | 1 si le champ multiple a la valeur (sans tenir compte des majuscules) : `TEM(funcoes; "Cronógrafo")` ; combien de valeurs il a |
 | `PADRAO(x; autre)`, `VAZIO(x)`, `NADA()` | x, ou l'autre si x est vide ; 1 si x est vide ; vide, exprès (`SE(condition; NADA(); calcul)`) |
 | `HOJE()`, `AGORA()` | la date du jour et l'instant actuel, en jours (maintenant avec la fraction du jour) |
 | `DIAS_DESDE(date)`, `DIAS_ATE(date)`, `SOMA_MESES(date; mois)` | jours depuis et jusqu'à une date (négatif : déjà passée) ; la date plus des mois, selon le calendrier |
@@ -674,6 +675,26 @@ apparaît aussi dans cette unité dans les **Données de la montre** et dans le 
 pouces : *47 mm (1,85 pol)*). Une unité utilisée ne se supprime pas (la suppression dit qui l'utilise) ; supprimer une base
 emporte celles qui se convertissent en elle. Par l'API : `recurso=unidades` (la liste, avec la conversion et l'usage de
 chacune) et `recurso=unidades` avec `acao=salvar` ou `excluir`.
+
+### Les règles de valeur
+
+Chaque champ dit quelle valeur il accepte, dans l'onglet **Champs** de la page **Définitions**, et l'API refuse ce qui ne
+la suit pas (l'écran, l'API, l'import, le calibre) :
+
+- **Valeurs possibles** (une par ligne) : dans la **liste**, ce sont les options, obligatoires ; dans le **texte** et le
+  **nombre**, quand le champ en a, la valeur doit être l'une d'elles (la largeur du bracelet : 18, 20, 22), et la fiche
+  montre un menu. Écrit en minuscules, ça marche aussi : l'écriture des définitions est gardée.
+- **Minimum** et **maximum**, seulement pour le nombre (vide : sans limite) : le diamètre de 20 à 60 mm. La plage apparaît
+  sous la saisie, et le refus dit laquelle (*doit être de 20 à 60 mm*).
+- **Plusieurs valeurs** : le champ multiple, comme les **fonctions** de la montre (date, GMT, chronographe). Dans la fiche,
+  une case pour chaque valeur possible ; dans les Données de la montre, chacune dans une étiquette ; dans le passeport,
+  séparées par des virgules. Dans la base, une par ligne (les tables `campo_valor_item` et `calibre_valor_item`), et dans les
+  formules il arrive avec une par ligne : `TEM(funcoes; "GMT")` dit s'il l'a, et `ITENS(funcoes)`, combien.
+
+Changer le type ou les règles d'un champ vérifie les valeurs déjà enregistrées : ce qui ne les suit plus est listé et le
+changement attend que vous corrigiez (cesser d'être multiple, par exemple, seulement quand chaque montre a une seule valeur).
+Par l'API : `recurso=campos` avec `opcoes`, `minimo`, `maximo` et `multiplo` ; sur la montre, `valores[funcoes][]` une fois
+par valeur.
 
 ### Les sections de la fiche
 
@@ -1777,7 +1798,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `rodizio` | `usando` (je porte celle-ci aujourd'hui), `trocar_dia` (la montre d'un jour), `periodo` (les montres d'une période, dans l'ordre : `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (efface les jours de la période et le mode les refait ; seulement `de` : jusqu'à la fin du plan ; seulement `ate` : de demain jusqu'à lui), `periodo_livre` (efface et laisse les jours libres, sans tirage ; les mêmes dates), `manual` (la Rotation manuelle : `de`, `ate`, `dias[AAAA-MM-JJ]` = l'id de la montre, `auto` ou `livre`), `apagar_tudo` (toute la programmation à partir de demain disparaît ; `hoje=1` : à partir d'aujourd'hui ; le mode reconstruit le plan), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (changer le mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (groupes) et `relogios` (le groupe de chaque montre) |
-| `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (et `ordem` dans les champs) |
+| `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (et `ordem` dans les champs ; le champ avec les règles de valeur : `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
 | `config` | `salvar`, `evento_salvar`, `evento_excluir` |

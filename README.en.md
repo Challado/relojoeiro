@@ -99,7 +99,7 @@ flowchart LR
 | Concept | What it is | Example |
 |---|---|---|
 | **Groups** (the tree) | The classification of the collection, in as many levels as you want. Everything registered in a group applies to it and to everything below it. | `Traditional › Mechanical › Automatic` |
-| **Fields** | The data of each watch, defined by you: text, number, date, yes/no or list, with unit and default value. | `reserva_horas = 40 h`, `data_pilha`, `loja` |
+| **Fields** | The data of each watch, defined by you: text, number, date, yes/no or list, with unit, default value and the value rules (the possible values, the minimum and the maximum, several values at once). | `reserva_horas = 40 h`, `data_pilha`, `funcoes = Data, GMT` |
 | **Sections** | The record sections, created by you: each field sits in one of them, and the record, the dashboard, the passport and the reports show the fields grouped, in their order. | *Identification*, *Purchase*, *Construction*, *Energy* |
 | **Units** | What goes after the number, registered by you: the symbol, the name and the conversion (the inch in millimetres). Fields, entry types and formulas pick the unit from the list, and the value can also appear in another unit. | `47 mm (1.85 pol)` |
 | **Calibers** | The watch's movement, with what belongs to it: the manufacturer, the technical manual, the recommendations and the field values. A watch with a caliber uses its own value, otherwise the caliber's, otherwise the field's default. | `NH35`: 41 h power reserve, rate from −20 to +40 s/day |
@@ -123,6 +123,7 @@ calculation, and division by zero gives empty. The basics:
 | `MIN(...)`, `MAX(...)` | the smallest and the largest of the values (ignore the empty ones) |
 | `LIMITA(x; min; max)`, `ARREDONDA(x; places)`, `ABS(x)` | x held in the range; rounded; without sign |
 | `CONVERTER(x; "de"; "para")` | x in another unit of the same quantity, by the unit register: `CONVERTER(diametro; "mm"; "pol")`; empty when the two do not convert |
+| `TEM(x; "valor")`, `ITENS(x)` | 1 if the multiple field has the value (case-insensitive): `TEM(funcoes; "Cronógrafo")`; how many values it has |
 | `PADRAO(x; other)`, `VAZIO(x)`, `NADA()` | x, or the other if x is empty; 1 if x is empty; empty, on purpose (`SE(condition; NADA(); calculation)`) |
 | `HOJE()`, `AGORA()` | today's date and the current instant, in days (now with the fraction of the day) |
 | `DIAS_DESDE(date)`, `DIAS_ATE(date)`, `SOMA_MESES(date; months)` | days since and until a date (negative: already passed); the date plus months, by the calendar |
@@ -657,6 +658,25 @@ the **Watch data** and in the **Passport** (the millimetre already shows the inc
 cannot be deleted (the deletion says who uses it); deleting a base takes along the units that convert into it. Through the
 API: `recurso=unidades` (the list, with each one's conversion and use) and `recurso=unidades` with `acao=salvar` or
 `excluir`.
+
+### The value rules
+
+Each field says which value it accepts, in the **Fields** tab of the **Definitions** page, and the API refuses what does not
+follow it (the screen, the API, the import, the caliber):
+
+- **Possible values** (one per line): in a **list**, they are the options, required; in **text** and **number**, when the
+  field has them, the value must be one of them (the strap width: 18, 20, 22), and the record shows a menu. Written in
+  lowercase also works: the definitions' spelling is kept.
+- **Minimum** and **maximum**, number only (empty: no limit): the diameter from 20 to 60 mm. The range appears below the
+  input, and the refusal says what it is (*must be from 20 to 60 mm*).
+- **Several values**: the multiple field, like the watch's **functions** (date, GMT, chronograph). In the record, one box
+  for each possible value; in Watch data, each one in a tag; in the passport, separated by commas. In the database, one per
+  row (the `campo_valor_item` and `calibre_valor_item` tables), and in formulas it arrives with one per line:
+  `TEM(funcoes; "GMT")` says whether it has it, and `ITENS(funcoes)`, how many.
+
+Changing a field's type or rules checks the values already saved: whatever no longer follows is listed and the change waits
+for you to fix it (stopping being multiple, for example, only when each watch has a single value). Through the API:
+`recurso=campos` with `opcoes`, `minimo`, `maximo` and `multiplo`; on the watch, `valores[funcoes][]` once for each value.
 
 ### Record sections
 
@@ -1727,7 +1747,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `rodizio` | `usando` (I'm wearing this one today), `trocar_dia` (a day's watch), `periodo` (the watches of a period, in order: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (erases the period's days and the mode builds them again; only `de`: to the end of the plan; only `ate`: from tomorrow to it), `periodo_livre` (erases and leaves the days free, without a draw; the same dates), `manual` (the Manual rotation: `de`, `ate`, `dias[YYYY-MM-DD]` = the watch id, `auto` or `livre`), `apagar_tudo` (the whole schedule from tomorrow on goes away; `hoje=1`: from today on; the mode builds the plan again), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (change the mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (groups) and `relogios` (each watch's group) |
-| `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (and `ordem` in the fields) |
+| `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (and `ordem` in the fields; the field with the value rules: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
 | `config` | `salvar`, `evento_salvar`, `evento_excluir` |

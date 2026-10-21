@@ -1,4 +1,4 @@
-<!-- origem: e4d0ac5d5f50e4111e1b523e8a90d24789d106cc -->
+<!-- origem: 329aebc4561f43ee2cfe90799f815e0785b08f56 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -190,7 +190,7 @@ curl -u upyogkarta:password -G "http://server/relojoeiro/api.php" -d recurso=cal
 | `rodizio` | `usando` (आज मैं यह पहन रहा हूँ), `trocar_dia` (किसी दिन की घड़ी), `periodo` (किसी अवधि की घड़ियाँ, क्रम से: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (अवधि के दिन हटाता है और मोड उन्हें फिर से बनाता है; केवल `de`: योजना के अंत तक; केवल `ate`: कल से उस तक), `periodo_livre` (मिटाकर दिनों को बिना ड्रॉ ख़ाली छोड़ता है; वही तारीख़ें), `manual` (मैनुअल रोटेशन: `de`, `ate`, `dias[YYYY-MM-DD]` = घड़ी का id, `auto` या `livre`), `apagar_tudo` (कल से आगे का पूरा कार्यक्रम हटता है; `hoje=1`: आज से आगे; मोड योजना दोबारा बनाता है), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (मोड बदलना) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (समूह) और `relogios` (हर घड़ी का समूह) |
-| `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (और फ़ील्ड में `ordem`) |
+| `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (और फ़ील्ड में `ordem`; मान के नियमों वाला फ़ील्ड: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
 | `config` | `salvar`, `evento_salvar`, `evento_excluir` |

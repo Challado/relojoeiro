@@ -1003,7 +1003,7 @@ const IMPACTO_NOMES = ["usuario" => "usuários", "colecao" => "coleções", "col
     "convite" => "convites", "pedido" => "pedidos de acesso", "api_token" => "tokens de API", "usuario_token" => "links de senha", "push_inscricao" => "aparelhos do Web Push", "usuario_smtp" => "servidores de e-mail próprios",
     "no" => "grupos", "campo" => "campos", "campo_opcao" => "opções de lista", "unidade" => "unidades", "campo_secao" => "divisórias de campos", "lancamento_tipo" => "tipos de lançamento", "formula" => "fórmulas", "aviso" => "avisos",
     "documento_categoria" => "categorias de documento", "documento_categoria_aceita" => "tipos aceitos de categorias", "relogio" => "relógios", "foto" => "fotos",
-    "campo_valor" => "valores de campo", "calibre" => "calibres", "calibre_valor" => "valores de calibre", "relogio_calibre" => "relógios com calibre", "lancamento" => "lançamentos", "medicao" => "medições do gasto", "documento" => "documentos", "documento_parte" => "pedaços de documentos no banco",
+    "campo_valor" => "valores de campo", "calibre" => "calibres", "calibre_valor" => "valores de calibre", "campo_valor_item" => "valores de campo múltiplo", "calibre_valor_item" => "valores de campo múltiplo de calibre", "relogio_calibre" => "relógios com calibre", "lancamento" => "lançamentos", "medicao" => "medições do gasto", "documento" => "documentos", "documento_parte" => "pedaços de documentos no banco",
     "servico" => "serviços e diagnósticos", "servico_peca" => "peças de serviços", "servico_documento" => "documentos de serviços",
     "reserva_teste" => "testes da reserva e observações da energia", "timegrapher" => "medições do timegrapher",
     "acessorio" => "acessórios", "acessorio_relogio" => "vínculos de acessório", "criterio_parametro" => "parâmetros de critérios", "criterio_sub" => "subparâmetros de critérios",
@@ -1019,7 +1019,7 @@ tk("usuários"); tk("coleções"); tk("membros"); tk("acessos a tudo de um dono"
 tk("pedidos de acesso"); tk("tokens de API"); tk("links de senha"); tk("aparelhos do Web Push");
 tk("servidores de e-mail próprios"); tk("grupos"); tk("campos"); tk("opções de lista"); tk("tipos de lançamento");
 tk("fórmulas"); tk("avisos"); tk("categorias de documento"); tk("tipos aceitos de categorias"); tk("relógios");
-tk("fotos"); tk("valores de campo"); tk("unidades"); tk("divisórias de campos"); tk("calibres"); tk("valores de calibre"); tk("relógios com calibre");
+tk("fotos"); tk("valores de campo"); tk("unidades"); tk("divisórias de campos"); tk("calibres"); tk("valores de calibre"); tk("valores de campo múltiplo"); tk("valores de campo múltiplo de calibre"); tk("relógios com calibre");
 tk("lançamentos"); tk("medições do gasto"); tk("documentos"); tk("pedaços de documentos no banco");
 tk("serviços e diagnósticos"); tk("peças de serviços"); tk("documentos de serviços");
 tk("testes da reserva e observações da energia"); tk("medições do timegrapher"); tk("acessórios"); tk("vínculos de acessório");

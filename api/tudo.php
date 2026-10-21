@@ -18,7 +18,8 @@ $campos = [];
 foreach (campos_todos() as $c) {
     $campos[] = ["id" => (int)$c["id"], "identificador" => $c["identificador"], "nome" => $c["nome"], "tipo" => $c["tipo"], "unidade" => $c["unidade"],
         "opcoes" => $c["opcoes"], "padrao" => $c["padrao"], "no_id" => $c["no_id"] === null ? null : (int)$c["no_id"], "lugar" => no_caminho($c["no_id"]), "ordem" => (int)$c["ordem"],
-        "secao_id" => ($c["secao_id"] ?? null) === null ? null : (int)$c["secao_id"]];
+        "secao_id" => ($c["secao_id"] ?? null) === null ? null : (int)$c["secao_id"], "minimo" => numero_do_campo($c["minimo"] ?? null) === null ? null : (float)$c["minimo"],
+        "maximo" => numero_do_campo($c["maximo"] ?? null) === null ? null : (float)$c["maximo"], "multiplo" => (int)($c["multiplo"] ?? 0) === 1];
 }
 $tipos_l = [];
 foreach (lancamento_tipos() as $t) {

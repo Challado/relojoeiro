@@ -23,9 +23,13 @@ $n_p = nos_todos();
 
 // um valor do cadastro em texto, pelo tipo do campo: data DD/MM/AAAA, sim/não, número com vírgula e a unidade (R$ na frente;
 // com a unidade em que ela também aparece, entre parênteses: "47 mm (1,85 pol)")
-$texto_valor = function ($c, $v) {
+$texto_valor = function ($c, $v) use (&$texto_valor) {
     if ($v === null || $v === "") {
         return null;
+    }
+    // o múltiplo: cada valor no jeito do tipo, separados por vírgula
+    if ((int)($c["multiplo"] ?? 0) === 1) {
+        return implode(", ", array_map(function ($x) use ($c, $texto_valor) { return $texto_valor(array_merge($c, ["multiplo" => 0]), $x); }, explode("\n", (string)$v)));
     }
     if ($c["tipo"] === "data") {
         return data_txt(strtotime(substr((string)$v, 0, 10)));

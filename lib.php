@@ -518,6 +518,14 @@ function valores_proprios($id)
     foreach (linhas("SELECT c.identificador, v.valor FROM campo_valor v JOIN campo c ON c.id = v.campo_id WHERE v.relogio_id = ?", [$id]) as $x) {
         $res[$x["identificador"]] = $x["valor"];
     }
+    // os campos múltiplos: um valor por linha da tabela, juntos
+    $itens = [];
+    foreach (linhas("SELECT c.identificador, v.valor FROM campo_valor_item v JOIN campo c ON c.id = v.campo_id WHERE v.relogio_id = ?", [$id]) as $x) {
+        $itens[$x["identificador"]][] = $x["valor"];
+    }
+    foreach ($itens as $ident => $l) {
+        $res[$ident] = itens_juntar(campos_todos()[$ident] ?? null, $l);
+    }
     return $res;
 }
 
@@ -546,6 +554,16 @@ function calibres_dos_relogios()
             JOIN campo c ON c.id = v.campo_id") as $x) {
             $res[(int)$x["relogio_id"]]["valores"][$x["identificador"]] = $x["valor"];
         }
+        $itens = [];
+        foreach (linhas("SELECT rc.relogio_id, c.identificador, v.valor FROM relogio_calibre rc JOIN calibre_valor_item v ON v.calibre_id = rc.calibre_id
+            JOIN campo c ON c.id = v.campo_id") as $x) {
+            $itens[(int)$x["relogio_id"]][$x["identificador"]][] = $x["valor"];
+        }
+        foreach ($itens as $rid => $porc) {
+            foreach ($porc as $ident => $l) {
+                $res[$rid]["valores"][$ident] = itens_juntar(campos_todos()[$ident] ?? null, $l);
+            }
+        }
         $cache = [$k => $res];
     }
     return $cache[$k];
@@ -563,6 +581,13 @@ function valores_do_calibre($cid)
     $res = [];
     foreach (linhas("SELECT c.identificador, v.valor FROM calibre_valor v JOIN campo c ON c.id = v.campo_id WHERE v.calibre_id = ?", [(int)$cid]) as $x) {
         $res[$x["identificador"]] = $x["valor"];
+    }
+    $itens = [];
+    foreach (linhas("SELECT c.identificador, v.valor FROM calibre_valor_item v JOIN campo c ON c.id = v.campo_id WHERE v.calibre_id = ?", [(int)$cid]) as $x) {
+        $itens[$x["identificador"]][] = $x["valor"];
+    }
+    foreach ($itens as $ident => $l) {
+        $res[$ident] = itens_juntar(campos_todos()[$ident] ?? null, $l);
     }
     return $res;
 }
@@ -625,9 +650,67 @@ function calibres_todos()
     }, linhas("SELECT * FROM calibre ORDER BY nome, id"));
 }
 
-// Confere e normaliza um valor digitado para o tipo do campo. Devolve [valor normalizado (texto) ou null se vazio, erro]
+// Os valores possíveis de um campo, em lista (o texto do cadastro tem um por linha). O sim/não e a data não têm
+function campo_opcoes_lista($c)
+{
+    if (($c["tipo"] ?? "") === "sim_nao" || ($c["tipo"] ?? "") === "data") {
+        return [];
+    }
+    $o = $c["opcoes"] ?? null;
+    return array_values(array_filter(array_map("trim", is_array($o) ? $o : explode("\n", str_replace("\r", "", (string)$o))), function ($x) { return $x !== ""; }));
+}
+
+// Um número do cadastro (o mínimo, o máximo) em texto, sem os zeros do fim: 0.500000 vira 0.5
+function numero_do_campo($v)
+{
+    return $v === null || $v === "" ? null : (string)(0 + (float)$v);
+}
+
+// O mínimo e o máximo de um campo de número em texto, para a tela (embaixo da entrada) e para o erro: "de 30 a 50 mm",
+// "no mínimo 0", "no máximo 100 %"; null quando o campo não tem limite (ou não é número)
+function campo_regra_texto($c)
+{
+    $min = numero_do_campo($c["minimo"] ?? null);
+    $max = numero_do_campo($c["maximo"] ?? null);
+    if (!in_array($c["tipo"] ?? "", ["inteiro", "decimal"], true) || ($min === null && $max === null)) {
+        return null;
+    }
+    $u = ($c["unidade"] ?? "") !== "" ? " " . $c["unidade"] : "";
+    $f = function ($x) { return numero_txt((float)$x, 6, 0); };
+    return $min !== null && $max !== null ? t("de {1} a {2}", [1 => $f($min), 2 => $f($max) . $u])
+        : ($min !== null ? t("no mínimo {1}", [1 => $f($min) . $u]) : t("no máximo {1}", [1 => $f($max) . $u]));
+}
+
+// O valor digitado, conferido e normalizado pelo tipo e pelas regras do campo: [valor, erro] (o vazio: [null, ""]). As
+// regras: os valores possíveis (na lista, sempre; no texto e no número, quando o campo tem: o valor tem de ser um deles,
+// e vale o escrito do cadastro, sem diferença de maiúsculas), o mínimo e o máximo do número e o múltiplo (vários dos
+// valores possíveis de uma vez: uma lista, ou um por linha; o valor fica um por linha, na ordem dos valores possíveis)
 function valor_para_campo($c, $v)
 {
+    $opcoes = campo_opcoes_lista($c);
+    if ((int)($c["multiplo"] ?? 0) === 1) {
+        $itens = is_array($v) ? $v : explode("\n", str_replace("\r", "", (string)$v));
+        $um = array_merge($c, ["multiplo" => 0]);
+        $certos = [];
+        foreach ($itens as $x) {
+            if (trim((string)$x) !== "") {
+                $p = valor_para_campo($um, $x);
+                if ($p[1] !== "") {
+                    return [null, $p[1]];
+                }
+                $certos[$p[0]] = array_search($p[0], $opcoes, true);
+            }
+        }
+        asort($certos);
+        return count($certos) === 0 ? [null, ""] : [implode("\n", array_map("strval", array_keys($certos))), ""];
+    }
+    if (is_array($v)) {
+        $v = array_values(array_filter(array_map(function ($x) { return trim((string)$x); }, $v), function ($x) { return $x !== ""; }));
+        if (count($v) > 1) {
+            return [null, t("aceita um valor só")];
+        }
+        $v = $v[0] ?? "";
+    }
     $v = trim((string)$v);
     $res = [null, ""];
     if ($v !== "") {
@@ -643,11 +726,83 @@ function valor_para_campo($c, $v)
         } elseif ($c["tipo"] === "data") {
             $d = DateTimeImmutable::createFromFormat("!Y-m-d", $v);
             $res = $d && $d->format("Y-m-d") === $v ? [$v, ""] : [null, t("tem de ser uma data AAAA-MM-DD")];
-        } elseif ($c["tipo"] === "lista") {
-            $opcoes = array_values(array_filter(array_map("trim", explode("\n", (string)$c["opcoes"]))));
-            $res = in_array($v, $opcoes, true) ? [$v, ""] : [null, t("tem de ser uma das opções: {1}", [1 => implode(", ", $opcoes)])];
         } else {
             $res = strlen($v) <= 1000 ? [$v, ""] : [null, t("passa de 1000 caracteres")];
+        }
+        // o mínimo e o máximo do número
+        $min = numero_do_campo($c["minimo"] ?? null);
+        $max = numero_do_campo($c["maximo"] ?? null);
+        if ($res[1] === "" && ($c["tipo"] === "inteiro" || $c["tipo"] === "decimal") && (($min !== null && (float)$res[0] < (float)$min) || ($max !== null && (float)$res[0] > (float)$max))) {
+            $res = [null, t("tem de ser {1}", [1 => campo_regra_texto($c)])];
+        }
+        // os valores possíveis (a lista tem sempre; o texto e o número, quando o campo tem)
+        if ($res[1] === "" && ($c["tipo"] === "lista" || count($opcoes) > 0)) {
+            $achou = null;
+            foreach ($opcoes as $o) {
+                if ($o === $res[0] || mb_strtolower($o) === mb_strtolower($res[0]) || (($c["tipo"] === "inteiro" || $c["tipo"] === "decimal") && is_numeric($o) && (float)$o == (float)$res[0])) {
+                    $achou = $achou ?? $o;
+                }
+            }
+            $res = $achou !== null ? [$achou, ""] : [null, t("tem de ser uma das opções: {1}", [1 => implode(", ", $opcoes)])];
+        }
+    }
+    return $res;
+}
+
+// Grava o valor de um campo num relógio ou num calibre ($dono: "relogio" ou "calibre"; o valor já conferido por
+// valor_para_campo; null apaga). O campo múltiplo vai um por linha para o campo_valor_item (no calibre, o
+// calibre_valor_item); os outros, para o campo_valor (calibre_valor)
+function valor_gravar($dono, $id, $c, $valor)
+{
+    [$tabela, $itens, $col] = $dono === "calibre" ? ["calibre_valor", "calibre_valor_item", "calibre_id"] : ["campo_valor", "campo_valor_item", "relogio_id"];
+    sql("DELETE FROM " . $tabela . " WHERE " . $col . " = ? AND campo_id = ?", [(int)$id, (int)$c["id"]]);
+    sql("DELETE FROM " . $itens . " WHERE " . $col . " = ? AND campo_id = ?", [(int)$id, (int)$c["id"]]);
+    if ($valor === null || $valor === "") {
+        return;
+    }
+    if ((int)($c["multiplo"] ?? 0) === 1) {
+        $feitos = [];
+        foreach (explode("\n", (string)$valor) as $x) {
+            $x = mb_substr(trim($x), 0, 120);
+            if ($x !== "" && !isset($feitos[mb_strtolower($x)])) {
+                $feitos[mb_strtolower($x)] = true;
+                sql("INSERT INTO " . $itens . " (" . $col . ", campo_id, valor) VALUES (?, ?, ?)", [(int)$id, (int)$c["id"], $x]);
+            }
+        }
+    } else {
+        sql("INSERT INTO " . $tabela . " (" . $col . ", campo_id, valor) VALUES (?, ?, ?)", [(int)$id, (int)$c["id"], (string)$valor]);
+    }
+}
+
+// Os valores de um campo múltiplo lidos do banco (um por linha da tabela), juntos num texto: um por linha, na ordem dos
+// valores possíveis do campo
+function itens_juntar($c, $itens)
+{
+    $opcoes = $c ? campo_opcoes_lista($c) : [];
+    usort($itens, function ($a, $b) use ($opcoes) {
+        $pa = array_search($a, $opcoes, true);
+        $pb = array_search($b, $opcoes, true);
+        return [$pa === false ? PHP_INT_MAX : $pa, $a] <=> [$pb === false ? PHP_INT_MAX : $pb, $b];
+    });
+    return implode("\n", $itens);
+}
+
+// Todos os valores gravados de um campo, nos relógios e nos calibres (o múltiplo já junto, um por linha): a conferência
+// quando as regras do campo mudam. [["dono" => "relogio" ou "calibre", "id", "nome", "valor"], ...]
+function valores_do_campo($c)
+{
+    $res = [];
+    foreach ([["relogio", "campo_valor", "campo_valor_item", "relogio_id", "relogio"], ["calibre", "calibre_valor", "calibre_valor_item", "calibre_id", "calibre"]] as [$dono, $t, $ti, $col, $tab]) {
+        $itens = [];
+        foreach (linhas("SELECT v." . $col . " AS id, x.nome, v.valor FROM " . $t . " v JOIN " . $tab . " x ON x.id = v." . $col . " WHERE v.campo_id = ?", [(int)$c["id"]]) as $x) {
+            $res[] = ["dono" => $dono, "id" => (int)$x["id"], "nome" => $x["nome"], "valor" => $x["valor"]];
+        }
+        foreach (linhas("SELECT v." . $col . " AS id, x.nome, v.valor FROM " . $ti . " v JOIN " . $tab . " x ON x.id = v." . $col . " WHERE v.campo_id = ?", [(int)$c["id"]]) as $x) {
+            $itens[(int)$x["id"]]["nome"] = $x["nome"];
+            $itens[(int)$x["id"]]["itens"][] = $x["valor"];
+        }
+        foreach ($itens as $id => $x) {
+            $res[] = ["dono" => $dono, "id" => $id, "nome" => $x["nome"], "valor" => itens_juntar($c, $x["itens"])];
         }
     }
     return $res;
@@ -879,6 +1034,7 @@ $MIGRACOES = [
     "v40" => ["migracao_v40.sql", tk("o login e o e-mail de cada conta sem espaços nas pontas também no banco (a regra ck_usuario_aparados), e nunca duas contas com o mesmo login ou e-mail: o login de uma também não pode ser o e-mail de outra (os dois servem para entrar)"), "sistema.chave=migracao_v40", "migracao_v40"],
     "v41" => ["migracao_v41.sql", tk("o cadastro das unidades (Cadastros › Unidades): cada árvore ganha as unidades prontas (mm, cm, pol, g, h, dias, bar, °C...), com o nome, a conversão (a unidade base da mesma grandeza e o fator: 1 pol = 25,4 mm) e a unidade em que o valor também aparece (o milímetro também em polegadas); o campo, o tipo de lançamento e a fórmula escolhem a unidade da lista, e a função CONVERTER converte nas fórmulas. As unidades que a árvore já usa entram também"), "unidade", "migracao_v41_dados"],
     "v42" => ["migracao_v42.sql", tk("as divisórias da ficha (Cadastros › Divisórias): os campos ficam agrupados por seção no cadastro, no painel, no passaporte e nos relatórios (Identificação, Compra, Construção, Energia, Manutenção e precisão, Rodízio, Desejo), e você cria, renomeia e reordena as suas; os campos prontos já vêm cada um na sua"), "campo_secao", "migracao_v42_dados"],
+    "v43" => ["migracao_v43.sql", tk("as regras do valor de um campo (Cadastros › Campos): os valores possíveis também no texto e no número (o valor tem de ser um deles), o mínimo e o máximo do número e o campo múltiplo (a lista múltipla, como as funções do relógio: vários valores de uma vez, guardados um por linha), com as funções TEM e ITENS nas fórmulas"), "campo_valor_item"],
 ];
 
 // O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
@@ -1351,6 +1507,8 @@ $FUNCOES = [
     "CONVERTER" => [3, 3, tk("CONVERTER(x; \"de\"; \"para\"): o valor numa outra unidade da mesma grandeza, pelo cadastro das unidades (ex.: CONVERTER(diametro; \"mm\"; \"pol\")); vazio quando as duas não se convertem"), false],
     "PADRAO" => [2, 2, tk("PADRAO(x; valor se x estiver vazio)"), false],
     "VAZIO" => [1, 1, tk("1 se o valor está vazio"), false],
+    "TEM" => [2, 2, tk("TEM(x; \"valor\"): 1 se o campo múltiplo (a lista múltipla, como as funções) tem esse valor, sem diferença de maiúsculas; num campo de um valor só, 1 se é ele (ex.: TEM(funcoes; \"Cronógrafo\"))"), false],
+    "ITENS" => [1, 1, tk("ITENS(x): quantos valores o campo múltiplo tem (vazio: 0)"), false],
     "NADA" => [0, 0, tk("o vazio, de propósito (ex.: SE(condição; NADA(); conta))"), false],
     "HOJE" => [0, 0, tk("a data de hoje (em dias)"), false],
     "AGORA" => [0, 0, tk("o instante de agora (em dias, com a fração do dia)"), false],
@@ -2299,6 +2457,10 @@ function formula_calcular($no, &$ctx)
                 $res = $v[0] ?? $v[1];
             } elseif ($nome === "VAZIO") {
                 $res = $v[0] === null ? 1 : 0;
+            } elseif ($nome === "TEM" || $nome === "ITENS") {
+                // o campo múltiplo chega como texto, um valor por linha
+                $itens = $v[0] === null ? [] : array_values(array_filter(array_map("trim", explode("\n", (string)$v[0])), function ($x) { return $x !== ""; }));
+                $res = $nome === "ITENS" ? count($itens) : (in_array(mb_strtolower(trim((string)$v[1])), array_map("mb_strtolower", $itens), true) ? 1 : 0);
             } elseif ($nome === "NADA") {
                 $res = null;
             } elseif ($nome === "HOJE") {

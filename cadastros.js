@@ -76,7 +76,8 @@ function recarregarCadastros() {
         + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, [t("Campo"), t("Identificador"), t("Tipo"), t("Divisória"), t("Vale para"), t("Padrão"), ""].map(function (item) { return el("th", {}, item); }).join("")))
           + el("tbody", {}, d.campos.map(function (c) {
             var sec = d.secoes.filter(function (x) { return x.id === c.secao_id; })[0];
-            return el("tr", {}, el("td", {}, h(c.nome) + (c.unidade !== "" ? " (" + h(c.unidade) + ")" : "")) + el("td", {"class": "formula ident"}, h(c.identificador)) + el("td", {}, h(d.tipos_de_campo[c.tipo]))
+            return el("tr", {}, el("td", {}, h(c.nome) + (c.unidade !== "" ? " (" + h(c.unidade) + ")" : "")) + el("td", {"class": "formula ident"}, h(c.identificador)) + el("td", {}, h(d.tipos_de_campo[c.tipo]) + (c.multiplo === 1 ? t(" · vários valores") : "")
+                + (c.regra ? el("small", {}, h(c.regra)) : ""))
               + el("td", {}, sec ? h(sec.nome) : el("span", {"class": "nota"}, t("nenhuma")))
               + el("td", {"class": "nota"}, h(caminho(d, c.no_id)) + (c.so_desejado === 1 ? t(" · só nos desejados") : "") + (c.calibre === 1 ? t(" · do movimento") : "")) + el("td", {}, h(vazio(c.padrao)))
               + el("td", {"class": "acoes-linha"}, linkEditar(c.id) + " " + botaoLinha("ordem", c.id, "", null, el("button", {"class": "leve discreto", "name": "direcao", "value": "sobe"}, "↑")
@@ -93,7 +94,12 @@ function recarregarCadastros() {
           }).join(""))}) + el("small", {}, el("a", {"href": "cadastros.php?aba=secoes"}, t("as divisórias"))))
           + el("label", {}, t("Valor padrão {1}", {1: el("input", {"name": "padrao", "value": vazio(f.padrao)})}))
           + el("label", {}, t("Vale para {1}", {1: el("select", {"name": "no_id"}, opcoesNo(d, f.no_id))}))
-          + el("label", {}, t("Opções (lista: uma por linha) {1}", {1: el("textarea", {"name": "opcoes"}, h(vazio(f.opcoes)))}))
+          + el("label", {}, t("Valores possíveis (um por linha; vazio: qualquer um) {1}", {1: el("textarea", {"name": "opcoes"}, h(vazio(f.opcoes)))})
+            + el("small", {}, t("Na lista, obrigatórios; no texto e no número, o valor tem de ser um deles. No sim/não e na data, não valem.")))
+          + el("label", {}, t("Mínimo {1}", {1: el("input", {"name": "minimo", "inputmode": "decimal", "value": f.minimo === null || f.minimo === undefined ? "" : String(f.minimo).replace(".", ",")})}) + el("small", {}, t("só no número; vazio: sem limite")))
+          + el("label", {}, t("Máximo {1}", {1: el("input", {"name": "maximo", "inputmode": "decimal", "value": f.maximo === null || f.maximo === undefined ? "" : String(f.maximo).replace(".", ",")})}) + el("small", {}, t("só no número; vazio: sem limite")))
+          + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "multiplo", "value": "0"}) + el("input", {"type": "checkbox", "name": "multiplo", "value": "1", "checked": f.multiplo === 1})
+            + t(" vários valores (marca quantos dos valores possíveis quiser: as funções do relógio)"))
           + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "so_desejado", "value": "0"}) + el("input", {"type": "checkbox", "name": "so_desejado", "value": "1", "checked": f.so_desejado === 1})
             + t(" só nos desejados (a lista de desejos: o preço-alvo, a prioridade)"))
           + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "calibre", "value": "0"}) + el("input", {"type": "checkbox", "name": "calibre", "value": "1", "checked": f.calibre === 1})
@@ -273,6 +279,9 @@ function recarregarTotais() {
 
 // um valor de campo como texto (a lista e o formulário dos calibres): sim/não, data, número com vírgula
 function valorDoCampo(c, v) {
+  if (c.multiplo) {
+    return String(v).split("\n").map(function (x) { return valorDoCampo({tipo: c.tipo, unidade: c.unidade}, x); }).join(", ");
+  }
   if (c.tipo === "sim_nao") {
     return String(v) === "1" ? t("sim") : t("não");
   }
@@ -287,14 +296,22 @@ function entradaDoCalibre(c, v) {
   var nome = "valores[" + c.identificador + "]";
   var rotulo = h(c.nome) + (c.unidade !== "" ? " (" + h(c.unidade) + ")" : "");
   var entrada;
-  if (c.tipo === "sim_nao" || c.tipo === "lista") {
-    var ops = c.tipo === "sim_nao" ? [["1", t("sim")], ["0", t("não")]] : String(c.opcoes || "").split("\n").filter(function (o) { return o.trim() !== ""; }).map(function (o) { return [o, o]; });
+  var possiveis = String(c.opcoes || "").split("\n").filter(function (o) { return o.trim() !== ""; });
+  if (c.multiplo) {
+    // vários dos valores possíveis; nenhum marcado: o calibre não define
+    var marcados = v === null || v === undefined ? [] : String(v).split("\n");
+    return el("fieldset", {"class": "multiplo"}, el("legend", {}, rotulo) + el("input", {"type": "hidden", "name": nome + "[]", "value": ""}) + possiveis.map(function (o) {
+      return el("label", {"class": "check"}, el("input", {"type": "checkbox", "name": nome + "[]", "value": o, "checked": marcados.indexOf(o) >= 0}) + " " + h(o));
+    }).join("") + (c.grupo ? el("small", {}, t("vale em {1}", {1: h(c.grupo)})) : ""));
+  }
+  if (c.tipo === "sim_nao" || c.tipo === "lista" || possiveis.length > 0) {
+    var ops = c.tipo === "sim_nao" ? [["1", t("sim")], ["0", t("não")]] : possiveis.map(function (o) { return [o, o]; });
     entrada = el("select", {"name": nome}, el("option", {"value": ""}, t("— não define")) + ops.map(function (o) { return el("option", {"value": o[0], "selected": v !== null && String(v) === o[0]}, h(o[1])); }).join(""));
   } else if (c.tipo === "data") {
     entrada = el("input", {"type": "date", "name": nome, "value": vazio(v)});
   } else {
     entrada = el("input", {"name": nome, "value": v === null || v === undefined ? "" : (c.tipo === "texto" ? v : String(v).replace(".", ",")), "inputmode": c.tipo === "texto" ? null : "decimal",
-      "placeholder": t("não define")});
+      "placeholder": t("não define")}) + (c.regra ? el("small", {}, h(c.regra)) : "");
   }
   return el("label", {}, rotulo + " " + entrada + (c.grupo ? el("small", {}, t("vale em {1}", {1: h(c.grupo)})) : ""));
 }

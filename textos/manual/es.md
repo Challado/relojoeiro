@@ -1,4 +1,4 @@
-<!-- origem: fde23080cf72489353e3280ddc3f628f73999744 -->
+<!-- origem: daa6363e1d5e61f0657394fe19d7cf110acb11aa -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -51,7 +51,7 @@ flowchart LR
 | Concepto | Qué es | Ejemplo |
 |---|---|---|
 | **Grupos** (el árbol) | La clasificación de la colección, en tantos niveles como quiera. Todo lo registrado en un grupo vale para él y para todo lo que está debajo. | `Tradicional › Mecánico › Automático` |
-| **Campos** | Los datos de cada reloj, definidos por usted: texto, número, fecha, sí/no o lista, con unidad y valor por defecto. | `reserva_horas = 40 h`, `data_pilha`, `loja` |
+| **Campos** | Los datos de cada reloj, definidos por usted: texto, número, fecha, sí/no o lista, con unidad, valor por defecto y las reglas del valor (los valores posibles, el mínimo y el máximo, varios valores a la vez). | `reserva_horas = 40 h`, `data_pilha`, `funcoes = Data, GMT` |
 | **Secciones** | Las secciones de la ficha, creadas por usted: cada campo queda en una de ellas, y la ficha, el panel, el pasaporte y los informes muestran los campos agrupados, en su orden. | *Identificación*, *Compra*, *Construcción*, *Energía* |
 | **Unidades** | Lo que va después del número, registrado por usted: el símbolo, el nombre y la conversión (la pulgada en milímetros). Los campos, los tipos de registro y las fórmulas eligen la unidad de la lista, y el valor puede aparecer también en otra unidad. | `47 mm (1,85 pol)` |
 | **Calibres** | El movimiento del reloj, con lo que es suyo: el fabricante, el manual técnico, las recomendaciones y los valores de los campos. El reloj con un calibre usa su propio valor, si no el del calibre, si no el predeterminado del campo. | `NH35`: reserva de 41 h, marcha de −20 a +40 s/día |
@@ -75,6 +75,7 @@ la cuenta, y la división por cero da vacío. Lo básico:
 | `MIN(...)`, `MAX(...)` | el menor y el mayor de los valores (ignoran los vacíos) |
 | `LIMITA(x; mín; máx)`, `ARREDONDA(x; decimales)`, `ABS(x)` | x sujeto al rango; redondeado; sin signo |
 | `CONVERTER(x; "de"; "para")` | x en otra unidad de la misma magnitud, según el registro de unidades: `CONVERTER(diametro; "mm"; "pol")`; vacío cuando las dos no se convierten |
+| `TEM(x; "valor")`, `ITENS(x)` | 1 si el campo múltiple tiene el valor (sin diferencia de mayúsculas): `TEM(funcoes; "Cronógrafo")`; cuántos valores tiene |
 | `PADRAO(x; otro)`, `VAZIO(x)`, `NADA()` | x, o el otro si x está vacío; 1 si x está vacío; vacío, a propósito (`SE(condición; NADA(); cuenta)`) |
 | `HOJE()`, `AGORA()` | la fecha de hoy y el instante actual, en días (ahora con la fracción del día) |
 | `DIAS_DESDE(fecha)`, `DIAS_ATE(fecha)`, `SOMA_MESES(fecha; meses)` | días desde y hasta una fecha (negativo: ya pasó); la fecha más meses, por el calendario |
@@ -604,6 +605,25 @@ unidad en los **Datos del reloj** y en el **Pasaporte** (el milímetro ya viene 
 Una unidad en uso no se elimina (la eliminación dice quién la usa); eliminar una base se lleva las que se convierten en
 ella. Por la API: `recurso=unidades` (la lista, con la conversión y el uso de cada una) y `recurso=unidades` con
 `acao=salvar` o `excluir`.
+
+### Las reglas del valor {#as-regras-do-valor}
+
+Cada campo dice qué valor acepta, en la pestaña **Campos** de la página **Definiciones**, y la API rechaza lo que no lo sigue
+(la pantalla, la API, la importación, el calibre):
+
+- **Valores posibles** (uno por línea): en la **lista**, son las opciones, obligatorias; en el **texto** y el **número**,
+  cuando el campo los tiene, el valor tiene que ser uno de ellos (el ancho de la correa: 18, 20, 22), y la ficha muestra un
+  menú. Escrito en minúsculas también vale: queda lo escrito en las definiciones.
+- **Mínimo** y **máximo**, solo en el número (vacío: sin límite): el diámetro de 20 a 60 mm. El rango aparece debajo de la
+  entrada, y el rechazo dice cuál es (*tiene que ser de 20 a 60 mm*).
+- **Varios valores**: el campo múltiple, como las **funciones** del reloj (fecha, GMT, cronógrafo). En la ficha, una
+  casilla para cada valor posible; en los Datos del reloj, cada uno en una etiqueta; en el pasaporte, separados por comas. En
+  la base de datos, uno por fila (las tablas `campo_valor_item` y `calibre_valor_item`), y en las fórmulas llega con uno por
+  línea: `TEM(funcoes; "GMT")` dice si lo tiene, e `ITENS(funcoes)`, cuántos.
+
+Cambiar el tipo o las reglas de un campo comprueba los valores ya grabados: lo que ya no las sigue se lista y el cambio
+espera a que usted lo corrija (dejar de ser múltiple, por ejemplo, solo cuando cada reloj tiene un solo valor). Por la API:
+`recurso=campos` con `opcoes`, `minimo`, `maximo` y `multiplo`; en el reloj, `valores[funcoes][]` una vez por cada valor.
 
 ### Las secciones de la ficha {#as-divisórias-da-ficha}
 

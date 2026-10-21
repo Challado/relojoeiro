@@ -746,9 +746,14 @@
  *     campos[].lugar                 esse grupo por extenso
  *     campos[].no_id                 o grupo em que o campo vale; null: todos os relógios
  *     campos[].nome                  o nome do campo
- *     campos[].opcoes                as opções de um campo de lista, uma por linha (texto; vazio nos outros)
+ *     campos[].opcoes                os valores possíveis, um por linha (a lista tem sempre; o texto e o número, quando o campo tem: o
+ *                                    valor tem de ser um deles; vazio: qualquer um)
  *     campos[].ordem                 a posição do campo no cadastro
  *     campos[].secao_id              a divisória da ficha em que o campo fica (secoes[].id); null: nenhuma, no fim da ficha
+ *     campos[].minimo                o menor valor que o número aceita; null: sem limite
+ *     campos[].maximo                o maior valor que o número aceita; null: sem limite
+ *     campos[].multiplo              verdadeiro: o campo é múltiplo (vários dos valores possíveis de uma vez, guardados um por linha; o
+ *                                    valor vem com um por linha)
  *     secoes                         as divisórias da ficha (Cadastros › Divisórias), na ordem
  *     secoes[]                       uma divisória
  *     secoes[].id                    o número da divisória (o secao_id dos campos)
@@ -1847,6 +1852,10 @@
  *                                    null: sem
  *     campos[].secao                 o nome da divisória da ficha em que o campo fica; null: nenhuma. Os campos vêm na ordem da ficha:
  *                                    pelas divisórias, os sem divisória no fim
+ *     campos[].multiplo              verdadeiro: o campo é múltiplo (vários dos valores possíveis de uma vez: uma caixa para cada; valor e
+ *                                    do_calibre com um por linha)
+ *     campos[].regra                 o mínimo e o máximo do número em texto, para mostrar embaixo da entrada ("de 20 a 60 mm"); null: sem
+ *                                    limite
  *     calibres                       os calibres da árvore, pelo nome (o menu Calibre do cadastro)
  *     calibres[]                     um calibre
  *     calibres[].id                  o número do calibre (o calibre_id da gravação)
@@ -1935,6 +1944,7 @@
  *                                    ("1,85 pol"); null: sem número ou sem essa unidade
  *     relogio.dados[].secao          o nome da divisória da ficha do campo; null: nenhuma. Os dados vêm na ordem da ficha: pelas
  *                                    divisórias, os sem divisória no fim
+ *     relogio.dados[].multiplo       verdadeiro: o campo é múltiplo (o valor e o valor_usado vêm com um por linha)
  *     relogio.dados[].tipo           inteiro, decimal, sim_nao, data, lista ou texto
  *     relogio.dados[].unidade        a unidade (texto)
  *     relogio.dados[].valor          o valor informado no relógio (texto; null: não preenchido)
@@ -3031,9 +3041,15 @@
  *     campos[].identificador         o nome do campo nas fórmulas e nos critérios
  *     campos[].no_id                 o grupo em que o campo vale; null: todos os relógios
  *     campos[].nome                  o nome do campo
- *     campos[].opcoes                as opções de um campo de lista, uma por linha (texto; vazio nos outros)
+ *     campos[].opcoes                os valores possíveis, um por linha (a lista tem sempre; o texto e o número, quando o campo tem: o
+ *                                    valor tem de ser um deles; vazio: qualquer um)
  *     campos[].ordem                 a posição do campo no cadastro
  *     campos[].secao_id              a divisória da ficha em que o campo fica (secoes[].id); null: nenhuma, no fim da ficha
+ *     campos[].minimo                o menor valor que o número aceita; null: sem limite
+ *     campos[].maximo                o maior valor que o número aceita; null: sem limite
+ *     campos[].multiplo              1: o campo é múltiplo (vários dos valores possíveis de uma vez); 0: um valor só
+ *     campos[].regra                 o mínimo e o máximo do número em texto, para mostrar embaixo da entrada ("de 20 a 60 mm"); null: sem
+ *                                    limite
  *     secoes                         as divisórias da ficha (Cadastros › Divisórias), na ordem
  *     secoes[]                       uma divisória
  *     secoes[].id                    o número da divisória (o secao_id dos campos)
@@ -3700,7 +3716,12 @@
  *     campos[].tipo                  inteiro, decimal, sim_nao, data, lista ou texto
  *     campos[].unidade               a unidade (vazio: sem)
  *     campos[].padrao                o padrão do campo; null: sem
- *     campos[].opcoes                as opções de um campo de lista, uma por linha; null nos outros
+ *     campos[].opcoes                os valores possíveis, um por linha (a lista tem sempre; o texto e o número, quando o campo tem); null:
+ *                                    qualquer um
+ *     campos[].multiplo              verdadeiro: o campo é múltiplo (vários dos valores possíveis de uma vez; no formulário, uma caixa para
+ *                                    cada)
+ *     campos[].regra                 o mínimo e o máximo do número em texto, para mostrar embaixo da entrada ("de 20 a 60 mm"); null: sem
+ *                                    limite
  *     campos[].grupo                 o grupo em que o campo vale, por extenso; null: todos os relógios
  *     campos[].movimento             verdadeiro: o campo é do movimento (a marca da aba Campos, campo.calibre)
  *     campos_mostrar                 o que a Configuração pede no formulário: movimento (só os campos do movimento) ou todos

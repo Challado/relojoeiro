@@ -227,16 +227,21 @@ CREATE TABLE campo (
     so_desejado    TINYINT NOT NULL DEFAULT 0,
     calibre        TINYINT NOT NULL DEFAULT 0,
     secao_id       INT NULL,
+    minimo         DECIMAL(18,6) NULL,
+    maximo         DECIMAL(18,6) NULL,
+    multiplo       TINYINT NOT NULL DEFAULT 0,
     INDEX (no_id),
     INDEX campo_secao (secao_id),
     FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
     FOREIGN KEY (secao_id) REFERENCES campo_secao(id) ON DELETE SET NULL,
     CONSTRAINT ck_campo_textos CHECK (TRIM(identificador) <> '' AND TRIM(nome) <> ''),
     CONSTRAINT ck_campo_so_desejado CHECK (so_desejado IN (0, 1)),
-    CONSTRAINT ck_campo_calibre CHECK (calibre IN (0, 1))
+    CONSTRAINT ck_campo_calibre CHECK (calibre IN (0, 1)),
+    CONSTRAINT ck_campo_multiplo CHECK (multiplo IN (0, 1)),
+    CONSTRAINT ck_campo_faixa CHECK (minimo IS NULL OR maximo IS NULL OR minimo <= maximo)
 ) ENGINE=InnoDB;
 
--- as opções de um campo do tipo lista
+-- os valores possíveis de um campo (a lista; no texto e no número, quando tem: o valor tem de ser um deles)
 CREATE TABLE campo_opcao (
     campo_id  INT NOT NULL,
     ordem     INT NOT NULL,
@@ -420,6 +425,19 @@ CREATE TABLE campo_valor (
     FOREIGN KEY (campo_id) REFERENCES campo(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- os valores de um campo múltiplo (a lista múltipla: as funções do relógio), um por linha; o campo múltiplo não usa o
+-- campo_valor
+CREATE TABLE campo_valor_item (
+    relogio_id  INT NOT NULL,
+    campo_id    INT NOT NULL,
+    valor       VARCHAR(120) NOT NULL,
+    PRIMARY KEY (relogio_id, campo_id, valor),
+    INDEX (campo_id),
+    FOREIGN KEY (relogio_id) REFERENCES relogio(id) ON DELETE CASCADE,
+    FOREIGN KEY (campo_id) REFERENCES campo(id) ON DELETE CASCADE,
+    CONSTRAINT ck_campo_valor_item CHECK (TRIM(valor) <> '')
+) ENGINE=InnoDB;
+
 -- os calibres (o movimento), da árvore como o cadastro: nome, fabricante, o link do manual técnico, as recomendações e os
 -- valores dos campos que ele define; o relógio aponta para um (relogio_calibre) e herda dele o que não tem
 CREATE TABLE calibre (
@@ -441,6 +459,18 @@ CREATE TABLE calibre_valor (
     PRIMARY KEY (calibre_id, campo_id),
     FOREIGN KEY (calibre_id) REFERENCES calibre(id) ON DELETE CASCADE,
     FOREIGN KEY (campo_id) REFERENCES campo(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- os valores de um campo múltiplo que um calibre define, um por linha (como o campo_valor_item do relógio)
+CREATE TABLE calibre_valor_item (
+    calibre_id  INT NOT NULL,
+    campo_id    INT NOT NULL,
+    valor       VARCHAR(120) NOT NULL,
+    PRIMARY KEY (calibre_id, campo_id, valor),
+    INDEX (campo_id),
+    FOREIGN KEY (calibre_id) REFERENCES calibre(id) ON DELETE CASCADE,
+    FOREIGN KEY (campo_id) REFERENCES campo(id) ON DELETE CASCADE,
+    CONSTRAINT ck_calibre_valor_item CHECK (TRIM(valor) <> '')
 ) ENGINE=InnoDB;
 
 CREATE TABLE relogio_calibre (

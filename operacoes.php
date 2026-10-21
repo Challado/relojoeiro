@@ -236,6 +236,24 @@ function op_campos($acao, $d)
         if ($secao !== null && !isset(secoes_todas()[$secao])) {
             $erros[] = t("Divisória: a {1} não existe (Cadastros › Divisórias).", [1 => $secao]);
         }
+        // as regras do valor: o mínimo e o máximo (só no número; vazio: sem limite) e o múltiplo (vários dos valores possíveis)
+        $numero = $c["tipo"] === "inteiro" || $c["tipo"] === "decimal";
+        foreach (["minimo" => t("Mínimo"), "maximo" => t("Máximo")] as $k => $rot) {
+            $bruto = array_key_exists($k, $d) ? trim((string)$d[$k]) : (string)numero_do_campo($atual[$k] ?? null);
+            $c[$k] = null;
+            if ($numero && $bruto !== "") {
+                $p = valor_para_campo(["tipo" => "decimal"], $bruto);
+                if ($p[1] !== "") {
+                    $erros[] = $rot . ": " . $p[1] . ".";
+                } else {
+                    $c[$k] = $p[0];
+                }
+            }
+        }
+        if ($c["minimo"] !== null && $c["maximo"] !== null && (float)$c["minimo"] > (float)$c["maximo"]) {
+            $erros[] = t("O mínimo passa do máximo.");
+        }
+        $c["multiplo"] = array_key_exists("multiplo", $d) ? ((string)$d["multiplo"] === "1" ? 1 : 0) : (int)($atual["multiplo"] ?? 0);
         if (!identificador_valido($c["identificador"])) {
             $erros[] = t("Identificador: minúsculas, números e _, começando por letra, até 40 (é o nome nas fórmulas).");
         } elseif ((int)valor("SELECT COUNT(*) FROM campo WHERE identificador = ? AND id <> ?", [$c["identificador"], $id]) > 0 || isset(formulas_todas()[$c["identificador"]])) {
@@ -256,6 +274,24 @@ function op_campos($acao, $d)
         if ($c["tipo"] === "lista" && count(array_filter(explode("\n", $c["opcoes"]))) === 0) {
             $erros[] = t("Uma lista precisa de pelo menos uma opção (uma por linha).");
         }
+        // os valores possíveis: no sim/não e na data, nenhum; no número, cada um conferido (e escrito como o número)
+        if ($c["tipo"] === "sim_nao" || $c["tipo"] === "data") {
+            $c["opcoes"] = "";
+        } elseif ($numero && $c["opcoes"] !== "" && count($erros) === 0) {
+            $ops = [];
+            foreach (campo_opcoes_lista($c) as $o) {
+                $p = valor_para_campo(array_merge($c, ["opcoes" => "", "multiplo" => 0]), $o);
+                if ($p[1] !== "") {
+                    $erros[] = t("Valores possíveis: {1} {2}.", [1 => $o, 2 => $p[1]]);
+                } else {
+                    $ops[] = $p[0];
+                }
+            }
+            $c["opcoes"] = implode("\n", $ops);
+        }
+        if ($c["multiplo"] === 1 && count(campo_opcoes_lista($c)) === 0) {
+            $erros[] = t("Vários valores: o campo precisa dos valores possíveis (um por linha).");
+        }
         if ($no === false) {
             $erros[] = t("O ponto da árvore não existe.");
         }
@@ -266,13 +302,18 @@ function op_campos($acao, $d)
             }
             $c["padrao"] = $p[0] ?? "";
         }
-        // tipo novo: os valores já gravados têm de servir nele
-        if (count($erros) === 0 && $atual && ($c["tipo"] !== $atual["tipo"] || $c["opcoes"] !== (string)$atual["opcoes"])) {
+        // tipo ou regras novas: os valores já gravados têm de servir nelas (e são gravados de novo, já no jeito novo: o
+        // múltiplo um por linha, o número dos valores possíveis)
+        $regravar = [];
+        if (count($erros) === 0 && $atual && ($c["tipo"] !== $atual["tipo"] || $c["opcoes"] !== (string)$atual["opcoes"] || $c["multiplo"] !== (int)($atual["multiplo"] ?? 0)
+            || $c["minimo"] !== numero_do_campo($atual["minimo"] ?? null) || $c["maximo"] !== numero_do_campo($atual["maximo"] ?? null))) {
             $nao_servem = [];
-            foreach (array_merge(linhas("SELECT r.nome, v.valor FROM campo_valor v JOIN relogio r ON r.id = v.relogio_id WHERE v.campo_id = ?", [$id]),
-                linhas("SELECT c.nome, v.valor FROM calibre_valor v JOIN calibre c ON c.id = v.calibre_id WHERE v.campo_id = ?", [$id])) as $v) {
-                if (valor_para_campo($c, $v["valor"])[1] !== "") {
-                    $nao_servem[] = $v["nome"] . " (" . $v["valor"] . ")";
+            foreach (valores_do_campo($atual) as $v) {
+                $p = valor_para_campo($c, $v["valor"]);
+                if ($p[1] !== "") {
+                    $nao_servem[] = $v["nome"] . " (" . str_replace("\n", ", ", $v["valor"]) . ")";
+                } else {
+                    $regravar[] = [$v["dono"], $v["id"], $p[0]];
                 }
             }
             if (count($nao_servem) > 0) {
@@ -280,18 +321,22 @@ function op_campos($acao, $d)
             }
         }
         if (count($erros) === 0) {
-            $dados = [$c["identificador"], $c["nome"], $c["tipo"], $c["unidade"], $c["padrao"] !== "" ? $c["padrao"] : null, no_gravar($no), $so_desejado, $do_calibre, $secao];
+            $dados = [$c["identificador"], $c["nome"], $c["tipo"], $c["unidade"], $c["padrao"] !== "" ? $c["padrao"] : null, no_gravar($no), $so_desejado, $do_calibre, $secao,
+                $c["minimo"], $c["maximo"], $c["multiplo"]];
             if ($acao === "novo") {
-                sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, so_desejado, calibre, secao_id, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, so_desejado, calibre, secao_id, minimo, maximo, multiplo, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     array_merge($dados, [(int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM campo")]));
                 $id = ultimo_id();
                 $msg = t("Campo {1} criado, para {2}. Nas fórmulas: {3}.", [1 => $c["nome"], 2 => no_caminho($no), 3 => $c["identificador"]]);
             } else {
-                sql("UPDATE campo SET identificador = ?, nome = ?, tipo = ?, unidade = ?, padrao = ?, no_id = ?, so_desejado = ?, calibre = ?, secao_id = ? WHERE id = ?", array_merge($dados, [$id]));
+                sql("UPDATE campo SET identificador = ?, nome = ?, tipo = ?, unidade = ?, padrao = ?, no_id = ?, so_desejado = ?, calibre = ?, secao_id = ?, minimo = ?, maximo = ?, multiplo = ? WHERE id = ?", array_merge($dados, [$id]));
                 $msg = t("Campo {1} salvo.", [1 => $c["nome"]]);
             }
-            // as opções da lista (só no tipo lista; nos outros, nenhuma)
-            campo_gravar_opcoes($id, $c["tipo"] === "lista" ? $c["opcoes"] : "");
+            // os valores possíveis (no sim/não e na data, nenhum) e os valores já gravados, no jeito novo
+            campo_gravar_opcoes($id, $c["opcoes"]);
+            foreach ($regravar as [$dono, $did, $val]) {
+                valor_gravar($dono, $did, ["id" => $id, "multiplo" => $c["multiplo"]], $val);
+            }
             campos_todos(true);
         }
     } elseif ($acao === "excluir") {
@@ -299,7 +344,7 @@ function op_campos($acao, $d)
         if (count($usam) > 0) {
             $erros[] = t("Não dá para excluir {1}: estas fórmulas usam: {2}.", [1 => $atual["identificador"], 2 => implode(", ", $usam)]);
         } else {
-            $n = (int)valor("SELECT COUNT(*) FROM campo_valor WHERE campo_id = ?", [$id]);
+            $n = (int)valor("SELECT COUNT(*) FROM relogio WHERE id IN (SELECT relogio_id FROM campo_valor WHERE campo_id = ?) OR id IN (SELECT relogio_id FROM campo_valor_item WHERE campo_id = ?)", [$id, $id]);
             sql("DELETE FROM campo WHERE id = ?", [$id]);
             campos_todos(true);
             $msg = t("Campo {1} excluído{2}", [1 => $atual["nome"], 2 => $n > 0 ? t(", com os valores dele em {1}{2}", [1 => $n, 2 => $n === 1 ? t(" relógio.") : t(" relógios.")]) : "."]);
@@ -746,7 +791,7 @@ function op_calibres($acao, $d)
             if ($conf[1] !== "") {
                 $erros[] = $campos[$ident]["nome"] . ": " . $conf[1];
             } else {
-                $gravar[(int)$campos[$ident]["id"]] = $conf[0];
+                $gravar[(int)$campos[$ident]["id"]] = [$campos[$ident], $conf[0]];
             }
         }
         if (count($erros) === 0) {
@@ -758,12 +803,8 @@ function op_calibres($acao, $d)
                 $id = ultimo_id();
                 $msg = t("Calibre {1} criado.", [1 => $nome]);
             }
-            foreach ($gravar as $cid => $v) {
-                if ($v === null) {
-                    sql("DELETE FROM calibre_valor WHERE calibre_id = ? AND campo_id = ?", [$id, $cid]);
-                } else {
-                    sql("REPLACE INTO calibre_valor (calibre_id, campo_id, valor) VALUES (?, ?, ?)", [$id, $cid, $v]);
-                }
+            foreach ($gravar as $cid => [$campo_g, $v]) {
+                valor_gravar("calibre", $id, $campo_g, $v);
             }
             $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
         }
@@ -937,10 +978,8 @@ function op_relogio($acao, $d)
                     $conf = valor_para_campo($campos[$ident], $v);
                     if ($conf[1] !== "") {
                         $ignorados[] = $campos[$ident]["nome"] . " (" . $conf[1] . ")";
-                    } elseif ($conf[0] === null) {
-                        sql("DELETE FROM campo_valor WHERE relogio_id = ? AND campo_id = ?", [$id, (int)$campos[$ident]["id"]]);
                     } else {
-                        sql("REPLACE INTO campo_valor (relogio_id, campo_id, valor) VALUES (?, ?, ?)", [$id, (int)$campos[$ident]["id"], $conf[0]]);
+                        valor_gravar("relogio", $id, $campos[$ident], $conf[0]);
                     }
                 }
             }
@@ -1653,7 +1692,7 @@ function op_reserva($acao, $d)
             if ($conf[1] !== "") {
                 $erros[] = $conf[1];
             } else {
-                sql("REPLACE INTO campo_valor (relogio_id, campo_id, valor) VALUES (?, ?, ?)", [$rid, (int)$campos["reserva_horas"]["id"], $conf[0]]);
+                valor_gravar("relogio", $rid, $campos["reserva_horas"], $conf[0]);
                 $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
                 [$nom, $o_n] = valor_nominal($r, "reserva_horas");
                 $msg = t("A reserva de marcha do cadastro do {1} passou a {2} (a medida, em {3}).", [1 => $r["nome"], 2 => reserva_horas_txt($h),
@@ -4103,6 +4142,7 @@ function importacao_trazer($ler)
     banco_inicio();
     sql("DELETE FROM lancamento");
     sql("DELETE FROM campo_valor");
+    sql("DELETE FROM campo_valor_item");
     sql("DELETE FROM foto");
     sql("DELETE FROM relogio");
 
@@ -4196,7 +4236,7 @@ function importacao_trazer($ler)
                     if ($v[1] !== "" || $v[0] === null) {
                         $conta[t("valores que não servem no campo (não trazidos)")]++;
                     } else {
-                        sql("INSERT INTO campo_valor (relogio_id, campo_id, valor) VALUES (?, ?, ?)", [$rmap[(int)$r["id"]], (int)$campos[$ident]["id"], $v[0]]);
+                        valor_gravar("relogio", $rmap[(int)$r["id"]], $campos[$ident], $v[0]);
                         $conta[t("valores")]++;
                     }
                 }

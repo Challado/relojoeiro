@@ -86,7 +86,7 @@ flowchart LR
 | 概念 | 是什么 | 示例 |
 |---|---|---|
 | **分组**（树） | 收藏的分类，可以有任意多层。在某个分组中录入的一切，适用于该分组及其下的所有分组。 | `传统手表 › 机械表 › 自动机械表` |
-| **字段** | 每块手表的数据，由你定义：文本、数字、日期、是/否或列表，可带单位和默认值。 | `reserva_horas = 40 h`、`data_pilha`、`loja` |
+| **字段** | 每块手表的数据，由你定义：文本、数字、日期、是/否或列表，可带单位、默认值和取值规则（可选值、最小值和最大值、一次多个值）。 | `reserva_horas = 40 h`、`data_pilha`、`funcoes = Data, GMT` |
 | **分区** | 档案的分区，由你创建：每个字段属于其中一个分区，档案、面板、护照和报告按分区顺序分组显示字段。 | *识别信息*、*购买*、*构造*、*能量* |
 | **单位** | 写在数字后面的部分，由你登记：符号、名称和换算（英寸换成毫米）。字段、记录类型和公式从列表中选择单位，数值还可以同时以另一个单位显示。 | `47 mm (1.85 pol)` |
 | **机芯** | 手表的机芯，以及属于它的信息：厂家、技术手册、建议和各字段的值。有机芯的手表先用自己的值，没有就用机芯的，再没有就用字段默认值。 | `NH35`：动力储备 41 小时，走时 −20 到 +40 秒/天 |
@@ -108,6 +108,7 @@ flowchart LR
 | `MIN(...)`、`MAX(...)` | 各值中的最小值和最大值（忽略空值） |
 | `LIMITA(x; 最小; 最大)`、`ARREDONDA(x; 小数位)`、`ABS(x)` | 把 x 限制在区间内；四舍五入；去掉符号 |
 | `CONVERTER(x; "de"; "para")` | 按单位登记把 x 换算成同一物理量的另一个单位：`CONVERTER(diametro; "mm"; "pol")`；两者无法换算时为空 |
+| `TEM(x; "valor")`、`ITENS(x)` | 多值字段包含该值时为 1（不区分大小写）：`TEM(funcoes; "Cronógrafo")`；它有多少个值 |
 | `PADRAO(x; 另一个)`、`VAZIO(x)`、`NADA()` | x，若 x 为空则取另一个；x 为空时为 1；故意返回空值（`SE(条件; NADA(); 计算)`） |
 | `HOJE()`、`AGORA()` | 今天的日期和当前时刻，以天为单位（当前时刻带有一天中的小数部分） |
 | `DIAS_DESDE(日期)`、`DIAS_ATE(日期)`、`SOMA_MESES(日期; 月数)` | 距某日期已过和还剩的天数（负数：已经过去）；按日历加上月数后的日期 |
@@ -433,6 +434,16 @@ dias      = SE(NO_GRUPO("Smartwatch"); dias_seguidos; 1)
 每棵树都有自己的**单位登记**，在**定义**页面的**单位**标签里：**符号**（写在数字后面的部分：`mm`、`h`、`dias`、`R$`）、完整的**名称**和**换算**。它自带常用单位：长度（mm、cm、m、pol、pés）、质量（g、kg、oz）、时间（s、min、h、dias、semanas、meses、anos）、温度（°C、°F）、压力（bar、atm、hPa、psi）、振频（bph、Hz）以及单独的单位（%、s/dia、ms、°、mAh、V、lux、R$）。字段、记录类型和公式**从这个列表**中选择单位（API 会拒绝未登记的符号），修改单位的符号时，使用它的地方也会一起改。
 
 换算只有一层：每个单位按**系数**换算成其物理量的**基准**（1 pol = 25.4 mm；1 h = 3600 s），只有温度还要用**零点**（°C = (°F − 32) × 5/9）。基准相同的两个单位可以互相换算，公式 `CONVERTER(x; "de"; "para")` 负责计算。**同时显示为**：数值也会以该单位显示在**手表数据**和**护照**里（毫米默认同时显示英寸：*47 mm (1.85 pol)*）。正在使用的单位不能删除（删除时会说明谁在用）；删除基准会连同换算成它的单位一起删除。通过 API：`recurso=unidades`（列表，含每个单位的换算和使用情况），以及 `recurso=unidades` 加 `acao=salvar` 或 `excluir`。
+
+### 取值规则
+
+每个字段在**定义**页面的**字段**标签中说明它接受什么值，不符合的会被 API 拒绝（界面、API、导入、机芯都一样）：
+
+- **可选值**（每行一个）：在**列表**中就是选项，必填；在**文本**和**数字**中，字段有可选值时，值必须是其中之一（表带宽度：18、20、22），档案中显示为菜单。用小写写也可以：保留定义中的写法。
+- **最小值**和**最大值**，仅限数字（空：不限）：直径 20 到 60 mm。范围显示在输入框下方，拒绝时会说明范围（*必须为 20 到 60 mm*）。
+- **多个值**：多值字段，如手表的**功能**（日期、GMT、计时）。档案中每个可选值一个复选框；在手表数据中，每个值一个标签；在护照中用逗号分隔。数据库中每行一个（`campo_valor_item` 和 `calibre_valor_item` 表），公式中以每行一个的形式出现：`TEM(funcoes; "GMT")` 判断是否包含，`ITENS(funcoes)` 给出数量。
+
+修改字段的类型或规则时会检查已保存的值：不再符合的会列出来，修改要等你改好之后才进行（例如，只有每块手表都只有一个值时才能取消多值）。通过 API：`recurso=campos` 带 `opcoes`、`minimo`、`maximo` 和 `multiplo`；在手表上，每个值传一次 `valores[funcoes][]`。
 
 ### 档案分区
 
@@ -1150,7 +1161,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `rodizio` | `usando`（我今天戴的是这块）、`trocar_dia`（某一天的手表）、`periodo`（一个时段的手表，按顺序：`de`、`ate`、`relogio_ids[]`、`dias_cada`）、`periodo_sortear`（删除时段内的日子，由模式重新安排；只填 `de`：到计划结束；只填 `ate`：从明天到它）、`periodo_livre`（清除并让这些天保持空闲，不抽选；日期规则相同）、`manual`（手动轮换：`de`、`ate`、`dias[YYYY-MM-DD]` = 手表 id、`auto` 或 `livre`）、`apagar_tudo`（清除从明天起的全部安排；`hoje=1`：从今天起；模式会重新生成计划）、`resortear`、`resortear_hoje`、`proxima_semana`、`modo`（更换模式） |
 | `modos` | `salvar`、`ativar`、`excluir` |
 | `arvore` | `novo`、`renomear`、`mover`、`ordem`、`excluir`（分组）以及 `relogios`（每块手表的分组） |
-| `campos`、`avisos`、`lancamento_tipos` | `novo`、`alterar`、`excluir`（字段还有 `ordem`） |
+| `campos`、`avisos`、`lancamento_tipos` | `novo`、`alterar`、`excluir`（字段还有 `ordem`；带取值规则的字段：`opcoes`、`minimo`、`maximo`、`multiplo`） |
 | `formulas` | `nova`、`alterar`、`excluir` |
 | `criterios` | `conjunto_criar`、`conjunto_excluir`、`param_novo`、`param_excluir`、`param_pesos`、`sub_novo`、`sub_excluir`、`sub_medida`、`sub_mover`、`sub_pesos`、`faixas`、`ordem`、`restaurar` |
 | `config` | `salvar`、`evento_salvar`、`evento_excluir` |

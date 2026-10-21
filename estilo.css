@@ -431,6 +431,10 @@ p.alerta-duplo { font-size: .88rem; color: var(--ambar); margin: .3rem 0; }
 button.corrige { font-size: .85rem; padding: .3rem .7rem; margin-top: .2rem; border-color: #c0392b; color: #9b2c22; }
 fieldset.secao-cadastro { border: 1px solid var(--aco); border-radius: 8px; padding: .6rem .7rem .7rem; margin: 0; display: grid; gap: .6rem; }
 fieldset.secao-cadastro legend { font-size: .9rem; font-weight: 600; color: var(--cinza); padding: 0 .3rem; }
+/* o campo múltiplo (as funções): uma caixa para cada valor possível, lado a lado, quebrando a linha */
+fieldset.multiplo { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .3rem 1rem; min-width: 0; }
+fieldset.multiplo legend { padding: 0; margin-bottom: .25rem; width: 100%; }
+.item-multiplo { display: inline-block; border: 1px solid var(--aco); border-radius: 999px; padding: 0 .5rem; margin: 0 .2rem .2rem 0; font-size: .9em; white-space: nowrap; }
 /* a linha de título de cada divisória na tabela dos dados do relógio */
 tr.secao-dados th { text-align: left; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cinza); padding-top: .7rem; border-bottom: 1px solid var(--aco); }
 /* os valores que um calibre define (a aba Calibres dos Cadastros): os campos numa grade, o grupo em que valem embaixo */
