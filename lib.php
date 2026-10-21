@@ -5541,6 +5541,24 @@ function pulso_tira_sozinho()
     return cfg("pulso_auto_fim") !== "0";
 }
 
+// O solar sai do sol sozinho na hora da Configuração (sol_fim; é o padrão): o "fecha às" do tipo No sol segue essa hora.
+// Desligado (sol_auto_fim = 0), a sessão no sol só fecha pelo Tirar do sol.
+function sol_tira_sozinho()
+{
+    return cfg("sol_auto_fim") !== "0";
+}
+
+// A hora em que a sessão no sol fecha sozinha (HH:MM): a da Configuração, senão a que o tipo No sol já tem, senão 18:00. Fica
+// guardada mesmo com o tirar sozinho desligado, para quando ele for ligado de novo
+function sol_fim_hora()
+{
+    if (preg_match("/^([01][0-9]|2[0-3]):[0-5][0-9]\$/", cfg("sol_fim")) === 1) {
+        return cfg("sol_fim");
+    }
+    $t = lancamento_tipos()["sol"] ?? null;
+    return $t !== null && $t["fecha_as"] !== null ? substr((string)$t["fecha_as"], 0, 5) : "18:00";
+}
+
 // As horas no pulso de um relógio entre dois instantes (as sessões juntas, sem contar duas vezes a mesma hora; a aberta, até
 // o fim do intervalo)
 function horas_no_pulso($rid, $de, $ate)

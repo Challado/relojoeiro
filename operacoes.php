@@ -2991,6 +2991,7 @@ function op_modos($acao, $d)
 // Configuração (página Configuração e API recurso=config). Ações:
 //   salvar: horario_manha, horario_noite, uso_inicio e uso_fim (HH:MM; o horário de uso só grava com os dois válidos e o fim
 //           depois do início); sol_fim (a sessão no sol esquecida aberta fecha a essa hora: o "fecha às" do tipo sol);
+//           sol_auto_fim (1 ou 0: o solar sai do sol sozinho no sol_fim; 0: só pelo Tirar do sol, e a hora fica guardada);
 //           sol_limiar (1 a 99: o solar vai para o sol quando a carga estimada chega a essa %); url_sistema (para a âncora
 //           {link}); pulso_auto_inicio (1 ou 0: o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo
 //           Pôs); pulso_auto_fim (1 ou 0: sai sozinho no fim do horário de uso, o "fecha às" do tipo No pulso; 0: só pelo
@@ -3101,8 +3102,16 @@ function op_config($acao, $d)
             if (array_key_exists("fuso", $d)) {
                 cfg_set("fuso", (string)(fuso_valido($d["fuso"]) ?? ""));
             }
-            if (array_key_exists("sol_fim", $d) && isset(lancamento_tipos()["sol"])) {
-                sql("UPDATE lancamento_tipo SET fecha_as = ? WHERE identificador = 'sol'", [$d["sol_fim"] . ":00"]);
+            // a hora do sol fica na Configuração; tirando do sol sozinho, o "fecha às" do tipo No sol é ela; sem tirar sozinho,
+            // nenhum (só o Tirar do sol)
+            if (array_key_exists("sol_fim", $d)) {
+                cfg_set("sol_fim", (string)$d["sol_fim"]);
+            }
+            if (array_key_exists("sol_auto_fim", $d)) {
+                cfg_set("sol_auto_fim", (string)$d["sol_auto_fim"] === "1" ? "1" : "0");
+            }
+            if ((array_key_exists("sol_fim", $d) || array_key_exists("sol_auto_fim", $d)) && isset(lancamento_tipos()["sol"])) {
+                sql("UPDATE lancamento_tipo SET fecha_as = ? WHERE identificador = 'sol'", [sol_tira_sozinho() ? sol_fim_hora() . ":00" : null]);
             }
             if (array_key_exists("previsao_limite", $d)) {
                 cfg_set("previsao_limite", (string)numero_br($d["previsao_limite"]));

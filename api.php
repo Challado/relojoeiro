@@ -792,6 +792,10 @@
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso);
  *                                    0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
+ *     config.sol_auto_fim            1 (ou vazio): o solar sai do sol sozinho na hora de sol_fim (o "fecha às" do tipo No sol); 0: só pelo
+ *                                    Tirar do sol
+ *     config.sol_fim                 a hora em que a sessão no sol esquecida aberta fecha (HH:MM), guardada mesmo com o sol_auto_fim
+ *                                    desligado
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
  *     config.sol_limiar              no solar, a carga (%) em que ele deve ir para o sol
  *     config.ultima_manha            o dia da última rodada da manhã do cron (texto AAAA-MM-DD)
@@ -2712,6 +2716,10 @@
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso);
  *                                    0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
+ *     config.sol_auto_fim            1 (ou vazio): o solar sai do sol sozinho na hora de sol_fim (o "fecha às" do tipo No sol); 0: só pelo
+ *                                    Tirar do sol
+ *     config.sol_fim                 a hora em que a sessão no sol esquecida aberta fecha (HH:MM), guardada mesmo com o sol_auto_fim
+ *                                    desligado
  *     config.previsao_limite         o limite de carga da previsão do smartwatch, em %
  *     config.sol_limiar              no solar, a carga (%) em que ele deve ir para o sol
  *     config.ultima_manha            o dia da última rodada da manhã do cron (texto AAAA-MM-DD)
@@ -2744,6 +2752,7 @@
  *     relogios[].nome                o nome
  *     repeticoes.<repeticao>         cada repetição de evento e o nome dela
  *     sol_fim                        a hora em que a sessão no sol esquecida aberta fecha (HH:MM)
+ *     sol_auto_fim                   true (o padrão): o solar sai do sol sozinho na hora de sol_fim; false: só pelo Tirar do sol
  *     sistema                        o que é do sistema inteiro (não da coleção)
  *     sistema.url_sistema            o endereço do sistema, para os links das mensagens ({link}), do ICS e do Outlook (vazio: o do pedido)
  *     sistema.pode_mudar             verdadeiro ou falso: quem pede pode mudar (só o master)

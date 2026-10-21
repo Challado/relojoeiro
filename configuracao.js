@@ -201,11 +201,13 @@ function recarregarConfig(aplicadas, manterPosicao) {
           + parCampo(t("No pulso até"), hora("uso_fim", cfg("uso_fim")))
           + parCampo(t("Tirar do pulso sozinho"), marca("pulso_auto_fim", cfg("pulso_auto_fim") !== "0"), "check")
           + parCampo(t("Sessão no sol esquecida fecha às"), hora("sol_fim", d.sol_fim))
+          + parCampo(t("Tirar do sol sozinho"), marca("sol_auto_fim", d.sol_auto_fim), "check")
           // a semana do rodízio: o horizonte do plano, o ciclo, a próxima semana e os blocos contam dela
           + parCampo(t("A semana começa"), el("select", {"name": "semana_inicio"}, el("option", {"value": "segunda", "selected": cfg("semana_inicio") !== "domingo"}, t("Na segunda-feira"))
             + el("option", {"value": "domingo", "selected": cfg("semana_inicio") === "domingo"}, t("No domingo"))))),
           el("p", {"class": "nota"}, t("Sem <strong>pôr sozinho</strong>, o relógio do dia só entra no pulso pelo <strong>Pôs no pulso</strong>; sem <strong>tirar sozinho</strong>, só sai pelo ")
             + t("<strong>Tirou do pulso</strong> (esquecido, continua contando como no pulso). O horário de uso vale sempre para o plano e as previsões. Fora do pulso, o relógio conta como guardado.")
+            + " " + t("Sem <strong>tirar do sol sozinho</strong>, o solar só sai do sol pelo <strong>Tirar do sol</strong> (esquecido, continua carregando na conta).")
             + " " + t("A semana do rodízio começa no dia escolhido: o plano vem montado até o último dia da semana, e o ciclo, a próxima semana e o relógio para a semana inteira contam dela.")));
         var limites = cartao(t("Limites e contas"), el("div", {"class": "campos"},
           parCampo(t("Carregar quando a carga chegar a (%)"), numero("carga_limiar", cfg("carga_limiar") !== "" ? cfg("carga_limiar") : "20", "1", "99"))

@@ -731,6 +731,26 @@ ler("reserva de todos", ["recurso" => "reserva"]);
 ler("ficha com a reserva", ["recurso" => "ficha", "relogio" => $rel["manual"]]);
 ler("passaporte com a reserva", ["recurso" => "passaporte", "relogio" => $rel["manual"]]);
 
+// o Tirar do sol sozinho (sol_auto_fim): desligado, o "fecha às" do tipo No sol fica vazio (a sessão só fecha pelo Tirar do
+// sol) e a hora continua guardada; ligado de novo, volta a hora
+$fecha_sol = function ($nome) {
+    foreach (ler($nome, ["recurso" => "cadastros"])["lancamento_tipos"] ?? [] as $t) {
+        if ($t["identificador"] === "sol") {
+            return $t["fecha_as"];
+        }
+    }
+    return "sem o tipo";
+};
+escrever(["recurso" => "config", "acao" => "salvar", "sol_auto_fim" => 0]);
+$cfg_sol = ler("configuracao sem tirar do sol sozinho", ["recurso" => "config"]);
+if ($fecha_sol("tipos sem tirar do sol sozinho") !== null || ($cfg_sol["sol_auto_fim"] ?? null) !== false || ($cfg_sol["sol_fim"] ?? "") !== "18:00") {
+    $falhas[] = "sol_auto_fim: desligado, o tipo No sol ainda fecha sozinho, ou a hora sumiu";
+}
+escrever(["recurso" => "config", "acao" => "salvar", "sol_auto_fim" => 1]);
+if (substr((string)$fecha_sol("tipos com tirar do sol sozinho"), 0, 5) !== "18:00") {
+    $falhas[] = "sol_auto_fim: ligado de novo, o tipo No sol não voltou a fechar às 18:00";
+}
+
 // os totais: os que vêm prontos (todos, os do rodapé de alguns relógios, os da página), o Testar (uma expressão boa, uma
 // errada, uma que precisa de função de total, uma vazia), um total novo só da página, um no rodapé sem coluna (não pode), a
 // ordem, e a exclusão (sem confirmar, o impacto; com, sai)
