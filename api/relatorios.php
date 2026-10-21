@@ -158,7 +158,7 @@ $RELATORIOS["passaporte"] = [$g_colecao, t("Passaporte do relógio"), t("A ficha
         $sec[] = $pares(t("Compra"), [[t("Data"), $data($c["data"])], [t("Valor pago"), $reais($c["valor"])], [t("Loja"), $c["loja"]], [t("Garantia até"), $data($c["garantia_ate"])]],
             t("Sem dados da compra."));
         $sec[] = $pares(t("Uso"), [[t("Primeira vez no pulso"), $data($u["primeira_vez"])], [t("Última vez"), $u["no_pulso_agora"] ? t("no pulso agora") : $data($u["ultima_vez"])],
-            [t("Horas no pulso"), $u["primeira_vez"] === null ? null : decimal_txt($u["horas_no_pulso"], 1) . t(" h")],
+            [t("Horas no pulso"), $u["primeira_vez"] === null ? null : numero_txt($u["horas_no_pulso"], 1) . t(" h")],
             [t("Dias de uso"), $u["dias_de_uso"] === null ? null : (string)$u["dias_de_uso"]], [t("Custo por uso"), $reais($u["custo_por_uso"])]], t("Ainda não foi ao pulso."));
         $sec[] = $pares(t("Cadastro"), array_map(function ($v) { return [$v["nome"], $v["valor"]]; }, $d["cadastro"]), t("Nada preenchido."));
         $sec[] = $tabela(t("Manutenções"), [t("Marcação"), [t("Vezes"), true], t("A última")], array_map(function ($m) use ($data) {
@@ -289,7 +289,7 @@ $RELATORIOS["historico"] = [$g_uso, t("Linha do tempo"), t("O que cada relógio 
             $l = [$x["relogio"]];
             foreach ($estados as $e) {
                 $te = $x["tempo"][$e] ?? null;
-                $l[] = $te === null || (int)$te["segundos"] === 0 ? null : t("{1} ({2}%)", [1 => $te["texto"], 2 => decimal_txt($te["porcentagem"], 1)]);
+                $l[] = $te === null || (int)$te["segundos"] === 0 ? null : t("{1} ({2}%)", [1 => $te["texto"], 2 => numero_txt($te["porcentagem"], 1)]);
             }
             $resumo_t[] = $l;
         }
@@ -311,20 +311,20 @@ $RELATORIOS["estatisticas"] = [$g_uso, t("Uso no período"), t("As estatísticas
         $e = $ler("estatisticas", ["de" => $tudo ? "tudo" : $per["de"], "ate" => $per["ate"]]);
         $s = $e["resumo"];
         return ["subtitulo" => $periodo_txt(["de" => $e["de"], "ate" => $e["ate"]]),
-            "resumo" => [[t("Dias"), (string)$s["dias"]], [t("Dias com relógio"), (string)$s["dias_com_relogio"]], [t("Horas no pulso"), decimal_txt($s["horas"], 1)],
-                [t("Horas por dia com relógio"), decimal_txt($s["horas_por_dia"], 1)], [t("Relógios usados"), t("{1} de {2}", [1 => $s["relogios_usados"], 2 => $s["relogios_na_colecao"]])],
+            "resumo" => [[t("Dias"), (string)$s["dias"]], [t("Dias com relógio"), (string)$s["dias_com_relogio"]], [t("Horas no pulso"), numero_txt($s["horas"], 1)],
+                [t("Horas por dia com relógio"), numero_txt($s["horas_por_dia"], 1)], [t("Relógios usados"), t("{1} de {2}", [1 => $s["relogios_usados"], 2 => $s["relogios_na_colecao"]])],
                 [t("O mais usado"), $s["mais_usado"] ? $s["mais_usado"]["nome"] : null], [t("O menos usado"), $s["menos_usado"] ? $s["menos_usado"]["nome"] : null],
                 [t("Valor da coleção"), $reais($s["valor_colecao"])], [t("Custo por uso médio"), $reais($s["custo_por_uso_medio"])]],
             "secoes" => [$tabela(t("Por relógio"), [t("Relógio"), [t("Usos"), true], [t("Horas"), true], [t("Parte"), true], t("Último uso"), [t("Dias sem uso"), true], [t("Custo por uso"), true], t("Tendência")],
                 array_map(function ($r) use ($data, $reais) {
-                    return [$r["nome"], (string)$r["usos"], decimal_txt($r["horas"], 1), decimal_txt($r["porcentagem"], 1) . "%", $data($r["ultimo_uso"]),
+                    return [$r["nome"], (string)$r["usos"], numero_txt($r["horas"], 1), numero_txt($r["porcentagem"], 1) . "%", $data($r["ultimo_uso"]),
                         $r["dias_sem_uso"] === null ? null : (string)$r["dias_sem_uso"], $reais($r["custo_por_uso"]), $r["tendencia_texto"]];
                 }, $e["relogios"]), t("Nenhum relógio.")),
                 $tabela(t("Por dia da semana"), [t("Dia"), [t("Dias com uso"), true], [t("Horas"), true], [t("Média por dia"), true], [t("Parte"), true]], array_map(function ($x) {
-                    return [$x["nome"], t("{1} de {2}", [1 => $x["dias_com_uso"], 2 => $x["dias"]]), decimal_txt($x["horas"], 1), decimal_txt($x["media_horas"], 1), decimal_txt($x["porcentagem"], 1) . "%"];
+                    return [$x["nome"], t("{1} de {2}", [1 => $x["dias_com_uso"], 2 => $x["dias"]]), numero_txt($x["horas"], 1), numero_txt($x["media_horas"], 1), numero_txt($x["porcentagem"], 1) . "%"];
                 }, $e["por_dia_semana"]), t("Nada.")),
                 $tabela(t("Por mês"), [t("Mês"), [t("Dias com uso"), true], [t("Relógios"), true], [t("Horas"), true], [t("Média por dia"), true], [t("Parte"), true]], array_map(function ($x) {
-                    return [$x["nome"], t("{1} de {2}", [1 => $x["dias_com_uso"], 2 => $x["dias"]]), (string)$x["relogios"], decimal_txt($x["horas"], 1), decimal_txt($x["media_horas"], 1), decimal_txt($x["porcentagem"], 1) . "%"];
+                    return [$x["nome"], t("{1} de {2}", [1 => $x["dias_com_uso"], 2 => $x["dias"]]), (string)$x["relogios"], numero_txt($x["horas"], 1), numero_txt($x["media_horas"], 1), numero_txt($x["porcentagem"], 1) . "%"];
                 }, $e["por_mes"]), t("Nada."))]];
     }];
 
@@ -341,7 +341,7 @@ $RELATORIOS["plano"] = [$g_uso, t("Plano do rodízio"), t("O plano dia a dia no 
                 return [$data($x["data"]), $x["dia_semana_curto"], $x["relogio"] ?? t("livre"), $x["motivo"]];
             }, $dias), t("Nada planejado no período.")),
                 $tabela(t("Dias de cada relógio"), [t("Relógio"), [t("Dias"), true], [t("Parte"), true], t("O próximo")], array_map(function ($x) use ($data) {
-                    return [$x["relogio"], (string)$x["dias"], decimal_txt($x["porcentagem"], 1) . "%", $data($x["proximo"])];
+                    return [$x["relogio"], (string)$x["dias"], numero_txt($x["porcentagem"], 1) . "%", $data($x["proximo"])];
                 }, $d["resumo"]["relogios"]), t("Nenhum relógio."))]];
     }];
 
@@ -374,7 +374,7 @@ $RELATORIOS["criterios"] = [$g_uso, t("Notas dos critérios"), t("A nota de cada
         foreach ($notas as $n) {
             foreach ($n["conta"] as $x) {
                 $conta[] = [$n["relogio"], $x["parametro"], $x["subparametro"], is_numeric($x["valor"]) ? decimal_txt($x["valor"], 2) : $x["valor"], $x["faixa"],
-                    decimal_txt($x["nota"], 1), decimal_txt($x["peso_efetivo"], 1), decimal_txt($x["pontos"], 2)];
+                    numero_txt($x["nota"], 1), numero_txt($x["peso_efetivo"], 1), numero_txt($x["pontos"], 2)];
             }
         }
         $pos = 0;
@@ -382,7 +382,7 @@ $RELATORIOS["criterios"] = [$g_uso, t("Notas dos critérios"), t("A nota de cada
             "resumo" => [],
             "secoes" => [$tabela(t("A ordem"), [[t("Posição"), true], t("Relógio"), [t("Nota"), true], t("Critérios"), t("No rodízio")], array_map(function ($n) use (&$pos) {
                 $pos++;
-                return [(string)$pos, $n["relogio"], decimal_txt($n["nota"], 2), $n["conjunto_texto"], $n["disponivel"] ? t("sim") : t("não")];
+                return [(string)$pos, $n["relogio"], numero_txt($n["nota"], 2), $n["conjunto_texto"], $n["disponivel"] ? t("sim") : t("não")];
             }, $notas), t("Nenhum relógio.")),
                 $tabela(t("A conta de cada relógio"), [t("Relógio"), t("Parâmetro"), t("Subparâmetro"), [t("Valor"), true], t("Faixa"), [t("Nota"), true], [t("Peso"), true], [t("Pontos"), true]],
                     $conta, t("Nada."))]];
@@ -438,7 +438,7 @@ $RELATORIOS["precisao"] = [$g_manut, t("Precisão e marcha"), t("A marcha (s/dia
             "secoes" => [$pares(t("A marcha"), [[t("Marcha"), $x["marcha_texto"]], [t("Variação"), $x["marcha_dp_texto"]], [t("A última"), $x["ultima_texto"]],
                 [t("Desvio agora"), $x["desvio_agora_texto"]], [t("Esperada"), $x["esperada"]["texto"] ?? null], [t("Medições"), (string)$x["medicoes"]]]),
                 $tabela(t("Os intervalos medidos"), [t("De"), t("Até"), [t("Dias"), true], [t("Marcha"), true], t("Posição")], array_map(function ($i) use ($data_hora) {
-                    return [$data_hora($i["de"]), $data_hora($i["ate"]), decimal_txt($i["dias"], 2), $i["marcha_texto"], $i["posicao_texto"]];
+                    return [$data_hora($i["de"]), $data_hora($i["ate"]), numero_txt($i["dias"], 2), $i["marcha_texto"], $i["posicao_texto"]];
                 }, $x["intervalos"]), t("Nenhum intervalo medido."))]];
     }];
 

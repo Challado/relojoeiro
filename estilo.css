@@ -1703,6 +1703,8 @@ svg.mostrador .visor-hora { font: 700 16px/1 ui-monospace, Menlo, Consolas, mono
 .pagina-relatorios #form-relatorio { margin-bottom: 1rem; }
 table.relatorio th.num, table.relatorio td.num { text-align: right; }
 table.relatorio td { white-space: normal; overflow-wrap: anywhere; }
+/* a coluna de registro (o que o cron fez, gravado como saiu): pré-formatado, mas quebrando a linha, como na página das execuções */
+table.relatorio td pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; }
 table.relatorio tfoot td { font-weight: 600; border-top: 1px solid var(--aco-escuro); border-bottom: 0; }
 .pagina-impressa section.relatorio-resumo dl.pares { grid-template-columns: fit-content(45%) minmax(0, 1fr); }
 @media print {
