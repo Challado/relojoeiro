@@ -1,4 +1,4 @@
-<!-- origem: 3e6e2bb79de85133f8f9faa830cbcc1ac5246ed0 -->
+<!-- origem: 859e2b0561a8107ee9c31707d65ba92b5d96a5e1 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -665,7 +665,7 @@ vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des
 | [`reconstrucao.php`](reconstrucao.php) | le guide pour réécrire le système à partir de zéro (le `recurso=reconstrucao` de l'API) |
 | [`.htaccess`](.htaccess) | la protection des fichiers internes sur Apache (et la connexion du site avec PHP en FastCGI) |
 | [`nginx-relogios.conf`](nginx-relogios.conf) | le bloc nginx qui protège les fichiers internes |
-| [`testes/`](testes/) | le test de parité : le même scénario par l'API sur chaque base, et le comparateur des réponses ; la vérification de la mise en page de tous les écrans, du téléphone à l'ordinateur, et du miroir entre la fiche et le panneau d'Aujourd'hui (le même ordre des sections et des cadres) (`layout.cjs` ; `LINGUA=en` vérifie dans une langue) ; celle des dictionnaires des langues (`textos.php`) ; l'assemblage du README de chaque langue (`readme.php`) ; et la vérification de l'architecture (`arquitetura.php` : les règles que le code doit suivre) |
+| [`testes/`](testes/) | le test de parité : le même scénario par l'API sur chaque base, et le comparateur des réponses ; la vérification de la mise en page de tous les écrans, du téléphone à l'ordinateur, et du miroir entre la fiche et le panneau d'Aujourd'hui (le même ordre des sections et des cadres) (`layout.cjs` ; `LINGUA=en` vérifie dans une langue) ; celle de la mise à jour d'une ancienne base : la base installée par une version antérieure, avec des données, passe à l'actuelle par les migrations (`migracao.sh`) ; celle des dictionnaires des langues (`textos.php`) ; l'assemblage du README de chaque langue (`readme.php`) ; et la vérification de l'architecture (`arquitetura.php` : les règles que le code doit suivre) |
 | [`docs/telas/`](docs/telas/) | les captures d'écran de ce README |
 | `README.md`, `README.en.md`, `README.zh-CN.md`, `README.hi.md`, `README.es.md`, `README.fr.md` | ce README : l'original, en portugais, et les autres langues. Ils ne se modifient pas à la main : le [`testes/readme.php`](testes/readme.php) assemble chacun en joignant le manuel traduit (`textos/manual/<langue>.md`, les sections que montre l'Aide) et le reste traduit (`textos/readme/<langue>.md` : le début, Essayez, l'API, l'Installation, Comment c'est à l'intérieur, Comment contribuer et la Licence) |
 | [`PORTE.md`](PORTE.md) | le registre du portage de la version précédente |
@@ -685,12 +685,14 @@ Les améliorations sont les bienvenues, et le chemin passe toujours par ce dép�
    dans le code.
 4. Vous avez changé la base ? Créez une `migracao_vN.sql` et enregistrez-la dans `$MIGRACOES` dans le `lib.php` : la structure
    dans le dialecte de MySQL, les données en SQL commun aux quatre bases (voir [Les mises à jour de la base](#atualizações-do-banco)).
+   Le `testes/migracao.sh` vérifie le chemin de ceux qui l'utilisent déjà : une base de la version précédente, avec des
+   données, passe par les migrations à l'actuelle (GitHub le lance, sur les quatre bases, à chaque push).
 5. Vous avez changé l'API ? **Expliquez chaque nouveau champ** dans le dictionnaire de l'aide : le `"campos"` du
    `recurso=ajuda`, dans le `api/ajuda.php` (la section de la ressource, avec le chemin du champ comme clé). C'est la source
    unique : le dictionnaire de l'en-tête du `api.php` est généré à partir de lui, avec `php testes/dicionario.php --gravar`
    (n'écrivez pas dans l'en-tête à la main).
 6. **Lancez le test de parité** ([`testes/`](testes/)) sur les quatre bases avant d'envoyer (GitHub le lance aussi, à chaque
-   push sur `main` : le test de parité, la documentation et la mise en page, dans
+   push sur `main` : le test de parité, la mise à jour d'une ancienne base, la documentation et la mise en page, dans
    [`.github/workflows/testes.yml`](.github/workflows/testes.yml) ; le résultat apparaît dans l'onglet **Actions** et dans le
    ✓ / ✗ à côté de chaque commit) : `testes/paridade.sh`, avec les bases en marche, doit finir par `Tudo igual.` Il vérifie
    aussi la documentation : l'en-tête est ce que génère l'aide, et chaque champ des réponses est expliqué. Il vérifie l'architecture ([`testes/arquitetura.php`](testes/arquitetura.php), que GitHub

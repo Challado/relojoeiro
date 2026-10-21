@@ -1,6 +1,8 @@
 # Os testes a cada push no main (e quando pedido na aba Actions): o teste de paridade (testes/paridade.sh) nos bancos, que
 # confere também a documentação da API (o dicionário do cabeçalho e os campos explicados), a conferência do layout das telas e
 # a dos textos fixos (nenhum texto na tela fora do dicionário: o sistema inteiro em chinês).
+# Nos jobs dos bancos, depois da paridade, o teste da atualização (testes/migracao.sh): um banco instalado pela versão de
+# antes do push, com dados, passa para a de agora pelas migrações, como no servidor de quem usa ao fazer o git pull.
 # O resultado aparece na aba Actions do GitHub e no ✓ / ✗ ao lado de cada commit.
 name: Testes
 
@@ -54,6 +56,8 @@ jobs:
       TESTE_PG_SENHA: teste
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # a versão de antes do push, para o teste da atualização
       - uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
@@ -63,6 +67,10 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client mariadb-client > /dev/null
       - name: Teste de paridade
         run: testes/paridade.sh sqlite pgsql mysql
+      - name: Atualização de um banco antigo (a versão de antes do push, com dados, pelas migrações)
+        run: testes/migracao.sh sqlite pgsql mysql
+        env:
+          MIGRACAO_BASE: ${{ github.event.before }}
 
   firebird:
     name: Paridade (SQLite e Firebird)
@@ -79,6 +87,8 @@ jobs:
       TESTE_FB_SENHA: masterkey
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # a versão de antes do push, para o teste da atualização
       - uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
@@ -88,6 +98,10 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq firebird3.0-utils > /dev/null
       - name: Teste de paridade
         run: testes/paridade.sh sqlite firebird
+      - name: Atualização de um banco antigo (a versão de antes do push, com dados, pelas migrações)
+        run: testes/migracao.sh firebird
+        env:
+          MIGRACAO_BASE: ${{ github.event.before }}
 
   layout:
     name: Layout das telas

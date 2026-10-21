@@ -1,4 +1,4 @@
-<!-- origem: 3e6e2bb79de85133f8f9faa830cbcc1ac5246ed0 -->
+<!-- origem: 859e2b0561a8107ee9c31707d65ba92b5d96a5e1 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -634,7 +634,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | [`reconstrucao.php`](reconstrucao.php) | the script to rewrite the system from scratch (the API's `recurso=reconstrucao`) |
 | [`.htaccess`](.htaccess) | the protection of the internal files on Apache (and the site login with PHP through FastCGI) |
 | [`nginx-relogios.conf`](nginx-relogios.conf) | the nginx block that protects the internal files |
-| [`testes/`](testes/) | the parity test: the same script through the API on each database, and the comparer of the responses; the layout check of all the screens, from phone to computer, and of the mirror between the watch page and the Today panel (the same order of sections and boxes) (`layout.cjs`; `LINGUA=en` checks in a language); the check of the languages' dictionaries (`textos.php`); the assembly of each language's README (`readme.php`); and the architecture check (`arquitetura.php`: the rules the code has to follow) |
+| [`testes/`](testes/) | the parity test: the same script through the API on each database, and the comparer of the responses; the layout check of all the screens, from phone to computer, and of the mirror between the watch page and the Today panel (the same order of sections and boxes) (`layout.cjs`; `LINGUA=en` checks in a language); the check of updating an old database: a database installed by an earlier version, with data, moves to the current one through the migrations (`migracao.sh`); the check of the languages' dictionaries (`textos.php`); the assembly of each language's README (`readme.php`); and the architecture check (`arquitetura.php`: the rules the code has to follow) |
 | [`docs/telas/`](docs/telas/) | the screenshots of this README |
 | `README.md`, `README.en.md`, `README.zh-CN.md`, `README.hi.md`, `README.es.md`, `README.fr.md` | this README: the original, in Portuguese, and the other languages. These aren't edited by hand: [`testes/readme.php`](testes/readme.php) assembles each one by joining the translated manual (`textos/manual/<language>.md`, the sections the Help shows) and the translated rest (`textos/readme/<language>.md`: the beginning, Try it, the API, the Installation, How it is inside, How to contribute and the License) |
 | [`PORTE.md`](PORTE.md) | the record of the port of the previous version |
@@ -652,11 +652,13 @@ Improvements are welcome, and the way is always this repository:
    translations go in `textos/`). What is knowledge about watches goes into the starter set (`modelo.json`), not into the code.
 4. Changed the database? Create a `migracao_vN.sql` and register it in `$MIGRACOES` in `lib.php`: the structure in MySQL's
    dialect, the data in SQL common to the four databases (see [Database updates](#atualizações-do-banco)).
+   `testes/migracao.sh` checks the path of those who already use it: a database from the previous version, with data, goes
+   through the migrations to the current one (GitHub runs it, on the four databases, on every push).
 5. Changed the API? **Explain each new field** in the help's dictionary: the `"campos"` of `recurso=ajuda`, in `api/ajuda.php`
    (the resource's section, with the field's path as the key). It is the single source: the dictionary in the header of
    `api.php` is generated from it, with `php testes/dicionario.php --gravar` (don't write in the header by hand).
 6. **Run the parity test** ([`testes/`](testes/)) on the four databases before sending (GitHub also runs it, on every push to
-   `main`: the parity test, the documentation and the layout, in [`.github/workflows/testes.yml`](.github/workflows/testes.yml);
+   `main`: the parity test, the update of an old database, the documentation and the layout, in [`.github/workflows/testes.yml`](.github/workflows/testes.yml);
    the result shows in the **Actions** tab and in the ✓ / ✗ next to each commit): `testes/paridade.sh`, with the databases
    up, has to end with `Tudo igual.` It also checks the documentation: the header is what the help generates, and every field
    of the responses is explained. It checks the architecture ([`testes/arquitetura.php`](testes/arquitetura.php), which GitHub

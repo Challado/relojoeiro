@@ -166,15 +166,38 @@ Ele confere também o pedido de acesso, que é pelo código (o id) que o dono pa
 tudo da ana pelo código, e nem a resposta nem a lista dos pedidos deles mostram o nome da coleção ou o login dela; e a página
 Criar conta, sem login, não lista contas nem coleções. O `paridade.sh` o roda em cada banco, no fim (leva uns 10 segundos).
 
+# Atualização de um banco antigo
+
+O [`migracao.sh`](migracao.sh) confere o caminho de quem já usa o sistema: o `git pull` e o **Aplicar** da Configuração. Para
+cada banco, ele tira uma cópia da versão anterior do código (pelo `git worktree`, numa pasta temporária), instala com ela um
+banco vazio, cria o usuário de teste e lança dados pela API dela (um relógio com valores, leituras de carga, uma sessão no
+pulso, um documento e um acessório). Depois sobe o código de agora no mesmo banco, lista as migrações pendentes, aplica e
+confere: nenhuma pendente depois, o relógio, o documento, o acessório e o histórico de antes lidos pela API de agora, a
+ficha, a página Hoje e o passaporte respondendo, e nenhum aviso do PHP. Sem migração nova entre as duas versões, confere do
+mesmo jeito (o banco já fica em dia). Termina com 0 se tudo passou (uns 10 segundos):
+
+```sh
+testes/migracao.sh                                    # os quatro bancos, a partir do commit anterior (HEAD~1)
+testes/migracao.sh sqlite firebird                    # só esses
+MIGRACAO_BASE=v1.0 testes/migracao.sh sqlite          # a partir de outra versão (um commit, uma tag, um ramo)
+```
+
+Os bancos e o acesso são os do teste de paridade, com outro nome de banco (`TESTE_BANCO_MIG`, padrão `relogios_mig_teste`; o
+arquivo do Firebird ganha `_mig` no nome), **apagado e recriado**; os servidores sobem a partir da porta `TESTE_PORTA_MIG`
+(padrão 8150, duas por banco).
+
 # No GitHub, a cada push
 
 O [`.github/workflows/testes.yml`](../.github/workflows/testes.yml) roda os testes no GitHub Actions a cada push no `main` (e
-quando pedido na aba **Actions**, em "Run workflow"), em três trabalhos ao mesmo tempo:
+quando pedido na aba **Actions**, em "Run workflow"), em cinco trabalhos ao mesmo tempo:
 
+- **Arquitetura, idiomas e documentação (sem banco):** o `arquitetura.php`, o `textos.php` (os dicionários, os manuais e
+  os READMEs traduzidos) e o `dicionario.php`;
 - **Paridade (SQLite, PostgreSQL, MariaDB):** os bancos como serviços do GitHub e o `testes/paridade.sh` (com as conferências
-  da documentação);
-- **Paridade (SQLite e Firebird):** o mesmo com o Firebird 3;
-- **Layout das telas:** o Playwright com o Chromium e o `testes/paridade.sh --layout sqlite`; quando falha, as capturas das
-  telas ficam para baixar na página da rodada (Artifacts, "layout").
+  da documentação); depois, o `testes/migracao.sh` nos três, a partir da versão de antes do push (`github.event.before`);
+- **Paridade (SQLite e Firebird):** o mesmo com o Firebird 3, e o `testes/migracao.sh firebird`;
+- **Layout das telas:** o Playwright com o Chromium, o `configuracao-interface.cjs` e o `testes/paridade.sh --layout sqlite`; quando falha, as capturas das
+  telas ficam para baixar na página da rodada (Artifacts, "layout");
+- **Nenhum texto fixo:** o `LINGUA=zh-CN testes/paridade.sh --textos sqlite`, o sistema inteiro em chinês.
 
 O resultado aparece na aba **Actions** do repositório e no ✓ / ✗ ao lado de cada commit; uma falha também chega por e-mail.

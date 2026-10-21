@@ -2151,7 +2151,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | [`reconstrucao.php`](reconstrucao.php) | o roteiro para reescrever o sistema do zero (o `recurso=reconstrucao` da API) |
 | [`.htaccess`](.htaccess) | a proteção dos arquivos internos no Apache (e o login do site com o PHP por FastCGI) |
 | [`nginx-relogios.conf`](nginx-relogios.conf) | o bloco do nginx que protege os arquivos internos |
-| [`testes/`](testes/) | o teste de paridade: o mesmo roteiro pela API em cada banco, e o comparador das respostas; a conferência do layout de todas as telas, do celular ao computador, e do espelho entre a ficha e o painel da Hoje (a mesma ordem das seções e dos quadros) (`layout.cjs`; `LINGUA=en` confere num idioma); a dos dicionários dos idiomas (`textos.php`); a montagem do README de cada idioma (`readme.php`); e a conferência da arquitetura (`arquitetura.php`: as regras que o código tem de seguir) |
+| [`testes/`](testes/) | o teste de paridade: o mesmo roteiro pela API em cada banco, e o comparador das respostas; a conferência do layout de todas as telas, do celular ao computador, e do espelho entre a ficha e o painel da Hoje (a mesma ordem das seções e dos quadros) (`layout.cjs`; `LINGUA=en` confere num idioma); a da atualização de um banco antigo: o banco instalado por uma versão anterior, com dados, passa para a de agora pelas migrações (`migracao.sh`); a dos dicionários dos idiomas (`textos.php`); a montagem do README de cada idioma (`readme.php`); e a conferência da arquitetura (`arquitetura.php`: as regras que o código tem de seguir) |
 | [`docs/telas/`](docs/telas/) | as capturas de tela deste README |
 | `README.en.md`, `README.zh-CN.md`, `README.hi.md`, `README.es.md`, `README.fr.md` | este README nos outros idiomas. Não se editam à mão: o [`testes/readme.php`](testes/readme.php) monta cada um juntando o manual traduzido (`textos/manual/<idioma>.md`, as seções que a Ajuda mostra) e o resto traduzido (`textos/readme/<idioma>.md`: o começo, Experimente, a API, a Instalação, Como é por dentro, Como contribuir e a Licença) |
 | [`PORTE.md`](PORTE.md) | o registro do porte da versão anterior |
@@ -2169,11 +2169,13 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
    vão em `textos/`). O que é conhecimento sobre relógios vai para o conjunto inicial (`modelo.json`), não para o código.
 4. Mudou o banco? Crie uma `migracao_vN.sql` e registre em `$MIGRACOES` no `lib.php`: a estrutura no dialeto do MySQL, os
    dados em SQL comum aos quatro bancos (veja [Atualizações do banco](#atualizações-do-banco)).
+   O `testes/migracao.sh` confere o caminho de quem já usa: um banco da versão anterior, com dados, passa pelas migrações para
+   a de agora (o GitHub roda, nos quatro bancos, a cada push).
 5. Mudou a API? **Explique cada campo novo** no dicionário da ajuda: o `"campos"` do `recurso=ajuda`, no `api/ajuda.php` (a seção do
    recurso, com o caminho do campo como chave). Ele é a fonte única: o dicionário do cabeçalho do `api.php` é gerado dele, com
    `php testes/dicionario.php --gravar` (não escreva no cabeçalho à mão).
 6. **Rode o teste de paridade** ([`testes/`](testes/)) nos quatro bancos antes de mandar (o GitHub também roda, a cada push
-   no `main`: o teste de paridade, a documentação e o layout, em [`.github/workflows/testes.yml`](.github/workflows/testes.yml);
+   no `main`: o teste de paridade, a atualização de um banco antigo, a documentação e o layout, em [`.github/workflows/testes.yml`](.github/workflows/testes.yml);
    o resultado aparece na aba **Actions** e no ✓ / ✗ ao lado de cada commit): `testes/paridade.sh`, com os
    bancos no ar, tem de terminar com `Tudo igual.` Ele confere também a documentação: o cabeçalho é o que a ajuda gera, e
    todo campo das respostas está explicado. Confere a arquitetura ([`testes/arquitetura.php`](testes/arquitetura.php), que
