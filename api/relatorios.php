@@ -18,11 +18,12 @@ if (!defined("RELOJOEIRO_API")) {
 $cel = function ($v) {
     return $v === null || $v === "" ? "—" : (string)$v;
 };
-// uma seção em tabela: as colunas (o nome, ou [o nome, true] na que é número: alinhada à direita), as linhas (cada uma, a
-// lista das células), o texto de quando não há linha, o total (a linha de baixo) e uma nota
+// uma seção em tabela: as colunas (o nome, ou [o nome, true] na que é número: alinhada à direita; [o nome, false, true] na
+// que é um registro gravado como saiu, no idioma de quando foi gravado: o do cron), as linhas (cada uma, a lista das
+// células), o texto de quando não há linha, o total (a linha de baixo) e uma nota
 $tabela = function ($titulo, $colunas, $linhas, $vazio, $total = null, $nota = null) use ($cel) {
     return ["titulo" => $titulo, "tipo" => "tabela", "nota" => $nota,
-        "colunas" => array_map(function ($c) { return is_array($c) ? ["nome" => $c[0], "numero" => (bool)$c[1]] : ["nome" => $c, "numero" => false]; }, $colunas),
+        "colunas" => array_map(function ($c) { return is_array($c) ? ["nome" => $c[0], "numero" => (bool)$c[1], "registro" => (bool)($c[2] ?? false)] : ["nome" => $c, "numero" => false, "registro" => false]; }, $colunas),
         "linhas" => array_map(function ($l) use ($cel) { return array_map($cel, array_values($l)); }, array_values($linhas)),
         "total" => $total === null ? null : array_map($cel, array_values($total)), "vazio" => $vazio];
 };
@@ -514,7 +515,7 @@ $RELATORIOS["cron"] = [$g_sistema, t("Execuções do cron"), t("As últimas exec
         $d = $ler("cron", ["situacao" => $sit, "limite" => 500]);
         return ["subtitulo" => ["atividade" => t("As que fizeram alguma coisa"), "todas" => t("Todas"), "erros" => t("Só as com erro")][$sit],
             "resumo" => [[t("Execuções"), (string)$d["resumo"]["total"]], [t("Com erro"), (string)$d["resumo"]["erros"]], [t("A última"), $data_hora($d["ultima"])]],
-            "secoes" => [$tabela(t("Execuções"), [t("Começo"), [t("Duração (ms)"), true], t("Erro"), t("O que fez")], array_map(function ($x) use ($data_hora) {
+            "secoes" => [$tabela(t("Execuções"), [t("Começo"), [t("Duração (ms)"), true], t("Erro"), [t("O que fez"), false, true]], array_map(function ($x) use ($data_hora) {
                 return [$data_hora($x["inicio"]), (string)$x["duracao_ms"], $x["teve_erro"] ? t("sim") : t("não"), $x["registro"]];
             }, $d["execucoes"]), t("Nenhuma execução."), null, $d["total"] > count($d["execucoes"]) ? t("As {1} mais recentes de {2}.", [1 => count($d["execucoes"]), 2 => $d["total"]]) : null)]];
     }];

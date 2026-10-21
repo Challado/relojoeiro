@@ -2910,6 +2910,7 @@ $saida = [
             "secoes[].colunas" => t('na tabela: as colunas'),
             "secoes[].colunas[].nome" => t('o nome da coluna'),
             "secoes[].colunas[].numero" => t('true na coluna de números (alinhada à direita)'),
+            "secoes[].colunas[].registro" => t('true na coluna de um registro gravado como saiu, no idioma de quando foi gravado (o que o cron fez): a tela mostra como texto pré-formatado'),
             "secoes[].linhas" => t('na tabela: as linhas, cada uma a lista das células, na ordem das colunas'),
             "secoes[].linhas[][]" => t('uma célula, em texto (— quando não há valor)'),
             "secoes[].total" => t('na tabela: a linha do total, na ordem das colunas; null: sem total'),

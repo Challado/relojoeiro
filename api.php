@@ -4073,6 +4073,8 @@
  *     secoes[].colunas               na tabela: as colunas
  *     secoes[].colunas[].nome        o nome da coluna
  *     secoes[].colunas[].numero      true na coluna de números (alinhada à direita)
+ *     secoes[].colunas[].registro    true na coluna de um registro gravado como saiu, no idioma de quando foi gravado (o que o cron fez): a
+ *                                    tela mostra como texto pré-formatado
  *     secoes[].linhas                na tabela: as linhas, cada uma a lista das células, na ordem das colunas
  *     secoes[].linhas[][]            uma célula, em texto (— quando não há valor)
  *     secoes[].total                 na tabela: a linha do total, na ordem das colunas; null: sem total

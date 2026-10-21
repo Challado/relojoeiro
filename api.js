@@ -80,7 +80,7 @@ function semPreencher(attrs) {
 // rodapé. Tudo vem em texto da API; aqui só se monta. A página Relatórios usa este, e as outras telas apontam para ela
 // (linkRelatorio)
 function relatorioHtml(r) {
-  var celula = function (v, c) { return el("td", {"class": c && c.numero ? "num" : ""}, h(v)); };
+  var celula = function (v, c) { return el("td", {"class": c && c.numero ? "num" : ""}, c && c.registro && v !== "—" ? el("pre", {}, h(v)) : h(v)); };
   var res = el("div", {"class": "barra-impressao"}, el("button", {"type": "button", "onclick": "window.print()"}, t("Imprimir")) + " "
     + el("a", {"class": "botao leve", "href": r.csv, "download": ""}, t("Baixar a planilha (CSV)")) + " "
     + el("span", {"class": "nota"}, t("No papel saem só os dados (o \"Salvar como PDF\" do navegador guarda o arquivo).")));
