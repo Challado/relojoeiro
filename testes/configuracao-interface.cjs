@@ -11,7 +11,8 @@ function dadosConfig() {
   return {config:{idioma:'pt-BR',horario_manha:'06:30',horario_noite:'20:00',uso_inicio:'07:00',uso_fim:'22:00',encostado_dias:'30'},
     linguas:Object.keys(salvas).map(codigo=>({codigo,nome:codigo})),fuso_sistema:'UTC',fusos:[{nome:'UTC',deslocamento:'+00:00'}],
     mostrar_ate:{proximos:7,plano:31},atualizar_segundos:60,relojinho:{modo:'hora',modelos:24},cron_estado:{situacao:'rodando',texto:'Cron OK',registro:'registro\n'.repeat(30)},
-    sol_fim:'18:00',config_php_copia:null,sistema:{pode_mudar:true,url_sistema:'https://exemplo.invalid'},
+    sol_fim:'18:00',sol_auto_fim:true,config_php_copia:null,
+    senha_politica:{regras:{tamanho:8,maiusculas:1,minusculas:1,numeros:1,simbolos:1},texto:'A senha precisa de pelo menos 8 caracteres.'},sistema:{pode_mudar:true,url_sistema:'https://exemplo.invalid'},
     aleatorio:{ultimo_lote:null,fora_desde:null},eventos:[],destinos:[],agendas:[]};
 }
 const base = `
