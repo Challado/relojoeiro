@@ -1,4 +1,4 @@
-<!-- origem: 87aa9c78e9fe7a84a881a5a6e9ff4e66ac8a061b -->
+<!-- origem: 51e3a928a67760c7c6162115ae0a084dff87628d -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1575,7 +1575,7 @@ quiere la aplicación, en tres pasos:
 
 La aplicación es el sitio: las mismas pantallas, actualizadas solas a cada apertura (nada que descargar de una tienda). El
 *service worker* guarda el estilo, los scripts, los íconos y los textos del idioma, para abrir rápido; las páginas y los datos
-vienen siempre de la red, y sin red aparece la página **Sin conexión**, con **Intentar de nuevo**. Por la API:
+vienen siempre de la red (las páginas, directo: el *service worker* no se mete, y aparece el pedido de contraseña del login), y sin red aparece la página **Sin conexión**, con **Intentar de nuevo**. Por la API:
 `recurso=manifest` y `recurso=sw` (sin login), y `recurso=conta` con `acao=aparelho_lembrar` (la cookie) y
 `acao=aparelho_esquecer`. Quien prefiere un atajo de un solo toque, sin abrir nada, tiene la sección siguiente.
 

@@ -4,7 +4,9 @@
 //   1. Na instalação, guarda esses arquivos num cache com o nome da versão; ao ativar, apaga os caches das versões antigas.
 //   2. O estilo, os scripts, as imagens e os textos do idioma (api.php?recurso=textos&formato=js) saem do cache quando já
 //      estão nele (o endereço leva a versão: um arquivo novo tem outro endereço); senão vêm da rede e entram no cache.
-//   3. As páginas vêm sempre da rede (o login e os dados são de agora); sem rede, a página "sem conexão" (offline.html).
+//   3. As páginas o navegador abre sozinho, direto da rede (o login e os dados são de agora): a página que pede a senha (o
+//      401 do login) só mostra o pedido de senha do navegador quando o service worker não se mete. Só sem rede
+//      (navigator.onLine falso) ele responde, com a página "sem conexão" (offline.html).
 //   4. A API nunca fica em cache: todo pedido vai para a rede.
 //   5. O Web Push (Minha conta, "Receber notificações neste aparelho"): mostra a notificação que chega do servidor
 //      ({titulo, texto, link}, cifrada pelo navegador) e, no clique, abre o sistema (o link, ou o Hoje).
@@ -47,9 +49,9 @@ self.addEventListener("fetch", function (ev) {
         return resposta;
       });
     }));
-  } else if (pedido.mode === "navigate") {
-    ev.respondWith(fetch(pedido).catch(function () {
-      return caches.match("offline.html");
+  } else if (pedido.mode === "navigate" && self.navigator.onLine === false) {
+    ev.respondWith(caches.match("offline.html").then(function (guardado) {
+      return guardado || fetch(pedido);
     }));
   }
 });

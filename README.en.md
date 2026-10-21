@@ -2089,7 +2089,7 @@ app, in three steps:
 
 The app is the site: the same screens, updated by themselves at each opening (nothing to download from a store). The *service
 worker* keeps the stylesheet, the scripts, the icons and the language texts, to open fast; the pages and the data always come
-from the network, and without network the **No connection** page appears, with **Try again**. Through the API:
+from the network (the pages, directly: the *service worker* stays out of the way, and the login's password prompt appears), and without network the **No connection** page appears, with **Try again**. Through the API:
 `recurso=manifest` and `recurso=sw` (no login), and `recurso=conta` with `acao=aparelho_lembrar` (the cookie) and
 `acao=aparelho_esquecer`. Whoever prefers a one-tap shortcut, without opening anything, has the next section.
 

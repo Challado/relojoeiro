@@ -1,4 +1,4 @@
-<!-- origem: 87aa9c78e9fe7a84a881a5a6e9ff4e66ac8a061b -->
+<!-- origem: 51e3a928a67760c7c6162115ae0a084dff87628d -->
 
 ## 核心理念：系统对手表一无所知 {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1005,7 +1005,7 @@ API 的消息（每次写入的回复、错误、查询中的文本）使用请�
 2. **安装。** 在 Android（Chrome）上，**安装应用**按钮就在那里出现；否则在浏览器菜单中选**安装应用**（或**添加到主屏幕**）。在 iPhone 和 iPad 上，在 Safari 中：**共享 › 添加到主屏幕**。已安装的应用打开即登录：清单携带已记住设备的密钥，它会成为应用的 cookie（在 iPhone 上应用不共享 Safari 的 cookie；所以第 1 步要先做）。
 3. **开启通知。** 在下方的**此设备上的通知**框中：当日手表、前一天和提醒以设备通知的形式送达（Web Push；在 iPhone 上只能从已安装的应用内接收）。接收的内容在**提醒**页的**推送目标**中选择（见[消息与日历](#mensagens-e-agendas)）。
 
-应用就是网站：同样的界面，每次打开自动更新（无需从商店下载）。*service worker* 缓存样式、脚本、图标和语言文本，以便快速打开；页面和数据始终来自网络，无网络时显示**没有网络连接**页面和**重试**按钮。通过 API：`recurso=manifest` 和 `recurso=sw`（无需登录），以及 `recurso=conta` 的 `acao=aparelho_lembrar`（cookie）和 `acao=aparelho_esquecer`。想要一键快捷方式、什么都不用打开的人，见下一节。
+应用就是网站：同样的界面，每次打开自动更新（无需从商店下载）。*service worker* 缓存样式、脚本、图标和语言文本，以便快速打开；页面和数据始终来自网络（页面是直接打开的：*service worker* 不介入，这样登录的密码提示才会出现），无网络时显示**没有网络连接**页面和**重试**按钮。通过 API：`recurso=manifest` 和 `recurso=sw`（无需登录），以及 `recurso=conta` 的 `acao=aparelho_lembrar`（cookie）和 `acao=aparelho_esquecer`。想要一键快捷方式、什么都不用打开的人，见下一节。
 
 ## 用手机一键标记 {#marcar-pelo-celular-com-um-toque}
 

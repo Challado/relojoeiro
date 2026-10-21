@@ -2166,7 +2166,7 @@ l'appareil où vous voulez l'application, en trois étapes :
 
 L'application, c'est le site : les mêmes écrans, mis à jour d'eux-mêmes à chaque ouverture (rien à télécharger d'un magasin).
 Le *service worker* garde le style, les scripts, les icônes et les textes de la langue, pour ouvrir vite ; les pages et les
-données viennent toujours du réseau, et sans réseau apparaît la page **Pas de connexion**, avec **Réessayer**. Par l'API :
+données viennent toujours du réseau (les pages, directement : le *service worker* ne s'en mêle pas, et la demande de mot de passe du login apparaît), et sans réseau apparaît la page **Pas de connexion**, avec **Réessayer**. Par l'API :
 `recurso=manifest` et `recurso=sw` (sans login), et `recurso=conta` avec `acao=aparelho_lembrar` (le cookie) et
 `acao=aparelho_esquecer`. Qui préfère un raccourci d'une seule touche, sans rien ouvrir, a la section suivante.
 

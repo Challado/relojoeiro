@@ -1,4 +1,4 @@
-<!-- origem: 87aa9c78e9fe7a84a881a5a6e9ff4e66ac8a061b -->
+<!-- origem: 51e3a928a67760c7c6162115ae0a084dff87628d -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1581,7 +1581,7 @@ app, in three steps:
 
 The app is the site: the same screens, updated by themselves at each opening (nothing to download from a store). The *service
 worker* keeps the stylesheet, the scripts, the icons and the language texts, to open fast; the pages and the data always come
-from the network, and without network the **No connection** page appears, with **Try again**. Through the API:
+from the network (the pages, directly: the *service worker* stays out of the way, and the login's password prompt appears), and without network the **No connection** page appears, with **Try again**. Through the API:
 `recurso=manifest` and `recurso=sw` (no login), and `recurso=conta` with `acao=aparelho_lembrar` (the cookie) and
 `acao=aparelho_esquecer`. Whoever prefers a one-tap shortcut, without opening anything, has the next section.
 

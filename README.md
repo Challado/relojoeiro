@@ -2038,8 +2038,9 @@ passos:
    escolhe na página **Avisos**, em **Destinos** (veja [Mensagens e agendas](#mensagens-e-agendas)).
 
 O aplicativo é o site: as mesmas telas, atualizadas sozinhas a cada abertura (nada para baixar da loja). O *service worker*
-guarda o estilo, os scripts, os ícones e os textos do idioma, para abrir rápido; as páginas e os dados vêm sempre da rede, e
-sem rede aparece a página **Sem conexão**, com **Tentar de novo**. Pela API: `recurso=manifest` e `recurso=sw` (sem login),
+guarda o estilo, os scripts, os ícones e os textos do idioma, para abrir rápido; as páginas e os dados vêm sempre da rede (as
+páginas, direto: o *service worker* não se mete, e o pedido de senha do login aparece), e sem rede aparece a página **Sem
+conexão**, com **Tentar de novo**. Pela API: `recurso=manifest` e `recurso=sw` (sem login),
 e `recurso=conta` com `acao=aparelho_lembrar` (o cookie) e `acao=aparelho_esquecer`. Quem prefere um atalho de um toque só,
 sem abrir nada, tem a seção seguinte.
 
