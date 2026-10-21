@@ -1196,7 +1196,9 @@ dl.pares.datas dt { color: var(--tinta); font-weight: 600; font-size: .9rem; }
 
 /* as tabelas do painel (dados, medições, histórico): o título discreto, os números alinhados, nada cortado */
 table.tabela-dados { width: 100%; border-collapse: collapse; background: transparent; border-radius: 0; font-size: .88rem; }
-table.tabela-dados th { font-size: .74rem; color: var(--cinza); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; padding: .3rem .5rem; border-bottom: 1px solid var(--aco-escuro); }
+table.tabela-dados th { font-size: .74rem; color: var(--cinza); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; padding: .3rem .5rem; border-bottom: 1px solid var(--aco-escuro); white-space: nowrap; overflow-wrap: normal; word-break: normal; }
+/* o título de uma divisória (a linha que separa os grupos de campos) pode ser longo: quebra entre as palavras */
+table.tabela-dados tr.secao-dados th { white-space: normal; }
 table.tabela-dados td { padding: .42rem .5rem; border-bottom: 1px solid var(--aco); vertical-align: top; }
 table.tabela-dados th:first-child, table.tabela-dados td:first-child { padding-left: 0; }
 table.tabela-dados th:last-child, table.tabela-dados td:last-child { padding-right: 0; }
@@ -1707,6 +1709,24 @@ svg.mostrador .visor-hora { font: 700 16px/1 ui-monospace, Menlo, Consolas, mono
 .rodape-impresso { margin-top: 1.5rem; }
 /* os relatórios (a página Relatórios): o menu, as tabelas (os números à direita, o total em negrito embaixo) e o resumo */
 .pagina-relatorios #form-relatorio { margin-bottom: 1rem; }
+/* o formulário: o menu do relatório, a descrição e os parâmetros lado a lado (o rótulo em cima do campo), numa linha que
+   quebra onde não cabe; o período (de e até) fica junto, e o botão no fim da linha. Sem o flex-wrap da .barra-impressao:
+   numa coluna que quebra, a largura da linha segue o filho mais largo e o período vazava da caixa no celular de 320 px */
+.pagina-relatorios .form-relatorio { display: flex; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: .7rem; max-width: 60rem; }
+.form-relatorio label.parametro { display: flex; flex-direction: column; gap: .25rem; font-size: .88rem; min-width: 0; color: var(--tinta); }
+.form-relatorio .linha-parametros select { min-width: 12rem; max-width: 100%; }
+.form-relatorio label.parametro select, .form-relatorio label.parametro input { font-size: 1rem; }
+.form-relatorio > label.parametro { align-self: flex-start; max-width: 100%; }
+.form-relatorio .nota { margin: 0; }
+.form-relatorio .linha-parametros { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .7rem 1rem; }
+/* os filhos do formulário (em coluna) e da linha podem ficar mais estreitos que o conteúdo: senão o período não encolhe */
+.pagina-relatorios .form-relatorio > *, .form-relatorio .linha-parametros > * { min-width: 0; }
+.form-relatorio .periodo { display: flex; align-items: flex-end; gap: .7rem; flex-wrap: nowrap; min-width: 0; max-width: 100%; margin: 0; color: inherit; }
+/* as duas datas dividem a largura e encolhem juntas no celular estreito (320 px), sem quebrar uma para baixo da outra */
+.form-relatorio .periodo label.parametro { flex: 0 1 9.5rem; }
+.form-relatorio .periodo input[type=date] { width: 100%; min-width: 0; }
+#form-relatorio .periodo input[type=date] { padding-left: .45rem; padding-right: .35rem; }
+.form-relatorio .linha-parametros .botoes { margin: 0; }
 table.relatorio th.num, table.relatorio td.num { text-align: right; }
 table.relatorio td { white-space: normal; overflow-wrap: anywhere; }
 /* a coluna de registro (o que o cron fez, gravado como saiu): pré-formatado, mas quebrando a linha, como na página das execuções */

@@ -9,6 +9,11 @@ function relatorioEscolhido(tipo) {
   return (catalogo.relatorios.filter(function (x) { return x.tipo === tipo; })[0]) || null;
 }
 
+// um parâmetro: o rótulo em cima do campo (os parâmetros ficam lado a lado, numa linha que quebra onde não cabe)
+function parametro(rotulo, controle) {
+  return el("label", {"class": "parametro"}, h(rotulo) + controle);
+}
+
 // os campos de um parâmetro, com o valor do endereço (ou o padrão da API)
 function campoParametro(p) {
   var v = pedidoRelatorio.get(p.nome);
@@ -16,16 +21,16 @@ function campoParametro(p) {
     v = p.padrao || "";
   }
   if (p.tipo === "relogio") {
-    return parCampo(p.rotulo, el("select", {"name": p.nome, "required": p.obrigatorio},
+    return parametro(p.rotulo, el("select", {"name": p.nome, "required": p.obrigatorio},
       el("option", {"value": ""}, p.obrigatorio ? t("Escolha o relógio") : h(p.vazio || ""))
       + catalogo.relogios.map(function (r) { return el("option", {"value": r.id, "selected": String(r.id) === v}, h(r.nome)); }).join("")));
   }
   if (p.tipo === "opcoes") {
-    return parCampo(p.rotulo, el("select", {"name": p.nome}, p.opcoes.map(function (o) {
+    return parametro(p.rotulo, el("select", {"name": p.nome}, p.opcoes.map(function (o) {
       return el("option", {"value": o.valor, "selected": o.valor === v}, h(o.nome));
     }).join("")));
   }
-  return parCampo(p.rotulo, el("input", {"type": "date", "name": p.nome, "value": v}));
+  return parametro(p.rotulo, el("input", {"type": "date", "name": p.nome, "value": v}));
 }
 
 function formRelatorio() {
@@ -42,10 +47,22 @@ function formRelatorio() {
     }).join(""));
   }).join("");
   var esc = relatorioEscolhido(tipo);
-  return el("form", {"class": "campos barra-impressao cartao-config", "id": "form-relatorio", "onsubmit": "return gerarRelatorio(this)"},
-    parCampo(t("Relatório"), el("select", {"name": "tipo", "required": true, "onchange": "trocarRelatorio(this.value)"}, opcoes), "largo")
-    + (esc ? el("p", {"class": "nota largo"}, h(esc.descricao)) + esc.parametros.map(campoParametro).join("") : "")
-    + el("div", {"class": "botoes largo"}, el("button", {"disabled": !esc}, t("Gerar o relatório"))));
+  // os parâmetros numa linha só; as datas seguidas (o período: de e até) juntas, sem quebrar entre elas; o botão no fim
+  var partes = [];
+  (esc ? esc.parametros : []).forEach(function (p) {
+    var anterior = partes[partes.length - 1];
+    if (p.tipo === "data" && anterior && anterior.data) {
+      anterior.html.push(campoParametro(p));
+    } else {
+      partes.push({data: p.tipo === "data", html: [campoParametro(p)]});
+    }
+  });
+  return el("form", {"class": "form-relatorio barra-impressao cartao-config", "id": "form-relatorio", "onsubmit": "return gerarRelatorio(this)"},
+    parametro(t("Relatório"), el("select", {"name": "tipo", "required": true, "onchange": "trocarRelatorio(this.value)"}, opcoes))
+    + (esc ? el("p", {"class": "nota"}, h(esc.descricao)) : "")
+    + el("div", {"class": "linha-parametros"}, partes.map(function (x) {
+      return x.data && x.html.length > 1 ? el("span", {"class": "periodo"}, x.html.join("")) : x.html.join("");
+    }).join("") + el("div", {"class": "botoes"}, el("button", {"disabled": !esc}, t("Gerar o relatório")))));
 }
 
 // outro relatório no menu: os parâmetros dele (os do anterior saem do endereço)

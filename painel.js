@@ -941,15 +941,17 @@ function abrirNoPainel(id) {
         }).join(" · ") + (r.calibre.documentos.length > 0 ? " · " : "") + el("a", {"href": "documentos.php?calibre=" + r.calibre.id}, t("documentos do calibre")))) : "";
       secoes.cadastro += quadro(t("Dados do relógio"), calLinha + el("div", {"class": "dados-grade"},
         el("div", {}, el("h3", {}, t("Cadastro")) + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Campo"))
-            + el("th", {}, t("Valor")) + el("th", {}, t("Origem")))) + el("tbody", {}, r.dados.map(function (c, i) {
+            + el("th", {}, t("Valor")))) + el("tbody", {}, r.dados.map(function (c, i) {
               // o texto livre (a observação, uma lista) quebra a linha; número, data e sim/não ficam numa linha só
               var texto = c.valor !== null && c.valor !== "" && ["sim_nao", "data", "inteiro", "decimal"].indexOf(c.tipo) < 0;
               // a API manda os dados na ordem das divisórias: uma linha de título onde muda a divisória (os sem divisória, no
               // fim, ficam em "Outros")
               var titulo = (i === 0 ? c.secao !== null : c.secao !== r.dados[i - 1].secao)
-                ? el("tr", {"class": "secao-dados"}, el("th", {"colspan": "3"}, c.secao !== null ? h(c.secao) : t("Outros"))) : "";
-              return titulo + el("tr", {"class": c.origem === "vazio" ? "vazio" : ""}, el("td", {}, h(c.nome)) + el("td", {"class": "valor" + (texto ? " texto" : "")}, valorCampo(c) + calculadoDoCampo(c.identificador))
-                + el("td", {}, el("span", {"class": "origem origem-" + c.origem}, h(c.origem_texto))));
+                ? el("tr", {"class": "secao-dados"}, el("th", {"colspan": "2"}, c.secao !== null ? h(c.secao) : t("Outros"))) : "";
+              // de onde vem o valor só quando não é o do relógio: o padrão do campo ou o do calibre, numa etiqueta ao lado do
+              // valor (o informado é o normal, e o vazio já é o "—")
+              var origem = c.origem === "padrao" || c.origem === "calibre" ? " " + el("span", {"class": "origem origem-" + c.origem}, h(c.origem_texto)) : "";
+              return titulo + el("tr", {"class": c.origem === "vazio" ? "vazio" : ""}, el("td", {}, h(c.nome)) + el("td", {"class": "valor" + (texto ? " texto" : "")}, valorCampo(c) + origem + calculadoDoCampo(c.identificador)));
             }).join(""))))
           + el("div", {"data-avancado": "dados.calculado"}, el("h3", {}, t("Calculado agora")) + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Fórmula"))
             + el("th", {}, t("Valor")) + el("th", {}, t("Versão")))) + el("tbody", {}, r.calculos.map(function (x) {
