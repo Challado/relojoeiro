@@ -2935,9 +2935,17 @@ function avisos_do_relogio($r, $momento, $so = null)
     }
     // o desempate (dois avisos vencendo no mesmo instante) é fixo, para a lista sair igual em qualquer banco
     usort($res, function ($x, $y) {
-        return [$x["falta_dias"], $x["identificador"]] <=> [$y["falta_dias"], $y["identificador"]];
+        return [aviso_ordem($x["falta_dias"]), $x["identificador"]] <=> [aviso_ordem($y["falta_dias"]), $y["identificador"]];
     });
     return $res;
+}
+
+// A chave da ordem de um aviso pelo quanto falta (em dias): o que vence "agora" (menos de um minuto, para lá ou para cá)
+// conta como zero, e desempata pelo relógio e pelo identificador. Senão, dois avisos vencidos agora mudavam de ordem
+// conforme o segundo em que cada um foi calculado
+function aviso_ordem($falta)
+{
+    return duracao_texto((float)$falta) === "" ? 0.0 : (float)$falta;
 }
 
 // Os avisos "na hora" vencidos agora, de todos os relógios (também os indisponíveis: um relógio fora do rodízio ainda pode
@@ -5935,7 +5943,7 @@ function avisos_de_hoje()
         }
     }
     // o desempate (dois relógios vencendo no mesmo instante) é fixo, para a lista sair igual em qualquer banco
-    usort($lista, function ($x, $y) { return [$x[1]["falta_dias"], (int)$x[0]["id"], $x[1]["identificador"]] <=> [$y[1]["falta_dias"], (int)$y[0]["id"], $y[1]["identificador"]]; });
+    usort($lista, function ($x, $y) { return [aviso_ordem($x[1]["falta_dias"]), (int)$x[0]["id"], $x[1]["identificador"]] <=> [aviso_ordem($y[1]["falta_dias"]), (int)$y[0]["id"], $y[1]["identificador"]]; });
     return $lista;
 }
 
