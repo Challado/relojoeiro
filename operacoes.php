@@ -254,6 +254,33 @@ function op_campos($acao, $d)
             $erros[] = t("O mínimo passa do máximo.");
         }
         $c["multiplo"] = array_key_exists("multiplo", $d) ? ((string)$d["multiplo"] === "1" ? 1 : 0) : (int)($atual["multiplo"] ?? 0);
+        // de quem é o campo: do relógio (o padrão) ou do acessório; no acessório, o tipo (vazio: todos) e o campo do relógio
+        // com que ele tem de bater para servir nele (a largura da pulseira com o entre alças)
+        $alvo = array_key_exists("alvo", $d) ? (string)$d["alvo"] : (string)($atual["alvo"] ?? "relogio");
+        $ac_tipo = array_key_exists("acessorio_tipo", $d) ? trim((string)$d["acessorio_tipo"]) : (string)($atual["acessorio_tipo"] ?? "");
+        $serve = array_key_exists("serve_campo_id", $d) ? (int)$d["serve_campo_id"] : (int)($atual["serve_campo_id"] ?? 0);
+        if ($alvo !== "relogio" && $alvo !== "acessorio") {
+            $erros[] = t("Para: relogio ou acessorio.");
+        } elseif ($atual && $alvo !== (string)($atual["alvo"] ?? "relogio") && count(valores_do_campo($atual)) > 0) {
+            $erros[] = t("O campo {1} já tem valores: não dá para mudar de relógio para acessório (ou o contrário).", [1 => $atual["nome"]]);
+        }
+        if ($alvo === "acessorio") {
+            if ($ac_tipo !== "" && !isset(ACESSORIO_TIPOS[$ac_tipo])) {
+                $erros[] = t("Tipo de acessório: {1} (vazio: todos).", [1 => implode(", ", array_keys(ACESSORIO_TIPOS))]);
+            }
+            $alvo_serve = $serve > 0 ? (array_values(array_filter(campos_todos(), function ($x) use ($serve) { return (int)$x["id"] === $serve; }))[0] ?? null) : null;
+            if ($serve > 0 && !$alvo_serve) {
+                $erros[] = t("Serve quando bate com: o campo {1} não é um campo dos relógios.", [1 => $serve]);
+            }
+            // o do acessório não tem grupo, divisória, desejado nem movimento (vale em todos os acessórios do tipo)
+            $no = null;
+            $so_desejado = 0;
+            $do_calibre = 0;
+            $secao = null;
+        } else {
+            $ac_tipo = "";
+            $serve = 0;
+        }
         if (!identificador_valido($c["identificador"])) {
             $erros[] = t("Identificador: minúsculas, números e _, começando por letra, até 40 (é o nome nas fórmulas).");
         } elseif ((int)valor("SELECT COUNT(*) FROM campo WHERE identificador = ? AND id <> ?", [$c["identificador"], $id]) > 0 || isset(formulas_todas()[$c["identificador"]])) {
@@ -322,14 +349,17 @@ function op_campos($acao, $d)
         }
         if (count($erros) === 0) {
             $dados = [$c["identificador"], $c["nome"], $c["tipo"], $c["unidade"], $c["padrao"] !== "" ? $c["padrao"] : null, no_gravar($no), $so_desejado, $do_calibre, $secao,
-                $c["minimo"], $c["maximo"], $c["multiplo"]];
+                $c["minimo"], $c["maximo"], $c["multiplo"], $alvo, $ac_tipo !== "" ? $ac_tipo : null, $serve > 0 ? $serve : null];
             if ($acao === "novo") {
-                sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, so_desejado, calibre, secao_id, minimo, maximo, multiplo, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, so_desejado, calibre, secao_id, minimo, maximo, multiplo, alvo, acessorio_tipo, serve_campo_id, ordem)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     array_merge($dados, [(int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM campo")]));
                 $id = ultimo_id();
-                $msg = t("Campo {1} criado, para {2}. Nas fórmulas: {3}.", [1 => $c["nome"], 2 => no_caminho($no), 3 => $c["identificador"]]);
+                $msg = $alvo === "acessorio" ? t("Campo {1} criado, para os acessórios{2}.", [1 => $c["nome"], 2 => $ac_tipo !== "" ? " (" . mb_strtolower(t(ACESSORIO_TIPOS[$ac_tipo]), "UTF-8") . ")" : ""])
+                    : t("Campo {1} criado, para {2}. Nas fórmulas: {3}.", [1 => $c["nome"], 2 => no_caminho($no), 3 => $c["identificador"]]);
             } else {
-                sql("UPDATE campo SET identificador = ?, nome = ?, tipo = ?, unidade = ?, padrao = ?, no_id = ?, so_desejado = ?, calibre = ?, secao_id = ?, minimo = ?, maximo = ?, multiplo = ? WHERE id = ?", array_merge($dados, [$id]));
+                sql("UPDATE campo SET identificador = ?, nome = ?, tipo = ?, unidade = ?, padrao = ?, no_id = ?, so_desejado = ?, calibre = ?, secao_id = ?, minimo = ?, maximo = ?, multiplo = ?,
+                    alvo = ?, acessorio_tipo = ?, serve_campo_id = ? WHERE id = ?", array_merge($dados, [$id]));
                 $msg = t("Campo {1} salvo.", [1 => $c["nome"]]);
             }
             // os valores possíveis (no sim/não e na data, nenhum) e os valores já gravados, no jeito novo
@@ -1326,6 +1356,21 @@ function op_acessorios($acao, $d)
         if (mb_strlen($obs) > 1000) {
             $erros[] = t("A observação vai até 1000 caracteres.");
         }
+        // os valores dos campos do acessório (os do tipo dele: Cadastros › Campos, para acessório); só muda o que vier
+        $gravar_a = [];
+        $campos_a = campos_de_acessorio(isset(ACESSORIO_TIPOS[$tipo]) ? $tipo : null);
+        foreach ((array)($d["valores"] ?? []) as $ident => $v) {
+            if (!isset($campos_a[$ident])) {
+                $erros[] = t("Campo desconhecido: {1}.", [1 => $ident]);
+                continue;
+            }
+            $conf = valor_para_campo($campos_a[$ident], $v);
+            if ($conf[1] !== "") {
+                $erros[] = $campos_a[$ident]["nome"] . ": " . $conf[1];
+            } else {
+                $gravar_a[] = [$campos_a[$ident], $conf[0]];
+            }
+        }
         if (count($erros) === 0) {
             if ($atual) {
                 sql("UPDATE acessorio SET nome = ?, tipo = ?, observacao = ? WHERE id = ?", [$nome, $tipo, $obs !== "" ? $obs : null, $id]);
@@ -1335,6 +1380,17 @@ function op_acessorios($acao, $d)
             }
             // o relógio do acessório (a ligação; 0: solto)
             ligacao_relogio("acessorio_relogio", "acessorio_id", $id, $rel > 0 ? $rel : null);
+            foreach ($gravar_a as [$campo_a, $v]) {
+                valor_gravar("acessorio", $id, $campo_a, $v);
+            }
+            // trocou de tipo: os valores dos campos que não são do tipo novo saem
+            if ($atual && $atual["tipo"] !== $tipo) {
+                foreach (campos_de_acessorio() as $c_a) {
+                    if (!isset($campos_a[$c_a["identificador"]])) {
+                        valor_gravar("acessorio", $id, $c_a, null);
+                    }
+                }
+            }
             $msg = t("Acessório {1} ({2}){3}{4}.", [1 => $nome, 2 => mb_strtolower(t(ACESSORIO_TIPOS[$tipo]), "UTF-8"), 3 => $atual ? t(" salvo") : t(" cadastrado"), 4 => $r ? t(", do {1}", [1 => $r["nome"]]) : t(", solto (de nenhum relógio)")]);
         }
     } elseif ($acao === "excluir" && $atual) {

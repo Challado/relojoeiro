@@ -754,6 +754,12 @@
  *     campos[].maximo                o maior valor que o número aceita; null: sem limite
  *     campos[].multiplo              verdadeiro: o campo é múltiplo (vários dos valores possíveis de uma vez, guardados um por linha; o
  *                                    valor vem com um por linha)
+ *     campos[].alvo                  de quem é o campo: relogio (o cadastro do relógio) ou acessorio (o cadastro do acessório, na página
+ *                                    Acessórios); a lista traz os dos relógios e depois os dos acessórios
+ *     campos[].acessorio_tipo        no campo de acessório, o tipo de acessório em que ele vale (pulseira, caixa...); null: todos (e nos
+ *                                    dos relógios)
+ *     campos[].serve_campo_id        no campo de acessório, o campo do relógio (campos[].id) com que ele tem de bater para o acessório
+ *                                    servir no relógio (a largura da pulseira com o entre alças); null: nenhum
  *     secoes                         as divisórias da ficha (Cadastros › Divisórias), na ordem
  *     secoes[]                       uma divisória
  *     secoes[].id                    o número da divisória (o secao_id dos campos)
@@ -1031,6 +1037,23 @@
  *     acessorios[].relogio           o nome desse relógio; null: solto
  *     acessorios[].observacao        a observação (null)
  *     acessorios[].criado            quando foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     acessorios[].valores           os campos do acessório preenchidos (Cadastros › Campos, para acessório: os do tipo dele), na ordem
+ *     acessorios[].valores[]         um campo do acessório
+ *     acessorios[].valores[].identificador
+ *                                    o identificador do campo
+ *     acessorios[].valores[].nome    o nome do campo
+ *     acessorios[].valores[].valor   o valor gravado (texto normalizado: número com ponto; o múltiplo, um por linha)
+ *     acessorios[].valores[].texto   o valor para mostrar, no idioma, com a unidade ("20 mm (0,79 pol)"; o múltiplo separado por vírgula)
+ *     acessorios[].serve_por         o que decide em que relógio ele serve: cada campo do relógio com que um campo dele bate, com o valor
+ *                                    dele ("Entre alças (largura da pulseira): 20 mm"); null: ele não preencheu nenhum desses campos
+ *     acessorios[].serve_por[]       um campo do relógio e o valor que ele tem de ter
+ *     acessorios[].serve_em          os relógios em que ele serve (os da coleção, emprestados e desejados cujo valor bate com o dele em
+ *                                    todos esses campos); null: não dá para saber (ele não preencheu nenhum desses campos)
+ *     acessorios[].serve_em[]        um relógio em que ele serve
+ *     acessorios[].serve_em[].relogio_id
+ *                                    o número do relógio
+ *     acessorios[].serve_em[].relogio
+ *                                    o nome do relógio
  *     servicos                       os serviços e diagnósticos de todos os relógios (como em recurso=servicos)
  *     servicos[]                     um serviço
  *     servicos[].id                  o número do serviço (o id da gravação)
@@ -1987,6 +2010,47 @@
  *     relogio.acessorios[].observacao
  *                                    a observação (null)
  *     relogio.acessorios[].criado    quando foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     relogio.acessorios[].valores   os campos do acessório preenchidos (Cadastros › Campos, para acessório: os do tipo dele), na ordem
+ *     relogio.acessorios[].valores[] um campo do acessório
+ *     relogio.acessorios[].valores[].identificador
+ *                                    o identificador do campo
+ *     relogio.acessorios[].valores[].nome
+ *                                    o nome do campo
+ *     relogio.acessorios[].valores[].valor
+ *                                    o valor gravado (texto normalizado: número com ponto; o múltiplo, um por linha)
+ *     relogio.acessorios[].valores[].texto
+ *                                    o valor para mostrar, no idioma, com a unidade ("20 mm (0,79 pol)"; o múltiplo separado por vírgula)
+ *     relogio.acessorios[].serve_por o que decide em que relógio ele serve: cada campo do relógio com que um campo dele bate, com o valor
+ *                                    dele ("Entre alças (largura da pulseira): 20 mm"); null: ele não preencheu nenhum desses campos
+ *     relogio.acessorios[].serve_por[]
+ *                                    um campo do relógio e o valor que ele tem de ter
+ *     relogio.acessorios[].serve_em  os relógios em que ele serve (os da coleção, emprestados e desejados cujo valor bate com o dele em
+ *                                    todos esses campos); null: não dá para saber (ele não preencheu nenhum desses campos)
+ *     relogio.acessorios[].serve_em[]
+ *                                    um relógio em que ele serve
+ *     relogio.acessorios[].serve_em[].relogio_id
+ *                                    o número do relógio
+ *     relogio.acessorios[].serve_em[].relogio
+ *                                    o nome do relógio
+ *     relogio.acessorios_servem      os acessórios de outros relógios, ou soltos, que servem neste (a pulseira com a largura do entre alças
+ *                                    dele): a troca possível
+ *     relogio.acessorios_servem[]    um acessório que serve
+ *     relogio.acessorios_servem[].id o número do acessório
+ *     relogio.acessorios_servem[].nome
+ *                                    o nome do acessório
+ *     relogio.acessorios_servem[].tipo
+ *                                    o tipo (pulseira, caixa, estojo, ferramenta, carregador, peca ou outro)
+ *     relogio.acessorios_servem[].tipo_texto
+ *                                    o tipo, no idioma
+ *     relogio.acessorios_servem[].relogio_id
+ *                                    o relógio de quem ele é; null: solto
+ *     relogio.acessorios_servem[].relogio
+ *                                    o nome desse relógio; null: solto
+ *     relogio.acessorios_servem[].serve_por
+ *                                    o que decide em que relógio ele serve: cada campo do relógio com que um campo dele bate, com o valor
+ *                                    dele ("Entre alças (largura da pulseira): 20 mm"); null: ele não preencheu nenhum desses campos
+ *     relogio.acessorios_servem[].serve_por[]
+ *                                    um campo do relógio e o valor que ele tem de ter
  *     relogio.servicos               os serviços e diagnósticos dele (o quadro Serviços e diagnósticos), do mais novo para o mais velho
  *     relogio.servicos[]             um serviço
  *     relogio.servicos[].id          o número do serviço (o id da gravação)
@@ -3048,6 +3112,16 @@
  *     campos[].minimo                o menor valor que o número aceita; null: sem limite
  *     campos[].maximo                o maior valor que o número aceita; null: sem limite
  *     campos[].multiplo              1: o campo é múltiplo (vários dos valores possíveis de uma vez); 0: um valor só
+ *     campos[].alvo                  de quem é o campo: relogio (o cadastro do relógio) ou acessorio (o cadastro do acessório, na página
+ *                                    Acessórios)
+ *     campos[].acessorio_tipo        no campo de acessório, o tipo de acessório em que ele vale (pulseira, caixa...); null: todos (e nos
+ *                                    dos relógios)
+ *     campos[].serve_campo_id        no campo de acessório, o campo do relógio (campos[].id) com que ele tem de bater para o acessório
+ *                                    servir no relógio (a largura da pulseira com o entre alças); null: nenhum
+ *     acessorio_tipos                os tipos de acessório, na ordem (o menu Tipo de acessório de um campo para acessório)
+ *     acessorio_tipos[]              um tipo
+ *     acessorio_tipos[].valor        o tipo (pulseira, caixa, estojo, ferramenta, carregador, peca ou outro)
+ *     acessorio_tipos[].nome         o nome do tipo, no idioma
  *     campos[].regra                 o mínimo e o máximo do número em texto, para mostrar embaixo da entrada ("de 20 a 60 mm"); null: sem
  *                                    limite
  *     secoes                         as divisórias da ficha (Cadastros › Divisórias), na ordem
@@ -3870,6 +3944,39 @@
  *     acessorios[].relogio           o nome desse relógio; null: solto
  *     acessorios[].observacao        a observação (null)
  *     acessorios[].criado            quando foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     acessorios[].valores           os campos do acessório preenchidos (Cadastros › Campos, para acessório: os do tipo dele), na ordem
+ *     acessorios[].valores[]         um campo do acessório
+ *     acessorios[].valores[].identificador
+ *                                    o identificador do campo
+ *     acessorios[].valores[].nome    o nome do campo
+ *     acessorios[].valores[].valor   o valor gravado (texto normalizado: número com ponto; o múltiplo, um por linha)
+ *     acessorios[].valores[].texto   o valor para mostrar, no idioma, com a unidade ("20 mm (0,79 pol)"; o múltiplo separado por vírgula)
+ *     acessorios[].serve_por         o que decide em que relógio ele serve: cada campo do relógio com que um campo dele bate, com o valor
+ *                                    dele ("Entre alças (largura da pulseira): 20 mm"); null: ele não preencheu nenhum desses campos
+ *     acessorios[].serve_por[]       um campo do relógio e o valor que ele tem de ter
+ *     acessorios[].serve_em          os relógios em que ele serve (os da coleção, emprestados e desejados cujo valor bate com o dele em
+ *                                    todos esses campos); null: não dá para saber (ele não preencheu nenhum desses campos)
+ *     acessorios[].serve_em[]        um relógio em que ele serve
+ *     acessorios[].serve_em[].relogio_id
+ *                                    o número do relógio
+ *     acessorios[].serve_em[].relogio
+ *                                    o nome do relógio
+ *     campos                         os campos dos acessórios (Cadastros › Campos, para acessório), na ordem: o formulário mostra os do
+ *                                    tipo escolhido
+ *     campos[]                       um campo de acessório
+ *     campos[].identificador         o identificador (o nome em valores[<identificador>] da gravação)
+ *     campos[].nome                  o nome do campo
+ *     campos[].tipo                  inteiro, decimal, sim_nao, data, lista ou texto
+ *     campos[].unidade               a unidade (vazio: sem)
+ *     campos[].acessorio_tipo        o tipo de acessório em que ele vale; null: todos
+ *     campos[].opcoes                os valores possíveis, na ordem (vazio: qualquer um)
+ *     campos[].opcoes[]              um valor possível
+ *     campos[].multiplo              verdadeiro: o campo é múltiplo (vários dos valores possíveis de uma vez; no formulário, uma caixa para
+ *                                    cada)
+ *     campos[].regra                 o mínimo e o máximo do número em texto, para mostrar embaixo da entrada ("de 20 a 60 mm"); null: sem
+ *                                    limite
+ *     campos[].serve                 o nome do campo do relógio com que ele tem de bater para o acessório servir no relógio (o entre
+ *                                    alças); null: nenhum
  *     tipos[]                        os tipos de acessório, na ordem (o menu Tipo)
  *     tipos[].valor                  o valor que vai na gravação (tipo)
  *     tipos[].nome                   o nome
@@ -4397,6 +4504,23 @@
  *     acessorios[].relogio           o nome dele
  *     acessorios[].observacao        a observação (null)
  *     acessorios[].criado            quando foi cadastrado
+ *     acessorios[].valores           os campos do acessório preenchidos (Cadastros › Campos, para acessório: os do tipo dele), na ordem
+ *     acessorios[].valores[]         um campo do acessório
+ *     acessorios[].valores[].identificador
+ *                                    o identificador do campo
+ *     acessorios[].valores[].nome    o nome do campo
+ *     acessorios[].valores[].valor   o valor gravado (texto normalizado: número com ponto; o múltiplo, um por linha)
+ *     acessorios[].valores[].texto   o valor para mostrar, no idioma, com a unidade ("20 mm (0,79 pol)"; o múltiplo separado por vírgula)
+ *     acessorios[].serve_por         o que decide em que relógio ele serve: cada campo do relógio com que um campo dele bate, com o valor
+ *                                    dele ("Entre alças (largura da pulseira): 20 mm"); null: ele não preencheu nenhum desses campos
+ *     acessorios[].serve_por[]       um campo do relógio e o valor que ele tem de ter
+ *     acessorios[].serve_em          os relógios em que ele serve (os da coleção, emprestados e desejados cujo valor bate com o dele em
+ *                                    todos esses campos); null: não dá para saber (ele não preencheu nenhum desses campos)
+ *     acessorios[].serve_em[]        um relógio em que ele serve
+ *     acessorios[].serve_em[].relogio_id
+ *                                    o número do relógio
+ *     acessorios[].serve_em[].relogio
+ *                                    o nome do relógio
  *     servicos_diagnosticos          os serviços e diagnósticos (como em recurso=servicos), do mais novo para o mais velho
  *     servicos_diagnosticos[]        um serviço
  *     servicos_diagnosticos[].id     o número do serviço (o id da gravação)
@@ -5836,7 +5960,13 @@ if ($recurso === "textos") {
     if ((string)$rq_a === "0") {
         $lista_a = array_values(array_filter($lista_a, function ($a) { return $a["relogio_id"] === null; }));
     }
+    // os campos dos acessórios (Cadastros › Campos, para acessório): o formulário mostra os do tipo escolhido
     $saida = ["acessorios" => $lista_a,
+        "campos" => array_values(array_map(function ($c) {
+            return ["identificador" => $c["identificador"], "nome" => $c["nome"], "tipo" => $c["tipo"], "unidade" => $c["unidade"], "acessorio_tipo" => $c["acessorio_tipo"] ?? null,
+                "opcoes" => campo_opcoes_lista($c), "multiplo" => (int)($c["multiplo"] ?? 0) === 1, "regra" => campo_regra_texto($c),
+                "serve" => ($c["serve_campo_id"] ?? null) === null ? null : (array_values(array_filter(campos_todos(), function ($x) use ($c) { return (int)$x["id"] === (int)$c["serve_campo_id"]; }))[0]["nome"] ?? null)];
+        }, campos_de_acessorio())),
         "tipos" => array_map(function ($k) { return ["valor" => $k, "nome" => t(ACESSORIO_TIPOS[$k])]; }, array_keys(ACESSORIO_TIPOS)),
         "por_tipo" => array_values(array_filter(array_map(function ($k) use ($lista_a) {
             return ["tipo" => $k, "nome" => t(ACESSORIO_TIPOS[$k]), "quantos" => count(array_filter($lista_a, function ($a) use ($k) { return $a["tipo"] === $k; }))];

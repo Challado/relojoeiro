@@ -230,15 +230,22 @@ CREATE TABLE campo (
     minimo         DECIMAL(18,6) NULL,
     maximo         DECIMAL(18,6) NULL,
     multiplo       TINYINT NOT NULL DEFAULT 0,
+    alvo           VARCHAR(10) NOT NULL DEFAULT 'relogio',
+    acessorio_tipo VARCHAR(20) NULL,
+    serve_campo_id INT NULL,
     INDEX (no_id),
     INDEX campo_secao (secao_id),
+    INDEX campo_serve (serve_campo_id),
     FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
     FOREIGN KEY (secao_id) REFERENCES campo_secao(id) ON DELETE SET NULL,
+    FOREIGN KEY (serve_campo_id) REFERENCES campo(id) ON DELETE SET NULL,
     CONSTRAINT ck_campo_textos CHECK (TRIM(identificador) <> '' AND TRIM(nome) <> ''),
     CONSTRAINT ck_campo_so_desejado CHECK (so_desejado IN (0, 1)),
     CONSTRAINT ck_campo_calibre CHECK (calibre IN (0, 1)),
     CONSTRAINT ck_campo_multiplo CHECK (multiplo IN (0, 1)),
-    CONSTRAINT ck_campo_faixa CHECK (minimo IS NULL OR maximo IS NULL OR minimo <= maximo)
+    CONSTRAINT ck_campo_faixa CHECK (minimo IS NULL OR maximo IS NULL OR minimo <= maximo),
+    CONSTRAINT ck_campo_alvo CHECK (alvo IN ('relogio', 'acessorio')),
+    CONSTRAINT ck_campo_acessorio CHECK (alvo = 'acessorio' OR acessorio_tipo IS NULL)
 ) ENGINE=InnoDB;
 
 -- os valores possíveis de um campo (a lista; no texto e no número, quando tem: o valor tem de ser um deles)
@@ -670,6 +677,29 @@ CREATE TABLE acessorio (
     FOREIGN KEY (colecao_id) REFERENCES colecao(id) ON DELETE CASCADE,
     CONSTRAINT ck_acessorio_nome CHECK (TRIM(nome) <> ''),
     CONSTRAINT ck_acessorio_tipo CHECK (tipo IN ('pulseira', 'caixa', 'estojo', 'ferramenta', 'carregador', 'peca', 'outro'))
+) ENGINE=InnoDB;
+
+-- o valor de cada campo de acessório (campo.alvo = acessorio: a largura e o material da pulseira) em cada acessório, como
+-- o campo_valor do relógio; o campo múltiplo, um por linha no acessorio_valor_item
+CREATE TABLE acessorio_valor (
+    acessorio_id  INT NOT NULL,
+    campo_id      INT NOT NULL,
+    valor         TEXT NOT NULL,
+    PRIMARY KEY (acessorio_id, campo_id),
+    INDEX (campo_id),
+    FOREIGN KEY (acessorio_id) REFERENCES acessorio(id) ON DELETE CASCADE,
+    FOREIGN KEY (campo_id) REFERENCES campo(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE acessorio_valor_item (
+    acessorio_id  INT NOT NULL,
+    campo_id      INT NOT NULL,
+    valor         VARCHAR(120) NOT NULL,
+    PRIMARY KEY (acessorio_id, campo_id, valor),
+    INDEX (campo_id),
+    FOREIGN KEY (acessorio_id) REFERENCES acessorio(id) ON DELETE CASCADE,
+    FOREIGN KEY (campo_id) REFERENCES campo(id) ON DELETE CASCADE,
+    CONSTRAINT ck_acessorio_valor_item CHECK (TRIM(valor) <> '')
 ) ENGINE=InnoDB;
 
 CREATE TABLE acessorio_relogio (

@@ -678,6 +678,21 @@ Changing a field's type or rules checks the values already saved: whatever no lo
 for you to fix it (stopping being multiple, for example, only when each watch has a single value). Through the API:
 `recurso=campos` with `opcoes`, `minimo`, `maximo` and `multiplo`; on the watch, `valores[funcoes][]` once for each value.
 
+### The construction and the accessories
+
+A new register already brings each watch's **construction** (see [The construction](#the-construction)): the case material
+and measurements, the crystal, the display, the lume, the crown, the case back and the functions. A tree that already
+existed gets these fields on the update (migration v44), in the collection's language, without touching the ones it
+already had with the same identifier.
+
+**Accessories** also have fields, defined like the watch's, in the **Fields** tab of the **Definitions** page, with **For:
+the accessories**: the **accessory type** the field applies to (or all) and, if relevant, the watch field it must match for
+the accessory to **fit** the watch. A new register brings the strap ones: the **width** (which matches the watch's **lug
+width**), the **material**, the **colour**, the **clasp** and the **quick release**. On the **Accessories** page, the form
+asks for the fields of the chosen type, and the list shows the **Data** and where each one **Fits**: the loose 20 mm strap
+shows as fitting every watch with a 20 mm lug width; on the dashboard, each watch's **Accessories** box also lists those of
+other watches (or loose ones) that **fit it**. Sold and archived watches do not count.
+
 ### Record sections
 
 A watch's fields are grouped into **sections**, the parts of the record: in the **Sections** tab of the **Definitions**
@@ -901,7 +916,7 @@ defaults are data, not code: you can change everything on the **Definitions** pa
 | **Available** | unticked, it leaves the rotation and the alerts (at the repairer, on a break), but the history stays. Out of the collection, it is always unticked (and the field disappears from the record). |
 | **Keep a copy of all its documents in the database** | ticked, every file of the watch (the manual, the invoice, the photos, the videos) also goes to the database, as a backup. It only appears when the collection's Settings don't decide for all (**Copy of the documents in the database (applies to every watch)** empty). See [The watch's documents](#the-watchs-documents): it is the second of the three levels of the copy. |
 | **Photo** | just for the screen. In the watch's detail (the panel, or the watch page), resting the mouse on the photo shows a summary of it (the name, the group and the code; the state and the charge; the score and the next day in the rotation; the purchase) and the reminder about the double-click. **Double-clicking** it, or the **Open photo** button below, opens the photo in a floating window, at its size (only in the detail: on the other photos, like the one in *Today is the day for* and the list thumbnails, the click opens the watch); one bigger than the screen appears scaled, without distortion, at the largest size that fits the monitor (and the browser window), with the real size and the scale below. It closes with the ×, with a click outside or with Esc. |
-| **Accessories** | the straps, the box, the case, the tools, the charger, the parts: the **Accessories** box in the panel shows its own (the type, the name and the note), and the **Accessories** page adds and changes them (an accessory can belong to a watch or be loose, serving several). |
+| **Accessories** | the straps, the box, the case, the tools, the charger, the parts: the **Accessories** box in the panel shows its own (the type, the name and the note), and the **Accessories** page adds and changes them (an accessory can belong to a watch or be loose, serving several). Each accessory has the fields of its type (the strap's width, material, colour and clasp), and the box also shows those of other watches, or loose ones, that **fit** it. See [The construction and the accessories](#the-construction-and-the-accessories). |
 | **Documents** | the manual, the invoice (in PDF and XML), the souvenir photos, the videos and anything else. See [The watch's documents](#the-watchs-documents). |
 
 ### The watch's documents
@@ -1006,6 +1021,23 @@ by itself the next minute, through the cron (the same one that recovers a missin
 | **Reference (the model)** `referencia` | | Text: the model, the manufacturer's reference. It appears in the wishlist. |
 | **Link (the watch's page)** `link` | | The address of the watch's page (the store, the manufacturer). In the wishlist it becomes the **open the page** link (only those starting with `http://` or `https://`). |
 | **Alert when the charge reaches** (%) `carga_minima` | the general one | This watch's **charge limit**: the point at which the alert to charge (smartwatch), put in the sun (solar) or wind/put on the winder (mechanical) goes out. Empty, the type's general one applies: on the smartwatch, the one in Settings (*"Charge when the estimated charge reaches"*, 20%); on the solar, the solar one in Settings (70%); on the mechanical, 0% (the reserve running out). See [The charge alerts](#the-charge-alerts). |
+
+### The construction
+
+Also for all watches, in the **Construction** section (with the value rules: the possible values, the range of the
+measurements and the functions, several at once):
+
+| Field | What it is |
+|---|---|
+| **Case material** `material_caixa` | a list: stainless steel, titanium, aluminium, bronze, ceramic, resin... |
+| **Case diameter** `diametro`, **Thickness** `espessura` | in mm (from 10 to 80 and from 2 to 40); the diameter also shows in inches |
+| **Lug to lug (length)** `alca_a_alca` | in mm: the length from one lug to the other, which tells whether it fits the wrist |
+| **Lug width (strap width)** `entre_alcas` | in mm: the width of the strap that fits it. A strap with the same width shows that it **fits** it |
+| **Weight** `peso` | in g |
+| **Crystal** `vidro`, **Display** `mostrador`, **Lume** `luminescencia`, **Crown** `coroa`, **Case back** `fundo` | lists (sapphire, mineral, acrylic...; analogue, digital, ana-digi, screen; Super-LumiNova, tritium, backlight...; screw-down...; exhibition...) |
+| **Dial colour** `cor_mostrador` | free text: *Blue (sunburst)* |
+| **Functions** `funcoes` | several at once: date, day of the week, chronograph, GMT, world time, moon phase, alarm, compass, GPS... In formulas, `TEM(funcoes; "GMT")` |
+| **Declared water resistance** `resistencia_agua_declarada` | in m: the manufacturer's (the water-resistance test is in the services) |
 
 ### The wishlist
 
@@ -1459,7 +1491,7 @@ comes in here by its name.
 | **Wishlist** (`desejos.php`) | The **wishlist**: the wished watches, from the highest priority to the lowest, each with the photo, the brand and the reference, the priority, the target price, the group, the link to its page and the **I bought it** button (puts it in the collection and opens its page, to fill in the purchase), with the sum of the target prices; the **New wish** button; and, below, **Outside the collection**: the lent, sold and archived ones, with **Back to the collection**. On the Today page, the **Wishlist (N)** button next to **New watch** leads to it (only when there is one). See [The wishlist](#the-wishlist). |
 | **Statistics** (`estatisticas.php`) | The collection's use in a period (**From**, **To**; the shortcuts 30 days, 90 days, 1 year and since the beginning; default: the last 90 days): the summary (days with a watch on the wrist, hours on the wrist and per day, watches worn and unworn, the average cost per use and the collection's value, the most and the least worn); **Each watch**, from the most worn to the least: days of use, hours, each one's share (with the bar), the cost per use, how many days since it last went on the wrist and the trend (↑ wearing more, ↓ wearing less, → stable: the second half of the period compared to the first); the **By day of the week** and **By month** charts (the hours on the wrist); and **The collection**: the watches divided by group, brand, purchase year, status and each list field (like Style), with how many, the share and the hours of each part. Through the API: `recurso=estatisticas`. |
 | **Totals** (`totais.php`, menu **Collection**) | The totals page: the totals marked for it (the **Totals** tab of Definitions), each in a box, narrow or wide, in the order of the definitions: the small table with the total row, the number, or the watch with the value. It opens from **See all totals** under the table on the Today page, with the same filter (*Counting 12 of 17 watches*, with **Count all**), or from the menu, with all of them. Through the API: `recurso=totais&parte=pagina`. See [Totals](#totals). |
-| **Accessories** (`acessorios.php`) | The straps, boxes, cases, tools, chargers, parts and anything else: the list (the name, the type, the watch it belongs to, or *loose*, and the note), with the **Watch** filter (all, the loose ones or those of a watch; the panel's **Accessories** box opens it already filtered), **Edit** and **Delete** on each one, and below the form (**New accessory**: name, type, watch or *loose (serves several)* and note). Deleting a watch leaves its accessories loose. Through the API: `recurso=acessorios` (the list) and the `acessorios` write (`salvar`, `excluir`). |
+| **Accessories** (`acessorios.php`) | The straps, boxes, cases, tools, chargers, parts and anything else: the list (the name, the type, the watch it belongs to, or *loose*, and the note), with the **Watch** filter (all, the loose ones or those of a watch; the panel's **Accessories** box opens it already filtered), **Edit** and **Delete** on each one, and below the form (**New accessory**: name, type, watch or *loose (serves several)* and note). Deleting a watch leaves its accessories loose. Through the API: `recurso=acessorios` (the list) and the `acessorios` write (`salvar`, `excluir`). Each one shows the **Data** (the fields of its type) and where it **Fits** (see [The construction and the accessories](#the-construction-and-the-accessories)); the form asks for the fields of the chosen type. |
 | **Gallery** (`galeria.php`) | The collection in photos, by group: each watch with the photo (the link to its page), the name, the brand and the reference, the purchase year and price and the days of use; at the top, how many, the total value and how many have a photo. **Also those outside the collection** shows the wished, sold and archived ones (with the status mark). **Print**: on paper, four per row, without the menu. Through the API: `recurso=galeria`. |
 | **Passport** (`passaporte.php`) | A watch's sheet to print or save as PDF (the **Passport** button in the panel's Documents box): the photo, the name, the brand and the reference, the group and the status; the **Purchase**; the **Use** (the first and the last time on the wrist, the hours on the wrist, the days of use and the cost per use); the filled-in **Record**; the **Services** (each type of mark, how many times and the last one; the services and battery changes); the **Accessories**; the **Documents**; and the **Upcoming alerts**. **Print**: only the data comes out on paper. Through the API: `recurso=passaporte`. With any service, also the **Services and diagnostics** (who did it, the cost, the water resistance and the rate before and after). |
 | **Reports** (`relatorios.php`) | The single door of the reports: the menu with all of them (by group), the chosen one's fields (the watch, the period, the options) and **Generate the report**; the report on screen, on paper (**Print**) and as a spreadsheet (**Download the spreadsheet (CSV)**). See [Reports](#reports). |
@@ -1497,7 +1529,7 @@ services, precision and timegrapher panels of the watch panel).
 | Collection | **Watch passport** | a watch's whole record: who it is, the purchase, the use, the registration, the maintenance, the services, the declared, measured and estimated, the power reserve tests, the timegrapher, the accessories, the documents and the next alerts |
 | Collection | **Collection costs** | the amount paid, the services (how many and how much), the total, the days of use and the cost of each use, by watch and summed |
 | Collection | **Wish list** | the wanted watches by priority, with the target price and the link, the sum of the prices, and those that left the collection |
-| Collection | **Accessories** | each watch's accessories and the loose ones, and how many of each type |
+| Collection | **Accessories** | each watch's accessories and the loose ones, and how many of each type, with the data and where each one fits |
 | Collection | **Documents** | the documents of each watch and caliber, with the category, the date, the file and the size |
 | Use and rotation | **Timeline** | what each watch did in the period, stretch by stretch, and the time in each state |
 | Use and rotation | **Use in the period** | the statistics: days with a watch, hours, the most and least used, each watch, by weekday and by month |

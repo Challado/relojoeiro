@@ -411,8 +411,15 @@ function abrirNoPainel(id) {
         + " " + el("a", {"href": "passaporte.php?id=" + id, "target": "_blank", "rel": "noopener", "class": "botao leve"}, t("Passaporte")), "documentos-ficha");
       secoes.cadastro += quadroDocs;
       // os acessórios dele (a pulseira, a caixa, a ferramenta...): o tipo e o nome; cadastrar e mudar, na página Acessórios
-      secoes.cadastro += quadro(t("Acessórios"), r.acessorios.length === 0 ? el("p", {"class": "nota"}, t("Nenhum: a pulseira extra, a caixa, o estojo, a ferramenta..."))
-        : pares(r.acessorios.map(function (a) { return [h(a.tipo_texto), h(a.nome) + (a.observacao !== null ? el("small", {}, h(a.observacao)) : "")]; })),
+      // os dados de cada um (a largura, o material...) embaixo do nome; e os de outros relógios (ou soltos) que servem nele
+      secoes.cadastro += quadro(t("Acessórios"), (r.acessorios.length === 0 ? el("p", {"class": "nota"}, t("Nenhum: a pulseira extra, a caixa, o estojo, a ferramenta..."))
+        : pares(r.acessorios.map(function (a) {
+          return [h(a.tipo_texto), h(a.nome) + (a.valores.length > 0 ? el("small", {}, a.valores.map(function (x) { return h(x.nome) + ": " + h(x.texto); }).join(" · ")) : "")
+            + (a.observacao !== null ? el("small", {}, h(a.observacao)) : "")];
+        })))
+        + (r.acessorios_servem.length > 0 ? el("h3", {}, t("Servem neste relógio")) + pares(r.acessorios_servem.map(function (a) {
+          return [h(a.tipo_texto), h(a.nome) + el("small", {}, (a.relogio !== null ? t("do {1}", {1: h(a.relogio)}) : t("solto")) + " · " + h(a.serve_por.join(" · ")))];
+        })) : ""),
         el("a", {"href": "acessorios.php?relogio=" + id, "target": "_blank", "rel": "noopener", "class": "botao leve"}, r.acessorios.length === 0 ? t("Cadastrar acessórios") : t("Ver os acessórios")), "acessorios-ficha");
       // os serviços e diagnósticos: em cima, a resistência à água declarada e a estanqueidade comprovada (uma não vale pela outra),
       // o custo somado e o último; cada serviço numa caixa que abre (os detalhes e o formulário para mudar ou excluir); embaixo,

@@ -201,6 +201,23 @@ function secoes_do_modelo($raiz, $tr)
     return $res;
 }
 
+// Um campo do modelo (modelo.json, campos) numa árvore, com o nome e os valores possíveis no idioma ($tr): o grupo ($no;
+// null: a raiz), a divisória ($secao_id) e a ordem; as regras do valor (minimo, maximo, multiplo) e, no do acessório, o
+// tipo de acessório (o serve, o campo do relógio com que ele bate, entra depois: arvore_criar). Devolve o id. Sem escopo
+function campo_do_modelo($c, $no, $secao_id, $ordem, $tr)
+{
+    $unidade = (string)($c["unidade"] ?? "");
+    sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, ordem, so_desejado, calibre, secao_id, minimo, maximo, multiplo, alvo, acessorio_tipo)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [$c["identificador"], $tr($c["nome"]), $c["tipo"], $unidade, $c["padrao"] ?? null, $no, $ordem, (int)($c["so_desejado"] ?? 0), (int)($c["calibre"] ?? 0), $secao_id,
+            $c["minimo"] ?? null, $c["maximo"] ?? null, (int)($c["multiplo"] ?? 0), $c["alvo"] ?? "relogio", $c["acessorio_tipo"] ?? null]);
+    $cid = ultimo_id();
+    foreach (array_values($c["opcoes"] ?? []) as $i => $o) {
+        sql("INSERT INTO campo_opcao (campo_id, ordem, valor) VALUES (?, ?, ?)", [$cid, $i + 1, $tr($o)]);
+    }
+    return (int)$cid;
+}
+
 // O tradutor dos textos do modelo para um idioma
 function modelo_tradutor($lingua)
 {
@@ -316,13 +333,14 @@ function arvore_criar($dono_id, $nome, $lingua, $com_modelo)
         };
         unidades_do_modelo($raiz, $tr);
         $secoes = secoes_do_modelo($raiz, $tr);
+        $campo_ids = [];
         foreach ($m["campos"] as $c) {
-            sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, ordem, so_desejado, calibre, secao_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [$c["identificador"], $tr($c["nome"]), $c["tipo"], $c["unidade"], $c["padrao"], $grupo($c["grupo"]), (int)$c["ordem"], (int)$c["so_desejado"], (int)($c["calibre"] ?? 0),
-                    ($c["secao"] ?? null) !== null ? ($secoes[$c["secao"]] ?? null) : null]);
-            $cid = ultimo_id();
-            foreach (array_values($c["opcoes"] ?? []) as $i => $o) {
-                sql("INSERT INTO campo_opcao (campo_id, ordem, valor) VALUES (?, ?, ?)", [$cid, $i + 1, $tr($o)]);
+            $campo_ids[$c["identificador"]] = campo_do_modelo($c, $grupo($c["grupo"]), ($c["secao"] ?? null) !== null ? ($secoes[$c["secao"]] ?? null) : null, (int)$c["ordem"], $tr);
+        }
+        // o campo do acessório que tem de bater com um do relógio (a largura da pulseira com o entre alças), depois de todos
+        foreach ($m["campos"] as $c) {
+            if (($c["serve"] ?? null) !== null && isset($campo_ids[$c["serve"]])) {
+                sql("UPDATE campo SET serve_campo_id = ? WHERE id = ?", [$campo_ids[$c["serve"]], $campo_ids[$c["identificador"]]]);
             }
         }
         $tipos = [];
@@ -1003,7 +1021,7 @@ const IMPACTO_NOMES = ["usuario" => "usuários", "colecao" => "coleções", "col
     "convite" => "convites", "pedido" => "pedidos de acesso", "api_token" => "tokens de API", "usuario_token" => "links de senha", "push_inscricao" => "aparelhos do Web Push", "usuario_smtp" => "servidores de e-mail próprios",
     "no" => "grupos", "campo" => "campos", "campo_opcao" => "opções de lista", "unidade" => "unidades", "campo_secao" => "divisórias de campos", "lancamento_tipo" => "tipos de lançamento", "formula" => "fórmulas", "aviso" => "avisos",
     "documento_categoria" => "categorias de documento", "documento_categoria_aceita" => "tipos aceitos de categorias", "relogio" => "relógios", "foto" => "fotos",
-    "campo_valor" => "valores de campo", "calibre" => "calibres", "calibre_valor" => "valores de calibre", "campo_valor_item" => "valores de campo múltiplo", "calibre_valor_item" => "valores de campo múltiplo de calibre", "relogio_calibre" => "relógios com calibre", "lancamento" => "lançamentos", "medicao" => "medições do gasto", "documento" => "documentos", "documento_parte" => "pedaços de documentos no banco",
+    "campo_valor" => "valores de campo", "calibre" => "calibres", "calibre_valor" => "valores de calibre", "campo_valor_item" => "valores de campo múltiplo", "calibre_valor_item" => "valores de campo múltiplo de calibre", "acessorio_valor" => "valores de acessório", "acessorio_valor_item" => "valores de campo múltiplo de acessório", "relogio_calibre" => "relógios com calibre", "lancamento" => "lançamentos", "medicao" => "medições do gasto", "documento" => "documentos", "documento_parte" => "pedaços de documentos no banco",
     "servico" => "serviços e diagnósticos", "servico_peca" => "peças de serviços", "servico_documento" => "documentos de serviços",
     "reserva_teste" => "testes da reserva e observações da energia", "timegrapher" => "medições do timegrapher",
     "acessorio" => "acessórios", "acessorio_relogio" => "vínculos de acessório", "criterio_parametro" => "parâmetros de critérios", "criterio_sub" => "subparâmetros de critérios",
@@ -1019,7 +1037,7 @@ tk("usuários"); tk("coleções"); tk("membros"); tk("acessos a tudo de um dono"
 tk("pedidos de acesso"); tk("tokens de API"); tk("links de senha"); tk("aparelhos do Web Push");
 tk("servidores de e-mail próprios"); tk("grupos"); tk("campos"); tk("opções de lista"); tk("tipos de lançamento");
 tk("fórmulas"); tk("avisos"); tk("categorias de documento"); tk("tipos aceitos de categorias"); tk("relógios");
-tk("fotos"); tk("valores de campo"); tk("unidades"); tk("divisórias de campos"); tk("calibres"); tk("valores de calibre"); tk("valores de campo múltiplo"); tk("valores de campo múltiplo de calibre"); tk("relógios com calibre");
+tk("fotos"); tk("valores de campo"); tk("unidades"); tk("divisórias de campos"); tk("calibres"); tk("valores de calibre"); tk("valores de campo múltiplo"); tk("valores de campo múltiplo de calibre"); tk("valores de acessório"); tk("valores de campo múltiplo de acessório"); tk("relógios com calibre");
 tk("lançamentos"); tk("medições do gasto"); tk("documentos"); tk("pedaços de documentos no banco");
 tk("serviços e diagnósticos"); tk("peças de serviços"); tk("documentos de serviços");
 tk("testes da reserva e observações da energia"); tk("medições do timegrapher"); tk("acessórios"); tk("vínculos de acessório");

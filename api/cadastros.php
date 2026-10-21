@@ -12,7 +12,7 @@ if (!defined("RELOJOEIRO_API")) {
 $n = nos_todos();
 $com_id = function ($linhas) {
     return array_map(function ($x) {
-        foreach (["id", "no_id", "ordem", "ativo", "exclusiva", "mede_gasto", "modo_id", "relogio_id", "escala_dias", "ciclo", "resolve_tipo_id", "na_hora", "so_desejado", "calibre", "secao_id", "multiplo"] as $k) {
+        foreach (["id", "no_id", "ordem", "ativo", "exclusiva", "mede_gasto", "modo_id", "relogio_id", "escala_dias", "ciclo", "resolve_tipo_id", "na_hora", "so_desejado", "calibre", "secao_id", "multiplo", "serve_campo_id"] as $k) {
             // a marca do modo em uso é 1 ou vazia (NULL) no banco: aqui, 1 ou 0
             if (array_key_exists($k, $x) && ($x[$k] !== null || ($k === "ativo" && array_key_exists("selecao", $x)))) {
                 $x[$k] = (int)$x[$k];
@@ -46,6 +46,8 @@ $saida = ["campos" => array_map(function ($c) {
     "grupos" => array_map(function ($o) { return ["id" => $o[0], "caminho" => no_caminho($o[0])]; }, nos_em_ordem()),
     "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"]]; }, linhas("SELECT id, nome FROM relogio ORDER BY nome")),
     "documento_categorias" => documento_categorias_lista(),
+    // os tipos de acessório (o menu Tipo de acessório de um campo para acessório)
+    "acessorio_tipos" => array_map(function ($k) { return ["valor" => $k, "nome" => t(ACESSORIO_TIPOS[$k])]; }, array_keys(ACESSORIO_TIPOS)),
     // as divisórias da ficha, na ordem, com quantos campos cada uma tem (a aba Divisórias e o menu Divisória dos campos)
     "secoes" => array_values(array_map(function ($x) {
         return array_merge($x, ["campos" => (int)valor("SELECT COUNT(*) FROM campo WHERE secao_id = ?", [$x["id"]])]);

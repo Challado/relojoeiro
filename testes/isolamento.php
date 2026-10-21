@@ -80,7 +80,8 @@ $rel_s = (int)preparar($ana, ["recurso" => "relogio", "acao" => "salvar", "id" =
 preparar($ana, ["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel_s, "tipo" => "carga", "valor" => 90, "quando" => date("Y-m-d H:i", time() - 30 * 3600)]);
 preparar($ana, ["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel_s, "tipo" => "carga", "valor" => 88]);
 $med_a = (int)(pedir($ana, "GET", ["recurso" => "ficha", "relogio" => $rel_s])["json"]["relogio"]["medicoes"][0]["id"] ?? 0);
-$ace_a = (int)(preparar($ana, ["recurso" => "acessorios", "acao" => "salvar", "nome" => "Acessorio SEGREDOANA", "tipo" => "pulseira", "relogio_id" => $rel_a])["id"] ?? 0);
+$ace_a = (int)(preparar($ana, ["recurso" => "acessorios", "acao" => "salvar", "nome" => "Acessorio SEGREDOANA", "tipo" => "pulseira", "relogio_id" => $rel_a,
+    "valores" => ["pulseira_cor" => "Cor SEGREDOANA", "pulseira_largura" => "20"]])["id"] ?? 0);
 $evt_a = (int)(preparar($ana, ["recurso" => "config", "acao" => "evento_salvar", "id" => 0, "nome" => "Evento SEGREDOANA", "repeticao" => "semanal", "hora" => "10:00", "dias_semana" => "6"])["id"] ?? 0);
 $des_a = (int)(preparar($ana, ["recurso" => "destinos", "acao" => "salvar", "id" => 0, "tipo" => "webhook", "nome" => "Destino SEGREDOANA", "ativo" => 0, "metodo" => "POST",
     "url" => "https://segredoana.exemplo.invalid/enviar"])["id"] ?? 0);

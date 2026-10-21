@@ -472,6 +472,8 @@ function arvore_copiar($raiz, $dono_id, $nome)
                 $troca = ["no_id" => $m["no"][(int)$x["no_id"]]];
                 if ($t === "campo") {
                     $troca["secao_id"] = $x["secao_id"] !== null ? ($m["campo_secao"][(int)$x["secao_id"]] ?? null) : null;
+                    // o campo do relógio com que o do acessório bate: depois de todos copiados
+                    $troca["serve_campo_id"] = null;
                 }
                 $m[$t][(int)$x["id"]] = linha_copiar($t, $x, $troca);
             }
@@ -484,6 +486,11 @@ function arvore_copiar($raiz, $dono_id, $nome)
         foreach ($m["campo"] as $de => $para) {
             foreach (linhas("SELECT * FROM campo_opcao WHERE campo_id = ?", [$de]) as $x) {
                 linha_copiar("campo_opcao", $x, ["campo_id" => $para]);
+            }
+        }
+        foreach (linhas("SELECT id, serve_campo_id FROM campo WHERE no_id IN (" . $nos . ") AND serve_campo_id IS NOT NULL") as $x) {
+            if (isset($m["campo"][(int)$x["id"]], $m["campo"][(int)$x["serve_campo_id"]])) {
+                sql("UPDATE campo SET serve_campo_id = ? WHERE id = ?", [$m["campo"][(int)$x["serve_campo_id"]], $m["campo"][(int)$x["id"]]]);
             }
         }
         // as unidades: as bases antes das que se convertem nelas; a unidade em que cada uma também aparece, depois de todas
@@ -600,6 +607,8 @@ function colecao_transferir($cid, $novo_dono)
             [$raiz, $m] = arvore_copiar((int)$c["no_id"], (int)$u["id"], (string)valor("SELECT nome FROM no WHERE id = ?", [(int)$c["no_id"]]));
             $rel = "SELECT id FROM relogio WHERE colecao_id = " . $cid;
             $trocas = [["relogio", "no_id", "no", "colecao_id = " . $cid], ["campo_valor", "campo_id", "campo", "relogio_id IN (" . $rel . ")"], ["campo_valor_item", "campo_id", "campo", "relogio_id IN (" . $rel . ")"],
+                ["acessorio_valor", "campo_id", "campo", "acessorio_id IN (SELECT id FROM acessorio WHERE colecao_id = " . $cid . ")"],
+                ["acessorio_valor_item", "campo_id", "campo", "acessorio_id IN (SELECT id FROM acessorio WHERE colecao_id = " . $cid . ")"],
                 ["lancamento", "tipo_id", "lancamento_tipo", "relogio_id IN (" . $rel . ")"], ["documento", "categoria_id", "documento_categoria", "relogio_id IN (" . $rel . ")"], ["relogio_calibre", "calibre_id", "calibre", "relogio_id IN (" . $rel . ")"],
                 ["modo_bloco", "no_id", "no", "modo_id IN (SELECT id FROM modo WHERE colecao_id = " . $cid . ")"]];
             foreach ($trocas as [$t, $col, $mapa, $onde]) {

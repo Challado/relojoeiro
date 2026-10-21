@@ -657,6 +657,20 @@ Mudar o tipo ou as regras de um campo confere os valores já gravados: o que nã
 acertar (deixar de ser múltiplo, por exemplo, só quando cada relógio tem um valor só). Pela API: `recurso=campos` com
 `opcoes`, `minimo`, `maximo` e `multiplo`; no relógio, `valores[funcoes][]` uma vez para cada valor.
 
+### A construção e os acessórios
+
+O cadastro novo já traz a **construção** de cada relógio (veja [A construção](#a-construção)): o material e as medidas da
+caixa, o vidro, o mostrador, a luminescência, a coroa, o fundo e as funções. Uma árvore que já existia ganha esses campos
+na atualização (a migração v44), no idioma da coleção, sem mexer nos que ela já tinha com o mesmo identificador.
+
+Os **acessórios** também têm campos, cadastrados como os do relógio, na aba **Campos** da página **Cadastros**, com
+**Para: os acessórios**: o **tipo de acessório** em que o campo vale (ou todos) e, se for o caso, o campo do relógio com que
+ele tem de bater para o acessório **servir** no relógio. O cadastro novo traz os da pulseira: a **largura** (que bate com o
+**entre alças** do relógio), o **material**, a **cor**, o **fecho** e o **engate rápido**. Na página **Acessórios**, o
+formulário pede os campos do tipo escolhido, e a lista mostra os **Dados** e onde cada um **Serve**: a pulseira solta de
+20 mm aparece servindo em todos os relógios de entre alças 20; no painel, o quadro **Acessórios** de cada relógio lista
+também os de outros relógios (ou soltos) que **servem nele**. Os vendidos e arquivados não entram nessa conta.
+
 ### As divisórias da ficha
 
 Os campos do relógio ficam agrupados em **divisórias**, as seções da ficha: na aba **Divisórias** da página **Cadastros**
@@ -868,7 +882,7 @@ grupos e os padrões são cadastro, não código: dá para mudar tudo na página
 | **Disponível** | desmarcado, ele sai do rodízio e dos avisos (no conserto, numa pausa), mas o histórico fica. Fora da coleção, fica sempre desmarcado (e o campo some do cadastro). |
 | **Guardar no banco a cópia de todos os documentos dele** | marcada, todo arquivo do relógio (o manual, a nota, as fotos, os vídeos) vai também para o banco, como cópia de segurança. Só aparece quando a Configuração da coleção não decide por todos (**Cópia dos documentos no banco (válido para todos os relógios)** vazia). Veja [Os documentos do relógio](#os-documentos-do-relógio): é o segundo dos três níveis da cópia. |
 | **Foto** | só para a tela. No detalhe do relógio (o painel, ou a ficha), parando o mouse em cima da foto aparece um resumo dele (o nome, o grupo e o código; o estado e a carga; a nota e o próximo dia no rodízio; a compra) e a lembrança do duplo clique. **Duplo clique** nela, ou o botão **Abrir foto** embaixo, abre a foto numa janela flutuante, no tamanho dela (só no detalhe: nas outras fotos, como a do *Hoje é dia de* e as miniaturas da lista, o clique abre o relógio); a que é maior que a tela aparece em escala, sem deformar, no maior tamanho que cabe no monitor (e na janela do navegador), com o tamanho real e a escala embaixo. Fecha com o ×, com um clique fora ou com Esc. |
-| **Acessórios** | as pulseiras, a caixa, o estojo, as ferramentas, o carregador, as peças: o quadro **Acessórios** do painel mostra os dele (o tipo, o nome e a observação), e a página **Acessórios** cadastra e muda (um acessório pode ser de um relógio ou solto, servindo a vários). |
+| **Acessórios** | as pulseiras, a caixa, o estojo, as ferramentas, o carregador, as peças: o quadro **Acessórios** do painel mostra os dele (o tipo, o nome e a observação), e a página **Acessórios** cadastra e muda (um acessório pode ser de um relógio ou solto, servindo a vários). Cada acessório tem os campos do tipo dele (a largura, o material, a cor e o fecho da pulseira), e o quadro mostra também os de outros relógios, ou soltos, que **servem** nele. Veja [A construção e os acessórios](#a-construção-e-os-acessórios). |
 | **Documentos** | o manual, a nota fiscal (em PDF e em XML), as fotos de recordação, os vídeos e o que mais for. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 
 ### Os documentos do relógio
@@ -968,6 +982,23 @@ no minuto seguinte, pelo cron (o mesmo que recupera um arquivo sumido).
 | **Referência (o modelo)** `referencia` | | Texto: o modelo, a referência do fabricante. Aparece na lista de desejos. |
 | **Link (a página do relógio)** `link` | | O endereço da página do relógio (a loja, o fabricante). Na lista de desejos vira o link **abrir a página** (só os que começam com `http://` ou `https://`). |
 | **Avisar quando a carga chegar a** (%) `carga_minima` | o geral | O **limite de carga** deste relógio: o ponto em que sai o aviso de carregar (smartwatch), de pôr no sol (solar) ou de dar corda/pôr no winder (mecânico). Vazio, vale o geral do tipo: no smartwatch, o da Configuração (*"Carregar quando a carga estimada chegar a"*, 20%); no solar, o do solar na Configuração (70%); no mecânico, 0% (a reserva acabando). Veja [Os avisos de carga](#os-avisos-de-carga). |
+
+### A construção
+
+Também para todos os relógios, na divisória **Construção** (com as regras do valor: os valores possíveis, a faixa das
+medidas e as funções, que são várias de uma vez):
+
+| Campo | O que é |
+|---|---|
+| **Material da caixa** `material_caixa` | uma lista: aço inoxidável, titânio, alumínio, bronze, cerâmica, resina... |
+| **Diâmetro da caixa** `diametro`, **Espessura** `espessura` | em mm (de 10 a 80 e de 2 a 40); o diâmetro aparece também em polegadas |
+| **Alça a alça (comprimento)** `alca_a_alca` | em mm: o comprimento de uma alça à outra, o que diz se ele cabe no pulso |
+| **Entre alças (largura da pulseira)** `entre_alcas` | em mm: a largura da pulseira que serve nele. A pulseira com a mesma largura mostra que **serve** nele |
+| **Peso** `peso` | em g |
+| **Vidro** `vidro`, **Mostrador** `mostrador`, **Luminescência** `luminescencia`, **Coroa** `coroa`, **Fundo** `fundo` | listas (safira, mineral, acrílico...; analógico, digital, anadigi, tela; Super-LumiNova, trítio, luz de fundo...; rosqueada...; transparente...) |
+| **Cor do mostrador** `cor_mostrador` | texto livre: *Azul (sunburst)* |
+| **Funções** `funcoes` | várias de uma vez: data, dia da semana, cronógrafo, GMT, hora mundial, fase da lua, alarme, bússola, GPS... Nas fórmulas, `TEM(funcoes; "GMT")` |
+| **Resistência à água declarada** `resistencia_agua_declarada` | em m: a do fabricante (o teste de estanqueidade fica nos serviços) |
 
 ### A lista de desejos
 
@@ -1415,7 +1446,7 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | **Desejos** (`desejos.php`) | A **lista de desejos**: os relógios desejados, da prioridade mais alta para a mais baixa, cada um com a foto, a marca e a referência, a prioridade, o preço-alvo, o grupo, o link da página dele e o botão **Comprei** (põe na coleção e abre a ficha, para preencher a compra), com a soma dos preços-alvo; o botão **Novo desejo**; e, embaixo, **Fora da coleção**: os emprestados, vendidos e arquivados, com **Voltar para a coleção**. Na página Hoje, o botão **Desejos (N)** ao lado do **Novo relógio** leva a ela (só quando há algum). Veja [A lista de desejos](#a-lista-de-desejos). |
 | **Estatísticas** (`estatisticas.php`) | O uso da coleção num período (**De**, **Até**; os atalhos 30 dias, 90 dias, 1 ano e desde o começo; padrão: os últimos 90 dias): o resumo (dias com relógio no pulso, horas no pulso e por dia, relógios usados e sem uso, o custo por uso médio e o valor da coleção, o mais e o menos usado); **Cada relógio**, do mais usado ao menos usado: dias de uso, horas, a parte de cada um (com a barra), o custo por uso, há quantos dias não vai ao pulso e a tendência (↑ usando mais, ↓ usando menos, → estável: a segunda metade do período comparada com a primeira); os gráficos **Por dia da semana** e **Por mês** (as horas no pulso); e **A coleção**: os relógios divididos por grupo, marca, ano da compra, situação e cada campo de lista (como o Estilo), com quantos, a parte e as horas de cada parte. Pela API: `recurso=estatisticas`. |
 | **Totais** (`totais.php`, menu **Coleção**) | A página de totais: os totais marcados para ela (a aba **Totais** dos Cadastros), cada um num quadro, estreito ou largo, na ordem do cadastro: a tabelinha com a linha de total, o número, ou o relógio com o valor. Abre pelo **Ver todos os totais** embaixo da tabela da página Hoje, com o mesmo filtro (*Contando 12 de 17 relógios*, com **Contar todos**), ou pelo menu, com todos. Pela API: `recurso=totais&parte=pagina`. Veja [Os totais](#os-totais). |
-| **Acessórios** (`acessorios.php`) | As pulseiras, caixas, estojos, ferramentas, carregadores, peças e o que mais for: a lista (o nome, o tipo, o relógio de que ele é, ou *solto*, e a observação), com o filtro **Relógio** (todos, os soltos ou os de um relógio; o quadro **Acessórios** do painel abre já filtrada), **Editar** e **Excluir** em cada um, e embaixo o cadastro (**Novo acessório**: nome, tipo, relógio ou *solto (serve a vários)* e observação). Excluir um relógio deixa os acessórios dele soltos. Pela API: `recurso=acessorios` (a lista) e a escrita `acessorios` (`salvar`, `excluir`). |
+| **Acessórios** (`acessorios.php`) | As pulseiras, caixas, estojos, ferramentas, carregadores, peças e o que mais for: a lista (o nome, o tipo, o relógio de que ele é, ou *solto*, e a observação), com o filtro **Relógio** (todos, os soltos ou os de um relógio; o quadro **Acessórios** do painel abre já filtrada), **Editar** e **Excluir** em cada um, e embaixo o cadastro (**Novo acessório**: nome, tipo, relógio ou *solto (serve a vários)*, os campos do tipo e observação). Cada um mostra os **Dados** (os campos do tipo dele) e onde ele **Serve** (veja [A construção e os acessórios](#a-construção-e-os-acessórios)). Excluir um relógio deixa os acessórios dele soltos. Pela API: `recurso=acessorios` (a lista) e a escrita `acessorios` (`salvar`, `excluir`). |
 | **Galeria** (`galeria.php`) | A coleção em fotos, por grupo: cada relógio com a foto (o link da ficha), o nome, a marca e a referência, o ano e o valor da compra e os dias de uso; no alto, quantos, o valor somado e quantos têm foto. **Também os de fora da coleção** mostra os desejados, vendidos e arquivados (com a marca da situação). **Imprimir**: no papel, quatro por linha, sem o menu. Pela API: `recurso=galeria`. |
 | **Passaporte** (`passaporte.php`) | A ficha de um relógio para imprimir ou guardar em PDF (o botão **Passaporte** no quadro Documentos do painel): a foto, o nome, a marca e a referência, o grupo e a situação; a **Compra**; o **Uso** (a primeira e a última vez no pulso, as horas no pulso, os dias de uso e o custo por uso); o **Cadastro** preenchido; as **Manutenções** (cada tipo de marcação, quantas vezes e a última; as revisões e trocas de pilha); os **Acessórios**; os **Documentos**; e os **Próximos avisos**. **Imprimir**: no papel saem só os dados. Pela API: `recurso=passaporte`. Com algum serviço, também os **Serviços e diagnósticos** (quem fez, o custo, a estanqueidade e a marcha antes e depois). |
 | **Relatórios** (`relatorios.php`) | A porta única dos relatórios: o menu com todos (por grupo), os campos do escolhido (o relógio, o período, as opções) e **Gerar o relatório**; o relatório na tela, no papel (**Imprimir**) e numa planilha (**Baixar a planilha (CSV)**). Veja [Os relatórios](#os-relatórios). |
@@ -1453,7 +1484,7 @@ quadros de serviços, precisão e timegrapher do painel).
 | Coleção | **Passaporte do relógio** | a ficha inteira de um relógio: quem ele é, a compra, o uso, o cadastro, as manutenções, os serviços, o declarado, medido e estimado, os testes da reserva, o timegrapher, os acessórios, os documentos e os próximos avisos |
 | Coleção | **Custos da coleção** | o valor pago, os serviços (quantos e quanto), o total, os dias de uso e o custo de cada uso, por relógio e somados |
 | Coleção | **Lista de desejos** | os desejados por prioridade, com o preço-alvo e o link, a soma dos preços, e os que saíram da coleção |
-| Coleção | **Acessórios** | os acessórios de cada relógio e os soltos, e quantos de cada tipo |
+| Coleção | **Acessórios** | os acessórios de cada relógio e os soltos, com os dados e onde cada um serve, e quantos de cada tipo |
 | Coleção | **Documentos** | os documentos de cada relógio e calibre, com a categoria, a data, o arquivo e o tamanho |
 | Uso e rodízio | **Linha do tempo** | o que cada relógio fez no período, trecho a trecho, e o tempo em cada estado |
 | Uso e rodízio | **Uso no período** | as estatísticas: dias com relógio, horas, o mais e o menos usado, cada relógio, por dia da semana e por mês |

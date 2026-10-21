@@ -250,6 +250,8 @@ const ESCOPO_CONDICOES = [
     "timegrapher" => "relogio_id IN ({RC})",
     "acessorio" => "colecao_id = {C}",
     "acessorio_relogio" => "relogio_id IN ({RC})",
+    "acessorio_valor" => "acessorio_id IN (SELECT id FROM acessorio WHERE colecao_id = {C})",
+    "acessorio_valor_item" => "acessorio_id IN (SELECT id FROM acessorio WHERE colecao_id = {C})",
     "config" => "colecao_id = {C}",
     "modo" => "colecao_id = {C}",
     "modo_bloco" => "modo_id IN (SELECT id FROM modo WHERE colecao_id = {C})",
@@ -286,7 +288,8 @@ const ESCOPO_CONDICOES = [
 const ESCOPO_VISOES = [
     "no" => ["id", "pai_id*", "dono_id", "nome", "ordem"],
     "relogio" => ["id", "colecao_id", "nome", "apelido", "no_id*", "disponivel", "criado", "copia_banco", "posse"],
-    "campo" => ["id", "identificador", "nome", "tipo", "unidade", "padrao", "no_id*", "ordem", "so_desejado", "calibre", "secao_id", "minimo", "maximo", "multiplo"],
+    "campo" => ["id", "identificador", "nome", "tipo", "unidade", "padrao", "no_id*", "ordem", "so_desejado", "calibre", "secao_id", "minimo", "maximo", "multiplo", "alvo", "acessorio_tipo",
+        "serve_campo_id"],
     "lancamento_tipo" => ["id", "identificador", "nome", "formato", "unidade", "fecha_as", "no_id*", "ordem", "exclusiva", "mede_gasto", "marcha", "condicao"],
     "formula" => ["id", "identificador", "nome", "expressao", "unidade", "no_id*"],
     "aviso" => ["id", "identificador", "nome", "expressao", "antecedencia_dias", "texto", "ativo", "no_id*", "escala", "simula_valor", "simula_horas", "agenda",

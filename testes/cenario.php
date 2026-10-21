@@ -770,55 +770,6 @@ if (!array_key_exists("secao_id", $pul_s2) || $pul_s2["secao_id"] !== null) {
 }
 escrever(["recurso" => "campos", "acao" => "excluir", "id" => $c_pul, "confirmar" => 1]);
 
-// as regras do valor: o campo múltiplo do movimento (as complicações: o NH35 define uma; o Seiko com o calibre usa a dele e
-// depois marca duas, guardadas uma por linha na ordem dos valores possíveis, mesmo escritas em minúsculas), as recusas (o
-// múltiplo sem valores possíveis, o mínimo acima do máximo, um valor possível que não é número, o valor fora da faixa ou
-// fora dos valores possíveis, a regra nova que os valores gravados não seguem: deixar de ser múltiplo com dois, o máximo
-// abaixo do gravado), as funções TEM e ITENS, o passaporte com os valores separados por vírgula e a volta (múltiplo de
-// novo, com um só)
-escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "complicacoes_teste", "nome" => "Complicações de teste", "tipo" => "texto", "multiplo" => 1], false);
-$c_comp = escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "complicacoes_teste", "nome" => "Complicações de teste", "tipo" => "lista",
-    "opcoes" => "Data\nGMT\nCronógrafo", "multiplo" => 1, "calibre" => 1]);
-escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "diametro_teste", "nome" => "Diâmetro de teste", "tipo" => "decimal", "unidade" => "mm", "minimo" => "50", "maximo" => "30"], false);
-$c_diam = escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "diametro_teste", "nome" => "Diâmetro de teste", "tipo" => "decimal", "unidade" => "mm", "minimo" => "30", "maximo" => "50"]);
-escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "largura_teste", "nome" => "Largura de teste", "tipo" => "inteiro", "unidade" => "mm", "opcoes" => "18\n20\nvinte e dois"], false);
-$c_larg = escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "largura_teste", "nome" => "Largura de teste", "tipo" => "inteiro", "unidade" => "mm", "opcoes" => "18\n20\n22"]);
-escrever(["recurso" => "calibres", "acao" => "salvar", "id" => $cal, "valores" => ["complicacoes_teste" => ["Data"]]]);
-$f_r1 = ler("ficha com o multiplo do calibre", ["recurso" => "ficha", "relogio" => $rel["auto"]]);
-$d_r1 = array_column($f_r1["relogio"]["dados"] ?? [], null, "identificador");
-escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto"], "valores" => ["complicacoes_teste" => ["cronógrafo", "Data"], "diametro_teste" => "42,5", "largura_teste" => "20"]]);
-escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["manual"], "valores" => ["complicacoes_teste" => ["Lua"], "diametro_teste" => "60", "largura_teste" => "21"]]);
-$f_r2 = ler("ficha com o multiplo", ["recurso" => "ficha", "relogio" => $rel["auto"]]);
-$d_r2 = array_column($f_r2["relogio"]["dados"] ?? [], null, "identificador");
-$f_r3 = ler("ficha com os valores recusados", ["recurso" => "ficha", "relogio" => $rel["manual"]]);
-$d_r3 = array_column($f_r3["relogio"]["dados"] ?? [], null, "identificador");
-$p_r = ler("passaporte com o multiplo", ["recurso" => "passaporte", "relogio" => $rel["auto"]]);
-$p_comp = array_values(array_filter($p_r["cadastro"] ?? [], function ($c) { return $c["identificador"] === "complicacoes_teste"; }))[0]["valor"] ?? null;
-$calc_r = ler("tem e itens", ["recurso" => "calcular", "relogio" => $rel["auto"], "expressao" => "TEM(complicacoes_teste; \"data\") * 100 + TEM(complicacoes_teste; \"GMT\") * 10 + ITENS(complicacoes_teste)"]);
-$v_r = $calc_r["resultados"][0]["valor"] ?? null;
-if (($d_r1["complicacoes_teste"]["valor_usado"] ?? null) !== "Data" || ($d_r1["complicacoes_teste"]["origem"] ?? "") !== "calibre"
-    || ($d_r2["complicacoes_teste"]["valor"] ?? null) !== "Data\nCronógrafo" || ($d_r2["complicacoes_teste"]["multiplo"] ?? null) !== true
-    || (string)($d_r2["diametro_teste"]["valor"] ?? "") !== "42.5" || !isset($d_r3["diametro_teste"], $d_r3["largura_teste"], $d_r3["complicacoes_teste"])
-    || $d_r3["diametro_teste"]["valor"] !== null || $d_r3["largura_teste"]["valor"] !== null || $d_r3["complicacoes_teste"]["valor"] !== null || $p_comp !== "Data, Cronógrafo" || $v_r != 102) {
-    $falhas[] = "regras do valor: " . json_encode([$d_r1["complicacoes_teste"] ?? null, $d_r2["complicacoes_teste"] ?? null, $d_r2["diametro_teste"] ?? null, $d_r3["diametro_teste"] ?? null, $p_comp, $v_r], JSON_UNESCAPED_UNICODE);
-}
-escrever(["recurso" => "campos", "acao" => "alterar", "id" => $c_comp, "multiplo" => 0], false);
-escrever(["recurso" => "campos", "acao" => "alterar", "id" => $c_diam, "maximo" => "40"], false);
-escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto"], "valores" => ["complicacoes_teste" => ["GMT"]]]);
-escrever(["recurso" => "calibres", "acao" => "salvar", "id" => $cal, "valores" => ["complicacoes_teste" => ""]]);
-escrever(["recurso" => "campos", "acao" => "alterar", "id" => $c_comp, "multiplo" => 0]);
-escrever(["recurso" => "campos", "acao" => "alterar", "id" => $c_comp, "multiplo" => 1]);
-$cad_r = ler("cadastros com as regras", ["recurso" => "cadastros"]);
-$f_r4 = ler("ficha de volta ao multiplo", ["recurso" => "ficha", "relogio" => $rel["auto"]]);
-$d_r4 = array_column($f_r4["relogio"]["dados"] ?? [], null, "identificador");
-$diam_r = array_values(array_filter($cad_r["campos"] ?? [], function ($c) { return $c["identificador"] === "diametro_teste"; }))[0] ?? [];
-if (($d_r4["complicacoes_teste"]["valor"] ?? null) !== "GMT" || ($diam_r["maximo"] ?? null) != 50 || ($diam_r["regra"] ?? null) === null) {
-    $falhas[] = "regras do valor, depois: " . json_encode([$d_r4["complicacoes_teste"] ?? null, $diam_r], JSON_UNESCAPED_UNICODE);
-}
-foreach ([$c_comp, $c_diam, $c_larg] as $c_r) {
-    escrever(["recurso" => "campos", "acao" => "excluir", "id" => $c_r, "confirmar" => 1]);
-}
-
 // os serviços e diagnósticos: uma revisão no automático com peças, a estanqueidade aprovada, a marcha antes e depois, a
 // garantia e um documento (vira também a marcação Revisão); as recusas (o teste de estanqueidade sem resultado, a data no
 // futuro, a pressão sem resultado, o custo da peça que não é número, o documento de outro relógio, a garantia antes do
@@ -1300,6 +1251,103 @@ foreach ([["tipo" => "nao_existe"], ["tipo" => "passaporte"], ["tipo" => "passap
         $falhas[] = "relatório recusado: " . json_encode($par_r) . " passou";
     }
 }
+
+// (no fim, depois das leituras que contam o tempo das sessões abertas: estes passos não atrasam aquelas leituras no banco
+// mais lento.) O Orient fica com o NH35 durante as regras do valor
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "calibre_id" => $cal]);
+// as regras do valor: o campo múltiplo do movimento (as complicações: o NH35 define uma; o Orient com o calibre usa a dele e
+// depois marca duas, guardadas uma por linha na ordem dos valores possíveis, mesmo escritas em minúsculas), as recusas (o
+// múltiplo sem valores possíveis, o mínimo acima do máximo, um valor possível que não é número, o valor fora da faixa ou
+// fora dos valores possíveis, a regra nova que os valores gravados não seguem: deixar de ser múltiplo com dois, o máximo
+// abaixo do gravado), as funções TEM e ITENS, o passaporte com os valores separados por vírgula e a volta (múltiplo de
+// novo, com um só)
+escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "complicacoes_teste", "nome" => "Complicações de teste", "tipo" => "texto", "multiplo" => 1], false);
+$c_comp = escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "complicacoes_teste", "nome" => "Complicações de teste", "tipo" => "lista",
+    "opcoes" => "Data\nGMT\nCronógrafo", "multiplo" => 1, "calibre" => 1]);
+escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "diametro_teste", "nome" => "Diâmetro de teste", "tipo" => "decimal", "unidade" => "mm", "minimo" => "50", "maximo" => "30"], false);
+$c_diam = escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "diametro_teste", "nome" => "Diâmetro de teste", "tipo" => "decimal", "unidade" => "mm", "minimo" => "30", "maximo" => "50"]);
+escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "largura_teste", "nome" => "Largura de teste", "tipo" => "inteiro", "unidade" => "mm", "opcoes" => "18\n20\nvinte e dois"], false);
+$c_larg = escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "largura_teste", "nome" => "Largura de teste", "tipo" => "inteiro", "unidade" => "mm", "opcoes" => "18\n20\n22"]);
+escrever(["recurso" => "calibres", "acao" => "salvar", "id" => $cal, "valores" => ["complicacoes_teste" => ["Data"]]]);
+$f_r1 = ler("ficha com o multiplo do calibre", ["recurso" => "ficha", "relogio" => $rel["auto2"]]);
+$d_r1 = array_column($f_r1["relogio"]["dados"] ?? [], null, "identificador");
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "valores" => ["complicacoes_teste" => ["cronógrafo", "Data"], "diametro_teste" => "42,5", "largura_teste" => "20"]]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["manual"], "valores" => ["complicacoes_teste" => ["Lua"], "diametro_teste" => "60", "largura_teste" => "21"]]);
+$f_r2 = ler("ficha com o multiplo", ["recurso" => "ficha", "relogio" => $rel["auto2"]]);
+$d_r2 = array_column($f_r2["relogio"]["dados"] ?? [], null, "identificador");
+$f_r3 = ler("ficha com os valores recusados", ["recurso" => "ficha", "relogio" => $rel["manual"]]);
+$d_r3 = array_column($f_r3["relogio"]["dados"] ?? [], null, "identificador");
+$p_r = ler("passaporte com o multiplo", ["recurso" => "passaporte", "relogio" => $rel["auto2"]]);
+$p_comp = array_values(array_filter($p_r["cadastro"] ?? [], function ($c) { return $c["identificador"] === "complicacoes_teste"; }))[0]["valor"] ?? null;
+$calc_r = ler("tem e itens", ["recurso" => "calcular", "relogio" => $rel["auto2"], "expressao" => "TEM(complicacoes_teste; \"data\") * 100 + TEM(complicacoes_teste; \"GMT\") * 10 + ITENS(complicacoes_teste)"]);
+$v_r = $calc_r["resultados"][0]["valor"] ?? null;
+if (($d_r1["complicacoes_teste"]["valor_usado"] ?? null) !== "Data" || ($d_r1["complicacoes_teste"]["origem"] ?? "") !== "calibre"
+    || ($d_r2["complicacoes_teste"]["valor"] ?? null) !== "Data\nCronógrafo" || ($d_r2["complicacoes_teste"]["multiplo"] ?? null) !== true
+    || (string)($d_r2["diametro_teste"]["valor"] ?? "") !== "42.5" || !isset($d_r3["diametro_teste"], $d_r3["largura_teste"], $d_r3["complicacoes_teste"])
+    || $d_r3["diametro_teste"]["valor"] !== null || $d_r3["largura_teste"]["valor"] !== null || $d_r3["complicacoes_teste"]["valor"] !== null || $p_comp !== "Data, Cronógrafo" || $v_r != 102) {
+    $falhas[] = "regras do valor: " . json_encode([$d_r1["complicacoes_teste"] ?? null, $d_r2["complicacoes_teste"] ?? null, $d_r2["diametro_teste"] ?? null, $d_r3["diametro_teste"] ?? null, $p_comp, $v_r], JSON_UNESCAPED_UNICODE);
+}
+escrever(["recurso" => "campos", "acao" => "alterar", "id" => $c_comp, "multiplo" => 0], false);
+escrever(["recurso" => "campos", "acao" => "alterar", "id" => $c_diam, "maximo" => "40"], false);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "valores" => ["complicacoes_teste" => ["GMT"]]]);
+escrever(["recurso" => "calibres", "acao" => "salvar", "id" => $cal, "valores" => ["complicacoes_teste" => ""]]);
+escrever(["recurso" => "campos", "acao" => "alterar", "id" => $c_comp, "multiplo" => 0]);
+escrever(["recurso" => "campos", "acao" => "alterar", "id" => $c_comp, "multiplo" => 1]);
+$cad_r = ler("cadastros com as regras", ["recurso" => "cadastros"]);
+$f_r4 = ler("ficha de volta ao multiplo", ["recurso" => "ficha", "relogio" => $rel["auto2"]]);
+$d_r4 = array_column($f_r4["relogio"]["dados"] ?? [], null, "identificador");
+$diam_r = array_values(array_filter($cad_r["campos"] ?? [], function ($c) { return $c["identificador"] === "diametro_teste"; }))[0] ?? [];
+if (($d_r4["complicacoes_teste"]["valor"] ?? null) !== "GMT" || ($diam_r["maximo"] ?? null) != 50 || ($diam_r["regra"] ?? null) === null) {
+    $falhas[] = "regras do valor, depois: " . json_encode([$d_r4["complicacoes_teste"] ?? null, $diam_r], JSON_UNESCAPED_UNICODE);
+}
+foreach ([$c_comp, $c_diam, $c_larg] as $c_r) {
+    escrever(["recurso" => "campos", "acao" => "excluir", "id" => $c_r, "confirmar" => 1]);
+}
+
+// a construção pronta e os campos dos acessórios: os do modelo (o material da caixa na divisória Construção, as funções
+// múltiplas, a largura da pulseira que bate com o entre alças), a pulseira solta de 20 mm (serve no automático, de entre
+// alças 20, e não no manual, de 22), as recusas (o campo da pulseira num estojo, a largura fora da faixa, o tipo de
+// acessório que não existe, o campo do relógio que não existe, mudar de relógio para acessório com valores), o campo de
+// acessório de todos os tipos, a troca de tipo (os valores que não são do tipo novo saem) e a exclusão
+$cad_c = ler("cadastros com a construcao", ["recurso" => "cadastros"]);
+$por_ident = array_column($cad_c["campos"] ?? [], null, "identificador");
+$sec_c = array_column($cad_c["secoes"] ?? [], "id", "nome");
+if (($por_ident["material_caixa"]["secao_id"] ?? null) !== ($sec_c["Construção"] ?? -1) || ($por_ident["funcoes"]["multiplo"] ?? 0) !== 1
+    || ($por_ident["pulseira_largura"]["alvo"] ?? "") !== "acessorio" || ($por_ident["pulseira_largura"]["serve_campo_id"] ?? null) !== ($por_ident["entre_alcas"]["id"] ?? -1)) {
+    $falhas[] = "construção: o modelo não veio (" . json_encode([$por_ident["material_caixa"] ?? null, $por_ident["pulseira_largura"] ?? null], JSON_UNESCAPED_UNICODE) . ")";
+}
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "valores" => ["entre_alcas" => "20", "material_caixa" => "aço inoxidável", "funcoes" => ["Data", "Dia da semana"]]]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["manual"], "valores" => ["entre_alcas" => "22"]]);
+$ac_p = escrever(["recurso" => "acessorios", "acao" => "salvar", "nome" => "Pulseira de couro 20", "tipo" => "pulseira", "relogio_id" => 0,
+    "valores" => ["pulseira_largura" => "20", "pulseira_material" => "couro", "pulseira_cor" => "Marrom"]]);
+escrever(["recurso" => "acessorios", "acao" => "salvar", "nome" => "Estojo errado", "tipo" => "estojo", "valores" => ["pulseira_largura" => "20"]], false);
+escrever(["recurso" => "acessorios", "acao" => "salvar", "nome" => "Larga demais", "tipo" => "pulseira", "valores" => ["pulseira_largura" => "99"]], false);
+escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "acessorio_x", "nome" => "X", "tipo" => "texto", "alvo" => "acessorio", "acessorio_tipo" => "foguete"], false);
+escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "acessorio_x", "nome" => "X", "tipo" => "texto", "alvo" => "acessorio", "serve_campo_id" => 999999], false);
+escrever(["recurso" => "campos", "acao" => "alterar", "id" => $por_ident["entre_alcas"]["id"] ?? 0, "alvo" => "acessorio"], false);
+$c_nota = escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "acessorio_nota_teste", "nome" => "Nota do acessório", "tipo" => "texto", "alvo" => "acessorio"]);
+$ac_l = ler("acessorios com a construcao", ["recurso" => "acessorios"]);
+$ac_couro = array_values(array_filter($ac_l["acessorios"] ?? [], function ($a) use ($ac_p) { return $a["id"] === $ac_p; }))[0] ?? [];
+$f_ac = ler("ficha com a pulseira que serve", ["recurso" => "ficha", "relogio" => $rel["auto2"]]);
+$f_ac2 = ler("ficha sem pulseira que serve", ["recurso" => "ficha", "relogio" => $rel["manual"]]);
+$p_ac = ler("passaporte com a construcao", ["recurso" => "passaporte", "relogio" => $rel["auto2"]]);
+$p_con = array_values(array_filter($p_ac["cadastro_secoes"] ?? [], function ($g) { return $g["secao"] === "Construção"; }))[0]["campos"] ?? [];
+if (array_column($ac_couro["serve_em"] ?? [], "relogio_id") !== [$rel["auto2"]] || count($ac_couro["valores"] ?? []) !== 3
+    || array_column($f_ac["relogio"]["acessorios_servem"] ?? [], "id") !== [$ac_p] || count($f_ac2["relogio"]["acessorios_servem"] ?? [1]) !== 0
+    || count(array_filter($p_con, function ($c) { return $c["identificador"] === "funcoes" && $c["valor"] === "Data, Dia da semana"; })) !== 1
+    || !in_array("acessorio_nota_teste", array_column($ac_l["campos"] ?? [], "identificador"), true)) {
+    $falhas[] = "acessórios com campos: " . json_encode([$ac_couro, $f_ac["relogio"]["acessorios_servem"] ?? null, $p_con], JSON_UNESCAPED_UNICODE);
+}
+escrever(["recurso" => "acessorios", "acao" => "salvar", "id" => $ac_p, "tipo" => "estojo", "valores" => ["acessorio_nota_teste" => "virou estojo"]]);
+$ac_l2 = ler("acessorio que trocou de tipo", ["recurso" => "acessorios"]);
+$ac_e = array_values(array_filter($ac_l2["acessorios"] ?? [], function ($a) use ($ac_p) { return $a["id"] === $ac_p; }))[0] ?? [];
+if (array_column($ac_e["valores"] ?? [], "identificador") !== ["acessorio_nota_teste"] || !array_key_exists("serve_em", $ac_e) || $ac_e["serve_em"] !== null) {
+    $falhas[] = "acessório que trocou de tipo: " . json_encode($ac_e, JSON_UNESCAPED_UNICODE);
+}
+escrever(["recurso" => "acessorios", "acao" => "excluir", "id" => $ac_p, "confirmar" => 1]);
+escrever(["recurso" => "campos", "acao" => "excluir", "id" => $c_nota, "confirmar" => 1]);
+
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "calibre_id" => "0"]);
 
 $texto = json_encode($foto, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_PRESERVE_ZERO_FRACTION | JSON_INVALID_UTF8_SUBSTITUTE);
 if ($texto === false) {

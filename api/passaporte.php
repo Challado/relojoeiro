@@ -21,37 +21,11 @@ $agora_p = time();
 $valores = valores_do_relogio($id);
 $n_p = nos_todos();
 
-// um valor do cadastro em texto, pelo tipo do campo: data DD/MM/AAAA, sim/não, número com vírgula e a unidade (R$ na frente;
-// com a unidade em que ela também aparece, entre parênteses: "47 mm (1,85 pol)")
-$texto_valor = function ($c, $v) use (&$texto_valor) {
-    if ($v === null || $v === "") {
-        return null;
-    }
-    // o múltiplo: cada valor no jeito do tipo, separados por vírgula
-    if ((int)($c["multiplo"] ?? 0) === 1) {
-        return implode(", ", array_map(function ($x) use ($c, $texto_valor) { return $texto_valor(array_merge($c, ["multiplo" => 0]), $x); }, explode("\n", (string)$v)));
-    }
-    if ($c["tipo"] === "data") {
-        return data_txt(strtotime(substr((string)$v, 0, 10)));
-    }
-    if ($c["tipo"] === "sim_nao") {
-        return (string)$v === "1" ? t("sim") : t("não");
-    }
-    if ($c["tipo"] === "decimal" || $c["tipo"] === "inteiro") {
-        $num = $c["tipo"] === "inteiro" ? numero_txt((float)$v, 0) : numero_txt((float)$v, 2, 0);
-        if ($c["unidade"] === "R$") {
-            return dinheiro_txt((float)$v);
-        }
-        $tambem = unidade_tambem($v, $c["unidade"]);
-        return $num . ($c["unidade"] !== "" ? " " . $c["unidade"] : "") . ($tambem !== null ? " (" . $tambem["texto"] . ")" : "");
-    }
-    return (string)$v;
-};
 $cadastro = [];
 // na ordem da ficha: por divisória, cada um com o nome da dele (null: sem divisória, no fim)
 foreach (campos_na_ordem_da_ficha(campos_do_relogio($r)) as $c) {
     $ident = $c["identificador"];
-    $t = $texto_valor($c, $valores[$ident] ?? null);
+    $t = valor_texto($c, $valores[$ident] ?? null);
     if ($t !== null) {
         $cadastro[] = ["identificador" => $ident, "nome" => $c["nome"], "secao" => $c["secao"], "valor" => $t];
     }

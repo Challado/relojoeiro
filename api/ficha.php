@@ -64,6 +64,8 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     $saida["relogio"] = ["id" => $id, "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? 0 : (int)$r["no_id"], "disponivel" => (int)$r["disponivel"] === 1,
         "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]), "da_colecao" => da_colecao($r),
         "acessorios" => acessorios_lista($id),
+        // os acessórios de outros relógios (ou soltos) que servem neste (a pulseira com a largura do entre alças dele)
+        "acessorios_servem" => acessorios_que_servem($id),
         // os serviços e diagnósticos (o quadro Serviços e diagnósticos): a lista, o resumo, os tipos e os documentos dele que um
         // serviço pode citar (o formulário)
         "servicos" => ($srv_f = servicos_lista($id)), "servicos_resumo" => servicos_resumo($id, $srv_f),

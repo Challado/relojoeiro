@@ -53,7 +53,10 @@ api({recurso: "passaporte", relogio: id}).then(function (d) {
   }
   res += el("div", {"class": "grade-impressa"},
     el("section", {}, el("h2", {}, t("Acessórios")) + (d.acessorios.length === 0 ? el("p", {"class": "nota"}, t("Nenhum."))
-      : linhas(d.acessorios.map(function (a) { return [h(a.tipo_texto), h(a.nome) + (a.observacao !== null ? el("small", {}, h(a.observacao)) : "")]; }))))
+      : linhas(d.acessorios.map(function (a) {
+        return [h(a.tipo_texto), h(a.nome) + (a.valores.length > 0 ? el("small", {}, a.valores.map(function (x) { return h(x.nome) + ": " + h(x.texto); }).join(" · ")) : "")
+          + (a.observacao !== null ? el("small", {}, h(a.observacao)) : "")];
+      }))))
     + el("section", {}, el("h2", {}, t("Documentos")) + (d.documentos.length === 0 ? el("p", {"class": "nota"}, t("Nenhum."))
       : linhas(d.documentos.map(function (x) { return [h(x.categoria), h(x.titulo) + (x.data !== null ? " · " + dataBr(x.data) : "")]; })))));
   if (d.proximos_avisos.length > 0) {

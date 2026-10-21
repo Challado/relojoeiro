@@ -79,7 +79,7 @@ function recarregarCadastros() {
             return el("tr", {}, el("td", {}, h(c.nome) + (c.unidade !== "" ? " (" + h(c.unidade) + ")" : "")) + el("td", {"class": "formula ident"}, h(c.identificador)) + el("td", {}, h(d.tipos_de_campo[c.tipo]) + (c.multiplo === 1 ? t(" · vários valores") : "")
                 + (c.regra ? el("small", {}, h(c.regra)) : ""))
               + el("td", {}, sec ? h(sec.nome) : el("span", {"class": "nota"}, t("nenhuma")))
-              + el("td", {"class": "nota"}, h(caminho(d, c.no_id)) + (c.so_desejado === 1 ? t(" · só nos desejados") : "") + (c.calibre === 1 ? t(" · do movimento") : "")) + el("td", {}, h(vazio(c.padrao)))
+              + el("td", {"class": "nota"}, (c.alvo === "acessorio" ? acessorioDoCampo(d, c) : h(caminho(d, c.no_id)) + (c.so_desejado === 1 ? t(" · só nos desejados") : "") + (c.calibre === 1 ? t(" · do movimento") : ""))) + el("td", {}, h(vazio(c.padrao)))
               + el("td", {"class": "acoes-linha"}, linkEditar(c.id) + " " + botaoLinha("ordem", c.id, "", null, el("button", {"class": "leve discreto", "name": "direcao", "value": "sobe"}, "↑")
                 + el("button", {"class": "leve discreto", "name": "direcao", "value": "desce"}, "↓")) + botaoLinha("excluir", c.id, t("Excluir"), t("Excluir o campo {1} e os valores dele?", {1: c.nome}))));
           }).join(""))))
@@ -89,20 +89,29 @@ function recarregarCadastros() {
           + el("label", {}, t("Identificador {1}", {1: el("input", {"name": "identificador", "value": vazio(f.identificador), "required": true, "pattern": "[a-z][a-z0-9_]{0,39}"})}))
           + el("label", {}, t("Tipo {1}", {1: el("select", {"name": "tipo"}, Object.keys(d.tipos_de_campo).map(function (k) { return el("option", {"value": k, "selected": f.tipo === k}, h(d.tipos_de_campo[k])); }).join(""))}))
           + campoUnidade(d, t("Unidade"), vazio(f.unidade))
-          + el("label", {}, t("Divisória {1}", {1: el("select", {"name": "secao_id"}, el("option", {"value": "0"}, t("— nenhuma (no fim da ficha)")) + d.secoes.map(function (x) {
+          // de quem é o campo: dos relógios ou dos acessórios (o menu mostra só o que vale para cada um)
+          + el("label", {}, t("Para {1}", {1: el("select", {"name": "alvo", "onchange": "var v = this.value; this.form.querySelectorAll('[data-alvo]').forEach(function (x) { x.hidden = x.getAttribute('data-alvo') !== v; });"},
+            el("option", {"value": "relogio", "selected": f.alvo !== "acessorio"}, t("os relógios")) + el("option", {"value": "acessorio", "selected": f.alvo === "acessorio"}, t("os acessórios")))}))
+          + el("label", {"data-alvo": "acessorio", "hidden": f.alvo !== "acessorio"}, t("Tipo de acessório {1}", {1: el("select", {"name": "acessorio_tipo"}, el("option", {"value": ""}, t("— todos")) + d.acessorio_tipos.map(function (x) {
+            return el("option", {"value": x.valor, "selected": f.acessorio_tipo === x.valor}, h(x.nome));
+          }).join(""))}))
+          + el("label", {"data-alvo": "acessorio", "hidden": f.alvo !== "acessorio"}, t("Serve no relógio quando bate com {1}", {1: el("select", {"name": "serve_campo_id"}, el("option", {"value": "0"}, t("— nenhum")) + d.campos.filter(function (x) { return x.alvo !== "acessorio"; }).map(function (x) {
+            return el("option", {"value": x.id, "selected": f.serve_campo_id === x.id}, h(x.nome));
+          }).join(""))}) + el("small", {}, t("a largura da pulseira com o entre alças do relógio: a pulseira mostra em quais relógios ela serve")))
+          + el("label", {"data-alvo": "relogio", "hidden": f.alvo === "acessorio"}, t("Divisória {1}", {1: el("select", {"name": "secao_id"}, el("option", {"value": "0"}, t("— nenhuma (no fim da ficha)")) + d.secoes.map(function (x) {
             return el("option", {"value": x.id, "selected": f.secao_id === x.id}, h(x.nome));
           }).join(""))}) + el("small", {}, el("a", {"href": "cadastros.php?aba=secoes"}, t("as divisórias"))))
           + el("label", {}, t("Valor padrão {1}", {1: el("input", {"name": "padrao", "value": vazio(f.padrao)})}))
-          + el("label", {}, t("Vale para {1}", {1: el("select", {"name": "no_id"}, opcoesNo(d, f.no_id))}))
+          + el("label", {"data-alvo": "relogio", "hidden": f.alvo === "acessorio"}, t("Vale para {1}", {1: el("select", {"name": "no_id"}, opcoesNo(d, f.no_id))}))
           + el("label", {}, t("Valores possíveis (um por linha; vazio: qualquer um) {1}", {1: el("textarea", {"name": "opcoes"}, h(vazio(f.opcoes)))})
             + el("small", {}, t("Na lista, obrigatórios; no texto e no número, o valor tem de ser um deles. No sim/não e na data, não valem.")))
           + el("label", {}, t("Mínimo {1}", {1: el("input", {"name": "minimo", "inputmode": "decimal", "value": f.minimo === null || f.minimo === undefined ? "" : String(f.minimo).replace(".", ",")})}) + el("small", {}, t("só no número; vazio: sem limite")))
           + el("label", {}, t("Máximo {1}", {1: el("input", {"name": "maximo", "inputmode": "decimal", "value": f.maximo === null || f.maximo === undefined ? "" : String(f.maximo).replace(".", ",")})}) + el("small", {}, t("só no número; vazio: sem limite")))
           + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "multiplo", "value": "0"}) + el("input", {"type": "checkbox", "name": "multiplo", "value": "1", "checked": f.multiplo === 1})
             + t(" vários valores (marca quantos dos valores possíveis quiser: as funções do relógio)"))
-          + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "so_desejado", "value": "0"}) + el("input", {"type": "checkbox", "name": "so_desejado", "value": "1", "checked": f.so_desejado === 1})
+          + el("label", {"class": "check", "data-alvo": "relogio", "hidden": f.alvo === "acessorio"}, el("input", {"type": "hidden", "name": "so_desejado", "value": "0"}) + el("input", {"type": "checkbox", "name": "so_desejado", "value": "1", "checked": f.so_desejado === 1})
             + t(" só nos desejados (a lista de desejos: o preço-alvo, a prioridade)"))
-          + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "calibre", "value": "0"}) + el("input", {"type": "checkbox", "name": "calibre", "value": "1", "checked": f.calibre === 1})
+          + el("label", {"class": "check", "data-alvo": "relogio", "hidden": f.alvo === "acessorio"}, el("input", {"type": "hidden", "name": "calibre", "value": "0"}) + el("input", {"type": "checkbox", "name": "calibre", "value": "1", "checked": f.calibre === 1})
             + t(" do movimento (aparece no formulário do calibre: a reserva, a marcha esperada...)"))
           + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + (e ? " " + el("a", {"href": "cadastros.php?aba=campos"}, t("cancelar")) : ""))));
     } else if (aba === "secoes") {
@@ -275,6 +284,13 @@ function recarregarTotais() {
     res += el("section", {"class": "cartao-config"}, sec);
     document.getElementById("cadastros").innerHTML = res;
   });
+}
+
+// a coluna Vale para de um campo de acessório: o tipo (ou todos) e o campo do relógio com que ele bate
+function acessorioDoCampo(d, c) {
+  var tipo = d.acessorio_tipos.filter(function (x) { return x.valor === c.acessorio_tipo; })[0];
+  var serve = d.campos.filter(function (x) { return x.id === c.serve_campo_id; })[0];
+  return t("acessórios: {1}", {1: tipo ? h(tipo.nome) : t("todos")}) + (serve ? t(" · serve quando bate com {1}", {1: h(serve.nome)}) : "");
 }
 
 // um valor de campo como texto (a lista e o formulário dos calibres): sim/não, data, número com vírgula

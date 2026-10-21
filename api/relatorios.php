@@ -186,8 +186,8 @@ $RELATORIOS["passaporte"] = [$g_colecao, t("Passaporte do relógio"), t("A ficha
             array_map(function ($m) use ($data_hora) {
                 return [$data_hora($m["quando"]), $m["posicao_texto"], $m["marcha_texto"], $m["amplitude_texto"], $m["erro_batida_texto"], $m["bph_texto"], $m["angulo_texto"]];
             }, $d["timegrapher"]), t("Nenhuma medição do timegrapher."));
-        $sec[] = $tabela(t("Acessórios"), [t("Tipo"), t("Nome"), t("Observação")], array_map(function ($a) {
-            return [$a["tipo_texto"], $a["nome"], $a["observacao"]];
+        $sec[] = $tabela(t("Acessórios"), [t("Tipo"), t("Nome"), t("Dados"), t("Observação")], array_map(function ($a) {
+            return [$a["tipo_texto"], $a["nome"], implode("; ", array_map(function ($x) { return $x["nome"] . ": " . $x["texto"]; }, $a["valores"])), $a["observacao"]];
         }, $d["acessorios"]), t("Nenhum."));
         $sec[] = $tabela(t("Documentos"), [t("Categoria"), t("Título"), t("Data"), t("Arquivo")], array_map(function ($x) use ($data) {
             return [$x["categoria"], $x["titulo"], $data($x["data"]), $x["nome"]];
@@ -255,8 +255,10 @@ $RELATORIOS["acessorios"] = [$g_colecao, t("Acessórios"), t("Os acessórios (pu
         }
         return ["subtitulo" => $r ? $r["nome"] : t("Todos os relógios"),
             "resumo" => [[t("Acessórios"), (string)count($lista)], [t("Soltos"), $r ? null : (string)count(array_filter($lista, function ($a) { return $a["relogio_id"] === null; }))]],
-            "secoes" => [$tabela(t("Acessórios"), [t("Tipo"), t("Nome"), t("Relógio"), t("Observação")], array_map(function ($a) {
-                return [$a["tipo_texto"], $a["nome"], $a["relogio_id"] === null ? t("solto") : $a["relogio"], $a["observacao"]];
+            "secoes" => [$tabela(t("Acessórios"), [t("Tipo"), t("Nome"), t("Relógio"), t("Dados"), t("Serve em"), t("Observação")], array_map(function ($a) {
+                return [$a["tipo_texto"], $a["nome"], $a["relogio_id"] === null ? t("solto") : $a["relogio"],
+                    implode("; ", array_map(function ($x) { return $x["nome"] . ": " . $x["texto"]; }, $a["valores"])),
+                    $a["serve_em"] === null ? null : (count($a["serve_em"]) > 0 ? implode(", ", array_column($a["serve_em"], "relogio")) : t("nenhum relógio")), $a["observacao"]];
             }, $lista), t("Nenhum acessório.")),
                 $tabela(t("Por tipo"), [t("Tipo"), [t("Quantos"), true]], array_map(function ($k, $n) { return [$k, (string)$n]; }, array_keys($tipos), array_values($tipos)), t("Nenhum."))]];
     }];

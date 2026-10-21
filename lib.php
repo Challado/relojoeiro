@@ -449,7 +449,8 @@ $TIPOS_CAMPO = [
     "texto" => tk("Texto (compara e dá faixa por categoria)"),
 ];
 
-// Todos os campos, por identificador (uma vez por requisição)
+// Todos os campos dos relógios, por identificador (uma vez por requisição). Os campos dos acessórios (campo.alvo =
+// acessorio) ficam de fora: campos_de_acessorio
 function campos_todos($recarregar = false)
 {
     // guardado por coleção (o cron passa por todas)
@@ -458,12 +459,31 @@ function campos_todos($recarregar = false)
     $c = $todos_[$k_] ?? null;
     if ($c === null || $recarregar) {
         $c = [];
+        $a = [];
         foreach (campos_com_opcoes(linhas("SELECT * FROM campo ORDER BY ordem, nome")) as $x) {
-            $c[$x["identificador"]] = $x;
+            if (($x["alvo"] ?? "relogio") === "acessorio") {
+                $a[$x["identificador"]] = $x;
+            } else {
+                $c[$x["identificador"]] = $x;
+            }
         }
+        $GLOBALS["CAMPOS_ACESSORIO"][$k_] = $a;
     }
     $todos_[$k_] = $c;
     return $c;
+}
+
+// Os campos dos acessórios (campo.alvo = acessorio), por identificador: os de um tipo de acessório (os do tipo e os de
+// todos), ou todos (null)
+function campos_de_acessorio($tipo = null)
+{
+    $k_ = (int)colecao_atual();
+    if (!isset($GLOBALS["CAMPOS_ACESSORIO"][$k_])) {
+        campos_todos(true);
+    }
+    return array_filter($GLOBALS["CAMPOS_ACESSORIO"][$k_], function ($c) use ($tipo) {
+        return $tipo === null || ($c["acessorio_tipo"] ?? null) === null || $c["acessorio_tipo"] === $tipo;
+    });
 }
 
 // Os campos com as opções de cada lista (a tabela campo_opcao) em "opcoes": uma por linha, na ordem (null: nenhuma)
@@ -749,12 +769,13 @@ function valor_para_campo($c, $v)
     return $res;
 }
 
-// Grava o valor de um campo num relógio ou num calibre ($dono: "relogio" ou "calibre"; o valor já conferido por
-// valor_para_campo; null apaga). O campo múltiplo vai um por linha para o campo_valor_item (no calibre, o
-// calibre_valor_item); os outros, para o campo_valor (calibre_valor)
+// Grava o valor de um campo num relógio, num calibre ou num acessório ($dono: "relogio", "calibre" ou "acessorio"; o valor
+// já conferido por valor_para_campo; null apaga). O campo múltiplo vai um por linha para o campo_valor_item (no calibre, o
+// calibre_valor_item; no acessório, o acessorio_valor_item); os outros, para o campo_valor (calibre_valor, acessorio_valor)
 function valor_gravar($dono, $id, $c, $valor)
 {
-    [$tabela, $itens, $col] = $dono === "calibre" ? ["calibre_valor", "calibre_valor_item", "calibre_id"] : ["campo_valor", "campo_valor_item", "relogio_id"];
+    [$tabela, $itens, $col] = $dono === "calibre" ? ["calibre_valor", "calibre_valor_item", "calibre_id"]
+        : ($dono === "acessorio" ? ["acessorio_valor", "acessorio_valor_item", "acessorio_id"] : ["campo_valor", "campo_valor_item", "relogio_id"]);
     sql("DELETE FROM " . $tabela . " WHERE " . $col . " = ? AND campo_id = ?", [(int)$id, (int)$c["id"]]);
     sql("DELETE FROM " . $itens . " WHERE " . $col . " = ? AND campo_id = ?", [(int)$id, (int)$c["id"]]);
     if ($valor === null || $valor === "") {
@@ -787,12 +808,117 @@ function itens_juntar($c, $itens)
     return implode("\n", $itens);
 }
 
-// Todos os valores gravados de um campo, nos relógios e nos calibres (o múltiplo já junto, um por linha): a conferência
+// Os valores gravados de um acessório: [identificador => texto] (o múltiplo, um por linha)
+function valores_do_acessorio($aid)
+{
+    $res = [];
+    foreach (linhas("SELECT c.identificador, v.valor FROM acessorio_valor v JOIN campo c ON c.id = v.campo_id WHERE v.acessorio_id = ?", [(int)$aid]) as $x) {
+        $res[$x["identificador"]] = $x["valor"];
+    }
+    $itens = [];
+    foreach (linhas("SELECT c.identificador, v.valor FROM acessorio_valor_item v JOIN campo c ON c.id = v.campo_id WHERE v.acessorio_id = ?", [(int)$aid]) as $x) {
+        $itens[$x["identificador"]][] = $x["valor"];
+    }
+    foreach ($itens as $ident => $l) {
+        $res[$ident] = itens_juntar(campos_de_acessorio()[$ident] ?? null, $l);
+    }
+    return $res;
+}
+
+// Um valor de campo em texto, pelo tipo: data DD/MM/AAAA, sim/não, número com vírgula e a unidade (R$ na frente; com a
+// unidade em que ela também aparece, entre parênteses: "47 mm (1,85 pol)"), o múltiplo separado por vírgula; null: vazio
+function valor_texto($c, $v)
+{
+    if ($v === null || $v === "") {
+        return null;
+    }
+    if ((int)($c["multiplo"] ?? 0) === 1) {
+        return implode(", ", array_map(function ($x) use ($c) { return valor_texto(array_merge($c, ["multiplo" => 0]), $x); }, explode("\n", (string)$v)));
+    }
+    if ($c["tipo"] === "data") {
+        return data_txt(strtotime(substr((string)$v, 0, 10)));
+    }
+    if ($c["tipo"] === "sim_nao") {
+        return (string)$v === "1" ? t("sim") : t("não");
+    }
+    if ($c["tipo"] === "decimal" || $c["tipo"] === "inteiro") {
+        $num = $c["tipo"] === "inteiro" ? numero_txt((float)$v, 0) : numero_txt((float)$v, 2, 0);
+        if ($c["unidade"] === "R$") {
+            return dinheiro_txt((float)$v);
+        }
+        $tambem = unidade_tambem($v, $c["unidade"]);
+        return $num . ($c["unidade"] !== "" ? " " . $c["unidade"] : "") . ($tambem !== null ? " (" . $tambem["texto"] . ")" : "");
+    }
+    return (string)$v;
+}
+
+// Dois valores de campo batem? (o "serve neste relógio" dos acessórios): números pelo valor, textos sem diferença de
+// maiúsculas; um múltiplo bate quando tem algum valor em comum com o outro
+function valores_batem($a, $b)
+{
+    $la = array_values(array_filter(array_map("trim", explode("\n", (string)$a)), function ($x) { return $x !== ""; }));
+    $lb = array_values(array_filter(array_map("trim", explode("\n", (string)$b)), function ($x) { return $x !== ""; }));
+    foreach ($la as $x) {
+        foreach ($lb as $y) {
+            if ((is_numeric($x) && is_numeric($y) && abs((float)$x - (float)$y) < 0.0001) || mb_strtolower($x) === mb_strtolower($y)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Os relógios em que um acessório serve, pelos campos dele que apontam para um campo do relógio (campo.serve_campo_id: a
+// largura da pulseira e o entre alças): serve quando todos os que o acessório preencheu batem com o valor do relógio (o
+// dele, o do calibre ou o padrão). Os relógios da coleção, emprestados e desejados (os vendidos e arquivados, não).
+// ["por" => [o que se compara, em texto: "Entre alças: 20 mm"], "relogios" => [["relogio_id", "relogio"], ...]]; null
+// quando o acessório não preencheu nenhum desses campos (não dá para saber)
+function acessorio_serve($a, $valores_a, &$cache)
+{
+    $regras = [];
+    $todos_r = campos_todos();
+    $por_id = array_column(array_values($todos_r), null, "id");
+    foreach (campos_de_acessorio($a["tipo"]) as $ident => $c) {
+        if (($c["serve_campo_id"] ?? null) !== null && isset($por_id[(int)$c["serve_campo_id"]]) && ($valores_a[$ident] ?? "") !== "") {
+            $regras[] = [$por_id[(int)$c["serve_campo_id"]], $valores_a[$ident]];
+        }
+    }
+    if (count($regras) === 0) {
+        return null;
+    }
+    if (!isset($cache["relogios"])) {
+        $cache["relogios"] = [];
+        foreach (linhas("SELECT * FROM relogio ORDER BY nome, id") as $r) {
+            if (in_array(posse_de($r), ["colecao", "emprestado", "desejado"], true)) {
+                $cache["relogios"][] = [$r, valores_do_relogio((int)$r["id"]), campos_do_relogio($r)];
+            }
+        }
+    }
+    $res = [];
+    foreach ($cache["relogios"] as [$r, $vr, $cr]) {
+        $ok = true;
+        foreach ($regras as [$cr_campo, $va]) {
+            $ident_r = $cr_campo["identificador"];
+            $v = ($vr[$ident_r] ?? "") !== "" ? $vr[$ident_r] : $cr_campo["padrao"];
+            if (!isset($cr[$ident_r]) || $v === null || $v === "" || !valores_batem($va, $v)) {
+                $ok = false;
+                break;
+            }
+        }
+        if ($ok) {
+            $res[] = ["relogio_id" => (int)$r["id"], "relogio" => $r["nome"]];
+        }
+    }
+    return ["por" => array_map(function ($x) { return $x[0]["nome"] . ": " . valor_texto($x[0], $x[1]); }, $regras), "relogios" => $res];
+}
+
+// Todos os valores gravados de um campo, nos relógios, nos calibres e nos acessórios (o múltiplo já junto, um por linha): a conferência
 // quando as regras do campo mudam. [["dono" => "relogio" ou "calibre", "id", "nome", "valor"], ...]
 function valores_do_campo($c)
 {
     $res = [];
-    foreach ([["relogio", "campo_valor", "campo_valor_item", "relogio_id", "relogio"], ["calibre", "calibre_valor", "calibre_valor_item", "calibre_id", "calibre"]] as [$dono, $t, $ti, $col, $tab]) {
+    foreach ([["relogio", "campo_valor", "campo_valor_item", "relogio_id", "relogio"], ["calibre", "calibre_valor", "calibre_valor_item", "calibre_id", "calibre"],
+        ["acessorio", "acessorio_valor", "acessorio_valor_item", "acessorio_id", "acessorio"]] as [$dono, $t, $ti, $col, $tab]) {
         $itens = [];
         foreach (linhas("SELECT v." . $col . " AS id, x.nome, v.valor FROM " . $t . " v JOIN " . $tab . " x ON x.id = v." . $col . " WHERE v.campo_id = ?", [(int)$c["id"]]) as $x) {
             $res[] = ["dono" => $dono, "id" => (int)$x["id"], "nome" => $x["nome"], "valor" => $x["valor"]];
@@ -1035,6 +1161,7 @@ $MIGRACOES = [
     "v41" => ["migracao_v41.sql", tk("o cadastro das unidades (Cadastros › Unidades): cada árvore ganha as unidades prontas (mm, cm, pol, g, h, dias, bar, °C...), com o nome, a conversão (a unidade base da mesma grandeza e o fator: 1 pol = 25,4 mm) e a unidade em que o valor também aparece (o milímetro também em polegadas); o campo, o tipo de lançamento e a fórmula escolhem a unidade da lista, e a função CONVERTER converte nas fórmulas. As unidades que a árvore já usa entram também"), "unidade", "migracao_v41_dados"],
     "v42" => ["migracao_v42.sql", tk("as divisórias da ficha (Cadastros › Divisórias): os campos ficam agrupados por seção no cadastro, no painel, no passaporte e nos relatórios (Identificação, Compra, Construção, Energia, Manutenção e precisão, Rodízio, Desejo), e você cria, renomeia e reordena as suas; os campos prontos já vêm cada um na sua"), "campo_secao", "migracao_v42_dados"],
     "v43" => ["migracao_v43.sql", tk("as regras do valor de um campo (Cadastros › Campos): os valores possíveis também no texto e no número (o valor tem de ser um deles), o mínimo e o máximo do número e o campo múltiplo (a lista múltipla, como as funções do relógio: vários valores de uma vez, guardados um por linha), com as funções TEM e ITENS nas fórmulas"), "campo_valor_item"],
+    "v44" => ["migracao_v44.sql", tk("a construção pronta e os campos dos acessórios: cada árvore ganha os campos da construção (material da caixa, diâmetro, espessura, alça a alça, entre alças, peso, vidro, mostrador e a cor dele, luminescência, coroa, fundo e as funções, uma lista múltipla) na divisória Construção, e os acessórios ganham campos (Cadastros › Campos, para acessório: a largura, o material, a cor e o fecho da pulseira); a pulseira mostra em quais relógios ela serve (a largura dela com o entre alças deles)"), "acessorio_valor", "migracao_v44_dados"],
 ];
 
 // O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
@@ -1261,6 +1388,55 @@ function migracao_v42_dados($nova = false)
             $secoes = secoes_do_modelo((int)$raiz["id"], modelo_tradutor($lingua));
             foreach ($onde as $ident => $secao) {
                 sql("UPDATE campo SET secao_id = ? WHERE identificador = ? AND secao_id IS NULL AND no_id IN (" . implode(", ", $arvore) . ")", [$secoes[$secao], $ident]);
+            }
+        }
+    });
+}
+
+// O passo em PHP da v44, depois do SQL dela: cada árvore ganha os campos da construção e os dos acessórios do modelo.json
+// que ela ainda não tem (pelo identificador; o nome e os valores possíveis no idioma da coleção), no fim da ordem; os da
+// construção vão para a divisória Construção (se a árvore tem uma com esse nome), e a unidade que a árvore não tem fica
+// vazia. Numa instalação nova, o schema e o modelo já trazem tudo
+const MIGRACAO_V44_CAMPOS = ["material_caixa", "diametro", "espessura", "alca_a_alca", "entre_alcas", "peso", "vidro", "mostrador", "cor_mostrador", "luminescencia",
+    "coroa", "fundo", "funcoes", "pulseira_largura", "pulseira_material", "pulseira_cor", "pulseira_fecho", "pulseira_engate_rapido"];
+function migracao_v44_dados($nova = false)
+{
+    if ($nova) {
+        return;
+    }
+    sem_escopo(function () {
+        $modelo = array_column(modelo_ler()["campos"], null, "identificador");
+        foreach (linhas("SELECT id FROM no WHERE pai_id IS NULL ORDER BY id") as $raiz) {
+            $arvore = [(int)$raiz["id"]];
+            $nivel = $arvore;
+            while (count($nivel) > 0) {
+                $nivel = array_map("intval", array_column(linhas("SELECT id FROM no WHERE pai_id IN (" . implode(", ", $nivel) . ")"), "id"));
+                $arvore = array_merge($arvore, $nivel);
+            }
+            $em = " AND no_id IN (" . implode(", ", $arvore) . ")";
+            $lingua = lingua_valida((string)valor("SELECT valor FROM config WHERE chave = 'idioma' AND colecao_id IN (SELECT id FROM colecao WHERE no_id = ?) ORDER BY colecao_id", [(int)$raiz["id"]])) ?? "pt-BR";
+            $tr = modelo_tradutor($lingua);
+            $secao = valor("SELECT id FROM campo_secao WHERE no_id = ? AND nome = ?", [(int)$raiz["id"], $tr("Construção")]);
+            $ordem = (int)valor("SELECT COALESCE(MAX(ordem), 0) FROM campo WHERE 1 = 1" . $em);
+            $ids = [];
+            foreach (MIGRACAO_V44_CAMPOS as $ident) {
+                $c = $modelo[$ident] ?? null;
+                if ($c === null || (int)valor("SELECT COUNT(*) FROM campo WHERE identificador = ?" . $em, [$ident]) > 0
+                    || (int)valor("SELECT COUNT(*) FROM formula WHERE identificador = ?" . $em, [$ident]) > 0) {
+                    continue;
+                }
+                if (($c["unidade"] ?? "") !== "" && (int)valor("SELECT COUNT(*) FROM unidade WHERE no_id = ? AND simbolo = ?", [(int)$raiz["id"], $c["unidade"]]) === 0) {
+                    $c["unidade"] = "";
+                }
+                $ids[$ident] = campo_do_modelo($c, (int)$raiz["id"], ($c["alvo"] ?? "relogio") === "relogio" && $secao !== null ? (int)$secao : null, ++$ordem, $tr);
+            }
+            // o campo do acessório que bate com um do relógio (a largura da pulseira com o entre alças)
+            foreach ($ids as $ident => $cid) {
+                $alvo_s = $modelo[$ident]["serve"] ?? null;
+                $sid = $alvo_s === null ? null : valor("SELECT id FROM campo WHERE identificador = ? AND alvo = 'relogio'" . $em, [$alvo_s]);
+                if ($sid !== null) {
+                    sql("UPDATE campo SET serve_campo_id = ? WHERE id = ?", [(int)$sid, $cid]);
+                }
             }
         }
     });
@@ -5197,12 +5373,37 @@ tk("Pulseira"); tk("Caixa"); tk("Estojo"); tk("Ferramenta"); tk("Carregador"); t
 // Os acessórios (de um relógio, ou todos: null), pelo tipo e pelo nome, prontos para a API
 function acessorios_lista($relogio_id = null)
 {
-    return array_map(function ($a) {
+    $cache = [];
+    return array_map(function ($a) use (&$cache) {
+        // os campos do acessório (os do tipo dele) com valor: o gravado e em texto; e os relógios em que ele serve
+        $va = valores_do_acessorio((int)$a["id"]);
+        $valores = [];
+        foreach (campos_de_acessorio($a["tipo"]) as $ident => $c) {
+            if (($va[$ident] ?? "") !== "") {
+                $valores[] = ["identificador" => $ident, "nome" => $c["nome"], "valor" => $va[$ident], "texto" => valor_texto($c, $va[$ident])];
+            }
+        }
+        $serve = acessorio_serve($a, $va, $cache);
         return ["id" => (int)$a["id"], "nome" => $a["nome"], "tipo" => $a["tipo"], "tipo_texto" => isset(ACESSORIO_TIPOS[$a["tipo"]]) ? t(ACESSORIO_TIPOS[$a["tipo"]]) : $a["tipo"],
             "relogio_id" => $a["relogio_id"] === null ? null : (int)$a["relogio_id"], "relogio" => $a["relogio"],
-            "observacao" => $a["observacao"] !== null && $a["observacao"] !== "" ? $a["observacao"] : null, "criado" => $a["criado"]];
+            "observacao" => $a["observacao"] !== null && $a["observacao"] !== "" ? $a["observacao"] : null, "criado" => $a["criado"],
+            "valores" => $valores, "serve_por" => $serve === null ? null : $serve["por"], "serve_em" => $serve === null ? null : $serve["relogios"]];
     }, linhas("SELECT a.*, r.nome AS relogio FROM acessorio a LEFT JOIN relogio r ON r.id = a.relogio_id"
         . ($relogio_id !== null ? " WHERE a.relogio_id = ?" : "") . " ORDER BY a.tipo, a.nome, a.id", $relogio_id !== null ? [(int)$relogio_id] : []));
+}
+
+// Os acessórios que servem num relógio e não são dele (os soltos e os de outros relógios): a pulseira de 20 mm no relógio
+// de entre alças 20. [["id", "nome", "tipo", "tipo_texto", "relogio_id", "relogio", "serve_por"], ...]
+function acessorios_que_servem($rid)
+{
+    $res = [];
+    foreach (acessorios_lista() as $a) {
+        if ($a["relogio_id"] !== (int)$rid && in_array((int)$rid, array_column($a["serve_em"] ?? [], "relogio_id"), true)) {
+            $res[] = ["id" => $a["id"], "nome" => $a["nome"], "tipo" => $a["tipo"], "tipo_texto" => $a["tipo_texto"], "relogio_id" => $a["relogio_id"], "relogio" => $a["relogio"],
+                "serve_por" => $a["serve_por"]];
+        }
+    }
+    return $res;
 }
 
 // Os tipos de serviço (ck_servico_tipo), na ordem, com o nome. A revisão e a troca de pilha viram também a marcação do tipo

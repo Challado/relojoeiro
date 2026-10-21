@@ -696,6 +696,22 @@ changement attend que vous corrigiez (cesser d'être multiple, par exemple, seul
 Par l'API : `recurso=campos` avec `opcoes`, `minimo`, `maximo` et `multiplo` ; sur la montre, `valores[funcoes][]` une fois
 par valeur.
 
+### La construction et les accessoires
+
+Le registre neuf apporte déjà la **construction** de chaque montre (voir [La construction](#la-construction)) : la matière et
+les mesures du boîtier, le verre, le cadran, la luminescence, la couronne, le fond et les fonctions. Un arbre qui existait
+déjà reçoit ces champs à la mise à jour (la migration v44), dans la langue de la collection, sans toucher à ceux qu'il
+avait déjà avec le même identifiant.
+
+Les **accessoires** ont aussi des champs, enregistrés comme ceux de la montre, dans l'onglet **Champs** de la page
+**Définitions**, avec **Pour : les accessoires** : le **type d'accessoire** où le champ vaut (ou tous) et, le cas échéant, le
+champ de la montre auquel il doit correspondre pour que l'accessoire **aille** sur la montre. Le registre neuf apporte ceux
+du bracelet : la **largeur** (qui correspond à l'**entre-cornes** de la montre), la **matière**, la **couleur**, le
+**fermoir** et l'**attache rapide**. Sur la page **Accessoires**, le formulaire demande les champs du type choisi, et la
+liste montre les **Données** et où chacun **Va** : le bracelet libre de 20 mm apparaît allant sur toutes les montres
+d'entre-cornes 20 ; sur le tableau de bord, le cadre **Accessoires** de chaque montre liste aussi ceux d'autres montres (ou
+libres) qui **vont sur elle**. Les montres vendues et archivées n'entrent pas dans ce calcul.
+
 ### Les sections de la fiche
 
 Les champs de la montre sont regroupés en **sections**, les parties de la fiche : dans l'onglet **Sections** de la page
@@ -931,7 +947,7 @@ vôtres.
 | **Disponible** | décochée, elle sort de la rotation et des alertes (chez l'horloger, en pause), mais l'historique reste. Hors de la collection, elle est toujours décochée (et le champ disparaît de la fiche). |
 | **Garder une copie de tous ses documents dans la base** | cochée, chaque fichier de la montre (le manuel, la facture, les photos, les vidéos) va aussi dans la base de données, comme sauvegarde. N'apparaît que quand la Configuration de la collection ne décide pas pour toutes (**Copie des documents dans la base (valable pour toutes les montres)** vide). Voir [Les documents de la montre](#les-documents-de-la-montre) : c'est le deuxième des trois niveaux de la copie. |
 | **Photo** | seulement pour l'écran. Dans le détail de la montre (le panneau, ou la fiche), en posant la souris sur la photo, un résumé apparaît (le nom, le groupe et le code ; l'état et la charge ; la note et le prochain jour dans la rotation ; l'achat) ainsi que le rappel du double-clic. Un **double-clic** dessus, ou le bouton **Ouvrir la photo** en dessous, ouvre la photo dans une fenêtre flottante, à sa taille (seulement dans le détail : sur les autres photos, comme celle de *Aujourd'hui, c'est le jour de* et les vignettes de la liste, le clic ouvre la montre) ; une photo plus grande que l'écran apparaît à l'échelle, sans déformation, à la plus grande taille qui tient dans le moniteur (et dans la fenêtre du navigateur), avec la taille réelle et l'échelle en dessous. Elle se ferme avec le ×, d'un clic à l'extérieur ou avec Échap. |
-| **Accessoires** | les bracelets, la boîte, l'étui, les outils, le chargeur, les pièces : le cadre **Accessoires** du panneau montre les siens (le type, le nom et l'observation), et la page **Accessoires** les ajoute et les modifie (un accessoire peut appartenir à une montre ou être indépendant, servant à plusieurs). |
+| **Accessoires** | les bracelets, la boîte, l'étui, les outils, le chargeur, les pièces : le cadre **Accessoires** du panneau montre les siens (le type, le nom et l'observation), et la page **Accessoires** les ajoute et les modifie (un accessoire peut appartenir à une montre ou être indépendant, servant à plusieurs). Chaque accessoire a les champs de son type (la largeur, la matière, la couleur et le fermoir du bracelet), et le cadre montre aussi ceux d'autres montres, ou libres, qui **vont** sur elle. Voir [La construction et les accessoires](#la-construction-et-les-accessoires). |
 | **Documents** | le manuel, la facture (en PDF et XML), les photos souvenirs, les vidéos et tout le reste. Voir [Les documents de la montre](#les-documents-de-la-montre). |
 ### Les documents de la montre
 
@@ -1039,6 +1055,23 @@ tout seul dans le dossier la minute suivante, grâce au cron (le même qui récu
 | **Référence (le modèle)** `referencia` | | Texte : le modèle, la référence du fabricant. Apparaît dans la liste d'envies. |
 | **Lien (la page de la montre)** `link` | | L'adresse de la page de la montre (la boutique, le fabricant). Dans la liste d'envies, il devient le lien **ouvrir la page** (seulement ceux qui commencent par `http://` ou `https://`). |
 | **Alerter quand la charge atteint** (%) `carga_minima` | le général | Le **seuil de charge** de cette montre : le point où part l'alerte pour charger (smartwatch), mettre au soleil (solaire) ou remonter/mettre sur le remontoir (mécanique). Vide, c'est le général du type qui s'applique : sur la smartwatch, celui de la Configuration (*« Charger quand la charge estimée atteint »*, 20 %) ; sur la solaire, celui de la solaire dans la Configuration (70 %) ; sur la mécanique, 0 % (la réserve qui s'épuise). Voir [Les alertes de charge](#les-alertes-de-charge). |
+
+### La construction
+
+Aussi pour toutes les montres, dans la section **Construction** (avec les règles de valeur : les valeurs possibles, la plage
+des mesures et les fonctions, plusieurs à la fois) :
+
+| Champ | Ce que c'est |
+|---|---|
+| **Matière du boîtier** `material_caixa` | une liste : acier inoxydable, titane, aluminium, bronze, céramique, résine... |
+| **Diamètre du boîtier** `diametro`, **Épaisseur** `espessura` | en mm (de 10 à 80 et de 2 à 40) ; le diamètre apparaît aussi en pouces |
+| **De corne à corne (longueur)** `alca_a_alca` | en mm : la longueur d'une corne à l'autre, qui dit si elle va au poignet |
+| **Entre-cornes (largeur du bracelet)** `entre_alcas` | en mm : la largeur du bracelet qui va sur elle. Le bracelet de même largeur montre qu'il **va** sur elle |
+| **Poids** `peso` | en g |
+| **Verre** `vidro`, **Cadran** `mostrador`, **Luminescence** `luminescencia`, **Couronne** `coroa`, **Fond** `fundo` | des listes (saphir, minéral, acrylique... ; analogique, numérique, ana-digi, écran ; Super-LumiNova, tritium, rétroéclairage... ; vissée... ; transparent...) |
+| **Couleur du cadran** `cor_mostrador` | texte libre : *Bleu (soleillé)* |
+| **Fonctions** `funcoes` | plusieurs à la fois : date, jour de la semaine, chronographe, GMT, heure universelle, phase de lune, alarme, boussole, GPS... Dans les formules, `TEM(funcoes; "GMT")` |
+| **Étanchéité déclarée** `resistencia_agua_declarada` | en m : celle du fabricant (le test d'étanchéité est dans les services) |
 
 ### La liste d'envies
 
@@ -1505,7 +1538,7 @@ que vous enregistrez apparaît ici sous son nom.
 | **Envies** (`desejos.php`) | La **liste d'envies** : les montres désirées, de la priorité la plus haute à la plus basse, chacune avec la photo, la marque et la référence, la priorité, le prix cible, le groupe, le lien vers sa page et le bouton **Achetée** (la met dans la collection et ouvre la fiche, pour remplir l'achat), avec la somme des prix cibles ; le bouton **Nouvelle envie** ; et, en dessous, **Hors de la collection** : les prêtées, vendues et archivées, avec **Retour dans la collection**. Sur la page Aujourd'hui, le bouton **Envies (N)** à côté de **Nouvelle montre** y mène (seulement quand il y en a). Voir [La liste d'envies](#la-liste-denvies). |
 | **Statistiques** (`estatisticas.php`) | L'usage de la collection sur une période (**De**, **À** ; les raccourcis 30 jours, 90 jours, 1 an et depuis le début ; par défaut : les 90 derniers jours) : le résumé (jours avec une montre au poignet, heures au poignet et par jour, montres portées et non portées, le coût par port moyen et la valeur de la collection, la plus et la moins portée) ; **Chaque montre**, de la plus portée à la moins : jours d'usage, heures, la part de chacune (avec la barre), le coût par port, depuis combien de jours elle n'est pas allée au poignet et la tendance (↑ portée davantage, ↓ portée moins, → stable : la seconde moitié de la période comparée à la première) ; les graphiques **Par jour de la semaine** et **Par mois** (les heures au poignet) ; et **La collection** : les montres réparties par groupe, marque, année d'achat, situation et chaque champ de liste (comme Style), avec combien, la part et les heures de chaque partie. Par l'API : `recurso=estatisticas`. |
 | **Totaux** (`totais.php`, menu **Collection**) | La page des totaux : les totaux cochés pour elle (l'onglet **Totaux** des Définitions), chacun dans un cadre, étroit ou large, dans l'ordre des définitions : le petit tableau avec la ligne de total, le nombre, ou la montre avec la valeur. Elle s'ouvre par **Voir tous les totaux** sous le tableau de la page Aujourd'hui, avec le même filtre (*12 montres sur 17 sont comptées*, avec **Tout compter**), ou par le menu, avec toutes. Par l'API : `recurso=totais&parte=pagina`. Voir [Les totaux](#les-totaux). |
-| **Accessoires** (`acessorios.php`) | Les bracelets, boîtes, étuis, outils, chargeurs, pièces et tout le reste : la liste (le nom, le type, la montre à laquelle il appartient, ou *indépendant*, et l'observation), avec le filtre **Montre** (tous, les indépendants ou ceux d'une montre ; le cadre **Accessoires** du panneau l'ouvre déjà filtrée), **Modifier** et **Supprimer** sur chacun, et en dessous le formulaire (**Nouvel accessoire** : nom, type, montre ou *indépendant (sert à plusieurs)* et observation). Supprimer une montre rend ses accessoires indépendants. Par l'API : `recurso=acessorios` (la liste) et l'écriture `acessorios` (`salvar`, `excluir`). |
+| **Accessoires** (`acessorios.php`) | Les bracelets, boîtes, étuis, outils, chargeurs, pièces et tout le reste : la liste (le nom, le type, la montre à laquelle il appartient, ou *indépendant*, et l'observation), avec le filtre **Montre** (tous, les indépendants ou ceux d'une montre ; le cadre **Accessoires** du panneau l'ouvre déjà filtrée), **Modifier** et **Supprimer** sur chacun, et en dessous le formulaire (**Nouvel accessoire** : nom, type, montre ou *indépendant (sert à plusieurs)* et observation). Supprimer une montre rend ses accessoires indépendants. Par l'API : `recurso=acessorios` (la liste) et l'écriture `acessorios` (`salvar`, `excluir`). Chacun montre les **Données** (les champs de son type) et où il **Va** (voir [La construction et les accessoires](#la-construction-et-les-accessoires)) ; le formulaire demande les champs du type choisi. |
 | **Galerie** (`galeria.php`) | La collection en photos, par groupe : chaque montre avec la photo (le lien vers la fiche), le nom, la marque et la référence, l'année et le prix d'achat et les jours d'usage ; en haut, combien, la valeur totale et combien ont une photo. **Aussi celles hors de la collection** montre les désirées, vendues et archivées (avec la marque de la situation). **Imprimer** : sur papier, quatre par ligne, sans le menu. Par l'API : `recurso=galeria`. |
 | **Passeport** (`passaporte.php`) | La fiche d'une montre à imprimer ou à enregistrer en PDF (le bouton **Passeport** du cadre Documents du panneau) : la photo, le nom, la marque et la référence, le groupe et la situation ; l'**Achat** ; l'**Usage** (la première et la dernière fois au poignet, les heures au poignet, les jours d'usage et le coût par port) ; la **Fiche** remplie ; les **Entretiens** (chaque type de marquage, combien de fois et le dernier ; les révisions et les changements de pile) ; les **Accessoires** ; les **Documents** ; et les **Prochaines alertes**. **Imprimer** : seules les données sortent sur le papier. Par l'API : `recurso=passaporte`. Avec un service, aussi les **Services et diagnostics** (qui l'a fait, le coût, l'étanchéité et la marche avant et après). |
 | **Rapports** (`relatorios.php`) | La porte unique des rapports : le menu avec tous (par groupe), les champs de celui choisi (la montre, la période, les options) et **Générer le rapport** ; le rapport à l'écran, sur papier (**Imprimer**) et dans un tableur (**Télécharger le tableur (CSV)**). Voir [Les rapports](#les-rapports). |
@@ -1543,7 +1576,7 @@ cadres services, précision et timegrapher du panneau).
 | Collection | **Passeport de la montre** | la fiche complète d'une montre : qui elle est, l'achat, l'usage, le registre, les entretiens, les services, le déclaré, mesuré et estimé, les tests de la réserve, le timegrapher, les accessoires, les documents et les prochaines alertes |
 | Collection | **Coûts de la collection** | le prix payé, les services (combien et pour combien), le total, les jours d'usage et le coût de chaque usage, par montre et totalisés |
 | Collection | **Liste de souhaits** | les montres souhaitées par priorité, avec le prix cible et le lien, la somme des prix, et celles qui ont quitté la collection |
-| Collection | **Accessoires** | les accessoires de chaque montre et ceux qui sont seuls, et combien de chaque type |
+| Collection | **Accessoires** | les accessoires de chaque montre et ceux qui sont seuls, et combien de chaque type, avec les données et où chacun va |
 | Collection | **Documents** | les documents de chaque montre et calibre, avec la catégorie, la date, le fichier et la taille |
 | Usage et rotation | **Chronologie** | ce que chaque montre a fait dans la période, tronçon par tronçon, et le temps dans chaque état |
 | Usage et rotation | **Usage dans la période** | les statistiques : jours avec une montre, heures, la plus et la moins portée, chaque montre, par jour de la semaine et par mois |

@@ -15,11 +15,12 @@ foreach (nos_em_ordem() as $o) {
         "caminho" => no_caminho($o[0]), "profundidade" => $o[1]];
 }
 $campos = [];
-foreach (campos_todos() as $c) {
+foreach (array_merge(campos_todos(), campos_de_acessorio()) as $c) {
     $campos[] = ["id" => (int)$c["id"], "identificador" => $c["identificador"], "nome" => $c["nome"], "tipo" => $c["tipo"], "unidade" => $c["unidade"],
         "opcoes" => $c["opcoes"], "padrao" => $c["padrao"], "no_id" => $c["no_id"] === null ? null : (int)$c["no_id"], "lugar" => no_caminho($c["no_id"]), "ordem" => (int)$c["ordem"],
         "secao_id" => ($c["secao_id"] ?? null) === null ? null : (int)$c["secao_id"], "minimo" => numero_do_campo($c["minimo"] ?? null) === null ? null : (float)$c["minimo"],
-        "maximo" => numero_do_campo($c["maximo"] ?? null) === null ? null : (float)$c["maximo"], "multiplo" => (int)($c["multiplo"] ?? 0) === 1];
+        "maximo" => numero_do_campo($c["maximo"] ?? null) === null ? null : (float)$c["maximo"], "multiplo" => (int)($c["multiplo"] ?? 0) === 1,
+        "alvo" => $c["alvo"] ?? "relogio", "acessorio_tipo" => $c["acessorio_tipo"] ?? null, "serve_campo_id" => ($c["serve_campo_id"] ?? null) === null ? null : (int)$c["serve_campo_id"]];
 }
 $tipos_l = [];
 foreach (lancamento_tipos() as $t) {
