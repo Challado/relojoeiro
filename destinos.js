@@ -39,7 +39,9 @@ function quadroDestino(x, d) {
     tipoCampos = camposWebhook(x.webhook, id);
   } else if (x.tipo === "email") {
     tipoCampos = parCampo(t("Para (um ou mais, separados por vírgula)"), el("input", {"name": "para", "value": x.email.para, "required": true}), "largo")
-      + (d.email.configurado ? "" : el("p", {"class": "alerta-cron"}, t("O envio de e-mail não está configurado no servidor (EMAIL_METODO no config.php): nada sai por aqui até lá.")));
+      + (d.email.configurado ? el("p", {"class": "nota"}, d.email.proprio ? t("Os e-mails desta coleção saem pelo servidor de e-mail próprio do dono dela (Minha conta), de {1}.", {1: h(d.email.remetente)})
+        : t("Os e-mails desta coleção saem pelo servidor do sistema, de {1}. O dono dela pode usar o servidor dele (o Gmail, o Outlook) em Minha conta.", {1: h(d.email.remetente)}))
+        : el("p", {"class": "alerta-cron"}, t("O envio de e-mail não está configurado no servidor (EMAIL_METODO no config.php) nem o dono desta coleção tem um servidor próprio (Minha conta): nada sai por aqui até lá.")));
   } else {
     tipoCampos = parCampo(t("Para os aparelhos de"), el("select", {"name": "usuario_id"}, d.usuarios.map(function (u) {
       return el("option", {"value": u.id, "selected": x.webpush.usuario_id === u.id}, h(u.login));

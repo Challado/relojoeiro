@@ -1179,7 +1179,7 @@ works out by itself from each watch's data: wind, charge, change the battery...)
 and **Where they go**, the summary of the destinations and the calendars, which have pages of their own:
 
 - **Destinations** (`destinos.php`): where the collection's messages go, each with its own language and its own time zone (of the times in the text). Each destination is a **webhook** (an HTTP request:
-  Telegram, n8n, Home Assistant, any bridge), an **e-mail** (through the e-mail server in `config.php`) or **Web Push** (the
+  Telegram, n8n, Home Assistant, any bridge), an **e-mail** (through the e-mail server of the collection's owner, in My account, otherwise through the one in `config.php`) or **Web Push** (the
   notifications on the phone and in the browser of someone who sees the collection). Each has the name, **On**, the
   **language**, the **default message** (with the placeholders `{acao}`, `{relogio}`, `{motivo}`, `{carga}`, `{ate}`,
   `{link}`...; the **Insert placeholder** button shows them all) and **What it receives**: each type of alert (the watch of the
@@ -1371,7 +1371,7 @@ comes in here by its name.
 | **Groups** (`grupos.php`) | The tree: create, rename, move, sort, delete (what belonged to the group goes to the one above) and choose each watch's group. |
 | **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), the totals (the **Totals** tab: see [Totals](#totals)), the calibers (the **Calibers** tab: see [Calibers](#calibers)) and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page, and the rotation modes on **Rotation modes**). |
 | **Cron runs** (`execucoes.php`) | What the cron did in each round, how long it took and the errors, with filters. |
-| **My account** (`conta.php`, menu **Account › My account**) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection (by the code the owner gave), your data (your code, the e-mail, the language, the password), the **app on the phone** (remember this device, install, the remembered devices), the **API tokens** (for your scripts), the **notifications on this device** (Web Push) and deleting the account. See [Several people](#several-people-accounts-collections-and-access) and [The app on the phone](#the-app-on-the-phone). |
+| **My account** (`conta.php`, menu **Account › My account**) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection (by the code the owner gave), your data (your code, the e-mail, the language, the password), the **app on the phone** (remember this device, install, the remembered devices), the **API tokens** (for your scripts), the **notifications on this device** (Web Push), the **sending of your e-mails** (through the system's server or your own: Gmail, Outlook) and deleting the account. See [Several people](#several-people-accounts-collections-and-access) and [The app on the phone](#the-app-on-the-phone). |
 | **Approvals** (`aprovacoes.php`) | The access requests to your collections (approve, decline), the invitations members made that wait for you, **Invite** (by e-mail), the invitations you made and who sees your collections (remove access). The menu shows **Approvals (N)** when something is waiting. |
 | **Users** (`usuarios.php`, master only) | The accounts panel: each one with what it has and the actions (view as, make official, extend, block, edit, change the password, transfer a collection, give access, delete) and creating an account. |
 | **Create account** (`cadastro.php`, without login) | The open sign-up: the new account (with a collection, or asking for access), the invitation that arrived by e-mail and **Forgot my password**. |
@@ -1555,7 +1555,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `reserva` | the measured reserve (`relogio=<id>`: the mechanical watch's reserve tests, the energy observations, the measurement, which is the median of the tests, and the declared, measured and estimated table with the confidence; without it, the tests and observations of all) |
 | `documento` | a document's file (`id=<id>`): to show (image, video, audio, PDF, text) or to download (the rest, or with `baixar=1`); `mini=1` is the photo's thumbnail. It serves pieces (Range), so the video can skip ahead |
 | `usuarios`, `migracoes` | the master: the accounts panel, each with what it has and the password hash (to migrate with the same password: see [The users and the passwords](#the-users-and-the-passwords)); the others, only their own account; the migrations still to apply |
-| `conta`, `colecoes`, `aprovacoes` | My account (the collections, the trees, the requests, the tokens, the remembered devices, the Web Push devices; `parte=menu`: only the menu's part); the collections and the trees; the Approvals page |
+| `conta`, `colecoes`, `aprovacoes` | My account (the collections, the trees, the requests, the tokens, the remembered devices, the Web Push devices, the own e-mail server; `parte=menu`: only the menu's part); the collections and the trees; the Approvals page |
 | `manifest`, `sw` | the app on the phone, no login: the manifest (JSON; with the remembered device's cookie, the `start_url` already gets in) and the *service worker* (JavaScript). See [The app on the phone](#the-app-on-the-phone) |
 | `cadastro` | the open sign-up, without login: whether it is open and the invitation (`convite=<token>`); no list of accounts or collections (the access request is by the code the owner gave) |
 | `instalacao` | the installation status: the database, whether it is empty, installed and up to date, how many users and the next step. It also answers with the database empty, with the token |
@@ -1587,7 +1587,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `destinos` | `salvar` (webhook, e-mail or Web Push, with what it receives), `testar` (`qual=`: text, morning or night), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook or ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (with the `senha`, or with another system's `senha_hash`; the first user, with the token, is the master) and, master only: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
-| `conta` | `alterar` (e-mail, language, password), `token_criar`, `token_revogar`, `aparelho_lembrar` (the app on the phone: this device's key in a cookie, which gets in without the password), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir`; master only: `email_testar`, `vapid_gerar` |
+| `conta` | `alterar` (e-mail, language, password), `token_criar`, `token_revogar`, `aparelho_lembrar` (the app on the phone: this device's key in a cookie, which gets in without the password), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `smtp_salvar` (the own e-mail server; `proprio=0` goes back to the system's), `smtp_testar`, `excluir`; master only: `email_testar`, `vapid_gerar` |
 | `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
 | `acessos`, `convites`, `pedidos` | `remover`, `sair`; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar`; `pedir`, `aprovar`, `recusar`, `cancelar` |
 | `cadastro` | without login: `criar_conta`, `esqueci_senha`, `nova_senha` |
@@ -1755,7 +1755,7 @@ get in through **Create account** (`cadastro.php`), through an invitation of you
 | `DB_ARQUIVO` | the database file (SQLite), outside the published folder |
 | `API_TOKEN` | **required**, with 10 characters or more. Without it the whole system stops and says why. |
 | `FUSO` | the system's time zone, like `America/Sao_Paulo`. Empty or missing: PHP's (`date.timezone` in php.ini). It is the time zone of the dates the database saves and of whoever has not chosen another; each collection (Settings) and each person (My account) can choose their own (see [The time zone](#the-time-zone)) |
-| `SEGREDO_CHAVE` | optional: the key that encrypts in the database the CalDAV passwords, the Google keys, the Outlook tokens and the webhook headers. Without it, the `API_TOKEN` (changing the key loses the stored secrets: just type them again) |
+| `SEGREDO_CHAVE` | optional: the key that encrypts in the database the CalDAV passwords, the Google keys, the Outlook tokens, the webhook headers and the passwords of the own e-mail servers. Without it, the `API_TOKEN` (changing the key loses the stored secrets: just type them again) |
 | `MSG_TITULO` | the title of the messages (the webhooks' `{titulo}`, the e-mail subject, the Web Push title). Default: Relógios |
 | `MSG_ENDPOINT`, `MSG_DESTINATARIO` | only for migration v25: the old message API (Telegram) becomes the collection's first webhook destination |
 | `CADASTRO_ABERTO`, `DEMO_DIAS`, `CONVITE_DIAS` | optional: the open sign-up (`false`: closed, only with an invitation; without the line, open), the demo account days (default 30; `0`: the account is born official) and the days an invitation or a request waits (default 7) |
@@ -1790,6 +1790,14 @@ on the server:
 - **E-mail:** the SMTP server in `config.php` (`SMTP_HOST`, the port, the security, the user and the password; on Gmail and
   Outlook, an app password) and the `EMAIL_REMETENTE`; or `EMAIL_METODO = "mail"`, with a sendmail on the server. With
   `IMAP_*`, each e-mail sent gets a copy in Sent. The master tests it in **My account › E-mail server**: the box shows what the system read from `config.php` (the method, the sender, SMTP, IMAP and POP; the passwords only as *set* or not) and points out what is wrong or missing (no `EMAIL_METODO`, a port that does not match the security, an empty password, PHP without `openssl`...). **Test the connections** signs in to SMTP, to IMAP (and checks the Sent folder) and to POP without sending anything; **Send a test e-mail** really sends one to the address you type. Then come the result of each part and the **conversation with the servers**, line by line (without the password), to find where it stopped.
+- **Your own e-mail server:** by default, the e-mails each person sends (the e-mail destinations of their collections, the
+  invitations, the access requests and the answers to them) go out through the system's server. Whoever prefers uses their
+  own, in **My account › Sending my e-mails**: **My server (SMTP)**, the server, the port, the security, the user, the
+  password and the sender (on Gmail: `smtp.gmail.com`, 587, TLS, your e-mail and an app password; on Outlook:
+  `smtp-mail.outlook.com`, 587, TLS). The password is stored encrypted in the database and is not shown again (left blank,
+  it keeps the stored one); **Send a test e-mail** checks it. **The system's server** goes back to the default. Whoever is
+  not the master only uses servers on the internet, nothing on the server's network; the copy in Sent (`IMAP_*`) is only for
+  the system's server.
 - **Web Push:** the site has to open over **https**. The master generates the keys in **My account › Web Push keys** and copies
   the two lines into `config.php`. Then each person turns on the notifications on their device, in **My account** (on the
   iPhone, first add the site to the home screen), and a Web Push destination sends to the devices of whoever it points to.

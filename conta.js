@@ -287,6 +287,53 @@ function quadroServidor(d) {
   return el("section", {"class": "cartao-config", "id": "servidor"}, res);
 }
 
+// Envio dos meus e-mails (todos): por onde saem os e-mails que a pessoa manda, o servidor do sistema (o padrão) ou o SMTP
+// dela (Gmail, Outlook, o do provedor). A escolha mostra os campos do SMTP; a senha gravada não volta (vazia: mantém). O
+// teste do SMTP próprio fica na página até o próximo (TESTE_SMTP)
+var TESTE_SMTP = null;
+function quadroEnvio(d) {
+  var s = d.smtp;
+  var seg = {tls: t("TLS (STARTTLS)"), ssl: t("SSL (desde o começo)"), nada: t("sem criptografia")};
+  var agora = s.proprio ? el("p", {}, t("Agora: pelo seu servidor, {1}, de {2}.", {1: el("strong", {}, h(s.host + ":" + s.porta)), 2: h(s.remetente)}))
+    : (s.sistema_configurado ? el("p", {}, t("Agora: pelo servidor do sistema."))
+      : el("p", {"class": "alerta-cron"}, t("Agora: o sistema não tem servidor de e-mail; sem um servidor seu, os seus e-mails não saem.")));
+  var res = el("h2", {}, t("Envio dos meus e-mails"))
+    + el("p", {"class": "nota"}, t("Os e-mails que você manda (os destinos de e-mail das suas coleções, os convites, os pedidos de acesso e as respostas a eles) saem pelo servidor do sistema. Se preferir, use o seu: o Gmail, o Outlook, o do seu provedor."))
+    + agora
+    + el("form", {"data-recurso": "conta", "class": "campos"}, el("input", {"type": "hidden", "name": "acao", "value": "smtp_salvar"})
+      + parCampo(t("Enviar por"), el("select", {"name": "proprio", "onchange": "this.form.querySelectorAll('[data-sub]').forEach(function (e) { e.hidden = this.value !== '1'; }, this)"},
+        el("option", {"value": "0", "selected": !s.proprio}, t("O servidor do sistema")) + el("option", {"value": "1", "selected": s.proprio}, t("O meu servidor (SMTP)"))), "largo")
+      + el("div", {"class": "campos largo", "data-sub": "1", "hidden": !s.proprio},
+        parCampo(t("Servidor (SMTP)"), el("input", {"name": "host", "value": s.host || "", "maxlength": "200", "placeholder": fixo("smtp.gmail.com"), "autocomplete": "off"}))
+        + parCampo(t("Porta"), el("input", {"type": "number", "name": "porta", "min": "1", "max": "65535", "value": s.porta || "", "placeholder": fixo("587")}))
+        + parCampo(t("Segurança"), el("select", {"name": "seguranca"}, ["tls", "ssl", "nada"].map(function (k) {
+          return el("option", {"value": k, "selected": (s.seguranca || "tls") === k}, seg[k]);
+        }).join("")))
+        + parCampo(t("Usuário"), el("input", {"name": "usuario", "value": s.usuario || "", "maxlength": "200", "autocomplete": "off", "placeholder": t("o e-mail da conta")}))
+        + parCampo(t("Senha"), el("input", {"type": "password", "name": "senha", "autocomplete": "new-password", "placeholder": s.senha_definida ? t("gravada (vazia: mantém)") : ""}))
+        + parCampo(t("Remetente"), el("input", {"type": "email", "name": "remetente", "value": s.remetente || "", "maxlength": "200", "placeholder": t("vazio: o usuário, se for um e-mail")}))
+        + el("p", {"class": "nota largo"}, t("No Gmail: servidor smtp.gmail.com, porta 587, TLS, o seu e-mail como usuário e uma senha de app (Conta do Google › Segurança › Senhas de app; pede a verificação em duas etapas), não a senha normal. No Outlook: smtp-mail.outlook.com, 587, TLS. A senha fica cifrada no banco e não aparece de novo.")))
+      + el("div", {"class": "botoes"}, el("button", {}, t("Salvar"))));
+  if (s.proprio) {
+    res += el("div", {"class": "botoes"}, formAcao("conta", "smtp_testar", {para: ""}, t("Testar a conexão (sem mandar nada)")))
+      + el("form", {"data-recurso": "conta", "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": "smtp_testar"})
+        + el("input", {"type": "email", "name": "para", "required": true, "value": d.usuario.email || "", "placeholder": t("para quem"), "aria-label": t("Para")})
+        + el("button", {}, t("Mandar um e-mail de teste")));
+  }
+  if (TESTE_SMTP) {
+    var r = TESTE_SMTP;
+    var partes = [["smtp", t("SMTP")], ["envio", t("E-mail de teste")]].filter(function (p) { return r[p[0]]; });
+    res += el("h3", {}, t("Resultado do teste"))
+      + el("ul", {"class": "teste-email"}, partes.map(function (p) {
+        var x = r[p[0]];
+        return el("li", {}, el("span", {"class": "estado " + (x.ok ? "estado-uso" : "estado-repouso")}, x.ok ? t("ok") : t("falhou")) + " " + el("strong", {}, p[1]) + (x.erro ? ": " + h(x.erro) : ""));
+      }).join(""))
+      + (r.registro && r.registro.length > 0 ? el("details", {"class": "registro-cron", "open": true}, el("summary", {}, t("Conversa com os servidores"))
+        + el("pre", {}, h(r.registro.join("\n")))) : "");
+  }
+  return el("section", {"class": "cartao-config", "id": "envio"}, res);
+}
+
 function quadroExcluir(d) {
   return el("section", {"class": "cartao-config", "id": "excluir"}, el("h2", {}, t("Excluir a conta"))
     + el("p", {"class": "nota"}, t("Sai a conta com tudo o que é dela: as suas coleções (com os relógios, o histórico e os arquivos), as suas árvores, os seus acessos e os seus tokens. Antes de apagar, a API mostra tudo o que sai junto."))
@@ -304,7 +351,7 @@ function carregarConta() {
     }
     res += quadroColecoes(d) + quadroArvores(d) + quadroPedir(d)
       + el("p", {"class": "nota"}, t("Para convidar alguém para as suas coleções, ou ver quem as vê: {1}.", {1: el("a", {"href": "aprovacoes.php"}, t("Aprovações e convites"))}))
-      + quadroDados(d) + quadroApp(d) + quadroTokens(d) + quadroPush(d) + quadroServidor(d) + quadroExcluir(d);
+      + quadroDados(d) + quadroApp(d) + quadroTokens(d) + quadroPush(d) + quadroEnvio(d) + quadroServidor(d) + quadroExcluir(d);
     document.getElementById("conta").innerHTML = res;
   });
 }
@@ -316,6 +363,9 @@ aoGravar = function (form, res, dados) {
   // o teste do e-mail fica na página até o próximo
   if (dados.get("recurso") === "conta" && dados.get("acao") === "email_testar") {
     TESTE_EMAIL = res.teste || null;
+  }
+  if (dados.get("recurso") === "conta" && (dados.get("acao") === "smtp_testar" || dados.get("acao") === "smtp_salvar")) {
+    TESTE_SMTP = dados.get("acao") === "smtp_testar" ? res.teste || null : null;
   }
   gravarConta(form, res, dados);
 };

@@ -158,6 +158,22 @@ CREATE TABLE usuario_aparelho (
     FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- o servidor de e-mail próprio de um usuário (Minha conta): os e-mails dele saem por ele, não pelo do sistema (v37)
+CREATE TABLE usuario_smtp (
+    usuario_id     INT PRIMARY KEY,
+    host           VARCHAR(200) NOT NULL,
+    porta          INT NOT NULL,
+    seguranca      VARCHAR(5) NOT NULL DEFAULT 'tls',
+    usuario        VARCHAR(200) NULL,
+    senha_cifrada  TEXT NULL,
+    remetente      VARCHAR(200) NOT NULL,
+    criado         DATETIME NOT NULL,
+    FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE,
+    CONSTRAINT ck_usuario_smtp_seguranca CHECK (seguranca IN ('tls', 'ssl', 'nada')),
+    CONSTRAINT ck_usuario_smtp_porta CHECK (porta BETWEEN 1 AND 65535),
+    CONSTRAINT ck_usuario_smtp_remetente CHECK (remetente LIKE '%_@_%')
+) ENGINE=InnoDB;
+
 -- os aparelhos (navegadores) de um usuário inscritos no Web Push
 CREATE TABLE push_inscricao (
     id             INT AUTO_INCREMENT PRIMARY KEY,

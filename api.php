@@ -637,8 +637,9 @@
  *                            Ex. excluir: curl -u lucas:senha -d recurso=usuarios -d acao=excluir -d login=visitante -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=conta             alterar (email, idioma, senha_atual e senha), token_criar (nome: devolve o token, só agora), token_revogar
  *                             (id), aparelho_lembrar (nome: o aplicativo no celular entra sem a senha por este aparelho, pelo cookie que
- *                             grava), aparelho_esquecer (id; vazio: este), push_inscrever (endpoint, p256dh, auth, aparelho), push_cancelar (id), push_testar, excluir
- *                             (confirmar=1: a conta com tudo); só o master: email_testar (para), vapid_gerar
+ *                             grava), aparelho_esquecer (id; vazio: este), push_inscrever (endpoint, p256dh, auth, aparelho), push_cancelar (id), push_testar,
+ *                             smtp_salvar (o servidor de e-mail próprio: proprio=0 volta ao do sistema; host, porta, seguranca, usuario, senha,
+ *                             remetente), smtp_testar (para), excluir (confirmar=1: a conta com tudo); só o master: email_testar (para), vapid_gerar
  *                            Ex. token_criar: curl -u lucas:senha -d recurso=conta -d acao=token_criar -d "nome=Atalho" http://servidor/relojoeiro/api.php
  *   recurso=colecoes          criar (nome, opcao: modelo, vazia ou arvore com arvore_id), renomear (id, nome), excluir (id, confirmar=1),
  *                             arvore_copiar (arvore_id, nome), arvore_renomear (arvore_id, nome), arvore_excluir (arvore_id, confirmar=1)
@@ -4304,8 +4305,11 @@
  *     avisos[].nome                  o nome
  *     avisos[].quando                quando sai
  *     padrao.modelo                  a mensagem padrão do modelo, no idioma da coleção (a de um destino novo)
- *     email.configurado              verdadeiro ou falso: o servidor manda e-mail (EMAIL_METODO ou SMTP_HOST no config.php)
+ *     email.configurado              verdadeiro ou falso: os e-mails desta coleção saem (pelo servidor de e-mail próprio do dono dela, em
+ *                                    Minha conta, senão pelo do sistema: EMAIL_METODO ou SMTP_HOST no config.php)
  *     email.metodo                   smtp ou mail; null: não configurado
+ *     email.proprio                  verdadeiro: saem pelo servidor de e-mail próprio do dono da coleção; falso: pelo do sistema
+ *     email.remetente                de quem os e-mails vêm (o remetente do servidor que vale); null: não configurado
  *     push.configurado               verdadeiro ou falso: o servidor tem as chaves do Web Push (VAPID_PUBLICA e VAPID_PRIVADA)
  *     push.chave_publica             a chave pública VAPID (base64url); null: não configurado
  *     usuarios[]                     quem vê a coleção (o Web Push vai para os aparelhos de um deles)
@@ -4452,7 +4456,16 @@
  *     push.aparelhos[].aparelho      o nome do aparelho (o navegador)
  *     push.aparelhos[].criada        desde quando
  *     push.aparelhos[].endpoint_hash a marca do endereço do aparelho (para o navegador saber se já está inscrito)
- *     email_configurado              verdadeiro ou falso: o servidor manda e-mail
+ *     email_configurado              verdadeiro ou falso: os seus e-mails saem (pelo seu servidor de e-mail próprio, senão pelo do sistema)
+ *     smtp                           o seu servidor de e-mail próprio (o quadro Envio dos meus e-mails); a senha nunca sai
+ *     smtp.proprio                   verdadeiro: os seus e-mails saem pelo seu servidor; falso: pelo do sistema (e o resto é null)
+ *     smtp.host                      o servidor SMTP
+ *     smtp.porta                     a porta
+ *     smtp.seguranca                 tls (STARTTLS), ssl ou nada
+ *     smtp.usuario                   o usuário do login (vazio: sem login)
+ *     smtp.senha_definida            verdadeiro ou falso: há uma senha gravada
+ *     smtp.remetente                 o e-mail de quem as mensagens vêm
+ *     smtp.sistema_configurado       verdadeiro ou falso: o sistema tem servidor de e-mail (o config.php), o que vale sem o seu
  *     senha_politica                 a força da senha (a Configuração, do sistema): o que toda senha nova precisa ter
  *     senha_politica.regras          o mínimo de cada regra (0: não exige)
  *     senha_politica.regras.tamanho  quantos caracteres, no mínimo
@@ -4592,12 +4605,14 @@
  *     pode_convidar[].nome           o nome
  *     pode_convidar[].dono           o login do dono
  *     pode_convidar[].papel          o seu papel nela
- *     email_configurado              verdadeiro ou falso: o servidor manda e-mail (sem ele, o link do convite aparece para você mandar)
+ *     email_configurado              verdadeiro ou falso: os seus e-mails saem, pelo seu servidor próprio ou pelo do sistema (sem isso, o
+ *                                    link do convite aparece para você mandar)
  *     convite_dias                   quantos dias um convite ou um pedido espera (CONVITE_DIAS)
  *   recurso=cadastro
  *     aberto                         verdadeiro ou falso: o cadastro está aberto (CADASTRO_ABERTO); fechado, só com convite
  *     demo_dias                      os dias da conta de demonstração (0: a conta nasce oficial)
- *     email_configurado              verdadeiro ou falso: o servidor manda e-mail (o Esqueci a senha precisa dele)
+ *     email_configurado              verdadeiro ou falso: o sistema manda e-mail, pelo servidor dele ou pelo próprio de alguma conta (o
+ *                                    Esqueci a senha precisa disso)
  *     senha_politica                 a força da senha (a Configuração, do sistema): o que toda senha nova precisa ter
  *     senha_politica.regras          o mínimo de cada regra (0: não exige)
  *     senha_politica.regras.tamanho  quantos caracteres, no mínimo

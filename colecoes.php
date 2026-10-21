@@ -889,12 +889,12 @@ function contas_limpeza()
             foreach ([1, 7] as $dias) {
                 if ($falta <= $dias && (int)($avisados[$uid] ?? 99) > $dias) {
                     $avisados[$uid] = $dias;
-                    if ((string)$u["email"] !== "" && email_metodo() !== null) {
+                    if ((string)$u["email"] !== "" && email_conta((int)$u["id"])["metodo"] !== null) {
                         $antes = lingua_atual();
                         lingua_definir(lingua_valida($u["idioma"]) ?? sis("idioma"));
                         [$ok, $erro] = email_enviar($u["email"], t("Relojoeiro: a sua conta de demonstração vence em {1}", [1 => duracao_texto($falta)]),
                             t("Olá, {1}. A sua conta de demonstração do Relojoeiro vence em {2} ({3}). Depois disso, ela e as suas coleções são apagadas. Para continuar, peça ao administrador para tornar a conta oficial.",
-                                [1 => $u["login"], 2 => duracao_texto($falta), 3 => data_txt(strtotime((string)$u["expira_em"]), true)]));
+                                [1 => $u["login"], 2 => duracao_texto($falta), 3 => data_txt(strtotime((string)$u["expira_em"]), true)]), (int)$u["id"]);
                         lingua_definir($antes);
                         $log[] = $ok ? t("aviso de vencimento da demo para {1}", [1 => $u["login"]]) : registro_erro(t("erro no aviso de vencimento da demo para {1}: {2}", [1 => $u["login"], 2 => $erro]));
                     }
@@ -950,7 +950,7 @@ function membros_da_colecao()
 // dele em todas). Toda exclusão pela API mostra isto primeiro e só apaga com confirmar=1
 // ---------------------------------------------------------------------------------------------------------------------
 const IMPACTO_NOMES = ["usuario" => "usuários", "colecao" => "coleções", "colecao_usuario" => "membros", "acesso_dono" => "acessos a tudo de um dono",
-    "convite" => "convites", "pedido" => "pedidos de acesso", "api_token" => "tokens de API", "usuario_token" => "links de senha", "push_inscricao" => "aparelhos do Web Push",
+    "convite" => "convites", "pedido" => "pedidos de acesso", "api_token" => "tokens de API", "usuario_token" => "links de senha", "push_inscricao" => "aparelhos do Web Push", "usuario_smtp" => "servidores de e-mail próprios",
     "no" => "grupos", "campo" => "campos", "campo_opcao" => "opções de lista", "lancamento_tipo" => "tipos de lançamento", "formula" => "fórmulas", "aviso" => "avisos",
     "documento_categoria" => "categorias de documento", "documento_categoria_aceita" => "tipos aceitos de categorias", "relogio" => "relógios", "foto" => "fotos",
     "campo_valor" => "valores de campo", "calibre" => "calibres", "calibre_valor" => "valores de calibre", "relogio_calibre" => "relógios com calibre", "lancamento" => "lançamentos", "medicao" => "medições do gasto", "documento" => "documentos", "documento_parte" => "pedaços de documentos no banco",

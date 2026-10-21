@@ -54,6 +54,9 @@ foreach (["ana" => "Senha-da-ana-1", "bia" => "Senha-da-bia-1", "caio" => "Senha
     $tk[$l] = ["token", preparar(["basic", $l . ":" . $s], ["recurso" => "conta", "acao" => "token_criar", "nome" => "teste"])["token"] ?? ""];
 }
 $ana = $tk["ana"];
+// o servidor de e-mail próprio da ana (um IP da internet: quem não é o master não usa a rede interna)
+preparar($ana, ["recurso" => "conta", "acao" => "smtp_salvar", "proprio" => 1, "host" => "203.0.113.5", "porta" => 587, "seguranca" => "tls",
+    "usuario" => "segredoana@exemplo.com", "senha" => "senha-smtp-da-ana", "remetente" => "segredoana@exemplo.com"]);
 
 // o que a ana cadastra, com a marca
 $conta_a = pedir($ana, "GET", ["recurso" => "conta"])["json"];
@@ -188,6 +191,8 @@ $tentativas = [
     ["recurso" => "usuarios", "acao" => "excluir", "login" => "ana", "confirmar" => 1],
     ["recurso" => "conta", "acao" => "alterar", "email" => "segredoana@exemplo.com"],
     ["recurso" => "conta", "acao" => "aparelho_esquecer", "id" => $apa_a],
+    ["recurso" => "conta", "acao" => "smtp_salvar", "proprio" => 0],
+    ["recurso" => "conta", "acao" => "smtp_testar", "para" => "x@exemplo.com"],
     ["recurso" => "backup", "acao" => "fazer"],
     ["recurso" => "importacao", "acao" => "importar"],
     ["recurso" => "pedidos", "acao" => "pedir", "colecao_id" => $col_a, "mensagem" => "oi"],
@@ -209,6 +214,18 @@ foreach (["bia", "caio"] as $quem) {
 $pol = pedir($srv, "GET", ["recurso" => "cadastro"])["json"]["senha_politica"]["regras"] ?? [];
 if (($pol["tamanho"] ?? 0) !== 8 || ($pol["simbolos"] ?? 0) !== 1) {
     $falhas[] = "MUDOU a força da senha por quem não é o master: " . json_encode($pol);
+}
+// o servidor de e-mail próprio: o da ana continua o dela (o dos outros é só deles), a senha nunca volta, e quem não é o
+// master não aponta o SMTP para a rede do servidor
+$sm = pedir($ana, "GET", ["recurso" => "conta"]);
+if (($sm["json"]["smtp"]["host"] ?? "") !== "203.0.113.5" || ($sm["json"]["smtp"]["senha_definida"] ?? null) !== true || strpos($sm["corpo"], "senha-smtp-da-ana") !== false) {
+    $falhas[] = "MUDOU (ou mostrou a senha d)o servidor de e-mail próprio da ana: " . json_encode($sm["json"]["smtp"] ?? null);
+}
+foreach (["127.0.0.1", "10.0.0.5", "localhost", "[::1]"] as $h) {
+    $r = pedir($tk["bia"], "POST", ["recurso" => "conta", "acao" => "smtp_salvar", "proprio" => 1, "host" => $h, "remetente" => "bia@exemplo.com"]);
+    if (($r["json"]["ok"] ?? true) !== false) {
+        $falhas[] = "A bia apontou o SMTP para a rede interna (" . $h . "): " . substr($r["corpo"], 0, 300);
+    }
 }
 // depois dos pedidos de acesso (ainda não aprovados): a conta de quem pediu mostra só o código, nunca o nome nem o login
 foreach (["bia", "caio"] as $quem) {

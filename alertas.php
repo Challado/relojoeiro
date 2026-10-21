@@ -83,6 +83,14 @@ function url_externa($url)
         return [t("endereço inválido: use http:// ou https://"), null];
     }
     $porta = (int)($p["port"] ?? (strtolower($p["scheme"]) === "https" ? 443 : 80));
+    [$erro, $ip] = host_externo($host);
+    return $erro !== "" ? [$erro, null] : ["", $host . ":" . $porta . ":" . (strpos($ip, ":") !== false ? "[" . $ip . "]" : $ip)];
+}
+
+// Confere um nome de servidor: resolve só para IPs da internet. [erro (vazio: serve), o primeiro IP]
+function host_externo($host)
+{
+    $host = strtolower(trim((string)$host, "[] "));
     $ips = filter_var($host, FILTER_VALIDATE_IP) !== false ? [$host] : array_merge(@gethostbynamel($host) ?: [],
         array_column(@dns_get_record($host, DNS_AAAA) ?: [], "ipv6"));
     if (count($ips) === 0) {
@@ -93,7 +101,7 @@ function url_externa($url)
             return [t("o endereço {1} é da rede interna do servidor: só o master usa endereços assim", [1 => $host]), null];
         }
     }
-    return ["", $host . ":" . $porta . ":" . (strpos($ips[0], ":") !== false ? "[" . $ips[0] . "]" : $ips[0])];
+    return ["", $ips[0]];
 }
 
 // Se a coleção do pedido é de um master (os endereços da rede interna valem nela)
@@ -277,7 +285,7 @@ function destino_enviar($dest, $texto, $titulo)
         return webhook_enviar($dest["webhook"], $texto, $titulo);
     }
     if ($dest["tipo"] === "email") {
-        return email_enviar($dest["email"]["para"], $titulo, $texto);
+        return email_enviar($dest["email"]["para"], $titulo, $texto, dono_da_colecao());
     }
     return webpush_enviar_usuario($dest["webpush"]["usuario_id"], $titulo, $texto);
 }
@@ -361,10 +369,75 @@ function email_remetente()
     return $r !== "" ? $r : trim((string)cfg_php("SMTP_USUARIO", ""));
 }
 
-// A mensagem MIME (texto, UTF-8, em base64): [cabeçalhos para o mail(), a mensagem inteira]
-function email_mensagem($para, $assunto, $texto)
+// A conta de envio: por onde um e-mail sai. A do sistema (o config.php) ou a de uma pessoa (o SMTP próprio dela, em Minha
+// conta). {proprio, metodo (smtp, mail ou null: desligado), host, porta, seguranca, usuario, senha, remetente}
+function email_conta_sistema()
 {
-    $de = email_remetente();
+    $seg = strtolower(trim((string)cfg_php("SMTP_SEGURANCA", "tls")));
+    $seg = $seg === "" ? "nada" : $seg;
+    return ["proprio" => false, "metodo" => email_metodo(), "host" => trim((string)cfg_php("SMTP_HOST", "")), "porta" => (int)cfg_php("SMTP_PORTA", $seg === "ssl" ? 465 : 587),
+        "seguranca" => $seg, "usuario" => (string)cfg_php("SMTP_USUARIO", ""), "senha" => (string)cfg_php("SMTP_SENHA", ""), "remetente" => email_remetente()];
+}
+
+// O SMTP próprio de uma pessoa (a linha de usuario_smtp, com a senha aberta), ou null. interno: se vale um servidor da rede
+// interna (só o do master)
+function email_conta_usuario($uid)
+{
+    if (!$uid || !banco_tem_tabela("usuario_smtp")) {
+        return null;
+    }
+    $x = sem_escopo(function () use ($uid) { return linha("SELECT s.*, u.papel FROM usuario_smtp s JOIN usuario u ON u.id = s.usuario_id WHERE s.usuario_id = ?", [(int)$uid]); });
+    return $x ? ["proprio" => true, "metodo" => "smtp", "host" => $x["host"], "porta" => (int)$x["porta"], "seguranca" => $x["seguranca"],
+        "usuario" => (string)($x["usuario"] ?? ""), "senha" => $x["senha_cifrada"] !== null && $x["senha_cifrada"] !== "" ? (string)segredo_abrir($x["senha_cifrada"]) : "",
+        "remetente" => $x["remetente"], "interno" => $x["papel"] === "master"] : null;
+}
+
+// Se alguém manda e-mail: o servidor do sistema, ou o SMTP próprio de alguma conta (o Esqueci a senha usa o da pessoa)
+function email_algum()
+{
+    return email_metodo() !== null || (banco_tem_tabela("usuario_smtp") && (int)sem_escopo(function () { return valor("SELECT COUNT(*) FROM usuario_smtp"); }) > 0);
+}
+
+// O SMTP próprio para a tela (recurso=conta): {proprio, host, porta, seguranca, usuario, senha_definida, remetente,
+// sistema_configurado} (sem ele: proprio falso e o resto null)
+function smtp_proprio_api($uid)
+{
+    $c = email_conta_usuario($uid);
+    return ["proprio" => $c !== null, "host" => $c["host"] ?? null, "porta" => $c["porta"] ?? null, "seguranca" => $c["seguranca"] ?? null,
+        "usuario" => $c !== null ? $c["usuario"] : null, "senha_definida" => $c !== null ? $c["senha"] !== "" : null, "remetente" => $c["remetente"] ?? null,
+        "sistema_configurado" => email_metodo() !== null];
+}
+
+// Abre a conexão do SMTP de uma conta de envio (a própria de quem não é master só vai a servidores da internet)
+function smtp_abrir($c)
+{
+    if (!empty($c["proprio"]) && empty($c["interno"])) {
+        [$erro] = host_externo($c["host"]);
+        if ($erro !== "") {
+            email_registro($erro);
+            throw new RuntimeException($erro);
+        }
+    }
+    return socket_abrir($c["host"], $c["porta"], $c["seguranca"]);
+}
+
+// Por onde sai o e-mail de uma pessoa: o SMTP próprio dela, senão o do sistema
+function email_conta($uid = null)
+{
+    return email_conta_usuario($uid) ?? email_conta_sistema();
+}
+
+// O dono da coleção de agora (os destinos de e-mail dela saem pelo SMTP dele, quando ele tem um)
+function dono_da_colecao()
+{
+    $c = (int)colecao_atual();
+    return $c > 0 ? (int)sem_escopo(function () use ($c) { return valor("SELECT dono_id FROM colecao WHERE id = ?", [$c]); }) : 0;
+}
+
+// A mensagem MIME (texto, UTF-8, em base64), de $de (vazio: o remetente do sistema): [cabeçalhos para o mail(), a mensagem inteira]
+function email_mensagem($para, $assunto, $texto, $de = "")
+{
+    $de = $de !== "" ? $de : email_remetente();
     $dominio = strpos($de, "@") !== false ? substr($de, strpos($de, "@") + 1) : "relojoeiro";
     $cab = ["From: " . $de, "MIME-Version: 1.0", "Content-Type: text/plain; charset=UTF-8", "Content-Transfer-Encoding: base64",
         "Date: " . date("r"), "Message-ID: <" . bin2hex(random_bytes(12)) . "@" . $dominio . ">"];
@@ -374,25 +447,28 @@ function email_mensagem($para, $assunto, $texto)
     return [$cab, $assunto_c, $corpo, $inteira];
 }
 
-// Manda um e-mail (para: um ou mais endereços, separados por vírgula): [ok, o erro]
-function email_enviar($para, $assunto, $texto)
+// Manda um e-mail (para: um ou mais endereços, separados por vírgula), pela conta de envio de $uid (o SMTP próprio dele,
+// senão o do sistema; sem $uid, o do sistema): [ok, o erro]
+function email_enviar($para, $assunto, $texto, $uid = null)
 {
-    $metodo = email_metodo();
+    $c = email_conta($uid);
+    $metodo = $c["metodo"];
     if ($metodo === null) {
-        return [false, t("o envio de e-mail não está configurado (EMAIL_METODO no config.php)")];
+        return [false, t("o envio de e-mail não está configurado (EMAIL_METODO no config.php, ou o servidor próprio em Minha conta)")];
     }
     $lista = array_values(array_filter(array_map("trim", explode(",", (string)$para)), function ($x) { return filter_var($x, FILTER_VALIDATE_EMAIL) !== false; }));
-    if (count($lista) === 0 || email_remetente() === "") {
+    if (count($lista) === 0 || $c["remetente"] === "") {
         return [false, count($lista) === 0 ? t("nenhum endereço válido em {1}", [1 => $para]) : t("falta o remetente (EMAIL_REMETENTE)")];
     }
-    [$cab, $assunto_c, $corpo, $inteira] = email_mensagem(implode(", ", $lista), $assunto, $texto);
+    [$cab, $assunto_c, $corpo, $inteira] = email_mensagem(implode(", ", $lista), $assunto, $texto, $c["remetente"]);
     if ($metodo === "mail") {
         $ok = @mail(implode(", ", $lista), $assunto_c, $corpo, implode("\r\n", $cab));
         $res = [$ok, $ok ? "" : t("o mail() do PHP recusou (confira o sendmail do servidor)")];
     } else {
-        $res = smtp_enviar($lista, $inteira);
+        $res = smtp_enviar($lista, $inteira, $c);
     }
-    if ($res[0] && trim((string)cfg_php("IMAP_HOST", "")) !== "") {
+    // a cópia em Enviados (o IMAP do config.php) só vale para o servidor do sistema
+    if ($res[0] && !$c["proprio"] && trim((string)cfg_php("IMAP_HOST", "")) !== "") {
         // a cópia em Enviados não muda o resultado do envio
         imap_guardar($inteira);
     }
@@ -461,12 +537,12 @@ function smtp_comando($s, $cmd, $espera, $mostrar = null)
 }
 
 // O SMTP: EHLO, STARTTLS (tls), AUTH LOGIN (com usuário), MAIL FROM, RCPT TO, DATA
-function smtp_enviar($para, $mensagem)
+function smtp_enviar($para, $mensagem, $c = null)
 {
-    $seg = strtolower((string)cfg_php("SMTP_SEGURANCA", "tls"));
-    $porta = (int)cfg_php("SMTP_PORTA", $seg === "ssl" ? 465 : 587);
+    $c = $c ?? email_conta_sistema();
+    $seg = $c["seguranca"];
     try {
-        $s = socket_abrir((string)cfg_php("SMTP_HOST", ""), $porta, $seg);
+        $s = smtp_abrir($c);
         smtp_comando($s, null, 220);
         $eu = gethostname() ?: "relojoeiro";
         smtp_comando($s, "EHLO " . $eu, 250);
@@ -478,13 +554,13 @@ function smtp_enviar($para, $mensagem)
             email_registro(t("TLS ligado."));
             smtp_comando($s, "EHLO " . $eu, 250);
         }
-        $u = (string)cfg_php("SMTP_USUARIO", "");
+        $u = $c["usuario"];
         if ($u !== "") {
             smtp_comando($s, "AUTH LOGIN", 334);
             smtp_comando($s, base64_encode($u), 334, t("(o usuário {1}, em base64)", [1 => $u]));
-            smtp_comando($s, base64_encode((string)cfg_php("SMTP_SENHA", "")), 235, t("(a senha, em base64)"));
+            smtp_comando($s, base64_encode($c["senha"]), 235, t("(a senha, em base64)"));
         }
-        smtp_comando($s, "MAIL FROM:<" . email_remetente() . ">", 250);
+        smtp_comando($s, "MAIL FROM:<" . $c["remetente"] . ">", 250);
         foreach ($para as $p) {
             smtp_comando($s, "RCPT TO:<" . $p . ">", [250, 251]);
         }
@@ -656,16 +732,18 @@ function email_config_resumo()
 // O teste da configuração do e-mail (o master, em Minha conta › Servidor de e-mail): conecta e entra no SMTP (sem mandar
 // nada), no IMAP (e confere a pasta Enviados) e no POP, e, com $para, manda um e-mail de teste. {metodo, remetente, smtp,
 // imap, pop, envio (cada um null ou {ok, erro}), registro (a conversa com os servidores, sem as senhas), config}
-function email_testar($para = "")
+function email_testar($para = "", $uid = null)
 {
     $GLOBALS["EMAIL_REGISTRO"] = [];
-    $res = ["metodo" => email_metodo(), "remetente" => email_remetente(), "smtp" => null, "imap" => null, "pop" => null, "envio" => null];
+    // com $uid, o SMTP próprio da pessoa (só ele e o envio; o IMAP e o POP são do sistema)
+    $c = ($uid ? email_conta_usuario($uid) : null) ?? email_conta_sistema();
+    $res = ["metodo" => $c["metodo"], "remetente" => $c["remetente"], "smtp" => null, "imap" => null, "pop" => null, "envio" => null];
     if ($res["metodo"] === "smtp") {
         // só a conexão e o login, sem mandar nada
         email_registro("— SMTP —");
         try {
-            $seg = strtolower(trim((string)cfg_php("SMTP_SEGURANCA", "tls")));
-            $s = socket_abrir((string)cfg_php("SMTP_HOST", ""), (int)cfg_php("SMTP_PORTA", $seg === "ssl" ? 465 : 587), $seg);
+            $seg = $c["seguranca"];
+            $s = smtp_abrir($c);
             smtp_comando($s, null, 220);
             smtp_comando($s, "EHLO relojoeiro", 250);
             if ($seg === "tls") {
@@ -676,10 +754,10 @@ function email_testar($para = "")
                 email_registro(t("TLS ligado."));
                 smtp_comando($s, "EHLO relojoeiro", 250);
             }
-            if ((string)cfg_php("SMTP_USUARIO", "") !== "") {
+            if ($c["usuario"] !== "") {
                 smtp_comando($s, "AUTH LOGIN", 334);
-                smtp_comando($s, base64_encode((string)cfg_php("SMTP_USUARIO", "")), 334, t("(o usuário {1}, em base64)", [1 => cfg_php("SMTP_USUARIO", "")]));
-                smtp_comando($s, base64_encode((string)cfg_php("SMTP_SENHA", "")), 235, t("(a senha, em base64)"));
+                smtp_comando($s, base64_encode($c["usuario"]), 334, t("(o usuário {1}, em base64)", [1 => $c["usuario"]]));
+                smtp_comando($s, base64_encode($c["senha"]), 235, t("(a senha, em base64)"));
             }
             email_registro("> QUIT");
             fwrite($s, "QUIT\r\n");
@@ -689,12 +767,12 @@ function email_testar($para = "")
             $res["smtp"] = ["ok" => false, "erro" => $e->getMessage()];
         }
     }
-    if (trim((string)cfg_php("IMAP_HOST", "")) !== "") {
+    if (!$c["proprio"] && trim((string)cfg_php("IMAP_HOST", "")) !== "") {
         email_registro("— IMAP —");
         [$ok, $erro] = imap_guardar("", true);
         $res["imap"] = ["ok" => $ok, "erro" => $erro !== "" ? $erro : null];
     }
-    if (trim((string)cfg_php("POP_HOST", "")) !== "") {
+    if (!$c["proprio"] && trim((string)cfg_php("POP_HOST", "")) !== "") {
         email_registro("— POP —");
         [$ok, $erro] = pop_testar();
         $res["pop"] = ["ok" => $ok, "erro" => $erro !== "" ? $erro : null];
@@ -705,13 +783,13 @@ function email_testar($para = "")
             email_registro(t("Pelo mail() do PHP (o sendmail do servidor): o PHP só diz se aceitou a mensagem, não se ela chegou."));
         }
         [$ok, $erro] = email_enviar($para, t("Relojoeiro: teste do e-mail"), t("Este é um e-mail de teste do Relojoeiro, enviado em {1} pelo método {2}, de {3}. Se chegou, o envio está funcionando.",
-            [1 => date("d/m/Y H:i:s"), 2 => $res["metodo"], 3 => email_remetente()]));
+            [1 => date("d/m/Y H:i:s"), 2 => $res["metodo"], 3 => $c["remetente"]]), $uid);
         $res["envio"] = ["ok" => $ok, "erro" => $erro !== "" ? $erro : null];
         email_registro($ok ? t("O servidor aceitou a mensagem. Confira a caixa de entrada (e a de spam) de {1}.", [1 => $para]) : t("Não foi: {1}", [1 => $erro]));
     }
     $res["registro"] = $GLOBALS["EMAIL_REGISTRO"];
     $GLOBALS["EMAIL_REGISTRO"] = null;
-    $res["config"] = email_config_resumo();
+    $res["config"] = $c["proprio"] ? null : email_config_resumo();
     return $res;
 }
 

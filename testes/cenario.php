@@ -225,17 +225,19 @@ $lanc("periodo", "smart", "pulso", ["inicio" => dia(5, "08:00"), "fim" => dia(5,
 $lanc("lancar", "smart", "carga", ["valor" => 83, "quando" => dia(4, "12:00")]);
 $lanc("periodo", "smart", "pulso", ["inicio" => dia(3, "08:00"), "fim" => dia(3, "22:00")]);
 $lanc("lancar", "smart", "carga", ["valor" => "71.5", "quando" => dia(2, "12:00"), "medir" => 0]);
-$lanc("lancar", "smart", "carga", ["valor" => 64, "quando" => dia(1, "18:00")]);
+$lanc("lancar", "smart", "carga", ["valor" => 64, "quando" => dia(1, "11:00")]);
 // a marcação da leitura: "em uso" quando o sistema tem ele fora do pulso não bate: a API pergunta (confirmar: true, sem
 // gravar) e só grava com confirmar=1, como a pessoa marcou; "em repouso" fora do pulso bate (medir=0: fica só no histórico);
 // estado errado recusa. A marcação fica gravada na leitura (estado) e o alterar muda a marcação
-escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["smart"], "tipo" => "carga", "valor" => 63, "quando" => dia(1, "20:00"), "estado" => "uso"], false);
-$leitura_uso = $lanc("lancar", "smart", "carga", ["valor" => 63, "quando" => dia(1, "20:00"), "estado" => "uso", "confirmar" => 1]);
-$lanc("lancar", "smart", "carga", ["valor" => 62, "quando" => dia(1, "21:30"), "estado" => "repouso", "medir" => 0]);
-// só o instante da leitura conta: no pulso das 21:40 às 21:50 (depois da leitura anterior) e fora dele às 21:55, "em repouso"
-// bate e grava sem perguntar (antes, o pulso desde a leitura anterior fazia a API perguntar)
-$lanc("periodo", "smart", "pulso", ["inicio" => dia(1, "21:40"), "fim" => dia(1, "21:50")]);
-$lanc("lancar", "smart", "carga", ["valor" => 62, "quando" => dia(1, "21:55"), "estado" => "repouso", "medir" => 0]);
+escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["smart"], "tipo" => "carga", "valor" => 63, "quando" => dia(1, "13:00"), "estado" => "uso"], false);
+$leitura_uso = $lanc("lancar", "smart", "carga", ["valor" => 63, "quando" => dia(1, "13:00"), "estado" => "uso", "confirmar" => 1]);
+$lanc("lancar", "smart", "carga", ["valor" => 62, "quando" => dia(1, "14:30"), "estado" => "repouso", "medir" => 0]);
+// só o instante da leitura conta: no pulso das 14:40 às 14:50 (depois da leitura anterior) e fora dele às 14:55, "em repouso"
+// bate e grava sem perguntar (antes, o pulso desde a leitura anterior fazia a API perguntar). Ontem, antes das 18:30: o
+// carregador aberto há 5h30 (logo abaixo), de madrugada, começa ontem depois das 18:30 e não esbarra nesse pulso (com o pulso
+// às 21:40, o roteiro rodado entre 00:00 e 03:20 tinha o carregador recusado)
+$lanc("periodo", "smart", "pulso", ["inicio" => dia(1, "14:40"), "fim" => dia(1, "14:50")]);
+$lanc("lancar", "smart", "carga", ["valor" => 62, "quando" => dia(1, "14:55"), "estado" => "repouso", "medir" => 0]);
 escrever(["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel["smart"], "tipo" => "carga", "valor" => 62, "estado" => "pulso"], false);
 escrever(["recurso" => "lancamento", "acao" => "alterar", "id" => $leitura_uso, "estado" => "repouso"]);
 escrever(["recurso" => "lancamento", "acao" => "alterar", "id" => $leitura_uso, "estado" => "uso"]);
@@ -355,6 +357,23 @@ escrever(["recurso" => "config", "acao" => "salvar", "senha_tamanho" => 12, "sen
 escrever(["recurso" => "usuarios", "acao" => "salvar", "login" => "fraco", "senha" => "Segredo@123"], false);
 escrever(["recurso" => "config", "acao" => "salvar", "senha_tamanho" => 8, "senha_numeros" => 1]);
 ler("politica da senha no cadastro", ["recurso" => "cadastro"]);
+// o servidor de e-mail próprio (Minha conta): sem ele não há o que testar; sem servidor, com a segurança errada ou sem
+// remetente, recusado; gravado, o remetente vazio vira o usuário, a senha não volta (só senha_definida) e a senha vazia
+// mantém a gravada; os destinos dizem que saem por ele; e volta ao do sistema
+escrever(["recurso" => "conta", "acao" => "smtp_testar", "para" => ""], false);
+escrever(["recurso" => "conta", "acao" => "smtp_salvar", "proprio" => 1, "host" => ""], false);
+escrever(["recurso" => "conta", "acao" => "smtp_salvar", "proprio" => 1, "host" => "smtp.exemplo.invalid", "seguranca" => "starttls"], false);
+escrever(["recurso" => "conta", "acao" => "smtp_salvar", "proprio" => 1, "host" => "smtp.exemplo.invalid", "porta" => 70000], false);
+escrever(["recurso" => "conta", "acao" => "smtp_salvar", "proprio" => 1, "host" => "smtp.exemplo.invalid", "usuario" => "eu", "remetente" => "sem arroba"], false);
+$smtp = escrever(["recurso" => "conta", "acao" => "smtp_salvar", "proprio" => 1, "host" => "SMTP.Exemplo.invalid", "porta" => "", "seguranca" => "tls", "usuario" => "eu@exemplo.com", "senha" => "segredo-do-smtp", "remetente" => ""], true, "smtp");
+escrever(["recurso" => "conta", "acao" => "smtp_salvar", "proprio" => 1, "host" => "smtp.exemplo.invalid", "porta" => 465, "seguranca" => "ssl", "usuario" => "eu@exemplo.com", "senha" => "", "remetente" => "relogios@exemplo.com"]);
+$conta_smtp = ler("conta com o servidor de e-mail próprio", ["recurso" => "conta"]);
+if (!is_array($smtp) || $smtp["remetente"] !== "eu@exemplo.com" || $smtp["host"] !== "smtp.exemplo.invalid" || (int)$smtp["porta"] !== 587
+    || ($conta_smtp["smtp"]["senha_definida"] ?? null) !== true || ($conta_smtp["smtp"]["porta"] ?? null) !== 465 || strpos(json_encode($conta_smtp), "segredo-do-smtp") !== false) {
+    $falhas[] = "smtp próprio: " . json_encode([$smtp, $conta_smtp["smtp"] ?? null], JSON_UNESCAPED_UNICODE);
+}
+ler("destinos com o servidor de e-mail próprio", ["recurso" => "destinos"]);
+escrever(["recurso" => "conta", "acao" => "smtp_salvar", "proprio" => 0]);
 
 // ---------- os destinos e as agendas (desligados: nada sai do servidor de teste; o link ICS é sorteado, e fica de fora) ----------
 escrever(["recurso" => "destinos", "acao" => "salvar", "id" => 0, "tipo" => "webhook", "nome" => "Telegram de teste", "ativo" => 0, "metodo" => "POST", "url" => "https://exemplo.invalid/enviar",

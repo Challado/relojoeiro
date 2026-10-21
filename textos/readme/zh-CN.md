@@ -1,4 +1,4 @@
-<!-- origem: 245fdb91fea59ed41cc5087fbdf8a7b84bf7b20d -->
+<!-- origem: 5aed559b7461acf4e29949761229d12b2df63490 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -132,7 +132,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `reserva` | 实测储备（`relogio=<id>`：机械表的储备测试、能量观察、实测值即各次测试的中位数，以及带可信度的声明、实测与估计表；不指定时，返回所有表的测试和观察） |
 | `documento` | 一个文档的文件（`id=<id>`）：用于显示（图片、视频、音频、PDF、文本）或下载（其他，或使用 `baixar=1`）；`mini=1` 是照片的缩略图。支持分段（Range），方便视频快进 |
 | `usuarios`、`migracoes` | master：账户面板，每个账户含其拥有的内容和密码哈希（用于以相同密码迁移：参见[用户与密码](#os-usuários-e-as-senhas)）；其他人只有自己的账户；尚待应用的迁移 |
-| `conta`、`colecoes`、`aprovacoes` | 我的账户（收藏、树、申请、令牌、已记住的设备、Web Push 设备；`parte=menu`：只返回菜单用的部分）；收藏和树；审批页面 |
+| `conta`、`colecoes`、`aprovacoes` | 我的账户（收藏、树、申请、令牌、已记住的设备、Web Push 设备、自己的邮件服务器；`parte=menu`：只返回菜单用的部分）；收藏和树；审批页面 |
 | `manifest`、`sw` | 手机上的应用，无需登录：清单（JSON；带已记住设备的 cookie 时，`start_url` 打开即登录）和 *service worker*（JavaScript）。见[手机上的应用](#o-aplicativo-no-celular) |
 | `cadastro` | 公开注册，无需登录：是否开放以及邀请（`convite=<token>`）；没有任何账户或收藏的列表（申请访问凭所有者给出的编号） |
 | `instalacao` | 安装状态：数据库、是否为空、是否已安装并为最新、用户数量以及下一步。数据库为空时也会响应（使用令牌） |
@@ -164,7 +164,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `destinos` | `salvar`（webhook、电子邮件或 Web Push，含接收内容）、`testar`（`qual=`：文本、早上或晚上）、`excluir` |
 | `agendas` | `salvar`（Google、CalDAV、Outlook 或 ICS）、`sincronizar`、`teste_criar`、`teste_remover`、`novo_link`（ICS）、`outlook_conectar`、`excluir` |
 | `usuarios` | `salvar`（带 `senha`，或带其他系统的 `senha_hash`；第一个用户使用令牌创建，是 master），以及仅限 master：`alterar`、`oficializar`、`prorrogar`、`voltar_demo`、`bloquear`、`transferir`、`dar_acesso`、`excluir` |
-| `conta` | `alterar`（电子邮件、语言、密码）、`token_criar`、`token_revogar`、`aparelho_lembrar`（手机上的应用：此设备的密钥存入 cookie，无需密码进入）、`aparelho_esquecer`、`push_inscrever`、`push_cancelar`、`push_testar`、`excluir`；仅限 master：`email_testar`、`vapid_gerar` |
+| `conta` | `alterar`（电子邮件、语言、密码）、`token_criar`、`token_revogar`、`aparelho_lembrar`（手机上的应用：此设备的密钥存入 cookie，无需密码进入）、`aparelho_esquecer`、`push_inscrever`、`push_cancelar`、`push_testar`、`smtp_salvar`（自己的邮件服务器；`proprio=0` 恢复使用系统的）、`smtp_testar`、`excluir`；仅限 master：`email_testar`、`vapid_gerar` |
 | `colecoes` | `criar`、`renomear`、`excluir`、`arvore_copiar`、`arvore_renomear`、`arvore_excluir` |
 | `acessos`、`convites`、`pedidos` | `remover`、`sair`；`convidar`、`aprovar`、`recusar`、`reenviar`、`cancelar`、`aceitar`；`pedir`、`aprovar`、`recusar`、`cancelar` |
 | `cadastro` | 无需登录：`criar_conta`、`esqueci_senha`、`nova_senha` |
@@ -299,7 +299,7 @@ php criar_usuario.php 你的登录名
 | `DB_ARQUIVO` | 数据库文件（SQLite），位于发布文件夹之外 |
 | `API_TOKEN` | **必填**，至少 10 个字符。没有它，整个系统会停止并说明原因。 |
 | `FUSO` | 系统时区，如 `America/Sao_Paulo`。为空或缺失：使用 PHP 的时区（php.ini 中的 `date.timezone`）。它是数据库保存日期所用的时区，也是未另选的人所用的时区；每个收藏（设置）和每个人（我的账户）都可以选择自己的（参见[时区](#o-fuso-horário)） |
-| `SEGREDO_CHAVE` | 可选：在数据库中加密 CalDAV 密码、Google 密钥、Outlook 令牌和 webhook 请求头的密钥。没有它则使用 `API_TOKEN`（更换密钥会丢失已保存的机密：重新填写即可） |
+| `SEGREDO_CHAVE` | 可选：在数据库中加密 CalDAV 密码、Google 密钥、Outlook 令牌、webhook 请求头以及自己邮件服务器的密码的密钥。没有它则使用 `API_TOKEN`（更换密钥会丢失已保存的机密：重新填写即可） |
 | `MSG_TITULO` | 消息的标题（webhook 的 `{titulo}`、邮件主题、Web Push 标题）。默认：Relógios |
 | `MSG_ENDPOINT`、`MSG_DESTINATARIO` | 仅用于 v25 迁移：旧的消息 API（Telegram）成为收藏的第一个 webhook 推送目标 |
 | `CADASTRO_ABERTO`、`DEMO_DIAS`、`CONVITE_DIAS` | 可选：公开注册（`false`：关闭，只能凭邀请；没有这一行时开放）、演示账户的天数（默认 30；`0`：账户一创建即为正式）以及邀请或申请等待的天数（默认 7） |
@@ -325,6 +325,7 @@ php criar_usuario.php 你的登录名
 
 - **Telegram（一个 webhook）：**用 @BotFather 创建一个机器人（它会给出令牌），并找到你的 `chat_id`（给机器人发一条消息，然后打开 `https://api.telegram.org/bot<token>/getUpdates`）。在**推送目标**中新建一个 webhook：方法 `GET` 或 `POST`，地址 `https://api.telegram.org/bot<token>/sendMessage`，字段 `chat_id` = 该数字，`text` = `{mensagem}`。任何其他桥接服务（n8n、Home Assistant、你自己的地址）都一样：系统把 `{titulo}` 和 `{mensagem}` 放到你指定的位置，响应为 2xx 即视为发送成功。长消息会分段发送。
 - **电子邮件：**在 `config.php` 中配置 SMTP 服务器（`SMTP_HOST`、端口、安全方式、用户名和密码；Gmail 和 Outlook 需要应用专用密码）和 `EMAIL_REMETENTE`；或使用 `EMAIL_METODO = "mail"`，服务器上需有 sendmail。配置 `IMAP_*` 后，每封已发送的邮件都会在“已发送”中保存一份副本。master 可在**我的账户 › 邮件服务器**中测试：该框显示系统从 `config.php` 读到的内容（发送方式、发件人、SMTP、IMAP 和 POP；密码只显示是否*已设置*），并指出错误或缺少的地方（没有 `EMAIL_METODO`、端口与安全方式不匹配、密码为空、PHP 没有 `openssl`……）。**测试连接**会登录 SMTP、IMAP（并检查“已发送”文件夹）和 POP，但不发送任何内容；**发送一封测试邮件**会真正发到你填写的地址。之后会显示每个部分的结果以及**与服务器的对话**（逐行显示，不含密码），方便找到在哪一步停下。
+- **你自己的邮件服务器：**默认情况下，每个人发送的邮件（其收藏的邮件推送目标、邀请、访问申请及其答复）都通过系统的服务器发出。愿意的人可以在**我的账户 › 发送我的邮件**中使用自己的服务器：**我的服务器（SMTP）**、服务器、端口、安全、用户名、密码和发件人（Gmail：`smtp.gmail.com`、587、TLS、你的邮箱和一个应用专用密码；Outlook：`smtp-mail.outlook.com`、587、TLS）。密码加密保存在数据库中，不会再次显示（留空则保留已保存的）；**发送测试邮件**可以检查。**系统的服务器**恢复默认。非 master 用户只能使用互联网上的服务器，不能使用服务器所在网络中的任何地址；“已发送”中的副本（`IMAP_*`）只适用于系统的服务器。
 - **Web Push：**网站必须通过 **https** 打开。master 在**我的账户 › Web Push 密钥**中生成密钥，并把两行复制到 `config.php`。之后，每个人在**我的账户**中为自己的设备打开通知（在 iPhone 上，先把网站添加到主屏幕），Web Push 推送目标会发往它所指向的人的设备。
 - **Google 日历：**在 Google Cloud 中创建一个**服务账号**并下载 JSON 密钥；把你的日历共享给服务账号的电子邮件，并授予修改事件的权限；在**日历**中粘贴密钥的 JSON（它会加密保存在数据库中）和日历 ID。只有 master 可以不粘贴 JSON，而是填写服务器上某个文件的路径。
 - **CalDAV（Nextcloud、iCloud、Fastmail）：**日历地址、用户名和密码。在 **iCloud** 上使用**应用专用密码**（appleid.apple.com › App 专用密码），日历地址位于 `caldav.icloud.com`。

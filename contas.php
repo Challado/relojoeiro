@@ -264,18 +264,19 @@ function colecao_por_id($id)
     return sem_escopo(function () use ($id) { return linha("SELECT c.*, u.login AS dono FROM colecao c JOIN usuario u ON u.id = c.dono_id WHERE c.id = ?", [(int)$id]); });
 }
 
-// Um e-mail no idioma de quem recebe ($assunto e $texto marcados com tk(), com as {n} de $vars). [ok, erro]
-function email_para($email, $lingua, $assunto, $texto, $vars = [])
+// Um e-mail no idioma de quem recebe ($assunto e $texto marcados com tk(), com as {n} de $vars), pela conta de envio de
+// $de (o id de quem manda: o SMTP próprio dele, senão o do sistema). [ok, erro]
+function email_para($email, $lingua, $assunto, $texto, $vars = [], $de = null)
 {
     if (trim((string)$email) === "") {
         return [false, t("sem e-mail")];
     }
-    if (email_metodo() === null) {
+    if (email_conta($de)["metodo"] === null) {
         return [false, t("o envio de e-mail não está configurado no servidor (EMAIL_METODO ou SMTP_HOST no config.php)")];
     }
     $antes = lingua_atual();
     lingua_definir(lingua_valida($lingua) ?? (lingua_valida(sis("idioma")) ?? $antes));
-    $r = email_enviar((string)$email, t($assunto, $vars), t($texto, $vars));
+    $r = email_enviar((string)$email, t($assunto, $vars), t($texto, $vars), $de);
     lingua_definir($antes);
     return $r;
 }
@@ -569,7 +570,9 @@ function conta_consulta()
             "push" => ["configurado" => vapid_configurado(), "chave_publica" => vapid_configurado() ? cfg_php("VAPID_PUBLICA", "") : null,
                 "aparelhos" => array_map(function ($p) { return ["id" => (int)$p["id"], "aparelho" => $p["aparelho"], "criada" => $p["criada"], "endpoint_hash" => $p["endpoint_hash"]]; },
                     linhas("SELECT id, aparelho, criada, endpoint_hash FROM push_inscricao WHERE usuario_id = ? ORDER BY criada", [$uid]))],
-            "email_configurado" => email_metodo() !== null, "senha_politica" => senha_politica_api(),
+            "email_configurado" => email_conta($uid)["metodo"] !== null, "senha_politica" => senha_politica_api(),
+            // o SMTP próprio da pessoa (os e-mails dela saem por ele; sem ele, pelo do sistema), sem a senha
+            "smtp" => smtp_proprio_api($uid),
             // a configuração do e-mail lida do config.php, para o master testar (as senhas só como definida ou não)
             "email" => usuario_master() ? email_config_resumo() : null,
             "demo_dias" => demo_dias(), "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS)),
@@ -640,7 +643,7 @@ function aprovacoes_consulta()
             "minhas_colecoes" => array_map(function ($c) { return ["id" => (int)$c["id"], "nome" => $c["nome"]]; }, $minhas),
             "pode_convidar" => array_map(function ($c) { return ["id" => $c["id"], "nome" => $c["nome"], "dono" => $c["dono"], "papel" => $c["papel"]]; },
                 array_values(array_filter(colecoes_visiveis($u), function ($c) { return $c["papel"] !== "master" || usuario_master(); }))),
-            "email_configurado" => email_metodo() !== null, "convite_dias" => convite_dias()];
+            "email_configurado" => email_conta($uid)["metodo"] !== null, "convite_dias" => convite_dias()];
     });
 }
 
@@ -649,7 +652,7 @@ function aprovacoes_consulta()
 function cadastro_consulta($convite)
 {
     return sem_escopo(function () use ($convite) {
-        $res = ["aberto" => cadastro_aberto(), "demo_dias" => demo_dias(), "email_configurado" => email_metodo() !== null, "senha_politica" => senha_politica_api(),
+        $res = ["aberto" => cadastro_aberto(), "demo_dias" => demo_dias(), "email_configurado" => email_algum(), "senha_politica" => senha_politica_api(),
             "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS)),
             "convite" => null];
         if ($convite !== null && $convite !== "") {
@@ -746,7 +749,7 @@ function op_cadastro($acao, $d)
                 $msg .= " " . t("É uma conta de demonstração de {1} dias: para continuar depois disso, peça ao administrador para torná-la oficial.", [1 => $dias]);
             }
             email_para($email, $lingua, tk("Relojoeiro: a sua conta {1} foi criada"), tk("Olá, {1}. A sua conta no Relojoeiro foi criada. Entre em {2} com o seu login e a sua senha."),
-                [1 => $login, 2 => url_do_sistema() . "/index.php"]);
+                [1 => $login, 2 => url_do_sistema() . "/index.php"], $uid);
             $extra = ["usuario_id" => $uid, "colecao_id" => $r["colecao_id"], "expira_em" => $expira];
         }
     } elseif ($acao === "esqueci_senha") {
@@ -754,7 +757,7 @@ function op_cadastro($acao, $d)
         $quem = trim((string)($d["email"] ?? ($d["login"] ?? "")));
         if ($quem === "") {
             $erros[] = t("Informe o e-mail ou o login da conta.");
-        } elseif (email_metodo() === null) {
+        } elseif (!email_algum()) {
             $erros[] = t("O servidor não envia e-mail: peça ao administrador para trocar a sua senha.");
         } else {
             $u = sem_escopo(function () use ($quem) { return linha("SELECT * FROM usuario WHERE email = ? OR login = ?", [$quem, $quem]); });
@@ -765,7 +768,7 @@ function op_cadastro($acao, $d)
                     sql("INSERT INTO usuario_token (usuario_id, token_hash, criado, expira) VALUES (?, ?, ?, ?)", [(int)$u["id"], token_hash($tk_), date("Y-m-d H:i:s"), date("Y-m-d H:i:s", time() + 7200)]);
                 });
                 email_para($u["email"], $u["idioma"], tk("Relojoeiro: trocar a senha de {1}"), tk("Olá, {1}. Para escolher uma senha nova, abra este link (vale por 2 horas): {2}. Se não foi você quem pediu, ignore este e-mail."),
-                    [1 => $u["login"], 2 => url_do_sistema() . "/cadastro.php?senha=" . $tk_]);
+                    [1 => $u["login"], 2 => url_do_sistema() . "/cadastro.php?senha=" . $tk_], (int)$u["id"]);
             }
             $msg = t("Se a conta existe e tem e-mail, o link para trocar a senha foi enviado (vale por 2 horas).");
         }
@@ -804,7 +807,7 @@ function pedido_criar($uid, $colecao_id, $dono_id, $mensagem)
     $quem = usuario_por_id($uid);
     if ($dono !== null && $quem !== null) {
         email_para($dono["email"], $dono["idioma"], tk("Relojoeiro: {1} pede acesso"), tk("{1} pede acesso ({2}). Aprove ou recuse em {3} (o pedido vence em {4} dias)."),
-            [1 => $quem["login"], 2 => alvo_texto($colecao_id, $dono_id), 3 => url_do_sistema() . "/aprovacoes.php", 4 => convite_dias()]);
+            [1 => $quem["login"], 2 => alvo_texto($colecao_id, $dono_id), 3 => url_do_sistema() . "/aprovacoes.php", 4 => convite_dias()], (int)$uid);
     }
     return $id;
 }
@@ -819,14 +822,15 @@ function convite_mandar($convite_id)
     });
     $link = url_do_sistema() . "/cadastro.php?convite=" . $tk_;
     [$ok] = email_para($v["email"], null, tk("Relojoeiro: {1} convida você"), tk("{1} convida você para ver {2} no Relojoeiro. Para aceitar, abra este link (vale até {3}): {4}"),
-        [1 => $v["login"], 2 => alvo_texto($v["colecao_id"], $v["dono_id"]), 3 => data_txt(strtotime((string)$v["expira"]), true), 4 => $link]);
+        [1 => $v["login"], 2 => alvo_texto($v["colecao_id"], $v["dono_id"]), 3 => data_txt(strtotime((string)$v["expira"]), true), 4 => $link], (int)$v["convidado_por"]);
     return [$link, $ok];
 }
 
 // recurso=conta: alterar (email, idioma, senha_atual + senha), excluir (a própria conta, com confirmar=1), token_criar
 // (nome), token_revogar (id), aparelho_lembrar (nome: o aplicativo no celular entra sem a senha por este aparelho; grava o
 // cookie), aparelho_esquecer (id; vazio: este aparelho), push_inscrever (endpoint, p256dh, auth, aparelho), push_cancelar (id ou endpoint),
-// push_testar, e, só o master: email_testar (para), vapid_gerar
+// push_testar, smtp_salvar (o SMTP próprio: proprio=0 volta ao do sistema; proprio=1 com host, porta, seguranca, usuario,
+// senha e remetente), smtp_testar (para), e, só o master: email_testar (para), vapid_gerar
 function op_conta($acao, $d)
 {
     $u = usuario_atual();
@@ -967,6 +971,67 @@ function op_conta($acao, $d)
             $msg = t("Notificação de teste enviada.");
         } else {
             $erros[] = $erro;
+        }
+    } elseif ($acao === "smtp_salvar") {
+        // o servidor de e-mail próprio da pessoa (Gmail, Outlook, o do provedor): os e-mails que ela manda (os destinos de
+        // e-mail das coleções dela, os convites, os pedidos e as respostas) saem por ele; sem ele, pelo do sistema
+        if ((string)($d["proprio"] ?? "1") === "0") {
+            sem_escopo(function () use ($uid) { sql("DELETE FROM usuario_smtp WHERE usuario_id = ?", [$uid]); });
+            $msg = email_metodo() !== null ? t("Os seus e-mails saem pelo servidor do sistema.") : t("Sem o servidor próprio: o sistema não tem servidor de e-mail, e os seus e-mails não saem.");
+        } else {
+            $atual = email_conta_usuario($uid);
+            $host = strtolower(trim((string)($d["host"] ?? "")));
+            $seg = strtolower(trim((string)($d["seguranca"] ?? "tls")));
+            $porta = trim((string)($d["porta"] ?? "")) === "" ? ($seg === "ssl" ? 465 : 587) : (int)$d["porta"];
+            $usuario = trim((string)($d["usuario"] ?? ""));
+            $remetente = trim((string)($d["remetente"] ?? ""));
+            $remetente = $remetente !== "" ? $remetente : (filter_var($usuario, FILTER_VALIDATE_EMAIL) !== false ? $usuario : (string)($u["email"] ?? ""));
+            // a senha vazia mantém a gravada (a tela não a mostra); sem usuário, sem senha
+            $senha = (string)($d["senha"] ?? "");
+            $cifrada = $usuario === "" ? null : ($senha !== "" ? segredo_cifrar($senha) : ($atual !== null && $atual["senha"] !== "" ? segredo_cifrar($atual["senha"]) : null));
+            if ($host === "" || mb_strlen($host, "UTF-8") > 200 || preg_match('/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$|^\[[0-9a-f:]+\]$/', $host) !== 1) {
+                $erros[] = t("Informe o servidor de SMTP (um nome como smtp.gmail.com).");
+            } elseif (!in_array($seg, ["tls", "ssl", "nada"], true)) {
+                $erros[] = t("Segurança desconhecida: use tls (STARTTLS), ssl ou nada.");
+            } elseif ($porta < 1 || $porta > 65535) {
+                $erros[] = t("Porta inválida: de 1 a 65535 (o comum: 587 com tls, 465 com ssl).");
+            } elseif (filter_var($remetente, FILTER_VALIDATE_EMAIL) === false || mb_strlen($remetente, "UTF-8") > 200) {
+                $erros[] = t("Informe o remetente: o e-mail que aparece como de quem a mensagem vem.");
+            } elseif (mb_strlen($usuario, "UTF-8") > 200 || strlen($senha) > 500) {
+                $erros[] = t("O usuário vai até 200 caracteres, e a senha até 500.");
+            } elseif ($u["papel"] !== "master" && ($e_h = host_externo($host)[0]) !== "") {
+                $erros[] = $e_h;
+            } else {
+                sem_escopo(function () use ($uid, $host, $porta, $seg, $usuario, $cifrada, $remetente) {
+                    sql("DELETE FROM usuario_smtp WHERE usuario_id = ?", [$uid]);
+                    sql("INSERT INTO usuario_smtp (usuario_id, host, porta, seguranca, usuario, senha_cifrada, remetente, criado) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())",
+                        [$uid, $host, $porta, $seg, $usuario !== "" ? $usuario : null, $cifrada, $remetente]);
+                });
+                $msg = t("Servidor de e-mail próprio gravado: os seus e-mails saem por {1}, de {2}. Mande um e-mail de teste para conferir.", [1 => $host . ":" . $porta, 2 => $remetente]);
+            }
+        }
+        $extra = ["smtp" => smtp_proprio_api($uid)];
+    } elseif ($acao === "smtp_testar") {
+        // o teste do SMTP próprio: conecta e entra (sem mandar nada) e, com para, manda um e-mail de teste por ele
+        $para = trim((string)($d["para"] ?? ""));
+        if (email_conta_usuario($uid) === null) {
+            $erros[] = t("Você não tem servidor de e-mail próprio: grave um antes de testar.");
+        } elseif ($para !== "" && filter_var($para, FILTER_VALIDATE_EMAIL) === false) {
+            $erros[] = t("E-mail inválido.");
+        } else {
+            $r = email_testar($para, $uid);
+            $extra = ["teste" => $r];
+            $partes = [];
+            foreach (["smtp" => "SMTP", "envio" => t("envio")] as $k => $nome) {
+                if ($r[$k] !== null) {
+                    $partes[] = $nome . ": " . ($r[$k]["ok"] ? t("ok") : t("erro ({1})", [1 => $r[$k]["erro"]]));
+                }
+            }
+            if (($r["smtp"] !== null && !$r["smtp"]["ok"]) || ($r["envio"] !== null && !$r["envio"]["ok"])) {
+                $erros[] = t("Teste do e-mail ({1}): {2}.", [1 => $r["metodo"], 2 => implode("; ", $partes)]);
+            } else {
+                $msg = t("Teste do e-mail ({1}): {2}.", [1 => $r["metodo"], 2 => implode("; ", $partes)]);
+            }
         }
     } elseif ($acao === "email_testar") {
         // o servidor de e-mail do config.php (só o master): a conexão do SMTP, do IMAP e do POP, e um e-mail de teste (para:
@@ -1235,7 +1300,7 @@ function op_pedidos($acao, $d)
             if ($acao !== "cancelar" && $quem !== null) {
                 email_para($quem["email"], $quem["idioma"], $acao === "aprovar" ? tk("Relojoeiro: acesso aprovado") : tk("Relojoeiro: acesso recusado"),
                     $acao === "aprovar" ? tk("Olá, {1}. O seu pedido de acesso foi aprovado ({2}). Entre em {3}.") : tk("Olá, {1}. O seu pedido de acesso foi recusado ({2})."),
-                    [1 => $quem["login"], 2 => alvo_texto($p["colecao_id"], $p["dono_id"]), 3 => url_do_sistema() . "/index.php"]);
+                    [1 => $quem["login"], 2 => alvo_texto($p["colecao_id"], $p["dono_id"]), 3 => url_do_sistema() . "/index.php"], $uid);
             }
             $msg = $acao === "aprovar" ? t("Pedido aprovado: {1} vê {2}.", [1 => $quem["login"] ?? "?", 2 => alvo_texto($p["colecao_id"], $p["dono_id"])])
                 : ($acao === "recusar" ? t("Pedido recusado.") : t("Pedido cancelado."));

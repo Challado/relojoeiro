@@ -1143,7 +1143,7 @@ calcula sozinho pelos dados de cada um: dar corda, carregar, trocar a pilha...),
 abaixo) e **Para onde vão**, o resumo dos destinos e das agendas, que têm páginas próprias:
 
 - **Destinos** (`destinos.php`): para onde vão as mensagens da coleção, cada um com o seu idioma e o seu fuso horário (das horas no texto). Cada destino é um **webhook** (um pedido HTTP:
-  o Telegram, o n8n, o Home Assistant, qualquer ponte), um **e-mail** (pelo servidor de e-mail do `config.php`) ou o **Web
+  o Telegram, o n8n, o Home Assistant, qualquer ponte), um **e-mail** (pelo servidor de e-mail do dono da coleção, em Minha conta, senão pelo do `config.php`) ou o **Web
   Push** (as notificações no celular e no navegador de alguém que vê a coleção). Cada um tem o nome, **Ligado**, o **idioma**,
   a **mensagem padrão** (com as âncoras `{acao}`, `{relogio}`, `{motivo}`, `{carga}`, `{ate}`, `{link}`...; o botão **Inserir
   âncora** mostra todas) e **O que recebe**: cada tipo de aviso (o relógio do dia, a véspera, cada aviso do cadastro e cada
@@ -1331,7 +1331,7 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | **Grupos** (`grupos.php`) | A árvore: criar, renomear, mover, ordenar, excluir (o que era do grupo passa para o de cima) e escolher o grupo de cada relógio. |
 | **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), os totais (a aba **Totais**: veja [Os totais](#os-totais)), os calibres (a aba **Calibres**: veja [Os calibres](#os-calibres)) e as categorias de documentos: tudo o que o sistema usa e que não é código (os avisos ficam na página **Avisos**, e os modos de rodízio, na **Modos de rodízio**). |
 | **Execuções do cron** (`execucoes.php`) | O que o cron fez a cada rodada, quanto tempo levou e os erros, com filtros. |
-| **Minha conta** (`conta.php`, menu **Conta › Minha conta**) | As coleções que você vê (abrir, criar, renomear, excluir, sair), as suas árvores de grupos (copiar, renomear, excluir), pedir acesso à coleção de alguém (pelo código que o dono passou), os seus dados (o seu código, o e-mail, o idioma, a senha), o **aplicativo no celular** (lembrar este aparelho, instalar, os aparelhos lembrados), os **tokens de API** (para os seus scripts), as **notificações neste aparelho** (o Web Push) e excluir a conta. Veja [Várias pessoas](#várias-pessoas-contas-coleções-e-acesso) e [O aplicativo no celular](#o-aplicativo-no-celular). |
+| **Minha conta** (`conta.php`, menu **Conta › Minha conta**) | As coleções que você vê (abrir, criar, renomear, excluir, sair), as suas árvores de grupos (copiar, renomear, excluir), pedir acesso à coleção de alguém (pelo código que o dono passou), os seus dados (o seu código, o e-mail, o idioma, a senha), o **aplicativo no celular** (lembrar este aparelho, instalar, os aparelhos lembrados), os **tokens de API** (para os seus scripts), as **notificações neste aparelho** (o Web Push), o **envio dos seus e-mails** (pelo servidor do sistema ou pelo seu: o Gmail, o Outlook) e excluir a conta. Veja [Várias pessoas](#várias-pessoas-contas-coleções-e-acesso) e [O aplicativo no celular](#o-aplicativo-no-celular). |
 | **Aprovações** (`aprovacoes.php`) | Os pedidos de acesso às suas coleções (aprovar, recusar), os convites que membros fizeram e esperam você, **Convidar** (por e-mail), os convites que você fez e quem vê as suas coleções (tirar o acesso). O menu mostra **Aprovações (N)** quando há algo esperando. |
 | **Usuários** (`usuarios.php`, só o master) | O painel das contas: cada uma com o que tem e as ações (ver como, tornar oficial, prorrogar, bloquear, alterar, trocar a senha, transferir uma coleção, dar acesso, excluir) e criar uma conta. |
 | **Criar conta** (`cadastro.php`, sem login) | O cadastro aberto: a conta nova (com uma coleção, ou pedindo acesso), o convite que chegou por e-mail e o **Esqueci a senha**. |
@@ -1509,7 +1509,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `reserva` | a reserva medida (`relogio=<id>`: os testes da reserva do mecânico, as observações da energia, a medida, que é a mediana dos testes, e a tabela declarado, medido e estimado com a confiança; sem ele, os testes e as observações de todos) |
 | `documento` | o arquivo de um documento (`id=<id>`): para mostrar (imagem, vídeo, áudio, PDF, texto) ou para baixar (o resto, ou com `baixar=1`); `mini=1` é a miniatura da foto. Atende pedaços (Range), para o vídeo avançar |
 | `usuarios`, `migracoes` | o master: o painel das contas, cada uma com o que tem e o hash da senha (para migrar com a mesma senha: veja [Os usuários e as senhas](#os-usuários-e-as-senhas)); os outros, só a própria conta; as migrações que faltam aplicar |
-| `conta`, `colecoes`, `aprovacoes` | Minha conta (as coleções, as árvores, os pedidos, os tokens, os aparelhos lembrados, os aparelhos do Web Push; `parte=menu`: só o do menu); as coleções e as árvores; a página Aprovações |
+| `conta`, `colecoes`, `aprovacoes` | Minha conta (as coleções, as árvores, os pedidos, os tokens, os aparelhos lembrados, os aparelhos do Web Push, o servidor de e-mail próprio; `parte=menu`: só o do menu); as coleções e as árvores; a página Aprovações |
 | `manifest`, `sw` | o aplicativo no celular, sem login: o manifesto (JSON; com o cookie do aparelho lembrado, o `start_url` já entra) e o *service worker* (JavaScript). Veja [O aplicativo no celular](#o-aplicativo-no-celular) |
 | `cadastro` | o cadastro aberto, sem login: se está aberto e o convite (`convite=<token>`); nenhuma lista de contas nem de coleções (o pedido de acesso é pelo código que o dono passou) |
 | `instalacao` | a situação da instalação: o banco, se está vazio, instalado e em dia, quantos usuários e o próximo passo. Responde também com o banco vazio, pelo token |
@@ -1541,7 +1541,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `destinos` | `salvar` (webhook, e-mail ou Web Push, com o que recebe), `testar` (`qual=`: texto, manhã ou noite), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook ou ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (com a `senha`, ou com o `senha_hash` de outro sistema; o primeiro usuário, pelo token, é o master) e, só o master: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
-| `conta` | `alterar` (e-mail, idioma, senha), `token_criar`, `token_revogar`, `aparelho_lembrar` (o aplicativo no celular: a chave deste aparelho num cookie, que entra sem a senha), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `excluir`; só o master: `email_testar`, `vapid_gerar` |
+| `conta` | `alterar` (e-mail, idioma, senha), `token_criar`, `token_revogar`, `aparelho_lembrar` (o aplicativo no celular: a chave deste aparelho num cookie, que entra sem a senha), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `smtp_salvar` (o servidor de e-mail próprio; `proprio=0` volta ao do sistema), `smtp_testar`, `excluir`; só o master: `email_testar`, `vapid_gerar` |
 | `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
 | `acessos`, `convites`, `pedidos` | `remover`, `sair`; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar`; `pedir`, `aprovar`, `recusar`, `cancelar` |
 | `cadastro` | sem login: `criar_conta`, `esqueci_senha`, `nova_senha` |
@@ -1707,7 +1707,7 @@ pessoas entram pelo **Criar conta** (`cadastro.php`), por um convite seu, ou o m
 | `DB_ARQUIVO` | o arquivo do banco (SQLite), fora da pasta publicada |
 | `API_TOKEN` | **obrigatório**, com 10 caracteres ou mais. Sem ele o sistema inteiro para e diz por quê. |
 | `FUSO` | o fuso horário do sistema, como `America/Sao_Paulo`. Vazio ou ausente: o do PHP (`date.timezone` no php.ini). É o fuso das datas que o banco grava e o de quem não escolheu outro; cada coleção (Configuração) e cada pessoa (Minha conta) pode escolher o seu (veja [O fuso horário](#o-fuso-horário)) |
-| `SEGREDO_CHAVE` | opcional: a chave que cifra no banco as senhas do CalDAV, as chaves do Google, os tokens do Outlook e os cabeçalhos dos webhooks. Sem ela, o `API_TOKEN` (trocar a chave perde os segredos guardados: é só digitar de novo) |
+| `SEGREDO_CHAVE` | opcional: a chave que cifra no banco as senhas do CalDAV, as chaves do Google, os tokens do Outlook, os cabeçalhos dos webhooks e as senhas dos servidores de e-mail próprios. Sem ela, o `API_TOKEN` (trocar a chave perde os segredos guardados: é só digitar de novo) |
 | `MSG_TITULO` | o título das mensagens (o `{titulo}` dos webhooks, o assunto do e-mail, o título do Web Push). Padrão: Relógios |
 | `MSG_ENDPOINT`, `MSG_DESTINATARIO` | só para a migração v25: a API de mensagem antiga (Telegram) vira o primeiro destino webhook da coleção |
 | `CADASTRO_ABERTO`, `DEMO_DIAS`, `CONVITE_DIAS` | opcionais: o cadastro aberto (`false`: fechado, só com convite; sem a linha, aberto), os dias da conta de demonstração (padrão 30; `0`: a conta já nasce oficial) e os dias que um convite ou um pedido espera (padrão 7) |
@@ -1746,6 +1746,13 @@ Cada coleção cria os destinos e as agendas dela nas páginas **Destinos** e **
   **Testar as conexões** entra no SMTP, no IMAP (e confere a pasta Enviados) e no POP sem mandar nada; **Mandar um e-mail de
   teste** manda de verdade para o endereço que você puser. Depois, aparecem o resultado de cada parte e a **conversa com os
   servidores**, linha a linha (sem a senha), para achar onde parou.
+- **O seu próprio servidor de e-mail:** por padrão, os e-mails que cada pessoa manda (os destinos de e-mail das coleções dela,
+  os convites, os pedidos de acesso e as respostas a eles) saem pelo servidor do sistema. Quem preferir usa o seu, em
+  **Minha conta › Envio dos meus e-mails**: **O meu servidor (SMTP)**, o servidor, a porta, a segurança, o usuário, a senha
+  e o remetente (no Gmail: `smtp.gmail.com`, 587, TLS, o seu e-mail e uma senha de app; no Outlook:
+  `smtp-mail.outlook.com`, 587, TLS). A senha fica cifrada no banco e não aparece de novo (em branco, mantém a gravada);
+  **Mandar um e-mail de teste** confere. **O servidor do sistema** volta ao padrão. Quem não é o master só usa servidores da
+  internet, nada da rede do servidor; a cópia em Enviados (o `IMAP_*`) é só do servidor do sistema.
 - **Web Push:** o site tem de abrir por **https**. O master gera as chaves em **Minha conta › Chaves do Web Push** e copia as
   duas linhas para o `config.php`. Depois, cada pessoa liga as notificações no aparelho dela, em **Minha conta**
   (no iPhone, primeiro adicione o site à tela de início), e um destino Web Push manda para os aparelhos de quem ele aponta.

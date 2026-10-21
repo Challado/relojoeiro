@@ -18,6 +18,7 @@ $saida = ["destinos" => array_values(array_map(function ($d) use ($hoje) {
     "avisos" => array_map(function ($k, $t) { return ["tipo" => $k, "nome" => $t[0], "quando" => $t[1]]; }, array_keys(tipos_de_aviso()), array_values(tipos_de_aviso())),
     "ancoras" => $ANCORAS, "fusos" => fusos_lista(), "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS)),
     "padrao" => ["modelo" => modelo_tradutor(lingua_valida(cfg("idioma")) ?? "pt-BR")(modelo_ler()["mensagens"]["modelo"])],
-    "email" => ["configurado" => email_metodo() !== null, "metodo" => email_metodo()],
+    // os e-mails da coleção saem pelo SMTP próprio do dono dela (Minha conta), senão pelo do sistema
+    "email" => (function () { $c = email_conta(dono_da_colecao()); return ["configurado" => $c["metodo"] !== null, "metodo" => $c["metodo"], "proprio" => $c["proprio"], "remetente" => $c["metodo"] !== null ? $c["remetente"] : null]; })(),
     "push" => ["configurado" => vapid_configurado(), "chave_publica" => vapid_configurado() ? (string)VAPID_PUBLICA : null],
     "usuarios" => array_map(function ($u) { return ["id" => (int)$u["id"], "login" => $u["login"]]; }, membros_da_colecao())];
