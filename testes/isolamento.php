@@ -46,11 +46,11 @@ function preparar($quem, $params)
 
 // as três contas, pelo token do servidor (o master)
 $srv = ["token", $SERVIDOR];
-preparar($srv, ["recurso" => "usuarios", "acao" => "salvar", "login" => "ana", "senha" => "senha-da-ana-1", "email" => "segredoana@exemplo.com"]);
-preparar($srv, ["recurso" => "usuarios", "acao" => "salvar", "login" => "bia", "senha" => "senha-da-bia-1", "email" => "bia@exemplo.com"]);
-preparar($srv, ["recurso" => "usuarios", "acao" => "salvar", "login" => "caio", "senha" => "senha-do-caio-1", "colecao_nova" => "nenhuma"]);
+preparar($srv, ["recurso" => "usuarios", "acao" => "salvar", "login" => "ana", "senha" => "Senha-da-ana-1", "email" => "segredoana@exemplo.com"]);
+preparar($srv, ["recurso" => "usuarios", "acao" => "salvar", "login" => "bia", "senha" => "Senha-da-bia-1", "email" => "bia@exemplo.com"]);
+preparar($srv, ["recurso" => "usuarios", "acao" => "salvar", "login" => "caio", "senha" => "Senha-do-caio-1", "colecao_nova" => "nenhuma"]);
 $tk = [];
-foreach (["ana" => "senha-da-ana-1", "bia" => "senha-da-bia-1", "caio" => "senha-do-caio-1"] as $l => $s) {
+foreach (["ana" => "Senha-da-ana-1", "bia" => "Senha-da-bia-1", "caio" => "Senha-do-caio-1"] as $l => $s) {
     $tk[$l] = ["token", preparar(["basic", $l . ":" . $s], ["recurso" => "conta", "acao" => "token_criar", "nome" => "teste"])["token"] ?? ""];
 }
 $ana = $tk["ana"];
@@ -184,6 +184,7 @@ $tentativas = [
     ["recurso" => "acessos", "acao" => "remover", "colecao_id" => $col_a, "usuario_id" => $uid_a, "confirmar" => 1],
     ["recurso" => "convites", "acao" => "criar", "colecao_id" => $col_a, "email" => "x@exemplo.com"],
     ["recurso" => "usuarios", "acao" => "salvar", "login" => "ana", "senha" => "INVADIDO-123"],
+    ["recurso" => "config", "acao" => "salvar", "senha_tamanho" => 4, "senha_simbolos" => 0],
     ["recurso" => "usuarios", "acao" => "excluir", "login" => "ana", "confirmar" => 1],
     ["recurso" => "conta", "acao" => "alterar", "email" => "segredoana@exemplo.com"],
     ["recurso" => "conta", "acao" => "aparelho_esquecer", "id" => $apa_a],
@@ -203,6 +204,11 @@ foreach (["bia", "caio"] as $quem) {
             $falhas[] = "VAZOU " . $quem . " POST " . http_build_query($p) . " → " . $r["codigo"] . ": " . substr($r["corpo"], 0, 300);
         }
     }
+}
+// a força da senha é do sistema: quem não é o master não muda (continua a do padrão)
+$pol = pedir($srv, "GET", ["recurso" => "cadastro"])["json"]["senha_politica"]["regras"] ?? [];
+if (($pol["tamanho"] ?? 0) !== 8 || ($pol["simbolos"] ?? 0) !== 1) {
+    $falhas[] = "MUDOU a força da senha por quem não é o master: " . json_encode($pol);
 }
 // depois dos pedidos de acesso (ainda não aprovados): a conta de quem pediu mostra só o código, nunca o nome nem o login
 foreach (["bia", "caio"] as $quem) {
@@ -244,7 +250,7 @@ $meds = pedir($ana, "GET", ["recurso" => "ficha", "relogio" => $rel_s])["json"][
 if ($med_a === 0 || ($meds[0]["usada"] ?? false) !== true) {
     $falhas[] = "MUDOU a medição do gasto da ana (ou ela não foi criada)";
 }
-if (pedir(["basic", "ana:senha-da-ana-1"], "GET", ["recurso" => "conta"])["codigo"] !== 200) {
+if (pedir(["basic", "ana:Senha-da-ana-1"], "GET", ["recurso" => "conta"])["codigo"] !== 200) {
     $falhas[] = "A SENHA da ana mudou";
 }
 foreach ($falhas as $f) {

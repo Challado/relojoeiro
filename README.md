@@ -718,6 +718,14 @@ e, vencida, o cron apaga a conta com tudo o que é dela. O master **torna a cont
 `CADASTRO_ABERTO = false` no `config.php`, o cadastro fecha: só entra quem o master cria ou quem tem um convite. A página tem
 também o **Esqueci a senha**: o link para escolher uma senha nova vai por e-mail e vale 2 horas.
 
+**A senha** tem a força que o master escolhe na **Configuração**, no cartão **Senhas**: o tamanho mínimo e quantas letras
+maiúsculas, minúsculas, números e símbolos ela precisa ter, no mínimo (o padrão: 8 caracteres, com 1 de cada). Vale para
+toda senha nova: a conta criada, a troca em **Minha conta**, a senha nova pelo link do **Esqueci a senha**, a do master em
+**Usuários** e a do `criar_usuario.php`; as que já existem continuam valendo. Todo lugar que define uma senha pede também o
+**Confirmar a senha** e, enquanto você digita, mostra o que a API diz dela: cada regra com ✓ ou ✗, a confirmação e a
+**força** (de muito fraca a forte, pelo tamanho e por quantos tipos de caractere ela mistura). Pela API:
+`recurso=cadastro`, `acao=conferir_senha` (sem login e sem gravar nada), e `senha_confirmacao` nas gravações de senha.
+
 **O painel do master** (**Usuários**) mostra cada conta com o e-mail, o papel, o último acesso, quando vence, as coleções (com
 quantos relógios) e o que mais ela vê, e as ações: **Ver como** (o sistema inteiro como aquela pessoa vê, com uma faixa no alto
 e o botão de voltar), **Tornar oficial**, **Prorrogar**, **Voltar a demo**, **Bloquear**, **Alterar** (o login, o e-mail, o

@@ -88,7 +88,7 @@ rodar() {
   local b=$1 porta=$2 log="$PASTA/$1.log"
   export RELOGIOS_DB=$b
   rm -rf "$PASTA/documentos_$b" "$PASTA/copias_$b"
-  { preparar "$b" && php instalar.php && php criar_usuario.php teste senha123; } > "$log" 2>&1 || { echo "FALHOU NA INSTALAÇÃO" >> "$log"; return 1; }
+  { preparar "$b" && php instalar.php && php criar_usuario.php teste Senha@123; } > "$log" 2>&1 || { echo "FALHOU NA INSTALAÇÃO" >> "$log"; return 1; }
   if curl -s -o /dev/null "http://127.0.0.1:$porta/"; then
     echo "A porta $porta já está ocupada (outro servidor no ar?): use TESTE_PORTA para escolher outra" >> "$log"; return 1
   fi
@@ -205,7 +205,7 @@ done
 
 if [ $MANTER -eq 1 ]; then
   i=0
-  for b in "${BANCOS[@]}"; do echo "$b no ar: http://127.0.0.1:$((PORTA0 + i))/ (usuário teste, senha senha123)"; i=$((i + 1)); done
+  for b in "${BANCOS[@]}"; do echo "$b no ar: http://127.0.0.1:$((PORTA0 + i))/ (usuário teste, senha Senha@123)"; i=$((i + 1)); done
   echo "Ctrl+C derruba os servidores."
   while true; do sleep 3600; done
 fi

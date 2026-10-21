@@ -22,7 +22,7 @@ testes/paridade.sh --layout sqlite      # e, no fim, a conferência do layout (v
 testes/paridade.sh --manter sqlite      # deixa o servidor no ar no fim, para olhar as telas (Ctrl+C derruba)
 ```
 
-Para cada banco ele apaga e recria o banco de teste, roda `instalar.php` e `criar_usuario.php teste senha123`, sobe um
+Para cada banco ele apaga e recria o banco de teste, roda `instalar.php` e `criar_usuario.php teste Senha@123`, sobe um
 servidor `php -S` com a semente dos sorteios fixa (`RELOGIOS_SEMENTE=42`; sem ela, a escala desempata ao acaso e o plano muda
 de uma rodada para outra) e roda o `cenario.php`; depois compara a fotografia de cada banco com a do primeiro. O resultado
 esperado é `Tudo igual.` (e o comando termina com 0). Antes do resultado, ele confere que o PHP não deu nenhum aviso
@@ -47,7 +47,7 @@ bancos vem do ambiente, com o padrão de uma máquina de desenvolvimento:
 Ele usa o `psql`, o `mysql` e o `isql-fb` para recriar os bancos, e o `curl` para esperar o servidor subir.
 
 Na mão, sem o `paridade.sh`: um `config.php` de teste (o `config.teste.php` serve, com `RELOGIOS_CONFIG`), para cada banco o
-banco vazio, `php instalar.php`, `php criar_usuario.php teste senha123` e um servidor com a semente
+banco vazio, `php instalar.php`, `php criar_usuario.php teste Senha@123` e um servidor com a semente
 (`RELOGIOS_SEMENTE=42 RELOGIOS_DB=sqlite php -S 127.0.0.1:8083 -t .`), o cenário com o mesmo ambiente (ele roda o cron como
 processo filho) e a comparação:
 

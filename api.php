@@ -2756,6 +2756,16 @@
  *     sistema                        o que é do sistema inteiro (não da coleção)
  *     sistema.url_sistema            o endereço do sistema, para os links das mensagens ({link}), do ICS e do Outlook (vazio: o do pedido)
  *     sistema.pode_mudar             verdadeiro ou falso: quem pede pode mudar (só o master)
+ *     senha_politica                 a força da senha (a Configuração, do sistema): o que toda senha nova precisa ter
+ *     senha_politica.regras          o mínimo de cada regra (0: não exige)
+ *     senha_politica.regras.tamanho  quantos caracteres, no mínimo
+ *     senha_politica.regras.maiusculas
+ *                                    quantas letras maiúsculas, no mínimo
+ *     senha_politica.regras.minusculas
+ *                                    quantas letras minúsculas, no mínimo
+ *     senha_politica.regras.numeros  quantos números, no mínimo
+ *     senha_politica.regras.simbolos quantos símbolos (o que não é letra, número nem espaço), no mínimo
+ *     senha_politica.texto           a regra por extenso, para a tela ("A senha precisa ter: 8 caracteres ou mais, 1 letra maiúscula...")
  *     destinos[]                     o resumo dos destinos da coleção (a página Destinos tem o resto)
  *     destinos[].id                  o id
  *     destinos[].nome                o nome
@@ -4443,6 +4453,16 @@
  *     push.aparelhos[].criada        desde quando
  *     push.aparelhos[].endpoint_hash a marca do endereço do aparelho (para o navegador saber se já está inscrito)
  *     email_configurado              verdadeiro ou falso: o servidor manda e-mail
+ *     senha_politica                 a força da senha (a Configuração, do sistema): o que toda senha nova precisa ter
+ *     senha_politica.regras          o mínimo de cada regra (0: não exige)
+ *     senha_politica.regras.tamanho  quantos caracteres, no mínimo
+ *     senha_politica.regras.maiusculas
+ *                                    quantas letras maiúsculas, no mínimo
+ *     senha_politica.regras.minusculas
+ *                                    quantas letras minúsculas, no mínimo
+ *     senha_politica.regras.numeros  quantos números, no mínimo
+ *     senha_politica.regras.simbolos quantos símbolos (o que não é letra, número nem espaço), no mínimo
+ *     senha_politica.texto           a regra por extenso, para a tela ("A senha precisa ter: 8 caracteres ou mais, 1 letra maiúscula...")
  *     email                          (só o master; null para os outros) a configuração do e-mail que o sistema leu do config.php, para o
  *                                    quadro Servidor de e-mail
  *     email.metodo                   smtp, mail ou null (o envio está desligado)
@@ -4578,6 +4598,16 @@
  *     aberto                         verdadeiro ou falso: o cadastro está aberto (CADASTRO_ABERTO); fechado, só com convite
  *     demo_dias                      os dias da conta de demonstração (0: a conta nasce oficial)
  *     email_configurado              verdadeiro ou falso: o servidor manda e-mail (o Esqueci a senha precisa dele)
+ *     senha_politica                 a força da senha (a Configuração, do sistema): o que toda senha nova precisa ter
+ *     senha_politica.regras          o mínimo de cada regra (0: não exige)
+ *     senha_politica.regras.tamanho  quantos caracteres, no mínimo
+ *     senha_politica.regras.maiusculas
+ *                                    quantas letras maiúsculas, no mínimo
+ *     senha_politica.regras.minusculas
+ *                                    quantas letras minúsculas, no mínimo
+ *     senha_politica.regras.numeros  quantos números, no mínimo
+ *     senha_politica.regras.simbolos quantos símbolos (o que não é letra, número nem espaço), no mínimo
+ *     senha_politica.texto           a regra por extenso, para a tela ("A senha precisa ter: 8 caracteres ou mais, 1 letra maiúscula...")
  *     linguas[]                      os idiomas
  *     linguas[].codigo               o código
  *     linguas[].nome                 o nome
@@ -4598,6 +4628,16 @@
  *                                    Levado para outro sistema que confira por bcrypt, o usuário entra lá com a mesma senha; e volta para
  *                                    cá por usuarios/salvar com senha_hash
  *     voce                           o login de quem pediu (pelo site; vazio pelo token)
+ *     senha_politica                 a força da senha (a Configuração, do sistema): o que toda senha nova precisa ter
+ *     senha_politica.regras          o mínimo de cada regra (0: não exige)
+ *     senha_politica.regras.tamanho  quantos caracteres, no mínimo
+ *     senha_politica.regras.maiusculas
+ *                                    quantas letras maiúsculas, no mínimo
+ *     senha_politica.regras.minusculas
+ *                                    quantas letras minúsculas, no mínimo
+ *     senha_politica.regras.numeros  quantos números, no mínimo
+ *     senha_politica.regras.simbolos quantos símbolos (o que não é letra, número nem espaço), no mínimo
+ *     senha_politica.texto           a regra por extenso, para a tela ("A senha precisa ter: 8 caracteres ou mais, 1 letra maiúscula...")
  *     usuarios[].id                  o id (só o master vê)
  *     usuarios[].email               o e-mail (para recuperar a senha, os convites e os avisos)
  *     usuarios[].papel               master (cuida do sistema inteiro) ou comum
@@ -5373,7 +5413,8 @@ if ($recurso === "textos") {
     $saida = ["ok" => $ok_o, "mensagem" => $msg_o];
 } elseif ($recurso === "usuarios") {
     // o master: o painel (todos, com o que cada um tem, e as coleções, para transferir e dar acesso); os outros, só a si mesmos
-    $saida = usuario_master() ? ["usuarios" => usuarios_painel(), "voce" => $quem, "demo_dias" => demo_dias(), "colecoes" => colecoes_visiveis(usuario_atual()), "fusos" => fusos_lista()]
+    $saida = usuario_master() ? ["usuarios" => usuarios_painel(), "voce" => $quem, "demo_dias" => demo_dias(), "colecoes" => colecoes_visiveis(usuario_atual()), "fusos" => fusos_lista(),
+        "senha_politica" => senha_politica_api()]
         : ["usuarios" => usuarios_catalogo(), "voce" => $quem];
 } elseif ($recurso === "conta") {
     $saida = ($_REQUEST["parte"] ?? "") === "menu" ? conta_menu() : conta_consulta();

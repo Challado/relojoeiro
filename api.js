@@ -763,6 +763,55 @@ function parCampo(rotulo, controle, tipo) {
   return el("label", {"class": "par-campo" + (tipo ? " " + tipo : "")}, el("span", {"class": "rotulo"}, h(rotulo)) + el("span", {"class": "controle"}, controle));
 }
 
+// Uma senha nova com a confirmação (Criar conta, a senha nova pelo link, Minha conta, Usuários): os dois campos e, embaixo,
+// a força pedida (o texto da API) e, enquanto a pessoa digita, o que a API diz da senha: cada regra com ✓ ou ✗, a
+// confirmação e a força. Quem confere é a API (recurso=cadastro, acao=conferir_senha, sem gravar); a tela só mostra
+function camposSenha(rotulo, politica, obrigatoria) {
+  return parCampo(rotulo, el("input", {"type": "password", "name": "senha", "required": !!obrigatoria, "autocomplete": "new-password", "data-senha-nova": true}))
+    + parCampo(t("Confirmar a senha"), el("input", {"type": "password", "name": "senha_confirmacao", "required": !!obrigatoria, "autocomplete": "new-password", "data-senha-nova": true}))
+    + caixaSenha(politica);
+}
+
+// A caixa da conferência da senha: começa com o texto da força pedida (o mesmo que ela mostra quando os campos ficam vazios)
+function caixaSenha(politica) {
+  return el("div", {"class": "senha-conferencia largo", "aria-live": "polite", "data-politica": politica.texto}, el("p", {"class": "nota"}, h(politica.texto)));
+}
+
+// Enquanto a pessoa digita a senha nova ou a confirmação: espera ela parar um instante e pergunta à API; a resposta mais
+// nova é a que fica (uma antiga que chega depois não apaga)
+var senhaConferida = {vez: 0, espera: null};
+document.addEventListener("input", function (ev) {
+  var campo = ev.target;
+  if (!campo.hasAttribute || !campo.hasAttribute("data-senha-nova") || !campo.form) {
+    return;
+  }
+  var form = campo.form;
+  var caixa = form.querySelector(".senha-conferencia");
+  if (!caixa) {
+    return;
+  }
+  var senha = form.querySelector("[name=senha]").value;
+  var conf = form.querySelector("[name=senha_confirmacao]");
+  var vez = ++senhaConferida.vez;
+  clearTimeout(senhaConferida.espera);
+  if (senha === "" && (!conf || conf.value === "")) {
+    caixa.innerHTML = el("p", {"class": "nota"}, h(caixa.getAttribute("data-politica")));
+    return;
+  }
+  senhaConferida.espera = setTimeout(function () {
+    enviar({recurso: "cadastro", acao: "conferir_senha", senha: senha, senha_confirmacao: conf ? conf.value : ""}).then(function (res) {
+      var c = res.conferencia;
+      if (vez !== senhaConferida.vez || !c) {
+        return;
+      }
+      caixa.innerHTML = el("ul", {"class": "senha-regras"}, c.regras.map(function (r) {
+        return el("li", {"class": r.ok ? "ok" : "falta"}, (r.ok ? "✓ " : "✗ ") + h(r.texto));
+      }).join("")) + el("p", {"class": "senha-forca forca-" + c.forca}, t("Força: {1}", {1: el("strong", {}, h(c.forca_texto))})
+        + el("span", {"class": "barra-forca"}, el("span", {"style": "width: " + (c.forca * 25) + "%"}, "")));
+    }, function () {});
+  }, 250);
+});
+
 // O pedido de acesso pelo código (a Criar conta e a Minha conta): o código que o dono passou, de uma coleção ou do dono (todas
 // as coleções dele). Nenhuma lista de contas nem de coleções: quem pede não vê quem tem conta. O acessoPorCodigo, no envio do
 // formulário, passa o código para o colecao_id ou o dono_id. Junto, o passo a passo: por que é pelo código, como pedir o código

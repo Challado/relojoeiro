@@ -1818,3 +1818,13 @@ ol.passos form { display: inline; }
 .quadro-tabela tfoot td { font-weight: 700; border-top: 2px solid var(--tinta); border-bottom: 0; background: #eef1f4; }
 .quadro-numero { margin: .5rem 0 0; font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .quadro-relogio { margin: .1rem 0 0; }
+
+/* a senha nova: o que a API diz dela enquanto a pessoa digita (cada regra com ✓ ou ✗) e a barra da força */
+.senha-conferencia { font-size: .85rem; min-width: 0; flex-basis: 100%; }
+.senha-conferencia ul.senha-regras { list-style: none; margin: .3rem 0; padding: 0; display: flex; flex-wrap: wrap; gap: .2rem 1rem; }
+.senha-conferencia li.ok { color: #1e6b2e; }
+.senha-conferencia li.falta { color: #a8661a; }
+.senha-conferencia .senha-forca { margin: .2rem 0; display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.senha-conferencia .barra-forca { display: inline-block; width: 8rem; max-width: 100%; height: .45rem; border-radius: 999px; background: var(--aco); overflow: hidden; }
+.senha-conferencia .barra-forca > span { display: block; height: 100%; background: #a8661a; }
+.senha-conferencia .forca-3 .barra-forca > span, .senha-conferencia .forca-4 .barra-forca > span { background: #1e6b2e; }

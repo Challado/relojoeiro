@@ -273,6 +273,14 @@ function recarregarConfig(aplicadas, manterPosicao) {
             + t("Passando disso, embaixo aparecem as páginas: &lt; (anterior), os números e &gt; (próxima)."))
           + el("p", {"class": "nota"}, t("<strong>Fuso horário:</strong> o da coleção vale para quem não escolheu o seu em Minha conta, e para o cron, as mensagens e as agendas dela; vazio, o do sistema (o config.php). ")
             + t("Cada pessoa vê e digita as horas no fuso dela; no banco fica tudo no fuso do sistema. <strong>Relógio da Hora certa:</strong> o mostrador da página Hora certa: analógico, digital, anadigi (o visor digital dentro do mostrador) ou os dois, um ao lado do outro.")));
+        // a força da senha (do sistema inteiro: só o master muda; os outros veem a regra)
+        var sp = d.senha_politica;
+        var senhas = cartao(t("Senhas"), el("div", {"class": "campos"},
+          [["tamanho", t("Tamanho mínimo (caracteres)"), "4", "128"], ["maiusculas", t("Letras maiúsculas, no mínimo"), "0", "32"], ["minusculas", t("Letras minúsculas, no mínimo"), "0", "32"],
+            ["numeros", t("Números, no mínimo"), "0", "32"], ["simbolos", t("Símbolos, no mínimo (como ! @ # -)"), "0", "32"]].map(function (x) {
+            return parCampo(x[1], d.sistema.pode_mudar ? numero("senha_" + x[0], String(sp.regras[x[0]]), x[2], x[3]) : el("span", {}, String(sp.regras[x[0]])));
+          }).join("")),
+          el("p", {"class": "nota"}, h(sp.texto) + " " + t("Vale para toda senha nova: a conta criada, a troca em Minha conta, a senha nova pelo link do Esqueci a senha e a do master em Usuários; as que já existem continuam valendo. É do sistema inteiro: só o master muda.")));
         var quadroCron = cartao(t("Cron"), cron);
         // de onde vêm os números dos sorteios (a API diz o último lote e se os dois serviços estão fora)
         var al = d.aleatorio;
@@ -286,7 +294,7 @@ function recarregarConfig(aplicadas, manterPosicao) {
           el("p", {}, t("{1} lembretes · {2} destinos · {3} agendas", {1: d.eventos.length, 2: d.destinos.length, 3: d.agendas.length}))),
           el("p", {"class": "nota"}, t("Os avisos dos relógios, os lembretes (os eventos personalizados) e para onde eles vão ficam juntos na página {1}.", {1: el("a", {"href": "avisos.php"}, t("Avisos"))})));
         res += el("form", {"data-recurso": "config", "id": "form-config"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
-          + el("div", {"class": "config-grade"}, rotina + limites + tela + quadroCron + sorteios + alertas)
+          + el("div", {"class": "config-grade"}, rotina + limites + tela + senhas + quadroCron + sorteios + alertas)
           // salvar: uma barra presa no pé da tela enquanto a página rola, com o botão sempre no mesmo lugar
           + el("div", {"class": "barra-salvar"}, el("span", {"class": "nota"}, t("As mudanças desta página valem depois de salvar.")) + el("button", {}, t("Salvar configuração"))));
         // ---------- Cópia de segurança (desligada no config.php, BACKUP_ATIVO = false: o quadro nem aparece) ----------

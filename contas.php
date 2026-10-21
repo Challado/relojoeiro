@@ -129,6 +129,112 @@ function login_erro($login)
     return "";
 }
 
+// A força da senha (a Configuração, do sistema: só o master muda): o tamanho mínimo e quantas letras maiúsculas, minúsculas,
+// números e símbolos ela precisa ter, no mínimo (0: não exige). Vale para toda senha nova (criar a conta, trocar em Minha
+// conta, pelo link do Esqueci a senha, pelo master em Usuários e pelo criar_usuario.php); as que já existem continuam valendo
+const SENHA_REGRAS = ["tamanho" => 8, "maiusculas" => 1, "minusculas" => 1, "numeros" => 1, "simbolos" => 1];
+
+// A política de agora: [regra => mínimo], a do sistema (sis senha_<regra>), senão o padrão
+function senha_politica()
+{
+    $p = [];
+    foreach (SENHA_REGRAS as $k => $padrao) {
+        $v = sis("senha_" . $k);
+        $p[$k] = $v !== null && $v !== "" && is_numeric($v) ? (int)$v : $padrao;
+    }
+    return $p;
+}
+
+// Quantos de cada coisa a senha tem: caracteres, maiúsculas, minúsculas, números e símbolos (o que não é letra, número nem
+// espaço: ! @ # - _ . e os outros)
+function senha_contagem($s)
+{
+    return ["tamanho" => mb_strlen($s, "UTF-8"), "maiusculas" => (int)preg_match_all("/\\p{Lu}/u", $s), "minusculas" => (int)preg_match_all("/\\p{Ll}/u", $s),
+        "numeros" => (int)preg_match_all("/\\p{Nd}/u", $s), "simbolos" => (int)preg_match_all("/[^\\p{L}\\p{Nd}\\s]/u", $s)];
+}
+
+// Uma regra por extenso, com o mínimo: "8 caracteres ou mais", "1 letra maiúscula", "2 números"
+function senha_regra_texto($regra, $n)
+{
+    $um = $n === 1;
+    switch ($regra) {
+        case "tamanho":
+            return t("{1} caracteres ou mais", [1 => $n]);
+        case "maiusculas":
+            return $um ? t("1 letra maiúscula") : t("{1} letras maiúsculas", [1 => $n]);
+        case "minusculas":
+            return $um ? t("1 letra minúscula") : t("{1} letras minúsculas", [1 => $n]);
+        case "numeros":
+            return $um ? t("1 número") : t("{1} números", [1 => $n]);
+        default:
+            return $um ? t("1 símbolo (como ! @ # -)") : t("{1} símbolos (como ! @ # -)", [1 => $n]);
+    }
+}
+
+// Uma lista por extenso: "a", "a e b", "a, b e c"
+function lista_e($itens)
+{
+    $itens = array_values($itens);
+    $n = count($itens);
+    return $n <= 1 ? (string)($itens[0] ?? "") : t("{1} e {2}", [1 => implode(", ", array_slice($itens, 0, $n - 1)), 2 => $itens[$n - 1]]);
+}
+
+// A política para a API e as telas: as regras (o mínimo de cada uma) e o texto ("8 caracteres ou mais, 1 letra maiúscula...")
+function senha_politica_api()
+{
+    $p = senha_politica();
+    $textos = [];
+    foreach ($p as $k => $n) {
+        if ($n > 0) {
+            $textos[] = senha_regra_texto($k, $n);
+        }
+    }
+    return ["regras" => $p, "texto" => t("A senha precisa ter: {1}.", [1 => lista_e($textos)])];
+}
+
+// A conferência de uma senha contra a política (sem gravar nada): cada regra (o mínimo, quantos ela tem, se passou), a
+// confirmação (quando vem: as duas iguais) e a força (0 a 4, pelo tamanho e por quantos tipos de caractere ela mistura)
+function senha_conferir($s, $confirmacao = null)
+{
+    $p = senha_politica();
+    $c = senha_contagem($s);
+    $regras = [];
+    foreach ($p as $k => $n) {
+        if ($n > 0) {
+            $regras[] = ["regra" => $k, "texto" => senha_regra_texto($k, $n), "exigido" => $n, "tem" => $c[$k], "ok" => $c[$k] >= $n];
+        }
+    }
+    if ($confirmacao !== null) {
+        $regras[] = ["regra" => "confirmacao", "texto" => t("a confirmação igual à senha"), "exigido" => null, "tem" => null, "ok" => $s !== "" && $s === $confirmacao];
+    }
+    $tipos = ($c["maiusculas"] > 0 ? 1 : 0) + ($c["minusculas"] > 0 ? 1 : 0) + ($c["numeros"] > 0 ? 1 : 0) + ($c["simbolos"] > 0 ? 1 : 0);
+    $forca = min(4, ($c["tamanho"] >= 8 ? 1 : 0) + ($c["tamanho"] >= 12 ? 1 : 0) + ($c["tamanho"] >= 16 ? 1 : 0) + ($tipos >= 3 ? 1 : 0) + ($tipos === 4 ? 1 : 0));
+    $forca = $c["tamanho"] < 6 ? 0 : $forca;
+    return ["ok" => count(array_filter($regras, function ($r) { return !$r["ok"]; })) === 0, "regras" => $regras, "forca" => $forca,
+        "forca_texto" => [t("muito fraca"), t("fraca"), t("razoável"), t("boa"), t("forte")][$forca]];
+}
+
+// Os erros de uma senha nova ($d: o pedido; com senha_confirmacao, as duas têm de ser iguais): [] quando está boa
+function senha_erros($senha, $d)
+{
+    $conf = array_key_exists("senha_confirmacao", $d) ? (string)$d["senha_confirmacao"] : null;
+    $r = senha_conferir($senha, $conf);
+    $falta = [];
+    $erros = [];
+    foreach ($r["regras"] as $x) {
+        if (!$x["ok"] && $x["regra"] !== "confirmacao") {
+            $falta[] = $x["texto"];
+        }
+    }
+    if (count($falta) > 0) {
+        $erros[] = t("A senha não tem a força pedida: falta {1}.", [1 => lista_e($falta)]);
+    }
+    if ($conf !== null && $conf !== $senha) {
+        $erros[] = t("A confirmação não é igual à senha: digite a mesma nos dois campos.");
+    }
+    return $erros;
+}
+
 // Um usuário como a API mostra (sem o hash da senha)
 function usuario_publico($u)
 {
@@ -463,7 +569,7 @@ function conta_consulta()
             "push" => ["configurado" => vapid_configurado(), "chave_publica" => vapid_configurado() ? cfg_php("VAPID_PUBLICA", "") : null,
                 "aparelhos" => array_map(function ($p) { return ["id" => (int)$p["id"], "aparelho" => $p["aparelho"], "criada" => $p["criada"], "endpoint_hash" => $p["endpoint_hash"]]; },
                     linhas("SELECT id, aparelho, criada, endpoint_hash FROM push_inscricao WHERE usuario_id = ? ORDER BY criada", [$uid]))],
-            "email_configurado" => email_metodo() !== null,
+            "email_configurado" => email_metodo() !== null, "senha_politica" => senha_politica_api(),
             // a configuração do e-mail lida do config.php, para o master testar (as senhas só como definida ou não)
             "email" => usuario_master() ? email_config_resumo() : null,
             "demo_dias" => demo_dias(), "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS)),
@@ -543,7 +649,7 @@ function aprovacoes_consulta()
 function cadastro_consulta($convite)
 {
     return sem_escopo(function () use ($convite) {
-        $res = ["aberto" => cadastro_aberto(), "demo_dias" => demo_dias(), "email_configurado" => email_metodo() !== null,
+        $res = ["aberto" => cadastro_aberto(), "demo_dias" => demo_dias(), "email_configurado" => email_metodo() !== null, "senha_politica" => senha_politica_api(),
             "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS)),
             "convite" => null];
         if ($convite !== null && $convite !== "") {
@@ -602,9 +708,7 @@ function op_cadastro($acao, $d)
         if (($e = login_erro($login)) !== "") {
             $erros[] = $e;
         }
-        if (strlen($senha) < 6) {
-            $erros[] = t("Informe uma senha de pelo menos 6 caracteres (ou o senha_hash de outro sistema).");
-        }
+        $erros = array_merge($erros, senha_erros($senha, $d));
         if ($email === "" || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             $erros[] = t("Informe um e-mail válido (para recuperar a senha e receber os avisos da conta).");
         }
@@ -665,14 +769,18 @@ function op_cadastro($acao, $d)
             }
             $msg = t("Se a conta existe e tem e-mail, o link para trocar a senha foi enviado (vale por 2 horas).");
         }
+    } elseif ($acao === "conferir_senha") {
+        // a conferência da senha enquanto a pessoa digita (sem gravar nada): as regras, a confirmação e a força
+        $extra = ["conferencia" => senha_conferir((string)($d["senha"] ?? ""), array_key_exists("senha_confirmacao", $d) ? (string)$d["senha_confirmacao"] : null)];
+        $msg = $extra["conferencia"]["ok"] ? t("A senha tem a força pedida.") : t("A senha ainda não tem a força pedida.");
     } elseif ($acao === "nova_senha") {
         $tk_ = trim((string)($d["token"] ?? ""));
         $senha = (string)($d["senha"] ?? "");
         $t_ = sem_escopo(function () use ($tk_) { return linha("SELECT * FROM usuario_token WHERE token_hash = ? AND expira > ?", [token_hash($tk_), date("Y-m-d H:i:s")]); });
         if ($t_ === null) {
             $erros[] = t("Link de senha desconhecido ou vencido: peça outro.");
-        } elseif (strlen($senha) < 6) {
-            $erros[] = t("Informe uma senha de pelo menos 6 caracteres (ou o senha_hash de outro sistema).");
+        } elseif (count($e_s = senha_erros($senha, $d)) > 0) {
+            $erros = array_merge($erros, $e_s);
         } else {
             sem_escopo(function () use ($t_, $senha) {
                 sql("UPDATE usuario SET senha_hash = ? WHERE id = ?", [password_hash($senha, PASSWORD_DEFAULT), (int)$t_["usuario_id"]]);
@@ -755,8 +863,8 @@ function op_conta($acao, $d)
         if ((string)($d["senha"] ?? "") !== "") {
             if (!password_verify((string)($d["senha_atual"] ?? ""), (string)$u["senha_hash"]) && !isset($GLOBALS["USUARIO_REAL"])) {
                 $erros[] = t("A senha atual não confere.");
-            } elseif (strlen((string)$d["senha"]) < 6) {
-                $erros[] = t("Informe uma senha de pelo menos 6 caracteres (ou o senha_hash de outro sistema).");
+            } elseif (count($e_s = senha_erros((string)$d["senha"], $d)) > 0) {
+                $erros = array_merge($erros, $e_s);
             } else {
                 $campos["senha_hash"] = password_hash((string)$d["senha"], PASSWORD_DEFAULT);
             }
@@ -1158,8 +1266,8 @@ function op_usuarios($acao, $d, $atual)
             $erros[] = t("Mande a senha ou o senha_hash, não os dois.");
         } elseif ($hash_pronto !== "" && (strlen($hash_pronto) > 255 || senha_hash_info($hash_pronto)[0] === null)) {
             $erros[] = t("senha_hash: um hash que o password_verify do PHP entenda (bcrypt, que começa com \$2y\$, \$2b\$ ou \$2a\$, ou argon2, com \$argon2).");
-        } elseif ($hash_pronto === "" && strlen($nova) < 6) {
-            $erros[] = t("Informe uma senha de pelo menos 6 caracteres (ou o senha_hash de outro sistema).");
+        } elseif ($hash_pronto === "" && count($e_s = senha_erros($nova, $d)) > 0) {
+            $erros = array_merge($erros, $e_s);
         } else {
             // o $2b$ (o bcrypt de Python, Node, Java...) é o mesmo cálculo que o $2y$ do PHP: guarda como $2y$
             $hash = $hash_pronto !== "" ? (strncmp($hash_pronto, '$2b$', 4) === 0 ? '$2y$' . substr($hash_pronto, 4) : $hash_pronto) : password_hash($nova, PASSWORD_DEFAULT);

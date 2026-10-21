@@ -3089,9 +3089,35 @@ function op_config($acao, $d)
         if (array_key_exists("hora_relogio", $d) && !in_array((string)$d["hora_relogio"], ["", "analogico", "digital", "anadigi", "ambos"], true)) {
             $erros[] = t("Relógio da Hora certa: analogico, digital, anadigi (os dois no mesmo relógio) ou ambos (um ao lado do outro).");
         }
+        // a força da senha: o tamanho de 4 a 128, cada mínimo de 0 a 32, e os mínimos juntos cabem no tamanho
+        $sp = senha_politica();
+        $mexe_senha = false;
+        foreach (array_keys(SENHA_REGRAS) as $k) {
+            if (array_key_exists("senha_" . $k, $d)) {
+                $mexe_senha = true;
+                $v = trim((string)$d["senha_" . $k]);
+                [$min, $max] = $k === "tamanho" ? [4, 128] : [0, 32];
+                if (preg_match("/^\\d+\$/", $v) !== 1 || (int)$v < $min || (int)$v > $max) {
+                    $erros[] = t("{1}: um número inteiro de {2} a {3}.", [1 => "senha_" . $k, 2 => $min, 3 => $max]);
+                } else {
+                    $sp[$k] = (int)$v;
+                }
+            }
+        }
+        if ($mexe_senha && !usuario_master()) {
+            $erros[] = t("A força da senha é do sistema inteiro: só o master muda.");
+        } elseif ($mexe_senha && $sp["maiusculas"] + $sp["minusculas"] + $sp["numeros"] + $sp["simbolos"] > $sp["tamanho"]) {
+            $erros[] = t("Os mínimos de maiúsculas, minúsculas, números e símbolos, somados, passam do tamanho da senha.");
+        }
         if (count($erros) === 0) {
             if (array_key_exists("url_sistema", $d) && usuario_master()) {
                 sis_set("url_sistema", trim((string)$d["url_sistema"]));
+            }
+            // a força da senha é do sistema inteiro: só o master muda
+            foreach (array_keys(SENHA_REGRAS) as $k) {
+                if (array_key_exists("senha_" . $k, $d) && usuario_master()) {
+                    sis_set("senha_" . $k, (string)(int)$d["senha_" . $k]);
+                }
             }
             foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina", "hora_relogio", "semana_inicio", "atualizar_segundos", "relojinho_modo", "calibre_campos"] as $k) {
                 if (array_key_exists($k, $d)) {

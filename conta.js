@@ -107,7 +107,7 @@ function quadroDados(d) {
       + parCampo(t("Fuso horário"), el("select", {"name": "fuso"}, opcoesFuso(d.fusos, u.fuso, d.fuso.colecao ? t("O da coleção ({1})", {1: d.fuso.colecao.replace(/_/g, " ")}) : t("O do sistema ({1})", {1: d.fuso.sistema.replace(/_/g, " ")}),
         t("O do navegador (neste aparelho: {1})", {1: (fusoNavegador() || "?").replace(/_/g, " ")}))), "largo")
       + parCampo(t("Senha atual (só para trocar a senha)"), el("input", {"type": "password", "name": "senha_atual", "autocomplete": "current-password"}))
-      + parCampo(t("Senha nova (pelo menos 6 caracteres)"), el("input", {"type": "password", "name": "senha", "minlength": "6", "autocomplete": "new-password"}))
+      + camposSenha(t("Senha nova"), d.senha_politica, false)
       + el("p", {"class": "nota"}, t("O e-mail serve para recuperar a senha, receber os convites e os avisos da conta. Trocou a senha: o navegador pede o login de novo.") + " "
         + t("O fuso horário vale para tudo o que você vê e digita (a Hora certa, os lançamentos, os avisos); quem divide a coleção com você vê cada hora no fuso dele. O dia do rodízio (o plano, o relógio do dia, as rodadas) é sempre o da coleção. Agora: {1}.", {1: el("strong", {}, h(d.fuso.nome.replace(/_/g, " ")))}))
       + el("div", {"class": "botoes"}, el("button", {}, t("Salvar")))));

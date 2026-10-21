@@ -51,7 +51,7 @@ function formConta(d) {
       "onsubmit": "acessoPorCodigo(this)"},
     el("input", {"type": "hidden", "name": "acao", "value": "criar_conta"})
     + parCampo(t("Login"), el("input", {"name": "login", "required": true, "maxlength": "60", "autocomplete": "username", "pattern": "[^:]+", "title": t("sem dois-pontos")}))
-    + parCampo(t("Senha (pelo menos 6 caracteres)"), el("input", {"type": "password", "name": "senha", "required": true, "minlength": "6", "autocomplete": "new-password"}))
+    + camposSenha(t("Senha"), d.senha_politica, true)
     + parCampo(t("E-mail"), el("input", {"type": "email", "name": "email", "required": true, "maxlength": "200", "value": d.convite ? d.convite.email : "", "autocomplete": "email"}), "largo")
     + parCampo(t("Idioma"), el("select", {"name": "idioma"}, linguas))
     + opcoes
@@ -65,7 +65,7 @@ function montarCadastro() {
     if (tokenSenha !== "") {
       res = el("h1", {}, t("Senha nova")) + recado() + el("section", {"class": "cartao-config"}, el("form", {"data-recurso": "cadastro", "class": "campos"},
         el("input", {"type": "hidden", "name": "acao", "value": "nova_senha"}) + el("input", {"type": "hidden", "name": "token", "value": tokenSenha})
-        + parCampo(t("Senha nova (pelo menos 6 caracteres)"), el("input", {"type": "password", "name": "senha", "required": true, "minlength": "6", "autocomplete": "new-password"}))
+        + camposSenha(t("Senha nova"), d.senha_politica, true)
         + el("div", {"class": "botoes"}, el("button", {}, t("Trocar a senha")))));
     } else if (convite !== "") {
       res = el("h1", {}, t("Convite")) + recado();

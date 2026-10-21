@@ -103,7 +103,7 @@ for b in "${BANCOS[@]}"; do
   erros=()
   # a versão anterior: a instalação, o usuário e os dados
   export RELOGIOS_CONFIG="$VELHO/testes/config.teste.php"
-  if ! { preparar "$b" && (cd "$VELHO" && php instalar.php && php criar_usuario.php teste senha123); } > "$PASTA/$b.log" 2>&1; then
+  if ! { preparar "$b" && (cd "$VELHO" && php instalar.php && php criar_usuario.php teste Senha@123); } > "$PASTA/$b.log" 2>&1; then
     echo "$b: a instalação da versão anterior falhou:"; tail -3 "$PASTA/$b.log" | sed 's/^/    /'; FALHOU=1; continue
   fi
   subir "$VELHO" $pv "$LOG" || { echo "$b: o servidor da versão anterior não subiu"; FALHOU=1; continue; }

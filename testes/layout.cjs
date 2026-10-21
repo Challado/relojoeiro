@@ -5,7 +5,7 @@
 // Antes, deixa os dados do cenário "feios" de propósito (nomes longos, observação comprida, fotos: veja estressar); ESTRESSE=0
 // confere com os dados como estão.
 // Roda sobre o banco do cenário (testes/cenario.php: os relógios 1, 3, 4, 5, 7 e 8) e precisa do Playwright com o Chromium:
-//   BASE=http://127.0.0.1:8101/ RELOGIOS_USUARIO=teste RELOGIOS_SENHA=senha123 node testes/layout.cjs [página] [tela]
+//   BASE=http://127.0.0.1:8101/ RELOGIOS_USUARIO=teste RELOGIOS_SENHA=Senha@123 node testes/layout.cjs [página] [tela]
 // (página e tela: um filtro, expressão regular, no nome; ex.: node testes/layout.cjs "ficha" "cel-"). Grava em testes/layout/
 // uma captura de cada tela, o relatorio.tsv (uma linha por problema) e o agrupado.txt (o mesmo problema com as telas em que
 // aparece). Termina com 0 se não achou nada, 1 se achou. LINGUA=en (zh-CN, hi, es, fr) confere as telas nesse idioma (o
@@ -14,7 +14,7 @@ const { chromium, devices } = require(process.env.PLAYWRIGHT || require('child_p
 const fs = require('fs');
 const BASE = process.env.BASE || 'http://127.0.0.1:8101/';
 const USUARIO = process.env.RELOGIOS_USUARIO || 'teste';
-const SENHA = process.env.RELOGIOS_SENHA || 'senha123';
+const SENHA = process.env.RELOGIOS_SENHA || 'Senha@123';
 const SAIDA = process.env.SAIDA || __dirname + '/layout';
 const LINGUA = process.env.LINGUA || '';
 fs.mkdirSync(SAIDA, { recursive: true });

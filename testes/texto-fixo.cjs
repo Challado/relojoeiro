@@ -19,7 +19,7 @@ const PAGINAS = require('./paginas.cjs');
 const RAIZ = __dirname + '/..';
 const BASE = process.env.BASE || 'http://127.0.0.1:8101/';
 const USUARIO = process.env.RELOGIOS_USUARIO || 'teste';
-const SENHA = process.env.RELOGIOS_SENHA || 'senha123';
+const SENHA = process.env.RELOGIOS_SENHA || 'Senha@123';
 const LINGUA = process.env.LINGUA || 'zh-CN';
 const DADOS = process.env.DADOS || '';
 

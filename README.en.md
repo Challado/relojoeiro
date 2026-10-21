@@ -745,6 +745,15 @@ theirs. The master **makes the account official** (or extends it) in **Users**. 
 `config.php`, sign-up closes: only those the master creates or who have an invitation get in. The page also has **Forgot my
 password**: the link to choose a new password goes by e-mail and lasts 2 hours.
 
+**The password** has the strength the master chooses in the **Settings**, in the **Passwords** card: the minimum length and
+how many uppercase letters, lowercase letters, digits and symbols it needs, at least (the default: 8 characters, with 1 of
+each). It applies to every new password: the account created, the change in **My account**, the new password by the
+**Forgot my password** link, the master's in **Users** and the one from `criar_usuario.php`; existing ones keep working.
+Every place that sets a password also asks for **Confirm the password** and, while you type, shows what the API says about
+it: each rule with ✓ or ✗, the confirmation and the **strength** (from very weak to strong, by the length and by how many
+kinds of character it mixes). Through the API: `recurso=cadastro`, `acao=conferir_senha` (without login and saving nothing),
+and `senha_confirmacao` in the password writes.
+
 **The master's panel** (**Users**) shows each account with the e-mail, the role, the last access, when it expires, the
 collections (with how many watches) and what else it sees, and the actions: **View as** (the whole system as that person sees
 it, with a bar at the top and the button to go back), **Make official**, **Extend**, **Back to demo**, **Block**, **Edit** (the

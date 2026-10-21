@@ -38,8 +38,9 @@ function acoesDoUsuario(u, d) {
       + parCampo(t("Papel"), el("select", {"name": "papel"}, el("option", {"value": "comum", "selected": u.papel === "comum"}, t("comum")) + el("option", {"value": "master", "selected": u.papel === "master"}, t("master"))))
       + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, t("Salvar"))));
   res += el("form", {"data-recurso": "usuarios", "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "login", "value": u.login})
-    + el("input", {"type": "password", "name": "senha", "minlength": "6", "required": true, "autocomplete": "new-password", "placeholder": t("senha nova"), "aria-label": t("Senha nova")})
-    + el("button", {"class": "leve"}, t("Trocar a senha")));
+    + el("input", {"type": "password", "name": "senha", "required": true, "autocomplete": "new-password", "placeholder": t("senha nova"), "aria-label": t("Senha nova"), "data-senha-nova": true})
+    + el("input", {"type": "password", "name": "senha_confirmacao", "required": true, "autocomplete": "new-password", "placeholder": t("confirmar a senha"), "aria-label": t("Confirmar a senha"), "data-senha-nova": true})
+    + el("button", {"class": "leve"}, t("Trocar a senha")) + caixaSenha(d.senha_politica));
   if (u.colecoes.length > 0 && outras.length > 0) {
     res += el("form", {"data-recurso": "usuarios", "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": "transferir"}) + el("input", {"type": "hidden", "name": "usuario_id", "value": u.id})
       + el("select", {"name": "colecao_id", "aria-label": t("Coleção")}, u.colecoes.map(function (c) { return el("option", {"value": c.id}, h(c.nome)); }).join(""))
@@ -93,7 +94,7 @@ function recarregarUsuarios() {
     res += el("section", {"class": "cartao-config"}, el("h2", {}, t("Criar conta")) + el("form", {"data-recurso": "usuarios", "class": "campos"},
       el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
       + parCampo(t("Login"), el("input", {"name": "login", "required": true, "maxlength": "60", "autocomplete": "off"}))
-      + parCampo(t("Senha (pelo menos 6 caracteres)"), el("input", {"type": "password", "name": "senha", "required": true, "minlength": "6", "autocomplete": "new-password"}))
+      + camposSenha(t("Senha"), d.senha_politica, true)
       + parCampo(t("E-mail"), el("input", {"type": "email", "name": "email", "maxlength": "200"}))
       + parCampo(t("Coleção"), el("select", {"name": "colecao_nova"}, el("option", {"value": "modelo"}, t("uma coleção com o conjunto inicial")) + el("option", {"value": "vazia"}, t("uma coleção vazia"))
         + el("option", {"value": "nenhuma"}, t("nenhuma (vai receber acesso a outra)"))))

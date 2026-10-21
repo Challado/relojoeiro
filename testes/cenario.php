@@ -85,8 +85,8 @@ function guardar_dados($params)
     });
 }
 
-// uma escrita: guarda a resposta (o ok, a mensagem, os erros) para comparar, e devolve o id
-function escrever($params, $espera_ok = true)
+// uma escrita: guarda a resposta (o ok, a mensagem, os erros) para comparar, e devolve o id (com $chave, essa parte da resposta)
+function escrever($params, $espera_ok = true, $chave = null)
 {
     global $foto, $falhas, $passo, $ultima_troca;
     $passo++;
@@ -108,7 +108,7 @@ function escrever($params, $espera_ok = true)
     if ($espera_ok && !($j["ok"] ?? false)) {
         $falhas[] = "passo " . $passo . " (" . $params["recurso"] . "." . $params["acao"] . "): " . json_encode($j ?? $r["cru"], JSON_UNESCAPED_UNICODE);
     }
-    return (int)($j["id"] ?? 0);
+    return $chave !== null ? ($j[$chave] ?? null) : (int)($j["id"] ?? 0);
 }
 
 function ler($nome, $params)
@@ -339,8 +339,22 @@ escrever(["recurso" => "criterios", "acao" => "param_novo", "escopo" => "g:" . G
 escrever(["recurso" => "config", "acao" => "salvar", "max_sem_uso" => 15, "previsao_limite" => 25, "uso_inicio" => "07:30", "uso_fim" => "22:00"]);
 escrever(["recurso" => "config", "acao" => "evento_salvar", "id" => 0, "nome" => "Limpar a coleção", "repeticao" => "semanal", "hora" => "10:00", "dias_semana" => "6"]);
 escrever(["recurso" => "config", "acao" => "evento_salvar", "id" => 0, "nome" => "Ajustar a hora do Seiko", "repeticao" => "intervalo", "intervalo_dias" => 10, "hora" => "08:15", "relogio_id" => $rel["auto"]]);
-escrever(["recurso" => "usuarios", "acao" => "salvar", "login" => "maria", "senha" => "segredo123"]);
-escrever(["recurso" => "usuarios", "acao" => "salvar", "login" => "MARIA", "senha" => "outra12345"], false);
+escrever(["recurso" => "usuarios", "acao" => "salvar", "login" => "maria", "senha" => "Segredo@123", "senha_confirmacao" => "Segredo@123"]);
+escrever(["recurso" => "usuarios", "acao" => "salvar", "login" => "MARIA", "senha" => "Outra@12345"], false);
+// a força da senha: a fraca e a confirmação diferente são recusadas; a conferência (sem gravar) diz cada regra e a força;
+// a política mais exigente na Configuração (só o master) recusa a senha que passava, e volta ao padrão
+escrever(["recurso" => "usuarios", "acao" => "salvar", "login" => "fraco", "senha" => "abc"], false);
+escrever(["recurso" => "usuarios", "acao" => "salvar", "login" => "fraco", "senha" => "Forte@2026x", "senha_confirmacao" => "Forte@2026y"], false);
+$conf_s = escrever(["recurso" => "cadastro", "acao" => "conferir_senha", "senha" => "abc", "senha_confirmacao" => "abd"], true, "conferencia");
+if (!is_array($conf_s) || $conf_s["ok"] !== false || count(array_filter($conf_s["regras"], function ($r) { return !$r["ok"]; })) !== 5) {
+    $falhas[] = "senha: a conferência de \"abc\" deu " . json_encode($conf_s, JSON_UNESCAPED_UNICODE);
+}
+escrever(["recurso" => "config", "acao" => "salvar", "senha_tamanho" => 3], false);
+escrever(["recurso" => "config", "acao" => "salvar", "senha_tamanho" => 8, "senha_numeros" => 6, "senha_simbolos" => 6], false);
+escrever(["recurso" => "config", "acao" => "salvar", "senha_tamanho" => 12, "senha_numeros" => 2]);
+escrever(["recurso" => "usuarios", "acao" => "salvar", "login" => "fraco", "senha" => "Segredo@123"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "senha_tamanho" => 8, "senha_numeros" => 1]);
+ler("politica da senha no cadastro", ["recurso" => "cadastro"]);
 
 // ---------- os destinos e as agendas (desligados: nada sai do servidor de teste; o link ICS é sorteado, e fica de fora) ----------
 escrever(["recurso" => "destinos", "acao" => "salvar", "id" => 0, "tipo" => "webhook", "nome" => "Telegram de teste", "ativo" => 0, "metodo" => "POST", "url" => "https://exemplo.invalid/enviar",
@@ -462,7 +476,7 @@ ler("ordem por nome", ["incluir" => "relogios", "ordem" => ["relogios" => "nome"
 
 // ---------- a segunda fase: o que muda a estrutura (exclusões em cascata), os outros modos e os critérios por inteiro ----------
 // o login pelo site (HTTP Basic): a senha conferida no banco, e o login sem diferença de maiúsculas
-foreach ([["teste", "senha123"], ["TESTE", "senha123"], ["teste", "errada"], ["maria", "outra12345"]] as [$u, $s]) {
+foreach ([["teste", "Senha@123"], ["TESTE", "Senha@123"], ["teste", "errada"], ["maria", "Outra@12345"]] as [$u, $s]) {
     $ch = curl_init($API . "?recurso=usuarios");
     curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_USERPWD => $u . ":" . $s, CURLOPT_TIMEOUT => 60]);
     $corpo = (string)curl_exec($ch);

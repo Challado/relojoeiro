@@ -1,4 +1,4 @@
-<!-- origem: fa52310f341965361c918dfc8814a365bf502726 -->
+<!-- origem: 4a184217297ddf1f62886aefb77f0561bc08016c -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -691,6 +691,15 @@ un correo avisa 7 días y 1 día antes y, vencida, el cron borra la cuenta con t
 cuenta** (o la prorroga) en **Usuarios**. Con `CADASTRO_ABERTO = false` en el `config.php`, el registro se cierra: solo entra
 quien el master crea o quien tiene una invitación. La página tiene también **Olvidé la contraseña**: el enlace para elegir una
 contraseña nueva va por correo y vale 2 horas.
+
+**La contraseña** tiene la fuerza que el master elige en la **Configuración**, en la tarjeta **Contraseñas**: el tamaño
+mínimo y cuántas letras mayúsculas, minúsculas, números y símbolos necesita tener, como mínimo (el predeterminado: 8
+caracteres, con 1 de cada). Vale para toda contraseña nueva: la cuenta creada, el cambio en **Mi cuenta**, la contraseña
+nueva por el enlace del **Olvidé la contraseña**, la del master en **Usuarios** y la del `criar_usuario.php`; las que ya
+existen siguen valiendo. Todo lugar que define una contraseña pide también el **Confirmar la contraseña** y, mientras
+usted escribe, muestra lo que dice la API: cada regla con ✓ o ✗, la confirmación y la **fuerza** (de muy débil a fuerte,
+por el tamaño y por cuántos tipos de carácter mezcla). Por la API: `recurso=cadastro`, `acao=conferir_senha` (sin inicio
+de sesión y sin guardar nada), y `senha_confirmacao` en las grabaciones de contraseña.
 
 **El panel del master** (**Usuarios**) muestra cada cuenta con el correo, el papel, el último acceso, cuándo vence, las
 colecciones (con cuántos relojes) y qué más ve, y las acciones: **Ver como** (todo el sistema como lo ve esa persona, con una

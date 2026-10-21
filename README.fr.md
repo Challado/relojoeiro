@@ -768,6 +768,16 @@ compte avec tout ce qui est à lui. Le master **rend le compte officiel** (ou le
 `CADASTRO_ABERTO = false` dans le `config.php`, l'inscription ferme : n'entre que qui le master crée ou qui a une invitation.
 La page a aussi le **Mot de passe oublié** : le lien pour choisir un nouveau mot de passe part par e-mail et vaut 2 heures.
 
+**Le mot de passe** a la force que le master choisit dans la **Configuration**, dans la carte **Mots de passe** : la longueur
+minimale et combien de lettres majuscules, minuscules, chiffres et symboles il doit avoir, au minimum (par défaut : 8
+caractères, avec 1 de chaque). Cela vaut pour tout nouveau mot de passe : le compte créé, le changement dans **Mon compte**,
+le nouveau mot de passe par le lien du **Mot de passe oublié**, celui du master dans **Utilisateurs** et celui du
+`criar_usuario.php` ; ceux qui existent déjà restent valables. Chaque endroit qui définit un mot de passe demande aussi le
+**Confirmer le mot de passe** et, pendant que vous tapez, montre ce que dit l'API : chaque règle avec ✓ ou ✗, la
+confirmation et la **force** (de très faible à forte, par la longueur et par combien de types de caractère il mélange). Par
+l'API : `recurso=cadastro`, `acao=conferir_senha` (sans identifiant et sans rien enregistrer), et `senha_confirmacao` dans
+les enregistrements de mot de passe.
+
 **Le panneau du master** (**Utilisateurs**) montre chaque compte avec l'e-mail, le rôle, le dernier accès, quand il expire,
 les collections (avec combien de montres) et ce qu'il voit d'autre, et les actions : **Voir en tant que** (tout le système tel
 que cette personne le voit, avec une bande en haut et le bouton pour revenir), **Rendre officiel**, **Prolonger**, **Revenir en
