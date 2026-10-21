@@ -847,7 +847,7 @@ function abrirNoPainel(id) {
           + el("form", {"data-recurso": "timegrapher", "class": "reserva-form"}, el("input", {"type": "hidden", "name": "acao", "value": "importar"}) + el("input", {"type": "hidden", "name": "relogio_id", "value": id})
             + el("label", {"class": "largo"}, t("Arquivo {1}", {1: el("input", {"type": "file", "accept": ".csv,.txt,text/csv,text/plain",
               "onchange": "var f = this.files[0], ta = this.form.querySelector('textarea'); if (f) { var rd = new FileReader(); rd.onload = function () { ta.value = rd.result; }; rd.readAsText(f); }"})}))
-            + el("label", {"class": "largo"}, t("O conteúdo {1}", {1: el("textarea", {"name": "csv", "rows": 5, "required": true, "placeholder": fixo("date;position;rate;amplitude;beat error\n2026-10-20 10:00;DU;+4;285;0.3")}, "")}))
+            + el("label", {"class": "largo"}, t("O conteúdo {1}", {1: el("textarea", {"name": "csv", "rows": 5, "required": true, "placeholder": fixo("date;position;rate;amplitude;beat error") + "\n" + fixo("2026-10-20 10:00;DU;+4;285;0.3")}, "")}))
             + el("label", {}, t("Linhas sem data em {1}", {1: momentoTg(null)}))
             + el("label", {"class": "check"}, el("input", {"type": "checkbox", "name": "conferir", "value": "1"}) + " " + t("Só conferir (sem gravar)"))
             + el("div", {"class": "botoes largo"}, el("button", {}, t("Importar")))));

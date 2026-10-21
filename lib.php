@@ -5126,10 +5126,12 @@ function reserva_do_relogio($r, $agora)
 // ---------------------------------------------------------------------------------------------------------------------
 // as posições do aparelho (as mesmas da leitura do desvio, menos o pulso, o misto e o winder)
 const TIMEGRAPHER_POSICOES = ["mostrador_cima", "mostrador_baixo", "coroa_cima", "coroa_baixo", "coroa_esquerda", "coroa_direita"];
-// as grandezas: o nome (traduzido no uso), e a unidade, o mínimo e o máximo (TIMEGRAPHER_LIMITES, que não se traduzem)
+// as grandezas: o nome (traduzido no uso), e a unidade (traduzida no uso: "ms" é 毫秒 em chinês), o mínimo e o máximo
+// (TIMEGRAPHER_LIMITES)
 const TIMEGRAPHER_GRANDEZAS = ["marcha" => "Marcha", "amplitude" => "Amplitude", "erro_batida" => "Erro de batida", "bph" => "Batidas por hora", "angulo" => "Ângulo de levantamento"];
 tk("Marcha"); tk("Amplitude"); tk("Erro de batida"); tk("Batidas por hora"); tk("Ângulo de levantamento");
 const TIMEGRAPHER_LIMITES = ["marcha" => ["s/dia", -999, 999, 1], "amplitude" => ["°", 0, 360, 1], "erro_batida" => ["ms", 0, 99, 2], "bph" => ["bph", 3600, 72000, 0], "angulo" => ["°", 10, 90, 1]];
+tk("s/dia"); tk("ms"); tk("bph");
 
 // Uma grandeza por extenso, com a unidade ("+4,2 s/dia", "285°", "0,3 ms", "28.800 bph"); null sem valor
 function timegrapher_txt($campo, $v)
@@ -5140,7 +5142,7 @@ function timegrapher_txt($campo, $v)
     if ($campo === "marcha") {
         return marcha_txt((float)$v);
     }
-    $u = TIMEGRAPHER_LIMITES[$campo][0];
+    $u = t(TIMEGRAPHER_LIMITES[$campo][0]);
     $n = $campo === "bph" ? numero_txt((float)$v, 0) : decimal_txt((float)$v, TIMEGRAPHER_LIMITES[$campo][3]);
     return $u === "°" ? $n . "°" : $n . " " . $u;
 }
@@ -5232,7 +5234,7 @@ function timegrapher_do_relogio($r, $agora)
         }
     }
     return ["resumo" => $resumo, "sessao" => $sessao, "medicoes" => $ms, "sessoes" => count(array_unique(array_map(function ($x) { return substr((string)$x["quando"], 0, 10); }, $ms))),
-        "grandezas" => array_map(function ($g) { return ["campo" => $g, "nome" => t(TIMEGRAPHER_GRANDEZAS[$g]), "unidade" => TIMEGRAPHER_LIMITES[$g][0],
+        "grandezas" => array_map(function ($g) { return ["campo" => $g, "nome" => t(TIMEGRAPHER_GRANDEZAS[$g]), "unidade" => t(TIMEGRAPHER_LIMITES[$g][0]),
             "minimo" => TIMEGRAPHER_LIMITES[$g][1], "maximo" => TIMEGRAPHER_LIMITES[$g][2]]; }, array_keys(TIMEGRAPHER_GRANDEZAS)),
         "posicoes" => array_map(function ($k) use ($pos) { return ["valor" => $k, "texto" => $pos[$k]]; }, TIMEGRAPHER_POSICOES)];
 }
@@ -5382,7 +5384,7 @@ function timegrapher_conferir($m)
     }
     foreach (TIMEGRAPHER_LIMITES as $g => [$u, $min, $max]) {
         if (($m[$g] ?? null) !== null && ($m[$g] < $min || $m[$g] > $max)) {
-            return t("{1}: de {2} a {3} {4}", [1 => t(TIMEGRAPHER_GRANDEZAS[$g]), 2 => numero_txt($min, 0), 3 => numero_txt($max, 0), 4 => $u]);
+            return t("{1}: de {2} a {3} {4}", [1 => t(TIMEGRAPHER_GRANDEZAS[$g]), 2 => numero_txt($min, 0), 3 => numero_txt($max, 0), 4 => t($u)]);
         }
     }
     if (($m["quando"] ?? null) !== null && $m["quando"] > time() + 60) {
