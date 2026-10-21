@@ -376,7 +376,7 @@ function abrirNoPainel(id) {
       var pr = r.precisao;
       if (pr) {
         secoes.precisao += quadro(t("Precisão"), el("p", {"class": "nota"}, h(pr.resumo)) + tabelaTecnica("marcha")
-          + (pr.pontos.length > 0 ? pares([[t("Desvio estimado agora"), h(pr.desvio_agora_texto)]]) : ""));
+          + (pr.pontos.length > 0 ? pares([[t("Desvio estimado agora"), h(pr.desvio_agora_texto)]]) : ""), linkRelatorio("precisao", {relogio: id}, t("Relatório da precisão"), true));
       }
       var c = r.compra;
       secoes.cadastro += quadro(t("Compra"), c.data === null && c.valor === null && c.loja === null && c.garantia_ate === null
@@ -457,7 +457,8 @@ function abrirNoPainel(id) {
           + (sr.ultimo !== null ? el("small", {}, t("o último: {1} em {2}", {1: h(sr.ultimo.tipo_texto.toLowerCase()), 2: dataBr(sr.ultimo.data)})) : "")],
         [t("Custo somado"), sr.custo !== null ? el("strong", {}, t("R$ ") + reais(sr.custo)) : nada("—")]])
         + r.servicos.map(linhaServico).join("")
-        + el("details", {"class": "servico-novo"}, el("summary", {}, t("Registrar um serviço")) + formServico(null)), "", "largo servicos-ficha");
+        + el("details", {"class": "servico-novo"}, el("summary", {}, t("Registrar um serviço")) + formServico(null)),
+        linkRelatorio("servicos", {relogio: id}, t("Relatório dos serviços"), true), "largo servicos-ficha");
       secoes.uso += quadro(t("Próximas manutenções"),r.manutencoes.length === 0 ? el("p", {"class": "nota"}, t("Nada previsto."))
         : pares(r.manutencoes.map(function (m) { return [dataBr(m.data), h(m.nome)]; }), "datas"));
       // marcar: um quadro só. O menu diz o que aconteceu, e embaixo aparecem só os campos daquilo: pôr ou tirar (cada sessão,
@@ -851,7 +852,7 @@ function abrirNoPainel(id) {
             + el("label", {}, t("Linhas sem data em {1}", {1: momentoTg(null)}))
             + el("label", {"class": "check"}, el("input", {"type": "checkbox", "name": "conferir", "value": "1"}) + " " + t("Só conferir (sem gravar)"))
             + el("div", {"class": "botoes largo"}, el("button", {}, t("Importar")))));
-        secoes.precisao += quadro(t("Timegrapher"), corpoTg, "", "largo reserva-ficha timegrapher-ficha");
+        secoes.precisao += quadro(t("Timegrapher"), corpoTg, linkRelatorio("timegrapher", {relogio: id}, t("Relatório do timegrapher"), true), "largo reserva-ficha timegrapher-ficha");
       }
       // os dados do relógio: o cadastro que vale para ele (o informado, senão o padrão do campo) e o resultado de cada fórmula agora
       var valorCampo = function (c) {
@@ -945,7 +946,8 @@ function abrirNoPainel(id) {
                 + el("td", {}, l.estado === "marca" ? h(l.texto) : el("span", {"class": "estado estado-" + (classe)}, h(l.texto)) + (l.em_andamento ? el("small", {}, t("em andamento")) : "")));
             }).join("")));
       }
-      secoes.historico += quadro(t("Histórico"), hist, r.linha_do_tempo.length > 0 ? el("a", {"class": "botao leve", "href": "historico.php?id=" + id, "target": "_blank", "rel": "noopener"}, t("Abrir o histórico completo")) : "",
+      secoes.historico += quadro(t("Histórico"), hist, r.linha_do_tempo.length > 0 ? el("a", {"class": "botao leve", "href": "historico.php?id=" + id, "target": "_blank", "rel": "noopener"}, t("Abrir o histórico completo"))
+        + " " + linkRelatorio("historico", {relogio: id}, t("Relatório"), true) : "",
         "largo historico");
       // as seções (só as que têm quadros): o título e os quadros dela numa grade; em cima de todas, um botão para cada uma, que
       // rola até ela

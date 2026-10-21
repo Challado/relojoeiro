@@ -55,7 +55,7 @@ api(pedido).then(function (d) {
   res += el("form", {"method": "get", "action": "estatisticas.php", "class": "filtros-execucoes cartao-config"},
     el("label", {}, t("De {1}", {1: el("input", {"type": "date", "name": "de", "value": d.de, "max": d.hoje})}))
     + el("label", {}, t("Até {1}", {1: el("input", {"type": "date", "name": "ate", "value": d.ate, "max": d.hoje})}))
-    + el("div", {"class": "botoes"}, el("button", {}, t("Ver")))
+    + el("div", {"class": "botoes"}, el("button", {}, t("Ver")) + " " + linkRelatorio("estatisticas", {de: d.de, ate: d.ate}, t("Relatório do período")))
     + el("div", {"class": "atalhos"}, [[29, t("30 dias")], [89, t("90 dias")], [364, t("1 ano")]].map(function (a) {
       return el("a", {"href": "estatisticas.php?de=" + diaAntes(a[0]) + "&ate=" + diaAntes(0)}, a[1]);
     }).join(" ") + " " + el("a", {"href": "estatisticas.php?de=tudo"}, t("desde o começo"))));

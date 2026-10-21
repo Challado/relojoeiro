@@ -1,4 +1,4 @@
-<!-- origem: 1e9be80226b08ebedae42b5b560171ddc3703d94 -->
+<!-- origem: a6995824a0aefafc1dce8174c583499bf649d150 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -133,6 +133,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `servicos` | 保养与检测（`relogio=<id>`，含摘要：标称防水、经证实的防水、次数和费用合计；不带时为全部），含零件、费用、防水以及前后走时 |
 | `reserva` | 实测储备（`relogio=<id>`：机械表的储备测试、能量观察、实测值即各次测试的中位数，以及带可信度的声明、实测与估计表；不指定时，返回所有表的测试和观察） |
 | `timegrapher` | 校表仪测量（`relogio=<id>`：最近一次测量，含每项的平均值和各方位之间的差、测量记录以及 CSV 导入能识别的内容；不带则返回全部） |
+| `relatorios` | 报表的统一入口：不带 `tipo` 时为目录（每个报表的分组、名称、描述和参数，以及手表）；带 `tipo`（`colecao`、`passaporte`、`custos`、`desejos`、`acessorios`、`documentos`、`historico`、`estatisticas`、`plano`、`avisos`、`criterios`、`servicos`、`precisao`、`timegrapher`、`reserva`、`calibres`、`totais`、`cron`）及其参数（`relogio`、`de`、`ate`、`posse`、`situacao`）时为生成好的报表（标题、副标题、摘要、表格或名值对形式的各部分、页脚，已是文字）；`csv=1`：表格 |
 | `documento` | 一个文档的文件（`id=<id>`）：用于显示（图片、视频、音频、PDF、文本）或下载（其他，或使用 `baixar=1`）；`mini=1` 是照片的缩略图。支持分段（Range），方便视频快进 |
 | `usuarios`、`migracoes` | master：账户面板，每个账户含其拥有的内容和密码哈希（用于以相同密码迁移：参见[用户与密码](#os-usuários-e-as-senhas)）；其他人只有自己的账户；尚待应用的迁移 |
 | `conta`、`colecoes`、`aprovacoes` | 我的账户（收藏、树、申请、令牌、已记住的设备、Web Push 设备、自己的邮件服务器；`parte=menu`：只返回菜单用的部分）；收藏和树；审批页面 |
@@ -455,7 +456,7 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 | 文件 | 是什么 |
 |---|---|
 | [`api.php`](api.php) | API，所有读写的入口（认证、格式、资源顺序、筛选、响应），文件头中有完整文档 |
-| [`api/`](api/) | API 中较大的资源，每个一个文件（`hoje.php`、`ficha.php`、`configuracao.php`、`desejos.php`、`estatisticas.php`、`hora_certa.php`、`passaporte.php`、`galeria.php`、`ajuda.php`……），还有它的函数（`funcoes.php`）和写入（`escrita.php`）：它们在 `api.php` 内部运行，直接打开则什么都不做（`.htaccess` 和 `nginx-relogios.conf` 会阻止该文件夹） |
+| [`api/`](api/) | API 中较大的资源，每个一个文件（`hoje.php`、`ficha.php`、`configuracao.php`、`desejos.php`、`estatisticas.php`、`hora_certa.php`、`passaporte.php`、`galeria.php`、`relatorios.php`、`ajuda.php`……），还有它的函数（`funcoes.php`，含报表的 `api_ler`）和写入（`escrita.php`）：它们在 `api.php` 内部运行，直接打开则什么都不做（`.htaccess` 和 `nginx-relogios.conf` 会阻止该文件夹） |
 | [`lib.php`](lib.php) | 核心：登录、树、公式引擎、提醒、标准、轮换、排程、文档 |
 | [`colecoes.php`](colecoes.php) | 核心中的收藏部分：请求的作用范围、`modelo.json`、加密的机密、`sistema` 表、v25 迁移和删除的影响 |
 | [`alertas.php`](alertas.php) | 推送目标（webhook、电子邮件、Web Push）和日历（Google、CalDAV、Outlook、ICS） |

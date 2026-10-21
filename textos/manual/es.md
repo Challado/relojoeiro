@@ -1,4 +1,4 @@
-<!-- origem: d8a2903f3e376ff1955f3fcb06bfe3968cd87c12 -->
+<!-- origem: 940979a03a68202f8e2394f1907f242dab5a685d -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1319,6 +1319,7 @@ que usted registre entra aquí con su nombre.
 | **Accesorios** (`acessorios.php`) | Las correas, cajas, estuches, herramientas, cargadores, piezas y lo que sea: la lista (el nombre, el tipo, el reloj al que pertenece, o *suelto*, y la observación), con el filtro **Reloj** (todos, los sueltos o los de un reloj; el cuadro **Accesorios** del panel la abre ya filtrada), **Editar** y **Eliminar** en cada uno, y debajo el formulario (**Nuevo accesorio**: nombre, tipo, reloj o *suelto (sirve a varios)* y observación). Eliminar un reloj deja sus accesorios sueltos. Por la API: `recurso=acessorios` (la lista) y la escritura `acessorios` (`salvar`, `excluir`). |
 | **Galería** (`galeria.php`) | La colección en fotos, por grupo: cada reloj con la foto (el enlace a la ficha), el nombre, la marca y la referencia, el año y el valor de compra y los días de uso; arriba, cuántos, el valor total y cuántos tienen foto. **También los de fuera de la colección** muestra los deseados, vendidos y archivados (con la marca de la situación). **Imprimir**: en papel, cuatro por fila, sin el menú. Por la API: `recurso=galeria`. |
 | **Pasaporte** (`passaporte.php`) | La hoja de un reloj para imprimir o guardar en PDF (el botón **Pasaporte** del cuadro Documentos del panel): la foto, el nombre, la marca y la referencia, el grupo y la situación; la **Compra**; el **Uso** (la primera y la última vez en la muñeca, las horas en la muñeca, los días de uso y el costo por uso); la **Ficha** rellenada; los **Mantenimientos** (cada tipo de marca, cuántas veces y la última; las revisiones y los cambios de pila); los **Accesorios**; los **Documentos**; y los **Próximos avisos**. **Imprimir**: en el papel salen solo los datos. Por la API: `recurso=passaporte`. Con algún servicio, también los **Servicios y diagnósticos** (quién lo hizo, el costo, la estanqueidad y la marcha antes y después). |
+| **Informes** (`relatorios.php`) | La puerta única de los informes: el menú con todos (por grupo), los campos del elegido (el reloj, el período, las opciones) y **Generar el informe**; el informe en la pantalla, en el papel (**Imprimir**) y en una planilla (**Descargar la planilla (CSV)**). Vea [Los informes](#os-relatórios). |
 | **Hora exacta** (`hora.php`) | La hora del servidor para poner en hora los relojes, en tu huso horario: el reloj elegido en la Configuración (**Reloj de la Hora exacta**): el analógico (caja de acero, esfera clara con los índices, los numerales 12, 6 y 9, la ventanilla de la fecha en el 3, agujas en lanza con franja luminosa y la de los segundos roja con contrapeso), el digital (una caja oscura con visor de cristal líquido: el día de la semana y la fecha, la hora grande con los "88:88:88" apagados detrás, el UTC y la fase de la luna), el anadigi (el visor digital dentro de la esfera analógica) o los dos, uno al lado del otro; andan segundo a segundo, ajustados por la API (descontando el tiempo de la petición; debajo, cuánto adelanta o atrasa el reloj del aparato), con la fecha en palabras, la hora UTC y el huso (y de dónde viene); los cuadros **Zona horaria y UTC** (la zona, el desfase, la hora Zulu, la letra militar de la zona, como *P (Papa)*, y el grupo fecha-hora, *131433P OCT 26*), **Calendario** (día del año, semana ISO, trimestre, día juliano, Unix) y **Luna** (la fase, la edad, la parte iluminada y las próximas lunas llena y nueva, por el ciclo medio: puede variar un día); y **Cómo ponerlo en hora**. Vuelve a leer la API cada minuto. Por la API: `recurso=hora_certa`. |
 | **Documentos** (`documentos.php`) | Los documentos de un reloj (o de todos), abiertos desde la ficha: envío de varios archivos, una pestaña por categoría, la galería de fotos a pantalla completa con presentación, los videos en secuencia en el orden elegido, el visor de PDF, el resumen de la NF-e a partir del XML, y descarga para el resto. Vea [Los documentos del reloj](#os-documentos-do-relógio). |
 | **Historial** (`historico.php`) | La línea de tiempo de un reloj: en uso por la rotación, en uso fuera del plan (en la muñeca sin ser el reloj del día), en el winder, al sol, en reposo, y cada cuerda, carga y cambio de pila. Muestra cuánto tiempo y qué porcentaje pasó en cada estado, con filtro de período y de estado. |
@@ -1336,6 +1337,43 @@ que usted registre entra aquí con su nombre.
 | **Usuarios** (`usuarios.php`, solo el master) | El panel de las cuentas: cada una con lo que tiene y las acciones (ver como, hacer oficial, prorrogar, bloquear, cambiar, cambiar la contraseña, transferir una colección, dar acceso, eliminar) y crear una cuenta. |
 | **Crear cuenta** (`cadastro.php`, sin login) | El registro abierto: la cuenta nueva (con una colección, o pidiendo acceso), la invitación que llegó por correo y **Olvidé la contraseña**. |
 | **Ayuda** (`ajuda.php`) | Esta guía dentro del sistema: la idea central, cómo funciona, la ficha de cada reloj campo por campo, los avisos de carga, las pantallas y las preguntas frecuentes (las mismas secciones del README, leídas de él; la API devuelve el mismo texto en `recurso=manual`). |
+
+### Los informes {#os-relatórios}
+
+La página **Informes** (en el menú, después de la **Colección**) es la puerta única de todo informe del sistema: un menú con
+los informes, por grupo, los campos del elegido (el reloj, el período, las opciones) y **Generar el informe**. El informe sale
+en la pantalla y listo para el papel (**Imprimir**; el "Guardar como PDF" del navegador guarda el archivo) y en una planilla
+(**Descargar la planilla (CSV)**, que Excel y LibreOffice abren con los acentos). La dirección guarda la elección
+(`relatorios.php?tipo=servicos&relogio=3`): el enlace abre el informe ya generado, y las otras pantallas apuntan a él (el
+**Informe** del historial, de las estadísticas, del plan, de los avisos, de los deseos, de los accesorios y de la galería, y de
+los cuadros de servicios, precisión y timegrapher del panel).
+
+| Grupo | Informe | Qué trae |
+|---|---|---|
+| Colección | **Inventario de la colección** | los relojes (solo los de la colección, o todos), con el grupo, la marca, la referencia, la situación, el año y el valor de la compra y los días de uso; el valor sumado |
+| Colección | **Pasaporte del reloj** | la ficha entera de un reloj: quién es, la compra, el uso, el registro, los mantenimientos, los servicios, lo declarado, medido y estimado, las pruebas de la reserva, el timegrapher, los accesorios, los documentos y los próximos avisos |
+| Colección | **Costos de la colección** | el valor pagado, los servicios (cuántos y cuánto), el total, los días de uso y el costo de cada uso, por reloj y sumados |
+| Colección | **Lista de deseos** | los deseados por prioridad, con el precio objetivo y el enlace, la suma de los precios, y los que salieron de la colección |
+| Colección | **Accesorios** | los accesorios de cada reloj y los sueltos, y cuántos de cada tipo |
+| Colección | **Documentos** | los documentos de cada reloj y calibre, con la categoría, la fecha, el archivo y el tamaño |
+| Uso y rotación | **Línea del tiempo** | lo que cada reloj hizo en el período, tramo a tramo, y el tiempo en cada estado |
+| Uso y rotación | **Uso en el período** | las estadísticas: días con reloj, horas, el más y el menos usado, cada reloj, por día de la semana y por mes |
+| Uso y rotación | **Plan de la rotación** | el reloj de cada día, con el motivo, y cuántos días tiene cada uno |
+| Uso y rotación | **Avisos** | los avisos de ahora, del atrasado al más lejano, y cuántos de cada situación |
+| Uso y rotación | **Notas de los criterios** | el orden de los relojes por la nota y la cuenta de cada uno, parámetro por parámetro |
+| Mantenimiento y precisión | **Servicios y diagnósticos** | cada servicio en el período, con el reloj, quién lo hizo, las piezas, el costo, la estanqueidad y la marcha antes y después; el costo sumado y por tipo |
+| Mantenimiento y precisión | **Precisión y marcha** | la marcha de cada reloj; con un reloj, la cuenta entera y cada intervalo medido |
+| Mantenimiento y precisión | **Timegrapher** | las mediciones; con un reloj, también la última sesión |
+| Mantenimiento y precisión | **Reserva medida** | las pruebas de la reserva y las observaciones de la energía |
+| Mantenimiento y precisión | **Calibres** | los calibres, el fabricante, los relojes y los documentos de cada uno |
+| Sistema | **Totales** | los totales de la página de totales, cada uno con el resultado |
+| Sistema | **Ejecuciones del cron** | las últimas ejecuciones: cuándo, cuánto tardó y qué hizo |
+
+Quien los arma es la API (`recurso=relatorios`): sin `tipo`, el catálogo (cada informe con el grupo, el nombre, la
+descripción y los parámetros, y los relojes); con `tipo` y sus parámetros, el informe listo, en un formato único para todos (el
+título, el subtítulo, el resumen, las secciones en tabla o en pares, el pie), ya en texto, en el idioma de quien pide; `csv=1`
+devuelve la planilla. Cada informe se arma sobre lo que la propia API responde a la pantalla (el mismo recurso, con las mismas
+reglas de acceso): nunca dice otra cosa que la pantalla, y quien no ve un reloj no lo ve en el informe.
 
 ### El modo básico y el avanzado {#o-modo-básico-e-o-avançado}
 

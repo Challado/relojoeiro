@@ -23,6 +23,12 @@ module.exports = [
   { nome: 'passaporte-3', url: 'passaporte.php?id=3' },
   { nome: 'passaporte-1', url: 'passaporte.php?id=1' },
   { nome: 'galeria', url: 'galeria.php?posse=todos' },
+  // os relatórios: o menu sozinho e cada relatório gerado (o relógio 4, o vendido, tem o timegrapher e a reserva medida)
+  { nome: 'relatorios', url: 'relatorios.php' },
+  ...['colecao', 'custos', 'desejos', 'acessorios', 'documentos', 'historico', 'estatisticas', 'plano', 'avisos', 'criterios', 'servicos', 'precisao', 'timegrapher',
+    'reserva', 'calibres', 'totais', 'cron'].map((t) => ({ nome: 'relatorio-' + t, url: 'relatorios.php?tipo=' + t })),
+  { nome: 'relatorio-passaporte-4', url: 'relatorios.php?tipo=passaporte&relogio=4' },
+  { nome: 'relatorio-timegrapher-4', url: 'relatorios.php?tipo=timegrapher&relogio=4' },
   { nome: 'acessorios-editar', url: 'acessorios.php?relogio=3&editar=2' },
   { nome: 'desejo-novo', url: 'index.php?novo=1&posse=desejado' },
   { nome: 'historico', url: 'historico.php?id=1' },

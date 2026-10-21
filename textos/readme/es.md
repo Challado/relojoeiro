@@ -1,4 +1,4 @@
-<!-- origem: 1e9be80226b08ebedae42b5b560171ddc3703d94 -->
+<!-- origem: a6995824a0aefafc1dce8174c583499bf649d150 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -163,6 +163,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `servicos` | los servicios y diagnósticos (`relogio=<id>`, con el resumen: la resistencia declarada, la estanqueidad comprobada, cuántos y el costo sumado; sin él, los de todos), con las piezas, el costo, la estanqueidad y la marcha antes y después |
 | `reserva` | la reserva medida (`relogio=<id>`: las pruebas de la reserva del mecánico, las observaciones de la energía, la medida, que es la mediana de las pruebas, y la tabla declarado, medido y estimado con la confianza; sin él, las pruebas y las observaciones de todos) |
 | `timegrapher` | las mediciones del timegrapher (`relogio=<id>`: la última sesión, con el promedio de cada magnitud y la diferencia entre las posiciones, las mediciones y lo que entiende la importación del CSV; sin él, las de todos) |
+| `relatorios` | los informes, por una puerta sola: sin `tipo`, el catálogo (cada informe con el grupo, el nombre, la descripción y los parámetros, y los relojes); con `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron`) y sus parámetros (`relogio`, `de`, `ate`, `posse`, `situacao`), el informe listo (título, subtítulo, resumen, secciones en tabla o en pares, pie, ya en texto); `csv=1`: la planilla |
 | `documento` | el archivo de un documento (`id=<id>`): para mostrar (imagen, video, audio, PDF, texto) o para descargar (el resto, o con `baixar=1`); `mini=1` es la miniatura de la foto. Atiende trozos (Range), para que el video avance |
 | `usuarios`, `migracoes` | el master: el panel de las cuentas, cada una con lo que tiene y el hash de la contraseña (para migrar con la misma contraseña: vea [Los usuarios y las contraseñas](#os-usuários-e-as-senhas)); los demás, solo su propia cuenta; las migraciones que faltan aplicar |
 | `conta`, `colecoes`, `aprovacoes` | Mi cuenta (las colecciones, los árboles, las solicitudes, los tokens, los aparatos recordados, los aparatos del Web Push, el servidor de correo propio; `parte=menu`: solo lo del menú); las colecciones y los árboles; la página Aprobaciones |
@@ -640,7 +641,7 @@ ciclos mayores, que ningún `CHECK` alcanza) y las de los vínculos opcionales.
 | Archivo | Qué es |
 |---|---|
 | [`api.php`](api.php) | la API, la puerta de toda lectura y escritura (la autenticación, el formato, el orden de los recursos, los filtros, la respuesta), con la documentación completa en la cabecera |
-| [`api/`](api/) | los recursos grandes de la API, un archivo cada uno (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `ajuda.php`...), más sus funciones (`funcoes.php`) y las escrituras (`escrita.php`): se ejecutan dentro del `api.php`, y abiertos directamente no hacen nada (el `.htaccess` y el `nginx-relogios.conf` bloquean la carpeta) |
+| [`api/`](api/) | los recursos grandes de la API, un archivo cada uno (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `ajuda.php`...), más sus funciones (`funcoes.php`, con el `api_ler` de los informes) y las escrituras (`escrita.php`): se ejecutan dentro del `api.php`, y abiertos directamente no hacen nada (el `.htaccess` y el `nginx-relogios.conf` bloquean la carpeta) |
 | [`lib.php`](lib.php) | el núcleo: login, árbol, motor de fórmulas, avisos, criterios, rotación, escala, documentos |
 | [`colecoes.php`](colecoes.php) | las colecciones en el núcleo: el alcance de la petición, el `modelo.json`, los secretos cifrados, la tabla `sistema`, la migración v25 y el impacto de las eliminaciones |
 | [`alertas.php`](alertas.php) | los destinos (webhook, correo, Web Push) y los calendarios (Google, CalDAV, Outlook, ICS) |

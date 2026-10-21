@@ -114,13 +114,27 @@ $antes = pedir($ana, "GET", ["recurso" => "ficha", "relogio" => $rel_a])["corpo"
 
 // os recursos de leitura e as variações de parâmetro com as coisas da ana
 $recursos = ["", "importacao", "backup", "foto", "documento", "documentos", "criterios", "avisos", "autonomia", "hoje", "ficha", "config", "historico", "previsao",
-    "plano", "desejos", "estatisticas", "precisao", "calibres", "servicos", "reserva", "timegrapher", "hora_certa", "passaporte", "galeria", "acessorios", "proximos", "rodizio_manual", "eventos", "destinos", "agendas",
+    "plano", "desejos", "estatisticas", "precisao", "calibres", "servicos", "reserva", "timegrapher", "relatorios", "hora_certa", "passaporte", "galeria", "acessorios", "proximos", "rodizio_manual", "eventos", "destinos", "agendas",
     "usuarios", "conta", "colecoes", "acessos", "pedidos", "convites", "aprovacoes", "cron", "arvore", "cadastros", "calcular", "migracoes", "instalacao",
     "cadastro", "entrar"];
 $variacoes = [[], ["colecao" => $col_a], ["relogio" => $rel_a], ["id" => $rel_a], ["relogio_id" => $rel_a], ["como" => "ana"], ["usuario" => "ana"],
     ["login" => "ana"], ["usuario_id" => $uid_a], ["documento" => $doc_a], ["id" => $doc_a], ["calibre" => $cal_a], ["id" => $doc_cal_a], ["id" => $des_a], ["id" => $agd_a], ["id" => $evt_a],
     ["no" => $no_a], ["no_id" => $no_a], ["arvore_id" => $no_a], ["relogio" => $rel_a, "baixar" => 1]];
 $n = 0;
+// os relatórios (recurso=relatorios): cada tipo, sem relógio, com os relógios da ana, com a coleção dela e na planilha
+foreach (["bia", "caio"] as $quem) {
+    foreach (["colecao", "passaporte", "custos", "desejos", "acessorios", "documentos", "historico", "estatisticas", "plano", "avisos", "criterios", "servicos", "precisao",
+        "timegrapher", "reserva", "calibres", "totais", "cron"] as $tp) {
+        foreach ([[], ["relogio" => $rel_a], ["relogio" => $rel_m], ["relogio" => $rel_s], ["colecao" => $col_a], ["relogio" => $rel_m, "csv" => 1], ["posse" => "todos", "de" => "tudo"]] as $v) {
+            $p = array_merge(["recurso" => "relatorios", "tipo" => $tp], $v);
+            $r = pedir($tk[$quem], "GET", $p);
+            $n++;
+            if (stripos($r["corpo"], $MARCA) !== false) {
+                $falhas[] = "VAZOU " . $quem . " GET " . http_build_query($p) . " → " . $r["codigo"] . ": " . substr(preg_replace('/\s+/', " ", $r["corpo"]), max(0, stripos($r["corpo"], $MARCA) - 120), 240);
+            }
+        }
+    }
+}
 foreach (["bia", "caio"] as $quem) {
     foreach ($recursos as $rec) {
         foreach ($variacoes as $v) {

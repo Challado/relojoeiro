@@ -4,7 +4,8 @@ var todos = new URLSearchParams(window.location.search).get("posse") === "todos"
 
 api(todos ? {recurso: "galeria", posse: "todos"} : {recurso: "galeria"}).then(function (d) {
   var res = el("div", {"class": "barra-impressao"}, el("button", {"type": "button", "onclick": "window.print()"}, t("Imprimir")) + " "
-    + el("a", {"href": todos ? "galeria.php" : "galeria.php?posse=todos", "class": "botao leve"}, todos ? t("Só a coleção") : t("Também os de fora da coleção")));
+    + el("a", {"href": todos ? "galeria.php" : "galeria.php?posse=todos", "class": "botao leve"}, todos ? t("Só a coleção") : t("Também os de fora da coleção"))
+    + " " + linkRelatorio("colecao", {posse: todos ? "todos" : ""}, t("Relatório do inventário")));
   res += el("div", {"class": "titulo-secao"}, el("h1", {}, t("Galeria")) + el("span", {"class": "nota"}, t("{1}{2}{3} · {4} com foto", {1: d.total, 2: d.total === 1 ? t(" relógio") : t(" relógios"), 3: d.valor_total > 0 ? t(" · R$ ") + reais(d.valor_total) : "", 4: d.com_foto})));
   if (d.total === 0) {
     res += el("p", {}, t("Nenhum relógio na coleção."));

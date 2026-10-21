@@ -4029,6 +4029,64 @@
  *     csv.posicoes[].posicao         o código
  *     csv.posicoes[].nomes           os nomes que valem
  *     csv.posicoes[].nomes[]         um nome
+ *   recurso=relatorios
+ *     relatorios                     o catálogo (sem tipo): cada relatório, na ordem do menu
+ *     relatorios[].tipo              o código do relatório (o tipo= do pedido)
+ *     relatorios[].grupo             o grupo dele no menu (Coleção, Uso e rodízio, Manutenção e precisão, Sistema)
+ *     relatorios[].nome              o nome
+ *     relatorios[].descricao         o que ele traz
+ *     relatorios[].parametros        os parâmetros que ele aceita, na ordem do formulário
+ *     relatorios[].parametros[].nome o nome do parâmetro no pedido (relogio, de, ate, posse, situacao)
+ *     relatorios[].parametros[].rotulo
+ *                                    o rótulo do campo
+ *     relatorios[].parametros[].tipo o tipo do campo: relogio (a lista de relogios), data (AAAA-MM-DD) ou opcoes
+ *     relatorios[].parametros[].obrigatorio
+ *                                    se precisa vir (true ou false)
+ *     relatorios[].parametros[].padrao
+ *                                    o valor quando não vem (uma data, uma opção); null: nenhum
+ *     relatorios[].parametros[].opcoes
+ *                                    as opções (no tipo opcoes); null nos outros
+ *     relatorios[].parametros[].opcoes[].valor
+ *                                    o valor da opção
+ *     relatorios[].parametros[].opcoes[].nome
+ *                                    o nome dela
+ *     relatorios[].parametros[].vazio
+ *                                    no relógio que não é obrigatório: o que vale sem escolher (todos); null nos outros
+ *     relogios                       os relógios para o parâmetro relogio (todos, também os de fora da coleção)
+ *     relogios[].id                  o número
+ *     relogios[].nome                o nome
+ *     relogios[].posse               a situação: colecao, desejado, emprestado, vendido ou arquivado
+ *     tipo                           o relatório pedido
+ *     grupo                          o grupo dele
+ *     titulo                         o título (o nome do relatório)
+ *     subtitulo                      o que foi pedido, em texto (o relógio, o período); null: nada a dizer
+ *     parametros                     os parâmetros que valeram (os que vieram e os padrões)
+ *     parametros.<parametro>         o valor de um parâmetro (relogio, de, ate, posse, situacao)
+ *     foto                           o endereço da foto do relógio (no passaporte, quando há foto); null: nenhuma
+ *     resumo                         o resumo do alto: pares de nome e valor (os sem valor ficam de fora)
+ *     resumo[].nome                  o nome
+ *     resumo[].valor                 o valor, em texto
+ *     secoes                         as seções do relatório, na ordem
+ *     secoes[].titulo                o título da seção
+ *     secoes[].tipo                  tabela ou pares
+ *     secoes[].nota                  uma nota embaixo da seção (os N primeiros de M, por exemplo); null: nenhuma
+ *     secoes[].colunas               na tabela: as colunas
+ *     secoes[].colunas[].nome        o nome da coluna
+ *     secoes[].colunas[].numero      true na coluna de números (alinhada à direita)
+ *     secoes[].linhas                na tabela: as linhas, cada uma a lista das células, na ordem das colunas
+ *     secoes[].linhas[][]            uma célula, em texto (— quando não há valor)
+ *     secoes[].total                 na tabela: a linha do total, na ordem das colunas; null: sem total
+ *     secoes[].total[]               uma célula do total
+ *     secoes[].vazio                 o texto de quando a seção não tem nada
+ *     secoes[].pares                 nos pares: os pares de nome e valor
+ *     secoes[].pares[].nome          o nome
+ *     secoes[].pares[].valor         o valor, em texto
+ *     gerado_em                      quando o relatório foi gerado (AAAA-MM-DD HH:MM:SS)
+ *     rodape                         a linha do rodapé (Gerado em ... pelo Relojoeiro.)
+ *     csv                            o endereço do mesmo relatório numa planilha (csv=1)
+ *     erro                           o motivo, quando o relatório não sai (o tipo desconhecido, o relógio que falta ou não existe, a data
+ *                                    errada)
+ *     tipos[]                        com o tipo desconhecido: os tipos que existem
  *   recurso=reserva
  *     relogio                        o relógio pedido; null: todos
  *     relogio.id                     o número
@@ -5635,18 +5693,7 @@ if ($recurso === "textos") {
     $saida = montar_criterios();
 } elseif ($recurso === "avisos") {
     // os avisos de todos os relógios agora, do mais urgente (ou mais atrasado) para o mais distante
-    $todos = [];
-    foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
-        foreach (avisos_do_relogio($r, time()) as $a) {
-            $todos[] = array_merge(["relogio_id" => (int)$r["id"], "relogio" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1], $a);
-        }
-    }
-    // o desempate (dois vencendo no mesmo instante) é fixo, para a lista sair igual em qualquer banco; o falta_dias
-    // arredondado (não a data com os segundos) junta o que vence "agora" em relógios calculados a um segundo um do outro
-    usort($todos, function ($x, $y) {
-        return [$x["falta_dias"], $x["relogio_id"], $x["identificador"]] <=> [$y["falta_dias"], $y["relogio_id"], $y["identificador"]];
-    });
-    $saida = ["avisos" => $todos];
+    $saida = ["avisos" => avisos_de_agora()];
 } elseif ($recurso === "autonomia") {
     // as autonomias de cada relógio, enxuto e rápido, para sistemas de fora (relogio=ids: só esses)
     $agora = time();
@@ -5727,6 +5774,8 @@ if ($recurso === "textos") {
     require __DIR__ . "/api/reserva.php";
 } elseif ($recurso === "timegrapher") {
     require __DIR__ . "/api/timegrapher.php";
+} elseif ($recurso === "relatorios") {
+    require __DIR__ . "/api/relatorios.php";
 } elseif ($recurso === "roteiro") {
     // o teste de um roteiro (ou do roteiro de um modo) num dia: cada relógio com as linhas calculadas, e quem sairia
     $texto = (string)($_REQUEST["roteiro"] ?? "");
@@ -5810,7 +5859,7 @@ if ($recurso === "textos") {
 } else {
     $codigo = 404;
     $saida = ["erro" => t("recurso desconhecido"), "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "servicos", "reserva", "timegrapher", "hora_certa", "acessorios", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "servicos", "reserva", "timegrapher", "relatorios", "hora_certa", "acessorios", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

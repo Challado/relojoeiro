@@ -54,6 +54,7 @@ function recarregarAvisos() {
     var editar = parseInt(q.get("editar") || "0", 10);
     var res = el("h1", {}, t("Avisos")) + el("nav", {"class": "abas"}, el("a", {"href": "#avisos-relogios"}, t("Avisos dos relógios")) + el("a", {"href": "#lembretes"}, t("Lembretes"))
       + el("a", {"href": "#para-onde"}, t("Para onde vão")))
+      + el("div", {"class": "botoes"}, linkRelatorio("avisos", {}, t("Relatório dos avisos")))
       + el("p", {"class": "nota"}, t("Tudo o que o sistema lembra: os avisos dos relógios, que ele calcula sozinho pelos dados de cada um (dar corda, carregar, trocar a pilha...); os lembretes, que você marca com hora e repetição; e para onde vão os dois (os destinos das mensagens e as agendas)."));
     if (recado !== "") {
       res += recado;

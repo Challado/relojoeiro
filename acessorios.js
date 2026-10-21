@@ -25,7 +25,8 @@ api(filtro !== "" ? {recurso: "acessorios", relogio: filtro} : {recurso: "acesso
     el("label", {}, t("Relógio {1}", {1: el("select", {"name": "relogio", "onchange": "this.form.submit()"}, el("option", {"value": "", "selected": filtro === ""}, t("Todos"))
       + el("option", {"value": "0", "selected": filtro === "0"}, t("Soltos (de nenhum relógio)"))
       + d.relogios.map(function (r) { return el("option", {"value": r.id, "selected": String(r.id) === filtro}, h(r.nome)); }).join(""))}))
-    + el("noscript", {}, el("button", {}, t("Filtrar"))));
+    + el("noscript", {}, el("button", {}, t("Filtrar")))
+    + el("div", {"class": "botoes"}, linkRelatorio("acessorios", {relogio: filtro !== "0" ? filtro : ""}, t("Relatório dos acessórios"))));
   res += el("div", {"class": "rolagem"}, el("table", {"class": "relogios compacta lista-acessorios"}, el("thead", {}, el("tr", {}, el("th", {}, t("Acessório")) + el("th", {}, t("Tipo"))
       + el("th", {}, t("Relógio")) + el("th", {}, t("Observação")) + el("th", {}, "")))
     + el("tbody", {}, d.acessorios.map(function (a) {

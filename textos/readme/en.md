@@ -1,4 +1,4 @@
-<!-- origem: 1e9be80226b08ebedae42b5b560171ddc3703d94 -->
+<!-- origem: a6995824a0aefafc1dce8174c583499bf649d150 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -162,6 +162,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `servicos` | the services and diagnostics (`relogio=<id>`, with the summary: the declared water resistance, the proven one, how many and the total cost; without it, everyone's), with the parts, the cost, the water resistance and the rate before and after |
 | `reserva` | the measured reserve (`relogio=<id>`: the mechanical watch's reserve tests, the energy observations, the measurement, which is the median of the tests, and the declared, measured and estimated table with the confidence; without it, the tests and observations of all) |
 | `timegrapher` | the timegrapher measurements (`relogio=<id>`: the last session, with the average of each quantity and the difference between the positions, the measurements and what the CSV import understands; without it, everyone's) |
+| `relatorios` | the reports, through a single door: without `tipo`, the catalog (each report with the group, the name, the description and the parameters, and the watches); with `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron`) and its parameters (`relogio`, `de`, `ate`, `posse`, `situacao`), the ready report (title, subtitle, summary, sections as table or pairs, footer, already in text); `csv=1`: the spreadsheet |
 | `documento` | a document's file (`id=<id>`): to show (image, video, audio, PDF, text) or to download (the rest, or with `baixar=1`); `mini=1` is the photo's thumbnail. It serves pieces (Range), so the video can skip ahead |
 | `usuarios`, `migracoes` | the master: the accounts panel, each with what it has and the password hash (to migrate with the same password: see [The users and the passwords](#os-usuários-e-as-senhas)); the others, only their own account; the migrations still to apply |
 | `conta`, `colecoes`, `aprovacoes` | My account (the collections, the trees, the requests, the tokens, the remembered devices, the Web Push devices, the own e-mail server; `parte=menu`: only the menu's part); the collections and the trees; the Approvals page |
@@ -625,7 +626,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | File | What it is |
 |---|---|
 | [`api.php`](api.php) | the API, the door for every read and write (the authentication, the format, the order of the resources, the filters, the response), with the complete documentation in the header |
-| [`api/`](api/) | the API's big resources, one file each (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `ajuda.php`...), plus its functions (`funcoes.php`) and the writes (`escrita.php`): they run inside `api.php`, and opened directly they do nothing (`.htaccess` and `nginx-relogios.conf` block the folder) |
+| [`api/`](api/) | the API's big resources, one file each (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `ajuda.php`...), plus its functions (`funcoes.php`, with the reports' `api_ler`) and the writes (`escrita.php`): they run inside `api.php`, and opened directly they do nothing (`.htaccess` and `nginx-relogios.conf` block the folder) |
 | [`lib.php`](lib.php) | the core: login, tree, formula engine, alerts, criteria, rotation, schedule, documents |
 | [`colecoes.php`](colecoes.php) | the collections in the core: the request's scope, `modelo.json`, the encrypted secrets, the `sistema` table, migration v25 and the impact of deletions |
 | [`alertas.php`](alertas.php) | the destinations (webhook, e-mail, Web Push) and the calendars (Google, CalDAV, Outlook, ICS) |

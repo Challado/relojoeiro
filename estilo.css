@@ -1699,6 +1699,17 @@ svg.mostrador .visor-hora { font: 700 16px/1 ui-monospace, Menlo, Consolas, mono
 .pagina-impressa section h2 { margin: 0 0 .4rem; font-size: 1.05rem; }
 .grade-impressa { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1rem; align-items: start; }
 .rodape-impresso { margin-top: 1.5rem; }
+/* os relatórios (a página Relatórios): o menu, as tabelas (os números à direita, o total em negrito embaixo) e o resumo */
+.pagina-relatorios #form-relatorio { margin-bottom: 1rem; }
+table.relatorio th.num, table.relatorio td.num { text-align: right; }
+table.relatorio td { white-space: normal; overflow-wrap: anywhere; }
+table.relatorio tfoot td { font-weight: 600; border-top: 1px solid var(--aco-escuro); border-bottom: 0; }
+.pagina-impressa section.relatorio-resumo dl.pares { grid-template-columns: fit-content(45%) minmax(0, 1fr); }
+@media print {
+  .pagina-relatorios .rolagem { overflow: visible; }
+  table.relatorio { font-size: .76rem; }
+  table.relatorio th, table.relatorio td { padding: .2rem .3rem; }
+}
 .galeria-relogios { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr)); gap: .9rem; }
 .galeria-relogios figure { margin: 0; min-width: 0; break-inside: avoid; }
 .galeria-relogios img, .galeria-relogios .sem-foto { display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px;

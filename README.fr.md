@@ -1450,6 +1450,7 @@ que vous enregistrez apparaît ici sous son nom.
 | **Accessoires** (`acessorios.php`) | Les bracelets, boîtes, étuis, outils, chargeurs, pièces et tout le reste : la liste (le nom, le type, la montre à laquelle il appartient, ou *indépendant*, et l'observation), avec le filtre **Montre** (tous, les indépendants ou ceux d'une montre ; le cadre **Accessoires** du panneau l'ouvre déjà filtrée), **Modifier** et **Supprimer** sur chacun, et en dessous le formulaire (**Nouvel accessoire** : nom, type, montre ou *indépendant (sert à plusieurs)* et observation). Supprimer une montre rend ses accessoires indépendants. Par l'API : `recurso=acessorios` (la liste) et l'écriture `acessorios` (`salvar`, `excluir`). |
 | **Galerie** (`galeria.php`) | La collection en photos, par groupe : chaque montre avec la photo (le lien vers la fiche), le nom, la marque et la référence, l'année et le prix d'achat et les jours d'usage ; en haut, combien, la valeur totale et combien ont une photo. **Aussi celles hors de la collection** montre les désirées, vendues et archivées (avec la marque de la situation). **Imprimer** : sur papier, quatre par ligne, sans le menu. Par l'API : `recurso=galeria`. |
 | **Passeport** (`passaporte.php`) | La fiche d'une montre à imprimer ou à enregistrer en PDF (le bouton **Passeport** du cadre Documents du panneau) : la photo, le nom, la marque et la référence, le groupe et la situation ; l'**Achat** ; l'**Usage** (la première et la dernière fois au poignet, les heures au poignet, les jours d'usage et le coût par port) ; la **Fiche** remplie ; les **Entretiens** (chaque type de marquage, combien de fois et le dernier ; les révisions et les changements de pile) ; les **Accessoires** ; les **Documents** ; et les **Prochaines alertes**. **Imprimer** : seules les données sortent sur le papier. Par l'API : `recurso=passaporte`. Avec un service, aussi les **Services et diagnostics** (qui l'a fait, le coût, l'étanchéité et la marche avant et après). |
+| **Rapports** (`relatorios.php`) | La porte unique des rapports : le menu avec tous (par groupe), les champs de celui choisi (la montre, la période, les options) et **Générer le rapport** ; le rapport à l'écran, sur papier (**Imprimer**) et dans un tableur (**Télécharger le tableur (CSV)**). Voir [Les rapports](#les-rapports). |
 | **Heure exacte** (`hora.php`) | L'heure du serveur pour régler les montres, dans votre fuseau horaire : l'horloge choisie dans la Configuration (**Horloge de l'Heure exacte**) : l'analogique (boîtier en acier, cadran clair avec les index, les chiffres 12, 6 et 9, le guichet de date à 3 h, des aiguilles en lance avec bande lumineuse et celle des secondes rouge avec contrepoids), le numérique (un boîtier sombre avec afficheur à cristaux liquides : le jour de la semaine et la date, l'heure en grand avec les « 88:88:88 » éteints derrière, l'UTC et la phase de la lune), l'ana-digi (l'affichage numérique dans le cadran analogique) ou les deux, côte à côte ; elles avancent seconde par seconde, réglées par l'API (en déduisant le temps de la requête ; en dessous, de combien l'horloge de l'appareil avance ou retarde), avec la date en toutes lettres, l'heure UTC et le fuseau (et d'où il vient) ; les cadres **Fuseau et UTC** (le fuseau, le décalage, l'heure Zulu, la lettre militaire du fuseau, comme *P (Papa)*, et le groupe date-heure, *131433P OCT 26*), **Calendrier** (jour de l'année, semaine ISO, trimestre, jour julien, Unix) et **Lune** (la phase, l'âge, la partie éclairée et les prochaines pleine et nouvelle lunes, par le cycle moyen : cela peut varier d'un jour) ; et **Comment régler**. Elle relit l'API chaque minute. Par l'API : `recurso=hora_certa`. |
 | **Documents** (`documentos.php`) | Les documents d'une montre (ou de toutes), ouverts depuis la fiche : envoi de plusieurs fichiers, un onglet par catégorie, la galerie de photos en plein écran avec diaporama, les vidéos à la suite dans l'ordre choisi, le lecteur PDF, le résumé de la NF-e à partir du XML, et le téléchargement pour le reste. Voir [Les documents de la montre](#les-documents-de-la-montre). |
 | **Historique** (`historico.php`) | La chronologie d'une montre : en usage par la rotation, en usage hors du plan (au poignet sans être la montre du jour), sur le remontoir, au soleil, au repos, et chaque remontage, charge et changement de pile. Il montre combien de temps et quel pourcentage elle a passé dans chaque état, avec un filtre de période et d'état. |
@@ -1467,6 +1468,44 @@ que vous enregistrez apparaît ici sous son nom.
 | **Utilisateurs** (`usuarios.php`, seulement le master) | Le panneau des comptes : chacun avec ce qu'il a et les actions (voir en tant que, rendre officiel, prolonger, bloquer, modifier, changer le mot de passe, transférer une collection, donner l'accès, supprimer) et créer un compte. |
 | **Créer un compte** (`cadastro.php`, sans identifiant) | L'inscription ouverte : le nouveau compte (avec une collection, ou en demandant l'accès), l'invitation arrivée par e-mail et le **Mot de passe oublié**. |
 | **Aide** (`ajuda.php`) | Ce guide dans le système : l'idée centrale, comment ça marche, la fiche de chaque montre champ par champ, les alertes de charge, les écrans et les questions fréquentes (les mêmes sections du README, lues depuis lui ; l'API renvoie le même texte dans `recurso=manual`). |
+
+### Les rapports
+
+La page **Rapports** (dans le menu, après la **Collection**) est la porte unique de tout rapport du système : un menu avec les
+rapports, par groupe, les champs de celui choisi (la montre, la période, les options) et **Générer le rapport**. Le rapport
+sort à l'écran et prêt pour le papier (**Imprimer** ; le « Enregistrer en PDF » du navigateur garde le fichier) et dans un
+tableur (**Télécharger le tableur (CSV)**, qu'Excel et LibreOffice ouvrent avec les accents). L'adresse garde le choix
+(`relatorios.php?tipo=servicos&relogio=3`) : le lien ouvre le rapport déjà généré, et les autres écrans pointent vers lui (le
+**Rapport** de l'historique, des statistiques, du plan, des alertes, des souhaits, des accessoires et de la galerie, et des
+cadres services, précision et timegrapher du panneau).
+
+| Groupe | Rapport | Ce qu'il apporte |
+|---|---|---|
+| Collection | **Inventaire de la collection** | les montres (seulement celles de la collection, ou toutes), avec le groupe, la marque, la référence, la situation, l'année et la valeur d'achat et les jours d'usage ; la valeur totale |
+| Collection | **Passeport de la montre** | la fiche complète d'une montre : qui elle est, l'achat, l'usage, le registre, les entretiens, les services, le déclaré, mesuré et estimé, les tests de la réserve, le timegrapher, les accessoires, les documents et les prochaines alertes |
+| Collection | **Coûts de la collection** | le prix payé, les services (combien et pour combien), le total, les jours d'usage et le coût de chaque usage, par montre et totalisés |
+| Collection | **Liste de souhaits** | les montres souhaitées par priorité, avec le prix cible et le lien, la somme des prix, et celles qui ont quitté la collection |
+| Collection | **Accessoires** | les accessoires de chaque montre et ceux qui sont seuls, et combien de chaque type |
+| Collection | **Documents** | les documents de chaque montre et calibre, avec la catégorie, la date, le fichier et la taille |
+| Usage et rotation | **Chronologie** | ce que chaque montre a fait dans la période, tronçon par tronçon, et le temps dans chaque état |
+| Usage et rotation | **Usage dans la période** | les statistiques : jours avec une montre, heures, la plus et la moins portée, chaque montre, par jour de la semaine et par mois |
+| Usage et rotation | **Plan de la rotation** | la montre de chaque jour, avec le motif, et combien de jours chacune a |
+| Usage et rotation | **Alertes** | les alertes maintenant, de la plus en retard à la plus lointaine, et combien de chaque situation |
+| Usage et rotation | **Notes des critères** | l'ordre des montres par la note et le calcul de chacune, paramètre par paramètre |
+| Entretien et précision | **Services et diagnostics** | chaque service dans la période, avec la montre, qui l'a fait, les pièces, le coût, l'étanchéité et la marche avant et après ; le coût total et par type |
+| Entretien et précision | **Précision et marche** | la marche de chaque montre ; avec une montre, le calcul complet et chaque intervalle mesuré |
+| Entretien et précision | **Timegrapher** | les mesures ; avec une montre, aussi la dernière séance |
+| Entretien et précision | **Réserve mesurée** | les tests de la réserve et les observations de l'énergie |
+| Entretien et précision | **Calibres** | les calibres, le fabricant, les montres et les documents de chacun |
+| Système | **Totaux** | les totaux de la page des totaux, chacun avec le résultat |
+| Système | **Exécutions du cron** | les dernières exécutions : quand, combien de temps et ce qu'elles ont fait |
+
+C'est l'API qui les construit (`recurso=relatorios`) : sans `tipo`, le catalogue (chaque rapport avec le groupe, le nom, la
+description et les paramètres, et les montres) ; avec `tipo` et ses paramètres, le rapport prêt, dans un format unique pour
+tous (le titre, le sous-titre, le résumé, les sections en tableau ou en paires, le pied), déjà en texte, dans la langue de qui
+demande ; `csv=1` renvoie le tableur. Chaque rapport est construit sur ce que l'API elle-même répond à l'écran (la même
+ressource, avec les mêmes règles d'accès) : il ne dit jamais autre chose que l'écran, et qui ne voit pas une montre ne la voit
+pas dans le rapport.
 
 ### Le mode simple et le mode avancé
 
@@ -1669,6 +1708,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `servicos` | les services et diagnostics (`relogio=<id>`, avec le résumé : la résistance déclarée, l'étanchéité prouvée, combien et le coût total ; sans lui, ceux de toutes), avec les pièces, le coût, l'étanchéité et la marche avant et après |
 | `reserva` | la réserve mesurée (`relogio=<id>` : les tests de la réserve de la mécanique, les observations de l'énergie, la mesure, qui est la médiane des tests, et le tableau déclaré, mesuré et estimé avec la confiance ; sans lui, les tests et les observations de toutes) |
 | `timegrapher` | les mesures du timegrapher (`relogio=<id>` : la dernière séance, avec la moyenne de chaque grandeur et l'écart entre les positions, les mesures et ce que l'importation du CSV comprend ; sans lui, celles de toutes) |
+| `relatorios` | les rapports, par une seule porte : sans `tipo`, le catalogue (chaque rapport avec le groupe, le nom, la description et les paramètres, et les montres) ; avec `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron`) et ses paramètres (`relogio`, `de`, `ate`, `posse`, `situacao`), le rapport prêt (titre, sous-titre, résumé, sections en tableau ou en paires, pied, déjà en texte) ; `csv=1` : le tableur |
 | `documento` | le fichier d'un document (`id=<id>`) : pour afficher (image, vidéo, audio, PDF, texte) ou pour télécharger (le reste, ou avec `baixar=1`) ; `mini=1` est la vignette de la photo. Il sert des morceaux (Range), pour que la vidéo avance |
 | `usuarios`, `migracoes` | le master : le panneau des comptes, chacun avec ce qu'il a et le hash du mot de passe (pour migrer avec le même mot de passe : voir [Les utilisateurs et les mots de passe](#les-utilisateurs-et-les-mots-de-passe)) ; les autres, seulement leur propre compte ; les migrations qui restent à appliquer |
 | `conta`, `colecoes`, `aprovacoes` | Mon compte (les collections, les arbres, les demandes, les jetons, les appareils mémorisés, les appareils du Web Push, le serveur d'e-mail personnel ; `parte=menu` : seulement ce qu'utilise le menu) ; les collections et les arbres ; la page Approbations |
@@ -2400,7 +2440,7 @@ vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des
 | Fichier | Ce que c'est |
 |---|---|
 | [`api.php`](api.php) | l'API, la porte de toute lecture et écriture (l'authentification, le format, l'ordre des ressources, les filtres, la réponse), avec la documentation complète dans l'en-tête |
-| [`api/`](api/) | les grosses ressources de l'API, un fichier chacune (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `ajuda.php`...), plus ses fonctions (`funcoes.php`) et les écritures (`escrita.php`) : elles tournent dans le `api.php`, et ouvertes directement elles ne font rien (le `.htaccess` et le `nginx-relogios.conf` bloquent le dossier) |
+| [`api/`](api/) | les grosses ressources de l'API, un fichier chacune (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `ajuda.php`...), plus ses fonctions (`funcoes.php`, avec le `api_ler` des rapports) et les écritures (`escrita.php`) : elles tournent dans le `api.php`, et ouvertes directement elles ne font rien (le `.htaccess` et le `nginx-relogios.conf` bloquent le dossier) |
 | [`lib.php`](lib.php) | le noyau : identification, arbre, moteur de formules, alertes, critères, rotation, planning, documents |
 | [`colecoes.php`](colecoes.php) | les collections dans le noyau : la portée de la requête, le `modelo.json`, les secrets chiffrés, la table `sistema`, la migration v25 et l'impact des suppressions |
 | [`alertas.php`](alertas.php) | les destinations (webhook, e-mail, Web Push) et les agendas (Google, CalDAV, Outlook, ICS) |

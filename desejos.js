@@ -27,7 +27,7 @@ aoGravar = function (form, res) {
 
 api({recurso: "desejos"}).then(function (d) {
   var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Lista de desejos"))
-    + el("div", {"class": "botoes"}, el("a", {"class": "botao", "href": "index.php?novo=1&posse=desejado"}, t("Novo desejo"))));
+    + el("div", {"class": "botoes"}, el("a", {"class": "botao", "href": "index.php?novo=1&posse=desejado"}, t("Novo desejo")) + " " + linkRelatorio("desejos", {}, t("Relatório dos desejos"))));
   res += el("p", {"class": "nota"}, d.desejados.length === 0 ? t("Nenhum relógio na lista de desejos. Em \"Novo desejo\" (ou no cadastro de qualquer relógio, na \"Situação na coleção\"), um relógio desejado entra aqui: com a marca, a referência, o preço-alvo, a prioridade e o link. Ele não entra no rodízio nem nos avisos.")
     : t("{1}{2}, a prioridade mais alta primeiro. Somando os preços-alvo: R$ {3}{4}. Comprou? \"Comprei\" põe o relógio na coleção (disponível para o rodízio) e abre a ficha dele, para preencher a compra.", {1: d.desejados.length, 2: d.desejados.length === 1 ? t(" relógio desejado") : t(" relógios desejados"), 3: reais(d.total_preco_alvo), 4: d.sem_preco_alvo > 0 ? t(" ({1} sem preço-alvo)", {1: d.sem_preco_alvo}) : ""}));
   if (d.desejados.length > 0) {

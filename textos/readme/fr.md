@@ -1,4 +1,4 @@
-<!-- origem: 1e9be80226b08ebedae42b5b560171ddc3703d94 -->
+<!-- origem: a6995824a0aefafc1dce8174c583499bf649d150 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -167,6 +167,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `servicos` | les services et diagnostics (`relogio=<id>`, avec le résumé : la résistance déclarée, l'étanchéité prouvée, combien et le coût total ; sans lui, ceux de toutes), avec les pièces, le coût, l'étanchéité et la marche avant et après |
 | `reserva` | la réserve mesurée (`relogio=<id>` : les tests de la réserve de la mécanique, les observations de l'énergie, la mesure, qui est la médiane des tests, et le tableau déclaré, mesuré et estimé avec la confiance ; sans lui, les tests et les observations de toutes) |
 | `timegrapher` | les mesures du timegrapher (`relogio=<id>` : la dernière séance, avec la moyenne de chaque grandeur et l'écart entre les positions, les mesures et ce que l'importation du CSV comprend ; sans lui, celles de toutes) |
+| `relatorios` | les rapports, par une seule porte : sans `tipo`, le catalogue (chaque rapport avec le groupe, le nom, la description et les paramètres, et les montres) ; avec `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron`) et ses paramètres (`relogio`, `de`, `ate`, `posse`, `situacao`), le rapport prêt (titre, sous-titre, résumé, sections en tableau ou en paires, pied, déjà en texte) ; `csv=1` : le tableur |
 | `documento` | le fichier d'un document (`id=<id>`) : pour afficher (image, vidéo, audio, PDF, texte) ou pour télécharger (le reste, ou avec `baixar=1`) ; `mini=1` est la vignette de la photo. Il sert des morceaux (Range), pour que la vidéo avance |
 | `usuarios`, `migracoes` | le master : le panneau des comptes, chacun avec ce qu'il a et le hash du mot de passe (pour migrer avec le même mot de passe : voir [Les utilisateurs et les mots de passe](#os-usuários-e-as-senhas)) ; les autres, seulement leur propre compte ; les migrations qui restent à appliquer |
 | `conta`, `colecoes`, `aprovacoes` | Mon compte (les collections, les arbres, les demandes, les jetons, les appareils mémorisés, les appareils du Web Push, le serveur d'e-mail personnel ; `parte=menu` : seulement ce qu'utilise le menu) ; les collections et les arbres ; la page Approbations |
@@ -656,7 +657,7 @@ vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des
 | Fichier | Ce que c'est |
 |---|---|
 | [`api.php`](api.php) | l'API, la porte de toute lecture et écriture (l'authentification, le format, l'ordre des ressources, les filtres, la réponse), avec la documentation complète dans l'en-tête |
-| [`api/`](api/) | les grosses ressources de l'API, un fichier chacune (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `ajuda.php`...), plus ses fonctions (`funcoes.php`) et les écritures (`escrita.php`) : elles tournent dans le `api.php`, et ouvertes directement elles ne font rien (le `.htaccess` et le `nginx-relogios.conf` bloquent le dossier) |
+| [`api/`](api/) | les grosses ressources de l'API, un fichier chacune (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `ajuda.php`...), plus ses fonctions (`funcoes.php`, avec le `api_ler` des rapports) et les écritures (`escrita.php`) : elles tournent dans le `api.php`, et ouvertes directement elles ne font rien (le `.htaccess` et le `nginx-relogios.conf` bloquent le dossier) |
 | [`lib.php`](lib.php) | le noyau : identification, arbre, moteur de formules, alertes, critères, rotation, planning, documents |
 | [`colecoes.php`](colecoes.php) | les collections dans le noyau : la portée de la requête, le `modelo.json`, les secrets chiffrés, la table `sistema`, la migration v25 et l'impact des suppressions |
 | [`alertas.php`](alertas.php) | les destinations (webhook, e-mail, Web Push) et les agendas (Google, CalDAV, Outlook, ICS) |

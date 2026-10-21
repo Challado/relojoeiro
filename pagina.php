@@ -45,6 +45,7 @@ function topo($titulo, $ativo, $publica = false)
         t("Rodízio") => ["plano.php" => t("Plano"), "modos.php" => t("Modos de rodízio"), "criterios.php" => t("Critérios de escolha")],
         t("Coleção") => ["galeria.php" => t("Galeria"), "ficha.php" => t("Ficha"), "acessorios.php" => t("Acessórios"), "desejos.php" => t("Desejos"), "estatisticas.php" => t("Estatísticas"), "totais.php" => t("Totais"),
             "grupos.php" => t("Grupos")],
+        "relatorios.php" => t("Relatórios"),
         t("Sistema") => ["configuracao.php" => t("Configuração"), "cadastros.php" => t("Cadastros"), "execucoes.php" => t("Execuções do cron"), "usuarios.php" => t("Usuários")],
         t("Conta") => ["conta.php" => t("Minha conta"), "aprovacoes.php" => t("Aprovações")],
         "ajuda.php" => t("Ajuda"),

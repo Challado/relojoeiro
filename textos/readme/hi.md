@@ -1,4 +1,4 @@
-<!-- origem: 1e9be80226b08ebedae42b5b560171ddc3703d94 -->
+<!-- origem: a6995824a0aefafc1dce8174c583499bf649d150 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -158,6 +158,7 @@ curl -u upyogkarta:password -G "http://server/relojoeiro/api.php" -d recurso=cal
 | `servicos` | सर्विस और जाँच (`relogio=<id>`, सारांश के साथ: घोषित जल-प्रतिरोध, सिद्ध जल-रोधकता, कितनी और कुल लागत; इसके बिना, सबकी), पुर्ज़ों, लागत, जल-रोधकता और पहले व बाद की गति के साथ |
 | `reserva` | मापा गया रिज़र्व (`relogio=<id>`: मैकेनिकल घड़ी के रिज़र्व परीक्षण, ऊर्जा के अवलोकन, माप, यानी परीक्षणों की माध्यिका, और भरोसे के साथ घोषित, मापा गया और अनुमानित की तालिका; इसके बिना, सभी के परीक्षण और अवलोकन) |
 | `timegrapher` | टाइमग्राफ़र के माप (`relogio=<id>`: आख़िरी सत्र, हर मात्रा के औसत और स्थितियों के बीच अंतर के साथ, माप और CSV आयात क्या समझता है; इसके बिना, सबके) |
+| `relatorios` | रिपोर्टें, एक ही दरवाज़े से: `tipo` के बिना, सूची (हर रिपोर्ट समूह, नाम, विवरण और मापदंडों के साथ, और घड़ियाँ); `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron`) और उसके मापदंडों (`relogio`, `de`, `ate`, `posse`, `situacao`) के साथ, तैयार रिपोर्ट (शीर्षक, उपशीर्षक, सारांश, तालिका या जोड़ों में खंड, फ़ुटर, पहले से पाठ में); `csv=1`: स्प्रेडशीट |
 | `documento` | एक दस्तावेज़ की फ़ाइल (`id=<id>`): दिखाने के लिए (छवि, वीडियो, ऑडियो, PDF, टेक्स्ट) या डाउनलोड के लिए (बाक़ी, या `baixar=1` के साथ); `mini=1` फ़ोटो का थंबनेल है। टुकड़ों (Range) में देता है, ताकि वीडियो आगे बढ़ सके |
 | `usuarios`, `migracoes` | master: खातों का पैनल, हर खाता उसके पास जो है और पासवर्ड के हैश के साथ (उसी पासवर्ड के साथ माइग्रेट करने के लिए: देखें [उपयोगकर्ता और पासवर्ड](#os-usuários-e-as-senhas)); बाकी, केवल अपना खाता; लागू करने को बचे माइग्रेशन |
 | `conta`, `colecoes`, `aprovacoes` | मेरा खाता (संग्रह, वृक्ष, अनुरोध, टोकन, याद रखे डिवाइस, Web Push के उपकरण, अपना ई-मेल सर्वर; `parte=menu`: केवल मेनू वाला हिस्सा); संग्रह और वृक्ष; स्वीकृतियाँ पृष्ठ |
@@ -610,7 +611,7 @@ v2 से v8 इससे पहले के हैं और सिर्फ�
 | फ़ाइल | यह क्या है |
 |---|---|
 | [`api.php`](api.php) | API, हर पढ़ने और लिखने का दरवाज़ा (प्रमाणीकरण, फ़ॉर्मेट, संसाधनों का क्रम, फ़िल्टर, जवाब), हेडर में पूरे दस्तावेज़ीकरण के साथ |
-| [`api/`](api/) | API के बड़े संसाधन, हर एक की एक फ़ाइल (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `ajuda.php`...), साथ में उसके फ़ंक्शन (`funcoes.php`) और लेखन (`escrita.php`): ये `api.php` के भीतर चलते हैं, और सीधे खोलने पर कुछ नहीं करते (`.htaccess` और `nginx-relogios.conf` फ़ोल्डर को रोकते हैं) |
+| [`api/`](api/) | API के बड़े संसाधन, हर एक की एक फ़ाइल (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `ajuda.php`...), साथ में उसके फ़ंक्शन (`funcoes.php`, रिपोर्टों के `api_ler` के साथ) और लेखन (`escrita.php`): ये `api.php` के भीतर चलते हैं, और सीधे खोलने पर कुछ नहीं करते (`.htaccess` और `nginx-relogios.conf` फ़ोल्डर को रोकते हैं) |
 | [`lib.php`](lib.php) | केंद्र: लॉगिन, वृक्ष, सूत्रों का इंजन, अलर्ट, मानदंड, रोटेशन, शेड्यूल, दस्तावेज़ |
 | [`colecoes.php`](colecoes.php) | केंद्र में संग्रह: अनुरोध का दायरा, `modelo.json`, एन्क्रिप्टेड रहस्य, `sistema` तालिका, माइग्रेशन v25 और हटाने का प्रभाव |
 | [`alertas.php`](alertas.php) | गंतव्य (webhook, ई-मेल, Web Push) और कैलेंडर (Google, CalDAV, Outlook, ICS) |

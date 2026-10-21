@@ -1364,6 +1364,7 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | **Acessórios** (`acessorios.php`) | As pulseiras, caixas, estojos, ferramentas, carregadores, peças e o que mais for: a lista (o nome, o tipo, o relógio de que ele é, ou *solto*, e a observação), com o filtro **Relógio** (todos, os soltos ou os de um relógio; o quadro **Acessórios** do painel abre já filtrada), **Editar** e **Excluir** em cada um, e embaixo o cadastro (**Novo acessório**: nome, tipo, relógio ou *solto (serve a vários)* e observação). Excluir um relógio deixa os acessórios dele soltos. Pela API: `recurso=acessorios` (a lista) e a escrita `acessorios` (`salvar`, `excluir`). |
 | **Galeria** (`galeria.php`) | A coleção em fotos, por grupo: cada relógio com a foto (o link da ficha), o nome, a marca e a referência, o ano e o valor da compra e os dias de uso; no alto, quantos, o valor somado e quantos têm foto. **Também os de fora da coleção** mostra os desejados, vendidos e arquivados (com a marca da situação). **Imprimir**: no papel, quatro por linha, sem o menu. Pela API: `recurso=galeria`. |
 | **Passaporte** (`passaporte.php`) | A ficha de um relógio para imprimir ou guardar em PDF (o botão **Passaporte** no quadro Documentos do painel): a foto, o nome, a marca e a referência, o grupo e a situação; a **Compra**; o **Uso** (a primeira e a última vez no pulso, as horas no pulso, os dias de uso e o custo por uso); o **Cadastro** preenchido; as **Manutenções** (cada tipo de marcação, quantas vezes e a última; as revisões e trocas de pilha); os **Acessórios**; os **Documentos**; e os **Próximos avisos**. **Imprimir**: no papel saem só os dados. Pela API: `recurso=passaporte`. Com algum serviço, também os **Serviços e diagnósticos** (quem fez, o custo, a estanqueidade e a marcha antes e depois). |
+| **Relatórios** (`relatorios.php`) | A porta única dos relatórios: o menu com todos (por grupo), os campos do escolhido (o relógio, o período, as opções) e **Gerar o relatório**; o relatório na tela, no papel (**Imprimir**) e numa planilha (**Baixar a planilha (CSV)**). Veja [Os relatórios](#os-relatórios). |
 | **Hora certa** (`hora.php`) | A hora do servidor para acertar os relógios, no seu fuso horário: o relógio escolhido na Configuração (**Relógio da Hora certa**): o analógico (caixa de aço, mostrador claro com os índices, os numerais 12, 6 e 9, a janela da data no 3, ponteiros em lança com faixa luminosa e o dos segundos vermelho com contrapeso), o digital (uma caixa escura com visor de cristal líquido: o dia da semana e a data, a hora grande com os "88:88:88" apagados atrás, o UTC e a fase da lua), o anadigi (o visor digital dentro do mostrador analógico) ou os dois, um ao lado do outro; andam segundo a segundo, acertados pela API (descontando o tempo do pedido; embaixo, quanto o relógio do aparelho está adiantado ou atrasado), com a data por extenso, a hora UTC e o fuso (e de onde ele veio); os quadros **Fuso e UTC** (o fuso, o deslocamento, a hora Zulu, a letra militar do fuso, como *P (Papa)*, e o grupo data-hora, *131433P OCT 26*), **Calendário** (dia do ano, semana ISO, trimestre, dia juliano, Unix) e **Lua** (a fase, a idade, a parte iluminada e as próximas cheia e nova, pelo ciclo médio: pode errar por um dia); e **Como acertar**. Lê a API de novo a cada minuto. Pela API: `recurso=hora_certa`. |
 | **Documentos** (`documentos.php`) | Os documentos de um relógio (ou de todos), aberta pela ficha: o envio de vários arquivos, uma aba por categoria, a galeria das fotos em tela cheia com apresentação, os vídeos em sequência na ordem escolhida, o visualizador de PDF, o resumo da NF-e do XML, e o download do resto. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 | **Histórico** (`historico.php`) | A linha do tempo de um relógio: em uso pelo rodízio, em uso fora do plano (no pulso sem ser o relógio do dia), no winder, no sol, em repouso, e cada corda, carga e troca de pilha. Mostra quanto tempo e que porcentagem ficou em cada estado, com filtro de período e de estado. |
@@ -1381,6 +1382,43 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | **Usuários** (`usuarios.php`, só o master) | O painel das contas: cada uma com o que tem e as ações (ver como, tornar oficial, prorrogar, bloquear, alterar, trocar a senha, transferir uma coleção, dar acesso, excluir) e criar uma conta. |
 | **Criar conta** (`cadastro.php`, sem login) | O cadastro aberto: a conta nova (com uma coleção, ou pedindo acesso), o convite que chegou por e-mail e o **Esqueci a senha**. |
 | **Ajuda** (`ajuda.php`) | Este guia dentro do sistema: a ideia central, como funciona, o cadastro de cada relógio campo por campo, os avisos de carga, as telas e as perguntas frequentes (as mesmas seções deste README, lidas dele; a API devolve o mesmo texto em `recurso=manual`). |
+
+### Os relatórios
+
+A página **Relatórios** (no menu, depois da **Coleção**) é a porta única de todo relatório do sistema: um menu com os
+relatórios, por grupo, os campos do escolhido (o relógio, o período, as opções) e **Gerar o relatório**. O relatório sai
+na tela e pronto para o papel (**Imprimir**; o "Salvar como PDF" do navegador guarda o arquivo) e numa planilha (**Baixar
+a planilha (CSV)**, que o Excel e o LibreOffice abrem com os acentos). O endereço guarda a escolha
+(`relatorios.php?tipo=servicos&relogio=3`): o link abre o relatório já gerado, e as outras telas apontam para ele (o
+**Relatório** do histórico, das estatísticas, do plano, dos avisos, dos desejos, dos acessórios e da galeria, e dos
+quadros de serviços, precisão e timegrapher do painel).
+
+| Grupo | Relatório | O que traz |
+|---|---|---|
+| Coleção | **Inventário da coleção** | os relógios (só os da coleção, ou todos), com o grupo, a marca, a referência, a situação, o ano e o valor da compra e os dias de uso; o valor somado |
+| Coleção | **Passaporte do relógio** | a ficha inteira de um relógio: quem ele é, a compra, o uso, o cadastro, as manutenções, os serviços, o declarado, medido e estimado, os testes da reserva, o timegrapher, os acessórios, os documentos e os próximos avisos |
+| Coleção | **Custos da coleção** | o valor pago, os serviços (quantos e quanto), o total, os dias de uso e o custo de cada uso, por relógio e somados |
+| Coleção | **Lista de desejos** | os desejados por prioridade, com o preço-alvo e o link, a soma dos preços, e os que saíram da coleção |
+| Coleção | **Acessórios** | os acessórios de cada relógio e os soltos, e quantos de cada tipo |
+| Coleção | **Documentos** | os documentos de cada relógio e calibre, com a categoria, a data, o arquivo e o tamanho |
+| Uso e rodízio | **Linha do tempo** | o que cada relógio fez no período, trecho a trecho, e o tempo em cada estado |
+| Uso e rodízio | **Uso no período** | as estatísticas: dias com relógio, horas, o mais e o menos usado, cada relógio, por dia da semana e por mês |
+| Uso e rodízio | **Plano do rodízio** | o relógio de cada dia, com o motivo, e quantos dias cada um tem |
+| Uso e rodízio | **Avisos** | os avisos de agora, do atrasado ao mais distante, e quantos de cada situação |
+| Uso e rodízio | **Notas dos critérios** | a ordem dos relógios pela nota e a conta de cada um, parâmetro por parâmetro |
+| Manutenção e precisão | **Serviços e diagnósticos** | cada serviço no período, com o relógio, quem fez, as peças, o custo, a estanqueidade e a marcha antes e depois; o custo somado e por tipo |
+| Manutenção e precisão | **Precisão e marcha** | a marcha de cada relógio; com um relógio, a conta inteira e cada intervalo medido |
+| Manutenção e precisão | **Timegrapher** | as medições; com um relógio, também a última sessão |
+| Manutenção e precisão | **Reserva medida** | os testes da reserva e as observações da energia |
+| Manutenção e precisão | **Calibres** | os calibres, o fabricante, os relógios e os documentos de cada um |
+| Sistema | **Totais** | os totais da página de totais, cada um com o resultado |
+| Sistema | **Execuções do cron** | as últimas execuções: quando, quanto tempo levou e o que fez |
+
+Quem monta é a API (`recurso=relatorios`): sem `tipo`, o catálogo (cada relatório com o grupo, o nome, a descrição e os
+parâmetros, e os relógios); com `tipo` e os parâmetros dele, o relatório pronto, num formato só para todos (o título, o
+subtítulo, o resumo, as seções em tabela ou em pares, o rodapé), já em texto, no idioma de quem pede; `csv=1` devolve a
+planilha. Cada relatório é montado em cima do que a própria API responde à tela (o mesmo recurso, com as mesmas regras de
+acesso): ele nunca diz outra coisa que a tela, e quem não vê um relógio não o vê no relatório.
 
 ### O modo básico e o avançado
 
@@ -1572,6 +1610,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `servicos` | os serviços e diagnósticos (`relogio=<id>`, com o resumo: a resistência declarada, a estanqueidade comprovada, quantos e o custo somado; sem ele, os de todos), com as peças, o custo, a estanqueidade e a marcha antes e depois |
 | `reserva` | a reserva medida (`relogio=<id>`: os testes da reserva do mecânico, as observações da energia, a medida, que é a mediana dos testes, e a tabela declarado, medido e estimado com a confiança; sem ele, os testes e as observações de todos) |
 | `timegrapher` | as medições do timegrapher (`relogio=<id>`: a última sessão, com a média de cada grandeza e a diferença entre as posições, as medições e o que a importação do CSV entende; sem ele, as de todos) |
+| `relatorios` | os relatórios, por uma porta só: sem `tipo`, o catálogo (cada relatório com o grupo, o nome, a descrição e os parâmetros, e os relógios); com `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron`) e os parâmetros dele (`relogio`, `de`, `ate`, `posse`, `situacao`), o relatório pronto (título, subtítulo, resumo, seções em tabela ou em pares, rodapé, já em texto); `csv=1`: a planilha |
 | `documento` | o arquivo de um documento (`id=<id>`): para mostrar (imagem, vídeo, áudio, PDF, texto) ou para baixar (o resto, ou com `baixar=1`); `mini=1` é a miniatura da foto. Atende pedaços (Range), para o vídeo avançar |
 | `usuarios`, `migracoes` | o master: o painel das contas, cada uma com o que tem e o hash da senha (para migrar com a mesma senha: veja [Os usuários e as senhas](#os-usuários-e-as-senhas)); os outros, só a própria conta; as migrações que faltam aplicar |
 | `conta`, `colecoes`, `aprovacoes` | Minha conta (as coleções, as árvores, os pedidos, os tokens, os aparelhos lembrados, os aparelhos do Web Push, o servidor de e-mail próprio; `parte=menu`: só o do menu); as coleções e as árvores; a página Aprovações |
@@ -2251,7 +2290,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | Arquivo | O que é |
 |---|---|
 | [`api.php`](api.php) | a API, a porta de toda leitura e escrita (a autenticação, o formato, a ordem dos recursos, os filtros, a resposta), com a documentação completa no cabeçalho |
-| [`api/`](api/) | os recursos grandes da API, um arquivo cada (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `ajuda.php`...), mais as funções dela (`funcoes.php`) e as escritas (`escrita.php`): rodam dentro do `api.php`, e abertos direto não fazem nada (o `.htaccess` e o `nginx-relogios.conf` bloqueiam a pasta) |
+| [`api/`](api/) | os recursos grandes da API, um arquivo cada (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `ajuda.php`...), mais as funções dela (`funcoes.php`, com o `api_ler` dos relatórios) e as escritas (`escrita.php`): rodam dentro do `api.php`, e abertos direto não fazem nada (o `.htaccess` e o `nginx-relogios.conf` bloqueiam a pasta) |
 | [`lib.php`](lib.php) | o núcleo: login, árvore, motor de fórmulas, avisos, critérios, rodízio, escala, documentos |
 | [`colecoes.php`](colecoes.php) | as coleções no núcleo: o escopo do pedido, o `modelo.json`, os segredos cifrados, a tabela `sistema`, a migração v25 e o impacto das exclusões |
 | [`alertas.php`](alertas.php) | os destinos (webhook, e-mail, Web Push) e as agendas (Google, CalDAV, Outlook, ICS) |

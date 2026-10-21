@@ -1151,6 +1151,33 @@ ler("2 galeria", ["recurso" => "galeria", "posse" => "todos"]);
 ler("2 estatisticas", ["recurso" => "estatisticas"]);
 ler("2 estatisticas desde o comeco", ["recurso" => "estatisticas", "de" => "tudo"]);
 ler("2 estatisticas recusadas", ["recurso" => "estatisticas", "de" => "2026-13-01"]);
+// os relatórios (a porta única): o catálogo; cada um, com os parâmetros de exemplo (o relógio, o período, as opções); a
+// planilha de um; e os erros (o tipo que não existe, o passaporte sem o relógio, o relógio que não existe, a data errada,
+// o período ao contrário)
+$cat_r = ler("2 relatorios", ["recurso" => "relatorios"]);
+$tipos_r = array_column($cat_r["relatorios"] ?? [], "tipo");
+if (count($tipos_r) !== 18) {
+    $falhas[] = "relatórios: o catálogo tem " . count($tipos_r) . " (" . implode(", ", $tipos_r) . ")";
+}
+foreach ([["colecao", []], ["colecao", ["posse" => "todos"]], ["passaporte", ["relogio" => $rel["manual"]]], ["passaporte", ["relogio" => $rel["auto2"]]], ["custos", []],
+    ["desejos", []], ["acessorios", []], ["acessorios", ["relogio" => $rel["crono"]]], ["documentos", []], ["historico", ["relogio" => $rel["smart"]]],
+    ["historico", ["de" => substr(dia(12, "00:00"), 0, 10), "ate" => substr(dia(1, "00:00"), 0, 10)]], ["estatisticas", ["de" => "tudo"]], ["estatisticas", []],
+    ["plano", []], ["avisos", []], ["avisos", ["relogio" => $rel["smart"]]], ["criterios", []], ["servicos", []], ["servicos", ["relogio" => $rel["auto2"]]],
+    ["precisao", []], ["precisao", ["relogio" => $rel["auto2"]]], ["timegrapher", []], ["timegrapher", ["relogio" => $rel["manual"]]], ["reserva", []],
+    ["reserva", ["relogio" => $rel["manual"]]], ["calibres", []], ["totais", []], ["cron", []], ["cron", ["situacao" => "todas"]]] as [$tp_r, $par_r]) {
+    $rr = ler("2 relatorio " . $tp_r . " " . json_encode($par_r), array_merge(["recurso" => "relatorios", "tipo" => $tp_r], $par_r));
+    if (!is_array($rr) || ($rr["tipo"] ?? "") !== $tp_r || !isset($rr["secoes"]) || count($rr["secoes"]) === 0) {
+        $falhas[] = "relatório " . $tp_r . ": " . substr(json_encode($rr, JSON_UNESCAPED_UNICODE), 0, 300);
+    }
+}
+ler("2 relatorio custos em csv", ["recurso" => "relatorios", "tipo" => "custos", "csv" => 1]);
+foreach ([["tipo" => "nao_existe"], ["tipo" => "passaporte"], ["tipo" => "passaporte", "relogio" => 99999], ["tipo" => "historico", "de" => "2026-13-01"],
+    ["tipo" => "servicos", "de" => "2026-05-01", "ate" => "2026-04-01"]] as $par_r) {
+    $rr = ler("2 relatorio recusado " . json_encode($par_r), array_merge(["recurso" => "relatorios"], $par_r));
+    if (!isset($rr["erro"])) {
+        $falhas[] = "relatório recusado: " . json_encode($par_r) . " passou";
+    }
+}
 
 $texto = json_encode($foto, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_PRESERVE_ZERO_FRACTION | JSON_INVALID_UTF8_SUBSTITUTE);
 if ($texto === false) {

@@ -63,7 +63,7 @@ function carregarHistorico() {
         + el("label", {}, t("Por página {1}", {1: el("select", {"name": "por"}, [["25", "25"], ["50", "50"], ["100", "100"], ["todos", t("Todos")]].map(function (o) {
           return el("option", {"value": o[0], "selected": por === o[0]}, o[1]);
         }).join(""))}))
-        + el("div", {"class": "botoes"}, el("button", {}, t("Filtrar")))
+        + el("div", {"class": "botoes"}, el("button", {}, t("Filtrar")) + " " + linkRelatorio("historico", {relogio: id, de: de, ate: ate}, t("Relatório deste período")))
         + el("div", {"class": "atalhos"}, el("a", {"href": link({de: diaAntes(6), ate: diaAntes(0), pagina: 1})}, t("7 dias")) + " "
           + el("a", {"href": link({de: diaAntes(29), ate: diaAntes(0), pagina: 1})}, t("30 dias")) + " " + el("a", {"href": link({de: "", ate: "", pagina: 1})}, t("desde o começo"))));
       var marcas = Object.keys(r.marcacoes);

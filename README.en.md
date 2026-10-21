@@ -1407,6 +1407,7 @@ comes in here by its name.
 | **Accessories** (`acessorios.php`) | The straps, boxes, cases, tools, chargers, parts and anything else: the list (the name, the type, the watch it belongs to, or *loose*, and the note), with the **Watch** filter (all, the loose ones or those of a watch; the panel's **Accessories** box opens it already filtered), **Edit** and **Delete** on each one, and below the form (**New accessory**: name, type, watch or *loose (serves several)* and note). Deleting a watch leaves its accessories loose. Through the API: `recurso=acessorios` (the list) and the `acessorios` write (`salvar`, `excluir`). |
 | **Gallery** (`galeria.php`) | The collection in photos, by group: each watch with the photo (the link to its page), the name, the brand and the reference, the purchase year and price and the days of use; at the top, how many, the total value and how many have a photo. **Also those outside the collection** shows the wished, sold and archived ones (with the status mark). **Print**: on paper, four per row, without the menu. Through the API: `recurso=galeria`. |
 | **Passport** (`passaporte.php`) | A watch's sheet to print or save as PDF (the **Passport** button in the panel's Documents box): the photo, the name, the brand and the reference, the group and the status; the **Purchase**; the **Use** (the first and the last time on the wrist, the hours on the wrist, the days of use and the cost per use); the filled-in **Record**; the **Services** (each type of mark, how many times and the last one; the services and battery changes); the **Accessories**; the **Documents**; and the **Upcoming alerts**. **Print**: only the data comes out on paper. Through the API: `recurso=passaporte`. With any service, also the **Services and diagnostics** (who did it, the cost, the water resistance and the rate before and after). |
+| **Reports** (`relatorios.php`) | The single door of the reports: the menu with all of them (by group), the chosen one's fields (the watch, the period, the options) and **Generate the report**; the report on screen, on paper (**Print**) and as a spreadsheet (**Download the spreadsheet (CSV)**). See [Reports](#reports). |
 | **Exact time** (`hora.php`) | The server's time to set the watches, in your time zone: the clock chosen in Settings (**Exact time clock**): the analog (steel case, light dial with the indices, the numerals 12, 6 and 9, the date window at 3, lance hands with a lume strip and the red seconds hand with counterweight), the digital (a dark case with a liquid crystal display: the weekday and the date, the big time with the faded "88:88:88" behind, the UTC and the moon phase), the ana-digi (the digital display inside the analog dial) or both, side by side; they move second by second, set by the API (discounting the request time; below, how far the device's clock is fast or slow), with the date in words, the UTC time and the time zone (and where it came from); the **Time zone and UTC** boxes (the time zone, the offset, Zulu time, the military letter of the time zone, like *P (Papa)*, and the date-time group, *131433P OCT 26*), **Calendar** (day of the year, ISO week, quarter, Julian day, Unix) and **Moon** (the phase, the age, the illuminated part and the next full and new moons, by the mean cycle: it can be off by a day); and **How to set it**. It reads the API again every minute. Through the API: `recurso=hora_certa`. |
 | **Documents** (`documentos.php`) | The documents of a watch (or of all), opened from the watch page: uploading several files, one tab per category, the full-screen photo gallery with a slideshow, the videos in sequence in the chosen order, the PDF viewer, the summary of the NF-e from the XML, and download for the rest. See [The watch's documents](#the-watchs-documents). |
 | **History** (`historico.php`) | A watch's timeline: in use by the rotation, in use outside the plan (on the wrist without being the watch of the day), on the winder, in the sun, at rest, and each winding, charge and battery change. It shows how much time and what percentage it spent in each state, with a period and state filter. |
@@ -1424,6 +1425,44 @@ comes in here by its name.
 | **Users** (`usuarios.php`, master only) | The accounts panel: each one with what it has and the actions (view as, make official, extend, block, edit, change the password, transfer a collection, give access, delete) and creating an account. |
 | **Create account** (`cadastro.php`, without login) | The open sign-up: the new account (with a collection, or asking for access), the invitation that arrived by e-mail and **Forgot my password**. |
 | **Help** (`ajuda.php`) | This guide inside the system: the central idea, how it works, each watch's record field by field, the charge alerts, the screens and the frequently asked questions (the same sections of the README, read from it; the API returns the same text in `recurso=manual`). |
+
+### Reports
+
+The **Reports** page (in the menu, after **Collection**) is the single door to every report in the system: a menu with the
+reports, by group, the chosen one's fields (the watch, the period, the options) and **Generate the report**. The report comes
+out on screen and ready for paper (**Print**; the browser's "Save as PDF" keeps the file) and as a spreadsheet (**Download
+the spreadsheet (CSV)**, which Excel and LibreOffice open with the accents). The address keeps the choice
+(`relatorios.php?tipo=servicos&relogio=3`): the link opens the report already generated, and the other screens point to it
+(the **Report** of the history, the statistics, the plan, the alerts, the wishes, the accessories and the gallery, and of the
+services, precision and timegrapher panels of the watch panel).
+
+| Group | Report | What it brings |
+|---|---|---|
+| Collection | **Collection inventory** | the watches (only those in the collection, or all), with the group, the brand, the reference, the status, the year and value of purchase and the days of use; the total value |
+| Collection | **Watch passport** | a watch's whole record: who it is, the purchase, the use, the registration, the maintenance, the services, the declared, measured and estimated, the power reserve tests, the timegrapher, the accessories, the documents and the next alerts |
+| Collection | **Collection costs** | the amount paid, the services (how many and how much), the total, the days of use and the cost of each use, by watch and summed |
+| Collection | **Wish list** | the wanted watches by priority, with the target price and the link, the sum of the prices, and those that left the collection |
+| Collection | **Accessories** | each watch's accessories and the loose ones, and how many of each type |
+| Collection | **Documents** | the documents of each watch and caliber, with the category, the date, the file and the size |
+| Use and rotation | **Timeline** | what each watch did in the period, stretch by stretch, and the time in each state |
+| Use and rotation | **Use in the period** | the statistics: days with a watch, hours, the most and least used, each watch, by weekday and by month |
+| Use and rotation | **Rotation plan** | each day's watch, with the reason, and how many days each one has |
+| Use and rotation | **Alerts** | the alerts now, from the overdue to the most distant, and how many of each status |
+| Use and rotation | **Criteria scores** | the order of the watches by score and each one's calculation, parameter by parameter |
+| Maintenance and precision | **Services and diagnostics** | each service in the period, with the watch, who did it, the parts, the cost, the water resistance and the rate before and after; the summed cost and by type |
+| Maintenance and precision | **Precision and rate** | each watch's rate; with a watch, the whole calculation and each measured interval |
+| Maintenance and precision | **Timegrapher** | the measurements; with a watch, also the last session |
+| Maintenance and precision | **Measured power reserve** | the power reserve tests and the energy observations |
+| Maintenance and precision | **Calibers** | the calibers, the manufacturer, the watches and the documents of each one |
+| System | **Totals** | the totals of the totals page, each one with the result |
+| System | **Cron runs** | the latest runs: when, how long it took and what it did |
+
+The API builds them (`recurso=relatorios`): without `tipo`, the catalog (each report with the group, the name, the
+description and the parameters, and the watches); with `tipo` and its parameters, the ready report, in a single format for all
+(the title, the subtitle, the summary, the sections as a table or pairs, the footer), already in text, in the language of whoever
+asks; `csv=1` returns the spreadsheet. Each report is built on what the API itself answers to the screen (the same resource,
+with the same access rules): it never says something different from the screen, and whoever does not see a watch does not see
+it in the report.
 
 ### Basic and advanced mode
 
@@ -1621,6 +1660,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `servicos` | the services and diagnostics (`relogio=<id>`, with the summary: the declared water resistance, the proven one, how many and the total cost; without it, everyone's), with the parts, the cost, the water resistance and the rate before and after |
 | `reserva` | the measured reserve (`relogio=<id>`: the mechanical watch's reserve tests, the energy observations, the measurement, which is the median of the tests, and the declared, measured and estimated table with the confidence; without it, the tests and observations of all) |
 | `timegrapher` | the timegrapher measurements (`relogio=<id>`: the last session, with the average of each quantity and the difference between the positions, the measurements and what the CSV import understands; without it, everyone's) |
+| `relatorios` | the reports, through a single door: without `tipo`, the catalog (each report with the group, the name, the description and the parameters, and the watches); with `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron`) and its parameters (`relogio`, `de`, `ate`, `posse`, `situacao`), the ready report (title, subtitle, summary, sections as table or pairs, footer, already in text); `csv=1`: the spreadsheet |
 | `documento` | a document's file (`id=<id>`): to show (image, video, audio, PDF, text) or to download (the rest, or with `baixar=1`); `mini=1` is the photo's thumbnail. It serves pieces (Range), so the video can skip ahead |
 | `usuarios`, `migracoes` | the master: the accounts panel, each with what it has and the password hash (to migrate with the same password: see [The users and the passwords](#the-users-and-the-passwords)); the others, only their own account; the migrations still to apply |
 | `conta`, `colecoes`, `aprovacoes` | My account (the collections, the trees, the requests, the tokens, the remembered devices, the Web Push devices, the own e-mail server; `parte=menu`: only the menu's part); the collections and the trees; the Approvals page |
@@ -2312,7 +2352,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | File | What it is |
 |---|---|
 | [`api.php`](api.php) | the API, the door for every read and write (the authentication, the format, the order of the resources, the filters, the response), with the complete documentation in the header |
-| [`api/`](api/) | the API's big resources, one file each (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `ajuda.php`...), plus its functions (`funcoes.php`) and the writes (`escrita.php`): they run inside `api.php`, and opened directly they do nothing (`.htaccess` and `nginx-relogios.conf` block the folder) |
+| [`api/`](api/) | the API's big resources, one file each (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `ajuda.php`...), plus its functions (`funcoes.php`, with the reports' `api_ler`) and the writes (`escrita.php`): they run inside `api.php`, and opened directly they do nothing (`.htaccess` and `nginx-relogios.conf` block the folder) |
 | [`lib.php`](lib.php) | the core: login, tree, formula engine, alerts, criteria, rotation, schedule, documents |
 | [`colecoes.php`](colecoes.php) | the collections in the core: the request's scope, `modelo.json`, the encrypted secrets, the `sistema` table, migration v25 and the impact of deletions |
 | [`alertas.php`](alertas.php) | the destinations (webhook, e-mail, Web Push) and the calendars (Google, CalDAV, Outlook, ICS) |

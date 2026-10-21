@@ -424,3 +424,104 @@ set_exception_handler(function ($t) use ($formato) {
     $banco = $t instanceof BancoErro || $t instanceof mysqli_sql_exception;
     responde($banco ? 503 : 500, ["erro" => $banco ? t("o banco de dados não respondeu") : t("erro interno"), "detalhe" => $t->getMessage()], $formato);
 });
+
+// Os avisos de todos os relógios agora (o recurso=avisos e o relatório Avisos), do mais urgente (ou mais atrasado) para o
+// mais distante. O desempate (dois vencendo no mesmo instante) é fixo, para a lista sair igual em qualquer banco; o
+// falta_dias arredondado (não a data com os segundos) junta o que vence "agora" em relógios calculados a um segundo um do
+// outro
+function avisos_de_agora()
+{
+    $todos = [];
+    foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
+        foreach (avisos_do_relogio($r, time()) as $a) {
+            $todos[] = array_merge(["relogio_id" => (int)$r["id"], "relogio" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1], $a);
+        }
+    }
+    usort($todos, function ($x, $y) {
+        return [$x["falta_dias"], $x["relogio_id"], $x["identificador"]] <=> [$y["falta_dias"], $y["relogio_id"], $y["identificador"]];
+    });
+    return $todos;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Os relatórios (recurso=relatorios, api/relatorios.php): o erro de um relatório (a mensagem e o código HTTP), um recurso
+// de leitura da própria API lido por dentro, e o relatório pronto em CSV
+// ---------------------------------------------------------------------------------------------------------------------
+class RelatorioErro extends Exception
+{
+}
+
+// Um recurso de leitura da API, por dentro: roda o pedaço dele (api/<recurso>.php) com estes parâmetros no lugar dos do
+// pedido e devolve [código, resposta]. Quem pede é o mesmo (o login, a coleção, o idioma): as regras de acesso são as do
+// recurso. O relatório nunca diz outra coisa que a tela
+function api_ler($recurso_l, $parametros = [])
+{
+    $guarda = [$_GET, $_REQUEST];
+    $_GET = array_map("strval", $parametros);
+    $_REQUEST = $_GET;
+    $codigo = 200;
+    $saida = [];
+    try {
+        require __DIR__ . "/" . basename($recurso_l) . ".php";
+    } finally {
+        [$_GET, $_REQUEST] = $guarda;
+    }
+    return [$codigo, json_decode((string)json_encode($saida), true)];
+}
+
+// O relatório em CSV (uma planilha: UTF-8 com a marca do começo, para o Excel reconhecer os acentos, separado por ponto e
+// vírgula): o título, o subtítulo, o resumo e cada seção (o título, as colunas, as linhas e o total; os pares em duas
+// colunas), uma linha em branco entre elas, e o rodapé
+function relatorio_csv($r)
+{
+    $f = fopen("php://temp", "r+");
+    $linha = function ($campos) use ($f) {
+        fputcsv($f, array_map("strval", $campos), ";", "\"", "");
+    };
+    $linha([$r["titulo"]]);
+    if (($r["subtitulo"] ?? null) !== null) {
+        $linha([$r["subtitulo"]]);
+    }
+    if (count($r["resumo"]) > 0) {
+        $linha([]);
+        foreach ($r["resumo"] as $x) {
+            $linha([$x["nome"], $x["valor"]]);
+        }
+    }
+    foreach ($r["secoes"] as $s) {
+        $linha([]);
+        $linha([$s["titulo"]]);
+        if ($s["tipo"] === "tabela") {
+            $linha(array_column($s["colunas"], "nome"));
+            foreach ($s["linhas"] as $l) {
+                $linha($l);
+            }
+            if ($s["total"] !== null) {
+                $linha($s["total"]);
+            }
+            if (count($s["linhas"]) === 0 && $s["vazio"] !== null) {
+                $linha([$s["vazio"]]);
+            }
+        } else {
+            foreach ($s["pares"] as $p) {
+                $linha([$p["nome"], $p["valor"]]);
+            }
+            if (count($s["pares"]) === 0 && $s["vazio"] !== null) {
+                $linha([$s["vazio"]]);
+            }
+        }
+        if (($s["nota"] ?? null) !== null) {
+            $linha([$s["nota"]]);
+        }
+    }
+    $linha([]);
+    $linha([$r["rodape"]]);
+    rewind($f);
+    return "\xEF\xBB\xBF" . stream_get_contents($f);
+}
+
+// O nome do arquivo do CSV: relatorio-<tipo>-<AAAA-MM-DD>.csv
+function relatorio_arquivo($r)
+{
+    return "relatorio-" . preg_replace("/[^a-z0-9_]/", "", (string)$r["tipo"]) . "-" . substr((string)$r["gerado_em"], 0, 10) . ".csv";
+}

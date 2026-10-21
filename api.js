@@ -75,6 +75,50 @@ function semPreencher(attrs) {
   return attrs;
 }
 
+// Um relatório da API (recurso=relatorios, tipo=...) pronto para a tela e para o papel: a barra (Imprimir e a planilha),
+// a cabeça (a foto, o grupo, o título e o subtítulo), o resumo, as seções (uma tabela, com o total embaixo, ou pares) e o
+// rodapé. Tudo vem em texto da API; aqui só se monta. A página Relatórios usa este, e as outras telas apontam para ela
+// (linkRelatorio)
+function relatorioHtml(r) {
+  var celula = function (v, c) { return el("td", {"class": c && c.numero ? "num" : ""}, h(v)); };
+  var res = el("div", {"class": "barra-impressao"}, el("button", {"type": "button", "onclick": "window.print()"}, t("Imprimir")) + " "
+    + el("a", {"class": "botao leve", "href": r.csv, "download": ""}, t("Baixar a planilha (CSV)")) + " "
+    + el("span", {"class": "nota"}, t("No papel saem só os dados (o \"Salvar como PDF\" do navegador guarda o arquivo).")));
+  res += el("header", {"class": "cabeca-impressa"}, (r.foto ? el("img", {"src": r.foto, "alt": h(r.subtitulo || r.titulo)}) : "")
+    + el("div", {}, el("p", {"class": "data"}, h(r.grupo)) + el("h1", {}, h(r.titulo)) + (r.subtitulo ? el("p", {}, h(r.subtitulo)) : "")));
+  if (r.resumo.length > 0) {
+    res += el("section", {"class": "relatorio-resumo"}, el("dl", {"class": "pares"}, r.resumo.map(function (x) { return el("dt", {}, h(x.nome)) + el("dd", {}, h(x.valor)); }).join("")));
+  }
+  r.secoes.forEach(function (s) {
+    var corpo;
+    if (s.tipo === "tabela") {
+      corpo = s.linhas.length === 0 ? el("p", {"class": "nota"}, h(s.vazio || ""))
+        : el("div", {"class": "rolagem"}, el("table", {"class": "tabela-dados compacta relatorio"},
+          el("thead", {}, el("tr", {}, s.colunas.map(function (c) { return el("th", {"class": c.numero ? "num" : ""}, h(c.nome)); }).join("")))
+          + el("tbody", {}, s.linhas.map(function (l) { return el("tr", {}, l.map(function (v, i) { return celula(v, s.colunas[i]); }).join("")); }).join(""))
+          + (s.total ? el("tfoot", {}, el("tr", {}, s.total.map(function (v, i) { return celula(v, s.colunas[i]); }).join(""))) : "")));
+    } else {
+      corpo = s.pares.length === 0 ? el("p", {"class": "nota"}, h(s.vazio || ""))
+        : el("dl", {"class": "pares"}, s.pares.map(function (x) { return el("dt", {}, h(x.nome)) + el("dd", {}, h(x.valor)); }).join(""));
+    }
+    res += el("section", {}, el("h2", {}, h(s.titulo)) + corpo + (s.nota ? el("p", {"class": "nota"}, h(s.nota)) : ""));
+  });
+  return res + el("p", {"class": "nota rodape-impresso"}, h(r.rodape));
+}
+
+// O link de uma tela para um relatório já escolhido (a página Relatórios abre e gera): o tipo e os parâmetros dele (os
+// vazios ficam de fora); novaAba: abre noutra aba (o painel do relógio, ao lado da lista)
+function linkRelatorio(tipo, parametros, texto, novaAba) {
+  var p = new URLSearchParams({tipo: tipo});
+  Object.keys(parametros || {}).forEach(function (k) {
+    if (parametros[k] !== null && parametros[k] !== undefined && parametros[k] !== "") {
+      p.set(k, parametros[k]);
+    }
+  });
+  return el("a", {"class": "botao leve link-relatorio", "href": "relatorios.php?" + p.toString(), "target": novaAba ? "_blank" : null, "rel": novaAba ? "noopener" : null},
+    texto || t("Relatório"));
+}
+
 // Texto seguro para pôr no HTML
 function h(t) {
   return String(t === null || t === undefined ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
