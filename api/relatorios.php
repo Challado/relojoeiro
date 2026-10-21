@@ -160,7 +160,13 @@ $RELATORIOS["passaporte"] = [$g_colecao, t("Passaporte do relógio"), t("A ficha
         $sec[] = $pares(t("Uso"), [[t("Primeira vez no pulso"), $data($u["primeira_vez"])], [t("Última vez"), $u["no_pulso_agora"] ? t("no pulso agora") : $data($u["ultima_vez"])],
             [t("Horas no pulso"), $u["primeira_vez"] === null ? null : numero_txt($u["horas_no_pulso"], 1) . t(" h")],
             [t("Dias de uso"), $u["dias_de_uso"] === null ? null : (string)$u["dias_de_uso"]], [t("Custo por uso"), $reais($u["custo_por_uso"])]], t("Ainda não foi ao pulso."));
-        $sec[] = $pares(t("Cadastro"), array_map(function ($v) { return [$v["nome"], $v["valor"]]; }, $d["cadastro"]), t("Nada preenchido."));
+        // o cadastro, uma seção por divisória (o que não tem divisória sai como "Cadastro")
+        if (count($d["cadastro_secoes"]) === 0) {
+            $sec[] = $pares(t("Cadastro"), [], t("Nada preenchido."));
+        }
+        foreach ($d["cadastro_secoes"] as $g) {
+            $sec[] = $pares($g["secao"] ?? t("Cadastro"), array_map(function ($v) { return [$v["nome"], $v["valor"]]; }, $g["campos"]));
+        }
         $sec[] = $tabela(t("Manutenções"), [t("Marcação"), [t("Vezes"), true], t("A última")], array_map(function ($m) use ($data) {
             return [$m["nome"], (string)$m["vezes"], $data($m["ultima"])];
         }, $d["marcacoes"]), t("Nenhuma marcação."));

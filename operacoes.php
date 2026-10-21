@@ -231,6 +231,11 @@ function op_campos($acao, $d)
         $so_desejado = array_key_exists("so_desejado", $d) ? ((string)$d["so_desejado"] === "1" ? 1 : 0) : (int)($atual["so_desejado"] ?? 0);
         // do movimento: o campo aparece no formulário do calibre (com a Configuração calibre_campos em só os do movimento)
         $do_calibre = array_key_exists("calibre", $d) ? ((string)$d["calibre"] === "1" ? 1 : 0) : (int)($atual["calibre"] ?? 0);
+        // a divisória da ficha (0 ou vazio: nenhuma, no fim)
+        $secao = array_key_exists("secao_id", $d) ? ((int)$d["secao_id"] > 0 ? (int)$d["secao_id"] : null) : (($atual["secao_id"] ?? null) !== null ? (int)$atual["secao_id"] : null);
+        if ($secao !== null && !isset(secoes_todas()[$secao])) {
+            $erros[] = t("Divisória: a {1} não existe (Cadastros › Divisórias).", [1 => $secao]);
+        }
         if (!identificador_valido($c["identificador"])) {
             $erros[] = t("Identificador: minúsculas, números e _, começando por letra, até 40 (é o nome nas fórmulas).");
         } elseif ((int)valor("SELECT COUNT(*) FROM campo WHERE identificador = ? AND id <> ?", [$c["identificador"], $id]) > 0 || isset(formulas_todas()[$c["identificador"]])) {
@@ -275,14 +280,14 @@ function op_campos($acao, $d)
             }
         }
         if (count($erros) === 0) {
-            $dados = [$c["identificador"], $c["nome"], $c["tipo"], $c["unidade"], $c["padrao"] !== "" ? $c["padrao"] : null, no_gravar($no), $so_desejado, $do_calibre];
+            $dados = [$c["identificador"], $c["nome"], $c["tipo"], $c["unidade"], $c["padrao"] !== "" ? $c["padrao"] : null, no_gravar($no), $so_desejado, $do_calibre, $secao];
             if ($acao === "novo") {
-                sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, so_desejado, calibre, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, so_desejado, calibre, secao_id, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     array_merge($dados, [(int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM campo")]));
                 $id = ultimo_id();
                 $msg = t("Campo {1} criado, para {2}. Nas fórmulas: {3}.", [1 => $c["nome"], 2 => no_caminho($no), 3 => $c["identificador"]]);
             } else {
-                sql("UPDATE campo SET identificador = ?, nome = ?, tipo = ?, unidade = ?, padrao = ?, no_id = ?, so_desejado = ?, calibre = ? WHERE id = ?", array_merge($dados, [$id]));
+                sql("UPDATE campo SET identificador = ?, nome = ?, tipo = ?, unidade = ?, padrao = ?, no_id = ?, so_desejado = ?, calibre = ?, secao_id = ? WHERE id = ?", array_merge($dados, [$id]));
                 $msg = t("Campo {1} salvo.", [1 => $c["nome"]]);
             }
             // as opções da lista (só no tipo lista; nos outros, nenhuma)
@@ -312,6 +317,60 @@ function op_campos($acao, $d)
         }
         $msg = t("Ordem alterada.");
     }
+    return resultado($erros, $msg, ["id" => $id]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Divisórias da ficha (as seções dos campos: Cadastros › Divisórias). Ações: salvar (id 0 cria, no fim; nome, até 80, sem
+// repetir na árvore), ordem (id, direcao: sobe ou desce), excluir (id; os campos dela ficam sem divisória, no fim da ficha)
+// ---------------------------------------------------------------------------------------------------------------------
+function op_secoes($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $id = (int)($d["id"] ?? 0);
+    $atual = $id > 0 ? (secoes_todas(true)[$id] ?? null) : null;
+    if ((($acao === "salvar" && $id > 0) || $acao === "ordem" || $acao === "excluir") && !$atual) {
+        $erros[] = t("Divisória não encontrada.");
+    } elseif ($acao === "salvar") {
+        $nome = trim((string)($d["nome"] ?? ($atual["nome"] ?? "")));
+        if ($nome === "" || mb_strlen($nome) > 80) {
+            $erros[] = t("Dê um nome à divisória (até 80 caracteres).");
+        } elseif ((int)valor("SELECT COUNT(*) FROM campo_secao WHERE nome = ? AND id <> ?", [$nome, $id]) > 0) {
+            $erros[] = t("Já existe a divisória {1}.", [1 => $nome]);
+        }
+        if (count($erros) === 0) {
+            if ($atual) {
+                sql("UPDATE campo_secao SET nome = ? WHERE id = ?", [$nome, $id]);
+                $msg = t("Divisória {1} salva.", [1 => $nome]);
+            } else {
+                sql("INSERT INTO campo_secao (no_id, nome, ordem) VALUES (?, ?, ?)", [no_raiz(), $nome, (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM campo_secao")]);
+                $id = ultimo_id();
+                $msg = t("Divisória {1} criada.", [1 => $nome]);
+            }
+        }
+    } elseif ($acao === "ordem") {
+        $todas = array_keys(secoes_todas());
+        $pos = array_search($id, $todas, true);
+        $viz = ($d["direcao"] ?? "") === "sobe" ? $pos - 1 : $pos + 1;
+        if ($viz >= 0 && $viz < count($todas)) {
+            $todas[$pos] = $todas[$viz];
+            $todas[$viz] = $id;
+        }
+        foreach ($todas as $k => $iid) {
+            sql("UPDATE campo_secao SET ordem = ? WHERE id = ?", [$k + 1, $iid]);
+        }
+        $msg = t("Ordem alterada.");
+    } elseif ($acao === "excluir") {
+        $n = (int)valor("SELECT COUNT(*) FROM campo WHERE secao_id = ?", [$id]);
+        sql("DELETE FROM campo_secao WHERE id = ?", [$id]);
+        $msg = t("Divisória {1} excluída{2}", [1 => $atual["nome"], 2 => $n === 0 ? "." : ($n === 1 ? t(": 1 campo ficou sem divisória, no fim da ficha.")
+            : t(": {1} campos ficaram sem divisória, no fim da ficha.", [1 => $n]))]);
+    } else {
+        $erros[] = t("Ação desconhecida: {1}.", [1 => $acao]);
+    }
+    secoes_todas(true);
+    campos_todos(true);
     return resultado($erros, $msg, ["id" => $id]);
 }
 

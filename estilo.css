@@ -429,8 +429,10 @@ table.compacta td:last-child { text-align: right; }
 .bolinha.ponto-repouso { background: #c0392b; }
 p.alerta-duplo { font-size: .88rem; color: var(--ambar); margin: .3rem 0; }
 button.corrige { font-size: .85rem; padding: .3rem .7rem; margin-top: .2rem; border-color: #c0392b; color: #9b2c22; }
-fieldset.compra { border: 1px solid var(--aco); border-radius: 8px; padding: .6rem .7rem .7rem; margin: 0; display: grid; gap: .6rem; }
-fieldset.compra legend { font-size: .9rem; font-weight: 600; color: var(--cinza); padding: 0 .3rem; }
+fieldset.secao-cadastro { border: 1px solid var(--aco); border-radius: 8px; padding: .6rem .7rem .7rem; margin: 0; display: grid; gap: .6rem; }
+fieldset.secao-cadastro legend { font-size: .9rem; font-weight: 600; color: var(--cinza); padding: 0 .3rem; }
+/* a linha de título de cada divisória na tabela dos dados do relógio */
+tr.secao-dados th { text-align: left; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cinza); padding-top: .7rem; border-bottom: 1px solid var(--aco); }
 /* os valores que um calibre define (a aba Calibres dos Cadastros): os campos numa grade, o grupo em que valem embaixo */
 fieldset.campos-calibre { border: 1px solid var(--aco); border-radius: 8px; padding: .6rem .7rem .7rem; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr)); gap: .6rem 1rem; }
 fieldset.campos-calibre legend { font-size: .9rem; font-weight: 600; color: var(--cinza); padding: 0 .3rem; }
@@ -1244,11 +1246,11 @@ table.conta-previsao tr.fora-da-conta .origem { opacity: .6; }
 /* editar cadastro: os campos numa grade, todos da mesma largura; o grupo, a compra e os botões na linha inteira */
 .detalhe .cadastro { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr)); gap: .8rem 1rem; max-width: none; align-items: end; }
 .detalhe .cadastro > label:not(.check) { font-size: .85rem; color: var(--cinza); }
-.detalhe .cadastro > label:has(.campo-subtipo), .detalhe .cadastro > fieldset.compra, .detalhe .cadastro > .botoes, .detalhe .cadastro > .regra-pulso { grid-column: 1 / -1; }
+.detalhe .cadastro > label:has(.campo-subtipo), .detalhe .cadastro > fieldset.secao-cadastro, .detalhe .cadastro > .botoes, .detalhe .cadastro > .regra-pulso { grid-column: 1 / -1; }
 .detalhe .cadastro > label small { color: var(--cinza); font-size: .78rem; }
 .detalhe .cadastro label.check { padding-bottom: .5rem; color: var(--tinta); }
-.detalhe fieldset.compra { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr)); gap: .8rem 1rem; padding: .7rem .8rem .8rem; }
-.detalhe fieldset.compra label { font-size: .85rem; color: var(--cinza); }
+.detalhe fieldset.secao-cadastro { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr)); gap: .8rem 1rem; padding: .7rem .8rem .8rem; }
+.detalhe fieldset.secao-cadastro label { font-size: .85rem; color: var(--cinza); }
 
 /* marcar: a lista do que aconteceu e, embaixo, os campos daquilo lado a lado, alinhados pela base */
 .quadro-marcar form.marcar { max-width: none; margin: 0; }

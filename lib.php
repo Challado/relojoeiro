@@ -659,6 +659,38 @@ function valor_para_campo($c, $v)
 // dela (na base = (valor - zero) × fator), e duas unidades com a mesma base (ou uma e a base) convertem entre si
 // ---------------------------------------------------------------------------------------------------------------------
 
+// As divisórias da ficha (as seções dos campos) da árvore da coleção, na ordem: [id => ["id", "nome", "ordem"]] (uma vez
+// por requisição; de novo depois de uma gravação)
+function secoes_todas($recarregar = false)
+{
+    static $todas_ = [];
+    $k_ = (int)colecao_atual();
+    if (!isset($todas_[$k_]) || $recarregar) {
+        $res = [];
+        foreach (linhas("SELECT * FROM campo_secao ORDER BY ordem, nome") as $x) {
+            $res[(int)$x["id"]] = ["id" => (int)$x["id"], "nome" => $x["nome"], "ordem" => (int)$x["ordem"]];
+        }
+        $todas_[$k_] = $res;
+    }
+    return $todas_[$k_];
+}
+
+// Os campos na ordem da ficha: pela divisória (na ordem delas; os sem divisória no fim) e, dentro dela, pela ordem do campo.
+// Cada um ganha "secao" (o nome da divisória, ou null)
+function campos_na_ordem_da_ficha($campos)
+{
+    $secoes = secoes_todas();
+    $pos = array_flip(array_keys($secoes));
+    $lista = array_values($campos);
+    foreach ($lista as $i => $c) {
+        $sid = ($c["secao_id"] ?? null) !== null ? (int)$c["secao_id"] : null;
+        $lista[$i]["secao"] = $sid !== null && isset($secoes[$sid]) ? $secoes[$sid]["nome"] : null;
+        $lista[$i]["_ordem"] = [$sid !== null && isset($pos[$sid]) ? $pos[$sid] : PHP_INT_MAX, (int)($c["ordem"] ?? 0), $i];
+    }
+    usort($lista, function ($x, $y) { return $x["_ordem"] <=> $y["_ordem"]; });
+    return array_map(function ($c) { unset($c["_ordem"]); return $c; }, $lista);
+}
+
 // As unidades da árvore da coleção, por símbolo (uma vez por requisição; de novo depois de uma gravação): cada uma com a
 // base e a unidade em que também aparece pelo símbolo, o fator e o zero como número e quantas se convertem nela
 function unidades_todas($recarregar = false)
@@ -846,6 +878,7 @@ $MIGRACOES = [
     "v39" => ["migracao_v39.sql", tk("o timegrapher: as medições de um timegrapher de bancada (a marcha, a amplitude, o erro de batida, as batidas por hora e o ângulo de levantamento, em cada posição), digitadas na mão ou importadas do CSV do aparelho, com a média e a diferença entre as posições de cada sessão"), "timegrapher"],
     "v40" => ["migracao_v40.sql", tk("o login e o e-mail de cada conta sem espaços nas pontas também no banco (a regra ck_usuario_aparados), e nunca duas contas com o mesmo login ou e-mail: o login de uma também não pode ser o e-mail de outra (os dois servem para entrar)"), "sistema.chave=migracao_v40", "migracao_v40"],
     "v41" => ["migracao_v41.sql", tk("o cadastro das unidades (Cadastros › Unidades): cada árvore ganha as unidades prontas (mm, cm, pol, g, h, dias, bar, °C...), com o nome, a conversão (a unidade base da mesma grandeza e o fator: 1 pol = 25,4 mm) e a unidade em que o valor também aparece (o milímetro também em polegadas); o campo, o tipo de lançamento e a fórmula escolhem a unidade da lista, e a função CONVERTER converte nas fórmulas. As unidades que a árvore já usa entram também"), "unidade", "migracao_v41_dados"],
+    "v42" => ["migracao_v42.sql", tk("as divisórias da ficha (Cadastros › Divisórias): os campos ficam agrupados por seção no cadastro, no painel, no passaporte e nos relatórios (Identificação, Compra, Construção, Energia, Manutenção e precisão, Rodízio, Desejo), e você cria, renomeia e reordena as suas; os campos prontos já vêm cada um na sua"), "campo_secao", "migracao_v42_dados"],
 ];
 
 // O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
@@ -1042,6 +1075,36 @@ function migracao_v41_dados($nova = false)
                         sql("INSERT INTO unidade (no_id, simbolo, nome, base_id, fator, zero) VALUES (?, ?, ?, NULL, NULL, 0)", [(int)$raiz["id"], $simbolo, $simbolo]);
                     }
                 }
+            }
+        }
+    });
+}
+
+// O passo em PHP da v42: em cada árvore, as divisórias do modelo.json (no idioma da coleção) e cada campo do modelo que
+// ainda não tem divisória na dele (pelo identificador). Numa instalação nova, a árvore já nasce com elas (arvore_criar)
+function migracao_v42_dados($nova = false)
+{
+    if ($nova) {
+        return;
+    }
+    sem_escopo(function () {
+        $onde = [];
+        foreach (modelo_ler()["campos"] as $c) {
+            if (($c["secao"] ?? null) !== null) {
+                $onde[$c["identificador"]] = $c["secao"];
+            }
+        }
+        foreach (linhas("SELECT id FROM no WHERE pai_id IS NULL ORDER BY id") as $raiz) {
+            $arvore = [(int)$raiz["id"]];
+            $nivel = $arvore;
+            while (count($nivel) > 0) {
+                $nivel = array_map("intval", array_column(linhas("SELECT id FROM no WHERE pai_id IN (" . implode(", ", $nivel) . ")"), "id"));
+                $arvore = array_merge($arvore, $nivel);
+            }
+            $lingua = lingua_valida((string)valor("SELECT valor FROM config WHERE chave = 'idioma' AND colecao_id IN (SELECT id FROM colecao WHERE no_id = ?) ORDER BY colecao_id", [(int)$raiz["id"]])) ?? "pt-BR";
+            $secoes = secoes_do_modelo((int)$raiz["id"], modelo_tradutor($lingua));
+            foreach ($onde as $ident => $secao) {
+                sql("UPDATE campo SET secao_id = ? WHERE identificador = ? AND secao_id IS NULL AND no_id IN (" . implode(", ", $arvore) . ")", [$secoes[$secao], $ident]);
             }
         }
     });

@@ -44,11 +44,23 @@ $texto_valor = function ($c, $v) {
     return (string)$v;
 };
 $cadastro = [];
-foreach (campos_do_relogio($r) as $ident => $c) {
+// na ordem da ficha: por divisória, cada um com o nome da dele (null: sem divisória, no fim)
+foreach (campos_na_ordem_da_ficha(campos_do_relogio($r)) as $c) {
+    $ident = $c["identificador"];
     $t = $texto_valor($c, $valores[$ident] ?? null);
     if ($t !== null) {
-        $cadastro[] = ["identificador" => $ident, "nome" => $c["nome"], "valor" => $t];
+        $cadastro[] = ["identificador" => $ident, "nome" => $c["nome"], "secao" => $c["secao"], "valor" => $t];
     }
+}
+// o mesmo cadastro agrupado por divisória, na ordem delas (o grupo sem divisória por último, com a secao null)
+$cadastro_secoes = [];
+foreach ($cadastro as $x) {
+    $u_ = count($cadastro_secoes) - 1;
+    if ($u_ < 0 || $cadastro_secoes[$u_]["secao"] !== $x["secao"]) {
+        $cadastro_secoes[] = ["secao" => $x["secao"], "campos" => []];
+        $u_++;
+    }
+    $cadastro_secoes[$u_]["campos"][] = ["identificador" => $x["identificador"], "nome" => $x["nome"], "valor" => $x["valor"]];
 }
 
 // o uso: a primeira e a última vez no pulso, as horas no pulso desde sempre, os dias de uso e o custo por uso (as fórmulas)
@@ -85,7 +97,7 @@ $saida = ["gerado_em" => date("Y-m-d H:i:s", $agora_p),
         "disponivel" => (int)$r["disponivel"] === 1, "criado" => $r["criado"], "foto" => $foto_p !== null ? strtotime($foto_p) : null,
         "marca" => ($valores["marca"] ?? "") !== "" ? $valores["marca"] : null, "referencia" => ($valores["referencia"] ?? "") !== "" ? $valores["referencia"] : null,
         "observacao" => ($valores["observacao"] ?? "") !== "" ? $valores["observacao"] : null],
-    "cadastro" => $cadastro,
+    "cadastro" => $cadastro, "cadastro_secoes" => $cadastro_secoes,
     "compra" => ["data" => ($valores["data_compra"] ?? "") !== "" ? substr((string)$valores["data_compra"], 0, 10) : null,
         "valor" => ($valores["valor_compra"] ?? "") !== "" ? (float)$valores["valor_compra"] : null,
         "loja" => ($valores["loja"] ?? "") !== "" ? $valores["loja"] : null,

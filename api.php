@@ -748,6 +748,12 @@
  *     campos[].nome                  o nome do campo
  *     campos[].opcoes                as opções de um campo de lista, uma por linha (texto; vazio nos outros)
  *     campos[].ordem                 a posição do campo no cadastro
+ *     campos[].secao_id              a divisória da ficha em que o campo fica (secoes[].id); null: nenhuma, no fim da ficha
+ *     secoes                         as divisórias da ficha (Cadastros › Divisórias), na ordem
+ *     secoes[]                       uma divisória
+ *     secoes[].id                    o número da divisória (o secao_id dos campos)
+ *     secoes[].nome                  o nome (Identificação, Compra, Construção...)
+ *     secoes[].ordem                 a posição da divisória na ficha
  *     campos[].padrao                o valor usado quando o relógio não tem o campo preenchido (texto; null: nenhum)
  *     campos[].tipo                  inteiro, decimal, sim_nao, data, lista ou texto
  *     campos[].unidade               a unidade (texto; vazio: nenhuma)
@@ -1839,6 +1845,8 @@
  *     campos[].valor                 o valor do relógio (null)
  *     campos[].do_calibre            o valor que o calibre do relógio define para o campo (o que vale quando o relógio não tem o dele);
  *                                    null: sem
+ *     campos[].secao                 o nome da divisória da ficha em que o campo fica; null: nenhuma. Os campos vêm na ordem da ficha:
+ *                                    pelas divisórias, os sem divisória no fim
  *     calibres                       os calibres da árvore, pelo nome (o menu Calibre do cadastro)
  *     calibres[]                     um calibre
  *     calibres[].id                  o número do calibre (o calibre_id da gravação)
@@ -1925,6 +1933,8 @@
  *     relogio.dados[].origem_texto   de onde veio, no idioma, para mostrar ("informado", "padrão", "vazio", "medido", "cadastro")
  *     relogio.dados[].tambem         o valor também na unidade em que a dele aparece (Cadastros › Unidades, mostrar também em), em texto
  *                                    ("1,85 pol"); null: sem número ou sem essa unidade
+ *     relogio.dados[].secao          o nome da divisória da ficha do campo; null: nenhuma. Os dados vêm na ordem da ficha: pelas
+ *                                    divisórias, os sem divisória no fim
  *     relogio.dados[].tipo           inteiro, decimal, sim_nao, data, lista ou texto
  *     relogio.dados[].unidade        a unidade (texto)
  *     relogio.dados[].valor          o valor informado no relógio (texto; null: não preenchido)
@@ -3023,6 +3033,13 @@
  *     campos[].nome                  o nome do campo
  *     campos[].opcoes                as opções de um campo de lista, uma por linha (texto; vazio nos outros)
  *     campos[].ordem                 a posição do campo no cadastro
+ *     campos[].secao_id              a divisória da ficha em que o campo fica (secoes[].id); null: nenhuma, no fim da ficha
+ *     secoes                         as divisórias da ficha (Cadastros › Divisórias), na ordem
+ *     secoes[]                       uma divisória
+ *     secoes[].id                    o número da divisória (o secao_id dos campos)
+ *     secoes[].nome                  o nome (Identificação, Compra, Construção...)
+ *     secoes[].ordem                 a posição da divisória na ficha
+ *     secoes[].campos                quantos campos estão nela
  *     campos[].padrao                o valor usado quando o relógio não tem o campo preenchido (texto; null: nenhum)
  *     campos[].so_desejado           1: o campo vale só nos relógios desejados (a lista de desejos); 0: em todos (do grupo)
  *     campos[].calibre               1: o campo é do movimento (aparece no formulário do calibre, com a Configuração em só os do
@@ -4316,6 +4333,18 @@
  *     cadastro[].identificador       o campo
  *     cadastro[].nome                o nome do campo
  *     cadastro[].valor               o valor em texto: data DD/MM/AAAA, sim ou não, número com vírgula e a unidade (R$ 1.200,50; 40 h)
+ *     cadastro[].secao               o nome da divisória da ficha do campo; null: nenhuma (o cadastro vem na ordem da ficha)
+ *     cadastro_secoes                o mesmo cadastro agrupado por divisória, na ordem delas; o grupo sem divisória vem por último
+ *     cadastro_secoes[]              uma divisória com os campos preenchidos dela
+ *     cadastro_secoes[].secao        o nome da divisória; null: os campos sem divisória
+ *     cadastro_secoes[].campos       os campos dela, na ordem
+ *     cadastro_secoes[].campos[]     um campo
+ *     cadastro_secoes[].campos[].identificador
+ *                                    o identificador do campo
+ *     cadastro_secoes[].campos[].nome
+ *                                    o nome do campo
+ *     cadastro_secoes[].campos[].valor
+ *                                    o valor em texto: data DD/MM/AAAA, sim ou não, número com vírgula e a unidade (R$ 1.200,50; 40 h)
  *     compra                         a compra
  *     compra.data                    a data (texto AAAA-MM-DD; null)
  *     compra.valor                   o valor pago, em R$ (null)

@@ -185,6 +185,22 @@ function unidades_do_modelo($raiz, $tr)
     }
 }
 
+// As divisórias do modelo (modelo.json, secoes) numa árvore ($raiz), com o nome no idioma ($tr); a que a árvore já tem
+// (o mesmo nome) fica. Devolve o nome do modelo (em português, como os campos do modelo citam) => id. Sem escopo
+function secoes_do_modelo($raiz, $tr)
+{
+    $res = [];
+    foreach (modelo_ler()["secoes"] as $x) {
+        $id = valor("SELECT id FROM campo_secao WHERE no_id = ? AND nome = ?", [(int)$raiz, $tr($x["nome"])]);
+        if ($id === null) {
+            sql("INSERT INTO campo_secao (no_id, nome, ordem) VALUES (?, ?, ?)", [(int)$raiz, $tr($x["nome"]), (int)$x["ordem"]]);
+            $id = ultimo_id();
+        }
+        $res[$x["nome"]] = (int)$id;
+    }
+    return $res;
+}
+
 // O tradutor dos textos do modelo para um idioma
 function modelo_tradutor($lingua)
 {
@@ -194,10 +210,10 @@ function modelo_tradutor($lingua)
     };
 }
 
-// Os textos do modelo que entram no idioma de quem cria a coleção (os nomes dos grupos, das unidades, dos campos e das
-// opções, dos tipos, das fórmulas, dos avisos e os textos deles, dos critérios e das faixas, das categorias, dos modos e
-// dos blocos, dos totais e os textos entre aspas das expressões deles, e as mensagens padrão dos destinos e das agendas):
-// a parte "cadastro" dos arquivos dos idiomas traduz cada um (o testes/textos.php confere)
+// Os textos do modelo que entram no idioma de quem cria a coleção (os nomes dos grupos, das unidades, das divisórias, dos
+// campos e das opções, dos tipos, das fórmulas, dos avisos e os textos deles, dos critérios e das faixas, das categorias,
+// dos modos e dos blocos, dos totais e os textos entre aspas das expressões deles, e as mensagens padrão dos destinos e das
+// agendas): a parte "cadastro" dos arquivos dos idiomas traduz cada um (o testes/textos.php confere)
 function modelo_textos()
 {
     $m = modelo_ler();
@@ -212,6 +228,9 @@ function modelo_textos()
     }
     foreach ($m["unidades"] as $u) {
         $junta($u["nome"]);
+    }
+    foreach ($m["secoes"] as $x) {
+        $junta($x["nome"]);
     }
     foreach ($m["campos"] as $c) {
         $junta($c["nome"]);
@@ -296,9 +315,11 @@ function arvore_criar($dono_id, $nome, $lingua, $com_modelo)
             return $ids[$a ?? "raiz"];
         };
         unidades_do_modelo($raiz, $tr);
+        $secoes = secoes_do_modelo($raiz, $tr);
         foreach ($m["campos"] as $c) {
-            sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, ordem, so_desejado, calibre) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [$c["identificador"], $tr($c["nome"]), $c["tipo"], $c["unidade"], $c["padrao"], $grupo($c["grupo"]), (int)$c["ordem"], (int)$c["so_desejado"], (int)($c["calibre"] ?? 0)]);
+            sql("INSERT INTO campo (identificador, nome, tipo, unidade, padrao, no_id, ordem, so_desejado, calibre, secao_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [$c["identificador"], $tr($c["nome"]), $c["tipo"], $c["unidade"], $c["padrao"], $grupo($c["grupo"]), (int)$c["ordem"], (int)$c["so_desejado"], (int)($c["calibre"] ?? 0),
+                    ($c["secao"] ?? null) !== null ? ($secoes[$c["secao"]] ?? null) : null]);
             $cid = ultimo_id();
             foreach (array_values($c["opcoes"] ?? []) as $i => $o) {
                 sql("INSERT INTO campo_opcao (campo_id, ordem, valor) VALUES (?, ?, ?)", [$cid, $i + 1, $tr($o)]);
@@ -980,7 +1001,7 @@ function membros_da_colecao()
 // ---------------------------------------------------------------------------------------------------------------------
 const IMPACTO_NOMES = ["usuario" => "usuários", "colecao" => "coleções", "colecao_usuario" => "membros", "acesso_dono" => "acessos a tudo de um dono",
     "convite" => "convites", "pedido" => "pedidos de acesso", "api_token" => "tokens de API", "usuario_token" => "links de senha", "push_inscricao" => "aparelhos do Web Push", "usuario_smtp" => "servidores de e-mail próprios",
-    "no" => "grupos", "campo" => "campos", "campo_opcao" => "opções de lista", "unidade" => "unidades", "lancamento_tipo" => "tipos de lançamento", "formula" => "fórmulas", "aviso" => "avisos",
+    "no" => "grupos", "campo" => "campos", "campo_opcao" => "opções de lista", "unidade" => "unidades", "campo_secao" => "divisórias de campos", "lancamento_tipo" => "tipos de lançamento", "formula" => "fórmulas", "aviso" => "avisos",
     "documento_categoria" => "categorias de documento", "documento_categoria_aceita" => "tipos aceitos de categorias", "relogio" => "relógios", "foto" => "fotos",
     "campo_valor" => "valores de campo", "calibre" => "calibres", "calibre_valor" => "valores de calibre", "relogio_calibre" => "relógios com calibre", "lancamento" => "lançamentos", "medicao" => "medições do gasto", "documento" => "documentos", "documento_parte" => "pedaços de documentos no banco",
     "servico" => "serviços e diagnósticos", "servico_peca" => "peças de serviços", "servico_documento" => "documentos de serviços",
@@ -998,7 +1019,7 @@ tk("usuários"); tk("coleções"); tk("membros"); tk("acessos a tudo de um dono"
 tk("pedidos de acesso"); tk("tokens de API"); tk("links de senha"); tk("aparelhos do Web Push");
 tk("servidores de e-mail próprios"); tk("grupos"); tk("campos"); tk("opções de lista"); tk("tipos de lançamento");
 tk("fórmulas"); tk("avisos"); tk("categorias de documento"); tk("tipos aceitos de categorias"); tk("relógios");
-tk("fotos"); tk("valores de campo"); tk("unidades"); tk("calibres"); tk("valores de calibre"); tk("relógios com calibre");
+tk("fotos"); tk("valores de campo"); tk("unidades"); tk("divisórias de campos"); tk("calibres"); tk("valores de calibre"); tk("relógios com calibre");
 tk("lançamentos"); tk("medições do gasto"); tk("documentos"); tk("pedaços de documentos no banco");
 tk("serviços e diagnósticos"); tk("peças de serviços"); tk("documentos de serviços");
 tk("testes da reserva e observações da energia"); tk("medições do timegrapher"); tk("acessórios"); tk("vínculos de acessório");

@@ -1,4 +1,4 @@
-<!-- origem: ebd8490961026de6e1fd03fdd3c875576f0425a8 -->
+<!-- origem: fde23080cf72489353e3280ddc3f628f73999744 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -52,6 +52,7 @@ flowchart LR
 |---|---|---|
 | **Groups** (the tree) | The classification of the collection, in as many levels as you want. Everything registered in a group applies to it and to everything below it. | `Traditional › Mechanical › Automatic` |
 | **Fields** | The data of each watch, defined by you: text, number, date, yes/no or list, with unit and default value. | `reserva_horas = 40 h`, `data_pilha`, `loja` |
+| **Sections** | The record sections, created by you: each field sits in one of them, and the record, the dashboard, the passport and the reports show the fields grouped, in their order. | *Identification*, *Purchase*, *Construction*, *Energy* |
 | **Units** | What goes after the number, registered by you: the symbol, the name and the conversion (the inch in millimetres). Fields, entry types and formulas pick the unit from the list, and the value can also appear in another unit. | `47 mm (1.85 pol)` |
 | **Calibers** | The watch's movement, with what belongs to it: the manufacturer, the technical manual, the recommendations and the field values. A watch with a caliber uses its own value, otherwise the caliber's, otherwise the field's default. | `NH35`: 41 h power reserve, rate from −20 to +40 s/day |
 | **Entry types** | What happens to a watch. It can be **instant** (winding, battery change), **with a value** (charge reading: 68%) or a **session** with start and end (on the wrist, on the winder, in the sun). | `sol`: a session that closes by itself at 6 pm if you forget |
@@ -609,6 +610,20 @@ cannot be deleted (the deletion says who uses it); deleting a base takes along t
 API: `recurso=unidades` (the list, with each one's conversion and use) and `recurso=unidades` with `acao=salvar` or
 `excluir`.
 
+### Record sections {#as-divisórias-da-ficha}
+
+A watch's fields are grouped into **sections**, the parts of the record: in the **Sections** tab of the **Definitions**
+page you create your own, name them and put them in order (↑ and ↓), and in the **Fields** tab you choose each field's
+section. A new register already comes with seven, and each ready-made field is already in its own: **Identification**,
+**Purchase**, **Construction**, **Energy**, **Maintenance and accuracy**, **Rotation** and **Wishlist**.
+
+The order applies everywhere: in **Edit record** each section is a group with its title (one with no visible field, like
+Wishlist on a watch in the collection, disappears); in **Watch data** a title row separates each one; the **Passport** has
+one card per section, and the Passport report, one part. Fields without a section (like the Note) come at the end,
+ungrouped (in Watch data, under **Other**). Deleting a section does not delete the fields: they are left without a
+section, at the end. Through the API: `recurso=cadastros` brings the `secoes` (with how many fields each one has), and
+`recurso=secoes` writes (`salvar`, `ordem`, `excluir`); the field carries the `secao_id`.
+
 ### Services and diagnostics {#os-serviços-e-diagnósticos}
 
 Every intervention on a watch goes in the panel's **Services and diagnostics** box (in the *Record and documents* section):
@@ -804,7 +819,8 @@ wrist and winder fields.
         └── Solar         Energy reserve, Direct sun to fill, On the wrist: how much it charges
 ```
 
-An empty field takes the record's **default** (the "empty" column in the tables below). The fields, the groups and the
+An empty field takes the record's **default** (the "empty" column in the tables below). In the record, the fields
+appear grouped by the sections (see [Record sections](#as-divisórias-da-ficha)), not by the tree's groups. The fields, the groups and the
 defaults are data, not code: you can change everything on the **Definitions** page, and create your own.
 
 ### The watch's basics {#o-básico-do-relógio}
@@ -1355,7 +1371,7 @@ comes in here by its name.
 | **Rotation modes** (`modos.php`, menu **Rotation**) | The rotation modes: the table (the active mode marked, the type, the criterion, the weeks and where it chooses from) with **Edit**, **Activate** and **Delete**, and a mode's form, with its type's screen: the name and the type; where to choose from (per stretch or per weekday), the schedule's period or the hand-written script with **Test on all watches**; the weeks ahead (with the list of weeks); the choice criterion and the cycle; and, in the ready-made types, the generated script (read-only, with **copy this script** to a Custom one). See [The rotation modes](#os-modos-de-rodízio). |
 | **Criteria** (`criterios.php`) | The criteria sets per place (all watches, a group or a watch), with parameters, subparameters, ranges and each watch's score with the calculation open. It has **Restore the initial criteria**. |
 | **Groups** (`grupos.php`) | The tree: create, rename, move, sort, delete (what belonged to the group goes to the one above) and choose each watch's group. |
-| **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), the totals (the **Totals** tab: see [Totals](#os-totais)), the calibers (the **Calibers** tab: see [Calibers](#os-calibres)), the units (the **Units** tab: see [Units](#as-unidades)) and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page, and the rotation modes on **Rotation modes**). |
+| **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), the totals (the **Totals** tab: see [Totals](#os-totais)), the calibers (the **Calibers** tab: see [Calibers](#os-calibres)), the record sections (the **Sections** tab: see [Record sections](#as-divisórias-da-ficha)), the units (the **Units** tab: see [Units](#as-unidades)) and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page, and the rotation modes on **Rotation modes**). |
 | **Cron runs** (`execucoes.php`) | What the cron did in each round, how long it took and the errors, with filters. |
 | **My account** (`conta.php`, menu **Account › My account**) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection (by the code the owner gave), your data (your code, the e-mail, the language, the interface mode, the password), the **app on the phone** (remember this device, install, the remembered devices), the **API tokens** (for your scripts), the **notifications on this device** (Web Push), the **sending of your e-mails** (through the system's server or your own: Gmail, Outlook) and deleting the account. See [Several people](#várias-pessoas-contas-coleções-e-acesso) and [The app on the phone](#o-aplicativo-no-celular). |
 | **Approvals** (`aprovacoes.php`) | The access requests to your collections (approve, decline), the invitations members made that wait for you, **Invite** (by e-mail), the invitations you made and who sees your collections (remove access). The menu shows **Approvals (N)** when something is waiting. |

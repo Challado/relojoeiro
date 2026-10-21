@@ -25,8 +25,11 @@ api({recurso: "passaporte", relogio: id}).then(function (d) {
       : linhas([[t("Primeira vez no pulso"), dataBr(u.primeira_vez)], [t("Última vez"), u.no_pulso_agora ? t("no pulso agora") : dataBr(u.ultima_vez)],
         [t("Horas no pulso"), num(u.horas_no_pulso, 1) + t(" h")], [t("Dias de uso"), u.dias_de_uso !== null ? String(u.dias_de_uso) : null],
         [t("Custo por uso"), u.custo_por_uso !== null ? t("R$ ") + reais(u.custo_por_uso) : null]]))));
-  res += el("section", {}, el("h2", {}, t("Cadastro")) + (d.cadastro.length === 0 ? el("p", {"class": "nota"}, t("Nada preenchido."))
-    : linhas(d.cadastro.map(function (x) { return [h(x.nome), h(x.valor)]; }))));
+  // o cadastro, uma parte por divisória (a da API, na ordem dela); o que não tem divisória sai como "Cadastro"
+  res += d.cadastro_secoes.length === 0 ? el("section", {}, el("h2", {}, t("Cadastro")) + el("p", {"class": "nota"}, t("Nada preenchido.")))
+    : d.cadastro_secoes.map(function (g) {
+      return el("section", {}, el("h2", {}, g.secao !== null ? h(g.secao) : t("Cadastro")) + linhas(g.campos.map(function (x) { return [h(x.nome), h(x.valor)]; })));
+    }).join("");
   res += el("section", {}, el("h2", {}, t("Manutenções")) + (d.marcacoes.length === 0 ? el("p", {"class": "nota"}, t("Nenhuma marcação."))
     : linhas(d.marcacoes.map(function (m) { return [h(m.nome), t("{1}{2} · a última em {3}", {1: m.vezes, 2: m.vezes === 1 ? t(" vez") : t(" vezes"), 3: dataBr(m.ultima)})]; })))
     + (d.servicos.length > 0 ? el("p", {"class": "nota"}, t("Revisões e trocas de pilha: {1}.", {1: d.servicos.map(function (s) { return dataBr(s.data) + " (" + h(s.nome.toLowerCase()) + ")"; }).join(", ")})) : ""));

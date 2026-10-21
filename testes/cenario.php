@@ -735,6 +735,41 @@ escrever(["recurso" => "unidades", "acao" => "excluir", "id" => $u_mi, "confirma
 escrever(["recurso" => "campos", "acao" => "excluir", "id" => $c_med, "confirmar" => 1]);
 ler("unidades no fim", ["recurso" => "unidades"]);
 
+// as divisórias da ficha: as do modelo (cada campo pronto na sua), uma nova (no fim), as recusas (sem nome, a repetida, a
+// do campo que não existe), o campo nela (a ficha e o passaporte agrupam), subir na ordem, a exclusão (o campo fica sem
+// divisória, no fim)
+$cad_s = ler("divisorias", ["recurso" => "cadastros"]);
+$sec_ids = [];
+foreach ($cad_s["secoes"] ?? [] as $x) {
+    $sec_ids[$x["nome"]] = $x["id"];
+}
+$marca_s = array_values(array_filter($cad_s["campos"] ?? [], function ($c) { return $c["identificador"] === "marca"; }))[0] ?? [];
+if (count($sec_ids) < 7 || ($marca_s["secao_id"] ?? null) !== ($sec_ids["Identificação"] ?? -1)) {
+    $falhas[] = "divisórias: as do modelo não vieram (" . implode(", ", array_keys($sec_ids)) . ")";
+}
+$s_nova = escrever(["recurso" => "secoes", "acao" => "salvar", "id" => 0, "nome" => "Pulseira"]);
+escrever(["recurso" => "secoes", "acao" => "salvar", "id" => 0, "nome" => " "], false);
+escrever(["recurso" => "secoes", "acao" => "salvar", "id" => 0, "nome" => "compra"], false);
+$c_pul = escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "pulseira_teste", "nome" => "Pulseira de teste", "tipo" => "texto", "secao_id" => $s_nova]);
+escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "outro_teste", "nome" => "Outro", "tipo" => "texto", "secao_id" => 99999], false);
+escrever(["recurso" => "secoes", "acao" => "ordem", "id" => $s_nova, "direcao" => "sobe"]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["manual"], "valores" => ["pulseira_teste" => "couro"]]);
+$f_s = ler("ficha com a divisoria nova", ["recurso" => "ficha", "relogio" => $rel["manual"]]);
+$p_s = ler("passaporte por divisoria", ["recurso" => "passaporte", "relogio" => $rel["manual"]]);
+$d_pul = array_values(array_filter($f_s["relogio"]["dados"] ?? [], function ($c) { return $c["identificador"] === "pulseira_teste"; }))[0] ?? [];
+$g_pul = array_values(array_filter($p_s["cadastro_secoes"] ?? [], function ($g) { return $g["secao"] === "Pulseira"; }));
+if (($d_pul["secao"] ?? null) !== "Pulseira" || count($g_pul) !== 1) {
+    $falhas[] = "divisórias: " . json_encode([$d_pul, $p_s["cadastro_secoes"] ?? null], JSON_UNESCAPED_UNICODE);
+}
+escrever(["recurso" => "secoes", "acao" => "excluir", "id" => $s_nova], false);
+escrever(["recurso" => "secoes", "acao" => "excluir", "id" => $s_nova, "confirmar" => 1]);
+$cad_s2 = ler("divisorias depois da exclusao", ["recurso" => "cadastros"]);
+$pul_s2 = array_values(array_filter($cad_s2["campos"] ?? [], function ($c) { return $c["identificador"] === "pulseira_teste"; }))[0] ?? [];
+if (!array_key_exists("secao_id", $pul_s2) || $pul_s2["secao_id"] !== null) {
+    $falhas[] = "divisórias: o campo não ficou sem divisória (" . json_encode($pul_s2, JSON_UNESCAPED_UNICODE) . ")";
+}
+escrever(["recurso" => "campos", "acao" => "excluir", "id" => $c_pul, "confirmar" => 1]);
+
 // os serviços e diagnósticos: uma revisão no automático com peças, a estanqueidade aprovada, a marcha antes e depois, a
 // garantia e um documento (vira também a marcação Revisão); as recusas (o teste de estanqueidade sem resultado, a data no
 // futuro, a pressão sem resultado, o custo da peça que não é número, o documento de outro relógio, a garantia antes do

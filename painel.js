@@ -19,6 +19,10 @@ function mostrarCamposDoTipo(form) {
   form.querySelectorAll("[data-so-colecao]").forEach(function (el) {
     el.hidden = posse !== null && posse.value !== "colecao";
   });
+  // a divisória sem nenhum campo à vista (todos de outro grupo, ou só dos desejados) some inteira
+  form.querySelectorAll("fieldset.secao-cadastro").forEach(function (fs) {
+    fs.hidden = fs.querySelector("label:not([hidden])") === null;
+  });
 }
 
 // Num formulário com menus que escolhem partes (select[data-mostra] e as partes com data-grupo e data-valor): fica à vista,
@@ -630,8 +634,8 @@ function abrirNoPainel(id) {
           + (document.querySelector(".painel") ? el("p", {"class": "ficha-link"}, el("a", {"href": "ficha.php?id=" + id, "target": "_blank", "rel": "noopener", "class": "botao leve"}, t("Abrir a ficha ↗"))) : "")))
         + "<!--editar-cadastro-->" + "<!--secoes-->";
     }
-    // o cadastro: nome, grupo, os campos (cada um no grupo em que vale), a compra agrupada, a observação, a foto (novo) e o disponível
-    var compraIds = ["data_compra", "valor_compra", "loja", "garantia_ate"];
+    // o cadastro: nome, grupo, os campos (cada um no grupo em que vale) por divisória (a API manda na ordem delas, cada campo
+    // com a divisória dele; os sem divisória, como a observação, vêm no fim, soltos), a foto (novo) e o disponível
     var noForm = novo ? Number(new URLSearchParams(window.location.search).get("no_id") || 0) : r.no_id;
     var cad = el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + (novo ? "" : el("input", {"type": "hidden", "name": "id", "value": id}))
       + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": novo ? "" : r.nome, "required": true})}))
@@ -647,20 +651,20 @@ function abrirNoPainel(id) {
     cad += el("label", {}, t("Calibre {1} {2}", {1: el("select", {"name": "calibre_id"}, el("option", {"value": "0"}, t("— sem calibre")) + d.calibres.map(function (c) {
       return el("option", {"value": c.id, "selected": c.id === calForm}, h(c.nome) + (c.fabricante ? " · " + h(c.fabricante) : ""));
     }).join("")), 2: el("small", {}, t("o movimento: o relógio usa os valores dele nos campos vazios ({1})", {1: el("a", {"href": "cadastros.php?aba=calibres"}, t("cadastrar calibres"))}))}));
-    d.campos.forEach(function (c) {
-      if (compraIds.indexOf(c.identificador) < 0 && c.identificador !== "observacao") {
-        cad += campoCadastro(c);
+    var divisoria = null;
+    var dentro = "";
+    var fechar = function () {
+      cad += divisoria !== null ? el("fieldset", {"class": "secao-cadastro"}, el("legend", {}, h(divisoria)) + dentro) : dentro;
+      dentro = "";
+    };
+    d.campos.forEach(function (c, i) {
+      if (i > 0 && c.secao !== divisoria) {
+        fechar();
       }
+      divisoria = c.secao;
+      dentro += campoCadastro(c);
     });
-    var deCompra = d.campos.filter(function (c) { return compraIds.indexOf(c.identificador) >= 0; });
-    if (deCompra.length > 0) {
-      cad += el("fieldset", {"class": "compra"}, el("legend", {}, t("Compra")) + deCompra.map(campoCadastro).join(""));
-    }
-    d.campos.forEach(function (c) {
-      if (c.identificador === "observacao") {
-        cad += campoCadastro(c);
-      }
-    });
+    fechar();
     if (novo) {
       cad += el("label", {}, t("Foto {1}", {1: el("input", {"type": "file", "accept": "image/*", "data-foto": "foto_base64_" + fid, "data-previa": "previa_" + fid, "aria-label": t("Escolher foto")})}))
         + el("input", {"type": "hidden", "name": "foto_base64", "id": "foto_base64_" + fid}) + el("img", {"id": "previa_" + fid, "class": "previa", "hidden": true, "alt": ""});
@@ -918,10 +922,14 @@ function abrirNoPainel(id) {
         }).join(" · ") + (r.calibre.documentos.length > 0 ? " · " : "") + el("a", {"href": "documentos.php?calibre=" + r.calibre.id}, t("documentos do calibre")))) : "";
       secoes.cadastro += quadro(t("Dados do relógio"), calLinha + el("div", {"class": "dados-grade"},
         el("div", {}, el("h3", {}, t("Cadastro")) + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Campo"))
-            + el("th", {}, t("Valor")) + el("th", {}, t("Origem")))) + el("tbody", {}, r.dados.map(function (c) {
+            + el("th", {}, t("Valor")) + el("th", {}, t("Origem")))) + el("tbody", {}, r.dados.map(function (c, i) {
               // o texto livre (a observação, uma lista) quebra a linha; número, data e sim/não ficam numa linha só
               var texto = c.valor !== null && c.valor !== "" && ["sim_nao", "data", "inteiro", "decimal"].indexOf(c.tipo) < 0;
-              return el("tr", {"class": c.origem === "vazio" ? "vazio" : ""}, el("td", {}, h(c.nome)) + el("td", {"class": "valor" + (texto ? " texto" : "")}, valorCampo(c) + calculadoDoCampo(c.identificador))
+              // a API manda os dados na ordem das divisórias: uma linha de título onde muda a divisória (os sem divisória, no
+              // fim, ficam em "Outros")
+              var titulo = (i === 0 ? c.secao !== null : c.secao !== r.dados[i - 1].secao)
+                ? el("tr", {"class": "secao-dados"}, el("th", {"colspan": "3"}, c.secao !== null ? h(c.secao) : t("Outros"))) : "";
+              return titulo + el("tr", {"class": c.origem === "vazio" ? "vazio" : ""}, el("td", {}, h(c.nome)) + el("td", {"class": "valor" + (texto ? " texto" : "")}, valorCampo(c) + calculadoDoCampo(c.identificador))
                 + el("td", {}, el("span", {"class": "origem origem-" + c.origem}, h(c.origem_texto))));
             }).join(""))))
           + el("div", {"data-avancado": "dados.calculado"}, el("h3", {}, t("Calculado agora")) + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Fórmula"))

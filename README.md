@@ -99,6 +99,7 @@ flowchart LR
 |---|---|---|
 | **Grupos** (a árvore) | A classificação da coleção, em quantos níveis você quiser. Tudo o que é cadastrado num grupo vale para ele e para tudo abaixo dele. | `Tradicional › Mecânico › Automático` |
 | **Campos** | Os dados de cada relógio, definidos por você: texto, número, data, sim/não ou lista, com unidade e valor padrão. | `reserva_horas = 40 h`, `data_pilha`, `loja` |
+| **Divisórias** | As seções da ficha, criadas por você: cada campo fica numa delas, e a ficha, o painel, o passaporte e os relatórios mostram os campos agrupados, na ordem delas. | *Identificação*, *Compra*, *Construção*, *Energia* |
 | **Unidades** | O que vai depois do número, cadastrado por você: o símbolo, o nome e a conversão (a polegada em milímetros). Os campos, os tipos de lançamento e as fórmulas escolhem a unidade da lista, e o valor pode aparecer também em outra unidade. | `47 mm (1,85 pol)` |
 | **Calibres** | O movimento do relógio, com o que é dele: o fabricante, o manual técnico, as recomendações e os valores dos campos. O relógio com um calibre usa o valor dele mesmo, senão o do calibre, senão o padrão do campo. | `NH35`: reserva de 41 h, marcha de −20 a +40 s/dia |
 | **Tipos de lançamento** | O que acontece com um relógio. Pode ser **instantâneo** (corda, troca de pilha), **com valor** (leitura de carga: 68%) ou uma **sessão** com início e fim (no pulso, no winder, no sol). | `sol`: sessão que fecha sozinha às 18h se você esquecer |
@@ -636,6 +637,20 @@ do relógio** e no **Passaporte** (o milímetro já vem mostrando as polegadas: 
 se exclui (a exclusão diz quem a usa); excluir uma base leva junto as que se convertem nela. Pela API: `recurso=unidades` (a
 lista, com a conversão e o uso de cada uma) e `recurso=unidades` com `acao=salvar` ou `excluir`.
 
+### As divisórias da ficha
+
+Os campos do relógio ficam agrupados em **divisórias**, as seções da ficha: na aba **Divisórias** da página **Cadastros**
+você cria as suas, dá o nome e põe na ordem (↑ e ↓), e na aba **Campos** escolhe a divisória de cada campo. O cadastro novo
+já vem com sete, e cada campo pronto já está na sua: **Identificação**, **Compra**, **Construção**, **Energia**,
+**Manutenção e precisão**, **Rodízio** e **Desejo**.
+
+A ordem vale em todo lugar: no **Editar cadastro** cada divisória é um grupo com o título dela (a que não tem nenhum campo à
+vista, como a Desejo num relógio da coleção, some); nos **Dados do relógio** uma linha de título separa cada uma; o
+**Passaporte** tem um cartão por divisória, e o relatório Passaporte, uma seção. Os campos sem divisória (como a
+Observação) vêm no fim, soltos (nos Dados do relógio, em **Outros**). Excluir uma divisória não apaga os campos: eles ficam
+sem divisória, no fim. Pela API: `recurso=cadastros` traz as `secoes` (com quantos campos cada uma tem), e
+`recurso=secoes` grava (`salvar`, `ordem`, `excluir`); o campo leva o `secao_id`.
+
 ### Os serviços e diagnósticos
 
 Cada intervenção num relógio fica no quadro **Serviços e diagnósticos** do painel (na seção *Cadastro e documentos*): a data,
@@ -819,8 +834,9 @@ pulso e de winder.
         └── Solar         Reserva de energia, Sol direto para encher, No pulso: quanto carrega
 ```
 
-Campo vazio vale o **padrão** do cadastro (a coluna "vazio" nas tabelas abaixo). Os campos, os grupos e os padrões são
-cadastro, não código: dá para mudar tudo na página **Cadastros**, e criar os seus.
+Campo vazio vale o **padrão** do cadastro (a coluna "vazio" nas tabelas abaixo). Na ficha, os campos aparecem agrupados
+pelas divisórias (veja [As divisórias da ficha](#as-divisórias-da-ficha)), não pelos grupos da árvore. Os campos, os
+grupos e os padrões são cadastro, não código: dá para mudar tudo na página **Cadastros**, e criar os seus.
 
 ### O básico do relógio
 
@@ -1393,7 +1409,7 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | **Modos de rodízio** (`modos.php`, menu **Rodízio**) | Os modos de rodízio: a tabela (o modo ativo marcado, o tipo, o critério, as semanas e de onde escolhe) com **Editar**, **Ativar** e **Excluir**, e o formulário de um modo, com a tela do tipo dele: o nome e o tipo; de onde escolher (por trecho ou por dia da semana), o período da escala ou o roteiro escrito à mão com **Testar em todos os relógios**; as semanas à frente (com a lista das semanas); o critério de escolha e o ciclo; e, nos tipos prontos, o roteiro gerado (só leitura, com **copiar este roteiro** para um Personalizado). Veja [Os modos de rodízio](#os-modos-de-rodízio). |
 | **Critérios** (`criterios.php`) | Os conjuntos de critérios por lugar (todos os relógios, um grupo ou um relógio), com parâmetros, subparâmetros, faixas e a nota de cada relógio com a conta aberta. Tem **Restaurar os critérios iniciais**. |
 | **Grupos** (`grupos.php`) | A árvore: criar, renomear, mover, ordenar, excluir (o que era do grupo passa para o de cima) e escolher o grupo de cada relógio. |
-| **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), os totais (a aba **Totais**: veja [Os totais](#os-totais)), os calibres (a aba **Calibres**: veja [Os calibres](#os-calibres)), as unidades (a aba **Unidades**: veja [As unidades](#as-unidades)) e as categorias de documentos: tudo o que o sistema usa e que não é código (os avisos ficam na página **Avisos**, e os modos de rodízio, na **Modos de rodízio**). |
+| **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), os totais (a aba **Totais**: veja [Os totais](#os-totais)), os calibres (a aba **Calibres**: veja [Os calibres](#os-calibres)), as divisórias da ficha (a aba **Divisórias**: veja [As divisórias da ficha](#as-divisórias-da-ficha)), as unidades (a aba **Unidades**: veja [As unidades](#as-unidades)) e as categorias de documentos: tudo o que o sistema usa e que não é código (os avisos ficam na página **Avisos**, e os modos de rodízio, na **Modos de rodízio**). |
 | **Execuções do cron** (`execucoes.php`) | O que o cron fez a cada rodada, quanto tempo levou e os erros, com filtros. |
 | **Minha conta** (`conta.php`, menu **Conta › Minha conta**) | As coleções que você vê (abrir, criar, renomear, excluir, sair), as suas árvores de grupos (copiar, renomear, excluir), pedir acesso à coleção de alguém (pelo código que o dono passou), os seus dados (o seu código, o e-mail, o idioma, o modo da interface, a senha), o **aplicativo no celular** (lembrar este aparelho, instalar, os aparelhos lembrados), os **tokens de API** (para os seus scripts), as **notificações neste aparelho** (o Web Push), o **envio dos seus e-mails** (pelo servidor do sistema ou pelo seu: o Gmail, o Outlook) e excluir a conta. Veja [Várias pessoas](#várias-pessoas-contas-coleções-e-acesso) e [O aplicativo no celular](#o-aplicativo-no-celular). |
 | **Aprovações** (`aprovacoes.php`) | Os pedidos de acesso às suas coleções (aprovar, recusar), os convites que membros fizeram e esperam você, **Convidar** (por e-mail), os convites que você fez e quem vê as suas coleções (tirar o acesso). O menu mostra **Aprovações (N)** quando há algo esperando. |
@@ -1654,6 +1670,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `reserva` | `iniciar` (quando ficou cheio e como), `parou`, `observar` (parou, carga baixa, nota; também no solar), `salvar`, `usar` (a mediana vai para o cadastro do relógio), `excluir` |
 | `timegrapher` | `salvar` (uma medição: a posição, a marcha, a amplitude, o erro de batida, as batidas por hora, o ângulo), `importar` (o CSV do aparelho; `conferir=1`: sem gravar), `excluir` |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (só sem documentos) |
+| `secoes` | as divisórias da ficha: `salvar` (o nome; `id=0` cria no fim), `ordem` (`direcao=sobe` ou `desce`), `excluir` (os campos dela ficam sem divisória, no fim) |
 | `unidades` | `salvar` (o símbolo, o nome, a base e o fator, o zero e o mostrar também em; o símbolo novo vai junto para quem o usa), `excluir` (só sem uso; leva junto as que se convertem nela) |
 | `lancamento` | `lancar` (corda, carga, pilha...), `iniciar` e `encerrar` (pôr e tirar do pulso, do winder, do sol, do carregador), `alternar` (fecha a sessão se está aberta, abre se está fechada: um botão só no celular), `periodo` (um período que já passou; no pulso do relógio do dia é uso do rodízio, e os trechos do mesmo tipo em que ele encosta, como o Pôr que ficou aberto, viram um só), `alterar`, `excluir`, `medicao` (uma medição do gasto entra ou sai da conta: `id`, `usada` 1 ou 0). Em todas, `relogio_id=hoje` é o relógio do dia |
 | `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `periodo` (os relógios de um período, na ordem: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (apaga os dias do período e o modo monta de novo; só `de`: até o fim do plano; só `ate`: de amanhã até ele), `periodo_livre` (apaga e deixa os dias livres, sem sorteio; as mesmas datas), `manual` (o Rodízio manual: `de`, `ate`, `dias[AAAA-MM-DD]` = o id do relógio, `auto` ou `livre`), `apagar_tudo` (toda a programação de amanhã em diante sai; `hoje=1`: de hoje em diante; o modo monta o plano de novo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |

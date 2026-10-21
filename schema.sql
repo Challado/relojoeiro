@@ -202,6 +202,18 @@ CREATE TABLE sistema (
 -- O cadastro da árvore (vale para todas as coleções que usam a árvore)
 -- =====================================================================================================================
 
+-- as divisórias da ficha (as seções dos campos: Identificação, Compra, Construção, Energia...), por árvore (presas à raiz):
+-- o nome e a ordem. Cada campo fica numa delas, ou em nenhuma (no fim, sem divisória)
+CREATE TABLE campo_secao (
+    id     INT AUTO_INCREMENT PRIMARY KEY,
+    no_id  INT NOT NULL,
+    nome   VARCHAR(80) NOT NULL,
+    ordem  INT NOT NULL DEFAULT 0,
+    UNIQUE (no_id, nome),
+    FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
+    CONSTRAINT ck_campo_secao_nome CHECK (TRIM(nome) <> '')
+) ENGINE=InnoDB;
+
 -- os campos do cadastro de um relógio, por grupo (a raiz: todos). O identificador não se repete na árvore (a API confere)
 CREATE TABLE campo (
     id             INT AUTO_INCREMENT PRIMARY KEY,
@@ -214,8 +226,11 @@ CREATE TABLE campo (
     ordem          INT NOT NULL DEFAULT 0,
     so_desejado    TINYINT NOT NULL DEFAULT 0,
     calibre        TINYINT NOT NULL DEFAULT 0,
+    secao_id       INT NULL,
     INDEX (no_id),
+    INDEX campo_secao (secao_id),
     FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
+    FOREIGN KEY (secao_id) REFERENCES campo_secao(id) ON DELETE SET NULL,
     CONSTRAINT ck_campo_textos CHECK (TRIM(identificador) <> '' AND TRIM(nome) <> ''),
     CONSTRAINT ck_campo_so_desejado CHECK (so_desejado IN (0, 1)),
     CONSTRAINT ck_campo_calibre CHECK (calibre IN (0, 1))

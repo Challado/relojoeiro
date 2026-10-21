@@ -1,4 +1,4 @@
-<!-- origem: ebd8490961026de6e1fd03fdd3c875576f0425a8 -->
+<!-- origem: fde23080cf72489353e3280ddc3f628f73999744 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -52,6 +52,7 @@ flowchart LR
 |---|---|---|
 | **Grupos** (el árbol) | La clasificación de la colección, en tantos niveles como quiera. Todo lo registrado en un grupo vale para él y para todo lo que está debajo. | `Tradicional › Mecánico › Automático` |
 | **Campos** | Los datos de cada reloj, definidos por usted: texto, número, fecha, sí/no o lista, con unidad y valor por defecto. | `reserva_horas = 40 h`, `data_pilha`, `loja` |
+| **Secciones** | Las secciones de la ficha, creadas por usted: cada campo queda en una de ellas, y la ficha, el panel, el pasaporte y los informes muestran los campos agrupados, en su orden. | *Identificación*, *Compra*, *Construcción*, *Energía* |
 | **Unidades** | Lo que va después del número, registrado por usted: el símbolo, el nombre y la conversión (la pulgada en milímetros). Los campos, los tipos de registro y las fórmulas eligen la unidad de la lista, y el valor puede aparecer también en otra unidad. | `47 mm (1,85 pol)` |
 | **Calibres** | El movimiento del reloj, con lo que es suyo: el fabricante, el manual técnico, las recomendaciones y los valores de los campos. El reloj con un calibre usa su propio valor, si no el del calibre, si no el predeterminado del campo. | `NH35`: reserva de 41 h, marcha de −20 a +40 s/día |
 | **Tipos de registro** | Lo que le pasa a un reloj. Puede ser **instantáneo** (cuerda, cambio de pila), **con valor** (lectura de carga: 68%) o una **sesión** con inicio y fin (en la muñeca, en el winder, al sol). | `sol`: una sesión que se cierra sola a las 18 h si usted se olvida |
@@ -604,6 +605,20 @@ Una unidad en uso no se elimina (la eliminación dice quién la usa); eliminar u
 ella. Por la API: `recurso=unidades` (la lista, con la conversión y el uso de cada una) y `recurso=unidades` con
 `acao=salvar` o `excluir`.
 
+### Las secciones de la ficha {#as-divisórias-da-ficha}
+
+Los campos del reloj quedan agrupados en **secciones**, las partes de la ficha: en la pestaña **Secciones** de la página
+**Definiciones** usted crea las suyas, les da nombre y las ordena (↑ y ↓), y en la pestaña **Campos** elige la sección de
+cada campo. El registro nuevo ya viene con siete, y cada campo listo ya está en la suya: **Identificación**, **Compra**,
+**Construcción**, **Energía**, **Mantenimiento y precisión**, **Rotación** y **Deseo**.
+
+El orden vale en todas partes: en **Editar ficha** cada sección es un grupo con su título (la que no tiene ningún campo
+visible, como Deseo en un reloj de la colección, desaparece); en los **Datos del reloj** una línea de título separa cada
+una; el **Pasaporte** tiene una tarjeta por sección, y el informe Pasaporte, un apartado. Los campos sin sección (como la
+Observación) van al final, sueltos (en los Datos del reloj, en **Otros**). Eliminar una sección no borra los campos: quedan
+sin sección, al final. Por la API: `recurso=cadastros` trae las `secoes` (con cuántos campos tiene cada una), y
+`recurso=secoes` graba (`salvar`, `ordem`, `excluir`); el campo lleva el `secao_id`.
+
 ### Los servicios y diagnósticos {#os-serviços-e-diagnósticos}
 
 Cada intervención en un reloj queda en el cuadro **Servicios y diagnósticos** del panel (en la sección *Ficha y documentos*):
@@ -799,7 +814,9 @@ de muñeca y de winder.
         └── Solar         Reserva de energía, Sol directo para llenar, En la muñeca: cuánto carga
 ```
 
-Un campo vacío toma el **predeterminado** de la ficha (la columna "vacío" de las tablas de abajo). Los campos, los grupos y
+Un campo vacío toma el **predeterminado** de la ficha (la columna "vacío" de las tablas de abajo). En la ficha, los
+campos aparecen agrupados por las secciones (vea [Las secciones de la ficha](#as-divisórias-da-ficha)), no por los grupos
+del árbol. Los campos, los grupos y
 los predeterminados son datos, no código: puede cambiarlo todo en la página **Definiciones**, y crear los suyos.
 
 ### Lo básico del reloj {#o-básico-do-relógio}
@@ -1349,7 +1366,7 @@ que usted registre entra aquí con su nombre.
 | **Modos de rotación** (`modos.php`, menú **Rotación**) | Los modos de rotación: la tabla (el modo activo marcado, el tipo, el criterio, las semanas y de dónde elige) con **Editar**, **Activar** y **Eliminar**, y el formulario de un modo, con la pantalla de su tipo: el nombre y el tipo; de dónde elegir (por tramo o por día de la semana), el período de la escala o el guion escrito a mano con **Probar en todos los relojes**; las semanas adelante (con la lista de las semanas); el criterio de elección y el ciclo; y, en los tipos listos, el guion generado (solo lectura, con **copiar este guion** a un Personalizado). Vea [Los modos de rotación](#os-modos-de-rodízio). |
 | **Criterios** (`criterios.php`) | Los conjuntos de criterios por lugar (todos los relojes, un grupo o un reloj), con parámetros, subparámetros, rangos y la nota de cada reloj con la cuenta abierta. Tiene **Restaurar los criterios iniciales**. |
 | **Grupos** (`grupos.php`) | El árbol: crear, renombrar, mover, ordenar, eliminar (lo que era del grupo pasa al de arriba) y elegir el grupo de cada reloj. |
-| **Definiciones** (`cadastros.php`) | Campos, tipos de registro, fórmulas (con **Probar**), los totales (la pestaña **Totales**: vea [Los totales](#os-totais)), los calibres (la pestaña **Calibres**: vea [Los calibres](#os-calibres)), las unidades (la pestaña **Unidades**: vea [Las unidades](#as-unidades)) y las categorías de documentos: todo lo que el sistema usa que no es código (los avisos están en la página **Avisos**, y los modos de rotación, en **Modos de rotación**). |
+| **Definiciones** (`cadastros.php`) | Campos, tipos de registro, fórmulas (con **Probar**), los totales (la pestaña **Totales**: vea [Los totales](#os-totais)), los calibres (la pestaña **Calibres**: vea [Los calibres](#os-calibres)), las secciones de la ficha (la pestaña **Secciones**: vea [Las secciones de la ficha](#as-divisórias-da-ficha)), las unidades (la pestaña **Unidades**: vea [Las unidades](#as-unidades)) y las categorías de documentos: todo lo que el sistema usa que no es código (los avisos están en la página **Avisos**, y los modos de rotación, en **Modos de rotación**). |
 | **Ejecuciones del cron** (`execucoes.php`) | Qué hizo el cron en cada vuelta, cuánto tardó y los errores, con filtros. |
 | **Mi cuenta** (`conta.php`, menú **Cuenta › Mi cuenta**) | Las colecciones que ve (abrir, crear, renombrar, eliminar, salir), sus árboles de grupos (copiar, renombrar, eliminar), pedir acceso a la colección de alguien (por el código que pasó el dueño), sus datos (su código, el correo, el idioma, el modo de la interfaz, la contraseña), la **aplicación en el celular** (recordar este aparato, instalar, los aparatos recordados), los **tokens de API** (para sus scripts), las **notificaciones en este aparato** (el Web Push), el **envío de sus correos** (por el servidor del sistema o por el suyo: Gmail, Outlook) y eliminar la cuenta. Vea [Varias personas](#várias-pessoas-contas-coleções-e-acesso) y [La aplicación en el celular](#o-aplicativo-no-celular). |
 | **Aprobaciones** (`aprovacoes.php`) | Las solicitudes de acceso a sus colecciones (aprobar, rechazar), las invitaciones que hicieron los miembros y le esperan, **Invitar** (por correo), las invitaciones que hizo y quién ve sus colecciones (quitar el acceso). El menú muestra **Aprobaciones (N)** cuando hay algo esperando. |

@@ -1,4 +1,4 @@
-<!-- origem: ebd8490961026de6e1fd03fdd3c875576f0425a8 -->
+<!-- origem: fde23080cf72489353e3280ddc3f628f73999744 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -54,6 +54,7 @@ flowchart LR
 |---|---|---|
 | **Groupes** (l'arbre) | Le classement de la collection, sur autant de niveaux que vous voulez. Tout ce qui est enregistré dans un groupe vaut pour lui et pour tout ce qui est en dessous. | `Traditionnelle › Mécanique › Automatique` |
 | **Champs** | Les données de chaque montre, définies par vous : texte, nombre, date, oui/non ou liste, avec unité et valeur par défaut. | `reserva_horas = 40 h`, `data_pilha`, `loja` |
+| **Sections** | Les sections de la fiche, créées par vous : chaque champ se trouve dans l'une d'elles, et la fiche, le tableau de bord, le passeport et les rapports montrent les champs regroupés, dans leur ordre. | *Identification*, *Achat*, *Construction*, *Énergie* |
 | **Unités** | Ce qui vient après le nombre, enregistré par vous : le symbole, le nom et la conversion (le pouce en millimètres). Les champs, les types de saisie et les formules choisissent l'unité dans la liste, et la valeur peut aussi apparaître dans une autre unité. | `47 mm (1,85 pol)` |
 | **Calibres** | Le mouvement de la montre, avec ce qui lui appartient : le fabricant, le manuel technique, les recommandations et les valeurs des champs. La montre avec un calibre utilise sa propre valeur, sinon celle du calibre, sinon la valeur par défaut du champ. | `NH35` : réserve de 41 h, marche de −20 à +40 s/jour |
 | **Types de saisie** | Ce qui arrive à une montre. Cela peut être **instantané** (remontage, changement de pile), **avec une valeur** (relevé de charge : 68 %) ou une **session** avec début et fin (au poignet, sur le remontoir, au soleil). | `sol` : une session qui se ferme seule à 18 h si vous oubliez |
@@ -622,6 +623,21 @@ pouces : *47 mm (1,85 pol)*). Une unité utilisée ne se supprime pas (la suppre
 emporte celles qui se convertissent en elle. Par l'API : `recurso=unidades` (la liste, avec la conversion et l'usage de
 chacune) et `recurso=unidades` avec `acao=salvar` ou `excluir`.
 
+### Les sections de la fiche {#as-divisórias-da-ficha}
+
+Les champs de la montre sont regroupés en **sections**, les parties de la fiche : dans l'onglet **Sections** de la page
+**Définitions** vous créez les vôtres, leur donnez un nom et les ordonnez (↑ et ↓), et dans l'onglet **Champs** vous
+choisissez la section de chaque champ. Le registre neuf en apporte déjà sept, et chaque champ prêt est déjà dans la sienne :
+**Identification**, **Achat**, **Construction**, **Énergie**, **Entretien et précision**, **Rotation** et **Envie**.
+
+L'ordre vaut partout : dans **Modifier la fiche** chaque section est un groupe avec son titre (celle qui n'a aucun champ
+visible, comme Envie sur une montre de la collection, disparaît) ; dans les **Données de la montre** une ligne de titre
+sépare chacune ; le **Passeport** a une carte par section, et le rapport Passeport, une partie. Les champs sans section
+(comme l'Observation) viennent à la fin, libres (dans les Données de la montre, sous **Autres**). Supprimer une section ne
+supprime pas les champs : ils restent sans section, à la fin. Par l'API : `recurso=cadastros` apporte les `secoes` (avec
+combien de champs chacune a), et `recurso=secoes` enregistre (`salvar`, `ordem`, `excluir`) ; le champ porte le
+`secao_id`.
+
 ### Les services et diagnostics {#os-serviços-e-diagnósticos}
 
 Chaque intervention sur une montre va dans le cadre **Services et diagnostics** du panneau (dans la section *Fiche et
@@ -826,7 +842,9 @@ groupes en dessous. C'est pourquoi « être automatique » n'est pas une case à
         └── Solaire       Réserve d'énergie, Soleil direct pour remplir, Au poignet : combien elle se charge
 ```
 
-Un champ vide prend la valeur **par défaut** de la fiche (la colonne « vide » des tableaux ci-dessous). Les champs, les groupes
+Un champ vide prend la valeur **par défaut** de la fiche (la colonne « vide » des tableaux ci-dessous). Dans la fiche,
+les champs apparaissent regroupés par les sections (voir [Les sections de la fiche](#as-divisórias-da-ficha)), pas par les
+groupes de l'arbre. Les champs, les groupes
 et les valeurs par défaut sont des données, pas du code : vous pouvez tout changer sur la page **Définitions**, et créer les
 vôtres.
 
@@ -1392,7 +1410,7 @@ que vous enregistrez apparaît ici sous son nom.
 | **Modes de rotation** (`modos.php`, menu **Rotation**) | Les modes de rotation : le tableau (le mode actif marqué, le type, le critère, les semaines et d'où il choisit) avec **Modifier**, **Activer** et **Supprimer**, et le formulaire d'un mode, avec l'écran de son type : le nom et le type ; d'où choisir (par tranche ou par jour de la semaine), la période du planning ou le scénario écrit à la main avec **Tester sur toutes les montres** ; les semaines en avant (avec la liste des semaines) ; le critère de choix et le cycle ; et, dans les types prêts, le scénario généré (lecture seule, avec **copier ce scénario** vers un Personnalisé). Voir [Les modes de rotation](#os-modos-de-rodízio). |
 | **Critères** (`criterios.php`) | Les ensembles de critères par endroit (toutes les montres, un groupe ou une montre), avec paramètres, sous-paramètres, tranches et la note de chaque montre avec le calcul détaillé. Il y a **Restaurer les critères initiaux**. |
 | **Groupes** (`grupos.php`) | L'arbre : créer, renommer, déplacer, trier, supprimer (ce qui appartenait au groupe passe à celui du dessus) et choisir le groupe de chaque montre. |
-| **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), les totaux (l'onglet **Totaux** : voir [Les totaux](#os-totais)), les calibres (l'onglet **Calibres** : voir [Les calibres](#os-calibres)), les unités (l'onglet **Unités** : voir [Les unités](#as-unidades)) et catégories de documents : tout ce que le système utilise et qui n'est pas du code (les alertes sont dans la page **Alertes**, et les modes de rotation dans **Modes de rotation**). |
+| **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), les totaux (l'onglet **Totaux** : voir [Les totaux](#os-totais)), les calibres (l'onglet **Calibres** : voir [Les calibres](#os-calibres)), les sections de la fiche (l'onglet **Sections** : voir [Les sections de la fiche](#as-divisórias-da-ficha)), les unités (l'onglet **Unités** : voir [Les unités](#as-unidades)) et catégories de documents : tout ce que le système utilise et qui n'est pas du code (les alertes sont dans la page **Alertes**, et les modes de rotation dans **Modes de rotation**). |
 | **Exécutions du cron** (`execucoes.php`) | Ce que le cron a fait à chaque passage, combien de temps il a pris et les erreurs, avec des filtres. |
 | **Mon compte** (`conta.php`, menu **Compte › Mon compte**) | Les collections que vous voyez (ouvrir, créer, renommer, supprimer, quitter), vos arbres de groupes (copier, renommer, supprimer), demander l'accès à la collection de quelqu'un (par le code donné par le propriétaire), vos données (votre code, l'e-mail, la langue, le mode de l'interface, le mot de passe), l'**application sur le téléphone** (mémoriser cet appareil, installer, les appareils mémorisés), les **jetons d'API** (pour vos scripts), les **notifications sur cet appareil** (le Web Push), l'**envoi de vos e-mails** (par le serveur du système ou par le vôtre : Gmail, Outlook) et supprimer le compte. Voir [Plusieurs personnes](#várias-pessoas-contas-coleções-e-acesso) et [L'application sur le téléphone](#o-aplicativo-no-celular). |
 | **Approbations** (`aprovacoes.php`) | Les demandes d'accès à vos collections (approuver, refuser), les invitations que des membres ont faites et qui vous attendent, **Inviter** (par e-mail), les invitations que vous avez faites et qui voit vos collections (retirer l'accès). Le menu affiche **Approbations (N)** quand quelque chose attend. |

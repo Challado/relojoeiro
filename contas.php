@@ -461,10 +461,19 @@ function arvore_copiar($raiz, $dono_id, $nome)
             }
         }
         $nos = implode(", ", array_keys($m["no"]));
+        // as divisórias antes dos campos (o campo aponta para a da cópia)
+        $m["campo_secao"] = [];
+        foreach (linhas("SELECT * FROM campo_secao WHERE no_id IN (" . $nos . ") ORDER BY id") as $x) {
+            $m["campo_secao"][(int)$x["id"]] = linha_copiar("campo_secao", $x, ["no_id" => $m["no"][(int)$x["no_id"]]]);
+        }
         foreach (["campo", "lancamento_tipo", "formula", "documento_categoria", "total", "calibre"] as $t) {
             $m[$t] = [];
             foreach (linhas("SELECT * FROM " . $t . " WHERE no_id IN (" . $nos . ") ORDER BY id") as $x) {
-                $m[$t][(int)$x["id"]] = linha_copiar($t, $x, ["no_id" => $m["no"][(int)$x["no_id"]]]);
+                $troca = ["no_id" => $m["no"][(int)$x["no_id"]]];
+                if ($t === "campo") {
+                    $troca["secao_id"] = $x["secao_id"] !== null ? ($m["campo_secao"][(int)$x["secao_id"]] ?? null) : null;
+                }
+                $m[$t][(int)$x["id"]] = linha_copiar($t, $x, $troca);
             }
         }
         $m["aviso"] = [];

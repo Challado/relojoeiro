@@ -1,8 +1,8 @@
 // Cadastros: os dados da API (recurso=cadastros; a aba Totais, recurso=totais; a aba Calibres, recurso=calibres; a aba
 // Unidades, recurso=unidades), uma aba por vez (cadastros.php?aba=campos&editar=3), com as gravações pela API (recurso=campos,
-// lancamento_tipos, formulas, totais, calibres, unidades e documento_categorias), o testar das fórmulas (recurso=calcular) e o dos totais (recurso=totais, expressao=). Os avisos ficam na página Avisos (avisos.js) e os modos de rodízio, na Modos de rodízio (modos.js).
-var ABAS = {campos: t("Campos"), unidades: t("Unidades"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), totais: t("Totais"), calibres: t("Calibres"), documentos: t("Categorias de documentos")};
-var RECURSO = {campos: "campos", unidades: "unidades", lancamentos: "lancamento_tipos", formulas: "formulas", totais: "totais", calibres: "calibres", documentos: "documento_categorias"};
+// secoes, lancamento_tipos, formulas, totais, calibres, unidades e documento_categorias), o testar das fórmulas (recurso=calcular) e o dos totais (recurso=totais, expressao=). Os avisos ficam na página Avisos (avisos.js) e os modos de rodízio, na Modos de rodízio (modos.js).
+var ABAS = {campos: t("Campos"), secoes: t("Divisórias"), unidades: t("Unidades"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), totais: t("Totais"), calibres: t("Calibres"), documentos: t("Categorias de documentos")};
+var RECURSO = {campos: "campos", secoes: "secoes", unidades: "unidades", lancamentos: "lancamento_tipos", formulas: "formulas", totais: "totais", calibres: "calibres", documentos: "documento_categorias"};
 var FAMILIAS = {imagem: t("imagens"), video: t("vídeos"), audio: t("áudios"), pdf: t("PDF"), xml: t("XML")};
 var q = new URLSearchParams(window.location.search);
 // os avisos dos relógios saíram daqui: moram na página Avisos, junto com os lembretes (o endereço antigo leva para lá)
@@ -73,9 +73,11 @@ function recarregarCadastros() {
       var f = e || {};
       res += el("section", {"class": "cartao-config"}, el("h2", {}, t("Campos do cadastro dos relógios"))
         + el("p", {"class": "nota"}, t("Cada campo vale para o ponto da árvore escolhido e tudo abaixo dele (os de cada nível somam) e aparece no cadastro desses relógios. O identificador é o nome do campo nas fórmulas. Marcado \"só nos desejados\", o campo aparece só nos relógios da lista de desejos."))
-        + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, [t("Campo"), t("Identificador"), t("Tipo"), t("Vale para"), t("Padrão"), ""].map(function (item) { return el("th", {}, item); }).join("")))
+        + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, [t("Campo"), t("Identificador"), t("Tipo"), t("Divisória"), t("Vale para"), t("Padrão"), ""].map(function (item) { return el("th", {}, item); }).join("")))
           + el("tbody", {}, d.campos.map(function (c) {
+            var sec = d.secoes.filter(function (x) { return x.id === c.secao_id; })[0];
             return el("tr", {}, el("td", {}, h(c.nome) + (c.unidade !== "" ? " (" + h(c.unidade) + ")" : "")) + el("td", {"class": "formula ident"}, h(c.identificador)) + el("td", {}, h(d.tipos_de_campo[c.tipo]))
+              + el("td", {}, sec ? h(sec.nome) : el("span", {"class": "nota"}, t("nenhuma")))
               + el("td", {"class": "nota"}, h(caminho(d, c.no_id)) + (c.so_desejado === 1 ? t(" · só nos desejados") : "") + (c.calibre === 1 ? t(" · do movimento") : "")) + el("td", {}, h(vazio(c.padrao)))
               + el("td", {"class": "acoes-linha"}, linkEditar(c.id) + " " + botaoLinha("ordem", c.id, "", null, el("button", {"class": "leve discreto", "name": "direcao", "value": "sobe"}, "↑")
                 + el("button", {"class": "leve discreto", "name": "direcao", "value": "desce"}, "↓")) + botaoLinha("excluir", c.id, t("Excluir"), t("Excluir o campo {1} e os valores dele?", {1: c.nome}))));
@@ -86,6 +88,9 @@ function recarregarCadastros() {
           + el("label", {}, t("Identificador {1}", {1: el("input", {"name": "identificador", "value": vazio(f.identificador), "required": true, "pattern": "[a-z][a-z0-9_]{0,39}"})}))
           + el("label", {}, t("Tipo {1}", {1: el("select", {"name": "tipo"}, Object.keys(d.tipos_de_campo).map(function (k) { return el("option", {"value": k, "selected": f.tipo === k}, h(d.tipos_de_campo[k])); }).join(""))}))
           + campoUnidade(d, t("Unidade"), vazio(f.unidade))
+          + el("label", {}, t("Divisória {1}", {1: el("select", {"name": "secao_id"}, el("option", {"value": "0"}, t("— nenhuma (no fim da ficha)")) + d.secoes.map(function (x) {
+            return el("option", {"value": x.id, "selected": f.secao_id === x.id}, h(x.nome));
+          }).join(""))}) + el("small", {}, el("a", {"href": "cadastros.php?aba=secoes"}, t("as divisórias"))))
           + el("label", {}, t("Valor padrão {1}", {1: el("input", {"name": "padrao", "value": vazio(f.padrao)})}))
           + el("label", {}, t("Vale para {1}", {1: el("select", {"name": "no_id"}, opcoesNo(d, f.no_id))}))
           + el("label", {}, t("Opções (lista: uma por linha) {1}", {1: el("textarea", {"name": "opcoes"}, h(vazio(f.opcoes)))}))
@@ -94,6 +99,21 @@ function recarregarCadastros() {
           + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "calibre", "value": "0"}) + el("input", {"type": "checkbox", "name": "calibre", "value": "1", "checked": f.calibre === 1})
             + t(" do movimento (aparece no formulário do calibre: a reserva, a marcha esperada...)"))
           + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + (e ? " " + el("a", {"href": "cadastros.php?aba=campos"}, t("cancelar")) : ""))));
+    } else if (aba === "secoes") {
+      var e = null;
+      d.secoes.forEach(function (x) { if (x.id === editar) { e = x; } });
+      res += el("section", {"class": "cartao-config"}, el("h2", {}, t("Divisórias da ficha"))
+        + el("p", {"class": "nota"}, t("As divisórias agrupam os campos no cadastro do relógio, no painel, no passaporte e nos relatórios, nesta ordem. Cada campo fica numa delas (na aba Campos, o menu Divisória); os sem divisória vêm no fim. Excluir uma divisória não apaga os campos: eles ficam sem divisória."))
+        + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Divisória")) + el("th", {"class": "num"}, t("Campos")) + el("th", {}, "")))
+          + el("tbody", {}, d.secoes.map(function (x) {
+            return el("tr", {}, el("td", {}, h(x.nome)) + el("td", {"class": "num"}, String(x.campos))
+              + el("td", {"class": "acoes-linha"}, linkEditar(x.id) + " " + botaoLinha("ordem", x.id, "", null, el("button", {"class": "leve discreto", "name": "direcao", "value": "sobe"}, "↑")
+                + el("button", {"class": "leve discreto", "name": "direcao", "value": "desce"}, "↓")) + botaoLinha("excluir", x.id, t("Excluir"))));
+          }).join(""))))
+        + el("h3", {"id": "form"}, e ? t("Alterar a divisória {1}", {1: h(e.nome)}) : t("Nova divisória"))
+        + el("form", {"data-recurso": "secoes", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": e ? e.id : 0})
+          + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": e ? e.nome : "", "required": true, "maxlength": "80", "placeholder": t("ex.: Construção")})}))
+          + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + (e ? " " + el("a", {"href": "cadastros.php?aba=secoes"}, t("cancelar")) : ""))));
     } else if (aba === "lancamentos") {
       var e = null;
       d.lancamento_tipos.forEach(function (item) { if (item.id === editar) { e = item; } });

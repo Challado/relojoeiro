@@ -106,11 +106,13 @@ $rst_a = (int)(preparar($ana, ["recurso" => "reserva", "acao" => "iniciar", "rel
 preparar($ana, ["recurso" => "reserva", "acao" => "parou", "id" => $rst_a, "fim" => date("Y-m-d H:i", time() - 86400)]);
 // uma unidade (o nome com a marca), que só a árvore da ana conhece
 $uni_a = (int)(preparar($ana, ["recurso" => "unidades", "acao" => "salvar", "id" => 0, "simbolo" => "sgA", "nome" => "Unidade SEGREDOANA", "base" => "mm", "fator" => "7"])["id"] ?? 0);
+// uma divisória (o nome com a marca)
+$sec_a = (int)(preparar($ana, ["recurso" => "secoes", "acao" => "salvar", "id" => 0, "nome" => "Divisória SEGREDOANA"])["id"] ?? 0);
 // e uma medição do timegrapher (a observação com a marca)
 $tgr_a = (int)(preparar($ana, ["recurso" => "timegrapher", "acao" => "salvar", "relogio_id" => $rel_m, "marcha" => 4, "amplitude" => 280, "observacao" => "Timegrapher SEGREDOANA"])["id"] ?? 0);
 $ids = ["colecao" => $col_a, "relogio" => $rel_a, "aparelho" => $apa_a, "lancamento" => $lan_a, "acessorio" => $ace_a, "evento" => $evt_a, "destino" => $des_a, "agenda" => $agd_a,
     "documento" => $doc_a, "no" => $no_a, "usuario" => $uid_a, "smartwatch" => $rel_s, "medicao" => $med_a, "calibre" => $cal_a, "doc_calibre" => $doc_cal_a, "servico" => $srv_a,
-    "mecanico" => $rel_m, "reserva" => $rst_a, "timegrapher" => $tgr_a, "unidade" => $uni_a];
+    "mecanico" => $rel_m, "reserva" => $rst_a, "timegrapher" => $tgr_a, "unidade" => $uni_a, "secao" => $sec_a];
 echo "A ana: " . json_encode($ids) . "\n";
 $antes = pedir($ana, "GET", ["recurso" => "ficha", "relogio" => $rel_a])["corpo"];
 
@@ -173,6 +175,10 @@ $tentativas = [
     ["recurso" => "calibres", "acao" => "excluir", "id" => $cal_a, "confirmar" => 1],
     ["recurso" => "unidades", "acao" => "salvar", "id" => $uni_a, "nome" => "INVADIDO"],
     ["recurso" => "unidades", "acao" => "excluir", "id" => $uni_a, "confirmar" => 1],
+    ["recurso" => "secoes", "acao" => "salvar", "id" => $sec_a, "nome" => "INVADIDO"],
+    ["recurso" => "secoes", "acao" => "ordem", "id" => $sec_a, "direcao" => "sobe"],
+    ["recurso" => "secoes", "acao" => "excluir", "id" => $sec_a, "confirmar" => 1],
+    ["recurso" => "campos", "acao" => "novo", "identificador" => "invadido2", "nome" => "INVADIDO", "tipo" => "texto", "secao_id" => $sec_a],
     ["recurso" => "campos", "acao" => "novo", "identificador" => "invadido", "nome" => "INVADIDO", "tipo" => "decimal", "unidade" => "sgA"],
     ["recurso" => "documentos", "acao" => "excluir", "id" => $doc_cal_a, "confirmar" => 1],
     ["recurso" => "documentos", "acao" => "alterar", "id" => $doc_cal_a, "titulo" => "INVADIDO"],
