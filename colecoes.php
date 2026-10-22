@@ -202,8 +202,9 @@ function secoes_do_modelo($raiz, $tr)
 }
 
 // Um campo do modelo (modelo.json, campos) numa árvore, com o nome e os valores possíveis no idioma ($tr): o grupo ($no;
-// null: a raiz), a divisória ($secao_id) e a ordem; as regras do valor (minimo, maximo, multiplo) e, no do acessório, o
-// tipo de acessório (o serve, o campo do relógio com que ele bate, entra depois: arvore_criar). Devolve o id. Sem escopo
+// null: a raiz), a divisória ($secao_id) e a ordem; as regras do valor (minimo, maximo, multiplo), de quem ele é (alvo:
+// relogio, acessorio, winder ou posicao) e, no do acessório, o tipo de acessório (o serve, o campo do relógio com que ele
+// bate, entra depois: arvore_criar). Devolve o id. Sem escopo
 function campo_do_modelo($c, $no, $secao_id, $ordem, $tr)
 {
     $unidade = (string)($c["unidade"] ?? "");
@@ -345,8 +346,9 @@ function arvore_criar($dono_id, $nome, $lingua, $com_modelo)
         }
         $tipos = [];
         foreach ($m["tipos"] as $x) {
-            sql("INSERT INTO lancamento_tipo (identificador, nome, formato, unidade, fecha_as, no_id, ordem, exclusiva, mede_gasto, marcha, condicao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [$x["identificador"], $tr($x["nome"]), $x["formato"], $x["unidade"], $x["fecha_as"], $grupo($x["grupo"]), (int)$x["ordem"], (int)$x["exclusiva"], (int)$x["mede_gasto"], $x["marcha"] ?? null, $x["condicao"]]);
+            sql("INSERT INTO lancamento_tipo (identificador, nome, formato, unidade, fecha_as, no_id, ordem, exclusiva, mede_gasto, marcha, winder, condicao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [$x["identificador"], $tr($x["nome"]), $x["formato"], $x["unidade"], $x["fecha_as"], $grupo($x["grupo"]), (int)$x["ordem"], (int)$x["exclusiva"], (int)$x["mede_gasto"], $x["marcha"] ?? null,
+                    (int)($x["winder"] ?? 0), $x["condicao"]]);
             $tipos[$x["identificador"]] = ultimo_id();
         }
         foreach ($m["formulas"] as $f) {
@@ -1024,7 +1026,9 @@ const IMPACTO_NOMES = ["usuario" => "usuários", "colecao" => "coleções", "col
     "campo_valor" => "valores de campo", "calibre" => "calibres", "calibre_valor" => "valores de calibre", "campo_valor_item" => "valores de campo múltiplo", "calibre_valor_item" => "valores de campo múltiplo de calibre", "acessorio_valor" => "valores de acessório", "acessorio_valor_item" => "valores de campo múltiplo de acessório", "relogio_calibre" => "relógios com calibre", "lancamento" => "lançamentos", "medicao" => "medições do gasto", "documento" => "documentos", "documento_parte" => "pedaços de documentos no banco",
     "servico" => "serviços e diagnósticos", "servico_peca" => "peças de serviços", "servico_documento" => "documentos de serviços",
     "reserva_teste" => "testes da reserva e observações da energia", "timegrapher" => "medições do timegrapher",
-    "acessorio" => "acessórios", "acessorio_relogio" => "vínculos de acessório", "criterio_parametro" => "parâmetros de critérios", "criterio_sub" => "subparâmetros de critérios",
+    "acessorio" => "acessórios", "acessorio_relogio" => "vínculos de acessório", "winder" => "winders", "winder_valor" => "valores de winder",
+    "winder_valor_item" => "valores de campo múltiplo de winder", "winder_posicao" => "posições de winder", "winder_posicao_valor" => "valores de posição de winder",
+    "winder_posicao_valor_item" => "valores de campo múltiplo de posição de winder", "lancamento_winder" => "sessões em posição de winder", "criterio_parametro" => "parâmetros de critérios", "criterio_sub" => "subparâmetros de critérios",
     "criterio_faixa" => "faixas de critérios", "config" => "valores da configuração", "modo" => "modos de rodízio", "modo_bloco" => "blocos de modos", "modo_bloco_relogio" => "relógios fixos de blocos",
     "modo_bloco_dia" => "dias de blocos", "plano" => "dias do plano", "plano_bloco" => "blocos de dias do plano", "plano_livre" => "dias livres", "evento_personalizado" => "eventos",
     "evento_relogio" => "vínculos de evento", "evento_dia" => "dias de eventos", "evento_disparo" => "disparos de eventos", "destino" => "destinos", "destino_webhook" => "webhooks",
@@ -1041,6 +1045,8 @@ tk("fotos"); tk("valores de campo"); tk("unidades"); tk("divisórias de campos")
 tk("lançamentos"); tk("medições do gasto"); tk("documentos"); tk("pedaços de documentos no banco");
 tk("serviços e diagnósticos"); tk("peças de serviços"); tk("documentos de serviços");
 tk("testes da reserva e observações da energia"); tk("medições do timegrapher"); tk("acessórios"); tk("vínculos de acessório");
+tk("winders"); tk("valores de winder"); tk("valores de campo múltiplo de winder"); tk("posições de winder"); tk("valores de posição de winder");
+tk("valores de campo múltiplo de posição de winder"); tk("sessões em posição de winder");
 tk("parâmetros de critérios"); tk("subparâmetros de critérios"); tk("faixas de critérios");
 tk("valores da configuração"); tk("modos de rodízio"); tk("blocos de modos"); tk("relógios fixos de blocos");
 tk("dias de blocos"); tk("dias do plano"); tk("blocos de dias do plano"); tk("dias livres"); tk("eventos");

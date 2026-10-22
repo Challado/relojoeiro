@@ -1,4 +1,4 @@
-<!-- origem: 329aebc4561f43ee2cfe90799f815e0785b08f56 -->
+<!-- origem: 1dc3be926762e6bed7f414015c3d61553c644bea -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -134,6 +134,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `servicos` | 保养与检测（`relogio=<id>`，含摘要：标称防水、经证实的防水、次数和费用合计；不带时为全部），含零件、费用、防水以及前后走时 |
 | `reserva` | 实测储备（`relogio=<id>`：机械表的储备测试、能量观察、实测值即各次测试的中位数，以及带可信度的声明、实测与估计表；不指定时，返回所有表的测试和观察） |
 | `timegrapher` | 校表仪测量（`relogio=<id>`：最近一次测量，含每项的平均值和各方位之间的差、测量记录以及 CSV 导入能识别的内容；不带则返回全部） |
+| `winders` | 收藏的上链盒（**上链盒**页面）：每个带数据、备注和位置，每个位置带程序、是否开启以及现在其中的手表（电量、每小时提供多少、何时充满）；上链盒和位置的字段，以及可以放上上链盒的手表 |
 | `relatorios` | 报表的统一入口：不带 `tipo` 时为目录（每个报表的分组、名称、描述和参数，以及手表）；带 `tipo`（`colecao`、`passaporte`、`custos`、`desejos`、`acessorios`、`documentos`、`historico`、`estatisticas`、`plano`、`avisos`、`criterios`、`servicos`、`precisao`、`timegrapher`、`reserva`、`calibres`、`totais`、`cron`）及其参数（`relogio`、`de`、`ate`、`posse`、`situacao`）时为生成好的报表（标题、副标题、摘要、表格或名值对形式的各部分、页脚，已是文字）；`csv=1`：表格 |
 | `documento` | 一个文档的文件（`id=<id>`）：用于显示（图片、视频、音频、PDF、文本）或下载（其他，或使用 `baixar=1`）；`mini=1` 是照片的缩略图。支持分段（Range），方便视频快进 |
 | `usuarios`、`migracoes` | master：账户面板，每个账户含其拥有的内容和密码哈希（用于以相同密码迁移：参见[用户与密码](#os-usuários-e-as-senhas)）；其他人只有自己的账户；尚待应用的迁移 |
@@ -158,10 +159,11 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `servicos` | `salvar`（日期、类型、由谁完成、工时费、零件、防水、前后走时、保修和文档；保养和更换电池也会生成记录），`excluir` |
 | `reserva` | `iniciar`（何时充满、如何充满）、`parou`、`observar`（停止、低电量、记录；太阳能表也可以）、`salvar`、`usar`（中位数写入表的档案）、`excluir` |
 | `timegrapher` | `salvar`（一次测量：方位、走时、振幅、偏振、每小时振次、提升角）、`importar`（仪器的 CSV；`conferir=1`：不保存）、`excluir` |
+| `winders`、`winder_posicoes` | `salvar`（上链盒：名称、字段、备注，以及创建时的位置数；位置：名称、顺序、开启、程序）、`excluir`（其中的时段保留，但没有位置） |
 | `documento_categorias` | `nova`、`alterar`、`excluir`（仅在没有文档时） |
 | `secoes` | 档案分区：`salvar`（名称；`id=0` 在末尾新建）、`ordem`（`direcao=sobe` 或 `desce`）、`excluir`（其中的字段不再属于任何分区，排在末尾） |
 | `unidades` | `salvar`（符号、名称、基准和系数、零点以及同时显示为；新符号会同步到使用它的地方），`excluir`（仅在未使用时；换算成它的单位一起删除） |
-| `lancamento` | `lancar`（上链、电量、电池……）、`iniciar` 和 `encerrar`（戴上和取下手腕、上链盒、晒太阳、充电器）、`alternar`（时段打开时关闭，关闭时打开：手机上一个按钮就够）、`periodo`（已经过去的一段时间；当天的手表戴在手腕上时算作轮换中的使用，与它相接的同类型片段（例如仍打开的“戴上”）合并为一段）、`alterar`、`excluir`、`medicao`（把一次消耗测量放入或移出计算：`id`，`usada` 为 1 或 0）。所有操作中，`relogio_id=hoje` 都表示当天的手表 |
+| `lancamento` | `lancar`（上链、电量、电池……）、`iniciar` 和 `encerrar`（戴上和取下手腕、上链盒、晒太阳、充电器；上链盒上用 `posicao_id`：位置）、`alternar`（时段打开时关闭，关闭时打开：手机上一个按钮就够）、`periodo`（已经过去的一段时间；当天的手表戴在手腕上时算作轮换中的使用，与它相接的同类型片段（例如仍打开的“戴上”）合并为一段）、`alterar`、`excluir`、`medicao`（把一次消耗测量放入或移出计算：`id`，`usada` 为 1 或 0）。所有操作中，`relogio_id=hoje` 都表示当天的手表 |
 | `rodizio` | `usando`（我今天戴的是这块）、`trocar_dia`（某一天的手表）、`periodo`（一个时段的手表，按顺序：`de`、`ate`、`relogio_ids[]`、`dias_cada`）、`periodo_sortear`（删除时段内的日子，由模式重新安排；只填 `de`：到计划结束；只填 `ate`：从明天到它）、`periodo_livre`（清除并让这些天保持空闲，不抽选；日期规则相同）、`manual`（手动轮换：`de`、`ate`、`dias[YYYY-MM-DD]` = 手表 id、`auto` 或 `livre`）、`apagar_tudo`（清除从明天起的全部安排；`hoje=1`：从今天起；模式会重新生成计划）、`resortear`、`resortear_hoje`、`proxima_semana`、`modo`（更换模式） |
 | `modos` | `salvar`、`ativar`、`excluir` |
 | `arvore` | `novo`、`renomear`、`mover`、`ordem`、`excluir`（分组）以及 `relogios`（每块手表的分组） |
@@ -467,7 +469,7 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 | [`banco.php`](banco.php) | 数据库：与 MySQL、Postgres、SQLite 或 Firebird 的连接，以及 SQL 在它们之间的转换 |
 | [`operacoes.php`](operacoes.php) | 每次写入的规则：校验和消息 |
 | [`cron.php`](cron.php) | 计划、当天的时段、早上和晚上两轮、事件、日历以及文档的维护 |
-| `index.php`、`plano.php`、`desejos.php`、`estatisticas.php`、`hora.php`、`acessorios.php`、`galeria.php`、`passaporte.php`、`ficha.php`、`documentos.php`、`historico.php`、`avisos.php`、`modos.php`、`configuracao.php`、`destinos.php`、`agendas.php`、`criterios.php`、`grupos.php`、`cadastros.php`、`execucoes.php`、`conta.php`、`aprovacoes.php`、`usuarios.php`、`cadastro.php` | 页面（只有骨架；`cadastro.php` 是公开页面） |
+| `index.php`、`plano.php`、`desejos.php`、`estatisticas.php`、`hora.php`、`acessorios.php`、`winders.php`、`galeria.php`、`passaporte.php`、`ficha.php`、`documentos.php`、`historico.php`、`avisos.php`、`modos.php`、`configuracao.php`、`destinos.php`、`agendas.php`、`criterios.php`、`grupos.php`、`cadastros.php`、`execucoes.php`、`conta.php`、`aprovacoes.php`、`usuarios.php`、`cadastro.php` | 页面（只有骨架；`cadastro.php` 是公开页面） |
 | `relojinho.js` | 菜单栏和网站图标上的小手表：24 种用 canvas 绘制、显示准确时间的手表，每小时一块（按顺序、抽取或不重复） |
 | `sw.js`、`offline.html`、`icone-*.png` | 手机上的应用：*service worker*（由 `recurso=sw` 提供，前面带版本号：界面缓存、无连接页面和 Web Push）、**没有网络连接**页面和图标（192、512 和 180 px） |
 | `ajuda.php` | 帮助页面：只有骨架；`ajuda.js` 向 API 请求文本（`recurso=manual`：README 中面向用户的章节，已在 `lib.php` 中转换为 HTML） |

@@ -754,8 +754,9 @@
  *     campos[].maximo                o maior valor que o número aceita; null: sem limite
  *     campos[].multiplo              verdadeiro: o campo é múltiplo (vários dos valores possíveis de uma vez, guardados um por linha; o
  *                                    valor vem com um por linha)
- *     campos[].alvo                  de quem é o campo: relogio (o cadastro do relógio) ou acessorio (o cadastro do acessório, na página
- *                                    Acessórios); a lista traz os dos relógios e depois os dos acessórios
+ *     campos[].alvo                  de quem é o campo: relogio (o cadastro do relógio), acessorio (o cadastro do acessório, na página
+ *                                    Acessórios), winder (o do winder) ou posicao (o da posição do winder, na página Winders); a lista traz
+ *                                    os dos relógios e depois os dos acessórios, dos winders e das posições
  *     campos[].acessorio_tipo        no campo de acessório, o tipo de acessório em que ele vale (pulseira, caixa...); null: todos (e nos
  *                                    dos relógios)
  *     campos[].serve_campo_id        no campo de acessório, o campo do relógio (campos[].id) com que ele tem de bater para o acessório
@@ -980,6 +981,8 @@
  *     lancamento_tipos[].mede_gasto  cada leitura desse tipo mede o gasto, comparando com a anterior (a função MEDIDO)
  *     lancamento_tipos[].marcha      o que o tipo mede da marcha: desvio (a leitura do desvio da hora, em segundos), acerto (o acerto da
  *                                    hora) ou null
+ *     lancamento_tipos[].winder      a sessão é numa posição de um winder (o Pôr pede a posição; o programa dela entra nas fórmulas por
+ *                                    WINDER_POSICAO): 1 ou 0 (verdadeiro ou falso na exportação)
  *     lancamento_tipos[].no_id       o grupo em que o tipo vale; null: todos
  *     lancamento_tipos[].nome        o nome do tipo
  *     lancamento_tipos[].ordem       a posição do tipo
@@ -1029,6 +1032,72 @@
  *                                    o período livre")
  *     acessorios[]                   os acessórios (como em recurso=acessorios): id, nome, tipo, tipo_texto, relogio_id (null: solto),
  *                                    relogio, observacao, criado
+ *     winders                        os winders, com as posições e o relógio em cada uma (como em recurso=winders, winders)
+ *     winders[]                      um winder
+ *     winders[].id                   o número do winder
+ *     winders[].nome                 o nome ("Escritório")
+ *     winders[].observacao           a observação (null)
+ *     winders[].criado               quando foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     winders[].dados                os campos do winder com valor (Cadastros › Campos, para o winder), na ordem: o informado e, sem ele, o
+ *                                    padrão do campo
+ *     winders[].dados[]              um campo
+ *     winders[].dados[].identificador
+ *                                    o identificador do campo (o nome em valores[<identificador>] da gravação e em WINDER("identificador"))
+ *     winders[].dados[].nome         o nome do campo
+ *     winders[].dados[].valor        o valor (texto normalizado: número com ponto; o múltiplo, um por linha)
+ *     winders[].dados[].texto        o valor para mostrar, no idioma, com a unidade
+ *     winders[].dados[].origem       informado (gravado no winder) ou padrao (o padrão do campo)
+ *     winders[].dados[].origem_texto a origem por extenso
+ *     winders[].posicoes             as posições do winder, na ordem
+ *     winders[].posicoes[]           uma posição
+ *     winders[].posicoes[].id        o número da posição (o posicao_id do iniciar)
+ *     winders[].posicoes[].nome      o nome ("Pos. 1")
+ *     winders[].posicoes[].ordem     a ordem dela no winder
+ *     winders[].posicoes[].ligada    verdadeiro: recebe relógio; falso: desligada
+ *     winders[].posicoes[].dados     o programa: os campos da posição com valor (Cadastros › Campos, para a posição do winder), como em
+ *                                    dados
+ *     winders[].posicoes[].dados[]   um campo
+ *     winders[].posicoes[].dados[].identificador
+ *                                    o identificador do campo (o nome em valores[<identificador>] da gravação e em
+ *                                    WINDER_POSICAO("identificador"))
+ *     winders[].posicoes[].dados[].nome
+ *                                    o nome do campo
+ *     winders[].posicoes[].dados[].valor
+ *                                    o valor (texto normalizado: número com ponto; o múltiplo, um por linha)
+ *     winders[].posicoes[].dados[].texto
+ *                                    o valor para mostrar, no idioma, com a unidade ("650 TPD")
+ *     winders[].posicoes[].dados[].origem
+ *                                    informado (gravado na posição) ou padrao (o padrão do campo)
+ *     winders[].posicoes[].dados[].origem_texto
+ *                                    a origem por extenso
+ *     winders[].posicoes[].programa  o programa em texto ("Rotações por dia: 650 TPD · Gira no sentido horário: sim")
+ *     winders[].posicoes[].relogio   o relógio que está nela agora (a sessão no winder aberta, ligada a ela); null: livre
+ *     winders[].posicoes[].relogio.relogio_id
+ *                                    o número do relógio
+ *     winders[].posicoes[].relogio.relogio
+ *                                    o nome dele
+ *     winders[].posicoes[].relogio.lancamento_id
+ *                                    a sessão (o lançamento)
+ *     winders[].posicoes[].relogio.tipo
+ *                                    o tipo de lançamento da sessão (o encerrar dela)
+ *     winders[].posicoes[].relogio.desde
+ *                                    desde quando (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     winders[].posicoes[].relogio.desde_texto
+ *                                    por extenso ("desde 07:40")
+ *     winders[].posicoes[].relogio.carga
+ *                                    a carga agora, em % (a fórmula energia); null: sem conta
+ *     winders[].posicoes[].relogio.ganho
+ *                                    o que cada hora ali dá, em horas de reserva por hora (a fórmula winder_ganho, com o programa da
+ *                                    posição); null: sem a fórmula
+ *     winders[].posicoes[].relogio.ganho_texto
+ *                                    por extenso ("2,05 h de reserva por hora")
+ *     winders[].posicoes[].relogio.falta_horas
+ *                                    as horas até encher (a fórmula winder_falta); null: não enche (a posição não dá corda nele) ou sem a
+ *                                    fórmula
+ *     winders[].posicoes[].relogio.cheio_texto
+ *                                    quando enche, por extenso ("cheio às 19:20", "cheio em 1d 4h", "cheio"); null: não enche
+ *     winders[].ocupadas             quantas posições têm relógio agora
+ *     winders[].livres               quantas posições ligadas estão sem relógio
  *     acessorios[].id                o número do acessório
  *     acessorios[].nome              o nome
  *     acessorios[].tipo              pulseira, caixa, estojo, ferramenta, carregador, peca ou outro
@@ -2034,6 +2103,16 @@
  *                                    o nome do relógio
  *     relogio.acessorios_servem      os acessórios de outros relógios, ou soltos, que servem neste (a pulseira com a largura do entre alças
  *                                    dele): a troca possível
+ *     relogio.winder_posicoes        as posições de winder livres agora (ligadas e sem relógio), onde ele pode entrar: o Pôr no winder do
+ *                                    Marcar; vazio sem winder cadastrado ou sem um tipo marcado como winder
+ *     relogio.winder_posicoes[]      uma posição livre
+ *     relogio.winder_posicoes[].id   o número da posição (o posicao_id do iniciar)
+ *     relogio.winder_posicoes[].winder_id
+ *                                    o winder dela
+ *     relogio.winder_posicoes[].texto
+ *                                    o winder e a posição por extenso ("Escritório, Pos. 1")
+ *     relogio.winder_posicoes[].programa
+ *                                    o programa da posição em texto ("Rotações por dia: 650 TPD · Gira no sentido horário: sim")
  *     relogio.acessorios_servem[]    um acessório que serve
  *     relogio.acessorios_servem[].id o número do acessório
  *     relogio.acessorios_servem[].nome
@@ -2778,7 +2857,10 @@
  *     relogio.tipos[].aberta         a sessão aberta desse tipo agora; null: nenhuma
  *     relogio.tipos[].aberta.inicio  desde quando (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.tipos[].aberta.rodizio verdadeiro ou falso: é a sessão do rodízio
- *     relogio.tipos[].aberta.texto   por extenso ("desde 07:00 (3 h 12 min)")
+ *     relogio.tipos[].aberta.texto   por extenso ("desde 07:00 (3 h 12 min)"; numa posição de winder, com ela: "... · Escritório, Pos. 2")
+ *     relogio.tipos[].aberta.posicao_id
+ *                                    a posição do winder em que a sessão está; null: nenhuma
+ *     relogio.tipos[].aberta.posicao o winder e a posição por extenso ("Escritório, Pos. 2"); null: nenhuma
  *     relogio.tipos[].formato        instantaneo, valor ou sessao
  *     relogio.tipos[].identificador  o tipo
  *     relogio.tipos[].mede_gasto     verdadeiro ou falso: a leitura mede o gasto (a caixa aparece)
@@ -2786,6 +2868,8 @@
  *     relogio.tipos[].unidade        a unidade do valor
  *     relogio.tipos[].marcha         o que o tipo mede da marcha: desvio (a leitura do desvio da hora: o Marcar mostra o Testar a
  *                                    precisão), acerto (o acerto da hora) ou null
+ *     relogio.tipos[].winder         verdadeiro: a sessão é numa posição de um winder (o Pôr no winder do Marcar escolhe a posição, de
+ *                                    winder_posicoes)
  *     relogio.precisao               a precisão do relógio (o quadro Precisão do painel): as leituras do desvio da hora e os acertos, a
  *                                    marcha (em segundos por dia: + adianta, − atrasa) e o desvio estimado agora; null se nenhum tipo de
  *                                    lançamento dele mede a marcha
@@ -3112,8 +3196,8 @@
  *     campos[].minimo                o menor valor que o número aceita; null: sem limite
  *     campos[].maximo                o maior valor que o número aceita; null: sem limite
  *     campos[].multiplo              1: o campo é múltiplo (vários dos valores possíveis de uma vez); 0: um valor só
- *     campos[].alvo                  de quem é o campo: relogio (o cadastro do relógio) ou acessorio (o cadastro do acessório, na página
- *                                    Acessórios)
+ *     campos[].alvo                  de quem é o campo: relogio (o cadastro do relógio), acessorio (o cadastro do acessório, na página
+ *                                    Acessórios), winder (o do winder) ou posicao (o da posição do winder, na página Winders)
  *     campos[].acessorio_tipo        no campo de acessório, o tipo de acessório em que ele vale (pulseira, caixa...); null: todos (e nos
  *                                    dos relógios)
  *     campos[].serve_campo_id        no campo de acessório, o campo do relógio (campos[].id) com que ele tem de bater para o acessório
@@ -3162,6 +3246,8 @@
  *     lancamento_tipos[].mede_gasto  cada leitura desse tipo mede o gasto, comparando com a anterior (a função MEDIDO)
  *     lancamento_tipos[].marcha      o que o tipo mede da marcha: desvio (a leitura do desvio da hora, em segundos), acerto (o acerto da
  *                                    hora) ou null
+ *     lancamento_tipos[].winder      a sessão é numa posição de um winder (o Pôr pede a posição; o programa dela entra nas fórmulas por
+ *                                    WINDER_POSICAO): 1 ou 0 (verdadeiro ou falso na exportação)
  *     lancamento_tipos[].no_id       o grupo em que o tipo vale; null: todos
  *     lancamento_tipos[].nome        o nome do tipo
  *     lancamento_tipos[].ordem       a posição do tipo
@@ -3989,6 +4075,108 @@
  *     relogios[].id                  o número (código)
  *     relogios[].nome                o nome
  *     relogios[].posse               a situação na coleção
+ *   recurso=winders
+ *     winders                        os winders da coleção, pelo nome
+ *     winders[]                      um winder
+ *     winders[].id                   o número do winder
+ *     winders[].nome                 o nome ("Escritório")
+ *     winders[].observacao           a observação (null)
+ *     winders[].criado               quando foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     winders[].dados                os campos do winder com valor (Cadastros › Campos, para o winder), na ordem: o informado e, sem ele, o
+ *                                    padrão do campo
+ *     winders[].dados[]              um campo
+ *     winders[].dados[].identificador
+ *                                    o identificador do campo (o nome em valores[<identificador>] da gravação e em WINDER("identificador"))
+ *     winders[].dados[].nome         o nome do campo
+ *     winders[].dados[].valor        o valor (texto normalizado: número com ponto; o múltiplo, um por linha)
+ *     winders[].dados[].texto        o valor para mostrar, no idioma, com a unidade
+ *     winders[].dados[].origem       informado (gravado no winder) ou padrao (o padrão do campo)
+ *     winders[].dados[].origem_texto a origem por extenso
+ *     winders[].posicoes             as posições do winder, na ordem
+ *     winders[].posicoes[]           uma posição
+ *     winders[].posicoes[].id        o número da posição (o posicao_id do iniciar)
+ *     winders[].posicoes[].nome      o nome ("Pos. 1")
+ *     winders[].posicoes[].ordem     a ordem dela no winder
+ *     winders[].posicoes[].ligada    verdadeiro: recebe relógio; falso: desligada
+ *     winders[].posicoes[].dados     o programa: os campos da posição com valor (Cadastros › Campos, para a posição do winder), como em
+ *                                    dados
+ *     winders[].posicoes[].dados[]   um campo
+ *     winders[].posicoes[].dados[].identificador
+ *                                    o identificador do campo (o nome em valores[<identificador>] da gravação e em
+ *                                    WINDER_POSICAO("identificador"))
+ *     winders[].posicoes[].dados[].nome
+ *                                    o nome do campo
+ *     winders[].posicoes[].dados[].valor
+ *                                    o valor (texto normalizado: número com ponto; o múltiplo, um por linha)
+ *     winders[].posicoes[].dados[].texto
+ *                                    o valor para mostrar, no idioma, com a unidade ("650 TPD")
+ *     winders[].posicoes[].dados[].origem
+ *                                    informado (gravado na posição) ou padrao (o padrão do campo)
+ *     winders[].posicoes[].dados[].origem_texto
+ *                                    a origem por extenso
+ *     winders[].posicoes[].programa  o programa em texto ("Rotações por dia: 650 TPD · Gira no sentido horário: sim")
+ *     winders[].posicoes[].relogio   o relógio que está nela agora (a sessão no winder aberta, ligada a ela); null: livre
+ *     winders[].posicoes[].relogio.relogio_id
+ *                                    o número do relógio
+ *     winders[].posicoes[].relogio.relogio
+ *                                    o nome dele
+ *     winders[].posicoes[].relogio.lancamento_id
+ *                                    a sessão (o lançamento)
+ *     winders[].posicoes[].relogio.tipo
+ *                                    o tipo de lançamento da sessão (o encerrar dela)
+ *     winders[].posicoes[].relogio.desde
+ *                                    desde quando (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     winders[].posicoes[].relogio.desde_texto
+ *                                    por extenso ("desde 07:40")
+ *     winders[].posicoes[].relogio.carga
+ *                                    a carga agora, em % (a fórmula energia); null: sem conta
+ *     winders[].posicoes[].relogio.ganho
+ *                                    o que cada hora ali dá, em horas de reserva por hora (a fórmula winder_ganho, com o programa da
+ *                                    posição); null: sem a fórmula
+ *     winders[].posicoes[].relogio.ganho_texto
+ *                                    por extenso ("2,05 h de reserva por hora")
+ *     winders[].posicoes[].relogio.falta_horas
+ *                                    as horas até encher (a fórmula winder_falta); null: não enche (a posição não dá corda nele) ou sem a
+ *                                    fórmula
+ *     winders[].posicoes[].relogio.cheio_texto
+ *                                    quando enche, por extenso ("cheio às 19:20", "cheio em 1d 4h", "cheio"); null: não enche
+ *     winders[].ocupadas             quantas posições têm relógio agora
+ *     winders[].livres               quantas posições ligadas estão sem relógio
+ *     campos_winder                  os campos dos winders (Cadastros › Campos, para o winder), na ordem: o formulário do winder
+ *     campos_winder[]                um campo
+ *     campos_winder[].identificador  o identificador (o nome em valores[<identificador>] da gravação)
+ *     campos_winder[].nome           o nome do campo
+ *     campos_winder[].tipo           inteiro, decimal, sim_nao, data, lista ou texto
+ *     campos_winder[].unidade        a unidade (vazio: sem)
+ *     campos_winder[].opcoes         os valores possíveis, na ordem (vazio: qualquer um)
+ *     campos_winder[].opcoes[]       um valor possível
+ *     campos_winder[].multiplo       verdadeiro: o campo é múltiplo (vários dos valores possíveis de uma vez; no formulário, uma caixa para
+ *                                    cada)
+ *     campos_winder[].regra          o mínimo e o máximo do número em texto, para mostrar embaixo da entrada; null: sem limite
+ *     campos_winder[].padrao         o padrão do campo (vale quando o valor fica vazio); null: nenhum
+ *     campos_winder[].padrao_texto   o padrão para mostrar, no idioma, com a unidade; null: nenhum
+ *     campos_posicao                 os campos das posições (Cadastros › Campos, para a posição do winder: o programa), na ordem: o
+ *                                    formulário da posição
+ *     campos_posicao[]               um campo
+ *     campos_posicao[].identificador o identificador (o nome em valores[<identificador>] da gravação)
+ *     campos_posicao[].nome          o nome do campo
+ *     campos_posicao[].tipo          inteiro, decimal, sim_nao, data, lista ou texto
+ *     campos_posicao[].unidade       a unidade (vazio: sem)
+ *     campos_posicao[].opcoes        os valores possíveis, na ordem (vazio: qualquer um)
+ *     campos_posicao[].opcoes[]      um valor possível
+ *     campos_posicao[].multiplo      verdadeiro: o campo é múltiplo (vários dos valores possíveis de uma vez; no formulário, uma caixa para
+ *                                    cada)
+ *     campos_posicao[].regra         o mínimo e o máximo do número em texto, para mostrar embaixo da entrada; null: sem limite
+ *     campos_posicao[].padrao        o padrão do campo (vale quando o valor fica vazio); null: nenhum
+ *     campos_posicao[].padrao_texto  o padrão para mostrar, no idioma, com a unidade; null: nenhum
+ *     relogios[]                     os relógios disponíveis que podem ir para um winder (os que têm um tipo de lançamento marcado como
+ *                                    winder), pelo nome: o Pôr da página
+ *     relogios[].id                  o número (código)
+ *     relogios[].nome                o nome
+ *     relogios[].tipo                o tipo de lançamento de winder dele (o tipo do iniciar)
+ *     relogios[].tipo_nome           o nome desse tipo ("No winder")
+ *     relogios[].posicao_id          a posição em que ele está agora; null: fora de um winder
+ *     relogios[].posicao             essa posição por extenso ("Escritório, Pos. 1"); null: fora de um winder
  *   recurso=servicos
  *     servicos                       os serviços (de um relógio, ou de todos), do mais novo para o mais velho
  *     servicos[]                     um serviço
@@ -5973,6 +6161,34 @@ if ($recurso === "textos") {
         }, array_keys(ACESSORIO_TIPOS)), function ($x) { return $x["quantos"] > 0; })),
         "soltos" => count(array_filter($lista_a, function ($a) { return $a["relogio_id"] === null; })),
         "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "posse" => posse_de($r)]; }, linhas("SELECT * FROM relogio ORDER BY nome"))];
+} elseif ($recurso === "winders") {
+    // os winders da coleção (a página Winders): cada um com as posições, o programa delas e o relógio que está em cada uma, os
+    // campos do winder e da posição (o formulário) e os relógios que podem ir para um winder (os que têm um tipo de lançamento
+    // marcado como winder: o Pôr no winder da página)
+    $agora_w = time();
+    $tipo_w = function ($r) {
+        foreach (lancamento_tipos_do_relogio($r) as $ident => $t_w) {
+            if ((int)($t_w["winder"] ?? 0) === 1) {
+                return ["identificador" => $ident, "nome" => $t_w["nome"]];
+            }
+        }
+        return null;
+    };
+    $no_winder = [];
+    foreach (linhas("SELECT l.relogio_id, lw.posicao_id FROM lancamento_winder lw JOIN lancamento l ON l.id = lw.lancamento_id WHERE l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?)",
+        [date("Y-m-d H:i:s", $agora_w), date("Y-m-d H:i:s", $agora_w)]) as $x) {
+        $no_winder[(int)$x["relogio_id"]] = (int)$x["posicao_id"];
+    }
+    $rel_w = [];
+    foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY nome, id") as $r_w) {
+        $t_w = $tipo_w($r_w);
+        if ($t_w !== null) {
+            $rel_w[] = ["id" => (int)$r_w["id"], "nome" => $r_w["nome"], "tipo" => $t_w["identificador"], "tipo_nome" => $t_w["nome"],
+                "posicao_id" => $no_winder[(int)$r_w["id"]] ?? null, "posicao" => isset($no_winder[(int)$r_w["id"]]) ? winder_posicao_nome($no_winder[(int)$r_w["id"]]) : null];
+        }
+    }
+    $saida = ["winders" => winders_lista($agora_w), "campos_winder" => winder_campos_formulario(campos_de_winder()), "campos_posicao" => winder_campos_formulario(campos_de_posicao()),
+        "relogios" => $rel_w];
 } elseif ($recurso === "proximos") {
     // os Próximos dias da página Hoje, uma página (a troca de página não relê a página Hoje inteira)
     $saida = plano_pagina(date("Y-m-d"), "", null, (int)($_REQUEST["pagina"] ?? 1),
@@ -6085,7 +6301,7 @@ if ($recurso === "textos") {
 } else {
     $codigo = 404;
     $saida = ["erro" => t("recurso desconhecido"), "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "unidades", "servicos", "reserva", "timegrapher", "relatorios", "hora_certa", "acessorios", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "unidades", "servicos", "reserva", "timegrapher", "relatorios", "hora_certa", "acessorios", "winders", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

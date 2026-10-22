@@ -450,7 +450,8 @@ $TIPOS_CAMPO = [
 ];
 
 // Todos os campos dos relógios, por identificador (uma vez por requisição). Os campos dos acessórios (campo.alvo =
-// acessorio) ficam de fora: campos_de_acessorio
+// acessorio), dos winders (winder) e das posições dos winders (posicao) ficam de fora: campos_de_acessorio, campos_de_winder
+// e campos_de_posicao
 function campos_todos($recarregar = false)
 {
     // guardado por coleção (o cron passa por todas)
@@ -459,15 +460,17 @@ function campos_todos($recarregar = false)
     $c = $todos_[$k_] ?? null;
     if ($c === null || $recarregar) {
         $c = [];
-        $a = [];
+        $outros = ["acessorio" => [], "winder" => [], "posicao" => []];
         foreach (campos_com_opcoes(linhas("SELECT * FROM campo ORDER BY ordem, nome")) as $x) {
-            if (($x["alvo"] ?? "relogio") === "acessorio") {
-                $a[$x["identificador"]] = $x;
+            if (isset($outros[$x["alvo"] ?? "relogio"])) {
+                $outros[$x["alvo"]][$x["identificador"]] = $x;
             } else {
                 $c[$x["identificador"]] = $x;
             }
         }
-        $GLOBALS["CAMPOS_ACESSORIO"][$k_] = $a;
+        $GLOBALS["CAMPOS_ACESSORIO"][$k_] = $outros["acessorio"];
+        $GLOBALS["CAMPOS_WINDER"][$k_] = $outros["winder"];
+        $GLOBALS["CAMPOS_POSICAO"][$k_] = $outros["posicao"];
     }
     $todos_[$k_] = $c;
     return $c;
@@ -484,6 +487,26 @@ function campos_de_acessorio($tipo = null)
     return array_filter($GLOBALS["CAMPOS_ACESSORIO"][$k_], function ($c) use ($tipo) {
         return $tipo === null || ($c["acessorio_tipo"] ?? null) === null || $c["acessorio_tipo"] === $tipo;
     });
+}
+
+// Os campos dos winders (campo.alvo = winder: a marca, o modelo...) e os das posições dos winders (campo.alvo = posicao: as
+// rotações por dia, o sentido, o ciclo...), por identificador
+function campos_de_winder()
+{
+    $k_ = (int)colecao_atual();
+    if (!isset($GLOBALS["CAMPOS_WINDER"][$k_])) {
+        campos_todos(true);
+    }
+    return $GLOBALS["CAMPOS_WINDER"][$k_];
+}
+
+function campos_de_posicao()
+{
+    $k_ = (int)colecao_atual();
+    if (!isset($GLOBALS["CAMPOS_POSICAO"][$k_])) {
+        campos_todos(true);
+    }
+    return $GLOBALS["CAMPOS_POSICAO"][$k_];
 }
 
 // Os campos com as opções de cada lista (a tabela campo_opcao) em "opcoes": uma por linha, na ordem (null: nenhuma)
@@ -769,13 +792,18 @@ function valor_para_campo($c, $v)
     return $res;
 }
 
-// Grava o valor de um campo num relógio, num calibre ou num acessório ($dono: "relogio", "calibre" ou "acessorio"; o valor
-// já conferido por valor_para_campo; null apaga). O campo múltiplo vai um por linha para o campo_valor_item (no calibre, o
-// calibre_valor_item; no acessório, o acessorio_valor_item); os outros, para o campo_valor (calibre_valor, acessorio_valor)
+// As tabelas dos valores de cada dono de campo: [a dos valores, a dos itens do múltiplo, a coluna do dono, a tabela do dono]
+const VALOR_TABELAS = ["relogio" => ["campo_valor", "campo_valor_item", "relogio_id", "relogio"], "calibre" => ["calibre_valor", "calibre_valor_item", "calibre_id", "calibre"],
+    "acessorio" => ["acessorio_valor", "acessorio_valor_item", "acessorio_id", "acessorio"], "winder" => ["winder_valor", "winder_valor_item", "winder_id", "winder"],
+    "posicao" => ["winder_posicao_valor", "winder_posicao_valor_item", "posicao_id", "winder_posicao"]];
+
+// Grava o valor de um campo num relógio, num calibre, num acessório, num winder ou numa posição de winder ($dono: "relogio",
+// "calibre", "acessorio", "winder" ou "posicao"; o valor já conferido por valor_para_campo; null apaga). O campo múltiplo vai
+// um por linha para a tabela dos itens do dono (o campo_valor_item do relógio, o calibre_valor_item...); os outros, para a
+// dos valores (campo_valor, calibre_valor, acessorio_valor, winder_valor, winder_posicao_valor): VALOR_TABELAS
 function valor_gravar($dono, $id, $c, $valor)
 {
-    [$tabela, $itens, $col] = $dono === "calibre" ? ["calibre_valor", "calibre_valor_item", "calibre_id"]
-        : ($dono === "acessorio" ? ["acessorio_valor", "acessorio_valor_item", "acessorio_id"] : ["campo_valor", "campo_valor_item", "relogio_id"]);
+    [$tabela, $itens, $col] = VALOR_TABELAS[$dono];
     sql("DELETE FROM " . $tabela . " WHERE " . $col . " = ? AND campo_id = ?", [(int)$id, (int)$c["id"]]);
     sql("DELETE FROM " . $itens . " WHERE " . $col . " = ? AND campo_id = ?", [(int)$id, (int)$c["id"]]);
     if ($valor === null || $valor === "") {
@@ -821,6 +849,26 @@ function valores_do_acessorio($aid)
     }
     foreach ($itens as $ident => $l) {
         $res[$ident] = itens_juntar(campos_de_acessorio()[$ident] ?? null, $l);
+    }
+    return $res;
+}
+
+// Os valores gravados de um winder ($dono "winder") ou de uma posição de winder ("posicao"): [identificador => texto] (o
+// múltiplo, um por linha)
+function valores_de_winder($dono, $id)
+{
+    [$tabela, $itens_t, $col] = VALOR_TABELAS[$dono];
+    $campos = $dono === "winder" ? campos_de_winder() : campos_de_posicao();
+    $res = [];
+    foreach (linhas("SELECT c.identificador, v.valor FROM " . $tabela . " v JOIN campo c ON c.id = v.campo_id WHERE v." . $col . " = ?", [(int)$id]) as $x) {
+        $res[$x["identificador"]] = $x["valor"];
+    }
+    $itens = [];
+    foreach (linhas("SELECT c.identificador, v.valor FROM " . $itens_t . " v JOIN campo c ON c.id = v.campo_id WHERE v." . $col . " = ?", [(int)$id]) as $x) {
+        $itens[$x["identificador"]][] = $x["valor"];
+    }
+    foreach ($itens as $ident => $l) {
+        $res[$ident] = itens_juntar($campos[$ident] ?? null, $l);
     }
     return $res;
 }
@@ -912,13 +960,13 @@ function acessorio_serve($a, $valores_a, &$cache)
     return ["por" => array_map(function ($x) { return $x[0]["nome"] . ": " . valor_texto($x[0], $x[1]); }, $regras), "relogios" => $res];
 }
 
-// Todos os valores gravados de um campo, nos relógios, nos calibres e nos acessórios (o múltiplo já junto, um por linha): a conferência
-// quando as regras do campo mudam. [["dono" => "relogio" ou "calibre", "id", "nome", "valor"], ...]
+// Todos os valores gravados de um campo, nos relógios, nos calibres, nos acessórios, nos winders e nas posições deles (o
+// múltiplo já junto, um por linha): a conferência quando as regras do campo mudam. [["dono" => "relogio", "calibre",
+// "acessorio", "winder" ou "posicao", "id", "nome", "valor"], ...]
 function valores_do_campo($c)
 {
     $res = [];
-    foreach ([["relogio", "campo_valor", "campo_valor_item", "relogio_id", "relogio"], ["calibre", "calibre_valor", "calibre_valor_item", "calibre_id", "calibre"],
-        ["acessorio", "acessorio_valor", "acessorio_valor_item", "acessorio_id", "acessorio"]] as [$dono, $t, $ti, $col, $tab]) {
+    foreach (VALOR_TABELAS as $dono => [$t, $ti, $col, $tab]) {
         $itens = [];
         foreach (linhas("SELECT v." . $col . " AS id, x.nome, v.valor FROM " . $t . " v JOIN " . $tab . " x ON x.id = v." . $col . " WHERE v.campo_id = ?", [(int)$c["id"]]) as $x) {
             $res[] = ["dono" => $dono, "id" => (int)$x["id"], "nome" => $x["nome"], "valor" => $x["valor"]];
@@ -1162,6 +1210,7 @@ $MIGRACOES = [
     "v42" => ["migracao_v42.sql", tk("as divisórias da ficha (Cadastros › Divisórias): os campos ficam agrupados por seção no cadastro, no painel, no passaporte e nos relatórios (Identificação, Compra, Construção, Energia, Manutenção e precisão, Rodízio, Desejo), e você cria, renomeia e reordena as suas; os campos prontos já vêm cada um na sua"), "campo_secao", "migracao_v42_dados"],
     "v43" => ["migracao_v43.sql", tk("as regras do valor de um campo (Cadastros › Campos): os valores possíveis também no texto e no número (o valor tem de ser um deles), o mínimo e o máximo do número e o campo múltiplo (a lista múltipla, como as funções do relógio: vários valores de uma vez, guardados um por linha), com as funções TEM e ITENS nas fórmulas"), "campo_valor_item"],
     "v44" => ["migracao_v44.sql", tk("a construção pronta e os campos dos acessórios: cada árvore ganha os campos da construção (material da caixa, diâmetro, espessura, alça a alça, entre alças, peso, vidro, mostrador e a cor dele, luminescência, coroa, fundo e as funções, uma lista múltipla) na divisória Construção, e os acessórios ganham campos (Cadastros › Campos, para acessório: a largura, o material, a cor e o fecho da pulseira); a pulseira mostra em quais relógios ela serve (a largura dela com o entre alças deles)"), "acessorio_valor", "migracao_v44_dados"],
+    "v45" => ["migracao_v45.sql", tk("os winders: a página Winders cadastra os winders da coleção e as posições de cada um, com campos livres (Cadastros › Campos, para o winder e para a posição: a marca, o modelo, as rotações por dia, o sentido, o ciclo); o Pôr no winder escolhe a posição, e a reserva do automático no winder sai da fórmula winder_ganho, pelo programa da posição (as rotações por dia e o sentido) e pelo que o relógio pede"), "lancamento_winder", "migracao_v45_dados"],
 ];
 
 // O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
@@ -1438,6 +1487,67 @@ function migracao_v44_dados($nova = false)
                     sql("UPDATE campo SET serve_campo_id = ? WHERE id = ?", [(int)$sid, $cid]);
                 }
             }
+        }
+    });
+}
+
+// O passo em PHP da v45, depois do SQL dela: em cada árvore, a unidade TPD (rotação por dia), os campos do modelo.json do
+// relógio (as rotações por dia que ele pede no winder e o sentido em que dá corda, no grupo do tipo No winder, na divisória
+// Energia), do winder e da posição (a marca e o modelo; as rotações por dia, o sentido e o ciclo), e as fórmulas winder_ganho
+// e winder_falta (no mesmo grupo), cada um só onde o identificador ainda não existe, no idioma da coleção; e a reserva_restante passa a
+// usar a winder_ganho onde ela ainda é a do modelo. Numa instalação nova, o schema e o modelo já trazem tudo
+const MIGRACAO_V45_CAMPOS = ["winder_tpd", "corda_horario", "corda_anti_horario", "winder_marca", "winder_modelo", "pos_tpd", "pos_horario", "pos_anti_horario", "pos_gira_min",
+    "pos_descansa_min"];
+const MIGRACAO_V45_RESERVA = ['ACUMULA(0; reserva_horas; 1; "pulso"; carga_pulso_reserva / carga_pulso_horas; "winder"; PADRAO(carga_winder_reserva; carga_pulso_reserva) / PADRAO(carga_winder_horas; carga_pulso_horas); "corda"; reserva_horas; "winder_antigo"; reserva_horas; "pulso_antigo"; reserva_horas)',
+    'ACUMULA(0; reserva_horas; 1; "pulso"; carga_pulso_reserva / carga_pulso_horas; "winder"; winder_ganho; "corda"; reserva_horas; "winder_antigo"; reserva_horas; "pulso_antigo"; reserva_horas)'];
+function migracao_v45_dados($nova = false)
+{
+    if ($nova) {
+        return;
+    }
+    sem_escopo(function () {
+        $m = modelo_ler();
+        $modelo = array_column($m["campos"], null, "identificador");
+        $formulas = array_values(array_filter($m["formulas"], function ($f) { return in_array($f["identificador"], ["winder_ganho", "winder_falta"], true); }));
+        $tpd = array_values(array_filter($m["unidades"], function ($u) { return $u["simbolo"] === "TPD"; }))[0];
+        foreach (linhas("SELECT id FROM no WHERE pai_id IS NULL ORDER BY id") as $raiz) {
+            $arvore = [(int)$raiz["id"]];
+            $nivel = $arvore;
+            while (count($nivel) > 0) {
+                $nivel = array_map("intval", array_column(linhas("SELECT id FROM no WHERE pai_id IN (" . implode(", ", $nivel) . ")"), "id"));
+                $arvore = array_merge($arvore, $nivel);
+            }
+            $em = " AND no_id IN (" . implode(", ", $arvore) . ")";
+            $lingua = lingua_valida((string)valor("SELECT valor FROM config WHERE chave = 'idioma' AND colecao_id IN (SELECT id FROM colecao WHERE no_id = ?) ORDER BY colecao_id", [(int)$raiz["id"]])) ?? "pt-BR";
+            $tr = modelo_tradutor($lingua);
+            if ((int)valor("SELECT COUNT(*) FROM unidade WHERE no_id = ? AND simbolo = ?", [(int)$raiz["id"], $tpd["simbolo"]]) === 0) {
+                sql("INSERT INTO unidade (no_id, simbolo, nome, base_id, fator, zero) VALUES (?, ?, ?, NULL, NULL, 0)", [(int)$raiz["id"], $tpd["simbolo"], $tr($tpd["nome"])]);
+            }
+            // o grupo dos automáticos: o do tipo No winder (sem ele, o do campo das horas no winder; sem nenhum, a raiz)
+            $grupo = valor("SELECT no_id FROM lancamento_tipo WHERE identificador = 'winder'" . $em) ?? valor("SELECT no_id FROM campo WHERE identificador = 'carga_winder_horas'" . $em);
+            $grupo = $grupo === null ? (int)$raiz["id"] : (int)$grupo;
+            $secao = valor("SELECT id FROM campo_secao WHERE no_id = ? AND nome = ?", [(int)$raiz["id"], $tr("Energia")]);
+            $ordem = (int)valor("SELECT COALESCE(MAX(ordem), 0) FROM campo WHERE 1 = 1" . $em);
+            $existe = function ($ident) use ($em) {
+                return (int)valor("SELECT COUNT(*) FROM campo WHERE identificador = ?" . $em, [$ident]) > 0 || (int)valor("SELECT COUNT(*) FROM formula WHERE identificador = ?" . $em, [$ident]) > 0;
+            };
+            foreach (MIGRACAO_V45_CAMPOS as $ident) {
+                $c = $modelo[$ident] ?? null;
+                if ($c === null || $existe($ident)) {
+                    continue;
+                }
+                if (($c["unidade"] ?? "") !== "" && (int)valor("SELECT COUNT(*) FROM unidade WHERE no_id = ? AND simbolo = ?", [(int)$raiz["id"], $c["unidade"]]) === 0) {
+                    $c["unidade"] = "";
+                }
+                $do_relogio = ($c["alvo"] ?? "relogio") === "relogio";
+                campo_do_modelo($c, $do_relogio ? $grupo : (int)$raiz["id"], $do_relogio && $secao !== null ? (int)$secao : null, ++$ordem, $tr);
+            }
+            foreach ($formulas as $f) {
+                if (!$existe($f["identificador"])) {
+                    sql("INSERT INTO formula (identificador, nome, expressao, unidade, no_id) VALUES (?, ?, ?, ?, ?)", [$f["identificador"], $tr($f["nome"]), $f["expressao"], $f["unidade"], $grupo]);
+                }
+            }
+            sql("UPDATE formula SET expressao = ? WHERE identificador = 'reserva_restante' AND expressao = ?" . $em, [MIGRACAO_V45_RESERVA[1], MIGRACAO_V45_RESERVA[0]]);
         }
     });
 }
@@ -1723,6 +1833,9 @@ $FUNCOES = [
     "NO_GRUPO" => [1, 1, tk("NO_GRUPO(\"grupo\"): 1 se o relógio está nesse ponto da árvore ou abaixo (o nome, o caminho \"Tradicional › Quartzo\" ou #id; \"todos\": 1 para todos)"), false],
     "RELOGIO" => [1, 1, tk("RELOGIO(\"nome\" ou id): 1 se é esse relógio"), false],
     "CALIBRE" => [1, 1, tk("CALIBRE(\"nome\" ou id): 1 se o relógio tem esse calibre (o movimento)"), false],
+    // o winder: os campos da posição em que o relógio está (Cadastros › Campos, para a posição do winder) e os do winder dela
+    "WINDER_POSICAO" => [1, 1, tk("WINDER_POSICAO(\"campo\"): o valor de um campo da posição do winder em que o relógio está (as rotações por dia, o sentido...: o gravado na posição, senão o padrão do campo); dentro do ACUMULA, o da posição de cada sessão no winder; fora de uma posição, vazio. Ex.: WINDER_POSICAO(\"pos_tpd\") / winder_tpd"), false],
+    "WINDER" => [1, 1, tk("WINDER(\"campo\"): o valor de um campo do winder dessa posição (a marca, o modelo...: Cadastros › Campos, para o winder); fora de uma posição, vazio"), false],
     // os serviços e diagnósticos do relógio (até o instante da conta)
     "ULTIMO_SERVICO" => [0, 1, tk("ULTIMO_SERVICO(\"tipo\"): a data do último serviço desse tipo (revisao, pilha, estanqueidade, regulagem, polimento, reparo, diagnostico, outro; \"estanqueidade\" conta também o teste feito numa revisão; sem tipo: qualquer); vazio sem nenhum"), false],
     "CUSTO_SERVICOS" => [0, 1, tk("CUSTO_SERVICOS(dias): quanto os serviços custaram (a mão de obra mais as peças) nos últimos N dias (0 ou sem: todos)"), false],
@@ -2433,14 +2546,15 @@ function formula_calcular($no, &$ctx)
             $id = (int)$ctx["r"]["id"];
             if (!isset($cache_l[$id])) {
                 $cache_l[$id] = [];
-                foreach (linhas("SELECT l.*, t.identificador AS tipo, t.formato, t.fecha_as FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? ORDER BY l.inicio, l.id", [$id]) as $l) {
+                foreach (linhas("SELECT l.*, t.identificador AS tipo, t.formato, t.fecha_as, lw.posicao_id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
+                    LEFT JOIN lancamento_winder lw ON lw.lancamento_id = l.id WHERE l.relogio_id = ? ORDER BY l.inicio, l.id", [$id]) as $l) {
                     $ini = strtotime($l["inicio"]);
                     $limite = null;
                     if ($l["fim"] === null && $l["fecha_as"] !== null) {
                         $limite = max($ini, instante(dia_da_colecao(strtotime($l["inicio"])), $l["fecha_as"]));
                     }
                     $cache_l[$id][$l["tipo"]][] = ["ini" => $ini, "fim" => $l["fim"] === null ? $limite : strtotime($l["fim"]),
-                        "valor" => $l["valor"] === null ? null : (float)$l["valor"], "formato" => $l["formato"]];
+                        "valor" => $l["valor"] === null ? null : (float)$l["valor"], "formato" => $l["formato"], "winder_posicao" => $l["posicao_id"] === null ? null : (int)$l["posicao_id"]];
                 }
             }
             // os gravados, e depois deles os simulados pela escala e pela previsão (SIMULACAO: [relógio => [tipo => lançamentos]],
@@ -2504,7 +2618,8 @@ function formula_calcular($no, &$ctx)
                 }
             } elseif ($nome === "ACUMULA") {
                 // um saldo que percorre o histórico dos tipos da lista, do primeiro lançamento deles até o instante. Numa sessão da
-                // lista, ganha o efeito dela por hora (duas ao mesmo tempo: vale a de maior ganho; um efeito negativo é uma perda);
+                // lista, ganha o efeito dela por hora (duas ao mesmo tempo: vale a de maior ganho; um efeito negativo é uma perda; a
+                // sessão numa posição de winder calcula o efeito com a posição dela: WINDER_POSICAO, uma vez por posição);
                 // num lançamento instantâneo da lista, o saldo passa a valer o efeito; num com valor, a leitura vezes o efeito;
                 // fora de sessão, perde a perda por hora. Sempre entre 0 e o máximo. Sem
                 // nenhum lançamento dos tipos da lista: vazio.
@@ -2514,20 +2629,38 @@ function formula_calcular($no, &$ctx)
                 if (is_numeric($inicio) && is_numeric($maximo) && is_numeric($perda) && count($args) >= 5 && count($args) % 2 === 1) {
                     $sessoes = [];
                     $marcas = [];
+                    $posicao_antes = array_key_exists("winder_posicao", $ctx) ? [$ctx["winder_posicao"]] : null;
                     for ($k = 3; $k + 1 < count($args); $k += 2) {
                         $tipo = $args[$k][0] === "t" ? $args[$k][1] : "";
+                        $ctx["winder_posicao"] = null;
                         $efeito = formula_calcular($args[$k + 1], $ctx);
-                        if (is_numeric($efeito)) {
-                            foreach ($ls[$tipo] ?? [] as $l) {
-                                if ($l["formato"] === "sessao") {
-                                    $sessoes[] = [$l["ini"], $l["fim_ate"], (float)$efeito];
-                                } else {
-                                    // o lançamento com valor (uma leitura): o saldo passa a valer a leitura vezes o efeito (1: a
-                                    // própria leitura); o instantâneo: o saldo passa a valer o efeito
-                                    $marcas[] = [$l["ini"], $l["formato"] === "valor" ? (float)$l["valor"] * (float)$efeito : (float)$efeito];
+                        $por_posicao = [];
+                        foreach ($ls[$tipo] ?? [] as $l) {
+                            $ef = $efeito;
+                            if (($l["winder_posicao"] ?? null) !== null) {
+                                if (!array_key_exists($l["winder_posicao"], $por_posicao)) {
+                                    $ctx["winder_posicao"] = $l["winder_posicao"];
+                                    $por_posicao[$l["winder_posicao"]] = formula_calcular($args[$k + 1], $ctx);
+                                    $ctx["winder_posicao"] = null;
                                 }
+                                $ef = $por_posicao[$l["winder_posicao"]];
+                            }
+                            if (!is_numeric($ef)) {
+                                continue;
+                            }
+                            if ($l["formato"] === "sessao") {
+                                $sessoes[] = [$l["ini"], $l["fim_ate"], (float)$ef];
+                            } else {
+                                // o lançamento com valor (uma leitura): o saldo passa a valer a leitura vezes o efeito (1: a
+                                // própria leitura); o instantâneo: o saldo passa a valer o efeito
+                                $marcas[] = [$l["ini"], $l["formato"] === "valor" ? (float)$l["valor"] * (float)$ef : (float)$ef];
                             }
                         }
+                    }
+                    if ($posicao_antes === null) {
+                        unset($ctx["winder_posicao"]);
+                    } else {
+                        $ctx["winder_posicao"] = $posicao_antes[0];
                     }
                     if (count($sessoes) + count($marcas) > 0) {
                         // os instantes em que algo muda: início e fim de cada sessão, cada marca, e o instante do cálculo
@@ -2691,6 +2824,11 @@ function formula_calcular($no, &$ctx)
             } elseif ($nome === "CALIBRE") {
                 $cal = calibre_do_relogio((int)($ctx["r"]["id"] ?? 0));
                 $res = $v[0] === null || $cal === null ? 0 : ((is_numeric($v[0]) ? (int)$v[0] === (int)$cal["id"] : mb_strtolower(trim((string)$v[0]), "UTF-8") === mb_strtolower((string)$cal["nome"], "UTF-8")) ? 1 : 0);
+            } elseif ($nome === "WINDER_POSICAO" || $nome === "WINDER") {
+                // a posição do winder: a da sessão que o ACUMULA está somando (ctx winder_posicao; null: uma sessão fora de
+                // posição), ou, fora dele, a da sessão no winder aberta no instante da conta
+                $pos_w = array_key_exists("winder_posicao", $ctx) ? $ctx["winder_posicao"] : winder_posicao_em((int)($ctx["r"]["id"] ?? 0), (int)$ctx["momento"]);
+                $res = $pos_w === null ? null : winder_campo_valor($nome === "WINDER" ? "winder" : "posicao", (int)$pos_w, (string)($v[0] ?? ""));
             } elseif ($nome === "ULTIMO_SERVICO" || $nome === "CUSTO_SERVICOS") {
                 // os serviços do relógio até o instante da conta
                 $do_r = array_values(array_filter(servicos_das_contas()[(int)($ctx["r"]["id"] ?? 0)] ?? [], function ($x) use ($ctx) { return $x["quando"] <= $ctx["momento"]; }));
@@ -2777,19 +2915,7 @@ function variavel_valor($ident, &$ctx)
         }
     } elseif (isset($campos[$ident])) {
         $bruto = $ctx["valores"][$ident] ?? null;
-        if ($bruto === null || $bruto === "") {
-            $bruto = $campos[$ident]["padrao"];
-        }
-        if ($bruto !== null && $bruto !== "") {
-            $tipo = $campos[$ident]["tipo"];
-            if ($tipo === "inteiro" || $tipo === "decimal" || $tipo === "sim_nao") {
-                $res = (float)$bruto;
-            } elseif ($tipo === "data") {
-                $res = dias_de(strtotime($bruto . " 00:00:00"));
-            } else {
-                $res = (string)$bruto;
-            }
-        }
+        $res = campo_para_conta($campos[$ident], $bruto === null || $bruto === "" ? $campos[$ident]["padrao"] : $bruto);
     } elseif (isset(formulas_todas()[$ident])) {
         $f = mais_perto(formulas_todas()[$ident], $ctx["r"]);
         if ($f !== null) {
@@ -2812,6 +2938,71 @@ function variavel_valor($ident, &$ctx)
         }
     }
     return $res;
+}
+
+// O valor de um campo nas contas, pelo tipo: número (o sim/não, 1 ou 0), data em dias, ou texto; vazio: null
+function campo_para_conta($c, $bruto)
+{
+    if ($bruto === null || $bruto === "") {
+        return null;
+    }
+    if ($c["tipo"] === "inteiro" || $c["tipo"] === "decimal" || $c["tipo"] === "sim_nao") {
+        return (float)$bruto;
+    }
+    return $c["tipo"] === "data" ? dias_de(strtotime($bruto . " 00:00:00")) : (string)$bruto;
+}
+
+// O nome de uma posição de winder com o do winder: "Escritório, Pos. 2" (null: não existe)
+function winder_posicao_nome($posicao_id)
+{
+    $x = linha("SELECT p.nome, w.nome AS winder FROM winder_posicao p JOIN winder w ON w.id = p.winder_id WHERE p.id = ?", [(int)$posicao_id]);
+    return $x ? t("{1}, {2}", [1 => $x["winder"], 2 => $x["nome"]]) : null;
+}
+
+// A posição de winder em que o relógio está num instante: a da sessão aberta nele, gravada no lancamento_winder (null: em
+// nenhuma). As sessões de cada relógio são lidas uma vez por requisição (de novo depois de uma gravação: FORMULAS_VERSAO)
+function winder_posicao_em($rid, $momento)
+{
+    static $cache = [];
+    static $versao = null;
+    if ($versao !== ($GLOBALS["FORMULAS_VERSAO"] ?? 0)) {
+        $cache = [];
+        $versao = $GLOBALS["FORMULAS_VERSAO"] ?? 0;
+    }
+    $k = (int)colecao_atual() . ":" . (int)$rid;
+    if (!isset($cache[$k])) {
+        $cache[$k] = linhas("SELECT l.inicio, l.fim, lw.posicao_id FROM lancamento l JOIN lancamento_winder lw ON lw.lancamento_id = l.id WHERE l.relogio_id = ? ORDER BY l.inicio, l.id", [(int)$rid]);
+    }
+    $res = null;
+    foreach ($cache[$k] as $l) {
+        if (strtotime($l["inicio"]) <= $momento && ($l["fim"] === null || strtotime($l["fim"]) > $momento)) {
+            $res = (int)$l["posicao_id"];
+        }
+    }
+    return $res;
+}
+
+// O valor de um campo da posição de winder ($dono "posicao") ou do winder dela ("winder") nas contas: o gravado, senão o
+// padrão do campo, pelo tipo (campo_para_conta); o campo que não existe: null
+function winder_campo_valor($dono, $posicao_id, $ident)
+{
+    static $cache = [];
+    static $versao = null;
+    if ($versao !== ($GLOBALS["FORMULAS_VERSAO"] ?? 0)) {
+        $cache = [];
+        $versao = $GLOBALS["FORMULAS_VERSAO"] ?? 0;
+    }
+    $campos = $dono === "winder" ? campos_de_winder() : campos_de_posicao();
+    if (!isset($campos[$ident])) {
+        return null;
+    }
+    $k = (int)colecao_atual() . ":" . $dono . ":" . (int)$posicao_id;
+    if (!isset($cache[$k])) {
+        $id = $dono === "winder" ? (int)(valor("SELECT winder_id FROM winder_posicao WHERE id = ?", [(int)$posicao_id]) ?? 0) : (int)$posicao_id;
+        $cache[$k] = $id > 0 ? valores_de_winder($dono, $id) : [];
+    }
+    $bruto = $cache[$k][$ident] ?? null;
+    return campo_para_conta($campos[$ident], $bruto === null || $bruto === "" ? $campos[$ident]["padrao"] : $bruto);
 }
 
 // Confere uma fórmula antes de gravar: a escrita, as variáveis (campos ou fórmulas que existem), os tipos de lançamento,
@@ -2929,7 +3120,7 @@ $FUNCOES_TOTAIS = [
 // as que dão uma tabelinha ou um relógio: só como a expressão inteira
 const TOTAIS_DO_TOPO = ["AGRUPADO", "FAIXAS", "QUEM_MENOR", "QUEM_MAIOR"];
 // as funções do motor que precisam de um relógio: nos totais, só dentro de uma função de total
-const FUNCOES_DO_RELOGIO = ["NO_GRUPO", "RELOGIO", "CALIBRE", "ULTIMO_SERVICO", "CUSTO_SERVICOS", "RESERVA_MEDIDA", "RESERVA_TESTES", "TIMEGRAPHER", "TIMEGRAPHER_DATA", "ESCOLHIDO_HA", "VEZES_NO_PLANO", "MEDIDO", "MEDIA_COLECAO", "LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA",
+const FUNCOES_DO_RELOGIO = ["NO_GRUPO", "RELOGIO", "CALIBRE", "WINDER_POSICAO", "WINDER", "ULTIMO_SERVICO", "CUSTO_SERVICOS", "RESERVA_MEDIDA", "RESERVA_TESTES", "TIMEGRAPHER", "TIMEGRAPHER_DATA", "ESCOLHIDO_HA", "VEZES_NO_PLANO", "MEDIDO", "MEDIA_COLECAO", "LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA",
     "MEDIANA_TAXA", "ULTIMA_TAXA", "MARCHA", "MARCHA_DP", "MARCHA_N", "MARCHA_ULTIMA", "DESVIO_AGORA", "DIA_SEMANA", "SEMANA_DO_ANO", "SORTEIO"];
 
 // As variáveis da tabela, que os totais têm em cada relógio além dos campos e das fórmulas: nome => [o que é, unidade]
@@ -5364,6 +5555,113 @@ function da_colecao($r)
     return in_array(posse_de($r), ["colecao", "emprestado"], true);
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Os winders da coleção (a página Winders). Cada um tem as posições, e cada posição o programa dela (os campos da posição:
+// as rotações por dia, o sentido, o ciclo...) e o relógio que está nela agora (a sessão aberta de um tipo marcado como winder,
+// ligada à posição), com a carga dele, o que cada hora ali dá e quanto falta para encher: as fórmulas energia, winder_ganho e
+// winder_falta, as que valem para o relógio. O winder não sabe nada de relógio: tudo vem dos campos e das fórmulas.
+// ---------------------------------------------------------------------------------------------------------------------
+
+// Os campos de um dono (winder ou posição) com o valor de cada um: o gravado ("informado") ou, sem ele, o padrão do campo
+// ("padrao"); os vazios sem padrão ficam de fora. [{identificador, nome, valor, texto, origem}]
+function winder_dados_lista($campos, $valores)
+{
+    $res = [];
+    foreach ($campos as $ident => $c) {
+        $v = ($valores[$ident] ?? "") !== "" ? $valores[$ident] : null;
+        $origem = $v !== null ? "informado" : "padrao";
+        $v = $v ?? (($c["padrao"] ?? "") !== "" ? $c["padrao"] : null);
+        if ($v !== null) {
+            $res[] = ["identificador" => $ident, "nome" => $c["nome"], "valor" => $v, "texto" => valor_texto($c, $v), "origem" => $origem, "origem_texto" => origem_texto($origem)];
+        }
+    }
+    return $res;
+}
+
+// Os campos de um dono (winder ou posição) para o formulário: [{identificador, nome, tipo, unidade, opcoes, multiplo, regra, padrao}]
+function winder_campos_formulario($campos)
+{
+    return array_values(array_map(function ($c) {
+        return ["identificador" => $c["identificador"], "nome" => $c["nome"], "tipo" => $c["tipo"], "unidade" => $c["unidade"], "opcoes" => campo_opcoes_lista($c),
+            "multiplo" => (int)($c["multiplo"] ?? 0) === 1, "regra" => campo_regra_texto($c), "padrao" => ($c["padrao"] ?? "") !== "" ? $c["padrao"] : null,
+            "padrao_texto" => ($c["padrao"] ?? "") !== "" ? valor_texto($c, $c["padrao"]) : null];
+    }, $campos));
+}
+
+// O relógio que está numa posição agora (a sessão no winder aberta, ligada a ela) e as contas dele: a carga (energia), o que
+// cada hora ali dá (winder_ganho, em horas de reserva por hora) e as horas até encher (winder_falta), com os textos
+function winder_ocupante($x, $agora)
+{
+    $r = linha("SELECT * FROM relogio WHERE id = ?", [(int)$x["relogio_id"]]);
+    $ctx = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio((int)$r["id"])];
+    $conta = function ($ident) use (&$ctx) {
+        $v = isset(formulas_todas()[$ident]) ? variavel_valor($ident, $ctx) : null;
+        return is_numeric($v) ? (float)$v : null;
+    };
+    $carga = $conta("energia");
+    $ganho = $conta("winder_ganho");
+    $falta = $conta("winder_falta");
+    $ini = strtotime($x["inicio"]);
+    $cheio = null;
+    if ($falta !== null) {
+        $quando = $agora + (int)round($falta * 3600);
+        $cheio = $falta * 60 < 1 ? t("cheio")
+            : t("cheio {1}", [1 => date("Y-m-d", $quando) === date("Y-m-d", $agora) ? t("às {1}", [1 => date("H:i", $quando)]) : t("em {1}", [1 => duracao_texto($falta / 24)])]);
+    }
+    return ["relogio_id" => (int)$r["id"], "relogio" => $r["nome"], "lancamento_id" => (int)$x["lancamento_id"], "tipo" => $x["tipo"], "desde" => date("Y-m-d H:i:s", $ini),
+        "desde_texto" => t("desde {1}", [1 => date("Y-m-d", $ini) === date("Y-m-d", $agora) ? date("H:i", $ini) : data_txt($ini, true, true)]),
+        "carga" => $carga === null ? null : (int)round($carga), "ganho" => $ganho === null ? null : round($ganho, 3),
+        "ganho_texto" => $ganho === null ? null : t("{1} h de reserva por hora", [1 => numero_txt($ganho, 2, 0)]),
+        "falta_horas" => $falta === null ? null : round($falta, 2), "cheio_texto" => $cheio];
+}
+
+// Os winders da coleção, por nome, com os dados (os campos do winder), as posições (na ordem, com o programa e o relógio que
+// está nela agora) e quantas estão ocupadas
+function winders_lista($agora = null)
+{
+    $agora = $agora ?? time();
+    $agora_t = date("Y-m-d H:i:s", $agora);
+    $ocupadas = [];
+    foreach (linhas("SELECT lw.posicao_id, l.id AS lancamento_id, l.relogio_id, l.inicio, t.identificador AS tipo FROM lancamento_winder lw JOIN lancamento l ON l.id = lw.lancamento_id
+        JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?) ORDER BY l.inicio, l.id", [$agora_t, $agora_t]) as $x) {
+        $ocupadas[(int)$x["posicao_id"]] = $x;
+    }
+    $posicoes = [];
+    foreach (linhas("SELECT * FROM winder_posicao ORDER BY winder_id, ordem, nome, id") as $p) {
+        $posicoes[(int)$p["winder_id"]][] = $p;
+    }
+    $res = [];
+    foreach (linhas("SELECT * FROM winder ORDER BY nome, id") as $w) {
+        $lista_p = array_map(function ($p) use ($ocupadas, $agora) {
+            $dados = winder_dados_lista(campos_de_posicao(), valores_de_winder("posicao", (int)$p["id"]));
+            return ["id" => (int)$p["id"], "nome" => $p["nome"], "ordem" => (int)$p["ordem"], "ligada" => (int)$p["ligada"] === 1, "dados" => $dados,
+                "programa" => implode(" · ", array_map(function ($d) { return $d["nome"] . ": " . $d["texto"]; }, $dados)),
+                "relogio" => isset($ocupadas[(int)$p["id"]]) ? winder_ocupante($ocupadas[(int)$p["id"]], $agora) : null];
+        }, $posicoes[(int)$w["id"]] ?? []);
+        $res[] = ["id" => (int)$w["id"], "nome" => $w["nome"], "observacao" => $w["observacao"], "criado" => $w["criado"],
+            "dados" => winder_dados_lista(campos_de_winder(), valores_de_winder("winder", (int)$w["id"])), "posicoes" => $lista_p,
+            "ocupadas" => count(array_filter($lista_p, function ($p) { return $p["relogio"] !== null; })),
+            "livres" => count(array_filter($lista_p, function ($p) { return $p["relogio"] === null && $p["ligada"]; }))];
+    }
+    return $res;
+}
+
+// As posições onde um relógio pode entrar agora (ligadas e sem relógio): [{id, winder_id, texto: "Escritório, Pos. 1",
+// programa}] (o Pôr no winder do painel)
+function winder_posicoes_livres($agora = null)
+{
+    $agora_t = date("Y-m-d H:i:s", $agora ?? time());
+    $res = [];
+    foreach (linhas("SELECT p.id, p.nome, p.winder_id, w.nome AS winder FROM winder_posicao p JOIN winder w ON w.id = p.winder_id WHERE p.ligada = 1 AND p.id NOT IN
+        (SELECT lw.posicao_id FROM lancamento_winder lw JOIN lancamento l ON l.id = lw.lancamento_id WHERE l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?)) ORDER BY w.nome, w.id, p.ordem, p.nome, p.id",
+        [$agora_t, $agora_t]) as $p) {
+        $dados = winder_dados_lista(campos_de_posicao(), valores_de_winder("posicao", (int)$p["id"]));
+        $res[] = ["id" => (int)$p["id"], "winder_id" => (int)$p["winder_id"], "texto" => t("{1}, {2}", [1 => $p["winder"], 2 => $p["nome"]]),
+            "programa" => implode(" · ", array_map(function ($x) { return $x["nome"] . ": " . $x["texto"]; }, $dados))];
+    }
+    return $res;
+}
+
 // Os tipos de acessório (ck_acessorio_tipo), na ordem, com o nome
 const ACESSORIO_TIPOS = ["pulseira" => "Pulseira", "caixa" => "Caixa", "estojo" => "Estojo", "ferramenta" => "Ferramenta", "carregador" => "Carregador",
     "peca" => "Peça", "outro" => "Outro"];
@@ -6710,11 +7008,14 @@ function visao_relogio($r, $agora)
     // as sessões abertas agora; a esquecida aberta conta só até o "fecha às" do tipo, no dia em que começou
     $abertas = [];
     $ult_pulso = 0;
-    foreach (linhas("SELECT l.inicio, l.fim, l.origem, t.identificador, t.nome, t.fecha_as FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
-        WHERE l.relogio_id = ? AND t.formato = 'sessao' AND l.inicio <= ? ORDER BY l.inicio, l.id", [$id, date("Y-m-d H:i:s", $agora)]) as $l) {
+    // (a sessão numa posição de winder leva o winder e a posição no nome: "No winder · Escritório, Pos. 2")
+    foreach (linhas("SELECT l.inicio, l.fim, l.origem, t.identificador, t.nome, t.fecha_as, lw.posicao_id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
+        LEFT JOIN lancamento_winder lw ON lw.lancamento_id = l.id WHERE l.relogio_id = ? AND t.formato = 'sessao' AND l.inicio <= ? ORDER BY l.inicio, l.id", [$id, date("Y-m-d H:i:s", $agora)]) as $l) {
         $fim = $l["fim"] !== null ? strtotime($l["fim"]) : ($l["fecha_as"] !== null ? max(strtotime($l["inicio"]), instante(dia_da_colecao(strtotime($l["inicio"])), $l["fecha_as"])) : PHP_INT_MAX);
         if ($fim > $agora) {
-            $abertas[] = ["tipo" => $l["identificador"], "nome" => $l["nome"], "inicio" => strtotime($l["inicio"]), "origem" => $l["origem"]];
+            $pos_w = $l["posicao_id"] === null ? null : winder_posicao_nome((int)$l["posicao_id"]);
+            $abertas[] = ["tipo" => $l["identificador"], "nome" => $pos_w === null ? $l["nome"] : t("{1} · {2}", [1 => $l["nome"], 2 => $pos_w]), "inicio" => strtotime($l["inicio"]),
+                "origem" => $l["origem"], "posicao_id" => $l["posicao_id"] === null ? null : (int)$l["posicao_id"]];
         }
         if ($l["identificador"] === "pulso") {
             $ult_pulso = max($ult_pulso, min($fim, $agora));

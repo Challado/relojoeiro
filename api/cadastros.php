@@ -12,7 +12,7 @@ if (!defined("RELOJOEIRO_API")) {
 $n = nos_todos();
 $com_id = function ($linhas) {
     return array_map(function ($x) {
-        foreach (["id", "no_id", "ordem", "ativo", "exclusiva", "mede_gasto", "modo_id", "relogio_id", "escala_dias", "ciclo", "resolve_tipo_id", "na_hora", "so_desejado", "calibre", "secao_id", "multiplo", "serve_campo_id"] as $k) {
+        foreach (["id", "no_id", "ordem", "ativo", "exclusiva", "mede_gasto", "winder", "modo_id", "relogio_id", "escala_dias", "ciclo", "resolve_tipo_id", "na_hora", "so_desejado", "calibre", "secao_id", "multiplo", "serve_campo_id"] as $k) {
             // a marca do modo em uso é 1 ou vazia (NULL) no banco: aqui, 1 ou 0
             if (array_key_exists($k, $x) && ($x[$k] !== null || ($k === "ativo" && array_key_exists("selecao", $x)))) {
                 $x[$k] = (int)$x[$k];

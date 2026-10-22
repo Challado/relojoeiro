@@ -116,6 +116,7 @@ $consultas = [
     "hora_certa" => ["recurso=hora_certa"],
     "textos" => ["recurso=textos", "recurso=textos&lingua=en"],
     "acessorios" => ["recurso=acessorios", "recurso=acessorios&relogio=0"],
+    "winders" => ["recurso=winders"],
     "passaporte" => $para_cada("recurso=passaporte&relogio=%d"),
     "galeria" => ["recurso=galeria", "recurso=galeria&posse=todos"],
     "rodizio_manual" => ["recurso=rodizio_manual&de=" . $hoje . "&ate=" . $daqui20 . "&pagina=1", "recurso=rodizio_manual&de=" . $hoje . "&ate=" . $daqui20 . "&pagina=3"],

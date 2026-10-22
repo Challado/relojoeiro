@@ -254,15 +254,15 @@ function op_campos($acao, $d)
             $erros[] = t("O mínimo passa do máximo.");
         }
         $c["multiplo"] = array_key_exists("multiplo", $d) ? ((string)$d["multiplo"] === "1" ? 1 : 0) : (int)($atual["multiplo"] ?? 0);
-        // de quem é o campo: do relógio (o padrão) ou do acessório; no acessório, o tipo (vazio: todos) e o campo do relógio
-        // com que ele tem de bater para servir nele (a largura da pulseira com o entre alças)
+        // de quem é o campo: do relógio (o padrão), do acessório, do winder ou da posição do winder; no acessório, o tipo (vazio:
+        // todos) e o campo do relógio com que ele tem de bater para servir nele (a largura da pulseira com o entre alças)
         $alvo = array_key_exists("alvo", $d) ? (string)$d["alvo"] : (string)($atual["alvo"] ?? "relogio");
         $ac_tipo = array_key_exists("acessorio_tipo", $d) ? trim((string)$d["acessorio_tipo"]) : (string)($atual["acessorio_tipo"] ?? "");
         $serve = array_key_exists("serve_campo_id", $d) ? (int)$d["serve_campo_id"] : (int)($atual["serve_campo_id"] ?? 0);
-        if ($alvo !== "relogio" && $alvo !== "acessorio") {
-            $erros[] = t("Para: relogio ou acessorio.");
+        if (!in_array($alvo, ["relogio", "acessorio", "winder", "posicao"], true)) {
+            $erros[] = t("Para: relogio, acessorio, winder ou posicao.");
         } elseif ($atual && $alvo !== (string)($atual["alvo"] ?? "relogio") && count(valores_do_campo($atual)) > 0) {
-            $erros[] = t("O campo {1} já tem valores: não dá para mudar de relógio para acessório (ou o contrário).", [1 => $atual["nome"]]);
+            $erros[] = t("O campo {1} já tem valores: não dá para mudar de quem ele é (do relógio, do acessório, do winder ou da posição).", [1 => $atual["nome"]]);
         }
         if ($alvo === "acessorio") {
             if ($ac_tipo !== "" && !isset(ACESSORIO_TIPOS[$ac_tipo])) {
@@ -277,6 +277,14 @@ function op_campos($acao, $d)
             $so_desejado = 0;
             $do_calibre = 0;
             $secao = null;
+        } elseif ($alvo === "winder" || $alvo === "posicao") {
+            // o do winder e o da posição também não (valem em todos os winders e em todas as posições)
+            $no = null;
+            $so_desejado = 0;
+            $do_calibre = 0;
+            $secao = null;
+            $ac_tipo = "";
+            $serve = 0;
         } else {
             $ac_tipo = "";
             $serve = 0;
@@ -356,7 +364,9 @@ function op_campos($acao, $d)
                     array_merge($dados, [(int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM campo")]));
                 $id = ultimo_id();
                 $msg = $alvo === "acessorio" ? t("Campo {1} criado, para os acessórios{2}.", [1 => $c["nome"], 2 => $ac_tipo !== "" ? " (" . mb_strtolower(t(ACESSORIO_TIPOS[$ac_tipo]), "UTF-8") . ")" : ""])
-                    : t("Campo {1} criado, para {2}. Nas fórmulas: {3}.", [1 => $c["nome"], 2 => no_caminho($no), 3 => $c["identificador"]]);
+                    : ($alvo === "winder" ? t("Campo {1} criado, para os winders. Nas fórmulas: WINDER(\"{2}\").", [1 => $c["nome"], 2 => $c["identificador"]])
+                    : ($alvo === "posicao" ? t("Campo {1} criado, para as posições dos winders. Nas fórmulas: WINDER_POSICAO(\"{2}\").", [1 => $c["nome"], 2 => $c["identificador"]])
+                    : t("Campo {1} criado, para {2}. Nas fórmulas: {3}.", [1 => $c["nome"], 2 => no_caminho($no), 3 => $c["identificador"]])));
             } else {
                 sql("UPDATE campo SET identificador = ?, nome = ?, tipo = ?, unidade = ?, padrao = ?, no_id = ?, so_desejado = ?, calibre = ?, secao_id = ?, minimo = ?, maximo = ?, multiplo = ?,
                     alvo = ?, acessorio_tipo = ?, serve_campo_id = ? WHERE id = ?", array_merge($dados, [$id]));
@@ -594,7 +604,8 @@ function op_unidades($acao, $d)
 // Tipos de lançamento. Ações: novo e alterar (id; identificador, nome, formato, unidade, fecha_as (HH:MM; só sessão:
 // a sessão esquecida aberta fecha sozinha a essa hora do dia em que começou; vazio: não fecha), exclusiva (1 ou 0; só sessão),
 // mede_gasto (1 ou 0; só com valor: cada leitura mede o gasto, comparando com a anterior), marcha (vazio, desvio (só com valor:
-// a leitura do desvio da hora, em segundos) ou acerto (só instantâneo: o acerto da hora)), condicao (vale quando: uma fórmula,
+// a leitura do desvio da hora, em segundos) ou acerto (só instantâneo: o acerto da hora)), winder (1 ou 0; só sessão: a sessão
+// é numa posição de um winder, e o Pôr pede a posição), condicao (vale quando: uma fórmula,
 // 1 vale e 0 não; vazia, vale sempre; ex.: corda_manual), no_id), excluir (id). Não se
 // exclui um tipo com lançamentos ou usado numa fórmula; não se muda o formato de um tipo que já tem lançamentos.
 // ---------------------------------------------------------------------------------------------------------------------
@@ -620,6 +631,10 @@ function op_lancamento_tipos($acao, $d)
         $exclusiva = array_key_exists("exclusiva", $d) ? ((string)$d["exclusiva"] === "1" ? 1 : 0) : ($atual ? (int)$atual["exclusiva"] : 0);
         $mede_gasto = array_key_exists("mede_gasto", $d) ? ((string)$d["mede_gasto"] === "1" ? 1 : 0) : ($atual ? (int)$atual["mede_gasto"] : 0);
         $marcha = trim((string)(array_key_exists("marcha", $d) ? $d["marcha"] : ($atual["marcha"] ?? "")));
+        $winder = array_key_exists("winder", $d) ? ((string)$d["winder"] === "1" ? 1 : 0) : ($atual ? (int)($atual["winder"] ?? 0) : 0);
+        if ($winder === 1 && $formato !== "sessao") {
+            $erros[] = t("Numa posição de winder só vale para sessão (com início e fim).");
+        }
         if ($marcha !== "" && !(($marcha === "desvio" && $formato === "valor") || ($marcha === "acerto" && $formato === "instantaneo"))) {
             $erros[] = t("Mede a marcha: desvio (só com valor, em segundos), acerto (só instantâneo) ou vazio.");
         }
@@ -656,16 +671,16 @@ function op_lancamento_tipos($acao, $d)
         }
         if (count($erros) === 0) {
             if ($acao === "novo") {
-                sql("INSERT INTO lancamento_tipo (identificador, nome, formato, unidade, fecha_as, exclusiva, mede_gasto, marcha, condicao, no_id, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                sql("INSERT INTO lancamento_tipo (identificador, nome, formato, unidade, fecha_as, exclusiva, mede_gasto, marcha, winder, condicao, no_id, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     [$ident, $nome, $formato, $unidade, $fecha !== "" ? $fecha : null, $formato === "sessao" ? $exclusiva : 0, $formato === "valor" ? $mede_gasto : 0, $marcha !== "" ? $marcha : null,
-                    $condicao !== "" ? $condicao : null, no_gravar($no),
+                    $winder, $condicao !== "" ? $condicao : null, no_gravar($no),
                     (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM lancamento_tipo")]);
                 $id = ultimo_id();
                 $msg = t("Tipo de lançamento {1} criado, para {2}.", [1 => $nome, 2 => no_caminho($no)]);
             } else {
-                sql("UPDATE lancamento_tipo SET identificador = ?, nome = ?, formato = ?, unidade = ?, fecha_as = ?, exclusiva = ?, mede_gasto = ?, marcha = ?, condicao = ?, no_id = ? WHERE id = ?",
+                sql("UPDATE lancamento_tipo SET identificador = ?, nome = ?, formato = ?, unidade = ?, fecha_as = ?, exclusiva = ?, mede_gasto = ?, marcha = ?, winder = ?, condicao = ?, no_id = ? WHERE id = ?",
                     [$ident, $nome, $formato, $unidade, $fecha !== "" ? $fecha : null, $formato === "sessao" ? $exclusiva : 0, $formato === "valor" ? $mede_gasto : 0, $marcha !== "" ? $marcha : null,
-                    $condicao !== "" ? $condicao : null, no_gravar($no), $id]);
+                    $winder, $condicao !== "" ? $condicao : null, no_gravar($no), $id]);
                 $msg = t("Tipo de lançamento {1} salvo.", [1 => $nome]);
             }
             lancamento_tipos(true);
@@ -1406,6 +1421,152 @@ function op_acessorios($acao, $d)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Winders. Ações: salvar (id: 0 ou ausente cria; nome, observacao, valores[<identificador>]: os campos do winder, Cadastros ›
+// Campos, para o winder; e, só ao criar, posicoes: quantas posições ele já ganha, "Pos. 1", "Pos. 2"..., de 0 a 50; só muda o
+// que vier), excluir (id: com as posições; as sessões que ficaram nelas continuam, sem a posição).
+// ---------------------------------------------------------------------------------------------------------------------
+function op_winders($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $id = (int)($d["id"] ?? 0);
+    $atual = $id > 0 ? linha("SELECT * FROM winder WHERE id = ?", [$id]) : null;
+    if ($id > 0 && !$atual) {
+        $erros[] = t("Winder não encontrado.");
+    } elseif ($acao === "salvar") {
+        $nome = array_key_exists("nome", $d) ? trim((string)$d["nome"]) : (string)($atual["nome"] ?? "");
+        $obs = array_key_exists("observacao", $d) ? trim((string)$d["observacao"]) : (string)($atual["observacao"] ?? "");
+        $n_pos = $atual ? 0 : trim((string)($d["posicoes"] ?? "0"));
+        if ($nome === "" || mb_strlen($nome) > 120) {
+            $erros[] = t("Dê um nome ao winder (até 120 caracteres).");
+        }
+        if (mb_strlen($obs) > 1000) {
+            $erros[] = t("A observação vai até 1000 caracteres.");
+        }
+        if (!$atual && (!ctype_digit((string)$n_pos) || (int)$n_pos > 50)) {
+            $erros[] = t("Posições: de 0 a 50 (as que o winder já ganha ao ser criado).");
+        }
+        // os valores dos campos do winder; só muda o que vier
+        $gravar_w = [];
+        $campos_w = campos_de_winder();
+        foreach ((array)($d["valores"] ?? []) as $ident => $v) {
+            if (!isset($campos_w[$ident])) {
+                $erros[] = t("Campo desconhecido: {1}.", [1 => $ident]);
+                continue;
+            }
+            $conf = valor_para_campo($campos_w[$ident], $v);
+            if ($conf[1] !== "") {
+                $erros[] = $campos_w[$ident]["nome"] . ": " . $conf[1];
+            } else {
+                $gravar_w[] = [$campos_w[$ident], $conf[0]];
+            }
+        }
+        if (count($erros) === 0) {
+            if ($atual) {
+                sql("UPDATE winder SET nome = ?, observacao = ? WHERE id = ?", [$nome, $obs !== "" ? $obs : null, $id]);
+            } else {
+                sql("INSERT INTO winder (colecao_id, nome, observacao, criado) VALUES (?, ?, ?, NOW())", [colecao_atual(), $nome, $obs !== "" ? $obs : null]);
+                $id = ultimo_id();
+                for ($i = 1; $i <= (int)$n_pos; $i++) {
+                    sql("INSERT INTO winder_posicao (winder_id, nome, ordem, ligada) VALUES (?, ?, ?, 1)", [$id, t("Pos. {1}", [1 => $i]), $i]);
+                }
+            }
+            foreach ($gravar_w as [$campo_w, $v]) {
+                valor_gravar("winder", $id, $campo_w, $v);
+            }
+            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+            $msg = $atual ? t("Winder {1} salvo.", [1 => $nome])
+                : t("Winder {1} cadastrado{2}.", [1 => $nome, 2 => (int)$n_pos > 0 ? t(", com {1} {2}", [1 => (int)$n_pos, 2 => (int)$n_pos === 1 ? t("posição") : t("posições")]) : ""]);
+        }
+    } elseif ($acao === "excluir" && $atual) {
+        sql("DELETE FROM winder WHERE id = ?", [$id]);
+        $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+        $msg = t("Winder {1} excluído.", [1 => $atual["nome"]]);
+        $id = 0;
+    } elseif ($acao === "excluir") {
+        $erros[] = t("Informe o winder (id).");
+    } else {
+        $erros[] = t("Ação desconhecida: use salvar ou excluir.");
+    }
+    return resultado($erros, $msg, ["id" => $id]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// As posições dos winders. Ações: salvar (id: 0 ou ausente cria, com winder_id; nome (até 60, sem repetir no winder), ordem,
+// ligada (1 ou 0: desligada não recebe relógio; com um relógio dentro, tire-o antes), valores[<identificador>]: o programa,
+// os campos da posição, Cadastros › Campos, para a posição do winder; só muda o que vier), excluir (id: as sessões que
+// ficaram nela continuam, sem a posição; a conta delas volta a usar os campos do relógio).
+// ---------------------------------------------------------------------------------------------------------------------
+function op_winder_posicoes($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $id = (int)($d["id"] ?? 0);
+    $atual = $id > 0 ? linha("SELECT p.*, w.nome AS winder FROM winder_posicao p JOIN winder w ON w.id = p.winder_id WHERE p.id = ?", [$id]) : null;
+    $agora_t = date("Y-m-d H:i:s");
+    if ($id > 0 && !$atual) {
+        $erros[] = t("Posição de winder não encontrada.");
+    } elseif ($acao === "salvar") {
+        $wid = $atual ? (int)$atual["winder_id"] : (int)($d["winder_id"] ?? 0);
+        $w = linha("SELECT * FROM winder WHERE id = ?", [$wid]);
+        $nome = array_key_exists("nome", $d) ? trim((string)$d["nome"]) : (string)($atual["nome"] ?? "");
+        $ligada = array_key_exists("ligada", $d) ? ((string)$d["ligada"] === "0" ? 0 : 1) : (int)($atual["ligada"] ?? 1);
+        $ordem = array_key_exists("ordem", $d) && trim((string)$d["ordem"]) !== "" ? (int)$d["ordem"] : ($atual ? (int)$atual["ordem"]
+            : (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM winder_posicao WHERE winder_id = ?", [$wid]));
+        if (!$w) {
+            $erros[] = t("Winder não encontrado (winder_id).");
+        }
+        if ($nome === "" || mb_strlen($nome) > 60) {
+            $erros[] = t("Dê um nome à posição (até 60 caracteres).");
+        } elseif ($w && (int)valor("SELECT COUNT(*) FROM winder_posicao WHERE winder_id = ? AND nome = ? AND id <> ?", [$wid, $nome, $id]) > 0) {
+            $erros[] = t("O {1} já tem uma posição {2}.", [1 => $w["nome"], 2 => $nome]);
+        }
+        $dentro = $atual ? valor("SELECT r.nome FROM lancamento_winder lw JOIN lancamento l ON l.id = lw.lancamento_id JOIN relogio r ON r.id = l.relogio_id
+            WHERE lw.posicao_id = ? AND l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?)", [$id, $agora_t, $agora_t]) : null;
+        if ($ligada === 0 && $dentro !== null) {
+            $erros[] = t("A posição {1} está com o {2}: tire o relógio antes de desligar.", [1 => $nome, 2 => $dentro]);
+        }
+        $gravar_p = [];
+        $campos_p = campos_de_posicao();
+        foreach ((array)($d["valores"] ?? []) as $ident => $v) {
+            if (!isset($campos_p[$ident])) {
+                $erros[] = t("Campo desconhecido: {1}.", [1 => $ident]);
+                continue;
+            }
+            $conf = valor_para_campo($campos_p[$ident], $v);
+            if ($conf[1] !== "") {
+                $erros[] = $campos_p[$ident]["nome"] . ": " . $conf[1];
+            } else {
+                $gravar_p[] = [$campos_p[$ident], $conf[0]];
+            }
+        }
+        if (count($erros) === 0) {
+            if ($atual) {
+                sql("UPDATE winder_posicao SET nome = ?, ordem = ?, ligada = ? WHERE id = ?", [$nome, $ordem, $ligada, $id]);
+            } else {
+                sql("INSERT INTO winder_posicao (winder_id, nome, ordem, ligada) VALUES (?, ?, ?, ?)", [$wid, $nome, $ordem, $ligada]);
+                $id = ultimo_id();
+            }
+            foreach ($gravar_p as [$campo_p, $v]) {
+                valor_gravar("posicao", $id, $campo_p, $v);
+            }
+            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+            $msg = t("Posição {1} do {2} {3}{4}.", [1 => $nome, 2 => $w["nome"], 3 => $atual ? t("salva") : t("criada"), 4 => $ligada === 0 ? t(" (desligada)") : ""]);
+        }
+    } elseif ($acao === "excluir" && $atual) {
+        sql("DELETE FROM winder_posicao WHERE id = ?", [$id]);
+        $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+        $msg = t("Posição {1} do {2} excluída.", [1 => $atual["nome"], 2 => $atual["winder"]]);
+        $id = 0;
+    } elseif ($acao === "excluir") {
+        $erros[] = t("Informe a posição (id).");
+    } else {
+        $erros[] = t("Ação desconhecida: use salvar ou excluir.");
+    }
+    return resultado($erros, $msg, ["id" => $id]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Os serviços e diagnósticos de um relógio. Ações:
 //   salvar (id: 0 ou sem, um novo; relogio_id, só no novo; data AAAA-MM-DD, até hoje; tipo: revisao, pilha, estanqueidade,
 //           regulagem, polimento, reparo, diagnostico ou outro; responsavel; descricao; mao_de_obra (R$); pecas: uma por
@@ -1943,11 +2104,13 @@ function op_timegrapher($acao, $d)
 //           em uso sai só das leituras marcadas em uso, e o gasto em repouso só das marcadas em repouso. Se o pulso
 //           registrado desde a leitura anterior não bate com ela, a API pergunta antes (confirmar: true, com a pergunta);
 //           com confirmar=1, grava como a pessoa marcou.
-//   iniciar (relogio_id, tipo, quando): abre uma sessão; se ela é exclusiva, fecha no mesmo instante a exclusiva aberta
-//                                       em outro lugar (o relógio fica num lugar só)
+//   iniciar (relogio_id, tipo, quando, posicao_id): abre uma sessão; se ela é exclusiva, fecha no mesmo instante a exclusiva
+//                                       aberta em outro lugar (o relógio fica num lugar só). posicao_id: num tipo marcado como
+//                                       winder, a posição do winder (ligada e sem outro relógio); vazio ou 0: nenhuma
 //   encerrar (relogio_id, tipo, quando): fecha a sessão aberta daquele tipo
-//   periodo (relogio_id, tipo, inicio, fim): uma sessão que já passou
-//   alterar (id; quando, inicio, fim, valor, estado: só o que vier), excluir (id)
+//   periodo (relogio_id, tipo, inicio, fim, posicao_id): uma sessão que já passou (a posição do winder, como no iniciar,
+//           sem outro relógio nela nesse tempo)
+//   alterar (id; quando, inicio, fim, valor, estado, posicao_id (0: sem posição): só o que vier), excluir (id)
 //   medicao (id da medição, usada 1 ou 0): a medição do gasto entra na conta ou fica só no histórico
 // Nada no futuro. O tipo tem de valer para o relógio (o ponto dele na árvore). Sessões exclusivas não se sobrepõem.
 // ---------------------------------------------------------------------------------------------------------------------
@@ -2001,6 +2164,38 @@ function op_lancamento($acao, $d)
         $acao = valor("SELECT id FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim > ?) LIMIT 1",
             [$rid, (int)$t["id"], date("Y-m-d H:i:s", $agora), date("Y-m-d H:i:s", $agora)]) !== null ? "encerrar" : "iniciar";
     }
+    // a posição de winder do pedido (posicao_id; vazio ou 0: nenhuma) para o trecho [a, b) (b null: aberta): só num tipo marcado
+    // como winder; tem de existir, estar ligada (ao abrir uma sessão agora) e sem outro relógio nesse trecho. [posição, erro]
+    $posicao_conferir = function ($a, $b, $abrir) use ($d, $t, $rid) {
+        $pid = (int)($d["posicao_id"] ?? 0);
+        if ($pid <= 0 || !$t) {
+            return [null, null];
+        }
+        if ((int)($t["winder"] ?? 0) !== 1) {
+            return [null, t("{1} não é numa posição de winder: a posição vale só nos tipos marcados como winder (Cadastros › Tipos de lançamento).", [1 => $t["nome"]])];
+        }
+        $pos = linha("SELECT p.*, w.nome AS winder FROM winder_posicao p JOIN winder w ON w.id = p.winder_id WHERE p.id = ?", [$pid]);
+        if (!$pos) {
+            return [null, t("Posição de winder não encontrada (posicao_id).")];
+        }
+        $texto = t("{1}, {2}", [1 => $pos["winder"], 2 => $pos["nome"]]);
+        if ($abrir && (int)$pos["ligada"] !== 1) {
+            return [null, t("A posição {1} está desligada.", [1 => $texto])];
+        }
+        $outro = linha("SELECT r.nome FROM lancamento_winder lw JOIN lancamento l ON l.id = lw.lancamento_id JOIN relogio r ON r.id = l.relogio_id
+            WHERE lw.posicao_id = ? AND l.relogio_id <> ? AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?) LIMIT 1", [$pid, $rid, $b === null ? "9999-12-31 00:00:00" : date("Y-m-d H:i:s", $b), date("Y-m-d H:i:s", $a)]);
+        if ($outro) {
+            return [null, t("A posição {1} já está com o {2} nesse tempo.", [1 => $texto, 2 => $outro["nome"]])];
+        }
+        return [$pos + ["texto" => $texto], null];
+    };
+    // grava a posição de winder de um lançamento (a do pedido; 0: tira a que havia)
+    $posicao_gravar = function ($lid) use ($d) {
+        sql("DELETE FROM lancamento_winder WHERE lancamento_id = ?", [(int)$lid]);
+        if ((int)($d["posicao_id"] ?? 0) > 0) {
+            sql("INSERT INTO lancamento_winder (lancamento_id, posicao_id) VALUES (?, ?)", [(int)$lid, (int)$d["posicao_id"]]);
+        }
+    };
     // sessões exclusivas do relógio que se sobrepõem a [a, b) (fora a $ignorar)
     $sobrepostas = function ($a, $b, $ignorar) use ($rid) {
         return linhas("SELECT l.id, l.tipo_id, t.nome, l.inicio, l.fim FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
@@ -2155,7 +2350,11 @@ function op_lancamento($acao, $d)
             $erros[] = t("{1} já está com {2} aberto.", [1 => $r["nome"], 2 => $t["nome"]]);
         } else {
             $fechadas = [];
-            if ((int)$t["exclusiva"] === 1) {
+            [$pos_w, $erro_w] = $posicao_conferir($q, null, true);
+            if ($erro_w !== null) {
+                $erros[] = $erro_w;
+            }
+            if (count($erros) === 0 && (int)$t["exclusiva"] === 1) {
                 // primeiro a conferência, sem mexer em nada: nesse instante, o relógio não pode estar numa sessão exclusiva
                 // já fechada (um período lançado antes) nem numa aberta que começou depois dele
                 $conflito = linha("SELECT t.nome, l.inicio, l.fim FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
@@ -2180,7 +2379,11 @@ function op_lancamento($acao, $d)
                 $origem = $t["identificador"] === "pulso" && $p_dia && (int)$p_dia["relogio_id"] === $rid ? "rodizio" : "manual";
                 sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, NULL, NULL, ?, NOW())", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), $origem]);
                 $id = ultimo_id();
-                $msg = t("{1}: {2} desde {3}.{4}", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($q, true, true), 4 => count($fechadas) > 0 ? t(" Fechado no mesmo instante: {1}.", [1 => implode(", ", $fechadas)]) : ""]);
+                if ($pos_w !== null) {
+                    $posicao_gravar($id);
+                }
+                $msg = t("{1}: {2} desde {3}.{4}", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($q, true, true), 4 => count($fechadas) > 0 ? t(" Fechado no mesmo instante: {1}.", [1 => implode(", ", $fechadas)]) : ""])
+                    . ($pos_w !== null ? t(" Na posição {1}.", [1 => $pos_w["texto"]]) : "");
             }
         }
     } elseif ($acao === "encerrar") {
@@ -2229,6 +2432,8 @@ function op_lancamento($acao, $d)
             $erros[] = t("Estado: uso ou repouso (vazio: não diz).");
         } elseif ($acao === "alterar" && array_key_exists("posicao", $d) && (string)$d["posicao"] !== "" && (($t["marcha"] ?? null) !== "desvio" || !isset(posicoes_marcha()[(string)$d["posicao"]]))) {
             $erros[] = t("Posição ({1}) vale só para a leitura do desvio da hora.", [1 => implode(", ", array_keys(posicoes_marcha()))]);
+        } elseif (array_key_exists("posicao_id", $d) && ($erro_w = $posicao_conferir($ini, $fim, false)[1]) !== null) {
+            $erros[] = $erro_w;
         } elseif ($acao === "periodo") {
             // no pulso, o relógio do dia está em uso pelo rodízio (como no Pôs), não "fora do plano"
             $p_dia = plano_do_dia(date("Y-m-d", $ini));
@@ -2241,6 +2446,9 @@ function op_lancamento($acao, $d)
                 sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, ?, NULL, ?, NOW())",
                     [$rid, (int)$t["id"], date("Y-m-d H:i:s", $ini), date("Y-m-d H:i:s", $fim), $origem]);
                 $id = ultimo_id();
+                if (array_key_exists("posicao_id", $d)) {
+                    $posicao_gravar($id);
+                }
                 $msg = t("Lançado no {1}: {2} de {3} a {4}.", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true), 4 => data_txt($fim, true, true)]);
             } else {
                 $aberto = false;
@@ -2255,6 +2463,9 @@ function op_lancamento($acao, $d)
                 foreach (array_slice($juntar, 1) as $x) {
                     sql("DELETE FROM lancamento WHERE id = ?", [(int)$x["id"]]);
                 }
+                if (array_key_exists("posicao_id", $d)) {
+                    $posicao_gravar($id);
+                }
                 $msg = $aberto
                     ? t("Juntado no {1}: {2} desde {3} (com o que já estava marcado).", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true)])
                     : t("Juntado no {1}: {2} de {3} a {4} (com o que já estava marcado).", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true), 4 => data_txt($fim, true, true)]);
@@ -2265,6 +2476,10 @@ function op_lancamento($acao, $d)
             // a posição da leitura do desvio (vazio: não informada) também muda só se vier
             $pos_l = ($t["marcha"] ?? null) === "desvio" && array_key_exists("posicao", $d) ? ((string)$d["posicao"] === "" ? null : (string)$d["posicao"]) : ($existente["posicao"] ?? null);
             sql("UPDATE lancamento SET inicio = ?, fim = ?, valor = ?, estado = ?, posicao = ? WHERE id = ?", [date("Y-m-d H:i:s", $ini), $fim === null ? null : date("Y-m-d H:i:s", $fim), $v, $est, $pos_l, $id]);
+            // a posição de winder da sessão muda só se vier (0: sem posição)
+            if (array_key_exists("posicao_id", $d)) {
+                $posicao_gravar($id);
+            }
             $msg = t("Corrigido no {1}: {2}.", [1 => $r["nome"], 2 => $t["nome"]]);
         }
     } elseif ($acao === "excluir") {

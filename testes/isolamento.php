@@ -115,22 +115,34 @@ $cmp_a = (int)(preparar($ana, ["recurso" => "campos", "acao" => "novo", "identif
     "opcoes" => "Item SEGREDOANA\nOutro", "multiplo" => 1])["id"] ?? 0);
 preparar($ana, ["recurso" => "relogio", "acao" => "salvar", "id" => $rel_a, "valores" => ["multiplo_ana" => ["Item SEGREDOANA"]]]);
 preparar($ana, ["recurso" => "calibres", "acao" => "salvar", "id" => $cal_a, "valores" => ["multiplo_ana" => ["Item SEGREDOANA", "Outro"]]]);
+// um winder e uma posição (os nomes com a marca, a marca do winder num campo) e um automático dela numa sessão antiga
+// na posição (a linha do lancamento_winder)
+$no_aut_a = 0;
+foreach ($arv["grupos"] ?? [] as $g_a) {
+    $no_aut_a = $no_aut_a === 0 && mb_strpos((string)$g_a["caminho"], "Autom") !== false ? (int)$g_a["id"] : $no_aut_a;
+}
+$rel_w = (int)(preparar($ana, ["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Automatico SEGREDOANA", "no_id" => $no_aut_a, "disponivel" => 1])["id"] ?? 0);
+$wnd_a = (int)(preparar($ana, ["recurso" => "winders", "acao" => "salvar", "nome" => "Winder SEGREDOANA", "posicoes" => 0, "valores" => ["winder_marca" => "Marca SEGREDOANA"]])["id"] ?? 0);
+$wps_a = (int)(preparar($ana, ["recurso" => "winder_posicoes", "acao" => "salvar", "winder_id" => $wnd_a, "nome" => "Pos SEGREDOANA", "valores" => ["pos_tpd" => "800"]])["id"] ?? 0);
+$lwd_a = (int)(preparar($ana, ["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => $rel_w, "tipo" => "winder", "posicao_id" => $wps_a,
+    "inicio" => date("Y-m-d H:i", time() - 5 * 86400), "fim" => date("Y-m-d H:i", time() - 5 * 86400 + 7200)])["id"] ?? 0);
 // e uma medição do timegrapher (a observação com a marca)
 $tgr_a = (int)(preparar($ana, ["recurso" => "timegrapher", "acao" => "salvar", "relogio_id" => $rel_m, "marcha" => 4, "amplitude" => 280, "observacao" => "Timegrapher SEGREDOANA"])["id"] ?? 0);
 $ids = ["colecao" => $col_a, "relogio" => $rel_a, "aparelho" => $apa_a, "lancamento" => $lan_a, "acessorio" => $ace_a, "evento" => $evt_a, "destino" => $des_a, "agenda" => $agd_a,
     "documento" => $doc_a, "no" => $no_a, "usuario" => $uid_a, "smartwatch" => $rel_s, "medicao" => $med_a, "calibre" => $cal_a, "doc_calibre" => $doc_cal_a, "servico" => $srv_a,
-    "mecanico" => $rel_m, "reserva" => $rst_a, "timegrapher" => $tgr_a, "unidade" => $uni_a, "secao" => $sec_a, "campo_multiplo" => $cmp_a];
+    "mecanico" => $rel_m, "reserva" => $rst_a, "timegrapher" => $tgr_a, "unidade" => $uni_a, "secao" => $sec_a, "campo_multiplo" => $cmp_a,
+    "automatico" => $rel_w, "winder" => $wnd_a, "winder_posicao" => $wps_a, "lancamento_winder" => $lwd_a];
 echo "A ana: " . json_encode($ids) . "\n";
 $antes = pedir($ana, "GET", ["recurso" => "ficha", "relogio" => $rel_a])["corpo"];
 
 // os recursos de leitura e as variações de parâmetro com as coisas da ana
 $recursos = ["", "importacao", "backup", "foto", "documento", "documentos", "criterios", "avisos", "autonomia", "hoje", "ficha", "config", "historico", "previsao",
-    "plano", "desejos", "estatisticas", "precisao", "calibres", "unidades", "servicos", "reserva", "timegrapher", "relatorios", "hora_certa", "passaporte", "galeria", "acessorios", "proximos", "rodizio_manual", "eventos", "destinos", "agendas",
+    "plano", "desejos", "estatisticas", "precisao", "calibres", "unidades", "servicos", "reserva", "timegrapher", "relatorios", "hora_certa", "passaporte", "galeria", "acessorios", "winders", "proximos", "rodizio_manual", "eventos", "destinos", "agendas",
     "usuarios", "conta", "colecoes", "acessos", "pedidos", "convites", "aprovacoes", "cron", "arvore", "cadastros", "calcular", "migracoes", "instalacao",
     "cadastro", "entrar"];
 $variacoes = [[], ["colecao" => $col_a], ["relogio" => $rel_a], ["id" => $rel_a], ["relogio_id" => $rel_a], ["como" => "ana"], ["usuario" => "ana"],
     ["login" => "ana"], ["usuario_id" => $uid_a], ["documento" => $doc_a], ["id" => $doc_a], ["calibre" => $cal_a], ["id" => $doc_cal_a], ["id" => $des_a], ["id" => $agd_a], ["id" => $evt_a],
-    ["no" => $no_a], ["no_id" => $no_a], ["arvore_id" => $no_a], ["relogio" => $rel_a, "baixar" => 1]];
+    ["no" => $no_a], ["no_id" => $no_a], ["arvore_id" => $no_a], ["relogio" => $rel_a, "baixar" => 1], ["id" => $wnd_a], ["id" => $wps_a], ["relogio" => $rel_w]];
 $n = 0;
 // os relatórios (recurso=relatorios): cada tipo, sem relógio, com os relógios da ana, com a coleção dela e na planilha
 foreach (["bia", "caio"] as $quem) {
@@ -207,6 +219,15 @@ $tentativas = [
     ["recurso" => "timegrapher", "acao" => "importar", "relogio_id" => $rel_m, "csv" => "rate;amplitude\n3;280\n"],
     ["recurso" => "timegrapher", "acao" => "excluir", "id" => $tgr_a, "confirmar" => 1],
     ["recurso" => "acessorios", "acao" => "salvar", "nome" => "INVADIDO", "tipo" => "pulseira", "relogio_id" => $rel_a],
+    ["recurso" => "winders", "acao" => "salvar", "id" => $wnd_a, "nome" => "INVADIDO"],
+    ["recurso" => "winders", "acao" => "salvar", "id" => $wnd_a, "valores" => ["winder_marca" => "INVADIDO"]],
+    ["recurso" => "winders", "acao" => "excluir", "id" => $wnd_a, "confirmar" => 1],
+    ["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wps_a, "nome" => "INVADIDO"],
+    ["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wps_a, "ligada" => 0],
+    ["recurso" => "winder_posicoes", "acao" => "salvar", "winder_id" => $wnd_a, "nome" => "INVADIDO"],
+    ["recurso" => "winder_posicoes", "acao" => "excluir", "id" => $wps_a, "confirmar" => 1],
+    ["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel_w, "tipo" => "winder", "posicao_id" => $wps_a],
+    ["recurso" => "lancamento", "acao" => "alterar", "id" => $lwd_a, "posicao_id" => 0],
     ["recurso" => "config", "acao" => "evento_salvar", "id" => $evt_a, "nome" => "INVADIDO", "repeticao" => "semanal", "hora" => "10:00", "dias_semana" => "6"],
     ["recurso" => "config", "acao" => "evento_excluir", "evento_id" => $evt_a, "confirmar" => 1],
     ["recurso" => "destinos", "acao" => "salvar", "id" => $des_a, "tipo" => "webhook", "nome" => "INVADIDO", "url" => "https://x.invalid/"],
@@ -290,14 +311,14 @@ if (preg_replace('/"(calculado_em|agora|gerado_em)[^,]*,/', "", $antes) !== preg
     && stripos($depois, "INVADIDO") !== false) {
     $falhas[] = "MUDOU a ficha do relógio da ana";
 }
-foreach ([["acessorios"], ["servicos", ["relogio" => $rel_a]], ["reserva", ["relogio" => $rel_m]], ["timegrapher", ["relogio" => $rel_m]], ["eventos"], ["destinos"], ["agendas"], ["documentos", ["relogio" => $rel_a]], ["historico", ["relogio" => $rel_a]], ["conta"], ["colecoes"],
+foreach ([["acessorios"], ["winders"], ["servicos", ["relogio" => $rel_a]], ["reserva", ["relogio" => $rel_m]], ["timegrapher", ["relogio" => $rel_m]], ["eventos"], ["destinos"], ["agendas"], ["documentos", ["relogio" => $rel_a]], ["historico", ["relogio" => $rel_a]], ["conta"], ["colecoes"],
     ["plano"], ["arvore"]] as $x) {
     $c = $ver($x[0], $x[1] ?? []);
     if (stripos($c, "INVADIDO") !== false) {
         $falhas[] = "MUDOU " . $x[0] . " da ana: " . substr($c, max(0, stripos($c, "INVADIDO") - 150), 300);
     }
 }
-foreach (["Relogio SEGREDOANA" => ["ficha", ["relogio" => $rel_a]], "Acessorio SEGREDOANA" => ["acessorios"], "Servico SEGREDOANA" => ["servicos", ["relogio" => $rel_a]], "Reserva SEGREDOANA" => ["reserva", ["relogio" => $rel_m]], "Timegrapher SEGREDOANA" => ["timegrapher", ["relogio" => $rel_m]], "Evento SEGREDOANA" => ["eventos"],
+foreach (["Relogio SEGREDOANA" => ["ficha", ["relogio" => $rel_a]], "Acessorio SEGREDOANA" => ["acessorios"], "Winder SEGREDOANA" => ["winders"], "Pos SEGREDOANA" => ["winders"], "Marca SEGREDOANA" => ["winders"], "Servico SEGREDOANA" => ["servicos", ["relogio" => $rel_a]], "Reserva SEGREDOANA" => ["reserva", ["relogio" => $rel_m]], "Timegrapher SEGREDOANA" => ["timegrapher", ["relogio" => $rel_m]], "Evento SEGREDOANA" => ["eventos"],
     "Destino SEGREDOANA" => ["destinos"], "Agenda SEGREDOANA" => ["agendas"], "Doc SEGREDOANA" => ["documentos", ["relogio" => $rel_a]],
     "Colecao SEGREDOANA" => ["conta"]] as $o => $x) {
     if (stripos($ver($x[0], $x[1] ?? []), $o) === false) {

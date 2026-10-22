@@ -1,4 +1,4 @@
-<!-- origem: 329aebc4561f43ee2cfe90799f815e0785b08f56 -->
+<!-- origem: 1dc3be926762e6bed7f414015c3d61553c644bea -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -159,6 +159,7 @@ curl -u upyogkarta:password -G "http://server/relojoeiro/api.php" -d recurso=cal
 | `servicos` | सर्विस और जाँच (`relogio=<id>`, सारांश के साथ: घोषित जल-प्रतिरोध, सिद्ध जल-रोधकता, कितनी और कुल लागत; इसके बिना, सबकी), पुर्ज़ों, लागत, जल-रोधकता और पहले व बाद की गति के साथ |
 | `reserva` | मापा गया रिज़र्व (`relogio=<id>`: मैकेनिकल घड़ी के रिज़र्व परीक्षण, ऊर्जा के अवलोकन, माप, यानी परीक्षणों की माध्यिका, और भरोसे के साथ घोषित, मापा गया और अनुमानित की तालिका; इसके बिना, सभी के परीक्षण और अवलोकन) |
 | `timegrapher` | टाइमग्राफ़र के माप (`relogio=<id>`: आख़िरी सत्र, हर मात्रा के औसत और स्थितियों के बीच अंतर के साथ, माप और CSV आयात क्या समझता है; इसके बिना, सबके) |
+| `winders` | संग्रह के वाइंडर (**वाइंडर** पेज): हर एक डेटा, टिप्पणी और पोज़ीशनों के साथ, और हर पोज़ीशन प्रोग्राम के साथ, कि वह चालू है या नहीं और अभी उसमें कौन-सी घड़ी है (चार्ज, हर घंटा कितना देता है, कब भरेगी); वाइंडर और पोज़ीशन के फ़ील्ड और वे घड़ियाँ जो वाइंडर पर जा सकती हैं |
 | `relatorios` | रिपोर्टें, एक ही दरवाज़े से: `tipo` के बिना, सूची (हर रिपोर्ट समूह, नाम, विवरण और मापदंडों के साथ, और घड़ियाँ); `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron`) और उसके मापदंडों (`relogio`, `de`, `ate`, `posse`, `situacao`) के साथ, तैयार रिपोर्ट (शीर्षक, उपशीर्षक, सारांश, तालिका या जोड़ों में खंड, फ़ुटर, पहले से पाठ में); `csv=1`: स्प्रेडशीट |
 | `documento` | एक दस्तावेज़ की फ़ाइल (`id=<id>`): दिखाने के लिए (छवि, वीडियो, ऑडियो, PDF, टेक्स्ट) या डाउनलोड के लिए (बाक़ी, या `baixar=1` के साथ); `mini=1` फ़ोटो का थंबनेल है। टुकड़ों (Range) में देता है, ताकि वीडियो आगे बढ़ सके |
 | `usuarios`, `migracoes` | master: खातों का पैनल, हर खाता उसके पास जो है और पासवर्ड के हैश के साथ (उसी पासवर्ड के साथ माइग्रेट करने के लिए: देखें [उपयोगकर्ता और पासवर्ड](#os-usuários-e-as-senhas)); बाकी, केवल अपना खाता; लागू करने को बचे माइग्रेशन |
@@ -183,10 +184,11 @@ curl -u upyogkarta:password -G "http://server/relojoeiro/api.php" -d recurso=cal
 | `servicos` | `salvar` (तारीख़, प्रकार, किसने किया, मज़दूरी, पुर्ज़े, जल-रोधकता, पहले व बाद की गति, वारंटी और दस्तावेज़; सर्विस और बैटरी बदलना प्रविष्टि भी बन जाते हैं), `excluir` |
 | `reserva` | `iniciar` (कब पूरी भरी और कैसे), `parou`, `observar` (रुक गई, कम चार्ज, नोट; सोलर में भी), `salvar`, `usar` (माध्यिका घड़ी के रिकॉर्ड में जाती है), `excluir` |
 | `timegrapher` | `salvar` (एक माप: स्थिति, चाल, आयाम, बीट त्रुटि, प्रति घंटा बीट, कोण), `importar` (उपकरण की CSV; `conferir=1`: बिना सहेजे), `excluir` |
+| `winders`, `winder_posicoes` | `salvar` (वाइंडर: नाम, फ़ील्ड, टिप्पणी और, बनाते समय, कितनी पोज़ीशनें; पोज़ीशन: नाम, क्रम, चालू, प्रोग्राम), `excluir` (उनमें रहे सत्र बने रहते हैं, बिना पोज़ीशन के) |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (सिर्फ़ बिना दस्तावेज़ों के) |
 | `secoes` | रिकॉर्ड के खंड: `salvar` (नाम; `id=0` अंत में बनाता है), `ordem` (`direcao=sobe` या `desce`), `excluir` (उसके फ़ील्ड बिना खंड के, अंत में रह जाते हैं) |
 | `unidades` | `salvar` (प्रतीक, नाम, आधार और गुणक, शून्य और इसमें भी दिखाएँ; नया प्रतीक उपयोग करने वालों तक जाता है), `excluir` (सिर्फ़ बिना उपयोग के; उसमें बदलने वाली इकाइयाँ भी साथ हटती हैं) |
-| `lancamento` | `lancar` (चाबी, चार्ज, बैटरी...), `iniciar` और `encerrar` (कलाई, वाइंडर, धूप, चार्जर पर रखना और उतारना), `alternar` (सत्र खुला हो तो बंद करता है, बंद हो तो खोलता है: फ़ोन पर एक ही बटन), `periodo` (बीत चुकी अवधि; दिन की घड़ी की कलाई पर यह रोटेशन का उपयोग है, और उसी प्रकार के खंड जिनसे यह छूती है, जैसे खुला छोड़ा गया पहनें, एक हो जाते हैं), `alterar`, `excluir`, `medicao` (खपत का कोई माप गणना में आता है या उससे निकलता है: `id`, `usada` 1 या 0)। सबमें `relogio_id=hoje` दिन की घड़ी है |
+| `lancamento` | `lancar` (चाबी, चार्ज, बैटरी...), `iniciar` और `encerrar` (कलाई, वाइंडर, धूप, चार्जर पर रखना और उतारना; वाइंडर पर, `posicao_id`: पोज़ीशन), `alternar` (सत्र खुला हो तो बंद करता है, बंद हो तो खोलता है: फ़ोन पर एक ही बटन), `periodo` (बीत चुकी अवधि; दिन की घड़ी की कलाई पर यह रोटेशन का उपयोग है, और उसी प्रकार के खंड जिनसे यह छूती है, जैसे खुला छोड़ा गया पहनें, एक हो जाते हैं), `alterar`, `excluir`, `medicao` (खपत का कोई माप गणना में आता है या उससे निकलता है: `id`, `usada` 1 या 0)। सबमें `relogio_id=hoje` दिन की घड़ी है |
 | `rodizio` | `usando` (आज मैं यह पहन रहा हूँ), `trocar_dia` (किसी दिन की घड़ी), `periodo` (किसी अवधि की घड़ियाँ, क्रम से: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (अवधि के दिन हटाता है और मोड उन्हें फिर से बनाता है; केवल `de`: योजना के अंत तक; केवल `ate`: कल से उस तक), `periodo_livre` (मिटाकर दिनों को बिना ड्रॉ ख़ाली छोड़ता है; वही तारीख़ें), `manual` (मैनुअल रोटेशन: `de`, `ate`, `dias[YYYY-MM-DD]` = घड़ी का id, `auto` या `livre`), `apagar_tudo` (कल से आगे का पूरा कार्यक्रम हटता है; `hoje=1`: आज से आगे; मोड योजना दोबारा बनाता है), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (मोड बदलना) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (समूह) और `relogios` (हर घड़ी का समूह) |
@@ -623,7 +625,7 @@ v2 से v8 इससे पहले के हैं और सिर्फ�
 | [`banco.php`](banco.php) | डेटाबेस: MySQL, Postgres, SQLite या Firebird से कनेक्शन, और एक से दूसरे में SQL का अनुवाद |
 | [`operacoes.php`](operacoes.php) | हर लेखन के नियम: जाँच और संदेश |
 | [`cron.php`](cron.php) | योजना, दिन का सत्र, सुबह और शाम के दौर, इवेंट, कैलेंडर और दस्तावेज़ों की देखभाल |
-| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | पृष्ठ (केवल ढाँचा; `cadastro.php` सार्वजनिक है) |
+| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `winders.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | पृष्ठ (केवल ढाँचा; `cadastro.php` सार्वजनिक है) |
 | `relojinho.js` | बार और फ़ेविकॉन की छोटी घड़ी: canvas में बनी सही समय वाली 24 तरह की घड़ियाँ, हर घंटे एक (क्रम से, चुनी हुई या बिना दोहराव) |
 | `sw.js`, `offline.html`, `icone-*.png` | फ़ोन पर ऐप: *service worker* (`recurso=sw` से, संस्करण आगे लगाकर: स्क्रीनों का कैश, बिना-कनेक्शन पेज और Web Push), **कनेक्शन नहीं है** पेज और आइकन (192, 512 और 180 px) |
 | `ajuda.php` | सहायता पेज: सिर्फ़ ढाँचा; `ajuda.js` API से टेक्स्ट माँगता है (`recurso=manual`: README के उपयोगकर्ताओं वाले हिस्से, `lib.php` में पहले से HTML में बदले हुए) |

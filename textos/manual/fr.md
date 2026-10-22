@@ -1,4 +1,4 @@
-<!-- origem: 65c8973df78f339348449dd1bac09f8571de4540 -->
+<!-- origem: 2ff296592f117589f8c3ac5a089ead7d76d2e967 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -12,7 +12,7 @@ dans des formules enregistrées, que vous lisez, modifiez et testez à l'écran 
 Réserve restante de la mécanique =
   ACUMULA(0; reserva_horas; 1;                                  ← commence à 0, le maximum est la réserve, perd 1 h par heure
           "pulso";  carga_pulso_reserva / carga_pulso_horas;    ← chaque heure au poignet recharge d'autant
-          "winder"; carga_winder_reserva / carga_winder_horas;  ← chaque heure sur le remontoir, d'autant
+          "winder"; winder_ganho;                               ← chaque heure sur le remontoir, selon le programme de la position
           "corda";  reserva_horas)                              ← le remontage la remplit
 ```
 
@@ -106,6 +106,7 @@ Et celles de la rotation (le scénario des modes ; en dehors, le jour est celui 
 | `NO_GRUPO("Tradicional › Quartzo")` | 1 si la montre est à ce point de l'arbre ou en dessous (le nom, le chemin ou `#id` ; `"todos"` : 1 pour toutes) |
 | `RELOGIO("Seiko SKX")` | 1 si c'est cette montre (par le nom ou par l'id) |
 | `CALIBRE("NH35")` | 1 si la montre a ce calibre (par le nom ou par l'id) |
+| `WINDER_POSICAO("pos_tpd")`, `WINDER("winder_marca")` | un champ de la position du remontoir où se trouve la montre (dans l'`ACUMULA`, la position de chaque session sur le remontoir) et un champ de son remontoir ; hors d'une position, vide (voir [Les remontoirs](#os-winders)) |
 | `ESCOLHIDO_HA(1)`, `VEZES_NO_PLANO(7)` | 1 si la montre était celle du plan il y a n jours (1 : hier ; -1 : demain, quand elle est déjà dans le plan) ; combien de jours elle a eus dans le plan dans les n derniers jours |
 | `ESCOLHA(n; a; b; c)` | le n-ième des valeurs (lui seul est calculé) : `ESCOLHA(DIA_SEMANA(); …)` donne une valeur par jour de la semaine |
 | `SORTEIO()` | un nombre de 0 à 1, du même lot RANDOM.ORG que les tirages |
@@ -660,6 +661,46 @@ liste montre les **Données** et où chacun **Va** : le bracelet libre de 20 mm 
 d'entre-cornes 20 ; sur le tableau de bord, le cadre **Accessoires** de chaque montre liste aussi ceux d'autres montres (ou
 libres) qui **vont sur elle**. Les montres vendues et archivées n'entrent pas dans ce calcul.
 
+### Les remontoirs {#os-winders}
+
+Le **remontoir** (la boîte qui fait tourner les automatiques) a sa propre fiche, sur la page **Remontoirs** (dans le menu
+**Collection**) : chaque remontoir avec ses **positions**, et chaque position avec son **programme**. Rien de cela n'est figé
+dans le code : les données du remontoir et le programme de la position sont des **champs**, enregistrés dans l'onglet
+**Champs** de la page **Définitions** avec **Pour : les remontoirs** ou **Pour : les positions des remontoirs**, comme ceux
+des montres. La configuration initiale apporte déjà la **marque** et le **modèle** du remontoir et, sur la position, les
+**tours par jour** (TPD, 650 par défaut), s'il **tourne dans le sens horaire** et **antihoraire** (les deux, par défaut) et
+le **cycle** (combien de temps il tourne et combien il se repose). Votre remontoir se programme autrement ? Créez ses champs.
+
+Côté montre, l'automatique gagne trois champs, que le calibre peut aussi donner : les **tours par jour qu'elle demande** sur
+le remontoir (650 par défaut) et si elle **se remonte en tournant dans le sens horaire** et **antihoraire** (les deux, par
+défaut ; le mouvement qui ne se remonte que dans un sens ne coche que celui-là).
+
+Ce que charge chaque heure sur le remontoir vient d'une formule, `winder_ganho` (onglet **Formules** des Définitions), que
+vous ajustez comme vous voulez. Celle de la configuration initiale : si la position tourne dans un sens où la montre se
+remonte, elle gagne la proportion des champs *Sur le remontoir* (les heures et la réserve qu'elles donnent) fois les tours
+de la position ÷ ceux qu'elle demande (au plus 1) ; si elle ne tourne dans aucun sens où elle se remonte, elle ne gagne
+rien. La session qui n'est pas dans une position (les anciennes, ou sans aucun remontoir enregistré) utilise les champs
+*Sur le remontoir*, comme avant. Dans les formules, `WINDER_POSICAO("pos_tpd")` est un champ de la position et
+`WINDER("winder_marca")`, un du remontoir. `reserva_restante` utilise `winder_ganho` dans chaque session sur le remontoir,
+avec le programme de la position où elle est restée : une montre qui a passé la nuit dans une position de 300 tours et
+l'après-midi dans une de 900 gagne chaque tronçon selon le sien. `winder_falta` donne les heures jusqu'à ce qu'elle soit
+pleine.
+
+Sur la page, une carte par remontoir, avec ses données et le tableau des positions : le **programme** (la valeur par défaut
+du champ apparaît avec l'étiquette *par défaut*), la **montre** qui s'y trouve, la **charge**, **ce que donne chaque heure**
+et quand elle est **pleine** (« pleine à 19:20 »), avec **Retirer** (la montre quitte le remontoir) et, sur la position
+libre, la liste des montres et **Mettre**. En dessous, les formulaires : le remontoir (le nom, les champs et, à la création,
+le nombre de positions qu'il reçoit) et la position (le nom, l'ordre, **allumée**, le programme). Une position éteinte ne
+reçoit pas de montre, et avec une montre dedans elle ne s'éteint pas.
+
+Sur le panneau de la montre, le **Mettre sur le remontoir** du cadre **Marquer** demande la **position** (seulement les
+allumées et libres) ; l'état dit alors où elle est : *« Sur le remontoir · Bureau, Pos. 2 »*. Le type d'entrée qui demande
+la position est celui coché comme **remontoir** dans l'onglet **Types d'entrée** (le *Sur le remontoir* de la configuration
+initiale). Supprimer une position ou un remontoir n'efface pas les sessions : elles restent sans la position, et leur calcul
+revient aux champs de la montre. Par l'API : `recurso=winders` (les remontoirs, les positions, la montre dans chacune et les
+montres qui peuvent aller sur un remontoir), les écritures `winders` et `winder_posicoes` (`salvar`, `excluir`) et
+l'`iniciar` du `lancamento` avec `posicao_id`.
+
 ### Les sections de la fiche {#as-divisórias-da-ficha}
 
 Les champs de la montre sont regroupés en **sections**, les parties de la fiche : dans l'onglet **Sections** de la page
@@ -872,7 +913,7 @@ groupes en dessous. C'est pourquoi « être automatique » n'est pas une case à
 ├── Smartwatch            Autonomie en usage réel, Consommation en usage, Consommation au repos, Sur le chargeur : heures pour remplir
 └── Traditionnelle        Dernière révision, Révision tous les
     ├── Mécanique         Réserve de marche, Se remonte par la couronne
-    │   ├── Automatique   Au poignet : heures / réserve, Sur le remontoir : heures / réserve
+    │   ├── Automatique   Au poignet : heures / réserve, Sur le remontoir : heures / réserve, tours par jour, sens du remontage
     │   └── Remontage manuel (rien de plus : au poignet elle ne se charge pas)
     └── Quartz
         ├── Pile          Dernier changement de pile, Durée de vie de la pile
@@ -1096,6 +1137,8 @@ remontage donnent le bras (et le remontoir)**, en proportion : *« tant d'heures
 | **Au poignet : réserve que donnent ces heures** (h) `carga_pulso_reserva` | 36 | ...et combien de réserve ce temps donne. Avec 8 h et 36 h : chaque heure au poignet ajoute 36 ÷ 8 = **4,5 h** de réserve. |
 | **Sur le remontoir : heures** `carga_winder_horas` | celui du poignet | La même chose, sur le remontoir (la boîte qui fait tourner la montre)... |
 | **Sur le remontoir : réserve que donnent ces heures** (h) `carga_winder_reserva` | celui du poignet | ...et combien de réserve donne ce temps sur le remontoir. Avec 4 h et 40 h : 10 h de réserve par heure sur le remontoir. Vide, c'est la proportion du poignet qui s'applique. |
+| **Sur le remontoir : tours par jour qu'elle demande** (TPD) `winder_tpd` | 650 | Combien de tours par jour le mouvement demande sur le remontoir. Dans une position qui tourne moins, elle en gagne la part (300 sur 600 : la moitié) ; plus, elle ne dépasse pas le plein (voir [Les remontoirs](#os-winders)). |
+| **Se remonte en tournant dans le sens horaire** `corda_horario` et **antihoraire** `corda_anti_horario` | oui | Les sens dans lesquels le rotor remonte. Dans une position qui ne tourne que dans un sens où elle ne se remonte pas, le remontoir ne charge pas. |
 
 Comment se fait le calcul, avec les valeurs par défaut (réserve de 40 h, 8 h au poignet donnant 36 h) :
 
@@ -1209,7 +1252,7 @@ Une saisie, c'est tout ce que vous marquez sur une montre. Chaque type vaut pour
 | **Au poignet** (`pulso`) | session | toutes | le temps au poignet : **Mise au poignet** et **Retirée du poignet**, ou le poignet automatique pendant l'horaire de port. Oubliée ouverte, elle se ferme à 22 h. |
 | **Relevé de charge** (`carga`) | valeur | Smartwatch | la charge que la montre affiche, en %. Chaque relevé mesure la consommation (voir [Consommation mesurée par les relevés](#gasto-medido-pelas-leituras)). |
 | **Remontage** (`corda`) | instantané | Mécanique (avec *Se remonte par la couronne*) | a rempli la réserve de marche. |
-| **Sur le remontoir** (`winder`) | session | Automatique | le temps sur le remontoir : la réserve monte. |
+| **Sur le remontoir** (`winder`) | session | Automatique | le temps sur le remontoir : la réserve monte selon le programme de la position. Coché comme **remontoir** : le Mettre demande la position (voir [Les remontoirs](#os-winders)). |
 | **Au soleil** (`sol`) | session | Solaire | le temps au soleil : la charge lumineuse monte. Oubliée ouverte, elle se ferme à 18 h (la Configuration le change). |
 | **Sur le chargeur** (`carregador`) | session | Smartwatch | le temps sur le chargeur : l'état de la montre affiche *Sur le chargeur*, la batterie monte selon le champ *Sur le chargeur : heures pour remplir*, l'alerte **Charger** disparaît et, quand elle est pleine, arrive le **Retirer du chargeur**. En la retirant, un relevé de charge remet le calcul d'aplomb. |
 | **Changement de pile** (`pilha`) | instantané | Pile | pile neuve : la durée de vie de la pile recommence. |
@@ -1230,7 +1273,9 @@ celle du groupe le plus proche de la montre qui s'applique. Toutes se modifient 
 | Formule | Ce qu'elle calcule |
 |---|---|
 | `energia` (%) | la charge actuelle, de 0 à 100. **Smartwatch :** elle parcourt l'historique depuis le dernier relevé : le relevé vaut tel quel ; chaque heure au poignet retire la consommation en usage ÷ 15 (les heures d'une journée de port), chaque heure sur le chargeur ajoute 100 ÷ *heures pour remplir*, et le reste du temps retire la consommation éteinte ÷ 24 ; toujours entre 0 et 100. **Mécanique :** la réserve restante ÷ la réserve de marche. **Solaire :** la charge lumineuse (elle baisse dans le noir selon la réserve d'énergie, monte au soleil selon le temps de soleil pour remplir, et au poignet d'une partie de cela (*Au poignet : combien elle se charge*) ; sans aucun soleil marqué, inconnue). **Pile :** ce qui reste de la durée de vie de la pile. |
-| `reserva_restante` (h) | **Mécanique :** la réserve de marche restante. Elle perd 1 heure par heure ; au poignet l'automatique gagne selon les champs *Au poignet* ; sur le remontoir, selon les champs *Sur le remontoir* ; le remontage (et les anciens marquages) la remplit. |
+| `reserva_restante` (h) | **Mécanique :** la réserve de marche restante. Elle perd 1 heure par heure ; au poignet l'automatique gagne selon les champs *Au poignet* ; sur le remontoir, selon `winder_ganho` de chaque session ; le remontage (et les anciens marquages) la remplit. |
+| `winder_ganho` | **Automatique :** combien de réserve donne chaque heure sur le remontoir. Dans une position : la proportion des champs *Sur le remontoir* fois les tours de la position ÷ ceux qu'elle demande (au plus 1), et 0 si elle ne tourne pas dans un sens où elle se remonte ; hors d'une position, la proportion des champs *Sur le remontoir*. |
+| `winder_falta` (h) | **Automatique :** les heures qui restent sur le remontoir pour être pleine (la réserve qui manque ÷ `winder_ganho`) ; vide si elle n'y gagne rien. |
 | `taxa_uso`, `taxa_repouso` (% par jour) | **Smartwatch :** la consommation au poignet et hors du poignet qui s'appliquent : celle mesurée par les relevés, sinon celle de la fiche. |
 | `dias_de_carga` (jours) | **Smartwatch :** combien de jours d'usage tient la charge actuelle. |
 | `dias_seguidos` (jours) | **Smartwatch :** combien de jours d'affilée elle reste dans le planning intelligent : ce que donne la batterie pleine, de 1 à 7. |
@@ -1427,7 +1472,7 @@ basculement se mesure avec les données réelles (un nom long ou une grande vale
 Les **Prochains jours** montrent aussi tous les jours de la programmation sur n'importe quel écran.
 
 **Le menu** regroupe les pages par sujet : **Aujourd'hui**, **Alertes** et **Heure exacte** seuls (ceux de tous les jours) ;
-**Rotation** (Plan, Modes de rotation, Critères de choix), **Collection** (Galerie, Fiche, Accessoires, Souhaits, Statistiques,
+**Rotation** (Plan, Modes de rotation, Critères de choix), **Collection** (Galerie, Fiche, Accessoires, Remontoirs, Souhaits, Statistiques,
 Totaux, Groupes), **Système** (Configuration, Définitions, Exécutions du cron et, seulement pour le master, Utilisateurs) et **Compte**
 (Mon compte, Approbations), chaque groupe avec la petite flèche qui ouvre sa liste d'un clic (un autre clic, un clic à
 l'extérieur ou Échap la ferme) ; et **Aide**. Le groupe de la page ouverte est souligné. Sur le téléphone, le menu replié
@@ -1451,6 +1496,7 @@ que vous enregistrez apparaît ici sous son nom.
 | **Statistiques** (`estatisticas.php`) | L'usage de la collection sur une période (**De**, **À** ; les raccourcis 30 jours, 90 jours, 1 an et depuis le début ; par défaut : les 90 derniers jours) : le résumé (jours avec une montre au poignet, heures au poignet et par jour, montres portées et non portées, le coût par port moyen et la valeur de la collection, la plus et la moins portée) ; **Chaque montre**, de la plus portée à la moins : jours d'usage, heures, la part de chacune (avec la barre), le coût par port, depuis combien de jours elle n'est pas allée au poignet et la tendance (↑ portée davantage, ↓ portée moins, → stable : la seconde moitié de la période comparée à la première) ; les graphiques **Par jour de la semaine** et **Par mois** (les heures au poignet) ; et **La collection** : les montres réparties par groupe, marque, année d'achat, situation et chaque champ de liste (comme Style), avec combien, la part et les heures de chaque partie. Par l'API : `recurso=estatisticas`. |
 | **Totaux** (`totais.php`, menu **Collection**) | La page des totaux : les totaux cochés pour elle (l'onglet **Totaux** des Définitions), chacun dans un cadre, étroit ou large, dans l'ordre des définitions : le petit tableau avec la ligne de total, le nombre, ou la montre avec la valeur. Elle s'ouvre par **Voir tous les totaux** sous le tableau de la page Aujourd'hui, avec le même filtre (*12 montres sur 17 sont comptées*, avec **Tout compter**), ou par le menu, avec toutes. Par l'API : `recurso=totais&parte=pagina`. Voir [Les totaux](#os-totais). |
 | **Accessoires** (`acessorios.php`) | Les bracelets, boîtes, étuis, outils, chargeurs, pièces et tout le reste : la liste (le nom, le type, la montre à laquelle il appartient, ou *indépendant*, et l'observation), avec le filtre **Montre** (tous, les indépendants ou ceux d'une montre ; le cadre **Accessoires** du panneau l'ouvre déjà filtrée), **Modifier** et **Supprimer** sur chacun, et en dessous le formulaire (**Nouvel accessoire** : nom, type, montre ou *indépendant (sert à plusieurs)* et observation). Supprimer une montre rend ses accessoires indépendants. Par l'API : `recurso=acessorios` (la liste) et l'écriture `acessorios` (`salvar`, `excluir`). Chacun montre les **Données** (les champs de son type) et où il **Va** (voir [La construction et les accessoires](#a-construção-e-os-acessórios)) ; le formulaire demande les champs du type choisi. |
+| **Remontoirs** (`winders.php`) | Les remontoirs et les positions de chacun : une carte par remontoir, avec ses données et le tableau des positions (le **programme**, la **montre** qui s'y trouve, la **charge**, **ce que donne chaque heure** et quand elle est **pleine**), **Retirer** et **Mettre** dans chaque position, **Modifier** la position, **Nouvelle position**, **Modifier le remontoir** et **Supprimer le remontoir** ; en dessous, la fiche (**Nouveau remontoir** : le nom, le nombre de positions qu'il reçoit, les champs du remontoir et l'observation) et celle de la position (le nom, l'ordre, allumée, le programme). Voir [Les remontoirs](#os-winders). Par l'API : `recurso=winders` et les écritures `winders` et `winder_posicoes`. |
 | **Galerie** (`galeria.php`) | La collection en photos, par groupe : chaque montre avec la photo (le lien vers la fiche), le nom, la marque et la référence, l'année et le prix d'achat et les jours d'usage ; en haut, combien, la valeur totale et combien ont une photo. **Aussi celles hors de la collection** montre les désirées, vendues et archivées (avec la marque de la situation). **Imprimer** : sur papier, quatre par ligne, sans le menu. Par l'API : `recurso=galeria`. |
 | **Passeport** (`passaporte.php`) | La fiche d'une montre à imprimer ou à enregistrer en PDF (le bouton **Passeport** du cadre Documents du panneau) : la photo, le nom, la marque et la référence, le groupe et la situation ; l'**Achat** ; l'**Usage** (la première et la dernière fois au poignet, les heures au poignet, les jours d'usage et le coût par port) ; la **Fiche** remplie ; les **Entretiens** (chaque type de marquage, combien de fois et le dernier ; les révisions et les changements de pile) ; les **Accessoires** ; les **Documents** ; et les **Prochaines alertes**. **Imprimer** : seules les données sortent sur le papier. Par l'API : `recurso=passaporte`. Avec un service, aussi les **Services et diagnostics** (qui l'a fait, le coût, l'étanchéité et la marche avant et après). |
 | **Rapports** (`relatorios.php`) | La porte unique des rapports : le menu avec tous (par groupe), les champs de celui choisi (la montre, la période, les options) et **Générer le rapport** ; le rapport à l'écran, sur papier (**Imprimer**) et dans un tableur (**Télécharger le tableur (CSV)**). Voir [Les rapports](#os-relatórios). |

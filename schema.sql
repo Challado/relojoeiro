@@ -7,7 +7,8 @@
 -- Várias pessoas, cada uma com as suas coleções (desde a migração v25). As regras:
 --   - tudo amarrado por chave primária e chave estrangeira, e toda chave estrangeira apaga em cascata: apagou o usuário, vão
 --     as coleções e as árvores dele, e tudo abaixo; nada fica solto (a referência opcional que só desfaz o vínculo, quando o
---     outro lado sai, é uma tabela de ligação: acessorio_relogio, evento_relogio, modo_bloco_relogio, plano_bloco);
+--     outro lado sai, é uma tabela de ligação: acessorio_relogio, evento_relogio, modo_bloco_relogio, plano_bloco,
+--     lancamento_winder);
 --   - 3ª forma normal: o que dá para deduzir subindo uma chave estrangeira não se repete (o lançamento chega à coleção pelo
 --     relógio; o campo chega ao dono pela árvore; o subgrupo não guarda a raiz nem o dono);
 --   - o dono de uma árvore fica só na raiz dela (o grupo sem pai); a coleção aponta para a raiz da árvore que usa, e uma
@@ -214,7 +215,8 @@ CREATE TABLE campo_secao (
     CONSTRAINT ck_campo_secao_nome CHECK (TRIM(nome) <> '')
 ) ENGINE=InnoDB;
 
--- os campos do cadastro de um relógio, por grupo (a raiz: todos). O identificador não se repete na árvore (a API confere)
+-- os campos do cadastro de um relógio, por grupo (a raiz: todos). O identificador não se repete na árvore (a API confere).
+-- alvo: de quem é o campo: do relógio, do acessório (de um tipo dele: acessorio_tipo), do winder ou da posição do winder
 CREATE TABLE campo (
     id             INT AUTO_INCREMENT PRIMARY KEY,
     identificador  VARCHAR(40) NOT NULL,
@@ -244,7 +246,7 @@ CREATE TABLE campo (
     CONSTRAINT ck_campo_calibre CHECK (calibre IN (0, 1)),
     CONSTRAINT ck_campo_multiplo CHECK (multiplo IN (0, 1)),
     CONSTRAINT ck_campo_faixa CHECK (minimo IS NULL OR maximo IS NULL OR minimo <= maximo),
-    CONSTRAINT ck_campo_alvo CHECK (alvo IN ('relogio', 'acessorio')),
+    CONSTRAINT ck_campo_alvo CHECK (alvo IN ('relogio', 'acessorio', 'winder', 'posicao')),
     CONSTRAINT ck_campo_acessorio CHECK (alvo = 'acessorio' OR acessorio_tipo IS NULL)
 ) ENGINE=InnoDB;
 
@@ -282,7 +284,8 @@ CREATE TABLE unidade (
     CONSTRAINT ck_unidade_base CHECK ((base_id IS NULL AND fator IS NULL AND zero = 0) OR (base_id IS NOT NULL AND fator IS NOT NULL AND fator <> 0))
 ) ENGINE=InnoDB;
 
--- os tipos de lançamento (pulso, carga, corda, winder, sol...), por grupo
+-- os tipos de lançamento (pulso, carga, corda, winder, sol...), por grupo. winder: a sessão é numa posição de um winder (o
+-- Pôr no winder pede a posição, gravada no lancamento_winder)
 CREATE TABLE lancamento_tipo (
     id             INT AUTO_INCREMENT PRIMARY KEY,
     identificador  VARCHAR(40) NOT NULL,
@@ -295,6 +298,7 @@ CREATE TABLE lancamento_tipo (
     exclusiva      TINYINT NOT NULL DEFAULT 0,
     mede_gasto     TINYINT NOT NULL DEFAULT 0,
     marcha         VARCHAR(10) NULL,
+    winder         TINYINT NOT NULL DEFAULT 0,
     condicao       VARCHAR(500) NULL,
     INDEX (no_id),
     FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
@@ -302,7 +306,8 @@ CREATE TABLE lancamento_tipo (
     CONSTRAINT ck_lancamento_tipo_exclusiva CHECK (exclusiva IN (0, 1) AND (exclusiva = 0 OR formato = 'sessao')),
     CONSTRAINT ck_lancamento_tipo_mede_gasto CHECK (mede_gasto IN (0, 1) AND (mede_gasto = 0 OR formato = 'valor')),
     CONSTRAINT ck_lancamento_tipo_fecha_as CHECK (fecha_as IS NULL OR formato = 'sessao'),
-    CONSTRAINT ck_lancamento_tipo_marcha CHECK (marcha IS NULL OR (marcha = 'desvio' AND formato = 'valor') OR (marcha = 'acerto' AND formato = 'instantaneo'))
+    CONSTRAINT ck_lancamento_tipo_marcha CHECK (marcha IS NULL OR (marcha = 'desvio' AND formato = 'valor') OR (marcha = 'acerto' AND formato = 'instantaneo')),
+    CONSTRAINT ck_lancamento_tipo_winder CHECK (winder IN (0, 1) AND (winder = 0 OR formato = 'sessao'))
 ) ENGINE=InnoDB;
 
 -- as fórmulas: uma versão por grupo (vale a do grupo mais perto do relógio)
@@ -708,6 +713,86 @@ CREATE TABLE acessorio_relogio (
     INDEX (relogio_id),
     FOREIGN KEY (acessorio_id) REFERENCES acessorio(id) ON DELETE CASCADE,
     FOREIGN KEY (relogio_id) REFERENCES relogio(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- os winders da coleção (a caixa que gira os automáticos): o nome e a observação; o resto (a marca, o modelo...) são campos
+-- (campo.alvo = winder), com o valor de cada um no winder_valor (o múltiplo, um por linha no winder_valor_item)
+CREATE TABLE winder (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    colecao_id  INT NOT NULL,
+    nome        VARCHAR(120) NOT NULL,
+    observacao  VARCHAR(1000) NULL,
+    criado      DATETIME NOT NULL,
+    INDEX (colecao_id),
+    FOREIGN KEY (colecao_id) REFERENCES colecao(id) ON DELETE CASCADE,
+    CONSTRAINT ck_winder_nome CHECK (TRIM(nome) <> '')
+) ENGINE=InnoDB;
+
+CREATE TABLE winder_valor (
+    winder_id  INT NOT NULL,
+    campo_id   INT NOT NULL,
+    valor      TEXT NOT NULL,
+    PRIMARY KEY (winder_id, campo_id),
+    INDEX (campo_id),
+    FOREIGN KEY (winder_id) REFERENCES winder(id) ON DELETE CASCADE,
+    FOREIGN KEY (campo_id) REFERENCES campo(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE winder_valor_item (
+    winder_id  INT NOT NULL,
+    campo_id   INT NOT NULL,
+    valor      VARCHAR(120) NOT NULL,
+    PRIMARY KEY (winder_id, campo_id, valor),
+    INDEX (campo_id),
+    FOREIGN KEY (winder_id) REFERENCES winder(id) ON DELETE CASCADE,
+    FOREIGN KEY (campo_id) REFERENCES campo(id) ON DELETE CASCADE,
+    CONSTRAINT ck_winder_valor_item CHECK (TRIM(valor) <> '')
+) ENGINE=InnoDB;
+
+-- as posições de cada winder (o lugar onde um relógio gira): o nome, a ordem e se está ligada; o programa dela (as
+-- rotações por dia, o sentido, o ciclo...) são campos (campo.alvo = posicao), com os valores no winder_posicao_valor (o
+-- múltiplo, um por linha no winder_posicao_valor_item)
+CREATE TABLE winder_posicao (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    winder_id  INT NOT NULL,
+    nome       VARCHAR(60) NOT NULL,
+    ordem      INT NOT NULL DEFAULT 0,
+    ligada     TINYINT NOT NULL DEFAULT 1,
+    UNIQUE (winder_id, nome),
+    FOREIGN KEY (winder_id) REFERENCES winder(id) ON DELETE CASCADE,
+    CONSTRAINT ck_winder_posicao_nome CHECK (TRIM(nome) <> ''),
+    CONSTRAINT ck_winder_posicao_ligada CHECK (ligada IN (0, 1))
+) ENGINE=InnoDB;
+
+CREATE TABLE winder_posicao_valor (
+    posicao_id  INT NOT NULL,
+    campo_id    INT NOT NULL,
+    valor       TEXT NOT NULL,
+    PRIMARY KEY (posicao_id, campo_id),
+    INDEX (campo_id),
+    FOREIGN KEY (posicao_id) REFERENCES winder_posicao(id) ON DELETE CASCADE,
+    FOREIGN KEY (campo_id) REFERENCES campo(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE winder_posicao_valor_item (
+    posicao_id  INT NOT NULL,
+    campo_id    INT NOT NULL,
+    valor       VARCHAR(120) NOT NULL,
+    PRIMARY KEY (posicao_id, campo_id, valor),
+    INDEX (campo_id),
+    FOREIGN KEY (posicao_id) REFERENCES winder_posicao(id) ON DELETE CASCADE,
+    FOREIGN KEY (campo_id) REFERENCES campo(id) ON DELETE CASCADE,
+    CONSTRAINT ck_winder_posicao_valor_item CHECK (TRIM(valor) <> '')
+) ENGINE=InnoDB;
+
+-- em que posição de winder ficou uma sessão (um lançamento de um tipo marcado como winder); a posição excluída desfaz a
+-- ligação (a sessão fica, e a conta dela volta a usar os campos do relógio)
+CREATE TABLE lancamento_winder (
+    lancamento_id  INT PRIMARY KEY,
+    posicao_id     INT NOT NULL,
+    INDEX (posicao_id),
+    FOREIGN KEY (lancamento_id) REFERENCES lancamento(id) ON DELETE CASCADE,
+    FOREIGN KEY (posicao_id) REFERENCES winder_posicao(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- os critérios de escolha: um conjunto por lugar, um grupo (a raiz: todos) ou um relógio (um ou outro)

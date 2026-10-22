@@ -59,7 +59,7 @@ cadastradas, que você lê, edita e testa pela tela:
 Reserva que sobra no mecânico =
   ACUMULA(0; reserva_horas; 1;                                  ← começa em 0, máximo é a reserva, perde 1 h por hora
           "pulso";  carga_pulso_reserva / carga_pulso_horas;    ← cada hora no pulso recarrega tanto
-          "winder"; carga_winder_reserva / carga_winder_horas;  ← cada hora no winder, tanto
+          "winder"; winder_ganho;                               ← cada hora no winder, pelo programa da posição
           "corda";  reserva_horas)                              ← dar corda enche
 ```
 
@@ -151,6 +151,7 @@ E as do rodízio (o roteiro dos modos; fora dele, o dia é o do instante da cont
 | `NO_GRUPO("Tradicional › Quartzo")` | 1 se o relógio está nesse ponto da árvore ou abaixo (o nome, o caminho ou `#id`; `"todos"`: 1 para todos) |
 | `RELOGIO("Seiko SKX")` | 1 se é esse relógio (pelo nome ou pelo id) |
 | `CALIBRE("NH35")` | 1 se o relógio tem esse calibre (pelo nome ou pelo id) |
+| `WINDER_POSICAO("pos_tpd")`, `WINDER("winder_marca")` | um campo da posição do winder em que o relógio está (dentro do `ACUMULA`, a posição de cada sessão no winder) e um campo do winder dela; fora de uma posição, vazio (veja [Os winders](#os-winders)) |
 | `ESCOLHIDO_HA(1)`, `VEZES_NO_PLANO(7)` | 1 se o relógio foi o do plano há n dias (1: ontem; -1: amanhã, quando já está no plano); quantos dias ele teve no plano nos últimos n dias |
 | `ESCOLHA(n; a; b; c)` | o n-ésimo dos valores (só ele é calculado): `ESCOLHA(DIA_SEMANA(); …)` dá um valor por dia da semana |
 | `SORTEIO()` | um número de 0 a 1, do mesmo lote do RANDOM.ORG dos sorteios |
@@ -672,6 +673,41 @@ formulário pede os campos do tipo escolhido, e a lista mostra os **Dados** e on
 20 mm aparece servindo em todos os relógios de entre alças 20; no painel, o quadro **Acessórios** de cada relógio lista
 também os de outros relógios (ou soltos) que **servem nele**. Os vendidos e arquivados não entram nessa conta.
 
+### Os winders
+
+O **winder** (a caixa que gira os automáticos) tem cadastro próprio, na página **Winders** (no menu **Coleção**): cada
+winder com as **posições** dele, e cada posição com o seu **programa**. Nada disso é fixo no código: os dados do winder e o
+programa da posição são **campos**, cadastrados na aba **Campos** da página **Cadastros** com **Para: os winders** ou
+**Para: as posições dos winders**, como os dos relógios. O cadastro novo já traz a **marca** e o **modelo** do winder, e, na
+posição, as **rotações por dia** (TPD, padrão 650), se ela **gira no sentido horário** e **no anti-horário** (os dois, por
+padrão) e o **ciclo** (quanto tempo gira e quanto descansa). O seu winder tem outro jeito de programar? Crie os campos dele.
+
+Do lado do relógio, o automático ganha três campos, que o calibre também pode dar: as **rotações por dia que ele pede** no
+winder (padrão 650) e se ele **dá corda girando no sentido horário** e **no anti-horário** (os dois, por padrão; o
+movimento que só dá corda num sentido marca só esse).
+
+Quanto cada hora no winder carrega sai de uma fórmula, a `winder_ganho` (aba **Fórmulas** dos Cadastros), que você ajusta
+como quiser. A do cadastro novo: se a posição gira num sentido em que o relógio dá corda, ele ganha a proporção do campo
+*No winder* (as horas e a reserva que elas dão) vezes as rotações da posição ÷ as que ele pede (no máximo 1); se não gira em
+nenhum sentido em que ele dá corda, não ganha nada. A sessão que não está numa posição (as antigas, ou com nenhum winder
+cadastrado) usa os campos *No winder*, como antes. Nas fórmulas, `WINDER_POSICAO("pos_tpd")` é um campo da posição e
+`WINDER("winder_marca")`, um do winder. A `reserva_restante` usa a `winder_ganho` em cada sessão no winder, com o programa da
+posição em que ela ficou: um relógio que passou a noite numa posição de 300 rotações e a tarde numa de 900 ganha cada trecho
+pelo seu. A `winder_falta` dá as horas até ele encher.
+
+Na página, um cartão por winder, com os dados dele e a tabela das posições: o **programa** (o padrão do campo aparece com a
+etiqueta *padrão*), o **relógio** que está nela, a **carga**, **quanto cada hora dá** e quando ele **enche** ("cheio às
+19:20"), com **Tirar** (o relógio sai do winder) e, na posição livre, o menu dos relógios e **Pôr**. Embaixo, os formulários:
+o winder (o nome, os campos e, ao criar, quantas posições ele já ganha) e a posição (o nome, a ordem, **ligada**, o programa).
+A posição desligada não recebe relógio, e com um relógio dentro não desliga.
+
+No painel do relógio, o **Pôr no winder** do quadro **Marcar** pede a **posição** (só as ligadas e livres); o estado passa a
+dizer onde ele está: *"No winder · Escritório, Pos. 2"*. O tipo de lançamento que pede a posição é o marcado como **winder** na
+aba **Tipos de lançamento** (o *No winder* do cadastro novo). Excluir uma posição ou um winder não apaga as sessões: elas
+ficam sem a posição, e a conta delas volta aos campos do relógio. Pela API: `recurso=winders` (os winders, as posições, o
+relógio em cada uma e os relógios que podem ir para um winder), as escritas `winders` e `winder_posicoes` (`salvar`,
+`excluir`) e o `iniciar` do `lancamento` com `posicao_id`.
+
 ### As divisórias da ficha
 
 Os campos do relógio ficam agrupados em **divisórias**, as seções da ficha: na aba **Divisórias** da página **Cadastros**
@@ -862,7 +898,7 @@ pulso e de winder.
 ├── Smartwatch            Autonomia em uso real, Decaimento em uso, Decaimento guardado, No carregador: horas para encher
 └── Tradicional           Última revisão, Revisão a cada
     ├── Mecânico          Reserva de marcha, Aceita corda pela coroa
-    │   ├── Automático    No pulso: horas / reserva, No winder: horas / reserva
+    │   ├── Automático    No pulso: horas / reserva, No winder: horas / reserva, rotações por dia, sentido da corda
     │   └── Corda manual  (nada a mais: no pulso ele não se carrega)
     └── Quartzo
         ├── Pilha         Última troca de pilha, Vida da pilha
@@ -1074,6 +1110,8 @@ braço (e o winder) dá**, em forma de proporção: *"tantas horas aqui me dão 
 | **No pulso: reserva que essas horas dão** (h) `carga_pulso_reserva` | 36 | ...e quanto de reserva esse tempo dá. Com 8 h e 36 h: cada hora no pulso soma 36 ÷ 8 = **4,5 h** de reserva. |
 | **No winder: horas** `carga_winder_horas` | o do pulso | O mesmo, no winder (a caixa que gira o relógio)... |
 | **No winder: reserva que essas horas dão** (h) `carga_winder_reserva` | o do pulso | ...e quanto de reserva esse tempo no winder dá. Com 4 h e 40 h: 10 h de reserva por hora de winder. Vazios, vale a proporção do pulso. |
+| **No winder: rotações por dia que ele pede** (TPD) `winder_tpd` | 650 | Quantas rotações por dia o movimento precisa no winder. Numa posição que gira menos, ele ganha a parte delas (300 de 600: metade); mais, não passa do cheio (veja [Os winders](#os-winders)). |
+| **Dá corda girando no sentido horário** `corda_horario` e **no anti-horário** `corda_anti_horario` | sim | Os sentidos em que o rotor dá corda. Numa posição que só gira num sentido em que ele não dá corda, o winder não carrega. |
 
 Como a conta anda, com os padrões (reserva de 40 h, 8 h de pulso dando 36 h):
 
@@ -1183,7 +1221,7 @@ Um lançamento é tudo o que se marca num relógio. Cada tipo vale para um grupo
 | **No pulso** (`pulso`) | sessão | todos | o tempo no pulso: o **Pôs** e o **Tirou**, ou o pulso sozinho no horário de uso. Esquecida aberta, fecha às 22h. |
 | **Leitura de carga** (`carga`) | valor | Smartwatch | a carga que o relógio mostra, em %. Cada leitura mede o gasto (veja [Gasto medido pelas leituras](#gasto-medido-pelas-leituras)). |
 | **Corda** (`corda`) | instantâneo | Mecânico (com *Aceita corda pela coroa*) | encheu a reserva de marcha. |
-| **No winder** (`winder`) | sessão | Automático | o tempo no winder: a reserva sobe. |
+| **No winder** (`winder`) | sessão | Automático | o tempo no winder: a reserva sobe pelo programa da posição. Marcado como **winder**: o Pôr pede a posição (veja [Os winders](#os-winders)). |
 | **No sol** (`sol`) | sessão | Solar | o tempo no sol: a carga de luz sobe. Esquecida aberta, fecha às 18h (a Configuração muda). |
 | **No carregador** (`carregador`) | sessão | Smartwatch | o tempo no carregador: o estado do relógio mostra *No carregador*, a bateria sobe pelo campo *No carregador: horas para encher*, o aviso **Carregar** some e, quando enche, vem o **Tirar do carregador**. Ao tirar, uma leitura de carga acerta a conta. |
 | **Troca de pilha** (`pilha`) | instantâneo | Pilha | pilha nova: a vida da pilha recomeça. |
@@ -1203,7 +1241,9 @@ mais perto do relógio. Todas se editam e se testam em **Cadastros**.
 | Fórmula | O que calcula |
 |---|---|
 | `energia` (%) | a carga de agora, de 0 a 100. **Smartwatch:** percorre o histórico desde a última leitura: a leitura vale como está; cada hora no pulso perde o gasto em uso ÷ 15 (as horas de um dia de uso), cada hora no carregador ganha 100 ÷ *horas para encher*, e o resto do tempo perde o gasto fora ÷ 24; sempre entre 0 e 100. **Mecânico:** a reserva que sobra ÷ a reserva de marcha. **Solar:** a carga de luz (perde no escuro pela reserva de energia, ganha no sol pelo tempo de sol para encher, e no pulso uma parte disso (*No pulso: quanto carrega*); sem nenhum sol marcado, desconhecida). **Pilha:** quanto falta da vida da pilha. |
-| `reserva_restante` (h) | **Mecânico:** a reserva de marcha que sobra. Perde 1 hora por hora; no pulso o automático ganha pelos campos *No pulso*; no winder, pelos campos *No winder*; a corda (e as marcações antigas) enchem. |
+| `reserva_restante` (h) | **Mecânico:** a reserva de marcha que sobra. Perde 1 hora por hora; no pulso o automático ganha pelos campos *No pulso*; no winder, pela `winder_ganho` de cada sessão; a corda (e as marcações antigas) enchem. |
+| `winder_ganho` | **Automático:** quanto de reserva cada hora no winder dá. Numa posição: a proporção dos campos *No winder* vezes as rotações da posição ÷ as que ele pede (no máximo 1), e 0 se ela não gira num sentido em que ele dá corda; fora de uma posição, a proporção dos campos *No winder*. |
+| `winder_falta` (h) | **Automático:** as horas que faltam no winder para encher (a reserva que falta ÷ a `winder_ganho`); vazia se ali ele não ganha nada. |
 | `taxa_uso`, `taxa_repouso` (% por dia) | **Smartwatch:** o gasto no pulso e o gasto fora que valem: o medido pelas leituras, senão o do cadastro. |
 | `dias_de_carga` (dias) | **Smartwatch:** quantos dias de uso a carga de agora aguenta. |
 | `dias_seguidos` (dias) | **Smartwatch:** quantos dias seguidos ele fica na escala inteligente: o que a bateria cheia dá, de 1 a 7. |
@@ -1426,7 +1466,7 @@ nome em cima. A troca é medida com os dados de verdade (um nome comprido ou um 
 Os **Próximos dias** também mostram todos os dias da escala em qualquer tela.
 
 **O menu** junta as páginas por assunto: **Hoje**, **Avisos** e **Hora certa** soltos (os de todo dia); **Rodízio**
-(Plano, Modos de rodízio, Critérios de escolha), **Coleção** (Galeria, Ficha, Acessórios, Desejos, Estatísticas, Totais, Grupos), **Sistema**
+(Plano, Modos de rodízio, Critérios de escolha), **Coleção** (Galeria, Ficha, Acessórios, Winders, Desejos, Estatísticas, Totais, Grupos), **Sistema**
 (Configuração, Cadastros, Execuções do cron e, só para o master, Usuários) e **Conta** (Minha conta, Aprovações), cada grupo
 com a setinha que abre a lista dele num clique (outro clique, um clique fora ou o Esc fecha); e **Ajuda**. O grupo da página
 aberta fica sublinhado. No celular, o menu recolhido abre com os grupos já abertos, cada um com o nome em cima. O menu tem,
@@ -1448,6 +1488,7 @@ desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato s
 | **Estatísticas** (`estatisticas.php`) | O uso da coleção num período (**De**, **Até**; os atalhos 30 dias, 90 dias, 1 ano e desde o começo; padrão: os últimos 90 dias): o resumo (dias com relógio no pulso, horas no pulso e por dia, relógios usados e sem uso, o custo por uso médio e o valor da coleção, o mais e o menos usado); **Cada relógio**, do mais usado ao menos usado: dias de uso, horas, a parte de cada um (com a barra), o custo por uso, há quantos dias não vai ao pulso e a tendência (↑ usando mais, ↓ usando menos, → estável: a segunda metade do período comparada com a primeira); os gráficos **Por dia da semana** e **Por mês** (as horas no pulso); e **A coleção**: os relógios divididos por grupo, marca, ano da compra, situação e cada campo de lista (como o Estilo), com quantos, a parte e as horas de cada parte. Pela API: `recurso=estatisticas`. |
 | **Totais** (`totais.php`, menu **Coleção**) | A página de totais: os totais marcados para ela (a aba **Totais** dos Cadastros), cada um num quadro, estreito ou largo, na ordem do cadastro: a tabelinha com a linha de total, o número, ou o relógio com o valor. Abre pelo **Ver todos os totais** embaixo da tabela da página Hoje, com o mesmo filtro (*Contando 12 de 17 relógios*, com **Contar todos**), ou pelo menu, com todos. Pela API: `recurso=totais&parte=pagina`. Veja [Os totais](#os-totais). |
 | **Acessórios** (`acessorios.php`) | As pulseiras, caixas, estojos, ferramentas, carregadores, peças e o que mais for: a lista (o nome, o tipo, o relógio de que ele é, ou *solto*, e a observação), com o filtro **Relógio** (todos, os soltos ou os de um relógio; o quadro **Acessórios** do painel abre já filtrada), **Editar** e **Excluir** em cada um, e embaixo o cadastro (**Novo acessório**: nome, tipo, relógio ou *solto (serve a vários)*, os campos do tipo e observação). Cada um mostra os **Dados** (os campos do tipo dele) e onde ele **Serve** (veja [A construção e os acessórios](#a-construção-e-os-acessórios)). Excluir um relógio deixa os acessórios dele soltos. Pela API: `recurso=acessorios` (a lista) e a escrita `acessorios` (`salvar`, `excluir`). |
+| **Winders** (`winders.php`) | Os winders e as posições de cada um: um cartão por winder, com os dados dele e a tabela das posições (o **programa**, o **relógio** que está nela, a **carga**, **quanto cada hora dá** e quando **enche**), **Tirar** e **Pôr** em cada posição, **Editar** a posição, **Nova posição**, **Editar o winder** e **Excluir o winder**; embaixo, o cadastro (**Novo winder**: o nome, quantas posições ele já ganha, os campos do winder e a observação) e o da posição (o nome, a ordem, ligada, o programa). Veja [Os winders](#os-winders). Pela API: `recurso=winders` e as escritas `winders` e `winder_posicoes`. |
 | **Galeria** (`galeria.php`) | A coleção em fotos, por grupo: cada relógio com a foto (o link da ficha), o nome, a marca e a referência, o ano e o valor da compra e os dias de uso; no alto, quantos, o valor somado e quantos têm foto. **Também os de fora da coleção** mostra os desejados, vendidos e arquivados (com a marca da situação). **Imprimir**: no papel, quatro por linha, sem o menu. Pela API: `recurso=galeria`. |
 | **Passaporte** (`passaporte.php`) | A ficha de um relógio para imprimir ou guardar em PDF (o botão **Passaporte** no quadro Documentos do painel): a foto, o nome, a marca e a referência, o grupo e a situação; a **Compra**; o **Uso** (a primeira e a última vez no pulso, as horas no pulso, os dias de uso e o custo por uso); o **Cadastro** preenchido; as **Manutenções** (cada tipo de marcação, quantas vezes e a última; as revisões e trocas de pilha); os **Acessórios**; os **Documentos**; e os **Próximos avisos**. **Imprimir**: no papel saem só os dados. Pela API: `recurso=passaporte`. Com algum serviço, também os **Serviços e diagnósticos** (quem fez, o custo, a estanqueidade e a marcha antes e depois). |
 | **Relatórios** (`relatorios.php`) | A porta única dos relatórios: o menu com todos (por grupo), os campos do escolhido (o relógio, o período, as opções) e **Gerar o relatório**; o relatório na tela, no papel (**Imprimir**) e numa planilha (**Baixar a planilha (CSV)**). Veja [Os relatórios](#os-relatórios). |
@@ -1697,6 +1738,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `servicos` | os serviços e diagnósticos (`relogio=<id>`, com o resumo: a resistência declarada, a estanqueidade comprovada, quantos e o custo somado; sem ele, os de todos), com as peças, o custo, a estanqueidade e a marcha antes e depois |
 | `reserva` | a reserva medida (`relogio=<id>`: os testes da reserva do mecânico, as observações da energia, a medida, que é a mediana dos testes, e a tabela declarado, medido e estimado com a confiança; sem ele, os testes e as observações de todos) |
 | `timegrapher` | as medições do timegrapher (`relogio=<id>`: a última sessão, com a média de cada grandeza e a diferença entre as posições, as medições e o que a importação do CSV entende; sem ele, as de todos) |
+| `winders` | os winders da coleção (a página **Winders**): cada um com os dados, a observação e as posições, e cada posição com o programa, se está ligada e o relógio que está nela agora (a carga, o que cada hora dá, quando enche); os campos do winder e da posição e os relógios que podem ir para um winder |
 | `relatorios` | os relatórios, por uma porta só: sem `tipo`, o catálogo (cada relatório com o grupo, o nome, a descrição e os parâmetros, e os relógios); com `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron`) e os parâmetros dele (`relogio`, `de`, `ate`, `posse`, `situacao`), o relatório pronto (título, subtítulo, resumo, seções em tabela ou em pares, rodapé, já em texto); `csv=1`: a planilha |
 | `documento` | o arquivo de um documento (`id=<id>`): para mostrar (imagem, vídeo, áudio, PDF, texto) ou para baixar (o resto, ou com `baixar=1`); `mini=1` é a miniatura da foto. Atende pedaços (Range), para o vídeo avançar |
 | `usuarios`, `migracoes` | o master: o painel das contas, cada uma com o que tem e o hash da senha (para migrar com a mesma senha: veja [Os usuários e as senhas](#os-usuários-e-as-senhas)); os outros, só a própria conta; as migrações que faltam aplicar |
@@ -1721,10 +1763,11 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `servicos` | `salvar` (a data, o tipo, quem fez, a mão de obra, as peças, a estanqueidade, a marcha antes e depois, a garantia e os documentos; a revisão e a troca de pilha viram também a marcação), `excluir` |
 | `reserva` | `iniciar` (quando ficou cheio e como), `parou`, `observar` (parou, carga baixa, nota; também no solar), `salvar`, `usar` (a mediana vai para o cadastro do relógio), `excluir` |
 | `timegrapher` | `salvar` (uma medição: a posição, a marcha, a amplitude, o erro de batida, as batidas por hora, o ângulo), `importar` (o CSV do aparelho; `conferir=1`: sem gravar), `excluir` |
+| `winders`, `winder_posicoes` | `salvar` (o winder: o nome, os campos, a observação e, ao criar, quantas posições; a posição: o nome, a ordem, ligada, o programa), `excluir` (as sessões que ficaram neles continuam, sem a posição) |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (só sem documentos) |
 | `secoes` | as divisórias da ficha: `salvar` (o nome; `id=0` cria no fim), `ordem` (`direcao=sobe` ou `desce`), `excluir` (os campos dela ficam sem divisória, no fim) |
 | `unidades` | `salvar` (o símbolo, o nome, a base e o fator, o zero e o mostrar também em; o símbolo novo vai junto para quem o usa), `excluir` (só sem uso; leva junto as que se convertem nela) |
-| `lancamento` | `lancar` (corda, carga, pilha...), `iniciar` e `encerrar` (pôr e tirar do pulso, do winder, do sol, do carregador), `alternar` (fecha a sessão se está aberta, abre se está fechada: um botão só no celular), `periodo` (um período que já passou; no pulso do relógio do dia é uso do rodízio, e os trechos do mesmo tipo em que ele encosta, como o Pôr que ficou aberto, viram um só), `alterar`, `excluir`, `medicao` (uma medição do gasto entra ou sai da conta: `id`, `usada` 1 ou 0). Em todas, `relogio_id=hoje` é o relógio do dia |
+| `lancamento` | `lancar` (corda, carga, pilha...), `iniciar` e `encerrar` (pôr e tirar do pulso, do winder, do sol, do carregador; no winder, `posicao_id`: a posição), `alternar` (fecha a sessão se está aberta, abre se está fechada: um botão só no celular), `periodo` (um período que já passou; no pulso do relógio do dia é uso do rodízio, e os trechos do mesmo tipo em que ele encosta, como o Pôr que ficou aberto, viram um só), `alterar`, `excluir`, `medicao` (uma medição do gasto entra ou sai da conta: `id`, `usada` 1 ou 0). Em todas, `relogio_id=hoje` é o relógio do dia |
 | `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `periodo` (os relógios de um período, na ordem: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (apaga os dias do período e o modo monta de novo; só `de`: até o fim do plano; só `ate`: de amanhã até ele), `periodo_livre` (apaga e deixa os dias livres, sem sorteio; as mesmas datas), `manual` (o Rodízio manual: `de`, `ate`, `dias[AAAA-MM-DD]` = o id do relógio, `auto` ou `livre`), `apagar_tudo` (toda a programação de amanhã em diante sai; `hoje=1`: de hoje em diante; o modo monta o plano de novo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (grupos) e `relogios` (o grupo de cada relógio) |
@@ -2388,7 +2431,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | [`banco.php`](banco.php) | o banco: a conexão com o MySQL, o Postgres, o SQLite ou o Firebird, e a tradução do SQL de um para outro |
 | [`operacoes.php`](operacoes.php) | as regras de cada gravação: validações e mensagens |
 | [`cron.php`](cron.php) | o plano, a sessão do dia, as rodadas da manhã e da noite, os eventos, a agenda e a manutenção dos documentos |
-| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | as páginas (só o esqueleto; a `cadastro.php` é a pública) |
+| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `winders.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | as páginas (só o esqueleto; a `cadastro.php` é a pública) |
 | `relojinho.js` | o reloginho da barra e do favicon: 24 tipos de relógio desenhados em canvas, com a hora certa, um por hora (na ordem, sorteado ou sem repetir) |
 | `sw.js`, `offline.html`, `icone-*.png` | o aplicativo no celular: o *service worker* (entregue por `recurso=sw`, com a versão na frente: o cache das telas, a página sem conexão e o Web Push), a página **Sem conexão** e os ícones (192, 512 e 180 px) |
 | `ajuda.php` | a página de ajuda: só o esqueleto; o `ajuda.js` pede o texto à API (`recurso=manual`: as seções do README para quem usa, já em HTML, convertidas no `lib.php`) |

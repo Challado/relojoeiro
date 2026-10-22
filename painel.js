@@ -518,8 +518,15 @@ function abrirNoPainel(id) {
             var tirar = item.aberta !== null;
             var verbo = acaoSessao(item.nome, tirar);
             opcoes.agora += el("option", {"value": chave}, h(verbo));
+            // a sessão num winder (o tipo marcado como winder): ao pôr, a posição livre (ligada e sem relógio) onde ele vai; sem
+            // nenhum winder cadastrado, como antes (a conta usa os campos do relógio)
+            var posicoesW = item.winder && !tirar ? (r.winder_posicoes || []) : [];
             partes += parte("marcar", chave, base + el("input", {"type": "hidden", "name": "acao", "value": tirar ? "encerrar" : "iniciar"})
               + (tirar ? el("p", {"class": "marcar-estado"}, h(item.aberta.texto)) : "")
+              + (posicoesW.length > 0 ? el("label", {}, t("Posição {1}", {1: el("select", {"name": "posicao_id"}, posicoesW.map(function (p) {
+                return el("option", {"value": p.id, "title": p.programa}, h(p.texto));
+              }).join("") + el("option", {"value": "0"}, t("— nenhuma (fora de um winder cadastrado)")))}))
+                + el("small", {}, t("O programa da posição (as rotações por dia, o sentido) entra na conta da carga.")) : "")
               + quando(tirar ? t("Tirou às") : t("Pôs às")) + el("button", {}, h(verbo)));
           } else if (item.marcha === "desvio" && r.precisao) {
             // a leitura do desvio da hora (o Testar a precisão): a hora certa andando na tela; a pessoa põe a hora que o relógio vai

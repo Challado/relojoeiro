@@ -79,7 +79,9 @@ function recarregarCadastros() {
             return el("tr", {}, el("td", {}, h(c.nome) + (c.unidade !== "" ? " (" + h(c.unidade) + ")" : "")) + el("td", {"class": "formula ident"}, h(c.identificador)) + el("td", {}, h(d.tipos_de_campo[c.tipo]) + (c.multiplo === 1 ? t(" · vários valores") : "")
                 + (c.regra ? el("small", {}, h(c.regra)) : ""))
               + el("td", {}, sec ? h(sec.nome) : el("span", {"class": "nota"}, t("nenhuma")))
-              + el("td", {"class": "nota"}, (c.alvo === "acessorio" ? acessorioDoCampo(d, c) : h(caminho(d, c.no_id)) + (c.so_desejado === 1 ? t(" · só nos desejados") : "") + (c.calibre === 1 ? t(" · do movimento") : ""))) + el("td", {}, h(vazio(c.padrao)))
+              + el("td", {"class": "nota vale-para"}, (c.alvo === "acessorio" ? acessorioDoCampo(d, c)
+                : c.alvo === "winder" ? t("os winders (nas fórmulas: WINDER(\"{1}\"))", {1: h(c.identificador)})
+                : c.alvo === "posicao" ? t("as posições dos winders (nas fórmulas: WINDER_POSICAO(\"{1}\"))", {1: h(c.identificador)}) : h(caminho(d, c.no_id)) + (c.so_desejado === 1 ? t(" · só nos desejados") : "") + (c.calibre === 1 ? t(" · do movimento") : ""))) + el("td", {}, h(vazio(c.padrao)))
               + el("td", {"class": "acoes-linha"}, linkEditar(c.id) + " " + botaoLinha("ordem", c.id, "", null, el("button", {"class": "leve discreto", "name": "direcao", "value": "sobe"}, "↑")
                 + el("button", {"class": "leve discreto", "name": "direcao", "value": "desce"}, "↓")) + botaoLinha("excluir", c.id, t("Excluir"), t("Excluir o campo {1} e os valores dele?", {1: c.nome}))));
           }).join(""))))
@@ -89,29 +91,31 @@ function recarregarCadastros() {
           + el("label", {}, t("Identificador {1}", {1: el("input", {"name": "identificador", "value": vazio(f.identificador), "required": true, "pattern": "[a-z][a-z0-9_]{0,39}"})}))
           + el("label", {}, t("Tipo {1}", {1: el("select", {"name": "tipo"}, Object.keys(d.tipos_de_campo).map(function (k) { return el("option", {"value": k, "selected": f.tipo === k}, h(d.tipos_de_campo[k])); }).join(""))}))
           + campoUnidade(d, t("Unidade"), vazio(f.unidade))
-          // de quem é o campo: dos relógios ou dos acessórios (o menu mostra só o que vale para cada um)
+          // de quem é o campo: dos relógios, dos acessórios, dos winders ou das posições dos winders (o menu mostra só o que vale
+          // para cada um)
           + el("label", {}, t("Para {1}", {1: el("select", {"name": "alvo", "onchange": "var v = this.value; this.form.querySelectorAll('[data-alvo]').forEach(function (x) { x.hidden = x.getAttribute('data-alvo') !== v; });"},
-            el("option", {"value": "relogio", "selected": f.alvo !== "acessorio"}, t("os relógios")) + el("option", {"value": "acessorio", "selected": f.alvo === "acessorio"}, t("os acessórios")))}))
+            el("option", {"value": "relogio", "selected": (f.alvo || "relogio") === "relogio"}, t("os relógios")) + el("option", {"value": "acessorio", "selected": f.alvo === "acessorio"}, t("os acessórios"))
+            + el("option", {"value": "winder", "selected": f.alvo === "winder"}, t("os winders")) + el("option", {"value": "posicao", "selected": f.alvo === "posicao"}, t("as posições dos winders")))}))
           + el("label", {"data-alvo": "acessorio", "hidden": f.alvo !== "acessorio"}, t("Tipo de acessório {1}", {1: el("select", {"name": "acessorio_tipo"}, el("option", {"value": ""}, t("— todos")) + d.acessorio_tipos.map(function (x) {
             return el("option", {"value": x.valor, "selected": f.acessorio_tipo === x.valor}, h(x.nome));
           }).join(""))}))
-          + el("label", {"data-alvo": "acessorio", "hidden": f.alvo !== "acessorio"}, t("Serve no relógio quando bate com {1}", {1: el("select", {"name": "serve_campo_id"}, el("option", {"value": "0"}, t("— nenhum")) + d.campos.filter(function (x) { return x.alvo !== "acessorio"; }).map(function (x) {
+          + el("label", {"data-alvo": "acessorio", "hidden": f.alvo !== "acessorio"}, t("Serve no relógio quando bate com {1}", {1: el("select", {"name": "serve_campo_id"}, el("option", {"value": "0"}, t("— nenhum")) + d.campos.filter(function (x) { return (x.alvo || "relogio") === "relogio"; }).map(function (x) {
             return el("option", {"value": x.id, "selected": f.serve_campo_id === x.id}, h(x.nome));
           }).join(""))}) + el("small", {}, t("a largura da pulseira com o entre alças do relógio: a pulseira mostra em quais relógios ela serve")))
-          + el("label", {"data-alvo": "relogio", "hidden": f.alvo === "acessorio"}, t("Divisória {1}", {1: el("select", {"name": "secao_id"}, el("option", {"value": "0"}, t("— nenhuma (no fim da ficha)")) + d.secoes.map(function (x) {
+          + el("label", {"data-alvo": "relogio", "hidden": (f.alvo || "relogio") !== "relogio"}, t("Divisória {1}", {1: el("select", {"name": "secao_id"}, el("option", {"value": "0"}, t("— nenhuma (no fim da ficha)")) + d.secoes.map(function (x) {
             return el("option", {"value": x.id, "selected": f.secao_id === x.id}, h(x.nome));
           }).join(""))}) + el("small", {}, el("a", {"href": "cadastros.php?aba=secoes"}, t("as divisórias"))))
           + el("label", {}, t("Valor padrão {1}", {1: el("input", {"name": "padrao", "value": vazio(f.padrao)})}))
-          + el("label", {"data-alvo": "relogio", "hidden": f.alvo === "acessorio"}, t("Vale para {1}", {1: el("select", {"name": "no_id"}, opcoesNo(d, f.no_id))}))
+          + el("label", {"data-alvo": "relogio", "hidden": (f.alvo || "relogio") !== "relogio"}, t("Vale para {1}", {1: el("select", {"name": "no_id"}, opcoesNo(d, f.no_id))}))
           + el("label", {}, t("Valores possíveis (um por linha; vazio: qualquer um) {1}", {1: el("textarea", {"name": "opcoes"}, h(vazio(f.opcoes)))})
             + el("small", {}, t("Na lista, obrigatórios; no texto e no número, o valor tem de ser um deles. No sim/não e na data, não valem.")))
           + el("label", {}, t("Mínimo {1}", {1: el("input", {"name": "minimo", "inputmode": "decimal", "value": f.minimo === null || f.minimo === undefined ? "" : String(f.minimo).replace(".", ",")})}) + el("small", {}, t("só no número; vazio: sem limite")))
           + el("label", {}, t("Máximo {1}", {1: el("input", {"name": "maximo", "inputmode": "decimal", "value": f.maximo === null || f.maximo === undefined ? "" : String(f.maximo).replace(".", ",")})}) + el("small", {}, t("só no número; vazio: sem limite")))
           + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "multiplo", "value": "0"}) + el("input", {"type": "checkbox", "name": "multiplo", "value": "1", "checked": f.multiplo === 1})
             + t(" vários valores (marca quantos dos valores possíveis quiser: as funções do relógio)"))
-          + el("label", {"class": "check", "data-alvo": "relogio", "hidden": f.alvo === "acessorio"}, el("input", {"type": "hidden", "name": "so_desejado", "value": "0"}) + el("input", {"type": "checkbox", "name": "so_desejado", "value": "1", "checked": f.so_desejado === 1})
+          + el("label", {"class": "check", "data-alvo": "relogio", "hidden": (f.alvo || "relogio") !== "relogio"}, el("input", {"type": "hidden", "name": "so_desejado", "value": "0"}) + el("input", {"type": "checkbox", "name": "so_desejado", "value": "1", "checked": f.so_desejado === 1})
             + t(" só nos desejados (a lista de desejos: o preço-alvo, a prioridade)"))
-          + el("label", {"class": "check", "data-alvo": "relogio", "hidden": f.alvo === "acessorio"}, el("input", {"type": "hidden", "name": "calibre", "value": "0"}) + el("input", {"type": "checkbox", "name": "calibre", "value": "1", "checked": f.calibre === 1})
+          + el("label", {"class": "check", "data-alvo": "relogio", "hidden": (f.alvo || "relogio") !== "relogio"}, el("input", {"type": "hidden", "name": "calibre", "value": "0"}) + el("input", {"type": "checkbox", "name": "calibre", "value": "1", "checked": f.calibre === 1})
             + t(" do movimento (aparece no formulário do calibre: a reserva, a marcha esperada...)"))
           + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + (e ? " " + el("a", {"href": "cadastros.php?aba=campos"}, t("cancelar")) : ""))));
     } else if (aba === "secoes") {
@@ -134,12 +138,12 @@ function recarregarCadastros() {
       d.lancamento_tipos.forEach(function (item) { if (item.id === editar) { e = item; } });
       var f = e || {};
       res += el("section", {"class": "cartao-config"}, el("h2", {}, t("Tipos de lançamento"))
-        + el("p", {"class": "nota"}, t("O que se registra num relógio: instantâneo (corda), com valor (leitura de carga) ou sessão com início e fim (pulso, winder, sol). O identificador é o nome nas funções das fórmulas: HORAS(\"pulso\"; 30). Sessão exclusiva: o relógio fica num lugar só. Mede o gasto: cada leitura desse tipo mede quanto caiu por dia de uso ou guardado (a função MEDIDO das fórmulas). Vale quando: uma fórmula que diz para quais relógios o tipo vale (ex.: corda_manual, só para quem aceita corda); vazia, vale para todos do grupo. Mede a marcha: a leitura do desvio da hora (quanto o relógio está adiantado ou atrasado, em segundos) e o acerto da hora, de onde sai a marcha em segundos por dia (o quadro Precisão e as funções MARCHA e DESVIO_AGORA)."))
+        + el("p", {"class": "nota"}, t("O que se registra num relógio: instantâneo (corda), com valor (leitura de carga) ou sessão com início e fim (pulso, winder, sol). O identificador é o nome nas funções das fórmulas: HORAS(\"pulso\"; 30). Sessão exclusiva: o relógio fica num lugar só. Mede o gasto: cada leitura desse tipo mede quanto caiu por dia de uso ou guardado (a função MEDIDO das fórmulas). Vale quando: uma fórmula que diz para quais relógios o tipo vale (ex.: corda_manual, só para quem aceita corda); vazia, vale para todos do grupo. Mede a marcha: a leitura do desvio da hora (quanto o relógio está adiantado ou atrasado, em segundos) e o acerto da hora, de onde sai a marcha em segundos por dia (o quadro Precisão e as funções MARCHA e DESVIO_AGORA). Winder: a sessão é numa posição de um winder (a página Winders), e o programa da posição entra nas fórmulas por WINDER_POSICAO."))
         + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Tipo")) + el("th", {}, t("Identificador")) + el("th", {}, t("Formato")) + el("th", {}, t("Fecha sozinho às"))
-            + el("th", {}, t("Exclusiva")) + el("th", {}, t("Mede o gasto")) + el("th", {}, t("Mede a marcha")) + el("th", {}, t("Vale quando")) + el("th", {}, t("Vale para")) + el("th", {"class": "num"}, t("Lançamentos")) + el("th", {}, "")))
+            + el("th", {}, t("Exclusiva")) + el("th", {}, t("Mede o gasto")) + el("th", {}, t("Mede a marcha")) + el("th", {}, t("Winder")) + el("th", {}, t("Vale quando")) + el("th", {}, t("Vale para")) + el("th", {"class": "num"}, t("Lançamentos")) + el("th", {}, "")))
           + el("tbody", {}, d.lancamento_tipos.map(function (item) {
             return el("tr", {}, el("td", {}, h(item.nome)) + el("td", {"class": "formula ident"}, h(item.identificador)) + el("td", {}, h(d.formatos_de_lancamento[item.formato]) + (item.unidade !== "" ? " (" + h(item.unidade) + ")" : ""))
-              + el("td", {}, h(String(vazio(item.fecha_as)).substr(0, 5))) + el("td", {}, item.exclusiva === 1 ? t("sim") : "") + el("td", {}, item.mede_gasto === 1 ? t("sim") : "") + el("td", {}, item.marcha ? h(d.marchas_de_lancamento[item.marcha]) : "") + el("td", {"class": "formula"}, h(vazio(item.condicao))) + el("td", {"class": "nota"}, h(caminho(d, item.no_id))) + el("td", {"class": "num"}, String(item.lancamentos))
+              + el("td", {}, h(String(vazio(item.fecha_as)).substr(0, 5))) + el("td", {}, item.exclusiva === 1 ? t("sim") : "") + el("td", {}, item.mede_gasto === 1 ? t("sim") : "") + el("td", {}, item.marcha ? h(d.marchas_de_lancamento[item.marcha]) : "") + el("td", {}, item.winder === 1 ? t("sim") : "") + el("td", {"class": "formula"}, h(vazio(item.condicao))) + el("td", {"class": "nota"}, h(caminho(d, item.no_id))) + el("td", {"class": "num"}, String(item.lancamentos))
               + el("td", {"class": "acoes-linha"}, linkEditar(item.id) + " " + botaoLinha("excluir", item.id, t("Excluir"), t("Excluir o tipo {1}?", {1: item.nome}))));
           }).join(""))))
         + el("h3", {"id": "form"}, e ? t("Alterar {1}", {1: h(e.nome)}) : t("Novo tipo de lançamento"))
@@ -155,6 +159,8 @@ function recarregarCadastros() {
             + t(" sessão exclusiva (o relógio num lugar só)"))
           + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "mede_gasto", "value": "0"}) + el("input", {"type": "checkbox", "name": "mede_gasto", "value": "1", "checked": f.mede_gasto === 1})
             + t(" mede o gasto (com valor: cada leitura mede o gasto em uso ou guardado, comparando com a anterior)"))
+          + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "winder", "value": "0"}) + el("input", {"type": "checkbox", "name": "winder", "value": "1", "checked": f.winder === 1})
+            + t(" numa posição de winder (sessão: o Pôr escolhe a posição, e o programa dela entra na conta: WINDER_POSICAO)"))
           + el("label", {}, t("Mede a marcha {1}", {1: el("select", {"name": "marcha"}, el("option", {"value": ""}, t("não")) + Object.keys(d.marchas_de_lancamento).map(function (k) {
             return el("option", {"value": k, "selected": f.marcha === k}, h(d.marchas_de_lancamento[k]));
           }).join(""))}))

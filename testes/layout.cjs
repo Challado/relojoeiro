@@ -288,7 +288,7 @@ async function espelho(b, relatorio, total) {
 }
 
 // Os dados de estresse: o cenário tem nomes e números curtos, e o que quebra no uso de verdade é o comprido. Antes de conferir,
-// pela própria API, o banco do cenário fica "feio" de propósito: nomes longos de relógio e de grupo, uma observação comprida e
+// pela própria API, o banco do cenário fica "feio" de propósito: nomes longos de relógio, de grupo e do winder, observações compridas e
 // fotos (a cabeça do painel muda com elas). Só no banco do cenário (ele é apagado e recriado a cada rodada); ESTRESSE=0 deixa
 // os dados como estão.
 async function estressar() {
@@ -314,6 +314,12 @@ async function estressar() {
   resultados.push(await api({ recurso: 'relogio', acao: 'salvar', id: 10, 'valores[marca]': 'Casio G-Shock Master of G Edição Limitada',
     'valores[referencia]': 'GW-M5610U-1ER-ANIVERSARIO-40-ANOS', 'valores[link]': 'https://www.exemplo-de-loja-com-endereco-comprido.com.br/relogios/casio/g-shock/gw-m5610u-1er?origem=lista',
     'valores[preco_alvo]': '1234567,89' }));
+  // o winder do cenário (2): nome, marca, modelo e observação compridos, e o programa da Pos. 2 (5) com todos os campos
+  resultados.push(await api({ recurso: 'winders', acao: 'salvar', id: 2, nome: 'Winder de quatro posições do quarto de hóspedes, em cima da cômoda',
+    observacao: 'Comprado junto com a caixa de viagem; a Pos. 3 faz barulho quando gira no sentido anti-horário, então fica só no horário.',
+    'valores[winder_marca]': 'Wolf Designs London', 'valores[winder_modelo]': 'Viceroy Module 2.7 Quad Watch Winder Macassar' }));
+  resultados.push(await api({ recurso: 'winder_posicoes', acao: 'salvar', id: 5, nome: 'Posição de baixo à direita',
+    'valores[pos_tpd]': '1950', 'valores[pos_anti_horario]': '0', 'valores[pos_gira_min]': '12.5', 'valores[pos_descansa_min]': '47.5' }));
   for (const id of [1, 3, 4, 5, 10]) {
     resultados.push(await api({ recurso: 'relogio', acao: 'foto', id, foto_base64: png }));
   }

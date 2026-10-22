@@ -44,9 +44,14 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     $tipos = [];
     foreach (lancamento_tipos_do_relogio($r) as $ident => $t) {
         if (substr($ident, -7) !== "_antigo") {
+            // o tipo marcado como winder pede a posição ao abrir; aberta numa posição, o texto diz qual
+            $pos_a = isset($abertas[$ident]) && ($abertas[$ident]["posicao_id"] ?? null) !== null ? winder_posicao_nome((int)$abertas[$ident]["posicao_id"]) : null;
             $tipos[] = ["identificador" => $ident, "nome" => $t["nome"], "formato" => $t["formato"], "unidade" => $t["unidade"], "mede_gasto" => (int)$t["mede_gasto"] === 1, "marcha" => $t["marcha"] ?? null,
+                "winder" => (int)($t["winder"] ?? 0) === 1,
                 "aberta" => isset($abertas[$ident]) ? ["inicio" => date("Y-m-d H:i:s", $abertas[$ident]["inicio"]), "rodizio" => $abertas[$ident]["origem"] === "rodizio",
-                    "texto" => t("{1}desde {2} ({3} h {4} min)", [1 => $abertas[$ident]["origem"] === "rodizio" ? t("no rodízio ") : "", 2 => date("H:i", $abertas[$ident]["inicio"]), 3 => intdiv((int)floor(($agora - $abertas[$ident]["inicio"]) / 60), 60), 4 => (int)floor(($agora - $abertas[$ident]["inicio"]) / 60) % 60])] : null];
+                    "posicao_id" => $abertas[$ident]["posicao_id"] ?? null, "posicao" => $pos_a,
+                    "texto" => t("{1}desde {2} ({3} h {4} min)", [1 => $abertas[$ident]["origem"] === "rodizio" ? t("no rodízio ") : "", 2 => date("H:i", $abertas[$ident]["inicio"]), 3 => intdiv((int)floor(($agora - $abertas[$ident]["inicio"]) / 60), 60), 4 => (int)floor(($agora - $abertas[$ident]["inicio"]) / 60) % 60])
+                        . ($pos_a !== null ? " · " . $pos_a : "")] : null];
         }
     }
     // as leituras com a marcação delas (uso ou repouso: a gravada, ou a do pulso registrado naquele instante)
@@ -64,6 +69,8 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     $saida["relogio"] = ["id" => $id, "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? 0 : (int)$r["no_id"], "disponivel" => (int)$r["disponivel"] === 1,
         "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]), "da_colecao" => da_colecao($r),
         "acessorios" => acessorios_lista($id),
+        // as posições de winder livres agora (o Pôr no winder do Marcar escolhe uma), só quando ele tem um tipo marcado como winder
+        "winder_posicoes" => count(array_filter($tipos, function ($x) { return $x["winder"]; })) > 0 ? winder_posicoes_livres($agora) : [],
         // os acessórios de outros relógios (ou soltos) que servem neste (a pulseira com a largura do entre alças dele)
         "acessorios_servem" => acessorios_que_servem($id),
         // os serviços e diagnósticos (o quadro Serviços e diagnósticos): a lista, o resumo, os tipos e os documentos dele que um

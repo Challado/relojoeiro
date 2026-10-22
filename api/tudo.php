@@ -15,7 +15,7 @@ foreach (nos_em_ordem() as $o) {
         "caminho" => no_caminho($o[0]), "profundidade" => $o[1]];
 }
 $campos = [];
-foreach (array_merge(campos_todos(), campos_de_acessorio()) as $c) {
+foreach (array_merge(campos_todos(), campos_de_acessorio(), campos_de_winder(), campos_de_posicao()) as $c) {
     $campos[] = ["id" => (int)$c["id"], "identificador" => $c["identificador"], "nome" => $c["nome"], "tipo" => $c["tipo"], "unidade" => $c["unidade"],
         "opcoes" => $c["opcoes"], "padrao" => $c["padrao"], "no_id" => $c["no_id"] === null ? null : (int)$c["no_id"], "lugar" => no_caminho($c["no_id"]), "ordem" => (int)$c["ordem"],
         "secao_id" => ($c["secao_id"] ?? null) === null ? null : (int)$c["secao_id"], "minimo" => numero_do_campo($c["minimo"] ?? null) === null ? null : (float)$c["minimo"],
@@ -25,7 +25,7 @@ foreach (array_merge(campos_todos(), campos_de_acessorio()) as $c) {
 $tipos_l = [];
 foreach (lancamento_tipos() as $t) {
     $tipos_l[] = ["id" => (int)$t["id"], "identificador" => $t["identificador"], "nome" => $t["nome"], "formato" => $t["formato"], "unidade" => $t["unidade"],
-        "fecha_as" => $t["fecha_as"] === null ? null : substr($t["fecha_as"], 0, 5), "exclusiva" => (int)$t["exclusiva"] === 1, "mede_gasto" => (int)$t["mede_gasto"] === 1, "marcha" => $t["marcha"] ?? null, "condicao" => $t["condicao"],
+        "fecha_as" => $t["fecha_as"] === null ? null : substr($t["fecha_as"], 0, 5), "exclusiva" => (int)$t["exclusiva"] === 1, "mede_gasto" => (int)$t["mede_gasto"] === 1, "marcha" => $t["marcha"] ?? null, "winder" => (int)($t["winder"] ?? 0) === 1, "condicao" => $t["condicao"],
         "no_id" => $t["no_id"] === null ? null : (int)$t["no_id"], "lugar" => no_caminho($t["no_id"]), "ordem" => (int)$t["ordem"]];
 }
 $formulas = [];
@@ -102,7 +102,7 @@ foreach (avisos_todos() as $versoes) {
     }
 }
 $saida = ["arvore" => $arvore, "unidades" => array_values(unidades_todas()), "secoes" => array_values(secoes_todas()), "campos" => $campos, "lancamento_tipos" => $tipos_l, "formulas" => $formulas, "avisos" => $avisos, "calibres" => calibres_todos(), "relogios" => $relogios,
-    "documento_categorias" => documento_categorias_lista(), "modos" => $modos, "plano" => plano_legivel("", ""), "plano_livre" => dias_livres("", ""), "acessorios" => acessorios_lista(), "servicos" => servicos_lista(), "reserva" => reserva_lista(), "timegrapher" => timegrapher_lista(), "config" => (object)$config,
+    "documento_categorias" => documento_categorias_lista(), "modos" => $modos, "plano" => plano_legivel("", ""), "plano_livre" => dias_livres("", ""), "acessorios" => acessorios_lista(), "winders" => winders_lista(), "servicos" => servicos_lista(), "reserva" => reserva_lista(), "timegrapher" => timegrapher_lista(), "config" => (object)$config,
     "eventos" => array_map("evento_legivel", eventos_com_dias(linhas("SELECT * FROM evento_personalizado ORDER BY nome"))),
     "destinos" => array_values(array_map("destino_legivel", destinos())),
     "agendas" => array_values(array_map(function ($ag) {

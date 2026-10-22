@@ -416,6 +416,9 @@ p.conta-carga {
    painel ("em uso (fora do plano)"), a etiqueta comprida ("Em repouso desde 25/09 20:40") quebra a linha
    nos espaços e continua dentro do quadro */
 dd .estado, .marcas .estado, table.historico-curto .estado { white-space: normal; border-radius: .8rem; }
+/* o estado numa posição de winder leva o nome do winder e da posição ("No winder · Escritório, Pos. 2 desde 07:40"): na
+   tabela dos relógios e no Marcar ele também quebra a linha nos espaços, em vez de vazar da coluna */
+#tabela-relogios .estado.estado-sessao, .marcar-estado .estado { white-space: normal; border-radius: .8rem; }
 .estado-uso { background: #e3f3e6; color: #1e6b2e; border-color: #a9d8b3; }
 .estado-repouso { background: #fbe8e6; color: #9b2c22; border-color: #efb5ae; }
 /* numa sessão que não é o pulso (no sol, no winder, no carregador): a cor das outras sessões no histórico */
@@ -1392,6 +1395,9 @@ td.acoes-linha { width: 1%; }
 .acoes-ev { margin-left: .4rem; }
 .acoes-ev button.discreto { padding: 0 .6rem; font-size: .82rem; background: #fff; border: 1px solid #efb5ae; }
 td.ident { white-space: nowrap; }
+/* o Vale para do campo de winder ou de posição traz o jeito de usar nas fórmulas (WINDER_POSICAO("pos_tpd")), sem espaço:
+   no celular ele quebra onde precisar */
+td.vale-para { overflow-wrap: anywhere; }
 
 /* ---------- formulários em grade (Novo campo, Novo tipo...): cada campo com o título em cima, todos da mesma largura e
    alinhados pelo alto; o texto longo e os botões na linha inteira ---------- */
@@ -1700,6 +1706,18 @@ svg.mostrador .visor-hora { font: 700 16px/1 ui-monospace, Menlo, Consolas, mono
 
 /* ---------- Acessórios ---------- */
 .pagina-acessorios #form { margin-top: 1.2rem; }
+/* os winders: um cartão por winder, os dados dele numa linha e a tabela das posições (no celular, um cartão por posição); a
+   posição desligada apagada; o Pôr (o menu do relógio e o botão) numa linha só, que quebra onde não cabe */
+.pagina-winders section.winder { margin-bottom: 1rem; }
+.pagina-winders .dados-winder { margin: 0 0 .6rem; font-size: .9rem; }
+.pagina-winders table.posicoes-winder td small { display: block; color: var(--cinza); font-size: .8rem; }
+.pagina-winders table.posicoes-winder td.programa { font-size: .84rem; min-width: 12rem; }
+.pagina-winders table.posicoes-winder td:nth-child(3) { min-width: 8rem; }
+.pagina-winders table.posicoes-winder tr.desligada td { color: var(--cinza); }
+.pagina-winders form.por-no-winder { display: inline-flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.pagina-winders form.por-no-winder select { max-width: 14rem; }
+.pagina-winders section.winder > .botoes { margin-top: .7rem; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.pagina-winders #form-posicao, .pagina-winders #form { margin-top: 1.2rem; }
 
 /* ---------- páginas para imprimir: o Passaporte do relógio e a Galeria ---------- */
 .pagina-impressa { max-width: 60rem; }

@@ -1,5 +1,5 @@
 {
-    "sobre": "O conjunto inicial de cada coleção nova (a instalação, o cadastro aberto, o Restaurar dos critérios). Sem códigos: cada grupo tem um apelido, cada unidade é citada pelo símbolo (a base dela e a unidade em que ela também aparece), cada campo cita a divisória (a seção) pelo nome e pode trazer as regras do valor (os valores possíveis, minimo, maximo, multiplo); o campo de acessório (alvo acessorio) diz o tipo do acessório e o campo do relógio com que ele bate (serve, pelo identificador), e os outros itens citam o grupo pelo apelido (\"raiz\" é a árvore inteira); o aviso cita o tipo que o resolve pelo identificador. Os nomes e os textos estão em português e saem no idioma de quem cria a coleção (a parte \"cadastro\" de textos/<idioma>.php).",
+    "sobre": "O conjunto inicial de cada coleção nova (a instalação, o cadastro aberto, o Restaurar dos critérios). Sem códigos: cada grupo tem um apelido, cada unidade é citada pelo símbolo (a base dela e a unidade em que ela também aparece), cada campo cita a divisória (a seção) pelo nome e pode trazer as regras do valor (os valores possíveis, minimo, maximo, multiplo); o campo de acessório (alvo acessorio) diz o tipo do acessório e o campo do relógio com que ele bate (serve, pelo identificador), o do winder e o da posição do winder (alvo winder e posicao) não têm grupo nem divisória, o tipo de lançamento marcado com winder pede a posição, e os outros itens citam o grupo pelo apelido (\"raiz\" é a árvore inteira); o aviso cita o tipo que o resolve pelo identificador. Os nomes e os textos estão em português e saem no idioma de quem cria a coleção (a parte \"cadastro\" de textos/<idioma>.php).",
     "grupos": [
         {
             "apelido": "smartwatch",
@@ -306,6 +306,14 @@
             "fator": null,
             "zero": 0,
             "mostrar_em": null
+        },
+        {
+            "simbolo": "TPD",
+            "nome": "rotação por dia",
+            "base": null,
+            "fator": null,
+            "zero": 0,
+            "mostrar_em": null
         }
     ],
     "secoes": [
@@ -576,6 +584,43 @@
             "grupo": "automatico",
             "secao": "Energia",
             "ordem": 35,
+            "so_desejado": 0,
+            "calibre": 1
+        },
+        {
+            "identificador": "winder_tpd",
+            "nome": "No winder: rotações por dia que ele pede",
+            "tipo": "inteiro",
+            "unidade": "TPD",
+            "padrao": "650",
+            "grupo": "automatico",
+            "secao": "Energia",
+            "ordem": 36,
+            "so_desejado": 0,
+            "calibre": 1,
+            "minimo": 1
+        },
+        {
+            "identificador": "corda_horario",
+            "nome": "Dá corda girando no sentido horário",
+            "tipo": "sim_nao",
+            "unidade": "",
+            "padrao": "1",
+            "grupo": "automatico",
+            "secao": "Energia",
+            "ordem": 37,
+            "so_desejado": 0,
+            "calibre": 1
+        },
+        {
+            "identificador": "corda_anti_horario",
+            "nome": "Dá corda girando no sentido anti-horário",
+            "tipo": "sim_nao",
+            "unidade": "",
+            "padrao": "1",
+            "grupo": "automatico",
+            "secao": "Energia",
+            "ordem": 38,
             "so_desejado": 0,
             "calibre": 1
         },
@@ -1094,6 +1139,100 @@
             "calibre": 0,
             "alvo": "acessorio",
             "acessorio_tipo": "pulseira"
+        },
+        {
+            "identificador": "winder_marca",
+            "nome": "Marca",
+            "tipo": "texto",
+            "unidade": "",
+            "padrao": null,
+            "grupo": "raiz",
+            "secao": null,
+            "ordem": 70,
+            "so_desejado": 0,
+            "calibre": 0,
+            "alvo": "winder"
+        },
+        {
+            "identificador": "winder_modelo",
+            "nome": "Modelo",
+            "tipo": "texto",
+            "unidade": "",
+            "padrao": null,
+            "grupo": "raiz",
+            "secao": null,
+            "ordem": 71,
+            "so_desejado": 0,
+            "calibre": 0,
+            "alvo": "winder"
+        },
+        {
+            "identificador": "pos_tpd",
+            "nome": "Rotações por dia",
+            "tipo": "inteiro",
+            "unidade": "TPD",
+            "padrao": "650",
+            "grupo": "raiz",
+            "secao": null,
+            "ordem": 80,
+            "so_desejado": 0,
+            "calibre": 0,
+            "alvo": "posicao",
+            "minimo": 0
+        },
+        {
+            "identificador": "pos_horario",
+            "nome": "Gira no sentido horário",
+            "tipo": "sim_nao",
+            "unidade": "",
+            "padrao": "1",
+            "grupo": "raiz",
+            "secao": null,
+            "ordem": 81,
+            "so_desejado": 0,
+            "calibre": 0,
+            "alvo": "posicao"
+        },
+        {
+            "identificador": "pos_anti_horario",
+            "nome": "Gira no sentido anti-horário",
+            "tipo": "sim_nao",
+            "unidade": "",
+            "padrao": "1",
+            "grupo": "raiz",
+            "secao": null,
+            "ordem": 82,
+            "so_desejado": 0,
+            "calibre": 0,
+            "alvo": "posicao"
+        },
+        {
+            "identificador": "pos_gira_min",
+            "nome": "Ciclo: gira por",
+            "tipo": "decimal",
+            "unidade": "min",
+            "padrao": null,
+            "grupo": "raiz",
+            "secao": null,
+            "ordem": 83,
+            "so_desejado": 0,
+            "calibre": 0,
+            "alvo": "posicao",
+            "minimo": 0
+        },
+        {
+            "identificador": "pos_descansa_min",
+            "nome": "Ciclo: descansa por",
+            "tipo": "decimal",
+            "unidade": "min",
+            "padrao": null,
+            "grupo": "raiz",
+            "secao": null,
+            "ordem": 84,
+            "so_desejado": 0,
+            "calibre": 0,
+            "alvo": "posicao",
+            "minimo": 0
         }
     ],
     "tipos": [
@@ -1108,7 +1247,8 @@
             "exclusiva": 1,
             "mede_gasto": 0,
             "condicao": null,
-            "marcha": null
+            "marcha": null,
+            "winder": 0
         },
         {
             "identificador": "carga",
@@ -1121,7 +1261,8 @@
             "exclusiva": 0,
             "mede_gasto": 1,
             "condicao": null,
-            "marcha": null
+            "marcha": null,
+            "winder": 0
         },
         {
             "identificador": "corda",
@@ -1134,7 +1275,8 @@
             "exclusiva": 0,
             "mede_gasto": 0,
             "condicao": "corda_manual",
-            "marcha": null
+            "marcha": null,
+            "winder": 0
         },
         {
             "identificador": "winder",
@@ -1147,7 +1289,8 @@
             "exclusiva": 1,
             "mede_gasto": 0,
             "condicao": null,
-            "marcha": null
+            "marcha": null,
+            "winder": 1
         },
         {
             "identificador": "sol",
@@ -1160,7 +1303,8 @@
             "exclusiva": 1,
             "mede_gasto": 0,
             "condicao": null,
-            "marcha": null
+            "marcha": null,
+            "winder": 0
         },
         {
             "identificador": "pilha",
@@ -1173,7 +1317,8 @@
             "exclusiva": 0,
             "mede_gasto": 0,
             "condicao": null,
-            "marcha": null
+            "marcha": null,
+            "winder": 0
         },
         {
             "identificador": "revisao",
@@ -1186,7 +1331,8 @@
             "exclusiva": 0,
             "mede_gasto": 0,
             "condicao": null,
-            "marcha": null
+            "marcha": null,
+            "winder": 0
         },
         {
             "identificador": "desvio",
@@ -1199,7 +1345,8 @@
             "exclusiva": 0,
             "mede_gasto": 0,
             "marcha": "desvio",
-            "condicao": null
+            "condicao": null,
+            "winder": 0
         },
         {
             "identificador": "acerto",
@@ -1212,7 +1359,8 @@
             "exclusiva": 0,
             "mede_gasto": 0,
             "marcha": "acerto",
-            "condicao": null
+            "condicao": null,
+            "winder": 0
         },
         {
             "identificador": "pulso_antigo",
@@ -1225,7 +1373,8 @@
             "exclusiva": 0,
             "mede_gasto": 0,
             "condicao": null,
-            "marcha": null
+            "marcha": null,
+            "winder": 0
         },
         {
             "identificador": "winder_antigo",
@@ -1238,7 +1387,8 @@
             "exclusiva": 0,
             "mede_gasto": 0,
             "condicao": null,
-            "marcha": null
+            "marcha": null,
+            "winder": 0
         },
         {
             "identificador": "sol_antigo",
@@ -1251,7 +1401,8 @@
             "exclusiva": 0,
             "mede_gasto": 0,
             "condicao": null,
-            "marcha": null
+            "marcha": null,
+            "winder": 0
         },
         {
             "identificador": "carregador",
@@ -1264,7 +1415,8 @@
             "exclusiva": 1,
             "mede_gasto": 0,
             "condicao": null,
-            "marcha": null
+            "marcha": null,
+            "winder": 0
         }
     ],
     "formulas": [
@@ -1311,9 +1463,23 @@
             "grupo": "smartwatch"
         },
         {
+            "identificador": "winder_ganho",
+            "nome": "No winder: horas de reserva que cada hora dá",
+            "expressao": "SE(VAZIO(WINDER_POSICAO(\"pos_tpd\")); 1; SE(OU(E(WINDER_POSICAO(\"pos_horario\"); corda_horario); E(WINDER_POSICAO(\"pos_anti_horario\"); corda_anti_horario)); MIN(1; WINDER_POSICAO(\"pos_tpd\") / winder_tpd); 0)) * PADRAO(carga_winder_reserva; carga_pulso_reserva) / PADRAO(carga_winder_horas; carga_pulso_horas)",
+            "unidade": "",
+            "grupo": "automatico"
+        },
+        {
+            "identificador": "winder_falta",
+            "nome": "No winder: horas até encher",
+            "expressao": "SE(winder_ganho > 0; MAX(0; (reserva_horas - reserva_restante) / winder_ganho); NADA())",
+            "unidade": "h",
+            "grupo": "automatico"
+        },
+        {
             "identificador": "reserva_restante",
             "nome": "Reserva de marcha que sobra",
-            "expressao": "ACUMULA(0; reserva_horas; 1; \"pulso\"; carga_pulso_reserva / carga_pulso_horas; \"winder\"; PADRAO(carga_winder_reserva; carga_pulso_reserva) / PADRAO(carga_winder_horas; carga_pulso_horas); \"corda\"; reserva_horas; \"winder_antigo\"; reserva_horas; \"pulso_antigo\"; reserva_horas)",
+            "expressao": "ACUMULA(0; reserva_horas; 1; \"pulso\"; carga_pulso_reserva / carga_pulso_horas; \"winder\"; winder_ganho; \"corda\"; reserva_horas; \"winder_antigo\"; reserva_horas; \"pulso_antigo\"; reserva_horas)",
             "unidade": "h",
             "grupo": "mecanico"
         },
