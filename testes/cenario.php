@@ -1124,8 +1124,12 @@ escrever(["recurso" => "config", "acao" => "salvar", "fuso" => "", "hora_relogio
 // é o da coleção em qualquer fuso. E o fuso de um destino: as horas no texto das mensagens dele
 escrever(["recurso" => "conta", "acao" => "alterar", "fuso" => "navegador"]);
 ler("conta no fuso do navegador, sem o cookie", ["recurso" => "conta"]);
-ler("hora certa com fuso_pedido", ["recurso" => "hora_certa", "fuso_pedido" => "Asia/Tokyo"]);
-ler("hoje com fuso_pedido (o dia é o da coleção)", ["recurso" => "hoje", "fuso_pedido" => "Asia/Tokyo"]);
+// o fuso do pedido longe da meia-noite dele no minuto em que o roteiro começou: Tóquio, ou Los Angeles quando é noite
+// em Tóquio (às 15:00 UTC, um banco lia quinta 23:59 e o outro, minutos depois, sexta)
+$hora_toquio = (int)(new DateTime("@" . $MINUTO))->setTimezone(new DateTimeZone("Asia/Tokyo"))->format("G");
+$fuso_pedido = $hora_toquio >= 3 && $hora_toquio <= 20 ? "Asia/Tokyo" : "America/Los_Angeles";
+ler("hora certa com fuso_pedido", ["recurso" => "hora_certa", "fuso_pedido" => $fuso_pedido]);
+ler("hoje com fuso_pedido (o dia é o da coleção)", ["recurso" => "hoje", "fuso_pedido" => $fuso_pedido]);
 escrever(["recurso" => "conta", "acao" => "alterar", "fuso" => ""]);
 escrever(["recurso" => "destinos", "acao" => "salvar", "id" => $dest_email, "tipo" => "email", "fuso" => "Marte/Olympus"], false);
 escrever(["recurso" => "destinos", "acao" => "salvar", "id" => $dest_email, "tipo" => "email", "fuso" => "Europe/Lisbon"]);
