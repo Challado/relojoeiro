@@ -676,6 +676,9 @@ nav.paginas span.atual { background: var(--safira); color: #fff; border-color: v
    coluna é um container (coluna-hoje), e o quadro passa para duas colunas e depois para a foto pequena conforme ela */
 .col-hoje { container: coluna-hoje / inline-size; }
 .hoje form.sem-relogio { margin: .6rem 0 0; }
+/* o Sem relógio hoje é um botão de verdade (borda e fundo), não um texto solto embaixo do relógio do dia */
+.hoje form.sem-relogio button { border: 1px solid var(--aco-escuro); background: #fff; color: var(--tinta); font-size: .85rem; padding: .3rem .8rem; }
+.hoje form.sem-relogio button:hover { border-color: var(--safira); color: var(--safira); }
 .hoje .trocar-dia { margin-top: .4rem; }
 .hoje h1, .hoje .data { overflow-wrap: anywhere; hyphens: auto; }
 @container coluna-hoje (max-width: 62rem) {
