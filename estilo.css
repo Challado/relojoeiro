@@ -1715,11 +1715,16 @@ svg.mostrador .visor-hora { font: 700 16px/1 ui-monospace, Menlo, Consolas, mono
 .pagina-winders dl.dados-winder { margin: 0 0 .8rem; max-width: 40rem; }
 .pagina-winders table.posicoes-winder td small { display: block; color: var(--cinza); font-size: .8rem; }
 .pagina-winders table.posicoes-winder th { white-space: normal; font-size: .72rem; vertical-align: bottom; }
-.pagina-winders table.posicoes-winder td { padding: .35rem .3rem; }
-.pagina-winders table.posicoes-winder td select { width: auto; min-width: 0; max-width: min(11rem, 100%); padding-right: 1.6rem; }
-.pagina-winders table.posicoes-winder input.curto { width: 4.2rem; min-width: 0; }
+.pagina-winders table.posicoes-winder td { padding: .35rem .25rem; }
+/* o máximo em rem, sem %: com % a tabela mede a coluna pela opção mais comprida do menu e empurra as outras para a rolagem */
+.pagina-winders table.posicoes-winder td select { width: auto; min-width: 0; max-width: 9rem; font-size: .8rem; padding: .35rem 1.3rem .35rem .4rem; background-position: right .3rem center; }
+@media (max-width: 900px) { .pagina-winders table.posicoes-winder td select { max-width: 100%; } }
+.pagina-winders table.posicoes-winder input.curto { width: 3.6rem; min-width: 0; font-size: .8rem; padding: .35rem .4rem; }
 .pagina-winders table.posicoes-winder tr.desligada td { color: var(--cinza); }
 .pagina-winders table.posicoes-winder td form { display: none; }
+/* Carga, Cada hora dá e Enche: no meio da coluna (os "—" de duas colunas vazias não se encostam) */
+@media (min-width: 901px) { .pagina-winders table.posicoes-winder td:nth-last-child(-n+3) { text-align: center; } }
+.pagina-winders table.posicoes-winder td button { display: block; margin-top: .35rem; font-size: .8rem; padding: .2rem .7rem; }
 /* o desenho do winder: a caixa escura com um berço redondo por posição; o anel em volta da foto é a carga (verde até a
    porcentagem, parado); na posição ligada, um tracinho claro roda em volta dele (o fundo gira, não a foto: nada muda de
    tamanho; parado para quem pediu menos movimento) */

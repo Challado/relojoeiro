@@ -64,17 +64,19 @@ function entradaLinha(c, p, formId) {
   var v = valorGravado(p.dados, c.identificador);
   var nome = "valores[" + c.identificador + "]";
   var rotulo = c.nome + (c.unidade !== "" ? " (" + c.unidade + ")" : "");
+  // o padrão sem a unidade, que já está no cabeçalho da coluna (no sim/não, o "sim" ou "não" do padrao_texto)
+  var padrao = c.padrao_texto === null ? null : (c.tipo === "sim_nao" || c.padrao === null ? c.padrao_texto : String(c.padrao).replace(".", ","));
   if (c.multiplo) {
     var x = (p.dados || []).filter(function (y) { return y.identificador === c.identificador; })[0];
     return x ? h(x.texto) : "—";
   }
   if (c.tipo === "sim_nao" || c.tipo === "lista" || c.opcoes.length > 0) {
     var ops = c.tipo === "sim_nao" ? [["1", t("sim")], ["0", t("não")]] : c.opcoes.map(function (o) { return [o, o]; });
-    return el("select", {"name": nome, "form": formId, "aria-label": rotulo}, el("option", {"value": ""}, c.padrao_texto !== null ? h(t("padrão: {1}", {1: c.padrao_texto})) : "—")
+    return el("select", {"name": nome, "form": formId, "aria-label": rotulo}, el("option", {"value": ""}, padrao !== null ? h(t("padrão: {1}", {1: padrao})) : "—")
       + ops.map(function (o) { return el("option", {"value": o[0], "selected": v !== null && String(v) === o[0]}, h(o[1])); }).join(""));
   }
   return el("input", {"name": nome, "form": formId, "aria-label": rotulo, "class": "curto", "value": v === null ? "" : (c.tipo === "texto" ? v : String(v).replace(".", ",")),
-    "inputmode": c.tipo === "texto" ? null : "decimal", "placeholder": c.padrao_texto !== null ? c.padrao_texto : null});
+    "inputmode": c.tipo === "texto" ? null : "decimal", "placeholder": padrao});
 }
 
 // o relógio da posição: "— nenhum —" tira quem está nela; escolher outro põe (e, se ele está noutra posição ou no winder
@@ -132,13 +134,13 @@ api({recurso: "winders"}).then(function (d) {
       return el("tr", {"class": p.ligada ? "" : "desligada"}, el("td", {}, el("form", {"id": fid, "data-recurso": "winder_posicoes", "data-fica": w.id},
           el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": p.id}))
           + el("strong", {}, h(p.nome)) + (p.ligada ? "" : el("small", {}, t("desligada")))
-          + el("small", {}, el("a", {"href": "winders.php?posicao=" + p.id + "#form-posicao", "title": t("O nome, a ordem e se a posição está ligada")}, t("Editar"))))
+          + el("small", {}, el("a", {"href": "winders.php?posicao=" + p.id + "#form-posicao", "title": t("O nome, a ordem e se a posição está ligada")}, t("Editar")))
+          + el("button", {"form": fid, "class": "leve"}, t("Salvar")))
         + d.campos_posicao.map(function (c) { return el("td", {}, entradaLinha(c, p, fid)); }).join("")
         + el("td", {}, p.ligada ? escolhaRelogio(p, d.relogios, fid) + (rel !== null ? el("small", {}, h(rel.desde_texto)) : "") : el("span", {"class": "nota"}, "—"))
         + el("td", {"class": "num"}, rel !== null && rel.carga !== null ? "~" + rel.carga + "%" : "—")
         + el("td", {}, rel !== null && rel.ganho_texto !== null ? h(rel.ganho_texto) : "—")
-        + el("td", {}, rel !== null && rel.cheio_texto !== null ? h(rel.cheio_texto) : "—")
-        + el("td", {"class": "acoes-linha"}, el("button", {"form": fid, "class": "leve"}, t("Salvar"))));
+        + el("td", {}, rel !== null && rel.cheio_texto !== null ? h(rel.cheio_texto) : "—"));
     }).join("");
     res += el("section", {"class": "cartao-config winder", "id": "w-" + w.id}, el("h2", {}, h(w.nome))
       + (w.posicoes.length > 0 ? desenhoWinder(w) : "")
@@ -146,7 +148,7 @@ api({recurso: "winders"}).then(function (d) {
       + (w.posicoes.length > 0
         ? el("div", {"class": "rolagem"}, el("table", {"class": "relogios compacta posicoes-winder"}, el("thead", {}, el("tr", {}, el("th", {}, t("Posição"))
           + d.campos_posicao.map(function (c) { return el("th", {}, h(c.nome) + (c.unidade !== "" ? " (" + h(c.unidade) + ")" : "")); }).join("")
-          + el("th", {}, t("Relógio")) + el("th", {}, t("Carga")) + el("th", {}, t("Cada hora dá")) + el("th", {}, t("Enche")) + el("th", {}, ""))) + el("tbody", {}, linhas)))
+          + el("th", {}, t("Relógio")) + el("th", {}, t("Carga")) + el("th", {}, t("Cada hora dá")) + el("th", {}, t("Enche")))) + el("tbody", {}, linhas)))
         : el("p", {"class": "nota"}, t("Nenhuma posição. Crie a primeira abaixo.")))
       + el("div", {"class": "botoes"}, el("a", {"class": "botao leve", "href": "winders.php?nova_posicao=" + w.id + "#form-posicao"}, t("Nova posição"))
         + " " + el("a", {"class": "botao leve", "href": "winders.php?editar=" + w.id + "#form"}, t("Editar o winder"))
