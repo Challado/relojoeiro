@@ -1,4 +1,4 @@
-<!-- origem: d5d6f4067b800b1e3148449bd1ad16121607654b -->
+<!-- origem: bf37d6af976e218bd24e0b1ff8757be830ce3a91 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -667,7 +667,7 @@ How much each hour on the winder charges comes from a formula, `winder_ganho` (*
 you adjust as you like. The new setup's: if the position turns in a direction in which the watch winds, it gains the
 proportion of the *On the winder* fields (the hours and the reserve they give) times the position's turns ÷ the ones it
 needs (at most 1); if it turns in no direction in which it winds, it gains nothing. A session that is not in a position (the
-old ones, or with no winder registered) uses the *On the winder* fields, as before. In formulas, `WINDER_POSICAO("pos_tpd")`
+old ones, from before the winders, or that of a deleted winder) uses the *On the winder* fields, as before. In formulas, `WINDER_POSICAO("pos_tpd")`
 is a field of the position and `WINDER("winder_marca")`, one of the winder. `reserva_restante` uses `winder_ganho` in each
 winder session, with the program of the position it was in: a watch that spent the night in a 650-turn position and the
 afternoon in a 1250-turn one gains each stretch by its own. `winder_falta` gives the hours until it is full.
@@ -686,13 +686,7 @@ winder before it was registered), leaves it and enters this one. Each position's
 **on**; below, the forms of the winder (the name, the fields and, when creating, how many positions it starts with) and of
 the position. A position that is off takes no watch, and with a watch inside it only turns off together with **— none —**.
 
-On the watch panel, the **Put on the winder** of the **Mark** box asks for the **position** (only the free ones that are on);
-the state then says where it is: *"On the winder · Office, Pos. 2"*. The entry type that asks for the position is the one
-marked as **winder** in the **Entry types** tab (the new setup's *On the winder*). Deleting a position or a winder does not
-delete the sessions: they stay without the position, and their calculation goes back to the watch's fields. Through the
-API: `recurso=winders` (the winders, the positions, the watch in each one and the watches that can go on a winder), the
-writes `winders` and `winder_posicoes` (`salvar`, `excluir`; in the position's `salvar`, `relogio_id` puts on, swaps or, with 0, takes off) and the `lancamento`
-`iniciar` with `posicao_id`. A tree that already existed gets the possible values of the turns per day in the update (migration
+**The winder is mandatory.** With no winder registered, there is no putting on or taking off the winder anywhere: on the watch panel, the **Put on the winder** of the **Mark** box only says so and leads to the **Winders** page; the alert that is resolved on the winder comes without a button; the phone shortcut and the API refuse. With a winder registered, the watch goes on the winder **only through the Winders page**, chosen in the **Watch** of a position: on the panel, **Put on the winder** leads to the page, and in **Today is the day for** the alert brings the link **Put on the winder ›**. **Taking off** works everywhere: on the page (**— none —**), in the panel's **Take off the winder**, in the alert button, in the shortcut and in the API. The **period that has passed** on the winder (the Mark's *A period that has passed*) asks for the **position** where it was. A session left open in a collection without a winder (a winder deleted with the watch inside) can still be taken off. The state says where it is: *"On the winder · Office, Pos. 2"*. The winder's entry type is the one marked as **winder** in the **Entry types** tab (the new setup's *On the winder*). Deleting a position or a winder does not delete the sessions: they stay without the position, and their calculation goes back to the watch's fields. Through the API: `recurso=winders` (the winders, the positions, the watch in each one and the watches that can go on a winder), the writes `winders` and `winder_posicoes` (`salvar`, `excluir`; in the position's `salvar`, `relogio_id` puts on, swaps or, with 0, takes off); in `lancamento`, `iniciar` refuses the winder's type, its `periodo` asks for `posicao_id`, and `encerrar` and `alternar` take off. A tree that already existed gets the possible values of the turns per day in the update (migration
 v46), if the field had none yet.
 
 ### Record sections {#as-divisórias-da-ficha}
@@ -1227,7 +1221,7 @@ An entry is anything you mark on a watch. Each type applies to a group and to th
 | **On the wrist** (`pulso`) | session | all | the time on the wrist: **Put on** and **Took off**, or the wrist on its own in the wearing hours. Forgotten open, it closes at 10 pm. |
 | **Charge reading** (`carga`) | value | Smartwatch | the charge the watch shows, in %. Each reading measures the consumption (see [Consumption measured by the readings](#gasto-medido-pelas-leituras)). |
 | **Winding** (`corda`) | instant | Mechanical (with *Can be wound by the crown*) | filled the power reserve. |
-| **On the winder** (`winder`) | session | Automatic | the time on the winder: the reserve goes up by the position's program. Marked as **winder**: Put on asks for the position (see [Winders](#os-winders)). |
+| **On the winder** (`winder`) | session | Automatic | the time on the winder: the reserve goes up by the position's program. Marked as **winder**: the winder is mandatory, and Put on is only through the Winders page, in a position (see [Winders](#os-winders)). |
 | **In the sun** (`sol`) | session | Solar | the time in the sun: the light charge goes up. Forgotten open, it closes at 6 pm (Settings changes it). |
 | **On the charger** (`carregador`) | session | Smartwatch | the time on the charger: the watch's state shows *On the charger*, the battery goes up by the *On the charger: hours to fill* field, the **Charge** alert goes away and, when it fills, **Take off the charger** comes. When taking it off, a charge reading sets the calculation right. |
 | **Battery change** (`pilha`) | instant | Battery | new battery: the battery life starts over. |
@@ -1743,7 +1737,7 @@ hours to fill* field; when it fills, the **Take off the charger** alert goes out
 leave the charger before going on the wrist.
 
 **I forgot to mark Took off (or Put on).**
-In the watch's panel, in the **Mark** box, choose from the menu what happened (*Take off the wrist*, *Put on the winder*...)
+In the watch's panel, in the **Mark** box, choose from the menu what happened (*Take off the wrist*, *Take off the winder*...)
 and fill in the time. It already comes with the browser's time, and follows the clock while the page is open: untouched, it
 counts as now (the exact instant, with the seconds); changed, the time you set counts (yesterday at 22:30), and it stops
 moving. Just fix what changed (the time, the day), without choosing everything again. Erased, it is also now. If what was
@@ -1800,7 +1794,7 @@ charger** without opening the site. Two things in the API exist for this: `acao=
 closes it if it is open: a single button to put on and take off) and `relogio_id=hoje` (the watch of the day, without needing
 to know its number). The response brings the `mensagem` ready to show (*"Xiaomi Band 8: On the wrist since 10/12 07:19."*).
 
-The request is always the same, changing only the type (`pulso`, `carregador`, `sol`, `winder`) and the watch:
+The request is always the same, changing only the type (`pulso`, `carregador`, `sol`; `winder` only takes off: putting on the winder is through the Winders page) and the watch:
 
 ```text
 POST https://your-server/relojoeiro/api.php

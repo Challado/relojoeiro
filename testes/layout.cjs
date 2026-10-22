@@ -314,11 +314,16 @@ async function estressar() {
   resultados.push(await api({ recurso: 'relogio', acao: 'salvar', id: 10, 'valores[marca]': 'Casio G-Shock Master of G Edição Limitada',
     'valores[referencia]': 'GW-M5610U-1ER-ANIVERSARIO-40-ANOS', 'valores[link]': 'https://www.exemplo-de-loja-com-endereco-comprido.com.br/relogios/casio/g-shock/gw-m5610u-1er?origem=lista',
     'valores[preco_alvo]': '1234567,89' }));
-  // o winder do cenário (2): nome, marca, modelo e observação compridos, e o programa da Pos. 2 (5) com todos os campos
-  resultados.push(await api({ recurso: 'winders', acao: 'salvar', id: 2, nome: 'Winder de quatro posições do quarto de hóspedes, em cima da cômoda',
+  // o winder Quarto do cenário (achado pelo nome: os números dependem de quantos winders o cenário criou antes): nome, marca,
+  // modelo e observação compridos, e o programa da Pos. 2 com todos os campos
+  const lw = await (await fetch(BASE + 'api.php?recurso=winders', {
+    headers: { Authorization: 'Basic ' + Buffer.from(USUARIO + ':' + SENHA).toString('base64') } })).json().catch(() => ({}));
+  const quarto = (lw.winders || []).find((w) => w.nome === 'Quarto') || { id: 0, posicoes: [] };
+  const pos2 = (quarto.posicoes.find((p) => p.nome === 'Pos. 2') || { id: 0 }).id;
+  resultados.push(await api({ recurso: 'winders', acao: 'salvar', id: quarto.id, nome: 'Winder de quatro posições do quarto de hóspedes, em cima da cômoda',
     observacao: 'Comprado junto com a caixa de viagem; a Pos. 3 faz barulho quando gira no sentido anti-horário, então fica só no horário.',
     'valores[winder_marca]': 'Wolf Designs London', 'valores[winder_modelo]': 'Viceroy Module 2.7 Quad Watch Winder Macassar' }));
-  resultados.push(await api({ recurso: 'winder_posicoes', acao: 'salvar', id: 5, nome: 'Posição de baixo à direita',
+  resultados.push(await api({ recurso: 'winder_posicoes', acao: 'salvar', id: pos2, nome: 'Posição de baixo à direita',
     'valores[pos_tpd]': '1250', 'valores[pos_anti_horario]': '0', 'valores[pos_gira_min]': '12.5', 'valores[pos_descansa_min]': '47.5' }));
   for (const id of [1, 3, 4, 5, 10]) {
     resultados.push(await api({ recurso: 'relogio', acao: 'foto', id, foto_base64: png }));

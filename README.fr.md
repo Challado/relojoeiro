@@ -734,7 +734,7 @@ Ce que charge chaque heure sur le remontoir vient d'une formule, `winder_ganho` 
 vous ajustez comme vous voulez. Celle de la configuration initiale : si la position tourne dans un sens où la montre se
 remonte, elle gagne la proportion des champs *Sur le remontoir* (les heures et la réserve qu'elles donnent) fois les tours
 de la position ÷ ceux qu'elle demande (au plus 1) ; si elle ne tourne dans aucun sens où elle se remonte, elle ne gagne
-rien. La session qui n'est pas dans une position (les anciennes, ou sans aucun remontoir enregistré) utilise les champs
+rien. La session qui n'est pas dans une position (les anciennes, d'avant les remontoirs, ou celle d'un remontoir supprimé) utilise les champs
 *Sur le remontoir*, comme avant. Dans les formules, `WINDER_POSICAO("pos_tpd")` est un champ de la position et
 `WINDER("winder_marca")`, un du remontoir. `reserva_restante` utilise `winder_ganho` dans chaque session sur le remontoir,
 avec le programme de la position où elle est restée : une montre qui a passé la nuit dans une position de 650 tours et
@@ -757,13 +757,7 @@ l'ordre et **allumée** ; en dessous, les formulaires du remontoir (le nom, les 
 positions qu'il reçoit) et de la position. Une position éteinte ne reçoit pas de montre, et avec une montre dedans elle ne
 s'éteint qu'avec **— aucune —**.
 
-Sur le panneau de la montre, le **Mettre sur le remontoir** du cadre **Marquer** demande la **position** (seulement les
-allumées et libres) ; l'état dit alors où elle est : *« Sur le remontoir · Bureau, Pos. 2 »*. Le type d'entrée qui demande
-la position est celui coché comme **remontoir** dans l'onglet **Types d'entrée** (le *Sur le remontoir* de la configuration
-initiale). Supprimer une position ou un remontoir n'efface pas les sessions : elles restent sans la position, et leur calcul
-revient aux champs de la montre. Par l'API : `recurso=winders` (les remontoirs, les positions, la montre dans chacune et les
-montres qui peuvent aller sur un remontoir), les écritures `winders` et `winder_posicoes` (`salvar`, `excluir` ; dans le `salvar` de la position, `relogio_id` met, échange ou, avec 0, retire) et
-l'`iniciar` du `lancamento` avec `posicao_id`. Un arbre qui existait déjà reçoit les valeurs possibles des tours par jour lors de la mise à jour (la migration
+**Le remontoir est obligatoire.** Sans aucun remontoir enregistré, il n'y a ni mettre ni retirer du remontoir nulle part : sur le panneau de la montre, le **Mettre sur le remontoir** du cadre **Marquer** ne fait que le dire et mène à la page **Remontoirs** ; l'alerte qui se résout sur le remontoir vient sans bouton ; le raccourci du téléphone et l'API refusent. Avec un remontoir enregistré, la montre va sur le remontoir **seulement par la page Remontoirs**, choisie dans la **Montre** d'une position : sur le panneau, le **Mettre sur le remontoir** mène à la page, et dans **Aujourd'hui, c'est le jour de** l'alerte apporte le lien **Mettre sur le remontoir ›**. **Retirer** marche partout : sur la page (**— aucune —**), dans le **Retirer du remontoir** du panneau, dans le bouton de l'alerte, dans le raccourci et dans l'API. La **période passée** sur le remontoir (l'*Une période passée* de Marquer) demande la **position** où elle était. La session restée ouverte dans une collection sans remontoir (un remontoir supprimé avec la montre dedans) se retire encore. L'état dit où elle est : *« Sur le remontoir · Bureau, Pos. 2 »*. Le type d'entrée du remontoir est celui coché comme **remontoir** dans l'onglet **Types d'entrée** (le *Sur le remontoir* de la configuration initiale). Supprimer une position ou un remontoir n'efface pas les sessions : elles restent sans la position, et leur calcul revient aux champs de la montre. Par l'API : `recurso=winders` (les remontoirs, les positions, la montre dans chacune et les montres qui peuvent aller sur un remontoir), les écritures `winders` et `winder_posicoes` (`salvar`, `excluir` ; dans le `salvar` de la position, `relogio_id` met, échange ou, avec 0, retire) ; dans `lancamento`, l'`iniciar` refuse le type du remontoir, son `periodo` demande `posicao_id`, et l'`encerrar` et l'`alternar` retirent. Un arbre qui existait déjà reçoit les valeurs possibles des tours par jour lors de la mise à jour (la migration
 v46), si le champ n'en avait encore aucune.
 
 ### Les sections de la fiche
@@ -1317,7 +1311,7 @@ Une saisie, c'est tout ce que vous marquez sur une montre. Chaque type vaut pour
 | **Au poignet** (`pulso`) | session | toutes | le temps au poignet : **Mise au poignet** et **Retirée du poignet**, ou le poignet automatique pendant l'horaire de port. Oubliée ouverte, elle se ferme à 22 h. |
 | **Relevé de charge** (`carga`) | valeur | Smartwatch | la charge que la montre affiche, en %. Chaque relevé mesure la consommation (voir [Consommation mesurée par les relevés](#consommation-mesurée-par-les-relevés)). |
 | **Remontage** (`corda`) | instantané | Mécanique (avec *Se remonte par la couronne*) | a rempli la réserve de marche. |
-| **Sur le remontoir** (`winder`) | session | Automatique | le temps sur le remontoir : la réserve monte selon le programme de la position. Coché comme **remontoir** : le Mettre demande la position (voir [Les remontoirs](#les-remontoirs)). |
+| **Sur le remontoir** (`winder`) | session | Automatique | le temps sur le remontoir : la réserve monte selon le programme de la position. Coché comme **remontoir** : le remontoir est obligatoire, et le Mettre se fait seulement par la page Remontoirs, dans une position (voir [Les remontoirs](#les-remontoirs)). |
 | **Au soleil** (`sol`) | session | Solaire | le temps au soleil : la charge lumineuse monte. Oubliée ouverte, elle se ferme à 18 h (la Configuration le change). |
 | **Sur le chargeur** (`carregador`) | session | Smartwatch | le temps sur le chargeur : l'état de la montre affiche *Sur le chargeur*, la batterie monte selon le champ *Sur le chargeur : heures pour remplir*, l'alerte **Charger** disparaît et, quand elle est pleine, arrive le **Retirer du chargeur**. En la retirant, un relevé de charge remet le calcul d'aplomb. |
 | **Changement de pile** (`pilha`) | instantané | Pile | pile neuve : la durée de vie de la pile recommence. |
@@ -1899,7 +1893,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `documento_categorias` | `nova`, `alterar`, `excluir` (seulement sans documents) |
 | `secoes` | les sections de la fiche : `salvar` (le nom ; `id=0` crée à la fin), `ordem` (`direcao=sobe` ou `desce`), `excluir` (ses champs restent sans section, à la fin) |
 | `unidades` | `salvar` (le symbole, le nom, la base et le facteur, le zéro et l'afficher aussi en ; le nouveau symbole passe à qui l'utilise), `excluir` (seulement sans usage ; emporte celles qui se convertissent en elle) |
-| `lancamento` | `lancar` (remontage, charge, pile...), `iniciar` et `encerrar` (mettre et retirer du poignet, du remontoir, du soleil, du chargeur ; sur le remontoir, `posicao_id` : la position), `alternar` (ferme la session si elle est ouverte, l'ouvre si elle est fermée : un seul bouton sur le téléphone), `periodo` (une période déjà passée ; au poignet de la montre du jour c'est un usage de la rotation, et les périodes du même type qu'elle touche, comme le Mettre resté ouvert, n'en font plus qu'une), `alterar`, `excluir`, `medicao` (une mesure de la consommation entre dans le calcul ou en sort : `id`, `usada` 1 ou 0). Dans toutes, `relogio_id=hoje` est la montre du jour |
+| `lancamento` | `lancar` (remontage, charge, pile...), `iniciar` et `encerrar` (mettre et retirer du poignet, du soleil, du chargeur ; du remontoir, seulement retirer : mettre se fait par la page Remontoirs, `winder_posicoes`), `alternar` (ferme la session si elle est ouverte, l'ouvre si elle est fermée : un seul bouton sur le téléphone ; sur le remontoir, ne fait que fermer), `periodo` (une période déjà passée ; sur le remontoir, avec la position, `posicao_id` ; au poignet de la montre du jour c'est un usage de la rotation, et les périodes du même type qu'elle touche, comme le Mettre resté ouvert, n'en font plus qu'une), `alterar`, `excluir`, `medicao` (une mesure de la consommation entre dans le calcul ou en sort : `id`, `usada` 1 ou 0). Dans toutes, `relogio_id=hoje` est la montre du jour |
 | `rodizio` | `usando` (je porte celle-ci aujourd'hui), `trocar_dia` (la montre d'un jour), `periodo` (les montres d'une période, dans l'ordre : `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (efface les jours de la période et le mode les refait ; seulement `de` : jusqu'à la fin du plan ; seulement `ate` : de demain jusqu'à lui), `periodo_livre` (efface et laisse les jours libres, sans tirage ; les mêmes dates), `manual` (la Rotation manuelle : `de`, `ate`, `dias[AAAA-MM-JJ]` = l'id de la montre, `auto` ou `livre`), `apagar_tudo` (toute la programmation à partir de demain disparaît ; `hoje=1` : à partir d'aujourd'hui ; le mode reconstruit le plan), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (changer le mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (groupes) et `relogios` (le groupe de chaque montre) |
@@ -2346,7 +2340,7 @@ montre du jour attend de quitter le chargeur avant d'aller au poignet.
 
 **J'ai oublié de marquer Retirée (ou Mise).**
 Dans le panneau de la montre, dans le cadre **Marquer**, choisissez dans le menu ce qui s'est passé (*Retirer du poignet*,
-*Mettre sur le remontoir*...) et remplissez l'heure. Elle arrive déjà avec l'heure du navigateur, et suit l'horloge tant que
+*Retirer du remontoir*...) et remplissez l'heure. Elle arrive déjà avec l'heure du navigateur, et suit l'horloge tant que
 la page est ouverte : sans y toucher, c'est maintenant (l'instant exact, avec les secondes) ; modifiée, c'est l'heure que vous
 avez mise (hier à 22:30), et elle cesse de bouger. Corrigez seulement ce qui a changé (l'heure, le jour), sans tout choisir à
 nouveau. Effacée, c'est aussi maintenant. Si ce qui a été marqué est faux, choisissez **Corriger ou supprimer un marquage** :
@@ -2406,7 +2400,7 @@ Tout ce que marque l'écran, l'API le marque, donc un raccourci sur l'écran d'a
 `relogio_id=hoje` (la montre du jour, sans avoir besoin de connaître son numéro). La réponse apporte le `mensagem` prêt à
 afficher (*« Xiaomi Band 8 : Au poignet depuis 10/12 07:19. »*).
 
-La requête est toujours la même, seuls changent le type (`pulso`, `carregador`, `sol`, `winder`) et la montre :
+La requête est toujours la même, seuls changent le type (`pulso`, `carregador`, `sol` ; le `winder` ne fait que retirer : mettre sur le remontoir se fait par la page Remontoirs) et la montre :
 
 ```text
 POST https://votre-serveur/relojoeiro/api.php

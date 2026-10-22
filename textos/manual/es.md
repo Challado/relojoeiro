@@ -1,4 +1,4 @@
-<!-- origem: d5d6f4067b800b1e3148449bd1ad16121607654b -->
+<!-- origem: bf37d6af976e218bd24e0b1ff8757be830ce3a91 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -663,7 +663,7 @@ Cuánto carga cada hora en el winder sale de una fórmula, la `winder_ganho` (pe
 usted ajusta como quiera. La del registro nuevo: si la posición gira en un sentido en que el reloj da cuerda, gana la
 proporción de los campos *En el winder* (las horas y la reserva que dan) por las rotaciones de la posición ÷ las que pide
 (como máximo 1); si no gira en ningún sentido en que da cuerda, no gana nada. La sesión que no está en una posición (las
-antiguas, o sin ningún winder registrado) usa los campos *En el winder*, como antes. En las fórmulas,
+antiguas, de antes de los winders, o la de un winder eliminado) usa los campos *En el winder*, como antes. En las fórmulas,
 `WINDER_POSICAO("pos_tpd")` es un campo de la posición y `WINDER("winder_marca")`, uno del winder. La `reserva_restante` usa
 la `winder_ganho` en cada sesión en el winder, con el programa de la posición en que estuvo: un reloj que pasó la noche en
 una posición de 650 rotaciones y la tarde en una de 1250 gana cada tramo según el suyo. La `winder_falta` da las horas hasta
@@ -683,13 +683,7 @@ winder antes de registrarlo), sale de ahí y entra en esta. El **Editar** de cad
 **encendida**; debajo, los formularios del winder (el nombre, los campos y, al crear, cuántas posiciones ya trae) y de la
 posición. La posición apagada no recibe reloj, y con un reloj dentro solo se apaga junto con **— ninguno —**.
 
-En el panel del reloj, el **Poner en el winder** del cuadro **Marcar** pide la **posición** (solo las encendidas y libres);
-el estado pasa a decir dónde está: *"En el winder · Oficina, Pos. 2"*. El tipo de registro que pide la posición es el
-marcado como **winder** en la pestaña **Tipos de registro** (el *En el winder* del registro nuevo). Eliminar una posición o
-un winder no borra las sesiones: quedan sin la posición, y su cálculo vuelve a los campos del reloj. Por la API:
-`recurso=winders` (los winders, las posiciones, el reloj en cada una y los relojes que pueden ir a un winder), las escrituras
-`winders` y `winder_posicoes` (`salvar`, `excluir`; en el `salvar` de la posición, `relogio_id` pone, cambia o, con 0, quita) y el `iniciar` del
-`lancamento` con `posicao_id`. Un árbol que ya existía gana los valores posibles de las rotaciones por día en la actualización (la migración
+**El winder es obligatorio.** Sin ningún winder registrado, no hay poner ni quitar del winder en ningún lugar: en el panel del reloj, el **Poner en el winder** del cuadro **Marcar** solo dice eso y lleva a la página **Winders**; el aviso que se resuelve en el winder viene sin botón; el atajo del móvil y la API rechazan. Con winder registrado, el reloj va al winder **solo por la página Winders**, elegido en el **Reloj** de una posición: en el panel, el **Poner en el winder** lleva a la página, y en **Hoy toca** el aviso trae el enlace **Poner en el winder ›**. **Quitar** vale en todas partes: en la página (**— ninguno —**), en el **Quitar del winder** del panel, en el botón del aviso, en el atajo y en la API. El **período que ya pasó** en el winder (el *Un período que ya pasó* de Marcar) pide la **posición** donde estuvo. La sesión que quedó abierta en una colección sin winder (un winder eliminado con el reloj dentro) todavía se puede quitar. El estado dice dónde está: *"En el winder · Oficina, Pos. 2"*. El tipo de registro del winder es el marcado como **winder** en la pestaña **Tipos de registro** (el *En el winder* del registro nuevo). Eliminar una posición o un winder no borra las sesiones: quedan sin la posición, y su cálculo vuelve a los campos del reloj. Por la API: `recurso=winders` (los winders, las posiciones, el reloj en cada una y los relojes que pueden ir a un winder), las escrituras `winders` y `winder_posicoes` (`salvar`, `excluir`; en el `salvar` de la posición, `relogio_id` pone, cambia o, con 0, quita); en `lancamento`, el `iniciar` rechaza el tipo del winder, su `periodo` pide `posicao_id`, y el `encerrar` y el `alternar` quitan. Un árbol que ya existía gana los valores posibles de las rotaciones por día en la actualización (la migración
 v46), si el campo todavía no tenía ninguno.
 
 ### Las secciones de la ficha {#as-divisórias-da-ficha}
@@ -1222,7 +1216,7 @@ Un registro es todo lo que usted marca en un reloj. Cada tipo vale para un grupo
 | **En la muñeca** (`pulso`) | sesión | todos | el tiempo en la muñeca: **Me lo puse** y **Me lo quité**, o la muñeca sola en el horario de uso. Olvidada abierta, se cierra a las 22 h. |
 | **Lectura de carga** (`carga`) | valor | Smartwatch | la carga que muestra el reloj, en %. Cada lectura mide el consumo (vea [Consumo medido por las lecturas](#gasto-medido-pelas-leituras)). |
 | **Cuerda** (`corda`) | instantáneo | Mecánico (con *Acepta cuerda por la corona*) | llenó la reserva de marcha. |
-| **En el winder** (`winder`) | sesión | Automático | el tiempo en el winder: la reserva sube según el programa de la posición. Marcado como **winder**: el Poner pide la posición (vea [Los winders](#os-winders)). |
+| **En el winder** (`winder`) | sesión | Automático | el tiempo en el winder: la reserva sube según el programa de la posición. Marcado como **winder**: el winder es obligatorio, y el Poner es solo por la página Winders, en una posición (vea [Los winders](#os-winders)). |
 | **Al sol** (`sol`) | sesión | Solar | el tiempo al sol: la carga de luz sube. Olvidada abierta, se cierra a las 18 h (la Configuración lo cambia). |
 | **En el cargador** (`carregador`) | sesión | Smartwatch | el tiempo en el cargador: el estado del reloj muestra *En el cargador*, la batería sube según el campo *En el cargador: horas para llenar*, el aviso **Cargar** desaparece y, cuando se llena, llega el **Quitar del cargador**. Al quitarlo, una lectura de carga pone la cuenta en su sitio. |
 | **Cambio de pila** (`pilha`) | instantáneo | Pila | pila nueva: la vida de la pila vuelve a empezar. |
@@ -1739,7 +1733,7 @@ el botón **Lo quité del cargador**. Con la muñeca automática activada, el re
 a la muñeca.
 
 **Olvidé marcar Me lo quité (o Me lo puse).**
-En el panel del reloj, en el cuadro **Marcar**, elija en el menú lo que pasó (*Quitar de la muñeca*, *Poner en el winder*...) y
+En el panel del reloj, en el cuadro **Marcar**, elija en el menú lo que pasó (*Quitar de la muñeca*, *Quitar del winder*...) y
 rellene la hora. Ya viene con la hora del navegador, y sigue el reloj mientras la página está abierta: sin tocarla, vale ahora
 (el instante exacto, con los segundos); cambiada, vale la hora que usted puso (ayer a las 22:30), y deja de moverse. Corrija
 solo lo que cambió (la hora, el día), sin elegirlo todo de nuevo. Borrada, también es ahora. Si lo marcado está mal, elija
@@ -1798,7 +1792,7 @@ está cerrada, la cierra si está abierta: un solo botón para ponerse y quitars
 necesidad de saber su número). La respuesta trae el `mensagem` listo para mostrar (*"Xiaomi Band 8: En la muñeca desde 10/12
 07:19."*).
 
-La petición es siempre la misma, cambiando solo el tipo (`pulso`, `carregador`, `sol`, `winder`) y el reloj:
+La petición es siempre la misma, cambiando solo el tipo (`pulso`, `carregador`, `sol`; el `winder` solo quita: poner en el winder es por la página Winders) y el reloj:
 
 ```text
 POST https://su-servidor/relojoeiro/api.php

@@ -1050,7 +1050,8 @@
  *     winders[].dados[].origem_texto a origem por extenso
  *     winders[].posicoes             as posições do winder, na ordem
  *     winders[].posicoes[]           uma posição
- *     winders[].posicoes[].id        o número da posição (o posicao_id do iniciar)
+ *     winders[].posicoes[].id        o número da posição (o id do winder_posicoes salvar, que põe o relógio nela com relogio_id; o
+ *                                    posicao_id do período)
  *     winders[].posicoes[].nome      o nome ("Pos. 1")
  *     winders[].posicoes[].ordem     a ordem dela no winder
  *     winders[].posicoes[].ligada    verdadeiro: recebe relógio; falso: desligada
@@ -1760,7 +1761,9 @@
  *     avisos[].resolve.nome          o nome dele
  *     avisos[].resolve.unidade       a unidade do valor
  *     avisos[].resolve.acao          o que o botão manda (recurso=lancamento): iniciar (a sessão está fechada), encerrar (a sessão está
- *                                    aberta: o Tirar do carregador) ou lancar (instantâneo ou leitura)
+ *                                    aberta: o Tirar do carregador) ou lancar (instantâneo ou leitura); winders: o tipo que resolve é o do
+ *                                    winder e ele está fora: o botão é o link para a página Winders (o pôr é só lá; sem winder cadastrado,
+ *                                    o aviso vem sem resolve)
  *     avisos[].resolve.estados       true numa leitura que mede o gasto, num relógio que vai ao pulso: a tela mostra dois botões, Em uso e
  *                                    Em repouso (o estado da leitura, no campo estado do lancar)
  *     avisos[].resolve.botao         o texto do botão ("Pôs no sol", "Tirou do carregador", "Informar leitura de carga", "Corda")
@@ -2106,10 +2109,13 @@
  *                                    o nome do relógio
  *     relogio.acessorios_servem      os acessórios de outros relógios, ou soltos, que servem neste (a pulseira com a largura do entre alças
  *                                    dele): a troca possível
- *     relogio.winder_posicoes        as posições de winder livres agora (ligadas e sem relógio), onde ele pode entrar: o Pôr no winder do
- *                                    Marcar; vazio sem winder cadastrado ou sem um tipo marcado como winder
+ *     relogio.winder_cadastrado      true: a coleção tem winder (o pôr no winder é só pela página Winders, e o período que já passou no
+ *                                    winder pede a posição); false: sem winder, não há pôr nem tirar do winder (só o tirar de uma sessão
+ *                                    que já estava aberta)
+ *     relogio.winder_posicoes        todas as posições de winder, para o período que já passou no winder (a posição onde ele esteve); vazio
+ *                                    sem winder cadastrado ou sem um tipo marcado como winder
  *     relogio.winder_posicoes[]      uma posição livre
- *     relogio.winder_posicoes[].id   o número da posição (o posicao_id do iniciar)
+ *     relogio.winder_posicoes[].id   o número da posição (o posicao_id do período)
  *     relogio.winder_posicoes[].winder_id
  *                                    o winder dela
  *     relogio.winder_posicoes[].texto
@@ -2871,8 +2877,8 @@
  *     relogio.tipos[].unidade        a unidade do valor
  *     relogio.tipos[].marcha         o que o tipo mede da marcha: desvio (a leitura do desvio da hora: o Marcar mostra o Testar a
  *                                    precisão), acerto (o acerto da hora) ou null
- *     relogio.tipos[].winder         verdadeiro: a sessão é numa posição de um winder (o Pôr no winder do Marcar escolhe a posição, de
- *                                    winder_posicoes)
+ *     relogio.tipos[].winder         verdadeiro: a sessão é numa posição de um winder (o winder é obrigatório: o pôr é só pela página
+ *                                    Winders, e o período que já passou escolhe a posição, de winder_posicoes)
  *     relogio.precisao               a precisão do relógio (o quadro Precisão do painel): as leituras do desvio da hora e os acertos, a
  *                                    marcha (em segundos por dia: + adianta, − atrasa) e o desvio estimado agora; null se nenhum tipo de
  *                                    lançamento dele mede a marcha
@@ -4097,7 +4103,8 @@
  *     winders[].dados[].origem_texto a origem por extenso
  *     winders[].posicoes             as posições do winder, na ordem
  *     winders[].posicoes[]           uma posição
- *     winders[].posicoes[].id        o número da posição (o posicao_id do iniciar)
+ *     winders[].posicoes[].id        o número da posição (o id do winder_posicoes salvar, que põe o relógio nela com relogio_id; o
+ *                                    posicao_id do período)
  *     winders[].posicoes[].nome      o nome ("Pos. 1")
  *     winders[].posicoes[].ordem     a ordem dela no winder
  *     winders[].posicoes[].ligada    verdadeiro: recebe relógio; falso: desligada

@@ -69,8 +69,11 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     $saida["relogio"] = ["id" => $id, "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? 0 : (int)$r["no_id"], "disponivel" => (int)$r["disponivel"] === 1,
         "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]), "da_colecao" => da_colecao($r),
         "acessorios" => acessorios_lista($id),
-        // as posições de winder livres agora (o Pôr no winder do Marcar escolhe uma), só quando ele tem um tipo marcado como winder
-        "winder_posicoes" => count(array_filter($tipos, function ($x) { return $x["winder"]; })) > 0 ? winder_posicoes_livres($agora) : [],
+        // o winder é obrigatório: sem winder cadastrado, o Marcar não tem pôr nem período no winder; com winder, o pôr é só pela
+        // página Winders, e o período que já passou escolhe a posição onde ele esteve (todas as posições, quando ele tem um tipo
+        // marcado como winder)
+        "winder_cadastrado" => ($w_cad = winder_cadastrado()),
+        "winder_posicoes" => $w_cad && count(array_filter($tipos, function ($x) { return $x["winder"]; })) > 0 ? winder_posicoes_livres($agora, false) : [],
         // os acessórios de outros relógios (ou soltos) que servem neste (a pulseira com a largura do entre alças dele)
         "acessorios_servem" => acessorios_que_servem($id),
         // os serviços e diagnósticos (o quadro Serviços e diagnósticos): a lista, o resumo, os tipos e os documentos dele que um

@@ -20,11 +20,12 @@ module.exports = [
   { nome: 'estatisticas', url: 'estatisticas.php?de=tudo' },
   { nome: 'hora', url: 'hora.php' },
   { nome: 'acessorios', url: 'acessorios.php' },
-  // os winders: o Quarto do cenário (2), com o Orient na Pos. 1 (4), o formulário de uma posição, o de uma nova e o do winder
+  // os winders: o Quarto do cenário (3; o 1 é a Varanda, criada antes, e o 2, o Escritório, excluído), com o Orient na Pos. 1
+  // (5), o formulário de uma posição (a Pos. 2, 6), o de uma nova e o do winder
   { nome: 'winders', url: 'winders.php' },
-  { nome: 'winders-posicao', url: 'winders.php?posicao=5' },
-  { nome: 'winders-nova-posicao', url: 'winders.php?nova_posicao=2' },
-  { nome: 'winders-editar', url: 'winders.php?editar=2' },
+  { nome: 'winders-posicao', url: 'winders.php?posicao=6' },
+  { nome: 'winders-nova-posicao', url: 'winders.php?nova_posicao=3' },
+  { nome: 'winders-editar', url: 'winders.php?editar=3' },
   { nome: 'passaporte-3', url: 'passaporte.php?id=3' },
   { nome: 'passaporte-1', url: 'passaporte.php?id=1' },
   { nome: 'galeria', url: 'galeria.php?posse=todos' },

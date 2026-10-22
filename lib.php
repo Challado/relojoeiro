@@ -5684,15 +5684,25 @@ function winders_lista($agora = null)
     return $res;
 }
 
-// As posições onde um relógio pode entrar agora (ligadas e sem relógio): [{id, winder_id, texto: "Escritório, Pos. 1",
-// programa}] (o Pôr no winder do painel)
-function winder_posicoes_livres($agora = null)
+// O winder é obrigatório: sem nenhum winder cadastrado na coleção, não há pôr nem tirar do winder (os tipos de lançamento
+// marcados como winder ficam sem uso, a não ser o tirar de uma sessão que já estava aberta); com winder, o relógio vai para
+// ele só pela página Winders, numa posição (winder_posicoes salvar com relogio_id)
+function winder_cadastrado()
+{
+    return (int)valor("SELECT COUNT(*) FROM winder") > 0;
+}
+
+// As posições de winder: [{id, winder_id, texto: "Escritório, Pos. 1", programa}]; $livres: só as que podem receber um
+// relógio agora (ligadas e sem relógio); sem ele, todas (o período que já passou, no painel, escolhe a posição onde ele
+// esteve)
+function winder_posicoes_livres($agora = null, $livres = true)
 {
     $agora_t = date("Y-m-d H:i:s", $agora ?? time());
     $res = [];
-    foreach (linhas("SELECT p.id, p.nome, p.winder_id, w.nome AS winder FROM winder_posicao p JOIN winder w ON w.id = p.winder_id WHERE p.ligada = 1 AND p.id NOT IN
-        (SELECT lw.posicao_id FROM lancamento_winder lw JOIN lancamento l ON l.id = lw.lancamento_id WHERE l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?)) ORDER BY w.nome, w.id, p.ordem, p.nome, p.id",
-        [$agora_t, $agora_t]) as $p) {
+    foreach (linhas("SELECT p.id, p.nome, p.winder_id, w.nome AS winder FROM winder_posicao p JOIN winder w ON w.id = p.winder_id"
+        . ($livres ? " WHERE p.ligada = 1 AND p.id NOT IN
+        (SELECT lw.posicao_id FROM lancamento_winder lw JOIN lancamento l ON l.id = lw.lancamento_id WHERE l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?))" : "")
+        . " ORDER BY w.nome, w.id, p.ordem, p.nome, p.id", $livres ? [$agora_t, $agora_t] : []) as $p) {
         $dados = winder_dados_lista(campos_de_posicao(), valores_de_winder("posicao", (int)$p["id"]));
         $res[] = ["id" => (int)$p["id"], "winder_id" => (int)$p["winder_id"], "texto" => t("{1}, {2}", [1 => $p["winder"], 2 => $p["nome"]]),
             "programa" => implode(" · ", array_map(function ($x) { return $x["nome"] . ": " . $x["texto"]; }, $dados))];

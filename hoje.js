@@ -147,13 +147,17 @@ function recarregarHoje() {
     porHtml(quadro, res);
 
     // "Hoje é dia de": uma tabela, como a dos próximos dias; cada aviso com o relógio (abre o painel), o motivo e o botão do
-    // lançamento que o resolve, como a API diz (leitura: com o valor; sessão: "Pôs ...", ou "Tirou ..." se ela já está aberta)
+    // lançamento que o resolve, como a API diz (leitura: com o valor; sessão: "Pôs ...", ou "Tirou ..." se ela já está aberta;
+    // o winder, o link para a página Winders)
     var res = "";
     if (d.avisos.length > 0) {
       res = el("section", {"class": "avisos"}, el("h2", {}, t("Hoje é dia de")) + el("table", {"class": "relogios"}, el("thead", {}, el("tr", {}, el("th", {}, t("O que fazer"))
         + el("th", {}, t("Relógio")) + el("th", {}, t("Por quê")) + el("th", {}, ""))) + el("tbody", {}, d.avisos.map(function (a) {
         var botao = "";
-        if (a.resolve) {
+        if (a.resolve && a.resolve.acao === "winders") {
+          // pôr no winder: com winder cadastrado, só pela página Winders (o link, não um botão que grava)
+          botao = el("a", {"class": "botao leve", "href": "winders.php"}, h(a.resolve.botao));
+        } else if (a.resolve) {
           botao = el("form", {"data-recurso": "lancamento"}, el("input", {"type": "hidden", "name": "acao", "value": a.resolve.acao}) + el("input", {"type": "hidden", "name": "tipo", "value": a.resolve.identificador})
             + el("input", {"type": "hidden", "name": "relogio_id", "value": a.relogio_id}) + el("input", {"type": "hidden", "name": "r", "value": a.relogio_id})
             + (a.resolve.formato === "valor" ? el("input", {"type": "text", "inputmode": "decimal", "name": "valor", "placeholder": a.resolve.unidade, "required": true, "aria-label": a.resolve.nome}) : "")

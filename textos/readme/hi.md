@@ -1,4 +1,4 @@
-<!-- origem: dd29ef39585f33ab3608fa3a31193014472cfc49 -->
+<!-- origem: feff3fcfdd420bb7f401b521ad72c3b04ce06b80 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -188,7 +188,7 @@ curl -u upyogkarta:password -G "http://server/relojoeiro/api.php" -d recurso=cal
 | `documento_categorias` | `nova`, `alterar`, `excluir` (सिर्फ़ बिना दस्तावेज़ों के) |
 | `secoes` | रिकॉर्ड के खंड: `salvar` (नाम; `id=0` अंत में बनाता है), `ordem` (`direcao=sobe` या `desce`), `excluir` (उसके फ़ील्ड बिना खंड के, अंत में रह जाते हैं) |
 | `unidades` | `salvar` (प्रतीक, नाम, आधार और गुणक, शून्य और इसमें भी दिखाएँ; नया प्रतीक उपयोग करने वालों तक जाता है), `excluir` (सिर्फ़ बिना उपयोग के; उसमें बदलने वाली इकाइयाँ भी साथ हटती हैं) |
-| `lancamento` | `lancar` (चाबी, चार्ज, बैटरी...), `iniciar` और `encerrar` (कलाई, वाइंडर, धूप, चार्जर पर रखना और उतारना; वाइंडर पर, `posicao_id`: पोज़ीशन), `alternar` (सत्र खुला हो तो बंद करता है, बंद हो तो खोलता है: फ़ोन पर एक ही बटन), `periodo` (बीत चुकी अवधि; दिन की घड़ी की कलाई पर यह रोटेशन का उपयोग है, और उसी प्रकार के खंड जिनसे यह छूती है, जैसे खुला छोड़ा गया पहनें, एक हो जाते हैं), `alterar`, `excluir`, `medicao` (खपत का कोई माप गणना में आता है या उससे निकलता है: `id`, `usada` 1 या 0)। सबमें `relogio_id=hoje` दिन की घड़ी है |
+| `lancamento` | `lancar` (चाबी, चार्ज, बैटरी...), `iniciar` और `encerrar` (कलाई, धूप, चार्जर पर रखना और उतारना; वाइंडर से सिर्फ़ उतारना: रखना वाइंडर पेज से, `winder_posicoes`), `alternar` (सत्र खुला हो तो बंद करता है, बंद हो तो खोलता है: फ़ोन पर एक ही बटन; वाइंडर पर सिर्फ़ बंद करता है), `periodo` (बीत चुकी अवधि; वाइंडर पर, पोज़ीशन के साथ, `posicao_id`; दिन की घड़ी की कलाई पर यह रोटेशन का उपयोग है, और उसी प्रकार के खंड जिनसे यह छूती है, जैसे खुला छोड़ा गया पहनें, एक हो जाते हैं), `alterar`, `excluir`, `medicao` (खपत का कोई माप गणना में आता है या उससे निकलता है: `id`, `usada` 1 या 0)। सबमें `relogio_id=hoje` दिन की घड़ी है |
 | `rodizio` | `usando` (आज मैं यह पहन रहा हूँ), `trocar_dia` (किसी दिन की घड़ी), `periodo` (किसी अवधि की घड़ियाँ, क्रम से: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (अवधि के दिन हटाता है और मोड उन्हें फिर से बनाता है; केवल `de`: योजना के अंत तक; केवल `ate`: कल से उस तक), `periodo_livre` (मिटाकर दिनों को बिना ड्रॉ ख़ाली छोड़ता है; वही तारीख़ें), `manual` (मैनुअल रोटेशन: `de`, `ate`, `dias[YYYY-MM-DD]` = घड़ी का id, `auto` या `livre`), `apagar_tudo` (कल से आगे का पूरा कार्यक्रम हटता है; `hoje=1`: आज से आगे; मोड योजना दोबारा बनाता है), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (मोड बदलना) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (समूह) और `relogios` (हर घड़ी का समूह) |

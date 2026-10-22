@@ -133,6 +133,12 @@ function carregarWinders() {
     var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Winders")) + el("span", {"class": "nota"}, d.winders.length + (d.winders.length === 1 ? t(" winder") : t(" winders"))
       + (nPos > 0 ? " · " + t("{1} posições, {2} com relógio", {1: nPos, 2: nOcup}) : "")));
     res += el("p", {"class": "nota"}, t("Cada winder tem as posições dele, e cada posição o programa dela (os campos da posição: as rotações por dia, o sentido, o ciclo). Mude o programa e o relógio de uma posição direto na linha da tabela e clique em Salvar: no Relógio, — nenhum — tira quem está nela, e outro relógio entra no lugar (saindo de onde estava). Quanto cada hora no winder carrega sai da fórmula winder_ganho, pelo programa da posição e pelo que o relógio pede (Cadastros › Fórmulas); os valores possíveis de cada campo, como as rotações por dia, ficam em Cadastros › Campos."));
+    // o winder é obrigatório: sem nenhum cadastrado, não há pôr nem tirar do winder em lugar nenhum
+    if (d.winders.length === 0) {
+      res += el("p", {"class": "acao"}, t("Nenhum winder cadastrado: sem ele, não há pôr nem tirar do winder em lugar nenhum. Cadastre o seu abaixo; depois, o relógio vai para o winder aqui, escolhido no Relógio de uma posição (e sai dele aqui, no painel do relógio ou no atalho)."));
+    } else {
+      res += el("p", {"class": "nota"}, t("O relógio vai para o winder só por aqui, numa posição; tirar dá para fazer aqui, no painel do relógio ou no atalho do celular."));
+    }
     res += ondeMuda("winders", [[t("O programa de uma posição (as rotações por dia, o sentido, o ciclo) e o relógio nela"), t("aqui: na linha da posição, e Salvar")],
       [t("O nome, a ordem e se a posição está ligada"), t("aqui: Editar, embaixo do nome da posição")], [t("O nome, a marca, o modelo e a observação do winder"), t("aqui: Editar o winder")],
       [t("Os valores possíveis das rotações por dia e os outros campos da posição"), t("{1}: a subtela \"as posições dos winders\"", {1: lugar("cadastros.php?aba=campos", t("Cadastros › Campos"))})],

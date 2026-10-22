@@ -22,16 +22,23 @@ foreach (avisos_de_hoje() as $x) {
     $t = $x[1]["resolve"] !== null ? (lancamento_tipos()[$x[1]["resolve"]] ?? null) : null;
     // o botão: a sessão que resolve, aberta, se fecha (o Tirar do carregador); fechada, se abre; a leitura se informa
     $aberta_h = $t && $t["formato"] === "sessao" && (int)valor("SELECT COUNT(*) FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND fim IS NULL", [(int)$x[0]["id"], (int)$t["id"]]) > 0;
+    // o winder é obrigatório: o aviso que se resolve pondo no winder fica sem botão sem winder cadastrado; com winder, o botão
+    // leva à página Winders (o pôr é só lá); com a sessão aberta, o Tirou continua
+    $pagina_w = $t && (int)($t["winder"] ?? 0) === 1 && !$aberta_h;
+    if ($pagina_w && !winder_cadastrado()) {
+        $t = null;
+        $pagina_w = false;
+    }
     $minus = $t ? (function_exists("mb_strtolower") ? mb_strtolower($t["nome"], "UTF-8") : strtolower($t["nome"])) : "";
     $avisos_h[] = ["relogio_id" => (int)$x[0]["id"], "relogio" => $x[0]["nome"], "identificador" => $x[1]["identificador"], "nome" => $x[1]["nome"], "texto" => $x[1]["texto"],
         "estado" => $x[1]["estado"], "resolve" => $t ? ["identificador" => $t["identificador"], "nome" => $t["nome"], "formato" => $t["formato"], "unidade" => $t["unidade"],
-            "acao" => $t["formato"] === "sessao" ? ($aberta_h ? "encerrar" : "iniciar") : "lancar",
+            "acao" => $pagina_w ? "winders" : ($t["formato"] === "sessao" ? ($aberta_h ? "encerrar" : "iniciar") : "lancar"),
             // o botão: "Pôs no carregador"; aberta, "Tirou do carregador" (o "no" do nome vira "do": só em português, a língua do nome
             // no cadastro de quem instalou em português; nos outros idiomas, "Terminou: <nome>")
             // a leitura que mede o gasto num relógio que vai ao pulso: a tela pergunta como ele estava (em uso ou em repouso)
             "estados" => $t["formato"] === "valor" && (int)$t["mede_gasto"] === 1 && isset(lancamento_tipos_do_relogio($x[0])["pulso"]),
-            "botao" => $t["formato"] === "sessao" ? ($aberta_h ? (lingua_atual() === "pt-BR" && preg_match("/^n(o|a|os|as)\\s/u", $minus) === 1 ? "Tirou d" . substr($minus, 1) : t("Terminou: {1}", [1 => $minus])) : t("Pôs {1}", [1 => $minus]))
-                : ($t["formato"] === "valor" ? t("Informar {1}", [1 => $minus]) : $t["nome"])] : null];
+            "botao" => $pagina_w ? t("Pôr {1} ›", [1 => $minus]) : ($t["formato"] === "sessao" ? ($aberta_h ? (lingua_atual() === "pt-BR" && preg_match("/^n(o|a|os|as)\\s/u", $minus) === 1 ? "Tirou d" . substr($minus, 1) : t("Terminou: {1}", [1 => $minus])) : t("Pôs {1}", [1 => $minus]))
+                : ($t["formato"] === "valor" ? t("Informar {1}", [1 => $minus]) : $t["nome"]))] : null];
 }
 $fotos = [];
 foreach (linhas("SELECT relogio_id, atualizado FROM foto") as $f) {

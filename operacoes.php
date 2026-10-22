@@ -1594,7 +1594,7 @@ function op_winder_posicoes($acao, $d)
                         }
                     }
                     if (count($erros) === 0) {
-                        $r_entra = op_lancamento("iniciar", ["relogio_id" => $troca_r, "tipo" => $tipo_novo["identificador"], "posicao_id" => $id]);
+                        $r_entra = op_lancamento("iniciar", ["relogio_id" => $troca_r, "tipo" => $tipo_novo["identificador"], "posicao_id" => $id, "pela_pagina_winders" => true]);
                         if ($r_entra["ok"]) {
                             $partes[] = $r_entra["mensagem"];
                         } else {
@@ -2157,11 +2157,12 @@ function op_timegrapher($acao, $d)
 //           registrado desde a leitura anterior não bate com ela, a API pergunta antes (confirmar: true, com a pergunta);
 //           com confirmar=1, grava como a pessoa marcou.
 //   iniciar (relogio_id, tipo, quando, posicao_id): abre uma sessão; se ela é exclusiva, fecha no mesmo instante a exclusiva
-//                                       aberta em outro lugar (o relógio fica num lugar só). posicao_id: num tipo marcado como
-//                                       winder, a posição do winder (ligada e sem outro relógio); vazio ou 0: nenhuma
+//                                       aberta em outro lugar (o relógio fica num lugar só). O winder é obrigatório: num tipo
+//                                       marcado como winder, sem winder cadastrado, recusa; com winder, só pela página Winders
+//                                       (o winder_posicoes salvar com relogio_id, que passa a posição e pela_pagina_winders)
 //   encerrar (relogio_id, tipo, quando): fecha a sessão aberta daquele tipo
-//   periodo (relogio_id, tipo, inicio, fim, posicao_id): uma sessão que já passou (a posição do winder, como no iniciar,
-//           sem outro relógio nela nesse tempo)
+//   periodo (relogio_id, tipo, inicio, fim, posicao_id): uma sessão que já passou; num tipo marcado como winder, só com
+//           winder cadastrado e com a posição onde ele esteve (sem outro relógio nela nesse tempo)
 //   alterar (id; quando, inicio, fim, valor, estado, posicao_id (0: sem posição): só o que vier), excluir (id)
 //   medicao (id da medição, usada 1 ou 0): a medição do gasto entra na conta ou fica só no histórico
 // Nada no futuro. O tipo tem de valer para o relógio (o ponto dele na árvore). Sessões exclusivas não se sobrepõem.
@@ -2262,6 +2263,16 @@ function op_lancamento($acao, $d)
         $erros[] = t("Relógio não encontrado (relogio_id).");
     } elseif (!$t) {
         $erros[] = t("Tipo de lançamento desconhecido para {1}: use um destes: {2}.", [1 => $r["nome"], 2 => implode(", ", array_keys(lancamento_tipos_do_relogio($r)))]);
+    } elseif ((int)($t["winder"] ?? 0) === 1 && in_array($acao, ["iniciar", "periodo"], true) && !winder_cadastrado()) {
+        // o winder é obrigatório: sem winder cadastrado, não há pôr no winder (nem pelo alternar, que aqui já virou iniciar);
+        // o tirar de uma sessão que já estava aberta continua
+        $erros[] = t("{1}: sem winder cadastrado, não há pôr no winder. Cadastre o seu na página Winders (recurso=winders).", [1 => $r["nome"]]);
+    } elseif ((int)($t["winder"] ?? 0) === 1 && $acao === "iniciar" && ($d["pela_pagina_winders"] ?? false) !== true) {
+        // com winder cadastrado, o relógio vai para o winder só pela página Winders, numa posição: o winder_posicoes salvar com
+        // relogio_id chama este iniciar com pela_pagina_winders (só por dentro: o que vem do pedido é texto, nunca true)
+        $erros[] = t("{1}: com winder cadastrado, o relógio vai para o winder só pela página Winders, numa posição (recurso=winder_posicoes, acao=salvar, com o relogio_id).", [1 => $r["nome"]]);
+    } elseif ((int)($t["winder"] ?? 0) === 1 && $acao === "periodo" && (int)($d["posicao_id"] ?? 0) <= 0) {
+        $erros[] = t("{1}: com winder cadastrado, o período no winder precisa da posição onde ele esteve (posicao_id).", [1 => $r["nome"]]);
     } elseif ($acao === "alternar") {
         $erros[] = t("{1} não é uma sessão: alternar vale só para as sessões (abre a fechada, fecha a aberta).", [1 => $t["nome"]]);
     } elseif ($acao === "lancar") {

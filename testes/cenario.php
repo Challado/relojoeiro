@@ -291,7 +291,21 @@ $lanc("periodo", "auto", "pulso", ["inicio" => dia(2, "08:00"), "fim" => dia(2, 
 // a corda ontem às 15:06: a reserva (41 h) acaba amanhã às 08:06, e hoje fica entre 8 h e 32 h a qualquer hora (perto de zero,
 // os segundos entre um banco e outro passariam da folga)
 $lanc("lancar", "auto", "corda", ["quando" => dia(1, "15:06")]);
-$lanc("periodo", "auto2", "winder", ["inicio" => dia(4, "08:00"), "fim" => dia(4, "20:00")]);
+// o winder é obrigatório: sem winder cadastrado, não há pôr no winder (o iniciar, o alternar e o período, recusados); com o
+// winder da varanda (uma posição; o nome vem depois dos outros, na ordem da lista), o período pede a posição onde ele esteve
+escrever(["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel["auto2"], "tipo" => "winder"], false);
+escrever(["recurso" => "lancamento", "acao" => "alternar", "relogio_id" => $rel["auto2"], "tipo" => "winder"], false);
+escrever(["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => $rel["auto2"], "tipo" => "winder", "inicio" => dia(4, "08:00"), "fim" => dia(4, "20:00")], false);
+ler("ficha sem winder cadastrado", ["recurso" => "ficha", "relogio" => $rel["auto2"]]);
+$wv = escrever(["recurso" => "winders", "acao" => "salvar", "nome" => "Varanda", "posicoes" => 1]);
+$wv_pos = 0;
+foreach (ler("winders com a varanda", ["recurso" => "winders"])["winders"] ?? [] as $w) {
+    if ($w["id"] === $wv) {
+        $wv_pos = $w["posicoes"][0]["id"] ?? 0;
+    }
+}
+escrever(["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => $rel["auto2"], "tipo" => "winder", "inicio" => dia(4, "08:00"), "fim" => dia(4, "20:00")], false);
+$lanc("periodo", "auto2", "winder", ["inicio" => dia(4, "08:00"), "fim" => dia(4, "20:00"), "posicao_id" => $wv_pos]);
 $lanc("periodo", "auto2", "pulso", ["inicio" => dia(9, "08:00"), "fim" => dia(9, "22:00")]);
 // há 29 dias, e não 30: as fórmulas de uso olham os últimos 30 dias (HORAS("pulso"; 30), CONTAR("pulso"; 30)), e essa borda
 // (agora menos 30 dias) passaria por dentro do período conforme a hora do dia
@@ -314,9 +328,14 @@ $lanc("encerrar", "crono", "estojo", ["quando" => ha_minutos(10)]);
 // o Orient no winder de manhã (de 400 a 31 minutos atrás): chega com reserva de sobra ao fim do cenário, quando o sorteio
 // o põe no pulso por alguns segundos (quanto, depende da velocidade do banco). Com a reserva perto de zero, esses segundos
 // mudavam a carga em 25% de um banco para outro; longe do zero, a diferença é de milésimos
-$lanc("periodo", "auto2", "winder", ["inicio" => ha_minutos(400), "fim" => ha_minutos(31)]);
-$lanc("iniciar", "auto2", "winder", ["quando" => ha_minutos(30)]);
-$lanc("encerrar", "auto2", "winder", ["quando" => ha_minutos(25)]);
+// com winder cadastrado, o pôr fora da página Winders é recusado (o iniciar, mesmo com a posição, e o alternar com ele fora);
+// pela página (winder_posicoes salvar com relogio_id) ele entra, e sai pelo alternar (tirar vale em todo lugar)
+$lanc("periodo", "auto2", "winder", ["inicio" => ha_minutos(400), "fim" => ha_minutos(31), "posicao_id" => $wv_pos]);
+escrever(["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel["auto2"], "tipo" => "winder", "posicao_id" => $wv_pos], false);
+escrever(["recurso" => "lancamento", "acao" => "alternar", "relogio_id" => $rel["auto2"], "tipo" => "winder"], false);
+escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wv_pos, "relogio_id" => $rel["auto2"]]);
+ler("ficha com winder cadastrado", ["recurso" => "ficha", "relogio" => $rel["auto2"]]);
+$lanc("alternar", "auto2", "winder");
 // o carregador: um período que já passou e um aberto agora (o estado vira "No carregador" e o aviso Carregar some)
 $lanc("periodo", "smart", "carregador", ["inicio" => dia(7, "20:00"), "fim" => dia(7, "23:00")]);
 // há 5h30 (cheio: a carga fica em 100, igual em qualquer banco). A meia hora: a linha do tempo junta esta sessão com a que o
@@ -959,7 +978,7 @@ escrever(["recurso" => "arvore", "acao" => "excluir", "id" => G(1)]);   // o gru
 $lancs = ler("lancamentos do auto", ["incluir" => "relogios", "f" => ["relogios" => ["id" => $rel["auto"]]], "mostrar" => ["relogios" => "lancamentos"], "foto" => "nao"]);
 $l0 = $lancs["relogios"][0]["lancamentos"][0]["id"] ?? 0;
 escrever(["recurso" => "lancamento", "acao" => "alterar", "id" => $l0, "fim" => dia(2, "21:00")]);
-escrever(["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => $rel["auto"], "tipo" => "winder", "inicio" => dia(2, "20:00"), "fim" => dia(2, "23:00")], false);   // sobrepõe o pulso
+escrever(["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => $rel["auto"], "tipo" => "winder", "inicio" => dia(2, "20:00"), "fim" => dia(2, "23:00"), "posicao_id" => $wv_pos], false);   // sobrepõe o pulso
 escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $rel["solar"]], false);   // sem confirmar: o impacto, e nada sai
 escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $rel["solar"], "confirmar" => 1]);
 escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $rel["auto"], "confirmar" => 1]);
@@ -1363,7 +1382,7 @@ escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "ca
 // metade das 1300 que ele pede), a ficha com a
 // posição, os campos de winder e de posição, o alterar que tira a posição, o segundo winder (que fica, com o Orient) e a
 // exclusão do primeiro (as sessões ficam, sem a posição)
-ler("winders vazio", ["recurso" => "winders"]);
+ler("winders so com a varanda", ["recurso" => "winders"]);
 escrever(["recurso" => "winders", "acao" => "salvar", "nome" => "", "posicoes" => 2], false);
 escrever(["recurso" => "winders", "acao" => "salvar", "nome" => "Demais", "posicoes" => 99], false);
 $wd = escrever(["recurso" => "winders", "acao" => "salvar", "nome" => "Escritório", "posicoes" => 2, "observacao" => "Em cima da estante",
@@ -1376,9 +1395,9 @@ escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "winder_id" => $wd
 $wp3 = escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "winder_id" => $wd, "nome" => "Pos. 3", "ligada" => 0]);
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "valores" => ["winder_tpd" => "1300"]]);
 $wper = $lanc("periodo", "auto2", "winder", ["inicio" => dia(20, "20:00"), "fim" => dia(20, "23:00"), "posicao_id" => $wpos["Pos. 1"] ?? 0]);
-escrever(["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel["auto2"], "tipo" => "winder", "posicao_id" => $wp3], false);
+escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wp3, "relogio_id" => $rel["auto2"]], false);   // desligada
 escrever(["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel["auto2"], "tipo" => "pulso", "posicao_id" => $wpos["Pos. 2"] ?? 0], false);
-$lanc("iniciar", "auto2", "winder", ["posicao_id" => $wpos["Pos. 2"] ?? 0]);
+escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wpos["Pos. 2"] ?? 0, "relogio_id" => $rel["auto2"]]);
 escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wpos["Pos. 2"] ?? 0, "ligada" => 0], false);
 $wl2 = ler("winders com o Orient na Pos. 2", ["recurso" => "winders"]);
 $wf = ler("ficha no winder", ["recurso" => "ficha", "relogio" => $rel["auto2"]]);
@@ -1409,7 +1428,7 @@ foreach ($wql["winders"] ?? [] as $w) {
         $wq_pos = array_column($w["posicoes"], "id", "nome");
     }
 }
-$lanc("iniciar", "auto2", "winder", ["posicao_id" => $wq_pos["Pos. 1"] ?? 0]);
+escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wq_pos["Pos. 1"] ?? 0, "relogio_id" => $rel["auto2"]]);
 // a linha da tabela da página (winder_posicoes salvar com relogio_id): o Orient vai da Pos. 1 para a Pos. 2 junto com o
 // programa novo, sai (— nenhum —) e volta para a Pos. 1; o relógio que não vai para winder é recusado
 escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wq_pos["Pos. 2"] ?? 0, "relogio_id" => $rel["auto2"], "valores" => ["pos_tpd" => "1050"]]);

@@ -514,19 +514,20 @@ function abrirNoPainel(id) {
         r.tipos.forEach(function (item) {
           var chave = "t-" + item.identificador;
           var base = el("input", {"type": "hidden", "name": "tipo", "value": item.identificador});
-          if (item.formato === "sessao") {
+          if (item.formato === "sessao" && item.winder && item.aberta === null) {
+            // o winder é obrigatório: pôr no winder não se faz aqui. Com winder cadastrado, só pela página Winders, numa posição
+            // (aqui, o link); sem winder, não há pôr nem tirar (o tirar de uma sessão que já estava aberta, sim: o ramo de baixo)
+            opcoes.agora += el("option", {"value": chave}, h(acaoSessao(item.nome, false)));
+            partes += parte("marcar", chave, el("p", {"class": "nota"}, (r.winder_cadastrado
+              ? t("Com winder cadastrado, o relógio vai para o winder só pela página Winders, numa posição.")
+              : t("Sem winder cadastrado não há pôr nem tirar do winder. Para usar, cadastre o seu na página Winders."))
+              + " " + el("a", {"href": "winders.php"}, t("Abrir a página Winders ›"))));
+          } else if (item.formato === "sessao") {
             var tirar = item.aberta !== null;
             var verbo = acaoSessao(item.nome, tirar);
             opcoes.agora += el("option", {"value": chave}, h(verbo));
-            // a sessão num winder (o tipo marcado como winder): ao pôr, a posição livre (ligada e sem relógio) onde ele vai; sem
-            // nenhum winder cadastrado, como antes (a conta usa os campos do relógio)
-            var posicoesW = item.winder && !tirar ? (r.winder_posicoes || []) : [];
             partes += parte("marcar", chave, base + el("input", {"type": "hidden", "name": "acao", "value": tirar ? "encerrar" : "iniciar"})
               + (tirar ? el("p", {"class": "marcar-estado"}, h(item.aberta.texto)) : "")
-              + (posicoesW.length > 0 ? el("label", {}, t("Posição {1}", {1: el("select", {"name": "posicao_id"}, posicoesW.map(function (p) {
-                return el("option", {"value": p.id, "title": p.programa}, h(p.texto));
-              }).join("") + el("option", {"value": "0"}, t("— nenhuma (fora de um winder cadastrado)")))}))
-                + el("small", {}, t("O programa da posição (as rotações por dia, o sentido) entra na conta da carga.")) : "")
               + quando(tirar ? t("Tirou às") : t("Pôs às")) + el("button", {}, h(verbo)));
           } else if (item.marcha === "desvio" && r.precisao) {
             // a leitura do desvio da hora (o Testar a precisão): a hora certa andando na tela; a pessoa põe a hora que o relógio vai
@@ -572,13 +573,21 @@ function abrirNoPainel(id) {
               + quando(t("Quando")) + el("button", {}, t("Marcar {1}", {1: h(minusculo(item.nome))})));
           }
         });
-        // um período inteiro que já passou: onde (se houver mais de uma sessão), de e até
-        if (sessoes.length > 0) {
-          opcoes.passou += el("option", {"value": "periodo"}, t("Um período que já passou ({1})", {1: h(sessoes.map(function (item) { return minusculo(item.nome); }).join(", "))}));
+        // um período inteiro que já passou: onde (se houver mais de uma sessão), de e até. No winder (obrigatório), só com winder
+        // cadastrado e com a posição onde ele esteve: o menu da posição aparece (e vai no pedido) só com o winder escolhido
+        var sessoesP = sessoes.filter(function (item) { return !item.winder || (r.winder_cadastrado && (r.winder_posicoes || []).length > 0); });
+        var posP = r.winder_posicoes || [];
+        var winderPrimeiro = sessoesP.length > 0 && !!sessoesP[0].winder;
+        if (sessoesP.length > 0) {
+          opcoes.passou += el("option", {"value": "periodo"}, t("Um período que já passou ({1})", {1: h(sessoesP.map(function (item) { return minusculo(item.nome); }).join(", "))}));
           partes += parte("marcar", "periodo", el("input", {"type": "hidden", "name": "acao", "value": "periodo"})
-            + (sessoes.length > 1
-              ? el("label", {}, t("Onde {1}", {1: el("select", {"name": "tipo"}, sessoes.map(function (item) { return el("option", {"value": item.identificador}, h(item.nome)); }).join(""))}))
-              : el("input", {"type": "hidden", "name": "tipo", "value": sessoes[0].identificador}))
+            + (sessoesP.length > 1
+              ? el("label", {}, t("Onde {1}", {1: el("select", {"name": "tipo", "onchange": "var w = this.selectedOptions[0].hasAttribute('data-winder'); this.form.querySelectorAll('[data-so-winder]').forEach(function (x) { x.hidden = !w; x.querySelectorAll('select').forEach(function (s) { s.disabled = !w; }); });"},
+                sessoesP.map(function (item) { return el("option", {"value": item.identificador, "data-winder": item.winder ? true : null}, h(item.nome)); }).join(""))}))
+              : el("input", {"type": "hidden", "name": "tipo", "value": sessoesP[0].identificador}))
+            + (sessoesP.some(function (item) { return item.winder; }) ? el("label", {"data-so-winder": true, "hidden": !winderPrimeiro}, t("Posição do winder {1}", {1: el("select", {"name": "posicao_id", "disabled": !winderPrimeiro}, posP.map(function (p) {
+              return el("option", {"value": p.id, "title": p.programa}, h(p.texto));
+            }).join(""))}) + el("small", {}, t("onde ele esteve: o programa da posição entra na conta da carga"))) : "")
             + el("label", {}, t("De {1}", {1: momento("inicio", momentoNavegador(new Date(agora.getTime() - 3600000)), true)}))
             + el("label", {}, t("Até {1}", {1: momento("fim", momentoNavegador(new Date()), true, true)}))
             + el("button", {}, t("Registrar o período")));
