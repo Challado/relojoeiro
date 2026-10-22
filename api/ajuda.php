@@ -261,7 +261,7 @@ $saida = [
             "excluir" => ["campos" => t('confirmar=1; id (com as posições; as sessões que ficaram nelas continuam, sem a posição, e a conta delas volta a usar os campos do relógio)'), "exemplo" => t('curl -u lucas:senha -d recurso=winders -d acao=excluir -d id=2 -d confirmar=1 http://servidor/relojoeiro/api.php')],
         ],
         "winder_posicoes" => [
-            "salvar" => ["campos" => t('id (0 ou ausente cria, com winder_id), nome (até 60, sem repetir no winder), ordem, ligada (1 ou 0: a desligada não recebe relógio; com um relógio dentro, tire-o antes), valores[<identificador do campo>]: o programa, os campos da posição (Cadastros › Campos, para a posição do winder; recurso=winders, campos_posicao), com as regras do valor; vazio apaga e vale o padrão do campo: só muda o que vier'), "exemplo" => t('curl -u lucas:senha -d recurso=winder_posicoes -d acao=salvar -d winder_id=2 -d "nome=Pos. 5" -d "valores[pos_tpd]=900" -d "valores[pos_anti_horario]=0" http://servidor/relojoeiro/api.php')],
+            "salvar" => ["campos" => t('id (0 ou ausente cria, com winder_id), nome (até 60, sem repetir no winder), ordem, ligada (1 ou 0: a desligada não recebe relógio; com um relógio dentro, só junto com relogio_id=0), valores[<identificador do campo>]: o programa, os campos da posição (Cadastros › Campos, para a posição do winder; recurso=winders, campos_posicao), com as regras do valor (as rotações por dia, nos valores possíveis do campo); vazio apaga e vale o padrão do campo; relogio_id: o relógio que fica na posição (recurso=winders, relogios): quem estava nela sai agora, e o escolhido, se estava noutra posição ou no winder sem posição, sai de lá e entra nesta (a sessão do tipo marcado como winder dele); 0: tira quem está; sem ele, ninguém entra nem sai: só muda o que vier'), "exemplo" => t('curl -u lucas:senha -d recurso=winder_posicoes -d acao=salvar -d id=5 -d "valores[pos_tpd]=1050" -d "valores[pos_anti_horario]=0" -d relogio_id=4 http://servidor/relojoeiro/api.php')],
             "excluir" => ["campos" => t('confirmar=1; id (as sessões que ficaram nela continuam, sem a posição)'), "exemplo" => t('curl -u lucas:senha -d recurso=winder_posicoes -d acao=excluir -d id=7 -d confirmar=1 http://servidor/relojoeiro/api.php')],
         ],
         "servicos" => [
@@ -781,6 +781,7 @@ $saida = [
             "winders[].posicoes[].relogio.ganho_texto" => t('por extenso ("2,05 h de reserva por hora")'),
             "winders[].posicoes[].relogio.falta_horas" => t('as horas até encher (a fórmula winder_falta); null: não enche (a posição não dá corda nele) ou sem a fórmula'),
             "winders[].posicoes[].relogio.cheio_texto" => t('quando enche, por extenso ("cheio às 19:20", "cheio em 1d 4h", "cheio"); null: não enche'),
+            "winders[].posicoes[].relogio.foto" => t('a versão da foto do relógio (o instante em que foi trocada, em segundos; recurso=foto&relogio=<id>&v=<versão>), a figurinha do desenho do winder; null: sem foto'),
             "winders[].ocupadas" => t('quantas posições têm relógio agora'),
             "winders[].livres" => t('quantas posições ligadas estão sem relógio'),
             "acessorios[].id" => t('o número do acessório'),
@@ -2942,6 +2943,7 @@ $saida = [
             "winders[].posicoes[].relogio.ganho_texto" => t('por extenso ("2,05 h de reserva por hora")'),
             "winders[].posicoes[].relogio.falta_horas" => t('as horas até encher (a fórmula winder_falta); null: não enche (a posição não dá corda nele) ou sem a fórmula'),
             "winders[].posicoes[].relogio.cheio_texto" => t('quando enche, por extenso ("cheio às 19:20", "cheio em 1d 4h", "cheio"); null: não enche'),
+            "winders[].posicoes[].relogio.foto" => t('a versão da foto do relógio (o instante em que foi trocada, em segundos; recurso=foto&relogio=<id>&v=<versão>), a figurinha do desenho do winder; null: sem foto'),
             "winders[].ocupadas" => t('quantas posições têm relógio agora'),
             "winders[].livres" => t('quantas posições ligadas estão sem relógio'),
             "campos_winder" => t('os campos dos winders (Cadastros › Campos, para o winder), na ordem: o formulário do winder'),
@@ -2973,6 +2975,7 @@ $saida = [
             "relogios[].nome" => t('o nome'),
             "relogios[].tipo" => t('o tipo de lançamento de winder dele (o tipo do iniciar)'),
             "relogios[].tipo_nome" => t('o nome desse tipo ("No winder")'),
+            "relogios[].no_winder" => t('verdadeiro: ele está no winder agora (a sessão do tipo dele aberta), numa posição ou sem posição (a sessão aberta antes de os winders serem cadastrados)'),
             "relogios[].posicao_id" => t('a posição em que ele está agora; null: fora de um winder'),
             "relogios[].posicao" => t('essa posição por extenso ("Escritório, Pos. 1"); null: fora de um winder'),
         ],

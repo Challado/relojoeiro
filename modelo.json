@@ -1178,7 +1178,13 @@
             "so_desejado": 0,
             "calibre": 0,
             "alvo": "posicao",
-            "minimo": 0
+            "minimo": 0,
+            "opcoes": [
+                "650",
+                "850",
+                "1050",
+                "1250"
+            ]
         },
         {
             "identificador": "pos_horario",

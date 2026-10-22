@@ -1712,13 +1712,41 @@ svg.mostrador .visor-hora { font: 700 16px/1 ui-monospace, Menlo, Consolas, mono
 /* os winders: um cartão por winder, os dados dele numa linha e a tabela das posições (no celular, um cartão por posição); a
    posição desligada apagada; o Pôr (o menu do relógio e o botão) numa linha só, que quebra onde não cabe */
 .pagina-winders section.winder { margin-bottom: 1rem; }
-.pagina-winders .dados-winder { margin: 0 0 .6rem; font-size: .9rem; }
+.pagina-winders dl.dados-winder { margin: 0 0 .8rem; max-width: 40rem; }
 .pagina-winders table.posicoes-winder td small { display: block; color: var(--cinza); font-size: .8rem; }
-.pagina-winders table.posicoes-winder td.programa { font-size: .84rem; min-width: 12rem; }
-.pagina-winders table.posicoes-winder td:nth-child(3) { min-width: 8rem; }
+.pagina-winders table.posicoes-winder th { white-space: normal; font-size: .72rem; vertical-align: bottom; }
+.pagina-winders table.posicoes-winder td { padding: .35rem .3rem; }
+.pagina-winders table.posicoes-winder td select { width: auto; min-width: 0; max-width: min(11rem, 100%); padding-right: 1.6rem; }
+.pagina-winders table.posicoes-winder input.curto { width: 4.2rem; min-width: 0; }
 .pagina-winders table.posicoes-winder tr.desligada td { color: var(--cinza); }
-.pagina-winders form.por-no-winder { display: inline-flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
-.pagina-winders form.por-no-winder select { max-width: 14rem; }
+.pagina-winders table.posicoes-winder td form { display: none; }
+/* o desenho do winder: a caixa escura com um berço redondo por posição; o anel em volta da foto é a carga (verde até a
+   porcentagem, parado); na posição ligada, um tracinho claro roda em volta dele (o fundo gira, não a foto: nada muda de
+   tamanho; parado para quem pediu menos movimento) */
+@property --giro { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.pagina-winders .winder-desenho {
+  display: grid; grid-template-columns: repeat(var(--colunas), minmax(0, 1fr)); gap: .9rem 1.1rem; justify-items: center;
+  max-width: calc(var(--colunas) * 8.5rem); box-sizing: border-box; margin: 0 0 1rem; padding: 1rem 1.1rem;
+  background: linear-gradient(160deg, #2b2f36, #14171c); border-radius: 14px; box-shadow: inset 0 0 0 3px #3a3f48, 0 4px 12px rgba(0, 0, 0, .18);
+}
+.winder-desenho figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: .35rem; min-width: 0; width: 100%; overflow: hidden; }
+.winder-desenho a { display: block; width: min(5.6rem, 100%); text-decoration: none; }
+.winder-desenho .berco {
+  --carga: 0; display: block; width: min(5.6rem, 100%); aspect-ratio: 1; border-radius: 50%; padding: .3rem; box-sizing: border-box; overflow: hidden;
+  background: conic-gradient(from var(--giro), rgba(255, 255, 255, .7) 0 3%, transparent 3%), conic-gradient(#3fb15a calc(var(--carga) * 1%), #4a505b 0);
+}
+.winder-desenho a .berco { width: 100%; }
+.winder-desenho .berco:not(.ocupado) { background: none; border: 2px dashed #6b7280; }
+.winder-desenho .berco.desligado { opacity: .45; }
+.winder-desenho .miolo { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: #e9ecef; }
+.winder-desenho .berco:not(.ocupado) .miolo { background: #23272e; color: #9aa1ab; font-size: .78rem; }
+.winder-desenho img { width: 100%; height: 100%; object-fit: cover; }
+.winder-desenho .berco-sem-foto { font-size: 1.6rem; font-weight: 700; color: var(--cinza); }
+.winder-desenho .berco.girando { animation: winder-gira 6s linear infinite; }
+@keyframes winder-gira { to { --giro: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .winder-desenho .berco.girando { animation: none; } }
+.winder-desenho figcaption { text-align: center; color: #e5e7eb; font-size: .8rem; max-width: 100%; overflow-wrap: anywhere; }
+.winder-desenho figcaption small { display: block; color: #aab1bb; }
 .pagina-winders section.winder > .botoes { margin-top: .7rem; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
 .pagina-winders #form-posicao, .pagina-winders #form { margin-top: 1.2rem; }
 

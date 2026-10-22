@@ -1096,6 +1096,9 @@
  *                                    fórmula
  *     winders[].posicoes[].relogio.cheio_texto
  *                                    quando enche, por extenso ("cheio às 19:20", "cheio em 1d 4h", "cheio"); null: não enche
+ *     winders[].posicoes[].relogio.foto
+ *                                    a versão da foto do relógio (o instante em que foi trocada, em segundos;
+ *                                    recurso=foto&relogio=<id>&v=<versão>), a figurinha do desenho do winder; null: sem foto
  *     winders[].ocupadas             quantas posições têm relógio agora
  *     winders[].livres               quantas posições ligadas estão sem relógio
  *     acessorios[].id                o número do acessório
@@ -4140,6 +4143,9 @@
  *                                    fórmula
  *     winders[].posicoes[].relogio.cheio_texto
  *                                    quando enche, por extenso ("cheio às 19:20", "cheio em 1d 4h", "cheio"); null: não enche
+ *     winders[].posicoes[].relogio.foto
+ *                                    a versão da foto do relógio (o instante em que foi trocada, em segundos;
+ *                                    recurso=foto&relogio=<id>&v=<versão>), a figurinha do desenho do winder; null: sem foto
  *     winders[].ocupadas             quantas posições têm relógio agora
  *     winders[].livres               quantas posições ligadas estão sem relógio
  *     campos_winder                  os campos dos winders (Cadastros › Campos, para o winder), na ordem: o formulário do winder
@@ -4175,6 +4181,8 @@
  *     relogios[].nome                o nome
  *     relogios[].tipo                o tipo de lançamento de winder dele (o tipo do iniciar)
  *     relogios[].tipo_nome           o nome desse tipo ("No winder")
+ *     relogios[].no_winder           verdadeiro: ele está no winder agora (a sessão do tipo dele aberta), numa posição ou sem posição (a
+ *                                    sessão aberta antes de os winders serem cadastrados)
  *     relogios[].posicao_id          a posição em que ele está agora; null: fora de um winder
  *     relogios[].posicao             essa posição por extenso ("Escritório, Pos. 1"); null: fora de um winder
  *   recurso=servicos
@@ -6166,14 +6174,6 @@ if ($recurso === "textos") {
     // campos do winder e da posição (o formulário) e os relógios que podem ir para um winder (os que têm um tipo de lançamento
     // marcado como winder: o Pôr no winder da página)
     $agora_w = time();
-    $tipo_w = function ($r) {
-        foreach (lancamento_tipos_do_relogio($r) as $ident => $t_w) {
-            if ((int)($t_w["winder"] ?? 0) === 1) {
-                return ["identificador" => $ident, "nome" => $t_w["nome"]];
-            }
-        }
-        return null;
-    };
     $no_winder = [];
     foreach (linhas("SELECT l.relogio_id, lw.posicao_id FROM lancamento_winder lw JOIN lancamento l ON l.id = lw.lancamento_id WHERE l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?)",
         [date("Y-m-d H:i:s", $agora_w), date("Y-m-d H:i:s", $agora_w)]) as $x) {
@@ -6181,9 +6181,13 @@ if ($recurso === "textos") {
     }
     $rel_w = [];
     foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY nome, id") as $r_w) {
-        $t_w = $tipo_w($r_w);
+        $t_w = tipo_winder_do_relogio($r_w);
         if ($t_w !== null) {
+            // no winder agora: a sessão do tipo dele aberta, numa posição ou fora de uma (as de antes dos winders cadastrados)
+            $aberta_w = valor("SELECT COUNT(*) FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.identificador = ? AND l.inicio <= ? AND l.fim IS NULL",
+                [(int)$r_w["id"], $t_w["identificador"], date("Y-m-d H:i:s", $agora_w)]);
             $rel_w[] = ["id" => (int)$r_w["id"], "nome" => $r_w["nome"], "tipo" => $t_w["identificador"], "tipo_nome" => $t_w["nome"],
+                "no_winder" => (int)$aberta_w > 0,
                 "posicao_id" => $no_winder[(int)$r_w["id"]] ?? null, "posicao" => isset($no_winder[(int)$r_w["id"]]) ? winder_posicao_nome($no_winder[(int)$r_w["id"]]) : null];
         }
     }

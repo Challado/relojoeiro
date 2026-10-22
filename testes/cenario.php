@@ -94,7 +94,8 @@ function escrever($params, $espera_ok = true, $chave = null)
     // novo agora: uma sessão que abre e fecha no mesmo segundo some (0 s), e no segundo seguinte fica (1 s). Antes de cada uma,
     // o segundo vira: a sessão de cada relógio que passa por hoje dura ao menos 1 s em qualquer banco, rápido ou lento
     $troca = in_array($params["recurso"], ["rodizio", "modos"], true)
-        || ($params["recurso"] === "lancamento" && in_array($params["acao"] ?? "", ["iniciar", "encerrar", "alternar"], true));
+        || ($params["recurso"] === "lancamento" && in_array($params["acao"] ?? "", ["iniciar", "encerrar", "alternar"], true))
+        || ($params["recurso"] === "winder_posicoes" && array_key_exists("relogio_id", $params));
     while ($troca && time() <= $ultima_troca) {
         usleep(20000);
     }
@@ -1357,8 +1358,9 @@ escrever(["recurso" => "campos", "acao" => "excluir", "id" => $c_nota, "confirma
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "calibre_id" => "0"]);
 
 // os winders (v45): um winder com duas posições e a marca, as recusas (sem nome, posições demais, o nome repetido, a posição
-// desligada ou ocupada, a posição num tipo que não é de winder), o programa da Pos. 2 (300 rotações, só no sentido horário),
-// o Orient num período antigo na Pos. 1 e agora na Pos. 2 (o ganho pelo programa: metade das 600 que ele pede), a ficha com a
+// desligada ou ocupada, a posição num tipo que não é de winder, as rotações fora dos valores possíveis), o programa da Pos. 2
+// (650 rotações, só no sentido horário), o Orient num período antigo na Pos. 1 e agora na Pos. 2 (o ganho pelo programa:
+// metade das 1300 que ele pede), a ficha com a
 // posição, os campos de winder e de posição, o alterar que tira a posição, o segundo winder (que fica, com o Orient) e a
 // exclusão do primeiro (as sessões ficam, sem a posição)
 ler("winders vazio", ["recurso" => "winders"]);
@@ -1368,10 +1370,11 @@ $wd = escrever(["recurso" => "winders", "acao" => "salvar", "nome" => "Escritór
     "valores" => ["winder_marca" => "Wolf", "winder_modelo" => "Viceroy"]]);
 $wl = ler("winders com duas posicoes", ["recurso" => "winders"]);
 $wpos = array_column(($wl["winders"][0]["posicoes"] ?? []), "id", "nome");
-escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wpos["Pos. 2"] ?? 0, "valores" => ["pos_tpd" => "300", "pos_anti_horario" => "0"]]);
+escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wpos["Pos. 2"] ?? 0, "valores" => ["pos_tpd" => "650", "pos_anti_horario" => "0"]]);
+escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wpos["Pos. 2"] ?? 0, "valores" => ["pos_tpd" => "900"]], false);
 escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "winder_id" => $wd, "nome" => "Pos. 1"], false);
 $wp3 = escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "winder_id" => $wd, "nome" => "Pos. 3", "ligada" => 0]);
-escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "valores" => ["winder_tpd" => "600"]]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "valores" => ["winder_tpd" => "1300"]]);
 $wper = $lanc("periodo", "auto2", "winder", ["inicio" => dia(20, "20:00"), "fim" => dia(20, "23:00"), "posicao_id" => $wpos["Pos. 1"] ?? 0]);
 escrever(["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel["auto2"], "tipo" => "winder", "posicao_id" => $wp3], false);
 escrever(["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel["auto2"], "tipo" => "pulso", "posicao_id" => $wpos["Pos. 2"] ?? 0], false);
@@ -1407,6 +1410,13 @@ foreach ($wql["winders"] ?? [] as $w) {
     }
 }
 $lanc("iniciar", "auto2", "winder", ["posicao_id" => $wq_pos["Pos. 1"] ?? 0]);
+// a linha da tabela da página (winder_posicoes salvar com relogio_id): o Orient vai da Pos. 1 para a Pos. 2 junto com o
+// programa novo, sai (— nenhum —) e volta para a Pos. 1; o relógio que não vai para winder é recusado
+escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wq_pos["Pos. 2"] ?? 0, "relogio_id" => $rel["auto2"], "valores" => ["pos_tpd" => "1050"]]);
+ler("winders com o Orient trocado de posição", ["recurso" => "winders"]);
+escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wq_pos["Pos. 2"] ?? 0, "relogio_id" => 0]);
+escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wq_pos["Pos. 3"] ?? 0, "relogio_id" => $rel["smart"]], false);
+escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wq_pos["Pos. 1"] ?? 0, "relogio_id" => $rel["auto2"]]);
 escrever(["recurso" => "winder_posicoes", "acao" => "excluir", "id" => $wp3], false);
 escrever(["recurso" => "winder_posicoes", "acao" => "excluir", "id" => $wp3, "confirmar" => 1]);
 escrever(["recurso" => "winders", "acao" => "excluir", "id" => $wd, "confirmar" => 1]);

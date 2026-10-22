@@ -1,4 +1,4 @@
-<!-- origem: 1dc3be926762e6bed7f414015c3d61553c644bea -->
+<!-- origem: dd29ef39585f33ab3608fa3a31193014472cfc49 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -163,7 +163,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `servicos` | the services and diagnostics (`relogio=<id>`, with the summary: the declared water resistance, the proven one, how many and the total cost; without it, everyone's), with the parts, the cost, the water resistance and the rate before and after |
 | `reserva` | the measured reserve (`relogio=<id>`: the mechanical watch's reserve tests, the energy observations, the measurement, which is the median of the tests, and the declared, measured and estimated table with the confidence; without it, the tests and observations of all) |
 | `timegrapher` | the timegrapher measurements (`relogio=<id>`: the last session, with the average of each quantity and the difference between the positions, the measurements and what the CSV import understands; without it, everyone's) |
-| `winders` | the collection's winders (the **Winders** page): each one with its data, the note and the positions, and each position with the program, whether it is on and the watch in it now (the charge, what each hour gives, when it fills up); the winder and position fields and the watches that can go on a winder |
+| `winders` | the collection's winders (the **Winders** page): each one with its data, the note and the positions, and each position with the program, whether it is on and the watch in it now (the charge, what each hour gives, when it fills up, the photo); the winder and position fields and the watches that can go on a winder (with the position they are in and whether they are on the winder without a position) |
 | `relatorios` | the reports, through a single door: without `tipo`, the catalog (each report with the group, the name, the description and the parameters, and the watches); with `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron`) and its parameters (`relogio`, `de`, `ate`, `posse`, `situacao`), the ready report (title, subtitle, summary, sections as table or pairs, footer, already in text); `csv=1`: the spreadsheet |
 | `documento` | a document's file (`id=<id>`): to show (image, video, audio, PDF, text) or to download (the rest, or with `baixar=1`); `mini=1` is the photo's thumbnail. It serves pieces (Range), so the video can skip ahead |
 | `usuarios`, `migracoes` | the master: the accounts panel, each with what it has and the password hash (to migrate with the same password: see [The users and the passwords](#os-usuários-e-as-senhas)); the others, only their own account; the migrations still to apply |
@@ -188,7 +188,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `servicos` | `salvar` (the date, the type, who did it, the labour, the parts, the water resistance, the rate before and after, the warranty and the documents; a service and a battery change also become the entry), `excluir` |
 | `reserva` | `iniciar` (when it was full and how), `parou`, `observar` (stopped, low charge, note; also on the solar), `salvar`, `usar` (the median goes to the watch's record), `excluir` |
 | `timegrapher` | `salvar` (a measurement: the position, the rate, the amplitude, the beat error, the beats per hour, the angle), `importar` (the device's CSV; `conferir=1`: without saving), `excluir` |
-| `winders`, `winder_posicoes` | `salvar` (the winder: the name, the fields, the note and, when creating, how many positions; the position: the name, the order, on, the program), `excluir` (the sessions that were in them stay, without the position) |
+| `winders`, `winder_posicoes` | `salvar` (the winder: the name, the fields, the note and, when creating, how many positions; the position: the name, the order, on, the program and `relogio_id`, the watch that stays in it: puts on, swaps or, with 0, takes off), `excluir` (the sessions that were in them stay, without the position) |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (only without documents) |
 | `secoes` | the record sections: `salvar` (the name; `id=0` creates at the end), `ordem` (`direcao=sobe` or `desce`), `excluir` (its fields are left without a section, at the end) |
 | `unidades` | `salvar` (the symbol, the name, the base and the factor, the zero and the also-show-in; the new symbol is carried to whatever uses it), `excluir` (only without use; takes along the units that convert into it) |

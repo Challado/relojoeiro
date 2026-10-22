@@ -123,7 +123,7 @@ foreach ($arv["grupos"] ?? [] as $g_a) {
 }
 $rel_w = (int)(preparar($ana, ["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Automatico SEGREDOANA", "no_id" => $no_aut_a, "disponivel" => 1])["id"] ?? 0);
 $wnd_a = (int)(preparar($ana, ["recurso" => "winders", "acao" => "salvar", "nome" => "Winder SEGREDOANA", "posicoes" => 0, "valores" => ["winder_marca" => "Marca SEGREDOANA"]])["id"] ?? 0);
-$wps_a = (int)(preparar($ana, ["recurso" => "winder_posicoes", "acao" => "salvar", "winder_id" => $wnd_a, "nome" => "Pos SEGREDOANA", "valores" => ["pos_tpd" => "800"]])["id"] ?? 0);
+$wps_a = (int)(preparar($ana, ["recurso" => "winder_posicoes", "acao" => "salvar", "winder_id" => $wnd_a, "nome" => "Pos SEGREDOANA", "valores" => ["pos_tpd" => "850"]])["id"] ?? 0);
 $lwd_a = (int)(preparar($ana, ["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => $rel_w, "tipo" => "winder", "posicao_id" => $wps_a,
     "inicio" => date("Y-m-d H:i", time() - 5 * 86400), "fim" => date("Y-m-d H:i", time() - 5 * 86400 + 7200)])["id"] ?? 0);
 // e uma medição do timegrapher (a observação com a marca)
@@ -226,6 +226,8 @@ $tentativas = [
     ["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wps_a, "ligada" => 0],
     ["recurso" => "winder_posicoes", "acao" => "salvar", "winder_id" => $wnd_a, "nome" => "INVADIDO"],
     ["recurso" => "winder_posicoes", "acao" => "excluir", "id" => $wps_a, "confirmar" => 1],
+    ["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wps_a, "relogio_id" => $rel_w],
+    ["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wps_a, "relogio_id" => 0],
     ["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel_w, "tipo" => "winder", "posicao_id" => $wps_a],
     ["recurso" => "lancamento", "acao" => "alterar", "id" => $lwd_a, "posicao_id" => 0],
     ["recurso" => "config", "acao" => "evento_salvar", "id" => $evt_a, "nome" => "INVADIDO", "repeticao" => "semanal", "hora" => "10:00", "dias_semana" => "6"],

@@ -1,6 +1,7 @@
-// Winders: a lista da API (recurso=winders), com as posições de cada winder (o programa, o relógio que está nela, a carga, o
-// que cada hora ali dá e quando enche), o Pôr e o Tirar de cada posição (recurso=lancamento, o tipo marcado como winder, com
-// a posição) e os formulários do winder (winders.php?editar=id) e da posição (?posicao=id; nova: ?nova_posicao=winder).
+// Winders: a lista da API (recurso=winders). Em cada winder, o desenho (um berço por posição, com a foto do relógio que está
+// nela), os dados e a tabela das posições, cada linha um formulário (recurso=winder_posicoes): o programa (os campos da
+// posição), o relógio (— nenhum — tira; outro põe ou troca) e o Salvar; embaixo, os formulários do winder
+// (winders.php?editar=id) e da posição (?posicao=id: o nome, a ordem, ligada; nova: ?nova_posicao=winder).
 var q = new URLSearchParams(window.location.search);
 var editar = parseInt(q.get("editar") || "0", 10);
 var editarPos = parseInt(q.get("posicao") || "0", 10);
@@ -48,30 +49,64 @@ function valorGravado(dados, ident) {
   return v;
 }
 
-// os dados de um winder ou de uma posição numa linha: "Marca: Wolf · Modelo: 1.8", com a etiqueta do padrão onde não foi informado
-function dadosTexto(dados) {
-  return dados.map(function (x) {
-    return h(x.nome) + ": " + el("strong", {}, h(x.texto)) + (x.origem !== "informado" ? " " + el("span", {"class": "origem origem-" + x.origem}, h(x.origem_texto)) : "");
-  }).join(" · ");
+// os dados de um winder em pares rótulo | valor (a tabela de duas colunas das fichas), com a etiqueta do padrão onde não foi
+// informado, e a observação no fim
+function tabelaDados(dados, observacao) {
+  var pares = dados.map(function (x) {
+    return el("dt", {}, h(x.nome)) + el("dd", {}, el("strong", {}, h(x.texto)) + (x.origem !== "informado" ? " " + el("span", {"class": "origem origem-" + x.origem}, h(x.origem_texto)) : ""));
+  }).join("") + (observacao !== null ? el("dt", {}, t("Observação")) + el("dd", {}, h(observacao)) : "");
+  return pares !== "" ? el("dl", {"class": "pares dados-winder"}, pares) : "";
 }
 
-// o Pôr e o Tirar de uma posição: tirar fecha a sessão do relógio que está nela; pôr abre a sessão do tipo winder do relógio
-// escolhido, já na posição (só os que não estão num winder agora)
-function acaoPosicao(w, p, relogios) {
-  if (p.relogio !== null) {
-    return el("form", {"data-recurso": "lancamento", "class": "inline", "data-fica": w.id}, el("input", {"type": "hidden", "name": "acao", "value": "encerrar"})
-      + el("input", {"type": "hidden", "name": "relogio_id", "value": p.relogio.relogio_id}) + el("input", {"type": "hidden", "name": "tipo", "value": p.relogio.tipo})
-      + el("button", {"class": "leve"}, t("Tirar")));
+// a entrada de um campo da posição na linha da tabela (o programa), ligada ao formulário da linha pelo atributo form: o
+// menu dos valores possíveis (ou sim e não), ou o número; vazio volta ao padrão do campo, que o menu e a dica mostram
+function entradaLinha(c, p, formId) {
+  var v = valorGravado(p.dados, c.identificador);
+  var nome = "valores[" + c.identificador + "]";
+  var rotulo = c.nome + (c.unidade !== "" ? " (" + c.unidade + ")" : "");
+  if (c.multiplo) {
+    var x = (p.dados || []).filter(function (y) { return y.identificador === c.identificador; })[0];
+    return x ? h(x.texto) : "—";
   }
-  var livres = relogios.filter(function (r) { return r.posicao_id === null; });
-  if (!p.ligada || livres.length === 0) {
-    return "";
+  if (c.tipo === "sim_nao" || c.tipo === "lista" || c.opcoes.length > 0) {
+    var ops = c.tipo === "sim_nao" ? [["1", t("sim")], ["0", t("não")]] : c.opcoes.map(function (o) { return [o, o]; });
+    return el("select", {"name": nome, "form": formId, "aria-label": rotulo}, el("option", {"value": ""}, c.padrao_texto !== null ? h(t("padrão: {1}", {1: c.padrao_texto})) : "—")
+      + ops.map(function (o) { return el("option", {"value": o[0], "selected": v !== null && String(v) === o[0]}, h(o[1])); }).join(""));
   }
-  return el("form", {"data-recurso": "lancamento", "class": "inline por-no-winder", "data-fica": w.id}, el("input", {"type": "hidden", "name": "acao", "value": "iniciar"})
-    + el("input", {"type": "hidden", "name": "posicao_id", "value": p.id}) + el("input", {"type": "hidden", "name": "tipo", "value": livres[0].tipo})
-    + el("select", {"name": "relogio_id", "aria-label": t("Relógio"), "onchange": "this.form.tipo.value = this.selectedOptions[0].getAttribute('data-tipo')"},
-      livres.map(function (r) { return el("option", {"value": r.id, "data-tipo": r.tipo}, h(r.nome)); }).join(""))
-    + " " + el("button", {"class": "leve"}, t("Pôr")));
+  return el("input", {"name": nome, "form": formId, "aria-label": rotulo, "class": "curto", "value": v === null ? "" : (c.tipo === "texto" ? v : String(v).replace(".", ",")),
+    "inputmode": c.tipo === "texto" ? null : "decimal", "placeholder": c.padrao_texto !== null ? c.padrao_texto : null});
+}
+
+// o relógio da posição: "— nenhum —" tira quem está nela; escolher outro põe (e, se ele está noutra posição ou no winder
+// sem posição, tira de lá). O que está nela fica no menu mesmo quando não está mais disponível para o rodízio
+function escolhaRelogio(p, relogios, formId) {
+  var atual = p.relogio !== null ? p.relogio.relogio_id : 0;
+  var lista = relogios.slice();
+  if (atual > 0 && lista.filter(function (r) { return r.id === atual; }).length === 0) {
+    lista.unshift({id: atual, nome: p.relogio.relogio, posicao_id: p.id, posicao: null, no_winder: true});
+  }
+  return el("select", {"name": "relogio_id", "form": formId, "aria-label": t("Relógio")}, el("option", {"value": "0", "selected": atual === 0}, t("— nenhum —"))
+    + lista.map(function (r) {
+      var onde = r.posicao_id !== null && r.posicao_id !== p.id ? t(" (em {1})", {1: r.posicao}) : (r.no_winder && r.posicao_id === null ? t(" (no winder, sem posição)") : "");
+      return el("option", {"value": r.id, "selected": r.id === atual}, h(r.nome + onde));
+    }).join(""));
+}
+
+// o desenho do winder: a caixa com um berço redondo por posição, na grade dele; no berço ocupado, a foto do relógio (ou a
+// inicial do nome) com o anel da carga em volta, girando devagar enquanto a posição está ligada, e o link da ficha; o livre
+// tracejado; o desligado apagado
+function desenhoWinder(w) {
+  var n = w.posicoes.length;
+  var colunas = n <= 2 ? Math.max(1, n) : (n <= 4 ? 2 : (n <= 6 ? 3 : 4));
+  return el("div", {"class": "winder-desenho", "style": "--colunas: " + colunas, "role": "img", "aria-label": t("Desenho do {1}", {1: w.nome})}, w.posicoes.map(function (p) {
+    var r = p.relogio;
+    var miolo = r === null ? el("span", {"class": "berco-vazio"}, p.ligada ? t("livre") : t("desligada"))
+      : (r.foto !== null ? el("img", {"src": "api.php?recurso=foto&relogio=" + r.relogio_id + "&v=" + r.foto, "alt": ""}) : el("span", {"class": "berco-sem-foto"}, h(r.relogio.charAt(0))));
+    var berco = el("span", {"class": "berco" + (r !== null ? " ocupado" : "") + (!p.ligada ? " desligado" : (r !== null ? " girando" : "")),
+      "style": r !== null && r.carga !== null ? "--carga: " + Math.max(0, Math.min(100, r.carga)) : null}, el("span", {"class": "miolo"}, miolo));
+    return el("figure", {}, (r !== null ? el("a", {"href": "ficha.php?id=" + r.relogio_id, "title": r.relogio}, berco) : berco)
+      + el("figcaption", {}, el("strong", {}, h(p.nome)) + (r !== null ? el("small", {}, h(r.relogio) + (r.carga !== null ? " · ~" + r.carga + "%" : "")) : "")));
+  }).join(""));
 }
 
 api({recurso: "winders"}).then(function (d) {
@@ -88,24 +123,29 @@ api({recurso: "winders"}).then(function (d) {
   d.winders.forEach(function (w) { nPos += w.posicoes.length; nOcup += w.ocupadas; });
   var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Winders")) + el("span", {"class": "nota"}, d.winders.length + (d.winders.length === 1 ? t(" winder") : t(" winders"))
     + (nPos > 0 ? " · " + t("{1} posições, {2} com relógio", {1: nPos, 2: nOcup}) : "")));
-  res += el("p", {"class": "nota"}, t("Cada winder tem as posições dele, e cada posição o programa dela (os campos da posição: as rotações por dia, o sentido, o ciclo). Quanto cada hora no winder carrega sai da fórmula winder_ganho, pelo programa da posição e pelo que o relógio pede (Cadastros › Fórmulas)."));
+  res += el("p", {"class": "nota"}, t("Cada winder tem as posições dele, e cada posição o programa dela (os campos da posição: as rotações por dia, o sentido, o ciclo). Mude o programa e o relógio de uma posição direto na linha da tabela e clique em Salvar: no Relógio, — nenhum — tira quem está nela, e outro relógio entra no lugar (saindo de onde estava). Quanto cada hora no winder carrega sai da fórmula winder_ganho, pelo programa da posição e pelo que o relógio pede (Cadastros › Fórmulas); os valores possíveis de cada campo, como as rotações por dia, ficam em Cadastros › Campos."));
   // um cartão por winder: os dados e a tabela das posições
   d.winders.forEach(function (w) {
     var linhas = w.posicoes.map(function (p) {
       var rel = p.relogio;
-      return el("tr", {"class": p.ligada ? "" : "desligada"}, el("td", {}, el("strong", {}, h(p.nome)) + (p.ligada ? "" : el("small", {}, t("desligada"))))
-        + el("td", {"class": "programa"}, p.dados.length > 0 ? dadosTexto(p.dados) : "—")
-        + el("td", {}, rel !== null ? el("a", {"href": "ficha.php?id=" + rel.relogio_id}, h(rel.relogio)) + el("small", {}, h(rel.desde_texto)) : el("span", {"class": "nota"}, p.ligada ? t("livre") : "—"))
+      var fid = "fp-" + p.id;
+      return el("tr", {"class": p.ligada ? "" : "desligada"}, el("td", {}, el("form", {"id": fid, "data-recurso": "winder_posicoes", "data-fica": w.id},
+          el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": p.id}))
+          + el("strong", {}, h(p.nome)) + (p.ligada ? "" : el("small", {}, t("desligada")))
+          + el("small", {}, el("a", {"href": "winders.php?posicao=" + p.id + "#form-posicao", "title": t("O nome, a ordem e se a posição está ligada")}, t("Editar"))))
+        + d.campos_posicao.map(function (c) { return el("td", {}, entradaLinha(c, p, fid)); }).join("")
+        + el("td", {}, p.ligada ? escolhaRelogio(p, d.relogios, fid) + (rel !== null ? el("small", {}, h(rel.desde_texto)) : "") : el("span", {"class": "nota"}, "—"))
         + el("td", {"class": "num"}, rel !== null && rel.carga !== null ? "~" + rel.carga + "%" : "—")
         + el("td", {}, rel !== null && rel.ganho_texto !== null ? h(rel.ganho_texto) : "—")
         + el("td", {}, rel !== null && rel.cheio_texto !== null ? h(rel.cheio_texto) : "—")
-        + el("td", {"class": "acoes-linha"}, acaoPosicao(w, p, d.relogios) + " " + el("a", {"href": "winders.php?posicao=" + p.id + "#form-posicao"}, t("Editar"))));
+        + el("td", {"class": "acoes-linha"}, el("button", {"form": fid, "class": "leve"}, t("Salvar"))));
     }).join("");
     res += el("section", {"class": "cartao-config winder", "id": "w-" + w.id}, el("h2", {}, h(w.nome))
-      + (w.dados.length > 0 ? el("p", {"class": "dados-winder"}, dadosTexto(w.dados)) : "")
-      + (w.observacao !== null ? el("p", {"class": "nota"}, h(w.observacao)) : "")
+      + (w.posicoes.length > 0 ? desenhoWinder(w) : "")
+      + tabelaDados(w.dados, w.observacao)
       + (w.posicoes.length > 0
-        ? el("div", {"class": "rolagem"}, el("table", {"class": "relogios compacta posicoes-winder"}, el("thead", {}, el("tr", {}, el("th", {}, t("Posição")) + el("th", {}, t("Programa"))
+        ? el("div", {"class": "rolagem"}, el("table", {"class": "relogios compacta posicoes-winder"}, el("thead", {}, el("tr", {}, el("th", {}, t("Posição"))
+          + d.campos_posicao.map(function (c) { return el("th", {}, h(c.nome) + (c.unidade !== "" ? " (" + h(c.unidade) + ")" : "")); }).join("")
           + el("th", {}, t("Relógio")) + el("th", {}, t("Carga")) + el("th", {}, t("Cada hora dá")) + el("th", {}, t("Enche")) + el("th", {}, ""))) + el("tbody", {}, linhas)))
         : el("p", {"class": "nota"}, t("Nenhuma posição. Crie a primeira abaixo.")))
       + el("div", {"class": "botoes"}, el("a", {"class": "botao leve", "href": "winders.php?nova_posicao=" + w.id + "#form-posicao"}, t("Nova posição"))

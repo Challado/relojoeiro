@@ -1523,7 +1523,23 @@ function op_winder_posicoes($acao, $d)
         }
         $dentro = $atual ? valor("SELECT r.nome FROM lancamento_winder lw JOIN lancamento l ON l.id = lw.lancamento_id JOIN relogio r ON r.id = l.relogio_id
             WHERE lw.posicao_id = ? AND l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?)", [$id, $agora_t, $agora_t]) : null;
-        if ($ligada === 0 && $dentro !== null) {
+        // relogio_id: o relógio que fica na posição (0: nenhum). Pôr, tirar e trocar numa gravação só: quem estava nela sai
+        // agora; o escolhido, se está noutra posição (ou no winder sem posição), sai de lá e entra nesta
+        $troca_r = array_key_exists("relogio_id", $d) ? (int)$d["relogio_id"] : null;
+        $novo_r = null;
+        $tipo_novo = null;
+        if ($troca_r !== null && $troca_r > 0) {
+            $novo_r = linha("SELECT * FROM relogio WHERE id = ?", [$troca_r]);
+            $tipo_novo = $novo_r ? tipo_winder_do_relogio($novo_r) : null;
+            if (!$novo_r) {
+                $erros[] = t("Relógio não encontrado (relogio_id).");
+            } elseif ($tipo_novo === null) {
+                $erros[] = t("O {1} não vai para um winder: nenhum tipo de lançamento dele está marcado como winder (Cadastros › Tipos de lançamento).", [1 => $novo_r["nome"]]);
+            } elseif ($ligada === 0) {
+                $erros[] = t("A posição {1} está desligada.", [1 => $nome]);
+            }
+        }
+        if ($ligada === 0 && $dentro !== null && $troca_r !== 0) {
             $erros[] = t("A posição {1} está com o {2}: tire o relógio antes de desligar.", [1 => $nome, 2 => $dentro]);
         }
         $gravar_p = [];
@@ -1552,6 +1568,42 @@ function op_winder_posicoes($acao, $d)
             }
             $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
             $msg = t("Posição {1} do {2} {3}{4}.", [1 => $nome, 2 => $w["nome"], 3 => $atual ? t("salva") : t("criada"), 4 => $ligada === 0 ? t(" (desligada)") : ""]);
+            if ($troca_r !== null) {
+                $agora_p = date("Y-m-d H:i:s");
+                $ocupante = linha("SELECT l.relogio_id, t.identificador FROM lancamento_winder lw JOIN lancamento l ON l.id = lw.lancamento_id
+                    JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE lw.posicao_id = ? AND l.inicio <= ? AND l.fim IS NULL", [$id, $agora_p]);
+                $partes = [];
+                if ($ocupante && (int)$ocupante["relogio_id"] !== $troca_r) {
+                    $r_sai = op_lancamento("encerrar", ["relogio_id" => (int)$ocupante["relogio_id"], "tipo" => $ocupante["identificador"]]);
+                    if ($r_sai["ok"]) {
+                        $partes[] = $r_sai["mensagem"];
+                    } else {
+                        $erros = array_merge($erros, $r_sai["erros"]);
+                    }
+                }
+                if ($novo_r && count($erros) === 0 && (!$ocupante || (int)$ocupante["relogio_id"] !== $troca_r)) {
+                    // o escolhido já está no winder (noutra posição ou sem posição): sai de lá antes de entrar nesta
+                    $aberta_n = valor("SELECT COUNT(*) FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.identificador = ? AND l.inicio <= ? AND l.fim IS NULL",
+                        [$troca_r, $tipo_novo["identificador"], $agora_p]);
+                    if ((int)$aberta_n > 0) {
+                        $r_mv = op_lancamento("encerrar", ["relogio_id" => $troca_r, "tipo" => $tipo_novo["identificador"]]);
+                        if ($r_mv["ok"]) {
+                            $partes[] = $r_mv["mensagem"];
+                        } else {
+                            $erros = array_merge($erros, $r_mv["erros"]);
+                        }
+                    }
+                    if (count($erros) === 0) {
+                        $r_entra = op_lancamento("iniciar", ["relogio_id" => $troca_r, "tipo" => $tipo_novo["identificador"], "posicao_id" => $id]);
+                        if ($r_entra["ok"]) {
+                            $partes[] = $r_entra["mensagem"];
+                        } else {
+                            $erros = array_merge($erros, $r_entra["erros"]);
+                        }
+                    }
+                }
+                $msg .= count($partes) > 0 ? " " . implode(" ", $partes) : "";
+            }
         }
     } elseif ($acao === "excluir" && $atual) {
         sql("DELETE FROM winder_posicao WHERE id = ?", [$id]);

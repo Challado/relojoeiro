@@ -1,4 +1,4 @@
-<!-- origem: 1dc3be926762e6bed7f414015c3d61553c644bea -->
+<!-- origem: dd29ef39585f33ab3608fa3a31193014472cfc49 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -164,7 +164,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `servicos` | los servicios y diagnósticos (`relogio=<id>`, con el resumen: la resistencia declarada, la estanqueidad comprobada, cuántos y el costo sumado; sin él, los de todos), con las piezas, el costo, la estanqueidad y la marcha antes y después |
 | `reserva` | la reserva medida (`relogio=<id>`: las pruebas de la reserva del mecánico, las observaciones de la energía, la medida, que es la mediana de las pruebas, y la tabla declarado, medido y estimado con la confianza; sin él, las pruebas y las observaciones de todos) |
 | `timegrapher` | las mediciones del timegrapher (`relogio=<id>`: la última sesión, con el promedio de cada magnitud y la diferencia entre las posiciones, las mediciones y lo que entiende la importación del CSV; sin él, las de todos) |
-| `winders` | los winders de la colección (la página **Winders**): cada uno con los datos, la observación y las posiciones, y cada posición con el programa, si está encendida y el reloj que está en ella ahora (la carga, lo que da cada hora, cuándo se llena); los campos del winder y de la posición y los relojes que pueden ir a un winder |
+| `winders` | los winders de la colección (la página **Winders**): cada uno con los datos, la observación y las posiciones, y cada posición con el programa, si está encendida y el reloj que está en ella ahora (la carga, lo que da cada hora, cuándo se llena, la foto); los campos del winder y de la posición y los relojes que pueden ir a un winder (con la posición en que están y si están en el winder sin posición) |
 | `relatorios` | los informes, por una puerta sola: sin `tipo`, el catálogo (cada informe con el grupo, el nombre, la descripción y los parámetros, y los relojes); con `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron`) y sus parámetros (`relogio`, `de`, `ate`, `posse`, `situacao`), el informe listo (título, subtítulo, resumen, secciones en tabla o en pares, pie, ya en texto); `csv=1`: la planilla |
 | `documento` | el archivo de un documento (`id=<id>`): para mostrar (imagen, video, audio, PDF, texto) o para descargar (el resto, o con `baixar=1`); `mini=1` es la miniatura de la foto. Atiende trozos (Range), para que el video avance |
 | `usuarios`, `migracoes` | el master: el panel de las cuentas, cada una con lo que tiene y el hash de la contraseña (para migrar con la misma contraseña: vea [Los usuarios y las contraseñas](#os-usuários-e-as-senhas)); los demás, solo su propia cuenta; las migraciones que faltan aplicar |
@@ -189,7 +189,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `servicos` | `salvar` (la fecha, el tipo, quién lo hizo, la mano de obra, las piezas, la estanqueidad, la marcha antes y después, la garantía y los documentos; la revisión y el cambio de pila se convierten también en el registro), `excluir` |
 | `reserva` | `iniciar` (cuándo quedó lleno y cómo), `parou`, `observar` (se detuvo, carga baja, nota; también en el solar), `salvar`, `usar` (la mediana va al registro del reloj), `excluir` |
 | `timegrapher` | `salvar` (una medición: la posición, la marcha, la amplitud, el error de latido, los latidos por hora, el ángulo), `importar` (el CSV del aparato; `conferir=1`: sin grabar), `excluir` |
-| `winders`, `winder_posicoes` | `salvar` (el winder: el nombre, los campos, la observación y, al crear, cuántas posiciones; la posición: el nombre, el orden, encendida, el programa), `excluir` (las sesiones que quedaron en ellos siguen, sin la posición) |
+| `winders`, `winder_posicoes` | `salvar` (el winder: el nombre, los campos, la observación y, al crear, cuántas posiciones; la posición: el nombre, el orden, encendida, el programa y `relogio_id`, el reloj que queda en ella: pone, cambia o, con 0, quita), `excluir` (las sesiones que quedaron en ellos siguen, sin la posición) |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (solo sin documentos) |
 | `secoes` | las secciones de la ficha: `salvar` (el nombre; `id=0` crea al final), `ordem` (`direcao=sobe` o `desce`), `excluir` (sus campos quedan sin sección, al final) |
 | `unidades` | `salvar` (el símbolo, el nombre, la base y el factor, el cero y el mostrar también en; el símbolo nuevo pasa a quien lo usa), `excluir` (solo sin uso; se lleva las que se convierten en ella) |

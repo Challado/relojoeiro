@@ -701,9 +701,11 @@ The **winder** (the box that turns automatics) has its own records, on the **Win
 winder with its **positions**, and each position with its **program**. None of this is fixed in the code: the winder's data
 and the position's program are **fields**, registered in the **Fields** tab of the **Definitions** page with **For: the
 winders** or **For: the winder positions**, like the watch fields. The new setup already brings the winder's **brand** and
-**model** and, on the position, the **turns per day** (TPD, default 650), whether it **turns clockwise** and
-**counterclockwise** (both, by default) and the **cycle** (how long it turns and how long it rests). Does your winder have
-another way of programming? Create its fields.
+**model** and, on the position, the **turns per day** (TPD, default 650, with the possible values 650, 850, 1050 and 1250,
+those of the TPD switch of common winders), whether it **turns clockwise** and **counterclockwise** (both, by default: the
+winder switch's bidirectional *Auto*) and the **cycle** (how long it turns and how long it rests). Does your winder have other
+speeds? Change the possible values of the **Turns per day** field in the **Fields** tab (or remove them all, to type any
+number). Another way of programming? Create its fields.
 
 On the watch side, the automatic gains three fields, which the caliber can also give: the **turns per day it needs** on the
 winder (default 650) and whether it **winds turning clockwise** and **counterclockwise** (both, by default; the movement that
@@ -715,22 +717,31 @@ proportion of the *On the winder* fields (the hours and the reserve they give) t
 needs (at most 1); if it turns in no direction in which it winds, it gains nothing. A session that is not in a position (the
 old ones, or with no winder registered) uses the *On the winder* fields, as before. In formulas, `WINDER_POSICAO("pos_tpd")`
 is a field of the position and `WINDER("winder_marca")`, one of the winder. `reserva_restante` uses `winder_ganho` in each
-winder session, with the program of the position it was in: a watch that spent the night in a 300-turn position and the
-afternoon in a 900-turn one gains each stretch by its own. `winder_falta` gives the hours until it is full.
+winder session, with the program of the position it was in: a watch that spent the night in a 650-turn position and the
+afternoon in a 1250-turn one gains each stretch by its own. `winder_falta` gives the hours until it is full.
 
-On the page, one card per winder, with its data and the table of positions: the **program** (a field's default shows with
-the *default* tag), the **watch** in it, the **charge**, **what each hour gives** and when it **fills up** ("full at
-19:20"), with **Take off** (the watch leaves the winder) and, on a free position, the list of watches and **Put on**.
-Below, the forms: the winder (the name, the fields and, when creating, how many positions it starts with) and the position
-(the name, the order, **on**, the program). A position that is off takes no watch, and with a watch inside it cannot be
-turned off.
+On the page, one card per winder. At the top, the winder's **drawing**: the box with a round cradle per position, and in each
+occupied cradle the watch's **photo** (or the initial of its name), with a green ring around it that is the **charge** and,
+while the position is on, a light tick going round over it (whoever asks the device for less motion sees it still); the free cradle is dashed,
+the off one is faded, and clicking the photo opens the watch page. Below, the winder's **data** (label and value, with the
+*default* tag where the field's default applies) and the **table of positions**, where each row is edited right there: one
+column for each position field (the **turns per day** in the menu of possible values, the **directions** as yes or no, the
+**cycle**; empty goes back to the default), the **Watch** column (a menu with **— none —** and the watches that go on a
+winder), the **charge**, **what each hour gives** and when it **fills up** ("full at 19:20"), and the row's **Save**. In
+Watch, **— none —** takes off whoever is in the position; choosing another one **puts on** or **swaps**: whoever was there
+leaves, and the chosen one, if it was in another position (or on the winder without a position, like those put on the
+winder before it was registered), leaves it and enters this one. Each position's **Edit** opens the name, the order and
+**on**; below, the forms of the winder (the name, the fields and, when creating, how many positions it starts with) and of
+the position. A position that is off takes no watch, and with a watch inside it only turns off together with **— none —**.
 
 On the watch panel, the **Put on the winder** of the **Mark** box asks for the **position** (only the free ones that are on);
 the state then says where it is: *"On the winder · Office, Pos. 2"*. The entry type that asks for the position is the one
 marked as **winder** in the **Entry types** tab (the new setup's *On the winder*). Deleting a position or a winder does not
 delete the sessions: they stay without the position, and their calculation goes back to the watch's fields. Through the
 API: `recurso=winders` (the winders, the positions, the watch in each one and the watches that can go on a winder), the
-writes `winders` and `winder_posicoes` (`salvar`, `excluir`) and the `lancamento` `iniciar` with `posicao_id`.
+writes `winders` and `winder_posicoes` (`salvar`, `excluir`; in the position's `salvar`, `relogio_id` puts on, swaps or, with 0, takes off) and the `lancamento`
+`iniciar` with `posicao_id`. A tree that already existed gets the possible values of the turns per day in the update (migration
+v46), if the field had none yet.
 
 ### Record sections
 
@@ -1535,7 +1546,7 @@ comes in here by its name.
 | **Statistics** (`estatisticas.php`) | The collection's use in a period (**From**, **To**; the shortcuts 30 days, 90 days, 1 year and since the beginning; default: the last 90 days): the summary (days with a watch on the wrist, hours on the wrist and per day, watches worn and unworn, the average cost per use and the collection's value, the most and the least worn); **Each watch**, from the most worn to the least: days of use, hours, each one's share (with the bar), the cost per use, how many days since it last went on the wrist and the trend (↑ wearing more, ↓ wearing less, → stable: the second half of the period compared to the first); the **By day of the week** and **By month** charts (the hours on the wrist); and **The collection**: the watches divided by group, brand, purchase year, status and each list field (like Style), with how many, the share and the hours of each part. Through the API: `recurso=estatisticas`. |
 | **Totals** (`totais.php`, menu **Collection**) | The totals page: the totals marked for it (the **Totals** tab of Definitions), each in a box, narrow or wide, in the order of the definitions: the small table with the total row, the number, or the watch with the value. It opens from **See all totals** under the table on the Today page, with the same filter (*Counting 12 of 17 watches*, with **Count all**), or from the menu, with all of them. Through the API: `recurso=totais&parte=pagina`. See [Totals](#totals). |
 | **Accessories** (`acessorios.php`) | The straps, boxes, cases, tools, chargers, parts and anything else: the list (the name, the type, the watch it belongs to, or *loose*, and the note), with the **Watch** filter (all, the loose ones or those of a watch; the panel's **Accessories** box opens it already filtered), **Edit** and **Delete** on each one, and below the form (**New accessory**: name, type, watch or *loose (serves several)* and note). Deleting a watch leaves its accessories loose. Through the API: `recurso=acessorios` (the list) and the `acessorios` write (`salvar`, `excluir`). Each one shows the **Data** (the fields of its type) and where it **Fits** (see [The construction and the accessories](#the-construction-and-the-accessories)); the form asks for the fields of the chosen type. |
-| **Winders** (`winders.php`) | The winders and the positions of each one: one card per winder, with its data and the table of positions (the **program**, the **watch** in it, the **charge**, **what each hour gives** and when it **fills up**), **Take off** and **Put on** in each position, **Edit** the position, **New position**, **Edit the winder** and **Delete the winder**; below, the forms (**New winder**: the name, how many positions it starts with, the winder's fields and the note) and the position's (the name, the order, on, the program). See [Winders](#winders). Through the API: `recurso=winders` and the writes `winders` and `winder_posicoes`. |
+| **Winders** (`winders.php`) | The winders and the positions of each one: one card per winder, with its **drawing** (one cradle per position, with the photo of the watch in it and the charge ring), the data and the table of positions, editable in the row (the **program**, one field per column; the **Watch**, with **— none —** to take off and the watches to put on or swap; the **charge**, **what each hour gives** and when it **fills up**; the **Save**), **Edit** the position (the name, the order, on), **New position**, **Edit the winder** and **Delete the winder**; below, the forms (**New winder**: the name, how many positions it starts with, the winder's fields and the note) and the position's (the name, the order, on, the program). See [Winders](#winders). Through the API: `recurso=winders` and the writes `winders` and `winder_posicoes`. |
 | **Gallery** (`galeria.php`) | The collection in photos, by group: each watch with the photo (the link to its page), the name, the brand and the reference, the purchase year and price and the days of use; at the top, how many, the total value and how many have a photo. **Also those outside the collection** shows the wished, sold and archived ones (with the status mark). **Print**: on paper, four per row, without the menu. Through the API: `recurso=galeria`. |
 | **Passport** (`passaporte.php`) | A watch's sheet to print or save as PDF (the **Passport** button in the panel's Documents box): the photo, the name, the brand and the reference, the group and the status; the **Purchase**; the **Use** (the first and the last time on the wrist, the hours on the wrist, the days of use and the cost per use); the filled-in **Record**; the **Services** (each type of mark, how many times and the last one; the services and battery changes); the **Accessories**; the **Documents**; and the **Upcoming alerts**. **Print**: only the data comes out on paper. Through the API: `recurso=passaporte`. With any service, also the **Services and diagnostics** (who did it, the cost, the water resistance and the rate before and after). |
 | **Reports** (`relatorios.php`) | The single door of the reports: the menu with all of them (by group), the chosen one's fields (the watch, the period, the options) and **Generate the report**; the report on screen, on paper (**Print**) and as a spreadsheet (**Download the spreadsheet (CSV)**). See [Reports](#reports). |
@@ -1792,7 +1803,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `servicos` | the services and diagnostics (`relogio=<id>`, with the summary: the declared water resistance, the proven one, how many and the total cost; without it, everyone's), with the parts, the cost, the water resistance and the rate before and after |
 | `reserva` | the measured reserve (`relogio=<id>`: the mechanical watch's reserve tests, the energy observations, the measurement, which is the median of the tests, and the declared, measured and estimated table with the confidence; without it, the tests and observations of all) |
 | `timegrapher` | the timegrapher measurements (`relogio=<id>`: the last session, with the average of each quantity and the difference between the positions, the measurements and what the CSV import understands; without it, everyone's) |
-| `winders` | the collection's winders (the **Winders** page): each one with its data, the note and the positions, and each position with the program, whether it is on and the watch in it now (the charge, what each hour gives, when it fills up); the winder and position fields and the watches that can go on a winder |
+| `winders` | the collection's winders (the **Winders** page): each one with its data, the note and the positions, and each position with the program, whether it is on and the watch in it now (the charge, what each hour gives, when it fills up, the photo); the winder and position fields and the watches that can go on a winder (with the position they are in and whether they are on the winder without a position) |
 | `relatorios` | the reports, through a single door: without `tipo`, the catalog (each report with the group, the name, the description and the parameters, and the watches); with `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron`) and its parameters (`relogio`, `de`, `ate`, `posse`, `situacao`), the ready report (title, subtitle, summary, sections as table or pairs, footer, already in text); `csv=1`: the spreadsheet |
 | `documento` | a document's file (`id=<id>`): to show (image, video, audio, PDF, text) or to download (the rest, or with `baixar=1`); `mini=1` is the photo's thumbnail. It serves pieces (Range), so the video can skip ahead |
 | `usuarios`, `migracoes` | the master: the accounts panel, each with what it has and the password hash (to migrate with the same password: see [The users and the passwords](#the-users-and-the-passwords)); the others, only their own account; the migrations still to apply |
@@ -1817,7 +1828,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `servicos` | `salvar` (the date, the type, who did it, the labour, the parts, the water resistance, the rate before and after, the warranty and the documents; a service and a battery change also become the entry), `excluir` |
 | `reserva` | `iniciar` (when it was full and how), `parou`, `observar` (stopped, low charge, note; also on the solar), `salvar`, `usar` (the median goes to the watch's record), `excluir` |
 | `timegrapher` | `salvar` (a measurement: the position, the rate, the amplitude, the beat error, the beats per hour, the angle), `importar` (the device's CSV; `conferir=1`: without saving), `excluir` |
-| `winders`, `winder_posicoes` | `salvar` (the winder: the name, the fields, the note and, when creating, how many positions; the position: the name, the order, on, the program), `excluir` (the sessions that were in them stay, without the position) |
+| `winders`, `winder_posicoes` | `salvar` (the winder: the name, the fields, the note and, when creating, how many positions; the position: the name, the order, on, the program and `relogio_id`, the watch that stays in it: puts on, swaps or, with 0, takes off), `excluir` (the sessions that were in them stay, without the position) |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (only without documents) |
 | `secoes` | the record sections: `salvar` (the name; `id=0` creates at the end), `ordem` (`direcao=sobe` or `desce`), `excluir` (its fields are left without a section, at the end) |
 | `unidades` | `salvar` (the symbol, the name, the base and the factor, the zero and the also-show-in; the new symbol is carried to whatever uses it), `excluir` (only without use; takes along the units that convert into it) |

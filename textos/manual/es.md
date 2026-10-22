@@ -1,4 +1,4 @@
-<!-- origem: 2d8506f338d636faf39a2a6a22552269a0473590 -->
+<!-- origem: 04c31af5dd6991b7c8709b26cb0d43ca3e070f00 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -649,9 +649,11 @@ El **winder** (la caja que gira los automáticos) tiene registro propio, en la p
 cada winder con sus **posiciones**, y cada posición con su **programa**. Nada de esto está fijo en el código: los datos del
 winder y el programa de la posición son **campos**, registrados en la pestaña **Campos** de la página **Definiciones** con
 **Para: los winders** o **Para: las posiciones de los winders**, como los de los relojes. El registro nuevo ya trae la
-**marca** y el **modelo** del winder y, en la posición, las **rotaciones por día** (TPD, por defecto 650), si **gira en
-sentido horario** y **antihorario** (los dos, por defecto) y el **ciclo** (cuánto tiempo gira y cuánto descansa). ¿Su winder
-se programa de otra manera? Cree sus campos.
+**marca** y el **modelo** del winder y, en la posición, las **rotaciones por día** (TPD, por defecto 650, con los valores
+posibles 650, 850, 1050 y 1250, los de la llave TPD de los winders comunes), si **gira en sentido horario** y **antihorario**
+(los dos, por defecto: el *Auto*, bidireccional, de la llave del winder) y el **ciclo** (cuánto tiempo gira y cuánto
+descansa). ¿Su winder tiene otras velocidades? Cambie los valores posibles del campo **Rotaciones por día** en la pestaña
+**Campos** (o quítelos todos, para escribir cualquier número). ¿Se programa de otra manera? Cree sus campos.
 
 Del lado del reloj, el automático gana tres campos, que el calibre también puede dar: las **rotaciones por día que pide** en
 el winder (por defecto 650) y si **da cuerda girando en sentido horario** y **antihorario** (los dos, por defecto; el
@@ -664,22 +666,31 @@ proporción de los campos *En el winder* (las horas y la reserva que dan) por la
 antiguas, o sin ningún winder registrado) usa los campos *En el winder*, como antes. En las fórmulas,
 `WINDER_POSICAO("pos_tpd")` es un campo de la posición y `WINDER("winder_marca")`, uno del winder. La `reserva_restante` usa
 la `winder_ganho` en cada sesión en el winder, con el programa de la posición en que estuvo: un reloj que pasó la noche en
-una posición de 300 rotaciones y la tarde en una de 900 gana cada tramo según el suyo. La `winder_falta` da las horas hasta
+una posición de 650 rotaciones y la tarde en una de 1250 gana cada tramo según el suyo. La `winder_falta` da las horas hasta
 que se llena.
 
-En la página, una tarjeta por winder, con sus datos y la tabla de las posiciones: el **programa** (el valor por defecto del
-campo aparece con la etiqueta *por defecto*), el **reloj** que está en ella, la **carga**, **cuánto da cada hora** y cuándo
-se **llena** ("lleno a las 19:20"), con **Quitar** (el reloj sale del winder) y, en la posición libre, el menú de los
-relojes y **Poner**. Abajo, los formularios: el winder (el nombre, los campos y, al crear, cuántas posiciones ya trae) y la
-posición (el nombre, el orden, **encendida**, el programa). La posición apagada no recibe reloj, y con un reloj dentro no se
-apaga.
+En la página, una tarjeta por winder. Arriba, el **dibujo** del winder: la caja con una cuna redonda por posición, y en cada
+cuna ocupada la **foto** del reloj (o la inicial del nombre), con un anillo verde alrededor que es la **carga** y,
+mientras la posición está encendida, una rayita clara girando sobre él (quien pide menos movimiento en el aparato lo ve quieto); la cuna libre es
+punteada, la apagada queda tenue, y el clic en la foto abre la ficha. Debajo, los **datos** del winder (etiqueta y valor, con
+la etiqueta *por defecto* donde vale el valor por defecto del campo) y la **tabla de las posiciones**, en la que cada fila se
+edita ahí mismo: una columna para cada campo de la posición (las **rotaciones por día** en el menú de los valores posibles,
+los **sentidos** en sí o no, el **ciclo**; vacío vuelve al valor por defecto), la columna **Reloj** (un menú con **—
+ninguno —** y los relojes que van a un winder), la **carga**, **cuánto da cada hora** y cuándo se **llena** ("lleno a las
+19:20"), y el **Guardar** de la fila. En Reloj, **— ninguno —** quita a quien está en la posición; elegir otro **pone** o
+**cambia**: quien estaba sale, y el elegido, si estaba en otra posición (o en el winder sin posición, como los que fueron al
+winder antes de registrarlo), sale de ahí y entra en esta. El **Editar** de cada posición abre el nombre, el orden y
+**encendida**; debajo, los formularios del winder (el nombre, los campos y, al crear, cuántas posiciones ya trae) y de la
+posición. La posición apagada no recibe reloj, y con un reloj dentro solo se apaga junto con **— ninguno —**.
 
 En el panel del reloj, el **Poner en el winder** del cuadro **Marcar** pide la **posición** (solo las encendidas y libres);
 el estado pasa a decir dónde está: *"En el winder · Oficina, Pos. 2"*. El tipo de registro que pide la posición es el
 marcado como **winder** en la pestaña **Tipos de registro** (el *En el winder* del registro nuevo). Eliminar una posición o
 un winder no borra las sesiones: quedan sin la posición, y su cálculo vuelve a los campos del reloj. Por la API:
 `recurso=winders` (los winders, las posiciones, el reloj en cada una y los relojes que pueden ir a un winder), las escrituras
-`winders` y `winder_posicoes` (`salvar`, `excluir`) y el `iniciar` del `lancamento` con `posicao_id`.
+`winders` y `winder_posicoes` (`salvar`, `excluir`; en el `salvar` de la posición, `relogio_id` pone, cambia o, con 0, quita) y el `iniciar` del
+`lancamento` con `posicao_id`. Un árbol que ya existía gana los valores posibles de las rotaciones por día en la actualización (la migración
+v46), si el campo todavía no tenía ninguno.
 
 ### Las secciones de la ficha {#as-divisórias-da-ficha}
 
@@ -1450,7 +1461,7 @@ que usted registre entra aquí con su nombre.
 | **Estadísticas** (`estatisticas.php`) | El uso de la colección en un período (**Desde**, **Hasta**; los atajos 30 días, 90 días, 1 año y desde el principio; predeterminado: los últimos 90 días): el resumen (días con reloj en la muñeca, horas en la muñeca y por día, relojes usados y sin uso, el costo por uso medio y el valor de la colección, el más y el menos usado); **Cada reloj**, del más usado al menos: días de uso, horas, la parte de cada uno (con la barra), el costo por uso, cuántos días hace que fue a la muñeca y la tendencia (↑ usando más, ↓ usando menos, → estable: la segunda mitad del período comparada con la primera); los gráficos **Por día de la semana** y **Por mes** (las horas en la muñeca); y **La colección**: los relojes divididos por grupo, marca, año de compra, situación y cada campo de lista (como Estilo), con cuántos, la parte y las horas de cada parte. Por la API: `recurso=estatisticas`. |
 | **Totales** (`totais.php`, menú **Colección**) | La página de totales: los totales marcados para ella (la pestaña **Totales** de las Definiciones), cada uno en un cuadro, estrecho o ancho, en el orden de las definiciones: la tablita con la fila de total, el número, o el reloj con el valor. Se abre desde **Ver todos los totales** debajo de la tabla de la página Hoy, con el mismo filtro (*Contando 12 de 17 relojes*, con **Contar todos**), o desde el menú, con todos. Por la API: `recurso=totais&parte=pagina`. Ver [Los totales](#os-totais). |
 | **Accesorios** (`acessorios.php`) | Las correas, cajas, estuches, herramientas, cargadores, piezas y lo que sea: la lista (el nombre, el tipo, el reloj al que pertenece, o *suelto*, y la observación), con el filtro **Reloj** (todos, los sueltos o los de un reloj; el cuadro **Accesorios** del panel la abre ya filtrada), **Editar** y **Eliminar** en cada uno, y debajo el formulario (**Nuevo accesorio**: nombre, tipo, reloj o *suelto (sirve a varios)* y observación). Eliminar un reloj deja sus accesorios sueltos. Por la API: `recurso=acessorios` (la lista) y la escritura `acessorios` (`salvar`, `excluir`). Cada uno muestra los **Datos** (los campos de su tipo) y dónde **Sirve** (vea [La construcción y los accesorios](#a-construção-e-os-acessórios)); el formulario pide los campos del tipo elegido. |
-| **Winders** (`winders.php`) | Los winders y las posiciones de cada uno: una tarjeta por winder, con sus datos y la tabla de las posiciones (el **programa**, el **reloj** que está en ella, la **carga**, **cuánto da cada hora** y cuándo se **llena**), **Quitar** y **Poner** en cada posición, **Editar** la posición, **Nueva posición**, **Editar el winder** y **Eliminar el winder**; abajo, el registro (**Nuevo winder**: el nombre, cuántas posiciones ya trae, los campos del winder y la observación) y el de la posición (el nombre, el orden, encendida, el programa). Vea [Los winders](#os-winders). Por la API: `recurso=winders` y las escrituras `winders` y `winder_posicoes`. |
+| **Winders** (`winders.php`) | Los winders y las posiciones de cada uno: una tarjeta por winder, con su **dibujo** (una cuna por posición, con la foto del reloj que está en ella y el anillo de la carga), los datos y la tabla de las posiciones, editable en la fila (el **programa**, un campo por columna; el **Reloj**, con **— ninguno —** para quitar y los relojes para poner o cambiar; la **carga**, **cuánto da cada hora** y cuándo se **llena**; el **Guardar**), **Editar** la posición (el nombre, el orden, encendida), **Nueva posición**, **Editar el winder** y **Eliminar el winder**; abajo, el registro (**Nuevo winder**: el nombre, cuántas posiciones ya trae, los campos del winder y la observación) y el de la posición (el nombre, el orden, encendida, el programa). Vea [Los winders](#os-winders). Por la API: `recurso=winders` y las escrituras `winders` y `winder_posicoes`. |
 | **Galería** (`galeria.php`) | La colección en fotos, por grupo: cada reloj con la foto (el enlace a la ficha), el nombre, la marca y la referencia, el año y el valor de compra y los días de uso; arriba, cuántos, el valor total y cuántos tienen foto. **También los de fuera de la colección** muestra los deseados, vendidos y archivados (con la marca de la situación). **Imprimir**: en papel, cuatro por fila, sin el menú. Por la API: `recurso=galeria`. |
 | **Pasaporte** (`passaporte.php`) | La hoja de un reloj para imprimir o guardar en PDF (el botón **Pasaporte** del cuadro Documentos del panel): la foto, el nombre, la marca y la referencia, el grupo y la situación; la **Compra**; el **Uso** (la primera y la última vez en la muñeca, las horas en la muñeca, los días de uso y el costo por uso); la **Ficha** rellenada; los **Mantenimientos** (cada tipo de marca, cuántas veces y la última; las revisiones y los cambios de pila); los **Accesorios**; los **Documentos**; y los **Próximos avisos**. **Imprimir**: en el papel salen solo los datos. Por la API: `recurso=passaporte`. Con algún servicio, también los **Servicios y diagnósticos** (quién lo hizo, el costo, la estanqueidad y la marcha antes y después). |
 | **Informes** (`relatorios.php`) | La puerta única de los informes: el menú con todos (por grupo), los campos del elegido (el reloj, el período, las opciones) y **Generar el informe**; el informe en la pantalla, en el papel (**Imprimir**) y en una planilla (**Descargar la planilla (CSV)**). Vea [Los informes](#os-relatórios). |

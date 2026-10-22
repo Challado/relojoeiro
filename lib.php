@@ -1211,6 +1211,7 @@ $MIGRACOES = [
     "v43" => ["migracao_v43.sql", tk("as regras do valor de um campo (Cadastros › Campos): os valores possíveis também no texto e no número (o valor tem de ser um deles), o mínimo e o máximo do número e o campo múltiplo (a lista múltipla, como as funções do relógio: vários valores de uma vez, guardados um por linha), com as funções TEM e ITENS nas fórmulas"), "campo_valor_item"],
     "v44" => ["migracao_v44.sql", tk("a construção pronta e os campos dos acessórios: cada árvore ganha os campos da construção (material da caixa, diâmetro, espessura, alça a alça, entre alças, peso, vidro, mostrador e a cor dele, luminescência, coroa, fundo e as funções, uma lista múltipla) na divisória Construção, e os acessórios ganham campos (Cadastros › Campos, para acessório: a largura, o material, a cor e o fecho da pulseira); a pulseira mostra em quais relógios ela serve (a largura dela com o entre alças deles)"), "acessorio_valor", "migracao_v44_dados"],
     "v45" => ["migracao_v45.sql", tk("os winders: a página Winders cadastra os winders da coleção e as posições de cada um, com campos livres (Cadastros › Campos, para o winder e para a posição: a marca, o modelo, as rotações por dia, o sentido, o ciclo); o Pôr no winder escolhe a posição, e a reserva do automático no winder sai da fórmula winder_ganho, pelo programa da posição (as rotações por dia e o sentido) e pelo que o relógio pede"), "lancamento_winder", "migracao_v45_dados"],
+    "v46" => ["migracao_v46.sql", tk("as rotações por dia das posições dos winders com valores possíveis (650, 850, 1050 e 1250, os da chave TPD dos winders comuns), num menu em cada posição da página Winders; mudam em Cadastros › Campos"), "sistema.chave=migracao_v46", "migracao_v46_dados"],
 ];
 
 // O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
@@ -1548,6 +1549,28 @@ function migracao_v45_dados($nova = false)
                 }
             }
             sql("UPDATE formula SET expressao = ? WHERE identificador = 'reserva_restante' AND expressao = ?" . $em, [MIGRACAO_V45_RESERVA[1], MIGRACAO_V45_RESERVA[0]]);
+        }
+    });
+}
+
+// Migração v46: os valores possíveis das rotações por dia (pos_tpd), do modelo, no campo de cada árvore que ainda não tem
+// nenhum (quem já cadastrou os dele fica como está). Numa instalação nova o modelo já traz os valores: fica só a marca (no
+// banco que já existia, o migracao_v46.sql grava a marca)
+function migracao_v46_dados($nova = false)
+{
+    if ($nova) {
+        sis_set("migracao_v46", "1");
+        return;
+    }
+    sem_escopo(function () {
+        $modelo = array_column(modelo_ler()["campos"], null, "identificador");
+        foreach (linhas("SELECT id FROM campo WHERE identificador = 'pos_tpd'") as $c) {
+            if ((int)valor("SELECT COUNT(*) FROM campo_opcao WHERE campo_id = ?", [(int)$c["id"]]) > 0) {
+                continue;
+            }
+            foreach (array_values($modelo["pos_tpd"]["opcoes"] ?? []) as $i => $o) {
+                sql("INSERT INTO campo_opcao (campo_id, ordem, valor) VALUES (?, ?, ?)", [(int)$c["id"], $i + 1, $o]);
+            }
         }
     });
 }
@@ -2950,6 +2973,18 @@ function campo_para_conta($c, $bruto)
         return (float)$bruto;
     }
     return $c["tipo"] === "data" ? dias_de(strtotime($bruto . " 00:00:00")) : (string)$bruto;
+}
+
+// O tipo de lançamento de winder de um relógio (o marcado como winder entre os que valem para ele): identificador e nome;
+// null quando ele não tem nenhum (não vai para um winder)
+function tipo_winder_do_relogio($r)
+{
+    foreach (lancamento_tipos_do_relogio($r) as $ident => $t_w) {
+        if ((int)($t_w["winder"] ?? 0) === 1) {
+            return ["identificador" => $ident, "nome" => $t_w["nome"]];
+        }
+    }
+    return null;
 }
 
 // O nome de uma posição de winder com o do winder: "Escritório, Pos. 2" (null: não existe)
@@ -5608,11 +5643,14 @@ function winder_ocupante($x, $agora)
         $cheio = $falta * 60 < 1 ? t("cheio")
             : t("cheio {1}", [1 => date("Y-m-d", $quando) === date("Y-m-d", $agora) ? t("às {1}", [1 => date("H:i", $quando)]) : t("em {1}", [1 => duracao_texto($falta / 24)])]);
     }
+    // a versão da foto (o instante em que foi trocada), para o endereço da figurinha no desenho do winder; null: sem foto
+    $foto = valor("SELECT atualizado FROM foto WHERE relogio_id = ?", [(int)$r["id"]]);
     return ["relogio_id" => (int)$r["id"], "relogio" => $r["nome"], "lancamento_id" => (int)$x["lancamento_id"], "tipo" => $x["tipo"], "desde" => date("Y-m-d H:i:s", $ini),
         "desde_texto" => t("desde {1}", [1 => date("Y-m-d", $ini) === date("Y-m-d", $agora) ? date("H:i", $ini) : data_txt($ini, true, true)]),
         "carga" => $carga === null ? null : (int)round($carga), "ganho" => $ganho === null ? null : round($ganho, 3),
         "ganho_texto" => $ganho === null ? null : t("{1} h de reserva por hora", [1 => numero_txt($ganho, 2, 0)]),
-        "falta_horas" => $falta === null ? null : round($falta, 2), "cheio_texto" => $cheio];
+        "falta_horas" => $falta === null ? null : round($falta, 2), "cheio_texto" => $cheio,
+        "foto" => $foto === null ? null : strtotime($foto)];
 }
 
 // Os winders da coleção, por nome, com os dados (os campos do winder), as posições (na ordem, com o programa e o relógio que

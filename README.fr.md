@@ -720,8 +720,11 @@ Le **remontoir** (la boîte qui fait tourner les automatiques) a sa propre fiche
 dans le code : les données du remontoir et le programme de la position sont des **champs**, enregistrés dans l'onglet
 **Champs** de la page **Définitions** avec **Pour : les remontoirs** ou **Pour : les positions des remontoirs**, comme ceux
 des montres. La configuration initiale apporte déjà la **marque** et le **modèle** du remontoir et, sur la position, les
-**tours par jour** (TPD, 650 par défaut), s'il **tourne dans le sens horaire** et **antihoraire** (les deux, par défaut) et
-le **cycle** (combien de temps il tourne et combien il se repose). Votre remontoir se programme autrement ? Créez ses champs.
+**tours par jour** (TPD, 650 par défaut, avec les valeurs possibles 650, 850, 1050 et 1250, celles du sélecteur TPD des
+remontoirs courants), s'il **tourne dans le sens horaire** et **antihoraire** (les deux, par défaut : l'*Auto*,
+bidirectionnel, du sélecteur du remontoir) et le **cycle** (combien de temps il tourne et combien il se repose). Votre
+remontoir a d'autres vitesses ? Changez les valeurs possibles du champ **Tours par jour** dans l'onglet **Champs** (ou
+retirez-les toutes, pour saisir n'importe quel nombre). Il se programme autrement ? Créez ses champs.
 
 Côté montre, l'automatique gagne trois champs, que le calibre peut aussi donner : les **tours par jour qu'elle demande** sur
 le remontoir (650 par défaut) et si elle **se remonte en tournant dans le sens horaire** et **antihoraire** (les deux, par
@@ -734,24 +737,34 @@ de la position ÷ ceux qu'elle demande (au plus 1) ; si elle ne tourne dans aucu
 rien. La session qui n'est pas dans une position (les anciennes, ou sans aucun remontoir enregistré) utilise les champs
 *Sur le remontoir*, comme avant. Dans les formules, `WINDER_POSICAO("pos_tpd")` est un champ de la position et
 `WINDER("winder_marca")`, un du remontoir. `reserva_restante` utilise `winder_ganho` dans chaque session sur le remontoir,
-avec le programme de la position où elle est restée : une montre qui a passé la nuit dans une position de 300 tours et
-l'après-midi dans une de 900 gagne chaque tronçon selon le sien. `winder_falta` donne les heures jusqu'à ce qu'elle soit
+avec le programme de la position où elle est restée : une montre qui a passé la nuit dans une position de 650 tours et
+l'après-midi dans une de 1250 gagne chaque tronçon selon le sien. `winder_falta` donne les heures jusqu'à ce qu'elle soit
 pleine.
 
-Sur la page, une carte par remontoir, avec ses données et le tableau des positions : le **programme** (la valeur par défaut
-du champ apparaît avec l'étiquette *par défaut*), la **montre** qui s'y trouve, la **charge**, **ce que donne chaque heure**
-et quand elle est **pleine** (« pleine à 19:20 »), avec **Retirer** (la montre quitte le remontoir) et, sur la position
-libre, la liste des montres et **Mettre**. En dessous, les formulaires : le remontoir (le nom, les champs et, à la création,
-le nombre de positions qu'il reçoit) et la position (le nom, l'ordre, **allumée**, le programme). Une position éteinte ne
-reçoit pas de montre, et avec une montre dedans elle ne s'éteint pas.
+Sur la page, une carte par remontoir. En haut, le **dessin** du remontoir : la boîte avec un berceau rond par position, et
+dans chaque berceau occupé la **photo** de la montre (ou l'initiale de son nom), avec un anneau vert autour qui est la
+**charge** et, tant que la position est allumée, un petit trait clair qui tourne par-dessus (qui demande moins de mouvement à l'appareil la voit
+immobile) ; le berceau libre est en pointillés, l'éteint est estompé, et le clic sur la photo ouvre la fiche. En dessous, les
+**données** du remontoir (libellé et valeur, avec l'étiquette *par défaut* là où vaut la valeur par défaut du champ) et le
+**tableau des positions**, où chaque ligne se modifie sur place : une colonne pour chaque champ de la position (les **tours
+par jour** dans le menu des valeurs possibles, les **sens** en oui ou non, le **cycle** ; vide revient à la valeur par
+défaut), la colonne **Montre** (un menu avec **— aucune —** et les montres qui vont sur un remontoir), la **charge**, **ce que
+donne chaque heure** et quand elle est **pleine** (« pleine à 19:20 »), et l'**Enregistrer** de la ligne. Dans Montre,
+**— aucune —** retire celle qui est dans la position ; en choisir une autre la **met** ou **échange** : celle qui y était
+sort, et la choisie, si elle était dans une autre position (ou sur le remontoir sans position, comme celles mises sur le
+remontoir avant qu'il soit enregistré), en sort et entre dans celle-ci. Le **Modifier** de chaque position ouvre le nom,
+l'ordre et **allumée** ; en dessous, les formulaires du remontoir (le nom, les champs et, à la création, le nombre de
+positions qu'il reçoit) et de la position. Une position éteinte ne reçoit pas de montre, et avec une montre dedans elle ne
+s'éteint qu'avec **— aucune —**.
 
 Sur le panneau de la montre, le **Mettre sur le remontoir** du cadre **Marquer** demande la **position** (seulement les
 allumées et libres) ; l'état dit alors où elle est : *« Sur le remontoir · Bureau, Pos. 2 »*. Le type d'entrée qui demande
 la position est celui coché comme **remontoir** dans l'onglet **Types d'entrée** (le *Sur le remontoir* de la configuration
 initiale). Supprimer une position ou un remontoir n'efface pas les sessions : elles restent sans la position, et leur calcul
 revient aux champs de la montre. Par l'API : `recurso=winders` (les remontoirs, les positions, la montre dans chacune et les
-montres qui peuvent aller sur un remontoir), les écritures `winders` et `winder_posicoes` (`salvar`, `excluir`) et
-l'`iniciar` du `lancamento` avec `posicao_id`.
+montres qui peuvent aller sur un remontoir), les écritures `winders` et `winder_posicoes` (`salvar`, `excluir` ; dans le `salvar` de la position, `relogio_id` met, échange ou, avec 0, retire) et
+l'`iniciar` du `lancamento` avec `posicao_id`. Un arbre qui existait déjà reçoit les valeurs possibles des tours par jour lors de la mise à jour (la migration
+v46), si le champ n'en avait encore aucune.
 
 ### Les sections de la fiche
 
@@ -1584,7 +1597,7 @@ que vous enregistrez apparaît ici sous son nom.
 | **Statistiques** (`estatisticas.php`) | L'usage de la collection sur une période (**De**, **À** ; les raccourcis 30 jours, 90 jours, 1 an et depuis le début ; par défaut : les 90 derniers jours) : le résumé (jours avec une montre au poignet, heures au poignet et par jour, montres portées et non portées, le coût par port moyen et la valeur de la collection, la plus et la moins portée) ; **Chaque montre**, de la plus portée à la moins : jours d'usage, heures, la part de chacune (avec la barre), le coût par port, depuis combien de jours elle n'est pas allée au poignet et la tendance (↑ portée davantage, ↓ portée moins, → stable : la seconde moitié de la période comparée à la première) ; les graphiques **Par jour de la semaine** et **Par mois** (les heures au poignet) ; et **La collection** : les montres réparties par groupe, marque, année d'achat, situation et chaque champ de liste (comme Style), avec combien, la part et les heures de chaque partie. Par l'API : `recurso=estatisticas`. |
 | **Totaux** (`totais.php`, menu **Collection**) | La page des totaux : les totaux cochés pour elle (l'onglet **Totaux** des Définitions), chacun dans un cadre, étroit ou large, dans l'ordre des définitions : le petit tableau avec la ligne de total, le nombre, ou la montre avec la valeur. Elle s'ouvre par **Voir tous les totaux** sous le tableau de la page Aujourd'hui, avec le même filtre (*12 montres sur 17 sont comptées*, avec **Tout compter**), ou par le menu, avec toutes. Par l'API : `recurso=totais&parte=pagina`. Voir [Les totaux](#les-totaux). |
 | **Accessoires** (`acessorios.php`) | Les bracelets, boîtes, étuis, outils, chargeurs, pièces et tout le reste : la liste (le nom, le type, la montre à laquelle il appartient, ou *indépendant*, et l'observation), avec le filtre **Montre** (tous, les indépendants ou ceux d'une montre ; le cadre **Accessoires** du panneau l'ouvre déjà filtrée), **Modifier** et **Supprimer** sur chacun, et en dessous le formulaire (**Nouvel accessoire** : nom, type, montre ou *indépendant (sert à plusieurs)* et observation). Supprimer une montre rend ses accessoires indépendants. Par l'API : `recurso=acessorios` (la liste) et l'écriture `acessorios` (`salvar`, `excluir`). Chacun montre les **Données** (les champs de son type) et où il **Va** (voir [La construction et les accessoires](#la-construction-et-les-accessoires)) ; le formulaire demande les champs du type choisi. |
-| **Remontoirs** (`winders.php`) | Les remontoirs et les positions de chacun : une carte par remontoir, avec ses données et le tableau des positions (le **programme**, la **montre** qui s'y trouve, la **charge**, **ce que donne chaque heure** et quand elle est **pleine**), **Retirer** et **Mettre** dans chaque position, **Modifier** la position, **Nouvelle position**, **Modifier le remontoir** et **Supprimer le remontoir** ; en dessous, la fiche (**Nouveau remontoir** : le nom, le nombre de positions qu'il reçoit, les champs du remontoir et l'observation) et celle de la position (le nom, l'ordre, allumée, le programme). Voir [Les remontoirs](#les-remontoirs). Par l'API : `recurso=winders` et les écritures `winders` et `winder_posicoes`. |
+| **Remontoirs** (`winders.php`) | Les remontoirs et les positions de chacun : une carte par remontoir, avec son **dessin** (un berceau par position, avec la photo de la montre qui s'y trouve et l'anneau de la charge), les données et le tableau des positions, modifiable dans la ligne (le **programme**, un champ par colonne ; la **Montre**, avec **— aucune —** pour retirer et les montres pour mettre ou échanger ; la **charge**, **ce que donne chaque heure** et quand elle est **pleine** ; l'**Enregistrer**), **Modifier** la position (le nom, l'ordre, allumée), **Nouvelle position**, **Modifier le remontoir** et **Supprimer le remontoir** ; en dessous, la fiche (**Nouveau remontoir** : le nom, le nombre de positions qu'il reçoit, les champs du remontoir et l'observation) et celle de la position (le nom, l'ordre, allumée, le programme). Voir [Les remontoirs](#les-remontoirs). Par l'API : `recurso=winders` et les écritures `winders` et `winder_posicoes`. |
 | **Galerie** (`galeria.php`) | La collection en photos, par groupe : chaque montre avec la photo (le lien vers la fiche), le nom, la marque et la référence, l'année et le prix d'achat et les jours d'usage ; en haut, combien, la valeur totale et combien ont une photo. **Aussi celles hors de la collection** montre les désirées, vendues et archivées (avec la marque de la situation). **Imprimer** : sur papier, quatre par ligne, sans le menu. Par l'API : `recurso=galeria`. |
 | **Passeport** (`passaporte.php`) | La fiche d'une montre à imprimer ou à enregistrer en PDF (le bouton **Passeport** du cadre Documents du panneau) : la photo, le nom, la marque et la référence, le groupe et la situation ; l'**Achat** ; l'**Usage** (la première et la dernière fois au poignet, les heures au poignet, les jours d'usage et le coût par port) ; la **Fiche** remplie ; les **Entretiens** (chaque type de marquage, combien de fois et le dernier ; les révisions et les changements de pile) ; les **Accessoires** ; les **Documents** ; et les **Prochaines alertes**. **Imprimer** : seules les données sortent sur le papier. Par l'API : `recurso=passaporte`. Avec un service, aussi les **Services et diagnostics** (qui l'a fait, le coût, l'étanchéité et la marche avant et après). |
 | **Rapports** (`relatorios.php`) | La porte unique des rapports : le menu avec tous (par groupe), les champs de celui choisi (la montre, la période, les options) et **Générer le rapport** ; le rapport à l'écran, sur papier (**Imprimer**) et dans un tableur (**Télécharger le tableur (CSV)**). Voir [Les rapports](#les-rapports). |
@@ -1846,7 +1859,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `servicos` | les services et diagnostics (`relogio=<id>`, avec le résumé : la résistance déclarée, l'étanchéité prouvée, combien et le coût total ; sans lui, ceux de toutes), avec les pièces, le coût, l'étanchéité et la marche avant et après |
 | `reserva` | la réserve mesurée (`relogio=<id>` : les tests de la réserve de la mécanique, les observations de l'énergie, la mesure, qui est la médiane des tests, et le tableau déclaré, mesuré et estimé avec la confiance ; sans lui, les tests et les observations de toutes) |
 | `timegrapher` | les mesures du timegrapher (`relogio=<id>` : la dernière séance, avec la moyenne de chaque grandeur et l'écart entre les positions, les mesures et ce que l'importation du CSV comprend ; sans lui, celles de toutes) |
-| `winders` | les remontoirs de la collection (la page **Remontoirs**) : chacun avec les données, l'observation et les positions, et chaque position avec le programme, si elle est allumée et la montre qui s'y trouve maintenant (la charge, ce que donne chaque heure, quand elle est pleine) ; les champs du remontoir et de la position et les montres qui peuvent aller sur un remontoir |
+| `winders` | les remontoirs de la collection (la page **Remontoirs**) : chacun avec les données, l'observation et les positions, et chaque position avec le programme, si elle est allumée et la montre qui s'y trouve maintenant (la charge, ce que donne chaque heure, quand elle est pleine, la photo) ; les champs du remontoir et de la position et les montres qui peuvent aller sur un remontoir (avec la position où elles sont et si elles sont sur le remontoir sans position) |
 | `relatorios` | les rapports, par une seule porte : sans `tipo`, le catalogue (chaque rapport avec le groupe, le nom, la description et les paramètres, et les montres) ; avec `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron`) et ses paramètres (`relogio`, `de`, `ate`, `posse`, `situacao`), le rapport prêt (titre, sous-titre, résumé, sections en tableau ou en paires, pied, déjà en texte) ; `csv=1` : le tableur |
 | `documento` | le fichier d'un document (`id=<id>`) : pour afficher (image, vidéo, audio, PDF, texte) ou pour télécharger (le reste, ou avec `baixar=1`) ; `mini=1` est la vignette de la photo. Il sert des morceaux (Range), pour que la vidéo avance |
 | `usuarios`, `migracoes` | le master : le panneau des comptes, chacun avec ce qu'il a et le hash du mot de passe (pour migrer avec le même mot de passe : voir [Les utilisateurs et les mots de passe](#les-utilisateurs-et-les-mots-de-passe)) ; les autres, seulement leur propre compte ; les migrations qui restent à appliquer |
@@ -1871,7 +1884,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `servicos` | `salvar` (la date, le type, qui l'a fait, la main-d'œuvre, les pièces, l'étanchéité, la marche avant et après, la garantie et les documents ; la révision et le changement de pile deviennent aussi la saisie), `excluir` |
 | `reserva` | `iniciar` (quand elle était pleine et comment), `parou`, `observar` (arrêtée, charge faible, note ; aussi sur la solaire), `salvar`, `usar` (la médiane va dans la fiche de la montre), `excluir` |
 | `timegrapher` | `salvar` (une mesure : la position, la marche, l'amplitude, l'erreur de battement, les alternances par heure, l'angle), `importar` (le CSV de l'appareil ; `conferir=1` : sans enregistrer), `excluir` |
-| `winders`, `winder_posicoes` | `salvar` (le remontoir : le nom, les champs, l'observation et, à la création, le nombre de positions ; la position : le nom, l'ordre, allumée, le programme), `excluir` (les sessions qui y étaient restent, sans la position) |
+| `winders`, `winder_posicoes` | `salvar` (le remontoir : le nom, les champs, l'observation et, à la création, le nombre de positions ; la position : le nom, l'ordre, allumée, le programme et `relogio_id`, la montre qui y reste : met, échange ou, avec 0, retire), `excluir` (les sessions qui y étaient restent, sans la position) |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (seulement sans documents) |
 | `secoes` | les sections de la fiche : `salvar` (le nom ; `id=0` crée à la fin), `ordem` (`direcao=sobe` ou `desce`), `excluir` (ses champs restent sans section, à la fin) |
 | `unidades` | `salvar` (le symbole, le nom, la base et le facteur, le zéro et l'afficher aussi en ; le nouveau symbole passe à qui l'utilise), `excluir` (seulement sans usage ; emporte celles qui se convertissent en elle) |
