@@ -1731,7 +1731,7 @@ svg.mostrador .visor-hora { font: 700 16px/1 ui-monospace, Menlo, Consolas, mono
 @property --giro { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
 .pagina-winders .winder-desenho {
   display: grid; grid-template-columns: repeat(var(--colunas), minmax(0, 1fr)); gap: .9rem 1.1rem; justify-items: center;
-  max-width: calc(var(--colunas) * 8.5rem); box-sizing: border-box; margin: 0 0 1rem; padding: 1rem 1.1rem;
+  max-width: calc(var(--colunas) * 8.5rem); box-sizing: border-box; margin: 0 auto 1rem; padding: 1rem 1.1rem;
   background: linear-gradient(160deg, #2b2f36, #14171c); border-radius: 14px; box-shadow: inset 0 0 0 3px #3a3f48, 0 4px 12px rgba(0, 0, 0, .18);
 }
 .winder-desenho figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: .35rem; min-width: 0; width: 100%; overflow: hidden; }
