@@ -198,7 +198,10 @@ function recarregarModos() {
     dados = d;
     var params = new URLSearchParams(window.location.search);
     var editar = parseInt(params.get("editar") || "0", 10);
-    var res = el("h1", {}, t("Modos de rodízio"));
+    var res = el("h1", {}, t("Modos de rodízio")) + ondeMuda("modos", [[t("Os modos, os blocos e quem entra em cada um"), t("aqui")],
+      [t("O plano dos próximos dias que o modo monta"), lugar("plano.php", t("Rodízio › Plano"))],
+      [t("Como o relógio de cada dia é escolhido (a nota, o peso)"), lugar("criterios.php", t("Rodízio › Critérios de escolha"))],
+      [t("Se um relógio entra no rodízio"), t("{1} ou {2}: o relógio › Editar cadastro › Disponível para o rodízio", {1: lugar("index.php", t("Hoje")), 2: lugar("ficha.php", t("Ficha"))})]]);
     if (recado !== "") {
       res += recado;
       recado = "";

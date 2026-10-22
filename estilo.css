@@ -1927,3 +1927,25 @@ ol.passos form { display: inline; }
 .senha-conferencia .barra-forca { display: inline-block; width: 8rem; max-width: 100%; height: .45rem; border-radius: 999px; background: var(--aco); overflow: hidden; }
 .senha-conferencia .barra-forca > span { display: block; height: 100%; background: #a8661a; }
 .senha-conferencia .forca-3 .barra-forca > span, .senha-conferencia .forca-4 .barra-forca > span { background: #1e6b2e; }
+
+/* subtelas recolhíveis (recolhivel() no api.js): a dos Cadastros, uma por "vale para", e o quadro "Onde se muda cada coisa" */
+details.recolhivel { border: 1px solid var(--aco); border-radius: 10px; margin: .6rem 0; background: var(--papel); }
+details.recolhivel > summary { cursor: pointer; padding: .55rem .8rem; font-weight: 600; color: var(--safira); overflow-wrap: anywhere; }
+details.recolhivel > summary small { font-weight: 400; color: var(--cinza); }
+details.recolhivel[open] > summary { border-bottom: 1px solid var(--aco); }
+details.recolhivel > .rolagem, details.recolhivel > p { margin: .4rem .6rem .6rem; }
+details.quadro-onde { max-width: 60rem; }
+details.quadro-onde > summary::before { content: "ⓘ "; }
+table.onde-muda td:first-child { width: 45%; }
+table.onde-muda td:last-child, table.compacta.onde-muda td:last-child { text-align: left; }
+.vale-extra { display: block; color: var(--cinza); font-size: .8rem; overflow-wrap: anywhere; }
+/* as subtelas dos Cadastros com as colunas na mesma largura (uma tabela por subtela: assim elas ficam alinhadas umas às outras) */
+@media (min-width: 901px) {
+  table.tabela-campos, table.tabela-formulas { table-layout: fixed; }
+  table.tabela-campos th:nth-child(1) { width: 27%; } table.tabela-campos th:nth-child(2) { width: 17%; } table.tabela-campos th:nth-child(3) { width: 21%; }
+  table.tabela-campos th:nth-child(4) { width: 12%; } table.tabela-campos th:nth-child(5) { width: 7%; } table.tabela-campos th:nth-child(6) { width: 16%; }
+  table.tabela-formulas th:nth-child(1) { width: 30%; } table.tabela-formulas th:nth-child(2) { width: 54%; } table.tabela-formulas th:nth-child(3) { width: 16%; }
+  table.tabela-campos td, table.tabela-formulas td { overflow-wrap: anywhere; }
+  /* na largura fixa, os botões da linha e o identificador comprido quebram em vez de vazar */
+  table.tabela-campos td.acoes-linha, table.tabela-formulas td.acoes-linha, table.tabela-campos td.ident { white-space: normal; }
+}

@@ -1588,6 +1588,17 @@ et **Indisponible** (gris, hors rotation et rangée) ou **Prêtée** (gris : che
 tous. Dans le panneau, l'état vient avec depuis quand (*« Au soleil depuis 09:12 »*). Tout type de saisie au format session
 que vous enregistrez apparaît ici sous son nom.
 
+**Où se change chaque chose.** En haut de Définitions (dans chaque onglet), Remontoirs, Accessoires, Groupes, Alertes,
+Modes de rotation, Critères de choix et de **Modifier la fiche** de la montre, un cadre qui s'ouvre et se ferme dit, dans un
+tableau, ce qui se change là et ce qui se change sur une autre page, avec le lien vers elle : la valeur d'un champ dans une
+montre, dans Modifier la fiche ; le nom, le type et les valeurs possibles du champ, dans **Définitions › Champs** ; les
+groupes, dans **Collection › Groupes** ; et ainsi de suite. Fermé, il reste fermé sur cet appareil.
+
+**Séparé par le Vaut pour.** Dans **Définitions › Champs**, **Types de saisie** et **Formules**, les lignes sont dans des
+sous-écrans repliables, un par **Vaut pour** : toutes les montres ensemble dans le premier, puis chaque groupe dans l'ordre
+de l'arbre (et, pour les champs, les accessoires par type, les remontoirs et les positions des remontoirs). Pour une
+formule, le Vaut pour est sa version pour ce point de l'arbre. Un sous-écran fermé reste aussi fermé sur cet appareil.
+
 | Page | À quoi elle sert |
 |---|---|
 | **Aujourd'hui** (`index.php`) | L'écran principal. Il montre en haut la montre du jour (ou, selon la Configuration, celle qui est au poignet maintenant ; avec le bouton **Jour sans montre**, et, un jour libre, **Aujourd'hui sans montre** avec le **choisir…**), les alertes du jour (en retard et bientôt) avec le bouton qui résout chacune, les prochains jours du plan (« Afficher jusqu'à » jours à la fois, avec les pages en dessous) et le mode de rotation, qui se change sur place (avec **Effacer une période** et **Tout effacer**) (et, dedans, la **Rotation manuelle** : les montres d'une période, jour par jour ; voir [La rotation manuelle](#la-rotation-manuelle)). En dessous se trouve le tableau de la collection, avec des filtres et le tri par type, état, charge, dernier port, prochain entretien, date et prix d'achat, et dans le pied les totaux de chaque colonne, en petits tableaux alignés, qui ne comptent que les montres que le filtre laisse (voir [Les totaux](#les-totaux)), avec **Voir tous les totaux**. Cliquer sur une montre ouvre son **panneau** : à côté de la liste ou dans une grande fenêtre flottante, selon la Configuration (**Ouvrir la montre sur la page Aujourd'hui**). |

@@ -106,6 +106,44 @@ function relatorioHtml(r) {
   return res + el("p", {"class": "nota rodape-impresso"}, h(r.rodape));
 }
 
+// As subtelas recolhíveis (<details data-recolhe="chave">): a que o usuário fechou fica fechada neste aparelho (localStorage,
+// só a comodidade de cada um; sem ele, tudo abre aberto)
+function recolhidos() {
+  try {
+    return JSON.parse(localStorage.getItem("recolhidos") || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+function recolhivel(chave, titulo, corpo, classe) {
+  return el("details", {"class": "recolhivel" + (classe ? " " + classe : ""), "data-recolhe": chave, "open": recolhidos().indexOf(chave) < 0}, el("summary", {}, titulo) + corpo);
+}
+document.addEventListener("toggle", function (ev) {
+  var d = ev.target;
+  if (!d.matches || !d.matches("details[data-recolhe]")) {
+    return;
+  }
+  var chave = d.getAttribute("data-recolhe");
+  var lista = recolhidos().filter(function (x) { return x !== chave; });
+  if (!d.open) {
+    lista.push(chave);
+  }
+  try {
+    localStorage.setItem("recolhidos", JSON.stringify(lista));
+  } catch (e) { /* armazenamento bloqueado: só não lembra */ }
+}, true);
+
+// "Onde se muda cada coisa": a tabela do topo das páginas (o quê | onde, com o link para o lugar), recolhível; linhas:
+// [[o quê, onde], ...], o onde já em HTML (lugar() faz o link)
+function ondeMuda(chave, linhas) {
+  return recolhivel("onde-" + chave, t("Onde se muda cada coisa"), el("div", {"class": "rolagem"}, el("table", {"class": "compacta onde-muda"},
+    el("thead", {}, el("tr", {}, el("th", {}, t("O quê")) + el("th", {}, t("Onde"))))
+    + el("tbody", {}, linhas.map(function (l) { return el("tr", {}, el("td", {}, l[0]) + el("td", {}, l[1])); }).join("")))), "quadro-onde");
+}
+function lugar(href, texto) {
+  return el("a", {"href": href}, texto);
+}
+
 // O link de uma tela para um relatório já escolhido (a página Relatórios abre e gera): o tipo e os parâmetros dele (os
 // vazios ficam de fora); novaAba: abre noutra aba (o painel do relógio, ao lado da lista)
 function linkRelatorio(tipo, parametros, texto, novaAba) {

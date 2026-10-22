@@ -53,6 +53,10 @@ api(filtro !== "" ? {recurso: "acessorios", relogio: filtro} : {recurso: "acesso
   d.relogios.forEach(function (r) { if (String(r.id) === filtro) { nomeFiltro = t("do {1}", {1: r.nome}); } });
   var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Acessórios")) + el("span", {"class": "nota"}, d.acessorios.length + (d.acessorios.length === 1 ? t(" acessório") : t(" acessórios"))
     + (nomeFiltro !== "" ? " " + h(nomeFiltro) : "") + (d.por_tipo.length > 0 ? " · " + d.por_tipo.map(function (t) { return t.quantos + " " + h(t.nome.toLowerCase()); }).join(", ") : "")));
+  res += ondeMuda("acessorios", [[t("O nome, o tipo, o relógio e os dados de um acessório"), t("aqui: Editar, na linha do acessório")],
+    [t("Quais dados cada tipo de acessório tem (a largura da pulseira...)"), t("{1}: os campos para os acessórios", {1: lugar("cadastros.php?aba=campos", t("Cadastros › Campos"))})],
+    [t("Em quais relógios ele serve"), t("{1}: o campo do acessório que bate com um campo do relógio (Serve no relógio quando bate com)", {1: lugar("cadastros.php?aba=campos", t("Cadastros › Campos"))})],
+    [t("Os acessórios de um relógio, no painel"), t("{1} ou {2}: o quadro Acessórios do relógio", {1: lugar("index.php", t("Hoje")), 2: lugar("ficha.php", t("Ficha"))})]]);
   res += el("form", {"method": "get", "action": "acessorios.php", "class": "filtros-execucoes cartao-config"},
     el("label", {}, t("Relógio {1}", {1: el("select", {"name": "relogio", "onchange": "this.form.submit()"}, el("option", {"value": "", "selected": filtro === ""}, t("Todos"))
       + el("option", {"value": "0", "selected": filtro === "0"}, t("Soltos (de nenhum relógio)"))

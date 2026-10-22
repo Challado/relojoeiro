@@ -1,4 +1,4 @@
-<!-- origem: 04c31af5dd6991b7c8709b26cb0d43ca3e070f00 -->
+<!-- origem: d5d6f4067b800b1e3148449bd1ad16121607654b -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1454,6 +1454,17 @@ somewhere else, like **In the sun**, **On the winder** or **On the charger** (or
 **Unavailable** (grey, out of rotation and stored) or **Lent** (grey: with someone else). The **State** filter has each one of
 them. In the panel, the state comes with since when (*"In the sun since 09:12"*). Any session-format entry type you register
 comes in here by its name.
+
+**Where each thing is changed.** At the top of Definitions (in each tab), Winders, Accessories, Groups, Alerts, Rotation
+modes, Selection criteria and the watch's **Edit record**, a box that opens and closes tells, in a table, what is changed
+there and what is changed on another page, with the link to it: the value of a field in a watch, in Edit record; the name,
+type and possible values of the field, in **Definitions › Fields**; the groups, in **Collection › Groups**; and so on.
+Closed, it stays closed on that device.
+
+**Separated by Applies to.** In **Definitions › Fields**, **Entry types** and **Formulas**, the rows come in sub-panels that
+collapse, one per **Applies to**: all watches together in the first, then each group in tree order (and, for the fields,
+the accessories by type, the winders and the winder positions). For a formula, the Applies to is its version for that point
+of the tree. A closed sub-panel also stays closed on that device.
 
 | Page | What it's for |
 |---|---|

@@ -55,6 +55,11 @@ function recarregarAvisos() {
     var res = el("h1", {}, t("Avisos")) + el("nav", {"class": "abas"}, el("a", {"href": "#avisos-relogios"}, t("Avisos dos relógios")) + el("a", {"href": "#lembretes"}, t("Lembretes"))
       + el("a", {"href": "#para-onde"}, t("Para onde vão")))
       + el("div", {"class": "botoes"}, linkRelatorio("avisos", {}, t("Relatório dos avisos")))
+      + ondeMuda("avisos", [[t("Quando um aviso vence, para quais relógios vale e a antecedência"), t("aqui: Editar, em Avisos dos relógios")],
+        [t("Os dados que o aviso usa (a data da última revisão, a da pilha)"), t("{1} ou {2}: o relógio › Editar cadastro", {1: lugar("index.php", t("Hoje")), 2: lugar("ficha.php", t("Ficha"))})],
+        [t("O lançamento que resolve o aviso (dar corda, carregar)"), lugar("cadastros.php?aba=lancamentos", t("Cadastros › Tipos de lançamento"))],
+        [t("Os lembretes com hora e repetição"), t("aqui: Lembretes")], [t("Para onde vão (Telegram, e-mail, agendas)"), t("aqui: Para onde vão")],
+        [t("A carga em que avisa"), lugar("configuracao.php", t("Sistema › Configuração"))]])
       + el("p", {"class": "nota"}, t("Tudo o que o sistema lembra: os avisos dos relógios, que ele calcula sozinho pelos dados de cada um (dar corda, carregar, trocar a pilha...); os lembretes, que você marca com hora e repetição; e para onde vão os dois (os destinos das mensagens e as agendas)."));
     if (recado !== "") {
       res += recado;
@@ -68,7 +73,7 @@ function recarregarAvisos() {
     var f = e || {};
     res += el("section", {"class": "cartao-config", "id": "avisos-relogios"}, el("h2", {}, t("Avisos dos relógios"))
       + el("p", {"class": "nota"}, t("Cada aviso tem uma fórmula da data prevista; entra \"em breve\" dentro da antecedência e \"atrasado\" quando a data passa. O \"vale quando\" (uma fórmula) diz para quais relógios o aviso vale (ex.: corda_manual = 0, só para o automático sem corda); vazio, vale para todos do grupo. O texto é o motivo nas mensagens ({motivo}): \"Dar corda: San Martin (a reserva acaba em 3h, 28/09/2026 10:53)\"; nele: {relogio}, {data}, {quando} e {limite} (o limite de carga do relógio). O tipo que resolve vira o botão na tela Hoje. Como as fórmulas, pode ter uma versão por ponto da árvore. Na escala inteligente: \"no relógio do dia\" é conferido no escolhido, do começo ao fim do bloco dele; \"sempre\", também nos guardados, todo dia. O que vence vira o lembrete do dia, e o lançamento que resolve é simulado com o valor (leitura) ou as horas (sessão) do aviso. Se o aviso vai para cada destino e cada agenda (e com que texto) se escolhe neles, em Para onde vão, embaixo; aqui fica a data que ele usa na agenda. \"Na hora\": além do alerta da manhã, o Telegram recebe o aviso no minuto em que ele vence (uma vez, até ele ser resolvido), como o \"Tirar do carregador\" quando a bateria enche."))
-      + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, [t("Aviso"), t("Versão para"), t("Data prevista"), t("Vale quando"), t("Antecedência"), t("Resolve"), t("Na escala"), t("Na agenda"), t("Na hora"), t("Ativo"), ""].map(function (item, i) {
+      + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, [t("Aviso"), t("Vale para"), t("Data prevista"), t("Vale quando"), t("Antecedência"), t("Resolve"), t("Na escala"), t("Na agenda"), t("Na hora"), t("Ativo"), ""].map(function (item, i) {
           return el("th", {"class": i === 4 ? "num" : null}, item);
         }).join(""))) + el("tbody", {}, dc.avisos.map(function (a) {
           return el("tr", {}, el("td", {}, h(a.nome) + " " + el("span", {"class": "nota formula"}, h(a.identificador))) + el("td", {"class": "nota"}, h(caminho(dc, a.no_id))) + el("td", {"class": "formula"}, h(a.expressao))
@@ -86,7 +91,7 @@ function recarregarAvisos() {
         + el("label", {}, t("Resolve {1}", {1: el("select", {"name": "resolve"}, el("option", {"value": ""}, "—") + dc.lancamento_tipos.map(function (item) {
           return el("option", {"value": item.identificador, "selected": f.resolve === item.identificador}, h(item.nome));
         }).join(""))}))
-        + el("label", {}, t("Versão para {1}", {1: el("select", {"name": "no_id"}, opcoesNo(dc, f.no_id))}))
+        + el("label", {}, t("Vale para {1}", {1: el("select", {"name": "no_id"}, opcoesNo(dc, f.no_id))}))
         + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "ativo", "value": "0"}) + el("input", {"type": "checkbox", "name": "ativo", "value": "1", "checked": e ? e.ativo === 1 : true}) + t(" ativo"))
         + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "na_hora", "value": "0"}) + el("input", {"type": "checkbox", "name": "na_hora", "value": "1", "checked": e ? e.na_hora === 1 : false}) + t(" na hora (Telegram no minuto em que vence)"))
         + el("label", {}, t("Na escala inteligente {1}", {1: el("select", {"name": "escala"}, Object.keys(ESCALA_A).map(function (k) { return el("option", {"value": k, "selected": (f.escala || "nao") === k}, h(ESCALA_A[k])); }).join(""))}))

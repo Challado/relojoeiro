@@ -1537,6 +1537,17 @@ somewhere else, like **In the sun**, **On the winder** or **On the charger** (or
 them. In the panel, the state comes with since when (*"In the sun since 09:12"*). Any session-format entry type you register
 comes in here by its name.
 
+**Where each thing is changed.** At the top of Definitions (in each tab), Winders, Accessories, Groups, Alerts, Rotation
+modes, Selection criteria and the watch's **Edit record**, a box that opens and closes tells, in a table, what is changed
+there and what is changed on another page, with the link to it: the value of a field in a watch, in Edit record; the name,
+type and possible values of the field, in **Definitions › Fields**; the groups, in **Collection › Groups**; and so on.
+Closed, it stays closed on that device.
+
+**Separated by Applies to.** In **Definitions › Fields**, **Entry types** and **Formulas**, the rows come in sub-panels that
+collapse, one per **Applies to**: all watches together in the first, then each group in tree order (and, for the fields,
+the accessories by type, the winders and the winder positions). For a formula, the Applies to is its version for that point
+of the tree. A closed sub-panel also stays closed on that device.
+
 | Page | What it's for |
 |---|---|
 | **Today** (`index.php`) | The main screen. It shows at the top the watch of the day (or, according to Settings, the one on the wrist now; with the **No watch today** button, and, on a free day, **Watch-free today** with **choose…**), today's alerts (overdue and soon) with the button that resolves each one, the next days of the plan ("Show up to" days at a time, with the pages below) and the rotation mode, which is changed right there (with **Erase a period** and **Erase all**) (and, in it, the **Manual rotation**: the watches of a period, day by day; see [The manual rotation](#the-manual-rotation)). Below is the collection table, with filters and sorting by type, state, charge, last worn, next service, purchase date and value, and in the footer the totals of each column, in aligned small tables, counting only the watches the filter leaves (see [Totals](#totals)), with **See all totals**. Clicking a watch opens its **panel**: next to the list or in a large floating window, as set in Settings (**Open the watch on the Today page**). |

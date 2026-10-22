@@ -10,7 +10,11 @@ function recarregarGrupos() {
       g[x.id] = x;
     });
     var opcoes = [[0, t("(na raiz)")]].concat(d.grupos.map(function (x) { return [x.id, x.caminho]; }));
-    var res = el("h1", {}, t("Grupos de relógios"));
+    var res = el("h1", {}, t("Grupos de relógios")) + ondeMuda("grupos", [[t("O nome e o lugar de um grupo na árvore"), t("aqui")],
+      [t("Em qual grupo cada relógio está"), t("{1} ou {2}: o relógio › Editar cadastro › Grupo", {1: lugar("index.php", t("Hoje")), 2: lugar("ficha.php", t("Ficha"))})],
+      [t("Os campos de um grupo (valem para ele e para tudo abaixo)"), t("{1}: a subtela do vale para do grupo", {1: lugar("cadastros.php?aba=campos", t("Cadastros › Campos"))})],
+      [t("Os tipos de lançamento e as fórmulas de um grupo"), t("{1} e {2}", {1: lugar("cadastros.php?aba=lancamentos", t("Cadastros › Tipos de lançamento")), 2: lugar("cadastros.php?aba=formulas", t("Cadastros › Fórmulas"))})],
+      [t("Os critérios de escolha de um grupo"), lugar("criterios.php", t("Rodízio › Critérios de escolha"))]]);
     if (recadoGrupos !== "") {
       res += el("p", {"class": "acao"}, h(recadoGrupos));
     }

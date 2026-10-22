@@ -1491,6 +1491,17 @@ noutro lugar, como **No sol**, **No winder** ou **No carregador** (laranja), **E
 **Indisponível** (cinza, fora do rodízio e guardado) ou **Emprestado** (cinza: com outra pessoa). O filtro **Estado** traz cada um deles. No painel, o estado vem com o
 desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato sessão que você cadastrar entra aqui pelo nome.
 
+**Onde se muda cada coisa.** No topo dos Cadastros (em cada aba), dos Winders, dos Acessórios, dos Grupos, dos Avisos, dos
+Modos de rodízio, dos Critérios de escolha e do **Editar cadastro** do relógio, um quadro que abre e fecha diz, numa tabela, o
+que se muda ali e o que se muda noutra página, com o link para ela: o valor de um campo num relógio, no Editar cadastro; o
+nome, o tipo e os valores possíveis do campo, em **Cadastros › Campos**; os grupos, em **Coleção › Grupos**; e assim por
+diante. Fechado, ele fica fechado naquele aparelho.
+
+**Separado pelo Vale para.** Em **Cadastros › Campos**, **Tipos de lançamento** e **Fórmulas**, as linhas vêm em subtelas
+que recolhem, uma por **Vale para**: todos os relógios juntos na primeira, depois cada grupo na ordem da árvore (e, nos
+campos, os acessórios por tipo, os winders e as posições dos winders). Na fórmula, o Vale para é a versão dela para aquele
+ponto da árvore. A subtela fechada também fica fechada naquele aparelho.
+
 | Página | Para que serve |
 |---|---|
 | **Hoje** (`index.php`) | A tela principal. Mostra no alto o relógio do dia (ou, conforme a Configuração, o que está no pulso agora; com o botão **Sem relógio hoje**, e, num dia livre, **Hoje sem relógio** com o **escolher…**), os avisos de hoje (atrasados e em breve) com o botão que resolve cada um, os próximos dias do plano (de "Mostrar até" em "Mostrar até" dias, com as páginas embaixo) e o modo de rodízio, que se troca ali mesmo (com **Apagar um período** e **Apagar tudo**) (e, nele, o **Rodízio manual**: os relógios de um período, dia a dia; veja [O rodízio manual](#o-rodízio-manual)). Abaixo fica a tabela da coleção, com filtros e ordenação por tipo, estado, carga, última vez usado, próxima manutenção, data e valor da compra, e no rodapé os totais de cada coluna, em tabelinhas alinhadas, contando só os relógios que o filtro deixa (veja [Os totais](#os-totais)), com **Ver todos os totais**. Clicar num relógio abre o **painel** dele: ao lado da lista ou numa janela flutuante grande, como estiver na Configuração (**Abrir o relógio na página Hoje**). |

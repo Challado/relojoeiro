@@ -69,17 +69,17 @@ function recarregarCriterios() {
     d.notas.forEach(function (n) {
       nomes[n.relogio_id] = n.relogio;
     });
-    var lugar = null;
+    var lugarAtual = null;
     d.lugares.forEach(function (l) {
       if (l.escopo === escopo) {
-        lugar = l;
+        lugarAtual = l;
       }
     });
-    if (lugar === null) {
+    if (lugarAtual === null) {
       escopo = "";
-      lugar = d.lugares[0];
+      lugarAtual = d.lugares[0];
     }
-    var textoLugar = lugar.lugar;
+    var textoLugar = lugarAtual.lugar;
     var proprio = conjuntos[escopo] ? conjuntos[escopo].parametros : [];
     var usam = function (e) {
       return (conjuntos[e] ? conjuntos[e].usado_por : []).map(function (id) { return nomes[id]; });
@@ -87,7 +87,9 @@ function recarregarCriterios() {
     var opcoesMedida = function (atual) {
       return Object.keys(d.variaveis).map(function (k) { return el("option", {"value": k, "selected": k === atual}, h(d.variaveis[k].nome)); }).join("");
     };
-    var res = el("h1", {}, t("Critérios de escolha do relógio"));
+    var res = el("h1", {}, t("Critérios de escolha do relógio")) + ondeMuda("criterios", [[t("Os critérios e o peso de cada um"), t("aqui")],
+      [t("A sua nota para cada relógio"), t("{1} ou {2}: o relógio › Editar cadastro", {1: lugar("index.php", t("Hoje")), 2: lugar("ficha.php", t("Ficha"))})],
+      [t("Os modos que usam os critérios"), lugar("modos.php", t("Rodízio › Modos de rodízio"))], [t("As fórmulas que os critérios usam"), lugar("cadastros.php?aba=formulas", t("Cadastros › Fórmulas"))]]);
     if (recado !== "") {
       res += el("p", {"class": "acao"}, h(recado));
     }
@@ -123,10 +125,10 @@ function recarregarCriterios() {
         return el("option", {"value": l.escopo, "selected": l.escopo === escopo}, h(l.texto) + (l.proprio ? t(" — com critérios próprios") : ""));
       }).join("")) + el("button", {"class": "leve"}, t("Abrir"))));
     if (proprio.length === 0) {
-      conj += el("p", {}, t("{1} não tem critérios próprios{2}", {1: el("strong", {}, h(textoLugar.charAt(0).toUpperCase() + textoLugar.slice(1))), 2: lugar.herda !== null ? t(": usa os de {1}.", {1: el("strong", {}, h(lugar.herda_texto))}) : (escopo === "" ? "." : t(", e nenhum lugar acima tem: nota neutra, 50."))}))
-        + el("div", {"class": "botoes"}, (lugar.herda !== null ? el("form", {"data-recurso": "criterios"}, el("input", {"type": "hidden", "name": "acao", "value": "conjunto_criar"})
+      conj += el("p", {}, t("{1} não tem critérios próprios{2}", {1: el("strong", {}, h(textoLugar.charAt(0).toUpperCase() + textoLugar.slice(1))), 2: lugarAtual.herda !== null ? t(": usa os de {1}.", {1: el("strong", {}, h(lugarAtual.herda_texto))}) : (escopo === "" ? "." : t(", e nenhum lugar acima tem: nota neutra, 50."))}))
+        + el("div", {"class": "botoes"}, (lugarAtual.herda !== null ? el("form", {"data-recurso": "criterios"}, el("input", {"type": "hidden", "name": "acao", "value": "conjunto_criar"})
           + el("input", {"type": "hidden", "name": "escopo", "value": escopo}) + el("input", {"type": "hidden", "name": "origem", "value": "herdado"})
-          + el("button", {}, t("Criar critérios próprios, copiando os de {1}", {1: h(lugar.herda_texto)}))) : "")
+          + el("button", {}, t("Criar critérios próprios, copiando os de {1}", {1: h(lugarAtual.herda_texto)}))) : "")
           + el("form", {"data-recurso": "criterios"}, el("input", {"type": "hidden", "name": "acao", "value": "conjunto_criar"}) + el("input", {"type": "hidden", "name": "escopo", "value": escopo})
             + el("input", {"type": "hidden", "name": "origem", "value": "vazio"}) + el("button", {"class": "leve"}, t("Criar vazio"))));
     } else {
@@ -156,9 +158,9 @@ function recarregarCriterios() {
       conj += el("form", {"data-recurso": "criterios", "class": "linha-inclusao"}, el("input", {"type": "hidden", "name": "acao", "value": "param_novo"}) + el("input", {"type": "hidden", "name": "escopo", "value": escopo})
         + el("label", {}, t("Novo parâmetro {1}", {1: el("input", {"name": "nome", "maxlength": "80", "required": true})})) + el("label", {}, t("Peso (%) {1}", {1: el("input", {"name": "peso", "class": "curto", "inputmode": "decimal", "required": true})}))
         + el("button", {}, t("Incluir")) + " " + el("span", {"class": "nota"}, t("Os outros deste conjunto abrem espaço na proporção de cada um.")))
-        + el("form", {"data-recurso": "criterios", "class": "excluir-conjunto", "onsubmit": "return confirm(" + JSON.stringify(t("Excluir todos os critérios próprios de {1}?\n\n{2}", {1: textoLugar, 2: lugar.herda !== null ? t("Passa a usar os de {1}.", {1: lugar.herda_texto}) : t("Os relógios sem conjunto mais perto ficam com nota neutra, 50.")})) + ")"},
+        + el("form", {"data-recurso": "criterios", "class": "excluir-conjunto", "onsubmit": "return confirm(" + JSON.stringify(t("Excluir todos os critérios próprios de {1}?\n\n{2}", {1: textoLugar, 2: lugarAtual.herda !== null ? t("Passa a usar os de {1}.", {1: lugarAtual.herda_texto}) : t("Os relógios sem conjunto mais perto ficam com nota neutra, 50.")})) + ")"},
           el("input", {"type": "hidden", "name": "acao", "value": "conjunto_excluir"}) + el("input", {"type": "hidden", "name": "escopo", "value": escopo})
-          + el("button", {"class": "leve discreto"}, t("Excluir os critérios próprios de {1}{2}", {1: h(textoLugar), 2: lugar.herda !== null ? t(" (volta a usar os de {1})", {1: h(lugar.herda_texto)}) : ""})));
+          + el("button", {"class": "leve discreto"}, t("Excluir os critérios próprios de {1}{2}", {1: h(textoLugar), 2: lugarAtual.herda !== null ? t(" (volta a usar os de {1})", {1: h(lugarAtual.herda_texto)}) : ""})));
     }
     res += el("section", {"class": "cartao-config", "id": "conjunto"}, conj);
     // cada parâmetro: os subparâmetros, as faixas de cada um, e incluir

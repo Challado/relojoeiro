@@ -49,6 +49,61 @@ function linkEditar(id) {
 function vazio(v) {
   return v === null || v === undefined ? "" : v;
 }
+// o título, as abas e, de cada aba, o quadro "Onde se muda cada coisa" (o que se muda aqui e o que se muda noutra página)
+function cabecaCadastros() {
+  var ed = t("{1} ou {2}: o relógio › Editar cadastro", {1: lugar("index.php", t("Hoje")), 2: lugar("ficha.php", t("Ficha"))});
+  var grupos = lugar("grupos.php", t("Coleção › Grupos"));
+  var cad = function (k) { return lugar("cadastros.php?aba=" + k, t("Cadastros › {1}", {1: ABAS[k]})); };
+  var linhas = {
+    campos: [[t("O valor de um campo num relógio"), ed],
+      [t("O nome, o tipo, a unidade, os valores possíveis, o padrão, a divisória e o vale para de um campo"), t("aqui: Editar, na linha do campo")],
+      [t("Os grupos do vale para (a árvore)"), grupos], [t("As divisórias da ficha"), cad("secoes")], [t("As unidades"), cad("unidades")],
+      [t("O valor de um campo do movimento num calibre"), cad("calibres")], [t("O valor de um campo de acessório"), lugar("acessorios.php", t("Coleção › Acessórios"))],
+      [t("O valor de um campo do winder ou da posição"), lugar("winders.php", t("Coleção › Winders"))], [t("A conta que usa o campo"), cad("formulas")]],
+    secoes: [[t("O nome e a ordem das divisórias"), t("aqui")], [t("Em qual divisória fica cada campo"), t("{1}: o menu Divisória do campo", {1: cad("campos")})],
+      [t("O valor dos campos de cada divisória num relógio"), ed]],
+    unidades: [[t("O nome, o símbolo, a grandeza e a conversão de uma unidade"), t("aqui")], [t("A unidade de um campo"), cad("campos")],
+      [t("A unidade de um tipo de lançamento"), cad("lancamentos")], [t("A unidade de uma fórmula"), cad("formulas")]],
+    lancamentos: [[t("Registrar um lançamento num relógio (pôr no pulso, corda, leitura da carga)"), t("{1}: o relógio › os botões do painel", {1: lugar("index.php", t("Hoje"))})],
+      [t("O nome, o formato, o vale para, o vale quando e as marcas de um tipo"), t("aqui: Editar, na linha do tipo")], [t("Os grupos do vale para (a árvore)"), grupos],
+      [t("Quanto cada sessão carrega ou gasta"), cad("formulas")], [t("As posições e o programa dos winders"), lugar("winders.php", t("Coleção › Winders"))],
+      [t("Os avisos que dependem dos lançamentos"), lugar("avisos.php", t("Avisos"))]],
+    formulas: [[t("O cálculo de uma fórmula num ponto da árvore"), t("aqui: Editar, na subtela do vale para dela")],
+      [t("Uma versão da fórmula para outro ponto da árvore"), t("aqui: Nova fórmula, com o mesmo identificador e outro Vale para")],
+      [t("Os campos que as fórmulas usam"), cad("campos")], [t("Onde aparece o resultado"), t("o painel do relógio ({1}) e a {2}", {1: lugar("index.php", t("Hoje")), 2: lugar("ficha.php", t("Ficha"))})],
+      [t("As somas da coleção inteira"), cad("totais")]],
+    totais: [[t("A conta de um total"), t("aqui")], [t("Onde os totais aparecem"), t("o rodapé da tabela de {1} e a página {2}", {1: lugar("index.php", t("Hoje")), 2: lugar("totais.php", t("Coleção › Totais"))})],
+      [t("As fórmulas de cada relógio, que os totais somam"), cad("formulas")]],
+    calibres: [[t("Os dados de um calibre"), t("aqui: Editar, na linha do calibre")], [t("Qual calibre um relógio usa"), t("{1} › Calibre", {1: ed})],
+      [t("Os campos que aparecem no calibre"), t("{1}: a caixa \"do movimento\" do campo", {1: cad("campos")})]],
+    documentos: [[t("O nome e os tipos de arquivo de uma categoria"), t("aqui")], [t("Os documentos de um relógio"), t("{1}: o relógio › Documentos", {1: lugar("ficha.php", t("Ficha"))})]]
+  };
+  return el("h1", {}, t("Cadastros")) + el("nav", {"class": "abas"}, Object.keys(ABAS).map(function (k) { return el("a", {"href": "cadastros.php?aba=" + k, "class": k === aba ? "ativa" : ""}, h(ABAS[k])); }).join(""))
+    + (linhas[aba] ? ondeMuda("cadastros-" + aba, linhas[aba]) : "");
+}
+// o "vale para" de um ponto da árvore: a chave da subtela, o título e a ordem (todos os relógios primeiro, depois os grupos na
+// ordem da árvore; um grupo que não existe mais conta como todos)
+function valeNo(d, id) {
+  var i = -1;
+  d.grupos.forEach(function (g, j) { if (g.id === id) { i = j; } });
+  return {chave: i < 0 ? "no0" : "no" + id, titulo: t("Vale para: {1}", {1: h(caminho(d, i < 0 ? 0 : id))}), ordem: i + 1};
+}
+// as linhas em subtelas recolhíveis, uma por "vale para" (grupoDe(item) diz qual), cada uma com a tabela dos itens dela e a
+// contagem no título; a fechada fica fechada neste aparelho (recolhivel, no api.js)
+function subtelas(itens, grupoDe, tabela, contar) {
+  var grupos = [];
+  itens.forEach(function (x) {
+    var g = grupoDe(x);
+    var achado = grupos.filter(function (y) { return y.chave === g.chave; })[0];
+    if (!achado) {
+      achado = {chave: g.chave, titulo: g.titulo, ordem: g.ordem, itens: []};
+      grupos.push(achado);
+    }
+    achado.itens.push(x);
+  });
+  grupos.sort(function (a, b) { return a.ordem - b.ordem; });
+  return grupos.map(function (g) { return recolhivel(aba + "-" + g.chave, g.titulo + " " + el("small", {}, h(contar(g.itens.length))), tabela(g.itens)); }).join("");
+}
 
 // lê e monta a aba escolhida
 function recarregarCadastros() {
@@ -62,7 +117,7 @@ function recarregarCadastros() {
     return recarregarUnidades();
   }
   return api({recurso: "cadastros"}).then(function (d) {
-    var res = el("h1", {}, t("Cadastros")) + el("nav", {"class": "abas"}, Object.keys(ABAS).map(function (k) { return el("a", {"href": "cadastros.php?aba=" + k, "class": k === aba ? "ativa" : ""}, h(ABAS[k])); }).join(""));
+    var res = cabecaCadastros();
     if (recado !== "") {
       res += recado;
       recado = "";
@@ -72,19 +127,18 @@ function recarregarCadastros() {
       d.campos.forEach(function (c) { if (c.id === editar) { e = c; } });
       var f = e || {};
       res += el("section", {"class": "cartao-config"}, el("h2", {}, t("Campos do cadastro dos relógios"))
-        + el("p", {"class": "nota"}, t("Cada campo vale para o ponto da árvore escolhido e tudo abaixo dele (os de cada nível somam) e aparece no cadastro desses relógios. O identificador é o nome do campo nas fórmulas. Marcado \"só nos desejados\", o campo aparece só nos relógios da lista de desejos."))
-        + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, [t("Campo"), t("Identificador"), t("Tipo"), t("Divisória"), t("Vale para"), t("Padrão"), ""].map(function (item) { return el("th", {}, item); }).join("")))
-          + el("tbody", {}, d.campos.map(function (c) {
-            var sec = d.secoes.filter(function (x) { return x.id === c.secao_id; })[0];
-            return el("tr", {}, el("td", {}, h(c.nome) + (c.unidade !== "" ? " (" + h(c.unidade) + ")" : "")) + el("td", {"class": "formula ident"}, h(c.identificador)) + el("td", {}, h(d.tipos_de_campo[c.tipo]) + (c.multiplo === 1 ? t(" · vários valores") : "")
-                + (c.regra ? el("small", {}, h(c.regra)) : ""))
-              + el("td", {}, sec ? h(sec.nome) : el("span", {"class": "nota"}, t("nenhuma")))
-              + el("td", {"class": "nota vale-para"}, (c.alvo === "acessorio" ? acessorioDoCampo(d, c)
-                : c.alvo === "winder" ? t("os winders (nas fórmulas: WINDER(\"{1}\"))", {1: h(c.identificador)})
-                : c.alvo === "posicao" ? t("as posições dos winders (nas fórmulas: WINDER_POSICAO(\"{1}\"))", {1: h(c.identificador)}) : h(caminho(d, c.no_id)) + (c.so_desejado === 1 ? t(" · só nos desejados") : "") + (c.calibre === 1 ? t(" · do movimento") : ""))) + el("td", {}, h(vazio(c.padrao)))
-              + el("td", {"class": "acoes-linha"}, linkEditar(c.id) + " " + botaoLinha("ordem", c.id, "", null, el("button", {"class": "leve discreto", "name": "direcao", "value": "sobe"}, "↑")
-                + el("button", {"class": "leve discreto", "name": "direcao", "value": "desce"}, "↓")) + botaoLinha("excluir", c.id, t("Excluir"), t("Excluir o campo {1} e os valores dele?", {1: c.nome}))));
-          }).join(""))))
+        + el("p", {"class": "nota"}, t("Cada campo vale para o ponto da árvore escolhido e tudo abaixo dele (os de cada nível somam) e aparece no cadastro desses relógios. O identificador é o nome do campo nas fórmulas. Marcado \"só nos desejados\", o campo aparece só nos relógios da lista de desejos. Os campos vêm separados pelo vale para, cada um numa subtela (clique no título para recolher ou abrir); os de todos os relógios ficam juntos na primeira."))
+        + subtelas(d.campos, function (c) { return grupoCampo(d, c); }, function (lista) {
+          return el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-campos"}, el("thead", {}, el("tr", {}, [t("Campo"), t("Identificador"), t("Tipo"), t("Divisória"), t("Padrão"), ""].map(function (item) { return el("th", {}, item); }).join("")))
+            + el("tbody", {}, lista.map(function (c) {
+              var sec = d.secoes.filter(function (x) { return x.id === c.secao_id; })[0];
+              return el("tr", {}, el("td", {}, h(c.nome) + (c.unidade !== "" ? " (" + h(c.unidade) + ")" : "") + extraCampo(d, c)) + el("td", {"class": "formula ident"}, h(c.identificador)) + el("td", {}, h(d.tipos_de_campo[c.tipo]) + (c.multiplo === 1 ? t(" · vários valores") : "")
+                  + (c.regra ? el("small", {}, h(c.regra)) : ""))
+                + el("td", {}, sec ? h(sec.nome) : el("span", {"class": "nota"}, t("nenhuma"))) + el("td", {}, h(vazio(c.padrao)))
+                + el("td", {"class": "acoes-linha"}, linkEditar(c.id) + " " + botaoLinha("ordem", c.id, "", null, el("button", {"class": "leve discreto", "name": "direcao", "value": "sobe"}, "↑")
+                  + el("button", {"class": "leve discreto", "name": "direcao", "value": "desce"}, "↓")) + botaoLinha("excluir", c.id, t("Excluir"), t("Excluir o campo {1} e os valores dele?", {1: c.nome}))));
+            }).join(""))));
+        }, function (n) { return n === 1 ? t("1 campo") : t("{1} campos", {1: n}); })
         + el("h3", {"id": "form"}, e ? t("Alterar o campo {1}", {1: h(e.nome)}) : t("Novo campo"))
         + el("form", {"data-recurso": "campos", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": e ? "alterar" : "novo"}) + (e ? el("input", {"type": "hidden", "name": "id", "value": e.id}) : "")
           + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": vazio(f.nome), "required": true, "maxlength": "120"})}))
@@ -138,14 +192,16 @@ function recarregarCadastros() {
       d.lancamento_tipos.forEach(function (item) { if (item.id === editar) { e = item; } });
       var f = e || {};
       res += el("section", {"class": "cartao-config"}, el("h2", {}, t("Tipos de lançamento"))
-        + el("p", {"class": "nota"}, t("O que se registra num relógio: instantâneo (corda), com valor (leitura de carga) ou sessão com início e fim (pulso, winder, sol). O identificador é o nome nas funções das fórmulas: HORAS(\"pulso\"; 30). Sessão exclusiva: o relógio fica num lugar só. Mede o gasto: cada leitura desse tipo mede quanto caiu por dia de uso ou guardado (a função MEDIDO das fórmulas). Vale quando: uma fórmula que diz para quais relógios o tipo vale (ex.: corda_manual, só para quem aceita corda); vazia, vale para todos do grupo. Mede a marcha: a leitura do desvio da hora (quanto o relógio está adiantado ou atrasado, em segundos) e o acerto da hora, de onde sai a marcha em segundos por dia (o quadro Precisão e as funções MARCHA e DESVIO_AGORA). Winder: a sessão é numa posição de um winder (a página Winders), e o programa da posição entra nas fórmulas por WINDER_POSICAO."))
-        + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Tipo")) + el("th", {}, t("Identificador")) + el("th", {}, t("Formato")) + el("th", {}, t("Fecha sozinho às"))
-            + el("th", {}, t("Exclusiva")) + el("th", {}, t("Mede o gasto")) + el("th", {}, t("Mede a marcha")) + el("th", {}, t("Winder")) + el("th", {}, t("Vale quando")) + el("th", {}, t("Vale para")) + el("th", {"class": "num"}, t("Lançamentos")) + el("th", {}, "")))
-          + el("tbody", {}, d.lancamento_tipos.map(function (item) {
-            return el("tr", {}, el("td", {}, h(item.nome)) + el("td", {"class": "formula ident"}, h(item.identificador)) + el("td", {}, h(d.formatos_de_lancamento[item.formato]) + (item.unidade !== "" ? " (" + h(item.unidade) + ")" : ""))
-              + el("td", {}, h(String(vazio(item.fecha_as)).substr(0, 5))) + el("td", {}, item.exclusiva === 1 ? t("sim") : "") + el("td", {}, item.mede_gasto === 1 ? t("sim") : "") + el("td", {}, item.marcha ? h(d.marchas_de_lancamento[item.marcha]) : "") + el("td", {}, item.winder === 1 ? t("sim") : "") + el("td", {"class": "formula"}, h(vazio(item.condicao))) + el("td", {"class": "nota"}, h(caminho(d, item.no_id))) + el("td", {"class": "num"}, String(item.lancamentos))
-              + el("td", {"class": "acoes-linha"}, linkEditar(item.id) + " " + botaoLinha("excluir", item.id, t("Excluir"), t("Excluir o tipo {1}?", {1: item.nome}))));
-          }).join(""))))
+        + el("p", {"class": "nota"}, t("O que se registra num relógio: instantâneo (corda), com valor (leitura de carga) ou sessão com início e fim (pulso, winder, sol). O identificador é o nome nas funções das fórmulas: HORAS(\"pulso\"; 30). Sessão exclusiva: o relógio fica num lugar só. Mede o gasto: cada leitura desse tipo mede quanto caiu por dia de uso ou guardado (a função MEDIDO das fórmulas). Vale quando: uma fórmula que diz para quais relógios o tipo vale (ex.: corda_manual, só para quem aceita corda); vazia, vale para todos do grupo. Mede a marcha: a leitura do desvio da hora (quanto o relógio está adiantado ou atrasado, em segundos) e o acerto da hora, de onde sai a marcha em segundos por dia (o quadro Precisão e as funções MARCHA e DESVIO_AGORA). Winder: a sessão é numa posição de um winder (a página Winders), e o programa da posição entra nas fórmulas por WINDER_POSICAO. Os tipos vêm separados pelo vale para, cada um numa subtela que recolhe."))
+        + subtelas(d.lancamento_tipos, function (item) { return valeNo(d, item.no_id || 0); }, function (lista) {
+          return el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Tipo")) + el("th", {}, t("Identificador")) + el("th", {}, t("Formato")) + el("th", {}, t("Fecha sozinho às"))
+              + el("th", {}, t("Exclusiva")) + el("th", {}, t("Mede o gasto")) + el("th", {}, t("Mede a marcha")) + el("th", {}, t("Winder")) + el("th", {}, t("Vale quando")) + el("th", {"class": "num"}, t("Lançamentos")) + el("th", {}, "")))
+            + el("tbody", {}, lista.map(function (item) {
+              return el("tr", {}, el("td", {}, h(item.nome)) + el("td", {"class": "formula ident"}, h(item.identificador)) + el("td", {}, h(d.formatos_de_lancamento[item.formato]) + (item.unidade !== "" ? " (" + h(item.unidade) + ")" : ""))
+                + el("td", {}, h(String(vazio(item.fecha_as)).substr(0, 5))) + el("td", {}, item.exclusiva === 1 ? t("sim") : "") + el("td", {}, item.mede_gasto === 1 ? t("sim") : "") + el("td", {}, item.marcha ? h(d.marchas_de_lancamento[item.marcha]) : "") + el("td", {}, item.winder === 1 ? t("sim") : "") + el("td", {"class": "formula"}, h(vazio(item.condicao))) + el("td", {"class": "num"}, String(item.lancamentos))
+                + el("td", {"class": "acoes-linha"}, linkEditar(item.id) + " " + botaoLinha("excluir", item.id, t("Excluir"), t("Excluir o tipo {1}?", {1: item.nome}))));
+            }).join(""))));
+        }, function (n) { return n === 1 ? t("1 tipo") : t("{1} tipos", {1: n}); })
         + el("h3", {"id": "form"}, e ? t("Alterar {1}", {1: h(e.nome)}) : t("Novo tipo de lançamento"))
         + el("form", {"data-recurso": "lancamento_tipos", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": e ? "alterar" : "novo"}) + (e ? el("input", {"type": "hidden", "name": "id", "value": e.id}) : "")
           + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": vazio(f.nome), "required": true})}))
@@ -170,18 +226,20 @@ function recarregarCadastros() {
       d.formulas.forEach(function (x) { if (x.id === editar) { e = x; } });
       var f = e || {};
       var sec = el("h2", {}, t("Fórmulas"))
-        + el("p", {"class": "nota"}, t("Uma fórmula pode ter uma versão em cada ponto da árvore: vale para o relógio a do ponto mais perto dele. Números com vírgula ou ponto, argumentos separados por ponto e vírgula, textos entre aspas. Variáveis: os identificadores dos campos e das fórmulas."))
-        + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Fórmula")) + el("th", {}, t("Versão para")) + el("th", {}, t("Cálculo")) + el("th", {}, "")))
-          + el("tbody", {}, d.formulas.map(function (x) {
-            return el("tr", {}, el("td", {}, h(x.nome) + " " + el("span", {"class": "nota formula"}, h(x.identificador) + (x.unidade !== "" ? " (" + h(x.unidade) + ")" : ""))) + el("td", {"class": "nota"}, h(caminho(d, x.no_id)))
-              + el("td", {"class": "formula"}, h(x.expressao)) + el("td", {"class": "acoes-linha"}, linkEditar(x.id) + " " + botaoLinha("excluir", x.id, t("Excluir"), t("Excluir esta versão de {1}?", {1: x.identificador}))));
-          }).join(""))))
+        + el("p", {"class": "nota"}, t("Uma fórmula pode ter uma versão em cada ponto da árvore (o Vale para; cada um na sua subtela): vale para o relógio a do ponto mais perto dele. Números com vírgula ou ponto, argumentos separados por ponto e vírgula, textos entre aspas. Variáveis: os identificadores dos campos e das fórmulas."))
+        + subtelas(d.formulas, function (x) { return valeNo(d, x.no_id || 0); }, function (lista) {
+          return el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-formulas"}, el("thead", {}, el("tr", {}, el("th", {}, t("Fórmula")) + el("th", {}, t("Cálculo")) + el("th", {}, "")))
+            + el("tbody", {}, lista.map(function (x) {
+              return el("tr", {}, el("td", {}, h(x.nome) + " " + el("span", {"class": "nota formula"}, h(x.identificador) + (x.unidade !== "" ? " (" + h(x.unidade) + ")" : "")))
+                + el("td", {"class": "formula"}, h(x.expressao)) + el("td", {"class": "acoes-linha"}, linkEditar(x.id) + " " + botaoLinha("excluir", x.id, t("Excluir"), t("Excluir esta versão de {1}?", {1: x.identificador}))));
+            }).join(""))));
+        }, function (n) { return n === 1 ? t("1 fórmula") : t("{1} fórmulas", {1: n}); })
         + el("h3", {"id": "form"}, e ? t("Alterar {1} ({2})", {1: h(e.identificador), 2: h(caminho(d, e.no_id))}) : t("Nova fórmula (ou nova versão de uma que existe)"))
         + el("form", {"data-recurso": "formulas", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": e ? "alterar" : "nova"}) + (e ? el("input", {"type": "hidden", "name": "id", "value": e.id}) : "")
           + (e ? "" : el("label", {}, t("Identificador {1}", {1: el("input", {"name": "identificador", "required": true, "pattern": "[a-z][a-z0-9_]{0,39}"})})))
           + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": vazio(f.nome), "required": true})}))
           + campoUnidade(d, t("Unidade"), vazio(f.unidade))
-          + el("label", {}, t("Versão para {1}", {1: el("select", {"name": "no_id"}, opcoesNo(d, f.no_id))}))
+          + el("label", {}, t("Vale para {1}", {1: el("select", {"name": "no_id"}, opcoesNo(d, f.no_id))}))
           + el("label", {"style": "grid-column: 1 / -1"}, t("Cálculo {1}", {1: el("textarea", {"name": "expressao", "class": "formula", "rows": "3", "required": true}, h(vazio(f.expressao)))}))
           + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar"))))
         + el("h3", {"id": "testar"}, t("Testar uma fórmula (sem gravar)"))
@@ -249,7 +307,7 @@ function recarregarTotais() {
     var e = null;
     d.totais.forEach(function (x) { if (x.id === editar) { e = x; } });
     var f = e || {coluna: null, rodape: false, pagina: true, largura: "estreito", formato: "numero"};
-    var res = el("h1", {}, t("Cadastros")) + el("nav", {"class": "abas"}, Object.keys(ABAS).map(function (k) { return el("a", {"href": "cadastros.php?aba=" + k, "class": k === aba ? "ativa" : ""}, h(ABAS[k])); }).join(""));
+    var res = cabecaCadastros();
     if (recado !== "") {
       res += recado;
       recado = "";
@@ -292,11 +350,43 @@ function recarregarTotais() {
   });
 }
 
-// a coluna Vale para de um campo de acessório: o tipo (ou todos) e o campo do relógio com que ele bate
-function acessorioDoCampo(d, c) {
-  var tipo = d.acessorio_tipos.filter(function (x) { return x.valor === c.acessorio_tipo; })[0];
+// a subtela (o "vale para") de um campo: o ponto da árvore, o tipo de acessório (ou todos), os winders ou as posições deles
+function grupoCampo(d, c) {
+  if (c.alvo === "acessorio") {
+    var i = -1;
+    d.acessorio_tipos.forEach(function (x, j) { if (x.valor === c.acessorio_tipo) { i = j; } });
+    return {chave: "ac-" + (i < 0 ? "" : c.acessorio_tipo), ordem: 1000 + i,
+      titulo: t("Vale para: os acessórios, {1}", {1: i < 0 ? t("todos os tipos") : h(d.acessorio_tipos[i].nome)})};
+  }
+  if (c.alvo === "winder") {
+    return {chave: "winder", ordem: 2000, titulo: t("Vale para: os winders")};
+  }
+  if (c.alvo === "posicao") {
+    return {chave: "posicao", ordem: 2001, titulo: t("Vale para: as posições dos winders")};
+  }
+  return valeNo(d, c.no_id || 0);
+}
+// o que mais diz para quem o campo vale, embaixo do nome: só nos desejados, do movimento (o calibre), com que campo do relógio
+// o acessório bate, e o nome nas fórmulas dos campos do winder e da posição
+function extraCampo(d, c) {
   var serve = d.campos.filter(function (x) { return x.id === c.serve_campo_id; })[0];
-  return t("acessórios: {1}", {1: tipo ? h(tipo.nome) : t("todos")}) + (serve ? t(" · serve quando bate com {1}", {1: h(serve.nome)}) : "");
+  var res = [];
+  if (c.so_desejado === 1) {
+    res.push(t("só nos desejados"));
+  }
+  if (c.calibre === 1) {
+    res.push(t("do movimento: aparece no calibre"));
+  }
+  if (c.alvo === "acessorio" && serve) {
+    res.push(t("serve no relógio quando bate com {1}", {1: h(serve.nome)}));
+  }
+  if (c.alvo === "winder") {
+    res.push(t("nas fórmulas: WINDER(\"{1}\")", {1: h(c.identificador)}));
+  }
+  if (c.alvo === "posicao") {
+    res.push(t("nas fórmulas: WINDER_POSICAO(\"{1}\")", {1: h(c.identificador)}));
+  }
+  return res.map(function (x) { return el("span", {"class": "vale-extra"}, x); }).join("");
 }
 
 // um valor de campo como texto (a lista e o formulário dos calibres): sim/não, data, número com vírgula
@@ -348,7 +438,7 @@ function recarregarCalibres() {
     var noForm = e ? e.campos_no_formulario : d.campos_no_formulario;
     var porIdent = {};
     d.campos.forEach(function (c) { porIdent[c.identificador] = c; });
-    var res = el("h1", {}, t("Cadastros")) + el("nav", {"class": "abas"}, Object.keys(ABAS).map(function (k) { return el("a", {"href": "cadastros.php?aba=" + k, "class": k === aba ? "ativa" : ""}, h(ABAS[k])); }).join(""));
+    var res = cabecaCadastros();
     if (recado !== "") {
       res += recado;
       recado = "";
@@ -396,7 +486,7 @@ function recarregarUnidades() {
     var e = null;
     d.unidades.forEach(function (x) { if (x.id === editar) { e = x; } });
     var f = e || {};
-    var res = el("h1", {}, t("Cadastros")) + el("nav", {"class": "abas"}, Object.keys(ABAS).map(function (k) { return el("a", {"href": "cadastros.php?aba=" + k, "class": k === aba ? "ativa" : ""}, h(ABAS[k])); }).join(""));
+    var res = cabecaCadastros();
     if (recado !== "") {
       res += recado;
       recado = "";

@@ -711,7 +711,13 @@ function abrirNoPainel(id) {
       res += cadastro;
     } else {
       // (com função no replace: um "$" nos dados, como em "R$", não vira padrão de troca)
-      var editarCadastro = el("details", {"class": "cadastro-painel"}, el("summary", {}, t("Editar cadastro")) + cadastro
+      var editarCadastro = el("details", {"class": "cadastro-painel"}, el("summary", {}, t("Editar cadastro")) + ondeMuda("cadastro-relogio", [
+          [t("Os valores deste relógio"), t("aqui, e Salvar alterações")],
+          [t("Quais campos aparecem, o nome, o tipo, os valores possíveis e o padrão de cada um"), lugar("cadastros.php?aba=campos", t("Cadastros › Campos"))],
+          [t("As divisórias (Construção, Compra...)"), lugar("cadastros.php?aba=secoes", t("Cadastros › Divisórias"))],
+          [t("Os grupos (o que vale para cada um)"), lugar("grupos.php", t("Coleção › Grupos"))],
+          [t("Os calibres e os valores deles (reserva, marcha)"), lugar("cadastros.php?aba=calibres", t("Cadastros › Calibres"))],
+          [t("O que é calculado (autonomia, carga, custo por uso)"), lugar("cadastros.php?aba=formulas", t("Cadastros › Fórmulas"))]]) + cadastro
         + el("form", {"data-recurso": "relogio", "class": "excluir"},
           el("input", {"type": "hidden", "name": "acao", "value": "excluir"}) + el("input", {"type": "hidden", "name": "id", "value": id}) + el("button", {"class": "leve discreto"}, t("Excluir este relógio"))));
       res = res.replace("<!--editar-cadastro-->", function () { return editarCadastro; });

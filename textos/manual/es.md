@@ -1,4 +1,4 @@
-<!-- origem: 04c31af5dd6991b7c8709b26cb0d43ca3e070f00 -->
+<!-- origem: d5d6f4067b800b1e3148449bd1ad16121607654b -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1451,6 +1451,17 @@ está en otro lugar, como **Al sol**, **En el winder** o **En el cargador** (nar
 disponible** (gris, fuera de la rotación y guardado) o **Prestado** (gris: con otra persona). El filtro **Estado** tiene cada
 uno de ellos. En el panel, el estado viene con desde cuándo (*"Al sol desde 09:12"*). Todo tipo de registro de formato sesión
 que usted registre entra aquí con su nombre.
+
+**Dónde se cambia cada cosa.** Arriba de Definiciones (en cada pestaña), Winders, Accesorios, Grupos, Avisos, Modos de
+rotación, Criterios de elección y de **Editar ficha** del reloj, un cuadro que se abre y se cierra dice, en una tabla, qué se
+cambia allí y qué se cambia en otra página, con el enlace a ella: el valor de un campo en un reloj, en Editar ficha; el
+nombre, el tipo y los valores posibles del campo, en **Definiciones › Campos**; los grupos, en **Colección › Grupos**; y así
+sucesivamente. Cerrado, queda cerrado en ese aparato.
+
+**Separado por el Vale para.** En **Definiciones › Campos**, **Tipos de registro** y **Fórmulas**, las filas vienen en
+subpantallas que se recogen, una por **Vale para**: todos los relojes juntos en la primera, después cada grupo en el orden
+del árbol (y, en los campos, los accesorios por tipo, los winders y las posiciones de los winders). En la fórmula, el Vale
+para es su versión para ese punto del árbol. La subpantalla cerrada también queda cerrada en ese aparato.
 
 | Página | Para qué sirve |
 |---|---|

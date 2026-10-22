@@ -1536,6 +1536,17 @@ disponible** (gris, fuera de la rotación y guardado) o **Prestado** (gris: con 
 uno de ellos. En el panel, el estado viene con desde cuándo (*"Al sol desde 09:12"*). Todo tipo de registro de formato sesión
 que usted registre entra aquí con su nombre.
 
+**Dónde se cambia cada cosa.** Arriba de Definiciones (en cada pestaña), Winders, Accesorios, Grupos, Avisos, Modos de
+rotación, Criterios de elección y de **Editar ficha** del reloj, un cuadro que se abre y se cierra dice, en una tabla, qué se
+cambia allí y qué se cambia en otra página, con el enlace a ella: el valor de un campo en un reloj, en Editar ficha; el
+nombre, el tipo y los valores posibles del campo, en **Definiciones › Campos**; los grupos, en **Colección › Grupos**; y así
+sucesivamente. Cerrado, queda cerrado en ese aparato.
+
+**Separado por el Vale para.** En **Definiciones › Campos**, **Tipos de registro** y **Fórmulas**, las filas vienen en
+subpantallas que se recogen, una por **Vale para**: todos los relojes juntos en la primera, después cada grupo en el orden
+del árbol (y, en los campos, los accesorios por tipo, los winders y las posiciones de los winders). En la fórmula, el Vale
+para es su versión para ese punto del árbol. La subpantalla cerrada también queda cerrada en ese aparato.
+
 | Página | Para qué sirve |
 |---|---|
 | **Hoy** (`index.php`) | La pantalla principal. Muestra arriba el reloj del día (o, según la Configuración, el que está en la muñeca ahora; con el botón **Sin reloj hoy**, y, en un día libre, **Hoy sin reloj** con el **elegir…**), los avisos de hoy (atrasados y próximos) con el botón que resuelve cada uno, los próximos días del plan (de "Mostrar hasta" en "Mostrar hasta" días, con las páginas debajo) y el modo de rotación, que se cambia ahí mismo (con **Borrar un período** y **Borrar todo**) (y, en él, la **Rotación manual**: los relojes de un período, día a día; vea [La rotación manual](#la-rotación-manual)). Debajo está la tabla de la colección, con filtros y ordenación por tipo, estado, carga, último uso, próximo mantenimiento, fecha y valor de compra, y en el pie los totales de cada columna, en tablitas alineadas, contando solo los relojes que deja el filtro (vea [Los totales](#los-totales)), con **Ver todos los totales**. Hacer clic en un reloj abre su **panel**: al lado de la lista o en una ventana flotante grande, según la Configuración (**Abrir el reloj en la página Hoy**). |

@@ -126,6 +126,12 @@ api({recurso: "winders"}).then(function (d) {
   var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Winders")) + el("span", {"class": "nota"}, d.winders.length + (d.winders.length === 1 ? t(" winder") : t(" winders"))
     + (nPos > 0 ? " · " + t("{1} posições, {2} com relógio", {1: nPos, 2: nOcup}) : "")));
   res += el("p", {"class": "nota"}, t("Cada winder tem as posições dele, e cada posição o programa dela (os campos da posição: as rotações por dia, o sentido, o ciclo). Mude o programa e o relógio de uma posição direto na linha da tabela e clique em Salvar: no Relógio, — nenhum — tira quem está nela, e outro relógio entra no lugar (saindo de onde estava). Quanto cada hora no winder carrega sai da fórmula winder_ganho, pelo programa da posição e pelo que o relógio pede (Cadastros › Fórmulas); os valores possíveis de cada campo, como as rotações por dia, ficam em Cadastros › Campos."));
+  res += ondeMuda("winders", [[t("O programa de uma posição (as rotações por dia, o sentido, o ciclo) e o relógio nela"), t("aqui: na linha da posição, e Salvar")],
+    [t("O nome, a ordem e se a posição está ligada"), t("aqui: Editar, embaixo do nome da posição")], [t("O nome, a marca, o modelo e a observação do winder"), t("aqui: Editar o winder")],
+    [t("Os valores possíveis das rotações por dia e os outros campos da posição"), t("{1}: a subtela \"as posições dos winders\"", {1: lugar("cadastros.php?aba=campos", t("Cadastros › Campos"))})],
+    [t("Os campos do winder (marca, modelo...)"), t("{1}: a subtela \"os winders\"", {1: lugar("cadastros.php?aba=campos", t("Cadastros › Campos"))})],
+    [t("Quanto cada hora no winder carrega"), t("{1}: a fórmula winder_ganho", {1: lugar("cadastros.php?aba=formulas", t("Cadastros › Fórmulas"))})],
+    [t("Quais relógios vão para o winder"), t("{1}: o tipo marcado como winder e o vale para dele", {1: lugar("cadastros.php?aba=lancamentos", t("Cadastros › Tipos de lançamento"))})]]);
   // um cartão por winder: os dados e a tabela das posições
   d.winders.forEach(function (w) {
     var linhas = w.posicoes.map(function (p) {

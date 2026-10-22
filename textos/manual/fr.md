@@ -1,4 +1,4 @@
-<!-- origem: 04c31af5dd6991b7c8709b26cb0d43ca3e070f00 -->
+<!-- origem: d5d6f4067b800b1e3148449bd1ad16121607654b -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1499,6 +1499,17 @@ elle est ailleurs, comme **Au soleil**, **Sur le remontoir** ou **Sur le chargeu
 et **Indisponible** (gris, hors rotation et rangée) ou **Prêtée** (gris : chez quelqu'un d'autre). Le filtre **État** les a
 tous. Dans le panneau, l'état vient avec depuis quand (*« Au soleil depuis 09:12 »*). Tout type de saisie au format session
 que vous enregistrez apparaît ici sous son nom.
+
+**Où se change chaque chose.** En haut de Définitions (dans chaque onglet), Remontoirs, Accessoires, Groupes, Alertes,
+Modes de rotation, Critères de choix et de **Modifier la fiche** de la montre, un cadre qui s'ouvre et se ferme dit, dans un
+tableau, ce qui se change là et ce qui se change sur une autre page, avec le lien vers elle : la valeur d'un champ dans une
+montre, dans Modifier la fiche ; le nom, le type et les valeurs possibles du champ, dans **Définitions › Champs** ; les
+groupes, dans **Collection › Groupes** ; et ainsi de suite. Fermé, il reste fermé sur cet appareil.
+
+**Séparé par le Vaut pour.** Dans **Définitions › Champs**, **Types de saisie** et **Formules**, les lignes sont dans des
+sous-écrans repliables, un par **Vaut pour** : toutes les montres ensemble dans le premier, puis chaque groupe dans l'ordre
+de l'arbre (et, pour les champs, les accessoires par type, les remontoirs et les positions des remontoirs). Pour une
+formule, le Vaut pour est sa version pour ce point de l'arbre. Un sous-écran fermé reste aussi fermé sur cet appareil.
 
 | Page | À quoi elle sert |
 |---|---|
