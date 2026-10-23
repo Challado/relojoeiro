@@ -675,7 +675,7 @@ function abrirNoPainel(id) {
       // seções (os dois entram no lugar das marcas, depois de montados)
       res += el("div", {"class": "ficha-cabeca"}, el("div", {"class": "ficha-foto"}, foto)
         + el("div", {"class": "ficha-identidade"}, el("p", {"class": "data"}, h(r.tipo) + " · " + h(r.caminho))
-          + el("h1", {}, h(r.nome)) + (r.observacao ? el("p", {"class": "observacao"}, h(r.observacao)) : "")
+          + el("h1", {}, h(r.nome)) + (r.observacao ? el("p", {"class": "observacao"}, textoRecolhivel(r.observacao, "obs-" + r.id)) : "")
           + el("p", {"class": "marcas"}, (r.posse === "desejado" ? "" : el("span", {"class": "estado estado-" + (r.estado)}, h(minusculo(r.estado_texto))))
             + (r.posse !== "colecao" ? " " + el("span", {"class": "estado estado-posse"}, h(minusculo(r.posse_texto)))
               : (r.disponivel ? "" : " " + el("span", {"class": "estado estado-indisponivel"}, t("indisponível"))))
@@ -931,7 +931,8 @@ function abrirNoPainel(id) {
             // o valor também na outra unidade (Cadastros › Unidades, "mostrar também em"), já em texto pela API
             res2 += c.tambem ? " " + el("small", {"class": "tambem"}, "(" + h(c.tambem) + ")") : "";
           } else {
-            res2 = h(v);
+            // o texto livre comprido (a observação) recolhido, com o + para ver o resto
+            res2 = c.tipo === "texto" ? textoRecolhivel(v, "campo-" + r.id + "-" + c.identificador) : h(v);
           }
         }
         return res2;

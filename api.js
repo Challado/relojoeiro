@@ -346,6 +346,42 @@ function instante(t) {
 // As formas de escolha do "Sortear este dia por" (as mesmas chaves da API: rodizio trocar_dia e manual, sortear:<chave>)
 var FORMAS_DE_ESCOLHA = [["inteligente", t("a maior nota")], ["ponderado", t("sorteio pela nota")], ["aleatorio", t("aleatório, todos com a mesma chance")], ["fifo", t("fila: o mais tempo sem uso")]];
 
+// Um texto comprido (a observação do relógio, um campo de texto): até TEXTO_CURTO caracteres, inteiro; mais que isso, o
+// começo (cortado numa palavra) com "…" e o botão redondo "+" que mostra o resto; aberto, o "−" recolhe (o sinal vem do CSS,
+// pelo aria-expanded). chave: quem é o texto, para ele continuar aberto quando a página se atualiza sozinha
+var TEXTO_CURTO = 110;
+var TEXTOS_ABERTOS = {};
+function textoRecolhivel(texto, chave) {
+  texto = String(texto);
+  if (texto.length <= TEXTO_CURTO) {
+    return h(texto);
+  }
+  var corte = texto.lastIndexOf(" ", TEXTO_CURTO);
+  if (corte < TEXTO_CURTO * 0.6) {
+    corte = TEXTO_CURTO;
+  }
+  var aberto = TEXTOS_ABERTOS[chave] === true;
+  return el("span", {"class": "texto-recolhe", "data-texto": chave},
+    el("span", {"class": "texto-curto", "hidden": aberto}, h(texto.slice(0, corte).replace(/[\s,.;:]+$/, "")) + "…")
+    + el("span", {"class": "texto-inteiro", "hidden": !aberto}, h(texto)) + "&nbsp;"
+    + el("button", {"type": "button", "class": "mais-menos", "aria-expanded": aberto ? "true" : "false", "title": aberto ? t("Mostrar menos") : t("Mostrar o texto inteiro"),
+      "aria-label": aberto ? t("Mostrar menos") : t("Mostrar o texto inteiro")}, ""));
+}
+document.addEventListener("click", function (ev) {
+  var b = ev.target.closest(".texto-recolhe > .mais-menos");
+  if (!b) {
+    return;
+  }
+  var caixa = b.parentNode;
+  var abrir = b.getAttribute("aria-expanded") !== "true";
+  caixa.querySelector(".texto-curto").hidden = abrir;
+  caixa.querySelector(".texto-inteiro").hidden = !abrir;
+  b.setAttribute("aria-expanded", abrir ? "true" : "false");
+  b.title = abrir ? t("Mostrar menos") : t("Mostrar o texto inteiro");
+  b.setAttribute("aria-label", b.title);
+  TEXTOS_ABERTOS[caixa.getAttribute("data-texto")] = abrir;
+});
+
 // O grupo "Sortear este dia por" de um seletor de dia (o trocar por…, o escolher… e o Rodízio manual): o dia é sorteado na
 // hora por essa forma, entre os relógios do bloco do modo, e fica escolhido à mão com o motivo do sorteio
 function opcoesSortearDia(atual) {
