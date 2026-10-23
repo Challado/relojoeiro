@@ -64,7 +64,7 @@ function montarPlano() {
     linhas += el("tr", {"class": (p.dia_semana >= 6 ? "fds" : "") + (p.hoje ? " de-hoje" : "")},
       el("td", {"class": "dia"}, dataBr(p.data, true) + " " + el("small", {}, p.dia_semana_curto) + (p.hoje ? " " + el("small", {}, t("hoje")) : ""))
       + el("td", {}, celulaDoDia(p)) + el("td", {}, h(p.acao || ""))
-      + el("td", {"class": "trocar"}, formTrocarDia(p, d.relogios, d.hoje)));
+      + el("td", {"class": "trocar"}, formTrocarDia(p, d.relogios, d.hoje, d.trocar_hoje)));
   });
   fecha();
   res += el("section", {}, el("h2", {}, t("Dia a dia{1}", {1: filtro.relogio !== "" ? t(" (só os dias do relógio escolhido)") : ""}))
@@ -73,7 +73,7 @@ function montarPlano() {
     + (dd.paginas > 1 ? el("p", {"class": "nota"}, t("Página {1} de {2} · {3} dias, {4} por página (o \"Mostrar até\" da {5}).", {1: dd.pagina, 2: dd.paginas, 3: dd.total, 4: dd.por_pagina, 5: el("a", {"href": "configuracao.php"}, t("Configuração"))})) : ""));
 
   // o rodapé: apagar os dias de um período (o modo monta de novo) e apagar tudo, depois de tudo o mais
-  res += el("footer", {"class": "cartao-config apagar-plano", "id": "apagar"}, el("h2", {}, t("Apagar a programação")) + formApagarPeriodo(d.hoje) + formApagarTudo());
+  res += el("footer", {"class": "cartao-config apagar-plano", "id": "apagar"}, el("h2", {}, t("Apagar a programação")) + formApagarPeriodo(d.hoje) + formApagarTudo(d.trocar_hoje));
 
   var main = document.getElementById("plano");
   porHtml(main, res);

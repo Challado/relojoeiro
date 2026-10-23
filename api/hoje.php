@@ -102,6 +102,9 @@ $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => c
     "proximos" => plano_pagina($hoje->format("Y-m-d"), "", null, (int)($_REQUEST["proximos_pagina"] ?? 1),
         ctype_digit((string)($_REQUEST["por_pagina"] ?? "")) ? (int)$_REQUEST["por_pagina"] : proximos_por_pagina()),
     "semana_inicio" => semana_comeca() === 7 ? "domingo" : "segunda",
+    // o relógio de hoje se troca no próprio dia? (a Configuração; não: o trocar por…, o Usando hoje, o inclusive hoje e o Sem
+    // relógio hoje não aparecem, e a troca vale a partir de amanhã)
+    "trocar_hoje" => trocar_hoje_permitido(),
     "proxima_semana" => ["inicio" => $ini_s->format("Y-m-d"), "fim" => $ini_s->modify("+6 days")->format("Y-m-d"),
         "ja_montada" => (int)valor("SELECT COUNT(*) FROM plano WHERE data BETWEEN ? AND ?", [$ini_s->format("Y-m-d"), $ini_s->modify("+6 days")->format("Y-m-d")]) > 1],
     "modos" => $modos_h,

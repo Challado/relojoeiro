@@ -212,7 +212,11 @@ function recarregarConfig(aplicadas, manterPosicao) {
           // a semana do rodízio: o horizonte do plano, o ciclo, a próxima semana e os blocos contam dela
           + parCampo(t("A semana começa"), el("select", {"name": "semana_inicio"}, el("option", {"value": "segunda", "selected": cfg("semana_inicio") !== "domingo"}, t("Na segunda-feira"))
             + el("option", {"value": "domingo", "selected": cfg("semana_inicio") === "domingo"}, t("No domingo"))), null,
-            ex("semana", t("A semana começa"), t("A semana do rodízio começa no dia escolhido: o plano vem montado até o último dia da semana, e o ciclo, a próxima semana e o relógio para a semana inteira contam dela.")))));
+            ex("semana", t("A semana começa"), t("A semana do rodízio começa no dia escolhido: o plano vem montado até o último dia da semana, e o ciclo, a próxima semana e o relógio para a semana inteira contam dela.")))
+          // trocar o relógio de hoje no próprio dia: desligado (o padrão), a troca vale a partir de amanhã
+          + parCampo(t("Trocar o relógio de hoje no próprio dia"), marca("trocar_hoje", d.trocar_hoje), "check",
+            ex("trocar-hoje", t("Trocar o relógio de hoje no próprio dia"), t("Desligado (o padrão), o relógio de hoje fica: o <strong>trocar por…</strong>, o <strong>Usando hoje</strong>, o <strong>Sortear de novo</strong>, o <strong>Sem relógio hoje</strong>, o período e o Rodízio manual valem a partir de amanhã, e o relógio de amanhã se escolhe até hoje. ")
+              + t("Ligado, o relógio de hoje também se troca no próprio dia, e passa a ser o do pulso a partir de agora. As marcações do pulso (Pôs e Tirou) continuam livres nos dois casos.")))));
         var limites = cartao(t("Limites e contas"), el("div", {"class": "campos"},
           parCampo(t("Carregar quando a carga chegar a (%)"), numero("carga_limiar", cfg("carga_limiar") !== "" ? cfg("carga_limiar") : "20", "1", "99"), null,
             ex("limite", t("O limite de carga"), t("O limite de carga de um relógio (no cadastro dele) vale no lugar do geral.")))

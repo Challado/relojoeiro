@@ -100,6 +100,43 @@ function comparar($x, $y, $caminho, $chave)
         if ($lista_x && count($x) !== count($y)) {
             $graves[] = [$caminho, "quantidade diferente", count($x), count($y)];
         }
+        // dois vizinhos com a mesma hora (os avisos em ordem de data, previstos com segundos de diferença entre um banco e o
+        // outro): trocados de lugar dentro da folga do tempo, é a mesma lista; o mesmo relógio e o mesmo identificador
+        // identificam cada um. Qualquer outra troca de ordem continua grave
+        if ($lista_x && count($x) === count($y) && array_is_list($y)) {
+            $folga_o = 120 + ($GLOBALS["FOLGA_ATRASO"] ?? 0);
+            // quem é (o aviso: o relógio e o identificador; a linha de um relatório: as duas primeiras colunas) e a hora dele (a
+            // data do aviso; na linha, a data e a hora dentro do texto, "24/10/2026 19:44")
+            $quem = function ($e) {
+                if (is_array($e) && !array_is_list($e)) {
+                    return isset($e["data"]) ? json_encode([$e["relogio_id"] ?? null, $e["identificador"] ?? null]) : null;
+                }
+                return is_array($e) && count($e) >= 3 && is_string($e[0]) && is_string($e[1]) ? json_encode([$e[0], $e[1]]) : null;
+            };
+            $hora = function ($e) {
+                if (is_array($e) && !array_is_list($e)) {
+                    return instante($e["data"] ?? null);
+                }
+                foreach (is_array($e) ? $e : [] as $c) {
+                    if (is_string($c) && preg_match("#(\\d{2})/(\\d{2})/(\\d{4}) (\\d{2}:\\d{2})#", $c, $m) === 1) {
+                        return instante($m[3] . "-" . $m[2] . "-" . $m[1] . " " . $m[4]);
+                    }
+                }
+                return null;
+            };
+            for ($i = 0; $i + 1 < count($x); $i++) {
+                $a0 = $quem($x[$i]);
+                $a1 = $quem($x[$i + 1]);
+                $t0 = $hora($x[$i]);
+                $t1 = $hora($x[$i + 1]);
+                if ($a0 !== null && $a1 !== null && $a0 !== $a1 && $t0 !== null && $t1 !== null && abs($t0 - $t1) <= $folga_o
+                    && $quem($y[$i]) === $a1 && $quem($y[$i + 1]) === $a0) {
+                    [$x[$i], $x[$i + 1]] = [$x[$i + 1], $x[$i]];
+                    $leves[] = [$caminho . "[" . $i . "]", "empate na hora, trocados de lugar", $a0, $a1];
+                    $i++;
+                }
+            }
+        }
         foreach (array_unique(array_merge(array_keys($x), array_keys($y))) as $k) {
             if (!array_key_exists($k, $x) || !array_key_exists($k, $y)) {
                 if (!$lista_x) {

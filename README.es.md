@@ -1354,6 +1354,7 @@ colección nueva va al final de cada línea.
 | **La sesión de sol olvidada se cierra a las** (`sol_fim`, que guarda el "se cierra a las" del tipo Al sol) | a quien lo puso al sol y olvidó el **Lo quité**, la sesión se le cierra a esta hora. Predeterminado: 18:00. |
 | **Sacar del sol solo** (`sol_auto_fim`) | la casilla al lado de la hora del sol: marcada, el solar sale del sol solo a esa hora; desmarcada, la sesión al sol queda abierta hasta **Sacar del sol** (olvidada, sigue cargando en la cuenta), y la hora queda guardada para cuando la casilla se marque de nuevo. Predeterminado: marcada. |
 | **La semana empieza** (`semana_inicio`) | el primer día de la semana de la rotación: **El lunes** (`segunda`) o **El domingo** (`domingo`). El plan de los [modos de rotación](#los-modos-de-rotación) viene armado hasta el último día de la semana (el domingo o el sábado), y el ciclo, la próxima semana y el reloj para toda la semana cuentan desde ella; vale para los próximos sorteos (lo que ya está en el plan se queda; **Sortear de nuevo** lo rehace). La función `SEMANA_DO_ANO()` de las fórmulas sigue siendo la semana ISO. Predeterminado: lunes. |
+| **Cambiar el reloj de hoy el mismo día** (`trocar_hoje`) | desmarcada (lo predeterminado), el reloj de hoy se queda: el **cambiar por…** y el **elegir…** del día de hoy, el **Usando hoy**, el **Sortear de nuevo** *incluyendo hoy*, el **Sin reloj hoy** y el **Incluyendo hoy** de Borrar todo no aparecen, en la Rotación manual el día de hoy queda fijo, y el **Sortear de nuevo** vale a partir de mañana aunque el día aún no haya empezado (la API rechaza lo que cambiaría el de hoy): el reloj de mañana se elige hasta hoy. Marcada, el de hoy también se cambia el mismo día, y el nuevo pasa a ser el de la muñeca desde ese momento. Las marcaciones de la muñeca (**Puso** y **Quitó**) siguen libres en los dos casos. Predeterminado: desmarcada. |
 | **Límite de carga** (`carga_limiar`) | la carga (%) en la que los avisos dicen cargar o dar cuerda; el campo **Límite de carga** de un reloj ocupa su lugar. De 1 a 99. Predeterminado: 20. |
 | **Límite del solar** (`sol_limiar`) | la carga (%) en la que el solar debe ir al sol. De 1 a 99. Predeterminado: 70. |
 | **Límite de la previsión** (`previsao_limite`) | la carga (%) que usa la previsión del smartwatch para "llega al límite en...". De 0 a 100. Predeterminado: 20. |
@@ -2263,6 +2264,11 @@ siguientes se ajustan). En un día elegido a mano, la misma lista tiene **volver
 desde hoy o desde mañana, o armar **la próxima semana** cualquier día; con **Sobrescribir todo** marcado, los días elegidos a
 mano y los libres también salen y se sortean de nuevo.
 
+**El día de hoy no se cambia el mismo día**, a menos que la Configuración lo permita (**Cambiar el reloj de hoy el mismo
+día**, desmarcada por defecto): en el día de hoy, en lugar del **cambiar por…**, aparece *hoy se queda (cambio a partir de
+mañana)*, y lo que usted cambia vale de mañana en adelante. ¿Quiere usar otro reloj hoy de todos modos? Marque su **Puso en la
+muñeca**: el uso queda registrado, y el plan no cambia.
+
 La misma lista tiene el grupo **Sortear este día por**: *la mayor nota*, *sorteo por la nota*, *aleatorio, todos con la misma
 probabilidad* o *fila: el más tiempo sin uso*. Solo ese día se sortea en el momento, por esa forma, entre los relojes del bloque
 del modo activo que cubre el día (sin bloque, entre todos los disponibles), sin el reloj que tenía el día; la garantía de
@@ -2277,7 +2283,7 @@ reloj y sin sorteo, como los días libres del plan. Si el reloj del día ya esta
 momento (el tiempo que ya se usó cuenta como uso; lo que ni había empezado no cuenta), y ningún reloj va solo a la muñeca hoy.
 Los demás días no cambian. ¿Cambió de idea? El cuadro pasa a mostrar **Hoy sin reloj** con el **elegir…**: el reloj elegido va
 a la muñeca desde ese momento; o **Sortear de nuevo** *incluyendo hoy*, en el modo de rotación. Por la API:
-`recurso=rodizio`, `acao=sem_relogio`.
+`recurso=rodizio`, `acao=sem_relogio`. Solo con el cambio el mismo día activado en la Configuración (**Cambiar el reloj de hoy el mismo día**).
 
 **¿Y si quiero elegir yo los relojes de un período?**
 En el cuadro **Modo de rotación** de la página Hoy, elija **Rotación manual**, ponga el inicio y el fin y haga clic en **OK**:

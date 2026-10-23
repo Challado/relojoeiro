@@ -24,7 +24,7 @@ $saida = ["modo" => valor("SELECT nome FROM modo WHERE id = ?", [modo_ativo()]),
     // o dia a dia da página, uma página por vez (o "Mostrar até" da Configuração), só de um relógio com relogio=<id>
     "dia_a_dia" => plano_pagina($de_p, $ate_p, $rel_p, (int)($_REQUEST["pagina"] ?? 1),
         ctype_digit((string)($_REQUEST["por_pagina"] ?? "")) ? (int)$_REQUEST["por_pagina"] : plano_por_pagina()), "escala_fim" => cfg("escala_fim") !== "" ? cfg("escala_fim") : null,
-    "plano_fim" => valor("SELECT MAX(data) FROM plano"), "hoje" => hoje_da_colecao()->format("Y-m-d"), "plano" => $plano_p, "livres" => dias_livres($de_p, $ate_p),
+    "plano_fim" => valor("SELECT MAX(data) FROM plano"), "hoje" => hoje_da_colecao()->format("Y-m-d"), "trocar_hoje" => trocar_hoje_permitido(), "plano" => $plano_p, "livres" => dias_livres($de_p, $ate_p),
     "resumo" => plano_resumo($plano_p, hoje_da_colecao()->format("Y-m-d")),
     "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1]; },
         linhas("SELECT id, nome, disponivel FROM relogio ORDER BY nome"))];

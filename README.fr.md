@@ -1402,6 +1402,7 @@ collection vient à la fin de chaque ligne.
 | **La session de soleil oubliée se ferme à** (`sol_fim`, qui enregistre le « se ferme à » du type Au soleil) | si vous l'avez mise au soleil et oublié le **Retirée**, la session se ferme à cette heure. Par défaut : 18:00. |
 | **Retirer du soleil automatiquement** (`sol_auto_fim`) | la case à côté de l'heure du soleil : cochée, la solaire sort du soleil toute seule à cette heure ; décochée, la session au soleil reste ouverte jusqu'au **Retirer du soleil** (oubliée, elle continue de se charger dans le calcul), et l'heure reste gardée pour quand la case sera cochée à nouveau. Par défaut : cochée. |
 | **La semaine commence** (`semana_inicio`) | le premier jour de la semaine de la rotation : **Le lundi** (`segunda`) ou **Le dimanche** (`domingo`). Le plan des [modes de rotation](#les-modes-de-rotation) arrive monté jusqu'au dernier jour de la semaine (le dimanche ou le samedi), et le cycle, la semaine prochaine et la montre pour toute la semaine se comptent à partir d'elle ; cela vaut pour les prochains tirages (ce qui est déjà dans le plan reste ; **Refaire le tirage** le refait). La fonction `SEMANA_DO_ANO()` des formules reste la semaine ISO. Par défaut : lundi. |
+| **Changer la montre du jour le jour même** (`trocar_hoje`) | décochée (par défaut), la montre du jour reste : le **changer pour…** et le **choisir…** du jour, le **Portée aujourd'hui**, le **Refaire le tirage** *y compris aujourd'hui*, le **Sans montre aujourd'hui** et le **Y compris aujourd'hui** de Tout effacer n'apparaissent pas, dans la Rotation manuelle le jour d'aujourd'hui reste figé, et le **Refaire le tirage** vaut à partir de demain même si la journée n'a pas commencé (l'API refuse ce qui changerait celle du jour) : la montre de demain se choisit jusqu'à aujourd'hui. Cochée, celle du jour se change aussi le jour même, et la nouvelle devient celle du poignet dès maintenant. Les marquages du poignet (**Mise** et **Retirée**) restent libres dans les deux cas. Par défaut : décochée. |
 | **Seuil de charge** (`carga_limiar`) | la charge (%) à laquelle les alertes disent de charger ou de remonter ; le champ **Seuil de charge** d'une montre prend sa place. De 1 à 99. Par défaut : 20. |
 | **Seuil de la solaire** (`sol_limiar`) | la charge (%) à laquelle la solaire doit aller au soleil. De 1 à 99. Par défaut : 70. |
 | **Seuil de la prévision** (`previsao_limite`) | la charge (%) qu'utilise la prévision de la smartwatch pour « atteint le seuil dans... ». De 0 à 100. Par défaut : 20. |
@@ -2333,6 +2334,11 @@ sort**. Vous pouvez aussi **Refaire le tirage** à partir d'aujourd'hui ou de de
 n'importe quel jour ; avec **Tout écraser** coché, les jours choisis à la main et les jours libres disparaissent aussi et
 sont tirés de nouveau.
 
+**Le jour même, la montre du jour ne change pas**, sauf si la Configuration le permet (**Changer la montre du jour le jour
+même**, décochée par défaut) : pour aujourd'hui, à la place du **changer pour…**, s'affiche *aujourd'hui reste (changement à
+partir de demain)*, et ce que vous changez vaut à partir de demain. Vous voulez porter une autre montre aujourd'hui quand même ?
+Marquez son **Mise au poignet** : l'usage est enregistré, et le plan ne change pas.
+
 La même liste a le groupe **Tirer ce jour au sort par** : *la meilleure note*, *tirage selon la note*, *aléatoire, toutes
 avec la même chance* ou *file : la plus longtemps sans usage*. Seul ce jour est tiré au sort sur-le-champ, selon ce mode,
 parmi les montres du bloc du mode actif qui couvre le jour (sans bloc, parmi toutes les disponibles), sans la montre que le
@@ -2348,7 +2354,7 @@ Dans le cadre de la montre du jour, en haut de la page Aujourd'hui, **Jour sans 
 rotation, elle le quitte maintenant (le temps déjà porté compte comme usage ; ce qui n'avait pas commencé ne compte pas), et
 aucune montre ne va toute seule au poignet aujourd'hui. Les autres jours ne changent pas. Vous avez changé d'avis ? Le cadre
 affiche alors **Aujourd'hui sans montre** avec le **choisir…** : la montre choisie va au poignet dès maintenant ; ou **Refaire
-le tirage** *y compris aujourd'hui*, dans le mode de rotation. Par l'API : `recurso=rodizio`, `acao=sem_relogio`.
+le tirage** *y compris aujourd'hui*, dans le mode de rotation. Par l'API : `recurso=rodizio`, `acao=sem_relogio`. Seulement avec le changement le jour même activé dans la Configuration (**Changer la montre du jour le jour même**).
 
 **Et si je veux choisir moi-même les montres d'une période ?**
 Dans le cadre **Mode de rotation** de la page Aujourd'hui, choisissez **Rotation manuelle**, indiquez le début et la fin et

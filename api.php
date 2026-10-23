@@ -29,6 +29,9 @@
  *   junto, em cascata, no banco inteiro); com confirmar=1, apaga, e os arquivos dos documentos saem do disco na hora.
  *   Toda gravação do recurso=rodizio que mexe no plano (menos acao=modo, que só marca o modo) responde também "mudancas": o
  *   que mudou do plano de hoje em diante em relação ao de antes (mudaram, iguais, texto e os dias, com antes, depois e o motivo).
+ *   O relógio de hoje não se troca no próprio dia, a não ser que a Configuração deixe (trocar_hoje=1; o padrão é 0): desligado,
+ *   o recurso=rodizio recusa usando, trocar_dia de hoje, resortear_hoje, sem_relogio, apagar_tudo com hoje=1, periodo começando
+ *   hoje e manual que mude hoje, e o resortear vale de amanhã. As marcações do pulso continuam livres.
  *
  * ---------------------------------------------------------------------------------------------
  * FORMATO
@@ -552,7 +555,7 @@
  *                             semana_fds e dia_semana), max_sem_uso (a garantia de rodízio): grava os dois e marca o modo; o plano
  *                             gravado continua; os blocos, as semanas e o roteiro se editam em recurso=modos),
  *                             resortear (de amanhã até domingo, ou até o fim da próxima semana, se ela já foi montada; se o dia
- *                             ainda não começou no pulso, também hoje), resortear_hoje
+ *                             ainda não começou no pulso e o relógio de hoje se troca no próprio dia, também hoje), resortear_hoje
  *                             (inclusive hoje: o sorteado passa a ser o do pulso a partir de agora), usando (relogio_id: o
  *                             relógio de hoje a partir de agora; motivo, opcional: a frase que fica no plano), trocar_dia (data,
  *                             relogio_id: o relógio daquele dia, à mão; hoje, como o usando; 0: o dia volta a ser sorteado;
@@ -608,7 +611,8 @@
  *                             366: o "Mostrar até", quantos dias os Próximos dias da página Hoje e o dia a dia da página Plano
  *                             mostram por página; padrão 7 e 31); idioma (o da coleção); max_sem_uso (0 a 365); previsao_limite (0 a
  *                             100); medicao_janela_dias (1 a 3650: a média do gasto medido usa as medições destes últimos dias);
- *                             encostado_dias; calibre_campos (movimento ou todos: os campos do formulário do calibre); url_sistema
+ *                             encostado_dias; trocar_hoje (1 ou 0: o relógio de hoje se troca no próprio dia, ou só a partir de
+ *                             amanhã; vazio: 0); calibre_campos (movimento ou todos: os campos do formulário do calibre); url_sistema
  *                             (do sistema inteiro: só o master); só o que vier), evento_salvar (evento_id
  *                             ou id: 0 cria; nome, ativo, repeticao, hora, data_inicio, dias_semana, dia_mes, intervalo_dias,
  *                             relogio_id; o evento novo já vai para todos os destinos), evento_excluir (evento_id ou id, confirmar=1)
@@ -805,6 +809,8 @@
  *                                    analógico) ou ambos (um ao lado do outro); vazio: ambos
  *     config.semana_inicio           o primeiro dia da semana do rodízio: segunda ou domingo (o plano vem montado até o último dia da
  *                                    semana; o ciclo, a próxima semana e o relógio para a semana inteira contam dela); vazio: segunda
+ *     config.trocar_hoje             1: o relógio de hoje se troca no próprio dia; 0 ou vazio (o padrão): só a partir de amanhã (o que
+ *                                    trocaria o de hoje é recusado, e o Sortear de novo vale de amanhã)
  *     config.idioma                  o idioma padrão da instalação (pt-BR, en, zh-CN, hi, es, fr; vazio: o do navegador, senão português)
  *     config.painel_modo             como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela
  *                                    grande por cima da página); vazio: lado
@@ -2023,6 +2029,10 @@
  *                                    começando no domingo)
  *     proxima_semana.ja_montada      verdadeiro ou falso: a próxima semana já está no plano
  *     semana_inicio                  o dia em que a semana do rodízio começa (a Configuração, semana_inicio): segunda ou domingo
+ *     trocar_hoje                    verdadeiro: o relógio de hoje se troca no próprio dia (a Configuração, trocar_hoje); falso, o padrão:
+ *                                    só a partir de amanhã, e as telas não mostram as trocas de hoje (o trocar por… do dia de hoje, o
+ *                                    Usando hoje, o inclusive hoje, o Sem relógio hoje, o Excluindo hoje do Apagar tudo; no Rodízio manual,
+ *                                    hoje fica parado)
  *     relogios[]                     a tabela dos relógios
  *     relogios[].agora               o estado por extenso, desde quando ("Em uso desde 07:00", "No sol desde 09:12", "Em repouso desde
  *                                    21:40")
@@ -2118,6 +2128,10 @@
  *                                    decide (a caixa do cadastro só aparece então)
  *     painel_modo                    como o relógio abre na página Hoje (a Configuração): lado (no painel à direita da lista, o padrão) ou
  *                                    flutuante (numa janela grande por cima da página); no celular, os dois cobrem a tela
+ *     trocar_hoje                    verdadeiro: o relógio de hoje se troca no próprio dia (a Configuração, trocar_hoje); falso, o padrão:
+ *                                    só a partir de amanhã, e as telas não mostram as trocas de hoje (o trocar por… do dia de hoje, o
+ *                                    Usando hoje, o inclusive hoje, o Sem relógio hoje, o Excluindo hoje do Apagar tudo; no Rodízio manual,
+ *                                    hoje fica parado)
  *     relogio                        o relógio; null: o cadastro de um relógio novo
  *     relogio.agora                  o estado por extenso, desde quando ("Em uso desde 07:00", "No sol desde 09:12", "Em repouso desde
  *                                    21:40")
@@ -3193,6 +3207,8 @@
  *                                    analógico) ou ambos (um ao lado do outro); vazio: ambos
  *     config.semana_inicio           o primeiro dia da semana do rodízio: segunda ou domingo (o plano vem montado até o último dia da
  *                                    semana; o ciclo, a próxima semana e o relógio para a semana inteira contam dela); vazio: segunda
+ *     config.trocar_hoje             1: o relógio de hoje se troca no próprio dia; 0 ou vazio (o padrão): só a partir de amanhã (o que
+ *                                    trocaria o de hoje é recusado, e o Sortear de novo vale de amanhã)
  *     fuso_sistema                   o fuso do sistema (o FUSO do config.php, ou o do PHP): o das datas gravadas no banco e o de quem não
  *                                    escolheu outro
  *     fusos[]                        os fusos horários que o PHP conhece, em ordem alfabética (as listas Fuso horário da Configuração e de
@@ -3254,6 +3270,10 @@
  *     repeticoes.<repeticao>         cada repetição de evento e o nome dela
  *     sol_fim                        a hora em que a sessão no sol esquecida aberta fecha (HH:MM)
  *     sol_auto_fim                   true (o padrão): o solar sai do sol sozinho na hora de sol_fim; false: só pelo Tirar do sol
+ *     trocar_hoje                    verdadeiro: o relógio de hoje se troca no próprio dia (a Configuração, trocar_hoje); falso, o padrão:
+ *                                    só a partir de amanhã, e as telas não mostram as trocas de hoje (o trocar por… do dia de hoje, o
+ *                                    Usando hoje, o inclusive hoje, o Sem relógio hoje, o Excluindo hoje do Apagar tudo; no Rodízio manual,
+ *                                    hoje fica parado)
  *     sistema                        o que é do sistema inteiro (não da coleção)
  *     sistema.url_sistema            o endereço do sistema, para os links das mensagens ({link}), do ICS e do Outlook (vazio: o do pedido)
  *     sistema.pode_mudar             verdadeiro ou falso: quem pede pode mudar (só o master)
@@ -3781,6 +3801,10 @@
  *     plano[].relogio                o nome dele
  *     plano[].relogio_id             o relógio do dia
  *     plano_fim                      o último dia gravado no plano (AAAA-MM-DD; null: plano vazio), qualquer que seja o período pedido
+ *     trocar_hoje                    verdadeiro: o relógio de hoje se troca no próprio dia (a Configuração, trocar_hoje); falso, o padrão:
+ *                                    só a partir de amanhã, e as telas não mostram as trocas de hoje (o trocar por… do dia de hoje, o
+ *                                    Usando hoje, o inclusive hoje, o Sem relógio hoje, o Excluindo hoje do Apagar tudo; no Rodízio manual,
+ *                                    hoje fica parado)
  *     resumo                         o resumo do período (os dias da resposta de hoje em diante), como a página Plano mostra
  *     resumo.ate                     o último dia contado (null: nenhum)
  *     resumo.de                      o primeiro dia contado (null: nenhum)
@@ -5322,6 +5346,10 @@
  *                                    anteriores do período contados como uso, a garantia de rodízio na frente, sem o relógio de ontem nem o
  *                                    de amanhã (se houver outro), empate pelo cadastrado primeiro; decidido ao gravar; e o Sortear este dia
  *                                    por
+ *     trocar_hoje                    verdadeiro: o relógio de hoje se troca no próprio dia (a Configuração, trocar_hoje); falso, o padrão:
+ *                                    só a partir de amanhã, e as telas não mostram as trocas de hoje (o trocar por… do dia de hoje, o
+ *                                    Usando hoje, o inclusive hoje, o Sem relógio hoje, o Excluindo hoje do Apagar tudo; no Rodízio manual,
+ *                                    hoje fica parado)
  *     formas[]                       as formas de escolha do "Sortear este dia por" do seletor de cada dia
  *                                    (dias[AAAA-MM-DD]=sortear:<chave> no acao=manual; o mesmo relogio_id=sortear:<chave> no
  *                                    acao=trocar_dia)

@@ -3460,6 +3460,10 @@ function op_rodizio($acao, $d)
     $fim_uso = instante($hoje->format("Y-m-d"), cfg("uso_fim"));
     $comecou = dia_comecou($agora);
     $sobrescrever = (string)($d["sobrescrever"] ?? "") === "1";
+    // trocar o relógio de hoje no próprio dia (a Configuração, trocar_hoje): desligado, o padrão, o de hoje fica e tudo o que
+    // o trocaria é recusado (ou, no Sortear de novo, vale a partir de amanhã)
+    $trava_hoje = !trocar_hoje_permitido();
+    $recusa_hoje = t("O relógio de hoje não se troca no próprio dia (Configuração: Trocar o relógio de hoje no próprio dia): a troca vale a partir de amanhã. As marcações do pulso continuam livres.");
     // troca o relógio de hoje a partir de agora: a sessão de rodízio do anterior termina agora (ou sai, se nem começou)
     // e a do novo começa agora (se ainda está no horário de uso)
     $troca_hoje = function ($novo_id, $motivo) use ($hoje, $agora, $ini_uso, $fim_uso) {
@@ -3510,9 +3514,12 @@ function op_rodizio($acao, $d)
             $erros = $res["erros"];
             $msg = $res["ok"] ? t("Modo aplicado: {1}. {2}", [1 => $m["nome"], 2 => $res["mensagem"]]) : "";
         }
+    } elseif ($acao === "resortear_hoje" && $trava_hoje) {
+        $erros[] = $recusa_hoje;
     } elseif ($acao === "resortear" || $acao === "resortear_hoje") {
         $antes = plano_do_dia($hoje->format("Y-m-d"));
-        $desde = ($acao === "resortear_hoje" || !$comecou) ? $hoje : $hoje->modify("+1 day");
+        // com o dia ainda por começar, o Sortear de novo pega hoje também (se o relógio de hoje se troca no próprio dia)
+        $desde = ($acao === "resortear_hoje" || (!$comecou && !$trava_hoje)) ? $hoje : $hoje->modify("+1 day");
         // até onde o sorteio já ia (a próxima semana, se já foi montada): é refeito até lá, e não só até o fim da semana
         $fim_s = $escala ? null : valor("SELECT MAX(data) FROM plano WHERE data >= ? AND origem = 'sorteio'", [$desde->format("Y-m-d")]);
         $modo_r = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]);
@@ -3534,12 +3541,14 @@ function op_rodizio($acao, $d)
         }
         garantir_plano($hoje, $escala ? null : $ate_s, $acao !== "resortear_hoje");
         $depois = plano_do_dia($hoje->format("Y-m-d"));
-        if ($depois && (!$antes || (int)$antes["relogio_id"] !== (int)$depois["relogio_id"]) && ($acao === "resortear_hoje" || !$comecou)) {
+        if ($depois && (!$antes || (int)$antes["relogio_id"] !== (int)$depois["relogio_id"]) && ($acao === "resortear_hoje" || !$comecou) && (!$trava_hoje || !$antes)) {
             // o de hoje trocado pelo sorteio: o motivo é o do sorteio
             $troca_hoje((int)$depois["relogio_id"], $depois["motivo"] ?? null);
         }
         $msg = t("Sorteado de novo{1}.{2}", [1 => $desde > $hoje ? ($antes ? t(" a partir de amanhã; hoje continua o {1}", [1 => $antes["nome"]]) : t(" a partir de amanhã")) : "", 2 => $depois ? " " . t("Hoje: {1}.", [1 => $depois["nome"]]) : ""])
             . dias_guardados_texto($guardados, $sobrescrever);
+    } elseif (($acao === "sem_relogio" || $acao === "usando") && $trava_hoje) {
+        $erros[] = $recusa_hoje;
     } elseif ($acao === "sem_relogio") {
         // hoje sem relógio: o dia fica livre (sem relógio e sem sorteio, como os dias livres do plano) e a sessão do rodízio de
         // hoje termina agora (o tempo que ele já ficou no pulso conta; a que ainda nem começou sai). Os outros dias não mudam.
@@ -3597,6 +3606,8 @@ function op_rodizio($acao, $d)
             $erros[] = t("Data: AAAA-MM-DD.");
         } elseif ($dt < $hoje) {
             $erros[] = t("O dia {1} já passou: o que foi usado nele se corrige nas marcações (o quadro \"Corrigir marcações\" no painel do relógio).", [1 => $dt->format("d/m")]);
+        } elseif ($dt == $hoje && $trava_hoje) {
+            $erros[] = $recusa_hoje;
         } elseif ($forma !== null && !isset(formas_de_escolha()[$forma])) {
             $erros[] = t("Forma de escolha: {1}.", [1 => implode(", ", array_keys(formas_de_escolha()))]);
         } elseif ($forma !== null) {
@@ -3675,6 +3686,8 @@ function op_rodizio($acao, $d)
             $erros[] = t("De e até: datas AAAA-MM-DD.");
         } elseif ($de_p < $hoje) {
             $erros[] = t("O período começa num dia que já passou: o que foi usado se corrige nas marcações.");
+        } elseif ($acao === "periodo" && $de_p == $hoje && $trava_hoje) {
+            $erros[] = t("O período começa hoje, mas o relógio de hoje não se troca no próprio dia (Configuração: Trocar o relógio de hoje no próprio dia): comece o período amanhã.");
         } elseif ($ate_p < $de_p) {
             $erros[] = t("O fim do período vem antes do começo.");
         } elseif (!$apagar_p && $de_p->diff($ate_p)->days > 730) {
@@ -3744,6 +3757,9 @@ function op_rodizio($acao, $d)
         // e os livres; depois o modo ativo monta o plano de novo (o sorteio até o fim da semana, ou a escala inteira). Hoje, se mudar, o
         // novo passa a ser o do pulso a partir de agora
         $com_hoje = in_array((string)($d["hoje"] ?? "0"), ["1", "on", "sim", "true"], true);
+        if ($com_hoje && $trava_hoje) {
+            return resultado([$recusa_hoje], "");
+        }
         $desde_t = $com_hoje ? $hoje : $hoje->modify("+1 day");
         $antes = plano_do_dia($hoje->format("Y-m-d"));
         $n_t = (int)valor("SELECT COUNT(*) FROM plano WHERE data >= ?", [$desde_t->format("Y-m-d")]) + (int)valor("SELECT COUNT(*) FROM plano_livre WHERE data >= ?", [$desde_t->format("Y-m-d")]);
@@ -3791,6 +3807,10 @@ function op_rodizio($acao, $d)
                 }
                 if (($escolhas[$data] ?? null) === "livre" && $dia == $hoje) {
                     $erros[] = t("Hoje não pode ficar livre: hoje já tem o relógio do pulso (troque por outro, ou Decida por mim).");
+                } elseif ($dia == $hoje && $trava_hoje && $v !== null && $v !== "auto" && $v !== "livre"
+                    && (!ctype_digit($v) || (int)$v !== (int)(plano_do_dia($data)["relogio_id"] ?? 0))) {
+                    // hoje, sem trocar no próprio dia: só o que ele já tem (ou o Decida por mim, que mantém o de hoje)
+                    $erros[] = t("{1}: {2}", [1 => $dia->format("d/m"), 2 => $recusa_hoje]);
                 }
             }
         }
@@ -4105,6 +4125,9 @@ function op_config($acao, $d)
             && (!ctype_digit(trim((string)$d["atualizar_segundos"])) || (int)$d["atualizar_segundos"] > 86400)) {
             $erros[] = t("Intervalo de atualização: de 1 a 86400 segundos, ou 0 (as páginas não se atualizam sozinhas); vazio: 60.");
         }
+        if (array_key_exists("trocar_hoje", $d) && !in_array(trim((string)$d["trocar_hoje"]), ["", "0", "1"], true)) {
+            $erros[] = t("Trocar o relógio de hoje no próprio dia: 1 (pode) ou 0 (só a partir de amanhã; vazio: 0).");
+        }
         if (array_key_exists("semana_inicio", $d) && !in_array((string)$d["semana_inicio"], ["", "segunda", "domingo"], true)) {
             $erros[] = t("A semana começa na segunda ou no domingo (vazio: segunda).");
         }
@@ -4141,7 +4164,7 @@ function op_config($acao, $d)
                     sis_set("senha_" . $k, (string)(int)$d["senha_" . $k]);
                 }
             }
-            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina", "hora_relogio", "semana_inicio", "atualizar_segundos", "relojinho_modo", "calibre_campos"] as $k) {
+            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina", "hora_relogio", "semana_inicio", "trocar_hoje", "atualizar_segundos", "relojinho_modo", "calibre_campos"] as $k) {
                 if (array_key_exists($k, $d)) {
                     cfg_set($k, trim((string)$d[$k]));
                 }

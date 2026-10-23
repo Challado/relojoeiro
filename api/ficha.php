@@ -24,7 +24,7 @@ foreach (campos_na_ordem_da_ficha(campos_todos()) as $c) {
         "padrao" => $c["padrao"], "no_id" => $c["no_id"] === null ? 0 : (int)$c["no_id"], "so_desejado" => (int)($c["so_desejado"] ?? 0) === 1,
         "secao" => $c["secao"], "multiplo" => (int)($c["multiplo"] ?? 0) === 1, "regra" => campo_regra_texto($c), "valor" => $proprios[$ident] ?? null, "do_calibre" => $do_calibre[$ident] ?? null];
 }
-$saida = ["hoje" => $hoje->format("Y-m-d"), "relogio" => null, "copia_sistema" => documentos_copia_sistema(), "painel_modo" => painel_modo(), "campos" => $campos,
+$saida = ["hoje" => $hoje->format("Y-m-d"), "trocar_hoje" => trocar_hoje_permitido(), "relogio" => null, "copia_sistema" => documentos_copia_sistema(), "painel_modo" => painel_modo(), "campos" => $campos,
     // as situações na coleção, na ordem, para o menu do cadastro
     "posses" => array_map(function ($k) { return ["valor" => $k, "nome" => t(POSSES[$k])]; }, array_keys(POSSES)),
     "grupos" => array_map(function ($o) use ($n) { return ["id" => $o[0], "caminho" => no_caminho($o[0]), "cadeia" => no_cadeia($o[0])]; }, nos_em_ordem()),

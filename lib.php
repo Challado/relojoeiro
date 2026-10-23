@@ -5164,7 +5164,7 @@ function rodizio_manual_pagina($de, $ate, $pagina)
             "motivo" => $p ? $p["motivo"] : null, "livre" => $livre, "escolha" => rodizio_manual_escolha($p, $livre)];
     }
     return ["de" => $de->format("Y-m-d"), "ate" => $ate->format("Y-m-d"), "total_dias" => $total, "por_pagina" => RODIZIO_MANUAL_POR_PAGINA,
-        "pagina" => $pagina, "paginas" => $paginas, "dias" => $dias,
+        "pagina" => $pagina, "paginas" => $paginas, "dias" => $dias, "trocar_hoje" => trocar_hoje_permitido(),
         "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"]]; }, linhas("SELECT id, nome FROM relogio WHERE disponivel = 1 ORDER BY nome")),
         "decida_por_mim" => rodizio_manual_criterio(),
         "formas" => array_map(function ($k, $n) { return ["chave" => $k, "nome" => $n]; }, array_keys(formas_de_escolha()), formas_de_escolha())];
@@ -7558,6 +7558,14 @@ function fechar_esquecidas($agora, $relogio = null)
             sql("UPDATE lancamento SET fim = ? WHERE id = ?", [date("Y-m-d H:i:s", $fecha), (int)$l["id"]]);
         }
     }
+}
+
+// Trocar o relógio de hoje no próprio dia (a Configuração, trocar_hoje): 1, pode (trocar por…, Usando hoje, Sortear de novo
+// inclusive hoje, Sem relógio hoje, o período e o rodízio manual a partir de hoje, Apagar tudo com hoje); vazio ou 0, o
+// padrão: o relógio de hoje fica, e toda troca vale a partir de amanhã (as marcações do pulso continuam livres)
+function trocar_hoje_permitido()
+{
+    return cfg("trocar_hoje") === "1";
 }
 
 // O dia de hoje já começou no pulso: pondo sozinho, passou o início do horário de uso; senão, o relógio do dia já foi posto

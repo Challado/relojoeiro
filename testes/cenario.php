@@ -463,6 +463,26 @@ ler("roteiro", ["recurso" => "roteiro", "roteiro" => $roteiro, "dia" => $em(1)])
 ler("roteiro do modo", ["recurso" => "roteiro", "modo" => $por_dia, "dia" => $em(2)]);
 ler("roteiro errado", ["recurso" => "roteiro", "roteiro" => "candidato = (\npeso = peso + 1\nnota = inexistente", "dia" => $em(3)]);
 ler("roteiro em dia inválido", ["recurso" => "roteiro", "roteiro" => "candidato = 1", "dia" => "2000-01-01"]);
+// trocar o relógio de hoje no próprio dia (a Configuração, trocar_hoje): desligado, o padrão, tudo o que trocaria o de hoje é
+// recusado (Usando hoje, o trocar por… e o sortear de hoje, o inclusive hoje, o Sem relógio hoje, o Apagar tudo com hoje, o
+// período e o rodízio manual mexendo em hoje) e o Sortear de novo vale de amanhã; um valor que não existe é recusado; depois,
+// ligado, o roteiro segue trocando o de hoje
+$hoje_t = substr(dia(0, "00:00"), 0, 10);
+ler("hoje sem trocar no próprio dia", ["recurso" => "hoje", "incluir" => "trocar_hoje,dia,hoje_livre"]);
+escrever(["recurso" => "rodizio", "acao" => "usando", "relogio_id" => $rel["crono"]], false);
+escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $hoje_t, "relogio_id" => $rel["pilha"]], false);
+escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $hoje_t, "relogio_id" => "sortear:aleatorio"], false);
+escrever(["recurso" => "rodizio", "acao" => "resortear_hoje"], false);
+escrever(["recurso" => "rodizio", "acao" => "sem_relogio"], false);
+escrever(["recurso" => "rodizio", "acao" => "apagar_tudo", "hoje" => 1], false);
+escrever(["recurso" => "rodizio", "acao" => "periodo", "de" => $hoje_t, "ate" => $em(2), "relogio_ids" => [$rel["pilha"]]], false);
+escrever(["recurso" => "rodizio", "acao" => "manual", "de" => $hoje_t, "ate" => $em(1), "dias" => [$hoje_t => "sortear:aleatorio"]], false);
+escrever(["recurso" => "rodizio", "acao" => "resortear"]);
+ler("hoje depois do sortear sem trocar no próprio dia", ["recurso" => "hoje", "incluir" => "trocar_hoje,dia"]);
+ler("rodízio manual sem trocar no próprio dia", ["recurso" => "rodizio_manual", "de" => $hoje_t, "ate" => $em(2)]);
+escrever(["recurso" => "config", "acao" => "salvar", "trocar_hoje" => "talvez"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "trocar_hoje" => "1"]);
+ler("config trocando no próprio dia", ["recurso" => "config"]);
 foreach ([$semana2, $por_dia, $personalizado] as $m_t) {
     escrever(["recurso" => "modos", "acao" => "ativar", "id" => $m_t]);
     escrever(["recurso" => "rodizio", "acao" => "resortear"]);

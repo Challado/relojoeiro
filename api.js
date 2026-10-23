@@ -341,7 +341,8 @@ function instante(t) {
 }
 
 // Trocar o relógio de um dia do plano (Hoje e Plano): a lista dos relógios disponíveis e o botão; no dia escolhido à mão
-// ou livre (de amanhã em diante), também "voltar a sortear". p: o dia do plano (data, relogio_id, origem); hoje: AAAA-MM-DD
+// ou livre (de amanhã em diante), também "voltar a sortear". p: o dia do plano (data, relogio_id, origem); hoje: AAAA-MM-DD;
+// trocaHoje: o trocar_hoje da API (falso: o dia de hoje não se troca, e a célula diz que a troca vale de amanhã)
 // As formas de escolha do "Sortear este dia por" (as mesmas chaves da API: rodizio trocar_dia e manual, sortear:<chave>)
 var FORMAS_DE_ESCOLHA = [["inteligente", t("a maior nota")], ["ponderado", t("sorteio pela nota")], ["aleatorio", t("aleatório, todos com a mesma chance")], ["fifo", t("fila: o mais tempo sem uso")]];
 
@@ -353,7 +354,10 @@ function opcoesSortearDia(atual) {
   }).join(""));
 }
 
-function formTrocarDia(p, relogios, hoje) {
+function formTrocarDia(p, relogios, hoje, trocaHoje) {
+  if (p.data === hoje && !trocaHoje) {
+    return el("span", {"class": "nota", "title": t("Configuração: Trocar o relógio de hoje no próprio dia")}, t("hoje fica (troca a partir de amanhã)"));
+  }
   var opcoes = el("option", {"value": "", "selected": true, "disabled": true}, p.origem === "livre" ? t("escolher…") : t("trocar por…"))
     + el("optgroup", {"label": t("Um relógio")}, relogios.filter(function (r) { return r.disponivel && r.id !== p.relogio_id; }).map(function (r) {
       return el("option", {"value": r.id}, h(r.nome));
@@ -408,16 +412,18 @@ function formApagarPeriodo(hoje) {
 }
 
 // Apagar tudo (página Plano e quadro Modo de rodízio): toda a programação de amanhã em diante (com "Excluindo hoje", de hoje
-// em diante) sai: os dias escolhidos à mão, os sorteados e os livres; o modo de rodízio monta o plano de novo (rodizio apagar_tudo)
-function formApagarTudo() {
-  return el("form", {"data-recurso": "rodizio", "class": "apagar-tudo", "onsubmit": "return confirm(this.getAttribute(this.hoje.checked ? 'data-confirma-hoje' : 'data-confirma'))",
+// em diante) sai: os dias escolhidos à mão, os sorteados e os livres; o modo de rodízio monta o plano de novo (rodizio apagar_tudo).
+// trocaHoje: o trocar_hoje da API (falso: sem o "Excluindo hoje", o dia de hoje fica)
+function formApagarTudo(trocaHoje) {
+  return el("form", {"data-recurso": "rodizio", "class": "apagar-tudo", "onsubmit": "return confirm(this.getAttribute(this.hoje && this.hoje.checked ? 'data-confirma-hoje' : 'data-confirma'))",
       "data-confirma-hoje": t("Apagar toda a programação, de hoje em diante (escolhidos à mão, sorteados e dias livres)? O modo de rodízio monta o plano de novo, e hoje pode sair outro relógio, que passa a ser o do pulso a partir de agora."),
       "data-confirma": t("Apagar toda a programação, de amanhã em diante (escolhidos à mão, sorteados e dias livres)? O modo de rodízio monta o plano de novo; hoje continua como está.")},
     el("input", {"type": "hidden", "name": "acao", "value": "apagar_tudo"})
     + el("span", {"class": "campo-principal"}, t("Apagar tudo"))
-    + el("div", {"class": "linha-apagar"}, el("label", {"class": "check"}, t("{1} Excluindo hoje (apaga também o dia de hoje)", {1: el("input", {"type": "checkbox", "name": "hoje", "value": "1"})}))
+    + el("div", {"class": "linha-apagar"}, (trocaHoje ? el("label", {"class": "check"}, t("{1} Excluindo hoje (apaga também o dia de hoje)", {1: el("input", {"type": "checkbox", "name": "hoje", "value": "1"})})) : "")
       + el("button", {"class": "leve"}, t("Apagar tudo")))
-    + ajudaNota("apagar-tudo", t("Apagar tudo"), t("Limpa toda a programação, de amanhã em diante: os dias escolhidos à mão, os sorteados e os livres. Marcando \"Excluindo hoje\", apaga de hoje em diante (se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora). Depois, o modo de rodízio monta o plano de novo, do zero.")));
+    + ajudaNota("apagar-tudo", t("Apagar tudo"), trocaHoje ? t("Limpa toda a programação, de amanhã em diante: os dias escolhidos à mão, os sorteados e os livres. Marcando \"Excluindo hoje\", apaga de hoje em diante (se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora). Depois, o modo de rodízio monta o plano de novo, do zero.")
+      : t("Limpa toda a programação, de amanhã em diante: os dias escolhidos à mão, os sorteados e os livres. Depois, o modo de rodízio monta o plano de novo, do zero. O dia de hoje fica: na Configuração, o relógio de hoje não se troca no próprio dia.")));
 }
 
 // Os dias do plano com os dias livres no meio, na ordem das datas (um dia livre: sem relógio, para escolher à mão)

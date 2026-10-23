@@ -1313,6 +1313,7 @@ A página **Configuração** guarda as opções **da coleção** (cada coleção
 | **A sessão no sol esquecida fecha às** (`sol_fim`, que grava o "fecha às" do tipo No sol) | quem pôs no sol e esqueceu do **Tirou** tem a sessão fechada nessa hora. Padrão: 18:00. |
 | **Tirar do sol sozinho** (`sol_auto_fim`) | a caixa ao lado da hora do sol: marcada, o solar sai do sol sozinho nessa hora; desmarcada, a sessão no sol fica aberta até o **Tirar do sol** (esquecida, ele continua carregando na conta), e a hora fica guardada para quando a caixa for marcada de novo. Padrão: marcada. |
 | **A semana começa** (`semana_inicio`) | o primeiro dia da semana do rodízio: **Na segunda-feira** (`segunda`) ou **No domingo** (`domingo`). O plano dos [modos de rodízio](#os-modos-de-rodízio) vem montado até o último dia da semana (o domingo ou o sábado), e o ciclo, a próxima semana e o relógio para a semana inteira contam dela; vale para os próximos sorteios (o que já está no plano fica; **Sortear de novo** refaz). A função `SEMANA_DO_ANO()` das fórmulas continua a semana ISO. Padrão: segunda-feira. |
+| **Trocar o relógio de hoje no próprio dia** (`trocar_hoje`) | desmarcada (o padrão), o relógio de hoje fica: o **trocar por…** e o **escolher…** do dia de hoje, o **Usando hoje**, o **Sortear de novo** *inclusive hoje*, o **Sem relógio hoje** e o **Excluindo hoje** do Apagar tudo não aparecem, no Rodízio manual o dia de hoje fica parado, e o **Sortear de novo** vale a partir de amanhã mesmo com o dia ainda por começar (a API recusa o que trocaria o de hoje): o relógio de amanhã se escolhe até hoje. Marcada, o de hoje também se troca no próprio dia, e o novo passa a ser o do pulso a partir de agora. As marcações do pulso (**Pôs** e **Tirou**) continuam livres nos dois casos. Padrão: desmarcada. |
 | **Limite de carga** (`carga_limiar`) | a carga (%) em que os avisos mandam carregar ou dar corda; o campo **Limite de carga** de um relógio vale no lugar dele. De 1 a 99. Padrão: 20. |
 | **Limite do solar** (`sol_limiar`) | a carga (%) em que o solar deve ir para o sol. De 1 a 99. Padrão: 70. |
 | **Limite da previsão** (`previsao_limite`) | a carga (%) que a previsão do smartwatch usa para "chega ao limite em...". De 0 a 100. Padrão: 20. |
@@ -2195,6 +2196,11 @@ ajustam). Num dia escolhido à mão, a mesma lista tem **voltar a sortear**. Tam
 ou de amanhã, ou montar **a próxima semana** em qualquer dia; com **Sobrescrever tudo** marcado, os dias escolhidos à mão e
 os livres também saem e são sorteados de novo.
 
+**O dia de hoje não se troca no próprio dia**, a não ser que a Configuração deixe (**Trocar o relógio de hoje no próprio dia**,
+desmarcada no padrão): no dia de hoje, no lugar do **trocar por…**, aparece *hoje fica (troca a partir de amanhã)*, e o que você
+muda vale de amanhã em diante. Quer usar outro relógio hoje assim mesmo? Marque o **Pôs no pulso** dele: o uso fica registrado,
+e o plano não muda.
+
 A mesma lista tem o grupo **Sortear este dia por**: *a maior nota*, *sorteio pela nota*, *aleatório, todos com a mesma chance*
 ou *fila: o mais tempo sem uso*. Só aquele dia é sorteado na hora, por essa forma, entre os relógios do bloco do modo ativo
 que cobre o dia (sem bloco, entre todos os disponíveis), sem o relógio que o dia tinha; a garantia de rodízio vem na frente
@@ -2209,7 +2215,7 @@ relógio e sem sorteio, como os dias livres do plano. Se o relógio do dia já e
 tempo que já ficou conta como uso; o que nem começou não conta), e nenhum relógio vai ao pulso sozinho hoje. Os outros dias
 não mudam. Mudou de ideia? O quadro passa a mostrar **Hoje sem relógio** com o **escolher…**: o relógio escolhido vai para
 o pulso a partir de agora; ou **Sortear de novo** *inclusive hoje*, no modo de rodízio. Pela API: `recurso=rodizio`,
-`acao=sem_relogio`.
+`acao=sem_relogio`. Só com a troca no próprio dia ligada na Configuração (**Trocar o relógio de hoje no próprio dia**).
 
 **E se eu quiser escolher eu mesmo os relógios de um período?**
 No quadro **Modo de rodízio** da página Hoje, escolha **Rodízio manual**, ponha o começo e o fim e clique em **OK**: os dias

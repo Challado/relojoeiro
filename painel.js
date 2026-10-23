@@ -392,7 +392,7 @@ function abrirNoPainel(id) {
         [t("Nota"), r.nota !== null ? el("strong", {}, num(r.nota.nota, 1)) + " " + avancado("rodizio.conta", el("a", {"href": "criterios.php?relogio=" + id + "#r" + id, "target": "_blank", "rel": "noopener"}, t("ver a conta"))) : nada(t("fora do rodízio"))],
         [t("Critérios de"), r.nota !== null ? h(r.nota.conjunto_texto) : "—"],
         [t("Próxima vez"), h(proxima)]]),
-        r.disponivel && r.proxima !== hoje ? el("form", {"data-recurso": "rodizio", "onsubmit": "return confirm(" + JSON.stringify(t("Usar o {1} hoje? Ele passa a ser o relógio do rodízio no período atual e o plano é refeito.", {1: r.nome})) + ")"}, el("input", {"type": "hidden", "name": "acao", "value": "usando"})
+        r.disponivel && r.proxima !== hoje && d.trocar_hoje ? el("form", {"data-recurso": "rodizio", "onsubmit": "return confirm(" + JSON.stringify(t("Usar o {1} hoje? Ele passa a ser o relógio do rodízio no período atual e o plano é refeito.", {1: r.nome})) + ")"}, el("input", {"type": "hidden", "name": "acao", "value": "usando"})
           + el("input", {"type": "hidden", "name": "relogio_id", "value": id}) + el("button", {"class": "leve"}, t("Usando hoje"))) : "");
       // a precisão (com o tipo de lançamento que mede a marcha): o resumo da API, a marcha, a última, o desvio estimado agora e a
       // esperada; a última fora da esperada em âmbar

@@ -28,6 +28,8 @@ $saida = ["config" => (object)$valores_c,
     "relojinho" => ["modo" => relojinho_modo(), "modelos" => RELOJINHO_MODELOS],
     "aleatorio" => ["fontes" => ["RANDOM.ORG", "ANU QRNG", t("gerador seguro do PHP (random_int)")], "ultimo_lote" => sis("aleatorio_ultima") !== "" ? sis("aleatorio_ultima") : null,
         "fora_desde" => sis("aleatorio_fora") !== "" ? date("Y-m-d H:i:s", (int)sis("aleatorio_fora")) : null], "sol_fim" => isset(lancamento_tipos()["sol"]) ? sol_fim_hora() : "", "sol_auto_fim" => sol_tira_sozinho(),
+    // trocar o relógio de hoje no próprio dia (a caixa da Configuração; desligado, o padrão: a troca vale a partir de amanhã)
+    "trocar_hoje" => trocar_hoje_permitido(),
     // o que é do sistema inteiro (só o master muda): o endereço do sistema
     "sistema" => ["url_sistema" => sis("url_sistema"), "pode_mudar" => usuario_master()],
     // a força da senha (do sistema: só o master muda): o mínimo de cada regra e o texto

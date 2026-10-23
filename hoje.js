@@ -30,7 +30,7 @@ function proximosHtml(px) {
     + el("tbody", {}, px.dias.map(function (p) {
       return el("tr", {"class": p.dia_semana >= 6 ? "fds" : ""}, el("td", {}, dataBr(p.data, true) + " " + el("small", {}, p.dia_semana_curto))
         + el("td", {}, celulaDoDia(p)) + el("td", {}, h(p.acao || ""))
-        + el("td", {"class": "trocar"}, formTrocarDia(p, dadosHoje.relogios, dadosHoje.data)));
+        + el("td", {"class": "trocar"}, formTrocarDia(p, dadosHoje.relogios, dadosHoje.data, dadosHoje.trocar_hoje)));
     }).join("") + (px.total === 0 ? el("tr", {}, el("td", {"colspan": "4"}, t("Neste modo o sorteio é feito dia a dia."))) : "")))
     + navPaginas(px.pagina, px.paginas, "proximos-pagina")
     + (px.paginas > 1 ? el("p", {"class": "nota"}, t("Página {1} de {2} · {3} dias no plano, {4} por página (o \"Mostrar até\" da {5}).", {1: px.pagina, 2: px.paginas, 3: px.total, 4: px.por_pagina, 5: el("a", {"href": "configuracao.php"}, t("Configuração"))})) : "");
@@ -88,15 +88,16 @@ function recarregarHoje() {
         + el("p", {"class": "periodo"}, el("span", {"class": "janela"}, h(d.dia.ate)) + " " + h(item && item.tipo !== "—" ? item.tipo : ""))
         + (d.dia.acao ? el("p", {"class": "acao"}, h(d.dia.acao)) : "")
         + (d.dia.motivo ? el("p", {"class": "motivo"}, el("strong", {}, t("Por que ele: ")) + h(d.dia.motivo)) : "")
-        // sem relógio hoje: o dia fica livre e a sessão do rodízio termina agora
-        + el("form", {"data-recurso": "rodizio", "class": "sem-relogio", "onsubmit": "return confirm(" + JSON.stringify(t("Hoje sem relógio? O dia fica livre: o {1} sai do rodízio de hoje (se já está no pulso pelo rodízio, sai agora; o tempo que ficou conta). Os outros dias não mudam.", {1: d.dia.relogio})) + ")"},
-          el("input", {"type": "hidden", "name": "acao", "value": "sem_relogio"}) + el("button", {"class": "leve"}, t("Sem relógio hoje")));
+        // sem relógio hoje: o dia fica livre e a sessão do rodízio termina agora (só com a troca no próprio dia ligada)
+        + (!d.trocar_hoje ? "" : el("form", {"data-recurso": "rodizio", "class": "sem-relogio", "onsubmit": "return confirm(" + JSON.stringify(t("Hoje sem relógio? O dia fica livre: o {1} sai do rodízio de hoje (se já está no pulso pelo rodízio, sai agora; o tempo que ficou conta). Os outros dias não mudam.", {1: d.dia.relogio})) + ")"},
+          el("input", {"type": "hidden", "name": "acao", "value": "sem_relogio"}) + el("button", {"class": "leve"}, t("Sem relógio hoje"))));
     } else if (d.hoje_livre) {
       // o dia livre: escolher um relógio para hoje (o mesmo "escolher…" dos dias livres), ou deixar assim
       texto += el("h1", {}, t("Hoje sem relógio"))
         + el("p", {"class": "periodo"}, el("span", {"class": "janela"}, t("dia livre")))
-        + el("p", {}, t("Nenhum relógio vai ao pulso pelo rodízio hoje. Quer usar um? Escolha abaixo, ou sorteie de novo (inclusive hoje) no quadro do modo de rodízio."))
-        + formTrocarDia({data: d.data, relogio_id: null, origem: "livre"}, d.relogios, d.data);
+        + el("p", {}, d.trocar_hoje ? t("Nenhum relógio vai ao pulso pelo rodízio hoje. Quer usar um? Escolha abaixo, ou sorteie de novo (inclusive hoje) no quadro do modo de rodízio.")
+          : t("Nenhum relógio vai ao pulso pelo rodízio hoje. O relógio de hoje não se troca no próprio dia (Configuração): escolha o de amanhã nos Próximos dias."))
+        + formTrocarDia({data: d.data, relogio_id: null, origem: "livre"}, d.relogios, d.data, d.trocar_hoje);
     } else {
       texto += el("h1", {}, t("Nenhum relógio para hoje"))
         + el("p", {}, t("Nenhum relógio disponível no grupo deste dia. Mude o grupo no modo de rodízio ou marque um relógio como disponível."));
@@ -231,11 +232,14 @@ function recarregarHoje() {
     // sortear de novo: as ações possíveis agora, com a explicação e a confirmação de cada uma
     var ateQuando = escala ? t("o fim da escala") : (d.proxima_semana && d.proxima_semana.ja_montada ? t("o fim da próxima semana") : semFim);
     var sorteios = [];
-    if (d.comecou) {
+    if (d.comecou || !d.trocar_hoje) {
+      // o relógio de hoje fica (já começou no pulso, ou a Configuração não troca o de hoje no próprio dia)
       sorteios.push(["resortear", t("a partir de amanhã"), t("Refaz o plano de amanhã até {1} pelo modo atual; hoje continua o {2}.", {1: ateQuando, 2: nomeHoje}),
         t("Sortear de novo a partir de amanhã? Hoje continua o {1}.", {1: nomeHoje}), true]);
-      sorteios.push(["resortear_hoje", t("inclusive hoje"), t("Refaz também hoje: se sair outro relógio, ele passa a ser o do pulso a partir de agora, e o {1} sai.", {1: nomeHoje}),
-        t("Sortear de novo inclusive hoje? Se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora, e o {1} sai.", {1: nomeHoje}), true]);
+      if (d.trocar_hoje) {
+        sorteios.push(["resortear_hoje", t("inclusive hoje"), t("Refaz também hoje: se sair outro relógio, ele passa a ser o do pulso a partir de agora, e o {1} sai.", {1: nomeHoje}),
+          t("Sortear de novo inclusive hoje? Se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora, e o {1} sai.", {1: nomeHoje}), true]);
+      }
     } else {
       sorteios.push(["resortear", t("a partir de hoje"), t("Refaz o plano de hoje até {1} pelo modo atual (o dia ainda não começou no pulso).", {1: ateQuando}), t("Sortear de novo a partir de hoje?"), true]);
     }
@@ -265,7 +269,7 @@ function recarregarHoje() {
       + el("p", {"class": "acao", "id": "manual-recado", "hidden": true}, "")
       + el("div", {"id": "manual-dias"}, ""));
     porHtml(document.getElementById("bloco-modo"), el("details", {}, el("summary", {}, el("span", {"class": "rotulo"}, t("Modo de rodízio")) + " " + el("strong", {}, h(modo ? modo.nome : t("nenhum"))) + " "
-      + el("span", {"class": "nota"}, "· " + (modo ? h(modo.tipo_texto) + " · " : "") + (escala ? t("pela maior nota") : (modo && modo.tipo === "personalizado" ? t("pelo roteiro") : h(modo ? SELECOES[modo.selecao][0] : "")))) + " " + el("span", {"class": "editar"}, t("editar"))) + formModo + formManual + formSorteio + formApagarPeriodo(d.data) + formApagarTudo()));
+      + el("span", {"class": "nota"}, "· " + (modo ? h(modo.tipo_texto) + " · " : "") + (escala ? t("pela maior nota") : (modo && modo.tipo === "personalizado" ? t("pelo roteiro") : h(modo ? SELECOES[modo.selecao][0] : "")))) + " " + el("span", {"class": "editar"}, t("editar"))) + formModo + formManual + formSorteio + formApagarPeriodo(d.data) + formApagarTudo(d.trocar_hoje)));
     mostrarModo();
 
     // A tabela dos relógios: disponíveis primeiro (o de hoje, depois os com aviso), indisponíveis no fim; na tela, a ordem e os
@@ -399,10 +403,12 @@ function manualHtml(r) {
       }).join(""))
       + opcoesSortearDia(atual)
       + (dia.hoje ? "" : el("option", {"value": "livre", "selected": atual === "livre"}, t("Sem relógio (dia livre)")));
+    // hoje, sem trocar o relógio no próprio dia (a Configuração): o seletor fica parado no que hoje já tem
+    var fixo = dia.hoje && !r.trocar_hoje;
     var agora = dia.livre ? el("span", {"class": "nota"}, t("dia livre")) : (dia.relogio !== null ? h(dia.relogio) + " " + el("small", {"class": "a-mao"}, dia.origem === "manual" ? t("à mão") : t("sorteado")) : el("span", {"class": "nota"}, "—"));
     return el("tr", {"class": dia.dia_semana >= 6 ? "fds" : ""}, el("td", {"data-rotulo": t("Dia")}, dataBr(dia.data, true) + " " + el("small", {}, dia.dia_semana_nome + (dia.hoje ? t(" · hoje") : "")))
       + el("td", {"data-rotulo": t("No plano agora")}, agora)
-      + el("td", {"data-rotulo": t("Relógio do dia")}, el("select", {"data-dia": dia.data, "aria-label": t("Relógio de {1}", {1: dataBr(dia.data)})}, opcoes)));
+      + el("td", {"data-rotulo": t("Relógio do dia")}, el("select", {"data-dia": dia.data, "disabled": fixo, "title": fixo ? t("Hoje fica: o relógio de hoje não se troca no próprio dia (Configuração).") : null, "aria-label": t("Relógio de {1}", {1: dataBr(dia.data)})}, opcoes)));
   }).join("");
   var nav = navPaginas(r.pagina, r.paginas, "manual-pagina");
   return el("table", {"class": "compacta manual-tabela"}, el("thead", {}, el("tr", {}, el("th", {}, t("Dia")) + el("th", {}, t("No plano agora")) + el("th", {}, t("Relógio do dia")))) + el("tbody", {}, linhas))

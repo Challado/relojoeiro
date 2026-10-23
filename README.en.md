@@ -1358,6 +1358,7 @@ each line.
 | **A forgotten sun session closes at** (`sol_fim`, which saves the "closes at" of the In the sun type) | whoever put it in the sun and forgot the **Took off** has the session closed at this time. Default: 18:00. |
 | **Take out of the sun automatically** (`sol_auto_fim`) | the checkbox next to the sun time: checked, the solar leaves the sun on its own at that time; unchecked, the sun session stays open until **Take out of the sun** (if forgotten, it keeps charging in the calculation), and the time stays saved for when the box is checked again. Default: checked. |
 | **The week starts** (`semana_inicio`) | the first day of the rotation week: **On Monday** (`segunda`) or **On Sunday** (`domingo`). The plan of the [rotation modes](#the-rotation-modes) comes built up to the last day of the week (Sunday or Saturday), and the cycle, the next week and the watch for the whole week count from it; it applies to the next draws (what is already in the plan stays; **Draw again** rebuilds it). The `SEMANA_DO_ANO()` function of the formulas is still the ISO week. Default: Monday. |
+| **Change today's watch on the same day** (`trocar_hoje`) | unticked (the default), today's watch stays: the **change to…** and the **choose…** of today, **Wearing today**, **Draw again** *including today*, **No watch today** and the **Including today** of Delete everything don't show, in the Manual rotation today stays fixed, and **Draw again** applies from tomorrow even with the day not yet started (the API refuses what would change today's): tomorrow's watch is chosen by today. Ticked, today's is also changed on the same day, and the new one becomes the one on the wrist from now on. The wrist markings (**Put on** and **Took off**) stay free in both cases. Default: unticked. |
 | **Charge limit** (`carga_limiar`) | the charge (%) at which the alerts say to charge or wind; a watch's **Charge limit** field takes its place. From 1 to 99. Default: 20. |
 | **Solar limit** (`sol_limiar`) | the charge (%) at which the solar should go into the sun. From 1 to 99. Default: 70. |
 | **Forecast limit** (`previsao_limite`) | the charge (%) that the smartwatch forecast uses for "reaches the limit in...". From 0 to 100. Default: 20. |
@@ -2251,6 +2252,11 @@ days adjust). On a day chosen by hand, the same list has **draw again**. You can
 tomorrow, or build **next week** on any day; with **Overwrite everything** checked, the days chosen by hand and the free
 ones also go away and are drawn again.
 
+**Today isn't changed on the same day**, unless the Settings allow it (**Change today's watch on the same day**, unticked by
+default): on today, instead of **change to…**, it shows *today stays (change from tomorrow)*, and what you change applies from
+tomorrow on. Want to wear another watch today anyway? Mark its **Put on the wrist**: the use is recorded, and the plan doesn't
+change.
+
 The same list has the group **Draw this day by**: *the highest score*, *draw by score*, *random, all with the same chance*
 or *queue: the longest without use*. Only that day is drawn on the spot, by that way, among the watches of the active mode's
 block that covers the day (no block: among all the available ones), without the watch the day had; the rotation guarantee
@@ -2265,7 +2271,7 @@ In the watch of the day box, at the top of the Today page, **No watch today** (i
 rotation, it comes off now (the time it was already worn counts as use; what hadn't even started doesn't count), and no watch
 goes on the wrist by itself today. The other days don't change. Changed your mind? The box now shows **Watch-free today** with
 **choose…**: the chosen watch goes on the wrist from now on; or **Draw again** *including today*, in the rotation mode. Through
-the API: `recurso=rodizio`, `acao=sem_relogio`.
+the API: `recurso=rodizio`, `acao=sem_relogio`. Only with the same-day change turned on in the Settings (**Change today's watch on the same day**).
 
 **What if I want to choose the watches for a period myself?**
 In the **Rotation mode** box on the Today page, choose **Manual rotation**, set the start and the end and click **OK**: the
