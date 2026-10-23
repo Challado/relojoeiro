@@ -152,7 +152,7 @@ And the rotation ones (the modes' script; outside it, the day is the one of the 
 | `NO_GRUPO("Tradicional › Quartzo")` | 1 if the watch is at that point of the tree or below (the name, the path or `#id`; `"todos"`: 1 for all) |
 | `RELOGIO("Seiko SKX")` | 1 if it is that watch (by name or by id) |
 | `CALIBRE("NH35")` | 1 if the watch has that caliber (by name or by id) |
-| `WINDER_POSICAO("pos_tpd")`, `WINDER("winder_marca")` | a field of the winder position the watch is in (inside `ACUMULA`, the position of each winder session) and a field of its winder; outside a position, empty (see [Winders](#winders)) |
+| `WINDER_PROGRAMA("voltas_dia")`, `WINDER_POSICAO("campo")`, `WINDER("winder_marca")` | the calculation of the program of the winder position the watch is in (the turns per day, `"voltas_horario"`, `"voltas_anti_horario"`, `"minutos_girando"`, `"velocidade"`, `"vezes_dia"`, `"ciclo_minutos"`; inside `ACUMULA`, the position of each winder session), a field of that position and a field of its winder; outside a position, or with no program, empty (see [Winders](#winders)) |
 | `ESCOLHIDO_HA(1)`, `VEZES_NO_PLANO(7)` | 1 if the watch was the plan's one n days ago (1: yesterday; -1: tomorrow, when it is already in the plan); how many days it had in the plan in the last n days |
 | `ESCOLHA(n; a; b; c)` | the n-th of the values (only it is calculated): `ESCOLHA(DIA_SEMANA(); …)` gives one value per weekday |
 | `SORTEIO()` | a number from 0 to 1, from the same RANDOM.ORG batch as the draws |
@@ -698,44 +698,73 @@ other watches (or loose ones) that **fit it**. Sold and archived watches do not 
 ### Winders
 
 The **winder** (the box that turns automatics) has its own records, on the **Winders** page (in the **Collection** menu): each
-winder with its **positions**, and each position with its **program**. None of this is fixed in the code: the winder's data
-and the position's program are **fields**, registered in the **Fields** tab of the **Definitions** page with **For: the
-winders** or **For: the winder positions**, like the watch fields. The new setup already brings the winder's **brand** and
-**model** and, on the position, the **turns per day** (TPD, default 650, with the possible values 650, 850, 1050 and 1250,
-those of the TPD switch of common winders), whether it **turns clockwise** and **counterclockwise** (both, by default: the
-winder switch's bidirectional *Auto*) and the **cycle** (how long it turns and how long it rests). Does your winder have other
-speeds? Change the possible values of the **Turns per day** field in the **Fields** tab (or remove them all, to type any
-number). Another way of programming? Create its fields.
+winder with its **positions**, and each position with its **program**, the way the cradle turns. The winder's data are
+**fields**, registered in the **Fields** tab of the **Definitions** page with **For: the winders**, like the watch fields; the
+new setup already brings the **brand**, the **model**, the **manual link** and the **cushion limits** (the case up to so many
+mm, the wrist from so much to so much cm and the weight up to so many g). The position can also have fields of its own
+(**For: the winder positions**).
+
+**Movements and programs.** A program is a **sequence of movements** that repeats. The **Movements** page (**Collection**
+menu) holds the steps: each one with a **code**, the name, the **type** (**clockwise turn**, **counterclockwise turn** or
+**stop**) and a single measure: the turn says **how many turns** it gives or **how long** it turns, never both; the stop only
+has the time. On the **Programs** page (**Collection** menu) each program has the name, the **kind of record** (**by turns**:
+the sequence's turns are in turns; **by time**: in time), whether it **runs all day** or **in blocks** (*on 3 h and off 9 h*),
+the **cradle speed** and the **sequence**, the movement codes in order (*3, 1, 4, 1*: the same code can repeat, like the same
+stop between the two turns). The cradle speed is **counted** (stick a bit of tape on the cradle and count the turns in 1
+minute) or comes from the **turns per day the manual gives** for that mode: one or the other. **Nothing that is calculated
+is typed**: each step's turns (or time), the cycle, how many times a day it runs, the time turning and the **turns per day**
+(the TPD), in total and in each direction, show up below while you change things, to check. A program serves in as many
+positions as you like, on any winder. For a winder that only gives the turns per day (the TPD switch: 650, 850...) there is
+the helper **Build a sequence for N turns per day**: the turns, the speed and the direction, and it builds the turns and the
+stops (it creates the missing movements); afterwards it is a program like the others. A movement that is in a program, or a
+program that is in a position, cannot be deleted (take it out of there first).
 
 On the watch side, the automatic gains three fields, which the caliber can also give: the **turns per day it needs** on the
 winder (default 650) and whether it **winds turning clockwise** and **counterclockwise** (both, by default; the movement that
 winds only in one direction marks only that one).
 
 How much each hour on the winder charges comes from a formula, `winder_ganho` (**Formulas** tab of the Definitions), which
-you adjust as you like. The new setup's: if the position turns in a direction in which the watch winds, it gains the
-proportion of the *On the winder* fields (the hours and the reserve they give) times the position's turns ÷ the ones it
-needs (at most 1); if it turns in no direction in which it winds, it gains nothing. A session that is not in a position (the
-old ones, from before the winders, or that of a deleted winder) uses the *On the winder* fields, as before. In formulas, `WINDER_POSICAO("pos_tpd")`
-is a field of the position and `WINDER("winder_marca")`, one of the winder. `reserva_restante` uses `winder_ganho` in each
-winder session, with the program of the position it was in: a watch that spent the night in a 650-turn position and the
-afternoon in a 1250-turn one gains each stretch by its own. `winder_falta` gives the hours until it is full.
+you adjust as you like. The new setup's adds up the program's turns per day **only in the directions in which the watch
+winds** and compares them with the ones it needs (at most 1), times the proportion of the *On the winder* fields (the hours
+and the reserve they give): in a 650-turn program, 325 in each direction, a watch that only winds clockwise gains half. With
+no program in the position, or in a session that is not in a position (the old ones, from before the winders, or that of a
+deleted winder), the *On the winder* fields apply, as before. In formulas, `WINDER_PROGRAMA("voltas_dia")` (and
+`"voltas_horario"`, `"voltas_anti_horario"`, `"minutos_girando"`, `"velocidade"`, `"vezes_dia"`, `"ciclo_minutos"`) reads the
+calculation of the position's program, `WINDER_POSICAO("campo")` a field of the position and `WINDER("winder_marca")` one of
+the winder. `reserva_restante` uses `winder_ganho` in each winder session, with the program of the position it was in: a
+watch that spent the night in a 650-turn position and the afternoon in a 1250-turn one gains each stretch by its own.
+`winder_falta` gives the hours until it is full.
+
+**The fixed place.** The position where you put a watch becomes **its place**. Taken off (to the wrist, stored...), the
+cradle keeps **its photo, faded and with the red ring**, and the row says where it is (*"place of the Seiko 5 · out: on the
+wrist"*), with the buttons **Put back** and **Free the place**. Putting it on the winder **from anywhere** (the watch panel,
+the phone shortcut, the Today alert, the API) returns it to its place, if the position is on and free; with another watch
+in it, or off, the system says why and putting on is done through the Winders page. Another watch put in the position takes
+the place. **The cushion limits**: a watch whose case or weight (those of its record) is beyond what the winder holds gets a
+warning on the position; it is only a warning, and **Got it, leave it** dismisses it for that watch on that winder. **The
+winder's documents** (the manual, the receipt, the photos) work like the watch's: the card's **Documents (N)** opens the
+Documents page on the winder.
 
 On the page, one card per winder. At the top, the winder's **drawing**: the box with a round cradle per position, and in each
 occupied cradle the watch's **photo** (or the initial of its name), with a green ring around it that is the **charge** and,
-while the position is on, a light tick going round over it (whoever asks the device for less motion sees it still); the free cradle is dashed,
-the off one is faded, and clicking the photo opens the watch page. Below, the winder's **data** (label and value, with the
-*default* tag where the field's default applies) and the **table of positions**, where each row is edited right there: one
-column for each position field (the **turns per day** in the menu of possible values, the **directions** as yes or no, the
-**cycle**; empty goes back to the default), the **Watch** column (a menu with **— none —** and the watches that go on a
-winder), the **charge**, **what each hour gives** and when it **fills up** ("full at 19:20"), and the row's **Save**. In
-Watch, **— none —** takes off whoever is in the position; choosing another one **puts on** or **swaps**: whoever was there
+while the position is on, a light tick going round over it (whoever asks the device for less motion sees it still); the
+cradle of the place of a watch that is out shows its photo faded, with the red ring; the free cradle is dashed, the off one is
+faded, and clicking the photo opens the watch page. Below, the winder's **data** (label and value, with the *default* tag
+where the field's default applies, and the manual link) and the **table of positions**, where each row is edited right
+there: the **Program** (a menu with **— no program —** and the programs, with its calculation below), the position's
+fields, if any, the **Watch** column (a menu with **— none —** and the watches that go on a winder), the **charge**, **what
+each hour gives** and when it **fills up** ("full at 19:20"), and the row's **Save**. In Watch, **— none —** takes off
+whoever is in the position (the place stays theirs); choosing another one **puts on** or **swaps**: whoever was there
 leaves, and the chosen one, if it was in another position (or on the winder without a position, like those put on the
 winder before it was registered), leaves it and enters this one. Each position's **Edit** opens the name, the order and
 **on**; below, the forms of the winder (the name, the fields and, when creating, how many positions it starts with) and of
 the position. A position that is off takes no watch, and with a watch inside it only turns off together with **— none —**.
 
-**The winder is mandatory.** With no winder registered, there is no putting on or taking off the winder anywhere: on the watch panel, the **Put on the winder** of the **Mark** box only says so and leads to the **Winders** page; the alert that is resolved on the winder comes without a button; the phone shortcut and the API refuse. With a winder registered, the watch goes on the winder **only through the Winders page**, chosen in the **Watch** of a position: on the panel, **Put on the winder** leads to the page, and in **Today is the day for** the alert brings the link **Put on the winder ›**. **Taking off** works everywhere: on the page (**— none —**), in the panel's **Take off the winder**, in the alert button, in the shortcut and in the API. The **period that has passed** on the winder (the Mark's *A period that has passed*) asks for the **position** where it was. A session left open in a collection without a winder (a winder deleted with the watch inside) can still be taken off. The state says where it is: *"On the winder · Office, Pos. 2"*. The winder's entry type is the one marked as **winder** in the **Entry types** tab (the new setup's *On the winder*). Deleting a position or a winder does not delete the sessions: they stay without the position, and their calculation goes back to the watch's fields. Through the API: `recurso=winders` (the winders, the positions, the watch in each one and the watches that can go on a winder), the writes `winders` and `winder_posicoes` (`salvar`, `excluir`; in the position's `salvar`, `relogio_id` puts on, swaps or, with 0, takes off); in `lancamento`, `iniciar` refuses the winder's type, its `periodo` asks for `posicao_id`, and `encerrar` and `alternar` take off. A tree that already existed gets the possible values of the turns per day in the update (migration
-v46), if the field had none yet.
+**The winder is mandatory.** With no winder registered, there is no putting on or taking off the winder anywhere: on the watch panel, the **Put on the winder** of the **Mark** box only says so and leads to the **Winders** page; the alert that is resolved on the winder comes without a button; the phone shortcut and the API refuse. With a winder registered, the watch goes on the winder through the **Winders** page, chosen in the **Watch** of a position, or, if its place is free, from anywhere: on the panel, the button **Back to its place: Versa, Pos. 2**; in **Today is the day for**, the alert button; with no place (or with it taken), **Put on the winder ›** leads to the page. **Taking off** works everywhere: on the page (**— none —**), in the panel's **Take off the winder**, in the alert button, in the shortcut and in the API. The **period that has passed** on the winder (the Mark's *A period that has passed*) asks for the **position** where it was (without it, its place applies). A session left open in a collection without a winder (a winder deleted with the watch inside) can still be taken off. The state says where it is: *"On the winder · Office, Pos. 2"*. The winder's entry type is the one marked as **winder** in the **Entry types** tab (the new setup's *On the winder*). Deleting a position or a winder does not delete the sessions: they stay without the position, and their calculation goes back to the watch's fields. Through the API: `recurso=winders` (the winders, the positions with the program, the watch, the place and the limit warnings, and the watches and programs to choose), `recurso=programas` (the programs with the calculation, the movements; with `previa=1`, the calculation of a program without saving), the writes `winders` (`salvar`, `limite_ok`, `excluir`), `winder_posicoes` (`salvar`, with `programa_id` and `relogio_id`, which puts on, swaps or, with 0, takes off; `liberar`; `excluir`), `movimentos` (`salvar`, `excluir`) and `programas` (`salvar`, `montar`, `excluir`); in `lancamento`, the winder type's `iniciar` and `alternar` return it to its free place (with no place, they refuse), its `periodo` asks for `posicao_id`, and `encerrar` takes off.
+A tree that already existed gets all this in the update (migration v47): each position's old program (the turns per day,
+the directions and the cycle, which were position fields) becomes a program, with the manual's turns per day equal to the
+previous ones (the charge stays the same; count the cradle speed and put it in the program), whoever is on the winder gets
+the place, and the old fields go away.
 
 ### Record sections
 
@@ -1156,8 +1185,8 @@ the arm (and the winder) gives**, as a proportion: *"so many hours here give me 
 | **On the wrist: reserve those hours give** (h) `carga_pulso_reserva` | 36 | ...and how much reserve that time gives. With 8 h and 36 h: each hour on the wrist adds 36 ÷ 8 = **4.5 h** of reserve. |
 | **On the winder: hours** `carga_winder_horas` | the wrist's | The same, on the winder (the box that turns the watch)... |
 | **On the winder: reserve those hours give** (h) `carga_winder_reserva` | the wrist's | ...and how much reserve that time on the winder gives. With 4 h and 40 h: 10 h of reserve per hour on the winder. Empty, the wrist's proportion applies. |
-| **On the winder: turns per day it needs** (TPD) `winder_tpd` | 650 | How many turns per day the movement needs on the winder. In a position that turns less, it gains their share (300 of 600: half); more, it does not go beyond full (see [Winders](#winders)). |
-| **Winds turning clockwise** `corda_horario` and **counterclockwise** `corda_anti_horario` | yes | The directions in which the rotor winds. In a position that only turns in a direction in which it does not wind, the winder does not charge. |
+| **On the winder: turns per day it needs** (TPD) `winder_tpd` | 650 | How many turns per day the movement needs on the winder. In a program that gives fewer turns (in the direction in which it winds), it gains its share of them (300 of 600: half); more does not go beyond full (see [Winders](#winders)). |
+| **Winds turning clockwise** `corda_horario` and **counterclockwise** `corda_anti_horario` | yes | The directions in which the rotor winds. Only the program's turns in those directions count: in a program that only turns in the direction in which it does not wind, the winder does not charge. |
 
 How the calculation goes, with the defaults (40 h reserve, 8 h on the wrist giving 36 h):
 
@@ -1180,7 +1209,7 @@ more, someone who sits all day winds less. It's worth adjusting to your use.
 - **Wrist:** start with the watch stopped, wear it for some hours and note how many, take it off and note how long it still
   runs. Wore it 6 h and it ran 24 h more afterwards: register **6** and **24**.
 - **Winder:** the same, with the watch stopped: X hours on the winder, take it off and see how long it runs. It depends on the
-  winder's programming (turns per day and direction).
+  position's program (the turns per day in the direction in which it winds).
 
 ### Hand-wound
 
@@ -1290,7 +1319,7 @@ group closest to the watch applies. All of them are edited and tested in **Defin
 |---|---|
 | `energia` (%) | the current charge, from 0 to 100. **Smartwatch:** it runs through the history since the last reading: the reading counts as it is; each hour on the wrist loses the in-use consumption ÷ 15 (the hours of a day of use), each hour on the charger gains 100 ÷ *hours to fill*, and the rest of the time loses the off consumption ÷ 24; always between 0 and 100. **Mechanical:** the remaining reserve ÷ the power reserve. **Solar:** the light charge (it loses in the dark by the energy reserve, gains in the sun by the sun time to fill, and on the wrist a part of that (*On the wrist: how much it charges*); without any sun marked, unknown). **Battery:** how much of the battery life is left. |
 | `reserva_restante` (h) | **Mechanical:** the remaining power reserve. It loses 1 hour per hour; on the wrist the automatic gains by the *On the wrist* fields; on the winder, by `winder_ganho` of each session; winding (and the old marks) fills it. |
-| `winder_ganho` | **Automatic:** how much reserve each hour on the winder gives. In a position: the proportion of the *On the winder* fields times the position's turns ÷ the ones it needs (at most 1), and 0 if it does not turn in a direction in which it winds; outside a position, the proportion of the *On the winder* fields. |
+| `winder_ganho` | **Automatic:** how much reserve each hour on the winder gives. In a position with a program: the proportion of the *On the winder* fields times the program's turns per day in the directions in which it winds ÷ the ones it needs (at most 1; 0 if the program turns in none of those directions); with no program or outside a position, the proportion of the *On the winder* fields. |
 | `winder_falta` (h) | **Automatic:** the hours left on the winder until it is full (the missing reserve ÷ `winder_ganho`); empty if it gains nothing there. |
 | `taxa_uso`, `taxa_repouso` (% per day) | **Smartwatch:** the consumption on the wrist and off that apply: the one measured by the readings, otherwise the record's. |
 | `dias_de_carga` (days) | **Smartwatch:** how many days of use the current charge lasts. |
@@ -1516,7 +1545,7 @@ measured with the real data (a long name or a large value count), not by the wid
 all the days of the schedule on any screen.
 
 **The menu** gathers the pages by subject: **Today**, **Alerts** and **Exact time** on their own (the everyday ones); **Rotation**
-(Plan, Rotation modes, Selection criteria), **Collection** (Gallery, Watch page, Accessories, Winders, Wishlist, Statistics, Totals, Groups), **System**
+(Plan, Rotation modes, Selection criteria), **Collection** (Gallery, Watch page, Accessories, Winders, Programs, Movements, Wishlist, Statistics, Totals, Groups), **System**
 (Settings, Definitions, Cron runs and, only for the master, Users) and **Account** (My account, Approvals), each group with the
 little arrow that opens its list in one click (another click, a click outside or Esc closes it); and **Help**. The group of the
 open page is underlined. On the phone, the collapsed menu opens with the groups already open, each with its name on top. The menu has,
@@ -1531,11 +1560,15 @@ somewhere else, like **In the sun**, **On the winder** or **On the charger** (or
 them. In the panel, the state comes with since when (*"In the sun since 09:12"*). Any session-format entry type you register
 comes in here by its name.
 
-**Where each thing is changed.** At the top of Definitions (in each tab), Winders, Accessories, Groups, Alerts, Rotation
-modes, Selection criteria and the watch's **Edit record**, a box that opens and closes tells, in a table, what is changed
-there and what is changed on another page, with the link to it: the value of a field in a watch, in Edit record; the name,
-type and possible values of the field, in **Definitions › Fields**; the groups, in **Collection › Groups**; and so on.
-Closed, it stays closed on that device.
+**The explanations.** What explains a page does not stay in the middle of it, pushing the fields: it stays in a **drawer**
+that slides in from the right. The **ⓘ** next to a label or a title opens the drawer right at its explanation; the
+**Explanations** button, in the page title, opens them all. In the drawer, the **search** at the top filters the
+explanations, and it closes on the **×**, on **Esc** or with a click outside. The **Where each thing is changed** of
+Definitions, Winders, Programs, Movements, Accessories, Groups, Alerts, Rotation modes, Selection criteria and the watch's
+**Edit record** is one of them: a table that says what is changed there and what is changed on another page, with the link to
+it (the value of a field on a watch, in Edit record; the name, the type and the possible values of the field, in
+**Definitions › Fields**; the groups, in **Collection › Groups**; and so on). On Today, the drawer also brings the
+explanations of the open watch panel.
 
 **Separated by Applies to.** In **Definitions › Fields**, **Entry types** and **Formulas**, the rows come in sub-panels that
 collapse, one per **Applies to**: all watches together in the first, then each group in tree order (and, for the fields,
@@ -1808,7 +1841,8 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `servicos` | the services and diagnostics (`relogio=<id>`, with the summary: the declared water resistance, the proven one, how many and the total cost; without it, everyone's), with the parts, the cost, the water resistance and the rate before and after |
 | `reserva` | the measured reserve (`relogio=<id>`: the mechanical watch's reserve tests, the energy observations, the measurement, which is the median of the tests, and the declared, measured and estimated table with the confidence; without it, the tests and observations of all) |
 | `timegrapher` | the timegrapher measurements (`relogio=<id>`: the last session, with the average of each quantity and the difference between the positions, the measurements and what the CSV import understands; without it, everyone's) |
-| `winders` | the collection's winders (the **Winders** page): each one with its data, the note and the positions, and each position with the program, whether it is on and the watch in it now (the charge, what each hour gives, when it fills up, the photo); the winder and position fields and the watches that can go on a winder (with the position they are in and whether they are on the winder without a position) |
+| `winders` | the collection's winders (the **Winders** page): each one with the data, the note, how many documents and the positions, and each position with the program (the turns per day, in total and in each direction), whether it is on, the watch that is in it now (the charge, what each hour gives, when it fills up, the photo), the fixed place (whose it is and whether it is out) and the cushion limit warnings; the winder and position fields, the watches that can go on a winder (with the position they are in and whether they are on the winder without a position) and the programs to choose |
+| `programas` | the winders' programs (the **Programs** page): each one with the kind of record, the cradle speed (or the manual's turns per day), whether it runs all day or in blocks, the sequence, the whole calculation (each step, the cycle, the times per day, the time turning, the turns per day in each direction) and the positions that use it; the movements (the **Movements** page) with the programs that use each one. `previa=1` with the program's fields: only the calculation, without saving |
 | `relatorios` | the reports, through a single door: without `tipo`, the catalog (each report with the group, the name, the description and the parameters, and the watches); with `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron`) and its parameters (`relogio`, `de`, `ate`, `posse`, `situacao`), the ready report (title, subtitle, summary, sections as table or pairs, footer, already in text); `csv=1`: the spreadsheet |
 | `documento` | a document's file (`id=<id>`): to show (image, video, audio, PDF, text) or to download (the rest, or with `baixar=1`); `mini=1` is the photo's thumbnail. It serves pieces (Range), so the video can skip ahead |
 | `usuarios`, `migracoes` | the master: the accounts panel, each with what it has and the password hash (to migrate with the same password: see [The users and the passwords](#the-users-and-the-passwords)); the others, only their own account; the migrations still to apply |
@@ -1833,11 +1867,12 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `servicos` | `salvar` (the date, the type, who did it, the labour, the parts, the water resistance, the rate before and after, the warranty and the documents; a service and a battery change also become the entry), `excluir` |
 | `reserva` | `iniciar` (when it was full and how), `parou`, `observar` (stopped, low charge, note; also on the solar), `salvar`, `usar` (the median goes to the watch's record), `excluir` |
 | `timegrapher` | `salvar` (a measurement: the position, the rate, the amplitude, the beat error, the beats per hour, the angle), `importar` (the device's CSV; `conferir=1`: without saving), `excluir` |
-| `winders`, `winder_posicoes` | `salvar` (the winder: the name, the fields, the note and, when creating, how many positions; the position: the name, the order, on, the program and `relogio_id`, the watch that stays in it: puts on, swaps or, with 0, takes off), `excluir` (the sessions that were in them stay, without the position) |
+| `winders`, `winder_posicoes` | `salvar` (the winder: the name, the fields, such as the manual link and the cushion limits, the note and, when creating, how many positions; the position: the name, the order, on, the `programa_id` and `relogio_id`, the watch that stays in it and gets the place: puts on, swaps or, with 0, takes off), `limite_ok` (the winder: a watch's limit warning does not come back), `liberar` (the position: it stops being the place of whoever it was), `excluir` (the sessions left in them remain, without the position) |
+| `movimentos`, `programas` | `salvar` (the movement: the name, the type and the turns or the time; the program: the name, the kind of record, the speed or the manual's turns per day, all day or the blocks and the sequence of codes; it only saves if the calculation closes), `montar` (the program: the helper, by the turns per day, the speed and the direction), `excluir` (what is in use does not go) |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (only without documents) |
 | `secoes` | the record sections: `salvar` (the name; `id=0` creates at the end), `ordem` (`direcao=sobe` or `desce`), `excluir` (its fields are left without a section, at the end) |
 | `unidades` | `salvar` (the symbol, the name, the base and the factor, the zero and the also-show-in; the new symbol is carried to whatever uses it), `excluir` (only without use; takes along the units that convert into it) |
-| `lancamento` | `lancar` (winding, charge, battery...), `iniciar` and `encerrar` (put on and take off the wrist, the sun, the charger; the winder, only take off: putting on is through the Winders page, `winder_posicoes`), `alternar` (closes the session if it is open, opens it if it is closed: a single button on the phone; on the winder, only closes), `periodo` (a period that has passed; on the winder, with the position, `posicao_id`; on the wrist of the watch of the day it is rotation use, and the stretches of the same type it touches, like a Put on left open, become one), `alterar`, `excluir`, `medicao` (a consumption measurement goes into or out of the calculation: `id`, `usada` 1 or 0). In all of them, `relogio_id=hoje` is the watch of the day |
+| `lancamento` | `lancar` (winding, charge, battery...), `iniciar` and `encerrar` (put on and take off the wrist, the sun, the charger; the winder, putting on is through the Winders page, `winder_posicoes`, unless the watch has its place free: then it goes back there), `alternar` (closes the session if it is open, opens it if it is closed: a single button on the phone; on the winder, it only opens back to the place), `periodo` (a period that has passed; on the winder, with the position, `posicao_id`; on the wrist of the watch of the day it is rotation use, and the stretches of the same type it touches, like a Put on left open, become one), `alterar`, `excluir`, `medicao` (a consumption measurement goes into or out of the calculation: `id`, `usada` 1 or 0). In all of them, `relogio_id=hoje` is the watch of the day |
 | `rodizio` | `usando` (I'm wearing this one today), `trocar_dia` (a day's watch), `periodo` (the watches of a period, in order: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (erases the period's days and the mode builds them again; only `de`: to the end of the plan; only `ate`: from tomorrow to it), `periodo_livre` (erases and leaves the days free, without a draw; the same dates), `manual` (the Manual rotation: `de`, `ate`, `dias[YYYY-MM-DD]` = the watch id, `auto` or `livre`), `apagar_tudo` (the whole schedule from tomorrow on goes away; `hoje=1`: from today on; the mode builds the plan again), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (change the mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (groups) and `relogios` (each watch's group) |
@@ -2313,7 +2348,7 @@ charger** without opening the site. Two things in the API exist for this: `acao=
 closes it if it is open: a single button to put on and take off) and `relogio_id=hoje` (the watch of the day, without needing
 to know its number). The response brings the `mensagem` ready to show (*"Xiaomi Band 8: On the wrist since 10/12 07:19."*).
 
-The request is always the same, changing only the type (`pulso`, `carregador`, `sol`; `winder` only takes off: putting on the winder is through the Winders page) and the watch:
+The request is always the same, changing only the type (`pulso`, `carregador`, `sol`; `winder` takes off and puts back in the watch's place, if it is free: the first putting on the winder is through the Winders page) and the watch:
 
 ```text
 POST https://your-server/relojoeiro/api.php
@@ -2513,7 +2548,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | [`banco.php`](banco.php) | the database: the connection to MySQL, Postgres, SQLite or Firebird, and the translation of SQL from one to another |
 | [`operacoes.php`](operacoes.php) | the rules of each write: validations and messages |
 | [`cron.php`](cron.php) | the plan, the day's session, the morning and evening rounds, the events, the calendar and the documents' upkeep |
-| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `winders.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | the pages (only the skeleton; `cadastro.php` is the public one) |
+| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `winders.php`, `programas.php`, `movimentos.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | the pages (only the skeleton; `cadastro.php` is the public one) |
 | `relojinho.js` | the little watch of the bar and the favicon: 24 kinds of watch drawn in canvas, with the right time, one per hour (in order, drawn or without repeating) |
 | `sw.js`, `offline.html`, `icone-*.png` | the app on the phone: the *service worker* (served by `recurso=sw`, with the version in front: the screens' cache, the no-connection page and the Web Push), the **No connection** page and the icons (192, 512 and 180 px) |
 | `ajuda.php` | the help page: only the skeleton; `ajuda.js` asks the API for the text (`recurso=manual`: the README's sections for users, already in HTML, converted in `lib.php`) |

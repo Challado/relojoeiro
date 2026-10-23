@@ -26,6 +26,13 @@ module.exports = [
   { nome: 'winders-posicao', url: 'winders.php?posicao=6' },
   { nome: 'winders-nova-posicao', url: 'winders.php?nova_posicao=3' },
   { nome: 'winders-editar', url: 'winders.php?editar=3' },
+  // os programas (o 1, de 650 voltas só no horário, e o 2, do ajudante; o da Pos. 2 do estresse vem depois) e os movimentos
+  // (o 1, o giro de 2 min), com o formulário de cada um, e os documentos do Quarto (o manual)
+  { nome: 'programas', url: 'programas.php' },
+  { nome: 'programas-editar', url: 'programas.php?editar=2' },
+  { nome: 'movimentos', url: 'movimentos.php' },
+  { nome: 'movimentos-editar', url: 'movimentos.php?editar=1' },
+  { nome: 'documentos-winder', url: 'documentos.php?winder=3' },
   { nome: 'passaporte-3', url: 'passaporte.php?id=3' },
   { nome: 'passaporte-1', url: 'passaporte.php?id=1' },
   { nome: 'galeria', url: 'galeria.php?posse=todos' },

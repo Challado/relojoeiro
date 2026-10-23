@@ -23,8 +23,9 @@ foreach (avisos_de_hoje() as $x) {
     // o botão: a sessão que resolve, aberta, se fecha (o Tirar do carregador); fechada, se abre; a leitura se informa
     $aberta_h = $t && $t["formato"] === "sessao" && (int)valor("SELECT COUNT(*) FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND fim IS NULL", [(int)$x[0]["id"], (int)$t["id"]]) > 0;
     // o winder é obrigatório: o aviso que se resolve pondo no winder fica sem botão sem winder cadastrado; com winder, o botão
-    // leva à página Winders (o pôr é só lá); com a sessão aberta, o Tirou continua
-    $pagina_w = $t && (int)($t["winder"] ?? 0) === 1 && !$aberta_h;
+    // leva à página Winders (o pôr é lá), a não ser que o relógio tenha o lugar dele livre: aí o botão o põe de volta lá; com
+    // a sessão aberta, o Tirou continua
+    $pagina_w = $t && (int)($t["winder"] ?? 0) === 1 && !$aberta_h && !(($lg_h = winder_lugar_info((int)$x[0]["id"], $agora)) !== null && $lg_h["livre"]);
     if ($pagina_w && !winder_cadastrado()) {
         $t = null;
         $pagina_w = false;

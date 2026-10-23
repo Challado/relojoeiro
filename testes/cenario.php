@@ -1376,10 +1376,11 @@ escrever(["recurso" => "campos", "acao" => "excluir", "id" => $c_nota, "confirma
 
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "calibre_id" => "0"]);
 
-// os winders (v45): um winder com duas posições e a marca, as recusas (sem nome, posições demais, o nome repetido, a posição
-// desligada ou ocupada, a posição num tipo que não é de winder, as rotações fora dos valores possíveis), o programa da Pos. 2
-// (650 rotações, só no sentido horário), o Orient num período antigo na Pos. 1 e agora na Pos. 2 (o ganho pelo programa:
-// metade das 1300 que ele pede), a ficha com a
+// os winders (v45, com os programas da v47): um winder com duas posições e a marca, as recusas (sem nome, posições demais, o
+// nome repetido, a posição desligada ou ocupada, a posição num tipo que não é de winder, um programa que não existe), o
+// programa da Pos. 2 (650 voltas por dia, só no sentido horário: um giro de 2 min e uma parada de 3 min, a velocidade tirada
+// das voltas do manual), o Orient num período antigo na Pos. 1 e agora na Pos. 2 (o ganho pelo programa: metade das 1300 que
+// ele pede), a ficha com a
 // posição, os campos de winder e de posição, o alterar que tira a posição, o segundo winder (que fica, com o Orient) e a
 // exclusão do primeiro (as sessões ficam, sem a posição)
 ler("winders so com a varanda", ["recurso" => "winders"]);
@@ -1389,8 +1390,12 @@ $wd = escrever(["recurso" => "winders", "acao" => "salvar", "nome" => "Escritór
     "valores" => ["winder_marca" => "Wolf", "winder_modelo" => "Viceroy"]]);
 $wl = ler("winders com duas posicoes", ["recurso" => "winders"]);
 $wpos = array_column(($wl["winders"][0]["posicoes"] ?? []), "id", "nome");
-escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wpos["Pos. 2"] ?? 0, "valores" => ["pos_tpd" => "650", "pos_anti_horario" => "0"]]);
-escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wpos["Pos. 2"] ?? 0, "valores" => ["pos_tpd" => "900"]], false);
+$m_h2 = escrever(["recurso" => "movimentos", "acao" => "salvar", "nome" => "Giro horário 2 min", "tipo" => "horario", "minutos" => 2]);
+$m_p3 = escrever(["recurso" => "movimentos", "acao" => "salvar", "nome" => "Parada 3 min", "tipo" => "parado", "minutos" => 3]);
+$pg650 = escrever(["recurso" => "programas", "acao" => "salvar", "nome" => "650 horário", "medida" => "tempo", "tpd_manual" => 650, "funciona" => "dia_todo",
+    "sequencia" => $m_h2 . ", " . $m_p3]);
+escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wpos["Pos. 2"] ?? 0, "programa_id" => $pg650]);
+escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wpos["Pos. 2"] ?? 0, "programa_id" => 999999], false);
 escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "winder_id" => $wd, "nome" => "Pos. 1"], false);
 $wp3 = escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "winder_id" => $wd, "nome" => "Pos. 3", "ligada" => 0]);
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "valores" => ["winder_tpd" => "1300"]]);
@@ -1401,7 +1406,7 @@ escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wpos["Pos
 escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wpos["Pos. 2"] ?? 0, "ligada" => 0], false);
 $wl2 = ler("winders com o Orient na Pos. 2", ["recurso" => "winders"]);
 $wf = ler("ficha no winder", ["recurso" => "ficha", "relogio" => $rel["auto2"]]);
-ler("calcular o programa da posicao", ["recurso" => "calcular", "relogio" => $rel["auto2"], "expressao" => "WINDER_POSICAO(\"pos_tpd\") * 10 + WINDER_POSICAO(\"pos_anti_horario\")"]);
+ler("calcular o programa da posicao", ["recurso" => "calcular", "relogio" => $rel["auto2"], "expressao" => "WINDER_PROGRAMA(\"voltas_dia\") * 10 + WINDER_PROGRAMA(\"voltas_anti_horario\")"]);
 $w_oc = [];
 foreach ($wl2["winders"][0]["posicoes"] ?? [] as $p) {
     $w_oc[$p["nome"]] = $p["relogio"]["relogio_id"] ?? null;
@@ -1430,8 +1435,10 @@ foreach ($wql["winders"] ?? [] as $w) {
 }
 escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wq_pos["Pos. 1"] ?? 0, "relogio_id" => $rel["auto2"]]);
 // a linha da tabela da página (winder_posicoes salvar com relogio_id): o Orient vai da Pos. 1 para a Pos. 2 junto com o
-// programa novo, sai (— nenhum —) e volta para a Pos. 1; o relógio que não vai para winder é recusado
-escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wq_pos["Pos. 2"] ?? 0, "relogio_id" => $rel["auto2"], "valores" => ["pos_tpd" => "1050"]]);
+// programa novo (o do ajudante, 1050 voltas por dia nos dois sentidos), sai (— nenhum —) e volta para a Pos. 1; o relógio
+// que não vai para winder é recusado
+$pg1050 = escrever(["recurso" => "programas", "acao" => "montar", "tpd" => 1050, "velocidade" => 8, "sentido" => "os_dois", "medida" => "voltas"]);
+escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wq_pos["Pos. 2"] ?? 0, "relogio_id" => $rel["auto2"], "programa_id" => $pg1050]);
 ler("winders com o Orient trocado de posição", ["recurso" => "winders"]);
 escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wq_pos["Pos. 2"] ?? 0, "relogio_id" => 0]);
 escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wq_pos["Pos. 3"] ?? 0, "relogio_id" => $rel["smart"]], false);
@@ -1441,6 +1448,96 @@ escrever(["recurso" => "winder_posicoes", "acao" => "excluir", "id" => $wp3, "co
 escrever(["recurso" => "winders", "acao" => "excluir", "id" => $wd, "confirmar" => 1]);
 escrever(["recurso" => "campos", "acao" => "excluir", "id" => $c_wd, "confirmar" => 1]);
 escrever(["recurso" => "campos", "acao" => "excluir", "id" => $c_wp, "confirmar" => 1]);
+
+// os programas, o lugar fixo, os limites e os documentos do winder (v47): as recusas dos movimentos (a parada com voltas, o giro
+// com as duas medidas ou sem nenhuma, o tipo errado, sem nome) e dos programas (a velocidade e o manual juntos, o bloco pela
+// metade, a sequência vazia ou só com paradas, o giro na outra medida, o código que não existe, a medida errada); um programa
+// por voltas em blocos; as prévias (sem gravar); o ajudante que não dá; mudar um movimento que quebraria um programa (recusado)
+// e um que não quebra; excluir o que está em uso (recusado); o Orient tirado e posto de volta sozinho no lugar dele (o
+// alternar); outro relógio que toma o lugar, o liberar (recusado com ele dentro); os avisos de limite da almofada e o "Já sei";
+// os documentos do winder
+$recusa = function ($nome, $params) use (&$falhas) {
+    if (escrever($params, false, "ok") === true) {
+        $falhas[] = "v47: aceitou o que devia recusar: " . $nome;
+    }
+};
+$recusa("parada com voltas", ["recurso" => "movimentos", "acao" => "salvar", "nome" => "X", "tipo" => "parado", "voltas" => 5]);
+$recusa("giro com voltas e tempo", ["recurso" => "movimentos", "acao" => "salvar", "nome" => "X", "tipo" => "horario", "voltas" => 5, "minutos" => 1]);
+$recusa("giro sem medida", ["recurso" => "movimentos", "acao" => "salvar", "nome" => "X", "tipo" => "anti_horario"]);
+$recusa("tipo errado", ["recurso" => "movimentos", "acao" => "salvar", "nome" => "X", "tipo" => "girando", "minutos" => 1]);
+$recusa("movimento sem nome", ["recurso" => "movimentos", "acao" => "salvar", "nome" => "", "tipo" => "horario", "minutos" => 1]);
+$m_v10 = escrever(["recurso" => "movimentos", "acao" => "salvar", "nome" => "Giro horário 10 voltas", "tipo" => "horario", "voltas" => 10]);
+$m_a10 = escrever(["recurso" => "movimentos", "acao" => "salvar", "nome" => "Giro anti-horário 10 voltas", "tipo" => "anti_horario", "voltas" => "10,5"]);
+$m_p1 = escrever(["recurso" => "movimentos", "acao" => "salvar", "nome" => "Parada 1 min 30 s", "tipo" => "parado", "minutos" => 1, "segundos" => 30]);
+$seq_v = $m_v10 . ", " . $m_p1 . ", " . $m_a10 . ", " . $m_p1;
+$recusa("velocidade e manual juntos", ["recurso" => "programas", "acao" => "salvar", "nome" => "X", "medida" => "voltas", "velocidade" => 5, "tpd_manual" => 650, "sequencia" => $seq_v]);
+$recusa("bloco pela metade", ["recurso" => "programas", "acao" => "salvar", "nome" => "X", "medida" => "voltas", "velocidade" => 5, "funciona" => "blocos", "liga_horas" => 3, "sequencia" => $seq_v]);
+$recusa("sequencia vazia", ["recurso" => "programas", "acao" => "salvar", "nome" => "X", "medida" => "voltas", "velocidade" => 5, "sequencia" => ""]);
+$recusa("so paradas", ["recurso" => "programas", "acao" => "salvar", "nome" => "X", "medida" => "tempo", "velocidade" => 5, "sequencia" => $m_p1 . ", " . $m_p3]);
+$recusa("giro na outra medida", ["recurso" => "programas", "acao" => "salvar", "nome" => "X", "medida" => "voltas", "velocidade" => 5, "sequencia" => $m_h2 . ", " . $m_p1]);
+$recusa("codigo que nao existe", ["recurso" => "programas", "acao" => "salvar", "nome" => "X", "medida" => "voltas", "velocidade" => 5, "sequencia" => $m_v10 . ", 999999"]);
+$recusa("medida errada", ["recurso" => "programas", "acao" => "salvar", "nome" => "X", "medida" => "giros", "velocidade" => 5, "sequencia" => $seq_v]);
+$pg_v = escrever(["recurso" => "programas", "acao" => "salvar", "nome" => "Voltas 3h/9h", "medida" => "voltas", "velocidade" => "5", "funciona" => "blocos",
+    "liga_horas" => 3, "para_horas" => 9, "observacao" => "Como o modo B", "sequencia" => $seq_v]);
+ler("programas e movimentos", ["recurso" => "programas"]);
+ler("previa de um programa novo", ["recurso" => "programas", "previa" => 1, "medida" => "tempo", "tpd_manual" => 675, "sequencia" => $m_h2 . ", " . $m_p3]);
+ler("previa de um programa gravado com outra velocidade", ["recurso" => "programas", "previa" => 1, "id" => $pg_v, "velocidade" => 10]);
+ler("previa sem velocidade", ["recurso" => "programas", "previa" => 1, "medida" => "tempo", "sequencia" => $m_h2 . ", " . $m_p3]);
+$recusa("ajudante que nao da", ["recurso" => "programas", "acao" => "montar", "tpd" => 5000, "velocidade" => 1]);
+$recusa("ajudante sem velocidade", ["recurso" => "programas", "acao" => "montar", "tpd" => 650]);
+$recusa("movimento que quebraria o programa", ["recurso" => "movimentos", "acao" => "salvar", "id" => $m_v10, "minutos" => 2]);
+escrever(["recurso" => "movimentos", "acao" => "salvar", "id" => $m_v10, "voltas" => 12]);
+$recusa("movimento em uso", ["recurso" => "movimentos", "acao" => "excluir", "id" => $m_v10, "confirmar" => 1]);
+$recusa("programa em uso", ["recurso" => "programas", "acao" => "excluir", "id" => $pg1050, "confirmar" => 1]);
+escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wq_pos["Pos. 1"] ?? 0, "programa_id" => $pg_v]);
+ler("winders com os programas", ["recurso" => "winders"]);
+ler("calcular a carga pelo programa", ["recurso" => "calcular", "relogio" => $rel["auto2"], "expressao" => "WINDER_PROGRAMA(\"voltas_horario\") + WINDER_PROGRAMA(\"vezes_dia\") / 1000"]);
+// o lugar: o Orient sai (o lugar fica), volta sozinho pelo alternar, sai de novo; outro relógio que vai para winder entra na
+// Pos. 1 pela página e toma o lugar (o Orient não volta mais sozinho); com ele dentro, liberar é recusado; ele sai, o lugar é liberado (o segundo
+// liberar, recusado) e o Orient volta pela página, com o lugar
+$lanc("alternar", "auto2", "winder");
+ler("winders com o Orient fora do lugar", ["recurso" => "winders"]);
+ler("ficha com o lugar livre", ["recurso" => "ficha", "relogio" => $rel["auto2"]]);
+$volta = escrever(["recurso" => "lancamento", "acao" => "alternar", "relogio_id" => $rel["auto2"], "tipo" => "winder"], true, "mensagem");
+if (strpos((string)$volta, "Quarto") === false) {
+    $falhas[] = "v47: o alternar não pôs o Orient de volta no lugar dele: " . $volta;
+}
+$lanc("alternar", "auto2", "winder");
+$outro_w = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Automático do lugar", "no_id" => G(4), "disponivel" => 1]);
+escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wq_pos["Pos. 1"] ?? 0, "relogio_id" => $outro_w]);
+$recusa("sem lugar, o alternar nao poe", ["recurso" => "lancamento", "acao" => "alternar", "relogio_id" => $rel["auto2"], "tipo" => "winder"]);
+$recusa("liberar com o relogio dentro", ["recurso" => "winder_posicoes", "acao" => "liberar", "id" => $wq_pos["Pos. 1"] ?? 0]);
+escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wq_pos["Pos. 1"] ?? 0, "relogio_id" => 0]);
+escrever(["recurso" => "winder_posicoes", "acao" => "liberar", "id" => $wq_pos["Pos. 1"] ?? 0]);
+$recusa("liberar de novo", ["recurso" => "winder_posicoes", "acao" => "liberar", "id" => $wq_pos["Pos. 1"] ?? 0]);
+escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wq_pos["Pos. 1"] ?? 0, "relogio_id" => $rel["auto2"]]);
+// os limites da almofada: a caixa e o peso do Orient passam dos do Quarto; o "Já sei" tira o aviso dele; os valores voltam
+escrever(["recurso" => "winders", "acao" => "salvar", "id" => $wq, "valores" => ["winder_caixa_max" => "38", "winder_peso_max" => "100", "winder_manual" => "https://exemplo.com/manual.pdf"]]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "valores" => ["diametro" => "40,5", "peso" => "120"]]);
+$wlim = ler("winders com os avisos de limite", ["recurso" => "winders"]);
+$n_av = 0;
+foreach ($wlim["winders"] ?? [] as $w) {
+    foreach ($w["posicoes"] as $p) {
+        $n_av += count($p["avisos_limite"] ?? []);
+    }
+}
+if ($n_av !== 2) {
+    $falhas[] = "v47: os avisos de limite deviam ser 2, vieram " . $n_av;
+}
+escrever(["recurso" => "winders", "acao" => "limite_ok", "id" => $wq, "relogio_id" => $rel["auto2"]]);
+ler("winders depois do ja sei", ["recurso" => "winders"]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "valores" => ["diametro" => "", "peso" => ""]]);
+// os documentos do winder: o manual (a pasta w<id>); com o relógio junto, recusado; a lista do winder
+escrever(["recurso" => "documentos", "acao" => "enviar", "winder_id" => $wq, "categoria_id" => $cat_tec, "titulo" => "Manual do Quarto",
+    "arquivo_nome" => "quarto.pdf", "arquivo_base64" => base64_encode("%PDF-1.4 manual do winder")]);
+$recusa("documento de winder e relogio juntos", ["recurso" => "documentos", "acao" => "enviar", "winder_id" => $wq, "relogio_id" => $rel["auto"], "categoria_id" => $cat_tec,
+    "arquivo_nome" => "x.pdf", "arquivo_base64" => base64_encode("%PDF-1.4 x")]);
+ler("documentos do winder", ["recurso" => "documentos", "winder" => $wq]);
+// o que não está em uso sai: o programa por voltas (a Pos. 1 volta ao do ajudante) e um movimento que nenhum programa usa
+escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wq_pos["Pos. 1"] ?? 0, "programa_id" => $pg1050]);
+escrever(["recurso" => "programas", "acao" => "excluir", "id" => $pg_v, "confirmar" => 1]);
+escrever(["recurso" => "movimentos", "acao" => "excluir", "id" => $m_v10, "confirmar" => 1]);
+escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $outro_w, "confirmar" => 1]);
 ler("winders no fim", ["recurso" => "winders"]);
 ler("historico do Orient depois dos winders", ["recurso" => "historico", "relogio" => $rel["auto2"], "limite" => 5]);
 

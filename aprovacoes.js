@@ -46,7 +46,7 @@ function carregarAprovacoes() {
     var alvos = d.pode_convidar.map(function (c) { return el("option", {"value": "c:" + c.id}, h(c.papel === "dono" ? c.nome : t("{1} (de {2})", {1: c.nome, 2: c.dono}))); }).join("")
       + (d.minhas_colecoes.length > 0 ? el("option", {"value": "d:eu"}, t("Tudo meu (todas as minhas coleções, também as que eu criar)")) : "");
     res += el("section", {"class": "cartao-config", "id": "convidar"}, el("h2", {}, t("Convidar"))
-      + el("p", {"class": "nota"}, t("O convite vai por e-mail com um link (vale {1} dias). Quem não tem conta cria uma pelo link; quem tem, entra e aceita. O convite de um membro espera o dono aprovar.", {1: d.convite_dias}))
+      + ajudaNota("convite", t("Como funciona o convite"), t("O convite vai por e-mail com um link (vale {1} dias). Quem não tem conta cria uma pelo link; quem tem, entra e aceita. O convite de um membro espera o dono aprovar.", {1: d.convite_dias}))
       + (d.email_configurado ? "" : el("p", {"class": "alerta-cron"}, t("O servidor não envia e-mail: o link aparece aqui, para você mandar.")))
       + el("form", {"data-recurso": "convites", "class": "campos", "data-dono": CONTA_LOGIN, "onsubmit": "var v = this.alvo.value.split(':'); this.colecao_id.value = v[0] === 'c' ? v[1] : ''; this.dono.value = v[0] === 'd' ? this.getAttribute('data-dono') : ''"},
         el("input", {"type": "hidden", "name": "acao", "value": "convidar"}) + el("input", {"type": "hidden", "name": "colecao_id", "value": ""}) + el("input", {"type": "hidden", "name": "dono", "value": ""})

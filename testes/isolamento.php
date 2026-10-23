@@ -116,33 +116,49 @@ $cmp_a = (int)(preparar($ana, ["recurso" => "campos", "acao" => "novo", "identif
 preparar($ana, ["recurso" => "relogio", "acao" => "salvar", "id" => $rel_a, "valores" => ["multiplo_ana" => ["Item SEGREDOANA"]]]);
 preparar($ana, ["recurso" => "calibres", "acao" => "salvar", "id" => $cal_a, "valores" => ["multiplo_ana" => ["Item SEGREDOANA", "Outro"]]]);
 // um winder e uma posição (os nomes com a marca, a marca do winder num campo) e um automático dela numa sessão antiga
-// na posição (a linha do lancamento_winder)
+// na posição (a linha do lancamento_winder); o movimento e o programa da posição (v47), o lugar fixo do automático (posto
+// pela página e tirado), o aviso de limite dispensado e um documento do winder
 $no_aut_a = 0;
 foreach ($arv["grupos"] ?? [] as $g_a) {
     $no_aut_a = $no_aut_a === 0 && mb_strpos((string)$g_a["caminho"], "Autom") !== false ? (int)$g_a["id"] : $no_aut_a;
 }
 $rel_w = (int)(preparar($ana, ["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Automatico SEGREDOANA", "no_id" => $no_aut_a, "disponivel" => 1])["id"] ?? 0);
 $wnd_a = (int)(preparar($ana, ["recurso" => "winders", "acao" => "salvar", "nome" => "Winder SEGREDOANA", "posicoes" => 0, "valores" => ["winder_marca" => "Marca SEGREDOANA"]])["id"] ?? 0);
-$wps_a = (int)(preparar($ana, ["recurso" => "winder_posicoes", "acao" => "salvar", "winder_id" => $wnd_a, "nome" => "Pos SEGREDOANA", "valores" => ["pos_tpd" => "850"]])["id"] ?? 0);
+$wps_a = (int)(preparar($ana, ["recurso" => "winder_posicoes", "acao" => "salvar", "winder_id" => $wnd_a, "nome" => "Pos SEGREDOANA"])["id"] ?? 0);
 $lwd_a = (int)(preparar($ana, ["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => $rel_w, "tipo" => "winder", "posicao_id" => $wps_a,
     "inicio" => date("Y-m-d H:i", time() - 5 * 86400), "fim" => date("Y-m-d H:i", time() - 5 * 86400 + 7200)])["id"] ?? 0);
+$mov_a = (int)(preparar($ana, ["recurso" => "movimentos", "acao" => "salvar", "nome" => "Mov SEGREDOANA", "tipo" => "horario", "minutos" => 2])["id"] ?? 0);
+$par_a = (int)(preparar($ana, ["recurso" => "movimentos", "acao" => "salvar", "nome" => "Parada SEGREDOANA", "tipo" => "parado", "minutos" => 3])["id"] ?? 0);
+$prg_a = (int)(preparar($ana, ["recurso" => "programas", "acao" => "salvar", "nome" => "Prog SEGREDOANA", "medida" => "tempo", "tpd_manual" => 850,
+    "sequencia" => $mov_a . ", " . $par_a])["id"] ?? 0);
+preparar($ana, ["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wps_a, "programa_id" => $prg_a]);
+preparar($ana, ["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wps_a, "relogio_id" => $rel_w]);
+preparar($ana, ["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wps_a, "relogio_id" => 0]);
+preparar($ana, ["recurso" => "winders", "acao" => "limite_ok", "id" => $wnd_a, "relogio_id" => $rel_w]);
+$cat_w = 0;
+foreach (pedir($ana, "GET", ["recurso" => "documentos"])["json"]["categorias"] ?? [] as $c_w) {
+    $cat_w = $cat_w === 0 && ($c_w["identificador"] ?? "") === "manual" ? (int)$c_w["id"] : $cat_w;
+}
+$dwd_a = (int)((preparar($ana, ["recurso" => "documentos", "acao" => "enviar", "winder_id" => $wnd_a, "categoria_id" => $cat_w, "titulo" => "DocWinder SEGREDOANA",
+    "arquivo_nome" => "w.pdf", "arquivo_base64" => base64_encode("%PDF-1.4 SEGREDOANA")])["ids"] ?? [0])[0] ?? 0);
 // e uma medição do timegrapher (a observação com a marca)
 $tgr_a = (int)(preparar($ana, ["recurso" => "timegrapher", "acao" => "salvar", "relogio_id" => $rel_m, "marcha" => 4, "amplitude" => 280, "observacao" => "Timegrapher SEGREDOANA"])["id"] ?? 0);
 $ids = ["colecao" => $col_a, "relogio" => $rel_a, "aparelho" => $apa_a, "lancamento" => $lan_a, "acessorio" => $ace_a, "evento" => $evt_a, "destino" => $des_a, "agenda" => $agd_a,
     "documento" => $doc_a, "no" => $no_a, "usuario" => $uid_a, "smartwatch" => $rel_s, "medicao" => $med_a, "calibre" => $cal_a, "doc_calibre" => $doc_cal_a, "servico" => $srv_a,
     "mecanico" => $rel_m, "reserva" => $rst_a, "timegrapher" => $tgr_a, "unidade" => $uni_a, "secao" => $sec_a, "campo_multiplo" => $cmp_a,
-    "automatico" => $rel_w, "winder" => $wnd_a, "winder_posicao" => $wps_a, "lancamento_winder" => $lwd_a];
+    "automatico" => $rel_w, "winder" => $wnd_a, "winder_posicao" => $wps_a, "lancamento_winder" => $lwd_a, "movimento" => $mov_a, "programa" => $prg_a,
+    "doc_winder" => $dwd_a];
 echo "A ana: " . json_encode($ids) . "\n";
 $antes = pedir($ana, "GET", ["recurso" => "ficha", "relogio" => $rel_a])["corpo"];
 
 // os recursos de leitura e as variações de parâmetro com as coisas da ana
 $recursos = ["", "importacao", "backup", "foto", "documento", "documentos", "criterios", "avisos", "autonomia", "hoje", "ficha", "config", "historico", "previsao",
-    "plano", "desejos", "estatisticas", "precisao", "calibres", "unidades", "servicos", "reserva", "timegrapher", "relatorios", "hora_certa", "passaporte", "galeria", "acessorios", "winders", "proximos", "rodizio_manual", "eventos", "destinos", "agendas",
+    "plano", "desejos", "estatisticas", "precisao", "calibres", "unidades", "servicos", "reserva", "timegrapher", "relatorios", "hora_certa", "passaporte", "galeria", "acessorios", "winders", "programas", "proximos", "rodizio_manual", "eventos", "destinos", "agendas",
     "usuarios", "conta", "colecoes", "acessos", "pedidos", "convites", "aprovacoes", "cron", "arvore", "cadastros", "calcular", "migracoes", "instalacao",
     "cadastro", "entrar"];
 $variacoes = [[], ["colecao" => $col_a], ["relogio" => $rel_a], ["id" => $rel_a], ["relogio_id" => $rel_a], ["como" => "ana"], ["usuario" => "ana"],
     ["login" => "ana"], ["usuario_id" => $uid_a], ["documento" => $doc_a], ["id" => $doc_a], ["calibre" => $cal_a], ["id" => $doc_cal_a], ["id" => $des_a], ["id" => $agd_a], ["id" => $evt_a],
-    ["no" => $no_a], ["no_id" => $no_a], ["arvore_id" => $no_a], ["relogio" => $rel_a, "baixar" => 1], ["id" => $wnd_a], ["id" => $wps_a], ["relogio" => $rel_w]];
+    ["no" => $no_a], ["no_id" => $no_a], ["arvore_id" => $no_a], ["relogio" => $rel_a, "baixar" => 1], ["id" => $wnd_a], ["id" => $wps_a], ["relogio" => $rel_w], ["winder" => $wnd_a], ["id" => $prg_a], ["id" => $prg_a, "previa" => 1], ["id" => $dwd_a]];
 $n = 0;
 // os relatórios (recurso=relatorios): cada tipo, sem relógio, com os relógios da ana, com a coleção dela e na planilha
 foreach (["bia", "caio"] as $quem) {
@@ -230,6 +246,19 @@ $tentativas = [
     ["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wps_a, "relogio_id" => 0],
     ["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel_w, "tipo" => "winder", "posicao_id" => $wps_a],
     ["recurso" => "lancamento", "acao" => "alterar", "id" => $lwd_a, "posicao_id" => 0],
+    ["recurso" => "lancamento", "acao" => "alternar", "relogio_id" => $rel_w, "tipo" => "winder"],
+    ["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wps_a, "programa_id" => 0],
+    ["recurso" => "winder_posicoes", "acao" => "liberar", "id" => $wps_a],
+    ["recurso" => "winders", "acao" => "limite_ok", "id" => $wnd_a, "relogio_id" => $rel_w],
+    ["recurso" => "movimentos", "acao" => "salvar", "id" => $mov_a, "nome" => "INVADIDO"],
+    ["recurso" => "movimentos", "acao" => "excluir", "id" => $par_a, "confirmar" => 1],
+    ["recurso" => "programas", "acao" => "salvar", "id" => $prg_a, "nome" => "INVADIDO"],
+    ["recurso" => "programas", "acao" => "salvar", "id" => $prg_a, "sequencia" => (string)$mov_a],
+    ["recurso" => "programas", "acao" => "excluir", "id" => $prg_a, "confirmar" => 1],
+    ["recurso" => "programas", "acao" => "salvar", "nome" => "INVADIDO", "medida" => "tempo", "velocidade" => 5, "sequencia" => $mov_a . ", " . $par_a],
+    ["recurso" => "documentos", "acao" => "enviar", "winder_id" => $wnd_a, "categoria_id" => $cat_w, "titulo" => "INVADIDO", "arquivo_nome" => "x.pdf",
+        "arquivo_base64" => base64_encode("%PDF-1.4 INVADIDO")],
+    ["recurso" => "documentos", "acao" => "excluir", "id" => $dwd_a, "confirmar" => 1],
     ["recurso" => "config", "acao" => "evento_salvar", "id" => $evt_a, "nome" => "INVADIDO", "repeticao" => "semanal", "hora" => "10:00", "dias_semana" => "6"],
     ["recurso" => "config", "acao" => "evento_excluir", "evento_id" => $evt_a, "confirmar" => 1],
     ["recurso" => "destinos", "acao" => "salvar", "id" => $des_a, "tipo" => "webhook", "nome" => "INVADIDO", "url" => "https://x.invalid/"],
@@ -313,14 +342,15 @@ if (preg_replace('/"(calculado_em|agora|gerado_em)[^,]*,/', "", $antes) !== preg
     && stripos($depois, "INVADIDO") !== false) {
     $falhas[] = "MUDOU a ficha do relógio da ana";
 }
-foreach ([["acessorios"], ["winders"], ["servicos", ["relogio" => $rel_a]], ["reserva", ["relogio" => $rel_m]], ["timegrapher", ["relogio" => $rel_m]], ["eventos"], ["destinos"], ["agendas"], ["documentos", ["relogio" => $rel_a]], ["historico", ["relogio" => $rel_a]], ["conta"], ["colecoes"],
+foreach ([["acessorios"], ["winders"], ["programas"], ["documentos", ["winder" => $wnd_a]], ["servicos", ["relogio" => $rel_a]], ["reserva", ["relogio" => $rel_m]], ["timegrapher", ["relogio" => $rel_m]], ["eventos"], ["destinos"], ["agendas"], ["documentos", ["relogio" => $rel_a]], ["historico", ["relogio" => $rel_a]], ["conta"], ["colecoes"],
     ["plano"], ["arvore"]] as $x) {
     $c = $ver($x[0], $x[1] ?? []);
     if (stripos($c, "INVADIDO") !== false) {
         $falhas[] = "MUDOU " . $x[0] . " da ana: " . substr($c, max(0, stripos($c, "INVADIDO") - 150), 300);
     }
 }
-foreach (["Relogio SEGREDOANA" => ["ficha", ["relogio" => $rel_a]], "Acessorio SEGREDOANA" => ["acessorios"], "Winder SEGREDOANA" => ["winders"], "Pos SEGREDOANA" => ["winders"], "Marca SEGREDOANA" => ["winders"], "Servico SEGREDOANA" => ["servicos", ["relogio" => $rel_a]], "Reserva SEGREDOANA" => ["reserva", ["relogio" => $rel_m]], "Timegrapher SEGREDOANA" => ["timegrapher", ["relogio" => $rel_m]], "Evento SEGREDOANA" => ["eventos"],
+foreach (["Relogio SEGREDOANA" => ["ficha", ["relogio" => $rel_a]], "Acessorio SEGREDOANA" => ["acessorios"], "Winder SEGREDOANA" => ["winders"], "Pos SEGREDOANA" => ["winders"], "Marca SEGREDOANA" => ["winders"], "Prog SEGREDOANA" => ["programas"], "Mov SEGREDOANA" => ["programas"],
+    "DocWinder SEGREDOANA" => ["documentos", ["winder" => $wnd_a]], "Servico SEGREDOANA" => ["servicos", ["relogio" => $rel_a]], "Reserva SEGREDOANA" => ["reserva", ["relogio" => $rel_m]], "Timegrapher SEGREDOANA" => ["timegrapher", ["relogio" => $rel_m]], "Evento SEGREDOANA" => ["eventos"],
     "Destino SEGREDOANA" => ["destinos"], "Agenda SEGREDOANA" => ["agendas"], "Doc SEGREDOANA" => ["documentos", ["relogio" => $rel_a]],
     "Colecao SEGREDOANA" => ["conta"]] as $o => $x) {
     if (stripos($ver($x[0], $x[1] ?? []), $o) === false) {

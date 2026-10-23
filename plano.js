@@ -30,7 +30,7 @@ function montarPlano() {
     }).join(""))})));
 
   // escolher os relógios de um período, dia a dia, é no Rodízio manual (o apagar fica no rodapé da página)
-  res += el("p", {"class": "nota"}, t("Para escolher os relógios de um período, dia a dia: na página {1}, no quadro Modo de rodízio, escolha \"Rodízio manual\". Para apagar a programação, veja o fim desta página.", {1: el("a", {"href": "index.php#manual"}, t("Hoje"))}));
+  res += ajudaNota("periodo", t("Escolher os relógios de um período"), t("Para escolher os relógios de um período, dia a dia: na página {1}, no quadro Modo de rodízio, escolha \"Rodízio manual\". Para apagar a programação, veja o fim desta página.", {1: el("a", {"href": "index.php#manual"}, t("Hoje"))}));
 
   // o resumo, da API: quantos dias cada relógio tem no período, a porcentagem, o próximo dia e quantos foram à mão
   var rs = d.resumo;

@@ -127,7 +127,7 @@ function recarregarCadastros() {
       d.campos.forEach(function (c) { if (c.id === editar) { e = c; } });
       var f = e || {};
       res += el("section", {"class": "cartao-config"}, el("h2", {}, t("Campos do cadastro dos relógios"))
-        + el("p", {"class": "nota"}, t("Cada campo vale para o ponto da árvore escolhido e tudo abaixo dele (os de cada nível somam) e aparece no cadastro desses relógios. O identificador é o nome do campo nas fórmulas. Marcado \"só nos desejados\", o campo aparece só nos relógios da lista de desejos. Os campos vêm separados pelo vale para, cada um numa subtela (clique no título para recolher ou abrir); os de todos os relógios ficam juntos na primeira."))
+        + ajudaNota("campos", t("Os campos"), t("Cada campo vale para o ponto da árvore escolhido e tudo abaixo dele (os de cada nível somam) e aparece no cadastro desses relógios. O identificador é o nome do campo nas fórmulas. Marcado \"só nos desejados\", o campo aparece só nos relógios da lista de desejos. Os campos vêm separados pelo vale para, cada um numa subtela (clique no título para recolher ou abrir); os de todos os relógios ficam juntos na primeira."))
         + subtelas(d.campos, function (c) { return grupoCampo(d, c); }, function (lista) {
           return el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-campos"}, el("thead", {}, el("tr", {}, [t("Campo"), t("Identificador"), t("Tipo"), t("Divisória"), t("Padrão"), ""].map(function (item) { return el("th", {}, item); }).join("")))
             + el("tbody", {}, lista.map(function (c) {
@@ -176,7 +176,7 @@ function recarregarCadastros() {
       var e = null;
       d.secoes.forEach(function (x) { if (x.id === editar) { e = x; } });
       res += el("section", {"class": "cartao-config"}, el("h2", {}, t("Divisórias da ficha"))
-        + el("p", {"class": "nota"}, t("As divisórias agrupam os campos no cadastro do relógio, no painel, no passaporte e nos relatórios, nesta ordem. Cada campo fica numa delas (na aba Campos, o menu Divisória); os sem divisória vêm no fim. Excluir uma divisória não apaga os campos: eles ficam sem divisória."))
+        + ajudaNota("divisorias", t("As divisórias"), t("As divisórias agrupam os campos no cadastro do relógio, no painel, no passaporte e nos relatórios, nesta ordem. Cada campo fica numa delas (na aba Campos, o menu Divisória); os sem divisória vêm no fim. Excluir uma divisória não apaga os campos: eles ficam sem divisória."))
         + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Divisória")) + el("th", {"class": "num"}, t("Campos")) + el("th", {}, "")))
           + el("tbody", {}, d.secoes.map(function (x) {
             return el("tr", {}, el("td", {}, h(x.nome)) + el("td", {"class": "num"}, String(x.campos))
@@ -192,7 +192,7 @@ function recarregarCadastros() {
       d.lancamento_tipos.forEach(function (item) { if (item.id === editar) { e = item; } });
       var f = e || {};
       res += el("section", {"class": "cartao-config"}, el("h2", {}, t("Tipos de lançamento"))
-        + el("p", {"class": "nota"}, t("O que se registra num relógio: instantâneo (corda), com valor (leitura de carga) ou sessão com início e fim (pulso, winder, sol). O identificador é o nome nas funções das fórmulas: HORAS(\"pulso\"; 30). Sessão exclusiva: o relógio fica num lugar só. Mede o gasto: cada leitura desse tipo mede quanto caiu por dia de uso ou guardado (a função MEDIDO das fórmulas). Vale quando: uma fórmula que diz para quais relógios o tipo vale (ex.: corda_manual, só para quem aceita corda); vazia, vale para todos do grupo. Mede a marcha: a leitura do desvio da hora (quanto o relógio está adiantado ou atrasado, em segundos) e o acerto da hora, de onde sai a marcha em segundos por dia (o quadro Precisão e as funções MARCHA e DESVIO_AGORA). Winder: a sessão é numa posição de um winder (a página Winders), e o programa da posição entra nas fórmulas por WINDER_POSICAO. Os tipos vêm separados pelo vale para, cada um numa subtela que recolhe."))
+        + ajudaNota("tipos", t("Os tipos de lançamento"), t("O que se registra num relógio: instantâneo (corda), com valor (leitura de carga) ou sessão com início e fim (pulso, winder, sol). O identificador é o nome nas funções das fórmulas: HORAS(\"pulso\"; 30). Sessão exclusiva: o relógio fica num lugar só. Mede o gasto: cada leitura desse tipo mede quanto caiu por dia de uso ou guardado (a função MEDIDO das fórmulas). Vale quando: uma fórmula que diz para quais relógios o tipo vale (ex.: corda_manual, só para quem aceita corda); vazia, vale para todos do grupo. Mede a marcha: a leitura do desvio da hora (quanto o relógio está adiantado ou atrasado, em segundos) e o acerto da hora, de onde sai a marcha em segundos por dia (o quadro Precisão e as funções MARCHA e DESVIO_AGORA). Winder: a sessão é numa posição de um winder (a página Winders), e o programa da posição entra nas fórmulas por WINDER_POSICAO. Os tipos vêm separados pelo vale para, cada um numa subtela que recolhe."))
         + subtelas(d.lancamento_tipos, function (item) { return valeNo(d, item.no_id || 0); }, function (lista) {
           return el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Tipo")) + el("th", {}, t("Identificador")) + el("th", {}, t("Formato")) + el("th", {}, t("Fecha sozinho às"))
               + el("th", {}, t("Exclusiva")) + el("th", {}, t("Mede o gasto")) + el("th", {}, t("Mede a marcha")) + el("th", {}, t("Winder")) + el("th", {}, t("Vale quando")) + el("th", {"class": "num"}, t("Lançamentos")) + el("th", {}, "")))
@@ -226,7 +226,7 @@ function recarregarCadastros() {
       d.formulas.forEach(function (x) { if (x.id === editar) { e = x; } });
       var f = e || {};
       var sec = el("h2", {}, t("Fórmulas"))
-        + el("p", {"class": "nota"}, t("Uma fórmula pode ter uma versão em cada ponto da árvore (o Vale para; cada um na sua subtela): vale para o relógio a do ponto mais perto dele. Números com vírgula ou ponto, argumentos separados por ponto e vírgula, textos entre aspas. Variáveis: os identificadores dos campos e das fórmulas."))
+        + ajudaNota("formulas", t("As fórmulas e as versões"), t("Uma fórmula pode ter uma versão em cada ponto da árvore (o Vale para; cada um na sua subtela): vale para o relógio a do ponto mais perto dele. Números com vírgula ou ponto, argumentos separados por ponto e vírgula, textos entre aspas. Variáveis: os identificadores dos campos e das fórmulas."))
         + subtelas(d.formulas, function (x) { return valeNo(d, x.no_id || 0); }, function (lista) {
           return el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-formulas"}, el("thead", {}, el("tr", {}, el("th", {}, t("Fórmula")) + el("th", {}, t("Cálculo")) + el("th", {}, "")))
             + el("tbody", {}, lista.map(function (x) {
@@ -263,7 +263,7 @@ function recarregarCadastros() {
       d.documento_categorias.forEach(function (x) { if (x.id === editar) { e = x; } });
       var f = e || {aceita: []};
       res += el("section", {"class": "cartao-config"}, el("h2", {}, t("Categorias de documentos"))
-        + el("p", {"class": "nota"}, t("Os documentos de cada relógio (a página Documentos, aberta pela ficha) ficam numa categoria. \"Aceita\" limita os arquivos da categoria; nada marcado, ela aceita qualquer arquivo. O jeito de abrir cada arquivo vem do tipo dele, não da categoria: as fotos na galeria, os vídeos no player, o PDF no visualizador, o XML da nota com o resumo, o resto para baixar. Uma categoria com documentos não se exclui: passe os documentos para outra antes."))
+        + ajudaNota("categorias", t("As categorias de documento"), t("Os documentos de cada relógio (a página Documentos, aberta pela ficha) ficam numa categoria. \"Aceita\" limita os arquivos da categoria; nada marcado, ela aceita qualquer arquivo. O jeito de abrir cada arquivo vem do tipo dele, não da categoria: as fotos na galeria, os vídeos no player, o PDF no visualizador, o XML da nota com o resumo, o resto para baixar. Uma categoria com documentos não se exclui: passe os documentos para outra antes."))
         + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, [t("Categoria"), t("Identificador"), t("Aceita"), t("Ordem"), t("Documentos"), ""].map(function (item, i) {
             return el("th", {"class": i === 3 || i === 4 ? "num" : null}, item);
           }).join(""))) + el("tbody", {}, d.documento_categorias.map(function (c) {
@@ -316,7 +316,7 @@ function recarregarTotais() {
       return el("input", {"type": "hidden", "name": nome, "value": "0"}) + el("input", {"type": "checkbox", "name": nome, "value": "1", "checked": ligado, "disabled": desligada});
     };
     var sec = el("h2", {}, t("Totais"))
-      + el("p", {"class": "nota"}, t("Cada total é uma expressão do motor que olha para todos os relógios mostrados de uma vez (os que o filtro da tabela da página Hoje deixa). Ele aparece no rodapé da tabela, embaixo da coluna dele, e/ou como um quadro na {1}. Vários totais na mesma coluna ficam um embaixo do outro, na ordem desta lista.", {1: el("a", {"href": "totais.php"}, t("página de totais"))}))
+      + ajudaNota("totais", t("Os totais"), t("Cada total é uma expressão do motor que olha para todos os relógios mostrados de uma vez (os que o filtro da tabela da página Hoje deixa). Ele aparece no rodapé da tabela, embaixo da coluna dele, e/ou como um quadro na {1}. Vários totais na mesma coluna ficam um embaixo do outro, na ordem desta lista.", {1: el("a", {"href": "totais.php"}, t("página de totais"))}))
       + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Coluna")) + el("th", {}, t("Nome")) + el("th", {}, t("Expressão"))
         + el("th", {}, t("Rodapé")) + el("th", {}, t("Página")) + el("th", {}, t("Dá agora")) + el("th", {}, "")))
         + el("tbody", {}, d.totais.map(function (x, i) {
@@ -343,7 +343,7 @@ function recarregarTotais() {
           + (e ? " " + el("a", {"href": "cadastros.php?aba=totais"}, t("cancelar")) : "")))
       + el("div", {"id": "teste-total", "aria-live": "polite"}, "")
       + el("details", {}, el("summary", {}, t("As funções de total")) + el("ul", {"class": "nota"}, d.funcoes.map(function (x) { return el("li", {}, el("strong", {}, h(x.nome)) + ": " + h(x.descricao)); }).join(""))
-        + el("p", {"class": "nota"}, t("Dentro delas vale tudo o que vale numa fórmula (os campos, as fórmulas, SE, DIAS_DESDE, MES_ANO...), calculado em cada relógio; fora delas, só números, textos e as funções que não precisam de um relógio.")))
+        + ajudaNota("totais-expressao", t("O que vale numa expressão de total"), t("Dentro delas vale tudo o que vale numa fórmula (os campos, as fórmulas, SE, DIAS_DESDE, MES_ANO...), calculado em cada relógio; fora delas, só números, textos e as funções que não precisam de um relógio.")))
       + el("details", {}, el("summary", {}, t("As variáveis da tabela")) + el("ul", {"class": "nota"}, d.variaveis.map(function (x) { return el("li", {}, el("strong", {}, h(x.nome)) + ": " + h(x.descricao)); }).join("")));
     res += el("section", {"class": "cartao-config"}, sec);
     document.getElementById("cadastros").innerHTML = res;
@@ -450,7 +450,7 @@ function recarregarCalibres() {
         + el("option", {"value": "todos", "selected": d.campos_mostrar === "todos"}, t("Todos os campos do cadastro")))}))
       + el("span", {"class": "nota"}, t("Com só os do movimento, os que o calibre já define aparecem também, para poder tirar.")));
     var sec = el("h2", {}, t("Calibres"))
-      + el("p", {"class": "nota"}, t("O calibre é o movimento do relógio (NH35, ST2130, B620...). Ele guarda o que é do movimento, não do relógio: o fabricante, o manual técnico, as recomendações e os valores dos campos (a reserva de marcha, a marcha esperada, aceita corda pela coroa...). O relógio com esse calibre usa esses valores nos campos que ele mesmo deixou vazios: vale o valor do relógio, senão o do calibre, senão o padrão do campo. Escolha o calibre no cadastro do relógio."))
+      + ajudaNota("calibres", t("O calibre"), t("O calibre é o movimento do relógio (NH35, ST2130, B620...). Ele guarda o que é do movimento, não do relógio: o fabricante, o manual técnico, as recomendações e os valores dos campos (a reserva de marcha, a marcha esperada, aceita corda pela coroa...). O relógio com esse calibre usa esses valores nos campos que ele mesmo deixou vazios: vale o valor do relógio, senão o do calibre, senão o padrão do campo. Escolha o calibre no cadastro do relógio."))
       + (d.calibres.length === 0 ? el("p", {"class": "nota"}, t("Nenhum calibre cadastrado."))
         : el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Calibre")) + el("th", {}, t("Fabricante")) + el("th", {}, t("Define"))
           + el("th", {}, t("Relógios")) + el("th", {}, "")))
@@ -500,7 +500,7 @@ function recarregarUnidades() {
     };
     var bases = d.grandezas.map(function (g) { return el("option", {"value": g.base, "selected": f.base === g.base}, h(g.base) + " · " + h(g.nome)); }).join("");
     var sec = el("h2", {}, t("Unidades"))
-      + el("p", {"class": "nota"}, t("As unidades que os campos, os tipos de lançamento e as fórmulas usam (o símbolo vai depois do número: 47 mm). A conversão: cada unidade se converte na base dela (a polegada em milímetros: 1 pol = 25,4 mm), e as que têm a mesma base convertem entre si (na função CONVERTER das fórmulas). Mostrar também em: o valor aparece também nessa unidade (47 mm (1,85 pol)). Mudar o símbolo muda também nos campos, nos tipos e nas fórmulas que o usam."))
+      + ajudaNota("unidades", t("As unidades"), t("As unidades que os campos, os tipos de lançamento e as fórmulas usam (o símbolo vai depois do número: 47 mm). A conversão: cada unidade se converte na base dela (a polegada em milímetros: 1 pol = 25,4 mm), e as que têm a mesma base convertem entre si (na função CONVERTER das fórmulas). Mostrar também em: o valor aparece também nessa unidade (47 mm (1,85 pol)). Mudar o símbolo muda também nos campos, nos tipos e nas fórmulas que o usam."))
       + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Símbolo")) + el("th", {}, t("Nome")) + el("th", {}, t("Conversão"))
           + el("th", {}, t("Mostrar também em")) + el("th", {}, t("Em uso")) + el("th", {}, "")))
         + el("tbody", {}, d.unidades.map(function (u) {

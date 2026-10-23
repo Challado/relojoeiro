@@ -1,4 +1,4 @@
-<!-- origem: bf37d6af976e218bd24e0b1ff8757be830ce3a91 -->
+<!-- origem: 964ff305cf919ea9df34fc1441d936e503297f78 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -106,7 +106,7 @@ Et celles de la rotation (le scénario des modes ; en dehors, le jour est celui 
 | `NO_GRUPO("Tradicional › Quartzo")` | 1 si la montre est à ce point de l'arbre ou en dessous (le nom, le chemin ou `#id` ; `"todos"` : 1 pour toutes) |
 | `RELOGIO("Seiko SKX")` | 1 si c'est cette montre (par le nom ou par l'id) |
 | `CALIBRE("NH35")` | 1 si la montre a ce calibre (par le nom ou par l'id) |
-| `WINDER_POSICAO("pos_tpd")`, `WINDER("winder_marca")` | un champ de la position du remontoir où se trouve la montre (dans l'`ACUMULA`, la position de chaque session sur le remontoir) et un champ de son remontoir ; hors d'une position, vide (voir [Les remontoirs](#os-winders)) |
+| `WINDER_PROGRAMA("voltas_dia")`, `WINDER_POSICAO("campo")`, `WINDER("winder_marca")` | le calcul du programme de la position du remontoir où est la montre (les tours par jour, `"voltas_horario"`, `"voltas_anti_horario"`, `"minutos_girando"`, `"velocidade"`, `"vezes_dia"`, `"ciclo_minutos"` ; dans l'`ACUMULA`, la position de chaque session sur le remontoir), un champ de cette position et un champ de son remontoir ; hors d'une position, ou sans programme, vide (voir [Les remontoirs](#os-winders)) |
 | `ESCOLHIDO_HA(1)`, `VEZES_NO_PLANO(7)` | 1 si la montre était celle du plan il y a n jours (1 : hier ; -1 : demain, quand elle est déjà dans le plan) ; combien de jours elle a eus dans le plan dans les n derniers jours |
 | `ESCOLHA(n; a; b; c)` | le n-ième des valeurs (lui seul est calculé) : `ESCOLHA(DIA_SEMANA(); …)` donne une valeur par jour de la semaine |
 | `SORTEIO()` | un nombre de 0 à 1, du même lot RANDOM.ORG que les tirages |
@@ -664,49 +664,79 @@ libres) qui **vont sur elle**. Les montres vendues et archivées n'entrent pas d
 ### Les remontoirs {#os-winders}
 
 Le **remontoir** (la boîte qui fait tourner les automatiques) a sa propre fiche, sur la page **Remontoirs** (dans le menu
-**Collection**) : chaque remontoir avec ses **positions**, et chaque position avec son **programme**. Rien de cela n'est figé
-dans le code : les données du remontoir et le programme de la position sont des **champs**, enregistrés dans l'onglet
-**Champs** de la page **Définitions** avec **Pour : les remontoirs** ou **Pour : les positions des remontoirs**, comme ceux
-des montres. La configuration initiale apporte déjà la **marque** et le **modèle** du remontoir et, sur la position, les
-**tours par jour** (TPD, 650 par défaut, avec les valeurs possibles 650, 850, 1050 et 1250, celles du sélecteur TPD des
-remontoirs courants), s'il **tourne dans le sens horaire** et **antihoraire** (les deux, par défaut : l'*Auto*,
-bidirectionnel, du sélecteur du remontoir) et le **cycle** (combien de temps il tourne et combien il se repose). Votre
-remontoir a d'autres vitesses ? Changez les valeurs possibles du champ **Tours par jour** dans l'onglet **Champs** (ou
-retirez-les toutes, pour saisir n'importe quel nombre). Il se programme autrement ? Créez ses champs.
+**Collection**) : chaque remontoir avec ses **positions**, et chaque position avec son **programme**, la façon dont le berceau
+tourne. Les données du remontoir sont des **champs**, enregistrés dans l'onglet **Champs** de la page **Définitions** avec
+**Pour : les remontoirs**, comme ceux des montres ; la configuration initiale apporte déjà la **marque**, le **modèle**, le
+**lien du manuel** et les **limites du coussin** (le boîtier jusqu'à tant de mm, le poignet de tant à tant de cm et le poids
+jusqu'à tant de g). La position peut aussi avoir ses propres champs (**Pour : les positions des remontoirs**).
+
+**Les mouvements et les programmes.** Un programme est une **séquence de mouvements** qui se répète. La page **Mouvements**
+(menu **Collection**) contient les étapes : chacune avec un **code**, le nom, le **type** (**rotation horaire**, **rotation
+antihoraire** ou **pause**) et une seule mesure : la rotation dit **combien de tours** elle fait ou **combien de temps** elle
+tourne, jamais les deux ; la pause n'a que le temps. Sur la page **Programmes** (menu **Collection**), chaque programme a le
+nom, le **type de saisie** (**par tours** : les rotations de la séquence sont en tours ; **par temps** : en temps), s'il
+**fonctionne toute la journée** ou **par blocs** (*marche 3 h et s'arrête 9 h*), la **vitesse du berceau** et la
+**séquence**, les codes des mouvements dans l'ordre (*3, 1, 4, 1* : le même code peut revenir, comme la même pause entre les
+deux rotations). La vitesse du berceau est **comptée** (collez un petit bout de ruban sur le berceau et comptez les tours en 1
+minute) ou vient des **tours par jour que donne le manuel** pour ce mode : l'une ou l'autre. **Rien de ce qui est calculé ne
+se saisit** : les tours de chaque étape (ou le temps), le cycle, combien de fois par jour il tourne, le temps de rotation et
+les **tours par jour** (le TPD), au total et dans chaque sens, s'affichent en dessous pendant que vous modifiez, pour
+vérifier. Un programme sert dans autant de positions que vous voulez, sur n'importe quel remontoir. Pour le remontoir qui ne
+donne que les tours par jour (le sélecteur TPD : 650, 850...), il y a l'assistant **Monter une séquence pour N tours par
+jour** : les tours, la vitesse et le sens, et il monte les rotations et les pauses (il crée les mouvements qui manquent) ;
+ensuite, c'est un programme comme les autres. Un mouvement qui est dans un programme, ou un programme qui est dans une
+position, ne se supprime pas (retirez-le de là d'abord).
 
 Côté montre, l'automatique gagne trois champs, que le calibre peut aussi donner : les **tours par jour qu'elle demande** sur
 le remontoir (650 par défaut) et si elle **se remonte en tournant dans le sens horaire** et **antihoraire** (les deux, par
 défaut ; le mouvement qui ne se remonte que dans un sens ne coche que celui-là).
 
 Ce que charge chaque heure sur le remontoir vient d'une formule, `winder_ganho` (onglet **Formules** des Définitions), que
-vous ajustez comme vous voulez. Celle de la configuration initiale : si la position tourne dans un sens où la montre se
-remonte, elle gagne la proportion des champs *Sur le remontoir* (les heures et la réserve qu'elles donnent) fois les tours
-de la position ÷ ceux qu'elle demande (au plus 1) ; si elle ne tourne dans aucun sens où elle se remonte, elle ne gagne
-rien. La session qui n'est pas dans une position (les anciennes, d'avant les remontoirs, ou celle d'un remontoir supprimé) utilise les champs
-*Sur le remontoir*, comme avant. Dans les formules, `WINDER_POSICAO("pos_tpd")` est un champ de la position et
-`WINDER("winder_marca")`, un du remontoir. `reserva_restante` utilise `winder_ganho` dans chaque session sur le remontoir,
-avec le programme de la position où elle est restée : une montre qui a passé la nuit dans une position de 650 tours et
-l'après-midi dans une de 1250 gagne chaque tronçon selon le sien. `winder_falta` donne les heures jusqu'à ce qu'elle soit
-pleine.
+vous ajustez comme vous voulez. Celle de la configuration initiale additionne les tours par jour du programme **seulement
+dans les sens où la montre se remonte** et les compare à ceux qu'elle demande (au plus 1), fois la proportion des champs
+*Sur le remontoir* (les heures et la réserve qu'elles donnent) : dans un programme de 650 tours, 325 dans chaque sens, la
+montre qui ne se remonte que dans le sens horaire gagne la moitié. Sans programme dans la position, ou dans une session qui
+n'est pas dans une position (les anciennes, d'avant les remontoirs, ou celle d'un remontoir supprimé), valent les champs
+*Sur le remontoir*, comme avant. Dans les formules, `WINDER_PROGRAMA("voltas_dia")` (et `"voltas_horario"`,
+`"voltas_anti_horario"`, `"minutos_girando"`, `"velocidade"`, `"vezes_dia"`, `"ciclo_minutos"`) lit le calcul du programme de
+la position, `WINDER_POSICAO("campo")` un champ de la position et `WINDER("winder_marca")` un du remontoir.
+`reserva_restante` utilise `winder_ganho` dans chaque session sur le remontoir, avec le programme de la position où elle est
+restée : une montre qui a passé la nuit dans une position de 650 tours et l'après-midi dans une de 1250 gagne chaque tronçon
+selon le sien. `winder_falta` donne les heures jusqu'à ce qu'elle soit pleine.
+
+**La place fixe.** La position où vous mettez une montre devient **sa place**. Retirée (au poignet, rangée...), le berceau
+garde **sa photo, estompée et avec l'anneau rouge**, et la ligne dit où elle est (*« place de la Seiko 5 · dehors : au
+poignet »*), avec les boutons **Remettre** et **Libérer la place**. La mettre sur le remontoir **de n'importe où** (le
+panneau de la montre, le raccourci du téléphone, l'alerte d'Aujourd'hui, l'API) la ramène à sa place, si la position est
+allumée et libre ; avec une autre montre dedans, ou éteinte, le système dit pourquoi et la mise se fait par la page
+Remontoirs. Une autre montre mise dans la position prend la place. **Les limites du coussin** : la montre dont le boîtier ou
+le poids (ceux de sa fiche) dépasse ce que le remontoir supporte reçoit un avertissement sur la position ; ce n'est qu'un
+avertissement, et le **Je sais, laisse comme ça** l'écarte pour cette montre sur ce remontoir. **Les documents du
+remontoir** (le manuel, la facture, les photos) marchent comme ceux de la montre : le **Documents (N)** de la carte ouvre la
+page Documents sur le remontoir.
 
 Sur la page, une carte par remontoir. En haut, le **dessin** du remontoir : la boîte avec un berceau rond par position, et
 dans chaque berceau occupé la **photo** de la montre (ou l'initiale de son nom), avec un anneau vert autour qui est la
-**charge** et, tant que la position est allumée, un petit trait clair qui tourne par-dessus (qui demande moins de mouvement à l'appareil la voit
-immobile) ; le berceau libre est en pointillés, l'éteint est estompé, et le clic sur la photo ouvre la fiche. En dessous, les
-**données** du remontoir (libellé et valeur, avec l'étiquette *par défaut* là où vaut la valeur par défaut du champ) et le
-**tableau des positions**, où chaque ligne se modifie sur place : une colonne pour chaque champ de la position (les **tours
-par jour** dans le menu des valeurs possibles, les **sens** en oui ou non, le **cycle** ; vide revient à la valeur par
-défaut), la colonne **Montre** (un menu avec **— aucune —** et les montres qui vont sur un remontoir), la **charge**, **ce que
-donne chaque heure** et quand elle est **pleine** (« pleine à 19:20 »), et l'**Enregistrer** de la ligne. Dans Montre,
-**— aucune —** retire celle qui est dans la position ; en choisir une autre la **met** ou **échange** : celle qui y était
-sort, et la choisie, si elle était dans une autre position (ou sur le remontoir sans position, comme celles mises sur le
-remontoir avant qu'il soit enregistré), en sort et entre dans celle-ci. Le **Modifier** de chaque position ouvre le nom,
+**charge** et, tant que la position est allumée, un petit trait clair qui tourne par-dessus (qui demande moins de mouvement à
+l'appareil la voit immobile) ; le berceau de la place d'une montre qui est dehors montre sa photo estompée, avec l'anneau
+rouge ; le berceau libre est en pointillés, l'éteint est estompé, et le clic sur la photo ouvre la fiche. En dessous, les
+**données** du remontoir (libellé et valeur, avec l'étiquette *par défaut* là où vaut la valeur par défaut du champ, et le
+lien du manuel) et le **tableau des positions**, où chaque ligne se modifie sur place : le **Programme** (un menu avec
+**— sans programme —** et les programmes, avec son calcul en dessous), les champs de la position, s'il y en a, la colonne
+**Montre** (un menu avec **— aucune —** et les montres qui vont sur un remontoir), la **charge**, **ce que donne chaque
+heure** et quand elle est **pleine** (« pleine à 19:20 »), et l'**Enregistrer** de la ligne. Dans Montre, **— aucune —**
+retire celle qui est dans la position (la place reste la sienne) ; en choisir une autre la **met** ou **échange** : celle qui
+y était sort, et la choisie, si elle était dans une autre position (ou sur le remontoir sans position, comme celles mises sur
+le remontoir avant qu'il soit enregistré), en sort et entre dans celle-ci. Le **Modifier** de chaque position ouvre le nom,
 l'ordre et **allumée** ; en dessous, les formulaires du remontoir (le nom, les champs et, à la création, le nombre de
 positions qu'il reçoit) et de la position. Une position éteinte ne reçoit pas de montre, et avec une montre dedans elle ne
 s'éteint qu'avec **— aucune —**.
 
-**Le remontoir est obligatoire.** Sans aucun remontoir enregistré, il n'y a ni mettre ni retirer du remontoir nulle part : sur le panneau de la montre, le **Mettre sur le remontoir** du cadre **Marquer** ne fait que le dire et mène à la page **Remontoirs** ; l'alerte qui se résout sur le remontoir vient sans bouton ; le raccourci du téléphone et l'API refusent. Avec un remontoir enregistré, la montre va sur le remontoir **seulement par la page Remontoirs**, choisie dans la **Montre** d'une position : sur le panneau, le **Mettre sur le remontoir** mène à la page, et dans **Aujourd'hui, c'est le jour de** l'alerte apporte le lien **Mettre sur le remontoir ›**. **Retirer** marche partout : sur la page (**— aucune —**), dans le **Retirer du remontoir** du panneau, dans le bouton de l'alerte, dans le raccourci et dans l'API. La **période passée** sur le remontoir (l'*Une période passée* de Marquer) demande la **position** où elle était. La session restée ouverte dans une collection sans remontoir (un remontoir supprimé avec la montre dedans) se retire encore. L'état dit où elle est : *« Sur le remontoir · Bureau, Pos. 2 »*. Le type d'entrée du remontoir est celui coché comme **remontoir** dans l'onglet **Types d'entrée** (le *Sur le remontoir* de la configuration initiale). Supprimer une position ou un remontoir n'efface pas les sessions : elles restent sans la position, et leur calcul revient aux champs de la montre. Par l'API : `recurso=winders` (les remontoirs, les positions, la montre dans chacune et les montres qui peuvent aller sur un remontoir), les écritures `winders` et `winder_posicoes` (`salvar`, `excluir` ; dans le `salvar` de la position, `relogio_id` met, échange ou, avec 0, retire) ; dans `lancamento`, l'`iniciar` refuse le type du remontoir, son `periodo` demande `posicao_id`, et l'`encerrar` et l'`alternar` retirent. Un arbre qui existait déjà reçoit les valeurs possibles des tours par jour lors de la mise à jour (la migration
-v46), si le champ n'en avait encore aucune.
+**Le remontoir est obligatoire.** Sans aucun remontoir enregistré, il n'y a ni mettre ni retirer du remontoir nulle part : sur le panneau de la montre, le **Mettre sur le remontoir** du cadre **Marquer** ne fait que le dire et mène à la page **Remontoirs** ; l'alerte qui se résout sur le remontoir vient sans bouton ; le raccourci du téléphone et l'API refusent. Avec un remontoir enregistré, la montre va sur le remontoir par la page **Remontoirs**, choisie dans la **Montre** d'une position, ou, si sa place est libre, de n'importe où : sur le panneau, le bouton **Retour à sa place : Versa, Pos. 2** ; dans **Aujourd'hui, c'est le jour de**, le bouton de l'alerte ; sans place (ou avec elle occupée), le **Mettre sur le remontoir ›** mène à la page. **Retirer** marche partout : sur la page (**— aucune —**), dans le **Retirer du remontoir** du panneau, dans le bouton de l'alerte, dans le raccourci et dans l'API. La **période passée** sur le remontoir (l'*Une période passée* de Marquer) demande la **position** où elle était (sans elle, vaut sa place). La session restée ouverte dans une collection sans remontoir (un remontoir supprimé avec la montre dedans) se retire encore. L'état dit où elle est : *« Sur le remontoir · Bureau, Pos. 2 »*. Le type d'entrée du remontoir est celui coché comme **remontoir** dans l'onglet **Types d'entrée** (le *Sur le remontoir* de la configuration initiale). Supprimer une position ou un remontoir n'efface pas les sessions : elles restent sans la position, et leur calcul revient aux champs de la montre. Par l'API : `recurso=winders` (les remontoirs, les positions avec le programme, la montre, la place et les avertissements de limite, et les montres et les programmes à choisir), `recurso=programas` (les programmes avec le calcul, les mouvements ; avec `previa=1`, le calcul d'un programme sans enregistrer), les écritures `winders` (`salvar`, `limite_ok`, `excluir`), `winder_posicoes` (`salvar`, avec `programa_id` et `relogio_id`, qui met, échange ou, avec 0, retire ; `liberar` ; `excluir`), `movimentos` (`salvar`, `excluir`) et `programas` (`salvar`, `montar`, `excluir`) ; dans `lancamento`, l'`iniciar` et l'`alternar` du type du remontoir la ramènent à sa place libre (sans place, ils refusent), son `periodo` demande `posicao_id`, et l'`encerrar` retire.
+Un arbre qui existait déjà reçoit tout cela lors de la mise à jour (la migration v47) : l'ancien programme de chaque position
+(les tours par jour, les sens et le cycle, qui étaient des champs de la position) devient un programme, avec les tours par
+jour du manuel égaux à ceux d'avant (la charge reste la même ; comptez la vitesse du berceau et mettez-la dans le programme),
+celle qui est sur le remontoir reçoit la place, et les anciens champs disparaissent.
 
 ### Les sections de la fiche {#as-divisórias-da-ficha}
 
@@ -1144,8 +1174,8 @@ remontage donnent le bras (et le remontoir)**, en proportion : *« tant d'heures
 | **Au poignet : réserve que donnent ces heures** (h) `carga_pulso_reserva` | 36 | ...et combien de réserve ce temps donne. Avec 8 h et 36 h : chaque heure au poignet ajoute 36 ÷ 8 = **4,5 h** de réserve. |
 | **Sur le remontoir : heures** `carga_winder_horas` | celui du poignet | La même chose, sur le remontoir (la boîte qui fait tourner la montre)... |
 | **Sur le remontoir : réserve que donnent ces heures** (h) `carga_winder_reserva` | celui du poignet | ...et combien de réserve donne ce temps sur le remontoir. Avec 4 h et 40 h : 10 h de réserve par heure sur le remontoir. Vide, c'est la proportion du poignet qui s'applique. |
-| **Sur le remontoir : tours par jour qu'elle demande** (TPD) `winder_tpd` | 650 | Combien de tours par jour le mouvement demande sur le remontoir. Dans une position qui tourne moins, elle en gagne la part (300 sur 600 : la moitié) ; plus, elle ne dépasse pas le plein (voir [Les remontoirs](#os-winders)). |
-| **Se remonte en tournant dans le sens horaire** `corda_horario` et **antihoraire** `corda_anti_horario` | oui | Les sens dans lesquels le rotor remonte. Dans une position qui ne tourne que dans un sens où elle ne se remonte pas, le remontoir ne charge pas. |
+| **Sur le remontoir : tours par jour qu'elle demande** (TPD) `winder_tpd` | 650 | Combien de tours par jour le mouvement demande sur le remontoir. Dans un programme qui fait moins de tours (dans le sens où elle se remonte), elle en gagne la part (300 sur 600 : la moitié) ; plus, ne dépasse pas le plein (voir [Les remontoirs](#os-winders)). |
+| **Se remonte en tournant dans le sens horaire** `corda_horario` et **antihoraire** `corda_anti_horario` | oui | Les sens dans lesquels le rotor remonte. Seuls comptent les tours du programme dans ces sens : dans un programme qui ne tourne que dans le sens où elle ne se remonte pas, le remontoir ne charge pas. |
 
 Comment se fait le calcul, avec les valeurs par défaut (réserve de 40 h, 8 h au poignet donnant 36 h) :
 
@@ -1169,7 +1199,7 @@ usage.
 - **Poignet :** commencez avec la montre arrêtée, portez-la quelques heures et notez combien, retirez-la et notez combien de
   temps elle fonctionne encore. Portée 6 h et elle a fonctionné 24 h de plus ensuite : enregistrez **6** et **24**.
 - **Remontoir :** la même chose, avec la montre arrêtée : X heures sur le remontoir, retirez-la et voyez combien de temps elle
-  fonctionne. Cela dépend de la programmation du remontoir (tours par jour et sens).
+  fonctionne. Cela dépend du programme de la position (les tours par jour dans le sens où elle se remonte).
 
 ### Remontage manuel {#corda-manual}
 
@@ -1281,7 +1311,7 @@ celle du groupe le plus proche de la montre qui s'applique. Toutes se modifient 
 |---|---|
 | `energia` (%) | la charge actuelle, de 0 à 100. **Smartwatch :** elle parcourt l'historique depuis le dernier relevé : le relevé vaut tel quel ; chaque heure au poignet retire la consommation en usage ÷ 15 (les heures d'une journée de port), chaque heure sur le chargeur ajoute 100 ÷ *heures pour remplir*, et le reste du temps retire la consommation éteinte ÷ 24 ; toujours entre 0 et 100. **Mécanique :** la réserve restante ÷ la réserve de marche. **Solaire :** la charge lumineuse (elle baisse dans le noir selon la réserve d'énergie, monte au soleil selon le temps de soleil pour remplir, et au poignet d'une partie de cela (*Au poignet : combien elle se charge*) ; sans aucun soleil marqué, inconnue). **Pile :** ce qui reste de la durée de vie de la pile. |
 | `reserva_restante` (h) | **Mécanique :** la réserve de marche restante. Elle perd 1 heure par heure ; au poignet l'automatique gagne selon les champs *Au poignet* ; sur le remontoir, selon `winder_ganho` de chaque session ; le remontage (et les anciens marquages) la remplit. |
-| `winder_ganho` | **Automatique :** combien de réserve donne chaque heure sur le remontoir. Dans une position : la proportion des champs *Sur le remontoir* fois les tours de la position ÷ ceux qu'elle demande (au plus 1), et 0 si elle ne tourne pas dans un sens où elle se remonte ; hors d'une position, la proportion des champs *Sur le remontoir*. |
+| `winder_ganho` | **Automatique :** combien de réserve donne chaque heure sur le remontoir. Dans une position avec programme : la proportion des champs *Sur le remontoir* fois les tours par jour du programme dans les sens où elle se remonte ÷ ceux qu'elle demande (au plus 1 ; 0 si le programme ne tourne dans aucun de ces sens) ; sans programme ou hors d'une position, la proportion des champs *Sur le remontoir*. |
 | `winder_falta` (h) | **Automatique :** les heures qui restent sur le remontoir pour être pleine (la réserve qui manque ÷ `winder_ganho`) ; vide si elle n'y gagne rien. |
 | `taxa_uso`, `taxa_repouso` (% par jour) | **Smartwatch :** la consommation au poignet et hors du poignet qui s'appliquent : celle mesurée par les relevés, sinon celle de la fiche. |
 | `dias_de_carga` (jours) | **Smartwatch :** combien de jours d'usage tient la charge actuelle. |
@@ -1479,7 +1509,7 @@ basculement se mesure avec les données réelles (un nom long ou une grande vale
 Les **Prochains jours** montrent aussi tous les jours de la programmation sur n'importe quel écran.
 
 **Le menu** regroupe les pages par sujet : **Aujourd'hui**, **Alertes** et **Heure exacte** seuls (ceux de tous les jours) ;
-**Rotation** (Plan, Modes de rotation, Critères de choix), **Collection** (Galerie, Fiche, Accessoires, Remontoirs, Souhaits, Statistiques,
+**Rotation** (Plan, Modes de rotation, Critères de choix), **Collection** (Galerie, Fiche, Accessoires, Remontoirs, Programmes, Mouvements, Souhaits, Statistiques,
 Totaux, Groupes), **Système** (Configuration, Définitions, Exécutions du cron et, seulement pour le master, Utilisateurs) et **Compte**
 (Mon compte, Approbations), chaque groupe avec la petite flèche qui ouvre sa liste d'un clic (un autre clic, un clic à
 l'extérieur ou Échap la ferme) ; et **Aide**. Le groupe de la page ouverte est souligné. Sur le téléphone, le menu replié
@@ -1494,11 +1524,16 @@ et **Indisponible** (gris, hors rotation et rangée) ou **Prêtée** (gris : che
 tous. Dans le panneau, l'état vient avec depuis quand (*« Au soleil depuis 09:12 »*). Tout type de saisie au format session
 que vous enregistrez apparaît ici sous son nom.
 
-**Où se change chaque chose.** En haut de Définitions (dans chaque onglet), Remontoirs, Accessoires, Groupes, Alertes,
-Modes de rotation, Critères de choix et de **Modifier la fiche** de la montre, un cadre qui s'ouvre et se ferme dit, dans un
-tableau, ce qui se change là et ce qui se change sur une autre page, avec le lien vers elle : la valeur d'un champ dans une
-montre, dans Modifier la fiche ; le nom, le type et les valeurs possibles du champ, dans **Définitions › Champs** ; les
-groupes, dans **Collection › Groupes** ; et ainsi de suite. Fermé, il reste fermé sur cet appareil.
+**Les explications.** Ce qui explique une page ne reste pas au milieu d'elle, en poussant les champs : il reste dans un
+**tiroir** qui glisse depuis la droite. Le **ⓘ** à côté d'un libellé ou d'un titre ouvre le tiroir directement sur son
+explication ; le bouton **Explications**, dans le titre de la page, les ouvre toutes. Dans le tiroir, la **recherche** en
+haut filtre les explications, et il se ferme sur le **×**, avec **Échap** ou d'un clic à l'extérieur. Le **Où se change
+chaque chose** des Définitions, des Remontoirs, des Programmes, des Mouvements, des Accessoires, des Groupes, des Alertes, des
+Modes de rotation, des Critères de choix et du **Modifier la fiche** de la montre en fait partie : un tableau qui dit ce qui
+se change là et ce qui se change sur une autre page, avec le lien vers elle (la valeur d'un champ sur une montre, dans
+Modifier la fiche ; le nom, le type et les valeurs possibles du champ, dans **Définitions › Champs** ; les groupes, dans
+**Collection › Groupes** ; et ainsi de suite). Sur Aujourd'hui, le tiroir apporte aussi les explications du panneau de la
+montre ouvert.
 
 **Séparé par le Vaut pour.** Dans **Définitions › Champs**, **Types de saisie** et **Formules**, les lignes sont dans des
 sous-écrans repliables, un par **Vaut pour** : toutes les montres ensemble dans le premier, puis chaque groupe dans l'ordre
@@ -1854,7 +1889,7 @@ Tout ce que marque l'écran, l'API le marque, donc un raccourci sur l'écran d'a
 `relogio_id=hoje` (la montre du jour, sans avoir besoin de connaître son numéro). La réponse apporte le `mensagem` prêt à
 afficher (*« Xiaomi Band 8 : Au poignet depuis 10/12 07:19. »*).
 
-La requête est toujours la même, seuls changent le type (`pulso`, `carregador`, `sol` ; le `winder` ne fait que retirer : mettre sur le remontoir se fait par la page Remontoirs) et la montre :
+La requête est toujours la même, seuls changent le type (`pulso`, `carregador`, `sol` ; le `winder` retire et remet à la place de la montre, si elle est libre : la première mise sur le remontoir se fait par la page Remontoirs) et la montre :
 
 ```text
 POST https://votre-serveur/relojoeiro/api.php

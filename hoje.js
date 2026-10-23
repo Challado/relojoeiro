@@ -64,6 +64,7 @@ function opcoesDoFiltro(nome, itens) {
 // lê a página inteira da API e monta os blocos
 function recarregarHoje() {
   return api({recurso: "hoje", proximos_pagina: paginaProximos}).then(function (d) {
+    ajudaGrupo("pagina", t("Hoje"));
     dadosHoje = d;
     paginaProximos = d.proximos.pagina;
     // o quadro "Hoje": o relógio do dia, até quando, o tipo, o lembrete, e ao lado as informações dele e a foto
@@ -220,7 +221,7 @@ function recarregarHoje() {
       + el("p", {"class": "nota explicacao", "data-sem-selecao": true, "data-explica-tipo": "aleatorio"}, h(SELECOES.aleatorio[1]))
       + el("p", {"class": "nota explicacao", "data-sem-selecao": true, "data-explica-tipo": "personalizado"}, t("O roteiro do modo diz a nota e o peso de cada relógio; mude-o nos Modos de rodízio."))
       + el("div", {"data-garantia": true}, el("label", {"class": "campo-principal"}, t("Garantia de rodízio: dias sem uso, no máximo {1}", {1: el("input", {"type": "number", "name": "max_sem_uso", "min": "0", "max": "365", "value": d.max_sem_uso, "class": "curto"})}))
-        + el("p", {"class": "nota"}, t("Quem passa do limite tem prioridade, o mais tempo parado primeiro. 0 desliga. O mesmo valor vale para todos os modos que usam a nota."))
+        + ajudaNota("garantia", t("A garantia de rodízio"), t("Quem passa do limite tem prioridade, o mais tempo parado primeiro. 0 desliga. O mesmo valor vale para todos os modos que usam a nota."))
         + el("p", {"class": "nota"}, t("A nota vem dos {1}, que você cadastra.", {1: el("a", {"href": "criterios.php"}, t("critérios"))})));
     var formModo = el("form", {"data-recurso": "rodizio"},
       el("input", {"type": "hidden", "name": "acao", "value": "modo"})
@@ -254,7 +255,7 @@ function recarregarHoje() {
       }).join("")) + el("button", {"class": "leve"}, t("Sortear")))
       + el("p", {"class": "nota", "data-explica-sorteio": true}, h(sorteios[0][2]))
       + el("label", {"class": "check"}, el("input", {"type": "checkbox", "name": "sobrescrever", "value": "1"}) + " " + t("Sobrescrever tudo"))
-      + el("p", {"class": "nota"}, t("Marcada, sai tudo o que o plano tem do começo do sorteio em diante: os dias escolhidos à mão, os dias livres e os sorteados; depois o modo monta tudo de novo. Desmarcada, os dias à mão e os livres ficam como estão.")));
+      + ajudaNota("apagar-sorteio", t("Apagar ao sortear de novo"), t("Marcada, sai tudo o que o plano tem do começo do sorteio em diante: os dias escolhidos à mão, os dias livres e os sorteados; depois o modo monta tudo de novo. Desmarcada, os dias à mão e os livres ficam como estão.")));
     // remontado, o quadro volta fechado, como no sistema antigo depois de aplicar
     // o rodízio manual: o período e, depois do OK, os dias dele de 7 em 7 (manualCarregar)
     var formManual = el("form", {"class": "rodizio-manual", "id": "form-manual", "data-so-manual": true, "hidden": true},
@@ -409,7 +410,7 @@ function manualHtml(r) {
     + el("p", {"class": "nota"}, t("Página {1} de {2} · {3}{4}, de {5} a {6}. O que você escolhe fica guardado enquanto você anda pelas páginas; nada muda antes de gravar.", {1: r.pagina, 2: r.paginas, 3: r.total_dias, 4: r.total_dias === 1 ? t(" dia") : t(" dias"), 5: dataBr(r.de), 6: dataBr(r.ate)}))
     + el("div", {"class": "botoes"}, el("button", {"name": "acao", "value": "manual"}, t("Gravar o rodízio manual")))
     + el("p", {"class": "nota"}, h(r.decida_por_mim))
-    + el("p", {"class": "nota"}, t("Para apagar os dias de um período (o modo de rodízio monta esses dias de novo): \"Apagar um período\", embaixo deste quadro, ou na página {1}.", {1: el("a", {"href": "plano.php"}, t("Plano"))}));
+    + ajudaNota("apagar-dias", t("Apagar dias do plano"), t("Para apagar os dias de um período (o modo de rodízio monta esses dias de novo): \"Apagar um período\", embaixo deste quadro, ou na página {1}.", {1: el("a", {"href": "plano.php"}, t("Plano"))}));
 }
 
 document.addEventListener("click", function (ev) {

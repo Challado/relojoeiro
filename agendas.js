@@ -31,7 +31,7 @@ function quadroAgenda(x, d) {
     campos = parCampo(t("Endereço do calendário"), el("input", {"type": "url", "name": "url", "value": x.caldav.url, "required": true, "placeholder": t("https://nuvem.exemplo.com/remote.php/dav/calendars/voce/relogios/")}), "largo")
       + parCampo(t("Usuário"), el("input", semPreencher({"name": "usuario", "value": x.caldav.usuario, "required": true})))
       + parCampo(t("Senha"), el("input", semPreencher({"type": "password", "name": "senha", "placeholder": x.caldav.senha_preenchida ? t("(guardada; vazio mantém)") : ""})))
-      + el("p", {"class": "nota"}, t("Nextcloud: Calendário › ⋯ › Copiar o link CalDAV. iCloud: o endereço do calendário em caldav.icloud.com e uma senha de app (appleid.apple.com › Senhas de app). Fastmail: caldav.fastmail.com, com uma senha de app."));
+      + ajudaNota("caldav", t("Como achar o endereço CalDAV"), t("Nextcloud: Calendário › ⋯ › Copiar o link CalDAV. iCloud: o endereço do calendário em caldav.icloud.com e uma senha de app (appleid.apple.com › Senhas de app). Fastmail: caldav.fastmail.com, com uma senha de app."));
   } else if (x.tipo === "outlook") {
     campos = parCampo(t("Conta Microsoft"), el("span", {}, x.outlook.conectada ? h(x.outlook.conta || t("conectada")) : t("não conectada")))
       + parCampo(t("Calendário (o id; vazio: o principal)"), el("input", {"name": "calendario_id", "value": x.outlook.calendario_id || ""}), "largo")
@@ -39,7 +39,7 @@ function quadroAgenda(x, d) {
         : el("p", {"class": "alerta-cron"}, t("O Outlook não está configurado no servidor (OUTLOOK_CLIENTE_ID e OUTLOOK_CLIENTE_SEGREDO no config.php). Sem isso, use um link ICS: o Outlook assina o link e mostra os eventos.")));
   } else {
     campos = parCampo(t("Link para assinar"), el("input", {"value": x.ics.link || "", "readonly": true, "class": "copiar", "onclick": "this.select()"}), "largo")
-      + el("p", {"class": "nota"}, t("Google Agenda: Outras agendas › + › Do URL. Outlook: Adicionar calendário › Assinar da Web. iPhone: Ajustes › Calendário › Contas › Adicionar › Outra › Calendário assinado. Quem tem o link vê os eventos: trocar o link desliga o de antes."));
+      + ajudaNota("ics", t("Como assinar o link ICS"), t("Google Agenda: Outras agendas › + › Do URL. Outlook: Adicionar calendário › Assinar da Web. iPhone: Ajustes › Calendário › Contas › Adicionar › Outra › Calendário assinado. Quem tem o link vê os eventos: trocar o link desliga o de antes."));
   }
   var idm = "amodelo-" + id;
   var form = el("form", {"data-recurso": "agendas"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": id})
@@ -76,7 +76,7 @@ function carregarAgendas() {
       recadoAgendas = "";
       history.replaceState(null, "", "agendas.php" + window.location.hash);
     }
-    res += el("p", {"class": "nota"}, t("Os avisos, o relógio do dia, a véspera e os eventos viram eventos de agenda, no horário da manhã do dia previsto. O cron sincroniza de manhã e à noite; o link ICS o app de agenda lê quando quiser."));
+    res += ajudaNota("o-que-vai", t("O que vai para a agenda"), t("Os avisos, o relógio do dia, a véspera e os eventos viram eventos de agenda, no horário da manhã do dia previsto. O cron sincroniza de manhã e à noite; o link ICS o app de agenda lê quando quiser."));
     res += d.agendas.map(function (x) { return quadroAgenda(x, d); }).join("");
     res += el("section", {"class": "cartao-config", "id": "nova"}, el("h2", {}, t("Nova agenda"))
       + el("form", {"data-recurso": "agendas", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": "0"})

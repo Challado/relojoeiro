@@ -21,7 +21,7 @@ function recarregarGrupos() {
     if (errosGrupos.length > 0) {
       res += el("div", {"class": "erros-form"}, el("strong", {}, t("Não foi salvo:")) + errosGrupos.map(function (e) { return el("p", {}, h(e)); }).join(""));
     }
-    res += el("p", {"class": "nota"}, t("Uma árvore sem limite de níveis. Cada relógio fica num grupo só. Cada grupo pode ter os seus próprios {1}; o relógio usa os do lugar mais perto dele (os dele, os do grupo dele, os do grupo de cima... ou os de todos). O mesmo nome pode se repetir em ramos diferentes. Os campos, os tipos de lançamento, as fórmulas e os avisos de cada grupo ficam em {2}.", {1: el("a", {"href": "criterios.php"}, t("critérios")), 2: el("a", {"href": "cadastros.php"}, t("Cadastros"))}));
+    res += ajudaNota("grupos", t("Os grupos"), t("Uma árvore sem limite de níveis. Cada relógio fica num grupo só. Cada grupo pode ter os seus próprios {1}; o relógio usa os do lugar mais perto dele (os dele, os do grupo dele, os do grupo de cima... ou os de todos). O mesmo nome pode se repetir em ramos diferentes. Os campos, os tipos de lançamento, as fórmulas e os avisos de cada grupo ficam em {2}.", {1: el("a", {"href": "criterios.php"}, t("critérios")), 2: el("a", {"href": "cadastros.php"}, t("Cadastros"))}));
     var arvore = d.grupos.map(function (x) {
       var rel = x.relogios.length;
       var cima = x.pai_id !== null ? g[x.pai_id].caminho : t("a raiz");

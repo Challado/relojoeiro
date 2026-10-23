@@ -1055,8 +1055,7 @@
  *     winders[].posicoes[].nome      o nome ("Pos. 1")
  *     winders[].posicoes[].ordem     a ordem dela no winder
  *     winders[].posicoes[].ligada    verdadeiro: recebe relógio; falso: desligada
- *     winders[].posicoes[].dados     o programa: os campos da posição com valor (Cadastros › Campos, para a posição do winder), como em
- *                                    dados
+ *     winders[].posicoes[].dados     os campos livres da posição com valor (Cadastros › Campos, para a posição do winder), como em dados
  *     winders[].posicoes[].dados[]   um campo
  *     winders[].posicoes[].dados[].identificador
  *                                    o identificador do campo (o nome em valores[<identificador>] da gravação e em
@@ -1066,12 +1065,26 @@
  *     winders[].posicoes[].dados[].valor
  *                                    o valor (texto normalizado: número com ponto; o múltiplo, um por linha)
  *     winders[].posicoes[].dados[].texto
- *                                    o valor para mostrar, no idioma, com a unidade ("650 TPD")
+ *                                    o valor para mostrar, no idioma, com a unidade
  *     winders[].posicoes[].dados[].origem
  *                                    informado (gravado na posição) ou padrao (o padrão do campo)
  *     winders[].posicoes[].dados[].origem_texto
  *                                    a origem por extenso
- *     winders[].posicoes[].programa  o programa em texto ("Rotações por dia: 650 TPD · Gira no sentido horário: sim")
+ *     winders[].posicoes[].programa  o programa da posição (o da página Programas); null: sem programa (a conta no winder usa a carga cheia
+ *                                    por hora)
+ *     winders[].posicoes[].programa.id
+ *                                    o número do programa (o programa_id do winder_posicoes salvar)
+ *     winders[].posicoes[].programa.nome
+ *                                    o nome ("Versa 650")
+ *     winders[].posicoes[].programa.texto
+ *                                    o cálculo por extenso ("650 voltas por dia (325 horário + 325 anti-horário) · ciclo de 20 min, 72
+ *                                    vezes por dia")
+ *     winders[].posicoes[].programa.voltas_dia
+ *                                    as voltas por dia, calculadas da sequência
+ *     winders[].posicoes[].programa.voltas_horario
+ *                                    as voltas por dia no sentido horário
+ *     winders[].posicoes[].programa.voltas_anti_horario
+ *                                    as voltas por dia no sentido anti-horário
  *     winders[].posicoes[].relogio   o relógio que está nela agora (a sessão no winder aberta, ligada a ela); null: livre
  *     winders[].posicoes[].relogio.relogio_id
  *                                    o número do relógio
@@ -1100,8 +1113,139 @@
  *     winders[].posicoes[].relogio.foto
  *                                    a versão da foto do relógio (o instante em que foi trocada, em segundos;
  *                                    recurso=foto&relogio=<id>&v=<versão>), a figurinha do desenho do winder; null: sem foto
+ *     winders[].posicoes[].lugar     o lugar fixo: de quem é a posição (o relógio que foi posto nela por último; pôr no winder de qualquer
+ *                                    lugar o devolve para cá); null: de ninguém
+ *     winders[].posicoes[].lugar.relogio_id
+ *                                    o número do relógio dono do lugar
+ *     winders[].posicoes[].lugar.relogio
+ *                                    o nome dele
+ *     winders[].posicoes[].lugar.fora
+ *                                    verdadeiro: ele não está nela agora (o berço mostra a foto dele apagada, com o aro vermelho, e os
+ *                                    botões Pôr de volta e Liberar o lugar)
+ *     winders[].posicoes[].lugar.estado_texto
+ *                                    onde ele está, fora ("fora: no pulso", "fora: guardado"); null: está nela
+ *     winders[].posicoes[].lugar.foto
+ *                                    a versão da foto do dono (como em relogio.foto); null: sem foto
+ *     winders[].posicoes[].avisos_limite
+ *                                    os avisos de limite da almofada do relógio que está nela (ou, vazia, do dono do lugar): a caixa ou o
+ *                                    peso dele passa do que o winder aguenta (os campos winder_caixa_max e winder_peso_max); o dispensado
+ *                                    com winders limite_ok não volta
+ *     winders[].posicoes[].avisos_limite[]
+ *                                    um aviso
+ *     winders[].posicoes[].avisos_limite[].relogio_id
+ *                                    o relógio do aviso (o relogio_id do limite_ok)
+ *     winders[].posicoes[].avisos_limite[].texto
+ *                                    o aviso por extenso ("O Steeldive tem 49 mm de caixa, e esta almofada vai até 42 mm.")
  *     winders[].ocupadas             quantas posições têm relógio agora
  *     winders[].livres               quantas posições ligadas estão sem relógio
+ *     winders[].documentos           quantos documentos o winder tem (o manual, a nota, as fotos: recurso=documentos&winder=<id>)
+ *     winder_programas               os programas dos winders (como em recurso=programas, programas)
+ *     winder_programas[]             um programa
+ *     winder_programas[].id          o número do programa
+ *     winder_programas[].nome        o nome ("Versa 650")
+ *     winder_programas[].medida      o tipo de cadastro: voltas (os giros em voltas) ou tempo (os giros em minutos e segundos)
+ *     winder_programas[].medida_texto
+ *                                    o tipo por extenso ("Por tempo")
+ *     winder_programas[].velocidade  a velocidade do berço contada, em voltas por minuto; null: tirada do manual (tpd_manual) ou sem
+ *     winder_programas[].tpd_manual  as voltas por dia que o manual diz, de onde a velocidade sai; null: a velocidade é a contada (ou não
+ *                                    há)
+ *     winder_programas[].liga_horas  as horas ligado de cada bloco; null: o dia todo
+ *     winder_programas[].para_horas  as horas parado de cada bloco; null: o dia todo
+ *     winder_programas[].funciona_texto
+ *                                    quando funciona por extenso ("o dia todo", "liga 3 h e para 9 h")
+ *     winder_programas[].observacao  a observação (null)
+ *     winder_programas[].sequencia   os códigos dos movimentos, na ordem (o sequencia do salvar)
+ *     winder_programas[].sequencia[] o código de um movimento (o id em movimentos)
+ *     winder_programas[].calculo     o cálculo do programa (tudo o que a página mostra e ninguém digita)
+ *     winder_programas[].calculo.passos
+ *                                    os passos da sequência, na ordem
+ *     winder_programas[].calculo.passos[]
+ *                                    um passo
+ *     winder_programas[].calculo.passos[].ordem
+ *                                    a ordem dele (1, 2...)
+ *     winder_programas[].calculo.passos[].movimento_id
+ *                                    o código do movimento
+ *     winder_programas[].calculo.passos[].nome
+ *                                    o nome do movimento
+ *     winder_programas[].calculo.passos[].tipo
+ *                                    horario, anti_horario ou parado
+ *     winder_programas[].calculo.passos[].tipo_texto
+ *                                    o tipo por extenso ("Giro horário")
+ *     winder_programas[].calculo.passos[].voltas
+ *                                    as voltas do passo (0 na parada); null: sem velocidade para calcular
+ *     winder_programas[].calculo.passos[].segundos
+ *                                    quanto tempo o passo dura, em segundos; null: sem velocidade para calcular
+ *     winder_programas[].calculo.passos[].voltas_texto
+ *                                    as voltas por extenso ("10 voltas")
+ *     winder_programas[].calculo.passos[].tempo_texto
+ *                                    o tempo por extenso ("2 min")
+ *     winder_programas[].calculo.passos[].voltas_calculadas
+ *                                    verdadeiro: as voltas saíram da conta (tempo × velocidade), não do movimento
+ *     winder_programas[].calculo.passos[].tempo_calculado
+ *                                    verdadeiro: o tempo saiu da conta (voltas ÷ velocidade), não do movimento
+ *     winder_programas[].calculo.velocidade
+ *                                    a velocidade usada, em voltas por minuto; null: sem
+ *     winder_programas[].calculo.velocidade_origem
+ *                                    de onde ela vem: contada (a informada) ou manual (tirada das voltas por dia do manual); null: sem
+ *     winder_programas[].calculo.velocidade_texto
+ *                                    a velocidade por extenso ("4,51 voltas por minuto (tirada das voltas por dia do manual)"); null: sem
+ *     winder_programas[].calculo.minutos_ligado_dia
+ *                                    os minutos ligado por dia (1440 o dia todo; nos blocos, a parte ligada)
+ *     winder_programas[].calculo.ciclo_segundos
+ *                                    quanto a sequência inteira dura, em segundos; null: sem conta
+ *     winder_programas[].calculo.ciclo_texto
+ *                                    o ciclo por extenso ("20 min")
+ *     winder_programas[].calculo.vezes_dia
+ *                                    quantas vezes a sequência roda por dia (os minutos ligado ÷ o ciclo)
+ *     winder_programas[].calculo.minutos_girando_dia
+ *                                    os minutos girando por dia (as paradas não contam)
+ *     winder_programas[].calculo.girando_texto
+ *                                    o tempo girando por extenso ("2 h 24 min")
+ *     winder_programas[].calculo.voltas_dia
+ *                                    as voltas por dia (o TPD), calculadas: as voltas de um ciclo × as vezes por dia; null: sem conta
+ *     winder_programas[].calculo.voltas_horario
+ *                                    as voltas por dia no sentido horário (a carga de quem dá corda nesse sentido)
+ *     winder_programas[].calculo.voltas_anti_horario
+ *                                    as voltas por dia no sentido anti-horário
+ *     winder_programas[].calculo.voltas_texto
+ *                                    as voltas por extenso ("1.800 (900 horário + 900 anti-horário)")
+ *     winder_programas[].calculo.erros
+ *                                    o que impede a conta (a sequência vazia ou só com paradas, um giro em voltas num programa por tempo,
+ *                                    as voltas do manual que as paradas não deixam dar...); vazio: fecha
+ *     winder_programas[].calculo.erros[]
+ *                                    um erro, por extenso
+ *     winder_programas[].calculo.avisos
+ *                                    o que vale conferir (sem a velocidade do berço, sem as voltas por dia; voltas por dia demais para um
+ *                                    automático...)
+ *     winder_programas[].calculo.avisos[]
+ *                                    um aviso, por extenso
+ *     winder_programas[].calculo.texto
+ *                                    o resumo por extenso ("650 voltas por dia (só no sentido anti-horário) · ciclo de 20 min, 72 vezes por
+ *                                    dia")
+ *     winder_programas[].usado_em    as posições que usam o programa
+ *     winder_programas[].usado_em[]  uma posição
+ *     winder_programas[].usado_em[].posicao_id
+ *                                    o número da posição
+ *     winder_programas[].usado_em[].texto
+ *                                    o winder e a posição por extenso ("Versa, Pos. 1")
+ *     winder_movimentos              os movimentos dos programas (como em recurso=programas, movimentos)
+ *     winder_movimentos[]            um movimento
+ *     winder_movimentos[].id         o código do movimento (o que a sequência do programa usa)
+ *     winder_movimentos[].nome       o nome ("Giro horário 2 min")
+ *     winder_movimentos[].tipo       horario, anti_horario ou parado
+ *     winder_movimentos[].tipo_texto o tipo por extenso
+ *     winder_movimentos[].voltas     as voltas do giro; null: medido em tempo (ou a parada)
+ *     winder_movimentos[].segundos   o tempo, em segundos; null: medido em voltas
+ *     winder_movimentos[].medida     voltas ou tempo: como ele é medido
+ *     winder_movimentos[].medida_texto
+ *                                    a medida por extenso ("2 min", "10 voltas")
+ *     winder_movimentos[].texto      o movimento por extenso ("Giro horário: 2 min")
+ *     winder_movimentos[].usado_em   os programas que o usam
+ *     winder_movimentos[].usado_em[] um programa
+ *     winder_movimentos[].usado_em[].programa_id
+ *                                    o número do programa
+ *     winder_movimentos[].usado_em[].nome
+ *                                    o nome dele
  *     acessorios[].id                o número do acessório
  *     acessorios[].nome              o nome
  *     acessorios[].tipo              pulseira, caixa, estojo, ferramenta, carregador, peca ou outro
@@ -1587,6 +1731,8 @@
  *                                    o relógio dele
  *     relogios[].documentos[].calibre_id
  *                                    null (os documentos dos calibres saem em recurso=documentos, calibre=)
+ *     relogios[].documentos[].winder_id
+ *                                    null (os documentos dos winders saem em recurso=documentos, winder=)
  *     relogios[].documentos[].tamanho
  *                                    o tamanho do arquivo, em bytes (número inteiro)
  *     relogios[].documentos[].tipo   o tipo do arquivo (MIME): image/jpeg, video/mp4, application/pdf, application/xml...
@@ -2112,6 +2258,13 @@
  *     relogio.winder_cadastrado      true: a coleção tem winder (o pôr no winder é só pela página Winders, e o período que já passou no
  *                                    winder pede a posição); false: sem winder, não há pôr nem tirar do winder (só o tirar de uma sessão
  *                                    que já estava aberta)
+ *     relogio.winder_lugar           o lugar fixo dele num winder (a posição em que foi posto por último): pôr no winder daqui o devolve
+ *                                    para lá, se está livre; null: sem lugar ou sem winder cadastrado
+ *     relogio.winder_lugar.posicao_id
+ *                                    a posição
+ *     relogio.winder_lugar.texto     o winder e a posição por extenso ("Versa, Pos. 2")
+ *     relogio.winder_lugar.livre     verdadeiro: a posição está ligada e sem outro relógio (o botão do painel o põe de volta)
+ *     relogio.winder_lugar.motivo    por que não dá ("o lugar dele (Versa, Pos. 2) está com o Seiko 5"); null: livre
  *     relogio.winder_posicoes        todas as posições de winder, para o período que já passou no winder (a posição onde ele esteve); vazio
  *                                    sem winder cadastrado ou sem um tipo marcado como winder
  *     relogio.winder_posicoes[]      uma posição livre
@@ -2121,7 +2274,8 @@
  *     relogio.winder_posicoes[].texto
  *                                    o winder e a posição por extenso ("Escritório, Pos. 1")
  *     relogio.winder_posicoes[].programa
- *                                    o programa da posição em texto ("Rotações por dia: 650 TPD · Gira no sentido horário: sim")
+ *                                    o programa da posição, o nome e o cálculo ("Versa 650 · 650 voltas por dia (325 horário + 325
+ *                                    anti-horário) · ciclo de 20 min, 72 vezes por dia"); null: sem programa
  *     relogio.acessorios_servem[]    um acessório que serve
  *     relogio.acessorios_servem[].id o número do acessório
  *     relogio.acessorios_servem[].nome
@@ -4108,8 +4262,7 @@
  *     winders[].posicoes[].nome      o nome ("Pos. 1")
  *     winders[].posicoes[].ordem     a ordem dela no winder
  *     winders[].posicoes[].ligada    verdadeiro: recebe relógio; falso: desligada
- *     winders[].posicoes[].dados     o programa: os campos da posição com valor (Cadastros › Campos, para a posição do winder), como em
- *                                    dados
+ *     winders[].posicoes[].dados     os campos livres da posição com valor (Cadastros › Campos, para a posição do winder), como em dados
  *     winders[].posicoes[].dados[]   um campo
  *     winders[].posicoes[].dados[].identificador
  *                                    o identificador do campo (o nome em valores[<identificador>] da gravação e em
@@ -4119,12 +4272,26 @@
  *     winders[].posicoes[].dados[].valor
  *                                    o valor (texto normalizado: número com ponto; o múltiplo, um por linha)
  *     winders[].posicoes[].dados[].texto
- *                                    o valor para mostrar, no idioma, com a unidade ("650 TPD")
+ *                                    o valor para mostrar, no idioma, com a unidade
  *     winders[].posicoes[].dados[].origem
  *                                    informado (gravado na posição) ou padrao (o padrão do campo)
  *     winders[].posicoes[].dados[].origem_texto
  *                                    a origem por extenso
- *     winders[].posicoes[].programa  o programa em texto ("Rotações por dia: 650 TPD · Gira no sentido horário: sim")
+ *     winders[].posicoes[].programa  o programa da posição (o da página Programas); null: sem programa (a conta no winder usa a carga cheia
+ *                                    por hora)
+ *     winders[].posicoes[].programa.id
+ *                                    o número do programa (o programa_id do winder_posicoes salvar)
+ *     winders[].posicoes[].programa.nome
+ *                                    o nome ("Versa 650")
+ *     winders[].posicoes[].programa.texto
+ *                                    o cálculo por extenso ("650 voltas por dia (325 horário + 325 anti-horário) · ciclo de 20 min, 72
+ *                                    vezes por dia")
+ *     winders[].posicoes[].programa.voltas_dia
+ *                                    as voltas por dia, calculadas da sequência
+ *     winders[].posicoes[].programa.voltas_horario
+ *                                    as voltas por dia no sentido horário
+ *     winders[].posicoes[].programa.voltas_anti_horario
+ *                                    as voltas por dia no sentido anti-horário
  *     winders[].posicoes[].relogio   o relógio que está nela agora (a sessão no winder aberta, ligada a ela); null: livre
  *     winders[].posicoes[].relogio.relogio_id
  *                                    o número do relógio
@@ -4153,8 +4320,32 @@
  *     winders[].posicoes[].relogio.foto
  *                                    a versão da foto do relógio (o instante em que foi trocada, em segundos;
  *                                    recurso=foto&relogio=<id>&v=<versão>), a figurinha do desenho do winder; null: sem foto
+ *     winders[].posicoes[].lugar     o lugar fixo: de quem é a posição (o relógio que foi posto nela por último; pôr no winder de qualquer
+ *                                    lugar o devolve para cá); null: de ninguém
+ *     winders[].posicoes[].lugar.relogio_id
+ *                                    o número do relógio dono do lugar
+ *     winders[].posicoes[].lugar.relogio
+ *                                    o nome dele
+ *     winders[].posicoes[].lugar.fora
+ *                                    verdadeiro: ele não está nela agora (o berço mostra a foto dele apagada, com o aro vermelho, e os
+ *                                    botões Pôr de volta e Liberar o lugar)
+ *     winders[].posicoes[].lugar.estado_texto
+ *                                    onde ele está, fora ("fora: no pulso", "fora: guardado"); null: está nela
+ *     winders[].posicoes[].lugar.foto
+ *                                    a versão da foto do dono (como em relogio.foto); null: sem foto
+ *     winders[].posicoes[].avisos_limite
+ *                                    os avisos de limite da almofada do relógio que está nela (ou, vazia, do dono do lugar): a caixa ou o
+ *                                    peso dele passa do que o winder aguenta (os campos winder_caixa_max e winder_peso_max); o dispensado
+ *                                    com winders limite_ok não volta
+ *     winders[].posicoes[].avisos_limite[]
+ *                                    um aviso
+ *     winders[].posicoes[].avisos_limite[].relogio_id
+ *                                    o relógio do aviso (o relogio_id do limite_ok)
+ *     winders[].posicoes[].avisos_limite[].texto
+ *                                    o aviso por extenso ("O Steeldive tem 49 mm de caixa, e esta almofada vai até 42 mm.")
  *     winders[].ocupadas             quantas posições têm relógio agora
  *     winders[].livres               quantas posições ligadas estão sem relógio
+ *     winders[].documentos           quantos documentos o winder tem (o manual, a nota, as fotos: recurso=documentos&winder=<id>)
  *     campos_winder                  os campos dos winders (Cadastros › Campos, para o winder), na ordem: o formulário do winder
  *     campos_winder[]                um campo
  *     campos_winder[].identificador  o identificador (o nome em valores[<identificador>] da gravação)
@@ -4192,6 +4383,116 @@
  *                                    sessão aberta antes de os winders serem cadastrados)
  *     relogios[].posicao_id          a posição em que ele está agora; null: fora de um winder
  *     relogios[].posicao             essa posição por extenso ("Escritório, Pos. 1"); null: fora de um winder
+ *     programas                      os programas para escolher em cada posição (a página Programas), pelo nome
+ *     programas[]                    um programa
+ *     programas[].id                 o número (o programa_id do winder_posicoes salvar)
+ *     programas[].nome               o nome
+ *     programas[].texto              o cálculo por extenso (as voltas por dia, o ciclo e as vezes por dia)
+ *   recurso=programas
+ *     programas                      os programas dos winders, pelo nome
+ *     programas[]                    um programa
+ *     programas[].id                 o número do programa
+ *     programas[].nome               o nome ("Versa 650")
+ *     programas[].medida             o tipo de cadastro: voltas (os giros em voltas) ou tempo (os giros em minutos e segundos)
+ *     programas[].medida_texto       o tipo por extenso ("Por tempo")
+ *     programas[].velocidade         a velocidade do berço contada, em voltas por minuto; null: tirada do manual (tpd_manual) ou sem
+ *     programas[].tpd_manual         as voltas por dia que o manual diz, de onde a velocidade sai; null: a velocidade é a contada (ou não
+ *                                    há)
+ *     programas[].liga_horas         as horas ligado de cada bloco; null: o dia todo
+ *     programas[].para_horas         as horas parado de cada bloco; null: o dia todo
+ *     programas[].funciona_texto     quando funciona por extenso ("o dia todo", "liga 3 h e para 9 h")
+ *     programas[].observacao         a observação (null)
+ *     programas[].sequencia          os códigos dos movimentos, na ordem (o sequencia do salvar)
+ *     programas[].sequencia[]        o código de um movimento (o id em movimentos)
+ *     programas[].calculo            o cálculo do programa (tudo o que a página mostra e ninguém digita)
+ *     programas[].calculo.passos     os passos da sequência, na ordem
+ *     programas[].calculo.passos[]   um passo
+ *     programas[].calculo.passos[].ordem
+ *                                    a ordem dele (1, 2...)
+ *     programas[].calculo.passos[].movimento_id
+ *                                    o código do movimento
+ *     programas[].calculo.passos[].nome
+ *                                    o nome do movimento
+ *     programas[].calculo.passos[].tipo
+ *                                    horario, anti_horario ou parado
+ *     programas[].calculo.passos[].tipo_texto
+ *                                    o tipo por extenso ("Giro horário")
+ *     programas[].calculo.passos[].voltas
+ *                                    as voltas do passo (0 na parada); null: sem velocidade para calcular
+ *     programas[].calculo.passos[].segundos
+ *                                    quanto tempo o passo dura, em segundos; null: sem velocidade para calcular
+ *     programas[].calculo.passos[].voltas_texto
+ *                                    as voltas por extenso ("10 voltas")
+ *     programas[].calculo.passos[].tempo_texto
+ *                                    o tempo por extenso ("2 min")
+ *     programas[].calculo.passos[].voltas_calculadas
+ *                                    verdadeiro: as voltas saíram da conta (tempo × velocidade), não do movimento
+ *     programas[].calculo.passos[].tempo_calculado
+ *                                    verdadeiro: o tempo saiu da conta (voltas ÷ velocidade), não do movimento
+ *     programas[].calculo.velocidade a velocidade usada, em voltas por minuto; null: sem
+ *     programas[].calculo.velocidade_origem
+ *                                    de onde ela vem: contada (a informada) ou manual (tirada das voltas por dia do manual); null: sem
+ *     programas[].calculo.velocidade_texto
+ *                                    a velocidade por extenso ("4,51 voltas por minuto (tirada das voltas por dia do manual)"); null: sem
+ *     programas[].calculo.minutos_ligado_dia
+ *                                    os minutos ligado por dia (1440 o dia todo; nos blocos, a parte ligada)
+ *     programas[].calculo.ciclo_segundos
+ *                                    quanto a sequência inteira dura, em segundos; null: sem conta
+ *     programas[].calculo.ciclo_texto
+ *                                    o ciclo por extenso ("20 min")
+ *     programas[].calculo.vezes_dia  quantas vezes a sequência roda por dia (os minutos ligado ÷ o ciclo)
+ *     programas[].calculo.minutos_girando_dia
+ *                                    os minutos girando por dia (as paradas não contam)
+ *     programas[].calculo.girando_texto
+ *                                    o tempo girando por extenso ("2 h 24 min")
+ *     programas[].calculo.voltas_dia as voltas por dia (o TPD), calculadas: as voltas de um ciclo × as vezes por dia; null: sem conta
+ *     programas[].calculo.voltas_horario
+ *                                    as voltas por dia no sentido horário (a carga de quem dá corda nesse sentido)
+ *     programas[].calculo.voltas_anti_horario
+ *                                    as voltas por dia no sentido anti-horário
+ *     programas[].calculo.voltas_texto
+ *                                    as voltas por extenso ("1.800 (900 horário + 900 anti-horário)")
+ *     programas[].calculo.erros      o que impede a conta (a sequência vazia ou só com paradas, um giro em voltas num programa por tempo,
+ *                                    as voltas do manual que as paradas não deixam dar...); vazio: fecha
+ *     programas[].calculo.erros[]    um erro, por extenso
+ *     programas[].calculo.avisos     o que vale conferir (sem a velocidade do berço, sem as voltas por dia; voltas por dia demais para um
+ *                                    automático...)
+ *     programas[].calculo.avisos[]   um aviso, por extenso
+ *     programas[].calculo.texto      o resumo por extenso ("650 voltas por dia (só no sentido anti-horário) · ciclo de 20 min, 72 vezes por
+ *                                    dia")
+ *     programas[].usado_em           as posições que usam o programa
+ *     programas[].usado_em[]         uma posição
+ *     programas[].usado_em[].posicao_id
+ *                                    o número da posição
+ *     programas[].usado_em[].texto   o winder e a posição por extenso ("Versa, Pos. 1")
+ *     movimentos                     os movimentos (a página Movimentos), os giros horários, os anti-horários e as paradas
+ *     movimentos[]                   um movimento
+ *     movimentos[].id                o código do movimento (o que a sequência do programa usa)
+ *     movimentos[].nome              o nome ("Giro horário 2 min")
+ *     movimentos[].tipo              horario, anti_horario ou parado
+ *     movimentos[].tipo_texto        o tipo por extenso
+ *     movimentos[].voltas            as voltas do giro; null: medido em tempo (ou a parada)
+ *     movimentos[].segundos          o tempo, em segundos; null: medido em voltas
+ *     movimentos[].medida            voltas ou tempo: como ele é medido
+ *     movimentos[].medida_texto      a medida por extenso ("2 min", "10 voltas")
+ *     movimentos[].texto             o movimento por extenso ("Giro horário: 2 min")
+ *     movimentos[].usado_em          os programas que o usam
+ *     movimentos[].usado_em[]        um programa
+ *     movimentos[].usado_em[].programa_id
+ *                                    o número do programa
+ *     movimentos[].usado_em[].nome   o nome dele
+ *     tipos                          os tipos de movimento, na ordem
+ *     tipos[]                        um tipo
+ *     tipos[].valor                  horario, anti_horario ou parado (o tipo do movimentos salvar)
+ *     tipos[].nome                   o nome por extenso
+ *     medidas                        os tipos de cadastro do programa
+ *     medidas[]                      um tipo
+ *     medidas[].valor                voltas ou tempo (a medida do programas salvar)
+ *     medidas[].nome                 o nome por extenso ("Por voltas")
+ *     calculo                        com previa=1: o cálculo do programa do pedido, como em programas[].calculo (os erros do pedido entram
+ *                                    em erros)
+ *     sequencia                      com previa=1: os códigos dos movimentos da sequência do pedido, na ordem
+ *     sequencia[]                    o código de um movimento
  *   recurso=servicos
  *     servicos                       os serviços (de um relógio, ou de todos), do mais novo para o mais velho
  *     servicos[]                     um serviço
@@ -5545,6 +5846,14 @@
  *     calibres[].id                  o número do calibre
  *     calibres[].nome                o nome do calibre
  *     calibres[].documentos          quantos documentos ele tem
+ *     winder                         o winder pedido (winder=): {id, nome}; null: sem
+ *     winder.id                      o número do winder
+ *     winder.nome                    o nome do winder
+ *     winders                        os winders da coleção, pelo nome (para escolher os documentos de um)
+ *     winders[]                      um winder: {id, nome, documentos}
+ *     winders[].id                   o número do winder
+ *     winders[].nome                 o nome do winder
+ *     winders[].documentos           quantos documentos ele tem
  *     do_calibre                     com relogio: o calibre dele e os documentos do calibre, que valem para ele: {id, nome, documentos
  *                                    (como em documentos)}; null: o relógio não tem calibre
  *     do_calibre.id                  o número do calibre
@@ -5593,7 +5902,9 @@
  *     documentos[].copia_por         quem pede a cópia no banco: sistema (a Configuração da coleção, documentos_copia = todos), relogio (a
  *                                    marca do relógio) ou arquivo (a marca do próprio arquivo); null: ninguém
  *     documentos[].relogio_id        o relógio dele
- *     documentos[].calibre_id        o calibre dele (os documentos do calibre); null nos de relógio
+ *     documentos[].calibre_id        o calibre dele (os documentos do calibre); null nos de relógio e nos de winder
+ *     documentos[].winder_id         o winder dele (os documentos do winder: o manual, a nota, as fotos); null nos de relógio e nos de
+ *                                    calibre
  *     documentos[].tamanho           o tamanho do arquivo, em bytes (número inteiro)
  *     documentos[].tipo              o tipo do arquivo (MIME): image/jpeg, video/mp4, application/pdf, application/xml...
  *     documentos[].titulo            o título
@@ -6177,9 +6488,9 @@ if ($recurso === "textos") {
         "soltos" => count(array_filter($lista_a, function ($a) { return $a["relogio_id"] === null; })),
         "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "posse" => posse_de($r)]; }, linhas("SELECT * FROM relogio ORDER BY nome"))];
 } elseif ($recurso === "winders") {
-    // os winders da coleção (a página Winders): cada um com as posições, o programa delas e o relógio que está em cada uma, os
-    // campos do winder e da posição (o formulário) e os relógios que podem ir para um winder (os que têm um tipo de lançamento
-    // marcado como winder: o Pôr no winder da página)
+    // os winders da coleção (a página Winders): cada um com as posições, o programa delas, o relógio que está em cada uma e o
+    // lugar fixo, os campos do winder e da posição (o formulário), os relógios que podem ir para um winder (os que têm um
+    // tipo de lançamento marcado como winder: o Pôr no winder da página) e os programas (o menu da posição)
     $agora_w = time();
     $no_winder = [];
     foreach (linhas("SELECT l.relogio_id, lw.posicao_id FROM lancamento_winder lw JOIN lancamento l ON l.id = lw.lancamento_id WHERE l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?)",
@@ -6199,7 +6510,9 @@ if ($recurso === "textos") {
         }
     }
     $saida = ["winders" => winders_lista($agora_w), "campos_winder" => winder_campos_formulario(campos_de_winder()), "campos_posicao" => winder_campos_formulario(campos_de_posicao()),
-        "relogios" => $rel_w];
+        "relogios" => $rel_w, "programas" => array_map(function ($p) { return ["id" => $p["id"], "nome" => $p["nome"], "texto" => $p["calculo"]["texto"]]; }, winder_programas_lista())];
+} elseif ($recurso === "programas") {
+    require __DIR__ . "/api/programas.php";
 } elseif ($recurso === "proximos") {
     // os Próximos dias da página Hoje, uma página (a troca de página não relê a página Hoje inteira)
     $saida = plano_pagina(date("Y-m-d"), "", null, (int)($_REQUEST["pagina"] ?? 1),
@@ -6312,7 +6625,7 @@ if ($recurso === "textos") {
 } else {
     $codigo = 404;
     $saida = ["erro" => t("recurso desconhecido"), "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "unidades", "servicos", "reserva", "timegrapher", "relatorios", "hora_certa", "acessorios", "winders", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "unidades", "servicos", "reserva", "timegrapher", "relatorios", "hora_certa", "acessorios", "winders", "programas", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

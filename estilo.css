@@ -161,7 +161,7 @@ fieldset label, .cadastro label { display: flex; flex-direction: column; gap: .2
 .cadastro { display: grid; gap: .9rem; max-width: 28rem; }
 /* a caixa de marcar com o texto ao lado, em qualquer formulário (o rótulo em coluna é para os campos de digitar) */
 label.check, .cadastro label.check { flex-direction: row; align-items: center; gap: .5rem; }
-label.check input[type=checkbox] { width: auto; flex: none; margin: 0; }
+label.check input[type=checkbox], label.check input[type=radio] { width: auto; flex: none; margin: 0; }
 .nota { color: var(--cinza); font-size: .92rem; }
 
 [hidden] { display: none !important; }
@@ -1722,6 +1722,10 @@ svg.mostrador .visor-hora { font: 700 16px/1 ui-monospace, Menlo, Consolas, mono
 .pagina-winders table.posicoes-winder input.curto { width: 3.6rem; min-width: 0; font-size: .8rem; padding: .35rem .4rem; }
 .pagina-winders table.posicoes-winder tr.desligada td { color: var(--cinza); }
 .pagina-winders table.posicoes-winder td form { display: none; }
+/* o lugar fora (Pôr de volta, Liberar o lugar) e o Já sei do aviso de limite: botões pequenos embaixo do relógio */
+.pagina-winders table.posicoes-winder td form.acao-lugar { display: inline-block; margin-right: .3rem; }
+.pagina-winders table.posicoes-winder td small.lugar-fora { color: #b42d2d; }
+.pagina-winders table.posicoes-winder td small.aviso-limite { color: var(--ambar); }
 /* Carga, Cada hora dá e Enche: no meio da coluna (os "—" de duas colunas vazias não se encostam) */
 @media (min-width: 901px) { .pagina-winders table.posicoes-winder td:nth-last-child(-n+3) { text-align: center; } }
 .pagina-winders table.posicoes-winder td button { display: block; margin-top: .35rem; font-size: .8rem; padding: .2rem .7rem; }
@@ -1743,6 +1747,11 @@ svg.mostrador .visor-hora { font: 700 16px/1 ui-monospace, Menlo, Consolas, mono
 .winder-desenho a .berco { width: 100%; }
 .winder-desenho .berco:not(.ocupado) { background: none; border: 2px dashed #6b7280; }
 .winder-desenho .berco.desligado { opacity: .45; }
+/* o lugar de um relógio que saiu: a foto dele apagada, com o aro vermelho em volta ("fora") */
+.winder-desenho .berco.fora { background: none; border: 3px solid #d64545; box-shadow: 0 0 12px rgba(214, 69, 69, .55); }
+.winder-desenho .berco.fora .miolo { background: #e9ecef; }
+.winder-desenho .berco.fora img, .winder-desenho .berco.fora .berco-sem-foto { opacity: .4; filter: grayscale(.7); }
+.winder-desenho figcaption small.fora { color: #f3a5a5; }
 .winder-desenho .miolo { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: #e9ecef; }
 .winder-desenho .berco:not(.ocupado) .miolo { background: #23272e; color: #9aa1ab; font-size: .78rem; }
 .winder-desenho img { width: 100%; height: 100%; object-fit: cover; }
@@ -1949,3 +1958,62 @@ table.onde-muda td:last-child, table.compacta.onde-muda td:last-child { text-ali
   /* na largura fixa, os botões da linha e o identificador comprido quebram em vez de vazar */
   table.tabela-campos td.acoes-linha, table.tabela-formulas td.acoes-linha, table.tabela-campos td.ident { white-space: normal; }
 }
+
+/* ---------- a gaveta de ajuda: as explicações fora da página. O ⓘ ao lado de um rótulo (ou o botão Ajuda do título) abre a
+   gaveta pela direita, por cima de tudo, com o fundo escurecido; no celular, a tela inteira. A busca no alto filtra; o × , o
+   Esc ou um clique fora fecha ---------- */
+button.ajuda-i, .ajuda-topo button.ajuda-fechar { min-height: 0; }
+button.ajuda-i {
+  display: inline-flex; align-items: center; justify-content: center; flex: none; width: 1.25rem; height: 1.25rem; min-width: 1.25rem; margin: 0 .2rem; padding: 0;
+  vertical-align: text-bottom; border: 1px solid var(--aco-escuro); border-radius: 50%; background: var(--papel); color: var(--safira);
+  font: 600 .8rem/1 "Segoe UI", Arial, sans-serif; cursor: pointer;
+}
+button.ajuda-i:hover, button.ajuda-i:focus-visible { border-color: var(--safira); background: #e8eef6; outline: none; }
+.ajuda-botao { margin-left: auto; }
+.ajuda-fundo { position: fixed; inset: 0; z-index: 90; background: rgba(16, 22, 29, .45); }
+.ajuda-gaveta {
+  position: fixed; z-index: 91; top: 0; right: 0; bottom: 0; width: min(32rem, 94vw); display: flex; flex-direction: column;
+  background: var(--papel); border-radius: 16px 0 0 16px; box-shadow: -18px 0 50px rgba(10, 16, 24, .35);
+}
+body.com-ajuda { overflow: hidden; }
+.ajuda-topo { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .8rem 1rem; border-bottom: 1px solid var(--aco); }
+.ajuda-topo h2 { margin: 0; font-size: 1.15rem; flex: 1 1 auto; }
+.ajuda-busca { order: 3; flex: 1 1 100%; padding: .45rem .6rem; border: 1px solid var(--aco-escuro); border-radius: 8px; font: inherit; }
+.ajuda-fechar { border: 1px solid var(--aco-escuro); border-radius: 8px; background: none; padding: .1rem .6rem; font-size: 1.3rem; line-height: 1.2; cursor: pointer; color: var(--cinza); }
+.ajuda-fechar:hover { color: var(--tinta); border-color: var(--cinza); }
+.ajuda-corpo { overflow-y: auto; overscroll-behavior: contain; padding: .5rem 1rem 1.5rem; }
+.ajuda-grupo h3 { margin: 1rem 0 .3rem; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cinza); }
+.ajuda-item { padding: .6rem 0; border-bottom: 1px solid var(--aco); scroll-margin-top: .5rem; }
+.ajuda-item h4 { margin: 0 0 .25rem; font-size: 1rem; }
+.ajuda-item p { margin: .3rem 0; }
+.ajuda-item.ajuda-destaque { background: #fff8e6; margin: 0 -1rem; padding: .6rem 1rem; border-left: 3px solid var(--ambar); }
+@media (max-width: 600px) {
+  .ajuda-gaveta { width: 100vw; border-radius: 0; }
+}
+@media print { .ajuda-i, .ajuda-botao { display: none; } }
+
+/* ---------- Programas e Movimentos (os programas dos winders): as escolhas em linha, os números curtos lado a lado e a conta do
+   programa (os passos, com o calculado em itálico, e o resumo) embaixo da sequência ---------- */
+.pagina-programas fieldset.escolha, .pagina-movimentos fieldset.escolha { border: 1px solid var(--aco); border-radius: 8px; padding: .5rem .8rem; display: flex; flex-wrap: wrap; gap: .3rem 1rem; align-items: center; }
+.pagina-programas fieldset.escolha legend, .pagina-movimentos fieldset.escolha legend { font-size: .9rem; color: var(--cinza); padding: 0 .3rem; }
+.pagina-programas .par-tempo, .pagina-movimentos .par-tempo { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; }
+.pagina-programas input.curto, .pagina-movimentos input.curto { width: 5.5rem; }
+.pagina-programas .campo-sequencia { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: end; }
+.pagina-programas .conta-programa-caixa { grid-column: 1 / -1; }
+.pagina-programas table.conta-programa em { color: var(--safira); }
+.pagina-programas table.conta-programa tr.tipo-parado td { color: var(--cinza); }
+.pagina-programas dl.resumo-programa { max-width: 34rem; margin-top: .6rem; }
+.pagina-programas .aviso-conta { color: var(--ambar); margin: .3rem 0; }
+.pagina-programas table.programas td small, .pagina-movimentos table.movimentos td small { display: block; color: var(--cinza); font-size: .8rem; }
+/* a explicação que era um parágrafo: uma linha curta, discreta, que abre a gaveta nela */
+button.ajuda-linha {
+  display: inline-flex; align-items: center; gap: .3rem; min-height: 0; margin: .3rem 0; padding: .15rem .1rem; border: 0; background: none;
+  color: var(--safira); font-size: .85rem; text-align: left; cursor: pointer;
+  /* sempre numa linha só dela, também dentro de uma linha de formulário (flex) ou de uma grade */
+  flex: 0 0 100%; grid-column: 1 / -1; justify-content: flex-start; width: 100%;
+}
+button.ajuda-linha:hover { text-decoration: underline; }
+.ajuda-linha-i { display: inline-flex; align-items: center; justify-content: center; width: 1.1rem; height: 1.1rem; border: 1px solid var(--aco-escuro); border-radius: 50%; font-size: .72rem; font-weight: 600; }
+@media print { button.ajuda-linha { display: none; } }
+/* o botão Explicações posto sozinho dentro do título da página: pequeno, ao lado do nome */
+h1 > .ajuda-botao { font-size: .9rem; font-weight: 400; vertical-align: middle; margin-left: .8rem; letter-spacing: 0; }

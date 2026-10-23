@@ -102,7 +102,7 @@ foreach (avisos_todos() as $versoes) {
     }
 }
 $saida = ["arvore" => $arvore, "unidades" => array_values(unidades_todas()), "secoes" => array_values(secoes_todas()), "campos" => $campos, "lancamento_tipos" => $tipos_l, "formulas" => $formulas, "avisos" => $avisos, "calibres" => calibres_todos(), "relogios" => $relogios,
-    "documento_categorias" => documento_categorias_lista(), "modos" => $modos, "plano" => plano_legivel("", ""), "plano_livre" => dias_livres("", ""), "acessorios" => acessorios_lista(), "winders" => winders_lista(), "servicos" => servicos_lista(), "reserva" => reserva_lista(), "timegrapher" => timegrapher_lista(), "config" => (object)$config,
+    "documento_categorias" => documento_categorias_lista(), "modos" => $modos, "plano" => plano_legivel("", ""), "plano_livre" => dias_livres("", ""), "acessorios" => acessorios_lista(), "winders" => winders_lista(), "winder_programas" => winder_programas_lista(), "winder_movimentos" => winder_movimentos_lista(), "servicos" => servicos_lista(), "reserva" => reserva_lista(), "timegrapher" => timegrapher_lista(), "config" => (object)$config,
     "eventos" => array_map("evento_legivel", eventos_com_dias(linhas("SELECT * FROM evento_personalizado ORDER BY nome"))),
     "destinos" => array_values(array_map("destino_legivel", destinos())),
     "agendas" => array_values(array_map(function ($ag) {

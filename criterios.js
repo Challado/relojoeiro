@@ -214,7 +214,7 @@ function recarregarCriterios() {
           sec += el("details", {"class": "faixas", "id": "s" + s.id, "open": abrirFaixa === String(s.id)}, el("summary", {}, t("Faixas de {1} {2}", {1: el("strong", {}, h(s.nome)), 2: el("span", {"class": "nota"}, s.faixas.length + " " + (s.faixas.length === 1 ? "faixa" : "faixas") + " · " + h(m.nome))}))
             + el("form", {"data-recurso": "criterios"}, el("input", {"type": "hidden", "name": "acao", "value": "faixas"}) + el("input", {"type": "hidden", "name": "sub_id", "value": s.id})
               + el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-faixas", "data-faixas": true}, tabela))
-              + el("p", {"class": "nota"}, t("{1} A linha em branco serve para incluir uma faixa; o \"+ faixa\" cria mais.", {1: m.tipo === "categoria" ? t("Uma nota por categoria; categoria sem faixa: o subparâmetro não se aplica ao relógio daquela categoria.")
+              + ajudaNota("faixas", t("As faixas"), t("{1} A linha em branco serve para incluir uma faixa; o \"+ faixa\" cria mais.", {1: m.tipo === "categoria" ? t("Uma nota por categoria; categoria sem faixa: o subparâmetro não se aplica ao relógio daquela categoria.")
                 : t("Nota de 0 a 100. \"De\" entra na faixa, \"até\" não (a última inclui o seu \"até\"); \"até\" vazio = sem limite. A primeira começa em 0; cada uma começa onde a anterior terminou; a última vai até {1}.", {1: m.max === null ? t("\"sem limite\" (até vazio)") : t("{1} (ou sem limite)", {1: m.max})})}))
               + el("div", {"class": "botoes"}, el("button", {"type": "button", "class": "leve", "data-mais-faixa": true}, t("+ faixa")) + " " + el("button", {}, t("Salvar faixas"))))
             + el("div", {"class": "mais-opcoes"}, el("form", {"data-recurso": "criterios", "onsubmit": "return confirm(" + JSON.stringify(t("Trocar o que {1} mede? As faixas atuais serão apagadas, e ele recomeça com nota 50 em tudo.", {1: s.nome})) + ")"},
@@ -236,7 +236,7 @@ function recarregarCriterios() {
     // a nota de cada relógio disponível agora, da maior para a menor
     var abrir = q.get("relogio") || "";
     res += el("section", {"class": "cartao-config", "id": "notas"}, el("h2", {}, t("A nota de cada relógio agora"))
-      + el("p", {"class": "nota"}, t("Relógios disponíveis, da maior nota para a menor, cada um pelo conjunto de critérios que vale para ele. As regras que ficam fora da nota — o grupo de cada bloco de dias, os relógios fixos, não repetir o de ontem e a garantia de rodízio — valem na hora do sorteio."))
+      + ajudaNota("nota", t("Como a nota sai"), t("Relógios disponíveis, da maior nota para a menor, cada um pelo conjunto de critérios que vale para ele. As regras que ficam fora da nota — o grupo de cada bloco de dias, os relógios fixos, não repetir o de ontem e a garantia de rodízio — valem na hora do sorteio."))
       + d.notas.filter(function (n) { return n.disponivel; }).sort(function (a, b) { return b.nota - a.nota; }).map(function (n) {
         var somaEf = n.conta.reduce(function (s, l) { return s + l.peso_efetivo; }, 0);
         return el("details", {"class": "conta-nota", "open": abrir === String(n.relogio_id), "id": "r" + n.relogio_id}, el("summary", {}, el("strong", {}, h(n.relogio)) + " "
@@ -260,7 +260,7 @@ function recarregarCriterios() {
       }).join(""));
     res += el("section", {"class": "cartao-config"}, el("h2", {}, t("Restaurar os critérios iniciais")) + el("form", {"data-recurso": "criterios", "onsubmit": "return confirm(" + JSON.stringify(t("Apagar todos os critérios de todos os lugares e voltar aos iniciais?")) + ")"},
       el("input", {"type": "hidden", "name": "acao", "value": "restaurar"})
-      + el("p", {"class": "nota"}, t("Apaga os critérios de todos os lugares e volta aos que vieram com o sistema: um conjunto para todos os relógios e um para cada grupo principal. A forma de escolha e a garantia de rodízio não mudam."))
+      + ajudaNota("restaurar", t("Restaurar os critérios"), t("Apaga os critérios de todos os lugares e volta aos que vieram com o sistema: um conjunto para todos os relógios e um para cada grupo principal. A forma de escolha e a garantia de rodízio não mudam."))
       + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, t("Restaurar")))));
     document.getElementById("criterios").innerHTML = res;
     // soma ao vivo dos pesos de cada formulário, com quanto falta ou quanto passa, e o peso efetivo de cada subparâmetro

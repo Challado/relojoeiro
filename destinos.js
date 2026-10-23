@@ -60,7 +60,7 @@ function quadroDestino(x, d) {
       + tipoCampos)
     + el("div", {"class": "campo-modelo"}, el("div", {"class": "rotulo-modelo"}, el("label", {"for": idm}, el("h3", {}, t("Mensagem padrão"))) + listaAncoras(d.ancoras, idm, t("Inserir âncora na mensagem padrão")))
       + el("textarea", {"id": idm, "name": "modelo", "rows": "4", "required": true}, h(x.modelo))
-      + el("p", {"class": "nota"}, t("Cada item vira uma mensagem com este texto (ou com o personalizado dele, abaixo); os do mesmo horário vão juntos, separados por uma linha em branco.")))
+      + ajudaNota("texto", t("O texto da mensagem"), t("Cada item vira uma mensagem com este texto (ou com o personalizado dele, abaixo); os do mesmo horário vão juntos, separados por uma linha em branco.")))
     + el("h3", {}, t("O que recebe")) + tabelaRecebe("d" + id, x.recebe, d.ancoras, true)
     + el("div", {"class": "botoes"}, el("button", {}, t("Salvar"))));
   var acoes = el("div", {"class": "botoes"}, ["texto", "manha", "noite"].map(function (q) {
@@ -81,7 +81,7 @@ function carregarDestinos() {
       res += el("p", {"class": "acao"}, h(recadoDestinos));
       recadoDestinos = "";
     }
-    res += el("p", {"class": "nota"}, t("As mensagens da manhã (o relógio do dia e os avisos) e da noite (preparar o de amanhã), os avisos na hora e os eventos saem por cada destino ligado, com o que ele recebe. As âncoras entre chaves, como {relogio}, viram os valores na hora de enviar."));
+    res += ajudaNota("o-que-vai", t("O que vai para os destinos"), t("As mensagens da manhã (o relógio do dia e os avisos) e da noite (preparar o de amanhã), os avisos na hora e os eventos saem por cada destino ligado, com o que ele recebe. As âncoras entre chaves, como {relogio}, viram os valores na hora de enviar."));
     res += d.destinos.map(function (x) { return quadroDestino(x, d); }).join("");
     if (d.destinos.length === 0) {
       res += el("p", {"class": "alerta-cron"}, t("Nenhum destino ainda: as mensagens não saem para lugar nenhum."));

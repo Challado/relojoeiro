@@ -860,6 +860,33 @@ function calibres_apagar_arquivos($ids)
     return $n;
 }
 
+// As pastas dos documentos de winders que saíram (w<id>)
+function winders_apagar_arquivos($ids)
+{
+    $pasta = documentos_pasta();
+    $n = 0;
+    if ($pasta === null) {
+        return 0;
+    }
+    foreach ($ids as $id) {
+        if (is_dir($pasta . "/w" . (int)$id)) {
+            $n += apagar_pasta($pasta . "/w" . (int)$id);
+        }
+    }
+    return $n;
+}
+
+// Os winders de coleções (sem escopo)
+function winders_das_colecoes($colecoes)
+{
+    if (count($colecoes) === 0) {
+        return [];
+    }
+    return array_map("intval", array_column(sem_escopo(function () use ($colecoes) {
+        return linhas("SELECT id FROM winder WHERE colecao_id IN (" . implode(", ", array_map("intval", $colecoes)) . ")");
+    }), "id"));
+}
+
 // Os calibres das árvores (pelas raízes) de um dono, ou de uma árvore (sem escopo)
 function calibres_das_arvores($raizes)
 {
@@ -887,17 +914,19 @@ function usuario_excluir($uid)
 {
     $cols = array_map("intval", array_column(sem_escopo(function () use ($uid) { return linhas("SELECT id FROM colecao WHERE dono_id = ?", [(int)$uid]); }), "id"));
     $rel = relogios_das_colecoes($cols);
+    $wnd = winders_das_colecoes($cols);
     $cal = calibres_das_arvores(array_column(sem_escopo(function () use ($uid) { return linhas("SELECT id FROM no WHERE pai_id IS NULL AND dono_id = ?", [(int)$uid]); }), "id"));
     sem_escopo(function () use ($uid) { sql("DELETE FROM usuario WHERE id = ?", [(int)$uid]); });
-    return relogios_apagar_arquivos($rel) + calibres_apagar_arquivos($cal);
+    return relogios_apagar_arquivos($rel) + calibres_apagar_arquivos($cal) + winders_apagar_arquivos($wnd);
 }
 
 // Exclui uma coleção com tudo o que é dela (a árvore fica: é do dono, e pode servir a outras coleções)
 function colecao_excluir($cid)
 {
     $rel = relogios_das_colecoes([(int)$cid]);
+    $wnd = winders_das_colecoes([(int)$cid]);
     sem_escopo(function () use ($cid) { sql("DELETE FROM colecao WHERE id = ?", [(int)$cid]); });
-    return relogios_apagar_arquivos($rel);
+    return relogios_apagar_arquivos($rel) + winders_apagar_arquivos($wnd);
 }
 
 // Os critérios do modelo.json na árvore da coleção do pedido (o "Restaurar os critérios iniciais"): cada grupo do modelo vai
@@ -1028,7 +1057,9 @@ const IMPACTO_NOMES = ["usuario" => "usuários", "colecao" => "coleções", "col
     "reserva_teste" => "testes da reserva e observações da energia", "timegrapher" => "medições do timegrapher",
     "acessorio" => "acessórios", "acessorio_relogio" => "vínculos de acessório", "winder" => "winders", "winder_valor" => "valores de winder",
     "winder_valor_item" => "valores de campo múltiplo de winder", "winder_posicao" => "posições de winder", "winder_posicao_valor" => "valores de posição de winder",
-    "winder_posicao_valor_item" => "valores de campo múltiplo de posição de winder", "lancamento_winder" => "sessões em posição de winder", "criterio_parametro" => "parâmetros de critérios", "criterio_sub" => "subparâmetros de critérios",
+    "winder_posicao_valor_item" => "valores de campo múltiplo de posição de winder", "lancamento_winder" => "sessões em posição de winder", "winder_movimento" => "movimentos de winder",
+    "winder_programa" => "programas de winder", "winder_programa_passo" => "passos de programas de winder", "winder_posicao_programa" => "programas de posições de winder",
+    "winder_lugar" => "lugares fixos no winder", "winder_limite_ok" => "avisos de limite do winder dispensados", "criterio_parametro" => "parâmetros de critérios", "criterio_sub" => "subparâmetros de critérios",
     "criterio_faixa" => "faixas de critérios", "config" => "valores da configuração", "modo" => "modos de rodízio", "modo_bloco" => "blocos de modos", "modo_bloco_relogio" => "relógios fixos de blocos",
     "modo_bloco_dia" => "dias de blocos", "plano" => "dias do plano", "plano_bloco" => "blocos de dias do plano", "plano_livre" => "dias livres", "evento_personalizado" => "eventos",
     "evento_relogio" => "vínculos de evento", "evento_dia" => "dias de eventos", "evento_disparo" => "disparos de eventos", "destino" => "destinos", "destino_webhook" => "webhooks",
@@ -1046,7 +1077,8 @@ tk("lançamentos"); tk("medições do gasto"); tk("documentos"); tk("pedaços de
 tk("serviços e diagnósticos"); tk("peças de serviços"); tk("documentos de serviços");
 tk("testes da reserva e observações da energia"); tk("medições do timegrapher"); tk("acessórios"); tk("vínculos de acessório");
 tk("winders"); tk("valores de winder"); tk("valores de campo múltiplo de winder"); tk("posições de winder"); tk("valores de posição de winder");
-tk("valores de campo múltiplo de posição de winder"); tk("sessões em posição de winder");
+tk("valores de campo múltiplo de posição de winder"); tk("sessões em posição de winder"); tk("movimentos de winder"); tk("programas de winder");
+tk("passos de programas de winder"); tk("programas de posições de winder"); tk("lugares fixos no winder"); tk("avisos de limite do winder dispensados");
 tk("parâmetros de critérios"); tk("subparâmetros de critérios"); tk("faixas de critérios");
 tk("valores da configuração"); tk("modos de rodízio"); tk("blocos de modos"); tk("relógios fixos de blocos");
 tk("dias de blocos"); tk("dias do plano"); tk("blocos de dias do plano"); tk("dias livres"); tk("eventos");

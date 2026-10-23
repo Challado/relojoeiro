@@ -1212,6 +1212,7 @@ $MIGRACOES = [
     "v44" => ["migracao_v44.sql", tk("a construção pronta e os campos dos acessórios: cada árvore ganha os campos da construção (material da caixa, diâmetro, espessura, alça a alça, entre alças, peso, vidro, mostrador e a cor dele, luminescência, coroa, fundo e as funções, uma lista múltipla) na divisória Construção, e os acessórios ganham campos (Cadastros › Campos, para acessório: a largura, o material, a cor e o fecho da pulseira); a pulseira mostra em quais relógios ela serve (a largura dela com o entre alças deles)"), "acessorio_valor", "migracao_v44_dados"],
     "v45" => ["migracao_v45.sql", tk("os winders: a página Winders cadastra os winders da coleção e as posições de cada um, com campos livres (Cadastros › Campos, para o winder e para a posição: a marca, o modelo, as rotações por dia, o sentido, o ciclo); o Pôr no winder escolhe a posição, e a reserva do automático no winder sai da fórmula winder_ganho, pelo programa da posição (as rotações por dia e o sentido) e pelo que o relógio pede"), "lancamento_winder", "migracao_v45_dados"],
     "v46" => ["migracao_v46.sql", tk("as rotações por dia das posições dos winders com valores possíveis (650, 850, 1050 e 1250, os da chave TPD dos winders comuns), num menu em cada posição da página Winders; mudam em Cadastros › Campos"), "sistema.chave=migracao_v46", "migracao_v46_dados"],
+    "v47" => ["migracao_v47.sql", tk("os programas dos winders: as páginas Movimentos (cada passo: um giro horário ou anti-horário, em voltas ou em tempo, ou uma parada) e Programas (a sequência dos movimentos, por voltas ou por tempo, o dia todo ou em blocos, com a velocidade do berço contada ou tirada das voltas por dia do manual; as voltas por dia, o ciclo e o tempo girando sempre calculados), e cada posição escolhe o seu (o programa antigo de cada posição vira um, e os campos antigos saem); a carga no winder pelas voltas no sentido em que o relógio dá corda; o lugar fixo (o relógio tem a posição dele: fora dela, a foto apagada com o aro vermelho no berço, e pôr no winder de qualquer lugar o devolve para lá); os limites da almofada (caixa, pulso e peso), com aviso que se dispensa; e os documentos do winder (o manual, a nota, as fotos)"), "winder_limite_ok", "migracao_v47_dados"],
 ];
 
 // O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
@@ -1575,6 +1576,136 @@ function migracao_v46_dados($nova = false)
     });
 }
 
+// O passo em PHP da v47, depois do SQL dela. Em cada árvore: os campos novos do winder (o link do manual e os limites da
+// almofada), onde ainda não existem, e a fórmula winder_ganho nova onde ela ainda é a do modelo de antes. Em cada coleção, o
+// programa antigo de cada posição (os campos Rotações por dia, os dois sentidos e o ciclo, gira por e descansa por: o
+// gravado, senão o padrão) vira um programa (os iguais, um só): com o ciclo, por tempo (giro e parada em cada sentido);
+// sem ele, por voltas (a sequência do ajudante). Nos dois, a velocidade sai das rotações por dia (como as do manual): as
+// voltas por dia ficam as de antes. A posição ganha o programa, e quem está nela agora ganha o lugar. Os campos antigos
+// saem, com os valores. Numa instalação nova o schema e o modelo já trazem tudo
+const MIGRACAO_V47_CAMPOS = ["winder_manual", "winder_caixa_max", "winder_pulso_min", "winder_pulso_max", "winder_peso_max"];
+const MIGRACAO_V47_ANTIGOS = ["pos_tpd", "pos_horario", "pos_anti_horario", "pos_gira_min", "pos_descansa_min"];
+const MIGRACAO_V47_GANHO = 'SE(VAZIO(WINDER_POSICAO("pos_tpd")); 1; SE(OU(E(WINDER_POSICAO("pos_horario"); corda_horario); E(WINDER_POSICAO("pos_anti_horario"); corda_anti_horario)); MIN(1; WINDER_POSICAO("pos_tpd") / winder_tpd); 0)) * PADRAO(carga_winder_reserva; carga_pulso_reserva) / PADRAO(carga_winder_horas; carga_pulso_horas)';
+function migracao_v47_dados($nova = false)
+{
+    if ($nova) {
+        return;
+    }
+    sem_escopo(function () {
+        $m = modelo_ler();
+        $modelo = array_column($m["campos"], null, "identificador");
+        $ganho = array_values(array_filter($m["formulas"], function ($f) { return $f["identificador"] === "winder_ganho"; }))[0]["expressao"];
+        $arvore_de = function ($raiz) {
+            $arvore = [(int)$raiz];
+            $nivel = $arvore;
+            while (count($nivel) > 0) {
+                $nivel = array_map("intval", array_column(linhas("SELECT id FROM no WHERE pai_id IN (" . implode(", ", $nivel) . ")"), "id"));
+                $arvore = array_merge($arvore, $nivel);
+            }
+            return $arvore;
+        };
+        // 1. as árvores: os campos novos do winder e a fórmula da carga no winder
+        foreach (linhas("SELECT id FROM no WHERE pai_id IS NULL ORDER BY id") as $raiz) {
+            $em = " AND no_id IN (" . implode(", ", $arvore_de((int)$raiz["id"])) . ")";
+            $lingua = lingua_valida((string)valor("SELECT valor FROM config WHERE chave = 'idioma' AND colecao_id IN (SELECT id FROM colecao WHERE no_id = ?) ORDER BY colecao_id", [(int)$raiz["id"]])) ?? "pt-BR";
+            $tr = modelo_tradutor($lingua);
+            $ordem = (int)valor("SELECT COALESCE(MAX(ordem), 0) FROM campo WHERE 1 = 1" . $em);
+            foreach (MIGRACAO_V47_CAMPOS as $ident) {
+                $c = $modelo[$ident] ?? null;
+                if ($c === null || (int)valor("SELECT COUNT(*) FROM campo WHERE identificador = ?" . $em, [$ident]) > 0) {
+                    continue;
+                }
+                if (($c["unidade"] ?? "") !== "" && (int)valor("SELECT COUNT(*) FROM unidade WHERE no_id = ? AND simbolo = ?", [(int)$raiz["id"], $c["unidade"]]) === 0) {
+                    $c["unidade"] = "";
+                }
+                campo_do_modelo($c, (int)$raiz["id"], null, ++$ordem, $tr);
+            }
+            sql("UPDATE formula SET expressao = ? WHERE identificador = 'winder_ganho' AND expressao = ?" . $em, [$ganho, MIGRACAO_V47_GANHO]);
+        }
+        // 2. as coleções: o programa de cada posição, no idioma da coleção, e o lugar de quem está no winder agora
+        $lingua_antes = lingua_atual();
+        foreach (linhas("SELECT id, no_id FROM colecao ORDER BY id") as $col) {
+            $posicoes = linhas("SELECT p.id, p.nome FROM winder_posicao p JOIN winder w ON w.id = p.winder_id WHERE w.colecao_id = ? ORDER BY p.id", [(int)$col["id"]]);
+            if (count($posicoes) === 0) {
+                continue;
+            }
+            lingua_definir((string)valor("SELECT valor FROM config WHERE chave = 'idioma' AND colecao_id = ?", [(int)$col["id"]]));
+            $campos = [];
+            foreach (linhas("SELECT identificador, padrao FROM campo WHERE alvo = 'posicao' AND identificador IN ('" . implode("', '", MIGRACAO_V47_ANTIGOS) . "') AND no_id IN ("
+                . implode(", ", $arvore_de((int)$col["no_id"])) . ")") as $c) {
+                $campos[$c["identificador"]] = $c;
+            }
+            $feitos = [];
+            foreach ($posicoes as $p) {
+                $val = [];
+                foreach (linhas("SELECT c.identificador, v.valor FROM winder_posicao_valor v JOIN campo c ON c.id = v.campo_id WHERE v.posicao_id = ?", [(int)$p["id"]]) as $x) {
+                    $val[$x["identificador"]] = $x["valor"];
+                }
+                $le = function ($ident) use ($val, $campos) {
+                    if (!isset($campos[$ident])) {
+                        return null;
+                    }
+                    $b = ($val[$ident] ?? "") !== "" ? $val[$ident] : $campos[$ident]["padrao"];
+                    return $b === null || $b === "" || !is_numeric($b) ? null : (float)$b;
+                };
+                $tpd = $le("pos_tpd");
+                $hor = $le("pos_horario");
+                $ant = $le("pos_anti_horario");
+                $gira = $le("pos_gira_min");
+                $desc = $le("pos_descansa_min");
+                // sem o campo do sentido, o berço gira nos dois (o padrão de antes)
+                $hor = $hor === null || $hor > 0;
+                $ant = $ant === null || $ant > 0;
+                if ($tpd === null || $tpd <= 0 || (!$hor && !$ant)) {
+                    continue;
+                }
+                $sentido = $hor && $ant ? "os_dois" : ($hor ? "horario" : "anti_horario");
+                $ciclo = $gira !== null && $gira > 0 && $desc !== null && $desc > 0;
+                $chave = implode("|", [$tpd, $sentido, $ciclo ? $gira : "", $ciclo ? $desc : ""]);
+                if (!isset($feitos[$chave])) {
+                    $sentido_txt = ["os_dois" => t("os dois sentidos"), "horario" => t("sentido horário"), "anti_horario" => t("sentido anti-horário")][$sentido];
+                    if ($ciclo) {
+                        $seq = [];
+                        foreach ($sentido === "os_dois" ? ["horario", "anti_horario"] : [$sentido] as $dir) {
+                            $seq[] = [$dir, null, (int)round($gira * 60)];
+                            $seq[] = ["parado", null, (int)round($desc * 60)];
+                        }
+                        $medida = "tempo";
+                        $nome = t("Gira {1} e para {2}, {3} voltas por dia", [1 => tempo_curto_txt($gira * 60), 2 => tempo_curto_txt($desc * 60), 3 => numero_txt($tpd, 0)]);
+                    } else {
+                        $seq = winder_sequencia_para($tpd, 8, $sentido, "voltas")[0];
+                        $medida = "voltas";
+                        $nome = t("{1} voltas por dia, {2}", [1 => numero_txt($tpd, 0), 2 => $sentido_txt]);
+                    }
+                    if ($seq === null) {
+                        continue;
+                    }
+                    $obs = t("Convertido dos campos antigos da posição {1}: {2} voltas por dia, {3}{4}. A velocidade do berço sai das voltas por dia; conte as voltas dele em 1 minuto e ponha aqui.",
+                        [1 => $p["nome"], 2 => numero_txt($tpd, 0), 3 => $sentido_txt, 4 => $gira !== null && $gira > 0 ? t(", gira {1}", [1 => tempo_curto_txt($gira * 60)]) . ($desc !== null && $desc > 0 ? t(" e descansa {1}", [1 => tempo_curto_txt($desc * 60)]) : "") : ""]);
+                    sql("INSERT INTO winder_programa (colecao_id, nome, medida, velocidade, tpd_manual, liga_horas, para_horas, observacao, criado) VALUES (?, ?, ?, NULL, ?, NULL, NULL, ?, NOW())",
+                        [(int)$col["id"], mb_substr($nome, 0, 80), $medida, (int)round($tpd), mb_substr($obs, 0, 1000)]);
+                    $pid = (int)ultimo_id();
+                    foreach ($seq as $k => [$tipo, $voltas, $seg]) {
+                        sql("INSERT INTO winder_programa_passo (programa_id, ordem, movimento_id) VALUES (?, ?, ?)", [$pid, $k + 1, winder_movimento_achar_ou_criar((int)$col["id"], $tipo, $voltas, $seg)]);
+                    }
+                    $feitos[$chave] = $pid;
+                }
+                sql("DELETE FROM winder_posicao_programa WHERE posicao_id = ?", [(int)$p["id"]]);
+                sql("INSERT INTO winder_posicao_programa (posicao_id, programa_id) VALUES (?, ?)", [(int)$p["id"], $feitos[$chave]]);
+            }
+            foreach ($posicoes as $p) {
+                $oc = winder_posicao_ocupante((int)$p["id"]);
+                if ($oc && (int)valor("SELECT COUNT(*) FROM winder_lugar WHERE relogio_id = ? OR posicao_id = ?", [(int)$oc["relogio_id"], (int)$p["id"]]) === 0) {
+                    winder_lugar_gravar((int)$p["id"], (int)$oc["relogio_id"]);
+                }
+            }
+        }
+        lingua_definir($lingua_antes);
+        // 3. os campos antigos da posição saem, com os valores (em cascata)
+        sql("DELETE FROM campo WHERE alvo = 'posicao' AND identificador IN ('" . implode("', '", MIGRACAO_V47_ANTIGOS) . "')");
+    });
+}
+
 // O tipo de um modo pela forma dos blocos ($blocos: [[dias (1 a 7), um_por], ...]): escala (com escala_dias); um bloco com
 // os sete dias: um por semana (um por bloco), aleatório (um por dia e a forma aleatória) ou por dia da semana; dois blocos,
 // segunda a sexta e sábado e domingo, o primeiro um por bloco: semana e fim de semana; todos um por dia: por dia da
@@ -1857,8 +1988,9 @@ $FUNCOES = [
     "RELOGIO" => [1, 1, tk("RELOGIO(\"nome\" ou id): 1 se é esse relógio"), false],
     "CALIBRE" => [1, 1, tk("CALIBRE(\"nome\" ou id): 1 se o relógio tem esse calibre (o movimento)"), false],
     // o winder: os campos da posição em que o relógio está (Cadastros › Campos, para a posição do winder) e os do winder dela
-    "WINDER_POSICAO" => [1, 1, tk("WINDER_POSICAO(\"campo\"): o valor de um campo da posição do winder em que o relógio está (as rotações por dia, o sentido...: o gravado na posição, senão o padrão do campo); dentro do ACUMULA, o da posição de cada sessão no winder; fora de uma posição, vazio. Ex.: WINDER_POSICAO(\"pos_tpd\") / winder_tpd"), false],
+    "WINDER_POSICAO" => [1, 1, tk("WINDER_POSICAO(\"campo\"): o valor de um campo livre da posição do winder em que o relógio está (Cadastros › Campos, para a posição: o gravado na posição, senão o padrão do campo); dentro do ACUMULA, o da posição de cada sessão no winder; fora de uma posição, vazio. O programa da posição (as voltas por dia, os sentidos) vem de WINDER_PROGRAMA"), false],
     "WINDER" => [1, 1, tk("WINDER(\"campo\"): o valor de um campo do winder dessa posição (a marca, o modelo...: Cadastros › Campos, para o winder); fora de uma posição, vazio"), false],
+    "WINDER_PROGRAMA" => [1, 1, tk("WINDER_PROGRAMA(\"chave\"): o que o programa da posição do winder em que o relógio está dá (página Programas), sempre calculado da sequência dos movimentos: voltas_dia (as voltas por dia), voltas_horario e voltas_anti_horario (as de cada sentido), minutos_girando (por dia), velocidade (do berço, voltas por minuto), vezes_dia (o ciclo, quantas vezes por dia) e ciclo_minutos; vazio fora de uma posição, sem programa ou sem a velocidade do berço"), false],
     // os serviços e diagnósticos do relógio (até o instante da conta)
     "ULTIMO_SERVICO" => [0, 1, tk("ULTIMO_SERVICO(\"tipo\"): a data do último serviço desse tipo (revisao, pilha, estanqueidade, regulagem, polimento, reparo, diagnostico, outro; \"estanqueidade\" conta também o teste feito numa revisão; sem tipo: qualquer); vazio sem nenhum"), false],
     "CUSTO_SERVICOS" => [0, 1, tk("CUSTO_SERVICOS(dias): quanto os serviços custaram (a mão de obra mais as peças) nos últimos N dias (0 ou sem: todos)"), false],
@@ -2847,11 +2979,12 @@ function formula_calcular($no, &$ctx)
             } elseif ($nome === "CALIBRE") {
                 $cal = calibre_do_relogio((int)($ctx["r"]["id"] ?? 0));
                 $res = $v[0] === null || $cal === null ? 0 : ((is_numeric($v[0]) ? (int)$v[0] === (int)$cal["id"] : mb_strtolower(trim((string)$v[0]), "UTF-8") === mb_strtolower((string)$cal["nome"], "UTF-8")) ? 1 : 0);
-            } elseif ($nome === "WINDER_POSICAO" || $nome === "WINDER") {
+            } elseif ($nome === "WINDER_POSICAO" || $nome === "WINDER" || $nome === "WINDER_PROGRAMA") {
                 // a posição do winder: a da sessão que o ACUMULA está somando (ctx winder_posicao; null: uma sessão fora de
                 // posição), ou, fora dele, a da sessão no winder aberta no instante da conta
                 $pos_w = array_key_exists("winder_posicao", $ctx) ? $ctx["winder_posicao"] : winder_posicao_em((int)($ctx["r"]["id"] ?? 0), (int)$ctx["momento"]);
-                $res = $pos_w === null ? null : winder_campo_valor($nome === "WINDER" ? "winder" : "posicao", (int)$pos_w, (string)($v[0] ?? ""));
+                $res = $pos_w === null ? null : ($nome === "WINDER_PROGRAMA" ? winder_programa_valor((int)$pos_w, (string)($v[0] ?? ""))
+                    : winder_campo_valor($nome === "WINDER" ? "winder" : "posicao", (int)$pos_w, (string)($v[0] ?? "")));
             } elseif ($nome === "ULTIMO_SERVICO" || $nome === "CUSTO_SERVICOS") {
                 // os serviços do relógio até o instante da conta
                 $do_r = array_values(array_filter(servicos_das_contas()[(int)($ctx["r"]["id"] ?? 0)] ?? [], function ($x) use ($ctx) { return $x["quando"] <= $ctx["momento"]; }));
@@ -3155,7 +3288,7 @@ $FUNCOES_TOTAIS = [
 // as que dão uma tabelinha ou um relógio: só como a expressão inteira
 const TOTAIS_DO_TOPO = ["AGRUPADO", "FAIXAS", "QUEM_MENOR", "QUEM_MAIOR"];
 // as funções do motor que precisam de um relógio: nos totais, só dentro de uma função de total
-const FUNCOES_DO_RELOGIO = ["NO_GRUPO", "RELOGIO", "CALIBRE", "WINDER_POSICAO", "WINDER", "ULTIMO_SERVICO", "CUSTO_SERVICOS", "RESERVA_MEDIDA", "RESERVA_TESTES", "TIMEGRAPHER", "TIMEGRAPHER_DATA", "ESCOLHIDO_HA", "VEZES_NO_PLANO", "MEDIDO", "MEDIA_COLECAO", "LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA",
+const FUNCOES_DO_RELOGIO = ["NO_GRUPO", "RELOGIO", "CALIBRE", "WINDER_POSICAO", "WINDER", "WINDER_PROGRAMA", "ULTIMO_SERVICO", "CUSTO_SERVICOS", "RESERVA_MEDIDA", "RESERVA_TESTES", "TIMEGRAPHER", "TIMEGRAPHER_DATA", "ESCOLHIDO_HA", "VEZES_NO_PLANO", "MEDIDO", "MEDIA_COLECAO", "LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA",
     "MEDIANA_TAXA", "ULTIMA_TAXA", "MARCHA", "MARCHA_DP", "MARCHA_N", "MARCHA_ULTIMA", "DESVIO_AGORA", "DIA_SEMANA", "SEMANA_DO_ANO", "SORTEIO"];
 
 // As variáveis da tabela, que os totais têm em cada relógio além dos campos e das fórmulas: nome => [o que é, unidade]
@@ -5322,7 +5455,7 @@ function documento_info($d, $com_nfe = true)
 {
     $familia = documento_familia($d["tipo"], $d["nome"]);
     $res = ["id" => (int)$d["id"], "relogio_id" => $d["relogio_id"] === null ? null : (int)$d["relogio_id"], "calibre_id" => ($d["calibre_id"] ?? null) === null ? null : (int)$d["calibre_id"],
-        "categoria_id" => (int)$d["categoria_id"], "titulo" => $d["titulo"],
+        "winder_id" => ($d["winder_id"] ?? null) === null ? null : (int)$d["winder_id"], "categoria_id" => (int)$d["categoria_id"], "titulo" => $d["titulo"],
         "data" => $d["data"] === null ? null : substr((string)$d["data"], 0, 10), "descricao" => $d["descricao"], "nome" => $d["nome"], "tipo" => $d["tipo"],
         "familia" => $familia, "tamanho" => (int)$d["tamanho"], "miniatura" => $d["miniatura"] !== null && $d["miniatura"] !== "", "criado" => $d["criado"],
         "url" => "api.php?recurso=documento&id=" . (int)$d["id"], "no_disco" => documentos_pasta() !== null && documento_inteiro($d, documentos_pasta() . "/" . $d["arquivo"]),
@@ -5338,6 +5471,13 @@ function documentos_do_relogio($rid = null)
 {
     return linhas("SELECT d.* FROM documento d JOIN documento_categoria c ON c.id = d.categoria_id" . ($rid !== null ? " WHERE d.relogio_id = ?" : " WHERE d.relogio_id IS NOT NULL")
         . " ORDER BY d.relogio_id, c.ordem, c.id, COALESCE(d.data, '9999-12-31'), d.criado, d.id", $rid !== null ? [(int)$rid] : []);
+}
+
+// Os documentos de um winder (o manual, a nota, as fotos), na ordem das categorias e da data
+function documentos_do_winder($wid)
+{
+    return linhas("SELECT d.* FROM documento d JOIN documento_categoria c ON c.id = d.categoria_id WHERE d.winder_id = ?
+        ORDER BY c.ordem, c.id, COALESCE(d.data, '9999-12-31'), d.criado, d.id", [(int)$wid]);
 }
 
 // Os documentos de um calibre (o manual técnico, a ficha de serviço...), na ordem das categorias e da data
@@ -5431,8 +5571,9 @@ function documento_enviar($d, $caminho, $baixar, $miniatura = false)
     fclose($f);
 }
 
-// As categorias dos documentos, na ordem, com quantos documentos cada uma tem (de um relógio; null: de todos)
-function documento_categorias_lista($rid = null, $cid = null)
+// As categorias dos documentos, na ordem, com quantos documentos cada uma tem (de um relógio, de um calibre ou de um winder;
+// sem nenhum: os de todos os relógios)
+function documento_categorias_lista($rid = null, $cid = null, $wid = null)
 {
     $aceita = [];
     foreach (linhas("SELECT categoria_id, familia FROM documento_categoria_aceita ORDER BY categoria_id, familia") as $x) {
@@ -5441,8 +5582,8 @@ function documento_categorias_lista($rid = null, $cid = null)
     return array_map(function ($c) use ($aceita) {
         return ["id" => (int)$c["id"], "identificador" => $c["identificador"], "nome" => $c["nome"], "aceita" => $aceita[(int)$c["id"]] ?? [],
             "ordem" => (int)$c["ordem"], "documentos" => (int)$c["documentos"]];
-    }, linhas("SELECT c.*, (SELECT COUNT(*) FROM documento d WHERE d.categoria_id = c.id" . ($cid !== null ? " AND d.calibre_id = ?" : ($rid !== null ? " AND d.relogio_id = ?" : " AND d.relogio_id IS NOT NULL"))
-        . ") AS documentos FROM documento_categoria c ORDER BY c.ordem, c.id", $cid !== null ? [(int)$cid] : ($rid !== null ? [(int)$rid] : [])));
+    }, linhas("SELECT c.*, (SELECT COUNT(*) FROM documento d WHERE d.categoria_id = c.id" . ($wid !== null ? " AND d.winder_id = ?" : ($cid !== null ? " AND d.calibre_id = ?" : ($rid !== null ? " AND d.relogio_id = ?" : " AND d.relogio_id IS NOT NULL")))
+        . ") AS documentos FROM documento_categoria c ORDER BY c.ordem, c.id", $wid !== null ? [(int)$wid] : ($cid !== null ? [(int)$cid] : ($rid !== null ? [(int)$rid] : []))));
 }
 
 // Apaga os arquivos de um documento (o arquivo e a miniatura) da pasta
@@ -5591,10 +5732,11 @@ function da_colecao($r)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Os winders da coleção (a página Winders). Cada um tem as posições, e cada posição o programa dela (os campos da posição:
-// as rotações por dia, o sentido, o ciclo...) e o relógio que está nela agora (a sessão aberta de um tipo marcado como winder,
-// ligada à posição), com a carga dele, o que cada hora ali dá e quanto falta para encher: as fórmulas energia, winder_ganho e
-// winder_falta, as que valem para o relógio. O winder não sabe nada de relógio: tudo vem dos campos e das fórmulas.
+// Os winders da coleção (a página Winders). Cada um tem as posições, e cada posição o programa dela (da página Programas),
+// os campos livres dela, o relógio que está nela agora (a sessão aberta de um tipo marcado como winder, ligada à posição),
+// com a carga dele, o que cada hora ali dá e quanto falta para encher (as fórmulas energia, winder_ganho e winder_falta, as
+// que valem para o relógio), e o lugar fixo (de quem é a posição: fora dela, o berço mostra a foto dele apagada). O winder
+// não sabe nada de relógio: tudo vem dos campos, do programa e das fórmulas.
 // ---------------------------------------------------------------------------------------------------------------------
 
 // Os campos de um dono (winder ou posição) com o valor de cada um: o gravado ("informado") ou, sem ele, o padrão do campo
@@ -5653,8 +5795,8 @@ function winder_ocupante($x, $agora)
         "foto" => $foto === null ? null : strtotime($foto)];
 }
 
-// Os winders da coleção, por nome, com os dados (os campos do winder), as posições (na ordem, com o programa e o relógio que
-// está nela agora) e quantas estão ocupadas
+// Os winders da coleção, por nome, com os dados (os campos do winder), as posições (na ordem, com o programa, o relógio que
+// está nela agora, o lugar fixo e os avisos de limite da almofada), quantas estão ocupadas e livres, e os documentos dele
 function winders_lista($agora = null)
 {
     $agora = $agora ?? time();
@@ -5664,24 +5806,49 @@ function winders_lista($agora = null)
         JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?) ORDER BY l.inicio, l.id", [$agora_t, $agora_t]) as $x) {
         $ocupadas[(int)$x["posicao_id"]] = $x;
     }
+    $lugares = [];
+    foreach (linhas("SELECT l.posicao_id, r.id, r.nome FROM winder_lugar l JOIN relogio r ON r.id = l.relogio_id") as $x) {
+        $lugares[(int)$x["posicao_id"]] = $x;
+    }
+    $docs = [];
+    foreach (linhas("SELECT winder_id, COUNT(*) AS n FROM documento WHERE winder_id IS NOT NULL GROUP BY winder_id") as $x) {
+        $docs[(int)$x["winder_id"]] = (int)$x["n"];
+    }
     $posicoes = [];
     foreach (linhas("SELECT * FROM winder_posicao ORDER BY winder_id, ordem, nome, id") as $p) {
         $posicoes[(int)$p["winder_id"]][] = $p;
     }
     $res = [];
     foreach (linhas("SELECT * FROM winder ORDER BY nome, id") as $w) {
-        $lista_p = array_map(function ($p) use ($ocupadas, $agora) {
-            $dados = winder_dados_lista(campos_de_posicao(), valores_de_winder("posicao", (int)$p["id"]));
-            return ["id" => (int)$p["id"], "nome" => $p["nome"], "ordem" => (int)$p["ordem"], "ligada" => (int)$p["ligada"] === 1, "dados" => $dados,
-                "programa" => implode(" · ", array_map(function ($d) { return $d["nome"] . ": " . $d["texto"]; }, $dados)),
-                "relogio" => isset($ocupadas[(int)$p["id"]]) ? winder_ocupante($ocupadas[(int)$p["id"]], $agora) : null];
+        $lista_p = array_map(function ($p) use ($ocupadas, $lugares, $agora, $w) {
+            $oc = isset($ocupadas[(int)$p["id"]]) ? winder_ocupante($ocupadas[(int)$p["id"]], $agora) : null;
+            $dono = $lugares[(int)$p["id"]] ?? null;
+            // o lugar: de quem é a posição; fora (o dono não está nela agora) mostra a foto dele apagada e o Pôr de volta
+            $lugar = $dono === null ? null : ["relogio_id" => (int)$dono["id"], "relogio" => $dono["nome"], "fora" => $oc === null || (int)$oc["relogio_id"] !== (int)$dono["id"],
+                "estado_texto" => $oc !== null && (int)$oc["relogio_id"] === (int)$dono["id"] ? null : winder_fora_texto((int)$dono["id"], $agora),
+                "foto" => ($f = valor("SELECT atualizado FROM foto WHERE relogio_id = ?", [(int)$dono["id"]])) === null ? null : strtotime($f)];
+            $aviso_de = $oc !== null ? (int)$oc["relogio_id"] : ($dono !== null ? (int)$dono["id"] : null);
+            return ["id" => (int)$p["id"], "nome" => $p["nome"], "ordem" => (int)$p["ordem"], "ligada" => (int)$p["ligada"] === 1,
+                "dados" => winder_dados_lista(campos_de_posicao(), valores_de_winder("posicao", (int)$p["id"])), "programa" => winder_posicao_programa_info((int)$p["id"]),
+                "relogio" => $oc, "lugar" => $lugar,
+                "avisos_limite" => $aviso_de === null ? [] : array_map(function ($x) use ($aviso_de) { return ["relogio_id" => $aviso_de, "texto" => $x]; }, winder_limites_avisos((int)$w["id"], $aviso_de))];
         }, $posicoes[(int)$w["id"]] ?? []);
         $res[] = ["id" => (int)$w["id"], "nome" => $w["nome"], "observacao" => $w["observacao"], "criado" => $w["criado"],
             "dados" => winder_dados_lista(campos_de_winder(), valores_de_winder("winder", (int)$w["id"])), "posicoes" => $lista_p,
             "ocupadas" => count(array_filter($lista_p, function ($p) { return $p["relogio"] !== null; })),
-            "livres" => count(array_filter($lista_p, function ($p) { return $p["relogio"] === null && $p["ligada"]; }))];
+            "livres" => count(array_filter($lista_p, function ($p) { return $p["relogio"] === null && $p["ligada"]; })), "documentos" => $docs[(int)$w["id"]] ?? 0];
     }
     return $res;
+}
+
+// Onde está o relógio que saiu do lugar dele no winder, por extenso: "fora: no pulso", "fora: no sol", "fora: guardado"
+// (a sessão aberta nele agora, pelo nome do tipo; sem nenhuma, guardado)
+function winder_fora_texto($rid, $agora)
+{
+    $agora_t = date("Y-m-d H:i:s", $agora);
+    $sessao = valor("SELECT t.nome FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'sessao' AND l.inicio <= ? AND l.fim IS NULL
+        ORDER BY l.inicio DESC, l.id DESC", [(int)$rid, $agora_t]);
+    return $sessao !== null ? t("fora: {1}", [1 => mb_strtolower((string)$sessao, "UTF-8")]) : t("fora: guardado");
 }
 
 // O winder é obrigatório: sem nenhum winder cadastrado na coleção, não há pôr nem tirar do winder (os tipos de lançamento
@@ -5703,12 +5870,498 @@ function winder_posicoes_livres($agora = null, $livres = true)
         . ($livres ? " WHERE p.ligada = 1 AND p.id NOT IN
         (SELECT lw.posicao_id FROM lancamento_winder lw JOIN lancamento l ON l.id = lw.lancamento_id WHERE l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?))" : "")
         . " ORDER BY w.nome, w.id, p.ordem, p.nome, p.id", $livres ? [$agora_t, $agora_t] : []) as $p) {
-        $dados = winder_dados_lista(campos_de_posicao(), valores_de_winder("posicao", (int)$p["id"]));
+        $prog = winder_posicao_programa_info((int)$p["id"]);
         $res[] = ["id" => (int)$p["id"], "winder_id" => (int)$p["winder_id"], "texto" => t("{1}, {2}", [1 => $p["winder"], 2 => $p["nome"]]),
-            "programa" => implode(" · ", array_map(function ($x) { return $x["nome"] . ": " . $x["texto"]; }, $dados))];
+            "programa" => $prog === null ? null : $prog["nome"] . " · " . $prog["texto"]];
     }
     return $res;
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Os programas dos winders (a página Programas) e os movimentos deles (a página Movimentos). O movimento é um passo: um
+// giro num sentido, medido em voltas ou em tempo, ou uma parada (só tempo). O programa é a sequência dos movimentos,
+// repetida o dia todo ou em blocos (liga X h e para Y h), com o tipo de cadastro (os giros em voltas ou em tempo) e a
+// velocidade do berço (voltas por minuto: contada, ou tirada das voltas por dia que o manual diz). O resto é sempre
+// calculado, nunca digitado: o tempo de cada giro em voltas, as voltas de cada giro em tempo, o ciclo, as vezes por dia, o
+// tempo girando e as voltas por dia, no total e em cada sentido. A carga no winder (a fórmula winder_ganho, pela função
+// WINDER_PROGRAMA) usa as voltas no sentido em que o relógio dá corda.
+// ---------------------------------------------------------------------------------------------------------------------
+
+// Os tipos de movimento (ck do winder_movimento.tipo) e os tipos de cadastro do programa (winder_programa.medida), com o
+// nome; saem traduzidos no uso, t(...)
+const WINDER_MOVIMENTO_TIPOS = ["horario" => "Giro horário", "anti_horario" => "Giro anti-horário", "parado" => "Parada"];
+const WINDER_PROGRAMA_MEDIDAS = ["voltas" => "Por voltas", "tempo" => "Por tempo"];
+tk("Giro horário"); tk("Giro anti-horário"); tk("Parada"); tk("Por voltas"); tk("Por tempo");
+
+// Um número digitado ("25,4", "1.000,5" ou "25.4"): o número; null se vazio; false se não é número
+function numero_digitado($t)
+{
+    $t = trim((string)$t);
+    if ($t === "") {
+        return null;
+    }
+    $n = strpos($t, ",") !== false ? str_replace(",", ".", str_replace(".", "", $t)) : $t;
+    return is_numeric($n) ? (float)$n : false;
+}
+
+// Um tempo em segundos, curto: "40 s", "2 min", "1 min 38 s", "3 h", "1 h 30 min"
+function tempo_curto_txt($seg)
+{
+    $seg = (int)round((float)$seg);
+    if ($seg >= 3600 && $seg % 60 === 0) {
+        $h = intdiv($seg, 3600);
+        $m = intdiv($seg % 3600, 60);
+        return $m > 0 ? t("{1} h {2} min", [1 => $h, 2 => $m]) : t("{1} h", [1 => $h]);
+    }
+    $m = intdiv($seg, 60);
+    $s = $seg % 60;
+    return $m === 0 ? t("{1} s", [1 => $s]) : ($s === 0 ? t("{1} min", [1 => $m]) : t("{1} min {2} s", [1 => $m, 2 => $s]));
+}
+
+// Voltas por extenso: "1 volta", "14 voltas", "12,5 voltas"
+function voltas_txt($v)
+{
+    return abs((float)$v - 1) < 0.005 ? t("1 volta") : t("{1} voltas", [1 => numero_txt($v, 2, 0)]);
+}
+
+// Um movimento pronto para a API: o tipo e a medida que ele diz (voltas ou tempo), por extenso
+function winder_movimento_info($m)
+{
+    $voltas = $m["voltas"] === null ? null : (float)$m["voltas"];
+    $seg = $m["segundos"] === null ? null : (int)$m["segundos"];
+    $medida = $voltas !== null ? voltas_txt($voltas) : tempo_curto_txt($seg);
+    return ["id" => (int)$m["id"], "nome" => $m["nome"], "tipo" => $m["tipo"], "tipo_texto" => t(WINDER_MOVIMENTO_TIPOS[$m["tipo"]]),
+        "voltas" => $voltas, "segundos" => $seg, "medida" => $voltas !== null ? "voltas" : "tempo", "medida_texto" => $medida,
+        "texto" => t("{1}: {2}", [1 => t(WINDER_MOVIMENTO_TIPOS[$m["tipo"]]), 2 => $medida])];
+}
+
+// Como o programa funciona, por extenso: "o dia todo" ou "liga 3 h e para 9 h"
+function winder_funciona_txt($liga, $para)
+{
+    return $liga === null || $para === null ? t("o dia todo") : t("liga {1} h e para {2} h", [1 => numero_txt($liga, 2, 0), 2 => numero_txt($para, 2, 0)]);
+}
+
+// O cálculo de um programa. $p: a linha do winder_programa (ou os mesmos campos, de uma prévia): medida, velocidade,
+// tpd_manual, liga_horas, para_horas; $movs: os movimentos da sequência, na ordem (as linhas do winder_movimento, uma por
+// passo). Devolve os passos com as duas medidas (a dita pelo movimento e a calculada), a velocidade usada e de onde veio
+// (contada ou manual: tirada das voltas por dia do manual), o ciclo, as vezes por dia, o tempo girando e as voltas por dia
+// (no total e em cada sentido; null quando não dá para saber), os erros (o que impede de gravar), os avisos e o resumo
+function winder_programa_calculo($p, $movs)
+{
+    $num = function ($k) use ($p) {
+        return isset($p[$k]) && $p[$k] !== null && trim((string)$p[$k]) !== "" ? (float)$p[$k] : null;
+    };
+    $medida = ($p["medida"] ?? "") === "tempo" ? "tempo" : "voltas";
+    $vel = $num("velocidade");
+    $tpd_m = $num("tpd_manual");
+    $liga = $num("liga_horas");
+    $para = $num("para_horas");
+    $erros = [];
+    $avisos = [];
+    // os minutos ligado por dia: o dia todo, ou a parte do bloco (liga X h e para Y h)
+    $min_dia = $liga !== null && $para !== null && $liga + $para > 0 ? 1440 * $liga / ($liga + $para) : 1440.0;
+    // o que se sabe sem a velocidade: as voltas dos giros em voltas, o tempo dos giros em tempo e o das paradas
+    $giros = 0;
+    $voltas_seq = 0.0;
+    $seg_giro = 0.0;
+    $seg_parado = 0.0;
+    $fora = [];
+    foreach ($movs as $m) {
+        if ($m["tipo"] === "parado") {
+            $seg_parado += (float)$m["segundos"];
+            continue;
+        }
+        $giros++;
+        if ($m["voltas"] !== null) {
+            $voltas_seq += (float)$m["voltas"];
+            if ($medida === "tempo") {
+                $fora[] = $m["nome"];
+            }
+        } else {
+            $seg_giro += (float)$m["segundos"];
+            if ($medida === "voltas") {
+                $fora[] = $m["nome"];
+            }
+        }
+    }
+    if (count($movs) === 0) {
+        $erros[] = t("A sequência está vazia: ponha os movimentos, na ordem.");
+    } elseif ($giros === 0) {
+        $erros[] = t("Só parada não dá corda: ponha pelo menos um giro na sequência.");
+    }
+    if (count($fora) > 0) {
+        $erros[] = $medida === "voltas" ? t("No programa por voltas, os giros são em voltas: {1} é em tempo.", [1 => implode(", ", array_unique($fora))])
+            : t("No programa por tempo, os giros são em tempo: {1} é em voltas.", [1 => implode(", ", array_unique($fora))]);
+    }
+    // a velocidade: a contada, ou a que sai das voltas por dia do manual
+    $origem = $vel !== null ? "contada" : null;
+    if ($vel === null && $tpd_m !== null && count($erros) === 0) {
+        if ($medida === "tempo") {
+            // o ciclo não depende da velocidade: voltas por dia = velocidade × minutos girando por ciclo × vezes por dia
+            $vezes_t = $min_dia * 60 / ($seg_giro + $seg_parado);
+            $vel = $tpd_m / ($seg_giro / 60 * $vezes_t);
+        } else {
+            // o ciclo depende da velocidade (o tempo dos giros): voltas por dia = minutos ligado × V / (V / v + paradas), então
+            // v = V / (minutos ligado × V / voltas do manual − paradas)
+            $den = $min_dia * $voltas_seq / $tpd_m - $seg_parado / 60;
+            if ($den <= 0) {
+                $erros[] = t("Com estas paradas, o berço não chega a {1} voltas por dia: diminua as paradas ou confira o número do manual.", [1 => numero_txt($tpd_m, 0)]);
+            } else {
+                $vel = $voltas_seq / $den;
+            }
+        }
+        $origem = $vel !== null ? "manual" : null;
+    }
+    // os passos com as duas medidas, e as somas de um ciclo
+    $passos = [];
+    $ciclo = 0.0;
+    $girando = 0.0;
+    $vh = 0.0;
+    $va = 0.0;
+    $sabe_tempo = true;
+    $sabe_voltas = true;
+    foreach ($movs as $k => $m) {
+        $v_dito = $m["voltas"] !== null ? (float)$m["voltas"] : null;
+        $s_dito = $m["segundos"] !== null ? (float)$m["segundos"] : null;
+        if ($m["tipo"] === "parado") {
+            $v_c = 0.0;
+            $s_c = $s_dito;
+        } elseif ($v_dito !== null) {
+            $v_c = $v_dito;
+            $s_c = $vel !== null ? $v_dito / $vel * 60 : null;
+        } else {
+            $s_c = $s_dito;
+            $v_c = $vel !== null ? $s_dito / 60 * $vel : null;
+        }
+        if ($s_c === null) {
+            $sabe_tempo = false;
+        } else {
+            $ciclo += $s_c;
+            $girando += $m["tipo"] === "parado" ? 0 : $s_c;
+        }
+        if ($v_c === null) {
+            $sabe_voltas = false;
+        } elseif ($m["tipo"] === "horario") {
+            $vh += $v_c;
+        } elseif ($m["tipo"] === "anti_horario") {
+            $va += $v_c;
+        }
+        $passos[] = ["ordem" => $k + 1, "movimento_id" => (int)$m["id"], "nome" => $m["nome"], "tipo" => $m["tipo"], "tipo_texto" => t(WINDER_MOVIMENTO_TIPOS[$m["tipo"]]),
+            "voltas" => $v_c === null ? null : round($v_c, 2), "segundos" => $s_c === null ? null : (int)round($s_c),
+            "voltas_texto" => $v_c === null ? null : ($m["tipo"] === "parado" ? "—" : voltas_txt(round($v_c, 2))), "tempo_texto" => $s_c === null ? null : tempo_curto_txt($s_c),
+            "voltas_calculadas" => $m["tipo"] !== "parado" && $v_dito === null, "tempo_calculado" => $s_dito === null];
+    }
+    $vezes = $sabe_tempo && $ciclo > 0 && count($erros) === 0 ? $min_dia * 60 / $ciclo : null;
+    $voltas_dia = $vezes !== null && $sabe_voltas ? ($vh + $va) * $vezes : null;
+    if (count($erros) === 0 && $vel === null) {
+        $avisos[] = t("Sem a velocidade do berço não dá para saber {1} nem as voltas por dia: conte quantas voltas o berço dá em 1 minuto, ou ponha as voltas por dia que o manual diz.",
+            [1 => $medida === "tempo" ? t("as voltas de cada giro") : t("o tempo de cada giro")]);
+    }
+    if ($voltas_dia !== null && $voltas_dia > 1800) {
+        $avisos[] = t("{1} voltas por dia é mais que o dobro do que a maioria dos automáticos pede (650 a 900).", [1 => numero_txt($voltas_dia, 0)]);
+    }
+    $vd = $voltas_dia === null ? null : (int)round($voltas_dia);
+    $vdh = $voltas_dia === null ? null : (int)round($vh * $vezes);
+    $vda = $voltas_dia === null ? null : (int)round($va * $vezes);
+    $sentidos = $vd === null ? "" : ($vdh > 0 && $vda > 0 ? t("{1} horário + {2} anti-horário", [1 => numero_txt($vdh, 0), 2 => numero_txt($vda, 0)])
+        : ($vdh > 0 ? t("só no sentido horário") : t("só no sentido anti-horário")));
+    $ciclo_txt = $vezes === null ? null : (abs($vezes - 1) < 0.05 ? t("ciclo de {1}, uma vez por dia", [1 => tempo_curto_txt($ciclo)])
+        : t("ciclo de {1}, {2} vezes por dia", [1 => tempo_curto_txt($ciclo), 2 => numero_txt($vezes, 1, 0)]));
+    $resumo = count($erros) > 0 ? $erros[0]
+        : ($vd !== null ? t("{1} voltas por dia ({2})", [1 => numero_txt($vd, 0), 2 => $sentidos]) . ($ciclo_txt !== null ? " · " . $ciclo_txt : "")
+            : ($ciclo_txt !== null ? $ciclo_txt . " · " : "") . t("voltas por dia: falta a velocidade do berço"));
+    return ["passos" => $passos, "velocidade" => $vel === null ? null : round($vel, 3), "velocidade_origem" => $origem,
+        "velocidade_texto" => $vel === null ? null : t("{1} voltas por minuto", [1 => numero_txt($vel, 2, 0)]) . ($origem === "manual" ? " " . t("(tirada das voltas por dia do manual)") : ""),
+        "minutos_ligado_dia" => round($min_dia, 2), "ciclo_segundos" => $sabe_tempo && count($erros) === 0 ? (int)round($ciclo) : null,
+        "ciclo_texto" => $sabe_tempo && count($erros) === 0 ? tempo_curto_txt($ciclo) : null, "vezes_dia" => $vezes === null ? null : round($vezes, 2),
+        "minutos_girando_dia" => $vezes === null ? null : round($girando * $vezes / 60, 1), "girando_texto" => $vezes === null ? null : tempo_curto_txt($girando * $vezes),
+        "voltas_dia" => $vd, "voltas_horario" => $vdh, "voltas_anti_horario" => $vda,
+        "voltas_texto" => $vd === null ? null : t("{1} ({2})", [1 => numero_txt($vd, 0), 2 => $sentidos]), "erros" => $erros, "avisos" => $avisos, "texto" => $resumo];
+}
+
+// Os movimentos da sequência de um programa, na ordem (as linhas do winder_movimento, uma por passo)
+function winder_programa_movimentos($pid)
+{
+    return linhas("SELECT m.* FROM winder_programa_passo s JOIN winder_movimento m ON m.id = s.movimento_id WHERE s.programa_id = ? ORDER BY s.ordem", [(int)$pid]);
+}
+
+// O cálculo de um programa gravado (uma vez por requisição; de novo depois de uma gravação: FORMULAS_VERSAO); null: não existe
+function winder_programa_calculado($pid)
+{
+    static $cache = [];
+    $k = (int)colecao_atual() . ":" . ($GLOBALS["FORMULAS_VERSAO"] ?? 0) . ":" . (int)$pid;
+    if (!array_key_exists($k, $cache)) {
+        $p = linha("SELECT * FROM winder_programa WHERE id = ?", [(int)$pid]);
+        $cache[$k] = $p ? winder_programa_calculo($p, winder_programa_movimentos((int)$pid)) : null;
+    }
+    return $cache[$k];
+}
+
+// O programa de cada posição: [posicao_id => programa_id] (lido uma vez por requisição)
+function winder_posicoes_programas()
+{
+    static $cache = [];
+    $k = (int)colecao_atual() . ":" . ($GLOBALS["FORMULAS_VERSAO"] ?? 0);
+    if (!isset($cache[$k])) {
+        $cache[$k] = [];
+        foreach (linhas("SELECT posicao_id, programa_id FROM winder_posicao_programa") as $x) {
+            $cache[$k][(int)$x["posicao_id"]] = (int)$x["programa_id"];
+        }
+    }
+    return $cache[$k];
+}
+
+// O programa de uma posição, pronto para a API: {id, nome, texto (o resumo do cálculo), voltas_dia, voltas_horario,
+// voltas_anti_horario}; null: a posição está sem programa
+function winder_posicao_programa_info($posicao_id)
+{
+    $pid = winder_posicoes_programas()[(int)$posicao_id] ?? null;
+    if ($pid === null) {
+        return null;
+    }
+    $nome = valor("SELECT nome FROM winder_programa WHERE id = ?", [$pid]);
+    $c = winder_programa_calculado($pid);
+    return ["id" => $pid, "nome" => $nome, "texto" => $c["texto"], "voltas_dia" => $c["voltas_dia"], "voltas_horario" => $c["voltas_horario"], "voltas_anti_horario" => $c["voltas_anti_horario"]];
+}
+
+// As chaves da função WINDER_PROGRAMA("chave"): o que o cálculo do programa da posição dá
+const WINDER_PROGRAMA_CHAVES = ["voltas_dia" => "voltas_dia", "voltas_horario" => "voltas_horario", "voltas_anti_horario" => "voltas_anti_horario",
+    "minutos_girando" => "minutos_girando_dia", "velocidade" => "velocidade", "vezes_dia" => "vezes_dia", "ciclo_minutos" => "ciclo_segundos"];
+
+// O valor de WINDER_PROGRAMA("chave") numa posição: do cálculo do programa dela (null: sem programa, a chave não existe ou
+// não dá para saber, como as voltas sem a velocidade do berço)
+function winder_programa_valor($posicao_id, $chave)
+{
+    $pid = winder_posicoes_programas()[(int)$posicao_id] ?? null;
+    $c = $pid === null ? null : winder_programa_calculado($pid);
+    if ($c === null || !isset(WINDER_PROGRAMA_CHAVES[$chave]) || count($c["erros"]) > 0) {
+        return null;
+    }
+    $v = $c[WINDER_PROGRAMA_CHAVES[$chave]];
+    return $v === null ? null : ($chave === "ciclo_minutos" ? $v / 60 : (float)$v);
+}
+
+// Os programas da coleção, por nome, prontos para a API: o cadastro, a sequência (os ids dos movimentos, na ordem), o
+// cálculo e as posições que usam cada um
+function winder_programas_lista()
+{
+    $usado = [];
+    foreach (linhas("SELECT pp.programa_id, p.id, p.nome, w.nome AS winder FROM winder_posicao_programa pp JOIN winder_posicao p ON p.id = pp.posicao_id
+        JOIN winder w ON w.id = p.winder_id ORDER BY w.nome, w.id, p.ordem, p.nome, p.id") as $x) {
+        $usado[(int)$x["programa_id"]][] = ["posicao_id" => (int)$x["id"], "texto" => t("{1}, {2}", [1 => $x["winder"], 2 => $x["nome"]])];
+    }
+    $res = [];
+    foreach (linhas("SELECT * FROM winder_programa ORDER BY nome, id") as $p) {
+        $movs = winder_programa_movimentos((int)$p["id"]);
+        $n = function ($k) use ($p) { return $p[$k] === null ? null : (float)$p[$k]; };
+        $res[] = ["id" => (int)$p["id"], "nome" => $p["nome"], "medida" => $p["medida"], "medida_texto" => t(WINDER_PROGRAMA_MEDIDAS[$p["medida"]]),
+            "velocidade" => $n("velocidade"), "tpd_manual" => $p["tpd_manual"] === null ? null : (int)$p["tpd_manual"], "liga_horas" => $n("liga_horas"), "para_horas" => $n("para_horas"),
+            "funciona_texto" => winder_funciona_txt($n("liga_horas"), $n("para_horas")), "observacao" => $p["observacao"],
+            "sequencia" => array_map(function ($m) { return (int)$m["id"]; }, $movs), "calculo" => winder_programa_calculo($p, $movs), "usado_em" => $usado[(int)$p["id"]] ?? []];
+    }
+    return $res;
+}
+
+// Os movimentos da coleção, pelo tipo e pelo nome, prontos para a API, com os programas que usam cada um
+function winder_movimentos_lista()
+{
+    $usado = [];
+    foreach (linhas("SELECT DISTINCT s.movimento_id, g.id, g.nome FROM winder_programa_passo s JOIN winder_programa g ON g.id = s.programa_id ORDER BY g.nome, g.id") as $x) {
+        $usado[(int)$x["movimento_id"]][] = ["programa_id" => (int)$x["id"], "nome" => $x["nome"]];
+    }
+    $ordem = array_flip(array_keys(WINDER_MOVIMENTO_TIPOS));
+    $lista = linhas("SELECT * FROM winder_movimento ORDER BY nome, id");
+    usort($lista, function ($a, $b) use ($ordem) { return $ordem[$a["tipo"]] <=> $ordem[$b["tipo"]]; });
+    return array_map(function ($m) use ($usado) {
+        return winder_movimento_info($m) + ["usado_em" => $usado[(int)$m["id"]] ?? []];
+    }, $lista);
+}
+
+// O movimento igual da coleção (o mesmo tipo e a mesma medida), ou um novo, com o nome por extenso ("Giro horário, 14
+// voltas", "Parada, 29 min 16 s"). Devolve o id. $colecao_id: a coleção (na migração, sem escopo)
+function winder_movimento_achar_ou_criar($colecao_id, $tipo, $voltas, $segundos)
+{
+    $igual = $voltas !== null
+        ? valor("SELECT id FROM winder_movimento WHERE colecao_id = ? AND tipo = ? AND voltas IS NOT NULL AND ABS(voltas - ?) < 0.005 ORDER BY id", [(int)$colecao_id, $tipo, (float)$voltas])
+        : valor("SELECT id FROM winder_movimento WHERE colecao_id = ? AND tipo = ? AND voltas IS NULL AND segundos = ? ORDER BY id", [(int)$colecao_id, $tipo, (int)$segundos]);
+    if ($igual !== null) {
+        return (int)$igual;
+    }
+    $nome = t("{1}, {2}", [1 => t(WINDER_MOVIMENTO_TIPOS[$tipo]), 2 => $voltas !== null ? voltas_txt($voltas) : tempo_curto_txt($segundos)]);
+    sql("INSERT INTO winder_movimento (colecao_id, nome, tipo, voltas, segundos) VALUES (?, ?, ?, ?, ?)", [(int)$colecao_id, mb_substr($nome, 0, 60), $tipo, $voltas, $voltas !== null ? null : (int)$segundos]);
+    return (int)ultimo_id();
+}
+
+// O ajudante "montar uma sequência para N voltas por dia": os movimentos de um ciclo que dá essas voltas na velocidade do
+// berço ($sentido: os_dois, horario ou anti_horario; $medida: os giros em voltas ou em tempo). Nos dois sentidos: giro,
+// parada, o outro giro, parada; num sentido só: giro e parada. Cada giro dá as voltas de mais ou menos uma hora (a conta
+// fecha nas voltas pedidas pelas paradas). Devolve [[tipo, voltas, segundos], ...] e o erro (null: deu)
+function winder_sequencia_para($tpd, $vel, $sentido, $medida)
+{
+    $dirs = $sentido === "os_dois" ? ["horario", "anti_horario"] : [$sentido];
+    $n = count($dirs);
+    if ($medida === "voltas") {
+        $v_giro = max(1, (int)round($tpd / 24 / $n));
+        $seg_giro = $v_giro / $vel * 60;
+    } else {
+        $seg_giro = max(1, (int)round($tpd / 24 / $n / $vel * 60));
+        $v_giro = $seg_giro / 60 * $vel;
+    }
+    // o ciclo que dá as voltas pedidas: as voltas de um ciclo × (minutos por dia ÷ minutos do ciclo) = voltas por dia
+    $ciclo = 1440 * 60 * $v_giro * $n / $tpd;
+    $parada = (int)round(($ciclo - $n * $seg_giro) / $n);
+    if ($parada <= 0) {
+        return [null, t("A {1} voltas por minuto o berço não dá {2} voltas por dia: nem girando sem parar.", [1 => numero_txt($vel, 2, 0), 2 => numero_txt($tpd, 0)])];
+    }
+    $seq = [];
+    foreach ($dirs as $d) {
+        $seq[] = [$d, $medida === "voltas" ? $v_giro : null, $medida === "voltas" ? null : (int)$seg_giro];
+        $seq[] = ["parado", null, $parada];
+    }
+    return [$seq, null];
+}
+
+// Os campos de um programa no pedido (os que vierem; o resto, o de antes): a linha pronta para o cálculo e a gravação, a
+// sequência (os ids dos movimentos, na ordem: sequencia "1, 2, 3, 2" ou sequencia[]), os movimentos dela e os erros. Na
+// prévia (o cálculo que a tela mostra enquanto a pessoa muda), o nome pode faltar
+function winder_programa_do_pedido($d, $atual, $previa = false)
+{
+    $erros = [];
+    $pega = function ($k) use ($d, $atual) {
+        return array_key_exists($k, $d) ? trim((string)$d[$k]) : ($atual && $atual[$k] !== null ? (string)$atual[$k] : "");
+    };
+    $p = ["nome" => $pega("nome"), "medida" => $pega("medida"), "observacao" => $pega("observacao")];
+    foreach (["velocidade", "tpd_manual", "liga_horas", "para_horas"] as $k) {
+        $n = numero_digitado($pega($k));
+        if ($n === false || ($n !== null && $n <= 0)) {
+            $erros[] = ["velocidade" => t("A velocidade do berço é um número maior que zero (voltas por minuto)."), "tpd_manual" => t("As voltas por dia do manual são um número maior que zero."),
+                "liga_horas" => t("As horas ligado são um número maior que zero."), "para_horas" => t("As horas parado são um número maior que zero.")][$k];
+            $n = null;
+        }
+        $p[$k] = $n;
+    }
+    // o dia todo: sem os dois números do bloco (funciona=dia_todo os apaga)
+    if (($d["funciona"] ?? "") === "dia_todo") {
+        $p["liga_horas"] = null;
+        $p["para_horas"] = null;
+    }
+    $p["tpd_manual"] = $p["tpd_manual"] === null ? null : (int)round($p["tpd_manual"]);
+    if (($p["nome"] === "" && !$previa) || mb_strlen($p["nome"]) > 80) {
+        $erros[] = t("Dê um nome ao programa (até 80 caracteres).");
+    }
+    if (!isset(WINDER_PROGRAMA_MEDIDAS[$p["medida"]])) {
+        $erros[] = t("Tipo de cadastro (medida): voltas ou tempo.");
+        $p["medida"] = "voltas";
+    }
+    if ($p["velocidade"] !== null && $p["tpd_manual"] !== null) {
+        $erros[] = t("Ponha a velocidade contada ou as voltas por dia do manual, não as duas: a velocidade sai de uma delas.");
+    }
+    if (($p["liga_horas"] === null) !== ($p["para_horas"] === null)) {
+        $erros[] = t("Em blocos, diga as horas ligado e as horas parado (ou deixe as duas vazias: o dia todo).");
+    }
+    if (mb_strlen($p["observacao"]) > 1000) {
+        $erros[] = t("A observação vai até 1000 caracteres.");
+    }
+    // a sequência
+    if (array_key_exists("sequencia", $d)) {
+        $bruto = is_array($d["sequencia"]) ? $d["sequencia"] : preg_split("/[\\s,;]+/", trim((string)$d["sequencia"]), -1, PREG_SPLIT_NO_EMPTY);
+        $seq = [];
+        foreach ($bruto as $x) {
+            if (!ctype_digit(trim((string)$x))) {
+                $erros[] = t("A sequência são os códigos dos movimentos, na ordem, separados por vírgula: {1} não é um código.", [1 => trim((string)$x)]);
+            } else {
+                $seq[] = (int)$x;
+            }
+        }
+    } else {
+        $seq = $atual ? array_map("intval", array_column(linhas("SELECT movimento_id FROM winder_programa_passo WHERE programa_id = ? ORDER BY ordem", [(int)$atual["id"]]), "movimento_id")) : [];
+    }
+    $por_id = [];
+    if (count($seq) > 0) {
+        foreach (linhas("SELECT * FROM winder_movimento WHERE id IN (" . implode(", ", array_unique($seq)) . ")") as $m) {
+            $por_id[(int)$m["id"]] = $m;
+        }
+    }
+    $movs = [];
+    foreach ($seq as $mid) {
+        if (!isset($por_id[$mid])) {
+            $erros[] = t("Não há o movimento {1} (o código, na página Movimentos).", [1 => $mid]);
+        } else {
+            $movs[] = $por_id[$mid];
+        }
+    }
+    return [$p, $seq, $movs, array_values(array_unique($erros))];
+}
+
+// O movimento que está na sequência de um programa, ou o programa que está numa posição: não se exclui (a API diz onde está
+// em vez de perguntar o que sai junto)
+function winder_exclusao_em_uso($tabela, $id)
+{
+    if ($tabela === "winder_movimento") {
+        return (int)valor("SELECT COUNT(*) FROM winder_programa_passo WHERE movimento_id = ?", [(int)$id]) > 0;
+    }
+    return $tabela === "winder_programa" && (int)valor("SELECT COUNT(*) FROM winder_posicao_programa WHERE programa_id = ?", [(int)$id]) > 0;
+}
+
+// O lugar fixo de um relógio: a posição de quem ele é (winder_lugar), com o winder e se está ligada; null: nenhum
+function winder_lugar_do_relogio($rid)
+{
+    return linha("SELECT p.id, p.nome, p.ligada, p.winder_id, w.nome AS winder FROM winder_lugar l JOIN winder_posicao p ON p.id = l.posicao_id
+        JOIN winder w ON w.id = p.winder_id WHERE l.relogio_id = ?", [(int)$rid]);
+}
+
+// O lugar fixo de um relógio para as telas (o painel, o aviso da Hoje): {posicao_id, texto: "Versa, Pos. 1", livre: pode
+// voltar para lá agora (ligada e sem outro relógio), motivo: por que não pode}; null: ele não tem lugar
+function winder_lugar_info($rid, $agora = null)
+{
+    $lg = winder_lugar_do_relogio($rid);
+    if (!$lg) {
+        return null;
+    }
+    $oc = winder_posicao_ocupante((int)$lg["id"], $agora);
+    $texto = t("{1}, {2}", [1 => $lg["winder"], 2 => $lg["nome"]]);
+    $motivo = (int)$lg["ligada"] !== 1 ? t("o lugar dele ({1}) está desligado", [1 => $texto])
+        : ($oc && (int)$oc["relogio_id"] !== (int)$rid ? t("o lugar dele ({1}) está com o {2}", [1 => $texto, 2 => $oc["nome"]]) : null);
+    return ["posicao_id" => (int)$lg["id"], "texto" => $texto, "livre" => $motivo === null, "motivo" => $motivo];
+}
+
+// Quem está numa posição agora (a sessão no winder aberta nela): {relogio_id, nome}; null: ninguém
+function winder_posicao_ocupante($pid, $agora = null)
+{
+    $agora_t = date("Y-m-d H:i:s", $agora ?? time());
+    return linha("SELECT r.id AS relogio_id, r.nome FROM lancamento_winder lw JOIN lancamento l ON l.id = lw.lancamento_id JOIN relogio r ON r.id = l.relogio_id
+        WHERE lw.posicao_id = ? AND l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?)", [(int)$pid, $agora_t, $agora_t]);
+}
+
+// O lugar passa a ser do relógio: ele sai do lugar que tinha, e a posição deixa de ser de quem era
+function winder_lugar_gravar($pid, $rid)
+{
+    sql("DELETE FROM winder_lugar WHERE relogio_id = ? OR posicao_id = ?", [(int)$rid, (int)$pid]);
+    sql("INSERT INTO winder_lugar (posicao_id, relogio_id) VALUES (?, ?)", [(int)$pid, (int)$rid]);
+}
+
+// Os avisos de limite de um relógio num winder: a caixa (o diâmetro) ou o peso dele passa do que a almofada aguenta (os
+// campos do winder winder_caixa_max e winder_peso_max); o dispensado (winder_limite_ok) não volta. [texto, ...]
+function winder_limites_avisos($wid, $rid)
+{
+    if ((int)valor("SELECT COUNT(*) FROM winder_limite_ok WHERE winder_id = ? AND relogio_id = ?", [(int)$wid, (int)$rid]) > 0) {
+        return [];
+    }
+    $cw = campos_de_winder();
+    $vw = valores_de_winder("winder", (int)$wid);
+    $vr = valores_do_relogio((int)$rid);
+    $nome = (string)valor("SELECT nome FROM relogio WHERE id = ?", [(int)$rid]);
+    $res = [];
+    foreach ([["winder_caixa_max", "diametro", "O {1} tem {2} mm de caixa, e esta almofada vai até {3} mm."], ["winder_peso_max", "peso", "O {1} pesa {2} g, e esta almofada aguenta até {3} g."]] as [$lim, $do_r, $frase]) {
+        $max = isset($cw[$lim]) ? campo_para_conta($cw[$lim], $vw[$lim] ?? null) : null;
+        $tem = is_numeric($vr[$do_r] ?? null) ? (float)$vr[$do_r] : null;
+        if ($max !== null && $max > 0 && $tem !== null && $tem > $max) {
+            $res[] = t($frase, [1 => $nome, 2 => numero_txt($tem, 1, 0), 3 => numero_txt($max, 1, 0)]);
+        }
+    }
+    return $res;
+}
+tk("O {1} tem {2} mm de caixa, e esta almofada vai até {3} mm."); tk("O {1} pesa {2} g, e esta almofada aguenta até {3} g.");
 
 // Os tipos de acessório (ck_acessorio_tipo), na ordem, com o nome
 const ACESSORIO_TIPOS = ["pulseira" => "Pulseira", "caixa" => "Caixa", "estojo" => "Estojo", "ferramenta" => "Ferramenta", "carregador" => "Carregador",
@@ -6695,7 +7348,8 @@ function documentos_manutencao($orcamento, $diario = false)
     if ($diario && $perdidos > 0) {
         $log[] = t("aviso: {1}{2} na pasta e sem a cópia no banco (perdidos: exclua-os na página Documentos)", [1 => $perdidos, 2 => $perdidos === 1 ? t(" documento sem o arquivo inteiro") : t(" documentos sem o arquivo inteiro")]);
     }
-    // a pasta: as dos relógios (r<id>) e dos calibres (c<id>) que não existem mais, e os arquivos de nenhum documento
+    // a pasta: as dos relógios (r<id>), dos calibres (c<id>) e dos winders (w<id>) que não existem mais, e os arquivos de
+    // nenhum documento
     $relogios = [];
     foreach (linhas("SELECT id FROM relogio") as $r) {
         $relogios["r" . (int)$r["id"]] = true;
@@ -6703,10 +7357,13 @@ function documentos_manutencao($orcamento, $diario = false)
     foreach (linhas("SELECT id FROM calibre") as $r) {
         $relogios["c" . (int)$r["id"]] = true;
     }
+    foreach (linhas("SELECT id FROM winder") as $r) {
+        $relogios["w" . (int)$r["id"]] = true;
+    }
     $pastas_apagadas = [];
     $soltos = 0;
     foreach (scandir($pasta) ?: [] as $x) {
-        if (preg_match("/^[rc]\\d+$/", $x) !== 1 || !is_dir($pasta . "/" . $x)) {
+        if (preg_match("/^[rcw]\\d+$/", $x) !== 1 || !is_dir($pasta . "/" . $x)) {
             continue;
         }
         if (!isset($relogios[$x])) {

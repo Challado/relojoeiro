@@ -71,7 +71,7 @@ api(pedido).then(function (d) {
   }
   // cada relógio
   res += el("section", {"class": "cartao-config"}, el("h2", {}, t("Cada relógio"))
-    + el("p", {"class": "nota"}, t("Do mais usado ao menos usado no período. Dias de uso: os dias em que ele foi ao pulso. A parte: das horas no pulso de todos. Custo por uso: o valor pago dividido por todos os dias de uso (desde sempre). Tendência: as horas da segunda metade do período comparadas com as da primeira."))
+    + ajudaNota("uso", t("As colunas do uso"), t("Do mais usado ao menos usado no período. Dias de uso: os dias em que ele foi ao pulso. A parte: das horas no pulso de todos. Custo por uso: o valor pago dividido por todos os dias de uso (desde sempre). Tendência: as horas da segunda metade do período comparadas com as da primeira."))
     + el("div", {"class": "rolagem"}, el("table", {"class": "relogios compacta lista-estatisticas"}, el("thead", {}, el("tr", {}, el("th", {}, t("Relógio")) + el("th", {}, t("Dias de uso"))
       + el("th", {}, t("Horas")) + el("th", {}, t("A parte")) + el("th", {}, t("Custo por uso")) + el("th", {}, t("Sem uso há")) + el("th", {}, t("Tendência"))))
       + el("tbody", {}, d.relogios.map(function (x) {
@@ -94,7 +94,7 @@ api(pedido).then(function (d) {
       + el("p", {"class": "nota"}, d.por_mes.map(function (x) { return h(x.nome) + ": " + horas(x.horas) + ", " + x.relogios + (x.relogios === 1 ? t(" relógio") : t(" relógios")); }).join(" · "))));
   // a distribuição da coleção
   res += el("section", {"class": "cartao-config"}, el("h2", {}, t("A coleção"))
-    + el("p", {"class": "nota"}, t("Os relógios da coleção agora (na coleção e emprestados), divididos de cada jeito, com as horas no pulso de cada parte no período."))
+    + ajudaNota("colecao", t("A coleção agora"), t("Os relógios da coleção agora (na coleção e emprestados), divididos de cada jeito, com as horas no pulso de cada parte no período."))
     + el("div", {"class": "distribuicao"}, d.distribuicao.map(function (g) {
       return el("div", {"class": "parte-distribuicao"}, el("h3", {}, h(g.titulo)) + el("table", {"class": "relogios tabela-distribuicao"}, el("tbody", {}, g.itens.map(function (i) {
         return el("tr", {}, el("td", {}, h(i.nome)) + el("td", {"class": "num"}, i.relogios + (i.relogios === 1 ? t(" relógio") : t(" relógios")))

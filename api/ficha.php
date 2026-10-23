@@ -69,10 +69,11 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     $saida["relogio"] = ["id" => $id, "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? 0 : (int)$r["no_id"], "disponivel" => (int)$r["disponivel"] === 1,
         "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]), "da_colecao" => da_colecao($r),
         "acessorios" => acessorios_lista($id),
-        // o winder é obrigatório: sem winder cadastrado, o Marcar não tem pôr nem período no winder; com winder, o pôr é só pela
+        // o winder é obrigatório: sem winder cadastrado, o Marcar não tem pôr nem período no winder; com winder, o pôr é pela
         // página Winders, e o período que já passou escolhe a posição onde ele esteve (todas as posições, quando ele tem um tipo
-        // marcado como winder)
+        // marcado como winder); o relógio que tem o lugar dele (winder_lugar) volta para lá daqui também, se está livre
         "winder_cadastrado" => ($w_cad = winder_cadastrado()),
+        "winder_lugar" => $w_cad ? winder_lugar_info($id, $agora) : null,
         "winder_posicoes" => $w_cad && count(array_filter($tipos, function ($x) { return $x["winder"]; })) > 0 ? winder_posicoes_livres($agora, false) : [],
         // os acessórios de outros relógios (ou soltos) que servem neste (a pulseira com a largura do entre alças dele)
         "acessorios_servem" => acessorios_que_servem($id),

@@ -60,7 +60,7 @@ function recarregarAvisos() {
         [t("O lançamento que resolve o aviso (dar corda, carregar)"), lugar("cadastros.php?aba=lancamentos", t("Cadastros › Tipos de lançamento"))],
         [t("Os lembretes com hora e repetição"), t("aqui: Lembretes")], [t("Para onde vão (Telegram, e-mail, agendas)"), t("aqui: Para onde vão")],
         [t("A carga em que avisa"), lugar("configuracao.php", t("Sistema › Configuração"))]])
-      + el("p", {"class": "nota"}, t("Tudo o que o sistema lembra: os avisos dos relógios, que ele calcula sozinho pelos dados de cada um (dar corda, carregar, trocar a pilha...); os lembretes, que você marca com hora e repetição; e para onde vão os dois (os destinos das mensagens e as agendas)."));
+      + ajudaNota("pagina", t("O que esta página reúne"), t("Tudo o que o sistema lembra: os avisos dos relógios, que ele calcula sozinho pelos dados de cada um (dar corda, carregar, trocar a pilha...); os lembretes, que você marca com hora e repetição; e para onde vão os dois (os destinos das mensagens e as agendas)."));
     if (recado !== "") {
       res += recado;
       recado = "";
@@ -72,7 +72,7 @@ function recarregarAvisos() {
     dc.avisos.forEach(function (x) { if (x.id === editar) { e = x; } });
     var f = e || {};
     res += el("section", {"class": "cartao-config", "id": "avisos-relogios"}, el("h2", {}, t("Avisos dos relógios"))
-      + el("p", {"class": "nota"}, t("Cada aviso tem uma fórmula da data prevista; entra \"em breve\" dentro da antecedência e \"atrasado\" quando a data passa. O \"vale quando\" (uma fórmula) diz para quais relógios o aviso vale (ex.: corda_manual = 0, só para o automático sem corda); vazio, vale para todos do grupo. O texto é o motivo nas mensagens ({motivo}): \"Dar corda: San Martin (a reserva acaba em 3h, 28/09/2026 10:53)\"; nele: {relogio}, {data}, {quando} e {limite} (o limite de carga do relógio). O tipo que resolve vira o botão na tela Hoje. Como as fórmulas, pode ter uma versão por ponto da árvore. Na escala inteligente: \"no relógio do dia\" é conferido no escolhido, do começo ao fim do bloco dele; \"sempre\", também nos guardados, todo dia. O que vence vira o lembrete do dia, e o lançamento que resolve é simulado com o valor (leitura) ou as horas (sessão) do aviso. Se o aviso vai para cada destino e cada agenda (e com que texto) se escolhe neles, em Para onde vão, embaixo; aqui fica a data que ele usa na agenda. \"Na hora\": além do alerta da manhã, o Telegram recebe o aviso no minuto em que ele vence (uma vez, até ele ser resolvido), como o \"Tirar do carregador\" quando a bateria enche."))
+      + ajudaNota("avisos", t("Como os avisos funcionam"), t("Cada aviso tem uma fórmula da data prevista; entra \"em breve\" dentro da antecedência e \"atrasado\" quando a data passa. O \"vale quando\" (uma fórmula) diz para quais relógios o aviso vale (ex.: corda_manual = 0, só para o automático sem corda); vazio, vale para todos do grupo. O texto é o motivo nas mensagens ({motivo}): \"Dar corda: San Martin (a reserva acaba em 3h, 28/09/2026 10:53)\"; nele: {relogio}, {data}, {quando} e {limite} (o limite de carga do relógio). O tipo que resolve vira o botão na tela Hoje. Como as fórmulas, pode ter uma versão por ponto da árvore. Na escala inteligente: \"no relógio do dia\" é conferido no escolhido, do começo ao fim do bloco dele; \"sempre\", também nos guardados, todo dia. O que vence vira o lembrete do dia, e o lançamento que resolve é simulado com o valor (leitura) ou as horas (sessão) do aviso. Se o aviso vai para cada destino e cada agenda (e com que texto) se escolhe neles, em Para onde vão, embaixo; aqui fica a data que ele usa na agenda. \"Na hora\": além do alerta da manhã, o Telegram recebe o aviso no minuto em que ele vence (uma vez, até ele ser resolvido), como o \"Tirar do carregador\" quando a bateria enche."))
       + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, [t("Aviso"), t("Vale para"), t("Data prevista"), t("Vale quando"), t("Antecedência"), t("Resolve"), t("Na escala"), t("Na agenda"), t("Na hora"), t("Ativo"), ""].map(function (item, i) {
           return el("th", {"class": i === 4 ? "num" : null}, item);
         }).join(""))) + el("tbody", {}, dc.avisos.map(function (a) {
@@ -144,10 +144,10 @@ function recarregarAvisos() {
       + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "ativo", "value": "0"}) + el("input", {"type": "checkbox", "name": "ativo", "value": "1", "checked": fe.ativo}) + t(" Ativo"))
       + (edit ? el("p", {"class": "nota"}, t("Próximas vezes: {1}.", {1: edit.proximas_60.length > 0 ? h(edit.proximas_60.map(function (item) { return dataBr(item, true) + " " + horaBr(item); }).join(", "))
         : t("nenhuma nos próximos 60 dias")})) : "")
-      + el("p", {"class": "nota"}, t("Evento novo já vai por todos os destinos da coleção. Em cada destino e cada agenda (páginas Destinos e Agendas), escolha se ele vai e com que texto."))
+      + ajudaNota("evento-destinos", t("Para onde vai um lembrete"), t("Evento novo já vai por todos os destinos da coleção. Em cada destino e cada agenda (páginas Destinos e Agendas), escolha se ele vai e com que texto."))
       + el("div", {"class": "botoes"}, el("button", {}, edit ? t("Salvar alterações") : t("Criar evento")) + (edit ? " " + el("a", {"href": "avisos.php#lembretes"}, t("cancelar")) : ""));
     res += el("section", {"class": "cartao-config", "id": "lembretes"}, el("h2", {}, t("Lembretes (eventos personalizados)"))
-      + el("p", {"class": "nota"}, t("Um aviso seu, com horário e repetição próprios: todo dia, em dias da semana, todo mês, a cada N dias ou uma vez só."))
+      + ajudaNota("lembretes", t("Os lembretes"), t("Um aviso seu, com horário e repetição próprios: todo dia, em dias da semana, todo mês, a cada N dias ou uma vez só."))
       + eventosLista
       + el("details", {"class": "cartao-config novo-evento", "open": edit !== null || q.has("novo_evento")},
       el("summary", {}, edit ? t("Editar o evento {1}", {1: h(edit.nome)}) : t("Novo evento")) + el("form", {"data-recurso": "config", "class": "form-evento"}, formEvento)));
@@ -161,7 +161,7 @@ function recarregarAvisos() {
     var alertas = cartao(t("Para onde vão: destinos e agendas"), el("div", {"class": "campos"},
       el("h3", {}, el("a", {"href": "destinos.php"}, t("Destinos das mensagens"))) + listaAlvos(dg.destinos, "ativo", t("Nenhum ainda: as mensagens da manhã, da noite e os avisos não saem para lugar nenhum."))
       + el("h3", {}, el("a", {"href": "agendas.php"}, t("Agendas"))) + listaAlvos(dg.agendas, "ativa", t("Nenhuma ainda."))),
-      el("p", {"class": "nota"}, t("Um destino é um webhook (Telegram, n8n...), um e-mail ou o Web Push do navegador; uma agenda é o Google, um CalDAV (Nextcloud, iCloud, Fastmail), o Outlook ou um link ICS para assinar em qualquer app. Cada um escolhe o que recebe e tem a sua mensagem.")));
+      ajudaNota("destinos", t("Destinos e agendas"), t("Um destino é um webhook (Telegram, n8n...), um e-mail ou o Web Push do navegador; uma agenda é o Google, um CalDAV (Nextcloud, iCloud, Fastmail), o Outlook ou um link ICS para assinar em qualquer app. Cada um escolhe o que recebe e tem a sua mensagem.")));
     res += el("div", {"id": "para-onde"}, alertas);
     document.getElementById("avisos").innerHTML = res;
     mostrarRepeticao();

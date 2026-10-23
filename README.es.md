@@ -153,7 +153,7 @@ Y las de la rotación (el guion de los modos; fuera de él, el día es el del in
 | `NO_GRUPO("Tradicional › Quartzo")` | 1 si el reloj está en ese punto del árbol o debajo (el nombre, la ruta o `#id`; `"todos"`: 1 para todos) |
 | `RELOGIO("Seiko SKX")` | 1 si es ese reloj (por el nombre o por el id) |
 | `CALIBRE("NH35")` | 1 si el reloj tiene ese calibre (por el nombre o por el id) |
-| `WINDER_POSICAO("pos_tpd")`, `WINDER("winder_marca")` | un campo de la posición del winder en que está el reloj (dentro del `ACUMULA`, la posición de cada sesión en el winder) y un campo de su winder; fuera de una posición, vacío (vea [Los winders](#los-winders)) |
+| `WINDER_PROGRAMA("voltas_dia")`, `WINDER_POSICAO("campo")`, `WINDER("winder_marca")` | el cálculo del programa de la posición del winder en que está el reloj (las vueltas por día, `"voltas_horario"`, `"voltas_anti_horario"`, `"minutos_girando"`, `"velocidade"`, `"vezes_dia"`, `"ciclo_minutos"`; dentro del `ACUMULA`, la posición de cada sesión en el winder), un campo de esa posición y un campo de su winder; fuera de una posición, o sin programa, vacío (vea [Los winders](#los-winders)) |
 | `ESCOLHIDO_HA(1)`, `VEZES_NO_PLANO(7)` | 1 si el reloj fue el del plan hace n días (1: ayer; -1: mañana, cuando ya está en el plan); cuántos días tuvo en el plan en los últimos n días |
 | `ESCOLHA(n; a; b; c)` | el n-ésimo de los valores (solo ese se calcula): `ESCOLHA(DIA_SEMANA(); …)` da un valor por día de la semana |
 | `SORTEIO()` | un número de 0 a 1, del mismo lote de RANDOM.ORG de los sorteos |
@@ -695,45 +695,74 @@ vendidos y archivados no entran en esa cuenta.
 ### Los winders
 
 El **winder** (la caja que gira los automáticos) tiene registro propio, en la página **Winders** (en el menú **Colección**):
-cada winder con sus **posiciones**, y cada posición con su **programa**. Nada de esto está fijo en el código: los datos del
-winder y el programa de la posición son **campos**, registrados en la pestaña **Campos** de la página **Definiciones** con
-**Para: los winders** o **Para: las posiciones de los winders**, como los de los relojes. El registro nuevo ya trae la
-**marca** y el **modelo** del winder y, en la posición, las **rotaciones por día** (TPD, por defecto 650, con los valores
-posibles 650, 850, 1050 y 1250, los de la llave TPD de los winders comunes), si **gira en sentido horario** y **antihorario**
-(los dos, por defecto: el *Auto*, bidireccional, de la llave del winder) y el **ciclo** (cuánto tiempo gira y cuánto
-descansa). ¿Su winder tiene otras velocidades? Cambie los valores posibles del campo **Rotaciones por día** en la pestaña
-**Campos** (o quítelos todos, para escribir cualquier número). ¿Se programa de otra manera? Cree sus campos.
+cada winder con sus **posiciones**, y cada posición con su **programa**, la manera en que gira la cuna. Los datos del winder
+son **campos**, registrados en la pestaña **Campos** de la página **Definiciones** con **Para: los winders**, como los de los
+relojes; el registro nuevo ya trae la **marca**, el **modelo**, el **enlace del manual** y los **límites de la almohadilla**
+(la caja hasta tantos mm, la muñeca de tanto a tanto cm y el peso hasta tantos g). La posición también puede tener campos
+propios (**Para: las posiciones de los winders**).
+
+**Los movimientos y los programas.** Un programa es una **secuencia de movimientos** que se repite. En la página
+**Movimientos** (menú **Colección**) están los pasos: cada uno con un **código**, el nombre, el **tipo** (**giro horario**,
+**giro antihorario** o **parada**) y una sola medida: el giro dice **cuántas vueltas** da o **cuánto tiempo** gira, nunca las
+dos; la parada solo tiene el tiempo. En la página **Programas** (menú **Colección**) cada programa tiene el nombre, el **tipo
+de registro** (**por vueltas**: los giros de la secuencia son en vueltas; **por tiempo**: en tiempo), si **funciona todo el
+día** o **en bloques** (*enciende 3 h y para 9 h*), la **velocidad de la cuna** y la **secuencia**, los códigos de los
+movimientos en orden (*3, 1, 4, 1*: el mismo código puede repetirse, como la misma parada entre los dos giros). La velocidad
+de la cuna es **contada** (pegue un trocito de cinta en la cuna y cuente las vueltas en 1 minuto) o sale de las **vueltas por
+día que dice el manual** para ese modo: una u otra. **Nada de lo que se calcula se escribe**: las vueltas de cada paso (o el
+tiempo), el ciclo, cuántas veces al día se repite, el tiempo girando y las **vueltas por día** (el TPD), en total y en cada
+sentido, aparecen debajo mientras usted cambia, para comprobar. Un programa sirve en cuantas posiciones quiera, en cualquier
+winder. Para el winder que solo dice las vueltas por día (la llave TPD: 650, 850...) está el ayudante **Montar una secuencia
+para N vueltas por día**: las vueltas, la velocidad y el sentido, y él monta los giros y las paradas (crea los movimientos que
+faltan); después es un programa como los demás. Un movimiento que está en un programa, o un programa que está en una
+posición, no se elimina (quítelo de ahí antes).
 
 Del lado del reloj, el automático gana tres campos, que el calibre también puede dar: las **rotaciones por día que pide** en
 el winder (por defecto 650) y si **da cuerda girando en sentido horario** y **antihorario** (los dos, por defecto; el
 movimiento que solo da cuerda en un sentido marca solo ese).
 
 Cuánto carga cada hora en el winder sale de una fórmula, la `winder_ganho` (pestaña **Fórmulas** de las Definiciones), que
-usted ajusta como quiera. La del registro nuevo: si la posición gira en un sentido en que el reloj da cuerda, gana la
-proporción de los campos *En el winder* (las horas y la reserva que dan) por las rotaciones de la posición ÷ las que pide
-(como máximo 1); si no gira en ningún sentido en que da cuerda, no gana nada. La sesión que no está en una posición (las
-antiguas, de antes de los winders, o la de un winder eliminado) usa los campos *En el winder*, como antes. En las fórmulas,
-`WINDER_POSICAO("pos_tpd")` es un campo de la posición y `WINDER("winder_marca")`, uno del winder. La `reserva_restante` usa
-la `winder_ganho` en cada sesión en el winder, con el programa de la posición en que estuvo: un reloj que pasó la noche en
-una posición de 650 rotaciones y la tarde en una de 1250 gana cada tramo según el suyo. La `winder_falta` da las horas hasta
-que se llena.
+usted ajusta como quiera. La del registro nuevo suma las vueltas por día del programa **solo en los sentidos en que el reloj
+da cuerda** y las compara con las que pide (como máximo 1), por la proporción de los campos *En el winder* (las horas y la
+reserva que dan): en un programa de 650 vueltas, 325 en cada sentido, el reloj que solo da cuerda en el horario gana la
+mitad. Sin programa en la posición, o en una sesión que no está en una posición (las antiguas, de antes de los winders, o la
+de un winder eliminado), valen los campos *En el winder*, como antes. En las fórmulas, `WINDER_PROGRAMA("voltas_dia")` (y
+`"voltas_horario"`, `"voltas_anti_horario"`, `"minutos_girando"`, `"velocidade"`, `"vezes_dia"`, `"ciclo_minutos"`) lee el
+cálculo del programa de la posición, `WINDER_POSICAO("campo")` un campo de la posición y `WINDER("winder_marca")` uno del
+winder. La `reserva_restante` usa la `winder_ganho` en cada sesión en el winder, con el programa de la posición en que
+estuvo: un reloj que pasó la noche en una posición de 650 vueltas y la tarde en una de 1250 gana cada tramo según el suyo.
+La `winder_falta` da las horas hasta que se llena.
+
+**El lugar fijo.** La posición en que usted pone un reloj pasa a ser **su lugar**. Quitado (a la muñeca, guardado...), la
+cuna sigue con **su foto, tenue y con el aro rojo**, y la fila dice dónde está (*"lugar del Seiko 5 · fuera: en la
+muñeca"*), con los botones **Volver a poner** y **Liberar el lugar**. Poner en el winder **desde cualquier lugar** (el panel
+del reloj, el atajo del móvil, el aviso de Hoy, la API) lo devuelve a su lugar, si la posición está encendida y libre; con
+otro reloj en ella, o apagada, el sistema dice por qué y el poner queda para la página Winders. Otro reloj puesto en la
+posición se queda con el lugar. **Los límites de la almohadilla**: el reloj cuya caja o peso (los de su registro) pasa de lo
+que el winder aguanta recibe un aviso en la posición; es solo un aviso, y el **Ya lo sé, déjalo así** lo descarta para ese
+reloj en ese winder. **Los documentos del winder** (el manual, la factura, las fotos) funcionan como los del reloj: el
+**Documentos (N)** de la tarjeta abre la página Documentos en el winder.
 
 En la página, una tarjeta por winder. Arriba, el **dibujo** del winder: la caja con una cuna redonda por posición, y en cada
 cuna ocupada la **foto** del reloj (o la inicial del nombre), con un anillo verde alrededor que es la **carga** y,
-mientras la posición está encendida, una rayita clara girando sobre él (quien pide menos movimiento en el aparato lo ve quieto); la cuna libre es
-punteada, la apagada queda tenue, y el clic en la foto abre la ficha. Debajo, los **datos** del winder (etiqueta y valor, con
-la etiqueta *por defecto* donde vale el valor por defecto del campo) y la **tabla de las posiciones**, en la que cada fila se
-edita ahí mismo: una columna para cada campo de la posición (las **rotaciones por día** en el menú de los valores posibles,
-los **sentidos** en sí o no, el **ciclo**; vacío vuelve al valor por defecto), la columna **Reloj** (un menú con **—
-ninguno —** y los relojes que van a un winder), la **carga**, **cuánto da cada hora** y cuándo se **llena** ("lleno a las
-19:20"), y el **Guardar** de la fila. En Reloj, **— ninguno —** quita a quien está en la posición; elegir otro **pone** o
-**cambia**: quien estaba sale, y el elegido, si estaba en otra posición (o en el winder sin posición, como los que fueron al
-winder antes de registrarlo), sale de ahí y entra en esta. El **Editar** de cada posición abre el nombre, el orden y
-**encendida**; debajo, los formularios del winder (el nombre, los campos y, al crear, cuántas posiciones ya trae) y de la
-posición. La posición apagada no recibe reloj, y con un reloj dentro solo se apaga junto con **— ninguno —**.
+mientras la posición está encendida, una rayita clara girando sobre él (quien pide menos movimiento en el aparato lo ve
+quieto); la cuna del lugar de quien está fuera muestra su foto tenue, con el aro rojo; la libre es punteada, la apagada queda
+tenue, y el clic en la foto abre la ficha. Debajo, los **datos** del winder (etiqueta y valor, con la etiqueta *por defecto*
+donde vale el valor por defecto del campo, y el enlace del manual) y la **tabla de las posiciones**, en la que cada fila se
+edita ahí mismo: el **Programa** (un menú con **— sin programa —** y los programas, con su cálculo debajo), los campos de la
+posición, si los hay, la columna **Reloj** (un menú con **— ninguno —** y los relojes que van a un winder), la **carga**,
+**cuánto da cada hora** y cuándo se **llena** ("lleno a las 19:20"), y el **Guardar** de la fila. En Reloj, **— ninguno —**
+quita a quien está en la posición (el lugar sigue siendo suyo); elegir otro **pone** o **cambia**: quien estaba sale, y el
+elegido, si estaba en otra posición (o en el winder sin posición, como los que fueron al winder antes de registrarlo), sale
+de ahí y entra en esta. El **Editar** de cada posición abre el nombre, el orden y **encendida**; debajo, los formularios del
+winder (el nombre, los campos y, al crear, cuántas posiciones ya trae) y de la posición. La posición apagada no recibe reloj,
+y con un reloj dentro solo se apaga junto con **— ninguno —**.
 
-**El winder es obligatorio.** Sin ningún winder registrado, no hay poner ni quitar del winder en ningún lugar: en el panel del reloj, el **Poner en el winder** del cuadro **Marcar** solo dice eso y lleva a la página **Winders**; el aviso que se resuelve en el winder viene sin botón; el atajo del móvil y la API rechazan. Con winder registrado, el reloj va al winder **solo por la página Winders**, elegido en el **Reloj** de una posición: en el panel, el **Poner en el winder** lleva a la página, y en **Hoy toca** el aviso trae el enlace **Poner en el winder ›**. **Quitar** vale en todas partes: en la página (**— ninguno —**), en el **Quitar del winder** del panel, en el botón del aviso, en el atajo y en la API. El **período que ya pasó** en el winder (el *Un período que ya pasó* de Marcar) pide la **posición** donde estuvo. La sesión que quedó abierta en una colección sin winder (un winder eliminado con el reloj dentro) todavía se puede quitar. El estado dice dónde está: *"En el winder · Oficina, Pos. 2"*. El tipo de registro del winder es el marcado como **winder** en la pestaña **Tipos de registro** (el *En el winder* del registro nuevo). Eliminar una posición o un winder no borra las sesiones: quedan sin la posición, y su cálculo vuelve a los campos del reloj. Por la API: `recurso=winders` (los winders, las posiciones, el reloj en cada una y los relojes que pueden ir a un winder), las escrituras `winders` y `winder_posicoes` (`salvar`, `excluir`; en el `salvar` de la posición, `relogio_id` pone, cambia o, con 0, quita); en `lancamento`, el `iniciar` rechaza el tipo del winder, su `periodo` pide `posicao_id`, y el `encerrar` y el `alternar` quitan. Un árbol que ya existía gana los valores posibles de las rotaciones por día en la actualización (la migración
-v46), si el campo todavía no tenía ninguno.
+**El winder es obligatorio.** Sin ningún winder registrado, no hay poner ni quitar del winder en ningún lugar: en el panel del reloj, el **Poner en el winder** del cuadro **Marcar** solo dice eso y lleva a la página **Winders**; el aviso que se resuelve en el winder viene sin botón; el atajo del móvil y la API rechazan. Con winder registrado, el reloj va al winder por la página **Winders**, elegido en el **Reloj** de una posición, o, si tiene su lugar libre, desde cualquier lugar: en el panel, el botón **Vuelve a su lugar: Versa, Pos. 2**; en **Hoy toca**, el botón del aviso; sin lugar (o con él ocupado), el **Poner en el winder ›** lleva a la página. **Quitar** vale en todas partes: en la página (**— ninguno —**), en el **Quitar del winder** del panel, en el botón del aviso, en el atajo y en la API. El **período que ya pasó** en el winder (el *Un período que ya pasó* de Marcar) pide la **posición** donde estuvo (sin ella, vale su lugar). La sesión que quedó abierta en una colección sin winder (un winder eliminado con el reloj dentro) todavía se puede quitar. El estado dice dónde está: *"En el winder · Oficina, Pos. 2"*. El tipo de registro del winder es el marcado como **winder** en la pestaña **Tipos de registro** (el *En el winder* del registro nuevo). Eliminar una posición o un winder no borra las sesiones: quedan sin la posición, y su cálculo vuelve a los campos del reloj. Por la API: `recurso=winders` (los winders, las posiciones con el programa, el reloj, el lugar y los avisos de límite, y los relojes y los programas para elegir), `recurso=programas` (los programas con el cálculo, los movimientos; con `previa=1`, el cálculo de un programa sin guardar), las escrituras `winders` (`salvar`, `limite_ok`, `excluir`), `winder_posicoes` (`salvar`, con `programa_id` y `relogio_id`, que pone, cambia o, con 0, quita; `liberar`; `excluir`), `movimentos` (`salvar`, `excluir`) y `programas` (`salvar`, `montar`, `excluir`); en `lancamento`, el `iniciar` y el `alternar` del tipo del winder lo devuelven al lugar libre (sin lugar, rechazan), su `periodo` pide `posicao_id`, y el `encerrar` quita.
+Un árbol que ya existía gana todo esto en la actualización (la migración v47): el programa antiguo de cada posición (las
+rotaciones por día, los sentidos y el ciclo, que eran campos de la posición) se vuelve un programa, con las vueltas por día
+del manual iguales a las de antes (la carga sigue igual; cuente la velocidad de la cuna y póngala en el programa), quien está
+en el winder gana el lugar, y los campos antiguos salen.
 
 ### Las secciones de la ficha
 
@@ -1154,8 +1183,8 @@ dan el brazo (y el winder)**, como proporción: *"tantas horas aquí me dan tant
 | **En la muñeca: reserva que dan esas horas** (h) `carga_pulso_reserva` | 36 | ...y cuánta reserva da ese tiempo. Con 8 h y 36 h: cada hora en la muñeca suma 36 ÷ 8 = **4,5 h** de reserva. |
 | **En el winder: horas** `carga_winder_horas` | el de la muñeca | Lo mismo, en el winder (la caja que hace girar el reloj)... |
 | **En el winder: reserva que dan esas horas** (h) `carga_winder_reserva` | el de la muñeca | ...y cuánta reserva da ese tiempo en el winder. Con 4 h y 40 h: 10 h de reserva por hora en el winder. Vacío, vale la proporción de la muñeca. |
-| **En el winder: rotaciones por día que pide** (TPD) `winder_tpd` | 650 | Cuántas rotaciones por día necesita el movimiento en el winder. En una posición que gira menos, gana la parte de ellas (300 de 600: la mitad); más, no pasa de lleno (vea [Los winders](#los-winders)). |
-| **Da cuerda girando en sentido horario** `corda_horario` y **antihorario** `corda_anti_horario` | sí | Los sentidos en que el rotor da cuerda. En una posición que solo gira en un sentido en que no da cuerda, el winder no carga. |
+| **En el winder: rotaciones por día que pide** (TPD) `winder_tpd` | 650 | Cuántas rotaciones por día necesita el movimiento en el winder. En un programa que da menos vueltas (en el sentido en que da cuerda), gana la parte de ellas (300 de 600: la mitad); más, no pasa del lleno (vea [Los winders](#los-winders)). |
+| **Da cuerda girando en sentido horario** `corda_horario` y **antihorario** `corda_anti_horario` | sí | Los sentidos en que el rotor da cuerda. Solo cuentan las vueltas del programa en esos sentidos: en un programa que solo gira en el sentido en que no da cuerda, el winder no carga. |
 
 Cómo va la cuenta, con los predeterminados (reserva de 40 h, 8 h en la muñeca dando 36 h):
 
@@ -1177,8 +1206,8 @@ día sentado da menos. Vale la pena ajustarlo a su uso.
   quieto y anote cuánto tiempo funciona hasta pararse.
 - **Muñeca:** empiece con el reloj parado, úselo unas horas y anote cuántas, quíteselo y anote cuánto tiempo sigue funcionando.
   Lo usó 6 h y funcionó 24 h más después: registre **6** y **24**.
-- **Winder:** lo mismo, con el reloj parado: X horas en el winder, quítelo y vea cuánto funciona. Depende de la programación
-  del winder (vueltas por día y sentido).
+- **Winder:** lo mismo, con el reloj parado: X horas en el winder, quítelo y vea cuánto funciona. Depende del programa
+  de la posición (las vueltas por día en el sentido en que da cuerda).
 
 ### Cuerda manual
 
@@ -1286,7 +1315,7 @@ grupo más cercano al reloj. Todas se editan y se prueban en **Definiciones**.
 |---|---|
 | `energia` (%) | la carga ahora, de 0 a 100. **Smartwatch:** recorre el historial desde la última lectura: la lectura vale tal cual; cada hora en la muñeca pierde el consumo en uso ÷ 15 (las horas de un día de uso), cada hora en el cargador gana 100 ÷ *horas para llenar*, y el resto del tiempo pierde el consumo apagado ÷ 24; siempre entre 0 y 100. **Mecánico:** la reserva que queda ÷ la reserva de marcha. **Solar:** la carga de luz (pierde a oscuras según la reserva de energía, gana al sol según el tiempo de sol para llenar, y en la muñeca una parte de eso (*En la muñeca: cuánto carga*); sin ningún sol marcado, desconocida). **Pila:** cuánto queda de la vida de la pila. |
 | `reserva_restante` (h) | **Mecánico:** la reserva de marcha que queda. Pierde 1 hora por hora; en la muñeca el automático gana según los campos *En la muñeca*; en el winder, según la `winder_ganho` de cada sesión; la cuerda (y las marcas antiguas) la llena. |
-| `winder_ganho` | **Automático:** cuánta reserva da cada hora en el winder. En una posición: la proporción de los campos *En el winder* por las rotaciones de la posición ÷ las que pide (como máximo 1), y 0 si no gira en un sentido en que da cuerda; fuera de una posición, la proporción de los campos *En el winder*. |
+| `winder_ganho` | **Automático:** cuánta reserva da cada hora en el winder. En una posición con programa: la proporción de los campos *En el winder* por las vueltas por día del programa en los sentidos en que da cuerda ÷ las que pide (como máximo 1; 0 si el programa no gira en ninguno de esos sentidos); sin programa o fuera de una posición, la proporción de los campos *En el winder*. |
 | `winder_falta` (h) | **Automático:** las horas que faltan en el winder para llenarse (la reserva que falta ÷ la `winder_ganho`); vacía si ahí no gana nada. |
 | `taxa_uso`, `taxa_repouso` (% por día) | **Smartwatch:** el consumo en la muñeca y fuera que valen: el medido por las lecturas, si no el de la ficha. |
 | `dias_de_carga` (días) | **Smartwatch:** cuántos días de uso aguanta la carga actual. |
@@ -1515,7 +1544,7 @@ cuentan), no por el ancho de la pantalla. Los **Próximos días** también muest
 cualquier pantalla.
 
 **El menú** agrupa las páginas por tema: **Hoy**, **Avisos** y **Hora exacta** sueltos (los de todos los días); **Rotación**
-(Plan, Modos de rotación, Criterios de elección), **Colección** (Galería, Ficha, Accesorios, Winders, Deseos, Estadísticas, Totales, Grupos), **Sistema**
+(Plan, Modos de rotación, Criterios de elección), **Colección** (Galería, Ficha, Accesorios, Winders, Programas, Movimientos, Deseos, Estadísticas, Totales, Grupos), **Sistema**
 (Configuración, Definiciones, Ejecuciones del cron y, solo para el master, Usuarios) y **Cuenta** (Mi cuenta, Aprobaciones), cada
 grupo con la flechita que abre su lista con un clic (otro clic, un clic fuera o Esc la cierra); y **Ayuda**. El grupo de la página
 abierta queda subrayado. En el móvil, el menú recogido se abre con los grupos ya abiertos, cada uno con su nombre arriba. El menú
@@ -1530,11 +1559,15 @@ disponible** (gris, fuera de la rotación y guardado) o **Prestado** (gris: con 
 uno de ellos. En el panel, el estado viene con desde cuándo (*"Al sol desde 09:12"*). Todo tipo de registro de formato sesión
 que usted registre entra aquí con su nombre.
 
-**Dónde se cambia cada cosa.** Arriba de Definiciones (en cada pestaña), Winders, Accesorios, Grupos, Avisos, Modos de
-rotación, Criterios de elección y de **Editar ficha** del reloj, un cuadro que se abre y se cierra dice, en una tabla, qué se
-cambia allí y qué se cambia en otra página, con el enlace a ella: el valor de un campo en un reloj, en Editar ficha; el
-nombre, el tipo y los valores posibles del campo, en **Definiciones › Campos**; los grupos, en **Colección › Grupos**; y así
-sucesivamente. Cerrado, queda cerrado en ese aparato.
+**Las explicaciones.** Lo que explica una página no queda en medio de ella, empujando los campos: queda en un **cajón** que
+se desliza desde la derecha. El **ⓘ** al lado de una etiqueta o de un título abre el cajón ya en su explicación; el botón
+**Explicaciones**, en el título de la página, las abre todas. En el cajón, la **búsqueda** de arriba filtra las
+explicaciones, y se cierra en la **×**, con **Esc** o con un clic fuera. El **Dónde se cambia cada cosa** de Definiciones,
+Winders, Programas, Movimientos, Accesorios, Grupos, Avisos, Modos de rotación, Criterios de elección y del **Editar
+registro** del reloj es una de ellas: una tabla que dice qué se cambia ahí y qué se cambia en otra página, con el enlace a
+ella (el valor de un campo en un reloj, en Editar registro; el nombre, el tipo y los valores posibles del campo, en
+**Definiciones › Campos**; los grupos, en **Colección › Grupos**; y así sucesivamente). En Hoy, el cajón trae también las
+explicaciones del panel del reloj abierto.
 
 **Separado por el Vale para.** En **Definiciones › Campos**, **Tipos de registro** y **Fórmulas**, las filas vienen en
 subpantallas que se recogen, una por **Vale para**: todos los relojes juntos en la primera, después cada grupo en el orden
@@ -1806,7 +1839,8 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `servicos` | los servicios y diagnósticos (`relogio=<id>`, con el resumen: la resistencia declarada, la estanqueidad comprobada, cuántos y el costo sumado; sin él, los de todos), con las piezas, el costo, la estanqueidad y la marcha antes y después |
 | `reserva` | la reserva medida (`relogio=<id>`: las pruebas de la reserva del mecánico, las observaciones de la energía, la medida, que es la mediana de las pruebas, y la tabla declarado, medido y estimado con la confianza; sin él, las pruebas y las observaciones de todos) |
 | `timegrapher` | las mediciones del timegrapher (`relogio=<id>`: la última sesión, con el promedio de cada magnitud y la diferencia entre las posiciones, las mediciones y lo que entiende la importación del CSV; sin él, las de todos) |
-| `winders` | los winders de la colección (la página **Winders**): cada uno con los datos, la observación y las posiciones, y cada posición con el programa, si está encendida y el reloj que está en ella ahora (la carga, lo que da cada hora, cuándo se llena, la foto); los campos del winder y de la posición y los relojes que pueden ir a un winder (con la posición en que están y si están en el winder sin posición) |
+| `winders` | los winders de la colección (la página **Winders**): cada uno con los datos, la observación, cuántos documentos y las posiciones, y cada posición con el programa (las vueltas por día, en total y en cada sentido), si está encendida, el reloj que está en ella ahora (la carga, cuánto da cada hora, cuándo se llena, la foto), el lugar fijo (de quién es y si está fuera) y los avisos de límite de la almohadilla; los campos del winder y de la posición, los relojes que pueden ir a un winder (con la posición en que están y si están en el winder sin posición) y los programas para elegir |
+| `programas` | los programas de los winders (la página **Programas**): cada uno con el tipo de registro, la velocidad de la cuna (o las vueltas por día del manual), si funciona todo el día o en bloques, la secuencia, el cálculo entero (cada paso, el ciclo, las veces por día, el tiempo girando, las vueltas por día en cada sentido) y las posiciones que lo usan; los movimientos (la página **Movimientos**) con los programas que usan cada uno. `previa=1` con los campos del programa: solo el cálculo, sin guardar |
 | `relatorios` | los informes, por una puerta sola: sin `tipo`, el catálogo (cada informe con el grupo, el nombre, la descripción y los parámetros, y los relojes); con `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron`) y sus parámetros (`relogio`, `de`, `ate`, `posse`, `situacao`), el informe listo (título, subtítulo, resumen, secciones en tabla o en pares, pie, ya en texto); `csv=1`: la planilla |
 | `documento` | el archivo de un documento (`id=<id>`): para mostrar (imagen, video, audio, PDF, texto) o para descargar (el resto, o con `baixar=1`); `mini=1` es la miniatura de la foto. Atiende trozos (Range), para que el video avance |
 | `usuarios`, `migracoes` | el master: el panel de las cuentas, cada una con lo que tiene y el hash de la contraseña (para migrar con la misma contraseña: vea [Los usuarios y las contraseñas](#los-usuarios-y-las-contraseñas)); los demás, solo su propia cuenta; las migraciones que faltan aplicar |
@@ -1831,11 +1865,12 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `servicos` | `salvar` (la fecha, el tipo, quién lo hizo, la mano de obra, las piezas, la estanqueidad, la marcha antes y después, la garantía y los documentos; la revisión y el cambio de pila se convierten también en el registro), `excluir` |
 | `reserva` | `iniciar` (cuándo quedó lleno y cómo), `parou`, `observar` (se detuvo, carga baja, nota; también en el solar), `salvar`, `usar` (la mediana va al registro del reloj), `excluir` |
 | `timegrapher` | `salvar` (una medición: la posición, la marcha, la amplitud, el error de latido, los latidos por hora, el ángulo), `importar` (el CSV del aparato; `conferir=1`: sin grabar), `excluir` |
-| `winders`, `winder_posicoes` | `salvar` (el winder: el nombre, los campos, la observación y, al crear, cuántas posiciones; la posición: el nombre, el orden, encendida, el programa y `relogio_id`, el reloj que queda en ella: pone, cambia o, con 0, quita), `excluir` (las sesiones que quedaron en ellos siguen, sin la posición) |
+| `winders`, `winder_posicoes` | `salvar` (el winder: el nombre, los campos, como el enlace del manual y los límites de la almohadilla, la observación y, al crear, cuántas posiciones; la posición: el nombre, el orden, encendida, el `programa_id` y `relogio_id`, el reloj que queda en ella y gana el lugar: pone, cambia o, con 0, quita), `limite_ok` (el winder: el aviso de límite de un reloj no vuelve), `liberar` (la posición: deja de ser el lugar de quien era), `excluir` (las sesiones que quedaron en ellos siguen, sin la posición) |
+| `movimentos`, `programas` | `salvar` (el movimiento: el nombre, el tipo y las vueltas o el tiempo; el programa: el nombre, el tipo de registro, la velocidad o las vueltas por día del manual, todo el día o los bloques y la secuencia de los códigos; solo guarda si el cálculo cierra), `montar` (el programa: el ayudante, por las vueltas por día, la velocidad y el sentido), `excluir` (lo que está en uso no sale) |
 | `documento_categorias` | `nova`, `alterar`, `excluir` (solo sin documentos) |
 | `secoes` | las secciones de la ficha: `salvar` (el nombre; `id=0` crea al final), `ordem` (`direcao=sobe` o `desce`), `excluir` (sus campos quedan sin sección, al final) |
 | `unidades` | `salvar` (el símbolo, el nombre, la base y el factor, el cero y el mostrar también en; el símbolo nuevo pasa a quien lo usa), `excluir` (solo sin uso; se lleva las que se convierten en ella) |
-| `lancamento` | `lancar` (cuerda, carga, pila...), `iniciar` y `encerrar` (poner y quitar de la muñeca, del sol, del cargador; del winder, solo quitar: poner es por la página Winders, `winder_posicoes`), `alternar` (cierra la sesión si está abierta, la abre si está cerrada: un solo botón en el móvil; en el winder, solo cierra), `periodo` (un período que ya pasó; en el winder, con la posición, `posicao_id`; en la muñeca del reloj del día es uso de la rotación, y los tramos del mismo tipo con los que se toca, como el Poner que quedó abierto, se vuelven uno), `alterar`, `excluir`, `medicao` (una medición del consumo entra o sale de la cuenta: `id`, `usada` 1 o 0). En todas, `relogio_id=hoje` es el reloj del día |
+| `lancamento` | `lancar` (cuerda, carga, pila...), `iniciar` y `encerrar` (poner y quitar de la muñeca, del sol, del cargador; del winder, poner es por la página Winders, `winder_posicoes`, salvo que el reloj tenga su lugar libre: entonces vuelve ahí), `alternar` (cierra la sesión si está abierta, la abre si está cerrada: un solo botón en el móvil; en el winder, solo abre de vuelta al lugar), `periodo` (un período que ya pasó; en el winder, con la posición, `posicao_id`; en la muñeca del reloj del día es uso de la rotación, y los tramos del mismo tipo con los que se toca, como el Poner que quedó abierto, se vuelven uno), `alterar`, `excluir`, `medicao` (una medición del consumo entra o sale de la cuenta: `id`, `usada` 1 o 0). En todas, `relogio_id=hoje` es el reloj del día |
 | `rodizio` | `usando` (estoy usando este hoy), `trocar_dia` (el reloj de un día), `periodo` (los relojes de un período, en orden: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (borra los días del período y el modo los vuelve a montar; solo `de`: hasta el final del plan; solo `ate`: desde mañana hasta él), `periodo_livre` (borra y deja los días libres, sin sorteo; las mismas fechas), `manual` (la Rotación manual: `de`, `ate`, `dias[AAAA-MM-DD]` = el id del reloj, `auto` o `livre`), `apagar_tudo` (toda la programación de mañana en adelante se va; `hoje=1`: de hoy en adelante; el modo arma el plan de nuevo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (cambiar el modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (grupos) y `relogios` (el grupo de cada reloj) |
@@ -2327,7 +2362,7 @@ está cerrada, la cierra si está abierta: un solo botón para ponerse y quitars
 necesidad de saber su número). La respuesta trae el `mensagem` listo para mostrar (*"Xiaomi Band 8: En la muñeca desde 10/12
 07:19."*).
 
-La petición es siempre la misma, cambiando solo el tipo (`pulso`, `carregador`, `sol`; el `winder` solo quita: poner en el winder es por la página Winders) y el reloj:
+La petición es siempre la misma, cambiando solo el tipo (`pulso`, `carregador`, `sol`; el `winder` quita y vuelve a poner en el lugar del reloj, si está libre: el primer poner en el winder es por la página Winders) y el reloj:
 
 ```text
 POST https://su-servidor/relojoeiro/api.php
@@ -2527,7 +2562,7 @@ ciclos mayores, que ningún `CHECK` alcanza) y las de los vínculos opcionales.
 | [`banco.php`](banco.php) | la base: la conexión con MySQL, Postgres, SQLite o Firebird, y la traducción del SQL de una a otra |
 | [`operacoes.php`](operacoes.php) | las reglas de cada escritura: validaciones y mensajes |
 | [`cron.php`](cron.php) | el plan, la sesión del día, las vueltas de la mañana y de la noche, los eventos, el calendario y el mantenimiento de los documentos |
-| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `winders.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | las páginas (solo el esqueleto; `cadastro.php` es la pública) |
+| `index.php`, `plano.php`, `desejos.php`, `estatisticas.php`, `hora.php`, `acessorios.php`, `winders.php`, `programas.php`, `movimentos.php`, `galeria.php`, `passaporte.php`, `ficha.php`, `documentos.php`, `historico.php`, `avisos.php`, `modos.php`, `configuracao.php`, `destinos.php`, `agendas.php`, `criterios.php`, `grupos.php`, `cadastros.php`, `execucoes.php`, `conta.php`, `aprovacoes.php`, `usuarios.php`, `cadastro.php` | las páginas (solo el esqueleto; `cadastro.php` es la pública) |
 | `relojinho.js` | el relojito de la barra y del favicon: 24 tipos de reloj dibujados en canvas, con la hora exacta, uno por hora (en orden, sorteado o sin repetir) |
 | `sw.js`, `offline.html`, `icone-*.png` | la aplicación en el celular: el *service worker* (entregado por `recurso=sw`, con la versión delante: el caché de las pantallas, la página sin conexión y el Web Push), la página **Sin conexión** y los íconos (192, 512 y 180 px) |
 | `ajuda.php` | la página de ayuda: solo el esqueleto; el `ajuda.js` pide el texto a la API (`recurso=manual`: las secciones del README para quien usa, ya en HTML, convertidas en el `lib.php`) |

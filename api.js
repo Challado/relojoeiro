@@ -133,13 +133,149 @@ document.addEventListener("toggle", function (ev) {
   } catch (e) { /* armazenamento bloqueado: só não lembra */ }
 }, true);
 
-// "Onde se muda cada coisa": a tabela do topo das páginas (o quê | onde, com o link para o lugar), recolhível; linhas:
-// [[o quê, onde], ...], o onde já em HTML (lugar() faz o link)
-function ondeMuda(chave, linhas) {
-  return recolhivel("onde-" + chave, t("Onde se muda cada coisa"), el("div", {"class": "rolagem"}, el("table", {"class": "compacta onde-muda"},
-    el("thead", {}, el("tr", {}, el("th", {}, t("O quê")) + el("th", {}, t("Onde"))))
-    + el("tbody", {}, linhas.map(function (l) { return el("tr", {}, el("td", {}, l[0]) + el("td", {}, l[1])); }).join("")))), "quadro-onde");
+// ---------------------------------------------------------------------------------------------------------------------
+// A gaveta das explicações (a ajuda de cada página). As explicações não ficam no meio da página (empurrando os campos): ficam numa gaveta que desliza da
+// direita (no celular, a tela inteira). Cada parte da tela registra as dela ao se montar:
+//   ajudaGrupo(grupo, titulo)      começa (ou recomeça, ao remontar) um grupo: "pagina", "painel"... com o título dele
+//   ajuda(chave, titulo, html)     um item do grupo atual; devolve o ⓘ que abre a gaveta já nele (vai ao lado do rótulo)
+//   ajudaNota(chave, titulo, html) a explicação que era um parágrafo: a linha curta "ⓘ título" no lugar dele
+//   ajudaBotao()                   o botão "Explicações" do título da página: a gaveta com todos os itens
+//   ondeMuda(chave, linhas)        "onde se muda cada coisa" vira o primeiro item do grupo (a tabela O quê | Onde)
+// Na gaveta: a busca no alto filtra os itens; fecha no ×, no Esc ou num clique fora.
+// ---------------------------------------------------------------------------------------------------------------------
+var AJUDA = {grupos: [], atual: null};
+function ajudaGrupo(grupo, titulo) {
+  var g = null;
+  AJUDA.grupos.forEach(function (x) { if (x.grupo === grupo) { g = x; } });
+  if (g === null) {
+    g = {grupo: grupo, titulo: titulo, itens: []};
+    AJUDA.grupos.push(g);
+  }
+  g.titulo = titulo;
+  g.itens = [];
+  AJUDA.atual = g;
+  return g;
 }
+function ajudaItem(chave, titulo, html, primeiro) {
+  var g = AJUDA.atual || ajudaGrupo("pagina", document.title);
+  ajudaPorBotao();
+  g.itens = g.itens.filter(function (x) { return x.chave !== chave; });
+  var item = {chave: g.grupo + "-" + chave, titulo: titulo, html: html};
+  if (primeiro) {
+    g.itens.unshift(item);
+  } else {
+    g.itens.push(item);
+  }
+  return item.chave;
+}
+function ajuda(chave, titulo, html) {
+  var k = ajudaItem(chave, titulo, html);
+  return el("button", {"type": "button", "class": "ajuda-i", "data-ajuda": k, "aria-label": t("Explicação: {1}", {1: titulo}), "title": t("O que é isto?")}, t("ⓘ"));
+}
+// a explicação que era um parágrafo no meio da página: uma linha curta "ⓘ título" no mesmo lugar, que abre a gaveta nela
+function ajudaNota(chave, titulo, html) {
+  var k = ajudaItem(chave, titulo, el("p", {}, html));
+  return el("button", {"type": "button", "class": "ajuda-linha", "data-ajuda": k}, el("span", {"class": "ajuda-linha-i", "aria-hidden": "true"}, t("ⓘ")) + " " + h(titulo));
+}
+// o botão Explicações entra sozinho no título da página (o primeiro h1 da área principal) que tem explicações e ainda não tem
+// o botão; fora o destaque da página Hoje (o nome do relógio) e o painel do relógio, que mostram as dela pelas linhas ⓘ
+var ajudaBotaoEspera = null;
+function ajudaPorBotao() {
+  clearTimeout(ajudaBotaoEspera);
+  ajudaBotaoEspera = setTimeout(function () {
+    if (document.querySelector(".ajuda-botao")) {
+      return;
+    }
+    var h1 = Array.prototype.filter.call(document.querySelectorAll("main h1"), function (x) { return !x.closest(".col-hoje, .painel, .detalhe"); })[0];
+    if (h1) {
+      h1.insertAdjacentHTML("beforeend", " " + ajudaBotao());
+    }
+  }, 0);
+}
+// o ⓘ de um item que já está no grupo atual (o mesmo texto vale para dois campos)
+function ajudaRef(chave) {
+  var k = (AJUDA.atual ? AJUDA.atual.grupo : "pagina") + "-" + chave;
+  return el("button", {"type": "button", "class": "ajuda-i", "data-ajuda": k, "aria-label": t("Explicação"), "title": t("O que é isto?")}, t("ⓘ"));
+}
+function ajudaBotao() {
+  return el("button", {"type": "button", "class": "botao leve ajuda-botao", "data-ajuda": "", "title": t("As explicações desta página")}, t("Explicações"));
+}
+// "Onde se muda cada coisa" (o quê | onde, com o link para o lugar): um item da gaveta; linhas: [[o quê, onde], ...], o
+// onde já em HTML (lugar() faz o link). Não devolve nada para a página: o botão Explicações do título abre
+function ondeMuda(chave, linhas) {
+  ajudaItem("onde-" + chave, t("Onde se muda cada coisa"), el("div", {"class": "rolagem"}, el("table", {"class": "compacta onde-muda"},
+    el("thead", {}, el("tr", {}, el("th", {}, t("O quê")) + el("th", {}, t("Onde"))))
+    + el("tbody", {}, linhas.map(function (l) { return el("tr", {}, el("td", {}, l[0]) + el("td", {}, l[1])); }).join("")))), true);
+  return "";
+}
+// sem acento e em minúsculas, para a busca da gaveta
+function semAcento(s) {
+  return String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+function ajudaAbrir(chave) {
+  ajudaFechar();
+  var corpo = AJUDA.grupos.filter(function (g) { return g.itens.length > 0; }).map(function (g) {
+    return el("section", {"class": "ajuda-grupo"}, (AJUDA.grupos.length > 1 ? el("h3", {}, h(g.titulo)) : "")
+      + g.itens.map(function (x) { return el("article", {"class": "ajuda-item", "id": "ajuda-" + x.chave}, el("h4", {}, h(x.titulo)) + x.html); }).join(""));
+  }).join("");
+  var fundo = document.createElement("div");
+  fundo.className = "ajuda-fundo";
+  var gaveta = document.createElement("aside");
+  gaveta.className = "ajuda-gaveta";
+  gaveta.setAttribute("role", "dialog");
+  gaveta.setAttribute("aria-modal", "true");
+  gaveta.setAttribute("aria-label", t("Explicações"));
+  gaveta.innerHTML = el("div", {"class": "ajuda-topo"}, el("h2", {}, t("Explicações"))
+      + el("input", {"type": "search", "class": "ajuda-busca", "placeholder": t("Procurar nas explicações"), "aria-label": t("Procurar nas explicações")})
+      + el("button", {"type": "button", "class": "ajuda-fechar", "aria-label": t("Fechar"), "title": t("Fechar (Esc)")}, t("×")))
+    + el("div", {"class": "ajuda-corpo"}, corpo !== "" ? corpo + el("p", {"class": "nota ajuda-nada", "hidden": true}, t("Nada com isso nas explicações desta página."))
+      : el("p", {"class": "nota"}, t("Esta página não tem explicações.")));
+  document.body.appendChild(fundo);
+  document.body.appendChild(gaveta);
+  document.body.classList.add("com-ajuda");
+  fundo.addEventListener("click", ajudaFechar);
+  gaveta.querySelector(".ajuda-fechar").addEventListener("click", ajudaFechar);
+  gaveta.querySelector(".ajuda-busca").addEventListener("input", function () {
+    var q = semAcento(this.value.trim());
+    var algum = false;
+    gaveta.querySelectorAll(".ajuda-item").forEach(function (a) {
+      var ve = q === "" || semAcento(a.textContent).indexOf(q) >= 0;
+      a.hidden = !ve;
+      algum = algum || ve;
+    });
+    gaveta.querySelectorAll(".ajuda-grupo").forEach(function (g) { g.hidden = g.querySelectorAll(".ajuda-item:not([hidden])").length === 0; });
+    var nada = gaveta.querySelector(".ajuda-nada");
+    if (nada) {
+      nada.hidden = algum;
+    }
+  });
+  var alvo = chave ? document.getElementById("ajuda-" + chave) : null;
+  if (alvo) {
+    alvo.classList.add("ajuda-destaque");
+    alvo.scrollIntoView({block: "start"});
+    gaveta.querySelector(".ajuda-fechar").focus();
+  } else {
+    gaveta.querySelector(".ajuda-busca").focus();
+  }
+}
+function ajudaFechar() {
+  document.querySelectorAll(".ajuda-gaveta, .ajuda-fundo").forEach(function (x) { x.remove(); });
+  document.body.classList.remove("com-ajuda");
+}
+document.addEventListener("click", function (ev) {
+  var b = ev.target.closest ? ev.target.closest("[data-ajuda]") : null;
+  if (b) {
+    ev.preventDefault();
+    ajudaAbrir(b.getAttribute("data-ajuda"));
+  }
+});
+// Esc fecha a gaveta antes de qualquer outra coisa (o painel do relógio, por baixo, continua aberto)
+document.addEventListener("keydown", function (ev) {
+  if (ev.key === "Escape" && document.querySelector(".ajuda-gaveta")) {
+    ev.stopImmediatePropagation();
+    ajudaFechar();
+  }
+}, true);
 function lugar(href, texto) {
   return el("a", {"href": href}, texto);
 }
@@ -268,7 +404,7 @@ function formApagarPeriodo(hoje) {
     + el("div", {"class": "linha-apagar"}, el("label", {}, t("De {1}", {1: el("input", {"type": "date", "name": "de", "min": hoje})}))
       + el("label", {}, t("Até {1}", {1: el("input", {"type": "date", "name": "ate", "min": hoje})}))
       + el("button", {"class": "leve"}, t("Apagar")))
-    + el("p", {"class": "nota"}, t("Os dias do período saem do plano, de amanhã em diante (os escolhidos à mão, os sorteados e os livres), e o modo de rodízio monta esses dias de novo. Pode deixar um lado vazio: só o começo apaga dele até o fim do plano; só o fim apaga de amanhã até ele.")));
+    + ajudaNota("apagar-periodo", t("Apagar um período"), t("Os dias do período saem do plano, de amanhã em diante (os escolhidos à mão, os sorteados e os livres), e o modo de rodízio monta esses dias de novo. Pode deixar um lado vazio: só o começo apaga dele até o fim do plano; só o fim apaga de amanhã até ele.")));
 }
 
 // Apagar tudo (página Plano e quadro Modo de rodízio): toda a programação de amanhã em diante (com "Excluindo hoje", de hoje
@@ -281,7 +417,7 @@ function formApagarTudo() {
     + el("span", {"class": "campo-principal"}, t("Apagar tudo"))
     + el("div", {"class": "linha-apagar"}, el("label", {"class": "check"}, t("{1} Excluindo hoje (apaga também o dia de hoje)", {1: el("input", {"type": "checkbox", "name": "hoje", "value": "1"})}))
       + el("button", {"class": "leve"}, t("Apagar tudo")))
-    + el("p", {"class": "nota"}, t("Limpa toda a programação, de amanhã em diante: os dias escolhidos à mão, os sorteados e os livres. Marcando \"Excluindo hoje\", apaga de hoje em diante (se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora). Depois, o modo de rodízio monta o plano de novo, do zero.")));
+    + ajudaNota("apagar-tudo", t("Apagar tudo"), t("Limpa toda a programação, de amanhã em diante: os dias escolhidos à mão, os sorteados e os livres. Marcando \"Excluindo hoje\", apaga de hoje em diante (se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora). Depois, o modo de rodízio monta o plano de novo, do zero.")));
 }
 
 // Os dias do plano com os dias livres no meio, na ordem das datas (um dia livre: sem relógio, para escolher à mão)
@@ -306,7 +442,12 @@ function minusculo(t) {
 // vai no data-rotulo. Vale para toda tabela com cabeçalho, também as montadas depois (as linhas com colspan ficam sem).
 function rotularTabelas() {
   document.querySelectorAll("table").forEach(function (t) {
-    var titulos = t.tHead && t.tHead.rows.length > 0 ? Array.prototype.map.call(t.tHead.rows[0].cells, function (c) { return c.textContent.trim(); }) : [];
+    var titulos = t.tHead && t.tHead.rows.length > 0 ? Array.prototype.map.call(t.tHead.rows[0].cells, function (c) {
+      // o rótulo é o título sem o ⓘ das explicações (o botão fica só no cabeçalho)
+      var copia = c.cloneNode(true);
+      copia.querySelectorAll(".ajuda-i").forEach(function (b) { b.remove(); });
+      return copia.textContent.trim();
+    }) : [];
     Array.prototype.forEach.call(titulos.length > 0 ? t.tBodies : [], function (corpo) {
       Array.prototype.forEach.call(corpo.rows, function (tr) {
         if (tr.cells.length === titulos.length) {
@@ -853,8 +994,9 @@ function opcoesFuso(fusos, atual, vazioTexto, navegadorTexto) {
   }).join("");
 }
 
-function parCampo(rotulo, controle, tipo) {
-  return el("label", {"class": "par-campo" + (tipo ? " " + tipo : "")}, el("span", {"class": "rotulo"}, h(rotulo)) + el("span", {"class": "controle"}, controle));
+// um rótulo com o controle; explica: o ⓘ das explicações (ajuda()), ao lado do rótulo
+function parCampo(rotulo, controle, tipo, explica) {
+  return el("label", {"class": "par-campo" + (tipo ? " " + tipo : "")}, el("span", {"class": "rotulo"}, h(rotulo) + (explica || "")) + el("span", {"class": "controle"}, controle));
 }
 
 // Uma senha nova com a confirmação (Criar conta, a senha nova pelo link, Minha conta, Usuários): os dois campos e, embaixo,

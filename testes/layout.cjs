@@ -315,7 +315,8 @@ async function estressar() {
     'valores[referencia]': 'GW-M5610U-1ER-ANIVERSARIO-40-ANOS', 'valores[link]': 'https://www.exemplo-de-loja-com-endereco-comprido.com.br/relogios/casio/g-shock/gw-m5610u-1er?origem=lista',
     'valores[preco_alvo]': '1234567,89' }));
   // o winder Quarto do cenário (achado pelo nome: os números dependem de quantos winders o cenário criou antes): nome, marca,
-  // modelo e observação compridos, e o programa da Pos. 2 com todos os campos
+  // modelo, observação e link do manual compridos, os limites da almofada, e na Pos. 2 um programa de nome comprido, em blocos,
+  // com um movimento de nome comprido
   const lw = await (await fetch(BASE + 'api.php?recurso=winders', {
     headers: { Authorization: 'Basic ' + Buffer.from(USUARIO + ':' + SENHA).toString('base64') } })).json().catch(() => ({}));
   const quarto = (lw.winders || []).find((w) => w.nome === 'Quarto') || { id: 0, posicoes: [] };
@@ -323,8 +324,25 @@ async function estressar() {
   resultados.push(await api({ recurso: 'winders', acao: 'salvar', id: quarto.id, nome: 'Winder de quatro posições do quarto de hóspedes, em cima da cômoda',
     observacao: 'Comprado junto com a caixa de viagem; a Pos. 3 faz barulho quando gira no sentido anti-horário, então fica só no horário.',
     'valores[winder_marca]': 'Wolf Designs London', 'valores[winder_modelo]': 'Viceroy Module 2.7 Quad Watch Winder Macassar' }));
-  resultados.push(await api({ recurso: 'winder_posicoes', acao: 'salvar', id: pos2, nome: 'Posição de baixo à direita',
-    'valores[pos_tpd]': '1250', 'valores[pos_anti_horario]': '0', 'valores[pos_gira_min]': '12.5', 'valores[pos_descansa_min]': '47.5' }));
+  resultados.push(await api({ recurso: 'winders', acao: 'salvar', id: quarto.id,
+    'valores[winder_manual]': 'https://www.exemplo-de-fabricante-com-endereco-comprido.com/manuais/winders/viceroy-module-2-7-quad.pdf',
+    'valores[winder_caixa_max]': '42', 'valores[winder_pulso_min]': '16,5', 'valores[winder_pulso_max]': '18,5', 'valores[winder_peso_max]': '180' }));
+  const mov = async (campos) => {
+    const corpo = new URLSearchParams(Object.entries(Object.assign({ recurso: 'movimentos', acao: 'salvar' }, campos)));
+    const r = await fetch(BASE + 'api.php', { method: 'POST', body: corpo,
+      headers: { Authorization: 'Basic ' + Buffer.from(USUARIO + ':' + SENHA).toString('base64') } });
+    const j = await r.json().catch(() => ({}));
+    resultados.push(j.ok === true);
+    return j.id || 0;
+  };
+  const giro = await mov({ nome: 'Giro horário lento de 12 min 30 s, o do modo silencioso', tipo: 'horario', minutos: 12, segundos: 30 });
+  const parada = await mov({ nome: 'Parada comprida de quarenta e sete minutos e meio', tipo: 'parado', minutos: 47, segundos: 30 });
+  const pr = await fetch(BASE + 'api.php', { method: 'POST', body: new URLSearchParams({ recurso: 'programas', acao: 'salvar',
+    nome: 'Programa noturno silencioso só no sentido horário, liga três horas', medida: 'tempo', tpd_manual: '1250', funciona: 'blocos',
+    liga_horas: '3', para_horas: '9', observacao: 'Para os automáticos que só dão corda num sentido; o resto do dia descansa.', sequencia: giro + ', ' + parada }),
+    headers: { Authorization: 'Basic ' + Buffer.from(USUARIO + ':' + SENHA).toString('base64') } }).then((r) => r.json()).catch(() => ({}));
+  resultados.push(pr.ok === true);
+  resultados.push(await api({ recurso: 'winder_posicoes', acao: 'salvar', id: pos2, nome: 'Posição de baixo à direita', programa_id: pr.id || 0 }));
   for (const id of [1, 3, 4, 5, 10]) {
     resultados.push(await api({ recurso: 'relogio', acao: 'foto', id, foto_base64: png }));
   }

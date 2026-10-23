@@ -10,14 +10,14 @@ if (!defined("RELOJOEIRO_API")) {
 $ops = ["arvore" => "op_arvore", "campos" => "op_campos", "lancamento_tipos" => "op_lancamento_tipos", "formulas" => "op_formulas", "totais" => "op_totais", "calibres" => "op_calibres", "unidades" => "op_unidades", "secoes" => "op_secoes", "relogio" => "op_relogio",
     "lancamento" => "op_lancamento", "avisos" => "op_avisos", "criterios" => "op_criterios",
     "rodizio" => "op_rodizio", "modos" => "op_modos", "config" => "op_config", "documentos" => "op_documentos", "documento_categorias" => "op_documento_categorias",
-    "acessorios" => "op_acessorios", "winders" => "op_winders", "winder_posicoes" => "op_winder_posicoes", "servicos" => "op_servicos", "reserva" => "op_reserva", "timegrapher" => "op_timegrapher", "destinos" => "op_destinos", "agendas" => "op_agendas", "conta" => "op_conta", "colecoes" => "op_colecoes", "acessos" => "op_acessos",
+    "acessorios" => "op_acessorios", "winders" => "op_winders", "winder_posicoes" => "op_winder_posicoes", "movimentos" => "op_movimentos", "programas" => "op_programas", "servicos" => "op_servicos", "reserva" => "op_reserva", "timegrapher" => "op_timegrapher", "destinos" => "op_destinos", "agendas" => "op_agendas", "conta" => "op_conta", "colecoes" => "op_colecoes", "acessos" => "op_acessos",
     "convites" => "op_convites", "pedidos" => "op_pedidos"];
 // toda exclusão em dois passos: sem confirmar=1, a API diz o que sai junto (impacto_exclusao, no banco inteiro: uma árvore
 // serve a várias coleções) e não apaga nada; com confirmar=1, apaga. O item tem de ser da coleção do pedido (lido pela visão
 // dela); o que não é, segue para a operação, que responde "não encontrado"
 $exclusoes = ["relogio" => ["excluir", "relogio"], "campos" => ["excluir", "campo"], "lancamento_tipos" => ["excluir", "lancamento_tipo"], "formulas" => ["excluir", "formula"], "totais" => ["excluir", "total"], "calibres" => ["excluir", "calibre"], "unidades" => ["excluir", "unidade"], "secoes" => ["excluir", "campo_secao"],
     "avisos" => ["excluir", "aviso"], "modos" => ["excluir", "modo"], "documentos" => ["excluir", "documento"], "documento_categorias" => ["excluir", "documento_categoria"],
-    "acessorios" => ["excluir", "acessorio"], "winders" => ["excluir", "winder"], "winder_posicoes" => ["excluir", "winder_posicao"], "servicos" => ["excluir", "servico"], "reserva" => ["excluir", "reserva_teste"], "timegrapher" => ["excluir", "timegrapher"], "lancamento" => ["excluir", "lancamento"], "destinos" => ["excluir", "destino"], "agendas" => ["excluir", "agenda"],
+    "acessorios" => ["excluir", "acessorio"], "winders" => ["excluir", "winder"], "winder_posicoes" => ["excluir", "winder_posicao"], "movimentos" => ["excluir", "winder_movimento"], "programas" => ["excluir", "winder_programa"], "servicos" => ["excluir", "servico"], "reserva" => ["excluir", "reserva_teste"], "timegrapher" => ["excluir", "timegrapher"], "lancamento" => ["excluir", "lancamento"], "destinos" => ["excluir", "destino"], "agendas" => ["excluir", "agenda"],
     "config" => ["evento_excluir", "evento_personalizado"], "colecoes" => ["excluir", "colecao"]];
 $alvo_exc = null;
 if (($recurso === "colecoes" && $acao === "arvore_excluir") || (isset($exclusoes[$recurso]) && $acao === $exclusoes[$recurso][0])) {
@@ -31,7 +31,8 @@ if (($recurso === "colecoes" && $acao === "arvore_excluir") || (isset($exclusoes
         $dono_exc = sem_escopo(function () use ($tab_exc, $id_exc) { return valor("SELECT dono_id FROM " . banco_tabela_sql($tab_exc) . " WHERE id = ?", [$id_exc]); });
         $existe_exc = usuario_atual() !== null && (int)$dono_exc === (int)usuario_atual()["id"] ? $existe_exc : null;
     }
-    if ($existe_exc !== null) {
+    // o movimento numa sequência e o programa numa posição não saem: sem a pergunta, a operação diz onde estão
+    if ($existe_exc !== null && !winder_exclusao_em_uso($tab_exc, $id_exc)) {
         $alvo_exc = [$tab_exc, $id_exc];
     }
 } elseif ($recurso === "usuarios" && $acao === "excluir") {

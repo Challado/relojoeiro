@@ -176,6 +176,8 @@ function abrirNoPainel(id) {
   var mesmo = atual !== null && atual.getAttribute("data-id") === String(id);
   var rolagem = painel.scrollTop;
   return api(id > 0 ? {recurso: "ficha", relogio: id} : {recurso: "ficha"}).then(function (d) {
+    // as explicações do painel: um grupo dele na gaveta (o da página continua)
+    ajudaGrupo("painel", d.relogio ? d.relogio.nome : t("O relógio"));
     var noIndex = document.querySelector(".painel") !== null;
     if (noIndex) {
       // como ele abre (a Configuração): ao lado da lista, ou numa janela flutuante grande, com o fundo escurecido (um clique
@@ -309,7 +311,7 @@ function abrirNoPainel(id) {
             : (gs.conjunta ? t("os dois gastos saem juntos da conta") : t("ainda não separam bem os dois: vale a média de cada um")))
             + (gs.fora > 0 ? el("small", {"class": "em atrasado"}, t("{1} com uma leitura que não bate com as outras e pesa pouco na conta (veja Medições do gasto)", {1: gs.fora})) : "")})
           : t("nenhuma na janela ({1}){2}", {1: h(gs.janela_texto), 2: gs.uso.medido !== null || gs.repouso.medido !== null ? el("small", {}, t("vale a conta com as de antes")) : ""})]);
-        secoes.carga += quadro(t("Gasto da bateria"), pares(linhasGasto), el("p", {"class": "nota"}, t("Medições mais velhas que a janela saem da conta: se a bateria envelhecer e gastar mais, o medido sobe sozinho.")));
+        secoes.carga += quadro(t("Gasto da bateria"), pares(linhasGasto), ajudaNota("janela-gasto", t("A janela do gasto medido"), t("Medições mais velhas que a janela saem da conta: se a bateria envelhecer e gastar mais, o medido sobe sozinho.")));
       }
       // a autonomia: cheio pelo cadastro e pela conta (com o gasto medido), quanto ainda dura e quando acaba
       var au = r.autonomia;
@@ -380,7 +382,7 @@ function abrirNoPainel(id) {
         }).join("");
         if (rs.testar && !rs.aberto) {
           corpoRs += el("details", {"class": "reserva-novo"}, el("summary", {}, t("Começar um teste da reserva"))
-            + el("p", {"class": "nota"}, t("Encha até o fim (a corda pela coroa até travar, ou um tempo no winder ou no pulso), marque quando ficou cheio e deixe ele parado; quando ele parar, marque aqui. O tempo de cheio até parado é a reserva medida."))
+            + ajudaNota("testar-reserva", t("Como testar a reserva"), t("Encha até o fim (a corda pela coroa até travar, ou um tempo no winder ou no pulso), marque quando ficou cheio e deixe ele parado; quando ele parar, marque aqui. O tempo de cheio até parado é a reserva medida."))
             + formTeste(null));
         }
         corpoRs += el("details", {"class": "reserva-novo"}, el("summary", {}, t("Registrar uma observação")) + formObs(null));
@@ -514,12 +516,20 @@ function abrirNoPainel(id) {
         r.tipos.forEach(function (item) {
           var chave = "t-" + item.identificador;
           var base = el("input", {"type": "hidden", "name": "tipo", "value": item.identificador});
-          if (item.formato === "sessao" && item.winder && item.aberta === null) {
-            // o winder é obrigatório: pôr no winder não se faz aqui. Com winder cadastrado, só pela página Winders, numa posição
-            // (aqui, o link); sem winder, não há pôr nem tirar (o tirar de uma sessão que já estava aberta, sim: o ramo de baixo)
+          if (item.formato === "sessao" && item.winder && item.aberta === null && r.winder_lugar && r.winder_lugar.livre) {
+            // o lugar fixo: o relógio que tem o lugar dele no winder, livre, volta para lá daqui (a API escolhe a posição)
+            opcoes.agora += el("option", {"value": chave}, h(acaoSessao(item.nome, false)));
+            partes += parte("marcar", chave, base + el("input", {"type": "hidden", "name": "acao", "value": "iniciar"})
+              + el("p", {"class": "marcar-estado"}, t("Volta para o lugar dele: {1}", {1: h(r.winder_lugar.texto)}))
+              + quando(t("Pôs às")) + el("button", {}, h(acaoSessao(item.nome, false))));
+          } else if (item.formato === "sessao" && item.winder && item.aberta === null) {
+            // o winder é obrigatório: sem o lugar dele livre, pôr no winder não se faz aqui. Com winder cadastrado, pela página
+            // Winders, numa posição (aqui, o link); sem winder, não há pôr nem tirar (o tirar de uma sessão que já estava
+            // aberta, sim: o ramo de baixo)
             opcoes.agora += el("option", {"value": chave}, h(acaoSessao(item.nome, false)));
             partes += parte("marcar", chave, el("p", {"class": "nota"}, (r.winder_cadastrado
-              ? t("Com winder cadastrado, o relógio vai para o winder só pela página Winders, numa posição.")
+              ? (r.winder_lugar ? t("Não dá para voltar para o lugar dele agora: {1}. Ponha numa posição pela página Winders.", {1: h(r.winder_lugar.motivo)})
+                : t("Com winder cadastrado, o relógio vai para o winder pela página Winders, numa posição; depois, daqui mesmo ele volta para o lugar dele."))
               : t("Sem winder cadastrado não há pôr nem tirar do winder. Para usar, cadastre o seu na página Winders."))
               + " " + el("a", {"href": "winders.php"}, t("Abrir a página Winders ›"))));
           } else if (item.formato === "sessao") {
@@ -832,7 +842,7 @@ function abrirNoPainel(id) {
         }
         var medP = "";
         if (pr2.intervalos.length > 0) {
-          medP = el("h3", {}, t("Medições da marcha")) + el("p", {"class": "nota"}, t("Cada leitura comparada com a anterior (ou com o acerto da hora). A marcha do relógio é a média delas pesada pelo tempo: um intervalo de 10 dias pesa dez vezes o de um dia."))
+          medP = el("h3", {}, t("Medições da marcha")) + ajudaNota("marcha", t("A marcha"), t("Cada leitura comparada com a anterior (ou com o acerto da hora). A marcha do relógio é a média delas pesada pelo tempo: um intervalo de 10 dias pesa dez vezes o de um dia."))
             + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Quando")) + el("th", {}, t("Dias")) + el("th", {}, t("Onde ficou")) + el("th", {}, t("Desvio")) + el("th", {}, t("Marcha"))))
               + el("tbody", {}, pr2.intervalos.slice(0, 10).map(function (x) {
                 return el("tr", {}, el("td", {}, dataBr(x.ate, true) + " " + horaBr(x.ate)) + el("td", {}, num(x.dias, 2)) + el("td", {}, h(x.posicao_texto))
@@ -891,10 +901,10 @@ function abrirNoPainel(id) {
               + el("button", {"class": "leve discreto"}, t("Excluir esta medição"))));
         }).join("") + (tg.medicoes.length > 30 ? el("p", {"class": "nota"}, t("As 30 mais recentes de {1} medições (todas em recurso=timegrapher).", {1: tg.medicoes.length})) : "");
         corpoTg += el("details", {"class": "reserva-novo"}, el("summary", {}, t("Registrar uma medição"))
-          + el("p", {"class": "nota"}, t("O que o timegrapher mostra em cada posição: a marcha, a amplitude, o erro de batida, as batidas por hora e o ângulo de levantamento (o que o aparelho não mostra fica vazio). As medições do mesmo dia são uma sessão."))
+          + ajudaNota("timegrapher", t("O timegrapher"), t("O que o timegrapher mostra em cada posição: a marcha, a amplitude, o erro de batida, as batidas por hora e o ângulo de levantamento (o que o aparelho não mostra fica vazio). As medições do mesmo dia são uma sessão."))
           + formTg(null));
         corpoTg += el("details", {"class": "reserva-novo"}, el("summary", {}, t("Importar o CSV do aparelho"))
-          + el("p", {"class": "nota"}, t("O arquivo que o timegrapher (ou o aplicativo dele) exporta, com o cabeçalho: as colunas são reconhecidas pelo nome, em português ou em inglês (rate, amplitude, beat error, bph, lift angle, position, date, time). As linhas sem data ficam no instante escolhido aqui; a repetida não entra de novo. Conferir mostra o que entraria, sem gravar."))
+          + ajudaNota("timegrapher-csv", t("Importar o CSV do timegrapher"), t("O arquivo que o timegrapher (ou o aplicativo dele) exporta, com o cabeçalho: as colunas são reconhecidas pelo nome, em português ou em inglês (rate, amplitude, beat error, bph, lift angle, position, date, time). As linhas sem data ficam no instante escolhido aqui; a repetida não entra de novo. Conferir mostra o que entraria, sem gravar."))
           + el("form", {"data-recurso": "timegrapher", "class": "reserva-form"}, el("input", {"type": "hidden", "name": "acao", "value": "importar"}) + el("input", {"type": "hidden", "name": "relogio_id", "value": id})
             + el("label", {"class": "largo"}, t("Arquivo {1}", {1: el("input", {"type": "file", "accept": ".csv,.txt,text/csv,text/plain",
               "onchange": "var f = this.files[0], ta = this.form.querySelector('textarea'); if (f) { var rd = new FileReader(); rd.onload = function () { ta.value = rd.result; }; rd.readAsText(f); }"})}))

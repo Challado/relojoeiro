@@ -140,8 +140,9 @@ function recarregarIdiomaConfig(lingua, mensagem, posicaoAnterior) {
 
 // Um quadro da Configuração: o título, o conteúdo e, se houver, o pé (a explicação e os botões, sempre embaixo: os quadros
 // da mesma linha têm a mesma altura)
-function cartao(titulo, corpo, pe) {
-  return el("section", {"class": "cartao-config"}, el("h2", {}, h(titulo)) + el("div", {"class": "cartao-corpo"}, corpo) + (pe ? el("div", {"class": "cartao-pe"}, pe) : ""));
+// um quadro da página: o título (com o ⓘ das explicações, quando tem), o corpo e o pé (os avisos que precisam ficar à vista)
+function cartao(titulo, corpo, pe, explica) {
+  return el("section", {"class": "cartao-config"}, el("h2", {}, h(titulo) + (explica || "")) + el("div", {"class": "cartao-corpo"}, corpo) + (pe ? el("div", {"class": "cartao-pe"}, pe) : ""));
 }
 
 
@@ -174,7 +175,10 @@ function recarregarConfig(aplicadas, manterPosicao) {
         var c = d.config;
         idiomaConfig = c.idioma || "pt-BR";
         var cfg = function (k) { return c[k] === undefined ? "" : c[k]; };
-        var res = "";
+        // as explicações de cada opção ficam na gaveta (o ⓘ ao lado de cada uma e o botão Explicações do título)
+        ajudaGrupo("pagina", t("Configuração"));
+        var ex = function (chave, titulo, html) { return ajuda(chave, titulo, el("p", {}, html)); };
+        var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Configuração")) + ajudaBotao());
         // ---------- Geral ----------
         // a situação do cron vem da API (cron_estado): nunca rodou, parado (mais de 10 minutos) ou rodando
         var ce = d.cron_estado;
@@ -197,20 +201,21 @@ function recarregarConfig(aplicadas, manterPosicao) {
           parCampo(t("Manhã: relógio do dia e avisos"), hora("horario_manha", cfg("horario_manha")))
           + parCampo(t("Noite: preparar o de amanhã"), hora("horario_noite", cfg("horario_noite")))
           + parCampo(t("No pulso a partir de"), hora("uso_inicio", cfg("uso_inicio")))
-          + parCampo(t("Pôr no pulso sozinho"), marca("pulso_auto_inicio", cfg("pulso_auto_inicio") !== "0"), "check")
+          + parCampo(t("Pôr no pulso sozinho"), marca("pulso_auto_inicio", cfg("pulso_auto_inicio") !== "0"), "check",
+            ex("pulso-auto", t("Pôr e tirar do pulso sozinho"), t("Sem <strong>pôr sozinho</strong>, o relógio do dia só entra no pulso pelo <strong>Pôs no pulso</strong>; sem <strong>tirar sozinho</strong>, só sai pelo ")
+              + t("<strong>Tirou do pulso</strong> (esquecido, continua contando como no pulso). O horário de uso vale sempre para o plano e as previsões. Fora do pulso, o relógio conta como guardado.")))
           + parCampo(t("No pulso até"), hora("uso_fim", cfg("uso_fim")))
-          + parCampo(t("Tirar do pulso sozinho"), marca("pulso_auto_fim", cfg("pulso_auto_fim") !== "0"), "check")
+          + parCampo(t("Tirar do pulso sozinho"), marca("pulso_auto_fim", cfg("pulso_auto_fim") !== "0"), "check", ajudaRef("pulso-auto"))
           + parCampo(t("Sessão no sol esquecida fecha às"), hora("sol_fim", d.sol_fim))
-          + parCampo(t("Tirar do sol sozinho"), marca("sol_auto_fim", d.sol_auto_fim), "check")
+          + parCampo(t("Tirar do sol sozinho"), marca("sol_auto_fim", d.sol_auto_fim), "check",
+            ex("sol-auto", t("Tirar do sol sozinho"), t("Sem <strong>tirar do sol sozinho</strong>, o solar só sai do sol pelo <strong>Tirar do sol</strong> (esquecido, continua carregando na conta).")))
           // a semana do rodízio: o horizonte do plano, o ciclo, a próxima semana e os blocos contam dela
           + parCampo(t("A semana começa"), el("select", {"name": "semana_inicio"}, el("option", {"value": "segunda", "selected": cfg("semana_inicio") !== "domingo"}, t("Na segunda-feira"))
-            + el("option", {"value": "domingo", "selected": cfg("semana_inicio") === "domingo"}, t("No domingo"))))),
-          el("p", {"class": "nota"}, t("Sem <strong>pôr sozinho</strong>, o relógio do dia só entra no pulso pelo <strong>Pôs no pulso</strong>; sem <strong>tirar sozinho</strong>, só sai pelo ")
-            + t("<strong>Tirou do pulso</strong> (esquecido, continua contando como no pulso). O horário de uso vale sempre para o plano e as previsões. Fora do pulso, o relógio conta como guardado.")
-            + " " + t("Sem <strong>tirar do sol sozinho</strong>, o solar só sai do sol pelo <strong>Tirar do sol</strong> (esquecido, continua carregando na conta).")
-            + " " + t("A semana do rodízio começa no dia escolhido: o plano vem montado até o último dia da semana, e o ciclo, a próxima semana e o relógio para a semana inteira contam dela.")));
+            + el("option", {"value": "domingo", "selected": cfg("semana_inicio") === "domingo"}, t("No domingo"))), null,
+            ex("semana", t("A semana começa"), t("A semana do rodízio começa no dia escolhido: o plano vem montado até o último dia da semana, e o ciclo, a próxima semana e o relógio para a semana inteira contam dela.")))));
         var limites = cartao(t("Limites e contas"), el("div", {"class": "campos"},
-          parCampo(t("Carregar quando a carga chegar a (%)"), numero("carga_limiar", cfg("carga_limiar") !== "" ? cfg("carga_limiar") : "20", "1", "99"))
+          parCampo(t("Carregar quando a carga chegar a (%)"), numero("carga_limiar", cfg("carga_limiar") !== "" ? cfg("carga_limiar") : "20", "1", "99"), null,
+            ex("limite", t("O limite de carga"), t("O limite de carga de um relógio (no cadastro dele) vale no lugar do geral.")))
           + parCampo(t("Solar: pôr no sol quando chegar a (%)"), numero("sol_limiar", cfg("sol_limiar") !== "" ? cfg("sol_limiar") : "70", "1", "99"))
           // como calcular o gasto da bateria: a escolha da coleção vale por todos os relógios; vazia, valem o relógio e o grupo
           // (o campo do cadastro "Como calcular o gasto da bateria")
@@ -219,36 +224,46 @@ function recarregarConfig(aplicadas, manterPosicao) {
             + el("option", {"value": "robusto", "selected": cfg("gasto_motor") === "robusto"}, t("2. Pelas horas registradas, com leituras e cadastro (robusto)"))
             + el("option", {"value": "marcacao", "selected": cfg("gasto_motor") === "marcacao"}, t("3. Pela marcação: duas taxas separadas"))
             + el("option", {"value": "cadastro", "selected": cfg("gasto_motor") === "cadastro"}, t("4. Só o cadastro"))
-            + el("option", {"value": "formulas", "selected": cfg("gasto_motor") === "formulas"}, t("5. Pelas fórmulas do cadastro")))))
+            + el("option", {"value": "formulas", "selected": cfg("gasto_motor") === "formulas"}, t("5. Pelas fórmulas do cadastro"))), null,
+            ex("motor", t("O gasto da bateria"), t("O gasto da bateria tem cinco motores (veja a Ajuda); a escolha aqui vale para todos os relógios da coleção, e vazia valem a do relógio e a do grupo (o campo \"Como calcular o gasto da bateria\" do cadastro)."))))
           // o gasto medido conta as medições dos últimos dias ou as últimas leituras de cada tipo (em uso e em repouso)
           + avancado("config.gasto", parCampo(t("Gasto medido: contar por"), el("select", {"name": "medicao_base"}, el("option", {"value": "dias", "selected": cfg("medicao_base") !== "leituras"}, t("Dias (os últimos dias)"))
-            + el("option", {"value": "leituras", "selected": cfg("medicao_base") === "leituras"}, t("Leituras (as últimas de cada tipo)")))))
+            + el("option", {"value": "leituras", "selected": cfg("medicao_base") === "leituras"}, t("Leituras (as últimas de cada tipo)"))), null,
+            ex("medido", t("O gasto medido"), t("O gasto medido conta as medições dos últimos dias ou as últimas leituras de cada tipo (em uso e em repouso), conforme o \"contar por\"; as de fora saem da conta."))))
           + avancado("config.gasto", parCampo(t("Gasto medido: média dos últimos (dias)"), numero("medicao_janela_dias", cfg("medicao_janela_dias") !== "" ? cfg("medicao_janela_dias") : "90", "1", "3650")))
           + avancado("config.gasto", parCampo(t("Gasto medido: últimas leituras (de cada tipo)"), numero("medicao_janela_leituras", cfg("medicao_janela_leituras") !== "" ? cfg("medicao_janela_leituras") : "20", "2", "1000")))
           // o Encostado: a caixa liga ou desliga o aviso inteiro (o aviso do cadastro, a coluna da Hoje, o filtro); os dias, o limite
-          + parCampo(t("Avisar quando um relógio fica encostado"), marca("encostado_ativo", cfg("encostado_ativo") !== "0"), "check")
+          + parCampo(t("Avisar quando um relógio fica encostado"), marca("encostado_ativo", cfg("encostado_ativo") !== "0"), "check",
+            ex("encostado", t("O aviso Encostado"), t("Um relógio da coleção que passa do limite de dias sem ir ao pulso ganha o aviso <strong>Encostado</strong>; a caixa desliga tudo (o aviso, a coluna da Hoje e o filtro: é o mesmo aviso Encostado da página Avisos).")))
           + parCampo(t("Aviso Encostado: dias sem ir ao pulso"), numero("encostado_dias", cfg("encostado_dias") !== "" ? cfg("encostado_dias") : "30", "1", "3650"))
           // a cópia dos documentos no banco: a escolha da coleção vale sobre o relógio e o arquivo (antes era o config.php)
           + parCampo(t("Cópia dos documentos no banco (válido para todos os relógios)"), el("select", {"name": "documentos_copia"}, el("option", {"value": "", "selected": cfg("documentos_copia") !== "todos" && cfg("documentos_copia") !== "nenhum"}, t("Individual (no relógio ou no arquivo)"))
             + el("option", {"value": "todos", "selected": cfg("documentos_copia") === "todos"}, t("Todos os arquivos"))
-            + el("option", {"value": "nenhum", "selected": cfg("documentos_copia") === "nenhum"}, t("Nenhum arquivo"))))),
-          el("p", {"class": "nota"}, t("O limite de carga de um relógio (no cadastro dele) vale no lugar do geral. O gasto da bateria tem cinco motores (veja a Ajuda); a escolha aqui vale para todos os relógios da coleção, e vazia valem a do relógio e a do grupo (o campo \"Como calcular o gasto da bateria\" do cadastro). O gasto medido conta as medições dos últimos dias ou as últimas leituras de cada tipo (em uso e em repouso), conforme o \"contar por\"; as de fora saem da conta. A cópia dos documentos no banco escolhida aqui vale sobre o relógio e o arquivo. ")
-            + (d.config_php_copia !== null ? el("strong", {"class": "em atrasado"}, t("O config.php ainda define DOCUMENTOS_COPIA_BANCO, que não vale mais: a cópia dos documentos é escolhida aqui, por coleção. ")) : "")
-            + t("Um relógio da coleção que passa do limite de dias sem ir ao pulso ganha o aviso <strong>Encostado</strong>; a caixa desliga tudo (o aviso, a coluna da Hoje e o filtro: é o mesmo aviso Encostado da página Avisos).")));
+            + el("option", {"value": "nenhum", "selected": cfg("documentos_copia") === "nenhum"}, t("Nenhum arquivo"))), null,
+            ex("copia", t("A cópia dos documentos no banco"), t("A cópia dos documentos no banco escolhida aqui vale sobre o relógio e o arquivo.")))),
+          // o aviso que precisa ficar à vista: o config.php com a opção que não vale mais
+          d.config_php_copia !== null ? el("p", {"class": "nota"}, el("strong", {"class": "em atrasado"}, t("O config.php ainda define DOCUMENTOS_COPIA_BANCO, que não vale mais: a cópia dos documentos é escolhida aqui, por coleção. "))) : "");
         var tela = cartao(t("Telas"), el("div", {"class": "campos"},
           parCampo(t("Idioma padrão (quem não escolheu outro no menu)"), el("select", {"name": "idioma"}, d.linguas.map(function (l) {
             return el("option", {"value": l.codigo, "selected": (cfg("idioma") || "pt-BR") === l.codigo}, h(l.nome));
           }).join("")), "largo")
           // o fuso da coleção (quem não escolheu o seu em Minha conta; o cron, as mensagens e as agendas); vazio: o do sistema
-          + parCampo(t("Fuso horário (quem não escolheu outro em Minha conta)"), el("select", {"name": "fuso"}, opcoesFuso(d.fusos, cfg("fuso"), t("O do sistema ({1})", {1: d.fuso_sistema.replace(/_/g, " ")}))))
+          + parCampo(t("Fuso horário (quem não escolheu outro em Minha conta)"), el("select", {"name": "fuso"}, opcoesFuso(d.fusos, cfg("fuso"), t("O do sistema ({1})", {1: d.fuso_sistema.replace(/_/g, " ")}))), null,
+            ex("fuso", t("Fuso horário"), t("O da coleção vale para quem não escolheu o seu em Minha conta, e para o cron, as mensagens e as agendas dela; vazio, o do sistema (o config.php). ")
+              + t("Cada pessoa vê e digita as horas no fuso dela; no banco fica tudo no fuso do sistema.")))
           // o relógio da página Hora certa
           + parCampo(t("Relógio da Hora certa"), el("select", {"name": "hora_relogio"}, [["ambos", t("Analógico e digital (um ao lado do outro)")], ["analogico", t("Analógico")], ["digital", t("Digital")], ["anadigi", t("Anadigi (o visor digital dentro do analógico)")]].map(function (o) {
             return el("option", {"value": o[0], "selected": (cfg("hora_relogio") || "ambos") === o[0]}, o[1]);
-          }).join("")), "largo")
+          }).join("")), "largo",
+            ex("hora", t("Relógio da Hora certa"), t("O mostrador da página Hora certa: analógico, digital, anadigi (o visor digital dentro do mostrador) ou os dois, um ao lado do outro.")))
           + parCampo(t("Abrir o relógio na página Hoje"), el("select", {"name": "painel_modo"}, el("option", {"value": "lado", "selected": cfg("painel_modo") !== "flutuante"}, t("Ao lado da lista"))
-            + el("option", {"value": "flutuante", "selected": cfg("painel_modo") === "flutuante"}, t("Numa janela flutuante, grande"))))
+            + el("option", {"value": "flutuante", "selected": cfg("painel_modo") === "flutuante"}, t("Numa janela flutuante, grande"))), null,
+            ex("painel", t("Abrir o relógio"), t("<strong>Ao lado da lista:</strong> o relógio clicado abre num painel à direita, e a lista continua à vista. <strong>Numa janela flutuante:</strong> abre grande, ")
+              + t("no meio da tela, com os quadros lado a lado; fecha no ×, no Esc ou num clique fora. No celular, os dois cobrem a tela inteira.")))
           + parCampo(t("Destaque no alto da página Hoje"), el("select", {"name": "destaque_hoje"}, el("option", {"value": "dia", "selected": cfg("destaque_hoje") !== "pulso"}, t("O relógio do dia"))
-            + el("option", {"value": "pulso", "selected": cfg("destaque_hoje") === "pulso"}, t("O relógio no pulso agora"))))
+            + el("option", {"value": "pulso", "selected": cfg("destaque_hoje") === "pulso"}, t("O relógio no pulso agora"))), null,
+            ex("destaque", t("Destaque"), t("O quadro grande no alto da página Hoje mostra o relógio do dia (o do plano) ou o que está no pulso agora, ")
+              + t("mesmo que seja outro (o do dia aparece embaixo do nome). Sem nenhum relógio no pulso, fica o do dia.")))
           // o formulário do calibre (Cadastros › Calibres): só os campos do movimento (a marca do campo) ou todos
           + parCampo(t("Formulário do calibre (Cadastros › Calibres)"), el("select", {"name": "calibre_campos"}, el("option", {"value": "movimento", "selected": cfg("calibre_campos") !== "todos"}, t("Só os campos do movimento"))
             + el("option", {"value": "todos", "selected": cfg("calibre_campos") === "todos"}, t("Todos os campos do cadastro"))), "largo")
@@ -258,21 +273,15 @@ function recarregarConfig(aplicadas, manterPosicao) {
               ["sem_repeticao", t("Aleatório sem repetição: os 24 embaralhados, cada um uma vez por dia")]].map(function (o) {
               return el("option", {"value": o[0], "selected": d.relojinho.modo === o[0]}, o[1]);
             }).join("")), "largo")
-          + parCampo(t("Próximos dias (página Hoje): mostrar até (dias por página)"), numero("proximos_por_pagina", String(d.mostrar_ate.proximos), "1", "366"))
-          + parCampo(t("Plano: mostrar até (dias por página)"), numero("plano_por_pagina", String(d.mostrar_ate.plano), "1", "366"))
-          + parCampo(t("Intervalo de atualização das páginas (segundos; 0 desliga)"), numero("atualizar_segundos", String(d.atualizar_segundos), "0", "86400"))
+          + parCampo(t("Próximos dias (página Hoje): mostrar até (dias por página)"), numero("proximos_por_pagina", String(d.mostrar_ate.proximos), "1", "366"), null,
+            ex("mostrar", t("Mostrar até"), t("Quantos dias os Próximos dias (página Hoje, padrão 7) e o dia a dia da página Plano (padrão 31) mostram de cada vez. ")
+              + t("Passando disso, embaixo aparecem as páginas: &lt; (anterior), os números e &gt; (próxima).")))
+          + parCampo(t("Plano: mostrar até (dias por página)"), numero("plano_por_pagina", String(d.mostrar_ate.plano), "1", "366"), null, ajudaRef("mostrar"))
+          + parCampo(t("Intervalo de atualização das páginas (segundos; 0 desliga)"), numero("atualizar_segundos", String(d.atualizar_segundos), "0", "86400"), null,
+            ex("atualizar", t("Intervalo de atualização"), t("De quantos em quantos segundos a Hoje (com o painel), a Ficha, o Plano, os Totais e o Histórico leem tudo de novo sozinhos, sem recarregar a página (a carga, a autonomia, a última leitura, os avisos, os contadores). ")
+              + t("De 1 a 86400; 0 desliga; padrão 60. Nunca por cima de quem está digitando ou tem algo mudado e não gravado.")))
           + parCampo(t("Endereço do sistema (a âncora {link})"), d.sistema.pode_mudar ? el("input", {"name": "url_sistema", "value": d.sistema.url_sistema, "placeholder": t("http://servidor/relogios")})
-            : el("span", {}, d.sistema.url_sistema !== "" ? h(d.sistema.url_sistema) : t("(o do pedido; só o master muda)")), "largo")),
-          el("p", {"class": "nota"}, t("<strong>Ao lado da lista:</strong> o relógio clicado abre num painel à direita, e a lista continua à vista. <strong>Numa janela flutuante:</strong> abre grande, ")
-            + t("no meio da tela, com os quadros lado a lado; fecha no ×, no Esc ou num clique fora. No celular, os dois cobrem a tela inteira."))
-          + el("p", {"class": "nota"}, t("<strong>Destaque:</strong> o quadro grande no alto da página Hoje mostra o relógio do dia (o do plano) ou o que está no pulso agora, ")
-            + t("mesmo que seja outro (o do dia aparece embaixo do nome). Sem nenhum relógio no pulso, fica o do dia."))
-          + el("p", {"class": "nota"}, t("<strong>Intervalo de atualização:</strong> de quantos em quantos segundos a Hoje (com o painel), a Ficha, o Plano, os Totais e o Histórico leem tudo de novo sozinhos, sem recarregar a página (a carga, a autonomia, a última leitura, os avisos, os contadores). ")
-            + t("De 1 a 86400; 0 desliga; padrão 60. Nunca por cima de quem está digitando ou tem algo mudado e não gravado."))
-          + el("p", {"class": "nota"}, t("<strong>Mostrar até:</strong> quantos dias os Próximos dias (página Hoje, padrão 7) e o dia a dia da página Plano (padrão 31) mostram de cada vez. ")
-            + t("Passando disso, embaixo aparecem as páginas: &lt; (anterior), os números e &gt; (próxima)."))
-          + el("p", {"class": "nota"}, t("<strong>Fuso horário:</strong> o da coleção vale para quem não escolheu o seu em Minha conta, e para o cron, as mensagens e as agendas dela; vazio, o do sistema (o config.php). ")
-            + t("Cada pessoa vê e digita as horas no fuso dela; no banco fica tudo no fuso do sistema. <strong>Relógio da Hora certa:</strong> o mostrador da página Hora certa: analógico, digital, anadigi (o visor digital dentro do mostrador) ou os dois, um ao lado do outro.")));
+            : el("span", {}, d.sistema.url_sistema !== "" ? h(d.sistema.url_sistema) : t("(o do pedido; só o master muda)")), "largo")));
         // a força da senha (do sistema inteiro: só o master muda; os outros veem a regra)
         var sp = d.senha_politica;
         var senhas = cartao(t("Senhas"), el("div", {"class": "campos"},
@@ -280,7 +289,8 @@ function recarregarConfig(aplicadas, manterPosicao) {
             ["numeros", t("Números, no mínimo"), "0", "32"], ["simbolos", t("Símbolos, no mínimo (como ! @ # -)"), "0", "32"]].map(function (x) {
             return parCampo(x[1], d.sistema.pode_mudar ? numero("senha_" + x[0], String(sp.regras[x[0]]), x[2], x[3]) : el("span", {}, String(sp.regras[x[0]])));
           }).join("")),
-          el("p", {"class": "nota"}, h(sp.texto) + " " + t("Vale para toda senha nova: a conta criada, a troca em Minha conta, a senha nova pelo link do Esqueci a senha e a do master em Usuários; as que já existem continuam valendo. É do sistema inteiro: só o master muda.")));
+          el("p", {"class": "nota"}, h(sp.texto)),
+          ex("senhas", t("Senhas"), t("Vale para toda senha nova: a conta criada, a troca em Minha conta, a senha nova pelo link do Esqueci a senha e a do master em Usuários; as que já existem continuam valendo. É do sistema inteiro: só o master muda.")));
         var quadroCron = cartao(t("Cron"), cron);
         // de onde vêm os números dos sorteios (a API diz o último lote e se os dois serviços estão fora)
         var al = d.aleatorio;
@@ -288,7 +298,7 @@ function recarregarConfig(aplicadas, manterPosicao) {
           parCampo(t("Os números vêm de"), el("span", {}, t("1. RANDOM.ORG (ruído atmosférico) · 2. fora do ar, ANU QRNG (quântico) · 3. sem os dois, o gerador seguro do PHP")))
           + parCampo(t("Último lote"), el("span", {}, al.ultimo_lote ? h(al.ultimo_lote.replace(/ em (\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2}).*/, " em $3/$2/$1 $4")) : t("nenhum ainda")))
           + (al.fora_desde ? parCampo(t("Serviços fora"), el("span", {"class": "acao"}, t("os dois sem responder desde {1} {2}; o sistema tenta de novo depois de 10 minutos", {1: dataBr(al.fora_desde), 2: horaBr(al.fora_desde)}))) : "")),
-          el("p", {"class": "nota"}, t("Todo sorteio do sistema (o rodízio totalmente aleatório, o sorteio pela nota e o desempate de notas iguais na escala) usa estes números. Eles chegam num lote, e cada sorteio usa só o que precisa, sem viés.")));
+          "", ex("sorteios", t("Sorteios"), t("Todo sorteio do sistema (o rodízio totalmente aleatório, o sorteio pela nota e o desempate de notas iguais na escala) usa estes números. Eles chegam num lote, e cada sorteio usa só o que precisa, sem viés.")));
         // os avisos, os lembretes e para onde vão (os destinos e das agendas) moram na página Avisos: aqui, o resumo e o caminho
         var alertas = cartao(t("Avisos, lembretes e mensagens"), el("div", {"class": "campos"},
           el("p", {}, t("{1} lembretes · {2} destinos · {3} agendas", {1: d.eventos.length, 2: d.destinos.length, 3: d.agendas.length}))),

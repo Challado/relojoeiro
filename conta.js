@@ -53,7 +53,7 @@ function quadroColecoes(d) {
   return el("section", {"class": "cartao-config", "id": "colecoes"}, el("h2", {}, t("Coleções"))
     + (d.colecoes.length === 0 ? el("p", {"class": "alerta-cron"}, t("Você ainda não vê nenhuma coleção: crie uma aqui embaixo, ou peça acesso à de alguém (e espere a aprovação)."))
       : el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Coleção")) + el("th", {}, t("Código")) + el("th", {}, t("Dono")) + el("th", {}, t("Você é")) + el("th", {}, "")))
-        + el("tbody", {}, linhas))) + el("p", {"class": "nota"}, t("Para alguém pedir acesso a uma coleção sua, passe o código dela; para todas as suas, o seu código (em Seus dados). O pedido não mostra a ninguém o seu login nem os nomes das coleções: você aprova ou recusa em Aprovações.")))
+        + el("tbody", {}, linhas))) + ajudaNota("acesso-colecao", t("Pedir acesso a uma coleção"), t("Para alguém pedir acesso a uma coleção sua, passe o código dela; para todas as suas, o seu código (em Seus dados). O pedido não mostra a ninguém o seu login nem os nomes das coleções: você aprova ou recusa em Aprovações.")))
     + el("h3", {}, t("Nova coleção")) + el("form", {"data-recurso": "colecoes", "class": "campos"}, el("input", {"type": "hidden", "name": "acao", "value": "criar"})
       + parCampo(t("Nome"), el("input", {"name": "nome", "required": true, "maxlength": "120"}))
       + parCampo(t("Começa"), el("select", {"name": "opcao", "onchange": "this.form.querySelector('[data-sub]').hidden = this.value !== 'arvore'"},
@@ -68,7 +68,7 @@ function quadroArvores(d) {
     return "";
   }
   return el("section", {"class": "cartao-config", "id": "arvores"}, el("h2", {}, t("Árvores de grupos"))
-    + el("p", {"class": "nota"}, t("A árvore guarda os grupos e o cadastro deles (campos, tipos de lançamento, fórmulas, avisos, categorias e critérios). Uma árvore pode servir a várias coleções suas: o que muda nela vale para todas."))
+    + ajudaNota("arvore", t("A árvore"), t("A árvore guarda os grupos e o cadastro deles (campos, tipos de lançamento, fórmulas, avisos, categorias e critérios). Uma árvore pode servir a várias coleções suas: o que muda nela vale para todas."))
     + el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Árvore")) + el("th", {}, t("Grupos")) + el("th", {}, t("Usada por")) + el("th", {}, "")))
       + el("tbody", {}, d.arvores.map(function (a) {
         return el("tr", {}, el("td", {}, h(a.nome)) + el("td", {"class": "num"}, a.grupos) + el("td", {}, a.colecoes.map(function (c) { return h(c.nome); }).join(", ") || el("span", {"class": "nota"}, t("nenhuma coleção")))
@@ -102,7 +102,7 @@ function quadroDados(d) {
     + el("p", {}, t("Login: {1}", {1: el("strong", {}, h(u.login))}) + (u.papel === "master" ? el("span", {"class": "selo master"}, t("master")) : "")
       + (u.demo ? el("span", {"class": "selo demo"}, t("demonstração")) : "") + " · " + t("desde {1}", {1: dataBr(u.criado)})
       + " · " + t("seu código: {1}", {1: el("strong", {}, u.id)}))
-    + el("p", {"class": "nota"}, t("Alguém quer ver as suas coleções? Passe o seu código ({1}) para todas elas, também as que você criar depois, ou o código de uma coleção só (na coluna Código da tabela Coleções). A pessoa pede acesso com ele, na Criar conta ou em Minha conta; você recebe um e-mail e aprova ou recusa em Aprovações. Ninguém vê o seu login antes de você aprovar.", {1: u.id}))
+    + ajudaNota("codigo", t("O seu código"), t("Alguém quer ver as suas coleções? Passe o seu código ({1}) para todas elas, também as que você criar depois, ou o código de uma coleção só (na coluna Código da tabela Coleções). A pessoa pede acesso com ele, na Criar conta ou em Minha conta; você recebe um e-mail e aprova ou recusa em Aprovações. Ninguém vê o seu login antes de você aprovar.", {1: u.id}))
     + (u.demo ? el("p", {"class": "alerta-cron"}, t("Conta de demonstração: vence em {1} dias ({2}). Depois disso, ela e as suas coleções são apagadas. Para continuar, peça ao administrador para torná-la oficial.", {1: u.dias_restantes, 2: dataBr(u.expira_em)})) : "")
     + el("form", {"data-recurso": "conta", "class": "campos"}, el("input", {"type": "hidden", "name": "acao", "value": "alterar"})
       + parCampo(t("E-mail"), el("input", {"type": "email", "name": "email", "value": u.email || "", "maxlength": "200", "autocomplete": "off"}), "largo")
@@ -118,7 +118,7 @@ function quadroDados(d) {
       }).join("")))
       + parCampo(t("Senha atual (só para trocar a senha)"), el("input", {"type": "password", "name": "senha_atual", "autocomplete": "current-password"}))
       + camposSenha(t("Senha nova"), d.senha_politica, false)
-      + el("p", {"class": "nota"}, t("O e-mail serve para recuperar a senha, receber os convites e os avisos da conta. Trocou a senha: o navegador pede o login de novo.") + " "
+      + ajudaNota("email-senha", t("O e-mail e a senha"), t("O e-mail serve para recuperar a senha, receber os convites e os avisos da conta. Trocou a senha: o navegador pede o login de novo.") + " "
         + t("O modo básico mostra o dia a dia: cadastrar os relógios, marcar o uso, acompanhar a manutenção e escolher um rodízio pronto. O avançado mostra também as fórmulas, os roteiros, os critérios, as simulações e os totais. As contas e o motor são os mesmos nos dois.") + " "
         + t("O fuso horário vale para tudo o que você vê e digita (a Hora certa, os lançamentos, os avisos); quem divide a coleção com você vê cada hora no fuso dele. O dia do rodízio (o plano, o relógio do dia, as rodadas) é sempre o da coleção. Agora: {1}.", {1: el("strong", {}, h(d.fuso.nome.replace(/_/g, " ")))}))
       + el("div", {"class": "botoes"}, el("button", {}, t("Salvar")))));
@@ -126,7 +126,7 @@ function quadroDados(d) {
 
 function quadroTokens(d) {
   return el("section", {"class": "cartao-config", "id": "tokens"}, el("h2", {}, t("Tokens de API"))
-    + el("p", {"class": "nota"}, t("Para scripts e automações (cabeçalho X-Api-Token): o token vale como o seu login, com as suas coleções. Ele só aparece quando é criado."))
+    + ajudaNota("token", t("O token da API"), t("Para scripts e automações (cabeçalho X-Api-Token): o token vale como o seu login, com as suas coleções. Ele só aparece quando é criado."))
     + (tokenNovo ? el("p", {}, t("Token {1}:", {1: h(tokenNovo.nome)})) + el("p", {"class": "token-novo"}, h(tokenNovo.token)) : "")
     + (d.tokens.length > 0 ? el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Nome")) + el("th", {}, t("Criado em")) + el("th", {}, t("Último uso")) + el("th", {}, "")))
       + el("tbody", {}, d.tokens.map(function (k) {
@@ -168,7 +168,7 @@ function quadroApp(d) {
       }).join(""))));
   }
   return el("section", {"class": "cartao-config", "id": "app"}, el("h2", {}, t("Aplicativo no celular"))
-    + el("p", {"class": "nota"}, t("O sistema vira um aplicativo no seu celular ou tablet: um ícone na tela inicial, abrindo em tela cheia, entrando sem pedir a senha e recebendo as notificações. Três passos, feitos no aparelho em que você quer o aplicativo:"))
+    + ajudaNota("aplicativo", t("O aplicativo no celular"), t("O sistema vira um aplicativo no seu celular ou tablet: um ícone na tela inicial, abrindo em tela cheia, entrando sem pedir a senha e recebendo as notificações. Três passos, feitos no aparelho em que você quer o aplicativo:"))
     + el("ol", {"class": "passos"}, el("li", {}, el("strong", {}, t("Lembrar este aparelho.")) + " " + passo1) + el("li", {}, el("strong", {}, t("Instalar.")) + " " + passo2) + el("li", {}, el("strong", {}, t("Ligar as notificações.")) + " " + passo3))
     + (lista !== "" ? el("p", {"class": "nota"}, t("Os aparelhos lembrados (trocar a senha esquece todos):")) + lista : ""));
 }
@@ -269,7 +269,7 @@ function quadroServidor(d) {
   linhas.push([t("IMAP (cópia em Enviados)"), e.imap ? conta(e.imap) + " · " + t("pasta {1}", {1: h(e.imap.pasta)}) : el("span", {"class": "nota"}, t("não configurado (opcional)"))]);
   linhas.push([t("POP (só o teste da conta)"), e.pop ? conta(e.pop) : el("span", {"class": "nota"}, t("não configurado (opcional)"))]);
   var res = el("h2", {}, t("Servidor de e-mail (master)"))
-    + el("p", {"class": "nota"}, t("O sistema manda e-mail pelo que está no config.php (EMAIL_METODO, EMAIL_REMETENTE, SMTP_*, IMAP_*, POP_*): os convites, o Esqueci a senha, os avisos da conta e os destinos do tipo e-mail. Aqui está o que ele leu de lá, e o teste."))
+    + ajudaNota("email-sistema", t("O e-mail do sistema"), t("O sistema manda e-mail pelo que está no config.php (EMAIL_METODO, EMAIL_REMETENTE, SMTP_*, IMAP_*, POP_*): os convites, o Esqueci a senha, os avisos da conta e os destinos do tipo e-mail. Aqui está o que ele leu de lá, e o teste."))
     + el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados config-email"}, el("thead", {}, el("tr", {}, el("th", {}, t("Parte")) + el("th", {}, t("O que o sistema leu do config.php"))))
       + el("tbody", {}, linhas.map(function (l) {
         return el("tr", {}, el("td", {}, l[0]) + el("td", {}, l[1]));
@@ -282,7 +282,7 @@ function quadroServidor(d) {
       + el("form", {"data-recurso": "conta", "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": "email_testar"})
         + el("input", {"type": "email", "name": "para", "required": true, "value": d.usuario.email || "", "placeholder": t("para quem"), "aria-label": t("Para")})
         + el("button", {}, t("Mandar um e-mail de teste")))
-      + el("p", {"class": "nota"}, t("O teste conecta e entra no SMTP (sem mandar nada), no IMAP (e confere a pasta Enviados) e no POP; o e-mail de teste passa por tudo isso e sai de verdade. A conversa com os servidores aparece embaixo, sem as senhas."));
+      + ajudaNota("teste-email", t("O teste do e-mail"), t("O teste conecta e entra no SMTP (sem mandar nada), no IMAP (e confere a pasta Enviados) e no POP; o e-mail de teste passa por tudo isso e sai de verdade. A conversa com os servidores aparece embaixo, sem as senhas."));
   }
   if (TESTE_EMAIL) {
     var r = TESTE_EMAIL;
@@ -309,7 +309,7 @@ function quadroEnvio(d) {
     : (s.sistema_configurado ? el("p", {}, t("Agora: pelo servidor do sistema."))
       : el("p", {"class": "alerta-cron"}, t("Agora: o sistema não tem servidor de e-mail; sem um servidor seu, os seus e-mails não saem.")));
   var res = el("h2", {}, t("Envio dos meus e-mails"))
-    + el("p", {"class": "nota"}, t("Os e-mails que você manda (os destinos de e-mail das suas coleções, os convites, os pedidos de acesso e as respostas a eles) saem pelo servidor do sistema. Se preferir, use o seu: o Gmail, o Outlook, o do seu provedor."))
+    + ajudaNota("smtp-proprio", t("O seu servidor de e-mail"), t("Os e-mails que você manda (os destinos de e-mail das suas coleções, os convites, os pedidos de acesso e as respostas a eles) saem pelo servidor do sistema. Se preferir, use o seu: o Gmail, o Outlook, o do seu provedor."))
     + agora
     + el("form", {"data-recurso": "conta", "class": "campos"}, el("input", {"type": "hidden", "name": "acao", "value": "smtp_salvar"})
       + parCampo(t("Enviar por"), el("select", {"name": "proprio", "onchange": "this.form.querySelectorAll('[data-sub]').forEach(function (e) { e.hidden = this.value !== '1'; }, this)"},
@@ -323,7 +323,7 @@ function quadroEnvio(d) {
         + parCampo(t("Usuário"), el("input", semPreencher({"name": "usuario", "value": s.usuario || "", "maxlength": "200", "placeholder": t("o e-mail da conta")})))
         + parCampo(t("Senha"), el("input", semPreencher({"type": "password", "name": "senha", "placeholder": s.senha_definida ? t("gravada (vazia: mantém)") : ""})))
         + parCampo(t("Remetente"), el("input", {"type": "email", "name": "remetente", "value": s.remetente || "", "maxlength": "200", "autocomplete": "off", "placeholder": t("vazio: o usuário, se for um e-mail")}))
-        + el("p", {"class": "nota largo"}, t("No Gmail: servidor smtp.gmail.com, porta 587, TLS, o seu e-mail como usuário e uma senha de app (Conta do Google › Segurança › Senhas de app; pede a verificação em duas etapas), não a senha normal. No Outlook: smtp-mail.outlook.com, 587, TLS. A senha fica cifrada no banco e não aparece de novo.")))
+        + ajudaNota("gmail", t("Gmail, Outlook e outros"), t("No Gmail: servidor smtp.gmail.com, porta 587, TLS, o seu e-mail como usuário e uma senha de app (Conta do Google › Segurança › Senhas de app; pede a verificação em duas etapas), não a senha normal. No Outlook: smtp-mail.outlook.com, 587, TLS. A senha fica cifrada no banco e não aparece de novo.")))
       + el("div", {"class": "botoes"}, el("button", {}, t("Salvar"))));
   if (s.proprio) {
     res += el("div", {"class": "botoes"}, formAcao("conta", "smtp_testar", {para: ""}, t("Testar a conexão (sem mandar nada)")))
@@ -347,7 +347,7 @@ function quadroEnvio(d) {
 
 function quadroExcluir(d) {
   return el("section", {"class": "cartao-config", "id": "excluir"}, el("h2", {}, t("Excluir a conta"))
-    + el("p", {"class": "nota"}, t("Sai a conta com tudo o que é dela: as suas coleções (com os relógios, o histórico e os arquivos), as suas árvores, os seus acessos e os seus tokens. Antes de apagar, a API mostra tudo o que sai junto."))
+    + ajudaNota("excluir-conta", t("Excluir a conta"), t("Sai a conta com tudo o que é dela: as suas coleções (com os relógios, o histórico e os arquivos), as suas árvores, os seus acessos e os seus tokens. Antes de apagar, a API mostra tudo o que sai junto."))
     + formAcao("conta", "excluir", {}, t("Excluir a minha conta"), "perigo"));
 }
 
