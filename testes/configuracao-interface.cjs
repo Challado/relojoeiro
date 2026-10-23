@@ -21,7 +21,10 @@ function t(s,p) { var r=LINGUA==='pt-BR'?s:({"Telas":"Interface "+LINGUA,"Config
 function h(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function el(n,a,c) { return '<'+n+Object.keys(a||{}).map(k=>a[k]===true?' '+k:(a[k]===false||a[k]==null?'':' '+k+'="'+h(a[k])+'"')).join('')+'>'+(c||'')+(['input','img','br'].includes(n)?'':'</'+n+'>'); }
 function avancado(id,html) {return String(html).replace(/^(\s*<[a-zA-Z0-9]+)/,'$1 data-avancado="'+id+'"');}
-function parCampo(r,c,tipo) {return el('label',{class:'par-campo '+(tipo||'')},el('span',{},h(r))+el('span',{class:'controle'},c));}
+function parCampo(r,c,tipo,explica) {return el('label',{class:'par-campo '+(tipo||'')},el('span',{},h(r)+(explica||''))+el('span',{class:'controle'},c));}
+// a gaveta das explicações (api.js): aqui só o que a página chama, sem a gaveta
+function ajudaGrupo(){} function ajuda(c){return el('button',{type:'button',class:'ajuda-i','data-ajuda':c},'i');} function ajudaRef(c){return ajuda(c);}
+function ajudaNota(c,ti){return el('button',{type:'button',class:'ajuda-linha','data-ajuda':c},h(ti));} function ajudaBotao(){return el('button',{type:'button',class:'ajuda-botao','data-ajuda':''},'?');}
 function opcoesFuso(f,a,v) {return el('option',{value:''},v)+f.map(x=>el('option',{value:x.nome,selected:a===x.nome},x.nome)).join('');}
 function dataBr(x){return String(x).slice(0,10);} function horaBr(x){return String(x).slice(11,16);}
 function textoResposta(r){return (r.mensagem||'')+(r.erros&&r.erros.length?' '+r.erros.join(' '):'');}
