@@ -19,6 +19,7 @@ Com os bancos no ar (MySQL/MariaDB, PostgreSQL e Firebird; o SQLite não precisa
 testes/paridade.sh                      # os quatro, ao mesmo tempo; o SQLite é a referência
 testes/paridade.sh sqlite mysql         # só esses (o primeiro é a referência)
 testes/paridade.sh --layout sqlite      # e, no fim, a conferência do layout (veja abaixo) no primeiro
+testes/paridade.sh --rolagem sqlite     # e a conferência da rolagem (veja abaixo) no primeiro
 testes/paridade.sh --manter sqlite      # deixa o servidor no ar no fim, para olhar as telas (Ctrl+C derruba)
 ```
 
@@ -126,6 +127,27 @@ uma parte, os dois argumentos filtram o nome da tela e o do tamanho: `node teste
 são curtos; para pegar o que só quebra com o nome comprido de verdade, vale rodar também depois de dar nomes longos a alguns
 relógios e grupos e pôr foto em alguns (a cabeça do painel muda com a foto: os botões Abrir, Trocar e Remover foto).
 
+# Conferência da rolagem
+
+O `testes/rolagem.cjs` confere que nada fica travado na rolagem, em 8 tamanhos de tela: computador (1440 e 1280px), tablet
+deitado (1024px) e de pé (768px) e celular (412, 390, 360 e 320px; os três primeiros com o tamanho e o toque de um Pixel 7,
+um iPhone 13 e um Galaxy S9+, o último com a tela de 568px de altura de um iPhone SE). Ele rola como a pessoa rola, pelo
+gesto de rolagem do Chromium a partir de um ponto da tela (o navegador rola a caixa que está embaixo do ponto e, no fim dela,
+a de fora), e confere:
+
+| O quê | Onde | Passa quando |
+|---|---|---|
+| a página rola até o fim | todas as páginas (as de `testes/paginas.cjs`) | o fim do que rola embaixo do dedo chega ao pé da tela: a página, ou o painel do relógio aberto no celular e no tablet (que cobre a tela e rola por dentro, com a página de trás parada) |
+| o menu aberto rola até o último item | até 900px (o menu recolhido), na Hoje e na Configuração | o último item (o idioma) chega à tela, e a página de trás não andou: o menu rola por dentro |
+| a página volta a rolar com o menu fechado | as mesmas | depois de abrir e fechar o menu, o fim da página chega ao pé da tela |
+| a gaveta Explicações rola até a última explicação | Configuração, Winders, Programas e Cadastros | a última explicação chega ao pé da gaveta |
+| a página volta a rolar com a gaveta fechada (Esc) | as mesmas | o fim da página chega ao pé da tela |
+
+Pelo `paridade.sh`, sobre o banco do cenário: `testes/paridade.sh --rolagem sqlite`. Ou, com um servidor do cenário no ar:
+`BASE=http://127.0.0.1:8101/ node testes/rolagem.cjs`; os dois argumentos filtram a página (ou `menu`, ou `gaveta`) e o
+tamanho: `node testes/rolagem.cjs "menu" "cel-"`. O resultado esperado é `A rolagem confere: ...`; quando trava, diz o tamanho,
+a página e o que não deu para alcançar.
+
 # A documentação da API
 
 O dicionário dos campos (o que é cada campo de cada resposta) tem **uma fonte só**: o `"campos"` da ajuda, no [`api/ajuda.php`](../api/ajuda.php) (o
@@ -189,7 +211,7 @@ arquivo do Firebird ganha `_mig` no nome), **apagado e recriado**; os servidores
 # No GitHub, a cada push
 
 O [`.github/workflows/testes.yml`](../.github/workflows/testes.yml) roda os testes no GitHub Actions a cada push no `main` (e
-quando pedido na aba **Actions**, em "Run workflow"), em cinco trabalhos ao mesmo tempo:
+quando pedido na aba **Actions**, em "Run workflow"), em seis trabalhos ao mesmo tempo:
 
 - **Arquitetura, idiomas e documentação (sem banco):** o `arquitetura.php`, o `textos.php` (os dicionários, com as listas
   traduzidas no uso, `t(LISTA[...])`, os manuais e os READMEs traduzidos) e o `dicionario.php`;
@@ -198,6 +220,8 @@ quando pedido na aba **Actions**, em "Run workflow"), em cinco trabalhos ao mesm
 - **Paridade (SQLite e Firebird):** o mesmo com o Firebird 3, e o `testes/migracao.sh firebird`;
 - **Layout das telas:** o Playwright com o Chromium, o `configuracao-interface.cjs` e o `testes/paridade.sh --layout sqlite`; quando falha, as capturas das
   telas ficam para baixar na página da rodada (Artifacts, "layout");
+- **Rolagem das telas:** o `testes/paridade.sh --rolagem sqlite`: no computador, no tablet de pé e deitado e no celular, cada
+  página rola até o fim, o menu aberto até o último item e a gaveta Explicações até a última explicação;
 - **Nenhum texto fixo:** o `LINGUA=zh-CN testes/paridade.sh --textos sqlite`, o sistema inteiro em chinês.
 
 O resultado aparece na aba **Actions** do repositório e no ✓ / ✗ ao lado de cada commit; uma falha também chega por e-mail.

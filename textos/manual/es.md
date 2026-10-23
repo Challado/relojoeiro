@@ -1,4 +1,4 @@
-<!-- origem: 964ff305cf919ea9df34fc1441d936e503297f78 -->
+<!-- origem: 306c084a51d770ed7e4e5aaa95f006c9fe54cdb2 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1463,7 +1463,8 @@ cualquier pantalla.
 (Plan, Modos de rotación, Criterios de elección), **Colección** (Galería, Ficha, Accesorios, Winders, Programas, Movimientos, Deseos, Estadísticas, Totales, Grupos), **Sistema**
 (Configuración, Definiciones, Ejecuciones del cron y, solo para el master, Usuarios) y **Cuenta** (Mi cuenta, Aprobaciones), cada
 grupo con la flechita que abre su lista con un clic (otro clic, un clic fuera o Esc la cierra); y **Ayuda**. El grupo de la página
-abierta queda subrayado. En el móvil, el menú recogido se abre con los grupos ya abiertos, cada uno con su nombre arriba. El menú
+abierta queda subrayado. En el móvil, el menú recogido se abre con los grupos ya abiertos, cada uno con su nombre arriba. Abierto, nunca pasa de la altura de la
+pantalla: se desplaza por dentro hasta el último elemento (el idioma), y la página de detrás se queda quieta. El menú
 tiene, a la derecha, lo que es de quien entró: el **selector de colección** (con más de una; las de otros con el
 nombre del dueño), **Aprobaciones (N)** cuando hay solicitudes o invitaciones esperando, **Demo: N días** en la cuenta de
 demostración y el idioma. El master viendo el sistema como otra persona ve una franja arriba, **Viendo como...**, con el botón

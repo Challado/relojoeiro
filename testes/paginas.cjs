@@ -1,4 +1,4 @@
-// As telas que as conferências abrem (testes/layout.cjs e testes/texto-fixo.cjs), sobre o banco do cenário (testes/cenario.php:
+// As telas que as conferências abrem (testes/layout.cjs, testes/rolagem.cjs e testes/texto-fixo.cjs), sobre o banco do cenário (testes/cenario.php:
 // os relógios 1, 3, 4, 5, 7 e 8; o desejado 10; o vendido 4): o nome de cada uma e o endereço; flutuante: o painel do relógio
 // por cima da lista, em vez de ao lado.
 module.exports = [

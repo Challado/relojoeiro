@@ -1,4 +1,4 @@
-<!-- origem: 964ff305cf919ea9df34fc1441d936e503297f78 -->
+<!-- origem: 306c084a51d770ed7e4e5aaa95f006c9fe54cdb2 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1513,7 +1513,8 @@ Les **Prochains jours** montrent aussi tous les jours de la programmation sur n'
 Totaux, Groupes), **Système** (Configuration, Définitions, Exécutions du cron et, seulement pour le master, Utilisateurs) et **Compte**
 (Mon compte, Approbations), chaque groupe avec la petite flèche qui ouvre sa liste d'un clic (un autre clic, un clic à
 l'extérieur ou Échap la ferme) ; et **Aide**. Le groupe de la page ouverte est souligné. Sur le téléphone, le menu replié
-s'ouvre avec les groupes déjà ouverts, chacun avec son nom au-dessus. Le menu a, à droite, ce qui est à la personne connectée : le **sélecteur de collection** (s'il y en a plus d'une ; celles
+s'ouvre avec les groupes déjà ouverts, chacun avec son nom au-dessus. Ouvert, il ne dépasse jamais la hauteur de
+l'écran : il défile à l'intérieur jusqu'au dernier élément (la langue), et la page derrière reste immobile. Le menu a, à droite, ce qui est à la personne connectée : le **sélecteur de collection** (s'il y en a plus d'une ; celles
 des autres avec le nom du propriétaire), **Approbations (N)** quand des demandes ou des invitations attendent, **Démo : N
 jours** sur le compte de démonstration et la langue. Le master voyant le système comme une autre personne voit une bande en
 haut, **Vue en tant que...**, avec le bouton pour revenir.

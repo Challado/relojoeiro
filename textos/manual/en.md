@@ -1,4 +1,4 @@
-<!-- origem: 964ff305cf919ea9df34fc1441d936e503297f78 -->
+<!-- origem: 306c084a51d770ed7e4e5aaa95f006c9fe54cdb2 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1466,7 +1466,8 @@ all the days of the schedule on any screen.
 (Plan, Rotation modes, Selection criteria), **Collection** (Gallery, Watch page, Accessories, Winders, Programs, Movements, Wishlist, Statistics, Totals, Groups), **System**
 (Settings, Definitions, Cron runs and, only for the master, Users) and **Account** (My account, Approvals), each group with the
 little arrow that opens its list in one click (another click, a click outside or Esc closes it); and **Help**. The group of the
-open page is underlined. On the phone, the collapsed menu opens with the groups already open, each with its name on top. The menu has,
+open page is underlined. On the phone, the collapsed menu opens with the groups already open, each with its name on top. Open, it never goes past the height of the
+screen: it scrolls inside down to the last item (the language), and the page behind stays still. The menu has,
 on the right, what belongs to whoever is signed in: the **collection selector** (with more than one; other
 people's with the owner's name), **Approvals (N)** when there are requests or invitations waiting, **Demo: N days** on the demo
 account and the language. The master viewing the system as another person sees a bar at the top, **Viewing as...**, with the

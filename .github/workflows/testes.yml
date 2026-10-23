@@ -133,6 +133,26 @@ jobs:
           path: /tmp/relojoeiro-paridade.*/layout/
           if-no-files-found: ignore
           retention-days: 7
+  rolagem:
+    name: Rolagem das telas (computador, tablet de pé e deitado, celular)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: sqlite3, curl, mbstring, fileinfo, dom, zlib, gd, zip
+          coverage: none
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - name: Playwright e o Chromium
+        run: |
+          npm install -g playwright@1
+          playwright install --with-deps chromium
+      - name: Cada página até o fim, o menu aberto até o último item e a gaveta Explicações
+        run: testes/paridade.sh --rolagem sqlite
   textos-fixos:
     name: Nenhum texto fixo (o sistema inteiro em chinês)
     runs-on: ubuntu-latest

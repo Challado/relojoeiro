@@ -7,6 +7,9 @@
 #   testes/paridade.sh                           os quatro: sqlite pgsql mysql firebird
 #   testes/paridade.sh sqlite mysql              só esses (o primeiro é a referência)
 #   testes/paridade.sh --layout sqlite           e, no fim, a conferência do layout (testes/layout.cjs) no primeiro
+#   testes/paridade.sh --rolagem sqlite          e a conferência da rolagem (testes/rolagem.cjs) no primeiro: em cada
+#                                                tamanho de tela, cada página rola até o fim, o menu aberto até o último
+#                                                item e a gaveta Explicações até a última explicação
 #   testes/paridade.sh --manter sqlite           deixa os servidores no ar no fim (para olhar as telas); Ctrl+C derruba
 #   LINGUA=zh-CN testes/paridade.sh --textos sqlite   e a conferência dos textos fixos (testes/texto-fixo.cjs) no primeiro:
 #                                                nenhum texto nas telas fora do dicionário (o roteiro no mesmo idioma)
@@ -21,22 +24,25 @@
 # LINGUA=en roda o roteiro e a conferência dos campos nesse idioma (e o layout, com --layout); TESTE_ESTRITO=1 liga o modo
 # estrito dos idiomas no servidor de teste: a tradução que falta para com erro e aparece no registro do roteiro.
 # Outras variáveis: TESTE_PORTA (a primeira porta, padrão 8101; uma por banco), RELOGIOS_TESTE_PASTA (a pasta da rodada;
-# padrão: uma nova, temporária). Termina com 0 se tudo saiu igual, sem escrita recusada (e sem problema de layout).
+# padrão: uma nova, temporária). Termina com 0 se tudo saiu igual, sem escrita recusada (e sem problema de layout nem de
+# rolagem).
 set -u
 cd "$(dirname "$0")/.." || exit 2
 RAIZ=$(pwd)
 
 LAYOUT=0
+ROLAGEM=0
 MANTER=0
 TEXTOS=0
 BANCOS=()
 for a in "$@"; do
   case "$a" in
     --layout) LAYOUT=1 ;;
+    --rolagem) ROLAGEM=1 ;;
     --manter) MANTER=1 ;;
     --textos) TEXTOS=1 ;;
     sqlite|pgsql|mysql|firebird) BANCOS+=("$a") ;;
-    *) echo "Não conheço \"$a\". Uso: testes/paridade.sh [--layout] [--textos] [--manter] [sqlite] [pgsql] [mysql] [firebird]" >&2; exit 2 ;;
+    *) echo "Não conheço \"$a\". Uso: testes/paridade.sh [--layout] [--rolagem] [--textos] [--manter] [sqlite] [pgsql] [mysql] [firebird]" >&2; exit 2 ;;
   esac
 done
 [ ${#BANCOS[@]} -eq 0 ] && BANCOS=(sqlite pgsql mysql firebird)
@@ -193,8 +199,17 @@ if [ $LAYOUT -eq 1 ]; then
   if BASE="http://127.0.0.1:$PORTA0/" SAIDA="$PASTA/layout" node testes/layout.cjs; then :; else FALHOU=1; echo "    veja $PASTA/layout/agrupado.txt:"; sed 's/^/    /' "$PASTA/layout/agrupado.txt" 2>/dev/null | head -60; fi
 fi
 
+if [ $ROLAGEM -eq 1 ]; then
+  echo "Conferência da rolagem no $REF:"
+  if BASE="http://127.0.0.1:$PORTA0/" node testes/rolagem.cjs > "$PASTA/rolagem.txt" 2>&1; then
+    echo "    $(tail -1 "$PASTA/rolagem.txt")"
+  else
+    FALHOU=1; sed 's/^/    /' "$PASTA/rolagem.txt" | head -60
+  fi
+fi
+
 # o isolamento entre contas (testes/isolamento.php), em cada banco: a escrita das contas de teste vem depois da fotografia, da
-# conferência dos campos e do layout, para não mexer neles
+# conferência dos campos, do layout e da rolagem, para não mexer neles
 i=0
 for b in "${BANCOS[@]}"; do
   if [ -f "$PASTA/$b.json" ]; then

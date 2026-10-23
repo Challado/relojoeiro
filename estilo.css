@@ -951,6 +951,9 @@ table.resumo-plano { max-width: 44rem; }
   .menu-abre::before { content: "\2630\00a0"; }
   .topo.aberto .menu-abre::before { content: "\2715\00a0"; }
   .menu-itens { display: none; }
+  /* aberto, o menu nunca passa da altura da tela: a barra é presa no alto (sticky), então o que passasse dela ficaria fora
+     da tela para sempre; ele rola por dentro até o último item, e no fim a rolagem não escorre para a página de trás */
+  .topo.aberto { max-height: 100vh; max-height: 100dvh; overflow-y: auto; overscroll-behavior: contain; }
   .topo.aberto .menu-itens { display: grid; width: 100%; grid-template-columns: 1fr 1fr; gap: .4rem; padding: .5rem 0 .4rem; }
   .topo .menu-itens a { padding: .7rem .8rem; border-radius: 8px; background: #27323f; color: #dfe5eb; }
   .topo .menu-itens a.ativo { background: var(--safira); color: #fff; border-bottom: 0; }

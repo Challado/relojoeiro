@@ -1,4 +1,4 @@
-<!-- origem: d0d64c4829c9368ac292b20d555221b308e545a8 -->
+<!-- origem: 304872251d00561cb7f089d0aba334733089434d -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -676,7 +676,7 @@ ciclos mayores, que ningún `CHECK` alcanza) y las de los vínculos opcionales.
 | [`reconstrucao.php`](reconstrucao.php) | el guion para reescribir el sistema desde cero (el `recurso=reconstrucao` de la API) |
 | [`.htaccess`](.htaccess) | la protección de los archivos internos en Apache (y el login del sitio con PHP por FastCGI) |
 | [`nginx-relogios.conf`](nginx-relogios.conf) | el bloque de nginx que protege los archivos internos |
-| [`testes/`](testes/) | la prueba de paridad: el mismo guion por la API en cada base, y el comparador de las respuestas; la comprobación del diseño de todas las pantallas, del móvil al ordenador, y del espejo entre la ficha y el panel de Hoy (el mismo orden de secciones y cuadros) (`layout.cjs`; `LINGUA=en` comprueba en un idioma); la de la actualización de una base antigua: la base instalada por una versión anterior, con datos, pasa a la actual por las migraciones (`migracao.sh`); la de los diccionarios de los idiomas (`textos.php`); el armado del README de cada idioma (`readme.php`); y la comprobación de la arquitectura (`arquitetura.php`: las reglas que el código tiene que seguir) |
+| [`testes/`](testes/) | la prueba de paridad: el mismo guion por la API en cada base, y el comparador de las respuestas; la comprobación del diseño de todas las pantallas, del móvil al ordenador, y del espejo entre la ficha y el panel de Hoy (el mismo orden de secciones y cuadros) (`layout.cjs`; `LINGUA=en` comprueba en un idioma); la del desplazamiento: en cada tamaño de pantalla, cada página se desplaza hasta el final, el menú abierto hasta el último elemento (sin que se mueva la página de detrás) y el cajón Explicaciones hasta la última explicación (`rolagem.cjs`); la de la actualización de una base antigua: la base instalada por una versión anterior, con datos, pasa a la actual por las migraciones (`migracao.sh`); la de los diccionarios de los idiomas (`textos.php`); el armado del README de cada idioma (`readme.php`); y la comprobación de la arquitectura (`arquitetura.php`: las reglas que el código tiene que seguir) |
 | [`docs/telas/`](docs/telas/) | las capturas de pantalla de este README |
 | `README.md`, `README.en.md`, `README.zh-CN.md`, `README.hi.md`, `README.es.md`, `README.fr.md` | este README: el original, en portugués, y los otros idiomas. No se editan a mano: el [`testes/readme.php`](testes/readme.php) arma cada uno juntando el manual traducido (`textos/manual/<idioma>.md`, las secciones que muestra la Ayuda) y el resto traducido (`textos/readme/<idioma>.md`: el comienzo, Pruébelo, la API, la Instalación, Cómo es por dentro, Cómo contribuir y la Licencia) |
 | [`PORTE.md`](PORTE.md) | el registro del porte de la versión anterior |
@@ -701,7 +701,7 @@ Las mejoras son bienvenidas, y el camino es siempre este repositorio:
    cabecera del `api.php` se genera a partir de él, con `php testes/dicionario.php --gravar` (no escriba en la cabecera a
    mano).
 6. **Ejecute la prueba de paridad** ([`testes/`](testes/)) en las cuatro bases antes de enviar (GitHub también la ejecuta, en
-   cada push al `main`: la prueba de paridad, la actualización de una base antigua, la documentación y el diseño, en
+   cada push al `main`: la prueba de paridad, la actualización de una base antigua, la documentación, el diseño y el desplazamiento, en
    [`.github/workflows/testes.yml`](.github/workflows/testes.yml); el resultado aparece en la pestaña **Actions** y en el ✓ / ✗
    al lado de cada commit): `testes/paridade.sh`, con las bases en marcha, tiene que terminar con `Tudo igual.` También
    comprueba la documentación: la cabecera es lo que genera la ayuda, y todo campo de las respuestas está explicado. Comprueba la arquitectura ([`testes/arquitetura.php`](testes/arquitetura.php), que GitHub
@@ -709,7 +709,8 @@ Las mejoras son bienvenidas, y el camino es siempre este repositorio:
    la base solo la tocan el núcleo, la API y el cron, los archivos internos quedan bloqueados por la web, toda acción y toda
    constante del `config.php` están documentadas, y las otras reglas listadas al comienzo del archivo. Y falla si PHP da
    cualquier aviso (Warning, Notice, Deprecated) durante la vuelta. ¿Tocó las
-   pantallas? Ejecute también la comprobación del diseño (`testes/paridade.sh --layout sqlite`): `0 problemas`.
+   pantallas? Ejecute también la comprobación del diseño (`testes/paridade.sh --layout sqlite`): `0 problemas`; y la del desplazamiento
+   (`testes/paridade.sh --rolagem sqlite`): `A rolagem confere`.
 7. **Todo texto nuevo pasa por `t()`** (el `api.js` y el `textos/funcoes.php` tienen la función), con el portugués como clave
    y los parámetros entre llaves: `t("Excluir {1}?", {1: nome})`, nunca `"Excluir " + nome + "?"`. Ningún texto escrito directamente en las pantallas ni en la API: GitHub lo comprueba de dos formas. La regla 11 de `testes/arquitetura.php` rechaza el texto entre comillas que va a la pantalla fuera de `t()` (lo que no se traduce a propósito, como la marca, va en `fixo("...")`), y `LINGUA=zh-CN testes/paridade.sh --textos sqlite` abre todas las pantallas con el sistema entero en chino y señala cualquier palabra en letra latina que no sea un dato de quien lo usa ni venga del diccionario. Después, tradúzcalo en los
    cinco archivos de `textos/` y ejecute `php testes/textos.php` (la prueba de paridad también lo ejecuta): tiene que terminar
