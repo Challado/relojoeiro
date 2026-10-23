@@ -59,8 +59,14 @@ function numeros_iguais($x, $y, $chave)
     if (preg_match("/horas/", (string)$chave) === 1 && abs($x - $y) <= 0.1 + 1e-9) {
         return true;
     }
-    // (e os valores bem pequenos, como os dias sem uso de quem acabou de sair do pulso: 3 ou 4 segundos em dias)
-    return abs($x - $y) <= max(1e-3, 5e-3 * max(abs($x), abs($y)));
+    // a idade da Lua (uma casa, em dias): anda com o relógio de verdade, e segundos de diferença cruzam um passo do
+    // arredondamento (12 e 12,1)
+    if ($chave === "idade_dias" && abs($x - $y) <= 0.1 + 1e-9) {
+        return true;
+    }
+    // (e os valores bem pequenos, como os dias sem uso de quem acabou de sair do pulso: 3 ou 4 segundos em dias; e o que é
+    // medido em dias, como a conta de uma fórmula com os dias desde um lançamento: a mesma folga do tempo, em dias)
+    return abs($x - $y) <= max(1e-3, $folga / 86400, 5e-3 * max(abs($x), abs($y)));
 }
 
 function comparar($x, $y, $caminho, $chave)

@@ -80,7 +80,9 @@ O roteiro não deixa o resultado depender do segundo em que cada passo cai, nem 
   20:00 e 22:00: as rodadas do cron, o horário de uso e o sol que fecha sozinho), ele espera a hora passar antes de começar.
 
 E o que cresce enquanto o roteiro roda (a sessão no pulso aberta desde o começo do horário de uso) tem folga de 2 minutos na
-comparação: os valores em segundos e as contas em horas das fórmulas (`HORAS("pulso"; 30)`).
+comparação: os valores em segundos, as contas em horas das fórmulas (`HORAS("pulso"; 30)`) e as contas em dias (a mesma folga,
+em dias: uma fórmula com os dias desde um lançamento), mais o atraso de um banco em relação ao outro naquela leitura; e a
+idade da Lua da Hora certa (uma casa) tem folga de um passo do arredondamento.
 
 **Em todas as horas do dia.** Com o [`faketime`](https://github.com/wolfcw/libfaketime) (`apt install faketime`), o roteiro roda
 num horário simulado: `faketime -f "+3600s" ...` adianta o relógio do servidor `php -S`, do roteiro e do cron em uma hora. Só
