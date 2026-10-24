@@ -1081,7 +1081,10 @@ próprio arquivo).
 ainda não a tem no banco (o relógio acabou de ser marcado, ou uma cópia que falhou) ganha, e o que tem a cópia e ninguém mais
 pede perde (se o arquivo da pasta confere), até 256 MB por minuto; a pasta de um relógio que não
 existe mais (`r<número>`) é apagada inteira; e o arquivo da pasta que não é de nenhum documento é apagado (só depois de 10
-minutos, porque um envio pode estar no meio). Tudo o que ele faz entra no registro (**Execuções do cron**).
+minutos, porque um envio pode estar no meio). Tudo o que ele faz entra no registro (**Execuções do cron**). A cópia só é feita
+do arquivo inteiro: o cortado é recusado. A cópia que foi feita de um arquivo já cortado (antes dessa regra) também está
+cortada e não traz o inteiro de volta: a página Documentos mostra *cortado na pasta e também no banco* e o cron avisa uma vez
+por dia; envie o arquivo de novo e exclua o antigo.
 
 Excluir um documento apaga o arquivo e a cópia no banco; excluir o relógio (ou a coleção, a árvore, a conta) apaga os
 documentos dele, e os arquivos saem da pasta na hora. Sem a pasta configurada, a página avisa o que falta e não aceita envios.

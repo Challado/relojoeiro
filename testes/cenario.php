@@ -1312,6 +1312,27 @@ if ($cortado !== null && (string)@file_get_contents($cortado) !== $inteiro) {
     $falhas[] = "documento cortado: o cron não o recriou do banco";
 }
 escrever(["recurso" => "documentos", "acao" => "excluir", "id" => $doc_c, "confirmar" => 1]);
+// o cortado não vira cópia no banco: a feita de um arquivo já cortado não recriaria o inteiro, e o cron diria todo minuto
+// que o recriou. Pedida depois de cortado, a cópia é recusada; o documento fica fora da pasta, sem cópia, e o cron não
+// diz que recriou
+$doc_c = escrever(["recurso" => "documentos", "acao" => "enviar", "relogio_id" => $rel["smart"], "categoria_id" => $cat_livre, "titulo" => "Documento cortado sem cópia",
+    "arquivo_nome" => "cortado.txt", "arquivo_base64" => base64_encode($inteiro), "copia_banco" => 0]);
+$cortado = $cortar();
+escrever(["recurso" => "documentos", "acao" => "alterar", "id" => $doc_c, "categoria_id" => $cat_livre, "titulo" => "Documento cortado sem cópia", "copia_banco" => 1]);
+$d_c = null;
+foreach ((chamar("GET", ["recurso" => "documentos", "relogio" => $rel["smart"]])["json"]["documentos"] ?? []) as $x) {
+    if ((int)$x["id"] === (int)$doc_c) {
+        $d_c = $x;
+    }
+}
+if ($d_c === null || $d_c["no_disco"] !== false || $d_c["no_banco"] !== false || $d_c["copia_inteira"] !== null) {
+    $falhas[] = "documento cortado: a cópia no banco foi feita do arquivo cortado: " . json_encode($d_c);
+}
+cron();
+if (preg_match("/Documento cortado sem c/u", implode("\n", end($foto["cron"])["saida"] ?? [])) === 1) {
+    $falhas[] = "documento cortado: o cron disse que recriou o que não tem cópia inteira";
+}
+escrever(["recurso" => "documentos", "acao" => "excluir", "id" => $doc_c, "confirmar" => 1]);
 escrever(["recurso" => "config", "acao" => "salvar", "encostado_dias" => 0], false);
 ler("avisos com encostado", ["recurso" => "avisos"]);
 // hoje sem relógio: o dia fica livre (o cron não põe ninguém no pulso nem sorteia de novo) e depois volta, escolhendo um

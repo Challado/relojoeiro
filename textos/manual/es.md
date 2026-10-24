@@ -1,4 +1,4 @@
-<!-- origem: 9f924d87c6491065e145ca3c78972a36b65b1c98 -->
+<!-- origem: 979798910651e74bed6cb6d9b9a6932b9112c126 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1069,7 +1069,7 @@ la copia (la Configuración, el reloj o el propio archivo).
 la copia pedida y todavía no la tiene en la base (el reloj recién marcado, o una copia que falló) la recibe, y el que tiene la
 copia y ya nadie la pide la pierde (si el archivo de la carpeta coincide), hasta 256 MB por minuto; la carpeta de un reloj que
 ya no existe (`r<número>`) se borra entera; y un archivo de la carpeta que no pertenece a ningún documento se borra (solo
-después de 10 minutos, porque un envío puede estar a medias). Todo lo que hace queda en el registro (**Ejecuciones del cron**).
+después de 10 minutos, porque un envío puede estar a medias). Todo lo que hace queda en el registro (**Ejecuciones del cron**). La copia solo se hace del archivo entero: el cortado se rechaza. La copia que se hizo de un archivo ya cortado (antes de esta regla) también está cortada y no trae el entero de vuelta: la página Documentos muestra *cortado en la carpeta y también en la base de datos* y el cron avisa una vez al día; envía el archivo de nuevo y elimina el antiguo.
 
 Eliminar un documento borra el archivo y la copia en la base de datos; eliminar el reloj (o la colección, el árbol, la cuenta)
 borra sus documentos, y los archivos salen de la carpeta en el momento. Sin la carpeta configurada, la página avisa de lo que

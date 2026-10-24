@@ -1961,7 +1961,12 @@
  *                                    está cortado, e volta do banco quando for pedido ou na próxima rodada do cron; sem a cópia no banco,
  *                                    está perdido)
  *     relogios[].documentos[].no_banco
- *                                    verdadeiro: a cópia de segurança do arquivo está completa no banco (se ele sumir da pasta, volta dali)
+ *                                    verdadeiro: a cópia de segurança do arquivo foi feita no banco (se ele sumir da pasta, volta dali,
+ *                                    quando ela está inteira: copia_inteira)
+ *     relogios[].documentos[].copia_inteira
+ *                                    com o arquivo fora da pasta ou cortado (no_disco falso) e a cópia no banco: verdadeiro, a cópia tem o
+ *                                    arquivo inteiro e o traz de volta; falso, ela foi feita de um arquivo já cortado e não recria o
+ *                                    inteiro (envie o arquivo de novo); null: sem cópia no banco, ou o arquivo está inteiro na pasta
  *     relogios[].documentos[].copia_banco
  *                                    verdadeiro: o próprio arquivo pede a cópia no banco (o terceiro nível; o relógio e a Configuração da
  *                                    coleção, se pedem, valem por cima)
@@ -6871,7 +6876,11 @@
  *     documentos[].no_disco          verdadeiro: o arquivo está inteiro na pasta dos documentos, com o tamanho do envio (falso: sumiu ou
  *                                    está cortado, e volta do banco quando for pedido ou na próxima rodada do cron; sem a cópia no banco,
  *                                    está perdido)
- *     documentos[].no_banco          verdadeiro: a cópia de segurança do arquivo está completa no banco (se ele sumir da pasta, volta dali)
+ *     documentos[].no_banco          verdadeiro: a cópia de segurança do arquivo foi feita no banco (se ele sumir da pasta, volta dali,
+ *                                    quando ela está inteira: copia_inteira)
+ *     documentos[].copia_inteira     com o arquivo fora da pasta ou cortado (no_disco falso) e a cópia no banco: verdadeiro, a cópia tem o
+ *                                    arquivo inteiro e o traz de volta; falso, ela foi feita de um arquivo já cortado e não recria o
+ *                                    inteiro (envie o arquivo de novo); null: sem cópia no banco, ou o arquivo está inteiro na pasta
  *     documentos[].copia_banco       verdadeiro: o próprio arquivo pede a cópia no banco (o terceiro nível; o relógio e a Configuração da
  *                                    coleção, se pedem, valem por cima)
  *     documentos[].copia_por         quem pede a cópia no banco: sistema (a Configuração da coleção, documentos_copia = todos), relogio (a

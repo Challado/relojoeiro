@@ -1,4 +1,4 @@
-<!-- origem: 9f924d87c6491065e145ca3c78972a36b65b1c98 -->
+<!-- origem: 979798910651e74bed6cb6d9b9a6932b9112c126 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1108,7 +1108,7 @@ est demandée et qui ne l'a pas encore dans la base (la montre vient d'être coc
 celui qui a la copie que plus personne ne demande la perd (si le fichier du dossier correspond), jusqu'à 256 Mo par minute ;
 le dossier d'une montre qui n'existe plus (`r<numéro>`) est supprimé en entier ; et un fichier du dossier qui n'appartient à
 aucun document est supprimé (seulement après 10 minutes, car un envoi peut être en cours). Tout ce qu'il fait va dans le
-journal (**Exécutions du cron**).
+journal (**Exécutions du cron**). La copie n'est faite que du fichier complet : le tronqué est refusé. La copie faite d'un fichier déjà tronqué (avant cette règle) est tronquée elle aussi et ne ramène pas le fichier complet : la page Documents affiche *tronqué dans le dossier et aussi dans la base* et le cron prévient une fois par jour ; envoyez le fichier à nouveau et supprimez l'ancien.
 
 Supprimer un document supprime le fichier et la copie dans la base ; supprimer la montre (ou la collection, l'arbre, le compte)
 supprime ses documents, et les fichiers quittent le dossier aussitôt. Sans le dossier configuré, la page signale ce qui manque

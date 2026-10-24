@@ -154,7 +154,8 @@ document.addEventListener("keydown", function (ev) {
 var COPIA_POR = {sistema: t("o config.php guarda todos"), relogio: t("o relógio guarda todos os dele"), arquivo: t("pedida neste arquivo")};
 // o nome do arquivo, o tamanho e onde ele está guardado: na pasta, no banco, e quem pediu a cópia no banco
 function guardado(x) {
-  var onde = !x.no_disco ? el("strong", {}, x.no_banco ? t("fora da pasta (volta do banco ao abrir)") : t("o arquivo sumiu da pasta e não tem cópia no banco"))
+  var onde = !x.no_disco ? el("strong", {}, x.no_banco && x.copia_inteira ? t("fora da pasta (volta do banco ao abrir)")
+      : x.no_banco ? t("cortado na pasta e também no banco (a cópia foi feita do arquivo já cortado): envie o arquivo de novo") : t("o arquivo sumiu da pasta e não tem cópia no banco"))
     : x.no_banco ? (x.copia_por ? t("na pasta e no banco ({1})", {1: COPIA_POR[x.copia_por]}) : t("na pasta e no banco (ninguém mais pede a cópia: o cron a tira)"))
       : x.copia_por ? t("na pasta; a cópia no banco ainda vai ({1}; o cron faz)", {1: COPIA_POR[x.copia_por]}) : t("só na pasta");
   return el("p", {"class": "nota"}, h(x.nome) + " · " + tamanho(x.tamanho) + " · " + onde);

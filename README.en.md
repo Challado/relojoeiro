@@ -1121,7 +1121,7 @@ that has the copy requested and doesn't yet have it in the database (the watch w
 and one that has the copy and nobody asks for it anymore loses it (if the file in the folder matches), up to 256 MB per
 minute; the folder of a watch that no longer exists (`r<number>`) is deleted whole; and a file in the folder that belongs to no
 document is deleted (only after 10 minutes, because an upload may be halfway). Everything it does goes into the log (**Cron
-runs**).
+runs**). The copy is only made from the whole file: a cut one is refused. A copy made from an already cut file (before this rule) is cut too and doesn't bring the whole one back: the Documents page shows *cut short in the folder and in the database too* and the cron warns once a day; upload the file again and delete the old one.
 
 Deleting a document deletes the file and the copy in the database; deleting the watch (or the collection, the tree, the
 account) deletes its documents, and the files leave the folder at once. Without the folder configured, the page says what is

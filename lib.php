@@ -5574,7 +5574,11 @@ function documento_info($d, $com_nfe = true)
         "data" => $d["data"] === null ? null : substr((string)$d["data"], 0, 10), "descricao" => $d["descricao"], "nome" => $d["nome"], "tipo" => $d["tipo"],
         "familia" => $familia, "tamanho" => (int)$d["tamanho"], "miniatura" => $d["miniatura"] !== null && $d["miniatura"] !== "", "criado" => $d["criado"],
         "url" => "api.php?recurso=documento&id=" . (int)$d["id"], "no_disco" => documentos_pasta() !== null && documento_inteiro($d, documentos_pasta() . "/" . $d["arquivo"]),
-        "no_banco" => (int)($d["no_banco"] ?? 0) === 1, "copia_banco" => (int)($d["copia_banco"] ?? 0) === 1, "copia_por" => documento_copia_por($d), "nfe" => null];
+        "no_banco" => (int)($d["no_banco"] ?? 0) === 1, "copia_inteira" => null, "copia_banco" => (int)($d["copia_banco"] ?? 0) === 1, "copia_por" => documento_copia_por($d), "nfe" => null];
+    // a cópia só se confere quando faz falta (o arquivo não está inteiro na pasta): lê o último pedaço dela
+    if ($res["no_banco"] && !$res["no_disco"]) {
+        $res["copia_inteira"] = documento_copia_inteira($d, true);
+    }
     if ($com_nfe && $familia === "xml" && documentos_pasta() !== null) {
         $res["nfe"] = nfe_resumo(documentos_pasta() . "/" . $d["arquivo"]);
     }
@@ -7666,6 +7670,10 @@ function documento_copiar_para_banco($d)
     if ($caminho === null || !is_file($caminho)) {
         return t("o arquivo não está na pasta");
     }
+    // o cortado não vira cópia: ela só serve se é do arquivo inteiro, com o tamanho do envio
+    if (!documento_inteiro($d, $caminho)) {
+        return t("o arquivo na pasta está cortado (o tamanho não confere com o do envio)");
+    }
     try {
         sql("DELETE FROM documento_parte WHERE documento_id = ?", [(int)$d["id"]]);
         sql("UPDATE documento SET no_banco = 0 WHERE id = ?", [(int)$d["id"]]);
@@ -7713,7 +7721,8 @@ function documento_pedaco_para_banco($pedaco)
 }
 
 // Recria na pasta o arquivo de um documento (e a miniatura) a partir da cópia no banco, um pedaço por vez, conferindo o
-// SHA-256; o arquivo só aparece na pasta quando está inteiro e certo. Devolve verdadeiro se o arquivo está na pasta no fim
+// SHA-256 e o tamanho do envio; o arquivo só aparece na pasta quando está inteiro e certo. Devolve verdadeiro se o arquivo
+// está inteiro na pasta no fim (falso também quando a própria cópia está incompleta: feita de um arquivo já cortado)
 function documento_restaurar($d)
 {
     $pasta = documentos_pasta();
@@ -7734,7 +7743,7 @@ function documento_restaurar($d)
     if (documento_inteiro($d, $caminho)) {
         return true;
     }
-    if ((int)$d["no_banco"] !== 1) {
+    if ((int)$d["no_banco"] !== 1 || !documento_copia_inteira($d)) {
         return false;
     }
     if (!is_dir(dirname($caminho))) {
@@ -7746,13 +7755,16 @@ function documento_restaurar($d)
         return false;
     }
     $h = hash_init("sha256");
+    $bytes = 0;
     foreach (linhas("SELECT parte FROM documento_parte WHERE documento_id = ? AND parte >= 0 ORDER BY parte", [(int)$d["id"]]) as $p) {
         $pedaco = (string)valor("SELECT dados FROM documento_parte WHERE documento_id = ? AND parte = ?", [(int)$d["id"], (int)$p["parte"]]);
         hash_update($h, $pedaco);
         fwrite($f, $pedaco);
+        $bytes += strlen($pedaco);
     }
     fclose($f);
-    if ($d["hash"] !== null && hash_final($h) !== $d["hash"]) {
+    // a cópia feita de um arquivo já cortado confere com o hash dela, mas não tem o tamanho do envio: não serve
+    if ($bytes !== (int)$d["tamanho"] || ($d["hash"] !== null && hash_final($h) !== $d["hash"])) {
         @unlink($tmp);
         return false;
     }
@@ -7761,6 +7773,23 @@ function documento_restaurar($d)
         @unlink($caminho);
     }
     return @rename($tmp, $caminho);
+}
+
+// A cópia de um documento no banco tem os pedaços que o tamanho do envio pede (DOCUMENTO_PEDACO cada): a feita de um
+// arquivo já cortado tem menos, ou o último mais curto, e não recria o inteiro. Sem $ultimo, só a conta dos pedaços, sem ler
+// os dados (o cron pergunta a cada minuto; o último pedaço curto quem pega é o documento_restaurar, pelo tamanho); com ele,
+// também o tamanho do último pedaço (lê até um pedaço)
+function documento_copia_inteira($d, $ultimo = false)
+{
+    $pedacos = (int)ceil((int)$d["tamanho"] / DOCUMENTO_PEDACO);
+    if ((int)valor("SELECT COUNT(*) FROM documento_parte WHERE documento_id = ? AND parte >= 0", [(int)$d["id"]]) !== $pedacos) {
+        return false;
+    }
+    if (!$ultimo || $pedacos === 0) {
+        return true;
+    }
+    $resto = (int)$d["tamanho"] - ($pedacos - 1) * DOCUMENTO_PEDACO;
+    return strlen((string)valor("SELECT dados FROM documento_parte WHERE documento_id = ? AND parte = ?", [(int)$d["id"], $pedacos - 1])) === $resto;
 }
 
 // Apaga uma pasta e tudo o que há dentro
@@ -7811,6 +7840,7 @@ function documentos_manutencao($orcamento, $diario = false)
     }
     $restaurados = [];
     $perdidos = 0;
+    $copia_cortada = [];
     $copiados = 0;
     $falhas = [];
     $usados = [];
@@ -7825,6 +7855,8 @@ function documentos_manutencao($orcamento, $diario = false)
         if (!$tem || $mini_falta) {
             if (documento_restaurar($d) && !$tem) {
                 $restaurados[] = $d["titulo"];
+            } elseif (!$tem && (int)$d["no_banco"] === 1) {
+                $copia_cortada[] = $d["titulo"];
             } elseif (!$tem) {
                 $perdidos++;
             }
@@ -7855,6 +7887,10 @@ function documentos_manutencao($orcamento, $diario = false)
     }
     if (count($falhas) > 0) {
         $log[] = registro_erro(t("erro: a cópia no banco falhou: {1}", [1 => implode("; ", array_slice($falhas, 0, 5))]));
+    }
+    if ($diario && count($copia_cortada) > 0) {
+        $log[] = t("aviso: {1}{2} (a cópia foi feita do arquivo já cortado; envie o arquivo de novo na página Documentos): {3}", [1 => count($copia_cortada),
+            2 => count($copia_cortada) === 1 ? t(" documento cortado na pasta e também no banco") : t(" documentos cortados na pasta e também no banco"), 3 => implode(", ", array_slice($copia_cortada, 0, 10))]);
     }
     if ($diario && $perdidos > 0) {
         $log[] = t("aviso: {1}{2} na pasta e sem a cópia no banco (perdidos: exclua-os na página Documentos)", [1 => $perdidos, 2 => $perdidos === 1 ? t(" documento sem o arquivo inteiro") : t(" documentos sem o arquivo inteiro")]);
