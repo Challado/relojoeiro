@@ -1658,6 +1658,14 @@ escrever(["recurso" => "documentos", "acao" => "enviar", "winder_id" => $wq, "ca
 $recusa("documento de winder e relogio juntos", ["recurso" => "documentos", "acao" => "enviar", "winder_id" => $wq, "relogio_id" => $rel["auto"], "categoria_id" => $cat_tec,
     "arquivo_nome" => "x.pdf", "arquivo_base64" => base64_encode("%PDF-1.4 x")]);
 ler("documentos do winder", ["recurso" => "documentos", "winder" => $wq]);
+// o documento do winder fica na pasta dele (w<id>): ia para r0, que o cron apaga (não é de nenhum relógio) e recriava do
+// banco a cada minuto
+cron();
+$d_w = chamar("GET", ["recurso" => "documentos", "winder" => $wq])["json"]["documentos"][0] ?? null;
+$dir_w = getenv("RELOGIOS_TESTE_PASTA") . "/documentos_" . getenv("RELOGIOS_DB");
+if ($d_w === null || $d_w["no_disco"] !== true || count(glob($dir_w . "/w" . $wq . "/*.pdf") ?: []) !== 1 || is_dir($dir_w . "/r0")) {
+    $falhas[] = "documento do winder: não ficou inteiro na pasta w" . $wq . " depois do cron: " . json_encode($d_w);
+}
 // o que não está em uso sai: o programa por voltas (a Pos. 1 volta ao do ajudante) e um movimento que nenhum programa usa
 escrever(["recurso" => "winder_posicoes", "acao" => "salvar", "id" => $wq_pos["Pos. 1"] ?? 0, "programa_id" => $pg1050]);
 escrever(["recurso" => "programas", "acao" => "excluir", "id" => $pg_v, "confirmar" => 1]);

@@ -5549,7 +5549,7 @@ function documento_categoria_gravar_aceita($id, $familias)
 // Um nome novo de arquivo dentro da pasta (r<relógio>/<aleatório>), com a subpasta criada
 function documento_novo_arquivo($pasta, $sub, $nome)
 {
-    $sub = preg_match("/^[rc]\\d+$/", (string)$sub) === 1 ? (string)$sub : "r" . (int)$sub;
+    $sub = preg_match("/^[rcw]\\d+$/", (string)$sub) === 1 ? (string)$sub : "r" . (int)$sub;
     if (!is_dir($pasta . "/" . $sub)) {
         @mkdir($pasta . "/" . $sub, 0750, true);
     }
@@ -7824,7 +7824,8 @@ function registro_erro($texto)
 //    no banco ganha (até $orcamento bytes por rodada, para não pesar); o que tem a cópia e ninguém mais pede perde (só se o
 //    arquivo da pasta confere com ela: documento_tirar_do_banco);
 // 3. a pasta de um relógio que não existe mais sai inteira (r<id>), e o arquivo que não é de nenhum documento sai (só os
-//    de mais de 10 minutos: um envio pode estar no meio); o documento de um relógio que não existe mais sai do banco.
+//    de mais de 10 minutos: um envio pode estar no meio). O documento de um relógio excluído sai do banco pela chave
+//    estrangeira (ON DELETE CASCADE); o arquivo dele, aqui.
 // Com $diario, conta também os documentos perdidos (sem o arquivo inteiro na pasta e sem a cópia no banco).
 function documentos_manutencao($orcamento, $diario = false)
 {
@@ -7833,10 +7834,33 @@ function documentos_manutencao($orcamento, $diario = false)
     if ($pasta === null) {
         return $log;
     }
-    $orfaos = (int)valor("SELECT COUNT(*) FROM documento WHERE relogio_id IS NOT NULL AND relogio_id NOT IN (SELECT id FROM relogio)");
-    if ($orfaos > 0) {
-        sql("DELETE FROM documento WHERE relogio_id IS NOT NULL AND relogio_id NOT IN (SELECT id FROM relogio)");
-        $log[] = t("documentos: {1}{2}", [1 => $orfaos, 2 => $orfaos === 1 ? t(" documento de relógio que não existe mais apagado") : t(" documentos de relógios que não existem mais apagados")]);
+    // o documento fora da pasta do dono dele (r<relógio>, c<calibre>, w<winder>) vai para ela: os do winder iam para r0,
+    // que o cron apaga (não é de nenhum relógio) e recriava do banco a cada minuto
+    $movidos = 0;
+    foreach (linhas("SELECT id, relogio_id, calibre_id, winder_id, arquivo, miniatura FROM documento") as $d) {
+        $dono = $d["winder_id"] !== null ? "w" . (int)$d["winder_id"] : ($d["calibre_id"] !== null ? "c" . (int)$d["calibre_id"] : ($d["relogio_id"] !== null ? "r" . (int)$d["relogio_id"] : null));
+        if ($dono === null || strpos((string)$d["arquivo"], "..") !== false || dirname((string)$d["arquivo"]) === $dono) {
+            continue;
+        }
+        if (!is_dir($pasta . "/" . $dono)) {
+            @mkdir($pasta . "/" . $dono, 0750, true);
+        }
+        $novos = [];
+        foreach (["arquivo", "miniatura"] as $c) {
+            if ($d[$c] === null || $d[$c] === "") {
+                $novos[$c] = $d[$c];
+                continue;
+            }
+            $novos[$c] = $dono . "/" . basename((string)$d[$c]);
+            if (is_file($pasta . "/" . $d[$c]) && !@rename($pasta . "/" . $d[$c], $pasta . "/" . $novos[$c])) {
+                continue 2;
+            }
+        }
+        sql("UPDATE documento SET arquivo = ?, miniatura = ? WHERE id = ?", [$novos["arquivo"], $novos["miniatura"], (int)$d["id"]]);
+        $movidos++;
+    }
+    if ($movidos > 0) {
+        $log[] = t("documentos: {1}{2}", [1 => $movidos, 2 => $movidos === 1 ? t(" documento levado para a pasta do dono dele (o do winder ia para a de um relógio)") : t(" documentos levados para a pasta do dono deles (os do winder iam para a de um relógio)")]);
     }
     $restaurados = [];
     $perdidos = 0;

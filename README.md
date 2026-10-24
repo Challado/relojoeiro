@@ -1084,7 +1084,9 @@ existe mais (`r<número>`) é apagada inteira; e o arquivo da pasta que não é 
 minutos, porque um envio pode estar no meio). Tudo o que ele faz entra no registro (**Execuções do cron**). A cópia só é feita
 do arquivo inteiro: o cortado é recusado. A cópia que foi feita de um arquivo já cortado (antes dessa regra) também está
 cortada e não traz o inteiro de volta: a página Documentos mostra *cortado na pasta e também no banco* e o cron avisa uma vez
-por dia; envie o arquivo de novo e exclua o antigo.
+por dia; envie o arquivo de novo e exclua o antigo. O documento fora da pasta do dono dele (`r<relógio>`, `c<calibre>`,
+`w<winder>`) é levado para ela: os do winder iam para a pasta de um relógio que não existe, que o cron apagava e recriava do
+banco a cada minuto.
 
 Excluir um documento apaga o arquivo e a cópia no banco; excluir o relógio (ou a coleção, a árvore, a conta) apaga os
 documentos dele, e os arquivos saem da pasta na hora. Sem a pasta configurada, a página avisa o que falta e não aceita envios.
