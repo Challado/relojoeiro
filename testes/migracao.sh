@@ -151,7 +151,8 @@ for b in "${BANCOS[@]}"; do
   [ "${MAN%%|*}" != "$SRV_ANTES" ] && erros+=("as manutenções dos serviços de antes: $MAN (serviços: $SRV_ANTES)")
   [ "$(echo "$MAN" | cut -d'|' -f2)" != "$SRV_ANTES" ] && erros+=("uma manutenção dos serviços de antes não ficou encerrada: $MAN")
   [ "$(echo "$MAN" | cut -d'|' -f4)" != "1" ] && erros+=("a coleção não tem a sua oficina (Eu mesmo): $MAN")
-  if [ "$SRV_ANTES" = "2" ]; then
+  # o "quem fez" só existe antes da v48: só quando ela é aplicada agora ele vira a oficina
+  if [ "$SRV_ANTES" = "2" ] && case ", $PEND," in *", v48,"*) true ;; *) false ;; esac; then
     case ",$(echo "$MAN" | cut -d'|' -f3)," in *",Relojoaria de antes,"*) ;; *) erros+=("quem fez o serviço de antes não virou a oficina: $MAN") ;; esac
   fi
   for q in "recurso=hoje" "foto=nao" "recurso=passaporte&relogio=$R" "recurso=documentos&relogio=$R" "recurso=listas" "recurso=oficinas"; do
