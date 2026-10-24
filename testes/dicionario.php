@@ -95,6 +95,13 @@ if (!function_exists("t")) {
         return $s;
     }
 }
+// os grupos de campos que se repetem (as funções $doc_... do começo da ajuda, que o "campos" usa com ...): rodam antes
+$fonte_toda = (string)file_get_contents($arq_fonte);
+$ini_aj = strpos($fonte_toda, "// os grupos de campos que se repetem");
+$fim_aj = strpos($fonte_toda, "// a mesma lista que está no cabeçalho");
+if ($ini_aj !== false && $fim_aj !== false && $fim_aj > $ini_aj) {
+    eval(substr($fonte_toda, $ini_aj, $fim_aj - $ini_aj));
+}
 $campos = eval("return [" . $corpo . "];");
 if (!is_array($campos) || !isset($campos["como_ler"])) {
     fwrite(STDERR, "O \"campos\" da ajuda em " . basename($arq_fonte) . " não virou um array com o \"como_ler\".\n");

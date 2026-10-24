@@ -50,7 +50,7 @@ $rels = [];
 $fora_h = [];
 foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
     if (!da_colecao($r)) {
-        $fora_h[] = ["id" => (int)$r["id"], "nome" => $r["nome"], "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]),
+        $fora_h[] = ["id" => (int)$r["id"], "nome" => $r["nome"], "posse" => (string)$r["posse"], "posse_texto" => posse_texto($r), "posse_comportamento" => posse_de($r),
             "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "—", "foto" => $fotos[(int)$r["id"]] ?? null];
         continue;
     }

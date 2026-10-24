@@ -263,6 +263,17 @@ foreach ($fontes as $arq) {
         }
     }
 }
+// a chave (o literal antes do =>) do token na posição $k; null: ele não vem depois de um =>
+$chave_de = function (array $tk, int $k): ?string {
+    for ($a = $k - 1; $a >= 0 && is_array($tk[$a]) && $tk[$a][0] === T_WHITESPACE; $a--) {
+    }
+    if ($a < 0 || !is_array($tk[$a]) || $tk[$a][0] !== T_DOUBLE_ARROW) {
+        return null;
+    }
+    for ($a--; $a >= 0 && is_array($tk[$a]) && $tk[$a][0] === T_WHITESPACE; $a--) {
+    }
+    return $a >= 0 && is_array($tk[$a]) && $tk[$a][0] === T_CONSTANT_ENCAPSED_STRING ? (string)eval("return " . $tk[$a][1] . ";") : null;
+};
 foreach ($fontes as $arq) {
     $tk = token_get_all((string)file_get_contents($arq));
     for ($i = 0, $n = count($tk); $i < $n; $i++) {
@@ -290,7 +301,26 @@ foreach ($fontes as $arq) {
                 continue;
             }
             $v = eval("return " . $tk[$k][1] . ";");
-            // as unidades e os vazios ("h", "") não são texto
+            // as unidades e os vazios ("h", "") não são texto; nem os identificadores de chaves como "pagina" (a página em
+            // que a lista se edita) e "reservados" (os que nenhum item pode ter): a chave do valor, ou a da lista em que ele está
+            $chave = $chave_de($tk, $k);
+            if ($chave === null) {
+                $a = $k - 1;
+                for ($fundo = 0; $a > $j; $a--) {
+                    if ($tk[$a] === "]") {
+                        $fundo++;
+                    } elseif ($tk[$a] === "[") {
+                        if ($fundo === 0) {
+                            break;
+                        }
+                        $fundo--;
+                    }
+                }
+                $chave = $a > $j ? $chave_de($tk, $a) : null;
+            }
+            if (in_array($chave, ["pagina", "reservados"], true)) {
+                continue;
+            }
             if (preg_match('/\pL.*\pL/u', $v) === 1 && !isset($todas[$v])) {
                 $problemas[] = substr($arq, strlen($RAIZ) + 1) . " · " . $nome . ": \"" . mb_substr($v, 0, 90) . "\" sai por t(" . $nome . "[...]) e não tem o tk(\"...\") que o põe nos dicionários";
             }

@@ -778,14 +778,68 @@ Observación) van al final, sueltos (en los Datos del reloj, en **Otros**). Elim
 sin sección, al final. Por la API: `recurso=cadastros` trae las `secoes` (con cuántos campos tiene cada una), y
 `recurso=secoes` graba (`salvar`, `ordem`, `excluir`); el campo lleva el `secao_id`.
 
+### Las listas que son registro
+
+Lo que puede ser registro es registro: toda lista de elección del sistema es tuya, con ítems que creas, renombras, reordenas
+y quitas. Cada ítem tiene el **identificador** (fijo: es lo que queda guardado y lo que la API y las fórmulas citan), el
+**nombre**, el **orden** y, según la lista, **lo que hace** (el comportamiento: lo único que conoce el código), un **texto** y un
+**color**. El ítem en uso no sale, y lo que hace no cambia (crea otro); la lista nunca se queda sin lo que el sistema necesita.
+
+| Lista | Dónde | Lo que el ítem hace o guarda |
+|---|---|---|
+| Situaciones del reloj en la colección | Definiciones › Listas | *En la colección* (entra en la rotación), *Prestado* (de la colección, fuera de la rotación), *Deseado* (la lista de deseos) o *Fuera de la colección* (Vendido, Archivado, Regalado, Perdido o robado...) |
+| Tipos de accesorio | Definiciones › Listas | correa, caja, estuche, herramienta, cargador, pieza... |
+| Formas de cargar (la prueba de la reserva) | Definiciones › Listas | el texto es la unidad de la medida (vueltas, h) |
+| Observaciones de la reserva | Definiciones › Listas | se detuvo, indicador de carga baja, otra observación... |
+| Situaciones del mantenimiento | Mantenimiento › Listas | *En curso*, *Cierra* (vuelve y se convierte en servicio) o *Cancela*; el texto es el aviso de la situación; el color, el de la etiqueta |
+| Tipos de servicio | Mantenimiento › Listas | el texto es el tipo de registro que el servicio marca también (revisao, pilha) |
+| Resultados de la prueba de estanqueidad | Mantenimiento › Listas | *Aprobado* (comprueba la estanqueidad) o *Reprobado* |
+| Tipos de taller | Mantenimiento › Listas | un taller común o *tú mismo, en casa* |
+| Tipos de contacto | Mantenimiento › Listas | *Teléfono* (llama), *WhatsApp* (abre la conversación), *E-mail* (escribe), *Dirección en internet* (abre) o *Texto* |
+
+Cada colección nueva ya viene con las listas completas (en su idioma). Por la API: `recurso=listas` (con `pagina=cadastros` o
+`manutencao`) y `recurso=listas` con `acao=salvar` o `excluir`.
+
+### El mantenimiento
+
+El menú **Colección › Mantenimiento** es el lugar del mantenimiento, con cuatro pestañas: **En mantenimiento**,
+**Mantenimientos**, **Talleres** y **Listas**. Sin mantenimiento registrado, el reloj no va a ninguna parte: es **Registrar un
+mantenimiento** lo que lo manda (también desde el cuadro **Mantenimiento** del panel). Elige el reloj, el **taller**, la
+**situación**, el **tipo de servicio** y, si quieres, el problema, la orden de servicio, el envío, la previsión de vuelta, el
+presupuesto, lo que fue junto (la caja, la correa) y los documentos del envío.
+
+Al guardar, el reloj queda **en mantenimiento**: no disponible para la rotación hasta volver (con la etiqueta *en
+mantenimiento* en el panel y el estado *En mantenimiento* en la página Hoy), sus sesiones abiertas se cierran (en la muñeca, al
+sol, en el cargador; en el winder, la posición queda libre), sus días en el plan de mañana en adelante salen y se sortean de
+nuevo, y los avisos de carga, cuerda y pila se detienen. Si era el **reloj de hoy**, hoy queda libre: con la Configuración
+dejando cambiar el reloj de hoy el mismo día, eliges otro; sin ella, hoy queda sin reloj. Cambiar el disponible del reloj
+mientras está en el taller cambia el de la vuelta.
+
+La **situación** avanza desde la fila de la tabla (el menú y **Cambiar**), y cada cambio queda en la **historia**. Las
+situaciones son una lista tuya (Mantenimiento › Listas), y cada una hace una de tres cosas: **en curso** (Enviado, esperando
+presupuesto; Presupuesto recibido; Aprobado, en servicio; Esperando pieza; Listo para retirar), **cierra** (Retirado; Devuelto
+sin reparación) o **cancela** (Cancelado). En la que cierra, el reloj **vuelve** con la disponibilidad de antes y el
+mantenimiento **se convierte en un servicio** (el tipo, el presupuesto como mano de obra y sus documentos): completa lo que se
+hizo, las piezas y el costo en el cuadro Servicios del reloj. En la que cancela, vuelve sin servicio. Los avisos del
+mantenimiento: **Reclamar al taller** (la previsión pasó) y el **avance**, con el texto de la situación actual (*Aprobar el
+presupuesto*, *Retirar en el taller*); en las fórmulas, `MANUTENCAO("previsao")`, `MANUTENCAO("dias")`,
+`MANUTENCAO("orcamento")` y `MANUTENCAO()` (1 en mantenimiento).
+
+Los **talleres** tienen la dirección, el horario, la observación y **cuantos contactos quieras**, cada uno de un tipo
+(teléfono fijo, celular, WhatsApp, e-mail, sitio web, Instagram...: la lista Tipos de contacto); en la tabla, el teléfono
+llama, el WhatsApp abre la conversación y el e-mail escribe. El taller **Yo mismo (en casa)** es el tuyo: la pila cambiada en
+casa, la correa ajustada. Los informes: **En mantenimiento, por taller** (con los contactos), **Mantenimientos en el período** y
+**Gasto por taller**. Por la API: `recurso=manutencao` (los abiertos, los mantenimientos con los filtros `relogio`, `oficina`,
+`de`, `ate`, los talleres y el resumen), `recurso=oficinas`, y las escrituras `recurso=manutencao` (`salvar`, `situacao`,
+`excluir`) y `recurso=oficinas` (`salvar`, `excluir`).
+
 ### Los servicios y diagnósticos
 
 Cada intervención en un reloj queda en el cuadro **Servicios y diagnósticos** del panel (en la sección *Ficha y documentos*):
-la fecha, el tipo (revisión, cambio de pila, prueba de estanqueidad, regulación, pulido, reparación, diagnóstico u otro),
-quién lo hizo, qué se hizo, la mano de obra, las **piezas cambiadas** (una por línea, con el costo después del punto y coma:
-*"Corona; 120,00"*), la prueba de **estanqueidad** (aprobada o reprobada, y la presión en bar), la **marcha antes y después**
+la fecha, el tipo (los tipos de servicio: revisión, cambio de pila, prueba de estanqueidad, regulación, pulido...), el taller, qué se hizo, la mano de obra, las **piezas cambiadas** (una por línea, con el costo después del punto y coma:
+*"Corona; 120,00"*), la prueba de **estanqueidad** (el resultado, aprobado o reprobado, y la presión en bar), la **marcha antes y después**
 que midió el profesional, la garantía, la observación y los documentos del reloj que son del servicio (la factura, el
-presupuesto, las fotos). El costo del servicio es la mano de obra más las piezas, y el cuadro suma el de todos.
+presupuesto, las fotos). El costo del servicio es la mano de obra más las piezas, y el cuadro suma el de todos. Todo servicio es la vuelta de un mantenimiento: el registrado directo en el cuadro recibe uno ya cerrado en el taller elegido (sin él, el tuyo, **Yo mismo (en casa)**).
 
 La **resistencia al agua declarada** (el campo *Resistencia al agua declarada (del fabricante)* de la ficha, en metros) no es
 la hermeticidad de hoy: el cuadro muestra las dos por separado, la declarada y la **estanqueidad comprobada** en la última
@@ -793,7 +847,7 @@ prueba, con la fecha. Al lado de la marcha que informó el profesional aparece l
 desvío de la hora (vea [La precisión](#la-precisión-la-marcha-del-reloj)): la de los 60 días antes del servicio y la de los 60
 después.
 
-La revisión y el cambio de pila se convierten también en el registro **Revisión** o **Cambio de pila** en la fecha del
+El tipo de servicio que marca un registro (la revisión y el cambio de pila, en el registro inicial) se convierte también en el registro **Revisión** o **Cambio de pila** en la fecha del
 servicio: los avisos de siempre (la próxima revisión, la pila) cuentan el servicio, sin registrarlo dos veces. En las fórmulas,
 `ULTIMO_SERVICO("revisao")` da la fecha del último servicio de ese tipo (`"estanqueidade"` cuenta también la prueba hecha en
 una revisión) y `CUSTO_SERVICOS(365)` cuánto costaron los servicios en el último año; en los totales, las variables
@@ -984,7 +1038,7 @@ los predeterminados son datos, no código: puede cambiarlo todo en la página **
 |---|---|
 | **Nombre** | cómo aparece en todas partes: en pantalla, en Telegram y en el calendario. |
 | **Grupo** | su lugar en el árbol. Decide los campos, las fórmulas (la "carga" de un smartwatch es la batería; la de un mecánico, la reserva de marcha) y los avisos que recibe. |
-| **Situación en la colección** | **En la colección** (lo de siempre), **Deseado** (la lista de deseos: todavía no es suyo), **Prestado** (es suyo, pero lo tiene otra persona), **Vendido** o **Archivado**. Solo lo que está en la colección entra en la rotación: en las otras situaciones el reloj queda no disponible (la base de datos lo garantiza: la regla `ck_relogio_posse_disponivel`), sale del sorteo, de la escala y de los avisos, y, al salir de la colección, sus sesiones abiertas (en la muñeca, al sol, en el cargador) se cierran en el acto y sus días en el plan de mañana en adelante se quitan y se sortean de nuevo (hoy se queda, pero ya no va a la muñeca solo: cámbielo en **cambiar por…**). La ficha, los documentos y el historial se quedan. El prestado sigue en la tabla de la página Hoy (con el estado **Prestado**) y en el valor de la colección; el deseado, el vendido y el archivado salen de la tabla y aparecen en la página **Deseos** (y en el selector de la ficha, en **Fuera de la colección**). Al volver a **En la colección**, vuelve a estar disponible. Vea [La lista de deseos](#la-lista-de-deseos). |
+| **Situación en la colección** | Un ítem de la lista **Situaciones del reloj en la colección** (Definiciones › Listas): **En la colección** (lo de siempre), **Deseado** (la lista de deseos: todavía no es suyo), **Prestado** (es suyo, pero lo tiene otra persona) o uno que sale de la colección (**Vendido**, **Archivado**, **Regalado**, **Perdido o robado** y los que crees). Solo lo que está en la colección entra en la rotación: en las otras situaciones el reloj queda no disponible, sale del sorteo, de la escala y de los avisos, y, al salir de la colección, sus sesiones abiertas (en la muñeca, al sol, en el cargador) se cierran en el acto y sus días en el plan de mañana en adelante se quitan y se sortean de nuevo (hoy se queda, pero ya no va a la muñeca solo: cámbielo en **cambiar por…**). La ficha, los documentos y el historial se quedan. El prestado sigue en la tabla de la página Hoy (con el estado **Prestado**) y en el valor de la colección; el deseado, el vendido y el archivado salen de la tabla y aparecen en la página **Deseos** (y en el selector de la ficha, en **Fuera de la colección**). Al volver a **En la colección**, vuelve a estar disponible. Vea [La lista de deseos](#la-lista-de-deseos). |
 | **Disponible** | desmarcado, sale de la rotación y de los avisos (en el relojero, en una pausa), pero el historial se queda. Fuera de la colección, está siempre desmarcado (y el campo desaparece de la ficha). |
 | **Guardar una copia de todos sus documentos en la base** | marcado, todo archivo del reloj (el manual, la factura, las fotos, los videos) va también a la base de datos, como copia de seguridad. Solo aparece cuando la Configuración de la colección no decide por todos (**Copia de los documentos en la base (válido para todos los relojes)** vacía). Vea [Los documentos del reloj](#los-documentos-del-reloj): es el segundo de los tres niveles de la copia. |
 | **Foto** | solo para la pantalla. En el detalle del reloj (el panel, o la ficha), al detener el ratón sobre la foto aparece un resumen suyo (el nombre, el grupo y el código; el estado y la carga; la nota y el próximo día en la rotación; la compra) y el recordatorio del doble clic. Con **doble clic** en ella, o con el botón **Abrir foto** de debajo, la foto se abre en una ventana flotante, a su tamaño (solo en el detalle: en las otras fotos, como la de *Hoy toca* y las miniaturas de la lista, el clic abre el reloj); una mayor que la pantalla aparece a escala, sin deformar, en el mayor tamaño que cabe en el monitor (y en la ventana del navegador), con el tamaño real y la escala debajo. Se cierra con la ×, con un clic fuera o con Esc. |
@@ -1585,9 +1639,10 @@ para es su versión para ese punto del árbol. La subpantalla cerrada también q
 | **Estadísticas** (`estatisticas.php`) | El uso de la colección en un período (**Desde**, **Hasta**; los atajos 30 días, 90 días, 1 año y desde el principio; predeterminado: los últimos 90 días): el resumen (días con reloj en la muñeca, horas en la muñeca y por día, relojes usados y sin uso, el costo por uso medio y el valor de la colección, el más y el menos usado); **Cada reloj**, del más usado al menos: días de uso, horas, la parte de cada uno (con la barra), el costo por uso, cuántos días hace que fue a la muñeca y la tendencia (↑ usando más, ↓ usando menos, → estable: la segunda mitad del período comparada con la primera); los gráficos **Por día de la semana** y **Por mes** (las horas en la muñeca); y **La colección**: los relojes divididos por grupo, marca, año de compra, situación y cada campo de lista (como Estilo), con cuántos, la parte y las horas de cada parte. Por la API: `recurso=estatisticas`. |
 | **Totales** (`totais.php`, menú **Colección**) | La página de totales: los totales marcados para ella (la pestaña **Totales** de las Definiciones), cada uno en un cuadro, estrecho o ancho, en el orden de las definiciones: la tablita con la fila de total, el número, o el reloj con el valor. Se abre desde **Ver todos los totales** debajo de la tabla de la página Hoy, con el mismo filtro (*Contando 12 de 17 relojes*, con **Contar todos**), o desde el menú, con todos. Por la API: `recurso=totais&parte=pagina`. Ver [Los totales](#los-totales). |
 | **Accesorios** (`acessorios.php`) | Las correas, cajas, estuches, herramientas, cargadores, piezas y lo que sea: la lista (el nombre, el tipo, el reloj al que pertenece, o *suelto*, y la observación), con el filtro **Reloj** (todos, los sueltos o los de un reloj; el cuadro **Accesorios** del panel la abre ya filtrada), **Editar** y **Eliminar** en cada uno, y debajo el formulario (**Nuevo accesorio**: nombre, tipo, reloj o *suelto (sirve a varios)* y observación). Eliminar un reloj deja sus accesorios sueltos. Por la API: `recurso=acessorios` (la lista) y la escritura `acessorios` (`salvar`, `excluir`). Cada uno muestra los **Datos** (los campos de su tipo) y dónde **Sirve** (vea [La construcción y los accesorios](#la-construcción-y-los-accesorios)); el formulario pide los campos del tipo elegido. |
+| **Mantenimiento** (`manutencao.php`, menú **Colección**) | El reloj en el taller, de la ida a la vuelta, en cuatro pestañas: **En mantenimiento** (los que están en el taller ahora, con la situación, la previsión y el aviso; el menú para cambiar la situación; **Registrar un mantenimiento**, que manda el reloj, y, editando uno, la historia), **Mantenimientos** (todos, con los filtros y el costo), **Talleres** (con los contactos) y **Listas** (las situaciones, los tipos de servicio, los resultados de la estanqueidad, los tipos de taller y de contacto). Ver [El mantenimiento](#el-mantenimiento). |
 | **Winders** (`winders.php`) | Los winders y las posiciones de cada uno: una tarjeta por winder, con su **dibujo** (una cuna por posición, con la foto del reloj que está en ella y el anillo de la carga), los datos y la tabla de las posiciones, editable en la fila (el **programa**, un campo por columna; el **Reloj**, con **— ninguno —** para quitar y los relojes para poner o cambiar; la **carga**, **cuánto da cada hora** y cuándo se **llena**; el **Guardar**), **Editar** la posición (el nombre, el orden, encendida), **Nueva posición**, **Editar el winder** y **Eliminar el winder**; abajo, el registro (**Nuevo winder**: el nombre, cuántas posiciones ya trae, los campos del winder y la observación) y el de la posición (el nombre, el orden, encendida, el programa). Vea [Los winders](#los-winders). Por la API: `recurso=winders` y las escrituras `winders` y `winder_posicoes`. |
 | **Galería** (`galeria.php`) | La colección en fotos, por grupo: cada reloj con la foto (el enlace a la ficha), el nombre, la marca y la referencia, el año y el valor de compra y los días de uso; arriba, cuántos, el valor total y cuántos tienen foto. **También los de fuera de la colección** muestra los deseados, vendidos y archivados (con la marca de la situación). **Imprimir**: en papel, cuatro por fila, sin el menú. Por la API: `recurso=galeria`. |
-| **Pasaporte** (`passaporte.php`) | La hoja de un reloj para imprimir o guardar en PDF (el botón **Pasaporte** del cuadro Documentos del panel): la foto, el nombre, la marca y la referencia, el grupo y la situación; la **Compra**; el **Uso** (la primera y la última vez en la muñeca, las horas en la muñeca, los días de uso y el costo por uso); la **Ficha** rellenada; los **Mantenimientos** (cada tipo de marca, cuántas veces y la última; las revisiones y los cambios de pila); los **Accesorios**; los **Documentos**; y los **Próximos avisos**. **Imprimir**: en el papel salen solo los datos. Por la API: `recurso=passaporte`. Con algún servicio, también los **Servicios y diagnósticos** (quién lo hizo, el costo, la estanqueidad y la marcha antes y después). |
+| **Pasaporte** (`passaporte.php`) | La hoja de un reloj para imprimir o guardar en PDF (el botón **Pasaporte** del cuadro Documentos del panel): la foto, el nombre, la marca y la referencia, el grupo y la situación; la **Compra**; el **Uso** (la primera y la última vez en la muñeca, las horas en la muñeca, los días de uso y el costo por uso); la **Ficha** rellenada; los **Mantenimientos** (cada tipo de marca, cuántas veces y la última; las revisiones y los cambios de pila); los **Accesorios**; los **Documentos**; y los **Próximos avisos**. **Imprimir**: en el papel salen solo los datos. Por la API: `recurso=passaporte`. Con algún servicio, también los **Servicios y diagnósticos** (el taller, el costo, la estanqueidad y la marcha antes y después). |
 | **Informes** (`relatorios.php`) | La puerta única de los informes: el menú con todos (por grupo), los campos del elegido (el reloj, el período, las opciones) y **Generar el informe**; el informe en la pantalla, en el papel (**Imprimir**) y en una planilla (**Descargar la planilla (CSV)**). Vea [Los informes](#los-informes). |
 | **Hora exacta** (`hora.php`) | La hora del servidor para poner en hora los relojes, en tu huso horario: el reloj elegido en la Configuración (**Reloj de la Hora exacta**): el analógico (caja de acero, esfera clara con los índices, los numerales 12, 6 y 9, la ventanilla de la fecha en el 3, agujas en lanza con franja luminosa y la de los segundos roja con contrapeso), el digital (una caja oscura con visor de cristal líquido: el día de la semana y la fecha, la hora grande con los "88:88:88" apagados detrás, el UTC y la fase de la luna), el anadigi (el visor digital dentro de la esfera analógica) o los dos, uno al lado del otro; andan segundo a segundo, ajustados por la API (descontando el tiempo de la petición; debajo, cuánto adelanta o atrasa el reloj del aparato), con la fecha en palabras, la hora UTC y el huso (y de dónde viene); los cuadros **Zona horaria y UTC** (la zona, el desfase, la hora Zulu, la letra militar de la zona, como *P (Papa)*, y el grupo fecha-hora, *131433P OCT 26*), **Calendario** (día del año, semana ISO, trimestre, día juliano, Unix) y **Luna** (la fase, la edad, la parte iluminada y las próximas lunas llena y nueva, por el ciclo medio: puede variar un día); y **Cómo ponerlo en hora**. Vuelve a leer la API cada minuto. Por la API: `recurso=hora_certa`. |
 | **Documentos** (`documentos.php`) | Los documentos de un reloj (o de todos), abiertos desde la ficha: envío de varios archivos, una pestaña por categoría, la galería de fotos a pantalla completa con presentación, los videos en secuencia en el orden elegido, el visor de PDF, el resumen de la NF-e a partir del XML, y descarga para el resto. Vea [Los documentos del reloj](#los-documentos-del-reloj). |
@@ -1630,7 +1685,10 @@ los cuadros de servicios, precisión y timegrapher del panel).
 | Uso y rotación | **Plan de la rotación** | el reloj de cada día, con el motivo, y cuántos días tiene cada uno |
 | Uso y rotación | **Avisos** | los avisos de ahora, del atrasado al más lejano, y cuántos de cada situación |
 | Uso y rotación | **Notas de los criterios** | el orden de los relojes por la nota y la cuenta de cada uno, parámetro por parámetro |
-| Mantenimiento y precisión | **Servicios y diagnósticos** | cada servicio en el período, con el reloj, quién lo hizo, las piezas, el costo, la estanqueidad y la marcha antes y después; el costo sumado y por tipo |
+| Mantenimiento y precisión | **Servicios y diagnósticos** | cada servicio en el período, con el reloj, el taller, las piezas, el costo, la estanqueidad y la marcha antes y después; el costo sumado y por tipo |
+| Mantenimiento y precisión | **En mantenimiento, por taller** | los relojes en el taller ahora, por taller, con la situación, la previsión, el presupuesto y los contactos |
+| Mantenimiento y precisión | **Mantenimientos en el período** | cada mantenimiento del período: el reloj, el taller, el tipo, la situación, el envío, la vuelta, los días y el costo |
+| Mantenimiento y precisión | **Gasto por taller** | cuánto costó cada taller en el período, cuántos mantenimientos y los días en el taller |
 | Mantenimiento y precisión | **Precisión y marcha** | la marcha de cada reloj; con un reloj, la cuenta entera y cada intervalo medido |
 | Mantenimiento y precisión | **Timegrapher** | las mediciones; con un reloj, también la última sesión |
 | Mantenimiento y precisión | **Reserva medida** | las pruebas de la reserva y las observaciones de la energía |
@@ -1839,6 +1897,9 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `foto` | la foto de un reloj (`relogio=<id>`): la imagen, no JSON |
 | `documentos` | los documentos de un reloj (`relogio=<id>`; sin él, de todos), con las categorías, el resumen de la NF-e de cada XML, la carpeta y el límite |
 | `servicos` | los servicios y diagnósticos (`relogio=<id>`, con el resumen: la resistencia declarada, la estanqueidad comprobada, cuántos y el costo sumado; sin él, los de todos), con las piezas, el costo, la estanqueidad y la marcha antes y después |
+| `manutencao` | el mantenimiento: los abiertos, los mantenimientos (`relogio`, `oficina`, `de`, `ate`), los talleres con los contactos, el resumen y las listas del mantenimiento |
+| `oficinas` | los talleres, con los contactos, y los tipos de taller y de contacto |
+| `listas` | las listas que son registro (`pagina=cadastros` o `manutencao`), con lo que hace cada ítem y cuántas veces está en uso |
 | `reserva` | la reserva medida (`relogio=<id>`: las pruebas de la reserva del mecánico, las observaciones de la energía, la medida, que es la mediana de las pruebas, y la tabla declarado, medido y estimado con la confianza; sin él, las pruebas y las observaciones de todos) |
 | `timegrapher` | las mediciones del timegrapher (`relogio=<id>`: la última sesión, con el promedio de cada magnitud y la diferencia entre las posiciones, las mediciones y lo que entiende la importación del CSV; sin él, las de todos) |
 | `winders` | los winders de la colección (la página **Winders**): cada uno con los datos, la observación, cuántos documentos y las posiciones, y cada posición con el programa (las vueltas por día, en total y en cada sentido), si está encendida, el reloj que está en ella ahora (la carga, cuánto da cada hora, cuándo se llena, la foto), el lugar fijo (de quién es y si está fuera) y los avisos de límite de la almohadilla; los campos del winder y de la posición, los relojes que pueden ir a un winder (con la posición en que están y si están en el winder sin posición) y los programas para elegir |
@@ -1864,7 +1925,10 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 |---|---|
 | `relogio` | `salvar` (crear o cambiar), `excluir` (con los documentos), `foto`, `remover_foto` |
 | `documentos` | `enviar` (uno o varios archivos, con la categoría, el título, la fecha, la descripción y, en una foto, la miniatura), `alterar`, `excluir` |
-| `servicos` | `salvar` (la fecha, el tipo, quién lo hizo, la mano de obra, las piezas, la estanqueidad, la marcha antes y después, la garantía y los documentos; la revisión y el cambio de pila se convierten también en el registro), `excluir` |
+| `servicos` | `salvar` (la fecha, el tipo, el mantenimiento o el taller, la mano de obra, las piezas, la estanqueidad, la marcha antes y después, la garantía y los documentos; el tipo que marca un registro se convierte también en el registro), `excluir` |
+| `manutencao` | `salvar` (registrar manda el reloj al taller), `situacao` (la que cierra se convierte en servicio), `excluir` |
+| `oficinas` | `salvar` (con los contactos), `excluir` (solo el que no tiene mantenimientos) |
+| `listas` | `salvar` (un ítem: el identificador, el nombre, el orden, lo que hace, el texto, el color), `excluir` (solo fuera de uso) |
 | `reserva` | `iniciar` (cuándo quedó lleno y cómo), `parou`, `observar` (se detuvo, carga baja, nota; también en el solar), `salvar`, `usar` (la mediana va al registro del reloj), `excluir` |
 | `timegrapher` | `salvar` (una medición: la posición, la marcha, la amplitud, el error de latido, los latidos por hora, el ángulo), `importar` (el CSV del aparato; `conferir=1`: sin grabar), `excluir` |
 | `winders`, `winder_posicoes` | `salvar` (el winder: el nombre, los campos, como el enlace del manual y los límites de la almohadilla, la observación y, al crear, cuántas posiciones; la posición: el nombre, el orden, encendida, el `programa_id` y `relogio_id`, el reloj que queda en ella y gana el lugar: pone, cambia o, con 0, quita), `limite_ok` (el winder: el aviso de límite de un reloj no vuelve), `liberar` (la posición: deja de ser el lugar de quien era), `excluir` (las sesiones que quedaron en ellos siguen, sin la posición) |
@@ -2536,7 +2600,7 @@ Las reglas `CHECK`, por tema:
 |---|---|
 | Textos | nombre, identificador, título, texto de aviso, fórmula y clave de la configuración vacíos o solo con espacios |
 | Marcas sí/no | cualquier valor distinto de 0 y 1 (disponible, activo, exclusiva, mide el consumo, usada, envía, copia en la base, solo en los deseados...) |
-| Relojes | una situación en la colección fuera de la lista (`colecao`, `desejado`, `emprestado`, `vendido`, `arquivado`); un reloj disponible fuera de la colección |
+| Relojes | una situación en la colección vacía (el identificador de un ítem de la lista; el disponible fuera de la colección lo rechaza el guardado) |
 | Tipos de registro | sesión exclusiva fuera del formato sesión; "mide el consumo" fuera del formato con valor; "se cierra a las" fuera del formato sesión |
 | Registros y mediciones | fin antes del inicio; consumo medido (tasa) fuera de 0 a 100%; horas negativas |
 | Avisos | antelación fuera de 0 a 3650 días; horas simuladas en la escala fuera de 0 a 48 |

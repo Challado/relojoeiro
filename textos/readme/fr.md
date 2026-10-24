@@ -1,4 +1,4 @@
-<!-- origem: 304872251d00561cb7f089d0aba334733089434d -->
+<!-- origem: 7256e68a7f6cb823562b6d1f0b93b38f36e102fd -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -166,6 +166,9 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `foto` | la photo d'une montre (`relogio=<id>`) : l'image, pas du JSON |
 | `documentos` | les documents d'une montre (`relogio=<id>` ; sans lui, de toutes), avec les catégories, le résumé de la NF-e de chaque XML, le dossier et la limite |
 | `servicos` | les services et diagnostics (`relogio=<id>`, avec le résumé : la résistance déclarée, l'étanchéité prouvée, combien et le coût total ; sans lui, ceux de toutes), avec les pièces, le coût, l'étanchéité et la marche avant et après |
+| `manutencao` | l'entretien : les ouverts, les entretiens (`relogio`, `oficina`, `de`, `ate`), les ateliers avec les contacts, le résumé et les listes de l'entretien |
+| `oficinas` | les ateliers, avec les contacts, et les types d'atelier et de contact |
+| `listas` | les listes qui sont des définitions (`pagina=cadastros` ou `manutencao`), avec ce que fait chaque élément et combien de fois il est utilisé |
 | `reserva` | la réserve mesurée (`relogio=<id>` : les tests de la réserve de la mécanique, les observations de l'énergie, la mesure, qui est la médiane des tests, et le tableau déclaré, mesuré et estimé avec la confiance ; sans lui, les tests et les observations de toutes) |
 | `timegrapher` | les mesures du timegrapher (`relogio=<id>` : la dernière séance, avec la moyenne de chaque grandeur et l'écart entre les positions, les mesures et ce que l'importation du CSV comprend ; sans lui, celles de toutes) |
 | `winders` | les remontoirs de la collection (la page **Remontoirs**) : chacun avec les données, l'observation, combien de documents et les positions, et chaque position avec le programme (les tours par jour, au total et dans chaque sens), si elle est allumée, la montre qui y est maintenant (la charge, ce que donne chaque heure, quand elle est pleine, la photo), la place fixe (à qui elle est et si elle est dehors) et les avertissements de limite du coussin ; les champs du remontoir et de la position, les montres qui peuvent aller sur un remontoir (avec la position où elles sont et si elles sont sur le remontoir sans position) et les programmes à choisir |
@@ -191,7 +194,10 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 |---|---|
 | `relogio` | `salvar` (créer ou modifier), `excluir` (avec les documents), `foto`, `remover_foto` |
 | `documentos` | `enviar` (un ou plusieurs fichiers, avec la catégorie, le titre, la date, la description et, pour une photo, la vignette), `alterar`, `excluir` |
-| `servicos` | `salvar` (la date, le type, qui l'a fait, la main-d'œuvre, les pièces, l'étanchéité, la marche avant et après, la garantie et les documents ; la révision et le changement de pile deviennent aussi la saisie), `excluir` |
+| `servicos` | `salvar` (la date, le type, l'entretien ou l'atelier, la main-d'œuvre, les pièces, l'étanchéité, la marche avant et après, la garantie et les documents ; le type qui marque une saisie devient aussi la saisie), `excluir` |
+| `manutencao` | `salvar` (enregistrer envoie la montre à l'atelier), `situacao` (celui qui clôt devient un service), `excluir` |
+| `oficinas` | `salvar` (avec les contacts), `excluir` (seulement celui sans entretiens) |
+| `listas` | `salvar` (un élément : l'identifiant, le nom, l'ordre, ce qu'il fait, le texte, la couleur), `excluir` (seulement hors utilisation) |
 | `reserva` | `iniciar` (quand elle était pleine et comment), `parou`, `observar` (arrêtée, charge faible, note ; aussi sur la solaire), `salvar`, `usar` (la médiane va dans la fiche de la montre), `excluir` |
 | `timegrapher` | `salvar` (une mesure : la position, la marche, l'amplitude, l'erreur de battement, les alternances par heure, l'angle), `importar` (le CSV de l'appareil ; `conferir=1` : sans enregistrer), `excluir` |
 | `winders`, `winder_posicoes` | `salvar` (le remontoir : le nom, les champs, comme le lien du manuel et les limites du coussin, l'observation et, à la création, combien de positions ; la position : le nom, l'ordre, allumée, le `programa_id` et `relogio_id`, la montre qui y reste et prend la place : met, échange ou, avec 0, retire), `limite_ok` (le remontoir : l'avertissement de limite d'une montre ne revient pas), `liberar` (la position : elle cesse d'être la place de celle à qui elle était), `excluir` (les sessions restées dedans continuent, sans la position) |
@@ -641,7 +647,7 @@ Les règles `CHECK`, par sujet :
 |---|---|
 | Textes | nom, identifiant, titre, texte d'alerte, formule et clé de la configuration vides ou seulement des espaces |
 | Marques oui/non | toute valeur autre que 0 et 1 (disponible, active, exclusive, mesure la consommation, utilisée, envoie, copie dans la base, seulement pour les désirées...) |
-| Montres | une situation dans la collection hors de la liste (`colecao`, `desejado`, `emprestado`, `vendido`, `arquivado`) ; une montre disponible hors de la collection |
+| Montres | une situation dans la collection vide (l'identifiant d'un élément de la liste ; la disponible hors de la collection, c'est l'enregistrement qui la refuse) |
 | Types de saisie | session exclusive hors du format session ; « mesure la consommation » hors du format avec valeur ; « se ferme à » hors du format session |
 | Saisies et mesures | fin avant le début ; consommation mesurée (taux) hors de 0 à 100 % ; heures négatives |
 | Alertes | anticipation hors de 0 à 3650 jours ; heures simulées dans le planning hors de 0 à 48 |

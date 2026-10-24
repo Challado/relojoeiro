@@ -13,7 +13,13 @@
 --     relógio; o campo chega ao dono pela árvore; o subgrupo não guarda a raiz nem o dono);
 --   - o dono de uma árvore fica só na raiz dela (o grupo sem pai); a coleção aponta para a raiz da árvore que usa, e uma
 --     árvore serve a várias coleções do mesmo dono. O cadastro (campos, tipos de lançamento, fórmulas, avisos, critérios de
---     grupo, categorias de documento) fica pendurado na árvore; os relógios, o uso, o plano e a configuração, na coleção.
+--     grupo, categorias de documento, as listas) fica pendurado na árvore; os relógios, o uso, o plano, as oficinas e a
+--     configuração, na coleção;
+--   - o que pode ser cadastro é cadastro: as listas de escolha (lista_item: a situação na coleção, os tipos de acessório e de
+--     serviço, a estanqueidade, a reserva, a manutenção, as oficinas, os contatos) são itens da árvore, e o código só guarda o
+--     que cada item faz (o comportamento). As colunas que guardam um item pelo identificador dele (relogio.posse,
+--     acessorio.tipo, campo.acessorio_tipo, servico.tipo e estanqueidade, reserva_teste.tipo e protocolo) são as de antes:
+--     o identificador não muda, e o item em uso não sai.
 SET NAMES utf8mb4;
 
 -- =====================================================================================================================
@@ -407,7 +413,7 @@ CREATE TABLE relogio (
     disponivel   TINYINT NOT NULL DEFAULT 1,
     criado       DATETIME NOT NULL,
     copia_banco  TINYINT NOT NULL DEFAULT 0,
-    posse        VARCHAR(12) NOT NULL DEFAULT 'colecao',
+    posse        VARCHAR(20) NOT NULL DEFAULT 'colecao',   -- o identificador da situação (lista_item, lista relogio_situacao)
     INDEX (colecao_id),
     FOREIGN KEY (colecao_id) REFERENCES colecao(id) ON DELETE CASCADE,
     FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
@@ -415,8 +421,8 @@ CREATE TABLE relogio (
     CONSTRAINT ck_relogio_apelido CHECK (apelido IS NULL OR TRIM(apelido) <> ''),
     CONSTRAINT ck_relogio_disponivel CHECK (disponivel IN (0, 1)),
     CONSTRAINT ck_relogio_copia_banco CHECK (copia_banco IN (0, 1)),
-    CONSTRAINT ck_relogio_posse CHECK (posse IN ('colecao', 'desejado', 'emprestado', 'vendido', 'arquivado')),
-    CONSTRAINT ck_relogio_posse_disponivel CHECK (posse = 'colecao' OR disponivel = 0)
+    CONSTRAINT ck_relogio_posse CHECK (TRIM(posse) <> ''),
+    CONSTRAINT ck_relogio_posse_disponivel CHECK (disponivel IN (0, 1))
 ) ENGINE=InnoDB;
 
 CREATE TABLE foto (
@@ -735,18 +741,126 @@ CREATE TABLE documento_parte (
     CONSTRAINT ck_documento_parte_parte CHECK (parte >= -1)
 ) ENGINE=InnoDB;
 
--- os serviços e diagnósticos de um relógio (revisão, pilha, estanqueidade, regulagem...): o custo é a mão de obra mais as
--- peças; a revisão e a pilha viram também a marcação do tipo de mesmo nome (lancamento_id); os documentos do relógio que são
--- do serviço, pela ligação
+-- as listas que são cadastro (v48): por árvore, uma linha por item, com o identificador fixo, o nome, a ordem e o que ele faz
+CREATE TABLE lista_item (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    no_id          INT NOT NULL,
+    lista          VARCHAR(30) NOT NULL,
+    identificador  VARCHAR(20) NOT NULL,
+    nome           VARCHAR(80) NOT NULL,
+    ordem          INT NOT NULL DEFAULT 0,
+    comportamento  VARCHAR(20) NULL,
+    texto          VARCHAR(200) NULL,
+    cor            VARCHAR(7) NULL,
+    UNIQUE KEY lista_item_unico (no_id, lista, identificador),
+    FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
+    CONSTRAINT ck_lista_item_textos CHECK (TRIM(identificador) <> '' AND TRIM(nome) <> ''),
+    CONSTRAINT ck_lista_item_lista CHECK (lista IN ('relogio_situacao', 'acessorio_tipo', 'servico_tipo', 'estanqueidade', 'reserva_protocolo',
+        'reserva_observacao', 'manutencao_situacao', 'oficina_tipo', 'contato_tipo')),
+    CONSTRAINT ck_lista_item_comportamento CHECK ((lista = 'relogio_situacao' AND comportamento IN ('colecao', 'emprestado', 'desejado', 'fora'))
+        OR (lista = 'estanqueidade' AND comportamento IN ('aprova', 'reprova'))
+        OR (lista = 'manutencao_situacao' AND comportamento IN ('aberta', 'encerra', 'cancela'))
+        OR (lista = 'oficina_tipo' AND comportamento IN ('comum', 'propria'))
+        OR (lista = 'contato_tipo' AND comportamento IN ('telefone', 'whatsapp', 'email', 'link', 'texto'))
+        OR (lista IN ('acessorio_tipo', 'servico_tipo', 'reserva_protocolo', 'reserva_observacao') AND comportamento IS NULL)),
+    CONSTRAINT ck_lista_item_cor CHECK (cor IS NULL OR cor LIKE '#______')
+) ENGINE=InnoDB;
+
+-- as oficinas da coleção e os contatos de cada uma (v48)
+CREATE TABLE oficina (
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    colecao_id   INT NOT NULL,
+    nome         VARCHAR(120) NOT NULL,
+    tipo_id      INT NOT NULL,
+    endereco     VARCHAR(200) NULL,
+    numero       VARCHAR(20) NULL,
+    complemento  VARCHAR(80) NULL,
+    bairro       VARCHAR(80) NULL,
+    cidade       VARCHAR(80) NULL,
+    uf           VARCHAR(40) NULL,
+    cep          VARCHAR(20) NULL,
+    horario      VARCHAR(200) NULL,
+    observacao   VARCHAR(2000) NULL,
+    criado       DATETIME NOT NULL,
+    INDEX (colecao_id),
+    INDEX oficina_tipo (tipo_id),
+    FOREIGN KEY (colecao_id) REFERENCES colecao(id) ON DELETE CASCADE,
+    FOREIGN KEY (tipo_id) REFERENCES lista_item(id) ON DELETE CASCADE,
+    CONSTRAINT ck_oficina_nome CHECK (TRIM(nome) <> '')
+) ENGINE=InnoDB;
+
+CREATE TABLE oficina_contato (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    oficina_id  INT NOT NULL,
+    tipo_id     INT NOT NULL,
+    valor       VARCHAR(200) NOT NULL,
+    pessoa      VARCHAR(120) NULL,
+    observacao  VARCHAR(200) NULL,
+    principal   TINYINT NOT NULL DEFAULT 0,
+    ordem       INT NOT NULL DEFAULT 0,
+    INDEX (oficina_id),
+    INDEX oficina_contato_tipo (tipo_id),
+    FOREIGN KEY (oficina_id) REFERENCES oficina(id) ON DELETE CASCADE,
+    FOREIGN KEY (tipo_id) REFERENCES lista_item(id) ON DELETE CASCADE,
+    CONSTRAINT ck_oficina_contato_valor CHECK (TRIM(valor) <> ''),
+    CONSTRAINT ck_oficina_contato_principal CHECK (principal IN (0, 1))
+) ENGINE=InnoDB;
+
+-- a manutenção: o relógio numa oficina, a situação e cada mudança dela (v48)
+CREATE TABLE manutencao (
+    id                INT AUTO_INCREMENT PRIMARY KEY,
+    relogio_id        INT NOT NULL,
+    oficina_id        INT NOT NULL,
+    situacao_id       INT NOT NULL,
+    tipo_id           INT NOT NULL,
+    problema          VARCHAR(2000) NULL,
+    os                VARCHAR(60) NULL,
+    enviado           DATE NOT NULL,
+    previsao          DATE NULL,
+    orcamento         DECIMAL(12,2) NULL,
+    orcamento_data    DATE NULL,
+    encerrado         DATE NULL,
+    disponivel_antes  TINYINT NOT NULL DEFAULT 1,
+    observacao        VARCHAR(2000) NULL,
+    criado            DATETIME NOT NULL,
+    INDEX (relogio_id, enviado),
+    INDEX manutencao_oficina (oficina_id),
+    INDEX manutencao_situacao (situacao_id),
+    INDEX manutencao_tipo (tipo_id),
+    FOREIGN KEY (relogio_id) REFERENCES relogio(id) ON DELETE CASCADE,
+    FOREIGN KEY (oficina_id) REFERENCES oficina(id) ON DELETE CASCADE,
+    FOREIGN KEY (situacao_id) REFERENCES lista_item(id) ON DELETE CASCADE,
+    FOREIGN KEY (tipo_id) REFERENCES lista_item(id) ON DELETE CASCADE,
+    CONSTRAINT ck_manutencao_datas CHECK ((previsao IS NULL OR previsao >= enviado) AND (encerrado IS NULL OR encerrado >= enviado)
+        AND (orcamento_data IS NULL OR orcamento_data >= enviado)),
+    CONSTRAINT ck_manutencao_orcamento CHECK (orcamento IS NULL OR orcamento >= 0),
+    CONSTRAINT ck_manutencao_disponivel CHECK (disponivel_antes IN (0, 1))
+) ENGINE=InnoDB;
+
+CREATE TABLE manutencao_evento (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    manutencao_id  INT NOT NULL,
+    situacao_id    INT NOT NULL,
+    quando         DATETIME NOT NULL,
+    observacao     VARCHAR(500) NULL,
+    INDEX (manutencao_id, quando),
+    INDEX manutencao_evento_situacao (situacao_id),
+    FOREIGN KEY (manutencao_id) REFERENCES manutencao(id) ON DELETE CASCADE,
+    FOREIGN KEY (situacao_id) REFERENCES lista_item(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- os serviços e diagnósticos de um relógio (revisão, pilha, estanqueidade, regulagem...): o encerramento de uma manutenção
+-- (manutencao_id); o custo é a mão de obra mais as peças; o tipo de serviço que marca um tipo de lançamento (o texto do item:
+-- revisao, pilha) vira também essa marcação (lancamento_id); os documentos do relógio que são do serviço, pela ligação
 CREATE TABLE servico (
     id                 INT AUTO_INCREMENT PRIMARY KEY,
     relogio_id         INT NOT NULL,
+    manutencao_id      INT NOT NULL,
     data               DATE NOT NULL,
     tipo               VARCHAR(20) NOT NULL DEFAULT 'revisao',
-    responsavel        VARCHAR(120) NULL,
     descricao          TEXT NULL,
     mao_de_obra        DECIMAL(12,2) NULL,
-    estanqueidade      VARCHAR(10) NULL,
+    estanqueidade      VARCHAR(20) NULL,
     estanqueidade_bar  DECIMAL(6,2) NULL,
     marcha_antes       DECIMAL(8,2) NULL,
     marcha_depois      DECIMAL(8,2) NULL,
@@ -756,10 +870,12 @@ CREATE TABLE servico (
     criado             DATETIME NOT NULL,
     INDEX (relogio_id, data),
     INDEX servico_lancamento (lancamento_id),
+    INDEX servico_manutencao (manutencao_id),
     FOREIGN KEY (relogio_id) REFERENCES relogio(id) ON DELETE CASCADE,
+    FOREIGN KEY (manutencao_id) REFERENCES manutencao(id) ON DELETE CASCADE,
     FOREIGN KEY (lancamento_id) REFERENCES lancamento(id) ON DELETE SET NULL,
-    CONSTRAINT ck_servico_tipo CHECK (tipo IN ('revisao', 'pilha', 'estanqueidade', 'regulagem', 'polimento', 'reparo', 'diagnostico', 'outro')),
-    CONSTRAINT ck_servico_estanqueidade CHECK (estanqueidade IS NULL OR estanqueidade IN ('aprovado', 'reprovado')),
+    CONSTRAINT ck_servico_tipo CHECK (TRIM(tipo) <> ''),
+    CONSTRAINT ck_servico_estanqueidade CHECK (estanqueidade IS NULL OR TRIM(estanqueidade) <> ''),
     CONSTRAINT ck_servico_valores CHECK ((mao_de_obra IS NULL OR mao_de_obra >= 0) AND (estanqueidade_bar IS NULL OR estanqueidade_bar > 0)),
     CONSTRAINT ck_servico_garantia CHECK (garantia_ate IS NULL OR garantia_ate >= data)
 ) ENGINE=InnoDB;
@@ -785,21 +901,31 @@ CREATE TABLE servico_documento (
     FOREIGN KEY (documento_id) REFERENCES documento(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- os documentos do envio para a manutenção (o estado na entrega, a OS, o orçamento)
+CREATE TABLE manutencao_documento (
+    manutencao_id  INT NOT NULL,
+    documento_id   INT NOT NULL,
+    PRIMARY KEY (manutencao_id, documento_id),
+    INDEX (documento_id),
+    FOREIGN KEY (manutencao_id) REFERENCES manutencao(id) ON DELETE CASCADE,
+    FOREIGN KEY (documento_id) REFERENCES documento(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- os testes da reserva de marcha (cheio até parado) e as observações da energia (v36)
 CREATE TABLE reserva_teste (
     id               INT AUTO_INCREMENT PRIMARY KEY,
     relogio_id       INT NOT NULL,
-    tipo             VARCHAR(12) NOT NULL DEFAULT 'teste',
+    tipo             VARCHAR(20) NOT NULL DEFAULT 'teste',
     inicio           DATETIME NOT NULL,
     fim              DATETIME NULL,
-    protocolo        VARCHAR(10) NULL,
+    protocolo        VARCHAR(20) NULL,
     protocolo_valor  DECIMAL(8,2) NULL,
     observacao       VARCHAR(500) NULL,
     criado           DATETIME NOT NULL,
     INDEX (relogio_id, inicio),
     FOREIGN KEY (relogio_id) REFERENCES relogio(id) ON DELETE CASCADE,
-    CONSTRAINT ck_reserva_teste_tipo CHECK (tipo IN ('teste', 'parou', 'carga_baixa', 'nota')),
-    CONSTRAINT ck_reserva_teste_protocolo CHECK (protocolo IS NULL OR protocolo IN ('corda', 'winder', 'pulso', 'outro')),
+    CONSTRAINT ck_reserva_teste_tipo CHECK (TRIM(tipo) <> ''),
+    CONSTRAINT ck_reserva_teste_protocolo CHECK (protocolo IS NULL OR TRIM(protocolo) <> ''),
     CONSTRAINT ck_reserva_teste_fim CHECK (fim IS NULL OR fim > inicio),
     CONSTRAINT ck_reserva_teste_observacao CHECK (tipo = 'teste' OR (fim IS NULL AND protocolo IS NULL AND protocolo_valor IS NULL)),
     CONSTRAINT ck_reserva_teste_valor CHECK (protocolo_valor IS NULL OR protocolo_valor > 0)
@@ -842,7 +968,17 @@ CREATE TABLE acessorio (
     INDEX (colecao_id),
     FOREIGN KEY (colecao_id) REFERENCES colecao(id) ON DELETE CASCADE,
     CONSTRAINT ck_acessorio_nome CHECK (TRIM(nome) <> ''),
-    CONSTRAINT ck_acessorio_tipo CHECK (tipo IN ('pulseira', 'caixa', 'estojo', 'ferramenta', 'carregador', 'peca', 'outro'))
+    CONSTRAINT ck_acessorio_tipo CHECK (TRIM(tipo) <> '')
+) ENGINE=InnoDB;
+
+-- o que foi junto com o relógio para a manutenção (os acessórios dele: a pulseira, a caixa)
+CREATE TABLE manutencao_acessorio (
+    manutencao_id  INT NOT NULL,
+    acessorio_id   INT NOT NULL,
+    PRIMARY KEY (manutencao_id, acessorio_id),
+    INDEX (acessorio_id),
+    FOREIGN KEY (manutencao_id) REFERENCES manutencao(id) ON DELETE CASCADE,
+    FOREIGN KEY (acessorio_id) REFERENCES acessorio(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- o valor de cada campo de acessório (campo.alvo = acessorio: a largura e o material da pulseira) em cada acessório, como

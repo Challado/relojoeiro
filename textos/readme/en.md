@@ -1,4 +1,4 @@
-<!-- origem: 304872251d00561cb7f089d0aba334733089434d -->
+<!-- origem: 7256e68a7f6cb823562b6d1f0b93b38f36e102fd -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -161,6 +161,9 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `foto` | a watch's photo (`relogio=<id>`): the image, not JSON |
 | `documentos` | a watch's documents (`relogio=<id>`; without it, all of them), with the categories, the NF-e summary of each XML, the folder and the limit |
 | `servicos` | the services and diagnostics (`relogio=<id>`, with the summary: the declared water resistance, the proven one, how many and the total cost; without it, everyone's), with the parts, the cost, the water resistance and the rate before and after |
+| `manutencao` | maintenance: the open ones, the maintenances (`relogio`, `oficina`, `de`, `ate`), the workshops with the contacts, the summary and the maintenance lists |
+| `oficinas` | the workshops, with the contacts, and the workshop and contact types |
+| `listas` | the lists that are definitions (`pagina=cadastros` or `manutencao`), with what each item does and how many times it is in use |
 | `reserva` | the measured reserve (`relogio=<id>`: the mechanical watch's reserve tests, the energy observations, the measurement, which is the median of the tests, and the declared, measured and estimated table with the confidence; without it, the tests and observations of all) |
 | `timegrapher` | the timegrapher measurements (`relogio=<id>`: the last session, with the average of each quantity and the difference between the positions, the measurements and what the CSV import understands; without it, everyone's) |
 | `winders` | the collection's winders (the **Winders** page): each one with the data, the note, how many documents and the positions, and each position with the program (the turns per day, in total and in each direction), whether it is on, the watch that is in it now (the charge, what each hour gives, when it fills up, the photo), the fixed place (whose it is and whether it is out) and the cushion limit warnings; the winder and position fields, the watches that can go on a winder (with the position they are in and whether they are on the winder without a position) and the programs to choose |
@@ -186,7 +189,10 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 |---|---|
 | `relogio` | `salvar` (create or change), `excluir` (with the documents), `foto`, `remover_foto` |
 | `documentos` | `enviar` (one or several files, with the category, the title, the date, the description and, for a photo, the thumbnail), `alterar`, `excluir` |
-| `servicos` | `salvar` (the date, the type, who did it, the labour, the parts, the water resistance, the rate before and after, the warranty and the documents; a service and a battery change also become the entry), `excluir` |
+| `servicos` | `salvar` (the date, the type, the maintenance or the workshop, the labour, the parts, the water resistance, the rate before and after, the warranty and the documents; the type that marks an entry also becomes the entry), `excluir` |
+| `manutencao` | `salvar` (registering sends the watch to the workshop), `situacao` (the one that closes becomes a service), `excluir` |
+| `oficinas` | `salvar` (with the contacts), `excluir` (only the one without maintenances) |
+| `listas` | `salvar` (an item: the identifier, the name, the order, what it does, the text, the color), `excluir` (only when not in use) |
 | `reserva` | `iniciar` (when it was full and how), `parou`, `observar` (stopped, low charge, note; also on the solar), `salvar`, `usar` (the median goes to the watch's record), `excluir` |
 | `timegrapher` | `salvar` (a measurement: the position, the rate, the amplitude, the beat error, the beats per hour, the angle), `importar` (the device's CSV; `conferir=1`: without saving), `excluir` |
 | `winders`, `winder_posicoes` | `salvar` (the winder: the name, the fields, such as the manual link and the cushion limits, the note and, when creating, how many positions; the position: the name, the order, on, the `programa_id` and `relogio_id`, the watch that stays in it and gets the place: puts on, swaps or, with 0, takes off), `limite_ok` (the winder: a watch's limit warning does not come back), `liberar` (the position: it stops being the place of whoever it was), `excluir` (the sessions left in them remain, without the position) |
@@ -610,7 +616,7 @@ The `CHECK` rules, by subject:
 |---|---|
 | Texts | name, identifier, title, alert text, formula and settings key empty or only spaces |
 | Yes/no marks | any value other than 0 and 1 (available, active, exclusive, measures consumption, used, sends, copy in the database, only for wished ones...) |
-| Watches | a status in the collection outside the list (`colecao`, `desejado`, `emprestado`, `vendido`, `arquivado`); an available watch outside the collection |
+| Watches | an empty status in the collection (the identifier of an item of the list; the available one outside the collection is refused by the save) |
 | Entry types | exclusive session outside the session format; "measures consumption" outside the value format; "closes at" outside the session format |
 | Entries and measurements | end before start; measured consumption (rate) outside 0 to 100%; negative hours |
 | Alerts | lead time outside 0 to 3650 days; simulated hours in the schedule outside 0 to 48 |

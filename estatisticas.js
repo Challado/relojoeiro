@@ -75,7 +75,7 @@ api(pedido).then(function (d) {
     + el("div", {"class": "rolagem"}, el("table", {"class": "relogios compacta lista-estatisticas"}, el("thead", {}, el("tr", {}, el("th", {}, t("Relógio")) + el("th", {}, t("Dias de uso"))
       + el("th", {}, t("Horas")) + el("th", {}, t("A parte")) + el("th", {}, t("Custo por uso")) + el("th", {}, t("Sem uso há")) + el("th", {}, t("Tendência"))))
       + el("tbody", {}, d.relogios.map(function (x) {
-        return el("tr", {}, el("td", {}, el("a", {"href": "ficha.php?id=" + x.id}, h(x.nome)) + " " + el("small", {"class": "nota"}, h(x.tipo) + (x.posse !== "colecao" ? " · " + h(x.posse_texto.toLowerCase()) : "")))
+        return el("tr", {}, el("td", {}, el("a", {"href": "ficha.php?id=" + x.id}, h(x.nome)) + " " + el("small", {"class": "nota"}, h(x.tipo) + (x.posse_comportamento !== "colecao" ? " · " + h(x.posse_texto.toLowerCase()) : "")))
           + el("td", {"class": "num"}, String(x.usos))
           + el("td", {"class": "num"}, horas(x.horas))
           + el("td", {}, el("span", {"class": "parte"}, barraH(x.barra) + " " + num(x.porcentagem, 1) + "%"))

@@ -95,7 +95,7 @@ preparar($ana, ["recurso" => "relogio", "acao" => "salvar", "id" => $rel_a, "cal
 $doc_cal_a = (int)(preparar($ana, ["recurso" => "documentos", "acao" => "enviar", "calibre_id" => $cal_a, "categoria_id" => $cat_a, "titulo" => "Manual SEGREDOANA",
     "arquivo_nome" => "segredoana-calibre.txt", "arquivo_base64" => base64_encode("manual SEGREDOANA")])["id"] ?? 0);
 $srv_a = (int)(preparar($ana, ["recurso" => "servicos", "acao" => "salvar", "relogio_id" => $rel_a, "data" => date("Y-m-d", time() - 3 * 86400), "tipo" => "reparo",
-    "responsavel" => "Servico SEGREDOANA", "pecas" => "Peca SEGREDOANA; 10", "documentos" => (string)$doc_a])["id"] ?? 0);
+    "descricao" => "Servico SEGREDOANA", "pecas" => "Peca SEGREDOANA; 10", "documentos" => (string)$doc_a])["id"] ?? 0);
 // um mecânico da ana com um teste da reserva terminado (a observação com a marca)
 $no_mec_a = 0;
 foreach ($arv["grupos"] ?? [] as $g_a) {
@@ -221,8 +221,8 @@ $tentativas = [
     ["recurso" => "documentos", "acao" => "alterar", "id" => $doc_cal_a, "titulo" => "INVADIDO"],
     ["recurso" => "documentos", "acao" => "enviar", "calibre_id" => $cal_a, "categoria_id" => $cat_a, "titulo" => "INVADIDO", "arquivo_nome" => "x.txt", "arquivo_base64" => base64_encode("x")],
     ["recurso" => "acessorios", "acao" => "excluir", "id" => $ace_a, "confirmar" => 1],
-    ["recurso" => "servicos", "acao" => "salvar", "id" => $srv_a, "responsavel" => "INVADIDO"],
-    ["recurso" => "servicos", "acao" => "salvar", "relogio_id" => $rel_a, "data" => date("Y-m-d"), "responsavel" => "INVADIDO"],
+    ["recurso" => "servicos", "acao" => "salvar", "id" => $srv_a, "descricao" => "INVADIDO"],
+    ["recurso" => "servicos", "acao" => "salvar", "relogio_id" => $rel_a, "data" => date("Y-m-d"), "descricao" => "INVADIDO"],
     ["recurso" => "servicos", "acao" => "excluir", "id" => $srv_a, "confirmar" => 1],
     ["recurso" => "reserva", "acao" => "salvar", "id" => $rst_a, "observacao" => "INVADIDO"],
     ["recurso" => "reserva", "acao" => "parou", "relogio_id" => $rel_m],

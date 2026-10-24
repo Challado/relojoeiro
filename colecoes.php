@@ -287,6 +287,19 @@ function modelo_textos()
             $junta($b["nome"]);
         }
     }
+    // as listas que são cadastro (o texto do serviço é o identificador de um campo: esse não se traduz) e a oficina inicial
+    foreach ($m["listas"] as $lista => $itens) {
+        foreach ($itens as $x) {
+            $junta($x["nome"]);
+            if ($lista !== "servico_tipo") {
+                $junta($x["texto"] ?? null);
+            }
+        }
+    }
+    foreach ($m["oficinas"] as $o) {
+        $junta($o["nome"]);
+        $junta($o["observacao"] ?? null);
+    }
     foreach (["mensagens", "agenda"] as $k) {
         $junta($m[$k]["modelo"]);
         foreach ($m[$k]["avisos"] as $a) {
@@ -304,6 +317,9 @@ function arvore_criar($dono_id, $nome, $lingua, $com_modelo)
         sql("INSERT INTO no (pai_id, dono_id, nome, ordem) VALUES (NULL, ?, ?, 0)", [(int)$dono_id, corta_texto($nome, 80)]);
         $raiz = ultimo_id();
         $ids = ["raiz" => $raiz];
+        // as listas (a situação na coleção, os tipos, as situações da manutenção...) entram sempre, com ou sem o modelo: o
+        // sistema precisa delas para funcionar
+        listas_do_modelo($raiz, modelo_tradutor($lingua));
         if (!$com_modelo) {
             return [$raiz, $ids];
         }
@@ -372,6 +388,41 @@ function arvore_criar($dono_id, $nome, $lingua, $com_modelo)
     });
 }
 
+// As listas que são cadastro (lista_item: a situação do relógio na coleção, os tipos de acessório e de serviço, a
+// estanqueidade, a reserva, a manutenção, as oficinas e os contatos), do modelo.json, numa árvore: cada item só se a lista
+// dela ainda não tem esse identificador (a migração v48 pode rodar de novo). O nome sai no idioma ($tr); o texto também,
+// menos o do tipo de serviço (o identificador do tipo de lançamento que ele marca). Sem escopo
+function listas_do_modelo($raiz, $tr)
+{
+    sem_escopo(function () use ($raiz, $tr) {
+        foreach (modelo_ler()["listas"] as $lista => $itens) {
+            foreach (array_values($itens) as $i => $x) {
+                if (valor("SELECT id FROM lista_item WHERE no_id = ? AND lista = ? AND identificador = ?", [(int)$raiz, $lista, $x["identificador"]]) === null) {
+                    $texto = $x["texto"] ?? null;
+                    sql("INSERT INTO lista_item (no_id, lista, identificador, nome, ordem, comportamento, texto, cor) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                        [(int)$raiz, $lista, $x["identificador"], $tr($x["nome"]), $i + 1, $x["comportamento"] ?? null,
+                            $texto === null || $lista === "servico_tipo" ? $texto : $tr($texto), $x["cor"] ?? null]);
+                }
+            }
+        }
+    });
+}
+
+// As oficinas do modelo.json (a "Eu mesmo (em casa)") numa coleção: o tipo pelo identificador, na lista da árvore dela; só
+// a que a coleção ainda não tem pelo nome. Sem escopo
+function oficinas_do_modelo($colecao_id, $raiz, $tr)
+{
+    sem_escopo(function () use ($colecao_id, $raiz, $tr) {
+        foreach (modelo_ler()["oficinas"] as $o) {
+            $tipo = valor("SELECT id FROM lista_item WHERE no_id = ? AND lista = 'oficina_tipo' AND identificador = ?", [(int)$raiz, $o["tipo"]]);
+            if ($tipo !== null && valor("SELECT id FROM oficina WHERE colecao_id = ? AND nome = ?", [(int)$colecao_id, $tr($o["nome"])]) === null) {
+                sql("INSERT INTO oficina (colecao_id, nome, tipo_id, observacao, criado) VALUES (?, ?, ?, ?, NOW())",
+                    [(int)$colecao_id, $tr($o["nome"]), (int)$tipo, isset($o["observacao"]) ? $tr($o["observacao"]) : null]);
+            }
+        }
+    });
+}
+
 // Os critérios do modelo (os dos grupos), na árvore: $grupo dá o id de um apelido
 function modelo_criterios($grupo, $tr)
 {
@@ -402,6 +453,7 @@ function colecao_criar($dono_id, $nome, $raiz, $ids, $lingua)
             sql("INSERT INTO config (colecao_id, chave, valor) VALUES (?, ?, ?)", [$c, $k, (string)$v]);
         }
         sql("INSERT INTO config (colecao_id, chave, valor) VALUES (?, 'idioma', ?)", [$c, $lingua]);
+        oficinas_do_modelo($c, $raiz, $tr);
         if (count($ids) > 1) {
             foreach ($m["modos"] as $mo) {
                 sql("INSERT INTO modo (colecao_id, nome, tipo, selecao, ordem, escala_dias, semanas, ciclo, ativo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -1054,6 +1106,8 @@ const IMPACTO_NOMES = ["usuario" => "usuários", "colecao" => "coleções", "col
     "documento_categoria" => "categorias de documento", "documento_categoria_aceita" => "tipos aceitos de categorias", "relogio" => "relógios", "foto" => "fotos",
     "campo_valor" => "valores de campo", "calibre" => "calibres", "calibre_valor" => "valores de calibre", "campo_valor_item" => "valores de campo múltiplo", "calibre_valor_item" => "valores de campo múltiplo de calibre", "acessorio_valor" => "valores de acessório", "acessorio_valor_item" => "valores de campo múltiplo de acessório", "relogio_calibre" => "relógios com calibre", "lancamento" => "lançamentos", "medicao" => "medições do gasto", "documento" => "documentos", "documento_parte" => "pedaços de documentos no banco",
     "servico" => "serviços e diagnósticos", "servico_peca" => "peças de serviços", "servico_documento" => "documentos de serviços",
+    "lista_item" => "itens de listas", "oficina" => "oficinas", "oficina_contato" => "contatos de oficinas", "manutencao" => "manutenções",
+    "manutencao_evento" => "mudanças de situação de manutenções", "manutencao_acessorio" => "acessórios enviados para manutenção", "manutencao_documento" => "documentos de manutenções",
     "reserva_teste" => "testes da reserva e observações da energia", "timegrapher" => "medições do timegrapher",
     "acessorio" => "acessórios", "acessorio_relogio" => "vínculos de acessório", "winder" => "winders", "winder_valor" => "valores de winder",
     "winder_valor_item" => "valores de campo múltiplo de winder", "winder_posicao" => "posições de winder", "winder_posicao_valor" => "valores de posição de winder",
@@ -1075,6 +1129,7 @@ tk("fórmulas"); tk("avisos"); tk("categorias de documento"); tk("tipos aceitos 
 tk("fotos"); tk("valores de campo"); tk("unidades"); tk("divisórias de campos"); tk("calibres"); tk("valores de calibre"); tk("valores de campo múltiplo"); tk("valores de campo múltiplo de calibre"); tk("valores de acessório"); tk("valores de campo múltiplo de acessório"); tk("relógios com calibre");
 tk("lançamentos"); tk("medições do gasto"); tk("documentos"); tk("pedaços de documentos no banco");
 tk("serviços e diagnósticos"); tk("peças de serviços"); tk("documentos de serviços");
+tk("itens de listas"); tk("oficinas"); tk("contatos de oficinas"); tk("manutenções"); tk("mudanças de situação de manutenções"); tk("acessórios enviados para manutenção"); tk("documentos de manutenções");
 tk("testes da reserva e observações da energia"); tk("medições do timegrapher"); tk("acessórios"); tk("vínculos de acessório");
 tk("winders"); tk("valores de winder"); tk("valores de campo múltiplo de winder"); tk("posições de winder"); tk("valores de posição de winder");
 tk("valores de campo múltiplo de posição de winder"); tk("sessões em posição de winder"); tk("movimentos de winder"); tk("programas de winder");

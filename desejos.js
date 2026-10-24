@@ -8,11 +8,12 @@ function nomeComFoto(x, embaixo) {
     + el("span", {}, el("a", {"href": "ficha.php?id=" + x.id}, h(x.nome)) + (embaixo ? el("small", {"class": "nota bloco"}, embaixo) : "")));
 }
 
-// o botão que põe o relógio na coleção
+// o botão que põe o relógio na coleção (a situação que faz "na coleção", da API: Cadastros › Listas)
+var POSSE_COLECAO = "colecao";
 function botaoColecao(x, texto, pergunta) {
   return el("form", {"data-recurso": "relogio", "class": "inline", "data-abre": x.id, "onsubmit": "return confirm(" + JSON.stringify(pergunta) + ")"},
     el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": x.id})
-    + el("input", {"type": "hidden", "name": "posse", "value": "colecao"}) + el("button", {"class": "leve"}, texto));
+    + el("input", {"type": "hidden", "name": "posse", "value": POSSE_COLECAO}) + el("button", {"class": "leve"}, texto));
 }
 
 // gravou: com o relógio na coleção, a ficha dele (para a compra, a foto, os campos); senão, a mensagem e a página de novo
@@ -26,6 +27,7 @@ aoGravar = function (form, res) {
 };
 
 api({recurso: "desejos"}).then(function (d) {
+  POSSE_COLECAO = d.posse_colecao || POSSE_COLECAO;
   var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Lista de desejos"))
     + el("div", {"class": "botoes"}, el("a", {"class": "botao", "href": "index.php?novo=1&posse=desejado"}, t("Novo desejo")) + " " + linkRelatorio("desejos", {}, t("Relatório dos desejos"))));
   res += el("p", {"class": "nota"}, d.desejados.length === 0 ? t("Nenhum relógio na lista de desejos. Em \"Novo desejo\" (ou no cadastro de qualquer relógio, na \"Situação na coleção\"), um relógio desejado entra aqui: com a marca, a referência, o preço-alvo, a prioridade e o link. Ele não entra no rodízio nem nos avisos.")

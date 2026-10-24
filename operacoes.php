@@ -265,8 +265,8 @@ function op_campos($acao, $d)
             $erros[] = t("O campo {1} já tem valores: não dá para mudar de quem ele é (do relógio, do acessório, do winder ou da posição).", [1 => $atual["nome"]]);
         }
         if ($alvo === "acessorio") {
-            if ($ac_tipo !== "" && !isset(ACESSORIO_TIPOS[$ac_tipo])) {
-                $erros[] = t("Tipo de acessório: {1} (vazio: todos).", [1 => implode(", ", array_keys(ACESSORIO_TIPOS))]);
+            if ($ac_tipo !== "" && !isset(lista_itens("acessorio_tipo")[$ac_tipo])) {
+                $erros[] = t("Tipo de acessório: {1} (vazio: todos).", [1 => implode(", ", array_keys(lista_itens("acessorio_tipo")))]);
             }
             $alvo_serve = $serve > 0 ? (array_values(array_filter(campos_todos(), function ($x) use ($serve) { return (int)$x["id"] === $serve; }))[0] ?? null) : null;
             if ($serve > 0 && !$alvo_serve) {
@@ -363,7 +363,7 @@ function op_campos($acao, $d)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     array_merge($dados, [(int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM campo")]));
                 $id = ultimo_id();
-                $msg = $alvo === "acessorio" ? t("Campo {1} criado, para os acessórios{2}.", [1 => $c["nome"], 2 => $ac_tipo !== "" ? " (" . mb_strtolower(t(ACESSORIO_TIPOS[$ac_tipo]), "UTF-8") . ")" : ""])
+                $msg = $alvo === "acessorio" ? t("Campo {1} criado, para os acessórios{2}.", [1 => $c["nome"], 2 => $ac_tipo !== "" ? " (" . mb_strtolower(lista_nome("acessorio_tipo", $ac_tipo), "UTF-8") . ")" : ""])
                     : ($alvo === "winder" ? t("Campo {1} criado, para os winders. Nas fórmulas: WINDER(\"{2}\").", [1 => $c["nome"], 2 => $c["identificador"]])
                     : ($alvo === "posicao" ? t("Campo {1} criado, para as posições dos winders. Nas fórmulas: WINDER_POSICAO(\"{2}\").", [1 => $c["nome"], 2 => $c["identificador"]])
                     : t("Campo {1} criado, para {2}. Nas fórmulas: {3}.", [1 => $c["nome"], 2 => no_caminho($no), 3 => $c["identificador"]])));
@@ -954,14 +954,16 @@ function op_relogio($acao, $d)
         $no = array_key_exists("no_id", $d) ? no_do_pedido($d["no_id"]) : ($atual ? ($atual["no_id"] === null ? null : (int)$atual["no_id"]) : null);
         $disp = array_key_exists("disponivel", $d) ? ((string)$d["disponivel"] === "1" ? 1 : 0) : ($atual ? (int)$atual["disponivel"] : 1);
         $copia = array_key_exists("copia_banco", $d) ? ((string)$d["copia_banco"] === "1" ? 1 : 0) : ($atual ? (int)$atual["copia_banco"] : 0);
-        // a situação na coleção: fora dela o relógio fica indisponível (o banco garante); voltando para ela sem dizer o
-        // disponível, ele volta disponível
+        // a situação na coleção (um item da lista relogio_situacao, pelo identificador; o que ela faz é o comportamento dele):
+        // fora da coleção o relógio fica indisponível; voltando para ela sem dizer o disponível, ele volta disponível
         $posse_antes = $atual ? posse_de($atual) : null;
-        $posse = array_key_exists("posse", $d) ? (string)$d["posse"] : ($posse_antes ?? "colecao");
+        $posse = array_key_exists("posse", $d) ? trim((string)$d["posse"]) : ($atual ? (string)$atual["posse"] : (lista_com_comportamento("relogio_situacao", "colecao")["identificador"] ?? "colecao"));
+        $item_posse = lista_itens("relogio_situacao")[$posse] ?? null;
+        $comp = $item_posse["comportamento"] ?? null;
         $nota_posse = "";
-        if (!isset(POSSES[$posse])) {
-            $erros[] = t("Situação na coleção: colecao, desejado, emprestado, vendido ou arquivado.");
-        } elseif ($posse !== "colecao") {
+        if ($item_posse === null) {
+            $erros[] = t("Situação na coleção: {1}.", [1 => implode(", ", array_keys(lista_itens("relogio_situacao")))]);
+        } elseif ($comp !== "colecao") {
             if ($disp === 1 && array_key_exists("disponivel", $d) && $posse_antes !== null) {
                 $nota_posse = t(" Fora da coleção, ele fica indisponível para o rodízio.");
             }
@@ -983,6 +985,17 @@ function op_relogio($acao, $d)
         if ($calibre !== null && $calibre > 0 && valor("SELECT id FROM calibre WHERE id = ?", [$calibre]) === null) {
             $erros[] = t("O calibre não existe.");
         }
+        // em manutenção, ele fica indisponível até ela encerrar: a disponibilidade pedida é a da volta
+        $em_manut = $atual ? manutencao_aberta($id) : null;
+        if ($em_manut !== null && count($erros) === 0) {
+            if ((int)$em_manut["disponivel_antes"] !== $disp) {
+                sql("UPDATE manutencao SET disponivel_antes = ? WHERE id = ?", [$disp, (int)$em_manut["id"]]);
+            }
+            if ($disp === 1 || (int)$em_manut["disponivel_antes"] !== $disp) {
+                $nota_posse .= $disp === 1 ? t(" Em manutenção: ele volta disponível para o rodízio quando ela encerrar.") : t(" Em manutenção: ele volta indisponível para o rodízio quando ela encerrar.");
+            }
+            $disp = 0;
+        }
         if (count($erros) === 0) {
             if ($atual) {
                 sql("UPDATE relogio SET nome = ?, no_id = ?, disponivel = ?, copia_banco = ?, posse = ? WHERE id = ?", [$nome, no_gravar($no), $disp, $copia, $posse, $id]);
@@ -993,25 +1006,8 @@ function op_relogio($acao, $d)
             relogio_copia_banco($id, true);
             // saiu da coleção: os dias dele no plano, de amanhã em diante, saem e são sorteados de novo (hoje fica: troque pelo
             // "trocar por…" ou pelo "Sortear de novo")
-            if ($posse_antes === "colecao" && $posse !== "colecao") {
-                // as sessões abertas dele (no pulso, no sol, no carregador...) fecham agora: fora da coleção, ele não está em lugar nenhum
-                $abertas = linhas("SELECT l.id, t.nome FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND l.fim IS NULL AND t.formato = 'sessao'", [$id]);
-                if (count($abertas) > 0) {
-                    sql("UPDATE lancamento SET fim = ? WHERE relogio_id = ? AND fim IS NULL AND id IN (" . implode(", ", array_map(function ($x) { return (int)$x["id"]; }, $abertas)) . ")",
-                        [date("Y-m-d H:i:s"), $id]);
-                    $nota_posse .= t(" Fechei agora: {1}.", [1 => implode(", ", array_map(function ($x) { return mb_strtolower($x["nome"], "UTF-8"); }, $abertas))]);
-                }
-                $amanha = (hoje_da_colecao())->modify("+1 day");
-                $tirados = (int)valor("SELECT COUNT(*) FROM plano WHERE relogio_id = ? AND data >= ?", [$id, $amanha->format("Y-m-d")]);
-                if ($tirados > 0) {
-                    sql("DELETE FROM plano WHERE relogio_id = ? AND data >= ?", [$id, $amanha->format("Y-m-d")]);
-                    if (valor("SELECT escala_dias FROM modo WHERE id = ?", [modo_ativo()]) !== null) {
-                        gerar_escala($amanha);
-                    } else {
-                        garantir_plano(hoje_da_colecao());
-                    }
-                    $nota_posse .= t(" Saiu do plano de amanhã em diante ({1}{2} de novo).", [1 => $tirados, 2 => $tirados === 1 ? t(" dia sorteado") : t(" dias sorteados")]);
-                }
+            if ($posse_antes === "colecao" && $comp !== "colecao" && $em_manut === null) {
+                $nota_posse .= relogio_sai_do_rodizio($id, false);
             }
             // os valores: só dos campos que valem para o relógio (no ponto e na situação em que ficou)
             $campos = campos_do_relogio(["no_id" => $no, "posse" => $posse]);
@@ -1042,7 +1038,7 @@ function op_relogio($acao, $d)
                 $aviso_copia = $sistema !== null ? t(" (A cópia no banco dos documentos não muda: a Configuração da coleção decide por todos os relógios, {1}.)", [1 => $sistema ? t("todos os arquivos") : t("nenhum arquivo")])
                     : ($copia === 1 ? t(" Os documentos dele vão para o banco aos poucos, pelo cron.") : t(" As cópias no banco dos documentos dele que não pedem a própria cópia saem aos poucos, pelo cron (os arquivos continuam na pasta)."));
             }
-            $msg = ($atual ? t("Relógio {1} salvo.", [1 => $nome]) : t("Relógio {1} criado {2}{3}.", [1 => $nome, 2 => $no === null ? t("na raiz da árvore") : "em " . no_caminho($no), 3 => $posse !== "colecao" ? " (" . mb_strtolower(POSSES[$posse], "UTF-8") . ")" : ""])) . $nota_posse . $aviso_copia
+            $msg = ($atual ? t("Relógio {1} salvo.", [1 => $nome]) : t("Relógio {1} criado {2}{3}.", [1 => $nome, 2 => $no === null ? t("na raiz da árvore") : "em " . no_caminho($no), 3 => $comp !== "colecao" ? " (" . mb_strtolower($item_posse["nome"], "UTF-8") . ")" : ""])) . $nota_posse . $aviso_copia
                 . (count($ignorados) > 0 ? t(" Não gravei: {1}. Ficou o que já estava.", [1 => implode("; ", $ignorados)]) : "");
         }
     } elseif ($acao === "excluir" && $atual) {
@@ -1365,14 +1361,14 @@ function op_acessorios($acao, $d)
         $erros[] = t("Acessório não encontrado.");
     } elseif ($acao === "salvar") {
         $nome = array_key_exists("nome", $d) ? trim((string)$d["nome"]) : (string)($atual["nome"] ?? "");
-        $tipo = array_key_exists("tipo", $d) ? trim((string)$d["tipo"]) : (string)($atual["tipo"] ?? "pulseira");
+        $tipo = array_key_exists("tipo", $d) ? trim((string)$d["tipo"]) : (string)($atual["tipo"] ?? lista_padrao("acessorio_tipo", "pulseira"));
         $rel = array_key_exists("relogio_id", $d) ? (int)$d["relogio_id"] : ($atual && $atual["relogio_id"] !== null ? (int)$atual["relogio_id"] : 0);
         $obs = array_key_exists("observacao", $d) ? trim((string)$d["observacao"]) : (string)($atual["observacao"] ?? "");
         if ($nome === "" || mb_strlen($nome) > 120) {
             $erros[] = t("Dê um nome ao acessório (até 120 caracteres).");
         }
-        if (!isset(ACESSORIO_TIPOS[$tipo])) {
-            $erros[] = t("Tipo: {1}.", [1 => implode(", ", array_keys(ACESSORIO_TIPOS))]);
+        if (!isset(lista_itens("acessorio_tipo")[$tipo])) {
+            $erros[] = t("Tipo: {1}.", [1 => implode(", ", array_keys(lista_itens("acessorio_tipo")))]);
         }
         $r = $rel > 0 ? linha("SELECT id, nome FROM relogio WHERE id = ?", [$rel]) : null;
         if ($rel > 0 && !$r) {
@@ -1383,7 +1379,7 @@ function op_acessorios($acao, $d)
         }
         // os valores dos campos do acessório (os do tipo dele: Cadastros › Campos, para acessório); só muda o que vier
         $gravar_a = [];
-        $campos_a = campos_de_acessorio(isset(ACESSORIO_TIPOS[$tipo]) ? $tipo : null);
+        $campos_a = campos_de_acessorio(isset(lista_itens("acessorio_tipo")[$tipo]) ? $tipo : null);
         foreach ((array)($d["valores"] ?? []) as $ident => $v) {
             if (!isset($campos_a[$ident])) {
                 $erros[] = t("Campo desconhecido: {1}.", [1 => $ident]);
@@ -1416,7 +1412,7 @@ function op_acessorios($acao, $d)
                     }
                 }
             }
-            $msg = t("Acessório {1} ({2}){3}{4}.", [1 => $nome, 2 => mb_strtolower(t(ACESSORIO_TIPOS[$tipo]), "UTF-8"), 3 => $atual ? t(" salvo") : t(" cadastrado"), 4 => $r ? t(", do {1}", [1 => $r["nome"]]) : t(", solto (de nenhum relógio)")]);
+            $msg = t("Acessório {1} ({2}){3}{4}.", [1 => $nome, 2 => mb_strtolower(lista_nome("acessorio_tipo", $tipo), "UTF-8"), 3 => $atual ? t(" salvo") : t(" cadastrado"), 4 => $r ? t(", do {1}", [1 => $r["nome"]]) : t(", solto (de nenhum relógio)")]);
         }
     } elseif ($acao === "excluir" && $atual) {
         sql("DELETE FROM acessorio WHERE id = ?", [$id]);
@@ -1872,15 +1868,17 @@ function op_winder_posicoes($acao, $d)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Os serviços e diagnósticos de um relógio. Ações:
-//   salvar (id: 0 ou sem, um novo; relogio_id, só no novo; data AAAA-MM-DD, até hoje; tipo: revisao, pilha, estanqueidade,
-//           regulagem, polimento, reparo, diagnostico ou outro; responsavel; descricao; mao_de_obra (R$); pecas: uma por
-//           linha, "nome; custo" (o custo é opcional); estanqueidade: aprovado, reprovado ou vazio (não testada; o tipo
-//           estanqueidade pede o resultado); estanqueidade_bar (a pressão do teste, só com o resultado); marcha_antes e
+// Os serviços e diagnósticos de um relógio: cada um é o encerramento de uma manutenção. Ações:
+//   salvar (id: 0 ou sem, um novo; relogio_id, só no novo; manutencao_id, só no novo: a manutenção do relógio de que ele é
+//           o encerramento; sem ela, uma manutenção já encerrada, na oficina oficina_id (sem ela, a sua, "Eu mesmo (em
+//           casa)"), no dia do serviço; data AAAA-MM-DD, até hoje; tipo: o identificador de um tipo de serviço (Manutenção ›
+//           Listas; sem ele, o da manutenção, senão revisao); descricao; mao_de_obra (R$); pecas: uma por
+//           linha, "nome; custo" (o custo é opcional); estanqueidade: o identificador de um resultado (aprovado, reprovado)
+//           ou vazio (não testada; o tipo estanqueidade pede o resultado); estanqueidade_bar (a pressão do teste, só com o resultado); marcha_antes e
 //           marcha_depois (s/dia, a que o profissional mediu; + adianta); garantia_ate (AAAA-MM-DD, a partir da data);
 //           observacao (texto livre, sem limite); documentos: os ids dos documentos do relógio que são do serviço, separados por vírgula). Só o que
-//           vem no pedido muda. A revisão e a troca de pilha viram também a marcação do tipo de lançamento de mesmo nome
-//           (revisao, pilha), na data do serviço, quando o tipo vale para o relógio: os avisos e as fórmulas de sempre contam
+//           vem no pedido muda. O tipo de serviço com a marca (o texto do item: o tipo de lançamento, revisao, pilha) vira
+//           também essa marcação, na data do serviço, quando o tipo de lançamento vale para o relógio: os avisos e as fórmulas de sempre contam
 //           o serviço (ULTIMA_DATA("revisao")); mudar a data muda a marcação, e mudar o tipo a desfaz.
 //   excluir (id): sai o serviço, as peças e a ligação com os documentos (os documentos ficam no relógio), e a marcação
 //           que ele criou.
@@ -1909,16 +1907,27 @@ function op_servicos($acao, $d)
         } elseif ($data > hoje_da_colecao()->format("Y-m-d")) {
             $erros[] = t("A data do serviço não pode ser no futuro.");
         }
-        $tipo = $texto("tipo") !== "" ? $texto("tipo") : "revisao";
-        if (!isset(SERVICO_TIPOS[$tipo])) {
-            $erros[] = t("Tipo: {1}.", [1 => implode(", ", array_keys(SERVICO_TIPOS))]);
+        // a manutenção de que ele é o encerramento (só no novo): manutencao_id, uma do relógio; sem ela, o serviço ganha uma
+        // manutenção já encerrada (Retirado), na oficina oficina_id (sem ela, a sua: "Eu mesmo (em casa)"), no dia dele
+        $manut = null;
+        $oficina = null;
+        if (!$atual && (int)($d["manutencao_id"] ?? 0) > 0) {
+            $manut = linha("SELECT * FROM manutencao WHERE id = ? AND relogio_id = ?", [(int)$d["manutencao_id"], $rid]);
+            if (!$manut) {
+                $erros[] = t("A manutenção não é deste relógio.");
+            }
+        } elseif (!$atual) {
+            $oficina = (int)($d["oficina_id"] ?? 0) > 0 ? linha("SELECT id, nome FROM oficina WHERE id = ?", [(int)$d["oficina_id"]]) : oficina_propria();
+            if (!$oficina) {
+                $erros[] = t("A oficina não existe (sem ela, o serviço vai para a sua: Manutenção › Oficinas).");
+            }
         }
-        $resp = $texto("responsavel");
+        $tipo = $texto("tipo") !== "" ? $texto("tipo") : ($manut ? (string)(lista_item_por_id("servico_tipo", (int)$manut["tipo_id"])["identificador"] ?? "") : lista_padrao("servico_tipo", "revisao"));
+        if (!isset(lista_itens("servico_tipo")[$tipo])) {
+            $erros[] = t("Tipo: {1}.", [1 => implode(", ", array_keys(lista_itens("servico_tipo")))]);
+        }
         $desc = $texto("descricao");
         $obs = $texto("observacao");
-        if (mb_strlen($resp) > 120) {
-            $erros[] = t("Quem fez: até 120 caracteres.");
-        }
         if (mb_strlen($desc) > 4000) {
             $erros[] = t("A descrição vai até 4000 caracteres.");
         }
@@ -1942,11 +1951,12 @@ function op_servicos($acao, $d)
             $erros[] = t("A mão de obra não pode ser negativa.");
         }
         $est = $texto("estanqueidade");
-        if ($est !== "" && !in_array($est, ["aprovado", "reprovado"], true)) {
-            $erros[] = t("Estanqueidade: aprovado, reprovado ou vazio (não testada).");
+        $resultados = implode(", ", array_keys(lista_itens("estanqueidade")));
+        if ($est !== "" && !isset(lista_itens("estanqueidade")[$est])) {
+            $erros[] = t("Estanqueidade: {1} ou vazio (não testada).", [1 => $resultados]);
         }
         if ($tipo === "estanqueidade" && $est === "") {
-            $erros[] = t("O teste de estanqueidade pede o resultado: aprovado ou reprovado.");
+            $erros[] = t("O teste de estanqueidade pede o resultado: {1}.", [1 => $resultados]);
         }
         $bar = $num("estanqueidade_bar", $atual["estanqueidade_bar"] ?? null, t("Pressão do teste"));
         if ($bar !== null && ($bar <= 0 || $bar > 1000)) {
@@ -2008,14 +2018,15 @@ function op_servicos($acao, $d)
             $docs = array_keys($docs);
         }
         if (count($erros) === 0) {
-            $campos = [$data, $tipo, $resp !== "" ? $resp : null, $desc !== "" ? $desc : null, $mao, $est !== "" ? $est : null, $bar, $m_antes, $m_depois,
+            $campos = [$data, $tipo, $desc !== "" ? $desc : null, $mao, $est !== "" ? $est : null, $bar, $m_antes, $m_depois,
                 $garantia !== "" ? $garantia : null, $obs !== "" ? $obs : null];
             if ($atual) {
-                sql("UPDATE servico SET data = ?, tipo = ?, responsavel = ?, descricao = ?, mao_de_obra = ?, estanqueidade = ?, estanqueidade_bar = ?, marcha_antes = ?, marcha_depois = ?,
+                sql("UPDATE servico SET data = ?, tipo = ?, descricao = ?, mao_de_obra = ?, estanqueidade = ?, estanqueidade_bar = ?, marcha_antes = ?, marcha_depois = ?,
                     garantia_ate = ?, observacao = ? WHERE id = ?", array_merge($campos, [$id]));
             } else {
-                sql("INSERT INTO servico (relogio_id, data, tipo, responsavel, descricao, mao_de_obra, estanqueidade, estanqueidade_bar, marcha_antes, marcha_depois, garantia_ate,
-                    observacao, criado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())", array_merge([$rid], $campos));
+                $mid = $manut ? (int)$manut["id"] : manutencao_encerrada($rid, (int)$oficina["id"], $tipo, $data);
+                sql("INSERT INTO servico (relogio_id, manutencao_id, data, tipo, descricao, mao_de_obra, estanqueidade, estanqueidade_bar, marcha_antes, marcha_depois, garantia_ate,
+                    observacao, criado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())", array_merge([$rid, $mid], $campos));
                 $id = ultimo_id();
             }
             if ($pecas !== null) {
@@ -2033,7 +2044,8 @@ function op_servicos($acao, $d)
             // a marcação da revisão e da troca de pilha: na data do serviço (ao meio-dia), do tipo de mesmo nome, se ele vale
             // para o relógio; noutro tipo (ou sem o tipo de lançamento), a marcação que o serviço tinha sai
             $lan = $atual && $atual["lancamento_id"] !== null ? linha("SELECT * FROM lancamento WHERE id = ?", [(int)$atual["lancamento_id"]]) : null;
-            $tl = in_array($tipo, SERVICO_MARCA, true) ? (lancamento_tipos_do_relogio($r)[$tipo] ?? null) : null;
+            $marca = lista_itens("servico_tipo")[$tipo]["texto"] ?? null;
+            $tl = $marca !== null ? (lancamento_tipos_do_relogio($r)[$marca] ?? null) : null;
             $quando = $data . " 12:00:00";
             $marcou = "";
             if ($tl !== null && $tl["formato"] === "instantaneo") {
@@ -2052,7 +2064,7 @@ function op_servicos($acao, $d)
                 sql("UPDATE servico SET lancamento_id = NULL WHERE id = ?", [$id]);
             }
             $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
-            $msg = t("Serviço {1} de {2}{3}, do {4}.", [1 => mb_strtolower(t(SERVICO_TIPOS[$tipo]), "UTF-8"), 2 => data_txt(strtotime($data . " 00:00:00")),
+            $msg = t("Serviço {1} de {2}{3}, do {4}.", [1 => mb_strtolower(lista_nome("servico_tipo", $tipo), "UTF-8"), 2 => data_txt(strtotime($data . " 00:00:00")),
                 3 => $atual ? t(" salvo") : t(" registrado"), 4 => $r["nome"]]) . $marcou;
         }
     } elseif ($acao === "excluir" && $atual) {
@@ -2065,6 +2077,480 @@ function op_servicos($acao, $d)
         $id = 0;
     } elseif ($acao === "excluir") {
         $erros[] = t("Informe o serviço (id).");
+    } else {
+        $erros[] = t("Ação desconhecida: use salvar ou excluir.");
+    }
+    return resultado($erros, $msg, ["id" => $id]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// A manutenção: o relógio numa oficina, da ida à volta. Sem manutenção cadastrada, o relógio não vai a lugar nenhum: é
+// ela que o põe em manutenção. Ações:
+//   salvar (id: 0 ou sem, uma nova; relogio_id, só na nova: um relógio da coleção, na coleção ou emprestado, sem outra
+//           manutenção aberta; oficina_id: uma oficina da coleção (Manutenção › Oficinas); situacao: o identificador de
+//           uma situação (Manutenção › Listas; sem ela, na nova, a primeira das abertas; mudar por aqui é o mesmo que a
+//           ação situacao); tipo: o identificador do tipo de serviço pedido (sem ele, na nova, revisao); problema (até
+//           2000); os (o número da ordem de serviço, até 60); enviado (AAAA-MM-DD, até hoje; sem ele, hoje); previsao
+//           (AAAA-MM-DD, a partir do envio; passou e ela ainda está aberta: o aviso Cobrar a oficina); orcamento (R$, não
+//           negativo); orcamento_data (AAAA-MM-DD, a partir do envio); encerrado (AAAA-MM-DD: só numa situação que
+//           encerra ou cancela; sem ele, o dia da mudança); observacao (até 2000); acessorios (os ids dos acessórios da
+//           coleção que foram junto, separados por vírgula); documentos (os ids dos documentos do relógio: a OS, o
+//           orçamento, as fotos da entrega). Só o que vem no pedido muda. Aberta, o relógio fica em manutenção:
+//           indisponível (a disponibilidade de antes volta quando ela fecha), as sessões abertas dele fecham (o winder
+//           deixa a posição livre), sai do plano de amanhã em diante (sorteado de novo) e, se era o de hoje, hoje fica
+//           livre (sem a Configuração deixar trocar o relógio de hoje, sem relógio); os avisos dele param, menos os da
+//           manutenção.
+//   situacao (id; situacao; quando: AAAA-MM-DD HH:MM, até agora, a partir do envio; sem ele, agora; observacao, até 500;
+//           encerrado): a mudança fica na história. Numa que encerra (Retirado), o relógio volta e a manutenção vira um
+//           serviço (o tipo, o orçamento como mão de obra e os documentos dela; complete no serviço); numa que cancela,
+//           volta sem serviço; reabrir (voltar a uma aberta) põe o relógio de novo em manutenção, se ela não tem serviço.
+//   excluir (id): sai a manutenção, a história, os serviços dela (com a marcação de cada um) e as ligações; aberta, o
+//           relógio volta antes.
+// ---------------------------------------------------------------------------------------------------------------------
+function op_manutencao($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $extra = [];
+    $id = (int)($d["id"] ?? 0);
+    $atual = $id > 0 ? linha("SELECT * FROM manutencao WHERE id = ?", [$id]) : null;
+    $data_ok = function ($v) { return preg_match("/^\\d{4}-\\d{2}-\\d{2}$/", $v) === 1 && checkdate((int)substr($v, 5, 2), (int)substr($v, 8, 2), (int)substr($v, 0, 4)); };
+    $hoje = hoje_da_colecao()->format("Y-m-d");
+    if ($id > 0 && !$atual) {
+        $erros[] = t("Manutenção não encontrada.");
+    } elseif ($acao === "salvar") {
+        $texto = function ($k) use ($d, $atual) { return array_key_exists($k, $d) ? trim((string)$d[$k]) : trim((string)($atual[$k] ?? "")); };
+        $rid = $atual ? (int)$atual["relogio_id"] : (int)($d["relogio_id"] ?? 0);
+        $r = $rid > 0 ? linha("SELECT * FROM relogio WHERE id = ?", [$rid]) : null;
+        if (!$r) {
+            $erros[] = t("relógio não encontrado");
+        } elseif (!$atual && !da_colecao($r)) {
+            $erros[] = t("Só um relógio da coleção (na coleção ou emprestado) vai para a manutenção; o {1} está {2}.", [1 => $r["nome"], 2 => mb_strtolower(posse_texto($r), "UTF-8")]);
+        }
+        $of_id = array_key_exists("oficina_id", $d) ? (int)$d["oficina_id"] : ($atual ? (int)$atual["oficina_id"] : 0);
+        $of = $of_id > 0 ? linha("SELECT id, nome FROM oficina WHERE id = ?", [$of_id]) : null;
+        if (!$of) {
+            $erros[] = t("Escolha a oficina (Manutenção › Oficinas).");
+        }
+        $sit_id = $texto("situacao") !== "" && array_key_exists("situacao", $d) ? (lista_itens("manutencao_situacao")[$texto("situacao")]["id"] ?? 0)
+            : ($atual ? (int)$atual["situacao_id"] : (lista_com_comportamento("manutencao_situacao", "aberta")["id"] ?? 0));
+        $sit = lista_item_por_id("manutencao_situacao", (int)$sit_id);
+        if ($sit === null) {
+            $erros[] = t("Situação: {1}.", [1 => implode(", ", array_keys(lista_itens("manutencao_situacao")))]);
+        }
+        $tipo_ident = array_key_exists("tipo", $d) && trim((string)$d["tipo"]) !== "" ? trim((string)$d["tipo"])
+            : ($atual ? (string)(lista_item_por_id("servico_tipo", (int)$atual["tipo_id"])["identificador"] ?? "") : lista_padrao("servico_tipo", "revisao"));
+        $tipo = lista_itens("servico_tipo")[$tipo_ident] ?? null;
+        if ($tipo === null) {
+            $erros[] = t("Tipo: {1}.", [1 => implode(", ", array_keys(lista_itens("servico_tipo")))]);
+        }
+        $problema = $texto("problema");
+        $os = $texto("os");
+        $obs = $texto("observacao");
+        if (mb_strlen($problema) > 2000 || mb_strlen($obs) > 2000) {
+            $erros[] = t("O problema e a observação vão até 2000 caracteres.");
+        }
+        if (mb_strlen($os) > 60) {
+            $erros[] = t("A ordem de serviço vai até 60 caracteres.");
+        }
+        $enviado = $texto("enviado") !== "" ? substr($texto("enviado"), 0, 10) : $hoje;
+        if (!$data_ok($enviado)) {
+            $erros[] = t("Enviado: AAAA-MM-DD.");
+        } elseif ($enviado > $hoje) {
+            $erros[] = t("O envio não pode ser no futuro.");
+        }
+        $datas = [];
+        foreach (["previsao" => t("Previsão"), "orcamento_data" => t("Data do orçamento")] as $k => $rot) {
+            $v = $texto($k) !== "" ? substr($texto($k), 0, 10) : "";
+            if ($v !== "" && !$data_ok($v)) {
+                $erros[] = t("{1}: AAAA-MM-DD.", [1 => $rot]);
+            } elseif ($v !== "" && $v < $enviado) {
+                $erros[] = t("{1}: a partir do envio.", [1 => $rot]);
+            }
+            $datas[$k] = $v !== "" ? $v : null;
+        }
+        $orc = null;
+        if ($texto("orcamento") !== "") {
+            $orc = numero_br($texto("orcamento"));
+            if ($orc === null || $orc < 0) {
+                $erros[] = t("O orçamento é um número, não negativo.");
+            }
+        }
+        // o que foi junto (os acessórios da coleção) e os documentos (os do relógio)
+        $ids = function ($k) use ($d) {
+            return array_values(array_unique(array_filter(array_map("intval", is_array($d[$k]) ? $d[$k] : preg_split("/[,\\s]+/", (string)$d[$k])), function ($x) { return $x > 0; })));
+        };
+        $acess = array_key_exists("acessorios", $d) ? $ids("acessorios") : null;
+        foreach ($acess ?? [] as $a) {
+            if (valor("SELECT id FROM acessorio WHERE id = ?", [$a]) === null) {
+                $erros[] = t("O acessório {1} não é da coleção.", [1 => $a]);
+            }
+        }
+        $docs = array_key_exists("documentos", $d) ? $ids("documentos") : null;
+        foreach ($docs ?? [] as $x) {
+            if ((int)valor("SELECT COUNT(*) FROM documento WHERE id = ? AND relogio_id = ?", [$x, $rid]) === 0) {
+                $erros[] = t("Documento {1} não é deste relógio.", [1 => $x]);
+            }
+        }
+        $aberta_outra = $r ? manutencao_aberta($rid) : null;
+        if (!$atual && $aberta_outra !== null && ($sit["comportamento"] ?? "") === "aberta") {
+            $erros[] = t("O {1} já está em manutenção: {2}, desde {3}.", [1 => $r["nome"], 2 => $aberta_outra["oficina"], 3 => data_txt(strtotime($aberta_outra["enviado"] . " 00:00:00"))]);
+        }
+        if (count($erros) === 0) {
+            $campos = [(int)$of["id"], $tipo["id"], $problema !== "" ? $problema : null, $os !== "" ? $os : null, $enviado, $datas["previsao"], $orc, $datas["orcamento_data"], $obs !== "" ? $obs : null];
+            $nota = "";
+            if ($atual) {
+                sql("UPDATE manutencao SET oficina_id = ?, tipo_id = ?, problema = ?, os = ?, enviado = ?, previsao = ?, orcamento = ?, orcamento_data = ?, observacao = ? WHERE id = ?",
+                    array_merge($campos, [$id]));
+            } else {
+                // nova: entra na primeira situação aberta e, se a pedida é outra, muda para ela logo depois (a história fica)
+                $abre = ($sit["comportamento"] ?? "") === "aberta" ? $sit : lista_com_comportamento("manutencao_situacao", "aberta");
+                sql("INSERT INTO manutencao (relogio_id, oficina_id, tipo_id, problema, os, enviado, previsao, orcamento, orcamento_data, observacao, situacao_id, disponivel_antes, criado)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())", array_merge([$rid], $campos, [$abre["id"], (int)$r["disponivel"]]));
+                $id = ultimo_id();
+                sql("INSERT INTO manutencao_evento (manutencao_id, situacao_id, quando, observacao) VALUES (?, ?, ?, NULL)",
+                    [$id, $abre["id"], $enviado === $hoje ? date("Y-m-d H:i:s") : $enviado . " 12:00:00"]);
+                // a que já nasce fechada (o registro de uma manutenção passada) não mexe no relógio
+                $registro = ($sit["comportamento"] ?? "") !== "aberta";
+                if (!$registro) {
+                    sql("UPDATE relogio SET disponivel = 0 WHERE id = ?", [$rid]);
+                    $nota .= relogio_sai_do_rodizio($rid, true);
+                }
+                $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+                $atual = linha("SELECT * FROM manutencao WHERE id = ?", [$id]);
+            }
+            if ($acess !== null) {
+                sql("DELETE FROM manutencao_acessorio WHERE manutencao_id = ?", [$id]);
+                foreach ($acess as $a) {
+                    sql("INSERT INTO manutencao_acessorio (manutencao_id, acessorio_id) VALUES (?, ?)", [$id, $a]);
+                }
+            }
+            if ($docs !== null) {
+                sql("DELETE FROM manutencao_documento WHERE manutencao_id = ?", [$id]);
+                foreach ($docs as $x) {
+                    sql("INSERT INTO manutencao_documento (manutencao_id, documento_id) VALUES (?, ?)", [$id, $x]);
+                }
+            }
+            if ((int)$atual["situacao_id"] !== (int)$sit["id"]) {
+                $mud = manutencao_situacao_mudar($atual, $sit, time(), null, $texto("encerrado") !== "" ? substr($texto("encerrado"), 0, 10) : (!empty($registro) ? $enviado : null),
+                    empty($registro));
+                $erros = $mud["erros"];
+                $nota .= $mud["nota"];
+                $extra["servico_id"] = $mud["servico_id"];
+            }
+            $msg = t("Manutenção do {1} {2}: {3}, {4}.", [1 => $r["nome"], 2 => $id === (int)($d["id"] ?? 0) ? t("salva") : t("cadastrada"), 3 => $of["nome"],
+                4 => mb_strtolower(lista_item_por_id("manutencao_situacao", (int)valor("SELECT situacao_id FROM manutencao WHERE id = ?", [$id]))["nome"] ?? "", "UTF-8")]) . $nota;
+        }
+    } elseif ($acao === "situacao" && $atual) {
+        $sit = lista_itens("manutencao_situacao")[trim((string)($d["situacao"] ?? ""))] ?? null;
+        $quando = trim((string)($d["quando"] ?? "")) === "" ? time() : strtotime(str_replace("T", " ", (string)$d["quando"]));
+        $obs = trim((string)($d["observacao"] ?? ""));
+        if ($sit === null) {
+            $erros[] = t("Situação: {1}.", [1 => implode(", ", array_keys(lista_itens("manutencao_situacao")))]);
+        }
+        if ($quando === false || $quando > time() + 60) {
+            $erros[] = t("Quando: AAAA-MM-DD HH:MM, até agora.");
+        } elseif (date("Y-m-d", $quando) < substr((string)$atual["enviado"], 0, 10)) {
+            $erros[] = t("A mudança não pode ser antes do envio.");
+        }
+        if (mb_strlen($obs) > 500) {
+            $erros[] = t("A observação vai até 500 caracteres.");
+        }
+        if (count($erros) === 0) {
+            $enc = trim((string)($d["encerrado"] ?? ""));
+            $mud = manutencao_situacao_mudar($atual, $sit, (int)$quando, $obs !== "" ? $obs : null, $enc !== "" ? substr($enc, 0, 10) : null);
+            $erros = $mud["erros"];
+            $extra["servico_id"] = $mud["servico_id"];
+            $msg = t("Manutenção do {1}: {2}.", [1 => (string)valor("SELECT nome FROM relogio WHERE id = ?", [(int)$atual["relogio_id"]]), 2 => mb_strtolower($sit["nome"], "UTF-8")]) . $mud["nota"];
+        }
+    } elseif ($acao === "excluir" && $atual) {
+        $nome = (string)valor("SELECT nome FROM relogio WHERE id = ?", [(int)$atual["relogio_id"]]);
+        $nota = (lista_item_por_id("manutencao_situacao", (int)$atual["situacao_id"])["comportamento"] ?? "") === "aberta" ? manutencao_volta($atual) : "";
+        foreach (linhas("SELECT id FROM servico WHERE manutencao_id = ?", [$id]) as $s) {
+            op_servicos("excluir", ["id" => (int)$s["id"]]);
+        }
+        sql("DELETE FROM manutencao WHERE id = ?", [$id]);
+        $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+        $msg = t("Manutenção do {1} excluída.", [1 => $nome]) . $nota;
+        $id = 0;
+    } elseif (in_array($acao, ["situacao", "excluir"], true)) {
+        $erros[] = t("Informe a manutenção (id).");
+    } else {
+        $erros[] = t("Ação desconhecida: use salvar, situacao ou excluir.");
+    }
+    return resultado($erros, $msg, array_merge(["id" => $id], $extra));
+}
+
+// Muda a situação de uma manutenção ($m, a linha; $sit, o item; $quando, em segundos; $obs; $encerrado, AAAA-MM-DD ou null:
+// o dia da mudança): a história ganha a mudança e, conforme o que a situação faz, o relógio volta (encerra, cancela) ou vai
+// de novo (reabrir), e a que encerra vira um serviço. $mexe_no_relogio false: o registro de uma manutenção passada (o relógio
+// não foi a lugar nenhum agora). Devolve {erros, nota, servico_id}
+function manutencao_situacao_mudar($m, $sit, $quando, $obs, $encerrado, $mexe_no_relogio = true)
+{
+    $de = lista_item_por_id("manutencao_situacao", (int)$m["situacao_id"])["comportamento"] ?? "aberta";
+    $para = $sit["comportamento"];
+    $id = (int)$m["id"];
+    $rid = (int)$m["relogio_id"];
+    $servicos = (int)valor("SELECT COUNT(*) FROM servico WHERE manutencao_id = ?", [$id]);
+    $enc = $encerrado ?? date("Y-m-d", $quando);
+    $nota = "";
+    $servico_id = null;
+    if ($para !== "encerra" && $de === "encerra" && $servicos > 0) {
+        return ["erros" => [t("A manutenção já virou serviço: para mudar a situação, exclua antes o serviço dela.")], "nota" => "", "servico_id" => null];
+    }
+    if ($para === "aberta" && $de !== "aberta") {
+        $outra = manutencao_aberta($rid);
+        if ($outra !== null) {
+            return ["erros" => [t("O relógio já está noutra manutenção aberta: {1}.", [1 => $outra["oficina"]])], "nota" => "", "servico_id" => null];
+        }
+    }
+    if ($para !== "aberta" && ($enc < substr((string)$m["enviado"], 0, 10) || $enc > hoje_da_colecao()->format("Y-m-d"))) {
+        return ["erros" => [t("O encerramento vai do envio até hoje.")], "nota" => "", "servico_id" => null];
+    }
+    sql("UPDATE manutencao SET situacao_id = ? WHERE id = ?", [$sit["id"], $id]);
+    sql("INSERT INTO manutencao_evento (manutencao_id, situacao_id, quando, observacao) VALUES (?, ?, ?, ?)", [$id, $sit["id"], date("Y-m-d H:i:s", $quando), $obs]);
+    $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+    if ($de === "aberta" && $para !== "aberta") {
+        sql("UPDATE manutencao SET encerrado = ? WHERE id = ?", [$enc, $id]);
+        $nota .= $mexe_no_relogio ? manutencao_volta($m) : "";
+    } elseif ($de !== "aberta" && $para === "aberta") {
+        $r = linha("SELECT disponivel FROM relogio WHERE id = ?", [$rid]);
+        sql("UPDATE manutencao SET encerrado = NULL, disponivel_antes = ? WHERE id = ?", [(int)$r["disponivel"], $id]);
+        sql("UPDATE relogio SET disponivel = 0 WHERE id = ?", [$rid]);
+        $nota .= t(" Voltou para a manutenção.") . relogio_sai_do_rodizio($rid, true);
+    }
+    if ($para === "encerra" && $servicos === 0) {
+        $tipo = lista_item_por_id("servico_tipo", (int)$m["tipo_id"]);
+        $docs = array_column(linhas("SELECT documento_id FROM manutencao_documento WHERE manutencao_id = ?", [$id]), "documento_id");
+        $fim = (string)(valor("SELECT encerrado FROM manutencao WHERE id = ?", [$id]) ?? $enc);
+        $sv = op_servicos("salvar", ["relogio_id" => $rid, "manutencao_id" => $id, "data" => substr($fim, 0, 10), "tipo" => $tipo["identificador"] ?? "",
+            "mao_de_obra" => $m["orcamento"] === null ? "" : (string)$m["orcamento"], "estanqueidade" => "", "documentos" => implode(",", $docs)]);
+        if ($sv["ok"]) {
+            $servico_id = (int)$sv["id"];
+            $nota .= t(" Virou o serviço de {1}: complete o que foi feito, as peças e o custo no serviço.", [1 => data_txt(strtotime(substr($fim, 0, 10) . " 00:00:00"))]);
+        } else {
+            $nota .= t(" O serviço não foi criado ({1}): registre-o no quadro Serviços do relógio.", [1 => implode(" ", $sv["erros"])]);
+        }
+    }
+    return ["erros" => [], "nota" => $nota, "servico_id" => $servico_id];
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// As oficinas da coleção (Manutenção › Oficinas): quem cuida dos relógios, com quantos contatos quiser. Ações:
+//   salvar (id: 0 ou sem, uma nova; nome, até 120, sem repetir na coleção; tipo: o identificador de um tipo de oficina
+//           (Manutenção › Listas; sem ele, na nova, relojoeiro); endereco (até 200), numero (20), complemento (80), bairro
+//           (80), cidade (80), uf (40), cep (20), horario (até 200), observacao (até 2000); contatos: a lista inteira (os
+//           de antes saem), cada um com tipo (o identificador de um tipo de contato), valor (até 200: o número, o e-mail, o
+//           endereço), pessoa (até 120), observacao (até 200) e principal (1: o primeiro da lista; só um), em
+//           contatos[0][tipo]=... ou num JSON; até 30). Só o que vem no pedido muda.
+//   excluir (id): só a oficina sem manutenções (com elas, ela fica: é a história delas); a sua ("Eu mesmo (em casa)", a
+//           única do tipo que faz "você mesmo") também fica.
+// ---------------------------------------------------------------------------------------------------------------------
+function op_oficinas($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $id = (int)($d["id"] ?? 0);
+    $atual = $id > 0 ? linha("SELECT * FROM oficina WHERE id = ?", [$id]) : null;
+    if ($id > 0 && !$atual) {
+        $erros[] = t("Oficina não encontrada.");
+    } elseif ($acao === "salvar") {
+        $texto = function ($k) use ($d, $atual) { return array_key_exists($k, $d) ? trim((string)$d[$k]) : trim((string)($atual[$k] ?? "")); };
+        $nome = $texto("nome");
+        if ($nome === "" || mb_strlen($nome) > 120) {
+            $erros[] = t("Dê um nome à oficina (até 120 caracteres).");
+        } elseif (valor("SELECT id FROM oficina WHERE nome = ? AND id <> ?", [$nome, $id]) !== null) {
+            $erros[] = t("Já há a oficina {1}.", [1 => $nome]);
+        }
+        $tipo_ident = array_key_exists("tipo", $d) && trim((string)$d["tipo"]) !== "" ? trim((string)$d["tipo"])
+            : ($atual ? (string)(lista_item_por_id("oficina_tipo", (int)$atual["tipo_id"])["identificador"] ?? "") : lista_padrao("oficina_tipo", "relojoeiro"));
+        $tipo = lista_itens("oficina_tipo")[$tipo_ident] ?? null;
+        if ($tipo === null) {
+            $erros[] = t("Tipo: {1}.", [1 => implode(", ", array_keys(lista_itens("oficina_tipo")))]);
+        }
+        $lim = ["endereco" => 200, "numero" => 20, "complemento" => 80, "bairro" => 80, "cidade" => 80, "uf" => 40, "cep" => 20, "horario" => 200, "observacao" => 2000];
+        $vals = [];
+        foreach ($lim as $k => $n) {
+            $vals[$k] = $texto($k);
+            if (mb_strlen($vals[$k]) > $n) {
+                $erros[] = t("{1}: até {2} caracteres.", [1 => $k, 2 => $n]);
+            }
+        }
+        $contatos = null;
+        if (array_key_exists("contatos", $d)) {
+            $lista_c = is_array($d["contatos"]) ? $d["contatos"] : (trim((string)$d["contatos"]) === "" ? [] : json_decode((string)$d["contatos"], true));
+            if (!is_array($lista_c)) {
+                $erros[] = t("Contatos: uma lista (contatos[0][tipo]=...) ou um JSON.");
+                $lista_c = [];
+            }
+            if (count($lista_c) > 30) {
+                $erros[] = t("No máximo 30 contatos por oficina.");
+            }
+            $contatos = [];
+            $tem_principal = false;
+            foreach (array_values($lista_c) as $i => $c) {
+                $c = is_array($c) ? $c : [];
+                $tc = lista_itens("contato_tipo")[trim((string)($c["tipo"] ?? ""))] ?? null;
+                $valor_c = trim((string)($c["valor"] ?? ""));
+                $pessoa = trim((string)($c["pessoa"] ?? ""));
+                $obs_c = trim((string)($c["observacao"] ?? ""));
+                if ($valor_c === "" && $pessoa === "" && $obs_c === "") {
+                    continue;
+                }
+                if ($tc === null) {
+                    $erros[] = t("Contato {1}: o tipo ({2}).", [1 => $i + 1, 2 => implode(", ", array_keys(lista_itens("contato_tipo")))]);
+                }
+                if ($valor_c === "" || mb_strlen($valor_c) > 200 || mb_strlen($pessoa) > 120 || mb_strlen($obs_c) > 200) {
+                    $erros[] = t("Contato {1}: o valor (até 200), a pessoa (até 120) e a observação (até 200).", [1 => $i + 1]);
+                }
+                $principal = !$tem_principal && in_array((string)($c["principal"] ?? "0"), ["1", "true", "on"], true);
+                $tem_principal = $tem_principal || $principal;
+                $contatos[] = [$tc["id"] ?? 0, $valor_c, $pessoa !== "" ? $pessoa : null, $obs_c !== "" ? $obs_c : null, $principal ? 1 : 0, count($contatos) + 1];
+            }
+        }
+        if (count($erros) === 0) {
+            $campos = array_merge([$nome, $tipo["id"]], array_map(function ($v) { return $v !== "" ? $v : null; }, array_values($vals)));
+            if ($atual) {
+                sql("UPDATE oficina SET nome = ?, tipo_id = ?, endereco = ?, numero = ?, complemento = ?, bairro = ?, cidade = ?, uf = ?, cep = ?, horario = ?, observacao = ? WHERE id = ?",
+                    array_merge($campos, [$id]));
+            } else {
+                sql("INSERT INTO oficina (colecao_id, nome, tipo_id, endereco, numero, complemento, bairro, cidade, uf, cep, horario, observacao, criado)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())", array_merge([colecao_atual()], $campos));
+                $id = ultimo_id();
+            }
+            if ($contatos !== null) {
+                sql("DELETE FROM oficina_contato WHERE oficina_id = ?", [$id]);
+                foreach ($contatos as $c) {
+                    sql("INSERT INTO oficina_contato (oficina_id, tipo_id, valor, pessoa, observacao, principal, ordem) VALUES (?, ?, ?, ?, ?, ?, ?)", array_merge([$id], $c));
+                }
+            }
+            $msg = t("Oficina {1} {2}.", [1 => $nome, 2 => $atual ? t("salva") : t("cadastrada")]);
+        }
+    } elseif ($acao === "excluir" && $atual) {
+        $n = (int)valor("SELECT COUNT(*) FROM manutencao WHERE oficina_id = ?", [$id]);
+        $propria = (lista_item_por_id("oficina_tipo", (int)$atual["tipo_id"])["comportamento"] ?? "") === "propria";
+        if ($propria && (int)valor("SELECT COUNT(*) FROM oficina o JOIN lista_item i ON i.id = o.tipo_id WHERE i.comportamento = 'propria'") === 1) {
+            $erros[] = t("A {1} fica: é a sua (o serviço registrado sem oficina vai para ela).", [1 => $atual["nome"]]);
+        } elseif ($n > 0) {
+            $erros[] = t("A oficina {1} tem {2}: ela fica (é a história delas).", [1 => $atual["nome"], 2 => $n === 1 ? t("1 manutenção") : t("{1} manutenções", [1 => $n])]);
+        } else {
+            sql("DELETE FROM oficina WHERE id = ?", [$id]);
+            $msg = t("Oficina {1} excluída.", [1 => $atual["nome"]]);
+            $id = 0;
+        }
+    } elseif ($acao === "excluir") {
+        $erros[] = t("Informe a oficina (id).");
+    } else {
+        $erros[] = t("Ação desconhecida: use salvar ou excluir.");
+    }
+    return resultado($erros, $msg, ["id" => $id]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// As listas que são cadastro (Manutenção › Listas e Cadastros › Listas), na árvore da coleção: a situação do relógio na
+// coleção, os tipos de acessório, os jeitos de carregar e as observações da reserva, as situações da manutenção, os tipos
+// de serviço, os resultados da estanqueidade, os tipos de oficina e os tipos de contato. Ações:
+//   salvar (id: 0 ou sem, um item novo; lista, só no novo; identificador, só no novo: minúsculas, números e _, começando
+//           por letra, até 20, sem repetir na lista e fora dos reservados; nome, até 80; ordem; comportamento: o que ele
+//           faz, nas listas que têm (obrigatório nelas; não muda com o item em uso); texto, nas listas que têm (até 200;
+//           no tipo de serviço, o identificador de um tipo de lançamento instantâneo); cor, nas listas que têm (#rrggbb ou
+//           vazio)). Só o que vem no pedido muda. O identificador não muda.
+//   excluir (id): só o item fora de uso. Uma lista nunca fica sem um item do que o sistema precisa (a situação na
+//           coleção: um na coleção; a manutenção: uma aberta e uma que encerra; a oficina: a sua).
+// ---------------------------------------------------------------------------------------------------------------------
+function op_listas($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $id = (int)($d["id"] ?? 0);
+    $raiz = no_raiz();
+    $atual = $id > 0 ? linha("SELECT * FROM lista_item WHERE id = ? AND no_id = ?", [$id, $raiz]) : null;
+    // o último item com o que o sistema precisa não sai nem muda de comportamento
+    $ultimo = function ($it) use ($raiz) {
+        return in_array($it["comportamento"], LISTAS_ESSENCIAIS[$it["lista"]] ?? [], true)
+            && (int)valor("SELECT COUNT(*) FROM lista_item WHERE no_id = ? AND lista = ? AND comportamento = ? AND id <> ?", [$raiz, $it["lista"], $it["comportamento"], (int)$it["id"]]) === 0;
+    };
+    if ($id > 0 && !$atual) {
+        $erros[] = t("Item não encontrado.");
+    } elseif ($acao === "salvar") {
+        $lista = $atual ? $atual["lista"] : trim((string)($d["lista"] ?? ""));
+        $def = LISTAS[$lista] ?? null;
+        if ($def === null) {
+            $erros[] = t("Lista: {1}.", [1 => implode(", ", array_keys(LISTAS))]);
+        }
+        $ident = $atual ? $atual["identificador"] : trim((string)($d["identificador"] ?? ""));
+        if (!$atual && $def !== null) {
+            if (preg_match("/^[a-z][a-z0-9_]{0,19}$/", $ident) !== 1) {
+                $erros[] = t("Identificador: minúsculas, números e _, começando por letra, até 20.");
+            } elseif (in_array($ident, $def["reservados"], true)) {
+                $erros[] = t("O identificador {1} é do sistema nesta lista.", [1 => $ident]);
+            } elseif (valor("SELECT id FROM lista_item WHERE no_id = ? AND lista = ? AND identificador = ?", [$raiz, $lista, $ident]) !== null) {
+                $erros[] = t("A lista já tem o identificador {1}.", [1 => $ident]);
+            }
+        }
+        $nome = array_key_exists("nome", $d) ? trim((string)$d["nome"]) : (string)($atual["nome"] ?? "");
+        if ($nome === "" || mb_strlen($nome) > 80) {
+            $erros[] = t("Dê um nome ao item (até 80 caracteres).");
+        }
+        $ordem = array_key_exists("ordem", $d) && trim((string)$d["ordem"]) !== "" ? (int)$d["ordem"]
+            : ($atual ? (int)$atual["ordem"] : 1 + (int)valor("SELECT COALESCE(MAX(ordem), 0) FROM lista_item WHERE no_id = ? AND lista = ?", [$raiz, $lista]));
+        $comp = array_key_exists("comportamento", $d) ? trim((string)$d["comportamento"]) : (string)($atual["comportamento"] ?? "");
+        $texto = array_key_exists("texto", $d) ? trim((string)$d["texto"]) : (string)($atual["texto"] ?? "");
+        $cor = array_key_exists("cor", $d) ? strtolower(trim((string)$d["cor"])) : (string)($atual["cor"] ?? "");
+        if ($def !== null) {
+            if (count($def["comportamentos"]) > 0 && !isset($def["comportamentos"][$comp])) {
+                $erros[] = t("O que ele faz (comportamento): {1}.", [1 => implode(", ", array_keys($def["comportamentos"]))]);
+            } elseif (count($def["comportamentos"]) === 0) {
+                $comp = "";
+            }
+            if ($atual && $comp !== (string)$atual["comportamento"]) {
+                $uso = lista_item_em_uso($atual, $raiz);
+                if ($uso > 0) {
+                    $erros[] = t("O item {1} está em uso ({2}): o que ele faz não muda (crie outro item).", [1 => $atual["nome"], 2 => $uso]);
+                } elseif ($ultimo($atual)) {
+                    $erros[] = t("O {1} é o último item que faz isso: a lista precisa dele.", [1 => $atual["nome"]]);
+                }
+            }
+            if ($def["texto"] === null) {
+                $texto = "";
+            } elseif (mb_strlen($texto) > 200) {
+                $erros[] = t("O texto vai até 200 caracteres.");
+            } elseif ($lista === "servico_tipo" && $texto !== ""
+                && (int)valor("SELECT COUNT(*) FROM lancamento_tipo WHERE identificador = ? AND formato = 'instantaneo' AND no_id IN (" . implode(", ", arvore_nos($raiz)) . ")", [$texto]) === 0) {
+                $erros[] = t("A marca: o identificador de um tipo de lançamento instantâneo (Cadastros › Tipos de lançamento: revisao, pilha) ou vazio.");
+            }
+            if (!$def["cor"]) {
+                $cor = "";
+            } elseif ($cor !== "" && preg_match("/^#[0-9a-f]{6}$/", $cor) !== 1) {
+                $erros[] = t("A cor: #rrggbb ou vazio.");
+            }
+        }
+        if (count($erros) === 0) {
+            $vals = [$nome, $ordem, $comp !== "" ? $comp : null, $texto !== "" ? $texto : null, $cor !== "" ? $cor : null];
+            if ($atual) {
+                sql("UPDATE lista_item SET nome = ?, ordem = ?, comportamento = ?, texto = ?, cor = ? WHERE id = ?", array_merge($vals, [$id]));
+            } else {
+                sql("INSERT INTO lista_item (no_id, lista, identificador, nome, ordem, comportamento, texto, cor) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", array_merge([$raiz, $lista, $ident], $vals));
+                $id = ultimo_id();
+            }
+            $GLOBALS["LISTAS_VERSAO"] = ($GLOBALS["LISTAS_VERSAO"] ?? 0) + 1;
+            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+            $msg = t("{1}: {2} {3}.", [1 => t($def["nome"]), 2 => $nome, 3 => $atual ? t("salvo") : t("criado")]);
+        }
+    } elseif ($acao === "excluir" && $atual) {
+        $uso = lista_item_em_uso($atual, $raiz);
+        if ($uso > 0) {
+            $erros[] = t("O item {1} está em uso ({2}): ele fica.", [1 => $atual["nome"], 2 => $uso]);
+        } elseif ($ultimo($atual)) {
+            $erros[] = t("O {1} é o último item que faz isso: a lista precisa dele.", [1 => $atual["nome"]]);
+        } else {
+            sql("DELETE FROM lista_item WHERE id = ?", [$id]);
+            $GLOBALS["LISTAS_VERSAO"] = ($GLOBALS["LISTAS_VERSAO"] ?? 0) + 1;
+            $msg = t("{1}: {2} excluído.", [1 => t(LISTAS[$atual["lista"]]["nome"]), 2 => $atual["nome"]]);
+            $id = 0;
+        }
+    } elseif ($acao === "excluir") {
+        $erros[] = t("Informe o item (id).");
     } else {
         $erros[] = t("Ação desconhecida: use salvar ou excluir.");
     }
@@ -2134,9 +2620,9 @@ function op_reserva($acao, $d)
         }
         $ini = array_key_exists("inicio", $d) || !$atual ? $instante($d["inicio"] ?? "", t("Cheio em")) : strtotime($atual["inicio"]);
         $fim = $atual ? (array_key_exists("fim", $d) ? (trim((string)$d["fim"]) === "" ? null : $instante($d["fim"], t("Parou em"))) : ($atual["fim"] === null ? null : strtotime($atual["fim"]))) : null;
-        $prot = $texto("protocolo") !== "" ? $texto("protocolo") : "outro";
-        if (!isset(RESERVA_PROTOCOLOS[$prot])) {
-            $erros[] = t("Protocolo: {1}.", [1 => implode(", ", array_keys(RESERVA_PROTOCOLOS))]);
+        $prot = $texto("protocolo") !== "" ? $texto("protocolo") : lista_padrao("reserva_protocolo", "outro");
+        if (!isset(lista_itens("reserva_protocolo")[$prot])) {
+            $erros[] = t("Protocolo: {1}.", [1 => implode(", ", array_keys(lista_itens("reserva_protocolo")))]);
         }
         $pv = $texto("protocolo_valor");
         $pv_n = $pv === "" ? null : numero_br($pv);
@@ -2185,9 +2671,10 @@ function op_reserva($acao, $d)
         if (!$observar) {
             $erros[] = t("As observações da energia são do relógio com a reserva no cadastro (o mecânico e o solar).");
         }
-        $tipo = $texto("tipo") !== "" ? $texto("tipo") : "nota";
-        if (!isset(RESERVA_OBSERVACOES[$tipo])) {
-            $erros[] = t("Tipo da observação: {1}.", [1 => implode(", ", array_keys(RESERVA_OBSERVACOES))]);
+        $tipos_obs = array_diff(array_keys(lista_itens("reserva_observacao")), ["teste"]);
+        $tipo = $texto("tipo") !== "" ? $texto("tipo") : (in_array("nota", $tipos_obs, true) ? "nota" : (string)(array_values($tipos_obs)[0] ?? "nota"));
+        if (!in_array($tipo, $tipos_obs, true)) {
+            $erros[] = t("Tipo da observação: {1}.", [1 => implode(", ", $tipos_obs)]);
         }
         $quando = array_key_exists("quando", $d) || !$atual ? $instante($d["quando"] ?? "", t("Quando")) : strtotime($atual["inicio"]);
         if ($tipo === "nota" && $obs === "") {
@@ -2200,7 +2687,7 @@ function op_reserva($acao, $d)
                 sql("INSERT INTO reserva_teste (relogio_id, tipo, inicio, observacao, criado) VALUES (?, ?, ?, ?, NOW())", [$rid, $tipo, date("Y-m-d H:i:s", $quando), $obs !== "" ? $obs : null]);
                 $id = ultimo_id();
             }
-            $msg = t("Observação do {1} {2}: {3}, em {4}.", [1 => $r["nome"], 2 => $atual ? t("salva") : t("registrada"), 3 => mb_strtolower(t(RESERVA_OBSERVACOES[$tipo]), "UTF-8"), 4 => data_txt($quando, true)]);
+            $msg = t("Observação do {1} {2}: {3}, em {4}.", [1 => $r["nome"], 2 => $atual ? t("salva") : t("registrada"), 3 => mb_strtolower(lista_nome("reserva_observacao", $tipo), "UTF-8"), 4 => data_txt($quando, true)]);
         }
     } elseif ($acao === "usar") {
         $m = reserva_medida($rid, $agora);

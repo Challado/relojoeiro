@@ -1,4 +1,4 @@
-<!-- origem: 4417a65057ef82d9076e6607d48463f70d417d32 -->
+<!-- origem: 9f924d87c6491065e145ca3c78972a36b65b1c98 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -732,21 +732,76 @@ ungrouped (in Watch data, under **Other**). Deleting a section does not delete t
 section, at the end. Through the API: `recurso=cadastros` brings the `secoes` (with how many fields each one has), and
 `recurso=secoes` writes (`salvar`, `ordem`, `excluir`); the field carries the `secao_id`.
 
+### The lists that are definitions {#as-listas-que-são-cadastro}
+
+What can be a definition is a definition: every choice list in the system is yours, with items you create, rename, reorder and
+remove. Each item has the **identifier** (fixed: it's what gets saved and what the API and the formulas cite), the **name**, the
+**order** and, depending on the list, **what it does** (the behavior: the only thing the code knows), a **text** and a
+**color**. An item in use can't be removed, and what it does doesn't change (create another); the list is never left without
+what the system needs.
+
+| List | Where | What the item does or keeps |
+|---|---|---|
+| Watch statuses in the collection | Definitions › Lists | *In the collection* (goes into the rotation), *On loan* (of the collection, out of the rotation), *Wished* (the wishlist) or *Out of the collection* (Sold, Archived, Given away, Lost or stolen...) |
+| Accessory types | Definitions › Lists | strap, box, case, tool, charger, part... |
+| Ways of charging (the reserve test) | Definitions › Lists | the text is the unit of the measure (turns, h) |
+| Power-reserve observations | Definitions › Lists | stopped, low-charge indicator, other observation... |
+| Maintenance statuses | Maintenance › Lists | *In progress*, *Closes* (comes back and becomes a service) or *Cancels*; the text is the status alert; the color, the tag's |
+| Service types | Maintenance › Lists | the text is the entry type the service also marks (revisao, pilha) |
+| Water-resistance test results | Maintenance › Lists | *Passed* (proves the seal) or *Failed* |
+| Workshop types | Maintenance › Lists | a regular workshop or *yourself, at home* |
+| Contact types | Maintenance › Lists | *Phone* (calls), *WhatsApp* (opens the chat), *E-mail* (writes), *Web address* (opens) or *Text* |
+
+Each new collection already comes with the complete lists (in its language). Through the API: `recurso=listas` (with
+`pagina=cadastros` or `manutencao`) and `recurso=listas` with `acao=salvar` or `excluir`.
+
+### Maintenance {#a-manutenção}
+
+The **Collection › Maintenance** menu is the place for maintenance, with four tabs: **In maintenance**, **Maintenances**,
+**Workshops** and **Lists**. Without a registered maintenance, the watch goes nowhere: it's **Register a maintenance** that sends
+it (also from the panel's **Maintenance** box). Choose the watch, the **workshop**, the **status**, the **service type** and, if
+you like, the problem, the work order, the sending, the expected return, the quote, what went along (the box, the strap) and the
+shipping documents.
+
+On saving, the watch is **in maintenance**: unavailable for the rotation until it comes back (with the *in maintenance* tag on
+the panel and the *In maintenance* state on the Today page), its open sessions close (on the wrist, in the sun, on the charger;
+in the winder, the position becomes free), its days in the plan from tomorrow on are removed and drawn again, and the charge,
+winding and battery alerts stop. If it was **today's watch**, today becomes free: with the Settings allowing today's watch to be
+changed on the day itself, you choose another; without it, today stays without a watch. Changing the watch's availability
+while it is at the workshop changes the one it comes back with.
+
+The **status** moves along from the table row (the menu and **Change**), and each change goes into the **history**. The
+statuses are a list of yours (Maintenance › Lists), and each one does one of three things: **in progress** (Sent, awaiting the
+quote; Quote received; Approved, in service; Waiting for a part; Ready for pickup), **closes** (Picked up; Returned without
+repair) or **cancels** (Cancelled). In one that closes, the watch **comes back** with the availability from before and the
+maintenance **becomes a service** (the type, the quote as labour and its documents): complete what was done, the parts and
+the cost in the watch's Services box. In one that cancels, it comes back without a service. The maintenance alerts: **Chase
+the workshop** (the expected date has passed) and the **progress**, with the text of the current status (*Approve the quote*,
+*Pick up at the workshop*); in formulas, `MANUTENCAO("previsao")`, `MANUTENCAO("dias")`, `MANUTENCAO("orcamento")` and
+`MANUTENCAO()` (1 in maintenance).
+
+The **workshops** have the address, the opening hours, the note and **as many contacts as you want**, each of one type
+(landline, mobile, WhatsApp, e-mail, website, Instagram...: the Contact types list); in the table, the phone calls, WhatsApp
+opens the chat and the e-mail writes. The workshop **Myself (at home)** is yours: the battery changed at home, the adjusted
+strap. The reports: **In maintenance, by workshop** (with the contacts), **Maintenances in the period** and **Spending by
+workshop**. Through the API: `recurso=manutencao` (the open ones, the maintenances with the filters `relogio`, `oficina`, `de`,
+`ate`, the workshops and the summary), `recurso=oficinas`, and the writes `recurso=manutencao` (`salvar`, `situacao`,
+`excluir`) and `recurso=oficinas` (`salvar`, `excluir`).
+
 ### Services and diagnostics {#os-serviços-e-diagnósticos}
 
 Every intervention on a watch goes in the panel's **Services and diagnostics** box (in the *Record and documents* section):
-the date, the type (service, battery change, water-resistance test, regulation, polishing, repair, diagnostic or other), who
-did it, what was done, the labour, the **parts replaced** (one per line, with the cost after the semicolon: *"Crown; 120.00"*),
-the **water-resistance** test (passed or failed, and the pressure in bar), the **rate before and after** measured by the
+the date, the type (the service types: service, battery change, water-resistance test, regulation, polishing...), the workshop, what was done, the labour, the **parts replaced** (one per line, with the cost after the semicolon: *"Crown; 120.00"*),
+the **water-resistance** test (the result, passed or failed, and the pressure in bar), the **rate before and after** measured by the
 professional, the warranty, the note and the watch's documents that belong to the service (the invoice, the quote, the
-photos). The cost of a service is the labour plus the parts, and the box adds up all of them.
+photos). The cost of a service is the labour plus the parts, and the box adds up all of them. Every service is the return of a maintenance: one recorded directly in the box gets an already closed one at the chosen workshop (without it, yours, **Myself (at home)**).
 
 The **declared water resistance** (the record field *Declared water resistance (manufacturer)*, in metres) is not today's
 sealing: the box shows the two apart, the declared one and the **proven water resistance** from the last test, with the date.
 Next to the rate the professional entered, the **rate measured by the system** from the time-deviation readings shows up (see
 [Accuracy](#a-precisão-a-marcha-do-relógio)): the 60 days before the service and the 60 after.
 
-A service and a battery change also become the **Service** or **Battery change** entry on the service date: the usual alerts
+The service type that marks an entry (the service and the battery change, in the initial definitions) also becomes the **Service** or **Battery change** entry on the service date: the usual alerts
 (the next service, the battery) count it, without entering it twice. In formulas, `ULTIMO_SERVICO("revisao")` gives the date
 of the last service of that type (`"estanqueidade"` also counts a test made during a service) and `CUSTO_SERVICOS(365)` what
 the services cost in the last year; in totals, the variables `servicos` and `custo_servicos` (the ready-made total **Cost of
@@ -937,7 +992,7 @@ defaults are data, not code: you can change everything on the **Definitions** pa
 |---|---|
 | **Name** | how it appears everywhere: on screen, on Telegram and in the calendar. |
 | **Group** | its place in the tree. It decides the fields, the formulas (a smartwatch's "charge" is the battery; a mechanical's, the power reserve) and the alerts it gets. |
-| **Status in the collection** | **In the collection** (the usual), **Wished** (the wishlist: not yours yet), **Lent** (it's yours, but someone else has it), **Sold** or **Archived**. Only what is in the collection goes into the rotation: in the other statuses the watch is unavailable (the database guarantees it: the `ck_relogio_posse_disponivel` rule), it leaves the draw, the schedule and the alerts, and, when it leaves the collection, its open sessions (on the wrist, in the sun, on the charger) close at once and its days in the plan from tomorrow on are removed and drawn again (today stays, but it no longer goes on the wrist by itself: change it in **change to…**). Its page, documents and history remain. The lent one stays in the table on the Today page (with the **Lent** state) and in the collection's value; the wished, sold and archived ones leave the table and appear on the **Wishlist** page (and in the watch page's selector, under **Outside the collection**). Going back to **In the collection**, it becomes available again. See [The wishlist](#a-lista-de-desejos). |
+| **Status in the collection** | An item of the **Watch statuses in the collection** list (Definitions › Lists): **In the collection** (the usual), **Wished** (the wishlist: not yours yet), **Lent** (it's yours, but someone else has it) or one that leaves the collection (**Sold**, **Archived**, **Given away**, **Lost or stolen** and the ones you create). Only what is in the collection goes into the rotation: in the other statuses the watch is unavailable, it leaves the draw, the schedule and the alerts, and, when it leaves the collection, its open sessions (on the wrist, in the sun, on the charger) close at once and its days in the plan from tomorrow on are removed and drawn again (today stays, but it no longer goes on the wrist by itself: change it in **change to…**). Its page, documents and history remain. The lent one stays in the table on the Today page (with the **Lent** state) and in the collection's value; the wished, sold and archived ones leave the table and appear on the **Wishlist** page (and in the watch page's selector, under **Outside the collection**). Going back to **In the collection**, it becomes available again. See [The wishlist](#a-lista-de-desejos). |
 | **Available** | unticked, it leaves the rotation and the alerts (at the repairer, on a break), but the history stays. Out of the collection, it is always unticked (and the field disappears from the record). |
 | **Keep a copy of all its documents in the database** | ticked, every file of the watch (the manual, the invoice, the photos, the videos) also goes to the database, as a backup. It only appears when the collection's Settings don't decide for all (**Copy of the documents in the database (applies to every watch)** empty). See [The watch's documents](#os-documentos-do-relógio): it is the second of the three levels of the copy. |
 | **Photo** | just for the screen. In the watch's detail (the panel, or the watch page), resting the mouse on the photo shows a summary of it (the name, the group and the code; the state and the charge; the score and the next day in the rotation; the purchase) and the reminder about the double-click. **Double-clicking** it, or the **Open photo** button below, opens the photo in a floating window, at its size (only in the detail: on the other photos, like the one in *Today is the day for* and the list thumbnails, the click opens the watch); one bigger than the screen appears scaled, without distortion, at the largest size that fits the monitor (and the browser window), with the real size and the scale below. It closes with the ×, with a click outside or with Esc. |
@@ -1504,9 +1559,10 @@ of the tree. A closed sub-panel also stays closed on that device.
 | **Statistics** (`estatisticas.php`) | The collection's use in a period (**From**, **To**; the shortcuts 30 days, 90 days, 1 year and since the beginning; default: the last 90 days): the summary (days with a watch on the wrist, hours on the wrist and per day, watches worn and unworn, the average cost per use and the collection's value, the most and the least worn); **Each watch**, from the most worn to the least: days of use, hours, each one's share (with the bar), the cost per use, how many days since it last went on the wrist and the trend (↑ wearing more, ↓ wearing less, → stable: the second half of the period compared to the first); the **By day of the week** and **By month** charts (the hours on the wrist); and **The collection**: the watches divided by group, brand, purchase year, status and each list field (like Style), with how many, the share and the hours of each part. Through the API: `recurso=estatisticas`. |
 | **Totals** (`totais.php`, menu **Collection**) | The totals page: the totals marked for it (the **Totals** tab of Definitions), each in a box, narrow or wide, in the order of the definitions: the small table with the total row, the number, or the watch with the value. It opens from **See all totals** under the table on the Today page, with the same filter (*Counting 12 of 17 watches*, with **Count all**), or from the menu, with all of them. Through the API: `recurso=totais&parte=pagina`. See [Totals](#os-totais). |
 | **Accessories** (`acessorios.php`) | The straps, boxes, cases, tools, chargers, parts and anything else: the list (the name, the type, the watch it belongs to, or *loose*, and the note), with the **Watch** filter (all, the loose ones or those of a watch; the panel's **Accessories** box opens it already filtered), **Edit** and **Delete** on each one, and below the form (**New accessory**: name, type, watch or *loose (serves several)* and note). Deleting a watch leaves its accessories loose. Through the API: `recurso=acessorios` (the list) and the `acessorios` write (`salvar`, `excluir`). Each one shows the **Data** (the fields of its type) and where it **Fits** (see [The construction and the accessories](#a-construção-e-os-acessórios)); the form asks for the fields of the chosen type. |
+| **Maintenance** (`manutencao.php`, **Collection** menu) | The watch at the workshop, from going to coming back, in four tabs: **In maintenance** (the ones at the workshop now, with the status, the expected date and the alert; the menu to change the status; **Register a maintenance**, which sends the watch, and, when editing one, the history), **Maintenances** (all of them, with the filters and the cost), **Workshops** (with the contacts) and **Lists** (the statuses, the service types, the water-resistance results, the workshop and contact types). See [Maintenance](#a-manutenção). |
 | **Winders** (`winders.php`) | The winders and the positions of each one: one card per winder, with its **drawing** (one cradle per position, with the photo of the watch in it and the charge ring), the data and the table of positions, editable in the row (the **program**, one field per column; the **Watch**, with **— none —** to take off and the watches to put on or swap; the **charge**, **what each hour gives** and when it **fills up**; the **Save**), **Edit** the position (the name, the order, on), **New position**, **Edit the winder** and **Delete the winder**; below, the forms (**New winder**: the name, how many positions it starts with, the winder's fields and the note) and the position's (the name, the order, on, the program). See [Winders](#os-winders). Through the API: `recurso=winders` and the writes `winders` and `winder_posicoes`. |
 | **Gallery** (`galeria.php`) | The collection in photos, by group: each watch with the photo (the link to its page), the name, the brand and the reference, the purchase year and price and the days of use; at the top, how many, the total value and how many have a photo. **Also those outside the collection** shows the wished, sold and archived ones (with the status mark). **Print**: on paper, four per row, without the menu. Through the API: `recurso=galeria`. |
-| **Passport** (`passaporte.php`) | A watch's sheet to print or save as PDF (the **Passport** button in the panel's Documents box): the photo, the name, the brand and the reference, the group and the status; the **Purchase**; the **Use** (the first and the last time on the wrist, the hours on the wrist, the days of use and the cost per use); the filled-in **Record**; the **Services** (each type of mark, how many times and the last one; the services and battery changes); the **Accessories**; the **Documents**; and the **Upcoming alerts**. **Print**: only the data comes out on paper. Through the API: `recurso=passaporte`. With any service, also the **Services and diagnostics** (who did it, the cost, the water resistance and the rate before and after). |
+| **Passport** (`passaporte.php`) | A watch's sheet to print or save as PDF (the **Passport** button in the panel's Documents box): the photo, the name, the brand and the reference, the group and the status; the **Purchase**; the **Use** (the first and the last time on the wrist, the hours on the wrist, the days of use and the cost per use); the filled-in **Record**; the **Services** (each type of mark, how many times and the last one; the services and battery changes); the **Accessories**; the **Documents**; and the **Upcoming alerts**. **Print**: only the data comes out on paper. Through the API: `recurso=passaporte`. With any service, also the **Services and diagnostics** (the workshop, the cost, the water resistance and the rate before and after). |
 | **Reports** (`relatorios.php`) | The single door of the reports: the menu with all of them (by group), the chosen one's fields (the watch, the period, the options) and **Generate the report**; the report on screen, on paper (**Print**) and as a spreadsheet (**Download the spreadsheet (CSV)**). See [Reports](#os-relatórios). |
 | **Exact time** (`hora.php`) | The server's time to set the watches, in your time zone: the clock chosen in Settings (**Exact time clock**): the analog (steel case, light dial with the indices, the numerals 12, 6 and 9, the date window at 3, lance hands with a lume strip and the red seconds hand with counterweight), the digital (a dark case with a liquid crystal display: the weekday and the date, the big time with the faded "88:88:88" behind, the UTC and the moon phase), the ana-digi (the digital display inside the analog dial) or both, side by side; they move second by second, set by the API (discounting the request time; below, how far the device's clock is fast or slow), with the date in words, the UTC time and the time zone (and where it came from); the **Time zone and UTC** boxes (the time zone, the offset, Zulu time, the military letter of the time zone, like *P (Papa)*, and the date-time group, *131433P OCT 26*), **Calendar** (day of the year, ISO week, quarter, Julian day, Unix) and **Moon** (the phase, the age, the illuminated part and the next full and new moons, by the mean cycle: it can be off by a day); and **How to set it**. It reads the API again every minute. Through the API: `recurso=hora_certa`. |
 | **Documents** (`documentos.php`) | The documents of a watch (or of all), opened from the watch page: uploading several files, one tab per category, the full-screen photo gallery with a slideshow, the videos in sequence in the chosen order, the PDF viewer, the summary of the NF-e from the XML, and download for the rest. See [The watch's documents](#os-documentos-do-relógio). |
@@ -1549,7 +1605,10 @@ services, precision and timegrapher panels of the watch panel).
 | Use and rotation | **Rotation plan** | each day's watch, with the reason, and how many days each one has |
 | Use and rotation | **Alerts** | the alerts now, from the overdue to the most distant, and how many of each status |
 | Use and rotation | **Criteria scores** | the order of the watches by score and each one's calculation, parameter by parameter |
-| Maintenance and precision | **Services and diagnostics** | each service in the period, with the watch, who did it, the parts, the cost, the water resistance and the rate before and after; the summed cost and by type |
+| Maintenance and precision | **Services and diagnostics** | each service in the period, with the watch, the workshop, the parts, the cost, the water resistance and the rate before and after; the summed cost and by type |
+| Maintenance and precision | **In maintenance, by workshop** | the watches at the workshop now, by workshop, with the status, the expected date, the quote and the contacts |
+| Maintenance and precision | **Maintenances in the period** | each maintenance in the period: the watch, the workshop, the type, the status, the sending, the return, the days and the cost |
+| Maintenance and precision | **Spending by workshop** | how much each workshop cost in the period, how many maintenances and the days at the workshop |
 | Maintenance and precision | **Precision and rate** | each watch's rate; with a watch, the whole calculation and each measured interval |
 | Maintenance and precision | **Timegrapher** | the measurements; with a watch, also the last session |
 | Maintenance and precision | **Measured power reserve** | the power reserve tests and the energy observations |

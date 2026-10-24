@@ -121,6 +121,11 @@ for b in "${BANCOS[@]}"; do
   curl -s -H "$TOKEN" -d recurso=documentos -d acao=enviar -d relogio_id="$R" -d categoria_id="$CAT" -d "titulo=Documento de antes" -d arquivo_nome=antes.txt \
     --data-urlencode "arquivo_base64=$(printf 'conteudo de antes' | base64)" "$A" > /dev/null
   curl -s -H "$TOKEN" -d recurso=acessorios -d acao=salvar -d "nome=Pulseira de antes" -d tipo=pulseira -d relogio_id="$R" "$A" > /dev/null
+  # dois serviços: um com quem fez (vira uma oficina) e um sem (vai para a "Eu mesmo (em casa)")
+  curl -s -H "$TOKEN" -d recurso=servicos -d acao=salvar -d relogio_id="$R" -d tipo=revisao -d "data=$(date -d '-30 days' '+%Y-%m-%d')" \
+    -d "responsavel=Relojoaria de antes" -d mao_de_obra=300 "$A" > /dev/null
+  curl -s -H "$TOKEN" -d recurso=servicos -d acao=salvar -d relogio_id="$R" -d tipo=pilha -d "data=$(date -d '-10 days' '+%Y-%m-%d')" "$A" > /dev/null
+  SRV_ANTES=$(curl -s -H "$TOKEN" "$A?recurso=servicos&relogio=$R" | php -r 'echo count(json_decode(stream_get_contents(STDIN), true)["servicos"] ?? []);')
   LANC_ANTES=$(curl -s -H "$TOKEN" "$A?recurso=historico&relogio=$R" | json total)
   descer
   # a versão de agora: as pendentes, aplicar e conferir
@@ -136,7 +141,20 @@ for b in "${BANCOS[@]}"; do
   [ "$(echo "$FICHA" | json relogio.documentos.total)" != "1" ] && erros+=("o documento de antes sumiu")
   [ "$(echo "$FICHA" | json relogio.acessorios.0.nome)" != "Pulseira de antes" ] && erros+=("o acessório de antes sumiu")
   [ "$(curl -s -H "$TOKEN" "$A?recurso=historico&relogio=$R" | json total)" != "$LANC_ANTES" ] && erros+=("o histórico mudou de tamanho")
-  for q in "recurso=hoje" "foto=nao" "recurso=passaporte&relogio=$R" "recurso=documentos&relogio=$R"; do
+  # os serviços de antes continuam, cada um a volta de uma manutenção encerrada; quem fez virou a oficina (sem ele, a sua)
+  [ "$(curl -s -H "$TOKEN" "$A?recurso=servicos&relogio=$R" | php -r 'echo count(json_decode(stream_get_contents(STDIN), true)["servicos"] ?? []);')" != "$SRV_ANTES" ] \
+    && erros+=("os serviços de antes mudaram de número")
+  MAN=$(curl -s -H "$TOKEN" "$A?recurso=manutencao&relogio=$R" | php -r '$j = json_decode(stream_get_contents(STDIN), true); $m = $j["manutencoes"] ?? [];
+    $of = array_column($j["oficinas"] ?? [], "nome"); sort($of);
+    echo count($m), "|", count(array_filter($m, function ($x) { return ($x["situacao_comportamento"] ?? "") === "encerra" && !$x["aberta"]; })), "|",
+      implode(",", array_unique(array_column($m, "oficina"))), "|", count(array_filter($j["oficinas"] ?? [], function ($o) { return $o["propria"]; }));')
+  [ "${MAN%%|*}" != "$SRV_ANTES" ] && erros+=("as manutenções dos serviços de antes: $MAN (serviços: $SRV_ANTES)")
+  [ "$(echo "$MAN" | cut -d'|' -f2)" != "$SRV_ANTES" ] && erros+=("uma manutenção dos serviços de antes não ficou encerrada: $MAN")
+  [ "$(echo "$MAN" | cut -d'|' -f4)" != "1" ] && erros+=("a coleção não tem a sua oficina (Eu mesmo): $MAN")
+  if [ "$SRV_ANTES" = "2" ]; then
+    case ",$(echo "$MAN" | cut -d'|' -f3)," in *",Relojoaria de antes,"*) ;; *) erros+=("quem fez o serviço de antes não virou a oficina: $MAN") ;; esac
+  fi
+  for q in "recurso=hoje" "foto=nao" "recurso=passaporte&relogio=$R" "recurso=documentos&relogio=$R" "recurso=listas" "recurso=oficinas"; do
     c=$(curl -s -o /dev/null -w '%{http_code}' -H "$TOKEN" "$A?$q")
     [ "$c" != "200" ] && erros+=("$q respondeu $c")
   done

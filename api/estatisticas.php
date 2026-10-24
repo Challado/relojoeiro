@@ -125,7 +125,7 @@ foreach ($todos_r as $r) {
     $c = ["r" => $r, "momento" => $agora_e, "rastro" => [], "pilha" => [], "valores" => $v];
     $cpu = isset(formulas_todas()["custo_por_uso"]) ? variavel_valor("custo_por_uso", $c) : null;
     $rels_e[] = ["id" => $id, "nome" => $r["nome"], "tipo" => isset($n_e[(int)$r["no_id"]]) ? $n_e[(int)$r["no_id"]]["nome"] : t("sem grupo"),
-        "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]),
+        "posse" => (string)$r["posse"], "posse_texto" => posse_texto($r), "posse_comportamento" => posse_de($r),
         "usos" => count($dias_uso[$id] ?? []), "horas" => round($s / 3600, 1),
         "porcentagem" => $tot_seg > 0 ? round($s * 100 / $tot_seg, 1) : 0.0,
         "ultimo_uso" => $ultimo !== "" ? substr($ultimo, 0, 10) : null,
@@ -221,7 +221,7 @@ $distr = [
     $distribuir(t("Grupo"), "grupo", function ($r) { return $r["no_id"] === null ? t("(na raiz)") : no_caminho($r["no_id"]); }),
     $distribuir(t("Marca"), "marca", function ($r) use ($valores_e) { return $valores_e[(int)$r["id"]]["marca"] ?? null; }),
     $distribuir(t("Ano da compra"), "ano_compra", function ($r) use ($valores_e) { $d = (string)($valores_e[(int)$r["id"]]["data_compra"] ?? ""); return $d !== "" ? substr($d, 0, 4) : null; }),
-    $distribuir(t("Situação"), "posse", function ($r) { return t(POSSES[posse_de($r)]); }),
+    $distribuir(t("Situação"), "posse", function ($r) { return posse_texto($r); }),
 ];
 foreach (campos_todos() as $ident => $c) {
     if ($c["tipo"] === "lista" && (int)($c["so_desejado"] ?? 0) === 0) {

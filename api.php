@@ -688,6 +688,232 @@
  *   segundos são inteiros.
  *
  *   api.php (sem recurso)
+ *     listas                         as listas que são cadastro, cada uma com os itens, na ordem (como em recurso=listas)
+ *     listas.relogio_situacao        os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     listas.relogio_situacao[]      um item da lista
+ *     listas.relogio_situacao[].valor
+ *                                    o identificador do item (fixo: é o que se grava e o que a API e as fórmulas citam)
+ *     listas.relogio_situacao[].nome o nome do item
+ *     listas.relogio_situacao[].id   o número do item (o id da gravação, recurso=listas)
+ *     listas.relogio_situacao[].ordem
+ *                                    a ordem na lista
+ *     listas.relogio_situacao[].comportamento
+ *                                    o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     listas.relogio_situacao[].texto
+ *                                    o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     listas.relogio_situacao[].cor  a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     listas.acessorio_tipo          os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     listas.acessorio_tipo[]        um item da lista
+ *     listas.acessorio_tipo[].valor  o identificador do item (fixo: é o que se grava e o que a API e as fórmulas citam)
+ *     listas.acessorio_tipo[].nome   o nome do item
+ *     listas.acessorio_tipo[].id     o número do item (o id da gravação, recurso=listas)
+ *     listas.acessorio_tipo[].ordem  a ordem na lista
+ *     listas.acessorio_tipo[].comportamento
+ *                                    o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     listas.acessorio_tipo[].texto  o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     listas.acessorio_tipo[].cor    a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     listas.reserva_protocolo       os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     listas.reserva_protocolo[]     um item da lista
+ *     listas.reserva_protocolo[].valor
+ *                                    o identificador do item (fixo: é o que se grava e o que a API e as fórmulas citam)
+ *     listas.reserva_protocolo[].nome
+ *                                    o nome do item
+ *     listas.reserva_protocolo[].id  o número do item (o id da gravação, recurso=listas)
+ *     listas.reserva_protocolo[].ordem
+ *                                    a ordem na lista
+ *     listas.reserva_protocolo[].comportamento
+ *                                    o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     listas.reserva_protocolo[].texto
+ *                                    o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     listas.reserva_protocolo[].cor a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     listas.reserva_observacao      os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     listas.reserva_observacao[]    um item da lista
+ *     listas.reserva_observacao[].valor
+ *                                    o identificador do item (fixo: é o que se grava e o que a API e as fórmulas citam)
+ *     listas.reserva_observacao[].nome
+ *                                    o nome do item
+ *     listas.reserva_observacao[].id o número do item (o id da gravação, recurso=listas)
+ *     listas.reserva_observacao[].ordem
+ *                                    a ordem na lista
+ *     listas.reserva_observacao[].comportamento
+ *                                    o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     listas.reserva_observacao[].texto
+ *                                    o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     listas.reserva_observacao[].cor
+ *                                    a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     listas.manutencao_situacao     os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     listas.manutencao_situacao[]   um item da lista
+ *     listas.manutencao_situacao[].valor
+ *                                    o identificador do item (fixo: é o que se grava e o que a API e as fórmulas citam)
+ *     listas.manutencao_situacao[].nome
+ *                                    o nome do item
+ *     listas.manutencao_situacao[].id
+ *                                    o número do item (o id da gravação, recurso=listas)
+ *     listas.manutencao_situacao[].ordem
+ *                                    a ordem na lista
+ *     listas.manutencao_situacao[].comportamento
+ *                                    o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     listas.manutencao_situacao[].texto
+ *                                    o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     listas.manutencao_situacao[].cor
+ *                                    a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     listas.servico_tipo            os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     listas.servico_tipo[]          um item da lista
+ *     listas.servico_tipo[].valor    o identificador do item (fixo: é o que se grava e o que a API e as fórmulas citam)
+ *     listas.servico_tipo[].nome     o nome do item
+ *     listas.servico_tipo[].id       o número do item (o id da gravação, recurso=listas)
+ *     listas.servico_tipo[].ordem    a ordem na lista
+ *     listas.servico_tipo[].comportamento
+ *                                    o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     listas.servico_tipo[].texto    o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     listas.servico_tipo[].cor      a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     listas.estanqueidade           os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     listas.estanqueidade[]         um item da lista
+ *     listas.estanqueidade[].valor   o identificador do item (fixo: é o que se grava e o que a API e as fórmulas citam)
+ *     listas.estanqueidade[].nome    o nome do item
+ *     listas.estanqueidade[].id      o número do item (o id da gravação, recurso=listas)
+ *     listas.estanqueidade[].ordem   a ordem na lista
+ *     listas.estanqueidade[].comportamento
+ *                                    o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     listas.estanqueidade[].texto   o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     listas.estanqueidade[].cor     a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     listas.oficina_tipo            os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     listas.oficina_tipo[]          um item da lista
+ *     listas.oficina_tipo[].valor    o identificador do item (fixo: é o que se grava e o que a API e as fórmulas citam)
+ *     listas.oficina_tipo[].nome     o nome do item
+ *     listas.oficina_tipo[].id       o número do item (o id da gravação, recurso=listas)
+ *     listas.oficina_tipo[].ordem    a ordem na lista
+ *     listas.oficina_tipo[].comportamento
+ *                                    o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     listas.oficina_tipo[].texto    o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     listas.oficina_tipo[].cor      a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     listas.contato_tipo            os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     listas.contato_tipo[]          um item da lista
+ *     listas.contato_tipo[].valor    o identificador do item (fixo: é o que se grava e o que a API e as fórmulas citam)
+ *     listas.contato_tipo[].nome     o nome do item
+ *     listas.contato_tipo[].id       o número do item (o id da gravação, recurso=listas)
+ *     listas.contato_tipo[].ordem    a ordem na lista
+ *     listas.contato_tipo[].comportamento
+ *                                    o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     listas.contato_tipo[].texto    o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     listas.contato_tipo[].cor      a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     manutencoes                    as manutenções da coleção, da mais nova para a mais velha (como em recurso=manutencao)
+ *     manutencoes[]                  uma manutenção
+ *     manutencoes[].id               o número da manutenção
+ *     manutencoes[].relogio_id       o relógio
+ *     manutencoes[].relogio          o nome do relógio
+ *     manutencoes[].oficina_id       a oficina (Manutenção › Oficinas)
+ *     manutencoes[].oficina          o nome da oficina
+ *     manutencoes[].situacao         a situação agora: o identificador de um item da lista Situações da manutenção (Manutenção › Listas:
+ *                                    enviado, orcamento, aprovado, peca, pronto, retirado...)
+ *     manutencoes[].situacao_texto   a situação por extenso
+ *     manutencoes[].situacao_comportamento
+ *                                    o que a situação faz: aberta (o relógio na oficina), encerra (voltou e virou serviço) ou cancela
+ *                                    (voltou sem serviço)
+ *     manutencoes[].situacao_cor     a cor da situação (#rrggbb); null: sem
+ *     manutencoes[].aviso            aberta: o aviso da situação de agora (Aprovar o orçamento, Retirar na oficina); null: sem aviso
+ *     manutencoes[].aberta           true com o relógio na oficina agora (a situação faz aberta)
+ *     manutencoes[].tipo             o tipo de serviço pedido: o identificador de um item da lista Tipos de serviço
+ *     manutencoes[].tipo_texto       o tipo de serviço por extenso
+ *     manutencoes[].problema         o problema (o que se pediu à oficina); null: sem
+ *     manutencoes[].os               o número da ordem de serviço da oficina; null: sem
+ *     manutencoes[].enviado          o dia do envio (AAAA-MM-DD)
+ *     manutencoes[].previsao         o dia previsto para a volta (AAAA-MM-DD); null: sem
+ *     manutencoes[].atrasada         true se ela está aberta e a previsão já passou (o aviso Cobrar a oficina)
+ *     manutencoes[].dias             quantos dias o relógio ficou (ou está) na oficina: do envio à volta, ou até hoje
+ *     manutencoes[].orcamento        o orçamento, em R$; null: sem
+ *     manutencoes[].orcamento_data   o dia do orçamento (AAAA-MM-DD); null: sem
+ *     manutencoes[].encerrado        o dia da volta (AAAA-MM-DD, numa situação que encerra ou cancela); null: aberta
+ *     manutencoes[].disponivel_antes a disponibilidade para o rodízio com que o relógio volta (a de antes do envio, ou a pedida durante a
+ *                                    manutenção)
+ *     manutencoes[].observacao       a observação; null: sem
+ *     manutencoes[].desde            quando ela entrou na situação de agora (a última mudança da história)
+ *     manutencoes[].eventos          a história: cada mudança de situação, da mais velha para a mais nova
+ *     manutencoes[].eventos[]        uma mudança
+ *     manutencoes[].eventos[].situacao
+ *                                    o identificador da situação
+ *     manutencoes[].eventos[].situacao_texto
+ *                                    a situação por extenso
+ *     manutencoes[].eventos[].quando quando (texto AAAA-MM-DD HH:MM:SS)
+ *     manutencoes[].eventos[].observacao
+ *                                    a observação da mudança; null: sem
+ *     manutencoes[].acessorios       o que foi junto (os acessórios da coleção)
+ *     manutencoes[].acessorios[]     um acessório
+ *     manutencoes[].acessorios[].id  o número do acessório
+ *     manutencoes[].acessorios[].nome
+ *                                    o nome do acessório
+ *     manutencoes[].acessorios[].tipo_texto
+ *                                    o tipo do acessório por extenso
+ *     manutencoes[].documentos       os documentos do envio (os do relógio: a OS, o orçamento, as fotos da entrega)
+ *     manutencoes[].documentos[]     um documento
+ *     manutencoes[].documentos[].id  o número do documento
+ *     manutencoes[].documentos[].titulo
+ *                                    o título
+ *     manutencoes[].documentos[].url o endereço do arquivo (recurso=documento)
+ *     manutencoes[].servicos         os serviços que a volta registrou (recurso=servicos)
+ *     manutencoes[].servicos[]       um serviço
+ *     manutencoes[].servicos[].id    o número do serviço
+ *     manutencoes[].servicos[].data  a data do serviço (AAAA-MM-DD)
+ *     manutencoes[].servicos[].tipo_texto
+ *                                    o tipo do serviço por extenso
+ *     manutencoes[].servicos[].custo o custo do serviço (a mão de obra mais as peças), em R$; null: nada com custo
+ *     manutencoes[].custo            o custo da manutenção: os serviços dela somados, em R$; null: nada com custo
+ *     manutencoes[].criado           quando foi cadastrada (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     oficinas                       as oficinas da coleção, por nome (como em recurso=oficinas)
+ *     oficinas[]                     uma oficina
+ *     oficinas[].id                  o número da oficina
+ *     oficinas[].nome                o nome da oficina
+ *     oficinas[].tipo                o tipo: o identificador de um item da lista Tipos de oficina (Manutenção › Listas)
+ *     oficinas[].tipo_texto          o tipo por extenso
+ *     oficinas[].propria             true na sua oficina (o tipo faz "você mesmo, em casa": a Eu mesmo (em casa))
+ *     oficinas[].endereco            o endereço (a rua); null: sem
+ *     oficinas[].numero              o número; null: sem
+ *     oficinas[].complemento         o complemento; null: sem
+ *     oficinas[].bairro              o bairro; null: sem
+ *     oficinas[].cidade              a cidade; null: sem
+ *     oficinas[].uf                  o estado; null: sem
+ *     oficinas[].cep                 o CEP; null: sem
+ *     oficinas[].endereco_texto      o endereço inteiro numa linha; null: sem endereço
+ *     oficinas[].horario             o horário de atendimento; null: sem
+ *     oficinas[].observacao          a observação; null: sem
+ *     oficinas[].contatos            os contatos da oficina, o principal primeiro
+ *     oficinas[].contatos[]          um contato
+ *     oficinas[].contatos[].id       o número do contato
+ *     oficinas[].contatos[].tipo     o tipo do contato: o identificador de um item da lista Tipos de contato (Manutenção › Listas:
+ *                                    telefone, celular, whatsapp, email, site...)
+ *     oficinas[].contatos[].tipo_texto
+ *                                    o tipo do contato por extenso
+ *     oficinas[].contatos[].comportamento
+ *                                    o que o tipo faz: telefone, whatsapp, email, link ou texto
+ *     oficinas[].contatos[].valor    o número, o e-mail ou o endereço
+ *     oficinas[].contatos[].pessoa   com quem falar; null: sem
+ *     oficinas[].contatos[].observacao
+ *                                    a observação do contato; null: sem
+ *     oficinas[].contatos[].principal
+ *                                    true no contato principal
+ *     oficinas[].contatos[].link     o endereço que abre o contato pelo que o tipo faz (tel:, o wa.me do WhatsApp, mailto:, o site); null:
+ *                                    o texto
+ *     oficinas[].abertas             quantos relógios estão nela agora
+ *     oficinas[].manutencoes         quantas manutenções ela teve (todas)
+ *     oficinas[].gasto               quanto ela custou: os serviços das manutenções dela somados, em R$; null: nada com custo
  *     unidades                       as unidades da árvore (Cadastros › Unidades), na ordem do cadastro
  *     unidades[]                     uma unidade
  *     unidades[].id                  o número da unidade
@@ -1254,7 +1480,8 @@
  *                                    o nome dele
  *     acessorios[].id                o número do acessório
  *     acessorios[].nome              o nome
- *     acessorios[].tipo              pulseira, caixa, estojo, ferramenta, carregador, peca ou outro
+ *     acessorios[].tipo              o tipo: o identificador de um item da lista Tipos de acessório (Cadastros › Listas: pulseira, caixa,
+ *                                    estojo, ferramenta, carregador, peca, outro...)
  *     acessorios[].tipo_texto        o tipo por extenso
  *     acessorios[].relogio_id        o relógio de que ele é; null: solto
  *     acessorios[].relogio           o nome desse relógio; null: solto
@@ -1284,9 +1511,10 @@
  *     servicos[].relogio             o nome do relógio
  *     servicos[].data                a data do serviço (AAAA-MM-DD)
  *     servicos[].ha_dias             há quantos dias foi (no dia da coleção)
- *     servicos[].tipo                revisao, pilha, estanqueidade, regulagem, polimento, reparo, diagnostico ou outro
+ *     servicos[].tipo                o tipo: o identificador de um item da lista Tipos de serviço (Manutenção › Listas: revisao, pilha,
+ *                                    estanqueidade, regulagem, polimento...)
  *     servicos[].tipo_texto          o tipo por extenso
- *     servicos[].responsavel         quem fez (a relojoaria, o relojoeiro); null: não informado
+ *     servicos[].oficina             a oficina do serviço (a da manutenção de que ele é o encerramento: Manutenção › Oficinas)
  *     servicos[].descricao           o que foi feito; null: não informado
  *     servicos[].mao_de_obra         a mão de obra, em R$; null: não informada
  *     servicos[].pecas               as peças trocadas, na ordem
@@ -1295,8 +1523,13 @@
  *     servicos[].pecas[].custo       o custo da peça, em R$; null: não informado
  *     servicos[].custo_pecas         a soma do custo das peças, em R$ (0 sem nenhuma com custo)
  *     servicos[].custo               o custo do serviço: a mão de obra mais as peças, em R$; null: nada com custo
- *     servicos[].estanqueidade       o teste de estanqueidade: aprovado ou reprovado; null: não testada
- *     servicos[].estanqueidade_texto aprovada ou reprovada, por extenso; null: não testada
+ *     servicos[].estanqueidade       o resultado do teste de estanqueidade: o identificador de um item da lista Resultados do teste de
+ *                                    estanqueidade (Manutenção › Listas: aprovado, reprovado...); null: não testada
+ *     servicos[].estanqueidade_texto o resultado por extenso (o nome do item, em minúsculas); null: não testada
+ *     servicos[].estanqueidade_aprova
+ *                                    o resultado aprova a vedação (o item do resultado faz aprova)? true ou false; null: não testada
+ *     servicos[].manutencao_id       a manutenção de que o serviço é o encerramento (recurso=manutencao)
+ *     servicos[].oficina_id          o número da oficina
  *     servicos[].estanqueidade_bar   a pressão do teste, em bar; null: não informada
  *     servicos[].marcha_antes        a marcha antes do serviço, informada pelo profissional, em s/dia (+ adianta); null: não informada
  *     servicos[].marcha_depois       a marcha depois do serviço, informada pelo profissional, em s/dia; null: não informada
@@ -1325,8 +1558,8 @@
  *     servicos[].documentos[].id     o número do documento
  *     servicos[].documentos[].titulo o título
  *     servicos[].documentos[].url    o endereço do arquivo (recurso=documento)
- *     servicos[].marcacao            true se o serviço virou também a marcação do tipo de lançamento de mesmo nome (a revisão e a troca de
- *                                    pilha)
+ *     servicos[].marcacao            true se o serviço virou também a marcação do tipo de lançamento que o tipo de serviço marca (o texto
+ *                                    do item: revisao, pilha)
  *     servicos[].criado              quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     timegrapher                    as medições do timegrapher de todos os relógios (como em recurso=timegrapher)
  *     timegrapher[]                  uma medição
@@ -1356,7 +1589,8 @@
  *     reserva[].id                   o número do teste ou da observação (o id da gravação)
  *     reserva[].relogio_id           o relógio
  *     reserva[].relogio              o nome do relógio
- *     reserva[].tipo                 teste (o teste da reserva), parou, carga_baixa (o indicador de carga baixa) ou nota (outra observação)
+ *     reserva[].tipo                 teste (o teste da reserva) ou o identificador de uma observação da lista Observações da reserva
+ *                                    (Cadastros › Listas: parou, carga_baixa, nota...)
  *     reserva[].tipo_texto           o tipo por extenso
  *     reserva[].inicio               no teste, quando ele ficou cheio; na observação, quando foi (texto AAAA-MM-DD HH:MM:SS, no fuso do
  *                                    pedido)
@@ -1426,8 +1660,9 @@
  *                                    cópia; a Configuração da coleção, documentos_copia, se escolhe, vale por cima)
  *     relogios[].calibre_id          o id do calibre dele (o movimento); null: sem calibre
  *     relogios[].calibre             o nome do calibre dele; null: sem calibre
- *     relogios[].posse               a situação na coleção: colecao (na coleção), desejado (a lista de desejos), emprestado, vendido ou
- *                                    arquivado; fora da coleção, disponivel é sempre falso
+ *     relogios[].posse               a situação na coleção: o identificador de um item da lista Situações do relógio na coleção (Cadastros
+ *                                    › Listas: colecao, emprestado, desejado, vendido, arquivado...); o que ela faz está em
+ *                                    posse_comportamento
  *     relogios[].em_uso              verdadeiro ou falso: o relógio está com uma sessão no pulso aberta agora
  *     relogios[].energia             a energia agora, em % inteiro (a fórmula energia: bateria, reserva, luz ou pilha); null sem dados para
  *                                    calcular
@@ -1900,6 +2135,13 @@
  *     relogios[].restante_guardado   quanto ainda dura a partir de agora se ficar parado depois do que já está lançado (número inteiro, em
  *                                    segundos); null com o motivo
  *   recurso=hoje
+ *     fora_da_colecao[].posse_comportamento
+ *                                    o que a situação faz (o comportamento do item): colecao (entra no rodízio), emprestado (da coleção,
+ *                                    fora do rodízio), desejado (a lista de desejos) ou fora (fora da coleção)
+ *     relogios[].posse_comportamento o que a situação faz (o comportamento do item): colecao (entra no rodízio), emprestado (da coleção,
+ *                                    fora do rodízio), desejado (a lista de desejos) ou fora (fora da coleção)
+ *     relogios[].em_manutencao       a oficina em que ele está (o relógio em manutenção: indisponível, com o estado Em manutenção); null:
+ *                                    não está
  *     agora                          o instante da resposta (número inteiro: instante Unix (segundos desde 01/01/1970 UTC))
  *     avisos[]                       os avisos de hoje (atrasados ou em breve), um por relógio e aviso
  *     avisos[].estado                atrasado ou em_breve
@@ -1931,7 +2173,9 @@
  *     fora_da_colecao[].foto         a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
  *     fora_da_colecao[].id           o número (código)
  *     fora_da_colecao[].nome         o nome
- *     fora_da_colecao[].posse        a situação: desejado, vendido ou arquivado
+ *     fora_da_colecao[].posse        a situação na coleção: o identificador de um item da lista Situações do relógio na coleção (Cadastros
+ *                                    › Listas: colecao, emprestado, desejado, vendido, arquivado...); o que ela faz está em
+ *                                    posse_comportamento
  *     fora_da_colecao[].posse_texto  a mesma por extenso ("Desejado", "Vendido", "Arquivado")
  *     fora_da_colecao[].tipo         o grupo do relógio (o nome; "—": na raiz)
  *     estados[]                      os estados da tabela, na ordem (o filtro Estado): "Em uso", o nome de cada sessão que não é o pulso
@@ -2046,8 +2290,9 @@
  *     relogios[].de_hoje             verdadeiro ou falso: é o relógio de hoje
  *     relogios[].destaque            verdadeiro ou falso: é o relógio do destaque no alto da página (o mesmo de destaque.relogio_id)
  *     relogios[].disponivel          verdadeiro ou falso: entra no rodízio
- *     relogios[].posse               a situação na coleção: colecao ou emprestado (os desejados, vendidos e arquivados ficam em
- *                                    fora_da_colecao)
+ *     relogios[].posse               a situação na coleção: o identificador de um item da lista Situações do relógio na coleção (Cadastros
+ *                                    › Listas: colecao, emprestado, desejado, vendido, arquivado...); o que ela faz está em
+ *                                    posse_comportamento
  *     relogios[].posse_texto         a mesma por extenso: "Na coleção" ou "Emprestado"
  *     relogios[].em_uso              verdadeiro ou falso: no pulso agora
  *     relogios[].estado              o estado na tabela: uso (no pulso), sessao (numa sessão que não é o pulso: no sol, no winder, no
@@ -2091,6 +2336,289 @@
  *     totais.valor                   a soma do valor pago (valor_compra) de todos, em R$ (os sem valor contam 0)
  *     uso_inicio                     a hora em que o relógio do dia vai para o pulso (HH:MM)
  *   recurso=ficha
+ *     posses                         os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     posses[]                       as situações na coleção, na ordem (o menu "Situação na coleção" do cadastro)
+ *     posses[].valor                 o identificador da situação, o que vai na gravação (posse)
+ *     posses[].nome                  o nome ("Na coleção", "Desejado", "Emprestado", "Vendido", "Arquivado")
+ *     posses[].id                    o número do item (o id da gravação, recurso=listas)
+ *     posses[].ordem                 a ordem na lista
+ *     posses[].comportamento         o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     posses[].texto                 o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     posses[].cor                   a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     relogio.estanqueidades         os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     relogio.estanqueidades[]       um item da lista
+ *     relogio.estanqueidades[].valor o identificador do item (fixo: é o que se grava e o que a API e as fórmulas citam)
+ *     relogio.estanqueidades[].nome  o nome do item
+ *     relogio.estanqueidades[].id    o número do item (o id da gravação, recurso=listas)
+ *     relogio.estanqueidades[].ordem a ordem na lista
+ *     relogio.estanqueidades[].comportamento
+ *                                    o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     relogio.estanqueidades[].texto o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     relogio.estanqueidades[].cor   a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     relogio.servico_tipos          os tipos de serviço, na ordem
+ *     relogio.servico_tipos[]        um tipo
+ *     relogio.servico_tipos[].valor  o tipo (o tipo da gravação)
+ *     relogio.servico_tipos[].nome   o nome por extenso
+ *     relogio.servico_tipos[].id     o número do item (o id da gravação, recurso=listas)
+ *     relogio.servico_tipos[].ordem  a ordem na lista
+ *     relogio.servico_tipos[].comportamento
+ *                                    o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     relogio.servico_tipos[].texto  o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     relogio.servico_tipos[].cor    a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     relogio.reserva.protocolos     os protocolos do teste, na ordem
+ *     relogio.reserva.protocolos[]   um protocolo
+ *     relogio.reserva.protocolos[].valor
+ *                                    o identificador de um jeito de carregar da lista Jeitos de carregar (Cadastros › Listas: corda,
+ *                                    winder, pulso, outro...)
+ *     relogio.reserva.protocolos[].nome
+ *                                    o nome por extenso
+ *     relogio.reserva.protocolos[].id
+ *                                    o número do item (o id da gravação, recurso=listas)
+ *     relogio.reserva.protocolos[].ordem
+ *                                    a ordem na lista
+ *     relogio.reserva.protocolos[].comportamento
+ *                                    o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     relogio.reserva.protocolos[].texto
+ *                                    o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     relogio.reserva.protocolos[].cor
+ *                                    a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     relogio.reserva.tipos_observacao
+ *                                    os tipos das observações, na ordem
+ *     relogio.reserva.tipos_observacao[]
+ *                                    um tipo
+ *     relogio.reserva.tipos_observacao[].valor
+ *                                    o identificador de uma observação da lista Observações da reserva (Cadastros › Listas: parou,
+ *                                    carga_baixa, nota...)
+ *     relogio.reserva.tipos_observacao[].nome
+ *                                    o nome por extenso
+ *     relogio.reserva.tipos_observacao[].id
+ *                                    o número do item (o id da gravação, recurso=listas)
+ *     relogio.reserva.tipos_observacao[].ordem
+ *                                    a ordem na lista
+ *     relogio.reserva.tipos_observacao[].comportamento
+ *                                    o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     relogio.reserva.tipos_observacao[].texto
+ *                                    o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     relogio.reserva.tipos_observacao[].cor
+ *                                    a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     relogio.posse_comportamento    o que a situação faz (o comportamento do item): colecao (entra no rodízio), emprestado (da coleção,
+ *                                    fora do rodízio), desejado (a lista de desejos) ou fora (fora da coleção)
+ *     relogio.manutencao_aberta      a manutenção aberta (o relógio na oficina agora: o quadro Manutenção); null: não está em manutenção
+ *     relogio.manutencao_aberta.id   o número da manutenção
+ *     relogio.manutencao_aberta.relogio_id
+ *                                    o relógio
+ *     relogio.manutencao_aberta.relogio
+ *                                    o nome do relógio
+ *     relogio.manutencao_aberta.oficina_id
+ *                                    a oficina (Manutenção › Oficinas)
+ *     relogio.manutencao_aberta.oficina
+ *                                    o nome da oficina
+ *     relogio.manutencao_aberta.situacao
+ *                                    a situação agora: o identificador de um item da lista Situações da manutenção (Manutenção › Listas:
+ *                                    enviado, orcamento, aprovado, peca, pronto, retirado...)
+ *     relogio.manutencao_aberta.situacao_texto
+ *                                    a situação por extenso
+ *     relogio.manutencao_aberta.situacao_comportamento
+ *                                    o que a situação faz: aberta (o relógio na oficina), encerra (voltou e virou serviço) ou cancela
+ *                                    (voltou sem serviço)
+ *     relogio.manutencao_aberta.situacao_cor
+ *                                    a cor da situação (#rrggbb); null: sem
+ *     relogio.manutencao_aberta.aviso
+ *                                    aberta: o aviso da situação de agora (Aprovar o orçamento, Retirar na oficina); null: sem aviso
+ *     relogio.manutencao_aberta.aberta
+ *                                    true com o relógio na oficina agora (a situação faz aberta)
+ *     relogio.manutencao_aberta.tipo o tipo de serviço pedido: o identificador de um item da lista Tipos de serviço
+ *     relogio.manutencao_aberta.tipo_texto
+ *                                    o tipo de serviço por extenso
+ *     relogio.manutencao_aberta.problema
+ *                                    o problema (o que se pediu à oficina); null: sem
+ *     relogio.manutencao_aberta.os   o número da ordem de serviço da oficina; null: sem
+ *     relogio.manutencao_aberta.enviado
+ *                                    o dia do envio (AAAA-MM-DD)
+ *     relogio.manutencao_aberta.previsao
+ *                                    o dia previsto para a volta (AAAA-MM-DD); null: sem
+ *     relogio.manutencao_aberta.atrasada
+ *                                    true se ela está aberta e a previsão já passou (o aviso Cobrar a oficina)
+ *     relogio.manutencao_aberta.dias quantos dias o relógio ficou (ou está) na oficina: do envio à volta, ou até hoje
+ *     relogio.manutencao_aberta.orcamento
+ *                                    o orçamento, em R$; null: sem
+ *     relogio.manutencao_aberta.orcamento_data
+ *                                    o dia do orçamento (AAAA-MM-DD); null: sem
+ *     relogio.manutencao_aberta.encerrado
+ *                                    o dia da volta (AAAA-MM-DD, numa situação que encerra ou cancela); null: aberta
+ *     relogio.manutencao_aberta.disponivel_antes
+ *                                    a disponibilidade para o rodízio com que o relógio volta (a de antes do envio, ou a pedida durante a
+ *                                    manutenção)
+ *     relogio.manutencao_aberta.observacao
+ *                                    a observação; null: sem
+ *     relogio.manutencao_aberta.desde
+ *                                    quando ela entrou na situação de agora (a última mudança da história)
+ *     relogio.manutencao_aberta.eventos
+ *                                    a história: cada mudança de situação, da mais velha para a mais nova
+ *     relogio.manutencao_aberta.eventos[]
+ *                                    uma mudança
+ *     relogio.manutencao_aberta.eventos[].situacao
+ *                                    o identificador da situação
+ *     relogio.manutencao_aberta.eventos[].situacao_texto
+ *                                    a situação por extenso
+ *     relogio.manutencao_aberta.eventos[].quando
+ *                                    quando (texto AAAA-MM-DD HH:MM:SS)
+ *     relogio.manutencao_aberta.eventos[].observacao
+ *                                    a observação da mudança; null: sem
+ *     relogio.manutencao_aberta.acessorios
+ *                                    o que foi junto (os acessórios da coleção)
+ *     relogio.manutencao_aberta.acessorios[]
+ *                                    um acessório
+ *     relogio.manutencao_aberta.acessorios[].id
+ *                                    o número do acessório
+ *     relogio.manutencao_aberta.acessorios[].nome
+ *                                    o nome do acessório
+ *     relogio.manutencao_aberta.acessorios[].tipo_texto
+ *                                    o tipo do acessório por extenso
+ *     relogio.manutencao_aberta.documentos
+ *                                    os documentos do envio (os do relógio: a OS, o orçamento, as fotos da entrega)
+ *     relogio.manutencao_aberta.documentos[]
+ *                                    um documento
+ *     relogio.manutencao_aberta.documentos[].id
+ *                                    o número do documento
+ *     relogio.manutencao_aberta.documentos[].titulo
+ *                                    o título
+ *     relogio.manutencao_aberta.documentos[].url
+ *                                    o endereço do arquivo (recurso=documento)
+ *     relogio.manutencao_aberta.servicos
+ *                                    os serviços que a volta registrou (recurso=servicos)
+ *     relogio.manutencao_aberta.servicos[]
+ *                                    um serviço
+ *     relogio.manutencao_aberta.servicos[].id
+ *                                    o número do serviço
+ *     relogio.manutencao_aberta.servicos[].data
+ *                                    a data do serviço (AAAA-MM-DD)
+ *     relogio.manutencao_aberta.servicos[].tipo_texto
+ *                                    o tipo do serviço por extenso
+ *     relogio.manutencao_aberta.servicos[].custo
+ *                                    o custo do serviço (a mão de obra mais as peças), em R$; null: nada com custo
+ *     relogio.manutencao_aberta.custo
+ *                                    o custo da manutenção: os serviços dela somados, em R$; null: nada com custo
+ *     relogio.manutencao_aberta.criado
+ *                                    quando foi cadastrada (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     relogio.manutencoes_oficina    as manutenções do relógio (as idas à oficina), da mais nova para a mais velha
+ *     relogio.manutencoes_oficina[]  uma manutenção
+ *     relogio.manutencoes_oficina[].id
+ *                                    o número da manutenção
+ *     relogio.manutencoes_oficina[].relogio_id
+ *                                    o relógio
+ *     relogio.manutencoes_oficina[].relogio
+ *                                    o nome do relógio
+ *     relogio.manutencoes_oficina[].oficina_id
+ *                                    a oficina (Manutenção › Oficinas)
+ *     relogio.manutencoes_oficina[].oficina
+ *                                    o nome da oficina
+ *     relogio.manutencoes_oficina[].situacao
+ *                                    a situação agora: o identificador de um item da lista Situações da manutenção (Manutenção › Listas:
+ *                                    enviado, orcamento, aprovado, peca, pronto, retirado...)
+ *     relogio.manutencoes_oficina[].situacao_texto
+ *                                    a situação por extenso
+ *     relogio.manutencoes_oficina[].situacao_comportamento
+ *                                    o que a situação faz: aberta (o relógio na oficina), encerra (voltou e virou serviço) ou cancela
+ *                                    (voltou sem serviço)
+ *     relogio.manutencoes_oficina[].situacao_cor
+ *                                    a cor da situação (#rrggbb); null: sem
+ *     relogio.manutencoes_oficina[].aviso
+ *                                    aberta: o aviso da situação de agora (Aprovar o orçamento, Retirar na oficina); null: sem aviso
+ *     relogio.manutencoes_oficina[].aberta
+ *                                    true com o relógio na oficina agora (a situação faz aberta)
+ *     relogio.manutencoes_oficina[].tipo
+ *                                    o tipo de serviço pedido: o identificador de um item da lista Tipos de serviço
+ *     relogio.manutencoes_oficina[].tipo_texto
+ *                                    o tipo de serviço por extenso
+ *     relogio.manutencoes_oficina[].problema
+ *                                    o problema (o que se pediu à oficina); null: sem
+ *     relogio.manutencoes_oficina[].os
+ *                                    o número da ordem de serviço da oficina; null: sem
+ *     relogio.manutencoes_oficina[].enviado
+ *                                    o dia do envio (AAAA-MM-DD)
+ *     relogio.manutencoes_oficina[].previsao
+ *                                    o dia previsto para a volta (AAAA-MM-DD); null: sem
+ *     relogio.manutencoes_oficina[].atrasada
+ *                                    true se ela está aberta e a previsão já passou (o aviso Cobrar a oficina)
+ *     relogio.manutencoes_oficina[].dias
+ *                                    quantos dias o relógio ficou (ou está) na oficina: do envio à volta, ou até hoje
+ *     relogio.manutencoes_oficina[].orcamento
+ *                                    o orçamento, em R$; null: sem
+ *     relogio.manutencoes_oficina[].orcamento_data
+ *                                    o dia do orçamento (AAAA-MM-DD); null: sem
+ *     relogio.manutencoes_oficina[].encerrado
+ *                                    o dia da volta (AAAA-MM-DD, numa situação que encerra ou cancela); null: aberta
+ *     relogio.manutencoes_oficina[].disponivel_antes
+ *                                    a disponibilidade para o rodízio com que o relógio volta (a de antes do envio, ou a pedida durante a
+ *                                    manutenção)
+ *     relogio.manutencoes_oficina[].observacao
+ *                                    a observação; null: sem
+ *     relogio.manutencoes_oficina[].desde
+ *                                    quando ela entrou na situação de agora (a última mudança da história)
+ *     relogio.manutencoes_oficina[].eventos
+ *                                    a história: cada mudança de situação, da mais velha para a mais nova
+ *     relogio.manutencoes_oficina[].eventos[]
+ *                                    uma mudança
+ *     relogio.manutencoes_oficina[].eventos[].situacao
+ *                                    o identificador da situação
+ *     relogio.manutencoes_oficina[].eventos[].situacao_texto
+ *                                    a situação por extenso
+ *     relogio.manutencoes_oficina[].eventos[].quando
+ *                                    quando (texto AAAA-MM-DD HH:MM:SS)
+ *     relogio.manutencoes_oficina[].eventos[].observacao
+ *                                    a observação da mudança; null: sem
+ *     relogio.manutencoes_oficina[].acessorios
+ *                                    o que foi junto (os acessórios da coleção)
+ *     relogio.manutencoes_oficina[].acessorios[]
+ *                                    um acessório
+ *     relogio.manutencoes_oficina[].acessorios[].id
+ *                                    o número do acessório
+ *     relogio.manutencoes_oficina[].acessorios[].nome
+ *                                    o nome do acessório
+ *     relogio.manutencoes_oficina[].acessorios[].tipo_texto
+ *                                    o tipo do acessório por extenso
+ *     relogio.manutencoes_oficina[].documentos
+ *                                    os documentos do envio (os do relógio: a OS, o orçamento, as fotos da entrega)
+ *     relogio.manutencoes_oficina[].documentos[]
+ *                                    um documento
+ *     relogio.manutencoes_oficina[].documentos[].id
+ *                                    o número do documento
+ *     relogio.manutencoes_oficina[].documentos[].titulo
+ *                                    o título
+ *     relogio.manutencoes_oficina[].documentos[].url
+ *                                    o endereço do arquivo (recurso=documento)
+ *     relogio.manutencoes_oficina[].servicos
+ *                                    os serviços que a volta registrou (recurso=servicos)
+ *     relogio.manutencoes_oficina[].servicos[]
+ *                                    um serviço
+ *     relogio.manutencoes_oficina[].servicos[].id
+ *                                    o número do serviço
+ *     relogio.manutencoes_oficina[].servicos[].data
+ *                                    a data do serviço (AAAA-MM-DD)
+ *     relogio.manutencoes_oficina[].servicos[].tipo_texto
+ *                                    o tipo do serviço por extenso
+ *     relogio.manutencoes_oficina[].servicos[].custo
+ *                                    o custo do serviço (a mão de obra mais as peças), em R$; null: nada com custo
+ *     relogio.manutencoes_oficina[].custo
+ *                                    o custo da manutenção: os serviços dela somados, em R$; null: nada com custo
+ *     relogio.manutencoes_oficina[].criado
+ *                                    quando foi cadastrada (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     relogio.oficinas               as oficinas da coleção (o formulário do serviço: sem manutenção, ele ganha uma já encerrada na oficina
+ *                                    escolhida)
+ *     relogio.oficinas[]             uma oficina
+ *     relogio.oficinas[].id          o número da oficina
+ *     relogio.oficinas[].nome        o nome da oficina
  *     campos[]                       os campos do cadastro
  *     campos[].identificador         o campo
  *     campos[].no_id                 o grupo em que vale (0: todos)
@@ -2116,9 +2644,6 @@
  *     calibres[].nome                o nome
  *     calibres[].fabricante          o fabricante; null: não informado
  *     grupos[]                       os grupos (o seletor do cadastro)
- *     posses[]                       as situações na coleção, na ordem (o menu "Situação na coleção" do cadastro)
- *     posses[].nome                  o nome ("Na coleção", "Desejado", "Emprestado", "Vendido", "Arquivado")
- *     posses[].valor                 o valor que vai na gravação (posse): colecao, desejado, emprestado, vendido ou arquivado
  *     grupos[].cadeia[]              os ids do grupo e dos de cima
  *     grupos[].caminho               o caminho
  *     grupos[].id                    o número
@@ -2229,14 +2754,17 @@
  *                                    imagem, video, audio, pdf, xml ou outro
  *     relogio.calibre.documentos[].url
  *                                    o endereço do arquivo (recurso=documento)
- *     relogio.posse                  a situação na coleção: colecao, desejado, emprestado, vendido ou arquivado (fora da coleção,
- *                                    disponivel é sempre falso)
+ *     relogio.posse                  a situação na coleção: o identificador de um item da lista Situações do relógio na coleção (Cadastros
+ *                                    › Listas: colecao, emprestado, desejado, vendido, arquivado...); o que ela faz está em
+ *                                    posse_comportamento
  *     relogio.posse_texto            a mesma por extenso ("Na coleção", "Desejado"...)
- *     relogio.da_colecao             verdadeiro: é da coleção agora (na coleção ou emprestado); falso: desejado, vendido ou arquivado
+ *     relogio.da_colecao             verdadeiro: é da coleção agora (a situação faz colecao ou emprestado); falso: desejado ou fora da
+ *                                    coleção
  *     relogio.acessorios[]           os acessórios dele (o quadro Acessórios), pelo tipo e pelo nome
  *     relogio.acessorios[].id        o número do acessório
  *     relogio.acessorios[].nome      o nome
- *     relogio.acessorios[].tipo      pulseira, caixa, estojo, ferramenta, carregador, peca ou outro
+ *     relogio.acessorios[].tipo      o tipo: o identificador de um item da lista Tipos de acessório (Cadastros › Listas: pulseira, caixa,
+ *                                    estojo, ferramenta, carregador, peca, outro...)
  *     relogio.acessorios[].tipo_texto
  *                                    o tipo por extenso
  *     relogio.acessorios[].relogio_id
@@ -2295,7 +2823,8 @@
  *     relogio.acessorios_servem[].nome
  *                                    o nome do acessório
  *     relogio.acessorios_servem[].tipo
- *                                    o tipo (pulseira, caixa, estojo, ferramenta, carregador, peca ou outro)
+ *                                    o tipo: o identificador de um item da lista Tipos de acessório (Cadastros › Listas: pulseira, caixa,
+ *                                    estojo, ferramenta, carregador, peca, outro...)
  *     relogio.acessorios_servem[].tipo_texto
  *                                    o tipo, no idioma
  *     relogio.acessorios_servem[].relogio_id
@@ -2314,9 +2843,10 @@
  *     relogio.servicos[].relogio     o nome do relógio
  *     relogio.servicos[].data        a data do serviço (AAAA-MM-DD)
  *     relogio.servicos[].ha_dias     há quantos dias foi (no dia da coleção)
- *     relogio.servicos[].tipo        revisao, pilha, estanqueidade, regulagem, polimento, reparo, diagnostico ou outro
+ *     relogio.servicos[].tipo        o tipo: o identificador de um item da lista Tipos de serviço (Manutenção › Listas: revisao, pilha,
+ *                                    estanqueidade, regulagem, polimento...)
  *     relogio.servicos[].tipo_texto  o tipo por extenso
- *     relogio.servicos[].responsavel quem fez (a relojoaria, o relojoeiro); null: não informado
+ *     relogio.servicos[].oficina     a oficina do serviço (a da manutenção de que ele é o encerramento: Manutenção › Oficinas)
  *     relogio.servicos[].descricao   o que foi feito; null: não informado
  *     relogio.servicos[].mao_de_obra a mão de obra, em R$; null: não informada
  *     relogio.servicos[].pecas       as peças trocadas, na ordem
@@ -2328,9 +2858,15 @@
  *     relogio.servicos[].custo_pecas a soma do custo das peças, em R$ (0 sem nenhuma com custo)
  *     relogio.servicos[].custo       o custo do serviço: a mão de obra mais as peças, em R$; null: nada com custo
  *     relogio.servicos[].estanqueidade
- *                                    o teste de estanqueidade: aprovado ou reprovado; null: não testada
+ *                                    o resultado do teste de estanqueidade: o identificador de um item da lista Resultados do teste de
+ *                                    estanqueidade (Manutenção › Listas: aprovado, reprovado...); null: não testada
  *     relogio.servicos[].estanqueidade_texto
- *                                    aprovada ou reprovada, por extenso; null: não testada
+ *                                    o resultado por extenso (o nome do item, em minúsculas); null: não testada
+ *     relogio.servicos[].estanqueidade_aprova
+ *                                    o resultado aprova a vedação (o item do resultado faz aprova)? true ou false; null: não testada
+ *     relogio.servicos[].manutencao_id
+ *                                    a manutenção de que o serviço é o encerramento (recurso=manutencao)
+ *     relogio.servicos[].oficina_id  o número da oficina
  *     relogio.servicos[].estanqueidade_bar
  *                                    a pressão do teste, em bar; null: não informada
  *     relogio.servicos[].marcha_antes
@@ -2373,8 +2909,8 @@
  *                                    o título
  *     relogio.servicos[].documentos[].url
  *                                    o endereço do arquivo (recurso=documento)
- *     relogio.servicos[].marcacao    true se o serviço virou também a marcação do tipo de lançamento de mesmo nome (a revisão e a troca de
- *                                    pilha)
+ *     relogio.servicos[].marcacao    true se o serviço virou também a marcação do tipo de lançamento que o tipo de serviço marca (o texto
+ *                                    do item: revisao, pilha)
  *     relogio.servicos[].criado      quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.servicos_resumo        o resumo dos serviços (a resistência declarada, a estanqueidade comprovada, quantos, o custo somado, o
  *                                    último)
@@ -2400,19 +2936,17 @@
  *     relogio.servicos_resumo.estanqueidade.ha_dias
  *                                    há quantos dias
  *     relogio.servicos_resumo.estanqueidade.resultado
- *                                    aprovado ou reprovado
+ *                                    o identificador do resultado (Manutenção › Listas: aprovado, reprovado...)
  *     relogio.servicos_resumo.estanqueidade.resultado_texto
- *                                    aprovada ou reprovada, por extenso
+ *                                    o resultado por extenso (o nome do item, em minúsculas)
+ *     relogio.servicos_resumo.estanqueidade.aprova
+ *                                    true se o resultado aprova a vedação; false se reprova
  *     relogio.servicos_resumo.estanqueidade.bar
  *                                    a pressão do teste, em bar; null
  *     relogio.servicos_resumo.estanqueidade.servico_id
  *                                    o serviço do teste
  *     relogio.servicos_resumo.testes_estanqueidade
  *                                    quantos serviços tiveram o teste de estanqueidade
- *     relogio.servico_tipos          os tipos de serviço, na ordem
- *     relogio.servico_tipos[]        um tipo
- *     relogio.servico_tipos[].valor  o tipo (o tipo da gravação)
- *     relogio.servico_tipos[].nome   o nome por extenso
  *     relogio.servico_tipos[].marca  true se o serviço desse tipo vira também a marcação de mesmo nome (revisao, pilha)
  *     relogio.servico_documentos     os documentos do relógio que um serviço pode citar (o formulário)
  *     relogio.servico_documentos[]   um documento
@@ -2563,7 +3097,8 @@
  *     relogio.reserva.aberto.relogio_id
  *                                    o relógio
  *     relogio.reserva.aberto.relogio o nome do relógio
- *     relogio.reserva.aberto.tipo    teste (o teste da reserva), parou, carga_baixa (o indicador de carga baixa) ou nota (outra observação)
+ *     relogio.reserva.aberto.tipo    teste (o teste da reserva) ou o identificador de uma observação da lista Observações da reserva
+ *                                    (Cadastros › Listas: parou, carga_baixa, nota...)
  *     relogio.reserva.aberto.tipo_texto
  *                                    o tipo por extenso
  *     relogio.reserva.aberto.inicio  no teste, quando ele ficou cheio; na observação, quando foi (texto AAAA-MM-DD HH:MM:SS, no fuso do
@@ -2592,7 +3127,8 @@
  *                                    o relógio
  *     relogio.reserva.testes[].relogio
  *                                    o nome do relógio
- *     relogio.reserva.testes[].tipo  teste (o teste da reserva), parou, carga_baixa (o indicador de carga baixa) ou nota (outra observação)
+ *     relogio.reserva.testes[].tipo  teste (o teste da reserva) ou o identificador de uma observação da lista Observações da reserva
+ *                                    (Cadastros › Listas: parou, carga_baixa, nota...)
  *     relogio.reserva.testes[].tipo_texto
  *                                    o tipo por extenso
  *     relogio.reserva.testes[].inicio
@@ -2625,7 +3161,8 @@
  *     relogio.reserva.observacoes[].relogio
  *                                    o nome do relógio
  *     relogio.reserva.observacoes[].tipo
- *                                    teste (o teste da reserva), parou, carga_baixa (o indicador de carga baixa) ou nota (outra observação)
+ *                                    teste (o teste da reserva) ou o identificador de uma observação da lista Observações da reserva
+ *                                    (Cadastros › Listas: parou, carga_baixa, nota...)
  *     relogio.reserva.observacoes[].tipo_texto
  *                                    o tipo por extenso
  *     relogio.reserva.observacoes[].inicio
@@ -2666,22 +3203,8 @@
  *                                    do grupo); null: ele não tem
  *     relogio.reserva.usar_horas     o que "Usar a medida" (escrita reserva, acao=usar) gravaria no cadastro dele: a mediana em horas
  *                                    inteiras; null: sem medida, ou o cadastro já tem esse valor
- *     relogio.reserva.protocolos     os protocolos do teste, na ordem
- *     relogio.reserva.protocolos[]   um protocolo
- *     relogio.reserva.protocolos[].valor
- *                                    corda, winder, pulso ou outro
- *     relogio.reserva.protocolos[].nome
- *                                    o nome por extenso
  *     relogio.reserva.protocolos[].unidade
  *                                    o que o número diz (voltas, h); vazio: nada
- *     relogio.reserva.tipos_observacao
- *                                    os tipos das observações, na ordem
- *     relogio.reserva.tipos_observacao[]
- *                                    um tipo
- *     relogio.reserva.tipos_observacao[].valor
- *                                    parou, carga_baixa ou nota
- *     relogio.reserva.tipos_observacao[].nome
- *                                    o nome por extenso
  *     relogio.tecnico                declarado, medido e estimado: cada informação técnica numa tabelinha de três linhas, com a confiança
  *                                    (nos quadros Precisão, Reserva e Serviços e diagnósticos)
  *     relogio.tecnico[]              uma informação
@@ -3342,6 +3865,19 @@
  *     relogios[].no_id               o grupo (0: raiz)
  *     relogios[].nome                o nome
  *   recurso=cadastros
+ *     acessorio_tipos                os tipos de acessório, na ordem (o menu Tipo de acessório de um campo para acessório)
+ *     acessorio_tipos[]              um tipo
+ *     acessorio_tipos[].valor        o tipo: o identificador de um item da lista Tipos de acessório (Cadastros › Listas: pulseira, caixa,
+ *                                    estojo, ferramenta, carregador, peca, outro...)
+ *     acessorio_tipos[].nome         o nome do tipo, no idioma
+ *     acessorio_tipos[].id           o número do item (o id da gravação, recurso=listas)
+ *     acessorio_tipos[].ordem        a ordem na lista
+ *     acessorio_tipos[].comportamento
+ *                                    o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     acessorio_tipos[].texto        o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     acessorio_tipos[].cor          a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
  *     unidades                       as unidades da árvore, para o menu Unidade dos campos, dos tipos de lançamento e das fórmulas (a aba
  *                                    Unidades usa o recurso=unidades)
  *     unidades[]                     uma unidade
@@ -3385,10 +3921,6 @@
  *                                    dos relógios)
  *     campos[].serve_campo_id        no campo de acessório, o campo do relógio (campos[].id) com que ele tem de bater para o acessório
  *                                    servir no relógio (a largura da pulseira com o entre alças); null: nenhum
- *     acessorio_tipos                os tipos de acessório, na ordem (o menu Tipo de acessório de um campo para acessório)
- *     acessorio_tipos[]              um tipo
- *     acessorio_tipos[].valor        o tipo (pulseira, caixa, estojo, ferramenta, carregador, peca ou outro)
- *     acessorio_tipos[].nome         o nome do tipo, no idioma
  *     campos[].regra                 o mínimo e o máximo do número em texto, para mostrar embaixo da entrada ("de 20 a 60 mm"); null: sem
  *                                    limite
  *     secoes                         as divisórias da ficha (Cadastros › Divisórias), na ordem
@@ -3840,6 +4372,10 @@
  *     dias[].acao                    o lembrete do dia (o que fazer antes: carregar, dar corda...); null: nenhum
  *     dias[].motivo                  por que o relógio está no dia; null: nenhum
  *   recurso=desejos
+ *     fora[].posse_comportamento     o que a situação faz (o comportamento do item): colecao (entra no rodízio), emprestado (da coleção,
+ *                                    fora do rodízio), desejado (a lista de desejos) ou fora (fora da coleção)
+ *     posse_colecao                  a situação (o identificador) que o Comprei e o Voltar para a coleção gravam: a primeira que faz
+ *                                    colecao
  *     desejados[]                    os relógios desejados (a lista de desejos), a prioridade mais alta primeiro, depois pelo nome
  *     desejados[].caminho            o caminho do grupo ("Automáticos › Mergulho"; "todos os relógios" na raiz)
  *     desejados[].no_id              o grupo do relógio (o id do ponto da árvore); null na raiz
@@ -3861,7 +4397,9 @@
  *     fora[].foto                    a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
  *     fora[].id                      o número (código)
  *     fora[].nome                    o nome
- *     fora[].posse                   a situação: emprestado, vendido ou arquivado
+ *     fora[].posse                   a situação na coleção: o identificador de um item da lista Situações do relógio na coleção (Cadastros
+ *                                    › Listas: colecao, emprestado, desejado, vendido, arquivado...); o que ela faz está em
+ *                                    posse_comportamento
  *     fora[].posse_texto             a mesma por extenso
  *     fora[].tipo                    o grupo do relógio (o nome; "sem grupo" na raiz)
  *     grupos[]                       os grupos em ordem de árvore
@@ -4075,6 +4613,8 @@
  *     campos_no_formulario           os campos do formulário de um calibre novo, pelo identificador, na ordem do cadastro
  *     campos_no_formulario[]         o identificador de um campo
  *   recurso=estatisticas
+ *     relogios[].posse_comportamento o que a situação faz (o comportamento do item): colecao (entra no rodízio), emprestado (da coleção,
+ *                                    fora do rodízio), desejado (a lista de desejos) ou fora (fora da coleção)
  *     de                             o começo do período (texto AAAA-MM-DD)
  *     ate                            o fim do período (texto AAAA-MM-DD; no máximo hoje)
  *     hoje                           hoje (texto AAAA-MM-DD: o máximo das datas do filtro)
@@ -4104,7 +4644,9 @@
  *     relogios[].id                  o número (código)
  *     relogios[].nome                o nome
  *     relogios[].tipo                o grupo do relógio (o nome; "sem grupo" na raiz)
- *     relogios[].posse               a situação na coleção (colecao, emprestado, desejado, vendido, arquivado)
+ *     relogios[].posse               a situação na coleção: o identificador de um item da lista Situações do relógio na coleção (Cadastros
+ *                                    › Listas: colecao, emprestado, desejado, vendido, arquivado...); o que ela faz está em
+ *                                    posse_comportamento
  *     relogios[].posse_texto         a mesma por extenso
  *     relogios[].usos                os dias de uso no período (os dias em que ele foi ao pulso)
  *     relogios[].horas               as horas no pulso no período (uma casa)
@@ -4208,10 +4750,24 @@
  *     lua.proxima_nova               a próxima lua nova (texto AAAA-MM-DD)
  *     como_acertar                   o passo a passo para acertar um relógio de ponteiros pela hora certa
  *   recurso=acessorios
+ *     tipos                          os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     tipos[]                        os tipos de acessório, na ordem (o menu Tipo)
+ *     tipos[].valor                  o valor que vai na gravação (tipo)
+ *     tipos[].nome                   o nome
+ *     tipos[].id                     o número do item (o id da gravação, recurso=listas)
+ *     tipos[].ordem                  a ordem na lista
+ *     tipos[].comportamento          o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     tipos[].texto                  o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     tipos[].cor                    a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     relogios[].posse_comportamento o que a situação faz (o comportamento do item): colecao (entra no rodízio), emprestado (da coleção,
+ *                                    fora do rodízio), desejado (a lista de desejos) ou fora (fora da coleção)
  *     acessorios[]                   os acessórios, pelo tipo e pelo nome
  *     acessorios[].id                o número do acessório
  *     acessorios[].nome              o nome ("Pulseira NATO verde")
- *     acessorios[].tipo              pulseira, caixa, estojo, ferramenta, carregador, peca ou outro
+ *     acessorios[].tipo              o tipo: o identificador de um item da lista Tipos de acessório (Cadastros › Listas: pulseira, caixa,
+ *                                    estojo, ferramenta, carregador, peca, outro...)
  *     acessorios[].tipo_texto        o tipo por extenso ("Pulseira", "Peça")
  *     acessorios[].relogio_id        o relógio de que ele é; null: solto (serve a vários)
  *     acessorios[].relogio           o nome desse relógio; null: solto
@@ -4250,9 +4806,6 @@
  *                                    limite
  *     campos[].serve                 o nome do campo do relógio com que ele tem de bater para o acessório servir no relógio (o entre
  *                                    alças); null: nenhum
- *     tipos[]                        os tipos de acessório, na ordem (o menu Tipo)
- *     tipos[].valor                  o valor que vai na gravação (tipo)
- *     tipos[].nome                   o nome
  *     por_tipo[]                     quantos acessórios da lista há de cada tipo (só os tipos que têm algum)
  *     por_tipo[].tipo                o tipo
  *     por_tipo[].nome                o nome do tipo
@@ -4261,7 +4814,9 @@
  *     relogios[]                     todos os relógios, pelo nome (o menu Relógio)
  *     relogios[].id                  o número (código)
  *     relogios[].nome                o nome
- *     relogios[].posse               a situação na coleção
+ *     relogios[].posse               a situação na coleção: o identificador de um item da lista Situações do relógio na coleção (Cadastros
+ *                                    › Listas: colecao, emprestado, desejado, vendido, arquivado...); o que ela faz está em
+ *                                    posse_comportamento
  *   recurso=winders
  *     winders                        os winders da coleção, pelo nome
  *     winders[]                      um winder
@@ -4517,7 +5072,350 @@
  *                                    em erros)
  *     sequencia                      com previa=1: os códigos dos movimentos da sequência do pedido, na ordem
  *     sequencia[]                    o código de um movimento
+ *   recurso=manutencao
+ *     filtro                         os filtros do pedido
+ *     filtro.relogio                 o relógio (0: todos)
+ *     filtro.oficina                 a oficina (0: todas)
+ *     filtro.de                      o começo do período (vazio: sem)
+ *     filtro.ate                     o fim do período (vazio: sem)
+ *     hoje                           o dia de hoje na coleção (AAAA-MM-DD)
+ *     abertas                        as manutenções abertas (os relógios na oficina agora), sem os filtros
+ *     abertas[]                      uma manutenção
+ *     abertas[].id                   o número da manutenção
+ *     abertas[].relogio_id           o relógio
+ *     abertas[].relogio              o nome do relógio
+ *     abertas[].oficina_id           a oficina (Manutenção › Oficinas)
+ *     abertas[].oficina              o nome da oficina
+ *     abertas[].situacao             a situação agora: o identificador de um item da lista Situações da manutenção (Manutenção › Listas:
+ *                                    enviado, orcamento, aprovado, peca, pronto, retirado...)
+ *     abertas[].situacao_texto       a situação por extenso
+ *     abertas[].situacao_comportamento
+ *                                    o que a situação faz: aberta (o relógio na oficina), encerra (voltou e virou serviço) ou cancela
+ *                                    (voltou sem serviço)
+ *     abertas[].situacao_cor         a cor da situação (#rrggbb); null: sem
+ *     abertas[].aviso                aberta: o aviso da situação de agora (Aprovar o orçamento, Retirar na oficina); null: sem aviso
+ *     abertas[].aberta               true com o relógio na oficina agora (a situação faz aberta)
+ *     abertas[].tipo                 o tipo de serviço pedido: o identificador de um item da lista Tipos de serviço
+ *     abertas[].tipo_texto           o tipo de serviço por extenso
+ *     abertas[].problema             o problema (o que se pediu à oficina); null: sem
+ *     abertas[].os                   o número da ordem de serviço da oficina; null: sem
+ *     abertas[].enviado              o dia do envio (AAAA-MM-DD)
+ *     abertas[].previsao             o dia previsto para a volta (AAAA-MM-DD); null: sem
+ *     abertas[].atrasada             true se ela está aberta e a previsão já passou (o aviso Cobrar a oficina)
+ *     abertas[].dias                 quantos dias o relógio ficou (ou está) na oficina: do envio à volta, ou até hoje
+ *     abertas[].orcamento            o orçamento, em R$; null: sem
+ *     abertas[].orcamento_data       o dia do orçamento (AAAA-MM-DD); null: sem
+ *     abertas[].encerrado            o dia da volta (AAAA-MM-DD, numa situação que encerra ou cancela); null: aberta
+ *     abertas[].disponivel_antes     a disponibilidade para o rodízio com que o relógio volta (a de antes do envio, ou a pedida durante a
+ *                                    manutenção)
+ *     abertas[].observacao           a observação; null: sem
+ *     abertas[].desde                quando ela entrou na situação de agora (a última mudança da história)
+ *     abertas[].eventos              a história: cada mudança de situação, da mais velha para a mais nova
+ *     abertas[].eventos[]            uma mudança
+ *     abertas[].eventos[].situacao   o identificador da situação
+ *     abertas[].eventos[].situacao_texto
+ *                                    a situação por extenso
+ *     abertas[].eventos[].quando     quando (texto AAAA-MM-DD HH:MM:SS)
+ *     abertas[].eventos[].observacao a observação da mudança; null: sem
+ *     abertas[].acessorios           o que foi junto (os acessórios da coleção)
+ *     abertas[].acessorios[]         um acessório
+ *     abertas[].acessorios[].id      o número do acessório
+ *     abertas[].acessorios[].nome    o nome do acessório
+ *     abertas[].acessorios[].tipo_texto
+ *                                    o tipo do acessório por extenso
+ *     abertas[].documentos           os documentos do envio (os do relógio: a OS, o orçamento, as fotos da entrega)
+ *     abertas[].documentos[]         um documento
+ *     abertas[].documentos[].id      o número do documento
+ *     abertas[].documentos[].titulo  o título
+ *     abertas[].documentos[].url     o endereço do arquivo (recurso=documento)
+ *     abertas[].servicos             os serviços que a volta registrou (recurso=servicos)
+ *     abertas[].servicos[]           um serviço
+ *     abertas[].servicos[].id        o número do serviço
+ *     abertas[].servicos[].data      a data do serviço (AAAA-MM-DD)
+ *     abertas[].servicos[].tipo_texto
+ *                                    o tipo do serviço por extenso
+ *     abertas[].servicos[].custo     o custo do serviço (a mão de obra mais as peças), em R$; null: nada com custo
+ *     abertas[].custo                o custo da manutenção: os serviços dela somados, em R$; null: nada com custo
+ *     abertas[].criado               quando foi cadastrada (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     manutencoes                    as manutenções dos filtros, da mais nova para a mais velha
+ *     manutencoes[]                  uma manutenção
+ *     manutencoes[].id               o número da manutenção
+ *     manutencoes[].relogio_id       o relógio
+ *     manutencoes[].relogio          o nome do relógio
+ *     manutencoes[].oficina_id       a oficina (Manutenção › Oficinas)
+ *     manutencoes[].oficina          o nome da oficina
+ *     manutencoes[].situacao         a situação agora: o identificador de um item da lista Situações da manutenção (Manutenção › Listas:
+ *                                    enviado, orcamento, aprovado, peca, pronto, retirado...)
+ *     manutencoes[].situacao_texto   a situação por extenso
+ *     manutencoes[].situacao_comportamento
+ *                                    o que a situação faz: aberta (o relógio na oficina), encerra (voltou e virou serviço) ou cancela
+ *                                    (voltou sem serviço)
+ *     manutencoes[].situacao_cor     a cor da situação (#rrggbb); null: sem
+ *     manutencoes[].aviso            aberta: o aviso da situação de agora (Aprovar o orçamento, Retirar na oficina); null: sem aviso
+ *     manutencoes[].aberta           true com o relógio na oficina agora (a situação faz aberta)
+ *     manutencoes[].tipo             o tipo de serviço pedido: o identificador de um item da lista Tipos de serviço
+ *     manutencoes[].tipo_texto       o tipo de serviço por extenso
+ *     manutencoes[].problema         o problema (o que se pediu à oficina); null: sem
+ *     manutencoes[].os               o número da ordem de serviço da oficina; null: sem
+ *     manutencoes[].enviado          o dia do envio (AAAA-MM-DD)
+ *     manutencoes[].previsao         o dia previsto para a volta (AAAA-MM-DD); null: sem
+ *     manutencoes[].atrasada         true se ela está aberta e a previsão já passou (o aviso Cobrar a oficina)
+ *     manutencoes[].dias             quantos dias o relógio ficou (ou está) na oficina: do envio à volta, ou até hoje
+ *     manutencoes[].orcamento        o orçamento, em R$; null: sem
+ *     manutencoes[].orcamento_data   o dia do orçamento (AAAA-MM-DD); null: sem
+ *     manutencoes[].encerrado        o dia da volta (AAAA-MM-DD, numa situação que encerra ou cancela); null: aberta
+ *     manutencoes[].disponivel_antes a disponibilidade para o rodízio com que o relógio volta (a de antes do envio, ou a pedida durante a
+ *                                    manutenção)
+ *     manutencoes[].observacao       a observação; null: sem
+ *     manutencoes[].desde            quando ela entrou na situação de agora (a última mudança da história)
+ *     manutencoes[].eventos          a história: cada mudança de situação, da mais velha para a mais nova
+ *     manutencoes[].eventos[]        uma mudança
+ *     manutencoes[].eventos[].situacao
+ *                                    o identificador da situação
+ *     manutencoes[].eventos[].situacao_texto
+ *                                    a situação por extenso
+ *     manutencoes[].eventos[].quando quando (texto AAAA-MM-DD HH:MM:SS)
+ *     manutencoes[].eventos[].observacao
+ *                                    a observação da mudança; null: sem
+ *     manutencoes[].acessorios       o que foi junto (os acessórios da coleção)
+ *     manutencoes[].acessorios[]     um acessório
+ *     manutencoes[].acessorios[].id  o número do acessório
+ *     manutencoes[].acessorios[].nome
+ *                                    o nome do acessório
+ *     manutencoes[].acessorios[].tipo_texto
+ *                                    o tipo do acessório por extenso
+ *     manutencoes[].documentos       os documentos do envio (os do relógio: a OS, o orçamento, as fotos da entrega)
+ *     manutencoes[].documentos[]     um documento
+ *     manutencoes[].documentos[].id  o número do documento
+ *     manutencoes[].documentos[].titulo
+ *                                    o título
+ *     manutencoes[].documentos[].url o endereço do arquivo (recurso=documento)
+ *     manutencoes[].servicos         os serviços que a volta registrou (recurso=servicos)
+ *     manutencoes[].servicos[]       um serviço
+ *     manutencoes[].servicos[].id    o número do serviço
+ *     manutencoes[].servicos[].data  a data do serviço (AAAA-MM-DD)
+ *     manutencoes[].servicos[].tipo_texto
+ *                                    o tipo do serviço por extenso
+ *     manutencoes[].servicos[].custo o custo do serviço (a mão de obra mais as peças), em R$; null: nada com custo
+ *     manutencoes[].custo            o custo da manutenção: os serviços dela somados, em R$; null: nada com custo
+ *     manutencoes[].criado           quando foi cadastrada (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     oficinas                       as oficinas da coleção, por nome
+ *     oficinas[]                     uma oficina
+ *     oficinas[].id                  o número da oficina
+ *     oficinas[].nome                o nome da oficina
+ *     oficinas[].tipo                o tipo: o identificador de um item da lista Tipos de oficina (Manutenção › Listas)
+ *     oficinas[].tipo_texto          o tipo por extenso
+ *     oficinas[].propria             true na sua oficina (o tipo faz "você mesmo, em casa": a Eu mesmo (em casa))
+ *     oficinas[].endereco            o endereço (a rua); null: sem
+ *     oficinas[].numero              o número; null: sem
+ *     oficinas[].complemento         o complemento; null: sem
+ *     oficinas[].bairro              o bairro; null: sem
+ *     oficinas[].cidade              a cidade; null: sem
+ *     oficinas[].uf                  o estado; null: sem
+ *     oficinas[].cep                 o CEP; null: sem
+ *     oficinas[].endereco_texto      o endereço inteiro numa linha; null: sem endereço
+ *     oficinas[].horario             o horário de atendimento; null: sem
+ *     oficinas[].observacao          a observação; null: sem
+ *     oficinas[].contatos            os contatos da oficina, o principal primeiro
+ *     oficinas[].contatos[]          um contato
+ *     oficinas[].contatos[].id       o número do contato
+ *     oficinas[].contatos[].tipo     o tipo do contato: o identificador de um item da lista Tipos de contato (Manutenção › Listas:
+ *                                    telefone, celular, whatsapp, email, site...)
+ *     oficinas[].contatos[].tipo_texto
+ *                                    o tipo do contato por extenso
+ *     oficinas[].contatos[].comportamento
+ *                                    o que o tipo faz: telefone, whatsapp, email, link ou texto
+ *     oficinas[].contatos[].valor    o número, o e-mail ou o endereço
+ *     oficinas[].contatos[].pessoa   com quem falar; null: sem
+ *     oficinas[].contatos[].observacao
+ *                                    a observação do contato; null: sem
+ *     oficinas[].contatos[].principal
+ *                                    true no contato principal
+ *     oficinas[].contatos[].link     o endereço que abre o contato pelo que o tipo faz (tel:, o wa.me do WhatsApp, mailto:, o site); null:
+ *                                    o texto
+ *     oficinas[].abertas             quantos relógios estão nela agora
+ *     oficinas[].manutencoes         quantas manutenções ela teve (todas)
+ *     oficinas[].gasto               quanto ela custou: os serviços das manutenções dela somados, em R$; null: nada com custo
+ *     resumo                         o resumo
+ *     resumo.abertas                 quantos relógios estão na oficina agora
+ *     resumo.atrasadas               quantas abertas passaram da previsão
+ *     resumo.manutencoes             quantas manutenções os filtros trazem
+ *     resumo.gasto                   o custo das manutenções dos filtros somado, em R$
+ *     resumo.por_oficina             as oficinas que já tiveram manutenção
+ *     resumo.por_oficina[]           uma oficina
+ *     resumo.por_oficina[].oficina_id
+ *                                    o número da oficina
+ *     resumo.por_oficina[].oficina   o nome da oficina
+ *     resumo.por_oficina[].abertas   quantos relógios estão nela agora
+ *     resumo.por_oficina[].manutencoes
+ *                                    quantas manutenções ela teve (todas)
+ *     resumo.por_oficina[].gasto     quanto ela custou, em R$; null: nada com custo
+ *     situacoes                      os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     situacoes[]                    um item da lista
+ *     situacoes[].valor              o identificador do item (fixo: é o que se grava e o que a API e as fórmulas citam)
+ *     situacoes[].nome               o nome do item
+ *     situacoes[].id                 o número do item (o id da gravação, recurso=listas)
+ *     situacoes[].ordem              a ordem na lista
+ *     situacoes[].comportamento      o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     situacoes[].texto              o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     situacoes[].cor                a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     tipos                          os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     tipos[]                        um item da lista
+ *     tipos[].valor                  o identificador do item (fixo: é o que se grava e o que a API e as fórmulas citam)
+ *     tipos[].nome                   o nome do item
+ *     tipos[].id                     o número do item (o id da gravação, recurso=listas)
+ *     tipos[].ordem                  a ordem na lista
+ *     tipos[].comportamento          o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     tipos[].texto                  o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     tipos[].cor                    a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     tipos_oficina                  os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     tipos_oficina[]                um item da lista
+ *     tipos_oficina[].valor          o identificador do item (fixo: é o que se grava e o que a API e as fórmulas citam)
+ *     tipos_oficina[].nome           o nome do item
+ *     tipos_oficina[].id             o número do item (o id da gravação, recurso=listas)
+ *     tipos_oficina[].ordem          a ordem na lista
+ *     tipos_oficina[].comportamento  o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     tipos_oficina[].texto          o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     tipos_oficina[].cor            a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     tipos_contato                  os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     tipos_contato[]                um item da lista
+ *     tipos_contato[].valor          o identificador do item (fixo: é o que se grava e o que a API e as fórmulas citam)
+ *     tipos_contato[].nome           o nome do item
+ *     tipos_contato[].id             o número do item (o id da gravação, recurso=listas)
+ *     tipos_contato[].ordem          a ordem na lista
+ *     tipos_contato[].comportamento  o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     tipos_contato[].texto          o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     tipos_contato[].cor            a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     tipos[].marca                  o tipo de lançamento que o tipo de serviço marca (o texto do item); null: nenhum
+ *     relogios                       os relógios da coleção (na coleção e emprestados), os que podem ir para a manutenção
+ *     relogios[]                     um relógio
+ *     relogios[].id                  o número do relógio
+ *     relogios[].nome                o nome do relógio
+ *     relogios[].posse               a situação na coleção (o identificador)
+ *     relogios[].posse_texto         a situação por extenso
+ *     relogios[].disponivel          true se está disponível para o rodízio agora
+ *     relogios[].manutencao_id       a manutenção aberta dele; null: não está em manutenção
+ *     relogios[].em_manutencao       a oficina e desde quando, por extenso; null: não está
+ *     acessorios                     os acessórios da coleção (o que pode ir junto)
+ *     acessorios[]                   um acessório
+ *     acessorios[].id                o número do acessório
+ *     acessorios[].nome              o nome do acessório
+ *     acessorios[].tipo_texto        o tipo do acessório por extenso
+ *     acessorios[].relogio_id        o relógio de que ele é; null: solto
+ *     trocar_hoje                    true se a Configuração deixa trocar o relógio de hoje no próprio dia (o relógio de hoje que vai para a
+ *                                    manutenção deixa o dia livre para escolher outro; sem ela, hoje fica sem relógio)
+ *   recurso=oficinas
+ *     oficinas                       as oficinas da coleção, por nome
+ *     oficinas[]                     uma oficina
+ *     oficinas[].id                  o número da oficina
+ *     oficinas[].nome                o nome da oficina
+ *     oficinas[].tipo                o tipo: o identificador de um item da lista Tipos de oficina (Manutenção › Listas)
+ *     oficinas[].tipo_texto          o tipo por extenso
+ *     oficinas[].propria             true na sua oficina (o tipo faz "você mesmo, em casa": a Eu mesmo (em casa))
+ *     oficinas[].endereco            o endereço (a rua); null: sem
+ *     oficinas[].numero              o número; null: sem
+ *     oficinas[].complemento         o complemento; null: sem
+ *     oficinas[].bairro              o bairro; null: sem
+ *     oficinas[].cidade              a cidade; null: sem
+ *     oficinas[].uf                  o estado; null: sem
+ *     oficinas[].cep                 o CEP; null: sem
+ *     oficinas[].endereco_texto      o endereço inteiro numa linha; null: sem endereço
+ *     oficinas[].horario             o horário de atendimento; null: sem
+ *     oficinas[].observacao          a observação; null: sem
+ *     oficinas[].contatos            os contatos da oficina, o principal primeiro
+ *     oficinas[].contatos[]          um contato
+ *     oficinas[].contatos[].id       o número do contato
+ *     oficinas[].contatos[].tipo     o tipo do contato: o identificador de um item da lista Tipos de contato (Manutenção › Listas:
+ *                                    telefone, celular, whatsapp, email, site...)
+ *     oficinas[].contatos[].tipo_texto
+ *                                    o tipo do contato por extenso
+ *     oficinas[].contatos[].comportamento
+ *                                    o que o tipo faz: telefone, whatsapp, email, link ou texto
+ *     oficinas[].contatos[].valor    o número, o e-mail ou o endereço
+ *     oficinas[].contatos[].pessoa   com quem falar; null: sem
+ *     oficinas[].contatos[].observacao
+ *                                    a observação do contato; null: sem
+ *     oficinas[].contatos[].principal
+ *                                    true no contato principal
+ *     oficinas[].contatos[].link     o endereço que abre o contato pelo que o tipo faz (tel:, o wa.me do WhatsApp, mailto:, o site); null:
+ *                                    o texto
+ *     oficinas[].abertas             quantos relógios estão nela agora
+ *     oficinas[].manutencoes         quantas manutenções ela teve (todas)
+ *     oficinas[].gasto               quanto ela custou: os serviços das manutenções dela somados, em R$; null: nada com custo
+ *     tipos                          os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     tipos[]                        um item da lista
+ *     tipos[].valor                  o identificador do item (fixo: é o que se grava e o que a API e as fórmulas citam)
+ *     tipos[].nome                   o nome do item
+ *     tipos[].id                     o número do item (o id da gravação, recurso=listas)
+ *     tipos[].ordem                  a ordem na lista
+ *     tipos[].comportamento          o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     tipos[].texto                  o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     tipos[].cor                    a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     tipos_contato                  os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     tipos_contato[]                um item da lista
+ *     tipos_contato[].valor          o identificador do item (fixo: é o que se grava e o que a API e as fórmulas citam)
+ *     tipos_contato[].nome           o nome do item
+ *     tipos_contato[].id             o número do item (o id da gravação, recurso=listas)
+ *     tipos_contato[].ordem          a ordem na lista
+ *     tipos_contato[].comportamento  o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     tipos_contato[].texto          o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     tipos_contato[].cor            a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *   recurso=listas
+ *     listas                         as listas que são cadastro (as da página pedida, ou todas)
+ *     listas[]                       uma lista
+ *     listas[].lista                 o identificador da lista (relogio_situacao, acessorio_tipo, reserva_protocolo, reserva_observacao,
+ *                                    manutencao_situacao, servico_tipo, estanqueidade, oficina_tipo, contato_tipo)
+ *     listas[].nome                  o nome da lista
+ *     listas[].pagina                onde ela se edita: cadastros (Cadastros › Listas) ou manutencao (Manutenção › Listas)
+ *     listas[].texto                 o que quer dizer o texto do item nesta lista; null: os itens não têm texto
+ *     listas[].cor                   true se os itens têm cor
+ *     listas[].reservados            os identificadores que o sistema usa para outra coisa (nenhum item novo pode ter)
+ *     listas[].reservados[]          um identificador reservado
+ *     listas[].essenciais            o que a lista nunca fica sem (o último item que faz isso não sai nem muda o que faz)
+ *     listas[].essenciais[]          um comportamento
+ *     listas[].comportamentos        o que um item desta lista pode fazer (vazio: a lista não tem)
+ *     listas[].comportamentos[]      um comportamento
+ *     listas[].comportamentos[].valor
+ *                                    o comportamento (o que se grava em comportamento)
+ *     listas[].comportamentos[].nome o que ele faz, por extenso
+ *     listas[].itens                 os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
+ *     listas[].itens[]               um item da lista
+ *     listas[].itens[].valor         o identificador do item (fixo: é o que se grava e o que a API e as fórmulas citam)
+ *     listas[].itens[].nome          o nome do item
+ *     listas[].itens[].id            o número do item (o id da gravação, recurso=listas)
+ *     listas[].itens[].ordem         a ordem na lista
+ *     listas[].itens[].comportamento o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     listas[].itens[].texto         o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     listas[].itens[].cor           a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     listas[].itens[].identificador o identificador do item (o mesmo de valor)
+ *     listas[].itens[].em_uso        quantas vezes ele está em uso, em todas as coleções da árvore (em uso, ele não sai, e o que ele faz
+ *                                    não muda)
  *   recurso=servicos
+ *     tipos                          os tipos de serviço, na ordem
+ *     tipos[]                        um tipo
+ *     tipos[].valor                  o tipo (o tipo da gravação)
+ *     tipos[].nome                   o nome por extenso
+ *     tipos[].id                     o número do item (o id da gravação, recurso=listas)
+ *     tipos[].ordem                  a ordem na lista
+ *     tipos[].comportamento          o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     tipos[].texto                  o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     tipos[].cor                    a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
  *     servicos                       os serviços (de um relógio, ou de todos), do mais novo para o mais velho
  *     servicos[]                     um serviço
  *     servicos[].id                  o número do serviço (o id da gravação)
@@ -4525,9 +5423,10 @@
  *     servicos[].relogio             o nome do relógio
  *     servicos[].data                a data do serviço (AAAA-MM-DD)
  *     servicos[].ha_dias             há quantos dias foi (no dia da coleção)
- *     servicos[].tipo                revisao, pilha, estanqueidade, regulagem, polimento, reparo, diagnostico ou outro
+ *     servicos[].tipo                o tipo: o identificador de um item da lista Tipos de serviço (Manutenção › Listas: revisao, pilha,
+ *                                    estanqueidade, regulagem, polimento...)
  *     servicos[].tipo_texto          o tipo por extenso
- *     servicos[].responsavel         quem fez (a relojoaria, o relojoeiro); null: não informado
+ *     servicos[].oficina             a oficina do serviço (a da manutenção de que ele é o encerramento: Manutenção › Oficinas)
  *     servicos[].descricao           o que foi feito; null: não informado
  *     servicos[].mao_de_obra         a mão de obra, em R$; null: não informada
  *     servicos[].pecas               as peças trocadas, na ordem
@@ -4536,8 +5435,13 @@
  *     servicos[].pecas[].custo       o custo da peça, em R$; null: não informado
  *     servicos[].custo_pecas         a soma do custo das peças, em R$ (0 sem nenhuma com custo)
  *     servicos[].custo               o custo do serviço: a mão de obra mais as peças, em R$; null: nada com custo
- *     servicos[].estanqueidade       o teste de estanqueidade: aprovado ou reprovado; null: não testada
- *     servicos[].estanqueidade_texto aprovada ou reprovada, por extenso; null: não testada
+ *     servicos[].estanqueidade       o resultado do teste de estanqueidade: o identificador de um item da lista Resultados do teste de
+ *                                    estanqueidade (Manutenção › Listas: aprovado, reprovado...); null: não testada
+ *     servicos[].estanqueidade_texto o resultado por extenso (o nome do item, em minúsculas); null: não testada
+ *     servicos[].estanqueidade_aprova
+ *                                    o resultado aprova a vedação (o item do resultado faz aprova)? true ou false; null: não testada
+ *     servicos[].manutencao_id       a manutenção de que o serviço é o encerramento (recurso=manutencao)
+ *     servicos[].oficina_id          o número da oficina
  *     servicos[].estanqueidade_bar   a pressão do teste, em bar; null: não informada
  *     servicos[].marcha_antes        a marcha antes do serviço, informada pelo profissional, em s/dia (+ adianta); null: não informada
  *     servicos[].marcha_depois       a marcha depois do serviço, informada pelo profissional, em s/dia; null: não informada
@@ -4566,16 +5470,12 @@
  *     servicos[].documentos[].id     o número do documento
  *     servicos[].documentos[].titulo o título
  *     servicos[].documentos[].url    o endereço do arquivo (recurso=documento)
- *     servicos[].marcacao            true se o serviço virou também a marcação do tipo de lançamento de mesmo nome (a revisão e a troca de
- *                                    pilha)
+ *     servicos[].marcacao            true se o serviço virou também a marcação do tipo de lançamento que o tipo de serviço marca (o texto
+ *                                    do item: revisao, pilha)
  *     servicos[].criado              quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio                        o relógio pedido; null: todos
  *     relogio.id                     o número
  *     relogio.nome                   o nome
- *     tipos                          os tipos de serviço, na ordem
- *     tipos[]                        um tipo
- *     tipos[].valor                  o tipo (o tipo da gravação)
- *     tipos[].nome                   o nome por extenso
  *     tipos[].marca                  true se o serviço desse tipo vira também a marcação de mesmo nome (revisao, pilha)
  *     resumo                         com o relógio: o resumo dos serviços dele; null: todos
  *     resumo.quantos                 quantos serviços o relógio tem
@@ -4590,9 +5490,10 @@
  *     resumo.estanqueidade           a estanqueidade comprovada: o último serviço com o teste; null: nunca testada aqui
  *     resumo.estanqueidade.data      a data do teste
  *     resumo.estanqueidade.ha_dias   há quantos dias
- *     resumo.estanqueidade.resultado aprovado ou reprovado
+ *     resumo.estanqueidade.resultado o identificador do resultado (Manutenção › Listas: aprovado, reprovado...)
  *     resumo.estanqueidade.resultado_texto
- *                                    aprovada ou reprovada, por extenso
+ *                                    o resultado por extenso (o nome do item, em minúsculas)
+ *     resumo.estanqueidade.aprova    true se o resultado aprova a vedação; false se reprova
  *     resumo.estanqueidade.bar       a pressão do teste, em bar; null
  *     resumo.estanqueidade.servico_id
  *                                    o serviço do teste
@@ -4745,6 +5646,8 @@
  *     csv.posicoes[].nomes           os nomes que valem
  *     csv.posicoes[].nomes[]         um nome
  *   recurso=relatorios
+ *     relogios[].posse_comportamento o que a situação faz (o comportamento do item): colecao (entra no rodízio), emprestado (da coleção,
+ *                                    fora do rodízio), desejado (a lista de desejos) ou fora (fora da coleção)
  *     relatorios                     o catálogo (sem tipo): cada relatório, na ordem do menu
  *     relatorios[].tipo              o código do relatório (o tipo= do pedido)
  *     relatorios[].grupo             o grupo dele no menu (Coleção, Uso e rodízio, Manutenção e precisão, Sistema)
@@ -4770,7 +5673,9 @@
  *     relogios                       os relógios para o parâmetro relogio (todos, também os de fora da coleção)
  *     relogios[].id                  o número
  *     relogios[].nome                o nome
- *     relogios[].posse               a situação: colecao, desejado, emprestado, vendido ou arquivado
+ *     relogios[].posse               a situação na coleção: o identificador de um item da lista Situações do relógio na coleção (Cadastros
+ *                                    › Listas: colecao, emprestado, desejado, vendido, arquivado...); o que ela faz está em
+ *                                    posse_comportamento
  *     tipo                           o relatório pedido
  *     grupo                          o grupo dele
  *     titulo                         o título (o nome do relatório)
@@ -4805,6 +5710,36 @@
  *                                    errada)
  *     tipos[]                        com o tipo desconhecido: os tipos que existem
  *   recurso=reserva
+ *     reserva.protocolos             os protocolos do teste, na ordem
+ *     reserva.protocolos[]           um protocolo
+ *     reserva.protocolos[].valor     o identificador de um jeito de carregar da lista Jeitos de carregar (Cadastros › Listas: corda,
+ *                                    winder, pulso, outro...)
+ *     reserva.protocolos[].nome      o nome por extenso
+ *     reserva.protocolos[].id        o número do item (o id da gravação, recurso=listas)
+ *     reserva.protocolos[].ordem     a ordem na lista
+ *     reserva.protocolos[].comportamento
+ *                                    o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     reserva.protocolos[].texto     o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     reserva.protocolos[].cor       a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     reserva.tipos_observacao       os tipos das observações, na ordem
+ *     reserva.tipos_observacao[]     um tipo
+ *     reserva.tipos_observacao[].valor
+ *                                    o identificador de uma observação da lista Observações da reserva (Cadastros › Listas: parou,
+ *                                    carga_baixa, nota...)
+ *     reserva.tipos_observacao[].nome
+ *                                    o nome por extenso
+ *     reserva.tipos_observacao[].id  o número do item (o id da gravação, recurso=listas)
+ *     reserva.tipos_observacao[].ordem
+ *                                    a ordem na lista
+ *     reserva.tipos_observacao[].comportamento
+ *                                    o que o item faz, nas listas que têm (o código só conhece estes: a lista diz quais em recurso=listas);
+ *                                    null: a lista não tem
+ *     reserva.tipos_observacao[].texto
+ *                                    o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
+ *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
+ *     reserva.tipos_observacao[].cor a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
  *     relogio                        o relógio pedido; null: todos
  *     relogio.id                     o número
  *     relogio.nome                   o nome
@@ -4816,7 +5751,8 @@
  *     reserva.aberto.id              o número do teste ou da observação (o id da gravação)
  *     reserva.aberto.relogio_id      o relógio
  *     reserva.aberto.relogio         o nome do relógio
- *     reserva.aberto.tipo            teste (o teste da reserva), parou, carga_baixa (o indicador de carga baixa) ou nota (outra observação)
+ *     reserva.aberto.tipo            teste (o teste da reserva) ou o identificador de uma observação da lista Observações da reserva
+ *                                    (Cadastros › Listas: parou, carga_baixa, nota...)
  *     reserva.aberto.tipo_texto      o tipo por extenso
  *     reserva.aberto.inicio          no teste, quando ele ficou cheio; na observação, quando foi (texto AAAA-MM-DD HH:MM:SS, no fuso do
  *                                    pedido)
@@ -4835,7 +5771,8 @@
  *     reserva.testes[].id            o número do teste ou da observação (o id da gravação)
  *     reserva.testes[].relogio_id    o relógio
  *     reserva.testes[].relogio       o nome do relógio
- *     reserva.testes[].tipo          teste (o teste da reserva), parou, carga_baixa (o indicador de carga baixa) ou nota (outra observação)
+ *     reserva.testes[].tipo          teste (o teste da reserva) ou o identificador de uma observação da lista Observações da reserva
+ *                                    (Cadastros › Listas: parou, carga_baixa, nota...)
  *     reserva.testes[].tipo_texto    o tipo por extenso
  *     reserva.testes[].inicio        no teste, quando ele ficou cheio; na observação, quando foi (texto AAAA-MM-DD HH:MM:SS, no fuso do
  *                                    pedido)
@@ -4857,7 +5794,8 @@
  *     reserva.observacoes[].relogio_id
  *                                    o relógio
  *     reserva.observacoes[].relogio  o nome do relógio
- *     reserva.observacoes[].tipo     teste (o teste da reserva), parou, carga_baixa (o indicador de carga baixa) ou nota (outra observação)
+ *     reserva.observacoes[].tipo     teste (o teste da reserva) ou o identificador de uma observação da lista Observações da reserva
+ *                                    (Cadastros › Listas: parou, carga_baixa, nota...)
  *     reserva.observacoes[].tipo_texto
  *                                    o tipo por extenso
  *     reserva.observacoes[].inicio   no teste, quando ele ficou cheio; na observação, quando foi (texto AAAA-MM-DD HH:MM:SS, no fuso do
@@ -4890,17 +5828,7 @@
  *                                    do grupo); null: ele não tem
  *     reserva.usar_horas             o que "Usar a medida" (escrita reserva, acao=usar) gravaria no cadastro dele: a mediana em horas
  *                                    inteiras; null: sem medida, ou o cadastro já tem esse valor
- *     reserva.protocolos             os protocolos do teste, na ordem
- *     reserva.protocolos[]           um protocolo
- *     reserva.protocolos[].valor     corda, winder, pulso ou outro
- *     reserva.protocolos[].nome      o nome por extenso
  *     reserva.protocolos[].unidade   o que o número diz (voltas, h); vazio: nada
- *     reserva.tipos_observacao       os tipos das observações, na ordem
- *     reserva.tipos_observacao[]     um tipo
- *     reserva.tipos_observacao[].valor
- *                                    parou, carga_baixa ou nota
- *     reserva.tipos_observacao[].nome
- *                                    o nome por extenso
  *     tecnico                        com o relógio: declarado, medido e estimado (como na ficha); null sem o relógio
  *     tecnico[]                      uma informação
  *     tecnico[].chave                marcha, reserva (de marcha, o mecânico), reserva_energia (o solar: só observações, sem calibrar) ou
@@ -4956,7 +5884,8 @@
  *     registros[].id                 o número do teste ou da observação (o id da gravação)
  *     registros[].relogio_id         o relógio
  *     registros[].relogio            o nome do relógio
- *     registros[].tipo               teste (o teste da reserva), parou, carga_baixa (o indicador de carga baixa) ou nota (outra observação)
+ *     registros[].tipo               teste (o teste da reserva) ou o identificador de uma observação da lista Observações da reserva
+ *                                    (Cadastros › Listas: parou, carga_baixa, nota...)
  *     registros[].tipo_texto         o tipo por extenso
  *     registros[].inicio             no teste, quando ele ficou cheio; na observação, quando foi (texto AAAA-MM-DD HH:MM:SS, no fuso do
  *                                    pedido)
@@ -4971,13 +5900,17 @@
  *     registros[].observacao         a observação; null: sem
  *     registros[].criado             quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *   recurso=passaporte
+ *     relogio.posse_comportamento    o que a situação faz (o comportamento do item): colecao (entra no rodízio), emprestado (da coleção,
+ *                                    fora do rodízio), desejado (a lista de desejos) ou fora (fora da coleção)
  *     gerado_em                      quando foi gerado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio                        quem ele é
  *     relogio.id                     o número (código)
  *     relogio.nome                   o nome
  *     relogio.caminho                o caminho do grupo ("todos os relógios" na raiz)
  *     relogio.tipo                   o grupo (o nome; "sem grupo" na raiz)
- *     relogio.posse                  a situação na coleção
+ *     relogio.posse                  a situação na coleção: o identificador de um item da lista Situações do relógio na coleção (Cadastros
+ *                                    › Listas: colecao, emprestado, desejado, vendido, arquivado...); o que ela faz está em
+ *                                    posse_comportamento
  *     relogio.posse_texto            a mesma por extenso
  *     relogio.disponivel             verdadeiro: está no rodízio
  *     relogio.criado                 quando entrou no sistema (texto AAAA-MM-DD HH:MM:SS)
@@ -5059,11 +5992,12 @@
  *     servicos_diagnosticos[].data   a data do serviço (AAAA-MM-DD)
  *     servicos_diagnosticos[].ha_dias
  *                                    há quantos dias foi (no dia da coleção)
- *     servicos_diagnosticos[].tipo   revisao, pilha, estanqueidade, regulagem, polimento, reparo, diagnostico ou outro
+ *     servicos_diagnosticos[].tipo   o tipo: o identificador de um item da lista Tipos de serviço (Manutenção › Listas: revisao, pilha,
+ *                                    estanqueidade, regulagem, polimento...)
  *     servicos_diagnosticos[].tipo_texto
  *                                    o tipo por extenso
- *     servicos_diagnosticos[].responsavel
- *                                    quem fez (a relojoaria, o relojoeiro); null: não informado
+ *     servicos_diagnosticos[].oficina
+ *                                    a oficina do serviço (a da manutenção de que ele é o encerramento: Manutenção › Oficinas)
  *     servicos_diagnosticos[].descricao
  *                                    o que foi feito; null: não informado
  *     servicos_diagnosticos[].mao_de_obra
@@ -5079,9 +6013,16 @@
  *                                    a soma do custo das peças, em R$ (0 sem nenhuma com custo)
  *     servicos_diagnosticos[].custo  o custo do serviço: a mão de obra mais as peças, em R$; null: nada com custo
  *     servicos_diagnosticos[].estanqueidade
- *                                    o teste de estanqueidade: aprovado ou reprovado; null: não testada
+ *                                    o resultado do teste de estanqueidade: o identificador de um item da lista Resultados do teste de
+ *                                    estanqueidade (Manutenção › Listas: aprovado, reprovado...); null: não testada
  *     servicos_diagnosticos[].estanqueidade_texto
- *                                    aprovada ou reprovada, por extenso; null: não testada
+ *                                    o resultado por extenso (o nome do item, em minúsculas); null: não testada
+ *     servicos_diagnosticos[].estanqueidade_aprova
+ *                                    o resultado aprova a vedação (o item do resultado faz aprova)? true ou false; null: não testada
+ *     servicos_diagnosticos[].manutencao_id
+ *                                    a manutenção de que o serviço é o encerramento (recurso=manutencao)
+ *     servicos_diagnosticos[].oficina_id
+ *                                    o número da oficina
  *     servicos_diagnosticos[].estanqueidade_bar
  *                                    a pressão do teste, em bar; null: não informada
  *     servicos_diagnosticos[].marcha_antes
@@ -5127,8 +6068,8 @@
  *     servicos_diagnosticos[].documentos[].url
  *                                    o endereço do arquivo (recurso=documento)
  *     servicos_diagnosticos[].marcacao
- *                                    true se o serviço virou também a marcação do tipo de lançamento de mesmo nome (a revisão e a troca de
- *                                    pilha)
+ *                                    true se o serviço virou também a marcação do tipo de lançamento que o tipo de serviço marca (o texto
+ *                                    do item: revisao, pilha)
  *     servicos_diagnosticos[].criado quando foi registrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     tecnico                        declarado, medido e estimado (como na ficha)
  *     tecnico[]                      uma informação
@@ -5208,7 +6149,8 @@
  *     reserva_testes[].id            o número do teste ou da observação (o id da gravação)
  *     reserva_testes[].relogio_id    o relógio
  *     reserva_testes[].relogio       o nome do relógio
- *     reserva_testes[].tipo          teste (o teste da reserva), parou, carga_baixa (o indicador de carga baixa) ou nota (outra observação)
+ *     reserva_testes[].tipo          teste (o teste da reserva) ou o identificador de uma observação da lista Observações da reserva
+ *                                    (Cadastros › Listas: parou, carga_baixa, nota...)
  *     reserva_testes[].tipo_texto    o tipo por extenso
  *     reserva_testes[].inicio        no teste, quando ele ficou cheio; na observação, quando foi (texto AAAA-MM-DD HH:MM:SS, no fuso do
  *                                    pedido)
@@ -5235,6 +6177,9 @@
  *     proximos_avisos[].data         a data prevista (texto AAAA-MM-DD)
  *     proximos_avisos[].texto        o motivo por extenso
  *   recurso=galeria
+ *     grupos[].relogios[].posse_comportamento
+ *                                    o que a situação faz (o comportamento do item): colecao (entra no rodízio), emprestado (da coleção,
+ *                                    fora do rodízio), desejado (a lista de desejos) ou fora (fora da coleção)
  *     gerado_em                      quando foi gerado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     todos                          verdadeiro: com os de fora da coleção (posse=todos)
  *     total                          quantos relógios
@@ -5246,7 +6191,9 @@
  *     grupos[].relogios[].id         o número (código)
  *     grupos[].relogios[].nome       o nome
  *     grupos[].relogios[].tipo       o grupo (o nome; "sem grupo" na raiz)
- *     grupos[].relogios[].posse      a situação na coleção
+ *     grupos[].relogios[].posse      a situação na coleção: o identificador de um item da lista Situações do relógio na coleção (Cadastros
+ *                                    › Listas: colecao, emprestado, desejado, vendido, arquivado...); o que ela faz está em
+ *                                    posse_comportamento
  *     grupos[].relogios[].posse_texto
  *                                    a mesma por extenso
  *     grupos[].relogios[].foto       a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
@@ -6509,12 +7456,12 @@ if ($recurso === "textos") {
                 "opcoes" => campo_opcoes_lista($c), "multiplo" => (int)($c["multiplo"] ?? 0) === 1, "regra" => campo_regra_texto($c),
                 "serve" => ($c["serve_campo_id"] ?? null) === null ? null : (array_values(array_filter(campos_todos(), function ($x) use ($c) { return (int)$x["id"] === (int)$c["serve_campo_id"]; }))[0]["nome"] ?? null)];
         }, campos_de_acessorio())),
-        "tipos" => array_map(function ($k) { return ["valor" => $k, "nome" => t(ACESSORIO_TIPOS[$k])]; }, array_keys(ACESSORIO_TIPOS)),
-        "por_tipo" => array_values(array_filter(array_map(function ($k) use ($lista_a) {
-            return ["tipo" => $k, "nome" => t(ACESSORIO_TIPOS[$k]), "quantos" => count(array_filter($lista_a, function ($a) use ($k) { return $a["tipo"] === $k; }))];
-        }, array_keys(ACESSORIO_TIPOS)), function ($x) { return $x["quantos"] > 0; })),
+        "tipos" => lista_opcoes("acessorio_tipo"),
+        "por_tipo" => array_values(array_filter(array_map(function ($x) use ($lista_a) {
+            return ["tipo" => $x["identificador"], "nome" => $x["nome"], "quantos" => count(array_filter($lista_a, function ($a) use ($x) { return $a["tipo"] === $x["identificador"]; }))];
+        }, array_values(lista_itens("acessorio_tipo"))), function ($x) { return $x["quantos"] > 0; })),
         "soltos" => count(array_filter($lista_a, function ($a) { return $a["relogio_id"] === null; })),
-        "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "posse" => posse_de($r)]; }, linhas("SELECT * FROM relogio ORDER BY nome"))];
+        "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "posse" => (string)$r["posse"], "posse_comportamento" => posse_de($r)]; }, linhas("SELECT * FROM relogio ORDER BY nome"))];
 } elseif ($recurso === "winders") {
     // os winders da coleção (a página Winders): cada um com as posições, o programa delas, o relógio que está em cada uma e o
     // lugar fixo, os campos do winder e da posição (o formulário), os relógios que podem ir para um winder (os que têm um
@@ -6564,6 +7511,10 @@ if ($recurso === "textos") {
     require __DIR__ . "/api/unidades.php";
 } elseif ($recurso === "servicos") {
     require __DIR__ . "/api/servicos.php";
+} elseif ($recurso === "manutencao" || $recurso === "oficinas") {
+    require __DIR__ . "/api/manutencao.php";
+} elseif ($recurso === "listas") {
+    require __DIR__ . "/api/listas.php";
 } elseif ($recurso === "reserva") {
     require __DIR__ . "/api/reserva.php";
 } elseif ($recurso === "timegrapher") {
@@ -6653,7 +7604,7 @@ if ($recurso === "textos") {
 } else {
     $codigo = 404;
     $saida = ["erro" => t("recurso desconhecido"), "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "unidades", "servicos", "reserva", "timegrapher", "relatorios", "hora_certa", "acessorios", "winders", "programas", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "unidades", "servicos", "manutencao", "oficinas", "listas", "reserva", "timegrapher", "relatorios", "hora_certa", "acessorios", "winders", "programas", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

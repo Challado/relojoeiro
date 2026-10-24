@@ -1,4 +1,4 @@
-<!-- origem: 4417a65057ef82d9076e6607d48463f70d417d32 -->
+<!-- origem: 9f924d87c6491065e145ca3c78972a36b65b1c98 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -753,14 +753,70 @@ supprime pas les champs : ils restent sans section, à la fin. Par l'API : `recu
 combien de champs chacune a), et `recurso=secoes` enregistre (`salvar`, `ordem`, `excluir`) ; le champ porte le
 `secao_id`.
 
+### Les listes qui sont des définitions {#as-listas-que-são-cadastro}
+
+Ce qui peut être une définition est une définition : chaque liste de choix du système est à vous, avec des éléments que vous
+créez, renommez, réordonnez et supprimez. Chaque élément a l'**identifiant** (fixe : c'est ce qui est enregistré et ce que
+l'API et les formules citent), le **nom**, l'**ordre** et, selon la liste, **ce qu'il fait** (le comportement : la seule chose
+que le code connaît), un **texte** et une **couleur**. L'élément utilisé ne se supprime pas, et ce qu'il fait ne change pas
+(créez-en un autre) ; la liste ne reste jamais sans ce dont le système a besoin.
+
+| Liste | Où | Ce que l'élément fait ou garde |
+|---|---|---|
+| Statuts de la montre dans la collection | Définitions › Listes | *Dans la collection* (entre dans la rotation), *Prêtée* (de la collection, hors rotation), *Désirée* (la liste d'envies) ou *Hors de la collection* (Vendue, Archivée, Offerte, Perdue ou volée...) |
+| Types d'accessoire | Définitions › Listes | bracelet, boîte, étui, outil, chargeur, pièce... |
+| Façons de charger (le test de la réserve) | Définitions › Listes | le texte est l'unité de la mesure (tours, h) |
+| Observations de la réserve | Définitions › Listes | arrêtée, indicateur de charge faible, autre observation... |
+| Statuts de l'entretien | Entretien › Listes | *En cours*, *Clôt* (revient et devient un service) ou *Annule* ; le texte est l'alerte du statut ; la couleur, celle de l'étiquette |
+| Types de service | Entretien › Listes | le texte est le type de saisie que le service marque aussi (revisao, pilha) |
+| Résultats du test d'étanchéité | Entretien › Listes | *Réussi* (prouve l'étanchéité) ou *Échoué* |
+| Types d'atelier | Entretien › Listes | un atelier ordinaire ou *vous-même, à la maison* |
+| Types de contact | Entretien › Listes | *Téléphone* (appelle), *WhatsApp* (ouvre la conversation), *E-mail* (écrit), *Adresse internet* (ouvre) ou *Texte* |
+
+Chaque nouvelle collection arrive déjà avec les listes complètes (dans sa langue). Par l'API : `recurso=listas` (avec
+`pagina=cadastros` ou `manutencao`) et `recurso=listas` avec `acao=salvar` ou `excluir`.
+
+### L'entretien {#a-manutenção}
+
+Le menu **Collection › Entretien** est le lieu de l'entretien, avec quatre onglets : **En entretien**, **Entretiens**,
+**Ateliers** et **Listes**. Sans entretien enregistré, la montre ne va nulle part : c'est **Enregistrer un entretien** qui
+l'envoie (aussi depuis le cadre **Entretien** du panneau). Choisissez la montre, l'**atelier**, le **statut**, le **type de
+service** et, si vous voulez, le problème, le bon de réparation, l'envoi, le retour prévu, le devis, ce qui est parti avec (la
+boîte, le bracelet) et les documents de l'envoi.
+
+À l'enregistrement, la montre est **en entretien** : indisponible pour la rotation jusqu'au retour (avec l'étiquette *en
+entretien* sur le panneau et l'état *En entretien* sur la page Aujourd'hui), ses sessions ouvertes se ferment (au poignet, au
+soleil, sur le chargeur ; dans le remontoir, la position devient libre), ses jours dans le plan à partir de demain sortent et
+sont tirés à nouveau, et les alertes de charge, de remontage et de pile s'arrêtent. Si c'était la **montre du jour**,
+aujourd'hui devient libre : avec les Réglages qui permettent de changer la montre du jour le jour même, vous en choisissez une
+autre ; sinon, aujourd'hui reste sans montre. Changer la disponibilité de la montre pendant qu'elle est à l'atelier change
+celle du retour.
+
+Le **statut** avance depuis la ligne du tableau (le menu et **Changer**), et chaque changement va dans l'**historique**. Les
+statuts sont une liste à vous (Entretien › Listes), et chacun fait l'une de trois choses : **en cours** (Envoyé, en attente du
+devis ; Devis reçu ; Approuvé, en cours ; En attente d'une pièce ; Prêt à récupérer), **clôt** (Récupéré ; Rendu sans
+réparation) ou **annule** (Annulé). Dans celui qui clôt, la montre **revient** avec la disponibilité d'avant et l'entretien
+**devient un service** (le type, le devis comme main-d'œuvre et ses documents) : complétez ce qui a été fait, les pièces et le
+coût dans le cadre Services de la montre. Dans celui qui annule, elle revient sans service. Les alertes de l'entretien :
+**Relancer l'atelier** (la date prévue est passée) et l'**avancement**, avec le texte du statut actuel (*Approuver le devis*,
+*Récupérer à l'atelier*) ; dans les formules, `MANUTENCAO("previsao")`, `MANUTENCAO("dias")`, `MANUTENCAO("orcamento")` et
+`MANUTENCAO()` (1 en entretien).
+
+Les **ateliers** ont l'adresse, les horaires, la note et **autant de contacts que vous voulez**, chacun d'un type (téléphone
+fixe, portable, WhatsApp, e-mail, site web, Instagram... : la liste Types de contact) ; dans le tableau, le téléphone appelle,
+WhatsApp ouvre la conversation et l'e-mail écrit. L'atelier **Moi-même (à la maison)** est le vôtre : la pile changée à la
+maison, le bracelet ajusté. Les rapports : **En entretien, par atelier** (avec les contacts), **Entretiens de la période** et
+**Dépense par atelier**. Par l'API : `recurso=manutencao` (les ouverts, les entretiens avec les filtres `relogio`, `oficina`,
+`de`, `ate`, les ateliers et le résumé), `recurso=oficinas`, et les écritures `recurso=manutencao` (`salvar`, `situacao`,
+`excluir`) et `recurso=oficinas` (`salvar`, `excluir`).
+
 ### Les services et diagnostics {#os-serviços-e-diagnósticos}
 
 Chaque intervention sur une montre va dans le cadre **Services et diagnostics** du panneau (dans la section *Fiche et
-documents*) : la date, le type (révision, changement de pile, test d'étanchéité, réglage, polissage, réparation, diagnostic ou
-autre), qui l'a fait, ce qui a été fait, la main-d'œuvre, les **pièces remplacées** (une par ligne, avec le coût après le
-point-virgule : *« Couronne; 120,00 »*), le test d'**étanchéité** (réussi ou échoué, et la pression en bar), la **marche avant
+documents*) : la date, le type (les types de service : révision, changement de pile, test d'étanchéité, réglage, polissage...), l'atelier, ce qui a été fait, la main-d'œuvre, les **pièces remplacées** (une par ligne, avec le coût après le
+point-virgule : *« Couronne; 120,00 »*), le test d'**étanchéité** (le résultat, réussi ou échoué, et la pression en bar), la **marche avant
 et après** mesurée par le professionnel, la garantie, l'observation et les documents de la montre qui appartiennent au service
-(la facture, le devis, les photos). Le coût du service est la main-d'œuvre plus les pièces, et le cadre fait la somme de tous.
+(la facture, le devis, les photos). Le coût du service est la main-d'œuvre plus les pièces, et le cadre fait la somme de tous. Tout service est le retour d'un entretien : celui enregistré directement dans le cadre en reçoit un déjà clos dans l'atelier choisi (sans lui, le vôtre, **Moi-même (à la maison)**).
 
 La **résistance à l'eau déclarée** (le champ *Résistance à l'eau déclarée (du fabricant)* de la fiche, en mètres) n'est pas
 l'étanchéité d'aujourd'hui : le cadre montre les deux séparément, la déclarée et l'**étanchéité prouvée** au dernier test,
@@ -768,7 +824,7 @@ avec la date. À côté de la marche indiquée par le professionnel apparaît la
 lectures de l'écart de l'heure (voir [La précision](#a-precisão-a-marcha-do-relógio)) : celle des 60 jours avant le service et
 celle des 60 après.
 
-La révision et le changement de pile deviennent aussi la saisie **Révision** ou **Changement de pile** à la date du service :
+Le type de service qui marque une saisie (la révision et le changement de pile, dans les définitions initiales) devient aussi la saisie **Révision** ou **Changement de pile** à la date du service :
 les alertes habituelles (la prochaine révision, la pile) comptent le service, sans le saisir deux fois. Dans les formules,
 `ULTIMO_SERVICO("revisao")` donne la date du dernier service de ce type (`"estanqueidade"` compte aussi le test fait pendant une
 révision) et `CUSTO_SERVICOS(365)` ce que les services ont coûté la dernière année ; dans les totaux, les variables `servicos`
@@ -969,7 +1025,7 @@ vôtres.
 |---|---|
 | **Nom** | comment elle apparaît partout : à l'écran, sur Telegram et dans l'agenda. |
 | **Groupe** | sa place dans l'arbre. Il décide des champs, des formules (la « charge » d'une smartwatch est la batterie ; celle d'une mécanique, la réserve de marche) et des alertes qu'elle reçoit. |
-| **Situation dans la collection** | **Dans la collection** (le cas habituel), **Désirée** (la liste d'envies : pas encore à vous), **Prêtée** (elle est à vous, mais quelqu'un d'autre l'a), **Vendue** ou **Archivée**. Seul ce qui est dans la collection entre dans la rotation : dans les autres situations la montre est indisponible (la base de données le garantit : la règle `ck_relogio_posse_disponivel`), elle sort du tirage, du planning et des alertes, et, quand elle quitte la collection, ses sessions ouvertes (au poignet, au soleil, sur le chargeur) se ferment aussitôt et ses jours dans le plan à partir de demain sont retirés et tirés de nouveau (aujourd'hui reste, mais elle ne va plus au poignet toute seule : changez-la dans **remplacer par…**). Sa fiche, ses documents et son historique restent. La prêtée reste dans le tableau de la page Aujourd'hui (avec l'état **Prêtée**) et dans la valeur de la collection ; la désirée, la vendue et l'archivée quittent le tableau et apparaissent sur la page **Envies** (et dans le sélecteur de la fiche, sous **Hors de la collection**). En revenant à **Dans la collection**, elle redevient disponible. Voir [La liste d'envies](#a-lista-de-desejos). |
+| **Situation dans la collection** | Un élément de la liste **Statuts de la montre dans la collection** (Définitions › Listes) : **Dans la collection** (le cas habituel), **Désirée** (la liste d'envies : pas encore à vous), **Prêtée** (elle est à vous, mais quelqu'un d'autre l'a) ou un qui sort de la collection (**Vendue**, **Archivée**, **Offerte**, **Perdue ou volée** et ceux que vous créez). Seul ce qui est dans la collection entre dans la rotation : dans les autres situations la montre est indisponible, elle sort du tirage, du planning et des alertes, et, quand elle quitte la collection, ses sessions ouvertes (au poignet, au soleil, sur le chargeur) se ferment aussitôt et ses jours dans le plan à partir de demain sont retirés et tirés de nouveau (aujourd'hui reste, mais elle ne va plus au poignet toute seule : changez-la dans **remplacer par…**). Sa fiche, ses documents et son historique restent. La prêtée reste dans le tableau de la page Aujourd'hui (avec l'état **Prêtée**) et dans la valeur de la collection ; la désirée, la vendue et l'archivée quittent le tableau et apparaissent sur la page **Envies** (et dans le sélecteur de la fiche, sous **Hors de la collection**). En revenant à **Dans la collection**, elle redevient disponible. Voir [La liste d'envies](#a-lista-de-desejos). |
 | **Disponible** | décochée, elle sort de la rotation et des alertes (chez l'horloger, en pause), mais l'historique reste. Hors de la collection, elle est toujours décochée (et le champ disparaît de la fiche). |
 | **Garder une copie de tous ses documents dans la base** | cochée, chaque fichier de la montre (le manuel, la facture, les photos, les vidéos) va aussi dans la base de données, comme sauvegarde. N'apparaît que quand la Configuration de la collection ne décide pas pour toutes (**Copie des documents dans la base (valable pour toutes les montres)** vide). Voir [Les documents de la montre](#os-documentos-do-relógio) : c'est le deuxième des trois niveaux de la copie. |
 | **Photo** | seulement pour l'écran. Dans le détail de la montre (le panneau, ou la fiche), en posant la souris sur la photo, un résumé apparaît (le nom, le groupe et le code ; l'état et la charge ; la note et le prochain jour dans la rotation ; l'achat) ainsi que le rappel du double-clic. Un **double-clic** dessus, ou le bouton **Ouvrir la photo** en dessous, ouvre la photo dans une fenêtre flottante, à sa taille (seulement dans le détail : sur les autres photos, comme celle de *Aujourd'hui, c'est le jour de* et les vignettes de la liste, le clic ouvre la montre) ; une photo plus grande que l'écran apparaît à l'échelle, sans déformation, à la plus grande taille qui tient dans le moniteur (et dans la fenêtre du navigateur), avec la taille réelle et l'échelle en dessous. Elle se ferme avec le ×, d'un clic à l'extérieur ou avec Échap. |
@@ -1551,9 +1607,10 @@ formule, le Vaut pour est sa version pour ce point de l'arbre. Un sous-écran fe
 | **Statistiques** (`estatisticas.php`) | L'usage de la collection sur une période (**De**, **À** ; les raccourcis 30 jours, 90 jours, 1 an et depuis le début ; par défaut : les 90 derniers jours) : le résumé (jours avec une montre au poignet, heures au poignet et par jour, montres portées et non portées, le coût par port moyen et la valeur de la collection, la plus et la moins portée) ; **Chaque montre**, de la plus portée à la moins : jours d'usage, heures, la part de chacune (avec la barre), le coût par port, depuis combien de jours elle n'est pas allée au poignet et la tendance (↑ portée davantage, ↓ portée moins, → stable : la seconde moitié de la période comparée à la première) ; les graphiques **Par jour de la semaine** et **Par mois** (les heures au poignet) ; et **La collection** : les montres réparties par groupe, marque, année d'achat, situation et chaque champ de liste (comme Style), avec combien, la part et les heures de chaque partie. Par l'API : `recurso=estatisticas`. |
 | **Totaux** (`totais.php`, menu **Collection**) | La page des totaux : les totaux cochés pour elle (l'onglet **Totaux** des Définitions), chacun dans un cadre, étroit ou large, dans l'ordre des définitions : le petit tableau avec la ligne de total, le nombre, ou la montre avec la valeur. Elle s'ouvre par **Voir tous les totaux** sous le tableau de la page Aujourd'hui, avec le même filtre (*12 montres sur 17 sont comptées*, avec **Tout compter**), ou par le menu, avec toutes. Par l'API : `recurso=totais&parte=pagina`. Voir [Les totaux](#os-totais). |
 | **Accessoires** (`acessorios.php`) | Les bracelets, boîtes, étuis, outils, chargeurs, pièces et tout le reste : la liste (le nom, le type, la montre à laquelle il appartient, ou *indépendant*, et l'observation), avec le filtre **Montre** (tous, les indépendants ou ceux d'une montre ; le cadre **Accessoires** du panneau l'ouvre déjà filtrée), **Modifier** et **Supprimer** sur chacun, et en dessous le formulaire (**Nouvel accessoire** : nom, type, montre ou *indépendant (sert à plusieurs)* et observation). Supprimer une montre rend ses accessoires indépendants. Par l'API : `recurso=acessorios` (la liste) et l'écriture `acessorios` (`salvar`, `excluir`). Chacun montre les **Données** (les champs de son type) et où il **Va** (voir [La construction et les accessoires](#a-construção-e-os-acessórios)) ; le formulaire demande les champs du type choisi. |
+| **Entretien** (`manutencao.php`, menu **Collection**) | La montre à l'atelier, de l'aller au retour, en quatre onglets : **En entretien** (celles qui sont à l'atelier maintenant, avec le statut, la date prévue et l'alerte ; le menu pour changer le statut ; **Enregistrer un entretien**, qui envoie la montre, et, en en modifiant un, l'historique), **Entretiens** (tous, avec les filtres et le coût), **Ateliers** (avec les contacts) et **Listes** (les statuts, les types de service, les résultats d'étanchéité, les types d'atelier et de contact). Voir [L'entretien](#a-manutenção). |
 | **Remontoirs** (`winders.php`) | Les remontoirs et les positions de chacun : une carte par remontoir, avec son **dessin** (un berceau par position, avec la photo de la montre qui s'y trouve et l'anneau de la charge), les données et le tableau des positions, modifiable dans la ligne (le **programme**, un champ par colonne ; la **Montre**, avec **— aucune —** pour retirer et les montres pour mettre ou échanger ; la **charge**, **ce que donne chaque heure** et quand elle est **pleine** ; l'**Enregistrer**), **Modifier** la position (le nom, l'ordre, allumée), **Nouvelle position**, **Modifier le remontoir** et **Supprimer le remontoir** ; en dessous, la fiche (**Nouveau remontoir** : le nom, le nombre de positions qu'il reçoit, les champs du remontoir et l'observation) et celle de la position (le nom, l'ordre, allumée, le programme). Voir [Les remontoirs](#os-winders). Par l'API : `recurso=winders` et les écritures `winders` et `winder_posicoes`. |
 | **Galerie** (`galeria.php`) | La collection en photos, par groupe : chaque montre avec la photo (le lien vers la fiche), le nom, la marque et la référence, l'année et le prix d'achat et les jours d'usage ; en haut, combien, la valeur totale et combien ont une photo. **Aussi celles hors de la collection** montre les désirées, vendues et archivées (avec la marque de la situation). **Imprimer** : sur papier, quatre par ligne, sans le menu. Par l'API : `recurso=galeria`. |
-| **Passeport** (`passaporte.php`) | La fiche d'une montre à imprimer ou à enregistrer en PDF (le bouton **Passeport** du cadre Documents du panneau) : la photo, le nom, la marque et la référence, le groupe et la situation ; l'**Achat** ; l'**Usage** (la première et la dernière fois au poignet, les heures au poignet, les jours d'usage et le coût par port) ; la **Fiche** remplie ; les **Entretiens** (chaque type de marquage, combien de fois et le dernier ; les révisions et les changements de pile) ; les **Accessoires** ; les **Documents** ; et les **Prochaines alertes**. **Imprimer** : seules les données sortent sur le papier. Par l'API : `recurso=passaporte`. Avec un service, aussi les **Services et diagnostics** (qui l'a fait, le coût, l'étanchéité et la marche avant et après). |
+| **Passeport** (`passaporte.php`) | La fiche d'une montre à imprimer ou à enregistrer en PDF (le bouton **Passeport** du cadre Documents du panneau) : la photo, le nom, la marque et la référence, le groupe et la situation ; l'**Achat** ; l'**Usage** (la première et la dernière fois au poignet, les heures au poignet, les jours d'usage et le coût par port) ; la **Fiche** remplie ; les **Entretiens** (chaque type de marquage, combien de fois et le dernier ; les révisions et les changements de pile) ; les **Accessoires** ; les **Documents** ; et les **Prochaines alertes**. **Imprimer** : seules les données sortent sur le papier. Par l'API : `recurso=passaporte`. Avec un service, aussi les **Services et diagnostics** (l'atelier, le coût, l'étanchéité et la marche avant et après). |
 | **Rapports** (`relatorios.php`) | La porte unique des rapports : le menu avec tous (par groupe), les champs de celui choisi (la montre, la période, les options) et **Générer le rapport** ; le rapport à l'écran, sur papier (**Imprimer**) et dans un tableur (**Télécharger le tableur (CSV)**). Voir [Les rapports](#os-relatórios). |
 | **Heure exacte** (`hora.php`) | L'heure du serveur pour régler les montres, dans votre fuseau horaire : l'horloge choisie dans la Configuration (**Horloge de l'Heure exacte**) : l'analogique (boîtier en acier, cadran clair avec les index, les chiffres 12, 6 et 9, le guichet de date à 3 h, des aiguilles en lance avec bande lumineuse et celle des secondes rouge avec contrepoids), le numérique (un boîtier sombre avec afficheur à cristaux liquides : le jour de la semaine et la date, l'heure en grand avec les « 88:88:88 » éteints derrière, l'UTC et la phase de la lune), l'ana-digi (l'affichage numérique dans le cadran analogique) ou les deux, côte à côte ; elles avancent seconde par seconde, réglées par l'API (en déduisant le temps de la requête ; en dessous, de combien l'horloge de l'appareil avance ou retarde), avec la date en toutes lettres, l'heure UTC et le fuseau (et d'où il vient) ; les cadres **Fuseau et UTC** (le fuseau, le décalage, l'heure Zulu, la lettre militaire du fuseau, comme *P (Papa)*, et le groupe date-heure, *131433P OCT 26*), **Calendrier** (jour de l'année, semaine ISO, trimestre, jour julien, Unix) et **Lune** (la phase, l'âge, la partie éclairée et les prochaines pleine et nouvelle lunes, par le cycle moyen : cela peut varier d'un jour) ; et **Comment régler**. Elle relit l'API chaque minute. Par l'API : `recurso=hora_certa`. |
 | **Documents** (`documentos.php`) | Les documents d'une montre (ou de toutes), ouverts depuis la fiche : envoi de plusieurs fichiers, un onglet par catégorie, la galerie de photos en plein écran avec diaporama, les vidéos à la suite dans l'ordre choisi, le lecteur PDF, le résumé de la NF-e à partir du XML, et le téléchargement pour le reste. Voir [Les documents de la montre](#os-documentos-do-relógio). |
@@ -1596,7 +1653,10 @@ cadres services, précision et timegrapher du panneau).
 | Usage et rotation | **Plan de la rotation** | la montre de chaque jour, avec le motif, et combien de jours chacune a |
 | Usage et rotation | **Alertes** | les alertes maintenant, de la plus en retard à la plus lointaine, et combien de chaque situation |
 | Usage et rotation | **Notes des critères** | l'ordre des montres par la note et le calcul de chacune, paramètre par paramètre |
-| Entretien et précision | **Services et diagnostics** | chaque service dans la période, avec la montre, qui l'a fait, les pièces, le coût, l'étanchéité et la marche avant et après ; le coût total et par type |
+| Entretien et précision | **Services et diagnostics** | chaque service dans la période, avec la montre, l'atelier, les pièces, le coût, l'étanchéité et la marche avant et après ; le coût total et par type |
+| Entretien et précision | **En entretien, par atelier** | les montres à l'atelier maintenant, par atelier, avec le statut, la date prévue, le devis et les contacts |
+| Entretien et précision | **Entretiens de la période** | chaque entretien de la période : la montre, l'atelier, le type, le statut, l'envoi, le retour, les jours et le coût |
+| Entretien et précision | **Dépense par atelier** | combien chaque atelier a coûté dans la période, combien d'entretiens et les jours à l'atelier |
 | Entretien et précision | **Précision et marche** | la marche de chaque montre ; avec une montre, le calcul complet et chaque intervalle mesuré |
 | Entretien et précision | **Timegrapher** | les mesures ; avec une montre, aussi la dernière séance |
 | Entretien et précision | **Réserve mesurée** | les tests de la réserve et les observations de l'énergie |

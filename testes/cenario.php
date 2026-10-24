@@ -90,10 +90,10 @@ function escrever($params, $espera_ok = true, $chave = null)
 {
     global $foto, $falhas, $passo, $ultima_troca;
     $passo++;
-    // as escritas que podem trocar o relógio de hoje (rodízio, modos) fecham a sessão do rodízio do anterior agora e abrem a do
+    // as escritas que podem trocar o relógio de hoje (rodízio, modos, a manutenção) fecham a sessão do rodízio do anterior agora e abrem a do
     // novo agora: uma sessão que abre e fecha no mesmo segundo some (0 s), e no segundo seguinte fica (1 s). Antes de cada uma,
     // o segundo vira: a sessão de cada relógio que passa por hoje dura ao menos 1 s em qualquer banco, rápido ou lento
-    $troca = in_array($params["recurso"], ["rodizio", "modos"], true)
+    $troca = in_array($params["recurso"], ["rodizio", "modos", "manutencao"], true)
         || ($params["recurso"] === "lancamento" && in_array($params["acao"] ?? "", ["iniciar", "encerrar", "alternar"], true))
         || ($params["recurso"] === "winder_posicoes" && array_key_exists("relogio_id", $params));
     while ($troca && time() <= $ultima_troca) {
@@ -826,13 +826,97 @@ $doc_srv = escrever(["recurso" => "documentos", "acao" => "enviar", "relogio_id"
     "arquivo_nome" => "s1.pdf", "arquivo_base64" => base64_encode("%PDF-1.4 nota da revisao")]);
 $doc_outro = escrever(["recurso" => "documentos", "acao" => "enviar", "relogio_id" => $rel["smart"], "categoria_id" => $cat_nf, "titulo" => "Nota de outro relógio",
     "arquivo_nome" => "s2.pdf", "arquivo_base64" => base64_encode("%PDF-1.4 nota de outro")]);
+// a manutenção (a página Manutenção): as listas que são cadastro (o item novo, as recusas, o em uso que não sai e não muda o
+// que faz), as oficinas com os contatos (e as recusas) e a manutenção do relógio de hoje: ele sai do rodízio, das sessões e
+// dos avisos (menos os da manutenção), o dia de hoje fica livre (aqui trocar_hoje está ligado) e a disponibilidade pedida
+// no meio fica para a volta; a situação com aviso, o atrasado, a volta que vira serviço (com o orçamento), a reabertura
+// recusada com serviço, a que cancela, o registro de uma passada, a exclusão e os relatórios
+$listas_m = ler("listas", ["recurso" => "listas"]);
+ler("listas da manutencao", ["recurso" => "listas", "pagina" => "manutencao"]);
+$item_de = function ($lst, $lista, $ident) {
+    foreach ($lst["listas"] ?? [] as $l) {
+        foreach ($l["lista"] === $lista ? $l["itens"] : [] as $x) {
+            if ($x["identificador"] === $ident) {
+                return $x;
+            }
+        }
+    }
+    return null;
+};
+$garantia_m = escrever(["recurso" => "listas", "acao" => "salvar", "lista" => "manutencao_situacao", "identificador" => "garantia_fab", "nome" => "Na garantia do fabricante",
+    "comportamento" => "aberta", "texto" => "Cobrar a garantia", "cor" => "#7A4FB5", "ordem" => 4]);
+escrever(["recurso" => "listas", "acao" => "salvar", "lista" => "foguete", "identificador" => "x", "nome" => "X"], false);
+escrever(["recurso" => "listas", "acao" => "salvar", "lista" => "acessorio_tipo", "identificador" => "Ruim!", "nome" => "X"], false);
+escrever(["recurso" => "listas", "acao" => "salvar", "lista" => "acessorio_tipo", "identificador" => "pulseira", "nome" => "De novo"], false);
+escrever(["recurso" => "listas", "acao" => "salvar", "lista" => "reserva_observacao", "identificador" => "teste", "nome" => "Reservado"], false);
+escrever(["recurso" => "listas", "acao" => "salvar", "lista" => "manutencao_situacao", "identificador" => "sem_faz", "nome" => "Sem o que faz", "comportamento" => "voa"], false);
+escrever(["recurso" => "listas", "acao" => "salvar", "lista" => "manutencao_situacao", "identificador" => "cor_ruim", "nome" => "Cor ruim", "comportamento" => "aberta", "cor" => "azul"], false);
+escrever(["recurso" => "listas", "acao" => "salvar", "lista" => "servico_tipo", "identificador" => "marca_ruim", "nome" => "Marca ruim", "texto" => "foguete"], false);
+$caixa_m = escrever(["recurso" => "listas", "acao" => "salvar", "lista" => "acessorio_tipo", "identificador" => "capa", "nome" => "Capa de viagem"]);
+escrever(["recurso" => "listas", "acao" => "salvar", "id" => $item_de($listas_m, "relogio_situacao", "colecao")["id"] ?? 0, "comportamento" => "fora"], false);
+escrever(["recurso" => "listas", "acao" => "excluir", "id" => $item_de($listas_m, "relogio_situacao", "colecao")["id"] ?? 0], false);
+escrever(["recurso" => "listas", "acao" => "excluir", "id" => $caixa_m], false);
+escrever(["recurso" => "listas", "acao" => "excluir", "id" => $caixa_m, "confirmar" => 1]);
+$of_c = escrever(["recurso" => "oficinas", "acao" => "salvar", "nome" => "Relojoaria Central", "tipo" => "relojoeiro", "endereco" => "Rua XV de Novembro", "numero" => "100",
+    "bairro" => "Centro", "cidade" => "Curitiba", "uf" => "PR", "cep" => "80020-310", "horario" => "seg a sex, 9h às 18h", "observacao" => "Pergunte pelo Seu João.",
+    "contatos" => [["tipo" => "whatsapp", "valor" => "+55 41 99999-0000", "pessoa" => "Seu João"], ["tipo" => "email", "valor" => "central@exemplo.com", "principal" => "1"],
+        ["tipo" => "site", "valor" => "relojoariacentral.exemplo.com"], ["tipo" => "telefone", "valor" => "(41) 3333-0000", "observacao" => "só de manhã"]]]);
+escrever(["recurso" => "oficinas", "acao" => "salvar", "nome" => ""], false);
+escrever(["recurso" => "oficinas", "acao" => "salvar", "nome" => "Relojoaria Central"], false);
+escrever(["recurso" => "oficinas", "acao" => "salvar", "nome" => "Tipo errado", "tipo" => "foguete"], false);
+escrever(["recurso" => "oficinas", "acao" => "salvar", "nome" => "Contato errado", "contatos" => [["tipo" => "pombo", "valor" => "1"]]], false);
+$of_a = escrever(["recurso" => "oficinas", "acao" => "salvar", "nome" => "Assistência da marca", "tipo" => "autorizada", "contatos" => "[{\"tipo\": \"celular\", \"valor\": \"41 98888-7777\"}]"]);
+ler("oficinas", ["recurso" => "oficinas"]);
+$hoje_m = (int)(ler("hoje antes da manutencao", ["recurso" => "hoje", "incluir" => "dia"])["dia"]["relogio_id"] ?? 0);
+$enviado_m = date("Y-m-d", strtotime("-12 days"));
+$man = escrever(["recurso" => "manutencao", "acao" => "salvar", "relogio_id" => $hoje_m, "oficina_id" => $of_c, "tipo" => "revisao", "problema" => "Atrasando 30 s/dia.",
+    "os" => "OS-1234", "enviado" => $enviado_m, "previsao" => date("Y-m-d", strtotime("-2 days"))]);
+escrever(["recurso" => "manutencao", "acao" => "salvar", "relogio_id" => $hoje_m, "oficina_id" => $of_a], false);
+escrever(["recurso" => "manutencao", "acao" => "salvar", "relogio_id" => $rel["fora"], "oficina_id" => 999999], false);
+escrever(["recurso" => "manutencao", "acao" => "salvar", "relogio_id" => $rel["fora"], "oficina_id" => $of_c, "enviado" => date("Y-m-d", strtotime("+1 day"))], false);
+escrever(["recurso" => "manutencao", "acao" => "salvar", "relogio_id" => $rel["fora"], "oficina_id" => $of_c, "previsao" => "2000-01-01"], false);
+escrever(["recurso" => "manutencao", "acao" => "salvar", "relogio_id" => $rel["fora"], "oficina_id" => $of_c, "tipo" => "foguete"], false);
+escrever(["recurso" => "manutencao", "acao" => "salvar", "id" => $man, "acessorios" => "999999"], false);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $hoje_m, "disponivel" => 0]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $hoje_m, "disponivel" => 1]);
+ler("hoje com o relogio do dia na oficina", ["recurso" => "hoje", "incluir" => "dia,hoje_livre"]);
+ler("manutencao aberta", ["recurso" => "manutencao"]);
+ler("ficha na oficina", ["recurso" => "ficha", "relogio" => $hoje_m]);
+ler("avisos com o relogio na oficina", ["recurso" => "avisos"]);
+ler("calcular a manutencao", ["recurso" => "calcular", "relogio" => $hoje_m, "expressao" => "MANUTENCAO() * 1000 + MANUTENCAO(\"dias\") + PADRAO(MANUTENCAO(\"orcamento\"); 0)"]);
+escrever(["recurso" => "manutencao", "acao" => "situacao", "id" => $man, "situacao" => "orcamento", "observacao" => "R$ 350, com a coroa."]);
+escrever(["recurso" => "manutencao", "acao" => "salvar", "id" => $man, "orcamento" => "350,00", "orcamento_data" => date("Y-m-d", strtotime("-3 days"))]);
+escrever(["recurso" => "manutencao", "acao" => "situacao", "id" => $man, "situacao" => "foguete"], false);
+escrever(["recurso" => "manutencao", "acao" => "situacao", "id" => $man, "situacao" => "aprovado", "quando" => "2000-01-01 10:00"], false);
+escrever(["recurso" => "manutencao", "acao" => "situacao", "id" => $man, "situacao" => "garantia_fab"]);
+ler("avisos com o orcamento", ["recurso" => "avisos"]);
+escrever(["recurso" => "manutencao", "acao" => "situacao", "id" => $man, "situacao" => "retirado", "observacao" => "Retirado com a caixa."]);
+$ficha_m = ler("ficha de volta da oficina", ["recurso" => "ficha", "relogio" => $hoje_m]);
+escrever(["recurso" => "manutencao", "acao" => "situacao", "id" => $man, "situacao" => "enviado"], false);
+$cancela_m = escrever(["recurso" => "manutencao", "acao" => "salvar", "relogio_id" => $rel["fora"], "oficina_id" => $of_a, "tipo" => "diagnostico"]);
+escrever(["recurso" => "manutencao", "acao" => "situacao", "id" => $cancela_m, "situacao" => "cancelado"]);
+$passada_m = escrever(["recurso" => "manutencao", "acao" => "salvar", "relogio_id" => $rel["fora"], "oficina_id" => $of_c, "tipo" => "pilha", "situacao" => "retirado",
+    "enviado" => date("Y-m-d", strtotime("-40 days")), "encerrado" => date("Y-m-d", strtotime("-38 days")), "orcamento" => "45"]);
+escrever(["recurso" => "manutencao", "acao" => "excluir", "id" => $cancela_m], false);
+escrever(["recurso" => "manutencao", "acao" => "excluir", "id" => $cancela_m, "confirmar" => 1]);
+escrever(["recurso" => "oficinas", "acao" => "excluir", "id" => $of_c], false);
+ler("manutencoes de todas", ["recurso" => "manutencao"]);
+ler("manutencoes do periodo", ["recurso" => "manutencao", "oficina" => $of_c, "de" => date("Y-m-d", strtotime("-20 days")), "ate" => date("Y-m-d")]);
+foreach (["manutencao_oficinas" => [], "manutencoes" => ["relogio" => $rel["fora"]], "gasto_oficinas" => []] as $tipo_rm => $p_rm) {
+    ler("relatorio " . $tipo_rm, array_merge(["recurso" => "relatorios", "tipo" => $tipo_rm], $p_rm));
+}
+$srv_m = array_values(array_filter($ficha_m["relogio"]["servicos"] ?? [], function ($s) use ($man) { return $s["manutencao_id"] === $man; }))[0] ?? [];
+if (!array_key_exists("manutencao_aberta", $ficha_m["relogio"] ?? []) || $ficha_m["relogio"]["manutencao_aberta"] !== null || ($ficha_m["relogio"]["disponivel"] ?? false) !== true || ($srv_m["mao_de_obra"] ?? null) != 350
+    || ($srv_m["oficina"] ?? "") !== "Relojoaria Central" || ($srv_m["tipo"] ?? "") !== "revisao") {
+    $falhas[] = "manutenção: " . json_encode([$ficha_m["relogio"]["manutencao_aberta"] ?? null, $ficha_m["relogio"]["disponivel"] ?? null, $srv_m], JSON_UNESCAPED_UNICODE);
+}
 $d_srv = date("Y-m-d", strtotime("-5 days"));
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto"], "valores" => ["resistencia_agua_declarada" => 100]]);
 $revisoes = function ($nome) use ($rel) {
     return (int)(ler($nome, ["recurso" => "calcular", "relogio" => $rel["auto"], "expressao" => "CONTAR(\"revisao\"; 30)"])["resultados"][0]["valor"] ?? -1);
 };
 $revisoes_antes = $revisoes("calcular revisoes antes do servico");
-$srv = escrever(["recurso" => "servicos", "acao" => "salvar", "relogio_id" => $rel["auto"], "data" => $d_srv, "tipo" => "revisao", "responsavel" => "Relojoaria Central",
+$srv = escrever(["recurso" => "servicos", "acao" => "salvar", "relogio_id" => $rel["auto"], "data" => $d_srv, "tipo" => "revisao", "oficina_id" => $of_c,
     "descricao" => "Limpeza, lubrificação e regulagem.", "mao_de_obra" => "300,00", "pecas" => "Coroa; 120,50\nVedação do fundo\nVidro; 80", "estanqueidade" => "aprovado",
     "estanqueidade_bar" => "10", "marcha_antes" => "25", "marcha_depois" => "+4,5", "garantia_ate" => date("Y-m-d", strtotime("+360 days")), "documentos" => [$doc_srv],
     "observacao" => str_repeat("Observação longa do relojoeiro, sem limite de tamanho. ", 220)]);
@@ -1107,7 +1191,7 @@ escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $desejo2, "disponi
 escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "onde_vi", "nome" => "Onde vi", "tipo" => "texto", "no_id" => 0, "so_desejado" => 1]);
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $desejo2, "valores" => ["onde_vi" => "Na vitrine da loja"]]);
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "valores" => ["preco_alvo" => "100", "marca" => "Orient"]]);
-escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "posse" => "perdido"], false);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "posse" => "extraviado"], false);
 ler("desejos", ["recurso" => "desejos"]);
 ler("ficha do desejado", ["recurso" => "ficha", "relogio" => $desejo]);
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "posse" => "emprestado"]);
@@ -1276,7 +1360,7 @@ ler("2 estatisticas recusadas", ["recurso" => "estatisticas", "de" => "2026-13-0
 // o período ao contrário)
 $cat_r = ler("2 relatorios", ["recurso" => "relatorios"]);
 $tipos_r = array_column($cat_r["relatorios"] ?? [], "tipo");
-if (count($tipos_r) !== 18) {
+if (count($tipos_r) !== 21) {
     $falhas[] = "relatórios: o catálogo tem " . count($tipos_r) . " (" . implode(", ", $tipos_r) . ")";
 }
 foreach ([["colecao", []], ["colecao", ["posse" => "todos"]], ["passaporte", ["relogio" => $rel["manual"]]], ["passaporte", ["relogio" => $rel["auto2"]]], ["custos", []],

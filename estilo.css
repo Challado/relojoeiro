@@ -1637,6 +1637,17 @@ dl.pares.legenda-grafico dt, dl.pares.legenda-grafico dd { padding-top: .25rem; 
 .legenda-ponto { display: inline-block; margin-right: .9rem; white-space: nowrap; }
 /* a situação fora da coleção (desejado, emprestado, vendido, arquivado): uma etiqueta violeta, diferente dos estados */
 .estado-posse { background: #efe8f7; color: #5b3b8a; border-color: #d3c3ea; }
+/* a manutenção: a etiqueta "em manutenção" (e a situação, na cor dela), os contatos das oficinas e o editor das listas */
+.estado-manutencao { background: #fff6e5; color: #8a5a00; border-color: #e8c98a; }
+.lista-oficinas .contato { display: inline-block; margin: .1rem 0; }
+.lista-oficinas .contato.principal { font-weight: 600; }
+.lista-oficinas td > small { display: block; }
+.lista-manutencao td[colspan], .lista-oficinas td[colspan] { text-align: left; }
+.situacao-manutencao select { max-width: 13rem; }
+.lista-itens input:not([type=color]) { width: 100%; min-width: 6rem; }
+.lista-itens input[name=ordem] { min-width: 3rem; width: 3.5rem; }
+.lista-itens input[type=color] { width: 2.6rem; height: 2rem; padding: 0; border: 0; background: none; }
+.contatos input, .contatos select { width: 100%; min-width: 7rem; }
 
 /* ---------- Desejos: a lista de desejos e os de fora da coleção ---------- */
 .pagina-desejos h2 { margin-top: 2rem; }

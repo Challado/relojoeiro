@@ -60,7 +60,7 @@ foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
     }
     $foto = linha("SELECT tipo, atualizado" . ($com_foto ? ", dados" : "") . " FROM foto WHERE relogio_id = ?", [(int)$r["id"]]);
     $relogios[] = ["id" => (int)$r["id"], "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? null : (int)$r["no_id"], "lugar" => no_caminho($r["no_id"]),
-        "disponivel" => (int)$r["disponivel"] === 1, "copia_banco" => (int)$r["copia_banco"] === 1, "posse" => posse_de($r), "criado" => $r["criado"],
+        "disponivel" => (int)$r["disponivel"] === 1, "copia_banco" => (int)$r["copia_banco"] === 1, "posse" => (string)$r["posse"], "criado" => $r["criado"],
         "calibre_id" => $cal_t ? (int)$cal_t["id"] : null, "calibre" => $cal_t ? $cal_t["nome"] : null,
         "foto" => $foto ? ["tipo" => $foto["tipo"], "atualizada_em" => $foto["atualizado"], "base64" => $com_foto ? base64_encode($foto["dados"]) : null] : null,
         "documentos" => array_map(function ($x) { return documento_info($x, false); }, documentos_do_relogio((int)$r["id"])),
@@ -102,7 +102,8 @@ foreach (avisos_todos() as $versoes) {
     }
 }
 $saida = ["arvore" => $arvore, "unidades" => array_values(unidades_todas()), "secoes" => array_values(secoes_todas()), "campos" => $campos, "lancamento_tipos" => $tipos_l, "formulas" => $formulas, "avisos" => $avisos, "calibres" => calibres_todos(), "relogios" => $relogios,
-    "documento_categorias" => documento_categorias_lista(), "modos" => $modos, "plano" => plano_legivel("", ""), "plano_livre" => dias_livres("", ""), "acessorios" => acessorios_lista(), "winders" => winders_lista(), "winder_programas" => winder_programas_lista(), "winder_movimentos" => winder_movimentos_lista(), "servicos" => servicos_lista(), "reserva" => reserva_lista(), "timegrapher" => timegrapher_lista(), "config" => (object)$config,
+    "documento_categorias" => documento_categorias_lista(), "modos" => $modos, "plano" => plano_legivel("", ""), "plano_livre" => dias_livres("", ""), "acessorios" => acessorios_lista(), "winders" => winders_lista(), "winder_programas" => winder_programas_lista(), "winder_movimentos" => winder_movimentos_lista(), "servicos" => servicos_lista(), "manutencoes" => manutencao_lista(), "oficinas" => oficinas_lista(),
+    "listas" => (object)array_combine(array_keys(LISTAS), array_map("lista_opcoes", array_keys(LISTAS))), "reserva" => reserva_lista(), "timegrapher" => timegrapher_lista(), "config" => (object)$config,
     "eventos" => array_map("evento_legivel", eventos_com_dias(linhas("SELECT * FROM evento_personalizado ORDER BY nome"))),
     "destinos" => array_values(array_map("destino_legivel", destinos())),
     "agendas" => array_values(array_map(function ($ag) {

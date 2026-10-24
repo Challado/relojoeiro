@@ -20,7 +20,7 @@ foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
     if (posse_de($r) === "desejado") {
         $desejados[] = array_merge($base, desejo_do_relogio(valores_do_relogio((int)$r["id"])));
     } elseif (posse_de($r) !== "colecao") {
-        $fora_d[] = array_merge($base, ["posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)])]);
+        $fora_d[] = array_merge($base, ["posse" => (string)$r["posse"], "posse_texto" => posse_texto($r), "posse_comportamento" => posse_de($r)]);
     }
 }
 // a lista: a prioridade mais alta primeiro, depois pelo nome
@@ -28,7 +28,8 @@ usort($desejados, function ($a, $b) {
     return $a["prioridade_ordem"] <=> $b["prioridade_ordem"] ?: strcmp($a["nome"], $b["nome"]);
 });
 $c_prio = campos_todos()["prioridade_desejo"] ?? null;
-$saida = ["desejados" => $desejados, "total_preco_alvo" => round(array_sum(array_map(function ($x) { return $x["preco_alvo"] ?? 0; }, $desejados)), 2),
+// "Voltar para a coleção" e "Comprei": a situação (o identificador) do primeiro item que faz "na coleção"
+$saida = ["posse_colecao" => lista_com_comportamento("relogio_situacao", "colecao")["identificador"] ?? "colecao", "desejados" => $desejados, "total_preco_alvo" => round(array_sum(array_map(function ($x) { return $x["preco_alvo"] ?? 0; }, $desejados)), 2),
     "sem_preco_alvo" => count(array_filter($desejados, function ($x) { return $x["preco_alvo"] === null; })),
     "prioridades" => array_values(array_filter(array_map("trim", explode("\n", (string)($c_prio["opcoes"] ?? ""))))),
     "fora" => $fora_d,

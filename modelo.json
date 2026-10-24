@@ -1875,6 +1875,38 @@
             "condicao": null,
             "resolve": "pulso",
             "na_hora": 0
+        },
+        {
+            "identificador": "manutencao_cobrar",
+            "nome": "Cobrar a oficina",
+            "expressao": "MANUTENCAO(\"previsao\") + 1",
+            "antecedencia_dias": 0,
+            "texto": "o prazo da {oficina} para o {relogio}: {quando}",
+            "ativo": 1,
+            "grupo": "raiz",
+            "escala": "nao",
+            "simula_valor": null,
+            "simula_horas": null,
+            "agenda": "janela",
+            "condicao": null,
+            "resolve": null,
+            "na_hora": 0
+        },
+        {
+            "identificador": "manutencao_situacao",
+            "nome": "Andamento da manutenção",
+            "expressao": "MANUTENCAO(\"aviso\")",
+            "antecedencia_dias": 0,
+            "texto": "{situacao_aviso}: o {relogio} está na {oficina} ({situacao}) {quando}",
+            "ativo": 1,
+            "grupo": "raiz",
+            "escala": "nao",
+            "simula_valor": null,
+            "simula_horas": null,
+            "agenda": "janela",
+            "condicao": null,
+            "resolve": null,
+            "na_hora": 0
         }
     ],
     "criterios": [
@@ -3763,5 +3795,305 @@
                 "envia": 1
             }
         ]
-    }
+    },
+    "listas": {
+        "relogio_situacao": [
+            {
+                "identificador": "colecao",
+                "nome": "Na coleção",
+                "comportamento": "colecao"
+            },
+            {
+                "identificador": "emprestado",
+                "nome": "Emprestado",
+                "comportamento": "emprestado"
+            },
+            {
+                "identificador": "desejado",
+                "nome": "Desejado",
+                "comportamento": "desejado"
+            },
+            {
+                "identificador": "vendido",
+                "nome": "Vendido",
+                "comportamento": "fora"
+            },
+            {
+                "identificador": "arquivado",
+                "nome": "Arquivado",
+                "comportamento": "fora"
+            },
+            {
+                "identificador": "presenteado",
+                "nome": "Presenteado",
+                "comportamento": "fora"
+            },
+            {
+                "identificador": "perdido",
+                "nome": "Perdido ou roubado",
+                "comportamento": "fora"
+            }
+        ],
+        "acessorio_tipo": [
+            {
+                "identificador": "pulseira",
+                "nome": "Pulseira"
+            },
+            {
+                "identificador": "caixa",
+                "nome": "Caixa"
+            },
+            {
+                "identificador": "estojo",
+                "nome": "Estojo"
+            },
+            {
+                "identificador": "ferramenta",
+                "nome": "Ferramenta"
+            },
+            {
+                "identificador": "carregador",
+                "nome": "Carregador"
+            },
+            {
+                "identificador": "peca",
+                "nome": "Peça"
+            },
+            {
+                "identificador": "outro",
+                "nome": "Outro"
+            }
+        ],
+        "servico_tipo": [
+            {
+                "identificador": "revisao",
+                "nome": "Revisão",
+                "texto": "revisao"
+            },
+            {
+                "identificador": "pilha",
+                "nome": "Troca de pilha",
+                "texto": "pilha"
+            },
+            {
+                "identificador": "estanqueidade",
+                "nome": "Teste de estanqueidade"
+            },
+            {
+                "identificador": "regulagem",
+                "nome": "Regulagem"
+            },
+            {
+                "identificador": "polimento",
+                "nome": "Polimento"
+            },
+            {
+                "identificador": "reparo",
+                "nome": "Reparo"
+            },
+            {
+                "identificador": "diagnostico",
+                "nome": "Diagnóstico"
+            },
+            {
+                "identificador": "vidro",
+                "nome": "Troca de vidro"
+            },
+            {
+                "identificador": "pulseira",
+                "nome": "Troca ou ajuste de pulseira"
+            },
+            {
+                "identificador": "coroa",
+                "nome": "Troca de coroa"
+            },
+            {
+                "identificador": "vedacao",
+                "nome": "Troca das vedações"
+            },
+            {
+                "identificador": "limpeza",
+                "nome": "Limpeza"
+            },
+            {
+                "identificador": "outro",
+                "nome": "Outro"
+            }
+        ],
+        "estanqueidade": [
+            {
+                "identificador": "aprovado",
+                "nome": "Aprovado",
+                "comportamento": "aprova"
+            },
+            {
+                "identificador": "reprovado",
+                "nome": "Reprovado",
+                "comportamento": "reprova"
+            }
+        ],
+        "reserva_protocolo": [
+            {
+                "identificador": "corda",
+                "nome": "Corda pela coroa",
+                "texto": "voltas"
+            },
+            {
+                "identificador": "winder",
+                "nome": "No winder",
+                "texto": "h"
+            },
+            {
+                "identificador": "pulso",
+                "nome": "No pulso",
+                "texto": "h"
+            },
+            {
+                "identificador": "outro",
+                "nome": "Outro jeito"
+            }
+        ],
+        "reserva_observacao": [
+            {
+                "identificador": "parou",
+                "nome": "Parou"
+            },
+            {
+                "identificador": "carga_baixa",
+                "nome": "Indicador de carga baixa"
+            },
+            {
+                "identificador": "nota",
+                "nome": "Outra observação"
+            }
+        ],
+        "manutencao_situacao": [
+            {
+                "identificador": "enviado",
+                "nome": "Enviado, aguardando orçamento",
+                "comportamento": "aberta",
+                "cor": "#6b7684"
+            },
+            {
+                "identificador": "orcamento",
+                "nome": "Orçamento recebido",
+                "comportamento": "aberta",
+                "texto": "Aprovar o orçamento",
+                "cor": "#b7791f"
+            },
+            {
+                "identificador": "aprovado",
+                "nome": "Aprovado, em serviço",
+                "comportamento": "aberta",
+                "cor": "#1f4f8f"
+            },
+            {
+                "identificador": "peca",
+                "nome": "Aguardando peça",
+                "comportamento": "aberta",
+                "cor": "#8a5a00"
+            },
+            {
+                "identificador": "pronto",
+                "nome": "Pronto para retirar",
+                "comportamento": "aberta",
+                "texto": "Retirar na oficina",
+                "cor": "#2f7d32"
+            },
+            {
+                "identificador": "retirado",
+                "nome": "Retirado",
+                "comportamento": "encerra",
+                "cor": "#2f7d32"
+            },
+            {
+                "identificador": "devolvido",
+                "nome": "Devolvido sem conserto",
+                "comportamento": "encerra",
+                "cor": "#9b2c2c"
+            },
+            {
+                "identificador": "cancelado",
+                "nome": "Cancelado",
+                "comportamento": "cancela",
+                "cor": "#6b7684"
+            }
+        ],
+        "oficina_tipo": [
+            {
+                "identificador": "relojoeiro",
+                "nome": "Relojoeiro",
+                "comportamento": "comum"
+            },
+            {
+                "identificador": "autorizada",
+                "nome": "Assistência autorizada",
+                "comportamento": "comum"
+            },
+            {
+                "identificador": "fabricante",
+                "nome": "Fabricante",
+                "comportamento": "comum"
+            },
+            {
+                "identificador": "loja",
+                "nome": "Loja",
+                "comportamento": "comum"
+            },
+            {
+                "identificador": "propria",
+                "nome": "Eu mesmo (em casa)",
+                "comportamento": "propria"
+            },
+            {
+                "identificador": "outro",
+                "nome": "Outro",
+                "comportamento": "comum"
+            }
+        ],
+        "contato_tipo": [
+            {
+                "identificador": "telefone",
+                "nome": "Telefone fixo",
+                "comportamento": "telefone"
+            },
+            {
+                "identificador": "celular",
+                "nome": "Celular",
+                "comportamento": "telefone"
+            },
+            {
+                "identificador": "whatsapp",
+                "nome": "WhatsApp",
+                "comportamento": "whatsapp"
+            },
+            {
+                "identificador": "email",
+                "nome": "E-mail",
+                "comportamento": "email"
+            },
+            {
+                "identificador": "site",
+                "nome": "Site",
+                "comportamento": "link"
+            },
+            {
+                "identificador": "instagram",
+                "nome": "Instagram",
+                "comportamento": "link"
+            },
+            {
+                "identificador": "outro",
+                "nome": "Outro",
+                "comportamento": "texto"
+            }
+        ]
+    },
+    "oficinas": [
+        {
+            "nome": "Eu mesmo (em casa)",
+            "tipo": "propria",
+            "observacao": "O que você mesmo faz: a pilha trocada em casa, a pulseira ajustada, a limpeza."
+        }
+    ]
 }

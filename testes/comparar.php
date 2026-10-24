@@ -137,6 +137,25 @@ function comparar($x, $y, $caminho, $chave)
                 }
             }
         }
+        // a nota de um relógio pelos critérios (nota e a conta de cada subparâmetro): um valor que anda com o tempo (os dias
+        // sem uso) perto da borda de uma faixa cai numa faixa num banco e na vizinha no outro, dentro da folga do tempo; a
+        // faixa, a nota e os pontos dele, e a nota somada, são a mesma conta
+        if (!$lista_x && isset($x["conta"], $y["conta"], $x["nota"], $y["nota"]) && is_array($x["conta"]) && is_array($y["conta"]) && count($x["conta"]) === count($y["conta"])) {
+            foreach ($x["conta"] as $j => $cx) {
+                $cy = $y["conta"][$j] ?? null;
+                if (is_array($cx) && is_array($cy) && is_numeric($cx["valor"] ?? null) && is_numeric($cy["valor"] ?? null) && ($cx["faixa"] ?? null) !== ($cy["faixa"] ?? null)
+                    && ($cx["variavel"] ?? null) === ($cy["variavel"] ?? null) && numeros_iguais((float)$cx["valor"], (float)$cy["valor"], "dias")) {
+                    $leves[] = [$caminho . ".conta[" . $j . "]", "na borda da faixa, o valor andou com o tempo", $cx["faixa"], $cy["faixa"]];
+                    if (isset($x["relogio_id"])) {
+                        $GLOBALS["NA_BORDA"][(int)$x["relogio_id"]] = true;
+                    }
+                    foreach (["faixa", "nota", "pontos", "valor"] as $k_b) {
+                        unset($x["conta"][$j][$k_b], $y["conta"][$j][$k_b]);
+                    }
+                    unset($x["nota"], $y["nota"]);
+                }
+            }
+        }
         foreach (array_unique(array_merge(array_keys($x), array_keys($y))) as $k) {
             if (!array_key_exists($k, $x) || !array_key_exists($k, $y)) {
                 if (!$lista_x) {
@@ -225,6 +244,14 @@ foreach (array_unique(array_merge(array_keys($leituras_a), array_keys($leituras_
     comparar($leituras_a[$l], $leituras_b[$l], ".leituras." . $l, $l);
 }
 $FOLGA_ATRASO = 0;
+// a nota do relógio na ficha (só o número) do relógio cuja conta caiu na borda de uma faixa (acima): a mesma conta, leve
+$graves = array_values(array_filter($graves, function ($g) use (&$leves, $leituras_a) {
+    if (preg_match("/^\.leituras\.(.+)\.resposta\.relogio\.nota\.nota\$/", $g[0], $m) === 1 && isset($GLOBALS["NA_BORDA"][(int)($leituras_a[$m[1]]["resposta"]["relogio"]["id"] ?? 0)])) {
+        $leves[] = [$g[0], "na borda da faixa, a nota do mesmo relógio", $g[2], $g[3]];
+        return false;
+    }
+    return true;
+}));
 $corta = function ($s) {
     $s = (string)$s;
     return strlen($s) > 160 ? substr($s, 0, 157) . "..." : $s;

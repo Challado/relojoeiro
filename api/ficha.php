@@ -26,7 +26,7 @@ foreach (campos_na_ordem_da_ficha(campos_todos()) as $c) {
 }
 $saida = ["hoje" => $hoje->format("Y-m-d"), "trocar_hoje" => trocar_hoje_permitido(), "relogio" => null, "copia_sistema" => documentos_copia_sistema(), "painel_modo" => painel_modo(), "campos" => $campos,
     // as situações na coleção, na ordem, para o menu do cadastro
-    "posses" => array_map(function ($k) { return ["valor" => $k, "nome" => t(POSSES[$k])]; }, array_keys(POSSES)),
+    "posses" => lista_opcoes("relogio_situacao"),
     "grupos" => array_map(function ($o) use ($n) { return ["id" => $o[0], "caminho" => no_caminho($o[0]), "cadeia" => no_cadeia($o[0])]; }, nos_em_ordem()),
     // os calibres da árvore, para o menu do cadastro
     "calibres" => array_map(function ($c) { return ["id" => (int)$c["id"], "nome" => $c["nome"], "fabricante" => $c["fabricante"]]; }, linhas("SELECT id, nome, fabricante FROM calibre ORDER BY nome, id"))];
@@ -67,7 +67,7 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     $foto = valor("SELECT atualizado FROM foto WHERE relogio_id = ?", [$id]);
     $nota = (int)$r["disponivel"] === 1 ? nota_do_relogio($r, $agora) : null;
     $saida["relogio"] = ["id" => $id, "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? 0 : (int)$r["no_id"], "disponivel" => (int)$r["disponivel"] === 1,
-        "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]), "da_colecao" => da_colecao($r),
+        "posse" => (string)$r["posse"], "posse_texto" => posse_texto($r), "posse_comportamento" => posse_de($r), "da_colecao" => da_colecao($r),
         "acessorios" => acessorios_lista($id),
         // o winder é obrigatório: sem winder cadastrado, o Marcar não tem pôr nem período no winder; com winder, o pôr é pela
         // página Winders, e o período que já passou escolhe a posição onde ele esteve (todas as posições, quando ele tem um tipo
@@ -80,7 +80,12 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
         // os serviços e diagnósticos (o quadro Serviços e diagnósticos): a lista, o resumo, os tipos e os documentos dele que um
         // serviço pode citar (o formulário)
         "servicos" => ($srv_f = servicos_lista($id)), "servicos_resumo" => servicos_resumo($id, $srv_f),
-        "servico_tipos" => array_map(function ($k) { return ["valor" => $k, "nome" => t(SERVICO_TIPOS[$k]), "marca" => in_array($k, SERVICO_MARCA, true)]; }, array_keys(SERVICO_TIPOS)),
+        "servico_tipos" => servico_tipos_opcoes(), "estanqueidades" => lista_opcoes("estanqueidade"),
+        // a manutenção (o quadro Manutenção): a aberta (o relógio na oficina agora; null sem) e todas, da mais nova para a mais
+        // velha; cadastrar, mudar a situação e encerrar ficam na página Manutenção
+        "manutencoes_oficina" => ($mn_f = manutencao_lista(["relogio" => $id])),
+        "manutencao_aberta" => array_values(array_filter($mn_f, function ($m) { return $m["aberta"]; }))[0] ?? null,
+        "oficinas" => array_map(function ($o) { return ["id" => (int)$o["id"], "nome" => $o["nome"]]; }, linhas("SELECT id, nome FROM oficina ORDER BY nome, id")),
         "servico_documentos" => array_map(function ($x) { return ["id" => (int)$x["id"], "titulo" => $x["titulo"]]; }, documentos_do_relogio($id)),
         // a reserva medida (o quadro Reserva): os testes do mecânico e as observações da energia; null sem reserva no cadastro
         "reserva" => ($rs_f = reserva_do_relogio($r, $agora)),
@@ -141,8 +146,10 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
             $l[] = $v["estado_texto"] . " · " . ($v["energia"] !== null ? t("carga {1}%", [1 => (int)round((float)$v["energia"])]) : (string)$v["de"]);
             if ($nota !== null) {
                 $l[] = t("Nota {1}{2}", [1 => motivo_nota($nota["nota"]), 2 => $proxima !== null ? t(" · próximo dia no rodízio: {1}", [1 => data_txt(strtotime($proxima))]) : ""]);
+            } elseif (manutencao_aberta($id) !== null) {
+                $l[] = t("Em manutenção ({1}): fora do rodízio", [1 => manutencao_aberta($id)["oficina"]]);
             } elseif (posse_de($r) !== "colecao") {
-                $l[] = t("{1}: fora do rodízio", [1 => t(POSSES[posse_de($r)])]);
+                $l[] = t("{1}: fora do rodízio", [1 => posse_texto($r)]);
             } elseif ((int)$r["disponivel"] !== 1) {
                 $l[] = t("Indisponível: fora do rodízio");
             }

@@ -1,4 +1,4 @@
-<!-- origem: 304872251d00561cb7f089d0aba334733089434d -->
+<!-- origem: 7256e68a7f6cb823562b6d1f0b93b38f36e102fd -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -162,6 +162,9 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `foto` | la foto de un reloj (`relogio=<id>`): la imagen, no JSON |
 | `documentos` | los documentos de un reloj (`relogio=<id>`; sin él, de todos), con las categorías, el resumen de la NF-e de cada XML, la carpeta y el límite |
 | `servicos` | los servicios y diagnósticos (`relogio=<id>`, con el resumen: la resistencia declarada, la estanqueidad comprobada, cuántos y el costo sumado; sin él, los de todos), con las piezas, el costo, la estanqueidad y la marcha antes y después |
+| `manutencao` | el mantenimiento: los abiertos, los mantenimientos (`relogio`, `oficina`, `de`, `ate`), los talleres con los contactos, el resumen y las listas del mantenimiento |
+| `oficinas` | los talleres, con los contactos, y los tipos de taller y de contacto |
+| `listas` | las listas que son registro (`pagina=cadastros` o `manutencao`), con lo que hace cada ítem y cuántas veces está en uso |
 | `reserva` | la reserva medida (`relogio=<id>`: las pruebas de la reserva del mecánico, las observaciones de la energía, la medida, que es la mediana de las pruebas, y la tabla declarado, medido y estimado con la confianza; sin él, las pruebas y las observaciones de todos) |
 | `timegrapher` | las mediciones del timegrapher (`relogio=<id>`: la última sesión, con el promedio de cada magnitud y la diferencia entre las posiciones, las mediciones y lo que entiende la importación del CSV; sin él, las de todos) |
 | `winders` | los winders de la colección (la página **Winders**): cada uno con los datos, la observación, cuántos documentos y las posiciones, y cada posición con el programa (las vueltas por día, en total y en cada sentido), si está encendida, el reloj que está en ella ahora (la carga, cuánto da cada hora, cuándo se llena, la foto), el lugar fijo (de quién es y si está fuera) y los avisos de límite de la almohadilla; los campos del winder y de la posición, los relojes que pueden ir a un winder (con la posición en que están y si están en el winder sin posición) y los programas para elegir |
@@ -187,7 +190,10 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 |---|---|
 | `relogio` | `salvar` (crear o cambiar), `excluir` (con los documentos), `foto`, `remover_foto` |
 | `documentos` | `enviar` (uno o varios archivos, con la categoría, el título, la fecha, la descripción y, en una foto, la miniatura), `alterar`, `excluir` |
-| `servicos` | `salvar` (la fecha, el tipo, quién lo hizo, la mano de obra, las piezas, la estanqueidad, la marcha antes y después, la garantía y los documentos; la revisión y el cambio de pila se convierten también en el registro), `excluir` |
+| `servicos` | `salvar` (la fecha, el tipo, el mantenimiento o el taller, la mano de obra, las piezas, la estanqueidad, la marcha antes y después, la garantía y los documentos; el tipo que marca un registro se convierte también en el registro), `excluir` |
+| `manutencao` | `salvar` (registrar manda el reloj al taller), `situacao` (la que cierra se convierte en servicio), `excluir` |
+| `oficinas` | `salvar` (con los contactos), `excluir` (solo el que no tiene mantenimientos) |
+| `listas` | `salvar` (un ítem: el identificador, el nombre, el orden, lo que hace, el texto, el color), `excluir` (solo fuera de uso) |
 | `reserva` | `iniciar` (cuándo quedó lleno y cómo), `parou`, `observar` (se detuvo, carga baja, nota; también en el solar), `salvar`, `usar` (la mediana va al registro del reloj), `excluir` |
 | `timegrapher` | `salvar` (una medición: la posición, la marcha, la amplitud, el error de latido, los latidos por hora, el ángulo), `importar` (el CSV del aparato; `conferir=1`: sin grabar), `excluir` |
 | `winders`, `winder_posicoes` | `salvar` (el winder: el nombre, los campos, como el enlace del manual y los límites de la almohadilla, la observación y, al crear, cuántas posiciones; la posición: el nombre, el orden, encendida, el `programa_id` y `relogio_id`, el reloj que queda en ella y gana el lugar: pone, cambia o, con 0, quita), `limite_ok` (el winder: el aviso de límite de un reloj no vuelve), `liberar` (la posición: deja de ser el lugar de quien era), `excluir` (las sesiones que quedaron en ellos siguen, sin la posición) |
@@ -625,7 +631,7 @@ Las reglas `CHECK`, por tema:
 |---|---|
 | Textos | nombre, identificador, título, texto de aviso, fórmula y clave de la configuración vacíos o solo con espacios |
 | Marcas sí/no | cualquier valor distinto de 0 y 1 (disponible, activo, exclusiva, mide el consumo, usada, envía, copia en la base, solo en los deseados...) |
-| Relojes | una situación en la colección fuera de la lista (`colecao`, `desejado`, `emprestado`, `vendido`, `arquivado`); un reloj disponible fuera de la colección |
+| Relojes | una situación en la colección vacía (el identificador de un ítem de la lista; el disponible fuera de la colección lo rechaza el guardado) |
 | Tipos de registro | sesión exclusiva fuera del formato sesión; "mide el consumo" fuera del formato con valor; "se cierra a las" fuera del formato sesión |
 | Registros y mediciones | fin antes del inicio; consumo medido (tasa) fuera de 0 a 100%; horas negativas |
 | Avisos | antelación fuera de 0 a 3650 días; horas simuladas en la escala fuera de 0 a 48 |

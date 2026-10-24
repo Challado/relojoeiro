@@ -1,8 +1,8 @@
 // Cadastros: os dados da API (recurso=cadastros; a aba Totais, recurso=totais; a aba Calibres, recurso=calibres; a aba
 // Unidades, recurso=unidades), uma aba por vez (cadastros.php?aba=campos&editar=3), com as gravações pela API (recurso=campos,
 // secoes, lancamento_tipos, formulas, totais, calibres, unidades e documento_categorias), o testar das fórmulas (recurso=calcular) e o dos totais (recurso=totais, expressao=). Os avisos ficam na página Avisos (avisos.js) e os modos de rodízio, na Modos de rodízio (modos.js).
-var ABAS = {campos: t("Campos"), secoes: t("Divisórias"), unidades: t("Unidades"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), totais: t("Totais"), calibres: t("Calibres"), documentos: t("Categorias de documentos")};
-var RECURSO = {campos: "campos", secoes: "secoes", unidades: "unidades", lancamentos: "lancamento_tipos", formulas: "formulas", totais: "totais", calibres: "calibres", documentos: "documento_categorias"};
+var ABAS = {campos: t("Campos"), secoes: t("Divisórias"), unidades: t("Unidades"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), totais: t("Totais"), calibres: t("Calibres"), documentos: t("Categorias de documentos"), listas: t("Listas")};
+var RECURSO = {campos: "campos", secoes: "secoes", unidades: "unidades", lancamentos: "lancamento_tipos", formulas: "formulas", totais: "totais", calibres: "calibres", documentos: "documento_categorias", listas: "listas"};
 var FAMILIAS = {imagem: t("imagens"), video: t("vídeos"), audio: t("áudios"), pdf: t("PDF"), xml: t("XML")};
 var q = new URLSearchParams(window.location.search);
 // os avisos dos relógios saíram daqui: moram na página Avisos, junto com os lembretes (o endereço antigo leva para lá)
@@ -76,7 +76,9 @@ function cabecaCadastros() {
       [t("As fórmulas de cada relógio, que os totais somam"), cad("formulas")]],
     calibres: [[t("Os dados de um calibre"), t("aqui: Editar, na linha do calibre")], [t("Qual calibre um relógio usa"), t("{1} › Calibre", {1: ed})],
       [t("Os campos que aparecem no calibre"), t("{1}: a caixa \"do movimento\" do campo", {1: cad("campos")})]],
-    documentos: [[t("O nome e os tipos de arquivo de uma categoria"), t("aqui")], [t("Os documentos de um relógio"), t("{1}: o relógio › Documentos", {1: lugar("ficha.php", t("Ficha"))})]]
+    documentos: [[t("O nome e os tipos de arquivo de uma categoria"), t("aqui")], [t("Os documentos de um relógio"), t("{1}: o relógio › Documentos", {1: lugar("ficha.php", t("Ficha"))})]],
+    listas: [[t("Os itens de uma lista (o nome, a ordem, o que faz)"), t("aqui")], [t("As listas da manutenção (situações, tipos de serviço, estanqueidade, oficinas, contatos)"), lugar("manutencao.php?aba=listas", t("Coleção › Manutenção › Listas"))],
+      [t("A situação de um relógio"), ed], [t("O tipo de um acessório"), lugar("acessorios.php", t("Coleção › Acessórios"))]]
   };
   return el("h1", {}, t("Cadastros")) + el("nav", {"class": "abas"}, Object.keys(ABAS).map(function (k) { return el("a", {"href": "cadastros.php?aba=" + k, "class": k === aba ? "ativa" : ""}, h(ABAS[k])); }).join(""))
     + (linhas[aba] ? ondeMuda("cadastros-" + aba, linhas[aba]) : "");
@@ -115,6 +117,13 @@ function recarregarCadastros() {
   }
   if (aba === "unidades") {
     return recarregarUnidades();
+  }
+  // as listas que são cadastro desta página (a situação na coleção, os tipos de acessório, os jeitos de carregar e as
+  // observações da reserva; as da manutenção ficam na página Manutenção), no editor das listas (o do api.js)
+  if (aba === "listas") {
+    return api({recurso: "listas", pagina: "cadastros"}).then(function (l) {
+      document.getElementById("cadastros").innerHTML = cabecaCadastros() + editorListas(l.listas);
+    });
   }
   return api({recurso: "cadastros"}).then(function (d) {
     var res = cabecaCadastros();

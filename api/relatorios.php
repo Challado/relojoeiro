@@ -170,9 +170,9 @@ $RELATORIOS["passaporte"] = [$g_colecao, t("Passaporte do relógio"), t("A ficha
         $sec[] = $tabela(t("Manutenções"), [t("Marcação"), [t("Vezes"), true], t("A última")], array_map(function ($m) use ($data) {
             return [$m["nome"], (string)$m["vezes"], $data($m["ultima"])];
         }, $d["marcacoes"]), t("Nenhuma marcação."));
-        $sec[] = $tabela(t("Serviços e diagnósticos"), [t("Data"), t("Tipo"), t("Quem fez"), [t("Custo"), true], t("Estanqueidade"), t("Marcha antes"), t("Marcha depois"), t("Peças"), t("Descrição")],
+        $sec[] = $tabela(t("Serviços e diagnósticos"), [t("Data"), t("Tipo"), t("Oficina"), [t("Custo"), true], t("Estanqueidade"), t("Marcha antes"), t("Marcha depois"), t("Peças"), t("Descrição")],
             array_map(function ($s) use ($data, $reais) {
-                return [$data($s["data"]), $s["tipo_texto"], $s["responsavel"], $reais($s["custo"]),
+                return [$data($s["data"]), $s["tipo_texto"], $s["oficina"], $reais($s["custo"]),
                     $s["estanqueidade_texto"] === null ? null : $s["estanqueidade_texto"] . ($s["estanqueidade_bar"] !== null ? t(" a {1} bar", [1 => decimal_txt($s["estanqueidade_bar"], 2)]) : ""),
                     $s["marcha_antes_texto"], $s["marcha_depois_texto"], implode(", ", array_column($s["pecas"], "nome")), $s["descricao"]];
             }, $d["servicos_diagnosticos"]), t("Nenhum serviço."));
@@ -397,7 +397,63 @@ $RELATORIOS["criterios"] = [$g_uso, t("Notas dos critérios"), t("A nota de cada
     }];
 
 // os serviços e diagnósticos (o recurso=servicos), no período
-$RELATORIOS["servicos"] = [$g_manut, t("Serviços e diagnósticos"), t("Cada serviço no período (revisão, pilha, estanqueidade, regulagem, polimento, reparo, diagnóstico): o relógio, quem fez, as peças, o custo, a estanqueidade e a marcha antes e depois; o custo somado e por tipo."),
+$RELATORIOS["manutencao_oficinas"] = [$g_manut, t("Em manutenção, por oficina"), t("Os relógios na oficina agora, agrupados por oficina: a situação, desde quando, a previsão (e se está atrasada), o orçamento e os contatos da oficina."),
+    [],
+    function ($p) use ($ler, $tabela, $data, $reais) {
+        $d = $ler("manutencao");
+        $secoes = [];
+        foreach ($d["oficinas"] as $o) {
+            $abertas = array_values(array_filter($d["abertas"], function ($m) use ($o) { return $m["oficina_id"] === $o["id"]; }));
+            if (count($abertas) === 0) {
+                continue;
+            }
+            $contatos = implode(" · ", array_map(function ($c) { return $c["tipo_texto"] . ": " . $c["valor"] . ($c["pessoa"] !== null ? " (" . $c["pessoa"] . ")" : ""); }, $o["contatos"]));
+            $secoes[] = $tabela($o["nome"], [t("Relógio"), t("Situação"), t("Enviado"), [t("Dias"), true], t("Previsão"), [t("Orçamento"), true], t("OS")],
+                array_map(function ($m) use ($data, $reais) {
+                    return [$m["relogio"], $m["situacao_texto"], $data($m["enviado"]), (string)$m["dias"], $m["previsao"] === null ? null : $data($m["previsao"]) . ($m["atrasada"] ? " " . t("(atrasada)") : ""),
+                        $reais($m["orcamento"]), $m["os"]];
+                }, $abertas), t("Nenhum."), null, trim(($o["endereco_texto"] ?? "") . ($contatos !== "" ? " · " . $contatos : "")) ?: null);
+        }
+        return ["subtitulo" => t("Agora"), "resumo" => [[t("Em manutenção"), (string)$d["resumo"]["abertas"]], [t("Atrasadas"), (string)$d["resumo"]["atrasadas"]]],
+            "secoes" => count($secoes) > 0 ? $secoes : [$tabela(t("Em manutenção"), [t("Relógio")], [], t("Nenhum relógio na oficina agora."))]];
+    }];
+
+$RELATORIOS["manutencoes"] = [$g_manut, t("Manutenções no período"), t("Cada manutenção aberta em algum dia do período: o relógio, a oficina, o tipo, a situação, o envio, a volta, quantos dias ficou e quanto custou (os serviços dela); quantas e o custo somado."),
+    [$p_relogio(false), $p_data("de", t("De"), -365), $p_data("ate", t("Até"), null)],
+    function ($p) use ($ler, $relogio, $periodo, $periodo_txt, $tabela, $data, $reais) {
+        $r = $relogio($p, false);
+        $per = $periodo($p, -365, null);
+        $d = $ler("manutencao", array_filter(["relogio" => $r ? (int)$r["id"] : null, "de" => $per["de"], "ate" => $per["ate"]], function ($v) { return $v !== null; }));
+        $lista = $d["manutencoes"];
+        $soma = array_sum(array_map(function ($m) { return (float)($m["custo"] ?? 0); }, $lista));
+        return ["subtitulo" => ($r ? $r["nome"] : t("Todos os relógios")) . " · " . $periodo_txt($per),
+            "resumo" => [[t("Manutenções"), (string)count($lista)], [t("Custo somado"), $reais(round($soma, 2))]],
+            "secoes" => [$tabela(t("Manutenções"), [t("Relógio"), t("Oficina"), t("Tipo"), t("Situação"), t("Enviado"), t("Voltou"), [t("Dias"), true], [t("Custo"), true]],
+                array_map(function ($m) use ($data, $reais) {
+                    return [$m["relogio"], $m["oficina"], $m["tipo_texto"], $m["situacao_texto"], $data($m["enviado"]), $data($m["encerrado"]), (string)$m["dias"], $reais($m["custo"])];
+                }, $lista), t("Nenhuma manutenção no período."), count($lista) > 0 ? [t("Total"), "", "", "", "", "", "", $reais(round($soma, 2))] : null)]];
+    }];
+
+$RELATORIOS["gasto_oficinas"] = [$g_manut, t("Gasto por oficina"), t("Quanto cada oficina custou no período (os serviços das manutenções dela), quantas manutenções, quantos dias os relógios ficaram lá e a média de dias; o total."),
+    [$p_data("de", t("De"), -365), $p_data("ate", t("Até"), null)],
+    function ($p) use ($ler, $periodo, $periodo_txt, $tabela, $reais) {
+        $per = $periodo($p, -365, null);
+        $d = $ler("manutencao", array_filter(["de" => $per["de"], "ate" => $per["ate"]], function ($v) { return $v !== null; }));
+        $por = [];
+        foreach ($d["manutencoes"] as $m) {
+            $x = $por[$m["oficina"]] ?? [0, 0, 0.0];
+            $por[$m["oficina"]] = [$x[0] + 1, $x[1] + $m["dias"], $x[2] + (float)($m["custo"] ?? 0)];
+        }
+        uasort($por, function ($a, $b) { return $b[2] <=> $a[2]; });
+        $soma = array_sum(array_column($por, 2));
+        return ["subtitulo" => $periodo_txt($per), "resumo" => [[t("Oficinas"), (string)count($por)], [t("Gasto somado"), $reais(round($soma, 2))]],
+            "secoes" => [$tabela(t("Por oficina"), [t("Oficina"), [t("Manutenções"), true], [t("Dias na oficina"), true], [t("Média de dias"), true], [t("Gasto"), true]],
+                array_map(function ($nome, $x) use ($reais) {
+                    return [$nome, (string)$x[0], (string)$x[1], decimal_txt($x[1] / max(1, $x[0]), 1), $reais(round($x[2], 2))];
+                }, array_keys($por), array_values($por)), t("Nenhuma manutenção no período."), count($por) > 0 ? [t("Total"), (string)array_sum(array_column($por, 0)), (string)array_sum(array_column($por, 1)), "", $reais(round($soma, 2))] : null)]];
+    }];
+
+$RELATORIOS["servicos"] = [$g_manut, t("Serviços e diagnósticos"), t("Cada serviço no período (revisão, pilha, estanqueidade, regulagem, polimento, reparo, diagnóstico): o relógio, a oficina, as peças, o custo, a estanqueidade e a marcha antes e depois; o custo somado e por tipo."),
     [$p_relogio(false), $p_data("de", t("De"), null), $p_data("ate", t("Até"), null)],
     function ($p) use ($ler, $relogio, $periodo, $periodo_txt, $dentro, $tabela, $data, $reais) {
         $r = $relogio($p, false);
@@ -412,9 +468,9 @@ $RELATORIOS["servicos"] = [$g_manut, t("Serviços e diagnósticos"), t("Cada ser
         }
         return ["subtitulo" => ($r ? $r["nome"] : t("Todos os relógios")) . " · " . $periodo_txt($per),
             "resumo" => [[t("Serviços"), (string)count($lista)], [t("Custo somado"), $reais(round($soma, 2))]],
-            "secoes" => [$tabela(t("Serviços"), [t("Data"), t("Relógio"), t("Tipo"), t("Quem fez"), [t("Mão de obra"), true], t("Peças"), [t("Custo"), true], t("Estanqueidade"), t("Marcha antes"), t("Marcha depois"), t("Descrição")],
+            "secoes" => [$tabela(t("Serviços"), [t("Data"), t("Relógio"), t("Tipo"), t("Oficina"), [t("Mão de obra"), true], t("Peças"), [t("Custo"), true], t("Estanqueidade"), t("Marcha antes"), t("Marcha depois"), t("Descrição")],
                 array_map(function ($s) use ($data, $reais) {
-                    return [$data($s["data"]), $s["relogio"], $s["tipo_texto"], $s["responsavel"], $reais($s["mao_de_obra"]),
+                    return [$data($s["data"]), $s["relogio"], $s["tipo_texto"], $s["oficina"], $reais($s["mao_de_obra"]),
                         implode(", ", array_map(function ($x) use ($reais) { return $x["nome"] . ($x["custo"] !== null ? " (" . $reais($x["custo"]) . ")" : ""); }, $s["pecas"])),
                         $reais($s["custo"]), $s["estanqueidade_texto"] === null ? null : $s["estanqueidade_texto"] . ($s["estanqueidade_bar"] !== null ? t(" a {1} bar", [1 => decimal_txt($s["estanqueidade_bar"], 2)]) : ""),
                         $s["marcha_antes_texto"], $s["marcha_depois_texto"], $s["descricao"]];
@@ -535,7 +591,7 @@ if ($tipo_r === "") {
     $saida = ["relatorios" => array_map(function ($k, $x) {
         return ["tipo" => $k, "grupo" => $x[0], "nome" => $x[1], "descricao" => $x[2], "parametros" => $x[3]];
     }, array_keys($RELATORIOS), array_values($RELATORIOS)),
-        "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "posse" => posse_de($r)]; }, linhas("SELECT * FROM relogio ORDER BY nome"))];
+        "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "posse" => (string)$r["posse"], "posse_comportamento" => posse_de($r)]; }, linhas("SELECT * FROM relogio ORDER BY nome"))];
     return;
 }
 if (!isset($RELATORIOS[$tipo_r])) {

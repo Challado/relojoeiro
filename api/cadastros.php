@@ -47,7 +47,7 @@ $saida = ["campos" => array_map(function ($c) {
     "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"]]; }, linhas("SELECT id, nome FROM relogio ORDER BY nome")),
     "documento_categorias" => documento_categorias_lista(),
     // os tipos de acessório (o menu Tipo de acessório de um campo para acessório)
-    "acessorio_tipos" => array_map(function ($k) { return ["valor" => $k, "nome" => t(ACESSORIO_TIPOS[$k])]; }, array_keys(ACESSORIO_TIPOS)),
+    "acessorio_tipos" => lista_opcoes("acessorio_tipo"),
     // as divisórias da ficha, na ordem, com quantos campos cada uma tem (a aba Divisórias e o menu Divisória dos campos)
     "secoes" => array_values(array_map(function ($x) {
         return array_merge($x, ["campos" => (int)valor("SELECT COUNT(*) FROM campo WHERE secao_id = ?", [$x["id"]])]);

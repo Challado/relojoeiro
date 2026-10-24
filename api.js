@@ -1368,3 +1368,46 @@ function atualizarSozinho(ler, ocupada) {
   document.addEventListener("visibilitychange", tentar);
   window.addEventListener("focus", tentar);
 }
+
+// O editor das listas que são cadastro (recurso=listas: Manutenção › Listas e Cadastros › Listas): cada lista numa seção
+// recolhível, com a tabela dos itens (o identificador fixo, o nome, a ordem, o que ele faz, o texto e a cor, conforme a
+// lista, quantas vezes está em uso) e, embaixo, o item novo. Cada linha grava sozinha (o formulário dela fica na última
+// célula; as entradas apontam para ele). O item em uso não sai, e o que ele faz não muda
+function editorListas(listas) {
+  return listas.map(function (l) {
+    var colunas = [t("Identificador"), t("Nome"), t("Ordem")].concat(l.comportamentos.length > 0 ? [t("O que faz")] : [])
+      .concat(l.texto !== null ? [t("Texto")] : []).concat(l.cor ? [t("Cor")] : []).concat([t("Em uso"), ""]);
+    var faz = function (form, atual, travado) {
+      return el("select", {"name": "comportamento", "form": form, "disabled": travado}, l.comportamentos.map(function (c) {
+        return el("option", {"value": c.valor, "selected": c.valor === atual, "title": c.nome}, h(c.nome));
+      }).join(""));
+    };
+    var linhas = l.itens.map(function (x) {
+      var f = "lista-" + x.id;
+      return el("tr", {}, el("td", {}, el("code", {}, h(x.identificador)))
+        + el("td", {}, el("input", {"name": "nome", "form": f, "value": x.nome, "maxlength": 80, "required": true}))
+        + el("td", {}, el("input", {"name": "ordem", "form": f, "value": x.ordem === undefined ? "" : x.ordem, "inputmode": "numeric", "size": 3}))
+        + (l.comportamentos.length > 0 ? el("td", {}, faz(f, x.comportamento, x.em_uso > 0)) : "")
+        + (l.texto !== null ? el("td", {}, el("input", {"name": "texto", "form": f, "value": x.texto || "", "maxlength": 200, "title": l.texto})) : "")
+        + (l.cor ? el("td", {}, el("input", {"type": "color", "name": "cor", "form": f, "value": x.cor || "#6b7684"})) : "")
+        + el("td", {"class": "num"}, String(x.em_uso))
+        + el("td", {"class": "acoes-linha"}, el("form", {"data-recurso": "listas", "id": f, "class": "inline"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
+          + el("input", {"type": "hidden", "name": "id", "value": x.id}) + el("button", {"class": "leve"}, t("Salvar")))
+          + (x.em_uso === 0 ? " " + el("form", {"data-recurso": "listas", "class": "inline"}, el("input", {"type": "hidden", "name": "acao", "value": "excluir"})
+            + el("input", {"type": "hidden", "name": "id", "value": x.id}) + el("button", {"class": "leve discreto"}, t("Excluir"))) : "")));
+    }).join("");
+    var novo = el("form", {"data-recurso": "listas", "class": "form-grade lista-novo"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
+      + el("input", {"type": "hidden", "name": "lista", "value": l.lista})
+      + el("label", {}, t("Identificador {1} {2}", {1: el("input", {"name": "identificador", "maxlength": 20, "required": true, "pattern": "[a-z][a-z0-9_]{0,19}"}),
+        2: el("small", {}, t("minúsculas, números e _; não muda depois"))}))
+      + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "maxlength": 80, "required": true})}))
+      + (l.comportamentos.length > 0 ? el("label", {}, t("O que faz {1}", {1: el("select", {"name": "comportamento"}, l.comportamentos.map(function (c) { return el("option", {"value": c.valor}, h(c.nome)); }).join(""))})) : "")
+      + (l.texto !== null ? el("label", {}, t("Texto {1} {2}", {1: el("input", {"name": "texto", "maxlength": 200}), 2: el("small", {}, h(l.texto))})) : "")
+      + (l.cor ? el("label", {}, t("Cor {1}", {1: el("input", {"type": "color", "name": "cor", "value": "#6b7684"})})) : "")
+      + el("div", {"class": "botoes"}, el("button", {}, t("Criar o item"))));
+    return recolhivel("lista-" + l.lista, h(l.nome) + " " + el("small", {}, l.itens.length === 1 ? t("1 item") : t("{1} itens", {1: l.itens.length})),
+      (l.comportamentos.length > 0 ? el("p", {"class": "nota"}, t("O que cada item pode fazer: {1}.", {1: l.comportamentos.map(function (c) { return h(c.nome); }).join("; ")})) : "")
+      + el("div", {"class": "rolagem"}, el("table", {"class": "relogios compacta lista-itens"}, el("thead", {}, el("tr", {}, colunas.map(function (c) { return el("th", {}, c); }).join("")))
+        + el("tbody", {}, linhas))) + el("h3", {}, t("Novo item")) + novo, "cartao-config");
+  }).join("");
+}

@@ -18,7 +18,7 @@ api(todos ? {recurso: "galeria", posse: "todos"} : {recurso: "galeria"}).then(fu
       return el("figure", {}, el("a", {"href": "ficha.php?id=" + x.id}, x.foto !== null ? el("img", {"src": "api.php?recurso=foto&relogio=" + x.id + "&v=" + x.foto, "alt": t("Foto do {1}", {1: x.nome}), "loading": "lazy"})
           : el("span", {"class": "sem-foto"}, t("Sem foto")))
         + el("figcaption", {}, el("strong", {}, h(x.nome)) + (linha2 !== "" ? el("span", {}, linha2) : "") + (linha3 !== "" ? el("small", {}, linha3) : "")
-          + (x.posse !== "colecao" ? el("small", {"class": "estado estado-posse"}, h(x.posse_texto.toLowerCase())) : "")));
+          + (x.posse_comportamento !== "colecao" ? el("small", {"class": "estado estado-posse"}, h(x.posse_texto.toLowerCase())) : "")));
     }).join("")));
   }).join("");
   res += el("p", {"class": "nota rodape-impresso"}, t("Gerado em {1} {2} pelo Relojoeiro.", {1: dataBr(d.gerado_em), 2: horaBr(d.gerado_em)}));

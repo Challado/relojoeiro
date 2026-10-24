@@ -1213,6 +1213,7 @@ $MIGRACOES = [
     "v45" => ["migracao_v45.sql", tk("os winders: a página Winders cadastra os winders da coleção e as posições de cada um, com campos livres (Cadastros › Campos, para o winder e para a posição: a marca, o modelo, as rotações por dia, o sentido, o ciclo); o Pôr no winder escolhe a posição, e a reserva do automático no winder sai da fórmula winder_ganho, pelo programa da posição (as rotações por dia e o sentido) e pelo que o relógio pede"), "lancamento_winder", "migracao_v45_dados"],
     "v46" => ["migracao_v46.sql", tk("as rotações por dia das posições dos winders com valores possíveis (650, 850, 1050 e 1250, os da chave TPD dos winders comuns), num menu em cada posição da página Winders; mudam em Cadastros › Campos"), "sistema.chave=migracao_v46", "migracao_v46_dados"],
     "v47" => ["migracao_v47.sql", tk("os programas dos winders: as páginas Movimentos (cada passo: um giro horário ou anti-horário, em voltas ou em tempo, ou uma parada) e Programas (a sequência dos movimentos, por voltas ou por tempo, o dia todo ou em blocos, com a velocidade do berço contada ou tirada das voltas por dia do manual; as voltas por dia, o ciclo e o tempo girando sempre calculados), e cada posição escolhe o seu (o programa antigo de cada posição vira um, e os campos antigos saem); a carga no winder pelas voltas no sentido em que o relógio dá corda; o lugar fixo (o relógio tem a posição dele: fora dela, a foto apagada com o aro vermelho no berço, e pôr no winder de qualquer lugar o devolve para lá); os limites da almofada (caixa, pulso e peso), com aviso que se dispensa; e os documentos do winder (o manual, a nota, as fotos)"), "winder_limite_ok", "migracao_v47_dados"],
+    "v48" => ["migracao_v48.sql", tk("a manutenção (a página Manutenção): cadastrar a manutenção de um relógio (a oficina, a situação, o problema, a OS, a previsão, o orçamento, o que foi junto e os documentos) põe o relógio em manutenção, fora do rodízio até voltar, e o encerramento vira o serviço; as oficinas, com quantos contatos quiser; e as listas que viram cadastro (a situação na coleção, os tipos de acessório e de serviço, a estanqueidade, os jeitos de carregar e as observações da reserva, as situações da manutenção, os tipos de oficina e de contato), cada item com o que ele faz. Cada responsável dos serviços de antes vira uma oficina, e cada serviço, uma manutenção encerrada"), "sistema.chave=migracao_v48", "migracao_v48_dados"],
 ];
 
 // O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
@@ -1706,6 +1707,98 @@ function migracao_v47_dados($nova = false)
     });
 }
 
+// Migração v48: as listas que viram cadastro e a manutenção. 1. Cada árvore ganha as listas do modelo.json (no idioma da
+// coleção dela), os avisos da manutenção (manutencao_cobrar e manutencao_situacao, onde ainda não tem) e um item para cada
+// valor gravado que ainda não está na lista (o nome é o próprio valor); 2. cada coleção
+// ganha a oficina "Eu mesmo (em casa)"; 3. cada serviço de antes vira o encerramento de uma manutenção (Retirado, enviada e
+// encerrada no dia dele), na oficina do responsável dele (uma oficina para cada responsável diferente da coleção; sem
+// responsável, a "Eu mesmo (em casa)"); 4. a coluna servico.responsavel sai e servico.manutencao_id fica obrigatória. Pode
+// rodar de novo. Numa instalação nova o schema.sql já é o de agora: fica só a marca
+function migracao_v48_dados($nova = false)
+{
+    if ($nova) {
+        sis_set("migracao_v48", "1");
+        return;
+    }
+    sem_escopo(function () {
+        $lingua_de = function ($raiz) {
+            return lingua_valida((string)valor("SELECT valor FROM config WHERE chave = 'idioma' AND colecao_id IN (SELECT id FROM colecao WHERE no_id = ?) ORDER BY colecao_id", [(int)$raiz])) ?? "pt-BR";
+        };
+        // 1. as listas, e o que já está gravado e não está nelas (os valores de antes eram os do modelo: é só a garantia)
+        $avisos_m = array_values(array_filter(modelo_ler()["avisos"], function ($a) { return strpos($a["identificador"], "manutencao") === 0; }));
+        foreach (linhas("SELECT id FROM no WHERE pai_id IS NULL ORDER BY id") as $r) {
+            $raiz = (int)$r["id"];
+            $tr = modelo_tradutor($lingua_de($raiz));
+            listas_do_modelo($raiz, $tr);
+            // os avisos da manutenção (Cobrar a oficina, o andamento), na raiz, onde a árvore ainda não tem
+            foreach ($avisos_m as $a) {
+                if ((int)valor("SELECT COUNT(*) FROM aviso WHERE identificador = ? AND no_id IN (" . implode(", ", arvore_nos($raiz)) . ")", [$a["identificador"]]) === 0) {
+                    sql("INSERT INTO aviso (identificador, nome, expressao, antecedencia_dias, texto, ativo, no_id, escala, simula_valor, simula_horas, agenda, condicao, resolve_tipo_id, na_hora)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)", [$a["identificador"], $tr($a["nome"]), $a["expressao"], $a["antecedencia_dias"], $tr($a["texto"]), (int)$a["ativo"],
+                        $raiz, $a["escala"], $a["simula_valor"], $a["simula_horas"], $a["agenda"], $a["condicao"], (int)$a["na_hora"]]);
+                }
+            }
+            $rel = "SELECT id FROM relogio WHERE colecao_id IN (SELECT id FROM colecao WHERE no_id = " . $raiz . ")";
+            $gravados = [
+                "relogio_situacao" => "SELECT DISTINCT posse AS v FROM relogio WHERE colecao_id IN (SELECT id FROM colecao WHERE no_id = " . $raiz . ")",
+                "servico_tipo" => "SELECT DISTINCT tipo AS v FROM servico WHERE relogio_id IN (" . $rel . ")",
+                "estanqueidade" => "SELECT DISTINCT estanqueidade AS v FROM servico WHERE estanqueidade IS NOT NULL AND relogio_id IN (" . $rel . ")",
+                "acessorio_tipo" => "SELECT DISTINCT tipo AS v FROM acessorio WHERE colecao_id IN (SELECT id FROM colecao WHERE no_id = " . $raiz . ")",
+                "reserva_protocolo" => "SELECT DISTINCT protocolo AS v FROM reserva_teste WHERE protocolo IS NOT NULL AND relogio_id IN (" . $rel . ")",
+                "reserva_observacao" => "SELECT DISTINCT tipo AS v FROM reserva_teste WHERE tipo <> 'teste' AND relogio_id IN (" . $rel . ")",
+            ];
+            foreach ($gravados as $lista => $consulta) {
+                foreach (array_column(linhas($consulta), "v") as $v) {
+                    if (valor("SELECT id FROM lista_item WHERE no_id = ? AND lista = ? AND identificador = ?", [$raiz, $lista, $v]) === null) {
+                        $comp = ["relogio_situacao" => "fora", "estanqueidade" => $v === "aprovado" ? "aprova" : "reprova"][$lista] ?? null;
+                        sql("INSERT INTO lista_item (no_id, lista, identificador, nome, ordem, comportamento) VALUES (?, ?, ?, ?, ?, ?)",
+                            [$raiz, $lista, $v, $v, 1 + (int)valor("SELECT COALESCE(MAX(ordem), 0) FROM lista_item WHERE no_id = ? AND lista = ?", [$raiz, $lista]), $comp]);
+                    }
+                }
+            }
+        }
+        // 2 e 3. as coleções: a "Eu mesmo (em casa)", as oficinas dos responsáveis e uma manutenção para cada serviço
+        $com_responsavel = banco_tem_coluna("servico", "responsavel");
+        foreach (linhas("SELECT id, no_id FROM colecao ORDER BY id") as $col) {
+            $c = (int)$col["id"];
+            $raiz = (int)$col["no_id"];
+            oficinas_do_modelo($c, $raiz, modelo_tradutor($lingua_de($raiz)));
+            $item = function ($lista, $ident, $comp) use ($raiz) {
+                return (int)(valor("SELECT id FROM lista_item WHERE no_id = ? AND lista = ? AND identificador = ?", [$raiz, $lista, $ident])
+                    ?? valor("SELECT id FROM lista_item WHERE no_id = ? AND lista = ? AND comportamento = ? ORDER BY ordem, id", [$raiz, $lista, $comp]));
+            };
+            $retirado = $item("manutencao_situacao", "retirado", "encerra");
+            $propria = (int)valor("SELECT o.id FROM oficina o JOIN lista_item i ON i.id = o.tipo_id WHERE o.colecao_id = ? AND i.comportamento = 'propria' ORDER BY o.id", [$c]);
+            $oficinas = [];
+            foreach (linhas("SELECT id, nome FROM oficina WHERE colecao_id = ?", [$c]) as $o) {
+                $oficinas[mb_strtolower(trim((string)$o["nome"]))] = (int)$o["id"];
+            }
+            $servicos = linhas("SELECT s.id, s.relogio_id, s.tipo, s.data, s.criado, " . ($com_responsavel ? "s.responsavel" : "NULL AS responsavel") . ", r.disponivel FROM servico s JOIN relogio r ON r.id = s.relogio_id
+                WHERE r.colecao_id = ? AND s.manutencao_id IS NULL ORDER BY s.id", [$c]);
+            foreach ($servicos as $s) {
+                $nome = corta_texto(trim((string)$s["responsavel"]), 120);
+                $chave = mb_strtolower($nome);
+                if ($nome === "") {
+                    $oficina = $propria;
+                } elseif (isset($oficinas[$chave])) {
+                    $oficina = $oficinas[$chave];
+                } else {
+                    sql("INSERT INTO oficina (colecao_id, nome, tipo_id, criado) VALUES (?, ?, ?, NOW())", [$c, $nome, $item("oficina_tipo", "relojoeiro", "comum")]);
+                    $oficina = $oficinas[$chave] = ultimo_id();
+                }
+                sql("INSERT INTO manutencao (relogio_id, oficina_id, situacao_id, tipo_id, enviado, encerrado, disponivel_antes, criado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    [(int)$s["relogio_id"], $oficina, $retirado, $item("servico_tipo", (string)$s["tipo"], ""), $s["data"], $s["data"], (int)$s["disponivel"], $s["criado"]]);
+                $m = ultimo_id();
+                sql("INSERT INTO manutencao_evento (manutencao_id, situacao_id, quando) VALUES (?, ?, ?)", [$m, $retirado, $s["criado"]]);
+                sql("UPDATE servico SET manutencao_id = ? WHERE id = ?", [$m, (int)$s["id"]]);
+            }
+        }
+        // 4. as colunas: o responsável virou a oficina, e todo serviço tem a manutenção
+        banco_script("ALTER TABLE servico MODIFY COLUMN manutencao_id INT NOT NULL;" . ($com_responsavel ? "\nALTER TABLE servico DROP COLUMN responsavel;" : ""));
+        sis_set("migracao_v48", "1");
+    });
+}
+
 // O tipo de um modo pela forma dos blocos ($blocos: [[dias (1 a 7), um_por], ...]): escala (com escala_dias); um bloco com
 // os sete dias: um por semana (um por bloco), aleatório (um por dia e a forma aleatória) ou por dia da semana; dois blocos,
 // segunda a sexta e sábado e domingo, o primeiro um por bloco: semana e fim de semana; todos um por dia: por dia da
@@ -1992,8 +2085,10 @@ $FUNCOES = [
     "WINDER" => [1, 1, tk("WINDER(\"campo\"): o valor de um campo do winder dessa posição (a marca, o modelo...: Cadastros › Campos, para o winder); fora de uma posição, vazio"), false],
     "WINDER_PROGRAMA" => [1, 1, tk("WINDER_PROGRAMA(\"chave\"): o que o programa da posição do winder em que o relógio está dá (página Programas), sempre calculado da sequência dos movimentos: voltas_dia (as voltas por dia), voltas_horario e voltas_anti_horario (as de cada sentido), minutos_girando (por dia), velocidade (do berço, voltas por minuto), vezes_dia (o ciclo, quantas vezes por dia) e ciclo_minutos; vazio fora de uma posição, sem programa ou sem a velocidade do berço"), false],
     // os serviços e diagnósticos do relógio (até o instante da conta)
-    "ULTIMO_SERVICO" => [0, 1, tk("ULTIMO_SERVICO(\"tipo\"): a data do último serviço desse tipo (revisao, pilha, estanqueidade, regulagem, polimento, reparo, diagnostico, outro; \"estanqueidade\" conta também o teste feito numa revisão; sem tipo: qualquer); vazio sem nenhum"), false],
+    "ULTIMO_SERVICO" => [0, 1, tk("ULTIMO_SERVICO(\"tipo\"): a data do último serviço desse tipo (o identificador de um tipo de serviço, Manutenção › Listas: revisao, pilha, estanqueidade, regulagem, polimento...; \"estanqueidade\" conta também o teste feito noutro serviço; sem tipo: qualquer); vazio sem nenhum"), false],
     "CUSTO_SERVICOS" => [0, 1, tk("CUSTO_SERVICOS(dias): quanto os serviços custaram (a mão de obra mais as peças) nos últimos N dias (0 ou sem: todos)"), false],
+    // a manutenção aberta do relógio (o relógio na oficina agora)
+    "MANUTENCAO" => [0, 1, tk("MANUTENCAO(\"chave\"): a manutenção aberta do relógio (vazio sem nenhuma, ou antes do envio): previsao (o dia previsto para a volta), enviado (o dia do envio), desde (quando ela entrou na situação de agora), aviso (o mesmo desde, só se a situação de agora tem o texto do aviso: Aprovar o orçamento, Retirar na oficina), dias (há quantos dias está na oficina), orcamento (R$); sem chave, 1 com o relógio em manutenção e 0 sem"), false],
     // a reserva medida do relógio (os testes terminados até o instante da conta)
     "RESERVA_MEDIDA" => [0, 0, tk("RESERVA_MEDIDA(): a reserva de marcha medida nos testes do relógio, em horas (a mediana dos testes terminados; vazio sem nenhum). PADRAO(RESERVA_MEDIDA(); reserva_horas) usa a medida e, sem ela, o cadastro"), false],
     "RESERVA_TESTES" => [0, 0, tk("RESERVA_TESTES(): quantos testes da reserva o relógio tem terminados"), false],
@@ -3005,6 +3100,20 @@ function formula_calcular($no, &$ctx)
                         }
                     }
                 }
+            } elseif ($nome === "MANUTENCAO") {
+                $m_m = manutencao_aberta((int)($ctx["r"]["id"] ?? 0));
+                $ch_m = isset($v[0]) && $v[0] !== null ? (string)$v[0] : "";
+                $env_m = $m_m !== null ? strtotime(substr((string)$m_m["enviado"], 0, 10) . " 00:00:00") : null;
+                if ($m_m === null || $env_m > $ctx["momento"]) {
+                    $res = $ch_m === "" ? 0 : null;
+                } elseif ($ch_m === "") {
+                    $res = 1;
+                } else {
+                    $desde_m = strtotime((string)(valor("SELECT MAX(quando) FROM manutencao_evento WHERE manutencao_id = ?", [(int)$m_m["id"]]) ?? $m_m["criado"]));
+                    $res = ["previsao" => $m_m["previsao"] !== null ? dias_de(strtotime(substr((string)$m_m["previsao"], 0, 10) . " 00:00:00")) : null, "enviado" => dias_de($env_m),
+                        "desde" => dias_de($desde_m), "aviso" => ($m_m["situacao_aviso"] ?? "") !== "" ? dias_de($desde_m) : null,
+                        "dias" => floor(($ctx["momento"] - $env_m) / 86400), "orcamento" => $m_m["orcamento"] !== null ? (float)$m_m["orcamento"] : null][$ch_m] ?? null;
+                }
             } elseif ($nome === "TIMEGRAPHER" || $nome === "TIMEGRAPHER_DATA") {
                 $ses_t = timegrapher_sessao((int)($ctx["r"]["id"] ?? 0), (int)$ctx["momento"]);
                 $g_t = $nome === "TIMEGRAPHER" ? (string)($v[0] ?? "") : "";
@@ -3245,8 +3354,9 @@ function tabela_linha($r, $agora, $extra = [])
     $leitura = linha("SELECT l.inicio, l.valor, t.unidade FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'valor'
             AND t.marcha IS NULL ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [(int)$r["id"]]);
     return ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1, "tipo" => isset($nos[(int)$r["no_id"]]) ? $nos[(int)$r["no_id"]]["nome"] : "—",
-        "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]),
-        "em_uso" => $v["em_uso"], "estado" => $estado_h, "estado_texto" => $estado_h === "indisponivel" ? (posse_de($r) === "emprestado" ? t("Emprestado") : t("Indisponível")) : $v["estado_texto"],
+        "posse" => (string)$r["posse"], "posse_texto" => posse_texto($r), "posse_comportamento" => posse_de($r),
+        "em_manutencao" => ($mn_h = manutencao_aberta((int)$r["id"])) !== null ? $mn_h["oficina"] : null,
+        "em_uso" => $v["em_uso"], "estado" => $estado_h, "estado_texto" => $estado_h === "indisponivel" ? ($mn_h !== null ? t("Em manutenção") : (posse_de($r) === "emprestado" ? posse_texto($r) : t("Indisponível"))) : $v["estado_texto"],
         "estado_ordem" => ["uso" => 0, "sessao" => 1, "repouso" => 2, "indisponivel" => 3][$estado_h],
         "agora" => $v["texto"], "carga" => (int)$r["disponivel"] === 1 ? $v["energia"] : null, "carga_de" => $v["de"], "ultimo" => $v["ultimo"],
         "ultimo_txt" => $v["em_uso"] ? t("agora · {1}", [1 => date("H:i", $agora)]) : ($v["ultimo"] > 0 ? data_txt($v["ultimo"], true, date("Y", $v["ultimo"]) === date("Y", $agora)) : t("nunca")),
@@ -3796,7 +3906,9 @@ function avisos_todos($recarregar = false)
 
 // Os avisos de um relógio num instante: cada aviso que vale para ele e tem data prevista (sem data: não se aplica agora).
 // estado: atrasado (a data passou), em_breve (dentro da antecedência) ou ok. texto: o do cadastro, com {relogio},
-// {data} (dd/mm/aaaa hh:mm), {quando} ("em 2d 3h", "há 5h", "agora") e {limite} (o limite de carga do relógio) trocados.
+// {data} (dd/mm/aaaa hh:mm), {quando} ("em 2d 3h", "há 5h", "agora"), {limite} (o limite de carga do relógio) e, em
+// manutenção, {oficina}, {situacao} e {situacao_aviso} (o texto do aviso da situação de agora) trocados. Em manutenção, só
+// os avisos da manutenção (identificador manutencao_*) valem.
 function avisos_do_relogio($r, $momento, $so = null)
 {
     $res = [];
@@ -3805,9 +3917,11 @@ function avisos_do_relogio($r, $momento, $so = null)
         return $res;
     }
     $agora_d = dias_de($momento);
+    // em manutenção (o relógio na oficina), só os avisos da manutenção (identificador manutencao_*): os outros param
+    $manut = isset($r["id"]) ? manutencao_aberta((int)$r["id"]) : null;
     foreach (avisos_todos() as $ident => $versoes) {
         // $so: só estes avisos (os identificadores), para não calcular os outros
-        if ($so !== null && !in_array($ident, $so, true)) {
+        if (($so !== null && !in_array($ident, $so, true)) || ($manut !== null && strpos($ident, "manutencao") !== 0)) {
             continue;
         }
         $a = mais_perto($versoes, $r);
@@ -3834,7 +3948,8 @@ function avisos_do_relogio($r, $momento, $so = null)
                 // escala, simula_*, agenda e modelo: para a escala inteligente e a agenda (o modelo é o texto sem as trocas, só com o {limite})
                 $res[] = ["identificador" => $ident, "nome" => $a["nome"], "data" => gmdate("Y-m-d H:i:s", $ts), "falta_dias" => round($falta, 4),
                     "estado" => $falta < 0 ? "atrasado" : ($falta <= (float)$a["antecedencia_dias"] ? "em_breve" : "ok"),
-                    "texto" => str_replace(["{relogio}", "{data}", "{quando}"], [$r["nome"], $data_txt, $quando], $modelo),
+                    "texto" => str_replace(["{relogio}", "{data}", "{quando}", "{oficina}", "{situacao_aviso}", "{situacao}"], [$r["nome"], $data_txt, $quando, $manut["oficina"] ?? "",
+                        $manut["situacao_aviso"] ?? "", mb_strtolower((string)($manut["situacao"] ?? ""), "UTF-8")], $modelo),
                     "resolve" => $a["resolve"], "versao" => no_caminho($a["no_id"]), "escala" => $a["escala"],
                     "simula_valor" => $a["simula_valor"] === null ? null : (float)$a["simula_valor"], "simula_horas" => $a["simula_horas"] === null ? null : (float)$a["simula_horas"],
                     "agenda" => $a["agenda"], "na_hora" => (int)($a["na_hora"] ?? 0) === 1, "modelo" => $modelo];
@@ -5695,17 +5810,130 @@ function painel_modo()
     return cfg("painel_modo") === "flutuante" ? "flutuante" : "lado";
 }
 
-// A situação de cada relógio na coleção (a posse): o identificador e o nome. Só "colecao" entra no rodízio (fora dela o relógio
-// fica indisponível: o banco garante, ck_relogio_posse_disponivel); "colecao" e "emprestado" são da coleção (contam no valor e
-// nas listas da página Hoje); "desejado" é a lista de desejos; "vendido" e "arquivado" saem das listas e guardam a ficha
-const POSSES = ["colecao" => "Na coleção", "desejado" => "Desejado", "emprestado" => "Emprestado", "vendido" => "Vendido", "arquivado" => "Arquivado"];
-// os nomes, para os dicionários dos idiomas: saem traduzidos no uso, t(POSSES[...])
-tk("Na coleção"); tk("Desejado"); tk("Emprestado"); tk("Vendido"); tk("Arquivado");
+// As listas que são cadastro (lista_item, na árvore da coleção; Manutenção › Listas e Cadastros › Listas). O código guarda
+// só o que é comportamento: de cada lista, o nome, a página em que ela se edita, o que quer dizer o texto do item (null:
+// sem texto), se o item tem cor, os identificadores reservados (que o sistema usa para outra coisa) e o que cada item pode
+// fazer (o comportamento: vazio, a lista não tem). Os itens, os nomes, a ordem e o texto são da pessoa (o modelo.json traz
+// os iniciais). O identificador de um item não muda (é o que as colunas de antes guardam e o que a API e as fórmulas citam),
+// e o item em uso não sai
+const LISTAS = [
+    "relogio_situacao" => ["nome" => "Situações do relógio na coleção", "pagina" => "cadastros", "texto" => null, "cor" => false, "reservados" => [],
+        "comportamentos" => ["colecao" => "Na coleção: entra no rodízio, no plano e nos avisos", "emprestado" => "Emprestado: continua da coleção (o valor, a página Hoje, os avisos), fora do rodízio",
+            "desejado" => "Desejado: a lista de desejos", "fora" => "Fora da coleção: sai das listas e do rodízio; a ficha e o histórico ficam"]],
+    "acessorio_tipo" => ["nome" => "Tipos de acessório", "pagina" => "cadastros", "texto" => null, "cor" => false, "reservados" => [], "comportamentos" => []],
+    "reserva_protocolo" => ["nome" => "Jeitos de carregar no teste da reserva", "pagina" => "cadastros", "texto" => "A unidade da medida (voltas, h; vazio: sem medida)", "cor" => false,
+        "reservados" => [], "comportamentos" => []],
+    "reserva_observacao" => ["nome" => "Observações da reserva", "pagina" => "cadastros", "texto" => null, "cor" => false, "reservados" => ["teste"], "comportamentos" => []],
+    "manutencao_situacao" => ["nome" => "Situações da manutenção", "pagina" => "manutencao", "texto" => "O aviso enquanto a manutenção está nesta situação (vazio: sem aviso)", "cor" => true,
+        "reservados" => [], "comportamentos" => ["aberta" => "Em andamento: o relógio fica na oficina, fora do rodízio e dos avisos",
+            "encerra" => "Encerra: o relógio volta e a manutenção vira um serviço", "cancela" => "Cancela: o relógio volta, sem serviço"]],
+    "servico_tipo" => ["nome" => "Tipos de serviço", "pagina" => "manutencao", "texto" => "O tipo de lançamento que o serviço marca também, no dia dele (um instantâneo: revisao, pilha; vazio: nenhum)",
+        "cor" => false, "reservados" => [], "comportamentos" => []],
+    "estanqueidade" => ["nome" => "Resultados do teste de estanqueidade", "pagina" => "manutencao", "texto" => null, "cor" => false, "reservados" => [],
+        "comportamentos" => ["aprova" => "Aprovado: comprova a resistência à água", "reprova" => "Reprovado: não comprova"]],
+    "oficina_tipo" => ["nome" => "Tipos de oficina", "pagina" => "manutencao", "texto" => null, "cor" => false, "reservados" => [],
+        "comportamentos" => ["comum" => "Uma oficina (o relojoeiro, a assistência, a loja)", "propria" => "Você mesmo, em casa"]],
+    "contato_tipo" => ["nome" => "Tipos de contato", "pagina" => "manutencao", "texto" => null, "cor" => false, "reservados" => [],
+        "comportamentos" => ["telefone" => "Telefone: liga", "whatsapp" => "WhatsApp: abre a conversa", "email" => "E-mail: escreve",
+            "link" => "Endereço na internet: abre", "texto" => "Texto: só mostra"]],
+];
+// o que uma lista nunca fica sem (o último item com esse comportamento não sai nem muda): a situação na coleção, uma na
+// coleção; a manutenção, uma aberta e uma que encerra; a oficina, a sua
+const LISTAS_ESSENCIAIS = ["relogio_situacao" => ["colecao"], "manutencao_situacao" => ["aberta", "encerra"], "oficina_tipo" => ["propria"]];
+// os textos, para os dicionários dos idiomas: saem traduzidos no uso, t(LISTAS[...])
+tk("Situações do relógio na coleção"); tk("Na coleção: entra no rodízio, no plano e nos avisos");
+tk("Emprestado: continua da coleção (o valor, a página Hoje, os avisos), fora do rodízio"); tk("Desejado: a lista de desejos");
+tk("Fora da coleção: sai das listas e do rodízio; a ficha e o histórico ficam"); tk("Tipos de acessório"); tk("Jeitos de carregar no teste da reserva");
+tk("A unidade da medida (voltas, h; vazio: sem medida)"); tk("Observações da reserva"); tk("Situações da manutenção");
+tk("O aviso enquanto a manutenção está nesta situação (vazio: sem aviso)"); tk("Em andamento: o relógio fica na oficina, fora do rodízio e dos avisos");
+tk("Encerra: o relógio volta e a manutenção vira um serviço"); tk("Cancela: o relógio volta, sem serviço"); tk("Tipos de serviço");
+tk("O tipo de lançamento que o serviço marca também, no dia dele (um instantâneo: revisao, pilha; vazio: nenhum)");
+tk("Resultados do teste de estanqueidade"); tk("Aprovado: comprova a resistência à água"); tk("Reprovado: não comprova"); tk("Tipos de oficina");
+tk("Uma oficina (o relojoeiro, a assistência, a loja)"); tk("Você mesmo, em casa"); tk("Tipos de contato"); tk("Telefone: liga");
+tk("WhatsApp: abre a conversa"); tk("E-mail: escreve"); tk("Endereço na internet: abre"); tk("Texto: só mostra");
 
+// Os itens de uma lista na árvore da coleção do pedido ($raiz: de outra árvore), na ordem: identificador => item (id,
+// identificador, nome, ordem, comportamento, texto, cor). Sem coleção no pedido (e sem $raiz), nenhum
+function lista_itens($lista, $raiz = null)
+{
+    static $guardadas = [];
+    $e = banco_escopo_atual();
+    $raiz = $raiz !== null ? (int)$raiz : ($e === null ? 0 : (int)$e["raiz"]);
+    if ($raiz === 0) {
+        return [];
+    }
+    $k = $raiz . "|" . $lista . "|" . ($GLOBALS["LISTAS_VERSAO"] ?? 0);
+    if (!isset($guardadas[$k])) {
+        $guardadas[$k] = [];
+        foreach (sem_escopo(function () use ($raiz, $lista) { return linhas("SELECT * FROM lista_item WHERE no_id = ? AND lista = ? ORDER BY ordem, id", [$raiz, $lista]); }) as $x) {
+            $guardadas[$k][$x["identificador"]] = ["id" => (int)$x["id"], "identificador" => $x["identificador"], "nome" => $x["nome"], "ordem" => (int)$x["ordem"],
+                "comportamento" => $x["comportamento"], "texto" => $x["texto"] !== null && $x["texto"] !== "" ? $x["texto"] : null, "cor" => $x["cor"]];
+        }
+    }
+    return $guardadas[$k];
+}
+
+// O nome de um item pelo identificador (o identificador, se a lista não tem)
+function lista_nome($lista, $ident)
+{
+    return lista_itens($lista)[(string)$ident]["nome"] ?? (string)$ident;
+}
+
+// Um item pelo id (null se não é da lista, na árvore da coleção)
+function lista_item_por_id($lista, $id)
+{
+    foreach (lista_itens($lista) as $x) {
+        if ($x["id"] === (int)$id) {
+            return $x;
+        }
+    }
+    return null;
+}
+
+// O primeiro item (na ordem) com o comportamento; null se nenhum tem
+function lista_com_comportamento($lista, $comp)
+{
+    foreach (lista_itens($lista) as $x) {
+        if ($x["comportamento"] === $comp) {
+            return $x;
+        }
+    }
+    return null;
+}
+
+// O identificador padrão de uma lista: o preferido, se a lista tem; senão o primeiro item
+function lista_padrao($lista, $preferido)
+{
+    $itens = lista_itens($lista);
+    return isset($itens[$preferido]) ? $preferido : (string)(array_key_first($itens) ?? $preferido);
+}
+
+// Os itens de uma lista para a API e as telas (os menus): valor (o identificador), nome, id, ordem, comportamento, texto, cor
+function lista_opcoes($lista)
+{
+    return array_values(array_map(function ($x) {
+        return ["valor" => $x["identificador"], "nome" => $x["nome"], "id" => $x["id"], "ordem" => $x["ordem"], "comportamento" => $x["comportamento"], "texto" => $x["texto"], "cor" => $x["cor"]];
+    }, lista_itens($lista)));
+}
+
+// A situação de cada relógio na coleção (relogio.posse: o identificador de um item da lista relogio_situacao). O que ela
+// faz é o comportamento do item: só "colecao" entra no rodízio (fora dela o relógio fica indisponível); "colecao" e
+// "emprestado" são da coleção (contam no valor, nas listas da página Hoje e nos avisos); "desejado" é a lista de desejos;
+// "fora" sai das listas e guarda a ficha. posse_de dá o comportamento (o item que não está na lista vale pelo nome, se é
+// um comportamento; os vendido e arquivado de antes, fora; o resto, na coleção); posse_texto, o nome do item
 function posse_de($r)
 {
     $p = (string)($r["posse"] ?? "colecao");
-    return isset(POSSES[$p]) ? $p : "colecao";
+    $i = lista_itens("relogio_situacao")[$p] ?? null;
+    if ($i !== null) {
+        return $i["comportamento"];
+    }
+    return isset(LISTAS["relogio_situacao"]["comportamentos"][$p]) ? $p : (in_array($p, ["vendido", "arquivado"], true) ? "fora" : "colecao");
+}
+
+function posse_texto($r)
+{
+    return lista_nome("relogio_situacao", (string)($r["posse"] ?? "colecao"));
 }
 
 // O que a lista de desejos mostra de um relógio desejado, dos valores dele: a marca, a referência, o preço-alvo, a prioridade
@@ -6293,12 +6521,19 @@ function winder_programa_do_pedido($d, $atual, $previa = false)
     return [$p, $seq, $movs, array_values(array_unique($erros))];
 }
 
-// O movimento que está na sequência de um programa, ou o programa que está numa posição: não se exclui (a API diz onde está
-// em vez de perguntar o que sai junto)
+// O movimento que está na sequência de um programa, o programa que está numa posição, a oficina com manutenções e o item de
+// lista em uso: não se excluem (a API diz onde estão em vez de perguntar o que sai junto)
 function winder_exclusao_em_uso($tabela, $id)
 {
     if ($tabela === "winder_movimento") {
         return (int)valor("SELECT COUNT(*) FROM winder_programa_passo WHERE movimento_id = ?", [(int)$id]) > 0;
+    }
+    if ($tabela === "oficina") {
+        return (int)valor("SELECT COUNT(*) FROM manutencao WHERE oficina_id = ?", [(int)$id]) > 0;
+    }
+    if ($tabela === "lista_item") {
+        $it = linha("SELECT * FROM lista_item WHERE id = ?", [(int)$id]);
+        return $it && lista_item_em_uso($it, (int)$it["no_id"]) > 0;
     }
     return $tabela === "winder_programa" && (int)valor("SELECT COUNT(*) FROM winder_posicao_programa WHERE programa_id = ?", [(int)$id]) > 0;
 }
@@ -6363,11 +6598,6 @@ function winder_limites_avisos($wid, $rid)
 }
 tk("O {1} tem {2} mm de caixa, e esta almofada vai até {3} mm."); tk("O {1} pesa {2} g, e esta almofada aguenta até {3} g.");
 
-// Os tipos de acessório (ck_acessorio_tipo), na ordem, com o nome
-const ACESSORIO_TIPOS = ["pulseira" => "Pulseira", "caixa" => "Caixa", "estojo" => "Estojo", "ferramenta" => "Ferramenta", "carregador" => "Carregador",
-    "peca" => "Peça", "outro" => "Outro"];
-// os nomes, para os dicionários dos idiomas: saem traduzidos no uso, t(ACESSORIO_TIPOS[...])
-tk("Pulseira"); tk("Caixa"); tk("Estojo"); tk("Ferramenta"); tk("Carregador"); tk("Peça"); tk("Outro");
 
 // Os acessórios (de um relógio, ou todos: null), pelo tipo e pelo nome, prontos para a API
 function acessorios_lista($relogio_id = null)
@@ -6383,7 +6613,7 @@ function acessorios_lista($relogio_id = null)
             }
         }
         $serve = acessorio_serve($a, $va, $cache);
-        return ["id" => (int)$a["id"], "nome" => $a["nome"], "tipo" => $a["tipo"], "tipo_texto" => isset(ACESSORIO_TIPOS[$a["tipo"]]) ? t(ACESSORIO_TIPOS[$a["tipo"]]) : $a["tipo"],
+        return ["id" => (int)$a["id"], "nome" => $a["nome"], "tipo" => $a["tipo"], "tipo_texto" => lista_nome("acessorio_tipo", $a["tipo"]),
             "relogio_id" => $a["relogio_id"] === null ? null : (int)$a["relogio_id"], "relogio" => $a["relogio"],
             "observacao" => $a["observacao"] !== null && $a["observacao"] !== "" ? $a["observacao"] : null, "criado" => $a["criado"],
             "valores" => $valores, "serve_por" => $serve === null ? null : $serve["por"], "serve_em" => $serve === null ? null : $serve["relogios"]];
@@ -6405,12 +6635,24 @@ function acessorios_que_servem($rid)
     return $res;
 }
 
-// Os tipos de serviço (ck_servico_tipo), na ordem, com o nome. A revisão e a troca de pilha viram também a marcação do tipo
-// de lançamento de mesmo identificador (revisao, pilha), quando ele vale para o relógio
-const SERVICO_TIPOS = ["revisao" => "Revisão", "pilha" => "Troca de pilha", "estanqueidade" => "Teste de estanqueidade", "regulagem" => "Regulagem",
-    "polimento" => "Polimento", "reparo" => "Reparo", "diagnostico" => "Diagnóstico", "outro" => "Outro"];
-tk("Revisão"); tk("Troca de pilha"); tk("Teste de estanqueidade"); tk("Regulagem"); tk("Polimento"); tk("Reparo"); tk("Diagnóstico");
-const SERVICO_MARCA = ["revisao", "pilha"];
+// Os tipos de serviço são a lista servico_tipo (Manutenção › Listas): o texto do item é o tipo de lançamento (um
+// instantâneo: revisao, pilha) que o serviço marca também, no dia dele, quando o tipo vale para o relógio. Para a API e as
+// telas: cada tipo com a marca (o identificador do tipo de lançamento, ou null)
+function servico_tipos_opcoes()
+{
+    return array_map(function ($x) { return array_merge($x, ["marca" => $x["texto"]]); }, lista_opcoes("servico_tipo"));
+}
+
+// O resultado de um teste de estanqueidade (o identificador de um item da lista estanqueidade) aprova? true, false, ou
+// null sem teste
+function estanqueidade_aprova($ident)
+{
+    if ($ident === null || $ident === "") {
+        return null;
+    }
+    $c = lista_itens("estanqueidade")[(string)$ident]["comportamento"] ?? ($ident === "aprovado" ? "aprova" : "reprova");
+    return $c === "aprova";
+}
 // quantos dias antes e depois do serviço a marcha medida pelo sistema (as leituras do desvio da hora) entra no "antes" e no
 // "depois"
 const SERVICO_JANELA_MARCHA = 60;
@@ -6420,7 +6662,8 @@ const SERVICO_JANELA_MARCHA = 60;
 // pelo sistema nos SERVICO_JANELA_MARCHA dias de cada lado)
 function servicos_lista($relogio_id = null)
 {
-    $servicos = linhas("SELECT s.*, r.nome AS relogio FROM servico s JOIN relogio r ON r.id = s.relogio_id" . ($relogio_id !== null ? " WHERE s.relogio_id = ?" : "")
+    $servicos = linhas("SELECT s.*, r.nome AS relogio, o.id AS oficina_id, o.nome AS oficina FROM servico s JOIN relogio r ON r.id = s.relogio_id
+        JOIN manutencao m ON m.id = s.manutencao_id JOIN oficina o ON o.id = m.oficina_id" . ($relogio_id !== null ? " WHERE s.relogio_id = ?" : "")
         . " ORDER BY s.data DESC, s.id DESC", $relogio_id !== null ? [(int)$relogio_id] : []);
     if (count($servicos) === 0) {
         return [];
@@ -6455,11 +6698,12 @@ function servicos_lista($relogio_id = null)
         $garantia = $s["garantia_ate"] === null ? null : substr((string)$s["garantia_ate"], 0, 10);
         return ["id" => $id, "relogio_id" => $rid, "relogio" => $s["relogio"], "data" => $data,
             "ha_dias" => (int)(new DateTimeImmutable($data, $hoje->getTimezone()))->diff($hoje)->format("%r%a"),
-            "tipo" => $s["tipo"], "tipo_texto" => isset(SERVICO_TIPOS[$s["tipo"]]) ? t(SERVICO_TIPOS[$s["tipo"]]) : $s["tipo"],
-            "responsavel" => $s["responsavel"] !== null && $s["responsavel"] !== "" ? $s["responsavel"] : null,
+            "tipo" => $s["tipo"], "tipo_texto" => lista_nome("servico_tipo", $s["tipo"]),
+            "manutencao_id" => (int)$s["manutencao_id"], "oficina_id" => (int)$s["oficina_id"], "oficina" => $s["oficina"],
             "descricao" => $s["descricao"] !== null && $s["descricao"] !== "" ? $s["descricao"] : null,
             "mao_de_obra" => $mao, "pecas" => $ps, "custo_pecas" => round($soma_pecas, 2), "custo" => $tem_custo ? round((float)$mao + $soma_pecas, 2) : null,
-            "estanqueidade" => $s["estanqueidade"], "estanqueidade_texto" => $s["estanqueidade"] === "aprovado" ? t("aprovada") : ($s["estanqueidade"] === "reprovado" ? t("reprovada") : null),
+            "estanqueidade" => $s["estanqueidade"], "estanqueidade_texto" => $s["estanqueidade"] === null ? null : mb_strtolower(lista_nome("estanqueidade", $s["estanqueidade"]), "UTF-8"),
+            "estanqueidade_aprova" => estanqueidade_aprova($s["estanqueidade"]),
             "estanqueidade_bar" => $s["estanqueidade_bar"] === null ? null : round((float)$s["estanqueidade_bar"], 2),
             "marcha_antes" => $s["marcha_antes"] === null ? null : round((float)$s["marcha_antes"], 2), "marcha_depois" => $s["marcha_depois"] === null ? null : round((float)$s["marcha_depois"], 2),
             "marcha_antes_texto" => $s["marcha_antes"] === null ? null : marcha_txt((float)$s["marcha_antes"]), "marcha_depois_texto" => $s["marcha_depois"] === null ? null : marcha_txt((float)$s["marcha_depois"]),
@@ -6481,7 +6725,7 @@ function servicos_resumo($rid, $lista = null)
     $testes = count(array_filter($lista, function ($s) { return $s["estanqueidade"] !== null; }));
     foreach ($lista as $s) {
         if ($s["estanqueidade"] !== null) {
-            $teste = ["data" => $s["data"], "ha_dias" => $s["ha_dias"], "resultado" => $s["estanqueidade"], "resultado_texto" => $s["estanqueidade_texto"], "bar" => $s["estanqueidade_bar"], "servico_id" => $s["id"]];
+            $teste = ["data" => $s["data"], "ha_dias" => $s["ha_dias"], "resultado" => $s["estanqueidade"], "resultado_texto" => $s["estanqueidade_texto"], "aprova" => $s["estanqueidade_aprova"], "bar" => $s["estanqueidade_bar"], "servico_id" => $s["id"]];
             break;
         }
     }
@@ -6554,24 +6798,292 @@ function confianca_medida($regra, $n, $ultima, $agora, $dp = null, $tol = null, 
         "resumo" => t("Confiança {1}: {2}.", [1 => $nivel_texto, 2 => $texto]) . (count($motivos) > 0 ? t(" Não é alta por: {1}.", [1 => implode("; ", $motivos)]) : "")];
 }
 
-// Os protocolos do teste da reserva (ck_reserva_teste_protocolo): como ele ficou cheio, e o que o número diz; e os tipos das
-// observações da energia (ck_reserva_teste_tipo, menos o teste)
-const RESERVA_PROTOCOLOS = ["corda" => ["Corda pela coroa", "voltas"], "winder" => ["No winder", "h"], "pulso" => ["No pulso", "h"], "outro" => ["Outro jeito", ""]];
-const RESERVA_OBSERVACOES = ["parou" => "Parou", "carga_baixa" => "Indicador de carga baixa", "nota" => "Outra observação"];
-tk("Corda pela coroa"); tk("No winder"); tk("No pulso"); tk("Outro jeito"); tk("voltas"); tk("Parou"); tk("Indicador de carga baixa"); tk("Outra observação");
+// A manutenção: o relógio numa oficina (manutencao), da situação de comportamento "aberta" (Enviado, Orçamento recebido,
+// Aprovado, Aguardando peça, Pronto para retirar) até uma que encerra (Retirado: vira um serviço) ou cancela. Aberta, o
+// relógio fica indisponível (a disponibilidade de antes fica na manutenção, disponivel_antes, e volta quando ela fecha),
+// fora do rodízio, das sessões e dos avisos (menos os da manutenção: identificador manutencao_*)
 
-// Como o relógio ficou cheio no teste, por extenso: "cheio com 40 voltas da coroa", "cheio depois de 8 h no winder"
+// A oficina "Eu mesmo (em casa)" da coleção (a primeira do tipo de comportamento propria), ou null
+function oficina_propria()
+{
+    return linha("SELECT o.id, o.nome FROM oficina o JOIN lista_item i ON i.id = o.tipo_id WHERE i.comportamento = 'propria' ORDER BY o.id") ?: null;
+}
+
+// As manutenções abertas da coleção, por relógio (lidas uma vez por requisição, de novo depois de uma gravação)
+function manutencoes_abertas()
+{
+    static $guardadas = [];
+    $k = (int)colecao_atual() . "/" . ($GLOBALS["FORMULAS_VERSAO"] ?? 0);
+    if (!isset($guardadas[$k])) {
+        $guardadas = [$k => []];
+        foreach (linhas("SELECT m.*, o.nome AS oficina, s.nome AS situacao, s.identificador AS situacao_identificador, s.texto AS situacao_aviso FROM manutencao m
+            JOIN lista_item s ON s.id = m.situacao_id JOIN oficina o ON o.id = m.oficina_id WHERE s.comportamento = 'aberta' ORDER BY m.id") as $m) {
+            $guardadas[$k][(int)$m["relogio_id"]] = $m;
+        }
+    }
+    return $guardadas[$k];
+}
+
+// A manutenção aberta de um relógio, ou null
+function manutencao_aberta($rid)
+{
+    return manutencoes_abertas()[(int)$rid] ?? null;
+}
+
+// O relógio sai do rodízio agora (foi para a manutenção, ou saiu da coleção): as sessões abertas dele fecham (o pulso, o
+// winder, que deixa a posição livre, o sol, o carregador); os dias dele no plano, de amanhã em diante, saem e são sorteados
+// de novo; $hoje_tambem: o dia de hoje, se é dele, também sai e fica livre (com a Configuração deixando trocar o relógio de
+// hoje no próprio dia, você escolhe outro; sem ela, hoje fica sem relógio). Devolve a nota do que mudou
+function relogio_sai_do_rodizio($id, $hoje_tambem)
+{
+    $nota = "";
+    $abertas = linhas("SELECT l.id, t.nome FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND l.fim IS NULL AND t.formato = 'sessao'", [(int)$id]);
+    if (count($abertas) > 0) {
+        sql("UPDATE lancamento SET fim = ? WHERE relogio_id = ? AND fim IS NULL AND id IN (" . implode(", ", array_map(function ($x) { return (int)$x["id"]; }, $abertas)) . ")",
+            [date("Y-m-d H:i:s"), (int)$id]);
+        $nota .= t(" Fechei agora: {1}.", [1 => implode(", ", array_map(function ($x) { return mb_strtolower($x["nome"], "UTF-8"); }, $abertas))]);
+    }
+    $hoje = hoje_da_colecao();
+    if ($hoje_tambem && (int)(plano_do_dia($hoje->format("Y-m-d"))["relogio_id"] ?? 0) === (int)$id) {
+        sql("DELETE FROM plano WHERE data = ?", [$hoje->format("Y-m-d")]);
+        plano_livre_marcar($hoje->format("Y-m-d"));
+        $nota .= trocar_hoje_permitido() ? t(" Hoje ficou livre: escolha outro relógio para hoje, se quiser.")
+            : t(" Hoje ficou sem relógio (a Configuração não deixa trocar o relógio de hoje no próprio dia).");
+    }
+    $amanha = $hoje->modify("+1 day");
+    $tirados = (int)valor("SELECT COUNT(*) FROM plano WHERE relogio_id = ? AND data >= ?", [(int)$id, $amanha->format("Y-m-d")]);
+    if ($tirados > 0) {
+        sql("DELETE FROM plano WHERE relogio_id = ? AND data >= ?", [(int)$id, $amanha->format("Y-m-d")]);
+        $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+        if (valor("SELECT escala_dias FROM modo WHERE id = ?", [modo_ativo()]) !== null) {
+            gerar_escala($amanha);
+        } else {
+            garantir_plano($hoje);
+        }
+        $nota .= t(" Saiu do plano de amanhã em diante ({1}{2} de novo).", [1 => $tirados, 2 => $tirados === 1 ? t(" dia sorteado") : t(" dias sorteados")]);
+    }
+    return $nota;
+}
+
+// A manutenção fecha: o relógio volta com a disponibilidade de antes (fora da coleção, indisponível). Devolve a nota
+function manutencao_volta($m)
+{
+    $r = linha("SELECT * FROM relogio WHERE id = ?", [(int)$m["relogio_id"]]);
+    $disp = posse_de($r) === "colecao" && (int)$m["disponivel_antes"] === 1 ? 1 : 0;
+    sql("UPDATE relogio SET disponivel = ? WHERE id = ?", [$disp, (int)$r["id"]]);
+    $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+    return $disp === 1 ? t(" O {1} voltou para o rodízio (o plano já montado fica: o \"Sortear de novo\" o inclui).", [1 => $r["nome"]])
+        : t(" O {1} voltou, indisponível para o rodízio, como estava.", [1 => $r["nome"]]);
+}
+
+// Uma manutenção já encerrada (a de um serviço registrado sem ela): na oficina, do tipo de serviço, enviada e encerrada no
+// dia, na primeira situação que encerra. Devolve o id
+function manutencao_encerrada($rid, $oficina_id, $tipo, $data)
+{
+    $sit = lista_com_comportamento("manutencao_situacao", "encerra");
+    $tipo_i = lista_itens("servico_tipo")[$tipo] ?? null;
+    if ($sit === null || $tipo_i === null) {
+        throw new RuntimeException(t("faltam as listas da manutenção (Manutenção › Listas)"));
+    }
+    sql("INSERT INTO manutencao (relogio_id, oficina_id, situacao_id, tipo_id, enviado, encerrado, disponivel_antes, criado) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())",
+        [(int)$rid, (int)$oficina_id, $sit["id"], $tipo_i["id"], $data, $data, (int)valor("SELECT disponivel FROM relogio WHERE id = ?", [(int)$rid])]);
+    $mid = ultimo_id();
+    sql("INSERT INTO manutencao_evento (manutencao_id, situacao_id, quando) VALUES (?, ?, NOW())", [$mid, $sit["id"]]);
+    return $mid;
+}
+
+// As manutenções da coleção, prontas para a API, da mais nova para a mais velha. $f: relogio (id), oficina (id), de e ate
+// (AAAA-MM-DD: as que estiveram abertas em algum dia do período), abertas (true: só as abertas)
+function manutencao_lista($f = [])
+{
+    $onde = [];
+    $par = [];
+    if (($f["relogio"] ?? 0) > 0) {
+        $onde[] = "m.relogio_id = ?";
+        $par[] = (int)$f["relogio"];
+    }
+    if (($f["oficina"] ?? 0) > 0) {
+        $onde[] = "m.oficina_id = ?";
+        $par[] = (int)$f["oficina"];
+    }
+    if (($f["ate"] ?? "") !== "") {
+        $onde[] = "m.enviado <= ?";
+        $par[] = $f["ate"];
+    }
+    if (($f["de"] ?? "") !== "") {
+        $onde[] = "(m.encerrado IS NULL OR m.encerrado >= ?)";
+        $par[] = $f["de"];
+    }
+    if (!empty($f["abertas"])) {
+        $onde[] = "s.comportamento = 'aberta'";
+    }
+    $ms = linhas("SELECT m.*, r.nome AS relogio, o.nome AS oficina FROM manutencao m JOIN relogio r ON r.id = m.relogio_id JOIN oficina o ON o.id = m.oficina_id
+        JOIN lista_item s ON s.id = m.situacao_id" . (count($onde) > 0 ? " WHERE " . implode(" AND ", $onde) : "") . " ORDER BY m.enviado DESC, m.id DESC", $par);
+    if (count($ms) === 0) {
+        return [];
+    }
+    $ids = implode(", ", array_map(function ($m) { return (int)$m["id"]; }, $ms));
+    $eventos = [];
+    foreach (linhas("SELECT * FROM manutencao_evento WHERE manutencao_id IN (" . $ids . ") ORDER BY quando, id") as $e) {
+        $sit = lista_item_por_id("manutencao_situacao", (int)$e["situacao_id"]);
+        $eventos[(int)$e["manutencao_id"]][] = ["situacao" => $sit["identificador"] ?? null, "situacao_texto" => $sit["nome"] ?? null, "quando" => $e["quando"],
+            "observacao" => $e["observacao"]];
+    }
+    $acess = [];
+    foreach (linhas("SELECT ma.manutencao_id, a.id, a.nome, a.tipo FROM manutencao_acessorio ma JOIN acessorio a ON a.id = ma.acessorio_id WHERE ma.manutencao_id IN (" . $ids . ") ORDER BY a.nome, a.id") as $a) {
+        $acess[(int)$a["manutencao_id"]][] = ["id" => (int)$a["id"], "nome" => $a["nome"], "tipo_texto" => lista_nome("acessorio_tipo", $a["tipo"])];
+    }
+    $docs = [];
+    foreach (linhas("SELECT md.manutencao_id, d.id, d.titulo FROM manutencao_documento md JOIN documento d ON d.id = md.documento_id WHERE md.manutencao_id IN (" . $ids . ") ORDER BY d.titulo, d.id") as $x) {
+        $docs[(int)$x["manutencao_id"]][] = ["id" => (int)$x["id"], "titulo" => $x["titulo"], "url" => "api.php?recurso=documento&id=" . (int)$x["id"]];
+    }
+    $servicos = [];
+    foreach (servicos_lista() as $sv) {
+        $servicos[$sv["manutencao_id"]][] = ["id" => $sv["id"], "data" => $sv["data"], "tipo_texto" => $sv["tipo_texto"], "custo" => $sv["custo"]];
+    }
+    $hoje = hoje_da_colecao()->format("Y-m-d");
+    return array_map(function ($m) use ($eventos, $acess, $docs, $servicos, $hoje) {
+        $id = (int)$m["id"];
+        $sit = lista_item_por_id("manutencao_situacao", (int)$m["situacao_id"]);
+        $tipo = lista_item_por_id("servico_tipo", (int)$m["tipo_id"]);
+        $aberta = ($sit["comportamento"] ?? "") === "aberta";
+        $fim = $m["encerrado"] !== null ? substr((string)$m["encerrado"], 0, 10) : $hoje;
+        $enviado = substr((string)$m["enviado"], 0, 10);
+        $prev = $m["previsao"] !== null ? substr((string)$m["previsao"], 0, 10) : null;
+        $svs = $servicos[$id] ?? [];
+        $custos = array_values(array_filter(array_column($svs, "custo"), function ($c) { return $c !== null; }));
+        $ev = $eventos[$id] ?? [];
+        return ["id" => $id, "relogio_id" => (int)$m["relogio_id"], "relogio" => $m["relogio"], "oficina_id" => (int)$m["oficina_id"], "oficina" => $m["oficina"],
+            "situacao" => $sit["identificador"] ?? null, "situacao_texto" => $sit["nome"] ?? null, "situacao_comportamento" => $sit["comportamento"] ?? null,
+            "situacao_cor" => $sit["cor"] ?? null, "aviso" => $aberta ? ($sit["texto"] ?? null) : null, "aberta" => $aberta,
+            "tipo" => $tipo["identificador"] ?? null, "tipo_texto" => $tipo["nome"] ?? null,
+            "problema" => $m["problema"] !== null && $m["problema"] !== "" ? $m["problema"] : null, "os" => $m["os"] !== null && $m["os"] !== "" ? $m["os"] : null,
+            "enviado" => $enviado, "previsao" => $prev, "atrasada" => $aberta && $prev !== null && $prev < $hoje,
+            "dias" => (int)(new DateTimeImmutable($enviado))->diff(new DateTimeImmutable($fim))->format("%a"),
+            "orcamento" => $m["orcamento"] === null ? null : round((float)$m["orcamento"], 2), "orcamento_data" => $m["orcamento_data"] !== null ? substr((string)$m["orcamento_data"], 0, 10) : null,
+            "encerrado" => $m["encerrado"] !== null ? substr((string)$m["encerrado"], 0, 10) : null, "disponivel_antes" => (int)$m["disponivel_antes"] === 1,
+            "observacao" => $m["observacao"] !== null && $m["observacao"] !== "" ? $m["observacao"] : null,
+            "desde" => count($ev) > 0 ? $ev[count($ev) - 1]["quando"] : null, "eventos" => $ev, "acessorios" => $acess[$id] ?? [], "documentos" => $docs[$id] ?? [],
+            "servicos" => $svs, "custo" => count($custos) > 0 ? round(array_sum($custos), 2) : null, "criado" => $m["criado"]];
+    }, $ms);
+}
+
+// As oficinas da coleção, prontas para a API, por nome: o tipo, o endereço, o horário, a observação, os contatos (na ordem:
+// o principal primeiro), quantas manutenções (as abertas e todas) e o gasto (os serviços das manutenções dela)
+function oficinas_lista()
+{
+    $contatos = [];
+    foreach (linhas("SELECT * FROM oficina_contato ORDER BY principal DESC, ordem, id") as $c) {
+        $tp = lista_item_por_id("contato_tipo", (int)$c["tipo_id"]);
+        $contatos[(int)$c["oficina_id"]][] = ["id" => (int)$c["id"], "tipo" => $tp["identificador"] ?? null, "tipo_texto" => $tp["nome"] ?? null,
+            "comportamento" => $tp["comportamento"] ?? "texto", "valor" => $c["valor"], "pessoa" => $c["pessoa"] !== null && $c["pessoa"] !== "" ? $c["pessoa"] : null,
+            "observacao" => $c["observacao"] !== null && $c["observacao"] !== "" ? $c["observacao"] : null, "principal" => (int)$c["principal"] === 1,
+            "link" => contato_link($tp["comportamento"] ?? "texto", $c["valor"])];
+    }
+    $conta = [];
+    foreach (linhas("SELECT m.oficina_id, s.comportamento, COUNT(*) AS n FROM manutencao m JOIN lista_item s ON s.id = m.situacao_id GROUP BY m.oficina_id, s.comportamento") as $x) {
+        $conta[(int)$x["oficina_id"]][$x["comportamento"]] = (int)$x["n"];
+    }
+    $gasto = [];
+    foreach (servicos_lista() as $sv) {
+        if ($sv["custo"] !== null) {
+            $gasto[$sv["oficina_id"]] = ($gasto[$sv["oficina_id"]] ?? 0.0) + $sv["custo"];
+        }
+    }
+    return array_map(function ($o) use ($contatos, $conta, $gasto) {
+        $id = (int)$o["id"];
+        $tp = lista_item_por_id("oficina_tipo", (int)$o["tipo_id"]);
+        $vazio = function ($v) { return $v !== null && trim((string)$v) !== "" ? $v : null; };
+        $partes = array_filter([$vazio($o["endereco"]) !== null ? trim($o["endereco"] . ($vazio($o["numero"]) !== null ? ", " . $o["numero"] : "") . ($vazio($o["complemento"]) !== null ? " · " . $o["complemento"] : "")) : null,
+            $vazio($o["bairro"]), trim(($vazio($o["cidade"]) ?? "") . ($vazio($o["uf"]) !== null ? "/" . $o["uf"] : "")), $vazio($o["cep"])], function ($x) { return $x !== null && $x !== ""; });
+        return ["id" => $id, "nome" => $o["nome"], "tipo" => $tp["identificador"] ?? null, "tipo_texto" => $tp["nome"] ?? null, "propria" => ($tp["comportamento"] ?? "") === "propria",
+            "endereco" => $vazio($o["endereco"]), "numero" => $vazio($o["numero"]), "complemento" => $vazio($o["complemento"]), "bairro" => $vazio($o["bairro"]),
+            "cidade" => $vazio($o["cidade"]), "uf" => $vazio($o["uf"]), "cep" => $vazio($o["cep"]), "endereco_texto" => count($partes) > 0 ? implode(" · ", $partes) : null,
+            "horario" => $vazio($o["horario"]), "observacao" => $vazio($o["observacao"]), "contatos" => $contatos[$id] ?? [],
+            "abertas" => $conta[$id]["aberta"] ?? 0, "manutencoes" => array_sum($conta[$id] ?? []), "gasto" => isset($gasto[$id]) ? round($gasto[$id], 2) : null];
+    }, linhas("SELECT * FROM oficina ORDER BY nome, id"));
+}
+
+// O endereço que abre um contato pelo comportamento do tipo dele: tel:, o wa.me do WhatsApp, mailto: ou o próprio link
+// (com https:// quando falta); o texto, nenhum
+function contato_link($comp, $valor)
+{
+    $v = trim((string)$valor);
+    $digitos = preg_replace("/[^0-9+]/", "", $v);
+    switch ($comp) {
+        case "telefone":
+            return $digitos !== "" ? "tel:" . $digitos : null;
+        case "whatsapp":
+            return $digitos !== "" ? "https://wa.me/" . ltrim($digitos, "+") : null;
+        case "email":
+            return strpos($v, "@") !== false ? "mailto:" . $v : null;
+        case "link":
+            return $v === "" ? null : (preg_match("#^[a-z][a-z0-9+.-]*://#i", $v) === 1 ? $v : "https://" . ltrim($v, "/"));
+    }
+    return null;
+}
+
+// Os grupos de uma árvore (a raiz e todos abaixo dela), sem escopo
+function arvore_nos($raiz)
+{
+    return sem_escopo(function () use ($raiz) {
+        $nos = [];
+        $nivel = [(int)$raiz];
+        while (count($nivel) > 0) {
+            $nos = array_merge($nos, $nivel);
+            $nivel = array_values(array_diff(array_map("intval", array_column(linhas("SELECT id FROM no WHERE pai_id IN (" . implode(", ", $nivel) . ")"), "id")), $nos));
+        }
+        return $nos;
+    });
+}
+
+// Quantas vezes um item de uma lista está em uso, em todas as coleções da árvore ($raiz): o que impede tirar o item (e
+// mudar o que ele faz)
+function lista_item_em_uso($item, $raiz)
+{
+    return (int)sem_escopo(function () use ($item, $raiz) {
+        $col = "SELECT id FROM colecao WHERE no_id = " . (int)$raiz;
+        $rel = "SELECT id FROM relogio WHERE colecao_id IN (" . $col . ")";
+        $id = (int)$item["id"];
+        $ident = (string)$item["identificador"];
+        switch ($item["lista"]) {
+            case "relogio_situacao":
+                return valor("SELECT COUNT(*) FROM relogio WHERE posse = ? AND colecao_id IN (" . $col . ")", [$ident]);
+            case "acessorio_tipo":
+                return (int)valor("SELECT COUNT(*) FROM acessorio WHERE tipo = ? AND colecao_id IN (" . $col . ")", [$ident])
+                    + (int)valor("SELECT COUNT(*) FROM campo WHERE acessorio_tipo = ? AND no_id IN (" . implode(", ", arvore_nos($raiz)) . ")", [$ident]);
+            case "servico_tipo":
+                return (int)valor("SELECT COUNT(*) FROM servico WHERE tipo = ? AND relogio_id IN (" . $rel . ")", [$ident]) + (int)valor("SELECT COUNT(*) FROM manutencao WHERE tipo_id = ?", [$id]);
+            case "estanqueidade":
+                return valor("SELECT COUNT(*) FROM servico WHERE estanqueidade = ? AND relogio_id IN (" . $rel . ")", [$ident]);
+            case "reserva_protocolo":
+                return valor("SELECT COUNT(*) FROM reserva_teste WHERE protocolo = ? AND relogio_id IN (" . $rel . ")", [$ident]);
+            case "reserva_observacao":
+                return valor("SELECT COUNT(*) FROM reserva_teste WHERE tipo = ? AND relogio_id IN (" . $rel . ")", [$ident]);
+            case "manutencao_situacao":
+                return (int)valor("SELECT COUNT(*) FROM manutencao WHERE situacao_id = ?", [$id]) + (int)valor("SELECT COUNT(*) FROM manutencao_evento WHERE situacao_id = ?", [$id]);
+            case "oficina_tipo":
+                return valor("SELECT COUNT(*) FROM oficina WHERE tipo_id = ?", [$id]);
+            case "contato_tipo":
+                return valor("SELECT COUNT(*) FROM oficina_contato WHERE tipo_id = ?", [$id]);
+        }
+        return 0;
+    });
+}
+
+// Os jeitos de carregar no teste da reserva são a lista reserva_protocolo (Cadastros › Listas: o texto do item é a unidade
+// da medida, voltas ou h; vazio, sem medida), e as observações da energia, a lista reserva_observacao (o identificador
+// "teste" é do teste: nenhuma observação o usa). Como o relógio ficou cheio no teste, por extenso: "cheio com 40 voltas:
+// corda pela coroa", "cheio: no winder"
 function reserva_protocolo_txt($protocolo, $valor)
 {
-    $v = $valor === null ? null : decimal_txt((float)$valor, 2);
-    if ($protocolo === "corda") {
-        return $v !== null ? t("cheio com {1} voltas da coroa", [1 => $v]) : t("cheio pela corda da coroa");
-    } elseif ($protocolo === "winder") {
-        return $v !== null ? t("cheio depois de {1} h no winder", [1 => $v]) : t("cheio no winder");
-    } elseif ($protocolo === "pulso") {
-        return $v !== null ? t("cheio depois de {1} h no pulso", [1 => $v]) : t("cheio no pulso");
+    if ($protocolo === null || $protocolo === "") {
+        return t("cheio");
     }
-    return t("cheio de outro jeito");
+    $i = lista_itens("reserva_protocolo")[(string)$protocolo] ?? null;
+    $nome = mb_strtolower($i["nome"] ?? (string)$protocolo, "UTF-8");
+    return $valor !== null && ($i["texto"] ?? null) !== null ? t("cheio com {1} {2}: {3}", [1 => decimal_txt((float)$valor, 2), 2 => $i["texto"], 3 => $nome])
+        : t("cheio: {1}", [1 => $nome]);
 }
 
 // Horas por extenso: "41,5 h"
@@ -6591,7 +7103,7 @@ function reserva_lista($relogio_id = null, $agora = null)
         $teste = $x["tipo"] === "teste";
         $horas = $teste && $fim !== null ? ($fim - $ini) / 3600 : null;
         return ["id" => (int)$x["id"], "relogio_id" => (int)$x["relogio_id"], "relogio" => $x["relogio"], "tipo" => $x["tipo"],
-            "tipo_texto" => $teste ? t("Teste da reserva") : t(RESERVA_OBSERVACOES[$x["tipo"]] ?? $x["tipo"]),
+            "tipo_texto" => $teste ? t("Teste da reserva") : lista_nome("reserva_observacao", $x["tipo"]),
             "inicio" => date("Y-m-d H:i:s", $ini), "fim" => $fim === null ? null : date("Y-m-d H:i:s", $fim),
             "em_andamento" => $teste && $fim === null, "horas" => $horas === null ? null : round($horas, 2), "horas_texto" => reserva_horas_txt($horas),
             "ate_agora" => $teste && $fim === null ? round(max(0, $agora - $ini) / 3600, 2) : null,
@@ -6677,9 +7189,8 @@ function reserva_do_relogio($r, $agora)
         "medida" => $m["n"] === 0 ? null : ["testes" => $m["n"], "horas" => round($m["mediana"], 2), "horas_texto" => reserva_horas_txt($m["mediana"]),
             "variacao" => $m["dp"] === null ? null : round($m["dp"], 2), "ultimo" => date("Y-m-d H:i:s", $m["ultima"]), "ultimo_horas" => round($m["ultima_horas"], 2)],
         "cadastro_relogio" => $testar ? $proprio : null, "usar_horas" => $usar !== null && ($proprio === null || abs($proprio - $usar) >= 0.5) ? $usar : null,
-        "protocolos" => array_map(function ($k) { return ["valor" => $k, "nome" => t(RESERVA_PROTOCOLOS[$k][0]), "unidade" => RESERVA_PROTOCOLOS[$k][1] === "voltas" ? t("voltas") : RESERVA_PROTOCOLOS[$k][1]]; },
-            array_keys(RESERVA_PROTOCOLOS)),
-        "tipos_observacao" => array_map(function ($k) { return ["valor" => $k, "nome" => t(RESERVA_OBSERVACOES[$k])]; }, array_keys(RESERVA_OBSERVACOES))];
+        "protocolos" => array_map(function ($x) { return array_merge($x, ["unidade" => $x["texto"] ?? ""]); }, lista_opcoes("reserva_protocolo")),
+        "tipos_observacao" => array_values(array_filter(lista_opcoes("reserva_observacao"), function ($x) { return $x["valor"] !== "teste"; }))];
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -7032,10 +7543,10 @@ function tecnico_do_relogio($r, $agora, $pr, $rs, $sr)
             "medido" => $e === null ? $linha(null, null, t("nenhum teste de estanqueidade nos serviços"))
                 : $linha($e["bar"], $e["bar"] !== null ? t("{1} a {2} bar", [1 => $e["resultado_texto"], 2 => decimal_txt($e["bar"], 1)]) : $e["resultado_texto"], null, null, $e["data"]),
             "estimado" => $e === null ? $linha(null, null, t("sem teste, a resistência declarada não comprova a vedação de agora"))
-                : $linha(null, $e["resultado"] === "aprovado" ? t("vedação comprovada no último teste") : t("vedação reprovada no último teste"),
+                : $linha(null, $e["aprova"] ? t("vedação comprovada no último teste") : t("vedação reprovada no último teste"),
                     t("o teste de {1}", [1 => data_txt(strtotime($e["data"] . " 00:00:00"))])),
             "confianca" => $e === null ? null : confianca_medida("estanqueidade", $n_e, strtotime($e["data"] . " 12:00:00"), $agora, null, null, null, true),
-            "fora" => $e !== null && $e["resultado"] === "reprovado"];
+            "fora" => $e !== null && !$e["aprova"]];
     }
     return $res;
 }

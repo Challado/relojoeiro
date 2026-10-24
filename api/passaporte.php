@@ -71,7 +71,7 @@ $foto_p = valor("SELECT atualizado FROM foto WHERE relogio_id = ?", [$id]);
 $rs_p = reserva_do_relogio($r, $agora_p);
 $saida = ["gerado_em" => date("Y-m-d H:i:s", $agora_p),
     "relogio" => ["id" => $id, "nome" => $r["nome"], "caminho" => no_caminho($r["no_id"]),
-        "tipo" => isset($n_p[(int)$r["no_id"]]) ? $n_p[(int)$r["no_id"]]["nome"] : t("sem grupo"), "posse" => posse_de($r), "posse_texto" => t(POSSES[posse_de($r)]),
+        "tipo" => isset($n_p[(int)$r["no_id"]]) ? $n_p[(int)$r["no_id"]]["nome"] : t("sem grupo"), "posse" => (string)$r["posse"], "posse_texto" => posse_texto($r), "posse_comportamento" => posse_de($r),
         "disponivel" => (int)$r["disponivel"] === 1, "criado" => $r["criado"], "foto" => $foto_p !== null ? strtotime($foto_p) : null,
         "marca" => ($valores["marca"] ?? "") !== "" ? $valores["marca"] : null, "referencia" => ($valores["referencia"] ?? "") !== "" ? $valores["referencia"] : null,
         "observacao" => ($valores["observacao"] ?? "") !== "" ? $valores["observacao"] : null],

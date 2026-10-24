@@ -18,7 +18,7 @@ if ($rid_s > 0 && !$r_s) {
 } else {
     $lista_s = servicos_lista($r_s ? $rid_s : null);
     $saida = ["relogio" => $r_s ? ["id" => (int)$r_s["id"], "nome" => $r_s["nome"]] : null,
-        "tipos" => array_map(function ($k) { return ["valor" => $k, "nome" => t(SERVICO_TIPOS[$k]), "marca" => in_array($k, SERVICO_MARCA, true)]; }, array_keys(SERVICO_TIPOS)),
+        "tipos" => servico_tipos_opcoes(),
         "servicos" => $lista_s, "resumo" => $r_s ? servicos_resumo($rid_s, $lista_s) : null,
         "documentos" => $r_s ? array_map(function ($x) { return ["id" => (int)$x["id"], "titulo" => $x["titulo"]]; }, documentos_do_relogio($rid_s)) : null];
 }

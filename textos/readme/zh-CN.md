@@ -1,4 +1,4 @@
-<!-- origem: 304872251d00561cb7f089d0aba334733089434d -->
+<!-- origem: 7256e68a7f6cb823562b6d1f0b93b38f36e102fd -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -132,6 +132,9 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `foto` | 一块手表的照片（`relogio=<id>`）：图片本身，不是 JSON |
 | `documentos` | 一块手表的文档（`relogio=<id>`；没有时为全部），含类别、每个 XML 的 NF-e 摘要、文件夹和大小限制 |
 | `servicos` | 保养与检测（`relogio=<id>`，含摘要：标称防水、经证实的防水、次数和费用合计；不带时为全部），含零件、费用、防水以及前后走时 |
+| `manutencao` | 保养：进行中的、保养记录（`relogio`、`oficina`、`de`、`ate`）、带联系方式的维修店、摘要和保养的列表 |
+| `oficinas` | 维修店（带联系方式），以及维修店和联系方式类型 |
+| `listas` | 作为定义的列表（`pagina=cadastros` 或 `manutencao`），带每个条目的作用和被使用的次数 |
 | `reserva` | 实测储备（`relogio=<id>`：机械表的储备测试、能量观察、实测值即各次测试的中位数，以及带可信度的声明、实测与估计表；不指定时，返回所有表的测试和观察） |
 | `timegrapher` | 校表仪测量（`relogio=<id>`：最近一次测量，含每项的平均值和各方位之间的差、测量记录以及 CSV 导入能识别的内容；不带则返回全部） |
 | `winders` | 收藏的上链盒（**上链盒**页面）：每个上链盒带有数据、备注、文档数量和位置，每个位置带有程序（每日圈数，总数和每个方向）、是否开启、现在在上面的手表（电量、每小时提供多少、何时充满、照片）、固定位置（归谁、它是否不在）以及表枕限制警告；上链盒和位置的字段、可以放上上链盒的手表（以及它们所在的位置、是否在上链盒上但没有位置）和可供选择的程序 |
@@ -157,7 +160,10 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 |---|---|
 | `relogio` | `salvar`（创建或修改）、`excluir`（连同文档）、`foto`、`remover_foto` |
 | `documentos` | `enviar`（一个或多个文件，带类别、标题、日期、描述，照片还带缩略图）、`alterar`、`excluir` |
-| `servicos` | `salvar`（日期、类型、由谁完成、工时费、零件、防水、前后走时、保修和文档；保养和更换电池也会生成记录），`excluir` |
+| `servicos` | `salvar`（日期、类型、保养或维修店、工时费、零件、防水、前后走时、保修和文档；会标记记录的类型也会生成记录），`excluir` |
+| `manutencao` | `salvar`（登记即把表送到维修店）、`situacao`（结束类状态会变成服务）、`excluir` |
+| `oficinas` | `salvar`（带联系方式）、`excluir`（只能删除没有保养的） |
+| `listas` | `salvar`（一个条目：标识符、名称、顺序、作用、文本、颜色）、`excluir`（只能删除未使用的） |
 | `reserva` | `iniciar`（何时充满、如何充满）、`parou`、`observar`（停止、低电量、记录；太阳能表也可以）、`salvar`、`usar`（中位数写入表的档案）、`excluir` |
 | `timegrapher` | `salvar`（一次测量：方位、走时、振幅、偏振、每小时振次、提升角）、`importar`（仪器的 CSV；`conferir=1`：不保存）、`excluir` |
 | `winders`、`winder_posicoes` | `salvar`（上链盒：名称、字段，例如说明书链接和表枕限制、备注，以及创建时的位置数量；位置：名称、顺序、开启、`programa_id` 和 `relogio_id`，即放在其中并获得该位置的手表：放上、更换，或用 0 取下）、`limite_ok`（上链盒：某块手表的限制警告不再出现）、`liberar`（位置：不再是原来那块手表的位置）、`excluir`（留在其中的时段保留，但没有位置） |
@@ -442,7 +448,7 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 |---|---|
 | 文本 | 名称、标识符、标题、提醒文本、公式和设置键为空或只有空格 |
 | 是/否标记 | 0 和 1 以外的任何值（可用、启用、独占、测量消耗、使用中、发送、数据库副本、仅心愿手表……） |
-| 手表 | 不在列表中的收藏状态（`colecao`、`desejado`、`emprestado`、`vendido`、`arquivado`）；不在收藏中却可用的手表 |
+| 手表 | 空的收藏状态（列表中某个条目的标识符；不在收藏中却可用的情况由写入拒绝） |
 | 记录类型 | 非时段格式却独占；非数值格式却"测量消耗"；非时段格式却有"结束于" |
 | 记录和测量 | 结束早于开始；测得的消耗（速率）不在 0 到 100% 之间；小时数为负 |
 | 提醒 | 提前量不在 0 到 3650 天之间；排程中模拟的小时数不在 0 到 48 之间 |

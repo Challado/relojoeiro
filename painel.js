@@ -7,8 +7,11 @@ var CURTO = ["", t("seg"), t("ter"), t("qua"), t("qui"), t("sex"), t("sáb"), t(
 function mostrarCamposDoTipo(form) {
   var sel = form.querySelector(".campo-subtipo");
   // a situação na coleção: os campos da lista de desejos (data-desejo) só no desejado; o disponível só na coleção
+  // (o que a situação faz: o comportamento do item escolhido, no data-comportamento da opção)
   var posse = form.querySelector(".campo-posse");
-  var desejado = posse !== null && posse.value === "desejado";
+  var opPosse = posse !== null ? posse.options[posse.selectedIndex] : null;
+  var faz = opPosse ? opPosse.getAttribute("data-comportamento") : null;
+  var desejado = faz === "desejado";
   if (sel) {
     var opcao = sel.options[sel.selectedIndex];
     var cadeia = (opcao ? opcao.getAttribute("data-cadeia") || "" : "").split(" ");
@@ -17,7 +20,7 @@ function mostrarCamposDoTipo(form) {
     });
   }
   form.querySelectorAll("[data-so-colecao]").forEach(function (el) {
-    el.hidden = posse !== null && posse.value !== "colecao";
+    el.hidden = faz !== null && faz !== "colecao";
   });
   // a divisória sem nenhum campo à vista (todos de outro grupo, ou só dos desejados) some inteira
   form.querySelectorAll("fieldset.secao-cadastro").forEach(function (fs) {
@@ -444,13 +447,15 @@ function abrirNoPainel(id) {
         return el("form", {"data-recurso": "servicos", "class": "servico-form"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
           + (s ? el("input", {"type": "hidden", "name": "id", "value": s.id}) : el("input", {"type": "hidden", "name": "relogio_id", "value": id}))
           + el("label", {}, t("Data {1}", {1: el("input", {"type": "date", "name": "data", "value": s ? s.data : hoje, "max": hoje, "required": true})}))
-          + el("label", {}, t("Tipo {1}", {1: el("select", {"name": "tipo"}, r.servico_tipos.map(function (x) {
-            return el("option", {"value": x.valor, "selected": (s ? s.tipo : "revisao") === x.valor}, h(x.nome));
+          + el("label", {}, t("Tipo {1}", {1: el("select", {"name": "tipo"}, r.servico_tipos.map(function (x, i) {
+            return el("option", {"value": x.valor, "selected": s ? s.tipo === x.valor : i === 0}, h(x.nome));
           }).join(""))}))
-          + el("label", {}, t("Quem fez {1}", {1: el("input", {"name": "responsavel", "value": v("responsavel"), "maxlength": 120})}))
+          // a oficina: a do serviço (a da manutenção dele); no novo, escolha (o serviço ganha uma manutenção já encerrada nela)
+          + (s ? el("p", {"class": "nota"}, t("Oficina: {1}", {1: el("a", {"href": "manutencao.php?editar=" + s.manutencao_id}, h(s.oficina))}))
+            : el("label", {}, t("Oficina {1}", {1: el("select", {"name": "oficina_id"}, r.oficinas.map(function (o) { return el("option", {"value": o.id}, h(o.nome)); }).join(""))})))
           + el("label", {}, t("Mão de obra (R$) {1}", {1: el("input", {"name": "mao_de_obra", "inputmode": "decimal", "value": v("mao_de_obra")})}))
           + el("label", {}, t("Estanqueidade {1}", {1: el("select", {"name": "estanqueidade"}, el("option", {"value": ""}, t("não testada"))
-            + el("option", {"value": "aprovado", "selected": v("estanqueidade") === "aprovado"}, t("aprovada")) + el("option", {"value": "reprovado", "selected": v("estanqueidade") === "reprovado"}, t("reprovada")))}))
+            + r.estanqueidades.map(function (x) { return el("option", {"value": x.valor, "selected": v("estanqueidade") === x.valor}, h(x.nome)); }).join(""))}))
           + el("label", {}, t("Pressão do teste (bar) {1}", {1: el("input", {"name": "estanqueidade_bar", "inputmode": "decimal", "value": v("estanqueidade_bar")})}))
           + el("label", {}, t("Marcha antes (s/dia) {1}", {1: el("input", {"name": "marcha_antes", "inputmode": "decimal", "value": v("marcha_antes")})}))
           + el("label", {}, t("Marcha depois (s/dia) {1}", {1: el("input", {"name": "marcha_depois", "inputmode": "decimal", "value": v("marcha_depois")})}))
@@ -466,11 +471,11 @@ function abrirNoPainel(id) {
       var linhaServico = function (s) {
         var medida = function (m) { return m !== null ? t("{1} ({2} medidas)", {1: h(m.marcha_texto), 2: m.intervalos}) : nada(t("sem leituras do desvio")); };
         return el("details", {"class": "servico"}, el("summary", {}, el("strong", {}, dataBr(s.data)) + " · " + h(s.tipo_texto)
-            + (s.responsavel !== null ? " · " + h(s.responsavel) : "") + (s.custo !== null ? " · " + t("R$ ") + reais(s.custo) : ""))
+            + " · " + h(s.oficina) + (s.custo !== null ? " · " + t("R$ ") + reais(s.custo) : ""))
           + pares([[t("O que foi feito"), s.descricao !== null ? h(s.descricao) : nada("—")],
             [t("Peças"), s.pecas.length === 0 ? nada("—") : s.pecas.map(function (p) { return h(p.nome) + (p.custo !== null ? " " + el("small", {}, t("R$ ") + reais(p.custo)) : ""); }).join("<br>")],
             [t("Custo"), s.custo !== null ? el("strong", {}, t("R$ ") + reais(s.custo)) + el("small", {}, t("mão de obra {1} · peças {2}", {1: s.mao_de_obra !== null ? t("R$ ") + reais(s.mao_de_obra) : "—", 2: t("R$ ") + reais(s.custo_pecas)})) : nada("—")],
-            [t("Estanqueidade"), s.estanqueidade !== null ? el("span", {"class": s.estanqueidade === "reprovado" ? "em atrasado" : ""}, h(s.estanqueidade_texto))
+            [t("Estanqueidade"), s.estanqueidade !== null ? el("span", {"class": s.estanqueidade_aprova === false ? "em atrasado" : ""}, h(s.estanqueidade_texto))
               + (s.estanqueidade_bar !== null ? " " + t("a {1} bar", {1: num(s.estanqueidade_bar, 1)}) : "") : nada(t("não testada"))],
             [t("Marcha antes"), (s.marcha_antes_texto !== null ? h(s.marcha_antes_texto) + el("small", {}, t("informada")) : "") + el("small", {}, t("medida pelo sistema: {1}", {1: medida(s.medida_antes)}))],
             [t("Marcha depois"), (s.marcha_depois_texto !== null ? h(s.marcha_depois_texto) + el("small", {}, t("informada")) : "") + el("small", {}, t("medida pelo sistema: {1}", {1: medida(s.medida_depois)}))],
@@ -482,6 +487,24 @@ function abrirNoPainel(id) {
             + el("form", {"data-recurso": "servicos", "class": "excluir"}, el("input", {"type": "hidden", "name": "acao", "value": "excluir"}) + el("input", {"type": "hidden", "name": "id", "value": s.id})
               + el("button", {"class": "leve discreto"}, t("Excluir este serviço")))));
       };
+      // a manutenção: o relógio na oficina agora (a oficina, a situação, o envio, a previsão, o orçamento, o aviso) ou o
+      // "Cadastrar uma manutenção" (sem manutenção cadastrada, ele não vai a lugar nenhum); embaixo, as idas de antes. Tudo se
+      // cadastra e muda na página Manutenção
+      var ma = r.manutencao_aberta;
+      secoes.cadastro += quadro(t("Manutenção"), (ma ? pares([[t("Oficina"), h(ma.oficina)],
+          [t("Situação"), el("span", {"class": "estado estado-manutencao", "style": ma.situacao_cor ? "border-color:" + ma.situacao_cor + ";color:" + ma.situacao_cor : null}, h(ma.situacao_texto))
+            + (ma.aviso !== null ? el("small", {}, h(ma.aviso)) : "")],
+          [t("Enviado"), dataBr(ma.enviado) + el("small", {}, ma.dias === 1 ? t("há 1 dia") : t("há {1} dias", {1: ma.dias}))],
+          [t("Previsão"), ma.previsao !== null ? el("span", {"class": ma.atrasada ? "em atrasado" : ""}, dataBr(ma.previsao)) + (ma.atrasada ? el("small", {}, t("atrasada: cobre a oficina")) : "") : nada("—")],
+          [t("Orçamento"), ma.orcamento !== null ? t("R$ ") + reais(ma.orcamento) : nada("—")],
+          [t("Problema"), ma.problema !== null ? h(ma.problema) : nada("—")]])
+          : el("p", {"class": "nota"}, r.da_colecao ? t("Não está em manutenção. Para mandar o relógio para uma oficina (ou para você mesmo, em casa), cadastre a manutenção: ele sai do rodízio até voltar.")
+            : t("Só um relógio da coleção vai para a manutenção.")))
+        + (r.manutencoes_oficina.filter(function (m) { return !m.aberta; }).length > 0 ? el("h3", {}, t("As de antes")) + pares(r.manutencoes_oficina.filter(function (m) { return !m.aberta; }).slice(0, 5).map(function (m) {
+          return [dataBr(m.enviado), h(m.oficina) + el("small", {}, h(m.tipo_texto) + " · " + h(m.situacao_texto) + (m.custo !== null ? " · " + t("R$ ") + reais(m.custo) : ""))];
+        })) : ""),
+        ma ? el("a", {"href": "manutencao.php?editar=" + ma.id + "#form", "target": "_blank", "rel": "noopener", "class": "botao"}, t("Abrir a manutenção"))
+          : (r.da_colecao ? el("a", {"href": "manutencao.php?relogio=" + id + "#form", "target": "_blank", "rel": "noopener", "class": "botao"}, t("Cadastrar uma manutenção")) : ""), "quadro-manutencao");
       secoes.cadastro += quadro(t("Serviços e diagnósticos"), tabelaTecnica("estanqueidade") + pares([
         [t("Serviços"), sr.quantos === 0 ? nada(t("nenhum registrado")) : sr.quantos + (sr.quantos === 1 ? t(" serviço") : t(" serviços"))
           + (sr.ultimo !== null ? el("small", {}, t("o último: {1} em {2}", {1: h(sr.ultimo.tipo_texto.toLowerCase()), 2: dataBr(sr.ultimo.data)})) : "")],
@@ -489,7 +512,7 @@ function abrirNoPainel(id) {
         + r.servicos.map(linhaServico).join("")
         + el("details", {"class": "servico-novo"}, el("summary", {}, t("Registrar um serviço")) + formServico(null)),
         linkRelatorio("servicos", {relogio: id}, t("Relatório dos serviços"), true), "largo servicos-ficha");
-      secoes.uso += quadro(t("Próximas manutenções"),r.manutencoes.length === 0 ? el("p", {"class": "nota"}, t("Nada previsto."))
+      secoes.uso += quadro(t("Próximos avisos"),r.manutencoes.length === 0 ? el("p", {"class": "nota"}, t("Nada previsto."))
         : pares(r.manutencoes.map(function (m) { return [dataBr(m.data), h(m.nome)]; }), "datas"));
       // marcar: um quadro só. O menu diz o que aconteceu, e embaixo aparecem só os campos daquilo: pôr ou tirar (cada sessão,
       // só o que cabe agora), uma marcação de um momento (corda, pilha...), a leitura (carga), um período que já passou, ou
@@ -650,7 +673,7 @@ function abrirNoPainel(id) {
       // o desejado (a lista de desejos): ainda não é seu, então nada de agora, previsão, rodízio ou marcar; na seção do
       // cadastro, o quadro Desejo (a marca, a referência, o preço-alvo, a prioridade e o link) e os documentos (fotos, anúncios
       // guardados)
-      if (r.posse === "desejado" && r.desejo) {
+      if (r.posse_comportamento === "desejado" && r.desejo) {
         var dj = r.desejo;
         secoes = {uso: "", carga: "", precisao: "", historico: ""};
         secoes.cadastro = quadro(t("Desejo"), pares([[t("Marca"), dj.marca !== null ? h(dj.marca) : nada("—")], [t("Referência"), dj.referencia !== null ? h(dj.referencia) : nada("—")],
@@ -661,7 +684,7 @@ function abrirNoPainel(id) {
       }
       // o atalho do pulso, na cabeça: um botão só, "Pôr" quando ele não está no pulso e "Tirar" quando está (agora; a hora
       // certa e o resto ficam no quadro Marcar)
-      var pulso = r.posse === "desejado" ? null : r.tipos.filter(function (item) { return item.identificador === "pulso" && item.formato === "sessao"; })[0] || null;
+      var pulso = r.posse_comportamento === "desejado" || r.manutencao_aberta ? null : r.tipos.filter(function (item) { return item.identificador === "pulso" && item.formato === "sessao"; })[0] || null;
       var atalho = "";
       if (pulso) {
         var noPulso = pulso.aberta !== null;
@@ -676,9 +699,10 @@ function abrirNoPainel(id) {
       res += el("div", {"class": "ficha-cabeca"}, el("div", {"class": "ficha-foto"}, foto)
         + el("div", {"class": "ficha-identidade"}, el("p", {"class": "data"}, h(r.tipo) + " · " + h(r.caminho))
           + el("h1", {}, h(r.nome)) + (r.observacao ? el("p", {"class": "observacao"}, textoRecolhivel(r.observacao, "obs-" + r.id)) : "")
-          + el("p", {"class": "marcas"}, (r.posse === "desejado" ? "" : el("span", {"class": "estado estado-" + (r.estado)}, h(minusculo(r.estado_texto))))
-            + (r.posse !== "colecao" ? " " + el("span", {"class": "estado estado-posse"}, h(minusculo(r.posse_texto)))
-              : (r.disponivel ? "" : " " + el("span", {"class": "estado estado-indisponivel"}, t("indisponível"))))
+          + el("p", {"class": "marcas"}, (r.posse_comportamento === "desejado" ? "" : el("span", {"class": "estado estado-" + (r.estado)}, h(minusculo(r.estado_texto))))
+            + (r.manutencao_aberta ? " " + el("span", {"class": "estado estado-manutencao"}, t("em manutenção")) : "")
+            + (r.posse_comportamento !== "colecao" ? " " + el("span", {"class": "estado estado-posse"}, h(minusculo(r.posse_texto)))
+              : (r.disponivel || r.manutencao_aberta ? "" : " " + el("span", {"class": "estado estado-indisponivel"}, t("indisponível"))))
             + (r.proxima === hoje ? " " + el("span", {"class": "estado estado-atividade"}, t("relógio de hoje")) : "")) + atalho
           // no painel da página Hoje, o caminho para a ficha (o mesmo relógio numa página só dele, numa aba nova)
           + (document.querySelector(".painel") ? el("p", {"class": "ficha-link"}, el("a", {"href": "ficha.php?id=" + id, "target": "_blank", "rel": "noopener", "class": "botao leve"}, t("Abrir a ficha ↗"))) : "")))
@@ -694,7 +718,7 @@ function abrirNoPainel(id) {
     // a situação na coleção (no relógio novo, a do endereço: index.php?novo=1&posse=desejado, o "Novo desejo" da página Desejos)
     var posseForm = novo ? (new URLSearchParams(window.location.search).get("posse") || "colecao") : r.posse;
     cad += el("label", {}, t("Situação na coleção {1} {2}", {1: el("select", {"name": "posse", "class": "campo-posse"}, d.posses.map(function (p) {
-      return el("option", {"value": p.valor, "selected": p.valor === posseForm}, h(p.nome));
+      return el("option", {"value": p.valor, "data-comportamento": p.comportamento, "selected": p.valor === posseForm}, h(p.nome));
     }).join("")), 2: el("small", {}, t("fora da coleção, ele sai do rodízio e dos avisos; a ficha e o histórico ficam"))}));
     // o calibre (o movimento): o relógio herda dele os valores que não tem (a aba Calibres dos Cadastros)
     var calForm = novo || !r.calibre ? 0 : r.calibre.id;
