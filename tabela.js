@@ -271,27 +271,23 @@
     }
 
     // coluna "Em": quando falta menos de um mês, o texto é recalculado aqui a cada minuto (dias, horas e minutos não dependem
-    // do calendário); acima disso ele só muda de um dia para o outro, e vem pronto do servidor
+    // do calendário); acima disso ele só muda de um dia para o outro, e vem pronto do servidor. O texto é o mesmo que o
+    // servidor escreve (duracao_texto no lib.php: as duas maiores partes que não são zero, "atrasado " na frente e "agora"
+    // sem nenhuma), para a linha não mudar de altura quando o minuto vira; "2d 10h" não quebra, o "atrasado" pode ir para cima
     var faltaTexto = function (momento) {
-      var dif = Math.round((momento * 1000 - Date.now()) / 60000);
-      var min = Math.abs(dif);
-      var d = Math.floor(min / 1440);
-      var h = Math.floor((min % 1440) / 60);
-      var m = min % 60;
-      var partes = [[m, "m"]];
-      if (h > 0) {
-        partes = [[h, "h"], [m, "m"]];
-      }
-      if (d > 0) {
-        partes = [[d, "d"], [h, "h"]];
-      }
-      var txt = partes.filter(function (p) { return p[0] > 0; }).map(function (p) { return p[0] + p[1]; }).join("\u00a0");   // "2d 10h" não quebra; o "atrasado" pode ir para cima
-      if (txt === "") {
-        txt = "agora";
-      } else if (dif < 0) {
-        txt = t("atrasado {1}", {1: txt});
-      }
-      return txt;
+      var dif = momento * 1000 - Date.now();
+      var min = Math.round(Math.abs(dif) / 60000);
+      var partes = [];
+      [[tk("{n}a"), 525960], [tk("{n}m"), 43830], [tk("{n}d"), 1440], [tk("{n}h"), 60], [tk("{n}min"), 1]].forEach(function (u) {
+        if (partes.length < 2 && (min >= u[1] || partes.length > 0)) {
+          var n = Math.floor(min / u[1]);
+          min -= n * u[1];
+          if (n > 0) {
+            partes.push(t(u[0], {n: n}));
+          }
+        }
+      });
+      return (dif < 0 ? t("atrasado ") : "") + (partes.length > 0 ? partes.join("\u00a0") : t("agora"));
     };
     var atualizarFalta = function () {
       corpo.querySelectorAll("td[data-momento]").forEach(function (td) {

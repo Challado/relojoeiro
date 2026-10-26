@@ -542,57 +542,6 @@ escrever(["recurso" => "modos", "acao" => "ativar", "id" => $inteligente]);
 cron();
 escrever(["recurso" => "rodizio", "acao" => "usando", "relogio_id" => $rel["crono"]]);
 cron();
-// na escala, o pedido de um dia ou de um período muda só ele: fora dele, cada dia fica com o relógio que tinha (o
-// "sortear o período" de uma semana sorteava a escala inteira)
-$escala_dias = function () {
-    $m = [];
-    foreach ((chamar("GET", ["recurso" => "plano", "dias" => 45])["json"]["plano"] ?? []) as $p) {
-        $m[$p["data"]] = (int)$p["relogio_id"];
-    }
-    return $m;
-};
-$fora_mudou = function ($antes, $depois, $de, $ate) {
-    $mudou = [];
-    foreach ($antes as $data => $rid) {
-        if ($data > date("Y-m-d") && ($data < $de || $data > $ate) && ($depois[$data] ?? null) !== $rid) {
-            $mudou[] = $data;
-        }
-    }
-    return $mudou;
-};
-$antes_e = $escala_dias();
-escrever(["recurso" => "rodizio", "acao" => "periodo_sortear", "de" => $em(10), "ate" => $em(16)]);
-$m_e = $fora_mudou($antes_e, $escala_dias(), $em(10), $em(16));
-if (count($antes_e) < 20 || count($m_e) > 0) {
-    $falhas[] = "escala: o período sorteado de novo mudou dias fora dele (" . count($antes_e) . " dias no plano): " . implode(", ", $m_e);
-}
-$antes_e = $escala_dias();
-escrever(["recurso" => "rodizio", "acao" => "periodo_livre", "de" => $em(18), "ate" => $em(19)]);
-$m_e = $fora_mudou($antes_e, $escala_dias(), $em(18), $em(19));
-if (count($m_e) > 0) {
-    $falhas[] = "escala: o período livre mudou dias fora dele: " . implode(", ", $m_e);
-}
-foreach ([[$rel["pilha"], "trocar à mão"], ["sortear:inteligente", "sortear o dia"], [0, "voltar a sortear"]] as [$v_e, $nome_e]) {
-    $antes_e = $escala_dias();
-    escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(22), "relogio_id" => $v_e]);
-    $m_e = $fora_mudou($antes_e, $escala_dias(), $em(22), $em(22));
-    if (count($m_e) > 0) {
-        $falhas[] = "escala: " . $nome_e . " um dia mudou outros dias: " . implode(", ", $m_e);
-    }
-}
-$antes_e = $escala_dias();
-escrever(["recurso" => "rodizio", "acao" => "periodo", "de" => $em(25), "ate" => $em(26), "relogio_ids" => [$rel["pilha"]]]);
-$m_e = $fora_mudou($antes_e, $escala_dias(), $em(25), $em(26));
-if (count($m_e) > 0) {
-    $falhas[] = "escala: o período à mão mudou dias fora dele: " . implode(", ", $m_e);
-}
-$antes_e = $escala_dias();
-escrever(["recurso" => "rodizio", "acao" => "manual", "de" => $em(28), "ate" => $em(29), "dias" => [$em(28) => "auto", $em(29) => (string)$rel["pilha"]]]);
-$m_e = $fora_mudou($antes_e, $escala_dias(), $em(28), $em(29));
-if (count($m_e) > 0) {
-    $falhas[] = "escala: o rodízio manual mudou dias fora dele: " . implode(", ", $m_e);
-}
-ler("escala depois dos pedidos de período", ["recurso" => "plano", "dias" => 45]);
 
 // ---------- a fotografia ----------
 ler("tudo", ["foto" => "nao"]);
@@ -1724,6 +1673,69 @@ escrever(["recurso" => "movimentos", "acao" => "excluir", "id" => $m_v10, "confi
 escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $outro_w, "confirmar" => 1]);
 ler("winders no fim", ["recurso" => "winders"]);
 ler("historico do Orient depois dos winders", ["recurso" => "historico", "relogio" => $rel["auto2"], "limite" => 5]);
+
+// ---------- a escala: o pedido de um dia ou de um período muda só ele ----------
+// no fim do cenário: são escritas pesadas (cada uma refaz a simulação da escala), e no banco mais lento o tempo que elas
+// levam atrasaria as leituras que andam com o relógio (a carga, a reserva, a autonomia) que vêm depois. Antes, a escala
+// montada pelo Sortear de novo (um pedido: os motivos no idioma dele; o cron grava no idioma da instalação, e a rodada em
+// outro idioma veria português nas telas) e o relógio de hoje trocado à mão (usando), como no uso de verdade
+escrever(["recurso" => "modos", "acao" => "ativar", "id" => $inteligente]);
+escrever(["recurso" => "rodizio", "acao" => "resortear"]);
+escrever(["recurso" => "rodizio", "acao" => "usando", "relogio_id" => $rel["crono"]]);
+// na escala, o pedido de um dia ou de um período muda só ele: fora dele, cada dia fica com o relógio que tinha e nem é
+// gravado de novo (o "sortear o período" de uma semana sorteava a escala inteira). Cada dia: o relógio e quando a linha foi
+// gravada (criado); com 1 s entre a leitura e o pedido, um dia apagado e sorteado de novo aparece mesmo quando sai o mesmo
+// relógio (a escala inteligente é determinística: sorteada de novo no mesmo estado, sai igual)
+$escala_dias = function () {
+    $m = [];
+    foreach ((chamar("GET", ["recurso" => "plano", "dias" => 45])["json"]["plano"] ?? []) as $p) {
+        $m[$p["data"]] = $p["relogio_id"] . " " . $p["criado"];
+    }
+    sleep(1);
+    return $m;
+};
+$fora_mudou = function ($antes, $depois, $de, $ate) {
+    $mudou = [];
+    foreach ($antes as $data => $rid) {
+        if ($data > date("Y-m-d") && ($data < $de || $data > $ate) && ($depois[$data] ?? null) !== $rid) {
+            $mudou[] = $data;
+        }
+    }
+    return $mudou;
+};
+$antes_e = $escala_dias();
+escrever(["recurso" => "rodizio", "acao" => "periodo_sortear", "de" => $em(10), "ate" => $em(16)]);
+$m_e = $fora_mudou($antes_e, $escala_dias(), $em(10), $em(16));
+if (count($antes_e) < 20 || count($m_e) > 0) {
+    $falhas[] = "escala: o período sorteado de novo mudou dias fora dele (" . count($antes_e) . " dias no plano): " . implode(", ", $m_e);
+}
+$antes_e = $escala_dias();
+escrever(["recurso" => "rodizio", "acao" => "periodo_livre", "de" => $em(18), "ate" => $em(19)]);
+$m_e = $fora_mudou($antes_e, $escala_dias(), $em(18), $em(19));
+if (count($m_e) > 0) {
+    $falhas[] = "escala: o período livre mudou dias fora dele: " . implode(", ", $m_e);
+}
+foreach ([[$rel["pilha"], "trocar à mão"], ["sortear:inteligente", "sortear o dia"], [0, "voltar a sortear"]] as [$v_e, $nome_e]) {
+    $antes_e = $escala_dias();
+    escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(22), "relogio_id" => $v_e]);
+    $m_e = $fora_mudou($antes_e, $escala_dias(), $em(22), $em(22));
+    if (count($m_e) > 0) {
+        $falhas[] = "escala: " . $nome_e . " um dia mudou outros dias: " . implode(", ", $m_e);
+    }
+}
+$antes_e = $escala_dias();
+escrever(["recurso" => "rodizio", "acao" => "periodo", "de" => $em(25), "ate" => $em(26), "relogio_ids" => [$rel["pilha"]]]);
+$m_e = $fora_mudou($antes_e, $escala_dias(), $em(25), $em(26));
+if (count($m_e) > 0) {
+    $falhas[] = "escala: o período à mão mudou dias fora dele: " . implode(", ", $m_e);
+}
+$antes_e = $escala_dias();
+escrever(["recurso" => "rodizio", "acao" => "manual", "de" => $em(28), "ate" => $em(29), "dias" => [$em(28) => "auto", $em(29) => (string)$rel["pilha"]]]);
+$m_e = $fora_mudou($antes_e, $escala_dias(), $em(28), $em(29));
+if (count($m_e) > 0) {
+    $falhas[] = "escala: o rodízio manual mudou dias fora dele: " . implode(", ", $m_e);
+}
+ler("escala depois dos pedidos de período", ["recurso" => "plano", "dias" => 45]);
 
 $texto = json_encode($foto, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_PRESERVE_ZERO_FRACTION | JSON_INVALID_UTF8_SUBSTITUTE);
 if ($texto === false) {

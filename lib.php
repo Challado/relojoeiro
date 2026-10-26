@@ -5352,8 +5352,11 @@ function rodizio_manual_decidir($de, $ate, $escolhas)
                     $escolhido = (int)array_key_first($info);
                     $motivo = t("Decida por mim: a maior nota ({1}), {2}.", [1 => motivo_nota($info[$escolhido]["nota"]), 2 => $entre]);
                 }
-                if (count($fora) > 0) {
-                    $motivo .= t(" {1}{2} de fora.", [1 => ucfirst(implode(" e ", $fora)), 2 => count($fora) > 1 ? " ficaram" : " ficou"]);
+                // no máximo dois: o de ontem e o de amanhã
+                if (count($fora) === 1) {
+                    $motivo .= t(" {1} ficou de fora.", [1 => ucfirst($fora[0])]);
+                } elseif (count($fora) > 1) {
+                    $motivo .= t(" {1} e {2} ficaram de fora.", [1 => ucfirst($fora[0]), 2 => $fora[1]]);
                 }
                 $res[$data] = [$escolhido, corta_texto($motivo, 300)];
             }

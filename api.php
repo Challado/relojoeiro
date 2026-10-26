@@ -7260,6 +7260,7 @@ if ($em_dia) {
     }
 }
 lingua_definir(lingua_do_pedido($lingua_padrao));
+$GLOBALS["LINGUA_DO_PEDIDO"] = true;
 // o fuso do pedido: o do usuário (Minha conta), o da coleção (a Configuração) ou o do sistema (o FUSO do config.php)
 if ($em_dia) {
     try {

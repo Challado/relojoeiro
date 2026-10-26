@@ -64,7 +64,8 @@ h2 { font-size: 1.1rem; margin: 0 0 .75rem; }
   border: 1px solid var(--aco-escuro);
 }
 .hoje .data { color: var(--cinza); margin: 0; }
-.periodo { display: flex; align-items: center; gap: .75rem; color: var(--cinza); margin: 0 0 1rem; }
+/* a janela do dia e o tipo do relógio; sem espaço (o celular pequeno), o tipo desce para baixo da janela */
+.periodo { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .75rem; color: var(--cinza); margin: 0 0 1rem; }
 
 /* janela de data, como a de um mostrador */
 .janela {

@@ -416,6 +416,11 @@ function responde($codigo, $saida, $formato)
 
 // erro que escapar: sai no formato pedido
 set_exception_handler(function ($t) use ($formato) {
+    // o erro veio antes de o api.php escolher o idioma do pedido (o banco caiu ao ler o usuário ou a coleção): o idioma que
+    // o pedido diz (lingua=, o cookie do seletor, o Accept-Language), sem o do usuário e o da coleção, que estão no banco
+    if (empty($GLOBALS["LINGUA_DO_PEDIDO"])) {
+        lingua_definir(lingua_do_pedido());
+    }
     if ($t instanceof BancoErro && $t->integridade) {
         // o banco recusou a gravação: um registro que outro ainda usa, ou um valor repetido onde não pode
         responde(409, ["erro" => t("o banco recusou a gravação: ela quebraria uma regra dos dados (um registro que outro ainda usa, um valor repetido onde não pode, ou um valor fora das regras de validação do banco)"), "detalhe" => $t->getMessage()], $formato);

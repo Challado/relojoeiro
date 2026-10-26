@@ -100,8 +100,16 @@ const CAMADA = () => {
 // fim do que rola ali
 async function conferirFim(p, vp, problemas, rotulo) {
   const ponto = (await p.evaluate(CAMADA)) || [vp.width / 2, vp.height * 0.6];
+  const antes = (await p.evaluate(FIM, ponto)).total;
   await rolarAteParar(p, ponto[0], ponto[1], MARCA);
-  const r = await p.evaluate(FIM, ponto);
+  let r = await p.evaluate(FIM, ponto);
+  // a página cresceu enquanto rolava (um texto que anda com o relógio, como a coluna Em da Hoje quando o minuto vira: "agora"
+  // passa a "atrasado 1min" e a linha ganha uma linha de texto): rola de novo, uma vez. Com a mesma altura, parar antes do
+  // fim é travar
+  if (!r.fim && r.total !== antes) {
+    await rolarAteParar(p, ponto[0], ponto[1], MARCA);
+    r = await p.evaluate(FIM, ponto);
+  }
   if (!r.fim) {
     problemas.push(rotulo + ' (' + r.quem + ' parou em ' + r.onde + ' de ' + r.total + ' px; overflow do body: ' + r.corpo + ')');
   }

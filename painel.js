@@ -58,7 +58,7 @@ function acaoSessao(nome, tirar) {
 
 // Segundos por extenso, com as duas maiores partes: "1a 5m", "5d 3h", "12h 22min", "40min"
 function duracao(seg) {
-  var partes = [[31557600, tk(t("{n}a"))], [2629800, tk(t("{n}m"))], [86400, tk(t("{n}d"))], [3600, tk(t("{n}h"))], [60, tk(t("{n}min"))]];
+  var partes = [[31557600, tk("{n}a")], [2629800, tk("{n}m")], [86400, tk("{n}d")], [3600, tk("{n}h")], [60, tk("{n}min")]];
   var res = [];
   var resto = Math.max(0, Math.round(seg));
   partes.forEach(function (x) {
