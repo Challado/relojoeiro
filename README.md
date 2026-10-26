@@ -2584,7 +2584,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | [`reconstrucao.php`](reconstrucao.php) | o roteiro para reescrever o sistema do zero (o `recurso=reconstrucao` da API) |
 | [`.htaccess`](.htaccess) | a proteção dos arquivos internos no Apache (e o login do site com o PHP por FastCGI) |
 | [`nginx-relogios.conf`](nginx-relogios.conf) | o bloco do nginx que protege os arquivos internos |
-| [`testes/`](testes/) | o teste de paridade: o mesmo roteiro pela API em cada banco, e o comparador das respostas; a conferência do layout de todas as telas, do celular ao computador, e do espelho entre a ficha e o painel da Hoje (a mesma ordem das seções e dos quadros) (`layout.cjs`; `LINGUA=en` confere num idioma); a da rolagem: em cada tamanho de tela, cada página rola até o fim, o menu aberto até o último item (sem a página de trás andar) e a gaveta Explicações até a última explicação (`rolagem.cjs`); a da atualização de um banco antigo: o banco instalado por uma versão anterior, com dados, passa para a de agora pelas migrações (`migracao.sh`); a dos dicionários dos idiomas (`textos.php`); a montagem do README de cada idioma (`readme.php`); e a conferência da arquitetura (`arquitetura.php`: as regras que o código tem de seguir) |
+| [`testes/`](testes/) | o teste de paridade: o mesmo roteiro pela API em cada banco, e o comparador das respostas; a conferência do layout de todas as telas, do celular ao computador, e do espelho entre a ficha e o painel da Hoje (a mesma ordem das seções e dos quadros) (`layout.cjs`; `LINGUA=en` confere num idioma); a da rolagem: em cada tamanho de tela, cada página rola até o fim, o menu aberto até o último item (sem a página de trás andar) e a gaveta Explicações até a última explicação (`rolagem.cjs`); a da atualização de um banco antigo: o banco instalado por uma versão anterior, com dados, passa para a de agora pelas migrações (`migracao.sh`); a simulação dos modos de rodízio: cada modo vivido dia a dia, com o relógio adiantado de mentira, conferido contra as regras deste README (`simulacao.sh`); a dos dicionários dos idiomas (`textos.php`); a montagem do README de cada idioma (`readme.php`); e a conferência da arquitetura (`arquitetura.php`: as regras que o código tem de seguir) |
 | [`docs/telas/`](docs/telas/) | as capturas de tela deste README |
 | `README.en.md`, `README.zh-CN.md`, `README.hi.md`, `README.es.md`, `README.fr.md` | este README nos outros idiomas. Não se editam à mão: o [`testes/readme.php`](testes/readme.php) monta cada um juntando o manual traduzido (`textos/manual/<idioma>.md`, as seções que a Ajuda mostra) e o resto traduzido (`textos/readme/<idioma>.md`: o começo, Experimente, a API, a Instalação, Como é por dentro, Como contribuir e a Licença) |
 | [`PORTE.md`](PORTE.md) | o registro do porte da versão anterior |
@@ -2608,7 +2608,7 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
    recurso, com o caminho do campo como chave). Ele é a fonte única: o dicionário do cabeçalho do `api.php` é gerado dele, com
    `php testes/dicionario.php --gravar` (não escreva no cabeçalho à mão).
 6. **Rode o teste de paridade** ([`testes/`](testes/)) nos quatro bancos antes de mandar (o GitHub também roda, a cada push
-   no `main`: o teste de paridade, a atualização de um banco antigo, a documentação, o layout e a rolagem, em [`.github/workflows/testes.yml`](.github/workflows/testes.yml);
+   no `main`: o teste de paridade, a atualização de um banco antigo, a documentação, a simulação dos modos de rodízio, o layout e a rolagem, em [`.github/workflows/testes.yml`](.github/workflows/testes.yml);
    o resultado aparece na aba **Actions** e no ✓ / ✗ ao lado de cada commit): `testes/paridade.sh`, com os
    bancos no ar, tem de terminar com `Tudo igual.` Ele confere também a documentação: o cabeçalho é o que a ajuda gera, e
    todo campo das respostas está explicado. Confere a arquitetura ([`testes/arquitetura.php`](testes/arquitetura.php), que
@@ -2617,7 +2617,8 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
    constante do `config.php` estão documentadas, e as outras regras listadas no começo do arquivo. E falha se o PHP der
    qualquer aviso (Warning, Notice, Deprecated) durante a rodada. Mexeu nas telas? Rode também a conferência do layout
    (`testes/paridade.sh --layout sqlite`): `0 problemas`; e a da rolagem (`testes/paridade.sh --rolagem sqlite`):
-   `A rolagem confere`.
+   `A rolagem confere`. Mexeu no rodízio? Rode a simulação dos modos (`testes/simulacao.sh`, com o `faketime` instalado):
+   `Os 19 modos conferem`.
 7. **Todo texto novo passa pelo `t()`** (o `api.js` e o `textos/funcoes.php` têm a função), com o português como chave e os
    parâmetros entre chaves: `t("Excluir {1}?", {1: nome})`, nunca `"Excluir " + nome + "?"`. Nenhum texto escrito direto nas telas nem na API: o GitHub confere de dois jeitos. A regra 11 do `testes/arquitetura.php` recusa o texto entre aspas que vai para a tela fora do `t()` (o que não se traduz de propósito, como a marca, vai no `fixo("...")`), e `LINGUA=zh-CN testes/paridade.sh --textos sqlite` abre todas as telas com o sistema inteiro em chinês e acusa qualquer palavra em letra latina que não seja dado de quem usa nem venha do dicionário. Depois, traduza nos cinco
    arquivos de `textos/` e rode `php testes/textos.php` (o teste de paridade também roda): tem de terminar sem falta.

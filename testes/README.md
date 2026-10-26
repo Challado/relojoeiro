@@ -212,16 +212,66 @@ Os bancos e o acesso são os do teste de paridade, com outro nome de banco (`TES
 arquivo do Firebird ganha `_mig` no nome), **apagado e recriado**; os servidores sobem a partir da porta `TESTE_PORTA_MIG`
 (padrão 8150, duas por banco).
 
+# A simulação dos modos de rodízio
+
+O [`simulacao.sh`](simulacao.sh) vive cada modo de rodízio dia a dia, do jeito que o sistema roda de verdade, e confere o
+resultado contra as regras do README ([Os modos de rodízio](../README.md#os-modos-de-rodízio), [O roteiro do
+modo](../README.md#o-roteiro-do-modo), [O rodízio manual](../README.md#o-rodízio-manual), [A escala
+inteligente](../README.md#a-escala-inteligente)). O tempo passa de mentira: o servidor (`php -S`), o cron e o roteiro rodam com
+o [libfaketime](https://github.com/wolfcw/libfaketime) (`apt install faketime`), e o roteiro escreve a data e a hora num arquivo
+que todos leem (`FAKETIME_TIMESTAMP_FILE`). Nada do código do sistema muda para isso.
+
+O [`simulacao.php`](simulacao.php) instala um SQLite novo e monta um modelo (sete relógios de cinco grupos, um indisponível e
+uma semana de uso antes do começo, cada relógio num dia); cada modo começa desse modelo, numa segunda-feira, e vive 28 dias:
+às 07:10 o cron (a rodada da manhã: o plano completado, a escala replanejada, o relógio do dia no pulso), às 12:00 a página
+Hoje (o relógio do dia, quem está no pulso, o plano à frente) e o que o modo faz nesse dia, às 22:30 o cron de novo. Os
+sorteios saem de uma semente diferente em cada rodada do cron (repetível, sem rede). Os 19 modos:
+
+| Modo | O que exercita |
+|---|---|
+| Um por semana (maior nota, sorteio pela nota, aleatório, fila) | a semana inteira com o mesmo relógio, cada forma de escolha |
+| Um por semana, duas semanas, semana no domingo | o horizonte de duas semanas, a semana começando no domingo, um grupo |
+| Semana e fim de semana (sorteio pela nota, fila, semana no domingo) | o trecho de segunda a sexta com um relógio, o fim de semana um por dia |
+| Por dia da semana (sorteio pela nota com o rodízio manual; fila com três semanas) | o grupo de cada dia, o relógio fixo, o dia sem bloco (livre), o rodízio manual |
+| Um por dia (maior nota, sorteio pela nota, fila), garantia de 5 dias | a garantia de rodízio |
+| Um por dia com o ciclo (segunda e domingo) | o ciclo da semana |
+| Aleatório todo dia | o sorteio sem garantia |
+| Um por dia com as trocas à mão | Usando hoje, trocar por… amanhã, os relógios de um período, o período livre, sortear de novo um período, Sem relógio hoje, a próxima semana, Apagar tudo |
+| Escala inteligente, 30 dias, com o rodízio manual | o replanejamento da manhã, o smartwatch dias seguidos, os dias à mão |
+| Personalizado (o roteiro de exemplo do README) | o candidato e os dias do roteiro |
+
+E as regras, dia a dia: todo dia tem relógio (menos os livres), disponível, e ele está no pulso ao meio-dia; o relógio de
+cada dia é o que o plano dizia na véspera (fora da escala); o plano chega ao fim da última das semanas do modo (na escala,
+até o fim dela); cada dia sai do bloco do dia da semana (o grupo com os subgrupos, ou o relógio fixo); "um para o trecho"
+mantém o relógio no trecho dentro da semana; o de ontem fica de fora quando há outro candidato; o ciclo só repete depois de
+todos; a fila tira quem espera há mais tempo; a garantia de rodízio (ninguém parado mais que `max_sem_uso` mais o número de
+candidatos, fora do aleatório e sem as trocas à mão: o dia trocado muda só ele, e os seguintes, sorteados antes, ficam); o
+aleatório tira relógios diferentes; na escala, o smartwatch no máximo 7 dias seguidos; o personalizado só com os
+tradicionais na semana; o rodízio manual (o dia à mão sai como foi escolhido, o livre fica sem relógio e sem ninguém no
+pulso, os dois continuam depois do Sortear de novo e dos crons, e o Decida por mim não repete o de ontem nem o de amanhã);
+trocar o relógio de hoje no próprio dia, desligado (o padrão), é recusado; e o PHP não dá aviso nenhum. Com uma regra
+falhando, ele diz o modo, o dia e o que aconteceu, e mostra o diário do modo (o relógio de cada dia; `*` escolhido à mão).
+Leva uns 4 minutos e termina com 0 se tudo passou:
+
+```sh
+testes/simulacao.sh                     # os 19 modos
+testes/simulacao.sh fifo "por dia"      # só os modos cujo nome tem "fifo" ou "por dia"
+SIMULACAO_DIAS=56 testes/simulacao.sh   # cada modo por 8 semanas
+```
+
+A porta do servidor é a `TESTE_PORTA` (padrão 8191); a pasta da rodada, a `RELOGIOS_TESTE_PASTA` (padrão: uma temporária nova).
+
 # No GitHub, a cada push
 
 O [`.github/workflows/testes.yml`](../.github/workflows/testes.yml) roda os testes no GitHub Actions a cada push no `main` (e
-quando pedido na aba **Actions**, em "Run workflow"), em seis trabalhos ao mesmo tempo:
+quando pedido na aba **Actions**, em "Run workflow"), em sete trabalhos ao mesmo tempo:
 
 - **Arquitetura, idiomas e documentação (sem banco):** o `arquitetura.php`, o `textos.php` (os dicionários, com as listas
   traduzidas no uso, `t(LISTA[...])`, os manuais e os READMEs traduzidos) e o `dicionario.php`;
 - **Paridade (SQLite, PostgreSQL, MariaDB):** os bancos como serviços do GitHub e o `testes/paridade.sh` (com as conferências
   da documentação); depois, o `testes/migracao.sh` nos três, a partir da versão de antes do push (`github.event.before`);
 - **Paridade (SQLite e Firebird):** o mesmo com o Firebird 3, e o `testes/migracao.sh firebird`;
+- **Simulação dos modos de rodízio:** o libfaketime e o `testes/simulacao.sh` (veja acima): os 19 modos, 28 dias cada;
 - **Layout das telas:** o Playwright com o Chromium, o `configuracao-interface.cjs` e o `testes/paridade.sh --layout sqlite`; quando falha, as capturas das
   telas ficam para baixar na página da rodada (Artifacts, "layout");
 - **Rolagem das telas:** o `testes/paridade.sh --rolagem sqlite`: no computador, no tablet de pé e deitado e no celular, cada

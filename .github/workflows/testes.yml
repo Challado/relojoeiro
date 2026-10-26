@@ -3,6 +3,8 @@
 # a dos textos fixos (nenhum texto na tela fora do dicionário: o sistema inteiro em chinês).
 # Nos jobs dos bancos, depois da paridade, o teste da atualização (testes/migracao.sh): um banco instalado pela versão de
 # antes do push, com dados, passa para a de agora pelas migrações, como no servidor de quem usa ao fazer o git pull.
+# A simulação dos modos de rodízio (testes/simulacao.sh): cada modo vivido dia a dia, 28 dias, com o relógio da máquina
+# adiantado de mentira (libfaketime) e o cron de manhã e de noite, conferido contra as regras do README.
 # O resultado aparece na aba Actions do GitHub e no ✓ / ✗ ao lado de cada commit.
 name: Testes
 
@@ -102,6 +104,22 @@ jobs:
         run: testes/migracao.sh firebird
         env:
           MIGRACAO_BASE: ${{ github.event.before }}
+
+  simulacao:
+    name: Simulação dos modos de rodízio (dia a dia, com o relógio adiantado)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: sqlite3, curl, mbstring, fileinfo, dom, zlib, gd, zip
+          coverage: none
+      - name: O libfaketime (o relógio falso do servidor, do cron e do roteiro)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq faketime > /dev/null
+      - name: Cada modo, 28 dias, com o cron de manhã e de noite
+        run: testes/simulacao.sh
 
   layout:
     name: Layout das telas
