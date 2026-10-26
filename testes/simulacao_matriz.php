@@ -103,6 +103,8 @@ function simular_matriz($semana_inicio, $dia)
     }
     $guardados = [];               // data => relógio escolhido à mão, ou "livre"
     $prox_fim = "";                // o fim da próxima semana montada ("" sem ela)
+    $escala_inicio = "amanha";     // a Configuração escala_inicio de agora
+    $estrito = false;              // o fim da escala exato (a parte F: hoje já começou no pulso e cada passo refaz a escala)
     $semana_fim = function ($d) use ($semana_inicio) {
         return data_mais(semana_de($d, $semana_inicio), 6);
     };
@@ -116,9 +118,15 @@ function simular_matriz($semana_inicio, $dia)
         return [$plano, array_flip($p["livres"] ?? []), (string)($p["escala_fim"] ?? "")];
     };
     // o fim esperado do modo ativo, hoje
-    $fim_esperado = function () use (&$ativo, &$parametro, &$prox_fim, $modos, $dia, $semana_inicio) {
+    $fim_esperado = function () use (&$ativo, &$parametro, &$prox_fim, &$escala_inicio, &$estrito, $modos, $dia, $semana_inicio) {
         $m = $modos[$ativo];
         if ($m["tipo"] === "escala") {
+            // os dias do modo contados de hoje ou de amanhã (com o dia de hoje já no pulso, a escala montada antes de ele
+            // começar ou depois); na parte F, exato: de amanhã com a escala_inicio amanha, de hoje com a hoje
+            if ($estrito) {
+                $fim = data_mais($dia, $parametro[$ativo] - 1 + ($escala_inicio === "amanha" ? 1 : 0));
+                return [$fim, $fim];
+            }
             return [data_mais($dia, $parametro[$ativo] - 1), data_mais($dia, $parametro[$ativo])];
         }
         $fim = data_mais(semana_de($dia, $semana_inicio), 7 * $parametro[$ativo] - 1);
@@ -140,7 +148,7 @@ function simular_matriz($semana_inicio, $dia)
         $fim = $max;
         if ($modos[$ativo]["tipo"] === "escala") {
             if ($escala_fim < $min || $escala_fim > $max) {
-                $falhas[] = $onde . ": a escala vai até " . ($escala_fim ?: "nada") . " (devia ir até " . $min . " ou " . $max . ")";
+                $falhas[] = $onde . ": a escala vai até " . ($escala_fim ?: "nada") . " (devia ir até " . $min . ($max !== $min ? " ou " . $max : "") . ")";
             }
             $fim = $escala_fim !== "" && $escala_fim >= $min && $escala_fim <= $max ? $escala_fim : $min;
         }
@@ -353,6 +361,42 @@ function simular_matriz($semana_inicio, $dia)
         $conferir("de volta aos dias de antes e apagar tudo");
     }
 
+    // ---------- F: o primeiro dia da escala (a Configuração escala_inicio), com o dia de hoje já começado no pulso ----------
+    // amanha (o padrão): os dias do modo contam de amanhã; hoje: o de hoje é o 1º dia. Mudar a Configuração refaz a escala na
+    // próxima montagem, e o Sortear de novo, o Apagar um período e o Apagar tudo seguem a escolha; o relógio de hoje não muda
+    $estrito = true;
+    foreach (["escala de 7", "escala de 30"] as $rotulo) {
+        $aplicar($rotulo);
+        [$p0] = $ler();
+        $de_hoje = isset($p0[$dia]) ? (int)$p0[$dia]["relogio_id"] : null;
+        if ($de_hoje === null) {
+            $falhas[] = $nome . " · " . $rotulo . " · o primeiro dia da escala: hoje está sem relógio ao meio-dia";
+        }
+        foreach (["hoje", "amanha", "hoje", "amanha"] as $ini) {
+            $escala_inicio = $ini;
+            $passo = "a escala começando " . ($ini === "hoje" ? "sempre hoje" : "amanhã");
+            escrever(["recurso" => "config", "acao" => "salvar", "escala_inicio" => $ini], true, $nome . " · " . $rotulo . " · " . $passo);
+            $conferir($passo . ", só salvando");
+            escrever(["recurso" => "config", "acao" => "salvar", "escala_inicio" => $ini], true, $nome . " · " . $rotulo . " · " . $passo);
+            $conferir($passo . ", salvando de novo igual");
+            $rodizio(["acao" => "resortear"], "sortear de novo");
+            $conferir($passo . " e sortear de novo");
+            $rodizio(["acao" => "periodo_sortear", "de" => data_mais($dia, 1)], "apagar um período só com o começo");
+            $conferir($passo . " e apagar um período só com o começo");
+            $rodizio(["acao" => "apagar_tudo"], "apagar tudo");
+            $conferir($passo . " e apagar tudo");
+            $salvar($rotulo, 14);
+            $conferir($passo . " e passada a 14 dias");
+            $salvar($rotulo, $modos[$rotulo]["escala_dias"]);
+            $conferir($passo . " e de volta aos dias de antes");
+            [$p1] = $ler();
+            if ($de_hoje !== null && (!isset($p1[$dia]) || (int)$p1[$dia]["relogio_id"] !== $de_hoje)) {
+                $falhas[] = $nome . " · " . $rotulo . " · " . $passo . ": o relógio de hoje, já no pulso, mudou";
+            }
+        }
+    }
+    escrever(["recurso" => "config", "acao" => "salvar", "escala_inicio" => "amanha"], true, $nome);
+
     printf("%-55s %s · %d passos\n", $nome, count($falhas) === $antes_f ? "confere" : (count($falhas) - $antes_f) . " regra(s) falharam", $passos);
     return $passos;
 }
@@ -366,9 +410,17 @@ function simular_matriz_dias($inicio)
     $nome = "matriz do rodízio, os dias passando";
     $antes_f = count($falhas);
     $passos = 0;
+    $rodadas = [];
     foreach (matriz_modos() as $rotulo => $m) {
+        // a escala, com as duas escolhas da Configuração escala_inicio (amanha, o padrão, e hoje)
+        foreach ($m["tipo"] === "escala" ? ["amanha", "hoje"] : ["amanha"] as $ini) {
+            $rodadas[] = [$m["tipo"] === "escala" ? $rotulo . ", começando " . ($ini === "hoje" ? "sempre hoje" : "amanhã") : $rotulo, $m, $ini];
+        }
+    }
+    foreach ($rodadas as [$rotulo, $m, $ini]) {
         voltar_ao_modelo();
         relogio($inicio . " 05:00:00");
+        escrever(["recurso" => "config", "acao" => "salvar", "escala_inicio" => $ini], true, $nome);
         $id = (int)(escrever(["recurso" => "modos", "acao" => "salvar", "id" => 0, "nome" => $rotulo] + $m, true, $nome)["id"] ?? 0);
         escrever(["recurso" => "modos", "acao" => "ativar", "id" => $id], true, $nome);
         $fim_e = "";
@@ -395,6 +447,13 @@ function simular_matriz_dias($inicio)
                 // o fim só muda quando a escala vence
                 if ($fim_e !== "" && $fim !== $fim_e && $fim_e >= data_mais($dia, 1)) {
                     $falhas[] = $onde . ": o fim da escala andou de " . $fim_e . " para " . $fim . " antes de ela vencer";
+                }
+                // a primeira escala (montada às 05:00, com o dia de hoje ainda não começado): os dias do modo contados de hoje; a
+                // seguinte (o cron da manhã no último dia da que vence): começa no dia depois do fim dela, com os dias do modo
+                // inteiros, nas duas escolhas da escala_inicio (de 7 em 7, sem perder nem repetir um dia)
+                $certo_f = $fim_e === "" ? data_mais($dia, $m["escala_dias"] - 1) : data_mais($fim_e, $m["escala_dias"]);
+                if ($fim !== $fim_e && $fim !== $certo_f) {
+                    $falhas[] = $onde . ": a escala " . ($fim_e === "" ? "nova" : "seguinte (a anterior ia até " . $fim_e . ")") . " vai até " . $fim . " (devia ir até " . $certo_f . ")";
                 }
                 $fim_e = $fim;
             } else {

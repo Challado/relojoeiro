@@ -284,7 +284,8 @@ escolhidos à mão e os livres no lugar; fora do período mexido, cada dia com o
 | As ações, em cada modo | sortear de novo um período (com o começo e o fim, só o fim, só o começo), período livre, os relógios de um período, trocar um dia, o rodízio manual, o Sortear de novo, a próxima semana (recusada na escala), as cinco ações de hoje recusadas com o trocar no próprio dia desligado, o Apagar tudo |
 | O trocar no próprio dia ligado, em cada modo | Usando hoje, sortear de novo inclusive hoje, Sem relógio hoje, trocar o relógio de hoje, Apagar tudo inclusive hoje |
 | Os parâmetros | as semanas 2, 3, 1 e 3 (salvando e com o Sortear de novo); a escala de 14, 30, 7, 30 e 14 dias (salvando, com o Sortear de novo e com o Apagar um período só com o começo) e mudada direto no banco (30 e 7) |
-| Os dias passando | cada modo, 20 dias com o cron da manhã: a escala segue o próprio período até vencer |
+| O primeiro dia da escala | a escala de 7 e de 30 dias ao meio-dia (o dia de hoje já no pulso), com a Configuração **A escala inteligente começa** em *Sempre hoje* e *Amanhã*, de um para o outro e de volta: salvando, salvando igual, com o Sortear de novo, o Apagar um período só com o começo, o Apagar tudo e passando a 14 dias. O fim exato (os dias do modo contados de hoje, ou de amanhã) e o relógio de hoje sem mudar |
+| Os dias passando | cada modo, 20 dias com o cron da manhã (a escala com as duas escolhas do primeiro dia): a escala segue o próprio período até vencer, e a seguinte vai até os dias do modo contados do dia em que o cron a monta |
 
 Leva uns 12 minutos e termina com 0 se tudo passou:
 

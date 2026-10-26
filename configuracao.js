@@ -213,6 +213,11 @@ function recarregarConfig(aplicadas, manterPosicao) {
           + parCampo(t("A semana começa"), el("select", {"name": "semana_inicio"}, el("option", {"value": "segunda", "selected": cfg("semana_inicio") !== "domingo"}, t("Na segunda-feira"))
             + el("option", {"value": "domingo", "selected": cfg("semana_inicio") === "domingo"}, t("No domingo"))), null,
             ex("semana", t("A semana começa"), t("A semana do rodízio começa no dia escolhido: o plano vem montado até o último dia da semana, e o ciclo, a próxima semana e o relógio para a semana inteira contam dela.")))
+          // o primeiro dia da escala inteligente: amanhã quando o de hoje já começou no pulso (o padrão) ou sempre hoje
+          + parCampo(t("A escala inteligente começa"), el("select", {"name": "escala_inicio"}, el("option", {"value": "amanha", "selected": cfg("escala_inicio") !== "hoje"}, t("Amanhã, se o dia de hoje já começou no pulso"))
+            + el("option", {"value": "hoje", "selected": cfg("escala_inicio") === "hoje"}, t("Sempre hoje"))), null,
+            ex("escala-inicio", t("A escala inteligente começa"), t("De onde a escala conta os dias do modo (o período dela). <strong>Amanhã, se o dia de hoje já começou no pulso</strong> (o padrão): o dia de hoje que já começou fica de fora da conta, e a escala de 7 dias vai de amanhã até daqui a 7 dias (o mesmo dia da semana aparece duas vezes, hoje e no fim). ")
+              + t("<strong>Sempre hoje</strong>: hoje é o 1º dia, e a escala de 7 dias vai até daqui a 6 (uma semana certa). O relógio de hoje que já começou no pulso não muda nos dois casos. Mudou: a escala é refeita na próxima vez que o plano é montado (a página Hoje, o cron).")))
           // trocar o relógio de hoje no próprio dia: desligado (o padrão), a troca vale a partir de amanhã
           + parCampo(t("Trocar o relógio de hoje no próprio dia"), marca("trocar_hoje", d.trocar_hoje), "check",
             ex("trocar-hoje", t("Trocar o relógio de hoje no próprio dia"), t("Desligado (o padrão), o relógio de hoje fica: o <strong>trocar por…</strong>, o <strong>Usando hoje</strong>, o <strong>Sortear de novo</strong>, o <strong>Sem relógio hoje</strong>, o período e o Rodízio manual valem a partir de amanhã, e o relógio de amanhã se escolhe até hoje. ")

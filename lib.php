@@ -5111,7 +5111,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
             plano_gravar($hoje->format("Y-m-d"), (int)$no_pulso, null, "manual", t("Já estava no pulso pelo rodízio quando o plano de hoje foi montado."));
         }
         if ($modo["escala_dias"] !== null) {
-            if (cfg("escala_fim") === "" || cfg("escala_fim") < $hoje->format("Y-m-d") || cfg("escala_fim") > escala_fim_maximo($modo, $hoje)->format("Y-m-d")
+            if (cfg("escala_fim") === "" || cfg("escala_fim") < $hoje->format("Y-m-d") || cfg("escala_fim") > escala_fim_limite($modo, $hoje)->format("Y-m-d")
                 || cfg("escala_dias_gerada") !== (string)max(1, (int)$modo["escala_dias"])
                 || ((plano_do_dia($hoje->format("Y-m-d")) === null
                 || plano_do_dia($hoje->modify("+1 day")->format("Y-m-d")) === null) && cfg("escala_gerada") !== hoje_da_colecao()->format("Y-m-d"))) {
@@ -8578,12 +8578,28 @@ function simular_lancamento($rid, $tipo, $ini, $fim, $valor, $so_uso = false)
     }
 }
 
-// O fim mais longe que a escala do modo pode ter hoje: escala_dias contados do primeiro dia que ela monta (hoje; amanhã,
-// quando o dia de hoje já começou no pulso com o relógio do plano).
+// O primeiro dia de uma escala que começa agora (o Sortear de novo, o Apagar tudo, a primeira, a de um modo mudado). Pela
+// Configuração (escala_inicio): amanha (o padrão), hoje, ou amanhã quando o dia de hoje já começou no pulso com o relógio do
+// plano; hoje, sempre hoje (o de hoje que já começou conta como o 1º dia, e a escala de 7 dias vai até daqui a 6).
+function escala_comeco_novo($hoje)
+{
+    return cfg("escala_inicio") !== "hoje" && time() >= instante($hoje->format("Y-m-d"), cfg("uso_inicio")) && plano_do_dia($hoje->format("Y-m-d")) !== null
+        ? $hoje->modify("+1 day") : $hoje;
+}
+
+// O fim de uma escala que começa agora: escala_dias contados do primeiro dia dela (escala_comeco_novo).
 function escala_fim_maximo($modo, $hoje)
 {
-    $base = time() >= instante($hoje->format("Y-m-d"), cfg("uso_inicio")) && plano_do_dia($hoje->format("Y-m-d")) !== null ? $hoje->modify("+1 day") : $hoje;
-    return $base->modify("+" . (max(1, (int)$modo["escala_dias"]) - 1) . " days");
+    return escala_comeco_novo($hoje)->modify("+" . (max(1, (int)$modo["escala_dias"]) - 1) . " days");
+}
+
+// O fim mais longe que a escala de agora pode ter: escala_dias contados do primeiro dia dela (config escala_comeco: a nova
+// começa hoje ou amanhã; a seguinte, no dia depois do fim da que venceu). Sem o primeiro dia gravado (uma escala de uma versão
+// de antes), o de uma escala que começa agora.
+function escala_fim_limite($modo, $hoje)
+{
+    $comeco = DateTimeImmutable::createFromFormat("!Y-m-d", cfg("escala_comeco"));
+    return $comeco ? $comeco->modify("+" . (max(1, (int)$modo["escala_dias"]) - 1) . " days") : escala_fim_maximo($modo, $hoje);
 }
 
 // A escala inteligente (o modo ativo com escala_dias): monta o plano de $ini até o fim da escala (escala_fim; vencido ou
@@ -8607,9 +8623,10 @@ function gerar_escala($ini, $ate = null, $nova = false)
         $ini = $hoje->modify("+1 day");
     }
     if ($modo && $modo["escala_dias"] !== null) {
-        // o fim da escala nunca passa de escala_dias a contar do primeiro dia que ela pode mudar (escala_fim_maximo): o fim
-        // gravado por uma escala mais comprida (o modo tinha mais dias) não faz a de agora montar o mês inteiro
+        // o fim da escala nunca passa de escala_dias a contar do primeiro dia dela (escala_fim_limite): o fim gravado por uma
+        // escala mais comprida (o modo tinha mais dias) não faz a de agora montar o mês inteiro
         $maximo = escala_fim_maximo($modo, $hoje);
+        $limite = escala_fim_limite($modo, $hoje);
         // a escala gravada com outro número de dias (escala_dias_gerada: o modo mudou, até antes de salvar o modo apagar o fim)
         // é refeita inteira, como uma nova: de 7 para 30 dias vai até o 30º, de 30 para 7 fica nos 7
         $dias_m = (string)max(1, (int)$modo["escala_dias"]);
@@ -8618,13 +8635,36 @@ function gerar_escala($ini, $ate = null, $nova = false)
             $ate = null;
         }
         $fim = cfg("escala_fim") !== "" ? new DateTimeImmutable(cfg("escala_fim")) : null;
-        if ($nova || $fim === null || $fim < $ini || $fim > $maximo) {
-            $fim = $nova || ($fim !== null && $fim > $maximo) ? $maximo : min($maximo, $ini->modify("+" . ((int)$dias_m - 1) . " days"));
+        if ($nova || $fim === null || $fim > $limite) {
+            // uma escala nova: começa hoje, ou amanhã (escala_comeco_novo)
+            $comeco = escala_comeco_novo($hoje);
+            $fim = $maximo;
+            $limite = $maximo;
+        } elseif ($fim < $ini && $fim <= $hoje) {
+            // a escala venceu (o último dia dela é hoje, já no pulso, ou passou): a seguinte começa no dia depois do fim, com os
+            // dias do modo inteiros (de 7 em 7, sem perder nem repetir um dia); vencida há mais tempo, hoje ou amanhã
+            $comeco = max($fim->modify("+1 day"), escala_comeco_novo($hoje));
+            $fim = $comeco->modify("+" . ((int)$dias_m - 1) . " days");
+            $limite = $fim;
+        } elseif ($fim < $ini) {
+            // um pedido depois do fim (a escala ainda vale): até onde uma escala que começa agora iria
+            $comeco = escala_comeco_novo($hoje);
+            $fim = min($maximo, $ini->modify("+" . ((int)$dias_m - 1) . " days"));
+            $limite = $maximo;
+        } else {
+            $comeco = null;
         }
         // o pedido de um período que passa do fim da escala (o Apagar um período só com o começo vai até o máximo): a escala
-        // vai até ele, sem passar dos dias do modo
+        // vai até ele, sem passar dos dias do modo contados de agora (ou do primeiro dia dela, se for mais longe); passando do
+        // fim de agora, a conta dos dias recomeça (o primeiro dia anda junto)
         if ($ate !== null && $ate > $fim) {
-            $fim = min($ate, $maximo);
+            $fim = min($ate, max($limite, $maximo));
+            if ($fim > $limite) {
+                $comeco = $fim->modify("-" . ((int)$dias_m - 1) . " days");
+            }
+        }
+        if ($comeco !== null) {
+            cfg_set("escala_comeco", $comeco->format("Y-m-d"));
         }
         cfg_set("escala_fim", $fim->format("Y-m-d"));
         cfg_set("escala_dias_gerada", $dias_m);

@@ -1,4 +1,4 @@
-<!-- origem: 876e187d9e4a853f8aeb4cdbf8bc6ff3931a51fa -->
+<!-- origem: 43e90d4fdecad72fd4300b365a84ffb9593df8f4 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -437,7 +437,7 @@ and only their *what to do* is redone (the simulated charge changes with the new
 rebuild the whole schedule.
 
 The schedule **goes up to the mode's days** (from 7 to 730, on the Rotation modes page), counted from today (from tomorrow,
-if today has already started on the wrist). Changed the active mode's days, from 7 to 30 or from 30 to 7: the end of the
+if today has already started on the wrist; with **The smart schedule starts** set to *Always today*, in Settings, today is always day 1, and the 7-day schedule runs to 6 days from now). When the period ends, the next one starts the day after its last day, with the mode's full days (7 by 7, without losing or repeating a day), with either choice. Changed the active mode's days, from 7 to 30 or from 30 to 7: the end of the
 schedule is dropped, and the next build (the Today page, the cron) already uses the new days (the schedule keeps how many days
 it was generated with: another number in the mode, it is rebuilt whole). **Draw again** and **Erase all** always start a new
 schedule with the mode's current days. **Erase a period** with only the start erases from it to the end of the plan and builds
@@ -1386,6 +1386,7 @@ each line.
 | **A forgotten sun session closes at** (`sol_fim`, which saves the "closes at" of the In the sun type) | whoever put it in the sun and forgot the **Took off** has the session closed at this time. Default: 18:00. |
 | **Take out of the sun automatically** (`sol_auto_fim`) | the checkbox next to the sun time: checked, the solar leaves the sun on its own at that time; unchecked, the sun session stays open until **Take out of the sun** (if forgotten, it keeps charging in the calculation), and the time stays saved for when the box is checked again. Default: checked. |
 | **The week starts** (`semana_inicio`) | the first day of the rotation week: **On Monday** (`segunda`) or **On Sunday** (`domingo`). The plan of the [rotation modes](#os-modos-de-rodízio) comes built up to the last day of the week (Sunday or Saturday), and the cycle, the next week and the watch for the whole week count from it; it applies to the next draws (what is already in the plan stays; **Draw again** rebuilds it). The `SEMANA_DO_ANO()` function of the formulas is still the ISO week. Default: Monday. |
+| **The smart schedule starts** (`escala_inicio`) | where the [smart schedule](#a-escala-inteligente) counts the mode's days from: **Tomorrow, if today has already started on the wrist** (`amanha`, the default: today, once started, is left out of the count, and the 7-day schedule runs from tomorrow to 7 days from now, with today's weekday showing up again at the end) or **Always today** (`hoje`: today is day 1, and the 7-day schedule runs to 6 days from now). Today's watch that has already started on the wrist doesn't change in either case. Changed it: the end of the schedule is erased, and the next build (the Today page, the cron) redoes the schedule counting from the new first day. |
 | **Change today's watch on the same day** (`trocar_hoje`) | unticked (the default), today's watch stays: the **change to…** and the **choose…** of today, **Wearing today**, **Draw again** *including today*, **No watch today** and the **Including today** of Delete everything don't show, in the Manual rotation today stays fixed, and **Draw again** applies from tomorrow even with the day not yet started (the API refuses what would change today's): tomorrow's watch is chosen by today. Ticked, today's is also changed on the same day, and the new one becomes the one on the wrist from now on. The wrist markings (**Put on** and **Took off**) stay free in both cases. Default: unticked. |
 | **Charge limit** (`carga_limiar`) | the charge (%) at which the alerts say to charge or wind; a watch's **Charge limit** field takes its place. From 1 to 99. Default: 20. |
 | **Solar limit** (`sol_limiar`) | the charge (%) at which the solar should go into the sun. From 1 to 99. Default: 70. |

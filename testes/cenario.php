@@ -1791,6 +1791,27 @@ foreach ([[30, null, "salvar o modo com 30 dias"], [30, "resortear", "sortear de
     }
 }
 ler("escala de 7, 30 e 7 dias de novo", ["recurso" => "plano", "dias" => 45]);
+// o primeiro dia da escala (a Configuração escala_inicio): hoje, o de hoje é sempre o 1º dia (a escala de 7 vai até daqui a
+// 6, a qualquer hora); amanha (o padrão), de amanhã quando o dia de hoje já começou no pulso. Mudar refaz a escala na próxima
+// montagem, e o Sortear de novo segue a escolha; outro valor é recusado
+escrever(["recurso" => "config", "acao" => "salvar", "escala_inicio" => "ontem"], false);
+foreach ([["hoje", null, "salvar sempre hoje"], ["hoje", "resortear", "sempre hoje e sortear de novo"], ["amanha", null, "salvar amanhã"],
+    ["amanha", "resortear", "amanhã e sortear de novo"], ["hoje", "apagar_tudo", "sempre hoje e apagar tudo"]] as [$ini_e, $acao_e, $nome_e]) {
+    escrever(["recurso" => "config", "acao" => "salvar", "escala_inicio" => $ini_e]);
+    if ($acao_e !== null) {
+        escrever(["recurso" => "rodizio", "acao" => $acao_e]);
+    }
+    chamar("GET", ["recurso" => "hoje"]);
+    $fim_e = $fim_escala();
+    $alem_e = $sorteados_alem($fim_e !== "" ? $fim_e : $em(7));
+    $certo_e = $ini_e === "hoje" ? $fim_e === $em(6) : ($fim_e === $em(6) || $fim_e === $em(7));
+    if (!$certo_e || count($alem_e) > 0) {
+        $falhas[] = "escala começando " . $ini_e . ": " . $nome_e . " deixou o fim em " . ($fim_e !== "" ? $fim_e : "nenhum") . " (devia ser "
+            . ($ini_e === "hoje" ? $em(6) : $em(6) . " ou " . $em(7)) . ")" . (count($alem_e) > 0 ? "; sorteados depois: " . implode(", ", array_slice($alem_e, 0, 5)) : "");
+    }
+}
+ler("escala começando sempre hoje", ["recurso" => "config"]);
+escrever(["recurso" => "config", "acao" => "salvar", "escala_inicio" => "amanha"]);
 
 $texto = json_encode($foto, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_PRESERVE_ZERO_FRACTION | JSON_INVALID_UTF8_SUBSTITUTE);
 if ($texto === false) {

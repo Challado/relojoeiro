@@ -4649,6 +4649,9 @@ function op_config($acao, $d)
         if (array_key_exists("semana_inicio", $d) && !in_array((string)$d["semana_inicio"], ["", "segunda", "domingo"], true)) {
             $erros[] = t("A semana começa na segunda ou no domingo (vazio: segunda).");
         }
+        if (array_key_exists("escala_inicio", $d) && !in_array((string)$d["escala_inicio"], ["", "amanha", "hoje"], true)) {
+            $erros[] = t("O primeiro dia da escala inteligente: amanha (hoje, ou amanhã quando o dia de hoje já começou no pulso) ou hoje (sempre hoje; vazio: amanha).");
+        }
         if (array_key_exists("hora_relogio", $d) && !in_array((string)$d["hora_relogio"], ["", "analogico", "digital", "anadigi", "ambos"], true)) {
             $erros[] = t("Relógio da Hora certa: analogico, digital, anadigi (os dois no mesmo relógio) ou ambos (um ao lado do outro).");
         }
@@ -4682,7 +4685,12 @@ function op_config($acao, $d)
                     sis_set("senha_" . $k, (string)(int)$d["senha_" . $k]);
                 }
             }
-            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina", "hora_relogio", "semana_inicio", "trocar_hoje", "atualizar_segundos", "relojinho_modo", "calibre_campos"] as $k) {
+            // o primeiro dia da escala mudou: o fim dela sai, e a próxima montagem (a página Hoje, o cron) refaz a escala contando do
+            // primeiro dia novo (como mudar os dias do modo)
+            if (array_key_exists("escala_inicio", $d) && (cfg("escala_inicio") === "hoje") !== (trim((string)$d["escala_inicio"]) === "hoje")) {
+                cfg_set("escala_fim", "");
+            }
+            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina", "hora_relogio", "semana_inicio", "escala_inicio", "trocar_hoje", "atualizar_segundos", "relojinho_modo", "calibre_campos"] as $k) {
                 if (array_key_exists($k, $d)) {
                     cfg_set($k, trim((string)$d[$k]));
                 }

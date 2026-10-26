@@ -1007,6 +1007,9 @@
  *     config.escala_gerada           o dia em que a escala foi gerada pela última vez (texto AAAA-MM-DD)
  *     config.escala_dias_gerada      com quantos dias do modo a escala foi gerada (texto; outro número no modo ativo: a escala é refeita
  *                                    inteira na próxima montagem)
+ *     config.escala_comeco           o primeiro dia da escala inteligente gerada (texto AAAA-MM-DD): a nova começa hoje ou amanhã (pela
+ *                                    escala_inicio); a seguinte, no dia depois do fim da que venceu; a escala vai até escala_dias contados
+ *                                    dele
  *     config.proxima_semana_fim      o último dia da próxima semana montada pela proxima_semana (texto AAAA-MM-DD): o Sortear de novo refaz
  *                                    o plano até ele
  *     config.horario_manha           a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)
@@ -1039,6 +1042,9 @@
  *                                    analógico) ou ambos (um ao lado do outro); vazio: ambos
  *     config.semana_inicio           o primeiro dia da semana do rodízio: segunda ou domingo (o plano vem montado até o último dia da
  *                                    semana; o ciclo, a próxima semana e o relógio para a semana inteira contam dela); vazio: segunda
+ *     config.escala_inicio           de onde a escala inteligente conta os dias do modo: amanha ou vazio (o padrão): hoje, ou amanhã quando
+ *                                    o dia de hoje já começou no pulso; hoje: sempre hoje (o de hoje que já começou é o 1º dia: a escala de
+ *                                    7 dias vai até daqui a 6)
  *     config.trocar_hoje             1: o relógio de hoje se troca no próprio dia; 0 ou vazio (o padrão): só a partir de amanhã (o que
  *                                    trocaria o de hoje é recusado, e o Sortear de novo vale de amanhã)
  *     config.idioma                  o idioma padrão da instalação (pt-BR, en, zh-CN, hi, es, fr; vazio: o do navegador, senão português)
@@ -3709,6 +3715,9 @@
  *     config.escala_gerada           o dia em que a escala foi gerada pela última vez (texto AAAA-MM-DD)
  *     config.escala_dias_gerada      com quantos dias do modo a escala foi gerada (texto; outro número no modo ativo: a escala é refeita
  *                                    inteira na próxima montagem)
+ *     config.escala_comeco           o primeiro dia da escala inteligente gerada (texto AAAA-MM-DD): a nova começa hoje ou amanhã (pela
+ *                                    escala_inicio); a seguinte, no dia depois do fim da que venceu; a escala vai até escala_dias contados
+ *                                    dele
  *     config.proxima_semana_fim      o último dia da próxima semana montada pela proxima_semana (texto AAAA-MM-DD): o Sortear de novo refaz
  *                                    o plano até ele
  *     config.horario_manha           a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)
@@ -3743,6 +3752,9 @@
  *                                    analógico) ou ambos (um ao lado do outro); vazio: ambos
  *     config.semana_inicio           o primeiro dia da semana do rodízio: segunda ou domingo (o plano vem montado até o último dia da
  *                                    semana; o ciclo, a próxima semana e o relógio para a semana inteira contam dela); vazio: segunda
+ *     config.escala_inicio           de onde a escala inteligente conta os dias do modo: amanha ou vazio (o padrão): hoje, ou amanhã quando
+ *                                    o dia de hoje já começou no pulso; hoje: sempre hoje (o de hoje que já começou é o 1º dia: a escala de
+ *                                    7 dias vai até daqui a 6)
  *     config.trocar_hoje             1: o relógio de hoje se troca no próprio dia; 0 ou vazio (o padrão): só a partir de amanhã (o que
  *                                    trocaria o de hoje é recusado, e o Sortear de novo vale de amanhã)
  *     fuso_sistema                   o fuso do sistema (o FUSO do config.php, ou o do PHP): o das datas gravadas no banco e o de quem não
