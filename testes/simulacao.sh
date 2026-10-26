@@ -36,8 +36,16 @@ export FAKETIME_TIMESTAMP_FILE="$PASTA/relogio.txt"
 export FAKETIME_NO_CACHE=1
 export FAKETIME_DONT_FAKE_MONOTONIC=1
 # o começo: uma segunda-feira, longe de hoje (nada do resultado depende do dia em que o teste roda)
-echo "2027-01-04 05:00:00" > "$FAKETIME_TIMESTAMP_FILE"
+echo "2027-01-04 05:00:00" > "$FAKETIME_TIMESTAMP_FILE.novo" && mv "$FAKETIME_TIMESTAMP_FILE.novo" "$FAKETIME_TIMESTAMP_FILE"
 export LD_PRELOAD="$LIB"
+# o relógio falso funciona? (o libfaketime de cada versão lê o arquivo do seu jeito: o 0.9.11 em diante, o do Ubuntu 26.04, para o
+# processo se ler o arquivo vazio; por isso o roteiro troca o arquivo inteiro de uma vez, com rename, e nunca o esvazia)
+agora_falso=$(date '+%Y-%m-%d %H:%M')
+if [ "$agora_falso" != "2027-01-04 05:00" ]; then
+  echo "O relógio falso não pegou: o date diz $agora_falso (devia dizer 2027-01-04 05:00)." >&2
+  echo "libfaketime: $LIB ($(dpkg-query -W -f='${Version}' libfaketime 2>/dev/null || echo 'versão desconhecida')); o arquivo: $(od -c "$FAKETIME_TIMESTAMP_FILE" | head -2 | tr '\n' ' ')" >&2
+  exit 2
+fi
 
 SERVIDOR=""
 derrubar() {

@@ -40,11 +40,14 @@ date_default_timezone_set("America/Sao_Paulo");
 $INICIO = "2027-01-04";   // uma segunda-feira
 $falhas = [];
 
-// o relógio falso: todos (o servidor, o cron e este roteiro) passam a ver este instante
+// o relógio falso: todos (o servidor, o cron e este roteiro) passam a ver este instante. Escrito ao lado e trocado de uma
+// vez (rename): o libfaketime relê o arquivo a cada leitura do relógio, e o servidor lê o relógio o tempo todo; pego vazio
+// no meio de uma escrita (o file_put_contents esvazia antes de escrever), ele derruba o processo
 function relogio($instante)
 {
     global $RELOGIO;
-    file_put_contents($RELOGIO, $instante . "\n");
+    file_put_contents($RELOGIO . ".novo", $instante . "\n");
+    rename($RELOGIO . ".novo", $RELOGIO);
     clearstatcache();
 }
 

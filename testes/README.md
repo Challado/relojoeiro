@@ -219,7 +219,9 @@ resultado contra as regras do README ([Os modos de rodízio](../README.md#os-mod
 modo](../README.md#o-roteiro-do-modo), [O rodízio manual](../README.md#o-rodízio-manual), [A escala
 inteligente](../README.md#a-escala-inteligente)). O tempo passa de mentira: o servidor (`php -S`), o cron e o roteiro rodam com
 o [libfaketime](https://github.com/wolfcw/libfaketime) (`apt install faketime`), e o roteiro escreve a data e a hora num arquivo
-que todos leem (`FAKETIME_TIMESTAMP_FILE`). Nada do código do sistema muda para isso.
+que todos leem (`FAKETIME_TIMESTAMP_FILE`), trocado sempre de uma vez (escrito ao lado e posto no lugar com `rename`: o
+libfaketime 0.9.11 em diante, o do Ubuntu 26.04, derruba o processo que lê o arquivo vazio, e o servidor lê o relógio o tempo
+todo). Antes de começar, o `simulacao.sh` confere que o relógio falso pegou. Nada do código do sistema muda para isso.
 
 O [`simulacao.php`](simulacao.php) instala um SQLite novo e monta um modelo (sete relógios de cinco grupos, um indisponível e
 uma semana de uso antes do começo, cada relógio num dia); cada modo começa desse modelo, numa segunda-feira, e vive 28 dias:
