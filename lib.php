@@ -8562,8 +8562,10 @@ function escala_fim_maximo($modo, $hoje)
 // diante saem antes; os escolhidos à mão e os livres ficam. O dia de hoje que já começou no pulso não muda. Com $ate, só os
 // sorteados de $ini a $ate saem e são sorteados de novo (o pedido de um período, de um dia): os outros dias ficam com o
 // relógio que têm, e só o "o que fazer" deles é refeito (a carga simulada muda com o período novo); $ate antes de $ini: nada
-// sai, só se preenche o que está vago (o relógio que saiu do rodízio) e se refaz o "o que fazer". Devolve quantos dias gravou.
-function gerar_escala($ini, $ate = null)
+// sai, só se preenche o que está vago (o relógio que saiu do rodízio) e se refaz o "o que fazer". $nova (o Sortear de novo, o
+// Apagar tudo): uma escala nova, com o fim nos escala_dias do modo de agora (o fim gravado, mais curto ou mais comprido, não
+// vale). Devolve quantos dias gravou.
+function gerar_escala($ini, $ate = null, $nova = false)
 {
     $gravados = 0;
     $modo = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]);
@@ -8579,8 +8581,8 @@ function gerar_escala($ini, $ate = null)
         // gravado por uma escala mais comprida (o modo tinha mais dias) não faz a de agora montar o mês inteiro
         $maximo = escala_fim_maximo($modo, $hoje);
         $fim = cfg("escala_fim") !== "" ? new DateTimeImmutable(cfg("escala_fim")) : null;
-        if ($fim === null || $fim < $ini || $fim > $maximo) {
-            $fim = $fim !== null && $fim > $maximo ? $maximo : min($maximo, $ini->modify("+" . (max(1, (int)$modo["escala_dias"]) - 1) . " days"));
+        if ($nova || $fim === null || $fim < $ini || $fim > $maximo) {
+            $fim = $nova || ($fim !== null && $fim > $maximo) ? $maximo : min($maximo, $ini->modify("+" . (max(1, (int)$modo["escala_dias"]) - 1) . " days"));
             cfg_set("escala_fim", $fim->format("Y-m-d"));
         }
         if ($ate === null) {

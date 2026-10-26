@@ -486,11 +486,12 @@ période ou la laisser libre, choisir les montres d'une période, la Rotation ma
 gardent la montre qu'ils ont, et seul leur *quoi faire* est refait (la charge simulée change avec la nouvelle période).
 **Refaire le tirage** et **Tout effacer** refont le planning entier.
 
-Le planning **ne dépasse jamais les jours du mode** (de 7 à 730, sur la page Modes de rotation), comptés à partir d'aujourd'hui
-(de demain, si la journée d'aujourd'hui a déjà commencé au poignet). Vous avez raccourci le mode, de 30 à 7 jours par exemple :
-la prochaine fois que le plan est construit (la page Aujourd'hui, le cron, un Effacer), les jours tirés après le 7e partent.
-**Effacer une période** avec seulement le début efface jusqu'à la fin du plan et ne reconstruit que jusqu'à la fin du planning ;
-les jours d'après restent sans plan jusqu'au prochain planning.
+Le planning **va jusqu'aux jours du mode** (de 7 à 730, sur la page Modes de rotation), comptés à partir d'aujourd'hui (de
+demain, si la journée d'aujourd'hui a déjà commencé au poignet). Vous avez changé les jours du mode actif, de 7 à 30 ou de 30 à
+7 : la fin du planning est retirée, et la construction suivante (la page Aujourd'hui, le cron) utilise déjà les nouveaux jours.
+**Refaire le tirage** et **Tout effacer** commencent toujours un nouveau planning avec les jours actuels du mode. **Effacer une
+période** avec seulement le début efface jusqu'à la fin du plan et ne reconstruit que jusqu'à la fin du planning ; les jours
+d'après restent sans plan jusqu'au prochain planning.
 
 ### Consommation mesurée par les relevés
 

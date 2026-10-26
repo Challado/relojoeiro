@@ -4025,7 +4025,7 @@ function op_rodizio($acao, $d)
         sql("DELETE FROM plano WHERE data >= ? AND (origem <> 'manual' OR data = ?)", [$desde->format("Y-m-d"), $hoje->format("Y-m-d")]);
         sql("DELETE FROM plano_livre WHERE data = ? AND data >= ?", [$hoje->format("Y-m-d"), $desde->format("Y-m-d")]);
         if ($escala) {
-            gerar_escala($desde);
+            gerar_escala($desde, null, true);
         }
         garantir_plano($hoje, $escala ? null : $ate_s, $acao !== "resortear_hoje");
         $depois = plano_do_dia($hoje->format("Y-m-d"));
@@ -4269,7 +4269,7 @@ function op_rodizio($acao, $d)
         sql("DELETE FROM plano WHERE data >= ?", [$desde_t->format("Y-m-d")]);
         sql("DELETE FROM plano_livre WHERE data >= ?", [$desde_t->format("Y-m-d")]);
         if ($escala) {
-            gerar_escala($desde_t);
+            gerar_escala($desde_t, null, true);
         }
         garantir_plano($hoje, null, !$com_hoje);
         $depois = plano_do_dia($hoje->format("Y-m-d"));
@@ -4497,6 +4497,11 @@ function op_modos($acao, $d)
             $escala_dias = $escala_dias === null ? null : (int)$escala_dias;
             if ($atual) {
                 sql("UPDATE modo SET nome = ?, tipo = ?, selecao = ?, escala_dias = ?, semanas = ?, ciclo = ?, roteiro = ? WHERE id = ?", [$nome, $tipo, $sel, $escala_dias, (int)$semanas, $ciclo, $roteiro !== "" ? $roteiro : null, $id]);
+                // a escala ativa com outro número de dias: o fim gravado sai, e a próxima montagem (a página Hoje, o cron, o Sortear
+                // de novo) faz a escala com os dias novos (de 7 para 30: até o 30º dia; de 30 para 7: só os 7)
+                if ((int)$id === modo_ativo() && ($atual["escala_dias"] === null ? null : (int)$atual["escala_dias"]) !== $escala_dias) {
+                    cfg_set("escala_fim", "");
+                }
             } else {
                 sql("INSERT INTO modo (colecao_id, nome, tipo, selecao, escala_dias, semanas, ciclo, roteiro, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [colecao_atual(), $nome, $tipo, $sel, $escala_dias, (int)$semanas, $ciclo, $roteiro !== "" ? $roteiro : null,
                     (int)valor("SELECT COALESCE(MAX(ordem), 0) + 1 FROM modo")]);

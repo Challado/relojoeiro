@@ -1758,6 +1758,39 @@ foreach ([["periodo_sortear", ["de" => $em(2)], "apagar um período só com o co
     }
 }
 ler("escala encurtada para 7 dias", ["recurso" => "plano", "dias" => 45]);
+// e o contrário: a escala de 7 passa a 30 dias. Só de salvar o modo, a página Hoje já monta até o 30º dia; o Sortear de novo
+// também (antes, os dois ficavam no fim da escala de 7). E de volta a 7, o Sortear de novo encolhe para os 7.
+$fim_escala = function () {
+    return chamar("GET", ["recurso" => "plano", "dias" => 45])["json"]["escala_fim"] ?? "";
+};
+foreach ([[30, null, "salvar o modo com 30 dias"], [30, "resortear", "sortear de novo com 30 dias"], [7, "resortear", "sortear de novo de volta a 7 dias"]] as [$dias_e, $acao_e, $nome_e]) {
+    escrever(["recurso" => "modos", "acao" => "salvar", "id" => $inteligente, "nome" => "Escala inteligente", "selecao" => "inteligente", "escala_dias" => $dias_e,
+        "blocos" => [["nome" => "Todo dia", "dias" => [1, 2, 3, 4, 5, 6, 7], "no_id" => 0, "um_por" => "dia", "relogio_id" => 0]]]);
+    if ($acao_e !== null) {
+        escrever(["recurso" => "rodizio", "acao" => $acao_e]);
+    }
+    chamar("GET", ["recurso" => "hoje"]);
+    $fim_e = $fim_escala();
+    // todo dia de amanhã até o fim da escala tem relógio no plano (ou é livre)
+    $lido_e = chamar("GET", ["recurso" => "plano", "dias" => 45])["json"];
+    $tem_e = array_merge(array_column($lido_e["plano"] ?? [], "data"), $lido_e["livres"] ?? []);
+    $vagos_e = [];
+    for ($k = 1; $em($k) <= $fim_e && $k <= 40; $k++) {
+        if (!in_array($em($k), $tem_e, true)) {
+            $vagos_e[] = $em($k);
+        }
+    }
+    if (count($vagos_e) > 0) {
+        $falhas[] = "escala de " . $dias_e . " dias: " . $nome_e . " deixou dias sem plano até o fim (" . $fim_e . "): " . implode(", ", array_slice($vagos_e, 0, 5));
+    }
+    $alem_e = $sorteados_alem($em($dias_e));
+    // o fim: escala_dias contados de hoje ou de amanhã (com o dia de hoje já no pulso)
+    if ($fim_e < $em($dias_e - 1) || $fim_e > $em($dias_e) || count($alem_e) > 0) {
+        $falhas[] = "escala de " . $dias_e . " dias: " . $nome_e . " deixou o fim em " . ($fim_e !== "" ? $fim_e : "nenhum") . " (devia ser " . $em($dias_e - 1) . " ou " . $em($dias_e) . ")"
+            . (count($alem_e) > 0 ? "; sorteados depois: " . implode(", ", array_slice($alem_e, 0, 5)) : "");
+    }
+}
+ler("escala de 7, 30 e 7 dias de novo", ["recurso" => "plano", "dias" => 45]);
 
 $texto = json_encode($foto, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_PRESERVE_ZERO_FRACTION | JSON_INVALID_UTF8_SUBSTITUTE);
 if ($texto === false) {

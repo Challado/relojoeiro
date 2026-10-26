@@ -1,4 +1,4 @@
-<!-- origem: 95e8117cb31b022ade3280b2e5b7634816ddcb13 -->
+<!-- origem: 74efd325e13fa10f08a5efc95c6a8e1b46b25b68 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -424,11 +424,11 @@ un período, elegir los relojes de un período, la Rotación manual) **cambia so
 tienen, y solo se rehace su *qué hacer* (la carga simulada cambia con el período nuevo). El **Sortear de nuevo** y el **Borrar
 todo** rehacen la escala entera.
 
-La escala **nunca pasa de los días del modo** (de 7 a 730, en la página Modos de rotación), contados desde hoy (desde mañana,
-si el día de hoy ya empezó en la muñeca). ¿Acortó el modo, de 30 a 7 días por ejemplo? La próxima vez que se monta el plan (la
-página Hoy, el cron, un Borrar), los días sorteados después del 7.º salen. **Borrar un período** solo con el comienzo borra
-hasta el final del plan y vuelve a montar solo hasta el final de la escala; los días después de ella quedan sin plan hasta la
-próxima escala.
+La escala **va hasta los días del modo** (de 7 a 730, en la página Modos de rotación), contados desde hoy (desde mañana, si el
+día de hoy ya empezó en la muñeca). ¿Cambió los días del modo activo, de 7 a 30 o de 30 a 7? El fin de la escala se quita, y el
+próximo montaje (la página Hoy, el cron) ya monta con los días nuevos. **Sortear de nuevo** y **Borrar todo** siempre empiezan
+una escala nueva con los días actuales del modo. **Borrar un período** solo con el comienzo borra hasta el final del plan y
+vuelve a montar solo hasta el final de la escala; los días después de ella quedan sin plan hasta la próxima escala.
 
 ### Consumo medido por las lecturas {#gasto-medido-pelas-leituras}
 
