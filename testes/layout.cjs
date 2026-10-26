@@ -227,6 +227,19 @@ async function auditarTela(b, tela, fp, relatorio, total) {
     }
     const vistos = new Set();
     probs = probs.filter((x) => { const k = x.tipo + x.quem; if (vistos.has(k)) return false; vistos.add(k); return true; });
+    // o problema no menu do alto: como ele estava na hora (aberto pelo botão? o CSS do celular valia?), para saber a causa sem a captura
+    if (probs.some((x) => /nav\.topo|menu-itens/.test(x.quem))) {
+      const menu = await p.evaluate(() => {
+        const topo = document.querySelector('nav.topo');
+        const itens = document.getElementById('menu-itens');
+        const botao = document.querySelector('.menu-botao');
+        return 'menu: ' + JSON.stringify({ aberto: !!topo && topo.classList.contains('aberto'), botao: botao ? botao.getAttribute('aria-expanded') : null,
+          celular: matchMedia('(max-width: 900px)').matches, largura: innerWidth, documento: document.documentElement.clientWidth,
+          itens: itens ? getComputedStyle(itens).display : null, grupos: [...document.querySelectorAll('.menu-grupo.aberto')].length,
+          foco: document.activeElement ? document.activeElement.tagName + '.' + document.activeElement.className : null, rolagem: scrollY });
+      });
+      probs.forEach((x) => { if (/nav\.topo|menu-itens/.test(x.quem)) x.det += ' [' + menu + ']'; });
+    }
     erros.forEach((e) => probs.push({ tipo: 'erro', det: e, quem: '' }));
     // a captura só serve para olhar: com a máquina carregada (15 tamanhos ao mesmo tempo) ela pode passar do tempo esperando
     // as fontes; tenta de novo, e se falhar outra vez segue sem ela (os problemas já foram conferidos)
