@@ -368,6 +368,28 @@ function simular($m)
             // o Sortear de novo (de amanhã): os dias à mão e o livre ficam
             escrever(["recurso" => "rodizio", "acao" => "resortear"], true, $m["nome"] . " · " . $dia);
         }
+        if ($escala && $i === 10) {
+            // os dias do modo mudados sem passar pelo salvar do modo (como no servidor do Lucas: o modo salvo com 30 dias numa
+            // versão que não apagava o fim): a escala lembra com quantos dias foi gerada e se refaz inteira na página Hoje
+            foreach ([7, 30] as $dias_x) {
+                $pdo = new PDO("sqlite:" . $GLOBALS["BANCO"]);
+                $pdo->exec("UPDATE modo SET escala_dias = " . $dias_x . " WHERE id = " . (int)$modo_id);
+                $pdo = null;
+                $fim_x = (string)(chamar("GET", ["recurso" => "hoje"])["escala_fim"] ?? "");
+                if ($fim_x < data_mais($dia, $dias_x - 1) || $fim_x > data_mais($dia, $dias_x)) {
+                    $erro($dia, "o modo passou a " . $dias_x . " dias e a escala ficou até " . ($fim_x ?: "nada") . " (devia ir até " . data_mais($dia, $dias_x) . ")");
+                }
+            }
+        }
+        if ($escala && $i === 12) {
+            // Apagar um período só com o começo (amanhã): monta até onde os 30 dias do modo deixam, a contar de hoje (e não só
+            // até o fim que a escala tinha, de dois dias atrás)
+            escrever(["recurso" => "rodizio", "acao" => "periodo_sortear", "de" => $amanha], true, $m["nome"] . " · " . $dia);
+            $fim_x = (string)(chamar("GET", ["recurso" => "hoje"])["escala_fim"] ?? "");
+            if ($fim_x < data_mais($dia, 29) || $fim_x > data_mais($dia, 30)) {
+                $erro($dia, "apagar um período só com o começo deixou a escala até " . ($fim_x ?: "nada") . " (devia ir até " . data_mais($dia, 30) . ")");
+            }
+        }
         if (!empty($m["trocas"])) {
             $onde_t = $m["nome"] . " · " . $dia;
             $fora_de = function ($evitar) use ($DISPONIVEIS) {

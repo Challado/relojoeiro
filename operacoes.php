@@ -4165,6 +4165,11 @@ function op_rodizio($acao, $d)
         if ($apagar_p && $ate_txt === "" && $de_txt !== "") {
             $ultimo_p = max((string)valor("SELECT MAX(data) FROM plano"), (string)valor("SELECT MAX(data) FROM plano_livre"));
             $ate_txt = max(substr($ultimo_p, 0, 10), $de_txt);
+            // na escala, sem o fim: até onde os dias do modo deixam (a escala de 7 que passou a 30 vai até o 30º dia)
+            $modo_p = $escala ? linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]) : null;
+            if ($modo_p) {
+                $ate_txt = max($ate_txt, escala_fim_maximo($modo_p, $hoje)->format("Y-m-d"));
+            }
         }
         $de_p = DateTimeImmutable::createFromFormat("!Y-m-d", $de_txt);
         $ate_p = DateTimeImmutable::createFromFormat("!Y-m-d", $ate_txt);

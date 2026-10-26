@@ -1005,6 +1005,8 @@
  *                                    separados por vírgula): o cron não manda de novo
  *     config.escala_fim              até que dia vai a escala inteligente gerada (texto AAAA-MM-DD; vazio fora da escala)
  *     config.escala_gerada           o dia em que a escala foi gerada pela última vez (texto AAAA-MM-DD)
+ *     config.escala_dias_gerada      com quantos dias do modo a escala foi gerada (texto; outro número no modo ativo: a escala é refeita
+ *                                    inteira na próxima montagem)
  *     config.horario_manha           a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)
  *     config.horario_noite           a hora da rodada da noite: preparar o relógio de amanhã (HH:MM)
  *     config.max_sem_uso             a garantia de rodízio: nenhum relógio passa desses dias sem uso (0 desliga)
@@ -3703,6 +3705,8 @@
  *                                    separados por vírgula): o cron não manda de novo
  *     config.escala_fim              até que dia vai a escala inteligente gerada (texto AAAA-MM-DD; vazio fora da escala)
  *     config.escala_gerada           o dia em que a escala foi gerada pela última vez (texto AAAA-MM-DD)
+ *     config.escala_dias_gerada      com quantos dias do modo a escala foi gerada (texto; outro número no modo ativo: a escala é refeita
+ *                                    inteira na próxima montagem)
  *     config.horario_manha           a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)
  *     config.horario_noite           a hora da rodada da noite: preparar o relógio de amanhã (HH:MM)
  *     config.max_sem_uso             a garantia de rodízio: nenhum relógio passa desses dias sem uso (0 desliga)

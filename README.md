@@ -468,9 +468,10 @@ refazem a escala inteira.
 
 A escala **vai até os dias do modo** (de 7 a 730, na página Modos de rodízio), contados de hoje (de amanhã, se o dia de hoje
 já começou no pulso). Mudou os dias do modo ativo, de 7 para 30 ou de 30 para 7: o fim da escala sai, e a próxima montagem (a
-página Hoje, o cron) já monta com os dias novos. O **Sortear de novo** e o **Apagar tudo** sempre começam uma escala nova com os
-dias do modo de agora. **Apagar um período** só com o começo apaga até o fim do plano e monta de novo só até o fim da escala;
-os dias depois dela ficam sem plano até a próxima escala.
+página Hoje, o cron) já monta com os dias novos (a escala guarda com quantos dias foi gerada: outro número no modo, ela é
+refeita inteira). O **Sortear de novo** e o **Apagar tudo** sempre começam uma escala nova com os dias do modo de agora.
+**Apagar um período** só com o começo apaga dele até o fim do plano e monta de novo até onde os dias do modo deixam (o modo de
+30 dias vai até o 30º, contado de hoje).
 
 ### Gasto medido pelas leituras
 

@@ -5112,6 +5112,7 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
         }
         if ($modo["escala_dias"] !== null) {
             if (cfg("escala_fim") === "" || cfg("escala_fim") < $hoje->format("Y-m-d") || cfg("escala_fim") > escala_fim_maximo($modo, $hoje)->format("Y-m-d")
+                || cfg("escala_dias_gerada") !== (string)max(1, (int)$modo["escala_dias"])
                 || ((plano_do_dia($hoje->format("Y-m-d")) === null
                 || plano_do_dia($hoje->modify("+1 day")->format("Y-m-d")) === null) && cfg("escala_gerada") !== hoje_da_colecao()->format("Y-m-d"))) {
                 gerar_escala($hoje);
@@ -8580,11 +8581,24 @@ function gerar_escala($ini, $ate = null, $nova = false)
         // o fim da escala nunca passa de escala_dias a contar do primeiro dia que ela pode mudar (escala_fim_maximo): o fim
         // gravado por uma escala mais comprida (o modo tinha mais dias) não faz a de agora montar o mês inteiro
         $maximo = escala_fim_maximo($modo, $hoje);
+        // a escala gravada com outro número de dias (escala_dias_gerada: o modo mudou, até antes de salvar o modo apagar o fim)
+        // é refeita inteira, como uma nova: de 7 para 30 dias vai até o 30º, de 30 para 7 fica nos 7
+        $dias_m = (string)max(1, (int)$modo["escala_dias"]);
+        if (cfg("escala_dias_gerada") !== $dias_m) {
+            $nova = true;
+            $ate = null;
+        }
         $fim = cfg("escala_fim") !== "" ? new DateTimeImmutable(cfg("escala_fim")) : null;
         if ($nova || $fim === null || $fim < $ini || $fim > $maximo) {
-            $fim = $nova || ($fim !== null && $fim > $maximo) ? $maximo : min($maximo, $ini->modify("+" . (max(1, (int)$modo["escala_dias"]) - 1) . " days"));
-            cfg_set("escala_fim", $fim->format("Y-m-d"));
+            $fim = $nova || ($fim !== null && $fim > $maximo) ? $maximo : min($maximo, $ini->modify("+" . ((int)$dias_m - 1) . " days"));
         }
+        // o pedido de um período que passa do fim da escala (o Apagar um período só com o começo vai até o máximo): a escala
+        // vai até ele, sem passar dos dias do modo
+        if ($ate !== null && $ate > $fim) {
+            $fim = min($ate, $maximo);
+        }
+        cfg_set("escala_fim", $fim->format("Y-m-d"));
+        cfg_set("escala_dias_gerada", $dias_m);
         if ($ate === null) {
             sql("DELETE FROM plano WHERE data >= ? AND origem <> 'manual'", [$ini->format("Y-m-d")]);
         } elseif ($ate >= $ini) {

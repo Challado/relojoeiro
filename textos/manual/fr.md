@@ -1,4 +1,4 @@
-<!-- origem: 74efd325e13fa10f08a5efc95c6a8e1b46b25b68 -->
+<!-- origem: 468f6e0fc5e66a82a78d4c23e4b1f7726ef5e75e -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -436,10 +436,11 @@ gardent la montre qu'ils ont, et seul leur *quoi faire* est refait (la charge si
 
 Le planning **va jusqu'aux jours du mode** (de 7 à 730, sur la page Modes de rotation), comptés à partir d'aujourd'hui (de
 demain, si la journée d'aujourd'hui a déjà commencé au poignet). Vous avez changé les jours du mode actif, de 7 à 30 ou de 30 à
-7 : la fin du planning est retirée, et la construction suivante (la page Aujourd'hui, le cron) utilise déjà les nouveaux jours.
-**Refaire le tirage** et **Tout effacer** commencent toujours un nouveau planning avec les jours actuels du mode. **Effacer une
-période** avec seulement le début efface jusqu'à la fin du plan et ne reconstruit que jusqu'à la fin du planning ; les jours
-d'après restent sans plan jusqu'au prochain planning.
+7 : la fin du planning est retirée, et la construction suivante (la page Aujourd'hui, le cron) utilise déjà les nouveaux jours
+(le planning garde avec combien de jours il a été généré : un autre nombre dans le mode, il est refait en entier). **Refaire le
+tirage** et **Tout effacer** commencent toujours un nouveau planning avec les jours actuels du mode. **Effacer une période**
+avec seulement le début efface de lui jusqu'à la fin du plan et reconstruit aussi loin que les jours du mode le permettent (le
+mode de 30 jours va jusqu'au 30e, compté à partir d'aujourd'hui).
 
 ### Consommation mesurée par les relevés {#gasto-medido-pelas-leituras}
 

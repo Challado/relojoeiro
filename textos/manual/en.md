@@ -1,4 +1,4 @@
-<!-- origem: 74efd325e13fa10f08a5efc95c6a8e1b46b25b68 -->
+<!-- origem: 468f6e0fc5e66a82a78d4c23e4b1f7726ef5e75e -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -432,9 +432,10 @@ rebuild the whole schedule.
 
 The schedule **goes up to the mode's days** (from 7 to 730, on the Rotation modes page), counted from today (from tomorrow,
 if today has already started on the wrist). Changed the active mode's days, from 7 to 30 or from 30 to 7: the end of the
-schedule is dropped, and the next build (the Today page, the cron) already uses the new days. **Draw again** and **Erase all**
-always start a new schedule with the mode's current days. **Erase a period** with only the start erases up to the end of the
-plan and builds again only up to the end of the schedule; the days after it stay unplanned until the next schedule.
+schedule is dropped, and the next build (the Today page, the cron) already uses the new days (the schedule keeps how many days
+it was generated with: another number in the mode, it is rebuilt whole). **Draw again** and **Erase all** always start a new
+schedule with the mode's current days. **Erase a period** with only the start erases from it to the end of the plan and builds
+again as far as the mode's days allow (the 30-day mode goes up to the 30th, counted from today).
 
 ### Consumption measured by the readings {#gasto-medido-pelas-leituras}
 
