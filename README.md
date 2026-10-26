@@ -405,7 +405,8 @@ no quadro **Modo de rodízio** da página Hoje (cada um abaixo de uma linha, com
 
 - **Apagar um período**: **De** e **Até**; um dos dois pode ficar vazio (só o **De** apaga dele até o fim do plano; só o
   **Até**, de amanhã até ele). Os dias do período saem do plano, de amanhã em diante (os escolhidos à mão, os sorteados e os
-  livres), e o modo de rodízio monta esses dias de novo. O botão **Apagar** pede confirmação.
+  livres), e o modo de rodízio monta esses dias de novo, só eles: os outros dias ficam como estão (na escala inteligente também). O
+botão **Apagar** pede confirmação.
 - **Apagar tudo**: limpa toda a programação, de amanhã em diante: os dias escolhidos à mão, os sorteados e os livres.
   Marcando **Excluindo hoje**, apaga de hoje em diante (se sair outro relógio para hoje, ele passa a ser o do pulso a partir
   de agora). Depois, o modo de rodízio monta o plano de novo, do zero: até o último dia da última das semanas do modo (as
@@ -430,8 +431,9 @@ cada dia de um período (as férias, uma viagem, um mês inteiro). Ponha o come�
 - para apagar os dias de um período (o modo de rodízio monta esses dias de novo) ou apagar tudo, veja
   [Apagar a programação](#apagar-a-programação).
 
-Fora do período, continua valendo o modo de rodízio de sempre. Os dias escolhidos à mão ficam mesmo quando você sorteia de
-novo ou o cron monta a semana seguinte; na escala inteligente, ela é refeita em volta deles.
+Fora do período, continua valendo o modo de rodízio de sempre, e nada fora dele muda (na escala inteligente também). Os dias
+escolhidos à mão ficam mesmo quando você sorteia de novo ou o cron monta a semana seguinte; na escala inteligente, o Sortear
+de novo e o replanejamento da manhã refazem a escala em volta deles.
 
 **O critério do *Decida por mim*:**
 1. a **nota dos critérios** (os que você cadastra em **Critérios**: dias sem uso, equilíbrio, preferência, carga...), calculada
@@ -456,7 +458,13 @@ Hoje, com *Decida por mim*, continua o relógio que já está no plano.
 5. passa para o dia seguinte.
 
 Toda manhã o cron **replaneja a partir do estado real**. Se você usou outro relógio, esqueceu de carregar ou lançou uma
-leitura diferente da prevista, o plano se corrige sozinho.
+leitura diferente da prevista, o plano se corrige sozinho. Os dias escolhidos à mão e os livres ficam; os sorteados, de hoje
+em diante, são sorteados de novo.
+
+O que você muda num dia ou num período (trocar o relógio de um dia, voltar a sortear um dia, sortear de novo ou deixar livre
+um período, escolher os relógios de um período, o Rodízio manual) **muda só ele**: os outros dias ficam com o relógio que têm,
+e só o *o que fazer* deles é refeito (a carga simulada muda com o período novo). O **Sortear de novo** e o **Apagar tudo**
+refazem a escala inteira.
 
 ### Gasto medido pelas leituras
 

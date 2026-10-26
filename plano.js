@@ -17,7 +17,7 @@ function montarPlano() {
   var ultimo = d.plano_fim;
 
   var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Plano")) + el("div", {"class": "botoes"}, linkRelatorio("plano", {}, t("Relatório do plano"))))
-    + el("p", {"class": "nota"}, t("Modo: {1}{2}{3}. Troque o relógio de qualquer dia em \"trocar por…\": o dia fica escolhido à mão{4}.", {1: h(d.modo || t("nenhum")), 2: d.escala_fim ? t(" · a escala vai até {1}", {1: dataBr(d.escala_fim)}) : "", 3: ultimo ? t(" · o plano gravado vai até {1}", {1: dataBr(ultimo)}) : "", 4: d.escala_fim ? t(" e a escala é refeita a partir dele") : ""}));
+    + el("p", {"class": "nota"}, t("Modo: {1}{2}{3}. Troque o relógio de qualquer dia em \"trocar por…\": o dia fica escolhido à mão{4}.", {1: h(d.modo || t("nenhum")), 2: d.escala_fim ? t(" · a escala vai até {1}", {1: dataBr(d.escala_fim)}) : "", 3: ultimo ? t(" · o plano gravado vai até {1}", {1: dataBr(ultimo)}) : "", 4: d.escala_fim ? t(" e só ele muda") : ""}));
   if (recado !== "") {
     res += el("p", {"class": "acao"}, h(recado)) + tabelaMudancas(mudancas);
   }

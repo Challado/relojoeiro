@@ -413,7 +413,8 @@ day) and in the **Rotation mode** box on the Today page (each below a line, like
 
 - **Erase a period**: **From** and **To**; one of the two can stay empty (only **From** erases from it to the end of the
   plan; only **To**, from tomorrow to it). The period's days leave the plan, from tomorrow on (the ones chosen by hand, the
-  drawn ones and the free ones), and the rotation mode builds these days again. The **Erase** button asks for confirmation.
+  drawn ones and the free ones), and the rotation mode builds these days again, only them: the other days stay as they are (in the smart schedule too). The
+  **Erase** button asks for confirmation.
 - **Erase all**: clears the whole schedule, from tomorrow on: the days chosen by hand, the drawn ones and the free ones.
   Ticking **Including today**, it erases from today on (if another watch comes up for today, it becomes the one on the wrist
   from now on). Then the rotation mode builds the plan again, from scratch: up to the last day of the last of the mode's weeks (the
@@ -439,8 +440,9 @@ each day of a period yourself (the holidays, a trip, a whole month). Set the sta
 - to erase a period's days (the rotation mode builds these days again) or erase everything, see
   [Erase the schedule](#erase-the-schedule).
 
-Outside the period, the usual rotation mode still applies. The days chosen by hand stay even when you draw again or the cron
-builds the following week; in the smart schedule, it is rebuilt around them.
+Outside the period, the usual rotation mode still applies, and nothing outside it changes (in the smart schedule too). The days
+chosen by hand stay even when you draw again or the cron builds the following week; in the smart schedule, **Draw again** and
+the morning replan rebuild the schedule around them.
 
 **The *Decide for me* criterion:**
 1. the **criteria score** (the ones you define in **Criteria**: days without use, balance, preference, charge...), calculated
@@ -468,7 +470,13 @@ day:
 5. it moves on to the next day.
 
 Every morning the cron **replans from the real state**. If you wore another watch, forgot to charge or logged a different
-reading than expected, the plan corrects itself.
+reading than expected, the plan corrects itself. The days chosen by hand and the free ones stay; the drawn ones, from today on,
+are drawn again.
+
+What you change in a day or a period (changing a day's watch, sending a day back to the draw, drawing a period again or leaving
+it free, choosing the watches of a period, the Manual rotation) **changes only it**: the other days keep the watch they have,
+and only their *what to do* is redone (the simulated charge changes with the new period). **Draw again** and **Erase all**
+rebuild the whole schedule.
 
 ### Consumption measured by the readings
 

@@ -97,6 +97,17 @@ function comparar($x, $y, $caminho, $chave)
             $graves[] = [$caminho, "lista num, objeto no outro", "", ""];
             return;
         }
+        // a conta de uma fórmula com a unidade dela (a ficha, recurso=tudo): o que anda com o relógio (a autonomia em s, a
+        // reserva e o "horas até encher" em h) tem a folga do tempo naquela unidade; o resto segue a regra dos números
+        if (!$lista_x && isset($x["unidade"], $y["unidade"]) && $x["unidade"] === $y["unidade"] && array_key_exists("valor", $x) && array_key_exists("valor", $y)
+            && (is_int($x["valor"]) || is_float($x["valor"])) && (is_int($y["valor"]) || is_float($y["valor"]))) {
+            $por_unidade = ["s" => 1, "min" => 60, "h" => 3600, "d" => 86400, "dias" => 86400];
+            if (isset($por_unidade[$x["unidade"]]) && abs($x["valor"] - $y["valor"]) <= (120 + ($GLOBALS["FOLGA_ATRASO"] ?? 0)) / $por_unidade[$x["unidade"]]) {
+                $y["valor"] = $x["valor"];
+            } elseif ($x["unidade"] === "%" && abs($x["valor"] - $y["valor"]) <= 0.5) {
+                $y["valor"] = $x["valor"];
+            }
+        }
         if ($lista_x && count($x) !== count($y)) {
             $graves[] = [$caminho, "quantidade diferente", count($x), count($y)];
         }

@@ -418,8 +418,8 @@ par jour) et dans le cadre **Mode de rotation** de la page Aujourd'hui (chacun s
 
 - **Effacer une période** : **De** et **À** ; l'un des deux peut rester vide (seulement **De** efface de lui jusqu'à la fin
   du plan ; seulement **À**, de demain jusqu'à lui). Les jours de la période quittent le plan, à partir de demain (ceux
-  choisis à la main, ceux tirés et les libres), et le mode de rotation refait ces jours. Le bouton **Effacer** demande
-  confirmation.
+  choisis à la main, ceux tirés et les libres), et le mode de rotation refait ces jours, eux seuls : les autres jours restent tels quels (dans le planning intelligent
+  aussi). Le bouton **Effacer** demande confirmation.
 - **Tout effacer** : vide toute la programmation, à partir de demain : les jours choisis à la main, les tirés et les libres.
   En cochant **Y compris aujourd'hui**, il efface à partir d'aujourd'hui (si une autre montre sort pour aujourd'hui, elle
   devient celle au poignet dès maintenant). Ensuite le mode de rotation reconstruit le plan, de zéro : jusqu'au dernier jour de la
@@ -448,9 +448,9 @@ choisissez vous-même la montre de chaque jour d'une période (les vacances, un 
 - pour effacer les jours d'une période (le mode de rotation refait ces jours) ou tout effacer, voir
   [Effacer la programmation](#effacer-la-programmation).
 
-Hors de la période, le mode de rotation habituel s'applique toujours. Les jours choisis à la main restent même quand vous
-refaites le tirage ou que le cron construit la semaine suivante ; dans le planning intelligent, celui-ci est refait autour
-d'eux.
+Hors de la période, le mode de rotation habituel s'applique toujours, et rien en dehors d'elle ne change (dans le planning
+intelligent aussi). Les jours choisis à la main restent même quand vous refaites le tirage ou que le cron construit la semaine
+suivante ; dans le planning intelligent, **Refaire le tirage** et la replanification du matin refont le planning autour d'eux.
 
 **Le critère de *Décider pour moi* :**
 1. la **note des critères** (ceux que vous définissez dans **Critères** : jours sans usage, équilibre, préférence,
@@ -478,7 +478,13 @@ simulant jour par jour :
 5. il passe au jour suivant.
 
 Chaque matin, le cron **replanifie à partir de l'état réel**. Si vous avez porté une autre montre, oublié de charger ou saisi
-un relevé différent de celui prévu, le plan se corrige.
+un relevé différent de celui prévu, le plan se corrige. Les jours choisis à la main et les libres restent ; les tirés, à partir
+d'aujourd'hui, sont tirés à nouveau.
+
+Ce que vous changez dans un jour ou une période (changer la montre d'un jour, rendre un jour au tirage, refaire le tirage d'une
+période ou la laisser libre, choisir les montres d'une période, la Rotation manuelle) **ne change que lui** : les autres jours
+gardent la montre qu'ils ont, et seul leur *quoi faire* est refait (la charge simulée change avec la nouvelle période).
+**Refaire le tirage** et **Tout effacer** refont le planning entier.
 
 ### Consommation mesurée par les relevés
 

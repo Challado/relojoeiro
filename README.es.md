@@ -408,8 +408,8 @@ a día) y en el cuadro **Modo de rotación** de la página Hoy (cada uno debajo 
 
 - **Borrar un período**: **Desde** y **Hasta**; uno de los dos puede quedar vacío (solo **Desde** borra desde él hasta el
   final del plan; solo **Hasta**, desde mañana hasta él). Los días del período salen del plan, de mañana en adelante (los
-  elegidos a mano, los sorteados y los libres), y el modo de rotación vuelve a montar esos días. El botón **Borrar** pide
-  confirmación.
+  elegidos a mano, los sorteados y los libres), y el modo de rotación vuelve a montar esos días, solo ellos: los demás días quedan como están (también en la escala
+  inteligente). El botón **Borrar** pide confirmación.
 - **Borrar todo**: limpia toda la programación, de mañana en adelante: los días elegidos a mano, los sorteados y los libres.
   Marcando **Incluyendo hoy**, borra de hoy en adelante (si sale otro reloj para hoy, pasa a ser el de la muñeca desde ese
   momento). Después el modo de rotación vuelve a armar el plan, desde cero: hasta el último día de la última de las semanas del modo (las
@@ -435,8 +435,9 @@ haga clic en **OK**:
 - para borrar los días de un período (el modo de rotación vuelve a montar esos días) o borrarlo todo, vea
   [Borrar la programación](#borrar-la-programación).
 
-Fuera del período, sigue valiendo el modo de rotación de siempre. Los días elegidos a mano se mantienen aunque sortee de nuevo
-o el cron arme la semana siguiente; en la escala inteligente, se rehace alrededor de ellos.
+Fuera del período, sigue valiendo el modo de rotación de siempre, y nada fuera de él cambia (también en la escala inteligente).
+Los días elegidos a mano se mantienen aunque sortee de nuevo o el cron arme la semana siguiente; en la escala inteligente, el
+**Sortear de nuevo** y la replanificación de la mañana rehacen la escala alrededor de ellos.
 
 **El criterio del *Decide por mí*:**
 1. la **nota de los criterios** (los que usted define en **Criterios**: días sin uso, equilibrio, preferencia, carga...),
@@ -464,7 +465,13 @@ día:
 5. pasa al día siguiente.
 
 Cada mañana el cron **vuelve a planificar desde el estado real**. Si usó otro reloj, se olvidó de cargar o registró una lectura
-distinta de la prevista, el plan se corrige.
+distinta de la prevista, el plan se corrige. Los días elegidos a mano y los libres se mantienen; los sorteados, de hoy en
+adelante, se sortean de nuevo.
+
+Lo que cambia en un día o en un período (cambiar el reloj de un día, devolver un día al sorteo, sortear de nuevo o dejar libre
+un período, elegir los relojes de un período, la Rotación manual) **cambia solo eso**: los demás días se quedan con el reloj que
+tienen, y solo se rehace su *qué hacer* (la carga simulada cambia con el período nuevo). El **Sortear de nuevo** y el **Borrar
+todo** rehacen la escala entera.
 
 ### Consumo medido por las lecturas
 

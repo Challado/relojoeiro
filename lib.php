@@ -6860,7 +6860,8 @@ function relogio_sai_do_rodizio($id, $hoje_tambem)
         sql("DELETE FROM plano WHERE relogio_id = ? AND data >= ?", [(int)$id, $amanha->format("Y-m-d")]);
         $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
         if (valor("SELECT escala_dias FROM modo WHERE id = ?", [modo_ativo()]) !== null) {
-            gerar_escala($amanha);
+            // só os dias dele, que ficaram vagos: os outros continuam com o relógio que têm
+            gerar_escala($amanha, $hoje);
         } else {
             garantir_plano($hoje);
         }
@@ -8546,9 +8547,11 @@ function simular_lancamento($rid, $tipo, $ini, $fim, $valor, $so_uso = false)
 // A escala inteligente (o modo ativo com escala_dias): monta o plano de $ini até o fim da escala (escala_fim; vencido ou
 // vazio, um horizonte novo de escala_dias) pelo roteiro do modo, simulando dia a dia a partir do estado real (plano_montar,
 // com a simulação inteira da carga e os avisos: o que vence vira o "o que fazer" do dia). Os dias sorteados de $ini em
-// diante saem antes; os escolhidos à mão e os livres ficam. O dia de hoje que já começou no pulso não muda. Devolve
-// quantos dias gravou.
-function gerar_escala($ini)
+// diante saem antes; os escolhidos à mão e os livres ficam. O dia de hoje que já começou no pulso não muda. Com $ate, só os
+// sorteados de $ini a $ate saem e são sorteados de novo (o pedido de um período, de um dia): os outros dias ficam com o
+// relógio que têm, e só o "o que fazer" deles é refeito (a carga simulada muda com o período novo); $ate antes de $ini: nada
+// sai, só se preenche o que está vago (o relógio que saiu do rodízio) e se refaz o "o que fazer". Devolve quantos dias gravou.
+function gerar_escala($ini, $ate = null)
 {
     $gravados = 0;
     $modo = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]);
@@ -8565,7 +8568,11 @@ function gerar_escala($ini)
             $fim = $ini->modify("+" . (max(1, (int)$modo["escala_dias"]) - 1) . " days");
             cfg_set("escala_fim", $fim->format("Y-m-d"));
         }
-        sql("DELETE FROM plano WHERE data >= ? AND origem <> 'manual'", [$ini->format("Y-m-d")]);
+        if ($ate === null) {
+            sql("DELETE FROM plano WHERE data >= ? AND origem <> 'manual'", [$ini->format("Y-m-d")]);
+        } elseif ($ate >= $ini) {
+            sql("DELETE FROM plano WHERE data BETWEEN ? AND ? AND origem <> 'manual'", [$ini->format("Y-m-d"), $ate->format("Y-m-d")]);
+        }
         $gravados = plano_montar($modo, $hoje, $ini, $fim, true);
         cfg_set("escala_gerada", hoje_da_colecao()->format("Y-m-d"));
     }
