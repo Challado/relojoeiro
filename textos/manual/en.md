@@ -1,4 +1,4 @@
-<!-- origem: b99d998a1f775474e84a838c620421d5d561fb96 -->
+<!-- origem: 95e8117cb31b022ade3280b2e5b7634816ddcb13 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -429,6 +429,12 @@ What you change in a day or a period (changing a day's watch, sending a day back
 it free, choosing the watches of a period, the Manual rotation) **changes only it**: the other days keep the watch they have,
 and only their *what to do* is redone (the simulated charge changes with the new period). **Draw again** and **Erase all**
 rebuild the whole schedule.
+
+The schedule **never goes past the mode's days** (from 7 to 730, on the Rotation modes page), counted from today (from
+tomorrow, if today has already started on the wrist). Shortened the mode, from 30 to 7 days for example: the next time the plan
+is built (the Today page, the cron, an Erase), the drawn days after the 7th go away. **Erase a period** with only the start
+erases up to the end of the plan and builds again only up to the end of the schedule; the days after it stay unplanned until
+the next schedule.
 
 ### Consumption measured by the readings {#gasto-medido-pelas-leituras}
 

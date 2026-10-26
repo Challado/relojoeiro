@@ -1736,6 +1736,28 @@ if (count($m_e) > 0) {
     $falhas[] = "escala: o rodízio manual mudou dias fora dele: " . implode(", ", $m_e);
 }
 ler("escala depois dos pedidos de período", ["recurso" => "plano", "dias" => 45]);
+// a escala encurtada (o modo passa de 45 para 7 dias): o fim gravado pela escala de 45 não vale mais. Apagar um período só
+// com o começo e o Apagar tudo montam no máximo os 7 dias do modo (antes, a escala nova seguia até o fim velho: o mês inteiro)
+escrever(["recurso" => "modos", "acao" => "salvar", "id" => $inteligente, "nome" => "Escala inteligente", "selecao" => "inteligente", "escala_dias" => 7,
+    "blocos" => [["nome" => "Todo dia", "dias" => [1, 2, 3, 4, 5, 6, 7], "no_id" => 0, "um_por" => "dia", "relogio_id" => 0]]]);
+$sorteados_alem = function ($limite) {
+    $alem = [];
+    foreach ((chamar("GET", ["recurso" => "plano", "dias" => 45])["json"]["plano"] ?? []) as $p) {
+        if ($p["origem"] === "sorteio" && $p["data"] > $limite) {
+            $alem[] = $p["data"];
+        }
+    }
+    return $alem;
+};
+foreach ([["periodo_sortear", ["de" => $em(2)], "apagar um período só com o começo"], ["apagar_tudo", [], "apagar tudo"]] as [$acao_e, $campos_e, $nome_e]) {
+    escrever(["recurso" => "rodizio", "acao" => $acao_e] + $campos_e);
+    $alem_e = $sorteados_alem($em(7));
+    $fim_e = chamar("GET", ["recurso" => "plano", "dias" => 45])["json"]["escala_fim"] ?? null;
+    if (count($alem_e) > 0 || $fim_e === null || $fim_e > $em(7)) {
+        $falhas[] = "escala de 7 dias: " . $nome_e . " montou além do 7º dia (fim " . ($fim_e ?? "nenhum") . "): " . implode(", ", array_slice($alem_e, 0, 5));
+    }
+}
+ler("escala encurtada para 7 dias", ["recurso" => "plano", "dias" => 45]);
 
 $texto = json_encode($foto, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_PRESERVE_ZERO_FRACTION | JSON_INVALID_UTF8_SUBSTITUTE);
 if ($texto === false) {

@@ -4203,9 +4203,17 @@ function op_rodizio($acao, $d)
                         plano_livre_marcar($dia->format("Y-m-d"));
                     }
                 }
+                $alem_p = "";
                 if ($escala) {
-                    // só o período é sorteado de novo (os livres ficam sem relógio); fora dele, cada dia fica com o relógio que tem
+                    // só o período é sorteado de novo (os livres ficam sem relógio); fora dele, cada dia fica com o relógio que tem.
+                    // O que passa do fim da escala (escala_dias do modo) saiu e não volta: a escala seguinte monta esses dias
                     gerar_escala($desde_p, $ate_p);
+                    $fim_e = new DateTimeImmutable(cfg("escala_fim"));
+                    if ($acao === "periodo_sortear" && $ate_p > $fim_e) {
+                        $ate_p = max($fim_e, $desde_p);
+                        $alem_p = t(" Depois de {1}, os dias ficam sem plano até a próxima escala: a escala do modo tem {2} dias.",
+                            [1 => $fim_e->format("d/m"), 2 => (int)valor("SELECT escala_dias FROM modo WHERE id = ?", [modo_ativo()])]);
+                    }
                 } else {
                     garantir_plano($hoje);
                 }
@@ -4215,7 +4223,7 @@ function op_rodizio($acao, $d)
                 $msg = $acao === "periodo_livre"
                     ? t("De {1}: {2}{3}, sem relógio e sem sorteio{4}. Escolha o relógio de cada um em \"escolher…\", ou no Rodízio manual.", [1 => $faixa_txt, 2 => $livres, 3 => $livres === 1 ? t(" dia livre") : t(" dias livres"), 4 => $n_p > 0 ? t(" (o que estava gravado saiu)") : ""])
                     : t("De {1}: {2}o período foi sorteado de novo{3}.", [1 => $faixa_txt, 2 => $n_p > 0 ? ($n_p === 1 ? t("1 dia saiu do plano e ") : t("{1} dias saíram do plano e ", [1 => $n_p])) : "", 3 => $escala ? t("; fora dele, nada mudou")
-                            : ($ate_p > horizonte_do_modo(linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]) ?: [], $hoje) ? t("; os dias depois do horizonte do modo são sorteados quando a semana deles chegar") : "")]);
+                            : ($ate_p > horizonte_do_modo(linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]) ?: [], $hoje) ? t("; os dias depois do horizonte do modo são sorteados quando a semana deles chegar") : "")]) . $alem_p;
             }
         } elseif (count($ids_p) === 0) {
             $erros[] = t("Escolha pelo menos um relógio para o período.");

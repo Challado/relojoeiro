@@ -478,6 +478,12 @@ it free, choosing the watches of a period, the Manual rotation) **changes only i
 and only their *what to do* is redone (the simulated charge changes with the new period). **Draw again** and **Erase all**
 rebuild the whole schedule.
 
+The schedule **never goes past the mode's days** (from 7 to 730, on the Rotation modes page), counted from today (from
+tomorrow, if today has already started on the wrist). Shortened the mode, from 30 to 7 days for example: the next time the plan
+is built (the Today page, the cron, an Erase), the drawn days after the 7th go away. **Erase a period** with only the start
+erases up to the end of the plan and builds again only up to the end of the schedule; the days after it stay unplanned until
+the next schedule.
+
 ### Consumption measured by the readings
 
 The smartwatch's record says "lasts 5 days". Reality disagrees, and changes as the battery ages. That's why **each charge

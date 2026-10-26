@@ -1,4 +1,4 @@
-<!-- origem: b99d998a1f775474e84a838c620421d5d561fb96 -->
+<!-- origem: 95e8117cb31b022ade3280b2e5b7634816ddcb13 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -433,6 +433,12 @@ Ce que vous changez dans un jour ou une période (changer la montre d'un jour, r
 période ou la laisser libre, choisir les montres d'une période, la Rotation manuelle) **ne change que lui** : les autres jours
 gardent la montre qu'ils ont, et seul leur *quoi faire* est refait (la charge simulée change avec la nouvelle période).
 **Refaire le tirage** et **Tout effacer** refont le planning entier.
+
+Le planning **ne dépasse jamais les jours du mode** (de 7 à 730, sur la page Modes de rotation), comptés à partir d'aujourd'hui
+(de demain, si la journée d'aujourd'hui a déjà commencé au poignet). Vous avez raccourci le mode, de 30 à 7 jours par exemple :
+la prochaine fois que le plan est construit (la page Aujourd'hui, le cron, un Effacer), les jours tirés après le 7e partent.
+**Effacer une période** avec seulement le début efface jusqu'à la fin du plan et ne reconstruit que jusqu'à la fin du planning ;
+les jours d'après restent sans plan jusqu'au prochain planning.
 
 ### Consommation mesurée par les relevés {#gasto-medido-pelas-leituras}
 

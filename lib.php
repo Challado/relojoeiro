@@ -5111,7 +5111,8 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
             plano_gravar($hoje->format("Y-m-d"), (int)$no_pulso, null, "manual", t("Já estava no pulso pelo rodízio quando o plano de hoje foi montado."));
         }
         if ($modo["escala_dias"] !== null) {
-            if (cfg("escala_fim") === "" || cfg("escala_fim") < $hoje->format("Y-m-d") || ((plano_do_dia($hoje->format("Y-m-d")) === null
+            if (cfg("escala_fim") === "" || cfg("escala_fim") < $hoje->format("Y-m-d") || cfg("escala_fim") > escala_fim_maximo($modo, $hoje)->format("Y-m-d")
+                || ((plano_do_dia($hoje->format("Y-m-d")) === null
                 || plano_do_dia($hoje->modify("+1 day")->format("Y-m-d")) === null) && cfg("escala_gerada") !== hoje_da_colecao()->format("Y-m-d"))) {
                 gerar_escala($hoje);
             }
@@ -8547,6 +8548,14 @@ function simular_lancamento($rid, $tipo, $ini, $fim, $valor, $so_uso = false)
     }
 }
 
+// O fim mais longe que a escala do modo pode ter hoje: escala_dias contados do primeiro dia que ela monta (hoje; amanhã,
+// quando o dia de hoje já começou no pulso com o relógio do plano).
+function escala_fim_maximo($modo, $hoje)
+{
+    $base = time() >= instante($hoje->format("Y-m-d"), cfg("uso_inicio")) && plano_do_dia($hoje->format("Y-m-d")) !== null ? $hoje->modify("+1 day") : $hoje;
+    return $base->modify("+" . (max(1, (int)$modo["escala_dias"]) - 1) . " days");
+}
+
 // A escala inteligente (o modo ativo com escala_dias): monta o plano de $ini até o fim da escala (escala_fim; vencido ou
 // vazio, um horizonte novo de escala_dias) pelo roteiro do modo, simulando dia a dia a partir do estado real (plano_montar,
 // com a simulação inteira da carga e os avisos: o que vence vira o "o que fazer" do dia). Os dias sorteados de $ini em
@@ -8566,9 +8575,12 @@ function gerar_escala($ini, $ate = null)
         $ini = $hoje->modify("+1 day");
     }
     if ($modo && $modo["escala_dias"] !== null) {
+        // o fim da escala nunca passa de escala_dias a contar do primeiro dia que ela pode mudar (escala_fim_maximo): o fim
+        // gravado por uma escala mais comprida (o modo tinha mais dias) não faz a de agora montar o mês inteiro
+        $maximo = escala_fim_maximo($modo, $hoje);
         $fim = cfg("escala_fim") !== "" ? new DateTimeImmutable(cfg("escala_fim")) : null;
-        if ($fim === null || $fim < $ini) {
-            $fim = $ini->modify("+" . (max(1, (int)$modo["escala_dias"]) - 1) . " days");
+        if ($fim === null || $fim < $ini || $fim > $maximo) {
+            $fim = $fim !== null && $fim > $maximo ? $maximo : min($maximo, $ini->modify("+" . (max(1, (int)$modo["escala_dias"]) - 1) . " days"));
             cfg_set("escala_fim", $fim->format("Y-m-d"));
         }
         if ($ate === null) {

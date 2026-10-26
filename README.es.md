@@ -473,6 +473,12 @@ un período, elegir los relojes de un período, la Rotación manual) **cambia so
 tienen, y solo se rehace su *qué hacer* (la carga simulada cambia con el período nuevo). El **Sortear de nuevo** y el **Borrar
 todo** rehacen la escala entera.
 
+La escala **nunca pasa de los días del modo** (de 7 a 730, en la página Modos de rotación), contados desde hoy (desde mañana,
+si el día de hoy ya empezó en la muñeca). ¿Acortó el modo, de 30 a 7 días por ejemplo? La próxima vez que se monta el plan (la
+página Hoy, el cron, un Borrar), los días sorteados después del 7.º salen. **Borrar un período** solo con el comienzo borra
+hasta el final del plan y vuelve a montar solo hasta el final de la escala; los días después de ella quedan sin plan hasta la
+próxima escala.
+
 ### Consumo medido por las lecturas
 
 La ficha del smartwatch dice "dura 5 días". La realidad discrepa, y cambia conforme la batería envejece. Por eso, **cada

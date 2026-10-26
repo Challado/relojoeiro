@@ -466,6 +466,11 @@ um período, escolher os relógios de um período, o Rodízio manual) **muda só
 e só o *o que fazer* deles é refeito (a carga simulada muda com o período novo). O **Sortear de novo** e o **Apagar tudo**
 refazem a escala inteira.
 
+A escala **nunca passa dos dias do modo** (de 7 a 730, na página Modos de rodízio), contados de hoje (de amanhã, se o dia de
+hoje já começou no pulso). Encurtou o modo, de 30 para 7 dias por exemplo: na próxima vez que o plano é montado (a página
+Hoje, o cron, um Apagar), os dias sorteados depois do 7º saem. **Apagar um período** só com o começo apaga até o fim do plano
+e monta de novo só até o fim da escala; os dias depois dela ficam sem plano até a próxima escala.
+
 ### Gasto medido pelas leituras
 
 O cadastro do smartwatch diz "dura 5 dias". A realidade discorda, e muda conforme a bateria envelhece. Por isso, **cada leitura
