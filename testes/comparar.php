@@ -230,6 +230,23 @@ function comparar($x, $y, $caminho, $chave)
         $leves[] = [$caminho, "prazo no texto", $x, $y];
         return;
     }
+    // a data no texto ("chega a 20% em 17h 30min, 27/10/2026 23:59" e "chega a 20% há 6h 29min, 28/10/2026 00:00"): o mesmo
+    // instante, com a folga do tempo, que caiu no dia seguinte numa rodada; o prazo vira "em" num e "há" no outro (os outros
+    // números do texto, iguais)
+    $datas = function ($t) { preg_match_all("#\\b(\\d{2})/(\\d{2})/(\\d{4}) (\\d{2}):(\\d{2})\\b#", $t, $m, PREG_SET_ORDER); return array_map(function ($d) { return gmmktime((int)$d[4], (int)$d[5], 0, (int)$d[2], (int)$d[1], (int)$d[3]); }, $m); };
+    $sem_data = function ($t) { return (preg_replace("/\\b(em|há) \\d+(a|m|d|h|min)( \\d+(a|m|d|h|min))*\\b/u", "<quando>", preg_replace("#\\b\\d{2}/\\d{2}/\\d{4} \\d{2}:\\d{2}\\b#", "<data>", $t))); };
+    if (is_string($x) && is_string($y) && $sem_data($x) === $sem_data($y)) {
+        $dx = $datas($x);
+        $dy = $datas($y);
+        $perto = count($dx) > 0 && count($dx) === count($dy);
+        foreach ($dx as $i => $d) {
+            $perto = $perto && abs($d - $dy[$i]) <= 120 + ($GLOBALS["FOLGA_ATRASO"] ?? 0);
+        }
+        if ($perto) {
+            $leves[] = [$caminho, "data no texto, o tempo andou", $x, $y];
+            return;
+        }
+    }
     $graves[] = [$caminho, "valor diferente", json_encode($x, JSON_UNESCAPED_UNICODE), json_encode($y, JSON_UNESCAPED_UNICODE)];
 }
 
