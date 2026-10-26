@@ -267,10 +267,11 @@ async function espelho(b, relatorio, total) {
   const c = await b.newContext({ viewport: { width: 1440, height: 900 }, httpCredentials: { username: USUARIO, password: SENHA }, locale: LINGUA || 'pt-BR', timezoneId: 'America/Sao_Paulo' });
   if (LINGUA) await c.addCookies([{ name: 'lingua', value: LINGUA, url: BASE }]);
   const p = await c.newPage();
+  // os números não contam: o tempo corre entre a ficha e o Hoje ("no rodízio desde 08:31 (0 h 0 min)" vira "0 h 1 min")
   const estrutura = (raiz) => {
     const d = document.querySelector(raiz + ' .detalhe');
     return d ? [...d.querySelectorAll('.ficha-cabeca, .atalho-pulso, details.cadastro-painel > summary, .secoes-atalhos button, .secao-titulo, .quadro > h2')]
-      .map((e) => e.className + ': ' + e.textContent.trim().slice(0, 40)) : [];
+      .map((e) => e.className + ': ' + e.textContent.trim().replace(/\d+/g, '#').slice(0, 40)) : [];
   };
   for (const id of [1, 3, 4, 5, 7, 8, 10]) {
     await p.goto(BASE + 'ficha.php?id=' + id, { waitUntil: 'networkidle', timeout: 90000 });
