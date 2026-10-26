@@ -1007,6 +1007,8 @@
  *     config.escala_gerada           o dia em que a escala foi gerada pela última vez (texto AAAA-MM-DD)
  *     config.escala_dias_gerada      com quantos dias do modo a escala foi gerada (texto; outro número no modo ativo: a escala é refeita
  *                                    inteira na próxima montagem)
+ *     config.proxima_semana_fim      o último dia da próxima semana montada pela proxima_semana (texto AAAA-MM-DD): o Sortear de novo refaz
+ *                                    o plano até ele
  *     config.horario_manha           a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)
  *     config.horario_noite           a hora da rodada da noite: preparar o relógio de amanhã (HH:MM)
  *     config.max_sem_uso             a garantia de rodízio: nenhum relógio passa desses dias sem uso (0 desliga)
@@ -3707,6 +3709,8 @@
  *     config.escala_gerada           o dia em que a escala foi gerada pela última vez (texto AAAA-MM-DD)
  *     config.escala_dias_gerada      com quantos dias do modo a escala foi gerada (texto; outro número no modo ativo: a escala é refeita
  *                                    inteira na próxima montagem)
+ *     config.proxima_semana_fim      o último dia da próxima semana montada pela proxima_semana (texto AAAA-MM-DD): o Sortear de novo refaz
+ *                                    o plano até ele
  *     config.horario_manha           a hora da rodada da manhã do cron: o relógio do dia e os avisos (HH:MM)
  *     config.horario_noite           a hora da rodada da noite: preparar o relógio de amanhã (HH:MM)
  *     config.max_sem_uso             a garantia de rodízio: nenhum relógio passa desses dias sem uso (0 desliga)

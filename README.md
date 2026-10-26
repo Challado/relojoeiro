@@ -326,6 +326,9 @@ Rodízio manual, por exemplo); a mensagem diz quantos ficaram (*"Ficaram como es
 dia da próxima semana), à mão, livre ou sorteado, e o modo monta tudo de novo; a confirmação avisa antes, e a mensagem diz
 quantos dias à mão e livres foram sobrescritos.
 
+O Sortear de novo vai até o fim das semanas do modo, ou até o fim da **próxima semana**, se você a montou. Voltando de outro
+modo, o que ele sorteou depois disso (os 30 dias da escala, por exemplo) sai e não volta.
+
 **O que mudou.** Toda gravação que mexe no plano (o Sortear de novo, a próxima semana, o trocar por…, o Rodízio manual, os
 períodos, o Sem relógio hoje e o apagar) mostra, junto com a mensagem, o que mudou em relação ao plano de antes: *"3 dias
 mudaram; 11 ficaram com o mesmo relógio."* e uma tabelinha com cada dia que mudou (**Dia**, **Antes**, **Depois** e o

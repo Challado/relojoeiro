@@ -253,10 +253,30 @@ tradicionais na semana; o rodízio manual (o dia à mão sai como foi escolhido,
 pulso, os dois continuam depois do Sortear de novo e dos crons, e o Decida por mim não repete o de ontem nem o de amanhã);
 trocar o relógio de hoje no próprio dia, desligado (o padrão), é recusado; e o PHP não dá aviso nenhum. Com uma regra
 falhando, ele diz o modo, o dia e o que aconteceu, e mostra o diário do modo (o relógio de cada dia; `*` escolhido à mão).
+
+Depois dos modos, **as trocas de modo**: num banco só, um passo depois do outro, como alguém mexendo nos modos. Depois de
+cada passo, o plano de amanhã até o fim esperado (o fim das semanas do modo, ou `escala_dias` contados de hoje) não tem
+buraco, nada sorteado passa desse fim, e o dia escolhido à mão e os livres continuam onde estavam (menos no Apagar tudo):
+
+| Passo | O que confere |
+|---|---|
+| Semanal de 1 semana, passado a 2 (só salvando) e de volta a 1 com o Apagar tudo | o plano vai até a 1ª ou a 2ª semana |
+| A escala de 7 ativada e passada a 30 (só salvando) | a escala vai até o 7º e depois até o 30º dia |
+| Dois dias de cron | o fim da escala não anda (ela segue o próprio período) |
+| Apagar um período só com o começo | de novo os 30 dias, contados de hoje |
+| Um dia à mão e dois livres; a escala de volta a 7 (salvando) e o Sortear de novo | só os 7 dias, e os escolhidos à mão ficam |
+| Os dias do modo mudados direto no banco (30, como um salvar antigo) e de volta a 7 | a escala se refaz com os dias do modo |
+| Apagar tudo na escala de 7 | só os 7 dias, sem os escolhidos à mão |
+| De volta ao semanal com o Sortear de novo | só a semana: o que a escala sorteou depois sai |
+| A próxima semana montada, o Sortear de novo e o Apagar tudo | o plano vai até o fim da próxima semana, e depois só até esta |
+| Semana e fim de semana de 2 semanas | as 2 semanas |
+| De novo a escala, de 30 dias, e a escala vencendo (o cron do dia seguinte ao fim) | 30 dias, e uma escala nova de 30 |
+
 Leva uns 4 minutos e termina com 0 se tudo passou:
 
 ```sh
-testes/simulacao.sh                     # os 19 modos
+testes/simulacao.sh                     # os 19 modos e as trocas de modo
+testes/simulacao.sh "trocas de modo"    # só as trocas de modo
 testes/simulacao.sh fifo "por dia"      # só os modos cujo nome tem "fifo" ou "por dia"
 SIMULACAO_DIAS=56 testes/simulacao.sh   # cada modo por 8 semanas
 ```
@@ -273,7 +293,7 @@ quando pedido na aba **Actions**, em "Run workflow"), em sete trabalhos ao mesmo
 - **Paridade (SQLite, PostgreSQL, MariaDB):** os bancos como serviços do GitHub e o `testes/paridade.sh` (com as conferências
   da documentação); depois, o `testes/migracao.sh` nos três, a partir da versão de antes do push (`github.event.before`);
 - **Paridade (SQLite e Firebird):** o mesmo com o Firebird 3, e o `testes/migracao.sh firebird`;
-- **Simulação dos modos de rodízio:** o libfaketime e o `testes/simulacao.sh` (veja acima): os 19 modos, 28 dias cada;
+- **Simulação dos modos de rodízio:** o libfaketime e o `testes/simulacao.sh` (veja acima): os 19 modos, 28 dias cada, e as trocas de modo;
 - **Layout das telas:** o Playwright com o Chromium, o `configuracao-interface.cjs` e o `testes/paridade.sh --layout sqlite`; quando falha, as capturas das
   telas ficam para baixar na página da rodada (Artifacts, "layout");
 - **Rolagem das telas:** o `testes/paridade.sh --rolagem sqlite`: no computador, no tablet de pé e deitado e no celular, cada

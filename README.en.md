@@ -331,6 +331,9 @@ the Manual rotation, for example); the message says how many stayed (*"Left as t
 today or from the first day of the next week), by hand, free or drawn, and the mode builds everything again; the
 confirmation warns you first, and the message says how many days by hand and free days were overwritten.
 
+Draw again goes up to the end of the mode's weeks, or up to the end of the **next week**, if you built it. Coming back from
+another mode, what it drew after that (the schedule's 30 days, for example) goes away and does not come back.
+
 **What changed.** Every write that touches the plan (Draw again, the next week, replace with…, the manual rotation,
 the periods, No watch today and erasing) shows, together with the message, what changed compared with the plan before: *"3
 days changed; 11 kept the same watch."* and a little table with each day that changed (**Day**, **Before**, **After** and

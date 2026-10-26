@@ -25,6 +25,9 @@
 //   - o rodízio manual: o dia escolhido à mão sai como foi escolhido, o livre fica sem relógio e sem ninguém no pulso, e os
 //     dois continuam depois do Sortear de novo e dos crons; o Decida por mim não repete o de ontem nem o de amanhã;
 //   - trocar o relógio de hoje no próprio dia (desligado, o padrão): recusado.
+// Depois dos modos, as trocas de modo (simular_trocas): num banco só, o semanal de 1 e 2 semanas, a escala de 7 e 30 dias, ida e
+// volta, com o Sortear de novo, os Apagar e a escala vencendo; depois de cada passo, o plano sem buraco até o fim esperado,
+// nada sorteado depois dele e os escolhidos à mão no lugar. O filtro "trocas de modo" roda só elas.
 // Sai com 1 se alguma regra falhar, e diz o modo, o dia e o que aconteceu.
 if (PHP_SAPI !== "cli" || count($argv) < 3) {
     fwrite(STDERR, "Uso: php testes/simulacao.php <endereço do api.php> <pasta da rodada> [filtro...]\n");
@@ -633,6 +636,185 @@ function simular($m)
     }
 }
 
+// ---------- as trocas de modo e de parâmetro ----------
+// Um banco só, um passo depois do outro, como alguém mexendo nos modos: um por semana com 1 e 2 semanas, a escala de 7 e de
+// 30 dias (salvando o modo, sem passar pelo salvar, com o Sortear de novo, o Apagar um período só com o começo e o Apagar
+// tudo), a volta para o modo semanal e de novo para a escala, os dias passando com o cron e a escala vencendo. Depois de
+// cada passo, o plano de amanhã até o fim esperado (o fim das semanas do modo, ou escala_dias contados de hoje; de amanhã,
+// se o dia de hoje já começou no pulso) não tem buraco, nada sorteado passa desse fim, e os dias escolhidos à mão e os
+// livres continuam onde estavam (menos no Apagar tudo, que tira tudo).
+function simular_trocas()
+{
+    global $falhas, $INICIO, $REL, $BANCO;
+    $nome = "trocas de modo (semanas 1 e 2, escala 7 e 30, ida e volta)";
+    $antes = count($falhas);
+    $passos = 0;
+    voltar_ao_modelo();
+    relogio($INICIO . " 05:00:00");
+    $todos = [["nome" => "Todos", "dias" => [1, 2, 3, 4, 5, 6, 7], "no_id" => 0, "um_por" => "dia", "relogio_id" => 0]];
+    $semanal = function ($semanas) use ($todos) {
+        return ["nome" => "Semanal", "tipo" => "dia_semana", "selecao" => "inteligente", "semanas" => $semanas, "blocos" => $todos];
+    };
+    $escala_m = function ($dias) use ($todos) {
+        return ["nome" => "Escala", "tipo" => "escala", "selecao" => "inteligente", "escala_dias" => $dias, "blocos" => $todos];
+    };
+    $id_s = (int)(escrever(["recurso" => "modos", "acao" => "salvar", "id" => 0] + $semanal(1), true, $nome)["id"] ?? 0);
+    $id_e = (int)(escrever(["recurso" => "modos", "acao" => "salvar", "id" => 0] + $escala_m(7), true, $nome)["id"] ?? 0);
+    $guardados = [];   // data => relógio escolhido à mão, ou "livre"
+    // confere o estado depois de um passo. $tipo: ["semanas", n] ou ["escala", n]
+    $conferir = function ($passo, $dia, $tipo) use (&$falhas, $nome, &$guardados, &$passos) {
+        $passos++;
+        $onde = $nome . " · " . $dia . " · " . $passo;
+        $h = chamar("GET", ["recurso" => "hoje"]);
+        $p = chamar("GET", ["recurso" => "plano", "dias" => 60]);
+        $plano = [];
+        foreach ($p["plano"] ?? [] as $x) {
+            $plano[$x["data"]] = $x;
+        }
+        $livres = array_flip($p["livres"] ?? []);
+        if ($tipo[0] === "escala") {
+            $fim = (string)($p["escala_fim"] ?? "");
+            [$min, $max] = [data_mais($dia, $tipo[1] - 1), data_mais($dia, $tipo[1])];
+            if ($fim < $min || $fim > $max) {
+                $falhas[] = $onde . ": a escala de " . $tipo[1] . " dias vai até " . ($fim ?: "nada") . " (devia ir até " . $min . " ou " . $max . ")";
+                return;
+            }
+        } elseif ($tipo[0] === "ate") {
+            $fim = $tipo[1];
+        } else {
+            $fim = data_mais(semana_de($dia, "segunda"), 7 * $tipo[1] - 1);
+            if ($tipo[1] === 1 && $dia === $fim) {
+                $fim = data_mais($dia, 1);
+            }
+        }
+        for ($d = data_mais($dia, 1); $d <= $fim; $d = data_mais($d, 1)) {
+            if (!isset($plano[$d]) && !isset($livres[$d])) {
+                $falhas[] = $onde . ": o plano tem um buraco em " . $d . " (devia ir até " . $fim . ")";
+                break;
+            }
+        }
+        $alem = [];
+        foreach ($plano as $d => $x) {
+            if ($d > $fim && $x["origem"] === "sorteio") {
+                $alem[] = $d;
+            }
+        }
+        if ($alem) {
+            $falhas[] = $onde . ": sorteados depois do fim (" . $fim . "): " . implode(", ", array_slice($alem, 0, 5)) . (count($alem) > 5 ? "…" : "");
+        }
+        foreach ($guardados as $d => $v) {
+            if ($d <= $dia) {
+                continue;
+            }
+            $tem = $v === "livre" ? isset($livres[$d]) : (isset($plano[$d]) && (int)$plano[$d]["relogio_id"] === $v && $plano[$d]["origem"] === "manual");
+            if (!$tem) {
+                $falhas[] = $onde . ": o dia " . $d . " escolhido à mão (" . ($v === "livre" ? "livre" : $v) . ") sumiu ou mudou";
+            }
+        }
+    };
+    $salvar = function ($id, $modo, $onde) {
+        escrever(["recurso" => "modos", "acao" => "salvar", "id" => $id] + $modo, true, $onde);
+    };
+    $rodizio = function ($campos, $onde) {
+        escrever(["recurso" => "rodizio"] + $campos, true, $onde);
+    };
+
+    // segunda: o semanal de 1 semana, montado pelo cron da manhã
+    $dia = $INICIO;
+    escrever(["recurso" => "modos", "acao" => "ativar", "id" => $id_s], true, $nome);
+    relogio($dia . " 07:10:00");
+    cron($nome . " · " . $dia);
+    relogio($dia . " 12:00:00");
+    $conferir("semanal, 1 semana", $dia, ["semanas", 1]);
+    $salvar($id_s, $semanal(2), $nome);
+    $conferir("semanal passado a 2 semanas (só salvando)", $dia, ["semanas", 2]);
+    $salvar($id_s, $semanal(1), $nome);
+    $rodizio(["acao" => "apagar_tudo"], $nome);
+    $conferir("de volta a 1 semana e Apagar tudo", $dia, ["semanas", 1]);
+
+    // a escala de 7 ativada (o Aplicar só marca; a página Hoje monta a escala, que ainda não existia)
+    escrever(["recurso" => "modos", "acao" => "ativar", "id" => $id_e], true, $nome);
+    $conferir("escala de 7 ativada", $dia, ["escala", 7]);
+    $salvar($id_e, $escala_m(30), $nome);
+    $conferir("escala passada a 30 dias (só salvando)", $dia, ["escala", 30]);
+
+    // terça e quarta, com o cron: a escala segue o mesmo período (o fim não anda)
+    $fim_antes = (string)(chamar("GET", ["recurso" => "plano"])["escala_fim"] ?? "");
+    foreach ([1, 2] as $k) {
+        $dia = data_mais($INICIO, $k);
+        relogio($dia . " 07:10:00");
+        cron($nome . " · " . $dia);
+    }
+    relogio($dia . " 12:00:00");
+    $fim_agora = (string)(chamar("GET", ["recurso" => "plano"])["escala_fim"] ?? "");
+    if ($fim_agora !== $fim_antes) {
+        $falhas[] = $nome . " · " . $dia . ": com os dias passando, o fim da escala andou de " . $fim_antes . " para " . $fim_agora . " (a escala segue o próprio período)";
+    }
+    $passos++;
+    // Apagar um período só com o começo (amanhã): de novo os 30 dias, contados de hoje
+    $rodizio(["acao" => "periodo_sortear", "de" => data_mais($dia, 1)], $nome);
+    $conferir("apagar um período só com o começo, na escala de 30", $dia, ["escala", 30]);
+
+    // um dia escolhido à mão e dois livres: ficam em todas as trocas até o Apagar tudo
+    $rodizio(["acao" => "trocar_dia", "data" => data_mais($dia, 3), "relogio_id" => $REL["Corda"]], $nome);
+    $rodizio(["acao" => "periodo_livre", "de" => data_mais($dia, 5), "ate" => data_mais($dia, 6)], $nome);
+    $guardados = [data_mais($dia, 3) => $REL["Corda"], data_mais($dia, 5) => "livre", data_mais($dia, 6) => "livre"];
+    $conferir("um dia à mão e dois livres", $dia, ["escala", 30]);
+    $salvar($id_e, $escala_m(7), $nome);
+    $conferir("escala de volta a 7 dias (só salvando)", $dia, ["escala", 7]);
+    $rodizio(["acao" => "resortear"], $nome);
+    $conferir("Sortear de novo na escala de 7", $dia, ["escala", 7]);
+
+    // os dias do modo mudados sem passar pelo salvar (um banco salvo por uma versão antiga): 30 de novo, direto no banco
+    $pdo = new PDO("sqlite:" . $BANCO);
+    $pdo->exec("UPDATE modo SET escala_dias = 30 WHERE id = " . $id_e);
+    $pdo = null;
+    $conferir("escala passada a 30 dias direto no banco", $dia, ["escala", 30]);
+    $salvar($id_e, $escala_m(7), $nome);
+    $conferir("e de volta a 7", $dia, ["escala", 7]);
+    $rodizio(["acao" => "apagar_tudo"], $nome);
+    $guardados = [];
+    $conferir("Apagar tudo na escala de 7", $dia, ["escala", 7]);
+
+    // de volta ao semanal: o Aplicar só marca; o Sortear de novo monta a semana, e nada da escala fica depois dela
+    escrever(["recurso" => "modos", "acao" => "ativar", "id" => $id_s], true, $nome);
+    $rodizio(["acao" => "resortear"], $nome);
+    $conferir("de volta ao semanal e Sortear de novo", $dia, ["semanas", 1]);
+    // a próxima semana montada à mão: o Sortear de novo refaz até o fim dela (e não só até o fim desta)
+    $rodizio(["acao" => "proxima_semana"], $nome);
+    $fim_prox = data_mais(semana_de($dia, "segunda"), 13);
+    $conferir("próxima semana montada", $dia, ["ate", $fim_prox]);
+    $rodizio(["acao" => "resortear"], $nome);
+    $conferir("Sortear de novo com a próxima semana montada", $dia, ["ate", $fim_prox]);
+    $rodizio(["acao" => "apagar_tudo"], $nome);
+    $conferir("Apagar tudo no semanal", $dia, ["semanas", 1]);
+
+    // outro modo, semana e fim de semana de 2 semanas: o Aplicar só marca, o Sortear de novo monta as 2 semanas
+    $fds = ["nome" => "Semana e fds", "tipo" => "semana_fds", "selecao" => "inteligente", "semanas" => 2, "blocos" => [
+        ["nome" => "Semana", "dias" => [1, 2, 3, 4, 5], "no_id" => 0, "um_por" => "bloco", "relogio_id" => 0],
+        ["nome" => "Fim de semana", "dias" => [6, 7], "no_id" => 0, "um_por" => "dia", "relogio_id" => 0]]];
+    $id_f = (int)(escrever(["recurso" => "modos", "acao" => "salvar", "id" => 0] + $fds, true, $nome)["id"] ?? 0);
+    escrever(["recurso" => "modos", "acao" => "ativar", "id" => $id_f], true, $nome);
+    $rodizio(["acao" => "resortear"], $nome);
+    $conferir("semana e fim de semana, 2 semanas", $dia, ["semanas", 2]);
+
+    // e para a escala, agora de 30 (salva antes de ativar)
+    $salvar($id_e, $escala_m(30), $nome);
+    escrever(["recurso" => "modos", "acao" => "ativar", "id" => $id_e], true, $nome);
+    $conferir("de novo a escala, agora de 30", $dia, ["escala", 30]);
+
+    // o fim da escala passa: no dia seguinte a ele, o cron da manhã monta uma escala nova de 30
+    $fim_e = (string)(chamar("GET", ["recurso" => "plano"])["escala_fim"] ?? "");
+    $dia = data_mais($fim_e, 1);
+    relogio($dia . " 07:10:00");
+    cron($nome . " · " . $dia);
+    relogio($dia . " 12:00:00");
+    $conferir("a escala venceu e o cron fez a seguinte", $dia, ["escala", 30]);
+
+    printf("%-55s %s · %d passos\n", $nome, count($falhas) === $antes ? "confere" : (count($falhas) - $antes) . " regra(s) falharam", $passos);
+    return $passos;
+}
+
 $rodados = 0;
 foreach ($MODOS as $m) {
     if ($FILTROS) {
@@ -649,7 +831,14 @@ foreach ($MODOS as $m) {
     simular($m);
     $rodados++;
 }
-if ($rodados === 0) {
+$trocas = !$FILTROS;
+foreach ($FILTROS as $f) {
+    if (mb_stripos("trocas de modo", $f) !== false) {
+        $trocas = true;
+    }
+}
+$passos_trocas = $trocas ? simular_trocas() : 0;
+if ($rodados === 0 && !$trocas) {
     echo "Nenhum modo com esse nome.\n";
     exit(1);
 }
@@ -657,4 +846,5 @@ if ($falhas) {
     echo "\nRegras que falharam:\n  " . implode("\n  ", $falhas) . "\n";
     exit(1);
 }
-echo "\nOs " . $rodados . " modos conferem: " . $DIAS . " dias cada, com o cron de manhã e de noite.\n";
+echo "\n" . ($rodados > 0 ? "Os " . $rodados . " modos conferem: " . $DIAS . " dias cada, com o cron de manhã e de noite" . ($trocas ? "; e" : ".") . "\n" : "")
+    . ($trocas ? "as trocas de modo conferem: " . $passos_trocas . " passos.\n" : "");

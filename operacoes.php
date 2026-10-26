@@ -4008,10 +4008,17 @@ function op_rodizio($acao, $d)
         $antes = plano_do_dia($hoje->format("Y-m-d"));
         // com o dia ainda por começar, o Sortear de novo pega hoje também (se o relógio de hoje se troca no próprio dia)
         $desde = ($acao === "resortear_hoje" || (!$comecou && !$trava_hoje)) ? $hoje : $hoje->modify("+1 day");
-        // até onde o sorteio já ia (a próxima semana, se já foi montada): é refeito até lá, e não só até o fim da semana
-        $fim_s = $escala ? null : valor("SELECT MAX(data) FROM plano WHERE data >= ? AND origem = 'sorteio'", [$desde->format("Y-m-d")]);
+        // a próxima semana, se foi montada (proxima_semana_fim): é refeita até lá, e não só até o fim da semana. Só ela: os dias
+        // sorteados depois do horizonte por outro modo (a escala de 30 dias antes de voltar ao semanal) saem e não voltam
+        $fim_s = !$escala && cfg("proxima_semana_fim") >= $desde->format("Y-m-d") ? cfg("proxima_semana_fim") : null;
         $modo_r = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]);
         $ate_s = $modo_r ? horizonte_do_modo($modo_r, $hoje) : $hoje;
+        // um plano de antes da proxima_semana_fim (vazia): a próxima semana conta como montada se ela está inteira no plano
+        if (!$escala && cfg("proxima_semana_fim") === "") {
+            $prox = [$ate_s->modify("+1 day")->format("Y-m-d"), $ate_s->modify("+7 days")->format("Y-m-d")];
+            $n_prox = (int)valor("SELECT COUNT(*) FROM plano WHERE data BETWEEN ? AND ?", $prox) + (int)valor("SELECT COUNT(*) FROM plano_livre WHERE data BETWEEN ? AND ?", $prox);
+            $fim_s = $n_prox >= 7 ? $prox[1] : null;
+        }
         if ($fim_s !== null && (string)$fim_s > $ate_s->format("Y-m-d")) {
             $ate_s = new DateTimeImmutable(substr((string)$fim_s, 0, 10));
         }
@@ -4382,6 +4389,8 @@ function op_rodizio($acao, $d)
             }
             sql("DELETE FROM plano WHERE data BETWEEN ? AND ? AND origem <> 'manual'", [$ini->format("Y-m-d"), $ini->modify("+6 days")->format("Y-m-d")]);
             garantir_plano($hoje, $ini->modify("+6 days"));
+            // até onde a próxima semana foi montada: o Sortear de novo refaz até lá (e não até onde o plano de outro modo ia)
+            cfg_set("proxima_semana_fim", $ini->modify("+6 days")->format("Y-m-d"));
             $msg = t("Semana de {1} a {2} montada.", [1 => $ini->format("d/m"), 2 => $ini->modify("+6 days")->format("d/m")]) . dias_guardados_texto($guardados, $sobrescrever);
         }
     }

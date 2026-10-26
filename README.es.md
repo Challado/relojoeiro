@@ -326,6 +326,9 @@ casilla **Sobrescribir todo** marcada, sale todo lo que el plan tiene desde el c
 desde hoy o desde el primer día de la próxima semana), a mano, libre o sorteado, y el modo arma todo de nuevo; la
 confirmación avisa antes, y el mensaje dice cuántos días a mano y libres fueron sobrescritos.
 
+El Sortear de nuevo va hasta el fin de las semanas del modo, o hasta el fin de la **próxima semana**, si usted la armó. Al
+volver de otro modo, lo que él sorteó después de eso (los 30 días de la escala, por ejemplo) sale y no vuelve.
+
 **Lo que cambió.** Toda escritura que toca el plan (el Sortear de nuevo, la próxima semana, el cambiar por…, la rotación
 manual, los periodos, el Sin reloj hoy y el borrar) muestra, junto con el mensaje, lo que cambió respecto al plan de antes:
 *"3 días cambiaron; 11 se quedaron con el mismo reloj."* y una tablita con cada día que cambió (**Día**, **Antes**,

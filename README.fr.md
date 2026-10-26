@@ -334,6 +334,9 @@ la case **Tout écraser** cochée, tout ce que le plan contient à partir du dé
 d'aujourd'hui ou du premier jour de la semaine prochaine), à la main, libre ou tiré, et le mode remonte tout ; la
 confirmation prévient avant, et le message dit combien de jours à la main et de jours libres ont été écrasés.
 
+Refaire le tirage va jusqu'à la fin des semaines du mode, ou jusqu'à la fin de la **semaine prochaine**, si vous l'avez
+montée. En revenant d'un autre mode, ce qu'il a tiré après (les 30 jours du planning, par exemple) part et ne revient pas.
+
 **Ce qui a changé.** Toute écriture qui touche au plan (le Tirer à nouveau, la semaine suivante, le remplacer par…, la
 rotation manuelle, les périodes, le Pas de montre aujourd'hui et l'effacement) montre, avec le message, ce qui a changé par
 rapport au plan d'avant : *« 3 jours ont changé ; 11 ont gardé la même montre. »* et un petit tableau avec chaque jour qui a

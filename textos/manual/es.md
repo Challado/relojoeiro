@@ -1,4 +1,4 @@
-<!-- origem: 468f6e0fc5e66a82a78d4c23e4b1f7726ef5e75e -->
+<!-- origem: 310d59bc48c79e4a9a9cd3bafa5e26650ac000f5 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -276,6 +276,9 @@ Rotación manual, por ejemplo); el mensaje dice cuántos quedaron (*"Quedaron co
 casilla **Sobrescribir todo** marcada, sale todo lo que el plan tiene desde el comienzo del sorteo en adelante (desde mañana,
 desde hoy o desde el primer día de la próxima semana), a mano, libre o sorteado, y el modo arma todo de nuevo; la
 confirmación avisa antes, y el mensaje dice cuántos días a mano y libres fueron sobrescritos.
+
+El Sortear de nuevo va hasta el fin de las semanas del modo, o hasta el fin de la **próxima semana**, si usted la armó. Al
+volver de otro modo, lo que él sorteó después de eso (los 30 días de la escala, por ejemplo) sale y no vuelve.
 
 **Lo que cambió.** Toda escritura que toca el plan (el Sortear de nuevo, la próxima semana, el cambiar por…, la rotación
 manual, los periodos, el Sin reloj hoy y el borrar) muestra, junto con el mensaje, lo que cambió respecto al plan de antes:

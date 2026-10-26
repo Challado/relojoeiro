@@ -1,4 +1,4 @@
-<!-- origem: 468f6e0fc5e66a82a78d4c23e4b1f7726ef5e75e -->
+<!-- origem: 310d59bc48c79e4a9a9cd3bafa5e26650ac000f5 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -282,6 +282,9 @@ the Manual rotation, for example); the message says how many stayed (*"Left as t
 **Overwrite everything** box checked, everything the plan has from the start of the draw on goes away (from tomorrow, from
 today or from the first day of the next week), by hand, free or drawn, and the mode builds everything again; the
 confirmation warns you first, and the message says how many days by hand and free days were overwritten.
+
+Draw again goes up to the end of the mode's weeks, or up to the end of the **next week**, if you built it. Coming back from
+another mode, what it drew after that (the schedule's 30 days, for example) goes away and does not come back.
 
 **What changed.** Every write that touches the plan (Draw again, the next week, replace with…, the manual rotation,
 the periods, No watch today and erasing) shows, together with the message, what changed compared with the plan before: *"3

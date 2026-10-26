@@ -1,4 +1,4 @@
-<!-- origem: 468f6e0fc5e66a82a78d4c23e4b1f7726ef5e75e -->
+<!-- origem: 310d59bc48c79e4a9a9cd3bafa5e26650ac000f5 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -281,6 +281,9 @@ de la Rotation manuelle, par exemple) ; le message dit combien sont restés (*«
 la case **Tout écraser** cochée, tout ce que le plan contient à partir du début du tirage disparaît (à partir de demain,
 d'aujourd'hui ou du premier jour de la semaine prochaine), à la main, libre ou tiré, et le mode remonte tout ; la
 confirmation prévient avant, et le message dit combien de jours à la main et de jours libres ont été écrasés.
+
+Refaire le tirage va jusqu'à la fin des semaines du mode, ou jusqu'à la fin de la **semaine prochaine**, si vous l'avez
+montée. En revenant d'un autre mode, ce qu'il a tiré après (les 30 jours du planning, par exemple) part et ne revient pas.
 
 **Ce qui a changé.** Toute écriture qui touche au plan (le Tirer à nouveau, la semaine suivante, le remplacer par…, la
 rotation manuelle, les périodes, le Pas de montre aujourd'hui et l'effacement) montre, avec le message, ce qui a changé par
