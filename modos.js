@@ -88,6 +88,12 @@ function numeroDaSemana(d) {
   return Math.ceil(((x - ano) / 86400000 + 1) / 7);
 }
 
+// o ⓘ do "Escolher de": de onde sai o relógio de cada dia (por dia da semana, também o dia livre)
+function ajudaEscolherDe(porDia) {
+  return ajuda("escolher-de", t("Escolher de"), el("p", {}, t("De onde sai o relógio: a coleção toda, um grupo da árvore (com os subgrupos dele) ou um relógio fixo. O relógio fixo sai sempre que estiver disponível; indisponível (na oficina, fora do rodízio), o dia é sorteado entre os outros candidatos.")
+    + (porDia ? " " + t("Na tabela por dia da semana, \"Sem relógio\" deixa o dia livre: sem sorteio e sem ninguém no pulso.") : "")));
+}
+
 // o formulário de um modo: os campos do tipo (f: o modo, ou o modelo de um novo com o tipo escolhido)
 function formModo(e, f) {
   var tipo = f.tipo;
@@ -98,20 +104,22 @@ function formModo(e, f) {
   var corpo = el("p", {"class": "nota"}, h(EXPLICA_TIPO[tipo]));
   var b1 = f.blocos[0] || null;
   if (tipo === "semana" || tipo === "aleatorio" || tipo === "escala") {
-    corpo += el("div", {"class": "form-grade"}, el("label", {}, t("Escolher de {1}", {1: el("select", {"name": "de[0]"}, opcoesDe(valorDe(b1), false))}))
+    corpo += el("div", {"class": "form-grade"}, el("label", {}, t("Escolher de {1}", {1: el("select", {"name": "de[0]"}, opcoesDe(valorDe(b1), false))}) + " " + ajudaEscolherDe())
       + (tipo === "escala" ? el("label", {}, t("Período {1}", {1: el("select", {"name": "escala_dias"}, ESCALAS.map(function (x) {
         return el("option", {"value": x[0], "selected": (f.escala_dias || 30) === x[0]}, h(x[1]));
-      }).join("") + (f.escala_dias && ESCALAS.filter(function (x) { return x[0] === f.escala_dias; }).length === 0 ? el("option", {"value": f.escala_dias, "selected": true}, t("{1} dias", {1: f.escala_dias})) : ""))})) : ""));
+      }).join("") + (f.escala_dias && ESCALAS.filter(function (x) { return x[0] === f.escala_dias; }).length === 0 ? el("option", {"value": f.escala_dias, "selected": true}, t("{1} dias", {1: f.escala_dias})) : ""))})
+        + " " + ajuda("periodo-escala", t("O período da escala"), el("p", {}, t("Quantos dias a escala planeja de uma vez, contados de hoje (de amanhã, se o dia de hoje já começou no pulso). Ela segue esse período até ele acabar, e aí o cron da manhã monta o seguinte. Mudou o período: na próxima vez que o plano é montado (a página Hoje, o cron), a escala é refeita com os dias novos; o Sortear de novo e o Apagar tudo também começam uma escala nova com eles.")))) : ""));
   } else if (tipo === "semana_fds") {
     var b2 = f.blocos[1] || null;
     corpo += el("div", {"class": "form-grade trechos"}, [[t("Segunda a sexta"), b1, 0, t("um relógio para os cinco dias")], [t("Sábado e domingo"), b2, 1, t("um relógio para os dois dias")]].map(function (x) {
       return el("fieldset", {"class": "trecho"}, el("legend", {}, x[0])
-        + el("label", {}, t("Escolher de {1}", {1: el("select", {"name": "de[" + x[2] + "]"}, opcoesDe(valorDe(x[1]), false))}))
+        + el("label", {}, t("Escolher de {1}", {1: el("select", {"name": "de[" + x[2] + "]"}, opcoesDe(valorDe(x[1]), false))}) + " " + (x[2] === 0 ? ajudaEscolherDe() : ajudaRef("escolher-de")))
+        + el("p", {"class": "trecho-ajuda"}, x[2] === 0 ? ajuda("um-por", t("Um relógio para o trecho ou um por dia"), el("p", {}, t("Um relógio para o trecho: o mesmo relógio em todos os dias do trecho, dentro da semana (escolhido no primeiro dia dele). Um relógio por dia: cada dia tem a sua escolha, e o de ontem fica de fora se houver outro candidato."))) : ajudaRef("um-por"))
         + el("label", {"class": "check"}, el("input", {"type": "radio", "name": "um_por[" + x[2] + "]", "value": "bloco", "checked": x[1] === null ? x[2] === 0 : x[1].um_por === "bloco"}) + " " + x[3])
         + el("label", {"class": "check"}, el("input", {"type": "radio", "name": "um_por[" + x[2] + "]", "value": "dia", "checked": x[1] === null ? x[2] === 1 : x[1].um_por === "dia"}) + " " + t("um relógio por dia")));
     }).join(""));
   } else if (tipo === "dia_semana") {
-    corpo += el("div", {"class": "rolagem"}, el("table", {"class": "compacta dias-da-semana"}, el("thead", {}, el("tr", {}, el("th", {}, t("Dia")) + el("th", {}, t("Escolher de"))))
+    corpo += el("div", {"class": "rolagem"}, el("table", {"class": "compacta dias-da-semana"}, el("thead", {}, el("tr", {}, el("th", {}, t("Dia")) + el("th", {}, t("Escolher de") + " " + ajudaEscolherDe(true))))
       + el("tbody", {}, diasEmOrdem().map(function (dia) {
         var b = e ? blocoDoDia(f, dia) : null;
         return el("tr", {"class": dia >= 6 ? "fds" : ""}, el("td", {}, DIAS_LONGOS[dia]) + el("td", {}, el("select", {"name": "de[" + dia + "]", "aria-label": DIAS_LONGOS[dia]}, opcoesDe(e ? (b === null ? "livre" : valorDe(b)) : "0", true))));
@@ -146,7 +154,8 @@ function formModo(e, f) {
   }
   if (tipo !== "aleatorio") {
     corpo += el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "ciclo", "value": "0"}) + el("input", {"type": "checkbox", "name": "ciclo", "value": "1", "checked": f.ciclo === 1 || f.ciclo === true})
-      + " " + t("ciclo: um relógio só volta depois que todos os candidatos passaram na semana"));
+      + " " + t("ciclo: um relógio só volta depois que todos os candidatos passaram na semana") + " "
+      + ajuda("ciclo", t("O ciclo"), el("p", {}, t("Ligado, um relógio que já foi para o pulso só volta depois que todos os candidatos do mesmo bloco passaram; aí o ciclo fecha e começa outro. Conta o plano desde o primeiro dia da semana (a semana começa no dia escolhido em {1}); na escala, o período inteiro dela. Se nenhum candidato que ainda não passou estiver disponível naquele dia, o ciclo é deixado de lado só nesse dia. Desligado, a escolha pode repetir um relógio na mesma semana (menos o de ontem).", {1: el("a", {"href": "configuracao.php"}, t("Configuração"))}))));
   }
   if (tipo !== "personalizado" && e) {
     corpo += el("details", {"class": "roteiro-gerado"}, el("summary", {}, t("O roteiro que este modo gera (só leitura)")) + el("pre", {"class": "formula"}, h(e.roteiro_efetivo))

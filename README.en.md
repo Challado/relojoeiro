@@ -323,7 +323,8 @@ for what makes sense in it:
 In the first three, the **choice criterion** is the draw: by the **highest score**, by **draw by score** (the score becomes
 the chance), **random** or by **queue** (whoever has been waiting the longest). With the **cycle** on, a watch only comes back
 after all the candidates have had their turn in the week. The **Rotation mode** panel on the Today page chooses the mode, the
-criterion and the rotation guarantee; **Apply mode** only marks: nothing in the plan changes until you click **Draw again**.
+criterion and the rotation guarantee; **Apply mode** only marks: nothing in the plan changes until you click **Draw again** (except what the
+previous mode drew after the end of the new one's weeks, like the days of the 30-day schedule, which goes away at the next build).
 
 **Draw again** rebuilds what the mode drew and leaves the days chosen by hand and the free days as they are (the ones from
 the Manual rotation, for example); the message says how many stayed (*"Left as they were: 7 free days..."*). With the
@@ -332,7 +333,9 @@ today or from the first day of the next week), by hand, free or drawn, and the m
 confirmation warns you first, and the message says how many days by hand and free days were overwritten.
 
 Draw again goes up to the end of the mode's weeks, or up to the end of the **next week**, if you built it. Coming back from
-another mode, what it drew after that (the schedule's 30 days, for example) goes away and does not come back.
+another mode, what it drew after that (the schedule's 30 days, for example) goes away and does not come back. **Erase all** also
+removes the next week you built. After the end, only the consecutive days of the watch that started up to it remain (the
+smartwatch stays the days of its battery); if a day in the middle of them changes, what was left of the run goes away.
 
 **What changed.** Every write that touches the plan (Draw again, the next week, replace with…, the manual rotation,
 the periods, No watch today and erasing) shows, together with the message, what changed compared with the plan before: *"3

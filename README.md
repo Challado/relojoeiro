@@ -318,7 +318,8 @@ faz sentido nele:
 Nos três primeiros, o **critério de escolha** é o sorteio: pela **maior nota**, por **sorteio pela nota** (a nota vira a
 chance), **aleatório** ou por **fila** (quem está esperando há mais tempo). Com o **ciclo** ligado, um relógio só volta
 depois que todos os candidatos passaram na semana. O quadro **Modo de rodízio** da página Hoje escolhe o modo, o critério e a
-garantia de rodízio; **Aplicar modo** só marca: nada do plano muda até você clicar em **Sortear de novo**.
+garantia de rodízio; **Aplicar modo** só marca: nada do plano muda até você clicar em **Sortear de novo** (menos o que o modo
+de antes sorteou depois do fim das semanas do novo, como os dias da escala de 30 dias, que sai já na próxima montagem).
 
 O **Sortear de novo** refaz o que o modo sorteou e deixa como estão os dias escolhidos à mão e os dias livres (os do
 Rodízio manual, por exemplo); a mensagem diz quantos ficaram (*"Ficaram como estavam: 7 dias livres..."*). Com a caixa
@@ -327,7 +328,9 @@ dia da próxima semana), à mão, livre ou sorteado, e o modo monta tudo de novo
 quantos dias à mão e livres foram sobrescritos.
 
 O Sortear de novo vai até o fim das semanas do modo, ou até o fim da **próxima semana**, se você a montou. Voltando de outro
-modo, o que ele sorteou depois disso (os 30 dias da escala, por exemplo) sai e não volta.
+modo, o que ele sorteou depois disso (os 30 dias da escala, por exemplo) sai e não volta. O **Apagar tudo** tira também a próxima
+semana montada. Depois do fim, só ficam os dias seguidos do relógio que começou até ele (o smartwatch fica os dias da
+bateria); se um dia no meio deles muda, o que sobrava da corrida sai.
 
 **O que mudou.** Toda gravação que mexe no plano (o Sortear de novo, a próxima semana, o trocar por…, o Rodízio manual, os
 períodos, o Sem relógio hoje e o apagar) mostra, junto com a mensagem, o que mudou em relação ao plano de antes: *"3 dias

@@ -272,11 +272,26 @@ buraco, nada sorteado passa desse fim, e o dia escolhido à mão e os livres con
 | Semana e fim de semana de 2 semanas | as 2 semanas |
 | De novo a escala, de 30 dias, e a escala vencendo (o cron do dia seguinte ao fim) | 30 dias, e uma escala nova de 30 |
 
-Leva uns 4 minutos e termina com 0 se tudo passou:
+Por fim, **a matriz do rodízio** ([`simulacao_matriz.php`](simulacao_matriz.php)): todos os cenários, com a semana começando na
+segunda (rodada numa quarta) e no domingo (rodada num sábado, o último dia da semana), e as mesmas conferências depois de cada
+passo (sem buraco até o fim esperado; nada sorteado depois dele, fora os dias seguidos do relógio que começou até ele; os
+escolhidos à mão e os livres no lugar; fora do período mexido, cada dia com o relógio que tinha):
+
+| Parte | Os cenários |
+|---|---|
+| Os modos | um por dia de 1, 2 e 3 semanas; um por semana; semana e fim de semana de 2 semanas; aleatório; personalizado; escala de 7, 14 e 30 dias |
+| As trocas | cada modo trocado por cada um dos outros (as 90 trocas, num caminho só): o Aplicar e o Sortear de novo |
+| As ações, em cada modo | sortear de novo um período (com o começo e o fim, só o fim, só o começo), período livre, os relógios de um período, trocar um dia, o rodízio manual, o Sortear de novo, a próxima semana (recusada na escala), as cinco ações de hoje recusadas com o trocar no próprio dia desligado, o Apagar tudo |
+| O trocar no próprio dia ligado, em cada modo | Usando hoje, sortear de novo inclusive hoje, Sem relógio hoje, trocar o relógio de hoje, Apagar tudo inclusive hoje |
+| Os parâmetros | as semanas 2, 3, 1 e 3 (salvando e com o Sortear de novo); a escala de 14, 30, 7, 30 e 14 dias (salvando, com o Sortear de novo e com o Apagar um período só com o começo) e mudada direto no banco (30 e 7) |
+| Os dias passando | cada modo, 20 dias com o cron da manhã: a escala segue o próprio período até vencer |
+
+Leva uns 12 minutos e termina com 0 se tudo passou:
 
 ```sh
 testes/simulacao.sh                     # os 19 modos e as trocas de modo
 testes/simulacao.sh "trocas de modo"    # só as trocas de modo
+testes/simulacao.sh "matriz do rodízio" # só a matriz
 testes/simulacao.sh fifo "por dia"      # só os modos cujo nome tem "fifo" ou "por dia"
 SIMULACAO_DIAS=56 testes/simulacao.sh   # cada modo por 8 semanas
 ```
@@ -293,7 +308,7 @@ quando pedido na aba **Actions**, em "Run workflow"), em sete trabalhos ao mesmo
 - **Paridade (SQLite, PostgreSQL, MariaDB):** os bancos como serviços do GitHub e o `testes/paridade.sh` (com as conferências
   da documentação); depois, o `testes/migracao.sh` nos três, a partir da versão de antes do push (`github.event.before`);
 - **Paridade (SQLite e Firebird):** o mesmo com o Firebird 3, e o `testes/migracao.sh firebird`;
-- **Simulação dos modos de rodízio:** o libfaketime e o `testes/simulacao.sh` (veja acima): os 19 modos, 28 dias cada, e as trocas de modo;
+- **Simulação dos modos de rodízio:** o libfaketime e o `testes/simulacao.sh` (veja acima): os 19 modos, 28 dias cada, as trocas de modo e a matriz do rodízio;
 - **Layout das telas:** o Playwright com o Chromium, o `configuracao-interface.cjs` e o `testes/paridade.sh --layout sqlite`; quando falha, as capturas das
   telas ficam para baixar na página da rodada (Artifacts, "layout");
 - **Rolagem das telas:** o `testes/paridade.sh --rolagem sqlite`: no computador, no tablet de pé e deitado e no celular, cada

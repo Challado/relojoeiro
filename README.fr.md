@@ -326,7 +326,8 @@ Dans les trois premiers, le **critère de choix** est le tirage : par la **meill
 note devient la chance), **au hasard** ou par **file d'attente** (celle qui attend depuis le plus longtemps). Avec le **cycle**
 activé, une montre ne revient qu'après le passage de toutes les candidates dans la semaine. Le cadre **Mode de rotation** de
 la page Aujourd'hui choisit le mode, le critère et la garantie de rotation ; **Appliquer le mode** ne fait que marquer : rien
-du plan ne change tant que vous ne cliquez pas sur **Refaire le tirage**.
+du plan ne change tant que vous ne cliquez pas sur **Refaire le tirage** (sauf ce que le mode précédent a tiré après la fin
+des semaines du nouveau, comme les jours du planning de 30 jours, qui part dès la construction suivante).
 
 **Refaire le tirage** refait ce que le mode a tiré et laisse tels quels les jours choisis à la main et les jours libres (ceux
 de la Rotation manuelle, par exemple) ; le message dit combien sont restés (*« Restés tels quels : 7 jours libres... »*). Avec
@@ -335,7 +336,9 @@ d'aujourd'hui ou du premier jour de la semaine prochaine), à la main, libre ou 
 confirmation prévient avant, et le message dit combien de jours à la main et de jours libres ont été écrasés.
 
 Refaire le tirage va jusqu'à la fin des semaines du mode, ou jusqu'à la fin de la **semaine prochaine**, si vous l'avez
-montée. En revenant d'un autre mode, ce qu'il a tiré après (les 30 jours du planning, par exemple) part et ne revient pas.
+montée. En revenant d'un autre mode, ce qu'il a tiré après (les 30 jours du planning, par exemple) part et ne revient pas. **Tout effacer** retire aussi la
+semaine prochaine montée. Après la fin, seuls restent les jours consécutifs de la montre qui a commencé jusqu'à elle (la
+montre connectée reste les jours de sa batterie) ; si un jour au milieu change, ce qui restait de la série part.
 
 **Ce qui a changé.** Toute écriture qui touche au plan (le Tirer à nouveau, la semaine suivante, le remplacer par…, la
 rotation manuelle, les périodes, le Pas de montre aujourd'hui et l'effacement) montre, avec le message, ce qui a changé par

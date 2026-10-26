@@ -5119,7 +5119,36 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
             }
             return;
         }
-        plano_montar($modo, $hoje, $hoje, $ate === null ? horizonte_do_modo($modo, $hoje) : $ate, false);
+        $fim_p = $ate === null ? horizonte_do_modo($modo, $hoje) : $ate;
+        // a próxima semana montada (proxima_semana_fim) também é do plano: os buracos dela se completam
+        if (cfg("proxima_semana_fim") !== "" && cfg("proxima_semana_fim") > $fim_p->format("Y-m-d")) {
+            $fim_p = new DateTimeImmutable(cfg("proxima_semana_fim"));
+        }
+        plano_tirar_orfaos($fim_p);
+        plano_montar($modo, $hoje, $hoje, $fim_p, false);
+    }
+}
+
+// Fora da escala, depois do fim do plano ($fim: o horizonte do modo, ou a próxima semana montada) só ficam os dias seguidos do
+// relógio que começou até o fim (o smartwatch dos dias da bateria, o relógio do trecho do bloco) e os escolhidos à mão. Os
+// sorteados que sobram (a corrida quebrada por um dia trocado ou por um período sorteado de novo, o que outro modo sorteou
+// depois do horizonte) saem.
+function plano_tirar_orfaos($fim)
+{
+    $ontem = null;
+    $seguindo = true;
+    foreach (linhas("SELECT data, relogio_id, origem FROM plano WHERE data >= ? ORDER BY data", [$fim->format("Y-m-d")]) as $x) {
+        $d = substr((string)$x["data"], 0, 10);
+        if ($d === $fim->format("Y-m-d")) {
+            $ontem = [$d, (int)$x["relogio_id"]];
+            continue;
+        }
+        $seguindo = $seguindo && $ontem !== null && $ontem[0] === (new DateTimeImmutable($d))->modify("-1 day")->format("Y-m-d") && $ontem[1] === (int)$x["relogio_id"];
+        if (!$seguindo && $x["origem"] === "sorteio") {
+            sql("DELETE FROM plano WHERE data = ? AND origem = 'sorteio'", [$d]);
+            continue;
+        }
+        $ontem = [$d, (int)$x["relogio_id"]];
     }
 }
 

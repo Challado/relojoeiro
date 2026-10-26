@@ -838,7 +838,21 @@ foreach ($FILTROS as $f) {
     }
 }
 $passos_trocas = $trocas ? simular_trocas() : 0;
-if ($rodados === 0 && !$trocas) {
+// a matriz: todos os modos, todas as trocas entre eles, todas as ações e os parâmetros (testes/simulacao_matriz.php)
+$matriz = !$FILTROS;
+foreach ($FILTROS as $f) {
+    if (mb_stripos("matriz do rodízio", $f) !== false) {
+        $matriz = true;
+    }
+}
+$passos_matriz = 0;
+if ($matriz) {
+    require __DIR__ . "/simulacao_matriz.php";
+    $passos_matriz += simular_matriz("segunda", "2027-01-06");
+    $passos_matriz += simular_matriz("domingo", "2027-01-09");
+    $passos_matriz += simular_matriz_dias("2027-01-04");
+}
+if ($rodados === 0 && !$trocas && !$matriz) {
     echo "Nenhum modo com esse nome.\n";
     exit(1);
 }
@@ -847,4 +861,5 @@ if ($falhas) {
     exit(1);
 }
 echo "\n" . ($rodados > 0 ? "Os " . $rodados . " modos conferem: " . $DIAS . " dias cada, com o cron de manhã e de noite" . ($trocas ? "; e" : ".") . "\n" : "")
-    . ($trocas ? "as trocas de modo conferem: " . $passos_trocas . " passos.\n" : "");
+    . ($trocas ? "as trocas de modo conferem: " . $passos_trocas . " passos" . ($matriz ? "; e" : ".") . "\n" : "")
+    . ($matriz ? "a matriz do rodízio confere: " . $passos_matriz . " passos.\n" : "");

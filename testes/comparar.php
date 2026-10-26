@@ -206,6 +206,13 @@ function comparar($x, $y, $caminho, $chave)
         $leves[] = [$caminho, "arredondamento", $x, $y];
         return;
     }
+    // um número em texto, com a vírgula decimal (o valor de um critério no relatório: "1" e "1,01" dias sem uso), calculado com
+    // minutos de diferença de um banco para o outro: até 2% (ou 0,02) é leve
+    $num = function ($t) { return is_string($t) && preg_match("/^-?\\d+(,\\d+)?\$/", $t) === 1 ? (float)str_replace(",", ".", $t) : null; };
+    if ($num($x) !== null && $num($y) !== null && abs($num($x) - $num($y)) <= max(0.02, 0.02 * max(abs($num($x)), abs($num($y))))) {
+        $leves[] = [$caminho, "número no texto, o tempo andou", $x, $y];
+        return;
+    }
     $ix = instante($x);
     $iy = instante($y);
     if ($ix !== null && $iy !== null && abs($ix - $iy) <= 120) {

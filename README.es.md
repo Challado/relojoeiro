@@ -318,7 +318,8 @@ En los tres primeros, el **criterio de elección** es el sorteo: por la **mayor 
 vuelve probabilidad), **aleatorio** o por **fila** (el que lleva más tiempo esperando). Con el **ciclo** activado, un reloj
 solo vuelve después de que todos los candidatos hayan pasado en la semana. El cuadro **Modo de rotación** de la página Hoy
 elige el modo, el criterio y la garantía de rotación; **Aplicar modo** solo marca: nada del plan cambia hasta que haga clic en
-**Sortear de nuevo**.
+**Sortear de nuevo** (menos lo que el modo anterior sorteó después del fin de las semanas del nuevo, como los días de la
+escala de 30 días, que sale ya en el próximo montaje).
 
 **Sortear de nuevo** rehace lo que el modo sorteó y deja como están los días elegidos a mano y los días libres (los de la
 Rotación manual, por ejemplo); el mensaje dice cuántos quedaron (*"Quedaron como estaban: 7 días libres..."*). Con la
@@ -327,7 +328,9 @@ desde hoy o desde el primer día de la próxima semana), a mano, libre o sortead
 confirmación avisa antes, y el mensaje dice cuántos días a mano y libres fueron sobrescritos.
 
 El Sortear de nuevo va hasta el fin de las semanas del modo, o hasta el fin de la **próxima semana**, si usted la armó. Al
-volver de otro modo, lo que él sorteó después de eso (los 30 días de la escala, por ejemplo) sale y no vuelve.
+volver de otro modo, lo que él sorteó después de eso (los 30 días de la escala, por ejemplo) sale y no vuelve. **Borrar todo** quita también la
+próxima semana armada. Después del fin, solo quedan los días seguidos del reloj que empezó hasta él (el smartwatch se queda
+los días de la batería); si un día en medio de ellos cambia, lo que quedaba de la racha sale.
 
 **Lo que cambió.** Toda escritura que toca el plan (el Sortear de nuevo, la próxima semana, el cambiar por…, la rotación
 manual, los periodos, el Sin reloj hoy y el borrar) muestra, junto con el mensaje, lo que cambió respecto al plan de antes:

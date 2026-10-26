@@ -4013,12 +4013,6 @@ function op_rodizio($acao, $d)
         $fim_s = !$escala && cfg("proxima_semana_fim") >= $desde->format("Y-m-d") ? cfg("proxima_semana_fim") : null;
         $modo_r = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]);
         $ate_s = $modo_r ? horizonte_do_modo($modo_r, $hoje) : $hoje;
-        // um plano de antes da proxima_semana_fim (vazia): a próxima semana conta como montada se ela está inteira no plano
-        if (!$escala && cfg("proxima_semana_fim") === "") {
-            $prox = [$ate_s->modify("+1 day")->format("Y-m-d"), $ate_s->modify("+7 days")->format("Y-m-d")];
-            $n_prox = (int)valor("SELECT COUNT(*) FROM plano WHERE data BETWEEN ? AND ?", $prox) + (int)valor("SELECT COUNT(*) FROM plano_livre WHERE data BETWEEN ? AND ?", $prox);
-            $fim_s = $n_prox >= 7 ? $prox[1] : null;
-        }
         if ($fim_s !== null && (string)$fim_s > $ate_s->format("Y-m-d")) {
             $ate_s = new DateTimeImmutable(substr((string)$fim_s, 0, 10));
         }
@@ -4280,6 +4274,8 @@ function op_rodizio($acao, $d)
         $n_t = (int)valor("SELECT COUNT(*) FROM plano WHERE data >= ?", [$desde_t->format("Y-m-d")]) + (int)valor("SELECT COUNT(*) FROM plano_livre WHERE data >= ?", [$desde_t->format("Y-m-d")]);
         sql("DELETE FROM plano WHERE data >= ?", [$desde_t->format("Y-m-d")]);
         sql("DELETE FROM plano_livre WHERE data >= ?", [$desde_t->format("Y-m-d")]);
+        // a próxima semana montada também sai: o Sortear de novo de depois vai só até o fim das semanas do modo
+        cfg_set("proxima_semana_fim", "");
         if ($escala) {
             gerar_escala($desde_t, null, true);
         }

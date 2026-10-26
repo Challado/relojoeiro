@@ -108,7 +108,7 @@ jobs:
   simulacao:
     name: Simulação dos modos de rodízio (dia a dia, com o relógio adiantado)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
@@ -118,7 +118,7 @@ jobs:
           coverage: none
       - name: O libfaketime (o relógio falso do servidor, do cron e do roteiro)
         run: sudo apt-get update -qq && sudo apt-get install -y -qq faketime > /dev/null
-      - name: Cada modo, 28 dias, com o cron de manhã e de noite
+      - name: Os 19 modos (28 dias cada), as trocas de modo e a matriz do rodízio (todos os modos, trocas, ações e parâmetros)
         run: testes/simulacao.sh
 
   layout:
