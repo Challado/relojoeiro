@@ -317,6 +317,7 @@ function recarregarConfig(aplicadas, manterPosicao) {
         var al = d.aleatorio;
         var sorteios = cartao(t("Sorteios"), el("div", {"class": "campos"},
           parCampo(t("Os números vêm de"), el("span", {}, t("1. RANDOM.ORG (ruído atmosférico) · 2. fora do ar, ANU QRNG (quântico) · 3. sem os dois, o gerador seguro do PHP")))
+          + parCampo(t("Sorteios") + " · " + t("Precisão") + " (0–8)", numero("sorteio_casas", cfg("sorteio_casas") !== "" ? cfg("sorteio_casas") : "2", "0", "8"))
           + parCampo(t("Último lote"), el("span", {}, al.ultimo_lote ? h(al.ultimo_lote.replace(/ em (\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2}).*/, " em $3/$2/$1 $4")) : t("nenhum ainda")))
           + (al.fora_desde ? parCampo(t("Serviços fora"), el("span", {"class": "acao"}, t("os dois sem responder desde {1} {2}; o sistema tenta de novo depois de 10 minutos", {1: dataBr(al.fora_desde), 2: horaBr(al.fora_desde)}))) : "")),
           "", ex("sorteios", t("Sorteios"), t("Todo sorteio do sistema (o rodízio totalmente aleatório, o sorteio pela nota e o desempate de notas iguais na escala) usa estes números. Eles chegam num lote, e cada sorteio usa só o que precisa, sem viés.")));
