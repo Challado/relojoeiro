@@ -1,4 +1,4 @@
-<!-- origem: 31bde738a32741e0596220eedb21dadcf7429cc7 -->
+<!-- origem: fbd430e0a8f5ca6f221edcb4657e4a59c46443a3 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -82,6 +82,7 @@ dans le calcul, et la division par zéro donne vide. L'essentiel :
 | `HOJE()`, `AGORA()` | la date du jour et l'instant actuel, en jours (maintenant avec la fraction du jour) |
 | `DIAS_DESDE(date)`, `DIAS_ATE(date)`, `SOMA_MESES(date; mois)` | jours depuis et jusqu'à une date (négatif : déjà passée) ; la date plus des mois, selon le calendrier |
 | `HORAS_USO()` | les heures d'une journée de port, selon l'horaire de port de la Configuration (de 7 h à 22 h : 15) |
+| `QUANDO_ENERGIA(limite; dias)` | première date à laquelle l’énergie atteint la limite, sous 1 à 366 jours (366 par défaut), selon les sessions et la consommation mesurée au début ; vide si elle ne l’atteint pas ou si des données manquent |
 | `CONFIG("clé")` | un nombre de la Configuration, comme `CONFIG("sol_limiar")` |
 
 Et celles qui lisent l'historique de chaque montre :
@@ -566,6 +567,18 @@ automatique : inutile de toucher à la fiche. La « Consommation en usage » et 
 s'appliquent que tant qu'il n'y a pas de mesure (ou toujours, dans le moteur 4).
 
 ---
+
+### La prévision de décharge {#a-previsão-de-descarga}
+
+La projection conserve la consommation mesurée à son début : le vieillissement d’une mesure pendant la projection ne peut pas faire remonter la charge. Les consultations historiques utilisent toujours la fenêtre de la date demandée. La recherche trouve le premier passage à la limite ou à zéro, par segments de sessions, avec une précision d’une minute. Un futur sans données n’est pas présenté comme une autonomie supérieure à un an.
+
+L’alerte **Charger** par défaut utilise `QUANDO_ENERGIA(limite_carga; 366)`, le même calcul que la fiche, en respectant la fin des sessions. La migration v50 ne modifie que l’expression par défaut connue de la v49 ; les alertes personnalisées sont préservées.
+
+`precisa` reste limité à 100%. Si même une charge pleine s’épuise avant la fin des jours consécutifs, `recarga_no_bloco` est vrai et le texte indique qu’une recharge est nécessaire pendant la période. `carregar_antes` concerne la charge requise à l’entrée ; il ne garantit pas à lui seul qu’une charge couvre le bloc.
+
+Une confiance élevée exige une lecture de deux jours au plus, au moins trois mesures distinguant les consommations, des taux estimés à partir des mesures et un écart-type ne dépassant pas la moitié de chaque taux. Elle est faible si la lecture dépasse sept jours, si une donnée nécessaire manque ou si l’écart-type atteint le taux ; moyenne dans les autres cas. `confianca_motivos` explique les limites. Une lecture récente ne prouve pas à elle seule la précision d’une date future.
+
+Les résultats numériques non finis, comme `10 ^ 1000`, deviennent vides (`null`), comme une division par zéro. `PADRAO` peut fournir une valeur de repli. Si un autre résultat invalide empêche la sérialisation, l’API renvoie une erreur JSON avec HTTP 500, jamais un corps vide avec HTTP 200.
 
 ### La précision (la marche de la montre) {#a-precisão-a-marcha-do-relógio}
 

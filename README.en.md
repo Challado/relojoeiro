@@ -128,6 +128,7 @@ calculation, and division by zero gives empty. The basics:
 | `HOJE()`, `AGORA()` | today's date and the current instant, in days (now with the fraction of the day) |
 | `DIAS_DESDE(date)`, `DIAS_ATE(date)`, `SOMA_MESES(date; months)` | days since and until a date (negative: already passed); the date plus months, by the calendar |
 | `HORAS_USO()` | the hours of a day of use, by the wearing hours in Settings (7 am to 10 pm: 15) |
+| `QUANDO_ENERGIA(limite; dias)` | the first date when energy reaches the limit, within 1 to 366 days (default 366), respecting sessions and keeping measured drain from the start; empty if it does not reach it or data is missing |
 | `CONFIG("key")` | a number from Settings, like `CONFIG("sol_limiar")` |
 
 And the ones that read each watch's history:
@@ -606,6 +607,18 @@ there's no need to touch the record. The record's "Decay in use" and "Decay stor
 (or always, in engine 4).
 
 ---
+
+### Discharge forecasts
+
+The projection keeps measured drain from its starting instant: measurements aging during projection cannot make the battery regain charge. Historical queries still use the window of the date queried. The search finds the first crossing of the limit or zero in session segments, with precision within one minute. Missing future data is not presented as battery life exceeding one year.
+
+The default **Charge** alert uses `QUANDO_ENERGIA(limite_carga; 366)`, the same calculation as the watch details, respecting session end times. Migration v50 only updates the known default expression from v49; customized alerts are preserved.
+
+`precisa` remains capped at 100%. If even a full charge runs out before the consecutive days end, `recarga_no_bloco` is true and the text warns that recharging is needed during the period. `carregar_antes` concerns the charge required at entry; it alone does not guarantee that one charge covers the block.
+
+High confidence requires a reading no more than two days old, at least three measurements separating the drain rates, rates estimated from measurements and a standard deviation no greater than half of each rate. Confidence is low with a reading over seven days old, missing required data or a standard deviation at least as large as the rate; otherwise it is medium. `confianca_motivos` explains the limitations. A recent reading alone does not prove that a future date is accurate.
+
+Non-finite numeric results, such as `10 ^ 1000`, become empty (`null`), like division by zero. `PADRAO` can provide a fallback. If another invalid result prevents serialization, the API returns a JSON error with HTTP 500, never an empty body with HTTP 200.
 
 ### Accuracy (the watch's rate)
 
@@ -2671,6 +2684,8 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | [`PORTE.md`](PORTE.md) | the record of the port of the previous version |
 
 ---
+
+The regression `php testes/previsao.php` covers first discharge, recharging during rotation, confidence, JSON output and migration v50.
 
 The regressions `php testes/backup.php` and `php testes/motores.php` use fresh disposable SQLite databases. They check that an invalid backup preserves the database, that valid older backups can be restored, and that extreme weights and charge forecasts work. They also run in the architecture job of the CI; browser regressions still run in the layout job.
 

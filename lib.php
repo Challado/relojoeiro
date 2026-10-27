@@ -1215,7 +1215,13 @@ $MIGRACOES = [
     "v47" => ["migracao_v47.sql", tk("os programas dos winders: as páginas Movimentos (cada passo: um giro horário ou anti-horário, em voltas ou em tempo, ou uma parada) e Programas (a sequência dos movimentos, por voltas ou por tempo, o dia todo ou em blocos, com a velocidade do berço contada ou tirada das voltas por dia do manual; as voltas por dia, o ciclo e o tempo girando sempre calculados), e cada posição escolhe o seu (o programa antigo de cada posição vira um, e os campos antigos saem); a carga no winder pelas voltas no sentido em que o relógio dá corda; o lugar fixo (o relógio tem a posição dele: fora dela, a foto apagada com o aro vermelho no berço, e pôr no winder de qualquer lugar o devolve para lá); os limites da almofada (caixa, pulso e peso), com aviso que se dispensa; e os documentos do winder (o manual, a nota, as fotos)"), "winder_limite_ok", "migracao_v47_dados"],
     "v48" => ["migracao_v48.sql", tk("a manutenção (a página Manutenção): cadastrar a manutenção de um relógio (a oficina, a situação, o problema, a OS, a previsão, o orçamento, o que foi junto e os documentos) põe o relógio em manutenção, fora do rodízio até voltar, e o encerramento vira o serviço; as oficinas, com quantos contatos quiser; e as listas que viram cadastro (a situação na coleção, os tipos de acessório e de serviço, a estanqueidade, os jeitos de carregar e as observações da reserva, as situações da manutenção, os tipos de oficina e de contato), cada item com o que ele faz. Cada responsável dos serviços de antes vira uma oficina, e cada serviço, uma manutenção encerrada"), "sistema.chave=migracao_v48", "migracao_v48_dados"],
     "v49" => ["migracao_v49.sql", tk("o aviso Carregar: converter corretamente as horas no pulso para dias, sem prever séculos de bateria guardada; a precisão dos pesos dos sorteios passa a ser configurável"), "sistema.chave=migracao_v49", "migracao_v49_dados"],
+    "v50" => ["migracao_v50.sql", tk("a previsão de descarga com o gasto medido fixo durante a projeção; o aviso Carregar usa a mesma conta da ficha; os períodos que precisam de recarga no meio e a confiança das estimativas"), "sistema.chave=migracao_v50", "migracao_v50_dados"],
 ];
+
+function migracao_v50_dados($nova = false)
+{
+    sis_set("migracao_v50", "1");
+}
 
 // A instalação nova já usa a expressão corrigida do modelo; a marca é do sistema inteiro.
 function migracao_v49_dados($nova = false)
@@ -2053,6 +2059,7 @@ $FUNCOES = [
     "HOJE" => [0, 0, tk("a data de hoje (em dias)"), false],
     "AGORA" => [0, 0, tk("o instante de agora (em dias, com a fração do dia)"), false],
     "HORAS_USO" => [0, 0, tk("as horas de um dia de uso, pelo horário de uso da Configuração (das 7h às 22h: 15)"), false],
+    "QUANDO_ENERGIA" => [1, 2, tk("QUANDO_ENERGIA(limite; dias): a primeira data em que a energia chega ao limite, respeitando as sessões gravadas e mantendo o gasto medido do início da projeção; dias de 1 a 366 (padrão 366); vazio se não chegar nesse período ou se faltar dado"), false],
     "MEDIDO" => [1, 1, tk("MEDIDO(\"uso\") ou MEDIDO(\"repouso\"): o gasto medido pelas leituras, em % por dia (de uso ou fora do pulso): os dois saem juntos das medições dos últimos dias da Configuração (cada intervalo entre duas leituras: a queda = dias de uso × gasto em uso + dias fora × gasto fora), na conta feita nas leituras de cada trecho entre recargas, todas com o mesmo peso, a que não bate com as outras pesando menos (regressão robusta) e partindo do gasto do cadastro; sem nenhuma nesses dias, as de antes; sem nenhuma, vazio"), false],
     "CONFIG" => [1, 1, tk("CONFIG(\"chave\"): um número da Configuração (ex.: CONFIG(\"sol_limiar\"), o limite do solar); vazio se não for número"), false],
     "DIAS_DESDE" => [1, 1, tk("dias desde uma data"), false],
@@ -2266,6 +2273,9 @@ function formula_referencias($arvore)
         if ($no[0] === "v") {
             $res["variaveis"][$no[1]] = true;
         } elseif ($no[0] === "f") {
+            if ($no[1] === "QUANDO_ENERGIA") {
+                $res["variaveis"]["energia"] = true;
+            }
             foreach ($no[2] as $k => $a) {
                 // nas funções do histórico, o 1º argumento (e, no HORAS_APOS e no ACUMULA, os outros textos) é um tipo de lançamento;
                 // no MEDIA_COLECAO, o argumento é uma variável
@@ -2682,6 +2692,7 @@ function formula_calcular($no, &$ctx)
         $cache_l = [];
         $cache_m = [];
         $cache_med = [];
+        $cache_pecas = [];
         $versao = $GLOBALS["FORMULAS_VERSAO"] ?? 0;
     }
     $res = null;
@@ -2712,7 +2723,7 @@ function formula_calcular($no, &$ctx)
                 } elseif ($no[1] === "/") {
                     $res = abs($b) < 1e-12 ? null : $a / $b;
                 } elseif ($no[1] === "^") {
-                    $res = ($a < 0 && floor($b) != $b) ? null : pow($a, $b);
+                    $res = (($a < 0 && floor($b) != $b) || ($a == 0 && $b < 0)) ? null : pow($a, $b);
                 } elseif ($no[1] === "<") {
                     $res = $a < $b ? 1 : 0;
                 } elseif ($no[1] === "<=") {
@@ -2760,6 +2771,7 @@ function formula_calcular($no, &$ctx)
             // leituras foram marcadas como pedido, até o instante da conta e dentro de N dias (0: a janela da Configuração)
             $v = array_map(function ($a) use (&$ctx) { return formula_calcular($a, $ctx); }, $args);
             $id = (int)$ctx["r"]["id"];
+            $momento_med = (int)($ctx["medicoes_em"] ?? min($ctx["momento"], time()));
             if (!isset($cache_pecas[$id])) {
                 $cache_pecas[$id] = medicoes_da_conta($id, true)[0];
             }
@@ -2769,10 +2781,10 @@ function formula_calcular($no, &$ctx)
             $h_dia_p = $h_dia_p > 0 ? $h_dia_p : 24;
             $sel = [];
             if ($medida !== null) {
-                $todas = $dias > 0 ? array_values(array_filter($cache_pecas[$id], function ($m) use ($ctx, $dias) {
+                $todas = $dias > 0 ? array_values(array_filter($cache_pecas[$id], function ($m) use ($momento_med, $dias) {
                     $f = strtotime($m["fim"]);
-                    return $f <= $ctx["momento"] && $f > $ctx["momento"] - $dias * 86400;
-                })) : medicoes_janela($cache_pecas[$id], $ctx["momento"], 0);
+                    return $f <= $momento_med && $f > $momento_med - $dias * 86400;
+                })) : medicoes_janela($cache_pecas[$id], $momento_med, 0);
                 $sel = array_values(array_filter($todas, function ($m) use ($medida) { return $m["medida"] === $medida; }));
             }
             $taxas = array_map(function ($m) use ($h_dia_p) {
@@ -3033,6 +3045,14 @@ function formula_calcular($no, &$ctx)
                 $res = floor($agora_d);
             } elseif ($nome === "AGORA") {
                 $res = $agora_d;
+            } elseif ($nome === "QUANDO_ENERGIA") {
+                // A energia não pode pedir uma previsão de si mesma; a validação também detecta essa dependência.
+                if (!isset($ctx["pilha"]["energia"]) && is_numeric($v[0]) && is_finite((float)$v[0])
+                    && (count($v) < 2 || (is_numeric($v[1]) && is_finite((float)$v[1]) && $v[1] >= 1 && $v[1] <= 366))) {
+                    $origem = (int)($ctx["medicoes_em"] ?? min($ctx["momento"], time()));
+                    $lim = energia_ate_limite($ctx["r"], $ctx["momento"], $ctx["momento"] + (int)(($v[1] ?? 366) * 86400), (float)$v[0], $origem);
+                    $res = $lim["instante"] === null ? null : dias_de($lim["instante"]);
+                }
             } elseif ($nome === "MEDIDO" && (!empty($ctx["sem_medido"]) || gasto_motor_de($ctx["r"])[0] === "cadastro")) {
                 // a conta só com o cadastro: o que valeria sem as medições (a tabela dos gastos da previsão), ou o motor
                 // "só o cadastro" (as medições ficam no histórico; a previsão usa o cadastro)
@@ -3041,6 +3061,7 @@ function formula_calcular($no, &$ctx)
                 // as medições usadas do relógio, lidas uma vez por requisição; os gastos são os da janela que termina no
                 // instante da conta (gasto_medido), guardados pelo trecho de medições que entrou (a escala pede o mesmo muitas vezes)
                 $id = (int)$ctx["r"]["id"];
+                $momento_med = (int)($ctx["medicoes_em"] ?? min($ctx["momento"], time()));
                 if (!isset($cache_med[$id])) {
                     $cache_med[$id] = ["linhas" => medicoes_da_conta($id)[0], "contas" => [], "motor" => gasto_motor_de($ctx["r"])[0]];
                 }
@@ -3049,18 +3070,18 @@ function formula_calcular($no, &$ctx)
                 $fim = 0;
                 foreach ($cache_med[$id]["linhas"] as $k => $m) {
                     $t = strtotime($m["fim"]);
-                    if ($t <= $ctx["momento"] - $janela && cfg("medicao_base") !== "leituras") {
+                    if ($t <= $momento_med - $janela && cfg("medicao_base") !== "leituras") {
                         $ini = $k + 1;
                     }
-                    if ($t <= $ctx["momento"]) {
+                    if ($t <= $momento_med) {
                         $fim = $k + 1;
                     }
                 }
                 $chave = $ini . "-" . $fim;
                 if (!isset($cache_med[$id]["contas"][$chave])) {
-                    $cache_med[$id]["prior"] = $cache_med[$id]["prior"] ?? gasto_prior($ctx["r"], $ctx["momento"]);
+                    $cache_med[$id]["prior"] = $cache_med[$id]["prior"] ?? gasto_prior($ctx["r"], $momento_med);
                     // no motor "pelas fórmulas", MEDIDO é a conta pela marcação (o 3): a fórmula parte dela se quiser
-                    $cache_med[$id]["contas"][$chave] = gasto_medido($cache_med[$id]["linhas"], $ctx["momento"], $cache_med[$id]["prior"],
+                    $cache_med[$id]["contas"][$chave] = gasto_medido($cache_med[$id]["linhas"], $momento_med, $cache_med[$id]["prior"],
                         $cache_med[$id]["motor"] === "formulas" ? "marcacao" : $cache_med[$id]["motor"]);
                 }
                 $res = in_array($v[0], ["uso", "repouso"], true) ? $cache_med[$id]["contas"][$chave][$v[0]] : null;
@@ -3160,7 +3181,8 @@ function formula_calcular($no, &$ctx)
             }
         }
     }
-    return $res;
+    // Assim como a divisão por zero, estouro e resultado não finito viram vazio e não quebram o JSON da API.
+    return is_float($res) && !is_finite($res) ? null : $res;
 }
 
 // O valor de uma variável para o relógio: o campo (convertido para o tipo), ou a fórmula que vale para ele
@@ -3209,7 +3231,7 @@ function variavel_valor($ident, &$ctx)
             }
         }
     }
-    return $res;
+    return is_float($res) && !is_finite($res) ? null : $res;
 }
 
 // O valor de um campo nas contas, pelo tipo: número (o sim/não, 1 ou 0), data em dias, ou texto; vazio: null
@@ -3219,7 +3241,7 @@ function campo_para_conta($c, $bruto)
         return null;
     }
     if ($c["tipo"] === "inteiro" || $c["tipo"] === "decimal" || $c["tipo"] === "sim_nao") {
-        return (float)$bruto;
+        return is_finite((float)$bruto) ? (float)$bruto : null;
     }
     return $c["tipo"] === "data" ? dias_de(strtotime($bruto . " 00:00:00")) : (string)$bruto;
 }
@@ -3406,7 +3428,7 @@ $FUNCOES_TOTAIS = [
 const TOTAIS_DO_TOPO = ["AGRUPADO", "FAIXAS", "QUEM_MENOR", "QUEM_MAIOR"];
 // as funções do motor que precisam de um relógio: nos totais, só dentro de uma função de total
 const FUNCOES_DO_RELOGIO = ["NO_GRUPO", "RELOGIO", "CALIBRE", "WINDER_POSICAO", "WINDER", "WINDER_PROGRAMA", "ULTIMO_SERVICO", "CUSTO_SERVICOS", "RESERVA_MEDIDA", "RESERVA_TESTES", "TIMEGRAPHER", "TIMEGRAPHER_DATA", "ESCOLHIDO_HA", "VEZES_NO_PLANO", "MEDIDO", "MEDIA_COLECAO", "LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA",
-    "MEDIANA_TAXA", "ULTIMA_TAXA", "MARCHA", "MARCHA_DP", "MARCHA_N", "MARCHA_ULTIMA", "DESVIO_AGORA", "DIA_SEMANA", "SEMANA_DO_ANO", "SORTEIO"];
+    "MEDIANA_TAXA", "ULTIMA_TAXA", "QUANDO_ENERGIA", "MARCHA", "MARCHA_DP", "MARCHA_N", "MARCHA_ULTIMA", "DESVIO_AGORA", "DIA_SEMANA", "SEMANA_DO_ANO", "SORTEIO"];
 
 // As variáveis da tabela, que os totais têm em cada relógio além dos campos e das fórmulas: nome => [o que é, unidade]
 $VARIAVEIS_TABELA = [
@@ -8733,17 +8755,78 @@ function gerar_escala($ini, $ate = null, $nova = false)
     return $gravados;
 }
 
-// A previsão da energia de um relógio com leitura (um tipo de lançamento com valor, como a leitura de carga do
-// smartwatch), pela fórmula energia (em %): quanto dura se usar a partir de hoje (dias_de_carga), quando chega ao limite da
-// Configuração (previsao_limite, 20%) parado, com quanto entra no próximo rodízio e quanto precisa para os dias seguidos
-// dele (simulado com carga cheia na entrada), e a confiança da conta (a idade da leitura e os campos da conta).
-// Devolve as frases (as da página) e os mesmos números. "aplica": o relógio tem leitura com valor (senão, nada).
+// A energia projetada mantém a calibração de origem; o instante do histórico continua sendo o pedido.
+function energia_projetada($r, $momento, $origem, $valores)
+{
+    $ctx = ["r" => $r, "momento" => (int)$momento, "medicoes_em" => (int)$origem, "rastro" => [], "pilha" => [], "valores" => $valores];
+    $e = variavel_valor("energia", $ctx);
+    return is_numeric($e) && is_finite((float)$e) ? (float)$e : null;
+}
+
+// Primeira passagem pelo limite, por trechos do histórico e da simulação; precisão de até um minuto.
+// calculavel=false distingue falta de dados de uma projeção conhecida que não cruza o limite no horizonte.
+function energia_ate_limite($r, $agora, $ate, $limite, $origem = null)
+{
+    $origem = $origem ?? min($agora, time());
+    $valores = valores_do_relogio((int)$r["id"]);
+    $energia = function ($t) use ($r, $origem, $valores) { return energia_projetada($r, $t, $origem, $valores); };
+    $res = ["instante" => null, "calculavel" => true];
+    $e = $energia($agora);
+    if ($e === null || $ate < $agora) {
+        return ["instante" => null, "calculavel" => false];
+    }
+    if ($e <= $limite) {
+        return ["instante" => $agora, "calculavel" => true];
+    }
+    $marcos = [$agora, $ate];
+    foreach (linhas("SELECT l.inicio, l.fim, t.formato, t.fecha_as FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ?", [(int)$r["id"]]) as $l) {
+        $ini = (int)strtotime($l["inicio"]);
+        $marcos[] = $ini;
+        if ($l["formato"] === "sessao") {
+            $fim = $l["fim"] === null ? ($l["fecha_as"] === null ? null : max($ini, instante(dia_da_colecao($ini), $l["fecha_as"]))) : (int)strtotime($l["fim"]);
+            if ($fim !== null) $marcos[] = $fim;
+        }
+    }
+    foreach ($GLOBALS["SIMULACAO"][(int)$r["id"]] ?? [] as $ls) {
+        foreach ($ls as $l) {
+            if (!empty($l["so_uso"])) continue;
+            $marcos[] = (int)$l["ini"];
+            if ($l["fim"] !== null) $marcos[] = (int)$l["fim"];
+        }
+    }
+    $marcos = array_values(array_unique(array_filter($marcos, function ($t) use ($agora, $ate) { return $t >= $agora && $t <= $ate; })));
+    sort($marcos);
+    for ($i = 1; $i < count($marcos); $i++) {
+        $a = $marcos[$i - 1];
+        $fim = $marcos[$i];
+        // Antes de uma leitura/corda que muda o saldo, ainda pode haver uma descarga no trecho anterior.
+        foreach (array_unique([max($a, $fim - 1), $fim]) as $b) {
+            $eb = $energia($b);
+            if ($eb === null) return ["instante" => null, "calculavel" => false];
+            if ($eb <= $limite) {
+                while ($b - $a > 60) {
+                    $meio = $a + intdiv($b - $a, 2);
+                    $em = $energia($meio);
+                    if ($em === null) return ["instante" => null, "calculavel" => false];
+                    if ($em <= $limite) $b = $meio;
+                    else $a = $meio;
+                }
+                return ["instante" => $b, "calculavel" => true];
+            }
+            $a = $b;
+        }
+    }
+    return $res;
+}
+
+// A previsão dos relógios com leitura de valor: energia, primeira descarga, preparação do rodízio e confiança.
+// Devolve as frases da página e os mesmos números. A confiança usa também as medições e sua incerteza.
 function previsao_energia($r, $agora)
 {
     $hoje = new DateTimeImmutable(date("Y-m-d", $agora));
     $res = ["aplica" => false, "linhas" => [], "energia" => null, "dura_dias" => null, "dura_ate" => null, "limite" => (float)(cfg("previsao_limite") !== "" ? cfg("previsao_limite") : 20),
         "chega_limite_em" => null, "proxima_entrada" => null, "carga_na_entrada" => null, "precisa" => null, "carregar_antes" => null,
-        "leitura" => null, "leitura_em" => null, "confianca" => null, "conta" => [], "gasto" => null];
+        "leitura" => null, "leitura_em" => null, "confianca" => null, "confianca_motivos" => [], "recarga_no_bloco" => null, "conta" => [], "gasto" => null];
     $tipos_valor = [];
     foreach (lancamento_tipos_do_relogio($r) as $ident => $t) {
         if ($t["formato"] === "valor" && ($t["marcha"] ?? null) === null) {
@@ -8889,28 +8972,16 @@ function previsao_energia($r, $agora)
             if ($energia <= $res["limite"]) {
                 $res["linhas"][] = t("Já está abaixo de {1}%. Guardado assim, a bateria se desgasta.", [1 => decimal_txt($res["limite"], 6)]);
             } else {
-                $baixo = $agora;
-                $alto = $agora + 366 * 86400;
-                $ctx = ["r" => $r, "momento" => $alto, "rastro" => [], "pilha" => [], "valores" => $valores];
-                $e_alto = variavel_valor("energia", $ctx);
-                if (is_numeric($e_alto) && (float)$e_alto <= $res["limite"]) {
-                    // Acha o primeiro minuto em que a energia chega ao limite, em vez de arredondar para dias inteiros.
-                    // A conta respeita o fim das sessões gravadas e o consumo depois que o relógio sai do pulso.
-                    while ($alto - $baixo > 60) {
-                        $meio = $baixo + intdiv($alto - $baixo, 2);
-                        $ctx = ["r" => $r, "momento" => $meio, "rastro" => [], "pilha" => [], "valores" => $valores];
-                        $e = variavel_valor("energia", $ctx);
-                        if (is_numeric($e) && (float)$e <= $res["limite"]) {
-                            $alto = $meio;
-                        } else {
-                            $baixo = $meio;
-                        }
-                    }
+                $busca = energia_ate_limite($r, $agora, $agora + 366 * 86400, $res["limite"], $agora);
+                if ($busca["instante"] !== null) {
+                    $alto = $busca["instante"];
                     $res["chega_limite_em"] = date("Y-m-d H:i:s", $alto);
                     $quando = [1 => decimal_txt($res["limite"], 6), 2 => data_txt($alto, false, date("Y", $alto) === $hoje->format("Y")) . " " . date("H:i", $alto)];
-                    $res["linhas"][] = $continuando !== null ? t("Continuando {3}, chega a {1}% em {2}.", $quando + [3 => $continuando]) : t("Parado, chega a {1}% em {2}.", $quando);
+                    $res["linhas"][] = $continuando !== null ? t("Com as sessões registradas, chega a {1}% em {2}.", $quando) : t("Parado, chega a {1}% em {2}.", $quando);
+                } elseif (!$busca["calculavel"]) {
+                    $res["linhas"][] = t("Não foi possível calcular quando a energia chega ao limite: faltam dados na projeção.");
                 } else {
-                    $res["linhas"][] = $continuando !== null ? t("Continuando {2}, fica acima de {1}% por mais de um ano.", [1 => decimal_txt($res["limite"], 6), 2 => $continuando])
+                    $res["linhas"][] = $continuando !== null ? t("Com as sessões registradas, fica acima de {1}% por mais de um ano.", [1 => decimal_txt($res["limite"], 6)])
                         : t("Parado, fica acima de {1}% por mais de um ano.", [1 => decimal_txt($res["limite"], 6)]);
                 }
             }
@@ -8919,7 +8990,7 @@ function previsao_energia($r, $agora)
             if ($proxima !== null && $proxima !== $hoje->format("Y-m-d")) {
                 $entrada = instante($proxima, cfg("uso_inicio"));
                 $ctx = ["r" => $r, "momento" => $entrada, "rastro" => [], "pilha" => [], "valores" => $valores];
-                $na_entrada = variavel_valor("energia", $ctx);
+                $na_entrada = energia_projetada($r, $entrada, $agora, $valores);
                 // quanto os dias seguidos gastam: simulados com a carga cheia na entrada; esgotou antes do fim: 100%
                 $ultimo_dia = $proxima;
                 $prox = date("Y-m-d", strtotime($proxima . " +1 day"));
@@ -8927,31 +8998,61 @@ function previsao_energia($r, $agora)
                     $ultimo_dia = $prox;
                     $prox = date("Y-m-d", strtotime($prox . " +1 day"));
                 }
-                $GLOBALS["SIMULACAO"] = [];
-                simular_lancamento((int)$r["id"], $leitura["identificador"], $entrada, null, 100);
-                for ($k = $proxima; $k <= $ultimo_dia; $k = date("Y-m-d", strtotime($k . " +1 day"))) {
-                    simular_lancamento((int)$r["id"], "pulso", instante($k, cfg("uso_inicio")), instante($k, cfg("uso_fim")), null);
+                $simulacao_antes = $GLOBALS["SIMULACAO"] ?? [];
+                try {
+                    $GLOBALS["SIMULACAO"] = [];
+                    simular_lancamento((int)$r["id"], $leitura["identificador"], $entrada, null, 100);
+                    for ($k = $proxima; $k <= $ultimo_dia; $k = date("Y-m-d", strtotime($k . " +1 day"))) {
+                        simular_lancamento((int)$r["id"], "pulso", instante($k, cfg("uso_inicio")), instante($k, cfg("uso_fim")), null);
+                    }
+                    $fim_bloco = instante($ultimo_dia, cfg("uso_fim"));
+                    $no_fim = energia_projetada($r, $fim_bloco, $agora, $valores);
+                    $esgota = energia_ate_limite($r, $entrada, $fim_bloco, 0.0001, $agora);
+                } finally {
+                    $GLOBALS["SIMULACAO"] = $simulacao_antes;
+                    $GLOBALS["SIMULACAO_VERSAO"]++;
                 }
-                $ctx = ["r" => $r, "momento" => instante($ultimo_dia, cfg("uso_fim")), "rastro" => [], "pilha" => [], "valores" => $valores];
-                $no_fim = variavel_valor("energia", $ctx);
-                $GLOBALS["SIMULACAO"] = [];
-                $GLOBALS["SIMULACAO_VERSAO"]++;
-                if (is_numeric($na_entrada) && is_numeric($no_fim)) {
+                if (is_numeric($na_entrada) && $no_fim !== null && $esgota["calculavel"]) {
                     $res["proxima_entrada"] = $proxima;
                     $res["carga_na_entrada"] = (int)round((float)$na_entrada);
-                    $res["precisa"] = (float)$no_fim <= 0 ? 100 : (int)ceil(100 - (float)$no_fim);
+                    $res["precisa"] = $no_fim <= 0 ? 100 : max(0, (int)ceil(100 - $no_fim));
                     $res["carregar_antes"] = (float)$na_entrada < $res["precisa"];
-                    $res["linhas"][] = t("Entra no rodízio em {1} com ~{2}%; precisa de {3}%{4}", [1 => data_txt(strtotime($proxima), false, true), 2 => $res["carga_na_entrada"], 3 => $res["precisa"], 4 => $res["carregar_antes"] ? t(". Carregar antes.") : t(". Dá conta.")]);
+                    $res["recarga_no_bloco"] = $esgota["instante"] !== null && $esgota["instante"] < $fim_bloco - 60;
+                    $fim_texto = $res["recarga_no_bloco"] ? t(". Mesmo com 100%, precisa recarregar durante esse período.")
+                        : ($res["carregar_antes"] ? t(". Carregar antes.") : t(". Dá conta."));
+                    $res["linhas"][] = t("Entra no rodízio em {1} com ~{2}%; precisa de {3}%{4}", [1 => data_txt(strtotime($proxima), false, true), 2 => $res["carga_na_entrada"], 3 => $res["precisa"], 4 => $fim_texto]);
                 }
             }
-            // a confiança: a leitura envelhece; alta só com leitura de até 2 dias e nenhum campo da conta vazio
+            // A data recente da leitura, sozinha, não prova que as taxas estimadas são confiáveis.
             $idade = ($agora - strtotime($leitura["inicio"])) / 86400;
-            $res["confianca"] = $idade <= 2 && !$vazio ? "alta" : ($idade <= 7 ? "media" : "baixa");
+            $motivos = [];
+            if ($idade > 2) $motivos[] = t("a leitura tem mais de dois dias");
+            if ($vazio) $motivos[] = t("há dados necessários vazios");
+            if ($g["n"] < 3) $motivos[] = t("há menos de três medições na conta");
+            if (!$vale_medido["uso"] || !$vale_medido["repouso"]) $motivos[] = t("as taxas da projeção não foram estimadas pelas medições");
+            if ($g["uso"] === null || $g["repouso"] === null || (!$g["conjunta"] && ($n_med["uso"] === 0 || $n_med["repouso"] === 0))) {
+                $motivos[] = t("as medições não separam os dois gastos");
+            }
+            $incerta = false;
+            $muito_incerta = false;
+            foreach (["uso", "repouso"] as $medida) {
+                $x = $gasto[$medida];
+                if ($vale_medido[$medida]) {
+                    $dp = $x["medido_dp"];
+                    $incerta = $incerta || $dp === null || $dp > abs($x["vale"]) * 0.5;
+                    $muito_incerta = $muito_incerta || ($dp !== null && $dp > 0 && $dp >= abs($x["vale"]));
+                }
+            }
+            if ($incerta) $motivos[] = t("a incerteza dos gastos é alta ou não foi estimada");
+            if (isset($busca) && !$busca["calculavel"]) $motivos[] = t("faltam dados na projeção futura");
+            $res["confianca"] = $idade > 7 || $vazio || $muito_incerta || (isset($busca) && !$busca["calculavel"]) ? "baixa" : (count($motivos) === 0 ? "alta" : "media");
+            $res["confianca_motivos"] = $motivos;
             // hoje, ontem, ou há quantos dias de calendário
             $dias_leitura = (int)(new DateTimeImmutable(substr($leitura["inicio"], 0, 10)))->diff($hoje)->days;
             $quando = $dias_leitura === 0 ? t("hoje") : ($dias_leitura === 1 ? t("ontem") : t("há {1} dias", [1 => $dias_leitura]));
             // (de onde vem cada número da conta vai à parte, em "conta": a tela mostra numa tabela)
             $res["linhas"][] = t("Confiança {1}: leitura de {2}{3} feita {4}.", [1 => ["alta" => t("alta"), "media" => t("média"), "baixa" => t("baixa")][$res["confianca"]], 2 => decimal_txt($res["leitura"], 6), 3 => $leitura["unidade"], 4 => $quando]);
+            if (count($motivos) > 0) $res["linhas"][] = t("Limitações da previsão: {1}.", [1 => implode("; ", $motivos)]);
         }
     }
     return $res;
@@ -8962,57 +9063,20 @@ function previsao_energia($r, $agora)
 // de sessão a energia só sobe ou só desce, então a busca é por trechos: acha o primeiro trecho em que ela chega a zero e
 // procura o instante por metades, até 1 minuto. Devolve o instante (em segundos) ou null: sem energia calculável, ou ela não
 // chega a zero até $ate. Usado pelas autonomias (parado, no pulso direto, seguindo o plano).
-function quando_acaba($r, $agora, $sessoes, $ate)
+function quando_acaba($r, $agora, $sessoes, $ate, &$calculavel = null)
 {
-    $id = (int)$r["id"];
-    $GLOBALS["SIMULACAO"] = [];
-    $GLOBALS["SIMULACAO_VERSAO"] = ($GLOBALS["SIMULACAO_VERSAO"] ?? 0) + 1;
-    // os limites dos trechos: agora, o começo e o fim de cada sessão simulada e de cada gravada que ainda não acabou, e $ate
-    $marcos = [$agora, $ate];
-    foreach ($sessoes as $x) {
-        simular_lancamento($id, $x[0], $x[1], $x[2], null);
-        $marcos[] = (int)$x[1];
-        $marcos[] = (int)$x[2];
+    $antes = $GLOBALS["SIMULACAO"] ?? [];
+    try {
+        $GLOBALS["SIMULACAO"] = [];
+        $GLOBALS["SIMULACAO_VERSAO"] = ($GLOBALS["SIMULACAO_VERSAO"] ?? 0) + 1;
+        foreach ($sessoes as $x) simular_lancamento((int)$r["id"], $x[0], $x[1], $x[2], null);
+        $busca = energia_ate_limite($r, $agora, $ate, 0.0001, min($agora, time()));
+        $calculavel = $busca["calculavel"];
+        return $busca["instante"];
+    } finally {
+        $GLOBALS["SIMULACAO"] = $antes;
+        $GLOBALS["SIMULACAO_VERSAO"]++;
     }
-    foreach (linhas("SELECT l.inicio, l.fim FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'sessao' AND l.fim > ?",
-        [$id, date("Y-m-d H:i:s", $agora)]) as $l) {
-        $marcos[] = (int)strtotime($l["inicio"]);
-        $marcos[] = (int)strtotime($l["fim"]);
-    }
-    $marcos = array_values(array_unique(array_filter($marcos, function ($x) use ($agora, $ate) { return $x >= $agora && $x <= $ate; })));
-    sort($marcos);
-    $valores = valores_do_relogio($id);
-    $energia_em = function ($t) use ($r, $valores) {
-        $c = ["r" => $r, "momento" => (int)$t, "rastro" => [], "pilha" => [], "valores" => $valores];
-        $e = variavel_valor("energia", $c);
-        return is_numeric($e) ? (float)$e : null;
-    };
-    $res = null;
-    $e0 = isset(formulas_todas()["energia"]) ? $energia_em($agora) : null;
-    if ($e0 !== null && $e0 <= 0.0001) {
-        $res = $agora;
-    } elseif ($e0 !== null) {
-        for ($i = 0; $res === null && $i < count($marcos) - 1; $i++) {
-            $a = $marcos[$i];
-            $b = $marcos[$i + 1];
-            $eb = $energia_em($b);
-            if ($eb !== null && $eb <= 0.0001) {
-                while ($b - $a > 60) {
-                    $meio = intdiv($a + $b, 2);
-                    $em = $energia_em($meio);
-                    if ($em !== null && $em <= 0.0001) {
-                        $b = $meio;
-                    } else {
-                        $a = $meio;
-                    }
-                }
-                $res = $b;
-            }
-        }
-    }
-    $GLOBALS["SIMULACAO"] = [];
-    $GLOBALS["SIMULACAO_VERSAO"]++;
-    return $res;
 }
 
 // As autonomias de um relógio, em segundos (inteiros), para a API: a prevista (carga cheia, pelo cadastro: a fórmula
@@ -9045,9 +9109,9 @@ function autonomia_do_relogio($r, $agora)
             $plano[] = ["pulso", $ini, $fim];
         }
     }
-    $acaba_guardado = $energia === null ? null : quando_acaba($r, $agora, [], $ate);
-    $acaba_em_uso = $energia === null ? null : quando_acaba($r, $agora, $fim_pulso < $ate ? [["pulso", $fim_pulso, $ate]] : [], $ate);
-    $acaba = $energia === null ? null : quando_acaba($r, $agora, $plano, $ate);
+    $acaba_guardado = $energia === null ? null : quando_acaba($r, $agora, [], $ate, $guardado_calculavel);
+    $acaba_em_uso = $energia === null ? null : quando_acaba($r, $agora, $fim_pulso < $ate ? [["pulso", $fim_pulso, $ate]] : [], $ate, $uso_calculavel);
+    $acaba = $energia === null ? null : quando_acaba($r, $agora, $plano, $ate, $plano_calculavel);
     $res = ["calculado_em_unixtimestamp" => $agora, "em_uso" => $em_uso, "energia" => $energia,
         "autonomia_prevista" => $formula("autonomia_prevista"), "autonomia_atual" => $formula("autonomia_atual"),
         "autonomia_estimada" => $acaba === null ? null : $acaba - $agora,
@@ -9063,8 +9127,10 @@ function autonomia_do_relogio($r, $agora)
     }
     foreach (["restante_em_uso" => t("no pulso direto"), "restante_guardado" => t("guardado"), "autonomia_estimada" => t("seguindo o plano")] as $k => $como) {
         if ($res[$k] === null) {
+            $calculavel = ["restante_em_uso" => $uso_calculavel ?? false, "restante_guardado" => $guardado_calculavel ?? false, "autonomia_estimada" => $plano_calculavel ?? false][$k];
             $res["motivos"][$k] = $energia === null ? t("sem dados para calcular a energia agora (ex.: smartwatch sem nenhuma leitura, solar sem nenhum sol registrado)")
-                : t("a energia não chega a zero em até 10 anos {1}{2}", [1 => $como, 2 => $k === "restante_em_uso" ? t(" (no pulso, o relógio pode se recarregar)") : ""]);
+                : (!$calculavel ? t("faltam dados para projetar a energia {1}", [1 => $como])
+                : t("a energia não chega a zero em até 10 anos {1}{2}", [1 => $como, 2 => $k === "restante_em_uso" ? t(" (no pulso, o relógio pode se recarregar)") : ""]));
         }
     }
     foreach (["acaba_em_unixtimestamp", "acaba_em_segundos", "acaba_em_datacomtz"] as $k) {

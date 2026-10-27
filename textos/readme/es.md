@@ -1,4 +1,4 @@
-<!-- origem: 73c90cef48face883c57bb9a153027fc9109dade -->
+<!-- origem: 51213c17088e79ada1cb0b3bd3b061bb54802501 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -688,6 +688,8 @@ ciclos mayores, que ningún `CHECK` alcanza) y las de los vínculos opcionales.
 | [`PORTE.md`](PORTE.md) | el registro del porte de la versión anterior |
 
 ---
+
+La regresión `php testes/previsao.php` cubre la primera descarga, recarga durante la rotación, confianza, salida JSON y migración v50.
 
 Las regresiones `php testes/backup.php` y `php testes/motores.php` usan bases SQLite nuevas y desechables. Comprueban que una copia no válida preserve la base, que las copias antiguas válidas se restauren y que los pesos extremos y las previsiones de carga funcionen. También se ejecutan en el trabajo de arquitectura del CI; las regresiones del navegador siguen en el trabajo de diseño.
 

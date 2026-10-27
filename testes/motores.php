@@ -69,7 +69,8 @@ try {
     // A atualização só troca a expressão padrão conhecida, e pode rodar mais de uma vez.
     $migracao = file_get_contents(dirname(__DIR__) . "/migracao_v49.sql");
     exigir_motor(preg_match("/AND expressao = '([^']+)'/", $migracao, $antiga) === 1, "Falta a proteção da expressão antiga na migração.");
-    $padrao = (string)valor("SELECT expressao FROM aviso WHERE identificador = 'carregar' ORDER BY id LIMIT 1");
+    exigir_motor(preg_match("/UPDATE aviso SET expressao = '([^']+)'/", $migracao, $nova_v49) === 1, "Falta a expressão corrigida na v49.");
+    $padrao = $nova_v49[1];
     sql("UPDATE aviso SET expressao = ? WHERE identificador = 'carregar'", [$antiga[1]]);
     sql("INSERT INTO aviso (identificador, nome, expressao, texto, no_id) VALUES ('carregar', 'Personalizado', 'AGORA() + 2', 'Teste', ?)", [no_raiz()]);
     banco_script($migracao);

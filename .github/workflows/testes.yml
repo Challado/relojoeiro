@@ -38,6 +38,8 @@ jobs:
         run: php testes/backup.php
       - name: Pesos extremos e previsão de carga
         run: php testes/motores.php
+      - name: Primeira descarga, recarga no rodízio e robustez das previsões
+        run: php testes/previsao.php
 
   paridade:
     name: Paridade (SQLite, PostgreSQL, MariaDB)

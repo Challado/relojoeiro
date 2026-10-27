@@ -410,7 +410,12 @@ function responde($codigo, $saida, $formato)
         echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<resposta>\n" . xml_de($saida, 1) . "</resposta>\n";
     } else {
         header("Content-Type: application/json; charset=utf-8");
-        echo json_encode($saida, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        try {
+            echo json_encode($saida, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            http_response_code(500);
+            echo json_encode(["erro" => t("não foi possível gerar uma resposta JSON válida")], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        }
     }
 }
 

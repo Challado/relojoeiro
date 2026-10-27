@@ -99,6 +99,9 @@
  *   recurso=calcular  expressao=<fórmula> [relogio=3 ou 1,2,3]: calcula a fórmula (sem gravar) em cada relógio:
  *                   {"expressao", "resultados": [{"relogio_id", "relogio", "valor", "partes": {nome: valor}}]}
  *                   Erro de escrita: 400 {"erro", "erros": [...]}. É o "testar" das fórmulas.
+ *                   Estouro numérico e resultados não finitos dão null, assim como a divisão por zero.
+ *                   QUANDO_ENERGIA(limite; dias): primeira data do limite, respeitando as sessões e a calibração inicial;
+ *                   dias de 1 a 366 (padrão 366); null se não atingir ou faltar dado. Não pode depender de energia em círculo.
  *                            Ex.: curl -u lucas:senha -G "http://servidor/relojoeiro/api.php" --data-urlencode recurso=calcular --data-urlencode "expressao=energia * 2" -d relogio=10,12
  *   recurso=foto relogio=3   a imagem (não é JSON)
  *                            Ex.: curl -u lucas:senha -o foto.jpg "http://servidor/relojoeiro/api.php?recurso=foto&relogio=10"
@@ -144,8 +147,9 @@
  *   recurso=previsao         [relogio=ids] a previsão da energia dos relógios com leitura (o smartwatch): {"previsoes": [{"relogio_id",
  *                            "relogio", "aplica" (tem leitura com valor), "linhas" (as frases da página), "energia", "dura_dias",
  *                            "dura_ate", "limite" (a Configuração, 20%), "chega_limite_em" (parado), "proxima_entrada",
- *                            "carga_na_entrada", "precisa", "carregar_antes", "leitura", "leitura_em", "confianca" (alta, média,
- *                            baixa), "conta": [{"campo", "nome", "valor", "unidade", "origem": informado, padrão ou vazio}],
+ *                            "carga_na_entrada", "precisa" (até 100), "carregar_antes", "recarga_no_bloco" (nem cheio cobre o período),
+ *                            "leitura", "leitura_em", "confianca" (alta, média, baixa), "confianca_motivos" (as limitações),
+ *                            "conta": [{"campo", "nome", "valor", "unidade", "origem": informado, padrão ou vazio}],
  *                            "gasto": {"uso" e "repouso": {"cadastro", "medido", "antes", "vale"}, "janela_dias", "medicoes",
  *                            "medicoes_antes", "conjunta"}}]}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=previsao&relogio=10"
@@ -1795,10 +1799,16 @@
  *     relogios[].previsao.carregar_antes
  *                                    verdadeiro ou falso: a carga na entrada não basta (é preciso carregar antes)
  *     relogios[].previsao.chega_limite_em
- *                                    quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se passa
- *                                    de um ano
- *     relogios[].previsao.confianca  a confiança da conta: alta (leitura de até 2 dias e nenhum dado vazio, ou gasto em uso medido), media
- *                                    ou baixa (leitura com mais de 7 dias)
+ *                                    a primeira data em que a carga chega ao limite, respeitando as sessões registradas e mantendo o gasto
+ *                                    medido do início da projeção (AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se não chegar em 366 dias
+ *                                    ou se faltar dado
+ *     relogios[].previsao.confianca  alta exige leitura de até 2 dias, pelo menos 3 medições que separem os gastos e incerteza de até
+ *                                    metade de cada taxa medida; media ou baixa nos demais casos; baixa com leitura de mais de 7 dias, dado
+ *                                    ausente ou incerteza igual ou maior que a taxa; os motivos vêm em confianca_motivos
+ *     relogios[].previsao.confianca_motivos
+ *                                    as limitações que impedem confiança alta; lista vazia quando alta
+ *     relogios[].previsao.confianca_motivos[]
+ *                                    um motivo para a confiança da previsão não ser alta
  *     relogios[].previsao.conta[]    de onde vem cada número da conta: primeiro o gasto que vale no pulso e fora dele, depois o gasto
  *                                    medido pelas leituras e os campos do cadastro (os de um gasto em que vale o medido, com usado falso)
  *     relogios[].previsao.conta[].usado
@@ -1930,7 +1940,11 @@
  *     relogios[].previsao.leitura_em quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].previsao.limite     o limite de carga da Configuração (previsao_limite), em % (número)
  *     relogios[].previsao.linhas[]   as frases da previsão, como a tela mostra (texto)
- *     relogios[].previsao.precisa    quanto ele precisa ter na entrada para os dias seguidos no pulso, em % (número)
+ *     relogios[].previsao.precisa    a carga necessária na entrada para os dias seguidos no pulso, em % (até 100); recarga_no_bloco avisa
+ *                                    quando nem uma carga cheia cobre o período
+ *     relogios[].previsao.recarga_no_bloco
+ *                                    verdadeiro se mesmo com 100% na entrada a carga acaba antes do fim dos dias seguidos; é preciso
+ *                                    recarregar durante o período; null sem projeção calculável
  *     relogios[].previsao.proxima_entrada
  *                                    o próximo dia em que o relógio entra no rodízio (texto AAAA-MM-DD); null se não está no plano
  *     relogios[].restante_em_uso     quanto ainda dura a partir de agora se ficar no pulso sem tirar, o dia todo (número inteiro, em
@@ -3444,10 +3458,16 @@
  *     relogio.previsao.carregar_antes
  *                                    verdadeiro ou falso: a carga na entrada não basta (é preciso carregar antes)
  *     relogio.previsao.chega_limite_em
- *                                    quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se passa
- *                                    de um ano
- *     relogio.previsao.confianca     a confiança da conta: alta (leitura de até 2 dias e nenhum dado vazio, ou gasto em uso medido), media
- *                                    ou baixa (leitura com mais de 7 dias)
+ *                                    a primeira data em que a carga chega ao limite, respeitando as sessões registradas e mantendo o gasto
+ *                                    medido do início da projeção (AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se não chegar em 366 dias
+ *                                    ou se faltar dado
+ *     relogio.previsao.confianca     alta exige leitura de até 2 dias, pelo menos 3 medições que separem os gastos e incerteza de até
+ *                                    metade de cada taxa medida; media ou baixa nos demais casos; baixa com leitura de mais de 7 dias, dado
+ *                                    ausente ou incerteza igual ou maior que a taxa; os motivos vêm em confianca_motivos
+ *     relogio.previsao.confianca_motivos
+ *                                    as limitações que impedem confiança alta; lista vazia quando alta
+ *     relogio.previsao.confianca_motivos[]
+ *                                    um motivo para a confiança da previsão não ser alta
  *     relogio.previsao.conta[]       de onde vem cada número da conta: primeiro o gasto que vale no pulso e fora dele, depois o gasto
  *                                    medido pelas leituras e os campos do cadastro (os de um gasto em que vale o medido, com usado falso)
  *     relogio.previsao.conta[].usado verdadeiro: o número entra na conta; falso: um campo do cadastro que ficou fora, porque vale o gasto
@@ -3573,7 +3593,11 @@
  *     relogio.previsao.leitura_em    quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.previsao.limite        o limite de carga da Configuração (previsao_limite), em % (número)
  *     relogio.previsao.linhas[]      as frases da previsão, como a tela mostra (texto)
- *     relogio.previsao.precisa       quanto ele precisa ter na entrada para os dias seguidos no pulso, em % (número)
+ *     relogio.previsao.precisa       a carga necessária na entrada para os dias seguidos no pulso, em % (até 100); recarga_no_bloco avisa
+ *                                    quando nem uma carga cheia cobre o período
+ *     relogio.previsao.recarga_no_bloco
+ *                                    verdadeiro se mesmo com 100% na entrada a carga acaba antes do fim dos dias seguidos; é preciso
+ *                                    recarregar durante o período; null sem projeção calculável
  *     relogio.previsao.proxima_entrada
  *                                    o próximo dia em que o relógio entra no rodízio (texto AAAA-MM-DD); null se não está no plano
  *     relogio.proxima                o próximo dia no plano (texto AAAA-MM-DD); null: não está no plano
@@ -4234,10 +4258,15 @@
  *     previsoes[].aplica             verdadeiro ou falso: o relógio tem leitura com valor (senão os outros campos ficam vazios)
  *     previsoes[].carga_na_entrada   com quanto ele entra nesse dia, em % (número)
  *     previsoes[].carregar_antes     verdadeiro ou falso: a carga na entrada não basta (é preciso carregar antes)
- *     previsoes[].chega_limite_em    quando, parado, a carga chega ao limite (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se passa
- *                                    de um ano
- *     previsoes[].confianca          a confiança da conta: alta (leitura de até 2 dias e nenhum dado vazio, ou gasto em uso medido), media
- *                                    ou baixa (leitura com mais de 7 dias)
+ *     previsoes[].chega_limite_em    a primeira data em que a carga chega ao limite, respeitando as sessões registradas e mantendo o gasto
+ *                                    medido do início da projeção (AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se não chegar em 366 dias
+ *                                    ou se faltar dado
+ *     previsoes[].confianca          alta exige leitura de até 2 dias, pelo menos 3 medições que separem os gastos e incerteza de até
+ *                                    metade de cada taxa medida; media ou baixa nos demais casos; baixa com leitura de mais de 7 dias, dado
+ *                                    ausente ou incerteza igual ou maior que a taxa; os motivos vêm em confianca_motivos
+ *     previsoes[].confianca_motivos  as limitações que impedem confiança alta; lista vazia quando alta
+ *     previsoes[].confianca_motivos[]
+ *                                    um motivo para a confiança da previsão não ser alta
  *     previsoes[].conta[]            de onde vem cada número da conta: primeiro o gasto que vale no pulso e fora dele, depois o gasto
  *                                    medido pelas leituras e os campos do cadastro (os de um gasto em que vale o medido, com usado falso)
  *     previsoes[].conta[].usado      verdadeiro: o número entra na conta; falso: um campo do cadastro que ficou fora, porque vale o gasto
@@ -4345,7 +4374,10 @@
  *     previsoes[].leitura_em         quando foi a última leitura (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     previsoes[].limite             o limite de carga da Configuração (previsao_limite), em % (número)
  *     previsoes[].linhas[]           as frases da previsão, como a tela mostra (texto)
- *     previsoes[].precisa            quanto ele precisa ter na entrada para os dias seguidos no pulso, em % (número)
+ *     previsoes[].precisa            a carga necessária na entrada para os dias seguidos no pulso, em % (até 100); recarga_no_bloco avisa
+ *                                    quando nem uma carga cheia cobre o período
+ *     previsoes[].recarga_no_bloco   verdadeiro se mesmo com 100% na entrada a carga acaba antes do fim dos dias seguidos; é preciso
+ *                                    recarregar durante o período; null sem projeção calculável
  *     previsoes[].proxima_entrada    o próximo dia em que o relógio entra no rodízio (texto AAAA-MM-DD); null se não está no plano
  *     previsoes[].relogio            o nome
  *     previsoes[].relogio_id         o relógio

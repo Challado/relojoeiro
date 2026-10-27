@@ -1,4 +1,4 @@
-<!-- origem: 73c90cef48face883c57bb9a153027fc9109dade -->
+<!-- origem: 51213c17088e79ada1cb0b3bd3b061bb54802501 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -501,6 +501,8 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 | [`PORTE.md`](PORTE.md) | 从上一版本移植的记录 |
 
 ---
+
+回归测试 `php testes/previsao.php` 覆盖首次放电、轮换中途充电、可信度、JSON 输出和 v50 迁移。
 
 回归测试 `php testes/backup.php` 和 `php testes/motores.php` 使用新建的一次性 SQLite 数据库，检查无效备份不改变数据库、旧的有效备份可恢复，以及极端权重和电量预测的行为。它们也在 CI 的架构作业中运行；浏览器回归测试仍在布局作业中运行。
 

@@ -129,6 +129,7 @@ la cuenta, y la división por cero da vacío. Lo básico:
 | `HOJE()`, `AGORA()` | la fecha de hoy y el instante actual, en días (ahora con la fracción del día) |
 | `DIAS_DESDE(fecha)`, `DIAS_ATE(fecha)`, `SOMA_MESES(fecha; meses)` | días desde y hasta una fecha (negativo: ya pasó); la fecha más meses, por el calendario |
 | `HORAS_USO()` | las horas de un día de uso, por el horario de uso de la Configuración (de 7 a 22 h: 15) |
+| `QUANDO_ENERGIA(limite; dias)` | la primera fecha en que la energía llega al límite, en 1 a 366 días (predeterminado 366), respetando las sesiones y el gasto medido inicial; vacío si no llega o faltan datos |
 | `CONFIG("clave")` | un número de la Configuración, como `CONFIG("sol_limiar")` |
 
 Y las que leen el historial de cada reloj:
@@ -600,6 +601,18 @@ falta tocar la ficha. El "Consumo en uso" y el "Consumo guardado" de la ficha so
 en el motor 4).
 
 ---
+
+### La previsión de descarga
+
+La proyección mantiene el gasto medido al inicio: el envejecimiento de una medición durante la proyección no hace que la batería recupere carga. Las consultas históricas siguen usando la ventana de la fecha consultada. La búsqueda encuentra el primer cruce del límite o del cero, por tramos de las sesiones, con precisión de hasta un minuto. Un futuro sin datos no se presenta como autonomía superior a un año.
+
+El aviso predeterminado **Cargar** usa `QUANDO_ENERGIA(limite_carga; 366)`, el mismo cálculo de la ficha, respetando el fin de las sesiones. La migración v50 solo actualiza la expresión predeterminada conocida de la v49; los avisos personalizados se conservan.
+
+`precisa` sigue limitado al 100%. Si incluso una carga completa se agota antes de terminar los días consecutivos, `recarga_no_bloco` es verdadero y el texto avisa que hay que recargar durante el período. `carregar_antes` trata de la carga necesaria al entrar; por sí solo no garantiza que una carga cubra el bloque.
+
+La confianza alta exige una lectura de hasta dos días, al menos tres mediciones que separen los gastos, tasas estimadas con las mediciones y una desviación estándar de hasta la mitad de cada tasa. Es baja con una lectura de más de siete días, datos necesarios ausentes o desviación estándar igual o superior a la tasa; en los demás casos, media. `confianca_motivos` explica las limitaciones. Una lectura reciente por sí sola no demuestra que la fecha futura sea precisa.
+
+Los resultados numéricos no finitos, como `10 ^ 1000`, dan vacío (`null`), como la división por cero. `PADRAO` puede ofrecer un valor alternativo. Si otro resultado inválido impide la serialización, la API responde un error JSON con HTTP 500, nunca un cuerpo vacío con HTTP 200.
 
 ### La precisión (la marcha del reloj)
 
@@ -2683,6 +2696,8 @@ ciclos mayores, que ningún `CHECK` alcanza) y las de los vínculos opcionales.
 | [`PORTE.md`](PORTE.md) | el registro del porte de la versión anterior |
 
 ---
+
+La regresión `php testes/previsao.php` cubre la primera descarga, recarga durante la rotación, confianza, salida JSON y migración v50.
 
 Las regresiones `php testes/backup.php` y `php testes/motores.php` usan bases SQLite nuevas y desechables. Comprueban que una copia no válida preserve la base, que las copias antiguas válidas se restauren y que los pesos extremos y las previsiones de carga funcionen. También se ejecutan en el trabajo de arquitectura del CI; las regresiones del navegador siguen en el trabajo de diseño.
 

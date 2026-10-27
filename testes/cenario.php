@@ -555,6 +555,10 @@ foreach ($rel as $nome => $id) {
 ler("foto auto", ["recurso" => "foto", "relogio" => $rel["auto"]]);
 ler("tudo com fotos", ["incluir" => "relogios", "mostrar" => ["relogios" => "id,nome,foto"]]);
 ler("calcular", ["recurso" => "calcular", "expressao" => "energia * 2 + HORAS(\"pulso\"; 30)"]);
+// O estouro vira vazio, sem quebrar a serialização da resposta HTTP.
+$estouro = ler("calcular estouro numerico", ["recurso" => "calcular", "relogio" => $rel["smart"], "expressao" => "10 ^ 1000"]);
+if (!isset($estouro["resultados"][0]) || $estouro["resultados"][0]["valor"] !== null) $falhas[] = "calcular: estouro não virou vazio";
+
 ler("filtro nome", ["incluir" => "relogios", "f" => ["relogios" => ["nome" => ["contem" => "relogio"]]], "mostrar" => ["relogios" => "id,nome"], "foto" => "nao"]);
 ler("filtro energia", ["incluir" => "relogios", "f" => ["relogios" => ["formulas.energia.valor" => ["ate" => 60]]], "ordem" => ["relogios" => "-formulas.energia.valor"], "mostrar" => ["relogios" => "nome,formulas.energia.valor"], "foto" => "nao"]);
 ler("cron", ["recurso" => "cron", "situacao" => "todas", "busca" => "plano"]);
