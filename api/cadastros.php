@@ -43,6 +43,7 @@ $saida = ["campos" => array_map(function ($c) {
     "tipos_de_modo" => array_map(function ($k) { return ["chave" => $k, "nome" => t(MODO_TIPOS[$k])]; }, array_keys(MODO_TIPOS)),
     "roteiro_padrao" => ROTEIRO_SAIDAS,
     "modo_ativo" => modo_ativo(), "max_sem_uso" => (int)cfg("max_sem_uso"), "hoje" => hoje_da_colecao()->format("Y-m-d"), "semana_inicio" => semana_comeca() === 7 ? "domingo" : "segunda",
+    "semana_ultimo_dia" => cfg("semana_ultimo_dia") === "semana_seguinte" ? "semana_seguinte" : "dia_seguinte",
     "grupos" => array_map(function ($o) { return ["id" => $o[0], "caminho" => no_caminho($o[0])]; }, nos_em_ordem()),
     "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"]]; }, linhas("SELECT id, nome FROM relogio ORDER BY nome")),
     "documento_categorias" => documento_categorias_lista(),

@@ -1811,7 +1811,32 @@ foreach ([["hoje", null, "salvar sempre hoje"], ["hoje", "resortear", "sempre ho
     }
 }
 ler("escala começando sempre hoje", ["recurso" => "config"]);
-escrever(["recurso" => "config", "acao" => "salvar", "escala_inicio" => "amanha"]);
+// onde a escala fecha (escala_periodo), com ela começando sempre hoje: no fim da semana, a de 7 dias vai até o fim desta
+// semana (a semana na segunda; hoje no domingo, até o fim da seguinte); no fim do mês, a de 30 dias vai até o último dia do
+// mês (hoje no último dia, até o fim do seguinte). Outro valor é recusado, e o da semana_ultimo_dia também
+escrever(["recurso" => "config", "acao" => "salvar", "escala_periodo" => "quinzena"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "semana_ultimo_dia" => "nunca"], false);
+$fim_semana_e = $em(7 - (int)date("N"));
+$fim_semana_e = $fim_semana_e === $em(0) ? $em(7) : $fim_semana_e;
+$fim_mes_e = date("Y-m-t") === $em(0) ? date("Y-m-t", strtotime(date("Y-m-01") . " +1 month")) : date("Y-m-t");
+foreach ([["semana", 7, $fim_semana_e, "fechando no fim da semana"], ["mes", 7, $fim_semana_e, "fechando no fim do mês, com 7 dias (como a semana)"],
+    ["mes", 30, $fim_mes_e, "fechando no fim do mês, com 30 dias"], ["semana", 7, $fim_semana_e, "de volta ao fim da semana, com 7 dias"]] as [$per_e, $dias_e, $certo_e, $nome_e]) {
+    escrever(["recurso" => "config", "acao" => "salvar", "escala_inicio" => "hoje", "escala_periodo" => $per_e]);
+    escrever(["recurso" => "modos", "acao" => "salvar", "id" => $inteligente, "nome" => "Escala inteligente", "selecao" => "inteligente", "escala_dias" => $dias_e,
+        "blocos" => [["nome" => "Todo dia", "dias" => [1, 2, 3, 4, 5, 6, 7], "no_id" => 0, "um_por" => "dia", "relogio_id" => 0]]]);
+    escrever(["recurso" => "rodizio", "acao" => "resortear"]);
+    chamar("GET", ["recurso" => "hoje"]);
+    $fim_e = $fim_escala();
+    $alem_e = $sorteados_alem($fim_e !== "" ? $fim_e : $certo_e);
+    if ($fim_e !== $certo_e || count($alem_e) > 0) {
+        $falhas[] = "escala " . $nome_e . ": o fim ficou em " . ($fim_e !== "" ? $fim_e : "nenhum") . " (devia ser " . $certo_e . ")"
+            . (count($alem_e) > 0 ? "; sorteados depois: " . implode(", ", array_slice($alem_e, 0, 5)) : "");
+    }
+}
+// no último dia da semana, a semana seguinte inteira (semana_ultimo_dia): grava e volta; o efeito, a matriz da simulação confere
+escrever(["recurso" => "config", "acao" => "salvar", "semana_ultimo_dia" => "semana_seguinte"]);
+ler("a semana seguinte inteira no último dia", ["recurso" => "cadastros", "incluir" => "semana_ultimo_dia"]);
+escrever(["recurso" => "config", "acao" => "salvar", "escala_inicio" => "amanha", "escala_periodo" => "corridos", "semana_ultimo_dia" => "dia_seguinte"]);
 
 $texto = json_encode($foto, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_PRESERVE_ZERO_FRACTION | JSON_INVALID_UTF8_SUBSTITUTE);
 if ($texto === false) {

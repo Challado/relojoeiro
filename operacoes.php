@@ -4652,6 +4652,12 @@ function op_config($acao, $d)
         if (array_key_exists("escala_inicio", $d) && !in_array((string)$d["escala_inicio"], ["", "amanha", "hoje"], true)) {
             $erros[] = t("O primeiro dia da escala inteligente: amanha (hoje, ou amanhã quando o dia de hoje já começou no pulso) ou hoje (sempre hoje; vazio: amanha).");
         }
+        if (array_key_exists("escala_periodo", $d) && !in_array((string)$d["escala_periodo"], ["", "corridos", "semana", "mes"], true)) {
+            $erros[] = t("Onde a escala inteligente fecha: corridos (os dias do período contados), semana (no fim da semana, semanas inteiras) ou mes (no fim do mês, meses inteiros); vazio: corridos.");
+        }
+        if (array_key_exists("semana_ultimo_dia", $d) && !in_array((string)$d["semana_ultimo_dia"], ["", "dia_seguinte", "semana_seguinte"], true)) {
+            $erros[] = t("No último dia da semana, os modos por semana montam: dia_seguinte (só o dia seguinte) ou semana_seguinte (a semana seguinte inteira); vazio: dia_seguinte.");
+        }
         if (array_key_exists("hora_relogio", $d) && !in_array((string)$d["hora_relogio"], ["", "analogico", "digital", "anadigi", "ambos"], true)) {
             $erros[] = t("Relógio da Hora certa: analogico, digital, anadigi (os dois no mesmo relógio) ou ambos (um ao lado do outro).");
         }
@@ -4690,7 +4696,14 @@ function op_config($acao, $d)
             if (array_key_exists("escala_inicio", $d) && (cfg("escala_inicio") === "hoje") !== (trim((string)$d["escala_inicio"]) === "hoje")) {
                 cfg_set("escala_fim", "");
             }
-            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina", "hora_relogio", "semana_inicio", "escala_inicio", "trocar_hoje", "atualizar_segundos", "relojinho_modo", "calibre_campos"] as $k) {
+            // onde a escala fecha mudou (ou a semana, com a escala fechando na semana ou no mês): o mesmo
+            $periodo_n = array_key_exists("escala_periodo", $d) ? trim((string)$d["escala_periodo"]) : cfg("escala_periodo");
+            if (($periodo_n === "" ? "corridos" : $periodo_n) !== (cfg("escala_periodo") === "" ? "corridos" : cfg("escala_periodo"))
+                || (array_key_exists("semana_inicio", $d) && in_array($periodo_n, ["semana", "mes"], true)
+                && ((string)$d["semana_inicio"] === "domingo") !== (cfg("semana_inicio") === "domingo"))) {
+                cfg_set("escala_fim", "");
+            }
+            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina", "hora_relogio", "semana_inicio", "escala_inicio", "escala_periodo", "semana_ultimo_dia", "trocar_hoje", "atualizar_segundos", "relojinho_modo", "calibre_campos"] as $k) {
                 if (array_key_exists($k, $d)) {
                     cfg_set($k, trim((string)$d[$k]));
                 }

@@ -1042,6 +1042,14 @@
  *                                    analógico) ou ambos (um ao lado do outro); vazio: ambos
  *     config.semana_inicio           o primeiro dia da semana do rodízio: segunda ou domingo (o plano vem montado até o último dia da
  *                                    semana; o ciclo, a próxima semana e o relógio para a semana inteira contam dela); vazio: segunda
+ *     config.escala_periodo          onde a escala inteligente fecha: corridos ou vazio (o padrão: os dias do período contados do primeiro
+ *                                    dia dela); semana (semanas inteiras, os dias ÷ 7: até o último dia da semana do primeiro dia e as
+ *                                    semanas seguintes); mes (meses inteiros, os dias ÷ 30,4: até o último dia do mês do primeiro dia e os
+ *                                    meses seguintes; com menos de 28 dias, como semana); na semana e no mês, se o primeiro dia já é o
+ *                                    último (da semana, do mês), até o fim da seguinte
+ *     config.semana_ultimo_dia       no último dia da semana, os modos por semana (fora da escala) montam: dia_seguinte ou vazio (o padrão:
+ *                                    só o dia seguinte) ou semana_seguinte (as semanas do modo contam da semana que vem, que vem montada
+ *                                    inteira)
  *     config.escala_inicio           de onde a escala inteligente conta os dias do modo: amanha ou vazio (o padrão): hoje, ou amanhã quando
  *                                    o dia de hoje já começou no pulso; hoje: sempre hoje (o de hoje que já começou é o 1º dia: a escala de
  *                                    7 dias vai até daqui a 6)
@@ -3752,6 +3760,14 @@
  *                                    analógico) ou ambos (um ao lado do outro); vazio: ambos
  *     config.semana_inicio           o primeiro dia da semana do rodízio: segunda ou domingo (o plano vem montado até o último dia da
  *                                    semana; o ciclo, a próxima semana e o relógio para a semana inteira contam dela); vazio: segunda
+ *     config.escala_periodo          onde a escala inteligente fecha: corridos ou vazio (o padrão: os dias do período contados do primeiro
+ *                                    dia dela); semana (semanas inteiras, os dias ÷ 7: até o último dia da semana do primeiro dia e as
+ *                                    semanas seguintes); mes (meses inteiros, os dias ÷ 30,4: até o último dia do mês do primeiro dia e os
+ *                                    meses seguintes; com menos de 28 dias, como semana); na semana e no mês, se o primeiro dia já é o
+ *                                    último (da semana, do mês), até o fim da seguinte
+ *     config.semana_ultimo_dia       no último dia da semana, os modos por semana (fora da escala) montam: dia_seguinte ou vazio (o padrão:
+ *                                    só o dia seguinte) ou semana_seguinte (as semanas do modo contam da semana que vem, que vem montada
+ *                                    inteira)
  *     config.escala_inicio           de onde a escala inteligente conta os dias do modo: amanha ou vazio (o padrão): hoje, ou amanhã quando
  *                                    o dia de hoje já começou no pulso; hoje: sempre hoje (o de hoje que já começou é o 1º dia: a escala de
  *                                    7 dias vai até daqui a 6)
@@ -4028,6 +4044,9 @@
  *     hoje                           o dia de hoje da coleção (AAAA-MM-DD), para a lista das semanas
  *     semana_inicio                  o dia em que a semana do rodízio começa (a Configuração, semana_inicio): segunda ou domingo; a lista
  *                                    das semanas e a ordem dos dias seguem ele
+ *     semana_ultimo_dia              no último dia da semana, o que os modos por semana montam (a Configuração, semana_ultimo_dia):
+ *                                    dia_seguinte (só o dia seguinte) ou semana_seguinte (a semana seguinte inteira: a lista das semanas
+ *                                    começa nela)
  *     relogios[]                     os relógios
  *     relogios[].id                  o número
  *     relogios[].nome                o nome

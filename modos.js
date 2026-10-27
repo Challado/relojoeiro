@@ -63,6 +63,11 @@ function listaSemanas(n) {
   var hoje = new Date(instante(dados.hoje));
   var seg = new Date(hoje.getTime());
   seg.setDate(seg.getDate() - ((hoje.getDay() || 7) - diasEmOrdem()[0] + 7) % 7);
+  // no último dia da semana, com a Configuração "a semana seguinte inteira", as semanas contam da semana que vem
+  var proxima = dados.semana_ultimo_dia === "semana_seguinte" && (hoje.getDay() || 7) === diasEmOrdem()[6];
+  if (proxima) {
+    seg.setDate(seg.getDate() + 7);
+  }
   var linhas = [];
   for (var i = 0; i < n; i++) {
     var ini = new Date(seg.getTime());
@@ -72,7 +77,7 @@ function listaSemanas(n) {
     // o número é o da semana ISO da segunda-feira dela (na semana que começa no domingo, a segunda é o dia seguinte)
     var segunda = new Date(ini.getTime());
     segunda.setDate(segunda.getDate() + (ini.getDay() === 0 ? 1 : 0));
-    linhas.push(el("li", {}, t("Semana {1}: {2} a {3}", {1: numeroDaSemana(segunda), 2: dataBr(isoData(ini), true), 3: dataBr(isoData(fim), true)}) + (i === 0 ? " " + el("small", {}, t("(esta)")) : "")));
+    linhas.push(el("li", {}, t("Semana {1}: {2} a {3}", {1: numeroDaSemana(segunda), 2: dataBr(isoData(ini), true), 3: dataBr(isoData(fim), true)}) + (i === 0 ? " " + el("small", {}, proxima ? t("(a que vem)") : t("(esta)")) : "")));
   }
   return el("ul", {"class": "semanas-lista"}, linhas.join(""));
 }
@@ -144,7 +149,7 @@ function formModo(e, f) {
     var semanas = f.semanas || 1;
     corpo += el("div", {"class": "semanas"}, el("label", {}, t("Planejar {1} semanas à frente", {1: el("input", {"type": "number", "name": "semanas", "min": "1", "max": "8", "value": semanas, "class": "curto", "data-semanas": true})}))
       + el("div", {"data-semanas-lista": true}, listaSemanas(semanas))
-      + ajudaNota("semanas", t("As semanas do plano"), t("O plano vem montado até o último dia da última semana ({1}); a seguinte entra quando a sua vez chega, ou antes, em \"Sortear de novo: a próxima semana\" (só com mais de uma semana). A semana começa no dia escolhido em {2}.", {1: dados.semana_inicio === "domingo" ? t("o sábado") : t("o domingo"), 2: el("a", {"href": "configuracao.php"}, t("Configuração"))})));
+      + ajudaNota("semanas", t("As semanas do plano"), t("O plano vem montado até o último dia da última semana ({1}); a seguinte entra quando a sua vez chega, ou antes, em \"Sortear de novo: a próxima semana\" (só com mais de uma semana). A semana começa no dia escolhido em {2}; lá também se escolhe se, no último dia da semana, o plano traz só o dia seguinte ou a semana seguinte inteira.", {1: dados.semana_inicio === "domingo" ? t("o sábado") : t("o domingo"), 2: el("a", {"href": "configuracao.php"}, t("Configuração"))})));
   }
   if (tipo === "semana" || tipo === "semana_fds" || tipo === "dia_semana") {
     corpo += el("label", {}, t("Critério de escolha (o sorteio) {1}", {1: el("select", {"name": "selecao"}, Object.keys(SEL).map(function (k) { return el("option", {"value": k, "selected": (f.selecao || "ponderado") === k}, h(SEL[k])); }).join(""))}))
