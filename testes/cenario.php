@@ -1838,6 +1838,13 @@ escrever(["recurso" => "config", "acao" => "salvar", "semana_ultimo_dia" => "sem
 ler("a semana seguinte inteira no último dia", ["recurso" => "cadastros", "incluir" => "semana_ultimo_dia"]);
 escrever(["recurso" => "config", "acao" => "salvar", "escala_inicio" => "amanha", "escala_periodo" => "corridos", "semana_ultimo_dia" => "dia_seguinte"]);
 
+// A precisão configurável dos pesos: recusa valores fora do intervalo e aceita duas e oito casas.
+escrever(["recurso" => "config", "acao" => "salvar", "sorteio_casas" => "9"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "sorteio_casas" => "-1"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "sorteio_casas" => "8"]);
+ler("precisão dos pesos dos sorteios", ["recurso" => "config"]);
+escrever(["recurso" => "config", "acao" => "salvar", "sorteio_casas" => "2"]);
+
 $texto = json_encode($foto, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_PRESERVE_ZERO_FRACTION | JSON_INVALID_UTF8_SUBSTITUTE);
 if ($texto === false) {
     fwrite(STDERR, "Não consegui gravar a fotografia: " . json_last_error_msg() . "\n");
