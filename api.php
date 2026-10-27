@@ -3400,7 +3400,8 @@
  *                                    prazo)
  *     relogio.encostado.falta        quanto falta, por extenso ("12d", "atrasado 40d")
  *     relogio.encostado.momento      o instante previsto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC))
- *     relogio.manutencoes[]          as 5 próximas manutenções (avisos, sem o Encostado)
+ *     relogio.manutencoes[]          as 5 próximas manutenções (avisos, sem o Encostado), pela data exibida; no mesmo dia, pelo
+ *                                    identificador do aviso
  *     relogio.manutencoes[].data     a data (texto AAAA-MM-DD)
  *     relogio.manutencoes[].nome     o aviso
  *     relogio.medicao_janela_texto   a janela da conta do gasto medido por extenso (o "contar por" da Configuração: dias ou leituras)

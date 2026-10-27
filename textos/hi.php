@@ -6817,7 +6817,7 @@ Relojoeiro की कैलेंडर स्क्रीन से बना�
         'o valor (número), num lançamento com valor; null nos outros' => 'मान (संख्या), मान सहित प्रविष्टि में; बाकी में null',
         'os trechos da linha do tempo do relógio, os 5 mais recentes: cada trecho é um período contínuo num estado, ou uma marcação (um lançamento instantâneo)' => 'घड़ी की टाइमलाइन के खंड, 5 सबसे नए: प्रत्येक खंड एक स्थिति में सतत अवधि है, या एक मार्किंग (एक तत्काल प्रविष्टि)',
         'o aviso Encostado deste relógio (o quadro Agora; não entra nas próximas manutenções); null: sem data' => 'इस घड़ी का अलर्ट पड़ी हुई (फ़्रेम अभी; आगामी सर्विस में नहीं आता); null: बिना तारीख़',
-        'as 5 próximas manutenções (avisos, sem o Encostado)' => 'आगामी 5 सर्विस (अलर्ट, पड़ी हुई के बिना)',
+        'as 5 próximas manutenções (avisos, sem o Encostado), pela data exibida; no mesmo dia, pelo identificador do aviso' => 'दिखाई गई तारीख के अनुसार अगले 5 रखरखाव (चेतावनियाँ, निष्क्रियता को छोड़कर); एक ही दिन पर चेतावनी के पहचानकर्ता के अनुसार',
         'a data (texto AAAA-MM-DD)' => 'तारीख़ (पाठ AAAA-MM-DD)',
         'a janela da conta do gasto medido por extenso (o "contar por" da Configuração: dias ou leituras)' => 'मापी गई खपत की गणना की विंडो शब्दों में (सेटिंग का "किसके अनुसार गिनें": दिन या रीडिंग)',
         'a janela da média do gasto medido, em dias (a da Configuração)' => 'मापी खपत के औसत की विंडो, दिनों में (कॉन्फ़िगरेशन की)',

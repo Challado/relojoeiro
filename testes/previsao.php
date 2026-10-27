@@ -83,6 +83,16 @@ try {
     exigir_previsao(proc_close($pr) === 0, "Falhou a resposta JSON: " . $erro);
     $json = json_decode($texto, true, 512, JSON_THROW_ON_ERROR);
     exigir_previsao($json["status"] === 500 && isset($json["saida"]["erro"]), "O erro de serialização não respondeu JSON com HTTP 500.");
+    define("RELOJOEIRO_API", true); $formato = "json"; require dirname(__DIR__) . "/api/funcoes.php";
+    $avisos = [
+        ["identificador" => "winder", "nome" => "Pôr no winder", "data" => "2020-06-16 12:00:01"],
+        ["identificador" => "carregar", "nome" => "Carregar", "data" => "2020-06-16 12:00:40"],
+        ["identificador" => "leitura", "nome" => "Informar a carga", "data" => "2020-06-14 08:00:00"],
+    ];
+    $ordem = manutencoes_da_ficha($avisos, "2020-06-15");
+    $avisos[0]["data"] = "2020-06-16 12:00:59"; $avisos[1]["data"] = "2020-06-16 12:00:02";
+    exigir_previsao(manutencoes_da_ficha(array_reverse($avisos), "2020-06-15") === $ordem, "Os segundos inverteram a lista de dias da ficha.");
+    exigir_previsao($ordem[0]["data"] === "2020-06-15" && $ordem[1]["nome"] === "Carregar", "A lista diária não preservou a data exibida e o desempate.");
 
     // Duas medições passadas: a antiga sai da janela em dez dias. Não há qualquer recarga futura.
     $campo = (int)valor("SELECT id FROM campo WHERE identificador = 'decaimento_repouso' ORDER BY id LIMIT 1");

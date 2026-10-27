@@ -402,6 +402,16 @@ function montar_criterios()
 }
 
 
+// A ficha mostra somente o dia, não os segundos da previsão. Empates no dia exibido têm ordem estável.
+function manutencoes_da_ficha($avisos, $hoje)
+{
+    $data = function ($a) use ($hoje) { return max($hoje, substr($a["data"], 0, 10)); };
+    usort($avisos, function ($a, $b) use ($data) {
+        return [$data($a), $a["identificador"]] <=> [$data($b), $b["identificador"]];
+    });
+    return array_map(function ($a) use ($data) { return ["data" => $data($a), "nome" => $a["nome"]]; }, array_slice($avisos, 0, 5));
+}
+
 function responde($codigo, $saida, $formato)
 {
     http_response_code($codigo);
