@@ -108,6 +108,13 @@ function comparar($x, $y, $caminho, $chave)
                 $y["valor"] = $x["valor"];
             }
         }
+        // uma linha da conta da nota de um critério (criterios.notas[].conta[]): o valor da variável anda com o tempo (a reserva
+        // agora, em %, cai enquanto o cenário roda); com a mesma nota e os mesmos pontos nos dois, até 0,5 de diferença é o tempo
+        if (!$lista_x && isset($x["variavel"], $x["nota"], $y["nota"]) && array_key_exists("valor", $x) && array_key_exists("valor", $y)
+            && is_numeric($x["valor"]) && is_numeric($y["valor"]) && $x["nota"] === $y["nota"] && ($x["pontos"] ?? null) === ($y["pontos"] ?? null)
+            && abs($x["valor"] - $y["valor"]) <= 0.5) {
+            $y["valor"] = $x["valor"];
+        }
         if ($lista_x && count($x) !== count($y)) {
             $graves[] = [$caminho, "quantidade diferente", count($x), count($y)];
         }
@@ -255,11 +262,16 @@ foreach (["config", "2 config"] as $l) {
     unset($a["leituras"][$l]["resposta"]["pasta"], $b["leituras"][$l]["resposta"]["pasta"]);
 }
 // o atraso de cada leitura (t: há quantos segundos a rodada começou, anotado pelo cenário): sai da comparação e vira folga
-// do tempo naquela leitura. Fotografias sem o t: sem atraso (só os 120 s)
+// do tempo naquela leitura. A conta que anda com o tempo vem de uma escrita de antes (a corda, o começo da sessão), e nela um
+// banco também pode ter estado atrasado: a folga soma o atraso da leitura e o maior atraso até ela. Fotografias sem o t: sem
+// atraso (só os 120 s)
 $atrasos = [];
+$maior_atraso = 0;
 foreach (array_keys($a["leituras"] ?? []) as $l) {
     if (isset($a["leituras"][$l]["t"], $b["leituras"][$l]["t"])) {
-        $atrasos[$l] = abs((float)$a["leituras"][$l]["t"] - (float)$b["leituras"][$l]["t"]);
+        $agora_a = abs((float)$a["leituras"][$l]["t"] - (float)$b["leituras"][$l]["t"]);
+        $maior_atraso = max($maior_atraso, $agora_a);
+        $atrasos[$l] = $agora_a + $maior_atraso;
     }
     unset($a["leituras"][$l]["t"]);
     if (isset($b["leituras"][$l])) {
