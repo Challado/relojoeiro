@@ -143,12 +143,17 @@ function examinar(seletorRaiz) {
     // (a etiqueta de estado que quebra de propósito, nos espaços, fica de fora: white-space normal)
     if ((e.tagName === 'BUTTON' && !e.matches('form.excluir-conjunto button') || e.classList.contains('botao') || (e.classList.contains('estado') && cs.whiteSpace === 'nowrap')) && (e.innerText || '').trim().length > 0
       && !/\n/.test(e.innerText.trim())) {
-      const rg = document.createRange();
-      rg.selectNodeContents(e);
       const tops = [];
-      for (const q of rg.getClientRects()) {
-        if (q.width < 1) continue;
-        if (!tops.some((t) => Math.abs(t - q.top) < 4)) tops.push(q.top);
+      // A imagem e a legenda de uma galeria ocupam alturas diferentes, sem partir uma linha de texto.
+      const textos = document.createTreeWalker(e, NodeFilter.SHOW_TEXT);
+      for (let no = textos.nextNode(); no; no = textos.nextNode()) {
+        if (!no.textContent.trim() || !visivel(no.parentElement)) continue;
+        const rg = document.createRange();
+        rg.selectNodeContents(no);
+        for (const q of rg.getClientRects()) {
+          if (q.width < 1) continue;
+          if (!tops.some((t) => Math.abs(t - q.top) < 4)) tops.push(q.top);
+        }
       }
       if (tops.length > 1) {
         probs.push({ tipo: 'texto-partido', det: tops.length + ' linhas', quem: nomear(e) });
@@ -265,6 +270,20 @@ async function auditarTela(b, tela, fp, relatorio, total) {
 // sequência; só o "Abrir a ficha ↗" é do painel. Cada relógio do cenário, num computador de 1440px: o que falta num lado ou
 // a ordem diferente vira um problema "espelho". Roda antes das 15 telas, num navegador só dele: no fim delas o navegador do CI
 // pode já ter caído (a captura enorme da Ajuda no celular), e o espelho não pode depender disso.
+async function conferirDetector(b) {
+  const c = await b.newContext({viewport: {width: 320, height: 480}});
+  try {
+    const p = await c.newPage();
+    await p.setContent('<style>button{font:16px sans-serif}#foto{display:flex;flex-direction:column}#foto img{width:80px;height:80px}#foto span{white-space:nowrap}#quebra{width:65px;white-space:normal}</style><button id="foto"><img alt="" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><span>Foto do cadastro</span></button><button id="quebra">Texto comprido que quebra</button>');
+    const problemas = (await p.evaluate(examinar)).filter(x => x.tipo === 'texto-partido');
+    if (problemas.some(x => x.quem.includes('button#foto')) || !problemas.some(x => x.quem.includes('button#quebra'))) {
+      throw new Error('O detector deve ignorar a imagem e continuar detectando o texto partido.');
+    }
+  } finally {
+    await c.close();
+  }
+}
+
 async function conferirEspelho(relatorio, total) {
   const b = await chromium.launch();
   try {
@@ -317,6 +336,20 @@ async function estressar() {
   const resultados = [];
   // um PNG de 1x1 (a foto)
   const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYPgPAAEDAQAIicLsAAAAAElFTkSuQmCC';
+  // Nomes sem espaços exercitam a quebra do cartão e a reticência da legenda, além dos títulos compridos.
+  const dd = await fetch(BASE + 'api.php?recurso=documentos&relogio=1', {
+    headers: { Authorization: 'Basic ' + Buffer.from(USUARIO + ':' + SENHA).toString('base64') }
+  }).then(r => r.json());
+  const categoria = dd.categorias.find(c => c.identificador === 'manual');
+  if (!categoria) throw new Error('Falta a categoria Manual no cenário do layout.');
+  const nomeLongo = 'Manual_do_movimento_com_referencia_comprida_e_especificacoes_tecnicas_para_uso_diario';
+  for (const [ext, conteudo] of [['pdf', Buffer.from('%PDF-1.4 manual de teste').toString('base64')], ['png', png]]) {
+    const cat = ext === 'png' ? dd.categorias.find(c => c.identificador === 'foto') || categoria : categoria;
+    const ok = await api({recurso:'documentos', acao:'enviar', relogio_id:1, categoria_id:cat.id,
+      titulo:nomeLongo, arquivo_nome:nomeLongo+'.'+ext, arquivo_base64:conteudo});
+    if (!ok) throw new Error('Não criou o documento de nome comprido no cenário do layout.');
+    resultados.push(ok);
+  }
   const nomes = { 3: 'Orient Bambino Version 2 Open Heart Automático RA-AC0001S10B', 5: 'Casio F-91W-1YEF Edição Comemorativa de 35 anos' };
   for (const [id, nome] of Object.entries(nomes)) {
     resultados.push(await api({ recurso: 'relogio', acao: 'salvar', id, nome }));
@@ -375,6 +408,7 @@ async function estressar() {
     await conferirEspelho(relatorio, total);
   }
   const b = await chromium.launch();
+  await conferirDetector(b);
   await Promise.all(TELAS.filter((t) => !ft || ft.test(t.nome)).map((t) => auditarTela(b, t, fp, relatorio, total)));
   await b.close();
   relatorio.sort();

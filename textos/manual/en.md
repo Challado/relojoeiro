@@ -1,4 +1,4 @@
-<!-- origem: 7a8c255be2492f14d05118d78289f93d6b14e4c0 -->
+<!-- origem: 31bde738a32741e0596220eedb21dadcf7429cc7 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1392,7 +1392,8 @@ each line.
 | **Change today's watch on the same day** (`trocar_hoje`) | unticked (the default), today's watch stays: the **change to…** and the **choose…** of today, **Wearing today**, **Draw again** *including today*, **No watch today** and the **Including today** of Delete everything don't show, in the Manual rotation today stays fixed, and **Draw again** applies from tomorrow even with the day not yet started (the API refuses what would change today's): tomorrow's watch is chosen by today. Ticked, today's is also changed on the same day, and the new one becomes the one on the wrist from now on. The wrist markings (**Put on** and **Took off**) stay free in both cases. Default: unticked. |
 | **Charge limit** (`carga_limiar`) | the charge (%) at which the alerts say to charge or wind; a watch's **Charge limit** field takes its place. From 1 to 99. Default: 20. |
 | **Solar limit** (`sol_limiar`) | the charge (%) at which the solar should go into the sun. From 1 to 99. Default: 70. |
-| **Forecast limit** (`previsao_limite`) | the charge (%) that the smartwatch forecast uses for "reaches the limit in...". From 0 to 100. Default: 20. |
+| **Forecast limit** (`previsao_limite`) | the charge (%) that the smartwatch forecast uses for "reaches the limit in...". From 0 to 100. Default: 20. The Charge alert converts the rate per day of use into calendar days and does not predict dates beyond 366 days. The detailed forecast finds the time of the threshold to within one minute. `chega_limite_em` includes date and time as `AAAA-MM-DD HH:MM:SS`. |
+| **Decimal places for weights** (`sorteio_casas`) | 0 to 8, default 2, in Settings › Draws. Weights are rounded before drawing; if all positive weights become zero, the original weights are used. Zero weights do not participate. |
 | **Rotation guarantee** (`max_sem_uso`) | no watch goes more than these days without use: the one that does goes ahead of all. 0 turns it off. Default: 21. |
 | **Idle alert: days without going on the wrist** (`encostado_dias`) | after how many days without going on the wrist a watch in the collection gets the **Idle** alert (in **Today is the day for**: *Idle*, *"the limit of days without going on the wrist was due 2d ago, 10/11/2026 18:00"*). From 1 to 3650. Default: 30. The alert is turned off in **Definitions › Alerts**. |
 | **Battery drain: how to calculate (applies to every watch)** (`gasto_motor`) | which of the five engines of the [consumption measured by the readings](#gasto-medido-pelas-leituras) does the calculation, for every watch in the collection: **1. By the recorded hours (the original engine)**, **2. ... (robust)**, **3. By the marking: two separate rates**, **4. Registration only** or **5. By the registration formulas**. Default: empty (*Individual (on the watch or the group)*: each watch's **How to calculate the battery drain** field, else its default, else engine 1). |
@@ -1966,6 +1967,8 @@ browser).
 - **To turn it off** (another routine already copies the database, or it is a test installation): `define("BACKUP_ATIVO", false);`
   in `config.php`. The cron makes no copy, the `fazer` write is refused and the **Backup** box disappears from Settings, along
   with the warning that the folder is missing.
+
+Before restoring, the system checks the entire gzip stream, JSON, tables, columns and binary values. For new backups, it also checks the record count of each table; valid older backups are still accepted. A backup rejected by these checks changes neither the database nor the backup list. The new backup header contains `verificacao=1`, and each table contains `registros`.
 
 ## Rewrite the system from scratch {#reescrever-o-sistema-do-zero}
 

@@ -1,4 +1,4 @@
-<!-- origem: 3d8073acba0a0a3a7ea64dfae19b7bf0db3ab41d -->
+<!-- origem: 73c90cef48face883c57bb9a153027fc9109dade -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -672,6 +672,8 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | [`PORTE.md`](PORTE.md) | the record of the port of the previous version |
 
 ---
+
+The regressions `php testes/backup.php` and `php testes/motores.php` use fresh disposable SQLite databases. They check that an invalid backup preserves the database, that valid older backups can be restored, and that extreme weights and charge forecasts work. They also run in the architecture job of the CI; browser regressions still run in the layout job.
 
 ## How to contribute {#como-contribuir}
 

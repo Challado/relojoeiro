@@ -4590,6 +4590,9 @@ function op_config($acao, $d)
         if (array_key_exists("max_sem_uso", $d) && (!ctype_digit(trim((string)$d["max_sem_uso"])) || (int)$d["max_sem_uso"] > 365)) {
             $erros[] = t("Garantia de rodízio: de 0 a 365 dias.");
         }
+        if (array_key_exists("sorteio_casas", $d) && (!ctype_digit(trim((string)$d["sorteio_casas"])) || (int)$d["sorteio_casas"] > 8)) {
+            $erros[] = t("{1}: um número inteiro de {2} a {3}.", [1 => t("Casas decimais dos pesos"), 2 => 0, 3 => 8]);
+        }
         if (array_key_exists("medicao_janela_dias", $d) && (!ctype_digit(trim((string)$d["medicao_janela_dias"])) || (int)$d["medicao_janela_dias"] < 1 || (int)$d["medicao_janela_dias"] > 3650)) {
             $erros[] = t("Gasto medido: a média usa de 1 a 3650 dias de medições.");
         }
@@ -4703,7 +4706,7 @@ function op_config($acao, $d)
                 && ((string)$d["semana_inicio"] === "domingo") !== (cfg("semana_inicio") === "domingo"))) {
                 cfg_set("escala_fim", "");
             }
-            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina", "hora_relogio", "semana_inicio", "escala_inicio", "escala_periodo", "semana_ultimo_dia", "trocar_hoje", "atualizar_segundos", "relojinho_modo", "calibre_campos"] as $k) {
+            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "sorteio_casas", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina", "hora_relogio", "semana_inicio", "escala_inicio", "escala_periodo", "semana_ultimo_dia", "trocar_hoje", "atualizar_segundos", "relojinho_modo", "calibre_campos"] as $k) {
                 if (array_key_exists($k, $d)) {
                     cfg_set($k, trim((string)$d[$k]));
                 }

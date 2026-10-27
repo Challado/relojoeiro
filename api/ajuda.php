@@ -61,6 +61,46 @@ $doc_oficina = function ($p) {
         $p . ".gasto" => t('quanto ela custou: os serviços das manutenções dela somados, em R$; null: nada com custo')];
 };
 
+// Os mesmos campos do arquivo, no documento próprio e no herdado do calibre.
+$doc_documento = function ($p) {
+    return [
+        $p . ".categoria_id" => t('a categoria dele (as categorias dos documentos)'),
+        $p . ".criado" => t('quando foi enviado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)'),
+        $p . ".data" => t('a data do documento: a ocasião da foto, a data da nota (texto AAAA-MM-DD; null: sem data)'),
+        $p . ".descricao" => t('a descrição (texto; null: sem descrição)'),
+        $p . ".familia" => t('como ele abre, pelo tipo do arquivo: imagem (a galeria), video (o player), audio, pdf (o visualizador), xml (o resumo da nota e o download) ou outro (o download)'),
+        $p . ".id" => t('o número do documento (para recurso=documento e para alterar ou excluir)'),
+        $p . ".miniatura" => t('verdadeiro: a foto tem miniatura (recurso=documento com mini=1)'),
+        $p . ".nome" => t('o nome do arquivo enviado'),
+        $p . ".no_disco" => t('verdadeiro: o arquivo está inteiro na pasta dos documentos, com o tamanho do envio (falso: sumiu ou está cortado, e volta do banco quando for pedido ou na próxima rodada do cron; sem a cópia no banco, está perdido)'),
+        $p . ".no_banco" => t('verdadeiro: a cópia de segurança do arquivo foi feita no banco (se ele sumir da pasta, volta dali, quando ela está inteira: copia_inteira)'),
+        $p . ".copia_inteira" => t('com o arquivo fora da pasta ou cortado (no_disco falso) e a cópia no banco: verdadeiro, a cópia tem o arquivo inteiro e o traz de volta; falso, ela foi feita de um arquivo já cortado e não recria o inteiro (envie o arquivo de novo); null: sem cópia no banco, ou o arquivo está inteiro na pasta'),
+        $p . ".copia_banco" => t('verdadeiro: o próprio arquivo pede a cópia no banco (o terceiro nível; o relógio e a Configuração da coleção, se pedem, valem por cima)'),
+        $p . ".copia_por" => t('quem pede a cópia no banco: sistema (a Configuração da coleção, documentos_copia = todos), relogio (a marca do relógio) ou arquivo (a marca do próprio arquivo); null: ninguém'),
+        $p . ".relogio_id" => t('o relógio dele'),
+        $p . ".calibre_id" => t('o calibre dele (os documentos do calibre); null nos de relógio e nos de winder'),
+        $p . ".winder_id" => t('o winder dele (os documentos do winder: o manual, a nota, as fotos); null nos de relógio e nos de calibre'),
+        $p . ".tamanho" => t('o tamanho do arquivo, em bytes (número inteiro)'),
+        $p . ".tipo" => t('o tipo do arquivo (MIME): image/jpeg, video/mp4, application/pdf, application/xml...'),
+        $p . ".titulo" => t('o título'),
+        $p . ".url" => t('o endereço do arquivo, relativo à pasta do sistema (api.php?recurso=documento&id=...)'),
+        $p . ".nfe" => t('o resumo da NF-e, quando o arquivo é o XML de uma nota fiscal eletrônica; null: não é'),
+        $p . ".nfe.chave" => t('a chave de acesso da nota (44 dígitos)'),
+        $p . ".nfe.cnpj" => t('o CNPJ (ou o CPF) do emitente'),
+        $p . ".nfe.data" => t('a data de emissão (texto AAAA-MM-DD)'),
+        $p . ".nfe.emitente" => t('o nome do emitente (a loja)'),
+        $p . ".nfe.numero" => t('o número da nota'),
+        $p . ".nfe.produtos[]" => t('os produtos da nota'),
+        $p . ".nfe.produtos[].descricao" => t('a descrição do produto'),
+        $p . ".nfe.produtos[].quantidade" => t('a quantidade (número)'),
+        $p . ".nfe.produtos[].valor" => t('o valor do produto (número, em R$)'),
+        $p . ".nfe.serie" => t('a série da nota'),
+        $p . ".nfe.valor" => t('o valor total da nota (número, em R$)'),
+    ];
+};
+
+$sorteio_doc = t('sorteio_casas: de 0 a 8 casas decimais nos pesos dos sorteios; padrão 2. Se todos os pesos positivos arredondarem para zero, usa os pesos originais.');
+
 // a mesma lista que está no cabeçalho deste arquivo: cada consulta com os parâmetros e um exemplo; cada escrita com as ações,
 // os campos de cada uma e um exemplo
 $saida = [
@@ -667,6 +707,7 @@ $saida = [
             "campos[].padrao" => t('o valor usado quando o relógio não tem o campo preenchido (texto; null: nenhum)'),
             "campos[].tipo" => t('inteiro, decimal, sim_nao, data, lista ou texto'),
             "campos[].unidade" => t('a unidade (texto; vazio: nenhuma)'),
+            "config.sorteio_casas" => $sorteio_doc,
             "config.carga_limiar" => t('o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se preenchido, vale no lugar)'),
             "config.na_hora_enviados" => t('os avisos "na hora" que já foram pelo Telegram e ainda estão vencidos (relogio_id:identificador, separados por vírgula): o cron não manda de novo'),
             "config.escala_fim" => t('até que dia vai a escala inteligente gerada (texto AAAA-MM-DD; vazio fora da escala)'),
@@ -2229,6 +2270,7 @@ $saida = [
             "cron_estado.situacao" => t('nunca (ainda não rodou), parado (mais de 10 minutos sem rodar) ou rodando'),
             "cron_estado.texto" => t('a frase da Configuração ("Cron rodando: última execução às 10:41."; parado e nunca trazem a linha do crontab)'),
             "cron_estado.ultima" => t('quando rodou pela última vez (AAAA-MM-DD HH:MM:SS, no fuso do sistema; null: nunca rodou)'),
+            "config.sorteio_casas" => $sorteio_doc,
             "config.carga_limiar" => t('o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se preenchido, vale no lugar)'),
             "config.na_hora_enviados" => t('os avisos "na hora" que já foram pelo Telegram e ainda estão vencidos (relogio_id:identificador, separados por vírgula): o cron não manda de novo'),
             "config.escala_fim" => t('até que dia vai a escala inteligente gerada (texto AAAA-MM-DD; vazio fora da escala)'),
@@ -4573,38 +4615,8 @@ $saida = [
             "categorias[].nome" => t('o nome'),
             "categorias[].ordem" => t('a ordem em que ela aparece (número)'),
             "documentos[]" => t('os documentos do relógio (o manual, a nota fiscal, fotos, vídeos...): os dados de cada um; o arquivo vem pelo recurso=documento'),
-            "documentos[].categoria_id" => t('a categoria dele (as categorias dos documentos)'),
-            "documentos[].criado" => t('quando foi enviado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)'),
-            "documentos[].data" => t('a data do documento: a ocasião da foto, a data da nota (texto AAAA-MM-DD; null: sem data)'),
-            "documentos[].descricao" => t('a descrição (texto; null: sem descrição)'),
-            "documentos[].familia" => t('como ele abre, pelo tipo do arquivo: imagem (a galeria), video (o player), audio, pdf (o visualizador), xml (o resumo da nota e o download) ou outro (o download)'),
-            "documentos[].id" => t('o número do documento (para recurso=documento e para alterar ou excluir)'),
-            "documentos[].miniatura" => t('verdadeiro: a foto tem miniatura (recurso=documento com mini=1)'),
-            "documentos[].nome" => t('o nome do arquivo enviado'),
-            "documentos[].no_disco" => t('verdadeiro: o arquivo está inteiro na pasta dos documentos, com o tamanho do envio (falso: sumiu ou está cortado, e volta do banco quando for pedido ou na próxima rodada do cron; sem a cópia no banco, está perdido)'),
-            "documentos[].no_banco" => t('verdadeiro: a cópia de segurança do arquivo foi feita no banco (se ele sumir da pasta, volta dali, quando ela está inteira: copia_inteira)'),
-            "documentos[].copia_inteira" => t('com o arquivo fora da pasta ou cortado (no_disco falso) e a cópia no banco: verdadeiro, a cópia tem o arquivo inteiro e o traz de volta; falso, ela foi feita de um arquivo já cortado e não recria o inteiro (envie o arquivo de novo); null: sem cópia no banco, ou o arquivo está inteiro na pasta'),
-            "documentos[].copia_banco" => t('verdadeiro: o próprio arquivo pede a cópia no banco (o terceiro nível; o relógio e a Configuração da coleção, se pedem, valem por cima)'),
-            "documentos[].copia_por" => t('quem pede a cópia no banco: sistema (a Configuração da coleção, documentos_copia = todos), relogio (a marca do relógio) ou arquivo (a marca do próprio arquivo); null: ninguém'),
-            "documentos[].relogio_id" => t('o relógio dele'),
-            "documentos[].calibre_id" => t('o calibre dele (os documentos do calibre); null nos de relógio e nos de winder'),
-            "documentos[].winder_id" => t('o winder dele (os documentos do winder: o manual, a nota, as fotos); null nos de relógio e nos de calibre'),
-            "documentos[].tamanho" => t('o tamanho do arquivo, em bytes (número inteiro)'),
-            "documentos[].tipo" => t('o tipo do arquivo (MIME): image/jpeg, video/mp4, application/pdf, application/xml...'),
-            "documentos[].titulo" => t('o título'),
-            "documentos[].url" => t('o endereço do arquivo, relativo à pasta do sistema (api.php?recurso=documento&id=...)'),
-            "documentos[].nfe" => t('o resumo da NF-e, quando o arquivo é o XML de uma nota fiscal eletrônica; null: não é'),
-            "documentos[].nfe.chave" => t('a chave de acesso da nota (44 dígitos)'),
-            "documentos[].nfe.cnpj" => t('o CNPJ (ou o CPF) do emitente'),
-            "documentos[].nfe.data" => t('a data de emissão (texto AAAA-MM-DD)'),
-            "documentos[].nfe.emitente" => t('o nome do emitente (a loja)'),
-            "documentos[].nfe.numero" => t('o número da nota'),
-            "documentos[].nfe.produtos[]" => t('os produtos da nota'),
-            "documentos[].nfe.produtos[].descricao" => t('a descrição do produto'),
-            "documentos[].nfe.produtos[].quantidade" => t('a quantidade (número)'),
-            "documentos[].nfe.produtos[].valor" => t('o valor do produto (número, em R$)'),
-            "documentos[].nfe.serie" => t('a série da nota'),
-            "documentos[].nfe.valor" => t('o valor total da nota (número, em R$)'),
+            ...$doc_documento("documentos[]"),
+            ...$doc_documento("do_calibre.documentos[]"),
         ],
         "manual" => [
             "fonte" => t('de onde vem o texto: README.md (em português) ou textos/manual/<idioma>.md (a tradução do idioma do pedido)'),
@@ -4821,3 +4833,6 @@ $saida = [
     "motor_totais" => array_map(function ($f) { return $f[2]; }, $GLOBALS["FUNCOES_TOTAIS"]),
     "escrita_das_formulas" => t('números com vírgula ou ponto; textos entre aspas; argumentos separados por ponto e vírgula; operações + - * / ^; comparações = <> < <= > >= (dão 1 ou 0); variáveis: os identificadores dos campos e das fórmulas; vazio se propaga; divisão por zero: vazio'),
 ];
+
+$saida["escrita"]["config"]["salvar"]["campos"] .= "; " . $sorteio_doc;
+$saida["escrita"]["backup"]["restaurar"]["campos"] .= " " . t('Antes de restaurar, o sistema confere o gzip inteiro, o JSON, as tabelas, as colunas e os binários. Nas cópias novas, confere também a quantidade de registros de cada tabela; cópias antigas válidas continuam aceitas. Uma cópia reprovada nessa conferência não altera o banco nem a lista de cópias.');

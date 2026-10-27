@@ -1,4 +1,4 @@
-<!-- origem: 3d8073acba0a0a3a7ea64dfae19b7bf0db3ab41d -->
+<!-- origem: 73c90cef48face883c57bb9a153027fc9109dade -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -688,6 +688,8 @@ ciclos mayores, que ningún `CHECK` alcanza) y las de los vínculos opcionales.
 | [`PORTE.md`](PORTE.md) | el registro del porte de la versión anterior |
 
 ---
+
+Las regresiones `php testes/backup.php` y `php testes/motores.php` usan bases SQLite nuevas y desechables. Comprueban que una copia no válida preserve la base, que las copias antiguas válidas se restauren y que los pesos extremos y las previsiones de carga funcionen. También se ejecutan en el trabajo de arquitectura del CI; las regresiones del navegador siguen en el trabajo de diseño.
 
 ## Cómo contribuir {#como-contribuir}
 

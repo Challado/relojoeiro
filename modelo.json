@@ -1687,7 +1687,7 @@
         {
             "identificador": "carregar",
             "nome": "Carregar",
-            "expressao": "SE(EM_SESSAO(\"carregador\"); NADA(); SE(energia <= limite_carga; AGORA(); AGORA() + (energia - limite_carga) / SE(EM_SESSAO(\"pulso\"); taxa_uso; taxa_repouso)))",
+            "expressao": "SE(EM_SESSAO(\"carregador\"); NADA(); SE(energia <= limite_carga; AGORA(); SE(EM_SESSAO(\"pulso\"); SE(taxa_uso > 0; SE((energia - limite_carga) * HORAS_USO() / (taxa_uso * 24) <= 366; AGORA() + (energia - limite_carga) * HORAS_USO() / (taxa_uso * 24); NADA()); NADA()); SE(taxa_repouso > 0; SE((energia - limite_carga) / taxa_repouso <= 366; AGORA() + (energia - limite_carga) / taxa_repouso; NADA()); NADA()))))",
             "antecedencia_dias": 0,
             "texto": "chega a {limite}% {quando}, {data}",
             "ativo": 1,
@@ -3679,6 +3679,7 @@
         "horario_manha": "06:30",
         "horario_noite": "20:00",
         "max_sem_uso": "21",
+        "sorteio_casas": "2",
         "previsao_limite": "20",
         "sol_limiar": "70",
         "medicao_janela_dias": "90",

@@ -1,4 +1,4 @@
-<!-- origem: 7a8c255be2492f14d05118d78289f93d6b14e4c0 -->
+<!-- origem: 31bde738a32741e0596220eedb21dadcf7429cc7 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1385,7 +1385,8 @@ colección nueva va al final de cada línea.
 | **Cambiar el reloj de hoy el mismo día** (`trocar_hoje`) | desmarcada (lo predeterminado), el reloj de hoy se queda: el **cambiar por…** y el **elegir…** del día de hoy, el **Usando hoy**, el **Sortear de nuevo** *incluyendo hoy*, el **Sin reloj hoy** y el **Incluyendo hoy** de Borrar todo no aparecen, en la Rotación manual el día de hoy queda fijo, y el **Sortear de nuevo** vale a partir de mañana aunque el día aún no haya empezado (la API rechaza lo que cambiaría el de hoy): el reloj de mañana se elige hasta hoy. Marcada, el de hoy también se cambia el mismo día, y el nuevo pasa a ser el de la muñeca desde ese momento. Las marcaciones de la muñeca (**Puso** y **Quitó**) siguen libres en los dos casos. Predeterminado: desmarcada. |
 | **Límite de carga** (`carga_limiar`) | la carga (%) en la que los avisos dicen cargar o dar cuerda; el campo **Límite de carga** de un reloj ocupa su lugar. De 1 a 99. Predeterminado: 20. |
 | **Límite del solar** (`sol_limiar`) | la carga (%) en la que el solar debe ir al sol. De 1 a 99. Predeterminado: 70. |
-| **Límite de la previsión** (`previsao_limite`) | la carga (%) que usa la previsión del smartwatch para "llega al límite en...". De 0 a 100. Predeterminado: 20. |
+| **Límite de la previsión** (`previsao_limite`) | la carga (%) que usa la previsión del smartwatch para "llega al límite en...". De 0 a 100. Predeterminado: 20. El aviso Cargar convierte la tasa por día de uso en días naturales y no prevé fechas más allá de 366 días. La previsión detallada busca el instante del límite con una precisión de hasta un minuto. `chega_limite_em` incluye la fecha y la hora en formato `AAAA-MM-DD HH:MM:SS`. |
+| **Decimales de los pesos** (`sorteio_casas`) | de 0 a 8, predeterminado 2, en Configuración › Sorteos. Los pesos se redondean antes del sorteo; si todos los positivos se vuelven cero, se usan los pesos originales. El peso cero no participa. |
 | **Garantía de rotación** (`max_sem_uso`) | ningún reloj pasa más de estos días sin uso: el que pasa va delante de todos. 0 la desactiva. Predeterminado: 21. |
 | **Aviso Arrinconado: días sin ir a la muñeca** (`encostado_dias`) | tras cuántos días sin ir a la muñeca un reloj de la colección recibe el aviso **Arrinconado** (en **Hoy toca**: *Arrinconado*, *"el límite de días sin ir a la muñeca venció hace 2d, 10/11/2026 18:00"*). De 1 a 3650. Predeterminado: 30. El aviso se desactiva en **Definiciones › Avisos**. |
 | **Gasto de batería: cómo calcular (válido para todos los relojes)** (`gasto_motor`) | cuál de los cinco motores del [consumo medido por las lecturas](#gasto-medido-pelas-leituras) hace la cuenta, para todos los relojes de la colección: **1. Por las horas registradas (el motor original)**, **2. ... (robusto)**, **3. Por la marcación: dos tasas separadas**, **4. Solo el registro** o **5. Por las fórmulas del registro**. Predeterminado: vacío (*Individual (en el reloj o en el grupo)*: el campo **Cómo calcular el gasto de batería** de cada reloj, si no su predeterminado, si no el motor 1). |
@@ -1961,6 +1962,8 @@ descargar la base por el navegador).
 - **Para desactivarla** (otra rutina ya copia la base, o es una instalación de prueba): `define("BACKUP_ATIVO", false);` en el
   `config.php`. El cron no hace copia, la escritura `fazer` se rechaza y el cuadro **Copia de seguridad** desaparece de la
   Configuración, junto con el aviso de que falta la carpeta.
+
+Antes de restaurar, el sistema comprueba el gzip completo, el JSON, las tablas, las columnas y los valores binarios. En las copias nuevas también comprueba la cantidad de registros de cada tabla; las copias antiguas válidas se siguen aceptando. Una copia rechazada en esta comprobación no cambia la base ni la lista de copias. El encabezado de las copias nuevas contiene `verificacao=1`, y cada tabla contiene `registros`.
 
 ## Reescribir el sistema desde cero {#reescrever-o-sistema-do-zero}
 

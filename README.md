@@ -1408,7 +1408,8 @@ A página **Configuração** guarda as opções **da coleção** (cada coleção
 | **Trocar o relógio de hoje no próprio dia** (`trocar_hoje`) | desmarcada (o padrão), o relógio de hoje fica: o **trocar por…** e o **escolher…** do dia de hoje, o **Usando hoje**, o **Sortear de novo** *inclusive hoje*, o **Sem relógio hoje** e o **Excluindo hoje** do Apagar tudo não aparecem, no Rodízio manual o dia de hoje fica parado, e o **Sortear de novo** vale a partir de amanhã mesmo com o dia ainda por começar (a API recusa o que trocaria o de hoje): o relógio de amanhã se escolhe até hoje. Marcada, o de hoje também se troca no próprio dia, e o novo passa a ser o do pulso a partir de agora. As marcações do pulso (**Pôs** e **Tirou**) continuam livres nos dois casos. Padrão: desmarcada. |
 | **Limite de carga** (`carga_limiar`) | a carga (%) em que os avisos mandam carregar ou dar corda; o campo **Limite de carga** de um relógio vale no lugar dele. De 1 a 99. Padrão: 20. |
 | **Limite do solar** (`sol_limiar`) | a carga (%) em que o solar deve ir para o sol. De 1 a 99. Padrão: 70. |
-| **Limite da previsão** (`previsao_limite`) | a carga (%) que a previsão do smartwatch usa para "chega ao limite em...". De 0 a 100. Padrão: 20. |
+| **Limite da previsão** (`previsao_limite`) | a carga (%) que a previsão do smartwatch usa para "chega ao limite em...". De 0 a 100. Padrão: 20. O aviso Carregar converte a taxa por dia de uso em dias civis e não prevê datas além de 366 dias. A previsão detalhada procura o instante do limite com precisão de até um minuto. `chega_limite_em` traz data e hora, no formato `AAAA-MM-DD HH:MM:SS`. |
+| **Casas decimais dos pesos** (`sorteio_casas`) | de 0 a 8, padrão 2, em Configuração › Sorteios. Os pesos são arredondados antes do sorteio; se todos os positivos virarem zero, usa os pesos originais. Peso zero não participa. |
 | **Garantia de rodízio** (`max_sem_uso`) | nenhum relógio passa mais que esses dias sem uso: o que passa entra na frente de todos. 0 desliga. Padrão: 21. |
 | **Avisar quando um relógio fica encostado** (`encostado_ativo`) | marcada, o aviso **Encostado** funciona; desmarcada, ele some inteiro (o aviso, a coluna da página Hoje e o filtro). É o mesmo que ligar ou desligar o aviso `encostado` na página **Avisos**. Padrão: marcada. |
 | **Aviso Encostado: dias sem ir ao pulso** (`encostado_dias`) | depois de quantos dias sem ir ao pulso um relógio da coleção ganha o aviso **Encostado** (em **Hoje é dia de**: *Encostado*, *"o limite de dias sem ir ao pulso vence há 2d, 11/10/2026 18:00"*). De 1 a 3650. Padrão: 30. A caixa acima liga e desliga o aviso. |
@@ -2446,6 +2447,10 @@ nova, as mais velhas saem. A pasta dentro da publicada é recusada (qualquer um 
   `config.php`. O cron não faz cópia, a escrita `fazer` é recusada e o quadro **Cópia de segurança** some da Configuração,
   com o aviso de que falta a pasta.
 
+Antes de restaurar, o sistema confere o gzip inteiro, o JSON, as tabelas, as colunas e os binários. Nas cópias novas,
+confere também a quantidade de registros de cada tabela; cópias antigas válidas continuam aceitas. Uma cópia reprovada nessa conferência não
+altera o banco nem a lista de cópias. O cabeçalho das cópias novas traz `verificacao=1`, e cada tabela traz `registros`.
+
 ## Reescrever o sistema do zero
 
 Quem quiser reescrever o Relojoeiro, em outra linguagem, outro banco ou outro framework, e chegar ao mesmo sistema, pede à API o
@@ -2613,6 +2618,8 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | [`PORTE.md`](PORTE.md) | o registro do porte da versão anterior |
 
 ---
+
+As regressões `php testes/backup.php` e `php testes/motores.php` usam bancos SQLite novos e descartáveis. Conferem que uma cópia inválida preserve o banco, que cópias antigas válidas voltem e que pesos extremos e previsões de carga funcionem. Também rodam no trabalho de arquitetura do CI; as regressões do navegador continuam no trabalho de layout.
 
 ## Como contribuir
 

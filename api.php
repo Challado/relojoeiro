@@ -616,6 +616,8 @@
  *                             (do sistema inteiro: só o master); só o que vier), evento_salvar (evento_id
  *                             ou id: 0 cria; nome, ativo, repeticao, hora, data_inicio, dias_semana, dia_mes, intervalo_dias,
  *                             relogio_id; o evento novo já vai para todos os destinos), evento_excluir (evento_id ou id, confirmar=1)
+ *                            sorteio_casas: de 0 a 8 casas decimais nos pesos dos sorteios; padrão 2. Se todos os pesos positivos
+ *                            arredondarem para zero, usa os pesos originais.
  *                            Ex. salvar: curl -u lucas:senha -d recurso=config -d acao=salvar -d horario_manha=06:30 -d carga_limiar=25 http://servidor/relojoeiro/api.php
  *                            Ex. evento_salvar: curl -u lucas:senha -d recurso=config -d acao=evento_salvar -d evento_id=0 -d "nome=Limpar as pulseiras" -d repeticao=semanal -d "dias_semana[]=1" -d "dias_semana[]=4" -d hora=20:00 http://servidor/relojoeiro/api.php
  *                            Ex. evento_excluir: curl -u lucas:senha -d recurso=config -d acao=evento_excluir -d evento_id=3 -d confirmar=1 http://servidor/relojoeiro/api.php
@@ -676,6 +678,9 @@
  *                             resposta traz "arquivo"), restaurar (arquivo: o nome de uma cópia da pasta; antes, guarda uma cópia do
  *                             que está agora; depois, num passo só, troca todos os registros pelos da cópia; só uma cópia da mesma
  *                             versão do banco; sem o conteúdo dos documentos, eles voltam sem a cópia no banco e o cron refaz a pedida)
+ *                            Antes de restaurar, confere o gzip inteiro, o JSON, as tabelas, as colunas e os binários; nas cópias
+ *                            novas, também as contagens. Cópias antigas válidas continuam aceitas. Cópia reprovada nessa conferência não altera o banco
+ *                            nem a lista de cópias.
  *                            Ex. fazer: curl -u lucas:senha -d recurso=backup -d acao=fazer http://servidor/relojoeiro/api.php
  *                            Ex. restaurar: curl -u lucas:senha -d recurso=backup -d acao=restaurar -d arquivo=relojoeiro-2026-10-12-200000.jsonl.gz http://servidor/relojoeiro/api.php
  *
@@ -999,6 +1004,8 @@
  *     campos[].padrao                o valor usado quando o relógio não tem o campo preenchido (texto; null: nenhum)
  *     campos[].tipo                  inteiro, decimal, sim_nao, data, lista ou texto
  *     campos[].unidade               a unidade (texto; vazio: nenhuma)
+ *     config.sorteio_casas           sorteio_casas: de 0 a 8 casas decimais nos pesos dos sorteios; padrão 2. Se todos os pesos positivos
+ *                                    arredondarem para zero, usa os pesos originais.
  *     config.carga_limiar            o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se
  *                                    preenchido, vale no lugar)
  *     config.na_hora_enviados        os avisos "na hora" que já foram pelo Telegram e ainda estão vencidos (relogio_id:identificador,
@@ -3715,6 +3722,8 @@
  *     cron_estado.texto              a frase da Configuração ("Cron rodando: última execução às 10:41."; parado e nunca trazem a linha do
  *                                    crontab)
  *     cron_estado.ultima             quando rodou pela última vez (AAAA-MM-DD HH:MM:SS, no fuso do sistema; null: nunca rodou)
+ *     config.sorteio_casas           sorteio_casas: de 0 a 8 casas decimais nos pesos dos sorteios; padrão 2. Se todos os pesos positivos
+ *                                    arredondarem para zero, usa os pesos originais.
  *     config.carga_limiar            o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se
  *                                    preenchido, vale no lugar)
  *     config.na_hora_enviados        os avisos "na hora" que já foram pelo Telegram e ainda estão vencidos (relogio_id:identificador,
@@ -6947,6 +6956,71 @@
  *                                    o valor do produto (número, em R$)
  *     documentos[].nfe.serie         a série da nota
  *     documentos[].nfe.valor         o valor total da nota (número, em R$)
+ *     do_calibre.documentos[].categoria_id
+ *                                    a categoria dele (as categorias dos documentos)
+ *     do_calibre.documentos[].criado quando foi enviado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
+ *     do_calibre.documentos[].data   a data do documento: a ocasião da foto, a data da nota (texto AAAA-MM-DD; null: sem data)
+ *     do_calibre.documentos[].descricao
+ *                                    a descrição (texto; null: sem descrição)
+ *     do_calibre.documentos[].familia
+ *                                    como ele abre, pelo tipo do arquivo: imagem (a galeria), video (o player), audio, pdf (o
+ *                                    visualizador), xml (o resumo da nota e o download) ou outro (o download)
+ *     do_calibre.documentos[].id     o número do documento (para recurso=documento e para alterar ou excluir)
+ *     do_calibre.documentos[].miniatura
+ *                                    verdadeiro: a foto tem miniatura (recurso=documento com mini=1)
+ *     do_calibre.documentos[].nome   o nome do arquivo enviado
+ *     do_calibre.documentos[].no_disco
+ *                                    verdadeiro: o arquivo está inteiro na pasta dos documentos, com o tamanho do envio (falso: sumiu ou
+ *                                    está cortado, e volta do banco quando for pedido ou na próxima rodada do cron; sem a cópia no banco,
+ *                                    está perdido)
+ *     do_calibre.documentos[].no_banco
+ *                                    verdadeiro: a cópia de segurança do arquivo foi feita no banco (se ele sumir da pasta, volta dali,
+ *                                    quando ela está inteira: copia_inteira)
+ *     do_calibre.documentos[].copia_inteira
+ *                                    com o arquivo fora da pasta ou cortado (no_disco falso) e a cópia no banco: verdadeiro, a cópia tem o
+ *                                    arquivo inteiro e o traz de volta; falso, ela foi feita de um arquivo já cortado e não recria o
+ *                                    inteiro (envie o arquivo de novo); null: sem cópia no banco, ou o arquivo está inteiro na pasta
+ *     do_calibre.documentos[].copia_banco
+ *                                    verdadeiro: o próprio arquivo pede a cópia no banco (o terceiro nível; o relógio e a Configuração da
+ *                                    coleção, se pedem, valem por cima)
+ *     do_calibre.documentos[].copia_por
+ *                                    quem pede a cópia no banco: sistema (a Configuração da coleção, documentos_copia = todos), relogio (a
+ *                                    marca do relógio) ou arquivo (a marca do próprio arquivo); null: ninguém
+ *     do_calibre.documentos[].relogio_id
+ *                                    o relógio dele
+ *     do_calibre.documentos[].calibre_id
+ *                                    o calibre dele (os documentos do calibre); null nos de relógio e nos de winder
+ *     do_calibre.documentos[].winder_id
+ *                                    o winder dele (os documentos do winder: o manual, a nota, as fotos); null nos de relógio e nos de
+ *                                    calibre
+ *     do_calibre.documentos[].tamanho
+ *                                    o tamanho do arquivo, em bytes (número inteiro)
+ *     do_calibre.documentos[].tipo   o tipo do arquivo (MIME): image/jpeg, video/mp4, application/pdf, application/xml...
+ *     do_calibre.documentos[].titulo o título
+ *     do_calibre.documentos[].url    o endereço do arquivo, relativo à pasta do sistema (api.php?recurso=documento&id=...)
+ *     do_calibre.documentos[].nfe    o resumo da NF-e, quando o arquivo é o XML de uma nota fiscal eletrônica; null: não é
+ *     do_calibre.documentos[].nfe.chave
+ *                                    a chave de acesso da nota (44 dígitos)
+ *     do_calibre.documentos[].nfe.cnpj
+ *                                    o CNPJ (ou o CPF) do emitente
+ *     do_calibre.documentos[].nfe.data
+ *                                    a data de emissão (texto AAAA-MM-DD)
+ *     do_calibre.documentos[].nfe.emitente
+ *                                    o nome do emitente (a loja)
+ *     do_calibre.documentos[].nfe.numero
+ *                                    o número da nota
+ *     do_calibre.documentos[].nfe.produtos[]
+ *                                    os produtos da nota
+ *     do_calibre.documentos[].nfe.produtos[].descricao
+ *                                    a descrição do produto
+ *     do_calibre.documentos[].nfe.produtos[].quantidade
+ *                                    a quantidade (número)
+ *     do_calibre.documentos[].nfe.produtos[].valor
+ *                                    o valor do produto (número, em R$)
+ *     do_calibre.documentos[].nfe.serie
+ *                                    a série da nota
+ *     do_calibre.documentos[].nfe.valor
+ *                                    o valor total da nota (número, em R$)
  *   recurso=manual
  *     fonte                          de onde vem o texto: README.md (em português) ou textos/manual/<idioma>.md (a tradução do idioma do
  *                                    pedido)

@@ -1,4 +1,4 @@
-<!-- origem: 3d8073acba0a0a3a7ea64dfae19b7bf0db3ab41d -->
+<!-- origem: 73c90cef48face883c57bb9a153027fc9109dade -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -704,6 +704,8 @@ vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des
 | [`PORTE.md`](PORTE.md) | le registre du portage de la version précédente |
 
 ---
+
+Les régressions `php testes/backup.php` et `php testes/motores.php` utilisent de nouvelles bases SQLite jetables. Elles vérifient qu’une sauvegarde non valide préserve la base, que les anciennes sauvegardes valides sont restaurées et que les poids extrêmes et les prévisions de charge fonctionnent. Elles tournent aussi dans le job architecture du CI ; les régressions du navigateur restent dans le job de mise en page.
 
 ## Comment contribuer {#como-contribuir}
 

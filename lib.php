@@ -1214,7 +1214,14 @@ $MIGRACOES = [
     "v46" => ["migracao_v46.sql", tk("as rotações por dia das posições dos winders com valores possíveis (650, 850, 1050 e 1250, os da chave TPD dos winders comuns), num menu em cada posição da página Winders; mudam em Cadastros › Campos"), "sistema.chave=migracao_v46", "migracao_v46_dados"],
     "v47" => ["migracao_v47.sql", tk("os programas dos winders: as páginas Movimentos (cada passo: um giro horário ou anti-horário, em voltas ou em tempo, ou uma parada) e Programas (a sequência dos movimentos, por voltas ou por tempo, o dia todo ou em blocos, com a velocidade do berço contada ou tirada das voltas por dia do manual; as voltas por dia, o ciclo e o tempo girando sempre calculados), e cada posição escolhe o seu (o programa antigo de cada posição vira um, e os campos antigos saem); a carga no winder pelas voltas no sentido em que o relógio dá corda; o lugar fixo (o relógio tem a posição dele: fora dela, a foto apagada com o aro vermelho no berço, e pôr no winder de qualquer lugar o devolve para lá); os limites da almofada (caixa, pulso e peso), com aviso que se dispensa; e os documentos do winder (o manual, a nota, as fotos)"), "winder_limite_ok", "migracao_v47_dados"],
     "v48" => ["migracao_v48.sql", tk("a manutenção (a página Manutenção): cadastrar a manutenção de um relógio (a oficina, a situação, o problema, a OS, a previsão, o orçamento, o que foi junto e os documentos) põe o relógio em manutenção, fora do rodízio até voltar, e o encerramento vira o serviço; as oficinas, com quantos contatos quiser; e as listas que viram cadastro (a situação na coleção, os tipos de acessório e de serviço, a estanqueidade, os jeitos de carregar e as observações da reserva, as situações da manutenção, os tipos de oficina e de contato), cada item com o que ele faz. Cada responsável dos serviços de antes vira uma oficina, e cada serviço, uma manutenção encerrada"), "sistema.chave=migracao_v48", "migracao_v48_dados"],
+    "v49" => ["migracao_v49.sql", tk("o aviso Carregar: converter corretamente as horas no pulso para dias, sem prever séculos de bateria guardada; a precisão dos pesos dos sorteios passa a ser configurável"), "sistema.chave=migracao_v49", "migracao_v49_dados"],
 ];
+
+// A instalação nova já usa a expressão corrigida do modelo; a marca é do sistema inteiro.
+function migracao_v49_dados($nova = false)
+{
+    sis_set("migracao_v49", "1");
+}
 
 // O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
 // o roteiro dos modos que não são personalizados é gerado a cada uso, dos blocos
@@ -4641,28 +4648,47 @@ function escolha_do_dia($modo, $dia, $m_ini, $cands, $roteiro, $fora = [], $bloc
             $motivo = $estilo === "fifo"
                 ? t("Fila: o mais tempo sem uso ({1}), {2}.", [1 => motivo_parado($info[$escolhido]["dsu"], $info[$escolhido]["nunca"]), 2 => $entre])
                 : t("A maior nota ({1}), {2}.", [1 => motivo_nota($info[$escolhido]["nota"]), 2 => $entre]);
-        } elseif (count(array_unique(array_map(function ($p) { return (int)round($p * 100); }, $pesos))) === 1) {
-            $ids = array_keys($info);
-            $escolhido = $ids[sorteio(0, count($ids) - 1)];
-            $motivo = t("Sorteio simples, {1}, todos com a mesma chance ({2}).", [1 => $entre, 2 => aleatorio_fonte()]);
         } else {
-            // com sorteio: o peso de cada um é a chance dele (peso 0: nenhuma)
-            $total = 0;
-            foreach ($info as $x) {
-                $total += (int)round($x["peso"] * 100);
+            // A precisão do peso é configurável (0 a 8 casas, padrão 2).
+            // Se TODOS os pesos positivos virarem zero com o arredondamento, usa os originais: não fica sem escolhido.
+            $casas = max(0, min(8, cfg("sorteio_casas") === "" ? 2 : (int)cfg("sorteio_casas")));
+            $arredondados = array_map(function ($p) use ($casas) { return round((float)$p, $casas); }, $pesos);
+            if (max($arredondados) <= 0) {
+                $arredondados = $pesos;
             }
-            $alvo = sorteio(1, max(1, $total));
-            foreach ($info as $cid => $x) {
-                $alvo -= (int)round($x["peso"] * 100);
-                if ($escolhido === null && $alvo <= 0 && $x["peso"] > 0) {
-                    $escolhido = $cid;
+            if (count(array_unique($arredondados)) === 1) {
+                $ids = array_keys($info);
+                $escolhido = $ids[sorteio(0, count($ids) - 1)];
+                $motivo = t("Sorteio simples, {1}, todos com a mesma chance ({2}).", [1 => $entre, 2 => aleatorio_fonte()]);
+            } else {
+                // Normaliza os pesos para não estourar inteiros ao multiplicar por 10^casas.
+                // Um sorteio usa um inteiro de 1 a 1 bilhão; peso 0 não participa.
+                $maior = max($arredondados);
+                $normais = array_map(function ($p) use ($maior) { return (float)$p / $maior; }, $arredondados);
+                $total = array_sum($normais);
+                $alvo = sorteio(1, 1000000000) * $total / 1000000000;
+                $ultimo_positivo = null;
+                foreach (array_keys($info) as $i => $cid) {
+                    if ($normais[$i] > 0) {
+                        $ultimo_positivo = $cid;
+                        $alvo -= $normais[$i];
+                        if ($escolhido === null && $alvo <= 0) {
+                            $escolhido = $cid;
+                        }
+                    }
                 }
-            }
-            if ($escolhido !== null) {
-                $chance = motivo_nota(round($info[$escolhido]["peso"] * 100) * 100 / max(1, $total));
-                $motivo = $estilo === "ponderado"
-                    ? t("Sorteio pela nota, {1}: nota {2}, {3}% de chance ({4}).", [1 => $entre, 2 => motivo_nota($info[$escolhido]["nota"]), 3 => $chance, 4 => aleatorio_fonte()])
-                    : t("Sorteio pelo peso, {1}: peso {2}, {3}% de chance ({4}).", [1 => $entre, 2 => motivo_nota($info[$escolhido]["peso"]), 3 => $chance, 4 => aleatorio_fonte()]);
+                // Protege contra pequenos erros de ponto flutuante na soma acumulada.
+                if ($escolhido === null) {
+                    $escolhido = $ultimo_positivo;
+                }
+                if ($escolhido !== null) {
+                    $ids = array_keys($info);
+                    $indice = array_search($escolhido, $ids, true);
+                    $chance = motivo_nota($normais[$indice] * 100 / max(0.000000000001, $total));
+                    $motivo = $estilo === "ponderado"
+                        ? t("Sorteio pela nota, {1}: nota {2}, {3}% de chance ({4}).", [1 => $entre, 2 => motivo_nota($info[$escolhido]["nota"]), 3 => $chance, 4 => aleatorio_fonte()])
+                        : t("Sorteio pelo peso, {1}: peso {2}, {3}% de chance ({4}).", [1 => $entre, 2 => motivo_nota($info[$escolhido]["peso"]), 3 => $chance, 4 => aleatorio_fonte()]);
+                }
             }
         }
     }
@@ -8863,14 +8889,16 @@ function previsao_energia($r, $agora)
             if ($energia <= $res["limite"]) {
                 $res["linhas"][] = t("Já está abaixo de {1}%. Guardado assim, a bateria se desgasta.", [1 => decimal_txt($res["limite"], 6)]);
             } else {
-                $baixo = 0;
-                $alto = 366;
-                $ctx = ["r" => $r, "momento" => $agora + $alto * 86400, "rastro" => [], "pilha" => [], "valores" => $valores];
+                $baixo = $agora;
+                $alto = $agora + 366 * 86400;
+                $ctx = ["r" => $r, "momento" => $alto, "rastro" => [], "pilha" => [], "valores" => $valores];
                 $e_alto = variavel_valor("energia", $ctx);
                 if (is_numeric($e_alto) && (float)$e_alto <= $res["limite"]) {
-                    while ($alto - $baixo > 1) {
-                        $meio = intdiv($baixo + $alto, 2);
-                        $ctx = ["r" => $r, "momento" => $agora + $meio * 86400, "rastro" => [], "pilha" => [], "valores" => $valores];
+                    // Acha o primeiro minuto em que a energia chega ao limite, em vez de arredondar para dias inteiros.
+                    // A conta respeita o fim das sessões gravadas e o consumo depois que o relógio sai do pulso.
+                    while ($alto - $baixo > 60) {
+                        $meio = $baixo + intdiv($alto - $baixo, 2);
+                        $ctx = ["r" => $r, "momento" => $meio, "rastro" => [], "pilha" => [], "valores" => $valores];
                         $e = variavel_valor("energia", $ctx);
                         if (is_numeric($e) && (float)$e <= $res["limite"]) {
                             $alto = $meio;
@@ -8878,9 +8906,8 @@ function previsao_energia($r, $agora)
                             $baixo = $meio;
                         }
                     }
-                    $chega = $hoje->modify("+" . $alto . " days");
-                    $res["chega_limite_em"] = $chega->format("Y-m-d");
-                    $quando = [1 => decimal_txt($res["limite"], 6), 2 => data_txt($chega->getTimestamp(), false, $chega->format("Y") === $hoje->format("Y"))];
+                    $res["chega_limite_em"] = date("Y-m-d H:i:s", $alto);
+                    $quando = [1 => decimal_txt($res["limite"], 6), 2 => data_txt($alto, false, date("Y", $alto) === $hoje->format("Y")) . " " . date("H:i", $alto)];
                     $res["linhas"][] = $continuando !== null ? t("Continuando {3}, chega a {1}% em {2}.", $quando + [3 => $continuando]) : t("Parado, chega a {1}% em {2}.", $quando);
                 } else {
                     $res["linhas"][] = $continuando !== null ? t("Continuando {2}, fica acima de {1}% por mais de um ano.", [1 => decimal_txt($res["limite"], 6), 2 => $continuando])
@@ -9644,10 +9671,10 @@ function banco_despejar($arquivo, $docs)
         $falta = array_key_first(migracoes_pendentes());
         $versao = $falta === null ? end($versoes) : ($versoes[array_search($falta, $versoes, true) - 1] ?? "v1");
         gzwrite($gz, json_encode(["relojoeiro_copia" => 1, "criada" => date("Y-m-d H:i:s"), "banco" => banco_tipo(), "versao" => $versao,
-            "documentos" => $docs, "tabelas" => array_column($tabelas, 0)], JSON_UNESCAPED_UNICODE) . "\n");
+            "documentos" => $docs, "tabelas" => array_column($tabelas, 0), "verificacao" => 1], JSON_UNESCAPED_UNICODE) . "\n");
         $linhas = 0;
         foreach ($tabelas as [$nome_t, $colunas, $binarias, $chave]) {
-            gzwrite($gz, json_encode(["tabela" => $nome_t, "colunas" => $colunas, "binarias" => $binarias], JSON_UNESCAPED_UNICODE) . "\n");
+            gzwrite($gz, json_encode(["tabela" => $nome_t, "colunas" => $colunas, "binarias" => $binarias, "registros" => (int)valor("SELECT COUNT(*) FROM " . $nome_t)], JSON_UNESCAPED_UNICODE) . "\n");
             // de pouco em pouco (o conteúdo dos documentos vem em pedaços de 4 MB)
             $lote = in_array($nome_t, ["documento_parte", "foto"], true) ? 2 : 500;
             for ($de = 0; ; $de += $lote) {
@@ -9671,6 +9698,133 @@ function banco_despejar($arquivo, $docs)
     });
 }
 
+// Lê o gzip por partes: o zlib confere também o CRC e o fim do arquivo, sem carregar a cópia inteira na memória.
+// O chamador mantém o descritor aberto: a cópia anterior pode tirar o arquivo escolhido da lista das mais velhas.
+function backup_linhas($arquivo)
+{
+    rewind($arquivo);
+    $z = inflate_init(ZLIB_ENCODING_GZIP);
+    $hash = hash_init("sha256");
+    $pendente = "";
+    $bytes = 0;
+    $fim = false;
+    while (!feof($arquivo)) {
+        $pedaco = fread($arquivo, 8192);
+        if ($pedaco === false || ($fim && $pedaco !== "")) {
+            throw new RuntimeException(t("a cópia está incompleta ou contém dados inválidos"));
+        }
+        if ($pedaco === "") {
+            break;
+        }
+        $bytes += strlen($pedaco);
+        hash_update($hash, $pedaco);
+        $texto = @inflate_add($z, $pedaco, ZLIB_SYNC_FLUSH);
+        if ($texto === false) {
+            throw new RuntimeException(t("a cópia está incompleta ou contém dados inválidos"));
+        }
+        $pendente .= $texto;
+        while (($quebra = strpos($pendente, "\n")) !== false) {
+            if ($quebra > (64 << 20)) {
+                throw new RuntimeException(t("a cópia está incompleta ou contém dados inválidos"));
+            }
+            $linha = substr($pendente, 0, $quebra);
+            $pendente = substr($pendente, $quebra + 1);
+            $x = json_decode($linha, true);
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($x)) {
+                throw new RuntimeException(t("a cópia está incompleta ou contém dados inválidos"));
+            }
+            yield $x;
+        }
+        if (strlen($pendente) > (64 << 20)) {
+            throw new RuntimeException(t("a cópia está incompleta ou contém dados inválidos"));
+        }
+        $fim = inflate_get_status($z) === ZLIB_STREAM_END;
+        if ($fim && inflate_get_read_len($z) !== $bytes) {
+            throw new RuntimeException(t("a cópia está incompleta ou contém dados inválidos"));
+        }
+    }
+    if (!$fim) {
+        throw new RuntimeException(t("a cópia está incompleta ou contém dados inválidos"));
+    }
+    if ($pendente !== "") {
+        $x = json_decode($pendente, true);
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($x)) {
+            throw new RuntimeException(t("a cópia está incompleta ou contém dados inválidos"));
+        }
+        yield $x;
+    }
+    return hash_final($hash);
+}
+
+// Confere a estrutura inteira antes de mexer no banco; na segunda passagem, chama a gravação de cada registro.
+// Cópias antigas não têm contagem: continuam válidas com todas as tabelas, linhas e gzip íntegros.
+function backup_conferir($arquivo, $info, $gravar = null)
+{
+    global $MIGRACOES;
+    $cab = null;
+    $vistas = [];
+    $tabela = null;
+    $colunas = [];
+    $binarias = [];
+    $esperados = null;
+    $lidos = 0;
+    $mesmos = function ($a, $b) {
+        if (!is_array($a) || !array_is_list($a) || count(array_filter($a, "is_string")) !== count($a) || count(array_unique($a)) !== count($a)) {
+            return false;
+        }
+        sort($a);
+        sort($b);
+        return $a === $b;
+    };
+    $leitor = backup_linhas($arquivo);
+    foreach ($leitor as $x) {
+        if ($cab === null) {
+            if (($x["relojoeiro_copia"] ?? null) !== 1 || !is_bool($x["documentos"] ?? null)
+                || !$mesmos($x["tabelas"] ?? null, array_values(array_filter(array_keys($info), function ($t) use ($x) { return $x["documentos"] || $t !== "documento_parte"; })))) {
+                throw new RuntimeException(t("a cópia está incompleta ou contém dados inválidos"));
+            }
+            if (($x["versao"] ?? "") !== array_key_last($MIGRACOES)) {
+                throw new RuntimeException(t("A cópia é da versão {1} do banco e este está na {2}: volte a cópia num sistema da mesma versão.", [1 => $x["versao"] ?? "?", 2 => array_key_last($MIGRACOES)]));
+            }
+            if (isset($x["verificacao"]) && $x["verificacao"] !== 1) {
+                throw new RuntimeException(t("a cópia está incompleta ou contém dados inválidos"));
+            }
+            $cab = $x;
+        } elseif (isset($x["tabela"])) {
+            if (($esperados !== null && $esperados !== $lidos) || !is_string($x["tabela"]) || !isset($info[$x["tabela"]])
+                || ($cab["tabelas"][count($vistas)] ?? null) !== $x["tabela"] || isset($vistas[$x["tabela"]])
+                || !$mesmos($x["colunas"] ?? null, $info[$x["tabela"]][1]) || !$mesmos($x["binarias"] ?? null, $info[$x["tabela"]][2])
+                || ((isset($x["registros"]) || isset($cab["verificacao"])) && (!is_int($x["registros"] ?? null) || $x["registros"] < 0))) {
+                throw new RuntimeException(t("a cópia está incompleta ou contém dados inválidos"));
+            }
+            $tabela = $x["tabela"];
+            $colunas = $x["colunas"];
+            $binarias = $x["binarias"];
+            $vistas[$tabela] = true;
+            $esperados = $x["registros"] ?? null;
+            $lidos = 0;
+        } else {
+            if ($tabela === null || !array_is_list($x) || count($x) !== count($colunas)) {
+                throw new RuntimeException(t("a cópia está incompleta ou contém dados inválidos"));
+            }
+            foreach ($x as $i => $v) {
+                if (is_array($v) || is_object($v) || (is_float($v) && !is_finite($v))
+                    || ($v !== null && in_array($colunas[$i], $binarias, true) && (!is_string($v) || base64_decode($v, true) === false))) {
+                    throw new RuntimeException(t("a cópia está incompleta ou contém dados inválidos"));
+                }
+            }
+            $lidos++;
+            if ($gravar !== null) {
+                $gravar($tabela, $colunas, $binarias, $x);
+            }
+        }
+    }
+    if ($cab === null || count($vistas) !== count($cab["tabelas"]) || ($esperados !== null && $esperados !== $lidos)) {
+        throw new RuntimeException(t("a cópia está incompleta ou contém dados inválidos"));
+    }
+    return [$cab, $leitor->getReturn()];
+}
+
 // Volta o banco para uma cópia: antes, faz uma cópia do que está agora; depois, num passo só (se algo falha, nada muda),
 // apaga todos os registros e grava os da cópia. Só uma cópia da mesma versão do sistema (a mesma última migração). Sem o
 // conteúdo dos documentos na cópia, os documentos voltam sem a cópia no banco, e o cron refaz a que for pedida.
@@ -9689,25 +9843,27 @@ function backup_restaurar_tudo($arquivo)
     if ($caminho === null) {
         return ["ok" => false, "mensagem" => "", "erros" => [backup_pasta() === null ? t("Sem a pasta das cópias: {1}.", [1 => backup_pasta_erro()]) : t("Cópia não encontrada: {1}.", [1 => $arquivo])]];
     }
-    $gz = gzopen($caminho, "rb");
-    $cab = json_decode((string)gzgets($gz, 1 << 20), true);
-    if (!is_array($cab) || ($cab["relojoeiro_copia"] ?? null) !== 1) {
-        gzclose($gz);
-        return ["ok" => false, "mensagem" => "", "erros" => [t("O arquivo {1} não é uma cópia do Relojoeiro.", [1 => $arquivo])]];
-    }
-    if (($cab["versao"] ?? "") !== array_key_last($MIGRACOES)) {
-        gzclose($gz);
-        return ["ok" => false, "mensagem" => "", "erros" => [t("A cópia é da versão {1} do banco e este está na {2}: volte a cópia num sistema da mesma versão.", [1 => $cab["versao"] ?? "?", 2 => array_key_last($MIGRACOES)])]];
-    }
-    $antes = backup_fazer();
-    if (!$antes["ok"]) {
-        gzclose($gz);
-        return ["ok" => false, "mensagem" => "", "erros" => array_merge([t("Não restaurei: a cópia do que está agora falhou.")], $antes["erros"])];
-    }
     $todas = backup_tabelas();
     $info = [];
     foreach ($todas as $t) {
         $info[$t[0]] = $t;
+    }
+    $arquivo_copia = @fopen($caminho, "rb");
+    try {
+        if ($arquivo_copia === false) {
+            throw new RuntimeException(t("a cópia está incompleta ou contém dados inválidos"));
+        }
+        [$cab, $hash] = backup_conferir($arquivo_copia, $info);
+    } catch (Throwable $e) {
+        if (is_resource($arquivo_copia)) {
+            fclose($arquivo_copia);
+        }
+        return ["ok" => false, "mensagem" => "", "erros" => [t("Não restaurei (o banco ficou como estava): {1}.", [1 => $e->getMessage()])]];
+    }
+    $antes = backup_fazer();
+    if (!$antes["ok"]) {
+        fclose($arquivo_copia);
+        return ["ok" => false, "mensagem" => "", "erros" => array_merge([t("Não restaurei: a cópia do que está agora falhou.")], $antes["erros"])];
     }
     $n = 0;
     banco_inicio();
@@ -9736,6 +9892,20 @@ function backup_restaurar_tudo($arquivo)
         // os registros que citam a própria tabela (a árvore) esperam o citado entrar
         $soltar = function () use (&$esperando, &$tabela, &$colunas, &$info, $grava) {
             $proprias = $tabela !== null ? $info[$tabela][4] : [];
+            $mostrar_depois = [];
+            // Uma unidade pode mostrar em outra que converte para ela (mm ↔ pol). A conversão entra primeiro;
+            // a referência opcional de exibição volta depois que todas as unidades já existem.
+            if ($tabela === "unidade" && isset($proprias["mostrar_em_id"])) {
+                $i_mostrar = array_search("mostrar_em_id", $colunas, true);
+                $i_id = array_search("id", $colunas, true);
+                foreach ($esperando as &$vals) {
+                    if ($vals[$i_mostrar] !== null) {
+                        $mostrar_depois[] = [$vals[$i_mostrar], $vals[$i_id]];
+                        $vals[$i_mostrar] = null;
+                    }
+                }
+                unset($vals, $proprias["mostrar_em_id"]);
+            }
             $feitos = [];
             while (count($esperando) > 0) {
                 $resto = [];
@@ -9759,36 +9929,37 @@ function backup_restaurar_tudo($arquivo)
                 }
                 $esperando = $resto;
             }
-        };
-        while (($l = gzgets($gz, 64 << 20)) !== false) {
-            $x = json_decode($l, true);
-            if (is_array($x) && isset($x["tabela"])) {
-                $soltar();
-                if (!isset($info[$x["tabela"]])) {
-                    throw new RuntimeException(t("a tabela {1} da cópia não existe neste banco", [1 => $x["tabela"]]));
-                }
-                $tabela = $x["tabela"];
-                $colunas = $x["colunas"];
-                $binarias = $x["binarias"];
-            } elseif (is_array($x) && $tabela !== null) {
-                if (count($info[$tabela][4]) > 0) {
-                    $esperando[] = $x;
-                } else {
-                    $grava($x);
-                }
+            foreach ($mostrar_depois as $v) {
+                sql("UPDATE unidade SET mostrar_em_id = ? WHERE id = ?", $v);
             }
-        }
+        };
+        [, $hash_lido] = backup_conferir($arquivo_copia, $info, function ($nome, $cols, $bins, $vals) use (&$tabela, &$colunas, &$binarias, &$esperando, $info, $grava, $soltar) {
+            if ($tabela !== $nome) {
+                $soltar();
+                $tabela = $nome;
+                $colunas = $cols;
+                $binarias = $bins;
+            }
+            if (count($info[$tabela][4]) > 0) {
+                $esperando[] = $vals;
+            } else {
+                $grava($vals);
+            }
+        });
         $soltar();
+        if (!hash_equals($hash, $hash_lido)) {
+            throw new RuntimeException(t("a cópia está incompleta ou contém dados inválidos"));
+        }
         if (empty($cab["documentos"]) && isset($info["documento"])) {
             sql("UPDATE documento SET no_banco = 0");
         }
         banco_confirma();
     } catch (Throwable $e) {
         banco_desfaz();
-        gzclose($gz);
+        fclose($arquivo_copia);
         return ["ok" => false, "mensagem" => "", "erros" => [t("Não restaurei (o banco ficou como estava): {1}.", [1 => $e->getMessage()])]];
     }
-    gzclose($gz);
+    fclose($arquivo_copia);
     banco_ajustar_ids();
     sis_set("backup_ultima", (string)preg_replace("/^relojoeiro-(\\d{4}-\\d{2}-\\d{2})-(\\d{2})(\\d{2})(\\d{2}).*\$/", "\$1 \$2:\$3:\$4", $antes["arquivo"]));
     return ["ok" => true, "mensagem" => t("Banco restaurado da cópia {1} ({2} registros). O que estava antes foi guardado em {3}.", [1 => $arquivo, 2 => $n, 3 => $antes["arquivo"]]), "erros" => []];

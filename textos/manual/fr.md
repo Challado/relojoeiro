@@ -1,4 +1,4 @@
-<!-- origem: 7a8c255be2492f14d05118d78289f93d6b14e4c0 -->
+<!-- origem: 31bde738a32741e0596220eedb21dadcf7429cc7 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1432,7 +1432,8 @@ collection vient à la fin de chaque ligne.
 | **Changer la montre du jour le jour même** (`trocar_hoje`) | décochée (par défaut), la montre du jour reste : le **changer pour…** et le **choisir…** du jour, le **Portée aujourd'hui**, le **Refaire le tirage** *y compris aujourd'hui*, le **Sans montre aujourd'hui** et le **Y compris aujourd'hui** de Tout effacer n'apparaissent pas, dans la Rotation manuelle le jour d'aujourd'hui reste figé, et le **Refaire le tirage** vaut à partir de demain même si la journée n'a pas commencé (l'API refuse ce qui changerait celle du jour) : la montre de demain se choisit jusqu'à aujourd'hui. Cochée, celle du jour se change aussi le jour même, et la nouvelle devient celle du poignet dès maintenant. Les marquages du poignet (**Mise** et **Retirée**) restent libres dans les deux cas. Par défaut : décochée. |
 | **Seuil de charge** (`carga_limiar`) | la charge (%) à laquelle les alertes disent de charger ou de remonter ; le champ **Seuil de charge** d'une montre prend sa place. De 1 à 99. Par défaut : 20. |
 | **Seuil de la solaire** (`sol_limiar`) | la charge (%) à laquelle la solaire doit aller au soleil. De 1 à 99. Par défaut : 70. |
-| **Seuil de la prévision** (`previsao_limite`) | la charge (%) qu'utilise la prévision de la smartwatch pour « atteint le seuil dans... ». De 0 à 100. Par défaut : 20. |
+| **Seuil de la prévision** (`previsao_limite`) | la charge (%) qu'utilise la prévision de la smartwatch pour « atteint le seuil dans... ». De 0 à 100. Par défaut : 20. L’alerte Charger convertit le taux par journée d’utilisation en jours calendaires et ne prévoit pas de date au-delà de 366 jours. La prévision détaillée recherche l’instant du seuil avec une précision d’une minute. `chega_limite_em` contient la date et l’heure au format `AAAA-MM-DD HH:MM:SS`. |
+| **Décimales des poids** (`sorteio_casas`) | de 0 à 8, 2 par défaut, dans Configuration › Tirages. Les poids sont arrondis avant le tirage ; si tous les poids positifs deviennent nuls, les poids initiaux sont utilisés. Les poids nuls ne participent pas. |
 | **Garantie de rotation** (`max_sem_uso`) | aucune montre ne reste plus de ces jours sans usage : celle qui les dépasse passe devant toutes. 0 la désactive. Par défaut : 21. |
 | **Alerte Délaissée : jours sans aller au poignet** (`encostado_dias`) | après combien de jours sans aller au poignet une montre de la collection reçoit l'alerte **Délaissée** (dans **Aujourd'hui, c'est le jour de** : *Délaissée*, *« la limite de jours sans aller au poignet a expiré il y a 2j, 10/11/2026 18:00 »*). De 1 à 3650. Par défaut : 30. L'alerte se désactive dans **Définitions › Alertes**. |
 | **Consommation de la batterie : comment calculer (valable pour toutes les montres)** (`gasto_motor`) | lequel des cinq moteurs de la [consommation mesurée par les relevés](#gasto-medido-pelas-leituras) fait le calcul, pour toutes les montres de la collection : **1. Par les heures enregistrées (le moteur d'origine)**, **2. ... (robuste)**, **3. Par le marquage : deux taux séparés**, **4. La fiche seulement** ou **5. Par les formules de la fiche**. Par défaut : vide (*Individuelle (sur la montre ou le groupe)* : le champ **Comment calculer la consommation de la batterie** de chaque montre, sinon sa valeur par défaut, sinon le moteur 1). |
@@ -2030,6 +2031,8 @@ défaut) : à chaque nouvelle copie, les plus anciennes s'en vont. Un dossier à
 - **Pour la désactiver** (une autre routine copie déjà la base, ou c'est une installation de test) : `define("BACKUP_ATIVO", false);`
   dans le `config.php`. Le cron ne fait pas de copie, l'écriture `fazer` est refusée et le cadre **Sauvegarde** disparaît de la
   Configuration, avec l'avertissement que le dossier manque.
+
+Avant la restauration, le système vérifie tout le flux gzip, le JSON, les tables, les colonnes et les valeurs binaires. Pour les nouvelles sauvegardes, il vérifie aussi le nombre d’enregistrements de chaque table ; les anciennes sauvegardes valides restent acceptées. Une sauvegarde rejetée lors de cette vérification ne modifie ni la base ni la liste des sauvegardes. L’en-tête des nouvelles sauvegardes contient `verificacao=1`, et chaque table contient `registros`.
 
 ## Réécrire le système à partir de zéro {#reescrever-o-sistema-do-zero}
 
