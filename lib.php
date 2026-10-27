@@ -1214,6 +1214,7 @@ $MIGRACOES = [
     "v46" => ["migracao_v46.sql", tk("as rotações por dia das posições dos winders com valores possíveis (650, 850, 1050 e 1250, os da chave TPD dos winders comuns), num menu em cada posição da página Winders; mudam em Cadastros › Campos"), "sistema.chave=migracao_v46", "migracao_v46_dados"],
     "v47" => ["migracao_v47.sql", tk("os programas dos winders: as páginas Movimentos (cada passo: um giro horário ou anti-horário, em voltas ou em tempo, ou uma parada) e Programas (a sequência dos movimentos, por voltas ou por tempo, o dia todo ou em blocos, com a velocidade do berço contada ou tirada das voltas por dia do manual; as voltas por dia, o ciclo e o tempo girando sempre calculados), e cada posição escolhe o seu (o programa antigo de cada posição vira um, e os campos antigos saem); a carga no winder pelas voltas no sentido em que o relógio dá corda; o lugar fixo (o relógio tem a posição dele: fora dela, a foto apagada com o aro vermelho no berço, e pôr no winder de qualquer lugar o devolve para lá); os limites da almofada (caixa, pulso e peso), com aviso que se dispensa; e os documentos do winder (o manual, a nota, as fotos)"), "winder_limite_ok", "migracao_v47_dados"],
     "v48" => ["migracao_v48.sql", tk("a manutenção (a página Manutenção): cadastrar a manutenção de um relógio (a oficina, a situação, o problema, a OS, a previsão, o orçamento, o que foi junto e os documentos) põe o relógio em manutenção, fora do rodízio até voltar, e o encerramento vira o serviço; as oficinas, com quantos contatos quiser; e as listas que viram cadastro (a situação na coleção, os tipos de acessório e de serviço, a estanqueidade, os jeitos de carregar e as observações da reserva, as situações da manutenção, os tipos de oficina e de contato), cada item com o que ele faz. Cada responsável dos serviços de antes vira uma oficina, e cada serviço, uma manutenção encerrada"), "sistema.chave=migracao_v48", "migracao_v48_dados"],
+    "v49" => ["migracao_v49.sql", tk("o aviso Carregar: converter corretamente as horas no pulso para dias, sem prever séculos de bateria guardada; a precisão dos pesos dos sorteios passa a ser configurável"), "config.chave=migracao_v49"],
 ];
 
 // O passo em PHP da v30, depois do SQL dela: cada modo que existe ganha o tipo pela forma dos blocos (modo_tipo_inferir);
@@ -4641,28 +4642,47 @@ function escolha_do_dia($modo, $dia, $m_ini, $cands, $roteiro, $fora = [], $bloc
             $motivo = $estilo === "fifo"
                 ? t("Fila: o mais tempo sem uso ({1}), {2}.", [1 => motivo_parado($info[$escolhido]["dsu"], $info[$escolhido]["nunca"]), 2 => $entre])
                 : t("A maior nota ({1}), {2}.", [1 => motivo_nota($info[$escolhido]["nota"]), 2 => $entre]);
-        } elseif (count(array_unique(array_map(function ($p) { return (int)round($p * 100); }, $pesos))) === 1) {
-            $ids = array_keys($info);
-            $escolhido = $ids[sorteio(0, count($ids) - 1)];
-            $motivo = t("Sorteio simples, {1}, todos com a mesma chance ({2}).", [1 => $entre, 2 => aleatorio_fonte()]);
         } else {
-            // com sorteio: o peso de cada um é a chance dele (peso 0: nenhuma)
-            $total = 0;
-            foreach ($info as $x) {
-                $total += (int)round($x["peso"] * 100);
+            // A precisão do peso é configurável (0 a 8 casas, padrão 2).
+            // Se TODOS os pesos positivos virarem zero com o arredondamento, usa os originais: não fica sem escolhido.
+            $casas = max(0, min(8, cfg("sorteio_casas") === "" ? 2 : (int)cfg("sorteio_casas")));
+            $arredondados = array_map(function ($p) use ($casas) { return round((float)$p, $casas); }, $pesos);
+            if (max($arredondados) <= 0) {
+                $arredondados = $pesos;
             }
-            $alvo = sorteio(1, max(1, $total));
-            foreach ($info as $cid => $x) {
-                $alvo -= (int)round($x["peso"] * 100);
-                if ($escolhido === null && $alvo <= 0 && $x["peso"] > 0) {
-                    $escolhido = $cid;
+            if (count(array_unique($arredondados)) === 1) {
+                $ids = array_keys($info);
+                $escolhido = $ids[sorteio(0, count($ids) - 1)];
+                $motivo = t("Sorteio simples, {1}, todos com a mesma chance ({2}).", [1 => $entre, 2 => aleatorio_fonte()]);
+            } else {
+                // Normaliza os pesos para não estourar inteiros ao multiplicar por 10^casas.
+                // Um sorteio usa um inteiro de 1 a 1 bilhão; peso 0 não participa.
+                $maior = max($arredondados);
+                $normais = array_map(function ($p) use ($maior) { return (float)$p / $maior; }, $arredondados);
+                $total = array_sum($normais);
+                $alvo = sorteio(1, 1000000000) * $total / 1000000000;
+                $ultimo_positivo = null;
+                foreach (array_keys($info) as $i => $cid) {
+                    if ($normais[$i] > 0) {
+                        $ultimo_positivo = $cid;
+                        $alvo -= $normais[$i];
+                        if ($escolhido === null && $alvo <= 0) {
+                            $escolhido = $cid;
+                        }
+                    }
                 }
-            }
-            if ($escolhido !== null) {
-                $chance = motivo_nota(round($info[$escolhido]["peso"] * 100) * 100 / max(1, $total));
-                $motivo = $estilo === "ponderado"
-                    ? t("Sorteio pela nota, {1}: nota {2}, {3}% de chance ({4}).", [1 => $entre, 2 => motivo_nota($info[$escolhido]["nota"]), 3 => $chance, 4 => aleatorio_fonte()])
-                    : t("Sorteio pelo peso, {1}: peso {2}, {3}% de chance ({4}).", [1 => $entre, 2 => motivo_nota($info[$escolhido]["peso"]), 3 => $chance, 4 => aleatorio_fonte()]);
+                // Protege contra pequenos erros de ponto flutuante na soma acumulada.
+                if ($escolhido === null) {
+                    $escolhido = $ultimo_positivo;
+                }
+                if ($escolhido !== null) {
+                    $ids = array_keys($info);
+                    $indice = array_search($escolhido, $ids, true);
+                    $chance = motivo_nota($normais[$indice] * 100 / max(0.000000000001, $total));
+                    $motivo = $estilo === "ponderado"
+                        ? t("Sorteio pela nota, {1}: nota {2}, {3}% de chance ({4}).", [1 => $entre, 2 => motivo_nota($info[$escolhido]["nota"]), 3 => $chance, 4 => aleatorio_fonte()])
+                        : t("Sorteio pelo peso, {1}: peso {2}, {3}% de chance ({4}).", [1 => $entre, 2 => motivo_nota($info[$escolhido]["peso"]), 3 => $chance, 4 => aleatorio_fonte()]);
+                }
             }
         }
     }
@@ -8863,14 +8883,16 @@ function previsao_energia($r, $agora)
             if ($energia <= $res["limite"]) {
                 $res["linhas"][] = t("Já está abaixo de {1}%. Guardado assim, a bateria se desgasta.", [1 => decimal_txt($res["limite"], 6)]);
             } else {
-                $baixo = 0;
-                $alto = 366;
-                $ctx = ["r" => $r, "momento" => $agora + $alto * 86400, "rastro" => [], "pilha" => [], "valores" => $valores];
+                $baixo = $agora;
+                $alto = $agora + 366 * 86400;
+                $ctx = ["r" => $r, "momento" => $alto, "rastro" => [], "pilha" => [], "valores" => $valores];
                 $e_alto = variavel_valor("energia", $ctx);
                 if (is_numeric($e_alto) && (float)$e_alto <= $res["limite"]) {
-                    while ($alto - $baixo > 1) {
-                        $meio = intdiv($baixo + $alto, 2);
-                        $ctx = ["r" => $r, "momento" => $agora + $meio * 86400, "rastro" => [], "pilha" => [], "valores" => $valores];
+                    // Acha o primeiro minuto em que a energia chega ao limite, em vez de arredondar para dias inteiros.
+                    // A conta respeita o fim das sessões gravadas e o consumo depois que o relógio sai do pulso.
+                    while ($alto - $baixo > 60) {
+                        $meio = $baixo + intdiv($alto - $baixo, 2);
+                        $ctx = ["r" => $r, "momento" => $meio, "rastro" => [], "pilha" => [], "valores" => $valores];
                         $e = variavel_valor("energia", $ctx);
                         if (is_numeric($e) && (float)$e <= $res["limite"]) {
                             $alto = $meio;
@@ -8878,9 +8900,8 @@ function previsao_energia($r, $agora)
                             $baixo = $meio;
                         }
                     }
-                    $chega = $hoje->modify("+" . $alto . " days");
-                    $res["chega_limite_em"] = $chega->format("Y-m-d");
-                    $quando = [1 => decimal_txt($res["limite"], 6), 2 => data_txt($chega->getTimestamp(), false, $chega->format("Y") === $hoje->format("Y"))];
+                    $res["chega_limite_em"] = date("Y-m-d", $alto);
+                    $quando = [1 => decimal_txt($res["limite"], 6), 2 => data_txt($alto, false, date("Y", $alto) === $hoje->format("Y")) . " " . date("H:i", $alto)];
                     $res["linhas"][] = $continuando !== null ? t("Continuando {3}, chega a {1}% em {2}.", $quando + [3 => $continuando]) : t("Parado, chega a {1}% em {2}.", $quando);
                 } else {
                     $res["linhas"][] = $continuando !== null ? t("Continuando {2}, fica acima de {1}% por mais de um ano.", [1 => decimal_txt($res["limite"], 6), 2 => $continuando])
