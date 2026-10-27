@@ -446,9 +446,7 @@ set_exception_handler(function ($t) use ($formato) {
 });
 
 // Os avisos de todos os relógios agora (o recurso=avisos e o relatório Avisos), do mais urgente (ou mais atrasado) para o
-// mais distante. O desempate (dois vencendo no mesmo instante) é fixo, para a lista sair igual em qualquer banco; o
-// falta_dias arredondado (não a data com os segundos) junta o que vence "agora" em relógios calculados a um segundo um do
-// outro
+// mais distante. A ordem usa o minuto exibido e, no empate, o relógio e o identificador, como no motor.
 function avisos_de_agora()
 {
     $todos = [];

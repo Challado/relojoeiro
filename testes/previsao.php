@@ -116,6 +116,18 @@ try {
         }
         avisos_todos(true);
         exigir_previsao($ordem_minuto() === ["a_agenda_teste", "z_agenda_teste"], "Os segundos inverteram os próximos avisos no mesmo minuto.");
+        [$codigo_p, $passaporte] = api_ler("passaporte", ["relogio" => 1]);
+        $nomes_p = array_values(array_filter(array_column($passaporte["proximos_avisos"], "nome"), function ($nome) {
+            return in_array($nome, ["a_agenda_teste", "z_agenda_teste"], true);
+        }));
+        exigir_previsao($codigo_p === 200 && $nomes_p === ["a_agenda_teste", "z_agenda_teste"], "O passaporte reordenou os avisos depois do motor.");
+        [$codigo_r, $relatorio] = api_ler("relatorios", ["tipo" => "passaporte", "relogio" => 1]);
+        $nomes_r = [];
+        foreach ($relatorio["secoes"] as $secao) {
+            if ($secao["titulo"] !== t("Próximos avisos")) continue;
+            $nomes_r = array_values(array_intersect(array_column($secao["linhas"], 0), ["a_agenda_teste", "z_agenda_teste"]));
+        }
+        exigir_previsao($codigo_r === 200 && $nomes_r === $nomes_p, "O relatório mudou a ordem dos avisos do passaporte.");
     }
     sql("DELETE FROM aviso WHERE identificador IN ('a_agenda_teste', 'z_agenda_teste')"); avisos_todos(true);
 
