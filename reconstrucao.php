@@ -667,7 +667,7 @@ function reconstrucao_telas()
                     t('Em Telas, depois do Destaque: "Formulário do calibre (Cadastros › Calibres)": Só os campos do movimento / Todos os campos do cadastro (calibre_campos; vazio: movimento).'),
                     t('Em Rotina do dia, depois de "A semana começa": "Trocar o relógio de hoje no próprio dia" (caixa; trocar_hoje: 1 marcada; vazio ou 0, o padrão, desmarcada), com o ⓘ que explica o que fica de fora sem ela.'),
                     t('Cron: "Cron rodando: última execução às HH:MM." (nota) ou, em âmbar, "O cron ainda não rodou" / "O cron não roda desde ..." com a linha do crontab em código; o erro guardado numa caixa; o link "Ver todas as execuções do cron" e o registro da última rodada (o master vê o do sistema; os outros, o da coleção).'),
-                    t('Sorteios (só leitura): de onde vêm os números (RANDOM.ORG, ANU QRNG, o gerador seguro do PHP) e o último lote.'),
+                    t('Sorteios: de onde vêm os números (RANDOM.ORG, ANU QRNG, o gerador seguro do PHP) e o último lote (só leitura); Casas decimais dos pesos (número de 0 a 8, padrão 2; sorteio_casas).'),
                 ]],
                 ["titulo" => t('Avisos, lembretes e mensagens'), "itens" => [
                     t('Um quadro pequeno na grade: "N lembretes · N destinos · N agendas" e a nota "Os avisos dos relógios, os lembretes (os eventos personalizados) e para onde eles vão ficam juntos na página Avisos." (o link). O endereço antigo de um lembrete (?evento=<id> ou #personalizados) leva para a página Avisos.'),
