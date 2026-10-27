@@ -1,4 +1,4 @@
-<!-- origem: fbd430e0a8f5ca6f221edcb4657e4a59c46443a3 -->
+<!-- origem: 6b1eafee26a0503addb740312b56af3a7e0820b3 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -561,6 +561,8 @@ there's no need to touch the record. The record's "Decay in use" and "Decay stor
 ---
 
 ### Discharge forecasts {#a-previsão-de-descarga}
+
+Warnings are sorted by the displayed minute; ties use the watch and warning identifier. Calendar events on the same date and time are sorted by event key.
 
 The projection keeps measured drain from its starting instant: measurements aging during projection cannot make the battery regain charge. Historical queries still use the window of the date queried. The search finds the first crossing of the limit or zero in session segments, with precision within one minute. Missing future data is not presented as battery life exceeding one year.
 

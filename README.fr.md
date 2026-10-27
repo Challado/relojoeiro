@@ -622,6 +622,8 @@ s'appliquent que tant qu'il n'y a pas de mesure (ou toujours, dans le moteur 4).
 
 ### La prévision de décharge
 
+Les alertes sont triées selon la minute affichée ; en cas d’égalité, par montre et identifiant de l’alerte. Dans les agendas, les événements à la même date et heure sont triés par leur clé.
+
 La projection conserve la consommation mesurée à son début : le vieillissement d’une mesure pendant la projection ne peut pas faire remonter la charge. Les consultations historiques utilisent toujours la fenêtre de la date demandée. La recherche trouve le premier passage à la limite ou à zéro, par segments de sessions, avec une précision d’une minute. Un futur sans données n’est pas présenté comme une autonomie supérieure à un an.
 
 L’alerte **Charger** par défaut utilise `QUANDO_ENERGIA(limite_carga; 366)`, le même calcul que la fiche, en respectant la fin des sessions. La migration v50 ne modifie que l’expression par défaut connue de la v49 ; les alertes personnalisées sont préservées.

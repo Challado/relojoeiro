@@ -1,4 +1,4 @@
-<!-- origem: fbd430e0a8f5ca6f221edcb4657e4a59c46443a3 -->
+<!-- origem: 6b1eafee26a0503addb740312b56af3a7e0820b3 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -569,6 +569,8 @@ s'appliquent que tant qu'il n'y a pas de mesure (ou toujours, dans le moteur 4).
 ---
 
 ### La prévision de décharge {#a-previsão-de-descarga}
+
+Les alertes sont triées selon la minute affichée ; en cas d’égalité, par montre et identifiant de l’alerte. Dans les agendas, les événements à la même date et heure sont triés par leur clé.
 
 La projection conserve la consommation mesurée à son début : le vieillissement d’une mesure pendant la projection ne peut pas faire remonter la charge. Les consultations historiques utilisent toujours la fenêtre de la date demandée. La recherche trouve le premier passage à la limite ou à zéro, par segments de sessions, avec une précision d’une minute. Un futur sans données n’est pas présenté comme une autonomie supérieure à un an.
 

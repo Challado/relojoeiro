@@ -1,4 +1,4 @@
-<!-- origem: fbd430e0a8f5ca6f221edcb4657e4a59c46443a3 -->
+<!-- origem: 6b1eafee26a0503addb740312b56af3a7e0820b3 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -554,6 +554,8 @@ en el motor 4).
 ---
 
 ### La previsión de descarga {#a-previsão-de-descarga}
+
+Los avisos se ordenan por el minuto mostrado; los empates, por el reloj y el identificador del aviso. En las agendas, los eventos con la misma fecha y hora se ordenan por la clave del evento.
 
 La proyección mantiene el gasto medido al inicio: el envejecimiento de una medición durante la proyección no hace que la batería recupere carga. Las consultas históricas siguen usando la ventana de la fecha consultada. La búsqueda encuentra el primer cruce del límite o del cero, por tramos de las sesiones, con precisión de hasta un minuto. Un futuro sin datos no se presenta como autonomía superior a un año.
 

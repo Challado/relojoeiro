@@ -600,6 +600,8 @@ motor 4).
 
 ### A previsão de descarga
 
+Os avisos são ordenados pelo minuto exibido; no empate, pelo relógio e pelo identificador do aviso. Nas agendas, eventos na mesma data e hora são ordenados pela chave do evento.
+
 A projeção mantém o gasto medido do instante inicial: uma medição envelhecer durante a projeção não faz a bateria recuperar carga. Consultas históricas continuam usando a janela da data consultada. A busca procura a primeira passagem pelo limite ou por zero, por trechos das sessões, com precisão de até um minuto. Um futuro sem dados não é apresentado como autonomia superior a um ano.
 
 O aviso padrão **Carregar** usa `QUANDO_ENERGIA(limite_carga; 366)`, a mesma conta da ficha, respeitando o fim das sessões. A migração v50 atualiza somente a expressão padrão conhecida da v49; avisos personalizados permanecem como estavam.

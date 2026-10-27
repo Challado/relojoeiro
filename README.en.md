@@ -610,6 +610,8 @@ there's no need to touch the record. The record's "Decay in use" and "Decay stor
 
 ### Discharge forecasts
 
+Warnings are sorted by the displayed minute; ties use the watch and warning identifier. Calendar events on the same date and time are sorted by event key.
+
 The projection keeps measured drain from its starting instant: measurements aging during projection cannot make the battery regain charge. Historical queries still use the window of the date queried. The search finds the first crossing of the limit or zero in session segments, with precision within one minute. Missing future data is not presented as battery life exceeding one year.
 
 The default **Charge** alert uses `QUANDO_ENERGIA(limite_carga; 366)`, the same calculation as the watch details, respecting session end times. Migration v50 only updates the known default expression from v49; customized alerts are preserved.

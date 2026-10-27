@@ -3962,6 +3962,8 @@ function avisos_do_relogio($r, $momento, $so = null)
                 $data = null;
             }
             if (is_numeric($data)) {
+                // O instante previsto usa o primeiro segundo inteiro, com folga apenas para erro de ponto flutuante.
+                $data = ceil((float)$data * 86400 - 0.00001) / 86400;
                 // {limite}: o limite de carga que vale para o relógio (o dele, senão o geral), trocado já no modelo
                 $modelo = $a["texto"];
                 if (strpos($modelo, "{limite}") !== false) {
@@ -3987,16 +3989,16 @@ function avisos_do_relogio($r, $momento, $so = null)
     }
     // o desempate (dois avisos vencendo no mesmo instante) é fixo, para a lista sair igual em qualquer banco
     usort($res, function ($x, $y) {
-        return [aviso_ordem($x["falta_dias"]), $x["identificador"]] <=> [aviso_ordem($y["falta_dias"]), $y["identificador"]];
+        return [aviso_ordem($x["falta_dias"], $x["data"]), $x["identificador"]] <=> [aviso_ordem($y["falta_dias"], $y["data"]), $y["identificador"]];
     });
     return $res;
 }
 
-// A chave da ordem de um aviso pelo quanto falta (em dias): o que vence "agora" (menos de um minuto, para lá ou para cá)
-// conta como zero, e desempata pelo relógio e pelo identificador. Senão, dois avisos vencidos agora mudavam de ordem
-// conforme o segundo em que cada um foi calculado
-function aviso_ordem($falta)
+// A ordem de um aviso segue o minuto exibido; os identificadores desempatam. Sem data, usa o tempo restante.
+function aviso_ordem($falta, $data = null)
 {
+    // As listas mostram data e hora até os minutos; no mesmo minuto, os identificadores desempatam.
+    if ($data !== null) return substr($data, 0, 16);
     return duracao_texto((float)$falta) === "" ? 0.0 : (float)$falta;
 }
 
@@ -8467,7 +8469,7 @@ function avisos_de_hoje()
         }
     }
     // o desempate (dois relógios vencendo no mesmo instante) é fixo, para a lista sair igual em qualquer banco
-    usort($lista, function ($x, $y) { return [aviso_ordem($x[1]["falta_dias"]), (int)$x[0]["id"], $x[1]["identificador"]] <=> [aviso_ordem($y[1]["falta_dias"]), (int)$y[0]["id"], $y[1]["identificador"]]; });
+    usort($lista, function ($x, $y) { return [aviso_ordem($x[1]["falta_dias"], $x[1]["data"]), (int)$x[0]["id"], $x[1]["identificador"]] <=> [aviso_ordem($y[1]["falta_dias"], $y[1]["data"]), (int)$y[0]["id"], $y[1]["identificador"]]; });
     return $lista;
 }
 
@@ -8804,7 +8806,7 @@ function energia_ate_limite($r, $agora, $ate, $limite, $origem = null)
             $eb = $energia($b);
             if ($eb === null) return ["instante" => null, "calculavel" => false];
             if ($eb <= $limite) {
-                while ($b - $a > 60) {
+                while ($b - $a > 1) {
                     $meio = $a + intdiv($b - $a, 2);
                     $em = $energia($meio);
                     if ($em === null) return ["instante" => null, "calculavel" => false];
@@ -9007,7 +9009,7 @@ function previsao_energia($r, $agora)
                     }
                     $fim_bloco = instante($ultimo_dia, cfg("uso_fim"));
                     $no_fim = energia_projetada($r, $fim_bloco, $agora, $valores);
-                    $esgota = energia_ate_limite($r, $entrada, $fim_bloco, 0.0001, $agora);
+                    $esgota = energia_ate_limite($r, $entrada, $fim_bloco, 0, $agora);
                 } finally {
                     $GLOBALS["SIMULACAO"] = $simulacao_antes;
                     $GLOBALS["SIMULACAO_VERSAO"]++;
@@ -9070,7 +9072,7 @@ function quando_acaba($r, $agora, $sessoes, $ate, &$calculavel = null)
         $GLOBALS["SIMULACAO"] = [];
         $GLOBALS["SIMULACAO_VERSAO"] = ($GLOBALS["SIMULACAO_VERSAO"] ?? 0) + 1;
         foreach ($sessoes as $x) simular_lancamento((int)$r["id"], $x[0], $x[1], $x[2], null);
-        $busca = energia_ate_limite($r, $agora, $ate, 0.0001, min($agora, time()));
+        $busca = energia_ate_limite($r, $agora, $ate, 0, min($agora, time()));
         $calculavel = $busca["calculavel"];
         return $busca["instante"];
     } finally {

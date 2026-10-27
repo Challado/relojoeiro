@@ -458,7 +458,7 @@ function avisos_de_agora()
         }
     }
     usort($todos, function ($x, $y) {
-        return [$x["falta_dias"], $x["relogio_id"], $x["identificador"]] <=> [$y["falta_dias"], $y["relogio_id"], $y["identificador"]];
+        return [aviso_ordem($x["falta_dias"], $x["data"]), $x["relogio_id"], $x["identificador"]] <=> [aviso_ordem($y["falta_dias"], $y["data"]), $y["relogio_id"], $y["identificador"]];
     });
     return $todos;
 }

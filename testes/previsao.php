@@ -93,6 +93,31 @@ try {
     $avisos[0]["data"] = "2020-06-16 12:00:59"; $avisos[1]["data"] = "2020-06-16 12:00:02";
     exigir_previsao(manutencoes_da_ficha(array_reverse($avisos), "2020-06-15") === $ordem, "Os segundos inverteram a lista de dias da ficha.");
     exigir_previsao($ordem[0]["data"] === "2020-06-15" && $ordem[1]["nome"] === "Carregar", "A lista diária não preservou a data exibida e o desempate.");
+    // Dois avisos em instantes diferentes, mas no mesmo dia/horário da agenda: o empate usa a chave do evento.
+    foreach (["a_agenda_teste" => "0.2", "z_agenda_teste" => "0.1"] as $ident => $fracao) {
+        sql("INSERT INTO aviso (identificador, nome, expressao, texto, no_id, ativo, agenda) VALUES (?, ?, ?, 'Teste', ?, 1, 'janela')",
+            [$ident, $ident, "HOJE() + 1 + " . $fracao, $grupo]);
+    }
+    avisos_todos(true);
+    $agenda = ["janela_dias" => 3, "avisos" => ["a_agenda_teste" => ["envia" => true], "z_agenda_teste" => ["envia" => true]]];
+    $eventos = agenda_desejada(hoje_da_colecao(), $agenda);
+    exigir_previsao(array_column($eventos, "tipo") === ["a_agenda_teste", "z_agenda_teste"], "A agenda herdou a ordem dos segundos das previsões.");
+    sql("UPDATE aviso SET expressao = 'HOJE() + 1 + 0.3' WHERE identificador = 'z_agenda_teste'"); avisos_todos(true);
+    exigir_previsao(array_column(agenda_desejada(hoje_da_colecao(), $agenda), "chave") === array_column($eventos, "chave"), "A previsão inverteu eventos no mesmo horário da agenda.");
+    // A lista do passaporte também deve manter o empate do minuto, mesmo se os segundos inverterem.
+    $ordem_minuto = function () use ($r, $agora) {
+        return array_column(array_values(array_filter(avisos_do_relogio($r, $agora), function ($a) {
+            return in_array($a["identificador"], ["a_agenda_teste", "z_agenda_teste"], true);
+        })), "identificador");
+    };
+    foreach ([[1, 40], [59, 2]] as $segundos) {
+        foreach (["a_agenda_teste", "z_agenda_teste"] as $i => $ident) {
+            sql("UPDATE aviso SET expressao = ? WHERE identificador = ?", ["HOJE() + 1 + (43200 + " . $segundos[$i] . ") / 86400", $ident]);
+        }
+        avisos_todos(true);
+        exigir_previsao($ordem_minuto() === ["a_agenda_teste", "z_agenda_teste"], "Os segundos inverteram os próximos avisos no mesmo minuto.");
+    }
+    sql("DELETE FROM aviso WHERE identificador IN ('a_agenda_teste', 'z_agenda_teste')"); avisos_todos(true);
 
     // Duas medições passadas: a antiga sai da janela em dez dias. Não há qualquer recarga futura.
     $campo = (int)valor("SELECT id FROM campo WHERE identificador = 'decaimento_repouso' ORDER BY id LIMIT 1");
@@ -163,6 +188,12 @@ try {
     $autonomia = autonomia_do_relogio($r, $agora);
     exigir_previsao(strpos(json_encode($autonomia["motivos"]), "10 anos") === false, "A autonomia desconhecida virou mais de dez anos.");
     alterar_previsao("energia", $padroes["energia"]);
+
+    // Taxa pequena não permite tratar 0,0001% como zero: isso adiantaria a descarga em mais de quatorze minutos.
+    limpar_previsao(); alterar_previsao("taxa_repouso", "0.01");
+    lancar_previsao("carga", $agora, null, 0.01);
+    $fim_pequeno = quando_acaba($r, $agora, [], $agora + 2 * 86400);
+    exigir_previsao($fim_pequeno !== null && abs($fim_pequeno - ($agora + 86400)) <= 1, "Descarga de taxa pequena fora do instante esperado: " . var_export($fim_pequeno === null ? null : $fim_pequeno - $agora, true));
 
     // Atualização idempotente: somente a expressão padrão conhecida muda.
     $migracao = file_get_contents(dirname(__DIR__) . "/migracao_v50.sql");

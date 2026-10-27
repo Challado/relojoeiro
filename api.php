@@ -95,6 +95,7 @@
  *                   "disponivel", "identificador", "nome", "data", "falta_dias" (negativo: atrasado), "estado" (atrasado,
  *                   em_breve ou ok), "texto", "resolve", "versao", "escala", "simula_valor", "simula_horas", "agenda", "modelo" (o texto
  *                   com as âncoras)}]. Sem data prevista (falta um dado): o aviso não aparece.
+ *                   A ordem usa o minuto exibido; no empate, o relógio e o identificador do aviso.
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=avisos"
  *   recurso=calcular  expressao=<fórmula> [relogio=3 ou 1,2,3]: calcula a fórmula (sem gravar) em cada relógio:
  *                   {"expressao", "resultados": [{"relogio_id", "relogio", "valor", "partes": {nome: valor}}]}
@@ -2116,7 +2117,7 @@
  *     agendas_desejadas[]            o que tem de estar em cada agenda agora, pelo que ela recebe
  *     agendas_desejadas[].agenda_id  o id da agenda
  *     agendas_desejadas[].agenda     o nome da agenda
- *     agendas_desejadas[].eventos[]  os eventos
+ *     agendas_desejadas[].eventos[]  os eventos por data e hora; no mesmo horário, pela chave do evento
  *     agendas_desejadas[].eventos[].chave
  *                                    a identificação do evento na agenda (a mesma enquanto nada mudar; é o que o sistema usa para atualizar
  *                                    ou remover)

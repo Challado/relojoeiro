@@ -1001,7 +1001,8 @@ function agenda_desejada($hoje, $ag)
             }
         }
     }
-    usort($lista, function ($a, $b) { return strcmp($a["data"] . $a["hora"], $b["data"] . $b["hora"]); });
+    // Vários avisos podem cair na mesma hora da agenda: a chave dá uma ordem independente da precisão da previsão.
+    usort($lista, function ($a, $b) { return [$a["data"], $a["hora"], $a["chave"]] <=> [$b["data"], $b["hora"], $b["chave"]]; });
     return $lista;
 }
 

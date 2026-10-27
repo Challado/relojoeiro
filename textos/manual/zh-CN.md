@@ -1,4 +1,4 @@
-<!-- origem: fbd430e0a8f5ca6f221edcb4657e4a59c46443a3 -->
+<!-- origem: 6b1eafee26a0503addb740312b56af3a7e0820b3 -->
 
 ## 核心理念：系统对手表一无所知 {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -367,6 +367,8 @@ dias      = SE(NO_GRUPO("Smartwatch"); dias_seguidos; 1)
 ---
 
 ### 放电预测 {#a-previsão-de-descarga}
+
+提醒按显示的分钟排序；时间相同时按手表和提醒标识符排序。日历中日期和时间相同的事件按事件键排序。
 
 推算固定起点的实测耗电量：测量记录在推算期间变旧，不会让电池凭空恢复电量。历史查询仍使用所查询日期的测量窗口。搜索按时段分段，找到首次达到阈值或零电量的时间，误差不超过一分钟。缺少未来数据不会被描述为续航超过一年。
 
