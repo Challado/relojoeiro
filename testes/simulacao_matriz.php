@@ -469,21 +469,27 @@ function simular_matriz_dias($inicio)
     foreach (matriz_modos() as $rotulo => $m) {
         // a escala, com as duas escolhas da Configuração escala_inicio (amanha, o padrão, e hoje)
         // e a escala fechando no fim da semana e do mês (escala_periodo); os modos por semana com a semana seguinte inteira no
-        // último dia (semana_ultimo_dia)
+        // último dia (semana_ultimo_dia); e, com a semana começando no domingo, a escala fechando na semana e os modos por semana
+        // com a semana seguinte inteira
         if ($m["tipo"] === "escala") {
             foreach ([["amanha", "corridos"], ["hoje", "corridos"], ["amanha", "semana"], ["hoje", "semana"], ["amanha", "mes"]] as [$ini, $per]) {
-                $rodadas[] = [$rotulo . ", começando " . ($ini === "hoje" ? "sempre hoje" : "amanhã") . ($per !== "corridos" ? ", fechando " . $per : ""), $m, $ini, $per, "dia_seguinte"];
+                $rodadas[] = [$rotulo . ", começando " . ($ini === "hoje" ? "sempre hoje" : "amanhã") . ($per !== "corridos" ? ", fechando " . $per : ""), $m, $ini, $per, "dia_seguinte", "segunda", $rotulo];
+            }
+            foreach (["amanha", "hoje"] as $ini) {
+                $rodadas[] = [$rotulo . ", semana no domingo, começando " . ($ini === "hoje" ? "sempre hoje" : "amanhã") . ", fechando semana", $m, $ini, "semana", "dia_seguinte", "domingo", $rotulo];
             }
         } else {
-            $rodadas[] = [$rotulo, $m, "amanha", "corridos", "dia_seguinte"];
-            $rodadas[] = [$rotulo . ", a semana seguinte inteira no último dia", $m, "amanha", "corridos", "semana_seguinte"];
+            $rodadas[] = [$rotulo, $m, "amanha", "corridos", "dia_seguinte", "segunda", $rotulo];
+            $rodadas[] = [$rotulo . ", a semana seguinte inteira no último dia", $m, "amanha", "corridos", "semana_seguinte", "segunda", $rotulo];
+            $rodadas[] = [$rotulo . ", semana no domingo, a semana seguinte inteira no último dia", $m, "amanha", "corridos", "semana_seguinte", "domingo", $rotulo];
         }
     }
-    foreach ($rodadas as [$rotulo, $m, $ini, $per, $ult]) {
+    // o modo é gravado com o nome curto dele (o rótulo da rodada passa do tamanho do nome)
+    foreach ($rodadas as [$rotulo, $m, $ini, $per, $ult, $sem, $nome_modo]) {
         voltar_ao_modelo();
         relogio($inicio . " 05:00:00");
-        escrever(["recurso" => "config", "acao" => "salvar", "escala_inicio" => $ini, "escala_periodo" => $per, "semana_ultimo_dia" => $ult], true, $nome);
-        $id = (int)(escrever(["recurso" => "modos", "acao" => "salvar", "id" => 0, "nome" => $rotulo] + $m, true, $nome)["id"] ?? 0);
+        escrever(["recurso" => "config", "acao" => "salvar", "escala_inicio" => $ini, "escala_periodo" => $per, "semana_ultimo_dia" => $ult, "semana_inicio" => $sem], true, $nome);
+        $id = (int)(escrever(["recurso" => "modos", "acao" => "salvar", "id" => 0, "nome" => $nome_modo] + $m, true, $nome)["id"] ?? 0);
         escrever(["recurso" => "modos", "acao" => "ativar", "id" => $id], true, $nome);
         $fim_e = "";
         for ($i = 0; $i < 20; $i++) {
@@ -516,14 +522,14 @@ function simular_matriz_dias($inicio)
                 // a primeira escala (montada às 05:00, com o dia de hoje ainda não começado): os dias do modo contados de hoje; a
                 // seguinte (o cron da manhã no último dia da que vence): começa no dia depois do fim dela, com os dias do modo
                 // inteiros, nas duas escolhas da escala_inicio (de 7 em 7, sem perder nem repetir um dia)
-                $certo_f = matriz_fim_de($fim_e === "" ? $dia : data_mais($fim_e, 1), $m["escala_dias"], $per, "segunda");
+                $certo_f = matriz_fim_de($fim_e === "" ? $dia : data_mais($fim_e, 1), $m["escala_dias"], $per, $sem);
                 if ($fim !== $fim_e && $fim !== $certo_f) {
                     $falhas[] = $onde . ": a escala " . ($fim_e === "" ? "nova" : "seguinte (a anterior ia até " . $fim_e . ")") . " vai até " . $fim . " (devia ir até " . $certo_f . ")";
                 }
                 $fim_e = $fim;
             } else {
-                $fim = data_mais(semana_de($dia, "segunda"), 7 * $m["semanas"] - 1);
-                if ($ult === "semana_seguinte" && $dia === data_mais(semana_de($dia, "segunda"), 6)) {
+                $fim = data_mais(semana_de($dia, $sem), 7 * $m["semanas"] - 1);
+                if ($ult === "semana_seguinte" && $dia === data_mais(semana_de($dia, $sem), 6)) {
                     $fim = data_mais($dia, 7 * $m["semanas"]);
                 } elseif ($m["semanas"] === 1 && $dia === $fim) {
                     $fim = data_mais($dia, 1);
