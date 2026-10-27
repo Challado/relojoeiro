@@ -2571,6 +2571,8 @@ function gasto_medido_desde($medicoes, $momento, $desde, $prior = null)
     $cov = [[0.0, 0.0], [0.0, 0.0]];
     $separa = false;
     for ($volta = 0; $volta < 40; $volta++) {
+        $sigma_antes = $sigma;
+        $beta_antes = $beta;
         // cada trecho em torno da média dele (a carga do começo some da conta), com os pesos de agora
         $a = [[0.0, 0.0], [0.0, 0.0]];
         $b = [0.0, 0.0];
@@ -2641,7 +2643,12 @@ function gasto_medido_desde($medicoes, $momento, $desde, $prior = null)
                 $w[$t][$i] = $novo;
             }
         }
-        if ($mudou < 1e-4) {
+        // Pesos iguais não bastam: a escala do ruído também muda o peso do cadastro e a incerteza.
+        $mudou_taxa = 0.0;
+        foreach ([0, 1] as $j) {
+            $mudou_taxa = max($mudou_taxa, abs((float)$beta[$j] - (float)$beta_antes[$j]) / max(1.0, abs((float)$beta[$j])));
+        }
+        if ($mudou < 1e-4 && abs($sigma - $sigma_antes) <= 1e-4 * max(1.0, $sigma_antes) && $mudou_taxa < 1e-4) {
             break;
         }
     }
@@ -8193,6 +8200,21 @@ function medicoes_da_conta($rid, $por_marcacao = null)
     return [$res, $marc];
 }
 
+// A conta de um intervalo elegível, compartilhada pela leitura nova e pela recuperação de uma medição ausente.
+function medicao_do_intervalo($rid, $inicio, $fim, $de_valor, $ate_valor, $taxas)
+{
+    $hp = horas_no_pulso($rid, $inicio, $fim);
+    $hg = ($fim - $inicio) / 3600 - $hp;
+    $h_dia = (strtotime("2000-01-01 " . cfg("uso_fim")) - strtotime("2000-01-01 " . cfg("uso_inicio"))) / 3600;
+    $du = $hp / max(1, $h_dia); $dg = $hg / 24;
+    $medida = $du >= 0.5 || $du >= $dg ? "uso" : "repouso";
+    $queda = $de_valor - $ate_valor;
+    $taxa = $medida === "uso" ? ($queda - $dg * (float)$taxas["taxa_repouso"]) / $du
+        : ($queda - $du * (float)$taxas["taxa_uso"]) / max(0.01, $dg);
+    return ["medida" => $medida, "taxa" => round(max(0, min(100, $taxa)), 3), "horas_pulso" => round($hp, 2),
+        "horas_guardado" => round($hg, 2), "peso_horas" => round($medida === "uso" ? $hp : $hg, 2)];
+}
+
 // Depois de corrigir o pulso de um relógio entre $de e $ate (uma sessão alterada, excluída ou lançada no passado), as
 // medições do gasto que cobrem esse trecho refazem as horas no pulso e fora dele (a queda entre as leituras não muda)
 function recalcular_medicoes($rid, $de, $ate)
@@ -9030,7 +9052,8 @@ function previsao_energia($r, $agora)
             $motivos = [];
             if ($idade > 2) $motivos[] = t("a leitura tem mais de dois dias");
             if ($vazio) $motivos[] = t("há dados necessários vazios");
-            if ($g["n"] < 3) $motivos[] = t("há menos de três medições na conta");
+            if ($n_med["uso"] < 3) $motivos[] = t("há menos de três medições em uso");
+            if ($n_med["repouso"] < 3) $motivos[] = t("há menos de três medições em repouso");
             if (!$vale_medido["uso"] || !$vale_medido["repouso"]) $motivos[] = t("as taxas da projeção não foram estimadas pelas medições");
             if ($g["uso"] === null || $g["repouso"] === null || (!$g["conjunta"] && ($n_med["uso"] === 0 || $n_med["repouso"] === 0))) {
                 $motivos[] = t("as medições não separam os dois gastos");

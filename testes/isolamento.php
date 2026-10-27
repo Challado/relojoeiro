@@ -78,7 +78,7 @@ foreach ($arv["grupos"] ?? [] as $g) {
 $rel_s = (int)preparar($ana, ["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Smart SEGREDOANA", "no_id" => $no_s, "disponivel" => 1])["id"];
 // a primeira bem no passado (o fuso daqui pode não ser o do servidor), a segunda agora (vazio: o agora do servidor)
 preparar($ana, ["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel_s, "tipo" => "carga", "valor" => 90, "quando" => date("Y-m-d H:i", time() - 30 * 3600)]);
-preparar($ana, ["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel_s, "tipo" => "carga", "valor" => 88]);
+$lan_med_a = (int)(preparar($ana, ["recurso" => "lancamento", "acao" => "lancar", "relogio_id" => $rel_s, "tipo" => "carga", "valor" => 88]))["id"];
 $med_a = (int)(pedir($ana, "GET", ["recurso" => "ficha", "relogio" => $rel_s])["json"]["relogio"]["medicoes"][0]["id"] ?? 0);
 $ace_a = (int)(preparar($ana, ["recurso" => "acessorios", "acao" => "salvar", "nome" => "Acessorio SEGREDOANA", "tipo" => "pulseira", "relogio_id" => $rel_a,
     "valores" => ["pulseira_cor" => "Cor SEGREDOANA", "pulseira_largura" => "20"]])["id"] ?? 0);
@@ -205,6 +205,7 @@ $tentativas = [
     ["recurso" => "lancamento", "acao" => "excluir", "id" => $lan_a, "confirmar" => 1],
     ["recurso" => "lancamento", "acao" => "salvar", "id" => $lan_a, "observacao" => "INVADIDO"],
     ["recurso" => "lancamento", "acao" => "medicao", "id" => $med_a, "usada" => 0],
+    ["recurso" => "lancamento", "acao" => "medicao_criar", "lancamento_id" => $lan_med_a],
     ["recurso" => "acessorios", "acao" => "salvar", "id" => $ace_a, "nome" => "INVADIDO", "tipo" => "pulseira"],
     ["recurso" => "calibres", "acao" => "salvar", "id" => $cal_a, "nome" => "INVADIDO"],
     ["recurso" => "calibres", "acao" => "excluir", "id" => $cal_a, "confirmar" => 1],

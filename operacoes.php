@@ -2888,14 +2888,15 @@ function op_timegrapher($acao, $d)
 // Lançamentos. Ações:
 //   lancar (relogio_id, tipo, valor (formato "valor"), quando (AAAA-MM-DD HH:MM; vazio: agora), medir (1 ou 0; padrão 1)):
 //           instantâneo ou com valor. Num tipo que mede o gasto (a leitura de carga), a leitura é comparada com a anterior,
-//           como no sistema antigo: subiu, ou ficou bem acima do que a estimativa previa, é recarga (novo ponto de partida,
-//           sem medir); menos de 12 horas, pouco tempo para medir; senão o intervalo é separado em horas no pulso e guardado
+//           subiu: é recarga (novo ponto de partida, sem medir). Acima da estimativa, mas sem subir, mede normalmente.
+//           Menos de 1 hora: pouco tempo para medir; senão o intervalo é separado em horas no pulso e guardado
 //           e mede o gasto em uso (com meio dia de uso ou mais) ou guardado. Com medir=1, a medição entra na média (a
 //           caixa "Atualizar o gasto com esta medição"); com 0, fica só no histórico. Leitura com data anterior à última
 //           não mede. estado (uso ou repouso; vazio: não diz): a marcação da leitura, que fica gravada nela e manda: o gasto
 //           em uso sai só das leituras marcadas em uso, e o gasto em repouso só das marcadas em repouso. Se o pulso
 //           registrado desde a leitura anterior não bate com ela, a API pergunta antes (confirmar: true, com a pergunta);
 //           com confirmar=1, grava como a pessoa marcou.
+//   medicao_criar (lancamento_id): recupera a medição ausente de uma leitura; preserva as existentes, inclusive usada=0.
 //   iniciar (relogio_id, tipo, quando, posicao_id): abre uma sessão; se ela é exclusiva, fecha no mesmo instante a exclusiva
 //                                       aberta em outro lugar (o relógio fica num lugar só). O winder é obrigatório: num tipo
 //                                       marcado como winder, sem winder cadastrado, recusa; com winder, só pela página Winders
@@ -2913,6 +2914,42 @@ function op_lancamento($acao, $d)
     $msg = "";
     $id = (int)($d["id"] ?? 0);
     $agora = time();
+    // Recupera uma medição ausente sem alterar as leituras nem as medições existentes (inclusive as tiradas da conta).
+    if ($acao === "medicao_criar") {
+        $lid = (int)($d["lancamento_id"] ?? 0);
+        $l = linha("SELECT l.id, l.relogio_id, l.tipo_id, l.inicio, l.valor, t.formato, t.mede_gasto FROM lancamento l
+            JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.id = ?", [$lid]);
+        if (!$l || $l["formato"] !== "valor" || (int)$l["mede_gasto"] !== 1) {
+            return resultado([t("Leitura de carga não encontrada (lancamento_id).")], "");
+        }
+        $existente_m = valor("SELECT id FROM medicao WHERE lancamento_id = ?", [$lid]);
+        if ($existente_m !== null) return resultado([], t("A medição já existe e foi preservada."), ["id" => (int)$existente_m]);
+        $a = linha("SELECT inicio, valor FROM lancamento WHERE relogio_id = ? AND tipo_id = ?
+            AND (inicio < ? OR (inicio = ? AND id < ?)) ORDER BY inicio DESC, id DESC LIMIT 1",
+            [(int)$l["relogio_id"], (int)$l["tipo_id"], $l["inicio"], $l["inicio"], $lid]);
+        $fim_m = strtotime($l["inicio"]); $ini_m = $a ? strtotime($a["inicio"]) : $fim_m;
+        if (!$a || $fim_m > $agora + 60 || $fim_m - $ini_m < 3600 || (float)$l["valor"] > (float)$a["valor"]) {
+            return resultado([t("O intervalo não mede gasto: precisa de leitura anterior, pelo menos uma hora e carga sem aumento.")], "");
+        }
+        if (valor("SELECT l.id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'sessao'
+            AND t.identificador <> 'pulso' AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?) ORDER BY l.inicio DESC, l.id DESC LIMIT 1",
+            [(int)$l["relogio_id"], $l["inicio"], $a["inicio"]]) !== null) {
+            return resultado([t("O intervalo tem outra sessão além do pulso e não mede gasto.")], "");
+        }
+        $r_m = linha("SELECT * FROM relogio WHERE id = ?", [(int)$l["relogio_id"]]);
+        $taxas = [];
+        foreach (["taxa_uso", "taxa_repouso"] as $f_m) {
+            $ctx_m = ["r" => $r_m, "momento" => $fim_m, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio((int)$r_m["id"])];
+            $taxas[$f_m] = isset(formulas_todas()[$f_m]) ? variavel_valor($f_m, $ctx_m) : null;
+        }
+        $m = medicao_do_intervalo((int)$l["relogio_id"], $ini_m, $fim_m, (float)$a["valor"], (float)$l["valor"], $taxas);
+        sql("INSERT INTO medicao (lancamento_id, medida, taxa, de_valor, ate_valor, inicio, fim, horas_pulso, horas_guardado, peso_horas, usada, criado)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())", [$lid, $m["medida"], $m["taxa"], $a["valor"], $l["valor"], $a["inicio"], $l["inicio"],
+                $m["horas_pulso"], $m["horas_guardado"], $m["peso_horas"]]);
+        $mid = ultimo_id();
+        $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+        return resultado([], t("Medição criada a partir das leituras registradas."), ["id" => $mid]);
+    }
     // um momento vindo do pedido (AAAA-MM-DD HH:MM, com espaço ou T, como manda o campo de data e hora do navegador): vazio =
     // agora; false se não é data e hora válidas ou está no futuro
     $momento = function ($v) use ($agora) {
@@ -3104,15 +3141,11 @@ function op_lancamento($acao, $d)
                 $anterior = (float)$antes["valor"];
                 $queda = $anterior - $v;
                 $estimada = is_numeric($conta["energia"]) ? (float)$conta["energia"] : null;
-                // folga para não confundir recarga com estimativa um pouco errada: metade da queda esperada, no mínimo 10 pontos
-                $folga = max(10, $estimada === null ? 0 : ($anterior - $estimada) * 0.5);
                 $un = $t["unidade"];
                 $de = t("De {1}{2} em {3} a {4}{5}{6}", [1 => decimal_txt($anterior, 6), 2 => $un, 3 => data_txt($t1, true, true), 4 => decimal_txt($v, 6), 5 => $un, 6 => $q < $agora - 60 ? t(" em {1}", [1 => data_txt($q, true, true)]) : t(" agora")]);
                 $pela_estimativa = $estimada === null ? "" : t(" A estimativa era ~{1}{2}.", [1 => (int)round($estimada), 2 => $un]);
                 if ($queda < 0) {
                     $msg .= t(" Carregado: a leitura anterior era {1}{2}{3}. Novo ponto de partida.", [1 => decimal_txt($anterior, 6), 2 => $un, 3 => $estimada === null ? "" : " e a estimativa ~" . (int)round($estimada) . $un]);
-                } elseif ($estimada !== null && $v > $estimada + $folga) {
-                    $msg .= t(" Carregado em parte: pela estimativa ele estava com ~{1}{2}. Novo ponto de partida, sem medir o gasto deste intervalo.", [1 => (int)round($estimada), 2 => $un]);
                 } elseif (($outra = valor("SELECT t.nome FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'sessao'
                     AND t.identificador <> 'pulso' AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?) ORDER BY l.inicio DESC, l.id DESC LIMIT 1",
                     [$rid, date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $t1)])) !== null) {
@@ -3122,19 +3155,15 @@ function op_lancamento($acao, $d)
                     $msg .= t(" {1}: menos de 1 hora desde a leitura anterior, pouco tempo para medir o gasto.{2}", [1 => $de, 2 => $pela_estimativa]);
                 } else {
                     // as horas no pulso entre as duas leituras
-                    $h_pulso = horas_no_pulso($rid, $t1, $q);
-                    $h_guardado = $horas - $h_pulso;
-                    $h_dia = (strtotime("2000-01-01 " . cfg("uso_fim")) - strtotime("2000-01-01 " . cfg("uso_inicio"))) / 3600;
-                    $dias_uso = $h_pulso / max(1, $h_dia);
-                    $dias_guardado = $h_guardado / 24;
+                    $medicao = medicao_do_intervalo($rid, $t1, $q, $anterior, $v, $conta);
+                    $h_pulso = $medicao["horas_pulso"];
+                    $h_guardado = $medicao["horas_guardado"];
                     $tempo = t("{1}{2} h fora do pulso", [1 => $h_pulso >= 1 ? t("{1} h no pulso e ", [1 => (int)round($h_pulso)]) : "", 2 => (int)round($h_guardado)]);
                     // todo intervalo entra na conta dos dois gastos (gasto_medido), até o sem queda nenhuma: ele diz que o gasto é
                     // pequeno. O gasto do intervalo sozinho fica no histórico: com pelo menos meio dia de uso, ou mais dias de uso que
                     // fora do pulso, o de uso (descontando o fora do pulso que valia); senão, o de fora (descontando o pouco de uso)
-                    $medida = $dias_uso >= 0.5 || $dias_uso >= $dias_guardado ? "uso" : "repouso";
-                    $taxa = $medida === "uso" ? ($queda - $dias_guardado * (float)$conta["taxa_repouso"]) / $dias_uso
-                        : ($queda - $dias_uso * (float)$conta["taxa_uso"]) / max(0.01, $dias_guardado);
-                    $taxa = round(max(0, min(100, $taxa)), 3);
+                    $medida = $medicao["medida"];
+                    $taxa = $medicao["taxa"];
                     $usada = !array_key_exists("medir", $d) || (string)$d["medir"] === "1";
                     sql("INSERT INTO medicao (lancamento_id, medida, taxa, de_valor, ate_valor, inicio, fim, horas_pulso, horas_guardado, peso_horas, usada, criado)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())", [$id, $medida, $taxa, $anterior, $v, date("Y-m-d H:i:s", $t1), date("Y-m-d H:i:s", $q),

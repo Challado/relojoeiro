@@ -1,4 +1,4 @@
-<!-- origem: 6b1eafee26a0503addb740312b56af3a7e0820b3 -->
+<!-- origem: 306209a9a45c84316aaf2feef1945e048a06e706 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -446,6 +446,10 @@ again as far as the mode's days allow (the 30-day mode goes up to the 30th, coun
 
 ### Consumption measured by the readings {#gasto-medido-pelas-leituras}
 
+A reading that continues to fall can measure drain even above the estimate: the difference helps correct the model. If charging occurred without a recorded session, use medir=0 to exclude the interval from calibration.
+
+The lancamento/medicao_criar action, with lancamento_id of the recorded reading, restores a missing measurement: it requires an earlier reading, at least one hour between them, no increase in charge and no session other than wrist use. It preserves readings and any existing measurement, including excluded ones; id in the response identifies the measurement.
+
 The smartwatch's record says "lasts 5 days". Reality disagrees, and changes as the battery ages. That's why **each charge
 reading you log is compared with the previous one**, and the interval between the two becomes a measurement: how much it
 dropped, how many hours it spent on the wrist and how many off the wrist (stored, switched off), and how you marked each
@@ -562,6 +566,8 @@ there's no need to touch the record. The record's "Decay in use" and "Decay stor
 
 ### Discharge forecasts {#a-previsão-de-descarga}
 
+The robust fit stops only when reading weights, rates and the noise scale stabilize. The contribution of registered values and the uncertainty use the final noise scale.
+
 Warnings are sorted by the displayed minute; ties use the watch and warning identifier. Calendar events on the same date and time are sorted by event key.
 
 The projection keeps measured drain from its starting instant: measurements aging during projection cannot make the battery regain charge. Historical queries still use the window of the date queried. The search finds the first crossing of the limit or zero in session segments, with precision within one minute. Missing future data is not presented as battery life exceeding one year.
@@ -570,7 +576,7 @@ The default **Charge** alert uses `QUANDO_ENERGIA(limite_carga; 366)`, the same 
 
 `precisa` remains capped at 100%. If even a full charge runs out before the consecutive days end, `recarga_no_bloco` is true and the text warns that recharging is needed during the period. `carregar_antes` concerns the charge required at entry; it alone does not guarantee that one charge covers the block.
 
-High confidence requires a reading no more than two days old, at least three measurements separating the drain rates, rates estimated from measurements and a standard deviation no greater than half of each rate. Confidence is low with a reading over seven days old, missing required data or a standard deviation at least as large as the rate; otherwise it is medium. `confianca_motivos` explains the limitations. A recent reading alone does not prove that a future date is accurate.
+High confidence requires a reading no more than two days old, at least three in-use measurements and three at-rest measurements separating the drain rates, rates estimated from measurements and a standard deviation no greater than half of each rate. Confidence is low with a reading over seven days old, missing required data or a standard deviation at least as large as the rate; otherwise it is medium. `confianca_motivos` explains the limitations. A recent reading alone does not prove that a future date is accurate.
 
 Non-finite numeric results, such as `10 ^ 1000`, become empty (`null`), like division by zero. `PADRAO` can provide a fallback. If another invalid result prevents serialization, the API returns a JSON error with HTTP 500, never an empty body with HTTP 200.
 

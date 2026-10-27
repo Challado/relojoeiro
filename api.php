@@ -468,6 +468,9 @@
  *                            Ex. novo: curl -u lucas:senha -d recurso=lancamento_tipos -d acao=novo -d identificador=banho_ultrassom -d "nome=Banho ultrassônico" -d formato=instantaneo -d no_id=0 http://servidor/relojoeiro/api.php
  *                            Ex. alterar: curl -u lucas:senha -d recurso=lancamento_tipos -d acao=alterar -d id=11 -d fecha_as=18:00 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=lancamento_tipos -d acao=excluir -d id=11 -d confirmar=1 http://servidor/relojoeiro/api.php
+ *                            medicao_criar (lancamento_id da leitura já gravada): recupera a medição ausente sem alterar leituras
+ *                            ou medições existentes, inclusive as excluídas da conta. Exige leitura anterior, pelo menos uma hora,
+ *                            carga sem aumento e nenhuma sessão além do pulso. A resposta id identifica a medição.
  *   recurso=formulas          nova (identificador, nome, expressao, unidade, no_id: fórmula nova, ou mais uma versão da que
  *                             existe, em outro ponto), alterar (id: nome, expressao, unidade, no_id), excluir (id)
  *                            Ex. nova: curl -u lucas:senha -d recurso=formulas -d acao=nova -d identificador=idade_dias -d "nome=Idade (dias)" --data-urlencode "expressao=AGORA() - data_compra" -d unidade=dias -d no_id=0 http://servidor/relojoeiro/api.php
@@ -1803,9 +1806,10 @@
  *                                    a primeira data em que a carga chega ao limite, respeitando as sessões registradas e mantendo o gasto
  *                                    medido do início da projeção (AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se não chegar em 366 dias
  *                                    ou se faltar dado
- *     relogios[].previsao.confianca  alta exige leitura de até 2 dias, pelo menos 3 medições que separem os gastos e incerteza de até
- *                                    metade de cada taxa medida; media ou baixa nos demais casos; baixa com leitura de mais de 7 dias, dado
- *                                    ausente ou incerteza igual ou maior que a taxa; os motivos vêm em confianca_motivos
+ *     relogios[].previsao.confianca  alta exige leitura de até 2 dias, pelo menos 3 medições em uso e 3 em repouso que separem os gastos e
+ *                                    incerteza de até metade de cada taxa medida; media ou baixa nos demais casos; baixa com leitura de
+ *                                    mais de 7 dias, dado ausente ou incerteza igual ou maior que a taxa; os motivos vêm em
+ *                                    confianca_motivos
  *     relogios[].previsao.confianca_motivos
  *                                    as limitações que impedem confiança alta; lista vazia quando alta
  *     relogios[].previsao.confianca_motivos[]
@@ -3463,9 +3467,10 @@
  *                                    a primeira data em que a carga chega ao limite, respeitando as sessões registradas e mantendo o gasto
  *                                    medido do início da projeção (AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se não chegar em 366 dias
  *                                    ou se faltar dado
- *     relogio.previsao.confianca     alta exige leitura de até 2 dias, pelo menos 3 medições que separem os gastos e incerteza de até
- *                                    metade de cada taxa medida; media ou baixa nos demais casos; baixa com leitura de mais de 7 dias, dado
- *                                    ausente ou incerteza igual ou maior que a taxa; os motivos vêm em confianca_motivos
+ *     relogio.previsao.confianca     alta exige leitura de até 2 dias, pelo menos 3 medições em uso e 3 em repouso que separem os gastos e
+ *                                    incerteza de até metade de cada taxa medida; media ou baixa nos demais casos; baixa com leitura de
+ *                                    mais de 7 dias, dado ausente ou incerteza igual ou maior que a taxa; os motivos vêm em
+ *                                    confianca_motivos
  *     relogio.previsao.confianca_motivos
  *                                    as limitações que impedem confiança alta; lista vazia quando alta
  *     relogio.previsao.confianca_motivos[]
@@ -4263,9 +4268,10 @@
  *     previsoes[].chega_limite_em    a primeira data em que a carga chega ao limite, respeitando as sessões registradas e mantendo o gasto
  *                                    medido do início da projeção (AAAA-MM-DD HH:MM:SS, no fuso do sistema); null se não chegar em 366 dias
  *                                    ou se faltar dado
- *     previsoes[].confianca          alta exige leitura de até 2 dias, pelo menos 3 medições que separem os gastos e incerteza de até
- *                                    metade de cada taxa medida; media ou baixa nos demais casos; baixa com leitura de mais de 7 dias, dado
- *                                    ausente ou incerteza igual ou maior que a taxa; os motivos vêm em confianca_motivos
+ *     previsoes[].confianca          alta exige leitura de até 2 dias, pelo menos 3 medições em uso e 3 em repouso que separem os gastos e
+ *                                    incerteza de até metade de cada taxa medida; media ou baixa nos demais casos; baixa com leitura de
+ *                                    mais de 7 dias, dado ausente ou incerteza igual ou maior que a taxa; os motivos vêm em
+ *                                    confianca_motivos
  *     previsoes[].confianca_motivos  as limitações que impedem confiança alta; lista vazia quando alta
  *     previsoes[].confianca_motivos[]
  *                                    um motivo para a confiança da previsão não ser alta

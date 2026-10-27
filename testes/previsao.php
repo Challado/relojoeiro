@@ -131,9 +131,82 @@ try {
     }
     sql("DELETE FROM aviso WHERE identificador IN ('a_agenda_teste', 'z_agenda_teste')"); avisos_todos(true);
 
+    // Uma estimativa muito baixa não transforma uma leitura decrescente em recarga nem impede aprender com ela.
+    limpar_previsao(); cfg_set("gasto_motor", "cadastro");
+    alterar_previsao("taxa_uso", "80"); alterar_previsao("taxa_repouso", "0.1");
+    $inicio_m = $agora - 12 * 3600; $fim_m = $agora - 6 * 3600;
+    lancar_previsao("carga", $inicio_m, null, 80); lancar_previsao("pulso", $inicio_m, $agora);
+    $lancar_carga = function ($quando, $valor) {
+        return op_lancamento("lancar", ["relogio_id" => 1, "tipo" => "carga", "valor" => $valor,
+            "quando" => date("Y-m-d H:i", $quando), "estado" => "uso", "confirmar" => 1]);
+    };
+    $leitura_m = $lancar_carga($fim_m, 70);
+    exigir_previsao($leitura_m["ok"], "A leitura decrescente foi recusada.");
+    $m = linha("SELECT * FROM medicao WHERE lancamento_id = ?", [$leitura_m["id"]]);
+    exigir_previsao($m !== null && abs((float)$m["taxa"] - 10 * 8 / 6) < 0.001, "A estimativa impediu a nova medição de corrigir o gasto.");
+    $leituras_antes = linhas("SELECT id, inicio, valor FROM lancamento WHERE relogio_id = 1 ORDER BY id");
+    sql("DELETE FROM medicao WHERE id = ?", [$m["id"]]);
+    $criada_m = op_lancamento("medicao_criar", ["lancamento_id" => $leitura_m["id"]]);
+    exigir_previsao($criada_m["ok"] && (int)valor("SELECT COUNT(*) FROM medicao") === 1, "Não recuperou a medição ausente.");
+    exigir_previsao(linhas("SELECT id, inicio, valor FROM lancamento WHERE relogio_id = 1 ORDER BY id") === $leituras_antes, "A recuperação alterou as leituras originais.");
+    op_lancamento("medicao", ["id" => $criada_m["id"], "usada" => 0]);
+    $de_novo_m = op_lancamento("medicao_criar", ["lancamento_id" => $leitura_m["id"]]);
+    exigir_previsao($de_novo_m["ok"] && $de_novo_m["id"] === $criada_m["id"] && (int)valor("SELECT usada FROM medicao WHERE id = ?", [$criada_m["id"]]) === 0, "A recuperação duplicou a medição ou desfez a exclusão da conta.");
+    exigir_previsao(!op_lancamento("medicao_criar", ["lancamento_id" => 0])["ok"], "Aceitou leitura inexistente.");
+    foreach ([[$fim_m + 2 * 3600, 90], [$fim_m + 9000, 89]] as [$quando_m, $valor_m]) {
+        $nao_m = $lancar_carga($quando_m, $valor_m);
+        exigir_previsao($nao_m["ok"] && !op_lancamento("medicao_criar", ["lancamento_id" => $nao_m["id"]])["ok"], "Uma recarga ou intervalo curto virou medição.");
+    }
+    lancar_previsao("carregador", $fim_m + 3 * 3600, $fim_m + 4 * 3600);
+    $nao_m = $lancar_carga($agora, 88);
+    exigir_previsao($nao_m["ok"] && !op_lancamento("medicao_criar", ["lancamento_id" => $nao_m["id"]])["ok"], "Um intervalo com carregador virou medição.");
+    alterar_previsao("taxa_uso", $padroes["taxa_uso"]); alterar_previsao("taxa_repouso", $padroes["taxa_repouso"]);
+    limpar_previsao();
+
+    // Mesmo com pesos iguais, a escala estimada precisa voltar à regressão e à covariância.
+    $medicoes_regressao = function ($leituras) use ($agora) {
+        $ms = []; $inicio = $agora - (count($leituras) - 1) * 8 * 3600;
+        for ($i = 1; $i < count($leituras); $i++) {
+            $ms[] = ["id" => $i, "inicio" => date("Y-m-d H:i:s", $inicio), "fim" => date("Y-m-d H:i:s", $inicio + 8 * 3600),
+                "de_valor" => $leituras[$i - 1], "ate_valor" => $leituras[$i], "horas_pulso" => 8, "horas_guardado" => 0];
+            $inicio += 8 * 3600;
+        }
+        return $ms;
+    };
+    $g = gasto_medido_desde($medicoes_regressao([100, 60]), $agora, null, ["uso" => 100, "repouso" => null]);
+    // Duas leituras: soma dos tempos centrados ao quadrado = 1/2; ruído mínimo = 0,5; prior = 100 ± 50.
+    $media_esperada = (40 * 2 + 100 / (50 * 50)) / (2 + 1 / (50 * 50));
+    $dp_esperado = sqrt(1 / (2 + 1 / (50 * 50)));
+    exigir_previsao(abs($g["uso"] - $media_esperada) <= 0.001 && abs($g["uso_dp"] - $dp_esperado) <= 0.001, "A regressão parou antes de incorporar o ruído mínimo ao cadastro.");
+    $g = gasto_medido_desde($medicoes_regressao([100, 85, 65, 60]), $agora, null);
+    // Reta de mínimos quadrados: taxa 14, resíduos 1,5; 0,5; -5,5; 3,5. MAD = 3,5 e informação = 5.
+    exigir_previsao($g["uso"] === 14.0 && abs($g["uso_dp"] - 1.4826 * 3.5 / sqrt(5)) <= 0.001, "A incerteza ficou na escala inicial apesar do ruído das leituras.");
+
+    // Uma medição em uso e duas em repouso não justificam confiança alta; três de cada podem justificar.
+    cfg_set("gasto_motor", "robusto"); limpar_previsao();
+    $inicio = $agora - 3 * (96 + 8) * 3600; $carga = 90;
+    lancar_previsao("carga", $inicio, null, $carga);
+    for ($i = 0; $i < 6; $i++) {
+        $uso = $i % 2 === 1; $h = $uso ? 8 : 96; $queda = $uso ? 20 : 2;
+        $fim = $inicio + $h * 3600;
+        $lid = lancar_previsao("carga", $fim, null, $carga - $queda);
+        if ($uso) lancar_previsao("pulso", $inicio, $fim);
+        sql("INSERT INTO medicao (lancamento_id, medida, taxa, de_valor, ate_valor, inicio, fim, horas_pulso, horas_guardado, peso_horas, usada, criado)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())", [$lid, $uso ? "uso" : "repouso", $uso ? 20 : 0.5, $carga, $carga - $queda,
+                date("Y-m-d H:i:s", $inicio), date("Y-m-d H:i:s", $fim), $uso ? $h : 0, $uso ? 0 : $h, $h]);
+        $GLOBALS["FORMULAS_VERSAO"]++;
+        if ($i === 2 || $i === 5) {
+            $p = previsao_energia($r, $fim);
+            exigir_previsao($p["gasto"]["medicoes"] === $i + 1, "As medições da confiança não entraram na conta.");
+            exigir_previsao($i === 2 ? $p["confianca"] !== "alta" : $p["confianca"] === "alta", "A confiança não distinguiu uma de três medições em uso (" . ($i + 1) . "): " . implode("; ", $p["confianca_motivos"]));
+        }
+        $inicio = $fim; $carga -= $queda;
+    }
+    limpar_previsao();
+
     // Duas medições passadas: a antiga sai da janela em dez dias. Não há qualquer recarga futura.
     $campo = (int)valor("SELECT id FROM campo WHERE identificador = 'decaimento_repouso' ORDER BY id LIMIT 1");
-    sql("INSERT INTO campo_valor (relogio_id, campo_id, valor) VALUES (1, ?, '0')", [$campo]);
+    sql("INSERT INTO campo_valor (relogio_id, campo_id, valor) VALUES (1, ?, '0.1')", [$campo]);
     lancar_previsao("carga", $agora - 81 * 86400, null, 100);
     $antiga = lancar_previsao("carga", $agora - 80 * 86400, null, 0);
     lancar_previsao("carga", $agora - 3600, null, 21);
@@ -147,10 +220,11 @@ try {
         $ctx = contexto_previsao(); $taxa = variavel_valor("taxa_repouso", $ctx);
         exigir_previsao($taxa > 0, "Falta a taxa do caso " . $motor);
         $p = previsao_energia($r, $agora);
+        exigir_previsao($p["chega_limite_em"] !== null, "Não encontrou o limite no horizonte no motor " . $motor);
         exigir_previsao(abs(strtotime($p["chega_limite_em"]) - ($agora + 86400 / $taxa)) <= 60, "Perdeu o primeiro limite no motor " . $motor);
         $t = quando_acaba($r, $agora, [], $agora + 3650 * 86400);
         exigir_previsao(abs($t - ($agora + 21 * 86400 / $taxa)) <= 60, "Perdeu o primeiro esgotamento no motor " . $motor);
-        exigir_previsao(energia_projetada($r, $agora + 11 * 86400, $agora, valores_do_relogio(1)) === 0.0, "A energia subiu sem recarga no motor " . $motor);
+        exigir_previsao(abs(energia_projetada($r, $agora + 11 * 86400, $agora, valores_do_relogio(1)) - max(0, 21 - 11 * $taxa)) < 1e-8, "A energia subiu sem recarga no motor " . $motor);
         exigir_previsao($p["confianca"] !== "alta" && count($p["confianca_motivos"]) > 0, "Poucas medições ganharam confiança alta.");
     }
     // As funções de medição usadas pelas fórmulas personalizadas também mantêm a janela inicial.

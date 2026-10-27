@@ -489,6 +489,10 @@ días del modo dejan (el modo de 30 días va hasta el 30.º, contado desde hoy).
 
 ### Consumo medido por las lecturas
 
+Una lectura que sigue bajando puede medir el gasto aunque supere la estimación: la diferencia ayuda a corregir el modelo. Si hubo carga sin una sesión registrada, use medir=0 para no usar el intervalo en la calibración.
+
+La acción lancamento/medicao_criar, con el lancamento_id de la lectura guardada, recupera una medición ausente: exige una lectura anterior, al menos una hora de intervalo, carga sin aumento y ninguna sesión aparte del uso en la muñeca. Conserva las lecturas y cualquier medición existente, incluso las excluidas; en la respuesta, id identifica la medición.
+
 La ficha del smartwatch dice "dura 5 días". La realidad discrepa, y cambia conforme la batería envejece. Por eso, **cada
 lectura de carga que usted lanza se compara con la anterior**, y el intervalo entre las dos se vuelve una medición: cuánto
 cayó, cuántas horas pasó en la muñeca y cuántas fuera de la muñeca (guardado, apagado), y cómo usted marcó cada lectura (en
@@ -604,6 +608,8 @@ en el motor 4).
 
 ### La previsión de descarga
 
+El ajuste robusto solo termina cuando se estabilizan los pesos de las lecturas, las tasas y la escala del ruido. El peso del registro y la incertidumbre usan la escala final del ruido.
+
 Los avisos se ordenan por el minuto mostrado; los empates, por el reloj y el identificador del aviso. En las agendas, los eventos con la misma fecha y hora se ordenan por la clave del evento.
 
 La proyección mantiene el gasto medido al inicio: el envejecimiento de una medición durante la proyección no hace que la batería recupere carga. Las consultas históricas siguen usando la ventana de la fecha consultada. La búsqueda encuentra el primer cruce del límite o del cero, por tramos de las sesiones, con precisión de hasta un minuto. Un futuro sin datos no se presenta como autonomía superior a un año.
@@ -612,7 +618,7 @@ El aviso predeterminado **Cargar** usa `QUANDO_ENERGIA(limite_carga; 366)`, el m
 
 `precisa` sigue limitado al 100%. Si incluso una carga completa se agota antes de terminar los días consecutivos, `recarga_no_bloco` es verdadero y el texto avisa que hay que recargar durante el período. `carregar_antes` trata de la carga necesaria al entrar; por sí solo no garantiza que una carga cubra el bloque.
 
-La confianza alta exige una lectura de hasta dos días, al menos tres mediciones que separen los gastos, tasas estimadas con las mediciones y una desviación estándar de hasta la mitad de cada tasa. Es baja con una lectura de más de siete días, datos necesarios ausentes o desviación estándar igual o superior a la tasa; en los demás casos, media. `confianca_motivos` explica las limitaciones. Una lectura reciente por sí sola no demuestra que la fecha futura sea precisa.
+La confianza alta exige una lectura de hasta dos días, al menos tres mediciones en uso y tres en reposo que separen los gastos, tasas estimadas con las mediciones y una desviación estándar de hasta la mitad de cada tasa. Es baja con una lectura de más de siete días, datos necesarios ausentes o desviación estándar igual o superior a la tasa; en los demás casos, media. `confianca_motivos` explica las limitaciones. Una lectura reciente por sí sola no demuestra que la fecha futura sea precisa.
 
 Los resultados numéricos no finitos, como `10 ^ 1000`, dan vacío (`null`), como la división por cero. `PADRAO` puede ofrecer un valor alternativo. Si otro resultado inválido impide la serialización, la API responde un error JSON con HTTP 500, nunca un cuerpo vacío con HTTP 200.
 

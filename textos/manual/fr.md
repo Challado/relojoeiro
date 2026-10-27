@@ -1,4 +1,4 @@
-<!-- origem: 6b1eafee26a0503addb740312b56af3a7e0820b3 -->
+<!-- origem: 306209a9a45c84316aaf2feef1945e048a06e706 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -451,6 +451,10 @@ mode de 30 jours va jusqu'au 30e, compté à partir d'aujourd'hui).
 
 ### Consommation mesurée par les relevés {#gasto-medido-pelas-leituras}
 
+Une lecture qui continue de baisser peut mesurer la consommation même au-dessus de l’estimation : cet écart aide à corriger le modèle. Si une recharge a eu lieu sans session enregistrée, utilisez medir=0 pour exclure cet intervalle de l’étalonnage.
+
+L’action lancamento/medicao_criar, avec le lancamento_id de la lecture enregistrée, récupère une mesure manquante : elle exige une lecture antérieure, un intervalle d’au moins une heure, une charge sans hausse et aucune session autre que le port au poignet. Elle préserve les lectures et toute mesure existante, même exclue ; id dans la réponse identifie la mesure.
+
 La fiche de la smartwatch dit « tient 5 jours ». La réalité n'est pas d'accord, et change à mesure que la batterie vieillit.
 C'est pourquoi **chaque relevé de charge que vous saisissez est comparé au précédent**, et l'intervalle entre les deux devient
 une mesure : de combien elle a baissé, combien d'heures elle a passées au poignet et combien hors du poignet (rangée, éteinte),
@@ -570,6 +574,8 @@ s'appliquent que tant qu'il n'y a pas de mesure (ou toujours, dans le moteur 4).
 
 ### La prévision de décharge {#a-previsão-de-descarga}
 
+L’ajustement robuste s’arrête seulement lorsque les poids des lectures, les taux et l’échelle du bruit se stabilisent. Le poids des valeurs du registre et l’incertitude utilisent l’échelle finale du bruit.
+
 Les alertes sont triées selon la minute affichée ; en cas d’égalité, par montre et identifiant de l’alerte. Dans les agendas, les événements à la même date et heure sont triés par leur clé.
 
 La projection conserve la consommation mesurée à son début : le vieillissement d’une mesure pendant la projection ne peut pas faire remonter la charge. Les consultations historiques utilisent toujours la fenêtre de la date demandée. La recherche trouve le premier passage à la limite ou à zéro, par segments de sessions, avec une précision d’une minute. Un futur sans données n’est pas présenté comme une autonomie supérieure à un an.
@@ -578,7 +584,7 @@ L’alerte **Charger** par défaut utilise `QUANDO_ENERGIA(limite_carga; 366)`, 
 
 `precisa` reste limité à 100%. Si même une charge pleine s’épuise avant la fin des jours consécutifs, `recarga_no_bloco` est vrai et le texte indique qu’une recharge est nécessaire pendant la période. `carregar_antes` concerne la charge requise à l’entrée ; il ne garantit pas à lui seul qu’une charge couvre le bloc.
 
-Une confiance élevée exige une lecture de deux jours au plus, au moins trois mesures distinguant les consommations, des taux estimés à partir des mesures et un écart-type ne dépassant pas la moitié de chaque taux. Elle est faible si la lecture dépasse sept jours, si une donnée nécessaire manque ou si l’écart-type atteint le taux ; moyenne dans les autres cas. `confianca_motivos` explique les limites. Une lecture récente ne prouve pas à elle seule la précision d’une date future.
+Une confiance élevée exige une lecture de deux jours au plus, au moins trois mesures en usage et trois au repos distinguant les consommations, des taux estimés à partir des mesures et un écart-type ne dépassant pas la moitié de chaque taux. Elle est faible si la lecture dépasse sept jours, si une donnée nécessaire manque ou si l’écart-type atteint le taux ; moyenne dans les autres cas. `confianca_motivos` explique les limites. Une lecture récente ne prouve pas à elle seule la précision d’une date future.
 
 Les résultats numériques non finis, comme `10 ^ 1000`, deviennent vides (`null`), comme une division par zéro. `PADRAO` peut fournir une valeur de repli. Si un autre résultat invalide empêche la sérialisation, l’API renvoie une erreur JSON avec HTTP 500, jamais un corps vide avec HTTP 200.
 
