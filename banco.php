@@ -1087,13 +1087,19 @@ function banco_desfaz()
 function banco_atomico($f)
 {
     $propria = empty($GLOBALS["BANCO_TRANSACAO_ATIVA"]);
-    if ($propria) banco_inicio();
+    if ($propria) {
+        banco_inicio();
+    }
     try {
         $resultado = $f();
-        if ($propria) banco_confirma();
+        if ($propria) {
+            banco_confirma();
+        }
         return $resultado;
     } catch (Throwable $e) {
-        if ($propria) banco_desfaz();
+        if ($propria) {
+            banco_desfaz();
+        }
         $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
         throw $e;
     }

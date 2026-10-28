@@ -3329,7 +3329,9 @@ function op_lancamento($acao, $d)
             $escolhas_m = $acao === "lancar" && $id > 0 && (string)($d["medir"] ?? "1") === "0" ? [$id => 0] : [];
             $desde_m = [$agora];
             foreach ([$q ?? null, $ini ?? null, $existente ? strtotime($existente["inicio"]) : null] as $instante_m) {
-                if (is_int($instante_m)) $desde_m[] = $instante_m;
+                if (is_int($instante_m)) {
+                    $desde_m[] = $instante_m;
+                }
             }
             sincronizar_medicoes($rid, true, $escolhas_m, min($desde_m));
         }

@@ -306,7 +306,7 @@ O [`.github/workflows/testes.yml`](../.github/workflows/testes.yml) roda os test
 quando pedido na aba **Actions**, em "Run workflow"), em sete trabalhos ao mesmo tempo:
 
 - **Arquitetura, idiomas e documentação (sem banco):** o `arquitetura.php`, o `textos.php` (os dicionários, com as listas
-  traduzidas no uso, `t(LISTA[...])`, os manuais e os READMEs traduzidos), o `dicionario.php`, o `backup.php` e o `motores.php`;
+  traduzidas no uso, `t(LISTA[...])`, os manuais e os READMEs traduzidos), o `dicionario.php`, o `backup.php`, o `motores.php` e o `previsao.php`;
 - **Paridade (SQLite, PostgreSQL, MariaDB):** os bancos como serviços do GitHub e o `testes/paridade.sh` (com as conferências
   da documentação); depois, o `testes/migracao.sh` nos três, a partir da versão de antes do push (`github.event.before`);
 - **Paridade (SQLite e Firebird):** o mesmo com o Firebird 3, e o `testes/migracao.sh firebird`;
@@ -319,11 +319,17 @@ quando pedido na aba **Actions**, em "Run workflow"), em sete trabalhos ao mesmo
 
 O resultado aparece na aba **Actions** do repositório e no ✓ / ✗ ao lado de cada commit; uma falha também chega por e-mail.
 
-As regressões rápidas `php testes/backup.php` e `php testes/motores.php` criam seus próprios bancos SQLite descartáveis.
+As regressões rápidas `php testes/backup.php`, `php testes/motores.php` e `php testes/previsao.php` criam seus próprios bancos
+SQLite descartáveis.
 A primeira recusa cópias incompletas, JSON inválido, gzip truncado, CRC errado, tabelas/colunas/binários inválidos e contagens
 incorretas, sem mudar o banco nem a lista de cópias; também restaura os formatos novo e antigo, inclusive quando a retenção
 remove o arquivo escolhido durante a cópia anterior. A segunda confere pesos extremos, arredondamento, a conversão de dias
-de uso em dias civis, o horizonte de um ano e o instante do limite com precisão de minuto.
+de uso em dias civis, o horizonte de um ano e o instante do limite com precisão de minuto. A terceira confere a descarga: a
+calibração das medições fixa durante a projeção nos quatro motores medidos (e as consultas do passado com a janela delas),
+as sessões e o fim automático como marcos da busca, o aviso Carregar pela mesma conta da ficha, a recarga no meio do bloco,
+a confiança e os motivos, a leitura decrescente que não vira recarga, as leituras frequentes e as corrigidas refazendo os
+intervalos (com a escolha manual preservada), a janela sem voltar ao histórico vencido, a meia-vida, a ordem dos avisos e
+das agendas, o JSON válido mesmo com um resultado inválido e as migrações que só trocam a expressão padrão.
 
 A restauração válida inclui as referências de exibição e conversão entre unidades (mm mostra em polegadas, e polegadas
 convertem para mm), sem perder nenhum dos dois vínculos.

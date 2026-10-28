@@ -2077,7 +2077,7 @@ $FUNCOES = [
     "AGORA" => [0, 0, tk("o instante de agora (em dias, com a fração do dia)"), false],
     "HORAS_USO" => [0, 0, tk("as horas de um dia de uso, pelo horário de uso da Configuração (das 7h às 22h: 15)"), false],
     "QUANDO_ENERGIA" => [1, 2, tk("QUANDO_ENERGIA(limite; dias): a primeira data em que a energia chega ao limite, respeitando as sessões gravadas e mantendo o gasto medido do início da projeção; dias de 1 a 366 (padrão 366); vazio se não chegar nesse período ou se faltar dado"), false],
-    "MEDIDO" => [1, 1, tk("MEDIDO(\"uso\") ou MEDIDO(\"repouso\"): o gasto medido pelas leituras, em % por dia (de uso ou fora do pulso): os dois saem juntos das medições dos últimos dias da Configuração (cada intervalo entre duas leituras: a queda = dias de uso × gasto em uso + dias fora × gasto fora), na conta feita nas leituras de cada trecho entre recargas, todas com o mesmo peso, a que não bate com as outras pesando menos (regressão robusta) e partindo do gasto do cadastro; sem nenhuma nesses dias, as de antes; sem nenhuma, vazio"), false],
+    "MEDIDO" => [1, 1, tk("MEDIDO(\"uso\") ou MEDIDO(\"repouso\"): o gasto medido pelas leituras, em % por dia (de uso ou fora do pulso): os dois saem juntos das medições dos últimos dias da Configuração (cada intervalo entre duas leituras: a queda = dias de uso × gasto em uso + dias fora × gasto fora), na conta feita nas leituras de cada trecho entre recargas, só os intervalos inteiros dentro desses dias, todas com o mesmo peso (com a meia-vida da Configuração, as mais velhas pesando menos), a que não bate com as outras pesando menos (regressão robusta) e partindo do gasto do cadastro; sem nenhuma nesses dias, vazio (as mais velhas não voltam)"), false],
     "CONFIG" => [1, 1, tk("CONFIG(\"chave\"): um número da Configuração (ex.: CONFIG(\"sol_limiar\"), o limite do solar); vazio se não for número"), false],
     "DIAS_DESDE" => [1, 1, tk("dias desde uma data"), false],
     "DIAS_ATE" => [1, 1, tk("dias até uma data (negativo: já passou)"), false],
@@ -2665,10 +2665,14 @@ function gasto_medido_desde($medicoes, $momento, $desde, $prior = null)
         $sigma = max(GASTO_LEITURA_ERRO, count($abs) > 0 ? 1.4826 * $abs[intdiv(count($abs), 2)] : GASTO_LEITURA_ERRO);
         if ((int)cfg("medicao_meia_vida_dias") > 0 && count($abs_idade) > 0) {
             usort($abs_idade, function ($a, $b) { return $a[0] <=> $b[0]; });
-            $metade = array_sum(array_column($abs_idade, 1)) / 2; $acumulado = 0.0;
+            $metade = array_sum(array_column($abs_idade, 1)) / 2;
+            $acumulado = 0.0;
             foreach ($abs_idade as [$erro_idade, $peso_idade]) {
                 $acumulado += $peso_idade;
-                if ($acumulado > $metade) { $sigma = max(GASTO_LEITURA_ERRO, 1.4826 * $erro_idade); break; }
+                if ($acumulado > $metade) {
+                    $sigma = max(GASTO_LEITURA_ERRO, 1.4826 * $erro_idade);
+                    break;
+                }
             }
         }
         $mudou = 0.0;
@@ -3113,7 +3117,9 @@ function formula_calcular($no, &$ctx)
                 $selecionadas = medicoes_janela($cache_med[$id]["linhas"], $momento_med, 0);
                 $prior_med = gasto_prior($ctx["r"], $momento_med);
                 $chave = implode(",", array_column($selecionadas, "id")) . ":" . json_encode($prior_med);
-                if ((int)cfg("medicao_meia_vida_dias") > 0) $chave .= ":" . $momento_med;
+                if ((int)cfg("medicao_meia_vida_dias") > 0) {
+                    $chave .= ":" . $momento_med;
+                }
                 if (!isset($cache_med[$id]["contas"][$chave])) {
                     // no motor "pelas fórmulas", MEDIDO é a conta pela marcação (o 3): a fórmula parte dela se quiser
                     $cache_med[$id]["contas"][$chave] = gasto_medido($selecionadas, $momento_med, $prior_med,
@@ -4033,7 +4039,9 @@ function avisos_do_relogio($r, $momento, $so = null)
 function aviso_ordem($falta, $data = null)
 {
     // As listas mostram data e hora até os minutos; no mesmo minuto, os identificadores desempatam.
-    if ($data !== null) return substr($data, 0, 16);
+    if ($data !== null) {
+        return substr($data, 0, 16);
+    }
     return duracao_texto((float)$falta) === "" ? 0.0 : (float)$falta;
 }
 
@@ -8129,7 +8137,9 @@ function horas_no_pulso($rid, $de, $ate)
         AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?) ORDER BY l.inicio, l.id", [(int)$rid, date("Y-m-d H:i:s", $ate), date("Y-m-d H:i:s", $de)]) as $sp) {
         $a = max($ate_aqui, strtotime($sp["inicio"]));
         $fim = $sp["fim"] === null ? null : strtotime($sp["fim"]);
-        if ($fim === null && $sp["fecha_as"] !== null) $fim = max(strtotime($sp["inicio"]), instante(dia_da_colecao(strtotime($sp["inicio"])), $sp["fecha_as"]));
+        if ($fim === null && $sp["fecha_as"] !== null) {
+            $fim = max(strtotime($sp["inicio"]), instante(dia_da_colecao(strtotime($sp["inicio"])), $sp["fecha_as"]));
+        }
         $b = min($ate, $fim ?? $ate);
         if ($b > $a) {
             $h += ($b - $a) / 3600;
@@ -8147,7 +8157,9 @@ function periodos_no_pulso($rid, $de, $ate)
         AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?) ORDER BY l.inicio, l.id", [(int)$rid, date("Y-m-d H:i:s", $ate), date("Y-m-d H:i:s", $de)]) as $sp) {
         $a = max($de, strtotime($sp["inicio"]));
         $fim = $sp["fim"] === null ? null : strtotime($sp["fim"]);
-        if ($fim === null && $sp["fecha_as"] !== null) $fim = max(strtotime($sp["inicio"]), instante(dia_da_colecao(strtotime($sp["inicio"])), $sp["fecha_as"]));
+        if ($fim === null && $sp["fecha_as"] !== null) {
+            $fim = max(strtotime($sp["inicio"]), instante(dia_da_colecao(strtotime($sp["inicio"])), $sp["fecha_as"]));
+        }
         $b = min($ate, $fim ?? $ate);
         if ($b > $a) {
             $res[] = [$a, $b];
@@ -8182,7 +8194,9 @@ function leituras_marcadas($rid)
             $e = "repouso";
             foreach ($pulsos as $p) {
                 $fim = $p["fim"] === null ? null : strtotime($p["fim"]);
-                if ($fim === null && $p["fecha_as"] !== null) $fim = max(strtotime($p["inicio"]), instante(dia_da_colecao(strtotime($p["inicio"])), $p["fecha_as"]));
+                if ($fim === null && $p["fecha_as"] !== null) {
+                    $fim = max(strtotime($p["inicio"]), instante(dia_da_colecao(strtotime($p["inicio"])), $p["fecha_as"]));
+                }
                 if (strtotime($p["inicio"]) <= $t && ($fim === null || $fim > $t)) {
                     $e = "uso";
                     break;
@@ -8221,7 +8235,9 @@ function medicoes_da_conta($rid, $por_marcacao = null)
         $ini_e = $por_inicio[date("Y-m-d H:i:s", strtotime($m["inicio"]))] ?? null;
         $entra = $fim_e !== null && $fim_e === $ini_e;
         $marc[(int)$m["id"]] = ["de" => $ini_e, "ate" => $fim_e, "entra" => $por_marcacao ? $entra : null];
-        if ((int)$m["usada"] !== 1 || (int)$m["valida"] !== 1) continue;
+        if ((int)$m["usada"] !== 1 || (int)$m["valida"] !== 1) {
+            continue;
+        }
         if (!$por_marcacao) {
             $res[] = $m;
         } elseif ($entra) {
@@ -8242,7 +8258,8 @@ function medicao_do_intervalo($rid, $inicio, $fim, $de_valor, $ate_valor, $taxas
     $hg = ($fim - $inicio) / 3600 - $hp;
     $h_dia = (strtotime("2000-01-01 " . cfg("uso_fim")) - strtotime("2000-01-01 " . cfg("uso_inicio"))) / 3600;
     $h_dia = $h_dia > 0 ? $h_dia : 24;
-    $du = $hp / $h_dia; $dg = $hg / 24;
+    $du = $hp / $h_dia;
+    $dg = $hg / 24;
     $medida = $du >= 0.5 || $du >= $dg ? "uso" : "repouso";
     $queda = $de_valor - $ate_valor;
     $taxa = $medida === "uso" ? ($queda - $dg * (float)$taxas["taxa_repouso"]) / $du
@@ -8257,10 +8274,14 @@ function sincronizar_medicoes($rid, $criar = true, $escolhas = [], $desde = null
 {
     return banco_atomico(function () use ($rid, $criar, $escolhas, $desde) {
         $r = linha("SELECT * FROM relogio WHERE id = ?", [(int)$rid]);
-        if (!$r) return;
+        if (!$r) {
+            return;
+        }
         $existentes = [];
         foreach (linhas("SELECT m.* FROM medicao m JOIN lancamento l ON l.id = m.lancamento_id WHERE l.relogio_id = ? ORDER BY m.id", [(int)$rid]) as $m) {
-            if (!isset($existentes[(int)$m["lancamento_id"]])) $existentes[(int)$m["lancamento_id"]] = $m;
+            if (!isset($existentes[(int)$m["lancamento_id"]])) {
+                $existentes[(int)$m["lancamento_id"]] = $m;
+            }
         }
         $leituras = linhas("SELECT l.id, l.tipo_id, l.inicio, l.valor FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
             WHERE l.relogio_id = ? AND t.formato = 'valor' AND t.mede_gasto = 1 ORDER BY l.inicio, l.id", [(int)$rid]);
@@ -8270,7 +8291,9 @@ function sincronizar_medicoes($rid, $criar = true, $escolhas = [], $desde = null
             WHERE l.relogio_id = ? AND t.formato = 'sessao' AND t.identificador <> 'pulso'", [(int)$rid]) as $s) {
             $a = strtotime($s["inicio"]);
             $b = $s["fim"] === null ? null : strtotime($s["fim"]);
-            if ($b === null && $s["fecha_as"] !== null) $b = max($a, instante(dia_da_colecao($a), $s["fecha_as"]));
+            if ($b === null && $s["fecha_as"] !== null) {
+                $b = max($a, instante(dia_da_colecao($a), $s["fecha_as"]));
+            }
             $sessoes[] = [$a, $b];
         }
         // Só as medições já reconstruídas podem participar do ponto de partida da próxima: nada de taxas antigas no meio.
@@ -8280,16 +8303,28 @@ function sincronizar_medicoes($rid, $criar = true, $escolhas = [], $desde = null
         foreach ($leituras as $l) {
             $a = $anteriores[(int)$l["tipo_id"]] ?? null;
             $anteriores[(int)$l["tipo_id"]] = $l;
-            $fim = strtotime($l["inicio"]); $inicio = $a ? strtotime($a["inicio"]) : $fim;
-            if ($desde !== null && $fim < $desde) continue;
-            if (!$a || $fim <= $inicio || $fim > time() + 60 || (float)$l["valor"] > (float)$a["valor"]) continue;
+            $fim = strtotime($l["inicio"]);
+            $inicio = $a ? strtotime($a["inicio"]) : $fim;
+            if ($desde !== null && $fim < $desde) {
+                continue;
+            }
+            if (!$a || $fim <= $inicio || $fim > time() + 60 || (float)$l["valor"] > (float)$a["valor"]) {
+                continue;
+            }
             $outra = false;
             foreach ($sessoes as [$si, $sf]) {
-                if ($si < $fim && ($sf === null || $sf > $inicio)) { $outra = true; break; }
+                if ($si < $fim && ($sf === null || $sf > $inicio)) {
+                    $outra = true;
+                    break;
+                }
             }
-            if ($outra) continue;
+            if ($outra) {
+                continue;
+            }
             $m = $existentes[(int)$l["id"]] ?? null;
-            if ($m === null && $criar !== true && (!is_array($criar) || !in_array((int)$l["id"], $criar, true))) continue;
+            if ($m === null && $criar !== true && (!is_array($criar) || !in_array((int)$l["id"], $criar, true))) {
+                continue;
+            }
             $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
             // O cadastro apenas desconta o outro estado na taxa descritiva. A regressão usa as quedas e horas originais.
             $prior = gasto_prior($r, $inicio);
@@ -8894,14 +8929,20 @@ function energia_ate_limite($r, $agora, $ate, $limite, $origem = null)
         $marcos[] = $ini;
         if ($l["formato"] === "sessao") {
             $fim = $l["fim"] === null ? ($l["fecha_as"] === null ? null : max($ini, instante(dia_da_colecao($ini), $l["fecha_as"]))) : (int)strtotime($l["fim"]);
-            if ($fim !== null) $marcos[] = $fim;
+            if ($fim !== null) {
+                $marcos[] = $fim;
+            }
         }
     }
     foreach ($GLOBALS["SIMULACAO"][(int)$r["id"]] ?? [] as $ls) {
         foreach ($ls as $l) {
-            if (!empty($l["so_uso"])) continue;
+            if (!empty($l["so_uso"])) {
+                continue;
+            }
             $marcos[] = (int)$l["ini"];
-            if ($l["fim"] !== null) $marcos[] = (int)$l["fim"];
+            if ($l["fim"] !== null) {
+                $marcos[] = (int)$l["fim"];
+            }
         }
     }
     $marcos = array_values(array_unique(array_filter($marcos, function ($t) use ($agora, $ate) { return $t >= $agora && $t <= $ate; })));
@@ -8912,14 +8953,21 @@ function energia_ate_limite($r, $agora, $ate, $limite, $origem = null)
         // Antes de uma leitura/corda que muda o saldo, ainda pode haver uma descarga no trecho anterior.
         foreach (array_unique([max($a, $fim - 1), $fim]) as $b) {
             $eb = $energia($b);
-            if ($eb === null) return ["instante" => null, "calculavel" => false];
+            if ($eb === null) {
+                return ["instante" => null, "calculavel" => false];
+            }
             if ($eb <= $limite) {
                 while ($b - $a > 1) {
                     $meio = $a + intdiv($b - $a, 2);
                     $em = $energia($meio);
-                    if ($em === null) return ["instante" => null, "calculavel" => false];
-                    if ($em <= $limite) $b = $meio;
-                    else $a = $meio;
+                    if ($em === null) {
+                        return ["instante" => null, "calculavel" => false];
+                    }
+                    if ($em <= $limite) {
+                        $b = $meio;
+                    } else {
+                        $a = $meio;
+                    }
                 }
                 return ["instante" => $b, "calculavel" => true];
             }
@@ -9136,11 +9184,21 @@ function previsao_energia($r, $agora)
             // A data recente da leitura, sozinha, não prova que as taxas estimadas são confiáveis.
             $idade = ($agora - strtotime($leitura["inicio"])) / 86400;
             $motivos = [];
-            if ($idade > 2) $motivos[] = t("a leitura tem mais de dois dias");
-            if ($vazio) $motivos[] = t("há dados necessários vazios");
-            if ($n_med["uso"] < 3) $motivos[] = t("há menos de três medições em uso");
-            if ($n_med["repouso"] < 3) $motivos[] = t("há menos de três medições em repouso");
-            if (!$vale_medido["uso"] || !$vale_medido["repouso"]) $motivos[] = t("as taxas da projeção não foram estimadas pelas medições");
+            if ($idade > 2) {
+                $motivos[] = t("a leitura tem mais de dois dias");
+            }
+            if ($vazio) {
+                $motivos[] = t("há dados necessários vazios");
+            }
+            if ($n_med["uso"] < 3) {
+                $motivos[] = t("há menos de três medições em uso");
+            }
+            if ($n_med["repouso"] < 3) {
+                $motivos[] = t("há menos de três medições em repouso");
+            }
+            if (!$vale_medido["uso"] || !$vale_medido["repouso"]) {
+                $motivos[] = t("as taxas da projeção não foram estimadas pelas medições");
+            }
             if ($g["uso"] === null || $g["repouso"] === null || (!$g["conjunta"] && ($n_med["uso"] === 0 || $n_med["repouso"] === 0))) {
                 $motivos[] = t("as medições não separam os dois gastos");
             }
@@ -9154,8 +9212,12 @@ function previsao_energia($r, $agora)
                     $muito_incerta = $muito_incerta || ($dp !== null && $dp > 0 && $dp >= abs($x["vale"]));
                 }
             }
-            if ($incerta) $motivos[] = t("a incerteza dos gastos é alta ou não foi estimada");
-            if (isset($busca) && !$busca["calculavel"]) $motivos[] = t("faltam dados na projeção futura");
+            if ($incerta) {
+                $motivos[] = t("a incerteza dos gastos é alta ou não foi estimada");
+            }
+            if (isset($busca) && !$busca["calculavel"]) {
+                $motivos[] = t("faltam dados na projeção futura");
+            }
             $res["confianca"] = $idade > 7 || $vazio || $muito_incerta || (isset($busca) && !$busca["calculavel"]) ? "baixa" : (count($motivos) === 0 ? "alta" : "media");
             $res["confianca_motivos"] = $motivos;
             // hoje, ontem, ou há quantos dias de calendário
@@ -9163,7 +9225,9 @@ function previsao_energia($r, $agora)
             $quando = $dias_leitura === 0 ? t("hoje") : ($dias_leitura === 1 ? t("ontem") : t("há {1} dias", [1 => $dias_leitura]));
             // (de onde vem cada número da conta vai à parte, em "conta": a tela mostra numa tabela)
             $res["linhas"][] = t("Confiança {1}: leitura de {2}{3} feita {4}.", [1 => ["alta" => t("alta"), "media" => t("média"), "baixa" => t("baixa")][$res["confianca"]], 2 => decimal_txt($res["leitura"], 6), 3 => $leitura["unidade"], 4 => $quando]);
-            if (count($motivos) > 0) $res["linhas"][] = t("Limitações da previsão: {1}.", [1 => implode("; ", $motivos)]);
+            if (count($motivos) > 0) {
+                $res["linhas"][] = t("Limitações da previsão: {1}.", [1 => implode("; ", $motivos)]);
+            }
         }
     }
     return $res;
@@ -9180,7 +9244,9 @@ function quando_acaba($r, $agora, $sessoes, $ate, &$calculavel = null)
     try {
         $GLOBALS["SIMULACAO"] = [];
         $GLOBALS["SIMULACAO_VERSAO"] = ($GLOBALS["SIMULACAO_VERSAO"] ?? 0) + 1;
-        foreach ($sessoes as $x) simular_lancamento((int)$r["id"], $x[0], $x[1], $x[2], null);
+        foreach ($sessoes as $x) {
+            simular_lancamento((int)$r["id"], $x[0], $x[1], $x[2], null);
+        }
         $busca = energia_ate_limite($r, $agora, $ate, 0, min($agora, time()));
         $calculavel = $busca["calculavel"];
         return $busca["instante"];
