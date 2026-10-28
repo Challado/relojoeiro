@@ -611,7 +611,7 @@ La v51 reconstruye las mediciones tras nuevas lecturas, correcciones, eliminacio
 
 El ajuste robusto solo termina cuando se estabilizan los pesos de las lecturas, las tasas y la escala del ruido. El peso del registro y la incertidumbre usan la escala final del ruido.
 
-Los avisos se ordenan por el minuto mostrado; los empates, por el reloj y el identificador del aviso. En las agendas, los eventos con la misma fecha y hora se ordenan por la clave del evento.
+Los avisos se ordenan por el minuto mostrado, y el que vence ahora (a menos de medio minuto) cuenta en el minuto del cálculo, para que los segundos no cambien el orden; los empates, por el reloj y el identificador del aviso. En las agendas, los eventos con la misma fecha y hora se ordenan por la clave del evento.
 
 La proyección mantiene el gasto medido al inicio: el envejecimiento de una medición durante la proyección no hace que la batería recupere carga. Las consultas históricas siguen usando la ventana de la fecha consultada. La búsqueda encuentra el primer cruce del límite o del cero, por tramos de las sesiones, con precisión de hasta un minuto. Un futuro sin datos no se presenta como autonomía superior a un año.
 

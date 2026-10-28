@@ -129,6 +129,28 @@ try {
         }
         exigir_previsao($codigo_r === 200 && $nomes_r === $nomes_p, "O relatório mudou a ordem dos avisos do passaporte.");
     }
+    // Os dois vencendo agora, um no segundo 59 de um minuto e o outro no segundo 1 do seguinte (um aviso gravado agora e
+    // outro previsto para agora): os dois dizem "agora" e contam no minuto do cálculo, e o identificador desempata
+    foreach (["a_agenda_teste", "z_agenda_teste"] as $ident) {
+        sql("UPDATE aviso SET expressao = 'HOJE() + 0.5' WHERE identificador = ?", [$ident]);
+    }
+    avisos_todos(true);
+    $meio_dia = null;
+    foreach (avisos_do_relogio($r, $agora) as $a) {
+        if ($a["identificador"] === "a_agenda_teste") {
+            // a data do aviso é a hora local: o instante dela, pelo deslocamento do fuso agora
+            $meio_dia = $agora + strtotime($a["data"] . " UTC") - (int)round(dias_de($agora) * 86400);
+        }
+    }
+    exigir_previsao($meio_dia !== null, "O aviso de teste do meio-dia não apareceu.");
+    foreach (["a_agenda_teste" => 1, "z_agenda_teste" => -1] as $ident => $segundo) {
+        sql("UPDATE aviso SET expressao = ? WHERE identificador = ?", ["HOJE() + (43200 + " . $segundo . ") / 86400", $ident]);
+    }
+    avisos_todos(true);
+    $na_virada = array_column(array_values(array_filter(avisos_do_relogio($r, $meio_dia), function ($a) {
+        return in_array($a["identificador"], ["a_agenda_teste", "z_agenda_teste"], true);
+    })), "identificador");
+    exigir_previsao($na_virada === ["a_agenda_teste", "z_agenda_teste"], "A virada do minuto inverteu dois avisos que vencem agora: " . implode(", ", $na_virada));
     sql("DELETE FROM aviso WHERE identificador IN ('a_agenda_teste', 'z_agenda_teste')"); avisos_todos(true);
 
     // Uma estimativa muito baixa não transforma uma leitura decrescente em recarga nem impede aprender com ela.

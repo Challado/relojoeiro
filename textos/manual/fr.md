@@ -1,4 +1,4 @@
-<!-- origem: 656bdb14a75c67d571dae4cc8398473d79d98368 -->
+<!-- origem: 6e8fb9ad525a897abfab4daa4f84ff36a0080f40 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -578,7 +578,7 @@ La v51 reconstruit les mesures après de nouveaux relevés, corrections, suppres
 
 L’ajustement robuste s’arrête seulement lorsque les poids des lectures, les taux et l’échelle du bruit se stabilisent. Le poids des valeurs du registre et l’incertitude utilisent l’échelle finale du bruit.
 
-Les alertes sont triées selon la minute affichée ; en cas d’égalité, par montre et identifiant de l’alerte. Dans les agendas, les événements à la même date et heure sont triés par leur clé.
+Les alertes sont triées selon la minute affichée, et celle qui arrive à échéance maintenant (à moins d’une demi-minute) compte dans la minute du calcul, pour que les secondes ne changent pas l’ordre ; en cas d’égalité, par montre et identifiant de l’alerte. Dans les agendas, les événements à la même date et heure sont triés par leur clé.
 
 La projection conserve la consommation mesurée à son début : le vieillissement d’une mesure pendant la projection ne peut pas faire remonter la charge. Les consultations historiques utilisent toujours la fenêtre de la date demandée. La recherche trouve le premier passage à la limite ou à zéro, par segments de sessions, avec une précision d’une minute. Un futur sans données n’est pas présenté comme une autonomie supérieure à un an.
 

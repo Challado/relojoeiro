@@ -447,17 +447,19 @@ set_exception_handler(function ($t) use ($formato) {
 });
 
 // Os avisos de todos os relógios agora (o recurso=avisos e o relatório Avisos), do mais urgente (ou mais atrasado) para o
-// mais distante. A ordem usa o minuto exibido e, no empate, o relógio e o identificador, como no motor.
+// mais distante. A ordem usa o minuto exibido (o que vence agora, no minuto do cálculo) e, no empate, o relógio e o identificador, como no motor.
 function avisos_de_agora()
 {
     $todos = [];
+    $agora = time();
     foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
-        foreach (avisos_do_relogio($r, time()) as $a) {
+        foreach (avisos_do_relogio($r, $agora) as $a) {
             $todos[] = array_merge(["relogio_id" => (int)$r["id"], "relogio" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1], $a);
         }
     }
-    usort($todos, function ($x, $y) {
-        return [aviso_ordem($x["falta_dias"], $x["data"]), $x["relogio_id"], $x["identificador"]] <=> [aviso_ordem($y["falta_dias"], $y["data"]), $y["relogio_id"], $y["identificador"]];
+    usort($todos, function ($x, $y) use ($agora) {
+        return [aviso_ordem($x["falta_dias"], $x["data"], $agora), $x["relogio_id"], $x["identificador"]]
+            <=> [aviso_ordem($y["falta_dias"], $y["data"], $agora), $y["relogio_id"], $y["identificador"]];
     });
     return $todos;
 }

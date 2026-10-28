@@ -4029,15 +4029,21 @@ function avisos_do_relogio($r, $momento, $so = null)
         }
     }
     // o desempate (dois avisos vencendo no mesmo instante) é fixo, para a lista sair igual em qualquer banco
-    usort($res, function ($x, $y) {
-        return [aviso_ordem($x["falta_dias"], $x["data"]), $x["identificador"]] <=> [aviso_ordem($y["falta_dias"], $y["data"]), $y["identificador"]];
+    usort($res, function ($x, $y) use ($momento) {
+        return [aviso_ordem($x["falta_dias"], $x["data"], $momento), $x["identificador"]] <=> [aviso_ordem($y["falta_dias"], $y["data"], $momento), $y["identificador"]];
     });
     return $res;
 }
 
-// A ordem de um aviso segue o minuto exibido; os identificadores desempatam. Sem data, usa o tempo restante.
-function aviso_ordem($falta, $data = null)
+// A ordem de um aviso segue o minuto exibido; os identificadores desempatam. Sem data, usa o tempo restante. O que vence
+// agora (a menos de meio minuto, para lá ou para cá: o texto diz "agora") conta no minuto do cálculo ($momento, na hora
+// local, como a data do aviso): senão, um aviso gravado no segundo 59 e outro previsto para o segundo seguinte caíam em
+// minutos diferentes e trocavam de ordem conforme o segundo em que a lista foi calculada
+function aviso_ordem($falta, $data = null, $momento = null)
 {
+    if ($momento !== null && duracao_texto((float)$falta) === "") {
+        return gmdate("Y-m-d H:i", (int)round(dias_de($momento) * 86400));
+    }
     // As listas mostram data e hora até os minutos; no mesmo minuto, os identificadores desempatam.
     if ($data !== null) {
         return substr($data, 0, 16);
@@ -8604,15 +8610,19 @@ function visao_relogio($r, $agora)
 function avisos_de_hoje()
 {
     $lista = [];
+    $agora = time();
     foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY nome") as $r) {
-        foreach (avisos_do_relogio($r, time()) as $a) {
+        foreach (avisos_do_relogio($r, $agora) as $a) {
             if ($a["estado"] !== "ok") {
                 $lista[] = [$r, $a];
             }
         }
     }
     // o desempate (dois relógios vencendo no mesmo instante) é fixo, para a lista sair igual em qualquer banco
-    usort($lista, function ($x, $y) { return [aviso_ordem($x[1]["falta_dias"], $x[1]["data"]), (int)$x[0]["id"], $x[1]["identificador"]] <=> [aviso_ordem($y[1]["falta_dias"], $y[1]["data"]), (int)$y[0]["id"], $y[1]["identificador"]]; });
+    usort($lista, function ($x, $y) use ($agora) {
+        return [aviso_ordem($x[1]["falta_dias"], $x[1]["data"], $agora), (int)$x[0]["id"], $x[1]["identificador"]]
+            <=> [aviso_ordem($y[1]["falta_dias"], $y[1]["data"], $agora), (int)$y[0]["id"], $y[1]["identificador"]];
+    });
     return $lista;
 }
 

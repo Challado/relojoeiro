@@ -618,7 +618,7 @@ v51 rebuilds measurements after new readings, corrections, deletions and session
 
 The robust fit stops only when reading weights, rates and the noise scale stabilize. The contribution of registered values and the uncertainty use the final noise scale.
 
-Warnings are sorted by the displayed minute; ties use the watch and warning identifier. Calendar events on the same date and time are sorted by event key.
+Warnings are sorted by the displayed minute, and one due now (within half a minute) counts in the minute of the calculation, so the seconds do not change the order; ties use the watch and warning identifier. Calendar events on the same date and time are sorted by event key.
 
 The projection keeps measured drain from its starting instant: measurements aging during projection cannot make the battery regain charge. Historical queries still use the window of the date queried. The search finds the first crossing of the limit or zero in session segments, with precision within one minute. Missing future data is not presented as battery life exceeding one year.
 
