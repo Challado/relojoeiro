@@ -1,4 +1,4 @@
-<!-- origem: 306209a9a45c84316aaf2feef1945e048a06e706 -->
+<!-- origem: 656bdb14a75c67d571dae4cc8398473d79d98368 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -448,7 +448,7 @@ again as far as the mode's days allow (the 30-day mode goes up to the 30th, coun
 
 A reading that continues to fall can measure drain even above the estimate: the difference helps correct the model. If charging occurred without a recorded session, use medir=0 to exclude the interval from calibration.
 
-The lancamento/medicao_criar action, with lancamento_id of the recorded reading, restores a missing measurement: it requires an earlier reading, at least one hour between them, no increase in charge and no session other than wrist use. It preserves readings and any existing measurement, including excluded ones; id in the response identifies the measurement.
+The lancamento/medicao_criar action, with lancamento_id of the recorded reading, restores a missing measurement: it requires a previous reading at a different time, no charge increase and no session other than wrist use. It preserves readings, existing measurement ids and their usada choice; it rebuilds derived data and validity. In the response, id identifies the measurement.
 
 The smartwatch's record says "lasts 5 days". Reality disagrees, and changes as the battery ages. That's why **each charge
 reading you log is compared with the previous one**, and the interval between the two becomes a measurement: how much it
@@ -481,7 +481,7 @@ collection's choice, in Settings*).
 
 **Which measurements enter** is another Settings choice, **Measured drain: count by**: **days** (the measurements of the last
 so many days, 90 by default) or **readings** (the last so many measurements of each kind, in use and at rest, 20 by default).
-With none in the window, the earlier ones enter. It applies to engines 1, 2, 3 and 5 (and to the formula functions without
+With no valid measurements in the window, registered values apply; expired measurements do not return. It applies to engines 1, 2, 3 and 5 (and to the formula functions without
 the N of days).
 
 Between two recharges, the charge drops in a straight line with the time on the wrist and the time stored:
@@ -494,7 +494,7 @@ Consecutive readings, with no recharge in between, form a **stretch**. Each stre
 calculation finds out), and the two consumptions apply to all the stretches. In engine 2, with the readings in the window,
 the system finds **the two consumptions together**: the ones that best explain all the readings. A night between two readings
 (only off the wrist) pins down the consumption stored; the days on the wrist, already knowing that one, pin down the
-consumption in use. Every measurement of 1 hour or more enters, even the one with no drop at all (it says the consumption is
+consumption in use. Every measurement between different times enters, including intervals shorter than one hour, even the one with no drop at all (it says the consumption is
 small). The more readings, the more precise. In engine 3 the same calculation is done twice, once with only the readings in
 use and once with only the ones at rest.
 
@@ -565,6 +565,8 @@ there's no need to touch the record. The record's "Decay in use" and "Decay stor
 ---
 
 ### Discharge forecasts {#a-previsão-de-descarga}
+
+v51 rebuilds measurements after new readings, corrections, deletions and session changes, preserving readings, existing measurement ids and the `usada=0` choice. An interval that becomes ineligible is marked `valida=false` and excluded from calibration; another correction can revalidate it without undoing a manual exclusion. Frequent readings also contribute without overlapping intervals. The days window requires the entire interval inside it; when empty, registered values apply. The `medicao_meia_vida_dias` option (0 to 3650, default 0) reduces data weight by age: after N days, half the weight; 0 disables it. It applies to horas, robusto, marcacao and MEDIDO in formulas; it neither changes recorded charge nor adds another aging loss. Projections keep the calibration from their origin. Accuracy within ±2 points must be measured against later readings; this correction does not certify 80% without validation.
 
 The robust fit stops only when reading weights, rates and the noise scale stabilize. The contribution of registered values and the uncertainty use the final noise scale.
 
@@ -1421,6 +1423,7 @@ each line.
 | **Measured drain: count by** (`medicao_base`) | what enters the measured consumption's calculation: **Days** (`dias`, the measurements of the last so many days) or **Readings** (`leituras`, the last so many measurements of each kind, in use and at rest). Default: days. |
 | **Measured drain: average of the last (days)** (`medicao_janela_dias`) | the measured consumption's window, counting by days: older measurements leave the calculation. From 1 to 3650. Default: 90. |
 | **Measured drain: last readings (of each kind)** (`medicao_janela_leituras`) | the window counting by readings: how many measurements of each kind enter. From 2 to 1000. Default: 20. |
+| **Measured drain: data half-life (days; 0 disables)** (`medicao_meia_vida_dias`) | medicao_meia_vida_dias: 0 to 3650 days; data weight halves after N days; 0 disables it (default). |
 | **Copy of the documents in the database (applies to every watch)** (`documentos_copia`) | for the whole collection: **All files** (`todos`), **No file** (`nenhum`) or empty (*Individual (on the watch or the file)*). It is the first of the three levels of the copy (see [The watch's documents](#os-documentos-do-relógio)). Default: empty. |
 | **System address** (`url_sistema`) | the address that the `{link}` placeholder puts in the messages and in the calendar, and the one of the links in the e-mails, the ICS and the Outlook return. It belongs to the whole system: only the master changes it. Default: empty (the address the page was opened from). |
 | **Next days: show up to** (`proximos_por_pagina`) and **Plan: show up to** (`plano_por_pagina`) | how many days the **Next days** on the Today page and the **Day by day** on the Plan page show at a time (from 1 to 366). Beyond that, the page navigator appears below: **<** (previous), the numbers (the first, the last and up to two on each side of the current one, with … in the gaps) and **>** (next); resting the mouse on it, the tip says *Previous*, *Next* or *Page N*. Default: 7 and 31. |

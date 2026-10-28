@@ -1,4 +1,4 @@
-<!-- origem: 306209a9a45c84316aaf2feef1945e048a06e706 -->
+<!-- origem: 656bdb14a75c67d571dae4cc8398473d79d98368 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -442,7 +442,7 @@ días del modo dejan (el modo de 30 días va hasta el 30.º, contado desde hoy).
 
 Una lectura que sigue bajando puede medir el gasto aunque supere la estimación: la diferencia ayuda a corregir el modelo. Si hubo carga sin una sesión registrada, use medir=0 para no usar el intervalo en la calibración.
 
-La acción lancamento/medicao_criar, con el lancamento_id de la lectura guardada, recupera una medición ausente: exige una lectura anterior, al menos una hora de intervalo, carga sin aumento y ninguna sesión aparte del uso en la muñeca. Conserva las lecturas y cualquier medición existente, incluso las excluidas; en la respuesta, id identifica la medición.
+La acción lancamento/medicao_criar, con lancamento_id de la lectura guardada, recupera una medición ausente: exige una lectura anterior en otro instante, carga sin aumento y ninguna sesión aparte del uso en la muñeca. Conserva las lecturas, los ids de las mediciones existentes y su opción usada; recalcula los datos derivados y su validez. En la respuesta, id identifica la medición.
 
 La ficha del smartwatch dice "dura 5 días". La realidad discrepa, y cambia conforme la batería envejece. Por eso, **cada
 lectura de carga que usted lanza se compara con la anterior**, y el intervalo entre las dos se vuelve una medición: cuánto
@@ -475,7 +475,7 @@ la colección, en la Configuración*).
 
 **Qué mediciones entran** es otra elección de la Configuración, **Gasto medido: contar por**: **días** (las mediciones de los
 últimos tantos días, 90 por defecto) o **lecturas** (las últimas tantas mediciones de cada tipo, en uso y en reposo, 20 por
-defecto). Sin ninguna en la ventana, entran las de antes. Vale para los motores 1, 2, 3 y 5 (y para las funciones de las
+defecto). Sin mediciones válidas en la ventana, valen los datos registrados; las mediciones vencidas no vuelven. Vale para los motores 1, 2, 3 y 5 (y para las funciones de las
 fórmulas sin el N de días).
 
 Entre dos recargas, la carga cae en línea recta con el tiempo en la muñeca y el tiempo guardado:
@@ -487,8 +487,7 @@ lectura = carga del comienzo − consumo en uso × días de uso − consumo guar
 Lecturas seguidas, sin recarga en medio, forman un **tramo**. Cada tramo tiene la carga de su comienzo (que la cuenta
 descubre), y los dos consumos valen para todos los tramos. En el motor 2, con las lecturas de la ventana, el sistema halla
 **los dos consumos juntos**: los que mejor explican todas las lecturas. Una noche entre dos lecturas (solo fuera de la muñeca)
-ajusta el consumo guardado; los días en la muñeca, sabiendo ya ese, ajustan el consumo en uso. Entra toda medición de 1 hora o
-más, hasta la sin caída ninguna (dice que el consumo es pequeño). Cuantas más lecturas, más preciso. En el motor 3 la misma
+ajusta el consumo guardado; los días en la muñeca, sabiendo ya ese, ajustan el consumo en uso. Entra toda medición entre instantes diferentes, incluso con menos de una hora, hasta la sin caída ninguna (dice que el consumo es pequeño). Cuantas más lecturas, más preciso. En el motor 3 la misma
 cuenta se hace dos veces, una solo con las lecturas en uso y otra solo con las en reposo.
 
 La cuenta robusta (los motores 2 y 3) tiene tres cuidados, cada uno con un motivo:
@@ -558,6 +557,8 @@ en el motor 4).
 ---
 
 ### La previsión de descarga {#a-previsão-de-descarga}
+
+La v51 reconstruye las mediciones tras nuevas lecturas, correcciones, eliminaciones y cambios de sesiones, conservando las lecturas, los ids de las mediciones existentes y la opción `usada=0`. Un intervalo que deja de ser elegible queda con `valida=false`, fuera de la calibración; otra corrección puede revalidarlo sin deshacer una exclusión manual. Las lecturas frecuentes también contribuyen, sin intervalos superpuestos. La ventana por días exige el intervalo completo dentro de ella; vacía, valen los datos registrados. La opción `medicao_meia_vida_dias` (0 a 3650, predeterminado 0) reduce el peso por edad: tras N días, la mitad del peso; 0 desactiva. Se aplica a horas, robusto, marcacao y MEDIDO en las fórmulas; no cambia la carga informada ni añade otra pérdida por envejecimiento. La proyección mantiene la calibración de su origen. La precisión de ±2 puntos debe medirse con lecturas posteriores; la corrección no certifica un 80% sin validación.
 
 El ajuste robusto solo termina cuando se estabilizan los pesos de las lecturas, las tasas y la escala del ruido. El peso del registro y la incertidumbre usan la escala final del ruido.
 
@@ -1414,6 +1415,7 @@ colección nueva va al final de cada línea.
 | **Gasto medido: contar por** (`medicao_base`) | lo que entra en la cuenta del consumo medido: **Días** (`dias`, las mediciones de los últimos tantos días) o **Lecturas** (`leituras`, las últimas tantas mediciones de cada tipo, en uso y en reposo). Predeterminado: días. |
 | **Gasto medido: media de los últimos (días)** (`medicao_janela_dias`) | la ventana del consumo medido, contando por días: las mediciones más antiguas salen de la cuenta. De 1 a 3650. Predeterminado: 90. |
 | **Gasto medido: últimas lecturas (de cada tipo)** (`medicao_janela_leituras`) | la ventana contando por lecturas: cuántas mediciones de cada tipo entran. De 2 a 1000. Predeterminado: 20. |
+| **Consumo medido: semivida de los datos (días; 0 desactiva)** (`medicao_meia_vida_dias`) | medicao_meia_vida_dias: de 0 a 3650 días; el peso de los datos se reduce a la mitad tras N días; 0 desactiva (predeterminado). |
 | **Copia de los documentos en la base (válido para todos los relojes)** (`documentos_copia`) | para toda la colección: **Todos los archivos** (`todos`), **Ningún archivo** (`nenhum`) o vacío (*Individual (en el reloj o en el archivo)*). Es el primero de los tres niveles de la copia (vea [Los documentos del reloj](#os-documentos-do-relógio)). Predeterminado: vacío. |
 | **Dirección del sistema** (`url_sistema`) | la dirección que el marcador `{link}` pone en los mensajes y en el calendario, y la de los enlaces de los correos, del ICS y del retorno de Outlook. Es de todo el sistema: solo el master la cambia. Por defecto: vacía (la dirección por la que se abrió la página). |
 | **Próximos días: mostrar hasta** (`proximos_por_pagina`) y **Plan: mostrar hasta** (`plano_por_pagina`) | cuántos días muestran a la vez los **Próximos días** de la página Hoy y el **Día a día** de la página Plan (de 1 a 366). Pasado eso, aparece el paginador debajo: **<** (anterior), los números (el primero, el último y hasta dos a cada lado del actual, con … en los huecos) y **>** (siguiente); al detener el ratón encima, la ayuda dice *Anterior*, *Siguiente* o *Página N*. Predeterminado: 7 y 31. |

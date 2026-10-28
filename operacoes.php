@@ -2889,10 +2889,10 @@ function op_timegrapher($acao, $d)
 //   lancar (relogio_id, tipo, valor (formato "valor"), quando (AAAA-MM-DD HH:MM; vazio: agora), medir (1 ou 0; padrão 1)):
 //           instantâneo ou com valor. Num tipo que mede o gasto (a leitura de carga), a leitura é comparada com a anterior,
 //           subiu: é recarga (novo ponto de partida, sem medir). Acima da estimativa, mas sem subir, mede normalmente.
-//           Menos de 1 hora: pouco tempo para medir; senão o intervalo é separado em horas no pulso e guardado
+//           Instantes diferentes: o intervalo é separado em horas no pulso e guardado, inclusive abaixo de uma hora
 //           e mede o gasto em uso (com meio dia de uso ou mais) ou guardado. Com medir=1, a medição entra na média (a
 //           caixa "Atualizar o gasto com esta medição"); com 0, fica só no histórico. Leitura com data anterior à última
-//           não mede. estado (uso ou repouso; vazio: não diz): a marcação da leitura, que fica gravada nela e manda: o gasto
+//           reconstrói os intervalos vizinhos. estado (uso ou repouso; vazio: não diz): a marcação da leitura, que fica gravada nela e manda: o gasto
 //           em uso sai só das leituras marcadas em uso, e o gasto em repouso só das marcadas em repouso. Se o pulso
 //           registrado desde a leitura anterior não bate com ela, a API pergunta antes (confirmar: true, com a pergunta);
 //           com confirmar=1, grava como a pessoa marcou.
@@ -2910,453 +2910,435 @@ function op_timegrapher($acao, $d)
 // ---------------------------------------------------------------------------------------------------------------------
 function op_lancamento($acao, $d)
 {
-    $erros = [];
-    $msg = "";
-    $id = (int)($d["id"] ?? 0);
-    $agora = time();
-    // Recupera uma medição ausente sem alterar as leituras nem as medições existentes (inclusive as tiradas da conta).
-    if ($acao === "medicao_criar") {
-        $lid = (int)($d["lancamento_id"] ?? 0);
-        $l = linha("SELECT l.id, l.relogio_id, l.tipo_id, l.inicio, l.valor, t.formato, t.mede_gasto FROM lancamento l
-            JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.id = ?", [$lid]);
-        if (!$l || $l["formato"] !== "valor" || (int)$l["mede_gasto"] !== 1) {
-            return resultado([t("Leitura de carga não encontrada (lancamento_id).")], "");
-        }
-        $existente_m = valor("SELECT id FROM medicao WHERE lancamento_id = ?", [$lid]);
-        if ($existente_m !== null) return resultado([], t("A medição já existe e foi preservada."), ["id" => (int)$existente_m]);
-        $a = linha("SELECT inicio, valor FROM lancamento WHERE relogio_id = ? AND tipo_id = ?
-            AND (inicio < ? OR (inicio = ? AND id < ?)) ORDER BY inicio DESC, id DESC LIMIT 1",
-            [(int)$l["relogio_id"], (int)$l["tipo_id"], $l["inicio"], $l["inicio"], $lid]);
-        $fim_m = strtotime($l["inicio"]); $ini_m = $a ? strtotime($a["inicio"]) : $fim_m;
-        if (!$a || $fim_m > $agora + 60 || $fim_m - $ini_m < 3600 || (float)$l["valor"] > (float)$a["valor"]) {
-            return resultado([t("O intervalo não mede gasto: precisa de leitura anterior, pelo menos uma hora e carga sem aumento.")], "");
-        }
-        if (valor("SELECT l.id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'sessao'
-            AND t.identificador <> 'pulso' AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?) ORDER BY l.inicio DESC, l.id DESC LIMIT 1",
-            [(int)$l["relogio_id"], $l["inicio"], $a["inicio"]]) !== null) {
-            return resultado([t("O intervalo tem outra sessão além do pulso e não mede gasto.")], "");
-        }
-        $r_m = linha("SELECT * FROM relogio WHERE id = ?", [(int)$l["relogio_id"]]);
-        $taxas = [];
-        foreach (["taxa_uso", "taxa_repouso"] as $f_m) {
-            $ctx_m = ["r" => $r_m, "momento" => $fim_m, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio((int)$r_m["id"])];
-            $taxas[$f_m] = isset(formulas_todas()[$f_m]) ? variavel_valor($f_m, $ctx_m) : null;
-        }
-        $m = medicao_do_intervalo((int)$l["relogio_id"], $ini_m, $fim_m, (float)$a["valor"], (float)$l["valor"], $taxas);
-        sql("INSERT INTO medicao (lancamento_id, medida, taxa, de_valor, ate_valor, inicio, fim, horas_pulso, horas_guardado, peso_horas, usada, criado)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())", [$lid, $m["medida"], $m["taxa"], $a["valor"], $l["valor"], $a["inicio"], $l["inicio"],
-                $m["horas_pulso"], $m["horas_guardado"], $m["peso_horas"]]);
-        $mid = ultimo_id();
-        $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
-        return resultado([], t("Medição criada a partir das leituras registradas."), ["id" => $mid]);
-    }
-    // um momento vindo do pedido (AAAA-MM-DD HH:MM, com espaço ou T, como manda o campo de data e hora do navegador): vazio =
-    // agora; false se não é data e hora válidas ou está no futuro
-    $momento = function ($v) use ($agora) {
-        $v = str_replace("T", " ", trim((string)$v));
-        $res = false;
-        if ($v === "") {
-            $res = $agora;
-        } else {
-            $dt = DateTimeImmutable::createFromFormat("!Y-m-d H:i", substr($v, 0, 16));
-            if ($dt && $dt->format("Y-m-d H:i") === substr($v, 0, 16) && $dt->getTimestamp() <= $agora + 60) {
-                $res = $dt->getTimestamp();
+    return banco_atomico(function () use ($acao, $d) {
+        $erros = [];
+        $msg = "";
+        $id = (int)($d["id"] ?? 0);
+        $agora = time();
+        // Recupera uma medição ausente sem alterar as leituras nem as medições existentes (inclusive as tiradas da conta).
+        if ($acao === "medicao_criar") {
+            $lid = (int)($d["lancamento_id"] ?? 0);
+            $l = linha("SELECT l.id, l.relogio_id, l.tipo_id, l.inicio, l.valor, t.formato, t.mede_gasto FROM lancamento l
+                JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.id = ?", [$lid]);
+            if (!$l || $l["formato"] !== "valor" || (int)$l["mede_gasto"] !== 1) {
+                return resultado([t("Leitura de carga não encontrada (lancamento_id).")], "");
             }
+            $existente_m = valor("SELECT id FROM medicao WHERE lancamento_id = ?", [$lid]);
+            sincronizar_medicoes((int)$l["relogio_id"], [$lid], [], strtotime($l["inicio"]));
+            $medicao_m = linha("SELECT id, valida FROM medicao WHERE lancamento_id = ? ORDER BY id LIMIT 1", [$lid]);
+            if (!$medicao_m || (int)$medicao_m["valida"] !== 1) {
+                return resultado([t("O intervalo não mede gasto: precisa de leitura anterior, instantes diferentes, carga sem aumento e nenhuma outra sessão além do pulso.")], "");
+            }
+            return resultado([], $existente_m !== null ? t("A medição já existe e foi preservada.") : t("Medição criada a partir das leituras registradas."), ["id" => (int)$medicao_m["id"]]);
         }
-        return $res;
-    };
-    // uma medição do gasto entra ou sai da conta (usada 1 ou 0), sem apagar nada: ela fica no histórico
-    if ($acao === "medicao") {
-        $m = linha("SELECT m.id, m.usada, l.relogio_id FROM medicao m JOIN lancamento l ON l.id = m.lancamento_id WHERE m.id = ?", [$id]);
-        $usar = (string)($d["usada"] ?? "");
-        if (!$m) {
-            return resultado([t("Medição não encontrada (id).")], "");
-        }
-        if ($usar !== "0" && $usar !== "1") {
-            return resultado([t("Usada: 1 (entra na conta) ou 0 (só no histórico).")], "");
-        }
-        sql("UPDATE medicao SET usada = ? WHERE id = ?", [(int)$usar, $id]);
-        return resultado([], $usar === "1" ? t("A medição voltou para a conta do gasto.") : t("A medição saiu da conta do gasto (fica no histórico)."), ["id" => $id]);
-    }
-    $existente = $id > 0 ? linha("SELECT l.*, t.identificador AS tipo, t.formato, t.exclusiva, t.nome AS tipo_nome FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.id = ?", [$id]) : null;
-    // relogio_id=hoje: o relógio do dia, pelo plano (para um atalho no celular que não sabe o id)
-    $hoje_pedido = !$existente && strtolower(trim((string)($d["relogio_id"] ?? ""))) === "hoje";
-    $p_hoje = $hoje_pedido ? plano_do_dia(date("Y-m-d", $agora)) : null;
-    $rid = $existente ? (int)$existente["relogio_id"] : ($hoje_pedido ? ($p_hoje ? (int)$p_hoje["relogio_id"] : 0) : (int)($d["relogio_id"] ?? 0));
-    $r = linha("SELECT * FROM relogio WHERE id = ?", [$rid]);
-    $t = $existente ? lancamento_tipos()[$existente["tipo"]] : ($r ? (lancamento_tipos_do_relogio($r)[(string)($d["tipo"] ?? "")] ?? null) : null);
-    // as sessões esquecidas abertas do relógio fecham antes (o Pôs de hoje não esbarra na de ontem, nem o Tirou a estica)
-    if ($r) {
-        fechar_esquecidas($agora, $rid);
-    }
-    // alternar: a sessão aberta se fecha, a fechada se abre (um botão só no celular: "pulso", "carregador")
-    if ($acao === "alternar" && $t && $t["formato"] === "sessao") {
-        $acao = valor("SELECT id FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim > ?) LIMIT 1",
-            [$rid, (int)$t["id"], date("Y-m-d H:i:s", $agora), date("Y-m-d H:i:s", $agora)]) !== null ? "encerrar" : "iniciar";
-    }
-    // o lugar fixo: com winder cadastrado, o relógio que tem o lugar dele (winder_lugar) volta para lá ao pôr no winder de
-    // qualquer lugar (o painel, o atalho, o aviso, a API), se a posição está ligada e livre; o período que já passou, sem a
-    // posição, fica no lugar dele. Sem lugar (ou com ele ocupado, ou desligado), pôr no winder só pela página Winders
-    $lugar_auto = null;
-    $lugar_motivo = null;
-    if ($r && $t && (int)($t["winder"] ?? 0) === 1 && in_array($acao, ["iniciar", "periodo"], true) && ($d["pela_pagina_winders"] ?? false) !== true && winder_cadastrado()) {
-        $lg = winder_lugar_do_relogio($rid);
-        if ($lg && ((int)($d["posicao_id"] ?? 0) <= 0 || (int)$d["posicao_id"] === (int)$lg["id"])) {
-            $oc_lg = $acao === "iniciar" ? winder_posicao_ocupante((int)$lg["id"], $agora) : null;
-            if ($acao === "iniciar" && (int)$lg["ligada"] !== 1) {
-                $lugar_motivo = t("o lugar dele ({1}, {2}) está desligado", [1 => $lg["winder"], 2 => $lg["nome"]]);
-            } elseif ($oc_lg && (int)$oc_lg["relogio_id"] !== $rid) {
-                $lugar_motivo = t("o lugar dele ({1}, {2}) está com o {3}", [1 => $lg["winder"], 2 => $lg["nome"], 3 => $oc_lg["nome"]]);
+        // um momento vindo do pedido (AAAA-MM-DD HH:MM, com espaço ou T, como manda o campo de data e hora do navegador): vazio =
+        // agora; false se não é data e hora válidas ou está no futuro
+        $momento = function ($v) use ($agora) {
+            $v = str_replace("T", " ", trim((string)$v));
+            $res = false;
+            if ($v === "") {
+                $res = $agora;
             } else {
-                $d["posicao_id"] = (int)$lg["id"];
-                $d["pela_pagina_winders"] = $acao === "iniciar" ? true : ($d["pela_pagina_winders"] ?? false);
-                $lugar_auto = t("{1}, {2}", [1 => $lg["winder"], 2 => $lg["nome"]]);
-            }
-        }
-    }
-    // a posição de winder do pedido (posicao_id; vazio ou 0: nenhuma) para o trecho [a, b) (b null: aberta): só num tipo marcado
-    // como winder; tem de existir, estar ligada (ao abrir uma sessão agora) e sem outro relógio nesse trecho. [posição, erro]
-    $posicao_conferir = function ($a, $b, $abrir) use ($d, $t, $rid) {
-        $pid = (int)($d["posicao_id"] ?? 0);
-        if ($pid <= 0 || !$t) {
-            return [null, null];
-        }
-        if ((int)($t["winder"] ?? 0) !== 1) {
-            return [null, t("{1} não é numa posição de winder: a posição vale só nos tipos marcados como winder (Cadastros › Tipos de lançamento).", [1 => $t["nome"]])];
-        }
-        $pos = linha("SELECT p.*, w.nome AS winder FROM winder_posicao p JOIN winder w ON w.id = p.winder_id WHERE p.id = ?", [$pid]);
-        if (!$pos) {
-            return [null, t("Posição de winder não encontrada (posicao_id).")];
-        }
-        $texto = t("{1}, {2}", [1 => $pos["winder"], 2 => $pos["nome"]]);
-        if ($abrir && (int)$pos["ligada"] !== 1) {
-            return [null, t("A posição {1} está desligada.", [1 => $texto])];
-        }
-        $outro = linha("SELECT r.nome FROM lancamento_winder lw JOIN lancamento l ON l.id = lw.lancamento_id JOIN relogio r ON r.id = l.relogio_id
-            WHERE lw.posicao_id = ? AND l.relogio_id <> ? AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?) LIMIT 1", [$pid, $rid, $b === null ? "9999-12-31 00:00:00" : date("Y-m-d H:i:s", $b), date("Y-m-d H:i:s", $a)]);
-        if ($outro) {
-            return [null, t("A posição {1} já está com o {2} nesse tempo.", [1 => $texto, 2 => $outro["nome"]])];
-        }
-        return [$pos + ["texto" => $texto], null];
-    };
-    // grava a posição de winder de um lançamento (a do pedido; 0: tira a que havia)
-    $posicao_gravar = function ($lid) use ($d) {
-        sql("DELETE FROM lancamento_winder WHERE lancamento_id = ?", [(int)$lid]);
-        if ((int)($d["posicao_id"] ?? 0) > 0) {
-            sql("INSERT INTO lancamento_winder (lancamento_id, posicao_id) VALUES (?, ?)", [(int)$lid, (int)$d["posicao_id"]]);
-        }
-    };
-    // sessões exclusivas do relógio que se sobrepõem a [a, b) (fora a $ignorar)
-    $sobrepostas = function ($a, $b, $ignorar) use ($rid) {
-        return linhas("SELECT l.id, l.tipo_id, t.nome, l.inicio, l.fim FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
-            WHERE l.relogio_id = ? AND t.exclusiva = 1 AND l.id <> ? AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?)",
-            [$rid, $ignorar, date("Y-m-d H:i:s", $b), date("Y-m-d H:i:s", $a)]);
-    };
-    if (($acao === "alterar" || $acao === "excluir") && !$existente) {
-        $erros[] = t("Lançamento não encontrado.");
-    } elseif ($hoje_pedido && !$p_hoje) {
-        $erros[] = t("Nenhum relógio para hoje no plano (relogio_id=hoje).");
-    } elseif (!$r) {
-        $erros[] = t("Relógio não encontrado (relogio_id).");
-    } elseif (!$t) {
-        $erros[] = t("Tipo de lançamento desconhecido para {1}: use um destes: {2}.", [1 => $r["nome"], 2 => implode(", ", array_keys(lancamento_tipos_do_relogio($r)))]);
-    } elseif ((int)($t["winder"] ?? 0) === 1 && in_array($acao, ["iniciar", "periodo"], true) && !winder_cadastrado()) {
-        // o winder é obrigatório: sem winder cadastrado, não há pôr no winder (nem pelo alternar, que aqui já virou iniciar);
-        // o tirar de uma sessão que já estava aberta continua
-        $erros[] = t("{1}: sem winder cadastrado, não há pôr no winder. Cadastre o seu na página Winders (recurso=winders).", [1 => $r["nome"]]);
-    } elseif ((int)($t["winder"] ?? 0) === 1 && $acao === "iniciar" && ($d["pela_pagina_winders"] ?? false) !== true) {
-        // com winder cadastrado, o relógio vai para o winder só pela página Winders, numa posição: o winder_posicoes salvar com
-        // relogio_id chama este iniciar com pela_pagina_winders (só por dentro: o que vem do pedido é texto, nunca true)
-        $erros[] = $lugar_motivo !== null
-            ? t("{1}: {2}; ponha pela página Winders, numa posição (recurso=winder_posicoes, acao=salvar, com o relogio_id).", [1 => $r["nome"], 2 => $lugar_motivo])
-            : t("{1}: com winder cadastrado, o relógio vai para o winder pela página Winders, numa posição (recurso=winder_posicoes, acao=salvar, com o relogio_id); depois, de qualquer lugar, ele volta para o lugar dele.", [1 => $r["nome"]]);
-    } elseif ((int)($t["winder"] ?? 0) === 1 && $acao === "periodo" && (int)($d["posicao_id"] ?? 0) <= 0) {
-        $erros[] = t("{1}: com winder cadastrado, o período no winder precisa da posição onde ele esteve (posicao_id).", [1 => $r["nome"]]);
-    } elseif ($acao === "alternar") {
-        $erros[] = t("{1} não é uma sessão: alternar vale só para as sessões (abre a fechada, fecha a aberta).", [1 => $t["nome"]]);
-    } elseif ($acao === "lancar") {
-        $q = $momento($d["quando"] ?? "");
-        $v = numero_br($d["valor"] ?? "");
-        $estado = strtolower(trim((string)($d["estado"] ?? "")));
-        $pulso_t = lancamento_tipos_do_relogio($r)["pulso"] ?? null;
-        // a leitura do desvio da hora: o desvio direto (valor, em segundos) ou a hora que o relógio mostrava (marca) no instante
-        // da leitura (instante_ms, o da hora certa na tela; sem ele, agora); a posição em que ele ficou desde a anterior
-        $marcha_t = $t["marcha"] ?? null;
-        $posicao = strtolower(trim((string)($d["posicao"] ?? "")));
-        $marca_ok = true;
-        if ($marcha_t === "desvio" && trim((string)($d["marca"] ?? "")) !== "") {
-            [$v_m, $q_m] = desvio_da_marca((string)$d["marca"], (string)($d["instante_ms"] ?? ""), $agora);
-            $marca_ok = $v_m !== null;
-            if ($marca_ok) {
-                $v = $v_m;
-                $q = $q_m;
-            }
-        }
-        if ($t["formato"] === "sessao") {
-            $erros[] = t("{1} é uma sessão: use iniciar e encerrar, ou periodo.", [1 => $t["nome"]]);
-        } elseif ($q === false) {
-            $erros[] = t("Quando: AAAA-MM-DD HH:MM, até agora (vazio: agora).");
-        } elseif (!$marca_ok) {
-            $erros[] = t("Marca: a hora que o relógio mostra, HH:MM:SS (o instante da leitura vai em instante_ms, em milissegundos, de até 10 minutos atrás; sem ele, agora).");
-        } elseif ($t["formato"] === "valor" && $v === null) {
-            $erros[] = t("{1} precisa de um valor (número{2}).", [1 => $t["nome"], 2 => $t["unidade"] !== "" ? ", em " . $t["unidade"] : ""]);
-        } elseif ($marcha_t === "desvio" && abs($v) > 21600) {
-            $erros[] = t("O desvio vai até 6 horas para mais ou para menos (em segundos; + adiantado, − atrasado).");
-        } elseif ($posicao !== "" && ($marcha_t !== "desvio" || !isset(posicoes_marcha()[$posicao]))) {
-            $erros[] = t("Posição ({1}) vale só para a leitura do desvio da hora.", [1 => implode(", ", array_keys(posicoes_marcha()))]);
-        } elseif ($estado !== "" && !in_array($estado, ["uso", "repouso"], true)) {
-            $erros[] = t("Estado: uso ou repouso (vazio: não diz).");
-        } elseif ($estado !== "" && ($t["formato"] !== "valor" || $pulso_t === null)) {
-            $erros[] = t("Estado (uso ou repouso) vale só para uma leitura, num relógio que vai ao pulso.");
-        } elseif ($estado !== "" && (string)($d["confirmar"] ?? "") !== "1" && ($pergunta = estado_leitura_confere($rid, $q, $estado)) !== null) {
-            // a marcação não bate com o pulso registrado: a pessoa confirma (confirmar=1) e vale o que ela marcou
-            return resultado([$pergunta], "", ["confirmar" => true, "pergunta" => $pergunta]);
-        } else {
-            // o gasto medido: a leitura de antes (do mesmo tipo), a estimativa e os gastos que valiam, tudo antes de gravar esta
-            $mede = $t["formato"] === "valor" && (int)($t["mede_gasto"] ?? 0) === 1
-                && valor("SELECT id FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio > ?", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q)]) === null;
-            $antes = $mede ? linha("SELECT inicio, valor FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? ORDER BY inicio DESC, id DESC LIMIT 1",
-                [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q)]) : null;
-            $conta = [];
-            if ($antes) {
-                $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
-                foreach (["energia", "taxa_uso", "taxa_repouso"] as $f) {
-                    $c = ["r" => $r, "momento" => $q, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio($rid)];
-                    $conta[$f] = isset(formulas_todas()[$f]) ? variavel_valor($f, $c) : null;
+                $dt = DateTimeImmutable::createFromFormat("!Y-m-d H:i", substr($v, 0, 16));
+                if ($dt && $dt->format("Y-m-d H:i") === substr($v, 0, 16) && $dt->getTimestamp() <= $agora + 60) {
+                    $res = $dt->getTimestamp();
                 }
             }
-            sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, estado, posicao, origem, criado) VALUES (?, ?, ?, NULL, ?, ?, ?, 'manual', NOW())",
-                [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), $t["formato"] === "valor" ? $v : null, $estado !== "" ? $estado : null, $posicao !== "" ? $posicao : null]);
-            $id = ultimo_id();
+            return $res;
+        };
+        // uma medição do gasto entra ou sai da conta (usada 1 ou 0), sem apagar nada: ela fica no histórico
+        if ($acao === "medicao") {
+            $m = linha("SELECT m.id, m.usada, l.relogio_id FROM medicao m JOIN lancamento l ON l.id = m.lancamento_id WHERE m.id = ?", [$id]);
+            $usar = (string)($d["usada"] ?? "");
+            if (!$m) {
+                return resultado([t("Medição não encontrada (id).")], "");
+            }
+            if ($usar !== "0" && $usar !== "1") {
+                return resultado([t("Usada: 1 (entra na conta) ou 0 (só no histórico).")], "");
+            }
+            sql("UPDATE medicao SET usada = ? WHERE id = ?", [(int)$usar, $id]);
             $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
-            $msg = t("Lançado no {1}: {2}{3}{4}.", [1 => $r["nome"], 2 => $t["nome"], 3 => $t["formato"] === "valor" ? " " . decimal_txt($v, 6) . ($t["unidade"] !== "" ? " " . $t["unidade"] : "") : "", 4 => $q < $agora - 60 ? " em " . data_txt($q, true) : ""]);
-            if ($marcha_t !== null) {
-                $msg .= precisao_recado($rid, $id, $marcha_t);
-            }
-            if ($mede && !$antes) {
-                $msg .= t(" Primeira leitura: é o ponto de partida.");
-            } elseif ($antes) {
-                $t1 = strtotime($antes["inicio"]);
-                $horas = ($q - $t1) / 3600;
-                $anterior = (float)$antes["valor"];
-                $queda = $anterior - $v;
-                $estimada = is_numeric($conta["energia"]) ? (float)$conta["energia"] : null;
-                $un = $t["unidade"];
-                $de = t("De {1}{2} em {3} a {4}{5}{6}", [1 => decimal_txt($anterior, 6), 2 => $un, 3 => data_txt($t1, true, true), 4 => decimal_txt($v, 6), 5 => $un, 6 => $q < $agora - 60 ? t(" em {1}", [1 => data_txt($q, true, true)]) : t(" agora")]);
-                $pela_estimativa = $estimada === null ? "" : t(" A estimativa era ~{1}{2}.", [1 => (int)round($estimada), 2 => $un]);
-                if ($queda < 0) {
-                    $msg .= t(" Carregado: a leitura anterior era {1}{2}{3}. Novo ponto de partida.", [1 => decimal_txt($anterior, 6), 2 => $un, 3 => $estimada === null ? "" : " e a estimativa ~" . (int)round($estimada) . $un]);
-                } elseif (($outra = valor("SELECT t.nome FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'sessao'
-                    AND t.identificador <> 'pulso' AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?) ORDER BY l.inicio DESC, l.id DESC LIMIT 1",
-                    [$rid, date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $t1)])) !== null) {
-                    // o gasto medido conta só pulso e guardado: com outra sessão no meio (o carregador), o intervalo não mede
-                    $msg .= t(" {1}: teve {2} no meio. Novo ponto de partida, sem medir o gasto deste intervalo.{3}", [1 => $de, 2 => $outra, 3 => $pela_estimativa]);
-                } elseif ($horas < 1) {
-                    $msg .= t(" {1}: menos de 1 hora desde a leitura anterior, pouco tempo para medir o gasto.{2}", [1 => $de, 2 => $pela_estimativa]);
+            return resultado([], $usar === "1" ? t("A medição voltou para a conta do gasto.") : t("A medição saiu da conta do gasto (fica no histórico)."), ["id" => $id]);
+        }
+        $existente = $id > 0 ? linha("SELECT l.*, t.identificador AS tipo, t.formato, t.exclusiva, t.nome AS tipo_nome FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.id = ?", [$id]) : null;
+        // relogio_id=hoje: o relógio do dia, pelo plano (para um atalho no celular que não sabe o id)
+        $hoje_pedido = !$existente && strtolower(trim((string)($d["relogio_id"] ?? ""))) === "hoje";
+        $p_hoje = $hoje_pedido ? plano_do_dia(date("Y-m-d", $agora)) : null;
+        $rid = $existente ? (int)$existente["relogio_id"] : ($hoje_pedido ? ($p_hoje ? (int)$p_hoje["relogio_id"] : 0) : (int)($d["relogio_id"] ?? 0));
+        $r = linha("SELECT * FROM relogio WHERE id = ?", [$rid]);
+        $t = $existente ? lancamento_tipos()[$existente["tipo"]] : ($r ? (lancamento_tipos_do_relogio($r)[(string)($d["tipo"] ?? "")] ?? null) : null);
+        // as sessões esquecidas abertas do relógio fecham antes (o Pôs de hoje não esbarra na de ontem, nem o Tirou a estica)
+        if ($r) {
+            fechar_esquecidas($agora, $rid);
+        }
+        // alternar: a sessão aberta se fecha, a fechada se abre (um botão só no celular: "pulso", "carregador")
+        if ($acao === "alternar" && $t && $t["formato"] === "sessao") {
+            $acao = valor("SELECT id FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim > ?) LIMIT 1",
+                [$rid, (int)$t["id"], date("Y-m-d H:i:s", $agora), date("Y-m-d H:i:s", $agora)]) !== null ? "encerrar" : "iniciar";
+        }
+        // o lugar fixo: com winder cadastrado, o relógio que tem o lugar dele (winder_lugar) volta para lá ao pôr no winder de
+        // qualquer lugar (o painel, o atalho, o aviso, a API), se a posição está ligada e livre; o período que já passou, sem a
+        // posição, fica no lugar dele. Sem lugar (ou com ele ocupado, ou desligado), pôr no winder só pela página Winders
+        $lugar_auto = null;
+        $lugar_motivo = null;
+        if ($r && $t && (int)($t["winder"] ?? 0) === 1 && in_array($acao, ["iniciar", "periodo"], true) && ($d["pela_pagina_winders"] ?? false) !== true && winder_cadastrado()) {
+            $lg = winder_lugar_do_relogio($rid);
+            if ($lg && ((int)($d["posicao_id"] ?? 0) <= 0 || (int)$d["posicao_id"] === (int)$lg["id"])) {
+                $oc_lg = $acao === "iniciar" ? winder_posicao_ocupante((int)$lg["id"], $agora) : null;
+                if ($acao === "iniciar" && (int)$lg["ligada"] !== 1) {
+                    $lugar_motivo = t("o lugar dele ({1}, {2}) está desligado", [1 => $lg["winder"], 2 => $lg["nome"]]);
+                } elseif ($oc_lg && (int)$oc_lg["relogio_id"] !== $rid) {
+                    $lugar_motivo = t("o lugar dele ({1}, {2}) está com o {3}", [1 => $lg["winder"], 2 => $lg["nome"], 3 => $oc_lg["nome"]]);
                 } else {
-                    // as horas no pulso entre as duas leituras
-                    $medicao = medicao_do_intervalo($rid, $t1, $q, $anterior, $v, $conta);
-                    $h_pulso = $medicao["horas_pulso"];
-                    $h_guardado = $medicao["horas_guardado"];
-                    $tempo = t("{1}{2} h fora do pulso", [1 => $h_pulso >= 1 ? t("{1} h no pulso e ", [1 => (int)round($h_pulso)]) : "", 2 => (int)round($h_guardado)]);
-                    // todo intervalo entra na conta dos dois gastos (gasto_medido), até o sem queda nenhuma: ele diz que o gasto é
-                    // pequeno. O gasto do intervalo sozinho fica no histórico: com pelo menos meio dia de uso, ou mais dias de uso que
-                    // fora do pulso, o de uso (descontando o fora do pulso que valia); senão, o de fora (descontando o pouco de uso)
-                    $medida = $medicao["medida"];
-                    $taxa = $medicao["taxa"];
-                    $usada = !array_key_exists("medir", $d) || (string)$d["medir"] === "1";
-                    sql("INSERT INTO medicao (lancamento_id, medida, taxa, de_valor, ate_valor, inicio, fim, horas_pulso, horas_guardado, peso_horas, usada, criado)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())", [$id, $medida, $taxa, $anterior, $v, date("Y-m-d H:i:s", $t1), date("Y-m-d H:i:s", $q),
-                        round($h_pulso, 2), round($h_guardado, 2), round($medida === "uso" ? $h_pulso : $h_guardado, 2), $usada ? 1 : 0]);
-                    $id_med = ultimo_id();
-                    $msg .= " " . $de . ": " . $tempo . "." . $pela_estimativa;
-                    if ($usada) {
-                        // os dois gastos que passam a valer, com esta medição junto (a mesma conta da função MEDIDO)
-                        $motor_l = gasto_motor_de($r)[0];
-                        $g = gasto_medido(medicoes_da_conta($rid)[0], $q, gasto_prior($r, $q), $motor_l === "formulas" ? "marcacao" : $motor_l);
-                        $num = function ($x) { return decimal_txt(round((float)$x, 2), 6); };
-                        $partes = [];
-                        if ($g["uso"] !== null) {
-                            $partes[] = t("em uso {1}% (± {2}) por dia de uso", [1 => $num($g["uso"]), 2 => $num($g["uso_dp"])]);
-                        }
-                        if ($g["repouso"] !== null) {
-                            $partes[] = t("fora do pulso {1}% (± {2}) por dia", [1 => $num($g["repouso"]), 2 => $num($g["repouso_dp"])]);
-                        }
-                        $msg .= t(" Gasto medido agora{1} ({2}{3}{4} {5}).", [1 => count($partes) > 0 ? ": " . implode(", ", $partes) : t(": ainda sem como separar"), 2 => $g["conjunta"] ? t("os dois juntos, de ") : "", 3 => $g["n"], 4 => $g["n"] === 1 ? t(" medição") : t(" medições"), 5 => medicoes_janela_texto()]);
-                        // uma leitura desta medição não bate com as outras: ela pesa pouco na conta (a tabela Medições do gasto diz)
-                        if (in_array($id_med, $g["fora"], true)) {
-                            $msg .= t(" A leitura de {1}% não bate com as outras (a conta erra {2} pontos nela): pesa só {3}% na conta. Confira as marcações do intervalo (o pulso, o carregador) e a leitura.",
-                                [1 => decimal_txt((float)$g["leitura"][$id_med], 6), 2 => decimal_txt(abs((float)$g["erro"][$id_med]), 6), 3 => (int)round(100 * (float)$g["peso"][$id_med])]);
-                        }
-                    } else {
-                        $msg .= t(" Entrou só no histórico.");
-                    }
+                    $d["posicao_id"] = (int)$lg["id"];
+                    $d["pela_pagina_winders"] = $acao === "iniciar" ? true : ($d["pela_pagina_winders"] ?? false);
+                    $lugar_auto = t("{1}, {2}", [1 => $lg["winder"], 2 => $lg["nome"]]);
                 }
             }
         }
-    } elseif ($acao === "iniciar") {
-        $q = $momento($d["quando"] ?? "");
-        if ($t["formato"] !== "sessao") {
-            $erros[] = t("{1} não é uma sessão: use lancar.", [1 => $t["nome"]]);
-        } elseif ($q === false) {
-            $erros[] = t("Quando: AAAA-MM-DD HH:MM, até agora (vazio: agora).");
-        } elseif (valor("SELECT id FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim > ?)", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $q)]) !== null) {
-            $erros[] = t("{1} já está com {2} aberto.", [1 => $r["nome"], 2 => $t["nome"]]);
-        } else {
-            $fechadas = [];
-            [$pos_w, $erro_w] = $posicao_conferir($q, null, true);
-            if ($erro_w !== null) {
-                $erros[] = $erro_w;
+        // a posição de winder do pedido (posicao_id; vazio ou 0: nenhuma) para o trecho [a, b) (b null: aberta): só num tipo marcado
+        // como winder; tem de existir, estar ligada (ao abrir uma sessão agora) e sem outro relógio nesse trecho. [posição, erro]
+        $posicao_conferir = function ($a, $b, $abrir) use ($d, $t, $rid) {
+            $pid = (int)($d["posicao_id"] ?? 0);
+            if ($pid <= 0 || !$t) {
+                return [null, null];
             }
-            if (count($erros) === 0 && (int)$t["exclusiva"] === 1) {
-                // primeiro a conferência, sem mexer em nada: nesse instante, o relógio não pode estar numa sessão exclusiva
-                // já fechada (um período lançado antes) nem numa aberta que começou depois dele
-                $conflito = linha("SELECT t.nome, l.inicio, l.fim FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
-                    WHERE l.relogio_id = ? AND t.exclusiva = 1 AND l.inicio > ? AND l.inicio <= ? LIMIT 1",
-                    [$rid, date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $agora)]);
-                if ($conflito) {
-                    $erros[] = t("Nesse momento {1} já estava em {2} (de {3} a {4}): o relógio fica num lugar só.", [1 => $r["nome"], 2 => $conflito["nome"], 3 => data_txt(strtotime($conflito["inicio"]), true, true), 4 => $conflito["fim"] === null ? "agora" : data_txt(strtotime($conflito["fim"]), true, true)]);
-                } else {
-                    // o relógio num lugar só: a exclusiva aberta em outro lugar fecha no mesmo instante
-                    foreach (linhas("SELECT l.id, t.nome FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.exclusiva = 1 AND l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?)",
-                        [$rid, date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $q)]) as $x) {
-                        sql("UPDATE lancamento SET fim = ? WHERE id = ?", [date("Y-m-d H:i:s", $q), (int)$x["id"]]);
-                        $fechadas[] = $x["nome"];
-                    }
+            if ((int)($t["winder"] ?? 0) !== 1) {
+                return [null, t("{1} não é numa posição de winder: a posição vale só nos tipos marcados como winder (Cadastros › Tipos de lançamento).", [1 => $t["nome"]])];
+            }
+            $pos = linha("SELECT p.*, w.nome AS winder FROM winder_posicao p JOIN winder w ON w.id = p.winder_id WHERE p.id = ?", [$pid]);
+            if (!$pos) {
+                return [null, t("Posição de winder não encontrada (posicao_id).")];
+            }
+            $texto = t("{1}, {2}", [1 => $pos["winder"], 2 => $pos["nome"]]);
+            if ($abrir && (int)$pos["ligada"] !== 1) {
+                return [null, t("A posição {1} está desligada.", [1 => $texto])];
+            }
+            $outro = linha("SELECT r.nome FROM lancamento_winder lw JOIN lancamento l ON l.id = lw.lancamento_id JOIN relogio r ON r.id = l.relogio_id
+                WHERE lw.posicao_id = ? AND l.relogio_id <> ? AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?) LIMIT 1", [$pid, $rid, $b === null ? "9999-12-31 00:00:00" : date("Y-m-d H:i:s", $b), date("Y-m-d H:i:s", $a)]);
+            if ($outro) {
+                return [null, t("A posição {1} já está com o {2} nesse tempo.", [1 => $texto, 2 => $outro["nome"]])];
+            }
+            return [$pos + ["texto" => $texto], null];
+        };
+        // grava a posição de winder de um lançamento (a do pedido; 0: tira a que havia)
+        $posicao_gravar = function ($lid) use ($d) {
+            sql("DELETE FROM lancamento_winder WHERE lancamento_id = ?", [(int)$lid]);
+            if ((int)($d["posicao_id"] ?? 0) > 0) {
+                sql("INSERT INTO lancamento_winder (lancamento_id, posicao_id) VALUES (?, ?)", [(int)$lid, (int)$d["posicao_id"]]);
+            }
+        };
+        // sessões exclusivas do relógio que se sobrepõem a [a, b) (fora a $ignorar)
+        $sobrepostas = function ($a, $b, $ignorar) use ($rid) {
+            return linhas("SELECT l.id, l.tipo_id, t.nome, l.inicio, l.fim FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
+                WHERE l.relogio_id = ? AND t.exclusiva = 1 AND l.id <> ? AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?)",
+                [$rid, $ignorar, date("Y-m-d H:i:s", $b), date("Y-m-d H:i:s", $a)]);
+        };
+        if (($acao === "alterar" || $acao === "excluir") && !$existente) {
+            $erros[] = t("Lançamento não encontrado.");
+        } elseif ($hoje_pedido && !$p_hoje) {
+            $erros[] = t("Nenhum relógio para hoje no plano (relogio_id=hoje).");
+        } elseif (!$r) {
+            $erros[] = t("Relógio não encontrado (relogio_id).");
+        } elseif (!$t) {
+            $erros[] = t("Tipo de lançamento desconhecido para {1}: use um destes: {2}.", [1 => $r["nome"], 2 => implode(", ", array_keys(lancamento_tipos_do_relogio($r)))]);
+        } elseif ((int)($t["winder"] ?? 0) === 1 && in_array($acao, ["iniciar", "periodo"], true) && !winder_cadastrado()) {
+            // o winder é obrigatório: sem winder cadastrado, não há pôr no winder (nem pelo alternar, que aqui já virou iniciar);
+            // o tirar de uma sessão que já estava aberta continua
+            $erros[] = t("{1}: sem winder cadastrado, não há pôr no winder. Cadastre o seu na página Winders (recurso=winders).", [1 => $r["nome"]]);
+        } elseif ((int)($t["winder"] ?? 0) === 1 && $acao === "iniciar" && ($d["pela_pagina_winders"] ?? false) !== true) {
+            // com winder cadastrado, o relógio vai para o winder só pela página Winders, numa posição: o winder_posicoes salvar com
+            // relogio_id chama este iniciar com pela_pagina_winders (só por dentro: o que vem do pedido é texto, nunca true)
+            $erros[] = $lugar_motivo !== null
+                ? t("{1}: {2}; ponha pela página Winders, numa posição (recurso=winder_posicoes, acao=salvar, com o relogio_id).", [1 => $r["nome"], 2 => $lugar_motivo])
+                : t("{1}: com winder cadastrado, o relógio vai para o winder pela página Winders, numa posição (recurso=winder_posicoes, acao=salvar, com o relogio_id); depois, de qualquer lugar, ele volta para o lugar dele.", [1 => $r["nome"]]);
+        } elseif ((int)($t["winder"] ?? 0) === 1 && $acao === "periodo" && (int)($d["posicao_id"] ?? 0) <= 0) {
+            $erros[] = t("{1}: com winder cadastrado, o período no winder precisa da posição onde ele esteve (posicao_id).", [1 => $r["nome"]]);
+        } elseif ($acao === "alternar") {
+            $erros[] = t("{1} não é uma sessão: alternar vale só para as sessões (abre a fechada, fecha a aberta).", [1 => $t["nome"]]);
+        } elseif ($acao === "lancar") {
+            $q = $momento($d["quando"] ?? "");
+            $v = numero_br($d["valor"] ?? "");
+            $estado = strtolower(trim((string)($d["estado"] ?? "")));
+            $pulso_t = lancamento_tipos_do_relogio($r)["pulso"] ?? null;
+            // a leitura do desvio da hora: o desvio direto (valor, em segundos) ou a hora que o relógio mostrava (marca) no instante
+            // da leitura (instante_ms, o da hora certa na tela; sem ele, agora); a posição em que ele ficou desde a anterior
+            $marcha_t = $t["marcha"] ?? null;
+            $posicao = strtolower(trim((string)($d["posicao"] ?? "")));
+            $marca_ok = true;
+            if ($marcha_t === "desvio" && trim((string)($d["marca"] ?? "")) !== "") {
+                [$v_m, $q_m] = desvio_da_marca((string)$d["marca"], (string)($d["instante_ms"] ?? ""), $agora);
+                $marca_ok = $v_m !== null;
+                if ($marca_ok) {
+                    $v = $v_m;
+                    $q = $q_m;
                 }
             }
-            if (count($erros) === 0) {
-                // o Pôs no relógio do dia é o uso do rodízio (não "fora do plano"): sem pôr sozinho, é ele que abre o dia; pondo
-                // sozinho, um Pôs antes do início do horário já conta como a sessão do dia (o cron não abre outra). Aberta até o
-                // Tirou, ou até o "fecha às" do tipo (o fim do horário de uso, tirando sozinho)
-                $p_dia = plano_do_dia(date("Y-m-d", $q));
-                $origem = $t["identificador"] === "pulso" && $p_dia && (int)$p_dia["relogio_id"] === $rid ? "rodizio" : "manual";
-                sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, NULL, NULL, ?, NOW())", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), $origem]);
-                $id = ultimo_id();
-                if ($pos_w !== null) {
-                    $posicao_gravar($id);
-                }
-                $msg = t("{1}: {2} desde {3}.{4}", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($q, true, true), 4 => count($fechadas) > 0 ? t(" Fechado no mesmo instante: {1}.", [1 => implode(", ", $fechadas)]) : ""])
-                    . ($pos_w !== null ? t(" Na posição {1}.", [1 => $pos_w["texto"]]) : "");
-            }
-        }
-    } elseif ($acao === "encerrar") {
-        $q = $momento($d["quando"] ?? "");
-        // a sessão aberta agora: sem fim, ou com o fim ainda no futuro (a de rodízio já nasce com o fim do horário de uso)
-        $aberta = linha("SELECT * FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim > ?) ORDER BY inicio DESC, id DESC LIMIT 1",
-            [$rid, (int)$t["id"], date("Y-m-d H:i:s", $agora), date("Y-m-d H:i:s", $agora)]);
-        if ($q === false) {
-            $erros[] = t("Quando: AAAA-MM-DD HH:MM, até agora (vazio: agora).");
-        } elseif (!$aberta) {
-            $erros[] = t("{1} não está com {2} aberto.", [1 => $r["nome"], 2 => $t["nome"]]);
-        } elseif ($q < strtotime($aberta["inicio"])) {
-            $erros[] = t("Quando: AAAA-MM-DD HH:MM, não antes do início ({1}) e até agora (vazio: agora).", [1 => data_txt(strtotime($aberta["inicio"]), true, true)]);
-        } else {
-            sql("UPDATE lancamento SET fim = ? WHERE id = ?", [date("Y-m-d H:i:s", $q), (int)$aberta["id"]]);
-            $id = (int)$aberta["id"];
-            $min = (int)round(($q - strtotime($aberta["inicio"])) / 60);
-            $msg = t("{1}: encerrada a sessão {2} ({3} h {4} min).", [1 => $r["nome"], 2 => $t["nome"], 3 => intdiv($min, 60), 4 => $min % 60]);
-        }
-    } elseif ($acao === "periodo" || $acao === "alterar") {
-        // o período (ou a correção): início e fim no passado, fim depois do início, e sem sobrepor outra exclusiva
-        $formato = $t["formato"];
-        $ini = $acao === "periodo" || array_key_exists("inicio", $d) || array_key_exists("quando", $d)
-            ? $momento($d["inicio"] ?? ($d["quando"] ?? "x")) : strtotime($existente["inicio"]);
-        $fim = null;
-        if ($formato === "sessao") {
-            $fim = $acao === "periodo" || array_key_exists("fim", $d) ? (trim((string)($d["fim"] ?? "")) === "" && $acao === "alterar" ? null : $momento($d["fim"] ?? "x"))
-                : ($existente["fim"] === null ? null : strtotime($existente["fim"]));
-        }
-        $v = $formato === "valor" ? (array_key_exists("valor", $d) ? numero_br($d["valor"]) : (float)$existente["valor"]) : null;
-        if ($acao === "periodo" && $formato !== "sessao") {
-            $erros[] = t("{1} não é uma sessão: use lancar.", [1 => $t["nome"]]);
-        } elseif ($ini === false || $fim === false) {
-            $erros[] = t("Início e fim: AAAA-MM-DD HH:MM, até agora.");
-        } elseif ($fim !== null && $fim <= $ini) {
-            $erros[] = t("O fim tem de ser depois do início.");
-        } elseif ($formato === "valor" && $v === null) {
-            $erros[] = t("{1} precisa de um valor.", [1 => $t["nome"]]);
-        } elseif ((int)$t["exclusiva"] === 1 && count($outras = array_values(array_filter($sobrepostas($ini, $fim ?? $agora, $id), function ($x) use ($acao, $t) {
-            // no período, as do mesmo tipo não atrapalham: elas se juntam a ele (logo abaixo)
-            return $acao !== "periodo" || (int)$x["tipo_id"] !== (int)$t["id"];
-        }))) > 0) {
-            $s = $outras[0];
-            $erros[] = t("{1} já estava em {2} de {3} a {4}: o relógio fica num lugar só.", [1 => $r["nome"], 2 => $s["nome"], 3 => data_txt(strtotime($s["inicio"]), true, true), 4 => $s["fim"] === null ? "agora" : data_txt(strtotime($s["fim"]), true, true)]);
-        } elseif ($acao === "alterar" && array_key_exists("estado", $d) && !in_array((string)$d["estado"], ["", "uso", "repouso"], true)) {
-            $erros[] = t("Estado: uso ou repouso (vazio: não diz).");
-        } elseif ($acao === "alterar" && array_key_exists("posicao", $d) && (string)$d["posicao"] !== "" && (($t["marcha"] ?? null) !== "desvio" || !isset(posicoes_marcha()[(string)$d["posicao"]]))) {
-            $erros[] = t("Posição ({1}) vale só para a leitura do desvio da hora.", [1 => implode(", ", array_keys(posicoes_marcha()))]);
-        } elseif (array_key_exists("posicao_id", $d) && ($erro_w = $posicao_conferir($ini, $fim, false)[1]) !== null) {
-            $erros[] = $erro_w;
-        } elseif ($acao === "periodo") {
-            // no pulso, o relógio do dia está em uso pelo rodízio (como no Pôs), não "fora do plano"
-            $p_dia = plano_do_dia(date("Y-m-d", $ini));
-            $origem = $t["identificador"] === "pulso" && $p_dia && (int)$p_dia["relogio_id"] === $rid ? "rodizio" : "manual";
-            // os trechos do mesmo tipo que o período cobre ou em que ele encosta (o Pôs aberto que começou depois, o período
-            // que acaba quando ele começa) viram um só: do primeiro início ao último fim (aberto, se um deles está aberto)
-            $juntar = linhas("SELECT id, inicio, fim, origem FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim >= ?) ORDER BY inicio, id",
-                [$rid, (int)$t["id"], date("Y-m-d H:i:s", $fim), date("Y-m-d H:i:s", $ini)]);
-            if (count($juntar) === 0) {
-                sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, ?, NULL, ?, NOW())",
-                    [$rid, (int)$t["id"], date("Y-m-d H:i:s", $ini), date("Y-m-d H:i:s", $fim), $origem]);
-                $id = ultimo_id();
-                if (array_key_exists("posicao_id", $d)) {
-                    $posicao_gravar($id);
-                }
-                $msg = t("Lançado no {1}: {2} de {3} a {4}.", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true), 4 => data_txt($fim, true, true)]);
+            if ($t["formato"] === "sessao") {
+                $erros[] = t("{1} é uma sessão: use iniciar e encerrar, ou periodo.", [1 => $t["nome"]]);
+            } elseif ($q === false) {
+                $erros[] = t("Quando: AAAA-MM-DD HH:MM, até agora (vazio: agora).");
+            } elseif (!$marca_ok) {
+                $erros[] = t("Marca: a hora que o relógio mostra, HH:MM:SS (o instante da leitura vai em instante_ms, em milissegundos, de até 10 minutos atrás; sem ele, agora).");
+            } elseif ($t["formato"] === "valor" && $v === null) {
+                $erros[] = t("{1} precisa de um valor (número{2}).", [1 => $t["nome"], 2 => $t["unidade"] !== "" ? ", em " . $t["unidade"] : ""]);
+            } elseif ($marcha_t === "desvio" && abs($v) > 21600) {
+                $erros[] = t("O desvio vai até 6 horas para mais ou para menos (em segundos; + adiantado, − atrasado).");
+            } elseif ($posicao !== "" && ($marcha_t !== "desvio" || !isset(posicoes_marcha()[$posicao]))) {
+                $erros[] = t("Posição ({1}) vale só para a leitura do desvio da hora.", [1 => implode(", ", array_keys(posicoes_marcha()))]);
+            } elseif ($estado !== "" && !in_array($estado, ["uso", "repouso"], true)) {
+                $erros[] = t("Estado: uso ou repouso (vazio: não diz).");
+            } elseif ($estado !== "" && ($t["formato"] !== "valor" || $pulso_t === null)) {
+                $erros[] = t("Estado (uso ou repouso) vale só para uma leitura, num relógio que vai ao pulso.");
+            } elseif ($estado !== "" && (string)($d["confirmar"] ?? "") !== "1" && ($pergunta = estado_leitura_confere($rid, $q, $estado)) !== null) {
+                // a marcação não bate com o pulso registrado: a pessoa confirma (confirmar=1) e vale o que ela marcou
+                return resultado([$pergunta], "", ["confirmar" => true, "pergunta" => $pergunta]);
             } else {
-                $aberto = false;
-                foreach ($juntar as $x) {
-                    $ini = min($ini, strtotime($x["inicio"]));
-                    $aberto = $aberto || $x["fim"] === null;
-                    $fim = $x["fim"] === null ? $fim : max($fim, strtotime($x["fim"]));
-                    $origem = $x["origem"] === "rodizio" ? "rodizio" : $origem;
+                // o gasto medido: a leitura de antes (do mesmo tipo), a estimativa e os gastos que valiam, tudo antes de gravar esta
+                $mede = $t["formato"] === "valor" && (int)($t["mede_gasto"] ?? 0) === 1
+                    && valor("SELECT id FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio > ?", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q)]) === null;
+                $antes = $mede ? linha("SELECT inicio, valor FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? ORDER BY inicio DESC, id DESC LIMIT 1",
+                    [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q)]) : null;
+                $conta = [];
+                if ($antes) {
+                    $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+                    foreach (["energia", "taxa_uso", "taxa_repouso"] as $f) {
+                        $c = ["r" => $r, "momento" => $q, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio($rid)];
+                        $conta[$f] = isset(formulas_todas()[$f]) ? variavel_valor($f, $c) : null;
+                    }
                 }
-                $id = (int)$juntar[0]["id"];
-                sql("UPDATE lancamento SET inicio = ?, fim = ?, origem = ? WHERE id = ?", [date("Y-m-d H:i:s", $ini), $aberto ? null : date("Y-m-d H:i:s", $fim), $origem, $id]);
-                foreach (array_slice($juntar, 1) as $x) {
-                    sql("DELETE FROM lancamento WHERE id = ?", [(int)$x["id"]]);
+                sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, estado, posicao, origem, criado) VALUES (?, ?, ?, NULL, ?, ?, ?, 'manual', NOW())",
+                    [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), $t["formato"] === "valor" ? $v : null, $estado !== "" ? $estado : null, $posicao !== "" ? $posicao : null]);
+                $id = ultimo_id();
+                $medicao_nova = null;
+                if ((int)($t["mede_gasto"] ?? 0) === 1) {
+                    sincronizar_medicoes($rid, true, [$id => (string)($d["medir"] ?? "1") === "1" ? 1 : 0], $q);
+                    $medicoes_refeitas = true;
+                    $medicao_nova = linha("SELECT * FROM medicao WHERE lancamento_id = ? AND valida = 1 ORDER BY id LIMIT 1", [$id]);
                 }
+                $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+                $msg = t("Lançado no {1}: {2}{3}{4}.", [1 => $r["nome"], 2 => $t["nome"], 3 => $t["formato"] === "valor" ? " " . decimal_txt($v, 6) . ($t["unidade"] !== "" ? " " . $t["unidade"] : "") : "", 4 => $q < $agora - 60 ? " em " . data_txt($q, true) : ""]);
+                if ($marcha_t !== null) {
+                    $msg .= precisao_recado($rid, $id, $marcha_t);
+                }
+                if ($mede && !$antes) {
+                    $msg .= t(" Primeira leitura: é o ponto de partida.");
+                } elseif ($antes) {
+                    $t1 = strtotime($antes["inicio"]);
+                    $horas = ($q - $t1) / 3600;
+                    $anterior = (float)$antes["valor"];
+                    $queda = $anterior - $v;
+                    $estimada = is_numeric($conta["energia"]) ? (float)$conta["energia"] : null;
+                    $un = $t["unidade"];
+                    $de = t("De {1}{2} em {3} a {4}{5}{6}", [1 => decimal_txt($anterior, 6), 2 => $un, 3 => data_txt($t1, true, true), 4 => decimal_txt($v, 6), 5 => $un, 6 => $q < $agora - 60 ? t(" em {1}", [1 => data_txt($q, true, true)]) : t(" agora")]);
+                    $pela_estimativa = $estimada === null ? "" : t(" A estimativa era ~{1}{2}.", [1 => (int)round($estimada), 2 => $un]);
+                    if ($queda < 0) {
+                        $msg .= t(" Carregado: a leitura anterior era {1}{2}{3}. Novo ponto de partida.", [1 => decimal_txt($anterior, 6), 2 => $un, 3 => $estimada === null ? "" : " e a estimativa ~" . (int)round($estimada) . $un]);
+                    } elseif ($medicao_nova === null && $horas > 0) {
+                        $msg .= t(" {1}: outra sessão no intervalo impede medir o gasto.{2}", [1 => $de, 2 => $pela_estimativa]);
+                    } elseif ($horas <= 0) {
+                        $msg .= t(" {1}: a leitura anterior está no mesmo instante, sem intervalo para medir o gasto.{2}", [1 => $de, 2 => $pela_estimativa]);
+                    } else {
+                        // as horas no pulso entre as duas leituras
+                        $medicao = $medicao_nova;
+                        $h_pulso = $medicao["horas_pulso"];
+                        $h_guardado = $medicao["horas_guardado"];
+                        $tempo = t("{1}{2} h fora do pulso", [1 => $h_pulso >= 1 ? t("{1} h no pulso e ", [1 => (int)round($h_pulso)]) : "", 2 => (int)round($h_guardado)]);
+                        // todo intervalo entra na conta dos dois gastos (gasto_medido), até o sem queda nenhuma: ele diz que o gasto é
+                        // pequeno. O gasto do intervalo sozinho fica no histórico: com pelo menos meio dia de uso, ou mais dias de uso que
+                        // fora do pulso, o de uso (descontando o fora do pulso que valia); senão, o de fora (descontando o pouco de uso)
+                        $medida = $medicao["medida"];
+                        $taxa = $medicao["taxa"];
+                        $usada = !array_key_exists("medir", $d) || (string)$d["medir"] === "1";
+                        $id_med = (int)$medicao["id"];
+                        $msg .= " " . $de . ": " . $tempo . "." . $pela_estimativa;
+                        if ($usada) {
+                            // os dois gastos que passam a valer, com esta medição junto (a mesma conta da função MEDIDO)
+                            $motor_l = gasto_motor_de($r)[0];
+                            $g = gasto_medido(medicoes_da_conta($rid)[0], $q, gasto_prior($r, $q), $motor_l === "formulas" ? "marcacao" : $motor_l);
+                            $num = function ($x) { return decimal_txt(round((float)$x, 2), 6); };
+                            $partes = [];
+                            if ($g["uso"] !== null) {
+                                $partes[] = t("em uso {1}% (± {2}) por dia de uso", [1 => $num($g["uso"]), 2 => $num($g["uso_dp"])]);
+                            }
+                            if ($g["repouso"] !== null) {
+                                $partes[] = t("fora do pulso {1}% (± {2}) por dia", [1 => $num($g["repouso"]), 2 => $num($g["repouso_dp"])]);
+                            }
+                            $msg .= t(" Gasto medido agora{1} ({2}{3}{4} {5}).", [1 => count($partes) > 0 ? ": " . implode(", ", $partes) : t(": ainda sem como separar"), 2 => $g["conjunta"] ? t("os dois juntos, de ") : "", 3 => $g["n"], 4 => $g["n"] === 1 ? t(" medição") : t(" medições"), 5 => medicoes_janela_texto()]);
+                            // uma leitura desta medição não bate com as outras: ela pesa pouco na conta (a tabela Medições do gasto diz)
+                            if (in_array($id_med, $g["fora"], true)) {
+                                $msg .= t(" A leitura de {1}% não bate com as outras (a conta erra {2} pontos nela): pesa só {3}% na conta. Confira as marcações do intervalo (o pulso, o carregador) e a leitura.",
+                                    [1 => decimal_txt((float)$g["leitura"][$id_med], 6), 2 => decimal_txt(abs((float)$g["erro"][$id_med]), 6), 3 => (int)round(100 * (float)$g["peso"][$id_med])]);
+                            }
+                        } else {
+                            $msg .= t(" Entrou só no histórico.");
+                        }
+                    }
+                }
+            }
+        } elseif ($acao === "iniciar") {
+            $q = $momento($d["quando"] ?? "");
+            if ($t["formato"] !== "sessao") {
+                $erros[] = t("{1} não é uma sessão: use lancar.", [1 => $t["nome"]]);
+            } elseif ($q === false) {
+                $erros[] = t("Quando: AAAA-MM-DD HH:MM, até agora (vazio: agora).");
+            } elseif (valor("SELECT id FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim > ?)", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $q)]) !== null) {
+                $erros[] = t("{1} já está com {2} aberto.", [1 => $r["nome"], 2 => $t["nome"]]);
+            } else {
+                $fechadas = [];
+                [$pos_w, $erro_w] = $posicao_conferir($q, null, true);
+                if ($erro_w !== null) {
+                    $erros[] = $erro_w;
+                }
+                if (count($erros) === 0 && (int)$t["exclusiva"] === 1) {
+                    // primeiro a conferência, sem mexer em nada: nesse instante, o relógio não pode estar numa sessão exclusiva
+                    // já fechada (um período lançado antes) nem numa aberta que começou depois dele
+                    $conflito = linha("SELECT t.nome, l.inicio, l.fim FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
+                        WHERE l.relogio_id = ? AND t.exclusiva = 1 AND l.inicio > ? AND l.inicio <= ? LIMIT 1",
+                        [$rid, date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $agora)]);
+                    if ($conflito) {
+                        $erros[] = t("Nesse momento {1} já estava em {2} (de {3} a {4}): o relógio fica num lugar só.", [1 => $r["nome"], 2 => $conflito["nome"], 3 => data_txt(strtotime($conflito["inicio"]), true, true), 4 => $conflito["fim"] === null ? "agora" : data_txt(strtotime($conflito["fim"]), true, true)]);
+                    } else {
+                        // o relógio num lugar só: a exclusiva aberta em outro lugar fecha no mesmo instante
+                        foreach (linhas("SELECT l.id, t.nome FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.exclusiva = 1 AND l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?)",
+                            [$rid, date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $q)]) as $x) {
+                            sql("UPDATE lancamento SET fim = ? WHERE id = ?", [date("Y-m-d H:i:s", $q), (int)$x["id"]]);
+                            $fechadas[] = $x["nome"];
+                        }
+                    }
+                }
+                if (count($erros) === 0) {
+                    // o Pôs no relógio do dia é o uso do rodízio (não "fora do plano"): sem pôr sozinho, é ele que abre o dia; pondo
+                    // sozinho, um Pôs antes do início do horário já conta como a sessão do dia (o cron não abre outra). Aberta até o
+                    // Tirou, ou até o "fecha às" do tipo (o fim do horário de uso, tirando sozinho)
+                    $p_dia = plano_do_dia(date("Y-m-d", $q));
+                    $origem = $t["identificador"] === "pulso" && $p_dia && (int)$p_dia["relogio_id"] === $rid ? "rodizio" : "manual";
+                    sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, NULL, NULL, ?, NOW())", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), $origem]);
+                    $id = ultimo_id();
+                    if ($pos_w !== null) {
+                        $posicao_gravar($id);
+                    }
+                    $msg = t("{1}: {2} desde {3}.{4}", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($q, true, true), 4 => count($fechadas) > 0 ? t(" Fechado no mesmo instante: {1}.", [1 => implode(", ", $fechadas)]) : ""])
+                        . ($pos_w !== null ? t(" Na posição {1}.", [1 => $pos_w["texto"]]) : "");
+                }
+            }
+        } elseif ($acao === "encerrar") {
+            $q = $momento($d["quando"] ?? "");
+            // a sessão aberta agora: sem fim, ou com o fim ainda no futuro (a de rodízio já nasce com o fim do horário de uso)
+            $aberta = linha("SELECT * FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim > ?) ORDER BY inicio DESC, id DESC LIMIT 1",
+                [$rid, (int)$t["id"], date("Y-m-d H:i:s", $agora), date("Y-m-d H:i:s", $agora)]);
+            if ($q === false) {
+                $erros[] = t("Quando: AAAA-MM-DD HH:MM, até agora (vazio: agora).");
+            } elseif (!$aberta) {
+                $erros[] = t("{1} não está com {2} aberto.", [1 => $r["nome"], 2 => $t["nome"]]);
+            } elseif ($q < strtotime($aberta["inicio"])) {
+                $erros[] = t("Quando: AAAA-MM-DD HH:MM, não antes do início ({1}) e até agora (vazio: agora).", [1 => data_txt(strtotime($aberta["inicio"]), true, true)]);
+            } else {
+                sql("UPDATE lancamento SET fim = ? WHERE id = ?", [date("Y-m-d H:i:s", $q), (int)$aberta["id"]]);
+                $id = (int)$aberta["id"];
+                $min = (int)round(($q - strtotime($aberta["inicio"])) / 60);
+                $msg = t("{1}: encerrada a sessão {2} ({3} h {4} min).", [1 => $r["nome"], 2 => $t["nome"], 3 => intdiv($min, 60), 4 => $min % 60]);
+            }
+        } elseif ($acao === "periodo" || $acao === "alterar") {
+            // o período (ou a correção): início e fim no passado, fim depois do início, e sem sobrepor outra exclusiva
+            $formato = $t["formato"];
+            $ini = $acao === "periodo" || array_key_exists("inicio", $d) || array_key_exists("quando", $d)
+                ? $momento($d["inicio"] ?? ($d["quando"] ?? "x")) : strtotime($existente["inicio"]);
+            $fim = null;
+            if ($formato === "sessao") {
+                $fim = $acao === "periodo" || array_key_exists("fim", $d) ? (trim((string)($d["fim"] ?? "")) === "" && $acao === "alterar" ? null : $momento($d["fim"] ?? "x"))
+                    : ($existente["fim"] === null ? null : strtotime($existente["fim"]));
+            }
+            $v = $formato === "valor" ? (array_key_exists("valor", $d) ? numero_br($d["valor"]) : (float)$existente["valor"]) : null;
+            if ($acao === "periodo" && $formato !== "sessao") {
+                $erros[] = t("{1} não é uma sessão: use lancar.", [1 => $t["nome"]]);
+            } elseif ($ini === false || $fim === false) {
+                $erros[] = t("Início e fim: AAAA-MM-DD HH:MM, até agora.");
+            } elseif ($fim !== null && $fim <= $ini) {
+                $erros[] = t("O fim tem de ser depois do início.");
+            } elseif ($formato === "valor" && $v === null) {
+                $erros[] = t("{1} precisa de um valor.", [1 => $t["nome"]]);
+            } elseif ((int)$t["exclusiva"] === 1 && count($outras = array_values(array_filter($sobrepostas($ini, $fim ?? $agora, $id), function ($x) use ($acao, $t) {
+                // no período, as do mesmo tipo não atrapalham: elas se juntam a ele (logo abaixo)
+                return $acao !== "periodo" || (int)$x["tipo_id"] !== (int)$t["id"];
+            }))) > 0) {
+                $s = $outras[0];
+                $erros[] = t("{1} já estava em {2} de {3} a {4}: o relógio fica num lugar só.", [1 => $r["nome"], 2 => $s["nome"], 3 => data_txt(strtotime($s["inicio"]), true, true), 4 => $s["fim"] === null ? "agora" : data_txt(strtotime($s["fim"]), true, true)]);
+            } elseif ($acao === "alterar" && array_key_exists("estado", $d) && !in_array((string)$d["estado"], ["", "uso", "repouso"], true)) {
+                $erros[] = t("Estado: uso ou repouso (vazio: não diz).");
+            } elseif ($acao === "alterar" && array_key_exists("posicao", $d) && (string)$d["posicao"] !== "" && (($t["marcha"] ?? null) !== "desvio" || !isset(posicoes_marcha()[(string)$d["posicao"]]))) {
+                $erros[] = t("Posição ({1}) vale só para a leitura do desvio da hora.", [1 => implode(", ", array_keys(posicoes_marcha()))]);
+            } elseif (array_key_exists("posicao_id", $d) && ($erro_w = $posicao_conferir($ini, $fim, false)[1]) !== null) {
+                $erros[] = $erro_w;
+            } elseif ($acao === "periodo") {
+                // no pulso, o relógio do dia está em uso pelo rodízio (como no Pôs), não "fora do plano"
+                $p_dia = plano_do_dia(date("Y-m-d", $ini));
+                $origem = $t["identificador"] === "pulso" && $p_dia && (int)$p_dia["relogio_id"] === $rid ? "rodizio" : "manual";
+                // os trechos do mesmo tipo que o período cobre ou em que ele encosta (o Pôs aberto que começou depois, o período
+                // que acaba quando ele começa) viram um só: do primeiro início ao último fim (aberto, se um deles está aberto)
+                $juntar = linhas("SELECT id, inicio, fim, origem FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim >= ?) ORDER BY inicio, id",
+                    [$rid, (int)$t["id"], date("Y-m-d H:i:s", $fim), date("Y-m-d H:i:s", $ini)]);
+                if (count($juntar) === 0) {
+                    sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, ?, NULL, ?, NOW())",
+                        [$rid, (int)$t["id"], date("Y-m-d H:i:s", $ini), date("Y-m-d H:i:s", $fim), $origem]);
+                    $id = ultimo_id();
+                    if (array_key_exists("posicao_id", $d)) {
+                        $posicao_gravar($id);
+                    }
+                    $msg = t("Lançado no {1}: {2} de {3} a {4}.", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true), 4 => data_txt($fim, true, true)]);
+                } else {
+                    $aberto = false;
+                    foreach ($juntar as $x) {
+                        $ini = min($ini, strtotime($x["inicio"]));
+                        $aberto = $aberto || $x["fim"] === null;
+                        $fim = $x["fim"] === null ? $fim : max($fim, strtotime($x["fim"]));
+                        $origem = $x["origem"] === "rodizio" ? "rodizio" : $origem;
+                    }
+                    $id = (int)$juntar[0]["id"];
+                    sql("UPDATE lancamento SET inicio = ?, fim = ?, origem = ? WHERE id = ?", [date("Y-m-d H:i:s", $ini), $aberto ? null : date("Y-m-d H:i:s", $fim), $origem, $id]);
+                    foreach (array_slice($juntar, 1) as $x) {
+                        sql("DELETE FROM lancamento WHERE id = ?", [(int)$x["id"]]);
+                    }
+                    if (array_key_exists("posicao_id", $d)) {
+                        $posicao_gravar($id);
+                    }
+                    $msg = $aberto
+                        ? t("Juntado no {1}: {2} desde {3} (com o que já estava marcado).", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true)])
+                        : t("Juntado no {1}: {2} de {3} a {4} (com o que já estava marcado).", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true), 4 => data_txt($fim, true, true)]);
+                }
+            } else {
+                // a marcação da leitura (uso ou repouso; vazio: nenhuma) muda só se vier
+                $est = $formato === "valor" && array_key_exists("estado", $d) ? ((string)$d["estado"] === "" ? null : (string)$d["estado"]) : ($existente["estado"] ?? null);
+                // a posição da leitura do desvio (vazio: não informada) também muda só se vier
+                $pos_l = ($t["marcha"] ?? null) === "desvio" && array_key_exists("posicao", $d) ? ((string)$d["posicao"] === "" ? null : (string)$d["posicao"]) : ($existente["posicao"] ?? null);
+                sql("UPDATE lancamento SET inicio = ?, fim = ?, valor = ?, estado = ?, posicao = ? WHERE id = ?", [date("Y-m-d H:i:s", $ini), $fim === null ? null : date("Y-m-d H:i:s", $fim), $v, $est, $pos_l, $id]);
+                // a posição de winder da sessão muda só se vier (0: sem posição)
                 if (array_key_exists("posicao_id", $d)) {
                     $posicao_gravar($id);
                 }
-                $msg = $aberto
-                    ? t("Juntado no {1}: {2} desde {3} (com o que já estava marcado).", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true)])
-                    : t("Juntado no {1}: {2} de {3} a {4} (com o que já estava marcado).", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true), 4 => data_txt($fim, true, true)]);
+                $msg = t("Corrigido no {1}: {2}.", [1 => $r["nome"], 2 => $t["nome"]]);
             }
-        } else {
-            // a marcação da leitura (uso ou repouso; vazio: nenhuma) muda só se vier
-            $est = $formato === "valor" && array_key_exists("estado", $d) ? ((string)$d["estado"] === "" ? null : (string)$d["estado"]) : ($existente["estado"] ?? null);
-            // a posição da leitura do desvio (vazio: não informada) também muda só se vier
-            $pos_l = ($t["marcha"] ?? null) === "desvio" && array_key_exists("posicao", $d) ? ((string)$d["posicao"] === "" ? null : (string)$d["posicao"]) : ($existente["posicao"] ?? null);
-            sql("UPDATE lancamento SET inicio = ?, fim = ?, valor = ?, estado = ?, posicao = ? WHERE id = ?", [date("Y-m-d H:i:s", $ini), $fim === null ? null : date("Y-m-d H:i:s", $fim), $v, $est, $pos_l, $id]);
-            // a posição de winder da sessão muda só se vier (0: sem posição)
-            if (array_key_exists("posicao_id", $d)) {
-                $posicao_gravar($id);
-            }
-            $msg = t("Corrigido no {1}: {2}.", [1 => $r["nome"], 2 => $t["nome"]]);
+        } elseif ($acao === "excluir") {
+            sql("DELETE FROM lancamento WHERE id = ?", [$id]);
+            $msg = t("Excluído do {1}: {2} de {3}.", [1 => $r["nome"], 2 => $existente["tipo_nome"], 3 => data_txt(strtotime($existente["inicio"]), true)]);
+            $id = 0;
         }
-    } elseif ($acao === "excluir") {
-        sql("DELETE FROM lancamento WHERE id = ?", [$id]);
-        $msg = t("Excluído do {1}: {2} de {3}.", [1 => $r["nome"], 2 => $existente["tipo_nome"], 3 => data_txt(strtotime($existente["inicio"]), true)]);
-        $id = 0;
-    }
-    // o pulso mudou no passado (Pôs ou Tirou com hora, período, correção, exclusão): as medições do gasto que cobrem o trecho
-    // refazem as horas no pulso e fora
-    if (count($erros) === 0 && $t && $t["identificador"] === "pulso" && in_array($acao, ["iniciar", "encerrar", "periodo", "alterar", "excluir"], true)) {
-        $desde = [$agora];
-        foreach ([$q ?? null, $ini ?? null, $existente ? strtotime($existente["inicio"]) : null] as $x) {
-            if (is_int($x)) {
-                $desde[] = $x;
+        // Leituras e sessões mudam os intervalos vizinhos: fontes corrigidas não podem deixar quedas ou horas antigas.
+        if (count($erros) === 0 && empty($medicoes_refeitas) && $t && ((int)($t["mede_gasto"] ?? 0) === 1 || $t["formato"] === "sessao")
+            && in_array($acao, ["lancar", "iniciar", "encerrar", "periodo", "alterar", "excluir"], true)) {
+            $escolhas_m = $acao === "lancar" && $id > 0 && (string)($d["medir"] ?? "1") === "0" ? [$id => 0] : [];
+            $desde_m = [$agora];
+            foreach ([$q ?? null, $ini ?? null, $existente ? strtotime($existente["inicio"]) : null] as $instante_m) {
+                if (is_int($instante_m)) $desde_m[] = $instante_m;
             }
+            sincronizar_medicoes($rid, true, $escolhas_m, min($desde_m));
         }
-        recalcular_medicoes($rid, min($desde), $agora + 1);
-    }
-    // o relógio voltou para o lugar dele no winder (sem a página Winders): o recado diz onde
-    if (count($erros) === 0 && $lugar_auto !== null && $msg !== "") {
-        $msg .= " " . t("No lugar dele: {1}.", [1 => $lugar_auto]);
-    }
-    return resultado($erros, $msg, ["id" => $id]);
+        // o relógio voltou para o lugar dele no winder (sem a página Winders): o recado diz onde
+        if (count($erros) === 0 && $lugar_auto !== null && $msg !== "") {
+            $msg .= " " . t("No lugar dele: {1}.", [1 => $lugar_auto]);
+        }
+        return resultado($erros, $msg, ["id" => $id]);
+    });
 }
 
 
@@ -4585,7 +4567,7 @@ function op_modos($acao, $d)
 //           {link}); pulso_auto_inicio (1 ou 0: o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo
 //           Pôs); pulso_auto_fim (1 ou 0: sai sozinho no fim do horário de uso, o "fecha às" do tipo No pulso; 0: só pelo
 //           Tirou); encostado_ativo (1 ou 0: liga ou desliga o aviso Encostado do cadastro); max_sem_uso (0 a 365); previsao_limite (0 a 100); medicao_base (dias ou leituras: o gasto medido conta as medições dos últimos dias ou as últimas leituras de cada tipo); gasto_motor (vazio: conforme o relógio e o grupo; horas, robusto, marcacao, cadastro ou formulas: como calcular o gasto da bateria, para toda a coleção); documentos_copia (vazio: conforme o relógio e o arquivo; todos ou nenhum: a cópia dos documentos no banco, para toda a coleção); medicao_janela_leituras (2 a 1000); medicao_janela_dias (1 a 3650: a média do gasto medido
-//           usa as medições destes últimos dias); url_sistema só o master (é do sistema inteiro). Só o que vier no pedido muda.
+//           usa as medições inteiras destes últimos dias); medicao_meia_vida_dias (0 a 3650, padrão 0: sem peso por idade); url_sistema só o master (é do sistema inteiro). Só o que vier no pedido muda.
 //           As mensagens e as agendas saem pelos destinos e pelas agendas (op_destinos, op_agendas).
 //   evento_salvar (evento_id (ou id): 0 cria; nome, ativo, repeticao (uma, diaria, semanal, mensal, intervalo), hora (HH:MM),
 //           data_inicio (uma vez: a data; a cada N dias: desde quando, vazio: hoje), dias_semana (1 a 7, lista ou separados
@@ -4624,6 +4606,9 @@ function op_config($acao, $d)
         }
         if (array_key_exists("medicao_janela_dias", $d) && (!ctype_digit(trim((string)$d["medicao_janela_dias"])) || (int)$d["medicao_janela_dias"] < 1 || (int)$d["medicao_janela_dias"] > 3650)) {
             $erros[] = t("Gasto medido: a média usa de 1 a 3650 dias de medições.");
+        }
+        if (array_key_exists("medicao_meia_vida_dias", $d) && (!ctype_digit(trim((string)$d["medicao_meia_vida_dias"])) || (int)$d["medicao_meia_vida_dias"] > 3650)) {
+            $erros[] = t("{1}: um número inteiro de {2} a {3}.", [1 => t("Gasto medido: meia-vida dos dados (dias; 0 desliga)"), 2 => 0, 3 => 3650]);
         }
         if (array_key_exists("medicao_base", $d) && !in_array((string)$d["medicao_base"], ["dias", "leituras"], true)) {
             $erros[] = t("Gasto medido: contar por dias ou por leituras.");
@@ -4735,7 +4720,7 @@ function op_config($acao, $d)
                 && ((string)$d["semana_inicio"] === "domingo") !== (cfg("semana_inicio") === "domingo"))) {
                 cfg_set("escala_fim", "");
             }
-            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "sorteio_casas", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina", "hora_relogio", "semana_inicio", "escala_inicio", "escala_periodo", "semana_ultimo_dia", "trocar_hoje", "atualizar_segundos", "relojinho_modo", "calibre_campos"] as $k) {
+            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "sorteio_casas", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_meia_vida_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina", "hora_relogio", "semana_inicio", "escala_inicio", "escala_periodo", "semana_ultimo_dia", "trocar_hoje", "atualizar_segundos", "relojinho_modo", "calibre_campos"] as $k) {
                 if (array_key_exists($k, $d)) {
                     cfg_set($k, trim((string)$d[$k]));
                 }
@@ -4772,6 +4757,7 @@ function op_config($acao, $d)
             if ((array_key_exists("pulso_auto_fim", $d) || array_key_exists("uso_fim", $d)) && isset(lancamento_tipos()["pulso"])) {
                 sql("UPDATE lancamento_tipo SET fecha_as = ? WHERE identificador = 'pulso'", [pulso_tira_sozinho() ? cfg("uso_fim") . ":00" : null]);
             }
+            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
             $msg = t("Configuração salva.");
         }
     } elseif ($acao === "evento_salvar") {

@@ -62,7 +62,8 @@ function medicoes_legivel($id)
         $mid = (int)$m["id"];
         return ["id" => $mid, "lancamento_id" => (int)$m["lancamento_id"], "medida" => $m["medida"], "taxa" => (float)$m["taxa"], "de_valor" => (float)$m["de_valor"],
             "ate_valor" => (float)$m["ate_valor"], "inicio" => $m["inicio"], "fim" => $m["fim"], "horas_pulso" => (float)$m["horas_pulso"], "horas_guardado" => (float)$m["horas_guardado"],
-            "peso_horas" => (float)$m["peso_horas"], "usada" => (int)$m["usada"] === 1, "na_media" => $motor !== "cadastro" && in_array($mid, $g["usadas"], true),
+            "peso_horas" => (float)$m["peso_horas"], "usada" => (int)$m["usada"] === 1, "valida" => (int)$m["valida"] === 1,
+            "na_media" => $motor !== "cadastro" && in_array($mid, $g["usadas"], true),
             "peso" => $g["peso"][$mid] ?? null, "leitura_fraca" => $g["leitura"][$mid] ?? null, "fora" => in_array($mid, $g["fora"], true),
             "erro" => $g["erro"][$mid] ?? null, "criado" => $m["criado"],
             // as marcações das duas leituras (uso ou repouso) e se elas deixam a medição entrar (iguais)

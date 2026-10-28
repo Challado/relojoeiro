@@ -1,4 +1,4 @@
-<!-- origem: 51213c17088e79ada1cb0b3bd3b061bb54802501 -->
+<!-- origem: 323c1b47ab3cc3fa76db1c7b7d12b41b6c43aec3 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -705,7 +705,7 @@ vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des
 
 ---
 
-La régression `php testes/previsao.php` couvre la première décharge, la recharge pendant la rotation, la confiance, la sortie JSON et la migration v50.
+La régression `php testes/previsao.php` couvre la première décharge, la recharge pendant la rotation, la confiance, la sortie JSON, les migrations v50/v51, les relevés fréquents, les corrections des sources, la validité de la fenêtre et la pondération selon l’âge.
 
 Les régressions `php testes/backup.php` et `php testes/motores.php` utilisent de nouvelles bases SQLite jetables. Elles vérifient qu’une sauvegarde non valide préserve la base, que les anciennes sauvegardes valides sont restaurées et que les poids extrêmes et les prévisions de charge fonctionnent. Elles tournent aussi dans le job architecture du CI ; les régressions du navigateur restent dans le job de mise en page.
 

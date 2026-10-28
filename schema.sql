@@ -532,13 +532,15 @@ CREATE TABLE medicao (
     horas_guardado  DECIMAL(9,2) NOT NULL,
     peso_horas      DECIMAL(9,2) NOT NULL,
     usada           TINYINT NOT NULL DEFAULT 1,
+    valida          TINYINT NOT NULL DEFAULT 1,
     criado          DATETIME NOT NULL,
     INDEX (lancamento_id, medida, fim),
     FOREIGN KEY (lancamento_id) REFERENCES lancamento(id) ON DELETE CASCADE,
     CONSTRAINT ck_medicao_taxa CHECK (taxa BETWEEN 0 AND 100),
     CONSTRAINT ck_medicao_horas CHECK (horas_pulso >= 0 AND horas_guardado >= 0 AND peso_horas >= 0),
     CONSTRAINT ck_medicao_periodo CHECK (fim >= inicio),
-    CONSTRAINT ck_medicao_usada CHECK (usada IN (0, 1))
+    CONSTRAINT ck_medicao_usada CHECK (usada IN (0, 1)),
+    CONSTRAINT ck_medicao_valida CHECK (valida IN (0, 1))
 ) ENGINE=InnoDB;
 
 -- os winders da coleção (a caixa que gira os automáticos): o nome e a observação; o resto (a marca, o modelo...) são campos

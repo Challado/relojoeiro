@@ -1216,7 +1216,24 @@ $MIGRACOES = [
     "v48" => ["migracao_v48.sql", tk("a manutenção (a página Manutenção): cadastrar a manutenção de um relógio (a oficina, a situação, o problema, a OS, a previsão, o orçamento, o que foi junto e os documentos) põe o relógio em manutenção, fora do rodízio até voltar, e o encerramento vira o serviço; as oficinas, com quantos contatos quiser; e as listas que viram cadastro (a situação na coleção, os tipos de acessório e de serviço, a estanqueidade, os jeitos de carregar e as observações da reserva, as situações da manutenção, os tipos de oficina e de contato), cada item com o que ele faz. Cada responsável dos serviços de antes vira uma oficina, e cada serviço, uma manutenção encerrada"), "sistema.chave=migracao_v48", "migracao_v48_dados"],
     "v49" => ["migracao_v49.sql", tk("o aviso Carregar: converter corretamente as horas no pulso para dias, sem prever séculos de bateria guardada; a precisão dos pesos dos sorteios passa a ser configurável"), "sistema.chave=migracao_v49", "migracao_v49_dados"],
     "v50" => ["migracao_v50.sql", tk("a previsão de descarga com o gasto medido fixo durante a projeção; o aviso Carregar usa a mesma conta da ficha; os períodos que precisam de recarga no meio e a confiança das estimativas"), "sistema.chave=migracao_v50", "migracao_v50_dados"],
+    "v51" => ["migracao_v51.sql", tk("as medições reconstruídas após correções, o aprendizado com leituras frequentes e a validade dos dados do gasto da bateria"), "sistema.chave=migracao_v51", "migracao_v51_dados"],
 ];
+
+function migracao_v51_dados($nova = false)
+{
+    if (!$nova) {
+        sem_escopo(function () {
+            $colecoes = linhas("SELECT id FROM colecao ORDER BY id");
+            foreach ($colecoes as $c) {
+                banco_escopo((int)$c["id"]);
+                foreach (linhas("SELECT id FROM relogio ORDER BY id") as $r) {
+                    sincronizar_medicoes((int)$r["id"]);
+                }
+            }
+        });
+    }
+    sis_set("migracao_v51", "1");
+}
 
 function migracao_v50_dados($nova = false)
 {
@@ -2375,6 +2392,13 @@ function gasto_motor_nome($motor)
     return $n[$motor] ?? $motor;
 }
 
+// A idade reduz a influência da leitura sem alterar a carga ou os instantes das sessões.
+function medicao_peso_idade($instante, $momento)
+{
+    $meia_vida = max(0, (int)cfg("medicao_meia_vida_dias"));
+    return $meia_vida > 0 ? max(1e-12, pow(0.5, max(0, $momento - $instante) / (86400 * $meia_vida))) : 1.0;
+}
+
 function gasto_medido_horas($medicoes, $momento)
 {
     $h_dia = (strtotime("2000-01-01 " . cfg("uso_fim")) - strtotime("2000-01-01 " . cfg("uso_inicio"))) / 3600;
@@ -2392,7 +2416,8 @@ function gasto_medido_horas($medicoes, $momento)
         $usadas[] = (int)$m["id"];
         $hp = (float)$m["horas_pulso"];
         $hg = (float)$m["horas_guardado"];
-        $w = $hp + $hg;
+        $peso_idade = medicao_peso_idade($fim, $momento);
+        $w = ($hp + $hg) * $peso_idade;
         $a = $hp / $h_dia;
         $b = $hg / 24;
         $q = (float)$m["de_valor"] - (float)$m["ate_valor"];
@@ -2401,8 +2426,8 @@ function gasto_medido_horas($medicoes, $momento)
         $sab += $w * $a * $b;
         $saq += $w * $a * $q;
         $sbq += $w * $b * $q;
-        $media[$m["medida"]][0] += (float)$m["taxa"] * (float)$m["peso_horas"];
-        $media[$m["medida"]][1] += (float)$m["peso_horas"];
+        $media[$m["medida"]][0] += (float)$m["taxa"] * (float)$m["peso_horas"] * $peso_idade;
+        $media[$m["medida"]][1] += (float)$m["peso_horas"] * $peso_idade;
     }
     // todas as medições da janela entram, cada uma pesando as horas que cobre (não há leitura que pese menos)
     $res = ["uso" => null, "repouso" => null, "uso_dp" => null, "repouso_dp" => null, "n" => $n, "conjunta" => false, "usadas" => $usadas, "peso" => [], "fora" => [], "erro" => [], "leitura" => []];
@@ -2432,7 +2457,7 @@ function gasto_medido_horas($medicoes, $momento)
 }
 
 // O gasto medido pelas leituras de carga, num instante, pelo motor do relógio ($motor: horas, robusto, marcacao ou
-// formulas; cadastro: vazio), com as medições da janela da Configuração (nenhuma nela: todas as de antes). $prior: o gasto
+// formulas; cadastro: vazio), com as medições válidas da janela da Configuração (nenhuma nela: vale o cadastro). $prior: o gasto
 // do cadastro (["uso" => %, "repouso" => %], do gasto_prior), que a conta robusta junta com as medições.
 function gasto_medido($medicoes, $momento, $prior = null, $motor = "robusto")
 {
@@ -2440,8 +2465,7 @@ function gasto_medido($medicoes, $momento, $prior = null, $motor = "robusto")
     if ($motor === "cadastro") {
         return $vazio;
     }
-    $janela = medicoes_janela($medicoes, $momento, 0);
-    $ms = count($janela) > 0 ? $janela : $medicoes;
+    $ms = medicoes_janela($medicoes, $momento, 0);
     if ($motor === "horas") {
         return gasto_medido_horas($ms, $momento);
     }
@@ -2474,7 +2498,8 @@ function medicoes_janela($medicoes, $momento, $qual = 0)
     $j = max(1, (int)cfg("medicao_janela_dias")) * 86400;
     return array_values(array_filter($ate, function ($m) use ($momento, $j, $qual) {
         $f = strtotime($m["fim"]);
-        return $f > $momento - ($qual + 1) * $j && $f <= $momento - $qual * $j;
+        $inicio = strtotime($m["inicio"]);
+        return $inicio >= $momento - ($qual + 1) * $j && $f > $momento - ($qual + 1) * $j && $f <= $momento - $qual * $j;
     }));
 }
 
@@ -2542,14 +2567,14 @@ function gasto_medido_desde($medicoes, $momento, $desde, $prior = null)
         $de = (float)$m["de_valor"];
         $segue = $ultimo !== null && isset($m["inicio"]) && $m["inicio"] === $ultimo["fim"] && abs($de - $ultimo["valor"]) < 0.001;
         if (!$segue) {
-            $trechos[] = [["r" => $de, "u" => 0.0, "g" => 0.0, "fecha" => null, "abre" => null]];
+            $trechos[] = [["r" => $de, "u" => 0.0, "g" => 0.0, "quando" => strtotime($m["inicio"]), "fecha" => null, "abre" => null]];
         }
         $t = count($trechos) - 1;
         $n_t = count($trechos[$t]) - 1;
         $antes = $trechos[$t][$n_t];
         $trechos[$t][$n_t]["abre"] = $id;
         $trechos[$t][] = ["r" => (float)$m["ate_valor"], "u" => $antes["u"] + (float)$m["horas_pulso"] / $h_dia,
-            "g" => $antes["g"] + (float)$m["horas_guardado"] / 24, "fecha" => $id, "abre" => null];
+            "g" => $antes["g"] + (float)$m["horas_guardado"] / 24, "quando" => $fim, "fecha" => $id, "abre" => null];
         $ultimo = ["fim" => $m["fim"], "valor" => (float)$m["ate_valor"]];
     }
     $res = ["uso" => null, "repouso" => null, "uso_dp" => null, "repouso_dp" => null, "n" => count($ids), "conjunta" => false,
@@ -2563,7 +2588,7 @@ function gasto_medido_desde($medicoes, $momento, $desde, $prior = null)
     $w = [];
     foreach ($trechos as $t => $pts) {
         foreach ($pts as $i => $p) {
-            $w[$t][$i] = 1.0;
+            $w[$t][$i] = medicao_peso_idade($p["quando"], $momento);
         }
     }
     $sigma = 1.0;
@@ -2604,7 +2629,8 @@ function gasto_medido_desde($medicoes, $momento, $desde, $prior = null)
         $det = $m[0][0] * $m[1][1] - $m[0][1] * $m[1][0];
         if (abs($det) < 1e-12) {
             // sem cadastro e sem leituras que separem os dois: o que dá para medir, cada um sozinho
-            $beta = [$m[0][0] > 0 ? $v[0] / $m[0][0] : null, $m[1][1] > 0 ? $v[1] / $m[1][1] : null];
+            $indeterminada = $a[0][0] > 1e-9 && $a[1][1] > 1e-9;
+            $beta = [$m[0][0] > 0 && !$indeterminada ? $v[0] / $m[0][0] : null, $m[1][1] > 0 && !$indeterminada ? $v[1] / $m[1][1] : null];
             $cov = [[$m[0][0] > 0 ? 1 / $m[0][0] : 0.0, 0.0], [0.0, $m[1][1] > 0 ? 1 / $m[1][1] : 0.0]];
         } else {
             $beta = [($v[0] * $m[1][1] - $v[1] * $m[0][1]) / $det, ($m[0][0] * $v[1] - $m[1][0] * $v[0]) / $det];
@@ -2620,6 +2646,7 @@ function gasto_medido_desde($medicoes, $momento, $desde, $prior = null)
         // os desvios de cada leitura e os pesos novos (Huber: 1 até 1,345 σ, depois σ·1,345/|desvio|)
         $desv = [];
         $abs = [];
+        $abs_idade = [];
         foreach ($trechos as $t => $pts) {
             $sw = $sc = 0.0;
             foreach ($pts as $i => $p) {
@@ -2630,15 +2657,25 @@ function gasto_medido_desde($medicoes, $momento, $desde, $prior = null)
                 $desv[$t][$i] = $p["r"] - ($sc / $sw - (float)$beta[0] * $p["u"] - (float)$beta[1] * $p["g"]);
                 if (count($pts) > 1) {
                     $abs[] = abs($desv[$t][$i]);
+                    $abs_idade[] = [abs($desv[$t][$i]), medicao_peso_idade($p["quando"], $momento)];
                 }
             }
         }
         sort($abs);
         $sigma = max(GASTO_LEITURA_ERRO, count($abs) > 0 ? 1.4826 * $abs[intdiv(count($abs), 2)] : GASTO_LEITURA_ERRO);
+        if ((int)cfg("medicao_meia_vida_dias") > 0 && count($abs_idade) > 0) {
+            usort($abs_idade, function ($a, $b) { return $a[0] <=> $b[0]; });
+            $metade = array_sum(array_column($abs_idade, 1)) / 2; $acumulado = 0.0;
+            foreach ($abs_idade as [$erro_idade, $peso_idade]) {
+                $acumulado += $peso_idade;
+                if ($acumulado > $metade) { $sigma = max(GASTO_LEITURA_ERRO, 1.4826 * $erro_idade); break; }
+            }
+        }
         $mudou = 0.0;
         foreach ($trechos as $t => $pts) {
             foreach ($pts as $i => $p) {
                 $novo = abs($desv[$t][$i]) > 1.345 * $sigma ? 1.345 * $sigma / abs($desv[$t][$i]) : 1.0;
+                $novo *= medicao_peso_idade($p["quando"], $momento);
                 $mudou = max($mudou, abs($novo - $w[$t][$i]));
                 $w[$t][$i] = $novo;
             }
@@ -2656,8 +2693,9 @@ function gasto_medido_desde($medicoes, $momento, $desde, $prior = null)
     foreach ($trechos as $t => $pts) {
         foreach ($pts as $i => $p) {
             foreach ([$p["fecha"], $p["abre"]] as $mid) {
-                if ($mid !== null && (!isset($res["peso"][$mid]) || $w[$t][$i] < $res["peso"][$mid])) {
-                    $res["peso"][$mid] = round($w[$t][$i], 2);
+                $peso_robusto = $w[$t][$i] / medicao_peso_idade($p["quando"], $momento);
+                if ($mid !== null && (!isset($res["peso"][$mid]) || $peso_robusto < $res["peso"][$mid])) {
+                    $res["peso"][$mid] = round($peso_robusto, 2);
                     $res["erro"][$mid] = round($desv[$t][$i], 1);
                     $res["leitura"][$mid] = $p["r"];
                 }
@@ -2790,7 +2828,7 @@ function formula_calcular($no, &$ctx)
             if ($medida !== null) {
                 $todas = $dias > 0 ? array_values(array_filter($cache_pecas[$id], function ($m) use ($momento_med, $dias) {
                     $f = strtotime($m["fim"]);
-                    return $f <= $momento_med && $f > $momento_med - $dias * 86400;
+                    return strtotime($m["inicio"]) >= $momento_med - $dias * 86400 && $f <= $momento_med && $f > $momento_med - $dias * 86400;
                 })) : medicoes_janela($cache_pecas[$id], $momento_med, 0);
                 $sel = array_values(array_filter($todas, function ($m) use ($medida) { return $m["medida"] === $medida; }));
             }
@@ -3072,23 +3110,13 @@ function formula_calcular($no, &$ctx)
                 if (!isset($cache_med[$id])) {
                     $cache_med[$id] = ["linhas" => medicoes_da_conta($id)[0], "contas" => [], "motor" => gasto_motor_de($ctx["r"])[0]];
                 }
-                $janela = max(1, (int)cfg("medicao_janela_dias")) * 86400;
-                $ini = 0;
-                $fim = 0;
-                foreach ($cache_med[$id]["linhas"] as $k => $m) {
-                    $t = strtotime($m["fim"]);
-                    if ($t <= $momento_med - $janela && cfg("medicao_base") !== "leituras") {
-                        $ini = $k + 1;
-                    }
-                    if ($t <= $momento_med) {
-                        $fim = $k + 1;
-                    }
-                }
-                $chave = $ini . "-" . $fim;
+                $selecionadas = medicoes_janela($cache_med[$id]["linhas"], $momento_med, 0);
+                $prior_med = gasto_prior($ctx["r"], $momento_med);
+                $chave = implode(",", array_column($selecionadas, "id")) . ":" . json_encode($prior_med);
+                if ((int)cfg("medicao_meia_vida_dias") > 0) $chave .= ":" . $momento_med;
                 if (!isset($cache_med[$id]["contas"][$chave])) {
-                    $cache_med[$id]["prior"] = $cache_med[$id]["prior"] ?? gasto_prior($ctx["r"], $momento_med);
                     // no motor "pelas fórmulas", MEDIDO é a conta pela marcação (o 3): a fórmula parte dela se quiser
-                    $cache_med[$id]["contas"][$chave] = gasto_medido($cache_med[$id]["linhas"], $momento_med, $cache_med[$id]["prior"],
+                    $cache_med[$id]["contas"][$chave] = gasto_medido($selecionadas, $momento_med, $prior_med,
                         $cache_med[$id]["motor"] === "formulas" ? "marcacao" : $cache_med[$id]["motor"]);
                 }
                 $res = in_array($v[0], ["uso", "repouso"], true) ? $cache_med[$id]["contas"][$chave][$v[0]] : null;
@@ -8097,10 +8125,12 @@ function horas_no_pulso($rid, $de, $ate)
 {
     $h = 0.0;
     $ate_aqui = $de;
-    foreach (linhas("SELECT l.inicio, l.fim FROM lancamento l JOIN lancamento_tipo tp ON tp.id = l.tipo_id WHERE l.relogio_id = ? AND tp.identificador = 'pulso'
+    foreach (linhas("SELECT l.inicio, l.fim, tp.fecha_as FROM lancamento l JOIN lancamento_tipo tp ON tp.id = l.tipo_id WHERE l.relogio_id = ? AND tp.identificador = 'pulso'
         AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?) ORDER BY l.inicio, l.id", [(int)$rid, date("Y-m-d H:i:s", $ate), date("Y-m-d H:i:s", $de)]) as $sp) {
         $a = max($ate_aqui, strtotime($sp["inicio"]));
-        $b = min($ate, $sp["fim"] === null ? $ate : strtotime($sp["fim"]));
+        $fim = $sp["fim"] === null ? null : strtotime($sp["fim"]);
+        if ($fim === null && $sp["fecha_as"] !== null) $fim = max(strtotime($sp["inicio"]), instante(dia_da_colecao(strtotime($sp["inicio"])), $sp["fecha_as"]));
+        $b = min($ate, $fim ?? $ate);
         if ($b > $a) {
             $h += ($b - $a) / 3600;
             $ate_aqui = $b;
@@ -8113,10 +8143,12 @@ function horas_no_pulso($rid, $de, $ate)
 function periodos_no_pulso($rid, $de, $ate)
 {
     $res = [];
-    foreach (linhas("SELECT l.inicio, l.fim FROM lancamento l JOIN lancamento_tipo tp ON tp.id = l.tipo_id WHERE l.relogio_id = ? AND tp.identificador = 'pulso'
+    foreach (linhas("SELECT l.inicio, l.fim, tp.fecha_as FROM lancamento l JOIN lancamento_tipo tp ON tp.id = l.tipo_id WHERE l.relogio_id = ? AND tp.identificador = 'pulso'
         AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?) ORDER BY l.inicio, l.id", [(int)$rid, date("Y-m-d H:i:s", $ate), date("Y-m-d H:i:s", $de)]) as $sp) {
         $a = max($de, strtotime($sp["inicio"]));
-        $b = min($ate, $sp["fim"] === null ? $ate : strtotime($sp["fim"]));
+        $fim = $sp["fim"] === null ? null : strtotime($sp["fim"]);
+        if ($fim === null && $sp["fecha_as"] !== null) $fim = max(strtotime($sp["inicio"]), instante(dia_da_colecao(strtotime($sp["inicio"])), $sp["fecha_as"]));
+        $b = min($ate, $fim ?? $ate);
         if ($b > $a) {
             $res[] = [$a, $b];
         }
@@ -8141,7 +8173,7 @@ function estado_leitura_confere($rid, $q, $estado)
 // marcação (de antes dela, ou de um script que não diz), a do pulso registrado naquele instante
 function leituras_marcadas($rid)
 {
-    $pulsos = linhas("SELECT l.inicio, l.fim FROM lancamento l JOIN lancamento_tipo tp ON tp.id = l.tipo_id WHERE l.relogio_id = ? AND tp.identificador = 'pulso'", [(int)$rid]);
+    $pulsos = linhas("SELECT l.inicio, l.fim, tp.fecha_as FROM lancamento l JOIN lancamento_tipo tp ON tp.id = l.tipo_id WHERE l.relogio_id = ? AND tp.identificador = 'pulso'", [(int)$rid]);
     $res = [];
     foreach (linhas("SELECT l.id, l.inicio, l.estado FROM lancamento l JOIN lancamento_tipo tp ON tp.id = l.tipo_id WHERE l.relogio_id = ? AND tp.formato = 'valor' AND tp.marcha IS NULL", [(int)$rid]) as $l) {
         $e = $l["estado"];
@@ -8149,7 +8181,9 @@ function leituras_marcadas($rid)
             $t = strtotime($l["inicio"]);
             $e = "repouso";
             foreach ($pulsos as $p) {
-                if (strtotime($p["inicio"]) <= $t && ($p["fim"] === null || strtotime($p["fim"]) > $t)) {
+                $fim = $p["fim"] === null ? null : strtotime($p["fim"]);
+                if ($fim === null && $p["fecha_as"] !== null) $fim = max(strtotime($p["inicio"]), instante(dia_da_colecao(strtotime($p["inicio"])), $p["fecha_as"]));
+                if (strtotime($p["inicio"]) <= $t && ($fim === null || $fim > $t)) {
                     $e = "uso";
                     break;
                 }
@@ -8171,8 +8205,8 @@ function medicoes_da_conta($rid, $por_marcacao = null)
         $r_ = linha("SELECT * FROM relogio WHERE id = ?", [(int)$rid]);
         $por_marcacao = $r_ ? in_array(gasto_motor_de($r_)[0], ["marcacao", "formulas"], true) : false;
     }
-    $linhas = linhas("SELECT m.id, m.lancamento_id, m.medida, m.taxa, m.peso_horas, m.inicio, m.fim, m.horas_pulso, m.horas_guardado, m.de_valor, m.ate_valor
-        FROM medicao m JOIN lancamento l ON l.id = m.lancamento_id WHERE l.relogio_id = ? AND m.usada = 1 ORDER BY m.fim, m.id", [(int)$rid]);
+    $linhas = linhas("SELECT m.id, m.lancamento_id, m.medida, m.taxa, m.peso_horas, m.inicio, m.fim, m.horas_pulso, m.horas_guardado, m.de_valor, m.ate_valor, m.usada, m.valida
+        FROM medicao m JOIN lancamento l ON l.id = m.lancamento_id WHERE l.relogio_id = ? ORDER BY m.fim, m.id", [(int)$rid]);
     // as marcações das duas leituras de cada medição saem sempre (a tabela Medições do gasto mostra em qualquer motor); só
     // o motor pela marcação (e o das fórmulas) escolhe as medições por elas
     $marc = [];
@@ -8187,6 +8221,7 @@ function medicoes_da_conta($rid, $por_marcacao = null)
         $ini_e = $por_inicio[date("Y-m-d H:i:s", strtotime($m["inicio"]))] ?? null;
         $entra = $fim_e !== null && $fim_e === $ini_e;
         $marc[(int)$m["id"]] = ["de" => $ini_e, "ate" => $fim_e, "entra" => $por_marcacao ? $entra : null];
+        if ((int)$m["usada"] !== 1 || (int)$m["valida"] !== 1) continue;
         if (!$por_marcacao) {
             $res[] = $m;
         } elseif ($entra) {
@@ -8206,7 +8241,8 @@ function medicao_do_intervalo($rid, $inicio, $fim, $de_valor, $ate_valor, $taxas
     $hp = horas_no_pulso($rid, $inicio, $fim);
     $hg = ($fim - $inicio) / 3600 - $hp;
     $h_dia = (strtotime("2000-01-01 " . cfg("uso_fim")) - strtotime("2000-01-01 " . cfg("uso_inicio"))) / 3600;
-    $du = $hp / max(1, $h_dia); $dg = $hg / 24;
+    $h_dia = $h_dia > 0 ? $h_dia : 24;
+    $du = $hp / $h_dia; $dg = $hg / 24;
     $medida = $du >= 0.5 || $du >= $dg ? "uso" : "repouso";
     $queda = $de_valor - $ate_valor;
     $taxa = $medida === "uso" ? ($queda - $dg * (float)$taxas["taxa_repouso"]) / $du
@@ -8215,19 +8251,69 @@ function medicao_do_intervalo($rid, $inicio, $fim, $de_valor, $ate_valor, $taxas
         "horas_guardado" => round($hg, 2), "peso_horas" => round($medida === "uso" ? $hp : $hg, 2)];
 }
 
+// Refaz os dados derivados pelas fontes atuais. $criar: todas as ausentes (true), nenhuma (false), ou só estes ids.
+// Uma correção pode tornar o intervalo inválido e depois válido de novo: o id e a escolha usada=0 continuam guardados.
+function sincronizar_medicoes($rid, $criar = true, $escolhas = [], $desde = null)
+{
+    return banco_atomico(function () use ($rid, $criar, $escolhas, $desde) {
+        $r = linha("SELECT * FROM relogio WHERE id = ?", [(int)$rid]);
+        if (!$r) return;
+        $existentes = [];
+        foreach (linhas("SELECT m.* FROM medicao m JOIN lancamento l ON l.id = m.lancamento_id WHERE l.relogio_id = ? ORDER BY m.id", [(int)$rid]) as $m) {
+            if (!isset($existentes[(int)$m["lancamento_id"]])) $existentes[(int)$m["lancamento_id"]] = $m;
+        }
+        $leituras = linhas("SELECT l.id, l.tipo_id, l.inicio, l.valor FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
+            WHERE l.relogio_id = ? AND t.formato = 'valor' AND t.mede_gasto = 1 ORDER BY l.inicio, l.id", [(int)$rid]);
+        // As sessões abertas com fechamento automático acabam nessa hora, mesmo sem fim materializado pelo cron.
+        $sessoes = [];
+        foreach (linhas("SELECT l.inicio, l.fim, t.fecha_as FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
+            WHERE l.relogio_id = ? AND t.formato = 'sessao' AND t.identificador <> 'pulso'", [(int)$rid]) as $s) {
+            $a = strtotime($s["inicio"]);
+            $b = $s["fim"] === null ? null : strtotime($s["fim"]);
+            if ($b === null && $s["fecha_as"] !== null) $b = max($a, instante(dia_da_colecao($a), $s["fecha_as"]));
+            $sessoes[] = [$a, $b];
+        }
+        // Só as medições já reconstruídas podem participar do ponto de partida da próxima: nada de taxas antigas no meio.
+        sql("UPDATE medicao SET valida = 0 WHERE lancamento_id IN (SELECT id FROM lancamento WHERE relogio_id = ?)" . ($desde !== null ? " AND fim >= ?" : ""),
+            $desde !== null ? [(int)$rid, date("Y-m-d H:i:s", $desde)] : [(int)$rid]);
+        $anteriores = [];
+        foreach ($leituras as $l) {
+            $a = $anteriores[(int)$l["tipo_id"]] ?? null;
+            $anteriores[(int)$l["tipo_id"]] = $l;
+            $fim = strtotime($l["inicio"]); $inicio = $a ? strtotime($a["inicio"]) : $fim;
+            if ($desde !== null && $fim < $desde) continue;
+            if (!$a || $fim <= $inicio || $fim > time() + 60 || (float)$l["valor"] > (float)$a["valor"]) continue;
+            $outra = false;
+            foreach ($sessoes as [$si, $sf]) {
+                if ($si < $fim && ($sf === null || $sf > $inicio)) { $outra = true; break; }
+            }
+            if ($outra) continue;
+            $m = $existentes[(int)$l["id"]] ?? null;
+            if ($m === null && $criar !== true && (!is_array($criar) || !in_array((int)$l["id"], $criar, true))) continue;
+            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+            // O cadastro apenas desconta o outro estado na taxa descritiva. A regressão usa as quedas e horas originais.
+            $prior = gasto_prior($r, $inicio);
+            $conta = medicao_do_intervalo((int)$rid, $inicio, $fim, (float)$a["valor"], (float)$l["valor"],
+                ["taxa_uso" => $prior["uso"], "taxa_repouso" => $prior["repouso"]]);
+            $dados = [$conta["medida"], $conta["taxa"], $a["valor"], $l["valor"], $a["inicio"], $l["inicio"],
+                $conta["horas_pulso"], $conta["horas_guardado"], $conta["peso_horas"]];
+            if ($m !== null) {
+                sql("UPDATE medicao SET medida = ?, taxa = ?, de_valor = ?, ate_valor = ?, inicio = ?, fim = ?, horas_pulso = ?, horas_guardado = ?, peso_horas = ?, valida = 1 WHERE id = ?",
+                    array_merge($dados, [(int)$m["id"]]));
+            } else {
+                sql("INSERT INTO medicao (lancamento_id, medida, taxa, de_valor, ate_valor, inicio, fim, horas_pulso, horas_guardado, peso_horas, usada, valida, criado)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())", array_merge([(int)$l["id"]], $dados, [(int)($escolhas[(int)$l["id"]] ?? 1)]));
+            }
+        }
+        $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+    });
+}
+
 // Depois de corrigir o pulso de um relógio entre $de e $ate (uma sessão alterada, excluída ou lançada no passado), as
 // medições do gasto que cobrem esse trecho refazem as horas no pulso e fora dele (a queda entre as leituras não muda)
 function recalcular_medicoes($rid, $de, $ate)
 {
-    foreach (linhas("SELECT m.id, m.medida, m.inicio, m.fim FROM medicao m JOIN lancamento l ON l.id = m.lancamento_id WHERE l.relogio_id = ? AND m.inicio < ? AND m.fim > ?", [(int)$rid, date("Y-m-d H:i:s", $ate), date("Y-m-d H:i:s", $de)]) as $m) {
-        $a = strtotime($m["inicio"]);
-        $b = strtotime($m["fim"]);
-        $hp = horas_no_pulso($rid, $a, $b);
-        $hg = ($b - $a) / 3600 - $hp;
-        // o peso escolhido aqui (e não num CASE com parâmetros, que o PostgreSQL não sabe de que tipo são)
-        sql("UPDATE medicao SET horas_pulso = ?, horas_guardado = ?, peso_horas = ? WHERE id = ?",
-            [round($hp, 2), round($hg, 2), round($m["medida"] === "uso" ? $hp : $hg, 2), (int)$m["id"]]);
-    }
+    sincronizar_medicoes($rid, true, [], $de);
 }
 
 // As sessões esquecidas abertas (sem fim) de um tipo que fecha sozinho ("fecha às"): passaram da hora, ganham o fim nela, no
@@ -8889,11 +8975,11 @@ function previsao_energia($r, $agora)
             $prior_g = gasto_prior($r, $agora);
             $motor_c = $motor_g === "formulas" ? "marcacao" : $motor_g;
             $g = gasto_medido($medicoes, $agora, $prior_g, $motor_c);
-            // as medições da conta (as da janela; nenhuma nela: todas as de antes, como no gasto_medido), quantas de cada tipo,
+            // as medições válidas da janela e quantas de cada tipo,
             // e o que só as leituras dão (a mesma conta sem o cadastro como ponto de partida: com poucas medições, o cadastro
             // puxa o medido para perto dele)
             $janela_g = medicoes_janela($medicoes, $agora, 0);
-            $ms_g = array_values(array_filter(count($janela_g) > 0 ? $janela_g : $medicoes, function ($m) use ($agora) { return strtotime($m["fim"]) <= $agora; }));
+            $ms_g = $janela_g;
             $n_med = ["uso" => 0, "repouso" => 0];
             foreach ($ms_g as $m) {
                 $n_med[$m["medida"] === "uso" ? "uso" : "repouso"]++;
@@ -8920,7 +9006,7 @@ function previsao_energia($r, $agora)
             };
             $agora_j = $conta_j(medicoes_janela($medicoes, $agora, 0));
             $antes_j = $conta_j(medicoes_janela($medicoes, $agora, 1));
-            $gasto = ["janela_dias" => $janela, "motor" => $motor_g, "motor_nome" => gasto_motor_nome($motor_g), "motor_de" => $motor_de,
+            $gasto = ["janela_dias" => $janela, "meia_vida_dias" => max(0, (int)cfg("medicao_meia_vida_dias")), "motor" => $motor_g, "motor_nome" => gasto_motor_nome($motor_g), "motor_de" => $motor_de,
                 "base" => cfg("medicao_base") === "leituras" ? "leituras" : "dias",
                 "janela_leituras" => (int)cfg("medicao_janela_leituras") >= 2 ? (int)cfg("medicao_janela_leituras") : 20, "janela_texto" => medicoes_janela_texto(), "medicoes" => $agora_j["n"], "fora" => count($agora_j["fora"]), "conjunta" => $agora_j["conjunta"], "medicoes_antes" => $antes_j["n"]];
             $tem = false;

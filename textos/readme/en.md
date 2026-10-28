@@ -1,4 +1,4 @@
-<!-- origem: 51213c17088e79ada1cb0b3bd3b061bb54802501 -->
+<!-- origem: 323c1b47ab3cc3fa76db1c7b7d12b41b6c43aec3 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -673,7 +673,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 
 ---
 
-The regression `php testes/previsao.php` covers first discharge, recharging during rotation, confidence, JSON output and migration v50.
+The regression `php testes/previsao.php` covers first discharge, recharging during rotation, confidence, JSON output, migrations v50/v51, frequent readings, source corrections, window validity and age weighting.
 
 The regressions `php testes/backup.php` and `php testes/motores.php` use fresh disposable SQLite databases. They check that an invalid backup preserves the database, that valid older backups can be restored, and that extreme weights and charge forecasts work. They also run in the architecture job of the CI; browser regressions still run in the layout job.
 

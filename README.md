@@ -491,7 +491,7 @@ refeita inteira). O **Sortear de novo** e o **Apagar tudo** sempre começam uma 
 
 Uma leitura que continua caindo pode medir gasto mesmo acima da estimativa: a diferença ajuda a corrigir o modelo. Se houve recarga sem sessão registrada, use medir=0 para não usar o intervalo na calibração.
 
-A ação lancamento/medicao_criar, com lancamento_id da leitura já gravada, recupera uma medição ausente: exige leitura anterior, intervalo de pelo menos uma hora, carga sem aumento e nenhuma sessão além do pulso. Preserva as leituras e qualquer medição existente, inclusive a tirada da conta; na resposta, id identifica a medição.
+A ação lancamento/medicao_criar, com lancamento_id da leitura já gravada, recupera uma medição ausente: exige leitura anterior em outro instante, carga sem aumento e nenhuma sessão além do pulso. Preserva as leituras, o id e a escolha usada das medições existentes; refaz seus dados derivados e sua validade. Na resposta, id identifica a medição.
 
 O cadastro do smartwatch diz "dura 5 dias". A realidade discorda, e muda conforme a bateria envelhece. Por isso, **cada leitura
 de carga que você lança é comparada com a anterior**, e o intervalo entre as duas vira uma medição: quanto caiu, quantas horas
@@ -524,7 +524,7 @@ Configuração*).
 
 **Quais medições entram** é outra escolha da Configuração, **Gasto medido: contar por**: **dias** (as medições dos últimos
 tantos dias, 90 por padrão) ou **leituras** (as últimas tantas medições de cada tipo, em uso e em repouso, 20 por padrão).
-Sem nenhuma na janela, entram as de antes. Vale para os motores 1, 2, 3 e 5 (e para as funções das fórmulas sem o N de dias).
+Sem nenhuma medição válida na janela, vale o cadastro; medições vencidas não voltam à conta. Contando por dias, o intervalo inteiro deve estar na janela: o sistema não inventa leituras para recortar um intervalo longo. Vale para os motores 1, 2, 3 e 5 (e para as funções das fórmulas sem o N de dias).
 
 Entre duas recargas, a carga cai em linha reta com o tempo no pulso e o tempo guardado:
 
@@ -535,7 +535,7 @@ leitura = carga do começo − gasto em uso × dias de uso − gasto guardado ×
 Leituras seguidas, sem recarga no meio, formam um **trecho**. Cada trecho tem a carga do começo dele (que a conta descobre), e
 os dois gastos valem para todos os trechos. No motor 2, com as leituras da janela, o sistema acha **os dois gastos juntos**: os
 que melhor explicam todas as leituras. Uma noite entre duas leituras (só fora do pulso) acerta o gasto guardado; os dias no
-pulso, já sabendo esse, acertam o gasto em uso. Entra toda medição de 1 hora ou mais, até a sem queda nenhuma (ela diz que o
+pulso, já sabendo esse, acertam o gasto em uso. Entra toda medição entre instantes diferentes, inclusive intervalos menores que uma hora, até a sem queda nenhuma (ela diz que o
 gasto é pequeno). Quanto mais leituras, mais preciso. No motor 3 a mesma conta é feita duas vezes, uma só com as leituras em
 uso e outra só com as em repouso.
 
@@ -603,6 +603,8 @@ motor 4).
 ---
 
 ### A previsão de descarga
+
+A v51 reconstrói as medições após novas leituras, correções, exclusões e alterações de sessões, preservando as leituras, os ids das medições existentes e a escolha `usada=0`. Um intervalo que deixa de ser elegível fica com `valida=false`, fora da calibração; corrigir novamente pode revalidá-lo sem reativar uma exclusão manual. Leituras frequentes também aprendem, sem criar intervalos sobrepostos. A janela por dias exige o intervalo inteiro dentro dela; vazia, vale o cadastro. A opção `medicao_meia_vida_dias` (0 a 3650, padrão 0) reduz o peso dos dados pela idade: após N dias, metade do peso; 0 desliga. Vale nos motores horas, robusto, marcação e no MEDIDO das fórmulas; não muda a carga informada nem cria uma perda extra por envelhecimento. A projeção mantém a calibração da origem. A precisão de ±2 pontos deve ser medida com leituras posteriores; a correção não certifica 80% sem validação.
 
 O ajuste robusto só termina quando os pesos das leituras, as taxas e a escala do ruído estabilizam. O peso do cadastro e a incerteza usam a escala final do ruído.
 
@@ -1438,6 +1440,7 @@ A página **Configuração** guarda as opções **da coleção** (cada coleção
 | **Gasto medido: contar por** (`medicao_base`) | o que entra na conta do gasto medido: **Dias** (`dias`, as medições dos últimos tantos dias) ou **Leituras** (`leituras`, as últimas tantas medições de cada tipo, em uso e em repouso). Padrão: dias. |
 | **Gasto medido: média dos últimos (dias)** (`medicao_janela_dias`) | a janela do gasto medido, contando por dias: as medições mais velhas saem da conta. De 1 a 3650. Padrão: 90. |
 | **Gasto medido: últimas leituras (de cada tipo)** (`medicao_janela_leituras`) | a janela contando por leituras: quantas medições de cada tipo entram. De 2 a 1000. Padrão: 20. |
+| **Gasto medido: meia-vida dos dados (dias; 0 desliga)** (`medicao_meia_vida_dias`) | De 0 a 3650 dias; padrão 0. Com N, o peso temporal cai à metade após N dias. Aplica-se aos motores horas, robusto, marcação e MEDIDO nas fórmulas. Não altera as leituras nem a carga. |
 | **Cópia dos documentos no banco (válido para todos os relógios)** (`documentos_copia`) | para a coleção inteira: **Todos os arquivos** (`todos`), **Nenhum arquivo** (`nenhum`) ou vazio (*Individual (no relógio ou no arquivo)*). É o primeiro dos três níveis da cópia (veja [Os documentos do relógio](#os-documentos-do-relógio)). Padrão: vazio. |
 | **Endereço do sistema** (`url_sistema`) | o endereço que a âncora `{link}` põe nas mensagens e na agenda, e o dos links dos e-mails, do ICS e do retorno do Outlook. É do sistema inteiro: só o master muda. Padrão: vazio (o endereço por onde a página foi aberta). |
 | **Próximos dias: mostrar até** (`proximos_por_pagina`) e **Plano: mostrar até** (`plano_por_pagina`) | quantos dias os **Próximos dias** da página Hoje e o **Dia a dia** da página Plano mostram de cada vez (de 1 a 366). Passando disso, embaixo aparece o navegador das páginas: **<** (anterior), os números (a primeira, a última e até duas de cada lado da atual, com … nos saltos) e **>** (próxima); parando o mouse em cima, a dica diz *Anterior*, *Próximo* ou *Página N*. Padrão: 7 e 31. |
@@ -2640,7 +2643,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 
 ---
 
-A regressão `php testes/previsao.php` cobre a primeira descarga, recarga no rodízio, confiança, saída JSON e migração v50.
+A regressão `php testes/previsao.php` cobre a primeira descarga, recarga no rodízio, confiança, saída JSON e migrações v50/v51, leituras frequentes, correções das fontes, validade da janela e peso por idade.
 
 As regressões `php testes/backup.php` e `php testes/motores.php` usam bancos SQLite novos e descartáveis. Conferem que uma cópia inválida preserve o banco, que cópias antigas válidas voltem e que pesos extremos e previsões de carga funcionem. Também rodam no trabalho de arquitetura do CI; as regressões do navegador continuam no trabalho de layout.
 

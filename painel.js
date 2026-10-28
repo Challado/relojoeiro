@@ -310,6 +310,7 @@ function abrirNoPainel(id) {
           linhasGasto.push([t("Janela anterior"), (gs.uso.antes !== null ? t("{1} no pulso", {1: pct(gs.uso.antes)}) : "") + (gs.uso.antes !== null && gs.repouso.antes !== null ? " · " : "")
             + (gs.repouso.antes !== null ? t("{1} fora", {1: pct(gs.repouso.antes)}) : "") + el("small", {}, gs.base === "leituras" ? t("{1}{2}, nas {3} leituras de cada tipo antes dessas", {1: gs.medicoes_antes, 2: gs.medicoes_antes === 1 ? t(" medição") : t(" medições"), 3: gs.janela_leituras}) : t("{1}{2}, nos {3} dias antes", {1: gs.medicoes_antes, 2: gs.medicoes_antes === 1 ? t(" medição") : t(" medições"), 3: gs.janela_dias}))]);
         }
+        if (gs.meia_vida_dias > 0) linhasGasto.push([t("Gasto medido: meia-vida dos dados (dias; 0 desliga)"), t("{1} dias", {1: gs.meia_vida_dias})]);
         linhasGasto.push([t("Medições"), gs.medicoes > 0 ? t("{1} na conta, {2}{3}", {1: gs.medicoes, 2: h(gs.janela_texto), 3: el("small", {}, gs.motor === "marcacao" || gs.motor === "formulas" ? t("pela marcação: {1} em uso e {2} em repouso", {1: gs.uso.medicoes, 2: gs.repouso.medicoes})
             : (gs.conjunta ? t("os dois gastos saem juntos da conta") : t("ainda não separam bem os dois: vale a média de cada um")))
             + (gs.fora > 0 ? el("small", {"class": "em atrasado"}, t("{1} com uma leitura que não bate com as outras e pesa pouco na conta (veja Medições do gasto)", {1: gs.fora})) : "")})
@@ -817,7 +818,7 @@ function abrirNoPainel(id) {
                   + td(par([t("No pulso"), t("Fora do pulso")], [t("{1} h", {1: num(m.horas_pulso, 1)}), t("{1} h", {1: num(m.horas_guardado, 1)})]))
                   + td(par([m.medida === "uso" ? t("Em uso") : t("Fora do pulso")], [t("{1}% por dia", {1: num(m.taxa, 2)})]))
                   // na conta: sim; em parte (a leitura que não bate com as outras pesa menos, Huber); não (fora da janela, só histórico)
-                  + td((!m.usada ? t("não (só histórico)") : (m.marcacoes_iguais === false ? t("não (leituras com marcações diferentes)") : motorG === "cadastro" ? t("não (só o cadastro)") : !m.na_media ? t("não (fora da janela)")
+                  + td((m.valida === false ? t("não (intervalo invalidado por correção)") : !m.usada ? t("não (só histórico)") : (m.marcacoes_iguais === false ? t("não (leituras com marcações diferentes)") : motorG === "cadastro" ? t("não (só o cadastro)") : !m.na_media ? t("não (fora da janela)")
                       : (m.peso !== null && m.peso < 1 ? el("span", {"class": m.fora ? "em atrasado" : ""}, t("em parte: pesa {1}%", {1: Math.round(100 * m.peso)})) : t("sim"))))
                     + (m.na_media && m.peso !== null && m.peso < 1 ? el("small", {}, t("a leitura de {1}% não bate bem com as outras (a conta erra {2} pontos nela)", {1: num(m.leitura_fraca, 0), 2: num(Math.abs(m.erro), 1)})) : ""))
                   // pôr ou tirar da conta, sem apagar a medição

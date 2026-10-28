@@ -1,4 +1,4 @@
-<!-- origem: 306209a9a45c84316aaf2feef1945e048a06e706 -->
+<!-- origem: 656bdb14a75c67d571dae4cc8398473d79d98368 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -453,7 +453,7 @@ mode de 30 jours va jusqu'au 30e, compté à partir d'aujourd'hui).
 
 Une lecture qui continue de baisser peut mesurer la consommation même au-dessus de l’estimation : cet écart aide à corriger le modèle. Si une recharge a eu lieu sans session enregistrée, utilisez medir=0 pour exclure cet intervalle de l’étalonnage.
 
-L’action lancamento/medicao_criar, avec le lancamento_id de la lecture enregistrée, récupère une mesure manquante : elle exige une lecture antérieure, un intervalle d’au moins une heure, une charge sans hausse et aucune session autre que le port au poignet. Elle préserve les lectures et toute mesure existante, même exclue ; id dans la réponse identifie la mesure.
+L’action lancamento/medicao_criar, avec lancamento_id du relevé enregistré, récupère une mesure manquante : il faut un relevé antérieur à un autre instant, sans hausse de charge ni session autre que le port au poignet. Elle préserve les relevés, les ids des mesures existantes et leur choix usada ; elle recalcule les données dérivées et leur validité. Dans la réponse, id identifie la mesure.
 
 La fiche de la smartwatch dit « tient 5 jours ». La réalité n'est pas d'accord, et change à mesure que la batterie vieillit.
 C'est pourquoi **chaque relevé de charge que vous saisissez est comparé au précédent**, et l'intervalle entre les deux devient
@@ -487,7 +487,7 @@ choix de la collection, dans la Configuration*).
 
 **Quelles mesures entrent** est un autre choix de la Configuration, **Consommation mesurée : compter par** : **jours** (les
 mesures des tant derniers jours, 90 par défaut) ou **relevés** (les tant dernières mesures de chaque type, en usage et au
-repos, 20 par défaut). Sans aucune dans la fenêtre, celles d'avant entrent. Vaut pour les moteurs 1, 2, 3 et 5 (et pour les
+repos, 20 par défaut). Sans mesure valide dans la fenêtre, les valeurs de la fiche s’appliquent ; les mesures périmées ne reviennent pas. Vaut pour les moteurs 1, 2, 3 et 5 (et pour les
 fonctions des formules sans le N de jours).
 
 Entre deux recharges, la charge baisse en ligne droite avec le temps au poignet et le temps rangée :
@@ -500,7 +500,7 @@ Des relevés consécutifs, sans recharge entre eux, forment un **tronçon**. Cha
 découvre), et les deux consommations valent pour tous les tronçons. Dans le moteur 2, avec les relevés de la fenêtre, le
 système trouve **les deux consommations ensemble** : celles qui expliquent le mieux tous les relevés. Une nuit entre deux
 relevés (seulement hors du poignet) cale la consommation rangée ; les jours au poignet, celle-ci étant connue, calent la
-consommation en usage. Toute mesure de 1 heure ou plus entre, même celle sans aucune baisse (elle dit que la consommation est
+consommation en usage. Toute mesure entre des instants différents entre, même de moins d’une heure, même celle sans aucune baisse (elle dit que la consommation est
 petite). Plus il y a de relevés, plus c'est précis. Dans le moteur 3 le même calcul est fait deux fois, une seule avec les
 relevés en usage et une seule avec ceux au repos.
 
@@ -573,6 +573,8 @@ s'appliquent que tant qu'il n'y a pas de mesure (ou toujours, dans le moteur 4).
 ---
 
 ### La prévision de décharge {#a-previsão-de-descarga}
+
+La v51 reconstruit les mesures après de nouveaux relevés, corrections, suppressions et changements de sessions, en préservant les relevés, les ids des mesures existantes et le choix `usada=0`. Un intervalle devenu inadmissible est marqué `valida=false` et exclu de l’étalonnage ; une autre correction peut le revalider sans annuler une exclusion manuelle. Les relevés fréquents contribuent aussi, sans intervalles superposés. La fenêtre en jours exige que l’intervalle entier soit inclus ; si elle est vide, les valeurs de la fiche s’appliquent. L’option `medicao_meia_vida_dias` (0 à 3650, défaut 0) réduit le poids selon l’âge : après N jours, la moitié du poids ; 0 désactive. Elle s’applique à horas, robusto, marcacao et MEDIDO dans les formules ; elle ne change pas la charge saisie et n’ajoute pas de perte supplémentaire due au vieillissement. La projection conserve l’étalonnage de son origine. La précision de ±2 points doit être mesurée avec des relevés ultérieurs ; la correction ne certifie pas 80% sans validation.
 
 L’ajustement robuste s’arrête seulement lorsque les poids des lectures, les taux et l’échelle du bruit se stabilisent. Le poids des valeurs du registre et l’incertitude utilisent l’échelle finale du bruit.
 
@@ -1461,6 +1463,7 @@ collection vient à la fin de chaque ligne.
 | **Consommation mesurée : compter par** (`medicao_base`) | ce qui entre dans le calcul de la consommation mesurée : **Jours** (`dias`, les mesures des tant derniers jours) ou **Relevés** (`leituras`, les tant dernières mesures de chaque type, en usage et au repos). Par défaut : jours. |
 | **Consommation mesurée : moyenne des derniers (jours)** (`medicao_janela_dias`) | la fenêtre de la consommation mesurée, en comptant par jours : les mesures plus anciennes sortent du calcul. De 1 à 3650. Par défaut : 90. |
 | **Consommation mesurée : derniers relevés (de chaque type)** (`medicao_janela_leituras`) | la fenêtre en comptant par relevés : combien de mesures de chaque type entrent. De 2 à 1000. Par défaut : 20. |
+| **Consommation mesurée : demi-vie des données (jours ; 0 désactive)** (`medicao_meia_vida_dias`) | medicao_meia_vida_dias : de 0 à 3650 jours ; le poids des données diminue de moitié après N jours ; 0 désactive (défaut). |
 | **Copie des documents dans la base (valable pour toutes les montres)** (`documentos_copia`) | pour toute la collection : **Tous les fichiers** (`todos`), **Aucun fichier** (`nenhum`) ou vide (*Individuelle (sur la montre ou le fichier)*). C'est le premier des trois niveaux de la copie (voir [Les documents de la montre](#os-documentos-do-relógio)). Par défaut : vide. |
 | **Adresse du système** (`url_sistema`) | l'adresse que le repère `{link}` met dans les messages et dans l'agenda, et celle des liens des e-mails, de l'ICS et du retour d'Outlook. Elle est à tout le système : seul le master la change. Par défaut : vide (l'adresse par laquelle la page a été ouverte). |
 | **Prochains jours : afficher jusqu'à** (`proximos_por_pagina`) et **Plan : afficher jusqu'à** (`plano_por_pagina`) | combien de jours affichent à la fois les **Prochains jours** de la page Aujourd'hui et le **Jour par jour** de la page Plan (de 1 à 366). Au-delà, le paginateur apparaît en dessous : **<** (précédent), les numéros (le premier, le dernier et jusqu'à deux de chaque côté de l'actuel, avec … dans les trous) et **>** (suivant) ; en posant la souris dessus, l'info-bulle dit *Précédent*, *Suivant* ou *Page N*. Par défaut : 7 et 31. |

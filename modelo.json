@@ -3683,6 +3683,7 @@
         "previsao_limite": "20",
         "sol_limiar": "70",
         "medicao_janela_dias": "90",
+        "medicao_meia_vida_dias": "0",
         "medicao_base": "dias",
         "medicao_janela_leituras": "20",
         "carga_limiar": "20",

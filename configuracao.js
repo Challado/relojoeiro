@@ -253,6 +253,8 @@ function recarregarConfig(aplicadas, manterPosicao) {
             ex("medido", t("O gasto medido"), t("O gasto medido conta as medições dos últimos dias ou as últimas leituras de cada tipo (em uso e em repouso), conforme o \"contar por\"; as de fora saem da conta."))))
           + avancado("config.gasto", parCampo(t("Gasto medido: média dos últimos (dias)"), numero("medicao_janela_dias", cfg("medicao_janela_dias") !== "" ? cfg("medicao_janela_dias") : "90", "1", "3650")))
           + avancado("config.gasto", parCampo(t("Gasto medido: últimas leituras (de cada tipo)"), numero("medicao_janela_leituras", cfg("medicao_janela_leituras") !== "" ? cfg("medicao_janela_leituras") : "20", "2", "1000")))
+          + avancado("config.gasto", parCampo(t("Gasto medido: meia-vida dos dados (dias; 0 desliga)"), numero("medicao_meia_vida_dias", cfg("medicao_meia_vida_dias") !== "" ? cfg("medicao_meia_vida_dias") : "0", "0", "3650"), null,
+            ex("idade", t("O gasto medido"), t("Com meia-vida de N dias, uma leitura de N dias atrás pesa metade de uma atual. A janela continua limitando a idade dos dados; 0 mantém pesos iguais por idade. Os cinco motores continuam disponíveis."))))
           // o Encostado: a caixa liga ou desliga o aviso inteiro (o aviso do cadastro, a coluna da Hoje, o filtro); os dias, o limite
           + parCampo(t("Avisar quando um relógio fica encostado"), marca("encostado_ativo", cfg("encostado_ativo") !== "0"), "check",
             ex("encostado", t("O aviso Encostado"), t("Um relógio da coleção que passa do limite de dias sem ir ao pulso ganha o aviso <strong>Encostado</strong>; a caixa desliga tudo (o aviso, a coluna da Hoje e o filtro: é o mesmo aviso Encostado da página Avisos).")))

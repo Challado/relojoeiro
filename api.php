@@ -468,9 +468,6 @@
  *                            Ex. novo: curl -u lucas:senha -d recurso=lancamento_tipos -d acao=novo -d identificador=banho_ultrassom -d "nome=Banho ultrassônico" -d formato=instantaneo -d no_id=0 http://servidor/relojoeiro/api.php
  *                            Ex. alterar: curl -u lucas:senha -d recurso=lancamento_tipos -d acao=alterar -d id=11 -d fecha_as=18:00 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=lancamento_tipos -d acao=excluir -d id=11 -d confirmar=1 http://servidor/relojoeiro/api.php
- *                            medicao_criar (lancamento_id da leitura já gravada): recupera a medição ausente sem alterar leituras
- *                            ou medições existentes, inclusive as excluídas da conta. Exige leitura anterior, pelo menos uma hora,
- *                            carga sem aumento e nenhuma sessão além do pulso. A resposta id identifica a medição.
  *   recurso=formulas          nova (identificador, nome, expressao, unidade, no_id: fórmula nova, ou mais uma versão da que
  *                             existe, em outro ponto), alterar (id: nome, expressao, unidade, no_id), excluir (id)
  *                            Ex. nova: curl -u lucas:senha -d recurso=formulas -d acao=nova -d identificador=idade_dias -d "nome=Idade (dias)" --data-urlencode "expressao=AGORA() - data_compra" -d unidade=dias -d no_id=0 http://servidor/relojoeiro/api.php
@@ -527,6 +524,9 @@
  *                            Ex. periodo: curl -u lucas:senha -d recurso=lancamento -d acao=periodo -d relogio_id=3 -d tipo=winder -d "inicio=2026-09-26 20:00" -d "fim=2026-09-27 07:00" http://servidor/relojoeiro/api.php
  *                            Ex. alterar: curl -u lucas:senha -d recurso=lancamento -d acao=alterar -d id=42 -d valor=70 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=lancamento -d acao=excluir -d id=42 -d confirmar=1 http://servidor/relojoeiro/api.php
+ *                            medicao_criar (lancamento_id): recupera o intervalo ausente entre instantes diferentes, sem aumento
+ *                             de carga nem outra sessão além do pulso. Atualiza dados derivados, preservando leituras, ids e usada=0.
+ *                            Novas leituras, correções e exclusões reconstroem as medições; valida=false impede calibrar.
  *   recurso=avisos            novo (identificador, nome, expressao: a data prevista, condicao: vale quando (uma fórmula, 1 vale e 0
  *                             não; vazia, vale sempre; ex.: corda_manual = 0), antecedencia_dias, texto com {relogio},
  *                             {data}, {quando} e {limite}, resolve: o tipo de lançamento, ativo, no_id, escala: nao, uso (conferido no
@@ -618,7 +618,8 @@
  *                             página Hoje é o relógio do dia; pulso: o relógio no pulso agora); proximos_por_pagina e plano_por_pagina (1 a
  *                             366: o "Mostrar até", quantos dias os Próximos dias da página Hoje e o dia a dia da página Plano
  *                             mostram por página; padrão 7 e 31); idioma (o da coleção); max_sem_uso (0 a 365); previsao_limite (0 a
- *                             100); medicao_janela_dias (1 a 3650: a média do gasto medido usa as medições destes últimos dias);
+ *                             100); medicao_janela_dias (1 a 3650: intervalos inteiros nestes últimos dias);
+ *                             medicao_meia_vida_dias (0 a 3650: metade do peso após N dias; padrão 0, desligado);
  *                             encostado_dias; trocar_hoje (1 ou 0: o relógio de hoje se troca no próprio dia, ou só a partir de
  *                             amanhã; vazio: 0); calibre_campos (movimento ou todos: os campos do formulário do calibre); url_sistema
  *                             (do sistema inteiro: só o master); só o que vier), evento_salvar (evento_id
@@ -1042,8 +1043,10 @@
  *                                    decidem)
  *     config_php_copia               o DOCUMENTOS_COPIA_BANCO que o config.php ainda define (verdadeiro ou falso), que não vale mais (a
  *                                    Configuração mostra o aviso); null: não está lá
- *     config.medicao_janela_dias     o gasto medido pelas leituras usa as medições destes últimos dias, com "contar por" dias (sem nenhuma
- *                                    na janela, as de antes)
+ *     config.medicao_janela_dias     o gasto medido usa intervalos inteiros nestes últimos dias, com contar por dias; sem medição válida na
+ *                                    janela, vale o cadastro
+ *     config.medicao_meia_vida_dias  a meia-vida temporal dos dados em dias (medicao_meia_vida_dias); 0 desliga; não altera a carga
+ *                                    informada
  *     config.medicao_janela_leituras o gasto medido usa as últimas tantas medições de cada tipo (em uso e em repouso), com "contar por"
  *                                    leituras (2 a 1000)
  *     config.encostado_dias          o aviso Encostado: depois de quantos dias sem ir ao pulso um relógio da coleção é avisado (1 a 3650;
@@ -1790,6 +1793,8 @@
  *     relogios[].medicoes[].taxa     o gasto medido, em % por dia de uso (uso) ou por dia guardado (repouso) (número)
  *     relogios[].medicoes[].usada    verdadeiro ou falso: a caixa "Atualizar o gasto com esta medição" estava marcada (entra na média);
  *                                    falso: só histórico
+ *     relogios[].medicoes[].valida   verdadeiro quando o intervalo continua elegível pelas leituras e sessões atuais; falso fica fora da
+ *                                    calibração sem alterar a escolha usada
  *     relogios[].motivos             por que cada campo acima ficou null (objeto; vazio quando todos foram calculados)
  *     relogios[].motivos.<campo>     o motivo de o campo <campo> estar null (texto), ex.: sem dados para calcular a energia; não chega a
  *                                    zero em até 10 anos
@@ -1858,6 +1863,9 @@
  *                                    a janela por extenso: "dos últimos 90 dias" ou "das últimas 20 leituras de cada tipo"
  *     relogios[].previsao.gasto.janela_dias
  *                                    a janela do gasto medido (medicao_janela_dias da Configuração), em dias (número)
+ *     relogios[].previsao.gasto.meia_vida_dias
+ *                                    a meia-vida temporal dos dados em dias (medicao_meia_vida_dias); 0 desliga; não altera a carga
+ *                                    informada
  *     relogios[].previsao.gasto.fora quantas medições da janela têm uma leitura que não bate com as outras e pesa menos da metade na conta
  *                                    (número)
  *     relogios[].previsao.gasto.medicoes
@@ -3450,6 +3458,8 @@
  *     relogio.medicoes[].taxa        o gasto medido, em % por dia de uso (uso) ou por dia guardado (repouso) (número)
  *     relogio.medicoes[].usada       verdadeiro ou falso: a caixa "Atualizar o gasto com esta medição" estava marcada (entra na média);
  *                                    falso: só histórico
+ *     relogio.medicoes[].valida      verdadeiro quando o intervalo continua elegível pelas leituras e sessões atuais; falso fica fora da
+ *                                    calibração sem alterar a escolha usada
  *     relogio.no_id                  o grupo (0: na raiz)
  *     relogio.nome                   o nome
  *     relogio.nota                   a nota nos critérios; null: indisponível
@@ -3513,6 +3523,9 @@
  *                                    a janela por extenso: "dos últimos 90 dias" ou "das últimas 20 leituras de cada tipo"
  *     relogio.previsao.gasto.janela_dias
  *                                    a janela do gasto medido (medicao_janela_dias da Configuração), em dias (número)
+ *     relogio.previsao.gasto.meia_vida_dias
+ *                                    a meia-vida temporal dos dados em dias (medicao_meia_vida_dias); 0 desliga; não altera a carga
+ *                                    informada
  *     relogio.previsao.gasto.fora    quantas medições da janela têm uma leitura que não bate com as outras e pesa menos da metade na conta
  *                                    (número)
  *     relogio.previsao.gasto.medicoes
@@ -3783,8 +3796,10 @@
  *                                    decidem)
  *     config_php_copia               o DOCUMENTOS_COPIA_BANCO que o config.php ainda define (verdadeiro ou falso), que não vale mais (a
  *                                    Configuração mostra o aviso); null: não está lá
- *     config.medicao_janela_dias     o gasto medido pelas leituras usa as medições destes últimos dias, com "contar por" dias (sem nenhuma
- *                                    na janela, as de antes)
+ *     config.medicao_janela_dias     o gasto medido usa intervalos inteiros nestes últimos dias, com contar por dias; sem medição válida na
+ *                                    janela, vale o cadastro
+ *     config.medicao_meia_vida_dias  a meia-vida temporal dos dados em dias (medicao_meia_vida_dias); 0 desliga; não altera a carga
+ *                                    informada
  *     config.medicao_janela_leituras o gasto medido usa as últimas tantas medições de cada tipo (em uso e em repouso), com "contar por"
  *                                    leituras (2 a 1000)
  *     config.encostado_dias          o aviso Encostado: depois de quantos dias sem ir ao pulso um relógio da coleção é avisado (1 a 3650;
@@ -4305,6 +4320,9 @@
  *                                    as últimas tantas medições de cada tipo que entram, com base leituras (número)
  *     previsoes[].gasto.janela_texto a janela por extenso: "dos últimos 90 dias" ou "das últimas 20 leituras de cada tipo"
  *     previsoes[].gasto.janela_dias  a janela do gasto medido (medicao_janela_dias da Configuração), em dias (número)
+ *     previsoes[].gasto.meia_vida_dias
+ *                                    a meia-vida temporal dos dados em dias (medicao_meia_vida_dias); 0 desliga; não altera a carga
+ *                                    informada
  *     previsoes[].gasto.fora         quantas medições da janela têm uma leitura que não bate com as outras e pesa menos da metade na conta
  *                                    (número)
  *     previsoes[].gasto.medicoes     quantas medições da janela entram na conta (número)

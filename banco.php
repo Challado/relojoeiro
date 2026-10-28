@@ -1055,27 +1055,48 @@ function banco_inicio()
 {
     if (banco_tipo() === "firebird") {
         banco_fb_transacao("inicio");
-        return;
+    } else {
+        banco_direto(banco_tipo() === "mysql" ? "START TRANSACTION" : "BEGIN");
     }
-    banco_direto(banco_tipo() === "mysql" ? "START TRANSACTION" : "BEGIN");
+    $GLOBALS["BANCO_TRANSACAO_ATIVA"] = true;
 }
 
 function banco_confirma()
 {
     if (banco_tipo() === "firebird") {
         banco_fb_transacao("confirma");
+        $GLOBALS["BANCO_TRANSACAO_ATIVA"] = false;
         return;
     }
     banco_direto("COMMIT");
+    $GLOBALS["BANCO_TRANSACAO_ATIVA"] = false;
 }
 
 function banco_desfaz()
 {
     if (banco_tipo() === "firebird") {
         banco_fb_transacao("desfaz");
+        $GLOBALS["BANCO_TRANSACAO_ATIVA"] = false;
         return;
     }
     banco_direto("ROLLBACK");
+    $GLOBALS["BANCO_TRANSACAO_ATIVA"] = false;
+}
+
+// O bloco participa da transação do chamador; só quem abriu confirma ou desfaz.
+function banco_atomico($f)
+{
+    $propria = empty($GLOBALS["BANCO_TRANSACAO_ATIVA"]);
+    if ($propria) banco_inicio();
+    try {
+        $resultado = $f();
+        if ($propria) banco_confirma();
+        return $resultado;
+    } catch (Throwable $e) {
+        if ($propria) banco_desfaz();
+        $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+        throw $e;
+    }
 }
 
 // Firebird: a transação pelo PDO. O pdo_firebird antigo (o do PHP 8.3) deixa a transação do autocommit sempre aberta e

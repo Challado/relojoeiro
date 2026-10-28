@@ -155,12 +155,111 @@ try {
     exigir_previsao(!op_lancamento("medicao_criar", ["lancamento_id" => 0])["ok"], "Aceitou leitura inexistente.");
     foreach ([[$fim_m + 2 * 3600, 90], [$fim_m + 9000, 89]] as [$quando_m, $valor_m]) {
         $nao_m = $lancar_carga($quando_m, $valor_m);
-        exigir_previsao($nao_m["ok"] && !op_lancamento("medicao_criar", ["lancamento_id" => $nao_m["id"]])["ok"], "Uma recarga ou intervalo curto virou medição.");
+        exigir_previsao($nao_m["ok"] && op_lancamento("medicao_criar", ["lancamento_id" => $nao_m["id"]])["ok"] === ($valor_m === 89), "A recuperação não distinguiu uma recarga de uma leitura curta válida.");
     }
     lancar_previsao("carregador", $fim_m + 3 * 3600, $fim_m + 4 * 3600);
     $nao_m = $lancar_carga($agora, 88);
     exigir_previsao($nao_m["ok"] && !op_lancamento("medicao_criar", ["lancamento_id" => $nao_m["id"]])["ok"], "Um intervalo com carregador virou medição.");
     alterar_previsao("taxa_uso", $padroes["taxa_uso"]); alterar_previsao("taxa_repouso", $padroes["taxa_repouso"]);
+    limpar_previsao();
+
+    // Leituras frequentes aprendem juntas; corrigir uma fonte refaz os dois intervalos, preservando a escolha manual.
+    cfg_set("gasto_motor", "robusto");
+    $inicio_curto = $agora - 4 * 3600;
+    $pulso_curto = lancar_previsao("pulso", $inicio_curto, $agora);
+    $curtas = [];
+    foreach ([80, 79, 78, 77] as $i => $v) {
+        $l = $lancar_carga($inicio_curto + $i * 1200, $v);
+        exigir_previsao($l["ok"], "A leitura frequente não foi aceita."); $curtas[] = $l["id"];
+    }
+    exigir_previsao((int)valor("SELECT COUNT(*) FROM medicao WHERE valida = 1") === 3, "As leituras de vinte em vinte minutos não aprenderam ao longo da hora.");
+    $m_curta = linha("SELECT * FROM medicao WHERE lancamento_id = ?", [$curtas[1]]);
+    $m_seguinte = linha("SELECT * FROM medicao WHERE lancamento_id = ?", [$curtas[2]]);
+    op_lancamento("medicao", ["id" => $m_curta["id"], "usada" => 0]);
+    exigir_previsao(op_lancamento("alterar", ["id" => $curtas[1], "valor" => "79.5"])["ok"], "A leitura não foi corrigida.");
+    exigir_previsao((float)valor("SELECT ate_valor FROM medicao WHERE id = ?", [$m_curta["id"]]) === 79.5
+        && (float)valor("SELECT de_valor FROM medicao WHERE id = ?", [$m_seguinte["id"]]) === 79.5, "Corrigir o valor deixou uma das medições vizinhas antiga.");
+    op_lancamento("alterar", ["id" => $curtas[1], "valor" => 85]);
+    exigir_previsao((int)valor("SELECT valida FROM medicao WHERE id = ?", [$m_curta["id"]]) === 0
+        && (int)valor("SELECT usada FROM medicao WHERE id = ?", [$m_curta["id"]]) === 0, "Invalidar o intervalo perdeu a exclusão manual.");
+    op_lancamento("alterar", ["id" => $curtas[1], "valor" => 79]);
+    exigir_previsao((int)valor("SELECT valida FROM medicao WHERE id = ?", [$m_curta["id"]]) === 1
+        && (int)valor("SELECT usada FROM medicao WHERE id = ?", [$m_curta["id"]]) === 0, "Revalidar o intervalo reativou uma medição tirada da conta.");
+    op_lancamento("excluir", ["id" => $curtas[1]]);
+    $m_seguinte = linha("SELECT * FROM medicao WHERE id = ?", [$m_seguinte["id"]]);
+    exigir_previsao((float)$m_seguinte["de_valor"] === 80.0 && $m_seguinte["inicio"] === date("Y-m-d H:i:s", $inicio_curto), "Excluir a leitura deixou a seguinte ancorada na fonte excluída.");
+    $retroativa = $lancar_carga($inicio_curto + 600, "79.75");
+    exigir_previsao($retroativa["ok"] && (int)valor("SELECT COUNT(*) FROM medicao WHERE valida = 1") === 3
+        && (float)valor("SELECT de_valor FROM medicao WHERE id = ?", [$m_seguinte["id"]]) === 79.75, "A leitura retroativa não dividiu corretamente o intervalo.");
+    op_lancamento("alterar", ["id" => $retroativa["id"], "quando" => date("Y-m-d H:i", $inicio_curto + 1800)]);
+    exigir_previsao(valor("SELECT inicio FROM medicao WHERE id = ?", [$m_seguinte["id"]]) === date("Y-m-d H:i:s", $inicio_curto + 1800), "Corrigir a hora não mudou o início do intervalo seguinte.");
+    op_lancamento("alterar", ["id" => $retroativa["id"], "quando" => date("Y-m-d H:i", $inicio_curto + 600)]);
+    $fontes_atomicas = linhas("SELECT * FROM lancamento ORDER BY id");
+    $medicoes_atomicas = linhas("SELECT * FROM medicao ORDER BY id");
+    try {
+        banco_atomico(function () use ($retroativa) {
+            exigir_previsao(op_lancamento("alterar", ["id" => $retroativa["id"], "valor" => 79])["ok"], "Falhou a preparação da transação.");
+            throw new RuntimeException("Interromper a operação depois de refazer as medições.");
+        });
+    } catch (RuntimeException $e) {
+        exigir_previsao($e->getMessage() === "Interromper a operação depois de refazer as medições.", "A transação falhou antes do ponto de interrupção.");
+    }
+    exigir_previsao($fontes_atomicas === linhas("SELECT * FROM lancamento ORDER BY id") && $medicoes_atomicas === linhas("SELECT * FROM medicao ORDER BY id"), "A falha deixou a fonte ou as medições parcialmente alteradas.");
+    op_lancamento("excluir", ["id" => $pulso_curto]);
+    exigir_previsao((float)valor("SELECT horas_pulso FROM medicao WHERE id = ?", [$m_seguinte["id"]]) === 0.0
+        && valor("SELECT medida FROM medicao WHERE id = ?", [$m_seguinte["id"]]) === "repouso", "Corrigir o pulso não refez as horas e a classificação.");
+    $carregador_curto = op_lancamento("periodo", ["relogio_id" => 1, "tipo" => "carregador", "inicio" => date("Y-m-d H:i", $inicio_curto + 300), "fim" => date("Y-m-d H:i", $inicio_curto + 900)]);
+    exigir_previsao($carregador_curto["ok"] && (int)valor("SELECT valida FROM medicao WHERE id = ?", [$m_seguinte["id"]]) === 0, "A recarga inserida no passado não invalidou o intervalo.");
+    op_lancamento("excluir", ["id" => $carregador_curto["id"]]);
+    exigir_previsao((int)valor("SELECT valida FROM medicao WHERE id = ?", [$m_seguinte["id"]]) === 1, "Retirar a recarga corrigida não revalidou o intervalo.");
+    $fontes_curto = linhas("SELECT * FROM lancamento ORDER BY id");
+    $ids_curto = linhas("SELECT id, usada FROM medicao ORDER BY id");
+    migracao_v51_dados();
+    exigir_previsao(sis("migracao_v51") === "1" && $fontes_curto === linhas("SELECT * FROM lancamento ORDER BY id")
+        && $ids_curto === linhas("SELECT id, usada FROM medicao ORDER BY id"), "A v51 mudou fontes, ids ou exclusões manuais.");
+    limpar_previsao();
+
+    // Não há retorno silencioso ao histórico vencido; um intervalo longo não vira informação da última semana.
+    $vencida = ["id" => 1, "inicio" => date("Y-m-d H:i:s", $agora - 102 * 86400), "fim" => date("Y-m-d H:i:s", $agora - 100 * 86400),
+        "medida" => "repouso", "taxa" => 10, "peso_horas" => 48, "horas_pulso" => 0, "horas_guardado" => 48, "de_valor" => 90, "ate_valor" => 70];
+    foreach (["horas", "robusto", "marcacao", "formulas"] as $motor_j) {
+        $g_j = gasto_medido([$vencida], $agora, ["uso" => 20, "repouso" => 0.1], $motor_j);
+        exigir_previsao($g_j["n"] === 0 && $g_j["uso"] === null && $g_j["repouso"] === null, "O motor " . $motor_j . " recuperou dados vencidos.");
+    }
+    $longa = $vencida; $longa["inicio"] = date("Y-m-d H:i:s", $agora - 365 * 86400); $longa["fim"] = date("Y-m-d H:i:s", $agora);
+    exigir_previsao(medicoes_janela([$longa], $agora) === [], "Um intervalo de um ano entrou inteiro na janela recente.");
+    $mista = $vencida; $mista["inicio"] = date("Y-m-d H:i:s", $agora - 86400); $mista["fim"] = date("Y-m-d H:i:s", $agora);
+    $mista["horas_pulso"] = 12; $mista["horas_guardado"] = 12; $mista["ate_valor"] = 80;
+    $g_j = gasto_medido_desde([$mista], $agora, null);
+    exigir_previsao($g_j["uso"] === null && $g_j["repouso"] === null && !$g_j["conjunta"], "Uma única proporção mista inventou dois gastos independentes.");
+
+    // Peso por idade em dias: a capacidade menor aparece como taxa recente maior, sem descontar a carga outra vez.
+    $antiga = $mista; $antiga["inicio"] = date("Y-m-d H:i:s", $agora - 80 * 86400 - 8 * 3600); $antiga["fim"] = date("Y-m-d H:i:s", $agora - 80 * 86400);
+    $antiga["horas_pulso"] = 8; $antiga["horas_guardado"] = 0; $antiga["de_valor"] = 100; $antiga["ate_valor"] = 90; $antiga["medida"] = "uso"; $antiga["taxa"] = 10; $antiga["peso_horas"] = 8;
+    $recente = $antiga; $recente["id"] = 2; $recente["inicio"] = date("Y-m-d H:i:s", $agora - 8 * 3600); $recente["fim"] = date("Y-m-d H:i:s", $agora); $recente["ate_valor"] = 80; $recente["taxa"] = 20;
+    cfg_set("medicao_meia_vida_dias", "0");
+    $sem_idade = gasto_medido_desde([$antiga, $recente], $agora, null);
+    cfg_set("medicao_meia_vida_dias", "10");
+    exigir_previsao(abs(medicao_peso_idade($agora - 10 * 86400, $agora) - 0.5) < 1e-10, "A meia-vida não reduziu o peso pela metade.");
+    $com_idade = gasto_medido_desde([$antiga, $recente], $agora, null);
+    exigir_previsao(abs($com_idade["uso"] - 20) < abs($sem_idade["uso"] - 20), "O robusto não acompanhou a taxa recente maior.");
+    $com_idade_h = gasto_medido_horas([$antiga, $recente], $agora);
+    exigir_previsao(abs($com_idade_h["uso"] - (10 / 256 + 20) / (1 / 256 + 1)) < 0.001, "O motor de horas não aplicou os pesos por idade.");
+    exigir_previsao(!op_config("salvar", ["medicao_meia_vida_dias" => "-1"])["ok"], "A meia-vida negativa foi aceita.");
+    cfg_set("medicao_meia_vida_dias", "0");
+
+    // As horas medidas respeitam o fim automático mesmo antes de o cron gravar o encerramento.
+    limpar_previsao();
+    $pulso_fim_anterior = valor("SELECT fecha_as FROM lancamento_tipo WHERE identificador = 'pulso'");
+    sql("UPDATE lancamento_tipo SET fecha_as = '16:00' WHERE identificador = 'pulso'");
+    $pulso_auto = $agora - 4 * 3600;
+    lancar_previsao("pulso", $pulso_auto);
+    exigir_previsao(abs(horas_no_pulso(1, $pulso_auto, $pulso_auto + 24 * 3600) - 8) < 0.001, "As horas medidas ignoraram o encerramento automático.");
+    exigir_previsao(periodos_no_pulso(1, $pulso_auto + 12 * 3600, $pulso_auto + 13 * 3600) === [], "O período continuou no pulso depois do fim automático.");
+    $depois_fim = lancar_previsao("carga", $pulso_auto + 12 * 3600, null, 70);
+    sql("UPDATE lancamento SET estado = NULL WHERE id = ?", [$depois_fim]);
+    exigir_previsao(leituras_marcadas(1)[$depois_fim]["estado"] === "repouso", "A leitura sem marcação herdou um pulso já encerrado.");
+    sql("UPDATE lancamento_tipo SET fecha_as = ? WHERE identificador = 'pulso'", [$pulso_fim_anterior]);
     limpar_previsao();
 
     // Mesmo com pesos iguais, a escala estimada precisa voltar à regressão e à covariância.
