@@ -1859,6 +1859,29 @@ escrever(["recurso" => "config", "acao" => "salvar", "sorteio_casas" => "8"]);
 ler("precisão dos pesos dos sorteios", ["recurso" => "config"]);
 escrever(["recurso" => "config", "acao" => "salvar", "sorteio_casas" => "2"]);
 
+// ---------- o iniciar que emenda, o período aberto e o lote ----------
+// um relógio só para isto (fora do rodízio), apagado no fim: a sessão que acaba às 11:00 e o iniciar das 11:00 viram uma só.
+// No grupo Tradicional (o Smartwatch já saiu na segunda fase; o carregador vale na árvore inteira)
+$rel_e = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Relógio da emenda", "no_id" => G(2), "disponivel" => 0]);
+escrever(["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => $rel_e, "tipo" => "carregador", "inicio" => dia(3, "10:00"), "fim" => dia(3, "11:00")]);
+escrever(["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel_e, "tipo" => "carregador", "quando" => dia(3, "11:00")]);
+escrever(["recurso" => "lancamento", "acao" => "encerrar", "relogio_id" => $rel_e, "tipo" => "carregador", "quando" => dia(3, "12:00")]);
+// o período sem o fim fica aberto (até agora, e continua)
+escrever(["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => $rel_e, "tipo" => "carregador", "inicio" => dia(3, "13:00")]);
+escrever(["recurso" => "lancamento", "acao" => "encerrar", "relogio_id" => $rel_e, "tipo" => "carregador", "quando" => dia(3, "14:00")]);
+// o lote: tudo ou nada (as duas entram; uma ruim desfaz a boa), cada uma sozinha (a boa fica), e o que não entra num lote
+$periodo_e = function ($de, $ate) use ($rel_e) {
+    return ["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => $rel_e, "tipo" => "carregador", "inicio" => dia(3, $de), "fim" => dia(3, $ate)];
+};
+escrever(["recurso" => "lote", "acao" => "", "operacoes" => json_encode([$periodo_e("15:00", "16:00"), $periodo_e("17:00", "18:00")])]);
+escrever(["recurso" => "lote", "acao" => "", "operacoes" => json_encode([$periodo_e("19:00", "20:00"), $periodo_e("21:00", "20:30")])], false);
+escrever(["recurso" => "lote", "acao" => "", "atomico" => "0", "operacoes" => json_encode([$periodo_e("19:00", "20:00"), $periodo_e("21:00", "20:30")])], false);
+escrever(["recurso" => "lote", "acao" => "", "operacoes" => json_encode([["recurso" => "usuarios", "acao" => "salvar", "login" => "x"]])], false);
+escrever(["recurso" => "lote", "acao" => "", "operacoes" => "[]"], false);
+escrever(["recurso" => "lote", "acao" => "", "atomico" => "talvez", "operacoes" => json_encode([$periodo_e("22:00", "23:00")])], false);
+ler("a emenda, o período aberto e o lote", ["recurso" => "historico", "relogio" => $rel_e, "limite" => 1000]);
+escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $rel_e, "confirmar" => 1]);
+
 $texto = json_encode($foto, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_PRESERVE_ZERO_FRACTION | JSON_INVALID_UTF8_SUBSTITUTE);
 if ($texto === false) {
     fwrite(STDERR, "Não consegui gravar a fotografia: " . json_last_error_msg() . "\n");

@@ -1,4 +1,4 @@
-<!-- origem: fa0f3f96ed1035ca378702d2fb7fa9fb7558f324 -->
+<!-- origem: cae268bd26c3d12a0264f0c34681a52da1c5730a -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -205,7 +205,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `documento_categorias` | `nova`, `alterar`, `excluir` (seulement sans documents) |
 | `secoes` | les sections de la fiche : `salvar` (le nom ; `id=0` crée à la fin), `ordem` (`direcao=sobe` ou `desce`), `excluir` (ses champs restent sans section, à la fin) |
 | `unidades` | `salvar` (le symbole, le nom, la base et le facteur, le zéro et l'afficher aussi en ; le nouveau symbole passe à qui l'utilise), `excluir` (seulement sans usage ; emporte celles qui se convertissent en elle) |
-| `lancamento` | `lancar` (remontage, charge, pile...), `iniciar` et `encerrar` (mettre et retirer du poignet, du soleil, du chargeur ; du remontoir, mettre se fait par la page Remontoirs, `winder_posicoes`, sauf si la montre a sa place libre : alors elle y retourne), `alternar` (ferme la session si elle est ouverte, l'ouvre si elle est fermée : un seul bouton sur le téléphone ; sur le remontoir, n'ouvre que pour le retour à la place), `periodo` (une période déjà passée ; sur le remontoir, avec la position, `posicao_id` ; au poignet de la montre du jour c'est un usage de la rotation, et les périodes du même type qu'elle touche, comme le Mettre resté ouvert, n'en font plus qu'une), `alterar`, `excluir`, `medicao` (une mesure de la consommation entre dans le calcul ou en sort : `id`, `usada` 1 ou 0). Dans toutes, `relogio_id=hoje` est la montre du jour |
+| `lancamento` | `lancar` (remontage, charge, pile...), `iniciar` et `encerrar` (mettre et retirer du poignet, du soleil, du chargeur ; du remontoir, mettre se fait par la page Remontoirs, `winder_posicoes`, sauf si la montre a sa place libre : alors elle y retourne), `alternar` (ferme la session si elle est ouverte, l'ouvre si elle est fermée : un seul bouton sur le téléphone ; sur le remontoir, n'ouvre que pour le retour à la place), `periodo` (une période déjà passée ; sur le remontoir, avec la position, `posicao_id` ; au poignet de la montre du jour c'est un usage de la rotation, et les périodes du même type qu'elle touche, comme le Mettre resté ouvert, n'en font plus qu'une), `alterar`, `excluir`, `medicao` (une mesure de la consommation entre dans le calcul ou en sort : `id`, `usada` 1 ou 0). Dans toutes, `relogio_id=hoje` est la montre du jour Un `iniciar` qui commence à la même minute où un tronçon du même type s’est terminé s’y raccorde (il redevient ouvert), et un `periodo` sans `fim` reste ouvert, du début jusqu’à maintenant. |
 | `rodizio` | `usando` (je porte celle-ci aujourd'hui), `trocar_dia` (la montre d'un jour), `periodo` (les montres d'une période, dans l'ordre : `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (efface les jours de la période et le mode les refait ; seulement `de` : jusqu'à la fin du plan ; seulement `ate` : de demain jusqu'à lui), `periodo_livre` (efface et laisse les jours libres, sans tirage ; les mêmes dates), `manual` (la Rotation manuelle : `de`, `ate`, `dias[AAAA-MM-JJ]` = l'id de la montre, `auto` ou `livre`), `apagar_tudo` (toute la programmation à partir de demain disparaît ; `hoje=1` : à partir d'aujourd'hui ; le mode reconstruit le plan), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (changer le mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (groupes) et `relogios` (le groupe de chaque montre) |
@@ -224,6 +224,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `instalacao` | `instalar` (seulement sur une base vide, avec le jeton) |
 | `backup` | `fazer` (une sauvegarde maintenant), `restaurar` (`arquivo=` : ramène la base à cette copie, en gardant d'abord une copie de ce qui existe maintenant) |
 | `importacao` | `importar` (`banco=` le nom de l'ancienne base ; `substituir=1` quand cette base a déjà des montres ; arrêté en cours de route, rien n'est enregistré) |
+| `lote` | sans `acao` : `operacoes` (la liste, en JSON, des écritures `{recurso, acao, ...les champs}`, faites dans l’ordre) et `atomico` (`1`, par défaut : tout ou rien dans une seule transaction, et la première qui échoue annule les précédentes ; `0` : chacune vaut seule). Au plus `LOTE_MAXIMO` opérations (100 par défaut). Les ressources qu’une transaction ne peut pas annuler n’y entrent pas : documents, agendas, destinations, comptes et accès, inscription, importation, copie de sauvegarde, migrations et installation |
 
 **Les réponses d'erreur** disent la raison : `{"erro": "..."}` dans les consultations, et `{"ok": false, "mensagem", "erros": [...]}`
 (une erreur par raison) dans une écriture refusée :
@@ -418,6 +419,7 @@ votre part, ou le master crée le compte dans **Utilisateurs**.
 | `TEXTOS_ESTRITO` | facultatif, pour qui traduit : `true` fait qu'une traduction manquante s'arrête sur une erreur (voir [Les langues](#os-idiomas)) |
 | `CRON_TRAVA` | facultatif : le fichier de verrou du cron, qui garantit un passage à la fois (voir l’installation du cron). Sans elle, un par installation dans le dossier temporaire du système |
 | `API_ESPERA` | facultatif : combien de secondes les écrans attendent la réponse de l’API avant d’annuler la requête et de dire que le serveur n’a pas répondu. Sans elle, 120 ; `0`, sans limite. Les écritures longues (importation, copie de sauvegarde, migrations et installation) n’ont pas de limite |
+| `LOTE_MAXIMO` | facultatif : combien d’opérations tiennent dans un lot (`recurso=lote`). Sans elle, 100 |
 
 Le système lit le `config.php` de son dossier. Une variable d'environnement du serveur, `RELOGIOS_CONFIG`, désigne un autre
 fichier à la place : c'est ce qu'utilise le test de parité (`testes/paridade.sh`, avec le

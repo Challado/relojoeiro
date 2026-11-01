@@ -9953,6 +9953,19 @@ function api_espera_segundos()
     return defined("API_ESPERA") && is_numeric(API_ESPERA) && (int)API_ESPERA >= 0 ? (int)API_ESPERA : 120;
 }
 
+// O lote (recurso=lote): no máximo quantas operações num POST (LOTE_MAXIMO do config.php; sem a linha, 100)
+function lote_maximo()
+{
+    return defined("LOTE_MAXIMO") && is_numeric(LOTE_MAXIMO) && (int)LOTE_MAXIMO > 0 ? (int)LOTE_MAXIMO : 100;
+}
+
+// Os recursos que não entram num lote: os que fazem o que uma transação não desfaz (arquivos na pasta, e-mails, outros
+// serviços, contas e acessos) e os demorados
+function lote_recursos_fora()
+{
+    return array_merge(["lote", "documentos", "agendas", "destinos", "conta", "colecoes", "acessos", "convites", "pedidos", "usuarios", "cadastro"], recursos_demorados());
+}
+
 // As escritas que podem demorar (o histórico inteiro, o banco inteiro): sem limite de tempo no PHP nem na espera das telas
 function recursos_demorados()
 {

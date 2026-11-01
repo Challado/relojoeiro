@@ -1,4 +1,4 @@
-<!-- origem: fa0f3f96ed1035ca378702d2fb7fa9fb7558f324 -->
+<!-- origem: cae268bd26c3d12a0264f0c34681a52da1c5730a -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -201,7 +201,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `documento_categorias` | `nova`, `alterar`, `excluir` (solo sin documentos) |
 | `secoes` | las secciones de la ficha: `salvar` (el nombre; `id=0` crea al final), `ordem` (`direcao=sobe` o `desce`), `excluir` (sus campos quedan sin sección, al final) |
 | `unidades` | `salvar` (el símbolo, el nombre, la base y el factor, el cero y el mostrar también en; el símbolo nuevo pasa a quien lo usa), `excluir` (solo sin uso; se lleva las que se convierten en ella) |
-| `lancamento` | `lancar` (cuerda, carga, pila...), `iniciar` y `encerrar` (poner y quitar de la muñeca, del sol, del cargador; del winder, poner es por la página Winders, `winder_posicoes`, salvo que el reloj tenga su lugar libre: entonces vuelve ahí), `alternar` (cierra la sesión si está abierta, la abre si está cerrada: un solo botón en el móvil; en el winder, solo abre de vuelta al lugar), `periodo` (un período que ya pasó; en el winder, con la posición, `posicao_id`; en la muñeca del reloj del día es uso de la rotación, y los tramos del mismo tipo con los que se toca, como el Poner que quedó abierto, se vuelven uno), `alterar`, `excluir`, `medicao` (una medición del consumo entra o sale de la cuenta: `id`, `usada` 1 o 0). En todas, `relogio_id=hoje` es el reloj del día |
+| `lancamento` | `lancar` (cuerda, carga, pila...), `iniciar` y `encerrar` (poner y quitar de la muñeca, del sol, del cargador; del winder, poner es por la página Winders, `winder_posicoes`, salvo que el reloj tenga su lugar libre: entonces vuelve ahí), `alternar` (cierra la sesión si está abierta, la abre si está cerrada: un solo botón en el móvil; en el winder, solo abre de vuelta al lugar), `periodo` (un período que ya pasó; en el winder, con la posición, `posicao_id`; en la muñeca del reloj del día es uso de la rotación, y los tramos del mismo tipo con los que se toca, como el Poner que quedó abierto, se vuelven uno), `alterar`, `excluir`, `medicao` (una medición del consumo entra o sale de la cuenta: `id`, `usada` 1 o 0). En todas, `relogio_id=hoje` es el reloj del día El `iniciar` que empieza en el mismo minuto en que terminó un tramo del mismo tipo se une a él (vuelve a quedar abierto), y el `periodo` sin `fim` queda abierto, del inicio hasta ahora. |
 | `rodizio` | `usando` (estoy usando este hoy), `trocar_dia` (el reloj de un día), `periodo` (los relojes de un período, en orden: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (borra los días del período y el modo los vuelve a montar; solo `de`: hasta el final del plan; solo `ate`: desde mañana hasta él), `periodo_livre` (borra y deja los días libres, sin sorteo; las mismas fechas), `manual` (la Rotación manual: `de`, `ate`, `dias[AAAA-MM-DD]` = el id del reloj, `auto` o `livre`), `apagar_tudo` (toda la programación de mañana en adelante se va; `hoje=1`: de hoy en adelante; el modo arma el plan de nuevo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (cambiar el modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (grupos) y `relogios` (el grupo de cada reloj) |
@@ -220,6 +220,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `instalacao` | `instalar` (solo en una base vacía, con el token) |
 | `backup` | `fazer` (una copia de seguridad ahora), `restaurar` (`arquivo=`: devuelve la base a esa copia, guardando antes una de lo que hay ahora) |
 | `importacao` | `importar` (`banco=` el nombre de la base antigua; `substituir=1` cuando esta base ya tiene relojes; si se detuvo a medias, no queda nada guardado) |
+| `lote` | sin `acao`: `operacoes` (la lista, en JSON, de escrituras `{recurso, acao, ...los campos}`, hechas en orden) y `atomico` (`1`, el predeterminado: todo o nada en una sola transacción, y la primera que falla deshace las anteriores; `0`: cada una vale sola). Como máximo `LOTE_MAXIMO` operaciones (por defecto 100). No entran los recursos que una transacción no deshace: documentos, agendas, destinos, cuentas y accesos, registro, importación, copia de seguridad, migraciones e instalación |
 
 **Las respuestas de error** dicen el motivo: `{"erro": "..."}` en las consultas, y `{"ok": false, "mensagem", "erros": [...]}`
 (un error por motivo) en una escritura rechazada:
@@ -411,6 +412,7 @@ entran por **Crear cuenta** (`cadastro.php`), por una invitación suya, o el mas
 | `TEXTOS_ESTRITO` | opcional, para quien está traduciendo: `true` hace que la traducción que falta se detenga con un error (vea [Los idiomas](#os-idiomas)) |
 | `CRON_TRAVA` | opcional: el archivo de bloqueo del cron, que garantiza una vuelta a la vez (vea la instalación del cron). Sin ella, uno por instalación en la carpeta temporal del sistema |
 | `API_ESPERA` | opcional: cuántos segundos esperan las pantallas la respuesta de la API antes de cancelar el pedido y decir que el servidor no respondió. Sin ella, 120; `0`, sin límite. Las escrituras lentas (importación, copia de seguridad, migraciones e instalación) no tienen límite |
+| `LOTE_MAXIMO` | opcional: cuántas operaciones caben en un lote (`recurso=lote`). Sin ella, 100 |
 
 El sistema lee el `config.php` de su carpeta. Una variable de entorno del servidor, `RELOGIOS_CONFIG`, apunta a otro archivo en
 su lugar: es lo que usa la prueba de paridad (`testes/paridade.sh`, con el [`testes/config.teste.php`](testes/config.teste.php)),

@@ -3178,11 +3178,16 @@ function op_lancamento($acao, $d)
             }
         } elseif ($acao === "iniciar") {
             $q = $momento($d["quando"] ?? "");
+            // o trecho do mesmo tipo que acabou no mesmo minuto (o período que termina quando esta começa, o encerrar e o iniciar
+            // de novo no mesmo minuto): o iniciar emenda nele, que volta a ficar aberto, como o período faz com o que encosta
+            $emenda = $t && $t["formato"] === "sessao" && $q !== false
+                ? linha("SELECT id, inicio, fim, origem FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND fim IS NOT NULL AND fim >= ? AND fim < ? AND inicio < ? ORDER BY fim DESC, id DESC LIMIT 1",
+                    [$rid, (int)$t["id"], date("Y-m-d H:i:00", $q), date("Y-m-d H:i:00", $q + 60), date("Y-m-d H:i:00", $q)]) : null;
             if ($t["formato"] !== "sessao") {
                 $erros[] = t("{1} não é uma sessão: use lancar.", [1 => $t["nome"]]);
             } elseif ($q === false) {
                 $erros[] = t("Quando: AAAA-MM-DD HH:MM, até agora (vazio: agora).");
-            } elseif (valor("SELECT id FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim > ?)", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $q)]) !== null) {
+            } elseif ($emenda === null && valor("SELECT id FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim > ?)", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $q)]) !== null) {
                 $erros[] = t("{1} já está com {2} aberto.", [1 => $r["nome"], 2 => $t["nome"]]);
             } else {
                 $fechadas = [];
@@ -3200,8 +3205,8 @@ function op_lancamento($acao, $d)
                         $erros[] = t("Nesse momento {1} já estava em {2} (de {3} a {4}): o relógio fica num lugar só.", [1 => $r["nome"], 2 => $conflito["nome"], 3 => data_txt(strtotime($conflito["inicio"]), true, true), 4 => $conflito["fim"] === null ? "agora" : data_txt(strtotime($conflito["fim"]), true, true)]);
                     } else {
                         // o relógio num lugar só: a exclusiva aberta em outro lugar fecha no mesmo instante
-                        foreach (linhas("SELECT l.id, t.nome FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.exclusiva = 1 AND l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?)",
-                            [$rid, date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $q)]) as $x) {
+                        foreach (linhas("SELECT l.id, t.nome FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.exclusiva = 1 AND l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?) AND l.id <> ?",
+                            [$rid, date("Y-m-d H:i:s", $q), date("Y-m-d H:i:s", $q), $emenda ? (int)$emenda["id"] : 0]) as $x) {
                             sql("UPDATE lancamento SET fim = ? WHERE id = ?", [date("Y-m-d H:i:s", $q), (int)$x["id"]]);
                             $fechadas[] = $x["nome"];
                         }
@@ -3213,12 +3218,20 @@ function op_lancamento($acao, $d)
                     // Tirou, ou até o "fecha às" do tipo (o fim do horário de uso, tirando sozinho)
                     $p_dia = plano_do_dia(date("Y-m-d", $q));
                     $origem = $t["identificador"] === "pulso" && $p_dia && (int)$p_dia["relogio_id"] === $rid ? "rodizio" : "manual";
-                    sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, NULL, NULL, ?, NOW())", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), $origem]);
-                    $id = ultimo_id();
+                    if ($emenda !== null) {
+                        // emendado: o trecho que acabou neste minuto volta a ficar aberto (do rodízio, se um dos dois é)
+                        $id = (int)$emenda["id"];
+                        sql("UPDATE lancamento SET fim = NULL, origem = ? WHERE id = ?", [$origem === "rodizio" ? "rodizio" : $emenda["origem"], $id]);
+                    } else {
+                        sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, NULL, NULL, ?, NOW())", [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q), $origem]);
+                        $id = ultimo_id();
+                    }
                     if ($pos_w !== null) {
                         $posicao_gravar($id);
                     }
-                    $msg = t("{1}: {2} desde {3}.{4}", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($q, true, true), 4 => count($fechadas) > 0 ? t(" Fechado no mesmo instante: {1}.", [1 => implode(", ", $fechadas)]) : ""])
+                    $msg = $emenda !== null ? t("{1}: {2} desde {3}, emendado com o trecho que tinha acabado às {4}.{5}", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt(strtotime($emenda["inicio"]), true, true),
+                        4 => data_txt(strtotime($emenda["fim"]), true, true), 5 => count($fechadas) > 0 ? t(" Fechado no mesmo instante: {1}.", [1 => implode(", ", $fechadas)]) : ""])
+                        . ($pos_w !== null ? t(" Na posição {1}.", [1 => $pos_w["texto"]]) : "") : t("{1}: {2} desde {3}.{4}", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($q, true, true), 4 => count($fechadas) > 0 ? t(" Fechado no mesmo instante: {1}.", [1 => implode(", ", $fechadas)]) : ""])
                         . ($pos_w !== null ? t(" Na posição {1}.", [1 => $pos_w["texto"]]) : "");
                 }
             }
@@ -3246,7 +3259,8 @@ function op_lancamento($acao, $d)
                 ? $momento($d["inicio"] ?? ($d["quando"] ?? "x")) : strtotime($existente["inicio"]);
             $fim = null;
             if ($formato === "sessao") {
-                $fim = $acao === "periodo" || array_key_exists("fim", $d) ? (trim((string)($d["fim"] ?? "")) === "" && $acao === "alterar" ? null : $momento($d["fim"] ?? "x"))
+                // sem o fim (vazio ou sem o campo), o período fica aberto: do início até agora, e continua (como um iniciar no passado)
+                $fim = $acao === "periodo" || array_key_exists("fim", $d) ? (trim((string)($d["fim"] ?? "")) === "" ? null : $momento($d["fim"]))
                     : ($existente["fim"] === null ? null : strtotime($existente["fim"]));
             }
             $v = $formato === "valor" ? (array_key_exists("valor", $d) ? numero_br($d["valor"]) : (float)$existente["valor"]) : null;
@@ -3268,7 +3282,7 @@ function op_lancamento($acao, $d)
                 $erros[] = t("Estado: uso ou repouso (vazio: não diz).");
             } elseif ($acao === "alterar" && array_key_exists("posicao", $d) && (string)$d["posicao"] !== "" && (($t["marcha"] ?? null) !== "desvio" || !isset(posicoes_marcha()[(string)$d["posicao"]]))) {
                 $erros[] = t("Posição ({1}) vale só para a leitura do desvio da hora.", [1 => implode(", ", array_keys(posicoes_marcha()))]);
-            } elseif (array_key_exists("posicao_id", $d) && ($erro_w = $posicao_conferir($ini, $fim, false)[1]) !== null) {
+            } elseif (array_key_exists("posicao_id", $d) && ($erro_w = $posicao_conferir($ini, $fim, $acao === "periodo" && $fim === null)[1]) !== null) {
                 $erros[] = $erro_w;
             } elseif ($acao === "periodo") {
                 // no pulso, o relógio do dia está em uso pelo rodízio (como no Pôs), não "fora do plano"
@@ -3277,17 +3291,19 @@ function op_lancamento($acao, $d)
                 // os trechos do mesmo tipo que o período cobre ou em que ele encosta (o Pôs aberto que começou depois, o período
                 // que acaba quando ele começa) viram um só: do primeiro início ao último fim (aberto, se um deles está aberto)
                 $juntar = linhas("SELECT id, inicio, fim, origem FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim >= ?) ORDER BY inicio, id",
-                    [$rid, (int)$t["id"], date("Y-m-d H:i:s", $fim), date("Y-m-d H:i:s", $ini)]);
+                    [$rid, (int)$t["id"], date("Y-m-d H:i:s", $fim ?? $agora), date("Y-m-d H:i:s", $ini)]);
                 if (count($juntar) === 0) {
                     sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, ?, NULL, ?, NOW())",
-                        [$rid, (int)$t["id"], date("Y-m-d H:i:s", $ini), date("Y-m-d H:i:s", $fim), $origem]);
+                        [$rid, (int)$t["id"], date("Y-m-d H:i:s", $ini), $fim === null ? null : date("Y-m-d H:i:s", $fim), $origem]);
                     $id = ultimo_id();
                     if (array_key_exists("posicao_id", $d)) {
                         $posicao_gravar($id);
                     }
-                    $msg = t("Lançado no {1}: {2} de {3} a {4}.", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true), 4 => data_txt($fim, true, true)]);
+                    $msg = $fim === null ? t("Lançado no {1}: {2} desde {3}, aberto.", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true)])
+                        : t("Lançado no {1}: {2} de {3} a {4}.", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true), 4 => data_txt($fim, true, true)]);
                 } else {
-                    $aberto = false;
+                    // sem o fim, o período junto fica aberto
+                    $aberto = $fim === null;
                     foreach ($juntar as $x) {
                         $ini = min($ini, strtotime($x["inicio"]));
                         $aberto = $aberto || $x["fim"] === null;

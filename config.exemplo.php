@@ -131,3 +131,5 @@ define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");
 // quantos segundos as telas esperam a resposta da API antes de dizer que o servidor não respondeu (sem esta linha, 120;
 // 0, sem limite). A importação, a cópia de segurança, as migrações e a instalação não têm limite
 // define("API_ESPERA", 120);
+// quantas operações cabem num lote (recurso=lote: várias escritas num POST só). Sem esta linha, 100
+// define("LOTE_MAXIMO", 100);

@@ -1297,7 +1297,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `documento_categorias` | `nova`、`alterar`、`excluir`（仅在没有文档时） |
 | `secoes` | 档案分区：`salvar`（名称；`id=0` 在末尾新建）、`ordem`（`direcao=sobe` 或 `desce`）、`excluir`（其中的字段不再属于任何分区，排在末尾） |
 | `unidades` | `salvar`（符号、名称、基准和系数、零点以及同时显示为；新符号会同步到使用它的地方），`excluir`（仅在未使用时；换算成它的单位一起删除） |
-| `lancamento` | `lancar`（上链、电量、电池……）、`iniciar` 和 `encerrar`（戴上和取下手腕、晒太阳、充电器；上链盒要通过上链盒页面放上，即 `winder_posicoes`，除非手表的位置空闲：那时它会回到那里）、`alternar`（时段打开时关闭，关闭时打开：手机上一个按钮就够；上链盒上只能在回到位置时打开）、`periodo`（已经过去的一段时间；上链盒上要带位置 `posicao_id`；当天的手表戴在手腕上时算作轮换中的使用，与它相接的同类型片段（例如仍打开的“戴上”）合并为一段）、`alterar`、`excluir`、`medicao`（把一次消耗测量放入或移出计算：`id`，`usada` 为 1 或 0）。所有操作中，`relogio_id=hoje` 都表示当天的手表 |
+| `lancamento` | `lancar`（上链、电量、电池……）、`iniciar` 和 `encerrar`（戴上和取下手腕、晒太阳、充电器；上链盒要通过上链盒页面放上，即 `winder_posicoes`，除非手表的位置空闲：那时它会回到那里）、`alternar`（时段打开时关闭，关闭时打开：手机上一个按钮就够；上链盒上只能在回到位置时打开）、`periodo`（已经过去的一段时间；上链盒上要带位置 `posicao_id`；当天的手表戴在手腕上时算作轮换中的使用，与它相接的同类型片段（例如仍打开的“戴上”）合并为一段）、`alterar`、`excluir`、`medicao`（把一次消耗测量放入或移出计算：`id`，`usada` 为 1 或 0）。所有操作中，`relogio_id=hoje` 都表示当天的手表 在同类型的一段刚结束的同一分钟开始的 `iniciar` 会与其衔接（该段重新变为开放），没有 `fim` 的 `periodo` 保持开放，从开始一直到现在。 |
 | `rodizio` | `usando`（我今天戴的是这块）、`trocar_dia`（某一天的手表）、`periodo`（一个时段的手表，按顺序：`de`、`ate`、`relogio_ids[]`、`dias_cada`）、`periodo_sortear`（删除时段内的日子，由模式重新安排；只填 `de`：到计划结束；只填 `ate`：从明天到它）、`periodo_livre`（清除并让这些天保持空闲，不抽选；日期规则相同）、`manual`（手动轮换：`de`、`ate`、`dias[YYYY-MM-DD]` = 手表 id、`auto` 或 `livre`）、`apagar_tudo`（清除从明天起的全部安排；`hoje=1`：从今天起；模式会重新生成计划）、`resortear`、`resortear_hoje`、`proxima_semana`、`modo`（更换模式） |
 | `modos` | `salvar`、`ativar`、`excluir` |
 | `arvore` | `novo`、`renomear`、`mover`、`ordem`、`excluir`（分组）以及 `relogios`（每块手表的分组） |
@@ -1316,6 +1316,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `instalacao` | `instalar`（仅限空数据库，使用令牌） |
 | `backup` | `fazer`（立即备份）、`restaurar`（`arquivo=`：把数据库恢复到那份备份，恢复前先备份当前内容） |
 | `importacao` | `importar`（`banco=` 旧数据库的名称；本数据库已有手表时用 `substituir=1`；中途停止则什么都不保存） |
+| `lote` | 无 `acao`：`operacoes`（JSON 格式的写入列表 `{recurso, acao, ...字段}`，按顺序执行）和 `atomico`（`1`，默认：在一个事务中全部成功或全部不做，第一个失败的会撤销之前的；`0`：每个单独生效）。最多 `LOTE_MAXIMO` 个操作（默认 100）。事务无法撤销的资源不能加入：文档、日历、目的地、账户和访问、注册、导入、备份、迁移和安装 |
 
 **错误响应**会说明原因：查询中为 `{"erro": "..."}`，被拒绝的写入为 `{"ok": false, "mensagem", "erros": [...]}`（每个原因一条错误）：
 
@@ -1467,6 +1468,7 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 | `TEXTOS_ESTRITO` | 可选，供翻译者使用：`true` 让缺少的翻译报错停止（参见[语言](#语言)） |
 | `CRON_TRAVA` | 可选：cron 的锁文件，确保每次只运行一轮（参见 cron 的安装）。没有它时，每个安装在系统临时文件夹中各有一个 |
 | `API_ESPERA` | 可选：界面等待 API 响应的秒数，超过后取消请求并提示服务器没有响应。没有它时为 120；`0` 表示不限。耗时的写入（导入、备份、迁移和安装）不受限制 |
+| `LOTE_MAXIMO` | 可选：一个批次（`recurso=lote`）最多包含多少个操作。没有它时为 100 |
 
 系统读取它所在文件夹中的 `config.php`。服务器环境变量 `RELOGIOS_CONFIG` 可以指向另一个文件代替它：一致性测试就是这样用的（`testes/paridade.sh`，配合 [`testes/config.teste.php`](testes/config.teste.php)），以便在不碰真正的 `config.php` 的情况下运行。正常安装时不要设置它。
 

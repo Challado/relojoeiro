@@ -506,8 +506,10 @@
  *   recurso=lancamento        lancar (relogio_id, tipo, valor, quando: AAAA-MM-DD HH:MM, vazio = agora; medir: 1 (padrão) ou 0,
  *                             num tipo que mede o gasto: com 1 a medição entra na média, com 0 fica só no histórico — a caixa
  *                             "Atualizar o gasto com esta medição"; a mensagem traz a conta), iniciar (relogio_id,
- *                             tipo, quando: abre a sessão; exclusiva fecha a outra exclusiva aberta), encerrar (relogio_id, tipo,
- *                             quando), periodo (relogio_id, tipo, inicio (quando também vale), fim: uma sessão que já passou),
+ *                             tipo, quando: abre a sessão; exclusiva fecha a outra exclusiva aberta; começando no mesmo minuto em
+ *                             que acabou um trecho do mesmo tipo, emenda nele, que volta a ficar aberto), encerrar (relogio_id, tipo,
+ *                             quando), periodo (relogio_id, tipo, inicio (quando também vale), fim: uma sessão que já passou; sem
+ *                             o fim, fica aberta, do início até agora),
  *                             alterar (id: quando ou inicio, fim, valor; só o que vier), excluir (id), alternar (relogio_id, tipo
  *                             (sessão), quando: fecha a sessão se ela está aberta, abre se está fechada: um botão só num atalho de
  *                             celular). Em todas, relogio_id=hoje é o relógio do dia, pelo plano. Nada no futuro; o tipo tem de
@@ -683,6 +685,14 @@
  *                             os valores dos campos e o histórico; tudo numa transação (parou no meio: nada fica gravado); a resposta
  *                             traz "contagem" (quantos de cada)
  *                            Ex. importar: curl -u lucas:senha -d recurso=importacao -d acao=importar -d banco=relogios -d substituir=1 http://servidor/relojoeiro/api.php
+ *   recurso=lote              (sem acao) várias escritas num POST só: operacoes (a lista, em JSON, de {recurso, acao, os campos
+ *                             dela}, feitas na ordem; com o confirmar=1 das exclusões) e atomico (1, o padrão: tudo ou nada numa
+ *                             transação só, e a primeira que falha desfaz as de antes e para; 0: cada uma vale sozinha e o lote
+ *                             segue). No máximo LOTE_MAXIMO operações (padrão 100). Fora: documentos, agendas, destinos, conta,
+ *                             colecoes, acessos, convites, pedidos, usuarios, cadastro, importacao, backup, migracoes, instalacao
+ *                             (o que uma transação não desfaz). A resposta: ok, mensagem, erros (com o número de cada uma que
+ *                             falhou), atomico, desfeito e resultados (indice, recurso, acao e a resposta de cada uma feita)
+ *                            Ex. lote: curl -u lucas:senha -H "Content-Type: application/json" -d '{"recurso": "lote", "operacoes": [{"recurso": "lancamento", "acao": "encerrar", "relogio_id": 12, "tipo": "carregador"}, {"recurso": "lancamento", "acao": "iniciar", "relogio_id": 12, "tipo": "pulso"}]}' http://servidor/relojoeiro/api.php
  *   recurso=backup            fazer (agora: a cópia vai para a BACKUP_PASTA, e as mais velhas que passam do BACKUP_MANTER saem; a
  *                             resposta traz "arquivo"), restaurar (arquivo: o nome de uma cópia da pasta; antes, guarda uma cópia do
  *                             que está agora; depois, num passo só, troca todos os registros pelos da cópia; só uma cópia da mesma
