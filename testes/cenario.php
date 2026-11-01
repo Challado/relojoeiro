@@ -29,13 +29,16 @@ if ($fuso !== "" && !@date_default_timezone_set($fuso)) {
 // As horas em que o sistema muda de comportamento: a meia-noite (o dia de hoje), as rodadas do cron (06:30 e 20:00), o começo do
 // horário de uso (07:00, o da instalação, e 07:30, o que o roteiro configura: a sessão do rodízio de hoje abre ou não), as
 // 18:00 (a sessão no sol fecha sozinha) e o fim do uso (22:00). Uma rodada que cruza uma delas sai diferente de outra que roda
-// inteira antes; a menos de 3 minutos de uma, o roteiro espera ela passar (os bancos, rodando juntos, esperam todos)
+// inteira antes; perto de uma, o roteiro espera ela passar (os bancos, rodando juntos, esperam todos). Perto é o tempo que o
+// roteiro leva no banco mais lento (TESTE_VIRADA, em segundos; padrão 600: o Firebird leva perto de 7 minutos): com 3
+// minutos, o Firebird começava antes das 07:26 e cruzava as 07:30 no meio, depois do SQLite
+$janela_virada = getenv("TESTE_VIRADA") !== false && ctype_digit((string)getenv("TESTE_VIRADA")) ? (int)getenv("TESTE_VIRADA") : 600;
 foreach (["00:00", "06:30", "07:00", "07:30", "18:00", "20:00", "22:00"] as $virada) {
     $em = strtotime(date("Y-m-d") . " " . $virada);
     if ($em <= time()) {
         $em = strtotime("+1 day", $em);
     }
-    if ($em - time() <= 180) {
+    if ($em - time() <= $janela_virada) {
         fwrite(STDERR, "Esperando passar das " . $virada . " (" . ($em - time() + 2) . " s)\n");
         sleep(max(0, $em - time() + 2));
     }

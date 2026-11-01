@@ -44,6 +44,7 @@ bancos vem do ambiente, com o padrão de uma máquina de desenvolvimento:
 | `TESTE_FB_ARQUIVO`, `TESTE_FB_USUARIO`, `TESTE_FB_SENHA` | `/var/lib/firebird/3.0/data/relogios_teste.fdb`, `SYSDBA`, `masterkey` | o Firebird (o arquivo também é apagado e recriado; tem de ter "teste" no nome) |
 | `TESTE_PORTA` | `8101` | a porta do primeiro servidor (uma por banco, em sequência) |
 | `RELOGIOS_TESTE_PASTA` | uma pasta temporária nova | onde fica tudo da rodada |
+| `TESTE_VIRADA` | `600` | quantos segundos antes de uma das horas em que o sistema muda de comportamento o roteiro espera ela passar (o tempo do banco mais lento) |
 
 Ele usa o `psql`, o `mysql` e o `isql-fb` para recriar os bancos, e o `curl` para esperar o servidor subir.
 
@@ -76,8 +77,9 @@ O roteiro não deixa o resultado depender do segundo em que cada passo cai, nem 
   ficaria noutro);
 - o que ele lança no passado fica longe das bordas das janelas das fórmulas (os últimos 30 dias), que andam com a hora do
   dia, e a reserva do automático não chega perto de zero hoje;
-- a menos de 3 minutos de uma das horas em que o sistema muda de comportamento (a meia-noite, 06:30, 07:00, 07:30, 18:00,
-  20:00 e 22:00: as rodadas do cron, o horário de uso e o sol que fecha sozinho), ele espera a hora passar antes de começar.
+- perto de uma das horas em que o sistema muda de comportamento (a meia-noite, 06:30, 07:00, 07:30, 18:00, 20:00 e 22:00:
+  as rodadas do cron, o horário de uso e o sol que fecha sozinho), ele espera a hora passar antes de começar. Perto é o
+  tempo que o roteiro leva no banco mais lento (`TESTE_VIRADA`, padrão 10 minutos: o Firebird leva perto de 7).
 
 E o que cresce enquanto o roteiro roda (a sessão no pulso aberta desde o começo do horário de uso) tem folga de 2 minutos na
 comparação: os valores em segundos, as contas em horas das fórmulas (`HORAS("pulso"; 30)`) e as contas em dias (a mesma folga,
