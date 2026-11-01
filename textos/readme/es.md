@@ -1,4 +1,4 @@
-<!-- origem: 4105d1db07780f7486172bc4bcf81717f0b3a8bf -->
+<!-- origem: fa0f3f96ed1035ca378702d2fb7fa9fb7558f324 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -348,6 +348,10 @@ Una vuelta a la vez: `cron.php` sostiene un archivo de bloqueo mientras corre (`
 uno por instalación en la carpeta temporal del sistema). Si la vuelta anterior todavía está corriendo, la del minuto
 siguiente sale enseguida, sin tocar la base, y anota el salto en un archivo junto al bloqueo (`<bloqueo>.pulos`). La
 vuelta que sostenía el bloqueo registra, como error, cuántas salieron así y cuánto tardó.
+
+La vuelta que toma el bloqueo graba en él el número de su proceso; después de **Vueltas del cron antes de matar la
+trabada** (Configuración; por defecto 10) vueltas saltadas seguidas, la siguiente comprueba que el proceso es el del
+cron, mata la trabada y corre en su lugar, con el error en el registro.
 
 En SQLite, ponga el archivo de la base (`DB_ARQUIVO`) **fuera de la carpeta que publica el servidor web**, en una carpeta en
 la que el usuario de PHP pueda escribir (SQLite crea a su lado los archivos `-wal` y `-shm`).

@@ -304,7 +304,11 @@ function recarregarConfig(aplicadas, manterPosicao) {
             ex("atualizar", t("Intervalo de atualização"), t("De quantos em quantos segundos a Hoje (com o painel), a Ficha, o Plano, os Totais e o Histórico leem tudo de novo sozinhos, sem recarregar a página (a carga, a autonomia, a última leitura, os avisos, os contadores). ")
               + t("De 1 a 86400; 0 desliga; padrão 60. Nunca por cima de quem está digitando ou tem algo mudado e não gravado.")))
           + parCampo(t("Endereço do sistema (a âncora {link})"), d.sistema.pode_mudar ? el("input", {"name": "url_sistema", "value": d.sistema.url_sistema, "placeholder": t("http://servidor/relogios")})
-            : el("span", {}, d.sistema.url_sistema !== "" ? h(d.sistema.url_sistema) : t("(o do pedido; só o master muda)")), "largo")));
+            : el("span", {}, d.sistema.url_sistema !== "" ? h(d.sistema.url_sistema) : t("(o do pedido; só o master muda)")), "largo")
+          + parCampo(t("Rodadas do cron antes de matar a travada (0 nunca mata)"), d.sistema.pode_mudar ? numero("cron_espera_rodadas", String(d.sistema.cron_espera_rodadas), "0", "1440")
+            : el("span", {}, h(String(d.sistema.cron_espera_rodadas))), null,
+            ex("cron-espera", t("Rodadas do cron antes de matar a travada"), t("O cron roda a cada minuto, uma rodada por vez: cada uma grava o número do processo dela no arquivo de trava. Achando a anterior ainda rodando, a rodada sai sem rodar e conta o pulo; depois deste número de rodadas puladas seguidas, a próxima mata a travada e roda no lugar dela, com o erro no registro. ")
+              + t("De 0 a 1440; 0 nunca mata (só espera); padrão 10. É do sistema inteiro: só o master muda.")))));
         // a força da senha (do sistema inteiro: só o master muda; os outros veem a regra)
         var sp = d.senha_politica;
         var senhas = cartao(t("Senhas"), el("div", {"class": "campos"},

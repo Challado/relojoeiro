@@ -1,4 +1,4 @@
-<!-- origem: 4105d1db07780f7486172bc4bcf81717f0b3a8bf -->
+<!-- origem: fa0f3f96ed1035ca378702d2fb7fa9fb7558f324 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -297,6 +297,8 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 `cron.php` 有两个选项，用于手动运行：`--forcar` 立即运行早上和晚上两轮，即使今天已经运行过（生成排程、发送消息并同步日历，如果它们已开启）；`-v` 在屏幕上显示它保存的日志（与 cron 运行记录页面相同）。例如：`php cron.php --forcar -v`。
 
 每次只运行一轮：`cron.php` 运行时持有一个锁文件（`config.php` 中的 `CRON_TRAVA`；没有它时，每个安装在系统临时文件夹中各有一个）。如果上一轮仍在运行，下一分钟的那一轮会立即退出，不触碰数据库，并在锁旁边的文件（`<锁>.pulos`）中记下跳过。持有锁的那一轮会把这样退出的轮数和它自己用了多长时间记录为错误。
+
+取得锁的那一轮在锁中写入自己的进程号；连续跳过达到 **终止卡住的那一轮前的 cron 轮数**（设置；默认 10）后，下一轮确认该进程属于 cron，终止卡住的那一轮并代替它运行，错误记入日志。
 
 使用 SQLite 时，把数据库文件（`DB_ARQUIVO`）放在 **Web 服务器发布的文件夹之外**，放在 PHP 用户可写的文件夹中（SQLite 会在旁边创建 `-wal` 和 `-shm` 文件）。
 

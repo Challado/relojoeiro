@@ -42,8 +42,16 @@ register_shutdown_function(function () use (&$log, $falar, $inicio) {
     }
     // a rodada que segurava a trava conta as que saíram enquanto ela rodava (o arquivo dos pulos, ao lado da trava)
     $pulos = isset($GLOBALS["CRON_TRAVA_ARQUIVO"]) ? $GLOBALS["CRON_TRAVA_ARQUIVO"] . ".pulos" : null;
+    if (isset($GLOBALS["CRON_MATOU"])) {
+        $log[] = registro_erro($GLOBALS["CRON_MATOU"]);
+    }
     if ($pulos !== null && is_file($pulos)) {
-        $n_pulos = count(file($pulos, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: []);
+        $linhas_pulos = file($pulos, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+        $n_pulos = count($linhas_pulos);
+        // as linhas que não são só a hora do pulo: a falha de uma rodada que tentou matar a travada e não conseguiu
+        foreach (array_unique(array_filter($linhas_pulos, function ($l) { return preg_match("/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\$/", $l) !== 1; })) as $falha) {
+            $log[] = registro_erro(t("erro: {1}", [1 => $falha]));
+        }
         if (!@unlink($pulos)) {
             $log[] = registro_erro(t("erro: não consegui apagar o arquivo dos pulos do cron ({1})", [1 => $pulos]));
         }
@@ -101,25 +109,60 @@ register_shutdown_function(function () use (&$log, $falar, $inicio) {
 try {
     require_once __DIR__ . "/lib.php";
 
-    // a trava: uma rodada por vez (cron_trava_caminho). Achando a trava segura pela anterior, esta sai na hora, sem tocar no
-    // banco (ele pode ser o que está lento), e anota o pulo no arquivo ao lado; sem conseguir abrir a trava, não roda (para
-    // não se sobrepor a outra) e registra o erro. O sistema solta a trava sozinho quando a rodada termina, mesmo num erro fatal
+    // a trava: uma rodada por vez (cron_trava_caminho). A rodada que pega a trava grava nela o número do processo (PID), quando
+    // começou e quantas rodadas a próxima espera (cron_espera_rodadas). A do minuto seguinte, achando a trava segura e o PID
+    // ainda vivo, sai sem rodar e sem tocar no banco (ele pode ser o que está lento), e anota o pulo ao lado da trava
+    // (<trava>.pulos); com os pulos chegando ao limite, ela mata a travada, pega a trava e roda no lugar dela, com o erro no
+    // registro. Sem conseguir abrir a trava, não roda (para não se sobrepor a outra) e registra o erro. O sistema solta a
+    // trava sozinho quando a rodada termina, mesmo num erro fatal
     $trava_caminho = cron_trava_caminho();
     $trava = @fopen($trava_caminho, "c+");
     if ($trava === false) {
         $log[] = registro_erro(t("erro: não consegui abrir o arquivo de trava do cron ({1}): a rodada não roda, para não se sobrepor a outra. Confira a CRON_TRAVA do config.php e a permissão da pasta", [1 => $trava_caminho]));
         exit;
     }
+    $pulos_caminho = $trava_caminho . ".pulos";
     if (!flock($trava, LOCK_EX | LOCK_NB)) {
-        $dono = trim((string)stream_get_contents($trava));
-        $GLOBALS["CRON_PULADA"] = t("a rodada anterior do cron ainda está rodando ({1}): esta saiu sem rodar", [1 => $dono]);
-        if (@file_put_contents($trava_caminho . ".pulos", date("Y-m-d H:i:s") . "\n", FILE_APPEND) === false) {
-            $GLOBALS["CRON_PULADA"] .= ". " . t("Não consegui anotar o pulo em {1}", [1 => $trava_caminho . ".pulos"]);
+        $dono = json_decode((string)stream_get_contents($trava), true);
+        $pid_dono = is_array($dono) ? (int)($dono["pid"] ?? 0) : 0;
+        $limite = is_array($dono) && isset($dono["limite"]) ? (int)$dono["limite"] : 10;
+        $desde = is_array($dono) ? (string)($dono["inicio"] ?? "") : "";
+        if (@file_put_contents($pulos_caminho, date("Y-m-d H:i:s") . "\n", FILE_APPEND) === false) {
+            $GLOBALS["CRON_PULADA"] = t("a rodada anterior do cron ainda está rodando (processo {1}, desde {2}), esta saiu sem rodar e não consegui anotar o pulo em {3}", [1 => $pid_dono, 2 => $desde, 3 => $pulos_caminho]);
+            exit;
         }
-        exit;
+        $n_pulos = count(file($pulos_caminho, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: []);
+        // o processo da trava é este cron (na pasta /proc, o comando dele cita o cron.php): nunca mata outro programa
+        $cmd = $pid_dono > 0 && is_readable("/proc/" . $pid_dono . "/cmdline") ? (string)@file_get_contents("/proc/" . $pid_dono . "/cmdline") : null;
+        $e_cron = $cmd === null || strpos($cmd, "cron.php") !== false;
+        if ($limite <= 0 || $n_pulos < $limite || $pid_dono <= 0 || processo_vivo($pid_dono) === false || !$e_cron) {
+            $GLOBALS["CRON_PULADA"] = t("a rodada anterior do cron ainda está rodando (processo {1}, desde {2}): esta saiu sem rodar ({3} de {4} antes de matá-la)", [1 => $pid_dono, 2 => $desde, 3 => $n_pulos, 4 => $limite > 0 ? $limite : "∞"])
+                . ($pid_dono > 0 && !$e_cron ? " " . t("O processo {1} não é o cron: não mato.", [1 => $pid_dono]) : "");
+            exit;
+        }
+        $motivo = processo_matar($pid_dono);
+        // morta, a trava fica livre (o sistema a solta junto com o processo); espera alguns segundos por ela
+        $pegou = false;
+        for ($i = 0; $motivo === "" && $i < 20 && !$pegou; $i++) {
+            $pegou = flock($trava, LOCK_EX | LOCK_NB);
+            if (!$pegou) {
+                usleep(500000);
+            }
+        }
+        if (!$pegou) {
+            $GLOBALS["CRON_PULADA"] = t("a rodada do cron travada (processo {1}, desde {2}) passou de {3} rodadas puladas e não consegui matá-la: {4}", [1 => $pid_dono, 2 => $desde, 3 => $limite, 4 => $motivo !== "" ? $motivo : t("a trava não ficou livre")]);
+            @file_put_contents($pulos_caminho, $GLOBALS["CRON_PULADA"] . "\n", FILE_APPEND);
+            exit;
+        }
+        $GLOBALS["CRON_MATOU"] = t("erro: a rodada do cron do processo {1}, rodando desde {2}, travou: depois de {3} rodadas puladas seguidas, esta a matou e rodou no lugar dela", [1 => $pid_dono, 2 => $desde, 3 => $n_pulos]);
+        // os pulos da travada já estão no erro acima: a conta recomeça com esta rodada
+        if (!@unlink($pulos_caminho)) {
+            $GLOBALS["CRON_MATOU"] .= ". " . t("Não consegui apagar o arquivo dos pulos do cron ({1})", [1 => $pulos_caminho]);
+        }
     }
     ftruncate($trava, 0);
-    fwrite($trava, t("processo {1}, desde {2}", [1 => getmypid(), 2 => date("Y-m-d H:i:s")]));
+    rewind($trava);
+    fwrite($trava, json_encode(["pid" => getmypid(), "inicio" => date("Y-m-d H:i:s"), "limite" => cron_espera_rodadas()]));
     fflush($trava);
     $GLOBALS["CRON_TRAVA_ARQUIVO"] = $trava_caminho;
     $GLOBALS["CRON_TRAVA"] = $trava;

@@ -1443,6 +1443,7 @@ A página **Configuração** guarda as opções **da coleção** (cada coleção
 | **Gasto medido: meia-vida dos dados (dias; 0 desliga)** (`medicao_meia_vida_dias`) | De 0 a 3650 dias; padrão 0. Com N, o peso temporal cai à metade após N dias. Aplica-se aos motores horas, robusto, marcação e MEDIDO nas fórmulas. Não altera as leituras nem a carga. |
 | **Cópia dos documentos no banco (válido para todos os relógios)** (`documentos_copia`) | para a coleção inteira: **Todos os arquivos** (`todos`), **Nenhum arquivo** (`nenhum`) ou vazio (*Individual (no relógio ou no arquivo)*). É o primeiro dos três níveis da cópia (veja [Os documentos do relógio](#os-documentos-do-relógio)). Padrão: vazio. |
 | **Endereço do sistema** (`url_sistema`) | o endereço que a âncora `{link}` põe nas mensagens e na agenda, e o dos links dos e-mails, do ICS e do retorno do Outlook. É do sistema inteiro: só o master muda. Padrão: vazio (o endereço por onde a página foi aberta). |
+| **Rodadas do cron antes de matar a travada** (`cron_espera_rodadas`) | o cron roda uma rodada por vez, e cada uma grava o número do processo dela no arquivo de trava. Achando a anterior ainda rodando, a rodada sai sem rodar e conta o pulo; depois deste número de rodadas puladas seguidas, a próxima confere que o processo é o do cron, mata a travada e roda no lugar dela, com o erro no registro. De 0 a 1440; 0 nunca mata (só espera). É do sistema inteiro: só o master muda. Padrão: 10. |
 | **Próximos dias: mostrar até** (`proximos_por_pagina`) e **Plano: mostrar até** (`plano_por_pagina`) | quantos dias os **Próximos dias** da página Hoje e o **Dia a dia** da página Plano mostram de cada vez (de 1 a 366). Passando disso, embaixo aparece o navegador das páginas: **<** (anterior), os números (a primeira, a última e até duas de cada lado da atual, com … nos saltos) e **>** (próxima); parando o mouse em cima, a dica diz *Anterior*, *Próximo* ou *Página N*. Padrão: 7 e 31. |
 | **Intervalo de atualização das páginas** (`atualizar_segundos`) | de quantos em quantos segundos a **Hoje** (com o relógio aberto no painel), a **Ficha**, o **Plano**, os **Totais** e o **Histórico** leem tudo de novo sozinhos, sem recarregar: de 1 a 86400; **0** desliga; vazio, 60. Negativo ou acima disso, a Configuração recusa. Veja [As páginas se atualizam sozinhas](#as-páginas-se-atualizam-sozinhas). |
 | **Fuso horário (quem não escolheu outro em Minha conta)** (`fuso`) | o fuso horário da coleção: o de quem não escolheu o seu em **Minha conta**, e o do cron, das mensagens e das agendas dela (veja [O fuso horário](#o-fuso-horário)). Vazio: o do sistema (o `FUSO` do `config.php`). |
@@ -1502,6 +1503,7 @@ E do sistema inteiro (a tabela `sistema`):
 | `backup_ultima` | quando foi feita a última cópia de segurança. |
 | `aleatorio_ultima`, `aleatorio_fora` | a fonte do último lote de números aleatórios e desde quando os serviços de fora falharam. |
 | `url_sistema`, `idioma` | o endereço do sistema e o idioma da instalação. |
+| `cron_espera_rodadas` | as rodadas do cron puladas seguidas antes de a próxima matar a travada. |
 | `demo_avisos` | os avisos de vencimento da conta de demonstração que já foram (para não mandar duas vezes). |
 | `migracao_v25` | a marca de que a migração v25 (a passagem para várias pessoas) foi aplicada. |
 
@@ -2090,6 +2092,10 @@ Uma rodada por vez: o `cron.php` segura um arquivo de trava enquanto roda (`CRON
 por instalação na pasta temporária do sistema). Se a rodada anterior ainda estiver rodando, a do minuto seguinte sai na
 hora, sem tocar no banco, e anota o pulo num arquivo ao lado da trava (`<trava>.pulos`). A rodada que segurava a trava
 registra, como erro, quantas saíram assim e quanto tempo ela levou.
+
+A rodada que pega a trava grava nela o número do processo dela; depois de **Rodadas do cron antes de matar a travada**
+(Configuração; padrão 10) rodadas puladas seguidas, a próxima confere que o processo é o do cron, mata a travada e roda
+no lugar dela, com o erro no registro.
 
 No SQLite, ponha o arquivo do banco (`DB_ARQUIVO`) **fora da pasta que o servidor web publica**, numa pasta em que o
 usuário do PHP possa escrever (o SQLite cria ao lado os arquivos `-wal` e `-shm`).

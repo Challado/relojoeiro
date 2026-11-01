@@ -1467,6 +1467,7 @@ colección nueva va al final de cada línea.
 | **Consumo medido: semivida de los datos (días; 0 desactiva)** (`medicao_meia_vida_dias`) | medicao_meia_vida_dias: de 0 a 3650 días; el peso de los datos se reduce a la mitad tras N días; 0 desactiva (predeterminado). |
 | **Copia de los documentos en la base (válido para todos los relojes)** (`documentos_copia`) | para toda la colección: **Todos los archivos** (`todos`), **Ningún archivo** (`nenhum`) o vacío (*Individual (en el reloj o en el archivo)*). Es el primero de los tres niveles de la copia (vea [Los documentos del reloj](#los-documentos-del-reloj)). Predeterminado: vacío. |
 | **Dirección del sistema** (`url_sistema`) | la dirección que el marcador `{link}` pone en los mensajes y en el calendario, y la de los enlaces de los correos, del ICS y del retorno de Outlook. Es de todo el sistema: solo el master la cambia. Por defecto: vacía (la dirección por la que se abrió la página). |
+| **Vueltas del cron antes de matar la trabada** (`cron_espera_rodadas`) | el cron corre una vuelta a la vez, y cada una graba el número de su proceso en el archivo de bloqueo. Si encuentra la anterior todavía corriendo, la vuelta sale sin ejecutarse y cuenta el salto; después de este número de vueltas saltadas seguidas, la siguiente comprueba que el proceso es el del cron, mata la trabada y corre en su lugar, con el error en el registro. De 0 a 1440; 0 nunca mata (solo espera). Es de todo el sistema: solo el master la cambia. Predeterminado: 10. |
 | **Próximos días: mostrar hasta** (`proximos_por_pagina`) y **Plan: mostrar hasta** (`plano_por_pagina`) | cuántos días muestran a la vez los **Próximos días** de la página Hoy y el **Día a día** de la página Plan (de 1 a 366). Pasado eso, aparece el paginador debajo: **<** (anterior), los números (el primero, el último y hasta dos a cada lado del actual, con … en los huecos) y **>** (siguiente); al detener el ratón encima, la ayuda dice *Anterior*, *Siguiente* o *Página N*. Predeterminado: 7 y 31. |
 | **Intervalo de actualización de las páginas** (`atualizar_segundos`) | cada cuántos segundos **Hoy** (con el reloj abierto en el panel), la **Ficha**, el **Plan**, los **Totales** y el **Historial** leen todo de nuevo solos, sin recargar: de 1 a 86400; **0** lo apaga; vacío, 60. Negativo o por encima de eso, la Configuración lo rechaza. Vea [Las páginas se actualizan solas](#las-páginas-se-actualizan-solas). |
 | **Huso horario (quien no eligió otro en Mi cuenta)** (`fuso`) | el huso horario de la colección: el de quien no eligió el suyo en **Mi cuenta**, y el del cron, los mensajes y las agendas de ella (vea [El huso horario](#el-huso-horario)). Vacío: el del sistema (el `FUSO` del `config.php`). |
@@ -1530,6 +1531,7 @@ Y de todo el sistema (la tabla `sistema`):
 | `backup_ultima` | cuándo se hizo la última copia de seguridad. |
 | `aleatorio_ultima`, `aleatorio_fora` | la fuente del último lote de números aleatorios y desde cuándo fallan los servicios de fuera. |
 | `url_sistema`, `idioma` | la dirección del sistema y el idioma de la instalación. |
+| `cron_espera_rodadas` | las vueltas del cron saltadas seguidas antes de que la siguiente mate la trabada. |
 | `demo_avisos` | los avisos de vencimiento de la cuenta de demostración que ya salieron (para no enviarlos dos veces). |
 | `migracao_v25` | la marca de que se aplicó la migración v25 (el paso a varias personas). |
 
@@ -2130,6 +2132,10 @@ Una vuelta a la vez: `cron.php` sostiene un archivo de bloqueo mientras corre (`
 uno por instalación en la carpeta temporal del sistema). Si la vuelta anterior todavía está corriendo, la del minuto
 siguiente sale enseguida, sin tocar la base, y anota el salto en un archivo junto al bloqueo (`<bloqueo>.pulos`). La
 vuelta que sostenía el bloqueo registra, como error, cuántas salieron así y cuánto tardó.
+
+La vuelta que toma el bloqueo graba en él el número de su proceso; después de **Vueltas del cron antes de matar la
+trabada** (Configuración; por defecto 10) vueltas saltadas seguidas, la siguiente comprueba que el proceso es el del
+cron, mata la trabada y corre en su lugar, con el error en el registro.
 
 En SQLite, ponga el archivo de la base (`DB_ARQUIVO`) **fuera de la carpeta que publica el servidor web**, en una carpeta en
 la que el usuario de PHP pueda escribir (SQLite crea a su lado los archivos `-wal` y `-shm`).

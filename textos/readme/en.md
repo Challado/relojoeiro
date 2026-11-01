@@ -1,4 +1,4 @@
-<!-- origem: 4105d1db07780f7486172bc4bcf81717f0b3a8bf -->
+<!-- origem: fa0f3f96ed1035ca378702d2fb7fa9fb7558f324 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -346,6 +346,10 @@ One round at a time: `cron.php` holds a lock file while it runs (`CRON_TRAVA` in
 installation in the system temporary folder). If the previous round is still running, the next minute's round leaves at
 once, without touching the database, and records the skip in a file next to the lock (`<lock>.pulos`). The round that held
 the lock records, as an error, how many left this way and how long it took.
+
+The round that takes the lock writes its process number in it; after **Cron rounds before killing the stuck one**
+(Settings; default 10) skipped rounds in a row, the next one checks that the process is the cron's, kills the stuck one
+and runs in its place, with the error in the log.
 
 On SQLite, put the database file (`DB_ARQUIVO`) **outside the folder the web server publishes**, in a folder the PHP user can
 write to (SQLite creates the `-wal` and `-shm` files next to it).

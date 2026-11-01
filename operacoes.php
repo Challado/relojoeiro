@@ -4695,6 +4695,15 @@ function op_config($acao, $d)
                 }
             }
         }
+        // quantas rodadas do cron esperam a travada antes de matá-la: do sistema inteiro, só o master; 0 a 1440 (0: nunca mata)
+        if (array_key_exists("cron_espera_rodadas", $d)) {
+            $v_cron = trim((string)$d["cron_espera_rodadas"]);
+            if (!usuario_master()) {
+                $erros[] = t("As rodadas que o cron espera antes de matar a travada são do sistema inteiro: só o master muda.");
+            } elseif ($v_cron !== "" && (preg_match("/^\d+\$/", $v_cron) !== 1 || (int)$v_cron > 1440)) {
+                $erros[] = t("cron_espera_rodadas: um número inteiro de 0 a 1440 (0: nunca mata; vazio: o padrão, 10).");
+            }
+        }
         if ($mexe_senha && !usuario_master()) {
             $erros[] = t("A força da senha é do sistema inteiro: só o master muda.");
         } elseif ($mexe_senha && $sp["maiusculas"] + $sp["minusculas"] + $sp["numeros"] + $sp["simbolos"] > $sp["tamanho"]) {
@@ -4703,6 +4712,9 @@ function op_config($acao, $d)
         if (count($erros) === 0) {
             if (array_key_exists("url_sistema", $d) && usuario_master()) {
                 sis_set("url_sistema", trim((string)$d["url_sistema"]));
+            }
+            if (array_key_exists("cron_espera_rodadas", $d) && usuario_master()) {
+                sis_set("cron_espera_rodadas", trim((string)$d["cron_espera_rodadas"]));
             }
             // a força da senha é do sistema inteiro: só o master muda
             foreach (array_keys(SENHA_REGRAS) as $k) {

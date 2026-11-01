@@ -1,4 +1,4 @@
-<!-- origem: 6e8fb9ad525a897abfab4daa4f84ff36a0080f40 -->
+<!-- origem: 809d49f5a1d6e55a4b4c64ad1023e218737db127 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1466,6 +1466,7 @@ collection vient à la fin de chaque ligne.
 | **Consommation mesurée : demi-vie des données (jours ; 0 désactive)** (`medicao_meia_vida_dias`) | medicao_meia_vida_dias : de 0 à 3650 jours ; le poids des données diminue de moitié après N jours ; 0 désactive (défaut). |
 | **Copie des documents dans la base (valable pour toutes les montres)** (`documentos_copia`) | pour toute la collection : **Tous les fichiers** (`todos`), **Aucun fichier** (`nenhum`) ou vide (*Individuelle (sur la montre ou le fichier)*). C'est le premier des trois niveaux de la copie (voir [Les documents de la montre](#os-documentos-do-relógio)). Par défaut : vide. |
 | **Adresse du système** (`url_sistema`) | l'adresse que le repère `{link}` met dans les messages et dans l'agenda, et celle des liens des e-mails, de l'ICS et du retour d'Outlook. Elle est à tout le système : seul le master la change. Par défaut : vide (l'adresse par laquelle la page a été ouverte). |
+| **Passages du cron avant de tuer celui bloqué** (`cron_espera_rodadas`) | le cron tourne un passage à la fois, et chacun écrit son numéro de processus dans le fichier de verrou. S’il trouve le précédent encore en cours, le passage sort sans s’exécuter et compte le saut ; après ce nombre de passages sautés d’affilée, le suivant vérifie que le processus est celui du cron, tue celui bloqué et tourne à sa place, avec l’erreur dans le journal. De 0 à 1440 ; 0 ne tue jamais (attend seulement). C’est pour tout le système : seul le master la change. Par défaut : 10. |
 | **Prochains jours : afficher jusqu'à** (`proximos_por_pagina`) et **Plan : afficher jusqu'à** (`plano_por_pagina`) | combien de jours affichent à la fois les **Prochains jours** de la page Aujourd'hui et le **Jour par jour** de la page Plan (de 1 à 366). Au-delà, le paginateur apparaît en dessous : **<** (précédent), les numéros (le premier, le dernier et jusqu'à deux de chaque côté de l'actuel, avec … dans les trous) et **>** (suivant) ; en posant la souris dessus, l'info-bulle dit *Précédent*, *Suivant* ou *Page N*. Par défaut : 7 et 31. |
 | **Intervalle de mise à jour des pages** (`atualizar_segundos`) | toutes les combien de secondes **Aujourd'hui** (avec la montre ouverte dans le panneau), la **Fiche**, le **Plan**, les **Totaux** et l'**Historique** relisent tout seuls, sans recharger : de 1 à 86400 ; **0** désactive ; vide, 60. Négatif ou au-delà, la Configuration refuse. Voir [Les pages se mettent à jour seules](#as-páginas-se-atualizam-sozinhas). |
 | **Fuseau horaire (qui n'en a pas choisi un autre dans Mon compte)** (`fuso`) | le fuseau horaire de la collection : celui de qui n'a pas choisi le sien dans **Mon compte**, et celui de son cron, de ses messages et de ses agendas (voir [Le fuseau horaire](#o-fuso-horário)). Vide : celui du système (le `FUSO` du `config.php`). |
@@ -1530,6 +1531,7 @@ Et de tout le système (la table `sistema`) :
 | `backup_ultima` | quand la dernière sauvegarde a été faite. |
 | `aleatorio_ultima`, `aleatorio_fora` | la source du dernier lot de nombres aléatoires et depuis quand les services extérieurs échouent. |
 | `url_sistema`, `idioma` | l'adresse du système et la langue de l'installation. |
+| `cron_espera_rodadas` | les passages du cron sautés d’affilée avant que le suivant tue celui bloqué. |
 | `demo_avisos` | les avis d'expiration du compte de démonstration déjà envoyés (pour ne pas les envoyer deux fois). |
 | `migracao_v25` | la marque que la migration v25 (le passage à plusieurs personnes) a été appliquée. |
 

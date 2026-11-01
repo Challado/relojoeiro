@@ -31,7 +31,7 @@ $saida = ["config" => (object)$valores_c,
     // trocar o relógio de hoje no próprio dia (a caixa da Configuração; desligado, o padrão: a troca vale a partir de amanhã)
     "trocar_hoje" => trocar_hoje_permitido(),
     // o que é do sistema inteiro (só o master muda): o endereço do sistema
-    "sistema" => ["url_sistema" => sis("url_sistema"), "pode_mudar" => usuario_master()],
+    "sistema" => ["url_sistema" => sis("url_sistema"), "cron_espera_rodadas" => cron_espera_rodadas(), "pode_mudar" => usuario_master()],
     // a força da senha (do sistema: só o master muda): o mínimo de cada regra e o texto
     "senha_politica" => senha_politica_api(),
     // o DOCUMENTOS_COPIA_BANCO do config.php não vale mais (a cópia é escolhida aqui, por coleção): definido, a página avisa

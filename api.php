@@ -3895,6 +3895,8 @@
  *                                    hoje fica parado)
  *     sistema                        o que é do sistema inteiro (não da coleção)
  *     sistema.url_sistema            o endereço do sistema, para os links das mensagens ({link}), do ICS e do Outlook (vazio: o do pedido)
+ *     sistema.cron_espera_rodadas    quantas rodadas do cron saem sem rodar, com a anterior travada, antes de a próxima matá-la (0 a 1440;
+ *                                    0, nunca mata; padrão 10; só o master muda)
  *     sistema.pode_mudar             verdadeiro ou falso: quem pede pode mudar (só o master)
  *     senha_politica                 a força da senha (a Configuração, do sistema): o que toda senha nova precisa ter
  *     senha_politica.regras          o mínimo de cada regra (0: não exige)

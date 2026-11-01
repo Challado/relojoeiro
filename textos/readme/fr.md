@@ -1,4 +1,4 @@
-<!-- origem: 4105d1db07780f7486172bc4bcf81717f0b3a8bf -->
+<!-- origem: fa0f3f96ed1035ca378702d2fb7fa9fb7558f324 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -354,6 +354,10 @@ sans elle, un par installation dans le dossier temporaire du système). Si le pa
 la minute suivante sort aussitôt, sans toucher la base, et note le saut dans un fichier à côté du verrou
 (`<verrou>.pulos`). Le passage qui tenait le verrou enregistre, comme erreur, combien sont sortis ainsi et combien de
 temps il a pris.
+
+Le passage qui prend le verrou y écrit son numéro de processus ; après **Passages du cron avant de tuer celui bloqué**
+(Paramètres ; par défaut 10) passages sautés d’affilée, le suivant vérifie que le processus est celui du cron, tue
+celui bloqué et tourne à sa place, avec l’erreur dans le journal.
 
 Sur SQLite, mettez le fichier de la base (`DB_ARQUIVO`) **hors du dossier que publie le serveur web**, dans un dossier où
 l'utilisateur de PHP peut écrire (SQLite crée à côté les fichiers `-wal` et `-shm`).

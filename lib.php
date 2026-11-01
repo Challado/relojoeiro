@@ -9870,13 +9870,80 @@ function backup_caminho($arquivo)
     return $pasta !== null && preg_match("/^relojoeiro-\\d{4}-\\d{2}-\\d{2}-\\d{6}\\.jsonl\\.gz\$/", $arquivo) === 1 && is_file($pasta . "/" . $arquivo) ? $pasta . "/" . $arquivo : null;
 }
 
-// O arquivo de trava do cron (CRON_TRAVA do config.php; sem a linha, um por instalação na pasta temporária): a rodada o
-// segura (flock) enquanto roda, e a do minuto seguinte, achando-o seguro, sai na hora sem tocar no banco. Ao lado dele, o
-// arquivo dos pulos (<trava>.pulos): uma linha por rodada que saiu assim, contada no registro da rodada que segurava a trava
+// O arquivo de trava do cron (CRON_TRAVA do config.php; sem a linha, um por instalação na pasta temporária, pela pasta do
+// sistema e pelo banco: duas instalações com o mesmo código e bancos diferentes não se travam): a rodada o segura (flock)
+// enquanto roda, e a do minuto seguinte, achando-o seguro, sai na hora sem tocar no banco. Ao lado dele, o arquivo dos
+// pulos (<trava>.pulos): uma linha por rodada que saiu assim, contada no registro da rodada que segurava a trava
 function cron_trava_caminho()
 {
-    return defined("CRON_TRAVA") && trim((string)CRON_TRAVA) !== "" ? (string)CRON_TRAVA
-        : sys_get_temp_dir() . "/relojoeiro-cron-" . substr(md5(__DIR__), 0, 12) . ".trava";
+    if (defined("CRON_TRAVA") && trim((string)CRON_TRAVA) !== "") {
+        return (string)CRON_TRAVA;
+    }
+    $banco = [];
+    foreach (["DB_TIPO", "DB_HOST", "DB_PORTA", "DB_NOME"] as $c) {
+        $banco[] = defined($c) ? (string)constant($c) : "";
+    }
+    if (defined("DB_TIPO") && DB_TIPO === "sqlite") {
+        $banco[] = defined("DB_ARQUIVO") ? (string)DB_ARQUIVO : "";
+    }
+    return sys_get_temp_dir() . "/relojoeiro-cron-" . substr(md5(__DIR__ . "|" . implode("|", $banco)), 0, 12) . ".trava";
+}
+
+// Quantas rodadas do cron saem sem rodar, com a anterior ainda rodando, antes de a próxima matar a travada (cron_espera_rodadas,
+// do sistema inteiro: só o master muda; 0 a 1440, padrão 10; 0, nunca mata: só espera). Sem banco, o padrão
+function cron_espera_rodadas()
+{
+    try {
+        $v = trim((string)sis("cron_espera_rodadas"));
+    } catch (Throwable $e) {
+        $v = "";
+    }
+    return preg_match("/^\d+\$/", $v) === 1 && (int)$v <= 1440 ? (int)$v : 10;
+}
+
+// Um processo vivo (o PID do arquivo de trava): pelo sinal 0 do posix ou pela pasta /proc; sem os dois, não dá para saber (null)
+function processo_vivo($pid)
+{
+    $pid = (int)$pid;
+    if ($pid <= 0) {
+        return false;
+    }
+    if (function_exists("posix_kill")) {
+        return @posix_kill($pid, 0) || (function_exists("posix_get_last_error") && posix_get_last_error() === 1);
+    }
+    return is_dir("/proc") ? is_dir("/proc/" . $pid) : null;
+}
+
+// Mata um processo: o pedido de parar (TERM) e, se ele não parou em $prazo segundos, à força (KILL). Devolve "" se ele
+// parou, ou o motivo de não ter conseguido
+function processo_matar($pid, $prazo = 10)
+{
+    $pid = (int)$pid;
+    $sinal = function ($s) use ($pid) {
+        if (function_exists("posix_kill")) {
+            return @posix_kill($pid, $s === "TERM" ? 15 : 9);
+        }
+        if (function_exists("exec")) {
+            $saida = [];
+            $rc = 1;
+            @exec("kill -" . $s . " " . $pid . " 2>/dev/null", $saida, $rc);
+            return $rc === 0;
+        }
+        return null;
+    };
+    foreach (["TERM", "KILL"] as $s) {
+        $ok = $sinal($s);
+        if ($ok === null) {
+            return t("o PHP não tem como mandar sinal a um processo (nem posix_kill nem exec)");
+        }
+        for ($i = 0; $i < $prazo * 2; $i++) {
+            if (processo_vivo($pid) === false) {
+                return "";
+            }
+            usleep(500000);
+        }
+    }
+    return processo_vivo($pid) === false ? "" : t("o processo {1} não parou nem com KILL (sem permissão?)", [1 => $pid]);
 }
 
 // Quanto as telas esperam a resposta da API, em segundos (API_ESPERA do config.php; sem a linha, 120; 0, sem limite):

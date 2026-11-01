@@ -1,4 +1,4 @@
-<!-- origem: 6e8fb9ad525a897abfab4daa4f84ff36a0080f40 -->
+<!-- origem: 809d49f5a1d6e55a4b4c64ad1023e218737db127 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1426,6 +1426,7 @@ each line.
 | **Measured drain: data half-life (days; 0 disables)** (`medicao_meia_vida_dias`) | medicao_meia_vida_dias: 0 to 3650 days; data weight halves after N days; 0 disables it (default). |
 | **Copy of the documents in the database (applies to every watch)** (`documentos_copia`) | for the whole collection: **All files** (`todos`), **No file** (`nenhum`) or empty (*Individual (on the watch or the file)*). It is the first of the three levels of the copy (see [The watch's documents](#os-documentos-do-relógio)). Default: empty. |
 | **System address** (`url_sistema`) | the address that the `{link}` placeholder puts in the messages and in the calendar, and the one of the links in the e-mails, the ICS and the Outlook return. It belongs to the whole system: only the master changes it. Default: empty (the address the page was opened from). |
+| **Cron rounds before killing the stuck one** (`cron_espera_rodadas`) | the cron runs one round at a time, and each one writes its process number in the lock file. Finding the previous one still running, the round leaves without running and counts the skip; after this number of skipped rounds in a row, the next one checks that the process is the cron's, kills the stuck one and runs in its place, with the error in the log. From 0 to 1440; 0 never kills (only waits). It is for the whole system: only the master changes it. Default: 10. |
 | **Next days: show up to** (`proximos_por_pagina`) and **Plan: show up to** (`plano_por_pagina`) | how many days the **Next days** on the Today page and the **Day by day** on the Plan page show at a time (from 1 to 366). Beyond that, the page navigator appears below: **<** (previous), the numbers (the first, the last and up to two on each side of the current one, with … in the gaps) and **>** (next); resting the mouse on it, the tip says *Previous*, *Next* or *Page N*. Default: 7 and 31. |
 | **Page refresh interval** (`atualizar_segundos`) | how often, in seconds, **Today** (with the watch open in the panel), the **Watch page**, the **Plan**, the **Totals** and the **History** read everything again by themselves, without reloading: from 1 to 86400; **0** turns it off; empty, 60. Negative or above that, Settings refuses it. See [The pages refresh by themselves](#as-páginas-se-atualizam-sozinhas). |
 | **Time zone (whoever has not chosen another in My account)** (`fuso`) | the collection's time zone: that of whoever has not chosen their own in **My account**, and that of its cron, messages and calendars (see [The time zone](#o-fuso-horário)). Empty: the system's (the `FUSO` of `config.php`). |
@@ -1488,6 +1489,7 @@ And of the whole system (the `sistema` table):
 | `backup_ultima` | when the last backup was made. |
 | `aleatorio_ultima`, `aleatorio_fora` | the source of the last batch of random numbers and since when the outside services have failed. |
 | `url_sistema`, `idioma` | the system address and the installation language. |
+| `cron_espera_rodadas` | the cron rounds skipped in a row before the next one kills the stuck one. |
 | `demo_avisos` | the demo account expiry notices already sent (so as not to send them twice). |
 | `migracao_v25` | the mark that migration v25 (the move to several people) was applied. |
 

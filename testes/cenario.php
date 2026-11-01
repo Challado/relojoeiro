@@ -394,6 +394,10 @@ if (!is_array($conf_s) || $conf_s["ok"] !== false || count(array_filter($conf_s[
 escrever(["recurso" => "config", "acao" => "salvar", "senha_tamanho" => 3], false);
 escrever(["recurso" => "config", "acao" => "salvar", "senha_tamanho" => 8, "senha_numeros" => 6, "senha_simbolos" => 6], false);
 escrever(["recurso" => "config", "acao" => "salvar", "senha_tamanho" => 12, "senha_numeros" => 2]);
+// as rodadas que o cron espera antes de matar a travada (do sistema, só o master): fora de 0 a 1440, recusado
+escrever(["recurso" => "config", "acao" => "salvar", "cron_espera_rodadas" => "1441"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "cron_espera_rodadas" => "dez"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "cron_espera_rodadas" => "3"]);
 escrever(["recurso" => "usuarios", "acao" => "salvar", "login" => "fraco", "senha" => "Segredo@123"], false);
 escrever(["recurso" => "config", "acao" => "salvar", "senha_tamanho" => 8, "senha_numeros" => 1]);
 ler("politica da senha no cadastro", ["recurso" => "cadastro"]);
