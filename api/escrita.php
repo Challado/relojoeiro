@@ -65,7 +65,7 @@ if ($alvo_exc !== null && (string)($d["confirmar"] ?? "") !== "1") {
 } elseif ($recurso === "usuarios") {
     $saida = op_usuarios($acao, $d, $quem !== "" ? $quem : t("(token da API)"));
 } elseif ($recurso === "importacao") {
-    // a importação do sistema anterior pode demorar (o histórico inteiro): sem o limite de tempo do PHP
+    // a importação do sistema anterior pode demorar (o histórico inteiro): sem o limite de tempo do PHP (recursos_demorados)
     @set_time_limit(0);
     $saida = op_importacao($acao, $d);
 } elseif ($recurso === "backup") {

@@ -1,4 +1,4 @@
-<!-- origem: 323c1b47ab3cc3fa76db1c7b7d12b41b6c43aec3 -->
+<!-- origem: 4105d1db07780f7486172bc4bcf81717f0b3a8bf -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -342,6 +342,11 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 today (it builds the schedule, sends the messages and syncs the calendar, if they are on), and `-v` shows on screen the log it
 saves (the same as the Cron runs page). E.g.: `php cron.php --forcar -v`.
 
+One round at a time: `cron.php` holds a lock file while it runs (`CRON_TRAVA` in `config.php`; without it, one per
+installation in the system temporary folder). If the previous round is still running, the next minute's round leaves at
+once, without touching the database, and records the skip in a file next to the lock (`<lock>.pulos`). The round that held
+the lock records, as an error, how many left this way and how long it took.
+
 On SQLite, put the database file (`DB_ARQUIVO`) **outside the folder the web server publishes**, in a folder the PHP user can
 write to (SQLite creates the `-wal` and `-shm` files next to it).
 
@@ -398,6 +403,8 @@ get in through **Create account** (`cadastro.php`), through an invitation of you
 | `ALEATORIO_RANDOMORG_URL`, `ALEATORIO_ANU_URL` | optional, only for tests: the addresses of the random number sources (`https://www.random.org/integers/` and `https://qrng.anu.edu.au/API/jsonI.php`). Changed, the draws ask a test server for the numbers |
 | `GOOGLE_TOKEN_URL`, `GOOGLE_API_URL`, `OUTLOOK_LOGIN_URL`, `OUTLOOK_GRAPH_URL` | optional, only for tests: the Google and Microsoft addresses the calendars use. Changed, the sync talks to a test server |
 | `TEXTOS_ESTRITO` | optional, for whoever is translating: `true` makes a missing translation stop with an error (see [The languages](#os-idiomas)) |
+| `CRON_TRAVA` | optional: the cron lock file, which ensures one round at a time (see the cron installation). Without it, one per installation in the system temporary folder |
+| `API_ESPERA` | optional: how many seconds the screens wait for the API answer before cancelling the request and saying the server did not respond. Without it, 120; `0`, no limit. The slow writes (import, backup, migrations and installation) have no limit |
 
 The system reads the `config.php` in its folder. A server environment variable, `RELOGIOS_CONFIG`, points to another file
 instead: it is what the parity test uses (`testes/paridade.sh`, with [`testes/config.teste.php`](testes/config.teste.php)), to

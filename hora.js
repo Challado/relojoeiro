@@ -81,7 +81,14 @@ function andar() {
   }
 }
 
+// uma leitura por vez: com o servidor lento, a do minuto seguinte não sai enquanto a anterior não acabar (com a resposta ou
+// com o erro na tela)
+var lendoHora = false;
 function ler() {
+  if (lendoHora) {
+    return Promise.resolve();
+  }
+  lendoHora = true;
   var antes = Date.now();
   return api({recurso: "hora_certa"}).then(function (d) {
     var depois = Date.now();
@@ -126,6 +133,8 @@ function ler() {
     andar();
   }).catch(function (e) {
     document.getElementById("hora").innerHTML = el("p", {"class": "acao"}, t("Não consegui ler a hora certa: {1}", {1: h(e.message)}));
+  }).then(function () {
+    lendoHora = false;
   });
 }
 

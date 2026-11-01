@@ -1,4 +1,4 @@
-<!-- origem: 323c1b47ab3cc3fa76db1c7b7d12b41b6c43aec3 -->
+<!-- origem: 4105d1db07780f7486172bc4bcf81717f0b3a8bf -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -344,6 +344,11 @@ El `cron.php` tiene dos opciones, para ejecutarlo a mano: `--forcar` ejecuta la 
 aunque ya se hayan ejecutado hoy (arma la escala, envía los mensajes y sincroniza el calendario, si están activados), y `-v`
 muestra en pantalla el registro que guarda (el mismo de la página Ejecuciones del cron). Ej.: `php cron.php --forcar -v`.
 
+Una vuelta a la vez: `cron.php` sostiene un archivo de bloqueo mientras corre (`CRON_TRAVA` en `config.php`; sin ella,
+uno por instalación en la carpeta temporal del sistema). Si la vuelta anterior todavía está corriendo, la del minuto
+siguiente sale enseguida, sin tocar la base, y anota el salto en un archivo junto al bloqueo (`<bloqueo>.pulos`). La
+vuelta que sostenía el bloqueo registra, como error, cuántas salieron así y cuánto tardó.
+
 En SQLite, ponga el archivo de la base (`DB_ARQUIVO`) **fuera de la carpeta que publica el servidor web**, en una carpeta en
 la que el usuario de PHP pueda escribir (SQLite crea a su lado los archivos `-wal` y `-shm`).
 
@@ -400,6 +405,8 @@ entran por **Crear cuenta** (`cadastro.php`), por una invitación suya, o el mas
 | `ALEATORIO_RANDOMORG_URL`, `ALEATORIO_ANU_URL` | opcionales, solo para pruebas: las direcciones de las fuentes de los números aleatorios (`https://www.random.org/integers/` y `https://qrng.anu.edu.au/API/jsonI.php`). Cambiadas, los sorteos piden los números a un servidor de prueba |
 | `GOOGLE_TOKEN_URL`, `GOOGLE_API_URL`, `OUTLOOK_LOGIN_URL`, `OUTLOOK_GRAPH_URL` | opcionales, solo para pruebas: las direcciones de Google y de Microsoft que usan los calendarios. Cambiadas, la sincronización habla con un servidor de prueba |
 | `TEXTOS_ESTRITO` | opcional, para quien está traduciendo: `true` hace que la traducción que falta se detenga con un error (vea [Los idiomas](#os-idiomas)) |
+| `CRON_TRAVA` | opcional: el archivo de bloqueo del cron, que garantiza una vuelta a la vez (vea la instalación del cron). Sin ella, uno por instalación en la carpeta temporal del sistema |
+| `API_ESPERA` | opcional: cuántos segundos esperan las pantallas la respuesta de la API antes de cancelar el pedido y decir que el servidor no respondió. Sin ella, 120; `0`, sin límite. Las escrituras lentas (importación, copia de seguridad, migraciones e instalación) no tienen límite |
 
 El sistema lee el `config.php` de su carpeta. Una variable de entorno del servidor, `RELOGIOS_CONFIG`, apunta a otro archivo en
 su lugar: es lo que usa la prueba de paridad (`testes/paridade.sh`, con el [`testes/config.teste.php`](testes/config.teste.php)),

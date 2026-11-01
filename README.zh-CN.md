@@ -1420,6 +1420,8 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 
 `cron.php` 有两个选项，用于手动运行：`--forcar` 立即运行早上和晚上两轮，即使今天已经运行过（生成排程、发送消息并同步日历，如果它们已开启）；`-v` 在屏幕上显示它保存的日志（与 cron 运行记录页面相同）。例如：`php cron.php --forcar -v`。
 
+每次只运行一轮：`cron.php` 运行时持有一个锁文件（`config.php` 中的 `CRON_TRAVA`；没有它时，每个安装在系统临时文件夹中各有一个）。如果上一轮仍在运行，下一分钟的那一轮会立即退出，不触碰数据库，并在锁旁边的文件（`<锁>.pulos`）中记下跳过。持有锁的那一轮会把这样退出的轮数和它自己用了多长时间记录为错误。
+
 使用 SQLite 时，把数据库文件（`DB_ARQUIVO`）放在 **Web 服务器发布的文件夹之外**，放在 PHP 用户可写的文件夹中（SQLite 会在旁边创建 `-wal` 和 `-shm` 文件）。
 
 使用 Firebird 时，数据库必须以 **UTF8** 创建（上面的 `DEFAULT CHARACTER SET UTF8`）。PHP 需要 `pdo_firebird` 扩展：在 Debian 和 Ubuntu 上是 `php8.4-interbase` 包（旧名称）以及随之安装的 Firebird 客户端（`libfbclient2`）；在 `php.ini` 中写 `extension=pdo_firebird`。服务器是 `firebird3.0-server` 包（或 Firebird 官网的安装程序）。在 `config.php` 中，`DB_NOME` 是 `.fdb` 文件**在数据库服务器上**的路径（或 `databases.conf` 中的别名），`DB_USUARIO`/`DB_SENHA` 是一个 Firebird 用户（`SYSDBA` 或为系统创建的用户）。
@@ -1459,6 +1461,8 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 | `ALEATORIO_RANDOMORG_URL`、`ALEATORIO_ANU_URL` | 可选，仅用于测试：随机数来源的地址（`https://www.random.org/integers/` 和 `https://qrng.anu.edu.au/API/jsonI.php`）。更改后，抽选会向测试服务器索取数字 |
 | `GOOGLE_TOKEN_URL`、`GOOGLE_API_URL`、`OUTLOOK_LOGIN_URL`、`OUTLOOK_GRAPH_URL` | 可选，仅用于测试：日历使用的 Google 和 Microsoft 地址。改掉后，同步会与测试服务器通信 |
 | `TEXTOS_ESTRITO` | 可选，供翻译者使用：`true` 让缺少的翻译报错停止（参见[语言](#语言)） |
+| `CRON_TRAVA` | 可选：cron 的锁文件，确保每次只运行一轮（参见 cron 的安装）。没有它时，每个安装在系统临时文件夹中各有一个 |
+| `API_ESPERA` | 可选：界面等待 API 响应的秒数，超过后取消请求并提示服务器没有响应。没有它时为 120；`0` 表示不限。耗时的写入（导入、备份、迁移和安装）不受限制 |
 
 系统读取它所在文件夹中的 `config.php`。服务器环境变量 `RELOGIOS_CONFIG` 可以指向另一个文件代替它：一致性测试就是这样用的（`testes/paridade.sh`，配合 [`testes/config.teste.php`](testes/config.teste.php)），以便在不碰真正的 `config.php` 的情况下运行。正常安装时不要设置它。
 

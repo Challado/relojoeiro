@@ -33,6 +33,24 @@ set_error_handler(function ($nivel, $texto, $arquivo, $linha) use (&$log) {
 
 // erro fatal ou exceção: grava no banco; se nem o banco responder, num arquivo na pasta temporária
 register_shutdown_function(function () use (&$log, $falar, $inicio) {
+    // a rodada que achou a trava segura (a anterior ainda rodando) sai sem tocar no banco: o pulo já está no arquivo dos pulos
+    if (isset($GLOBALS["CRON_PULADA"])) {
+        if ($falar) {
+            echo $GLOBALS["CRON_PULADA"] . "\n";
+        }
+        return;
+    }
+    // a rodada que segurava a trava conta as que saíram enquanto ela rodava (o arquivo dos pulos, ao lado da trava)
+    $pulos = isset($GLOBALS["CRON_TRAVA_ARQUIVO"]) ? $GLOBALS["CRON_TRAVA_ARQUIVO"] . ".pulos" : null;
+    if ($pulos !== null && is_file($pulos)) {
+        $n_pulos = count(file($pulos, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: []);
+        if (!@unlink($pulos)) {
+            $log[] = registro_erro(t("erro: não consegui apagar o arquivo dos pulos do cron ({1})", [1 => $pulos]));
+        }
+        if ($n_pulos > 0) {
+            $log[] = registro_erro(t("{1} rodada(s) do cron saíram sem rodar enquanto esta rodava (ela levou {2} min): uma rodada não começa antes da anterior acabar", [1 => $n_pulos, 2 => round((microtime(true) - $inicio) / 60, 1)]));
+        }
+    }
     $e = error_get_last();
     if ($e && in_array($e["type"], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
         $log[] = registro_erro(t("erro fatal: {1} ({2}:{3})", [1 => $e["message"], 2 => basename($e["file"]), 3 => $e["line"]]));
@@ -82,6 +100,29 @@ register_shutdown_function(function () use (&$log, $falar, $inicio) {
 
 try {
     require_once __DIR__ . "/lib.php";
+
+    // a trava: uma rodada por vez (cron_trava_caminho). Achando a trava segura pela anterior, esta sai na hora, sem tocar no
+    // banco (ele pode ser o que está lento), e anota o pulo no arquivo ao lado; sem conseguir abrir a trava, não roda (para
+    // não se sobrepor a outra) e registra o erro. O sistema solta a trava sozinho quando a rodada termina, mesmo num erro fatal
+    $trava_caminho = cron_trava_caminho();
+    $trava = @fopen($trava_caminho, "c+");
+    if ($trava === false) {
+        $log[] = registro_erro(t("erro: não consegui abrir o arquivo de trava do cron ({1}): a rodada não roda, para não se sobrepor a outra. Confira a CRON_TRAVA do config.php e a permissão da pasta", [1 => $trava_caminho]));
+        exit;
+    }
+    if (!flock($trava, LOCK_EX | LOCK_NB)) {
+        $dono = trim((string)stream_get_contents($trava));
+        $GLOBALS["CRON_PULADA"] = t("a rodada anterior do cron ainda está rodando ({1}): esta saiu sem rodar", [1 => $dono]);
+        if (@file_put_contents($trava_caminho . ".pulos", date("Y-m-d H:i:s") . "\n", FILE_APPEND) === false) {
+            $GLOBALS["CRON_PULADA"] .= ". " . t("Não consegui anotar o pulo em {1}", [1 => $trava_caminho . ".pulos"]);
+        }
+        exit;
+    }
+    ftruncate($trava, 0);
+    fwrite($trava, t("processo {1}, desde {2}", [1 => getmypid(), 2 => date("Y-m-d H:i:s")]));
+    fflush($trava);
+    $GLOBALS["CRON_TRAVA_ARQUIVO"] = $trava_caminho;
+    $GLOBALS["CRON_TRAVA"] = $trava;
 
     $hoje = new DateTimeImmutable("today");
     $agora = date("H:i");

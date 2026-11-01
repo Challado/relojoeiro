@@ -6708,6 +6708,10 @@
  *                                    o que corrigir no config.php)
  *     demo_dias                      os dias da conta de demonstração
  *     master                         (parte=menu) verdadeiro ou falso: quem pede é o master (ou o master vendo como outro)
+ *     espera_segundos                (parte=menu) quantos segundos a tela espera a resposta da API antes de cancelar o pedido e dizer que o
+ *                                    servidor não respondeu (API_ESPERA do config.php; padrão 120; 0, sem limite)
+ *     recursos_demorados[]           (parte=menu) as escritas que não têm esse limite, porque podem demorar: importacao, backup, migracoes
+ *                                    e instalacao
  *     atualizar_segundos             (parte=menu) de quantos em quantos segundos a página lê tudo de novo sozinha (a Configuração da
  *                                    coleção; 0: não lê; sem coleção, 0)
  *     relojinho                      (parte=menu) o reloginho da barra e da aba, no modo da Configuração da coleção (sem coleção, null: o

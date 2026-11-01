@@ -125,3 +125,9 @@ define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");
 // (o normal num servidor de uso), o que falta sai em português e nada para. php testes/textos.php lista tudo o que falta
 // de uma vez
 // define("TEXTOS_ESTRITO", true);
+// o arquivo de trava do cron, que garante uma rodada por vez: a do minuto seguinte, achando a anterior ainda rodando, sai
+// sem rodar e anota o pulo. Sem esta linha, um por instalação na pasta temporária do sistema
+// define("CRON_TRAVA", "/var/lib/relogios2/cron.trava");
+// quantos segundos as telas esperam a resposta da API antes de dizer que o servidor não respondeu (sem esta linha, 120;
+// 0, sem limite). A importação, a cópia de segurança, as migrações e a instalação não têm limite
+// define("API_ESPERA", 120);

@@ -2086,6 +2086,11 @@ O `cron.php` tem duas opções, para rodar à mão: `--forcar` roda a rodada da 
 rodado hoje (monta a escala, manda as mensagens e sincroniza a agenda, se estiverem ligadas), e `-v` mostra na tela o registro
 que ele grava (o mesmo da página Execuções do cron). Ex.: `php cron.php --forcar -v`.
 
+Uma rodada por vez: o `cron.php` segura um arquivo de trava enquanto roda (`CRON_TRAVA` no `config.php`; sem ela, um
+por instalação na pasta temporária do sistema). Se a rodada anterior ainda estiver rodando, a do minuto seguinte sai na
+hora, sem tocar no banco, e anota o pulo num arquivo ao lado da trava (`<trava>.pulos`). A rodada que segurava a trava
+registra, como erro, quantas saíram assim e quanto tempo ela levou.
+
 No SQLite, ponha o arquivo do banco (`DB_ARQUIVO`) **fora da pasta que o servidor web publica**, numa pasta em que o
 usuário do PHP possa escrever (o SQLite cria ao lado os arquivos `-wal` e `-shm`).
 
@@ -2141,6 +2146,8 @@ pessoas entram pelo **Criar conta** (`cadastro.php`), por um convite seu, ou o m
 | `ALEATORIO_RANDOMORG_URL`, `ALEATORIO_ANU_URL` | opcionais, só para testes: os endereços das fontes dos números aleatórios (`https://www.random.org/integers/` e `https://qrng.anu.edu.au/API/jsonI.php`). Trocados, os sorteios pedem os números a um servidor de teste |
 | `GOOGLE_TOKEN_URL`, `GOOGLE_API_URL`, `OUTLOOK_LOGIN_URL`, `OUTLOOK_GRAPH_URL` | opcionais, só para testes: os endereços do Google e da Microsoft que as agendas usam. Trocados, a sincronização conversa com um servidor de teste |
 | `TEXTOS_ESTRITO` | opcional, para quem está traduzindo: `true` faz a tradução que falta parar com erro (veja [Os idiomas](#os-idiomas)) |
+| `CRON_TRAVA` | opcional: o arquivo de trava do cron, que garante uma rodada por vez (veja a instalação do cron). Sem ela, um por instalação na pasta temporária do sistema |
+| `API_ESPERA` | opcional: quantos segundos as telas esperam a resposta da API antes de cancelar o pedido e dizer que o servidor não respondeu. Sem ela, 120; `0`, sem limite. As escritas demoradas (importação, cópia de segurança, migrações e instalação) não têm limite |
 
 O sistema lê o `config.php` da pasta dele. Uma variável de ambiente do servidor, `RELOGIOS_CONFIG`, aponta outro arquivo no
 lugar: é o que o teste de paridade usa (`testes/paridade.sh`, com o [`testes/config.teste.php`](testes/config.teste.php)), para

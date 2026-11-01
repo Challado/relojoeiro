@@ -2190,6 +2190,12 @@ même s'ils ont déjà eu lieu aujourd'hui (il construit le planning, envoie les
 activés), et `-v` affiche à l'écran le journal qu'il enregistre (le même que la page Exécutions du cron). Ex. :
 `php cron.php --forcar -v`.
 
+Un passage à la fois : `cron.php` tient un fichier de verrou pendant qu’il tourne (`CRON_TRAVA` dans `config.php` ;
+sans elle, un par installation dans le dossier temporaire du système). Si le passage précédent tourne encore, celui de
+la minute suivante sort aussitôt, sans toucher la base, et note le saut dans un fichier à côté du verrou
+(`<verrou>.pulos`). Le passage qui tenait le verrou enregistre, comme erreur, combien sont sortis ainsi et combien de
+temps il a pris.
+
 Sur SQLite, mettez le fichier de la base (`DB_ARQUIVO`) **hors du dossier que publie le serveur web**, dans un dossier où
 l'utilisateur de PHP peut écrire (SQLite crée à côté les fichiers `-wal` et `-shm`).
 
@@ -2247,6 +2253,8 @@ votre part, ou le master crée le compte dans **Utilisateurs**.
 | `ALEATORIO_RANDOMORG_URL`, `ALEATORIO_ANU_URL` | facultatifs, seulement pour les tests : les adresses des sources des nombres aléatoires (`https://www.random.org/integers/` et `https://qrng.anu.edu.au/API/jsonI.php`). Changées, les tirages demandent les nombres à un serveur de test |
 | `GOOGLE_TOKEN_URL`, `GOOGLE_API_URL`, `OUTLOOK_LOGIN_URL`, `OUTLOOK_GRAPH_URL` | facultatifs, seulement pour les tests : les adresses de Google et de Microsoft qu'utilisent les agendas. Changées, la synchronisation parle à un serveur de test |
 | `TEXTOS_ESTRITO` | facultatif, pour qui traduit : `true` fait qu'une traduction manquante s'arrête sur une erreur (voir [Les langues](#les-langues)) |
+| `CRON_TRAVA` | facultatif : le fichier de verrou du cron, qui garantit un passage à la fois (voir l’installation du cron). Sans elle, un par installation dans le dossier temporaire du système |
+| `API_ESPERA` | facultatif : combien de secondes les écrans attendent la réponse de l’API avant d’annuler la requête et de dire que le serveur n’a pas répondu. Sans elle, 120 ; `0`, sans limite. Les écritures longues (importation, copie de sauvegarde, migrations et installation) n’ont pas de limite |
 
 Le système lit le `config.php` de son dossier. Une variable d'environnement du serveur, `RELOGIOS_CONFIG`, désigne un autre
 fichier à la place : c'est ce qu'utilise le test de parité (`testes/paridade.sh`, avec le

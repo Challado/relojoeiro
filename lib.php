@@ -9870,6 +9870,28 @@ function backup_caminho($arquivo)
     return $pasta !== null && preg_match("/^relojoeiro-\\d{4}-\\d{2}-\\d{2}-\\d{6}\\.jsonl\\.gz\$/", $arquivo) === 1 && is_file($pasta . "/" . $arquivo) ? $pasta . "/" . $arquivo : null;
 }
 
+// O arquivo de trava do cron (CRON_TRAVA do config.php; sem a linha, um por instalação na pasta temporária): a rodada o
+// segura (flock) enquanto roda, e a do minuto seguinte, achando-o seguro, sai na hora sem tocar no banco. Ao lado dele, o
+// arquivo dos pulos (<trava>.pulos): uma linha por rodada que saiu assim, contada no registro da rodada que segurava a trava
+function cron_trava_caminho()
+{
+    return defined("CRON_TRAVA") && trim((string)CRON_TRAVA) !== "" ? (string)CRON_TRAVA
+        : sys_get_temp_dir() . "/relojoeiro-cron-" . substr(md5(__DIR__), 0, 12) . ".trava";
+}
+
+// Quanto as telas esperam a resposta da API, em segundos (API_ESPERA do config.php; sem a linha, 120; 0, sem limite):
+// passou disso, a tela cancela o pedido e diz que o servidor não respondeu, em vez de ficar parada para sempre
+function api_espera_segundos()
+{
+    return defined("API_ESPERA") && is_numeric(API_ESPERA) && (int)API_ESPERA >= 0 ? (int)API_ESPERA : 120;
+}
+
+// As escritas que podem demorar (o histórico inteiro, o banco inteiro): sem limite de tempo no PHP nem na espera das telas
+function recursos_demorados()
+{
+    return ["importacao", "backup", "migracoes", "instalacao"];
+}
+
 // Faz uma cópia agora e apaga as mais velhas que passam do BACKUP_MANTER. Devolve {ok, mensagem, erros, arquivo}
 function backup_fazer()
 {
@@ -9879,8 +9901,13 @@ function backup_fazer()
         return ["ok" => false, "mensagem" => "", "erros" => [t("Não fiz a cópia: {1}.", [1 => backup_pasta_erro()])], "arquivo" => null];
     }
     $nome = "relojoeiro-" . date("Y-m-d-His") . ".jsonl.gz";
-    // segundos iguais (duas no mesmo segundo): a próxima espera o nome ficar livre
+    // segundos iguais (duas no mesmo segundo): a próxima espera o nome ficar livre, no máximo 5 s; depois, erro
+    $esperou = 0;
     while (is_file($pasta . "/" . $nome)) {
+        if ($esperou >= 5) {
+            return ["ok" => false, "mensagem" => "", "erros" => [t("Não fiz a cópia: o arquivo {1} já existe na pasta das cópias e o nome não ficou livre.", [1 => $nome])], "arquivo" => null];
+        }
+        $esperou++;
         sleep(1);
         $nome = "relojoeiro-" . date("Y-m-d-His") . ".jsonl.gz";
     }

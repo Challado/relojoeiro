@@ -4389,6 +4389,8 @@ $saida = [
             "email.problemas[]" => t('o que está errado ou faltando na configuração, achado sem conectar em nada (cada um, uma frase dizendo o que corrigir no config.php)'),
             "demo_dias" => t('os dias da conta de demonstração'),
             "master" => t('(parte=menu) verdadeiro ou falso: quem pede é o master (ou o master vendo como outro)'),
+            "espera_segundos" => t('(parte=menu) quantos segundos a tela espera a resposta da API antes de cancelar o pedido e dizer que o servidor não respondeu (API_ESPERA do config.php; padrão 120; 0, sem limite)'),
+            "recursos_demorados[]" => t('(parte=menu) as escritas que não têm esse limite, porque podem demorar: importacao, backup, migracoes e instalacao'),
             "atualizar_segundos" => t('(parte=menu) de quantos em quantos segundos a página lê tudo de novo sozinha (a Configuração da coleção; 0: não lê; sem coleção, 0)'),
             "relojinho" => t('(parte=menu) o reloginho da barra e da aba, no modo da Configuração da coleção (sem coleção, null: o modelo da hora)'),
             "relojinho.modo" => t('hora, aleatorio ou sem_repeticao (a Configuração relojinho_modo)'),

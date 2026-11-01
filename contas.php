@@ -1668,6 +1668,8 @@ function conta_menu()
         "idioma_padrao" => lingua_valida($u["idioma"] ?? null) ?? (lingua_valida(cfg("idioma")) ?? lingua_valida(sis("idioma"))),
         // de quantos em quantos segundos a página lê tudo de novo sozinha (a Configuração; 0: não lê)
         "atualizar_segundos" => colecao_atual() !== null ? atualizar_segundos() : 0,
+        // quanto a tela espera a resposta da API (API_ESPERA do config.php; 0: sem limite) e as escritas sem esse limite
+        "espera_segundos" => api_espera_segundos(), "recursos_demorados" => recursos_demorados(),
         // o reloginho da barra: o modo da Configuração e o modelo de cada hora de hoje (o relojinho.js desenha)
         "relojinho" => colecao_atual() !== null ? ["modo" => relojinho_modo(), "dia" => hoje_da_colecao()->format("Y-m-d"), "ordem" => relojinho_ordem(hoje_da_colecao()->format("Y-m-d"))] : null,
         "colecoes" => array_map(function ($c) { return ["id" => $c["id"], "nome" => $c["nome"], "dono" => $c["dono"], "papel" => $c["papel"]]; }, colecoes_visiveis($u)),

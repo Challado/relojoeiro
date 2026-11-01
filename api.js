@@ -524,9 +524,41 @@ new MutationObserver(function () {
 }).observe(document.body, {childList: true, subtree: true});
 rotularTabelas();
 
-// O que a API respondeu com erro: banco desatualizado vai para a Configuração (que aplica); o resto vira uma exceção
+// Quanto a tela espera a resposta da API (API_ESPERA do config.php, que vem no menu; até ele chegar, 120 s; 0: sem limite)
+// e as escritas que não têm esse limite (as demoradas: o servidor continua trabalhando nelas)
+var ESPERA_SEGUNDOS = 120;
+var RECURSOS_DEMORADOS = ["importacao", "backup", "migracoes", "instalacao"];
+// Um pedido à API com prazo: passou da espera, o pedido é cancelado e vira o erro "o servidor não respondeu", em vez de a
+// tela ficar parada para sempre. O prazo vale até a resposta inteira chegar (o corpo também)
+function pedirApi(endereco, opcoes, recurso) {
+  var s = ESPERA_SEGUNDOS;
+  if (!(s > 0) || RECURSOS_DEMORADOS.indexOf(recurso) >= 0 || typeof AbortController === "undefined") {
+    return fetch(endereco, opcoes).then(tratarResposta);
+  }
+  var controle = new AbortController();
+  var prazo = setTimeout(function () { controle.abort(); }, s * 1000);
+  opcoes.signal = controle.signal;
+  return fetch(endereco, opcoes).then(tratarResposta).then(function (dados) {
+    clearTimeout(prazo);
+    return dados;
+  }, function (e) {
+    clearTimeout(prazo);
+    if (e && e.name === "AbortError") {
+      throw new Error(t("o servidor não respondeu em {1} s", {1: s}));
+    }
+    throw e;
+  });
+}
+
+// O que a API respondeu com erro: banco desatualizado vai para a Configuração (que aplica); o resto vira uma exceção. Uma
+// resposta que não é JSON (a página de erro do servidor web) também é erro, nunca um objeto vazio calado
 function tratarResposta(resp) {
-  return resp.json().catch(function () { return {}; }).then(function (dados) {
+  return resp.json().catch(function () {
+    if (resp.ok) {
+      throw new Error(t("a API respondeu algo que não é JSON (HTTP {1})", {1: resp.status}));
+    }
+    return {};
+  }).then(function (dados) {
     if (resp.status === 503 && dados.pendentes && window.location.pathname.indexOf("configuracao.php") < 0) {
       window.location = "configuracao.php";
     }
@@ -551,8 +583,8 @@ function tratarResposta(resp) {
 // Lê um recurso da API: api({recurso: "hoje"}) (depois do dicionário do idioma: a tela que vem em seguida já sai traduzida)
 function api(parametros) {
   return textosProntos.then(function () {
-    return fetch("api.php?" + new URLSearchParams(parametros || {}).toString(), { credentials: "same-origin" });
-  }).then(tratarResposta);
+    return pedirApi("api.php?" + new URLSearchParams(parametros || {}).toString(), { credentials: "same-origin" }, (parametros || {}).recurso);
+  });
 }
 
 // Grava pela API: dados é um FormData ou um objeto; devolve {ok, mensagem, erros, ...}
@@ -571,7 +603,7 @@ function enviar(dados) {
     GRAVANDO--;
     return x;
   };
-  return fetch("api.php", { method: "POST", body: corpo, credentials: "same-origin" }).then(tratarResposta).then(fim, function (e) {
+  return pedirApi("api.php", { method: "POST", body: corpo, credentials: "same-origin" }, corpo.get("recurso")).then(fim, function (e) {
     fim();
     throw e;
   });
@@ -1170,6 +1202,13 @@ var contaPronta = document.querySelector("[data-menu-conta]") ? api({recurso: "c
   if (typeof m.atualizar_segundos === "number") {
     ATUALIZAR_SEGUNDOS = m.atualizar_segundos;
   }
+  // a espera pela API e as escritas sem limite (o config.php do servidor)
+  if (typeof m.espera_segundos === "number") {
+    ESPERA_SEGUNDOS = m.espera_segundos;
+  }
+  if (Array.isArray(m.recursos_demorados)) {
+    RECURSOS_DEMORADOS = m.recursos_demorados;
+  }
   // o reloginho da barra: o modelo de cada hora do dia, no modo da Configuração (o relojinho.js desenha)
   if (m.relojinho && m.relojinho.ordem) {
     window.RELOJINHO_ORDEM = m.relojinho.ordem;
@@ -1342,7 +1381,9 @@ function paginaOcupada() {
 }
 function atualizarSozinho(ler, ocupada) {
   var ultima = Date.now();
+  var boa = Date.now();
   var lendo = false;
+  var falhou = false;
   var tentar = function () {
     var s = ATUALIZAR_SEGUNDOS;
     if (!(s > 0) || document.hidden || lendo || Date.now() - ultima < s * 1000 - 200 || paginaOcupada() || (ocupada && ocupada())) {
@@ -1352,8 +1393,22 @@ function atualizarSozinho(ler, ocupada) {
     var comeco = Date.now();
     var posicao = posicaoAtualDaPagina();
     Promise.resolve().then(ler).then(function () {
+      boa = Date.now();
+      if (falhou) {
+        falhou = false;
+        avisoFlutuanteGravacao(t("A página voltou a se atualizar sozinha."), false);
+      }
       return MEXEU_NA_ROLAGEM > comeco ? null : restaurarPosicaoDaGravacao(posicao);
-    }).catch(function () {}).then(function () {
+    }).catch(function (e) {
+      // a falha aparece uma vez (até a próxima leitura dar certo): o que a página mostra é da última que deu certo; a
+      // próxima tentativa é a do intervalo seguinte, uma por vez
+      if (!falhou) {
+        falhou = true;
+        var b = new Date(boa);
+        avisoFlutuanteGravacao(t("A página não conseguiu se atualizar sozinha: {1}. O que ela mostra é de {2}; ela tenta de novo no próximo intervalo.",
+          {1: e && e.message ? e.message : String(e), 2: String(b.getHours()).padStart(2, "0") + ":" + String(b.getMinutes()).padStart(2, "0")}), true);
+      }
+    }).then(function () {
       ultima = Date.now();
       lendo = false;
     });
