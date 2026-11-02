@@ -10465,6 +10465,10 @@ function parametros_sistema_lista()
     $textos = parametros_sistema_textos();
     $res = [];
     foreach (PARAMETROS_SISTEMA as $k => [$linha, $tipo, $padrao, $min, $max]) {
+        // o tamanho dos documentos ainda aceita o nome antigo da linha (MANUAL_LIMITE), sem o DOCUMENTOS_LIMITE
+        if ($k === "documentos_limite" && !defined("DOCUMENTOS_LIMITE") && defined("MANUAL_LIMITE")) {
+            $linha = "MANUAL_LIMITE";
+        }
         $config = $linha !== null && defined($linha) ? constant($linha) : null;
         $res[] = ["chave" => $k, "nome" => $textos[$k][0], "descricao" => $textos[$k][1], "tipo" => $tipo, "valor" => $valores[$k],
             "origem" => parametro_gravado($k) !== null ? "sistema" : ($config !== null ? "config" : "padrao"),
