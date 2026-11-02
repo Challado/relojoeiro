@@ -112,6 +112,15 @@ function comparar($x, $y, $caminho, $chave)
                 $y["valor"] = $x["valor"];
             }
         }
+        // um total sobre a carga (a Carga média do cadastro, MEDIA(carga)): a carga de cada relógio é um número inteiro que cai
+        // com o tempo, e no banco mais lento um relógio já pode ter descido um ponto; até 1 de diferença é o tempo (um relógio
+        // a mais ou a menos no conjunto muda bem mais que isso)
+        if (!$lista_x && is_string($x["expressao"] ?? null) && ($x["expressao"] ?? null) === ($y["expressao"] ?? null) && preg_match("/\\bcarga\\b/", $x["expressao"]) === 1
+            && is_array($x["resultado"] ?? null) && is_array($y["resultado"] ?? null) && is_numeric($x["resultado"]["valor"] ?? null) && is_numeric($y["resultado"]["valor"] ?? null)
+            && abs($x["resultado"]["valor"] - $y["resultado"]["valor"]) <= 1) {
+            $y["resultado"]["valor"] = $x["resultado"]["valor"];
+            $y["resultado"]["texto"] = $x["resultado"]["texto"] ?? null;
+        }
         // uma linha da conta da nota de um critério (criterios.notas[].conta[]): o valor da variável anda com o tempo (a reserva
         // agora, em %, cai enquanto o cenário roda); com a mesma nota e os mesmos pontos nos dois, até 0,5 de diferença é o tempo
         if (!$lista_x && isset($x["variavel"], $x["nota"], $y["nota"]) && array_key_exists("valor", $x) && array_key_exists("valor", $y)

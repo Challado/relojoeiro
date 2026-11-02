@@ -1070,9 +1070,10 @@ ler("totais teste faixas", ["recurso" => "totais", "parte" => "teste", "expressa
 ler("totais teste errado", ["recurso" => "totais", "parte" => "teste", "expressao" => "SOMA(carga"]);
 ler("totais teste sem funcao de total", ["recurso" => "totais", "parte" => "teste", "expressao" => "carga + 1"]);
 ler("totais teste vazio", ["recurso" => "totais", "parte" => "teste", "expressao" => ""]);
-// ESCOLHA nos totais calcula só o valor escolhido (como o SE): o primeiro, o segundo e um fora da lista (vazio)
-foreach (["ESCOLHA(1; SOMA(carga); CONTA())" => "primeiro", "ESCOLHA(CONTA() / CONTA() + 1; SOMA(carga); CONTA())" => "segundo",
-    "ESCOLHA(3; SOMA(carga); CONTA())" => "fora"] as $x => $qual) {
+// ESCOLHA nos totais calcula só o valor escolhido (como o SE): o primeiro, o segundo e um fora da lista (vazio). O valor do
+// primeiro é a soma do valor pago, que não anda com o tempo (a carga anda: o banco mais lento lia um ponto a menos)
+foreach (["ESCOLHA(1; SOMA(valor_compra); CONTA())" => "primeiro", "ESCOLHA(CONTA() / CONTA() + 1; SOMA(valor_compra); CONTA())" => "segundo",
+    "ESCOLHA(3; SOMA(valor_compra); CONTA())" => "fora"] as $x => $qual) {
     ler("totais teste escolha " . $qual, ["recurso" => "totais", "parte" => "teste", "expressao" => $x]);
 }
 $total_novo = escrever(["recurso" => "totais", "acao" => "salvar", "nome" => "Carga somada", "expressao" => "SOMA(carga)", "coluna" => "", "rodape" => "0", "pagina" => "1", "largura" => "largo", "formato" => "porcentagem"]);
